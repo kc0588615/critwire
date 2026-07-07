@@ -56,6 +56,12 @@ export default async function GamePortalLayout({
             >
               Patch Notes
             </Link>
+            <Link
+              className="opacity-75 transition-opacity hover:opacity-100"
+              href={`/g/${project.slug}/issues`}
+            >
+              Issues
+            </Link>
             {externalLinks.map((link) => (
               <a
                 className="opacity-75 transition-opacity hover:opacity-100"

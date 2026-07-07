@@ -16,3 +16,7 @@ fixtures (run verify-isolation.mjs first on a fresh DB).
 
 `verify-phase4.mjs` — patch notes feed/pagination/detail/RSS +
 revalidation. Requires Phase 2/3 fixtures.
+
+`verify-phase5.mjs` — issue tracker filters/board/detail + voting
+(toggle, per-token uniqueness, tampered cookies). Requires Phase 2-4
+fixtures.
