@@ -29,8 +29,11 @@ const generateURL: GenerateURL<Post | Page> = ({ doc }) => {
 export const plugins: Plugin[] = [
   multiTenantPlugin<Config>({
     collections: {
-      // Tenant-scoped collections. Phase 2 replaces these with the full
-      // v7 schema (game-projects, patch-notes, issues, …).
+      'game-projects': {},
+      'patch-notes': {},
+      issues: {},
+      'issue-reports': {},
+      'issue-votes': {},
       media: {},
       pages: {},
     },

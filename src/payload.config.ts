@@ -5,8 +5,13 @@ import { buildConfig, PayloadRequest } from 'payload'
 import { fileURLToPath } from 'url'
 
 import { Categories } from './collections/Categories'
+import { GameProjects } from './collections/GameProjects'
+import { IssueReports } from './collections/IssueReports'
+import { Issues } from './collections/Issues'
+import { IssueVotes } from './collections/IssueVotes'
 import { Media } from './collections/Media'
 import { Pages } from './collections/Pages'
+import { PatchNotes } from './collections/PatchNotes'
 import { Posts } from './collections/Posts'
 import { Tenants } from './collections/Tenants'
 import { Users } from './collections/Users'
@@ -71,7 +76,19 @@ export default buildConfig({
     // required because the standalone Docker image has no payload CLI.
     prodMigrations: migrations,
   }),
-  collections: [Tenants, Pages, Posts, Media, Categories, Users],
+  collections: [
+    Tenants,
+    GameProjects,
+    PatchNotes,
+    Issues,
+    IssueReports,
+    IssueVotes,
+    Pages,
+    Posts,
+    Media,
+    Categories,
+    Users,
+  ],
   cors: [getServerSideURL()].filter(Boolean),
   globals: [Header, Footer],
   plugins,

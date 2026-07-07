@@ -68,6 +68,11 @@ export interface Config {
   blocks: {};
   collections: {
     tenants: Tenant;
+    'game-projects': GameProject;
+    'patch-notes': PatchNote;
+    issues: Issue;
+    'issue-reports': IssueReport;
+    'issue-votes': IssueVote;
     pages: Page;
     posts: Post;
     media: Media;
@@ -91,6 +96,11 @@ export interface Config {
   };
   collectionsSelect: {
     tenants: TenantsSelect<false> | TenantsSelect<true>;
+    'game-projects': GameProjectsSelect<false> | GameProjectsSelect<true>;
+    'patch-notes': PatchNotesSelect<false> | PatchNotesSelect<true>;
+    issues: IssuesSelect<false> | IssuesSelect<true>;
+    'issue-reports': IssueReportsSelect<false> | IssueReportsSelect<true>;
+    'issue-votes': IssueVotesSelect<false> | IssueVotesSelect<true>;
     pages: PagesSelect<false> | PagesSelect<true>;
     posts: PostsSelect<false> | PostsSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
@@ -169,123 +179,53 @@ export interface Tenant {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "pages".
+ * via the `definition` "game-projects".
  */
-export interface Page {
+export interface GameProject {
   id: number;
   tenant?: (number | null) | Tenant;
-  title: string;
-  hero: {
-    type: 'none' | 'highImpact' | 'mediumImpact' | 'lowImpact';
-    richText?: {
-      root: {
-        type: string;
-        children: {
-          type: any;
-          version: number;
-          [k: string]: unknown;
-        }[];
-        direction: ('ltr' | 'rtl') | null;
-        format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-        indent: number;
-        version: number;
-      };
-      [k: string]: unknown;
-    } | null;
-    links?:
-      | {
-          link: {
-            type?: ('reference' | 'custom') | null;
-            newTab?: boolean | null;
-            reference?:
-              | ({
-                  relationTo: 'pages';
-                  value: number | Page;
-                } | null)
-              | ({
-                  relationTo: 'posts';
-                  value: number | Post;
-                } | null);
-            url?: string | null;
-            label: string;
-            /**
-             * Choose how the link should be rendered.
-             */
-            appearance?: ('default' | 'outline') | null;
-          };
-          id?: string | null;
-        }[]
-      | null;
-    media?: (number | null) | Media;
-  };
-  layout: (CallToActionBlock | ContentBlock | MediaBlock | ArchiveBlock | FormBlock)[];
-  meta?: {
-    title?: string | null;
-    /**
-     * Maximum upload file size: 12MB. Recommended file size for images is <500KB.
-     */
-    image?: (number | null) | Media;
-    description?: string | null;
-  };
-  publishedAt?: string | null;
+  name: string;
   /**
    * When enabled, the slug will auto-generate from the title field on save and autosave.
    */
   generateSlug?: boolean | null;
   slug: string;
-  updatedAt: string;
-  createdAt: string;
-  _status?: ('draft' | 'published') | null;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "posts".
- */
-export interface Post {
-  id: number;
-  title: string;
-  heroImage?: (number | null) | Media;
-  content: {
-    root: {
-      type: string;
-      children: {
-        type: any;
-        version: number;
-        [k: string]: unknown;
-      }[];
-      direction: ('ltr' | 'rtl') | null;
-      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-      indent: number;
-      version: number;
-    };
-    [k: string]: unknown;
-  };
-  relatedPosts?: (number | Post)[] | null;
-  categories?: (number | Category)[] | null;
-  meta?: {
-    title?: string | null;
-    /**
-     * Maximum upload file size: 12MB. Recommended file size for images is <500KB.
-     */
-    image?: (number | null) | Media;
-    description?: string | null;
-  };
-  publishedAt?: string | null;
-  authors?: (number | User)[] | null;
-  populatedAuthors?:
-    | {
-        id?: string | null;
-        name?: string | null;
-      }[]
-    | null;
+  description?: string | null;
+  logo?: (number | null) | Media;
+  banner?: (number | null) | Media;
   /**
-   * When enabled, the slug will auto-generate from the title field on save and autosave.
+   * Hex color, e.g. #7c3aed
    */
-  generateSlug?: boolean | null;
-  slug: string;
+  accentColor?: string | null;
+  /**
+   * External links shown on the public portal.
+   */
+  links?: {
+    website?: string | null;
+    steam?: string | null;
+    epic?: string | null;
+    itch?: string | null;
+    discord?: string | null;
+    support?: string | null;
+    docs?: string | null;
+    merch?: string | null;
+  };
+  /**
+   * Where public contact form submissions are routed.
+   */
+  contact?: {
+    target?: ('EMAIL' | 'DISCORD_WEBHOOK' | 'EXTERNAL_URL') | null;
+    email?: string | null;
+    discordWebhookUrl?: string | null;
+    externalUrl?: string | null;
+  };
+  /**
+   * Custom domain (Phase 8). Verification required before it serves traffic.
+   */
+  customDomain?: string | null;
+  customDomainVerified?: boolean | null;
   updatedAt: string;
   createdAt: string;
-  _status?: ('draft' | 'published') | null;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -406,6 +346,275 @@ export interface FolderInterface {
   folderType?: 'media'[] | null;
   updatedAt: string;
   createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "patch-notes".
+ */
+export interface PatchNote {
+  id: number;
+  tenant?: (number | null) | Tenant;
+  gameProject: number | GameProject;
+  title: string;
+  /**
+   * When enabled, the slug will auto-generate from the title field on save and autosave.
+   */
+  generateSlug?: boolean | null;
+  slug: string;
+  /**
+   * e.g. v1.2.0, Hotfix 3
+   */
+  versionLabel?: string | null;
+  /**
+   * Short teaser shown in the patch notes feed.
+   */
+  summary?: string | null;
+  content: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  };
+  publishedAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "issues".
+ */
+export interface Issue {
+  id: number;
+  tenant?: (number | null) | Tenant;
+  gameProject: number | GameProject;
+  title: string;
+  /**
+   * When enabled, the slug will auto-generate from the title field on save and autosave.
+   */
+  generateSlug?: boolean | null;
+  slug: string;
+  summary?: string | null;
+  details?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  category:
+    | 'INFORMATION'
+    | 'PATCH_NOTES'
+    | 'GAMEPLAY'
+    | 'CRASHES'
+    | 'USER_INTERFACE'
+    | 'AUDIO'
+    | 'VISUAL'
+    | 'QUESTS'
+    | 'PERFORMANCE'
+    | 'FEATURE_REQUEST'
+    | 'OTHER';
+  status: 'REPORTED' | 'INVESTIGATING' | 'NEEDS_MORE_INFO' | 'WORKAROUND_AVAILABLE' | 'PLANNED' | 'FIXED' | 'CLOSED';
+  isPublic?: boolean | null;
+  isPinned?: boolean | null;
+  /**
+   * Shown publicly when status is Needs More Info.
+   */
+  needsMoreInfoText?: string | null;
+  /**
+   * Shown publicly when status is Workaround Available.
+   */
+  workaroundText?: string | null;
+  /**
+   * Links the public issue to the patch note that fixed it.
+   */
+  fixedInPatchNote?: (number | null) | PatchNote;
+  upvoteCount?: number | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "issue-reports".
+ */
+export interface IssueReport {
+  id: number;
+  tenant?: (number | null) | Tenant;
+  gameProject: number | GameProject;
+  title: string;
+  description: string;
+  category:
+    | 'INFORMATION'
+    | 'PATCH_NOTES'
+    | 'GAMEPLAY'
+    | 'CRASHES'
+    | 'USER_INTERFACE'
+    | 'AUDIO'
+    | 'VISUAL'
+    | 'QUESTS'
+    | 'PERFORMANCE'
+    | 'FEATURE_REQUEST'
+    | 'OTHER';
+  status: 'NEW' | 'PUBLISHED' | 'LINKED' | 'DISMISSED';
+  issue?: (number | null) | Issue;
+  submitterEmail?: string | null;
+  /**
+   * e.g. Windows, Steam Deck, PS5
+   */
+  platform?: string | null;
+  gameVersion?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "issue-votes".
+ */
+export interface IssueVote {
+  id: number;
+  tenant?: (number | null) | Tenant;
+  issue: number | Issue;
+  browserTokenHash: string;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "pages".
+ */
+export interface Page {
+  id: number;
+  tenant?: (number | null) | Tenant;
+  title: string;
+  hero: {
+    type: 'none' | 'highImpact' | 'mediumImpact' | 'lowImpact';
+    richText?: {
+      root: {
+        type: string;
+        children: {
+          type: any;
+          version: number;
+          [k: string]: unknown;
+        }[];
+        direction: ('ltr' | 'rtl') | null;
+        format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+        indent: number;
+        version: number;
+      };
+      [k: string]: unknown;
+    } | null;
+    links?:
+      | {
+          link: {
+            type?: ('reference' | 'custom') | null;
+            newTab?: boolean | null;
+            reference?:
+              | ({
+                  relationTo: 'pages';
+                  value: number | Page;
+                } | null)
+              | ({
+                  relationTo: 'posts';
+                  value: number | Post;
+                } | null);
+            url?: string | null;
+            label: string;
+            /**
+             * Choose how the link should be rendered.
+             */
+            appearance?: ('default' | 'outline') | null;
+          };
+          id?: string | null;
+        }[]
+      | null;
+    media?: (number | null) | Media;
+  };
+  layout: (CallToActionBlock | ContentBlock | MediaBlock | ArchiveBlock | FormBlock)[];
+  meta?: {
+    title?: string | null;
+    /**
+     * Maximum upload file size: 12MB. Recommended file size for images is <500KB.
+     */
+    image?: (number | null) | Media;
+    description?: string | null;
+  };
+  publishedAt?: string | null;
+  gameProject?: (number | null) | GameProject;
+  /**
+   * When enabled, the slug will auto-generate from the title field on save and autosave.
+   */
+  generateSlug?: boolean | null;
+  slug: string;
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "posts".
+ */
+export interface Post {
+  id: number;
+  title: string;
+  heroImage?: (number | null) | Media;
+  content: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  };
+  relatedPosts?: (number | Post)[] | null;
+  categories?: (number | Category)[] | null;
+  meta?: {
+    title?: string | null;
+    /**
+     * Maximum upload file size: 12MB. Recommended file size for images is <500KB.
+     */
+    image?: (number | null) | Media;
+    description?: string | null;
+  };
+  publishedAt?: string | null;
+  authors?: (number | User)[] | null;
+  populatedAuthors?:
+    | {
+        id?: string | null;
+        name?: string | null;
+      }[]
+    | null;
+  /**
+   * When enabled, the slug will auto-generate from the title field on save and autosave.
+   */
+  generateSlug?: boolean | null;
+  slug: string;
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1002,6 +1211,26 @@ export interface PayloadLockedDocument {
         value: number | Tenant;
       } | null)
     | ({
+        relationTo: 'game-projects';
+        value: number | GameProject;
+      } | null)
+    | ({
+        relationTo: 'patch-notes';
+        value: number | PatchNote;
+      } | null)
+    | ({
+        relationTo: 'issues';
+        value: number | Issue;
+      } | null)
+    | ({
+        relationTo: 'issue-reports';
+        value: number | IssueReport;
+      } | null)
+    | ({
+        relationTo: 'issue-votes';
+        value: number | IssueVote;
+      } | null)
+    | ({
         relationTo: 'pages';
         value: number | Page;
       } | null)
@@ -1095,6 +1324,114 @@ export interface TenantsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "game-projects_select".
+ */
+export interface GameProjectsSelect<T extends boolean = true> {
+  tenant?: T;
+  name?: T;
+  generateSlug?: T;
+  slug?: T;
+  description?: T;
+  logo?: T;
+  banner?: T;
+  accentColor?: T;
+  links?:
+    | T
+    | {
+        website?: T;
+        steam?: T;
+        epic?: T;
+        itch?: T;
+        discord?: T;
+        support?: T;
+        docs?: T;
+        merch?: T;
+      };
+  contact?:
+    | T
+    | {
+        target?: T;
+        email?: T;
+        discordWebhookUrl?: T;
+        externalUrl?: T;
+      };
+  customDomain?: T;
+  customDomainVerified?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "patch-notes_select".
+ */
+export interface PatchNotesSelect<T extends boolean = true> {
+  tenant?: T;
+  gameProject?: T;
+  title?: T;
+  generateSlug?: T;
+  slug?: T;
+  versionLabel?: T;
+  summary?: T;
+  content?: T;
+  publishedAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "issues_select".
+ */
+export interface IssuesSelect<T extends boolean = true> {
+  tenant?: T;
+  gameProject?: T;
+  title?: T;
+  generateSlug?: T;
+  slug?: T;
+  summary?: T;
+  details?: T;
+  category?: T;
+  status?: T;
+  isPublic?: T;
+  isPinned?: T;
+  needsMoreInfoText?: T;
+  workaroundText?: T;
+  fixedInPatchNote?: T;
+  upvoteCount?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "issue-reports_select".
+ */
+export interface IssueReportsSelect<T extends boolean = true> {
+  tenant?: T;
+  gameProject?: T;
+  title?: T;
+  description?: T;
+  category?: T;
+  status?: T;
+  issue?: T;
+  submitterEmail?: T;
+  platform?: T;
+  gameVersion?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "issue-votes_select".
+ */
+export interface IssueVotesSelect<T extends boolean = true> {
+  tenant?: T;
+  issue?: T;
+  browserTokenHash?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "pages_select".
  */
 export interface PagesSelect<T extends boolean = true> {
@@ -1139,6 +1476,7 @@ export interface PagesSelect<T extends boolean = true> {
         description?: T;
       };
   publishedAt?: T;
+  gameProject?: T;
   generateSlug?: T;
   slug?: T;
   updatedAt?: T;

@@ -117,6 +117,16 @@ export const Pages: CollectionConfig<'pages'> = {
         position: 'sidebar',
       },
     },
+    {
+      // Associates a page with a game project (landing pages). The full
+      // landing-page block system arrives in Phase 3.
+      name: 'gameProject',
+      type: 'relationship',
+      relationTo: 'game-projects',
+      admin: {
+        position: 'sidebar',
+      },
+    },
     slugField(),
   ],
   hooks: {

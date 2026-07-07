@@ -1,0 +1,84 @@
+import type { CollectionConfig } from 'payload'
+
+import { tenantMemberAccess, tenantOwnerAccess } from '../../access/tenantAccess'
+import { ISSUE_CATEGORY_OPTIONS, ISSUE_REPORT_STATUS_OPTIONS } from '../options'
+
+export const IssueReports: CollectionConfig = {
+  slug: 'issue-reports',
+  access: {
+    // Never public: reports may contain emails and unvetted content.
+    // The public submission endpoint (Phase 6) creates reports via the
+    // Local API with overrideAccess after Turnstile + rate limiting.
+    read: tenantMemberAccess,
+    create: tenantMemberAccess,
+    update: tenantMemberAccess,
+    delete: tenantOwnerAccess,
+  },
+  admin: {
+    defaultColumns: ['title', 'gameProject', 'category', 'status', 'createdAt'],
+    group: 'Game Portal',
+    useAsTitle: 'title',
+  },
+  fields: [
+    {
+      name: 'gameProject',
+      type: 'relationship',
+      relationTo: 'game-projects',
+      required: true,
+      index: true,
+    },
+    {
+      name: 'title',
+      type: 'text',
+      required: true,
+    },
+    {
+      name: 'description',
+      type: 'textarea',
+      required: true,
+    },
+    {
+      name: 'category',
+      type: 'select',
+      defaultValue: 'OTHER',
+      options: [...ISSUE_CATEGORY_OPTIONS],
+      required: true,
+    },
+    {
+      name: 'status',
+      type: 'select',
+      defaultValue: 'NEW',
+      options: [...ISSUE_REPORT_STATUS_OPTIONS],
+      required: true,
+      index: true,
+    },
+    {
+      // Set when the report is linked to (or promoted into) an issue.
+      name: 'issue',
+      type: 'relationship',
+      relationTo: 'issues',
+      filterOptions: ({ data }) => {
+        const project = (data as { gameProject?: number | string | { id: number | string } })
+          ?.gameProject
+        const projectID = typeof project === 'object' && project !== null ? project.id : project
+        return projectID ? { gameProject: { equals: projectID } } : false
+      },
+    },
+    {
+      name: 'submitterEmail',
+      type: 'email',
+    },
+    {
+      name: 'platform',
+      type: 'text',
+      admin: {
+        description: 'e.g. Windows, Steam Deck, PS5',
+      },
+    },
+    {
+      name: 'gameVersion',
+      type: 'text',
+    },
+  ],
+  timestamps: true,
+}
