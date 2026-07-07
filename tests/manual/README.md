@@ -13,3 +13,6 @@ It is idempotent: fixtures are find-or-create.
 `verify-phase3.mjs` — landing page blocks, publish/unpublish flow,
 on-demand revalidation, 404s, media upload. Requires the Phase 2
 fixtures (run verify-isolation.mjs first on a fresh DB).
+
+`verify-phase4.mjs` — patch notes feed/pagination/detail/RSS +
+revalidation. Requires Phase 2/3 fixtures.

@@ -1,0 +1,59 @@
+import type { PaginatedDocs } from 'payload'
+
+import config from '@payload-config'
+import { getPayload } from 'payload'
+import { cache } from 'react'
+
+import type { PatchNote } from '@/payload-types'
+
+export const PATCH_NOTES_PER_PAGE = 10
+
+export const queryPublishedPatchNotes = cache(
+  async ({
+    page,
+    projectID,
+  }: {
+    page: number
+    projectID: number | string
+  }): Promise<PaginatedDocs<PatchNote>> => {
+    const payload = await getPayload({ config })
+
+    return payload.find({
+      collection: 'patch-notes',
+      depth: 0,
+      limit: PATCH_NOTES_PER_PAGE,
+      page,
+      sort: '-publishedAt',
+      where: {
+        and: [{ gameProject: { equals: projectID } }, { _status: { equals: 'published' } }],
+      },
+    })
+  },
+)
+
+export const getPublishedPatchNote = cache(
+  async ({
+    projectID,
+    slug,
+  }: {
+    projectID: number | string
+    slug: string
+  }): Promise<null | PatchNote> => {
+    const payload = await getPayload({ config })
+
+    const result = await payload.find({
+      collection: 'patch-notes',
+      depth: 1,
+      limit: 1,
+      pagination: false,
+      where: {
+        and: [
+          { gameProject: { equals: projectID } },
+          { slug: { equals: slug } },
+          { _status: { equals: 'published' } },
+        ],
+      },
+    })
+    return result.docs[0] ?? null
+  },
+)

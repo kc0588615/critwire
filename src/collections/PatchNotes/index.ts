@@ -5,6 +5,7 @@ import { slugField } from 'payload'
 import { tenantMemberAccess, tenantOwnerAccess } from '../../access/tenantAccess'
 import { populatePublishedAt } from '../../hooks/populatePublishedAt'
 import { validateUniqueSlugPerProject } from '../../hooks/validateUniqueSlugPerProject'
+import { revalidatePatchNotes, revalidatePatchNotesDelete } from './hooks/revalidatePatchNotes'
 
 export const PatchNotes: CollectionConfig = {
   slug: 'patch-notes',
@@ -68,6 +69,8 @@ export const PatchNotes: CollectionConfig = {
     },
   ],
   hooks: {
+    afterChange: [revalidatePatchNotes],
+    afterDelete: [revalidatePatchNotesDelete],
     beforeChange: [populatePublishedAt],
     beforeValidate: [validateUniqueSlugPerProject('patch-notes')],
   },

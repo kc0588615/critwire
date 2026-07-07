@@ -4,26 +4,17 @@ import { revalidatePath } from 'next/cache'
 
 import type { GamePage } from '../../../payload-types'
 
+import { resolveProjectSlug } from '../../../hooks/resolveProjectSlug'
+
 const revalidateProjectPath = async (
   gameProject: GamePage['gameProject'],
   payload: Parameters<CollectionAfterChangeHook>[0]['req']['payload'],
 ): Promise<void> => {
-  const projectID = typeof gameProject === 'object' ? gameProject.id : gameProject
-  if (!projectID) return
+  const slug = await resolveProjectSlug(gameProject, payload)
+  if (!slug) return
 
-  try {
-    const project = await payload.findByID({
-      collection: 'game-projects',
-      id: projectID,
-      depth: 0,
-    })
-    if (project?.slug) {
-      payload.logger.info(`Revalidating game portal at /g/${project.slug}`)
-      revalidatePath(`/g/${project.slug}`)
-    }
-  } catch (err) {
-    payload.logger.error({ err, msg: 'Failed to revalidate game portal path' })
-  }
+  payload.logger.info(`Revalidating game portal at /g/${slug}`)
+  revalidatePath(`/g/${slug}`)
 }
 
 export const revalidateGamePage: CollectionAfterChangeHook<GamePage> = async ({
