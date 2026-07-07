@@ -10,6 +10,10 @@ import {
 } from '../../access/tenantAccess'
 import { validateOptionalHttpUrl } from '../../lib/validation/url'
 import { CONTACT_FORM_TARGET_OPTIONS } from '../options'
+import {
+  revalidateGameProject,
+  revalidateGameProjectDelete,
+} from './hooks/revalidateGameProject'
 
 const externalLinkField = (name: string, label: string) => ({
   name,
@@ -169,5 +173,9 @@ export const GameProjects: CollectionConfig = {
       defaultValue: false,
     },
   ],
+  hooks: {
+    afterChange: [revalidateGameProject],
+    afterDelete: [revalidateGameProjectDelete],
+  },
   timestamps: true,
 }

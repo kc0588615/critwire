@@ -5,6 +5,7 @@ import { buildConfig, PayloadRequest } from 'payload'
 import { fileURLToPath } from 'url'
 
 import { Categories } from './collections/Categories'
+import { GamePages } from './collections/GamePages'
 import { GameProjects } from './collections/GameProjects'
 import { IssueReports } from './collections/IssueReports'
 import { Issues } from './collections/Issues'
@@ -79,6 +80,7 @@ export default buildConfig({
   collections: [
     Tenants,
     GameProjects,
+    GamePages,
     PatchNotes,
     Issues,
     IssueReports,

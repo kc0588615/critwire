@@ -30,12 +30,14 @@ export const plugins: Plugin[] = [
   multiTenantPlugin<Config>({
     collections: {
       'game-projects': {},
+      'game-pages': {},
       'patch-notes': {},
       issues: {},
       'issue-reports': {},
       'issue-votes': {},
       media: {},
-      pages: {},
+      // `pages` is deliberately NOT tenant-scoped: it is the platform
+      // marketing site, managed by super admins only.
     },
     tenantsArrayField: {
       includeDefaultField: true,

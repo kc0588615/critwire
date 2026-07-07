@@ -1,7 +1,7 @@
 import type { CollectionConfig } from 'payload'
 
-import { authenticated } from '../../access/authenticated'
 import { authenticatedOrPublished } from '../../access/authenticatedOrPublished'
+import { isSuperAdmin } from '../../access/isSuperAdmin'
 import { Archive } from '../../blocks/ArchiveBlock/config'
 import { CallToAction } from '../../blocks/CallToAction/config'
 import { Content } from '../../blocks/Content/config'
@@ -23,11 +23,12 @@ import {
 
 export const Pages: CollectionConfig<'pages'> = {
   slug: 'pages',
+  // Platform marketing pages — managed by super admins, not tenants.
   access: {
-    create: authenticated,
-    delete: authenticated,
+    create: ({ req }) => isSuperAdmin(req.user),
+    delete: ({ req }) => isSuperAdmin(req.user),
     read: authenticatedOrPublished,
-    update: authenticated,
+    update: ({ req }) => isSuperAdmin(req.user),
   },
   // This config controls what's populated by default when a page is referenced
   // https://payloadcms.com/docs/queries/select#defaultpopulate-collection-config-property
@@ -113,16 +114,6 @@ export const Pages: CollectionConfig<'pages'> = {
     {
       name: 'publishedAt',
       type: 'date',
-      admin: {
-        position: 'sidebar',
-      },
-    },
-    {
-      // Associates a page with a game project (landing pages). The full
-      // landing-page block system arrives in Phase 3.
-      name: 'gameProject',
-      type: 'relationship',
-      relationTo: 'game-projects',
       admin: {
         position: 'sidebar',
       },

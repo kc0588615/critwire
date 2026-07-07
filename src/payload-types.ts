@@ -69,6 +69,7 @@ export interface Config {
   collections: {
     tenants: Tenant;
     'game-projects': GameProject;
+    'game-pages': GamePage;
     'patch-notes': PatchNote;
     issues: Issue;
     'issue-reports': IssueReport;
@@ -97,6 +98,7 @@ export interface Config {
   collectionsSelect: {
     tenants: TenantsSelect<false> | TenantsSelect<true>;
     'game-projects': GameProjectsSelect<false> | GameProjectsSelect<true>;
+    'game-pages': GamePagesSelect<false> | GamePagesSelect<true>;
     'patch-notes': PatchNotesSelect<false> | PatchNotesSelect<true>;
     issues: IssuesSelect<false> | IssuesSelect<true>;
     'issue-reports': IssueReportsSelect<false> | IssueReportsSelect<true>;
@@ -349,6 +351,115 @@ export interface FolderInterface {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "game-pages".
+ */
+export interface GamePage {
+  id: number;
+  tenant?: (number | null) | Tenant;
+  gameProject: number | GameProject;
+  kind: 'landing';
+  title: string;
+  content?: (GameHeroBlock | GameFeaturesBlock | MediaGalleryBlock | GameCTABlock | TrailerEmbedBlock)[] | null;
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "GameHeroBlock".
+ */
+export interface GameHeroBlock {
+  /**
+   * Defaults to the game name when empty.
+   */
+  heading?: string | null;
+  tagline?: string | null;
+  backgroundImage?: (number | null) | Media;
+  showLogo?: boolean | null;
+  /**
+   * Call-to-action buttons linking out (store page, Discord, …).
+   */
+  buttons?:
+    | {
+        label: string;
+        url: string;
+        variant?: ('primary' | 'secondary') | null;
+        id?: string | null;
+      }[]
+    | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'gameHero';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "GameFeaturesBlock".
+ */
+export interface GameFeaturesBlock {
+  heading?: string | null;
+  items: {
+    title: string;
+    description?: string | null;
+    image?: (number | null) | Media;
+    id?: string | null;
+  }[];
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'gameFeatures';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "MediaGalleryBlock".
+ */
+export interface MediaGalleryBlock {
+  heading?: string | null;
+  items: {
+    image: number | Media;
+    caption?: string | null;
+    id?: string | null;
+  }[];
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'mediaGallery';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "GameCTABlock".
+ */
+export interface GameCTABlock {
+  heading: string;
+  text?: string | null;
+  /**
+   * Call-to-action buttons linking out (store page, Discord, …).
+   */
+  buttons?:
+    | {
+        label: string;
+        url: string;
+        variant?: ('primary' | 'secondary') | null;
+        id?: string | null;
+      }[]
+    | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'gameCTA';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TrailerEmbedBlock".
+ */
+export interface TrailerEmbedBlock {
+  heading?: string | null;
+  /**
+   * YouTube or Vimeo video URL.
+   */
+  url: string;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'trailerEmbed';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "patch-notes".
  */
 export interface PatchNote {
@@ -501,7 +612,6 @@ export interface IssueVote {
  */
 export interface Page {
   id: number;
-  tenant?: (number | null) | Tenant;
   title: string;
   hero: {
     type: 'none' | 'highImpact' | 'mediumImpact' | 'lowImpact';
@@ -556,7 +666,6 @@ export interface Page {
     description?: string | null;
   };
   publishedAt?: string | null;
-  gameProject?: (number | null) | GameProject;
   /**
    * When enabled, the slug will auto-generate from the title field on save and autosave.
    */
@@ -1215,6 +1324,10 @@ export interface PayloadLockedDocument {
         value: number | GameProject;
       } | null)
     | ({
+        relationTo: 'game-pages';
+        value: number | GamePage;
+      } | null)
+    | ({
         relationTo: 'patch-notes';
         value: number | PatchNote;
       } | null)
@@ -1362,6 +1475,109 @@ export interface GameProjectsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "game-pages_select".
+ */
+export interface GamePagesSelect<T extends boolean = true> {
+  tenant?: T;
+  gameProject?: T;
+  kind?: T;
+  title?: T;
+  content?:
+    | T
+    | {
+        gameHero?: T | GameHeroBlockSelect<T>;
+        gameFeatures?: T | GameFeaturesBlockSelect<T>;
+        mediaGallery?: T | MediaGalleryBlockSelect<T>;
+        gameCTA?: T | GameCTABlockSelect<T>;
+        trailerEmbed?: T | TrailerEmbedBlockSelect<T>;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "GameHeroBlock_select".
+ */
+export interface GameHeroBlockSelect<T extends boolean = true> {
+  heading?: T;
+  tagline?: T;
+  backgroundImage?: T;
+  showLogo?: T;
+  buttons?:
+    | T
+    | {
+        label?: T;
+        url?: T;
+        variant?: T;
+        id?: T;
+      };
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "GameFeaturesBlock_select".
+ */
+export interface GameFeaturesBlockSelect<T extends boolean = true> {
+  heading?: T;
+  items?:
+    | T
+    | {
+        title?: T;
+        description?: T;
+        image?: T;
+        id?: T;
+      };
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "MediaGalleryBlock_select".
+ */
+export interface MediaGalleryBlockSelect<T extends boolean = true> {
+  heading?: T;
+  items?:
+    | T
+    | {
+        image?: T;
+        caption?: T;
+        id?: T;
+      };
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "GameCTABlock_select".
+ */
+export interface GameCTABlockSelect<T extends boolean = true> {
+  heading?: T;
+  text?: T;
+  buttons?:
+    | T
+    | {
+        label?: T;
+        url?: T;
+        variant?: T;
+        id?: T;
+      };
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TrailerEmbedBlock_select".
+ */
+export interface TrailerEmbedBlockSelect<T extends boolean = true> {
+  heading?: T;
+  url?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "patch-notes_select".
  */
 export interface PatchNotesSelect<T extends boolean = true> {
@@ -1435,7 +1651,6 @@ export interface IssueVotesSelect<T extends boolean = true> {
  * via the `definition` "pages_select".
  */
 export interface PagesSelect<T extends boolean = true> {
-  tenant?: T;
   title?: T;
   hero?:
     | T
@@ -1476,7 +1691,6 @@ export interface PagesSelect<T extends boolean = true> {
         description?: T;
       };
   publishedAt?: T;
-  gameProject?: T;
   generateSlug?: T;
   slug?: T;
   updatedAt?: T;
