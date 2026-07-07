@@ -1,0 +1,14 @@
+.next
+node_modules
+.git
+.env*
+!.env.example
+certs
+docs
+tests
+test-results
+playwright-report
+public/media
+Dockerfile
+docker-compose.yml
+nginx.conf

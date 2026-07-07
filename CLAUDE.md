@@ -85,7 +85,20 @@ production-oriented and minimal.
 
 ## Commands
 
-Project not yet scaffolded (Phase 1 starts with `create-payload-app`,
-website template). Update this section once the project exists:
-dev server, typecheck, lint, test, `payload generate:types`,
-migration commands, `docker compose up`.
+- `pnpm dev` — dev server (needs Postgres running and `.env`)
+- `pnpm build` — production build (standalone output + sitemap)
+- `pnpm exec tsc --noEmit` — typecheck
+- `pnpm lint` — eslint
+- `pnpm generate:types` — regenerate `src/payload-types.ts` after any
+  collection change (commit the result)
+- `pnpm generate:importmap` — regenerate admin import map after adding
+  admin components
+- `pnpm payload migrate:create <name>` — create a migration after
+  schema changes (commit it; prod runs them on boot via `prodMigrations`)
+- `pnpm payload migrate` — apply migrations locally
+- `pnpm test` — vitest (int) + playwright (e2e)
+- `docker compose up -d --build` — full stack (see `docs/deploy.md`)
+
+Local Postgres for dev: any Postgres 16 on `localhost:5432` with a
+`critwire` database (see `DATABASE_URL` in `.env.example`). No Docker
+available in this WSL distro.
