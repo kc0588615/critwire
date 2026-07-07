@@ -20,3 +20,7 @@ revalidation. Requires Phase 2/3 fixtures.
 `verify-phase5.mjs` — issue tracker filters/board/detail + voting
 (toggle, per-token uniqueness, tampered cookies). Requires Phase 2-4
 fixtures.
+
+`verify-phase6.mjs` — public issue report form, report-to-issue
+promotion hook, contact form routing, and jobs queue execution. Requires
+Phase 2-5 fixtures and a standalone or dev server on port 3000.

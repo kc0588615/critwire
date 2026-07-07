@@ -16,6 +16,7 @@ import { PatchNotes } from './collections/PatchNotes'
 import { Posts } from './collections/Posts'
 import { Tenants } from './collections/Tenants'
 import { Users } from './collections/Users'
+import { discordWebhookContactTask, emailContactFormTask } from './jobs/contact'
 import { migrations } from './migrations'
 import { Footer } from './Footer/config'
 import { Header } from './Header/config'
@@ -115,6 +116,10 @@ export default buildConfig({
         return authHeader === `Bearer ${secret}`
       },
     },
-    tasks: [],
+    // Single-VPS deployment: queued contact jobs are run explicitly by
+    // the submit handler after enqueueing, and this autorun is a backup
+    // for transient failures or process restarts.
+    autoRun: [{ cron: '* * * * *', limit: 10, queue: 'default' }],
+    tasks: [emailContactFormTask, discordWebhookContactTask],
   },
 })

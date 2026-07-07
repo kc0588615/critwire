@@ -138,6 +138,8 @@ export interface Config {
   user: User;
   jobs: {
     tasks: {
+      'email-contact-form': TaskEmailContactForm;
+      'discord-webhook': TaskDiscordWebhook;
       schedulePublish: TaskSchedulePublish;
       inline: {
         input: unknown;
@@ -1268,7 +1270,7 @@ export interface PayloadJob {
     | {
         executedAt: string;
         completedAt: string;
-        taskSlug: 'inline' | 'schedulePublish';
+        taskSlug: 'inline' | 'email-contact-form' | 'discord-webhook' | 'schedulePublish';
         taskID: string;
         input?:
           | {
@@ -1301,7 +1303,7 @@ export interface PayloadJob {
         id?: string | null;
       }[]
     | null;
-  taskSlug?: ('inline' | 'schedulePublish') | null;
+  taskSlug?: ('inline' | 'email-contact-form' | 'discord-webhook' | 'schedulePublish') | null;
   queue?: string | null;
   waitUntil?: string | null;
   processing?: boolean | null;
@@ -2346,6 +2348,40 @@ export interface CollectionsWidget {
     [k: string]: unknown;
   };
   width: 'full';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskEmail-contact-form".
+ */
+export interface TaskEmailContactForm {
+  input: {
+    projectID: string;
+    gameSlug: string;
+    name?: string | null;
+    email?: string | null;
+    subject?: string | null;
+    message: string;
+  };
+  output: {
+    sent: boolean;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskDiscord-webhook".
+ */
+export interface TaskDiscordWebhook {
+  input: {
+    projectID: string;
+    gameSlug: string;
+    name?: string | null;
+    email?: string | null;
+    subject?: string | null;
+    message: string;
+  };
+  output: {
+    sent: boolean;
+  };
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
