@@ -2,9 +2,12 @@ import { getServerSideSitemap } from 'next-sitemap'
 import { getPayload } from 'payload'
 import config from '@payload-config'
 import { unstable_cache } from 'next/cache'
+import { shouldSkipBuildStaticGeneration } from '@/utilities/staticGeneration'
 
 const getPostsSitemap = unstable_cache(
   async () => {
+    if (shouldSkipBuildStaticGeneration) return []
+
     const payload = await getPayload({ config })
     const SITE_URL =
       process.env.NEXT_PUBLIC_SERVER_URL ||

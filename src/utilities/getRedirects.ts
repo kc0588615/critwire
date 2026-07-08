@@ -1,8 +1,11 @@
 import configPromise from '@payload-config'
 import { getPayload } from 'payload'
 import { unstable_cache } from 'next/cache'
+import { shouldSkipBuildStaticGeneration } from './staticGeneration'
 
 export async function getRedirects(depth = 1) {
+  if (shouldSkipBuildStaticGeneration) return []
+
   const payload = await getPayload({ config: configPromise })
 
   const { docs: redirects } = await payload.find({

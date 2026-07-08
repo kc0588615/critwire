@@ -7,11 +7,13 @@ import configPromise from '@payload-config'
 import { getPayload } from 'payload'
 import React from 'react'
 import PageClient from './page.client'
+import { deferStaticGenerationIfRequested } from '@/utilities/staticGeneration'
 
-export const dynamic = 'force-static'
 export const revalidate = 600
 
 export default async function Page() {
+  await deferStaticGenerationIfRequested()
+
   const payload = await getPayload({ config: configPromise })
 
   const posts = await payload.find({

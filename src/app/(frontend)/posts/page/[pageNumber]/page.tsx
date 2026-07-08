@@ -8,6 +8,10 @@ import { getPayload } from 'payload'
 import React from 'react'
 import PageClient from './page.client'
 import { notFound } from 'next/navigation'
+import {
+  deferStaticGenerationIfRequested,
+  shouldSkipBuildStaticGeneration,
+} from '@/utilities/staticGeneration'
 
 export const revalidate = 600
 
@@ -18,6 +22,8 @@ type Args = {
 }
 
 export default async function Page({ params: paramsPromise }: Args) {
+  await deferStaticGenerationIfRequested()
+
   const { pageNumber } = await paramsPromise
   const payload = await getPayload({ config: configPromise })
 
@@ -70,6 +76,8 @@ export async function generateMetadata({ params: paramsPromise }: Args): Promise
 }
 
 export async function generateStaticParams() {
+  if (shouldSkipBuildStaticGeneration) return []
+
   const payload = await getPayload({ config: configPromise })
   const { totalDocs } = await payload.count({
     collection: 'posts',

@@ -12,8 +12,14 @@ import { RenderHero } from '@/heros/RenderHero'
 import { generateMeta } from '@/utilities/generateMeta'
 import PageClient from './page.client'
 import { LivePreviewListener } from '@/components/LivePreviewListener'
+import {
+  deferStaticGenerationIfRequested,
+  shouldSkipBuildStaticGeneration,
+} from '@/utilities/staticGeneration'
 
 export async function generateStaticParams() {
+  if (shouldSkipBuildStaticGeneration) return []
+
   const payload = await getPayload({ config: configPromise })
   const pages = await payload.find({
     collection: 'pages',
@@ -44,6 +50,8 @@ type Args = {
 }
 
 export default async function Page({ params: paramsPromise }: Args) {
+  await deferStaticGenerationIfRequested()
+
   const { isEnabled: draft } = await draftMode()
   const { slug = 'home' } = await paramsPromise
   // Decode to support slugs with special characters
@@ -81,6 +89,10 @@ export default async function Page({ params: paramsPromise }: Args) {
 }
 
 export async function generateMetadata({ params: paramsPromise }: Args): Promise<Metadata> {
+  if (shouldSkipBuildStaticGeneration) return generateMeta({ doc: null })
+
+  await deferStaticGenerationIfRequested()
+
   const { slug = 'home' } = await paramsPromise
   // Decode to support slugs with special characters
   const decodedSlug = decodeURIComponent(slug)
