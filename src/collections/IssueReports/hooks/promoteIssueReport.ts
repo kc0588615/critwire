@@ -6,6 +6,9 @@ import { revalidatePath } from 'next/cache'
 import type { IssueReport } from '@/payload-types'
 
 import { resolveProjectSlug } from '@/hooks/resolveProjectSlug'
+import { getLogger } from '@/lib/logger'
+
+const log = getLogger('hooks.issue-report-promotion')
 
 const relationID = (value: unknown): number | undefined => {
   if (typeof value === 'number') return value
@@ -68,7 +71,7 @@ export const promoteIssueReport: CollectionAfterChangeHook<IssueReport> = async 
   if (relationID(doc.issue)) return doc
 
   try {
-    req.payload.logger.info({ msg: 'Promoting issue report.', reportID: doc.id })
+    log.info({ msg: 'Promoting issue report.', reportID: doc.id })
 
     const projectID = relationID(doc.gameProject)
     const tenantID = relationID(doc.tenant)
@@ -78,7 +81,7 @@ export const promoteIssueReport: CollectionAfterChangeHook<IssueReport> = async 
     }
 
     const slug = await uniqueIssueSlug({ projectID, req, title: doc.title })
-    req.payload.logger.info({
+    log.info({
       msg: 'Issue report promotion slug resolved.',
       reportID: doc.id,
       slug,
@@ -99,7 +102,7 @@ export const promoteIssueReport: CollectionAfterChangeHook<IssueReport> = async 
       },
       overrideAccess: true,
     })
-    req.payload.logger.info({
+    log.info({
       issueID: issue.id,
       msg: 'Issue created from report.',
       reportID: doc.id,
@@ -115,7 +118,7 @@ export const promoteIssueReport: CollectionAfterChangeHook<IssueReport> = async 
           overrideAccess: true,
         })
         .then(() => {
-          req.payload.logger.info({
+          log.info({
             issueID: issue.id,
             msg: 'Issue relation set on report.',
             reportID: doc.id,
@@ -123,7 +126,7 @@ export const promoteIssueReport: CollectionAfterChangeHook<IssueReport> = async 
         })
         .catch((err) => {
           Sentry.captureException(err)
-          req.payload.logger.error({
+          log.error({
             err,
             issueID: issue.id,
             msg: 'Could not set issue relation on report.',

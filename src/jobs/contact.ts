@@ -4,6 +4,11 @@ import * as Sentry from '@sentry/nextjs'
 
 import type { GameProject } from '@/payload-types'
 
+import { renderContactFormEmail } from '@/lib/email/renderContactFormEmail'
+import { getLogger } from '@/lib/logger'
+
+const log = getLogger('jobs.contact')
+
 type ContactTaskInput = {
   email?: string
   gameSlug: string
@@ -24,14 +29,6 @@ const multilineField = (name: keyof ContactTaskInput) => ({
   type: 'textarea' as const,
   required: true,
 })
-
-const escapeHTML = (value: string): string =>
-  value
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#39;')
 
 const getProject = async ({
   input,
@@ -78,7 +75,7 @@ export const emailContactFormTask: TaskConfig<'email-contact-form'> = {
 
       const apiKey = process.env.RESEND_API_KEY
       if (!apiKey) {
-        req.payload.logger.info({
+        log.info({
           msg: 'RESEND_API_KEY unset; contact email job succeeded without sending.',
           projectID: project.id,
           to,
@@ -86,19 +83,26 @@ export const emailContactFormTask: TaskConfig<'email-contact-form'> = {
         return { output: { sent: true } }
       }
 
-      const safeName = input.name ? escapeHTML(input.name) : 'Anonymous player'
-      const safeEmail = input.email ? escapeHTML(input.email) : 'Not provided'
-      const safeMessage = escapeHTML(input.message).replaceAll('\n', '<br />')
       const subject = input.subject?.trim()
         ? `[${project.name}] ${input.subject.trim()}`
         : `[${project.name}] Contact form submission`
+      const portalUrl = `${process.env.NEXT_PUBLIC_SERVER_URL ?? ''}/g/${input.gameSlug}`
+      const { html, text } = await renderContactFormEmail({
+        email: input.email || undefined,
+        gameName: project.name,
+        message: input.message,
+        name: input.name || undefined,
+        portalUrl,
+        subject: input.subject || undefined,
+      })
 
       const response = await fetch('https://api.resend.com/emails', {
         body: JSON.stringify({
           from: process.env.RESEND_FROM_EMAIL ?? 'Critwire <notifications@critwire.local>',
-          html: `<p><strong>Name:</strong> ${safeName}</p><p><strong>Email:</strong> ${safeEmail}</p><p><strong>Game:</strong> ${escapeHTML(project.name)}</p><hr /><p>${safeMessage}</p>`,
+          html,
           reply_to: input.email || undefined,
           subject,
+          text,
           to,
         }),
         headers: {
@@ -112,7 +116,7 @@ export const emailContactFormTask: TaskConfig<'email-contact-form'> = {
         throw new Error(`Resend contact email failed with ${response.status}: ${await response.text()}`)
       }
 
-      req.payload.logger.info({ msg: 'Contact email sent.', projectID: project.id, to })
+      log.info({ msg: 'Contact email sent.', projectID: project.id, to })
       return { output: { sent: true } }
     } catch (err) {
       Sentry.captureException(err)
@@ -170,7 +174,7 @@ export const discordWebhookContactTask: TaskConfig<'discord-webhook'> = {
         throw new Error(`Discord webhook failed with ${response.status}: ${await response.text()}`)
       }
 
-      req.payload.logger.info({ msg: 'Discord contact webhook sent.', projectID: project.id })
+      log.info({ msg: 'Discord contact webhook sent.', projectID: project.id })
       return { output: { sent: true } }
     } catch (err) {
       Sentry.captureException(err)

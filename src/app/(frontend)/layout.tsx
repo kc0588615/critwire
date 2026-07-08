@@ -44,10 +44,15 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 }
 
 export const metadata: Metadata = {
+  description:
+    'Critwire is the public ops layer for indie games: websites, patch notes, issue trackers, player reports, and contact routing.',
   metadataBase: new URL(getServerSideURL()),
   openGraph: mergeOpenGraph(),
+  title: {
+    default: 'Critwire',
+    template: '%s | Critwire',
+  },
   twitter: {
     card: 'summary_large_image',
-    creator: '@payloadcms',
   },
 }

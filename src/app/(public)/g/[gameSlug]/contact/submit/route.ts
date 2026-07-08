@@ -8,6 +8,9 @@ import type { GameProject } from '@/payload-types'
 import { getClientIP, normalizeTurnstileToken, readRequestBody } from '@/lib/public-forms/request'
 import { verifyTurnstile } from '@/lib/turnstile/verifyTurnstile'
 import { checkRateLimit } from '@/lib/upstash/rate-limit'
+import { getLogger } from '@/lib/logger'
+
+const log = getLogger('public.contact')
 
 const contactSchema = z.object({
   email: z.email().optional().or(z.literal('')),
@@ -134,22 +137,23 @@ export async function POST(
       subject: parsed.data.subject || '',
     }
 
-    payload.logger.info({ msg: 'Queueing contact form job.', projectID: project.id, target })
+    log.info({ msg: 'Queueing contact form job.', projectID: project.id, target })
     await payload.jobs.queue({
       input,
       queue: 'default',
       task: hasEmailTarget ? 'email-contact-form' : 'discord-webhook',
     })
-    payload.logger.info({ msg: 'Running contact form job queue.', projectID: project.id, target })
+    log.info({ msg: 'Running contact form job queue.', projectID: project.id, target })
     await payload.jobs.run({ limit: 10, queue: 'default' })
 
-    payload.logger.info({ msg: 'Public contact form submitted.', projectID: project.id, target })
+    log.info({ msg: 'Public contact form submitted.', projectID: project.id, target })
 
     return responseFor({ gameSlug, json: { ok: true }, req, status: 200 })
   } catch (err) {
     Sentry.captureException(err)
     const payload = await getPayload({ config }).catch(() => null)
     payload?.logger.error({ err, msg: 'Public contact form submission failed.' })
+    log.error({ err, msg: 'Public contact form submission failed.' })
     return responseFor({
       gameSlug,
       json: { error: 'Something went wrong.' },

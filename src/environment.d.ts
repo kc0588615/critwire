@@ -5,6 +5,11 @@ declare global {
       DATABASE_URL: string
       NEXT_PUBLIC_SERVER_URL: string
       VERCEL_PROJECT_PRODUCTION_URL: string
+      LOG_LEVEL?: string
+      RESEND_API_KEY?: string
+      RESEND_FROM_EMAIL?: string
+      NEXT_PUBLIC_TURNSTILE_SITE_KEY?: string
+      TURNSTILE_SECRET_KEY?: string
     }
   }
 }

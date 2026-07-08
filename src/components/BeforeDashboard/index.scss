@@ -9,12 +9,25 @@
     }
   }
 
-  &__instructions {
-    list-style: decimal;
-    margin-bottom: base(0.5);
+  &__grid {
+    display: grid;
+    gap: base(0.75);
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    margin-top: base(0.75);
 
-    & li {
-      width: 100%;
+    & section {
+      border: 1px solid var(--theme-elevation-150);
+      border-radius: 6px;
+      padding: base(0.75);
+    }
+
+    & h5 {
+      margin: 0 0 base(0.25);
+    }
+
+    & p {
+      color: var(--theme-elevation-650);
+      margin: 0 0 base(0.5);
     }
   }
 

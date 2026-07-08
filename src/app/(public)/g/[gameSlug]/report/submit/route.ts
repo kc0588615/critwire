@@ -9,6 +9,9 @@ import { ISSUE_CATEGORY_OPTIONS } from '@/collections/options'
 import { getClientIP, normalizeTurnstileToken, readRequestBody } from '@/lib/public-forms/request'
 import { verifyTurnstile } from '@/lib/turnstile/verifyTurnstile'
 import { checkRateLimit } from '@/lib/upstash/rate-limit'
+import { getLogger } from '@/lib/logger'
+
+const log = getLogger('public.issue-report')
 
 type IssueCategory = (typeof ISSUE_CATEGORY_OPTIONS)[number]['value']
 
@@ -137,7 +140,7 @@ export async function POST(
       overrideAccess: true,
     })
 
-    payload.logger.info({
+    log.info({
       msg: 'Public issue report submitted.',
       projectID: project.id,
       reportID: report.id,

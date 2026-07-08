@@ -109,6 +109,12 @@ export async function generateMetadata({
     openGraph: {
       description: project.description ?? undefined,
       images: banner,
+      siteName: 'Critwire',
+      title: project.name,
+    },
+    twitter: {
+      card: 'summary_large_image',
+      images: banner?.map((image) => image.url),
       title: project.name,
     },
     title: project.name,

@@ -18,6 +18,7 @@ the Next.js + Payload app, and Nginx. Cloudflare sits in front.
    - `PAYLOAD_SECRET`, `CRON_SECRET`, `PREVIEW_SECRET` (`openssl rand -hex 32`)
    - `NEXT_PUBLIC_SERVER_URL=https://<your-domain>`
    - R2, Upstash, Sentry credentials
+   - `LOG_LEVEL=info`
    - `DATABASE_URL` is overridden by compose to point at PgBouncer; the
      value in `.env` is only used for local dev.
 6. **Cloudflare DNS**: A record for the app domain → VPS IP,
@@ -50,11 +51,20 @@ docker compose up -d --build
 ## Backups (set up during Phase 7 hardening)
 
 Daily `pg_dump` from the postgres container, uploaded to R2, 30-day
-retention:
+retention. Use a locked-down R2 bucket and credentials scoped to that
+bucket:
 
 ```bash
+mkdir -p /opt/critwire/backups
+backup="critwire-$(date -u +%Y%m%dT%H%M%SZ).sql.gz"
 docker compose exec -T postgres pg_dump -U "$DB_USER" "$DB_NAME" | gzip \
-  | <upload to R2 via rclone/aws cli>
+  > "/opt/critwire/backups/$backup"
+
+# Example with rclone remote `critwire-r2`:
+rclone copy "/opt/critwire/backups/$backup" \
+  "critwire-r2:${BACKUP_R2_BUCKET}/${BACKUP_R2_PREFIX:-production}/"
+
+find /opt/critwire/backups -name 'critwire-*.sql.gz' -mtime +30 -delete
 ```
 
 Test a restore monthly:

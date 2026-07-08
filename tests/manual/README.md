@@ -24,3 +24,8 @@ fixtures.
 `verify-phase6.mjs` — public issue report form, report-to-issue
 promotion hook, contact form routing, and jobs queue execution. Requires
 Phase 2-5 fixtures and a standalone or dev server on port 3000.
+
+`verify-phase7.mjs` — polish smoke test for Critwire SEO defaults,
+admin onboarding copy, Turnstile form rendering, and health endpoint.
+Requires the Phase 2-6 fixtures and a standalone or dev server on port
+3000.

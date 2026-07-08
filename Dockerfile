@@ -7,7 +7,9 @@ FROM base AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 COPY package.json pnpm-lock.yaml .npmrc ./
-RUN corepack enable pnpm && pnpm install --frozen-lockfile --ignore-workspace
+RUN corepack enable pnpm && \
+    pnpm fetch --frozen-lockfile && \
+    pnpm install --frozen-lockfile --ignore-workspace --offline
 
 FROM base AS builder
 WORKDIR /app

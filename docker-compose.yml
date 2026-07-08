@@ -33,6 +33,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    init: true
     restart: unless-stopped
     env_file:
       - .env
@@ -43,6 +44,8 @@ services:
       - '3000'
     depends_on:
       - pgbouncer
+    security_opt:
+      - no-new-privileges:true
     healthcheck:
       test: ['CMD-SHELL', 'wget -qO- http://127.0.0.1:3000/api/health || exit 1']
       interval: 30s
@@ -52,6 +55,7 @@ services:
 
   nginx:
     image: nginx:1.27-alpine
+    init: true
     restart: unless-stopped
     ports:
       - '80:80'
@@ -62,6 +66,8 @@ services:
       - ./certs:/etc/nginx/certs:ro
     depends_on:
       - app
+    security_opt:
+      - no-new-privileges:true
 
 volumes:
   postgres_data:
