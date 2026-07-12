@@ -36,4 +36,16 @@ export const CONTACT_FORM_TARGET_OPTIONS = [
   { label: 'Email', value: 'EMAIL' },
   { label: 'Discord Webhook', value: 'DISCORD_WEBHOOK' },
   { label: 'External URL', value: 'EXTERNAL_URL' },
+  { label: 'Tally form', value: 'TALLY' },
+] as const
+
+export const TALLY_DISPLAY_OPTIONS = [
+  { label: 'Embed on page', value: 'embed' },
+  { label: 'Button (open Tally)', value: 'button' },
+] as const
+
+export const REPORT_FORM_PROVIDER_OPTIONS = [
+  { label: 'Native Critwire form', value: 'native' },
+  { label: 'Tally form', value: 'tally' },
+  { label: 'External URL', value: 'external' },
 ] as const

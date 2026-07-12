@@ -168,6 +168,11 @@ docker-compose.yml / Dockerfile / nginx.conf
 
 ## Operations
 
+- **Local seeding:** run content seeds through the app process, for
+  example `pnpm seed:critter-connect` against a running local app with
+  `CRON_SECRET` set. Do not run `pnpm dev` against a database currently
+  owned by the Docker app stack; Payload dev push can leave development
+  migration state that blocks the production-like container on restart.
 - **Backups:** daily `pg_dump` cron on the VPS, 30-day retention,
   uploaded to R2 (zero egress for restore), restore tested monthly.
 - **Errors:** Sentry on Next.js server, client, and jobs-queue tasks.

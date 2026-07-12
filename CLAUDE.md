@@ -36,7 +36,8 @@ in the same project.
   (Postgres + PgBouncer + app), Nginx, Cloudflare in front. No Vercel.
 - **Plugins:** `@payloadcms/plugin-multi-tenant`, `@payloadcms/storage-s3`
   (R2, region `auto`), `@payloadcms/richtext-lexical`,
-  `payload-kanban-board` (admin triage only).
+  admin Issues kanban via DnD-Kit + Payload `orderable` (not a
+  separate marketplace plugin).
 
 **Removed in v7 — never add back:** Clerk, Prisma, TipTap, Trigger.dev,
 custom `forTenant()` / `ServiceContext` / `proxy.ts` patterns, Vercel.

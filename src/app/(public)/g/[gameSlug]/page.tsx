@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 
 import config from '@payload-config'
+import Image from 'next/image'
 import { notFound } from 'next/navigation'
 import { getPayload } from 'payload'
 import React from 'react'
@@ -42,34 +43,126 @@ const getPublishedLandingPage = async (projectID: number | string) => {
  * presentable the moment the project exists.
  */
 const DefaultLanding: React.FC<{ project: GameProject }> = ({ project }) => (
-  <section className="relative flex min-h-[60vh] items-center justify-center overflow-hidden text-center">
-    {project.banner && typeof project.banner === 'object' && (
-      <>
-        <Media fill imgClassName="object-cover" priority resource={project.banner} />
-        <div className="absolute inset-0 bg-black/50" />
-      </>
-    )}
-    <div className="relative z-10 mx-auto max-w-3xl px-6 py-20">
-      {project.logo && typeof project.logo === 'object' && (
-        <Media imgClassName="mx-auto mb-6 max-h-32 w-auto" priority resource={project.logo} />
-      )}
-      <h1
-        className={`text-4xl font-bold tracking-tight sm:text-6xl ${project.banner ? 'text-white' : ''}`}
-      >
-        {project.name}
-      </h1>
-      {project.description && (
-        <p className={`mt-4 text-lg sm:text-xl ${project.banner ? 'text-white/85' : 'opacity-80'}`}>
-          {project.description}
-        </p>
-      )}
-      {project.links?.steam && (
-        <div className="mt-8 flex justify-center">
-          <GameButtons buttons={[{ label: 'View on Steam', url: project.links.steam }]} />
+  <>
+    <section className="relative isolate overflow-hidden">
+      <div className="absolute inset-0 -z-10">
+        {project.banner && typeof project.banner === 'object' ? (
+          <Media fill imgClassName="object-cover" priority resource={project.banner} />
+        ) : (
+          <Image
+            alt=""
+            className="object-cover"
+            fill
+            priority
+            sizes="100vw"
+            src="/critter-connect/field-binder-hero.png"
+          />
+        )}
+        <div className="absolute inset-0 bg-[linear-gradient(90deg,#0a0e1a_0%,rgba(10,14,26,0.92)_30%,rgba(10,14,26,0.45)_65%,rgba(10,14,26,0.8)_100%)]" />
+        <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-[#0a0e1a] to-transparent" />
+      </div>
+
+      <div className="cc-shell flex min-h-[calc(100vh-73px)] items-center py-20">
+        <div className="max-w-2xl">
+          {project.logo && typeof project.logo === 'object' && (
+            <Media imgClassName="mb-7 max-h-20 w-auto" priority resource={project.logo} />
+          )}
+          <h1 className="text-5xl font-black leading-[0.95] tracking-tight text-slate-100 sm:text-7xl">
+            {project.name}
+          </h1>
+          <p className="mt-6 max-w-xl text-lg leading-8 text-slate-300 sm:text-xl">
+            {project.description ||
+              'Build a field binder of hard-won discoveries. Follow real places, unlock clue trails, and turn player reports into better expeditions.'}
+          </p>
+          <div className="mt-9 flex flex-wrap gap-3">
+            {project.links?.steam ? (
+              <GameButtons buttons={[{ label: 'Begin Expedition', url: project.links.steam }]} />
+            ) : null}
+            <a className="cc-button-primary" href={`/g/${project.slug}/report`}>
+              Send Field Report
+            </a>
+            <a className="cc-button-secondary" href={`/g/${project.slug}/issues`}>
+              Check Field Board
+            </a>
+          </div>
         </div>
-      )}
-    </div>
-  </section>
+      </div>
+    </section>
+
+    <section className="cc-section">
+      <div className="cc-shell grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
+        <div className="cc-panel-elevated rounded-lg p-6 sm:p-8">
+          <p className="cc-kicker">Discovery Loop</p>
+          <h2 className="mt-4 max-w-2xl text-3xl font-black tracking-tight sm:text-5xl">
+            Every clue earns its place in the binder.
+          </h2>
+          <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-300">
+            Classification, habitat, geography, morphology, behavior, life cycle, key facts, and
+            conservation all stay visible as evidence trails. The site gives players the same
+            field-device feel outside the game.
+          </p>
+          <div className="mt-8 grid gap-3 sm:grid-cols-2">
+            {[
+              ['Classification', 'var(--ds-gem-observe)'],
+              ['Habitat', 'var(--ds-gem-camouflage)'],
+              ['Geographic', 'var(--ds-gem-scan)'],
+              ['Conservation', 'var(--ds-gem-burst)'],
+            ].map(([label, color]) => (
+              <div className="glass-strip rounded-lg p-4" key={label}>
+                <span className="mb-3 block h-2 w-12 rounded-full" style={{ background: color }} />
+                <span className="font-mono text-sm text-slate-200">{label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="cc-panel rounded-lg p-3">
+          <Image
+            alt="A glowing Critter Connect discovery card with clue slots and a species portrait"
+            className="h-full min-h-80 w-full rounded-md object-cover"
+            height={1086}
+            sizes="(min-width: 1024px) 40vw, 100vw"
+            src="/critter-connect/discovery-card.png"
+            width={1448}
+          />
+        </div>
+      </div>
+    </section>
+
+    <section className="pb-24">
+      <div className="cc-shell grid gap-4 md:grid-cols-3">
+        {[
+          {
+            href: `/g/${project.slug}/patch-notes`,
+            title: 'Field Notes',
+            text: 'Publish updates in the same voice players see in the HUD.',
+          },
+          {
+            href: `/g/${project.slug}/issues`,
+            title: 'Field Board',
+            text: 'Show known tracks, priorities, status, and player votes in one place.',
+          },
+          {
+            href: `/g/${project.slug}/contact`,
+            title: 'Contact Route',
+            text: 'Route player messages through email, Discord, or an external trailhead.',
+          },
+        ].map((item) => (
+          <a
+            className="cc-panel group rounded-lg p-6 transition-transform hover:-translate-y-1 hover:border-cyan-300/40"
+            href={item.href}
+            key={item.href}
+          >
+            <h3 className="text-xl font-bold text-slate-100">{item.title}</h3>
+            <p className="mt-3 leading-7 text-slate-400">{item.text}</p>
+            <span className="mt-6 inline-flex font-mono text-sm text-cyan-200">
+              Open route
+              <span className="ml-2 transition-transform group-hover:translate-x-1">→</span>
+            </span>
+          </a>
+        ))}
+      </div>
+    </section>
+  </>
 )
 
 export default async function GameLandingPage({

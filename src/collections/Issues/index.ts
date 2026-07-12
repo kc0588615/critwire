@@ -8,6 +8,10 @@ import { ISSUE_CATEGORY_OPTIONS, ISSUE_STATUS_OPTIONS } from '../options'
 
 export const Issues: CollectionConfig = {
   slug: 'issues',
+  // Fractional-index `_order` field for admin kanban drag-and-drop
+  // (see src/components/admin/issues/* — adapted from
+  // https://gist.github.com/Dan6erbond/e0dd89744c21aaa8c25925717d589eeb).
+  orderable: true,
   access: {
     // The public board only shows issues the studio marked public.
     read: ({ req }) => {
@@ -19,6 +23,13 @@ export const Issues: CollectionConfig = {
     delete: tenantOwnerAccess,
   },
   admin: {
+    components: {
+      views: {
+        list: {
+          Component: '@/components/admin/issues/list',
+        },
+      },
+    },
     defaultColumns: ['title', 'gameProject', 'category', 'status', 'upvoteCount'],
     group: 'Game Portal',
     useAsTitle: 'title',

@@ -32,7 +32,7 @@ export async function generateMetadata({ params }: Args): Promise<Metadata> {
         'application/rss+xml': `/g/${gameSlug}/patch-notes/feed.xml`,
       },
     },
-    description: `Latest updates and patch notes for ${project.name}.`,
-    title: `Patch Notes — ${project.name}`,
+    description: `Latest field notes and updates for ${project.name}.`,
+    title: `Field Notes — ${project.name}`,
   }
 }

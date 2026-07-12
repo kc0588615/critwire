@@ -14,6 +14,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
   return (
     <html
       className={[GeistSans.variable, GeistMono.variable].join(' ')}
+      data-theme="dark"
       lang="en"
       suppressHydrationWarning
     >

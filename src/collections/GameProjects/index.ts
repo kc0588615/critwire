@@ -8,8 +8,13 @@ import {
   tenantMemberFieldRead,
   tenantOwnerAccess,
 } from '../../access/tenantAccess'
+import { validateOptionalTallyUrl } from '../../lib/tally/parseTallyForm'
 import { validateOptionalHttpUrl } from '../../lib/validation/url'
-import { CONTACT_FORM_TARGET_OPTIONS } from '../options'
+import {
+  CONTACT_FORM_TARGET_OPTIONS,
+  REPORT_FORM_PROVIDER_OPTIONS,
+  TALLY_DISPLAY_OPTIONS,
+} from '../options'
 import {
   revalidateGameProject,
   revalidateGameProjectDelete,
@@ -131,6 +136,68 @@ export const GameProjects: CollectionConfig = {
           type: 'text',
           admin: {
             condition: (_, siblingData) => siblingData?.target === 'EXTERNAL_URL',
+          },
+          validate: validateOptionalHttpUrl,
+        },
+        {
+          name: 'tallyUrl',
+          type: 'text',
+          admin: {
+            condition: (_, siblingData) => siblingData?.target === 'TALLY',
+            description:
+              'Tally share URL (https://tally.so/r/…) or form ID. Submissions stay in Tally.',
+          },
+          validate: validateOptionalTallyUrl,
+        },
+        {
+          name: 'tallyDisplay',
+          type: 'select',
+          defaultValue: 'embed',
+          options: [...TALLY_DISPLAY_OPTIONS],
+          admin: {
+            condition: (_, siblingData) => siblingData?.target === 'TALLY',
+          },
+        },
+      ],
+    },
+    {
+      name: 'reportForm',
+      type: 'group',
+      admin: {
+        description:
+          'Player bug/report intake. Prefer Tally so submissions and spam handling stay on their free tier.',
+      },
+      fields: [
+        {
+          name: 'provider',
+          type: 'select',
+          defaultValue: 'native',
+          options: [...REPORT_FORM_PROVIDER_OPTIONS],
+        },
+        {
+          name: 'tallyUrl',
+          type: 'text',
+          admin: {
+            condition: (_, siblingData) => siblingData?.provider === 'tally',
+            description: 'Tally share URL or form ID. Submissions are managed in Tally, not Critwire.',
+          },
+          validate: validateOptionalTallyUrl,
+        },
+        {
+          name: 'tallyDisplay',
+          type: 'select',
+          defaultValue: 'embed',
+          options: [...TALLY_DISPLAY_OPTIONS],
+          admin: {
+            condition: (_, siblingData) => siblingData?.provider === 'tally',
+          },
+        },
+        {
+          name: 'externalUrl',
+          type: 'text',
+          admin: {
+            condition: (_, siblingData) => siblingData?.provider === 'external',
+            description: 'GitHub issue template, Linear form, Discord channel invite, etc.',
           },
           validate: validateOptionalHttpUrl,
         },

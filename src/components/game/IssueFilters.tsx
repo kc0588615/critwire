@@ -31,7 +31,7 @@ export const IssueFilters: React.FC = () => {
       }}
     >
       <input
-        className="w-48 rounded-md border bg-transparent px-3 py-1.5 text-sm"
+        className="cc-input w-48 px-3 py-2 text-sm"
         defaultValue={params.q}
         key={params.q}
         name="q"
@@ -39,7 +39,7 @@ export const IssueFilters: React.FC = () => {
         type="search"
       />
       <select
-        className="rounded-md border bg-transparent px-2 py-1.5 text-sm"
+        className="cc-input w-auto px-2 py-2 text-sm"
         onChange={(e) => void setParams({ category: e.target.value || null, page: 1 })}
         value={params.category}
       >
@@ -51,18 +51,18 @@ export const IssueFilters: React.FC = () => {
         ))}
       </select>
       <select
-        className="rounded-md border bg-transparent px-2 py-1.5 text-sm"
-        onChange={(e) => void setParams({ page: 1, sort: e.target.value === 'top' ? null : e.target.value })}
+        className="cc-input w-auto px-2 py-2 text-sm"
+        onChange={(e) =>
+          void setParams({ page: 1, sort: e.target.value === 'top' ? null : e.target.value })
+        }
         value={params.sort}
       >
         <option value="top">Most upvoted</option>
         <option value="latest">Latest</option>
       </select>
       <button
-        className="rounded-md border px-3 py-1.5 text-sm opacity-75 hover:opacity-100"
-        onClick={() =>
-          void setParams({ view: params.view === 'board' ? null : 'board' })
-        }
+        className="cc-button-secondary min-h-0 px-3 py-2 text-sm"
+        onClick={() => void setParams({ view: params.view === 'board' ? null : 'board' })}
         type="button"
       >
         {params.view === 'board' ? 'List view' : 'Board view'}

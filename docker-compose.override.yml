@@ -1,0 +1,9 @@
+services:
+  app:
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      PAYLOAD_SECRET: ${PAYLOAD_SECRET}
+      NEXT_PUBLIC_SERVER_URL: ${NEXT_PUBLIC_SERVER_URL:-http://localhost:3000}

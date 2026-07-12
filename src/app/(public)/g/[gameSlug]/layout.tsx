@@ -34,49 +34,53 @@ export default async function GamePortalLayout({
 
   return (
     <div
-      className="flex min-h-screen flex-col"
+      className="cc-portal flex min-h-screen flex-col"
       style={
         project.accentColor
           ? ({ '--game-accent': project.accentColor } as React.CSSProperties)
           : undefined
       }
     >
-      <header className="border-b">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-4">
+      <header className="sticky top-0 z-50 border-b border-white/10 bg-[#0a0e1a]/80 backdrop-blur-xl">
+        <div className="cc-shell flex items-center justify-between gap-4 py-4">
           <Link className="flex items-center gap-3" href={`/g/${project.slug}`}>
-            {project.logo && typeof project.logo === 'object' && (
-              <Media imgClassName="h-8 w-8 rounded object-cover" resource={project.logo} />
-            )}
-            <span className="text-lg font-semibold">{project.name}</span>
+            <span className="grid h-9 w-9 place-items-center rounded-lg border border-cyan-300/30 bg-cyan-300/10 font-mono text-sm font-black text-cyan-200 glow-cyan">
+              {project.logo && typeof project.logo === 'object' ? (
+                <Media imgClassName="h-8 w-8 rounded object-cover" resource={project.logo} />
+              ) : (
+                project.name.slice(0, 2).toUpperCase()
+              )}
+            </span>
+            <span className="text-base font-semibold tracking-tight">{project.name}</span>
           </Link>
-          <nav className="flex flex-wrap items-center gap-4 text-sm">
+          <nav className="flex flex-wrap items-center gap-4 text-sm text-slate-300">
             <Link
-              className="opacity-75 transition-opacity hover:opacity-100"
+              className="transition-colors hover:text-cyan-200"
               href={`/g/${project.slug}/patch-notes`}
             >
-              Patch Notes
+              Field Notes
             </Link>
             <Link
-              className="opacity-75 transition-opacity hover:opacity-100"
+              className="transition-colors hover:text-cyan-200"
               href={`/g/${project.slug}/issues`}
             >
-              Issues
+              Field Board
             </Link>
             <Link
-              className="opacity-75 transition-opacity hover:opacity-100"
+              className="transition-colors hover:text-cyan-200"
               href={`/g/${project.slug}/report`}
             >
-              Report a Bug
+              Send Report
             </Link>
             <Link
-              className="opacity-75 transition-opacity hover:opacity-100"
+              className="transition-colors hover:text-cyan-200"
               href={`/g/${project.slug}/contact`}
             >
               Contact
             </Link>
             {externalLinks.map((link) => (
               <a
-                className="opacity-75 transition-opacity hover:opacity-100"
+                className="transition-colors hover:text-cyan-200"
                 href={link.url}
                 key={link.key}
                 rel="noopener noreferrer"
@@ -89,12 +93,14 @@ export default async function GamePortalLayout({
         </div>
       </header>
       <main className="flex-1">{children}</main>
-      <footer className="border-t">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6 text-sm opacity-70">
-          <span>© {new Date().getFullYear()} {project.name}</span>
+      <footer className="border-t border-white/10">
+        <div className="cc-shell flex items-center justify-between py-6 text-sm text-slate-400">
+          <span>
+            © {new Date().getFullYear()} {project.name}
+          </span>
           <span>
             Powered by{' '}
-            <Link className="underline" href="/">
+            <Link className="text-cyan-200 underline" href="/">
               Critwire
             </Link>
           </span>

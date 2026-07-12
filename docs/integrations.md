@@ -9,6 +9,37 @@
 | Sentry | Error tracking | server + client + jobs instrumentation |
 | Better Stack | Uptime monitoring | external — pings health endpoint |
 | Cloudflare | DNS, CDN, SSL, Turnstile | DNS/proxy config; `/lib/turnstile` |
+| Tally | Optional contact/report forms (studio-owned) | `GameProjects` contact/reportForm; `TallyEmbed` |
+| DnD-Kit | Admin Issues kanban drag-and-drop | `src/components/admin/issues/*` |
+
+## Tally (optional contact + report forms)
+
+Studios own their Tally account. Critwire stores only a form URL (or
+form ID) and display mode (`embed` | `button`):
+
+- **Contact:** `GameProjects.contact.target = TALLY` + `tallyUrl`
+- **Report:** `GameProjects.reportForm.provider = tally` + `tallyUrl`
+
+Public pages render an approved iframe embed (or a button to the share
+URL). Submissions, spam protection, and exports live in Tally — not
+Critwire. Always show that boundary to players.
+
+Native Critwire contact (email / Discord webhook) and report forms
+remain available when Tally is not configured. Do not store Tally API
+keys; Level 1–2 integration only (URL + embed).
+
+Helpers: `src/lib/tally/parseTallyForm.ts`,
+`src/components/game/TallyEmbed.tsx`.
+
+## Admin Issues kanban (DnD-Kit)
+
+Adapted from the Payload orderable kanban pattern (DnD-Kit + fractional
+`_order`). Custom list view on the `issues` collection with a Kanban /
+Table tab switcher. Dragging updates `status` and `_order` via the
+Payload REST API. Public player `?view=board` is unchanged (read-only).
+
+Components: `src/components/admin/issues/`. Collection:
+`orderable: true` on `issues`.
 
 ## Cloudflare R2 (media storage)
 

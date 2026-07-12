@@ -100,14 +100,20 @@ admin view.
   issue per token, IP rate-limited via Upstash.
 - **Public kanban:** `?view=board` renders issues grouped by status —
   read-only Server Component, no drag-and-drop for players.
-- **Admin triage:** `payload-kanban-board` plugin gives studio users
-  drag-and-drop status management in the admin panel.
+- **Admin triage:** custom Issues list view (Kanban + Table) using
+  DnD-Kit and Payload `orderable` — drag status/order in admin only.
 
 ## Issue report flow
 
-Public form (Turnstile-protected) → studio review queue in Payload
-admin. Actions: **publish** (afterChange hook creates an Issue from the
-report), **link** to an existing Issue, or **dismiss**.
+Configurable per GameProject (`reportForm`):
+
+- **native** (default) — Critwire form (Turnstile-protected) →
+  `issue-reports` review queue in Payload admin. Actions: **publish**
+  (afterChange hook creates an Issue from the report), **link** to an
+  existing Issue, or **dismiss**.
+- **tally** — embed or button to a studio-owned Tally form; submissions
+  stay in Tally.
+- **external** — link out to GitHub issue template, Linear, Discord, etc.
 
 ## Contact form
 
@@ -115,9 +121,17 @@ Configurable routing per GameProject:
 
 - **EMAIL** — via Resend (jobs queue)
 - **DISCORD_WEBHOOK** — formatted embed (jobs queue)
-- **EXTERNAL_URL** — redirect
+- **EXTERNAL_URL** — redirect / open external page
+- **TALLY** — embed or button to a studio-owned Tally form
 
-Protected by Turnstile + Upstash rate limiting.
+Native EMAIL / DISCORD_WEBHOOK paths are protected by Turnstile +
+Upstash rate limiting. Tally paths do not hit Critwire POST endpoints.
+
+## Admin issue triage
+
+Issues collection list view includes a **Kanban** board (status columns,
+drag-and-drop via DnD-Kit + Payload `orderable`) and the standard
+**Table** view. Public player `?view=board` remains read-only.
 
 ## Pricing tiers
 
@@ -149,7 +163,7 @@ confirmation.
 4. **Patch notes** — draft/publish workflow, public feed with
    pagination, detail pages, RSS, revalidation.
 5. **Public issue tracker** — list (search/sort/filter/badges), detail,
-   voting system, public `?view=board`, admin kanban plugin,
+   voting system, public `?view=board`, admin Issues kanban (DnD-Kit),
    revalidation.
 6. **Issue reports + contact form** — Turnstile report form, admin
    review queue, report→issue promotion hook, contact routing via jobs

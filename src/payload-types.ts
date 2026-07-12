@@ -218,9 +218,29 @@ export interface GameProject {
    * Where public contact form submissions are routed.
    */
   contact?: {
-    target?: ('EMAIL' | 'DISCORD_WEBHOOK' | 'EXTERNAL_URL') | null;
+    target?: ('EMAIL' | 'DISCORD_WEBHOOK' | 'EXTERNAL_URL' | 'TALLY') | null;
     email?: string | null;
     discordWebhookUrl?: string | null;
+    externalUrl?: string | null;
+    /**
+     * Tally share URL (https://tally.so/r/…) or form ID. Submissions stay in Tally.
+     */
+    tallyUrl?: string | null;
+    tallyDisplay?: ('embed' | 'button') | null;
+  };
+  /**
+   * Player bug/report intake. Prefer Tally so submissions and spam handling stay on their free tier.
+   */
+  reportForm?: {
+    provider?: ('native' | 'tally' | 'external') | null;
+    /**
+     * Tally share URL or form ID. Submissions are managed in Tally, not Critwire.
+     */
+    tallyUrl?: string | null;
+    tallyDisplay?: ('embed' | 'button') | null;
+    /**
+     * GitHub issue template, Linear form, Discord channel invite, etc.
+     */
     externalUrl?: string | null;
   };
   /**
@@ -508,6 +528,7 @@ export interface PatchNote {
  */
 export interface Issue {
   id: number;
+  _order?: string | null;
   tenant?: (number | null) | Tenant;
   gameProject: number | GameProject;
   title: string;
@@ -1469,6 +1490,16 @@ export interface GameProjectsSelect<T extends boolean = true> {
         email?: T;
         discordWebhookUrl?: T;
         externalUrl?: T;
+        tallyUrl?: T;
+        tallyDisplay?: T;
+      };
+  reportForm?:
+    | T
+    | {
+        provider?: T;
+        tallyUrl?: T;
+        tallyDisplay?: T;
+        externalUrl?: T;
       };
   customDomain?: T;
   customDomainVerified?: T;
@@ -1601,6 +1632,7 @@ export interface PatchNotesSelect<T extends boolean = true> {
  * via the `definition` "issues_select".
  */
 export interface IssuesSelect<T extends boolean = true> {
+  _order?: T;
   tenant?: T;
   gameProject?: T;
   title?: T;
