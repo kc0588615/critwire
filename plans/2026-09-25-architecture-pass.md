@@ -73,7 +73,7 @@ Out:
 
 - [x] Baseline: install, migrate, run typecheck, lint, unit and E2E tests; record the results under Baseline
 - [x] Architecture: `architect` writes findings and the target design
-- [ ] Fable review: `architecture-reviewer`
+- [x] Fable review: `architecture-reviewer`
 - [ ] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
 - [ ] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
 - [ ] Steps: `planner` writes Steps and Verification
@@ -572,6 +572,24 @@ Pair each fix with its scenario: write the scenario, watch it fail, fix, then wa
 
 ## Architecture review (Fable)
 
+VERDICT: APPROVE
+
+MUST-FIX: none
+
+MISSED:
+1. **SSRF through `contact.discordWebhookUrl`** (`GameProjects/index.ts:220-228`, `jobs/contact.ts:153`). The field accepts any http(s) URL (`lib/validation/url.ts`) and the job POSTs the player's message to it from the server, so any studio member can point the server at internal or third-party HTTP endpoints. The E2E design relies on this looseness (the local webhook sink in S5.4), so don't tighten it in this pass; record it as **Q4** for the owner: restrict to `https://discord.com/api/webhooks/` (and `discordapp.com`) in production, which would require the E2E sink to move behind a host allowlist.
+2. **`src/app/api/seed/critter-connect/route.ts`** is not in the findings. It is a production route that creates and updates a demo tenant's projects, pages and notes through the Local API, gated only by `CRON_SECRET` (the same secret as the job runner). Out of scope to remove (product decision), but the E2E env's `CRON_SECRET=''` correctly disables it, and the Summary should list it as leftover surface next to Q2.
+3. **F5 detail.** `uniqueIssueSlug` (`promoteIssueReport.ts:46-55`) calls `req.payload.find` without `req`. In the new `beforeChange` design pass `req` so the lookup runs in the same transaction as the Issue create; otherwise it reads outside the transaction (harmless today, wrong by construction).
+
+SHOULD-CONSIDER:
+1. **Harness proof for `migrate:fresh`.** `migrateFresh` calls `dropDatabase` (drops and recreates schema `public`), which needs the DB role to own the schema. The Baseline only ran `migrate`; make Step 1's proof include one `payload migrate:fresh --force-accept-warning` run against `critwire_m_architecture_pass` before writing the config around it.
+2. **Pipe the webServer output.** Playwright ignores webServer stdout by default; with `next build` inside the command, set `webServer.stdout: 'pipe'` so build failures and timing land in `run.log` (the artifact).
+3. **F4 DRY.** Put the `$inc` write in one `adjustUpvoteCount({ issueID, delta, req })` used by both IssueVotes hooks, and pass `select: { upvoteCount: true }` so the hook can return the post-write count without a second read. `$inc` is supported by the Postgres adapter (`@payloadcms/drizzle/dist/transform/write/traverseFields.js:592`), and `db.updateOne` does not touch `updatedAt`, so S4.6's `updatedAt` assertion is sound.
+4. **F11 migration ordering.** The plugin's folder `tenant` field validates presence rather than `required: true` (`plugin-multi-tenant/dist/fields/tenantField/index.js:103-107`), so the generated column is nullable and the migration is safe on a production DB with existing folders (Q3 stays a visibility question only). Generate it with `migrate:create` on a DB with no `dev` row, then `generate:types`; note that order in the Steps.
+5. **S2.3 contrast check.** Measuring 4.5:1 from `getComputedStyle` works but couples the test to the palette derivation; asserting the derived button colours match the template's documented fallback pair is less brittle and still catches the regression that `site-template.int` guarded.
+
+Verification notes (what I checked): F1 (`payload.config.ts:103-124`, no `jobsCollectionOverrides`; Payload's jobs collection carries no `access` block so `defaultAccess` applies), F2 (Posts, Categories, Header, Footer, plugin overrides), F3 (all five call sites default to `overrideAccess: true`; field access on `contact.email` / `discordWebhookUrl` is `tenantMemberFieldRead`; the multi-tenant plugin passes anonymous reads through unchanged, so `overrideAccess:false` yields exactly the public filter), F4 (three separate Local API calls; recount-then-update), F5 (create without `req`, `setTimeout` self-update), F6 (`updateIssue(...).catch` inside `setColumns` updaters; `reactStrictMode: true`), F7 (`revalidatePath('/g/<slug>')` only, while patch-notes pages and feed are `revalidate = 3600`), F8 (`req.data` gate; Local API never sets `req.data`), F9 (both fields restrict `update` only), F10 (`user = await payload.auth(...)` assigns the result object), F11 (`folders: true`, folders not in the plugin config; plugin supports `payload-folders` explicitly), F12 (byte-identical helpers; report route never reads `reportForm.provider`), F13 (`sent: true` without `RESEND_API_KEY`; `jobs.run({ limit: 10 })` in the request). Dropping the `/g/<slug>/issues` revalidation in F5 is correct: both issues pages are `force-dynamic`. Harness: `migrate.js` sets `PAYLOAD_MIGRATING` and accepts `--force-accept-warning`; `next start` only warns on `output: 'standalone'`; `payload.jobs.runByID` exists in 3.85.2; Playwright runs plugin setup (webServer) before `globalSetup`; Chromium accepts `Secure` cookies on `http://localhost`; `test-results/` and `playwright-report/` are gitignored. Scope: no new features; the one schema change (F11) fixes a real cross-tenant access hole; all other changes are access, hook and helper changes with behaviour preserved except for the listed bugs.
+
 ## Architecture review (Astra)
 
 ## Revision notes
@@ -587,10 +605,12 @@ Pair each fix with its scenario: write the scenario, watch it fail, fix, then wa
 - **Q1.** Should production reject form submissions when `TURNSTILE_SECRET_KEY` or the Upstash credentials are missing? Today it silently skips both checks (F15). Not blocking: the mission leaves fail-open behavior unchanged.
 - **Q2.** Should we remove the unused Payload website-template surface (posts, categories, forms and form-submissions, search, redirects, header/footer, and the post routes)? It needs a migration. `form-submissions` is a public form endpoint with no Turnstile or rate limiting (F16). Not blocking: F2 closes the access holes.
 - **Q3.** After F11, any media folders already in production have no tenant, so only super admins can see them until someone assigns one. Do they need a backfill? Not blocking for the mission.
+- **Q4.** Should `contact.discordWebhookUrl` be restricted to `https://discord.com/api/webhooks/` (and `discordapp.com`) in production? Today it accepts any http(s) URL and the contact job POSTs to it from the server, an SSRF path any studio member can use (Fable review, MISSED 1). Not blocking: the mission leaves it as is because the E2E webhook sink relies on it.
 
 ## Log
 
 - 2026-09-25 06:35 UTC: Baseline recorded. tsc, lint (0 errors), int (45/45) and build pass; old E2E suite fails 2, 2 not run.
 - 2026-09-25 06:53 UTC: Architecture written by `architect`: 14 findings to fix (F1–F14, incl. jobs/marketing access holes, public reads bypassing access, vote-count race), 6 left with reasons; E2E harness on a production build with `migrate:fresh` on a dedicated E2E DB; scenario list and test-audit calls. Q1–Q3 copied to Questions. Plan-only change, no code verification needed.
+- 2026-09-25 07:00 UTC: Fable review by `architecture-reviewer`: APPROVE, MUST-FIX none. Verified F1–F13 against code; 3 missed items (SSRF via Discord webhook URL → Q4, CRON_SECRET seed route, pass `req` in F5 slug lookup) and 5 should-consider notes for the planner. Plan-only change.
 
 ## Summary
