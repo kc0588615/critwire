@@ -52,7 +52,7 @@ export const flagshipSlots: { [K in SiteSlotId]: SlotDefinition<K> } = {
   },
   features: {
     aiDescription:
-      'Three to six selling-point items with optional images, in one of four approved layouts.',
+      'Up to six selling-point items (three or more reads best) with optional images, in one of four approved layouts. An empty items list hides the section; leave it empty rather than padding with weak items.',
     id: 'features',
     render: FeaturesSection,
     schema: slotSchemas.features,
@@ -68,7 +68,7 @@ export const flagshipSlots: { [K in SiteSlotId]: SlotDefinition<K> } = {
   },
   gallery: {
     aiDescription:
-      'Two to twelve screenshots with alt text and optional captions, in one of four approved layouts.',
+      'Up to twelve screenshots from the supplied media, each with alt text and an optional caption, in one of four approved layouts. Use each media id at most once; an empty items list hides the section.',
     id: 'gallery',
     render: GallerySection,
     schema: slotSchemas.gallery,

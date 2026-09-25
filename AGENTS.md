@@ -1,4 +1,4 @@
-# Critwire — Indie Game Developer Portal (Build Spec v7)
+# Critwire — Indie Game Developer Portal
 
 Multi-tenant white-label SaaS: the **public ops layer for an indie game**.
 Each studio gets one hosted, branded portal: game website + patch notes +
@@ -21,13 +21,11 @@ in the same project.
 | `docs/features.md` | Product scope, collections/fields, issue tracker + voting behavior, contact form, pricing tiers, build phases |
 | `docs/integrations.md` | R2, Upstash, Resend, Stripe, Sentry, Turnstile, Cloudflare, PgBouncer, backups, env vars |
 
-## Stack (v7 — do not reintroduce v6.1 choices)
+## Stack
 
 - **Framework:** Payload CMS 3.73.0+ inside Next.js. TypeScript strict.
-- **Next.js version:** 16.2.x required for Payload's Next 16 support. If
-  16.2.0 stable is not yet released when scaffolding, **pin 15.4.11** and
-  upgrade later — Payload supports both. Verify at phase start; never
-  hardcode "latest".
+- **Next.js version:** 16.2.x (pinned exact in `package.json`; never
+  "latest").
 - **Runtime:** Node.js 24.x LTS.
 - **DB:** PostgreSQL 16 via `@payloadcms/db-postgres` (Drizzle inside),
   PgBouncer in front (transaction mode).
@@ -39,8 +37,9 @@ in the same project.
   admin Issues kanban via DnD-Kit + Payload `orderable` (not a
   separate marketplace plugin).
 
-**Removed in v7 — never add back:** Clerk, Prisma, TipTap, Trigger.dev,
+**Not used — Payload covers these:** Clerk, Prisma, TipTap, Trigger.dev,
 custom `forTenant()` / `ServiceContext` / `proxy.ts` patterns, Vercel.
+Don't add them.
 
 ## Non-negotiable rules
 
@@ -80,9 +79,9 @@ must be deployable. **Stop after each phase and wait for confirmation.**
 Do not build custom domains (Phase 8) or billing (Phase 9) before
 Phases 1–7 have shipped and real users have touched the core product.
 
-Output expectations per phase: list files created/changed, full code
-(no pseudocode), error handling, Sentry capture where appropriate,
-production-oriented and minimal.
+Output expectations per phase: list files created/changed; code is
+production-oriented and minimal, with error handling and Sentry capture
+where appropriate.
 
 ## Commands
 
@@ -100,10 +99,10 @@ production-oriented and minimal.
 - `pnpm test` — vitest (int) + playwright (e2e)
 - `docker compose up -d --build` — full stack (see `docs/deploy.md`)
 
-Local Postgres for dev: `docker compose up -d postgres` (Docker Desktop
-is available in this WSL distro; `docker-compose.override.yml` exposes
-it on `localhost:5432`). `DATABASE_URL` in `.env` points at it for
-`pnpm dev` and the payload CLI. Note: running dev/tests uses Payload's
+Local Postgres for dev: `DATABASE_URL` in `.env` must point at a running
+Postgres 16 (native on the agent VPS; `docker compose up -d postgres`
+on machines with Docker, exposed on `localhost:5432` by
+`docker-compose.override.yml`). Note: running dev/tests uses Payload's
 dev push and records a `dev` row in `payload_migrations`, after which
 `pnpm payload migrate` and `pnpm build` (which boots Payload during
 page-data collection) block on an interactive confirmation prompt —
