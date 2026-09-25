@@ -826,7 +826,7 @@ The session that carries out the affected step copies the matching line into **D
 
 ### Checklist
 
-- [ ] **Step 1: E2E harness on a fresh database**
+- [x] **Step 1: E2E harness on a fresh database**
   - **Files:**
     - `playwright.config.ts`
     - `package.json` (scripts)
@@ -1340,6 +1340,11 @@ This covers only the parts proven outside the E2E suite. The list is written bef
 
 ## Decisions
 
+- **Fable SC1: taken (Step 1).** `payload migrate:fresh --force-accept-warning` was proven against `critwire_m_architecture_pass_e2e` before the config was built around it: exit 0, 6 migrations, no `dev` row, mission DB untouched (`proofs/step1-migrate-fresh.log`).
+- **Fable SC2: taken (Step 1).** `webServer.stdout: 'pipe'` (and stderr), so `[WebServer]` migrate and build lines land in the run log.
+- **Step 1: the API fixture creates one request context per role up front** (4 roles + anonymous) instead of lazily: `newContext` is async, and five idle contexts cost nothing. Playwright attaches worker-scoped request contexts to each test's trace (`artifactsRecorder` walks `request._contexts` at test start), so API calls made from these clients still show up in every test's trace.
+- **Step 1: the DB guard compares host and database name** of `E2E_DATABASE_URL` and `DATABASE_URL`, so a different user or password on the same database still counts as "the same database".
+
 ## Questions for the owner
 
 - **Q1. Deploy prerequisite (F15, F13).** This branch makes production refuse public form submissions and votes when their protection isn't configured, instead of silently skipping it. Before deploying, set these in production `.env`:
@@ -1360,5 +1365,6 @@ This covers only the parts proven outside the E2E suite. The list is written bef
 - 2026-09-25 07:02 UTC: Astra review: APPROVE_WITH_CHANGES, 5 MUST-FIX (marketing draft-mode authorization, fail-closed rule 8 on missing Turnstile/Upstash creds + form-submissions create, Discord webhook SSRF restriction, failed-not-successful contact job when delivery unconfigured, upvote count reconciliation on cutover) and 3 should-consider. Plan-only change; MUST-FIX go to the Revision stage.
 - 2026-09-25 07:16 UTC: Revision by `architect`: all 5 Astra MUST-FIX accepted (F10 draft-mode super-admin only, F15/F16 fail-closed in production + form-submissions create locked, new F21 Discord webhook allowlist, F13 contact task throws so jobs stay recoverable, F4 reconcile-upvotes data migration); new bug F22 (voted issues can't be deleted) found; Fable MISSED folded in (F21, F23, F5 `req`). Q1 reworded as deploy prerequisite, Q4 resolved. Plan-only change.
 - 2026-09-25 07:34 UTC: Steps by `planner`: 21 steps (harness → fixes with their E2E scenarios, with expected-fail marks until each fix lands → tests/int and tests/manual audit → docs → final verification), plus Verification and Failure modes. Fable SC1–4 taken, SC5 rejected with a reason. F4 decrement moved to `beforeDelete`, which fixes the double-decrement on concurrent withdrawals; checked against `deleteByID.js` (re-read after beforeDelete → NotFound → rollback). Plan-only change.
+- 2026-09-25 07:42 UTC: Step 1 done: E2E harness on a production build with `migrate:fresh` on `critwire_m_architecture_pass_e2e`; `setup` project seeds super admin, studios A/B and aOwner/aMember/bOwner and saves sessions + `world.json`; template specs, `tests/helpers/` and `test.env` deleted. Turnstile reachable (siteverify OK with test keys). tsc 0; lint 0 errors, 27 warnings (was 30); E2E 1 passed (setup), 0 expected-fail, 124 s wall (build 84 s); report holds the setup trace; `dev` rows 0 in both DBs, mission DB `min(created_at)` unchanged; all 3 guard cases exit 1 in 2 s (`proofs/step1-guard.log`).
 
 ## Summary
