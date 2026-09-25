@@ -71,7 +71,7 @@ Out:
 
 ## Stages
 
-- [ ] Baseline: install, migrate, run typecheck, lint, unit and E2E tests; record the results under Baseline
+- [x] Baseline: install, migrate, run typecheck, lint, unit and E2E tests; record the results under Baseline
 - [ ] Architecture: `architect` writes findings and the target design
 - [ ] Fable review: `architecture-reviewer`
 - [ ] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
@@ -79,6 +79,24 @@ Out:
 - [ ] Steps: `planner` writes Steps and Verification
 
 ## Baseline
+
+Recorded 2026-09-25 ~06:30 UTC on commit `9834f34`, fresh mission DB `critwire_m_architecture_pass`.
+
+| Check | Command | Result | Wall time |
+|---|---|---|---|
+| Install | `pnpm install --frozen-lockfile` | OK, already up to date | <1 s |
+| Migrate | `pnpm payload migrate` | OK, all 6 migrations applied to the empty DB | 9 s |
+| Typecheck | `pnpm exec tsc --noEmit` | Pass, 0 errors | 13 s |
+| Lint | `pnpm lint` | Pass, 0 errors, 30 warnings (25 `no-unused-vars`, mostly the `payload, req` args in generated migrations plus the old E2E specs and `verify-phase5.mjs`; 5 React-hooks warnings: `set-state-in-effect` in `src/providers/Theme/index.tsx:51` and `ThemeSelector/index.tsx:33`, render-time ref/state warnings in `src/Header/Component.client.tsx:28` and `src/components/Card/index.tsx:38,70`) | 11 s |
+| Unit/int | `pnpm test:int` | Pass: 7 files, 45 tests (`site-config-schema` 15, `site-template` 9, `tally-parse` 9, `site-generator` 6, `template-revalidation` 3, `site-config-parity` 2, `api` 1) | 18 s |
+| E2E | `pnpm test:e2e --reporter=list` (dev server) | **Fail**: 2 failed, 2 did not run. `Admin Panel` `beforeAll` timed out (30 s) waiting for `#field-email` on `/admin/login` while `next dev` compiled it, so its 3 tests failed or didn't run; `Frontend › can load homepage` expects title "Payload Website Template", got "Critwire". No traces kept (`trace: on-first-retry`, retries 0 locally) | 1 m 49 s |
+| Build | `pnpm build` | Pass (only Sentry `disableLogger` deprecation warnings) | 1 m 48 s |
+
+Observations for the architect:
+- `tests/int/api.int.spec.ts` boots Payload with dev push, which writes the `dev` row into `payload_migrations`; after `pnpm test:int` (or any E2E run on `pnpm dev`), `pnpm build` and `pnpm payload migrate` need that row deleted first. The E2E harness must not leave the DB in that state.
+- The existing E2E suite covers none of critwire's own behavior: it is Payload's website template (dashboard, users list, pages create, template homepage title). E2E coverage of the core flows before this mission: **0**.
+- `tests/manual/` holds 6 scripts (1,084 lines): `verify-isolation.mjs` and `verify-phase3..7.mjs`. They are not run by any `pnpm` script.
+- A production build takes ~1 m 48 s on this box; the dev-server E2E spent most of its 1 m 49 s compiling routes on first hit.
 
 ## Architecture
 
@@ -97,5 +115,7 @@ Out:
 ## Questions for the owner
 
 ## Log
+
+- 2026-09-25 06:35 UTC: Baseline recorded. tsc, lint (0 errors), int (45/45) and build pass; old E2E suite fails 2, 2 not run.
 
 ## Summary
