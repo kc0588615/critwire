@@ -76,7 +76,7 @@ Out:
 - [x] Fable review: `architecture-reviewer`
 - [x] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
 - [x] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
-- [ ] Steps: `planner` writes Steps and Verification
+- [x] Steps: `planner` writes Steps and Verification
 
 ## Baseline
 
@@ -363,7 +363,7 @@ Where to point it:
 - A separate database role isn't worth it: role management lives outside the repo, and the name guard already stops the realistic mistake.
 
 **Fixtures.** `tests/e2e/auth.setup.ts` is the `setup` project, so it shows up in the report with its own trace.
-- It calls `POST /api/users/first-register` to create the super admin. Anything other than 201 fails fast with "E2E database is not fresh".
+- It calls `POST /api/users/first-register` to create the super admin. Anything other than 200 fails fast with "E2E database is not fresh". (Planner fix: Payload 3.85.2 answers 200 on success and 403 once a user exists, `payload/dist/auth/endpoints/registerFirstUser.js:42`; the original text said 201.)
 - As the super admin, it creates tenants A and B and the users `aOwner`, `aMember` (tenant A) and `bOwner` (tenant B).
 - It logs each user in and writes `test-results/.auth/<role>.json` (storageState) and `test-results/.auth/world.json` (tenant IDs and JWTs).
 - Each spec creates its own game projects and content in `beforeAll` over REST, as the owning studio user, with slugs unique to that spec. Specs stay independent, and hooks and revalidation run inside the real server.
@@ -768,7 +768,575 @@ Fable's SHOULD-CONSIDER items are left to the planner.
 
 ## Steps
 
+21 steps, one per session. The E2E harness and coverage come first. Fixes land with, or right after, the scenario that proves them. Tests are deleted only after the suite is green (Steps 18–19).
+
+### How every step runs
+
+- Shell helpers, from the repo root:
+  ```bash
+  cd /srv/critter-ai/worktrees/architecture-pass
+  DB=$(grep '^DATABASE_URL=' .env | cut -d= -f2-)          # mission DB, never reset
+  E2E_DB=$(grep '^E2E_DATABASE_URL=' .env | cut -d= -f2-)  # dropped on every E2E run (from Step 1)
+  PROOFS=/srv/critter-ai/agent-state/missions/architecture-pass/proofs   # mkdir -p once
+  ```
+- **Standard checks** end every step unless the step says otherwise. Run them one at a time:
+  1. `pnpm exec tsc --noEmit` → 0 errors.
+  2. `pnpm lint` → 0 errors, and the warning count never goes up.
+  3. `set -o pipefail; pnpm test:e2e 2>&1 | tee /tmp/e2e-step<N>.log` → exit 0. This is the full suite, on a freshly reset E2E database, with a fresh build. 0 failed and 0 flaky; the only expected-to-fail tests are the ones still annotated.
+
+  The Log line records passed and expected-fail counts and wall time.
+- **Expected-failure convention.** Sometimes a spec lands in an earlier step than its fix. Then each test that exposes a finding is a separate test, tagged in its title (`… [F11]`), and starts with `test.fail(true, 'F11: fixed in Step 4')`.
+  - Before committing, read each failure in the list output and confirm it shows the finding's symptom (for example "expected 403, received 201"), not a bug in the test.
+  - The fixing step deletes the `test.fail` line. If the test then doesn't pass, Playwright fails the run, so no annotation can be forgotten.
+  - When a spec and its fix land in the same step, don't annotate. Run the spec before the fix, list the failing tests in the Log, then fix.
+- **Dev-row gotcha.**
+  - Never run `pnpm dev`.
+  - Until Step 18, never run the full `pnpm test:int`: `tests/int/api.int.spec.ts` dev-pushes into the mission DB. Run single files instead: `pnpm test:int tests/int/<file>`.
+  - Before any `pnpm payload migrate` or `pnpm build`, run `psql "$DB" -c "delete from payload_migrations where name='dev'"`.
+- `E2E_SKIP_BUILD=1 pnpm test:e2e <spec>` is only for iterating on a spec right after a full run. Never use it for a step's verification: it reuses `.next`, with the env the last E2E build baked in.
+- Heavy jobs (E2E, build, migrate) run one at a time.
+- Code a step touches uses `extractID` from `payload/shared` instead of a local relation-ID helper (F14), so Step 17 only has to sweep what's left.
+
+### Planner decisions
+
+The session that carries out the affected step copies the matching line into **Decisions**.
+
+- **Fable SHOULD-CONSIDER 1: taken (Step 1).** Prove `payload migrate:fresh --force-accept-warning` against the E2E database before building the config around it. That is the database the harness drops; the mission database is never reset.
+- **SC2: taken (Step 1).** Set `webServer.stdout: 'pipe'`; stderr is piped by default. Build output and timings then land in `run.log`.
+- **SC3: taken, with one change (Step 9).**
+  - One `adjustUpvoteCount({ issueID, delta, req })` serves both IssueVotes hooks, using `$inc`.
+  - Its `select` asks for the issue's `gameProject` and `isPublic`, so the landing can be revalidated without a second read.
+  - The helper itself returns nothing (CQS). A hook's return value can't reach the route anyway, so the route reads `upvoteCount` after the write, as F4 already specifies.
+- **F4 refinement (Step 9): the decrement runs in `beforeDelete`, not `afterDelete`.**
+  - The race: `@payloadcms/drizzle/dist/deleteOne.js` never checks how many rows `deleteWhere` removed, and `deleteByID` runs `afterDelete` regardless. Two concurrent withdrawals with the same cookie both pass the existence check. The second DELETE waits for the first, removes 0 rows, and would still decrement.
+  - Why `beforeDelete` fixes it: there, the `$inc` takes the issue's row lock before `deleteByID` re-reads the vote (`payload/dist/collections/operations/deleteByID.js:44-76`). The second request waits, then finds no vote, throws NotFound, and rolls back its own decrement.
+  - S4.6 gets a same-cookie parallel-withdrawal case.
+- **SC4: taken (Step 4).** In order: clear the `dev` row, `migrate:create`, read the SQL, `migrate`, check with psql, then `generate:types` and `generate:importmap`.
+- **SC5: rejected (Step 6).**
+  - Measuring contrast from computed styles asserts the invariant (at least 4.5:1) whatever the palette. It also catches a broken CSS-variable mapping (`flagship.css:106-108`). Pinning a "fallback pair" would tie the test to the palette.
+  - For the scenario's `#ffffff` there's no fallback anyway. White clears 3:1 against the `#0b0d14` background, so the derivation keeps it and only switches the foreground to `#0b1016`.
+- **F3 is split.** The portal reads are Step 8. `getContactRoute`, and removing the contact and report pages' privileged re-queries, move to Step 13 with F12, so S5 covers those pages before they change.
+- **Scenario additions:**
+  - S1.2: a rejected cross-tenant DELETE of a voted issue leaves its votes in place. The Issue `beforeDelete` runs before the document-level access filter, so this relies on the rollback.
+  - S1.9: a published post that the Archive block must list.
+  - S5.3: a single write. The report's `updatedAt` in the PATCH response must equal a GET one second later; today this fails every time.
+  - S5.5: the full Discord allowlist case list.
+  - S4.6: parallel withdrawals with the same cookie.
+- **Harness text fix.** `first-register` answers 200, not 201. The harness section is corrected.
+
+### Checklist
+
+- [ ] **Step 1: E2E harness on a fresh database**
+  - **Files:**
+    - `playwright.config.ts`
+    - `package.json` (scripts)
+    - new `tests/e2e/auth.setup.ts`
+    - new `tests/e2e/support/env.ts`, `api.ts`, `fixtures.ts`
+    - `.env.example`
+    - the worktree `.env` (not committed)
+    - delete `tests/e2e/admin.e2e.spec.ts`, `tests/e2e/frontend.e2e.spec.ts`, `tests/helpers/` and `test.env`
+  - **Do:**
+    1. **Pre-flight.**
+       - `psql "$DB" -c 'create database critwire_m_architecture_pass_e2e'` (the `critwire` role has CREATEDB and will own it).
+       - Add `E2E_DATABASE_URL` to `.env`: the `DATABASE_URL` value with the database name swapped.
+       - `curl -sSI https://challenges.cloudflare.com/turnstile/v0/api.js` should return 200, because S5 needs it. If it doesn't, write it under Questions and carry on.
+    2. **SC1 proof**, saved to `$PROOFS/step1-migrate-fresh.log`:
+       - Note `psql "$DB" -Atc "select min(created_at) from payload_migrations"`.
+       - `DATABASE_URL="$E2E_DB" pnpm payload migrate:fresh --force-accept-warning` → exit 0, with "Migrated:" for all 6 migrations.
+       - `psql "$E2E_DB" -Atc "select name from payload_migrations order by id"` → 6 names, no `dev`.
+       - The mission DB's `min(created_at)` is unchanged.
+
+       If this fails (for example on schema ownership), fix it before writing any config.
+    3. **`playwright.config.ts`**, as in "E2E harness":
+       - Keep `import 'dotenv/config'`.
+       - The guard throws "E2E_DATABASE_URL: this database is dropped on every run; …" unless the URL is set, its database name ends in `_e2e`, and it differs from `DATABASE_URL`.
+       - `E2E_PORT` defaults to 3100; `baseURL` is `http://localhost:<port>`.
+       - Projects: `setup` (`testMatch: /auth\.setup\.ts/`) and `chromium` (`testMatch: /\.spec\.ts$/`, `dependencies: ['setup']`, Desktop Chrome).
+       - Reporters, `use`, workers, retries, `forbidOnly` and timeouts as specified.
+       - `webServer`:
+         - `command: 'pnpm e2e:server'`, `url: <baseURL>/api/health`, `timeout: 420_000`, `reuseExistingServer: false`, `stdout: 'pipe'`, `stderr: 'pipe'`.
+         - `env`: `DATABASE_URL` set to `E2E_DATABASE_URL`; `PORT`; `NEXT_PUBLIC_SERVER_URL`; both Turnstile test keys; `PREVIEW_SECRET`; `SKIP_BUILD_STATIC_GENERATION=1`; `RATE_LIMIT_OPTIONAL=1`; `DISCORD_WEBHOOK_TEST_ORIGIN=http://127.0.0.1:<port+1>`.
+         - Also in `env`, set to `''`: `R2_*`, `RESEND_API_KEY`, `SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_DSN`, `OPENAI_API_KEY`, `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` and `CRON_SECRET`.
+    4. **Scripts:**
+       - `test:e2e` = `cross-env NODE_OPTIONS=--no-deprecation playwright test`
+       - `e2e:server` = `payload migrate:fresh --force-accept-warning && ([ "$E2E_SKIP_BUILD" = 1 ] || next build) && next start`
+    5. **Support files:**
+       - `support/env.ts`: port, baseURL, sink origin, the dummy Turnstile token, role names and credentials, auth file paths.
+       - `support/api.ts`: a REST client per role on Playwright's `APIRequestContext`, sending `Authorization: JWT <token>`. Methods: `create`, `update`, `find`, `findByID`, `remove` and `raw`. Each returns `{ status, body }` and never throws on non-2xx, so tests can assert status codes.
+       - `support/fixtures.ts`: `test.extend` with `world` (reads `world.json`) and `api(role)`, both **worker-scoped** so `beforeAll` can use them. Later steps add the project factory, `lexical()`, `upload()` and `webhookSink`.
+    6. **`auth.setup.ts`**, as in "Fixtures":
+       - first-register expects 200
+       - create tenants A and B, then `aOwner`, `aMember` and `bOwner`
+       - log in every role, including the super admin
+       - write `test-results/.auth/<role>.json` and `world.json`
+    7. **`.env.example`:**
+       - `E2E_DATABASE_URL`, with the warning that it's dropped on every run and must end in `_e2e`
+       - `RATE_LIMIT_OPTIONAL` and `DISCORD_WEBHOOK_TEST_ORIGIN`, commented out and marked "E2E only; never set in production"
+    8. Delete the template specs, `tests/helpers/` and `test.env`.
+  - **Verify:**
+    - Standard checks. The log shows `[WebServer]` build lines and `1 passed` (setup), and `playwright-report/index.html` holds the setup trace.
+    - `psql "$E2E_DB" -Atc "select count(*) from payload_migrations where name='dev'"` → 0. The same query on `$DB` → 0, and `$DB`'s `min(created_at)` is unchanged.
+    - Guard proof. Each of these must exit non-zero within seconds, without starting a server:
+      - `E2E_DATABASE_URL="$DB" pnpm test:e2e`
+      - `DATABASE_URL="$E2E_DB" E2E_DATABASE_URL="$E2E_DB" pnpm test:e2e`
+    - Record the run's wall time.
+
+- [ ] **Step 2: Tenant-isolation spec, API scenarios (S1.1–S1.8, S1.10)**
+  - **Files:**
+    - new `tests/e2e/tenant-isolation.spec.ts`
+    - `tests/e2e/support/fixtures.ts`: add a project factory (creates a game project as a given role, with a spec-unique slug) plus the issue, patch-note and report factories it needs
+  - **Do:** write S1.1–S1.8 and S1.10 as in "E2E scenarios", one test per finding so expected failures are exact.
+    - Pass `tenant` explicitly on every tenant-scoped create. That includes `payload-folders`, which ignores the field until F11.
+    - S1.1: the `payload-folders` check is its own test [F11], annotated `test.fail` → Step 4. The other collections pass today.
+    - S1.2: add a check. A's issue gets a player vote, cast through `POST /api/vote` with a fresh cookie jar. `bOwner`'s DELETE returns 403 or 404, and the vote row still exists (counted as super admin).
+    - S1.3: the owner deleting a voted issue [F22] is annotated → Step 10. `aMember`'s 403 is a separate test that passes.
+    - S1.6 [F9] → Step 4.
+    - S1.7 becomes three tests, all annotated → Step 3:
+      - jobs [F1]. The run endpoint is `GET /api/payload-jobs/run` and answers 401 when denied.
+      - platform content [F2]
+      - anonymous form-submissions create [F16]
+    - S1.10 passes today. Send a same-origin `Origin` header, or none.
+  - **Verify:** standard checks. `setup` and S1 pass, and exactly six tests are expected to fail (F1, F2, F9, F11, F16, F22). The Log line gives each one's symptom.
+
+- [ ] **Step 3: Lock system and platform collections to super admins (F1, F2, F16)**
+  - **Scenarios:** remove the `test.fail` from the three S1.7 tests.
+  - **Files:**
+    - `src/access/isSuperAdmin.ts`: add `superAdminOnly: Access`.
+    - `src/access/authenticatedOrPublished.ts` → `superAdminOrPublished.ts`, and its importers `Pages/index.ts` and `Posts/index.ts`.
+    - `src/collections/Tenants/index.ts`, `Users/index.ts`, `Pages/index.ts`: replace each collection-level `({ req }) => isSuperAdmin(req.user)` with `superAdminOnly`. Leave the role-aware read/update functions and field-level access (`FieldAccess`) as they are.
+    - `src/collections/Posts/index.ts`, `src/collections/Categories.ts`: create, update and delete.
+    - `src/Header/config.ts`, `src/Footer/config.ts`: `update`.
+    - `src/plugins/index.ts`: redirects writes, forms writes, form-submissions create/read/update/delete, search update/delete.
+    - `src/payload.config.ts`:
+      - `jobs.access.run`: super admin, or the `CRON_SECRET` bearer when the secret is set.
+      - `jobsCollectionOverrides`: create/read/update/delete super admin only, and `admin.hidden: ({ user }) => !isSuperAdmin(user)`.
+  - **Do:** access changes only, no schema change. `authenticated` stays where it's still right (Users `admin`, Media).
+  - **Verify:** standard checks.
+
+- [ ] **Step 4: Field create guards, tenant-scoped media folders, production refusal (F9, F11, F15)**
+  - **Scenarios:**
+    - Remove the `test.fail` from S1.6 and from the S1.1 folders test.
+    - F15 has no E2E scenario (documented gap), so there's a manual proof below. The E2E suite proves production still serves forms when it's configured.
+  - **Files:**
+    - `src/collections/GameProjects/index.ts`: `customDomainVerified.access.create` for super admins.
+    - `src/collections/Issues/index.ts`: `upvoteCount.access.create: () => false`.
+    - `src/plugins/index.ts`: add `'payload-folders': {}`.
+    - new `src/migrations/<ts>_tenant_scoped_media_folders.ts` and `.json`, plus `src/migrations/index.ts`.
+    - `src/payload-types.ts` and `src/app/(payload)/admin/importMap.js`.
+    - `src/lib/turnstile/verifyTurnstile.ts` and `src/lib/upstash/rate-limit.ts`: throw in production, per F15. Only `checkRateLimit` reads `RATE_LIMIT_OPTIONAL=1`.
+    - `src/environment.d.ts`: declare `RATE_LIMIT_OPTIONAL`, and the Upstash variables if missing.
+  - **Do (F11, in this order, SC4):**
+    1. `psql "$DB" -c "delete from payload_migrations where name='dev'"`
+    2. Add the plugin entry.
+    3. `pnpm payload migrate:create tenant_scoped_media_folders`
+    4. Read the generated SQL. It may only add a nullable `payload_folders.tenant_id`, its foreign key to `tenants`, and an index. Anything else means the schema snapshot has drifted: stop and find out why.
+    5. `pnpm payload migrate` (mission DB).
+    6. `pnpm generate:types`
+    7. `pnpm generate:importmap`
+  - **Verify:**
+    - Standard checks.
+    - Migration proof, saved to `$PROOFS/step4-folders.log`: `psql "$DB" -c '\d payload_folders'` shows a nullable `tenant_id integer` with its foreign key, and `pnpm payload migrate:status` lists the migration as applied.
+    - F15 manual proof, saved to `$PROOFS/step4-f15.log`. It reuses this step's E2E build; see Failure modes.
+      1. Start `DATABASE_URL="$E2E_DB" PORT=3102 TURNSTILE_SECRET_KEY= RATE_LIMIT_OPTIONAL= UPSTASH_REDIS_REST_URL= UPSTASH_REDIS_REST_TOKEN= pnpm start` in the background.
+      2. `curl -s -X POST -H 'content-type: application/json' -d '{"message":"hello there, studio","turnstileToken":"x"}' localhost:3102/g/any/contact/submit` → 500 `{"error":"Something went wrong."}`. The server log shows "Public contact form submission failed" with the Turnstile message.
+      3. `curl -s -X POST -H 'content-type: application/json' -d '{"issueId":1}' localhost:3102/api/vote` → 500.
+      4. Stop the server.
+
+- [ ] **Step 5: Authorize Draft Mode reads (F10) with its preview scenario (S1.9)**
+  - **Files:**
+    - `tests/e2e/tenant-isolation.spec.ts` (S1.9)
+    - new `src/utilities/getPreviewUser.ts`, moved from `src/app/(public)/g/[gameSlug]/page.tsx:54-62`
+    - `src/app/(public)/g/[gameSlug]/page.tsx`
+    - `src/app/(frontend)/[slug]/page.tsx` (`queryPageBySlug`)
+    - `src/app/(frontend)/posts/[slug]/page.tsx` (`queryPostBySlug`)
+    - `src/app/(frontend)/next/preview/route.ts`
+    - `src/blocks/ArchiveBlock/Component.tsx`
+  - **Do:**
+    1. Write S1.9 first, in the browser, using the setup project's storage states. The test signs B's site-preview token with `signSitePreviewToken` from `src/lib/security/sitePreviewToken.ts`, using `PAYLOAD_SECRET` from `.env`.
+    2. Fixtures, created as super admin over REST:
+       - a published marketing page whose title has a later draft
+       - a marketing page with an Archive block (`populateBy: 'collection'`)
+       - one published post, which the archive must list
+       - one never-published post, which it must not
+    3. Run it, and log the parts that fail. Expected: anonymous and `bOwner` requests to `/next/preview` get Draft Mode instead of 403; `bOwner` sees the marketing draft; the archive lists the draft post.
+    4. Implement F10 as specified:
+       - Marketing reads use `draft = isSuperAdmin(previewUser)`, `overrideAccess: false` and `user: previewUser`.
+       - `/next/preview` destructures `{ user }`, and returns 403 with `draft.disable()` unless the user is a super admin.
+       - `ArchiveBlock` reads with `overrideAccess: false`.
+  - **Verify:** standard checks. All of S1 passes.
+
+- [ ] **Step 6: Portal landing spec (S2)**
+  - **Files:**
+    - new `tests/e2e/portal-landing.spec.ts`
+    - `tests/e2e/support/api.ts`: add `upload()`, a multipart `POST /api/media` with `file` plus `_payload` JSON that includes `tenant`
+    - `tests/e2e/support/fixtures.ts`
+  - **Do:** S2.1–S2.6 as specified. They all pass today; they replace `site-template.int`, `site-config-schema.int`, and the SEO checks in `verify-phase3/7`.
+    - S2.1: compare the rendered `main` text of the two 404s, not the raw HTML; RSC payloads differ per request.
+    - S2.3 (SC5 rejected):
+      - Read the rendered primary button's computed `color` and `backgroundColor`, and convert both to hex.
+      - Assert `contrastRatio(fg, bg) >= 4.5`, using the pure helper in `src/site-templates/flagship-game-v1/schema/contrast.ts`; it imports nothing from Payload.
+    - S2.4:
+      - Build the publish body the way the admin sends it: array rows with an `id`, and the hero media id from `upload()`.
+      - Each invalid variant gets its own assertion: status 400, and the public page unchanged.
+  - **Verify:** standard checks.
+
+- [ ] **Step 7: Patch-notes spec with the revalidation and publish-date fixes (F7, F8)**
+  - **Scenarios:** S3.1–S3.4. For F8, a partial PATCH keeps `publishedAt` and the note's position. For F7, the renamed project shows in the patch-notes header.
+  - **Files:**
+    - new `tests/e2e/patch-notes.spec.ts`
+    - `tests/e2e/support/fixtures.ts`: add `lexical(text)`, a minimal Lexical root JSON
+    - `src/collections/GameProjects/hooks/revalidateGameProject.ts`: `revalidatePath('/g/<slug>', 'layout')` for the current, previous and deleted slugs
+    - `src/hooks/populatePublishedAt.ts`
+  - **Do:**
+    1. Write the spec. Give the 12 notes explicit, distinct `publishedAt` values so the order is deterministic.
+    2. For F7, load the patch-notes page first so it's cached, then rename the project.
+    3. Run it before the fixes, and log the F7 and F8 failures.
+    4. Fix, then run again.
+
+    The F8 rule: `data.publishedAt ?? originalDoc?.publishedAt ?? (status === 'published' ? now : undefined)`, where `status = data._status ?? originalDoc?._status`. PatchNotes, Pages and Posts share this hook.
+  - **Verify:** standard checks.
+
+- [ ] **Step 8: Issue list, board and detail spec, and public reads through access (F3, part 1)**
+  - **Scenarios:** S4.1–S4.3; the draft patch-note title is the F3 failure. S2, S3 and S1.4 guard the change.
+  - **Files:**
+    - new `tests/e2e/issues-voting.spec.ts`, S4.1–S4.3 only
+    - `src/lib/game-portal/getGameProject.ts`
+    - `src/lib/game-portal/issues.ts`: every read except `getHasVoted`
+    - `src/lib/game-portal/patchNotes.ts`: add a `limit` argument to `queryPublishedPatchNotes`
+    - the published landing read in `src/app/(public)/g/[gameSlug]/page.tsx`
+    - `src/app/(public)/g/[gameSlug]/(ops)/patch-notes/feed.xml/route.ts`: reuse `getGameProject` and `queryPublishedPatchNotes({ limit: 20 })`
+  - **Do:**
+    1. Write S4.1–S4.3, run them, and log the F3 failure.
+    2. Pass `overrideAccess: false` on every public portal read, and keep the explicit filters.
+       - With access applied, relationships the visitor can't read come back as bare IDs: the draft patch note, and the project's `tenant`.
+       - The issue detail page already handles an ID (`issues/[slug]/page.tsx:29-32`). Any other code that assumes a populated object must handle an ID too; tsc and S2 show where.
+    3. Leave the contact and report pages' privileged reads for Step 13.
+  - **Verify:** standard checks.
+
+- [ ] **Step 9: Voting counter owned by IssueVotes hooks (F4) and the shared landing revalidation (F14, part)**
+  - **Scenarios:**
+    - S4.4–S4.6.
+    - The planner's same-cookie case: vote with cookie C, then send two parallel `POST /api/vote` with C, for 5 rounds. In every round there's no 5xx, and `upvoteCount` equals the number of vote rows.
+  - **Files:**
+    - `tests/e2e/issues-voting.spec.ts`
+    - new `src/hooks/revalidateGameLanding.ts`: a command that resolves the slug and calls `revalidatePath('/g/<slug>')`. It replaces the local copies in `src/collections/GamePages/hooks/revalidateGamePage.ts`, `src/collections/Issues/hooks/revalidateIssueLanding.ts` and `src/collections/PatchNotes/hooks/revalidatePatchNotes.ts`. Keep one slug lookup per hook call.
+    - new `src/collections/IssueVotes/hooks/adjustUpvoteCount.ts`, and the hooks in `src/collections/IssueVotes/index.ts`
+    - `src/app/api/vote/route.ts`
+  - **Do:**
+    1. Write S4.4–S4.6 and the extra case, run them, and log the failures. The `updatedAt` check fails every time; the parallel cases usually do.
+    2. `adjustUpvoteCount({ issueID, delta, req })` calls `req.payload.db.updateOne({ collection: 'issues', id, data: { upvoteCount: { $inc: delta } }, req, select: { gameProject: true, isPublic: true } })`. If the issue is public it then calls `revalidateGameLanding`. It returns nothing.
+    3. IssueVotes hooks (see Planner decisions):
+       - `afterChange` on create → `+1`.
+       - `beforeDelete`: read the vote with `req` (`findByID`, `disableErrors: true`; return if it's null) → `-1`.
+    4. The route, per F4:
+       - Use `getClientIP`.
+       - Look up the issue with `find` and `overrideAccess: false`: 404 for private or unknown issues, while real errors propagate.
+       - Find the existing vote, then `delete` it (NotFound means already removed) or `create` one (a unique-violation `ValidationError` means already voted).
+       - Respond with `upvoteCount` read after the write.
+  - **Verify:** standard checks. `pnpm test:int tests/int/template-revalidation.int.spec.ts` still passes (3 tests).
+
+- [ ] **Step 10: Upvote reconciliation migration (F4) and deletable voted issues (F22)**
+  - **Scenarios:** remove the `test.fail` from S1.3's owner-delete test [F22]. S1.2's votes-survive check guards the rollback.
+  - **Files:**
+    - new `src/migrations/<ts>_reconcile_issue_upvote_counts.ts` and `.json`, plus `src/migrations/index.ts`
+    - new `src/collections/Issues/hooks/deleteIssueVotes.ts`, and `beforeDelete` in `src/collections/Issues/index.ts`
+    - `$PROOFS/reconcile-upvotes.sql`, outside the repo
+  - **Do:**
+    1. Write the proof SQL first. "Failure modes" lists what it must rule out.
+    2. Clear the `dev` row, then run `pnpm payload migrate:create reconcile_issue_upvote_counts --force-accept-warning`. The flag creates a blank migration without the interactive prompt. The generated SQL must be empty, and the migration must sort after F11's. Write `up` with F4's SQL through `db.execute(sql\`…\`)`, and a no-op `down`.
+    3. Proof on the mission DB, saved to `$PROOFS/step10-reconcile.log`:
+       - Run the fixture part of the SQL: two tenants and one project. Issue X has 2 same-tenant votes and 1 vote carrying the other tenant; issue Y has none. Set `upvote_count` to 7 and 3, and note both `updated_at` values.
+       - `pnpm payload migrate`.
+       - Check: X = 2, Y = 0, both `updated_at` unchanged, and `migrate:status` shows the migration applied.
+       - Delete the fixture rows.
+    4. F22: `deleteIssueVotes` (`beforeDelete`) calls `req.payload.db.deleteMany({ collection: 'issue-votes', where: { issue: { equals: id } }, req })`.
+  - **Verify:** standard checks.
+
+- [ ] **Step 11: Reports and contact spec (S5)**
+  - **Files:**
+    - new `tests/e2e/reports-contact.spec.ts`
+    - `tests/e2e/support/fixtures.ts`: add `webhookSink`, an HTTP server on the `DISCORD_WEBHOOK_TEST_ORIGIN` port that records requests per path and can answer 307 to another path
+  - **Do:** write S5.1–S5.6, plus the planner additions.
+    - Browser tests use the real Turnstile widget: wait until the hidden `cf-turnstile-response` input has a value before submitting. API tests send `XXXX.DUMMY.TOKEN.XXXX`.
+    - Annotate these tests:
+      - **S5.2** [F12] → Step 13: with the report provider set to Tally, a native submit is rejected.
+      - **S5.3** [F5] → Step 12: PATCH the report to PUBLISHED. The response and an immediate GET both carry `issue`. After 1 s, a GET's `updatedAt` equals the PATCH response's (one write).
+      - **S5.4** [F21] → Step 14: the redirect isn't followed and the job is kept. The rest of S5.4 passes today; it's the F3 guard.
+      - **S5.5** [F21] → Step 14: the Discord allowlist. With target `DISCORD_WEBHOOK`:
+        - Saves: `https://discord.com/api/webhooks/1/abc`, the same path on `discordapp.com`, `ptb.discord.com` and `canary.discord.com`, and the sink origin.
+        - Rejected with 400:
+          - `http://discord.com/api/webhooks/1/abc` (not https)
+          - `https://discord.com:8443/api/webhooks/1/abc` (port)
+          - `https://u:p@discord.com/api/webhooks/1/abc` (credentials)
+          - `https://discord.com/api/v10/users/@me` (path)
+          - `https://discord.com.evil.test/api/webhooks/1/x` (host suffix)
+          - `https://evil.test/discord.com/api/webhooks/1/x`
+          - `http://169.254.169.254/latest/meta-data/`
+          - `http://127.0.0.1:<sink port + 1>/api/webhooks/1/x` (the test host on another port)
+      - **S5.6** [F13] → Step 14: the email job is kept.
+    - Not annotated, because they pass today:
+      - a separate guard test: a project routed to `EMAIL` still saves while its hidden `discordWebhookUrl` holds a stale non-Discord value
+      - the other S5.5 variants
+  - **Verify:** standard checks. Exactly these five tests are expected to fail, each with its symptom.
+
+- [ ] **Step 12: Atomic report promotion (F5)**
+  - **Scenarios:** remove the `test.fail` from S5.3. S5.1, and later S6.7, guard it.
+  - **Files:**
+    - replace `src/collections/IssueReports/hooks/promoteIssueReport.ts` with `createIssueFromPublishedReport.ts`, a `beforeChange` hook
+    - `src/collections/IssueReports/index.ts` (hooks)
+  - **Do:** as F5. Keep today's trigger: a change into `PUBLISHED` with no linked issue, including a create that is already `PUBLISHED`.
+    - Merge `data` over `originalDoc`.
+    - Create the Issue with `req`, so it's in the same transaction, and pass `req` to `uniqueIssueSlug`.
+    - Return `{ ...data, issue: issue.id }`.
+    - A missing project or tenant throws `ValidationError`.
+    - No `setTimeout`, no self-update, no context flag, and no `/issues` layout revalidation.
+    - Use `extractID`.
+  - **Verify:** standard checks.
+
+- [ ] **Step 13: Contact routing helper and shared public-form guard (F3 part 2, F12)**
+  - **Scenarios:** remove the `test.fail` from S5.2. S5.1, S5.4 and S5.5 guard the refactor.
+  - **Files:**
+    - new `src/lib/game-portal/contactRoute.ts`: `getContactRoute(slug)`, returning the union without secrets
+    - new `src/lib/public-forms/guard.ts`: `guardPublicForm` and `formResponse`
+    - new `src/components/game/TurnstileField.tsx`
+    - `src/app/(public)/g/[gameSlug]/(ops)/contact/page.tsx`, `contact/submit/route.ts`, `report/page.tsx` and `report/submit/route.ts`
+  - **Do:**
+    - The contact page and the contact submit route both take routing from `getContactRoute`, the only privileged portal read. The route gets the project itself from `getGameProject`.
+    - The report page drops `getReportProject` and reads `reportForm` from `getGameProject`.
+    - Both submit routes use `guardPublicForm` (parse → Turnstile → rate limit, in patterns.md order; F15's throws reach the route's catch) and `formResponse`.
+    - The report route looks up the project with `getGameProject`, and returns 400 when `reportForm.provider !== 'native'`.
+    - `TurnstileField` replaces both copies. Delete the no-op ternary.
+    - The contact route still queues and runs jobs as it does today; Step 14 changes that.
+  - **Verify:** standard checks.
+
+- [ ] **Step 14: Contact jobs deliver or throw, and Discord destinations are restricted (F13, F21)**
+  - **Scenarios:** remove the `test.fail` from S5.4's redirect test, S5.5's allowlist test and S5.6.
+  - **Files:**
+    - new `src/lib/validation/discordWebhook.ts` (`isAllowedDiscordWebhookUrl`)
+    - `src/collections/GameProjects/index.ts`: `discordWebhookUrl.validate` applies the check when `siblingData.target === 'DISCORD_WEBHOOK'`
+    - `src/jobs/contact.ts`
+    - `src/app/(public)/g/[gameSlug]/(ops)/contact/submit/route.ts`: `payload.jobs.runByID({ id: job.id })` instead of `jobs.run({ limit: 10 })`
+    - `src/environment.d.ts` (`DISCORD_WEBHOOK_TEST_ORIGIN`)
+  - **Do:** as F13 and F21.
+    - `getProject` uses `findByID({ disableErrors: true })`.
+    - Throw on a missing project, a routing mismatch, an unset `RESEND_API_KEY`, or a URL that fails the allowlist.
+    - Both fetches get `AbortSignal.timeout(10_000)`. The Discord fetch also gets `redirect: 'error'`.
+    - Keep the Sentry capture and rethrow.
+  - **Verify:** standard checks. In S5.6's report output, the kept job's `log` entry shows the thrown message.
+
+- [ ] **Step 15: Admin triage spec (S6)**
+  - **Files:** new `tests/e2e/admin-triage.spec.ts`.
+  - **Do:** S6.1–S6.7, using `aOwner`'s storage state; S6.1's UI login uses a fresh context.
+    - Drag with `page.mouse`: down, several `move` steps adding up to more than 6 px (dnd-kit's activation distance), then up.
+    - S6.5 [F6] → annotate for Step 16. `page.route` answers the PATCH with 500; expect the card back in its original column and an error toast.
+  - **Verify:** standard checks. Only S6.5 is expected to fail: the card stays in the new column and no toast appears.
+
+- [ ] **Step 16: Kanban shows only moves the server accepted (F6)**
+  - **Scenarios:** remove the `test.fail` from S6.5. S6.3 and S6.4 guard.
+  - **Files:** `src/components/admin/issues/kanban.tsx` and `src/components/admin/issues/list.tsx`.
+  - **Do:** as F6.
+    - Compute the next columns from current state outside any updater, call `setColumns(next)`, then send the PATCH.
+    - On failure, restore the snapshot and call `toast.error` (from `@payloadcms/ui`).
+    - Ignore drag start while a move is in flight.
+    - The drag-start and drag-over handlers read state directly, not through updaters.
+    - Load-more failures show the same toast.
+    - Remove the error-swallowing try/catch in `list.tsx`.
+
+    E2E runs `next start`, where strict mode doesn't double-invoke updaters, so check that part by reading the code: every remaining `setColumns((prev) => …)` must be pure, with no fetch, ref write or other setter inside.
+  - **Verify:** standard checks.
+
+- [ ] **Step 17: Remaining DRY helpers (F14)**
+  - **Files:**
+    - Whichever of these still have a local relation-ID helper: `src/collections/IssueReports/hooks/validateReportStatus.ts`, `src/collections/Issues/hooks/revalidateIssueLanding.ts`, `src/collections/PatchNotes/hooks/revalidatePatchNotes.ts`, `src/site-generator/service.ts`, `src/site-generator/context.ts`, `src/hooks/validateUniqueSlugPerProject.ts`, `src/collections/GamePages/index.ts`, `src/access/tenantAccess.ts`, `src/access/tenantRoles.ts`. Find the rest with `grep -rnE "=== 'object' .*\.id" src --include=*.ts --include=*.tsx`.
+    - new `src/fields/sameGameProjectFilter.ts`, used by `src/collections/Issues/index.ts` and `src/collections/IssueReports/index.ts`.
+  - **Do:** replace each helper with `extractID`, guarding nulls first, and use one `sameGameProjectFilter`. No behavior change.
+  - **Verify:** standard checks. `pnpm test:int tests/int/template-revalidation.int.spec.ts tests/int/site-generator.int.spec.ts` passes.
+
+- [ ] **Step 18: Audit and trim `tests/int`**
+  - **Files:**
+    - Delete `tests/int/api.int.spec.ts`, `tally-parse.int.spec.ts`, `site-config-schema.int.spec.ts` and `site-template.int.spec.ts`.
+    - Trim `template-revalidation.int.spec.ts`: keep only "still skips issue writes that only change kanban order".
+    - Trim `site-generator.int.spec.ts`: drop "requires a slot only for slot-scoped generation".
+    - In the plan, add a `### Test audit results` table at the end of this Steps section.
+  - **Do:**
+    1. Fan out one subagent per int file: 7, in parallel, read-only. Each lists every test in its file with:
+       - keep or delete
+       - a one-line reason
+       - the exact title of the E2E test that replaces it, confirmed to exist and to have passed in the last run's list output
+    2. Where a test guards real behavior that no E2E test covers, add the E2E case first (in the matching spec), run it, then delete the test. Keep a test only where E2E can't reach the behavior, and say why.
+    3. Apply the calls and record the table.
+    4. Leave devDependencies alone; list any that became unused, for the Summary.
+  - **Verify:**
+    - tsc and lint.
+    - `pnpm test:int` → 3 files, 8 tests (site-config-parity 2, site-generator 5, template-revalidation 1).
+    - `psql "$DB" -Atc "select count(*) from payload_migrations where name='dev'"` → 0; nothing boots Payload any more.
+    - The full E2E suite, only if a case was added.
+
+- [ ] **Step 19: Audit and remove `tests/manual`**
+  - **Files:**
+    - delete `tests/manual/` (6 scripts and the README)
+    - E2E specs, only if a gap turns up
+    - extend `### Test audit results`
+  - **Do:**
+    1. Fan out one subagent per script: 6, in parallel. Each lists every assertion the script makes, with the E2E test that covers it, or marks it as a gap.
+    2. Add E2E tests for real gaps first, and run them. The legacy block renderer (`verify-phase3`) stays a documented gap.
+    3. Delete the directory.
+    4. `grep -rn "tests/manual\|verify-phase\|verify-isolation" --exclude-dir=node_modules --exclude-dir=plans .` → nothing.
+  - **Verify:** tsc and lint (the `verify-phase5.mjs` warnings are gone). The full E2E suite, if tests were added.
+
+- [ ] **Step 20: Testing rules and deploy docs**
+  - **Files:** `AGENTS.md`, `docs/patterns.md`, `docs/deploy.md`, `.env.example`.
+  - **Do:** as Target design item 9.
+    - **`AGENTS.md`:**
+      - A new `## Testing` section with:
+        - the brief's three rules, verbatim
+        - `pnpm test:e2e` needs `E2E_DATABASE_URL`, whose name must end in `_e2e`; that database is dropped on every run
+        - the artifact is `playwright-report/`, with a trace and screenshots for every test (`pnpm exec playwright show-report`)
+        - seed through REST in the setup project; each spec owns its projects
+        - int tests only for invariants E2E can't reach, naming the three kept files and why
+      - In Commands: update the `pnpm test` line, and add `pnpm test:e2e` and `pnpm test:int`. Leave the local-development paragraph alone.
+    - **`docs/patterns.md`:**
+      - **Hooks:**
+        - IssueReport promotion runs in `beforeChange`.
+        - IssueVote hooks own `upvoteCount` through `$inc`: increment on create, decrement in `beforeDelete`.
+        - Issue `beforeDelete` removes the issue's votes.
+        - Remove the stale "Issue afterChange recalculates upvoteCount" and "IssueVote beforeChange" claims.
+      - **Data access:** public portal reads use `overrideAccess: false`. Privileged reads live only in named helpers (`getContactRoute`, `getHasVoted`). Draft Mode reads authorize the preview user.
+      - **Jobs:** super-admin only. Contact tasks deliver or throw. Recovery: fix the configuration, then untick `hasError`.
+      - **Tenant isolation:** folders are tenant-scoped.
+      - **Public form endpoints:** production refuses forms without Turnstile or Upstash, and Discord destinations are restricted.
+      - **Voting model:** remove the `beforeChange` claim.
+    - **`.env.example` and `docs/deploy.md` step 5:**
+      - Production requires `TURNSTILE_SECRET_KEY` and `NEXT_PUBLIC_TURNSTILE_SITE_KEY`, Upstash, and `RESEND_API_KEY` when a studio routes contact to email.
+      - Remove the "fails open", "skipped" and "succeed without it" wording.
+  - **Verify:**
+    - tsc and lint.
+    - `grep -niE "fails open|succeed without|verification is skipped" .env.example docs AGENTS.md` → nothing.
+    - `grep -n "^## Testing" AGENTS.md` → exactly one line.
+
+- [ ] **Step 21: Final verification, artifact and Summary**
+  - **Do:**
+    1. Commit all code first, so the recorded SHA is the tested code.
+    2. Run the Verification section end to end, save the artifact, and write its README. `pnpm build` goes last.
+    3. Write the Summary:
+       - what changed and why, per finding
+       - every deleted test and its reason, from `### Test audit results`
+       - E2E coverage before (0 of 7 flows) and after (7 of 7, with test counts per spec)
+       - both review verdicts: Fable APPROVE; Astra APPROVE_WITH_CHANGES, with its MUST-FIX items resolved in Revision
+       - the bugs found and fixed: F1–F13, F21 and F22, one line each
+       - the planner decisions
+       - what's left for the owner: Q1–Q3, F23, the coverage gaps, and any devDependencies that became unused
+       - the artifact path and the reproduce command
+    4. Set `status: done`, then commit and push.
+  - **Verify:** everything in Verification passes. The artifact directory holds `playwright-report/index.html`, `run.log` and `README.md`.
+
+### Risks
+
+- **Turnstile needs outbound HTTPS** to challenges.cloudflare.com, from both the browser and the server. Step 1 checks it. If it's blocked, the S5 browser tests fail at "token issued": record that under Questions, and don't add a bypass.
+- **Build time.** Every standard check includes a build of about 110 s, so by Step 16 a full run takes roughly 5–8 minutes. If the build ever outgrows the 420 s webServer timeout, raise the timeout; don't skip the build.
+- **The autoRun cron** (every minute, limit 10) also runs inside the E2E server.
+  - It retries failed contact jobs. S5.4 and S5.6 still hold across retries: nothing reaches the redirect target, and email jobs keep failing.
+  - It could race `runByID` for a job that was just queued. Payload marks a job `processing` before running it, so the job still runs once. If S5.4's "exactly one embed" ever flakes, look here first; don't add retries.
+- **Uploads pile up.** Media from E2E runs accumulates in the gitignored `public/media/`, because `migrate:fresh` doesn't delete files. It's harmless; clear the folder by hand if it grows.
+- **F15** has only Step 4's manual proof. The first production deploy of this branch needs Q1's variables.
+
 ## Verification
+
+E2E is the verification; no unit tests are added. The 7 core flows map to 6 specs:
+
+| Core flow | Spec | Scenarios |
+|---|---|---|
+| Tenant isolation | `tenant-isolation.spec.ts` | S1.1–S1.10 |
+| Public game portal pages | `portal-landing.spec.ts` | S2.1–S2.6 |
+| Patch notes (list, detail, RSS) | `patch-notes.spec.ts` | S3.1–S3.4 |
+| Public issue tracker with voting | `issues-voting.spec.ts` | S4.1–S4.6 |
+| Issue reports | `reports-contact.spec.ts`, `admin-triage.spec.ts` | S5.1–S5.3, S6.7 |
+| Contact form | `reports-contact.spec.ts` | S5.4–S5.6 |
+| Admin triage and kanban | `admin-triage.spec.ts` | S6.1–S6.6 |
+
+**Final run (Step 21).** From `/srv/critter-ai/worktrees/architecture-pass`, one command at a time:
+
+```bash
+cd /srv/critter-ai/worktrees/architecture-pass
+DB=$(grep '^DATABASE_URL=' .env | cut -d= -f2-)
+E2E_DB=$(grep '^E2E_DATABASE_URL=' .env | cut -d= -f2-)
+ART=/srv/critter-ai/agent-state/missions/architecture-pass/e2e
+
+git status --short                                    # empty: the run tests committed code
+grep -rnE "test\.(only|fail|skip|fixme)\(" tests/e2e  # no output
+pnpm exec tsc --noEmit                                # 0 errors
+pnpm lint                                             # 0 errors
+pnpm test:int                                         # 3 files, 8 tests pass
+psql "$DB" -Atc "select count(*) from payload_migrations where name='dev'"      # 0
+
+rm -rf playwright-report test-results
+set -o pipefail
+pnpm test:e2e 2>&1 | tee /tmp/e2e-final.log            # exit 0
+psql "$E2E_DB" -Atc "select count(*) from payload_migrations where name='dev'"  # 0
+
+rm -rf "$ART" && mkdir -p "$ART"
+cp -r playwright-report "$ART/playwright-report"
+cp /tmp/e2e-final.log "$ART/run.log"
+# then write "$ART/README.md" (contents below)
+
+psql "$DB" -c "delete from payload_migrations where name='dev'"
+pnpm payload migrate:status                           # all 8 migrations applied, including the two new ones
+pnpm build                                            # last, so .next doesn't keep the E2E build's baked-in env
+```
+
+**What it must show:**
+- `run.log`:
+  - the `[WebServer]` lines for `migrate:fresh` (all 8 migrations) and `next build`
+  - then the list reporter: `setup` and every test in the six specs passed, with 0 failed, 0 flaky, 0 skipped and 0 expected-to-fail
+- `playwright-report/`:
+  - a trace for every test (`trace: 'on'`)
+  - screenshots for every browser test (`screenshot: 'on'`)
+  - each spec's key checkpoints as `test.step()` entries
+  - it opens on its own, with nothing else needed
+- Neither database has a `dev` row. The mission database keeps its own data; the reset only touched `*_e2e`.
+- `$ART/README.md` records:
+  - the UTC time and the tested commit (`git rev-parse HEAD`)
+  - passed, failed and flaky counts from the list output, and the wall time
+  - the flow → spec table above
+  - the reproduce and view commands below
+  - a note that the E2E database is dropped on every run
+
+**Reproduce and view:**
+```bash
+cd /srv/critter-ai/worktrees/architecture-pass       # or any checkout of agent/architecture-pass after pnpm install
+createdb critwire_e2e                                 # once; any name ending in _e2e, never the dev database
+E2E_DATABASE_URL=postgres://<user>:<password>@127.0.0.1:5432/critwire_e2e pnpm test:e2e
+pnpm exec playwright show-report /srv/critter-ai/agent-state/missions/architecture-pass/e2e/playwright-report
+```
+On this VPS the worktree `.env` already points `E2E_DATABASE_URL` at `critwire_m_architecture_pass_e2e`, so `pnpm test:e2e` on its own reproduces the run.
+
+**Other proofs**, saved during the steps under `/srv/critter-ai/agent-state/missions/architecture-pass/proofs/`: `step1-migrate-fresh.log`, `step4-folders.log`, `step4-f15.log`, `reconcile-upvotes.sql` and `step10-reconcile.log`.
+
+## Failure modes
+
+This covers only the parts proven outside the E2E suite. The list is written before the code; each proof must show that none of these happens.
+
+**`reconcile_issue_upvote_counts`** (Step 10, psql proof):
+1. A stale count survives: issue X keeps 7 instead of 2.
+2. An issue with no votes keeps a non-zero count: Y stays at 3 instead of 0. The correlated `count(*)` must give 0.
+3. A vote carrying another tenant is counted (X becomes 3), meaning the tenant predicate is missing.
+4. `updated_at` changes, which would re-sort "Recently Fixed".
+5. The migration is pending, or sorts before `tenant_scoped_media_folders`, in `migrate:status`.
+6. `down` changes data.
+7. `migrate:create` also generated schema SQL, meaning the snapshot has drifted.
+
+**`tenant_scoped_media_folders`** (Step 4, psql proof):
+1. `tenant_id` is `NOT NULL`, which would fail on production databases that already have folders.
+2. The migration touches tables other than `payload_folders`.
+3. The foreign key is missing, or doesn't point at `tenants`.
+
+**F15 production refusal** (Step 4, manual proof):
+1. Production with `TURNSTILE_SECRET_KEY` unset still processes a contact submission (200 or 400 instead of 500).
+2. Production without Upstash, and without `RATE_LIMIT_OPTIONAL`, still processes a vote (anything but 500).
+3. The refusal escapes the route's catch: no JSON error body, or an unhandled rejection in the server log.
+4. `RATE_LIMIT_OPTIONAL` also relaxes Turnstile. Check that `grep -rn RATE_LIMIT_OPTIONAL src` finds it only in `checkRateLimit`.
+5. Development gets refused too, because the throw isn't gated on `NODE_ENV === 'production'`. Check by reading both functions.
+6. The E2E production build refuses forms even though it's configured. The S4 and S5 specs catch this.
 
 ## Decisions
 
@@ -791,5 +1359,6 @@ Fable's SHOULD-CONSIDER items are left to the planner.
 - 2026-09-25 07:00 UTC: Fable review by `architecture-reviewer`: APPROVE, MUST-FIX none. Verified F1–F13 against code; 3 missed items (SSRF via Discord webhook URL → Q4, CRON_SECRET seed route, pass `req` in F5 slug lookup) and 5 should-consider notes for the planner. Plan-only change.
 - 2026-09-25 07:02 UTC: Astra review: APPROVE_WITH_CHANGES, 5 MUST-FIX (marketing draft-mode authorization, fail-closed rule 8 on missing Turnstile/Upstash creds + form-submissions create, Discord webhook SSRF restriction, failed-not-successful contact job when delivery unconfigured, upvote count reconciliation on cutover) and 3 should-consider. Plan-only change; MUST-FIX go to the Revision stage.
 - 2026-09-25 07:16 UTC: Revision by `architect`: all 5 Astra MUST-FIX accepted (F10 draft-mode super-admin only, F15/F16 fail-closed in production + form-submissions create locked, new F21 Discord webhook allowlist, F13 contact task throws so jobs stay recoverable, F4 reconcile-upvotes data migration); new bug F22 (voted issues can't be deleted) found; Fable MISSED folded in (F21, F23, F5 `req`). Q1 reworded as deploy prerequisite, Q4 resolved. Plan-only change.
+- 2026-09-25 07:34 UTC: Steps by `planner`: 21 steps (harness → fixes with their E2E scenarios, with expected-fail marks until each fix lands → tests/int and tests/manual audit → docs → final verification), plus Verification and Failure modes. Fable SC1–4 taken, SC5 rejected with a reason. F4 decrement moved to `beforeDelete`, which fixes the double-decrement on concurrent withdrawals; checked against `deleteByID.js` (re-read after beforeDelete → NotFound → rollback). Plan-only change.
 
 ## Summary
