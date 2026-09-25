@@ -74,7 +74,7 @@ Out:
 - [x] Baseline: install, migrate, run typecheck, lint, unit and E2E tests; record the results under Baseline
 - [x] Architecture: `architect` writes findings and the target design
 - [x] Fable review: `architecture-reviewer`
-- [ ] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
+- [x] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
 - [ ] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
 - [ ] Steps: `planner` writes Steps and Verification
 
@@ -592,6 +592,21 @@ Verification notes (what I checked): F1 (`payload.config.ts:103-124`, no `jobsCo
 
 ## Architecture review (Astra)
 
+VERDICT: APPROVE_WITH_CHANGES
+
+MUST-FIX:
+1. **F2/F10 leave marketing drafts exposed.** Any authenticated studio user can still enable Draft Mode, and marketing queries use `overrideAccess: draft`. Enforce super-admin authorization for marketing previews and authorize draft reads themselves.
+2. **F15/F16 explicitly retain violations of AGENTS.md rule 8.** Missing production credentials must reject submissions or fail startup. Protect or disable public `form-submissions` creation; removing its schema is unnecessary.
+3. **Q4 preserves an SSRF vulnerability for test convenience.** Restrict Discord delivery destinations, including redirects, at the outbound request boundary. Adapt the test sink without allowing arbitrary production destinations.
+4. **F13 still loses undelivered messages.** Returning `output: { sent: false }` marks the Payload task successful, preventing retries. Missing delivery configuration must produce a failed job with retained input and a recovery path.
+5. **F4 requires an existing-count reconciliation.** The old recount can commit stale values—the finding itself establishes this. Switching to increments preserves that error indefinitely. Reconcile counts against vote rows during a controlled cutover.
+
+SHOULD-CONSIDER:
+
+1. Serialize overlapping kanban mutations or reconcile from the server; restoring an old snapshot can erase a later successful move.
+2. Test concurrent vote removals as well as insertions, and failed report promotion rollback.
+3. Strengthen destructive E2E reset isolation with a dedicated database role and explicit disposable-database validation.
+
 ## Revision notes
 
 ## Steps
@@ -612,5 +627,6 @@ Verification notes (what I checked): F1 (`payload.config.ts:103-124`, no `jobsCo
 - 2026-09-25 06:35 UTC: Baseline recorded. tsc, lint (0 errors), int (45/45) and build pass; old E2E suite fails 2, 2 not run.
 - 2026-09-25 06:53 UTC: Architecture written by `architect`: 14 findings to fix (F1–F14, incl. jobs/marketing access holes, public reads bypassing access, vote-count race), 6 left with reasons; E2E harness on a production build with `migrate:fresh` on a dedicated E2E DB; scenario list and test-audit calls. Q1–Q3 copied to Questions. Plan-only change, no code verification needed.
 - 2026-09-25 07:00 UTC: Fable review by `architecture-reviewer`: APPROVE, MUST-FIX none. Verified F1–F13 against code; 3 missed items (SSRF via Discord webhook URL → Q4, CRON_SECRET seed route, pass `req` in F5 slug lookup) and 5 should-consider notes for the planner. Plan-only change.
+- 2026-09-25 07:02 UTC: Astra review: APPROVE_WITH_CHANGES, 5 MUST-FIX (marketing draft-mode authorization, fail-closed rule 8 on missing Turnstile/Upstash creds + form-submissions create, Discord webhook SSRF restriction, failed-not-successful contact job when delivery unconfigured, upvote count reconciliation on cutover) and 3 should-consider. Plan-only change; MUST-FIX go to the Revision stage.
 
 ## Summary
