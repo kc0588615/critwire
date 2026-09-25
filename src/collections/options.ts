@@ -49,3 +49,23 @@ export const REPORT_FORM_PROVIDER_OPTIONS = [
   { label: 'Tally form', value: 'tally' },
   { label: 'External URL', value: 'external' },
 ] as const
+
+export const RELEASE_STATE_OPTIONS = [
+  { label: 'Coming Soon', value: 'comingSoon' },
+  { label: 'Early Access', value: 'earlyAccess' },
+  { label: 'Released', value: 'released' },
+  { label: 'Free to Play', value: 'freeToPlay' },
+] as const
+
+export const PLATFORM_OPTIONS = [
+  { label: 'Windows', value: 'windows' },
+  { label: 'macOS', value: 'mac' },
+  { label: 'Linux', value: 'linux' },
+  { label: 'Steam Deck', value: 'steamDeck' },
+  { label: 'PlayStation', value: 'playstation' },
+  { label: 'Xbox', value: 'xbox' },
+  { label: 'Nintendo Switch', value: 'switch' },
+  { label: 'iOS', value: 'ios' },
+  { label: 'Android', value: 'android' },
+  { label: 'Web', value: 'web' },
+] as const

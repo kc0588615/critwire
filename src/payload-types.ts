@@ -213,6 +213,51 @@ export interface GameProject {
     support?: string | null;
     docs?: string | null;
     merch?: string | null;
+    playstation?: string | null;
+    xbox?: string | null;
+    nintendo?: string | null;
+    gog?: string | null;
+    youtube?: string | null;
+    pressKit?: string | null;
+    privacy?: string | null;
+    terms?: string | null;
+    /**
+     * YouTube or Vimeo video URL used by the landing page trailer section.
+     */
+    trailer?: string | null;
+  };
+  /**
+   * Release and platform facts shown on the public portal (and used by AI site generation).
+   */
+  availability?: {
+    releaseState?: ('comingSoon' | 'earlyAccess' | 'released' | 'freeToPlay') | null;
+    releaseDate?: string | null;
+    /**
+     * e.g. v1.2.0
+     */
+    currentVersion?: string | null;
+    demoUrl?: string | null;
+    platforms?:
+      | {
+          platform:
+            'windows' | 'mac' | 'linux' | 'steamDeck' | 'playstation' | 'xbox' | 'switch' | 'ios' | 'android' | 'web';
+          storeUrl?: string | null;
+          /**
+           * Optional availability note, e.g. "Demo available".
+           */
+          label?: string | null;
+          id?: string | null;
+        }[]
+      | null;
+  };
+  /**
+   * Optional credits shown on the public portal.
+   */
+  meta?: {
+    developer?: string | null;
+    publisher?: string | null;
+    engine?: string | null;
+    rating?: string | null;
   };
   /**
    * Where public contact form submissions are routed.
@@ -381,6 +426,293 @@ export interface GamePage {
   gameProject: number | GameProject;
   kind: 'landing';
   title: string;
+  /**
+   * Which renderer this page uses. Empty = legacy blocks.
+   */
+  template?: 'flagship-game-v1' | null;
+  schemaVersion?: number | null;
+  /**
+   * Flagship template configuration. Section order is fixed by the template; these fields control content, variants, and theme.
+   */
+  site?: {
+    nav?: {
+      links?:
+        | {
+            ref?:
+              | (
+                  | 'primary-store'
+                  | 'demo'
+                  | 'steam'
+                  | 'epic'
+                  | 'itch'
+                  | 'discord'
+                  | 'updates'
+                  | 'issues'
+                  | 'report'
+                  | 'contact'
+                )
+              | null;
+            /**
+             * Optional label override.
+             */
+            label?: string | null;
+            id?: string | null;
+          }[]
+        | null;
+      cta?: {
+        ref?:
+          | (
+              | 'primary-store'
+              | 'demo'
+              | 'steam'
+              | 'epic'
+              | 'itch'
+              | 'discord'
+              | 'updates'
+              | 'issues'
+              | 'report'
+              | 'contact'
+            )
+          | null;
+        /**
+         * Optional label override.
+         */
+        label?: string | null;
+      };
+    };
+    theme?: {
+      /**
+       * Semantic tokens. WCAG contrast is enforced on publish.
+       */
+      colors?: {
+        background?: string | null;
+        foreground?: string | null;
+        mutedForeground?: string | null;
+        surface?: string | null;
+        accent?: string | null;
+        accentForeground?: string | null;
+        border?: string | null;
+        success?: string | null;
+        warning?: string | null;
+        error?: string | null;
+      };
+      typography?: ('modern' | 'editorial' | 'technical') | null;
+      shape?: ('sharp' | 'balanced' | 'soft') | null;
+      density?: ('compact' | 'cinematic') | null;
+      motion?: ('off' | 'subtle') | null;
+    };
+    hero?: {
+      variant?: ('centeredCinematic' | 'leftEditorial' | 'split' | 'trailerBackground') | null;
+      eyebrow?: string | null;
+      /**
+       * Falls back to the project name.
+       */
+      heading?: string | null;
+      /**
+       * Falls back to the project description.
+       */
+      tagline?: string | null;
+      showLogo?: boolean | null;
+      backgroundMedia?: (number | null) | Media;
+      primaryAction?: {
+        ref?:
+          | (
+              | 'primary-store'
+              | 'demo'
+              | 'steam'
+              | 'epic'
+              | 'itch'
+              | 'discord'
+              | 'updates'
+              | 'issues'
+              | 'report'
+              | 'contact'
+            )
+          | null;
+        /**
+         * Optional label override.
+         */
+        label?: string | null;
+      };
+      secondaryAction?: {
+        ref?:
+          | (
+              | 'primary-store'
+              | 'demo'
+              | 'steam'
+              | 'epic'
+              | 'itch'
+              | 'discord'
+              | 'updates'
+              | 'issues'
+              | 'report'
+              | 'contact'
+            )
+          | null;
+        /**
+         * Optional label override.
+         */
+        label?: string | null;
+      };
+    };
+    /**
+     * Platform facts come from the game project — this controls presentation.
+     */
+    availability?: {
+      enabled?: boolean | null;
+      heading?: string | null;
+      note?: string | null;
+    };
+    features?: {
+      variant?: ('editorialThree' | 'cardGrid' | 'alternating' | 'featurePlusTwo') | null;
+      heading?: string | null;
+      intro?: string | null;
+      items?:
+        | {
+            title?: string | null;
+            body?: string | null;
+            media?: (number | null) | Media;
+            id?: string | null;
+          }[]
+        | null;
+    };
+    /**
+     * The video URL is the project links.trailer fact.
+     */
+    trailer?: {
+      enabled?: boolean | null;
+      heading?: string | null;
+      poster?: (number | null) | Media;
+    };
+    gallery?: {
+      variant?: ('editorialMosaic' | 'horizontalStrip' | 'carousel' | 'twoColumn') | null;
+      heading?: string | null;
+      items?:
+        | {
+            media?: (number | null) | Media;
+            alt?: string | null;
+            caption?: string | null;
+            id?: string | null;
+          }[]
+        | null;
+    };
+    adaptive?: {
+      kind?: ('story' | 'world' | 'characters' | 'modes' | 'roadmap' | 'systems' | 'philosophy') | null;
+      heading?: string | null;
+      body?: string | null;
+      media?: (number | null) | Media;
+      items?:
+        | {
+            title?: string | null;
+            body?: string | null;
+            id?: string | null;
+          }[]
+        | null;
+    };
+    latestUpdate?: {
+      enabled?: boolean | null;
+      heading?: string | null;
+    };
+    knownIssues?: {
+      enabled?: boolean | null;
+      variant?: ('compact' | 'pinned' | 'recentlyFixed') | null;
+      heading?: string | null;
+    };
+    community?: {
+      enabled?: boolean | null;
+      variant?: ('artworkBanner' | 'split') | null;
+      heading?: string | null;
+      body?: string | null;
+      background?: (number | null) | Media;
+      actions?:
+        | {
+            ref?:
+              | (
+                  | 'primary-store'
+                  | 'demo'
+                  | 'steam'
+                  | 'epic'
+                  | 'itch'
+                  | 'discord'
+                  | 'updates'
+                  | 'issues'
+                  | 'report'
+                  | 'contact'
+                )
+              | null;
+            /**
+             * Optional label override.
+             */
+            label?: string | null;
+            id?: string | null;
+          }[]
+        | null;
+    };
+    finalCta?: {
+      enabled?: boolean | null;
+      heading?: string | null;
+      subheading?: string | null;
+      background?: (number | null) | Media;
+      primaryAction?: {
+        ref?:
+          | (
+              | 'primary-store'
+              | 'demo'
+              | 'steam'
+              | 'epic'
+              | 'itch'
+              | 'discord'
+              | 'updates'
+              | 'issues'
+              | 'report'
+              | 'contact'
+            )
+          | null;
+        /**
+         * Optional label override.
+         */
+        label?: string | null;
+      };
+      secondaryAction?: {
+        ref?:
+          | (
+              | 'primary-store'
+              | 'demo'
+              | 'steam'
+              | 'epic'
+              | 'itch'
+              | 'discord'
+              | 'updates'
+              | 'issues'
+              | 'report'
+              | 'contact'
+            )
+          | null;
+        /**
+         * Optional label override.
+         */
+        label?: string | null;
+      };
+    };
+    footer?: {
+      tagline?: string | null;
+      showLegalLinks?: boolean | null;
+    };
+  };
+  /**
+   * AI generation provenance — set by the site generator.
+   */
+  generation?: {
+    model?: string | null;
+    prompt?: string | null;
+    generatedAt?: string | null;
+    changeSummary?:
+      | {
+          item?: string | null;
+          id?: string | null;
+        }[]
+      | null;
+  };
   content?: (GameHeroBlock | GameFeaturesBlock | MediaGalleryBlock | GameCTABlock | TrailerEmbedBlock)[] | null;
   updatedAt: string;
   createdAt: string;
@@ -1482,6 +1814,39 @@ export interface GameProjectsSelect<T extends boolean = true> {
         support?: T;
         docs?: T;
         merch?: T;
+        playstation?: T;
+        xbox?: T;
+        nintendo?: T;
+        gog?: T;
+        youtube?: T;
+        pressKit?: T;
+        privacy?: T;
+        terms?: T;
+        trailer?: T;
+      };
+  availability?:
+    | T
+    | {
+        releaseState?: T;
+        releaseDate?: T;
+        currentVersion?: T;
+        demoUrl?: T;
+        platforms?:
+          | T
+          | {
+              platform?: T;
+              storeUrl?: T;
+              label?: T;
+              id?: T;
+            };
+      };
+  meta?:
+    | T
+    | {
+        developer?: T;
+        publisher?: T;
+        engine?: T;
+        rating?: T;
       };
   contact?:
     | T
@@ -1515,6 +1880,199 @@ export interface GamePagesSelect<T extends boolean = true> {
   gameProject?: T;
   kind?: T;
   title?: T;
+  template?: T;
+  schemaVersion?: T;
+  site?:
+    | T
+    | {
+        nav?:
+          | T
+          | {
+              links?:
+                | T
+                | {
+                    ref?: T;
+                    label?: T;
+                    id?: T;
+                  };
+              cta?:
+                | T
+                | {
+                    ref?: T;
+                    label?: T;
+                  };
+            };
+        theme?:
+          | T
+          | {
+              colors?:
+                | T
+                | {
+                    background?: T;
+                    foreground?: T;
+                    mutedForeground?: T;
+                    surface?: T;
+                    accent?: T;
+                    accentForeground?: T;
+                    border?: T;
+                    success?: T;
+                    warning?: T;
+                    error?: T;
+                  };
+              typography?: T;
+              shape?: T;
+              density?: T;
+              motion?: T;
+            };
+        hero?:
+          | T
+          | {
+              variant?: T;
+              eyebrow?: T;
+              heading?: T;
+              tagline?: T;
+              showLogo?: T;
+              backgroundMedia?: T;
+              primaryAction?:
+                | T
+                | {
+                    ref?: T;
+                    label?: T;
+                  };
+              secondaryAction?:
+                | T
+                | {
+                    ref?: T;
+                    label?: T;
+                  };
+            };
+        availability?:
+          | T
+          | {
+              enabled?: T;
+              heading?: T;
+              note?: T;
+            };
+        features?:
+          | T
+          | {
+              variant?: T;
+              heading?: T;
+              intro?: T;
+              items?:
+                | T
+                | {
+                    title?: T;
+                    body?: T;
+                    media?: T;
+                    id?: T;
+                  };
+            };
+        trailer?:
+          | T
+          | {
+              enabled?: T;
+              heading?: T;
+              poster?: T;
+            };
+        gallery?:
+          | T
+          | {
+              variant?: T;
+              heading?: T;
+              items?:
+                | T
+                | {
+                    media?: T;
+                    alt?: T;
+                    caption?: T;
+                    id?: T;
+                  };
+            };
+        adaptive?:
+          | T
+          | {
+              kind?: T;
+              heading?: T;
+              body?: T;
+              media?: T;
+              items?:
+                | T
+                | {
+                    title?: T;
+                    body?: T;
+                    id?: T;
+                  };
+            };
+        latestUpdate?:
+          | T
+          | {
+              enabled?: T;
+              heading?: T;
+            };
+        knownIssues?:
+          | T
+          | {
+              enabled?: T;
+              variant?: T;
+              heading?: T;
+            };
+        community?:
+          | T
+          | {
+              enabled?: T;
+              variant?: T;
+              heading?: T;
+              body?: T;
+              background?: T;
+              actions?:
+                | T
+                | {
+                    ref?: T;
+                    label?: T;
+                    id?: T;
+                  };
+            };
+        finalCta?:
+          | T
+          | {
+              enabled?: T;
+              heading?: T;
+              subheading?: T;
+              background?: T;
+              primaryAction?:
+                | T
+                | {
+                    ref?: T;
+                    label?: T;
+                  };
+              secondaryAction?:
+                | T
+                | {
+                    ref?: T;
+                    label?: T;
+                  };
+            };
+        footer?:
+          | T
+          | {
+              tagline?: T;
+              showLegalLinks?: T;
+            };
+      };
+  generation?:
+    | T
+    | {
+        model?: T;
+        prompt?: T;
+        generatedAt?: T;
+        changeSummary?:
+          | T
+          | {
+              item?: T;
+              id?: T;
+            };
+      };
   content?:
     | T
     | {

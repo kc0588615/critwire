@@ -1,4 +1,9 @@
 services:
+  postgres:
+    # Dev-only: expose Postgres to the host for `pnpm dev`, payload
+    # migrate/generate commands, and integration tests.
+    ports:
+      - "5432:5432"
   app:
     ports:
       - "3000:3000"

@@ -150,8 +150,15 @@ write. Timed ISR exists only as a fallback safety net.
     /contact            contact form endpoint
     /vote               voting endpoint
 /collections            one file per collection config
-/blocks                 Lexical landing-page blocks (hero, features,
-                        media-gallery, cta, trailer)
+/site-templates         code-owned site templates (flagship-game-v1:
+                        canonical Zod schemas, slot registry, renderer,
+                        action registry, derived defaults)
+/site-generator         redacted context builder, SiteGenerator boundary,
+                        OpenAI structured-output adapter, scope policy,
+                        and atomic draft-only orchestration
+/blocks                 legacy Lexical landing-page blocks (hero,
+                        features, media-gallery, cta, trailer) — hidden
+                        since the flagship template shipped
 /components             shared UI (shadcn/ui)
 /lib
   /validation           shared Zod schemas

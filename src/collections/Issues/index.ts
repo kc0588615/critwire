@@ -5,6 +5,10 @@ import { slugField } from 'payload'
 import { tenantMemberAccess, tenantOwnerAccess } from '../../access/tenantAccess'
 import { validateUniqueSlugPerProject } from '../../hooks/validateUniqueSlugPerProject'
 import { ISSUE_CATEGORY_OPTIONS, ISSUE_STATUS_OPTIONS } from '../options'
+import {
+  revalidateIssueLanding,
+  revalidateIssueLandingDelete,
+} from './hooks/revalidateIssueLanding'
 
 export const Issues: CollectionConfig = {
   slug: 'issues',
@@ -137,6 +141,8 @@ export const Issues: CollectionConfig = {
     },
   ],
   hooks: {
+    afterChange: [revalidateIssueLanding],
+    afterDelete: [revalidateIssueLandingDelete],
     beforeValidate: [validateUniqueSlugPerProject('issues')],
   },
   indexes: [

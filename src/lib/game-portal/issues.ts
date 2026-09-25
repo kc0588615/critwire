@@ -69,6 +69,51 @@ export const queryBoardIssues = cache(async (projectID: number | string): Promis
   return result.docs
 })
 
+export const LANDING_ISSUE_LIMIT = 4
+
+export type LandingIssuesVariant = 'compact' | 'pinned' | 'recentlyFixed'
+
+/**
+ * Issues shown in the flagship landing page's known-issues slot.
+ * Sorting is always explicit (pinned/votes/dates) — never the admin
+ * kanban `_order` field, so board reordering cannot churn the public
+ * landing page (cross-plan contract with the kanban remediation).
+ */
+export const queryLandingIssues = cache(
+  async ({
+    projectID,
+    variant,
+  }: {
+    projectID: number | string
+    variant: LandingIssuesVariant
+  }): Promise<Issue[]> => {
+    const payload = await getPayload({ config })
+
+    const and: Where[] = [{ gameProject: { equals: projectID } }, { isPublic: { equals: true } }]
+    let sort: Sort = ['-isPinned', '-upvoteCount', '-createdAt']
+
+    if (variant === 'recentlyFixed') {
+      and.push({ status: { equals: 'FIXED' } })
+      sort = '-updatedAt'
+    } else if (variant === 'pinned') {
+      and.push({ isPinned: { equals: true } }, { status: { not_equals: 'CLOSED' } })
+      sort = ['-upvoteCount', '-createdAt']
+    } else {
+      and.push({ status: { not_in: ['FIXED', 'CLOSED'] } })
+    }
+
+    const result = await payload.find({
+      collection: 'issues',
+      depth: 0,
+      limit: LANDING_ISSUE_LIMIT,
+      pagination: false,
+      sort,
+      where: { and },
+    })
+    return result.docs
+  },
+)
+
 export const getPublicIssue = cache(
   async ({
     projectID,

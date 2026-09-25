@@ -3,6 +3,7 @@ import * as migration_20260707_132058_phase2_collections from './20260707_132058
 import * as migration_20260707_142015_phase3_game_pages from './20260707_142015_phase3_game_pages';
 import * as migration_20260707_225012_phase6_contact_jobs from './20260707_225012_phase6_contact_jobs';
 import * as migration_20260712_065641_issues_orderable_and_tally_forms from './20260712_065641_issues_orderable_and_tally_forms';
+import * as migration_20260712_082516_flagship_site_config from './20260712_082516_flagship_site_config';
 
 export const migrations = [
   {
@@ -28,6 +29,11 @@ export const migrations = [
   {
     up: migration_20260712_065641_issues_orderable_and_tally_forms.up,
     down: migration_20260712_065641_issues_orderable_and_tally_forms.down,
-    name: '20260712_065641_issues_orderable_and_tally_forms'
+    name: '20260712_065641_issues_orderable_and_tally_forms',
+  },
+  {
+    up: migration_20260712_082516_flagship_site_config.up,
+    down: migration_20260712_082516_flagship_site_config.down,
+    name: '20260712_082516_flagship_site_config'
   },
 ];

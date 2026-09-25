@@ -10,8 +10,11 @@ import {
 } from '../../access/tenantAccess'
 import { validateOptionalTallyUrl } from '../../lib/tally/parseTallyForm'
 import { validateOptionalHttpUrl } from '../../lib/validation/url'
+import { validateOptionalVideoUrl } from '../../lib/validation/video'
 import {
   CONTACT_FORM_TARGET_OPTIONS,
+  PLATFORM_OPTIONS,
+  RELEASE_STATE_OPTIONS,
   REPORT_FORM_PROVIDER_OPTIONS,
   TALLY_DISPLAY_OPTIONS,
 } from '../options'
@@ -79,6 +82,8 @@ export const GameProjects: CollectionConfig = {
       },
     },
     {
+      // Approved fact URLs. The flagship template's action registry and
+      // AI generation may SELECT these by ref, never rewrite them.
       name: 'links',
       type: 'group',
       admin: {
@@ -93,6 +98,97 @@ export const GameProjects: CollectionConfig = {
         externalLinkField('support', 'Support'),
         externalLinkField('docs', 'Documentation'),
         externalLinkField('merch', 'Merch Store'),
+        externalLinkField('playstation', 'PlayStation Store'),
+        externalLinkField('xbox', 'Xbox Store'),
+        externalLinkField('nintendo', 'Nintendo eShop'),
+        externalLinkField('gog', 'GOG'),
+        externalLinkField('youtube', 'YouTube Channel'),
+        externalLinkField('pressKit', 'Press Kit'),
+        externalLinkField('privacy', 'Privacy Policy'),
+        externalLinkField('terms', 'Terms of Service'),
+        {
+          name: 'trailer',
+          type: 'text',
+          label: 'Trailer Video',
+          admin: {
+            description: 'YouTube or Vimeo video URL used by the landing page trailer section.',
+          },
+          validate: validateOptionalVideoUrl,
+        },
+      ],
+    },
+    {
+      name: 'availability',
+      type: 'group',
+      admin: {
+        description:
+          'Release and platform facts shown on the public portal (and used by AI site generation).',
+      },
+      fields: [
+        {
+          name: 'releaseState',
+          type: 'select',
+          defaultValue: 'comingSoon',
+          options: [...RELEASE_STATE_OPTIONS],
+        },
+        {
+          name: 'releaseDate',
+          type: 'date',
+        },
+        {
+          name: 'currentVersion',
+          type: 'text',
+          admin: {
+            description: 'e.g. v1.2.0',
+          },
+          maxLength: 40,
+        },
+        {
+          name: 'demoUrl',
+          type: 'text',
+          validate: validateOptionalHttpUrl,
+        },
+        {
+          // Array order is the priority order: the first platform with
+          // a store URL is the "primary store" action target.
+          name: 'platforms',
+          type: 'array',
+          fields: [
+            {
+              name: 'platform',
+              type: 'select',
+              options: [...PLATFORM_OPTIONS],
+              required: true,
+            },
+            {
+              name: 'storeUrl',
+              type: 'text',
+              validate: validateOptionalHttpUrl,
+            },
+            {
+              name: 'label',
+              type: 'text',
+              admin: {
+                description: 'Optional availability note, e.g. "Demo available".',
+              },
+              maxLength: 40,
+            },
+          ],
+          maxRows: 12,
+        },
+      ],
+    },
+    {
+      name: 'meta',
+      type: 'group',
+      admin: {
+        description: 'Optional credits shown on the public portal.',
+      },
+      fields: [
+        { name: 'developer', type: 'text', maxLength: 80 },
+        { name: 'publisher', type: 'text', maxLength: 80 },
+        { name: 'engine', type: 'text', maxLength: 80 },
+        { name: 'rating', type: 'text', maxLength: 80 },
       ],
     },
     {

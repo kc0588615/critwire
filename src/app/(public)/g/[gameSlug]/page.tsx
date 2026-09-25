@@ -1,170 +1,82 @@
 import type { Metadata } from 'next'
 
+import * as Sentry from '@sentry/nextjs'
 import config from '@payload-config'
-import Image from 'next/image'
+import { draftMode, headers } from 'next/headers'
 import { notFound } from 'next/navigation'
 import { getPayload } from 'payload'
 import React from 'react'
 
-import type { GameProject } from '@/payload-types'
+import type { GamePage, GameProject, Media, User } from '@/payload-types'
 
 import { RenderGameBlocks } from '@/blocks/game/RenderGameBlocks'
-import { Media } from '@/components/Media'
-import { GameButtons } from '@/components/game/GameButtons'
+import { LivePreviewListener } from '@/components/LivePreviewListener'
+import { PortalChrome } from '@/components/game/PortalChrome'
 import { getGameProject } from '@/lib/game-portal/getGameProject'
+import { FlagshipSite } from '@/site-templates/flagship-game-v1/FlagshipSite'
+import { deriveFlagshipDefault } from '@/site-templates/flagship-game-v1/defaults'
+import { normalizeSiteInput } from '@/site-templates/flagship-game-v1/normalize'
+import { siteConfigV1Schema } from '@/site-templates/flagship-game-v1/schema/config'
 import { getServerSideURL } from '@/utilities/getURL'
 
-// ISR safety net — on-demand revalidation from the GamePages and
-// GameProjects hooks is the primary invalidation path.
+// ISR safety net — on-demand revalidation from the GamePages,
+// GameProjects, PatchNotes, and Issues hooks is the primary
+// invalidation path.
 export const revalidate = 3600
 
-const getPublishedLandingPage = async (projectID: number | string) => {
+const getLandingPage = async (
+  projectID: number | string,
+  draft: boolean,
+  user?: User | null,
+): Promise<GamePage | null> => {
   const payload = await getPayload({ config })
   const result = await payload.find({
     collection: 'game-pages',
     depth: 1,
-    draft: false,
+    draft,
     limit: 1,
+    ...(draft ? { overrideAccess: false, user } : {}),
     pagination: false,
     where: {
       and: [
         { gameProject: { equals: projectID } },
         { kind: { equals: 'landing' } },
-        { _status: { equals: 'published' } },
+        // Draft Mode (authorized via the signed /next/site-preview
+        // route) may read the latest draft version; the public path
+        // only ever sees published documents.
+        ...(draft ? [] : [{ _status: { equals: 'published' as const } }]),
       ],
     },
   })
   return result.docs[0] ?? null
 }
 
+const getPreviewUser = async (): Promise<null | User> => {
+  const payload = await getPayload({ config })
+  try {
+    const result = await payload.auth({ headers: await headers() })
+    return result.user
+  } catch {
+    return null
+  }
+}
+
+/** Media the project itself carries — saves a lookup for banner/logo refs. */
+const seedProjectMedia = (project: GameProject): Map<number, Media> => {
+  const map = new Map<number, Media>()
+  for (const value of [project.banner, project.logo]) {
+    if (value && typeof value === 'object') map.set(value.id, value)
+  }
+  return map
+}
+
 /**
- * Rendered when the studio has not published a landing page yet: a
- * clean default built from the project's own data, so the portal is
- * presentable the moment the project exists.
+ * Landing page decision tree:
+ * 1. Page published with the flagship template → flagship renderer.
+ * 2. Page published with legacy blocks (no template) → legacy renderer
+ *    inside the classic portal chrome, exactly as before.
+ * 3. No usable page → flagship default derived from project facts.
  */
-const DefaultLanding: React.FC<{ project: GameProject }> = ({ project }) => (
-  <>
-    <section className="relative isolate overflow-hidden">
-      <div className="absolute inset-0 -z-10">
-        {project.banner && typeof project.banner === 'object' ? (
-          <Media fill imgClassName="object-cover" priority resource={project.banner} />
-        ) : (
-          <Image
-            alt=""
-            className="object-cover"
-            fill
-            priority
-            sizes="100vw"
-            src="/critter-connect/field-binder-hero.png"
-          />
-        )}
-        <div className="absolute inset-0 bg-[linear-gradient(90deg,#0a0e1a_0%,rgba(10,14,26,0.92)_30%,rgba(10,14,26,0.45)_65%,rgba(10,14,26,0.8)_100%)]" />
-        <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-[#0a0e1a] to-transparent" />
-      </div>
-
-      <div className="cc-shell flex min-h-[calc(100vh-73px)] items-center py-20">
-        <div className="max-w-2xl">
-          {project.logo && typeof project.logo === 'object' && (
-            <Media imgClassName="mb-7 max-h-20 w-auto" priority resource={project.logo} />
-          )}
-          <h1 className="text-5xl font-black leading-[0.95] tracking-tight text-slate-100 sm:text-7xl">
-            {project.name}
-          </h1>
-          <p className="mt-6 max-w-xl text-lg leading-8 text-slate-300 sm:text-xl">
-            {project.description ||
-              'Build a field binder of hard-won discoveries. Follow real places, unlock clue trails, and turn player reports into better expeditions.'}
-          </p>
-          <div className="mt-9 flex flex-wrap gap-3">
-            {project.links?.steam ? (
-              <GameButtons buttons={[{ label: 'Begin Expedition', url: project.links.steam }]} />
-            ) : null}
-            <a className="cc-button-primary" href={`/g/${project.slug}/report`}>
-              Send Field Report
-            </a>
-            <a className="cc-button-secondary" href={`/g/${project.slug}/issues`}>
-              Check Field Board
-            </a>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section className="cc-section">
-      <div className="cc-shell grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
-        <div className="cc-panel-elevated rounded-lg p-6 sm:p-8">
-          <p className="cc-kicker">Discovery Loop</p>
-          <h2 className="mt-4 max-w-2xl text-3xl font-black tracking-tight sm:text-5xl">
-            Every clue earns its place in the binder.
-          </h2>
-          <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-300">
-            Classification, habitat, geography, morphology, behavior, life cycle, key facts, and
-            conservation all stay visible as evidence trails. The site gives players the same
-            field-device feel outside the game.
-          </p>
-          <div className="mt-8 grid gap-3 sm:grid-cols-2">
-            {[
-              ['Classification', 'var(--ds-gem-observe)'],
-              ['Habitat', 'var(--ds-gem-camouflage)'],
-              ['Geographic', 'var(--ds-gem-scan)'],
-              ['Conservation', 'var(--ds-gem-burst)'],
-            ].map(([label, color]) => (
-              <div className="glass-strip rounded-lg p-4" key={label}>
-                <span className="mb-3 block h-2 w-12 rounded-full" style={{ background: color }} />
-                <span className="font-mono text-sm text-slate-200">{label}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-        <div className="cc-panel rounded-lg p-3">
-          <Image
-            alt="A glowing Critter Connect discovery card with clue slots and a species portrait"
-            className="h-full min-h-80 w-full rounded-md object-cover"
-            height={1086}
-            sizes="(min-width: 1024px) 40vw, 100vw"
-            src="/critter-connect/discovery-card.png"
-            width={1448}
-          />
-        </div>
-      </div>
-    </section>
-
-    <section className="pb-24">
-      <div className="cc-shell grid gap-4 md:grid-cols-3">
-        {[
-          {
-            href: `/g/${project.slug}/patch-notes`,
-            title: 'Field Notes',
-            text: 'Publish updates in the same voice players see in the HUD.',
-          },
-          {
-            href: `/g/${project.slug}/issues`,
-            title: 'Field Board',
-            text: 'Show known tracks, priorities, status, and player votes in one place.',
-          },
-          {
-            href: `/g/${project.slug}/contact`,
-            title: 'Contact Route',
-            text: 'Route player messages through email, Discord, or an external trailhead.',
-          },
-        ].map((item) => (
-          <a
-            className="cc-panel group rounded-lg p-6 transition-transform hover:-translate-y-1 hover:border-cyan-300/40"
-            href={item.href}
-            key={item.href}
-          >
-            <h3 className="text-xl font-bold text-slate-100">{item.title}</h3>
-            <p className="mt-3 leading-7 text-slate-400">{item.text}</p>
-            <span className="mt-6 inline-flex font-mono text-sm text-cyan-200">
-              Open route
-              <span className="ml-2 transition-transform group-hover:translate-x-1">→</span>
-            </span>
-          </a>
-        ))}
-      </div>
-    </section>
-  </>
-)
-
 export default async function GameLandingPage({
   params,
 }: {
@@ -174,13 +86,70 @@ export default async function GameLandingPage({
   const project = await getGameProject(gameSlug)
   if (!project) notFound()
 
-  const page = await getPublishedLandingPage(project.id)
+  const { isEnabled: draftModeEnabled } = await draftMode()
+  const previewUser = draftModeEnabled ? await getPreviewUser() : null
+  // Draft Mode is a site-wide cookie. Every draft read must therefore
+  // re-authorize the current user against the requested project's page;
+  // otherwise a preview opened for one tenant could expose another
+  // tenant's unpublished page by navigating to its public slug.
+  const draftPage = previewUser ? await getLandingPage(project.id, true, previewUser) : null
+  const draft = draftPage !== null
+  const page = draftPage ?? (await getLandingPage(project.id, false))
+  const listener = draft ? <LivePreviewListener /> : null
 
-  if (!page?.content?.length) {
-    return <DefaultLanding project={project} />
+  if (page?.template === 'flagship-game-v1') {
+    const { input, media } = normalizeSiteInput({
+      schemaVersion: page.schemaVersion,
+      site: page.site,
+      template: page.template,
+    })
+    const parsed = siteConfigV1Schema.safeParse(input)
+    let siteConfig = parsed.success ? parsed.data : null
+
+    if (!siteConfig) {
+      // Published configs are Zod-validated on save, so this indicates
+      // drift (e.g. a schema change without migration) — or an
+      // intentionally incomplete draft in preview. Fall back to the
+      // derived default rather than erroring the public page.
+      if (!draft) {
+        Sentry.captureException(
+          new Error(`Stored flagship config for game-page ${page.id} failed validation`),
+          { extra: { issues: parsed.success ? [] : parsed.error.issues.slice(0, 10) } },
+        )
+      }
+      siteConfig = deriveFlagshipDefault(project)
+    }
+
+    const mediaSeed = seedProjectMedia(project)
+    for (const [id, doc] of media) mediaSeed.set(id, doc)
+
+    return (
+      <>
+        {listener}
+        <FlagshipSite config={siteConfig} mediaSeed={mediaSeed} project={project} />
+      </>
+    )
   }
 
-  return <RenderGameBlocks blocks={page.content} project={project} />
+  if (page?.content?.length) {
+    return (
+      <PortalChrome project={project}>
+        {listener}
+        <RenderGameBlocks blocks={page.content} project={project} />
+      </PortalChrome>
+    )
+  }
+
+  return (
+    <>
+      {listener}
+      <FlagshipSite
+        config={deriveFlagshipDefault(project)}
+        mediaSeed={seedProjectMedia(project)}
+        project={project}
+      />
+    </>
+  )
 }
 
 export async function generateMetadata({

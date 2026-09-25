@@ -18,6 +18,15 @@ The renderer owns section order, accessibility, responsive behavior, dynamic bin
 
 Puck is not installed in v1. Keep stable registry IDs and adapter-friendly props so an advanced Puck editor can be added later; Critwire's schema remains canonical.
 
+## Cross-plan contracts (binding, for Tally/kanban remediation compatibility)
+
+The in-flight Tally + Issues kanban work is committed as-is in `d378dbd` and will be remediated after this plan ships (see `plans/2026-07-12-tally-and-issues-kanban-remediation.md`). This plan builds on that snapshot — including migration `20260712_065641_issues_orderable_and_tally_forms` — and must hold four contracts so the remediation stays independent:
+
+1. **Action refs resolve to internal routes only.** `contact`, `report`, `issues`, and `updates` always resolve to `/g/[gameSlug]/…` routes in the action registry. The resolver never reads `contact.target` or `reportForm.provider`; provider semantics (native/Tally/external) live inside the route pages and belong to the remediation plan.
+2. **Dynamic slots never depend on `issues._order`.** `knownIssues` and `latestUpdate` query live published data via the Local API with explicit sorts (pinned/status/`updatedAt`). The Issues revalidation hook must skip writes where only `_order` changed, so admin kanban drags do not churn ISR on published game pages.
+3. **GameProject additions stay out of `contact` and `reportForm`.** New availability facts (`releaseState`, `platforms[]`, release/version/demo fields) get their own groups; new approved links extend the existing `links` group (which already has `steam`, `epic`, `itch`, `discord`) rather than creating a parallel structure.
+4. **Generation context excludes routing/provider config.** Redact `contact.*` and `reportForm.*` wholesale — the AI selects action refs and never needs provider configuration or Tally URLs.
+
 ## Data Model and Public Interfaces
 
 ### GameProject availability data
@@ -142,7 +151,9 @@ type GenerateSiteResult = {
 }
 ```
 
-Generation context includes public GameProject facts, registered actions, the current saved draft, media metadata and selected images, published patch-note metadata, public issue aggregates, and the template schemas. Never send contact addresses, Discord webhooks, player reports, submitter details, tenant membership, secrets, or unpublished operational content.
+Generation context includes public GameProject facts, registered actions, the current saved draft, media metadata and selected images, published patch-note metadata, public issue aggregates, and the template schemas. Never send contact addresses, Discord webhooks, Tally URLs, or anything else under `contact.*` / `reportForm.*`, nor player reports, submitter details, tenant membership, secrets, or unpublished operational content.
+
+Rate-limit the generation endpoint per tenant with Upstash. It is authenticated and admin-only, but it is a metered-cost endpoint and gets the same protection posture as public form endpoints.
 
 Refusal, timeout, invalid structured output, unknown references, and contrast failures must not modify the draft. Successful output is validated again, saved with `draft: true`, and recorded as a Payload version. AI never publishes automatically.
 
@@ -168,6 +179,7 @@ Verification includes:
 
 - Zod tests for variants, limits, enums, action/media references, contrast, unknown keys, and rejection of raw CSS/classes
 - Template-order invariant tests
+- Flagship default rendering for a project with no legacy content and no saved configuration — this is the first-run path every new tenant hits before any AI generation, and it must be tested as a first-class path
 - Renderer and dynamic-binding tests
 - Trailer test proving no third-party iframe loads before interaction
 - Tenant isolation, draft/version, refusal, and no-auto-publish integration tests
@@ -182,4 +194,4 @@ Verification includes:
 - Template work is prioritized before Tally/kanban remediation.
 - Only `flagship-game-v1` ships now; the registry remains versioned for future recipes.
 - Payload remains the primary authoring UI, but there is no block-ordering GUI.
-- Existing uncommitted work is preserved and unrelated work remains isolated where possible.
+- The previously uncommitted Tally/kanban and portal work is committed as `d378dbd`; this plan builds on that snapshot and its migration chain (`20260712_065641` and earlier). Migration `20260712_065641` is not edited by this plan.

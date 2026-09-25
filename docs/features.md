@@ -38,14 +38,47 @@ Roles: `admin` (global), `owner`, `member`.
 ### GameProject
 Primary game entity. Fields: name, slug (unique), description; logoUrl,
 bannerUrl, accentColor; customDomain, customDomainVerified; external
-links (steam, epic, itch, discord, support, docs, merch, …); contact
-form config (target type, email, discord webhook, external URL);
-timestamps.
+links (steam, epic, itch, discord, support, docs, merch, playstation,
+xbox, nintendo, gog, youtube, pressKit, privacy, terms, trailer);
+availability facts (releaseState, releaseDate, currentVersion, demoUrl,
+platforms[] with platform/storeUrl/label); meta credits (developer,
+publisher, engine, rating); contact form config (target type, email,
+discord webhook, external URL, Tally); timestamps.
 
-### Page
-Structured landing page content. Fields: gameProject (rel), kind
-(e.g. "landing"), title, content (Lexical with custom blocks: hero,
-features, media gallery, CTA, trailer embed), isPublished, timestamps.
+Links and availability are **approved fact URLs**: the flagship
+template and AI generation select them by ref; they never rewrite them.
+
+### GamePage (flagship template)
+One landing page per project, rendered by the code-owned
+`flagship-game-v1` template (see `src/site-templates/`). Fields:
+gameProject (rel), kind, title, template, schemaVersion, `site` group
+(typed slot configuration: nav, theme, hero, availability, features,
+trailer, gallery, adaptive, latestUpdate, knownIssues, community,
+finalCta, footer), generation provenance group, drafts/versions.
+
+- Zod schemas in `src/site-templates/flagship-game-v1/schema` are
+  canonical; Payload fields mirror them (parity-tested). Publishing
+  runs full Zod validation including WCAG contrast; drafts may be
+  incomplete.
+- Section order is fixed by the template; config controls content,
+  variants, and semantic theme tokens only. Action links are approved
+  refs (`primary-store`, `demo`, `steam`, …, `contact`) — internal ops
+  refs always resolve to `/g/[slug]/…` routes regardless of
+  contact/report provider config.
+- `latestUpdate` and `knownIssues` slots query live published data
+  (explicit sorts — never the admin kanban `_order`).
+- The legacy `content` blocks field is hidden but still renders for
+  pages published before the template shipped; projects with no
+  usable page get a derived flagship default from project facts.
+- Authenticated draft preview via Payload live preview and the signed
+  `/next/site-preview` route.
+- The admin document controls expose **Generate with AI** only for a
+  saved, unmodified page. Full, theme-only, and single-slot requests go
+  through `/next/generate-site`, which rechecks tenant access, limits
+  usage per tenant, sends a deliberately redacted context, validates
+  structured output twice, and writes a new draft version only. The AI
+  cannot publish, reorder sections, emit code/classes, invent URLs, or
+  access `contact.*` / `reportForm.*` provider configuration.
 
 ### PatchNote
 Draft/publish workflow. Fields: gameProject (rel), title, slug (unique

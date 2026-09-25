@@ -65,21 +65,23 @@ The Table tab receives exactly the props required by `DefaultListView`.
 
 ### Ordering and migration
 
-Keep `Issues.orderable = true`. The migration must:
+Keep `Issues.orderable = true`. Migration `20260712_065641_issues_orderable_and_tally_forms` is committed (`d378dbd`) and the template-first plan's migration builds on its snapshot — do **not** edit it retroactively. Audit what it already does and ship a **new corrective migration** for any gaps. The combined result must satisfy:
 
-- Add Tally fields and enums.
-- Add indexed `issues._order`.
-- Backfill existing Issues with distinct deterministic fractional keys in creation-time/ID order.
-- Preserve Payload-managed ordering for new Issues.
-- Normalize `contact_target = TALLY` before rollback recreates the old enum.
-- Remove fields, indexes, and types in dependency-safe order.
-- Work on empty and populated databases.
+- Tally fields and enums present.
+- Indexed `issues._order`.
+- Existing Issues backfilled with distinct deterministic fractional keys in creation-time/ID order.
+- Payload-managed ordering preserved for new Issues.
+- `contact_target = TALLY` normalized before rollback recreates the old enum.
+- Fields, indexes, and types removed in dependency-safe order on rollback.
+- Works on empty and populated databases.
 
 ### Drag-and-drop behavior
 
 Use Pointer and Keyboard sensors with `sortableKeyboardCoordinates` and accessible drag announcements. Support same-column reorder, cross-column moves, empty columns, drops before cards, overlays, cancellation, and paginated columns.
 
 Persist status and `_order` in one access-controlled Payload update. While saving, prevent conflicting drags and show pending state. On failure, restore the snapshot or refetch affected columns and show a Payload error toast. “Load more” retains tenant, status, order, and deduplication.
+
+Same-column reorders change only `_order`; per the template-first plan's cross-plan contracts, the Issues revalidation hook skips `_order`-only writes so board drags never trigger public-page ISR revalidation. Verify this holds after the template work lands (cross-column moves change status and revalidate normally).
 
 ## Tests and Verification
 
@@ -111,7 +113,7 @@ Run TypeScript, targeted ESLint, integration tests, production build, migration 
 
 ## Assumptions
 
-- This plan is separate from and queued after the template-first plan unless reprioritized.
+- This plan is separate from and queued after the template-first plan unless reprioritized. Its base includes the committed WIP (`d378dbd`) plus the template-first work; new migrations are numbered after the template plan's migrations.
 - No marketplace kanban plugin is added.
 - No Tally API, API key, webhook, or submission import is included.
 - Unrelated portal, seed, Docker, and design-system work stays outside the feature commit.

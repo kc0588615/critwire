@@ -19,7 +19,12 @@ const revalidatePatchNotesTree = async (
 
   payload.logger.info(`Revalidating patch notes at /g/${slug}/patch-notes`)
   revalidatePath(`/g/${slug}/patch-notes`, 'layout')
+  // The flagship landing page renders the latest published note live.
+  revalidatePath(`/g/${slug}`)
 }
+
+const relationshipID = (value: PatchNote['gameProject']): number | string =>
+  typeof value === 'object' ? value.id : value
 
 export const revalidatePatchNotes: CollectionAfterChangeHook<PatchNote> = async ({
   doc,
@@ -27,8 +32,15 @@ export const revalidatePatchNotes: CollectionAfterChangeHook<PatchNote> = async 
   req: { context, payload },
 }) => {
   if (!context.disableRevalidate) {
-    if (doc._status === 'published' || previousDoc?._status === 'published') {
+    const projectChanged =
+      previousDoc !== undefined &&
+      String(relationshipID(doc.gameProject)) !== String(relationshipID(previousDoc.gameProject))
+
+    if (doc._status === 'published') {
       await revalidatePatchNotesTree(doc, payload)
+    }
+    if (previousDoc?._status === 'published' && (projectChanged || doc._status !== 'published')) {
+      await revalidatePatchNotesTree(previousDoc, payload)
     }
   }
   return doc

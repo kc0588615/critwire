@@ -100,6 +100,12 @@ production-oriented and minimal.
 - `pnpm test` — vitest (int) + playwright (e2e)
 - `docker compose up -d --build` — full stack (see `docs/deploy.md`)
 
-Local Postgres for dev: any Postgres 16 on `localhost:5432` with a
-`critwire` database (see `DATABASE_URL` in `.env.example`). No Docker
-available in this WSL distro.
+Local Postgres for dev: `docker compose up -d postgres` (Docker Desktop
+is available in this WSL distro; `docker-compose.override.yml` exposes
+it on `localhost:5432`). `DATABASE_URL` in `.env` points at it for
+`pnpm dev` and the payload CLI. Note: running dev/tests uses Payload's
+dev push and records a `dev` row in `payload_migrations`, after which
+`pnpm payload migrate` and `pnpm build` (which boots Payload during
+page-data collection) block on an interactive confirmation prompt —
+delete that row first: `delete from payload_migrations where
+name='dev'`.

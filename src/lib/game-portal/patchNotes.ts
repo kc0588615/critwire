@@ -31,6 +31,25 @@ export const queryPublishedPatchNotes = cache(
   },
 )
 
+/** Newest published patch note — the flagship landing page's live "latest update" binding. */
+export const getLatestPublishedPatchNote = cache(
+  async (projectID: number | string): Promise<null | PatchNote> => {
+    const payload = await getPayload({ config })
+
+    const result = await payload.find({
+      collection: 'patch-notes',
+      depth: 0,
+      limit: 1,
+      pagination: false,
+      sort: '-publishedAt',
+      where: {
+        and: [{ gameProject: { equals: projectID } }, { _status: { equals: 'published' } }],
+      },
+    })
+    return result.docs[0] ?? null
+  },
+)
+
 export const getPublishedPatchNote = cache(
   async ({
     projectID,

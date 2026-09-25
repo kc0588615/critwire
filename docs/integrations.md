@@ -53,7 +53,7 @@ Components: `src/components/admin/issues/`. Collection:
 
 ## Upstash Redis
 
-Two uses only:
+Three uses only:
 
 1. **Rate limiting** (`/lib/rate-limit`) — all public form endpoints
    (contact, issue report, vote) limited by IP.
@@ -61,6 +61,21 @@ Two uses only:
    by the `next.config.ts` rewrite layer; invalidated by the
    GameProject `afterChange` hook when `customDomain` changes; cache
    miss falls through to a Payload Local API query.
+3. **AI site generation** — ten metered generation requests per tenant
+   per hour. Local development fails open without Upstash credentials;
+   production must configure them.
+
+## OpenAI
+
+- The official JavaScript SDK is isolated behind `SiteGenerator` in
+  `/site-generator`; application code does not call OpenAI directly.
+- Uses Responses API structured output with a transform-free wire Zod
+  schema, followed by the canonical `SiteConfigV1` validation boundary.
+- Requests set `store: false`. Refusals, timeouts, invalid output,
+  unknown media IDs, and contrast failures do not mutate the Payload
+  draft.
+- `OPENAI_SITE_MODEL` overrides the pinned default
+  `gpt-5.4-mini-2026-03-17`. `OPENAI_API_KEY` is server-only.
 
 ## Resend + React Email
 
@@ -119,6 +134,7 @@ Single source of truth for deploy config (Docker Compose `.env`):
 - `PAYLOAD_SECRET`
 - R2: bucket, endpoint, access key ID, secret access key
 - `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`
+- `OPENAI_API_KEY`, optional `OPENAI_SITE_MODEL`
 - `RESEND_API_KEY`
 - Turnstile site key + secret key
 - Stripe secret key + webhook secret (Phase 9)
