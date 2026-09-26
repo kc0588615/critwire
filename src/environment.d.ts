@@ -14,6 +14,8 @@ declare global {
       UPSTASH_REDIS_REST_TOKEN?: string
       /** E2E only: lets a production build run without Upstash. Never set in production. */
       RATE_LIMIT_OPTIONAL?: string
+      /** E2E only: the one non-Discord origin a contact webhook may target. Never set in production. */
+      DISCORD_WEBHOOK_TEST_ORIGIN?: string
     }
   }
 }

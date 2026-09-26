@@ -6,6 +6,7 @@ import type { GameProject } from '@/payload-types'
 
 import { renderContactFormEmail } from '@/lib/email/renderContactFormEmail'
 import { getLogger } from '@/lib/logger'
+import { isAllowedDiscordWebhookUrl } from '@/lib/validation/discordWebhook'
 
 const log = getLogger('jobs.contact')
 
@@ -30,57 +31,59 @@ const multilineField = (name: keyof ContactTaskInput) => ({
   required: true,
 })
 
+const DELIVERY_TIMEOUT_MS = 10_000
+
+const contactInputSchema = [
+  textField('projectID'),
+  textField('gameSlug'),
+  textField('name', false),
+  textField('email', false),
+  textField('subject', false),
+  multilineField('message'),
+]
+
+/**
+ * Loads the project a contact job delivers for. A deleted project throws,
+ * and so do database errors, so the job fails, is retried, and is kept with
+ * its input instead of being deleted as a success.
+ */
 const getProject = async ({
   input,
   req,
 }: {
   input: ContactTaskInput
   req: PayloadRequest
-}): Promise<GameProject | null> => {
-  const project = await req.payload
-    .findByID({
-      collection: 'game-projects',
-      depth: 0,
-      id: input.projectID,
-      overrideAccess: true,
-    })
-    .catch(() => null)
-
+}): Promise<GameProject> => {
+  const project = await req.payload.findByID({
+    collection: 'game-projects',
+    depth: 0,
+    disableErrors: true,
+    id: input.projectID,
+    overrideAccess: true,
+    req,
+  })
+  if (!project) throw new Error(`Contact job: game project ${input.projectID} no longer exists.`)
   return project
 }
 
 export const emailContactFormTask: TaskConfig<'email-contact-form'> = {
   slug: 'email-contact-form',
-  inputSchema: [
-    textField('projectID'),
-    textField('gameSlug'),
-    textField('name', false),
-    textField('email', false),
-    textField('subject', false),
-    multilineField('message'),
-  ],
+  inputSchema: contactInputSchema,
   outputSchema: [{ name: 'sent', type: 'checkbox', required: true }],
   retries: 2,
   handler: async ({ input, req }) => {
     try {
       const project = await getProject({ input: input as ContactTaskInput, req })
-      const to = project?.contact?.target === 'EMAIL' ? project.contact.email : null
-      if (!project || !to) {
-        req.payload.logger.warn({
-          msg: 'Skipping contact email job because email routing is not configured.',
-          projectID: input.projectID,
-        })
-        return { output: { sent: false } }
+      const to = project.contact?.target === 'EMAIL' ? project.contact.email : null
+      if (!to) {
+        throw new Error(
+          `Contact job: project ${project.id} no longer routes contact to an email address.`,
+        )
       }
 
       const apiKey = process.env.RESEND_API_KEY
       if (!apiKey) {
-        log.info({
-          msg: 'RESEND_API_KEY unset; contact email job succeeded without sending.',
-          projectID: project.id,
-          to,
-        })
-        return { output: { sent: true } }
+        throw new Error('Contact job: RESEND_API_KEY is not set, so the email cannot be sent.')
       }
 
       const subject = input.subject?.trim()
@@ -110,6 +113,7 @@ export const emailContactFormTask: TaskConfig<'email-contact-form'> = {
           'Content-Type': 'application/json',
         },
         method: 'POST',
+        signal: AbortSignal.timeout(DELIVERY_TIMEOUT_MS),
       })
 
       if (!response.ok) {
@@ -127,27 +131,22 @@ export const emailContactFormTask: TaskConfig<'email-contact-form'> = {
 
 export const discordWebhookContactTask: TaskConfig<'discord-webhook'> = {
   slug: 'discord-webhook',
-  inputSchema: [
-    textField('projectID'),
-    textField('gameSlug'),
-    textField('name', false),
-    textField('email', false),
-    textField('subject', false),
-    multilineField('message'),
-  ],
+  inputSchema: contactInputSchema,
   outputSchema: [{ name: 'sent', type: 'checkbox', required: true }],
   retries: 2,
   handler: async ({ input, req }) => {
     try {
       const project = await getProject({ input: input as ContactTaskInput, req })
       const webhookUrl =
-        project?.contact?.target === 'DISCORD_WEBHOOK' ? project.contact.discordWebhookUrl : null
-      if (!project || !webhookUrl) {
-        req.payload.logger.warn({
-          msg: 'Skipping Discord contact job because webhook routing is not configured.',
-          projectID: input.projectID,
-        })
-        return { output: { sent: false } }
+        project.contact?.target === 'DISCORD_WEBHOOK' ? project.contact.discordWebhookUrl : null
+      if (!webhookUrl) {
+        throw new Error(
+          `Contact job: project ${project.id} no longer routes contact to a Discord webhook.`,
+        )
+      }
+      // Checked again here: values saved before the allowlist existed skipped it.
+      if (!isAllowedDiscordWebhookUrl(webhookUrl)) {
+        throw new Error(`Contact job: project ${project.id} has a webhook URL that is not Discord's.`)
       }
 
       const response = await fetch(webhookUrl, {
@@ -168,6 +167,8 @@ export const discordWebhookContactTask: TaskConfig<'discord-webhook'> = {
         }),
         headers: { 'Content-Type': 'application/json' },
         method: 'POST',
+        redirect: 'error',
+        signal: AbortSignal.timeout(DELIVERY_TIMEOUT_MS),
       })
 
       if (!response.ok) {

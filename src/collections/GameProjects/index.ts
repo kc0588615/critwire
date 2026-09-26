@@ -9,6 +9,7 @@ import {
   tenantOwnerAccess,
 } from '../../access/tenantAccess'
 import { validateOptionalTallyUrl } from '../../lib/tally/parseTallyForm'
+import { validateContactDiscordWebhookUrl } from '../../lib/validation/discordWebhook'
 import { validateOptionalHttpUrl } from '../../lib/validation/url'
 import { validateOptionalVideoUrl } from '../../lib/validation/video'
 import {
@@ -225,7 +226,7 @@ export const GameProjects: CollectionConfig = {
           admin: {
             condition: (_, siblingData) => siblingData?.target === 'DISCORD_WEBHOOK',
           },
-          validate: validateOptionalHttpUrl,
+          validate: validateContactDiscordWebhookUrl,
         },
         {
           name: 'externalUrl',

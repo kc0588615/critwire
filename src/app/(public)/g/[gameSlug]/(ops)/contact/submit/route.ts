@@ -56,13 +56,14 @@ export async function POST(
 
     const payload = await getPayload({ config })
     log.info({ msg: 'Queueing contact form job.', projectID: project.id, target })
-    await payload.jobs.queue({
+    const job = await payload.jobs.queue({
       input,
       queue: 'default',
       task: target === 'EMAIL' ? 'email-contact-form' : 'discord-webhook',
     })
-    log.info({ msg: 'Running contact form job queue.', projectID: project.id, target })
-    await payload.jobs.run({ limit: 10, queue: 'default' })
+    // Only this submission's job runs here; a failed one stays queued for the
+    // autoRun cron to retry.
+    await payload.jobs.runByID({ id: job.id })
 
     log.info({ msg: 'Public contact form submitted.', projectID: project.id, target })
 

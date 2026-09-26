@@ -270,7 +270,6 @@ test.describe('S5.4–S5.6 contact form', () => {
     webhookSink,
     world,
   }) => {
-    test.fail(true, 'F21: fixed in Step 14')
     const hook = uniqueSlug('s54-redirect')
     const from = `/api/webhooks/${hook}/from`
     const to = `/api/webhooks/${hook}/to`
@@ -356,7 +355,6 @@ test.describe('S5.4–S5.6 contact form', () => {
   })
 
   test('S5.5 only Discord webhook URLs are accepted [F21]', async ({ api, uniqueSlug, webhookSink, world }) => {
-    test.fail(true, 'F21: fixed in Step 14')
     const aOwner = api('aOwner')
     const project = await createProject(aOwner, world.tenants.A.id, uniqueSlug('rc-contact-allowlist'))
     const sinkPort = Number(new URL(webhookSink.url('/')).port)
@@ -393,7 +391,6 @@ test.describe('S5.4–S5.6 contact form', () => {
   })
 
   test('S5.6 an email contact that cannot be sent stays in Jobs [F13]', async ({ api, uniqueSlug, world }) => {
-    test.fail(true, 'F13: fixed in Step 14')
     const project = await createProject(api('aOwner'), world.tenants.A.id, uniqueSlug('rc-contact-email'), {
       contact: { target: 'EMAIL', email: 'studio@e2e.test' },
     })
