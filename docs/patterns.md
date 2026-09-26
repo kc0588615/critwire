@@ -48,6 +48,8 @@ access: {
   or filter by workspace/tenant ID in application code.
 - The plugin owns the Tenants collection (a tenant = a Workspace/studio)
   and the admin tenant switcher.
+- Media folders (`payload-folders`) are tenant-scoped too: a studio
+  only sees its own folders.
 - Escape hatch: `payload.db.drizzle` for complex queries — must include
   explicit tenant scoping, since the plugin can't filter raw Drizzle.
 
@@ -56,18 +58,20 @@ access: {
 Business logic lives in collection lifecycle hooks, not standalone
 services. The established hooks:
 
-- **GameProject `beforeChange`** — validate slug uniqueness, normalize
-  custom domain input.
-- **GameProject `afterChange`** — invalidate the Upstash domain cache
-  when `customDomain` changes.
-- **PatchNote `afterChange`** — revalidate ISR for public patch-note
-  pages on publish/edit.
-- **Issue `afterChange`** — revalidate ISR for public issue pages;
-  recalculate `upvoteCount` if needed.
-- **IssueReport `afterChange`** — status → `PUBLISHED`: create an Issue
-  from the report. Status → `LINKED`: associate with an existing Issue.
-- **IssueVote `beforeChange`** — validate the browser token hash;
-  enforce one vote per token per issue.
+- **GameProject `afterChange` / `afterDelete`** — revalidate the
+  portal for the current, previous and deleted slugs.
+- **PatchNote `beforeChange`** — stamp `publishedAt` on first publish
+  only; `afterChange` / `afterDelete` revalidate the patch-note pages.
+- **Issue `afterChange` / `afterDelete`** — revalidate the public issue
+  pages and the landing. **Issue `beforeDelete`** removes the issue's
+  votes in the same transaction.
+- **IssueReport `beforeChange`** — status → `PUBLISHED`: create the
+  Issue with `req` (same transaction) and set the report's `issue` in
+  the same write.
+- **IssueVote `afterChange` / `beforeDelete`** — own `upvoteCount`
+  through `$inc`: increment on create, decrement in `beforeDelete` (so
+  a concurrent withdrawal of the same vote can't decrement twice).
+  Nothing else writes the counter.
 
 Rule: any hook that mutates published content calls `revalidatePath()`
 or `revalidateTag()` **after** the DB write.
@@ -79,6 +83,12 @@ or `revalidateTag()` **after** the DB write.
 - React components never touch the database directly.
 - Get the instance with `getPayload({ config })` (config imported from
   `@payload-config`).
+- Public portal reads pass `overrideAccess: false`, so collection
+  access decides what a player sees. Privileged reads live only in named
+  helpers (`getContactRoute`, `getHasVoted`) that return only what the
+  page needs, never secrets.
+- Draft Mode reads authorize the preview user: drafts only for a super
+  admin in Draft Mode, still with `overrideAccess: false`.
 
 ## Client-state rule
 
@@ -103,12 +113,19 @@ Tasks are defined in `/jobs` and registered in `payload.config.ts`:
   Discord.
 - `email-contact-form` — contact submission via Resend to the studio's
   configured email.
-- `email-confirmation` — optional confirmation copy to the player.
-- `isr-revalidate` — revalidate after content changes (may be replaced
-  by direct `revalidatePath()` where latency allows).
 
 The app is a persistent server, so the built-in scheduler just works —
-no cron workarounds.
+no cron workarounds. The submit route runs its own job (`jobs.runByID`);
+the autorun cron retries failures.
+
+- Jobs are super-admin only: the jobs collection and `jobs.access.run`
+  (or the `CRON_SECRET` bearer). They hold every studio's messages.
+- Contact tasks deliver or throw. A missing project, a changed routing
+  target, an unset `RESEND_API_KEY` or a disallowed webhook URL throws,
+  so the job keeps its input and error instead of disappearing.
+- Recovering a failed job: fix the configuration, then as a super admin
+  open the job in the admin and untick `hasError`; the autorun picks it
+  up again.
 
 ## Public form endpoints
 
@@ -120,13 +137,22 @@ Every public form endpoint follows the same shape:
 4. Do the work (Local API write, or enqueue a job).
 5. Structured pino log + Sentry capture on failure.
 
+Steps 1–3 are `guardPublicForm` (`/lib/public-forms/guard.ts`); use it
+for any new form. In production, a form endpoint refuses to run without
+Turnstile (`TURNSTILE_SECRET_KEY`) or Upstash. Only local development
+skips them, plus Upstash in E2E builds (`RATE_LIMIT_OPTIONAL=1`).
+Contact webhooks must be Discord's (`isAllowedDiscordWebhookUrl`,
+checked on save and again before sending, which also refuses
+redirects).
+
 ## Voting model
 
 - Signed browser-token cookie; the token is **hashed** before storage
   (`/lib/security`).
 - One vote per issue per token, enforced by a unique
-  `[issueId, browserTokenHash]` constraint plus the IssueVote
-  `beforeChange` hook.
+  `[issue, browserTokenHash]` index. The route treats a duplicate or an
+  already-withdrawn vote as done.
+- `upvoteCount` is owned by the IssueVote hooks (see Hooks).
 - IP rate limiting via Upstash on the `/api/vote` endpoint.
 
 ## Rich text / landing pages

@@ -96,7 +96,10 @@ where appropriate.
 - `pnpm payload migrate:create <name>` — create a migration after
   schema changes (commit it; prod runs them on boot via `prodMigrations`)
 - `pnpm payload migrate` — apply migrations locally
-- `pnpm test` — vitest (int) + playwright (e2e)
+- `pnpm test` — `test:int`, then `test:e2e`
+- `pnpm test:e2e` — Playwright against a fresh production build on the
+  disposable E2E database (see Testing)
+- `pnpm test:int` — vitest; the three int files, no database needed
 - `docker compose up -d --build` — full stack (see `docs/deploy.md`)
 
 Local Postgres for dev: `DATABASE_URL` in `.env` must point at a running
@@ -108,3 +111,36 @@ dev push and records a `dev` row in `payload_migrations`, after which
 page-data collection) block on an interactive confirmation prompt —
 delete that row first: `delete from payload_migrations where
 name='dev'`.
+
+## Testing
+
+- Never write unit tests after you write code.
+- Highly prefer E2E tests as the sole testing mechanism. Use them to
+  verify complex features work. At the end of E2E tests, produce a
+  verifiable and repeatable artifact.
+- If you must test a system in isolation, first write down all the ways
+  it could fail, then write the code.
+
+How the E2E suite works:
+
+- `pnpm test:e2e` needs `E2E_DATABASE_URL` pointing at a dedicated
+  database whose name ends in `_e2e`. That database is **dropped and
+  re-migrated on every run** (`payload migrate:fresh`); the config
+  refuses any other name, or the same database as `DATABASE_URL`. Each
+  run builds the app and serves it with `next start`.
+- The artifact is `playwright-report/`: a trace and screenshots for
+  every test. Open it with `pnpm exec playwright show-report`.
+- Seed through REST in the `setup` project (`tests/e2e/auth.setup.ts`
+  creates the super admin, two studios and their users). Each spec
+  creates the game projects it needs through the REST factories in
+  `tests/e2e/support/fixtures.ts`, so specs never depend on each
+  other's data.
+
+Int tests (`tests/int`) exist only for invariants E2E can't reach:
+
+- `site-generator` — needs a fake model: E2E has no OpenAI key and can't
+  see the model's input or force its failures.
+- `site-config-parity` — checks the Zod schema and the Payload field
+  tree agree down to every enum option.
+- `template-revalidation` — nothing under `/g` is ISR-cached yet, so E2E
+  can't observe that writes revalidate the right paths.

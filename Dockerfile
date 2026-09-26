@@ -16,8 +16,13 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
+# Next inlines NEXT_PUBLIC_* into the bundles (server ones too) at build
+# time, and .env is not in the build context, so compose passes them in.
+ARG NEXT_PUBLIC_SERVER_URL
+ARG NEXT_PUBLIC_TURNSTILE_SITE_KEY
+ARG NEXT_PUBLIC_SENTRY_DSN
 # Payload config is imported at build time; provide inert values for
-# anything it reads. Real values come from the environment at runtime.
+# anything it reads. Other real values come from the environment at runtime.
 RUN corepack enable pnpm && \
     DATABASE_URL=${DATABASE_URL:-postgres://build:build@localhost:5432/build} \
     PAYLOAD_SECRET=${PAYLOAD_SECRET:-build-time-placeholder} \

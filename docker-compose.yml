@@ -34,6 +34,11 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      # Baked into the build (see Dockerfile); compose reads them from .env.
+      args:
+        NEXT_PUBLIC_SERVER_URL: ${NEXT_PUBLIC_SERVER_URL:-}
+        NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${NEXT_PUBLIC_TURNSTILE_SITE_KEY:-}
+        NEXT_PUBLIC_SENTRY_DSN: ${NEXT_PUBLIC_SENTRY_DSN:-}
     init: true
     restart: unless-stopped
     env_file:

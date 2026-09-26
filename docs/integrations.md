@@ -62,8 +62,11 @@ Three uses only:
    GameProject `afterChange` hook when `customDomain` changes; cache
    miss falls through to a Payload Local API query.
 3. **AI site generation** — ten metered generation requests per tenant
-   per hour. Local development fails open without Upstash credentials;
-   production must configure them.
+   per hour.
+
+Local development runs without these limits when Upstash isn't
+configured; production refuses the request instead, so it must
+configure Upstash.
 
 ## OpenAI
 
@@ -80,16 +83,18 @@ Three uses only:
 ## Resend + React Email
 
 - Templates in `/lib/email` built with React Email.
-- Delivery happens inside Payload Jobs Queue tasks
-  (`email-contact-form`, `email-confirmation`), not inline in request
-  handlers.
+- Delivery happens inside the Payload Jobs Queue task
+  `email-contact-form`, not inline in request handlers. Without
+  `RESEND_API_KEY` the task fails and the job stays for a super admin
+  to retry.
 - Log every delivery event via pino.
 
 ## Cloudflare Turnstile
 
 - Required on every public form: contact form, issue report form.
 - Server-side verification in `/lib/turnstile`; reject on failure
-  before doing any work.
+  before doing any work. Production refuses submissions when
+  `TURNSTILE_SECRET_KEY` is unset.
 
 ## Stripe (Phase 9 — do not build earlier)
 

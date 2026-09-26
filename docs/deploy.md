@@ -18,6 +18,15 @@ the Next.js + Payload app, and Nginx. Cloudflare sits in front.
    - `PAYLOAD_SECRET`, `CRON_SECRET`, `PREVIEW_SECRET` (`openssl rand -hex 32`)
    - `NEXT_PUBLIC_SERVER_URL=https://<your-domain>`
    - R2, Upstash, Sentry credentials
+   - required, or public forms refuse submissions:
+     `TURNSTILE_SECRET_KEY` and `NEXT_PUBLIC_TURNSTILE_SITE_KEY`
+     (Cloudflare Turnstile), and `UPSTASH_REDIS_REST_URL` +
+     `UPSTASH_REDIS_REST_TOKEN` (voting refuses without Upstash too)
+   - `RESEND_API_KEY`, required once any studio routes contact to
+     email (without it those contact jobs fail), and
+     `RESEND_FROM_EMAIL` on a domain verified in Resend
+   - `NEXT_PUBLIC_*` values are baked in at build time (compose passes
+     them as build args), so rebuild after changing one
    - `LOG_LEVEL=info`
    - `DATABASE_URL` is overridden by compose to point at PgBouncer; the
      value in `.env` is only used for local dev.
