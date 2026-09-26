@@ -1,14 +1,14 @@
 import type { CollectionConfig } from 'payload'
 
 import { authenticated } from '../../access/authenticated'
-import { isSuperAdmin } from '../../access/isSuperAdmin'
+import { isSuperAdmin, superAdminOnly } from '../../access/isSuperAdmin'
 
 export const Users: CollectionConfig = {
   slug: 'users',
   access: {
     admin: authenticated,
-    create: ({ req }) => isSuperAdmin(req.user),
-    delete: ({ req }) => isSuperAdmin(req.user),
+    create: superAdminOnly,
+    delete: superAdminOnly,
     read: ({ req }) => {
       if (!req.user) return false
       if (isSuperAdmin(req.user)) return true

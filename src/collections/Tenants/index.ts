@@ -1,6 +1,6 @@
 import type { CollectionConfig } from 'payload'
 
-import { isSuperAdmin } from '../../access/isSuperAdmin'
+import { isSuperAdmin, superAdminOnly } from '../../access/isSuperAdmin'
 import { getTenantIDsByRole } from '../../access/tenantRoles'
 
 /**
@@ -10,8 +10,8 @@ import { getTenantIDsByRole } from '../../access/tenantRoles'
 export const Tenants: CollectionConfig = {
   slug: 'tenants',
   access: {
-    create: ({ req }) => isSuperAdmin(req.user),
-    delete: ({ req }) => isSuperAdmin(req.user),
+    create: superAdminOnly,
+    delete: superAdminOnly,
     read: ({ req }) => {
       if (!req.user) return false
       if (isSuperAdmin(req.user)) return true

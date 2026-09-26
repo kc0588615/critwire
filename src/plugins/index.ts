@@ -13,7 +13,8 @@ import { searchFields } from '@/search/fieldOverrides'
 import { beforeSyncWithSearch } from '@/search/beforeSync'
 
 import { Config, Page, Post } from '@/payload-types'
-import { isSuperAdmin } from '@/access/isSuperAdmin'
+import { isSuperAdmin, superAdminOnly } from '@/access/isSuperAdmin'
+import { validateTenantMembership } from '@/access/tenantAccess'
 import { getServerSideURL } from '@/utilities/getURL'
 
 const generateTitle: GenerateTitle<Post | Page> = ({ doc }) => {
@@ -61,6 +62,9 @@ export const plugins: Plugin[] = [
         update: ({ req }) => isSuperAdmin(req.user),
       },
     },
+    // The plugin's own tenant validator only checks presence, which
+    // leaves `filterOptions` enforced in the admin dropdown alone.
+    tenantField: { validate: validateTenantMembership },
     userHasAccessToAllTenants: (user) => isSuperAdmin(user),
   }),
   s3Storage({
@@ -84,6 +88,12 @@ export const plugins: Plugin[] = [
   redirectsPlugin({
     collections: ['pages', 'posts'],
     overrides: {
+      // Platform marketing site: a studio user must not redirect its URLs.
+      access: {
+        create: superAdminOnly,
+        delete: superAdminOnly,
+        update: superAdminOnly,
+      },
       // @ts-expect-error - This is a valid override, mapped fields don't resolve to the same type
       fields: ({ defaultFields }) => {
         return defaultFields.map((field) => {
@@ -115,7 +125,13 @@ export const plugins: Plugin[] = [
     fields: {
       payment: false,
     },
+    // The template form builder serves the platform marketing site only.
     formOverrides: {
+      access: {
+        create: superAdminOnly,
+        delete: superAdminOnly,
+        update: superAdminOnly,
+      },
       fields: ({ defaultFields }) => {
         return defaultFields.map((field) => {
           if ('name' in field && field.name === 'confirmationMessage') {
@@ -136,11 +152,24 @@ export const plugins: Plugin[] = [
         })
       },
     },
+    // Anonymous create would be a public form endpoint without Turnstile
+    // or rate limiting (rule 8); update stays the plugin's `false`.
+    formSubmissionOverrides: {
+      access: {
+        create: superAdminOnly,
+        delete: superAdminOnly,
+        read: superAdminOnly,
+      },
+    },
   }),
   searchPlugin({
     collections: ['posts'],
     beforeSync: beforeSyncWithSearch,
     searchOverrides: {
+      access: {
+        delete: superAdminOnly,
+        update: superAdminOnly,
+      },
       fields: ({ defaultFields }) => {
         return [...defaultFields, ...searchFields]
       },

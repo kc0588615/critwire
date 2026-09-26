@@ -1,4 +1,5 @@
-import type { Access, FieldAccess } from 'payload'
+import type { Access, FieldAccess, RelationshipFieldSingleValidation } from 'payload'
+import { extractID } from 'payload/shared'
 
 import type { Tenant } from '@/payload-types'
 
@@ -41,4 +42,22 @@ export const tenantMemberFieldRead: FieldAccess = ({ doc, req }) => {
   if (tenantID == null) return false
 
   return getTenantIDsByRole(user).some((id) => String(id) === String(tenantID))
+}
+
+/**
+ * Validator for the multi-tenant plugin's `tenant` field: a studio user
+ * may only assign documents to studios they belong to. The plugin's
+ * `filterOptions` narrows the admin dropdown but isn't enforced on the
+ * server, and its tenant-access `Where` doesn't look at incoming data.
+ * System writes without a user (votes, seeds) are trusted; the plugin
+ * still checks presence after this.
+ */
+export const validateTenantMembership: RelationshipFieldSingleValidation = (value, { req }) => {
+  const user = req.user
+  if (value == null || !user || isSuperAdmin(user)) return true
+
+  // Single-collection relationship: an ID or a populated tenant.
+  const tenantID = String(extractID(value as number | string | Pick<Tenant, 'id'>))
+  if (getTenantIDsByRole(user).some((id) => String(id) === tenantID)) return true
+  return 'You can only assign documents to your own studio.'
 }

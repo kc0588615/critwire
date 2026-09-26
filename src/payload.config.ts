@@ -4,6 +4,8 @@ import path from 'path'
 import { buildConfig, PayloadRequest } from 'payload'
 import { fileURLToPath } from 'url'
 
+import { isSuperAdmin, superAdminOnly } from './access/isSuperAdmin'
+import type { User } from './payload-types'
 import { Categories } from './collections/Categories'
 import { GamePages } from './collections/GamePages'
 import { GameProjects } from './collections/GameProjects'
@@ -102,20 +104,34 @@ export default buildConfig({
   },
   jobs: {
     access: {
+      // Super admins, or the scheduler's `CRON_SECRET` bearer. Studio
+      // users must not trigger queue runs.
       run: ({ req }: { req: PayloadRequest }): boolean => {
-        // Allow logged in users to execute this endpoint (default)
-        if (req.user) return true
+        if (isSuperAdmin(req.user)) return true
 
         const secret = process.env.CRON_SECRET
         if (!secret) return false
 
-        // If there is no logged in user, then check
-        // for the Vercel Cron secret to be present as an
-        // Authorization header:
-        const authHeader = req.headers.get('authorization')
-        return authHeader === `Bearer ${secret}`
+        return req.headers.get('authorization') === `Bearer ${secret}`
       },
     },
+    // Jobs hold every studio's queued contact messages, so the REST
+    // collection is super-admin only; super admins see it in the admin
+    // to recover failed deliveries. The queue itself uses the Local API.
+    jobsCollectionOverrides: ({ defaultJobsCollection }) => ({
+      ...defaultJobsCollection,
+      access: {
+        create: superAdminOnly,
+        delete: superAdminOnly,
+        read: superAdminOnly,
+        update: superAdminOnly,
+      },
+      admin: {
+        ...defaultJobsCollection.admin,
+        // The admin passes the serialized client user; `roles` is on it.
+        hidden: ({ user }) => !isSuperAdmin(user as User),
+      },
+    }),
     // Single-VPS deployment: queued contact jobs are run explicitly by
     // the submit handler after enqueueing, and this autorun is a backup
     // for transient failures or process restarts.

@@ -1,5 +1,6 @@
 import type { GlobalConfig } from 'payload'
 
+import { superAdminOnly } from '@/access/isSuperAdmin'
 import { link } from '@/fields/link'
 import { revalidateHeader } from './hooks/revalidateHeader'
 
@@ -7,6 +8,7 @@ export const Header: GlobalConfig = {
   slug: 'header',
   access: {
     read: () => true,
+    update: superAdminOnly,
   },
   fields: [
     {

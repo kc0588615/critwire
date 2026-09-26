@@ -179,7 +179,6 @@ test.describe('S1.2 cross-tenant writes', () => {
   })
 
   test('studio B cannot put documents into studio A’s tenant [F24]', async ({ api, uniqueSlug, world }) => {
-    test.fail(true, 'F24: fixed in Step 3')
     const bOwner = api('bOwner')
     await test.step('create an issue with tenant A → 400', async () => {
       const { status, body } = await bOwner.create('issues', {
@@ -291,7 +290,6 @@ test('S1.6 studios cannot create pre-verified domains or pre-counted votes [F9]'
 
 test.describe('S1.7 platform and system collections', () => {
   test('studio users cannot read, queue or run jobs [F1]', async ({ api }) => {
-    test.fail(true, 'F1: fixed in Step 3')
     const aOwner = api('aOwner')
     await test.step('read payload-jobs', async () => {
       expect((await aOwner.find('payload-jobs')).status).toBe(403)
@@ -309,7 +307,6 @@ test.describe('S1.7 platform and system collections', () => {
   })
 
   test('studio users cannot change the marketing site or read its form submissions [F2]', async ({ api, uniqueSlug }) => {
-    test.fail(true, 'F2: fixed in Step 3')
     const aOwner = api('aOwner')
     await test.step('create a post', async () => {
       const { status } = await aOwner.create('posts', {
@@ -335,7 +332,6 @@ test.describe('S1.7 platform and system collections', () => {
   })
 
   test('anonymous visitors cannot post form submissions [F16]', async ({ api }) => {
-    test.fail(true, 'F16: fixed in Step 3')
     const form = await seed(api('superAdmin'), 'forms', {
       title: 'Iso newsletter',
       fields: [{ blockType: 'text', name: 'name', label: 'Name', required: false }],
