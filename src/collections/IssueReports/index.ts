@@ -2,7 +2,7 @@ import type { CollectionConfig } from 'payload'
 
 import { tenantMemberAccess, tenantOwnerAccess } from '../../access/tenantAccess'
 import { ISSUE_CATEGORY_OPTIONS, ISSUE_REPORT_STATUS_OPTIONS } from '../options'
-import { promoteIssueReport } from './hooks/promoteIssueReport'
+import { createIssueFromPublishedReport } from './hooks/createIssueFromPublishedReport'
 import { validateReportStatus } from './hooks/validateReportStatus'
 
 export const IssueReports: CollectionConfig = {
@@ -83,7 +83,7 @@ export const IssueReports: CollectionConfig = {
     },
   ],
   hooks: {
-    afterChange: [promoteIssueReport],
+    beforeChange: [createIssueFromPublishedReport],
     beforeValidate: [validateReportStatus],
   },
   timestamps: true,

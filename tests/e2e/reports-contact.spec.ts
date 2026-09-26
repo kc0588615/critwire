@@ -144,7 +144,6 @@ test.describe('S5.1–S5.3 player reports', () => {
   })
 
   test('S5.3 publishing a report links its new issue in the same write [F5]', async ({ api }) => {
-    test.fail(true, 'F5: fixed in Step 12')
     const aOwner = api('aOwner')
     const report = await createReport(aOwner, project, { title: 'Torch goes out underwater' })
 
@@ -178,12 +177,7 @@ test.describe('S5.1–S5.3 player reports', () => {
     const issueID = await test.step('publishing creates the issue', async () => {
       const { status, body } = await aOwner.update('issue-reports', report.id, { status: 'PUBLISHED' })
       expect(status, JSON.stringify(body)).toBe(200)
-      // Today the link lands after the response (F5); the test above pins that down.
-      await expect
-        .poll(async () => (await aOwner.findByID('issue-reports', report.id)).body.issue ?? null, { timeout: 5_000 })
-        .toBeTruthy()
-      const { body: linked } = await aOwner.findByID('issue-reports', report.id)
-      return extractID(linked.issue!)
+      return extractID(body.doc.issue!)
     })
 
     await test.step('the issue is public, REPORTED, and keeps the category and summary', async () => {
