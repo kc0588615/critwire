@@ -36,8 +36,9 @@ const getLandingPage = async (
     depth: 1,
     draft,
     limit: 1,
-    ...(draft ? { overrideAccess: false, user } : {}),
+    overrideAccess: false,
     pagination: false,
+    user,
     where: {
       and: [
         { gameProject: { equals: projectID } },

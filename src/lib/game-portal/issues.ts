@@ -47,6 +47,7 @@ export const queryPublicIssues = cache(
       collection: 'issues',
       depth: 0,
       limit: ISSUES_PER_PAGE,
+      overrideAccess: false,
       page,
       sort: sortOrder,
       where: { and },
@@ -60,6 +61,7 @@ export const queryBoardIssues = cache(async (projectID: number | string): Promis
     collection: 'issues',
     depth: 0,
     limit: BOARD_ISSUE_LIMIT,
+    overrideAccess: false,
     pagination: false,
     sort: ['-isPinned', '-upvoteCount'],
     where: {
@@ -106,6 +108,7 @@ export const queryLandingIssues = cache(
       collection: 'issues',
       depth: 0,
       limit: LANDING_ISSUE_LIMIT,
+      overrideAccess: false,
       pagination: false,
       sort,
       where: { and },
@@ -127,6 +130,8 @@ export const getPublicIssue = cache(
       collection: 'issues',
       depth: 1,
       limit: 1,
+      // Through access, a fix note the visitor can't read (a draft) stays an ID.
+      overrideAccess: false,
       pagination: false,
       where: {
         and: [
@@ -142,7 +147,8 @@ export const getPublicIssue = cache(
 
 /**
  * Whether the current browser (vote-token cookie) has voted on the
- * issue. Reads the cookie — callers become dynamically rendered.
+ * issue. Reads the cookie — callers become dynamically rendered. The
+ * one privileged portal read here: votes aren't publicly readable.
  */
 export const getHasVoted = async (issueID: number | string): Promise<boolean> => {
   const cookieStore = await cookies()

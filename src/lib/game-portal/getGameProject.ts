@@ -5,8 +5,11 @@ import { getPayload } from 'payload'
 import { cache } from 'react'
 
 /**
- * Fetches a game project by public slug. Wrapped in React cache() so
- * the portal layout and nested pages share one query per request.
+ * Fetches a game project by public slug, as an anonymous visitor would
+ * see it: access control drops tenant-only fields (contact email,
+ * Discord webhook) and leaves unreadable relations, like `tenant`, as
+ * IDs. Wrapped in React cache() so the portal layout and nested pages
+ * share one query per request.
  */
 export const getGameProject = cache(async (slug: string): Promise<GameProject | null> => {
   const payload = await getPayload({ config })
@@ -15,6 +18,7 @@ export const getGameProject = cache(async (slug: string): Promise<GameProject | 
     collection: 'game-projects',
     depth: 1,
     limit: 1,
+    overrideAccess: false,
     pagination: false,
     where: { slug: { equals: slug } },
   })

@@ -1,6 +1,5 @@
-import config from '@payload-config'
-import { getPayload } from 'payload'
-
+import { getGameProject } from '@/lib/game-portal/getGameProject'
+import { queryPublishedPatchNotes } from '@/lib/game-portal/patchNotes'
 import { getServerSideURL } from '@/utilities/getURL'
 
 export const revalidate = 3600
@@ -18,29 +17,12 @@ export async function GET(
   { params }: { params: Promise<{ gameSlug: string }> },
 ): Promise<Response> {
   const { gameSlug } = await params
-  const payload = await getPayload({ config })
-
-  const projects = await payload.find({
-    collection: 'game-projects',
-    depth: 0,
-    limit: 1,
-    pagination: false,
-    where: { slug: { equals: gameSlug } },
-  })
-  const project = projects.docs[0]
+  const project = await getGameProject(gameSlug)
   if (!project) {
     return new Response('Not found', { status: 404 })
   }
 
-  const notes = await payload.find({
-    collection: 'patch-notes',
-    depth: 0,
-    limit: 20,
-    sort: '-publishedAt',
-    where: {
-      and: [{ gameProject: { equals: project.id } }, { _status: { equals: 'published' } }],
-    },
-  })
+  const notes = await queryPublishedPatchNotes({ limit: 20, page: 1, projectID: project.id })
 
   const base = getServerSideURL()
   const feedUrl = `${base}/g/${gameSlug}/patch-notes`

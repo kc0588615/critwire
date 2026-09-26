@@ -10,9 +10,11 @@ export const PATCH_NOTES_PER_PAGE = 10
 
 export const queryPublishedPatchNotes = cache(
   async ({
+    limit = PATCH_NOTES_PER_PAGE,
     page,
     projectID,
   }: {
+    limit?: number
     page: number
     projectID: number | string
   }): Promise<PaginatedDocs<PatchNote>> => {
@@ -21,7 +23,8 @@ export const queryPublishedPatchNotes = cache(
     return payload.find({
       collection: 'patch-notes',
       depth: 0,
-      limit: PATCH_NOTES_PER_PAGE,
+      limit,
+      overrideAccess: false,
       page,
       sort: '-publishedAt',
       where: {
@@ -40,6 +43,7 @@ export const getLatestPublishedPatchNote = cache(
       collection: 'patch-notes',
       depth: 0,
       limit: 1,
+      overrideAccess: false,
       pagination: false,
       sort: '-publishedAt',
       where: {
@@ -64,6 +68,7 @@ export const getPublishedPatchNote = cache(
       collection: 'patch-notes',
       depth: 1,
       limit: 1,
+      overrideAccess: false,
       pagination: false,
       where: {
         and: [

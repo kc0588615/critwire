@@ -778,7 +778,7 @@ Fable's SHOULD-CONSIDER items are left to the planner.
 
 ## Steps
 
-21 steps, one per session. The E2E harness and coverage come first. Fixes land with, or right after, the scenario that proves them. Tests are deleted only after the suite is green (Steps 18–19).
+24 steps, one per session. The E2E harness and coverage come first. Fixes land with, or right after, the scenario that proves them. Steps 17a–17c carry out the owner's H1 and H2 answers. Tests are deleted only after the suite is green (Steps 18–19).
 
 ### How every step runs
 
@@ -833,6 +833,29 @@ The session that carries out the affected step copies the matching line into **D
   - S5.5: the full Discord allowlist case list.
   - S4.6: parallel withdrawals with the same cookie.
 - **Harness text fix.** `first-register` answers 200, not 201. The harness section is corrected.
+- **H1: two steps, code first (17a), then the migration (17b).** In between, the app runs on the old schema: Payload ignores tables and nullable columns its config no longer has. This keeps each diff reviewable and gives the drop SQL its own proof. Nothing may run `migrate:create` between 17a and 17b, or it would absorb the drops. H2 (17c) comes after, so its blank migration sees no drift.
+- **H1: what goes and what stays.** Goes: everything in Step 17a's delete list, which is code that only posts, categories, forms, search, redirects or the header/footer globals use. Stays:
+  - Pages and everything it uses: the hero, CTA, Content and Media blocks, `link`/`linkGroup`, `plugin-seo`, `superAdminOrPublished`, `getMarketingReadOptions`, `/next/preview`, AdminBar, LivePreviewListener, HeaderTheme, `home-static` and the pages sitemap.
+  - The Header and Footer components.
+  - `src/seed/critterConnect.ts` and its route (H5).
+
+  There is no template seed code to remove: `src/endpoints/seed` doesn't exist, and the critter-connect seed writes only critwire collections.
+- **H1: the Archive and Form blocks leave Pages.** Archive only lists posts (filtered by categories), and Form only renders form-builder forms, so neither works without the removed collections. Existing marketing pages lose those blocks.
+- **H1: the header and footer lose their nav, and nothing replaces it.** The header renders the logo link; the footer renders the logo and the theme selector. The search link goes with search. Hard-coding nav links would be a new feature.
+- **H1: `link.reference` stays polymorphic, with `relationTo: ['pages']`.** A plain `'pages'` would change the stored shape (`{ relationTo, value }` to a bare id) and every `CMSLink` caller.
+- **H1: rich-text internal links that can't be resolved render `'#'` instead of throwing.** `'#'` is the Lexical converter's own fallback. After the removal, a link to a post stays an unpopulated id, and today's `throw` in `internalDocToHref` would turn the whole page into a 500. The same already happens for a link to a page the reader can't see, so this fixes that too.
+- **H1: E2E.**
+  - S1.7's posts, redirects, header and form-submissions checks, and the F16 test, become one "surface is gone" test. A 404 for a super admin proves removal, not just denial.
+  - S1.7's F2 test now guards the platform content that remains, Pages.
+  - S1.9 loses its Archive test (the F10 `ArchiveBlock` fix leaves with the block), and its fixture swaps the Archive block for a Content block.
+  - Net: S1 has one test fewer.
+- **H1: packages whose last importer is deleted are removed** (eight, listed in Step 17a). The brief rules out dependency upgrades, not removals, and keeping unused Payload plugins installed would contradict the owner's decision.
+- **H1: the drop migration deletes dangling references before the generated DDL.** That covers page relationships to posts and categories, locks on removed documents and globals, and pending `schedulePublish` jobs for posts. `payload_preferences` rows for removed collections stay, because Payload never reads them again.
+- **H2: nested folders count through their media.** A folder's contents are the media in it and in all its descendant folders.
+  - Counting only direct media would leave a parent that holds only one studio's subfolders without a tenant. The studio then couldn't reach its own subfolders in the folder browser.
+  - Descendant folders' own tenants aren't consulted: in production, every folder is still null when this runs, right after the F11 migration.
+- **H2: nothing is assigned that the contents don't justify.** A folder that already has a tenant is never overwritten, and a media item without a tenant disqualifies its folder.
+- **H2: unassigned folders are printed with `payload.logger.warn`.** In production the migration runs through `prodMigrations` at boot, so the list lands in the deploy log. The Summary tells the owner to look there.
 
 ### Checklist
 
@@ -1010,7 +1033,7 @@ The session that carries out the affected step copies the matching line into **D
   - **Verify:** standard checks.
   - **Deviation (done):** F7 did not fail before the fix. Every `/g/**` route builds as dynamic (ƒ) and has no `generateStaticParams`, so nothing under `/g` is ISR-cached despite `revalidate = 3600` (see Decisions and Q4). `lexical()` already existed from Step 2. The spec also covers F8's draft-dating symptom.
 
-- [ ] **Step 8: Issue list, board and detail spec, and public reads through access (F3, part 1)**
+- [x] **Step 8: Issue list, board and detail spec, and public reads through access (F3, part 1)**
   - **Scenarios:** S4.1–S4.3; the draft patch-note title is the F3 failure. S2, S3 and S1.4 guard the change.
   - **Files:**
     - new `tests/e2e/issues-voting.spec.ts`, S4.1–S4.3 only
@@ -1167,6 +1190,167 @@ The session that carries out the affected step copies the matching line into **D
   - **Do:** replace each helper with `extractID`, guarding nulls first, and use one `sameGameProjectFilter`. No behavior change.
   - **Verify:** standard checks. `pnpm test:int tests/int/template-revalidation.int.spec.ts tests/int/site-generator.int.spec.ts` passes.
 
+- [ ] **Step 17a: Remove the website-template code (H1, part 1)**
+  - **Scenarios** (`tests/e2e/tenant-isolation.spec.ts`). The spec changes and the removal land together, so nothing is annotated.
+    - **S1.7:**
+      - The F1 jobs test stays as it is.
+      - The F2 test becomes "studio users cannot change the marketing site [F2]". `aOwner` creating a marketing page → 403, and PATCHing a published one the super admin seeded (with a Content block, as in S1.9) → 403. Pages is the platform content that's left; this guards its `superAdminOnly`.
+      - Delete the F16 test. Its check moves into a new test, "the website-template surface is gone [H1]", with one `test.step` for each of these:
+        - As super admin, `GET /api/{posts,categories,forms,form-submissions,redirects,search}` and `GET /api/globals/{header,footer}` → 404 (Payload's "Route not found"). A super admin getting 404 proves the collection is gone, not just denied.
+        - Anonymous `POST /api/form-submissions` → 404. The public form endpoint F16 locked no longer exists.
+        - Anonymous `GET /posts`, `/posts/<any>`, `/search` and `/posts-sitemap.xml` → 404.
+        - `GET /pages-sitemap.xml` → 200, and it lists neither `/posts` nor `/search`.
+
+        The removed slugs aren't `CollectionSlug`s any more, so these steps use the client's `raw()`.
+    - **S1.9:**
+      - The marketing page fixture's `layout` becomes one `content` block (one `full` column with `lexical(…)`) instead of the Archive block.
+      - Delete the two post seeds, `publishedPostTitle`, `draftPostTitle`, and the test "the Archive block lists published posts only [F10]". The F10 `ArchiveBlock` fix leaves with the block.
+      - The other four S1.9 tests stay unchanged and keep covering marketing Draft Mode.
+  - **Files to delete** (`git rm -r`):
+    - Collections and globals:
+      - `src/collections/Posts/` (with `populateAuthors` and `revalidatePost`)
+      - `src/collections/Categories.ts`
+      - `src/Header/config.ts`, `src/Header/RowLabel.tsx`, `src/Header/Nav/`, `src/Header/hooks/`
+      - `src/Footer/config.ts`, `src/Footer/RowLabel.tsx`, `src/Footer/hooks/`
+    - Plugin code: `src/search/` (`Component.tsx`, `beforeSync.ts`, `fieldOverrides.ts`) and `src/hooks/revalidateRedirects.ts`.
+    - Routes: `src/app/(frontend)/posts/`, `src/app/(frontend)/search/` and `src/app/(frontend)/(sitemaps)/posts-sitemap.xml/`.
+    - Blocks and heroes:
+      - `src/blocks/ArchiveBlock/` and `src/blocks/Form/`
+      - `src/blocks/Banner/` and `src/blocks/Code/` (Posts' rich-text blocks)
+      - `src/blocks/RelatedPosts/`
+      - `src/heros/PostHero/`
+    - Components:
+      - `src/components/Card/`, `CollectionArchive/`, `PageRange/`, `Pagination/` and `PayloadRedirects/`
+      - the shadcn primitives only they used: `src/components/ui/{pagination,checkbox,textarea,input,label}.tsx`
+    - Utilities:
+      - `src/utilities/{formatAuthors,formatDateTime,useClickableCard,useDebounce,getDocument,getRedirects,getGlobals}.ts`
+      - `getMeUser.ts` and `toKebabCase.ts`: template utilities nothing imports today
+  - **Files to edit:**
+    - `src/payload.config.ts`: drop `Posts`, `Categories`, and `globals` (`Header`, `Footer`).
+    - `src/plugins/index.ts`:
+      - Drop `redirectsPlugin`, `nestedDocsPlugin` (categories only), `formBuilderPlugin` and `searchPlugin`, with their imports.
+      - `generateTitle` and `generateURL` take `Page` only.
+      - `seoPlugin` stays; Pages' SEO tab uses it.
+    - `src/collections/Pages/index.ts`: the `layout` blocks become `[CallToAction, Content, MediaBlock]`. `src/blocks/RenderBlocks.tsx` loses `archive` and `formBlock`.
+    - `src/fields/link.ts`: `relationTo: ['pages']`, still an array (see Planner decisions). `src/fields/defaultLexical.ts`: `enabledCollections: ['pages']`.
+    - `src/components/Link/index.tsx`: `reference` is a page; the href is `/${slug}`.
+    - `src/components/RichText/index.tsx`:
+      - Remove the `blocks` converters (`banner`, `code`, `mediaBlock`, `cta`). Once Posts goes, no editor has `BlocksFeature`.
+      - `internalDocToHref` returns `/${slug}` for a populated page and `'#'` otherwise, instead of throwing (Planner decisions).
+    - `src/utilities/generatePreviewPath.ts`: drop `posts`.
+    - `src/utilities/generateMeta.ts`: `Page` only.
+    - The comments in `src/utilities/getPreviewUser.ts` and `src/app/(frontend)/next/preview/route.ts`: "pages", not "pages and posts".
+    - `src/app/(frontend)/[slug]/page.tsx`: call `notFound()` (from `next/navigation`) where it rendered `<PayloadRedirects url={url} />`, and drop the `disableNotFound` instance.
+    - Header and footer:
+      - `src/Header/Component.tsx` and `Component.client.tsx`: the logo link only, with no global read and no search link. If `Component.tsx` would be left as an empty wrapper, fold it into the client component, keeping the `Header` export `layout.tsx` imports.
+      - `src/Footer/Component.tsx`: the logo and `ThemeSelector`, with no global read.
+    - `src/components/AdminBar/index.tsx`: drop the `posts` label, and the dead `projects` one.
+    - `src/app/(frontend)/(sitemaps)/pages-sitemap.xml/route.ts`: drop the `/search` and `/posts` default entries.
+    - `next-sitemap.config.cjs`: drop `posts-sitemap.xml` from `exclude` and `additionalSitemaps`, and `/posts/*` from `exclude`.
+    - `src/payload-types.ts` (`pnpm generate:types`) and `src/app/(payload)/admin/importMap.js` (`pnpm generate:importmap`).
+    - `package.json` and `pnpm-lock.yaml`: `pnpm remove @payloadcms/plugin-form-builder @payloadcms/plugin-nested-docs @payloadcms/plugin-redirects @payloadcms/plugin-search react-hook-form prism-react-renderer @radix-ui/react-checkbox @radix-ui/react-label`. This step deletes the last importer of each. Nothing that stays declares them as peers (checked when planning).
+  - **These stay:**
+    - `redirects.ts` at the repo root (Next's IE redirect, not the plugin)
+    - `src/endpoints/home-static.ts` (the Pages home fallback)
+    - `public/website-template-OG.webp` (the default OG image)
+    - `src/seed/critterConnect.ts` and `api/seed/critter-connect` (H5)
+  - **Do:**
+    1. Rewrite S1.7 and S1.9 first. Run `pnpm test:e2e tests/e2e/tenant-isolation.spec.ts` and log the result: only the H1 test fails, because the template endpoints answer 200.
+    2. `pnpm ls --depth 0 > /tmp/deps-before.txt`.
+    3. Delete and edit as listed, then `pnpm generate:types` and `pnpm generate:importmap`, and let tsc find the leftovers. Run `rm -rf .next/types` before tsc: Next's generated `validator.ts` imports the deleted routes until the next build.
+    4. Run the `pnpm remove` above.
+    5. No schema change in this step. The app runs on the current schema, because Payload ignores the template tables and the nullable `*_id` columns it no longer knows. Don't run `migrate:create` until Step 17b.
+  - **Verify:**
+    - Standard checks. S1 passes, including the H1 test. The Log records the new lint warning count (the two `Card` warnings go).
+    - `grep -rnE "@payloadcms/plugin-(form-builder|nested-docs|redirects|search)|collections/(Posts|Categories)|getCachedGlobal|PayloadRedirects|BlocksFeature" src tests package.json next-sitemap.config.cjs` → nothing.
+    - `pnpm ls --depth 0` compared with `/tmp/deps-before.txt`: only the eight removed packages differ. `pnpm install --frozen-lockfile` passes.
+
+- [ ] **Step 17b: Migration that drops the template tables (H1, part 2)**
+  - **Scenarios:** none new. The standard E2E run applies the migration through `migrate:fresh` (9 migrations), then exercises every remaining flow on the reduced schema.
+  - **Files:**
+    - new `src/migrations/<ts>_remove_website_template.ts` and `.json`, plus `src/migrations/index.ts`
+    - `$PROOFS/remove-template.sql`, outside the repo
+  - **Do:**
+    1. Write the proof SQL first. "Failure modes" lists what it must rule out.
+       - Save `select tablename from pg_tables where schemaname='public' order by 1` to `$PROOFS/step17b-tables-before.txt`.
+       - Fixture rows on the mission DB:
+         - pages P1 and P2, post X and category C
+         - `pages_rels` rows P1→P2 (`hero.links.0.link.reference`), P1→X and P1→C
+         - a `_pages_v` version of P1, with `_pages_v_rels` rows →P2 and →X
+         - form F with one submission
+         - `payload_locked_documents` L1 (rels → X), L2 (`global_slug = 'header'`) and L3 (rels → P1)
+         - `payload_jobs` J1 and J2, both `schedulePublish`, with `input` `{"doc":{"relationTo":"posts","value":<X>}}` and `{"doc":{"relationTo":"pages","value":<P1>}}`
+    2. Clear the `dev` row, then run `pnpm payload migrate:create remove_website_template`. Nothing is added or renamed, so there should be no prompt. If one appears, stop and read it, and never accept a rename.
+    3. Read the generated SQL. It may only drop the items below, with their indexes and constraints. Anything else means the snapshot has drifted: stop and find out why.
+       - The 37 tables:
+         - `posts`, `posts_rels`, `posts_populated_authors`, `_posts_v`, `_posts_v_rels`, `_posts_v_version_populated_authors`
+         - `categories`, `categories_breadcrumbs`
+         - `forms`, `forms_emails`, `forms_blocks_{checkbox,country,email,message,number,select,select_options,state,text,textarea}`
+         - `form_submissions`, `form_submissions_submission_data`
+         - `redirects`, `redirects_rels`
+         - `search`, `search_categories`, `search_rels`
+         - `header`, `header_nav_items`, `header_rels`, `footer`, `footer_nav_items`, `footer_rels`
+         - `pages_blocks_archive`, `_pages_v_blocks_archive`, `pages_blocks_form_block`, `_pages_v_blocks_form_block`
+       - The 10 columns:
+         - `posts_id` and `categories_id` on `pages_rels` and on `_pages_v_rels`
+         - `posts_id`, `categories_id`, `forms_id`, `form_submissions_id`, `redirects_id` and `search_id` on `payload_locked_documents_rels`
+       - The 10 enums: `enum_posts_status`, `enum__posts_v_version_status`, `enum_forms_confirmation_type`, `enum_redirects_to_type`, `enum_header_nav_items_link_type`, `enum_footer_nav_items_link_type`, `enum_pages_blocks_archive_{populate_by,relation_to}` and `enum__pages_v_blocks_archive_{populate_by,relation_to}`.
+    4. At the top of `up`, before the generated statements, add the cleanup that the column drops need, in one `db.execute`:
+       ```sql
+       DELETE FROM pages_rels WHERE posts_id IS NOT NULL OR categories_id IS NOT NULL;
+       DELETE FROM _pages_v_rels WHERE posts_id IS NOT NULL OR categories_id IS NOT NULL;
+       DELETE FROM payload_locked_documents WHERE global_slug IN ('header', 'footer') OR id IN (
+         SELECT parent_id FROM payload_locked_documents_rels
+         WHERE posts_id IS NOT NULL OR categories_id IS NOT NULL OR forms_id IS NOT NULL
+            OR form_submissions_id IS NOT NULL OR redirects_id IS NOT NULL OR search_id IS NOT NULL);
+       DELETE FROM payload_jobs WHERE task_slug = 'schedulePublish' AND input->'doc'->>'relationTo' = 'posts';
+       ```
+       - Without these, the column drops leave relationship rows that point at nothing, and a pending scheduled post publish fails on every cron run.
+       - `down` stays as generated. It recreates the tables empty; add a comment saying so.
+       - Destructure only what `up` and `down` use (Step 4's lint rule).
+    5. Run `pnpm payload migrate` on the mission DB, then the check part of the proof. Save it to `$PROOFS/step17b-remove-template.log`:
+       - Compared with `step17b-tables-before.txt`, exactly the 37 tables are gone and nothing is added.
+       - None of the 10 columns or 10 enums exist. Check the names listed; a pattern would also match `enum_issues_category` and `enum_game_projects_availability_platforms_platform`, which stay.
+       - The `pages` count is unchanged. P1 keeps exactly its P2 row in `pages_rels` and in `_pages_v_rels`.
+       - L1 and L2 are gone; L3 and its rels row remain. J1 is gone; J2 remains.
+       - `migrate:status` lists the migration as applied, after `reconcile_issue_upvote_counts`.
+       - Then delete the fixture rows that are left (P1, P2, P1's version row, L3 and J2).
+  - **Verify:** standard checks. `run.log` shows `migrate:fresh` applying 9 migrations.
+
+- [ ] **Step 17c: Backfill media-folder tenants (H2)**
+  - **Scenarios:** none in E2E, because E2E applies the migration to an empty database. The proof runs on the mission DB, like Step 10's.
+  - **Files:**
+    - new `src/migrations/<ts>_backfill_media_folder_tenants.ts` and `.json`, plus `src/migrations/index.ts`
+    - `$PROOFS/backfill-folders.sql`, outside the repo
+  - **Do:**
+    1. Write the proof SQL first ("Failure modes"). The fixture, on the mission DB, has tenants A and B and these folders and media:
+
+       | Folder | Contents | Expected tenant |
+       |---|---|---|
+       | F1 | 2 media items of A | A |
+       | F2 | media of A and of B | none |
+       | F3 | nothing | none |
+       | F4 | media of A, and one item with no tenant | none |
+       | P, with subfolder C | P holds only C; C holds media of A | P = A, C = A |
+       | Q, with subfolders Q1 and Q2 | Q1 holds media of A; Q2 holds media of B | Q none, Q1 = A, Q2 = B |
+       | R | already tenant B; holds media of A | B (untouched) |
+       | S1 and S2 | each is the other's parent (a cycle); S1 holds media of A | both A |
+
+       Before migrating, save `select id, tenant_id, folder_id from media order by id` and `select id, name, folder_id, updated_at from payload_folders order by id`.
+    2. Clear the `dev` row, then run `pnpm payload migrate:create backfill_media_folder_tenants --force-accept-warning`. The generated SQL must be empty; anything else means drift.
+    3. Write `up({ db, payload })`:
+       - One `UPDATE … RETURNING id` with a recursive CTE. Each folder's subtree is the folder plus every descendant folder. Use `UNION`, not `UNION ALL`, so a parent cycle terminates.
+       - A folder gets tenant T when its subtree holds at least one media item and every media item in it has tenant T: `count(*) = count(m.tenant_id) AND count(DISTINCT m.tenant_id) = 1`.
+       - Only folders whose `tenant_id` is null are updated.
+       - Then select the folders still without a tenant. Log the assigned ids with `payload.logger.info`. When any folders are left, log their ids with `payload.logger.warn`: "empty, or holding media of several studios or of none; only super admins see them".
+       - Raw SQL leaves `updated_at` alone. `down` is a no-op.
+    4. Run `pnpm payload migrate`, and check the results against the table. Save the checks and the migrate output to `$PROOFS/step17c-folder-backfill.log`:
+       - The warn line lists exactly F2, F3, F4 and Q.
+       - The media rows, and the folders' names, parents and `updated_at`, are unchanged.
+       - `migrate:status` lists the migration after `remove_website_template`.
+       - Then delete the fixture rows.
+  - **Verify:** standard checks. `run.log` shows `migrate:fresh` applying 10 migrations.
+
 - [ ] **Step 18: Audit and trim `tests/int`**
   - **Files:**
     - Delete `tests/int/api.int.spec.ts`, `tally-parse.int.spec.ts`, `site-config-schema.int.spec.ts` and `site-template.int.spec.ts`.
@@ -1180,7 +1364,7 @@ The session that carries out the affected step copies the matching line into **D
        - the exact title of the E2E test that replaces it, confirmed to exist and to have passed in the last run's list output
     2. Where a test guards real behavior that no E2E test covers, add the E2E case first (in the matching spec), run it, then delete the test. Keep a test only where E2E can't reach the behavior, and say why.
     3. Apply the calls and record the table.
-    4. Leave devDependencies alone; list any that became unused, for the Summary.
+    4. Leave devDependencies alone; list any that became unused, for the Summary. Step 17a already removed the runtime packages H1 left unused. No int file imports anything H1 removed (checked when planning), so H1 changes none of the calls above.
   - **Verify:**
     - tsc and lint.
     - `pnpm test:int` → 3 files, 8 tests (site-config-parity 2, site-generator 5, template-revalidation 1).
@@ -1200,7 +1384,7 @@ The session that carries out the affected step copies the matching line into **D
   - **Verify:** tsc and lint (the `verify-phase5.mjs` warnings are gone). The full E2E suite, if tests were added.
 
 - [ ] **Step 20: Testing rules and deploy docs**
-  - **Files:** `AGENTS.md`, `docs/patterns.md`, `docs/deploy.md`, `.env.example`.
+  - **Files:** `AGENTS.md`, `docs/patterns.md`, `docs/deploy.md`, `.env.example`, `README.md`.
   - **Do:** as Target design item 9.
     - **`AGENTS.md`:**
       - A new `## Testing` section with:
@@ -1224,23 +1408,30 @@ The session that carries out the affected step copies the matching line into **D
     - **`.env.example` and `docs/deploy.md` step 5:**
       - Production requires `TURNSTILE_SECRET_KEY` and `NEXT_PUBLIC_TURNSTILE_SITE_KEY`, Upstash, and `RESEND_API_KEY` when a studio routes contact to email.
       - Remove the "fails open", "skipped" and "succeed without it" wording.
+    - **`README.md`** is still Payload's website-template README (posts, categories, search, redirects, the seed button), which H1 made false. Replace it with a short critwire README: the one-paragraph description from `AGENTS.md`, pointers to `AGENTS.md` and `docs/`, and the commands. Nothing more.
+    - The other docs don't mention the removed template surface (checked when planning). `docs/features.md`'s phase history ("website template") stays.
   - **Verify:**
     - tsc and lint.
     - `grep -niE "fails open|succeed without|verification is skipped" .env.example docs AGENTS.md` → nothing.
     - `grep -n "^## Testing" AGENTS.md` → exactly one line.
+    - `grep -niE "website template|posts|categories|redirects" README.md` → nothing.
 
 - [ ] **Step 21: Final verification, artifact and Summary**
   - **Do:**
     1. Commit all code first, so the recorded SHA is the tested code.
     2. Run the Verification section end to end, save the artifact, and write its README. `pnpm build` goes last.
     3. Write the Summary:
-       - what changed and why, per finding
+       - what changed and why, per finding, plus the owner's H1 and H2 answers: the removed template surface and packages, and the two migrations (`remove_website_template`, `backfill_media_folder_tenants`)
        - every deleted test and its reason, from `### Test audit results`
        - E2E coverage before (0 of 7 flows) and after (7 of 7, with test counts per spec)
        - both review verdicts: Fable APPROVE; Astra APPROVE_WITH_CHANGES, with its MUST-FIX items resolved in Revision
-       - the bugs found and fixed: F1–F13, F21, F22 and F24, one line each
+       - the bugs found and fixed: F1–F13, F21, F22, F24 and F25, one line each. H1 superseded some of them by removing the surface they protected: F2's post, category, header, footer, redirect, form and search locks, F16, and F10's `ArchiveBlock` fix. Say so in their lines.
        - the planner decisions
-       - what's left for the owner: Q1–Q3, F23, the coverage gaps, and any devDependencies that became unused
+       - what's left for the owner:
+         - H3 (the deploy keys, formerly Q1), H4 (patch-notes ISR, formerly Q4) and H5 (the seed route, F23), if they're still open
+         - Before deploying, back up production. `remove_website_template` drops the template's data for good (its `down` recreates empty tables). Marketing pages lose any Archive or Form blocks, and the header and footer lose any nav links.
+         - After deploying, the app log's warn line lists media folders left without a tenant, for a super admin to assign (H2).
+         - the coverage gaps, and any devDependencies that became unused
        - the artifact path and the reproduce command
     4. Set `status: done`, then commit and push.
   - **Verify:** everything in Verification passes. The artifact directory holds `playwright-report/index.html`, `run.log` and `README.md`.
@@ -1254,6 +1445,15 @@ The session that carries out the affected step copies the matching line into **D
   - It could race `runByID` for a job that was just queued. Payload marks a job `processing` before running it, so the job still runs once. If S5.4's "exactly one embed" ever flakes, look here first; don't add retries.
 - **Uploads pile up.** Media from E2E runs accumulates in the gitignored `public/media/`, because `migrate:fresh` doesn't delete files. It's harmless; clear the folder by hand if it grows.
 - **F15** has only Step 4's manual proof. The first production deploy of this branch needs Q1's variables.
+- **H1 removes content, not just code.**
+  - On production, marketing pages lose any Archive or Form blocks. Link fields that pointed at posts render nothing, and rich-text links to posts render `'#'`.
+  - Any header or footer nav links go with their globals; the header and footer keep the logo and theme selector.
+  - The migration can't be undone with its data (`down` recreates empty tables), so the Summary tells the owner to back up before deploying.
+  - Nobody on the mission can see production's content. If the owner relies on any of it, that surfaces at review, before merge.
+- **Order between 17a and 17b.** Running `migrate:create` for anything else between them would fold the template drops into that migration. 17c's "generated SQL must be empty" check catches a slip.
+- **Lockfile churn.** `pnpm remove` should only drop packages. If `pnpm ls --depth 0` shows any other version change, restore `package.json` and `pnpm-lock.yaml` from git, keep the packages installed, and list them in the Summary as unused.
+- **Stale route types.** After routes are deleted, tsc still reads Next's `.next/types/validator.ts`, which imports them. Step 17a clears `.next/types` before tsc; the next build regenerates it.
+- **H2 mixed trees.** Take a subfolder assigned to a studio whose parent stays without a tenant (because its contents are mixed). It's hidden from that studio's folder browser, though its media still show in the media list. The warn line names the parent, and a super admin assigns it.
 
 ## Verification
 
@@ -1268,6 +1468,8 @@ E2E is the verification; no unit tests are added. The 7 core flows map to 6 spec
 | Issue reports | `reports-contact.spec.ts`, `admin-triage.spec.ts` | S5.1–S5.3, S6.7 |
 | Contact form | `reports-contact.spec.ts` | S5.4–S5.6 |
 | Admin triage and kanban | `admin-triage.spec.ts` | S6.1–S6.6 |
+
+S1.7 also proves that the website-template surface H1 removed answers 404, and that the remaining platform content (Pages) is super-admin only. Step 17a describes the new S1.7 and S1.9.
 
 **Final run (Step 21).** From `/srv/critter-ai/worktrees/architecture-pass`, one command at a time:
 
@@ -1295,13 +1497,14 @@ cp /tmp/e2e-final.log "$ART/run.log"
 # then write "$ART/README.md" (contents below)
 
 psql "$DB" -c "delete from payload_migrations where name='dev'"
-pnpm payload migrate:status                           # all 8 migrations applied, including the two new ones
+pnpm payload migrate:status                           # all 10 migrations applied, including the four new ones
 pnpm build                                            # last, so .next doesn't keep the E2E build's baked-in env
+grep -n posts public/robots.txt                       # no output: next-sitemap no longer lists the posts sitemap
 ```
 
 **What it must show:**
 - `run.log`:
-  - the `[WebServer]` lines for `migrate:fresh` (all 8 migrations) and `next build`
+  - the `[WebServer]` lines for `migrate:fresh` (all 10 migrations) and `next build`
   - then the list reporter: `setup` and every test in the six specs passed, with 0 failed, 0 flaky, 0 skipped and 0 expected-to-fail
 - `playwright-report/`:
   - a trace for every test (`trace: 'on'`)
@@ -1325,7 +1528,7 @@ pnpm exec playwright show-report /srv/critter-ai/agent-state/missions/architectu
 ```
 On this VPS the worktree `.env` already points `E2E_DATABASE_URL` at `critwire_m_architecture_pass_e2e`, so `pnpm test:e2e` on its own reproduces the run.
 
-**Other proofs**, saved during the steps under `/srv/critter-ai/agent-state/missions/architecture-pass/proofs/`: `step1-migrate-fresh.log`, `step4-folders.log`, `step4-f15.log`, `reconcile-upvotes.sql` and `step10-reconcile.log`.
+**Other proofs**, saved during the steps under `/srv/critter-ai/agent-state/missions/architecture-pass/proofs/`: `step1-migrate-fresh.log`, `step4-folders.log`, `step4-f15.log`, `reconcile-upvotes.sql`, `step10-reconcile.log`, `remove-template.sql`, `step17b-tables-before.txt`, `step17b-remove-template.log`, `backfill-folders.sql` and `step17c-folder-backfill.log`.
 
 ## Failure modes
 
@@ -1353,6 +1556,28 @@ This covers only the parts proven outside the E2E suite. The list is written bef
 5. Development gets refused too, because the throw isn't gated on `NODE_ENV === 'production'`. Check by reading both functions.
 6. The E2E production build refuses forms even though it's configured. The S4 and S5 specs catch this.
 
+**`remove_website_template`** (Step 17b, psql proof; the E2E run proves it applies to a fresh database and that every remaining flow works on the reduced schema):
+1. One of the 37 template tables, the 10 `*_id` columns or the 10 enums survives.
+2. Anything else changes: a table outside the 37 disappears, a surviving table loses another column, or anything is created. This would also mean the snapshot drifted.
+3. A page is lost, or a page's relationship to another page (P1→P2 in `pages_rels` or `_pages_v_rels`).
+4. A relationship row that pointed at a post or category survives as a row pointing at nothing.
+5. A lock on a removed document or on the header or footer global survives, or a lock on a page is deleted.
+6. A pending `schedulePublish` job for a post survives (it would fail on every cron run), or one for a page is deleted.
+7. The migration fails on a database that holds template data. The fixture includes a form with a submission, because `form_submissions.form_id` is `NOT NULL` with `ON DELETE SET NULL`.
+8. The migration is pending, or sorts before `reconcile_issue_upvote_counts`.
+
+**`backfill_media_folder_tenants`** (Step 17c, psql proof):
+1. A folder whose media all belong to one studio stays without a tenant (F1).
+2. A folder gets a tenant although its media belong to two studios (F2), it's empty (F3), or one of its media items has no tenant (F4).
+3. Nested contents are ignored: P stays without a tenant although its only subfolder holds A's media.
+4. A parent whose subfolders belong to different studios gets a tenant (Q), or those subfolders don't get theirs (Q1, Q2).
+5. A folder that already has a tenant is overwritten (R).
+6. A parent cycle makes the recursive query run forever (S1, S2).
+7. The warn line misses a folder left without a tenant, or lists an assigned one.
+8. Media rows change, or folders' names, parents or `updated_at` do.
+9. `down` changes data.
+10. `migrate:create` generated schema SQL (drift), or the migration sorts before `tenant_scoped_media_folders`.
+
 ## Decisions
 
 - **Fable SC1: taken (Step 1).** `payload migrate:fresh --force-accept-warning` was proven against `critwire_m_architecture_pass_e2e` before the config was built around it: exit 0, 6 migrations, no `dev` row, mission DB untouched (`proofs/step1-migrate-fresh.log`).
@@ -1377,18 +1602,15 @@ This covers only the parts proven outside the E2E suite. The list is written bef
 - **Step 7: F8 uses "absent keeps, explicit null clears" instead of the plan's `??` chain.** `data.publishedAt === undefined ? originalDoc?.publishedAt : data.publishedAt`, stamped with now only when that's empty and the resulting status is published. With `??`, a user clearing a draft's date in the admin would silently get the old date back. Only PatchNotes and Pages use the hook; Posts has its own `publishedAt` field and never did. Pages autosave drafts no longer get a date on the first autosave.
 - **Step 7: `eventually(check)` moved into `support/fixtures.ts`** (the 5 s `toPass` that proves on-demand revalidation), shared by S2's `expectLanding` and S3.
 - **Step 1: the DB guard compares host and database name** of `E2E_DATABASE_URL` and `DATABASE_URL`, so a different user or password on the same database still counts as "the same database".
+- **H1 (owner, 2026-09-26): remove the Payload website-template surface.** Posts, categories, forms and form-submissions, search, redirects, the header and footer globals, and the post routes go, with a schema migration. This extends the brief's scope ("schema changes only when a finding needs one"): the owner decided it. The planner added the steps before the docs and final-verification steps. The `api/seed/critter-connect` route (F23) wasn't part of the answer and stays until the owner answers H5.
+- **H2 (owner delegated, 2026-09-26): backfill media-folder tenants by data migration.** A new data-only migration, sorted after `tenant_scoped_media_folders`, sets each folder's tenant when every media item in it belongs to one tenant, and leaves empty or mixed folders null (super-admin only), printing their ids. It's a separate migration rather than an edit of the F11 one, which is already applied on the mission database. Nothing becomes visible to a studio that didn't already own everything inside.
+- **Step 8: the landing's published read passes `user` too** (`overrideAccess: false, user` on both paths, `user` undefined for visitors), so draft and published reads share one options shape instead of a conditional spread. The explicit `_status` filter stays.
+- **Step 8: `getGameProject` now returns the project as a visitor sees it.** Access strips `contact.email` and `contact.discordWebhookUrl` from the portal render tree (F3 b) and leaves `tenant` as an ID; no portal render code read either. The contact and report pages' privileged re-queries stay until Step 13, as planned.
+- **Step 8: S4.2 compares equal-vote board cards without order.** The board sorts by `-isPinned, -upvoteCount` only, so ties come back in database order. That's harmless on a board and not changed.
 
 ## Questions for the owner
 
-- **Q1. Deploy prerequisite (F15, F13).** This branch makes production refuse public form submissions and votes when their protection isn't configured, instead of silently skipping it. Before deploying, set these in production `.env`:
-  - `TURNSTILE_SECRET_KEY` and `NEXT_PUBLIC_TURNSTILE_SITE_KEY`
-  - `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`
-  - `RESEND_API_KEY`, if any studio routes contact to email. Without it, those messages now wait in Jobs, recoverable, rather than vanishing.
-
-  The old runbook listed Upstash but not Turnstile or Resend, so production may lack them. Recommendation: set them. Say so if you'd rather keep fail-open. Not blocking.
-- **Q2.** Should we remove the unused Payload website-template surface (posts, categories, forms and form-submissions, search, redirects, header/footer, the post routes) and the `api/seed/critter-connect` route (F23)? It needs a migration. Meanwhile, anonymous form-submissions are now refused (F16). If the live marketing site has a Form block visitors use, tell us, and we'll add Turnstile and rate limiting to it instead. Recommendation: remove the surface. Not blocking.
-- **Q3.** After F11, any media folders already in production have no tenant, so only super admins can see them until someone assigns one. Do they need a backfill? Not blocking for the mission.
-- **Note (formerly Q4, resolved by F21).** Contact delivery is now restricted to Discord webhook URLs. A project whose saved `discordWebhookUrl` points anywhere else stops receiving contact messages. Its jobs fail loudly and stay recoverable. No decision needed.
+See /srv/critter-ai/handoff/critwire.md (Q1 → H3, Q2 → H1, Q3 → H2, Q4 → H4, F23 → H5).
 
 ## Log
 
@@ -1405,5 +1627,7 @@ This covers only the parts proven outside the E2E suite. The list is written bef
 - 2026-09-26 03:22 UTC: Step 5 done: F10 fixed. `getPreviewUser` moved to `src/utilities/getPreviewUser.ts` with `getMarketingReadOptions` (drafts only for a super admin in Draft Mode, `overrideAccess: false`) used by both marketing queries; `/next/preview` destructures `{ user }` and 403s unless super admin; `ArchiveBlock` reads through access. S1.9 (5 browser tests) before the fix: anonymous `/next/preview` 200 instead of 403, `bOwner` in Draft Mode saw the marketing draft hero, the archive listed the never-published post; the anonymous marketing page 500'd because the harness set `SKIP_BUILD_STATIC_GENERATION` at runtime (now build-only, as in the Dockerfile). tsc 0; lint 0 errors, 27 warnings (unchanged); E2E exit 0, 26 passed incl. 1 expected-fail (F22), 0 flaky, 136 s wall; no `DYNAMIC_SERVER_USAGE` in the log; `dev` rows 0 in both DBs.
 - 2026-09-26 03:36 UTC: Step 6 done: `portal-landing.spec.ts` (S2.1–S2.6, 10 tests) plus `uploadImage()`/`PNG_8PX` fixtures. New bug **F25** found and fixed: publishing an existing flagship page answered 500 (`deepMerge` treated null as an object); before the fix both S2.4 tests failed with 500 on publish, and the unknown-key case returned 200 (Payload strips unknown keys; case replaced by an unapproved variant). tsc 0; lint 0 errors, 27 warnings (unchanged); E2E exit 0, 36 passed incl. 1 expected-fail (F22), 0 flaky, 150 s wall; `dev` rows 0 in both DBs.
 - 2026-09-26 03:43 UTC: Step 7 done: `patch-notes.spec.ts` (S3.1–S3.4, 8 tests) and a shared `eventually()` fixture. Before the fixes (spec only): 2 F8 failures, a partial title PATCH re-dated the note (`publishedAt` 2026-02-01 → the edit time), and a REST draft was stamped at save time; plus one selector bug in the spec, since fixed. The F7 rename test passed: `/g/**` routes render dynamically, so F7 is latent (Decisions, Q4). Fixed F8 in `populatePublishedAt` and F7 in `revalidateGameProject` (layout-level revalidation of current, previous and deleted slugs). tsc 0; lint 0 errors, 27 warnings (unchanged); E2E exit 0, 44 passed incl. 1 expected-fail (F22), 0 flaky, 166 s wall; `dev` rows 0 in both DBs.
+
+- 2026-09-26 04:01 UTC: Handoff H1 (remove template surface: yes) and H2 (folder backfill: delegated) picked up: Decisions recorded, `planner` added Steps 17a–17c; the plan's remaining questions moved to the handoff file as H3 (deploy keys + backup), H4 (ISR) and H5 (seed route). Step 8 done: `issues-voting.spec.ts` (S4.1–S4.3, 3 tests). Before the fix, S4.3 showed the F3 leak (the FIXED issue's page read "This issue was fixed in v9.9.9 — Secret expansion patch" for a draft note); S4.2 also failed on a spec bug (equal-vote board order), since fixed. F3 part 1: every public portal read in `getGameProject`, `issues.ts` (except `getHasVoted`), `patchNotes.ts` and the landing passes `overrideAccess: false`; RSS reuses `getGameProject` and `queryPublishedPatchNotes({ limit: 20 })`. tsc 0; lint 0 errors, 27 warnings (unchanged); E2E exit 0, 47 passed incl. 1 expected-fail (F22), 0 flaky, 173 s wall; `dev` rows 0 in both DBs.
 
 ## Summary
