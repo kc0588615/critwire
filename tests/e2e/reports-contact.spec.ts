@@ -130,7 +130,6 @@ test.describe('S5.1–S5.3 player reports', () => {
   })
 
   test('S5.2 a studio on Tally gets no native reports [F12]', async ({ api, uniqueSlug, world }) => {
-    test.fail(true, 'F12: fixed in Step 13')
     const tallyProject = await createProject(api('aOwner'), world.tenants.A.id, uniqueSlug('rc-report-tally-submit'), {
       reportForm: { provider: 'tally', tallyUrl: 'https://tally.so/r/wMzXab' },
     })

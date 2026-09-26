@@ -1,45 +1,16 @@
 import type { Metadata } from 'next'
 
-import config from '@payload-config'
-import { getPayload } from 'payload'
 import { notFound } from 'next/navigation'
 import React from 'react'
 
-import type { GameProject } from '@/payload-types'
-
 import { TallyFormPanel } from '@/components/game/TallyEmbed'
+import { TurnstileField } from '@/components/game/TurnstileField'
+import { getContactRoute } from '@/lib/game-portal/formRoutes'
 import { getGameProject } from '@/lib/game-portal/getGameProject'
-import { parseTallyForm } from '@/lib/tally/parseTallyForm'
 
 type Args = {
   params: Promise<{ gameSlug: string }>
   searchParams: Promise<{ error?: string; submitted?: string }>
-}
-
-const getContactProject = async (slug: string): Promise<GameProject | null> => {
-  const payload = await getPayload({ config })
-  const result = await payload.find({
-    collection: 'game-projects',
-    depth: 0,
-    limit: 1,
-    overrideAccess: true,
-    pagination: false,
-    where: { slug: { equals: slug } },
-  })
-
-  return result.docs[0] ?? null
-}
-
-const TurnstileField = () => {
-  const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY
-  if (!siteKey) return <input name="turnstileToken" type="hidden" value="" />
-
-  return (
-    <>
-      <script async defer src="https://challenges.cloudflare.com/turnstile/v0/api.js" />
-      <div className="cf-turnstile" data-sitekey={siteKey} />
-    </>
-  )
 }
 
 const ContactNotConfigured = ({ projectName }: { projectName: string }) => (
@@ -58,14 +29,7 @@ export default async function ContactPage({ params, searchParams }: Args) {
   const publicProject = await getGameProject(gameSlug)
   if (!publicProject) notFound()
 
-  const project = await getContactProject(gameSlug)
-  const contact = project?.contact
-  const tally =
-    contact?.target === 'TALLY' && contact.tallyUrl ? parseTallyForm(contact.tallyUrl) : null
-  const canUseForm =
-    (contact?.target === 'EMAIL' && Boolean(contact.email)) ||
-    (contact?.target === 'DISCORD_WEBHOOK' && Boolean(contact.discordWebhookUrl))
-  const externalUrl = contact?.target === 'EXTERNAL_URL' ? contact.externalUrl : null
+  const route = (await getContactRoute(gameSlug)) ?? { kind: 'none' }
 
   return (
     <div className="cc-shell py-12">
@@ -77,15 +41,15 @@ export default async function ContactPage({ params, searchParams }: Args) {
         </p>
       </div>
 
-      {tally ? (
+      {route.kind === 'tally' ? (
         <TallyFormPanel
           buttonLabel="Open contact form"
           description={`${publicProject.name} collects messages through Tally.`}
-          display={contact?.tallyDisplay === 'button' ? 'button' : 'embed'}
-          formUrl={contact!.tallyUrl!}
+          display={route.display}
+          formUrl={route.url}
           title="Contact the studio"
         />
-      ) : externalUrl ? (
+      ) : route.kind === 'external' ? (
         <div className="cc-panel max-w-3xl rounded-lg p-6">
           <h2 className="text-lg font-bold">Contact the studio</h2>
           <p className="mt-2 text-slate-400">
@@ -93,14 +57,14 @@ export default async function ContactPage({ params, searchParams }: Args) {
           </p>
           <a
             className="cc-button-primary mt-4"
-            href={externalUrl}
+            href={route.url}
             rel="noopener noreferrer"
             target="_blank"
           >
             Open contact page
           </a>
         </div>
-      ) : canUseForm ? (
+      ) : route.kind === 'form' ? (
         <>
           {submitted === '1' && (
             <div className="mb-6 rounded-md border border-emerald-300/30 bg-emerald-300/10 p-4 text-sm text-emerald-100">

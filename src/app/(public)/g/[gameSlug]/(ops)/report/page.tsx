@@ -1,45 +1,17 @@
 import type { Metadata } from 'next'
 
-import config from '@payload-config'
-import { getPayload } from 'payload'
 import { notFound } from 'next/navigation'
 import React from 'react'
 
-import type { GameProject } from '@/payload-types'
-
 import { ISSUE_CATEGORY_OPTIONS } from '@/collections/options'
 import { TallyFormPanel } from '@/components/game/TallyEmbed'
+import { TurnstileField } from '@/components/game/TurnstileField'
+import { getReportRoute } from '@/lib/game-portal/formRoutes'
 import { getGameProject } from '@/lib/game-portal/getGameProject'
-import { parseTallyForm } from '@/lib/tally/parseTallyForm'
 
 type Args = {
   params: Promise<{ gameSlug: string }>
   searchParams: Promise<{ error?: string; submitted?: string }>
-}
-
-const getReportProject = async (slug: string): Promise<GameProject | null> => {
-  const payload = await getPayload({ config })
-  const result = await payload.find({
-    collection: 'game-projects',
-    depth: 0,
-    limit: 1,
-    overrideAccess: true,
-    pagination: false,
-    where: { slug: { equals: slug } },
-  })
-  return result.docs[0] ?? null
-}
-
-const TurnstileField = () => {
-  const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY
-  if (!siteKey) return <input name="turnstileToken" type="hidden" value="" />
-
-  return (
-    <>
-      <script async defer src="https://challenges.cloudflare.com/turnstile/v0/api.js" />
-      <div className="cf-turnstile" data-sitekey={siteKey} />
-    </>
-  )
 }
 
 export default async function ReportIssuePage({ params, searchParams }: Args) {
@@ -48,14 +20,7 @@ export default async function ReportIssuePage({ params, searchParams }: Args) {
   const project = await getGameProject(gameSlug)
   if (!project) notFound()
 
-  // Sensitive routing fields need a privileged read; public project helper
-  // only returns world-readable fields after access control.
-  const reportProject = await getReportProject(gameSlug)
-  const reportForm = reportProject?.reportForm
-  const provider = reportForm?.provider ?? 'native'
-  const tally =
-    provider === 'tally' && reportForm?.tallyUrl ? parseTallyForm(reportForm.tallyUrl) : null
-  const externalUrl = provider === 'external' ? reportForm?.externalUrl : null
+  const route = getReportRoute(project.reportForm)
 
   return (
     <div className="cc-shell py-12">
@@ -68,15 +33,15 @@ export default async function ReportIssuePage({ params, searchParams }: Args) {
         </p>
       </div>
 
-      {tally && reportForm?.tallyUrl ? (
+      {route.kind === 'tally' ? (
         <TallyFormPanel
           buttonLabel="Open report form"
           description="Your report is collected in Tally. The studio reviews submissions there."
-          display={reportForm.tallyDisplay === 'button' ? 'button' : 'embed'}
-          formUrl={reportForm.tallyUrl}
+          display={route.display}
+          formUrl={route.url}
           title="Send a field report"
         />
-      ) : externalUrl ? (
+      ) : route.kind === 'external' ? (
         <div className="cc-panel max-w-3xl rounded-lg p-6 sm:p-8">
           <h2 className="text-lg font-bold">Send a field report</h2>
           <p className="mt-2 text-slate-400">
@@ -84,7 +49,7 @@ export default async function ReportIssuePage({ params, searchParams }: Args) {
           </p>
           <a
             className="cc-button-primary mt-4"
-            href={externalUrl}
+            href={route.url}
             rel="noopener noreferrer"
             target="_blank"
           >
