@@ -1,30 +1,17 @@
 import type { CollectionAfterChangeHook, CollectionAfterDeleteHook } from 'payload'
 
-import { revalidatePath } from 'next/cache'
+import { extractID } from 'payload/shared'
 
 import type { PatchNote } from '../../../payload-types'
 
-import { resolveProjectSlug } from '../../../hooks/resolveProjectSlug'
+import { revalidateGameLanding } from '../../../hooks/revalidateGameLanding'
 
 /**
- * Invalidates the whole patch-notes subtree for the project: the feed,
- * pagination pages, detail pages, and the RSS route.
+ * Patch-note changes invalidate the project's whole patch-notes subtree
+ * (feed, pagination, detail pages, RSS) and the landing, which renders
+ * the latest published note live.
  */
-const revalidatePatchNotesTree = async (
-  doc: PatchNote,
-  payload: Parameters<CollectionAfterChangeHook>[0]['req']['payload'],
-): Promise<void> => {
-  const slug = await resolveProjectSlug(doc.gameProject, payload)
-  if (!slug) return
-
-  payload.logger.info(`Revalidating patch notes at /g/${slug}/patch-notes`)
-  revalidatePath(`/g/${slug}/patch-notes`, 'layout')
-  // The flagship landing page renders the latest published note live.
-  revalidatePath(`/g/${slug}`)
-}
-
-const relationshipID = (value: PatchNote['gameProject']): number | string =>
-  typeof value === 'object' ? value.id : value
+const PATCH_NOTES_SECTION = 'patch-notes'
 
 export const revalidatePatchNotes: CollectionAfterChangeHook<PatchNote> = async ({
   doc,
@@ -33,14 +20,15 @@ export const revalidatePatchNotes: CollectionAfterChangeHook<PatchNote> = async 
 }) => {
   if (!context.disableRevalidate) {
     const projectChanged =
-      previousDoc !== undefined &&
-      String(relationshipID(doc.gameProject)) !== String(relationshipID(previousDoc.gameProject))
+      // On create, previousDoc is an empty object.
+      previousDoc?.gameProject != null &&
+      String(extractID(doc.gameProject)) !== String(extractID(previousDoc.gameProject))
 
     if (doc._status === 'published') {
-      await revalidatePatchNotesTree(doc, payload)
+      await revalidateGameLanding(doc.gameProject, payload, PATCH_NOTES_SECTION)
     }
     if (previousDoc?._status === 'published' && (projectChanged || doc._status !== 'published')) {
-      await revalidatePatchNotesTree(previousDoc, payload)
+      await revalidateGameLanding(previousDoc.gameProject, payload, PATCH_NOTES_SECTION)
     }
   }
   return doc
@@ -51,7 +39,7 @@ export const revalidatePatchNotesDelete: CollectionAfterDeleteHook<PatchNote> = 
   req: { context, payload },
 }) => {
   if (!context.disableRevalidate && doc) {
-    await revalidatePatchNotesTree(doc, payload)
+    await revalidateGameLanding(doc.gameProject, payload, PATCH_NOTES_SECTION)
   }
   return doc
 }

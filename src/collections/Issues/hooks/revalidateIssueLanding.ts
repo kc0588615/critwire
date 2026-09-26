@@ -1,10 +1,10 @@
 import type { CollectionAfterChangeHook, CollectionAfterDeleteHook } from 'payload'
 
-import { revalidatePath } from 'next/cache'
+import { extractID } from 'payload/shared'
 
 import type { Issue } from '../../../payload-types'
 
-import { resolveProjectSlug } from '../../../hooks/resolveProjectSlug'
+import { revalidateGameLanding } from '../../../hooks/revalidateGameLanding'
 
 /**
  * The flagship landing page shows a live known-issues summary, so
@@ -25,19 +25,6 @@ const LANDING_FIELDS = [
   'upvoteCount',
 ] as const satisfies readonly (keyof Issue)[]
 
-const relationshipID = (value: Issue['gameProject']): number | string =>
-  typeof value === 'object' ? value.id : value
-
-const revalidateIssueProject = async (
-  project: Issue['gameProject'],
-  payload: Parameters<CollectionAfterChangeHook>[0]['req']['payload'],
-): Promise<void> => {
-  const slug = await resolveProjectSlug(project, payload)
-  if (!slug) return
-  payload.logger.info(`Revalidating game landing at /g/${slug} (issue change)`)
-  revalidatePath(`/g/${slug}`)
-}
-
 export const revalidateIssueLanding: CollectionAfterChangeHook<Issue> = async ({
   doc,
   previousDoc,
@@ -47,8 +34,9 @@ export const revalidateIssueLanding: CollectionAfterChangeHook<Issue> = async ({
   // Issues that never appeared publicly can't affect the landing page.
   if (!doc.isPublic && !previousDoc?.isPublic) return doc
   const projectChanged =
-    previousDoc !== undefined &&
-    String(relationshipID(doc.gameProject)) !== String(relationshipID(previousDoc.gameProject))
+    // On create, previousDoc is an empty object.
+    previousDoc?.gameProject != null &&
+    String(extractID(doc.gameProject)) !== String(extractID(previousDoc.gameProject))
   if (
     previousDoc &&
     !projectChanged &&
@@ -58,10 +46,10 @@ export const revalidateIssueLanding: CollectionAfterChangeHook<Issue> = async ({
   }
 
   if (projectChanged && previousDoc) {
-    if (previousDoc.isPublic) await revalidateIssueProject(previousDoc.gameProject, payload)
-    if (doc.isPublic) await revalidateIssueProject(doc.gameProject, payload)
+    if (previousDoc.isPublic) await revalidateGameLanding(previousDoc.gameProject, payload)
+    if (doc.isPublic) await revalidateGameLanding(doc.gameProject, payload)
   } else {
-    await revalidateIssueProject(doc.gameProject, payload)
+    await revalidateGameLanding(doc.gameProject, payload)
   }
   return doc
 }
@@ -71,11 +59,6 @@ export const revalidateIssueLandingDelete: CollectionAfterDeleteHook<Issue> = as
   req: { context, payload },
 }) => {
   if (context.disableRevalidate || !doc?.isPublic) return doc
-
-  const slug = await resolveProjectSlug(doc.gameProject, payload)
-  if (slug) {
-    payload.logger.info(`Revalidating game landing at /g/${slug} (issue deleted)`)
-    revalidatePath(`/g/${slug}`)
-  }
+  await revalidateGameLanding(doc.gameProject, payload)
   return doc
 }

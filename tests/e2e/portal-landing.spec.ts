@@ -62,6 +62,8 @@ test('S2.1 an unknown game and a private issue get the same 404', async ({ api, 
   const render404 = async (path: string) => {
     const response = await page.goto(path)
     expect(response?.status(), path).toBe(404)
+    // The not-found UI can land after `load`; read the page once it's there.
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('404')
     return { title: await page.title(), body: await page.locator('body').innerText() }
   }
   const unknown = await test.step('unknown game', () => render404(`/g/${uniqueSlug('no-such-game')}`))

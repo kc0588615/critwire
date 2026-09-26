@@ -1,11 +1,13 @@
-import type { Page } from '@playwright/test'
+import type { Page, PlaywrightWorkerArgs } from '@playwright/test'
 
 import type { GameProject, Issue, PatchNote } from '../../src/payload-types'
-import { castVote, createIssue, createPatchNote, createProject, expect, test } from './support/fixtures'
+import type { RestClient } from './support/api'
+import { BASE_URL } from './support/env'
+import { castVote, createIssue, createPatchNote, createProject, eventually, expect, test } from './support/fixtures'
 
 /**
  * The public issue tracker under /g/<slug>/issues: the filtered list,
- * the read-only board, and issue detail pages. Replaces
+ * the read-only board, issue detail pages and player voting. Replaces
  * tests/manual/verify-phase5.mjs.
  */
 
@@ -208,5 +210,230 @@ test.describe('S4.1–S4.3 issue list, board and detail', () => {
     })
 
     await test.step('a private issue is 404', () => open(page, detail(privateIssue), 404))
+  })
+})
+
+const VOTE_COOKIE = 'cw_vote_token'
+
+interface VoteReply {
+  status: number
+  body: { error?: string; issuedNewToken?: boolean; upvoteCount?: number; voted?: boolean }
+  /** The `name=value` vote cookie the player holds after this call. */
+  cookie?: string
+}
+
+/**
+ * POSTs to /api/vote as a player holding `cookie`, or as a new player.
+ * Each call gets its own request context, so exactly the given cookie
+ * is sent and parallel calls share nothing else.
+ */
+async function postVote(
+  playwright: PlaywrightWorkerArgs['playwright'],
+  body: unknown,
+  cookie?: string,
+): Promise<VoteReply> {
+  const player = await playwright.request.newContext({ baseURL: BASE_URL })
+  try {
+    const response = await player.post('/api/vote', { data: body, headers: cookie ? { Cookie: cookie } : {} })
+    const issued = response
+      .headersArray()
+      .find(({ name, value }) => name.toLowerCase() === 'set-cookie' && value.startsWith(`${VOTE_COOKIE}=`))
+    return {
+      status: response.status(),
+      body: (await response.json()) as VoteReply['body'],
+      cookie: issued ? issued.value.split(';')[0] : cookie,
+    }
+  } finally {
+    await player.dispose()
+  }
+}
+
+/** The issue's stored counter and its vote rows, both read as super admin. */
+async function tally(superAdmin: RestClient, issueID: number) {
+  const issue = await superAdmin.findByID('issues', issueID, { depth: 0 })
+  const votes = await superAdmin.find('issue-votes', { where: { issue: { equals: issueID } }, limit: 1 })
+  expect(issue.status).toBe(200)
+  expect(votes.status).toBe(200)
+  return { upvoteCount: issue.body.upvoteCount, rows: votes.body.totalDocs, updatedAt: issue.body.updatedAt }
+}
+
+test.describe('S4.4 voting in the browser', () => {
+  let project: GameProject
+  let voted: Issue
+  let other: Issue
+
+  test.beforeAll(async ({ api, uniqueSlug, world }) => {
+    const aOwner = api('aOwner')
+    project = await createProject(aOwner, world.tenants.A.id, uniqueSlug('vote-browser'))
+    // Created first, so with no votes it sorts below `other` everywhere.
+    voted = await createIssue(aOwner, project, uniqueSlug('vote-rain'), { title: 'Rain clips through roofs' })
+    other = await createIssue(aOwner, project, uniqueSlug('vote-pins'), { title: 'Map pins drift' })
+  })
+
+  test('upvotes toggle, persist per browser, and reach the landing and the list', async ({ browser, page }) => {
+    const detail = `${issuesPath(project.slug)}/${voted.slug}`
+    const button = (on: Page) => on.getByRole('button', { name: /^Upvoted?\s*\d+$/ })
+    const expectButton = async (on: Page, pressed: boolean, count: number) => {
+      await expect(button(on)).toHaveAttribute('aria-pressed', String(pressed))
+      await expect(button(on).locator('span.font-mono')).toHaveText(String(count))
+    }
+    const knownIssues = page.locator('section[aria-labelledby="fs-known-issues-heading"] li')
+
+    await test.step('before any vote, the newer issue leads the landing and the list', async () => {
+      await open(page, `/g/${project.slug}`)
+      await expect(knownIssues).toHaveText([other.title, voted.title].map((title) => new RegExp(`^${title}`)))
+      await expect(knownIssues.filter({ hasText: '▲' })).toHaveCount(0)
+      await open(page, issuesPath(project.slug))
+      expect(await listedTitles(page, project.slug)).toEqual([other.title, voted.title])
+    })
+
+    await test.step('an upvote presses the button and survives a reload', async () => {
+      await open(page, detail)
+      await expectButton(page, false, 0)
+      await button(page).click()
+      await expectButton(page, true, 1)
+      await page.reload()
+      await expectButton(page, true, 1)
+    })
+
+    await test.step('a second browser adds its own vote; the first withdraws', async () => {
+      const second = await browser.newContext()
+      try {
+        const secondPage = await second.newPage()
+        await open(secondPage, detail)
+        await expectButton(secondPage, false, 1)
+        await button(secondPage).click()
+        await expectButton(secondPage, true, 2)
+      } finally {
+        await second.close()
+      }
+      await page.reload()
+      await expectButton(page, true, 2)
+      await button(page).click()
+      await expectButton(page, false, 1)
+    })
+
+    await test.step('the landing shows the count and ranks the voted issue first', async () => {
+      await eventually(async () => {
+        await page.goto(`/g/${project.slug}`)
+        await expect(knownIssues).toHaveText([new RegExp(`^${voted.title}.*▲ 1`), new RegExp(`^${other.title}`)], {
+          timeout: 1_000,
+        })
+      })
+    })
+
+    await test.step('the list\'s default "top" sort ranks it first too', async () => {
+      await open(page, issuesPath(project.slug))
+      expect(await listedTitles(page, project.slug)).toEqual([voted.title, other.title])
+    })
+  })
+})
+
+test.describe('S4.5–S4.6 voting API', () => {
+  let project: GameProject
+  let publicIssue: Issue
+  let privateIssue: Issue
+
+  test.beforeAll(async ({ api, uniqueSlug, world }) => {
+    const aOwner = api('aOwner')
+    project = await createProject(aOwner, world.tenants.A.id, uniqueSlug('vote-api'))
+    publicIssue = await createIssue(aOwner, project, uniqueSlug('vote-api-public'), { title: 'Fog flickers' })
+    privateIssue = await createIssue(aOwner, project, uniqueSlug('vote-api-private'), {
+      title: 'Crash in debug menu',
+      isPublic: false,
+    })
+  })
+
+  test('S4.5 rejects bad bodies and hidden issues', async ({ api, playwright }) => {
+    const malformed = [{}, { issueId: null }, { issueId: -1 }, { issueId: 'abc' }, { issueId: 2 ** 40 }, { issueId: { $ne: 1 } }]
+    for (const body of [...malformed, 'not json']) {
+      const reply = await postVote(playwright, body)
+      expect(reply.status, JSON.stringify(body)).toBe(400)
+    }
+    expect((await postVote(playwright, { issueId: 2_000_000_000 })).status).toBe(404)
+    expect((await postVote(playwright, { issueId: privateIssue.id })).status).toBe(404)
+    expect((await tally(api('superAdmin'), privateIssue.id)).rows).toBe(0)
+  })
+
+  test('S4.5 a tampered cookie is replaced and counted as a new voter', async ({ api, playwright }) => {
+    const first = await postVote(playwright, { issueId: publicIssue.id })
+    expect(first.body).toMatchObject({ voted: true, upvoteCount: 1, issuedNewToken: true })
+    const [token] = (first.cookie ?? '').slice(VOTE_COOKIE.length + 1).split('.')
+    expect(token).toMatch(/^[0-9a-f]{64}$/)
+    const tampered = `${VOTE_COOKIE}=${token}.${'0'.repeat(64)}`
+    const second = await postVote(playwright, { issueId: publicIssue.id }, tampered)
+    expect(second.status).toBe(200)
+    expect(second.body).toMatchObject({ voted: true, upvoteCount: 2, issuedNewToken: true })
+    expect(second.cookie).not.toBe(tampered)
+
+    // The original cookie still owns its vote.
+    const withdrawn = await postVote(playwright, { issueId: publicIssue.id }, first.cookie)
+    expect(withdrawn.body).toMatchObject({ voted: false, upvoteCount: 1, issuedNewToken: false })
+    expect(await tally(api('superAdmin'), publicIssue.id)).toMatchObject({ upvoteCount: 1, rows: 1 })
+  })
+
+  test('S4.6 parallel votes and withdrawals from different players all count [F4]', async ({
+    api,
+    playwright,
+    uniqueSlug,
+  }) => {
+    const superAdmin = api('superAdmin')
+    const issue = await createIssue(api('aOwner'), project, uniqueSlug('vote-parallel'), { title: 'Wind stutters' })
+
+    const votes = await Promise.all(Array.from({ length: 8 }, () => postVote(playwright, { issueId: issue.id })))
+    expect(votes.map((reply) => reply.status)).toEqual(Array(8).fill(200))
+    expect(await tally(superAdmin, issue.id)).toMatchObject({ upvoteCount: 8, rows: 8 })
+
+    const withdrawals = await Promise.all(
+      votes.map((reply) => postVote(playwright, { issueId: issue.id }, reply.cookie)),
+    )
+    expect(withdrawals.map((reply) => [reply.status, reply.body.voted])).toEqual(Array(8).fill([200, false]))
+    expect(await tally(superAdmin, issue.id)).toMatchObject({ upvoteCount: 0, rows: 0 })
+  })
+
+  test('S4.6 votes leave the issue\'s updatedAt alone [F4]', async ({ api, playwright }) => {
+    // The landing's "Recently Fixed" sorts by updatedAt, so a vote must not look like an edit.
+    const superAdmin = api('superAdmin')
+    const before = await tally(superAdmin, publicIssue.id)
+    const reply = await postVote(playwright, { issueId: publicIssue.id })
+    expect(reply.body.voted).toBe(true)
+    const after = await tally(superAdmin, publicIssue.id)
+    expect(after.upvoteCount).toBe(before.rows + 1)
+    expect(after.updatedAt).toBe(before.updatedAt)
+  })
+
+  test('S4.6 parallel toggles with one cookie never error and keep the count true [F4]', async ({
+    api,
+    playwright,
+    uniqueSlug,
+  }) => {
+    const superAdmin = api('superAdmin')
+    const issue = await createIssue(api('aOwner'), project, uniqueSlug('vote-same-cookie'), { title: 'Sky flashes' })
+    const { cookie } = await postVote(playwright, { issueId: publicIssue.id })
+    expect(cookie).toBeDefined()
+
+    const togglePair = async (label: string) => {
+      const pair = await Promise.all([1, 2].map(() => postVote(playwright, { issueId: issue.id }, cookie)))
+      expect(pair.map((reply) => reply.status), `${label}: ${JSON.stringify(pair.map((r) => r.body))}`).toEqual([
+        200, 200,
+      ])
+      const { upvoteCount, rows } = await tally(superAdmin, issue.id)
+      expect(upvoteCount, label).toBe(rows)
+      return rows
+    }
+
+    for (let round = 1; round <= 5; round++) {
+      // From "voted": both requests try to withdraw the same vote.
+      if ((await tally(superAdmin, issue.id)).rows === 0) {
+        expect((await postVote(playwright, { issueId: issue.id }, cookie)).body.voted).toBe(true)
+      }
+      await togglePair(`round ${round}, withdrawing`)
+
+      // From "not voted": both requests try to add it.
+      if ((await tally(superAdmin, issue.id)).rows === 1) {
+        expect((await postVote(playwright, { issueId: issue.id }, cookie)).body.voted).toBe(false)
+      }
+      await togglePair(`round ${round}, adding`)
+    }
   })
 })
