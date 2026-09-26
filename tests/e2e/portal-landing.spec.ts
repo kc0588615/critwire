@@ -10,6 +10,7 @@ import {
   createIssue,
   createPatchNote,
   createProject,
+  eventually,
   expect,
   seed,
   test,
@@ -36,17 +37,12 @@ const SECTION = {
 
 const section = (page: Page, id: string) => page.locator(`section[aria-labelledby="${id}"]`)
 
-/**
- * Loads the landing until `check` passes. Passing within 5 s proves
- * on-demand revalidation (timed ISR is an hour) and tolerates one
- * stale-while-revalidate response.
- */
-async function expectLanding(page: Page, slug: string, check: () => Promise<void>): Promise<void> {
-  await expect(async () => {
+/** Loads the landing until `check` passes; see `eventually`. */
+const expectLanding = (page: Page, slug: string, check: () => Promise<void>): Promise<void> =>
+  eventually(async () => {
     await page.goto(`/g/${slug}`)
     await check()
-  }).toPass({ timeout: 5_000 })
-}
+  })
 
 /** Text of a landing element; `textContent` ignores CSS text-transform. */
 const textOf = async (page: Page, selector: string): Promise<string> =>

@@ -5,10 +5,14 @@ import { revalidatePath } from 'next/cache'
 import type { GameProject } from '../../../payload-types'
 
 /**
- * Project fields (name, links, accent color, banner…) render on the
- * public portal, so any change revalidates /g/[slug] — including the
- * old path when the slug itself changes.
+ * Project fields (name, logo, links, accent color…) render on every
+ * public page under /g/[slug]: the landing, patch notes and their RSS
+ * feed, and the issue, report and contact pages. So any change
+ * revalidates the whole subtree, including the old one when the slug
+ * itself changes.
  */
+const revalidatePortal = (slug: string): void => revalidatePath(`/g/${slug}`, 'layout')
+
 export const revalidateGameProject: CollectionAfterChangeHook<GameProject> = ({
   doc,
   previousDoc,
@@ -16,10 +20,10 @@ export const revalidateGameProject: CollectionAfterChangeHook<GameProject> = ({
 }) => {
   if (!context.disableRevalidate) {
     payload.logger.info(`Revalidating game portal at /g/${doc.slug}`)
-    revalidatePath(`/g/${doc.slug}`)
+    revalidatePortal(doc.slug)
 
     if (previousDoc?.slug && previousDoc.slug !== doc.slug) {
-      revalidatePath(`/g/${previousDoc.slug}`)
+      revalidatePortal(previousDoc.slug)
     }
   }
   return doc
@@ -30,7 +34,7 @@ export const revalidateGameProjectDelete: CollectionAfterDeleteHook<GameProject>
   req: { context },
 }) => {
   if (!context.disableRevalidate && doc?.slug) {
-    revalidatePath(`/g/${doc.slug}`)
+    revalidatePortal(doc.slug)
   }
   return doc
 }

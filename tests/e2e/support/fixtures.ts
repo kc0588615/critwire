@@ -59,6 +59,14 @@ export const test = base.extend<{}, WorkerFixtures>({
 
 export { expect }
 
+/**
+ * Retries `check` for up to 5 s after a write. Passing within 5 s proves
+ * on-demand revalidation (timed ISR is an hour) and tolerates one
+ * stale-while-revalidate response.
+ */
+export const eventually = (check: () => Promise<void>): Promise<void> =>
+  expect(check).toPass({ timeout: 5_000 })
+
 type Doc<C extends CollectionSlug> = Config['collections'][C]
 
 /** Creates a document and fails the calling test unless the server answers 201. */
