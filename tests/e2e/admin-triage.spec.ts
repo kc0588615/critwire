@@ -159,7 +159,10 @@ test.describe('S6.2–S6.7 triage as studio A', () => {
       const bPage = await bContext.newPage()
       try {
         await bPage.goto(`${KANBAN}/${reported.id}`)
-        await expect(bPage).toHaveURL(new RegExp(`${KANBAN}\\?notFound=${reported.id}$`))
+        // Payload's list view may then append its default query params (depth, limit, sort).
+        await expect(bPage).toHaveURL(
+          (url) => url.pathname === KANBAN && url.searchParams.get('notFound') === String(reported.id),
+        )
         await expect(bPage.getByText(`The document with ID ${reported.id} could not be found.`)).toBeVisible()
         await expect(bPage.locator('body')).toContainText(bIssue.title)
         await expect(bPage.locator('body')).not.toContainText(reported.title)
@@ -238,7 +241,6 @@ test.describe('S6.2–S6.7 triage as studio A', () => {
   })
 
   test('S6.5 a move the server rejects goes back, with an error toast [F6]', async ({ api, page }) => {
-    test.fail(true, 'F6: fixed in Step 16')
     await page.route(`**/api/issues/${failing.id}`, (route) =>
       route.request().method() === 'PATCH'
         ? route.fulfill({ status: 500, contentType: 'application/json', body: '{"errors":[{"message":"boom"}]}' })

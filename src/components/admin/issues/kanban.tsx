@@ -28,6 +28,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
+import { toast } from '@payloadcms/ui'
 import Link from 'next/link'
 import type { PaginatedDocs } from 'payload'
 import { generateKeyBetween } from 'payload/shared'
@@ -113,6 +114,64 @@ function resolveColumn(
     if (columns[col.id].docs.some((issue) => issue.id === overId)) return col.id
   }
   return null
+}
+
+type PlannedMove = {
+  columns: Record<IssueStatus, ColumnState>
+  data: { _order: string; status?: IssueStatus }
+  to: IssueStatus
+}
+
+/** The board after dropping `draggedId` from `from` onto `overId`, and the PATCH that persists it. */
+function planMove(
+  columns: Record<IssueStatus, ColumnState>,
+  draggedId: number,
+  from: IssueStatus,
+  overId: number | string,
+): null | PlannedMove {
+  const to = resolveColumn(overId, columns)
+  if (!to) return null
+
+  if (from === to) {
+    if (isColumnId(overId)) return null
+    const docs = columns[from].docs
+    const oldIdx = docs.findIndex((doc) => doc.id === draggedId)
+    const newIdx = docs.findIndex((doc) => doc.id === overId)
+    if (oldIdx < 0 || newIdx < 0 || oldIdx === newIdx) return null
+
+    const reordered = arrayMove(docs, oldIdx, newIdx)
+    const newOrder = orderKeyForIndex(reordered, newIdx)
+    const withOrder = reordered.map((doc, i) => (i === newIdx ? { ...doc, _order: newOrder } : doc))
+    return {
+      columns: { ...columns, [from]: { ...columns[from], docs: withOrder } },
+      data: { _order: newOrder },
+      to,
+    }
+  }
+
+  const issue = columns[from].docs.find((doc) => doc.id === draggedId)
+  if (!issue) return null
+
+  const toDocs = [...columns[to].docs]
+  const overIdx = isColumnId(overId) ? toDocs.length : toDocs.findIndex((doc) => doc.id === overId)
+  const insertIdx = overIdx >= 0 ? overIdx : toDocs.length
+  toDocs.splice(insertIdx, 0, { ...issue, status: to })
+  const newOrder = orderKeyForIndex(toDocs, insertIdx)
+  toDocs[insertIdx] = { ...toDocs[insertIdx], _order: newOrder }
+
+  return {
+    columns: {
+      ...columns,
+      [from]: {
+        ...columns[from],
+        docs: columns[from].docs.filter((doc) => doc.id !== draggedId),
+        totalDocs: columns[from].totalDocs - 1,
+      },
+      [to]: { ...columns[to], docs: toDocs, totalDocs: columns[to].totalDocs + 1 },
+    },
+    data: { _order: newOrder, status: to },
+    to,
+  }
 }
 
 function projectLabel(issue: Issue): null | string {
@@ -287,23 +346,27 @@ export function IssuesKanban({ className, initialColumns }: IssuesKanbanProps) {
     ...initialColumns,
   }))
   const [activeIssue, setActiveIssue] = useState<Issue | null>(null)
+  const [overColumn, setOverColumn] = useState<IssueStatus | null>(null)
 
-  const overColumnRef = useRef<IssueStatus | null>(null)
-  const [overColumn, setOverColumnState] = useState<IssueStatus | null>(null)
-  const setOverColumn = useCallback((col: IssueStatus | null) => {
-    overColumnRef.current = col
-    setOverColumnState(col)
-  }, [])
-
-  const isDragging = useRef(false)
+  // Column the active drag started in; null when no drag is active.
   const sourceCol = useRef<IssueStatus | null>(null)
+  // Moves are serialized: rolling back a failed move restores its snapshot,
+  // which would wipe out a later move made while the first was in flight.
+  const moveInFlight = useRef(false)
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }))
 
   const handleLoadMore = useCallback(
     async (status: IssueStatus) => {
       const nextPage = (columns[status].page ?? 1) + 1
-      const result = await fetchMoreIssues(status, nextPage)
+      let result: ColumnState
+      try {
+        result = await fetchMoreIssues(status, nextPage)
+      } catch (err) {
+        console.error(err)
+        toast.error('Could not load more issues.')
+        return
+      }
       setColumns((prev) => ({
         ...prev,
         [status]: {
@@ -315,106 +378,57 @@ export function IssuesKanban({ className, initialColumns }: IssuesKanbanProps) {
     [columns],
   )
 
-  const handleDragStart = useCallback(({ active }: DragStartEvent) => {
-    isDragging.current = true
-    setColumns((prev) => {
+  const handleDragStart = useCallback(
+    ({ active }: DragStartEvent) => {
+      if (moveInFlight.current) return
       for (const col of COLUMNS) {
-        const issue = prev[col.id].docs.find((doc) => doc.id === active.id)
+        const issue = columns[col.id].docs.find((doc) => doc.id === active.id)
         if (issue) {
           sourceCol.current = col.id
           setActiveIssue(issue)
-          break
+          return
         }
       }
-      return prev
-    })
-  }, [])
+    },
+    [columns],
+  )
 
   const handleDragOver = useCallback(
     ({ over }: DragOverEvent) => {
-      if (!isDragging.current) return
-      if (!over) {
-        setOverColumn(null)
-        return
-      }
-      setColumns((prev) => {
-        const col = resolveColumn(over.id as number | string, prev)
-        setOverColumn(col !== sourceCol.current ? col : null)
-        return prev
-      })
+      if (!sourceCol.current) return
+      const col = over ? resolveColumn(over.id as number | string, columns) : null
+      setOverColumn(col !== sourceCol.current ? col : null)
     },
-    [setOverColumn],
+    [columns],
   )
 
   const handleDragEnd = useCallback(
     ({ active, over }: DragEndEvent) => {
-      isDragging.current = false
       setActiveIssue(null)
       setOverColumn(null)
 
-      const draggedId = active.id as number
       const from = sourceCol.current
       sourceCol.current = null
-
       if (!over || !from) return
 
-      const overId = over.id as number | string
+      const draggedId = active.id as number
+      const move = planMove(columns, draggedId, from, over.id as number | string)
+      if (!move) return
 
-      setColumns((prev) => {
-        const to = resolveColumn(overId, prev)
-        if (!to) return prev
-
-        if (from === to) {
-          if (isColumnId(overId)) return prev
-          const docs = prev[from].docs
-          const oldIdx = docs.findIndex((doc) => doc.id === draggedId)
-          const newIdx = docs.findIndex((doc) => doc.id === overId)
-          if (oldIdx < 0 || newIdx < 0 || oldIdx === newIdx) return prev
-
-          const reordered = arrayMove(docs, oldIdx, newIdx)
-          const newOrder = orderKeyForIndex(reordered, newIdx)
-          const withOrder = reordered.map((doc, i) =>
-            i === newIdx ? { ...doc, _order: newOrder } : doc,
-          )
-
-          updateIssue(draggedId, { _order: newOrder }).catch(console.error)
-
-          return { ...prev, [from]: { ...prev[from], docs: withOrder } }
-        }
-
-        const issue = prev[from].docs.find((doc) => doc.id === draggedId)
-        if (!issue) return prev
-
-        const newFromDocs = prev[from].docs.filter((doc) => doc.id !== draggedId)
-        const toDocs = [...prev[to].docs]
-        const overIdx = isColumnId(overId)
-          ? toDocs.length
-          : toDocs.findIndex((doc) => doc.id === overId)
-        const insertIdx = overIdx >= 0 ? overIdx : toDocs.length
-        toDocs.splice(insertIdx, 0, { ...issue, status: to })
-        const newOrder = orderKeyForIndex(toDocs, insertIdx)
-        toDocs[insertIdx] = { ...toDocs[insertIdx], _order: newOrder }
-
-        updateIssue(draggedId, { _order: newOrder, status: to }).catch((err) => {
-          console.error('Failed to update issue:', err)
+      const snapshot = columns
+      setColumns(move.columns)
+      moveInFlight.current = true
+      updateIssue(draggedId, move.data)
+        .catch((err) => {
+          console.error(err)
+          setColumns((prev) => ({ ...prev, [from]: snapshot[from], [move.to]: snapshot[move.to] }))
+          toast.error('Could not move the issue. It is back where it was.')
         })
-
-        return {
-          ...prev,
-          [from]: {
-            ...prev[from],
-            docs: newFromDocs,
-            totalDocs: prev[from].totalDocs - 1,
-          },
-          [to]: {
-            ...prev[to],
-            docs: toDocs,
-            totalDocs: prev[to].totalDocs + 1,
-          },
-        }
-      })
+        .finally(() => {
+          moveInFlight.current = false
+        })
     },
-    [setOverColumn],
+    [columns],
   )
 
   return (

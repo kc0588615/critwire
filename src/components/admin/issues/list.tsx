@@ -6,19 +6,6 @@ import type { Issue } from '@/payload-types'
 import IssuesListViewClient from './list.client'
 import { ISSUE_KANBAN_PAGE_SIZE, ISSUE_KANBAN_STATUSES, type IssueStatus } from './constants'
 
-const emptyPage = (): PaginatedDocs<Issue> => ({
-  docs: [],
-  hasNextPage: false,
-  hasPrevPage: false,
-  limit: ISSUE_KANBAN_PAGE_SIZE,
-  nextPage: null,
-  page: 1,
-  pagingCounter: 1,
-  prevPage: null,
-  totalDocs: 0,
-  totalPages: 1,
-})
-
 export default async function IssuesListView(props: ListViewServerProps) {
   // Payload hands a server list view its server-only props too (config
   // with access functions, the Payload instance, ...). Only the client
@@ -40,21 +27,17 @@ export default async function IssuesListView(props: ListViewServerProps) {
 
   const results = await Promise.all(
     ISSUE_KANBAN_STATUSES.map(async (status) => {
-      try {
-        const result = await payload.find({
-          collection: 'issues',
-          depth: 1,
-          limit: ISSUE_KANBAN_PAGE_SIZE,
-          overrideAccess: false,
-          page: 1,
-          sort: '_order',
-          user: user ?? undefined,
-          where: { status: { equals: status } },
-        })
-        return { result: result as PaginatedDocs<Issue>, status }
-      } catch {
-        return { result: emptyPage(), status }
-      }
+      const result = await payload.find({
+        collection: 'issues',
+        depth: 1,
+        limit: ISSUE_KANBAN_PAGE_SIZE,
+        overrideAccess: false,
+        page: 1,
+        sort: '_order',
+        user: user ?? undefined,
+        where: { status: { equals: status } },
+      })
+      return { result: result as PaginatedDocs<Issue>, status }
     }),
   )
 
