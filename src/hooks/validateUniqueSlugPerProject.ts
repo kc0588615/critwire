@@ -1,6 +1,7 @@
 import type { CollectionBeforeValidateHook, CollectionSlug } from 'payload'
 
 import { ValidationError } from 'payload'
+import { extractID } from 'payload/shared'
 
 /**
  * Enforces slug uniqueness per game project with a friendly validation
@@ -14,8 +15,6 @@ export const validateUniqueSlugPerProject =
     const project = data?.gameProject ?? originalDoc?.gameProject
     if (!slug || !project) return data
 
-    const projectID = typeof project === 'object' ? project.id : project
-
     const existing = await req.payload.find({
       collection,
       depth: 0,
@@ -24,7 +23,7 @@ export const validateUniqueSlugPerProject =
       where: {
         and: [
           { slug: { equals: slug } },
-          { gameProject: { equals: projectID } },
+          { gameProject: { equals: extractID(project) } },
           ...(originalDoc?.id ? [{ id: { not_equals: originalDoc.id } }] : []),
         ],
       },

@@ -1,3 +1,5 @@
+import { extractID } from 'payload/shared'
+
 import type { GameProject } from '@/payload-types'
 
 import { resolveSiteAction } from './actions'
@@ -31,15 +33,7 @@ export const deriveAccentColors = (
   return { accent, accentForeground }
 }
 
-const mediaIdOf = (value: GameProject['banner']): null | number => {
-  if (typeof value === 'number') return value
-  return typeof value === 'object' && value !== null ? value.id : null
-}
-
-const firstResolvable = (
-  refs: SiteActionRef[],
-  project: GameProject,
-): null | SiteAction => {
+const firstResolvable = (refs: SiteActionRef[], project: GameProject): null | SiteAction => {
   for (const ref of refs) {
     if (resolveSiteAction({ label: null, ref }, project)) return { label: null, ref }
   }
@@ -48,7 +42,7 @@ const firstResolvable = (
 
 export const deriveFlagshipDefault = (project: GameProject): SiteConfigV1 => {
   const { accent, accentForeground } = deriveAccentColors(project.accentColor)
-  const bannerId = mediaIdOf(project.banner)
+  const bannerId = project.banner == null ? null : extractID(project.banner)
   const storeAction = firstResolvable(['primary-store', 'demo', 'discord'], project)
   const hasDiscord = Boolean(project.links?.discord)
 
@@ -78,10 +72,7 @@ export const deriveFlagshipDefault = (project: GameProject): SiteConfigV1 => {
     },
     community: {
       variant: hasDiscord ? 'split' : 'artworkBanner',
-      body: toSafeText(
-        `Report bugs, follow fixes, and help shape ${project.name}.`,
-        400,
-      ),
+      body: toSafeText(`Report bugs, follow fixes, and help shape ${project.name}.`, 400),
       actions: hasDiscord
         ? [
             { label: null, ref: 'discord' },

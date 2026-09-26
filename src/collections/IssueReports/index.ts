@@ -1,6 +1,7 @@
 import type { CollectionConfig } from 'payload'
 
 import { tenantMemberAccess, tenantOwnerAccess } from '../../access/tenantAccess'
+import { sameGameProjectFilter } from '../../fields/sameGameProjectFilter'
 import { ISSUE_CATEGORY_OPTIONS, ISSUE_REPORT_STATUS_OPTIONS } from '../options'
 import { createIssueFromPublishedReport } from './hooks/createIssueFromPublishedReport'
 import { validateReportStatus } from './hooks/validateReportStatus'
@@ -59,12 +60,7 @@ export const IssueReports: CollectionConfig = {
       name: 'issue',
       type: 'relationship',
       relationTo: 'issues',
-      filterOptions: ({ data }) => {
-        const project = (data as { gameProject?: number | string | { id: number | string } })
-          ?.gameProject
-        const projectID = typeof project === 'object' && project !== null ? project.id : project
-        return projectID ? { gameProject: { equals: projectID } } : false
-      },
+      filterOptions: sameGameProjectFilter,
     },
     {
       name: 'submitterEmail',

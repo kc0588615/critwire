@@ -5,6 +5,7 @@ import { draftMode } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { NextRequest } from 'next/server'
 import { getPayload } from 'payload'
+import { extractID } from 'payload/shared'
 
 import { verifySitePreviewToken } from '@/lib/security/sitePreviewToken'
 
@@ -59,11 +60,10 @@ export async function GET(req: NextRequest): Promise<Response> {
     return new Response('You are not allowed to preview this page', { status: 403 })
   }
 
-  const projectID = typeof page.gameProject === 'object' ? page.gameProject.id : page.gameProject
   const project = await payload.findByID({
     collection: 'game-projects',
     depth: 0,
-    id: projectID,
+    id: extractID(page.gameProject),
   })
   if (!project?.slug) {
     draft.disable()

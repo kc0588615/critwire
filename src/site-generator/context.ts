@@ -1,5 +1,6 @@
 import type { GamePage, GameProject, Media, User } from '@/payload-types'
 import type { Payload } from 'payload'
+import { extractID } from 'payload/shared'
 
 import { resolveSiteAction } from '@/site-templates/flagship-game-v1/actions'
 import { flagshipSlots, SLOT_ORDER } from '@/site-templates/flagship-game-v1/registry'
@@ -8,11 +9,6 @@ import { SITE_ACTION_REFS } from '@/site-templates/flagship-game-v1/schema/refs'
 
 import { collectSiteMediaRefs } from './media'
 import type { SiteGenerationContext } from './types'
-
-const idOf = (value: GamePage['tenant'] | GamePage['gameProject']): null | number | string => {
-  if (value == null) return null
-  return typeof value === 'object' ? value.id : value
-}
 
 const LINK_KEYS = [
   'website',
@@ -61,8 +57,9 @@ export const buildSiteGenerationContext = async ({
   project: GameProject
   user: User
 }): Promise<SiteGenerationContext> => {
-  const tenantID = idOf(page.tenant) ?? idOf(project.tenant)
-  if (tenantID == null) throw new Error('Game page has no tenant.')
+  const tenant = page.tenant ?? project.tenant
+  if (tenant == null) throw new Error('Game page has no tenant.')
+  const tenantID = extractID(tenant)
 
   const selectedMedia = new Set(collectSiteMediaRefs(currentConfig))
 
@@ -87,10 +84,7 @@ export const buildSiteGenerationContext = async ({
         sort: '-publishedAt',
         user,
         where: {
-          and: [
-            { gameProject: { equals: project.id } },
-            { _status: { equals: 'published' } },
-          ],
+          and: [{ gameProject: { equals: project.id } }, { _status: { equals: 'published' } }],
         },
       }),
       payload.count({
@@ -138,10 +132,7 @@ export const buildSiteGenerationContext = async ({
           pagination: false,
           user,
           where: {
-            and: [
-              { tenant: { equals: tenantID } },
-              { id: { in: [...selectedMedia] } },
-            ],
+            and: [{ tenant: { equals: tenantID } }, { id: { in: [...selectedMedia] } }],
           },
         })
       : null

@@ -3,6 +3,7 @@ import type { CollectionConfig } from 'payload'
 import { slugField } from 'payload'
 
 import { tenantMemberAccess, tenantOwnerAccess } from '../../access/tenantAccess'
+import { sameGameProjectFilter } from '../../fields/sameGameProjectFilter'
 import { validateUniqueSlugPerProject } from '../../hooks/validateUniqueSlugPerProject'
 import { ISSUE_CATEGORY_OPTIONS, ISSUE_STATUS_OPTIONS } from '../options'
 import { deleteIssueVotes } from './hooks/deleteIssueVotes'
@@ -119,12 +120,7 @@ export const Issues: CollectionConfig = {
         condition: (data) => data?.status === 'FIXED',
         description: 'Links the public issue to the patch note that fixed it.',
       },
-      filterOptions: ({ data }) => {
-        const project = (data as { gameProject?: number | string | { id: number | string } })
-          ?.gameProject
-        const projectID = typeof project === 'object' && project !== null ? project.id : project
-        return projectID ? { gameProject: { equals: projectID } } : false
-      },
+      filterOptions: sameGameProjectFilter,
     },
     {
       // Maintained by the IssueVotes hooks; never edited by hand.

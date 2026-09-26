@@ -1,6 +1,7 @@
 import type { CollectionConfig } from 'payload'
 
 import { ValidationError } from 'payload'
+import { extractID } from 'payload/shared'
 
 import { tenantMemberAccess, tenantOwnerAccess } from '../../access/tenantAccess'
 import { GameCTA } from '../../blocks/game/CTA/config'
@@ -98,7 +99,6 @@ export const GamePages: CollectionConfig = {
         const kind = data?.kind ?? originalDoc?.kind ?? 'landing'
         if (!project) return data
 
-        const projectID = typeof project === 'object' ? project.id : project
         const existing = await req.payload.find({
           collection: 'game-pages',
           depth: 0,
@@ -106,7 +106,7 @@ export const GamePages: CollectionConfig = {
           overrideAccess: true,
           where: {
             and: [
-              { gameProject: { equals: projectID } },
+              { gameProject: { equals: extractID(project) } },
               { kind: { equals: kind } },
               ...(originalDoc?.id ? [{ id: { not_equals: originalDoc.id } }] : []),
             ],

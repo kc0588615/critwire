@@ -1,10 +1,14 @@
 import type { GamePage, GameProject, User } from '@/payload-types'
 import type { Payload } from 'payload'
+import { extractID } from 'payload/shared'
 
 import { checkRateLimit } from '@/lib/upstash/rate-limit'
 import { deriveFlagshipDefault } from '@/site-templates/flagship-game-v1/defaults'
 import { normalizeSiteInput } from '@/site-templates/flagship-game-v1/normalize'
-import { siteConfigV1Schema, type SiteConfigV1 } from '@/site-templates/flagship-game-v1/schema/config'
+import {
+  siteConfigV1Schema,
+  type SiteConfigV1,
+} from '@/site-templates/flagship-game-v1/schema/config'
 
 import { buildSiteGenerationContext } from './context'
 import { createSiteGenerator } from './openai'
@@ -28,11 +32,6 @@ type RateLimitCheck = (args: {
   limit: number
   windowSeconds: number
 }) => Promise<{ success: boolean }>
-
-const idOf = (value: GamePage['gameProject'] | GamePage['tenant']): null | number | string => {
-  if (value == null) return null
-  return typeof value === 'object' ? value.id : value
-}
 
 const currentConfigFor = ({
   page,
@@ -97,10 +96,10 @@ export const generateAndSaveSiteDraft = async ({
     throw new SiteGenerationServiceError('Game page not found.', 'not-found', 404)
   }
 
-  const tenantID = idOf(page.tenant)
-  if (tenantID == null) {
+  if (page.tenant == null) {
     throw new SiteGenerationServiceError('Game page has no tenant.', 'forbidden', 403)
   }
+  const tenantID = extractID(page.tenant)
 
   const limit = await rateLimit({
     identifier: String(tenantID),
@@ -116,10 +115,10 @@ export const generateAndSaveSiteDraft = async ({
     )
   }
 
-  const projectID = idOf(page.gameProject)
-  if (projectID == null) {
+  if (page.gameProject == null) {
     throw new SiteGenerationServiceError('Game project not found.', 'not-found', 404)
   }
+  const projectID = extractID(page.gameProject)
 
   let project: GameProject
   try {

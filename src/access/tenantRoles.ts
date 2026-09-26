@@ -1,3 +1,5 @@
+import { extractID } from 'payload/shared'
+
 import type { Tenant, User } from '@/payload-types'
 
 export type TenantRole = 'member' | 'owner'
@@ -16,7 +18,7 @@ export const getTenantIDsByRole = (
   return user.tenants.reduce<(number | string)[]>((ids, row) => {
     if (role && !row.roles?.includes(role)) return ids
     const tenant = row.tenant as number | string | Tenant
-    ids.push(typeof tenant === 'object' ? tenant.id : tenant)
+    ids.push(extractID(tenant))
     return ids
   }, [])
 }

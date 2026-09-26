@@ -2,6 +2,7 @@ import config from '@payload-config'
 import fs from 'fs/promises'
 import path from 'path'
 import { getPayload } from 'payload'
+import { extractID } from 'payload/shared'
 
 import type { GameProject, Media } from '../payload-types'
 
@@ -43,9 +44,6 @@ const lexicalFromText = (text: string) => ({
     version: 1,
   },
 })
-
-const idOf = (value: number | { id: number } | null | undefined) =>
-  typeof value === 'object' && value !== null ? value.id : value
 
 export async function seedCritterConnect() {
   const payload = await getPayload({ config })
@@ -154,8 +152,10 @@ export async function seedCritterConnect() {
     const needsUpdate =
       project.name !== projectSeed.name ||
       project.description !== projectSeed.description ||
-      idOf(project.banner) !== banner.id ||
-      idOf(project.logo) !== logo.id ||
+      !project.banner ||
+      extractID(project.banner) !== banner.id ||
+      !project.logo ||
+      extractID(project.logo) !== logo.id ||
       project.accentColor !== projectSeed.accentColor ||
       project.links?.steam !== projectSeed.links.steam ||
       project.availability?.releaseState !== projectSeed.availability.releaseState ||
@@ -272,8 +272,7 @@ export async function seedCritterConnect() {
     adaptive: {
       kind: 'systems',
       heading: 'A field system that rewards careful observation',
-      body:
-        'Classification, habitat, geography, morphology, behavior, life cycle, key facts, and conservation remain visible as connected evidence trails—not trivia hidden behind a score.',
+      body: 'Classification, habitat, geography, morphology, behavior, life cycle, key facts, and conservation remain visible as connected evidence trails—not trivia hidden behind a score.',
       media: logo.id,
       items: [
         {

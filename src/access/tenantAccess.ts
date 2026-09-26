@@ -38,10 +38,10 @@ export const tenantMemberFieldRead: FieldAccess = ({ doc, req }) => {
   if (isSuperAdmin(user)) return true
 
   const tenant = (doc as { tenant?: null | number | string | Tenant } | undefined)?.tenant
-  const tenantID = typeof tenant === 'object' && tenant !== null ? tenant.id : tenant
-  if (tenantID == null) return false
+  if (tenant == null) return false
 
-  return getTenantIDsByRole(user).some((id) => String(id) === String(tenantID))
+  const tenantID = String(extractID(tenant))
+  return getTenantIDsByRole(user).some((id) => String(id) === tenantID)
 }
 
 /**
