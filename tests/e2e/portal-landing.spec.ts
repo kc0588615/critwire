@@ -175,6 +175,22 @@ test('S2.3 a white accent still gives the primary button readable text', async (
   expect(contrastRatio(fg, bg), `${fg} on ${bg}`).toBeGreaterThanOrEqual(4.5)
 })
 
+test('S2.3 an accent too dark for the page falls back to the default accent', async ({ api, page, uniqueSlug, world }) => {
+  const project = await createProject(api('aOwner'), world.tenants.A.id, uniqueSlug('land-dark'), {
+    accentColor: '#123456',
+  })
+  await page.goto(`/g/${project.slug}`)
+  const button = page.locator('.fs-btn-primary').first()
+  await expect(button).toBeVisible()
+  const { color, background } = await button.evaluate((el) => {
+    const style = getComputedStyle(el)
+    return { color: style.color, background: style.backgroundColor }
+  })
+  const [fg, bg] = [rgbToHex(color), rgbToHex(background)]
+  expect(bg).toBe(DEFAULT_THEME_COLORS.accent)
+  expect(contrastRatio(fg, bg), `${fg} on ${bg}`).toBeGreaterThanOrEqual(4.5)
+})
+
 test.describe('S2.4 publishing a flagship page', () => {
   let project: GameProject
   let landing: GamePage
@@ -232,7 +248,17 @@ test.describe('S2.4 publishing a flagship page', () => {
   test('rejects an unsafe or invalid configuration and keeps the public page', async ({ api, page }) => {
     const aMember = api('aMember')
     const invalid: [string, (site: ReturnType<typeof siteLike>) => object][] = [
-      ['a <script> tagline', (site) => ({ ...site, hero: { ...site.hero, tagline: '<script>alert(1)</script>' } })],
+      ...[
+        '<script>alert(1)</script>',
+        'Nice game <img src=x>',
+        'body { color: red }',
+        'class="p-4 text-red-500"',
+        'style=color:red',
+        'javascript:alert(1)',
+      ].map((tagline): [string, (site: ReturnType<typeof siteLike>) => object] => [
+        `the tagline ${tagline}`,
+        (site) => ({ ...site, hero: { ...site.hero, tagline } }),
+      ]),
       [
         'a raw URL as an action ref',
         (site) => ({ ...site, hero: { ...site.hero, primaryAction: { ref: 'https://evil.example', label: null } } }),
@@ -241,6 +267,11 @@ test.describe('S2.4 publishing a flagship page', () => {
         'low-contrast colours',
         (site) => ({ ...site, theme: { colors: { ...DEFAULT_THEME_COLORS, foreground: '#2a2f3d' } } }),
       ],
+      [
+        'low-contrast button text',
+        (site) => ({ ...site, theme: { colors: { ...DEFAULT_THEME_COLORS, accentForeground: '#67e8f9' } } }),
+      ],
+      ['a 3-digit hex colour', (site) => ({ ...site, theme: { colors: { ...DEFAULT_THEME_COLORS, accent: '#fff' } } })],
       ['an unapproved variant', (site) => ({ ...site, hero: { ...site.hero, variant: 'parallax' } })],
     ]
     for (const [name, mutate] of invalid) {
@@ -255,6 +286,18 @@ test.describe('S2.4 publishing a flagship page', () => {
 
   test('publishes, keeps drafts private, and falls back when unpublished', async ({ api, page }) => {
     const aMember = api('aMember')
+
+    await test.step('setting only the accent keeps the default palette for the other colours', async () => {
+      const site = siteLike('Accent only')
+      const { status, body } = await publish(aMember, { ...site, theme: { colors: { accent: '#f59e0b' } } })
+      expect(status, JSON.stringify(body)).toBe(200)
+      expect(body.doc.site?.theme?.colors).toMatchObject({ ...DEFAULT_THEME_COLORS, accent: '#f59e0b' })
+      await expectLanding(page, project.slug, async () => {
+        await expect(page.getByRole('heading', { level: 1 })).toHaveText('Accent only', { timeout: 1_000 })
+      })
+      const background = await page.locator('.fs-btn-primary').first().evaluate((el) => getComputedStyle(el).backgroundColor)
+      expect(rgbToHex(background)).toBe('#f59e0b')
+    })
 
     await test.step('a valid publish shaped like admin data renders', async () => {
       const site = siteLike('Weather the storm')

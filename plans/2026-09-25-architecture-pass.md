@@ -1357,7 +1357,7 @@ The session that carries out the affected step copies the matching line into **D
        - Then delete the fixture rows.
   - **Verify:** standard checks. `run.log` shows `migrate:fresh` applying 10 migrations.
 
-- [ ] **Step 18: Audit and trim `tests/int`**
+- [x] **Step 18: Audit and trim `tests/int`**
   - **Files:**
     - Delete `tests/int/api.int.spec.ts`, `tally-parse.int.spec.ts`, `site-config-schema.int.spec.ts` and `site-template.int.spec.ts`.
     - Trim `template-revalidation.int.spec.ts`: keep only "still skips issue writes that only change kanban order".
@@ -1376,6 +1376,7 @@ The session that carries out the affected step copies the matching line into **D
     - `pnpm test:int` → 3 files, 8 tests (site-config-parity 2, site-generator 5, template-revalidation 1).
     - `psql "$DB" -Atc "select count(*) from payload_migrations where name='dev'"` → 0; nothing boots Payload any more.
     - The full E2E suite, only if a case was added.
+  - **Deviation (done):** `template-revalidation.int` keeps all 3 tests, so `pnpm test:int` is 3 files, 10 tests. The two "moves projects" cases were meant to move to S2.5/S3.4, but Step 7 found that nothing under `/g` is ISR-cached (H4). Those E2E tests would pass with every `revalidatePath` call deleted, so these int tests are the only guard for rule 4 until H4 lands. The audit ran in this session instead of 7 subagents: the files total 874 lines. Five gaps got E2E cases first (see the table).
 
 - [ ] **Step 19: Audit and remove `tests/manual`**
   - **Files:**
@@ -1442,6 +1443,37 @@ The session that carries out the affected step copies the matching line into **D
     4. Set `status: done`, then commit and push.
   - **Verify:** everything in Verification passes. The artifact directory holds `playwright-report/index.html`, `run.log` and `README.md`.
 
+### Test audit results
+
+Checked against `/tmp/e2e-step17c.log` (71 passed). "Added" marks E2E cases added in Step 18, which passed in `/tmp/e2e-step18.log` (72 passed).
+
+| File › test | Call | Reason | E2E replacement |
+|---|---|---|---|
+| api › fetches users | delete | Asserts only that `find` returns something; its dev push wrote the `dev` row. | `setup` › seed a fresh database and sign in every role |
+| tally-parse › share URL; embed URL; bare id; www host | delete | Accepted input forms, visible on the portal. | S5.2 a Tally or external report provider replaces the native form (share URL); S5.5 contact settings and submissions are validated › Tally embed URLs, www links and bare form ids embed the form (**added**) |
+| tally-parse › rejects non-Tally hosts; empty/invalid; validateOptionalTallyUrl ×3 | delete | Rejection is the field validator's job, seen on save; empty is allowed by every optional-field save in the suite. | S5.5 … › a non-Tally URL is rejected for TALLY |
+| site-config-schema › empty input → default config; normalizes empty text and trims | delete | Restates Zod defaults; the rendered defaults are visible. | S2.2 derived default landing (3 tests); S2.4 publishes, keeps drafts private… |
+| site-config-schema › rejects unknown keys; rejects section reordering | delete | Unreachable: Payload drops keys outside the field schema before hooks run (Step 6). | S2.4 publishes… › a valid publish shaped like admin data renders (asserts `junk` is dropped) |
+| site-config-schema › unsupported schema versions | delete | Only our code writes `schemaVersion` (admin read-only, always 1); restates a Zod literal. | — |
+| site-config-schema › approved variants; action refs, never raw URLs | delete | Seen as a 400 on publish. | S2.4 rejects an unsafe or invalid configuration… (unapproved variant, raw URL ref) |
+| site-config-schema › rejects HTML, CSS blocks and class attributes | delete | E2E covered only `<script>`; now all six hostile strings. | S2.4 rejects an unsafe… › the tagline … ×6 (**added** 5) |
+| site-config-schema › 6-digit hex colours; WCAG contrast pairs | delete | E2E covered only the foreground pair; now the button-text pair and a 3-digit hex too. | S2.4 rejects an unsafe… › low-contrast colours, low-contrast button text, a 3-digit hex colour (**added** 2) |
+| site-config-schema › length limits and item caps; media refs as positive ids | delete | Length/cap numbers restate the Zod config (parity keeps field and schema in step); Payload's upload field validates relation ids itself. | — |
+| site-config-schema › normalize: upload relations → ids, row ids stripped | delete | The admin-shaped publish sends row ids and a media id and renders. | S2.4 … › a valid publish shaped like admin data renders |
+| site-config-schema › normalize: partly filled colour group is unset | delete | Unreachable through the API: the colour fields have defaults, so Payload fills the rest of the group. What a studio sees is covered. | S2.4 … › setting only the accent keeps the default palette for the other colours (**added**) |
+| site-template › fixed section order | delete | | S2.2 … › shows the project’s facts… › sections render in the template’s fixed order |
+| site-template › registry covers every slot | delete | A missing or broken slot fails the render of every page that uses it. | S2.2, S2.4 |
+| site-template › deriveFlagshipDefault minimal project; project facts; hostile text | delete | | S2.2 derived default landing (3 tests) |
+| site-template › accessible accent for any input | delete | Two branches: white keeps the accent and swaps the text (covered); a too-dark accent falls back to the default (was not). | S2.3 a white accent still gives the primary button readable text; S2.3 an accent too dark for the page falls back to the default accent (**added**) |
+| site-template › contact/report/issues/updates internal; external refs only from facts | delete | | S2.2 … › portal links stay on /g/<slug>…; › the primary call to action is the first platform’s store; S2.2 a project without store facts has no store button… |
+| site-template › trailer facade | delete | | S2.2 loads the trailer iframe only after “Play video” |
+| site-generator › requires a slot only for slot-scoped generation | delete | E2E covered only the rejection; now the accepted half too. | S1.10 validates the request before generating (both steps; **added** the slot-named step) |
+| site-generator › theme-only and slot-only scope; structured output; refusals and unknown media; redacted context and one draft write; no write on failure or rate limit | keep (5) | Need a fake model: E2E has no OpenAI key and can't see the model's input or force its failures. | — |
+| site-config-parity › site group mirrors every key; every field, enum and type matches | keep (2) | Checks that two declarations agree down to every enum option; E2E would have to exercise every field. | — |
+| template-revalidation › both landings when a public issue moves; both patch-note trees when a note moves; skips kanban-order-only writes | keep (3) | E2E can't observe revalidation: nothing under `/g` is ISR-cached (Step 7, H4), so the move E2E tests pass without it. Revisit when H4 lands. | — |
+
+devDependencies now unused: `@testing-library/react` (no importer). `jsdom` is only the vitest `environment`; no remaining int test needs a DOM. Left installed for the owner to remove (Summary).
+
 ### Risks
 
 - **Turnstile needs outbound HTTPS** to challenges.cloudflare.com, from both the browser and the server. Step 1 checks it. If it's blocked, the S5 browser tests fail at "token issued": record that under Questions, and don't add a bypass.
@@ -1489,7 +1521,7 @@ git status --short                                    # empty: the run tests com
 grep -rnE "test\.(only|fail|skip|fixme)\(" tests/e2e  # no output
 pnpm exec tsc --noEmit                                # 0 errors
 pnpm lint                                             # 0 errors
-pnpm test:int                                         # 3 files, 8 tests pass
+pnpm test:int                                         # 3 files, 10 tests pass
 psql "$DB" -Atc "select count(*) from payload_migrations where name='dev'"      # 0
 
 rm -rf playwright-report test-results
@@ -1655,6 +1687,8 @@ This covers only the parts proven outside the E2E suite. The list is written bef
 - **Step 17b (deviation): the migration drops the 10 foreign keys into the removed tables before the tables, not after.** As generated, `DROP TABLE "posts" CASCADE` (and the other drops) removed `pages_rels_posts_fk` and the rest, and the generated `DROP CONSTRAINT` that followed failed ("constraint does not exist"), so the migration could never apply. The proof caught this; the migration rolled back cleanly. The 10 FKs are the only dependents of the 37 tables outside them (checked in `pg_constraint`, and there are no views), so after the reorder CASCADE removes nothing else. The statements stay exactly as generated, only moved, and `DROP CONSTRAINT` keeps failing loudly if a constraint is unexpectedly missing (no `IF EXISTS`).
 - **Planner H2 decisions (Step 17c): taken.** Nested folders count through their media: a folder's subtree (it and every descendant, cycles cut by `UNION`) must hold at least one media item, all of one tenant. Folders that already have a tenant are never overwritten, and a media item without a tenant disqualifies its folder. Unassigned folder ids go to `payload.logger.warn`, so in production they land in the deploy log.
 - **Step 17c: the assigned ids are logged too, with `payload.logger.info`,** so the deploy log shows both halves of the backfill. `down` is a no-op: a tenant on a folder is valid under the old code.
+- **Step 18: `template-revalidation.int` keeps all 3 tests (deviation from the audit's "keep 1 of 3").** The move cases' E2E replacements pass whether or not the hooks revalidate, because nothing under `/g` is ISR-cached (Step 7, H4). Deleting them would leave rule 4 unguarded for moves.
+- **Step 18: five int-only behaviors got E2E cases before their tests went:** Tally embed/www/bare-id forms (S5.5), the other five hostile tagline strings, the button-text contrast pair and 3-digit hex (S2.4), accent-only theme colours (S2.4), a too-dark accent falling back (S2.3), and a slot-scoped generation request that names its slot (S1.10). `normalizeSiteInput`'s partial-colour branch turned out unreachable through the API (the colour fields have defaults), so the E2E case asserts what the studio actually gets instead.
 
 ## Questions for the owner
 
@@ -1689,5 +1723,6 @@ See /srv/critter-ai/handoff/critwire.md (Q1 → H3, Q2 → H1, Q3 → H2, Q4 →
 - 2026-09-26 05:50 UTC: Step 17a done: website-template code removed (H1 part 1). Posts, Categories, the Header/Footer globals, the redirects/nested-docs/form-builder/search plugins, the post/search routes and posts sitemap, the Archive/Form/Banner/Code/RelatedPosts blocks, PostHero, the archive/card/pagination/redirect components, 5 unused shadcn primitives and 9 template utilities deleted; Pages, links, rich text, meta, preview path, sitemaps, header/footer and AdminBar trimmed; 8 packages removed (`pnpm ls` diff shows only those; `--frozen-lockfile` passes); no schema change. Before the removal the rewritten S1 failed only the H1 test (a template endpoint answered 200). Leftover grep empty. tsc 0; lint 0 errors, 24 warnings (was 27); E2E exit 0, 71 passed, 0 expected-fail, 0 flaky, 215 s wall; `dev` rows 0 in both DBs.
 - 2026-09-26 05:57 UTC: Step 17b done: `20260926_054934_remove_website_template` drops the 37 template tables, 10 columns (with their FKs and indexes) and 10 enums; generated SQL matched the planned list exactly. A cleanup statement runs first. The first mission-DB apply failed and rolled back: the generated `DROP TABLE ... CASCADE` had already removed the FKs its later `DROP CONSTRAINT` named, so the FK drops now run first (Decisions). psql proof (`$PROOFS/remove-template.sql`, `step17b-remove-template.log`): exactly the 37 tables dropped, 109 → 72, nothing added; columns and enums gone; P1 keeps only its P2 row in both rels tables; L1/L2 and J1 gone, L3 and J2 kept; migration applied after `reconcile_issue_upvote_counts`; fixtures deleted. tsc 0; lint 0 errors, 24 warnings (unchanged); E2E exit 0, `migrate:fresh` applied 9 migrations, 71 passed, 0 expected-fail, 0 flaky, 212 s wall; `dev` rows 0 in both DBs.
 - 2026-09-26 06:01 UTC: Step 17c done: data migration `20260926_055704_backfill_media_folder_tenants` (`migrate:create` blank, snapshot identical to 054934, so no drift) gives each untenanted folder its subtree's single media tenant via a recursive CTE, and warns with the ids left without one. Proof on the mission DB (`proofs/backfill-folders.sql`, `proofs/step17c-before.txt`, `proofs/step17c-folder-backfill.log`): F1, P, C, Q1, S1, S2 → A, Q2 → B, R stays B; the warn line listed exactly F2, F3, F4 and Q; media rows and folder names, parents and `updated_at` unchanged; `migrate:status` lists it after `remove_website_template`; fixture removed (0 leftover rows). tsc 0; lint 0 errors, 24 warnings (unchanged); E2E exit 0, `migrate:fresh` applied 10 migrations, 71 passed, 0 expected-fail, 0 flaky, 217 s wall.
+- 2026-09-26 06:16 UTC: Step 18 done: `tests/int` audited test by test (`### Test audit results`). Deleted `api`, `tally-parse`, `site-config-schema` and `site-template` int files and site-generator's "requires a slot"; kept site-generator 5, parity 2 and all 3 template-revalidation tests (deviation: `/g` isn't ISR-cached, so E2E can't see revalidation). Added E2E cases first for the five uncovered behaviors (1 new test, steps in S1.10, S2.4, S5.5). First full run failed my new accent-only step (Payload fills the colour group from field defaults); step rewritten to assert that. tsc 0; lint 0 errors, 24 warnings (unchanged); `pnpm test:int` 3 files, 10 tests, no Postgres; `dev` rows 0 in both DBs; E2E exit 0, 72 passed, 0 expected-fail, 0 flaky, 219 s wall.
 
 ## Summary

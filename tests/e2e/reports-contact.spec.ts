@@ -326,7 +326,7 @@ test.describe('S5.4–S5.6 contact form', () => {
     })
   })
 
-  test('S5.5 contact settings and submissions are validated', async ({ api, uniqueSlug, webhookSink, world }) => {
+  test('S5.5 contact settings and submissions are validated', async ({ api, page, uniqueSlug, webhookSink, world }) => {
     const aOwner = api('aOwner')
     const project = await createProject(aOwner, world.tenants.A.id, uniqueSlug('rc-contact-validate'), {
       contact: { target: 'DISCORD_WEBHOOK', discordWebhookUrl: webhookSink.url(`/api/webhooks/${uniqueSlug('s55')}/t`) },
@@ -335,6 +335,19 @@ test.describe('S5.4–S5.6 contact form', () => {
     await test.step('a non-Tally URL is rejected for TALLY', async () => {
       const { status } = await setContact(aOwner, project, { target: 'TALLY', tallyUrl: 'https://evil-tally.so/r/x' })
       expect(status).toBe(400)
+    })
+
+    await test.step('Tally embed URLs, www links and bare form ids embed the form', async () => {
+      for (const [tallyUrl, formID] of [
+        ['https://tally.so/embed/abc123?alignLeft=1&transparentBackground=1', 'abc123'],
+        ['https://www.tally.so/r/wMzXab', 'wMzXab'],
+        ['kLm9Qz', 'kLm9Qz'],
+      ]) {
+        const { status, body } = await setContact(aOwner, project, { target: 'TALLY', tallyUrl })
+        expect(status, JSON.stringify(body)).toBe(200)
+        await open(page, contactPath(project.slug))
+        await expect(page.locator(`iframe[data-tally-src^="https://tally.so/embed/${formID}?"]`)).toHaveCount(1)
+      }
     })
 
     await test.step('a stale hidden webhook value does not block routing to EMAIL', async () => {

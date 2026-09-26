@@ -510,9 +510,15 @@ test.describe('S1.10 AI site generation', () => {
   })
 
   test('validates the request before generating', async ({ api }) => {
-    const { status, body } = await generate(api('aOwner'), { ...request(), scope: 'slot' })
-    expect(status).toBe(400)
-    expect(body.error).toContain('Choose a slot')
+    await test.step('a slot-scoped request without a slot → 400', async () => {
+      const { status, body } = await generate(api('aOwner'), { ...request(), scope: 'slot' })
+      expect(status).toBe(400)
+      expect(body.error).toContain('Choose a slot')
+    })
+    await test.step('naming the slot passes validation (503: no OpenAI key here)', async () => {
+      const { status, body } = await generate(api('aOwner'), { ...request(), scope: 'slot', slot: 'hero' })
+      expect(status, JSON.stringify(body)).toBe(503)
+    })
   })
 
   test('without an OpenAI key answers 503 and leaves the draft alone', async ({ api }) => {

@@ -14,7 +14,6 @@ import {
   SiteGenerationServiceError,
 } from '@/site-generator/service'
 import type { SiteGenerationContext, SiteGenerator } from '@/site-generator/types'
-import { generateSiteRequestSchema } from '@/site-generator/types'
 
 const project = (overrides: Partial<GameProject> = {}): GameProject =>
   ({
@@ -55,22 +54,7 @@ const context = (overrides: Partial<SiteGenerationContext> = {}): SiteGeneration
   ...overrides,
 })
 
-describe('site generation request and scope policy', () => {
-  it('requires a slot only for slot-scoped generation', () => {
-    expect(
-      generateSiteRequestSchema.safeParse({ gamePageId: 1, prompt: 'Restyle it', scope: 'slot' })
-        .success,
-    ).toBe(false)
-    expect(
-      generateSiteRequestSchema.safeParse({
-        gamePageId: 1,
-        prompt: 'Restyle it',
-        scope: 'slot',
-        slot: 'hero',
-      }).success,
-    ).toBe(true)
-  })
-
+describe('site generation scope policy', () => {
   it('enforces theme-only and slot-only changes after model output', () => {
     const candidate = siteConfigV1Schema.parse({
       hero: { heading: 'Changed by model' },

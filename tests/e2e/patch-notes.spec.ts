@@ -7,8 +7,7 @@ import { createPatchNote, createProject, eventually, expect, test } from './supp
 /**
  * Public patch notes under /g/<slug>/patch-notes: the paginated feed,
  * detail pages, the RSS feed, and how each follows edits. Replaces
- * tests/manual/verify-phase4.mjs and the note-move case in
- * tests/int/template-revalidation.int.
+ * tests/manual/verify-phase4.mjs.
  */
 
 const feedPath = (slug: string) => `/g/${slug}/patch-notes`
