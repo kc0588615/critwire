@@ -5,6 +5,7 @@ import { slugField } from 'payload'
 import { tenantMemberAccess, tenantOwnerAccess } from '../../access/tenantAccess'
 import { validateUniqueSlugPerProject } from '../../hooks/validateUniqueSlugPerProject'
 import { ISSUE_CATEGORY_OPTIONS, ISSUE_STATUS_OPTIONS } from '../options'
+import { deleteIssueVotes } from './hooks/deleteIssueVotes'
 import {
   revalidateIssueLanding,
   revalidateIssueLandingDelete,
@@ -126,7 +127,7 @@ export const Issues: CollectionConfig = {
       },
     },
     {
-      // Maintained by the voting endpoint (Phase 5); never edited by hand.
+      // Maintained by the IssueVotes hooks; never edited by hand.
       name: 'upvoteCount',
       type: 'number',
       access: {
@@ -144,6 +145,7 @@ export const Issues: CollectionConfig = {
   hooks: {
     afterChange: [revalidateIssueLanding],
     afterDelete: [revalidateIssueLandingDelete],
+    beforeDelete: [deleteIssueVotes],
     beforeValidate: [validateUniqueSlugPerProject('issues')],
   },
   indexes: [

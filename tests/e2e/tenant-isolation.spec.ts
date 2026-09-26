@@ -206,7 +206,6 @@ test.describe('S1.3 roles', () => {
     playwright,
     uniqueSlug,
   }) => {
-    test.fail(true, 'F22: fixed in Step 10')
     const issue = await createIssue(api('aOwner'), a.project, uniqueSlug('iso-voted-delete'))
     await castVote(playwright, issue.id)
     expect(await countVotes(api('superAdmin'), issue.id)).toBe(1)

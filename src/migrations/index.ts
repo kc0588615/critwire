@@ -5,6 +5,7 @@ import * as migration_20260707_225012_phase6_contact_jobs from './20260707_22501
 import * as migration_20260712_065641_issues_orderable_and_tally_forms from './20260712_065641_issues_orderable_and_tally_forms';
 import * as migration_20260712_082516_flagship_site_config from './20260712_082516_flagship_site_config';
 import * as migration_20260926_030253_tenant_scoped_media_folders from './20260926_030253_tenant_scoped_media_folders';
+import * as migration_20260926_042239_reconcile_issue_upvote_counts from './20260926_042239_reconcile_issue_upvote_counts';
 
 export const migrations = [
   {
@@ -40,6 +41,11 @@ export const migrations = [
   {
     up: migration_20260926_030253_tenant_scoped_media_folders.up,
     down: migration_20260926_030253_tenant_scoped_media_folders.down,
-    name: '20260926_030253_tenant_scoped_media_folders'
+    name: '20260926_030253_tenant_scoped_media_folders',
+  },
+  {
+    up: migration_20260926_042239_reconcile_issue_upvote_counts.up,
+    down: migration_20260926_042239_reconcile_issue_upvote_counts.down,
+    name: '20260926_042239_reconcile_issue_upvote_counts'
   },
 ];
