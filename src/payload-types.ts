@@ -396,6 +396,7 @@ export interface Media {
  */
 export interface FolderInterface {
   id: number;
+  tenant?: (number | null) | Tenant;
   name: string;
   folder?: (number | null) | FolderInterface;
   documentsAndFolders?: {
@@ -2786,6 +2787,7 @@ export interface PayloadJobsSelect<T extends boolean = true> {
  * via the `definition` "payload-folders_select".
  */
 export interface PayloadFoldersSelect<T extends boolean = true> {
+  tenant?: T;
   name?: T;
   folder?: T;
   documentsAndFolders?: T;

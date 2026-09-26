@@ -10,7 +10,8 @@ type TurnstileResponse = {
 
 /**
  * Cloudflare Turnstile verification for public forms. Local development
- * skips verification when TURNSTILE_SECRET_KEY is not configured.
+ * skips verification when TURNSTILE_SECRET_KEY is not configured;
+ * production refuses (throws) instead of running forms unprotected.
  */
 export const verifyTurnstile = async ({
   ip,
@@ -20,7 +21,12 @@ export const verifyTurnstile = async ({
   token?: null | string
 }): Promise<TurnstileResult> => {
   const secret = process.env.TURNSTILE_SECRET_KEY
-  if (!secret) return { skipped: true, success: true }
+  if (!secret) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('TURNSTILE_SECRET_KEY is not set; refusing public form submissions')
+    }
+    return { skipped: true, success: true }
+  }
   if (!token) return { skipped: false, success: false }
 
   const body = new FormData()

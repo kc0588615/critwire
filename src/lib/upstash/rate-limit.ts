@@ -17,8 +17,9 @@ type RateLimitArgs = {
 
 /**
  * Sliding-window rate limit backed by Upstash. Fails open when Upstash
- * is not configured so local dev works without credentials — production
- * MUST set UPSTASH_REDIS_REST_URL/TOKEN.
+ * is not configured so local dev works without credentials. Production
+ * throws instead, unless RATE_LIMIT_OPTIONAL=1 (E2E builds only: there
+ * is no local Upstash to run them against).
  */
 export const checkRateLimit = async ({
   identifier,
@@ -27,7 +28,12 @@ export const checkRateLimit = async ({
   windowSeconds,
 }: RateLimitArgs): Promise<{ success: boolean }> => {
   const redis = getRedis()
-  if (!redis) return { success: true }
+  if (!redis) {
+    if (process.env.NODE_ENV === 'production' && process.env.RATE_LIMIT_OPTIONAL !== '1') {
+      throw new Error('Upstash is not configured; refusing rate-limited requests')
+    }
+    return { success: true }
+  }
 
   const cacheKey = `${key}:${limit}:${windowSeconds}`
   let limiter = limiters.get(cacheKey)

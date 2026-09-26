@@ -327,6 +327,7 @@ export const GameProjects: CollectionConfig = {
       type: 'checkbox',
       access: {
         // Set by the Phase 8 verification flow (or a super admin) only.
+        create: ({ req }) => isSuperAdmin(req.user),
         update: ({ req }) => isSuperAdmin(req.user),
       },
       admin: {

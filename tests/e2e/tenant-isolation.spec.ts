@@ -73,7 +73,6 @@ test.beforeAll(async ({ api, uniqueSlug, world }) => {
   })
   expect(upload.status, JSON.stringify(upload.body)).toBe(201)
 
-  // payload-folders ignores `tenant` until F11 adds it to the multi-tenant plugin.
   const folder = await aOwner.raw<{ doc: { id: number } }>('POST', '/api/payload-folders', {
     data: { name: 'Studio A art', folderType: ['media'], tenant },
   })
@@ -117,7 +116,6 @@ test.describe('S1.1 cross-tenant reads', () => {
   })
 
   test('studio B lists none of studio A’s media folders [F11]', async ({ api }) => {
-    test.fail(true, 'F11: fixed in Step 4')
     const { status, body } = await api('bOwner').find('payload-folders', { limit: 0 })
     expect(status).toBe(200)
     expect(idsOf(body.docs)).not.toContain(a.folderID)
@@ -273,7 +271,6 @@ test('S1.5 nobody writes votes through REST, not even a super admin', async ({ a
 })
 
 test('S1.6 studios cannot create pre-verified domains or pre-counted votes [F9]', async ({ api, uniqueSlug, world }) => {
-  test.fail(true, 'F9: fixed in Step 4')
   const aOwner = api('aOwner')
   await test.step('customDomainVerified is ignored on create', async () => {
     const project = await createProject(aOwner, world.tenants.A.id, uniqueSlug('iso-squat'), {

@@ -924,7 +924,7 @@ The session that carries out the affected step copies the matching line into **D
   - **Do:** access changes only, no schema change. `authenticated` stays where it's still right (Users `admin`, Media).
   - **Verify:** standard checks.
 
-- [ ] **Step 4: Field create guards, tenant-scoped media folders, production refusal (F9, F11, F15)**
+- [x] **Step 4: Field create guards, tenant-scoped media folders, production refusal (F9, F11, F15)**
   - **Scenarios:**
     - Remove the `test.fail` from S1.6 and from the S1.1 folders test.
     - F15 has no E2E scenario (documented gap), so there's a manual proof below. The E2E suite proves production still serves forms when it's configured.
@@ -1044,6 +1044,7 @@ The session that carries out the affected step copies the matching line into **D
        - Look up the issue with `find` and `overrideAccess: false`: 404 for private or unknown issues, while real errors propagate.
        - Find the existing vote, then `delete` it (NotFound means already removed) or `create` one (a unique-violation `ValidationError` means already voted).
        - Respond with `upvoteCount` read after the write.
+       - The catch logs the error (as the contact route does) as well as reporting to Sentry. Found in Step 4's F15 proof: today a production refusal from `checkRateLimit` leaves no trace in the server log.
   - **Verify:** standard checks. `pnpm test:int tests/int/template-revalidation.int.spec.ts` still passes (3 tests).
 
 - [ ] **Step 10: Upvote reconciliation migration (F4) and deletable voted issues (F22)**
@@ -1360,6 +1361,8 @@ This covers only the parts proven outside the E2E suite. The list is written bef
 - **Step 3: form-submissions `update` stays the plugin's `() => false`** rather than becoming `superAdminOnly` as Step 3 listed. Nobody needs to edit a submission, and loosening a deny to super admins isn't part of any fix. Create, read and delete are `superAdminOnly`. The forms and redirects plugins get `superAdminOnly` create/update/delete; search gets update/delete (its create is already `false`).
 - **Step 3: `jobs.access.run` no longer admits every logged-in user**, only super admins or the `CRON_SECRET` bearer. The jobs collection's `admin.hidden` casts the admin's `ClientUser` to `User` for `isSuperAdmin`; it carries `roles` at runtime.
 - **Step 3: `validateTenantMembership` trusts writes with no `req.user`** (Local API system writes: votes, seeds, jobs) and super admins, and leaves null to the plugin's presence check. It's wired once as the plugin's root `tenantField.validate`, so every tenant-scoped collection gets it.
+- **Step 4: the new migration destructures only `db`.** The generator's unused `payload, req` args added 4 lint warnings, and the rule is that the count never goes up. The generated SQL is unchanged: a nullable `payload_folders.tenant_id`, its `ON DELETE SET NULL` foreign key to `tenants`, and an index (`proofs/step4-folders.log`).
+- **Step 4: `/api/vote`'s catch doesn't log, only reports to Sentry**, so the F15 refusal there is visible only as the JSON 500 (no unhandled rejection). Step 9 rewrites that route, so the log line was added to Step 9's Do list rather than done here.
 - **Step 1: the DB guard compares host and database name** of `E2E_DATABASE_URL` and `DATABASE_URL`, so a different user or password on the same database still counts as "the same database".
 
 ## Questions for the owner
@@ -1385,5 +1388,6 @@ This covers only the parts proven outside the E2E suite. The list is written bef
 - 2026-09-25 07:42 UTC: Step 1 done: E2E harness on a production build with `migrate:fresh` on `critwire_m_architecture_pass_e2e`; `setup` project seeds super admin, studios A/B and aOwner/aMember/bOwner and saves sessions + `world.json`; template specs, `tests/helpers/` and `test.env` deleted. Turnstile reachable (siteverify OK with test keys). tsc 0; lint 0 errors, 27 warnings (was 30); E2E 1 passed (setup), 0 expected-fail, 124 s wall (build 84 s); report holds the setup trace; `dev` rows 0 in both DBs, mission DB `min(created_at)` unchanged; all 3 guard cases exit 1 in 2 s (`proofs/step1-guard.log`).
 - 2026-09-26 03:00 UTC: Step 2 done: `tenant-isolation.spec.ts` (S1.1–S1.8, S1.10; 20 tests) plus project/issue/patch-note/report/vote factories, `upload()` and `uniqueSlug`. New bug **F24** found (studio B creates/moves issues into tenant A: 201/200), root-caused to the plugin tenant field's custom `validate` skipping `filterOptions`; fix scheduled in Step 3. tsc 0; lint 0 errors, 27 warnings (unchanged); E2E exit 0, 21 passed incl. 7 expected-fail with their symptoms: F11 folder listed to B, F24 expected 400 got 201, F22 expected 200 got 500, F1 payload-jobs read 200, F2 post create 201, F16 anonymous form-submission 201, F9 `customDomainVerified` stored true; 0 flaky; 129 s wall; `dev` rows 0 in both DBs.
 - 2026-09-26 03:03 UTC: Step 3 done: `superAdminOnly` replaces the inline super-admin checks (Tenants, Users, Pages) and locks posts, categories, header/footer update, redirects/forms writes, form-submissions create/read/delete, search update/delete and the jobs collection (plus `jobs.access.run`); `authenticatedOrPublished` → `superAdminOrPublished`; F24 fixed with `validateTenantMembership` as the plugin's root `tenantField.validate`. tsc 0; lint 0 errors, 27 warnings (unchanged); E2E exit 0, 21 passed incl. 3 expected-fail (F9, F11, F22), F1/F2/F16/F24 tests now pass (F24 rejects with "You can only assign documents to your own studio."); 0 flaky; 131 s wall; `dev` rows 0 in both DBs.
+- 2026-09-26 03:09 UTC: Step 4 done: F9 `create` guards on `customDomainVerified` (super admin) and `upvoteCount` (`() => false`); F11 `payload-folders` in the multi-tenant plugin + migration `20260926_030253_tenant_scoped_media_folders` (nullable `tenant_id`, FK to tenants, index; applied to mission DB; types regenerated, import map unchanged); F15 production refusal in `verifyTurnstile` and `checkRateLimit` (`RATE_LIMIT_OPTIONAL=1` read only there). tsc 0; lint 0 errors, 27 warnings (unchanged); E2E exit 0, 21 passed incl. 1 expected-fail (F22), F9/F11 tests now pass, `migrate:fresh` applied 7 migrations; 0 flaky; 130 s wall; `dev` rows 0 in both DBs. F15 proof: contact 500 "Something went wrong." with the Turnstile message logged, vote 500 (`proofs/step4-f15.log`).
 
 ## Summary

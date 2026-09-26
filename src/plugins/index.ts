@@ -37,6 +37,7 @@ export const plugins: Plugin[] = [
       'issue-reports': {},
       'issue-votes': {},
       media: {},
+      'payload-folders': {},
       // `pages` is deliberately NOT tenant-scoped: it is the platform
       // marketing site, managed by super admins only.
     },

@@ -130,6 +130,7 @@ export const Issues: CollectionConfig = {
       name: 'upvoteCount',
       type: 'number',
       access: {
+        create: () => false,
         update: () => false,
       },
       admin: {

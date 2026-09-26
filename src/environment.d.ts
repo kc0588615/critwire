@@ -10,6 +10,10 @@ declare global {
       RESEND_FROM_EMAIL?: string
       NEXT_PUBLIC_TURNSTILE_SITE_KEY?: string
       TURNSTILE_SECRET_KEY?: string
+      UPSTASH_REDIS_REST_URL?: string
+      UPSTASH_REDIS_REST_TOKEN?: string
+      /** E2E only: lets a production build run without Upstash. Never set in production. */
+      RATE_LIMIT_OPTIONAL?: string
     }
   }
 }
