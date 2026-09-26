@@ -1378,7 +1378,7 @@ The session that carries out the affected step copies the matching line into **D
     - The full E2E suite, only if a case was added.
   - **Deviation (done):** `template-revalidation.int` keeps all 3 tests, so `pnpm test:int` is 3 files, 10 tests. The two "moves projects" cases were meant to move to S2.5/S3.4, but Step 7 found that nothing under `/g` is ISR-cached (H4). Those E2E tests would pass with every `revalidatePath` call deleted, so these int tests are the only guard for rule 4 until H4 lands. The audit ran in this session instead of 7 subagents: the files total 874 lines. Five gaps got E2E cases first (see the table).
 
-- [ ] **Step 19: Audit and remove `tests/manual`**
+- [x] **Step 19: Audit and remove `tests/manual`**
   - **Files:**
     - delete `tests/manual/` (6 scripts and the README)
     - E2E specs, only if a gap turns up
@@ -1473,6 +1473,19 @@ Checked against `/tmp/e2e-step17c.log` (71 passed). "Added" marks E2E cases adde
 | template-revalidation › both landings when a public issue moves; both patch-note trees when a note moves; skips kanban-order-only writes | keep (3) | E2E can't observe revalidation: nothing under `/g` is ISR-cached (Step 7, H4), so the move E2E tests pass without it. Revisit when H4 lands. | — |
 
 devDependencies now unused: `@testing-library/react` (no importer). `jsdom` is only the vitest `environment`; no remaining int test needs a DOM. Left installed for the owner to remove (Summary).
+
+**`tests/manual` (Step 19).** Checked against `/tmp/e2e-step18.log` (72 passed), one read-only auditor per script. All six scripts and the README are deleted: none was run by any `pnpm` script, and each needed a hand-seeded dev database. The per-assertion list (116 checks, each with its E2E test title) is in `proofs/step19-manual-audit.json`. "Added" cases passed in `/tmp/e2e-step19.log` (72 passed).
+
+| Script (checks) | Call | Reason | E2E replacement |
+|---|---|---|---|
+| verify-isolation (18) | delete | All covered. | `setup` › seed…; S1.1 studio B lists none of studio A's…; S1.2 (both tests); S1.3 a studio member cannot delete issues / a studio owner can delete…; S1.4 (all three); S1.5; S1.8 |
+| verify-phase3 (15) | delete | 9 covered. The other 6 are the legacy block renderer (hidden `content` field, documented gap) and the static "Powered by" footer text, which wouldn't catch a bug. | S2.1 an unknown game…; S2.2 shows the project's facts… / loads the trailer iframe…; S2.3 a white accent…; S2.4 publishes, keeps drafts private…; S2.6 an uploaded logo… |
+| verify-phase4 (24) | delete | 23 covered. Gap: nothing checked that the feed links its RSS document. | S3.1 the feed pages newest first… (**added** step: the RSS link and the `alternate` metadata link point at `feed.xml`); S3.2; S3.3; S3.4 (partial edit, unpublishing); S2.2 portal links |
+| verify-phase5 (26) | delete | 25 covered. Gap: search was only tried on a title, never on the summary half of its `or` filter. | S4.1 the list shows public issues… (**added** step: the search also matches summaries); S4.2; S4.3; S4.4; S4.5 (both); S4.6; S2.2 portal links |
+| verify-phase6 (17) | delete | 15 covered. Not kept: fixture plumbing, and "an empty Turnstile token succeeds without a secret", a dev-only fallback that E2E deliberately runs with a secret (it asserts the opposite, 400). | S5.1; S5.2 the report endpoint validates…; S5.3 (both); S5.4; S5.5 the contact page follows the routing target; S5.6; S2.2 portal links |
+| verify-phase7 (7) | delete | All covered; `/api/health` is the webServer readiness URL, so no run starts without it. | S2.2 shows the project's facts… (og:site_name, twitter:card); S5.1; S5.4; S6.1 the login page speaks Critwire… |
+
+The E2E spec headers no longer say which old file each replaces (all of them are deleted now); this table and git history keep that.
 
 ### Risks
 
@@ -1724,5 +1737,6 @@ See /srv/critter-ai/handoff/critwire.md (Q1 → H3, Q2 → H1, Q3 → H2, Q4 →
 - 2026-09-26 05:57 UTC: Step 17b done: `20260926_054934_remove_website_template` drops the 37 template tables, 10 columns (with their FKs and indexes) and 10 enums; generated SQL matched the planned list exactly. A cleanup statement runs first. The first mission-DB apply failed and rolled back: the generated `DROP TABLE ... CASCADE` had already removed the FKs its later `DROP CONSTRAINT` named, so the FK drops now run first (Decisions). psql proof (`$PROOFS/remove-template.sql`, `step17b-remove-template.log`): exactly the 37 tables dropped, 109 → 72, nothing added; columns and enums gone; P1 keeps only its P2 row in both rels tables; L1/L2 and J1 gone, L3 and J2 kept; migration applied after `reconcile_issue_upvote_counts`; fixtures deleted. tsc 0; lint 0 errors, 24 warnings (unchanged); E2E exit 0, `migrate:fresh` applied 9 migrations, 71 passed, 0 expected-fail, 0 flaky, 212 s wall; `dev` rows 0 in both DBs.
 - 2026-09-26 06:01 UTC: Step 17c done: data migration `20260926_055704_backfill_media_folder_tenants` (`migrate:create` blank, snapshot identical to 054934, so no drift) gives each untenanted folder its subtree's single media tenant via a recursive CTE, and warns with the ids left without one. Proof on the mission DB (`proofs/backfill-folders.sql`, `proofs/step17c-before.txt`, `proofs/step17c-folder-backfill.log`): F1, P, C, Q1, S1, S2 → A, Q2 → B, R stays B; the warn line listed exactly F2, F3, F4 and Q; media rows and folder names, parents and `updated_at` unchanged; `migrate:status` lists it after `remove_website_template`; fixture removed (0 leftover rows). tsc 0; lint 0 errors, 24 warnings (unchanged); E2E exit 0, `migrate:fresh` applied 10 migrations, 71 passed, 0 expected-fail, 0 flaky, 217 s wall.
 - 2026-09-26 06:16 UTC: Step 18 done: `tests/int` audited test by test (`### Test audit results`). Deleted `api`, `tally-parse`, `site-config-schema` and `site-template` int files and site-generator's "requires a slot"; kept site-generator 5, parity 2 and all 3 template-revalidation tests (deviation: `/g` isn't ISR-cached, so E2E can't see revalidation). Added E2E cases first for the five uncovered behaviors (1 new test, steps in S1.10, S2.4, S5.5). First full run failed my new accent-only step (Payload fills the colour group from field defaults); step rewritten to assert that. tsc 0; lint 0 errors, 24 warnings (unchanged); `pnpm test:int` 3 files, 10 tests, no Postgres; `dev` rows 0 in both DBs; E2E exit 0, 72 passed, 0 expected-fail, 0 flaky, 219 s wall.
+- 2026-09-26 06:22 UTC: Step 19 done: 6 read-only auditors listed all 116 checks in `tests/manual` (`### Test audit results`, `proofs/step19-manual-audit.json`): 108 covered, 6 legacy-renderer/footer trivia and 2 dev plumbing not kept, 2 real gaps. Added E2E steps first (S3.1 RSS link and `alternate` metadata; S4.1 search matches summaries), passed on the existing build, then deleted `tests/manual/` and the spec headers' "Replaces …" lines; reference grep empty. tsc 0; lint 0 errors, 23 warnings (was 24); E2E exit 0, 72 passed, 0 expected-fail, 0 flaky, 217 s wall; `dev` rows 0 in both DBs.
 
 ## Summary

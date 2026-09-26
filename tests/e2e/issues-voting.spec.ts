@@ -15,8 +15,7 @@ import {
 
 /**
  * The public issue tracker under /g/<slug>/issues: the filtered list,
- * the read-only board, issue detail pages and player voting. Replaces
- * tests/manual/verify-phase5.mjs.
+ * the read-only board, issue detail pages and player voting.
  */
 
 const issuesPath = (slug: string) => `/g/${slug}/issues`
@@ -61,6 +60,7 @@ test.describe('S4.1–S4.3 issue list, board and detail', () => {
     // Created oldest first, so "Latest" lists them in reverse.
     audio = await createIssue(aOwner, project, uniqueSlug('is-audio'), {
       title: 'Audio crackles in caves',
+      summary: 'Static noise when the reverb kicks in.',
       category: 'AUDIO',
     })
     workaround = await createIssue(aOwner, project, uniqueSlug('is-workaround'), {
@@ -149,6 +149,13 @@ test.describe('S4.1–S4.3 issue list, board and detail', () => {
       await page.getByPlaceholder('Search issues…').press('Enter')
       await expect(page).toHaveURL(/[?&]q=lantern/)
       await expect.poll(() => listedTitles(page, project.slug)).toEqual([fixedUnreleased.title])
+    })
+
+    await test.step('the search also matches summaries', async () => {
+      await page.getByPlaceholder('Search issues…').fill('reverb')
+      await page.getByPlaceholder('Search issues…').press('Enter')
+      await expect(page).toHaveURL(/[?&]q=reverb/)
+      await expect.poll(() => listedTitles(page, project.slug)).toEqual([audio.title])
     })
   })
 

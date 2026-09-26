@@ -9,8 +9,7 @@ import { createIssue, createProject, eventually, expect, test } from './support/
 /**
  * Studio triage in the admin panel: sign-in, the Issues kanban (moves,
  * reordering, failed saves), the table view, and publishing a player
- * report. Replaces the template's admin.e2e.spec.ts and the login copy
- * check in tests/manual/verify-phase7.mjs.
+ * report.
  */
 
 type IssueStatus = Issue['status']

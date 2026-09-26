@@ -6,8 +6,7 @@ import { createPatchNote, createProject, eventually, expect, test } from './supp
 
 /**
  * Public patch notes under /g/<slug>/patch-notes: the paginated feed,
- * detail pages, the RSS feed, and how each follows edits. Replaces
- * tests/manual/verify-phase4.mjs.
+ * detail pages, the RSS feed, and how each follows edits.
  */
 
 const feedPath = (slug: string) => `/g/${slug}/patch-notes`
@@ -92,6 +91,16 @@ test.describe('S3.1–S3.3 feed, detail pages and RSS', () => {
       await expect(page.getByText('v1.0.12', { exact: true })).toBeVisible()
       await expect(page.getByRole('navigation', { name: 'Pagination' })).toContainText('Page 1 of 2')
       await expect(page.locator('body')).not.toContainText(draft.title)
+    })
+
+    await test.step('the feed links its RSS document for readers and feed discovery', async () => {
+      const rss = `${feedPath(project.slug)}/feed.xml`
+      await expect(page.getByRole('link', { name: 'RSS', exact: true })).toHaveAttribute('href', rss)
+      // Metadata may resolve it against metadataBase, so match the path.
+      await expect(page.locator('link[rel="alternate"][type="application/rss+xml"]')).toHaveAttribute(
+        'href',
+        new RegExp(`${rss}$`),
+      )
     })
 
     await test.step('page 2 holds the oldest notes', async () => {

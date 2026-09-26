@@ -21,7 +21,7 @@ import {
 /**
  * One studio can never see or change another studio's data, players see
  * only what a studio published, and platform-level collections belong to
- * super admins. Replaces tests/manual/verify-isolation.mjs.
+ * super admins.
  */
 
 const DENIED = [403, 404]

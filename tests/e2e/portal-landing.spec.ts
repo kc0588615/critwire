@@ -20,9 +20,7 @@ import {
 /**
  * The public game portal landing page at /g/<slug>: the default page
  * derived from project facts, published flagship pages, and the live
- * patch-note and issue slots. Replaces tests/manual/verify-phase3.mjs,
- * the SEO checks in verify-phase7.mjs, tests/int/site-template.int and
- * tests/int/site-config-schema.int.
+ * patch-note and issue slots.
  */
 
 const SECTION = {

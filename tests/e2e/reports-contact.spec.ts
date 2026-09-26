@@ -9,8 +9,7 @@ import { createProject, createReport, expect, test } from './support/fixtures'
 /**
  * Player reports and the contact form: the public forms behind Turnstile,
  * report promotion into a public issue, and contact delivery to Discord
- * (a local sink) or email. Replaces tests/manual/verify-phase6.mjs, the
- * Turnstile check in verify-phase7.mjs and tally-parse.int.
+ * (a local sink) or email.
  */
 
 const reportPath = (slug: string) => `/g/${slug}/report`
