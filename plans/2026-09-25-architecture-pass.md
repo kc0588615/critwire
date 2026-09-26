@@ -2,7 +2,7 @@
 mission: architecture-pass
 project: critwire
 branch: agent/architecture-pass
-status: active
+status: done
 started: 2026-09-25 06:21 UTC
 ---
 
@@ -1423,7 +1423,7 @@ The session that carries out the affected step copies the matching line into **D
     - `grep -n "^## Testing" AGENTS.md` → exactly one line.
     - `grep -niE "website template|posts|categories|redirects" README.md` → nothing.
 
-- [ ] **Step 21: Final verification, artifact and Summary**
+- [x] **Step 21: Final verification, artifact and Summary**
   - **Do:**
     1. Commit all code first, so the recorded SHA is the tested code.
     2. Run the Verification section end to end, save the artifact, and write its README. `pnpm build` goes last.
@@ -1741,5 +1741,87 @@ See /srv/critter-ai/handoff/critwire.md (Q1 → H3, Q2 → H1, Q3 → H2, Q4 →
 - 2026-09-26 06:16 UTC: Step 18 done: `tests/int` audited test by test (`### Test audit results`). Deleted `api`, `tally-parse`, `site-config-schema` and `site-template` int files and site-generator's "requires a slot"; kept site-generator 5, parity 2 and all 3 template-revalidation tests (deviation: `/g` isn't ISR-cached, so E2E can't see revalidation). Added E2E cases first for the five uncovered behaviors (1 new test, steps in S1.10, S2.4, S5.5). First full run failed my new accent-only step (Payload fills the colour group from field defaults); step rewritten to assert that. tsc 0; lint 0 errors, 24 warnings (unchanged); `pnpm test:int` 3 files, 10 tests, no Postgres; `dev` rows 0 in both DBs; E2E exit 0, 72 passed, 0 expected-fail, 0 flaky, 219 s wall.
 - 2026-09-26 06:22 UTC: Step 19 done: 6 read-only auditors listed all 116 checks in `tests/manual` (`### Test audit results`, `proofs/step19-manual-audit.json`): 108 covered, 6 legacy-renderer/footer trivia and 2 dev plumbing not kept, 2 real gaps. Added E2E steps first (S3.1 RSS link and `alternate` metadata; S4.1 search matches summaries), passed on the existing build, then deleted `tests/manual/` and the spec headers' "Replaces …" lines; reference grep empty. tsc 0; lint 0 errors, 23 warnings (was 24); E2E exit 0, 72 passed, 0 expected-fail, 0 flaky, 217 s wall; `dev` rows 0 in both DBs.
 - 2026-09-26 06:27 UTC: Step 20 done: `AGENTS.md` `## Testing` (the three rules verbatim, the `_e2e` database, the artifact, setup seeding, the three kept int files) and Commands lines for `test`, `test:e2e`, `test:int`; `docs/patterns.md` hooks, data access, jobs (super-admin only, deliver or throw, untick `hasError` to recover), folders, public forms and voting; `.env.example`, `docs/deploy.md` step 5 and `docs/integrations.md` list Turnstile, Upstash and Resend as production-required; README replaced with a short critwire one. New bug **F26** fixed: the Docker build now gets `NEXT_PUBLIC_*` as build args (unverified by Docker, none on this VPS; Decisions). Greps: stale wording none, `## Testing` once, README template words none. tsc 0; lint 0 errors, 23 warnings (unchanged); no E2E (docs and Docker only, not on the E2E path).
+- 2026-09-26 06:36 UTC: Step 21 done: final Verification on `46bf715`. tsc 0; lint 0 errors, 23 warnings; test:int 3 files / 10 tests; E2E 72 passed, 0 failed, 0 flaky (217 s with build); no `dev` row in either DB; migrate:status 10/10; `pnpm build` passes (103 s); robots.txt has no posts sitemap. Artifact saved to `/srv/critter-ai/agent-state/missions/architecture-pass/e2e/` with README; Summary written; status done.
 
 ## Summary
+
+Mission done 2026-09-26. Final run on commit `46bf715`: tsc 0 errors, lint 0 errors (23 warnings, 30 at baseline), `pnpm test:int` 3 files / 10 tests, **E2E 72 passed, 0 failed, 0 flaky** (217 s including the build), `migrate:status` 10/10 applied, `pnpm build` passes. Neither database has a `dev` row.
+
+### Artifact and reproduce
+
+- **Artifact:** `/srv/critter-ai/agent-state/missions/architecture-pass/e2e/` holds `playwright-report/index.html` (a trace for each of the 72 tests, screenshots for the 42 browser tests, `test.step()` checkpoints), `run.log`, and a `README.md` with the tested commit, counts and the flow → spec table. Step proofs (psql logs, migration SQL, the manual-audit JSON, the final build log) are in `proofs/` next to it.
+- **Reproduce:** `cd /srv/critter-ai/worktrees/architecture-pass && pnpm test:e2e` (the worktree `.env` points `E2E_DATABASE_URL` at `critwire_m_architecture_pass_e2e`, which each run drops and re-migrates). Elsewhere: `createdb critwire_e2e`, then `E2E_DATABASE_URL=postgres://<user>:<password>@127.0.0.1:5432/critwire_e2e pnpm test:e2e`.
+- **View:** `pnpm exec playwright show-report /srv/critter-ai/agent-state/missions/architecture-pass/e2e/playwright-report`
+
+### E2E coverage
+
+Before: **0 of 7** core flows. The old suite was Payload's website-template suite (4 tests, 2 failing, 2 not run, no traces). After: **7 of 7**, 71 tests plus the `setup` seed:
+
+| Spec | Flows | Tests |
+|---|---|---|
+| `tenant-isolation.spec.ts` | tenant isolation (S1.1–S1.10) | 24 |
+| `portal-landing.spec.ts` | public game portal (S2.1–S2.6) | 11 |
+| `patch-notes.spec.ts` | patch notes list, detail, RSS (S3.1–S3.4) | 8 |
+| `issues-voting.spec.ts` | public issue tracker and voting (S4.1–S4.6) | 9 |
+| `reports-contact.spec.ts` | issue reports and contact form (S5.1–S5.6) | 12 |
+| `admin-triage.spec.ts` | admin triage, kanban, report promotion (S6.1–S6.7) | 7 |
+| `auth.setup.ts` | seeds a fresh database: super admin, studios A and B, their users | 1 |
+
+The harness runs a production build (`next build` + `next start`) against a dedicated `*_e2e` database dropped by `payload migrate:fresh` on every run, keeps a trace and screenshots for every test, and seeds only through REST. Known gaps, by design: Upstash rate limiting (no local Upstash), F15's production refusal (needs a second build; proven manually in `proofs/step4-f15.log`), the migrations' data paths (proven with psql, see Failure modes), the hidden legacy block landing renderer, real Resend delivery, and OpenAI generation internals (int tests).
+
+### What changed and why, per finding
+
+Bugs found and fixed:
+- **F1** Jobs collection had default access: any studio user could read other studios' contact jobs (player PII) or queue deliveries to another studio. Jobs and `access.run` are now super admin (or `CRON_SECRET`) only.
+- **F2** Any studio user could edit the Critwire marketing site. Pages are `superAdminOnly`. The posts, categories, header/footer, redirects, forms and search locks it also added were superseded by H1, which removed that surface.
+- **F3** Public portal reads bypassed access control and re-implemented visibility by hand. They now read with `overrideAccess: false`; the only privileged reads are the named helpers `getContactRoute` and `getHasVoted`, and portal render trees no longer carry the contact email or webhook URL.
+- **F4** Vote counting raced (8 parallel votes left a count of 4). The IssueVotes hooks own `upvoteCount` through `$inc` (`adjustUpvoteCount`, decrement in `beforeDelete`), votes no longer move `updatedAt`, and migration `reconcile_issue_upvote_counts` recounts existing counts.
+- **F5** Report promotion was a detached `setTimeout` self-update. It is now a `beforeChange` hook that creates the issue in the same transaction and links it in one write.
+- **F6** The kanban showed moves the server rejected. Moves are planned outside state updaters, rolled back with an error toast, and serialized.
+- **F7** Editing a project didn't revalidate its portal sub-pages. It now revalidates the `/g/<slug>` layout for the current, previous and deleted slugs (latent today: `/g` renders dynamically, see H4).
+- **F8** `populatePublishedAt` re-dated content on any edit that omitted the date. Absent keeps the stored date, explicit null clears it, and only a published doc with no date gets "now".
+- **F9** `customDomainVerified` and `upvoteCount` could be set on create. Both now have `create` field access (super admin, and never).
+- **F10** Marketing drafts were readable without authorization. Draft Mode is super-admin only, and draft reads go through `getMarketingReadOptions`. Its `ArchiveBlock` part left with the block (H1).
+- **F11** Media folders were shared across studios. `payload-folders` is tenant-scoped (migration `tenant_scoped_media_folders`), and H2's `backfill_media_folder_tenants` assigns existing folders whose contents all belong to one studio.
+- **F12** The contact and report routes duplicated their parse → Turnstile → rate-limit pipeline, and a native report to a Tally-routed project was accepted. One `guardPublicForm`, one `formResponse`, and `getReportRoute`/`getContactRoute` shared by each page and its route.
+- **F13** Contact jobs failed silently and a player's request ran the whole queue. Tasks deliver or throw (so failed jobs keep their input for recovery), fetches time out, and the route runs only its own job.
+- **F14** Copied relation-ID helpers replaced by Payload's `extractID`, and `revalidateGameLanding` shared by GamePages, Issues, PatchNotes and the vote counter.
+- **F15** Production silently skipped Turnstile and rate limiting when their keys were missing. It now refuses the request (500 JSON); `RATE_LIMIT_OPTIONAL` is the explicit opt-out for rate limiting only.
+- **F16** `form-submissions` create was an unprotected public form endpoint. Locked in Step 3, then removed with the form builder (H1).
+- **F21** Contact delivery POSTed to any URL a studio saved (SSRF). Discord webhook URLs are restricted to Discord's webhook path, on save and at delivery, with `redirect: 'error'`.
+- **F22** A voted issue couldn't be deleted (not-null violation, 500). Issue `beforeDelete` removes the issue's votes in the same transaction.
+- **F24** (found by S1.2) A studio user could create or move documents into another studio's tenant. `validateTenantMembership` is the plugin's root `tenantField.validate`, covering every tenant-scoped collection.
+- **F25** (found by S2.4) Publishing an existing flagship page answered 500 whenever a field was null (`deepMerge`'s `isObject(null)`). Fixed.
+- **F26** (found in Step 20) The Docker build never received `NEXT_PUBLIC_*` values, so production would render Turnstile with no site key and, with F15, reject every native form. The Dockerfile takes them as build args from `docker-compose.yml`. Not verified by a Docker build (no Docker here).
+- **Admin Issues page** (found by S6) answered 500 in every production build since the kanban landed (a client-module constant import and server props spread into a client component), the kanban had no styles, and its not-found banner was dropped. All fixed in Step 15.
+
+Owner decisions carried out:
+- **H1:** the Payload website-template surface is gone: Posts, Categories, the Header/Footer globals, the form-builder, redirects, nested-docs and search plugins, post and search routes, the posts sitemap, and the Archive/Form/Banner/Code/RelatedPosts blocks. Eight packages removed (`@payloadcms/plugin-form-builder`, `-nested-docs`, `-redirects`, `-search`, `react-hook-form`, `prism-react-renderer`, `@radix-ui/react-checkbox`, `@radix-ui/react-label`). Migration `remove_website_template` drops 37 tables, 10 columns and 10 enums, after deleting dangling relationships, locks and pending post-publish jobs. `README.md` now describes critwire.
+- **H2:** migration `backfill_media_folder_tenants` (above); folders it can't assign are logged with `warn`.
+
+Not fixed, with reasons (Architecture): F17 kanban ignores the admin tenant selector (belongs to the open kanban plan; nothing leaks), F18 `revalidatePath` before commit (Payload's standard pattern), F19 generator media filter (narrows, doesn't bypass), F20 the React-hooks lint warnings (none is a bug), F23 the seed route (H5).
+
+Docs: critwire's `AGENTS.md` has a `## Testing` section with the three rules verbatim plus how the E2E suite works; `docs/patterns.md`, `docs/integrations.md`, `docs/deploy.md` and `.env.example` now match the code (no "fails open" wording).
+
+### Deleted tests
+
+`tests/e2e`: Payload's 4 website-template tests and helpers (Step 1), none of which tested critwire. `tests/int`: 35 of 45 tests deleted (4 of 7 files whole), 10 kept in 3 files; `tests/manual`: all 6 scripts deleted (116 checks, 108 already covered, 2 real gaps given E2E steps first). Each test's call, reason and E2E replacement is in `### Test audit results` above; the per-check list for `tests/manual` is `proofs/step19-manual-audit.json`. Kept: `site-generator` (5, needs a fake model), `site-config-parity` (2, schema/field-tree agreement), `template-revalidation` (3, E2E can't observe revalidation until H4).
+
+### Reviews
+
+- Fable (`architecture-reviewer`): **APPROVE**, no MUST-FIX; its missed items and should-considers were folded in.
+- Astra: **APPROVE_WITH_CHANGES**, 5 MUST-FIX (marketing Draft Mode authorization, fail-closed forms and form-submissions, Discord SSRF, failed contact jobs, upvote reconciliation), all resolved in Revision (F10, F15/F16, F21, F13, F4).
+
+### Planner decisions
+
+Listed under `### Planner decisions` in Steps; each was copied to Decisions by the step that applied it. Headlines: E2E on a production build over a dropped `_e2e` database; findings fixed alongside the scenarios that prove them, with `test.fail` annotations removed by the fixing step; F4's decrement in `beforeDelete` to stop double-decrements; H1 in two steps (code, then migration); H2 counting nested folders through their media.
+
+### Left for the owner
+
+- **H3** (open): set Turnstile, Upstash and (if used) Resend keys in production before deploying; `NEXT_PUBLIC_TURNSTILE_SITE_KEY` must be in `.env` before `docker compose up -d --build` (F26).
+- **Back up production before deploying.** `remove_website_template` deletes the template's data for good (its `down` recreates empty tables). Marketing pages lose any Archive or Form blocks, and the header and footer lose any nav links.
+- **After deploying**, the app log's `warn` line from `backfill_media_folder_tenants` lists media folders left without a tenant, for a super admin to assign (H2).
+- **H4** (open): whether to make the patch-notes pages really ISR-cached. **H5** (open): keep or remove the Critter Connect seed route.
+- **F26** is unverified by a Docker build; check the first image build renders the Turnstile widget.
+- devDependencies now unused: `@testing-library/react` (no importer) and `jsdom` (only the vitest environment; no remaining int test needs a DOM). Left installed.
+- Branch `agent/architecture-pass` is pushed and not merged. It also edits `AGENTS.md`, like `agent/prompt-audit`; the two need reconciling.
