@@ -1,4 +1,5 @@
 import { readFile } from 'node:fs/promises'
+import { createServer } from 'node:http'
 
 import { test as base, expect, type APIRequestContext, type PlaywrightWorkerArgs } from '@playwright/test'
 import type { CollectionSlug } from 'payload'
@@ -6,12 +7,32 @@ import { extractID } from 'payload/shared'
 
 import type { Config, GameProject, Issue, IssueReport, Media, PatchNote } from '../../../src/payload-types'
 import { type Query, RestClient } from './api'
-import { BASE_URL, type Role, ROLES, WORLD_PATH } from './env'
+import { BASE_URL, type Role, ROLES, WEBHOOK_SINK_ORIGIN, WEBHOOK_SINK_PORT, WORLD_PATH } from './env'
 
 /** What `auth.setup.ts` created on the fresh database. */
 export interface World {
   tenants: Record<'A' | 'B', { id: number; slug: string }>
   users: Record<Role, { id: number; email: string; token: string }>
+}
+
+/** One request the webhook sink received. */
+export interface SinkRequest {
+  method: string
+  /** Parsed JSON body, or the raw text when it isn't JSON. */
+  body: unknown
+}
+
+/**
+ * Local stand-in for a Discord webhook, on the only non-Discord origin the
+ * server accepts (`DISCORD_WEBHOOK_TEST_ORIGIN`). Answers 204 like Discord,
+ * unless a path is set to redirect.
+ */
+export interface WebhookSink {
+  url: (path: string) => string
+  /** Requests received on `path`, oldest first. */
+  received: (path: string) => SinkRequest[]
+  /** Answers requests on `from` with a 307 to `to` on the sink. */
+  redirect: (from: string, to: string) => void
 }
 
 interface WorkerFixtures {
@@ -24,6 +45,7 @@ interface WorkerFixtures {
    * keep that re-seed from colliding with the first one.
    */
   uniqueSlug: (base: string) => string
+  webhookSink: WebhookSink
 }
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
@@ -52,6 +74,44 @@ export const test = base.extend<{}, WorkerFixtures>({
   uniqueSlug: [
     async ({}, use, workerInfo) => {
       await use((base) => `${base}-w${workerInfo.workerIndex}`)
+    },
+    { scope: 'worker' },
+  ],
+  webhookSink: [
+    async ({}, use) => {
+      const requests = new Map<string, SinkRequest[]>()
+      const redirects = new Map<string, string>()
+      const server = createServer((req, res) => {
+        const path = new URL(req.url ?? '/', WEBHOOK_SINK_ORIGIN).pathname
+        const chunks: Buffer[] = []
+        req.on('data', (chunk: Buffer) => chunks.push(chunk))
+        req.on('end', () => {
+          const text = Buffer.concat(chunks).toString('utf8')
+          let body: unknown = text
+          try {
+            body = JSON.parse(text)
+          } catch {
+            // Keep the raw text.
+          }
+          requests.set(path, [...(requests.get(path) ?? []), { method: req.method ?? '', body }])
+          const target = redirects.get(path)
+          if (target) res.writeHead(307, { Location: `${WEBHOOK_SINK_ORIGIN}${target}` })
+          else res.writeHead(204)
+          res.end()
+        })
+      })
+      await new Promise<void>((resolve, reject) => {
+        server.once('error', reject)
+        server.listen(WEBHOOK_SINK_PORT, '127.0.0.1', resolve)
+      })
+      await use({
+        url: (path) => `${WEBHOOK_SINK_ORIGIN}${path}`,
+        received: (path) => requests.get(path) ?? [],
+        redirect: (from, to) => {
+          redirects.set(from, to)
+        },
+      })
+      await new Promise<void>((resolve) => server.close(() => resolve()))
     },
     { scope: 'worker' },
   ],
