@@ -7,6 +7,8 @@ import { NextRequest } from 'next/server'
 
 import configPromise from '@payload-config'
 
+import { isSuperAdmin } from '@/access/isSuperAdmin'
+
 export type PreviewSearchParams = {
   path: string
   previewSecret: string
@@ -35,10 +37,10 @@ export async function GET(req: NextRequest): Promise<Response> {
   let user
 
   try {
-    user = await payload.auth({
+    ;({ user } = await payload.auth({
       req: req as unknown as PayloadRequest,
       headers: req.headers,
-    })
+    }))
   } catch (error) {
     payload.logger.error({ err: error }, 'Error verifying token for live preview')
     return new Response('You are not allowed to preview this page', { status: 403 })
@@ -46,12 +48,13 @@ export async function GET(req: NextRequest): Promise<Response> {
 
   const draft = await draftMode()
 
-  if (!user) {
+  // Only super admins edit marketing pages and posts, so only they
+  // preview drafts. The secret alone grants nothing: it ships in admin
+  // preview URLs every studio user can open.
+  if (!isSuperAdmin(user)) {
     draft.disable()
     return new Response('You are not allowed to preview this page', { status: 403 })
   }
-
-  // You can add additional checks here to see if the user is allowed to preview this page
 
   draft.enable()
 

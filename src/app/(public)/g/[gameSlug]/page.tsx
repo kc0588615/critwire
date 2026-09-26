@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 
 import * as Sentry from '@sentry/nextjs'
 import config from '@payload-config'
-import { draftMode, headers } from 'next/headers'
+import { draftMode } from 'next/headers'
 import { notFound } from 'next/navigation'
 import { getPayload } from 'payload'
 import React from 'react'
@@ -18,6 +18,7 @@ import { deriveFlagshipDefault } from '@/site-templates/flagship-game-v1/default
 import { normalizeSiteInput } from '@/site-templates/flagship-game-v1/normalize'
 import { siteConfigV1Schema } from '@/site-templates/flagship-game-v1/schema/config'
 import { getServerSideURL } from '@/utilities/getURL'
+import { getPreviewUser } from '@/utilities/getPreviewUser'
 
 // ISR safety net — on-demand revalidation from the GamePages,
 // GameProjects, PatchNotes, and Issues hooks is the primary
@@ -49,16 +50,6 @@ const getLandingPage = async (
     },
   })
   return result.docs[0] ?? null
-}
-
-const getPreviewUser = async (): Promise<null | User> => {
-  const payload = await getPayload({ config })
-  try {
-    const result = await payload.auth({ headers: await headers() })
-    return result.user
-  } catch {
-    return null
-  }
 }
 
 /** Media the project itself carries — saves a lookup for banner/logo refs. */

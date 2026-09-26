@@ -9,7 +9,7 @@
     "build": "cross-env NODE_OPTIONS=--no-deprecation next build",
     "postbuild": "next-sitemap --config next-sitemap.config.cjs",
     "dev": "cross-env NODE_OPTIONS=--no-deprecation next dev",
-    "e2e:server": "payload migrate:fresh --force-accept-warning && ([ \"$E2E_SKIP_BUILD\" = 1 ] || next build) && next start",
+    "e2e:server": "payload migrate:fresh --force-accept-warning && ([ \"$E2E_SKIP_BUILD\" = 1 ] || SKIP_BUILD_STATIC_GENERATION=1 next build) && next start",
     "dev:prod": "cross-env NODE_OPTIONS=--no-deprecation rm -rf .next && pnpm build && pnpm start",
     "generate:importmap": "cross-env NODE_OPTIONS=--no-deprecation payload generate:importmap",
     "generate:types": "cross-env NODE_OPTIONS=--no-deprecation payload generate:types",

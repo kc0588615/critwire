@@ -15,6 +15,9 @@ export const TURNSTILE_TEST_SECRET_KEY = '1x0000000000000000000000000000000AA'
 /** Token accepted by `siteverify` under the test secret, for API-level tests. */
 export const TURNSTILE_DUMMY_TOKEN = 'XXXX.DUMMY.TOKEN.XXXX'
 
+/** Marketing preview secret baked into the E2E build; `/next/preview` must still demand a super admin. */
+export const PREVIEW_SECRET = 'e2e-preview-secret'
+
 export const AUTH_SETUP_PATTERN = /auth\.setup\.ts/
 
 export const ROLES = ['superAdmin', 'aOwner', 'aMember', 'bOwner'] as const

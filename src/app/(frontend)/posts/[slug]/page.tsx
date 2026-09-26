@@ -12,6 +12,7 @@ import type { Post } from '@/payload-types'
 
 import { PostHero } from '@/heros/PostHero'
 import { generateMeta } from '@/utilities/generateMeta'
+import { getMarketingReadOptions } from '@/utilities/getPreviewUser'
 import PageClient from './page.client'
 import { LivePreviewListener } from '@/components/LivePreviewListener'
 import {
@@ -99,15 +100,12 @@ export async function generateMetadata({ params: paramsPromise }: Args): Promise
 }
 
 const queryPostBySlug = cache(async ({ slug }: { slug: string }) => {
-  const { isEnabled: draft } = await draftMode()
-
   const payload = await getPayload({ config: configPromise })
 
   const result = await payload.find({
     collection: 'posts',
-    draft,
+    ...(await getMarketingReadOptions()),
     limit: 1,
-    overrideAccess: draft,
     pagination: false,
     where: {
       slug: {

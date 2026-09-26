@@ -398,7 +398,7 @@ Browser tests run the real widget and the real `siteverify` call. API tests send
 The env also sets:
 - `NEXT_PUBLIC_SERVER_URL=http://localhost:<port>` and `PORT`
 - `PREVIEW_SECRET=e2e-preview-secret`
-- `SKIP_BUILD_STATIC_GENERATION=1`, as the Dockerfile does
+- `SKIP_BUILD_STATIC_GENERATION=1` for `next build` only, set inline in `e2e:server`, as the Dockerfile's build stage does (Step 5: set for `next start` too, it made on-demand marketing renders fail with `DYNAMIC_SERVER_USAGE`)
 - `RATE_LIMIT_OPTIONAL=1` (F15)
 - `DISCORD_WEBHOOK_TEST_ORIGIN=http://127.0.0.1:<E2E_PORT+1>` (F21)
 
@@ -429,7 +429,7 @@ The VPS path stays out of the repo's scripts.
 
 **Scripts:**
 - `test:e2e`: `cross-env NODE_OPTIONS=--no-deprecation playwright test`. The `--import=tsx/esm` loader is dropped, since tests no longer import Payload.
-- `e2e:server`: only Playwright's webServer invokes it, with the E2E env: `payload migrate:fresh --force-accept-warning && ([ "$E2E_SKIP_BUILD" = 1 ] || next build) && next start`. `E2E_SKIP_BUILD=1` is for iterating on specs only, never for verification. It reuses the previous build and its page cache.
+- `e2e:server`: only Playwright's webServer invokes it, with the E2E env: `payload migrate:fresh --force-accept-warning && ([ "$E2E_SKIP_BUILD" = 1 ] || SKIP_BUILD_STATIC_GENERATION=1 next build) && next start`. `E2E_SKIP_BUILD=1` is for iterating on specs only, never for verification. It reuses the previous build and its page cache.
 - `test`: unchanged.
 
 **Layout:**
@@ -953,7 +953,7 @@ The session that carries out the affected step copies the matching line into **D
       3. `curl -s -X POST -H 'content-type: application/json' -d '{"issueId":1}' localhost:3102/api/vote` → 500.
       4. Stop the server.
 
-- [ ] **Step 5: Authorize Draft Mode reads (F10) with its preview scenario (S1.9)**
+- [x] **Step 5: Authorize Draft Mode reads (F10) with its preview scenario (S1.9)**
   - **Files:**
     - `tests/e2e/tenant-isolation.spec.ts` (S1.9)
     - new `src/utilities/getPreviewUser.ts`, moved from `src/app/(public)/g/[gameSlug]/page.tsx:54-62`
@@ -1363,6 +1363,9 @@ This covers only the parts proven outside the E2E suite. The list is written bef
 - **Step 3: `validateTenantMembership` trusts writes with no `req.user`** (Local API system writes: votes, seeds, jobs) and super admins, and leaves null to the plugin's presence check. It's wired once as the plugin's root `tenantField.validate`, so every tenant-scoped collection gets it.
 - **Step 4: the new migration destructures only `db`.** The generator's unused `payload, req` args added 4 lint warnings, and the rule is that the count never goes up. The generated SQL is unchanged: a nullable `payload_folders.tenant_id`, its `ON DELETE SET NULL` foreign key to `tenants`, and an index (`proofs/step4-folders.log`).
 - **Step 4: `/api/vote`'s catch doesn't log, only reports to Sentry**, so the F15 refusal there is visible only as the JSON 500 (no unhandled rejection). Step 9 rewrites that route, so the log line was added to Step 9's Do list rather than done here.
+- **Step 5: the E2E server no longer runs with `SKIP_BUILD_STATIC_GENERATION=1`; only `next build` gets it**, inline in `e2e:server`. The Dockerfile sets it only in the build stage, so production's `next start` never sees it. With it set at runtime, `deferStaticGenerationIfRequested()` calls `connection()` inside an on-demand ISR render, and every anonymous marketing page answered 500 (`DYNAMIC_SERVER_USAGE`). S1.9's archive test found this; the harness now matches production.
+- **Step 5: `getMarketingReadOptions()` next to `getPreviewUser()`** in `src/utilities/getPreviewUser.ts` returns `{ draft, overrideAccess: false, user }` for both marketing queries, so the "drafts only for a super admin in Draft Mode" rule lives in one place instead of being repeated in `queryPageBySlug` and `queryPostBySlug`. `PREVIEW_SECRET` moved into `tests/e2e/support/env.ts`, shared by the config and S1.9.
+- **Step 5: S1.9 post titles carry the worker suffix.** Every marketing archive lists every post, so titles from a restarted worker's re-seed would otherwise match twice.
 - **Step 1: the DB guard compares host and database name** of `E2E_DATABASE_URL` and `DATABASE_URL`, so a different user or password on the same database still counts as "the same database".
 
 ## Questions for the owner
@@ -1389,5 +1392,6 @@ This covers only the parts proven outside the E2E suite. The list is written bef
 - 2026-09-26 03:00 UTC: Step 2 done: `tenant-isolation.spec.ts` (S1.1–S1.8, S1.10; 20 tests) plus project/issue/patch-note/report/vote factories, `upload()` and `uniqueSlug`. New bug **F24** found (studio B creates/moves issues into tenant A: 201/200), root-caused to the plugin tenant field's custom `validate` skipping `filterOptions`; fix scheduled in Step 3. tsc 0; lint 0 errors, 27 warnings (unchanged); E2E exit 0, 21 passed incl. 7 expected-fail with their symptoms: F11 folder listed to B, F24 expected 400 got 201, F22 expected 200 got 500, F1 payload-jobs read 200, F2 post create 201, F16 anonymous form-submission 201, F9 `customDomainVerified` stored true; 0 flaky; 129 s wall; `dev` rows 0 in both DBs.
 - 2026-09-26 03:03 UTC: Step 3 done: `superAdminOnly` replaces the inline super-admin checks (Tenants, Users, Pages) and locks posts, categories, header/footer update, redirects/forms writes, form-submissions create/read/delete, search update/delete and the jobs collection (plus `jobs.access.run`); `authenticatedOrPublished` → `superAdminOrPublished`; F24 fixed with `validateTenantMembership` as the plugin's root `tenantField.validate`. tsc 0; lint 0 errors, 27 warnings (unchanged); E2E exit 0, 21 passed incl. 3 expected-fail (F9, F11, F22), F1/F2/F16/F24 tests now pass (F24 rejects with "You can only assign documents to your own studio."); 0 flaky; 131 s wall; `dev` rows 0 in both DBs.
 - 2026-09-26 03:09 UTC: Step 4 done: F9 `create` guards on `customDomainVerified` (super admin) and `upvoteCount` (`() => false`); F11 `payload-folders` in the multi-tenant plugin + migration `20260926_030253_tenant_scoped_media_folders` (nullable `tenant_id`, FK to tenants, index; applied to mission DB; types regenerated, import map unchanged); F15 production refusal in `verifyTurnstile` and `checkRateLimit` (`RATE_LIMIT_OPTIONAL=1` read only there). tsc 0; lint 0 errors, 27 warnings (unchanged); E2E exit 0, 21 passed incl. 1 expected-fail (F22), F9/F11 tests now pass, `migrate:fresh` applied 7 migrations; 0 flaky; 130 s wall; `dev` rows 0 in both DBs. F15 proof: contact 500 "Something went wrong." with the Turnstile message logged, vote 500 (`proofs/step4-f15.log`).
+- 2026-09-26 03:22 UTC: Step 5 done: F10 fixed. `getPreviewUser` moved to `src/utilities/getPreviewUser.ts` with `getMarketingReadOptions` (drafts only for a super admin in Draft Mode, `overrideAccess: false`) used by both marketing queries; `/next/preview` destructures `{ user }` and 403s unless super admin; `ArchiveBlock` reads through access. S1.9 (5 browser tests) before the fix: anonymous `/next/preview` 200 instead of 403, `bOwner` in Draft Mode saw the marketing draft hero, the archive listed the never-published post; the anonymous marketing page 500'd because the harness set `SKIP_BUILD_STATIC_GENERATION` at runtime (now build-only, as in the Dockerfile). tsc 0; lint 0 errors, 27 warnings (unchanged); E2E exit 0, 26 passed incl. 1 expected-fail (F22), 0 flaky, 136 s wall; no `DYNAMIC_SERVER_USAGE` in the log; `dev` rows 0 in both DBs.
 
 ## Summary

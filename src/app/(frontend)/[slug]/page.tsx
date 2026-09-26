@@ -10,6 +10,7 @@ import { homeStatic } from '@/endpoints/home-static'
 import { RenderBlocks } from '@/blocks/RenderBlocks'
 import { RenderHero } from '@/heros/RenderHero'
 import { generateMeta } from '@/utilities/generateMeta'
+import { getMarketingReadOptions } from '@/utilities/getPreviewUser'
 import PageClient from './page.client'
 import { LivePreviewListener } from '@/components/LivePreviewListener'
 import {
@@ -104,16 +105,13 @@ export async function generateMetadata({ params: paramsPromise }: Args): Promise
 }
 
 const queryPageBySlug = cache(async ({ slug }: { slug: string }) => {
-  const { isEnabled: draft } = await draftMode()
-
   const payload = await getPayload({ config: configPromise })
 
   const result = await payload.find({
     collection: 'pages',
-    draft,
+    ...(await getMarketingReadOptions()),
     limit: 1,
     pagination: false,
-    overrideAccess: draft,
     where: {
       slug: {
         equals: slug,

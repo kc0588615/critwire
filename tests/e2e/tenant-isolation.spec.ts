@@ -1,7 +1,10 @@
+import type { Browser, Page as BrowserPage } from '@playwright/test'
 import type { CollectionSlug } from 'payload'
 
+import { signSitePreviewToken } from '../../src/lib/security/sitePreviewToken'
 import type { GamePage, GameProject, Issue, IssueReport, Media, PatchNote } from '../../src/payload-types'
 import type { RestClient } from './support/api'
+import { BASE_URL, PREVIEW_SECRET, type Role, storageStatePath } from './support/env'
 import {
   castVote,
   createIssue,
@@ -357,6 +360,153 @@ test('S1.8 issue slugs are unique per project, not globally', async ({ api, worl
   })
   await test.step('same slug in another project → 201', async () => {
     await createIssue(aOwner, a.otherProject, a.publicIssue.slug)
+  })
+})
+
+test.describe('S1.9 Draft Mode previews', () => {
+  const TEXT = {
+    aPublished: 'Iso A published heading',
+    aDraft: 'Iso A draft heading',
+    marketingPublished: 'Iso marketing published hero',
+    marketingDraft: 'Iso marketing draft hero',
+  }
+
+  let aPreviewProject: GameProject
+  let aLanding: GamePage
+  let bLanding: GamePage
+  let marketingSlug: string
+  // Worker-unique, because every marketing archive lists every post.
+  let publishedPostTitle: string
+  let draftPostTitle: string
+
+  const heroBlock = (heading: string) => [{ blockType: 'gameHero' as const, heading }]
+  const marketingPreviewURL = (path: string) =>
+    `/next/preview?${new URLSearchParams({ path, previewSecret: PREVIEW_SECRET })}`
+
+  /** A browser page signed in as `role`, or anonymous. */
+  async function browse(browser: Browser, role: Role | 'anonymous'): Promise<BrowserPage> {
+    const context = await browser.newContext({
+      baseURL: BASE_URL,
+      storageState: role === 'anonymous' ? undefined : storageStatePath(role),
+    })
+    return context.newPage()
+  }
+
+  test.beforeAll(async ({ api, uniqueSlug, world }) => {
+    const aOwner = api('aOwner')
+    const superAdmin = api('superAdmin')
+
+    aPreviewProject = await createProject(aOwner, world.tenants.A.id, uniqueSlug('iso-a-preview'))
+    // Legacy block page (no template), so the hero heading is the page's h1.
+    const published = await seed(aOwner, 'game-pages', {
+      gameProject: aPreviewProject.id,
+      tenant: world.tenants.A.id,
+      title: 'Iso A preview landing',
+      template: null,
+      content: heroBlock(TEXT.aPublished),
+      _status: 'published',
+    })
+    const draft = await aOwner.update(
+      'game-pages',
+      published.id,
+      { content: heroBlock(TEXT.aDraft), _status: 'draft' },
+      { draft: true },
+    )
+    expect(draft.status, JSON.stringify(draft.body)).toBe(200)
+    aLanding = published
+
+    bLanding = await seed(
+      api('bOwner'),
+      'game-pages',
+      { gameProject: bProject.id, tenant: world.tenants.B.id, title: 'Iso B landing', _status: 'draft' },
+      { draft: true },
+    )
+
+    publishedPostTitle = `Iso published post ${uniqueSlug('iso')}`
+    draftPostTitle = `Iso never-published post ${uniqueSlug('iso')}`
+    await seed(superAdmin, 'posts', {
+      title: publishedPostTitle,
+      slug: uniqueSlug('iso-published-post'),
+      content: lexical('Out now.'),
+      _status: 'published',
+    })
+    await seed(
+      superAdmin,
+      'posts',
+      { title: draftPostTitle, slug: uniqueSlug('iso-draft-post'), content: lexical('Not yet.'), _status: 'draft' },
+      { draft: true },
+    )
+
+    marketingSlug = uniqueSlug('iso-marketing')
+    const page = await seed(superAdmin, 'pages', {
+      title: TEXT.marketingPublished,
+      slug: marketingSlug,
+      hero: { type: 'lowImpact', richText: lexical(TEXT.marketingPublished) },
+      layout: [{ blockType: 'archive', populateBy: 'collection', relationTo: 'posts', limit: 50 }],
+      _status: 'published',
+    })
+    const pageDraft = await superAdmin.update(
+      'pages',
+      page.id,
+      { title: TEXT.marketingDraft, hero: { type: 'lowImpact', richText: lexical(TEXT.marketingDraft) }, _status: 'draft' },
+      { draft: true },
+    )
+    expect(pageDraft.status, JSON.stringify(pageDraft.body)).toBe(200)
+  })
+
+  test('only super admins can enter marketing Draft Mode [F10]', async ({ browser }) => {
+    for (const role of ['anonymous', 'bOwner'] as const) {
+      await test.step(role, async () => {
+        const page = await browse(browser, role)
+        const response = await page.goto(marketingPreviewURL(`/${marketingSlug}`))
+        expect(response?.status()).toBe(403)
+        await page.context().close()
+      })
+    }
+  })
+
+  test('a studio user in Draft Mode sees only published marketing content and other studios’ published pages [F10]', async ({
+    browser,
+  }) => {
+    const page = await browse(browser, 'bOwner')
+    await test.step('enter Draft Mode through studio B’s own site preview', async () => {
+      await page.goto(`/next/site-preview?token=${signSitePreviewToken(bLanding.id)}`)
+      await expect(page).toHaveURL(new RegExp(`/g/${bProject.slug}$`))
+    })
+    await test.step('studio A’s landing shows its published heading', async () => {
+      await page.goto(`/g/${aPreviewProject.slug}`)
+      await expect(page.getByRole('heading', { level: 1 })).toHaveText(TEXT.aPublished)
+      await expect(page.getByText(TEXT.aDraft)).toHaveCount(0)
+    })
+    await test.step('the marketing page shows its published hero', async () => {
+      await page.goto(`/${marketingSlug}`)
+      await expect(page.getByText(TEXT.marketingPublished)).toBeVisible()
+      await expect(page.getByText(TEXT.marketingDraft)).toHaveCount(0)
+    })
+    await page.context().close()
+  })
+
+  test('a super admin previews the marketing draft', async ({ browser }) => {
+    const page = await browse(browser, 'superAdmin')
+    await page.goto(marketingPreviewURL(`/${marketingSlug}`))
+    await expect(page).toHaveURL(new RegExp(`/${marketingSlug}$`))
+    await expect(page.getByText(TEXT.marketingDraft)).toBeVisible()
+    await page.context().close()
+  })
+
+  test('the Archive block lists published posts only [F10]', async ({ browser }) => {
+    const page = await browse(browser, 'anonymous')
+    await page.goto(`/${marketingSlug}`)
+    await expect(page.getByRole('link', { name: publishedPostTitle })).toBeVisible()
+    await expect(page.getByText(draftPostTitle)).toHaveCount(0)
+    await page.context().close()
+  })
+
+  test('studio B cannot preview studio A’s landing page', async ({ browser }) => {
+    const page = await browse(browser, 'bOwner')
+    const response = await page.goto(`/next/site-preview?token=${signSitePreviewToken(aLanding.id)}`)
+    expect(response?.status()).toBe(403)
+    await page.context().close()
   })
 })
 
