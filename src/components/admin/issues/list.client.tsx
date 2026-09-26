@@ -64,6 +64,7 @@ export default function IssuesListViewClient({
               </div>
             </div>
           </header>
+          {props.BeforeListTable}
           <IssuesKanban className="min-h-0 flex-1" initialColumns={initialColumns} />
         </Gutter>
       ) : (

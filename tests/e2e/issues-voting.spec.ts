@@ -2,8 +2,16 @@ import type { Page, PlaywrightWorkerArgs } from '@playwright/test'
 
 import type { GameProject, Issue, PatchNote } from '../../src/payload-types'
 import type { RestClient } from './support/api'
-import { BASE_URL } from './support/env'
-import { castVote, createIssue, createPatchNote, createProject, eventually, expect, test } from './support/fixtures'
+import {
+  castVote,
+  createIssue,
+  createPatchNote,
+  createProject,
+  eventually,
+  expect,
+  newRequestContext,
+  test,
+} from './support/fixtures'
 
 /**
  * The public issue tracker under /g/<slug>/issues: the filtered list,
@@ -232,7 +240,7 @@ async function postVote(
   body: unknown,
   cookie?: string,
 ): Promise<VoteReply> {
-  const player = await playwright.request.newContext({ baseURL: BASE_URL })
+  const player = await newRequestContext(playwright)
   try {
     const response = await player.post('/api/vote', { data: body, headers: cookie ? { Cookie: cookie } : {} })
     const issued = response

@@ -1163,17 +1163,22 @@ The session that carries out the affected step copies the matching line into **D
     - Keep the Sentry capture and rethrow.
   - **Verify:** standard checks. In S5.6's report output, the kept job's `log` entry shows the thrown message.
 
-- [ ] **Step 15: Admin triage spec (S6)**
+- [x] **Step 15: Admin triage spec (S6)**
   - **Files:** new `tests/e2e/admin-triage.spec.ts`.
   - **Do:** S6.1–S6.7, using `aOwner`'s storage state; S6.1's UI login uses a fresh context.
     - Drag with `page.mouse`: down, several `move` steps adding up to more than 6 px (dnd-kit's activation distance), then up.
     - S6.5 [F6] → annotate for Step 16. `page.route` answers the PATCH with 500; expect the card back in its original column and an error toast.
   - **Verify:** standard checks. Only S6.5 is expected to fail: the card stays in the new column and no toast appears.
+  - **Deviation (done):** the spec found that the admin Issues page was a 500 in every production build, and that the kanban had no styles (see Decisions, "Step 15"). Spec and fixes landed together, so nothing but S6.5 is annotated. Before the fixes, S6.2, S6.3, S6.4 and S6.6 failed (`/admin/collections/issues` → 500). Also:
+    - S6.2: Payload doesn't show a not-found view for a document the user can't read. It redirects to the list with `?notFound=<id>` and puts a "could not be found" banner in the list's `BeforeListTable` slot. The kanban now renders that slot, and S6.2 asserts the redirect, the banner, B's own board and no A title.
+    - The reorder test (S6.4) uses the Investigating column: Planned is off screen at 1280 px, and dnd-kit needs both cards on screen.
+    - Card titles carry a per-worker tag, so the re-seed after a failure adds no look-alike cards.
+    - Harness fix in `support/fixtures.ts`: `newRequestContext` (see Decisions).
 
 - [ ] **Step 16: Kanban shows only moves the server accepted (F6)**
   - **Scenarios:** remove the `test.fail` from S6.5. S6.3 and S6.4 guard.
   - **Files:** `src/components/admin/issues/kanban.tsx` and `src/components/admin/issues/list.tsx`.
-  - **Do:** as F6.
+  - **Do:** as F6. (Step 15 already made `list.tsx` pass only client props and moved the shared constants to `constants.ts`; the try/catch below is still there.)
     - Compute the next columns from current state outside any updater, call `setColumns(next)`, then send the PATCH.
     - On failure, restore the snapshot and call `toast.error` (from `@payloadcms/ui`).
     - Ignore drag start while a move is in flight.
@@ -1627,6 +1632,17 @@ This covers only the parts proven outside the E2E suite. The list is written bef
 - **Step 13: both submit routes still 404 when the visitor's project has no tenant**, as before (`!project?.tenant`), and the report route's catch now logs through `getLogger('public.issue-report')` like the contact route; the contact route's extra `payload.logger.error` duplicate is gone.
 - **Step 14: the allowlist's path and credentials checks apply to the test origin too.** `DISCORD_WEBHOOK_TEST_ORIGIN` only replaces the https/host/port check, so the E2E sink is held to `/api/webhooks/…` like Discord. The field validator (`validateContactDiscordWebhookUrl`) sits with `isAllowedDiscordWebhookUrl` in `src/lib/validation/discordWebhook.ts`, next to the other URL validators; the Tally validator stays where it was.
 - **Step 14: the contact job's project lookup passes `req`**, so it runs in the job's own request like every other Local API call in a hook or task, and both tasks share one `contactInputSchema`. The `.env.example` "succeed without it" wording is left for Step 20, which rewrites that section.
+- **Step 15 (bug): the admin Issues page answered 500 in every production build.** `list.tsx` is a Server Component, but it imported `ISSUE_KANBAN_STATUSES` and `ISSUE_KANBAN_PAGE_SIZE` from the `'use client'` module `kanban.tsx`. There it gets client references, not values (`ISSUE_KANBAN_STATUSES.map is not a function`). The constants and the `IssueStatus` type moved to `src/components/admin/issues/constants.ts`, which both sides import. This has been broken since the kanban landed (`d378dbd`).
+- **Step 15 (bug): the list view spread `ListViewServerProps` into its client component.** That spread passes the collection config (with access functions), `payload`, `i18n` and `data` across the boundary, which React rejects ("Functions cannot be passed directly to Client Components"). `list.tsx` now takes the server-only keys out (the ones Payload's own `renderListView` puts in `serverProps`) and passes the rest. The queued kanban remediation plan asks for the same.
+- **Step 15 (bug): the kanban had no styles.** Its Tailwind classes were never compiled for the admin, so all seven columns stacked full width. `kanban.tsx` now imports `kanban.css`, which is Tailwind for this folder only:
+  - no preflight;
+  - the theme in `reference inline` mode, so no `:root` variables are emitted (Payload defines `--color-blue-400/500` and `--font-mono` too);
+  - `@source not inline('table')`, since the `table` utility would override Payload's `.table`;
+  - `dark:` keyed to Payload's `data-theme`.
+
+  Payload's CSS is in `@layer payload-default`, so the later `utilities` layer wins, as the classes expect. I checked the compiled output: no class and no variable in it collides with Payload's stylesheets.
+- **Step 15: the kanban renders Payload's `BeforeListTable` slot.** Payload's answer to an unreadable document is a redirect to the list with a "document not found" banner in that slot. Kanban mode dropped it, so a user sent there saw no message.
+- **Step 15 (harness bug): request contexts start without cookies.** Playwright applies the calling test's `use` options, `storageState` included, to `playwright.request.newContext`. The worker-scoped `api` fixture was first built inside admin-triage's `test.use({ storageState: aOwner })`, so `api('anonymous')` was signed in as aOwner for the rest of the worker. S5.4's "anonymous" read then saw the webhook URL: the server was right, the test client wasn't anonymous. `newRequestContext(playwright)` passes an empty `storageState`. The `api` fixture, `castVote` and S4's `postVote` use it.
 
 ## Questions for the owner
 
@@ -1655,5 +1671,6 @@ See /srv/critter-ai/handoff/critwire.md (Q1 → H3, Q2 → H1, Q3 → H2, Q4 →
 - 2026-09-26 04:40 UTC: Step 12 done: `promoteIssueReport` (afterChange + `setTimeout` self-update) replaced by the `beforeChange` hook `createIssueFromPublishedReport`: it creates the Issue with `req` (same transaction, slug lookup included) and returns `{ ...data, issue }`, so the link lands in one write; no context flag, no `/issues` revalidation, `extractID` throughout. S5.3 [F5] un-annotated and passing; the guard test's 5 s poll dropped. tsc 0; lint 0 errors, 27 warnings (unchanged); E2E exit 0, 65 passed incl. 4 expected-fail (F12, F21 ×2, F13), 0 flaky, 199 s wall; `dev` rows 0 in both DBs.
 - 2026-09-26 04:50 UTC: Step 13 done: F12 and F3 part 2. `guardPublicForm` + `formResponse` (`src/lib/public-forms/guard.ts`) replace both routes' copies of the parse → Turnstile → rate-limit pipeline and `responseFor` (no-op ternary gone); shared `TurnstileField`; `getContactRoute` (the only privileged portal read, secrets never leave it) drives the contact page and route; the report page and route read `reportForm` from `getGameProject` through `getReportRoute`, and a native report to a Tally/external project now answers 400. S5.2 [F12] un-annotated and passing. tsc 0; lint 0 errors, 27 warnings (unchanged); E2E exit 0, 65 passed incl. 3 expected-fail (F21 ×2, F13), 0 flaky, 199 s wall; `dev` rows 0 in both DBs.
 - 2026-09-26 04:52 UTC: Step 14 done: F13 and F21. Contact tasks deliver or throw (missing project via `findByID({ disableErrors: true })`, routing mismatch, unset `RESEND_API_KEY`, disallowed webhook URL), both fetches time out after 10 s and Discord's uses `redirect: 'error'`; the submit route runs only its own job (`jobs.runByID`); `isAllowedDiscordWebhookUrl` gates the field on save when the target is Discord and the task before sending. S5.4 [F21], S5.5 [F21] and S5.6 [F13] un-annotated and passing; the kept email job's log carries "Contact job: RESEND_API_KEY is not set…". tsc 0; lint 0 errors, 27 warnings (unchanged); E2E exit 0, 65 passed, 0 expected-fail, 0 flaky, 199 s wall; `dev` rows 0 in both DBs.
+- 2026-09-26 05:30 UTC: Step 15 done: `tests/e2e/admin-triage.spec.ts` (S6.1–S6.7), S6.5 [F6] annotated for Step 16. The spec found three kanban bugs, fixed here: the admin Issues page was a 500 in production (a client-module import and server props spread into a client component), the board had no styles, and the not-found banner was dropped. It also found one harness bug: request contexts inherited a test's `storageState`. Before the fixes, S6.2/S6.3/S6.4/S6.6 failed with a 500. S6.5 fails with its symptom: after the PATCH returns 500 the card stays in Needs More Info, while REST still says REPORTED. tsc 0; lint 0 errors, 27 warnings (unchanged); E2E exit 0, 72 passed incl. 1 expected-fail (F6), 0 flaky, 231 s wall; `dev` rows 0 in both DBs.
 
 ## Summary

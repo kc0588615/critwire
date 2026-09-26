@@ -4,7 +4,7 @@ import type { ListViewServerProps } from 'payload'
 import type { Issue } from '@/payload-types'
 
 import IssuesListViewClient from './list.client'
-import { ISSUE_KANBAN_PAGE_SIZE, ISSUE_KANBAN_STATUSES, type IssueStatus } from './kanban'
+import { ISSUE_KANBAN_PAGE_SIZE, ISSUE_KANBAN_STATUSES, type IssueStatus } from './constants'
 
 const emptyPage = (): PaginatedDocs<Issue> => ({
   docs: [],
@@ -20,7 +20,23 @@ const emptyPage = (): PaginatedDocs<Issue> => ({
 })
 
 export default async function IssuesListView(props: ListViewServerProps) {
-  const { payload, user } = props
+  // Payload hands a server list view its server-only props too (config
+  // with access functions, the Payload instance, ...). Only the client
+  // props may cross into the client component.
+  const {
+    collectionConfig: _collectionConfig,
+    data: _data,
+    i18n: _i18n,
+    limit: _limit,
+    listSearchableFields: _listSearchableFields,
+    locale: _locale,
+    params: _params,
+    payload,
+    permissions: _permissions,
+    searchParams: _searchParams,
+    user,
+    ...clientProps
+  } = props
 
   const results = await Promise.all(
     ISSUE_KANBAN_STATUSES.map(async (status) => {
@@ -46,5 +62,5 @@ export default async function IssuesListView(props: ListViewServerProps) {
     results.map(({ result, status }) => [status, result]),
   ) as Record<IssueStatus, PaginatedDocs<Issue>>
 
-  return <IssuesListViewClient {...props} initialColumns={initialColumns} />
+  return <IssuesListViewClient {...clientProps} initialColumns={initialColumns} />
 }

@@ -1,0 +1,16 @@
+/*
+ * Tailwind for the admin Issues views only: the admin loads no Tailwind
+ * of its own. Payload's styles sit in @layer payload-default, so the
+ * later utilities layer wins, as the components' classes expect.
+ * - No preflight: it would reset the rest of the admin.
+ * - The theme is inlined and emits no variables: Payload defines some of
+ *   the same names (--color-blue-500, --font-mono) on :root.
+ * - Only this folder is scanned, and `table` is excluded because it
+ *   would override Payload's `.table`.
+ */
+@layer theme, utilities;
+@import 'tailwindcss/theme.css' layer(theme) theme(reference inline);
+@import 'tailwindcss/utilities.css' layer(utilities) source(none);
+@source './';
+@source not inline('table');
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));

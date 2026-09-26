@@ -9,6 +9,15 @@ import type { Config, GameProject, Issue, IssueReport, Media, PatchNote } from '
 import { type Query, RestClient } from './api'
 import { BASE_URL, type Role, ROLES, WEBHOOK_SINK_ORIGIN, WEBHOOK_SINK_PORT, WORLD_PATH } from './env'
 
+/**
+ * A request context with no cookies. Playwright applies the calling test's
+ * `use` options to `playwright.request.newContext`, `storageState`
+ * included, so a context first made under `test.use({ storageState })`
+ * would otherwise be signed in, even a worker-scoped one.
+ */
+export const newRequestContext = (playwright: PlaywrightWorkerArgs['playwright']): Promise<APIRequestContext> =>
+  playwright.request.newContext({ baseURL: BASE_URL, storageState: { cookies: [], origins: [] } })
+
 /** What `auth.setup.ts` created on the fresh database. */
 export interface World {
   tenants: Record<'A' | 'B', { id: number; slug: string }>
@@ -62,7 +71,7 @@ export const test = base.extend<{}, WorkerFixtures>({
       const contexts: APIRequestContext[] = []
       const clients = {} as Record<Role | 'anonymous', RestClient>
       for (const role of [...ROLES, 'anonymous'] as const) {
-        const context = await playwright.request.newContext({ baseURL: BASE_URL })
+        const context = await newRequestContext(playwright)
         contexts.push(context)
         clients[role] = new RestClient(context, role === 'anonymous' ? undefined : world.users[role].token)
       }
@@ -240,7 +249,7 @@ export async function castVote(
   playwright: PlaywrightWorkerArgs['playwright'],
   issueID: number,
 ): Promise<{ upvoteCount: number; voted: boolean }> {
-  const player = await playwright.request.newContext({ baseURL: BASE_URL })
+  const player = await newRequestContext(playwright)
   try {
     const response = await player.post('/api/vote', { data: { issueId: issueID } })
     expect(response.status(), `vote on issue ${issueID}`).toBe(200)

@@ -38,7 +38,8 @@ import type { Issue } from '@/payload-types'
 import { ISSUE_STATUS_OPTIONS } from '@/collections/options'
 import { cn } from '@/utilities/ui'
 
-export type IssueStatus = (typeof ISSUE_STATUS_OPTIONS)[number]['value']
+import { ISSUE_KANBAN_PAGE_SIZE, type IssueStatus } from './constants'
+import './kanban.css'
 
 type ColumnDef = {
   id: IssueStatus
@@ -65,8 +66,6 @@ const COLUMNS: ColumnDef[] = ISSUE_STATUS_OPTIONS.map((status) => ({
   ...PILL_STYLES[status.value],
 }))
 
-const COLUMN_LIMIT = 20
-
 async function updateIssue(
   issueId: number | string,
   data: { _order?: string; status?: IssueStatus },
@@ -85,7 +84,7 @@ async function updateIssue(
 async function fetchMoreIssues(status: IssueStatus, page: number): Promise<ColumnState> {
   const params = new URLSearchParams({
     depth: '0',
-    limit: String(COLUMN_LIMIT),
+    limit: String(ISSUE_KANBAN_PAGE_SIZE),
     page: String(page),
     sort: '_order',
     'where[status][equals]': status,
@@ -454,6 +453,3 @@ export function IssuesKanban({ className, initialColumns }: IssuesKanbanProps) {
     </div>
   )
 }
-
-export const ISSUE_KANBAN_STATUSES = ISSUE_STATUS_OPTIONS.map((s) => s.value)
-export const ISSUE_KANBAN_PAGE_SIZE = COLUMN_LIMIT
