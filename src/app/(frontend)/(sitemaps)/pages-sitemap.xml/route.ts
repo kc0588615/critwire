@@ -11,18 +11,8 @@ const getPagesSitemap = unstable_cache(
       process.env.VERCEL_PROJECT_PRODUCTION_URL ||
       'https://example.com'
     const dateFallback = new Date().toISOString()
-    const defaultSitemap = [
-      {
-        loc: `${SITE_URL}/search`,
-        lastmod: dateFallback,
-      },
-      {
-        loc: `${SITE_URL}/posts`,
-        lastmod: dateFallback,
-      },
-    ]
 
-    if (shouldSkipBuildStaticGeneration) return defaultSitemap
+    if (shouldSkipBuildStaticGeneration) return []
 
     const payload = await getPayload({ config })
 
@@ -55,7 +45,7 @@ const getPagesSitemap = unstable_cache(
           })
       : []
 
-    return [...defaultSitemap, ...sitemap]
+    return sitemap
   },
   ['pages-sitemap'],
   {

@@ -2,7 +2,7 @@ import type { Browser, Page as BrowserPage } from '@playwright/test'
 import type { CollectionSlug } from 'payload'
 
 import { signSitePreviewToken } from '../../src/lib/security/sitePreviewToken'
-import type { GamePage, GameProject, Issue, IssueReport, Media, PatchNote } from '../../src/payload-types'
+import type { GamePage, GameProject, Issue, IssueReport, Media, Page, PatchNote } from '../../src/payload-types'
 import type { RestClient } from './support/api'
 import { BASE_URL, PREVIEW_SECRET, type Role, storageStatePath } from './support/env'
 import {
@@ -47,6 +47,11 @@ interface StudioA {
 
 let a: StudioA
 let bProject: GameProject
+
+/** A marketing page layout of one full-width Content block. */
+const contentLayout = (text: string): Page['layout'] => [
+  { blockType: 'content', columns: [{ size: 'full', richText: lexical(text) }] },
+]
 
 const idsOf = (docs: { id: number | string }[]): (number | string)[] => docs.map((doc) => doc.id)
 
@@ -296,43 +301,59 @@ test.describe('S1.7 platform and system collections', () => {
     })
   })
 
-  test('studio users cannot change the marketing site or read its form submissions [F2]', async ({ api, uniqueSlug }) => {
+  test('studio users cannot change the marketing site [F2]', async ({ api, uniqueSlug }) => {
     const aOwner = api('aOwner')
-    await test.step('create a post', async () => {
-      const { status } = await aOwner.create('posts', {
+    await test.step('create a marketing page', async () => {
+      const { status, body } = await aOwner.create('pages', {
         title: 'Studio A was here',
-        slug: uniqueSlug('iso-studio-post'),
-        content: lexical('Not a Critwire post.'),
+        slug: uniqueSlug('iso-studio-page'),
+        hero: { type: 'lowImpact', richText: lexical('Not a Critwire page.') },
+        layout: contentLayout('Not a Critwire page.'),
       })
-      expect(status).toBe(403)
+      expect(status, JSON.stringify(body)).toBe(403)
     })
-    await test.step('create a redirect', async () => {
-      const { status } = await aOwner.create('redirects', {
-        from: `/${uniqueSlug('iso-hijack')}`,
-        to: { type: 'custom', url: 'https://example.com' },
+    await test.step('edit a published marketing page', async () => {
+      const page = await seed(api('superAdmin'), 'pages', {
+        title: 'Iso platform page',
+        slug: uniqueSlug('iso-platform-page'),
+        hero: { type: 'lowImpact', richText: lexical('Platform copy.') },
+        layout: contentLayout('Platform copy.'),
+        _status: 'published',
       })
-      expect(status).toBe(403)
-    })
-    await test.step('update the header global', async () => {
-      expect((await aOwner.raw('POST', '/api/globals/header', { data: { navItems: [] } })).status).toBe(403)
-    })
-    await test.step('read form submissions', async () => {
-      expect((await aOwner.find('form-submissions')).status).toBe(403)
+      const { status, body } = await aOwner.update('pages', page.id, { title: 'Studio A was here' })
+      expect(status, JSON.stringify(body)).toBe(403)
     })
   })
 
-  test('anonymous visitors cannot post form submissions [F16]', async ({ api }) => {
-    const form = await seed(api('superAdmin'), 'forms', {
-      title: 'Iso newsletter',
-      fields: [{ blockType: 'text', name: 'name', label: 'Name', required: false }],
-      confirmationType: 'message',
-      confirmationMessage: lexical('Thanks'),
+  test('the website-template surface is gone [H1]', async ({ api }) => {
+    const superAdmin = api('superAdmin')
+    const anonymous = api('anonymous')
+    // A super admin getting 404 proves removal, not just denial.
+    for (const path of [
+      ...['posts', 'categories', 'forms', 'form-submissions', 'redirects', 'search'].map((slug) => `/api/${slug}`),
+      '/api/globals/header',
+      '/api/globals/footer',
+    ]) {
+      await test.step(`super admin GET ${path} → 404`, async () => {
+        expect((await superAdmin.raw('GET', path)).status).toBe(404)
+      })
+    }
+    await test.step('anonymous POST /api/form-submissions → 404', async () => {
+      const { status } = await anonymous.raw('POST', '/api/form-submissions', {
+        data: { form: 1, submissionData: [{ field: 'name', value: 'Anonymous' }] },
+      })
+      expect(status).toBe(404)
     })
-    const { status, body } = await api('anonymous').create('form-submissions', {
-      form: form.id,
-      submissionData: [{ field: 'name', value: 'Anonymous' }],
+    for (const path of ['/posts', '/posts/any-post', '/search', '/posts-sitemap.xml']) {
+      await test.step(`anonymous GET ${path} → 404`, async () => {
+        expect((await anonymous.raw('GET', path)).status).toBe(404)
+      })
+    }
+    await test.step('the pages sitemap lists neither /posts nor /search', async () => {
+      const { status, body } = await anonymous.raw<string>('GET', '/pages-sitemap.xml')
+      expect(status).toBe(200)
+      expect(body).not.toMatch(/\/(posts|search)</)
     })
-    expect(status, JSON.stringify(body)).toBe(403)
   })
 })
 
@@ -365,9 +386,6 @@ test.describe('S1.9 Draft Mode previews', () => {
   let aLanding: GamePage
   let bLanding: GamePage
   let marketingSlug: string
-  // Worker-unique, because every marketing archive lists every post.
-  let publishedPostTitle: string
-  let draftPostTitle: string
 
   const heroBlock = (heading: string) => [{ blockType: 'gameHero' as const, heading }]
   const marketingPreviewURL = (path: string) =>
@@ -412,27 +430,12 @@ test.describe('S1.9 Draft Mode previews', () => {
       { draft: true },
     )
 
-    publishedPostTitle = `Iso published post ${uniqueSlug('iso')}`
-    draftPostTitle = `Iso never-published post ${uniqueSlug('iso')}`
-    await seed(superAdmin, 'posts', {
-      title: publishedPostTitle,
-      slug: uniqueSlug('iso-published-post'),
-      content: lexical('Out now.'),
-      _status: 'published',
-    })
-    await seed(
-      superAdmin,
-      'posts',
-      { title: draftPostTitle, slug: uniqueSlug('iso-draft-post'), content: lexical('Not yet.'), _status: 'draft' },
-      { draft: true },
-    )
-
     marketingSlug = uniqueSlug('iso-marketing')
     const page = await seed(superAdmin, 'pages', {
       title: TEXT.marketingPublished,
       slug: marketingSlug,
       hero: { type: 'lowImpact', richText: lexical(TEXT.marketingPublished) },
-      layout: [{ blockType: 'archive', populateBy: 'collection', relationTo: 'posts', limit: 50 }],
+      layout: contentLayout('Iso marketing body.'),
       _status: 'published',
     })
     const pageDraft = await superAdmin.update(
@@ -481,14 +484,6 @@ test.describe('S1.9 Draft Mode previews', () => {
     await page.goto(marketingPreviewURL(`/${marketingSlug}`))
     await expect(page).toHaveURL(new RegExp(`/${marketingSlug}$`))
     await expect(page.getByText(TEXT.marketingDraft)).toBeVisible()
-    await page.context().close()
-  })
-
-  test('the Archive block lists published posts only [F10]', async ({ browser }) => {
-    const page = await browse(browser, 'anonymous')
-    await page.goto(`/${marketingSlug}`)
-    await expect(page.getByRole('link', { name: publishedPostTitle })).toBeVisible()
-    await expect(page.getByText(draftPostTitle)).toHaveCount(0)
     await page.context().close()
   })
 

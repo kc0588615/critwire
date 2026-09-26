@@ -22,9 +22,9 @@ export const getPreviewUser = async (): Promise<null | User> => {
 }
 
 /**
- * Find options for platform marketing content (pages, posts). Studio
- * users get Draft Mode legitimately for their own game pages, so only a
- * super admin in Draft Mode reads drafts; access decides everything else.
+ * Find options for platform marketing pages. Studio users get Draft
+ * Mode legitimately for their own game pages, so only a super admin in
+ * Draft Mode reads drafts; access decides everything else.
  * Everyone else queries the published document: with `draft: true` a
  * published-only filter would miss it whenever a newer draft exists.
  */

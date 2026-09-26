@@ -6,7 +6,6 @@ import { fileURLToPath } from 'url'
 
 import { isSuperAdmin, superAdminOnly } from './access/isSuperAdmin'
 import type { User } from './payload-types'
-import { Categories } from './collections/Categories'
 import { GamePages } from './collections/GamePages'
 import { GameProjects } from './collections/GameProjects'
 import { IssueReports } from './collections/IssueReports'
@@ -15,13 +14,10 @@ import { IssueVotes } from './collections/IssueVotes'
 import { Media } from './collections/Media'
 import { Pages } from './collections/Pages'
 import { PatchNotes } from './collections/PatchNotes'
-import { Posts } from './collections/Posts'
 import { Tenants } from './collections/Tenants'
 import { Users } from './collections/Users'
 import { discordWebhookContactTask, emailContactFormTask } from './jobs/contact'
 import { migrations } from './migrations'
-import { Footer } from './Footer/config'
-import { Header } from './Header/config'
 import { plugins } from './plugins'
 import { defaultLexical } from '@/fields/defaultLexical'
 import { getServerSideURL } from './utilities/getURL'
@@ -89,13 +85,10 @@ export default buildConfig({
     IssueReports,
     IssueVotes,
     Pages,
-    Posts,
     Media,
-    Categories,
     Users,
   ],
   cors: [getServerSideURL()].filter(Boolean),
-  globals: [Header, Footer],
   plugins,
   secret: process.env.PAYLOAD_SECRET,
   sharp,

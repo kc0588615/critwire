@@ -48,9 +48,9 @@ export async function GET(req: NextRequest): Promise<Response> {
 
   const draft = await draftMode()
 
-  // Only super admins edit marketing pages and posts, so only they
-  // preview drafts. The secret alone grants nothing: it ships in admin
-  // preview URLs every studio user can open.
+  // Only super admins edit marketing pages, so only they preview
+  // drafts. The secret alone grants nothing: it ships in admin preview
+  // URLs every studio user can open.
   if (!isSuperAdmin(user)) {
     draft.disable()
     return new Response('You are not allowed to preview this page', { status: 403 })
