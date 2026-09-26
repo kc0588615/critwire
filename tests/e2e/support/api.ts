@@ -50,6 +50,7 @@ type Method = 'DELETE' | 'GET' | 'PATCH' | 'POST' | 'PUT'
 export interface RawOptions {
   data?: unknown
   headers?: Record<string, string>
+  multipart?: Record<string, string | { name: string; mimeType: string; buffer: Buffer }>
 }
 
 /**
@@ -62,11 +63,16 @@ export class RestClient {
     private readonly token?: string,
   ) {}
 
-  raw<T = unknown>(method: Method, path: string, { data, headers }: RawOptions = {}): Promise<ApiResult<T>> {
+  raw<T = unknown>(
+    method: Method,
+    path: string,
+    { data, headers, multipart }: RawOptions = {},
+  ): Promise<ApiResult<T>> {
     return this.request
       .fetch(path, {
         method,
         data,
+        multipart,
         headers: { ...(this.token ? { Authorization: `JWT ${this.token}` } : {}), ...headers },
       })
       .then((response) => toResult<T>(response))
@@ -86,6 +92,17 @@ export class RestClient {
 
   findByID<C extends CollectionSlug>(collection: C, id: number | string, query?: Query) {
     return this.raw<Doc<C>>('GET', `/api/${collection}/${id}${toQueryString(query)}`)
+  }
+
+  /** Upload collections take the file plus the document's fields as `_payload` JSON. */
+  upload<C extends CollectionSlug>(
+    collection: C,
+    file: { name: string; mimeType: string; buffer: Buffer },
+    data: Partial<Doc<C>>,
+  ) {
+    return this.raw<DocResult<C>>('POST', `/api/${collection}`, {
+      multipart: { file, _payload: JSON.stringify(data) },
+    })
   }
 
   remove<C extends CollectionSlug>(collection: C, id: number | string) {

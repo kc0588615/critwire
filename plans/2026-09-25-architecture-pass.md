@@ -298,6 +298,15 @@ Fix: an Issues `beforeDelete` hook, `deleteIssueVotes`, runs `req.payload.db.del
 - The issue was already authorized by the delete's tenant-scoped access, and its votes belong to it.
 - No schema change. A cascading foreign key would be reverted by Payload's schema snapshot on the next `migrate:create`.
 
+**F24 (bug, rule 2; found in Step 2). A studio user can write documents into another studio's tenant.** `bOwner` creates an issue with `tenant: A` and A's `gameProject` → 201, and moves its own issue into tenant A → 200 (S1.2). The same path is open on every tenant-scoped collection whose create/update is `tenantMemberAccess` (game-projects, game-pages, patch-notes, issues, issue-reports, media).
+- The plugin's tenant field has `filterOptions: { id: { in: userTenants } }`, but it also sets its own `validate` (`plugin-multi-tenant/dist/fields/tenantField/index.js:103-107`, presence only). A custom `validate` replaces Payload's relationship validator, and that validator is what enforces `filterOptions` on the server (`payload/dist/fields/validations.js:404+`). So `filterOptions` only narrows the admin dropdown.
+- The collection-level constraint `withTenantAccess` adds is a `Where`. On create, Payload treats a `Where` as "allowed"; on update, it matches the stored document, not the incoming data.
+- The `gameProject` filter the plugin adds is relative to the document's own `tenant`, so a consistent pair (tenant A + A's project) passes. That's why `tenant: B` + A's project → 400 but `tenant: A` → 201.
+
+Fix: root `tenantField: { validate }` in the plugin config, so every tenant-scoped collection (and `payload-folders` after F11) gets it. It is the plugin's documented override, and the plugin still runs its presence check after it.
+- `validateTenantMembership` (in `src/access/tenantAccess.ts`): true when there's no `req.user` (Local API system writes such as votes and seeds), when the user is a super admin, or when `extractID(value)` is one of `getTenantIDsByRole(user)`. Otherwise "You can only assign documents to your own studio."
+- No schema change. Studio users only ever pick their own tenants in the admin UI, so nothing legitimate changes.
+
 **F15 (real violation, rule 8). Production silently skips Turnstile and rate limiting when their credentials are missing.** `verifyTurnstile.ts:22-23` and `rate-limit.ts:29-30` fail open in every environment. Their own comments say the skip exists for local development ("production MUST set UPSTASH…"), and patterns.md says to fail closed on security paths (Astra MUST-FIX 2).
 
 Fix: fail closed and loud in production only.
@@ -326,7 +335,7 @@ Fix: `formSubmissionOverrides.access.create: superAdminOnly`, as part of F2. It'
 - **Other `NOT NULL` + `ON DELETE SET NULL` foreign keys** (`issues.game_project_id`, `issue_reports.game_project_id`, `users_tenants.tenant_id`, `form_submissions.form_id`). Deleting a project, tenant or form that still has children fails with a database error instead of a clear message. That blocks destructive deletes rather than orphaning data. These are rare, owner or super-admin only actions, unlike F22's routine issue cleanup.
 
 **Verified fine:**
-- Access on tenant collections. The plugin ANDs `tenant in user.tenants` onto every operation and validates relationship `filterOptions` on the server, so cross-tenant `gameProject` and `tenant` references are rejected (`plugin-multi-tenant/dist/utilities/withTenantAccess.js`, `addFilterOptionsToFields.js`, `payload/dist/fields/validations.js:404+`).
+- Access on tenant collections. The plugin ANDs `tenant in user.tenants` onto every read, update and delete, and validates the `gameProject` relationship's `filterOptions` on the server, so a `gameProject` from another tenant than the document's is rejected (`plugin-multi-tenant/dist/utilities/withTenantAccess.js`, `addFilterOptionsToFields.js`, `payload/dist/fields/validations.js:404+`). **Correction (Step 2):** the `tenant` field itself is not validated against the user's tenants; see F24.
 - Delete is owner-only.
 - IssueVotes create and update over REST are disabled.
 - The vote token is HMAC-signed, compared in constant time, and stored as a SHA-256 hash.
@@ -881,7 +890,7 @@ The session that carries out the affected step copies the matching line into **D
       - `DATABASE_URL="$E2E_DB" E2E_DATABASE_URL="$E2E_DB" pnpm test:e2e`
     - Record the run's wall time.
 
-- [ ] **Step 2: Tenant-isolation spec, API scenarios (S1.1–S1.8, S1.10)**
+- [x] **Step 2: Tenant-isolation spec, API scenarios (S1.1–S1.8, S1.10)**
   - **Files:**
     - new `tests/e2e/tenant-isolation.spec.ts`
     - `tests/e2e/support/fixtures.ts`: add a project factory (creates a game project as a given role, with a spec-unique slug) plus the issue, patch-note and report factories it needs
@@ -897,9 +906,10 @@ The session that carries out the affected step copies the matching line into **D
       - anonymous form-submissions create [F16]
     - S1.10 passes today. Send a same-origin `Origin` header, or none.
   - **Verify:** standard checks. `setup` and S1 pass, and exactly six tests are expected to fail (F1, F2, F9, F11, F16, F22). The Log line gives each one's symptom.
+  - **Deviation (done):** seven expected failures, not six. S1.2's `tenant: A` case, which the plan expected to pass, exposed a new bug, F24. It's a separate test annotated → Step 3.
 
-- [ ] **Step 3: Lock system and platform collections to super admins (F1, F2, F16)**
-  - **Scenarios:** remove the `test.fail` from the three S1.7 tests.
+- [ ] **Step 3: Lock system and platform collections to super admins (F1, F2, F16), and the tenant field to the user's studios (F24)**
+  - **Scenarios:** remove the `test.fail` from the three S1.7 tests and from S1.2's `[F24]` test.
   - **Files:**
     - `src/access/isSuperAdmin.ts`: add `superAdminOnly: Access`.
     - `src/access/authenticatedOrPublished.ts` → `superAdminOrPublished.ts`, and its importers `Pages/index.ts` and `Posts/index.ts`.
@@ -910,6 +920,7 @@ The session that carries out the affected step copies the matching line into **D
     - `src/payload.config.ts`:
       - `jobs.access.run`: super admin, or the `CRON_SECRET` bearer when the secret is set.
       - `jobsCollectionOverrides`: create/read/update/delete super admin only, and `admin.hidden: ({ user }) => !isSuperAdmin(user)`.
+    - F24: `src/access/tenantAccess.ts` gets `validateTenantMembership`; `src/plugins/index.ts` passes it as the multi-tenant plugin's root `tenantField: { validate }`.
   - **Do:** access changes only, no schema change. `authenticated` stays where it's still right (Users `admin`, Media).
   - **Verify:** standard checks.
 
@@ -1223,7 +1234,7 @@ The session that carries out the affected step copies the matching line into **D
        - every deleted test and its reason, from `### Test audit results`
        - E2E coverage before (0 of 7 flows) and after (7 of 7, with test counts per spec)
        - both review verdicts: Fable APPROVE; Astra APPROVE_WITH_CHANGES, with its MUST-FIX items resolved in Revision
-       - the bugs found and fixed: F1–F13, F21 and F22, one line each
+       - the bugs found and fixed: F1–F13, F21, F22 and F24, one line each
        - the planner decisions
        - what's left for the owner: Q1–Q3, F23, the coverage gaps, and any devDependencies that became unused
        - the artifact path and the reproduce command
@@ -1343,6 +1354,9 @@ This covers only the parts proven outside the E2E suite. The list is written bef
 - **Fable SC1: taken (Step 1).** `payload migrate:fresh --force-accept-warning` was proven against `critwire_m_architecture_pass_e2e` before the config was built around it: exit 0, 6 migrations, no `dev` row, mission DB untouched (`proofs/step1-migrate-fresh.log`).
 - **Fable SC2: taken (Step 1).** `webServer.stdout: 'pipe'` (and stderr), so `[WebServer]` migrate and build lines land in the run log.
 - **Step 1: the API fixture creates one request context per role up front** (4 roles + anonymous) instead of lazily: `newContext` is async, and five idle contexts cost nothing. Playwright attaches worker-scoped request contexts to each test's trace (`artifactsRecorder` walks `request._contexts` at test start), so API calls made from these clients still show up in every test's trace.
+- **Step 2: F24 is a new bug, fixed in Step 3.** S1.2 showed a studio user can create and move documents into another studio's tenant: the plugin's own `validate` on the tenant field replaces the relationship validator that would enforce its `filterOptions`. It goes in Step 3 because it's the same kind of change (access only, no schema), and it's a cross-tenant write, so it shouldn't wait. The fix is one root `tenantField.validate` in the plugin config rather than per-collection access, so every tenant-scoped collection, including `payload-folders` after F11, is covered in one place (rule 2).
+- **Step 2: specs get a `uniqueSlug` worker fixture** (`<base>-w<workerIndex>`). After an unexpected failure Playwright restarts the worker and re-runs `beforeAll`; unique slugs keep the re-seed from colliding with the first one.
+- **Step 2: `playwright-report/` and `test-results/` are in the ESLint ignores.** The HTML report bundles minified JS that lint would otherwise scan.
 - **Step 1: the DB guard compares host and database name** of `E2E_DATABASE_URL` and `DATABASE_URL`, so a different user or password on the same database still counts as "the same database".
 
 ## Questions for the owner
@@ -1366,5 +1380,6 @@ This covers only the parts proven outside the E2E suite. The list is written bef
 - 2026-09-25 07:16 UTC: Revision by `architect`: all 5 Astra MUST-FIX accepted (F10 draft-mode super-admin only, F15/F16 fail-closed in production + form-submissions create locked, new F21 Discord webhook allowlist, F13 contact task throws so jobs stay recoverable, F4 reconcile-upvotes data migration); new bug F22 (voted issues can't be deleted) found; Fable MISSED folded in (F21, F23, F5 `req`). Q1 reworded as deploy prerequisite, Q4 resolved. Plan-only change.
 - 2026-09-25 07:34 UTC: Steps by `planner`: 21 steps (harness → fixes with their E2E scenarios, with expected-fail marks until each fix lands → tests/int and tests/manual audit → docs → final verification), plus Verification and Failure modes. Fable SC1–4 taken, SC5 rejected with a reason. F4 decrement moved to `beforeDelete`, which fixes the double-decrement on concurrent withdrawals; checked against `deleteByID.js` (re-read after beforeDelete → NotFound → rollback). Plan-only change.
 - 2026-09-25 07:42 UTC: Step 1 done: E2E harness on a production build with `migrate:fresh` on `critwire_m_architecture_pass_e2e`; `setup` project seeds super admin, studios A/B and aOwner/aMember/bOwner and saves sessions + `world.json`; template specs, `tests/helpers/` and `test.env` deleted. Turnstile reachable (siteverify OK with test keys). tsc 0; lint 0 errors, 27 warnings (was 30); E2E 1 passed (setup), 0 expected-fail, 124 s wall (build 84 s); report holds the setup trace; `dev` rows 0 in both DBs, mission DB `min(created_at)` unchanged; all 3 guard cases exit 1 in 2 s (`proofs/step1-guard.log`).
+- 2026-09-26 03:00 UTC: Step 2 done: `tenant-isolation.spec.ts` (S1.1–S1.8, S1.10; 20 tests) plus project/issue/patch-note/report/vote factories, `upload()` and `uniqueSlug`. New bug **F24** found (studio B creates/moves issues into tenant A: 201/200), root-caused to the plugin tenant field's custom `validate` skipping `filterOptions`; fix scheduled in Step 3. tsc 0; lint 0 errors, 27 warnings (unchanged); E2E exit 0, 21 passed incl. 7 expected-fail with their symptoms: F11 folder listed to B, F24 expected 400 got 201, F22 expected 200 got 500, F1 payload-jobs read 200, F2 post create 201, F16 anonymous form-submission 201, F9 `customDomainVerified` stored true; 0 flaky; 129 s wall; `dev` rows 0 in both DBs.
 
 ## Summary
