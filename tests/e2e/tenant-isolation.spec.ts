@@ -15,6 +15,7 @@ import {
   lexical,
   seed,
   test,
+  uploadImage,
 } from './support/fixtures'
 
 /**
@@ -24,12 +25,6 @@ import {
  */
 
 const DENIED = [403, 404]
-
-/** 1×1 transparent PNG. */
-const PNG = Buffer.from(
-  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=',
-  'base64',
-)
 
 const A_CONTACT = {
   target: 'EMAIL',
@@ -70,11 +65,7 @@ test.beforeAll(async ({ api, uniqueSlug, world }) => {
   const project = await createProject(aOwner, tenant, uniqueSlug('iso-a1'), { contact: A_CONTACT })
   const otherProject = await createProject(aOwner, tenant, uniqueSlug('iso-a2'))
 
-  const upload = await aOwner.upload('media', { name: 'iso-a.png', mimeType: 'image/png', buffer: PNG }, {
-    alt: 'Studio A key art',
-    tenant,
-  })
-  expect(upload.status, JSON.stringify(upload.body)).toBe(201)
+  const media = await uploadImage(aOwner, tenant, 'iso-a.png', 'Studio A key art')
 
   const folder = await aOwner.raw<{ doc: { id: number } }>('POST', '/api/payload-folders', {
     data: { name: 'Studio A art', folderType: ['media'], tenant },
@@ -92,7 +83,7 @@ test.beforeAll(async ({ api, uniqueSlug, world }) => {
     page: await seed(aOwner, 'game-pages', { gameProject: project.id, tenant, title: 'Iso A landing', _status: 'draft' }, {
       draft: true,
     }),
-    media: upload.body.doc,
+    media,
     folderID: folder.body.doc.id,
   }
   bProject = await createProject(api('bOwner'), world.tenants.B.id, uniqueSlug('iso-b1'))

@@ -4,7 +4,7 @@ import { test as base, expect, type APIRequestContext, type PlaywrightWorkerArgs
 import type { CollectionSlug } from 'payload'
 import { extractID } from 'payload/shared'
 
-import type { Config, GameProject, Issue, IssueReport, PatchNote } from '../../../src/payload-types'
+import type { Config, GameProject, Issue, IssueReport, Media, PatchNote } from '../../../src/payload-types'
 import { type Query, RestClient } from './api'
 import { BASE_URL, type Role, ROLES, WORLD_PATH } from './env'
 
@@ -70,6 +70,19 @@ export async function seed<C extends CollectionSlug>(
 ): Promise<Doc<C>> {
   const { status, body } = await client.create(collection, data, query)
   expect(status, `create ${collection}: ${JSON.stringify(body)}`).toBe(201)
+  return body.doc
+}
+
+/** 8×8 opaque cyan PNG. */
+export const PNG_8PX = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAAEUlEQVR42mNQuvwOK2IYWhIA+3p4wcm7EQIAAAAASUVORK5CYII=',
+  'base64',
+)
+
+/** Uploads an 8×8 PNG to `tenant`'s media library and fails the calling test unless it's stored. */
+export async function uploadImage(client: RestClient, tenant: number, name: string, alt = name): Promise<Media> {
+  const { status, body } = await client.upload('media', { name, mimeType: 'image/png', buffer: PNG_8PX }, { alt, tenant })
+  expect(status, `upload ${name}: ${JSON.stringify(body)}`).toBe(201)
   return body.doc
 }
 
