@@ -58,8 +58,8 @@ access: {
 Business logic lives in collection lifecycle hooks, not standalone
 services. The established hooks:
 
-- **GameProject `afterChange` / `afterDelete`** — revalidate the
-  portal for the current, previous and deleted slugs.
+- **GameProject `afterChange` / `afterDelete`** — revalidate every
+  portal page by route pattern, which covers renamed and deleted slugs.
 - **PatchNote `beforeChange`** — stamp `publishedAt` on first publish
   only; `afterChange` / `afterDelete` revalidate the patch-note pages.
 - **Issue `afterChange` / `afterDelete`** — revalidate the public issue
@@ -74,7 +74,10 @@ services. The established hooks:
   Nothing else writes the counter.
 
 Rule: any hook that mutates published content calls `revalidatePath()`
-or `revalidateTag()` **after** the DB write.
+or `revalidateTag()` **after** the DB write. A single page revalidates
+by its URL (`/g/<slug>`); a subtree only by its route pattern, route
+groups included (`src/hooks/portalRoutes.ts`), because Next never tags
+pages with a concrete path's layout.
 
 ## Data access
 

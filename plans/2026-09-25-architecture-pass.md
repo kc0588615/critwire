@@ -2,7 +2,7 @@
 mission: architecture-pass
 project: critwire
 branch: agent/architecture-pass
-status: done
+status: active
 started: 2026-09-25 06:21 UTC
 ---
 
@@ -1443,6 +1443,41 @@ The session that carries out the affected step copies the matching line into **D
     4. Set `status: done`, then commit and push.
   - **Verify:** everything in Verification passes. The artifact directory holds `playwright-report/index.html`, `run.log` and `README.md`.
 
+- [x] **Step 22: On-demand ISR for the patch-notes pages, with revalidation that reaches them (H4, F27)**
+  - **Why:** the owner's H4 answer (2026-09-28): "Yes, fix it in this mission."
+  - **Files:**
+    - the four patch-notes routes (feed, `page/[pageNumber]`, `[slug]`, `feed.xml`): `generateStaticParams` returns `[]`
+    - `next.config.ts`: `experimental.isrFlushToDisk: false`
+    - new `src/hooks/portalRoutes.ts`: `PORTAL_ROUTE` and `PATCH_NOTES_ROUTE`, the route patterns
+    - `src/hooks/revalidateGameLanding.ts` (drop `section`), `src/collections/PatchNotes/hooks/revalidatePatchNotes.ts`, `src/collections/GameProjects/hooks/revalidateGameProject.ts`
+    - `tests/e2e/patch-notes.spec.ts`: new S3.5
+    - `tests/int/template-revalidation.int.spec.ts`: delete the patch-note move case
+    - `AGENTS.md` (the int list), `docs/architecture.md`, `docs/patterns.md`, `docs/deploy.md`, `docs/integrations.md`
+  - **Do:**
+    1. Add `generateStaticParams` and S3.5: the second visit to the feed, page 2, a note and RSS answers `x-nextjs-cache: HIT`.
+    2. Run the patch-notes spec. Expect S3.5 to pass and S3.4's edit cases to fail: the pages are now cached, and the hooks' concrete-path `revalidatePath('/g/<slug>/…', 'layout')` must be shown to reach them.
+    3. Revalidate subtrees by route pattern: patch-note writes use `PATCH_NOTES_ROUTE`, project writes `PORTAL_ROUTE`. Single pages keep their URL (`/g/<slug>`).
+    4. Keep the ISR cache in memory only, then check that nothing is written under `.next/server/app/g`.
+    5. Delete the int case that S3.4's move test now guards, and update the docs.
+  - **Verify:**
+    - standard checks
+    - `pnpm test:int`: 3 files, 9 tests
+    - the build lists the four routes as ● (SSG), and the landing and issue routes stay ƒ
+    - `ls .next/server/app/g` after a run: no such directory
+
+- [ ] **Step 23: Final verification again, and the Summary brought up to date**
+  - **Do:**
+    1. Commit all code first.
+    2. Run the Verification section end to end, as in Step 21, replacing the artifact at the same path. `pnpm build` goes last.
+    3. Update the Summary:
+       - F7's line: its concrete-path revalidation never matched a cached page (F27)
+       - a new line for F27, and one for H4 (the patch-notes pages are ISR-cached, memory-only)
+       - H4 and H5 are closed: H5 keeps the seed route, with no code change
+       - the new E2E and int counts, the deleted int case and its reason
+       - the Cloudflare caching note, under Left for the owner
+    4. Set `status: done`, then commit and push.
+  - **Verify:** everything in Verification passes. The artifact directory holds `playwright-report/index.html`, `run.log` and `README.md`.
+
 ### Test audit results
 
 Checked against `/tmp/e2e-step17c.log` (71 passed). "Added" marks E2E cases added in Step 18, which passed in `/tmp/e2e-step18.log` (72 passed).
@@ -1470,7 +1505,8 @@ Checked against `/tmp/e2e-step17c.log` (71 passed). "Added" marks E2E cases adde
 | site-generator › requires a slot only for slot-scoped generation | delete | E2E covered only the rejection; now the accepted half too. | S1.10 validates the request before generating (both steps; **added** the slot-named step) |
 | site-generator › theme-only and slot-only scope; structured output; refusals and unknown media; redacted context and one draft write; no write on failure or rate limit | keep (5) | Need a fake model: E2E has no OpenAI key and can't see the model's input or force its failures. | — |
 | site-config-parity › site group mirrors every key; every field, enum and type matches | keep (2) | Checks that two declarations agree down to every enum option; E2E would have to exercise every field. | — |
-| template-revalidation › both landings when a public issue moves; both patch-note trees when a note moves; skips kanban-order-only writes | keep (3) | E2E can't observe revalidation: nothing under `/g` is ISR-cached (Step 7, H4), so the move E2E tests pass without it. Revisit when H4 lands. | — |
+| template-revalidation › both landings when a public issue moves; skips kanban-order-only writes | keep (2) | E2E can't observe revalidation of the landing, which renders dynamically. | — |
+| template-revalidation › both patch-note trees when a note moves | delete (Step 22) | With the patch-notes pages ISR-cached (H4), S3.4's move test fails when the revalidation is missing (Step 22, Do 2). | S3.4 › moving a note to another game updates both feeds |
 
 devDependencies now unused: `@testing-library/react` (no importer). `jsdom` is only the vitest `environment`; no remaining int test needs a DOM. Left installed for the owner to remove (Summary).
 
@@ -1514,7 +1550,7 @@ E2E is the verification; no unit tests are added. The 7 core flows map to 6 spec
 |---|---|---|
 | Tenant isolation | `tenant-isolation.spec.ts` | S1.1–S1.10 |
 | Public game portal pages | `portal-landing.spec.ts` | S2.1–S2.6 |
-| Patch notes (list, detail, RSS) | `patch-notes.spec.ts` | S3.1–S3.4 |
+| Patch notes (list, detail, RSS) | `patch-notes.spec.ts` | S3.1–S3.5 |
 | Public issue tracker with voting | `issues-voting.spec.ts` | S4.1–S4.6 |
 | Issue reports | `reports-contact.spec.ts`, `admin-triage.spec.ts` | S5.1–S5.3, S6.7 |
 | Contact form | `reports-contact.spec.ts` | S5.4–S5.6 |
@@ -1534,7 +1570,7 @@ git status --short                                    # empty: the run tests com
 grep -rnE "test\.(only|fail|skip|fixme)\(" tests/e2e  # no output
 pnpm exec tsc --noEmit                                # 0 errors
 pnpm lint                                             # 0 errors
-pnpm test:int                                         # 3 files, 10 tests pass
+pnpm test:int                                         # 3 files, 9 tests pass (Step 22 deleted one)
 psql "$DB" -Atc "select count(*) from payload_migrations where name='dev'"      # 0
 
 rm -rf playwright-report test-results
@@ -1705,6 +1741,14 @@ This covers only the parts proven outside the E2E suite. The list is written bef
 - **Step 20: new bug F26, fixed: the Docker build never received the `NEXT_PUBLIC_*` values.** Next inlines `process.env.NEXT_PUBLIC_*` into server bundles too (the E2E build's Turnstile test site key is in `.next/server/chunks/ssr/*`), but `.dockerignore` excludes `.env*` and the Dockerfile took no build args. So a production image renders `TurnstileField`'s empty-token fallback, and with F15 requiring `TURNSTILE_SECRET_KEY` every native report and contact submission would be rejected. `NEXT_PUBLIC_SERVER_URL` (sitemap, links) and `NEXT_PUBLIC_SENTRY_DSN` (client Sentry) were baked empty the same way. Fix: the Dockerfile builder declares the three as `ARG`s and `docker-compose.yml` passes them from `.env` as build args; `docs/deploy.md` says to rebuild after changing one. Unverified by a Docker build (no Docker on this VPS); the Next half is proven by the grep above, the Docker half is standard `ARG` semantics. H3 now says the site key must be in `.env` before `docker compose up -d --build`.
 - **Step 20: the docs' other stale claims went with the ones the plan listed:** the nonexistent `email-confirmation` and `isr-revalidate` tasks (patterns, integrations), the GameProject hooks (no `beforeChange`, no domain-cache hook yet), and integrations' "fails open" for AI-generation limits and Resend. The Upstash domain cache (Phase 8) is left described as planned.
 
+- **H4 (owner, 2026-09-28): "Yes, fix it in this mission."** The patch-notes feed, pagination, detail and RSS routes become on-demand ISR (`generateStaticParams` returns `[]`). The landing and issue routes stay dynamic: they read Draft Mode and vote cookies. Added as Step 22, with the final verification redone as Step 23.
+- **H5 (owner, 2026-09-28): keep the Critter Connect seed route.** "It's the working way to load the Critter Connect demo (`pnpm seed:critter-connect`), and it refuses every request unless `CRON_SECRET` is set. No code change." F23 is closed with no change.
+- **Step 22: new bug F27, fixed: no subtree revalidation ever reached a cached page.** Next tags a cached page with its exact URL and with its route's pattern, route groups included (`_N_T_/(public)/g/[gameSlug]/(ops)/patch-notes/layout`, read from the entries' `x-next-cache-tags`). `revalidatePath('/g/<slug>/patch-notes', 'layout')` and F7's `revalidatePath('/g/<slug>', 'layout')` produce `_N_T_/g/<slug>/…/layout`, which no page carries. With the routes cached, S3.4's edit, unpublish, move and rename tests failed (the list output showed the old titles). Subtrees now revalidate by pattern: `PATCH_NOTES_ROUTE` for patch-note writes, `PORTAL_ROUTE` for project writes, which also covers renamed and deleted slugs without a previous-slug branch.
+- **Step 22: pattern revalidation clears every game's patch-notes pages, not just the edited game's.** Accepted: it is one call with no queries, it can't miss a path (renamed notes, cached 404s, `/page/02`), and a miss costs one render, which today every request pays. Rejected alternatives: listing each concrete path (feed, RSS, every page number, every note slug, old and new slugs) is fragile. Per-game `revalidateTag` would need `unstable_cache` around the portal queries, a second cache layer that the dynamic pages would share. Revisit when writes from many studios make pages miss often.
+- **Step 22: the ISR cache is memory-only (`experimental.isrFlushToDisk: false`).** On-demand ISR caches every path it renders, 404s included: the probe run wrote a draft slug, `page/1`, `page/3` and an unknown game's RSS under `.next/server/app/g`, about 116 KB per page. On disk, requests for made-up slugs would fill it without bound. Next's memory LRU (`cacheMaxMemorySize`, default 50 MB) evicts instead. The marketing `[slug]` route, already on-demand ISR, had the same exposure and gets the same fix. A restart empties the cache, as a deploy already did.
+- **Step 22: Cloudflare must not cache `/g/*` HTML.** Next sends `s-maxage=3600, stale-while-revalidate=31532400` on the ISR pages (`s-maxage=3600` on RSS), and on-demand revalidation can't purge the edge. Cloudflare's defaults don't cache HTML or XML, and `nginx.conf` has no proxy cache. `docs/deploy.md` now says not to add a "Cache Everything" rule.
+- **Step 22: `template-revalidation.int` drops its patch-note move case.** S3.4's move test now fails without that revalidation (Do 2), so E2E guards it. The two issue cases stay, because the landing still renders dynamically.
+
 ## Questions for the owner
 
 See /srv/critter-ai/handoff/critwire.md (Q1 → H3, Q2 → H1, Q3 → H2, Q4 → H4, F23 → H5).
@@ -1742,6 +1786,7 @@ See /srv/critter-ai/handoff/critwire.md (Q1 → H3, Q2 → H1, Q3 → H2, Q4 →
 - 2026-09-26 06:22 UTC: Step 19 done: 6 read-only auditors listed all 116 checks in `tests/manual` (`### Test audit results`, `proofs/step19-manual-audit.json`): 108 covered, 6 legacy-renderer/footer trivia and 2 dev plumbing not kept, 2 real gaps. Added E2E steps first (S3.1 RSS link and `alternate` metadata; S4.1 search matches summaries), passed on the existing build, then deleted `tests/manual/` and the spec headers' "Replaces …" lines; reference grep empty. tsc 0; lint 0 errors, 23 warnings (was 24); E2E exit 0, 72 passed, 0 expected-fail, 0 flaky, 217 s wall; `dev` rows 0 in both DBs.
 - 2026-09-26 06:27 UTC: Step 20 done: `AGENTS.md` `## Testing` (the three rules verbatim, the `_e2e` database, the artifact, setup seeding, the three kept int files) and Commands lines for `test`, `test:e2e`, `test:int`; `docs/patterns.md` hooks, data access, jobs (super-admin only, deliver or throw, untick `hasError` to recover), folders, public forms and voting; `.env.example`, `docs/deploy.md` step 5 and `docs/integrations.md` list Turnstile, Upstash and Resend as production-required; README replaced with a short critwire one. New bug **F26** fixed: the Docker build now gets `NEXT_PUBLIC_*` as build args (unverified by Docker, none on this VPS; Decisions). Greps: stale wording none, `## Testing` once, README template words none. tsc 0; lint 0 errors, 23 warnings (unchanged); no E2E (docs and Docker only, not on the E2E path).
 - 2026-09-26 06:36 UTC: Step 21 done: final Verification on `46bf715`. tsc 0; lint 0 errors, 23 warnings; test:int 3 files / 10 tests; E2E 72 passed, 0 failed, 0 flaky (217 s with build); no `dev` row in either DB; migrate:status 10/10; `pnpm build` passes (103 s); robots.txt has no posts sitemap. Artifact saved to `/srv/critter-ai/agent-state/missions/architecture-pass/e2e/` with README; Summary written; status done.
+- 2026-09-28 04:48 UTC: Handoff H4 (patch-notes ISR: do it in this mission) and H5 (keep the seed route, no change) picked up: Decisions recorded, Steps 22–23 added, both items closed. Step 22 done: the four patch-notes routes are on-demand ISR (build ●; landing and issue routes stay ƒ), and S3.5 proves the second visit is `x-nextjs-cache: HIT`. With the pages cached, S3.4's edit, unpublish, move and rename tests failed (F27: concrete-path `'layout'` revalidation matched no cached page; `proofs/step22-before-f27-fix.log`). Hooks now revalidate by route pattern, and the patch-notes spec passes 10/10. The ISR cache is memory-only: the probe had written cached 404s to disk. Nothing under `.next/server/app/g` after the run. Deleted the int patch-note move case. tsc 0; lint 0 errors, 23 warnings; test:int 3 files / 9 tests; E2E 73 passed, 0 failed, 0 flaky (226 s with build, `proofs/step22-e2e.log`).
 
 ## Summary
 

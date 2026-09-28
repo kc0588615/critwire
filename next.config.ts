@@ -15,6 +15,12 @@ const NEXT_PUBLIC_SERVER_URL = process.env.VERCEL_PROJECT_PRODUCTION_URL
 const nextConfig: NextConfig = {
   // Required by the multi-stage Dockerfile (copies .next/standalone).
   output: 'standalone',
+  experimental: {
+    // On-demand ISR stores every path it renders, 404s for made-up slugs
+    // included. Keep that cache in Next's memory LRU (cacheMaxMemorySize,
+    // 50 MB), which evicts; on disk, anyone could grow it without bound.
+    isrFlushToDisk: false,
+  },
   // Temporarily required on Windows until Next.js fixes Turbopack Sass resolution.
   // See: https://github.com/vercel/next.js/issues/86431
   sassOptions: {

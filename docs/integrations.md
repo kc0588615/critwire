@@ -129,6 +129,9 @@ routes where failure matters; don't swallow errors.
   (forwarded host/proto matter for domain resolution and Payload URLs).
 - Custom domain SSL is handled by Cloudflare proxy — no certbot on the
   VPS.
+- Cloudflare doesn't cache the app's HTML or RSS (its defaults). The app
+  caches them itself (ISR) and revalidates on every write, which a
+  Cloudflare "Cache Everything" rule would bypass. See `docs/deploy.md`.
 
 ## Environment variables
 

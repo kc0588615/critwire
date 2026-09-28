@@ -127,8 +127,8 @@ Keep the rewrite layer lightweight: resolution only, no business logic.
 | Route | Strategy |
 | --- | --- |
 | Marketing site | SSG |
-| Public landing page | ISR + on-demand revalidation |
-| Patch notes index/detail | ISR + on-demand revalidation |
+| Public landing page | SSR (reads Draft Mode for previews) |
+| Patch notes feed, pages, detail, RSS | ISR on first visit + on-demand revalidation |
 | Contact form | SSR |
 | Public issue tracker | SSR |
 | Payload admin panel | SSR (Payload-managed) |
@@ -136,6 +136,13 @@ Keep the rewrite layer lightweight: resolution only, no business logic.
 **Revalidation rule:** every Payload hook that modifies published
 content calls `revalidatePath()` / `revalidateTag()` after the DB
 write. Timed ISR exists only as a fallback safety net.
+
+ISR routes return `[]` from `generateStaticParams`, so nothing renders
+at build time; each path renders on its first visit and is cached. The
+cache lives in Next's memory LRU only (`experimental.isrFlushToDisk:
+false`), because it also stores 404s for made-up slugs and would
+otherwise grow on disk without bound. A restart or deploy empties it.
+Subtrees revalidate by route pattern (`src/hooks/portalRoutes.ts`).
 
 ## Project structure
 

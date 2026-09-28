@@ -1,17 +1,19 @@
 import type { CollectionAfterChangeHook, CollectionAfterDeleteHook } from 'payload'
 
+import { revalidatePath } from 'next/cache'
 import { extractID } from 'payload/shared'
 
 import type { PatchNote } from '../../../payload-types'
 
+import { PATCH_NOTES_ROUTE } from '../../../hooks/portalRoutes'
 import { revalidateGameLanding } from '../../../hooks/revalidateGameLanding'
 
 /**
- * Patch-note changes invalidate the project's whole patch-notes subtree
- * (feed, pagination, detail pages, RSS) and the landing, which renders
- * the latest published note live.
+ * A published patch note, or one that just stopped being public,
+ * invalidates the patch-notes pages (feed, pagination, detail pages,
+ * RSS) and the landing, which renders the latest published note live.
  */
-const PATCH_NOTES_SECTION = 'patch-notes'
+const revalidatePatchNotePages = (): void => revalidatePath(PATCH_NOTES_ROUTE, 'layout')
 
 export const revalidatePatchNotes: CollectionAfterChangeHook<PatchNote> = async ({
   doc,
@@ -23,12 +25,16 @@ export const revalidatePatchNotes: CollectionAfterChangeHook<PatchNote> = async 
       // On create, previousDoc is an empty object.
       previousDoc?.gameProject != null &&
       String(extractID(doc.gameProject)) !== String(extractID(previousDoc.gameProject))
+    const wasPublished = previousDoc?._status === 'published'
 
-    if (doc._status === 'published') {
-      await revalidateGameLanding(doc.gameProject, payload, PATCH_NOTES_SECTION)
+    if (doc._status === 'published' || wasPublished) {
+      revalidatePatchNotePages()
     }
-    if (previousDoc?._status === 'published' && (projectChanged || doc._status !== 'published')) {
-      await revalidateGameLanding(previousDoc.gameProject, payload, PATCH_NOTES_SECTION)
+    if (doc._status === 'published') {
+      await revalidateGameLanding(doc.gameProject, payload)
+    }
+    if (wasPublished && (projectChanged || doc._status !== 'published')) {
+      await revalidateGameLanding(previousDoc.gameProject, payload)
     }
   }
   return doc
@@ -39,7 +45,8 @@ export const revalidatePatchNotesDelete: CollectionAfterDeleteHook<PatchNote> = 
   req: { context, payload },
 }) => {
   if (!context.disableRevalidate && doc) {
-    await revalidateGameLanding(doc.gameProject, payload, PATCH_NOTES_SECTION)
+    revalidatePatchNotePages()
+    await revalidateGameLanding(doc.gameProject, payload)
   }
   return doc
 }

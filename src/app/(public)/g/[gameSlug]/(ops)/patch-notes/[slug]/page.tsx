@@ -11,6 +11,12 @@ import { getPublishedPatchNote } from '@/lib/game-portal/patchNotes'
 
 export const revalidate = 3600
 
+// No paths at build time: each one renders on its first visit, then is
+// served from the ISR cache until a hook revalidates it.
+export async function generateStaticParams() {
+  return []
+}
+
 type Args = { params: Promise<{ gameSlug: string; slug: string }> }
 
 export default async function PatchNoteDetailPage({ params }: Args) {

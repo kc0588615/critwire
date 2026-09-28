@@ -163,6 +163,24 @@ test.describe('S3.1–S3.3 feed, detail pages and RSS', () => {
       expect((await readFeed(request, uniqueSlug('pn-no-such-game'))).status).toBe(404)
     })
   })
+
+  test('S3.5 the feed, its pages, a note and RSS are served from the ISR cache [H4]', async ({ request }) => {
+    const paths = [
+      feedPath(project.slug),
+      `${feedPath(project.slug)}/page/2`,
+      `${feedPath(project.slug)}/${notes[0].slug}`,
+      `${feedPath(project.slug)}/feed.xml`,
+    ]
+    for (const path of paths) {
+      await test.step(path, async () => {
+        // The first visit renders and stores the page; the second must come from the cache.
+        expect((await request.get(path)).status()).toBe(200)
+        const cached = await request.get(path)
+        expect(cached.status()).toBe(200)
+        expect(cached.headers()['x-nextjs-cache']).toBe('HIT')
+      })
+    }
+  })
 })
 
 test.describe('S3.4 the public pages follow edits', () => {

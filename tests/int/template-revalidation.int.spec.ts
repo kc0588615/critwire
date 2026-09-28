@@ -1,13 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { GameProject, Issue, PatchNote } from '@/payload-types'
+import type { GameProject, Issue } from '@/payload-types'
 
 const { revalidatePath } = vi.hoisted(() => ({ revalidatePath: vi.fn() }))
 
 vi.mock('next/cache', () => ({ revalidatePath }))
 
 import { revalidateIssueLanding } from '@/collections/Issues/hooks/revalidateIssueLanding'
-import { revalidatePatchNotes } from '@/collections/PatchNotes/hooks/revalidatePatchNotes'
 
 const project = (id: number, slug: string): GameProject =>
   ({ id, name: slug, slug }) as GameProject
@@ -61,28 +60,5 @@ describe('flagship dynamic-slot revalidation', () => {
     } as never)
 
     expect(revalidatePath).not.toHaveBeenCalled()
-  })
-
-  it('revalidates both patch-note trees when a published note moves projects', async () => {
-    const oldProject = project(1, 'old-game')
-    const newProject = project(2, 'new-game')
-    const previousDoc = {
-      _status: 'published',
-      gameProject: oldProject,
-      id: 20,
-      title: 'Update',
-    } as PatchNote
-    const doc = { ...previousDoc, gameProject: newProject } as PatchNote
-
-    await revalidatePatchNotes({
-      doc,
-      previousDoc,
-      req: { context: {}, payload },
-    } as never)
-
-    expect(revalidatePath).toHaveBeenCalledWith('/g/old-game/patch-notes', 'layout')
-    expect(revalidatePath).toHaveBeenCalledWith('/g/old-game')
-    expect(revalidatePath).toHaveBeenCalledWith('/g/new-game/patch-notes', 'layout')
-    expect(revalidatePath).toHaveBeenCalledWith('/g/new-game')
   })
 })

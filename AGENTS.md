@@ -142,5 +142,5 @@ Int tests (`tests/int`) exist only for invariants E2E can't reach:
   see the model's input or force its failures.
 - `site-config-parity` — checks the Zod schema and the Payload field
   tree agree down to every enum option.
-- `template-revalidation` — nothing under `/g` is ISR-cached yet, so E2E
-  can't observe that writes revalidate the right paths.
+- `template-revalidation` — the landing renders dynamically, so E2E
+  can't observe that issue writes revalidate it.
