@@ -2,7 +2,7 @@
 mission: architecture-pass
 project: critwire
 branch: agent/architecture-pass
-status: active
+status: done
 started: 2026-09-25 06:21 UTC
 ---
 
@@ -1465,7 +1465,7 @@ The session that carries out the affected step copies the matching line into **D
     - the build lists the four routes as ● (SSG), and the landing and issue routes stay ƒ
     - `ls .next/server/app/g` after a run: no such directory
 
-- [ ] **Step 23: Final verification again, and the Summary brought up to date**
+- [x] **Step 23: Final verification again, and the Summary brought up to date**
   - **Do:**
     1. Commit all code first.
     2. Run the Verification section end to end, as in Step 21, replacing the artifact at the same path. `pnpm build` goes last.
@@ -1787,26 +1787,27 @@ See /srv/critter-ai/handoff/critwire.md (Q1 → H3, Q2 → H1, Q3 → H2, Q4 →
 - 2026-09-26 06:27 UTC: Step 20 done: `AGENTS.md` `## Testing` (the three rules verbatim, the `_e2e` database, the artifact, setup seeding, the three kept int files) and Commands lines for `test`, `test:e2e`, `test:int`; `docs/patterns.md` hooks, data access, jobs (super-admin only, deliver or throw, untick `hasError` to recover), folders, public forms and voting; `.env.example`, `docs/deploy.md` step 5 and `docs/integrations.md` list Turnstile, Upstash and Resend as production-required; README replaced with a short critwire one. New bug **F26** fixed: the Docker build now gets `NEXT_PUBLIC_*` as build args (unverified by Docker, none on this VPS; Decisions). Greps: stale wording none, `## Testing` once, README template words none. tsc 0; lint 0 errors, 23 warnings (unchanged); no E2E (docs and Docker only, not on the E2E path).
 - 2026-09-26 06:36 UTC: Step 21 done: final Verification on `46bf715`. tsc 0; lint 0 errors, 23 warnings; test:int 3 files / 10 tests; E2E 72 passed, 0 failed, 0 flaky (217 s with build); no `dev` row in either DB; migrate:status 10/10; `pnpm build` passes (103 s); robots.txt has no posts sitemap. Artifact saved to `/srv/critter-ai/agent-state/missions/architecture-pass/e2e/` with README; Summary written; status done.
 - 2026-09-28 04:48 UTC: Handoff H4 (patch-notes ISR: do it in this mission) and H5 (keep the seed route, no change) picked up: Decisions recorded, Steps 22–23 added, both items closed. Step 22 done: the four patch-notes routes are on-demand ISR (build ●; landing and issue routes stay ƒ), and S3.5 proves the second visit is `x-nextjs-cache: HIT`. With the pages cached, S3.4's edit, unpublish, move and rename tests failed (F27: concrete-path `'layout'` revalidation matched no cached page; `proofs/step22-before-f27-fix.log`). Hooks now revalidate by route pattern, and the patch-notes spec passes 10/10. The ISR cache is memory-only: the probe had written cached 404s to disk. Nothing under `.next/server/app/g` after the run. Deleted the int patch-note move case. tsc 0; lint 0 errors, 23 warnings; test:int 3 files / 9 tests; E2E 73 passed, 0 failed, 0 flaky (226 s with build, `proofs/step22-e2e.log`).
+- 2026-09-28 04:58 UTC: Step 23 done: final Verification on `0dc614b`. tsc 0; lint 0 errors, 23 warnings; test:int 3 files / 9 tests; E2E 73 passed, 0 failed, 0 flaky (222 s with build); no `dev` row in either DB; migrate:status 10/10; `pnpm build` passes (102 s, patch-notes routes ●, landing and issue routes ƒ, `proofs/step23-build.log`); nothing under `.next/server/app/g`; robots.txt has no posts sitemap. Artifact replaced at `/srv/critter-ai/agent-state/missions/architecture-pass/e2e/` with README; Summary updated for F27, H4 and H5; status done.
 
 ## Summary
 
-Mission done 2026-09-26. Final run on commit `46bf715`: tsc 0 errors, lint 0 errors (23 warnings, 30 at baseline), `pnpm test:int` 3 files / 10 tests, **E2E 72 passed, 0 failed, 0 flaky** (217 s including the build), `migrate:status` 10/10 applied, `pnpm build` passes. Neither database has a `dev` row.
+Mission done 2026-09-26; reopened for the owner's H4 answer and done again 2026-09-28. Final run (Step 23) on commit `0dc614b`: tsc 0 errors, lint 0 errors (23 warnings, 30 at baseline), `pnpm test:int` 3 files / 9 tests, **E2E 73 passed, 0 failed, 0 flaky** (222 s including the build), `migrate:status` 10/10 applied, `pnpm build` passes (102 s; the four patch-notes routes are ● SSG, the landing and issue routes ƒ), and nothing is written under `.next/server/app/g`. Neither database has a `dev` row.
 
 ### Artifact and reproduce
 
-- **Artifact:** `/srv/critter-ai/agent-state/missions/architecture-pass/e2e/` holds `playwright-report/index.html` (a trace for each of the 72 tests, screenshots for the 42 browser tests, `test.step()` checkpoints), `run.log`, and a `README.md` with the tested commit, counts and the flow → spec table. Step proofs (psql logs, migration SQL, the manual-audit JSON, the final build log) are in `proofs/` next to it.
+- **Artifact:** `/srv/critter-ai/agent-state/missions/architecture-pass/e2e/` holds `playwright-report/index.html` (a trace for each of the 73 tests, screenshots for every browser test, `test.step()` checkpoints), `run.log`, and a `README.md` with the tested commit, counts and the flow → spec table. Step proofs (psql logs, migration SQL, the manual-audit JSON, the final build log) are in `proofs/` next to it.
 - **Reproduce:** `cd /srv/critter-ai/worktrees/architecture-pass && pnpm test:e2e` (the worktree `.env` points `E2E_DATABASE_URL` at `critwire_m_architecture_pass_e2e`, which each run drops and re-migrates). Elsewhere: `createdb critwire_e2e`, then `E2E_DATABASE_URL=postgres://<user>:<password>@127.0.0.1:5432/critwire_e2e pnpm test:e2e`.
 - **View:** `pnpm exec playwright show-report /srv/critter-ai/agent-state/missions/architecture-pass/e2e/playwright-report`
 
 ### E2E coverage
 
-Before: **0 of 7** core flows. The old suite was Payload's website-template suite (4 tests, 2 failing, 2 not run, no traces). After: **7 of 7**, 71 tests plus the `setup` seed:
+Before: **0 of 7** core flows. The old suite was Payload's website-template suite (4 tests, 2 failing, 2 not run, no traces). After: **7 of 7**, 72 tests plus the `setup` seed:
 
 | Spec | Flows | Tests |
 |---|---|---|
 | `tenant-isolation.spec.ts` | tenant isolation (S1.1–S1.10) | 24 |
 | `portal-landing.spec.ts` | public game portal (S2.1–S2.6) | 11 |
-| `patch-notes.spec.ts` | patch notes list, detail, RSS (S3.1–S3.4) | 8 |
+| `patch-notes.spec.ts` | patch notes list, detail, RSS, ISR cache (S3.1–S3.5) | 9 |
 | `issues-voting.spec.ts` | public issue tracker and voting (S4.1–S4.6) | 9 |
 | `reports-contact.spec.ts` | issue reports and contact form (S5.1–S5.6) | 12 |
 | `admin-triage.spec.ts` | admin triage, kanban, report promotion (S6.1–S6.7) | 7 |
@@ -1823,7 +1824,7 @@ Bugs found and fixed:
 - **F4** Vote counting raced (8 parallel votes left a count of 4). The IssueVotes hooks own `upvoteCount` through `$inc` (`adjustUpvoteCount`, decrement in `beforeDelete`), votes no longer move `updatedAt`, and migration `reconcile_issue_upvote_counts` recounts existing counts.
 - **F5** Report promotion was a detached `setTimeout` self-update. It is now a `beforeChange` hook that creates the issue in the same transaction and links it in one write.
 - **F6** The kanban showed moves the server rejected. Moves are planned outside state updaters, rolled back with an error toast, and serialized.
-- **F7** Editing a project didn't revalidate its portal sub-pages. It now revalidates the `/g/<slug>` layout for the current, previous and deleted slugs (latent today: `/g` renders dynamically, see H4).
+- **F7** Editing a project didn't revalidate its portal sub-pages. Step 7 added a `/g/<slug>` layout revalidation for the current, previous and deleted slugs, but that concrete-path form never matched a cached page (F27); project writes now revalidate the `PORTAL_ROUTE` pattern.
 - **F8** `populatePublishedAt` re-dated content on any edit that omitted the date. Absent keeps the stored date, explicit null clears it, and only a published doc with no date gets "now".
 - **F9** `customDomainVerified` and `upvoteCount` could be set on create. Both now have `create` field access (super admin, and never).
 - **F10** Marketing drafts were readable without authorization. Draft Mode is super-admin only, and draft reads go through `getMarketingReadOptions`. Its `ArchiveBlock` part left with the block (H1).
@@ -1838,19 +1839,22 @@ Bugs found and fixed:
 - **F24** (found by S1.2) A studio user could create or move documents into another studio's tenant. `validateTenantMembership` is the plugin's root `tenantField.validate`, covering every tenant-scoped collection.
 - **F25** (found by S2.4) Publishing an existing flagship page answered 500 whenever a field was null (`deepMerge`'s `isObject(null)`). Fixed.
 - **F26** (found in Step 20) The Docker build never received `NEXT_PUBLIC_*` values, so production would render Turnstile with no site key and, with F15, reject every native form. The Dockerfile takes them as build args from `docker-compose.yml`. Not verified by a Docker build (no Docker here).
+- **F27** (found in Step 22) No subtree revalidation ever reached a cached page: Next tags cached pages with their route pattern (route groups included), not with `/g/<slug>/…/layout`. Once the patch-notes pages were cached, S3.4's edit, unpublish, move and rename tests failed. Hooks now revalidate by route pattern (`PATCH_NOTES_ROUTE`, `PORTAL_ROUTE` in `src/hooks/portalRoutes.ts`); this clears every game's patch-notes pages on a write, accepted as one cheap call that can't miss a path.
 - **Admin Issues page** (found by S6) answered 500 in every production build since the kanban landed (a client-module constant import and server props spread into a client component), the kanban had no styles, and its not-found banner was dropped. All fixed in Step 15.
 
 Owner decisions carried out:
 - **H1:** the Payload website-template surface is gone: Posts, Categories, the Header/Footer globals, the form-builder, redirects, nested-docs and search plugins, post and search routes, the posts sitemap, and the Archive/Form/Banner/Code/RelatedPosts blocks. Eight packages removed (`@payloadcms/plugin-form-builder`, `-nested-docs`, `-redirects`, `-search`, `react-hook-form`, `prism-react-renderer`, `@radix-ui/react-checkbox`, `@radix-ui/react-label`). Migration `remove_website_template` drops 37 tables, 10 columns and 10 enums, after deleting dangling relationships, locks and pending post-publish jobs. `README.md` now describes critwire.
 - **H2:** migration `backfill_media_folder_tenants` (above); folders it can't assign are logged with `warn`.
+- **H4:** the patch-notes feed, pagination, detail and RSS routes are on-demand ISR (`generateStaticParams` returns `[]`); S3.5 proves the second visit is `x-nextjs-cache: HIT`. The ISR cache is memory-only (`experimental.isrFlushToDisk: false`), because on-demand ISR also caches 404s for made-up slugs and on disk that grows without bound; the marketing `[slug]` route gets the same fix. The landing and issue routes stay dynamic (Draft Mode and vote cookies).
+- **H5:** the Critter Connect seed route stays, with no code change (it refuses every request unless `CRON_SECRET` is set). F23 is closed.
 
-Not fixed, with reasons (Architecture): F17 kanban ignores the admin tenant selector (belongs to the open kanban plan; nothing leaks), F18 `revalidatePath` before commit (Payload's standard pattern), F19 generator media filter (narrows, doesn't bypass), F20 the React-hooks lint warnings (none is a bug), F23 the seed route (H5).
+Not fixed, with reasons (Architecture): F17 kanban ignores the admin tenant selector (belongs to the open kanban plan; nothing leaks), F18 `revalidatePath` before commit (Payload's standard pattern), F19 generator media filter (narrows, doesn't bypass), F20 the React-hooks lint warnings (none is a bug), F23 the seed route (kept by the owner, H5).
 
 Docs: critwire's `AGENTS.md` has a `## Testing` section with the three rules verbatim plus how the E2E suite works; `docs/patterns.md`, `docs/integrations.md`, `docs/deploy.md` and `.env.example` now match the code (no "fails open" wording).
 
 ### Deleted tests
 
-`tests/e2e`: Payload's 4 website-template tests and helpers (Step 1), none of which tested critwire. `tests/int`: 35 of 45 tests deleted (4 of 7 files whole), 10 kept in 3 files; `tests/manual`: all 6 scripts deleted (116 checks, 108 already covered, 2 real gaps given E2E steps first). Each test's call, reason and E2E replacement is in `### Test audit results` above; the per-check list for `tests/manual` is `proofs/step19-manual-audit.json`. Kept: `site-generator` (5, needs a fake model), `site-config-parity` (2, schema/field-tree agreement), `template-revalidation` (3, E2E can't observe revalidation until H4).
+`tests/e2e`: Payload's 4 website-template tests and helpers (Step 1), none of which tested critwire. `tests/int`: 36 of 45 tests deleted (4 of 7 files whole), 9 kept in 3 files; `tests/manual`: all 6 scripts deleted (116 checks, 108 already covered, 2 real gaps given E2E steps first). Each test's call, reason and E2E replacement is in `### Test audit results` above; the per-check list for `tests/manual` is `proofs/step19-manual-audit.json`. Kept: `site-generator` (5, needs a fake model), `site-config-parity` (2, schema/field-tree agreement), `template-revalidation` (2, the issue cases: the landing renders dynamically, so E2E can't observe that issue writes revalidate it). Its third case, a patch note moving to another game, was deleted in Step 22: with the patch-notes pages cached, S3.4's move test fails without that revalidation.
 
 ### Reviews
 
@@ -1866,7 +1870,8 @@ Listed under `### Planner decisions` in Steps; each was copied to Decisions by t
 - **H3** (open): set Turnstile, Upstash and (if used) Resend keys in production before deploying; `NEXT_PUBLIC_TURNSTILE_SITE_KEY` must be in `.env` before `docker compose up -d --build` (F26).
 - **Back up production before deploying.** `remove_website_template` deletes the template's data for good (its `down` recreates empty tables). Marketing pages lose any Archive or Form blocks, and the header and footer lose any nav links.
 - **After deploying**, the app log's `warn` line from `backfill_media_folder_tenants` lists media folders left without a tenant, for a super admin to assign (H2).
-- **H4** (open): whether to make the patch-notes pages really ISR-cached. **H5** (open): keep or remove the Critter Connect seed route.
+- **Don't let Cloudflare cache `/g/*` HTML or RSS.** The patch-notes pages now send `s-maxage=3600, stale-while-revalidate=…`, and on-demand revalidation can't purge the edge. Cloudflare's defaults don't cache HTML or XML and `nginx.conf` has no proxy cache, so nothing to do unless someone adds a "Cache Everything" rule (`docs/deploy.md` says not to).
+- H4 and H5 are closed (above).
 - **F26** is unverified by a Docker build; check the first image build renders the Turnstile widget.
 - devDependencies now unused: `@testing-library/react` (no importer) and `jsdom` (only the vitest environment; no remaining int test needs a DOM). Left installed.
 - Branch `agent/architecture-pass` is pushed and not merged. It also edits `AGENTS.md`, like `agent/prompt-audit`; the two need reconciling.
