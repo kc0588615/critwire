@@ -74,7 +74,7 @@ Out:
 - [x] Architecture: `architect` writes findings and the target design
 - [x] Fable review: `architecture-reviewer`
 - [x] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
-- [ ] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
+- [x] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
 - [ ] Steps: `planner` writes Steps and Verification
 
 ## Baseline
@@ -91,7 +91,7 @@ Commit `669376c`, 2026-09-29 05:07–05:12 UTC.
 
 ## Architecture
 
-Written by the `architect` on 2026-09-29, from the code at `893b149` (source identical to `669376c`). Font choices and the two hero directions were checked with throwaway Playwright mockups (Critter Connect art, all three themes) before this plan was written. The mockup results are recorded under "Review against the brief".
+Written by the `architect` on 2026-09-29, from the code at `893b149` (source identical to `669376c`). Font choices and the two hero directions were checked with throwaway Playwright mockups (Critter Connect art, all three themes) before this plan was written. The mockup results are recorded under "Review against the brief". Revised the same day for the Fable review's MUST-FIX, MISSED and SHOULD-CONSIDER items; see "Revision notes".
 
 ### Current state (what exists)
 
@@ -107,7 +107,7 @@ Written by the `architect` on 2026-09-29, from the code at `893b149` (source ide
   - `Footer` with `ThemeSelector`, plus `InitTheme`, `providers/Theme` and `providers/HeaderTheme`.
   - The `html { opacity: 0 }` hack (`globals.css:239-246`).
   - The `heros/*` components, `blocks/{Content,CallToAction,MediaBlock}` and `AdminBar`.
-  - The typography-plugin config, which maps prose colours to an undefined `var(--text)` (`tailwind.config.mjs:9-10`).
+  - The typography-plugin config, which maps `--tw-prose-body/-headings` to an undefined `var(--text)` (`tailwind.config.mjs:9-10`). It's accidental but load-bearing: the invalid variable makes prose body and heading colour inherit (F5).
 - **How the theme flows from data to CSS** (landing only):
   1. The Payload `site.theme` group goes through `normalizeSiteInput`, then `siteConfigV1Schema`. Zod enforces six WCAG pairs (`schema/theme.ts:39-44`).
   2. `themeStyle()` writes the result as `--fs-*` inline custom properties on `.fs-root` (`FlagshipSite.tsx:62-66`), and `flagship.css` consumes them.
@@ -155,8 +155,14 @@ Written by the `architect` on 2026-09-29, from the code at `893b149` (source ide
    - `InitTheme` plus `html{opacity:0}` means a blocked or failed script leaves the whole page invisible.
    - **Bug and standards broken:** the invisible page is a bug; KISS (a light/dark switch nobody designed).
    - **Fix:** a code-owned marketing home and a single deliberate palette (§5).
-5. **Rich text assumes a dark page.** Patch-note and issue detail use `prose dark:prose-invert`. That only works because `(public)/layout.tsx:17` hard-codes `data-theme="dark"` (`RichText/index.tsx:39`, `patch-notes/[slug]/page.tsx:47`, `issues/[slug]/page.tsx:91`). Once theming reaches these pages, a light studio theme would render light-on-light body text.
-   - **Fix:** map the typography plugin's `--tw-prose-*` variables to surface tokens and drop `dark:`.
+5. **Rich text assumes a dark page, and its colours work by accident.**
+   - **Where:** patch-note and issue detail use `prose dark:prose-invert` (`RichText/index.tsx:39`, `patch-notes/[slug]/page.tsx:47`, `issues/[slug]/page.tsx:91`). That only works because `(public)/layout.tsx:17` hard-codes `data-theme="dark"`. Everywhere else, prose body and heading colour come from `var(--text)`, which nothing defines (`tailwind.config.mjs:9-10`). The declaration is invalid at computed-value time, so the colour inherits.
+   - **What goes wrong:** once theming reaches these pages, a light studio theme gets the invert palette's gray-300 on a light page. Simply deleting the `var(--text)` mapping would bring back the plugin's gray-700 on every dark theme.
+   - **Why a surface class can't fix it:** a `.fs-prose` rule doesn't work. The plugin registers `.prose` through `addComponents`, which Tailwind 4.3.2 routes to `addUtilities`. The compiled CSS confirms `.prose{--tw-prose-body:var(--text);…}` sits in `@layer utilities`, so its own `--tw-prose-*` declarations beat any components-layer rule on the same element.
+   - **Standards broken:** fail fast (a colour that works by accident); separation of concerns (prose ignores the surface's tokens).
+   - **Fix:**
+     - Make the plugin config the one deliberate prose mapping. `tailwind.config.mjs` points every `--tw-prose-*` colour, plus size and measure, at surface-owned `--prose-*` variables, and each root sets those (§10).
+     - Drop `dark:prose-invert`.
 6. **The default theme is the generic default, and it looks the same as Critter Connect.**
    - `DEFAULT_THEME_COLORS` (`schema/theme.ts:49-60`, #0b0d14 plus #22d3ee), the CC seed theme (`critterConnect.ts:197-209`) and the ops layer are all near-black plus cyan (skill cluster 2). Screenshots "under the default" and "under CC" would look identical.
    - `defaults.ts:19` uses the tinted near-black `#0b1016` as a button-text candidate.
@@ -187,7 +193,7 @@ Written by the `architect` on 2026-09-29, from the code at `893b149` (source ide
 - The action-ref contract.
 - The click-to-load trailer and the skip link.
 - The reduced-motion handling in the template.
-- The caching and revalidation architecture, access control and Zod boundaries from the architecture pass. Only the GamePage hook's scope widens (§1).
+- The caching and revalidation architecture, access control and Zod boundaries from the architecture pass. Only the two GamePage hooks' scope widens; the shared `revalidateGameLanding` keeps its scope (§1).
 
 ### Target design
 
@@ -201,7 +207,7 @@ GamePage ─────┘          (React cache, published only)
 landing /g/[slug] ── FlagshipSite ─┐        ops layout ── PortalChrome ─┐
                                    ▼                                    ▼
                        SiteFrame(config.theme, config.nav, config.footer, project)
-                       = .fs-root[style=themeStyle(theme)] + skip link + SiteNav + <main> + SiteFooter
+                       = SiteRoot(.fs-root: themeStyle, font classes, motion) + skip link + SiteNav + <main> + SiteFooter
 ```
 
 - **New `src/lib/game-portal/landingPage.ts`** takes code moved out of `app/(public)/g/[gameSlug]/page.tsx`:
@@ -210,12 +216,19 @@ landing /g/[slug] ── FlagshipSite ─┐        ops layout ── PortalChro
   - `getPortalSiteConfig(project): Promise<SiteConfigV1>`: a cached query that resolves the *published* landing and returns its flagship config, or `deriveFlagshipDefault(project)` for legacy or absent pages.
   - The landing page keeps its decision tree, calling these functions (no behaviour change).
 - **`PortalChrome`** becomes an async Server Component: `<SiteFrame config={await getPortalSiteConfig(project)} project={project}>`. It still wraps ops pages and legacy block landings.
-- **`SiteFrame`** (new, `render/SiteFrame.tsx`) is the only place that creates `.fs-root`. `FlagshipSite` renders slots inside it.
+- **`SiteRoot` and `SiteFrame`** (both new, in `render/SiteFrame.tsx`):
+  - **`SiteRoot({ theme, children })`** is the only element that ever carries `.fs-root`. It sets `style={themeStyle(theme)}` and `data-fs-motion`. It also applies the `.variable` classes of all three template display fonts (`flagship-game-v1/fonts.ts`); next/font defines `--font-archivo`, `--font-young-serif` and `--font-science-gothic` only where that class is applied. The faces use `preload: false`, so the browser downloads only the one `--fs-font-display` references.
+  - **`SiteFrame`** is `SiteRoot` plus the skip link, `SiteNav`, `<main>` and `SiteFooter`. `FlagshipSite` renders its slots inside `SiteFrame`.
+  - **The portal 404** uses `SiteRoot` alone.
+  - So the motion, focus and prose rules have exactly one root to target.
 - **`SiteNav` and `SiteFooter`** take `{ project, nav, value }` instead of the whole render context; they only ever read `project`.
   - **Current-page links:** `SiteNavLinks`, a tiny client component using `usePathname`, sets `aria-current="page"`. It replaces `NavShell`; the nav becomes a solid bar, so there's no scroll state.
-  - **Footer contents:** always the four portal pages, each labelled with the studio's nav label for that ref when one is set, otherwise `DEFAULT_ACTION_LABELS`. Then the project's external links (moved from `PortalChrome`), then legal links.
-- **Revalidation:** ops pages now render the landing's theme, nav and footer, so the GamePage hooks (`revalidateGamePage.ts:48`, the delete hook) call `revalidatePath(PORTAL_ROUTE, 'layout')`, the same scope the GameProject hook already uses. Without this, the ISR patch-notes pages keep the old theme for up to an hour.
-- **Portal 404:** `(public)/not-found.tsx` stays at the root (no leak) and renders in a plain `.fs-root` with `themeStyle(siteThemeSchema.parse({}))`, the default theme. It needs no data.
+  - **Footer contents:** always the four portal pages, each labelled with the studio's nav label for that ref when one is set, otherwise `DEFAULT_ACTION_LABELS`. Then the project's external links (moved from `PortalChrome`), then legal links. The bottom row keeps the copyright and the quiet "Powered by Critwire" credit that both chromes already carry (`SiteFooter.tsx:69-72`, `PortalChrome.tsx:101-104`); see Decisions.
+- **Revalidation:**
+  - **Why it changes:** ops pages now render the landing's theme, nav and footer, so the two GamePage hooks must revalidate every portal page, not just the landing. They currently call `revalidateGameLanding` at `revalidateGamePage.ts:14` and `:25`. Without the change, the ISR patch-notes pages keep the old theme for up to an hour.
+  - **Shared helper:** the GameProject hook's private `revalidatePortal` (`revalidateGameProject.ts:15-18`: a log line plus `revalidatePath(PORTAL_ROUTE, 'layout')`) moves to `src/hooks/revalidateGamePortal.ts` as `revalidateGamePortal(source, payload)`. The two GameProject hooks and the two GamePage hooks all call it. The GamePage change hook keeps its published or was-published condition.
+  - **What stays:** `revalidateGameLanding` is unchanged and keeps its `/g/<slug>` scope. The Issues, PatchNotes and IssueVotes hooks share it, and widening it would revalidate every portal on every vote.
+- **Portal 404:** `(public)/not-found.tsx` stays at the root (no leak). It renders inside `SiteRoot` with `siteThemeSchema.parse({})`, the default theme, and needs no data.
 
 #### 2. The white-label token contract (why any valid theme works)
 
@@ -286,6 +299,10 @@ There's no second accent and no gradients or shadows. The shadcn variables (`--b
 - **Why Atkinson for body:** it was designed for low-vision readers, and the portal's job is reading. Its distinct `I l 1` and slashed zero suit version strings like `v0.1.0`.
 - **Loading:** all five are served through `next/font/google` with subsets `latin, latin-ext`, `display: 'swap'` and axes `['wdth']` where listed. Google Fonts is reachable from this VPS (`curl` to `fonts.googleapis.com` answered, and the css2 API returned all five families). Next 16.2.6's bundled font list contains all five. Next downloads and self-hosts the files at build time, so there are no runtime third-party requests.
 - **Why the portal display fonts aren't preloaded:** the display face depends on the studio's theme, which isn't known statically. Swap plus Next's fallback metrics keeps layout shift low.
+- **Where the `.variable` classes go:**
+  - `--font-body`: on `<html>` in both root layouts.
+  - `--font-critwire`: on the `(frontend)` `<html>`.
+  - The three template faces: on `.fs-root` through `SiteRoot` (§1). That covers the landing, every ops page, legacy block landings and the portal 404.
 - **Cleanup:** remove `geist` from `package.json`. Code blocks in prose use the system `ui-monospace` stack (no web font).
 - **Studio type choice:** no new theme token is needed. `typography` (modern | editorial | technical), `shape`, `density` and `motion` already exist in Zod, in Payload and in the AI schema. Only what they *map to* changes, in `themeStyle.ts`. So there's no enum change, no parity-test change and no migration for tokens.
 
@@ -301,7 +318,12 @@ const RADIUS = { sharp: ['0', '0'], balanced: ['0.5rem', '0.375rem'], soft: ['1r
 const SECTION_Y = { cinematic: 'clamp(4.5rem, 9vw, 8rem)', compact: 'clamp(2.75rem, 5vw, 4.5rem)' }
 ```
 
-`--fs-font-body` goes away: body text is always `var(--font-body)`. If `font-stretch` doesn't reach the `wdth` axis through next/font's `@font-face`, use `font-variation-settings: 'wdth' N` instead. This is a check at implementation time, not a design change.
+`--fs-font-body` goes away: body text is always `var(--font-body)`.
+
+Width is set with `font-stretch`. That was verified during revision, not assumed:
+- Google's css2 response declares `font-stretch` ranges on the variable faces: `62% 125%` for Archivo, `50% 150%` for Anybody, and `50% 200%` for Science Gothic.
+- next/font's loader (`@next/font/dist/google/loader.js:136-141`) only rewrites the `src` URLs, so the range reaches the self-hosted `@font-face`.
+- So `font-stretch: 78%` selects `wdth` 78, and no `font-variation-settings` is needed.
 
 **Portal type scale.** Root is 16 px. The ratio is about 1.25 for text, with display jumps. The measure keeps lines under 80 characters.
 
@@ -405,7 +427,7 @@ No text is uppercase anywhere. The wordmark "Critwire" is Anybody wdth 130, w800
   - **Gallery:** captions go below the images.
   - **Adaptive:** kind headings only.
   - **Latest update:** version and date in a left column, then the linked h3 title, the summary, and "All patch notes".
-  - **Known issues:** rows of status marker, title, `▲ n` and the status label, then "See all known issues".
+  - **Known issues:** rows of the status marker (an empty CSS shape, see below), title, `▲ n` and the status label, all inside the link as today, then "See all known issues". Each row's text therefore starts with the title (issues-voting:299,334).
   - **Community and final CTA:** the art becomes a 21:9 band with the text block *below* it, never over it.
   - **Mobile:** everything stacks into one column.
 
@@ -425,8 +447,8 @@ Newer updates      Page 1 of 2      Older updates         ───┼───�
 390: version sits above the date and title.              390: tally column 3rem; filters wrap: search full width,
                                                               then the two selects, then the toggle.
 
-Issue board: horizontally scrolling 16rem columns with snap. Each column is <section aria-labelledby>
-with an h2 status name, marker and count; cards hold the title link, ▲ n and a Pinned tag. Empty column: "None".
+Issue board: horizontally scrolling 16rem columns with snap. Each column is a <section> labelled by its
+status label alone (markup below); cards hold the title link, ▲ n and a Pinned tag. Empty column: "None".
 
 Issue detail (46rem)                                     Report a bug / Contact (46rem)
 All known issues                                         Report a bug
@@ -443,12 +465,29 @@ details (prose, 68ch)                                     │ Turnstile         
 ```
 
 - **Dividers** separate items of the same list only; there are no section rules.
-- **Status shape vocabulary**, one component (`IssueStatus`), each shape always beside the status text:
+- **Board column markup:**
+
+  ```html
+  <section aria-labelledby="fs-board-INVESTIGATING">
+    <h2><StatusMark/> <span id="fs-board-INVESTIGATING">Investigating</span> <span class="fs-count">1</span></h2>
+    <ul>…cards…</ul>
+  </section>
+  ```
+
+  - The region's accessible name is the status label alone, so `getByRole('region', { name: label, exact: true })` (issues-voting:169) matches.
+  - The count and the marker sit in the h2 but outside the labelling element.
+- **Status shape vocabulary**, one component (`IssueStatus`), each shape always beside the status text. The glyphs below only illustrate the shapes:
   - ○ ring, `muted-fg`: Reported, Closed.
   - ◐ half, `accent`: Investigating, Planned.
   - ◆ diamond, `warning`: Needs More Info, Workaround Available.
   - ● dot, `success`: Fixed.
   - The same vocabulary appears in Critwire's hero loop.
+- **The marker is never a character.**
+  - **Markup:** `StatusMark` (exported from `IssueStatus.tsx`) renders an empty `<span aria-hidden="true" class="status-mark" data-shape="ring|half|diamond|dot">`.
+  - **Drawing:** CSS only, in `currentColor`: a bordered circle, a half `linear-gradient` fill, a 45° rotated square, a filled circle. The shape rules live once in `globals.css`. Each surface sets the colour: `IssueStatus`'s tone map on the portal, Ink in the loop.
+  - **Why:** Playwright's `toHaveText` reads `textContent`, `aria-hidden` text included. A glyph would break `^title` (issues-voting:299,334) and "links contain only the title", and screen readers would announce it (F9).
+  - **Where else:** the same `StatusMark` draws the ◆ in the issue-detail aside heading and the four markers in `IssueLoop`.
+  - **The one glyph that stays text:** the vote `▲`, inside `VoteCount` after the title, because E2E pins `▲ n` (§7).
 
 #### 6. Principles (what makes each surface itself)
 
@@ -486,8 +525,17 @@ details (prose, 68ch)                                     │ Turnstile         
 - **Semantics:**
   - Labels for search and selects (visually hidden).
   - `aria-current` in the nav.
-  - Board columns as labelled regions.
-  - Vote glyph `▲` `aria-hidden`, with visually hidden " votes".
+  - Board columns as regions named by a label-only element (§5).
+  - Status markers are empty CSS shapes, never characters (§5).
+  - **`VoteCount`** (not interactive) comes in two sizes:
+    - **List tally:** the number above a visible "vote" or "votes".
+    - **Inline** (board cards, landing): an `aria-hidden` `▲`, a space, the number, then a visually hidden " vote" or " votes". Its `textContent` reads `▲ n`, so E2E's `▲ 1` still matches. On the landing it renders only when n > 0.
+  - **`VoteButton`** holds exactly three things:
+    - the `aria-hidden` `▲`;
+    - the word "Upvote" or "Upvoted";
+    - `<span class="fs-vote-count">` containing only the current number.
+
+    So its name stays `/^Upvoted?\s*\d+$/` (issues-voting:290). The count roll animates that single number with a transform; the span never holds two numbers. The "+1"/"−1" ghost (`aria-hidden`) and the helper line sit outside the button, in its wrapper. Nothing visually hidden goes inside the button.
   - Hints linked by `aria-describedby`, outside the `<label>`, so label names stay stable for E2E.
   - One `<aside>` per issue detail (E2E reads `article aside`).
 
@@ -506,8 +554,8 @@ All copy is sentence case and active voice. Errors say what happened and what to
 | Issues | Player Signals / Field Board; "No tracks match…" | "Known issues" and "Bugs the {game} team knows about. Vote on the ones that affect you."; no match: "No issues match these filters." + "Clear filters"; none at all: "No known issues right now. Found a bug? Report it." |
 | Pinned | 📌 | "Pinned" tag in the meta row, outside the title link |
 | Vote | Vote failed. | Helper "One vote per browser. Select it again to take your vote back."; network fallback "Your vote didn’t count. Reload the page and try again." (server messages still shown) |
-| Report | Send Field Report; Field notes; Track type; "Field report received. The team will review the trail."; "The field report could not be sent…" | Report a bug; What happened?; Category; "Report sent. The {game} team reviews every report; confirmed bugs appear on the known issues page."; "Your report wasn’t sent, so nothing reached the studio. Check the fields, complete the verification and send it again." |
-| Contact | Studio Route; "…The team has the signal."; "Contact route is not configured" | Intro "Questions, feedback or press requests go straight to the {game} team. For bugs, use the report form."; "Message sent. The {game} team will reply by email if you left an address."; "{game} hasn’t set up a contact form yet" + "Reach the team through the links in the footer." |
+| Report | Send Field Report; Field notes; Track type; "Field report received. The team will review the trail."; "The field report could not be sent…" | Report a bug; What happened?; Category; "Report sent. The {game} team can see it now."; "Your report wasn’t sent, so nothing reached the studio. Check the fields, complete the verification and send it again." |
+| Contact | Studio Route; "…The team has the signal."; "Contact route is not configured" | Intro "Questions, feedback or press requests go straight to the {game} team. For bugs, use the report form."; "Message sent. If you left an email address, the {game} team can reply to it."; "{game} hasn’t set up a contact form yet" + "Reach the team through the links in the footer." |
 | Tally | Invalid-URL admin instructions; "…managed in Tally, not Critwire." | "This form isn’t available right now."; "This form is hosted by Tally." |
 | 404s | "This page could not be found." / Go home | "There’s no page at this address." / Go to the home page (h1 stays "404") |
 | Page titles | Field Notes — {game}, Field Board — {game}, Send Field Report — {game} | {game} patch notes, {game} known issues, Report a bug in {game}. Detail titles and the RSS title are unchanged. |
@@ -519,7 +567,7 @@ E2E selectors that change. Each keeps the assertion's meaning; Playwright name, 
 |---|---|---|---|
 | portal-landing:116-118 | `'Patch Notes' / 'Known Issues' / 'Report a Bug'`, `exact: true` | `'Patch notes' / 'Known issues' / 'Report a bug'` | Sentence-case labels |
 | patch-notes:107 | `'Older →'` | `'Older updates'` | Arrow removed |
-| issues-voting:169 | `div.w-64` with `:scope > div:first-child` | `page.getByRole('region', { name: label, exact: true })` | Columns become labelled sections |
+| issues-voting:169 | `div.w-64` with `:scope > div:first-child` | `page.getByRole('region', { name: label, exact: true })` | Columns become `<section>`s named by a label-only element (§5) |
 | issues-voting:173 | `` [`📌 ${pinned.title}`] `` | `[pinned.title]`, plus `expect(column('Investigating')).toContainText('Pinned')` | The marker moved out of the link; the "marked pinned" part of the assertion is kept |
 | issues-voting:293 | `span.font-mono` | `.fs-vote-count` | Count is no longer mono |
 | reports-contact:65, 66, 72 | `'Field notes'`, `'Track type'`, `'Field report received.'` | `'What happened'`, `'Category'`, `'Report sent.'` | Copy |
@@ -528,7 +576,7 @@ E2E selectors that change. Each keeps the assertion's meaning; Playwright name, 
 Still valid, and constraints the implementation must keep:
 - `'Get the Game'` still matches case-insensitively; it may be aligned to 'Get the game'.
 - `'RSS'` exact, `'Page 1 of 2'`, Board/List view, combobox order (category, then sort), and the `Search issues…` placeholder.
-- The vote button name `/^Upvoted?\s*\d+$/`. The "+1" ghost must be `aria-hidden`.
+- The vote button name `/^Upvoted?\s*\d+$/`. The button's content is fixed by §7; the ghost and the helper line sit outside it.
 - Send report, Send message, "Message sent.", "Open report form", "Open contact page".
 - All the other labels, "The studio needs more information", "Workaround", and `'v2.1.0 — Harbor hotfix'` (kept on purpose, see the review).
 - The h1 `404`.
@@ -537,7 +585,7 @@ Still valid, and constraints the implementation must keep:
 - A single `a[href="/g/<slug>"] img`: the footer never links home with an image.
 - One `banner` containing the project name.
 - `article .payload-richtext`, and a single `article aside`.
-- Known-issue `li` text starts with the title, contains `▲ n` only when n > 0, and keeps the status label inside the link.
+- Known-issue `li` text starts with the title (the marker is an empty CSS shape), contains `▲ n` only when n > 0, and keeps the status label inside the link.
 - Issue list and board links contain only the title.
 
 **One new E2E step, written first:** in S2.4, warm `/g/<slug>/patch-notes`, publish the accent `#f59e0b`, then `eventually` that page's `.fs-root` has `--fs-accent` equal to `#f59e0b`. This proves ops pages follow the theme and that the widened revalidation reaches cached pages.
@@ -554,31 +602,34 @@ Still valid, and constraints the implementation must keep:
 |---|---|
 | `src/fonts.ts` (new) | Atkinson Hyperlegible Next → `--font-body` |
 | `src/app/(frontend)/fonts.ts` (new) | Anybody → `--font-critwire` |
-| `src/site-templates/flagship-game-v1/fonts.ts` (new) | Archivo, Young Serif, Science Gothic → `--font-archivo`, `--font-young-serif`, `--font-science-gothic`. The template owns its fonts; `themeStyle` references the same variable names. |
-| `src/app/(frontend)/layout.tsx` | Font classes. Remove `InitTheme`, `Providers` and the Geist fonts. Header and footer stay. |
-| `src/app/(public)/layout.tsx` | Font classes. Remove Geist and `data-theme="dark"`. |
-| `src/app/(frontend)/globals.css` | Shared Tailwind entry only: Tailwind, the typography plugin, `@theme` (breakpoints, `--font-sans: var(--font-body)`), base, `.container`, and `@import './marketing.css' layer(components); @import './portal.css' layer(components);`. Delete `--ds-*`, `cc-*`, `glass-*`, `glow-*`, the dark palette, chart and sidebar tokens, and the opacity hack. |
-| `src/app/(frontend)/marketing.css` (new) | Critwire tokens (plus the shadcn variable values), `cw-*` classes, the loop animation, and focus styles. Prose colour mapping: `.cw-prose` sets the `--tw-prose-*` variables to Ink and Graphite (the marketing counterpart of `.fs-prose`). |
-| `src/app/(frontend)/portal.css` | Renamed from `flagship.css`; now the whole portal: `--fs-*` consumers, the §2 contract, plate hero, lists, board, forms, status markers, `.fs-prose`, focus, motion. |
-| `tailwind.config.mjs` | Drop the dead `var(--text)` prose mapping. |
+| `src/site-templates/flagship-game-v1/fonts.ts` (new) | Archivo, Young Serif, Science Gothic → `--font-archivo`, `--font-young-serif`, `--font-science-gothic`. The template owns its fonts; `themeStyle` references the same variable names, and `SiteRoot` applies the three `.variable` classes (§1). |
+| `src/app/(frontend)/layout.tsx` | `--font-body` and `--font-critwire` classes on `<html>`, `cw-root` on `<body>`. Remove `InitTheme`, `Providers` and the Geist fonts. Header and footer stay. |
+| `src/app/(public)/layout.tsx` | `--font-body` class on `<html>` (the display faces go on `.fs-root`, §1). Remove Geist and `data-theme="dark"`. |
+| `src/app/(frontend)/globals.css` | Shared Tailwind entry only: Tailwind, the typography plugin, `@theme` (breakpoints, `--font-sans: var(--font-body)`), base, `.container`, the shared `.status-mark` shapes (§5), and `@import './marketing.css' layer(components); @import './portal.css' layer(components);`. Delete `--ds-*`, `cc-*`, `glass-*`, `glow-*`, the dark palette, chart and sidebar tokens, and the opacity hack. |
+| `src/app/(frontend)/marketing.css` (new) | On `.cw-root`: the Critwire tokens, the shadcn variable values and the `--prose-*` values (see `tailwind.config.mjs`). Plus `cw-*` classes, the loop animation and focus styles. |
+| `src/app/(frontend)/portal.css` | Renamed from `flagship.css`; now the whole portal: `--fs-*` consumers, the §2 contract, plate hero, lists, board, forms, status-marker tones, the `--prose-*` values on `.fs-root`, focus, motion. No `.fs-prose` class (F5). |
+| `tailwind.config.mjs` | The one place prose is styled (F5). `typography.DEFAULT.css` (appended after the plugin's defaults, so it wins) maps: `--tw-prose-body/-headings/-links/-bold/-quotes/-code/-kbd/-pre-code` → `var(--prose-fg)`; `-lead/-captions/-counters/-bullets` → `var(--prose-muted)`; `-hr/-quote-borders/-th-borders/-td-borders/-kbd-shadows` → `var(--prose-border)`; `-pre-bg` → `var(--prose-code-bg)`. It sets `fontSize: var(--prose-size)`, `lineHeight: 1.6`, `maxWidth: var(--prose-measure)` and `a { textDecorationColor: var(--prose-link-line) }`. The template's `base`/`md` heading overrides are deleted. Values: `.fs-root` sets `--fs-fg`, `--fs-muted-fg`, `--fs-border`, `--fs-surface`, `--fs-accent`, `1.0625rem`, `68ch` (every text pair is a schema-guaranteed one, §2); `.cw-root` sets Ink, Graphite, Ink at 12%, `#FFFFFF`, Ink, `1.125rem`, `62ch`. |
 | `src/site-templates/flagship-game-v1/schema/theme.ts` | New `DEFAULT_THEME_COLORS` only. |
 | `.../render/themeStyle.ts` | Voice, radius and density tables (§4). |
 | `.../defaults.ts` | Button-text candidates from the palette; `finalCta.heading: null`. |
 | `.../actions.ts` | Sentence-case `DEFAULT_ACTION_LABELS`. |
-| `.../render/SiteFrame.tsx` (new), `SiteNav.tsx`, `SiteNavLinks.tsx` (new, client), `SiteFooter.tsx`, `FlagshipSite.tsx`, `ui.tsx` | One frame, one nav, one footer. `SectionHeader` loses `eyebrow`. |
+| `.../render/SiteFrame.tsx` (new: `SiteRoot`, `SiteFrame`), `SiteNav.tsx`, `SiteNavLinks.tsx` (new, client), `SiteFooter.tsx`, `FlagshipSite.tsx`, `ui.tsx` | One root, one frame, one nav, one footer (§1). `SectionHeader` loses `eyebrow`. |
 | `.../render/NavShell.tsx` | Delete. |
 | `.../render/slots/*.tsx` | Plate hero and build line; the other slots per §5; `KnownIssues` uses `IssueStatus`. |
 | `src/lib/game-portal/landingPage.ts` (new) | See §1. |
 | `app/(public)/g/[gameSlug]/page.tsx` | Uses `landingPage.ts`. |
 | `src/components/game/PortalChrome.tsx` | `SiteFrame` via `getPortalSiteConfig`. |
-| `src/collections/GamePages/hooks/revalidateGamePage.ts` | `revalidatePath(PORTAL_ROUTE, 'layout')` in both hooks. |
-| `src/components/game/IssueStatus.tsx` | Replaces `IssueStatusBadge.tsx`: tone map, shape marker, label; keeps the `issueStatusLabel` export. |
+| `src/hooks/revalidateGamePortal.ts` (new) | `revalidateGamePortal(source, payload)`: the log line plus `revalidatePath(PORTAL_ROUTE, 'layout')`, moved from `revalidateGameProject.ts:15-18` (§1). |
+| `src/collections/GameProjects/hooks/revalidateGameProject.ts` | Calls `revalidateGamePortal`; no behaviour change. |
+| `src/collections/GamePages/hooks/revalidateGamePage.ts` | Both hooks call `revalidateGamePortal` instead of `revalidateGameLanding`. |
+| `src/hooks/revalidateGameLanding.ts` | Unchanged: it keeps the `/g/<slug>` scope the Issues, PatchNotes and IssueVotes hooks rely on. |
+| `src/components/game/IssueStatus.tsx` | Replaces `IssueStatusBadge.tsx`: tone map, `StatusMark` (an empty `aria-hidden` CSS shape, §5), label; keeps the `issueStatusLabel` export. |
 | `src/components/game/VoteCount.tsx`, `format.ts` (`formatDate` replaces `formatPatchDate` and `formatSiteDate`), `PageHead.tsx`, `FormField.tsx`, `FormNotice.tsx` (all new) | Shared portal primitives (F8). |
-| `PatchNotesFeed.tsx`, `IssueFilters.tsx`, `VoteButton.tsx`, `TallyEmbed.tsx`, `GameButtons.tsx`, the ops pages under `(ops)/`, `(public)/not-found.tsx` | `fs-*` classes and §8 copy. |
+| `PatchNotesFeed.tsx`, `IssueFilters.tsx`, `VoteButton.tsx`, `TallyEmbed.tsx`, `GameButtons.tsx`, the ops pages under `(ops)/`, `(public)/not-found.tsx` (inside `SiteRoot`) | `fs-*` classes and §8 copy. `VoteButton` and `VoteCount` follow the markup in §7. The two detail pages drop their extra `div.prose dark:prose-invert` wrapper, since `RichText` already applies `.prose`. |
 | `src/blocks/game/*` (legacy blocks) | Mechanical port from `cc-*` to `fs-*` classes; no redesign. |
-| `src/components/RichText/index.tsx` | Drop `dark:prose-invert`. Callers add `fs-prose` or `cw-prose`. |
+| `src/components/RichText/index.tsx` | Drop `dark:prose-invert`, `md:prose-md` and the `max-w-none` it adds without a gutter, so the configured measure applies. Colours, size and measure come only from `tailwind.config.mjs` and the root that contains the prose. |
 | `src/app/(frontend)/page.tsx` | Renders `MarketingHome`. |
-| `src/components/marketing/{MarketingHome,IssueLoop}.tsx` (new) | Server components. |
+| `src/components/marketing/{MarketingHome,IssueLoop}.tsx` (new) | Server components. `IssueLoop` draws its markers with `StatusMark`. |
 | `src/Header/Component.tsx`, `src/Footer/Component.tsx` | Server components with the text wordmark. |
 | `(frontend)/[slug]/page.tsx`, `(frontend)/not-found.tsx`, `heros/*`, `blocks/{Content,CallToAction,MediaBlock}` | Restyled with tokens. `HighImpact` becomes a server component. The home fallback is removed. |
 | Delete | `endpoints/home-static.ts`, `[slug]/page.client.tsx`, `providers/**`, `components/Logo/Logo.tsx`, the `geist` dependency |
@@ -594,8 +645,11 @@ The ops pages keep their data calls, caching exports and access-controlled queri
 **Harness:** a reusable, committed Playwright config and spec, not a one-off. The design critique and later passes rerun it.
 
 - **Config:** `playwright.screenshots.config.ts` reuses the E2E server command (`pnpm e2e:server`: `migrate:fresh` on the disposable `_e2e` database, `SKIP_BUILD_STATIC_GENERATION=1 next build`, `next start`). It runs on port 3200 with `CRON_SECRET` set, `RATE_LIMIT_OPTIONAL=1`, the Turnstile always-pass test key, and every external service blank, as in the E2E config.
-- **Projects:** `desktop` (1440×900) and `mobile` (390×844, touch). `reducedMotion: 'reduce'`, so captures are deterministic final states. Captures wait for `document.fonts.ready` and take full-page screenshots.
-- **Command:** `SHOTS_SET=before|after SHOTS_DIR=/srv/critter-ai/agent-state/missions/design-pass/screenshots pnpm screenshots`. `testMatch: /\.shots\.ts$/`, so the E2E suite never picks it up. It drops the same `_e2e` database, so it never runs at the same time as `pnpm test:e2e`.
+- **Projects:** `desktop` (1440×900) and `mobile` (390×844, touch). `reducedMotion: 'reduce'`, so captures are deterministic final states. Full-page screenshots.
+- **Before every capture** the harness waits for two things:
+  - `document.fonts.ready`.
+  - When the page has a `.fs-root`, a poll until its computed `--fs-accent` equals the landing's value, read right after the theme switch. The ops pages are ISR-cached. The "before" ops pages have no `.fs-root` and skip this check.
+- **Command:** `SHOTS_SET=before|after SHOTS_DIR=/srv/critter-ai/agent-state/missions/design-pass/screenshots pnpm screenshots`. `testMatch: /\.shots\.ts$/`, so the E2E suite never picks it up. It drops the same `_e2e` database, so it never runs at the same time as `pnpm test:e2e`. The plan's Verification records the exact invocation of each set, and the commit it was shot from, so the owner can reproduce the index.
 
 **Fixtures,** created through REST only, so before and after share identical data:
 1. Register the first user (super admin) and create one tenant.
@@ -704,7 +758,7 @@ Before settling the plan, it was checked against a generic "portal for indie gam
    - "See a live portal" points at `/g/critter-connect`, which exists only if the demo is seeded in production.
    - The lead should add one handoff item, blocking nothing: confirm the demo is seeded in prod, say whether a CMS home page exists, and name a contact destination if prospects should be able to reach the owner. There's no signup or contact route today, so the only marketing actions are "See a live portal" and "Sign in".
 6. **Sentry may get noise.** `getPortalSiteConfig` reports stored-config drift, and the issues pages are dynamic, so a drifted config reports on every view until it's fixed (fail loud, by the owner's rules).
-7. **`font-stretch` on the `wdth` axis through next/font** needs checking at build time; the fallback is `font-variation-settings`.
+7. **`font-stretch` on the `wdth` axis through next/font:** resolved in revision. The `@font-face` ranges survive self-hosting (§4). The first after-screenshot of `/` and the landing is the visual confirmation.
 8. **E2E:** nine selector changes across seven table rows, plus one new step. Reviewers should confirm that the pinned-board update (issues-voting:173) keeps its meaning.
 
 ## Architecture review (Fable)
@@ -737,11 +791,46 @@ Skipped: usage limit reached; next retry after 2026-09-29 07:20 UTC (astra-revie
 
 ## Revision notes
 
+Revision by the `architect`, 2026-09-29. Every claim was checked against the code at `cd22188` before the design changed.
+
+**MUST-FIX**
+1. **Prose colour mapping.** Confirmed: the compiled CSS has `.prose{--tw-prose-body:var(--text);…}` inside `@layer utilities`, because the typography plugin's `addComponents` is `addUtilities` in Tailwind 4.3.2.
+   - **Changes:** rewrote F5 and its Current-state bullet. In §10, `tailwind.config.mjs` now maps every `--tw-prose-*` colour, plus size, line-height and measure, to `--prose-*` variables. `.fs-root` (portal.css) and `.cw-root` (marketing.css, on the `(frontend)` `<body>`) set their values.
+   - **Removed:** the `.fs-prose` and `.cw-prose` classes. `RichText` drops `dark:prose-invert`, `md:prose-md` and `max-w-none`, and the detail pages drop their nested `div.prose`.
+2. **Vote button name.** Covered in §7 Semantics and the §8 "still valid" list:
+   - `VoteButton` contains only the `aria-hidden` `▲`, "Upvote"/"Upvoted" and `.fs-vote-count`, holding one number (issues-voting:290).
+   - The ghost and the helper line sit outside the button.
+   - The visually hidden " votes" belongs to the inline `VoteCount` only. Its `textContent` stays `▲ n`.
+3. **Status marker.** In §5, the new "The marker is never a character" bullet specifies `StatusMark`: an empty `aria-hidden` span drawn with CSS. It is used by `IssueStatus`, the issue-detail aside heading and `IssueLoop`. The shape rules live in `globals.css`. The known-issues row, the §8 constraint and the §10 rows reference it. Test lines are corrected to issues-voting:299,334.
+4. **Board column name.** In §5, the new "Board column markup" gives the exact markup: `aria-labelledby` points at a span holding only the status label, with the count and marker outside it. The §7 and §8 rows reference it.
+
+**MISSED**
+- **Font `.variable` classes:** §1 introduces `SiteRoot`, which applies the three template font classes on the only `.fs-root`; the portal 404 uses it too. §4 gains "Where the `.variable` classes go". The §10 rows for the fonts and both layouts are updated.
+- **`revalidateGameLanding` scope:** stated in §1 Revalidation, "Fine as is" and §10. It keeps `/g/<slug>`; only the two GamePage hooks change. The plan's wrong citation `revalidateGamePage.ts:48` is corrected to `:14` and `:25`.
+- **"Powered by Critwire":** the review's premise is wrong. `SiteFooter.tsx:69-72` already carries the credit, so unifying the chromes removes nothing. It is recorded under Decisions as kept, and noted in §1's footer contents.
+
+**SHOULD-CONSIDER**
+1. **Adopted:** `revalidateGamePortal` is extracted to `src/hooks/revalidateGamePortal.ts` (§1, §10). It's cheap, and it removes a repeated call.
+2. **Adopted, with different wording:**
+   - **Report success:** the reviewer's text still promised studio behaviour ("will appear"). It now says only what happened: "Report sent. The {game} team can see it now." The report is stored as a NEW `issue-reports` doc.
+   - **Contact success:** the same fix applies: "Message sent. If you left an email address, the {game} team can reply to it."
+   - **E2E:** the `'Report sent.'` and `'Message sent.'` substrings still match.
+3. **Adopted:** `SiteRoot` is the only `.fs-root`, the 404 included (§1).
+4. **Adopted:** before each capture the harness waits for fonts and a per-page `--fs-accent` check, and Verification records each set's invocation (§11).
+5. **Resolved outright, not just moved earlier:** `font-stretch` does reach `wdth`. Google's `@font-face` declares the stretch ranges, and next/font only rewrites `src` (§4, risk 7).
+
 ## Steps
 
 ## Verification
 
 ## Decisions
+
+- **Keep the "Powered by Critwire" credit (proposed at the Revision stage, 2026-09-29).**
+  - **What:** `SiteFooter`, now on every portal page, keeps it as one quiet muted line beside the copyright, linking to `/`. Both chromes carry it today (`PortalChrome.tsx:101-104`, `SiteFooter.tsx:69-72`), so nothing is removed.
+  - **Why keep it:** `docs/features.md:173-174` prices it. FREE includes "platform branding" and INDIE sells "remove branding". Deleting it now would give that paid option away before billing (Phase 9) exists, and drop the product's only in-portal referral.
+  - **Why it fits white-label:** white-label here means the studio's name, art, theme and words lead, and one muted footer line doesn't compete with them.
+  - **What still goes:** the Tally footnote that named Critwire (F9) is an admin-facing aside, not the credit, so it's still removed.
+  - **Reversal:** one line in `SiteFooter` if the owner disagrees. The per-tier toggle belongs to Phase 9.
 
 ## Log
 
@@ -749,5 +838,6 @@ Skipped: usage limit reached; next retry after 2026-09-29 07:20 UTC (astra-revie
 - 2026-09-29 05:44 UTC · Architecture: `architect` wrote the design plan (tokens, type, layouts, brief review, file map, E2E impact, screenshot harness). Added handoff H6 (prod demo seed, CMS home page, marketing contact), blocking nothing. No code changed, so no checks run.
 - 2026-09-29 05:50 UTC · Fable review: `architecture-reviewer` verdict APPROVE_WITH_CHANGES, 4 MUST-FIX (prose colour mapping, vote button name, CSS-only status marker, board region name) for the Revision stage. Plan-only change, no checks needed.
 - 2026-09-29 05:51 UTC · Astra review: skipped, astra-review exit 3 (usage limit). Plan-only change, no checks needed.
+- 2026-09-29 06:00 UTC · Revision: `architect` resolved all 4 Fable MUST-FIX items (prose vars via tailwind.config, VoteButton name, CSS-only StatusMark, label-only board region name), the 3 MISSED items (SiteRoot carries font classes; revalidateGameLanding scope kept; "Powered by Critwire" kept, see Decisions) and adopted the SHOULD-CONSIDER items. Plan-only change, no checks needed.
 
 ## Summary
