@@ -70,7 +70,7 @@ Out:
 
 ## Stages
 
-- [ ] Baseline: install, migrate, run typecheck, lint, unit and E2E tests; record the results under Baseline
+- [x] Baseline: install, migrate, run typecheck, lint, unit and E2E tests; record the results under Baseline
 - [ ] Architecture: `architect` writes findings and the target design
 - [ ] Fable review: `architecture-reviewer`
 - [ ] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
@@ -78,6 +78,16 @@ Out:
 - [ ] Steps: `planner` writes Steps and Verification
 
 ## Baseline
+
+Commit `669376c`, 2026-09-29 05:07–05:12 UTC.
+
+- **Setup:** created the disposable E2E database `critwire_m_design_pass_e2e` and added `E2E_DATABASE_URL` and a generated `CRON_SECRET` (needed by `pnpm seed:critter-connect`) to the worktree `.env`. `pnpm install --frozen-lockfile`: up to date. `pnpm payload migrate`: all migrations applied to the fresh mission database, no `dev` row.
+- **Typecheck** (`pnpm exec tsc --noEmit`): pass.
+- **Lint** (`pnpm lint`): pass, 0 errors, 23 warnings (mostly `@typescript-eslint/no-unused-vars`, plus 3 `react-hooks/set-state-in-effect` and 1 `react-hooks/exhaustive-deps`). Pre-existing; don't add new ones.
+- **Int** (`pnpm test:int`): 3 files, 9 tests passed.
+- **E2E** (`pnpm test:e2e`): 73 passed, 0 failed, 3.7 min. Report: `/srv/critter-ai/agent-state/missions/design-pass/e2e-baseline/` (`pnpm exec playwright show-report <dir>`).
+- **Ports:** the E2E suite serves on 3100 (sink on 3101), not 3000; `critwire-demo` was inactive.
+- **Not yet done:** the "before" screenshots. No source has changed since `669376c`, so they can still be shot from it; the Steps must capture them before the first design change (or from a checkout of `669376c`).
 
 ## Architecture
 
@@ -94,5 +104,7 @@ Out:
 ## Decisions
 
 ## Log
+
+- 2026-09-29 05:13 UTC · Baseline: E2E db and env set up, migrations applied; tsc pass, lint 0 errors/23 warnings, int 9/9, E2E 73/73.
 
 ## Summary
