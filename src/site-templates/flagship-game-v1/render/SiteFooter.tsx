@@ -33,52 +33,46 @@ export const SiteFooter: React.FC<{
   ]
 
   return (
-    <footer className="border-t border-[var(--fs-border)]">
-      <div className="fs-shell py-10">
-        <div className="flex flex-wrap items-start justify-between gap-8">
-          <div className="max-w-sm">
-            <p className="fs-display text-lg">
-              {project.name}
-            </p>
-            {value.tagline ? (
-              <p className="mt-2 text-sm leading-6 text-[var(--fs-muted-fg)]">{value.tagline}</p>
-            ) : null}
-          </div>
-          <nav aria-label="Footer" className="text-sm">
-            <ul className="flex flex-wrap gap-x-6 gap-y-2">
-              {portal.map((link) => (
-                <li key={link.ref}>
-                  <Link className="fs-nav-link" href={link.href}>
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
-              {outbound.map((link) => (
-                <li key={link.key}>
-                  <a
-                    className="fs-nav-link"
-                    href={link.url}
-                    rel="noopener noreferrer"
-                    target="_blank"
-                  >
-                    {link.label}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </nav>
+    <footer className="fs-footer">
+      <div className="fs-shell fs-footer-main">
+        <div>
+          <p className="fs-display fs-footer-name">{project.name}</p>
+          {value.tagline ? <p className="fs-meta mt-2">{value.tagline}</p> : null}
         </div>
-        <div className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-[var(--fs-border)] pt-6 text-sm text-[var(--fs-muted-fg)]">
-          <span>
-            © {new Date().getFullYear()} {project.name}
-          </span>
-          <span>
-            Powered by{' '}
-            <Link className="fs-link underline" href="/">
-              Critwire
-            </Link>
-          </span>
-        </div>
+        <nav aria-label="Footer">
+          <ul className="fs-footer-links">
+            {portal.map((link) => (
+              <li key={link.ref}>
+                <Link className="fs-nav-link" href={link.href}>
+                  {link.label}
+                </Link>
+              </li>
+            ))}
+            {outbound.map((link) => (
+              <li key={link.key}>
+                <a
+                  className="fs-nav-link"
+                  href={link.url}
+                  rel="noopener noreferrer"
+                  target="_blank"
+                >
+                  {link.label}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      </div>
+      <div className="fs-shell fs-footer-base fs-meta">
+        <span>
+          © {new Date().getFullYear()} {project.name}
+        </span>
+        <span>
+          Powered by{' '}
+          <Link className="fs-link" href="/">
+            Critwire
+          </Link>
+        </span>
       </div>
     </footer>
   )

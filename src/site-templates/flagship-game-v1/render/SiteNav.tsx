@@ -19,21 +19,22 @@ export const SiteNav: React.FC<{ project: GameProject; value: NavConfig }> = ({
 
   return (
     <header className="fs-nav">
-      <div className="fs-shell flex items-center justify-between gap-4 py-4">
-        <Link className="fs-link flex min-w-0 items-center gap-3" href={`/g/${project.slug}`}>
+      <div className="fs-shell fs-nav-bar">
+        <Link className="fs-nav-home" href={`/g/${project.slug}`}>
           {project.logo && typeof project.logo === 'object' ? (
             <Media
-              imgClassName="h-9 w-9 rounded-[var(--fs-radius)] object-cover"
+              imgClassName="h-9 w-9 rounded-[var(--fs-radius-control)] object-cover"
               resource={project.logo}
             />
           ) : null}
-          <span className="truncate fs-display text-base">
-            {project.name}
-          </span>
+          <span className="fs-display fs-nav-name">{project.name}</span>
         </Link>
-        <SiteNavLinks links={links}>
-          {cta ? <SiteActionLink action={cta} variant="primary" /> : null}
-        </SiteNavLinks>
+        <SiteNavLinks links={links} />
+        {cta ? (
+          <div className="fs-nav-cta">
+            <SiteActionLink action={cta} variant="primary" />
+          </div>
+        ) : null}
       </div>
     </header>
   )

@@ -14,14 +14,11 @@ const currentState = (pathname: string, href: string): 'page' | 'true' | undefin
 }
 
 /** The site navigation; a client component only to mark the current page. */
-export const SiteNavLinks: React.FC<{
-  children?: React.ReactNode
-  links: ResolvedSiteAction[]
-}> = ({ children, links }) => {
+export const SiteNavLinks: React.FC<{ links: ResolvedSiteAction[] }> = ({ links }) => {
   const pathname = usePathname()
 
   return (
-    <nav aria-label="Site" className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
+    <nav aria-label="Site" className="fs-nav-links">
       {links.map((link, index) =>
         link.external ? (
           <a
@@ -44,7 +41,6 @@ export const SiteNavLinks: React.FC<{
           </Link>
         ),
       )}
-      {children}
     </nav>
   )
 }

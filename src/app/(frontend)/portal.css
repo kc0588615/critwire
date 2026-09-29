@@ -17,53 +17,126 @@
   --prose-link-line: var(--fs-accent);
   --prose-size: 1.0625rem;
   --prose-measure: 68ch;
+  --fs-gutter: clamp(1rem, 4vw, 2.5rem);
 
   background: var(--fs-bg);
   color: var(--fs-fg);
   font-family: var(--font-body), system-ui, sans-serif;
+  font-size: 1.0625rem;
+  line-height: 1.6;
 }
 
+/*
+ * The token contract (plan §2): text is only --fs-fg or --fs-muted-fg;
+ * the accent is only a fill (with --fs-accent-fg on it) or a
+ * decoration; --fs-border only draws dividers; interactive boundaries
+ * use --fs-muted-fg. Every pair used is one the theme schema checks,
+ * so any valid theme reads. No uppercase, shadows or gradients.
+ */
+
+/* ── Layout ─────────────────────────────────────────────── */
+
 .fs-shell {
-  width: min(1180px, calc(100% - 32px));
+  width: min(1180px, 100% - 2 * var(--fs-gutter));
   margin-inline: auto;
+}
+
+/* Reading columns inside the shell, left-aligned: detail pages and forms, then lists. */
+.fs-column {
+  max-width: 46rem;
+}
+
+.fs-column-wide {
+  max-width: 60rem;
 }
 
 .fs-section {
   padding-block: var(--fs-section-y);
 }
 
+/* ── Type scale (plan §4) ───────────────────────────────── */
+
 .fs-display,
 .fs-h1,
-.fs-h2 {
+.fs-h2,
+.fs-page-title {
   font-family: var(--fs-font-display);
   font-stretch: var(--fs-display-stretch);
   font-weight: var(--fs-display-weight);
   letter-spacing: var(--fs-display-tracking);
 }
 
+/* Hero title: the landing's one loud line. */
 .fs-h1 {
-  font-size: calc(clamp(2.5rem, 6vw, 4.5rem) * var(--fs-display-scale));
+  max-width: 12em;
+  font-size: calc(clamp(2.75rem, 1.5rem + 5vw, 6rem) * var(--fs-display-scale));
   line-height: var(--fs-display-leading);
+  text-wrap: balance;
 }
 
+/* Section title on the landing. */
 .fs-h2 {
-  font-size: calc(clamp(1.75rem, 3.5vw, 2.75rem) * var(--fs-display-scale));
+  max-width: 20em;
+  font-size: calc(clamp(1.875rem, 1.3rem + 1.9vw, 3rem) * var(--fs-display-scale));
   line-height: 1.05;
+  text-wrap: balance;
 }
 
+/* Ops page title (patch notes, issues, forms). */
+.fs-page-title {
+  font-size: calc(clamp(2.25rem, 1.8rem + 1.5vw, 3.25rem) * var(--fs-display-scale));
+  line-height: 1.05;
+  text-wrap: balance;
+}
+
+/* Entry title: a patch note, an issue, a feature. Body face. */
 .fs-h3 {
   font-size: 1.25rem;
   font-weight: 700;
   line-height: 1.3;
 }
 
+.fs-lead {
+  max-width: 36em;
+  font-size: 1.1875rem;
+  line-height: 1.55;
+}
+
+.fs-body {
+  max-width: 68ch;
+  font-size: 1.0625rem;
+  line-height: 1.6;
+}
+
+.fs-meta {
+  color: var(--fs-muted-fg);
+  font-size: 0.875rem;
+  font-weight: 500;
+  letter-spacing: 0.005em;
+  line-height: 1.45;
+}
+
+/* Numbers always use the body face, with digits that line up. */
+.fs-tally,
+.fs-version {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.fs-tally {
+  font-size: 1.75rem;
+}
+
+.fs-version {
+  font-size: 1rem;
+}
+
 .fs-eyebrow {
   margin-bottom: 0.9rem;
-  color: var(--fs-accent);
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  color: var(--fs-muted-fg);
+  font-size: 0.9375rem;
+  font-weight: 600;
 }
 
 .fs-panel {
@@ -73,14 +146,11 @@
 }
 
 .fs-panel-link {
-  transition:
-    border-color 160ms ease,
-    transform 160ms ease;
+  transition: border-color 150ms ease;
 }
 
 .fs-panel-link:hover {
-  border-color: var(--fs-accent);
-  transform: translateY(-1px);
+  border-color: var(--fs-muted-fg);
 }
 
 .fs-media-frame {
@@ -100,49 +170,84 @@
   line-height: 1.4;
 }
 
+/* ── Controls ───────────────────────────────────────────── */
+
 .fs-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 0.5rem;
   min-height: 2.75rem;
-  border-radius: var(--fs-radius);
-  padding: 0.72rem 1.15rem;
-  font-size: 0.9rem;
+  border: 1px solid transparent;
+  border-radius: var(--fs-radius-control);
+  padding: 0.625rem 1.125rem;
+  font-size: 0.9375rem;
   font-weight: 700;
+  line-height: 1.2;
+  text-decoration: none;
+  white-space: nowrap;
   transition:
-    filter 160ms ease,
-    border-color 160ms ease,
-    transform 160ms ease;
+    background-color 150ms ease,
+    border-color 150ms ease,
+    transform 120ms ease;
+}
+
+.fs-btn:active {
+  transform: scale(0.98);
 }
 
 .fs-btn-primary {
-  border: 1px solid var(--fs-accent);
+  border-color: var(--fs-accent);
   background: var(--fs-accent);
   color: var(--fs-accent-fg);
 }
 
+/* The accent fill stays exact on hover, so accent-fg keeps its checked contrast. */
+.fs-btn-primary:hover {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+}
+
 .fs-btn-secondary {
-  border: 1px solid var(--fs-border);
-  background: color-mix(in srgb, var(--fs-surface) 80%, transparent);
+  border-color: var(--fs-muted-fg);
+  background: transparent;
   color: var(--fs-fg);
 }
 
-.fs-btn:hover {
-  filter: brightness(1.06);
-  transform: translateY(-1px);
+.fs-btn-secondary:hover {
+  border-color: var(--fs-fg);
 }
 
-.fs-btn-secondary:hover {
-  border-color: var(--fs-accent);
+.fs-input {
+  width: 100%;
+  min-height: 2.75rem;
+  border: 1px solid var(--fs-muted-fg);
+  border-radius: var(--fs-radius-control);
+  padding: 0.5rem 0.75rem;
+  background: var(--fs-bg);
+  color: var(--fs-fg);
+  font: inherit;
+}
+
+.fs-input::placeholder {
+  color: var(--fs-muted-fg);
+  opacity: 1;
 }
 
 .fs-link {
   color: inherit;
+  text-decoration-line: underline;
+  text-decoration-color: var(--fs-accent);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
 }
 
 .fs-link:hover {
-  color: var(--fs-accent);
+  text-decoration-thickness: 2px;
 }
+
+/* ── Nav: a solid bar; one row on desktop, two below 64rem ── */
 
 .fs-nav {
   position: sticky;
@@ -152,13 +257,143 @@
   background: var(--fs-bg);
 }
 
-.fs-nav-link {
-  color: var(--fs-muted-fg);
-  transition: color 160ms ease;
+.fs-nav-bar {
+  display: grid;
+  grid-template-areas:
+    'home cta'
+    'links links';
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 1.5rem;
+  padding-top: 0.625rem;
 }
 
-.fs-nav-link:hover {
+.fs-nav-home {
+  display: flex;
+  grid-area: home;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+  min-height: 2.75rem;
   color: var(--fs-fg);
+}
+
+.fs-nav-name {
+  overflow: hidden;
+  font-size: calc(1.25rem * var(--fs-display-scale));
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fs-nav-cta {
+  grid-area: cta;
+}
+
+/* Below 64rem the links scroll sideways to the screen edge: no hamburger, so
+   the four pages players come for stay one tap away. */
+.fs-nav-links {
+  display: flex;
+  grid-area: links;
+  gap: 1.5rem;
+  margin-inline: calc(-1 * var(--fs-gutter));
+  overflow-x: auto;
+  padding-inline: var(--fs-gutter);
+  scrollbar-width: none;
+  white-space: nowrap;
+}
+
+.fs-nav-links::-webkit-scrollbar {
+  display: none;
+}
+
+@media (min-width: 64rem) {
+  .fs-nav-bar {
+    grid-template-areas: 'home links cta';
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    padding-block: 0.75rem;
+  }
+
+  .fs-nav-links {
+    justify-content: flex-end;
+    margin-inline: 0;
+    padding-inline: 0;
+  }
+}
+
+.fs-nav-link {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  color: var(--fs-muted-fg);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  transition: color 150ms ease;
+}
+
+.fs-nav-link:hover,
+.fs-nav-link[aria-current] {
+  color: var(--fs-fg);
+}
+
+/* Current page: an accent bar on bg (a fill, not text). */
+.fs-nav-link[aria-current]::after {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0.375rem;
+  height: 2px;
+  background: var(--fs-accent);
+  content: '';
+}
+
+/* ── Footer ─────────────────────────────────────────────── */
+
+.fs-footer {
+  border-top: 1px solid var(--fs-border);
+  background: var(--fs-surface);
+}
+
+.fs-footer-main {
+  display: grid;
+  gap: 2rem;
+  padding-block: 3rem 2rem;
+}
+
+@media (min-width: 48rem) {
+  .fs-footer-main {
+    grid-template-columns: minmax(0, 20rem) minmax(0, 1fr);
+    gap: 3rem;
+  }
+}
+
+.fs-footer-name {
+  font-size: 1.375rem;
+  line-height: 1.1;
+}
+
+/* Two even columns on phones; one wrapping row, packed left, once there's room. */
+.fs-footer-links {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 1.5rem;
+}
+
+@media (min-width: 48rem) {
+  .fs-footer-links {
+    display: flex;
+    flex-wrap: wrap;
+    column-gap: 2rem;
+  }
+}
+
+.fs-footer-base {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.5rem 1.5rem;
+  border-top: 1px solid var(--fs-border);
+  padding-block: 1.25rem 1.5rem;
 }
 
 .fs-hero-scrim {
@@ -241,13 +476,15 @@
   scrollbar-width: thin;
 }
 
+/* ── Focus, skip link and motion ────────────────────────── */
+
 .fs-skip {
   position: absolute;
   top: -100%;
   left: 1rem;
   z-index: 100;
-  border-radius: var(--fs-radius);
-  padding: 0.6rem 1rem;
+  border-radius: var(--fs-radius-control);
+  padding: 0.625rem 1rem;
   background: var(--fs-accent);
   color: var(--fs-accent-fg);
   font-weight: 700;
@@ -257,28 +494,45 @@
   top: 1rem;
 }
 
-/* Renderer-owned focus visibility on every interactive element. */
-.fs-root a:focus-visible,
-.fs-root button:focus-visible,
-.fs-root [tabindex]:focus-visible {
-  outline: 2px solid var(--fs-accent);
-  outline-offset: 3px;
-  border-radius: var(--fs-radius);
+/* Two-tone ring (WCAG C40): fg outline around a bg halo, at least 4.5:1
+   against the page, a surface or an accent fill under any valid theme. */
+.fs-root :focus-visible {
+  outline: 2px solid var(--fs-fg);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 2px var(--fs-bg);
 }
 
-/* Motion token + user preference both kill transitions. */
+/* The theme's motion token and the user's preference both stop every
+   animation and transition. Durations drop to zero rather than
+   `animation: none`, so animated elements land on their end state. */
 .fs-root[data-fs-motion='off'] *,
 .fs-root[data-fs-motion='off'] *::before,
 .fs-root[data-fs-motion='off'] *::after {
-  transition: none !important;
-  animation: none !important;
+  animation-delay: 0s !important;
+  animation-duration: 0s !important;
+  animation-iteration-count: 1 !important;
+  scroll-behavior: auto !important;
+  transition-delay: 0s !important;
+  transition-duration: 0s !important;
+}
+
+.fs-root[data-fs-motion='off'] .fs-btn:active {
+  transform: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .fs-root *,
   .fs-root *::before,
   .fs-root *::after {
-    transition: none !important;
-    animation: none !important;
+    animation-delay: 0s !important;
+    animation-duration: 0s !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-delay: 0s !important;
+    transition-duration: 0s !important;
+  }
+
+  .fs-root .fs-btn:active {
+    transform: none;
   }
 }
