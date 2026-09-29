@@ -24,25 +24,21 @@ export const TrailerSection: React.FC<{ ctx: SiteRenderContext; value: TrailerSl
 
   return (
     <section aria-labelledby="fs-trailer-heading" className="fs-section" id="fs-trailer">
-      <div className="fs-shell max-w-5xl">
-        <SectionHeader
-          align="center"
-          heading={value.heading ?? 'Watch the Trailer'}
-          id="fs-trailer-heading"
-        />
-        <TrailerLite embedUrl={embedUrl} title={title}>
-          {typeof value.poster === 'number' ? (
-            <SiteMedia
-              ctx={ctx}
-              fill
-              id={value.poster}
-              imgClassName="object-cover"
-              size="(min-width: 1024px) 60rem, 100vw"
-            />
-          ) : (
-            <span aria-hidden="true" className="fs-trailer-fallback" />
-          )}
-        </TrailerLite>
+      <div className="fs-shell">
+        <SectionHeader heading={value.heading ?? 'Watch the trailer'} id="fs-trailer-heading" />
+        <div className="fs-column-wide">
+          <TrailerLite embedUrl={embedUrl} title={title}>
+            {typeof value.poster === 'number' ? (
+              <SiteMedia
+                ctx={ctx}
+                fill
+                id={value.poster}
+                imgClassName="object-cover"
+                size="(min-width: 1024px) 60rem, 100vw"
+              />
+            ) : null}
+          </TrailerLite>
+        </div>
       </div>
     </section>
   )

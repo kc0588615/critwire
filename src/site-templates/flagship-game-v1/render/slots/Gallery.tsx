@@ -4,6 +4,9 @@ import type { GallerySlot } from '../../schema/slots'
 import type { SiteRenderContext } from '../context'
 import { SectionHeader, SiteMedia } from '../ui'
 
+type GalleryItem = GallerySlot['items'][number]
+
+/** Screenshots, untouched; each caption sits below its image, never over it. */
 export const GallerySection: React.FC<{ ctx: SiteRenderContext; value: GallerySlot }> = ({
   ctx,
   value,
@@ -12,21 +15,23 @@ export const GallerySection: React.FC<{ ctx: SiteRenderContext; value: GallerySl
   const heading = value.heading ?? 'Screenshots'
 
   const figure = (
-    item: GallerySlot['items'][number],
+    item: GalleryItem,
     index: number,
+    size: string,
     className = '',
-    size = '(min-width: 1024px) 50vw, 100vw',
   ): React.ReactNode => (
-    <figure className={`fs-media-frame relative m-0 ${className}`} key={index}>
-      <SiteMedia
-        alt={item.alt}
-        ctx={ctx}
-        fill
-        id={item.media}
-        imgClassName="object-cover"
-        size={size}
-      />
-      {item.caption ? <figcaption className="fs-caption">{item.caption}</figcaption> : null}
+    <figure className={`fs-figure ${className}`} key={index}>
+      <div className="fs-media-frame fs-figure-frame">
+        <SiteMedia
+          alt={item.alt}
+          ctx={ctx}
+          fill
+          id={item.media}
+          imgClassName="object-cover"
+          size={size}
+        />
+      </div>
+      {item.caption ? <figcaption className="fs-meta mt-2">{item.caption}</figcaption> : null}
     </figure>
   )
 
@@ -40,37 +45,28 @@ export const GallerySection: React.FC<{ ctx: SiteRenderContext; value: GallerySl
           ? 'w-[min(85%,52rem)] snap-center'
           : 'w-[min(70%,26rem)] snap-start'
       body = (
-        <div
-          aria-label={heading}
-          className="fs-scroll-row -mx-4 flex gap-4 overflow-x-auto px-4 pb-4"
-          role="region"
-          tabIndex={0}
-        >
-          {value.items.map((item, index) =>
-            figure(item, index, `aspect-video shrink-0 ${slide}`, '85vw'),
-          )}
+        <div aria-label={heading} className="fs-scroll-row" role="region" tabIndex={0}>
+          {value.items.map((item, index) => figure(item, index, '85vw', `shrink-0 ${slide}`))}
         </div>
       )
       break
     }
     case 'twoColumn':
       body = (
-        <div className="grid gap-5 sm:grid-cols-2">
-          {value.items.map((item, index) => figure(item, index, 'aspect-video'))}
+        <div className="grid gap-x-5 gap-y-8 sm:grid-cols-2">
+          {value.items.map((item, index) => figure(item, index, '(min-width: 640px) 50vw, 100vw'))}
         </div>
       )
       break
     case 'editorialMosaic':
     default:
+      // Every fifth image leads at two columns wide; the rest fill in beside it.
       body = (
-        <div className="grid auto-rows-[10rem] gap-4 sm:auto-rows-[12rem] sm:grid-cols-4">
+        <div className="fs-mosaic">
           {value.items.map((item, index) =>
-            figure(
-              item,
-              index,
-              index % 5 === 0 ? 'sm:col-span-2 sm:row-span-2' : 'sm:col-span-2 lg:col-span-1',
-              '(min-width: 1024px) 25vw, 50vw',
-            ),
+            index % 5 === 0
+              ? figure(item, index, '(min-width: 1024px) 66vw, 100vw', 'fs-mosaic-lead')
+              : figure(item, index, '(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw'),
           )}
         </div>
       )

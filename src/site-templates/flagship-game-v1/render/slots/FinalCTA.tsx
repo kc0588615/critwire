@@ -3,8 +3,9 @@ import React from 'react'
 import { resolveSiteAction } from '../../actions'
 import type { FinalCTASlot } from '../../schema/slots'
 import type { SiteRenderContext } from '../context'
-import { SiteActionLink, SiteMedia } from '../ui'
+import { SiteActionLink, SiteArtBand } from '../ui'
 
+/** The closing call: the art as a band, the text below it on the page. */
 export const FinalCTASection: React.FC<{ ctx: SiteRenderContext; value: FinalCTASlot }> = ({
   ctx,
   value,
@@ -17,24 +18,15 @@ export const FinalCTASection: React.FC<{ ctx: SiteRenderContext; value: FinalCTA
   return (
     <section aria-labelledby="fs-final-cta-heading" className="fs-section">
       <div className="fs-shell">
-        <div className="fs-panel relative isolate overflow-hidden px-6 py-16 text-center sm:px-12 sm:py-24">
-          {typeof value.background === 'number' ? (
-            <>
-              <div className="absolute inset-0 -z-10">
-                <SiteMedia ctx={ctx} fill id={value.background} imgClassName="object-cover" size="100vw" />
-              </div>
-              <div aria-hidden="true" className="fs-hero-scrim absolute inset-0 -z-10" />
-            </>
-          ) : null}
-          <h2 className="fs-h2 text-4xl sm:text-5xl" id="fs-final-cta-heading">
+        <SiteArtBand ctx={ctx} id={value.background} />
+        <div className="fs-band-text">
+          <h2 className="fs-h2" id="fs-final-cta-heading">
             {value.heading ?? `Play ${ctx.project.name}`}
           </h2>
           {value.subheading ? (
-            <p className="mx-auto mt-4 max-w-xl text-lg leading-8 text-[var(--fs-muted-fg)]">
-              {value.subheading}
-            </p>
+            <p className="fs-lead mt-4 text-[var(--fs-muted-fg)]">{value.subheading}</p>
           ) : null}
-          <div className="mt-9 flex flex-wrap justify-center gap-3">
+          <div className="mt-8 flex flex-wrap gap-3">
             <SiteActionLink action={primary} variant="primary" />
             <SiteActionLink action={secondary} variant="secondary" />
           </div>

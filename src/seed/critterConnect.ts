@@ -304,7 +304,8 @@ export async function seedCritterConnect() {
       enabled: true,
       heading: 'Your field binder is waiting.',
       subheading: 'Begin the expedition, then help shape every trail that follows.',
-      background: banner.id,
+      // No art: Community already shows the banner as a band just above.
+      background: null,
       primaryAction: { label: 'Begin expedition', ref: 'primary-store' },
       secondaryAction: { label: 'Read the field notes', ref: 'updates' },
     },

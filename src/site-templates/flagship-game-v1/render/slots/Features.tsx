@@ -4,78 +4,82 @@ import type { FeaturesSlot } from '../../schema/slots'
 import type { SiteRenderContext } from '../context'
 import { SectionHeader, SiteMedia } from '../ui'
 
+type FeatureItem = FeaturesSlot['items'][number]
+
+/**
+ * Flat features: no panels or shadows. An item becomes a card (framed
+ * media above its text) only when it carries media.
+ */
 export const FeaturesSection: React.FC<{ ctx: SiteRenderContext; value: FeaturesSlot }> = ({
   ctx,
   value,
 }) => {
   if (value.items.length === 0) return null
-  const heading = value.heading ?? 'Core Features'
 
-  const media = (id: null | number, alt: string): React.ReactNode =>
-    typeof id === 'number' ? (
-      <div className="fs-media-frame">
+  const media = (item: FeatureItem, size: string): React.ReactNode =>
+    typeof item.media === 'number' && ctx.media.has(item.media) ? (
+      <div className="fs-media-frame fs-feature-media">
         <SiteMedia
-          alt={alt}
+          alt={item.title}
           ctx={ctx}
-          id={id}
-          imgClassName="w-full object-cover"
-          size="(min-width: 1024px) 33vw, 100vw"
+          fill
+          id={item.media}
+          imgClassName="object-cover"
+          size={size}
         />
       </div>
     ) : null
+
+  const text = (item: FeatureItem, lead = false): React.ReactNode => (
+    <>
+      <h3 className="fs-h3">{item.title}</h3>
+      <p className={`${lead ? 'fs-lead' : 'fs-body'} mt-2 text-[var(--fs-muted-fg)]`}>
+        {item.body}
+      </p>
+    </>
+  )
 
   let body: React.ReactNode
 
   switch (value.variant) {
     case 'editorialThree':
       body = (
-        <div className="grid gap-10 md:grid-cols-3">
+        <ul className="fs-feature-columns">
           {value.items.map((item, index) => (
-            <div className="border-t border-[var(--fs-border)] pt-6" key={index}>
-              <h3 className="fs-h3">{item.title}</h3>
-              <p className="mt-3 leading-7 text-[var(--fs-muted-fg)]">{item.body}</p>
-            </div>
+            <li key={index}>{text(item)}</li>
           ))}
-        </div>
+        </ul>
       )
       break
     case 'alternating':
       body = (
-        <div className="space-y-14">
+        <ul className="fs-feature-alternating">
           {value.items.map((item, index) => (
-            <div
-              className={`grid items-center gap-8 lg:grid-cols-2 ${
-                index % 2 === 1 ? 'lg:[&>*:first-child]:order-2' : ''
-              }`}
-              key={index}
-            >
-              <div>
-                <h3 className="fs-h3">{item.title}</h3>
-                <p className="mt-4 text-lg leading-8 text-[var(--fs-muted-fg)]">{item.body}</p>
-              </div>
-              {media(item.media, item.title)}
-            </div>
+            <li className="fs-feature-row" key={index}>
+              <div>{text(item, true)}</div>
+              {media(item, '(min-width: 1024px) 50vw, 100vw')}
+            </li>
           ))}
-        </div>
+        </ul>
       )
       break
     case 'featurePlusTwo': {
       const [first, ...rest] = value.items
       body = (
-        <div className="grid gap-5 lg:grid-cols-[1.2fr_0.8fr]">
-          <div className="fs-panel p-7 sm:p-9">
-            <h3 className="fs-h3">{first.title}</h3>
-            <p className="mt-4 text-lg leading-8 text-[var(--fs-muted-fg)]">{first.body}</p>
-            {media(first.media, first.title)}
+        <div className="fs-feature-lead-grid">
+          <div className="fs-feature-card">
+            {media(first, '(min-width: 1024px) 60vw, 100vw')}
+            {text(first, true)}
           </div>
-          <div className="grid gap-5">
-            {rest.slice(0, 2).map((item, index) => (
-              <div className="fs-panel p-6" key={index}>
-                <h3 className="fs-h3">{item.title}</h3>
-                <p className="mt-3 leading-7 text-[var(--fs-muted-fg)]">{item.body}</p>
-              </div>
-            ))}
-          </div>
+          {rest.length > 0 ? (
+            <ul className="fs-rows">
+              {rest.slice(0, 2).map((item, index) => (
+                <li className="py-5 first:pt-0" key={index}>
+                  {text(item)}
+                </li>
+              ))}
+            </ul>
+          ) : null}
         </div>
       )
       break
@@ -83,29 +87,25 @@ export const FeaturesSection: React.FC<{ ctx: SiteRenderContext; value: Features
     case 'cardGrid':
     default:
       body = (
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <ul className="fs-feature-grid">
           {value.items.map((item, index) => (
-            <div className="fs-panel overflow-hidden" key={index}>
-              {media(item.media, item.title)}
-              <div className="p-6">
-                <h3 className="fs-h3">{item.title}</h3>
-                <p className="mt-3 leading-7 text-[var(--fs-muted-fg)]">{item.body}</p>
-              </div>
-            </div>
+            <li className="fs-feature-card" key={index}>
+              {media(item, '(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw')}
+              {text(item)}
+            </li>
           ))}
-        </div>
+        </ul>
       )
   }
 
   return (
     <section aria-labelledby="fs-features-heading" className="fs-section">
       <div className="fs-shell">
-        <SectionHeader heading={heading} id="fs-features-heading" />
-        {value.intro ? (
-          <p className="-mt-6 mb-10 max-w-2xl text-lg leading-8 text-[var(--fs-muted-fg)]">
-            {value.intro}
-          </p>
-        ) : null}
+        <SectionHeader
+          heading={value.heading ?? 'Features'}
+          id="fs-features-heading"
+          intro={value.intro}
+        />
         {body}
       </div>
     </section>

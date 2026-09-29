@@ -132,42 +132,15 @@
   font-size: 1rem;
 }
 
-.fs-eyebrow {
-  margin-bottom: 0.9rem;
-  color: var(--fs-muted-fg);
-  font-size: 0.9375rem;
-  font-weight: 600;
-}
-
-.fs-panel {
-  border: 1px solid var(--fs-border);
-  border-radius: var(--fs-radius);
-  background: var(--fs-surface);
-}
-
-.fs-panel-link {
-  transition: border-color 150ms ease;
-}
-
-.fs-panel-link:hover {
-  border-color: var(--fs-muted-fg);
-}
-
 .fs-media-frame {
   overflow: hidden;
   border-radius: var(--fs-radius);
   background: var(--fs-surface);
 }
 
-.fs-caption {
-  position: absolute;
-  inset-inline: 0;
-  bottom: 0;
-  padding: 0.5rem 0.75rem;
-  background: color-mix(in srgb, var(--fs-bg) 78%, transparent);
-  color: var(--fs-fg);
-  font-size: 0.75rem;
-  line-height: 1.4;
+/* A landing section's title, with its optional intro line. */
+.fs-section-head {
+  margin-bottom: 2.5rem;
 }
 
 /* ── Controls ───────────────────────────────────────────── */
@@ -574,15 +547,6 @@
   font-weight: 700;
 }
 
-.fs-hero-scrim {
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--fs-bg) 55%, transparent) 0%,
-    color-mix(in srgb, var(--fs-bg) 35%, transparent) 45%,
-    var(--fs-bg) 100%
-  );
-}
-
 /* ── Status, counts and entries (shared by the landing and ops pages) ── */
 
 /* Status marker tones (plan §5). The shapes live in globals.css; each is
@@ -724,13 +688,225 @@
   }
 }
 
+/* ── Landing sections below the hero (plan §5) ─────────── */
+
+.fs-action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+/* Features. editorialThree: columns split by dividers between items only. */
+.fs-feature-columns {
+  display: grid;
+}
+
+.fs-feature-columns > li {
+  padding-block: 1.25rem;
+}
+
+.fs-feature-columns > li:first-child {
+  padding-top: 0;
+}
+
+.fs-feature-columns > li + li {
+  border-top: 1px solid var(--fs-border);
+}
+
+@media (min-width: 48rem) {
+  .fs-feature-columns {
+    grid-auto-columns: minmax(0, 1fr);
+    grid-auto-flow: column;
+  }
+
+  .fs-feature-columns > li {
+    padding: 0 2rem;
+  }
+
+  .fs-feature-columns > li:first-child {
+    padding-left: 0;
+  }
+
+  .fs-feature-columns > li:last-child {
+    padding-right: 0;
+  }
+
+  .fs-feature-columns > li + li {
+    border-top: 0;
+    border-left: 1px solid var(--fs-border);
+  }
+}
+
+.fs-feature-grid {
+  display: grid;
+  gap: 2.5rem 2rem;
+}
+
+@media (min-width: 40rem) {
+  .fs-feature-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 64rem) {
+  .fs-feature-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.fs-feature-media {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  margin-bottom: 1.25rem;
+}
+
+.fs-feature-alternating {
+  display: grid;
+  gap: 3.5rem;
+}
+
+.fs-feature-row {
+  display: grid;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+@media (min-width: 64rem) {
+  .fs-feature-row {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 4rem;
+  }
+
+  /* Every second row puts its media first. */
+  .fs-feature-row:nth-child(even) > :first-child {
+    order: 2;
+  }
+
+  .fs-feature-row > .fs-feature-media {
+    margin-bottom: 0;
+  }
+}
+
+.fs-feature-lead-grid {
+  display: grid;
+  gap: 2.5rem;
+}
+
+@media (min-width: 64rem) {
+  .fs-feature-lead-grid {
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+    gap: 4rem;
+  }
+}
+
+/* Gallery: the image, then its caption below. */
+.fs-figure {
+  margin: 0;
+}
+
+.fs-figure-frame {
+  position: relative;
+  aspect-ratio: 16 / 10;
+}
+
+.fs-mosaic {
+  display: grid;
+  align-items: start;
+  gap: 2rem 1.25rem;
+}
+
+@media (min-width: 40rem) {
+  .fs-mosaic {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .fs-mosaic-lead {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (min-width: 64rem) {
+  .fs-mosaic {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .fs-mosaic-lead {
+    grid-column: span 2;
+  }
+}
+
+.fs-scroll-row {
+  display: flex;
+  gap: 1.25rem;
+  margin-inline: calc(-1 * var(--fs-gutter));
+  overflow-x: auto;
+  padding: 0 var(--fs-gutter) 1rem;
+  scroll-padding-inline: var(--fs-gutter);
+  scroll-snap-type: x mandatory;
+  scrollbar-width: thin;
+}
+
+/* Adaptive: text column, then the media beside it on wide screens. */
+.fs-adaptive-grid {
+  display: grid;
+  align-items: start;
+  gap: 2.5rem;
+}
+
+@media (min-width: 64rem) {
+  .fs-adaptive-grid {
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+    gap: 4rem;
+  }
+}
+
+/* Community and final CTA: the art as an untouched band, the text below it. */
+.fs-art-band {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  margin-bottom: 2.5rem;
+}
+
+@media (min-width: 48rem) {
+  .fs-art-band {
+    aspect-ratio: 21 / 9;
+  }
+}
+
+.fs-band-text-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.fs-band-text-center .fs-action-row {
+  justify-content: center;
+}
+
+.fs-community-split {
+  display: grid;
+  align-items: end;
+  gap: 0 4rem;
+}
+
+@media (min-width: 64rem) {
+  .fs-community-split {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .fs-community-split > .fs-section-head {
+    margin-bottom: 0;
+  }
+}
+
+/* Trailer: a click-to-load facade; the play control is an accent fill. */
 .fs-trailer-frame {
   position: relative;
   display: block;
   width: 100%;
   aspect-ratio: 16 / 9;
   overflow: hidden;
-  border: 1px solid var(--fs-border);
   border-radius: var(--fs-radius);
   background: var(--fs-surface);
 }
@@ -742,37 +918,25 @@
 
 .fs-trailer-play {
   position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  color: var(--fs-accent-fg);
-}
-
-.fs-trailer-play svg {
-  box-sizing: content-box;
-  padding: 1.1rem;
-  border-radius: 999px;
+  bottom: 1.25rem;
+  left: 1.25rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  border-radius: var(--fs-radius-control);
+  padding: 0.625rem 1.25rem 0.625rem 1rem;
   background: var(--fs-accent);
-  transition: transform 160ms ease;
+  color: var(--fs-accent-fg);
+  font-size: 0.9375rem;
+  font-weight: 700;
+  line-height: 1.2;
 }
 
-.fs-trailer-poster:hover .fs-trailer-play svg {
-  transform: scale(1.08);
-}
-
-.fs-trailer-fallback {
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(
-    circle at 50% 30%,
-    color-mix(in srgb, var(--fs-accent) 22%, transparent),
-    var(--fs-surface) 70%
-  );
-}
-
-.fs-scroll-row {
-  scroll-snap-type: x mandatory;
-  scrollbar-width: thin;
+.fs-trailer-poster:hover .fs-trailer-play {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
 }
 
 /* ── Focus, skip link and motion ────────────────────────── */

@@ -39,7 +39,7 @@ const DISPLAY: Record<SiteThemeV1['typography'], DisplayVoice> = {
   },
 }
 
-/** `shape` → [surface radius, control radius]. */
+/** `shape` maps to [surface radius, control radius]. */
 const RADIUS: Record<SiteThemeV1['shape'], [surface: string, control: string]> = {
   balanced: ['0.5rem', '0.375rem'],
   sharp: ['0px', '0px'],

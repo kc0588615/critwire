@@ -33,15 +33,16 @@ export const TrailerLite: React.FC<{
   return (
     <button
       aria-label={`Play video: ${title}`}
-      className="fs-trailer-frame fs-trailer-poster group"
+      className="fs-trailer-frame fs-trailer-poster"
       onClick={() => setActive(true)}
       type="button"
     >
       {children}
       <span aria-hidden="true" className="fs-trailer-play">
-        <svg fill="currentColor" height="28" viewBox="0 0 24 24" width="28">
+        <svg fill="currentColor" height="20" viewBox="0 0 24 24" width="20">
           <path d="M8 5.14v13.72L19 12 8 5.14Z" />
         </svg>
+        Play
       </span>
     </button>
   )

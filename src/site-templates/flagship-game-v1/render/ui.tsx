@@ -57,7 +57,7 @@ export const SiteActionRow: React.FC<{
 }> = ({ actions, primaryIndex = 0 }) => {
   if (actions.length === 0) return null
   return (
-    <div className="flex flex-wrap gap-3">
+    <div className="fs-action-row">
       {actions.map((action, index) => (
         <SiteActionLink
           action={action}
@@ -72,21 +72,42 @@ export const SiteActionRow: React.FC<{
 /**
  * Standard section header. Every slot section is an h2 — the hero owns
  * the page's single h1 and item titles are h3s, keeping the heading
- * hierarchy renderer-controlled.
+ * hierarchy renderer-controlled. An optional intro line sits under it.
  */
 export const SectionHeader: React.FC<{
-  align?: 'center' | 'left'
-  eyebrow?: null | string
   heading: string
   id: string
-}> = ({ align = 'left', eyebrow, heading, id }) => (
-  <div className={align === 'center' ? 'mb-10 text-center' : 'mb-10'}>
-    {eyebrow ? <p className="fs-eyebrow">{eyebrow}</p> : null}
+  intro?: null | string
+}> = ({ heading, id, intro }) => (
+  <div className="fs-section-head">
     <h2 className="fs-h2" id={id}>
       {heading}
     </h2>
+    {intro ? <p className="fs-lead mt-4 text-[var(--fs-muted-fg)]">{intro}</p> : null}
   </div>
 )
+
+/**
+ * Art band for sections that carry a background image: the art at a
+ * wide ratio, untouched, with the section's text below it on the page.
+ */
+export const SiteArtBand: React.FC<{ ctx: SiteRenderContext; id: null | number | undefined }> = ({
+  ctx,
+  id,
+}) => {
+  if (typeof id !== 'number' || !ctx.media.has(id)) return null
+  return (
+    <div className="fs-media-frame fs-art-band">
+      <SiteMedia
+        ctx={ctx}
+        fill
+        id={id}
+        imgClassName="object-cover"
+        size="(min-width: 1180px) 1180px, 100vw"
+      />
+    </div>
+  )
+}
 
 /** Splits plain-text bodies into paragraphs on blank lines. */
 export const Paragraphs: React.FC<{ className?: string; text: null | string }> = ({
