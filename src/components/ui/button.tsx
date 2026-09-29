@@ -3,25 +3,22 @@ import { Slot } from '@radix-ui/react-slot'
 import { type VariantProps, cva } from 'class-variance-authority'
 import * as React from 'react'
 
+// Styled only through the shadcn variables marketing.css re-points
+// (primary, foreground), so CMS links follow Critwire's palette. Focus
+// is the root's 2px ring; nothing here overrides the outline.
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-[color,box-shadow] disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 [&_svg]:shrink-0 ring-ring/10 dark:ring-ring/20 dark:outline-ring/40 outline-ring/50 focus-visible:ring-4 focus-visible:outline-1 aria-invalid:focus-visible:ring-0",
+  "inline-flex items-center justify-center gap-2 rounded-sm text-center text-base leading-tight font-bold decoration-2 underline-offset-[0.2em] transition-transform motion-safe:active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 [&_svg]:shrink-0",
   {
     variants: {
       variant: {
-        default: 'bg-primary text-primary-foreground shadow-sm hover:bg-primary/90',
-        destructive: 'bg-destructive text-destructive-foreground shadow-xs hover:bg-destructive/90',
-        outline:
-          'border border-input bg-background shadow-xs hover:bg-accent hover:text-accent-foreground',
-        secondary: 'bg-secondary text-secondary-foreground shadow-xs hover:bg-secondary/80',
-        ghost: 'hover:bg-accent hover:text-accent-foreground',
-        link: 'text-primary underline-offset-4 hover:underline',
+        default: 'bg-primary text-primary-foreground hover:underline',
+        outline: 'border-2 border-foreground text-foreground hover:underline',
+        link: 'text-foreground underline decoration-1 underline-offset-4 hover:decoration-2',
       },
       size: {
         clear: '',
-        default: 'h-10 px-4 py-2 has-[>svg]:px-3',
-        sm: 'h-9 rounded-md px-3 has-[>svg]:px-2.5',
-        lg: 'h-11 rounded-md px-8 has-[>svg]:px-4',
-        icon: 'size-10',
+        default: 'min-h-11 px-5 py-2.5',
+        lg: 'min-h-12 px-6 py-3',
       },
     },
     defaultVariants: {

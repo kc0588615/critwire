@@ -164,16 +164,25 @@ export async function uploadImage(client: RestClient, tenant: number, name: stri
 }
 
 /** Minimal Lexical rich-text value holding one paragraph. */
-export const lexical = (text: string): PatchNote['content'] => ({
+const lexicalRoot = (block: { type: string; [k: string]: unknown }): PatchNote['content'] => ({
   root: {
     type: 'root',
-    children: [{ type: 'paragraph', version: 1, children: [{ type: 'text', text, version: 1 }] }],
+    children: [{ ...block, version: 1 }],
     direction: null,
     format: '',
     indent: 0,
     version: 1,
   },
 })
+
+const textNode = (text: string) => ({ type: 'text', text, version: 1 })
+
+export const lexical = (text: string): PatchNote['content'] =>
+  lexicalRoot({ type: 'paragraph', children: [textNode(text)] })
+
+/** One h1, as an editor writes a marketing page's hero. */
+export const lexicalHeading = (text: string): PatchNote['content'] =>
+  lexicalRoot({ type: 'heading', tag: 'h1', children: [textNode(text)] })
 
 /** A marketing page layout of one full-width Content block. */
 export const contentLayout = (text: string): Page['layout'] => [

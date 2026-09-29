@@ -426,6 +426,49 @@
   }
 }
 
+/* ── CMS pages: one 62ch column on paper ────────────────── */
+
+/* Heroes and blocks stack with one rhythm; a high-impact hero's slip
+   is pulled up under the header like the home page's. */
+.cw-page {
+  --cw-page-top: clamp(2.5rem, 6vw, 4.5rem);
+  padding-block: var(--cw-page-top) clamp(4rem, 9vw, 7.5rem);
+}
+
+.cw-page > * + * {
+  margin-top: clamp(2rem, 4vw, 3rem);
+}
+
+.cw-page > .cw-slip:first-child {
+  margin-top: calc(-1 * (var(--cw-header-h) + var(--cw-page-top)));
+}
+
+.cw-page-column {
+  width: min(var(--prose-measure), 100%);
+  margin-inline: auto;
+}
+
+/* A call to action closes a section with an ink rule, not a card. */
+.cw-cta {
+  padding-top: 1.5rem;
+  border-top: 2px solid var(--cw-ink);
+}
+
+.cw-cta .cw-actions {
+  margin-top: 1.5rem;
+}
+
+.cw-media-img {
+  border: 1px solid var(--cw-rule);
+  border-radius: 0.25rem;
+}
+
+.cw-caption {
+  margin-top: 0.75rem;
+  color: var(--cw-graphite);
+  font-size: 0.9375rem;
+}
+
 /* ── 404 ────────────────────────────────────────────────── */
 
 .cw-not-found {

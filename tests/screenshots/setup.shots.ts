@@ -13,6 +13,7 @@ import {
   createPatchNote,
   createProject,
   lexical,
+  lexicalHeading,
   newRequestContext,
   seed,
 } from '../e2e/support/fixtures'
@@ -177,10 +178,22 @@ setup('seed the Critter Connect demo and the screenshot fixtures', async ({ page
     await seed(admin, 'pages', {
       title: 'About Critwire',
       slug,
-      hero: { type: 'lowImpact', richText: lexical('About Critwire') },
-      layout: contentLayout(
-        'Critwire gives an indie studio one hosted site for its game: patch notes, a public list of known issues players can vote on, a bug report form and a contact form.',
-      ),
+      // Authored the way an editor would: the hero carries the page's h1,
+      // and a call to action exercises the CMS link buttons.
+      hero: { type: 'lowImpact', richText: lexicalHeading('About Critwire') },
+      layout: [
+        ...contentLayout(
+          'Critwire gives an indie studio one hosted site for its game: patch notes, a public list of known issues players can vote on, a bug report form and a contact form.',
+        ),
+        {
+          blockType: 'cta',
+          richText: lexical('See it working on a real game before you set up your own.'),
+          links: [
+            { link: { type: 'custom', url: '/g/critter-connect', label: 'See a live portal', appearance: 'default' } },
+            { link: { type: 'custom', url: '/admin', label: 'Sign in', appearance: 'outline' } },
+          ],
+        },
+      ],
       _status: 'published',
     })
     return slug
