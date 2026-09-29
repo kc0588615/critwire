@@ -1,11 +1,10 @@
 import type { Metadata } from 'next'
 
 import configPromise from '@payload-config'
-import { getPayload, type RequiredDataFromCollectionSlug } from 'payload'
+import { getPayload } from 'payload'
 import { draftMode } from 'next/headers'
 import { notFound } from 'next/navigation'
 import React, { cache } from 'react'
-import { homeStatic } from '@/endpoints/home-static'
 
 import { RenderBlocks } from '@/blocks/RenderBlocks'
 import { RenderHero } from '@/heros/RenderHero'
@@ -32,20 +31,12 @@ export async function generateStaticParams() {
     },
   })
 
-  const params = pages.docs
-    ?.filter((doc) => {
-      return doc.slug !== 'home'
-    })
-    .map(({ slug }) => {
-      return { slug }
-    })
-
-  return params
+  return pages.docs.map(({ slug }) => ({ slug }))
 }
 
 type Args = {
   params: Promise<{
-    slug?: string
+    slug: string
   }>
 }
 
@@ -53,19 +44,11 @@ export default async function Page({ params: paramsPromise }: Args) {
   await deferStaticGenerationIfRequested()
 
   const { isEnabled: draft } = await draftMode()
-  const { slug = 'home' } = await paramsPromise
+  const { slug } = await paramsPromise
   // Decode to support slugs with special characters
-  const decodedSlug = decodeURIComponent(slug)
-  let page: RequiredDataFromCollectionSlug<'pages'> | null
-
-  page = await queryPageBySlug({
-    slug: decodedSlug,
+  const page = await queryPageBySlug({
+    slug: decodeURIComponent(slug),
   })
-
-  // Remove this code once your website is seeded
-  if (!page && slug === 'home') {
-    page = homeStatic
-  }
 
   if (!page) {
     notFound()
@@ -88,7 +71,7 @@ export async function generateMetadata({ params: paramsPromise }: Args): Promise
 
   await deferStaticGenerationIfRequested()
 
-  const { slug = 'home' } = await paramsPromise
+  const { slug } = await paramsPromise
   // Decode to support slugs with special characters
   const decodedSlug = decodeURIComponent(slug)
   const page = await queryPageBySlug({

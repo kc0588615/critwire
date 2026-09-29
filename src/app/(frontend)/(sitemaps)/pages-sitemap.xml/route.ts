@@ -34,18 +34,15 @@ const getPagesSitemap = unstable_cache(
       },
     })
 
-    const sitemap = results.docs
-      ? results.docs
-          .filter((page) => Boolean(page?.slug))
-          .map((page) => {
-            return {
-              loc: page?.slug === 'home' ? `${SITE_URL}/` : `${SITE_URL}/${page?.slug}`,
-              lastmod: page.updatedAt || dateFallback,
-            }
-          })
-      : []
+    // `/` is the fixed marketing home; CMS pages all live at `/<slug>`.
+    const pages = (results.docs ?? [])
+      .filter((page) => Boolean(page?.slug))
+      .map((page) => ({
+        loc: `${SITE_URL}/${page.slug}`,
+        lastmod: page.updatedAt || dateFallback,
+      }))
 
-    return sitemap
+    return [{ loc: `${SITE_URL}/`, lastmod: dateFallback }, ...pages]
   },
   ['pages-sitemap'],
   {
