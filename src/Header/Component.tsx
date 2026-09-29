@@ -1,33 +1,25 @@
-'use client'
-import { useHeaderTheme } from '@/providers/HeaderTheme'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-import React, { useEffect, useState } from 'react'
+import React from 'react'
 
-import { Logo } from '@/components/Logo/Logo'
+import { MARKETING_NAV } from '@/components/marketing/links'
+import { Wordmark } from '@/components/marketing/Wordmark'
 
-export const Header: React.FC = () => {
-  /* Storing the value in a useState to avoid hydration errors */
-  const [theme, setTheme] = useState<string | null>(null)
-  const { headerTheme, setHeaderTheme } = useHeaderTheme()
-  const pathname = usePathname()
-
-  useEffect(() => {
-    setHeaderTheme(null)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pathname])
-
-  useEffect(() => {
-    if (headerTheme && headerTheme !== theme) setTheme(headerTheme)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [headerTheme])
-
+export function Header() {
   return (
-    <header className="container relative z-20   " {...(theme ? { 'data-theme': theme } : {})}>
-      <div className="py-8 flex justify-between">
-        <Link href="/">
-          <Logo loading="eager" priority="high" className="invert dark:invert-0" />
-        </Link>
+    <header className="cw-header">
+      <div className="cw-shell cw-header-bar">
+        <Wordmark />
+        <nav aria-label="Main">
+          <ul className="cw-header-links">
+            {MARKETING_NAV.map(({ href, label, wideOnly }) => (
+              <li className={wideOnly ? 'cw-header-wide' : undefined} key={href}>
+                <Link className="cw-tap" href={href}>
+                  {label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
       </div>
     </header>
   )

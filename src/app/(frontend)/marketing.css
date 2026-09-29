@@ -1,0 +1,246 @@
+/*
+ * Critwire's own site (plan §3–§7): the "Addendum" slip. One loud
+ * yellow field, everything else ink on paper; no second accent, no
+ * gradients or shadows. Imported into `@layer components`, so Tailwind
+ * utilities on the same element win. The shadcn variables are
+ * re-pointed here, so `Button` and `CMSLink` follow the same palette.
+ */
+
+.cw-root {
+  --cw-yellow: #f6d33c;
+  --cw-ink: #1d1f55;
+  --cw-paper: #f2f3f8;
+  --cw-graphite: #4a4d6e;
+  --cw-rule: color-mix(in srgb, var(--cw-ink) 12%, transparent);
+  --cw-header-h: 4.5rem;
+  --cw-gutter: clamp(1rem, 4vw, 2.5rem);
+
+  --background: var(--cw-paper);
+  --foreground: var(--cw-ink);
+  --primary: var(--cw-ink);
+  --primary-foreground: var(--cw-yellow);
+  --muted-foreground: var(--cw-graphite);
+  --border: var(--cw-rule);
+  --ring: var(--cw-ink);
+
+  /* Rich text: tailwind.config.mjs maps every prose colour to these. */
+  --prose-fg: var(--cw-ink);
+  --prose-muted: var(--cw-graphite);
+  --prose-border: var(--cw-rule);
+  --prose-code-bg: #ffffff;
+  --prose-link-line: var(--cw-ink);
+  --prose-size: 1.125rem;
+  --prose-measure: 62ch;
+
+  background: var(--cw-paper);
+  color: var(--cw-ink);
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-size: 1.125rem;
+  line-height: 1.6;
+}
+
+/* Headings speak in Anybody, wide; body and numerals stay Atkinson. */
+.cw-root :where(h1, h2, h3, h4) {
+  font-family: var(--font-critwire), system-ui, sans-serif;
+  font-stretch: 108%;
+  font-weight: 750;
+  line-height: 1.05;
+}
+
+/* ── Layout ─────────────────────────────────────────────── */
+
+.cw-shell {
+  width: min(1180px, 100% - 2 * var(--cw-gutter));
+  margin-inline: auto;
+}
+
+.cw-main {
+  flex: 1 0 auto;
+}
+
+/* ── Wordmark and buttons ───────────────────────────────── */
+
+.cw-wordmark {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  font-family: var(--font-critwire), system-ui, sans-serif;
+  font-size: 1.5rem;
+  font-stretch: 130%;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1;
+  text-decoration: none;
+}
+
+.cw-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.75rem;
+  border-radius: 0.25rem;
+  padding: 0.625rem 1.25rem;
+  background: var(--cw-ink);
+  color: var(--cw-yellow);
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.2;
+  text-decoration: none;
+  transition: transform 120ms ease;
+}
+
+.cw-btn:hover {
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.2em;
+}
+
+.cw-btn:active {
+  transform: scale(0.98);
+}
+
+/* A plain text link sized as a tap target (header, footer, secondary actions). */
+.cw-tap {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.cw-tap:hover {
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.25em;
+}
+
+/* ── Header: transparent, in flow, over whatever field starts the page ── */
+
+.cw-header {
+  position: relative;
+  z-index: 1;
+}
+
+.cw-header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  height: var(--cw-header-h);
+}
+
+.cw-header-links {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  font-size: 0.9375rem;
+}
+
+/* At 390 px the header keeps the wordmark and "Sign in". */
+.cw-header-wide {
+  display: none;
+}
+
+@media (width >= 40rem) {
+  .cw-header-wide {
+    display: list-item;
+  }
+}
+
+/* ── Footer: the ink band ───────────────────────────────── */
+
+.cw-footer {
+  padding-block: 2.5rem;
+  background: var(--cw-ink);
+  color: var(--cw-paper);
+}
+
+.cw-footer-bar {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.cw-footer .cw-wordmark {
+  color: var(--cw-yellow);
+}
+
+.cw-footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 1.5rem;
+  font-size: 0.9375rem;
+}
+
+.cw-footer-copy {
+  font-size: 0.875rem;
+}
+
+@media (width >= 48rem) {
+  .cw-footer-bar {
+    flex-direction: row;
+    align-items: center;
+    gap: 2.5rem;
+  }
+
+  .cw-footer-copy {
+    margin-inline-start: auto;
+  }
+}
+
+/* ── 404 ────────────────────────────────────────────────── */
+
+.cw-not-found {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  padding-block: clamp(4rem, 14vh, 9rem);
+  text-align: center;
+}
+
+.cw-root .cw-not-found-code {
+  font-size: clamp(6rem, 3rem + 12vw, 12rem);
+  font-stretch: 130%;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 0.85;
+}
+
+.cw-not-found-text {
+  max-width: 34em;
+  color: var(--cw-graphite);
+  font-size: 1.3125rem;
+  line-height: 1.5;
+}
+
+/* ── Focus and motion ───────────────────────────────────── */
+
+.cw-root :focus-visible {
+  outline: 2px solid var(--cw-ink);
+  outline-offset: 2px;
+}
+
+.cw-footer :focus-visible {
+  outline-color: var(--cw-yellow);
+}
+
+/* Mirrors the portal's rule: durations drop to zero rather than
+   `animation: none`, so animated elements land on their end state. */
+@media (prefers-reduced-motion: reduce) {
+  .cw-root *,
+  .cw-root *::before,
+  .cw-root *::after {
+    animation-delay: 0s !important;
+    animation-duration: 0s !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-delay: 0s !important;
+    transition-duration: 0s !important;
+  }
+
+  .cw-root .cw-btn:active {
+    transform: none;
+  }
+}

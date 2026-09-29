@@ -11,7 +11,6 @@ import { RenderBlocks } from '@/blocks/RenderBlocks'
 import { RenderHero } from '@/heros/RenderHero'
 import { generateMeta } from '@/utilities/generateMeta'
 import { getMarketingReadOptions } from '@/utilities/getPreviewUser'
-import PageClient from './page.client'
 import { LivePreviewListener } from '@/components/LivePreviewListener'
 import {
   deferStaticGenerationIfRequested,
@@ -76,7 +75,6 @@ export default async function Page({ params: paramsPromise }: Args) {
 
   return (
     <article className="pt-16 pb-24">
-      <PageClient />
       {draft && <LivePreviewListener />}
 
       <RenderHero {...hero} />
