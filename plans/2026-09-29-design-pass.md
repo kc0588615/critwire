@@ -1433,6 +1433,6 @@ grep -rnE "Field (Notes|Board|report)|Track type|Studio Route|the signal|Payload
 - 2026-09-29 05:50 UTC · Fable review: `architecture-reviewer` verdict APPROVE_WITH_CHANGES, 4 MUST-FIX (prose colour mapping, vote button name, CSS-only status marker, board region name) for the Revision stage. Plan-only change, no checks needed.
 - 2026-09-29 05:51 UTC · Astra review: skipped, astra-review exit 3 (usage limit). Plan-only change, no checks needed.
 - 2026-09-29 06:00 UTC · Revision: `architect` resolved all 4 Fable MUST-FIX items (prose vars via tailwind.config, VoteButton name, CSS-only StatusMark, label-only board region name), the 3 MISSED items (SiteRoot carries font classes; revalidateGameLanding scope kept; "Powered by Critwire" kept, see Decisions) and adopted the SHOULD-CONSIDER items. Plan-only change, no checks needed.
-- 2026-09-29 06:25 UTC · Steps: `planner` wrote 24 steps (S1 harness, S2 seed + before shots, S3–S21 build, S22 after shots + index, S23 self-critique, S24 final verification) and the Verification section. Plan-only change, no checks needed.
+- 2026-09-29 06:20 UTC · Steps: `planner` wrote 24 steps (S1 harness, S2 seed + before shots, S3–S21 build, S22 after shots + index, S23 self-critique, S24 final verification) and the Verification section. Plan-only change, no checks needed.
 
 ## Summary
