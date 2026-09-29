@@ -1260,7 +1260,7 @@ Revision by the `architect`, 2026-09-29. Every claim was checked against the cod
     - delete the `dev` row, then `pnpm build`;
     - Look: all groups, desktop. Nothing has lost its styles, and the legacy landing sits in the studio's frame.
 
-- [ ] S22 · The "after" set, quality probes and the before/after index
+- [x] S22 · The "after" set, quality probes and the before/after index
   - **Add probes to the harness** in `tests/screenshots/probes.ts`. They use `expect.soft`, run only when `SHOTS_SET=after`, and also write their results to `after/checks.json`:
     1. At 390 px, no page scrolls sideways (`scrollWidth ≤ innerWidth`).
     2. At 390 px, buttons, form controls and header links are at least 44 px tall.
@@ -1375,7 +1375,7 @@ Screenshot record:
 | Set | Step | Commit | UTC | Command | PNGs | Probes |
 |---|---|---|---|---|---|---|
 | before | S2 | `f86f948` (src = `669376c`) | 2026-09-29 06:47–06:53 | full set, then `SHOTS_THEMES=critter-connect SHOTS_SKIP_BUILD=1 … --project mobile --grep "Contact, sent"` (see Log) | 102 | n/a |
-| after | S22 | | | | | |
+| after | S22 | `7a94e4c` + the S22 diff (uncommitted at capture, `meta.json` says so; committed as S22) | 2026-09-29 11:03–11:09 | full set, `SHOTS_SET=after SHOTS_DIR=$DIR pnpm screenshots` | 102 | 102 captures probed, 340 checks, 0 failures (`after/checks.json`) |
 | after, post-critique | S23 | | | | | |
 | after, final (if re-shot) | S24 | | | | | |
 
@@ -1540,6 +1540,11 @@ grep -rnE "Field (Notes|Board|report)|Track type|Studio Route|the signal|Payload
   - **Also deleted as dead:** `components/ui/card.tsx` and `select.tsx` (imported nowhere; they used the deleted palette), the `tw-animate-css` import and dependency (only `select.tsx` used its animations), `@radix-ui/react-select`, and the `@source inline` safelist for `border-border`, `bg-card` and the `error`/`success`/`warning` banner classes (the Banner block is gone). The `lg:col-span-*` safelist stays for the Content block.
   - **`@source not '../../components/admin'`:** the admin Issues views compile their own utilities (`kanban.css`); without this line, their `dark:` classes would land in the frontend CSS under Tailwind's default media-query `dark` variant once the custom one was deleted.
   - **Audit hits in comments reworded:** `portal.css` "No uppercase" and the `→` in the landing page's decision-tree comment, so every Verification audit prints nothing.
+- **S22: how the probes differ from the Steps as written (2026-09-29).**
+  - **Probe 3 on marketing:** the catalog has no marketing focus shot, and adding one would change the 102-image set. After the `/` capture the probe presses `Tab` once and checks the wordmark's ring is 2px solid Ink, so the ring never shows in a PNG.
+  - **Probe 5 reads status notes too:** the callout issue has no rich-text details, only its "Needs more info" note. The probe checks `article .payload-richtext p, li` and `article aside.fs-note p`, both studio-written text that must be `--fs-fg`.
+  - **Probe 4 found `fs-settle` left attached:** the hero plate's animation used `fill-mode: both`, so under reduced motion the finished animation stayed in `getAnimations()`. Its end state is the plate's own (`transform: none`), so it's now `backwards`: same look, nothing left attached. The marketing loop already used `backwards`.
+  - **Index:** each after image shows its probes (pass list, or each failure's detail) from `after/checks.json`, which is keyed by PNG name so a re-shot page replaces its entry.
 
 ## Log
 
@@ -1570,5 +1575,6 @@ grep -rnE "Field (Notes|Board|report)|Track type|Studio Route|the signal|Payload
 - 2026-09-29 10:26 UTC · S19: `/` renders the new Server Components `MarketingHome` (yellow slip pulled under the header: h1, lede, "See a live portal" + "Sign in"; paper `<dl>` "What players get on your portal" with a sticky one-third h2 and four entries linking into the demo) and `IssueLoop` (`<ol>` of four stages with CC content, `StatusMark` ring/ring/half/dot, CSS-only wire draw 0–1.8 s and fills to 2.2 s, `backwards` fill mode); own metadata; `homeStatic` and `endpoints/home-static.ts` gone, `home` slug no longer special in `[slug]`, `revalidatePage` and the sitemap (which now lists `/`). tsc pass; lint 0 errors/20 warnings; E2E 73/73; no `'use client'` in either component; Look `marketing` both widths 7/7: slip, loop and list read at 1440 and 390 (headline four lines at 1440, see Decisions).
 - 2026-09-29 10:39 UTC · S20: CMS pages on paper in one 62ch column (`.cw-page`, `.cw-page-column`); `LowImpact`/`MediumImpact` in the column, `HighImpact` as the yellow slip with media below, shared `HeroLinks`; CTA as an Ink-ruled close; Content/MediaBlock on `.cw-shell`, captions without prose; `Button` pruned to default/outline/link at 44/48 px with no `dark:` or focus overrides. Harness `about-critwire` gets an h1 hero and a CTA. tsc pass; lint 0 errors/20 warnings; E2E 73/73; no `dark:`/`data-theme`/`container` left in the S20 files; Look `marketing` both widths 7/7: h1, column, CTA buttons and 404 read at 1440 and 390 (block rhythm tightened to 2–3rem after the first Look).
 - 2026-09-29 10:53 UTC · S21: legacy blocks on `fs-*` (hero as plate/bare, feature grid, figures, trailer frame, CTA; `GameButtons` on `fs-btn`; wrappers gone); `globals.css` is the shared entry only (`--ds-*`, `cc-*`, `glass-*`, `glow-*`, shadcn light/dark palette, chart/sidebar/radius tokens, `dark` variant and dead safelist gone; five shadcn mappings kept for `Button`; admin excluded as a source); deleted unused `ui/card`, `ui/select`, `tw-animate-css`, `@radix-ui/react-select`. tsc pass; lint 0 errors/20 warnings; E2E 73/73; all six audits empty; `pnpm build` pass, no font-host URL in `.next/static`, built CSS has no `cc-`/`glass-`/`glow-`/`--ds-`/sidebar/chart/`data-theme`; Look all groups desktop 52/52: legacy landing in the studio frame (plate hero, flat features, CTA), marketing, CMS page and ops pages unchanged.
+- 2026-09-29 11:20 UTC · S22: `tests/screenshots/probes.ts` (7 probes, soft-asserted on after runs, merged into `after/checks.json`; marketing focus via one `Tab` after the `/` capture; prose probe covers status notes), index shows each after image's probes; first run 91/103 (probe 4: `fs-settle` fill `both` left the finished animation attached; probe 5: callout issue has no rich text), `fs-settle` → `backwards` and probe widened (see Decisions). Full after set re-shot: 103/103, 102 PNGs, 0 "not captured", 340 checks 0 failures. tsc pass; lint 0 errors/20 warnings; E2E 73/73; Looked at the CC landing focus shot: plate settled, ring visible.
 
 ## Summary

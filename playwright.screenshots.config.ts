@@ -13,7 +13,8 @@ import { SHOTS_CRON_SECRET } from './tests/screenshots/support'
  *   SHOTS_SET=before|after SHOTS_DIR=/abs/dir [SHOTS_THEMES=default,riso,…] pnpm screenshots [--project desktop|mobile]
  *
  * Writes `<SHOTS_DIR>/<set>/<group>--<page>--<width>.png` and rewrites
- * `<SHOTS_DIR>/index.html` with every before/after pair.
+ * `<SHOTS_DIR>/index.html` with every before/after pair. "after" runs also
+ * probe the quality floor into `<SHOTS_DIR>/after/checks.json`.
  */
 
 // Fail fast, before the build starts.

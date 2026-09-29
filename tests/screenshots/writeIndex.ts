@@ -3,6 +3,7 @@ import { readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 
 import { GROUP_LABELS, GROUPS, SETS, shotFile, shotsFor, shotsTarget, WIDTHS } from './catalog'
+import type { ProbeResult } from './probes'
 import type { RunMeta } from './recordRun'
 
 const escape = (text: string): string =>
@@ -13,16 +14,32 @@ const runsOf = async (dir: string, set: string): Promise<RunMeta[]> =>
     .then((text) => (JSON.parse(text) as { runs: RunMeta[] }).runs)
     .catch(() => [])
 
-const figure = (dir: string, set: string, file: string): string => {
+type Checks = Record<string, ProbeResult[]>
+
+const checksOf = async (dir: string): Promise<Checks> =>
+  readFile(path.join(dir, 'after', 'checks.json'), 'utf8')
+    .then((text) => JSON.parse(text) as Checks)
+    .catch(() => ({}))
+
+/** One line under an after image: its probes, with any failure spelled out. */
+const probeLine = (results: ProbeResult[] | undefined): string => {
+  if (!results) return ''
+  const failed = results.filter((result) => !result.pass)
+  if (!failed.length) return `<p class="probes">Probes pass: ${results.map((result) => result.probe).join(', ')}</p>`
+  return `<p class="probes failed">${failed.map((result) => `${escape(result.probe)}: ${escape(result.detail)}`).join('<br>')}</p>`
+}
+
+const figure = (dir: string, set: string, file: string, checks: Checks): string => {
   const src = `${set}/${file}`
   const body = existsSync(path.join(dir, src))
     ? `<a href="${escape(src)}"><img src="${escape(src)}" alt="${escape(`${set}: ${file}`)}" loading="lazy"></a>`
     : '<p class="missing">not captured</p>'
-  return `<figure><figcaption>${set}</figcaption>${body}</figure>`
+  return `<figure><figcaption>${set}</figcaption>${body}${set === 'after' ? probeLine(checks[file]) : ''}</figure>`
 }
 
 /** Writes `<dir>/index.html`: every catalog page, before and after side by side, at each width. */
 export async function writeIndex(dir: string): Promise<void> {
+  const checks = await checksOf(dir)
   const meta = await Promise.all(
     SETS.map(async (set) => {
       const runs = await runsOf(dir, set)
@@ -42,7 +59,7 @@ export async function writeIndex(dir: string): Promise<void> {
       .map((shot) => {
         const widths = WIDTHS.map((width) => {
           const file = shotFile(group, shot.id, width)
-          return `<div class="pair"><h4>${width} px</h4>${SETS.map((set) => figure(dir, set, file)).join('')}</div>`
+          return `<div class="pair"><h4>${width} px</h4>${SETS.map((set) => figure(dir, set, file, checks)).join('')}</div>`
         }).join('')
         return `<section><h3>${escape(shot.label)}</h3><div class="widths">${widths}</div></section>`
       })
@@ -68,11 +85,13 @@ export async function writeIndex(dir: string): Promise<void> {
   img { display: block; width: 100%; max-height: 70rem; object-fit: cover; object-position: top; border: 1px solid #c9c9d1; background: #fff; }
   .missing { padding: 2rem 1rem; border: 1px dashed #9a9aa6; color: #55556a; text-align: center; }
   code { font-size: 0.85em; }
+  .probes { margin: 0.25rem 0 0; font-size: 0.8rem; color: #2d6a3e; }
+  .probes.failed { color: #a1261f; font-weight: 600; }
 </style>
 </head>
 <body>
 <h1>Critwire design pass: before and after</h1>
-<p>Full-page captures at 1440 and 390 px. Select an image to open it at full size.</p>
+<p>Full-page captures at 1440 and 390 px. Select an image to open it at full size. Under each after image are the quality probes run on that capture (<code>after/checks.json</code>).</p>
 ${meta.join('\n')}
 <p>${nav}</p>
 ${groups}

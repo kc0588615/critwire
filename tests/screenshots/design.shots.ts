@@ -17,6 +17,7 @@ import {
   shotsTarget,
   type ShotsWorld,
 } from './catalog'
+import { probeMarketingFocus, probePage, recordChecks } from './probes'
 import { readWorld, reloadUntil, rootStyle, rootToken, SHOTS_CRON_SECRET } from './support'
 import { DEFAULT_THEME, RISO_THEME } from './themes'
 
@@ -80,6 +81,8 @@ for (const group of selectedGroups()) {
     for (const shot of shotsFor(group)) {
       test(shot.label, async ({ page }) => {
         const url = shot.path(world)
+        const requests: string[] = []
+        page.on('request', (request) => requests.push(request.url()))
         await page.goto(url)
         // Ops pages are ISR-cached: wait until each one wears the group's theme.
         // Pages without a `.fs-root` (the ops pages before the redesign) have none to wait for.
@@ -90,11 +93,13 @@ for (const group of selectedGroups()) {
         await showFocus(page, shot)
         const width = page.viewportSize()?.width
         if (!width) throw new Error('the project has no viewport')
-        await page.screenshot({
-          path: path.join(dir, set, shotFile(group, shot.id, width)),
-          fullPage: true,
-          animations: 'disabled',
-        })
+        const file = shotFile(group, shot.id, width)
+        const probes = set === 'after' ? await probePage(page, { group, shot, width, requests }) : []
+        await page.screenshot({ path: path.join(dir, set, file), fullPage: true, animations: 'disabled' })
+        if (set !== 'after') return
+        if (shot.id === 'home') probes.push(await probeMarketingFocus(page))
+        await recordChecks(dir, file, probes)
+        for (const probe of probes) expect.soft(probe.pass, `${probe.probe}: ${probe.detail}`).toBe(true)
       })
     }
   })
