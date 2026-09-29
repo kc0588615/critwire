@@ -104,7 +104,7 @@ test.describe('S3.1–S3.3 feed, detail pages and RSS', () => {
     })
 
     await test.step('page 2 holds the oldest notes', async () => {
-      await page.getByRole('link', { name: 'Older →' }).click()
+      await page.getByRole('link', { name: 'Older updates' }).click()
       await expect(page).toHaveURL(`${feedPath(project.slug)}/page/2`)
       expect(await feedTitles(page)).toEqual(newestFirst.slice(10))
       await expect(page.getByRole('navigation', { name: 'Pagination' })).toContainText('Page 2 of 2')

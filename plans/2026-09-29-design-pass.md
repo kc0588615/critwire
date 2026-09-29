@@ -1103,7 +1103,7 @@ Revision by the `architect`, 2026-09-29. Every claim was checked against the cod
     - `grep -rn "eyebrow=" src/site-templates` prints nothing;
     - Look: all portal groups, both widths.
 
-- [ ] S13 · Patch notes pages
+- [x] S13 · Patch notes pages
   - **New `PageHead.tsx`:** the page title, one line of purpose, and an optional action.
   - **`PatchNotesFeed.tsx`:**
     - each entry is an `li` with the version in a fixed left column (its own element, holding exactly the version text), then the date, the h2 link title and the summary;
@@ -1474,6 +1474,14 @@ grep -rnE "Field (Notes|Board|report)|Track type|Studio Route|the signal|Payload
   - **CC seed: the final CTA has no background.** Community already shows the same banner as a band just above it, and two identical 500 px bands in a row read as a mistake in the first Look.
   - **Dead rules deleted:** `.fs-eyebrow`, `.fs-panel`/`.fs-panel-link` (no user left; S16's form panel defines its own), `.fs-caption`, `.fs-hero-scrim`, `.fs-trailer-fallback`.
 
+- **S13: patch-notes details the Steps left open (2026-09-29).**
+  - **`PatchNotesFeed` takes `project`** (name and slug) instead of `gameSlug`, and renders its own `PageHead`, so the list and paged pages stay one-liners and the purpose line and empty state can name the game.
+  - **The head sits in the 60rem list column,** so the RSS action lines up with the list's right edge instead of the shell's; S14's issues head should do the same.
+  - **New shared ops classes in `portal.css`:** `.fs-ops` (page padding), `.fs-page-head`, `.fs-tap` (44 px text links: RSS, pagination), `.fs-back` (the back link, with a CSS-drawn chevron rather than an arrow character, for S15's "All known issues" too), `.fs-meta-line`, `.fs-empty` and `.fs-pagination`. `.fs-entry-main` now always takes the second column from 40rem, so an entry without a version keeps its alignment.
+  - **Feed entry:** the version is the left column's only element and shares the date's baseline; the date, the h2 link and the summary form the right column. The pagination keeps one divider above it, as the list's closing rule.
+  - **Empty state** links "RSS feed" in its sentence; the RSS head link is still the only link named exactly "RSS".
+  - **Descriptions:** the list page's meta description is the purpose line ("Every update to {game}, newest first.").
+
 ## Log
 
 - 2026-09-29 05:13 UTC · Baseline: E2E db and env set up, migrations applied; tsc pass, lint 0 errors/23 warnings, int 9/9, E2E 73/73.
@@ -1494,5 +1502,6 @@ grep -rnE "Field (Notes|Board|report)|Track type|Studio Route|the signal|Payload
 - 2026-09-29 08:28 UTC · S10: `components/game/format.ts` (`formatDate` at all five callers), `IssueStatus.tsx` (shape map, `StatusMark`, `IssueStatus`, `issueStatusLabel`; `IssueStatusBadge.tsx` deleted), `VoteCount.tsx` (tally, inline `▲ n` + sr-only word); CSS shapes in `globals.css`, tones via `--mark` and `.fs-status`/`.fs-rows`/`.fs-issue-row`/`.fs-entry` in `portal.css` (`.fs-chip*` gone); `KnownIssues` flat divided rows, "See all known issues", no eyebrow; `LatestUpdate` version/date column, no eyebrow. tsc pass; lint 0 errors/23 warnings; E2E 73/73 (run twice, before and after the `--mark` change); old-name grep empty; §2 colour audit empty; Look `default,critter-connect,riso` desktop 49/49 + CC landing both widths + Riso landing: rows read under all three themes, vote/label columns aligned after the first Look, 390 rows wrap under the title. Issues list bodies still old cards until S14 (status labels dark on them under Riso, like the titles already were).
 - 2026-09-29 08:45 UTC · S11: `Hero` title plate (`.fs-hero-stage` art + bg plate flush with the art's lower-left, top-right `--fs-radius`; centred plate for `centeredCinematic`/`trailerBackground` with "Watch the trailer"; `split` text left + 4:3 framed art; no art = full-scale title on bg), no scrim, plate settles 700 ms transform-only; build line from new `availabilityFacts(project)` (release state, date, "Version x", platforms, separate items); `Availability` "Where to play" rows, renders only with platforms or a note; CC seed `showLogo: false`. tsc pass; lint 0 errors/23 warnings; E2E 73/73; §2 and copy audits empty; Look `default,critter-connect,riso` both widths 97/97 plus CC landing re-shot after the seed change: plate and build line read under all three themes, 390 plate keeps its right gutter, bare landing shows the full-scale title.
 - 2026-09-29 09:01 UTC · S12: flat `Features` (divided editorial columns, media cards only with media), `Gallery` captions below images (`fs-figure`, `fs-mosaic`), `Adaptive` plain kind headings (`KIND_HEADINGS`, divided item list, framed media), `Trailer` "Watch the trailer" left-aligned with an accent "Play" pill (no gradient), `Community`/`FinalCTA` art as a `SiteArtBand` with text below; `SectionHeader` loses `eyebrow`/`align`, gains `intro`; defaults "Features", "Join the community"; dead `.fs-eyebrow`/`.fs-panel`/`.fs-caption`/scrim/fallback rules deleted; CC seed final CTA without art (see Decisions). tsc pass; lint 0 errors/23 warnings; E2E 73/73; `eyebrow=` grep and §2/copy audits empty; Look `default,critter-connect,riso` both widths 97/97, then CC landing re-shot after the seed change: sections read under all three themes, 390 stacks to one column.
+- 2026-09-29 09:15 UTC · S13: new `PageHead` (title, purpose, action); `PatchNotesFeed` takes `project`, head "Patch notes" + "Every update to {game}, newest first." + "RSS", divided entries (version column baseline-aligned with the date, h2 link, summary), "Newer updates / Page n of m / Older updates", §8 empty state; detail page: "All patch notes" back link (CSS chevron), version/date line, display h1, lead, prose in a 46rem column; titles "{game} patch notes" and "{game} patch notes, page n"; E2E patch-notes:107 → `'Older updates'`. tsc pass; lint 0 errors/23 warnings; E2E 73/73; §2 and copy audits empty on touched files; Look `default,critter-connect,riso` patch-notes pages both widths 15/15 (RSS moved into the list column and the version baseline-aligned after the first Look; bare project shows the empty state).
 
 ## Summary

@@ -686,6 +686,112 @@
     flex-direction: column;
     gap: 0.5rem;
   }
+
+  /* Stays in the second column when an entry has no version. */
+  .fs-entry-main {
+    grid-column: 2;
+  }
+}
+
+/* ── Ops pages: one calm reading column (plan §5) ──────── */
+
+.fs-ops {
+  padding-block: clamp(2.5rem, 5vw, 4rem) clamp(3.5rem, 7vw, 6rem);
+}
+
+/* Title and purpose, with the page's action beside them on wide screens. */
+.fs-page-head {
+  display: grid;
+  gap: 1.25rem 2rem;
+  align-items: end;
+  margin-bottom: clamp(2rem, 4vw, 3rem);
+}
+
+@media (min-width: 48rem) {
+  .fs-page-head {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+}
+
+.fs-page-head-action {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+/* A text link with a 44px target. */
+.fs-tap {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+}
+
+/* Back to the list: a CSS chevron, never an arrow character. */
+.fs-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.625rem;
+  min-height: 2.75rem;
+  color: var(--fs-muted-fg);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  transition: color 150ms ease;
+}
+
+.fs-back::before {
+  width: 0.45em;
+  height: 0.45em;
+  border-bottom: 2px solid currentColor;
+  border-left: 2px solid currentColor;
+  content: '';
+  transform: rotate(45deg);
+}
+
+.fs-back:hover {
+  color: var(--fs-fg);
+}
+
+/* Version and date on one line above a detail page's title. */
+.fs-meta-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 1rem;
+}
+
+.fs-feed > li {
+  padding-block: 1.75rem;
+}
+
+/* The version shares the date's line. */
+.fs-feed .fs-entry {
+  align-items: baseline;
+}
+
+.fs-feed > li:first-child {
+  padding-top: 0;
+}
+
+/* A list with nothing in it yet: one sentence that invites an action. */
+.fs-empty {
+  max-width: 36em;
+  font-size: 1.1875rem;
+  line-height: 1.55;
+}
+
+/* Newer, the page count, then older, each in its own slot. */
+.fs-pagination {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 1rem;
+  margin-top: 2.5rem;
+  border-top: 1px solid var(--fs-border);
+  padding-top: 1rem;
+}
+
+.fs-pagination > :last-child {
+  justify-self: end;
 }
 
 /* ── Landing sections below the hero (plan §5) ─────────── */

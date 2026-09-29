@@ -24,7 +24,7 @@ export default async function PatchNotesPage({ params }: Args) {
 
   const notes = await queryPublishedPatchNotes({ page: 1, projectID: project.id })
 
-  return <PatchNotesFeed gameSlug={gameSlug} notes={notes} />
+  return <PatchNotesFeed notes={notes} project={project} />
 }
 
 export async function generateMetadata({ params }: Args): Promise<Metadata> {
@@ -38,7 +38,7 @@ export async function generateMetadata({ params }: Args): Promise<Metadata> {
         'application/rss+xml': `/g/${gameSlug}/patch-notes/feed.xml`,
       },
     },
-    description: `Latest field notes and updates for ${project.name}.`,
-    title: `Field Notes — ${project.name}`,
+    description: `Every update to ${project.name}, newest first.`,
+    title: `${project.name} patch notes`,
   }
 }

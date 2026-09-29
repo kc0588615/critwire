@@ -27,25 +27,29 @@ export default async function PatchNoteDetailPage({ params }: Args) {
   const note = await getPublishedPatchNote({ projectID: project.id, slug })
   if (!note) notFound()
 
+  const published = formatDate(note.publishedAt)
+
   return (
-    <article className="mx-auto max-w-3xl px-6 py-12">
-      <Link className="text-sm opacity-70 hover:opacity-100" href={`/g/${gameSlug}/patch-notes`}>
-        ← All patch notes
-      </Link>
-      <div className="mt-6 flex flex-wrap items-center gap-3 text-sm opacity-70">
-        {note.versionLabel && (
-          <span className="rounded-full border px-2.5 py-0.5 font-mono text-xs">
-            {note.versionLabel}
-          </span>
-        )}
-        {note.publishedAt && (
-          <time dateTime={note.publishedAt}>{formatDate(note.publishedAt)}</time>
-        )}
-      </div>
-      <h1 className="mt-2 text-3xl font-bold sm:text-4xl">{note.title}</h1>
-      {note.summary && <p className="mt-4 text-lg opacity-80">{note.summary}</p>}
-      <RichText className="mx-0 mt-8" data={note.content} enableGutter={false} />
-    </article>
+    <div className="fs-shell fs-ops">
+      <article className="fs-column">
+        <Link className="fs-back" href={`/g/${gameSlug}/patch-notes`}>
+          All patch notes
+        </Link>
+        {note.versionLabel || published ? (
+          <p className="fs-meta-line mt-8">
+            {note.versionLabel ? <span className="fs-version">{note.versionLabel}</span> : null}
+            {published ? (
+              <time className="fs-meta" dateTime={note.publishedAt ?? undefined}>
+                {published}
+              </time>
+            ) : null}
+          </p>
+        ) : null}
+        <h1 className="fs-page-title mt-3">{note.title}</h1>
+        {note.summary ? <p className="fs-lead mt-5 text-[var(--fs-muted-fg)]">{note.summary}</p> : null}
+        <RichText className="mx-0 mt-10" data={note.content} enableGutter={false} />
+      </article>
+    </div>
   )
 }
 

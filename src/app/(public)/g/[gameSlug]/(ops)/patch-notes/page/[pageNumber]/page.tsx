@@ -28,7 +28,7 @@ export default async function PatchNotesPaginatedPage({ params }: Args) {
   const notes = await queryPublishedPatchNotes({ page, projectID: project.id })
   if (page > (notes.totalPages || 1)) notFound()
 
-  return <PatchNotesFeed gameSlug={gameSlug} notes={notes} />
+  return <PatchNotesFeed notes={notes} project={project} />
 }
 
 export async function generateMetadata({ params }: Args): Promise<Metadata> {
@@ -37,6 +37,6 @@ export async function generateMetadata({ params }: Args): Promise<Metadata> {
   if (!project) return {}
 
   return {
-    title: `Patch Notes (page ${pageNumber}) — ${project.name}`,
+    title: `${project.name} patch notes, page ${pageNumber}`,
   }
 }
