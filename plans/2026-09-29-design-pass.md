@@ -927,7 +927,7 @@ Revision by the `architect`, 2026-09-29. Every claim was checked against the cod
     - Fill in the before row of the Screenshot record.
     - No source change, so no E2E.
 
-- [ ] S3 · Extract the landing-config and portal-revalidation helpers (refactor, no behaviour change)
+- [x] S3 · Extract the landing-config and portal-revalidation helpers (refactor, no behaviour change)
   - New `src/lib/game-portal/landingPage.ts`, with code moved out of `app/(public)/g/[gameSlug]/page.tsx:29-116`:
     - `getLandingPage(projectID, draft, user?)`, wrapped in React `cache`;
     - `resolveFlagshipConfig(page, project, { draft })`, returning `{ config, media }` (normalize, parse, Sentry on drift outside Draft Mode, derived default).
@@ -1445,5 +1445,6 @@ grep -rnE "Field (Notes|Board|report)|Track type|Studio Route|the signal|Payload
 - 2026-09-29 06:20 UTC · Steps: `planner` wrote 24 steps (S1 harness, S2 seed + before shots, S3–S21 build, S22 after shots + index, S23 self-critique, S24 final verification) and the Verification section. Plan-only change, no checks needed.
 - 2026-09-29 06:42 UTC · S1: screenshot harness (`playwright.screenshots.config.ts`, `tests/screenshots/*`, `pnpm screenshots`), E2E env/fixtures shared. tsc pass; lint 0 errors/23 warnings; `playwright test --list` same 73 tests; harness lists 103 (setup + 102 shots); smoke `SHOTS_THEMES=critter-connect --project desktop` 15/15 passed, 14 PNGs + index.html showing CC art; `git diff --stat 669376c -- src public …` empty.
 - 2026-09-29 06:55 UTC · S2: mission DB built (`pnpm build` pass, first on the mission DB), dev super admin + tenant created over REST (credentials in `agent-state/missions/design-pass/dev-admin.txt`, 600), `pnpm seed:critter-connect` ok, `/g/critter-connect` 200. Before set: full run 102/103 passed (mobile CC "Contact, sent": Turnstile widget never rendered), that test re-shot and passed; 102 PNGs + `index.html` (all before images, after side "not captured"). Looked at landing/issues/report/`/` under all themes: Riso landing light, ops pages navy/cyan under every theme (F1, expected), `/` the Payload template. No source change, so no E2E.
+- 2026-09-29 07:00 UTC · S3: `lib/game-portal/landingPage.ts` (`getLandingPage` React-cached, `resolveFlagshipConfig` returning config + merged project/page media, `seedProjectMedia`) and `hooks/revalidateGamePortal.ts` extracted; landing page and both GameProject hooks call them, same log line. tsc pass; lint 0 errors/23 warnings; int 9/9; E2E 73/73.
 
 ## Summary

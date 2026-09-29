@@ -1,22 +1,20 @@
 import type { Metadata } from 'next'
 
-import * as Sentry from '@sentry/nextjs'
-import config from '@payload-config'
 import { draftMode } from 'next/headers'
 import { notFound } from 'next/navigation'
-import { getPayload } from 'payload'
 import React from 'react'
-
-import type { GamePage, GameProject, Media, User } from '@/payload-types'
 
 import { RenderGameBlocks } from '@/blocks/game/RenderGameBlocks'
 import { LivePreviewListener } from '@/components/LivePreviewListener'
 import { PortalChrome } from '@/components/game/PortalChrome'
 import { getGameProject } from '@/lib/game-portal/getGameProject'
+import {
+  getLandingPage,
+  resolveFlagshipConfig,
+  seedProjectMedia,
+} from '@/lib/game-portal/landingPage'
 import { FlagshipSite } from '@/site-templates/flagship-game-v1/FlagshipSite'
 import { deriveFlagshipDefault } from '@/site-templates/flagship-game-v1/defaults'
-import { normalizeSiteInput } from '@/site-templates/flagship-game-v1/normalize'
-import { siteConfigV1Schema } from '@/site-templates/flagship-game-v1/schema/config'
 import { getServerSideURL } from '@/utilities/getURL'
 import { getPreviewUser } from '@/utilities/getPreviewUser'
 
@@ -24,43 +22,6 @@ import { getPreviewUser } from '@/utilities/getPreviewUser'
 // GameProjects, PatchNotes, and Issues hooks is the primary
 // invalidation path.
 export const revalidate = 3600
-
-const getLandingPage = async (
-  projectID: number | string,
-  draft: boolean,
-  user?: User | null,
-): Promise<GamePage | null> => {
-  const payload = await getPayload({ config })
-  const result = await payload.find({
-    collection: 'game-pages',
-    depth: 1,
-    draft,
-    limit: 1,
-    overrideAccess: false,
-    pagination: false,
-    user,
-    where: {
-      and: [
-        { gameProject: { equals: projectID } },
-        { kind: { equals: 'landing' } },
-        // Draft Mode (authorized via the signed /next/site-preview
-        // route) may read the latest draft version; the public path
-        // only ever sees published documents.
-        ...(draft ? [] : [{ _status: { equals: 'published' as const } }]),
-      ],
-    },
-  })
-  return result.docs[0] ?? null
-}
-
-/** Media the project itself carries — saves a lookup for banner/logo refs. */
-const seedProjectMedia = (project: GameProject): Map<number, Media> => {
-  const map = new Map<number, Media>()
-  for (const value of [project.banner, project.logo]) {
-    if (value && typeof value === 'object') map.set(value.id, value)
-  }
-  return map
-}
 
 /**
  * Landing page decision tree:
@@ -90,35 +51,11 @@ export default async function GameLandingPage({
   const listener = draft ? <LivePreviewListener /> : null
 
   if (page?.template === 'flagship-game-v1') {
-    const { input, media } = normalizeSiteInput({
-      schemaVersion: page.schemaVersion,
-      site: page.site,
-      template: page.template,
-    })
-    const parsed = siteConfigV1Schema.safeParse(input)
-    let siteConfig = parsed.success ? parsed.data : null
-
-    if (!siteConfig) {
-      // Published configs are Zod-validated on save, so this indicates
-      // drift (e.g. a schema change without migration) — or an
-      // intentionally incomplete draft in preview. Fall back to the
-      // derived default rather than erroring the public page.
-      if (!draft) {
-        Sentry.captureException(
-          new Error(`Stored flagship config for game-page ${page.id} failed validation`),
-          { extra: { issues: parsed.success ? [] : parsed.error.issues.slice(0, 10) } },
-        )
-      }
-      siteConfig = deriveFlagshipDefault(project)
-    }
-
-    const mediaSeed = seedProjectMedia(project)
-    for (const [id, doc] of media) mediaSeed.set(id, doc)
-
+    const { config: siteConfig, media } = resolveFlagshipConfig(page, project, { draft })
     return (
       <>
         {listener}
-        <FlagshipSite config={siteConfig} mediaSeed={mediaSeed} project={project} />
+        <FlagshipSite config={siteConfig} mediaSeed={media} project={project} />
       </>
     )
   }
