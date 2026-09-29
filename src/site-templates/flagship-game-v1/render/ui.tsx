@@ -88,13 +88,6 @@ export const SectionHeader: React.FC<{
   </div>
 )
 
-export const formatSiteDate = (iso: null | string | undefined): null | string => {
-  if (!iso) return null
-  const date = new Date(iso)
-  if (Number.isNaN(date.getTime())) return null
-  return new Intl.DateTimeFormat('en-US', { dateStyle: 'medium' }).format(date)
-}
-
 /** Splits plain-text bodies into paragraphs on blank lines. */
 export const Paragraphs: React.FC<{ className?: string; text: null | string }> = ({
   className,

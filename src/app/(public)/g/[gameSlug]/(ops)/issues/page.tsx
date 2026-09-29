@@ -9,7 +9,7 @@ import React from 'react'
 import type { Issue } from '@/payload-types'
 
 import { IssueFilters } from '@/components/game/IssueFilters'
-import { IssueStatusBadge, issueStatusLabel } from '@/components/game/IssueStatusBadge'
+import { IssueStatus, issueStatusLabel } from '@/components/game/IssueStatus'
 import { ISSUE_STATUS_OPTIONS } from '@/collections/options'
 import { getGameProject } from '@/lib/game-portal/getGameProject'
 import { type IssueSortKey, queryBoardIssues, queryPublicIssues } from '@/lib/game-portal/issues'
@@ -39,7 +39,7 @@ const IssueRow: React.FC<{ base: string; issue: Issue }> = ({ base, issue }) => 
           <Link className="font-bold hover:text-cyan-200" href={`${base}/${issue.slug}`}>
             {issue.title}
           </Link>
-          <IssueStatusBadge status={issue.status} />
+          <IssueStatus status={issue.status} />
         </div>
         {issue.summary && (
           <p className="mt-2 line-clamp-2 text-sm text-slate-400">{issue.summary}</p>

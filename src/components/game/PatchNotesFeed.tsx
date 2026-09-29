@@ -5,14 +5,7 @@ import React from 'react'
 
 import type { PatchNote } from '@/payload-types'
 
-export const formatPatchDate = (timestamp: null | string | undefined): null | string => {
-  if (!timestamp) return null
-  return new Date(timestamp).toLocaleDateString('en-US', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  })
-}
+import { formatDate } from './format'
 
 export const PatchNotesFeed: React.FC<{
   gameSlug: string
@@ -48,7 +41,7 @@ export const PatchNotesFeed: React.FC<{
                     </span>
                   )}
                   {note.publishedAt && (
-                    <time dateTime={note.publishedAt}>{formatPatchDate(note.publishedAt)}</time>
+                    <time dateTime={note.publishedAt}>{formatDate(note.publishedAt)}</time>
                   )}
                 </div>
                 <h2 className="mt-3 text-xl font-bold">

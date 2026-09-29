@@ -1,9 +1,11 @@
 import Link from 'next/link'
 import React from 'react'
 
+import { formatDate } from '@/components/game/format'
+
 import type { LatestUpdateSlot } from '../../schema/slots'
 import type { SiteRenderContext } from '../context'
-import { formatSiteDate, SectionHeader } from '../ui'
+import { SectionHeader } from '../ui'
 
 /**
  * Live binding to the most recent published patch note — queried at
@@ -17,35 +19,35 @@ export const LatestUpdateSection: React.FC<{
   const note = ctx.latestPatchNote
   if (!note) return null
   const base = `/g/${ctx.project.slug}`
-  const published = formatSiteDate(note.publishedAt)
+  const published = formatDate(note.publishedAt)
 
   return (
     <section aria-labelledby="fs-latest-update-heading" className="fs-section">
       <div className="fs-shell">
-        <SectionHeader
-          eyebrow="Latest Update"
-          heading={value.heading ?? 'Fresh from the dev team'}
-          id="fs-latest-update-heading"
-        />
-        <div className="fs-panel p-7 sm:p-9">
-          <div className="flex flex-wrap items-center gap-3 text-sm text-[var(--fs-muted-fg)]">
-            {note.versionLabel ? <span className="fs-chip">{note.versionLabel}</span> : null}
-            {published ? <time dateTime={note.publishedAt ?? undefined}>{published}</time> : null}
+        <SectionHeader heading={value.heading ?? 'Latest update'} id="fs-latest-update-heading" />
+        <article className="fs-entry fs-column-wide">
+          <div className="fs-entry-aside">
+            {note.versionLabel ? <span className="fs-version">{note.versionLabel}</span> : null}
+            {published ? (
+              <time className="fs-meta" dateTime={note.publishedAt ?? undefined}>
+                {published}
+              </time>
+            ) : null}
           </div>
-          <h3 className="fs-h3 mt-4 text-2xl">
-            <Link className="fs-link" href={`${base}/patch-notes/${note.slug}`}>
-              {note.title}
-            </Link>
-          </h3>
-          {note.summary ? (
-            <p className="mt-3 max-w-2xl leading-7 text-[var(--fs-muted-fg)]">{note.summary}</p>
-          ) : null}
-          <div className="mt-6">
-            <Link className="fs-link text-sm font-semibold" href={`${base}/patch-notes`}>
-              All patch notes →
-            </Link>
+          <div className="fs-entry-main">
+            <h3 className="fs-h3">
+              <Link className="fs-link" href={`${base}/patch-notes/${note.slug}`}>
+                {note.title}
+              </Link>
+            </h3>
+            {note.summary ? <p className="fs-body mt-2 text-[var(--fs-muted-fg)]">{note.summary}</p> : null}
+            <p className="mt-5">
+              <Link className="fs-link font-semibold" href={`${base}/patch-notes`}>
+                All patch notes
+              </Link>
+            </p>
           </div>
-        </div>
+        </article>
       </div>
     </section>
   )

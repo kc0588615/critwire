@@ -25,6 +25,45 @@
 
 @plugin "@tailwindcss/typography";
 
+/*
+ * Issue status shapes (plan §5), filled with --mark, or currentColor when
+ * a surface sets none: the portal sets --mark in portal.css; marketing
+ * sets its colour.
+ * The element is always empty and aria-hidden; the label beside it
+ * carries the meaning.
+ */
+@layer components {
+  .status-mark {
+    display: inline-block;
+    flex: none;
+    width: 0.75rem;
+    height: 0.75rem;
+    border-radius: 999px;
+  }
+
+  .status-mark[data-shape='ring'] {
+    border: 2px solid var(--mark, currentColor);
+  }
+
+  .status-mark[data-shape='half'] {
+    border: 2px solid var(--mark, currentColor);
+    background: linear-gradient(90deg, var(--mark, currentColor) 50%, transparent 50%);
+  }
+
+  .status-mark[data-shape='diamond'] {
+    width: 0.625rem;
+    height: 0.625rem;
+    margin-inline: 0.0625rem;
+    border-radius: 1px;
+    background: var(--mark, currentColor);
+    transform: rotate(45deg);
+  }
+
+  .status-mark[data-shape='dot'] {
+    background: var(--mark, currentColor);
+  }
+}
+
 @source inline("lg:col-span-4");
 @source inline("lg:col-span-6");
 @source inline("lg:col-span-8");

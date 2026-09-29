@@ -5,7 +5,7 @@ import { notFound } from 'next/navigation'
 import React from 'react'
 
 import RichText from '@/components/RichText'
-import { IssueStatusBadge } from '@/components/game/IssueStatusBadge'
+import { IssueStatus } from '@/components/game/IssueStatus'
 import { VoteButton } from '@/components/game/VoteButton'
 import { ISSUE_CATEGORY_OPTIONS } from '@/collections/options'
 import { getGameProject } from '@/lib/game-portal/getGameProject'
@@ -39,7 +39,7 @@ export default async function IssueDetailPage({ params }: Args) {
 
       <div className="mt-6 flex flex-wrap items-center gap-2 text-sm">
         {issue.isPinned && <span title="Pinned">📌</span>}
-        <IssueStatusBadge status={issue.status} />
+        <IssueStatus status={issue.status} />
         {categoryLabel && (
           <span className="rounded-full border px-2.5 py-0.5 text-xs">{categoryLabel}</span>
         )}

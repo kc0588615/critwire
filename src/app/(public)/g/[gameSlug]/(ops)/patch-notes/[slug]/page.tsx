@@ -5,7 +5,7 @@ import { notFound } from 'next/navigation'
 import React from 'react'
 
 import RichText from '@/components/RichText'
-import { formatPatchDate } from '@/components/game/PatchNotesFeed'
+import { formatDate } from '@/components/game/format'
 import { getGameProject } from '@/lib/game-portal/getGameProject'
 import { getPublishedPatchNote } from '@/lib/game-portal/patchNotes'
 
@@ -39,7 +39,7 @@ export default async function PatchNoteDetailPage({ params }: Args) {
           </span>
         )}
         {note.publishedAt && (
-          <time dateTime={note.publishedAt}>{formatPatchDate(note.publishedAt)}</time>
+          <time dateTime={note.publishedAt}>{formatDate(note.publishedAt)}</time>
         )}
       </div>
       <h1 className="mt-2 text-3xl font-bold sm:text-4xl">{note.title}</h1>

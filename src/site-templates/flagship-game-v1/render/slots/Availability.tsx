@@ -1,10 +1,11 @@
 import React from 'react'
 
+import { formatDate } from '@/components/game/format'
 import { PLATFORM_OPTIONS, RELEASE_STATE_OPTIONS } from '@/collections/options'
 
 import type { AvailabilitySlot } from '../../schema/slots'
 import type { SiteRenderContext } from '../context'
-import { formatSiteDate, SectionHeader } from '../ui'
+import { SectionHeader } from '../ui'
 
 const optionLabel = (
   options: readonly { label: string; value: string }[],
@@ -22,7 +23,7 @@ export const AvailabilitySection: React.FC<{
   if (!value.enabled) return null
   const availability = ctx.project.availability
   const platforms = availability?.platforms ?? []
-  const releaseDate = formatSiteDate(availability?.releaseDate)
+  const releaseDate = formatDate(availability?.releaseDate)
   const facts = [
     availability?.releaseState
       ? optionLabel(RELEASE_STATE_OPTIONS, availability.releaseState)
