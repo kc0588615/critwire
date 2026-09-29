@@ -75,7 +75,7 @@ Out:
 - [x] Fable review: `architecture-reviewer`
 - [x] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
 - [x] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
-- [ ] Steps: `planner` writes Steps and Verification
+- [x] Steps: `planner` writes Steps and Verification
 
 ## Baseline
 
@@ -821,7 +821,601 @@ Revision by the `architect`, 2026-09-29. Every claim was checked against the cod
 
 ## Steps
 
+**How every step runs.** One step per session: do it, run its checks, tick it, add a Log line (UTC, what, results), commit code and plan together, push `agent/design-pass`.
+
+- **Base checks:** `pnpm exec tsc --noEmit`, then `pnpm lint` (0 errors, no more than the baseline's 23 warnings).
+- **E2E:** `pnpm test:e2e`, all green. Required whenever markup, copy, CSS or behaviour changed.
+- **Look** (the skill's "critique as you build"): `SHOTS_SET=after SHOTS_DIR=/tmp/design-pass-wip SHOTS_THEMES=<groups> pnpm screenshots [--project desktop|mobile]`. Open the PNGs of the pages the step touched and fix what reads wrong before committing. The groups are `default`, `critter-connect`, `riso` and `marketing`. Never point a Look at the artifact directory.
+- **Run one heavy job at a time.** E2E, the harness and `pnpm build` share `.next`, and E2E and the harness share the `_e2e` database. Never run two together, and stop any `pnpm dev` or `pnpm start` first. There is no Docker.
+- **Ports:** E2E uses 3100 (sink 3101), the harness 3200, and the mission-DB server 3000. If `systemctl --user is-active critwire-demo` reports active, stop it before using 3000.
+- **The `dev` row:** `pnpm dev` records one in the mission DB. Before `pnpm build`, `pnpm payload migrate` or `migrate:create`, run `psql "$(grep ^DATABASE_URL= .env | cut -d= -f2-)" -c "delete from payload_migrations where name='dev'"`.
+- **E2E selectors** change only in the step whose markup or copy breaks them (table below), and an assertion's meaning never changes. If an unlisted selector breaks, fix the markup. If that's impossible, change the selector without changing what it asserts, and record it under Decisions.
+- **Markup the E2E suite relies on** (§8):
+  - one h1 per page;
+  - one `banner` holding the project name;
+  - a navigation named "Site" with the four portal links;
+  - on patch-notes pages, `li > h2` only in the feed (patch-notes:16);
+  - `section.fs-hero` without `aria-labelledby`;
+  - the `main section[aria-labelledby]` order unchanged;
+  - one `a[href="/g/<slug>"] img` (header only);
+  - `article .payload-richtext` and exactly one `article aside`;
+  - issue links containing only the title.
+- **Hex colours in code are lowercase.** E2E S2.3 compares `rgbToHex` output with `DEFAULT_THEME_COLORS.accent`.
+- **Ops pages keep their data calls,** caching exports and access-controlled queries. Only presentation changes, plus the S5 revalidation.
+
+| E2E change (§8) | Step |
+|---|---|
+| portal-landing:116-118: sentence-case nav labels | S4 |
+| portal-landing S2.4: new step, ops pages follow the published theme (written first) | S5 |
+| patch-notes:107: `'Older updates'` | S13 |
+| issues-voting:169: board regions. issues-voting:173: pinned title plus `toContainText('Pinned')` | S14 |
+| issues-voting:293: `.fs-vote-count` | S15 |
+| reports-contact:65, 66, 72 | S16 |
+| reports-contact:319 | S17 |
+
+- [ ] S1 · Screenshot harness (tooling only, no `src/` change)
+  - **Share E2E code instead of copying it:**
+    - `requireDisposableDatabase()` and the webServer `env` block, as `serverEnv({ cronSecret })`, move from `playwright.config.ts` into `tests/e2e/support/env.ts`. That file stays free of test-runner imports.
+    - `contentLayout` moves from `tenant-isolation.spec.ts` into `tests/e2e/support/fixtures.ts`.
+    - Both callers import them. Record this DRY widening of §10 under Decisions.
+  - **`playwright.screenshots.config.ts`:**
+    - `testDir: 'tests/screenshots'`, `testMatch: /\.shots\.ts$/`, 1 worker, 0 retries.
+    - Projects: `shots-setup`, then `desktop` (1440×900) and `mobile` (390×844, `isMobile`, `hasTouch`), both depending on it. `reducedMotion: 'reduce'`.
+    - webServer: `pnpm e2e:server` with `serverEnv({ cronSecret: SHOTS_CRON_SECRET })`, plus `E2E_SKIP_BUILD=1` when `SHOTS_SKIP_BUILD=1`.
+    - The HTML report goes to `playwright-report-shots/` and test output to `test-results/shots/`.
+    - Fail fast unless `SHOTS_SET` is `before` or `after` and `SHOTS_DIR` is absolute.
+    - globalSetup writes `<SHOTS_DIR>/<SHOTS_SET>/meta.json` (commit, dirty flag, UTC time, command). globalTeardown runs `tests/screenshots/writeIndex.ts`.
+  - **`package.json`:** add `"screenshots": "cross-env NODE_OPTIONS=--no-deprecation E2E_PORT=3200 playwright test --config playwright.screenshots.config.ts"`. `E2E_PORT` points `BASE_URL` and the REST factories at 3200.
+  - **`tests/screenshots/setup.shots.ts`** (REST only, reusing `RestClient` and the `fixtures.ts` factories):
+    1. First-register a super admin and create one tenant.
+    2. `POST /api/seed/critter-connect` with the harness bearer token; expect 200.
+    3. Record the CC landing's `.fs-root` `style` attribute as the CC baseline.
+    4. Add patch note `v0.1.1`, "Clue trail and Steam Deck fixes".
+    5. Add four public CC issues:
+       - Investigating and pinned: "Clue trail disappears after fast travel";
+       - Needs More Info, with `needsMoreInfoText`;
+       - Workaround Available, with `workaroundText`;
+       - Fixed, with `fixedInPatchNote` pointing at v0.1.1.
+    6. Cast votes with `castVote`: 7, 4, 2 and 1.
+    7. Create a bare project (name and description only).
+    8. Create a legacy project whose published landing uses game blocks (hero, features, CTA; fields from `src/blocks/game/*/config.ts`).
+    9. Publish a marketing page `about-critwire` (lowImpact hero plus `contentLayout`).
+    10. Write `test-results/shots/world.json`.
+  - **`tests/screenshots/design.shots.ts`:**
+    - One `describe` per group in `SHOTS_THEMES`. By default that's all four, in the order `default`, `riso`, `critter-connect`, `marketing`.
+    - **Theme switch, in `beforeAll`:**
+      - Re-POST the seed and wait for the CC baseline style.
+      - `riso`: PATCH the §3 theme published (constants in `tests/screenshots/themes.ts`), then wait for `--fs-bg: #eef4d2`.
+      - `default`: PATCH ten `''` colours and `null` selects (send `null` colours if Payload rejects `''`), then wait until the whole `style` differs from the CC baseline. Checking `--fs-accent` alone isn't enough: before this pass, CC's accent equals the old default's `#22d3ee`.
+      - The waits reload the landing every second, for up to 60 s.
+    - **Pages per theme (14):** §11's twelve pages plus two focus shots:
+      - the report form with `getByLabel('Title')` focused;
+      - the landing, pressing `Tab` until `.fs-hero .fs-btn-primary` has focus (at most 40 presses; fail if it never does).
+    - **`default` also shoots:** the portal 404 (`/g/no-such-game`), the bare project's landing, patch notes, issues and contact pages (the first-run, empty and not-configured states), and the legacy landing.
+    - **`marketing` shoots:** `/`, `/about-critwire` and `/no-such-page`.
+    - **Before each capture:** wait for `networkidle` and `document.fonts.ready`. On CC pages that have a `.fs-root`, poll until its `style` equals the landing's.
+    - **Output:** a full-page PNG at `<SHOTS_DIR>/<set>/<group>--<page>--<1440|390>.png`.
+  - **`tests/screenshots/writeIndex.ts`:** writes a static `index.html` at `<SHOTS_DIR>`:
+    - each set's meta line at the top;
+    - then groups, then pages, with before and after side by side for each width;
+    - thumbnails linking to full size, using relative paths;
+    - "not captured" where a side is missing.
+  - `.gitignore`: add `/playwright-report-shots/`. `AGENTS.md` Commands: add one line for `pnpm screenshots`, noting that it drops the `_e2e` database, like `pnpm test:e2e`.
+  - **Checks:**
+    - base checks;
+    - `pnpm exec playwright test --list` lists the same tests as before the move;
+    - the smoke run `SHOTS_SET=before SHOTS_DIR=/tmp/design-pass-smoke SHOTS_THEMES=critter-connect pnpm screenshots --project desktop` passes and writes 14 PNGs plus `index.html`, and the PNGs show CC's art and content;
+    - `git diff --stat 669376c -- src public tailwind.config.mjs next.config.ts postcss.config.js` prints nothing.
+
+- [ ] S2 · Seed the mission database and capture the "before" set
+  - **Mission DB** (the brief's Notes; it also enables quick `pnpm dev` looks later):
+    1. Stop `critwire-demo` if it's active, and delete the `dev` row.
+    2. Run `pnpm build`. This is the first production build on the mission DB. Record the result; if it fails, record why (it must pass by S24).
+    3. Start `pnpm start` on 3000 in the background and wait for `/api/health`.
+    4. Over REST, as in `auth.setup.ts`: `POST /api/users/first-register` (a dev super admin), then `POST /api/tenants`.
+    5. Run `pnpm seed:critter-connect`. It reads `CRON_SECRET` and `NEXT_PUBLIC_SERVER_URL=http://localhost:3000` from `.env`.
+    6. Confirm `/g/critter-connect` renders, then stop the server.
+    7. Keep the dev admin's credentials in `/srv/critter-ai/agent-state/missions/design-pass/dev-admin.txt` (mode 600), never in git or the plan.
+  - **Before set:**
+    - Re-run S1's `git diff --stat 669376c …` check.
+    - Run `SHOTS_SET=before SHOTS_DIR=/srv/critter-ai/agent-state/missions/design-pass/screenshots pnpm screenshots`.
+    - Fallback if `src` has changed: `git worktree add --detach /tmp/design-pass-before 669376c`, copy in the harness files from the S1 commit and `.env`, run `pnpm install --frozen-lockfile`, and shoot from there.
+  - **Checks:**
+    - 102 PNGs: 14 pages × 3 themes × 2 widths, plus 9 once-per-width pages × 2.
+    - `index.html` lists every image, with "not captured" on the after side.
+    - Open the landing, issues, report and `/` at both widths under all three themes. Each theme applied (Riso's landing is light). The ops pages stay navy and cyan under every theme; that's F1, expected before the redesign.
+    - Fill in the before row of the Screenshot record.
+    - No source change, so no E2E.
+
+- [ ] S3 · Extract the landing-config and portal-revalidation helpers (refactor, no behaviour change)
+  - New `src/lib/game-portal/landingPage.ts`, with code moved out of `app/(public)/g/[gameSlug]/page.tsx:29-116`:
+    - `getLandingPage(projectID, draft, user?)`, wrapped in React `cache`;
+    - `resolveFlagshipConfig(page, project, { draft })`, returning `{ config, media }` (normalize, parse, Sentry on drift outside Draft Mode, derived default).
+  - The landing page keeps its decision tree and calls these two functions.
+  - New `src/hooks/revalidateGamePortal.ts`: `revalidateGamePortal(source, payload)`, the log line plus `revalidatePath(PORTAL_ROUTE, 'layout')`, moved from `revalidateGameProject.ts:15-18`. Both GameProject hooks call it. The GamePage hooks stay as they are until S5.
+  - **Checks:** base checks; `pnpm test:int`; E2E.
+
+- [ ] S4 · One root, one frame, one nav and one footer, on the landing and the portal 404
+  - **New `render/SiteFrame.tsx`:**
+    - `SiteRoot({ theme, children })` is the only element that carries `.fs-root`. It sets `style={themeStyle(theme)}` and `data-fs-motion`.
+    - `SiteFrame({ config, project, children })` is `SiteRoot` plus the skip link, `SiteNav`, `main#fs-main` and `SiteFooter`.
+    - `FlagshipSite` renders its slots inside `SiteFrame`.
+  - **Nav and footer signatures:** `SiteNav({ project, value })` and `SiteFooter({ project, nav, value })`; neither takes the render context.
+  - **Nav:** a new client component, `SiteNavLinks`, sets `aria-current="page"` through `usePathname`. It replaces `NavShell.tsx`, which is deleted. The header becomes a plain, solid `<header class="fs-nav">`; drop the `[data-scrolled]` rules from `flagship.css`.
+  - **Footer:**
+    - The four portal pages come first. Each uses the studio's nav label for its ref when one is set, otherwise `DEFAULT_ACTION_LABELS`, through `resolveSiteAction`, so there's no second label table.
+    - Then the project's external links. `EXTERNAL_LINK_LABELS` moves from `PortalChrome` into `actions.ts`, and `PortalChrome` imports it until S5.
+    - Then legal links in sentence case: Press kit, Privacy policy, Terms.
+    - The bottom row holds the copyright and "Powered by Critwire" (see Decisions).
+    - No headings inside footer lists.
+  - **`actions.ts`:** sentence-case `DEFAULT_ACTION_LABELS` (§8).
+    - E2E: portal-landing:116-118 become `'Patch notes'`, `'Known issues'` and `'Report a bug'`.
+    - portal-landing:156 may be aligned to `'Get the game'`.
+  - **`(public)/not-found.tsx`:** renders inside `SiteRoot` with `siteThemeSchema.parse({})`. Content: the h1 "404", "There’s no page at this address.", and a link "Go to the home page".
+  - **Checks:**
+    - base checks;
+    - E2E: S2.1's identical 404s, S2.2's nav labels, S2.6's single header image;
+    - Look: `default`, desktop.
+
+- [ ] S5 · Ops pages render inside the studio's frame and theme (behaviour change, test first)
+  - **Write the test first.** In portal-landing S2.4's "publishes, keeps drafts private…" test, add a step before the accent-only step:
+    1. Open `/g/<slug>/patch-notes`, which warms its ISR cache.
+    2. Publish the accent-only site (`#f59e0b`).
+    3. `eventually`, reload the page and check that `getComputedStyle(document.querySelector('.fs-root')).getPropertyValue('--fs-accent').trim()` equals `#f59e0b`.
+
+    Run `pnpm test:e2e tests/e2e/portal-landing.spec.ts -g "publishes, keeps drafts"` and confirm it fails, because ops pages have no `.fs-root` yet.
+  - **`landingPage.ts`:** add `getPortalSiteConfig(project)`, React-cached and reading the published landing only. It returns the flagship config through `resolveFlagshipConfig`; otherwise, including legacy block pages, it returns `deriveFlagshipDefault(project)`.
+  - **`PortalChrome.tsx`:** becomes an async Server Component rendering `<SiteFrame config={await getPortalSiteConfig(project)} project={project}>`. Its own header, footer, link table and `--game-accent` style are removed.
+  - **`revalidateGamePage.ts`:** both hooks call `revalidateGamePortal`. The change hook keeps its published-or-was-published condition. `revalidateGameLanding` is untouched.
+  - **Checks:**
+    - the new step passes;
+    - base checks; `pnpm test:int`;
+    - full E2E: patch-notes caching and rename, issues, reports-contact, tenant-isolation;
+    - Look: `riso`, desktop. The nav and footer follow the theme; page bodies stay old until S13–S17.
+
+- [ ] S6 · Fonts through next/font, and the display-voice tables
+  - **New font modules,** all `next/font/google` with subsets `latin, latin-ext` and `display: 'swap'`:
+    - `src/fonts.ts`: Atkinson Hyperlegible Next as `--font-body`, preloaded;
+    - `src/app/(frontend)/fonts.ts`: Anybody with `axes: ['wdth']` as `--font-critwire`, preloaded;
+    - `src/site-templates/flagship-game-v1/fonts.ts`: Archivo (`wdth`), Young Serif (400) and Science Gothic (`wdth`), as `--font-archivo`, `--font-young-serif` and `--font-science-gothic`, with `preload: false`.
+  - **Where the classes go:**
+    - Both layouts put the body font variable on `<html>`; the `(frontend)` layout also adds `--font-critwire`. Remove the Geist imports.
+    - `SiteRoot` adds the three template `.variable` classes.
+    - `globals.css` `@theme`: set `--font-sans: var(--font-body)` and drop the Geist font lines.
+    - Run `pnpm remove geist`.
+  - **`themeStyle.ts`:**
+    - Add §4's `DISPLAY`, `RADIUS` and `SECTION_Y` tables, emitting `--fs-font-display`, `--fs-display-weight/-stretch/-tracking/-scale/-leading`, `--fs-radius`, `--fs-radius-control` and `--fs-section-y`.
+    - Remove `--fs-font-heading` and `--fs-font-body`. Move every consumer (`flagship.css`, `SiteNav`, `SiteFooter`, the slots) to the new variables. `.fs-root` body text uses `var(--font-body)`.
+  - **Checks:**
+    - base checks; E2E (its build fetches the fonts);
+    - `grep -rn "geist\|fs-font-heading\|fs-font-body" src package.json` prints nothing;
+    - after the E2E build, `grep -rho "font-stretch:[^;}]*" .next/static --include=*.css | sort -u` shows `62% 125%`, `50% 150%` and `50% 200%` (risk 7);
+    - `grep -rlE "fonts\.(googleapis|gstatic)\.com" .next/static` prints nothing;
+    - Look: `default,riso,critter-connect`, desktop. The landing shows Archivo, Young Serif and Science Gothic, not a fallback font.
+
+- [ ] S7 · Layered stylesheets and one deliberate prose mapping
+  - **Layering:**
+    - `git mv src/app/(frontend)/flagship.css src/app/(frontend)/portal.css`.
+    - `globals.css` imports it with `@import './portal.css' layer(components);`. If Tailwind rejects `layer()` on an import, wrap the file's contents in `@layer components { … }` instead.
+    - Confirm in the built CSS that the `.fs-` rules sit inside `@layer components` (F7).
+  - **Prose:**
+    - `tailwind.config.mjs` gets §10's `--tw-prose-*` → `--prose-*` mapping, plus `fontSize`, `lineHeight: 1.6`, `maxWidth` and the link decoration colour. Delete the `base` and `md` heading overrides.
+    - `portal.css`: `.fs-root` sets `--prose-fg`, `--prose-muted`, `--prose-border`, `--prose-code-bg`, `--prose-link-line`, `--prose-size` and `--prose-measure` from the `--fs-*` tokens (§10 values).
+    - Marketing prose keeps inheriting its colour until S18 sets `.cw-root`.
+  - **`RichText/index.tsx`:** drop `dark:prose-invert`, `md:prose-md` and `max-w-none`.
+  - **Detail pages:** patch-note and issue detail drop their nested `div.prose dark:prose-invert`, so exactly one `.prose` wraps the rich text.
+  - **`(public)/layout.tsx`:** drop `data-theme="dark"`. Until S15, the issue callouts show their light variants instead of their `dark:` twins.
+  - **Checks:** base checks; E2E; Look: `riso,default`, both widths. On the light theme, detail-page prose reads in `--fs-fg`, and FinalCTA's utilities now apply.
+
+- [ ] S8 · New default and Critter Connect themes, with the column-default migration
+  - **`schema/theme.ts`:** `DEFAULT_THEME_COLORS` becomes Slate & signal (§3, lowercase).
+  - **`defaults.ts`:** `ACCENT_FOREGROUND_CANDIDATES = [DEFAULT.background, DEFAULT.foreground, '#000000', '#ffffff']`, and the derived default's `finalCta.heading: null`.
+  - **`src/seed/critterConnect.ts`:**
+    - the Night canopy theme (technical, balanced, cinematic, subtle);
+    - `accentColor: '#f3b340'`;
+    - sentence-case labels (§8);
+    - the launch note titled "Field binder launch".
+  - **Migration:** delete the `dev` row, then run `pnpm payload migrate:create design_default_theme`.
+    - It must hold exactly 20 `ALTER COLUMN … SET DEFAULT` statements (10 on `game_pages`, 10 on `_game_pages_v`) plus a matching `down`.
+    - Anything else is schema drift: stop and investigate.
+    - Run `pnpm payload migrate` on the mission DB.
+    - Run `pnpm generate:types`; `git diff --exit-code src/payload-types.ts` must pass.
+  - **Optional:** start the mission-DB server again and re-run `pnpm seed:critter-connect`, so the dev DB carries the new CC theme.
+  - **Checks:**
+    - base checks; `pnpm test:int` (the parity test is unchanged);
+    - E2E: `migrate:fresh` runs the new migration, and S2.3's white and `#123456` cases and S2.4's invalid themes keep their meaning;
+    - Look: `default,critter-connect,riso`, desktop. The Riso and CC publishes pass the schema's six WCAG pairs, or the Look fails.
+
+- [ ] S9 · Portal base: token contract, type scale, chrome, focus and motion rules (`portal.css`, `SiteNav`, `SiteNavLinks`, `SiteFooter`)
+  - **The §2 contract:**
+    - the accent is used only as a fill or decoration;
+    - `--fs-border` is used only for dividers;
+    - input and secondary-button borders use `--fs-muted-fg`.
+  - **Type:** §4's portal scale as classes: hero title, section title, ops page title, entry title, lead, body, meta, and a tally with `tabular-nums`.
+  - **Layout:** the shell is `min(1180px, 100% − 2 × clamp(1rem, 4vw, 2.5rem))`, with 46rem and 60rem reading columns and the `--fs-section-y` rhythm.
+  - **Controls:**
+    - primary button: accent fill with `--fs-accent-fg` text;
+    - secondary button: `--fs-muted-fg` border;
+    - both use `--fs-radius-control`, `:active` scales to 0.98, and targets are at least 44 px;
+    - links are underlined, with the accent as `text-decoration-color`.
+  - **Focus, skip link and motion:**
+    - the two-tone focus ring on every interactive element;
+    - the skip link;
+    - the root motion rules: `@media (prefers-reduced-motion: reduce)` and `[data-fs-motion='off']` stop every animation and transition and show end states.
+  - No uppercase, shadows or gradients.
+  - **Nav (§5, §7):**
+    - a solid, sticky `--fs-bg` bar with a `--fs-border` rule;
+    - at 1440 px: name, links and CTA on one row;
+    - at 390 px: the name (truncating) and the CTA, then a horizontally scrolling link row, with no hamburger;
+    - the `aria-current` underline in the accent.
+  - **Footer:** laid out per §1.
+  - **Checks:**
+    - base checks; E2E;
+    - Look: `default,critter-connect,riso`, both widths. At 390 px the nav is at most two rows and its links scroll. The focus shot shows the two-tone ring under all three themes.
+
+- [ ] S10 · Shared status, count and date primitives; the landing's known issues and latest update
+  - **New `src/components/game/format.ts`:** `formatDate` replaces `formatPatchDate` (PatchNotesFeed, patch-note detail) and `formatSiteDate` (`ui.tsx`, LatestUpdate, Availability) at every caller.
+  - **New `IssueStatus.tsx`:** replaces `IssueStatusBadge.tsx`, which is deleted, in `KnownIssues`, the issues list and issue detail.
+    - It holds the tone map, `StatusMark` and the label, and keeps the `issueStatusLabel` export.
+    - `StatusMark` is an empty `<span aria-hidden="true" class="status-mark" data-shape="ring|half|diamond|dot">`.
+    - The shapes are defined once in `globals.css`, CSS only, drawn in `currentColor`.
+    - The portal tones live in `portal.css`: ring in `--fs-muted-fg`, half in the accent, diamond in `--fs-warning`, dot in `--fs-success`.
+  - **New `VoteCount.tsx`** (§7):
+    - list tally: the number above a visible "vote" or "votes";
+    - inline: an `aria-hidden` ▲, a space, the number, then a visually hidden " vote" or " votes", so its `textContent` is `▲ n`.
+  - **`KnownIssues`:**
+    - §5 rows: marker, title, the inline `VoteCount` (only when n > 0) and the status label, all inside the link;
+    - the heading "Pinned issues" for the pinned variant, and the link "See all known issues";
+    - no eyebrow; its own colour map is deleted.
+  - **`LatestUpdate`:** version and date in a left column, the linked h3 title, the summary, then "All patch notes". No eyebrow.
+  - **Checks:**
+    - base checks;
+    - E2E: issues-voting's landing rows (`^title`, `▲ n`) and portal-landing S2.5;
+    - `grep -rn "IssueStatusBadge\|formatPatchDate\|formatSiteDate" src` prints nothing;
+    - Look: all portal groups at desktop, plus `critter-connect` at mobile.
+
+- [ ] S11 · The title-plate hero and the build line
+  - **`slots/Hero.tsx`** (§5): the plate sits on untouched art, with no scrim.
+    - `leftEditorial`: plate in the lower-left, `--fs-radius` on its top-right corner, width `min(58rem, 64%)`.
+    - `centeredCinematic` and `trailerBackground`: plate centred on the art's bottom edge; `trailerBackground` adds "Watch the trailer".
+    - `split`: text on the left, framed art at 4:3 on the right.
+    - No art: the title runs at full scale on `bg`, with no plate.
+    - The studio eyebrow is a plain, muted line. At 390 px the plate keeps a 1.25rem right gutter.
+    - The plate settles in: `translateY(1.25rem) → 0` over 700 ms, animating transform only, gated by the S9 rules.
+  - **Build line:** under the plate, built from `availabilityFacts(project)` (exported from `slots/Availability.tsx`). It shows release state, version and platforms as separate items, with no `·` join.
+  - **`Availability`:** "Where to play" as rows (platform name linked, then its label). It renders only when there are platforms or a note, with no eyebrow and no `→`.
+  - **Checks:**
+    - base checks;
+    - E2E: `section.fs-hero img`, the hero's `.fs-btn-primary` href, the h1, section order;
+    - Look: all portal groups, both widths, including the bare landing (the no-art variant).
+
+- [ ] S12 · The remaining landing sections
+  - **`Features`:** the four variants, flat; cards only where they carry media.
+  - **`Gallery`:** captions below the images.
+  - **`Adaptive`:** plain kind headings (Story, Characters, …); `KIND_LABELS` loses its eyebrows.
+  - **`Trailer`:** the heading "Watch the trailer"; `TrailerLite` restyled.
+  - **`Community` and `FinalCTA`:** the art becomes a 21:9 band with the text below it on `bg`, never over the art. `FinalCTA` uses its "Play {name}" fallback.
+  - **Default headings** per §8 (Features, Join the community).
+  - **Cleanup:** `SectionHeader` in `ui.tsx` loses `eyebrow`; delete `.fs-eyebrow` and the scrim rules from `portal.css`.
+  - **Checks:**
+    - base checks;
+    - E2E: the trailer's click-to-load "Play video", the features text, section order;
+    - `grep -rn "eyebrow=" src/site-templates` prints nothing;
+    - Look: all portal groups, both widths.
+
+- [ ] S13 · Patch notes pages
+  - **New `PageHead.tsx`:** the page title, one line of purpose, and an optional action.
+  - **`PatchNotesFeed.tsx`:**
+    - each entry is an `li` with the version in a fixed left column (its own element, holding exactly the version text), then the date, the h2 link title and the summary;
+    - dividers only between items; at 390 px the version sits above the rest;
+    - `nav[aria-label=Pagination]` holds "Newer updates", "Page n of m" and "Older updates" as separate items;
+    - the §8 empty state.
+  - **List and paged pages:** `PageHead` with "Patch notes", "Every update to {game}, newest first." and the "RSS" link (exact text). Titles: "{game} patch notes" and "{game} patch notes, page n".
+  - **Detail page:** the back link "All patch notes", a version and date meta line, the display h1, and prose in a 46rem column.
+  - **E2E:** patch-notes:107 becomes `'Older updates'`.
+  - **Checks:**
+    - base checks;
+    - E2E: feed order, `v1.0.12` exact, RSS, pagination, detail rich text, the rename banner, caching;
+    - Look: all portal groups, both widths, including the bare project's patch notes (the empty state).
+
+- [ ] S14 · Issues list, board and filters
+  - **`issues/page.tsx`, head:** `PageHead` with "Known issues", "Bugs the {game} team knows about. Vote on the ones that affect you." and a "Report a bug" action. Title: "{game} known issues".
+  - **List rows (§5):**
+    - a `VoteCount` tally column;
+    - an h2 link holding only the title;
+    - a meta row with `IssueStatus`, the category and a "Pinned" tag (no 📌);
+    - the summary.
+  - **Board:**
+    - one `<section aria-labelledby="fs-board-<STATUS>">` per status, with the §5 h2: `StatusMark`, a span holding only the label (it carries the id), and `.fs-count`;
+    - a `ul` of cards, each with the title link, the inline `VoteCount` and the Pinned tag;
+    - "None" in an empty column;
+    - 16rem columns that scroll sideways with snap.
+  - **Empty states:**
+    - no match: "No issues match these filters." plus a "Clear filters" link;
+    - no issues at all: "No known issues right now. Found a bug? Report it."
+  - **`IssueFilters.tsx`:**
+    - visually hidden labels for the search box and both selects;
+    - the placeholder `Search issues…`, the combobox order (category, then sort) and the Board/List view names stay as they are;
+    - at 390 px it wraps: search at full width, then the selects, then the toggle.
+  - **E2E:** issues-voting:169 becomes `page.getByRole('region', { name: label, exact: true })`. issues-voting:173 becomes `[pinned.title]`, plus `expect(column('Investigating')).toContainText('Pinned')`.
+  - **Checks:**
+    - base checks;
+    - E2E: the S4.x filters, board, sorting and isolation;
+    - Look: all portal groups, both widths, including the bare project's issues (the empty state).
+
+- [ ] S15 · Issue detail and the vote button
+  - **`issues/[slug]/page.tsx`:**
+    - the back link "All known issues";
+    - a meta row: `IssueStatus`, category, "Pinned" tag;
+    - the display h1, then the summary as the lead, then the vote;
+    - one surface `<aside>` whose heading uses `StatusMark` (the diamond): needs more info, workaround, or fixed in `v2.1.0 — Harbor hotfix` (a link). It replaces the amber, purple and green callouts and their `dark:` twins.
+    - prose details at 68ch.
+  - **`VoteButton.tsx` (§7):**
+    - the button holds only the `aria-hidden` ▲, "Upvote" or "Upvoted", and `<span class="fs-vote-count">` with one number;
+    - outside it sit the `aria-hidden` "+1"/"−1" ghost and the helper line, "One vote per browser. Select it again to take your vote back.";
+    - server messages are still shown; the network fallback reads "Your vote didn’t count. Reload the page and try again.";
+    - the `#111` fallback goes; the pressed state is the accent fill.
+    - Motion: the count rolls in 180 ms (a transform on the single number), the ghost runs 450 ms and the fill 150 ms. All of it stops under the S9 rules.
+  - **E2E:** issues-voting:293 becomes `button(on).locator('.fs-vote-count')`.
+  - **Checks:**
+    - base checks;
+    - E2E: vote toggle and persistence, the button name `/^Upvoted?\s*\d+$/`, the `article aside` texts, the fixed-in link, the hidden unreleased note;
+    - Look: all portal groups, both widths (the issue detail with a callout, and the plain one).
+
+- [ ] S16 · The report form, with shared form primitives
+  - **New `FormField.tsx`:** label, control, and a hint linked by `aria-describedby` that sits outside the `<label>`, so label names stay stable.
+  - **New `FormNotice.tsx`:** success uses `role="status"` and errors `role="alert"`. Its text is in `--fs-fg` beside a status shape, so colour never carries the message alone.
+  - **`report/page.tsx`:**
+    - `PageHead` "Report a bug", then "Tell the {game} team what went wrong." and "Check the known issues first: if your bug is there, vote on it." (with a link).
+    - A surface panel holds the form: Title; What happened? (hint below it); Category; Email (optional) beside Platform (optional), one column at 390 px; Game version (optional); Turnstile; "Send report".
+    - Success: "Report sent. The {game} team can see it now."
+    - Error: "Your report wasn’t sent, so nothing reached the studio. Check the fields, complete the verification and send it again."
+    - The external and Tally variants keep "Open report form".
+    - Title: "Report a bug in {game}". `TurnstileField` follows the form's rhythm.
+  - **E2E:** reports-contact:65 becomes `'What happened'`, :66 `'Category'`, and :72 `'Report sent.'`.
+  - **Checks:**
+    - base checks;
+    - E2E: the S5.x report flows, the Turnstile submit, the external and Tally variants;
+    - Look: all portal groups, both widths (report, report error, the focus shot).
+
+- [ ] S17 · The contact form and Tally embeds
+  - **`contact/page.tsx`:**
+    - `PageHead` "Contact", then "Questions, feedback or press requests go straight to the {game} team. For bugs, use the report form."
+    - Fields use `FormField` and banners use `FormNotice`; the button stays "Send message".
+    - Success: "Message sent. If you left an email address, the {game} team can reply to it."
+    - Not configured: "{game} hasn’t set up a contact form yet", then "Reach the team through the links in the footer."
+    - "Open contact page" stays.
+  - **`TallyEmbed.tsx`:**
+    - an invalid URL shows "This form isn’t available right now.";
+    - the footnote reads "This form is hosted by Tally.";
+    - `fs-*` styling.
+  - **E2E:** reports-contact:319 becomes `'set up a contact form yet'`.
+  - **Checks:**
+    - base checks;
+    - E2E: the Discord, email, external, Tally and not-configured contact flows;
+    - `grep -rnE "Field (Notes|Board|report)|Track type|Studio Route|the signal" src/app src/components src/site-templates` prints nothing;
+    - Look: all portal groups, both widths (contact, contact submitted), including the bare project's contact page (not configured).
+
+- [ ] S18 · Critwire marketing shell
+  - **`(frontend)/layout.tsx`:** `cw-root` on `<body>`. Remove `InitTheme` and `Providers`; `AdminBar`, `Header`, the page content and `Footer` stay.
+  - **New `(frontend)/marketing.css`,** imported by `globals.css` with `layer(components)`. On `.cw-root` it sets:
+    - the §3 tokens: `#f6d33c`, `#1d1f55`, `#f2f3f8`, `#4a4d6e`;
+    - the shadcn variables, re-pointed: `--background`, `--foreground`, `--primary`, `--primary-foreground`, `--muted-foreground`, `--border`, `--ring`;
+    - the §10 `--prose-*` values;
+    - §4's Critwire type: Anybody for headings, Atkinson for body;
+    - focus: a 2px Ink outline with offset, yellow on the ink footer;
+    - the reduced-motion mirror of the portal rules.
+  - **`Header/Component.tsx` and `Footer/Component.tsx`:** Server Components with the text wordmark "Critwire" (Anybody wdth 130, w800).
+    - Header: transparent, 4.5rem tall, in normal flow, with "Demo portal" (`/g/critter-connect`) and "Sign in" (`/admin`). At 390 px: the wordmark and "Sign in".
+    - Footer: an ink band with the wordmark, "Demo portal", "Sign in" and the copyright.
+  - **Delete:** `providers/**`, `components/Logo/Logo.tsx`, `[slug]/page.client.tsx` and its use, and the `html{opacity:0}` hack.
+  - **`heros/HighImpact`:** becomes a Server Component with no header-theme plumbing.
+  - **`(frontend)/not-found.tsx`:** paper background, a large "404", "There’s no page at this address." and "Go to the home page".
+  - **Checks:**
+    - base checks;
+    - E2E: tenant-isolation's marketing Draft Mode and preview tests;
+    - `grep -rn "useHeaderTheme\|InitTheme\|githubusercontent\|Payload Logo" src` prints nothing;
+    - Look: `marketing`, both widths.
+
+- [ ] S19 · Critwire home page `/`
+  - **Files:**
+    - new `components/marketing/MarketingHome.tsx` and `IssueLoop.tsx`, both Server Components;
+    - `(frontend)/page.tsx` renders `MarketingHome` with its own metadata;
+    - `[slug]/page.tsx` loses the `homeStatic` fallback (with no CMS `home` page, `/home` now 404s);
+    - delete `endpoints/home-static.ts`.
+  - **Content (§5):**
+    - The yellow slip hero is pulled up under the header with `margin-top: calc(-1 * var(--cw-header-h))`. It holds:
+      - the h1 "A public home for your game’s patch notes, known issues and bug reports.";
+      - the lede;
+      - "See a live portal" (`/g/critter-connect`) and "Sign in".
+    - `IssueLoop`: an `<ol>` of the four stages (A player reports it, You publish it, Players vote it up, You ship the fix), with Critter Connect's real content and Ink `StatusMark` markers.
+    - Then, on paper, "What players get on your portal" as a `<dl>` of Patch notes, Known issues, Bug reports and Your game’s site. Each entry links into the demo. The h2 is sticky at one-third width; everything stacks at 390 px.
+    - Claims cover only what's built: no pricing and no custom domains.
+  - **Motion:** the wire draws down over about 2.2 s. Stages appear at 0, 0.6, 1.2 and 1.8 s; the third marker fills halfway and the fourth fully. It's CSS only, and reduced motion shows the end state.
+  - **Checks:**
+    - base checks; E2E;
+    - neither `MarketingHome` nor `IssueLoop` has `'use client'`;
+    - Look: `marketing`, both widths.
+
+- [ ] S20 · Critwire CMS pages restyled
+  - **Files:** `[slug]/page.tsx`, `heros/{HighImpact,MediumImpact,LowImpact}` and `blocks/{Content,CallToAction,MediaBlock}`.
+  - **Restyle:**
+    - paper background with the S18 header and footer;
+    - an Anybody h1 and a 62ch prose column;
+    - `Button` and `CMSLink` styled through the re-pointed shadcn variables;
+    - no `dark:` or `data-theme` left.
+  - **Checks:** base checks; E2E (tenant-isolation's marketing tests); Look: `marketing`, both widths (`/about-critwire` and the 404).
+
+- [ ] S21 · Port the legacy game blocks, and delete the dead style layers
+  - **Legacy blocks:** `src/blocks/game/*` and `GameButtons.tsx` move mechanically from `cc-*` to `fs-*` classes (buttons, panels, headings). No redesign.
+  - **`globals.css`** ends as the shared entry only (§10). Delete:
+    - `--ds-*`, including `--ds-gem-*`;
+    - `cc-*`, `glass-*` and `glow-*`;
+    - the shadcn `:root` and `[data-theme='dark']` palette, and the chart and sidebar tokens;
+    - the `dark` custom variant, once nothing uses `dark:`.
+  - **Checks:**
+    - base checks;
+    - E2E: tenant-isolation still renders a `gameHero` block landing;
+    - every audit under Verification prints nothing;
+    - delete the `dev` row, then `pnpm build`;
+    - Look: all groups, desktop. Nothing has lost its styles, and the legacy landing sits in the studio's frame.
+
+- [ ] S22 · The "after" set, quality probes and the before/after index
+  - **Add probes to the harness** in `tests/screenshots/probes.ts`. They use `expect.soft`, run only when `SHOTS_SET=after`, and also write their results to `after/checks.json`:
+    1. At 390 px, no page scrolls sideways (`scrollWidth ≤ innerWidth`).
+    2. At 390 px, buttons, form controls and header links are at least 44 px tall.
+    3. In the focus shots, the focused element has a 2px solid outline in the root's `--fs-fg` (portal) or in Ink (marketing).
+    4. `document.getAnimations().length === 0` on the landing and `/` after load (reduced motion).
+    5. Prose on patch-note and issue detail renders in `--fs-fg` (F5).
+    6. No request goes to `fonts.googleapis.com`, `fonts.gstatic.com` or `raw.githubusercontent.com`.
+    7. Every portal page has exactly one `.fs-root`.
+  - **Shoot:** `rm -rf /srv/critter-ai/agent-state/missions/design-pass/screenshots/after`, then `SHOTS_SET=after SHOTS_DIR=/srv/critter-ai/agent-state/missions/design-pass/screenshots pnpm screenshots`.
+  - **Checks:**
+    - 102 PNGs, and `index.html` pairs every image (no "not captured");
+    - probe failures are fixed here if they're small (run E2E if the fix changes markup); otherwise they become the first inputs to S23;
+    - fill in the after row of the Screenshot record.
+
+- [ ] S23 · Self-critique from the screenshots, and its fixes
+  - **Review:** open the after PNGs next to their befores in `index.html`. At minimum, cover all three themes of the landing, issues, board, issue detail and report, plus `/`, at both widths.
+  - **Critique against the skill:**
+    - the five generic clusters;
+    - the typographic tells: one accented word, all caps, labels above content, `·` joins, "WORD — fragment", mono data labels, arrows;
+    - boldness spent only on the Critwire slip and the portal plate, with the ops pages calm;
+    - one motion moment per surface;
+    - copy: sentence case, active voice, errors that say what to do, empty states that invite an action;
+    - white-label: Riso lime must look designed, not broken;
+    - the quality floor (the S22 probes);
+    - Chanel's rule: remove one accessory per surface.
+  - **Record** `### Self-critique` under Decisions: the findings, the concrete change list (file and change) and what was removed.
+  - **Apply the list.** If it doesn't fit one session, apply the most important items and add the rest as S23b and onwards, before S24.
+  - **Re-shoot** the after set with the S22 command.
+  - **Checks:** base checks; E2E; clean probes; fill in the post-critique row of the Screenshot record.
+
+- [ ] S24 · Final verification and Summary
+  - **Verify:**
+    - Run all of Verification in order, E2E first.
+    - Copy `playwright-report/` to `/srv/critter-ai/agent-state/missions/design-pass/e2e-final/`.
+    - Delete the `dev` row, then run `pnpm payload migrate:status` and `pnpm build`.
+    - Run the audits.
+    - Re-shoot the after set if anything changed since S23's capture.
+  - **Summary:**
+    - the final design plan as built (palette, type, layout concept, principles; §3–§6 plus deviations);
+    - what the self-critique changed;
+    - the screenshot index path, and the E2E artifact path with its command;
+    - the check results;
+    - the review verdicts: Fable APPROVE_WITH_CHANGES; Astra skipped (usage limit);
+    - handoff items waiting on the owner (H6, plus any new ones);
+    - the deviations recorded under Decisions.
+  - **Close:** set `status: done` in the front matter, commit, and push `agent/design-pass` (don't merge).
+
+### Risks while executing
+
+- **Google Fonts is fetched on every build** (E2E, the harness, `pnpm build`). If a fetch fails, retry once. If it keeps failing, switch to `next/font/local` (see Rejected alternatives) and record it under Decisions.
+- **`@import … layer(components)`** may not be supported. Fallback: wrap the file's contents in `@layer components`.
+- **Payload may reject `''` colours** in the harness's `default` theme. Send `null` colours instead; `normalizeSiteInput` treats both as unset.
+- **Theme waits:** if a CC ops page never matches the landing's `style`, that's a revalidation bug from S5, not harness flakiness. Fix it; don't raise the timeout.
+- **Mixed visuals mid-pass are expected:** new frames around old ops-page bodies until S13–S17. Each Look judges only its own step's pages.
+- **The harness's build bakes port 3200.** Use `SHOTS_SKIP_BUILD=1` only straight after a harness run, never after E2E (3100), or media URLs point at a dead port.
+
 ## Verification
+
+E2E comes first. Run everything from the worktree root, one job at a time, with no `pnpm dev` or `pnpm start` running. Nothing is tested in isolation: no new int tests are written, and the three existing int files stay as they are. So there is no Failure modes section.
+
+**Commands and what they must show**
+
+1. `pnpm test:e2e`
+   - Every test passes, 0 failed, no retries. That's 73 tests at baseline; S5 adds a step to an existing test, not a new test.
+   - Artifact: `playwright-report/`, with a trace and a screenshot per test. The final run is copied to `/srv/critter-ai/agent-state/missions/design-pass/e2e-final/`.
+   - Reproduce with `pnpm test:e2e`. View with `pnpm exec playwright show-report /srv/critter-ai/agent-state/missions/design-pass/e2e-final`.
+2. `pnpm exec tsc --noEmit`: exit 0.
+3. `pnpm lint`: 0 errors and no more than 23 warnings (the baseline), none in files this mission added.
+4. `pnpm test:int`: 3 files, 9 tests pass. `site-config-parity` passes untouched, since no enum changes.
+5. Build:
+   - First run `psql "$(grep ^DATABASE_URL= .env | cut -d= -f2-)" -c "delete from payload_migrations where name='dev'"`.
+   - `pnpm payload migrate:status` shows every migration run, including `*_design_default_theme`.
+   - `pnpm build` exits 0.
+   - `grep -rlE "fonts\.(googleapis|gstatic)\.com" .next/static` prints nothing: the fonts are self-hosted, with no runtime requests.
+
+**E2E scenarios this pass touches.** Each keeps its meaning:
+- **portal-landing:**
+  - S2.1: identical 404s, now inside `SiteRoot`;
+  - S2.2: sentence-case nav labels, facts, section order;
+  - S2.3: the white and `#123456` accents against the new default;
+  - S2.4: publishing, plus the new step, "ops pages follow the published theme";
+  - S2.5: known-issue rows;
+  - S2.6: the header logo.
+- **patch-notes:** feed and pagination ("Older updates"), detail rich text, the rename banner, ISR revalidation.
+- **issues-voting:** filters, board regions and the pinned tag, the `.fs-vote-count` vote button, landing rows.
+- **reports-contact:** report labels and success, contact flows, "not configured".
+- **tenant-isolation:** marketing Draft Mode and preview, and the legacy `gameHero` landing.
+- **admin-triage:** untouched; the admin is out of scope, but it must still pass.
+
+**Screenshots.** The harness runs Playwright against a production build on port 3200 and drops and re-seeds the `_e2e` database on every run, so never run it alongside `pnpm test:e2e`. `DIR=/srv/critter-ai/agent-state/missions/design-pass/screenshots`.
+
+```
+SHOTS_SET=before SHOTS_DIR=$DIR pnpm screenshots                           # full before set (S2)
+SHOTS_SET=before SHOTS_DIR=$DIR SHOTS_THEMES=default pnpm screenshots
+SHOTS_SET=before SHOTS_DIR=$DIR SHOTS_THEMES=critter-connect pnpm screenshots
+SHOTS_SET=before SHOTS_DIR=$DIR SHOTS_THEMES=riso pnpm screenshots
+SHOTS_SET=before SHOTS_DIR=$DIR SHOTS_THEMES=marketing pnpm screenshots
+SHOTS_SET=after  SHOTS_DIR=$DIR pnpm screenshots                           # full after set (S22, S23, S24)
+SHOTS_SET=after  SHOTS_DIR=$DIR SHOTS_THEMES=default pnpm screenshots
+SHOTS_SET=after  SHOTS_DIR=$DIR SHOTS_THEMES=critter-connect pnpm screenshots
+SHOTS_SET=after  SHOTS_DIR=$DIR SHOTS_THEMES=riso pnpm screenshots
+SHOTS_SET=after  SHOTS_DIR=$DIR SHOTS_THEMES=marketing pnpm screenshots
+# one width: append --project desktop (1440×900) or --project mobile (390×844)
+# per-step Looks use SHOTS_DIR=/tmp/design-pass-wip, never $DIR
+```
+
+The before set must come from a commit whose `src` equals `669376c`. Each run writes `<set>/meta.json` (commit, UTC time, command), and `index.html` shows it.
+
+Screenshot record:
+
+| Set | Step | Commit | UTC | Command | PNGs | Probes |
+|---|---|---|---|---|---|---|
+| before | S2 | | | | | n/a |
+| after | S22 | | | | | |
+| after, post-critique | S23 | | | | | |
+| after, final (if re-shot) | S24 | | | | | |
+
+**Quality floor, and what proves each part**
+
+- **Responsive down to 390 px:**
+  - the `mobile` project captures every page;
+  - probe 1: no page scrolls sideways; only the nav link row and the board scroll, inside their own containers;
+  - probe 2: 44 px targets;
+  - review the 390 column in `index.html`.
+- **Visible keyboard focus:**
+  - the report Title field and the landing CTA reached by `Tab` are shot under `default`, `critter-connect` and `riso`, and marketing links are checked in the `marketing` Look;
+  - probe 3: a 2px solid ring in `--fs-fg` (portal) or Ink (marketing).
+- **`prefers-reduced-motion`:**
+  - every capture runs with `reducedMotion: 'reduce'`;
+  - probe 4: no running animations on the landing or `/`;
+  - every animation and transition in `portal.css` and `marketing.css` sits behind the `prefers-reduced-motion: reduce` and `[data-fs-motion='off']` rules.
+- **Contrast, for all three themes including Riso lime:**
+  - (a) Each palette passes the schema's six WCAG pairs, or its publish fails the run: Slate & signal through E2E S2.3 and S2.4, Night canopy through the seed, and Riso lime through the harness publish.
+  - (b) The §2 contract audits below.
+  - (c) Probe 5: prose renders in `--fs-fg` on every theme.
+  - (d) Marketing: `pnpm exec tsx -e "import { contrastRatio as c } from './src/site-templates/flagship-game-v1/schema/contrast'; for (const [f, b] of [['#1d1f55','#f6d33c'],['#4a4d6e','#f6d33c'],['#1d1f55','#f2f3f8'],['#4a4d6e','#f2f3f8'],['#f6d33c','#1d1f55'],['#f2f3f8','#1d1f55']]) console.log(f, b, c(f, b).toFixed(2))"` prints at least 4.50 on every line.
+- **No runtime third-party font requests:** probe 6, plus the build grep in command 5.
+
+**Audits.** Run them from the worktree root. Each must print nothing.
+
+```
+P='src/app/(frontend) src/app/(public) src/components/game src/components/marketing src/components/RichText src/site-templates src/blocks src/heros src/Header src/Footer'
+grep -rnE "(^|[;{[:space:]])color:[[:space:]]*var\(--fs-(accent|border|success|warning|error)\)" 'src/app/(frontend)/portal.css'   # §2: never as text
+grep -rnE "text-(\(|\[var\()--fs-(accent|border|success|warning|error)" $P
+grep -rnE "\b(cc|glass|glow)-[a-z]|--ds-|dark:|#111\b|(text|bg|border)-(slate|cyan|emerald|amber|violet|purple|green|blue)-[0-9]" $P
+grep -rnE "uppercase|font-mono" $P
+grep -rnE "→|←|📌|' · '" $P
+grep -rnE "Field (Notes|Board|report)|Track type|Studio Route|the signal|Payload Logo|githubusercontent" $P
+```
+
+**Artifacts**
+
+- `/srv/critter-ai/agent-state/missions/design-pass/screenshots/index.html`: every before/after pair. Alongside it are `before/` and `after/`, each with a `meta.json`, plus `after/checks.json`.
+- `/srv/critter-ai/agent-state/missions/design-pass/e2e-final/`: the final Playwright HTML report, with traces and screenshots.
+- `/srv/critter-ai/agent-state/missions/design-pass/e2e-baseline/`: the pre-change report, for comparison.
 
 ## Decisions
 
@@ -839,5 +1433,6 @@ Revision by the `architect`, 2026-09-29. Every claim was checked against the cod
 - 2026-09-29 05:50 UTC · Fable review: `architecture-reviewer` verdict APPROVE_WITH_CHANGES, 4 MUST-FIX (prose colour mapping, vote button name, CSS-only status marker, board region name) for the Revision stage. Plan-only change, no checks needed.
 - 2026-09-29 05:51 UTC · Astra review: skipped, astra-review exit 3 (usage limit). Plan-only change, no checks needed.
 - 2026-09-29 06:00 UTC · Revision: `architect` resolved all 4 Fable MUST-FIX items (prose vars via tailwind.config, VoteButton name, CSS-only StatusMark, label-only board region name), the 3 MISSED items (SiteRoot carries font classes; revalidateGameLanding scope kept; "Powered by Critwire" kept, see Decisions) and adopted the SHOULD-CONSIDER items. Plan-only change, no checks needed.
+- 2026-09-29 06:25 UTC · Steps: `planner` wrote 24 steps (S1 harness, S2 seed + before shots, S3–S21 build, S22 after shots + index, S23 self-critique, S24 final verification) and the Verification section. Plan-only change, no checks needed.
 
 ## Summary
