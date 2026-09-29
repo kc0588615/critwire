@@ -6,9 +6,9 @@ import { getGameProject } from '@/lib/game-portal/getGameProject'
 /**
  * Shared shell for a game portal: resolves the project once (React
  * cache shares the query with nested pages) and 404s unknown slugs.
- * Chrome is owned further down — the flagship template renders its own
- * navigation/footer, while operational pages use PortalChrome via the
- * (ops) route group layout.
+ * The frame is owned further down: the flagship landing renders
+ * SiteFrame itself, while operational pages get the same frame through
+ * PortalChrome in the (ops) route group layout.
  */
 export default async function GamePortalLayout({
   children,

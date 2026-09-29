@@ -957,7 +957,7 @@ Revision by the `architect`, 2026-09-29. Every claim was checked against the cod
     - E2E: S2.1's identical 404s, S2.2's nav labels, S2.6's single header image;
     - Look: `default`, desktop.
 
-- [ ] S5 · Ops pages render inside the studio's frame and theme (behaviour change, test first)
+- [x] S5 · Ops pages render inside the studio's frame and theme (behaviour change, test first)
   - **Write the test first.** In portal-landing S2.4's "publishes, keeps drafts private…" test, add a step before the accent-only step:
     1. Open `/g/<slug>/patch-notes`, which warms its ISR cache.
     2. Publish the accent-only site (`#f59e0b`).
@@ -1450,5 +1450,6 @@ grep -rnE "Field (Notes|Board|report)|Track type|Studio Route|the signal|Payload
 - 2026-09-29 06:55 UTC · S2: mission DB built (`pnpm build` pass, first on the mission DB), dev super admin + tenant created over REST (credentials in `agent-state/missions/design-pass/dev-admin.txt`, 600), `pnpm seed:critter-connect` ok, `/g/critter-connect` 200. Before set: full run 102/103 passed (mobile CC "Contact, sent": Turnstile widget never rendered), that test re-shot and passed; 102 PNGs + `index.html` (all before images, after side "not captured"). Looked at landing/issues/report/`/` under all themes: Riso landing light, ops pages navy/cyan under every theme (F1, expected), `/` the Payload template. No source change, so no E2E.
 - 2026-09-29 07:00 UTC · S3: `lib/game-portal/landingPage.ts` (`getLandingPage` React-cached, `resolveFlagshipConfig` returning config + merged project/page media, `seedProjectMedia`) and `hooks/revalidateGamePortal.ts` extracted; landing page and both GameProject hooks call them, same log line. tsc pass; lint 0 errors/23 warnings; int 9/9; E2E 73/73.
 - 2026-09-29 07:06 UTC · S4: `render/SiteFrame.tsx` (`SiteRoot`, `SiteFrame`), `SiteNavLinks` (client, `aria-current`), solid `fs-nav` (NavShell and `[data-scrolled]` deleted), `SiteNav`/`SiteFooter` take `project`, footer = portal pages (studio labels via `resolveSiteActions`) + project links + legal links in one list, sentence-case `DEFAULT_ACTION_LABELS`, portal 404 inside `SiteRoot` with new copy; E2E portal-landing:116-118,156 updated. tsc pass; lint 0 errors/23 warnings; E2E 73/73; Look `default` desktop 21/21 (landing nav solid, footer uses CC's labels, 404 in default theme).
+- 2026-09-29 07:22 UTC · S5: test first: new S2.4 step "ops pages follow the published theme" (warm `/patch-notes`, publish accent `#f59e0b`, `eventually` read `.fs-root --fs-accent`) failed before the change (no `.fs-root`). Then `getPortalSiteConfig` (React-cached, published landing only, derived default for legacy/absent), `PortalChrome` is `SiteFrame` around it (own header/footer/link table/`--game-accent` gone), both GamePage hooks call `revalidateGamePortal` (source `game page <id>`); `revalidateGameLanding` untouched. tsc pass; lint 0 errors/23 warnings; int 9/9; E2E 73/73 (new step passes); Look `riso` desktop 15/15: nav and footer follow Riso on every ops page, bodies still the old dark cards (expected until S13–S17). `.cc-portal` rules left for S21's dead-layer sweep.
 
 ## Summary

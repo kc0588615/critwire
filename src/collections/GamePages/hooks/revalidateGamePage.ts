@@ -2,27 +2,30 @@ import type { CollectionAfterChangeHook, CollectionAfterDeleteHook } from 'paylo
 
 import type { GamePage } from '../../../payload-types'
 
-import { revalidateGameLanding } from '../../../hooks/revalidateGameLanding'
+import { revalidateGamePortal } from '../../../hooks/revalidateGamePortal'
 
-export const revalidateGamePage: CollectionAfterChangeHook<GamePage> = async ({
+// The landing's site config also frames the ops pages (theme, nav,
+// footer), so a landing change revalidates every portal page.
+
+export const revalidateGamePage: CollectionAfterChangeHook<GamePage> = ({
   doc,
   previousDoc,
   req: { context, payload },
 }) => {
   if (!context.disableRevalidate) {
     if (doc._status === 'published' || previousDoc?._status === 'published') {
-      await revalidateGameLanding(doc.gameProject, payload)
+      revalidateGamePortal(`game page ${doc.id}`, payload)
     }
   }
   return doc
 }
 
-export const revalidateGamePageDelete: CollectionAfterDeleteHook<GamePage> = async ({
+export const revalidateGamePageDelete: CollectionAfterDeleteHook<GamePage> = ({
   doc,
   req: { context, payload },
 }) => {
   if (!context.disableRevalidate && doc) {
-    await revalidateGameLanding(doc.gameProject, payload)
+    revalidateGamePortal(`game page ${doc.id}`, payload)
   }
   return doc
 }

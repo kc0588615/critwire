@@ -285,6 +285,21 @@ test.describe('S2.4 publishing a flagship page', () => {
   test('publishes, keeps drafts private, and falls back when unpublished', async ({ api, page }) => {
     const aMember = api('aMember')
 
+    await test.step('ops pages follow the published theme', async () => {
+      const opsPage = `/g/${project.slug}/patch-notes`
+      // Warm the ISR cache first, so only revalidation can bring in the new theme.
+      await page.goto(opsPage)
+      const { status, body } = await publish(aMember, { ...siteLike('Accent only'), theme: { colors: { accent: '#f59e0b' } } })
+      expect(status, JSON.stringify(body)).toBe(200)
+      await eventually(async () => {
+        await page.goto(opsPage)
+        const accent = await page
+          .locator('.fs-root')
+          .evaluate((el) => getComputedStyle(el).getPropertyValue('--fs-accent').trim(), undefined, { timeout: 1_000 })
+        expect(accent).toBe('#f59e0b')
+      })
+    })
+
     await test.step('setting only the accent keeps the default palette for the other colours', async () => {
       const site = siteLike('Accent only')
       const { status, body } = await publish(aMember, { ...site, theme: { colors: { accent: '#f59e0b' } } })
