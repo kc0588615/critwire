@@ -1,8 +1,12 @@
 import type { Metadata } from 'next'
 
+import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import React from 'react'
 
+import { FormField } from '@/components/game/FormField'
+import { FormNotice } from '@/components/game/FormNotice'
+import { PageHead } from '@/components/game/PageHead'
 import { TallyFormPanel } from '@/components/game/TallyEmbed'
 import { TurnstileField } from '@/components/game/TurnstileField'
 import { getContactRoute } from '@/lib/game-portal/formRoutes'
@@ -13,133 +17,129 @@ type Args = {
   searchParams: Promise<{ error?: string; submitted?: string }>
 }
 
-const ContactNotConfigured = ({ projectName }: { projectName: string }) => (
-  <div className="cc-panel rounded-lg p-6">
-    <h2 className="text-lg font-bold">Contact route is not configured</h2>
-    <p className="mt-2 text-slate-400">
-      {projectName} has not connected a public contact destination yet. Check back later or use one
-      of the studio links in the navigation.
-    </p>
-  </div>
-)
-
 export default async function ContactPage({ params, searchParams }: Args) {
   const { gameSlug } = await params
   const { error, submitted } = await searchParams
-  const publicProject = await getGameProject(gameSlug)
-  if (!publicProject) notFound()
+  const project = await getGameProject(gameSlug)
+  if (!project) notFound()
 
   const route = (await getContactRoute(gameSlug)) ?? { kind: 'none' }
 
   return (
-    <div className="cc-shell py-12">
-      <div className="mb-8">
-        <p className="cc-kicker">Studio Route</p>
-        <h1 className="mt-3 text-4xl font-black tracking-tight">Contact {publicProject.name}</h1>
-        <p className="mt-3 max-w-2xl text-slate-400">
-          Send a message to the studio through their chosen route.
-        </p>
-      </div>
-
-      {route.kind === 'tally' ? (
-        <TallyFormPanel
-          buttonLabel="Open contact form"
-          description={`${publicProject.name} collects messages through Tally.`}
-          display={route.display}
-          formUrl={route.url}
-          title="Contact the studio"
+    <div className="fs-shell fs-ops">
+      <div className="fs-column">
+        <PageHead
+          purpose={
+            <>
+              Questions, feedback or press requests go straight to the {project.name} team. For
+              bugs, use the{' '}
+              <Link className="fs-link" href={`/g/${gameSlug}/report`}>
+                report form
+              </Link>
+              .
+            </>
+          }
+          title="Contact"
         />
-      ) : route.kind === 'external' ? (
-        <div className="cc-panel max-w-3xl rounded-lg p-6">
-          <h2 className="text-lg font-bold">Contact the studio</h2>
-          <p className="mt-2 text-slate-400">
-            {publicProject.name} handles contact through an external support page.
+
+        {route.kind === 'tally' ? (
+          <TallyFormPanel
+            buttonLabel="Open contact form"
+            description={`The ${project.name} team takes messages through its own form.`}
+            display={route.display}
+            formUrl={route.url}
+            title="Contact form"
+          />
+        ) : route.kind === 'external' ? (
+          <div className="fs-form">
+            <p>
+              The {project.name} team takes messages on its own support page. It opens in a new tab.
+            </p>
+            <div>
+              <a
+                className="fs-btn fs-btn-primary"
+                href={route.url}
+                rel="noopener noreferrer"
+                target="_blank"
+              >
+                Open contact page
+              </a>
+            </div>
+          </div>
+        ) : route.kind === 'form' ? (
+          <>
+            {submitted === '1' ? (
+              <FormNotice className="mb-6" tone="success">
+                Message sent. If you left an email address, the {project.name} team can reply to it.
+              </FormNotice>
+            ) : null}
+            {error === '1' ? (
+              <FormNotice className="mb-6" tone="error">
+                Your message wasn’t sent, so nothing reached the studio. Check the fields, complete
+                the verification and send it again.
+              </FormNotice>
+            ) : null}
+
+            <form action={`/g/${gameSlug}/contact/submit`} className="fs-form" method="post">
+              <div className="fs-field-pair">
+                <FormField id="name" label="Name (optional)">
+                  {(control) => (
+                    <input
+                      {...control}
+                      className="fs-input"
+                      maxLength={120}
+                      name="name"
+                      type="text"
+                    />
+                  )}
+                </FormField>
+                <FormField id="email" label="Email (optional)">
+                  {(control) => (
+                    <input {...control} className="fs-input" name="email" type="email" />
+                  )}
+                </FormField>
+              </div>
+
+              <FormField id="subject" label="Subject (optional)">
+                {(control) => (
+                  <input
+                    {...control}
+                    className="fs-input"
+                    maxLength={160}
+                    name="subject"
+                    type="text"
+                  />
+                )}
+              </FormField>
+
+              <FormField id="message" label="Message">
+                {(control) => (
+                  <textarea
+                    {...control}
+                    className="fs-input fs-textarea"
+                    maxLength={5000}
+                    minLength={10}
+                    name="message"
+                    required
+                  />
+                )}
+              </FormField>
+
+              <div className="fs-form-submit">
+                <TurnstileField />
+                <button className="fs-btn fs-btn-primary" type="submit">
+                  Send message
+                </button>
+              </div>
+            </form>
+          </>
+        ) : (
+          <p className="fs-empty">
+            {project.name} hasn’t set up a contact form yet. Reach the team through the links in
+            the footer.
           </p>
-          <a
-            className="cc-button-primary mt-4"
-            href={route.url}
-            rel="noopener noreferrer"
-            target="_blank"
-          >
-            Open contact page
-          </a>
-        </div>
-      ) : route.kind === 'form' ? (
-        <>
-          {submitted === '1' && (
-            <div className="mb-6 rounded-md border border-emerald-300/30 bg-emerald-300/10 p-4 text-sm text-emerald-100">
-              Message sent. The team has the signal.
-            </div>
-          )}
-          {error === '1' && (
-            <div className="mb-6 rounded-md border border-rose-300/30 bg-rose-300/10 p-4 text-sm text-rose-100">
-              The message could not be submitted. Check the fields and try again.
-            </div>
-          )}
-
-          <form
-            action={`/g/${gameSlug}/contact/submit`}
-            className="cc-panel max-w-3xl space-y-5 rounded-lg p-6 sm:p-8"
-            method="post"
-          >
-            <div className="grid gap-5 sm:grid-cols-2">
-              <div>
-                <label className="block text-sm font-medium" htmlFor="name">
-                  Name (optional)
-                </label>
-                <input
-                  className="cc-input mt-1 px-3 py-2"
-                  id="name"
-                  maxLength={120}
-                  name="name"
-                  type="text"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium" htmlFor="email">
-                  Email (optional)
-                </label>
-                <input className="cc-input mt-1 px-3 py-2" id="email" name="email" type="email" />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium" htmlFor="subject">
-                Subject (optional)
-              </label>
-              <input
-                className="cc-input mt-1 px-3 py-2"
-                id="subject"
-                maxLength={160}
-                name="subject"
-                type="text"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium" htmlFor="message">
-                Message
-              </label>
-              <textarea
-                className="cc-input mt-1 min-h-40 px-3 py-2"
-                id="message"
-                maxLength={5000}
-                minLength={10}
-                name="message"
-                required
-              />
-            </div>
-
-            <TurnstileField />
-
-            <button className="cc-button-primary" type="submit">
-              Send message
-            </button>
-          </form>
-        </>
-      ) : (
-        <ContactNotConfigured projectName={publicProject.name} />
-      )}
+        )}
+      </div>
     </div>
   )
 }
@@ -150,7 +150,7 @@ export async function generateMetadata({ params }: Args): Promise<Metadata> {
   if (!project) return {}
 
   return {
-    description: `Contact the ${project.name} team.`,
-    title: `Contact — ${project.name}`,
+    description: `Questions, feedback or press requests for the ${project.name} team.`,
+    title: `Contact the ${project.name} team`,
   }
 }

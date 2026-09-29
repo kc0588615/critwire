@@ -45,7 +45,7 @@ export default async function ReportIssuePage({ params, searchParams }: Args) {
         {route.kind === 'tally' ? (
           <TallyFormPanel
             buttonLabel="Open report form"
-            description={`The ${project.name} team collects bug reports in Tally.`}
+            description={`The ${project.name} team takes bug reports through its own form.`}
             display={route.display}
             formUrl={route.url}
             title="Bug report form"

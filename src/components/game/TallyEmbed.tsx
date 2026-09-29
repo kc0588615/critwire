@@ -27,6 +27,11 @@ function loadTallyScript(): void {
   document.body.appendChild(script)
 }
 
+/** Shown instead of a form whose saved Tally URL doesn't parse. */
+const UNAVAILABLE = 'This form isn’t available right now.'
+
+const HostedBy = () => <p className="fs-meta">This form is hosted by Tally.</p>
+
 export type TallyEmbedProps = {
   /** Tally share URL, embed URL, or raw form ID */
   formUrl: string
@@ -36,8 +41,8 @@ export type TallyEmbedProps = {
 }
 
 /**
- * Standard Tally embed. Submissions are handled entirely by Tally —
- * Critwire only hosts the iframe. See https://tally.so/help/embed-your-form
+ * Standard Tally embed. Submissions are handled entirely by Tally;
+ * the portal only hosts the iframe. See https://tally.so/help/embed-your-form
  */
 export const TallyEmbed: React.FC<TallyEmbedProps> = ({
   className,
@@ -54,17 +59,12 @@ export const TallyEmbed: React.FC<TallyEmbedProps> = ({
     return () => window.clearTimeout(id)
   }, [parsed])
 
-  if (!parsed) {
-    return (
-      <p className="text-sm text-rose-300">
-        This Tally form URL is invalid. Update it in the game project settings.
-      </p>
-    )
-  }
+  if (!parsed) return <p className={className}>{UNAVAILABLE}</p>
 
   return (
-    <div className={className}>
+    <div className={className ? `fs-tally ${className}` : 'fs-tally'}>
       <iframe
+        className="fs-tally-frame"
         data-tally-src={parsed.embedUrl}
         frameBorder="0"
         height="200"
@@ -74,18 +74,7 @@ export const TallyEmbed: React.FC<TallyEmbedProps> = ({
         title={title}
         width="100%"
       />
-      <p className="mt-3 text-xs text-slate-500">
-        Form submissions are managed in{' '}
-        <a
-          className="text-cyan-200 underline"
-          href="https://tally.so"
-          rel="noopener noreferrer"
-          target="_blank"
-        >
-          Tally
-        </a>
-        , not Critwire.
-      </p>
+      <HostedBy />
     </div>
   )
 }
@@ -95,6 +84,7 @@ export type TallyFormPanelProps = {
   /** embed shows iframe; button opens the share URL */
   display: 'button' | 'embed'
   buttonLabel: string
+  /** The iframe's accessible name; the page's h1 already names the form. */
   title?: string
   description?: string
 }
@@ -109,37 +99,32 @@ export const TallyFormPanel: React.FC<TallyFormPanelProps> = ({
   const parsed = parseTallyForm(formUrl)
   if (!parsed) {
     return (
-      <div className="cc-panel rounded-lg p-6">
-        <p className="text-sm text-rose-300">Invalid Tally form URL configured for this project.</p>
-      </div>
-    )
-  }
-
-  if (display === 'button') {
-    return (
-      <div className="cc-panel max-w-3xl rounded-lg p-6 sm:p-8">
-        {title ? <h2 className="text-lg font-bold">{title}</h2> : null}
-        {description ? <p className="mt-2 text-slate-400">{description}</p> : null}
-        <a
-          className="cc-button-primary mt-4"
-          href={parsed.shareUrl}
-          rel="noopener noreferrer"
-          target="_blank"
-        >
-          {buttonLabel}
-        </a>
-        <p className="mt-4 text-xs text-slate-500">
-          Opens a Tally form. Submissions are managed in Tally, not Critwire.
-        </p>
+      <div className="fs-form">
+        <p>{UNAVAILABLE}</p>
       </div>
     )
   }
 
   return (
-    <div className="cc-panel max-w-3xl rounded-lg p-6 sm:p-8">
-      {title ? <h2 className="mb-4 text-lg font-bold">{title}</h2> : null}
-      {description ? <p className="mb-4 text-slate-400">{description}</p> : null}
-      <TallyEmbed formUrl={formUrl} title={title ?? buttonLabel} />
+    <div className="fs-form">
+      {description ? <p>{description}</p> : null}
+      {display === 'button' ? (
+        <div className="fs-tally">
+          <div>
+            <a
+              className="fs-btn fs-btn-primary"
+              href={parsed.shareUrl}
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              {buttonLabel}
+            </a>
+          </div>
+          <HostedBy />
+        </div>
+      ) : (
+        <TallyEmbed formUrl={formUrl} title={title ?? buttonLabel} />
+      )}
     </div>
   )
 }

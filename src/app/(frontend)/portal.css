@@ -1128,6 +1128,18 @@
   min-height: 65px;
 }
 
+/* A Tally form (button or iframe), then the line saying Tally hosts it. The
+   iframe keeps the form's own Tally background, so it gets the control radius. */
+.fs-tally {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.fs-tally-frame {
+  display: block;
+  border-radius: var(--fs-radius-control);
+}
+
 /* A form's outcome: fg text beside a status shape; the colour is only the shape's fill. */
 .fs-notice {
   display: flex;

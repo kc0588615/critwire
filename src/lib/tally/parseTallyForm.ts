@@ -4,7 +4,7 @@
  * Accepted shapes:
  *   https://tally.so/r/wMzXab
  *   https://tally.so/embed/wMzXab
- *   https://tally.so/r/wMzXab?transparentBackground=1
+ *   https://tally.so/r/wMzXab?transparentBackground=1  (query ignored)
  *   wMzXab  (raw form id)
  */
 
@@ -19,6 +19,14 @@ export type ParsedTallyForm = {
 /** Form IDs are short base62-ish tokens from Tally. */
 const FORM_ID_RE = /^[A-Za-z0-9]{4,32}$/
 
+/**
+ * No `transparentBackground`: the form keeps the background of its own
+ * Tally theme, so its text stays readable on any portal theme (Tally's
+ * default dark text on a dark portal panel would not be).
+ */
+const embedUrl = (formId: string) =>
+  `https://tally.so/embed/${formId}?alignLeft=1&hideTitle=1&dynamicHeight=1`
+
 export function parseTallyForm(
   value: null | string | undefined,
 ): null | ParsedTallyForm {
@@ -29,7 +37,7 @@ export function parseTallyForm(
   // Bare form id
   if (FORM_ID_RE.test(trimmed) && !trimmed.includes('/') && !trimmed.includes('.')) {
     return {
-      embedUrl: `https://tally.so/embed/${trimmed}?alignLeft=1&hideTitle=1&transparentBackground=1&dynamicHeight=1`,
+      embedUrl: embedUrl(trimmed),
       formId: trimmed,
       shareUrl: `https://tally.so/r/${trimmed}`,
     }
@@ -47,7 +55,7 @@ export function parseTallyForm(
     if (!formId || !FORM_ID_RE.test(formId)) return null
 
     return {
-      embedUrl: `https://tally.so/embed/${formId}?alignLeft=1&hideTitle=1&transparentBackground=1&dynamicHeight=1`,
+      embedUrl: embedUrl(formId),
       formId,
       shareUrl: `https://tally.so/r/${formId}`,
     }

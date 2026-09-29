@@ -316,7 +316,7 @@ test.describe('S5.4–S5.6 contact form', () => {
         contact: { target: 'EMAIL' },
       })
       await open(page, contactPath(project.slug))
-      await expect(page.getByText('Contact route is not configured')).toBeVisible()
+      await expect(page.getByText('set up a contact form yet')).toBeVisible()
       const { status } = await submitForm(api('anonymous'), contactPath(project.slug), {
         message: message('unconfigured'),
         turnstileToken: TURNSTILE_DUMMY_TOKEN,
