@@ -21,6 +21,9 @@ export const IssueFilters: React.FC = () => {
     { shallow: false },
   )
 
+  // The board shows every public issue by status; the filters only apply to the list.
+  const board = params.view === 'board'
+
   return (
     <form
       className="fs-filters"
@@ -30,51 +33,55 @@ export const IssueFilters: React.FC = () => {
         void setParams({ page: 1, q: q || null })
       }}
     >
-      <label className="fs-filters-search">
-        <span className="sr-only">Search issues</span>
-        <input
-          className="fs-input"
-          defaultValue={params.q}
-          key={params.q}
-          name="q"
-          placeholder="Search issues…"
-          type="search"
-        />
-      </label>
-      <label>
-        <span className="sr-only">Category</span>
-        <select
-          className="fs-input fs-select"
-          onChange={(e) => void setParams({ category: e.target.value || null, page: 1 })}
-          value={params.category}
-        >
-          <option value="">All categories</option>
-          {ISSUE_CATEGORY_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label>
-        <span className="sr-only">Sort by</span>
-        <select
-          className="fs-input fs-select"
-          onChange={(e) =>
-            void setParams({ page: 1, sort: e.target.value === 'top' ? null : e.target.value })
-          }
-          value={params.sort}
-        >
-          <option value="top">Most upvoted</option>
-          <option value="latest">Latest</option>
-        </select>
-      </label>
+      {board ? null : (
+        <>
+          <label className="fs-filters-search">
+            <span className="sr-only">Search issues</span>
+            <input
+              className="fs-input"
+              defaultValue={params.q}
+              key={params.q}
+              name="q"
+              placeholder="Search issues…"
+              type="search"
+            />
+          </label>
+          <label>
+            <span className="sr-only">Category</span>
+            <select
+              className="fs-input fs-select"
+              onChange={(e) => void setParams({ category: e.target.value || null, page: 1 })}
+              value={params.category}
+            >
+              <option value="">All categories</option>
+              {ISSUE_CATEGORY_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <span className="sr-only">Sort by</span>
+            <select
+              className="fs-input fs-select"
+              onChange={(e) =>
+                void setParams({ page: 1, sort: e.target.value === 'top' ? null : e.target.value })
+              }
+              value={params.sort}
+            >
+              <option value="top">Most upvoted</option>
+              <option value="latest">Latest</option>
+            </select>
+          </label>
+        </>
+      )}
       <button
         className="fs-btn fs-btn-secondary fs-filters-view"
-        onClick={() => void setParams({ view: params.view === 'board' ? null : 'board' })}
+        onClick={() => void setParams({ view: board ? null : 'board' })}
         type="button"
       >
-        {params.view === 'board' ? 'List view' : 'Board view'}
+        {board ? 'List view' : 'Board view'}
       </button>
     </form>
   )

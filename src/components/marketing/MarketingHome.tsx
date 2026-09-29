@@ -2,7 +2,7 @@ import Link from 'next/link'
 import React from 'react'
 
 import { IssueLoop } from './IssueLoop'
-import { DEMO_PORTAL_HREF, SIGN_IN_HREF } from './links'
+import { DEMO_PORTAL_HREF } from './links'
 
 /** What a studio's portal gives players; every entry opens that page of the demo. */
 const PORTAL_PAGES = [
@@ -52,9 +52,6 @@ export function MarketingHome() {
             <div className="cw-actions">
               <Link className="cw-btn" href={DEMO_PORTAL_HREF}>
                 See a live portal
-              </Link>
-              <Link className="cw-tap cw-link" href={SIGN_IN_HREF}>
-                Sign in
               </Link>
             </div>
           </div>

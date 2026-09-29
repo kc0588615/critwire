@@ -89,7 +89,9 @@ export const deriveFlagshipDefault = (project: GameProject): SiteConfigV1 => {
           ],
     },
     finalCta: {
-      // null: the renderer's "Play {name}" names the game.
+      // Only a game players can get has a closing "Play {name}" (the null
+      // heading); without one it would repeat the community's actions.
+      enabled: storeAction !== null,
       heading: null,
       primaryAction: storeAction ?? { label: null, ref: 'report' },
       secondaryAction: { label: null, ref: 'contact' },

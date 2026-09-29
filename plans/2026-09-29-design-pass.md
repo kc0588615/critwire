@@ -1275,7 +1275,7 @@ Revision by the `architect`, 2026-09-29. Every claim was checked against the cod
     - probe failures are fixed here if they're small (run E2E if the fix changes markup); otherwise they become the first inputs to S23;
     - fill in the after row of the Screenshot record.
 
-- [ ] S23 · Self-critique from the screenshots, and its fixes
+- [x] S23 · Self-critique from the screenshots, and its fixes
   - **Review:** open the after PNGs next to their befores in `index.html`. At minimum, cover all three themes of the landing, issues, board, issue detail and report, plus `/`, at both widths.
   - **Critique against the skill:**
     - the five generic clusters;
@@ -1376,7 +1376,7 @@ Screenshot record:
 |---|---|---|---|---|---|---|
 | before | S2 | `f86f948` (src = `669376c`) | 2026-09-29 06:47–06:53 | full set, then `SHOTS_THEMES=critter-connect SHOTS_SKIP_BUILD=1 … --project mobile --grep "Contact, sent"` (see Log) | 102 | n/a |
 | after | S22 | `7a94e4c` + the S22 diff (uncommitted at capture, `meta.json` says so; committed as S22) | 2026-09-29 11:03–11:09 | full set, `SHOTS_SET=after SHOTS_DIR=$DIR pnpm screenshots` | 102 | 102 captures probed, 340 checks, 0 failures (`after/checks.json`) |
-| after, post-critique | S23 | | | | | |
+| after, post-critique | S23 | `b8e5a80` + the S23 diff (uncommitted at capture, `meta.json` says so; committed as S23) | 2026-09-29 11:29–11:35 | full set, `SHOTS_SET=after SHOTS_DIR=$DIR pnpm screenshots` (an 11:23 run before the board-toggle fix was overwritten) | 102 | 102 captures probed, 340 checks, 0 failures |
 | after, final (if re-shot) | S24 | | | | | |
 
 **Quality floor, and what proves each part**
@@ -1546,6 +1546,28 @@ grep -rnE "Field (Notes|Board|report)|Track type|Studio Route|the signal|Payload
   - **Probe 4 found `fs-settle` left attached:** the hero plate's animation used `fill-mode: both`, so under reduced motion the finished animation stayed in `getAnimations()`. Its end state is the plate's own (`transform: none`), so it's now `backwards`: same look, nothing left attached. The marketing loop already used `backwards`.
   - **Index:** each after image shows its probes (pass list, or each failure's detail) from `after/checks.json`, which is keyed by PNG name so a re-shot page replaces its entry.
 
+### Self-critique
+
+S23, 2026-09-29. Reviewed the S22 after set in `index.html` against the skill: the landing (all three themes, both widths, cropped to full length), issues, board, issue detail, report, patch notes, the bare landing and `/`.
+
+- **What held up:**
+  - **Boldness in two places only:** the Critwire slip and the portal title plate. The ops pages are calm under every theme.
+  - **White-label:** Riso lime reads as a designed light theme: serif voice, sharp corners, a blue fill, the dark art under a lime plate.
+  - **No generic clusters:** no cream/terracotta, no acid-on-black, no card kit or gradient washes, no mono labels, arrows or `·` joins. The only labels above content are the loop's stage names, which are a real sequence.
+  - **Quality floor:** S22's probes are clean (340 checks).
+- **Findings and the changes they led to:**
+  1. **The landing was mostly empty space.** Two neighbouring sections added up to two full `--fs-section-y` paddings (16rem at `cinematic`), so the CC landing ran past 6000 px with long dead gaps. *Change:* `portal.css` `.fs-section + .fs-section` halves the top padding, so neighbours sit 1.5 steps apart. The first and last sections keep a full step.
+  2. **At 390 px the nav cut the game's name** ("Critter Con…") to make room for the CTA. *Change:* `portal.css` hides `.fs-nav-cta` below 40rem. The landing hero repeats the call to action right below, and the ops pages are what players come for. **This is the portal's removed accessory.**
+  3. **The default voice ran words together.** Archivo at 78% width also narrows the space, so "Critter Connect" in the nav and the ops h1s read as one word. *Change:* `themeStyle.ts` `DISPLAY` gains `wordSpacing` (`modern` 0.08em, the other voices 0), emitted as `--fs-display-word-spacing` and used by `.fs-display`/`.fs-h1`/`.fs-h2`/`.fs-page-title`.
+  4. **The board showed filters that did nothing** (left for S23 in S14). The board query ignores search, category and sort. *Change:* `IssueFilters.tsx` renders only the view toggle in board view, and `portal.css` left-aligns the toggle when it's the only control. Behaviour is unchanged; E2E only reads the toggle.
+  5. **The derived default repeated itself and made a false claim.** A project without a store, demo or Discord link got a final CTA headed "Play {name}" with the same "Report a bug / Contact" pair as the community section just above it. *Change:* `defaults.ts` derives `finalCta.enabled` from `storeAction`, so the closing call appears only when there's a game to get. Studios can still turn it on in the admin.
+  6. **Marketing: "Sign in" appeared twice in the first viewport,** in the header and again beside the hero button. *Change:* `MarketingHome.tsx` drops the hero's "Sign in", so the slip has one action, "See a live portal". **This is the marketing site's removed accessory.**
+- **Kept on purpose:**
+  - **Status labels stay in Title Case** ("Needs More Info", "Workaround Available"). They come from `collections/options.ts`, which the admin shares, and §8 keeps portal and admin names matching. Renaming them would touch the out-of-scope admin and E2E's board region names.
+  - **The community banner stays centred** (§5). It's the one centred block, and it reads as a pause between the lists.
+  - **Each ops `PageHead` action sits beside the purpose line,** not the title. It lines up with the list's right edge, which the lists below need more.
+  - **Repeated art in the CC demo** (hero, gallery and community use the same key art) is the seed's content, not the design's.
+
 ## Log
 
 - 2026-09-29 05:13 UTC · Baseline: E2E db and env set up, migrations applied; tsc pass, lint 0 errors/23 warnings, int 9/9, E2E 73/73.
@@ -1576,5 +1598,6 @@ grep -rnE "Field (Notes|Board|report)|Track type|Studio Route|the signal|Payload
 - 2026-09-29 10:39 UTC · S20: CMS pages on paper in one 62ch column (`.cw-page`, `.cw-page-column`); `LowImpact`/`MediumImpact` in the column, `HighImpact` as the yellow slip with media below, shared `HeroLinks`; CTA as an Ink-ruled close; Content/MediaBlock on `.cw-shell`, captions without prose; `Button` pruned to default/outline/link at 44/48 px with no `dark:` or focus overrides. Harness `about-critwire` gets an h1 hero and a CTA. tsc pass; lint 0 errors/20 warnings; E2E 73/73; no `dark:`/`data-theme`/`container` left in the S20 files; Look `marketing` both widths 7/7: h1, column, CTA buttons and 404 read at 1440 and 390 (block rhythm tightened to 2–3rem after the first Look).
 - 2026-09-29 10:53 UTC · S21: legacy blocks on `fs-*` (hero as plate/bare, feature grid, figures, trailer frame, CTA; `GameButtons` on `fs-btn`; wrappers gone); `globals.css` is the shared entry only (`--ds-*`, `cc-*`, `glass-*`, `glow-*`, shadcn light/dark palette, chart/sidebar/radius tokens, `dark` variant and dead safelist gone; five shadcn mappings kept for `Button`; admin excluded as a source); deleted unused `ui/card`, `ui/select`, `tw-animate-css`, `@radix-ui/react-select`. tsc pass; lint 0 errors/20 warnings; E2E 73/73; all six audits empty; `pnpm build` pass, no font-host URL in `.next/static`, built CSS has no `cc-`/`glass-`/`glow-`/`--ds-`/sidebar/chart/`data-theme`; Look all groups desktop 52/52: legacy landing in the studio frame (plate hero, flat features, CTA), marketing, CMS page and ops pages unchanged.
 - 2026-09-29 11:20 UTC · S22: `tests/screenshots/probes.ts` (7 probes, soft-asserted on after runs, merged into `after/checks.json`; marketing focus via one `Tab` after the `/` capture; prose probe covers status notes), index shows each after image's probes; first run 91/103 (probe 4: `fs-settle` fill `both` left the finished animation attached; probe 5: callout issue has no rich text), `fs-settle` → `backwards` and probe widened (see Decisions). Full after set re-shot: 103/103, 102 PNGs, 0 "not captured", 340 checks 0 failures. tsc pass; lint 0 errors/20 warnings; E2E 73/73; Looked at the CC landing focus shot: plate settled, ring visible.
+- 2026-09-29 11:37 UTC · S23: self-critique of the S22 set (see Decisions › Self-critique); 6 changes: section rhythm 1.5 steps, nav CTA hidden below 40rem (name no longer truncated), `modern` display word spacing, board shows only the view toggle (left-aligned), derived final CTA only with a store action, marketing hero drops the duplicate "Sign in". tsc pass; lint 0 errors/20 warnings; E2E 73/73 (before the CSS-only toggle alignment); six audits empty; after set re-shot 103/103, 102 PNGs, 0 "not captured", 340 probe checks 0 failures; re-looked at the CC 390/1440 landing, bare landing and both boards.
 
 ## Summary

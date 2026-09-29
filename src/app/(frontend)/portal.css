@@ -54,6 +54,11 @@
   padding-block: var(--fs-section-y);
 }
 
+/* Neighbouring sections share one and a half steps, not two full paddings. */
+.fs-section + .fs-section {
+  padding-top: calc(var(--fs-section-y) / 2);
+}
+
 /* ── Type scale (plan §4) ───────────────────────────────── */
 
 .fs-display,
@@ -64,6 +69,7 @@
   font-stretch: var(--fs-display-stretch);
   font-weight: var(--fs-display-weight);
   letter-spacing: var(--fs-display-tracking);
+  word-spacing: var(--fs-display-word-spacing);
 }
 
 /* Hero title: the landing's one loud line. */
@@ -261,6 +267,14 @@
 
 .fs-nav-cta {
   grid-area: cta;
+}
+
+/* Phones: the game's name gets the row. The landing hero repeats the call to
+   action, and the ops pages are what players come to the portal for. */
+@media (max-width: 39.99rem) {
+  .fs-nav-cta {
+    display: none;
+  }
 }
 
 /* Below 64rem the links scroll sideways to the screen edge: no hamburger, so
@@ -795,8 +809,9 @@
   justify-self: end;
 }
 
-/* Issue filters: search, category, sort, then the view toggle. Below
-   40rem the search takes a full row and the rest wrap under it. */
+/* Issue filters: search, category, sort, then the view toggle (the board
+   shows the toggle alone). Below 40rem the search takes a full row and the
+   rest wrap under it. */
 .fs-filters {
   display: flex;
   flex-wrap: wrap;
@@ -833,6 +848,11 @@
 
   .fs-filters-view {
     margin-left: auto;
+  }
+
+  /* Board view: the toggle is the only control, so it starts the row. */
+  .fs-filters-view:only-child {
+    margin-left: 0;
   }
 }
 

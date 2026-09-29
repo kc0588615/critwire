@@ -9,6 +9,7 @@ type DisplayVoice = {
   stretch: string
   tracking: string
   weight: number
+  wordSpacing: string
 }
 
 /** The display voice per `typography` token; the faces come from `../fonts.ts`. */
@@ -20,6 +21,7 @@ const DISPLAY: Record<SiteThemeV1['typography'], DisplayVoice> = {
     stretch: '100%',
     tracking: '-0.02em',
     weight: 400,
+    wordSpacing: '0',
   },
   modern: {
     family: 'var(--font-archivo), system-ui, sans-serif',
@@ -28,6 +30,8 @@ const DISPLAY: Record<SiteThemeV1['typography'], DisplayVoice> = {
     stretch: '78%',
     tracking: '-0.012em',
     weight: 800,
+    // The 78% width narrows the space too; without this, words run together.
+    wordSpacing: '0.08em',
   },
   technical: {
     family: 'var(--font-science-gothic), system-ui, sans-serif',
@@ -36,6 +40,7 @@ const DISPLAY: Record<SiteThemeV1['typography'], DisplayVoice> = {
     stretch: '112%',
     tracking: '0',
     weight: 700,
+    wordSpacing: '0',
   },
 }
 
@@ -78,6 +83,7 @@ export const themeStyle = (theme: SiteThemeV1): CSSProperties => {
     '--fs-display-weight': voice.weight,
     '--fs-display-stretch': voice.stretch,
     '--fs-display-tracking': voice.tracking,
+    '--fs-display-word-spacing': voice.wordSpacing,
     '--fs-display-scale': voice.scale,
     '--fs-display-leading': voice.leading,
   } as CSSProperties
