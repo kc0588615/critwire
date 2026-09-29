@@ -2,7 +2,7 @@
 mission: design-pass
 project: critwire
 branch: agent/design-pass
-status: active
+status: done
 started: 2026-09-29 05:06 UTC
 ---
 
@@ -1291,7 +1291,7 @@ Revision by the `architect`, 2026-09-29. Every claim was checked against the cod
   - **Re-shoot** the after set with the S22 command.
   - **Checks:** base checks; E2E; clean probes; fill in the post-critique row of the Screenshot record.
 
-- [ ] S24 · Final verification and Summary
+- [x] S24 · Final verification and Summary
   - **Verify:**
     - Run all of Verification in order, E2E first.
     - Copy `playwright-report/` to `/srv/critter-ai/agent-state/missions/design-pass/e2e-final/`.
@@ -1377,7 +1377,7 @@ Screenshot record:
 | before | S2 | `f86f948` (src = `669376c`) | 2026-09-29 06:47–06:53 | full set, then `SHOTS_THEMES=critter-connect SHOTS_SKIP_BUILD=1 … --project mobile --grep "Contact, sent"` (see Log) | 102 | n/a |
 | after | S22 | `7a94e4c` + the S22 diff (uncommitted at capture, `meta.json` says so; committed as S22) | 2026-09-29 11:03–11:09 | full set, `SHOTS_SET=after SHOTS_DIR=$DIR pnpm screenshots` | 102 | 102 captures probed, 340 checks, 0 failures (`after/checks.json`) |
 | after, post-critique | S23 | `b8e5a80` + the S23 diff (uncommitted at capture, `meta.json` says so; committed as S23) | 2026-09-29 11:29–11:35 | full set, `SHOTS_SET=after SHOTS_DIR=$DIR pnpm screenshots` (an 11:23 run before the board-toggle fix was overwritten) | 102 | 102 captures probed, 340 checks, 0 failures |
-| after, final (if re-shot) | S24 | | | | | |
+| after, final | S24 | not re-shot: every source file in S23 was last modified by 11:27:38 UTC, before the 11:29 capture, so the S23 set shows the tree at `d5b591a` | — | — | 102 | 102 captures, 340 checks, 0 failures |
 
 **Quality floor, and what proves each part**
 
@@ -1599,5 +1599,112 @@ S23, 2026-09-29. Reviewed the S22 after set in `index.html` against the skill: t
 - 2026-09-29 10:53 UTC · S21: legacy blocks on `fs-*` (hero as plate/bare, feature grid, figures, trailer frame, CTA; `GameButtons` on `fs-btn`; wrappers gone); `globals.css` is the shared entry only (`--ds-*`, `cc-*`, `glass-*`, `glow-*`, shadcn light/dark palette, chart/sidebar/radius tokens, `dark` variant and dead safelist gone; five shadcn mappings kept for `Button`; admin excluded as a source); deleted unused `ui/card`, `ui/select`, `tw-animate-css`, `@radix-ui/react-select`. tsc pass; lint 0 errors/20 warnings; E2E 73/73; all six audits empty; `pnpm build` pass, no font-host URL in `.next/static`, built CSS has no `cc-`/`glass-`/`glow-`/`--ds-`/sidebar/chart/`data-theme`; Look all groups desktop 52/52: legacy landing in the studio frame (plate hero, flat features, CTA), marketing, CMS page and ops pages unchanged.
 - 2026-09-29 11:20 UTC · S22: `tests/screenshots/probes.ts` (7 probes, soft-asserted on after runs, merged into `after/checks.json`; marketing focus via one `Tab` after the `/` capture; prose probe covers status notes), index shows each after image's probes; first run 91/103 (probe 4: `fs-settle` fill `both` left the finished animation attached; probe 5: callout issue has no rich text), `fs-settle` → `backwards` and probe widened (see Decisions). Full after set re-shot: 103/103, 102 PNGs, 0 "not captured", 340 checks 0 failures. tsc pass; lint 0 errors/20 warnings; E2E 73/73; Looked at the CC landing focus shot: plate settled, ring visible.
 - 2026-09-29 11:37 UTC · S23: self-critique of the S22 set (see Decisions › Self-critique); 6 changes: section rhythm 1.5 steps, nav CTA hidden below 40rem (name no longer truncated), `modern` display word spacing, board shows only the view toggle (left-aligned), derived final CTA only with a store action, marketing hero drops the duplicate "Sign in". tsc pass; lint 0 errors/20 warnings; E2E 73/73 (before the CSS-only toggle alignment); six audits empty; after set re-shot 103/103, 102 PNGs, 0 "not captured", 340 probe checks 0 failures; re-looked at the CC 390/1440 landing, bare landing and both boards.
+- 2026-09-29 11:45 UTC · S24: final Verification at `d5b591a`: E2E 73/73, no retries (report copied to `e2e-final/`); tsc pass; lint 0 errors/20 warnings (none in added files); int 9/9; `dev` row absent, migrate:status all ran; `pnpm build` pass, no font-host URL in `.next/static`; six audits empty; marketing contrast 5.55–13.74; after set not re-shot (no source change since the S23 capture), 102/102 PNGs, 340 probe checks 0 failures. Summary written, status done.
 
 ## Summary
+
+Finished 2026-09-29 at 11:45 UTC on `agent/design-pass` (pushed, not merged). Critwire's marketing site and every studio-portal page have a new design, built from the Architecture section's design plan and adjusted by the self-critique. The branch has 129 files changed since `669376c`.
+
+### Final design plan, as built
+
+**Concept.**
+- **Critwire, "Addendum":** the coloured "read me first" slip that used to ship inside game boxes, listing late changes and known issues. It's the paper ancestor of patch notes. One yellow slip carries the headline and the report-to-fix loop; everything after it is ink on paper.
+- **Portal, "title plate":** the studio's key art runs untouched under a solid nav, and the game's title sits on a plate of page colour cut into the art's lower-left corner, with the live build facts beneath it. That's the portal's only loud element. The ops pages (patch notes, issues, board, issue detail, report, contact) share one calm, left-aligned reading column.
+
+**Palette.**
+- **Critwire:**
+  - Slip yellow `#F6D33C`: the hero field, and CTA text on ink.
+  - Ink `#1D1F55`: text, CTA fills, the loop's wire and the footer band.
+  - Paper `#F2F3F8`: the page background after the hero.
+  - Graphite `#4A4D6E`: secondary text.
+  - Contrast runs from 5.55 to 13.74:1. There are no gradients, shadows or second accent.
+- **Portal themes** (each passes the schema's six WCAG pairs):
+  - **Slate & signal (new default):** bg `#1F2030`, surface `#282A3D`, fg `#F1F1F5`, muted `#A9ACC2`, accent signal lilac `#AEB8FF`. Voice modern, shape balanced, density cinematic.
+  - **Night canopy (Critter Connect):** bg `#0F1F26`, accent firefly amber `#F3B340`, taken from the game's clue trails. Voice technical.
+  - **Riso lime (the white-label test theme):** light bg `#EEF4D2`, accent riso blue `#2446E8` with white text. Voice editorial, shape sharp, density compact.
+- **Token contract (§2):** it's what makes any valid theme work. Accent is only ever a fill and never text; muted-fg draws every control border; border is decorative only; status colours only fill shape markers that sit beside a text label. Focus is a two-tone `fg`/`bg` ring, and text never sits on art.
+
+**Type.** All fonts are OFL 1.1 and self-hosted through `next/font`, with no runtime requests.
+- **Body and UI everywhere:** Atkinson Hyperlegible Next. Every numeral uses it, with tabular tallies.
+- **Critwire display:** Anybody, wide (wdth 108–130).
+- **Portal display voices,** chosen by the existing `typography` token:
+  - modern: Archivo at 78% width, w800, with 0.08em word spacing (added by the self-critique);
+  - editorial: Young Serif;
+  - technical: Science Gothic at 112% width.
+- **No new theme enums:** `themeStyle.ts` maps the existing typography, shape, density and motion values to display, radius and section-rhythm tables.
+- **No uppercase text** anywhere.
+
+**Layout.**
+- **Shell:** 1180 px, with ops columns of 46rem (detail pages and forms) and 60rem (lists). Everything is left-aligned and ragged right; only the studio-chosen centred hero variants, the community banner and the 404s are centred.
+- **One chrome on every portal page:** `SiteFrame`, which renders the published landing theme, nav and footer on the ops pages too.
+- **Status markers are CSS shapes:** ring, half, diamond and dot, each always beside its label. The Critwire hero loop draws them too.
+- **At 390 px:** the nav links scroll in their own row, forms and filters stack, the board scrolls sideways, and targets are at least 44 px.
+
+**Principles.**
+- **Critwire:** show the loop, not adjectives. One loud colour field. Type does the shouting. Claims only about what's built.
+- **Portal:** the studio's art and words lead. Loud once, then calm ops pages. One chrome and one theme. Status has a shape, not only a colour. The token contract guarantees any theme rather than hoping for it.
+
+**Motion.** Each surface has one moment:
+- **Critwire:** the loop's wire draws over 2.2 s, in CSS only.
+- **Portal landing:** the title plate settles, 700 ms, transform only.
+- **Everything else:** only action feedback (the vote count roll and ghost, a 0.98 press). Reduced motion and the theme's `motion: off` show the end states.
+
+**Deviations from §3–§6 as built** (details under Decisions):
+- `/`'s headline wraps to four lines at 1440, not three.
+- The home hero has one action ("See a live portal").
+- `HighImpact` CMS heroes became the yellow slip.
+- The CMS `home` slug is no longer special.
+- The nav CTA is hidden below 40rem, instead of truncating the game's name.
+- Neighbouring sections sit 1.5 rhythm steps apart.
+- The board shows only the view toggle.
+- The derived final CTA appears only when there's a store action.
+- The legacy `gameHero` uses the plate, not a scrim.
+- Tally embeds keep their own background.
+- In the CC seed, `showLogo` is off and the final CTA has no art.
+
+### What the self-critique changed (S23)
+
+1. **Section rhythm:** neighbouring landing sections sat two full paddings apart (16rem), so the CC landing ran past 6000 px. They now sit 1.5 steps apart.
+2. **Nav at 390 px:** the CTA truncated "Critter Con…", so it's hidden below 40rem. This is the portal's removed accessory; the hero repeats the CTA.
+3. **Word spacing:** Archivo at 78% width ran words together, so the modern voice gains `--fs-display-word-spacing: 0.08em`.
+4. **Board filters:** they did nothing in board view, so the board now shows only the view toggle.
+5. **Derived final CTA:** it said "Play {name}" without a store link, repeating the community actions. It's now enabled only when there's a store action.
+6. **Marketing hero:** "Sign in" appeared twice in the first viewport, so it left the hero. This is the marketing site's removed accessory.
+
+### Artifacts
+
+- **Screenshot index:** `/srv/critter-ai/agent-state/missions/design-pass/screenshots/index.html`.
+  - 102 before and 102 after PNGs (1440 and 390 px), covering the portal under Slate & signal, Night canopy and Riso lime, plus marketing.
+  - 0 "not captured".
+  - `after/checks.json`: 340 quality-floor probe checks, 0 failures.
+- **E2E report:** `/srv/critter-ai/agent-state/missions/design-pass/e2e-final/`.
+  - Reproduce with `pnpm test:e2e`.
+  - View with `pnpm exec playwright show-report /srv/critter-ai/agent-state/missions/design-pass/e2e-final`.
+  - The pre-change report is in `e2e-baseline/`.
+- **Screenshots, reproducible:** `SHOTS_SET=after SHOTS_DIR=/srv/critter-ai/agent-state/missions/design-pass/screenshots pnpm screenshots`.
+
+### Check results (S24, commit `d5b591a`)
+
+- **E2E:** 73 passed, 0 failed, no retries (3.8 min).
+- **Typecheck:** `tsc --noEmit` exit 0.
+- **Lint:** 0 errors and 20 warnings, down from 23 at baseline, none in files this mission added.
+- **Int tests:** 3 files, 9 tests passed.
+- **Migrations:** `migrate:status` shows every migration ran, including `20260929_074053_design_default_theme`.
+- **Build:** `pnpm build` exit 0, and no `fonts.googleapis.com`/`gstatic.com` URL in `.next/static`.
+- **Audits:** all six Verification audits print nothing.
+- **Marketing contrast:** 5.55–13.74:1.
+
+### Reviews
+
+- **Fable:** APPROVE_WITH_CHANGES. All 4 MUST-FIX items were resolved at Revision.
+- **Astra:** skipped (usage limit, exit 3).
+
+### Waiting on the owner
+
+- **H6:** three facts about `/`:
+  - Is the CC demo seeded in production?
+  - Does a CMS `home` page exist? It's now only reachable at `/home`.
+  - Should the marketing page have a contact link?
+
+  Nothing is blocked; only whether the marketing page's links work in production depends on it.
+- **H3** (production form-protection keys, from architecture-pass) is still parked as `later`. It becomes blocking before a production deploy.
