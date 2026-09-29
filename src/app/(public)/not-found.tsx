@@ -1,14 +1,22 @@
 import Link from 'next/link'
 import React from 'react'
 
+import { siteThemeSchema } from '@/site-templates/flagship-game-v1/schema/theme'
+import { SiteRoot } from '@/site-templates/flagship-game-v1/render/SiteFrame'
+
+/** Same page for every miss, in the default theme: nothing about any game leaks. */
+const NOT_FOUND_THEME = siteThemeSchema.parse({})
+
 export default function NotFound() {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-4 px-6 text-center">
-      <h1 className="text-5xl font-bold">404</h1>
-      <p className="opacity-70">This page could not be found.</p>
-      <Link className="underline" href="/">
-        Go home
-      </Link>
-    </div>
+    <SiteRoot theme={NOT_FOUND_THEME}>
+      <main className="fs-shell flex flex-1 flex-col items-center justify-center gap-4 py-24 text-center">
+        <h1 className="font-[family-name:var(--fs-font-heading)] text-5xl font-bold">404</h1>
+        <p className="text-[var(--fs-muted-fg)]">There’s no page at this address.</p>
+        <Link className="fs-link underline" href="/">
+          Go to the home page
+        </Link>
+      </main>
+    </SiteRoot>
   )
 }

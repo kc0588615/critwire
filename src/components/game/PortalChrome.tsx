@@ -4,17 +4,7 @@ import React from 'react'
 import type { GameProject } from '@/payload-types'
 
 import { Media } from '@/components/Media'
-
-const EXTERNAL_LINK_LABELS: Record<string, string> = {
-  discord: 'Discord',
-  docs: 'Docs',
-  epic: 'Epic',
-  itch: 'itch.io',
-  merch: 'Merch',
-  steam: 'Steam',
-  support: 'Support',
-  website: 'Website',
-}
+import { EXTERNAL_LINK_LABELS, resolveProjectLinks } from '@/site-templates/flagship-game-v1/actions'
 
 /**
  * The classic portal chrome: sticky header, main slot, compact footer.
@@ -26,10 +16,7 @@ export const PortalChrome: React.FC<{
   children: React.ReactNode
   project: GameProject
 }> = ({ children, project }) => {
-  const externalLinks = Object.entries(EXTERNAL_LINK_LABELS).flatMap(([key, label]) => {
-    const url = project.links?.[key as keyof typeof project.links]
-    return typeof url === 'string' && url ? [{ key, label, url }] : []
-  })
+  const externalLinks = resolveProjectLinks(project, EXTERNAL_LINK_LABELS)
 
   return (
     <div

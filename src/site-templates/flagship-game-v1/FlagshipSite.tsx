@@ -11,9 +11,7 @@ import { collectSiteMediaRefs } from '@/site-generator/media'
 import type { SiteConfigV1 } from './schema/config'
 import { flagshipSlots, SLOT_ORDER } from './registry'
 import type { SiteRenderContext } from './render/context'
-import { SiteFooter } from './render/SiteFooter'
-import { SiteNav } from './render/SiteNav'
-import { themeStyle } from './render/themeStyle'
+import { SiteFrame } from './render/SiteFrame'
 
 /**
  * The fixed flagship-game-v1 renderer. Section order is code-owned
@@ -59,26 +57,15 @@ export const FlagshipSite: React.FC<{
   }
 
   return (
-    <div
-      className="fs-root flex min-h-screen flex-col"
-      data-fs-motion={siteConfig.theme.motion}
-      style={themeStyle(siteConfig.theme)}
-    >
-      <a className="fs-skip" href="#fs-main">
-        Skip to content
-      </a>
-      <SiteNav ctx={ctx} value={siteConfig.nav} />
-      <main className="flex-1" id="fs-main">
-        {SLOT_ORDER.map((slotId) => {
-          const slot = flagshipSlots[slotId]
-          const Section = slot.render as React.ComponentType<{
-            ctx: SiteRenderContext
-            value: SiteConfigV1[typeof slotId]
-          }>
-          return <Section ctx={ctx} key={slotId} value={siteConfig[slotId]} />
-        })}
-      </main>
-      <SiteFooter ctx={ctx} value={siteConfig.footer} />
-    </div>
+    <SiteFrame config={siteConfig} project={project}>
+      {SLOT_ORDER.map((slotId) => {
+        const slot = flagshipSlots[slotId]
+        const Section = slot.render as React.ComponentType<{
+          ctx: SiteRenderContext
+          value: SiteConfigV1[typeof slotId]
+        }>
+        return <Section ctx={ctx} key={slotId} value={siteConfig[slotId]} />
+      })}
+    </SiteFrame>
   )
 }

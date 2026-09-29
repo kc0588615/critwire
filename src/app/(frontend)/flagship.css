@@ -2,7 +2,7 @@
  * flagship-game-v1 template styles. Every color/size flows from the
  * --fs-* custom properties set by themeStyle() — semantic tokens only,
  * no raw values in components. Focus visibility, reduced motion, and
- * the overlay-to-solid nav are owned here, not by configuration.
+ * the solid nav are owned here, not by configuration.
  */
 
 .fs-root {
@@ -135,17 +135,8 @@
   position: sticky;
   top: 0;
   z-index: 50;
-  border-bottom: 1px solid transparent;
-  background: transparent;
-  transition:
-    background 200ms ease,
-    border-color 200ms ease;
-}
-
-.fs-nav[data-scrolled] {
-  border-bottom-color: var(--fs-border);
-  background: color-mix(in srgb, var(--fs-bg) 88%, transparent);
-  backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--fs-border);
+  background: var(--fs-bg);
 }
 
 .fs-nav-link {

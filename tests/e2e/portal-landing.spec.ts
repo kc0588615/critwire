@@ -113,9 +113,9 @@ test.describe('S2.2 derived default landing', () => {
     await test.step('portal links stay on /g/<slug> although contact and reports are external', async () => {
       const nav = page.getByRole('navigation', { name: 'Site' })
       for (const [label, path] of [
-        ['Patch Notes', 'patch-notes'],
-        ['Known Issues', 'issues'],
-        ['Report a Bug', 'report'],
+        ['Patch notes', 'patch-notes'],
+        ['Known issues', 'issues'],
+        ['Report a bug', 'report'],
         ['Contact', 'contact'],
       ]) {
         await expect(nav.getByRole('link', { name: label, exact: true })).toHaveAttribute(
@@ -153,7 +153,7 @@ test.describe('S2.2 derived default landing', () => {
   test('a project without store facts has no store button, and its name renders as text', async ({ page }) => {
     await page.goto(`/g/${bare.slug}`)
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('<Evil> {Game}')
-    await expect(page.getByRole('link', { name: 'Get the Game' })).toHaveCount(0)
+    await expect(page.getByRole('link', { name: 'Get the game' })).toHaveCount(0)
   })
 })
 

@@ -935,7 +935,7 @@ Revision by the `architect`, 2026-09-29. Every claim was checked against the cod
   - New `src/hooks/revalidateGamePortal.ts`: `revalidateGamePortal(source, payload)`, the log line plus `revalidatePath(PORTAL_ROUTE, 'layout')`, moved from `revalidateGameProject.ts:15-18`. Both GameProject hooks call it. The GamePage hooks stay as they are until S5.
   - **Checks:** base checks; `pnpm test:int`; E2E.
 
-- [ ] S4 · One root, one frame, one nav and one footer, on the landing and the portal 404
+- [x] S4 · One root, one frame, one nav and one footer, on the landing and the portal 404
   - **New `render/SiteFrame.tsx`:**
     - `SiteRoot({ theme, children })` is the only element that carries `.fs-root`. It sets `style={themeStyle(theme)}` and `data-fs-motion`.
     - `SiteFrame({ config, project, children })` is `SiteRoot` plus the skip link, `SiteNav`, `main#fs-main` and `SiteFooter`.
@@ -1435,6 +1435,9 @@ grep -rnE "Field (Notes|Board|report)|Track type|Studio Route|the signal|Payload
   - **`meta.json`** keeps a `runs` list (commit, dirty flag, UTC start, the reproducing command), so partial re-shoots don't hide the earlier runs; `index.html` shows every run.
   - **Mobile** captures at `deviceScaleFactor: 2`, so the 390 px shots stay legible in the critique; desktop at 1.
 
+- **S4: one link helper for the footer's outbound links (2026-09-29).** `actions.ts` holds `EXTERNAL_LINK_LABELS`, `LEGAL_LINK_LABELS` and `resolveProjectLinks(project, labels)`; `SiteFooter` and `PortalChrome` (until S5) both call the helper, so the "labelled project URL" filter exists once instead of in the footer and the chrome.
+- **S4: `aria-current` on section pages (2026-09-29).** `SiteNavLinks` sets `aria-current="page"` on the link's own page and `aria-current="true"` on pages below it (a patch note under Patch notes, an issue under Known issues), so S9 can style `[aria-current]` without claiming a detail page *is* the list page.
+
 ## Log
 
 - 2026-09-29 05:13 UTC · Baseline: E2E db and env set up, migrations applied; tsc pass, lint 0 errors/23 warnings, int 9/9, E2E 73/73.
@@ -1446,5 +1449,6 @@ grep -rnE "Field (Notes|Board|report)|Track type|Studio Route|the signal|Payload
 - 2026-09-29 06:42 UTC · S1: screenshot harness (`playwright.screenshots.config.ts`, `tests/screenshots/*`, `pnpm screenshots`), E2E env/fixtures shared. tsc pass; lint 0 errors/23 warnings; `playwright test --list` same 73 tests; harness lists 103 (setup + 102 shots); smoke `SHOTS_THEMES=critter-connect --project desktop` 15/15 passed, 14 PNGs + index.html showing CC art; `git diff --stat 669376c -- src public …` empty.
 - 2026-09-29 06:55 UTC · S2: mission DB built (`pnpm build` pass, first on the mission DB), dev super admin + tenant created over REST (credentials in `agent-state/missions/design-pass/dev-admin.txt`, 600), `pnpm seed:critter-connect` ok, `/g/critter-connect` 200. Before set: full run 102/103 passed (mobile CC "Contact, sent": Turnstile widget never rendered), that test re-shot and passed; 102 PNGs + `index.html` (all before images, after side "not captured"). Looked at landing/issues/report/`/` under all themes: Riso landing light, ops pages navy/cyan under every theme (F1, expected), `/` the Payload template. No source change, so no E2E.
 - 2026-09-29 07:00 UTC · S3: `lib/game-portal/landingPage.ts` (`getLandingPage` React-cached, `resolveFlagshipConfig` returning config + merged project/page media, `seedProjectMedia`) and `hooks/revalidateGamePortal.ts` extracted; landing page and both GameProject hooks call them, same log line. tsc pass; lint 0 errors/23 warnings; int 9/9; E2E 73/73.
+- 2026-09-29 07:08 UTC · S4: `render/SiteFrame.tsx` (`SiteRoot`, `SiteFrame`), `SiteNavLinks` (client, `aria-current`), solid `fs-nav` (NavShell and `[data-scrolled]` deleted), `SiteNav`/`SiteFooter` take `project`, footer = portal pages (studio labels via `resolveSiteActions`) + project links + legal links in one list, sentence-case `DEFAULT_ACTION_LABELS`, portal 404 inside `SiteRoot` with new copy; E2E portal-landing:116-118,156 updated. tsc pass; lint 0 errors/23 warnings; E2E 73/73; Look `default` desktop 21/21 (landing nav solid, footer uses CC's labels, 404 in default theme).
 
 ## Summary

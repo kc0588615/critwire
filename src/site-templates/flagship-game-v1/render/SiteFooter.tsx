@@ -1,27 +1,36 @@
 import Link from 'next/link'
 import React from 'react'
 
-import type { FooterConfig } from '../schema/slots'
-import type { SiteRenderContext } from './context'
+import type { GameProject } from '@/payload-types'
 
-const LEGAL_LINKS = [
-  { key: 'pressKit', label: 'Press Kit' },
-  { key: 'privacy', label: 'Privacy Policy' },
-  { key: 'terms', label: 'Terms' },
-] as const
+import {
+  EXTERNAL_LINK_LABELS,
+  LEGAL_LINK_LABELS,
+  resolveProjectLinks,
+  resolveSiteActions,
+} from '../actions'
+import type { SiteActionRef } from '../schema/refs'
+import type { FooterConfig, NavConfig } from '../schema/slots'
 
-export const SiteFooter: React.FC<{ ctx: SiteRenderContext; value: FooterConfig }> = ({
-  ctx,
-  value,
-}) => {
-  const { project } = ctx
-  const base = `/g/${project.slug}`
-  const legal = value.showLegalLinks
-    ? LEGAL_LINKS.flatMap(({ key, label }) => {
-        const url = project.links?.[key]
-        return typeof url === 'string' && url ? [{ key, label, url }] : []
-      })
-    : []
+const PORTAL_REFS = ['updates', 'issues', 'report', 'contact'] as const satisfies SiteActionRef[]
+
+/** The studio's own nav label for a ref, so the footer names pages the way the nav does. */
+const studioLabel = (nav: NavConfig, ref: SiteActionRef): null | string =>
+  [...nav.links, nav.cta].find((action) => action?.ref === ref && action.label)?.label ?? null
+
+export const SiteFooter: React.FC<{
+  nav: NavConfig
+  project: GameProject
+  value: FooterConfig
+}> = ({ nav, project, value }) => {
+  const portal = resolveSiteActions(
+    PORTAL_REFS.map((ref) => ({ label: studioLabel(nav, ref), ref })),
+    project,
+  )
+  const outbound = [
+    ...resolveProjectLinks(project, EXTERNAL_LINK_LABELS),
+    ...(value.showLegalLinks ? resolveProjectLinks(project, LEGAL_LINK_LABELS) : []),
+  ]
 
   return (
     <footer className="border-t border-[var(--fs-border)]">
@@ -35,30 +44,28 @@ export const SiteFooter: React.FC<{ ctx: SiteRenderContext; value: FooterConfig 
               <p className="mt-2 text-sm leading-6 text-[var(--fs-muted-fg)]">{value.tagline}</p>
             ) : null}
           </div>
-          <nav aria-label="Footer" className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
-            <Link className="fs-nav-link" href={`${base}/patch-notes`}>
-              Patch Notes
-            </Link>
-            <Link className="fs-nav-link" href={`${base}/issues`}>
-              Known Issues
-            </Link>
-            <Link className="fs-nav-link" href={`${base}/report`}>
-              Report a Bug
-            </Link>
-            <Link className="fs-nav-link" href={`${base}/contact`}>
-              Contact
-            </Link>
-            {legal.map((link) => (
-              <a
-                className="fs-nav-link"
-                href={link.url}
-                key={link.key}
-                rel="noopener noreferrer"
-                target="_blank"
-              >
-                {link.label}
-              </a>
-            ))}
+          <nav aria-label="Footer" className="text-sm">
+            <ul className="flex flex-wrap gap-x-6 gap-y-2">
+              {portal.map((link) => (
+                <li key={link.ref}>
+                  <Link className="fs-nav-link" href={link.href}>
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
+              {outbound.map((link) => (
+                <li key={link.key}>
+                  <a
+                    className="fs-nav-link"
+                    href={link.url}
+                    rel="noopener noreferrer"
+                    target="_blank"
+                  >
+                    {link.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
           </nav>
         </div>
         <div className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-[var(--fs-border)] pt-6 text-sm text-[var(--fs-muted-fg)]">

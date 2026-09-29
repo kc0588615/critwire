@@ -19,17 +19,49 @@ export type ResolvedSiteAction = {
 }
 
 export const DEFAULT_ACTION_LABELS: Record<SiteActionRef, string> = {
-  'primary-store': 'Get the Game',
+  'primary-store': 'Get the game',
   contact: 'Contact',
-  demo: 'Play the Demo',
+  demo: 'Play the demo',
   discord: 'Join the Discord',
   epic: 'Epic Games Store',
-  issues: 'Known Issues',
+  issues: 'Known issues',
   itch: 'itch.io',
-  report: 'Report a Bug',
+  report: 'Report a bug',
   steam: 'Steam',
-  updates: 'Patch Notes',
+  updates: 'Patch notes',
 }
+
+type ProjectLinkKey = keyof NonNullable<GameProject['links']>
+
+export type ProjectLink = { key: ProjectLinkKey; label: string; url: string }
+
+/** The project's own outbound links, listed in the portal footer. */
+export const EXTERNAL_LINK_LABELS: Partial<Record<ProjectLinkKey, string>> = {
+  discord: 'Discord',
+  docs: 'Docs',
+  epic: 'Epic',
+  itch: 'itch.io',
+  merch: 'Merch',
+  steam: 'Steam',
+  support: 'Support',
+  website: 'Website',
+}
+
+export const LEGAL_LINK_LABELS: Partial<Record<ProjectLinkKey, string>> = {
+  pressKit: 'Press kit',
+  privacy: 'Privacy policy',
+  terms: 'Terms',
+}
+
+/** The labelled links the project has a URL for, in the table's order. */
+export const resolveProjectLinks = (
+  project: GameProject,
+  labels: Partial<Record<ProjectLinkKey, string>>,
+): ProjectLink[] =>
+  (Object.entries(labels) as [ProjectLinkKey, string][]).flatMap(([key, label]) => {
+    const url = project.links?.[key]
+    return typeof url === 'string' && url ? [{ key, label, url }] : []
+  })
 
 const firstUrl = (...candidates: (null | string | undefined)[]): null | string => {
   for (const candidate of candidates) {
