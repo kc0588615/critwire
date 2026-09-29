@@ -907,7 +907,7 @@ Revision by the `architect`, 2026-09-29. Every claim was checked against the cod
     - the smoke run `SHOTS_SET=before SHOTS_DIR=/tmp/design-pass-smoke SHOTS_THEMES=critter-connect pnpm screenshots --project desktop` passes and writes 14 PNGs plus `index.html`, and the PNGs show CC's art and content;
     - `git diff --stat 669376c -- src public tailwind.config.mjs next.config.ts postcss.config.js` prints nothing.
 
-- [ ] S2 · Seed the mission database and capture the "before" set
+- [x] S2 · Seed the mission database and capture the "before" set
   - **Mission DB** (the brief's Notes; it also enables quick `pnpm dev` looks later):
     1. Stop `critwire-demo` if it's active, and delete the `dev` row.
     2. Run `pnpm build`. This is the first production build on the mission DB. Record the result; if it fails, record why (it must pass by S24).
@@ -1313,6 +1313,7 @@ Revision by the `architect`, 2026-09-29. Every claim was checked against the cod
 - **Google Fonts is fetched on every build** (E2E, the harness, `pnpm build`). If a fetch fails, retry once. If it keeps failing, switch to `next/font/local` (see Rejected alternatives) and record it under Decisions.
 - **`@import … layer(components)`** may not be supported. Fallback: wrap the file's contents in `@layer components`.
 - **Payload may reject `''` colours** in the harness's `default` theme. Send `null` colours instead; `normalizeSiteInput` treats both as unset.
+- **Turnstile loads from Cloudflare at runtime.** A slow widget fails that shot's `settle` (S2: one mobile "Contact, sent" of 102). Re-shoot just that test with `SHOTS_SKIP_BUILD=1 … --grep "<label>"` straight after the run; `meta.json` records both runs. Fail twice in a row on the same page and it's the page, not the network.
 - **Theme waits:** if a CC ops page never matches the landing's `style`, that's a revalidation bug from S5, not harness flakiness. Fix it; don't raise the timeout.
 - **Mixed visuals mid-pass are expected:** new frames around old ops-page bodies until S13–S17. Each Look judges only its own step's pages.
 - **The harness's build bakes port 3200.** Use `SHOTS_SKIP_BUILD=1` only straight after a harness run, never after E2E (3100), or media URLs point at a dead port.
@@ -1373,7 +1374,7 @@ Screenshot record:
 
 | Set | Step | Commit | UTC | Command | PNGs | Probes |
 |---|---|---|---|---|---|---|
-| before | S2 | | | | | n/a |
+| before | S2 | `f86f948` (src = `669376c`) | 2026-09-29 06:47–06:53 | full set, then `SHOTS_THEMES=critter-connect SHOTS_SKIP_BUILD=1 … --project mobile --grep "Contact, sent"` (see Log) | 102 | n/a |
 | after | S22 | | | | | |
 | after, post-critique | S23 | | | | | |
 | after, final (if re-shot) | S24 | | | | | |
@@ -1443,5 +1444,6 @@ grep -rnE "Field (Notes|Board|report)|Track type|Studio Route|the signal|Payload
 - 2026-09-29 06:00 UTC · Revision: `architect` resolved all 4 Fable MUST-FIX items (prose vars via tailwind.config, VoteButton name, CSS-only StatusMark, label-only board region name), the 3 MISSED items (SiteRoot carries font classes; revalidateGameLanding scope kept; "Powered by Critwire" kept, see Decisions) and adopted the SHOULD-CONSIDER items. Plan-only change, no checks needed.
 - 2026-09-29 06:20 UTC · Steps: `planner` wrote 24 steps (S1 harness, S2 seed + before shots, S3–S21 build, S22 after shots + index, S23 self-critique, S24 final verification) and the Verification section. Plan-only change, no checks needed.
 - 2026-09-29 06:42 UTC · S1: screenshot harness (`playwright.screenshots.config.ts`, `tests/screenshots/*`, `pnpm screenshots`), E2E env/fixtures shared. tsc pass; lint 0 errors/23 warnings; `playwright test --list` same 73 tests; harness lists 103 (setup + 102 shots); smoke `SHOTS_THEMES=critter-connect --project desktop` 15/15 passed, 14 PNGs + index.html showing CC art; `git diff --stat 669376c -- src public …` empty.
+- 2026-09-29 06:55 UTC · S2: mission DB built (`pnpm build` pass, first on the mission DB), dev super admin + tenant created over REST (credentials in `agent-state/missions/design-pass/dev-admin.txt`, 600), `pnpm seed:critter-connect` ok, `/g/critter-connect` 200. Before set: full run 102/103 passed (mobile CC "Contact, sent": Turnstile widget never rendered), that test re-shot and passed; 102 PNGs + `index.html` (all before images, after side "not captured"). Looked at landing/issues/report/`/` under all themes: Riso landing light, ops pages navy/cyan under every theme (F1, expected), `/` the Payload template. No source change, so no E2E.
 
 ## Summary
