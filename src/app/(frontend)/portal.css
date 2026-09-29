@@ -2,10 +2,22 @@
  * flagship-game-v1 template styles. Every color/size flows from the
  * --fs-* custom properties set by themeStyle() — semantic tokens only,
  * no raw values in components. Focus visibility, reduced motion, and
- * the solid nav are owned here, not by configuration.
+ * the solid nav are owned here, not by configuration. Imported into
+ * `@layer components`, so Tailwind utilities on the same element win.
  */
 
 .fs-root {
+  /* Rich text: tailwind.config.mjs maps every prose colour to these.
+     Each text pair is one the theme schema guarantees (fg and muted-fg
+     on bg and surface); accent only colours the link underline. */
+  --prose-fg: var(--fs-fg);
+  --prose-muted: var(--fs-muted-fg);
+  --prose-border: var(--fs-border);
+  --prose-code-bg: var(--fs-surface);
+  --prose-link-line: var(--fs-accent);
+  --prose-size: 1.0625rem;
+  --prose-measure: 68ch;
+
   background: var(--fs-bg);
   color: var(--fs-fg);
   font-family: var(--font-body), system-ui, sans-serif;

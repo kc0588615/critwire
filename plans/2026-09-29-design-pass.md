@@ -993,7 +993,7 @@ Revision by the `architect`, 2026-09-29. Every claim was checked against the cod
     - `grep -rlE "fonts\.(googleapis|gstatic)\.com" .next/static` prints nothing;
     - Look: `default,riso,critter-connect`, desktop. The landing shows Archivo, Young Serif and Science Gothic, not a fallback font.
 
-- [ ] S7 · Layered stylesheets and one deliberate prose mapping
+- [x] S7 · Layered stylesheets and one deliberate prose mapping
   - **Layering:**
     - `git mv src/app/(frontend)/flagship.css src/app/(frontend)/portal.css`.
     - `globals.css` imports it with `@import './portal.css' layer(components);`. If Tailwind rejects `layer()` on an import, wrap the file's contents in `@layer components { … }` instead.
@@ -1208,7 +1208,7 @@ Revision by the `architect`, 2026-09-29. Every claim was checked against the cod
   - **`Header/Component.tsx` and `Footer/Component.tsx`:** Server Components with the text wordmark "Critwire" (Anybody wdth 130, w800).
     - Header: transparent, 4.5rem tall, in normal flow, with "Demo portal" (`/g/critter-connect`) and "Sign in" (`/admin`). At 390 px: the wordmark and "Sign in".
     - Footer: an ink band with the wordmark, "Demo portal", "Sign in" and the copyright.
-  - **Delete:** `providers/**`, `components/Logo/Logo.tsx`, `[slug]/page.client.tsx` and its use, and the `html{opacity:0}` hack.
+  - **Delete:** `providers/**`, `components/Logo/Logo.tsx`, and `[slug]/page.client.tsx` and its use. (The `html{opacity:0}` hack already went in S7; see Decisions.)
   - **`heros/HighImpact`:** becomes a Server Component with no header-theme plumbing.
   - **`(frontend)/not-found.tsx`:** paper background, a large "404", "There’s no page at this address." and "Go to the home page".
   - **Checks:**
@@ -1443,6 +1443,8 @@ grep -rnE "Field (Notes|Board|report)|Track type|Studio Route|the signal|Payload
   - **`sharp` radius is `0px`, not `0`,** so the tokens stay valid inside `calc()`.
   - **`--font-mono`:** the Geist override is gone, so Tailwind's default `ui-monospace` stack applies (§4 "system ui-monospace").
   - **`--font-body` name kept:** Payload's admin CSS also defines `--font-body` on `:root`, but that chunk loads only on `/admin` (checked in the client-reference manifests), so the portal and marketing pages never see it.
+- **S7: the `html{opacity:0}` hack goes now, not in S18 (2026-09-29).** It hid every `<html>` without a `data-theme`, and S7 drops `data-theme="dark"` from the portal layout, so keeping it would have made every portal page invisible. Only marketing still sets `data-theme` (through `InitTheme`, a `beforeInteractive` script, until S18), so the cost is at most a light-to-dark flash there for a few steps. S18's "delete the opacity hack" item is already done.
+- **S7: detail-page rich text is left-aligned (2026-09-29).** `RichText` keeps its `mx-auto` for marketing; the patch-note and issue detail pages pass `mx-0`, so the 68ch prose column lines up with the title instead of centring inside the article. The template's `DEFAULT` `h1` tweak (normal weight) went with the `base`/`md` overrides.
 
 ## Log
 
@@ -1458,5 +1460,6 @@ grep -rnE "Field (Notes|Board|report)|Track type|Studio Route|the signal|Payload
 - 2026-09-29 07:06 UTC · S4: `render/SiteFrame.tsx` (`SiteRoot`, `SiteFrame`), `SiteNavLinks` (client, `aria-current`), solid `fs-nav` (NavShell and `[data-scrolled]` deleted), `SiteNav`/`SiteFooter` take `project`, footer = portal pages (studio labels via `resolveSiteActions`) + project links + legal links in one list, sentence-case `DEFAULT_ACTION_LABELS`, portal 404 inside `SiteRoot` with new copy; E2E portal-landing:116-118,156 updated. tsc pass; lint 0 errors/23 warnings; E2E 73/73; Look `default` desktop 21/21 (landing nav solid, footer uses CC's labels, 404 in default theme).
 - 2026-09-29 07:22 UTC · S5: test first: new S2.4 step "ops pages follow the published theme" (warm `/patch-notes`, publish accent `#f59e0b`, `eventually` read `.fs-root --fs-accent`) failed before the change (no `.fs-root`). Then `getPortalSiteConfig` (React-cached, published landing only, derived default for legacy/absent), `PortalChrome` is `SiteFrame` around it (own header/footer/link table/`--game-accent` gone), both GamePage hooks call `revalidateGamePortal` (source `game page <id>`); `revalidateGameLanding` untouched. tsc pass; lint 0 errors/23 warnings; int 9/9; E2E 73/73 (new step passes); Look `riso` desktop 15/15: nav and footer follow Riso on every ops page, bodies still the old dark cards (expected until S13–S17). `.cc-portal` rules left for S21's dead-layer sweep.
 - 2026-09-29 07:28 UTC · S6: next/font modules (`src/fonts.ts` Atkinson Hyperlegible Next `--font-body`, `(frontend)/fonts.ts` Anybody `--font-critwire`, template `fonts.ts` Archivo/Young Serif/Science Gothic, not preloaded, classes on `SiteRoot`), Geist removed (`pnpm remove geist`), `themeStyle` DISPLAY/RADIUS/SECTION_Y tables emit `--fs-font-display`, `--fs-display-*`, `--fs-radius(-control)`, `--fs-section-y`; `--fs-font-heading/-body` gone, consumers on `.fs-display`. tsc pass; lint 0 errors/23 warnings; E2E 73/73; built CSS has `font-stretch` 62% 125%, 50% 150%, 50% 200%; no googleapis/gstatic URL in `.next/static`; Look `default,riso,critter-connect` desktop 49/49: Archivo condensed, Young Serif and Science Gothic wide render on the landings, body Atkinson (slashed zero).
+- 2026-09-29 07:59 UTC · S7: `flagship.css` → `portal.css`, imported `layer(components)` (built CSS: all 49 `.fs-` rules inside `@layer components`); `tailwind.config.mjs` maps every `--tw-prose-*` colour, size, measure and link underline to `--prose-*`, set on `.fs-root`; `RichText` drops `dark:prose-invert`/`md:prose-md`/`max-w-none`, detail pages have one `.prose`; portal layout drops `data-theme="dark"`, opacity hack removed (see Decisions). tsc pass; lint 0 errors/23 warnings; E2E 73/73; Look `riso,default` both widths 69/69: Riso prose in `--fs-fg`, FinalCTA size utilities apply, callouts light until S15.
 
 ## Summary

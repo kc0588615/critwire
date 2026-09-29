@@ -88,9 +88,7 @@ export default async function IssueDetailPage({ params }: Args) {
       )}
 
       {issue.details && (
-        <div className="prose dark:prose-invert mt-8 max-w-none">
-          <RichText data={issue.details} enableGutter={false} />
-        </div>
+        <RichText className="mx-0 mt-8" data={issue.details} enableGutter={false} />
       )}
     </article>
   )

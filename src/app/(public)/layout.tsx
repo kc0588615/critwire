@@ -11,12 +11,7 @@ import '../(frontend)/globals.css'
 
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html
-      className={bodyFont.variable}
-      data-theme="dark"
-      lang="en"
-      suppressHydrationWarning
-    >
+    <html className={bodyFont.variable} lang="en" suppressHydrationWarning>
       <body className="flex min-h-screen flex-col">
         <NuqsAdapter>{children}</NuqsAdapter>
       </body>

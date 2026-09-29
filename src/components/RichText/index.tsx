@@ -35,8 +35,7 @@ export default function RichText(props: Props) {
         'payload-richtext',
         {
           container: enableGutter,
-          'max-w-none': !enableGutter,
-          'mx-auto prose md:prose-md dark:prose-invert': enableProse,
+          'mx-auto prose': enableProse,
         },
         className,
       )}

@@ -44,9 +44,7 @@ export default async function PatchNoteDetailPage({ params }: Args) {
       </div>
       <h1 className="mt-2 text-3xl font-bold sm:text-4xl">{note.title}</h1>
       {note.summary && <p className="mt-4 text-lg opacity-80">{note.summary}</p>}
-      <div className="prose dark:prose-invert mt-8 max-w-none">
-        <RichText data={note.content} enableGutter={false} />
-      </div>
+      <RichText className="mx-0 mt-8" data={note.content} enableGutter={false} />
     </article>
   )
 }
