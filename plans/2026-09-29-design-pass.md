@@ -973,7 +973,7 @@ Revision by the `architect`, 2026-09-29. Every claim was checked against the cod
     - full E2E: patch-notes caching and rename, issues, reports-contact, tenant-isolation;
     - Look: `riso`, desktop. The nav and footer follow the theme; page bodies stay old until S13–S17.
 
-- [ ] S6 · Fonts through next/font, and the display-voice tables
+- [x] S6 · Fonts through next/font, and the display-voice tables
   - **New font modules,** all `next/font/google` with subsets `latin, latin-ext` and `display: 'swap'`:
     - `src/fonts.ts`: Atkinson Hyperlegible Next as `--font-body`, preloaded;
     - `src/app/(frontend)/fonts.ts`: Anybody with `axes: ['wdth']` as `--font-critwire`, preloaded;
@@ -1437,6 +1437,12 @@ grep -rnE "Field (Notes|Board|report)|Track type|Studio Route|the signal|Payload
 
 - **S4: one link helper for the footer's outbound links (2026-09-29).** `actions.ts` holds `EXTERNAL_LINK_LABELS`, `LEGAL_LINK_LABELS` and `resolveProjectLinks(project, labels)`; `SiteFooter` and `PortalChrome` (until S5) both call the helper, so the "labelled project URL" filter exists once instead of in the footer and the chrome.
 - **S4: `aria-current` on section pages (2026-09-29).** `SiteNavLinks` sets `aria-current="page"` on the link's own page and `aria-current="true"` on pages below it (a patch note under Patch notes, an issue under Known issues), so S9 can style `[aria-current]` without claiming a detail page *is* the list page.
+- **S6: display-voice details the Steps left open (2026-09-29).**
+  - **One `.fs-display` class** in `flagship.css` carries the voice (family, `font-stretch`, weight, tracking); `.fs-h1`/`.fs-h2` share it and add size × `--fs-display-scale` and leading. The nav wordmark, footer name and portal 404 use `fs-display` instead of Tailwind font utilities. `.fs-h3` (entry titles) and `.fs-eyebrow` now use the body face, per §4's scale.
+  - **Generic fallbacks:** next/font emits no fallback metrics for Atkinson Hyperlegible Next or Science Gothic, so `.fs-root`, `--font-sans` and each `DISPLAY.family` end in a generic stack (`system-ui, sans-serif` or `Georgia, serif`).
+  - **`sharp` radius is `0px`, not `0`,** so the tokens stay valid inside `calc()`.
+  - **`--font-mono`:** the Geist override is gone, so Tailwind's default `ui-monospace` stack applies (§4 "system ui-monospace").
+  - **`--font-body` name kept:** Payload's admin CSS also defines `--font-body` on `:root`, but that chunk loads only on `/admin` (checked in the client-reference manifests), so the portal and marketing pages never see it.
 
 ## Log
 
@@ -1451,5 +1457,6 @@ grep -rnE "Field (Notes|Board|report)|Track type|Studio Route|the signal|Payload
 - 2026-09-29 07:00 UTC · S3: `lib/game-portal/landingPage.ts` (`getLandingPage` React-cached, `resolveFlagshipConfig` returning config + merged project/page media, `seedProjectMedia`) and `hooks/revalidateGamePortal.ts` extracted; landing page and both GameProject hooks call them, same log line. tsc pass; lint 0 errors/23 warnings; int 9/9; E2E 73/73.
 - 2026-09-29 07:06 UTC · S4: `render/SiteFrame.tsx` (`SiteRoot`, `SiteFrame`), `SiteNavLinks` (client, `aria-current`), solid `fs-nav` (NavShell and `[data-scrolled]` deleted), `SiteNav`/`SiteFooter` take `project`, footer = portal pages (studio labels via `resolveSiteActions`) + project links + legal links in one list, sentence-case `DEFAULT_ACTION_LABELS`, portal 404 inside `SiteRoot` with new copy; E2E portal-landing:116-118,156 updated. tsc pass; lint 0 errors/23 warnings; E2E 73/73; Look `default` desktop 21/21 (landing nav solid, footer uses CC's labels, 404 in default theme).
 - 2026-09-29 07:22 UTC · S5: test first: new S2.4 step "ops pages follow the published theme" (warm `/patch-notes`, publish accent `#f59e0b`, `eventually` read `.fs-root --fs-accent`) failed before the change (no `.fs-root`). Then `getPortalSiteConfig` (React-cached, published landing only, derived default for legacy/absent), `PortalChrome` is `SiteFrame` around it (own header/footer/link table/`--game-accent` gone), both GamePage hooks call `revalidateGamePortal` (source `game page <id>`); `revalidateGameLanding` untouched. tsc pass; lint 0 errors/23 warnings; int 9/9; E2E 73/73 (new step passes); Look `riso` desktop 15/15: nav and footer follow Riso on every ops page, bodies still the old dark cards (expected until S13–S17). `.cc-portal` rules left for S21's dead-layer sweep.
+- 2026-09-29 07:28 UTC · S6: next/font modules (`src/fonts.ts` Atkinson Hyperlegible Next `--font-body`, `(frontend)/fonts.ts` Anybody `--font-critwire`, template `fonts.ts` Archivo/Young Serif/Science Gothic, not preloaded, classes on `SiteRoot`), Geist removed (`pnpm remove geist`), `themeStyle` DISPLAY/RADIUS/SECTION_Y tables emit `--fs-font-display`, `--fs-display-*`, `--fs-radius(-control)`, `--fs-section-y`; `--fs-font-heading/-body` gone, consumers on `.fs-display`. tsc pass; lint 0 errors/23 warnings; E2E 73/73; built CSS has `font-stretch` 62% 125%, 50% 150%, 50% 200%; no googleapis/gstatic URL in `.next/static`; Look `default,riso,critter-connect` desktop 49/49: Archivo condensed, Young Serif and Science Gothic wide render on the landings, body Atkinson (slashed zero).
 
 ## Summary

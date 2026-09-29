@@ -37,7 +37,7 @@ export const SiteFooter: React.FC<{
       <div className="fs-shell py-10">
         <div className="flex flex-wrap items-start justify-between gap-8">
           <div className="max-w-sm">
-            <p className="font-[family-name:var(--fs-font-heading)] text-lg font-bold">
+            <p className="fs-display text-lg">
               {project.name}
             </p>
             {value.tagline ? (

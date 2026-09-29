@@ -11,7 +11,7 @@ export default function NotFound() {
   return (
     <SiteRoot theme={NOT_FOUND_THEME}>
       <main className="fs-shell flex flex-1 flex-col items-center justify-center gap-4 py-24 text-center">
-        <h1 className="font-[family-name:var(--fs-font-heading)] text-5xl font-bold">404</h1>
+        <h1 className="fs-display text-5xl">404</h1>
         <p className="text-[var(--fs-muted-fg)]">There’s no page at this address.</p>
         <Link className="fs-link underline" href="/">
           Go to the home page

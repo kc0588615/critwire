@@ -2,6 +2,7 @@ import React from 'react'
 
 import type { GameProject } from '@/payload-types'
 
+import { displayFontVariables } from '../fonts'
 import type { SiteConfigV1 } from '../schema/config'
 import type { SiteThemeV1 } from '../schema/theme'
 import { SiteFooter } from './SiteFooter'
@@ -10,15 +11,16 @@ import { themeStyle } from './themeStyle'
 
 /**
  * The only element that carries `.fs-root`: the theme's custom
- * properties and motion setting live here, so the focus, motion and
- * prose rules have exactly one root to target.
+ * properties, the display-font variables and the motion setting live
+ * here, so the focus, motion and prose rules have exactly one root to
+ * target.
  */
 export const SiteRoot: React.FC<{ children: React.ReactNode; theme: SiteThemeV1 }> = ({
   children,
   theme,
 }) => (
   <div
-    className="fs-root flex min-h-screen flex-col"
+    className={`fs-root flex min-h-screen flex-col ${displayFontVariables}`}
     data-fs-motion={theme.motion}
     style={themeStyle(theme)}
   >

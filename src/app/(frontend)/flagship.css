@@ -8,7 +8,7 @@
 .fs-root {
   background: var(--fs-bg);
   color: var(--fs-fg);
-  font-family: var(--fs-font-body);
+  font-family: var(--font-body), system-ui, sans-serif;
 }
 
 .fs-shell {
@@ -20,24 +20,26 @@
   padding-block: var(--fs-section-y);
 }
 
+.fs-display,
+.fs-h1,
+.fs-h2 {
+  font-family: var(--fs-font-display);
+  font-stretch: var(--fs-display-stretch);
+  font-weight: var(--fs-display-weight);
+  letter-spacing: var(--fs-display-tracking);
+}
+
 .fs-h1 {
-  font-family: var(--fs-font-heading);
-  font-size: clamp(2.5rem, 6vw, 4.5rem);
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  line-height: 1;
+  font-size: calc(clamp(2.5rem, 6vw, 4.5rem) * var(--fs-display-scale));
+  line-height: var(--fs-display-leading);
 }
 
 .fs-h2 {
-  font-family: var(--fs-font-heading);
-  font-size: clamp(1.75rem, 3.5vw, 2.75rem);
-  font-weight: 800;
-  letter-spacing: -0.015em;
-  line-height: 1.1;
+  font-size: calc(clamp(1.75rem, 3.5vw, 2.75rem) * var(--fs-display-scale));
+  line-height: 1.05;
 }
 
 .fs-h3 {
-  font-family: var(--fs-font-heading);
   font-size: 1.25rem;
   font-weight: 700;
   line-height: 1.3;
@@ -46,7 +48,6 @@
 .fs-eyebrow {
   margin-bottom: 0.9rem;
   color: var(--fs-accent);
-  font-family: var(--fs-font-heading);
   font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.14em;

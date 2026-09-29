@@ -1,10 +1,9 @@
 import type { Metadata } from 'next'
 
-import { GeistMono } from 'geist/font/mono'
-import { GeistSans } from 'geist/font/sans'
 import { NuqsAdapter } from 'nuqs/adapters/next/app'
 import React from 'react'
 
+import { bodyFont } from '@/fonts'
 import { mergeOpenGraph } from '@/utilities/mergeOpenGraph'
 import { getServerSideURL } from '@/utilities/getURL'
 
@@ -13,7 +12,7 @@ import '../(frontend)/globals.css'
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
   return (
     <html
-      className={[GeistSans.variable, GeistMono.variable].join(' ')}
+      className={bodyFont.variable}
       data-theme="dark"
       lang="en"
       suppressHydrationWarning

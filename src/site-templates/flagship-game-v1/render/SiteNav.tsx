@@ -27,7 +27,7 @@ export const SiteNav: React.FC<{ project: GameProject; value: NavConfig }> = ({
               resource={project.logo}
             />
           ) : null}
-          <span className="truncate font-[family-name:var(--fs-font-heading)] text-base font-bold tracking-tight">
+          <span className="truncate fs-display text-base">
             {project.name}
           </span>
         </Link>
