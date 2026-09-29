@@ -218,6 +218,8 @@ export async function seedCritterConnect() {
       heading: 'Every clue earns its place in the binder.',
       tagline:
         'Track real places, decode wildlife evidence, and turn every discovery into a field card worth keeping.',
+      // The logo is a square app icon the nav already shows; the title plate carries the name.
+      showLogo: false,
       backgroundMedia: banner.id,
       primaryAction: { label: 'Begin expedition', ref: 'primary-store' },
       secondaryAction: { label: 'Check the field board', ref: 'issues' },

@@ -396,6 +396,184 @@
   padding-block: 1.25rem 1.5rem;
 }
 
+/* ── Landing hero: the title plate (plan §5) ────────────── */
+
+/* The portal's one loud element. The art is never tinted and never
+   carries text: the title sits on a plate of page colour cut into it. */
+.fs-hero {
+  /* Where the shell's content starts, measured from the screen edge. */
+  --fs-hero-inset: max(var(--fs-gutter), (100% - 1180px) / 2);
+}
+
+.fs-hero-logo {
+  width: auto;
+  max-height: 4rem;
+  margin-bottom: 1.5rem;
+}
+
+.fs-hero-eyebrow {
+  margin-bottom: 1rem;
+  color: var(--fs-muted-fg);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.fs-hero-tagline {
+  margin-top: 1.5rem;
+  color: var(--fs-muted-fg);
+}
+
+.fs-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 2rem;
+}
+
+/* Phones: the art on top at 16:10, the plate stepping up into its
+   bottom edge and leaving a strip of art on the right. */
+.fs-hero-stage {
+  display: grid;
+}
+
+.fs-hero-art {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  background: var(--fs-surface);
+}
+
+.fs-hero-plate {
+  position: relative;
+  margin: -3.5rem 1.25rem 0 0;
+  border-top-right-radius: var(--fs-radius);
+  padding: 1.5rem 1.25rem 0 var(--fs-hero-inset);
+  background: var(--fs-bg);
+}
+
+.fs-hero-plated[data-align='center'] .fs-hero-plate {
+  margin-left: 1.25rem;
+  border-top-left-radius: var(--fs-radius);
+  padding-left: 1.25rem;
+  text-align: center;
+}
+
+.fs-hero-plated[data-align='center'] :is(.fs-h1, .fs-hero-tagline) {
+  margin-inline: auto;
+}
+
+.fs-hero-plated[data-align='center'] :is(.fs-hero-actions, .fs-build-line) {
+  justify-content: center;
+}
+
+.fs-hero-plated[data-align='center'] .fs-hero-logo {
+  margin-inline: auto;
+}
+
+/* Wider screens: the art fills the stage and the plate sits in its
+   lower-left corner (or centred on its bottom edge), flush with the
+   bottom so the page colour reads as reaching up into the art. */
+@media (min-width: 48rem) {
+  .fs-hero-stage {
+    grid-template: 'stage' minmax(min(62vh, 44rem), auto) / minmax(0, 1fr);
+  }
+
+  .fs-hero-art {
+    grid-area: stage;
+    aspect-ratio: auto;
+  }
+
+  .fs-hero-plate {
+    grid-area: stage;
+    align-self: end;
+    justify-self: start;
+    width: min(calc(var(--fs-hero-inset) + 52rem), 64%);
+    /* Keep a band of untouched art above the plate, however tall it grows. */
+    margin: clamp(8rem, 22vh, 14rem) 0 0;
+    padding: 2.5rem 3rem 0 var(--fs-hero-inset);
+  }
+
+  .fs-hero-plated[data-align='center'] .fs-hero-plate {
+    justify-self: center;
+    width: min(56rem, 100% - 2 * var(--fs-gutter));
+    margin-inline: 0;
+    padding-inline: 3rem;
+  }
+}
+
+/* No art: no plate. The title runs at full scale on the page. */
+.fs-hero-bare {
+  padding-block: calc(var(--fs-section-y) * 1.25) 0;
+}
+
+.fs-hero-split-grid {
+  display: grid;
+  align-items: center;
+  gap: 2.5rem;
+  padding-top: var(--fs-section-y);
+}
+
+.fs-hero-frame {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border-radius: var(--fs-radius);
+  background: var(--fs-surface);
+}
+
+@media (min-width: 64rem) {
+  .fs-hero-split-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 4rem;
+  }
+}
+
+/* The build line: the game's live facts under the title, as separate items. */
+.fs-build-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
+  margin-top: 2rem;
+  border-top: 1px solid var(--fs-border);
+  padding-top: 1rem;
+  color: var(--fs-muted-fg);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.45;
+}
+
+/* The one landing moment: the plate settles into the art. Transform
+   only, so the title paints at the first frame; the root motion rules
+   below land it on its end state. */
+.fs-hero-settle {
+  animation: fs-settle 700ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+@keyframes fs-settle {
+  from {
+    transform: translateY(1.25rem);
+  }
+
+  to {
+    transform: none;
+  }
+}
+
+/* Where to play: platform name, then its store label. */
+.fs-platform-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 1.25rem;
+  padding-block: 0.875rem;
+}
+
+.fs-platform-name {
+  min-width: 12rem;
+  font-weight: 700;
+}
+
 .fs-hero-scrim {
   background: linear-gradient(
     180deg,

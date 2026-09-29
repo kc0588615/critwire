@@ -2,6 +2,7 @@ import React from 'react'
 
 import { formatDate } from '@/components/game/format'
 import { PLATFORM_OPTIONS, RELEASE_STATE_OPTIONS } from '@/collections/options'
+import type { GameProject } from '@/payload-types'
 
 import type { AvailabilitySlot } from '../../schema/slots'
 import type { SiteRenderContext } from '../context'
@@ -13,73 +14,69 @@ const optionLabel = (
 ): null | string => options.find((option) => option.value === value)?.label ?? value ?? null
 
 /**
- * Renders platform/store facts straight from the GameProject — the slot
- * config controls presentation only; URLs are never AI-writable.
+ * The game's live build facts, in reading order: release state, release
+ * date, version, platforms. The hero's build line renders them; the
+ * Availability section doesn't repeat them.
+ */
+export const availabilityFacts = (project: GameProject): string[] => {
+  const availability = project.availability
+  const version = availability?.currentVersion?.trim()
+  const platforms = (availability?.platforms ?? [])
+    .map((platform) => optionLabel(PLATFORM_OPTIONS, platform.platform))
+    .filter((name): name is string => Boolean(name))
+
+  return [
+    optionLabel(RELEASE_STATE_OPTIONS, availability?.releaseState),
+    formatDate(availability?.releaseDate),
+    // "v0.1.0" and "0.1.0" both read as "Version 0.1.0".
+    version ? `Version ${version.replace(/^v(?=\d)/i, '')}` : null,
+    platforms.length > 0 ? [...new Set(platforms)].join(', ') : null,
+  ].filter((fact): fact is string => Boolean(fact))
+}
+
+/**
+ * Where to play: one row per platform, the name linked to its store.
+ * URLs come straight from the GameProject; the slot config controls
+ * presentation only, so they are never AI-writable.
  */
 export const AvailabilitySection: React.FC<{
   ctx: SiteRenderContext
   value: AvailabilitySlot
 }> = ({ ctx, value }) => {
   if (!value.enabled) return null
-  const availability = ctx.project.availability
-  const platforms = availability?.platforms ?? []
-  const releaseDate = formatDate(availability?.releaseDate)
-  const facts = [
-    availability?.releaseState
-      ? optionLabel(RELEASE_STATE_OPTIONS, availability.releaseState)
-      : null,
-    releaseDate,
-    availability?.currentVersion ? `Current version ${availability.currentVersion}` : null,
-  ].filter((fact): fact is string => Boolean(fact))
-
-  if (platforms.length === 0 && facts.length === 0) return null
+  const platforms = ctx.project.availability?.platforms ?? []
+  if (platforms.length === 0 && !value.note) return null
 
   return (
     <section aria-labelledby="fs-availability-heading" className="fs-section">
       <div className="fs-shell">
-        <SectionHeader
-          eyebrow={facts.join(' · ') || null}
-          heading={value.heading ?? 'Where to play'}
-          id="fs-availability-heading"
-        />
+        <SectionHeader heading={value.heading ?? 'Where to play'} id="fs-availability-heading" />
         {platforms.length > 0 ? (
-          <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <ul className="fs-rows fs-column-wide">
             {platforms.map((platform, index) => {
               const name = optionLabel(PLATFORM_OPTIONS, platform.platform) ?? 'Platform'
-              const inner = (
-                <>
-                  <span className="font-semibold">{name}</span>
-                  {platform.label ? (
-                    <span className="text-sm text-[var(--fs-muted-fg)]">{platform.label}</span>
-                  ) : null}
-                </>
-              )
               return (
-                <li key={platform.id ?? `${platform.platform}-${index}`}>
+                <li className="fs-platform-row" key={platform.id ?? `${platform.platform}-${index}`}>
                   {platform.storeUrl ? (
                     <a
-                      className="fs-panel fs-panel-link flex items-center justify-between gap-3 px-5 py-4"
+                      className="fs-link fs-platform-name"
                       href={platform.storeUrl}
                       rel="noopener noreferrer"
                       target="_blank"
                     >
-                      {inner}
-                      <span aria-hidden="true" className="text-[var(--fs-accent)]">
-                        →
-                      </span>
+                      {name}
                     </a>
                   ) : (
-                    <div className="fs-panel flex items-center justify-between gap-3 px-5 py-4">
-                      {inner}
-                    </div>
+                    <span className="fs-platform-name">{name}</span>
                   )}
+                  {platform.label ? <span className="fs-meta">{platform.label}</span> : null}
                 </li>
               )
             })}
           </ul>
         ) : null}
         {value.note ? (
-          <p className="mt-6 max-w-2xl text-sm leading-6 text-[var(--fs-muted-fg)]">{value.note}</p>
+          <p className="fs-body mt-6 text-[var(--fs-muted-fg)]">{value.note}</p>
         ) : null}
       </div>
     </section>
