@@ -73,7 +73,7 @@ Out:
 - [x] Baseline: install, migrate, run typecheck, lint, unit and E2E tests; record the results under Baseline
 - [x] Architecture: `architect` writes findings and the target design
 - [x] Fable review: `architecture-reviewer`
-- [ ] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
+- [x] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
 - [ ] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
 - [ ] Steps: `planner` writes Steps and Verification
 
@@ -733,6 +733,8 @@ SHOULD-CONSIDER:
 
 ## Architecture review (Astra)
 
+Skipped: usage limit reached; next retry after 2026-09-29 07:20 UTC (astra-review exit 3).
+
 ## Revision notes
 
 ## Steps
@@ -746,5 +748,6 @@ SHOULD-CONSIDER:
 - 2026-09-29 05:13 UTC · Baseline: E2E db and env set up, migrations applied; tsc pass, lint 0 errors/23 warnings, int 9/9, E2E 73/73.
 - 2026-09-29 05:44 UTC · Architecture: `architect` wrote the design plan (tokens, type, layouts, brief review, file map, E2E impact, screenshot harness). Added handoff H6 (prod demo seed, CMS home page, marketing contact), blocking nothing. No code changed, so no checks run.
 - 2026-09-29 05:50 UTC · Fable review: `architecture-reviewer` verdict APPROVE_WITH_CHANGES, 4 MUST-FIX (prose colour mapping, vote button name, CSS-only status marker, board region name) for the Revision stage. Plan-only change, no checks needed.
+- 2026-09-29 05:51 UTC · Astra review: skipped, astra-review exit 3 (usage limit). Plan-only change, no checks needed.
 
 ## Summary
