@@ -47,16 +47,16 @@ export type SiteThemeColors = z.infer<typeof siteThemeColorsSchema>
 
 /** Passes every contrast refinement; used as the schema default and in derived defaults. */
 export const DEFAULT_THEME_COLORS: SiteThemeColors = {
-  background: '#0b0d14',
-  foreground: '#f2f5fa',
-  mutedForeground: '#a8b1c4',
-  surface: '#141927',
-  accent: '#22d3ee',
-  accentForeground: '#07181d',
-  border: '#273043',
-  success: '#34d399',
-  warning: '#fbbf24',
-  error: '#fb7185',
+  background: '#1f2030',
+  foreground: '#f1f1f5',
+  mutedForeground: '#a9acc2',
+  surface: '#282a3d',
+  accent: '#aeb8ff',
+  accentForeground: '#1f2030',
+  border: '#3b3e56',
+  success: '#6fd39b',
+  warning: '#f2a05c',
+  error: '#ff7b86',
 }
 
 export const siteTypographySchema = z.enum(['modern', 'editorial', 'technical'])

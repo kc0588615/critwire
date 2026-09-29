@@ -16,7 +16,12 @@ import { DEFAULT_THEME_COLORS } from './schema/theme'
  * sanitized and the result is parsed through the canonical schema.
  */
 
-const ACCENT_FOREGROUND_CANDIDATES = ['#0b1016', '#f5f7fb', '#000000', '#ffffff']
+const ACCENT_FOREGROUND_CANDIDATES = [
+  DEFAULT_THEME_COLORS.background,
+  DEFAULT_THEME_COLORS.foreground,
+  '#000000',
+  '#ffffff',
+]
 
 export const deriveAccentColors = (
   raw: null | string | undefined,
@@ -84,7 +89,8 @@ export const deriveFlagshipDefault = (project: GameProject): SiteConfigV1 => {
           ],
     },
     finalCta: {
-      heading: 'Ready to jump in?',
+      // null: the renderer's "Play {name}" names the game.
+      heading: null,
       primaryAction: storeAction ?? { label: null, ref: 'report' },
       secondaryAction: { label: null, ref: 'contact' },
     },

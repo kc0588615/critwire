@@ -106,7 +106,7 @@ export async function seedCritterConnect() {
       'Build a field binder of hard-won discoveries. Follow real places, unlock clue trails, and turn player reports into better expeditions.',
     banner: banner.id,
     logo: logo.id,
-    accentColor: '#22d3ee',
+    accentColor: '#f3b340',
     links: {
       steam: 'https://store.steampowered.com/',
     },
@@ -187,25 +187,25 @@ export async function seedCritterConnect() {
   const flagshipConfig = siteConfigV1Schema.parse({
     nav: {
       links: [
-        { label: 'Field Notes', ref: 'updates' },
-        { label: 'Field Board', ref: 'issues' },
-        { label: 'Send Report', ref: 'report' },
+        { label: 'Field notes', ref: 'updates' },
+        { label: 'Field board', ref: 'issues' },
+        { label: 'Send report', ref: 'report' },
         { label: 'Contact', ref: 'contact' },
       ],
-      cta: { label: 'Begin Expedition', ref: 'primary-store' },
+      cta: { label: 'Begin expedition', ref: 'primary-store' },
     },
     theme: {
       colors: {
-        background: '#0a0e1a',
-        foreground: '#f2f5fa',
-        mutedForeground: '#aab6c9',
-        surface: '#121a2a',
-        accent: '#22d3ee',
-        accentForeground: '#07181d',
-        border: '#294057',
-        success: '#34d399',
-        warning: '#fbbf24',
-        error: '#fb7185',
+        background: '#0f1f26',
+        foreground: '#e6f1f0',
+        mutedForeground: '#9ab5b8',
+        surface: '#172b33',
+        accent: '#f3b340',
+        accentForeground: '#10191c',
+        border: '#28444e',
+        success: '#5bd49c',
+        warning: '#ef8a50',
+        error: '#ff6f7d',
       },
       typography: 'technical',
       shape: 'balanced',
@@ -219,8 +219,8 @@ export async function seedCritterConnect() {
       tagline:
         'Track real places, decode wildlife evidence, and turn every discovery into a field card worth keeping.',
       backgroundMedia: banner.id,
-      primaryAction: { label: 'Begin Expedition', ref: 'primary-store' },
-      secondaryAction: { label: 'Check Field Board', ref: 'issues' },
+      primaryAction: { label: 'Begin expedition', ref: 'primary-store' },
+      secondaryAction: { label: 'Check the field board', ref: 'issues' },
     },
     availability: {
       heading: 'Expedition access',
@@ -294,8 +294,8 @@ export async function seedCritterConnect() {
       body: 'Share a field report, follow known tracks, and see what the studio is investigating.',
       background: banner.id,
       actions: [
-        { label: 'Send Field Report', ref: 'report' },
-        { label: 'View Known Issues', ref: 'issues' },
+        { label: 'Send a field report', ref: 'report' },
+        { label: 'See known issues', ref: 'issues' },
       ],
     },
     finalCta: {
@@ -303,8 +303,8 @@ export async function seedCritterConnect() {
       heading: 'Your field binder is waiting.',
       subheading: 'Begin the expedition, then help shape every trail that follows.',
       background: banner.id,
-      primaryAction: { label: 'Begin Expedition', ref: 'primary-store' },
-      secondaryAction: { label: 'Read Field Notes', ref: 'updates' },
+      primaryAction: { label: 'Begin expedition', ref: 'primary-store' },
+      secondaryAction: { label: 'Read the field notes', ref: 'updates' },
     },
     footer: {
       tagline: 'Observe carefully. Connect the evidence.',
@@ -348,7 +348,7 @@ export async function seedCritterConnect() {
   const patchNoteSeed = {
     tenant: tenant.id,
     gameProject: project.id,
-    title: 'v0.1.0 - Field Binder Launch',
+    title: 'Field binder launch',
     slug: LAUNCH_PATCH_NOTE_SLUG,
     versionLabel: 'v0.1.0',
     summary: 'The field binder ships with discovery cards, clue trails, and the report tool.',

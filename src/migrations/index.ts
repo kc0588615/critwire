@@ -8,6 +8,7 @@ import * as migration_20260926_030253_tenant_scoped_media_folders from './202609
 import * as migration_20260926_042239_reconcile_issue_upvote_counts from './20260926_042239_reconcile_issue_upvote_counts';
 import * as migration_20260926_054934_remove_website_template from './20260926_054934_remove_website_template';
 import * as migration_20260926_055704_backfill_media_folder_tenants from './20260926_055704_backfill_media_folder_tenants';
+import * as migration_20260929_074053_design_default_theme from './20260929_074053_design_default_theme';
 
 export const migrations = [
   {
@@ -58,6 +59,11 @@ export const migrations = [
   {
     up: migration_20260926_055704_backfill_media_folder_tenants.up,
     down: migration_20260926_055704_backfill_media_folder_tenants.down,
-    name: '20260926_055704_backfill_media_folder_tenants'
+    name: '20260926_055704_backfill_media_folder_tenants',
+  },
+  {
+    up: migration_20260929_074053_design_default_theme.up,
+    down: migration_20260929_074053_design_default_theme.down,
+    name: '20260929_074053_design_default_theme'
   },
 ];
