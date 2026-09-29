@@ -5,7 +5,7 @@ import { test as base, expect, type APIRequestContext, type PlaywrightWorkerArgs
 import type { CollectionSlug } from 'payload'
 import { extractID } from 'payload/shared'
 
-import type { Config, GameProject, Issue, IssueReport, Media, PatchNote } from '../../../src/payload-types'
+import type { Config, GameProject, Issue, IssueReport, Media, Page, PatchNote } from '../../../src/payload-types'
 import { type Query, RestClient } from './api'
 import { BASE_URL, type Role, ROLES, WEBHOOK_SINK_ORIGIN, WEBHOOK_SINK_PORT, WORLD_PATH } from './env'
 
@@ -174,6 +174,11 @@ export const lexical = (text: string): PatchNote['content'] => ({
     version: 1,
   },
 })
+
+/** A marketing page layout of one full-width Content block. */
+export const contentLayout = (text: string): Page['layout'] => [
+  { blockType: 'content', columns: [{ size: 'full', richText: lexical(text) }] },
+]
 
 const tenantOf = (project: GameProject): number => {
   const tenant = project.tenant == null ? null : extractID(project.tenant)

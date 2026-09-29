@@ -35,3 +35,52 @@ export const CREDENTIALS: Record<Role, { email: string; name: string }> = {
 const AUTH_DIR = path.join(process.cwd(), 'test-results', '.auth')
 export const storageStatePath = (role: Role): string => path.join(AUTH_DIR, `${role}.json`)
 export const WORLD_PATH = path.join(AUTH_DIR, 'world.json')
+
+/**
+ * The E2E and screenshot servers run on a dedicated database that is
+ * dropped and re-migrated on every run (`pnpm e2e:server`). Refuse to
+ * start unless that database is clearly disposable.
+ */
+export function requireDisposableDatabase(): string {
+  const e2eURL = process.env.E2E_DATABASE_URL
+  const guard = 'E2E_DATABASE_URL: this database is dropped on every run;'
+  if (!e2eURL) {
+    throw new Error(`${guard} set it to a dedicated database whose name ends in _e2e.`)
+  }
+  const dbName = (url: string): string => new URL(url).pathname.replace(/^\//, '')
+  if (!dbName(e2eURL).endsWith('_e2e')) {
+    throw new Error(`${guard} its database name must end in _e2e (got "${dbName(e2eURL)}").`)
+  }
+  const devURL = process.env.DATABASE_URL
+  if (devURL && dbName(devURL) === dbName(e2eURL) && new URL(devURL).host === new URL(e2eURL).host) {
+    throw new Error(`${guard} it must not be the same database as DATABASE_URL.`)
+  }
+  return e2eURL
+}
+
+/**
+ * Environment for `pnpm e2e:server`. Next only fills env vars that are
+ * undefined, so '' here keeps a developer's .env from switching external
+ * services back on. `cronSecret` stays '' unless a run needs the seed route.
+ */
+export const serverEnv = ({ cronSecret = '' }: { cronSecret?: string } = {}): Record<string, string> => ({
+  DATABASE_URL: requireDisposableDatabase(),
+  PORT: String(E2E_PORT),
+  NEXT_PUBLIC_SERVER_URL: BASE_URL,
+  NEXT_PUBLIC_TURNSTILE_SITE_KEY: TURNSTILE_TEST_SITE_KEY,
+  TURNSTILE_SECRET_KEY: TURNSTILE_TEST_SECRET_KEY,
+  PREVIEW_SECRET,
+  RATE_LIMIT_OPTIONAL: '1',
+  DISCORD_WEBHOOK_TEST_ORIGIN: WEBHOOK_SINK_ORIGIN,
+  R2_BUCKET: '',
+  R2_ENDPOINT: '',
+  R2_ACCESS_KEY_ID: '',
+  R2_SECRET_ACCESS_KEY: '',
+  RESEND_API_KEY: '',
+  SENTRY_DSN: '',
+  NEXT_PUBLIC_SENTRY_DSN: '',
+  OPENAI_API_KEY: '',
+  UPSTASH_REDIS_REST_URL: '',
+  UPSTASH_REDIS_REST_TOKEN: '',
+  CRON_SECRET: cronSecret,
+})

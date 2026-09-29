@@ -2,11 +2,12 @@ import type { Browser, Page as BrowserPage } from '@playwright/test'
 import type { CollectionSlug } from 'payload'
 
 import { signSitePreviewToken } from '../../src/lib/security/sitePreviewToken'
-import type { GamePage, GameProject, Issue, IssueReport, Media, Page, PatchNote } from '../../src/payload-types'
+import type { GamePage, GameProject, Issue, IssueReport, Media, PatchNote } from '../../src/payload-types'
 import type { RestClient } from './support/api'
 import { BASE_URL, PREVIEW_SECRET, type Role, storageStatePath } from './support/env'
 import {
   castVote,
+  contentLayout,
   createIssue,
   createPatchNote,
   createProject,
@@ -47,11 +48,6 @@ interface StudioA {
 
 let a: StudioA
 let bProject: GameProject
-
-/** A marketing page layout of one full-width Content block. */
-const contentLayout = (text: string): Page['layout'] => [
-  { blockType: 'content', columns: [{ size: 'full', richText: lexical(text) }] },
-]
 
 const idsOf = (docs: { id: number | string }[]): (number | string)[] => docs.map((doc) => doc.id)
 

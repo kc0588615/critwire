@@ -100,6 +100,11 @@ where appropriate.
 - `pnpm test:e2e` — Playwright against a fresh production build on the
   disposable E2E database (see Testing)
 - `pnpm test:int` — vitest; the three int files, no database needed
+- `pnpm screenshots` — design screenshots (Critter Connect demo, several
+  themes, 1440 and 390 px) against a production build on port 3200;
+  needs `SHOTS_SET=before|after` and an absolute `SHOTS_DIR`. Drops the
+  `_e2e` database like `pnpm test:e2e`, so never run the two together
+  (see `playwright.screenshots.config.ts`)
 - `docker compose up -d --build` — full stack (see `docs/deploy.md`)
 
 Local Postgres for dev: `DATABASE_URL` in `.env` must point at a running

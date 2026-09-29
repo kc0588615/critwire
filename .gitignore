@@ -18,6 +18,7 @@ public/sitemap*.xml
 node_modules/
 /test-results/
 /playwright-report/
+/playwright-report-shots/
 /blob-report/
 /playwright/.cache/
 

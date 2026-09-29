@@ -1,39 +1,10 @@
 import { defineConfig, devices } from '@playwright/test'
 import 'dotenv/config'
 
-import {
-  AUTH_SETUP_PATTERN,
-  BASE_URL,
-  E2E_PORT,
-  PREVIEW_SECRET,
-  TURNSTILE_TEST_SECRET_KEY,
-  TURNSTILE_TEST_SITE_KEY,
-  WEBHOOK_SINK_ORIGIN,
-} from './tests/e2e/support/env'
+import { AUTH_SETUP_PATTERN, BASE_URL, serverEnv } from './tests/e2e/support/env'
 
-/**
- * E2E runs against a production build on a dedicated database that is
- * dropped and re-migrated on every run (`pnpm e2e:server`). Refuse to
- * start unless that database is clearly disposable.
- */
-function requireDisposableDatabase(): string {
-  const e2eURL = process.env.E2E_DATABASE_URL
-  const guard = 'E2E_DATABASE_URL: this database is dropped on every run;'
-  if (!e2eURL) {
-    throw new Error(`${guard} set it to a dedicated database whose name ends in _e2e.`)
-  }
-  const dbName = (url: string): string => new URL(url).pathname.replace(/^\//, '')
-  if (!dbName(e2eURL).endsWith('_e2e')) {
-    throw new Error(`${guard} its database name must end in _e2e (got "${dbName(e2eURL)}").`)
-  }
-  const devURL = process.env.DATABASE_URL
-  if (devURL && dbName(devURL) === dbName(e2eURL) && new URL(devURL).host === new URL(e2eURL).host) {
-    throw new Error(`${guard} it must not be the same database as DATABASE_URL.`)
-  }
-  return e2eURL
-}
-
-const e2eDatabaseURL = requireDisposableDatabase()
+// Fails fast, before anything starts, unless the E2E database is disposable.
+const env = serverEnv()
 
 export default defineConfig({
   testDir: './tests/e2e',
@@ -69,28 +40,6 @@ export default defineConfig({
     reuseExistingServer: false,
     stdout: 'pipe',
     stderr: 'pipe',
-    // Next only fills env vars that are undefined, so '' here keeps a
-    // developer's .env from switching external services back on.
-    env: {
-      DATABASE_URL: e2eDatabaseURL,
-      PORT: String(E2E_PORT),
-      NEXT_PUBLIC_SERVER_URL: BASE_URL,
-      NEXT_PUBLIC_TURNSTILE_SITE_KEY: TURNSTILE_TEST_SITE_KEY,
-      TURNSTILE_SECRET_KEY: TURNSTILE_TEST_SECRET_KEY,
-      PREVIEW_SECRET,
-      RATE_LIMIT_OPTIONAL: '1',
-      DISCORD_WEBHOOK_TEST_ORIGIN: WEBHOOK_SINK_ORIGIN,
-      R2_BUCKET: '',
-      R2_ENDPOINT: '',
-      R2_ACCESS_KEY_ID: '',
-      R2_SECRET_ACCESS_KEY: '',
-      RESEND_API_KEY: '',
-      SENTRY_DSN: '',
-      NEXT_PUBLIC_SENTRY_DSN: '',
-      OPENAI_API_KEY: '',
-      UPSTASH_REDIS_REST_URL: '',
-      UPSTASH_REDIS_REST_TOKEN: '',
-      CRON_SECRET: '',
-    },
+    env,
   },
 })

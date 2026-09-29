@@ -853,7 +853,7 @@ Revision by the `architect`, 2026-09-29. Every claim was checked against the cod
 | reports-contact:65, 66, 72 | S16 |
 | reports-contact:319 | S17 |
 
-- [ ] S1 · Screenshot harness (tooling only, no `src/` change)
+- [x] S1 · Screenshot harness (tooling only, no `src/` change)
   - **Share E2E code instead of copying it:**
     - `requireDisposableDatabase()` and the webServer `env` block, as `serverEnv({ cronSecret })`, move from `playwright.config.ts` into `tests/e2e/support/env.ts`. That file stays free of test-runner imports.
     - `contentLayout` moves from `tenant-isolation.spec.ts` into `tests/e2e/support/fixtures.ts`.
@@ -1426,6 +1426,14 @@ grep -rnE "Field (Notes|Board|report)|Track type|Studio Route|the signal|Payload
   - **What still goes:** the Tally footnote that named Critwire (F9) is an admin-facing aside, not the credit, so it's still removed.
   - **Reversal:** one line in `SiteFooter` if the owner disagrees. The per-tier toggle belongs to Phase 9.
 
+- **S1: the harness shares E2E code instead of copying it (2026-09-29).** `requireDisposableDatabase()` and the webServer env (`serverEnv({ cronSecret })`) moved from `playwright.config.ts` into `tests/e2e/support/env.ts`, and `contentLayout` from `tenant-isolation.spec.ts` into `tests/e2e/support/fixtures.ts`. This widens §10's file map. The E2E list is unchanged (73 tests; only line numbers in tenant-isolation moved).
+- **S1: how the harness differs from the Steps as written (2026-09-29).**
+  - **`default` theme:** publishes `siteThemeSchema.parse({})` imported from the tree under test, not ten `''` colours. Each build still renders its own default (old navy/cyan before, Slate & signal after), and the wait checks the exact `--fs-bg` instead of "differs from the CC baseline". `riso` waits on `--fs-bg: #eef4d2` as planned.
+  - **Page list:** one catalog (`tests/screenshots/catalog.ts`) drives both the capture spec and `index.html`, so the index can list "not captured" for any page.
+  - **Settling:** waits for `load`, every image decoded (lazy ones forced eager, for full-page captures), the Turnstile token where a form has one, and `document.fonts.ready`. Not `networkidle`: the Turnstile widget keeps the network busy, so report and contact never settled (smoke run 1: 5 timeouts).
+  - **`meta.json`** keeps a `runs` list (commit, dirty flag, UTC start, the reproducing command), so partial re-shoots don't hide the earlier runs; `index.html` shows every run.
+  - **Mobile** captures at `deviceScaleFactor: 2`, so the 390 px shots stay legible in the critique; desktop at 1.
+
 ## Log
 
 - 2026-09-29 05:13 UTC · Baseline: E2E db and env set up, migrations applied; tsc pass, lint 0 errors/23 warnings, int 9/9, E2E 73/73.
@@ -1434,5 +1442,6 @@ grep -rnE "Field (Notes|Board|report)|Track type|Studio Route|the signal|Payload
 - 2026-09-29 05:51 UTC · Astra review: skipped, astra-review exit 3 (usage limit). Plan-only change, no checks needed.
 - 2026-09-29 06:00 UTC · Revision: `architect` resolved all 4 Fable MUST-FIX items (prose vars via tailwind.config, VoteButton name, CSS-only StatusMark, label-only board region name), the 3 MISSED items (SiteRoot carries font classes; revalidateGameLanding scope kept; "Powered by Critwire" kept, see Decisions) and adopted the SHOULD-CONSIDER items. Plan-only change, no checks needed.
 - 2026-09-29 06:20 UTC · Steps: `planner` wrote 24 steps (S1 harness, S2 seed + before shots, S3–S21 build, S22 after shots + index, S23 self-critique, S24 final verification) and the Verification section. Plan-only change, no checks needed.
+- 2026-09-29 06:42 UTC · S1: screenshot harness (`playwright.screenshots.config.ts`, `tests/screenshots/*`, `pnpm screenshots`), E2E env/fixtures shared. tsc pass; lint 0 errors/23 warnings; `playwright test --list` same 73 tests; harness lists 103 (setup + 102 shots); smoke `SHOTS_THEMES=critter-connect --project desktop` 15/15 passed, 14 PNGs + index.html showing CC art; `git diff --stat 669376c -- src public …` empty.
 
 ## Summary
