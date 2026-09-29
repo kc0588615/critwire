@@ -1039,23 +1039,9 @@
   text-wrap: balance;
 }
 
-/* Text in fg; the error colour is only the marker's fill. */
-.fs-vote-error {
-  display: flex;
+/* A failed vote's notice takes its own row under the button. */
+.fs-vote-notice {
   flex-basis: 100%;
-  align-items: baseline;
-  gap: 0.5rem;
-  font-size: 0.9375rem;
-  font-weight: 600;
-}
-
-.fs-vote-error::before {
-  flex: none;
-  width: 0.625rem;
-  height: 0.625rem;
-  border-radius: 1px;
-  background: var(--fs-error);
-  content: '';
 }
 
 /* The studio's note: needs more info, a workaround, or the fix. */
@@ -1079,6 +1065,98 @@
 /* The accent is never on surface (§2), so the link underline follows the text. */
 .fs-note .fs-link {
   text-decoration-color: currentColor;
+}
+
+/* ── Forms: report and contact (plan §5) ───────────────── */
+
+/* The form sits on one surface panel; the controls keep the bg fill and
+   muted-fg border, both schema-checked against surface. */
+.fs-form {
+  display: grid;
+  gap: 1.5rem;
+  border-radius: var(--fs-radius);
+  padding: clamp(1.25rem, 4vw, 2rem);
+  background: var(--fs-surface);
+}
+
+.fs-field {
+  display: grid;
+  gap: 0.5rem;
+  align-content: start;
+}
+
+.fs-label {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.fs-hint {
+  max-width: 36em;
+}
+
+.fs-textarea {
+  min-height: 9rem;
+  resize: vertical;
+}
+
+/* Email beside platform from 40rem; one column on phones. */
+.fs-field-pair {
+  display: grid;
+  gap: 1.5rem;
+}
+
+@media (min-width: 40rem) {
+  .fs-field-pair {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Verification, then the submit at the row's end; they stack when narrow. */
+.fs-form-submit {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border-top: 1px solid var(--fs-border);
+  padding-top: 1.5rem;
+}
+
+/* Reserves the widget's height, so the button doesn't jump when it loads. */
+.fs-turnstile {
+  min-height: 65px;
+}
+
+/* A form's outcome: fg text beside a status shape; the colour is only the shape's fill. */
+.fs-notice {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  border-radius: var(--fs-radius);
+  padding: 1rem 1.25rem;
+  background: var(--fs-surface);
+  color: var(--fs-fg);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.fs-notice::before {
+  flex: none;
+  width: 0.625rem;
+  height: 0.625rem;
+  content: '';
+}
+
+.fs-notice[data-tone='success']::before {
+  border-radius: 999px;
+  background: var(--fs-success);
+}
+
+.fs-notice[data-tone='error']::before {
+  border-radius: 1px;
+  background: var(--fs-error);
 }
 
 /* ── Landing sections below the hero (plan §5) ─────────── */

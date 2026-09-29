@@ -62,14 +62,14 @@ test.describe('S5.1–S5.3 player reports', () => {
 
     await test.step('the Turnstile widget issues a token and the submit lands', async () => {
       await page.getByLabel('Title').fill(title)
-      await page.getByLabel('Field notes').fill('Paddling into the pier clips the raft straight through it.')
-      await page.getByLabel('Track type').selectOption('GAMEPLAY')
+      await page.getByLabel('What happened').fill('Paddling into the pier clips the raft straight through it.')
+      await page.getByLabel('Category').selectOption('GAMEPLAY')
       await page.getByLabel('Email (optional)').fill('player@e2e.test')
       await page.getByLabel('Platform (optional)').fill('Steam Deck')
       await page.getByLabel('Game version (optional)').fill('1.4.2')
       await submitWithTurnstile(page, 'Send report')
       await expect(page).toHaveURL(/[?&]submitted=1/)
-      await expect(page.getByText('Field report received.')).toBeVisible()
+      await expect(page.getByText('Report sent.')).toBeVisible()
     })
 
     await test.step("the studio owner sees it as NEW with the player's details", async () => {

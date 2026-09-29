@@ -12,7 +12,7 @@ export const TurnstileField: React.FC = () => {
   return (
     <>
       <script async defer src="https://challenges.cloudflare.com/turnstile/v0/api.js" />
-      <div className="cf-turnstile" data-sitekey={siteKey} />
+      <div className="cf-turnstile fs-turnstile" data-sitekey={siteKey} />
     </>
   )
 }

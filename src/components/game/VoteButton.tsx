@@ -2,6 +2,8 @@
 
 import React, { useState, useTransition } from 'react'
 
+import { FormNotice } from '@/components/game/FormNotice'
+
 const NETWORK_ERROR = 'Your vote didn’t count. Reload the page and try again.'
 
 type Change = { delta: 1 | -1; id: number }
@@ -79,9 +81,9 @@ export const VoteButton: React.FC<{
         One vote per browser. Select it again to take your vote back.
       </p>
       {error ? (
-        <p className="fs-vote-error" role="alert">
+        <FormNotice className="fs-vote-notice" tone="error">
           {error}
-        </p>
+        </FormNotice>
       ) : null}
     </div>
   )
