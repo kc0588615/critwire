@@ -72,7 +72,7 @@ Out:
 
 - [x] Baseline: install, migrate, run typecheck, lint, unit and E2E tests; record the results under Baseline
 - [x] Architecture: `architect` writes findings and the target design
-- [ ] Fable review: `architecture-reviewer`
+- [x] Fable review: `architecture-reviewer`
 - [ ] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
 - [ ] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
 - [ ] Steps: `planner` writes Steps and Verification
@@ -709,6 +709,28 @@ Before settling the plan, it was checked against a generic "portal for indie gam
 
 ## Architecture review (Fable)
 
+VERDICT: APPROVE_WITH_CHANGES
+
+Checked against the code at `9d2e8c4`: every contrast ratio in §3 recomputed (all six schema pairs pass for Slate & signal, Night canopy and Riso lime; marketing ink/yellow 10.37, graphite/yellow 5.55; white and `#123456` against `#1F2030` are 16.06 and 1.26, so S2.3 keeps its meaning); the five families exist in Next 16.2.6's `font-data.json` with the axes and subsets claimed; `siteThemeSchema` gains no keys, so the parity test, the AI schema and types are untouched; the ten colour defaults are Postgres column defaults on `game_pages` and `_game_pages_v` (10 + 10 statements, as §9 says); `PortalChrome`, `revalidateGamePage.ts`, `SiteNav`/`SiteFooter`, `flagship.css:44-52,128-133,158-190,255-263` and the cited E2E lines read as described. The design avoids the skill's five clusters and its typographic tells, spends boldness in exactly the two places the brief names, keeps the ops pages calm, and the §2 token contract is a genuine guarantee, not a hope (focus ring from `fg`/`bg`, accent never as text, text never over art). The screenshot harness meets the Definition of done (three themes, 1440/390, before/after index, Playwright against a production build, reduced motion for determinism). No feature or data-model change beyond re-pointed defaults. The four items below are places where the plan contradicts its own E2E constraints or would produce a defect as written.
+
+MUST-FIX:
+1. **Prose colour mapping (F5, §10 `tailwind.config.mjs`, `.fs-prose`/`.cw-prose`).** The plan calls the `--tw-prose-body: var(--text)` mapping "dead" and deletes it, then sets `--tw-prose-*` from `.fs-prose` inside `@layer components`. Both halves are wrong. `var(--text)` being undefined is what makes prose text *inherit* the page colour today (invalid at computed-value time → `color: inherit`), so removing it reinstates the plugin's grey-700 body text, which fails contrast on every dark theme. And `.prose` is a utility (`@plugin` output lands in the utilities layer), so a `.fs-prose` rule in the components layer loses to `.prose`'s own `--tw-prose-*` declarations on the same element. Fix: keep the plugin-config mechanism and make it deliberate: map `--tw-prose-body/-headings/-links/-bold/-quotes/-code/-hr/-th-borders/-td-borders/-counters/-bullets` to surface-owned variables (for example `var(--prose-fg)`, `var(--prose-muted)`, `var(--prose-border)`) in `tailwind.config.mjs`, and set those variables on `.fs-root` (from `--fs-*`) and on the marketing root (ink, graphite). Drop `dark:prose-invert` as planned.
+2. **Vote button name (§7 "visually hidden ' votes'" vs §8 "`/^Upvoted?\s*\d+$/` kept").** If the hidden " votes" is inside the button, its accessible name becomes "Upvote 3 votes" and issues-voting:288 fails. State explicitly: the button's content is the `aria-hidden` glyph, the "Upvote"/"Upvoted" word and the `.fs-vote-count` only; the visually hidden " votes" belongs to `VoteCount` on lists, board cards and the landing, never to `VoteButton`.
+3. **Status marker must not be a text glyph.** §5 puts the marker first in the known-issues row ("status marker, title, ▲ n, label") and draws ○◐◆● as characters. Playwright's `toHaveText` uses `textContent`, which includes `aria-hidden` text, so a glyph breaks `^${title}` (issues-voting:295,334) and the "links contain only the title" constraint, and screen readers announce the glyph (the plan's own F9). Pin it: `IssueStatus` renders the marker as an empty `<span aria-hidden>` drawn with CSS (border/border-radius/clip-path), never a character, so the row's text starts with the title. Same for the ◆ in the issue-detail aside and the loop markers in `IssueLoop`.
+4. **Board column accessible name (§5, §8 issues-voting:169).** The h2 is described as "status name, marker and count", but `getByRole('region', { name: label, exact: true })` needs the region's name to be the status name alone. `aria-labelledby` must point at an element containing only the status label; the count (and the CSS marker) sit outside it.
+
+MISSED:
+- The template display fonts (`flagship-game-v1/fonts.ts`) are loaded through `next/font`, whose `--font-archivo` etc. only exist where the font's `.variable` class is applied. The plan never says where. Apply all three on `.fs-root` in `SiteFrame` and on the portal 404's `.fs-root`, otherwise `themeStyle` points at undefined variables and the fallback stack renders.
+- `PortalChrome`'s footer carries "Powered by Critwire" on every ops page today; `SiteFooter` (which replaces it) has no such link. Removing it is fine for white-label, but it's a product decision the plan doesn't name. Record it under Decisions.
+- `revalidateGameLanding` is shared by the Issues, PatchNotes and IssueVotes hooks and must keep its `/g/<slug>` scope; only the two GamePage hooks change. The plan implies this but should say it, so nobody widens the shared helper.
+
+SHOULD-CONSIDER:
+1. Extract the GameProject hook's `revalidatePortal` (`revalidatePath(PORTAL_ROUTE, 'layout')` plus the log line) into `src/hooks/revalidateGamePortal.ts` and call it from both GamePage hooks, rather than repeating the call (DRY).
+2. "Report sent. The {game} team reviews every report; confirmed bugs appear on the known issues page." promises studio behaviour the platform can't guarantee. Say only what happened: "Report sent. If the {game} team confirms it, it will appear on the known issues page."
+3. `SiteFrame` applies the font variable classes and `data-fs-motion` in one place; make it the only element that ever carries `.fs-root` (the 404 included), so the motion and focus rules have one root to target.
+4. In the screenshot harness, wait for the `.fs-root` `--fs-accent` poll *and* `document.fonts.ready` before each capture, and record the exact `pnpm screenshots` invocation for each set in the plan's Verification, so the artifact is reproducible by the owner.
+5. Check the `font-stretch` ↔ `wdth` behaviour in the first mockup step, not at the end: Anybody at wdth 112/130 is the marketing identity, so if `font-variation-settings` is needed it changes several rules at once.
+
 ## Architecture review (Astra)
 
 ## Revision notes
@@ -723,5 +745,6 @@ Before settling the plan, it was checked against a generic "portal for indie gam
 
 - 2026-09-29 05:13 UTC · Baseline: E2E db and env set up, migrations applied; tsc pass, lint 0 errors/23 warnings, int 9/9, E2E 73/73.
 - 2026-09-29 05:44 UTC · Architecture: `architect` wrote the design plan (tokens, type, layouts, brief review, file map, E2E impact, screenshot harness). Added handoff H6 (prod demo seed, CMS home page, marketing contact), blocking nothing. No code changed, so no checks run.
+- 2026-09-29 05:50 UTC · Fable review: `architecture-reviewer` verdict APPROVE_WITH_CHANGES, 4 MUST-FIX (prose colour mapping, vote button name, CSS-only status marker, board region name) for the Revision stage. Plan-only change, no checks needed.
 
 ## Summary
