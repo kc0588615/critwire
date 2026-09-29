@@ -19,9 +19,7 @@
   --foreground: var(--cw-ink);
   --primary: var(--cw-ink);
   --primary-foreground: var(--cw-yellow);
-  --muted-foreground: var(--cw-graphite);
   --border: var(--cw-rule);
-  --ring: var(--cw-ink);
 
   /* Rich text: tailwind.config.mjs maps every prose colour to these. */
   --prose-fg: var(--cw-ink);

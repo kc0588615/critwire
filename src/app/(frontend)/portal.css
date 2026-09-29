@@ -31,7 +31,7 @@
  * the accent is only a fill (with --fs-accent-fg on it) or a
  * decoration; --fs-border only draws dividers; interactive boundaries
  * use --fs-muted-fg. Every pair used is one the theme schema checks,
- * so any valid theme reads. No uppercase, shadows or gradients.
+ * so any valid theme reads. No all-caps text, shadows or gradients.
  */
 
 /* ── Layout ─────────────────────────────────────────────── */

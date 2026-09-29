@@ -6,11 +6,11 @@ import { GameButtons } from '@/components/game/GameButtons'
 
 export const GameCTAComponent: React.FC<GameCTABlock> = ({ buttons, heading, text }) => {
   return (
-    <section className="cc-shell cc-section">
-      <div className="cc-panel-elevated mx-auto max-w-3xl rounded-lg p-8 text-center sm:p-10">
-        <h2 className="text-3xl font-black">{heading}</h2>
-        {text && <p className="mt-4 text-lg leading-8 text-slate-300">{text}</p>}
-        <div className="mt-8 flex justify-center">
+    <section className="fs-section">
+      <div className="fs-shell">
+        <h2 className="fs-h2">{heading}</h2>
+        {text && <p className="fs-lead mt-4 text-[var(--fs-muted-fg)]">{text}</p>}
+        <div className="mt-8">
           <GameButtons buttons={buttons} />
         </div>
       </div>

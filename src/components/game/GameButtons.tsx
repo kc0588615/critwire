@@ -11,10 +11,12 @@ export const GameButtons: React.FC<{ buttons?: Button[] | null }> = ({ buttons }
   if (!buttons?.length) return null
 
   return (
-    <div className="flex flex-wrap gap-3">
+    <div className="fs-action-row">
       {buttons.map((button, i) => (
         <a
-          className={button.variant === 'secondary' ? 'cc-button-secondary' : 'cc-button-primary'}
+          className={
+            button.variant === 'secondary' ? 'fs-btn fs-btn-secondary' : 'fs-btn fs-btn-primary'
+          }
           href={button.url}
           key={button.id ?? i}
           rel="noopener noreferrer"

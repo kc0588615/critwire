@@ -21,32 +21,15 @@ export const RenderGameBlocks: React.FC<{
       {blocks.map((block, index) => {
         switch (block.blockType) {
           case 'gameHero':
-            // Hero renders full-bleed at the top — no section spacing.
             return <GameHeroComponent key={block.id ?? index} {...block} project={project} />
           case 'gameFeatures':
-            return (
-              <div className="my-16" key={block.id ?? index}>
-                <GameFeaturesComponent {...block} />
-              </div>
-            )
+            return <GameFeaturesComponent key={block.id ?? index} {...block} />
           case 'mediaGallery':
-            return (
-              <div className="my-16" key={block.id ?? index}>
-                <MediaGalleryComponent {...block} />
-              </div>
-            )
+            return <MediaGalleryComponent key={block.id ?? index} {...block} />
           case 'gameCTA':
-            return (
-              <div className="my-16" key={block.id ?? index}>
-                <GameCTAComponent {...block} />
-              </div>
-            )
+            return <GameCTAComponent key={block.id ?? index} {...block} />
           case 'trailerEmbed':
-            return (
-              <div className="my-16" key={block.id ?? index}>
-                <TrailerEmbedComponent {...block} />
-              </div>
-            )
+            return <TrailerEmbedComponent key={block.id ?? index} {...block} />
           default:
             return null
         }

@@ -25,10 +25,10 @@ export const revalidate = 3600
 
 /**
  * Landing page decision tree:
- * 1. Page published with the flagship template → flagship renderer.
- * 2. Page published with legacy blocks (no template) → legacy renderer
+ * 1. Page published with the flagship template: the flagship renderer.
+ * 2. Page published with legacy blocks (no template): the legacy renderer
  *    inside the portal frame, themed with the derived default.
- * 3. No usable page → flagship default derived from project facts.
+ * 3. No usable page: the flagship default derived from project facts.
  */
 export default async function GameLandingPage({
   params,
