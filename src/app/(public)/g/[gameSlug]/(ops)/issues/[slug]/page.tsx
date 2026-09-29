@@ -4,8 +4,10 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import React from 'react'
 
+import type { Issue } from '@/payload-types'
+
 import RichText from '@/components/RichText'
-import { IssueStatus, issueCategoryLabel } from '@/components/game/IssueStatus'
+import { IssueMeta, issueStatusShape, StatusMark } from '@/components/game/IssueStatus'
 import { VoteButton } from '@/components/game/VoteButton'
 import { getGameProject } from '@/lib/game-portal/getGameProject'
 import { getHasVoted, getPublicIssue } from '@/lib/game-portal/issues'
@@ -14,6 +16,21 @@ import { getHasVoted, getPublicIssue } from '@/lib/game-portal/issues'
 export const dynamic = 'force-dynamic'
 
 type Args = { params: Promise<{ gameSlug: string; slug: string }> }
+
+/** The studio's note on the issue: one surface panel, headed by the status's own marker. */
+const IssueNote: React.FC<{
+  children: React.ReactNode
+  heading: string
+  status: Issue['status']
+}> = ({ children, heading, status }) => (
+  <aside className="fs-note mt-10">
+    <h2 className="fs-note-head">
+      <StatusMark shape={issueStatusShape(status)} />
+      {heading}
+    </h2>
+    {children}
+  </aside>
+)
 
 export default async function IssueDetailPage({ params }: Args) {
   const { gameSlug, slug } = await params
@@ -24,72 +41,61 @@ export default async function IssueDetailPage({ params }: Args) {
   if (!issue) notFound()
 
   const hasVoted = await getHasVoted(issue.id)
-  const categoryLabel = issueCategoryLabel(issue.category)
   const fixedIn =
     issue.fixedInPatchNote && typeof issue.fixedInPatchNote === 'object'
       ? issue.fixedInPatchNote
       : null
 
   return (
-    <article className="mx-auto max-w-3xl px-6 py-12">
-      <Link className="text-sm opacity-70 hover:opacity-100" href={`/g/${gameSlug}/issues`}>
-        ← All issues
-      </Link>
+    <div className="fs-shell fs-ops">
+      <article className="fs-column">
+        <Link className="fs-back" href={`/g/${gameSlug}/issues`}>
+          All known issues
+        </Link>
+        <IssueMeta className="mt-8" issue={issue} />
+        <h1 className="fs-page-title mt-3">{issue.title}</h1>
+        {issue.summary ? (
+          <p className="fs-lead mt-5 text-[var(--fs-muted-fg)]">{issue.summary}</p>
+        ) : null}
 
-      <div className="mt-6 flex flex-wrap items-center gap-2 text-sm">
-        {issue.isPinned && <span title="Pinned">📌</span>}
-        <IssueStatus status={issue.status} />
-        {categoryLabel && (
-          <span className="rounded-full border px-2.5 py-0.5 text-xs">{categoryLabel}</span>
-        )}
-      </div>
+        <div className="mt-8">
+          <VoteButton
+            initialCount={issue.upvoteCount ?? 0}
+            initialVoted={hasVoted}
+            issueId={issue.id}
+          />
+        </div>
 
-      <h1 className="mt-3 text-3xl font-bold sm:text-4xl">{issue.title}</h1>
-      {issue.summary && <p className="mt-4 text-lg opacity-80">{issue.summary}</p>}
+        {issue.status === 'NEEDS_MORE_INFO' && issue.needsMoreInfoText ? (
+          <IssueNote heading="The studio needs more information" status={issue.status}>
+            <p className="whitespace-pre-line">{issue.needsMoreInfoText}</p>
+          </IssueNote>
+        ) : null}
 
-      <div className="mt-6">
-        <VoteButton
-          initialCount={issue.upvoteCount ?? 0}
-          initialVoted={hasVoted}
-          issueId={issue.id}
-        />
-      </div>
+        {issue.status === 'WORKAROUND_AVAILABLE' && issue.workaroundText ? (
+          <IssueNote heading="Workaround" status={issue.status}>
+            <p className="whitespace-pre-line">{issue.workaroundText}</p>
+          </IssueNote>
+        ) : null}
 
-      {issue.status === 'NEEDS_MORE_INFO' && issue.needsMoreInfoText && (
-        <aside className="mt-8 rounded-md border border-amber-300 bg-amber-50 p-4 text-amber-900 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-200">
-          <h2 className="font-semibold">The studio needs more information</h2>
-          <p className="mt-1 whitespace-pre-line text-sm">{issue.needsMoreInfoText}</p>
-        </aside>
-      )}
+        {issue.status === 'FIXED' && fixedIn?.slug ? (
+          <IssueNote heading="Fixed" status={issue.status}>
+            <p>
+              The fix shipped in{' '}
+              <Link className="fs-link" href={`/g/${gameSlug}/patch-notes/${fixedIn.slug}`}>
+                {fixedIn.versionLabel ? `${fixedIn.versionLabel} — ` : ''}
+                {fixedIn.title}
+              </Link>
+              .
+            </p>
+          </IssueNote>
+        ) : null}
 
-      {issue.status === 'WORKAROUND_AVAILABLE' && issue.workaroundText && (
-        <aside className="mt-8 rounded-md border border-purple-300 bg-purple-50 p-4 text-purple-900 dark:border-purple-700 dark:bg-purple-950/40 dark:text-purple-200">
-          <h2 className="font-semibold">Workaround</h2>
-          <p className="mt-1 whitespace-pre-line text-sm">{issue.workaroundText}</p>
-        </aside>
-      )}
-
-      {issue.status === 'FIXED' && fixedIn?.slug && (
-        <aside className="mt-8 rounded-md border border-green-300 bg-green-50 p-4 text-green-900 dark:border-green-700 dark:bg-green-950/40 dark:text-green-200">
-          <h2 className="font-semibold">Fixed</h2>
-          <p className="mt-1 text-sm">
-            This issue was fixed in{' '}
-            <Link
-              className="underline"
-              href={`/g/${gameSlug}/patch-notes/${fixedIn.slug}`}
-            >
-              {fixedIn.versionLabel ? `${fixedIn.versionLabel} — ` : ''}
-              {fixedIn.title}
-            </Link>
-            .
-          </p>
-        </aside>
-      )}
-
-      {issue.details && (
-        <RichText className="mx-0 mt-8" data={issue.details} enableGutter={false} />
-      )}
-    </article>
+        {issue.details ? (
+          <RichText className="mx-0 mt-10" data={issue.details} enableGutter={false} />
+        ) : null}
+      </article>
+    </div>
   )
 }
 

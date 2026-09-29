@@ -290,7 +290,7 @@ test.describe('S4.4 voting in the browser', () => {
     const button = (on: Page) => on.getByRole('button', { name: /^Upvoted?\s*\d+$/ })
     const expectButton = async (on: Page, pressed: boolean, count: number) => {
       await expect(button(on)).toHaveAttribute('aria-pressed', String(pressed))
-      await expect(button(on).locator('span.font-mono')).toHaveText(String(count))
+      await expect(button(on).locator('.fs-vote-count')).toHaveText(String(count))
     }
     const knownIssues = page.locator('section[aria-labelledby="fs-known-issues-heading"] li')
 

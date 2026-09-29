@@ -46,11 +46,12 @@ export const IssueStatus: React.FC<{ className?: string; status: Issue['status']
 
 /** An issue's status, category and pinned tag, in one wrapping row outside its title link. */
 export const IssueMeta: React.FC<{
+  className?: string
   issue: Pick<Issue, 'category' | 'isPinned' | 'status'>
-}> = ({ issue }) => {
+}> = ({ className, issue }) => {
   const category = issueCategoryLabel(issue.category)
   return (
-    <div className="fs-issue-meta">
+    <div className={className ? `fs-issue-meta ${className}` : 'fs-issue-meta'}>
       <IssueStatus status={issue.status} />
       {category ? <span className="fs-meta">{category}</span> : null}
       {issue.isPinned ? <PinnedTag /> : null}

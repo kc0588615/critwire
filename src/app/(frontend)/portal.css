@@ -949,6 +949,138 @@
   background: var(--fs-bg);
 }
 
+/* ── Issue detail: the vote and the studio's note ───────── */
+
+/* The button, then the helper line beside it (below it on phones). */
+.fs-vote {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1.25rem;
+}
+
+.fs-vote-control {
+  position: relative;
+}
+
+.fs-vote-btn {
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease,
+    transform 120ms ease;
+}
+
+.fs-vote-btn[aria-disabled='true'] {
+  cursor: progress;
+}
+
+/* Clips the count's roll to its own line; the count is one number. */
+.fs-vote-count-window {
+  display: inline-flex;
+  overflow: hidden;
+  min-width: 1ch;
+  margin-left: 0.125rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.fs-vote-count {
+  display: inline-block;
+}
+
+.fs-vote-count[data-roll='up'] {
+  animation: fs-roll-up 180ms ease-out;
+}
+
+.fs-vote-count[data-roll='down'] {
+  animation: fs-roll-down 180ms ease-out;
+}
+
+@keyframes fs-roll-up {
+  from {
+    transform: translateY(100%);
+  }
+}
+
+@keyframes fs-roll-down {
+  from {
+    transform: translateY(-100%);
+  }
+}
+
+/* +1 or −1 rises off the button's end and fades; hidden when it lands. */
+.fs-vote-ghost {
+  position: absolute;
+  right: 0.75rem;
+  bottom: 100%;
+  color: var(--fs-fg);
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  opacity: 0;
+  pointer-events: none;
+  animation: fs-ghost 450ms ease-out;
+}
+
+@keyframes fs-ghost {
+  from {
+    opacity: 1;
+    transform: translateY(0.5rem);
+  }
+
+  to {
+    opacity: 0;
+    transform: translateY(-0.25rem);
+  }
+}
+
+.fs-vote-help {
+  max-width: 22rem;
+  text-wrap: balance;
+}
+
+/* Text in fg; the error colour is only the marker's fill. */
+.fs-vote-error {
+  display: flex;
+  flex-basis: 100%;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+.fs-vote-error::before {
+  flex: none;
+  width: 0.625rem;
+  height: 0.625rem;
+  border-radius: 1px;
+  background: var(--fs-error);
+  content: '';
+}
+
+/* The studio's note: needs more info, a workaround, or the fix. */
+.fs-note {
+  border-radius: var(--fs-radius);
+  padding: 1.25rem 1.5rem;
+  background: var(--fs-surface);
+  line-height: 1.6;
+}
+
+.fs-note-head {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  margin-bottom: 0.5rem;
+  font-size: 1.0625rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+/* The accent is never on surface (§2), so the link underline follows the text. */
+.fs-note .fs-link {
+  text-decoration-color: currentColor;
+}
+
 /* ── Landing sections below the hero (plan §5) ─────────── */
 
 .fs-action-row {
