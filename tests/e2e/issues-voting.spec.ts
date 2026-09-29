@@ -165,12 +165,12 @@ test.describe('S4.1–S4.3 issue list, board and detail', () => {
     await expect(page).toHaveURL(/[?&]view=board/)
     await expect(page.getByRole('button', { name: 'List view' })).toBeVisible()
 
-    const column = (label: string) =>
-      page.locator('div.w-64').filter({ has: page.locator(':scope > div:first-child', { hasText: label }) })
+    const column = (label: string) => page.getByRole('region', { name: label, exact: true })
 
     await test.step('each issue sits in its status column', async () => {
       await expect(column('Reported').getByRole('link')).toHaveText([audio.title])
-      await expect(column('Investigating').getByRole('link')).toHaveText([`📌 ${pinned.title}`])
+      await expect(column('Investigating').getByRole('link')).toHaveText([pinned.title])
+      await expect(column('Investigating')).toContainText('Pinned')
       await expect(column('Workaround Available').getByRole('link')).toHaveText([workaround.title])
       await expect(column('Needs More Info').getByRole('link')).toHaveText([needsInfo.title])
       // The board orders by pin and votes only, so equal-vote cards have no set order.

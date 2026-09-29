@@ -9,7 +9,15 @@ import React from 'react'
 import type { Issue } from '@/payload-types'
 
 import { IssueFilters } from '@/components/game/IssueFilters'
-import { IssueStatus, issueStatusLabel } from '@/components/game/IssueStatus'
+import {
+  IssueMeta,
+  issueStatusLabel,
+  issueStatusShape,
+  PinnedTag,
+  StatusMark,
+} from '@/components/game/IssueStatus'
+import { PageHead } from '@/components/game/PageHead'
+import { VoteCount } from '@/components/game/VoteCount'
 import { ISSUE_STATUS_OPTIONS } from '@/collections/options'
 import { getGameProject } from '@/lib/game-portal/getGameProject'
 import { type IssueSortKey, queryBoardIssues, queryPublicIssues } from '@/lib/game-portal/issues'
@@ -30,56 +38,82 @@ type Args = {
   searchParams: Promise<SearchParams>
 }
 
+type ListFilters = { category: string; q: string; sort: IssueSortKey }
+
+const purpose = (game: string) =>
+  `Bugs the ${game} team knows about. Vote on the ones that affect you.`
+
+/** A list page's URL that keeps the current filters. */
+const listPageHref = (base: string, { category, q, sort }: ListFilters, page: number): string => {
+  const query = new URLSearchParams()
+  if (category) query.set('category', category)
+  if (q) query.set('q', q)
+  if (sort !== 'top') query.set('sort', sort)
+  if (page > 1) query.set('page', String(page))
+  const search = query.toString()
+  return search ? `${base}?${search}` : base
+}
+
+const NoIssues: React.FC<{ reportHref: string }> = ({ reportHref }) => (
+  <p className="fs-empty">
+    No known issues right now. Found a bug?{' '}
+    <Link className="fs-link" href={reportHref}>
+      Report it
+    </Link>
+    .
+  </p>
+)
+
 const IssueRow: React.FC<{ base: string; issue: Issue }> = ({ base, issue }) => (
-  <li className="cc-panel rounded-lg p-5">
-    <div className="flex items-start justify-between gap-4">
-      <div>
-        <div className="flex flex-wrap items-center gap-2">
-          {issue.isPinned && <span title="Pinned">📌</span>}
-          <Link className="font-bold hover:text-cyan-200" href={`${base}/${issue.slug}`}>
-            {issue.title}
-          </Link>
-          <IssueStatus status={issue.status} />
-        </div>
-        {issue.summary && (
-          <p className="mt-2 line-clamp-2 text-sm text-slate-400">{issue.summary}</p>
-        )}
-      </div>
-      <div className="shrink-0 rounded-md border border-cyan-300/25 bg-cyan-300/10 px-2.5 py-1 text-center text-sm text-cyan-100">
-        <span aria-hidden>▲</span> {issue.upvoteCount ?? 0}
-      </div>
+  <li className="fs-issue-item">
+    <VoteCount count={issue.upvoteCount ?? 0} variant="tally" />
+    <div className="min-w-0">
+      <h2 className="fs-h3">
+        <Link className="fs-link" href={`${base}/${issue.slug}`}>
+          {issue.title}
+        </Link>
+      </h2>
+      <IssueMeta issue={issue} />
+      {issue.summary ? (
+        <p className="fs-body mt-2 line-clamp-2 text-[var(--fs-muted-fg)]">{issue.summary}</p>
+      ) : null}
     </div>
   </li>
 )
 
+/** Read-only: one region per status, named by the status label alone. */
 const IssueBoard: React.FC<{ base: string; issues: Issue[] }> = ({ base, issues }) => (
-  <div className="-mx-6 overflow-x-auto px-6">
-    <div className="flex min-w-max gap-4">
-      {ISSUE_STATUS_OPTIONS.map((status) => {
-        const column = issues.filter((issue) => issue.status === status.value)
-        return (
-          <div className="w-64 shrink-0" key={status.value}>
-            <div className="mb-3 flex items-center gap-2 text-sm font-bold text-slate-200">
-              {status.label}
-              <span className="rounded-full border border-white/10 px-1.5 text-xs text-slate-400">
-                {column.length}
-              </span>
-            </div>
-            <ul className="space-y-2">
+  <div className="fs-board">
+    {ISSUE_STATUS_OPTIONS.map((status) => {
+      const column = issues.filter((issue) => issue.status === status.value)
+      const labelId = `fs-board-${status.value}`
+      return (
+        <section aria-labelledby={labelId} className="fs-board-column" key={status.value}>
+          <h2 className="fs-board-head">
+            <StatusMark shape={issueStatusShape(status.value)} />
+            <span id={labelId}>{issueStatusLabel(status.value)}</span>
+            <span className="fs-count">{column.length}</span>
+          </h2>
+          {column.length === 0 ? (
+            <p className="fs-meta">None</p>
+          ) : (
+            <ul className="fs-board-cards">
               {column.map((issue) => (
-                <li className="cc-panel rounded-md p-3 text-sm" key={issue.id}>
-                  <Link className="font-medium hover:text-cyan-200" href={`${base}/${issue.slug}`}>
-                    {issue.isPinned ? '📌 ' : ''}
+                <li className="fs-board-card" key={issue.id}>
+                  <Link className="fs-link font-semibold" href={`${base}/${issue.slug}`}>
                     {issue.title}
                   </Link>
-                  <div className="mt-1 text-xs text-slate-400">▲ {issue.upvoteCount ?? 0}</div>
+                  <div className="fs-board-card-meta">
+                    <VoteCount count={issue.upvoteCount ?? 0} variant="inline" />
+                    {issue.isPinned ? <PinnedTag /> : null}
+                  </div>
                 </li>
               ))}
             </ul>
-          </div>
-        )
-      })}
-    </div>
+          )}
+        </section>
+      )
+    })}
   </div>
 )
 
@@ -91,33 +125,40 @@ export default async function IssuesPage({ params, searchParams }: Args) {
   if (!project) notFound()
 
   const base = `/g/${gameSlug}/issues`
+  const reportHref = `/g/${gameSlug}/report`
+  const boardIssues = view === 'board' ? await queryBoardIssues(project.id) : null
 
   return (
-    <div className="cc-shell py-12">
-      <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <p className="cc-kicker">Player Signals</p>
-          <h1 className="mt-3 text-4xl font-black tracking-tight">Field Board</h1>
-          <p className="mt-3 max-w-2xl text-slate-400">
-            Track known routes, confirmed snags, and the reports players are voting up next.
-          </p>
-        </div>
-      </div>
-      <div className="mb-8">
+    <div className="fs-shell fs-ops">
+      <div className="fs-column-wide">
+        <PageHead
+          action={
+            <Link className="fs-btn fs-btn-primary" href={reportHref}>
+              Report a bug
+            </Link>
+          }
+          purpose={purpose(project.name)}
+          title="Known issues"
+        />
         <IssueFilters />
       </div>
 
-      {view === 'board' ? (
-        <IssueBoard base={base} issues={await queryBoardIssues(project.id)} />
+      {boardIssues ? (
+        boardIssues.length === 0 ? (
+          <NoIssues reportHref={reportHref} />
+        ) : (
+          <IssueBoard base={base} issues={boardIssues} />
+        )
       ) : (
-        <IssueList
-          base={base}
-          category={category}
-          page={page}
-          projectID={project.id}
-          q={q}
-          sort={sort}
-        />
+        <div className="fs-column-wide">
+          <IssueList
+            base={base}
+            filters={{ category, q, sort }}
+            page={page}
+            projectID={project.id}
+            reportHref={reportHref}
+          />
+        </div>
       )}
     </div>
   )
@@ -125,63 +166,66 @@ export default async function IssuesPage({ params, searchParams }: Args) {
 
 const IssueList = async ({
   base,
-  category,
+  filters,
   page,
   projectID,
-  q,
-  sort,
+  reportHref,
 }: {
   base: string
-  category: string
+  filters: ListFilters
   page: number
   projectID: number | string
-  q: string
-  sort: IssueSortKey
+  reportHref: string
 }) => {
   const issues = await queryPublicIssues({
-    category: category || null,
+    category: filters.category || null,
     page: Math.max(1, page),
     projectID,
-    search: q || null,
-    sort,
+    search: filters.q || null,
+    sort: filters.sort,
   })
 
   if (issues.docs.length === 0) {
+    const filtered = Boolean(filters.category || filters.q)
+    if (!filtered && issues.totalDocs === 0) return <NoIssues reportHref={reportHref} />
     return (
-      <div className="cc-panel rounded-lg p-6 text-slate-300">
-        No tracks match. Try clearing the filters.
-      </div>
+      <p className="fs-empty">
+        No issues match these filters.{' '}
+        <Link className="fs-link" href={base}>
+          Clear filters
+        </Link>
+      </p>
     )
   }
 
   return (
     <>
-      <ul className="space-y-3">
+      <ul className="fs-rows fs-issue-list">
         {issues.docs.map((issue) => (
           <IssueRow base={base} issue={issue} key={issue.id} />
         ))}
       </ul>
       {issues.totalPages > 1 && (
-        <nav aria-label="Pagination" className="mt-8 flex items-center justify-between text-sm">
+        <nav aria-label="Pagination" className="fs-pagination">
           {issues.hasPrevPage ? (
             <Link
-              className="text-cyan-200 underline"
-              href={`${base}?page=${(issues.page ?? 2) - 1}`}
+              className="fs-link fs-tap font-semibold"
+              href={listPageHref(base, filters, (issues.page ?? 2) - 1)}
             >
-              ← Previous
+              Previous page
             </Link>
           ) : (
             <span />
           )}
-          <span className="opacity-70">
+          <span className="fs-meta">
             Page {issues.page} of {issues.totalPages}
           </span>
           {issues.hasNextPage ? (
             <Link
-              className="text-cyan-200 underline"
-              href={`${base}?page=${(issues.page ?? 1) + 1}`}
+              className="fs-link fs-tap font-semibold"
+              href={listPageHref(base, filters, (issues.page ?? 1) + 1)}
             >
-              Next →
+              Next page
             </Link>
           ) : (
             <span />
@@ -198,11 +242,7 @@ export async function generateMetadata({ params }: Args): Promise<Metadata> {
   if (!project) return {}
 
   return {
-    description: `Public field board, statuses (${ISSUE_STATUS_OPTIONS.map((s) =>
-      issueStatusLabel(s.value),
-    )
-      .slice(0, 3)
-      .join(', ')}, …) and player-voted priorities for ${project.name}.`,
-    title: `Field Board — ${project.name}`,
+    description: purpose(project.name),
+    title: `${project.name} known issues`,
   }
 }

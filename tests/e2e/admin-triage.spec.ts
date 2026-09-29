@@ -77,7 +77,7 @@ async function statusOf(client: RestClient, issue: Pick<Issue, 'id'>): Promise<I
 
 /** Public board column; the same shape as S4.2's. */
 const boardColumn = (page: Page, status: IssueStatus): Locator =>
-  page.locator('div.w-64').filter({ has: page.locator(':scope > div:first-child', { hasText: LABEL[status] }) })
+  page.getByRole('region', { name: LABEL[status], exact: true })
 
 test('S6.1 the login page speaks Critwire and a studio owner signs in to the dashboard', async ({ browser }) => {
   const context = await browser.newContext()

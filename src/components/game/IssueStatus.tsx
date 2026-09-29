@@ -2,7 +2,7 @@ import React from 'react'
 
 import type { Issue } from '@/payload-types'
 
-import { ISSUE_STATUS_OPTIONS } from '@/collections/options'
+import { ISSUE_CATEGORY_OPTIONS, ISSUE_STATUS_OPTIONS } from '@/collections/options'
 
 export type StatusShape = 'diamond' | 'dot' | 'half' | 'ring'
 
@@ -22,6 +22,9 @@ export const issueStatusShape = (status: Issue['status']): StatusShape => STATUS
 export const issueStatusLabel = (status: Issue['status']): string =>
   ISSUE_STATUS_OPTIONS.find((option) => option.value === status)?.label ?? status
 
+export const issueCategoryLabel = (category: Issue['category']): null | string =>
+  ISSUE_CATEGORY_OPTIONS.find((option) => option.value === category)?.label ?? null
+
 /**
  * An empty, CSS-drawn marker (globals.css). Never a character: it would
  * be announced and would land in the textContent that links and E2E read.
@@ -40,3 +43,19 @@ export const IssueStatus: React.FC<{ className?: string; status: Issue['status']
     {issueStatusLabel(status)}
   </span>
 )
+
+/** An issue's status, category and pinned tag, in one wrapping row outside its title link. */
+export const IssueMeta: React.FC<{
+  issue: Pick<Issue, 'category' | 'isPinned' | 'status'>
+}> = ({ issue }) => {
+  const category = issueCategoryLabel(issue.category)
+  return (
+    <div className="fs-issue-meta">
+      <IssueStatus status={issue.status} />
+      {category ? <span className="fs-meta">{category}</span> : null}
+      {issue.isPinned ? <PinnedTag /> : null}
+    </div>
+  )
+}
+
+export const PinnedTag: React.FC = () => <span className="fs-tag">Pinned</span>

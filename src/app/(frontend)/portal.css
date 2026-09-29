@@ -794,6 +794,161 @@
   justify-self: end;
 }
 
+/* Issue filters: search, category, sort, then the view toggle. Below
+   40rem the search takes a full row and the rest wrap under it. */
+.fs-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 2.5rem;
+}
+
+.fs-filters-search {
+  flex: 1 1 100%;
+}
+
+/* Phones: the two selects share a row; the toggle starts the next one. */
+.fs-filters > label:not(.fs-filters-search) {
+  flex: 1 1 9rem;
+}
+
+.fs-select {
+  padding-right: 0.5rem;
+}
+
+@media (min-width: 40rem) {
+  .fs-filters-search {
+    flex: 1 1 14rem;
+  }
+
+  .fs-filters > label:not(.fs-filters-search) {
+    flex: none;
+  }
+
+  .fs-select {
+    width: auto;
+  }
+
+  .fs-filters-view {
+    margin-left: auto;
+  }
+}
+
+/* Status, category and the pinned tag, outside the title link. */
+.fs-issue-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 1rem;
+  margin-top: 0.5rem;
+}
+
+/* Not interactive, so no border: a quiet fill carrying fg text. */
+.fs-tag {
+  display: inline-flex;
+  align-items: center;
+  border-radius: var(--fs-radius-control);
+  padding: 0.0625rem 0.5rem;
+  background: var(--fs-surface);
+  color: var(--fs-fg);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+/* Issue list: the vote tally in a fixed left column, then the entry. */
+.fs-issue-item {
+  display: grid;
+  grid-template-columns: 3rem minmax(0, 1fr);
+  align-items: start;
+  column-gap: 1.25rem;
+  padding-block: 1.5rem;
+}
+
+.fs-issue-item:first-child {
+  padding-top: 0;
+}
+
+.fs-issue-item > .fs-vote-tally {
+  justify-self: end;
+}
+
+@media (min-width: 40rem) {
+  .fs-issue-item {
+    grid-template-columns: 4.5rem minmax(0, 1fr);
+    column-gap: 2rem;
+  }
+}
+
+/* Issue board: 16rem status columns that scroll sideways, snapping to a
+   column, out to the screen's gutter. Positioned, so the cards' sr-only
+   vote words are clipped by it instead of widening the page. */
+.fs-board {
+  position: relative;
+  display: grid;
+  grid-auto-columns: 16rem;
+  grid-auto-flow: column;
+  align-items: start;
+  gap: 1.5rem;
+  margin-inline: calc(-1 * var(--fs-gutter));
+  overflow-x: auto;
+  padding: 0 var(--fs-gutter) 1rem;
+  scroll-padding-inline: var(--fs-gutter);
+  scroll-snap-type: x mandatory;
+}
+
+.fs-board-column {
+  scroll-snap-align: start;
+}
+
+.fs-board-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  border-bottom: 1px solid var(--fs-border);
+  padding-bottom: 0.75rem;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.fs-count {
+  margin-left: auto;
+  color: var(--fs-muted-fg);
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.fs-board-cards {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.fs-board-card {
+  display: grid;
+  gap: 0.5rem;
+  border-radius: var(--fs-radius);
+  padding: 0.875rem 1rem;
+  background: var(--fs-surface);
+  font-size: 0.9375rem;
+  line-height: 1.4;
+}
+
+.fs-board-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.75rem;
+  font-size: 0.875rem;
+}
+
+.fs-board-card .fs-tag {
+  background: var(--fs-bg);
+}
+
 /* ── Landing sections below the hero (plan §5) ─────────── */
 
 .fs-action-row {

@@ -5,9 +5,8 @@ import { notFound } from 'next/navigation'
 import React from 'react'
 
 import RichText from '@/components/RichText'
-import { IssueStatus } from '@/components/game/IssueStatus'
+import { IssueStatus, issueCategoryLabel } from '@/components/game/IssueStatus'
 import { VoteButton } from '@/components/game/VoteButton'
-import { ISSUE_CATEGORY_OPTIONS } from '@/collections/options'
 import { getGameProject } from '@/lib/game-portal/getGameProject'
 import { getHasVoted, getPublicIssue } from '@/lib/game-portal/issues'
 
@@ -25,7 +24,7 @@ export default async function IssueDetailPage({ params }: Args) {
   if (!issue) notFound()
 
   const hasVoted = await getHasVoted(issue.id)
-  const categoryLabel = ISSUE_CATEGORY_OPTIONS.find((o) => o.value === issue.category)?.label
+  const categoryLabel = issueCategoryLabel(issue.category)
   const fixedIn =
     issue.fixedInPatchNote && typeof issue.fixedInPatchNote === 'object'
       ? issue.fixedInPatchNote
