@@ -130,7 +130,7 @@ Out:
 - [x] Baseline: install, migrate, run typecheck, lint, unit and E2E tests; record the results under Baseline
 - [x] Architecture: `architect` writes findings and the target design
 - [x] Fable review: `architecture-reviewer`
-- [ ] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
+- [x] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
 - [ ] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
 - [ ] Steps: `planner` writes Steps and Verification
 
@@ -638,6 +638,22 @@ SHOULD-CONSIDER:
 
 ## Architecture review (Astra)
 
+VERDICT: APPROVE_WITH_CHANGES
+
+MUST-FIX:
+
+1. **§8 bypasses the prescribed tenant-filtering interface.** Constructing `{ tenant: { equals: selected } }` manually violates AGENTS.md’s prohibition on hand-rolled tenant filtering. Reuse the plugin-provided list filter for both initial kanban queries and pagination, retaining access enforcement.
+
+2. **§10’s reserved-slug migration can fail and breaks existing links.** Renaming `new` to `new-<id>` can collide with an existing slug in the same game, violating the compound unique index. Meanwhile, §7 redirects `/issues/new` to the submission form instead of the migrated feedback item. Specify collision-safe allocation and permanent redirects from affected old item URLs to their migrated destinations.
+
+SHOULD-CONSIDER:
+
+1. Resolve §4’s contradictory screening contract: it promises never to throw but explicitly permits local exceptions. Define one failure policy that prevents unscreened auto-publication.
+2. Define the spam threshold in terms of distinct URL occurrences; counting both `https://` and `www.` flags two ordinary links incorrectly.
+3. Preserve RSS GUIDs while changing item links to avoid replaying existing updates.
+4. Extend migration verification beyond the seed: include reserved-slug collisions, existing ideas, and partial theme data.
+5. State whether archived feedback accepts new votes; retaining existing vote counts does not settle that behavior.
+
 ## Revision notes
 
 ## Steps
@@ -654,5 +670,6 @@ SHOULD-CONSIDER:
 - 2026-09-30 04:58 UTC · Baseline: E2E db and env set up, migrations applied; tsc pass, lint 0 errors/20 warnings, int 9/9, E2E 73/73. Picked up H6 (contact address, data-preservation decision) and closed it.
 - 2026-09-30 05:20 UTC · Architecture: `architect` wrote 12 findings and the target design. Collection slugs stay; reports and issues get a Bug/Idea `type`; the filter uses `obscenity` (MIT) plus a link rule; GamePages and the site templates go; there are three migrations. Filed H7 (LICENSE holder, not blocking). The repo is public, so no visibility item is needed. No code changed, so no checks ran.
 - 2026-09-30 05:35 UTC · Fable review: APPROVE_WITH_CHANGES. One MUST-FIX (the §4 link rule double-counts `https://www.` URLs), three misses (`screenText` throw contract, votes on archived items, M14 list-preference key) and five should-considers, all for the Revision stage. No code changed, so no checks ran.
+- 2026-09-30 05:29 UTC · Astra review: APPROVE_WITH_CHANGES. Two MUST-FIX (§8 kanban hand-rolls the tenant filter instead of the plugin's list filter; §10 reserved-slug rename can collide and old `/issues/new`-style links lose their item) and five should-considers, overlapping Fable on the link count, `screenText` contract, RSS GUIDs and archived votes. No code changed, so no checks ran.
 
 ## Summary
