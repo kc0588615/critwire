@@ -5,7 +5,7 @@ import { PortalChrome } from '@/components/game/PortalChrome'
 import { getGameProject } from '@/lib/game-portal/getGameProject'
 
 /**
- * Operational pages (patch notes, issues, report, contact) render inside
+ * Operational pages (updates, feedback, the form, contact) render inside
  * the studio's frame: the published landing's theme, nav and footer.
  */
 export default async function GameOpsLayout({

@@ -53,7 +53,7 @@ export default async function IssueDetailPage({ params }: Args) {
     <div className="fs-shell fs-ops">
       <article className="fs-column">
         <Link className="fs-back" href={paths.feedback}>
-          All known issues
+          All feedback
         </Link>
         <IssueMeta className="mt-8" issue={issue} />
         <h1 className="fs-page-title mt-3">{issue.title}</h1>

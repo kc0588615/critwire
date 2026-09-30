@@ -808,7 +808,7 @@ export interface PatchNote {
    */
   versionLabel?: string | null;
   /**
-   * Short teaser shown in the patch notes feed.
+   * Short teaser shown in the updates feed.
    */
   summary?: string | null;
   content: {

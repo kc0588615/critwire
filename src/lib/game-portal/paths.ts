@@ -4,9 +4,9 @@
  */
 export const portalPaths = (gameSlug: string) => {
   const hub = `/g/${gameSlug}`
-  const feedback = `${hub}/issues`
-  const newFeedback = `${hub}/report`
-  const updates = `${hub}/patch-notes`
+  const feedback = `${hub}/feedback`
+  const newFeedback = `${feedback}/new`
+  const updates = `${hub}/updates`
   const contact = `${hub}/contact`
 
   return {
@@ -21,7 +21,7 @@ export const portalPaths = (gameSlug: string) => {
     rss: `${updates}/feed.xml`,
     update: (slug: string) => `${updates}/${slug}`,
     /**
-     * An RSS item's `<guid isPermaLink="true">`. Frozen at the original
+     * An RSS item's `<guid isPermaLink="true">`. Frozen at the pre-rename
      * patch-notes path: a changed guid makes feed readers deliver every
      * item again. The old path redirects, so it stays a valid permalink.
      */
@@ -49,9 +49,9 @@ export const isReservedFeedbackSlug = (slug: string): boolean => RESERVED_FEEDBA
  * Next tags a cached page with its exact URL and with its route's
  * pattern, route groups included (`/(public)/g/[gameSlug]/…/layout`),
  * never with a concrete path's layout. So `revalidatePath('/g/<slug>/
- * patch-notes', 'layout')` matches nothing: a subtree is revalidated by
+ * updates', 'layout')` matches nothing: a subtree is revalidated by
  * pattern, for every game at once. The updates E2E scenarios fail if a
  * route move leaves these stale.
  */
 export const PORTAL_ROUTE = '/(public)/g/[gameSlug]'
-export const UPDATES_ROUTE = `${PORTAL_ROUTE}/(ops)/patch-notes`
+export const UPDATES_ROUTE = `${PORTAL_ROUTE}/(ops)/updates`

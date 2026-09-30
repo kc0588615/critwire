@@ -36,7 +36,7 @@ export default async function ReportIssuePage({ params, searchParams }: Args) {
             <>
               Tell the {project.name} team what went wrong. Check the{' '}
               <Link className="fs-link" href={paths.feedback}>
-                known issues
+                feedback
               </Link>{' '}
               first: if your bug is there, vote on it.
             </>

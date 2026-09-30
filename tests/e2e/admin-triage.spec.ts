@@ -222,7 +222,7 @@ test.describe('S6.2–S6.7 triage as studio A', () => {
 
     await test.step('the public board and the landing follow', async () => {
       await eventually(async () => {
-        await page.goto(`/g/${project.slug}/issues?view=board`)
+        await page.goto(`/g/${project.slug}/feedback?view=board`)
         await expect(boardColumn(page, 'INVESTIGATING').getByRole('link')).toContainText([moving.title], {
           timeout: 1_000,
         })
@@ -307,7 +307,7 @@ test.describe('S6.2–S6.7 triage as studio A', () => {
     const title = `${tag}: crows freeze midair`
 
     await test.step('a player files the report through the public form endpoint', async () => {
-      const { status, body } = await api('anonymous').raw<{ ok?: boolean }>('POST', `/g/${project.slug}/report/submit`, {
+      const { status, body } = await api('anonymous').raw<{ ok?: boolean }>('POST', `/g/${project.slug}/feedback/new/submit`, {
         data: {
           title,
           description: 'Crows over the harbor stop flapping and hang in the sky.',
@@ -339,7 +339,7 @@ test.describe('S6.2–S6.7 triage as studio A', () => {
 
     await test.step('the public board lists the issue as Reported', async () => {
       await eventually(async () => {
-        await page.goto(`/g/${project.slug}/issues?view=board`)
+        await page.goto(`/g/${project.slug}/feedback?view=board`)
         await expect(boardColumn(page, 'REPORTED').getByRole('link', { name: title })).toBeVisible({ timeout: 1_000 })
       })
     })

@@ -5,11 +5,11 @@ import { BASE_URL } from './support/env'
 import { createPatchNote, createProject, eventually, expect, test } from './support/fixtures'
 
 /**
- * Public patch notes under /g/<slug>/patch-notes: the paginated feed,
+ * Public patch notes under /g/<slug>/updates: the paginated feed,
  * detail pages, the RSS feed, and how each follows edits.
  */
 
-const feedPath = (slug: string) => `/g/${slug}/patch-notes`
+const feedPath = (slug: string) => `/g/${slug}/updates`
 
 /** Note titles on a feed page, top to bottom. */
 const feedTitles = (page: Page): Promise<string[]> =>
@@ -333,7 +333,7 @@ test.describe('S3.4 the public pages follow edits', () => {
       await expect(header).toContainText('Before Rename')
       await open(page, `${feedPath(oldSlug)}/${note.slug}`)
       await expect(header).toContainText('Before Rename')
-      expect((await readFeed(request, oldSlug)).channelTitle).toBe('Before Rename — Patch Notes')
+      expect((await readFeed(request, oldSlug)).channelTitle).toBe('Before Rename — Updates')
     })
 
     await test.step('a new name shows on the feed, the detail page and RSS', async () => {
@@ -344,7 +344,7 @@ test.describe('S3.4 the public pages follow edits', () => {
         await expect(header).toContainText('After Rename', { timeout: 1_000 })
         await open(page, `${feedPath(oldSlug)}/${note.slug}`)
         await expect(header).toContainText('After Rename', { timeout: 1_000 })
-        expect((await readFeed(request, oldSlug)).channelTitle).toBe('After Rename — Patch Notes')
+        expect((await readFeed(request, oldSlug)).channelTitle).toBe('After Rename — Updates')
       })
     })
 

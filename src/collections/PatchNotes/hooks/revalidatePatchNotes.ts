@@ -11,7 +11,7 @@ import { revalidateGameLanding } from '../../../hooks/revalidateGameLanding'
 
 /**
  * A published patch note, or one that just stopped being public,
- * invalidates the patch-notes pages (feed, pagination, detail pages,
+ * invalidates the updates pages (feed, pagination, detail pages,
  * RSS) and the landing, which renders the latest published note live.
  */
 const revalidatePatchNotePages = (): void => revalidatePath(UPDATES_ROUTE, 'layout')

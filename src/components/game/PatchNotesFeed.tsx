@@ -27,12 +27,12 @@ export const PatchNotesFeed: React.FC<{
             </a>
           }
           purpose={`Every update to ${project.name}, newest first.`}
-          title="Patch notes"
+          title="Updates"
         />
 
         {notes.docs.length === 0 ? (
           <p className="fs-empty">
-            {project.name} hasn’t published any patch notes yet. Follow the{' '}
+            {project.name} hasn’t published any updates yet. Follow the{' '}
             <a className="fs-link" href={rss}>
               RSS feed
             </a>{' '}

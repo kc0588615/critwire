@@ -14,11 +14,11 @@ import {
 } from './support/fixtures'
 
 /**
- * The public issue tracker under /g/<slug>/issues: the filtered list,
+ * The public issue tracker under /g/<slug>/feedback: the filtered list,
  * the read-only board, issue detail pages and player voting.
  */
 
-const issuesPath = (slug: string) => `/g/${slug}/issues`
+const issuesPath = (slug: string) => `/g/${slug}/feedback`
 
 /** Loads `path` and fails unless the server answers `status`. */
 async function open(page: Page, path: string, status = 200): Promise<void> {
@@ -26,9 +26,11 @@ async function open(page: Page, path: string, status = 200): Promise<void> {
   expect(response?.status(), path).toBe(status)
 }
 
-/** Issue titles linked from the list or board, top to bottom. */
+/** Issue titles linked from the list or board, top to bottom; the form at `/feedback/new` isn't an item. */
 const listedTitles = (page: Page, slug: string): Promise<string[]> =>
-  page.locator(`a[href^="${issuesPath(slug)}/"]`).allTextContents()
+  page
+    .locator(`a[href^="${issuesPath(slug)}/"]:not([href^="${issuesPath(slug)}/new"])`)
+    .allTextContents()
 
 test.describe('S4.1–S4.3 issue list, board and detail', () => {
   let project: GameProject
@@ -211,7 +213,7 @@ test.describe('S4.1–S4.3 issue list, board and detail', () => {
     await test.step('a fix in a published note links to a live page', async () => {
       await open(page, detail(fixedReleased))
       const link = page.locator('article aside').getByRole('link', { name: 'v2.1.0 — Harbor hotfix' })
-      await expect(link).toHaveAttribute('href', `/g/${project.slug}/patch-notes/${releasedNote.slug}`)
+      await expect(link).toHaveAttribute('href', `/g/${project.slug}/updates/${releasedNote.slug}`)
       await link.click()
       await expect(page.getByRole('heading', { level: 1 })).toHaveText(releasedNote.title)
     })

@@ -59,10 +59,10 @@ export async function GET(
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>${escapeXml(`${project.name} — Patch Notes`)}</title>
+    <title>${escapeXml(`${project.name} — Updates`)}</title>
     <link>${escapeXml(feedUrl)}</link>
     <atom:link href="${escapeXml(`${base}${paths.rss}`)}" rel="self" type="application/rss+xml" />
-    <description>${escapeXml(`Latest updates and patch notes for ${project.name}.`)}</description>
+    <description>${escapeXml(`The latest updates for ${project.name}.`)}</description>
     <language>en</language>
 ${items}
   </channel>

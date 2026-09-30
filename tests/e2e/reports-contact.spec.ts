@@ -12,8 +12,8 @@ import { createIssue, createProject, createReport, expect, test } from './suppor
  * (a local sink) or email.
  */
 
-const reportPath = (slug: string) => `/g/${slug}/report`
-const issuePath = (game: string, slug: string) => `/g/${game}/issues/${slug}`
+const reportPath = (slug: string) => `/g/${slug}/feedback/new`
+const issuePath = (game: string, slug: string) => `/g/${game}/feedback/${slug}`
 const contactPath = (slug: string) => `/g/${slug}/contact`
 
 /** Loads `path` and fails unless the server answers 200. */
@@ -115,7 +115,7 @@ test.describe('S5.1–S5.3 player reports', () => {
       })
       await open(page, reportPath(tallyProject.slug))
       await expect(page.locator('iframe[data-tally-src^="https://tally.so/embed/wMzXab"]')).toHaveCount(1)
-      await expect(page.locator('form[action$="/report/submit"]')).toHaveCount(0)
+      await expect(page.locator('form[action$="/feedback/new/submit"]')).toHaveCount(0)
     })
 
     await test.step('external: the page links out and has no form', async () => {
@@ -125,7 +125,7 @@ test.describe('S5.1–S5.3 player reports', () => {
       })
       await open(page, reportPath(externalProject.slug))
       await expect(page.getByRole('link', { name: 'Open report form' })).toHaveAttribute('href', externalUrl)
-      await expect(page.locator('form[action$="/report/submit"]')).toHaveCount(0)
+      await expect(page.locator('form[action$="/feedback/new/submit"]')).toHaveCount(0)
     })
   })
 
@@ -191,7 +191,7 @@ test.describe('S5.1–S5.3 player reports', () => {
     })
 
     await test.step('the public board lists it', async () => {
-      await open(page, `/g/${project.slug}/issues?view=board`)
+      await open(page, `/g/${project.slug}/feedback?view=board`)
       await expect(page.getByRole('link', { name: report.title })).toBeVisible()
     })
 

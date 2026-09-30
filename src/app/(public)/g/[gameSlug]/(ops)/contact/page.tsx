@@ -33,10 +33,10 @@ export default async function ContactPage({ params, searchParams }: Args) {
         <PageHead
           purpose={
             <>
-              Questions, feedback or press requests go straight to the {project.name} team. For
-              bugs, use the{' '}
+              Questions or press requests go straight to the {project.name} team. For bugs and
+              ideas, use the{' '}
               <Link className="fs-link" href={paths.newFeedback()}>
-                report form
+                feedback form
               </Link>
               .
             </>

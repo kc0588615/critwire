@@ -66,7 +66,7 @@ test('S2.1 an unknown game and a private issue get the same 404', async ({ api, 
   }
   const unknown = await test.step('unknown game', () => render404(`/g/${uniqueSlug('no-such-game')}`))
   const privateIssue = await test.step('private issue of an existing game', () =>
-    render404(`/g/${project.slug}/issues/${hidden.slug}`),
+    render404(`/g/${project.slug}/feedback/${hidden.slug}`),
   )
   expect(privateIssue).toEqual(unknown)
   expect(privateIssue.body).not.toContain(project.name)
@@ -113,9 +113,9 @@ test.describe('S2.2 derived default landing', () => {
     await test.step('portal links stay on /g/<slug> although contact and reports are external', async () => {
       const nav = page.getByRole('navigation', { name: 'Site' })
       for (const [label, path] of [
-        ['Patch notes', 'patch-notes'],
-        ['Known issues', 'issues'],
-        ['Report a bug', 'report'],
+        ['Patch notes', 'updates'],
+        ['Known issues', 'feedback'],
+        ['Report a bug', 'feedback/new'],
         ['Contact', 'contact'],
       ]) {
         await expect(nav.getByRole('link', { name: label, exact: true })).toHaveAttribute(
@@ -286,7 +286,7 @@ test.describe('S2.4 publishing a flagship page', () => {
     const aMember = api('aMember')
 
     await test.step('ops pages follow the published theme', async () => {
-      const opsPage = `/g/${project.slug}/patch-notes`
+      const opsPage = `/g/${project.slug}/updates`
       // Warm the ISR cache first, so only revalidation can bring in the new theme.
       await page.goto(opsPage)
       const { status, body } = await publish(aMember, { ...siteLike('Accent only'), theme: { colors: { accent: '#f59e0b' } } })

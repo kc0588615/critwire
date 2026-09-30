@@ -53,7 +53,7 @@ export const PatchNotes: CollectionConfig = {
       name: 'summary',
       type: 'textarea',
       admin: {
-        description: 'Short teaser shown in the patch notes feed.',
+        description: 'Short teaser shown in the updates feed.',
       },
     },
     {

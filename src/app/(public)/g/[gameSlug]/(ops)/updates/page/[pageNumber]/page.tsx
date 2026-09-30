@@ -5,7 +5,6 @@ import React from 'react'
 
 import { PatchNotesFeed } from '@/components/game/PatchNotesFeed'
 import { getGameProject } from '@/lib/game-portal/getGameProject'
-import { portalPaths } from '@/lib/game-portal/paths'
 import { queryPublishedPatchNotes } from '@/lib/game-portal/patchNotes'
 
 export const revalidate = 3600
@@ -16,30 +15,28 @@ export async function generateStaticParams() {
   return []
 }
 
-type Args = { params: Promise<{ gameSlug: string }> }
+type Args = { params: Promise<{ gameSlug: string; pageNumber: string }> }
 
-export default async function PatchNotesPage({ params }: Args) {
-  const { gameSlug } = await params
+export default async function PatchNotesPaginatedPage({ params }: Args) {
+  const { gameSlug, pageNumber } = await params
+  const page = Number(pageNumber)
+  if (!Number.isInteger(page) || page < 2) notFound()
+
   const project = await getGameProject(gameSlug)
   if (!project) notFound()
 
-  const notes = await queryPublishedPatchNotes({ page: 1, projectID: project.id })
+  const notes = await queryPublishedPatchNotes({ page, projectID: project.id })
+  if (page > (notes.totalPages || 1)) notFound()
 
   return <PatchNotesFeed notes={notes} project={project} />
 }
 
 export async function generateMetadata({ params }: Args): Promise<Metadata> {
-  const { gameSlug } = await params
+  const { gameSlug, pageNumber } = await params
   const project = await getGameProject(gameSlug)
   if (!project) return {}
 
   return {
-    alternates: {
-      types: {
-        'application/rss+xml': portalPaths(gameSlug).rss,
-      },
-    },
-    description: `Every update to ${project.name}, newest first.`,
-    title: `${project.name} patch notes`,
+    title: `${project.name} updates, page ${pageNumber}`,
   }
 }

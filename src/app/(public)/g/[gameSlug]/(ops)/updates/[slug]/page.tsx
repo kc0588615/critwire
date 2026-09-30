@@ -34,7 +34,7 @@ export default async function PatchNoteDetailPage({ params }: Args) {
     <div className="fs-shell fs-ops">
       <article className="fs-column">
         <Link className="fs-back" href={portalPaths(gameSlug).updates}>
-          All patch notes
+          All updates
         </Link>
         {note.versionLabel || published ? (
           <p className="fs-meta-line mt-8">

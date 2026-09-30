@@ -5,8 +5,8 @@ import { revalidatePath } from 'next/cache'
 import { PORTAL_ROUTE } from '@/lib/game-portal/paths'
 
 /**
- * Revalidates every public page under /g/[gameSlug] (the landing, patch
- * notes and their RSS feed, and the issue, report and contact pages) for
+ * Revalidates every public page under /g/[gameSlug] (the landing, the
+ * updates and their RSS feed, and the feedback, form and contact pages) for
  * every game at once; see `PORTAL_ROUTE` for why it can't be narrower.
  * `source` names what changed, for the log line.
  */

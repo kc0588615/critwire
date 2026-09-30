@@ -42,7 +42,7 @@ type Args = {
 type ListFilters = { category: string; q: string; sort: IssueSortKey }
 
 const purpose = (game: string) =>
-  `Bugs the ${game} team knows about. Vote on the ones that affect you.`
+  `Bugs and ideas from ${game} players. Vote on the ones you care about.`
 
 /** A list page's URL that keeps the current filters. */
 const listPageHref = (base: string, { category, q, sort }: ListFilters, page: number): string => {
@@ -55,11 +55,11 @@ const listPageHref = (base: string, { category, q, sort }: ListFilters, page: nu
   return search ? `${base}?${search}` : base
 }
 
-const NoIssues: React.FC<{ reportHref: string }> = ({ reportHref }) => (
+const NoFeedback: React.FC<{ reportHref: string }> = ({ reportHref }) => (
   <p className="fs-empty">
-    No known issues right now. Found a bug?{' '}
+    No feedback yet. Found a bug or have an idea?{' '}
     <Link className="fs-link" href={reportHref}>
-      Report it
+      Send it
     </Link>
     .
   </p>
@@ -118,7 +118,7 @@ const IssueBoard: React.FC<{ issues: Issue[]; paths: PortalPaths }> = ({ issues,
   </div>
 )
 
-export default async function IssuesPage({ params, searchParams }: Args) {
+export default async function FeedbackPage({ params, searchParams }: Args) {
   const { gameSlug } = await params
   const { category, page, q, sort, view } = await loadSearchParams(searchParams)
 
@@ -127,6 +127,7 @@ export default async function IssuesPage({ params, searchParams }: Args) {
 
   const paths = portalPaths(gameSlug)
   const reportHref = paths.newFeedback()
+  const acceptIdeas = project.reportForm?.acceptIdeas !== false
   const boardIssues = view === 'board' ? await queryBoardIssues(project.id) : null
 
   return (
@@ -134,19 +135,26 @@ export default async function IssuesPage({ params, searchParams }: Args) {
       <div className="fs-column-wide">
         <PageHead
           action={
-            <Link className="fs-btn fs-btn-primary" href={reportHref}>
-              Report a bug
-            </Link>
+            <>
+              <Link className="fs-btn fs-btn-primary" href={paths.newFeedback('bug')}>
+                Report a bug
+              </Link>
+              {acceptIdeas ? (
+                <Link className="fs-btn fs-btn-secondary" href={paths.newFeedback('idea')}>
+                  Suggest an idea
+                </Link>
+              ) : null}
+            </>
           }
           purpose={purpose(project.name)}
-          title="Known issues"
+          title="Feedback"
         />
         <IssueFilters />
       </div>
 
       {boardIssues ? (
         boardIssues.length === 0 ? (
-          <NoIssues reportHref={reportHref} />
+          <NoFeedback reportHref={reportHref} />
         ) : (
           <IssueBoard issues={boardIssues} paths={paths} />
         )
@@ -188,10 +196,10 @@ const IssueList = async ({
 
   if (issues.docs.length === 0) {
     const filtered = Boolean(filters.category || filters.q)
-    if (!filtered && issues.totalDocs === 0) return <NoIssues reportHref={reportHref} />
+    if (!filtered && issues.totalDocs === 0) return <NoFeedback reportHref={reportHref} />
     return (
       <p className="fs-empty">
-        No issues match these filters.{' '}
+        No feedback matches these filters.{' '}
         <Link className="fs-link" href={paths.feedback}>
           Clear filters
         </Link>
@@ -244,6 +252,6 @@ export async function generateMetadata({ params }: Args): Promise<Metadata> {
 
   return {
     description: purpose(project.name),
-    title: `${project.name} known issues`,
+    title: `${project.name} feedback`,
   }
 }
