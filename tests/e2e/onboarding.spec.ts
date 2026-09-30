@@ -214,6 +214,8 @@ test('S14.7 in the browser: sign in, onboard, and land on the portal with the ne
       await page.getByLabel('Game name').fill(name)
       await page.getByLabel('Your website').fill(WEBSITE)
       await page.getByLabel('Store link (optional)').fill(STEAM_URL)
+      // The admin bar's actions are a super admin's; a new studio never sees it.
+      await expect(page.locator('.admin-bar')).toBeHidden()
       await page.getByRole('button', { name: 'Create my portal' }).click()
       await expect(page).toHaveURL(`/g/${slug}?welcome=1`)
       await expect(page.getByRole('heading', { level: 1 })).toHaveText(name)

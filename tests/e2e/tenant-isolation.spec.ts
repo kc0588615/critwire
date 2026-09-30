@@ -501,6 +501,7 @@ test.describe('S1.9 Draft Mode previews', () => {
     await page.goto(marketingPreviewURL(`/${marketingSlug}`))
     await expect(page).toHaveURL(new RegExp(`/${marketingSlug}$`))
     await expect(page.getByText(TEXT.marketingDraft)).toBeVisible()
+    await expect(page.locator('.admin-bar')).toBeVisible()
     await page.context().close()
   })
 })

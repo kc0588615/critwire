@@ -10,6 +10,8 @@ import { useRouter } from 'next/navigation'
 
 import './index.scss'
 
+import { isSuperAdmin } from '@/access/isSuperAdmin'
+import type { User } from '@/payload-types'
 import { getClientSideURL } from '@/utilities/getURL'
 
 const baseClass = 'admin-bar'
@@ -34,8 +36,11 @@ export const AdminBar: React.FC<{
   ) as keyof typeof collectionLabels
   const router = useRouter()
 
+  // Only a super admin can create pages or preview, so only they get the
+  // bar; a studio fresh from signup would see actions it can't take. The
+  // bar hands over the whole `/api/users/me` user, roles included.
   const onAuthChange = React.useCallback((user: PayloadMeUser) => {
-    setShow(Boolean(user?.id))
+    setShow(isSuperAdmin(user as (PayloadMeUser & Pick<User, 'roles'>) | null | undefined))
   }, [])
 
   return (

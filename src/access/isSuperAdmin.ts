@@ -2,7 +2,7 @@ import type { Access, FieldAccess } from 'payload'
 
 import type { User } from '@/payload-types'
 
-export const isSuperAdmin = (user: null | undefined | User): boolean => {
+export const isSuperAdmin = (user: null | undefined | Pick<User, 'roles'>): boolean => {
   return Boolean(user?.roles?.includes('admin'))
 }
 

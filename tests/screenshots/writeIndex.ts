@@ -73,7 +73,7 @@ export async function writeIndex(dir: string): Promise<void> {
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Critwire feedback pivot: screenshots</title>
+<title>Critwire: screenshots</title>
 <style>
   body { font: 15px/1.5 system-ui, sans-serif; margin: 2rem; color: #1b1b1f; background: #f4f4f6; }
   h1 { margin-top: 0; }
@@ -91,7 +91,7 @@ export async function writeIndex(dir: string): Promise<void> {
 </style>
 </head>
 <body>
-<h1>Critwire feedback pivot: screenshots</h1>
+<h1>Critwire: screenshots</h1>
 <p>Full-page captures at 1440 and 390 px. Select an image to open it at full size. Under each after image are the quality probes run on that capture (<code>after/checks.json</code>).</p>
 ${meta.join('\n')}
 <p>${nav}</p>

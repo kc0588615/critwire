@@ -17,23 +17,41 @@ export interface ShotsWorld {
     /** The seed's launch update, whose page shows "From your feedback". */
     launchUpdate: string
   }
+  signup: {
+    /** A pending signup's verification token; opening its page doesn't use it. */
+    verifyToken: string
+    /** The game a studio onboarded through signup, for the hub's welcome panel. */
+    welcomeSlug: string
+  }
 }
 
 export const WORLD_PATH = path.join(process.cwd(), 'test-results', 'shots', 'world.json')
 
-export const GROUPS = ['critter-connect', 'riso', 'marketing'] as const
+/** The session of a verified user with no studio yet, for shots with `signedIn`. */
+export const ONBOARDING_STATE_PATH = path.join(process.cwd(), 'test-results', 'shots', 'onboarding-user.json')
+
+export const GROUPS = ['critter-connect', 'riso', 'marketing', 'signup'] as const
 export type Group = (typeof GROUPS)[number]
+
+/** The groups that shoot the demo's portal pages under a theme. */
+const PORTAL_GROUPS = ['critter-connect', 'riso'] as const
+export type PortalGroup = (typeof PORTAL_GROUPS)[number]
 
 export const GROUP_LABELS: Record<Group, string> = {
   'critter-connect': 'Portal, Critter Connect theme',
   riso: 'Portal, Riso lime (light test theme)',
   marketing: 'Critwire home page',
+  signup: 'Sign up and onboarding',
 }
 
 export interface Shot {
   id: string
   label: string
   path: (world: ShotsWorld) => string
+  /** Shot as the verified user with no studio (`ONBOARDING_STATE_PATH`) instead of anonymously. */
+  signedIn?: true
+  /** A selector the page must show before the capture, for content that renders after hydration. */
+  ready?: string
 }
 
 const cc = (world: ShotsWorld, rest = ''): string => `/g/${world.cc.slug}${rest}`
@@ -50,9 +68,28 @@ const PORTAL_SHOTS: Shot[] = [
 
 const MARKETING_SHOTS: Shot[] = [{ id: 'home', label: 'Home', path: () => '/' }]
 
-export const isPortalGroup = (group: Group): group is Exclude<Group, 'marketing'> => group !== 'marketing'
+const SIGNUP_SHOTS: Shot[] = [
+  { id: 'signup', label: 'Sign up', path: () => '/signup' },
+  { id: 'signup-submitted', label: 'Sign up: check your inbox', path: () => '/signup?submitted=1' },
+  { id: 'verify', label: 'Verify: choose a password', path: (w) => `/verify/${encodeURIComponent(w.signup.verifyToken)}` },
+  { id: 'onboarding', label: 'Onboarding: your first game', path: () => '/onboarding', signedIn: true },
+  {
+    id: 'welcome',
+    label: 'New portal with its next steps',
+    path: (w) => `/g/${w.signup.welcomeSlug}?welcome=1`,
+    ready: '.fs-welcome',
+  },
+]
 
-export const shotsFor = (group: Group): Shot[] => (isPortalGroup(group) ? PORTAL_SHOTS : MARKETING_SHOTS)
+export const isPortalGroup = (group: Group): group is PortalGroup =>
+  (PORTAL_GROUPS as readonly string[]).includes(group)
+
+const OTHER_SHOTS: Record<Exclude<Group, PortalGroup>, Shot[]> = {
+  marketing: MARKETING_SHOTS,
+  signup: SIGNUP_SHOTS,
+}
+
+export const shotsFor = (group: Group): Shot[] => (isPortalGroup(group) ? PORTAL_SHOTS : OTHER_SHOTS[group])
 
 export const WIDTHS = [1440, 390] as const
 

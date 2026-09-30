@@ -1,19 +1,31 @@
 import { mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 
-import { expect, test as setup } from '@playwright/test'
+import { type APIRequestContext, expect, test as setup } from '@playwright/test'
+import { extractID } from 'payload/shared'
 
 import type { GameProject } from '../../src/payload-types'
 import { RestClient } from '../e2e/support/api'
+import { verificationToken } from '../e2e/support/email'
 import { PASSWORD } from '../e2e/support/env'
-import { castVote, createIssue, createPatchNote, lexical, newRequestContext } from '../e2e/support/fixtures'
-import { type ShotsWorld, WORLD_PATH } from './catalog'
+import {
+  castVote,
+  createIssue,
+  createPatchNote,
+  lexical,
+  newRequestContext,
+  onboard,
+  startSignup,
+  verifyAccount,
+} from '../e2e/support/fixtures'
+import { ONBOARDING_STATE_PATH, type ShotsWorld, WORLD_PATH } from './catalog'
 import { rootStyle, SHOTS_CRON_SECRET } from './support'
 
 /**
  * Seeds the freshly migrated database with the Critter Connect demo plus
  * the fixtures every capture shares, over HTTP only, so any build (before
- * or after the design pass) gets identical data.
+ * or after the design pass) gets identical data. The signup shots get a
+ * pending signup, a signed-in user with no studio, and a signed-up studio.
  */
 setup('seed the Critter Connect demo and the screenshot fixtures', async ({ page, playwright }) => {
   setup.setTimeout(180_000)
@@ -40,6 +52,11 @@ setup('seed the Critter Connect demo and the screenshot fixtures', async ({ page
     expect(status).toBe(200)
     expect(body.docs).toHaveLength(1)
     const project = body.docs[0] as GameProject
+    const demo = await admin.find('tenants', { where: { slug: { equals: 'critwire-demo' } }, depth: 0 })
+    expect(demo.body.docs, 'the seed made the critwire-demo studio').toHaveLength(1)
+    expect(project.tenant && extractID(project.tenant), 'the seed put critter-connect in critwire-demo').toBe(
+      demo.body.docs[0].id,
+    )
     // The seed has no website, so without this the Official site link never shows.
     const updated = await admin.update('game-projects', project.id, {
       links: { ...project.links, website: 'https://critterconnect.example' },
@@ -106,6 +123,24 @@ setup('seed the Critter Connect demo and the screenshot fixtures', async ({ page
     }
   })
 
+  const signup = await setup.step('sign up a pending user, a user with no studio, and a studio', async () => {
+    await startSignup(anonymous, 'pending@shots.test')
+    const verifyToken = await verificationToken('pending@shots.test')
+
+    const onboardingUser = await newRequestContext(playwright)
+    await signUpAndVerify(onboardingUser, 'onboarding@shots.test')
+    await onboardingUser.storageState({ path: ONBOARDING_STATE_PATH })
+    await onboardingUser.dispose()
+
+    const studio = await newRequestContext(playwright)
+    const token = await signUpAndVerify(studio, 'studio@shots.test')
+    const location = await onboard(studio, token, { name: 'Lantern Keep', website: 'https://lanternkeep.example' })
+    await studio.dispose()
+    const welcomeSlug = /^\/g\/([^/?]+)\?welcome=1$/.exec(location)?.[1]
+    expect(welcomeSlug, `Lantern Keep onboarded to ${location}`).toBeDefined()
+    return { verifyToken, welcomeSlug: welcomeSlug as string }
+  })
+
   const world: ShotsWorld = {
     superToken,
     cc: {
@@ -114,7 +149,21 @@ setup('seed the Critter Connect demo and the screenshot fixtures', async ({ page
       baselineStyle,
       launchUpdate: 'v0-1-0-launch',
     },
+    signup,
   }
   await writeFile(WORLD_PATH, JSON.stringify(world, null, 2))
   await anonymous.dispose()
 })
+
+/**
+ * Signs `email` up through the emailed link with the shared password and
+ * returns the session token `request` now holds.
+ */
+async function signUpAndVerify(request: APIRequestContext, email: string): Promise<string> {
+  await startSignup(request, email)
+  expect(await verifyAccount(request, await verificationToken(email), PASSWORD)).toBe('/onboarding')
+  const { cookies } = await request.storageState()
+  const token = cookies.find((cookie) => cookie.name === 'payload-token')?.value
+  expect(token, `${email} is signed in after verifying`).toBeTruthy()
+  return token as string
+}

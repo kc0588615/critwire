@@ -7,11 +7,14 @@ import { SHOTS_CRON_SECRET } from './tests/screenshots/support'
 
 /**
  * Design screenshots: the Critter Connect demo's portal pages under the
- * Critter Connect and Riso themes, plus the home page, at 1440 and
- * 390 px, against a production build on the disposable E2E database
- * (dropped on every run, so never alongside `pnpm test:e2e`).
+ * Critter Connect and Riso themes, the home page, and signup (the form,
+ * "check your inbox", the verify page, onboarding and a new portal's
+ * next steps), at 1440 and 390 px, against a production build on the
+ * disposable E2E database (dropped on every run, so never alongside
+ * `pnpm test:e2e`). Emails go to the E2E outbox, where the setup reads
+ * the verification links.
  *
- *   SHOTS_SET=before|after SHOTS_DIR=/abs/dir [SHOTS_THEMES=critter-connect,riso,marketing] pnpm screenshots [--project desktop|mobile]
+ *   SHOTS_SET=before|after SHOTS_DIR=/abs/dir [SHOTS_THEMES=critter-connect,riso,marketing,signup] pnpm screenshots [--project desktop|mobile]
  *
  * Writes `<SHOTS_DIR>/<set>/<group>--<page>--<width>.png` and rewrites
  * `<SHOTS_DIR>/index.html` with every captured set side by side. "after"

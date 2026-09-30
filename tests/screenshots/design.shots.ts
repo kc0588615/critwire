@@ -8,9 +8,11 @@ import { BASE_URL } from '../e2e/support/env'
 import { newRequestContext } from '../e2e/support/fixtures'
 import {
   GROUP_LABELS,
-  type Group,
   isPortalGroup,
+  ONBOARDING_STATE_PATH,
+  type PortalGroup,
   selectedGroups,
+  type Shot,
   shotFile,
   shotsFor,
   shotsTarget,
@@ -26,7 +28,7 @@ const THEMES: Record<'riso', SiteThemeV1> = { riso: RISO_THEME }
 
 /** Sets `group`'s theme on the Critter Connect project and waits until its hub renders it. */
 async function applyTheme(
-  group: Exclude<Group, 'marketing'>,
+  group: PortalGroup,
   world: ShotsWorld,
   request: APIRequestContext,
   page: Page,
@@ -72,7 +74,7 @@ for (const group of selectedGroups()) {
       await page.close()
     })
 
-    for (const shot of shotsFor(group)) {
+    const capture = (shot: Shot): void => {
       test(shot.label, async ({ page }) => {
         const url = shot.path(world)
         const requests: string[] = []
@@ -82,6 +84,7 @@ for (const group of selectedGroups()) {
         if (groupStyle !== null) {
           await reloadUntil(page, url, rootStyle, groupStyle, `${url} never showed the ${group} theme`)
         }
+        if (shot.ready) await expect(page.locator(shot.ready)).toBeVisible()
         await settle(page)
         const width = page.viewportSize()?.width
         if (!width) throw new Error('the project has no viewport')
@@ -92,6 +95,18 @@ for (const group of selectedGroups()) {
         if (shot.id === 'home') probes.push(await probeMarketingFocus(page))
         await recordChecks(dir, file, probes)
         for (const probe of probes) expect.soft(probe.pass, `${probe.probe}: ${probe.detail}`).toBe(true)
+      })
+    }
+
+    for (const shot of shotsFor(group)) {
+      if (!shot.signedIn) {
+        capture(shot)
+        continue
+      }
+      test.describe(() => {
+        // Read when the test's context opens, after the setup project wrote it.
+        test.use({ storageState: ONBOARDING_STATE_PATH })
+        capture(shot)
       })
     }
   })
