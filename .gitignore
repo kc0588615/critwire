@@ -7,7 +7,9 @@ node_modules
 next-env.d.ts
 .vercel
 
-# Payload default media upload directory
+# Local-disk uploads (src/lib/media/storage.ts). public/media is the old
+# location; the server refuses to start while it holds files.
+/media/
 public/media/
 
 public/robots.txt

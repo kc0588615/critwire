@@ -20,6 +20,7 @@ export const PortalNav: React.FC<{ project: GameProject }> = ({ project }) => {
             <Media
               imgClassName="h-9 w-9 rounded-[var(--fs-radius-control)] object-cover"
               resource={project.logo}
+              size="36px"
             />
           ) : null}
           <span className="fs-display fs-nav-name">{project.name}</span>

@@ -41,6 +41,8 @@ RUN addgroup --system --gid 1001 nodejs && \
 COPY --from=builder /app/public ./public
 
 RUN mkdir .next && chown nextjs:nodejs .next
+# Local-disk uploads (without R2); docker-compose.yml mounts a volume here.
+RUN mkdir media && chown nextjs:nodejs media
 
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static

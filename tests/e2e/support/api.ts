@@ -14,6 +14,8 @@ export interface ApiError {
 export interface ApiResult<T> {
   status: number
   body: T & { errors?: ApiError[] }
+  /** Lower-cased header names. */
+  headers: Record<string, string>
 }
 
 export interface DocResult<C extends CollectionSlug> {
@@ -42,7 +44,7 @@ async function toResult<T>(response: APIResponse): Promise<ApiResult<T>> {
   const text = await response.text()
   const isJSON = (response.headers()['content-type'] ?? '').includes('application/json')
   const body = (isJSON && text ? JSON.parse(text) : text) as ApiResult<T>['body']
-  return { status: response.status(), body }
+  return { status: response.status(), body, headers: response.headers() }
 }
 
 type Method = 'DELETE' | 'GET' | 'PATCH' | 'POST' | 'PUT'

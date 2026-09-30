@@ -941,7 +941,7 @@ The session that carries out the affected step copies the matching line into **D
   - **Checks:** standard.
   - **This step's risk:** relationship paths inside access `Where`s. S10.3 and S13.2 fail first if Drizzle can't query one of them.
 
-- [ ] Step 5: Media: raster images only, files outside `public/`, one way to serve them (§7b, F2, F11; P8, P9)
+- [x] Step 5: Media: raster images only, files outside `public/`, one way to serve them (§7b, F2, F11; P8, P9)
   - **Files:**
     - New `src/lib/media/storage.ts`, with no Payload or React imports (`instrumentation-node.ts` loads it):
       - `MEDIA_DIR = path.resolve(process.cwd(), 'media')`;
@@ -1398,6 +1398,11 @@ OUT=/srv/critter-ai/agent-state/missions/open-signup
 - **Step 3 · Membership is checked before suspension.** A non-member gets the 400 membership error without the hook ever reading the target studio, so a write can't reveal whether another studio is suspended. A tenant ID that doesn't exist fails loudly (404) instead of passing.
 - **Step 4 · P1 · Signed-in visitors can read public media files.** The plugin's `accessResultOverride` for `media` (`mediaFileReadOverride`) gives signed-in non-super-admins, on file reads only, `{ or: [<plugin result>, <the anonymous rule>] }`, or the anonymous rule when the plugin says `false`. Lists, REST documents and the admin keep the tenant constraint; suspension still hides files from everyone outside the studio.
 - **Step 4 · `/unavailable` links to the home page,** like the 404 page, and still names no game and gives no reason. `src/access/anyone.ts` is deleted: media was its last user.
+- **Step 5 · P8 · The image `srcSet` uses only the width-only sizes** (`thumbnail` to `xlarge`); `square` and `og` are crops, and a size Payload skipped has no URL and is left out.
+- **Step 5 · P9 · The ignore files add `media` and keep `public/media`,** so leftover files never reach git or a Docker image.
+- **Step 5 · The `<source>` has no `type`.** Uploads from before this step keep their sizes in the original format, so `type="image/webp"` would mislabel them; every supported browser decodes WebP, so the attribute bought nothing.
+- **Step 5 · `ImageMedia`'s default `sizes` is `100vw`,** and the portal logo passes `36px`. The template's default (`(max-width: 640px) 1280w, …`) wasn't valid `sizes` syntax, so browsers already read it as `100vw`; with a real `srcSet` that would fetch a large size for a 36 px logo. `src/cssVariables.js` went with it (its only user).
+- **Step 5 · `MEDIA_DIR` is marked `turbopackIgnore`.** Without it, Turbopack traced `process.cwd()/media` and copied every upload into `.next/standalone/media`.
 
 ## Log
 
@@ -1411,5 +1416,6 @@ OUT=/srv/critter-ai/agent-state/missions/open-signup
 - 2026-09-30 11:26 UTC · Step 2: migration `open_signup` (tenants `suspended`/`createdBy`, `flagged`/`flagReasons` on games and updates incl. versions, `abuse-reports`, `auth.verify` with the `_verified` backfill); `_verified`/`email` and the platform fields are super-admin-only; super-admin-created users start verified. Backfill check: a pre-existing user read `t` after migrating, then deleted. tsc pass; lint 0 errors, 20 warnings (none in touched files); E2E 81/81 in 4.3 min, incl. `accounts.spec.ts` S9.1–S9.4.
 - 2026-09-30 11:31 UTC · Step 3: `enforceTenantWrite` (`src/access/tenantWrite.ts`) replaces `validateTenantMembership` as a `beforeChange` hook on the tenant field, so membership is checked on draft saves too (F1) and a suspended studio's members get a 403 on every create and update. Before the fix: S1.11 create-draft got 201 and move-draft got 200 (expected 400); S10.1 got 201 on a game create (expected 403). tsc pass; lint 0 errors, 20 warnings (none in touched files); E2E 84/84 in 4.3 min, incl. S1.11 and `suspension.spec.ts` S10.1.
 - 2026-09-30 11:45 UTC · Step 4: anonymous reads from `src/access/publicRead.ts` (held games and updates, suspended studios' games, updates, items and media leave the public site via `tenant.suspended`/`gameProject.flagged` paths), `mediaFileReadOverride` (P1), `requirePortalProject` on the layout and all 8 portal pages (held or suspended → `/unavailable`, unknown → 404), static noindex `/unavailable`, Tenants `revalidateSuspension`. Before the fix: S10.2 got 403 for studio B's owner on `/api/media/file/s102-banner.png` (expected 200). tsc pass; lint 0 errors, 20 warnings (none in touched files); E2E 88/88 in 4.6 min, incl. S10.2, S10.3, S13.1, S13.2 and S2.1's 404; build lists `/unavailable` as static.
+- 2026-09-30 12:05 UTC · Step 5: media is raster-only (`mimeTypes`), stored in `media/` (`src/lib/media/storage.ts`, boot refuses a non-empty `public/media`), served only by `/api/media/file/` with `Cache-Control: private, max-age=300`; image optimizer off, `ImageMedia` adds a `<source srcSet>` of Payload's WebP sizes; `VideoMedia` removed; Dockerfile/compose get a `media` dir and volume (read, not run: no Docker here). Moved this worktree's 24 leftover uploads to `media/`. Before the fix: S11.1 SVG upload got 201 (expected 400); S11.2 `/_next/image?…&q=100` got 200 (expected 404) and the upload wasn't in `media/`; S11.3 had no `Cache-Control`. tsc pass; lint 0 errors, 20 warnings (none in touched files); E2E 93/93 in 5.1 min, incl. `media.spec.ts` S11.1–S11.5 and S2.6; boot check with `public/media/leftover.png` printed `exit 1` and the `mv` command.
 
 ## Summary

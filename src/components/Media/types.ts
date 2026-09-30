@@ -14,9 +14,8 @@ export interface Props {
   onLoad?: () => void
   loading?: 'lazy' | 'eager' // for NextImage only
   priority?: boolean // for NextImage only
-  ref?: Ref<HTMLImageElement | HTMLVideoElement | null>
+  ref?: Ref<HTMLImageElement | null>
   resource?: MediaType | string | number | null // for Payload media
   size?: string // for NextImage only
   src?: StaticImageData // for static media
-  videoClassName?: string
 }

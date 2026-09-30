@@ -1,4 +1,5 @@
 import { getContactHref } from '@/components/marketing/links'
+import { assertNoLegacyPublicMedia } from '@/lib/media/storage'
 
 /**
  * Checks the environment once at boot, in the Node.js runtime only.
@@ -8,6 +9,7 @@ import { getContactHref } from '@/components/marketing/links'
 export function checkEnvironment(): void {
   try {
     getContactHref()
+    assertNoLegacyPublicMedia()
   } catch (error) {
     console.error(error)
     process.exit(1)
