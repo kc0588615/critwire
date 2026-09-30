@@ -1,10 +1,13 @@
+import { randomUUID } from 'node:crypto'
+
 import type { Browser, Page as BrowserPage } from '@playwright/test'
 import type { CollectionSlug } from 'payload'
 
 import type { GameProject, Issue, IssueReport, Media, PatchNote } from '../../src/payload-types'
 import { type ApiResult, fieldErrors, type RestClient } from './support/api'
-import { BASE_URL, PREVIEW_SECRET, type Role, storageStatePath } from './support/env'
+import { BASE_URL, PREVIEW_SECRET, type Role, storageStatePath, TURNSTILE_DUMMY_TOKEN } from './support/env'
 import {
+  asStudioAdmin,
   castVote,
   contentLayout,
   createIssue,
@@ -13,7 +16,9 @@ import {
   createReport,
   expect,
   lexical,
+  PNG_8PX,
   seed,
+  type SignedUpStudio,
   test,
   uploadImage,
 } from './support/fixtures'
@@ -537,4 +542,219 @@ test('S1.10 the site generator and the landing builder are gone', async ({ api, 
   } finally {
     await page.context().close()
   }
+})
+
+test.describe('S1.13 two studios that signed up stay apart [DoD]', () => {
+  /** Written into every field B tries to change, so a leak is easy to spot. */
+  const MARKER = 'Written by studio B'
+
+  interface Target {
+    collection: CollectionSlug
+    id: number
+    /** A field B tries to overwrite. */
+    patch: Record<string, unknown>
+    query?: Record<string, unknown>
+  }
+
+  let a: SignedUpStudio
+  let b: SignedUpStudio
+  /** Everything studio A made, one entry per document. */
+  let targets: Target[]
+
+  test.beforeAll(async ({ api, signUpStudio }) => {
+    const id = randomUUID().slice(0, 8)
+    a = await signUpStudio(`Isolation A ${id}`)
+    b = await signUpStudio(`Isolation B ${id}`)
+    const client = a.owner.client
+
+    const publishedNote = await createPatchNote(client, a.project, 's113-published')
+    const draftNote = await createPatchNote(client, a.project, 's113-draft', { _status: 'draft' })
+    const publicIssue = await createIssue(client, a.project, 's113-public', { isPublic: true })
+    const privateIssue = await createIssue(client, a.project, 's113-private', { isPublic: false })
+    const media = await uploadImage(client, a.tenant.id, `s113-${id}.png`, 'Studio A key art')
+
+    const report = await api('anonymous').raw<{ id: number }>(
+      'POST',
+      `/g/${a.project.slug}/feedback/new/submit`,
+      {
+        data: {
+          title: 'Lantern flickers in the cave',
+          description: 'The lantern flickers off in the second cave.',
+          category: 'OTHER',
+          turnstileToken: TURNSTILE_DUMMY_TOKEN,
+        },
+      },
+    )
+    expect(report.status, JSON.stringify(report.body)).toBe(200)
+
+    const folder = await client.raw<{ doc: { id: number } }>('POST', '/api/payload-folders', {
+      data: { name: 'Studio A art', folderType: ['media'], tenant: a.tenant.id },
+    })
+    expect(folder.status, JSON.stringify(folder.body)).toBe(201)
+
+    const title = { title: MARKER }
+    targets = [
+      { collection: 'game-projects', id: a.project.id, patch: { description: MARKER } },
+      { collection: 'patch-notes', id: publishedNote.id, patch: title },
+      { collection: 'patch-notes', id: draftNote.id, patch: title, query: { draft: true } },
+      { collection: 'issues', id: publicIssue.id, patch: title },
+      { collection: 'issues', id: privateIssue.id, patch: title },
+      { collection: 'issue-reports', id: report.body.id, patch: title },
+      { collection: 'media', id: media.id, patch: { alt: MARKER } },
+      { collection: 'payload-folders', id: folder.body.doc.id, patch: { name: MARKER } },
+      { collection: 'users', id: a.owner.id, patch: { name: MARKER } },
+      { collection: 'tenants', id: a.tenant.id, patch: { name: MARKER } },
+    ]
+  })
+
+  test('B’s lists and reads hold none of A’s documents, drafts included', async () => {
+    for (const { collection, id, query } of targets) {
+      await test.step(`${collection} ${id}`, async () => {
+        const own = await a.owner.client.find(collection, { ...query, limit: 0 })
+        expect(idsOf(own.body.docs), 'A lists its own document').toContain(id)
+
+        const list = await b.owner.client.find(collection, { ...query, limit: 0 })
+        expect(list.status).toBe(200)
+        expect(idsOf(list.body.docs)).not.toContain(id)
+
+        const read = await b.owner.client.findByID(collection, id, query)
+        expect(DENIED, JSON.stringify(read.body)).toContain(read.status)
+      })
+    }
+  })
+
+  test('B can neither change nor delete A’s documents', async ({ api }) => {
+    for (const { collection, id, patch, query } of targets) {
+      await test.step(`${collection} ${id}`, async () => {
+        const update = await b.owner.client.update(collection, id, patch, query)
+        expect(DENIED, `PATCH ${JSON.stringify(update.body)}`).toContain(update.status)
+        const remove = await b.owner.client.remove(collection, id)
+        expect(DENIED, `DELETE ${JSON.stringify(remove.body)}`).toContain(remove.status)
+
+        const after = await api('superAdmin').findByID(collection, id, { ...query, depth: 0 })
+        expect(after.status, 'still there').toBe(200)
+        expect(JSON.stringify(after.body)).not.toContain(MARKER)
+      })
+    }
+  })
+
+  test('B cannot create documents in A’s studio, a draft update included [F1]', async ({ api }) => {
+    const client = b.owner.client
+    const tenant = a.tenant.id
+    const inA = { gameProject: a.project.id, tenant }
+    const refused = (result: ApiResult<unknown>) =>
+      expect([400, 403], JSON.stringify(result.body)).toContain(result.status)
+
+    await test.step('a game', async () => {
+      refused(await client.create('game-projects', { name: 'Planted game', tenant }))
+    })
+    await test.step('a published and a draft update', async () => {
+      const note = { ...inA, title: 'Planted update', content: lexical('Planted by studio B.') }
+      refused(
+        await client.create('patch-notes', { ...note, slug: 's113-plant', _status: 'published' }),
+      )
+      refused(
+        await client.create(
+          'patch-notes',
+          { ...note, slug: 's113-plant-draft', _status: 'draft' },
+          { draft: true },
+        ),
+      )
+    })
+    await test.step('an item and a submission', async () => {
+      refused(
+        await client.create('issues', {
+          ...inA,
+          title: 'Planted item',
+          slug: 's113-plant',
+          category: 'OTHER',
+        }),
+      )
+      refused(
+        await client.create('issue-reports', {
+          ...inA,
+          title: 'Planted submission',
+          description: 'Planted by studio B.',
+          category: 'OTHER',
+        }),
+      )
+    })
+    await test.step('a media file and a folder', async () => {
+      refused(
+        await client.upload(
+          'media',
+          { name: 's113-plant.png', mimeType: 'image/png', buffer: PNG_8PX },
+          { alt: 'Planted', tenant },
+        ),
+      )
+      refused(
+        await client.raw('POST', '/api/payload-folders', {
+          data: { name: 'Planted', folderType: ['media'], tenant },
+        }),
+      )
+    })
+
+    await test.step('A’s studio holds exactly what A made', async () => {
+      for (const collection of [
+        'game-projects',
+        'patch-notes',
+        'issues',
+        'issue-reports',
+        'media',
+        'payload-folders',
+      ] as const) {
+        const { status, body } = await api('superAdmin').find(collection, {
+          where: { tenant: { equals: tenant } },
+          draft: true,
+          depth: 0,
+          limit: 0,
+        })
+        expect(status).toBe(200)
+        const expected = targets
+          .filter((target) => target.collection === collection)
+          .map((target) => target.id)
+        expect(idsOf(body.docs).sort(), collection).toEqual(expected.sort())
+      }
+    })
+  })
+
+  test('B cannot join A’s studio', async ({ api }) => {
+    const { status, body } = await b.owner.client.update('users', b.owner.id, {
+      tenants: [
+        { tenant: b.tenant.id, roles: ['owner'] },
+        { tenant: a.tenant.id, roles: ['owner'] },
+      ],
+    })
+    expect(status, JSON.stringify(body)).toBeLessThan(500)
+
+    const account = await api('superAdmin').findByID('users', b.owner.id, { depth: 0 })
+    expect(account.body.tenants).toEqual([
+      expect.objectContaining({ tenant: b.tenant.id, roles: ['owner'] }),
+    ])
+    const members = await a.owner.client.find('users', { limit: 0 })
+    expect(idsOf(members.body.docs)).not.toContain(b.owner.id)
+  })
+
+  test('A’s game in the admin shows B none of A’s data', async ({ browser }) => {
+    const editURL = `/admin/collections/game-projects/${a.project.id}`
+    await test.step('A sees its game (the control)', async () => {
+      await asStudioAdmin(browser, a, async (page) => {
+        await page.goto(editURL)
+        await expect(page.locator('#field-name')).toHaveValue(a.project.name)
+      })
+    })
+    await test.step('B sees nothing of it', async () => {
+      await asStudioAdmin(browser, b, async (page) => {
+        await page.goto(editURL)
+        await page.waitForLoadState('networkidle')
+        await expect(page.locator('body')).not.toContainText(a.project.name)
+        await expect(page.locator('body')).not.toContainText(a.project.slug)
+        const values = await page
+          .locator('input, textarea')
+          .evaluateAll((fields) => fields.map((field) => (field as HTMLInputElement).value))
+        expect(values).not.toContain(a.project.name)
+        expect(values).not.toContain(a.project.slug)
+      })
+    })
+  })
 })

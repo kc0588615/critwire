@@ -16,6 +16,7 @@ import sharp from 'sharp'
 
 import type { Config, GameProject, Issue, IssueReport, Media, Page, PatchNote } from '../../../src/payload-types'
 import { type Query, RestClient } from './api'
+import { verificationToken } from './email'
 import {
   BASE_URL,
   PASSWORD,
@@ -82,6 +83,11 @@ export interface Studio {
   owner: Account
 }
 
+/** A studio that came through signup and onboarding, with its first game. */
+export interface SignedUpStudio extends Studio {
+  project: GameProject
+}
+
 interface WorkerFixtures {
   world: World
   /** REST client acting as `role`, or anonymously. Worker-scoped so `beforeAll` can use it. */
@@ -111,6 +117,11 @@ interface WorkerFixtures {
    * specs that change a studio's state, so they never touch `world`'s studios.
    */
   seedStudio: (label: string) => Promise<Studio>
+  /**
+   * A studio made the way a stranger makes one (§14): signup, the emailed
+   * link, a password, then onboarding a game called `name` over HTTP.
+   */
+  signUpStudio: (name: string) => Promise<SignedUpStudio>
 }
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
@@ -235,6 +246,42 @@ export const test = base.extend<{}, WorkerFixtures>({
           tenants: [{ tenant: tenant.id, roles: ['owner'] }],
         })
         return { tenant: { id: tenant.id, slug }, owner: await signIn(email, PASSWORD) }
+      })
+    },
+    { scope: 'worker' },
+  ],
+  signUpStudio: [
+    async ({ api, playwright, signIn }, use) => {
+      await use(async (name) => {
+        const email = randomEmail('signup')
+        const request = await newRequestContext(playwright)
+        try {
+          await startSignup(request, email)
+          expect(await verifyAccount(request, await verificationToken(email), PASSWORD)).toBe(
+            '/onboarding',
+          )
+          const owner = await signIn(email, PASSWORD)
+          const location = await onboard(request, owner.token, {
+            name,
+            website: 'https://studio.example.com',
+          })
+          const slug = /^\/g\/([^/?]+)\?welcome=1$/.exec(location)?.[1]
+          expect(slug, `${name} onboarded to ${location}`).toBeDefined()
+
+          const { body: projects } = await owner.client.find('game-projects', {
+            where: { slug: { equals: slug } },
+            depth: 0,
+          })
+          expect(projects.docs, `the owner reads ${slug}`).toHaveLength(1)
+          const project = projects.docs[0]
+          const tenant = await api('superAdmin').findByID('tenants', tenantOf(project), {
+            depth: 0,
+          })
+          expect(tenant.status).toBe(200)
+          return { tenant: { id: tenant.body.id, slug: tenant.body.slug }, owner, project }
+        } finally {
+          await request.dispose()
+        }
       })
     },
     { scope: 'worker' },
