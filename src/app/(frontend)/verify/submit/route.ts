@@ -7,7 +7,7 @@ import { z } from 'zod'
 
 import { activateAccount, VerificationLinkUsedError } from '@/lib/accounts/activateAccount'
 import { findPendingUserByToken } from '@/lib/accounts/pendingUser'
-import { isOpenSignup } from '@/lib/hosting'
+import { isOpenSignup, SIGNUP_PATH } from '@/lib/hosting'
 import { getLogger } from '@/lib/logger'
 import { formResponse, guardPublicForm } from '@/lib/public-forms/guard'
 import { readRequestBody } from '@/lib/public-forms/request'
@@ -22,7 +22,7 @@ const verifySchema = z.object({
 /** The verify page the form was posted from, read before the guard consumes the body. */
 const verifyPagePath = async (req: Request): Promise<string> => {
   const { token } = await readRequestBody(req.clone())
-  return typeof token === 'string' && token ? `/verify/${encodeURIComponent(token)}` : '/signup'
+  return typeof token === 'string' && token ? `/verify/${encodeURIComponent(token)}` : SIGNUP_PATH
 }
 
 /**

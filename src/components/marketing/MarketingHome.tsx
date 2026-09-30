@@ -38,8 +38,17 @@ const PORTAL_PAGES = [
   },
 ] as const
 
-/** Critwire's home page. The Contact link shows only when `contactHref` is set. */
-export function MarketingHome({ contactHref }: { contactHref: null | string }) {
+/**
+ * Critwire's home page. The Contact link shows only when `contactHref` is
+ * set, and "Create your portal" only when `signupHref` is (open signup).
+ */
+export function MarketingHome({
+  contactHref,
+  signupHref,
+}: {
+  contactHref: null | string
+  signupHref: null | string
+}) {
   return (
     <>
       <section aria-labelledby="cw-home-title" className="cw-slip">
@@ -115,6 +124,11 @@ export function MarketingHome({ contactHref }: { contactHref: null | string }) {
               hosted instance, free while it’s in early access.
             </p>
             <div className="cw-actions">
+              {signupHref ? (
+                <Link className="cw-btn" href={signupHref}>
+                  Create your portal
+                </Link>
+              ) : null}
               <a className="cw-btn" href={GITHUB_REPO_URL}>
                 Critwire on GitHub
               </a>

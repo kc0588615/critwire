@@ -4,8 +4,10 @@ import React from 'react'
 import type { GameProject } from '@/payload-types'
 
 import { resolveProjectLinks } from '@/lib/game-portal/links'
-import { portalNavLinks } from '@/lib/game-portal/paths'
+import { portalNavLinks, portalPaths } from '@/lib/game-portal/paths'
+import { isOpenSignup, reportAbuseHref } from '@/lib/hosting'
 
+/** The portal's footer. On the hosted instance (open signup) it also offers "Report this page". */
 export const PortalFooter: React.FC<{ project: GameProject }> = ({ project }) => (
   <footer className="fs-footer">
     <div className="fs-shell fs-footer-main">
@@ -33,11 +35,22 @@ export const PortalFooter: React.FC<{ project: GameProject }> = ({ project }) =>
       <span>
         © {new Date().getFullYear()} {project.name}
       </span>
-      <span>
-        Powered by{' '}
-        <Link className="fs-link" href="/">
-          Critwire
-        </Link>
+      <span className="fs-footer-end">
+        <span>
+          Powered by{' '}
+          <Link className="fs-link" href="/">
+            Critwire
+          </Link>
+        </span>
+        {isOpenSignup() ? (
+          <Link
+            className="fs-link"
+            href={reportAbuseHref(portalPaths(project.slug).hub)}
+            prefetch={false}
+          >
+            Report this page
+          </Link>
+        ) : null}
       </span>
     </div>
   </footer>

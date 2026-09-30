@@ -34,6 +34,23 @@ export const portalPaths = (gameSlug: string) => {
 
 export type PortalPaths = ReturnType<typeof portalPaths>
 
+const PORTAL_PATH = /^\/g\/([^/?#\s]+)(?:\/[^?#\s]*)?$/
+
+/**
+ * The game a root-relative path belongs to: `/g/<slug>` or any path
+ * under it. `null` for anything else, a query or fragment included.
+ */
+export const parsePortalPath = (path: string): { gameSlug: string } | null => {
+  const encoded = PORTAL_PATH.exec(path)?.[1]
+  if (!encoded) return null
+  try {
+    return { gameSlug: decodeURIComponent(encoded) }
+  } catch {
+    // A malformed escape is not a portal path.
+    return null
+  }
+}
+
 /** The portal's fixed navigation: the same three pages in the nav and the footer of every game. */
 export const PORTAL_NAV = [
   { key: 'updates', label: 'Updates' },

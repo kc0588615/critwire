@@ -527,6 +527,12 @@
   color: var(--cw-graphite);
 }
 
+/* The reported page's path on "Report this page"; long paths wrap. */
+.cw-account-path {
+  color: var(--cw-ink);
+  overflow-wrap: anywhere;
+}
+
 /* Controls and buttons are tap targets at every width (at least 44 px). */
 .cw-account :where(.fs-input, .cw-btn) {
   min-height: 2.75rem;

@@ -10,3 +10,10 @@ export function isOpenSignup(): boolean {
   if (raw === '1') return true
   throw new Error(`CRITWIRE_OPEN_SIGNUP must be 1, or empty to turn signup off (got "${raw}").`)
 }
+
+/** Where "Create your portal" leads. */
+export const SIGNUP_PATH = '/signup'
+
+/** The "Report this page" form for a portal path (`parsePortalPath` checks it on submit). */
+export const reportAbuseHref = (pagePath: string): string =>
+  `/report-abuse?${new URLSearchParams({ page: pagePath })}`

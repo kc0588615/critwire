@@ -7,7 +7,7 @@ import { z } from 'zod'
 import { checkAccountEmailBudget } from '@/lib/accounts/emailBudget'
 import { requestSignup } from '@/lib/accounts/requestSignup'
 import { isEmailDeliverable } from '@/lib/email/adapter'
-import { isOpenSignup } from '@/lib/hosting'
+import { isOpenSignup, SIGNUP_PATH } from '@/lib/hosting'
 import { getLogger } from '@/lib/logger'
 import { formResponse, guardPublicForm } from '@/lib/public-forms/guard'
 
@@ -16,8 +16,6 @@ const log = getLogger('signup')
 const signupSchema = z.object({
   email: z.string().trim().toLowerCase().pipe(z.email().max(254)),
 })
-
-const SIGNUP = '/signup'
 
 /**
  * Starts an account from an email address (§5). Every accepted address
@@ -33,7 +31,7 @@ export async function POST(req: Request): Promise<Response> {
       req,
       schema: signupSchema,
     })
-    if (!guard.ok) return formResponse({ json: { error: guard.error }, path: SIGNUP, req, status: guard.status })
+    if (!guard.ok) return formResponse({ json: { error: guard.error }, path: SIGNUP_PATH, req, status: guard.status })
 
     // Production without Resend: the link would reach nobody.
     if (!isEmailDeliverable()) throw new Error('Signup refused: email is not deliverable (set RESEND_API_KEY).')
@@ -45,10 +43,10 @@ export async function POST(req: Request): Promise<Response> {
       log.warn({ msg: 'Signup: the address is over its email budget; nothing sent.' })
     }
 
-    return formResponse({ json: { ok: true }, path: SIGNUP, req, status: 200 })
+    return formResponse({ json: { ok: true }, path: SIGNUP_PATH, req, status: 200 })
   } catch (err) {
     Sentry.captureException(err)
     log.error({ err, msg: 'Signup failed.' })
-    return formResponse({ json: { error: 'Something went wrong.' }, path: SIGNUP, req, status: 500 })
+    return formResponse({ json: { error: 'Something went wrong.' }, path: SIGNUP_PATH, req, status: 500 })
   }
 }

@@ -372,6 +372,13 @@
   padding-block: 1.25rem 1.5rem;
 }
 
+/* "Powered by Critwire" and, on the hosted instance, "Report this page". */
+.fs-footer-end {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
+}
+
 /* ── Hub header: the title plate (plan §5) ─────────────── */
 
 /* The portal's one loud element. The art is never tinted and never
