@@ -79,7 +79,7 @@ Out:
 - [x] Fable review: `architecture-reviewer`
 - [x] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
 - [x] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
-- [ ] Steps: `planner` writes Steps and Verification
+- [x] Steps: `planner` writes Steps and Verification
 
 ## Baseline
 
@@ -728,7 +728,663 @@ Revised 2026-09-30 by `architect`. Everything was re-checked against Payload 3.8
 
 ## Steps
 
+18 steps, one per session, in dependency order. Each security hole the design found (F1, F2, F11, F12) is closed early, together with the scenario that proves it. Onboarding lands before signup, so the verify route's redirect target exists when signup ships. Docs, screenshots and the full verification come last.
+
+### How every step runs
+
+- **Shell helpers.** The shell forgets variables between tool calls, so repeat them in each call:
+  ```bash
+  cd /srv/critter-ai/worktrees/open-signup
+  DB=$(grep '^DATABASE_URL=' .env | cut -d= -f2-)      # the mission database, never reset
+  MISSION=/srv/critter-ai/agent-state/missions/open-signup
+  ```
+- **Standard checks** end every step unless the step says otherwise. Run heavy jobs one at a time, with nothing else on ports 3100–3102:
+  1. `pnpm exec tsc --noEmit` → 0 errors.
+  2. `pnpm lint` → 0 errors. Warnings stay at 20 or fewer (the Baseline count), and none are in a file this mission touched.
+  3. `set -o pipefail; pnpm test:e2e 2>&1 | tee /tmp/e2e-step<N>.log` → exit 0. This is the full suite: a fresh build on a freshly migrated E2E database, with 0 failed. This mission's hooks and access rules apply to every collection, so every code step runs the whole suite, not only its own spec.
+
+  The step's Log line records the passed count, the wall time, and anything the step checked by hand.
+- **Test first when a step closes an existing hole.** That means F1, F2, F11, F12, and the cross-studio file read in Step 4. Write those scenarios first and run `pnpm test:e2e <spec>` on the unchanged code. Record in the Log which tests fail and how (for example "expected 400, received 201"). Then fix. For new features, write the spec in the same step as the code; no run on the old code is needed.
+- **The `dev` row gotcha:**
+  - Never run `pnpm dev` in this worktree. It dev-pushes the schema into the mission database and records a `dev` row in `payload_migrations`.
+  - Before any `pnpm payload migrate`, `pnpm payload migrate:create` or `pnpm build`, run `psql "$DB" -c "delete from payload_migrations where name='dev'"`.
+- **Schema changes** happen in Step 2 only, in this order:
+  1. Clear the `dev` row.
+  2. `pnpm payload migrate:create open_signup`.
+  3. Read the generated SQL and add the backfill.
+  4. `pnpm payload migrate`.
+  5. `pnpm generate:types`.
+
+  Commit the migration (`.ts`, `.json` and `src/migrations/index.ts`) and `src/payload-types.ts`.
+- **`pnpm generate:importmap`** after adding an admin component (Steps 13 and 15). Commit `src/app/(payload)/admin/importMap.js`.
+- **`E2E_SKIP_BUILD=1 pnpm test:e2e <spec>`** is only for iterating on a spec right after a full run. It is never a step's verification: it reuses `.next` and the env the last build baked in.
+- **Environment variables:** `.env.example` and `src/environment.d.ts` change in the step that introduces the variable. The prose docs change in Step 16.
+- **Owner items:** nothing here waits on H3 (production keys) or H8 (terms). Without them the app works as the design says:
+  - email goes to the outbox (outside production, or when `EMAIL_OUTBOX_DIR` is set);
+  - Turnstile uses Cloudflare's test keys in E2E and is skipped in development;
+  - rate limits are off (`RATE_LIMIT_OPTIONAL=1` in E2E).
+- **Finishing a step:** check it off, add the Log line, and commit code and plan together with a message that says why. Then push `agent/open-signup`.
+
+### Planner decisions
+
+The session that carries out the affected step copies the matching line into **Decisions**.
+
+- **P1 · Signed-in visitors can read public media files (Step 4).**
+  - **Why it's needed:** once Next's image optimizer is off (Step 5), browsers fetch `/api/media/file/…` themselves, sending the visitor's session cookie. Payload accepts that cookie because no CSRF allowlist is configured (`payload/dist/auth/extractJWT.js`). The multi-tenant plugin then limits a signed-in studio user to their own studios' files, and gives a user with no studio `false` (`plugin-multi-tenant/dist/utilities/withTenantAccess.js`).
+  - **Effect without the fix:** a signed-in owner opening the demo or another studio's portal would get 403s for every image. So would every newly verified user who hasn't onboarded yet.
+  - **The fix:** the plugin's per-collection `accessResultOverride` for `media`, as `mediaFileReadOverride` in `src/access/publicRead.ts`.
+    - It applies only when `accessKey === 'read'` and `isReadingStaticFile` is set, and only to signed-in non-super-admins. They get `{ or: [<the plugin's result>, <the anonymous media rule>] }`, or just the anonymous rule when the plugin's result is `false`.
+    - Lists, the admin and REST documents keep the tenant constraint. Only file bytes are widened, and only to what an anonymous visitor may already fetch.
+    - Suspension still hides files from everyone outside the studio. The studio's own members still see their files in the admin.
+- **P2 · The second E2E server doubles as the self-hosted profile (Step 6).**
+  - Port 3102 serves the same build with the low limits, plus `CRITWIRE_OPEN_SIGNUP=''` and `EMAIL_OUTBOX_DIR=''`.
+  - So the suite also proves what a self-hosted instance gets by default:
+    - `/signup`, `/verify/…`, `/onboarding` and `/report-abuse` answer 404;
+    - `/` shows no "Create your portal";
+    - portal footers show no "Report this page";
+    - "Forgot password?" tells the user to ask whoever runs the site.
+  - None of these assertions depend on the limits. §14 gave the second server the first server's env plus limits.
+- **P3 · Pages that read the signup flag render per request (Steps 9–15).**
+  - Every page or admin component that calls `isOpenSignup()` renders per request: `await connection()` as `/` already does, or a request API such as `searchParams`, `headers` or `payload.auth`.
+  - The reason: the Docker build runs with an empty environment, so a prerendered `/signup` would stay baked "off". The E2E build would bake it "on".
+  - P2's second server serves the flag-on build with the flag off, so a baked page fails the suite.
+- **P4 · Onboarding lands before signup (Steps 9–10, then 11).** `/verify/submit` redirects to `/onboarding`, so onboarding must exist first. Until signup exists, onboarding's tests use a user a super admin created without a studio. §13 already covers that case ("Signed in without a studio: Set up your portal").
+- **P5 · Account pages reuse the portal's form components.**
+  - `/signup`, `/verify/<token>`, `/onboarding` and `/report-abuse` share one shell, `src/components/accounts/AccountPage.tsx`.
+  - They reuse `FormField`, `FormNotice` and `TurnstileField` instead of copying them, and `marketing.css` styles those classes inside `.cw-root`.
+  - Inputs and buttons are at least 44 px tall, which the screenshot probes check at 390 px.
+- **P6 · `/report-abuse` shows the reported path, not the game's name.**
+  - Its GET does no lookup, so the page reveals nothing about whether a portal is held or suspended. The submit route still resolves the game with a privileged lookup (§12).
+  - The rule for which paths are portal paths lives in `paths.ts`, as `parsePortalPath`, beside every other portal URL.
+- **P7 · Concurrency is tested by outcome in E2E.** Each assertion holds whatever the interleaving, so none is flaky. Together they exercise §4's rollback and §6's unique-index and retry paths.
+  - Two `POST /verify/submit` with one token and different passwords: exactly one password signs in.
+  - Two `POST /onboarding/submit` for one user: exactly one studio and one game.
+  - Two users onboarding the same game name at once: two portals with distinct slugs.
+- **P8 · The image `srcSet` uses only the width-only sizes.**
+  - `thumbnail`, `small`, `medium`, `large` and `xlarge` keep the upload's aspect ratio.
+  - `square` (500×500) and `og` (1200×630) are crops and never go in the `srcSet`.
+  - A size Payload skipped (because the upload is narrower than it) has no URL and is left out.
+- **P9 · The ignore files add `media` and keep `public/media`,** so leftover files never reach git or a Docker image. The boot check still stops any server whose `public/media` holds files.
+- **P10 · The E2E artifact includes the outbox.** The final run copies `test-results/outbox/` next to the report, so every captured email can be re-read: verification, account created and password reset.
+- **P11 · The limit hooks live beside the module,** in `src/lib/limits/hooks.ts`. `src/lib/limits/` is then the only place that knows the limits; the collections only register the hooks.
+- **P12 · `createStudio` returns nothing (CQS).**
+  - A double submit comes back as a `StudioExistsError`, which the route turns into a redirect to `/admin`.
+  - On success, the route calls a query, `findOnboardedProject(userID)` in `src/lib/onboarding/`, to get the new game's slug and whether it was held.
+
+### Checklist
+
+- [ ] Step 1: One email transport, the auth-email templates, and the contact job through Payload (§3, F5)
+  - **Files:**
+    - `package.json`, `pnpm-lock.yaml`: `pnpm add @payloadcms/email-resend@3.85.2`, pinned exactly like the other `@payloadcms/*` packages.
+    - New `src/lib/email/adapter.ts` with `emailAdapter()` and `isEmailDeliverable()` (§3):
+      - With `RESEND_API_KEY`: `resendAdapter`, with the sender name and address parsed from `RESEND_FROM_EMAIL` (`Name <address>`). The default is `Critwire <notifications@critwire.local>`, the contact job's current fallback.
+      - Without it: an outbox adapter that never throws. It logs `to` and `subject` through `getLogger('email')`, and the HTML only outside production.
+      - When `EMAIL_OUTBOX_DIR` is set (empty counts as unset), the outbox adapter also writes each message as `<ISO time>-<random>.json` containing `{ to: string[], from, subject, html, text, sentAt }`. It creates the directory first.
+      - `isEmailDeliverable()` is true when Resend is configured, when `NODE_ENV !== 'production'`, or when `EMAIL_OUTBOX_DIR` is set.
+    - New `src/lib/email/render.tsx`: `renderEmail(element)` → `{ html, text }`. These are the two `render` calls now in `renderContactFormEmail.tsx`; both email renderers use it.
+    - New `src/lib/email/templates/AuthLinkEmail.tsx` (a heading, one sentence, a button and the plain link) and `renderAuthLinkEmail`, next to `renderContactFormEmail`.
+    - New `src/lib/email/authEmails.ts`: `verificationEmail(token)`, `accountCreatedEmail()` and `passwordResetEmail(token)`, each returning `Promise<{ subject, html }>`.
+      - Links come only from `getServerSideURL()`: `/verify/<token>`, `/admin/login` and `/admin/reset/<token>`.
+      - Subjects: "Confirm your email and choose a password", "An account was created for you", "Reset your Critwire password".
+    - `src/payload.config.ts`: `email: emailAdapter()`.
+    - `src/jobs/contact.ts`: keep the rule that an unset `RESEND_API_KEY` throws. Replace the `fetch` to `api.resend.com` with `req.payload.sendEmail({ to, subject, html, text, replyTo })`.
+    - `src/environment.d.ts`: add `EMAIL_OUTBOX_DIR?`.
+    - `.env.example`: the Email section says Resend also sends verification and password-reset emails, and production needs it for signup and password recovery. `EMAIL_OUTBOX_DIR` is for development and tests only.
+  - **Checks:** standard.
+    - Nothing sends auth email yet, so the full suite is a regression check.
+    - `reports-contact.spec.ts`'s contact tests must pass unchanged: with `RESEND_API_KEY=''`, an email contact job still fails.
+    - `grep -rn "api.resend.com" src` prints nothing.
+
+- [ ] Step 2: Data model and account rules, in the migration `open_signup` (§2, §4, F4)
+  - **Files:**
+    - `src/access/isSuperAdmin.ts`: add `superAdminFieldAccess: FieldAccess`.
+    - `src/collections/Users/index.ts`:
+      - `auth: { verify: { generateEmailHTML, generateEmailSubject } }`. Use `accountCreatedEmail()` when `user._verified` is true, otherwise `verificationEmail(token)` (§3).
+      - Two fields, merged by name over Payload's base auth fields: `_verified` (checkbox; `access.create` and `access.update` set to `superAdminFieldAccess`) and `email` (email; `access.update` set to `superAdminFieldAccess`).
+      - `hooks.beforeChange`: new `src/collections/Users/hooks/verifyUsersSuperAdminsCreate.ts`. When a super admin creates a user, it sets `_verified: true`.
+    - `src/collections/Tenants/index.ts`: two new fields.
+      - `suspended`: checkbox, default false, indexed, in the sidebar; create and update use `superAdminFieldAccess`.
+      - `createdBy`: relationship to `users`, `unique`, in the sidebar; create, read and update use `superAdminFieldAccess`.
+    - New `src/fields/moderation.ts` exporting `moderationFields()`, spread into `src/collections/GameProjects/index.ts` and `src/collections/PatchNotes/index.ts`:
+      - `flagged`: checkbox, default false, indexed, in the sidebar, with the description "Held for review: not public until a Critwire admin approves it."
+      - `flagReasons`: textarea in the sidebar, shown when `flagged` is set.
+      - Both use `superAdminFieldAccess` for create and update, and neither sets `admin.readOnly`.
+    - `src/collections/options.ts`: `ABUSE_REPORT_REASON_OPTIONS` (spam, scam or phishing, offensive, impersonation or copyright, other) and `ABUSE_REPORT_STATUS_OPTIONS` (open, resolved, dismissed).
+    - New `src/collections/AbuseReports/index.ts`:
+      - slug `abuse-reports`, with the fields from §2;
+      - every access function is `superAdminOnly`, and `admin.hidden` is `({ user }) => !isSuperAdmin(user)`;
+      - `useAsTitle: 'pageUrl'`; default columns: page, reason, status, createdAt.
+
+      Register it in `src/payload.config.ts`, not in the multi-tenant plugin.
+    - The migration `src/migrations/<timestamp>_open_signup.ts`, its `.json` and `index.ts` (see "How every step runs"):
+      - In `up`, after the generated SQL, add `UPDATE "users" SET "_verified" = true;`.
+      - Check the generated SQL for: a unique `created_by_id` with `ON DELETE SET NULL`; `abuse_reports.game_project_id` with `ON DELETE SET NULL`; the `flagged` indexes; and `version_flagged` and `version_flag_reasons` on `_patch_notes_v`.
+    - `src/payload-types.ts`, from `pnpm generate:types`.
+    - E2E harness:
+      - `tests/e2e/support/env.ts`: export `OUTBOX_DIR` (`<cwd>/test-results/outbox`), and `serverEnv()` sets `EMAIL_OUTBOX_DIR: OUTBOX_DIR`.
+      - New `tests/e2e/support/email.ts`:
+        - `readEmail(to)` polls `OUTBOX_DIR` for up to 10 s and returns the newest message to that address as `{ subject, html, links }`.
+        - `linkTo(email, pathPrefix)` returns the one link starting with `${BASE_URL}${pathPrefix}`, or fails the test.
+      - `tests/e2e/support/fixtures.ts`: `randomEmail(label)` returns `<label>-<uuid>@e2e.test`. Every account test uses fresh addresses.
+  - **Tests**, in the new `tests/e2e/accounts.spec.ts`:
+    - S9.1: a user a super admin creates is verified and can sign in. Their email, "An account was created for you", links to `/admin/login` and contains no `/verify/` link.
+    - S9.2: a signed-in user's `PATCH` of their own `email` and `_verified` changes neither; a super admin's `email` change sticks. Use a fresh user, never a `world` user.
+    - S9.3: studio users can't write platform fields.
+      - An owner's `PATCH` of `suspended` and `createdBy` on their own tenant changes nothing.
+      - On a game the owner creates with `flagged: true` and `flagReasons`, both are stored as `false` and empty.
+      - On a game a super admin flagged, the owner's `flagged: false` leaves it `true`.
+    - S9.4: `GET` and `POST /api/abuse-reports` answer 403 to a studio owner and to an anonymous visitor. A super admin can list them.
+  - **Migration backfill check:**
+    1. Before `pnpm payload migrate`: `psql "$DB" -c "insert into users (email, updated_at, created_at) values ('pre-existing@open-signup.test', now(), now())"`.
+    2. After it: `psql "$DB" -tc "select _verified from users where email='pre-existing@open-signup.test'"` prints `t`.
+    3. Delete the row, and put the result in the Log.
+  - **Checks:** standard. `auth.setup.ts` must pass unchanged: its super admin creates the studio users, and they must be verified to sign in.
+
+- [ ] Step 3: Tenant writes: close the draft hole (F1) and enforce suspension (§7)
+  - **Files:**
+    - New `src/access/tenantWrite.ts` with `enforceTenantWrite`, the field `beforeChange` hook from §7:
+      - The tenant it checks is `value ?? previousValue`.
+      - No user, or a super admin: it passes.
+      - Not a member of the tenant: a `ValidationError` on `tenant` with today's message, "You can only assign documents to your own studio."
+      - Tenant suspended (a privileged `findByID` on `tenants` with `select: { suspended: true }` and `req`): an `APIError` 403, "This studio is suspended, so changes can't be saved."
+    - `src/plugins/index.ts`: `tenantField: { hooks: { beforeChange: [enforceTenantWrite] } }` replaces `validate: validateTenantMembership`.
+    - `src/access/tenantAccess.ts`: delete `validateTenantMembership`.
+    - `tests/e2e/support/fixtures.ts`, two new fixtures:
+      - `seedStudio(api, label)`: the super admin creates a tenant and an owner (fresh email, `PASSWORD`, owner membership), then signs the owner in over REST. Returns `{ tenant: { id, slug }, owner: { id, email, password, token }, client }`.
+      - `seedUser(api, label)`: a user the super admin creates with no studio, signed in over REST. Returns `{ id, email, password, token }`.
+
+      Specs that change a studio's state use these, never `world`'s studios.
+  - **Tests.** Write them first, run them on the unchanged code, and log the failures:
+    - `tenant-isolation.spec.ts` S1.11 [F1]:
+      - Studio B's `POST /api/patch-notes?draft=true` with `tenant: A` answers 400, and A has no such draft.
+      - B moving its own draft to A with `PATCH ?draft=true` answers 400, and the draft stays in B.
+    - The new `tests/e2e/suspension.spec.ts`, S10.1: a suspended studio can't publish.
+      - Set up a `seedStudio` studio with a game, a published update, a draft and an item. The super admin sets `suspended: true`.
+      - Each of the owner's creates (game, update, draft update, item, media upload) and updates (game, publishing the draft, saving the draft) answers 403 with the message.
+      - Deleting the item answers 200.
+      - After `suspended: false`, a create works again.
+  - **Checks:** standard.
+
+- [ ] Step 4: Public visibility, `requirePortalProject` and `/unavailable` (§7, §8, F3; P1)
+  - **Files:**
+    - New `src/access/publicRead.ts`:
+      - one `Where` per collection shape (§7's table), using relationship paths (`tenant.suspended`, `gameProject.flagged`) with `not_equals: true`, so `NULL` counts as not held;
+      - signed-in users keep today's result (`true`, with the plugin's tenant constraint);
+      - `mediaFileReadOverride` (P1).
+    - `src/collections/GameProjects/index.ts`, `src/collections/PatchNotes/index.ts`, `src/collections/Issues/index.ts` and `src/collections/Media.ts`: `access.read` comes from `publicRead.ts`.
+    - `src/plugins/index.ts`: `media: { accessResultOverride: mediaFileReadOverride }`.
+    - `src/lib/game-portal/getGameProject.ts`, two additions:
+      - `portalExists(slug)`: a privileged `count` that returns a boolean, wrapped in React `cache`.
+      - `requirePortalProject(slug)`: returns the project; if there's none, `redirect('/unavailable')` when the portal exists, otherwise `notFound()`.
+    - The layout and all eight portal pages from F3 call `requirePortalProject`: `g/[gameSlug]/layout.tsx`, `page.tsx`, `updates/page.tsx`, `updates/page/[pageNumber]/page.tsx`, `updates/[slug]/page.tsx`, `feedback/page.tsx`, `feedback/[slug]/page.tsx`, `feedback/new/page.tsx` and `contact/page.tsx`.
+      - `generateMetadata`, `updates/feed.xml/route.ts` and both submit routes keep `getGameProject` and answer 404.
+    - New `src/app/(public)/unavailable/page.tsx`:
+      - static, with `robots: { index: false }`;
+      - says "This portal is unavailable." inside `PortalRoot` with `DEFAULT_THEME`;
+      - shows no name and no reason.
+    - `src/collections/Tenants/index.ts`: an `afterChange` hook, the new `src/collections/Tenants/hooks/revalidateSuspension.ts`. When `suspended` changed, it calls `revalidateGamePortal('tenant suspension', payload)` once.
+  - **Tests:**
+    - Write first [P1]: `suspension.spec.ts` S10.2, files follow the portal.
+      - Upload a banner to a `seedStudio` studio.
+      - The original at `/api/media/file/<banner>` and one of its sizes answer 200 to an anonymous visitor, to studio B's JWT, and to a `seedUser` with no studio.
+      - On today's code, B and the user with no studio get 403, so the test fails first.
+    - `suspension.spec.ts` S10.3, a suspended studio's portal. This is §14's row except the dashboard banner, which Step 15 adds.
+      - Warm the caches: the hub, an update page, an item page, RSS and the banner URLs.
+      - Suspend the studio. The pages land on `/unavailable` with none of the game's text, and RSS answers 404.
+      - The media URLs answer 403 to an anonymous visitor and to B, and still 200 to the studio's owner.
+      - Anonymous REST finds none of the studio's games, updates, items or media. `POST /api/vote` answers 404, and so do both submit routes.
+      - Unsuspend. The hub, the pages and the files come back (`eventually`).
+    - The new `tests/e2e/screening.spec.ts`. Step 7 adds the automatic flagging.
+      - S13.1: a game a super admin flags shows `/unavailable` until it's unflagged.
+      - S13.2: a published update a super admin flags leaves the feed, its page, RSS and the hub until it's unflagged.
+    - `portal-landing.spec.ts` S2.1 still gets its 404 for an unknown slug.
+  - **Checks:** standard.
+  - **This step's risk:** relationship paths inside access `Where`s. S10.3 and S13.2 fail first if Drizzle can't query one of them.
+
+- [ ] Step 5: Media: raster images only, files outside `public/`, one way to serve them (§7b, F2, F11; P8, P9)
+  - **Files:**
+    - New `src/lib/media/storage.ts`, with no Payload or React imports (`instrumentation-node.ts` loads it):
+      - `MEDIA_DIR = path.resolve(process.cwd(), 'media')`;
+      - `assertNoLegacyPublicMedia()`, which throws when `public/media` holds files and names the `mv public/media/* media/` fix.
+    - `src/collections/Media.ts`:
+      - `mimeTypes` as listed in F2;
+      - `staticDir: MEDIA_DIR`;
+      - `formatOptions: { format: 'webp' }` on every size except `og`;
+      - `modifyResponseHeaders` setting `Cache-Control: private, max-age=300`.
+    - `src/instrumentation-node.ts`: `checkEnvironment` also calls `assertNoLegacyPublicMedia()`.
+    - `next.config.ts`: `images: { unoptimized: true }`. Remove `localPatterns`, `qualities`, `remotePatterns` and the constant only they used.
+    - `src/components/Media/ImageMedia/index.tsx`:
+      - Add a `<source type="image/webp" srcSet sizes>` built from the width-only sizes (P8), inside the existing `<picture>`. The `next/image` fallback, the fill layout and the blur placeholder stay.
+      - Replace the template's comment block with one saying files are only served from `/api/media/file/`.
+    - Delete `src/components/Media/VideoMedia/`; `src/components/Media/index.tsx` renders only `ImageMedia`.
+    - `.gitignore` adds `/media` and `.dockerignore` adds `media`; both keep `public/media` (P9).
+    - `Dockerfile`: in the runner stage, before `USER nextjs`, add `RUN mkdir media && chown nextjs:nodejs media`.
+    - `docker-compose.yml`: `app.volumes: [media:/app/media]` and a named `media` volume.
+    - Docker isn't installed here, so the `Dockerfile` and `docker-compose.yml` changes are only checked by reading them, and the Log says so.
+    - In this worktree, move the leftover E2E uploads (untracked; see the architecture's Risks): `mkdir -p media && mv public/media/* media/ && rmdir public/media`.
+  - **Tests**, in the new `tests/e2e/media.spec.ts`. Write S11.1–S11.3 first and run them on the unchanged code.
+    - S11.1 [F2]: an SVG containing a script, a PDF and a ZIP are each refused with 400, and nothing is stored.
+    - S11.2 [F11]:
+      - `/_next/image?url=%2Fapi%2Fmedia%2Ffile%2F<name>&w=640&q=100` answers 404. Today it answers 200, since `q=100` is the only configured quality.
+      - An upload lands in `<cwd>/media/` and not in `public/media/`; the test checks this on disk.
+    - S11.3 [F11]: media file responses carry `Cache-Control: private, max-age=300`, for the original and for a size.
+    - S11.4: the hub's key art is served from `/api/media/file/`.
+      - Upload a 1600 px noise PNG made with `sharp`.
+      - The `<source>` lists WebP sizes from `thumbnail` to `large`, and each URL answers 200.
+      - The `<img>` loads (`naturalWidth > 0`).
+    - S11.5 [P1]: a browser signed in as studio B (`bOwner`'s storage state) sees studio A's portal logo load.
+    - `portal-landing.spec.ts` S2.6 (an 8 px logo, so no sizes) still passes.
+  - **Boot check**, after the E2E run, which leaves a fresh `.next`:
+    ```bash
+    mkdir -p public/media && touch public/media/leftover.png
+    PORT=3199 timeout 90 pnpm start > /tmp/boot-media.log 2>&1; echo "exit $?"
+    rm -r public/media
+    ```
+    It must print `exit 1` (124 means the server didn't stop), and the log must name `public/media` and the `mv` command.
+  - **Checks:** standard.
+
+- [ ] Step 6: Hosted limits and the second E2E server (§11, F7; P2, P11)
+  - **Files:**
+    - New `src/lib/limits/index.ts`:
+      - `getLimits()`, memoised. Unset or empty means off, a positive integer means on, and anything else throws naming the variable.
+      - `LimitReachedError`: an `APIError` with status 403 and a public message.
+      - One count per limit: `countStudioGames`, `sumStudioMediaBytes` and `countPublicFeedback`, all through the Local API with `req`.
+      - `assertGameRoom`, `assertMediaRoom` and `assertPublicFeedbackRoom`, which throw at the limit.
+      - `hasPublicFeedbackRoom`, a query for auto-publish.
+      - The messages are §11's, with the configured numbers.
+    - New `src/lib/limits/hooks.ts`. Each hook skips super admins and writes without a user.
+      - `checkGamesLimit`: GameProjects `beforeChange`, on create or when the tenant changes.
+      - `checkMediaLimit`: Media `beforeChange`, when `req.file` is present. It counts the `filesize` of the studio's original uploads, minus the document being replaced.
+      - `checkPublicFeedbackLimit`: Issues `beforeChange`, when an item becomes public: created public, changed from private to public, or moved to another game while public.
+    - Register the hooks in `src/collections/GameProjects/index.ts`, `src/collections/Media.ts` and `src/collections/Issues/index.ts`.
+    - `src/collections/IssueReports/hooks/autoPublishReport.ts`: when `hasPublicFeedbackRoom` is false, the submission stays `NEW`.
+    - `src/instrumentation-node.ts`: `checkEnvironment` calls `getLimits()`.
+    - `src/environment.d.ts` and `.env.example`: the three `CRITWIRE_LIMIT_*` variables, off by default. The `.env.example` comments give the hosted values (3, 100, 200).
+    - `tests/e2e/support/env.ts`:
+      - `serverEnv()` sets the three limits to `''`.
+      - Add `SECOND_PORT = E2E_PORT + 2` and `SECOND_BASE_URL`.
+      - Add `secondServerEnv()`: `serverEnv()` plus `PORT`, `CRITWIRE_OPEN_SIGNUP: ''`, `EMAIL_OUTBOX_DIR: ''` and the limits `2`, `1` and `3` (P2).
+    - `playwright.config.ts`: `webServer` becomes a list. The second entry runs `pnpm start` with `secondServerEnv()` and waits for `${SECOND_BASE_URL}/api/health` (timeout 120 s), with `reuseExistingServer: false` and piped output. It never migrates or builds.
+    - `tests/e2e/support/fixtures.ts`: `secondApi(role)`, worker-scoped `RestClient`s on `SECOND_BASE_URL` using the `world` tokens. Both servers share the database, so fixtures always seed through 3100.
+  - **Tests**, in the new `tests/e2e/limits.spec.ts`:
+    - S12.1, limits on (port 3102), in a fresh `seedStudio` studio:
+      - The third game gets a 403 with the games message. Saving a third game in the admin on 3102 shows the same text as a toast.
+      - A 1.5 MB noise PNG gets a 403 with the media message.
+      - The fourth public item gets a 403 with its message, and so does making a private item public.
+      - A player's submission to a game with review off, at the limit, gets the normal confirmation and stays `NEW`.
+      - A super admin can still add a game past the limit.
+    - S12.2, limits unset (port 3100): the same actions all succeed.
+  - **Boot check:** `CRITWIRE_LIMIT_GAMES_PER_STUDIO=three PORT=3199 timeout 90 pnpm start > /tmp/boot-limits.log 2>&1; echo "exit $?"` prints `exit 1`, and the log names the variable.
+  - **Checks:** standard. Two servers run from now on, so the Log also records the suite's wall time and peak memory (`free -m` during the run).
+
+- [ ] Step 7: Screen studio text and hold it for review (§9, F6)
+  - **Files:**
+    - New `src/hooks/screenText.ts`: `screenTextHook(textOf)`.
+      - It screens on create, and on update when `textOf({ ...originalDoc, ...data })` differs from `textOf(originalDoc)`. That's how "any screened field changed" is detected without a second list of fields.
+      - It sets `flagged`, and sets `flagReasons` to the reasons joined by newlines, or `null` when the text is clean.
+    - `src/collections/IssueReports/index.ts`: `screenTextHook` with the title and description replaces `screenReportText`. Delete `src/collections/IssueReports/hooks/screenReportText.ts`.
+    - `src/collections/GameProjects/index.ts`: screen the name and the pitch.
+    - `src/collections/PatchNotes/index.ts`: screen the title, the version label, the summary, and the content's plain text (`convertLexicalToPlaintext`).
+  - **Tests**, in `screening.spec.ts`:
+    - S13.3: a game named with an offensive word (like the flagged inputs in `reports-contact.spec.ts` S5.11) is held.
+      - It's stored `flagged`, with its reason, and the hub shows `/unavailable`.
+      - The owner's admin shows the flag and the reason, read-only.
+      - A super admin unticks `flagged` in the admin and saves, and the hub appears (`eventually`).
+      - The owner saving the unchanged name keeps it approved.
+    - S13.4: a published update with an offensive word in its content is missing from the feed, its own page (404), RSS and the hub until a super admin approves it.
+    - S13.5: a pitch with three links is held with the reason "3 links".
+    - `reports-contact.spec.ts` S5.11 passes unchanged.
+  - **Checks:** standard.
+
+- [ ] Step 8: Reserve the demo slug and pin the demo seed to its own studio (§7 Demo, F8)
+  - **Files:**
+    - `src/components/marketing/links.ts`: `DEMO_GAME_SLUG = 'critter-connect'` and `DEMO_PORTAL = portalPaths(DEMO_GAME_SLUG)`.
+    - New `src/collections/GameProjects/reservedSlug.ts`, on the model of `Issues/reservedSlug.ts`:
+      - `isReservedGameSlug(slug)`;
+      - `gameSlugify`, the slug field's `slugify`. It throws the reserved-slug `ValidationError` unless the write has no user or comes from a super admin, using the `req` Payload passes;
+      - `rejectReservedGameSlug`, a `beforeValidate` hook for slugs typed by hand.
+    - `src/collections/GameProjects/index.ts`: `slugField({ useAsSlug: 'name', slugify: gameSlugify })` and `beforeValidate: [rejectReservedGameSlug]`.
+    - `src/seed/critterConnect.ts`: find or create the tenant with slug `critwire-demo` (named "Critwire Demo"). Throw if `critter-connect` belongs to another tenant. Never read `tenants.docs[0]`.
+    - `tests/screenshots/setup.shots.ts`: drop the `demo-studio` tenant it creates, since the seed now makes its own.
+  - **Tests:** `tenant-isolation.spec.ts` S1.12. A studio owner can't create a game as `critter-connect`, or rename one to it, whether by slug or by a name that slugifies to it (400). A super admin can.
+  - **Seed check.** The E2E server has no `CRON_SECRET`, so the seed is checked by hand here and again in Step 17:
+    1. Run `pnpm seed:critter-connect` twice on the mission database.
+    2. `psql "$DB" -tc "select t.slug from game_projects g join tenants t on t.id = g.tenant_id where g.slug='critter-connect'"` prints `critwire-demo`.
+    3. Move the game to another tenant with `psql`. The seed must exit non-zero with the ownership message. Move the game back.
+    4. Clear the `dev` row the script's dev push leaves.
+  - **Checks:** standard.
+
+- [ ] Step 9: Onboarding: `createStudio` and `POST /onboarding/submit` (§6, §10; P3, P4, P7, P12)
+  - **Files:**
+    - New `src/lib/hosting.ts`: `isOpenSignup()`. `CRITWIRE_OPEN_SIGNUP=1` is on, unset or empty is off, and anything else throws naming the variable.
+      - `src/instrumentation-node.ts` calls it at boot.
+      - `environment.d.ts` and `.env.example` document it: hosted instances only, leave it unset to self-host.
+    - New `src/utilities/uniqueSlug.ts`: `uniqueSlug({ base, fallback, isTaken })`, the slugify and `-2`, `-3` loop extracted from `createIssueFromPublishedReport.ts`. That hook now uses it, and reserved feedback slugs still count as taken.
+    - `src/lib/game-portal/links.ts`: `storeLinkKey(url)`, a pure function next to `STORE_LINK_KEYS`.
+      - It returns the link key for Steam (`steampowered.com`), itch.io (`itch.io`), Epic (`epicgames.com`), GOG (`gog.com`), PlayStation (`playstation.com`), Xbox (`xbox.com`) and Nintendo (`nintendo.com`), and `null` for anything else.
+      - A URL matches when its host is the domain or a subdomain of it, split on a dot boundary.
+    - New `src/lib/payload/withTransaction.ts` (§4).
+    - New `src/lib/onboarding/createStudio.ts` (§6 steps 1–3):
+      - A unique violation on `createdBy` throws `StudioExistsError`.
+      - A unique violation on `slug` reruns the whole transaction, at most 3 attempts in all.
+      - It returns nothing (P12).
+    - New `src/lib/onboarding/findOnboardedProject.ts`: a query returning the slug and `flagged` of the game in the studio the user created.
+    - New `src/lib/onboarding/nextSteps.ts`: the three next steps as data (label, description, and an href built from the project). The dashboard shares it in Step 15.
+    - New `src/app/(frontend)/onboarding/submit/route.ts`:
+      - 404 unless `isOpenSignup()`.
+      - Authenticates with `payload.auth({ headers })`. No user: 303 to `/admin/login?redirect=%2Fonboarding`.
+      - The `_verified` invariant (§6): if it fails, throw to the route's catch (500, Sentry).
+      - A user already in a studio: 303 to `/admin`.
+      - Zod: `name` 1–80 characters; `website` an http(s) URL; `store` optional and mapped with `storeLinkKey`. An unknown store host: 303 to `/onboarding?error=store`.
+      - Calls `createStudio`, then `findOnboardedProject`. Redirects with 303 to `/g/<slug>?welcome=1`, or to `/onboarding?held=1` when the game was held. `StudioExistsError`: 303 to `/admin`.
+      - Any other error: Sentry, then 303 to `/onboarding?error=1`.
+    - `tests/e2e/support/env.ts`: `serverEnv()` sets `CRITWIRE_OPEN_SIGNUP: '1'`. The second server already overrides it with `''`.
+    - `tests/e2e/support/fixtures.ts`: `onboard(request, token, input)` posts the form with the JWT and `maxRedirects: 0`, and returns the `Location` header.
+  - **Tests**, in the new `tests/e2e/onboarding.spec.ts`:
+    - S14.1: a `seedUser` onboards over HTTP.
+      - This creates one tenant (`createdBy` is the user, who is its owner) and one game: the name, `links.website`, the Steam URL in `links.steam`, ideas off and review on.
+      - `Location` is `/g/<slug>?welcome=1`, and the anonymous hub shows the name and "Get the game".
+    - S14.2: a store URL on an unknown host is refused with the list of known stores, and nothing is created.
+    - S14.3 [P7]: two concurrent submits for one user create exactly one studio and one game. A later submit redirects to `/admin`.
+    - S14.4 [P7]: two users onboarding the same game name at once both get portals, with distinct slugs.
+    - S14.5: a game named "Critter Connect" gets the slug `critter-connect-2`. A name the filter flags lands on `/onboarding?held=1`, with the game stored `flagged`.
+    - S14.6: without a session, the submit redirects to sign-in; a studio member's submit redirects to `/admin`; the second server answers 404.
+  - **Boot check:** `CRITWIRE_OPEN_SIGNUP=yes PORT=3199 timeout 90 pnpm start > /tmp/boot-flag.log 2>&1; echo "exit $?"` prints `exit 1`, and the log names the variable.
+  - **Checks:** standard. `reports-contact.spec.ts` S5.7 (a submission titled "New" becomes `new-2`) covers the `uniqueSlug` extraction.
+
+- [ ] Step 10: The onboarding page and the next-steps panel (§6; P3, P5)
+  - **Files:**
+    - New `src/components/accounts/AccountPage.tsx`: the account-page shell (heading, lede, notices, children). Steps 10–14 use it.
+    - `src/app/(frontend)/marketing.css`: `.cw-root` rules for the classes of `FormField`, `FormNotice` and `TurnstileField`, with controls at least 44 px tall (P5).
+    - New `src/app/(frontend)/onboarding/page.tsx`:
+      - dynamic and `noindex`; 404 unless signup is open;
+      - the same session rules as the route: no user goes to `/admin/login?redirect=/onboarding`, and a user with a studio goes to `/admin`;
+      - the form: game name, your website, and an optional store link, with the known stores listed in its hint;
+      - the `?error=1`, `?error=store` and `?held=1` states, with §6's copy.
+    - New `src/components/game/WelcomePanel.tsx`: a client component that uses `useSearchParams` and renders only with `welcome=1`.
+      - It shows the three steps from `nextSteps.ts`. "Share this link" shows the absolute hub URL (from `getClientSideURL()`) with a Copy button.
+      - The hub page (`src/app/(public)/g/[gameSlug]/page.tsx`) renders it inside `<Suspense>` above `HubHeader`, passing the project's ID and slug.
+  - **Tests**, in `onboarding.spec.ts`:
+    - S14.7: in the browser, a `seedUser` signs in at `/admin/login`, opens `/onboarding` and fills in the form.
+      - They land on `/g/<slug>?welcome=1`, which shows the game's name and the three steps.
+      - The steps are: the absolute link (`${BASE_URL}/g/<slug>`) with Copy; "Add your first update", linking to `/admin/collections/patch-notes/create`; and "Turn on ideas", linking to `/admin/collections/game-projects/<id>`.
+      - An anonymous context opening `/g/<slug>` sees the hub without the panel.
+    - S14.8: `/onboarding` without a session redirects to `/admin/login?redirect=%2Fonboarding`, and signing in there returns to `/onboarding`. A studio owner is sent to `/admin`. The second server answers 404.
+  - **Checks:** standard.
+
+- [ ] Step 11: Signup and verification (§1, §4, §5)
+  - **Files:**
+    - New `src/lib/accounts/emailBudget.ts`: `checkAccountEmailBudget(email)`, the `account-email` budget from §5 (sha256 of the lower-cased address, 3 per hour).
+    - New `src/lib/accounts/pendingUser.ts`: `findPendingUserByToken(token)`, a query.
+    - New `src/lib/accounts/activateAccount.ts`: `activateAccount({ userID, token, password })`, a command running in one `withTransaction`.
+    - New `src/app/(frontend)/signup/page.tsx`:
+      - `await connection()`; 404 unless signup is open; `noindex`;
+      - an email field and `TurnstileField`, with the text "We'll email you a link to choose your password.";
+      - on `?submitted=1`, "Check your inbox", with links to sign in and to "Forgot password?" (`/admin/forgot`);
+      - an `?error=1` state.
+    - New `src/app/(frontend)/signup/submit/route.ts` (§5): every case redirects with 303 to `/signup?submitted=1`. When `!isEmailDeliverable()`, it answers 500 and reports to Sentry.
+    - New `src/app/(frontend)/verify/[token]/page.tsx`: GET only renders. It shows either "Choose a password" (a password of 8–128 characters, plus Turnstile), or "This link has been used or is invalid…" with a sign-in link.
+    - New `src/app/(frontend)/verify/submit/route.ts` (§4 steps 1–4):
+      - signs in with `login` from `@payloadcms/next/auth`, then 303 to `/onboarding`;
+      - no pending user: 303 back to `/verify/<token>`, which shows the "used or invalid" state;
+      - invalid input: `?error=1`.
+    - `tests/e2e/support/fixtures.ts`: `startSignup(request, email)` and `verifyAccount(request, token, password)`, which Step 12's `signUpStudio` builds on.
+  - **Tests**, in the new `tests/e2e/signup.spec.ts`:
+    - S15.1 [DoD]: the whole flow in the browser.
+      - `/signup`, then "Check your inbox", then the link from the outbox, then "Choose a password".
+      - The user lands on `/onboarding`, signed in, and onboards with a game name, a website and a Steam URL.
+      - `/g/<slug>?welcome=1` shows the name, "Get the game" and the next steps, and an anonymous context sees the hub.
+    - S15.2 [DoD, first half]: a pending account.
+      - Opening its link twice with GET leaves it unverified; a super admin reads `_verified: false`.
+      - It owns no tenant and no game.
+      - `/onboarding` without a session goes to sign-in.
+
+      Step 13 adds the password-reset half.
+    - S15.3: a second signup for a pending address sends the same link and leaves the user's `updatedAt` unchanged. A signup for a verified address sends nothing. All three answer "Check your inbox".
+    - S15.4: once the link is used, GET shows "used or invalid", and posting it again changes nothing.
+    - S15.5 [P7]: two concurrent verify posts with one token and different passwords. Exactly one of the passwords signs in over REST.
+    - S15.6: `POST /signup/submit` and `POST /verify/submit` without a Turnstile token answer 400.
+    - S15.7: the second server answers 404 for `/signup`, `/verify/<token>` and both submit routes.
+  - **Checks:** standard.
+
+- [ ] Step 12: Prove signed-up studios stay isolated (DoD; §14 row 4)
+  - **Files:**
+    - `tests/e2e/support/fixtures.ts`: `signUpStudio(playwright, name)`, as in §14: signup, the outbox link, verification with a password, a REST sign-in for a JWT, then onboarding over HTTP. Returns `{ email, password, token, tenantID, project }`.
+    - `tests/e2e/tenant-isolation.spec.ts`: S1.13.
+  - **Tests:** S1.13, two signed-up studios A and B.
+    - A creates a published update, a draft update, a public item and a private item, a submission (through the public form), a media upload and a media folder.
+    - B's lists hold none of A's projects, updates (drafts included, with `?draft=true`), items, submissions, media, folders, users or tenants.
+    - B's `PATCH` and `DELETE` on each of A's documents are refused.
+    - B's creates with `tenant: A` are refused, including a draft update (F1).
+    - B can't join A: `PATCH /api/users/<B>` with `tenants: [A]` changes nothing, and `PATCH /api/tenants/<A>` is refused.
+    - A's project edit URL, opened in the admin as B, shows none of A's data.
+  - **Checks:** standard. The brief makes isolation non-negotiable, so a hole found here is fixed here, and the Log says so.
+
+- [ ] Step 13: Password recovery behind Turnstile and rate limits (§4, §4a, F12)
+  - **Files:**
+    - `src/collections/Users/index.ts`:
+      - `auth.forgotPassword: { generateEmailHTML, generateEmailSubject }`, using `passwordResetEmail(token)`;
+      - `hooks.beforeOperation: [restrictPasswordRecovery]`, in the new `src/collections/Users/hooks/restrictPasswordRecovery.ts`.
+    - New `src/components/admin/ForgotPasswordView.tsx` (§4a): a server component that reads `isEmailDeliverable()` and the `submitted` and `error` search params Payload passes.
+      - Register it as `admin.components.views.forgot` in `src/payload.config.ts`, then run `pnpm generate:importmap`.
+    - New `src/app/(frontend)/forgot-password/submit/route.ts` (§4a steps 1–4).
+  - **Tests**, in the new `tests/e2e/password-recovery.spec.ts`. Write S16.1 first and run it on the unchanged code.
+    - S16.1 [F12]:
+      - `POST /api/users/forgot-password` and GraphQL's `forgotPasswordUsers` are refused for a real user's address, and the outbox gets nothing for it.
+      - `POST /forgot-password/submit` without a Turnstile token answers 400.
+    - S16.2 [DoD]: a `signUpStudio` user signs out, then signs back in at `/admin/login`.
+      - "Forgot password?" opens the custom `/admin/forgot`.
+      - The user submits the form (with Turnstile) and sees "Check your inbox".
+      - The email links to `/admin/reset/<token>`; after choosing a new password there, the user is signed in.
+      - REST login works with the new password and fails with the old one.
+    - S16.3 [DoD, second half]: a pending account (signup only) goes through recovery with the form.
+      - `POST /api/users/reset-password` with the emailed token returns a token.
+      - With that token, `GET /api/users/me` returns `null`, `PATCH /api/users/<id> { "_verified": true }` answers 403, and `/onboarding` redirects to sign-in.
+      - Login with the new password is refused, with a message that mentions verification.
+      - A super admin still reads `_verified: false`.
+    - S16.4: on the second server, where email isn't deliverable, `/admin/forgot` tells the user to ask whoever runs the site and shows no form. `POST /forgot-password/submit` answers 500.
+  - **Checks:** standard. `admin-triage.spec.ts` S6.1 (the login page) must still pass.
+
+- [ ] Step 14: Hosted-only public links: "Report this page" and "Create your portal" (§12, §13; P3, P6)
+  - **Files:**
+    - `src/lib/game-portal/paths.ts`: `parsePortalPath(path)` returns `{ gameSlug }` for `/g/<slug>` and any path under it, and `null` otherwise.
+    - `src/lib/hosting.ts`: `SIGNUP_PATH` and `reportAbuseHref(pagePath)`.
+    - `src/components/game/PortalFooter.tsx`: "Report this page", linking to `reportAbuseHref(portalPaths(slug).hub)`, when `isOpenSignup()`.
+    - New `src/app/(frontend)/report-abuse/page.tsx`:
+      - dynamic and `noindex`; 404 unless signup is open;
+      - shows the reported path (P6);
+      - the form: a reason (`ABUSE_REPORT_REASON_OPTIONS`), details (up to 2000 characters), an optional email, and Turnstile;
+      - `?submitted=1` and `?error=1` states.
+    - New `src/app/(frontend)/report-abuse/submit/route.ts` (§12). `page` is checked with `parsePortalPath`.
+    - `src/components/marketing/MarketingHome.tsx`: a `signupHref` prop. "Create your portal" (`cw-btn`) sits next to "Critwire on GitHub" and is hidden when the prop is `null`.
+    - `src/app/(frontend)/page.tsx` passes `isOpenSignup() ? SIGNUP_PATH : null`.
+  - **Tests:**
+    - The new `tests/e2e/abuse-reports.spec.ts`:
+      - S17.1 [DoD]: "Report this page" in a portal's footer opens the form (reason, details, Turnstile), and submitting it shows the thank-you notice. The super admin's `GET /api/abuse-reports` lists the report with its `pageUrl` and game. A report about a suspended studio's portal still resolves its game.
+      - S17.2: `POST /report-abuse/submit` answers 400 without a Turnstile token, and 400 for a `page` outside `/g/`.
+      - S17.3: on the second server, the portal footer has no "Report this page" and `/report-abuse` answers 404.
+    - `tests/e2e/home.spec.ts`:
+      - S8.1: on 3100, "Create your portal" links to `/signup`, next to "Critwire on GitHub".
+      - S8.2: on the second server, the home page has no signup link. The old S8.1 assertion moves here.
+  - **Checks:** standard.
+
+- [ ] Step 15: The admin: a dashboard for each role, and Critwire branding on sign-in (§4 styling, §10, §13, F9)
+  - **Files:**
+    - `src/components/BeforeDashboard/index.tsx` and `index.scss`: a server component that uses the `payload` and `user` props Payload passes. It replaces "Launch checklist" and "Create a tenant for the studio" with three variants (§13):
+      - **Super admin:** counts, each linking to its filtered list: held games (`?where[flagged][equals]=true`), held updates, open abuse reports, and studios.
+      - **Studio user:**
+        - each game's portal link and status: Live, Held for review, or Unavailable: suspended;
+        - a banner when the studio is suspended;
+        - the next steps from `nextSteps.ts`;
+        - the active limits from `getLimits()`, or nothing when all are off.
+      - **Signed in without a studio:** "Set up your portal", linking to `/onboarding`, when signup is open.
+    - `src/components/BeforeLogin/index.tsx`: keep "Welcome to Critwire.", and add "New to Critwire? Create your portal" (linking to `/signup`) when signup is open.
+    - New `src/components/admin/Logo.tsx` and `Icon.tsx`, reusing `src/components/marketing/Wordmark.tsx`.
+    - `src/payload.config.ts`: `admin.components.graphics.Logo` and `Icon`, and `admin.meta` with `titleSuffix: ' | Critwire'` and the favicons.
+    - `src/app/(payload)/custom.scss`: styles for the login, forgot-password and reset views.
+    - `src/plugins/index.ts`: the membership comment no longer promises invites (F9).
+    - `pnpm generate:importmap`.
+  - **Tests:**
+    - The new `tests/e2e/admin-dashboard.spec.ts`:
+      - S18.1: the super admin's dashboard shows the counts of held games, held updates, open reports and studios, each linking to its filtered list.
+      - S18.2: a studio owner's dashboard lists each game's portal link and status, and the next steps. It shows no limits on 3100, and the three limits (2 games, 1 MB, 3 items) on the second server.
+      - S18.3: a signed-in user with no studio sees "Set up your portal" on 3100, and not on the second server.
+      - S18.4: `/admin/login` shows the Critwire logo and "Create your portal" on 3100, and no "Create your portal" on the second server.
+    - `suspension.spec.ts` S10.3 adds: the owner's dashboard shows the suspended banner, and the banner is gone after unsuspending.
+    - `admin-triage.spec.ts` S6.1: replace the "Launch checklist" assertion with the studio dashboard's heading.
+  - **Checks:** standard.
+
+- [ ] Step 16: Docs: self-hosting, the new URLs and the patterns (§13; F9)
+  - **Files:**
+    - New `docs/self-hosting.md` (§13):
+      - the services table, with what fails without each service;
+      - the first super admin, made through `/admin`'s first-user form;
+      - `CRITWIRE_OPEN_SIGNUP` and the limits, all off by default, with the hosted values;
+      - an Upgrading section: `mv public/media/* media/`, and the Docker `media` volume.
+    - `AGENTS.md`:
+      - a docs-map row for `docs/self-hosting.md`;
+      - Build process: the owner chose open signup from day one (2026-09-29), and Phase 8 has no invites;
+      - Testing: the second server on `E2E_PORT + 2` (signup off, email off, low limits), and the outbox at `test-results/outbox`.
+    - `docs/features.md`: user verification, Hosting, and Phase 8 with its sequencing rule.
+    - `docs/architecture.md`: the new URLs and how each renders, and how media is served.
+    - `docs/patterns.md`:
+      - the tenant-write hook;
+      - public reads and the media file-read override;
+      - `requirePortalProject`;
+      - the screening hook and `moderationFields()`;
+      - limits;
+      - uploads are served only through `/api/media/file/`;
+      - pages that read the signup flag render per request.
+    - `docs/integrations.md`: the Resend adapter and the outbox, the private R2 bucket, and the new env vars.
+    - `docs/deploy.md`: the first-run bootstrap (the first super admin needs no signup), and the `media` volume.
+    - `README.md`: a link to `docs/self-hosting.md`.
+  - **Checks:**
+    - `pnpm exec tsc --noEmit` and `pnpm lint`. The step changes docs only, so no E2E.
+    - Every variable in `src/environment.d.ts` appears in `.env.example` and in `docs/integrations.md`, except the E2E-only ones, which `.env.example` marks as such.
+
+- [ ] Step 17: Screenshots of the signup pages and the updated home page (DoD)
+  - **Files:**
+    - `tests/screenshots/catalog.ts`:
+      - a `signup` group, "Sign up and onboarding", with `/signup`, `/signup?submitted=1`, `/verify/<token>`, `/onboarding` (signed in) and `/g/<slug>?welcome=1`;
+      - `ShotsWorld.signup` and an optional `Shot.signedIn`;
+      - `isPortalGroup` lists the portal groups by name, so the new group isn't treated as a portal group.
+    - `tests/screenshots/setup.shots.ts`:
+      - a pending signup's token;
+      - a verified user with no studio, whose session is saved to `test-results/shots/onboarding-user.json`;
+      - a `signUpStudio` studio for the welcome page;
+      - an assertion that the seed put `critter-connect` in `critwire-demo`.
+    - `tests/screenshots/design.shots.ts`: signed-in shots use a browser context with that storage state.
+    - `playwright.screenshots.config.ts`: update its comment.
+  - **Run:** `SHOTS_SET=after SHOTS_DIR=/srv/critter-ai/agent-state/missions/open-signup/screenshots pnpm screenshots`.
+    - It covers every group, so the portal pages are re-checked after Step 5's image change.
+    - The run must pass with every probe, and `index.html` must show the signup group and the home page at 1440 and 390 px.
+    - Look at every PNG: the hub's key art renders, the forms fit at 390 px, and the home page shows "Create your portal".
+  - **Checks:** tsc and lint. Also run the full E2E suite if `tests/e2e/support` changed.
+
+- [ ] Step 18: Full verification, artifacts and Summary
+  - Run the whole **Verification** below, in order.
+  - Update H3 in `/srv/critter-ai/handoff/critwire.md`. Keep its status (`later`) and don't ask again; add that:
+    - production signup and password recovery also need `RESEND_API_KEY`, and `RESEND_FROM_EMAIL` on a domain verified in Resend;
+    - the hosted instance sets `CRITWIRE_OPEN_SIGNUP=1` and the three limits.
+  - Write the **Summary**:
+    - what shipped;
+    - the hosted limits: 3 games per studio, 100 MB of media per studio, 200 public feedback items per game;
+    - the production environment variable names;
+    - the handoff items: H3 `later`, H7 and H8 waiting, none blocking;
+    - after merging: run `mv public/media/* media/` in `/srv/critter-ai/critwire` and restart `critwire-demo`, or the boot check stops them;
+    - where the E2E and screenshot artifacts are;
+    - both review verdicts.
+  - Set `status: done` in the front matter, commit and push.
+
+### Risks for the steps
+
+- **P1 is the only place file reads are widened.** S10.2 and S11.5 prove it works, and S10.3 proves suspension still wins over it.
+- **Suite length and memory.** Two servers and about 45 new tests put a full run at roughly 8–10 minutes and add about 1 GB of memory. The Log records both from Step 6 on. Per the architecture's Risks, if contact-job tests turn flaky with two job crons, turn off `jobs.shouldAutoRun` on the second server.
+- **The `/admin/forgot` override** relies on Payload resolving `admin.components.views.forgot` before its own view (`getRouteData.js:106-128`, as the architecture read it). If it doesn't, S16.2 fails at its first action.
+- **Cached redirects.** ISR caching of `redirect()` (an architecture risk) is covered by S10.3, which warms the pages, suspends, then unsuspends.
+- **Network access for Turnstile.** The Turnstile test keys load `challenges.cloudflare.com`, as the existing form tests already do. A network outage fails the browser tests, not the app.
+
 ## Verification
+
+E2E first. Run everything from the worktree root, one heavy job at a time, with nothing else on ports 3100–3102 or 3200.
+
+There are no new int tests and no Failure modes section:
+- every new behaviour can be reached end to end;
+- concurrency is tested by outcome (P7);
+- the three boot-time refusals are checked by the commands below.
+
+**Commands and what they must show (Step 18)**
+
+```bash
+cd /srv/critter-ai/worktrees/open-signup
+DB=$(grep '^DATABASE_URL=' .env | cut -d= -f2-)
+OUT=/srv/critter-ai/agent-state/missions/open-signup
+```
+
+1. **E2E:** `set -o pipefail; pnpm test:e2e 2>&1 | tee /tmp/open-signup-e2e.log`
+   - Exit 0 and 0 failed; the config allows no retries.
+   - The passed count is Baseline's 75 plus the new tests, and it matches the last step's Log line.
+   - **Artifact:** `rm -rf $OUT/e2e-final && cp -r playwright-report $OUT/e2e-final && cp /tmp/open-signup-e2e.log $OUT/e2e-final/run.log && cp -r test-results/outbox $OUT/e2e-final/outbox`
+     - Every test has a trace and screenshots (`trace: 'on'`, `screenshot: 'on'`).
+     - The outbox copy holds every email the run sent (P10).
+   - **Reproduce:** `pnpm test:e2e`. **View:** `pnpm exec playwright show-report $OUT/e2e-final`.
+2. **Typecheck:** `pnpm exec tsc --noEmit` exits 0.
+3. **Lint:** `pnpm lint` shows 0 errors and 20 or fewer warnings, none in a file this mission added or changed.
+4. **Int:** `pnpm test:int` passes the two existing files, `content-screen` and `issue-revalidation`.
+5. **Build:**
+   1. `psql "$DB" -c "delete from payload_migrations where name='dev'"`.
+   2. `pnpm payload migrate:status` lists `…_open_signup` as run.
+   3. `pnpm build` exits 0. It builds with `.env`, where signup is off, so nothing that depends on the flag may be prerendered (P3).
+6. **Boot checks**, after the build. Each must print `exit 1` (124 means the server didn't stop), and its log must name the problem:
+   ```bash
+   CRITWIRE_OPEN_SIGNUP=yes PORT=3199 timeout 90 pnpm start > /tmp/boot-flag.log 2>&1; echo "exit $?"
+   CRITWIRE_LIMIT_MEDIA_MB_PER_STUDIO=-5 PORT=3199 timeout 90 pnpm start > /tmp/boot-limits.log 2>&1; echo "exit $?"
+   mkdir -p public/media && touch public/media/leftover.png && PORT=3199 timeout 90 pnpm start > /tmp/boot-media.log 2>&1; echo "exit $?"; rm -r public/media
+   mkdir -p $OUT/e2e-final/boot-checks && cp /tmp/boot-*.log $OUT/e2e-final/boot-checks/
+   ```
+7. **Migration backfill:** rerun Step 2's check if the migration changed after Step 2.
+8. **Screenshots:** rerun Step 17's command if any UI changed after Step 17. Every probe must pass, and `$OUT/screenshots/index.html` must exist.
+9. **Audits.** Each of these prints nothing:
+   ```bash
+   grep -rn "validateTenantMembership\|screenReportText\|VideoMedia\|api.resend.com" src
+   grep -nE "remotePatterns|localPatterns|qualities" next.config.ts
+   grep -rn "if (!project) notFound()" 'src/app/(public)/g'           # F3: the copied gate is gone
+   grep -rnF '/g/${' src | grep -v src/lib/game-portal/paths.ts        # portal URLs come from paths.ts
+   grep -rln "CRITWIRE_LIMIT_" src | grep -vE "src/lib/limits/index.ts|src/environment.d.ts"
+   grep -rln "CRITWIRE_OPEN_SIGNUP" src | grep -vE "src/lib/hosting.ts|src/environment.d.ts"
+   grep -rln "EMAIL_OUTBOX_DIR" src | grep -vE "src/lib/email/adapter.ts|src/environment.d.ts"
+   ```
+   And `grep -c '"@payloadcms/email-resend": "3.85.2"' package.json` prints `1`.
+
+**Definition of done: what proves each item**
+
+| Definition of done | Proof | Step |
+|---|---|---|
+| `tsc`, `lint` and `build` pass, and the full E2E suite passes | Commands 1–5 | 18 |
+| The whole signup flow: sign up, verify through a captured email, onboard, see the live portal | `signup` › S15.1, plus `e2e-final/outbox` | 11 |
+| An unverified account's portal isn't public | `signup` › S15.2; `password-recovery` › S16.3 | 11, 13 |
+| A second signed-up user can't read or write the first user's studio | `tenant-isolation` › S1.13, plus S1.11 for draft writes [F1] | 12, 3 |
+| Each limit, when enabled, blocks with a message | `limits` › S12.1 (port 3102) | 6 |
+| Nothing is blocked when limits are unset | `limits` › S12.2 (port 3100) | 6 |
+| A suspended studio's portal and publishing | `suspension` › S10.1–S10.3 | 3, 4, 15 |
+| The report-this-page flow | `abuse-reports` › S17.1–S17.3 | 14 |
+| Screenshots of signup, verify, onboarding, next steps and `/`, at 1440 and 390 px, with `index.html` | Command 8 → `$OUT/screenshots/` | 17 |
+| The Summary lists the hosted limits, the production env vars and the handoff items | **Summary** | 18 |
+| `agent/open-signup` pushed and not merged | Every step pushes; `git status` is clean at the end | all |
+
+**The rest of the Goal: what proves each item**
+
+| Goal item | Proof | Step |
+|---|---|---|
+| Sign-in and password reset work, styled to match | `password-recovery` › S16.2; `admin-dashboard` › S18.4 | 13, 15 |
+| One limits module, driven by env vars, off by default | `limits` › S12.2; boot check 6; the audits | 6 |
+| Signup is protected by Turnstile and rate limiting | `signup` › S15.6 for Turnstile. E2E has no Upstash (`RATE_LIMIT_OPTIONAL=1`), so the rate limit runs through `guardPublicForm` and `checkRateLimit`, the same code as the existing forms, and isn't exercised to exhaustion | 11 |
+| The content filter screens a studio's own text | `screening` › S13.3–S13.5; `onboarding` › S14.5 | 7, 9 |
+| A super admin can suspend a studio | `suspension` › S10.1–S10.3 | 3, 4 |
+| The design's hardening (F1, F2, F8, F11, F12) | `tenant-isolation` › S1.11, S1.12; `media` › S11.1–S11.3; `password-recovery` › S16.1 | 3, 5, 8, 13 |
+| Self-hosted defaults: no signup, no call to action, no report link, recovery without email | The second-server tests: S8.2, S14.6, S14.8, S15.7, S16.4, S17.3, S18.3, S18.4 | 9–15 |
+| `/` has "Create your portal", leading to `/signup` | `home` › S8.1 | 14 |
+| Self-hosting docs | `docs/self-hosting.md` | 16 |
 
 ## Decisions
 
@@ -739,5 +1395,6 @@ Revised 2026-09-30 by `architect`. Everything was re-checked against Payload 3.8
 - 2026-09-30 10:20 UTC · Fable review: APPROVE_WITH_CHANGES; 2 MUST-FIX (users can self-set `_verified`; email changes skip re-verification), plus 4 missed items and 5 suggestions. Docs-only, no checks needed.
 - 2026-09-30 10:21 UTC · Astra review: APPROVE_WITH_CHANGES; 5 MUST-FIX (2 overlap Fable: self-set `_verified`, email change; new: signup retry overwrites a pending password, `public/media` bypasses suspension, forgot-password lacks rate limit/Turnstile) and 5 suggestions. Docs-only, no checks needed.
 - 2026-09-30 10:43 UTC · Revision: `architect` resolved all 7 MUST-FIX items (Fable 1–2, Astra 1–5): `_verified` and `email` super-admin-only; password moves from `/signup` to the verify form (no credential replacement without inbox proof); media moves out of `public/` and the Next image optimizer is off (new F11); forgot-password goes through a guarded route and REST/GraphQL `forgotPassword` is refused (new F12). Adopted 8 suggestions, declined 2 with reasons. No new handoff items. Docs-only, no checks needed.
+- 2026-09-30 11:05 UTC · Steps: `planner` wrote 18 steps in dependency order (hole-closing steps write their tests first; onboarding before signup; a second E2E server doubling as the self-hosted profile) and the Verification mapping each DoD item to a named test; 12 planner decisions (P1–P12) to be copied into Decisions by the step that applies them. Docs-only, no checks needed.
 
 ## Summary
