@@ -4,13 +4,19 @@ import type { User } from '@/payload-types'
 
 import { authenticated } from '../../access/authenticated'
 import { isSuperAdmin, superAdminFieldAccess, superAdminOnly } from '../../access/isSuperAdmin'
-import { accountCreatedEmail, verificationEmail } from '../../lib/email/authEmails'
+import { accountCreatedEmail, passwordResetEmail, verificationEmail } from '../../lib/email/authEmails'
+import { restrictPasswordRecovery } from './hooks/restrictPasswordRecovery'
 import { verifyUsersSuperAdminsCreate } from './hooks/verifyUsersSuperAdminsCreate'
 
 // Payload sends this on every create. A user a super admin created is
 // already verified, so they get a sign-in link instead of a token.
 const creationEmail = ({ token, user }: { token: string; user: User }) =>
   user._verified ? accountCreatedEmail() : verificationEmail(token)
+
+const resetEmail = (args?: { token?: string }) => {
+  if (!args?.token) throw new Error('Password reset email: Payload passed no token.')
+  return passwordResetEmail(args.token)
+}
 
 export const Users: CollectionConfig = {
   slug: 'users',
@@ -34,6 +40,10 @@ export const Users: CollectionConfig = {
     useAsTitle: 'name',
   },
   auth: {
+    forgotPassword: {
+      generateEmailHTML: async (args) => (await resetEmail(args)).html,
+      generateEmailSubject: async (args) => (await resetEmail(args)).subject,
+    },
     verify: {
       generateEmailHTML: async (args) => (await creationEmail(args)).html,
       generateEmailSubject: async (args) => (await creationEmail(args)).subject,
@@ -78,6 +88,7 @@ export const Users: CollectionConfig = {
   ],
   hooks: {
     beforeChange: [verifyUsersSuperAdminsCreate],
+    beforeOperation: [restrictPasswordRecovery],
   },
   timestamps: true,
 }
