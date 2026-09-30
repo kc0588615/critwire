@@ -2,7 +2,7 @@
 mission: feedback-pivot
 project: critwire
 branch: agent/feedback-pivot
-status: active
+status: done
 started: 2026-09-30 04:52 UTC
 ---
 
@@ -1008,7 +1008,7 @@ Every MUST-FIX is resolved in place. Items both reviewers raised are answered on
   - Fill in the screenshot record in Verification.
   - **Verify:** the run passes with every probe; base checks, and `pnpm test:e2e` if code changed.
 
-- [ ] S23 · Full verification and the Summary
+- [x] S23 · Full verification and the Summary
   - Run Verification's commands in order, one at a time, and archive the E2E report and its log. Re-run the migration check if `git diff <S15's commit> -- src/migrations tests/migrations` isn't empty.
   - **Write the Summary** (Definition of done):
     - what was removed, and why;
@@ -1212,5 +1212,58 @@ Only the content filter is tested in isolation (`tests/int/content-screen.int.sp
 - 2026-09-30 09:10 UTC · S20: `links.ts` gains `GITHUB_REPO_URL` (header, footer, home) and `getContactHref()` (`CRITWIRE_CONTACT_URL`: unset/empty → null, anything but `mailto:`/`https:` throws); new `instrumentation-node.ts` `checkEnvironment()` runs it at boot and exits 1 on a bad value (Next alone kept serving 500s; Decisions). `/` awaits `connection()` (build lists it as ƒ) and renders the rewritten `MarketingHome`: new headline and lede, `IssueLoop` over the four stages, what players get (updates, board, forms, hub), "Nothing is public until you say so" (review and the filter), "Free to self-host (MIT). Free hosted early access." with GitHub and Contact. Copy: `/`'s metadata, both layout descriptions, `mergeOpenGraph`, `BeforeLogin`. `.env.example`, `environment.d.ts`; E2E env `CRITWIRE_CONTACT_URL=mailto:e2e@critwire.test`. New `home.spec.ts` S8.1. tsc pass; lint 0 errors/20 warnings (none in touched files); E2E 75/75; fail-loud check: `javascript:alert(1)` exits 1 under `next start` and the standalone server; empty hides the link, an `https:` value shows it.
 - 2026-09-30 09:16 UTC · S21: AGENTS.md (title and thesis from the Product direction; docs map; scope guardrail with "website builder"; phases paragraph; int-test reasons; `pnpm screenshots` catalog), `docs/features.md` (thesis, collections with theme/pitch/key art/feedback settings, Issue and IssueReport type and flags, enums, the four stages, the portal, submit → filter → auto-publish → review, updates ↔ feedback, Hosting instead of pricing, phases rewritten), `docs/architecture.md` (URL table, rendering table with the ISR hub, project tree), `docs/patterns.md` (hooks: screen → auto-publish → promote, linked-update revalidation; landing-pages section gone), `docs/integrations.md` (content filter, `CRITWIRE_CONTACT_URL`, Upstash paths, Stripe gone), README summary, `.env.example` and `deploy.md` wording, the screenshot config comment; `LICENSE` MIT, "Critwire contributors" (H7 still waiting). tsc pass; lint 0 errors/20 warnings; int 2 files 13/13; all six Verification audits print nothing. No E2E: docs and one comment only.
 - 2026-09-30 09:25 UTC · S22: `pnpm screenshots` (after set, commit `abadeb9`): 26 PNGs, `meta.json`, `checks.json` (88/88 probes pass), `index.html` linking all 26, in `/srv/critter-ai/agent-state/missions/feedback-pivot/screenshots/`. Read every page at both widths under both themes plus `/`: hub, list, board (mobile columns scroll sideways inside the board), both forms, the update's "From your feedback"; nothing reads wrong, so no code changed and no E2E rerun. tsc pass, lint 0 errors/20 warnings.
+- 2026-09-30 09:36 UTC · S23: full Verification in order: E2E 75/75 (archived to `e2e-final/` with `run.log`), tsc pass, lint 0 errors/20 warnings (all in old migrations), int 2 files 13/13, migrate:status all 15 run, `pnpm build` exit 0; no migration changed after S15 and no code after S22, so the migration check (ALL ASSERTIONS PASSED) and screenshots (26 PNGs, 88/88 probes) stand; all six audits empty. Wrote the Summary, set `status: done`, dropped the `_premig` and `_migcheck` databases and removed `/tmp/fp-premig`.
 
 ## Summary
+
+Branch `agent/feedback-pivot`, final verification at `877312d` plus this plan update, 2026-09-30 09:20–09:35 UTC. Not merged.
+
+**Result.** Critwire is now a player feedback board and updates hub for each game, on a minimal themable portal at `/g/<game>` that links back to the studio's own site. The OpenAI site generator and the landing builder are gone. Reports and issues are typed Bug or Idea and shown in four public stages. Submissions are screened by a local content filter and can auto-publish when a studio turns review off. Updates and feedback link both ways, every old URL redirects, and the docs, `AGENTS.md` and a new MIT `LICENSE` describe the new product.
+
+**Removed, and why**
+- **The OpenAI site generator** (`src/site-generator/`, `/next/generate-site`, the admin control and `generationField`, the `openai` dependency, `OPENAI_API_KEY`/`OPENAI_SITE_MODEL`, its rate limits, docs and int test). Reason: the owner's rule "no AI site generation".
+- **The landing builder**: the GamePages collection with its drafts, versions, live preview and studio Draft Mode (`/next/site-preview`, `sitePreviewToken.ts`); the `flagship-game-v1` site template with its hero, feature, gallery, adaptive, community, trailer and final-CTA sections, variants and section order; the legacy `blocks/game/` blocks and `GameButtons`; `landingPage.ts`, `seed/siteConfig.ts` and `validation/video.ts`; 354 lines of landing-only CSS; and the `site-config-parity` int test. Reason: building a website is what critwire complements, not competes with (Decision rule 1). The theme tokens, the WCAG contrast checks and the design-pass visual system moved onto the game project (`theme`), so a studio can still match the portal to its own site.
+- **Configurable portal chrome** (nav labels and CTA, footer tagline, legal-links switch). The chrome is now fixed: Updates, Feedback, Contact, and an Official site link whenever `links.website` is set. Reason: simpler wins.
+- **Project fields** `accentColor` (the theme owns the accent), `links.trailer`, `availability.demoUrl` and `meta.{developer,publisher,engine,rating}`. Reason: they served only the landing.
+- **The `FEATURE_REQUEST` category**, which became the Idea type.
+- **The board's 200-item cap and in-memory counts** (F1), replaced by one query per stage with real counts.
+- **Stripe** from the docs, since there's no billing work now.
+
+**Migrations** (all in `src/migrations/`, run on boot in production through `prodMigrations`)
+1. **M12 `20260930_060748_remove_site_generator`** drops the generator's provenance: `game_pages.generation_{model,prompt,generated_at}`, `_game_pages_v.version_generation_{model,prompt,generated_at}`, and the tables `game_pages_generation_change_summary` and `_game_pages_v_version_generation_change_summary`.
+2. **M13 `20260930_061601_feedback_model`** adds `type` (BUG/IDEA, default BUG) to `issues` and `issue_reports` and maps `FEATURE_REQUEST` rows to type IDEA, category OTHER, before it recreates both category enums without FEATURE_REQUEST. It also adds the `IN_PROGRESS` status, `issue_reports.flagged` and `flag_reasons`, and `game_projects.report_form_accept_ideas` and `report_form_review_submissions` (both default true, so existing games keep review on). It renames any issue slugged `new` to the first free `new-<n>` in its game and clears its `generate_slug`.
+3. **M14 `20260930_072559_portal_theme`** adds the `game_projects.theme_*` columns and enums. It copies from each project's **published** flagship page: the ten colours (only when all ten are set, as the old renderer required), typography, shape, density and motion, the hero background as the key art (`banner_id`) where the project has none, and the hero tagline as the pitch (`description`) where the project has none.
+4. **M15 `20260930_080647_remove_landing_builder`** deletes the game-page lock rows and the `collection-game-pages*` preferences first. It then drops all 30 `game_pages*`/`_game_pages_v*` tables, the 44 `enum_*game_pages*` types, `payload_locked_documents_rels.game_pages_id`, and the project columns `accent_color`, `links_trailer`, `availability_demo_url` and `meta_{developer,publisher,engine,rating}`.
+
+**Existing content: where it went, and what was dropped.** The owner decided in H6 that existing production data needn't be preserved. The migrations still map content wherever the mapping is cheap and obvious:
+- *Mapped:* a published flagship page's full palette and its typography, shape, density and motion → the project's `theme`. Its hero background → the project's key art, and its hero tagline → the pitch, each only where the project had none. `FEATURE_REQUEST` issues and reports → type Idea, category Other. Existing reports and issues → type Bug. An issue slugged `new` → `new-<n>`. Media used only by pages stays in the library.
+- *Dropped:* every landing section (the hero's eyebrow, heading, variant and actions; features; gallery; adaptive; community; final CTA; trailer settings; the latest-update and known-issues headings and variants). Also dropped: the nav links, labels and CTA; the footer tagline and legal-links switch; legacy block pages; page drafts and versions; the AI provenance; a partial page palette (fewer than ten colours, which the old renderer ignored too); and a draft-only page's theme. On projects, `accentColor` (with a published flagship page, the page's full theme replaces it), the trailer and demo URLs and the meta credits are dropped.
+- *The `/issues/new` exception:* the old URL `/g/<game>/issues/new` of an item that was slugged `new` now redirects to the submit form, not to the renamed item. The item itself survives as `new-<n>`. Accepted under H6, since such a row almost certainly doesn't exist and a lookup route would keep a dead route alive.
+
+**Content filter.** `src/lib/moderation/screenText.ts` runs locally, with no external service. It combines two rules:
+- *Offensive words:* `obscenity`'s `RegExpMatcher` over its `englishDataset`, with the recommended transformers (case, leetspeak and look-alike spellings), plus a whitelist entry for `cockpit`.
+- *Links:* one regex counts URLs (scheme URLs, bare `www.` and bare shortener paths, each URL counted once). Text is flagged for three or more links or any link-shortener host (`bit.ly`, `tinyurl.com`, `t.co`, `goo.gl`, `is.gd`, `rb.gy`, `cutt.ly`, matched on the exact host).
+
+The reasons read `Offensive word: "<text>"` (deduplicated, at most five), `<n> links` and `Shortened link: <host>`. The filter runs in the Submissions `beforeChange` hook, so every write path is screened. A flag only stops auto-publishing: nothing is deleted, and a studio can publish a flagged item by hand. Word-list source: `obscenity` 0.4.6 (pinned exactly), **MIT**, with no dependencies. LDNOOBW was rejected because it's CC-BY-4.0. Eleven failure modes are covered one by one in `tests/int/content-screen.int.spec.ts`.
+
+**Verification (S23)**
+1. **E2E:** `pnpm test:e2e`: **75 passed, 0 failed** (4.1 min; no retries allowed). That's Baseline's 73, minus the deleted tests, plus the new ones, and it equals S20's count. Every Definition-of-done test is in the run (the table in Verification). The log's 10 `fetch failed` lines are the Discord-webhook jobs posting to the fake test URLs, the same 10 as in Baseline. Artifact: `/srv/critter-ai/agent-state/missions/feedback-pivot/e2e-final/` (HTML report with a trace and screenshots for every test, plus `run.log`). View it with `pnpm exec playwright show-report /srv/critter-ai/agent-state/missions/feedback-pivot/e2e-final`. The pre-change report is in `e2e-baseline/`.
+2. **Typecheck:** `pnpm exec tsc --noEmit` exits 0.
+3. **Lint:** `pnpm lint` shows 0 errors and 20 warnings, the same as Baseline, all in five pre-existing migrations.
+4. **Int:** `pnpm test:int` passes 2 files and 13 tests (`content-screen` 11, `issue-revalidation` 2).
+5. **Build:** no `dev` row; `pnpm payload migrate:status` shows all 15 migrations run, M12–M15 included; `pnpm build` exits 0. The hub, updates, update pages and feed are ● (ISR), and `/` is ƒ.
+6. **Migration check:** no migration or check file changed after S15, so S15's run stands. The Critter Connect seed at `683de8d` plus `fixtures.sql`, copied with `pg_dump`, then migrated: `migrate.log` shows M12–M15 run, and `assert.log` ends `ALL ASSERTIONS PASSED`. The same assertions raise on the unmigrated copy. Artifacts, including the exact `commands.sh`, are in `/srv/critter-ai/agent-state/missions/feedback-pivot/migration-check/`.
+7. **Screenshots:** S22's run at `abadeb9` stands, since no file under `src`, `tests` or `package.json` changed after it. It produced 26 PNGs (hub, list, board, bug and idea forms, and an update page, under Critter Connect and Riso at 1440 and 390 px, plus `/` at both widths), and all 88 probes pass. Artifact: `/srv/critter-ai/agent-state/missions/feedback-pivot/screenshots/index.html`. Reproduce with `SHOTS_SET=after SHOTS_DIR=<dir> pnpm screenshots`, never alongside `pnpm test:e2e`.
+8. **Audits:** all six in Verification print nothing: no generator, landing-builder or accent references, every portal URL comes from `paths.ts`, no "Known issues" or "Patch notes" copy, and `obscenity`/`qs-esm` are pinned exactly.
+
+**Reviews.** Fable (architecture-reviewer): APPROVE_WITH_CHANGES, with one MUST-FIX (the link count). Astra: APPROVE_WITH_CHANGES, with two MUST-FIX (the kanban's hand-rolled tenant filter, and reserved-slug collisions and redirects). The architect resolved all of them in the Revision. The one partial exception is the `/issues/new` redirect, rejected under H6 (Revision notes).
+
+**Also fixed on the way:** F17, where the admin kanban ignored the tenant selector (it now uses the plugin's `admin.baseFilter`, and a new selection re-keys the board). Votes on archived items now answer 409. RSS guids stay stable while item links move to `/updates/`. The feedback slug `new` is reserved (F3). A bad `CRITWIRE_CONTACT_URL` stops the server at boot.
+
+**Open follow-ups**
+- **H7 (waiting on the owner):** who holds the copyright in `LICENSE`. It ships as "Critwire contributors" until the owner answers, and nothing is blocked.
+- **H3 (later):** set the form-protection keys (Turnstile, Upstash) in production before deploying.
+- **Production `CRITWIRE_CONTACT_URL`** is stored in `/srv/critter-ai/agent-state/secrets/critwire.production.env` and must be in the deploy's env.
+- **Older NEW reports** aren't screened retroactively and don't auto-publish when a studio turns review off; the admin help text and the docs say so.
+- **A project `description` longer than 240 characters** blocks its next save until it's shortened (fail-loud, nothing truncated).
+- **Next mission (`open-signup`):** signup, onboarding, invites and the hosted early-access limits. Out of scope here: custom domains, a triage inbox, merge-as-vote, reporter emails, embeddable widgets, studio pages and theme presets.
