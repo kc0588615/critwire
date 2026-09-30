@@ -1,0 +1,50 @@
+// Critwire's palette and wordmark, shared with its site.
+@use '../../components/marketing/brand';
+
+// The sign-in, forgot-password and reset views (Payload's minimal
+// template): the wordmark over a yellow rule, the site's one accent.
+.template-minimal {
+  & .cw-wordmark {
+    color: var(--theme-text);
+    font-size: 2.25rem;
+    border-bottom: 0.3125rem solid var(--cw-yellow);
+  }
+
+  & .before-login {
+    margin-bottom: calc(var(--base) * 1.5);
+
+    & p {
+      margin: 0 0 calc(var(--base) * 0.5);
+    }
+  }
+
+  & .before-login a {
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
+}
+
+// In the light theme they are ink on paper, and the main button is the
+// site's: yellow on ink. The dark theme keeps Payload's colours.
+html[data-theme='light'] .template-minimal {
+  background-color: var(--cw-paper);
+  color: var(--cw-ink);
+
+  & .btn--style-primary {
+    --bg-color: var(--cw-ink);
+    --color: var(--cw-yellow);
+    --hover-bg: var(--cw-graphite);
+  }
+}
+
+// The breadcrumb's first step is the wordmark, set small.
+.step-nav__home:has(.cw-wordmark) {
+  width: auto;
+  height: auto;
+
+  & .cw-wordmark {
+    min-height: 0;
+    font-size: 1rem;
+  }
+}

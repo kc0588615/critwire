@@ -49,8 +49,8 @@ export const plugins: Plugin[] = [
           ],
         },
       ],
-      // Only super admins assign users to tenants for now. A proper
-      // invite flow arrives with onboarding (Phase 7).
+      // Only super admins assign users to studios. A new user gets their
+      // own studio through onboarding, and there are no invites.
       arrayFieldAccess: {
         create: ({ req }) => isSuperAdmin(req.user),
         update: ({ req }) => isSuperAdmin(req.user),

@@ -35,6 +35,16 @@ export function getLimits(): Limits {
   return limits
 }
 
+/** The limits in force, in words, for the admin dashboard; empty when all are off. */
+export function describeLimits(): string[] {
+  const { gamesPerStudio, mediaMBPerStudio, publicFeedbackPerGame } = getLimits()
+  return [
+    gamesPerStudio != null && `${gamesPerStudio} games per studio`,
+    mediaMBPerStudio != null && `${mediaMBPerStudio} MB of media per studio`,
+    publicFeedbackPerGame != null && `${publicFeedbackPerGame} public feedback items per game`,
+  ].filter((line): line is string => typeof line === 'string')
+}
+
 /** A 403 whose message the admin shows as its error toast, word for word. */
 export class LimitReachedError extends APIError {
   constructor(message: string) {

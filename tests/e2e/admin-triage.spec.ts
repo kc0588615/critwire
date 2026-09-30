@@ -94,7 +94,7 @@ test('S6.1 the login page speaks Critwire and a studio owner signs in to the das
       await page.getByLabel('Password').fill(PASSWORD)
       await page.getByRole('button', { name: 'Login' }).click()
       await expect(page).toHaveURL(/\/admin\/?$/)
-      await expect(page.getByText('Launch checklist')).toBeVisible()
+      await expect(page.getByRole('heading', { name: 'Your portals' })).toBeVisible()
     })
   } finally {
     await context.close()

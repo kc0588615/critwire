@@ -1,0 +1,25 @@
+/*
+ * Critwire's own brand, shared by its site (marketing.css) and the admin's
+ * sign-in views (custom.scss): the palette and the wordmark. Studio
+ * portals never use these.
+ */
+
+:root {
+  --cw-yellow: #f6d33c;
+  --cw-ink: #1d1f55;
+  --cw-paper: #f2f3f8;
+  --cw-graphite: #4a4d6e;
+}
+
+.cw-wordmark {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  font-family: var(--font-critwire), system-ui, sans-serif;
+  font-size: 1.5rem;
+  font-stretch: 130%;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1;
+  text-decoration: none;
+}

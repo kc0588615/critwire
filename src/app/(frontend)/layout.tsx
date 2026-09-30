@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 
-import { bodyFont } from '@/fonts'
+import { bodyFont, critwireFont } from '@/fonts'
 import { cn } from '@/utilities/ui'
 import React from 'react'
 
@@ -10,7 +10,6 @@ import { Header } from '@/Header/Component'
 import { mergeOpenGraph } from '@/utilities/mergeOpenGraph'
 import { draftMode } from 'next/headers'
 
-import { critwireFont } from './fonts'
 import './globals.css'
 import { getServerSideURL } from '@/utilities/getURL'
 

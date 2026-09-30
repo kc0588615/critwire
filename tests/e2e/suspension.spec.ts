@@ -6,6 +6,7 @@ import type { ApiResult, RestClient } from './support/api'
 import { TURNSTILE_DUMMY_TOKEN } from './support/env'
 import {
   PNG_8PX,
+  asStudioAdmin,
   createIssue,
   createPatchNote,
   createProject,
@@ -25,6 +26,8 @@ import {
  */
 
 const SUSPENDED = 'This studio is suspended, so changes can’t be saved.'
+/** The owner's dashboard banner. */
+const SUSPENDED_BANNER = 'This studio is suspended: its portals are unavailable'
 
 function expectSuspended(result: ApiResult<unknown>): void {
   expect(result.status, JSON.stringify(result.body)).toBe(403)
@@ -124,13 +127,15 @@ test('S10.2 a portal’s files load for signed-in visitors of other studios too'
 
 test('S10.3 a suspended studio’s portal is unavailable until it’s lifted', async ({
   api,
+  browser,
   page,
   playwright,
   seedStudio,
 }) => {
   const superAdmin = api('superAdmin')
   const anonymous = api('anonymous')
-  const { tenant, owner } = await seedStudio('s103')
+  const studio = await seedStudio('s103')
+  const { tenant, owner } = studio
   const banner = await uploadImage(owner.client, tenant.id, 's103-banner.png', 'Key art', await pngOfWidth(400))
   const project = await createProject(owner.client, tenant.id, `${tenant.slug}-game`, {
     name: `Driftwood ${tenant.slug}`,
@@ -231,7 +236,22 @@ test('S10.3 a suspended studio’s portal is unavailable until it’s lifted', a
     expect(contact.status, JSON.stringify(contact.body)).toBe(404)
   })
 
+  await test.step('the owner’s dashboard says the studio is suspended', () =>
+    asStudioAdmin(browser, studio, async (admin) => {
+      await expect(admin.getByText(SUSPENDED_BANNER)).toBeVisible()
+      await expect(admin.getByRole('region', { name: `Studio ${tenant.slug}` }).getByText(project.name)).toBeVisible()
+      await expect(admin.getByRole('region', { name: `Studio ${tenant.slug}` })).toContainText('Unavailable: suspended')
+    }),
+  )
+
   await setSuspended(superAdmin, tenant.id, false)
+
+  await test.step('after the suspension is lifted, the banner is gone', () =>
+    asStudioAdmin(browser, studio, async (admin) => {
+      await expect(admin.getByRole('region', { name: `Studio ${tenant.slug}` })).toContainText('Live')
+      await expect(admin.getByText(SUSPENDED_BANNER)).toHaveCount(0)
+    }),
+  )
 
   await test.step('after the suspension is lifted, the portal and its files come back', async () => {
     for (const path of pages) await eventually(() => expectLive(page, path))

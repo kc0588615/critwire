@@ -29,12 +29,14 @@ const dirname = path.dirname(filename)
 export default buildConfig({
   admin: {
     components: {
-      // The `BeforeLogin` component renders a message that you see while logging into your admin panel.
-      // Feel free to delete this at any time. Simply remove the line below.
+      // Above the sign-in form: the welcome line, and signup when it's open.
       beforeLogin: ['@/components/BeforeLogin'],
-      // The `BeforeDashboard` component renders the 'welcome' block that you see after logging into your admin panel.
-      // Feel free to delete this at any time. Simply remove the line below.
+      // The top of the dashboard, by role (§13).
       beforeDashboard: ['@/components/BeforeDashboard'],
+      graphics: {
+        Icon: '@/components/admin/Icon',
+        Logo: '@/components/admin/Logo',
+      },
       views: {
         // Password recovery goes through Turnstile and rate limits (§4a).
         forgot: { Component: '@/components/admin/ForgotPasswordView' },
@@ -42,6 +44,13 @@ export default buildConfig({
     },
     importMap: {
       baseDir: path.resolve(dirname),
+    },
+    meta: {
+      icons: [
+        { rel: 'icon', sizes: '32x32', url: '/favicon.ico' },
+        { rel: 'icon', type: 'image/svg+xml', url: '/favicon.svg' },
+      ],
+      titleSuffix: ' | Critwire',
     },
     user: Users.slug,
     livePreview: {

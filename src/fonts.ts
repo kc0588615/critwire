@@ -1,4 +1,4 @@
-import { Atkinson_Hyperlegible_Next } from 'next/font/google'
+import { Anybody, Atkinson_Hyperlegible_Next } from 'next/font/google'
 
 /**
  * Body and UI face for every surface (marketing and portal), and every
@@ -9,4 +9,15 @@ export const bodyFont = Atkinson_Hyperlegible_Next({
   display: 'swap',
   subsets: ['latin', 'latin-ext'],
   variable: '--font-body',
+})
+
+/**
+ * Critwire's own display face (its site and the admin's wordmark, never a
+ * studio's portal); defines `--font-critwire`.
+ */
+export const critwireFont = Anybody({
+  axes: ['wdth'],
+  display: 'swap',
+  subsets: ['latin', 'latin-ext'],
+  variable: '--font-critwire',
 })

@@ -4,13 +4,13 @@
  * gradients or shadows. Imported into `@layer components`, so Tailwind
  * utilities on the same element win. The shadcn variables are
  * re-pointed here, so `Button` and `CMSLink` follow the same palette.
+ * The palette itself and the wordmark are in brand.css, which the admin
+ * shares.
  */
 
+@import '../../components/marketing/brand.css';
+
 .cw-root {
-  --cw-yellow: #f6d33c;
-  --cw-ink: #1d1f55;
-  --cw-paper: #f2f3f8;
-  --cw-graphite: #4a4d6e;
   --cw-rule: color-mix(in srgb, var(--cw-ink) 12%, transparent);
   --cw-header-h: 4.5rem;
   --cw-gutter: clamp(1rem, 4vw, 2.5rem);
@@ -56,20 +56,7 @@
   flex: 1 0 auto;
 }
 
-/* ── Wordmark and buttons ───────────────────────────────── */
-
-.cw-wordmark {
-  display: inline-flex;
-  align-items: center;
-  min-height: 2.75rem;
-  font-family: var(--font-critwire), system-ui, sans-serif;
-  font-size: 1.5rem;
-  font-stretch: 130%;
-  font-weight: 800;
-  letter-spacing: -0.01em;
-  line-height: 1;
-  text-decoration: none;
-}
+/* ── Buttons ────────────────────────────────────────────── */
 
 .cw-btn {
   display: inline-flex;
