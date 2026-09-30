@@ -6,17 +6,7 @@ import { expect, test as setup } from '@playwright/test'
 import type { GameProject } from '../../src/payload-types'
 import { RestClient } from '../e2e/support/api'
 import { PASSWORD } from '../e2e/support/env'
-import {
-  castVote,
-  contentLayout,
-  createIssue,
-  createPatchNote,
-  createProject,
-  lexical,
-  lexicalHeading,
-  newRequestContext,
-  seed,
-} from '../e2e/support/fixtures'
+import { castVote, createIssue, createPatchNote, lexical, newRequestContext, seed } from '../e2e/support/fixtures'
 import { type ShotsWorld, WORLD_PATH } from './catalog'
 import { rootStyle, SHOTS_CRON_SECRET } from './support'
 
@@ -41,7 +31,7 @@ setup('seed the Critter Connect demo and the screenshot fixtures', async ({ page
   })
   const admin = new RestClient(anonymous, superToken)
 
-  const cc = await setup.step('run the Critter Connect seed', async () => {
+  const cc = await setup.step('run the Critter Connect seed and add the official site', async () => {
     const response = await anonymous.post('/api/seed/critter-connect', {
       headers: { Authorization: `Bearer ${SHOTS_CRON_SECRET}` },
     })
@@ -49,7 +39,13 @@ setup('seed the Critter Connect demo and the screenshot fixtures', async ({ page
     const { status, body } = await admin.find('game-projects', { where: { slug: { equals: 'critter-connect' } }, depth: 0 })
     expect(status).toBe(200)
     expect(body.docs).toHaveLength(1)
-    return body.docs[0] as GameProject
+    const project = body.docs[0] as GameProject
+    // The seed has no website, so without this the Official site link never shows.
+    const updated = await admin.update('game-projects', project.id, {
+      links: { ...project.links, website: 'https://critterconnect.example' },
+    })
+    expect(updated.status, JSON.stringify(updated.body)).toBe(200)
+    return project
   })
 
   const baselineStyle = await setup.step('record the theme the seed gives the hub', async () => {
@@ -59,7 +55,7 @@ setup('seed the Critter Connect demo and the screenshot fixtures', async ({ page
     return style as string
   })
 
-  const { calloutIssue } = await setup.step('add a patch note, four issues and their votes', async () => {
+  await setup.step('add a patch note, four issues and their votes', async () => {
     const note = await createPatchNote(admin, cc, 'v0-1-1', {
       title: 'Clue trail and Steam Deck fixes',
       versionLabel: 'v0.1.1',
@@ -108,42 +104,6 @@ setup('seed the Critter Connect demo and the screenshot fixtures', async ({ page
     for (const [issueID, count] of votes) {
       for (let i = 0; i < count; i++) await castVote(playwright, issueID)
     }
-    return { calloutIssue: needsInfo.slug }
-  })
-
-  const tenant = (await admin.find('tenants', { where: { slug: { equals: 'demo-studio' } } })).body.docs[0].id
-
-  const bare = await setup.step('create a bare project: no page, no art', () =>
-    createProject(admin, tenant, 'lantern-keeper', {
-      name: 'Lantern Keeper',
-      description: 'Keep the harbour light burning through a winter of storms, one night at a time.',
-    }),
-  )
-
-  const marketingSlug = await setup.step('publish a marketing page', async () => {
-    const slug = 'about-critwire'
-    await seed(admin, 'pages', {
-      title: 'About Critwire',
-      slug,
-      // Authored the way an editor would: the hero carries the page's h1,
-      // and a call to action exercises the CMS link buttons.
-      hero: { type: 'lowImpact', richText: lexicalHeading('About Critwire') },
-      layout: [
-        ...contentLayout(
-          'Critwire gives an indie studio one hosted site for its game: patch notes, a public list of known issues players can vote on, a bug report form and a contact form.',
-        ),
-        {
-          blockType: 'cta',
-          richText: lexical('See it working on a real game before you set up your own.'),
-          links: [
-            { link: { type: 'custom', url: '/g/critter-connect', label: 'See a live portal', appearance: 'default' } },
-            { link: { type: 'custom', url: '/admin', label: 'Sign in', appearance: 'outline' } },
-          ],
-        },
-      ],
-      _status: 'published',
-    })
-    return slug
   })
 
   const world: ShotsWorld = {
@@ -152,12 +112,8 @@ setup('seed the Critter Connect demo and the screenshot fixtures', async ({ page
       slug: cc.slug,
       projectID: cc.id,
       baselineStyle,
-      patchNote: 'v0-1-0-launch',
-      calloutIssue,
-      plainIssue: 'card-flicker-on-open',
+      launchUpdate: 'v0-1-0-launch',
     },
-    bare: { slug: bare.slug },
-    marketingSlug,
   }
   await writeFile(WORLD_PATH, JSON.stringify(world, null, 2))
   await anonymous.dispose()

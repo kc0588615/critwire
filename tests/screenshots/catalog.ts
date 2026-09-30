@@ -14,79 +14,45 @@ export interface ShotsWorld {
     projectID: number
     /** `.fs-root` style of the hub right after the seed, before any theme switch. */
     baselineStyle: string
-    patchNote: string
-    calloutIssue: string
-    plainIssue: string
+    /** The seed's launch update, whose page shows "From your feedback". */
+    launchUpdate: string
   }
-  bare: { slug: string }
-  marketingSlug: string
 }
 
 export const WORLD_PATH = path.join(process.cwd(), 'test-results', 'shots', 'world.json')
 
-export const GROUPS = ['default', 'riso', 'critter-connect', 'marketing'] as const
+export const GROUPS = ['critter-connect', 'riso', 'marketing'] as const
 export type Group = (typeof GROUPS)[number]
 
-export const THEME_GROUPS = ['default', 'riso', 'critter-connect'] as const satisfies readonly Group[]
-export type ThemeGroup = (typeof THEME_GROUPS)[number]
-
 export const GROUP_LABELS: Record<Group, string> = {
-  default: 'Portal, default theme',
-  riso: 'Portal, Riso lime (light test theme)',
   'critter-connect': 'Portal, Critter Connect theme',
-  marketing: 'Critwire marketing site',
+  riso: 'Portal, Riso lime (light test theme)',
+  marketing: 'Critwire home page',
 }
 
 export interface Shot {
   id: string
   label: string
   path: (world: ShotsWorld) => string
-  /** Whether the page wears Critter Connect's theme, so the capture waits for it. */
-  themed: boolean
-  /** Keyboard focus to show before the capture. */
-  focus?: 'report-title' | 'hero-cta'
 }
 
 const cc = (world: ShotsWorld, rest = ''): string => `/g/${world.cc.slug}${rest}`
 
-/** Shot under every theme group. */
-export const THEMED_SHOTS: Shot[] = [
-  { id: 'landing', label: 'Landing', path: (w) => cc(w), themed: true },
-  { id: 'patch-notes', label: 'Patch notes', path: (w) => cc(w, '/updates'), themed: true },
-  { id: 'patch-note', label: 'Patch note detail', path: (w) => cc(w, `/updates/${w.cc.patchNote}`), themed: true },
-  { id: 'issues', label: 'Known issues', path: (w) => cc(w, '/feedback'), themed: true },
-  { id: 'issues-no-match', label: 'Known issues, no match', path: (w) => cc(w, '/feedback?q=zzzz'), themed: true },
-  { id: 'board', label: 'Issue board', path: (w) => cc(w, '/feedback?view=board'), themed: true },
-  { id: 'issue-callout', label: 'Issue detail with a callout', path: (w) => cc(w, `/feedback/${w.cc.calloutIssue}`), themed: true },
-  { id: 'issue-plain', label: 'Issue detail, plain', path: (w) => cc(w, `/feedback/${w.cc.plainIssue}`), themed: true },
-  { id: 'report', label: 'Report a bug', path: (w) => cc(w, '/feedback/new'), themed: true },
-  { id: 'report-error', label: 'Report a bug, error', path: (w) => cc(w, '/feedback/new?error=1'), themed: true },
-  { id: 'contact', label: 'Contact', path: (w) => cc(w, '/contact'), themed: true },
-  { id: 'contact-sent', label: 'Contact, sent', path: (w) => cc(w, '/contact?submitted=1'), themed: true },
-  { id: 'focus-report', label: 'Focus: report title field', path: (w) => cc(w, '/feedback/new'), themed: true, focus: 'report-title' },
-  { id: 'focus-hero', label: 'Focus: landing CTA by keyboard', path: (w) => cc(w), themed: true, focus: 'hero-cta' },
+/** The portal pages, shot under each theme group; they wait for the group's theme. */
+const PORTAL_SHOTS: Shot[] = [
+  { id: 'hub', label: 'Hub', path: (w) => cc(w) },
+  { id: 'feedback', label: 'Feedback list', path: (w) => cc(w, '/feedback') },
+  { id: 'board', label: 'Feedback board', path: (w) => cc(w, '/feedback?view=board') },
+  { id: 'submit-bug', label: 'Submit form: a bug', path: (w) => cc(w, '/feedback/new?type=bug') },
+  { id: 'submit-idea', label: 'Submit form: an idea', path: (w) => cc(w, '/feedback/new?type=idea') },
+  { id: 'update', label: 'Launch update', path: (w) => cc(w, `/updates/${w.cc.launchUpdate}`) },
 ]
 
-/** Shot once per width, in the group named. */
-export const ONCE_SHOTS: Record<Group, Shot[]> = {
-  default: [
-    { id: 'portal-404', label: 'Portal 404', path: () => '/g/no-such-game', themed: false },
-    { id: 'bare-landing', label: 'First run: landing (no page, no art)', path: (w) => `/g/${w.bare.slug}`, themed: false },
-    { id: 'bare-patch-notes', label: 'First run: no patch notes', path: (w) => `/g/${w.bare.slug}/updates`, themed: false },
-    { id: 'bare-issues', label: 'First run: no issues', path: (w) => `/g/${w.bare.slug}/feedback`, themed: false },
-    { id: 'bare-contact', label: 'First run: contact not set up', path: (w) => `/g/${w.bare.slug}/contact`, themed: false },
-  ],
-  riso: [],
-  'critter-connect': [],
-  marketing: [
-    { id: 'home', label: 'Home', path: () => '/', themed: false },
-    { id: 'cms-page', label: 'CMS page', path: (w) => `/${w.marketingSlug}`, themed: false },
-    { id: 'marketing-404', label: 'Marketing 404', path: () => '/no-such-page', themed: false },
-  ],
-}
+const MARKETING_SHOTS: Shot[] = [{ id: 'home', label: 'Home', path: () => '/' }]
 
-export const shotsFor = (group: Group): Shot[] =>
-  (THEME_GROUPS as readonly Group[]).includes(group) ? [...THEMED_SHOTS, ...ONCE_SHOTS[group]] : ONCE_SHOTS[group]
+export const isPortalGroup = (group: Group): group is Exclude<Group, 'marketing'> => group !== 'marketing'
+
+export const shotsFor = (group: Group): Shot[] => (isPortalGroup(group) ? PORTAL_SHOTS : MARKETING_SHOTS)
 
 export const WIDTHS = [1440, 390] as const
 

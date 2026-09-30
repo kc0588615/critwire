@@ -9,8 +9,8 @@ import { newRequestContext } from '../e2e/support/fixtures'
 import {
   GROUP_LABELS,
   type Group,
+  isPortalGroup,
   selectedGroups,
-  type Shot,
   shotFile,
   shotsFor,
   shotsTarget,
@@ -18,11 +18,11 @@ import {
 } from './catalog'
 import { probeMarketingFocus, probePage, recordChecks } from './probes'
 import { readWorld, reloadUntil, rootStyle, rootToken, SHOTS_CRON_SECRET } from './support'
-import { DEFAULT_THEME, RISO_THEME } from './themes'
+import { RISO_THEME } from './themes'
 
 const { set, dir } = shotsTarget()
 
-const THEMES: Record<'default' | 'riso', SiteThemeV1> = { default: DEFAULT_THEME, riso: RISO_THEME }
+const THEMES: Record<'riso', SiteThemeV1> = { riso: RISO_THEME }
 
 /** Sets `group`'s theme on the Critter Connect project and waits until its hub renders it. */
 async function applyTheme(
@@ -63,7 +63,7 @@ for (const group of selectedGroups()) {
 
     test.beforeAll(async ({ browser, playwright }) => {
       world = await readWorld()
-      if (group === 'marketing') return
+      if (!isPortalGroup(group)) return
       const page = await browser.newPage({ baseURL: BASE_URL })
       const request = await newRequestContext(playwright)
       await applyTheme(group, world, request, page)
@@ -78,13 +78,11 @@ for (const group of selectedGroups()) {
         const requests: string[] = []
         page.on('request', (request) => requests.push(request.url()))
         await page.goto(url)
-        // Ops pages are ISR-cached: wait until each one wears the group's theme.
-        // Pages without a `.fs-root` (the ops pages before the redesign) have none to wait for.
-        if (shot.themed && groupStyle !== null && (await rootStyle(page)) !== null) {
+        // Portal pages are ISR-cached: wait until each one wears the group's theme.
+        if (groupStyle !== null) {
           await reloadUntil(page, url, rootStyle, groupStyle, `${url} never showed the ${group} theme`)
         }
         await settle(page)
-        await showFocus(page, shot)
         const width = page.viewportSize()?.width
         if (!width) throw new Error('the project has no viewport')
         const file = shotFile(group, shot.id, width)
@@ -116,14 +114,4 @@ async function settle(page: Page): Promise<void> {
     await expect(page.locator('input[name="cf-turnstile-response"]')).toHaveValue(/.+/, { timeout: 20_000 })
   }
   await page.evaluate(() => document.fonts.ready.then(() => undefined))
-}
-
-async function showFocus(page: Page, shot: Shot): Promise<void> {
-  if (shot.focus === 'report-title') {
-    await page.getByLabel('Title').focus()
-  } else if (shot.focus === 'hero-cta') {
-    const onCTA = () => page.evaluate(() => document.activeElement?.matches('.fs-hero .fs-btn-primary') ?? false)
-    for (let presses = 0; presses < 40 && !(await onCTA()); presses++) await page.keyboard.press('Tab')
-    expect(await onCTA(), 'Tab never reached the hero’s primary button').toBe(true)
-  }
 }

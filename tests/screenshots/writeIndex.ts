@@ -37,20 +37,21 @@ const figure = (dir: string, set: string, file: string, checks: Checks): string 
   return `<figure><figcaption>${set}</figcaption>${body}${set === 'after' ? probeLine(checks[file]) : ''}</figure>`
 }
 
-/** Writes `<dir>/index.html`: every catalog page, before and after side by side, at each width. */
+/**
+ * Writes `<dir>/index.html`: every catalog page at each width, in each
+ * set that has been captured (has a `meta.json`), side by side.
+ */
 export async function writeIndex(dir: string): Promise<void> {
   const checks = await checksOf(dir)
+  const sets = SETS.filter((set) => existsSync(path.join(dir, set, 'meta.json')))
   const meta = await Promise.all(
-    SETS.map(async (set) => {
-      const runs = await runsOf(dir, set)
-      const items = runs.length
-        ? runs
-            .map(
-              (run) =>
-                `<li><code>${escape(run.commit)}</code>${run.dirty ? ' (uncommitted changes)' : ''}, ${escape(run.startedAt)}: <code>${escape(run.command)}</code></li>`,
-            )
-            .join('')
-        : '<li>not captured yet</li>'
+    sets.map(async (set) => {
+      const items = (await runsOf(dir, set))
+        .map(
+          (run) =>
+            `<li><code>${escape(run.commit)}</code>${run.dirty ? ' (uncommitted changes)' : ''}, ${escape(run.startedAt)}: <code>${escape(run.command)}</code></li>`,
+        )
+        .join('')
       return `<h2>${set}</h2><ul>${items}</ul>`
     }),
   )
@@ -59,7 +60,7 @@ export async function writeIndex(dir: string): Promise<void> {
       .map((shot) => {
         const widths = WIDTHS.map((width) => {
           const file = shotFile(group, shot.id, width)
-          return `<div class="pair"><h4>${width} px</h4>${SETS.map((set) => figure(dir, set, file, checks)).join('')}</div>`
+          return `<div class="pair"><h4>${width} px</h4>${sets.map((set) => figure(dir, set, file, checks)).join('')}</div>`
         }).join('')
         return `<section><h3>${escape(shot.label)}</h3><div class="widths">${widths}</div></section>`
       })
@@ -72,13 +73,13 @@ export async function writeIndex(dir: string): Promise<void> {
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Critwire design pass: before and after</title>
+<title>Critwire feedback pivot: screenshots</title>
 <style>
   body { font: 15px/1.5 system-ui, sans-serif; margin: 2rem; color: #1b1b1f; background: #f4f4f6; }
   h1 { margin-top: 0; }
   section { margin: 1.5rem 0 2.5rem; }
   .widths { display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; align-items: start; }
-  .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+  .pair { display: grid; grid-template-columns: repeat(${Math.max(sets.length, 1)}, 1fr); gap: 0.75rem; }
   .pair h4 { grid-column: 1 / -1; margin: 0; }
   figure { margin: 0; }
   figcaption { font-weight: 600; }
@@ -90,7 +91,7 @@ export async function writeIndex(dir: string): Promise<void> {
 </style>
 </head>
 <body>
-<h1>Critwire design pass: before and after</h1>
+<h1>Critwire feedback pivot: screenshots</h1>
 <p>Full-page captures at 1440 and 390 px. Select an image to open it at full size. Under each after image are the quality probes run on that capture (<code>after/checks.json</code>).</p>
 ${meta.join('\n')}
 <p>${nav}</p>

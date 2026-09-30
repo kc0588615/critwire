@@ -3,7 +3,7 @@ import path from 'node:path'
 
 import type { Page } from '@playwright/test'
 
-import type { Group, Shot } from './catalog'
+import { type Group, isPortalGroup, type Shot } from './catalog'
 
 /**
  * The quality floor's probes (plan S22), run on every "after" capture.
@@ -29,9 +29,9 @@ const MOBILE_WIDTH = 390
 const MIN_TARGET_PX = 44
 const FONT_HOSTS = ['fonts.googleapis.com', 'fonts.gstatic.com', 'raw.githubusercontent.com']
 /** Pages whose motion moment must be settled once loaded under reduced motion. */
-const MOTION_PAGES = new Set(['landing', 'home'])
-/** Pages with studio-written text: rich text, or an issue's status note. */
-const PROSE_PAGES = new Set(['patch-note', 'issue-callout', 'issue-plain'])
+const MOTION_PAGES = new Set(['hub', 'home'])
+/** Pages with studio-written rich text. */
+const PROSE_PAGES = new Set(['update'])
 
 const result = (probe: string, pass: boolean, detail: string): ProbeResult => ({ probe, pass, detail })
 
@@ -136,10 +136,9 @@ async function oneRoot(page: Page): Promise<ProbeResult> {
 
 /** Probes that read the page as captured: run after focus is shown and before the screenshot. */
 export async function probePage(page: Page, { group, shot, width, requests }: ProbeTarget): Promise<ProbeResult[]> {
-  const portal = group !== 'marketing'
+  const portal = isPortalGroup(group)
   const results: ProbeResult[] = []
   if (width === MOBILE_WIDTH) results.push(await noSideScroll(page), await tapTargets(page))
-  if (shot.focus) results.push(await focusRing(page, '.fs-root', 'var(--fs-fg)'))
   if (MOTION_PAGES.has(shot.id)) results.push(await motionSettled(page))
   if (portal && PROSE_PAGES.has(shot.id)) results.push(await proseColor(page))
   results.push(noFontHosts(requests))
@@ -148,8 +147,8 @@ export async function probePage(page: Page, { group, shot, width, requests }: Pr
 }
 
 /**
- * Marketing has no focus shot: after the home capture, Tab to the first
- * link and check its ring is Ink. Runs after the screenshot so the ring
+ * No capture shows focus: after the home capture, Tab to the first link
+ * and check its ring is Ink. Runs after the screenshot so the ring
  * never shows in it.
  */
 export async function probeMarketingFocus(page: Page): Promise<ProbeResult> {

@@ -99,7 +99,7 @@ export const HubHeader: React.FC<{ project: GameProject }> = ({ project }) => {
   }
 
   return (
-    <section className="fs-hub-header fs-hero fs-hero-plated" data-align="start">
+    <section className="fs-hub-header fs-hero">
       <div className="fs-hero-stage">
         <div className="fs-hero-art">
           <Media fill imgClassName="object-cover" priority resource={art} size="100vw" />
