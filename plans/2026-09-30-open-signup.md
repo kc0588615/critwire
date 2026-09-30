@@ -880,7 +880,7 @@ The session that carries out the affected step copies the matching line into **D
     3. Delete the row, and put the result in the Log.
   - **Checks:** standard. `auth.setup.ts` must pass unchanged: its super admin creates the studio users, and they must be verified to sign in.
 
-- [ ] Step 3: Tenant writes: close the draft hole (F1) and enforce suspension (§7)
+- [x] Step 3: Tenant writes: close the draft hole (F1) and enforce suspension (§7)
   - **Files:**
     - New `src/access/tenantWrite.ts` with `enforceTenantWrite`, the field `beforeChange` hook from §7:
       - The tenant it checks is `value ?? previousValue`.
@@ -1395,6 +1395,7 @@ OUT=/srv/critter-ai/agent-state/missions/open-signup
 - **Step 2 · The account fixtures land in Step 2, not Step 3.** S9.2 needs a fresh user and S9.3 a fresh studio, so `signIn`, `seedUser` and `seedStudio` are worker fixtures now. They sign in on a throwaway request context and return a client that authenticates by header on a cookie-free one, so a new account's session cookie can never leak into the shared `anonymous` client.
 - **Step 2 · An abuse report's `reason` is required and its `status` is indexed.** The form always asks for a reason, and the super-admin dashboard counts open reports.
 - **Step 2 · The first user still gets a verification email.** Payload's first-register creates the user unverified (sending `verificationEmail`), then verifies them, which clears the token. That email's link lands on "This link has been used or is invalid. If you've already set your password, sign in", which is true for them. Accepted over detecting "no users yet" in the create hook, which would add a query to every signup for a one-time case.
+- **Step 3 · Membership is checked before suspension.** A non-member gets the 400 membership error without the hook ever reading the target studio, so a write can't reveal whether another studio is suspended. A tenant ID that doesn't exist fails loudly (404) instead of passing.
 
 ## Log
 
@@ -1406,5 +1407,6 @@ OUT=/srv/critter-ai/agent-state/missions/open-signup
 - 2026-09-30 11:05 UTC · Steps: `planner` wrote 18 steps in dependency order (hole-closing steps write their tests first; onboarding before signup; a second E2E server doubling as the self-hosted profile) and the Verification mapping each DoD item to a named test; 12 planner decisions (P1–P12) to be copied into Decisions by the step that applies them. Docs-only, no checks needed.
 - 2026-09-30 11:14 UTC · Step 1: `src/lib/email/` (Resend-or-outbox adapter, `renderEmail`, `AuthLinkEmail`, the three auth emails), `email: emailAdapter()` in the config, contact job via `payload.sendEmail`. tsc pass; lint 0 errors, 20 warnings (none in touched files); E2E 75/75 in 4.1 min (contact job still fails without `RESEND_API_KEY`); no `api.resend.com` left in `src`; rendered the three emails by hand: links use `NEXT_PUBLIC_SERVER_URL` and encode the token.
 - 2026-09-30 11:26 UTC · Step 2: migration `open_signup` (tenants `suspended`/`createdBy`, `flagged`/`flagReasons` on games and updates incl. versions, `abuse-reports`, `auth.verify` with the `_verified` backfill); `_verified`/`email` and the platform fields are super-admin-only; super-admin-created users start verified. Backfill check: a pre-existing user read `t` after migrating, then deleted. tsc pass; lint 0 errors, 20 warnings (none in touched files); E2E 81/81 in 4.3 min, incl. `accounts.spec.ts` S9.1–S9.4.
+- 2026-09-30 11:31 UTC · Step 3: `enforceTenantWrite` (`src/access/tenantWrite.ts`) replaces `validateTenantMembership` as a `beforeChange` hook on the tenant field, so membership is checked on draft saves too (F1) and a suspended studio's members get a 403 on every create and update. Before the fix: S1.11 create-draft got 201 and move-draft got 200 (expected 400); S10.1 got 201 on a game create (expected 403). tsc pass; lint 0 errors, 20 warnings (none in touched files); E2E 84/84 in 4.3 min, incl. S1.11 and `suspension.spec.ts` S10.1.
 
 ## Summary

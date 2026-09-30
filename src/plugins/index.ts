@@ -6,7 +6,7 @@ import { GenerateTitle, GenerateURL } from '@payloadcms/plugin-seo/types'
 
 import { Config, Page } from '@/payload-types'
 import { isSuperAdmin } from '@/access/isSuperAdmin'
-import { validateTenantMembership } from '@/access/tenantAccess'
+import { enforceTenantWrite } from '@/access/tenantWrite'
 import { getServerSideURL } from '@/utilities/getURL'
 
 const generateTitle: GenerateTitle<Page> = ({ doc }) => {
@@ -54,9 +54,9 @@ export const plugins: Plugin[] = [
         update: ({ req }) => isSuperAdmin(req.user),
       },
     },
-    // The plugin's own tenant validator only checks presence, which
-    // leaves `filterOptions` enforced in the admin dropdown alone.
-    tenantField: { validate: validateTenantMembership },
+    // Membership and suspension, on every save including drafts. The
+    // plugin's own validator only checks the tenant is present.
+    tenantField: { hooks: { beforeChange: [enforceTenantWrite] } },
     userHasAccessToAllTenants: (user) => isSuperAdmin(user),
   }),
   s3Storage({

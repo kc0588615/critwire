@@ -197,6 +197,47 @@ test.describe('S1.2 cross-tenant writes', () => {
   })
 })
 
+test.describe('S1.11 cross-tenant draft writes [F1]', () => {
+  test('studio B cannot create a draft update in studio A’s tenant', async ({ api, uniqueSlug, world }) => {
+    const slug = uniqueSlug('iso-draft-plant')
+    const { status, body } = await api('bOwner').create(
+      'patch-notes',
+      {
+        gameProject: a.project.id,
+        tenant: world.tenants.A.id,
+        title: 'Cross-tenant draft',
+        slug,
+        content: lexical('Planted by studio B.'),
+        _status: 'draft',
+      },
+      { draft: true },
+    )
+    expect(status, JSON.stringify(body)).toBe(400)
+
+    const planted = await api('superAdmin').find('patch-notes', { where: { slug: { equals: slug } }, draft: true, limit: 0 })
+    expect(planted.status).toBe(200)
+    expect(planted.body.totalDocs).toBe(0)
+  })
+
+  test('studio B cannot move its own draft update into studio A’s tenant', async ({ api, uniqueSlug, world }) => {
+    const bOwner = api('bOwner')
+    const draft = await createPatchNote(bOwner, bProject, uniqueSlug('iso-draft-move'), { _status: 'draft' })
+
+    const { status, body } = await bOwner.update(
+      'patch-notes',
+      draft.id,
+      { gameProject: a.project.id, tenant: world.tenants.A.id },
+      { draft: true },
+    )
+    expect(status, JSON.stringify(body)).toBe(400)
+
+    const after = await api('superAdmin').findByID('patch-notes', draft.id, { draft: true, depth: 0 })
+    expect(after.status).toBe(200)
+    expect(after.body.tenant).toBe(world.tenants.B.id)
+    expect(after.body.gameProject).toBe(bProject.id)
+  })
+})
+
 test.describe('S1.3 roles', () => {
   test('a studio member cannot delete issues', async ({ api, uniqueSlug }) => {
     const issue = await createIssue(api('aOwner'), a.project, uniqueSlug('iso-member-delete'))
