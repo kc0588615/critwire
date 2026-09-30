@@ -7,6 +7,7 @@ import { cache } from 'react'
 
 import type { Issue } from '@/payload-types'
 
+import { ARCHIVED_STATUSES, statusesFor } from '@/lib/game-portal/stages'
 import { VOTE_TOKEN_COOKIE, hashVoteToken, verifyVoteToken } from '@/lib/security/voteToken'
 
 export const ISSUES_PER_PAGE = 20
@@ -30,7 +31,11 @@ export const queryPublicIssues = cache(
   }): Promise<PaginatedDocs<Issue>> => {
     const payload = await getPayload({ config })
 
-    const and: Where[] = [{ gameProject: { equals: projectID } }, { isPublic: { equals: true } }]
+    const and: Where[] = [
+      { gameProject: { equals: projectID } },
+      { isPublic: { equals: true } },
+      { status: { not_in: ARCHIVED_STATUSES } },
+    ]
     if (category) and.push({ category: { equals: category } })
     if (search) {
       and.push({
@@ -39,9 +44,7 @@ export const queryPublicIssues = cache(
     }
 
     const sortOrder: Sort =
-      sort === 'top'
-        ? ['-isPinned', '-upvoteCount', '-createdAt']
-        : ['-isPinned', '-createdAt']
+      sort === 'top' ? ['-isPinned', '-upvoteCount', '-createdAt'] : ['-isPinned', '-createdAt']
 
     return payload.find({
       collection: 'issues',
@@ -65,7 +68,11 @@ export const queryBoardIssues = cache(async (projectID: number | string): Promis
     pagination: false,
     sort: ['-isPinned', '-upvoteCount'],
     where: {
-      and: [{ gameProject: { equals: projectID } }, { isPublic: { equals: true } }],
+      and: [
+        { gameProject: { equals: projectID } },
+        { isPublic: { equals: true } },
+        { status: { not_in: ARCHIVED_STATUSES } },
+      ],
     },
   })
   return result.docs
@@ -91,17 +98,21 @@ export const queryLandingIssues = cache(
   }): Promise<Issue[]> => {
     const payload = await getPayload({ config })
 
-    const and: Where[] = [{ gameProject: { equals: projectID } }, { isPublic: { equals: true } }]
+    const and: Where[] = [
+      { gameProject: { equals: projectID } },
+      { isPublic: { equals: true } },
+      { status: { not_in: ARCHIVED_STATUSES } },
+    ]
     let sort: Sort = ['-isPinned', '-upvoteCount', '-createdAt']
 
     if (variant === 'recentlyFixed') {
       and.push({ status: { equals: 'FIXED' } })
       sort = '-updatedAt'
     } else if (variant === 'pinned') {
-      and.push({ isPinned: { equals: true } }, { status: { not_equals: 'CLOSED' } })
+      and.push({ isPinned: { equals: true } })
       sort = ['-upvoteCount', '-createdAt']
     } else {
-      and.push({ status: { not_in: ['FIXED', 'CLOSED'] } })
+      and.push({ status: { not_in: statusesFor('shipped') } })
     }
 
     const result = await payload.find({

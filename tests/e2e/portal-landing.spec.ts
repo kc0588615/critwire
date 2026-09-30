@@ -406,13 +406,13 @@ test.describe('S2.5 live slots', () => {
     const aOwner = api('aOwner')
     const knownIssue = (title: string) => section(page, SECTION.knownIssues).getByRole('link', { name: new RegExp(title) })
 
-    await test.step('a status change updates the status label', async () => {
+    await test.step('a status change updates the stage label', async () => {
       await page.goto(`/g/${a1.slug}`)
-      await expect(knownIssue(publicIssue.title)).toContainText('Reported')
-      const { status } = await aOwner.update('issues', publicIssue.id, { status: 'INVESTIGATING' })
+      await expect(knownIssue(publicIssue.title)).toContainText('Under review')
+      const { status } = await aOwner.update('issues', publicIssue.id, { status: 'PLANNED' })
       expect(status).toBe(200)
       await expectLanding(page, a1.slug, async () => {
-        await expect(knownIssue(publicIssue.title)).toContainText('Investigating', { timeout: 1_000 })
+        await expect(knownIssue(publicIssue.title)).toContainText('Planned', { timeout: 1_000 })
       })
     })
 

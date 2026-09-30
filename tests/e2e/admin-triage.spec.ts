@@ -200,37 +200,40 @@ test.describe('S6.2–S6.7 triage as studio A', () => {
   })
 
   test('S6.3 dragging a card to another column changes its status everywhere', async ({ api, page }) => {
+    // Planned is the fifth column: wide enough that it and Reported are both on screen.
+    await page.setViewportSize({ width: 2400, height: 900 })
     await openKanban(page)
 
-    await test.step('drag from Reported to Investigating', async () => {
+    await test.step('drag from Reported to Planned', async () => {
       const saved = issuePatch(page, moving)
-      await drag(page, moving, dropArea(page, 'INVESTIGATING'))
+      await drag(page, moving, dropArea(page, 'PLANNED'))
       expect((await saved).status()).toBe(200)
-      await expect(dropArea(page, 'INVESTIGATING')).toContainText(moving.title)
+      await expect(dropArea(page, 'PLANNED')).toContainText(moving.title)
       await expect(dropArea(page, 'REPORTED')).not.toContainText(moving.title)
     })
 
     await test.step('the move survives a reload', async () => {
       await openKanban(page)
-      await expect(dropArea(page, 'INVESTIGATING')).toContainText(moving.title)
+      await expect(dropArea(page, 'PLANNED')).toContainText(moving.title)
       await expect(dropArea(page, 'REPORTED')).not.toContainText(moving.title)
     })
 
     await test.step('REST reports the new status', async () => {
-      expect(await statusOf(api('aOwner'), moving)).toBe('INVESTIGATING')
+      expect(await statusOf(api('aOwner'), moving)).toBe('PLANNED')
     })
 
+    // Players see stages: Reported → Investigating would look the same to them.
     await test.step('the public board and the landing follow', async () => {
       await eventually(async () => {
         await page.goto(`/g/${project.slug}/feedback?view=board`)
-        await expect(boardColumn(page, 'INVESTIGATING').getByRole('link')).toContainText([moving.title], {
+        await expect(boardColumn(page, 'PLANNED').getByRole('link')).toContainText([moving.title], {
           timeout: 1_000,
         })
       })
       await eventually(async () => {
         await page.goto(`/g/${project.slug}`)
         const known = page.locator('section[aria-labelledby="fs-known-issues-heading"]')
-        await expect(known.getByRole('link', { name: new RegExp(moving.title) })).toContainText('Investigating', {
+        await expect(known.getByRole('link', { name: new RegExp(moving.title) })).toContainText('Planned', {
           timeout: 1_000,
         })
       })
@@ -240,7 +243,7 @@ test.describe('S6.2–S6.7 triage as studio A', () => {
   test('S6.4 reordering a column survives a reload', async ({ api, page }) => {
     const [first, second, third] = investigating
     await openKanban(page)
-    // S6.3 adds a card to this column; only the seeded three are compared.
+    // Only the seeded three are compared: a re-seed after a failure adds more.
     const columnOrder = async () =>
       (await cardTitles(page, 'INVESTIGATING')).filter((title) => investigating.some((issue) => issue.title === title))
     expect(await columnOrder()).toEqual([first.title, second.title, third.title])

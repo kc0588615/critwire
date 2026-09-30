@@ -4,6 +4,7 @@ import { cookies } from 'next/headers'
 import { getPayload, NotFound, ValidationError, type Where } from 'payload'
 import { z } from 'zod'
 
+import { ARCHIVED_STATUSES } from '@/lib/game-portal/stages'
 import { getLogger } from '@/lib/logger'
 import { getClientIP } from '@/lib/public-forms/request'
 import { checkRateLimit } from '@/lib/upstash/rate-limit'
@@ -74,10 +75,14 @@ export async function POST(req: Request): Promise<Response> {
       disableErrors: true,
       id: parsed.data.issueId,
       overrideAccess: false,
-      select: { tenant: true },
+      select: { status: true, tenant: true },
     })
     if (!issue) {
       return Response.json({ error: 'Issue not found.' }, { status: 404 })
+    }
+    // An archived item's count is frozen: no new votes and no withdrawals.
+    if (ARCHIVED_STATUSES.includes(issue.status)) {
+      return Response.json({ error: 'This item is archived.' }, { status: 409 })
     }
 
     const voteWhere: Where = {

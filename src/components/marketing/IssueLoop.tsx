@@ -1,6 +1,6 @@
 import React from 'react'
 
-import { StatusMark, type StatusShape } from '@/components/game/IssueStatus'
+import { StatusMark, type StatusShape } from '@/components/game/FeedbackStatus'
 
 type Stage = { detail: string; name: string; shape: StatusShape }
 

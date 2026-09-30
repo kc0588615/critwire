@@ -1,9 +1,10 @@
 import Link from 'next/link'
 import React from 'react'
 
-import { issueStatusLabel, issueStatusShape, StatusMark } from '@/components/game/IssueStatus'
+import { StatusMark } from '@/components/game/FeedbackStatus'
 import { VoteCount } from '@/components/game/VoteCount'
 import { portalPaths } from '@/lib/game-portal/paths'
+import { publicStage } from '@/lib/game-portal/stages'
 
 import type { KnownIssuesSlot } from '../../schema/slots'
 import type { SiteRenderContext } from '../context'
@@ -36,21 +37,25 @@ export const KnownIssuesSection: React.FC<{
           id="fs-known-issues-heading"
         />
         <ul className="fs-rows fs-column-wide">
-          {ctx.knownIssues.map((issue) => (
-            <li key={issue.id}>
-              {/* The row's text starts with the title: the status marker is an empty CSS shape. */}
-              <Link className="fs-issue-row" href={paths.feedbackItem(issue.slug)}>
-                <StatusMark shape={issueStatusShape(issue.status)} />
-                <span className="fs-issue-row-title">{issue.title}</span>
-                <span className="fs-issue-row-meta">
-                  {typeof issue.upvoteCount === 'number' && issue.upvoteCount > 0 ? (
-                    <VoteCount count={issue.upvoteCount} variant="inline" />
-                  ) : null}
-                  <span>{issueStatusLabel(issue.status)}</span>
-                </span>
-              </Link>
-            </li>
-          ))}
+          {ctx.knownIssues.map((issue) => {
+            // queryLandingIssues leaves archived items out, so every row has a stage.
+            const stage = publicStage(issue.status)
+            return (
+              <li key={issue.id}>
+                {/* The row's text starts with the title: the stage marker is an empty CSS shape. */}
+                <Link className="fs-issue-row" href={paths.feedbackItem(issue.slug)}>
+                  {stage ? <StatusMark shape={stage.shape} /> : null}
+                  <span className="fs-issue-row-title">{issue.title}</span>
+                  <span className="fs-issue-row-meta">
+                    {typeof issue.upvoteCount === 'number' && issue.upvoteCount > 0 ? (
+                      <VoteCount count={issue.upvoteCount} variant="inline" />
+                    ) : null}
+                    <span>{stage?.label}</span>
+                  </span>
+                </Link>
+              </li>
+            )
+          })}
         </ul>
         <p className="mt-6">
           <Link className="fs-link font-semibold" href={paths.feedback}>

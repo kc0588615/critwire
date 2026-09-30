@@ -121,13 +121,13 @@ test.describe('S4.1–S4.3 issue list, board and detail', () => {
       await expect(page.locator('body')).not.toContainText(bIssue.title)
     })
 
-    await test.step('each row carries its status badge', async () => {
+    await test.step('each row carries its stage badge', async () => {
       const row = (issue: Issue) => page.getByRole('listitem').filter({ hasText: issue.title })
-      await expect(row(pinned)).toContainText('Investigating')
-      await expect(row(workaround)).toContainText('Workaround Available')
-      await expect(row(needsInfo)).toContainText('Needs More Info')
-      await expect(row(fixedReleased)).toContainText('Fixed')
-      await expect(row(audio)).toContainText('Reported')
+      await expect(row(pinned)).toContainText('Under review')
+      await expect(row(workaround)).toContainText('Under review')
+      await expect(row(needsInfo)).toContainText('Under review')
+      await expect(row(fixedReleased)).toContainText('Shipped')
+      await expect(row(audio)).toContainText('Under review')
     })
 
     await test.step('"Latest" lists newest first, pinned still on top', async () => {
@@ -452,5 +452,59 @@ test.describe('S4.5–S4.6 voting API', () => {
       }
       await togglePair(`round ${round}, adding`)
     }
+  })
+})
+
+test.describe('S4.7 archived items', () => {
+  let project: GameProject
+  let openItem: Issue
+  let archived: Issue
+
+  test.beforeAll(async ({ api, playwright, uniqueSlug, world }) => {
+    const aOwner = api('aOwner')
+    project = await createProject(aOwner, world.tenants.A.id, uniqueSlug('archived'))
+    // The open item keeps the landing's section and the board's columns on screen.
+    openItem = await createIssue(aOwner, project, uniqueSlug('archived-open'), { title: 'Torches flicker at dusk' })
+    archived = await createIssue(aOwner, project, uniqueSlug('archived-closed'), { title: 'Old launcher crash' })
+    // Voted while open, then closed: the vote route refuses archived items.
+    await castVote(playwright, archived.id)
+    const { status } = await aOwner.update('issues', archived.id, { status: 'CLOSED' })
+    expect(status).toBe(200)
+  })
+
+  test('an archived item leaves the board, the list and the landing, keeps its page and stops taking votes', async ({
+    api,
+    page,
+    playwright,
+  }) => {
+    await test.step('the list shows only the open item', async () => {
+      await open(page, issuesPath(project.slug))
+      expect(await listedTitles(page, project.slug)).toEqual([openItem.title])
+    })
+
+    await test.step('the board shows only the open item', async () => {
+      await open(page, `${issuesPath(project.slug)}?view=board`)
+      expect(await listedTitles(page, project.slug)).toEqual([openItem.title])
+    })
+
+    await test.step('the landing shows only the open item', async () => {
+      await open(page, `/g/${project.slug}`)
+      const knownIssues = page.locator('section[aria-labelledby="fs-known-issues-heading"] li')
+      await expect(knownIssues).toHaveText([new RegExp(`^${openItem.title}`)])
+    })
+
+    await test.step('its page says Archived and shows the count without a vote button', async () => {
+      await open(page, `${issuesPath(project.slug)}/${archived.slug}`)
+      await expect(page.getByRole('heading', { level: 1 })).toHaveText(archived.title)
+      await expect(page.locator('article .fs-issue-meta')).toContainText('Archived')
+      await expect(page.locator('article .fs-tally')).toHaveText('1')
+      await expect(page.getByRole('button', { name: /^Upvoted?\s*\d+$/ })).toHaveCount(0)
+    })
+
+    await test.step('the vote API answers 409 and the count stays 1', async () => {
+      const reply = await postVote(playwright, { issueId: archived.id })
+      expect(reply.status).toBe(409)
+      expect(await tally(api('superAdmin'), archived.id)).toMatchObject({ upvoteCount: 1, rows: 1 })
+    })
   })
 })

@@ -9,13 +9,8 @@ import React from 'react'
 import type { Issue } from '@/payload-types'
 
 import { IssueFilters } from '@/components/game/IssueFilters'
-import {
-  IssueMeta,
-  issueStatusLabel,
-  issueStatusShape,
-  PinnedTag,
-  StatusMark,
-} from '@/components/game/IssueStatus'
+import { FeedbackMeta, PinnedTag, StatusMark } from '@/components/game/FeedbackStatus'
+import { issueStatusLabel, issueStatusShape } from '@/components/game/IssueStatus'
 import { PageHead } from '@/components/game/PageHead'
 import { VoteCount } from '@/components/game/VoteCount'
 import { ISSUE_STATUS_OPTIONS } from '@/collections/options'
@@ -74,7 +69,7 @@ const IssueRow: React.FC<{ issue: Issue; paths: PortalPaths }> = ({ issue, paths
           {issue.title}
         </Link>
       </h2>
-      <IssueMeta issue={issue} />
+      <FeedbackMeta issue={issue} />
       {issue.summary ? (
         <p className="fs-body mt-2 line-clamp-2 text-[var(--fs-muted-fg)]">{issue.summary}</p>
       ) : null}
