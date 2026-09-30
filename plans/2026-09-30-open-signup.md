@@ -76,7 +76,7 @@ Out:
 
 - [x] Baseline: install, migrate, run typecheck, lint, unit and E2E tests; record the results under Baseline
 - [x] Architecture: `architect` writes findings and the target design
-- [ ] Fable review: `architecture-reviewer`
+- [x] Fable review: `architecture-reviewer`
 - [ ] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
 - [ ] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
 - [ ] Steps: `planner` writes Steps and Verification
@@ -545,6 +545,29 @@ email link -> /verify/<token> (verifies) -> "Email confirmed" -> /admin/login?re
 
 ## Architecture review (Fable)
 
+Checked the findings and design against the code at `27d23a3` and Payload 3.85.2 in `node_modules`.
+
+**Findings verified as real:** F1 (`tenantField` spreads `overrides`, so `hooks` pass through; `create.js:148` and `utilities/update.js:154` skip validation on drafts; `withTenantAccess.js` never looks at incoming data), F2 (`checkFileRestrictions.js` only runs the SVG check under `mimeTypes`), F3 (nine `notFound()` copies confirmed), F4 (`login.js:184` refuses `_verified === false`; `resetPassword.js` sets `_verified = Boolean(_verified)` and still opens a session), F5 (`payload.config.ts` sets no `email` and no `serverURL`; `contact.ts:95-118` calls Resend by hand), F6, F7 (`autoPublishReport.ts:16-30`), F8 (`critterConnect.ts:68-69`), F9. `mergeBaseFields.js` deep-merges a same-named field in `Users.fields` over Payload's base auth field, so the fixes below need no hook gymnastics.
+
+VERDICT: APPROVE_WITH_CHANGES
+
+MUST-FIX:
+1. **Email verification can be bypassed by any signed-up user.** Payload's `_verified` base field uses `defaultAccess` for `update` (`auth/baseFields/verification.js` → `auth/defaultAccess.js`: `Boolean(user)`), and `Users.access.update` lets a user update their own document. Combined with the plan's own F4 fact (a password reset opens a session for an unverified user), the sequence is: sign up → `/admin/forgot` → `/admin/reset/<token>` (session) → `PATCH /api/users/<id> { "_verified": true }` → onboarding passes. Fix: declare `_verified` in `Users.fields` with `access: { create: superAdmin, read: superAdmin, update: superAdmin }` (first-user registration is unaffected: `registerFirstUser.js:40` creates with `overrideAccess: true`, and the plan's super-admin `beforeChange` hook runs after field access). Add this exact sequence to the "unverified account" E2E and assert `_verified` stays false.
+2. **Email address can be changed without re-verification.** The same self-update path lets a verified user set `email` to any address; `_verified` stays true. That breaks "verifies their email" (Goal 2), and because §5 answers "existing, verified: send nothing", the address's real owner can never sign up and gets no explanation. Fix: `email` field `access.update: isSuperAdmin` (same `mergeBaseFields` override), or reject the change in the Users `beforeChange` hook §4 already adds. Say so in §4/§7 ("Unchanged" currently implies users may update themselves freely).
+
+MISSED:
+- **Media served from `public/media` bypasses every access rule.** `Media.ts:44` sets `staticDir` to `public/media`, so on any instance without R2 (dev, E2E, self-hosted local disk) Next serves `/media/<filename>` statically with no `checkFileAccess`. §7's "file serving applies this too" and the suspension E2E ("media … disappear from REST") are only true for `/api/media/file/<name>` and for R2-backed instances. Either move `staticDir` out of `public/` (one line; Payload's URL field already points at `/api/media/file/`) or state the limitation and assert the E2E against `/api/media/...` only.
+- **Onboarding step 3 must pass `tenant` explicitly.** The plugin's tenant `defaultValue` reads the `payload-tenant` cookie and, absent that, returns `null` unless autosave is on (`tenantField/index.js`); a Local API create as the user would fail the field's required validation. §6's data list omits `tenant`.
+- **Tenant `afterChange` revalidation must cover every game of the studio.** §8 says "calls `revalidateGamePortal`"; a tenant can hold up to 3 games, so it needs a `find` of the studio's game projects and one call each.
+- **`guardPublicForm` requires `rateLimit.scope`** (`guard.ts:14-17`, keyed `${ip}:${scope}`); §5 and §12 should name the scope (e.g. `'signup'`, `'abuse-report'`) so the per-IP budget isn't accidentally shared with a game's contact form.
+
+SHOULD-CONSIDER:
+1. The "existing, unverified: latest password wins" rule has a small race (attacker resubmits the victim's address with their own password after the victim signs up but before they click; the victim's newest link then verifies the attacker's password). Cheapest closure and one fewer step for the user: make `/verify/<token>` a form that takes the password, calls `verifyEmail` then `payload.login`, sets the cookie and 303s to `/onboarding`. It uses only Payload's operations, so it isn't hand-rolled auth.
+2. Set `serverURL: getServerSideURL()` in `payload.config.ts` as well as building links from it in the templates; `getRequestOrigin.js` then never consults the proxied host, and the CORS warning noise disappears.
+3. `flagged` + `flagReasons` appear on three collections; define them once (`moderationFields()` beside `screenTextHook`) so their access, admin read-only settings and index can't drift (DRY).
+4. `abuse-reports.gameProject` dangles when a game is deleted (Payload doesn't cascade); either make `pageUrl` the source of truth in the queue or clear it in `GameProjects.afterDelete`.
+5. The second E2E server on 3102 inherits `NEXT_PUBLIC_SERVER_URL=http://localhost:3100`; keep its tests REST-only (as planned) and set `PORT` alone, so nothing there renders absolute links.
+
 ## Architecture review (Astra)
 
 ## Revision notes
@@ -559,5 +582,6 @@ email link -> /verify/<token> (verifies) -> "Email confirmed" -> /admin/login?re
 
 - 2026-09-30 09:45 UTC · Baseline: created the E2E database, migrated; tsc, lint (0 errors, 20 warnings), int (13/13) and E2E (75/75) pass.
 - 2026-09-30 10:13 UTC · Architecture: `architect` wrote 10 findings (incl. draft updates skipping the tenant check, scriptable SVG uploads, the demo slug) and the target design; added handoff H8 (terms/AUP, blocks nothing). Docs-only, no checks needed.
+- 2026-09-30 10:20 UTC · Fable review: APPROVE_WITH_CHANGES; 2 MUST-FIX (users can self-set `_verified`; email changes skip re-verification), plus 4 missed items and 5 suggestions. Docs-only, no checks needed.
 
 ## Summary
