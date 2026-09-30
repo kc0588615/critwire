@@ -1,8 +1,6 @@
 import React from 'react'
 
-import { formatDate } from '@/components/game/format'
-import { PLATFORM_OPTIONS, RELEASE_STATE_OPTIONS } from '@/collections/options'
-import type { GameProject } from '@/payload-types'
+import { PLATFORM_OPTIONS } from '@/collections/options'
 
 import type { AvailabilitySlot } from '../../schema/slots'
 import type { SiteRenderContext } from '../context'
@@ -12,27 +10,6 @@ const optionLabel = (
   options: readonly { label: string; value: string }[],
   value: null | string | undefined,
 ): null | string => options.find((option) => option.value === value)?.label ?? value ?? null
-
-/**
- * The game's live build facts, in reading order: release state, release
- * date, version, platforms. The hero's build line renders them; the
- * Availability section doesn't repeat them.
- */
-export const availabilityFacts = (project: GameProject): string[] => {
-  const availability = project.availability
-  const version = availability?.currentVersion?.trim()
-  const platforms = (availability?.platforms ?? [])
-    .map((platform) => optionLabel(PLATFORM_OPTIONS, platform.platform))
-    .filter((name): name is string => Boolean(name))
-
-  return [
-    optionLabel(RELEASE_STATE_OPTIONS, availability?.releaseState),
-    formatDate(availability?.releaseDate),
-    // "v0.1.0" and "0.1.0" both read as "Version 0.1.0".
-    version ? `Version ${version.replace(/^v(?=\d)/i, '')}` : null,
-    platforms.length > 0 ? [...new Set(platforms)].join(', ') : null,
-  ].filter((fact): fact is string => Boolean(fact))
-}
 
 /**
  * Where to play: one row per platform, the name linked to its store.

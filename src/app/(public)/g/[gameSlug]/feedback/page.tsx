@@ -8,6 +8,7 @@ import React from 'react'
 
 import type { Issue } from '@/payload-types'
 
+import { FeedbackActions } from '@/components/game/FeedbackActions'
 import { FeedbackBoard } from '@/components/game/FeedbackBoard'
 import { FeedbackFilters } from '@/components/game/FeedbackFilters'
 import { FeedbackMeta } from '@/components/game/FeedbackStatus'
@@ -82,24 +83,12 @@ export default async function FeedbackPage({ params, searchParams }: Args) {
 
   const paths = portalPaths(gameSlug)
   const reportHref = paths.newFeedback()
-  const acceptIdeas = project.reportForm?.acceptIdeas !== false
 
   return (
     <div className="fs-shell fs-ops">
       <div className="fs-column-wide">
         <PageHead
-          action={
-            <>
-              <Link className="fs-btn fs-btn-primary" href={paths.newFeedback('bug')}>
-                Report a bug
-              </Link>
-              {acceptIdeas ? (
-                <Link className="fs-btn fs-btn-secondary" href={paths.newFeedback('idea')}>
-                  Suggest an idea
-                </Link>
-              ) : null}
-            </>
-          }
+          action={<FeedbackActions project={project} />}
           purpose={purpose(project.name)}
           title="Feedback"
         />

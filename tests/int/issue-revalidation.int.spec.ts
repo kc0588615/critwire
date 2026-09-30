@@ -15,34 +15,14 @@ const payload = {
   logger: { info: vi.fn() },
 }
 
-describe('flagship dynamic-slot revalidation', () => {
+// E2E can't see a revalidation that didn't happen, so this one case lives here.
+describe('issue hub revalidation', () => {
   beforeEach(() => {
     revalidatePath.mockClear()
     payload.logger.info.mockClear()
   })
 
-  it('revalidates both landing pages when a public issue moves projects', async () => {
-    const oldProject = project(1, 'old-game')
-    const newProject = project(2, 'new-game')
-    const previousDoc = {
-      gameProject: oldProject,
-      id: 10,
-      isPublic: true,
-      title: 'Public issue',
-    } as Issue
-    const doc = { ...previousDoc, gameProject: newProject } as Issue
-
-    await revalidateIssueLanding({
-      doc,
-      previousDoc,
-      req: { context: {}, payload },
-    } as never)
-
-    expect(revalidatePath).toHaveBeenCalledWith('/g/old-game')
-    expect(revalidatePath).toHaveBeenCalledWith('/g/new-game')
-  })
-
-  it('still skips issue writes that only change kanban order', async () => {
+  it('skips issue writes that only change kanban order', async () => {
     const gameProject = project(1, 'ordered-game')
     const previousDoc = {
       _order: 'a0',

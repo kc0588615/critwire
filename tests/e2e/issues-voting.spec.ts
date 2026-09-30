@@ -357,16 +357,16 @@ test.describe('S4.4 voting in the browser', () => {
     other = await createIssue(aOwner, project, uniqueSlug('vote-pins'), { title: 'Map pins drift' })
   })
 
-  test('upvotes toggle, persist per browser, and reach the landing and the list', async ({ browser, page }) => {
+  test('upvotes toggle, persist per browser, and reach the hub and the list', async ({ browser, page }) => {
     const detail = `${issuesPath(project.slug)}/${voted.slug}`
     const button = (on: Page) => on.getByRole('button', { name: /^Upvoted?\s*\d+$/ })
     const expectButton = async (on: Page, pressed: boolean, count: number) => {
       await expect(button(on)).toHaveAttribute('aria-pressed', String(pressed))
       await expect(button(on).locator('.fs-vote-count')).toHaveText(String(count))
     }
-    const knownIssues = page.locator('section[aria-labelledby="fs-known-issues-heading"] li')
+    const knownIssues = page.locator('section[aria-labelledby="fs-top-feedback-heading"] li')
 
-    await test.step('before any vote, the newer issue leads the landing and the list', async () => {
+    await test.step('before any vote, the newer issue leads the hub and the list', async () => {
       await open(page, `/g/${project.slug}`)
       await expect(knownIssues).toHaveText([other.title, voted.title].map((title) => new RegExp(`^${title}`)))
       await expect(knownIssues.filter({ hasText: '▲' })).toHaveCount(0)
@@ -400,7 +400,7 @@ test.describe('S4.4 voting in the browser', () => {
       await expectButton(page, false, 1)
     })
 
-    await test.step('the landing shows the count and ranks the voted issue first', async () => {
+    await test.step('the hub shows the count and ranks the voted issue first', async () => {
       await eventually(async () => {
         await page.goto(`/g/${project.slug}`)
         await expect(knownIssues).toHaveText([new RegExp(`^${voted.title}.*▲ 1`), new RegExp(`^${other.title}`)], {
@@ -479,7 +479,7 @@ test.describe('S4.5–S4.6 voting API', () => {
   })
 
   test('S4.6 votes leave the issue\'s updatedAt alone [F4]', async ({ api, playwright }) => {
-    // The landing's "Recently Fixed" sorts by updatedAt, so a vote must not look like an edit.
+    // A vote isn't an edit: `updatedAt` keeps meaning the studio's last change.
     const superAdmin = api('superAdmin')
     const before = await tally(superAdmin, publicIssue.id)
     const reply = await postVote(playwright, { issueId: publicIssue.id })
@@ -533,7 +533,7 @@ test.describe('S4.7 archived items', () => {
   test.beforeAll(async ({ api, playwright, uniqueSlug, world }) => {
     const aOwner = api('aOwner')
     project = await createProject(aOwner, world.tenants.A.id, uniqueSlug('archived'))
-    // The open item keeps the landing's section and the board's columns on screen.
+    // The open item keeps the hub's section and the board's columns on screen.
     openItem = await createIssue(aOwner, project, uniqueSlug('archived-open'), { title: 'Torches flicker at dusk' })
     archived = await createIssue(aOwner, project, uniqueSlug('archived-closed'), { title: 'Old launcher crash' })
     // Voted while open, then closed: the vote route refuses archived items.
@@ -542,7 +542,7 @@ test.describe('S4.7 archived items', () => {
     expect(status).toBe(200)
   })
 
-  test('an archived item leaves the board, the list and the landing, keeps its page and stops taking votes', async ({
+  test('an archived item leaves the board, the list and the hub, keeps its page and stops taking votes', async ({
     api,
     page,
     playwright,
@@ -557,9 +557,9 @@ test.describe('S4.7 archived items', () => {
       expect(await listedTitles(page, project.slug)).toEqual([openItem.title])
     })
 
-    await test.step('the landing shows only the open item', async () => {
+    await test.step('the hub shows only the open item', async () => {
       await open(page, `/g/${project.slug}`)
-      const knownIssues = page.locator('section[aria-labelledby="fs-known-issues-heading"] li')
+      const knownIssues = page.locator('section[aria-labelledby="fs-top-feedback-heading"] li')
       await expect(knownIssues).toHaveText([new RegExp(`^${openItem.title}`)])
     })
 

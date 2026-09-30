@@ -130,7 +130,7 @@ test.describe('S6.2–S6.7 triage as studio A', () => {
     }
     reported = await createIssue(aOwner, project, uniqueSlug('at-reported'), { title: `${tag}: fog pops in` })
     failing = await createIssue(aOwner, project, uniqueSlug('at-failing'), { title: `${tag}: save icon never stops` })
-    // Newest, so the landing (five newest open issues) lists it.
+    // Newest, so the hub (five top open items) lists it.
     moving = await createIssue(aOwner, project, uniqueSlug('at-moving'), { title: `${tag}: ladder drops the player` })
     const bProject = await createProject(api('bOwner'), world.tenants.B.id, uniqueSlug('at-triage-b'))
     bIssue = await createIssue(api('bOwner'), bProject, uniqueSlug('at-b'), { title: `${tag}: studio B only` })
@@ -231,7 +231,7 @@ test.describe('S6.2–S6.7 triage as studio A', () => {
     })
 
     // Players see stages: Reported → Investigating would look the same to them.
-    await test.step('the public board and the landing follow', async () => {
+    await test.step('the public board and the hub follow', async () => {
       await eventually(async () => {
         await page.goto(`/g/${project.slug}/feedback?view=board`)
         await expect(boardColumn(page, 'PLANNED').getByRole('link')).toContainText([moving.title], {
@@ -240,7 +240,7 @@ test.describe('S6.2–S6.7 triage as studio A', () => {
       })
       await eventually(async () => {
         await page.goto(`/g/${project.slug}`)
-        const known = page.locator('section[aria-labelledby="fs-known-issues-heading"]')
+        const known = page.locator('section[aria-labelledby="fs-top-feedback-heading"]')
         await expect(known.getByRole('link', { name: new RegExp(moving.title) })).toContainText('Planned', {
           timeout: 1_000,
         })

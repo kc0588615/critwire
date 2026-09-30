@@ -61,6 +61,11 @@ export const GameProjects: CollectionConfig = {
     {
       name: 'description',
       type: 'textarea',
+      label: 'Pitch',
+      maxLength: 240,
+      admin: {
+        description: 'One line under the name on your portal and in link previews.',
+      },
     },
     {
       name: 'logo',
@@ -70,6 +75,7 @@ export const GameProjects: CollectionConfig = {
     {
       name: 'banner',
       type: 'upload',
+      label: 'Key art',
       relationTo: 'media',
     },
     {

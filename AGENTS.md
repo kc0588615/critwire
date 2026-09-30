@@ -145,5 +145,6 @@ Int tests (`tests/int`) exist only for invariants E2E can't reach:
 
 - `site-config-parity` — checks the Zod schema and the Payload field
   tree agree down to every enum option.
-- `template-revalidation` — the landing renders dynamically, so E2E
-  can't observe that issue writes revalidate it.
+- `issue-revalidation` — an issue write that only moves a kanban card
+  must not revalidate the hub, and E2E can't observe a revalidation
+  that didn't happen.

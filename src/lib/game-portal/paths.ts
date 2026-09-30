@@ -69,4 +69,4 @@ export const isReservedFeedbackSlug = (slug: string): boolean => RESERVED_FEEDBA
  * route move leaves these stale.
  */
 export const PORTAL_ROUTE = '/(public)/g/[gameSlug]'
-export const UPDATES_ROUTE = `${PORTAL_ROUTE}/(ops)/updates`
+export const UPDATES_ROUTE = `${PORTAL_ROUTE}/updates`

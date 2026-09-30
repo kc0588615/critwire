@@ -9,7 +9,7 @@ import { portalPaths } from '@/lib/game-portal/paths'
 import { resolveProjectSlug } from './resolveProjectSlug'
 
 /**
- * Revalidates a game's portal landing at /g/<slug>, which renders live
+ * Revalidates a game's hub at /g/<slug>, which renders live
  * patch-note and issue data.
  */
 export const revalidateGameLanding = async (

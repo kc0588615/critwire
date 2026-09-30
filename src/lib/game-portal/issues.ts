@@ -110,55 +110,34 @@ export const queryBoardColumn = async ({
 
 export type BoardCard = Awaited<ReturnType<typeof queryBoardColumn>>['docs'][number]
 
-export const LANDING_ISSUE_LIMIT = 4
-
-export type LandingIssuesVariant = 'compact' | 'pinned' | 'recentlyFixed'
+export const TOP_FEEDBACK_LIMIT = 5
 
 /**
- * Issues shown in the flagship landing page's known-issues slot.
- * Sorting is always explicit (pinned/votes/dates) — never the admin
- * kanban `_order` field, so board reordering cannot churn the public
- * landing page (cross-plan contract with the kanban remediation).
+ * The hub's top feedback: open items (not shipped, not archived),
+ * pinned first, then by votes, then newest. The sort is always explicit,
+ * never the admin kanban's `_order`, so reordering the board can't churn
+ * the cached hub (the contract `revalidateIssueLanding` keeps).
  */
-export const queryLandingIssues = cache(
-  async ({
-    projectID,
-    variant,
-  }: {
-    projectID: number | string
-    variant: LandingIssuesVariant
-  }): Promise<Issue[]> => {
-    const payload = await getPayload({ config })
+export const queryTopFeedback = cache(async (projectID: number | string): Promise<Issue[]> => {
+  const payload = await getPayload({ config })
 
-    const and: Where[] = [
-      { gameProject: { equals: projectID } },
-      { isPublic: { equals: true } },
-      { status: { not_in: ARCHIVED_STATUSES } },
-    ]
-    let sort: Sort = ['-isPinned', '-upvoteCount', '-createdAt']
-
-    if (variant === 'recentlyFixed') {
-      and.push({ status: { equals: 'FIXED' } })
-      sort = '-updatedAt'
-    } else if (variant === 'pinned') {
-      and.push({ isPinned: { equals: true } })
-      sort = ['-upvoteCount', '-createdAt']
-    } else {
-      and.push({ status: { not_in: statusesFor('shipped') } })
-    }
-
-    const result = await payload.find({
-      collection: 'issues',
-      depth: 0,
-      limit: LANDING_ISSUE_LIMIT,
-      overrideAccess: false,
-      pagination: false,
-      sort,
-      where: { and },
-    })
-    return result.docs
-  },
-)
+  const result = await payload.find({
+    collection: 'issues',
+    depth: 0,
+    limit: TOP_FEEDBACK_LIMIT,
+    overrideAccess: false,
+    pagination: false,
+    sort: ['-isPinned', '-upvoteCount', '-createdAt'],
+    where: {
+      and: [
+        { gameProject: { equals: projectID } },
+        { isPublic: { equals: true } },
+        { status: { not_in: [...ARCHIVED_STATUSES, ...statusesFor('shipped')] } },
+      ],
+    },
+  })
+  return result.docs
+})
 
 export const getPublicIssue = cache(
   async ({

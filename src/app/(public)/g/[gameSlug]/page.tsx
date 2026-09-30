@@ -1,82 +1,35 @@
 import type { Metadata } from 'next'
 
-import { draftMode } from 'next/headers'
 import { notFound } from 'next/navigation'
 import React from 'react'
 
-import { RenderGameBlocks } from '@/blocks/game/RenderGameBlocks'
-import { LivePreviewListener } from '@/components/LivePreviewListener'
-import { PortalFrame } from '@/components/game/PortalFrame'
+import { HubHeader } from '@/components/game/HubHeader'
+import { LatestUpdates } from '@/components/game/LatestUpdates'
+import { TopFeedback } from '@/components/game/TopFeedback'
 import { getGameProject } from '@/lib/game-portal/getGameProject'
-import {
-  getLandingPage,
-  resolveFlagshipConfig,
-  seedProjectMedia,
-} from '@/lib/game-portal/landingPage'
-import { FlagshipSite } from '@/site-templates/flagship-game-v1/FlagshipSite'
-import { deriveFlagshipDefault } from '@/site-templates/flagship-game-v1/defaults'
 import { getServerSideURL } from '@/utilities/getURL'
-import { getPreviewUser } from '@/utilities/getPreviewUser'
 
-// ISR safety net — on-demand revalidation from the GamePages,
-// GameProjects, PatchNotes, and Issues hooks is the primary
-// invalidation path.
+// ISR safety net: the GameProjects, PatchNotes, Issues and vote hooks
+// revalidate the hub on every change it shows.
 export const revalidate = 3600
 
-/**
- * Landing page decision tree:
- * 1. Page published with the flagship template: the flagship renderer.
- * 2. Page published with legacy blocks (no template): the legacy renderer
- *    inside the portal frame, themed with the derived default.
- * 3. No usable page: the flagship default derived from project facts.
- */
-export default async function GameLandingPage({
-  params,
-}: {
-  params: Promise<{ gameSlug: string }>
-}) {
+// No paths at build time: each hub renders on its first visit, then is
+// served from the ISR cache until a hook revalidates it.
+export async function generateStaticParams() {
+  return []
+}
+
+/** A game's hub: who the game is, its latest updates and its top feedback. */
+export default async function GameHubPage({ params }: { params: Promise<{ gameSlug: string }> }) {
   const { gameSlug } = await params
   const project = await getGameProject(gameSlug)
   if (!project) notFound()
 
-  const { isEnabled: draftModeEnabled } = await draftMode()
-  const previewUser = draftModeEnabled ? await getPreviewUser() : null
-  // Draft Mode is a site-wide cookie. Every draft read must therefore
-  // re-authorize the current user against the requested project's page;
-  // otherwise a preview opened for one tenant could expose another
-  // tenant's unpublished page by navigating to its public slug.
-  const draftPage = previewUser ? await getLandingPage(project.id, true, previewUser) : null
-  const draft = draftPage !== null
-  const page = draftPage ?? (await getLandingPage(project.id, false))
-  const listener = draft ? <LivePreviewListener /> : null
-
-  if (page?.template === 'flagship-game-v1') {
-    const { config: siteConfig, media } = resolveFlagshipConfig(page, project, { draft })
-    return (
-      <>
-        {listener}
-        <FlagshipSite config={siteConfig} mediaSeed={media} project={project} />
-      </>
-    )
-  }
-
-  if (page?.content?.length) {
-    return (
-      <PortalFrame project={project}>
-        {listener}
-        <RenderGameBlocks blocks={page.content} project={project} />
-      </PortalFrame>
-    )
-  }
-
   return (
     <>
-      {listener}
-      <FlagshipSite
-        config={deriveFlagshipDefault(project)}
-        mediaSeed={seedProjectMedia(project)}
-        project={project}
-      />
+      <HubHeader project={project} />
+      <LatestUpdates project={project} />
+      <TopFeedback project={project} />
     </>
   )
 }

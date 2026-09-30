@@ -7,8 +7,8 @@ import type { GameProject, PatchNote } from '@/payload-types'
 
 import { portalPaths } from '@/lib/game-portal/paths'
 
-import { formatDate } from './format'
 import { PageHead } from './PageHead'
+import { UpdateEntry } from './UpdateEntry'
 
 export const PatchNotesFeed: React.FC<{
   notes: PaginatedDocs<PatchNote>
@@ -40,33 +40,11 @@ export const PatchNotesFeed: React.FC<{
           </p>
         ) : (
           <ul className="fs-rows fs-feed">
-            {notes.docs.map((note) => {
-              const published = formatDate(note.publishedAt)
-              return (
-                <li key={note.id}>
-                  <article className="fs-entry">
-                    {note.versionLabel ? (
-                      <span className="fs-version">{note.versionLabel}</span>
-                    ) : null}
-                    <div className="fs-entry-main">
-                      {published ? (
-                        <time className="fs-meta block" dateTime={note.publishedAt ?? undefined}>
-                          {published}
-                        </time>
-                      ) : null}
-                      <h2 className="fs-h3 mt-1">
-                        <Link className="fs-link" href={paths.update(note.slug)}>
-                          {note.title}
-                        </Link>
-                      </h2>
-                      {note.summary ? (
-                        <p className="fs-body mt-2 text-[var(--fs-muted-fg)]">{note.summary}</p>
-                      ) : null}
-                    </div>
-                  </article>
-                </li>
-              )
-            })}
+            {notes.docs.map((note) => (
+              <li key={note.id}>
+                <UpdateEntry href={paths.update(note.slug)} note={note} titleAs="h2" />
+              </li>
+            ))}
           </ul>
         )}
 

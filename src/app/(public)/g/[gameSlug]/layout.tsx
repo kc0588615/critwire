@@ -1,14 +1,14 @@
 import { notFound } from 'next/navigation'
 import React from 'react'
 
+import { PortalFrame } from '@/components/game/PortalFrame'
 import { getGameProject } from '@/lib/game-portal/getGameProject'
 
 /**
- * Shared shell for a game portal: resolves the project once (React
- * cache shares the query with nested pages) and 404s unknown slugs.
- * The frame is owned further down: the landing renders PortalFrame
- * itself, while operational pages get it from the (ops) route group
- * layout.
+ * Every page of a game's portal (the hub, updates, feedback, the form,
+ * contact) renders inside one frame, in the project's theme. Resolves
+ * the project once (React cache shares the query with nested pages) and
+ * 404s unknown slugs.
  */
 export default async function GamePortalLayout({
   children,
@@ -21,5 +21,5 @@ export default async function GamePortalLayout({
   const project = await getGameProject(gameSlug)
   if (!project) notFound()
 
-  return <>{children}</>
+  return <PortalFrame project={project}>{children}</PortalFrame>
 }

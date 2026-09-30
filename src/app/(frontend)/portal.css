@@ -606,24 +606,17 @@
   border-top: 1px solid var(--fs-border);
 }
 
-/* Landing known-issue row: marker, title, then votes and status. The
+/* Hub top-feedback row: the title, then type, votes and stage. The
    whole row is the link; its text starts with the title. */
 .fs-issue-row {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  column-gap: 0.875rem;
-  row-gap: 0.25rem;
+  grid-template-columns: minmax(0, 1fr);
+  row-gap: 0.375rem;
   align-items: baseline;
   min-height: 2.75rem;
   padding-block: 1rem;
   color: var(--fs-fg);
   text-decoration: none;
-}
-
-/* The marker sits on the title's first line, however many lines it wraps to. */
-.fs-issue-row > .status-mark {
-  align-self: start;
-  margin-top: 0.35rem;
 }
 
 .fs-issue-row-title {
@@ -642,7 +635,6 @@
 }
 
 .fs-issue-row-meta {
-  grid-column: 2;
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
@@ -653,24 +645,39 @@
 
 @media (min-width: 40rem) {
   .fs-issue-row {
-    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: 1.5rem;
   }
 
-  /* Votes and status in fixed columns, so counts and labels line up row to row. */
+  /* Type, votes and stage in fixed columns, so they line up row to row;
+     a row without votes leaves its column empty. */
   .fs-issue-row-meta {
-    grid-column: 3;
     display: grid;
-    grid-template-columns: 4rem 11rem;
+    grid-template-columns: 3.5rem 4rem 9.5rem;
     column-gap: 1.25rem;
   }
 
+  .fs-issue-row-meta > .fs-tag {
+    grid-column: 1;
+    justify-self: start;
+  }
+
   .fs-issue-row-meta > .fs-vote-inline {
+    grid-column: 2;
     justify-self: end;
   }
 
-  .fs-issue-row-meta > :last-child {
-    grid-column: 2;
+  .fs-issue-row-meta > .fs-status {
+    grid-column: 3;
   }
+}
+
+/* The links that close a hub section: the full page, and RSS for updates. */
+.fs-hub-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
+  margin-top: 1.5rem;
 }
 
 /* A dated entry: version and date in a fixed left column, then the rest.

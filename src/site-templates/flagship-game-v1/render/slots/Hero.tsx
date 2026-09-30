@@ -1,12 +1,12 @@
 import React from 'react'
 
 import { Media } from '@/components/Media'
+import { availabilityFacts } from '@/components/game/HubHeader'
 
 import { resolveSiteAction } from '../../actions'
 import type { HeroSlot } from '../../schema/slots'
 import type { SiteRenderContext } from '../context'
 import { SiteActionLink, SiteMedia } from '../ui'
-import { availabilityFacts } from './Availability'
 
 /**
  * The portal's one loud element. The studio's art runs untouched (no

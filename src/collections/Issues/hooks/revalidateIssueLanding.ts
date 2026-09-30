@@ -7,8 +7,8 @@ import type { Issue } from '../../../payload-types'
 import { revalidateGameLanding } from '../../../hooks/revalidateGameLanding'
 
 /**
- * The flagship landing page shows a live known-issues summary, so
- * public-visible issue changes must revalidate /g/[slug].
+ * The hub shows the top open feedback, so public-visible issue changes
+ * must revalidate /g/[slug].
  *
  * Cross-plan contract with the admin kanban: writes that only move a
  * card (the fractional `_order` field — or any field outside this
@@ -17,6 +17,7 @@ import { revalidateGameLanding } from '../../../hooks/revalidateGameLanding'
 const LANDING_FIELDS = [
   'title',
   'slug',
+  'type',
   'summary',
   'status',
   'category',
@@ -31,7 +32,7 @@ export const revalidateIssueLanding: CollectionAfterChangeHook<Issue> = async ({
   req: { context, payload },
 }) => {
   if (context.disableRevalidate) return doc
-  // Issues that never appeared publicly can't affect the landing page.
+  // Issues that never appeared publicly can't affect the hub.
   if (!doc.isPublic && !previousDoc?.isPublic) return doc
   const projectChanged =
     // On create, previousDoc is an empty object.

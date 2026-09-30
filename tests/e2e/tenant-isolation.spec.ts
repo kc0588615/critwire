@@ -373,14 +373,12 @@ test('S1.8 issue slugs are unique per project, not globally', async ({ api, worl
 test.describe('S1.9 Draft Mode previews', () => {
   const TEXT = {
     aPublished: 'Iso A published heading',
-    aDraft: 'Iso A draft heading',
     marketingPublished: 'Iso marketing published hero',
     marketingDraft: 'Iso marketing draft hero',
   }
 
   let aPreviewProject: GameProject
   let aLanding: GamePage
-  let bLanding: GamePage
   let marketingSlug: string
 
   const heroBlock = (heading: string) => [{ blockType: 'gameHero' as const, heading }]
@@ -401,8 +399,7 @@ test.describe('S1.9 Draft Mode previews', () => {
     const superAdmin = api('superAdmin')
 
     aPreviewProject = await createProject(aOwner, world.tenants.A.id, uniqueSlug('iso-a-preview'))
-    // Legacy block page (no template), so the hero heading is the page's h1.
-    const published = await seed(aOwner, 'game-pages', {
+    aLanding = await seed(aOwner, 'game-pages', {
       gameProject: aPreviewProject.id,
       tenant: world.tenants.A.id,
       title: 'Iso A preview landing',
@@ -410,21 +407,6 @@ test.describe('S1.9 Draft Mode previews', () => {
       content: heroBlock(TEXT.aPublished),
       _status: 'published',
     })
-    const draft = await aOwner.update(
-      'game-pages',
-      published.id,
-      { content: heroBlock(TEXT.aDraft), _status: 'draft' },
-      { draft: true },
-    )
-    expect(draft.status, JSON.stringify(draft.body)).toBe(200)
-    aLanding = published
-
-    bLanding = await seed(
-      api('bOwner'),
-      'game-pages',
-      { gameProject: bProject.id, tenant: world.tenants.B.id, title: 'Iso B landing', _status: 'draft' },
-      { draft: true },
-    )
 
     marketingSlug = uniqueSlug('iso-marketing')
     const page = await seed(superAdmin, 'pages', {
@@ -452,27 +434,6 @@ test.describe('S1.9 Draft Mode previews', () => {
         await page.context().close()
       })
     }
-  })
-
-  test('a studio user in Draft Mode sees only published marketing content and other studios’ published pages [F10]', async ({
-    browser,
-  }) => {
-    const page = await browse(browser, 'bOwner')
-    await test.step('enter Draft Mode through studio B’s own site preview', async () => {
-      await page.goto(`/next/site-preview?token=${signSitePreviewToken(bLanding.id)}`)
-      await expect(page).toHaveURL(new RegExp(`/g/${bProject.slug}$`))
-    })
-    await test.step('studio A’s landing shows its published heading', async () => {
-      await page.goto(`/g/${aPreviewProject.slug}`)
-      await expect(page.getByRole('heading', { level: 1 })).toHaveText(TEXT.aPublished)
-      await expect(page.getByText(TEXT.aDraft)).toHaveCount(0)
-    })
-    await test.step('the marketing page shows its published hero', async () => {
-      await page.goto(`/${marketingSlug}`)
-      await expect(page.getByText(TEXT.marketingPublished)).toBeVisible()
-      await expect(page.getByText(TEXT.marketingDraft)).toHaveCount(0)
-    })
-    await page.context().close()
   })
 
   test('a super admin previews the marketing draft', async ({ browser }) => {

@@ -176,6 +176,9 @@ export interface GameProject {
    */
   generateSlug?: boolean | null;
   slug: string;
+  /**
+   * One line under the name on your portal and in link previews.
+   */
   description?: string | null;
   logo?: (number | null) | Media;
   banner?: (number | null) | Media;

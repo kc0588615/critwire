@@ -5,8 +5,8 @@ import React from 'react'
 import type { GameProject, Media } from '@/payload-types'
 
 import { PortalFrame } from '@/components/game/PortalFrame'
-import { queryLandingIssues } from '@/lib/game-portal/issues'
-import { getLatestPublishedPatchNote } from '@/lib/game-portal/patchNotes'
+import { queryTopFeedback } from '@/lib/game-portal/issues'
+import { queryPublishedPatchNotes } from '@/lib/game-portal/patchNotes'
 
 import type { SiteConfigV1 } from './schema/config'
 import { collectSiteMediaRefs } from './media'
@@ -31,10 +31,12 @@ export const FlagshipSite: React.FC<{
   const missingIds = collectSiteMediaRefs(siteConfig).filter((id) => !media.has(id))
 
   const [latestPatchNote, knownIssues, mediaResult] = await Promise.all([
-    siteConfig.latestUpdate.enabled ? getLatestPublishedPatchNote(project.id) : null,
-    siteConfig.knownIssues.enabled
-      ? queryLandingIssues({ projectID: project.id, variant: siteConfig.knownIssues.variant })
-      : [],
+    siteConfig.latestUpdate.enabled
+      ? queryPublishedPatchNotes({ limit: 1, page: 1, projectID: project.id }).then(
+          (notes) => notes.docs[0] ?? null,
+        )
+      : null,
+    siteConfig.knownIssues.enabled ? queryTopFeedback(project.id) : [],
     missingIds.length > 0
       ? payload.find({
           collection: 'media',
