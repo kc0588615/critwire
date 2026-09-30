@@ -127,7 +127,7 @@ Out:
 
 ## Stages
 
-- [ ] Baseline: install, migrate, run typecheck, lint, unit and E2E tests; record the results under Baseline
+- [x] Baseline: install, migrate, run typecheck, lint, unit and E2E tests; record the results under Baseline
 - [ ] Architecture: `architect` writes findings and the target design
 - [ ] Fable review: `architecture-reviewer`
 - [ ] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
@@ -135,6 +135,15 @@ Out:
 - [ ] Steps: `planner` writes Steps and Verification
 
 ## Baseline
+
+Commit `8cd22d9`, 2026-09-30 04:52–04:57 UTC.
+
+- **Setup:** created the disposable E2E database `critwire_m_feedback_pivot_e2e` and added `E2E_DATABASE_URL`, a generated `CRON_SECRET` (for `pnpm seed:critter-connect`) and `CRITWIRE_CONTACT_URL` (H6) to the worktree `.env`. `pnpm install --frozen-lockfile`: up to date. `pnpm payload migrate`: all 11 migrations applied to the fresh mission database, no `dev` row.
+- **Typecheck** (`pnpm exec tsc --noEmit`): pass.
+- **Lint** (`pnpm lint`): pass, 0 errors, 20 warnings (all `@typescript-eslint/no-unused-vars`). Pre-existing; don't add new ones.
+- **Int** (`pnpm test:int`): 3 files, 9 tests passed.
+- **E2E** (`pnpm test:e2e`): 73 passed, 0 failed, 3.8 min. Report: `/srv/critter-ai/agent-state/missions/feedback-pivot/e2e-baseline/` (`pnpm exec playwright show-report <dir>`; `run.log` alongside). Three of the 73 (`S1.10 AI site generation`) test the generator this mission removes; they go with it.
+- **Ports:** the E2E suite serves on 3100 (sink on 3101); `critwire-demo` was inactive.
 
 ## Architecture
 
@@ -150,6 +159,11 @@ Out:
 
 ## Decisions
 
+- **H6 picked up (2026-09-30).** The home page's Contact link reads `CRITWIRE_CONTACT_URL` (a `mailto:` or `https:` value; hidden when unset). Owner's value: `mailto:admin@critwire.com`, in the worktree `.env` and `/srv/critter-ai/agent-state/secrets/critwire.production.env`. H6's other two questions are moot after the pivot and were closed with a note.
+- **Owner (H6, 2026-09-30): existing production data need not be preserved.** Migrations may drop existing studio content instead of mapping it. This relaxes the brief's "Keep existing studio content" rule: map where it's cheap and obvious, drop otherwise, and list every drop in the Summary as before.
+
 ## Log
+
+- 2026-09-30 04:58 UTC · Baseline: E2E db and env set up, migrations applied; tsc pass, lint 0 errors/20 warnings, int 9/9, E2E 73/73. Picked up H6 (contact address, data-preservation decision) and closed it.
 
 ## Summary
