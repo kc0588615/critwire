@@ -21,6 +21,8 @@ be. Built on Payload CMS inside Next.js; Payload is the app.
 - `docs/integrations.md` — R2, Upstash, Resend, Turnstile, Sentry, the
   content filter and env vars
 - `docs/deploy.md` — production runbook
+- `docs/self-hosting.md` — which services you need, the first super
+  admin, open signup and the hosted limits (all off by default)
 
 ## Commands
 

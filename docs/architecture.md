@@ -40,7 +40,8 @@ Three services (`docker-compose.yml`):
   healthy.
 - **app** — multi-stage Dockerfile build (Next.js + Payload), port 3000,
   `DATABASE_URL` points at **pgbouncer:6432**, not postgres directly.
-  Requires `PAYLOAD_SECRET`. Non-root container user.
+  Requires `PAYLOAD_SECRET`. Non-root container user. Named volume
+  `media` at `/app/media` holds uploads when R2 isn't configured.
 
 Because the app is a persistent server, Payload's built-in job
 scheduler works without any cron workaround.
@@ -115,7 +116,36 @@ Built only by `portalPaths` (`src/lib/game-portal/paths.ts`).
 The old `/issues/*`, `/report` and `/patch-notes/*` URLs redirect
 permanently (`redirects.ts`; 308 for the old form's POST).
 
-## Custom domain resolution (Phase 8)
+Every portal page and the layout get their game through
+`requirePortalProject(slug)` (`src/lib/game-portal/getGameProject.ts`):
+a held game or a suspended studio's game redirects to `/unavailable`,
+an unknown slug is a 404. The RSS feed and the submit routes answer 404
+for both.
+
+### Accounts, hosting and moderation URLs
+
+```
+/unavailable                 a held or suspended portal; names no game and gives no reason
+/admin/forgot                "Forgot password?" (a custom Payload view) → POST /forgot-password/submit
+/admin/login, /admin/reset/<token>   Payload's own views, in Critwire's styling
+```
+
+Only with open signup (`CRITWIRE_OPEN_SIGNUP=1`, `src/lib/hosting.ts`);
+otherwise each answers 404:
+
+```
+/signup                      email + Turnstile → POST /signup/submit
+/verify/<token>              "Choose a password" → POST /verify/submit (verifies, signs in)
+/onboarding                  game name, website, store → POST /onboarding/submit
+/report-abuse?page=/g/<slug> "Report this page" → POST /report-abuse/submit
+```
+
+The submit routes are public form endpoints (`guardPublicForm`), except
+onboarding's, which needs a signed-in user. Each answers a browser with
+a 303 back to its page (`?submitted=1`, `?error=1`) and a JSON client
+with JSON.
+
+## Custom domain resolution (Phase 9)
 
 Resolved at the Next.js level — no separate proxy service:
 
@@ -133,7 +163,9 @@ Keep the rewrite layer lightweight: resolution only, no business logic.
 
 | Route | Strategy |
 | --- | --- |
-| Home page `/` | Dynamic (reads `CRITWIRE_CONTACT_URL` at request time) |
+| Home page `/` | Dynamic (reads `CRITWIRE_CONTACT_URL` and the signup flag at request time) |
+| `/signup`, `/verify/<token>`, `/onboarding`, `/report-abuse` | Dynamic, `noindex` (read the signup flag or the session per request) |
+| `/unavailable` | Static, `noindex` |
 | Marketing CMS pages | SSG (Draft Mode previews) |
 | Game hub | ISR on first visit + on-demand revalidation |
 | Updates feed, pages, detail, RSS | ISR on first visit + on-demand revalidation |
@@ -152,6 +184,34 @@ false`), because it also stores 404s for made-up slugs and would
 otherwise grow on disk without bound. A restart or deploy empties it.
 Subtrees revalidate by route pattern (`PORTAL_ROUTE` and `UPDATES_ROUTE` in `src/lib/game-portal/paths.ts`).
 
+Pages that read `CRITWIRE_OPEN_SIGNUP` must render per request: the
+Docker image is built without the runtime environment, so a prerendered
+page would keep the build's value.
+
+## Media serving
+
+Uploads are served only by Payload, at `/api/media/file/<name>`, which
+checks the Media collection's `read` access on every request, for local
+disk and R2 alike. So a suspended studio's files answer 403 there.
+
+- **Local disk** stores uploads in `media/` at the project root
+  (`MEDIA_DIR`, `src/lib/media/storage.ts`), outside `public/`, because
+  Next serves `public/` without asking Payload. The server refuses to
+  start while `public/media` holds files. Docker mounts the `media`
+  volume at `/app/media`.
+- **R2** keeps the bucket private: no `r2.dev` URL, no custom domain,
+  no `disablePayloadAccessControl`.
+- **No image optimizer** (`images.unoptimized`): it would fetch and
+  cache files outside Payload's check. `ImageMedia` instead offers
+  Payload's generated WebP sizes (`thumbnail` to `xlarge`) as a
+  `srcSet`.
+- Every file response sends `Cache-Control: private, max-age=300`, so
+  Cloudflare never keeps a copy and a suspension or hold reaches every
+  browser within five minutes.
+- Signed-in visitors may read any file an anonymous visitor may
+  (`mediaFileReadOverride`); lists and documents keep the tenant
+  limit.
+
 ## Project structure
 
 ```
@@ -159,7 +219,10 @@ Subtrees revalidate by route pattern (`PORTAL_ROUTE` and `UPDATES_ROUTE` in `src
   /app
     /(payload)            Payload admin routes (auto-generated)
     /(public)/g/[gameSlug]  public game portal routes
-    /(frontend)           home page, marketing CMS pages, previews
+    /(public)/unavailable   held or suspended portal
+    /(frontend)           home page, marketing CMS pages, previews,
+                          signup, verify, onboarding, report-abuse,
+                          forgot-password
     /api
       /health             health check
       /vote               voting endpoint
@@ -167,16 +230,25 @@ Subtrees revalidate by route pattern (`PORTAL_ROUTE` and `UPDATES_ROUTE` in `src
   /collections            one folder per collection config
   /components
     /game                 portal UI (hub, board, forms, chrome, theme)
-    /admin/issues         admin feedback kanban
+    /accounts             AccountPage, the signup/verify/onboarding shell
+    /admin                forgot-password view, logo, feedback kanban
+    /BeforeDashboard      admin dashboard for each role
     /marketing            home page
   /lib
     /game-portal          portal paths, stages, theme, links, queries
+    /accounts             signup, pending users, activation, email budget
+    /onboarding           createStudio, next steps
+    /limits               hosted-plan limits and their hooks
+    /hosting.ts           the open-signup flag
+    /media                where local uploads live
+    /admin                dashboard queries
+    /payload              withTransaction, unique-violation helper
     /moderation           content filter (screenText)
     /public-forms         guardPublicForm (Zod, Turnstile, rate limit)
     /validation           shared Zod schemas
     /upstash              Redis client, rate limits
     /turnstile            Turnstile verification
-    /email                React Email templates
+    /email                Resend-or-outbox adapter, React Email templates
     /security             vote-token hashing
     /tally                Tally form URLs
   /jobs                   Payload Jobs Queue task definitions

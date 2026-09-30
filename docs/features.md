@@ -35,11 +35,29 @@ multi-tenant plugin.
 
 ### Tenants (plugin-managed)
 One tenant = one Workspace (studio). Plugin handles tenant field
-injection, admin tenant switcher, and access filtering.
+injection, admin tenant switcher, and access filtering. Platform
+fields, which only a super admin writes:
+
+- `suspended`: takes the studio's portals off the public site and
+  refuses its members' creates and updates (see Hosting).
+- `createdBy`: the user whose onboarding created the studio (unique,
+  so one self-service studio per user); empty for studios a super
+  admin makes.
 
 ### Users (Payload built-in, extended)
 Email/password (Payload auth). Tenant association via plugin.
 Roles: `admin` (global), `owner`, `member`.
+
+- **Email verification** (`auth.verify`): Payload signs nobody in
+  until their address is verified. A self-service account verifies by
+  choosing its password on `/verify/<token>`; users a super admin
+  creates start verified.
+- `email` and `_verified` are super-admin fields, so "verified" always
+  means this address was confirmed. Users change only their name and
+  password.
+- Password recovery goes only through the guarded "Forgot password?"
+  form (`/admin/forgot`); Payload's REST and GraphQL forgot-password
+  operations are refused.
 
 ### GameProject
 Primary game entity; its slug is the portal's URL (`/g/<slug>`, unique
@@ -62,12 +80,15 @@ across studios). Fields:
 - **Feedback form** (`reportForm`): provider (native, Tally or
   external); for the native form, `acceptIdeas` and
   `reviewSubmissions` (both on by default).
+- **Review:** `flagged` and `flagReasons`, set by the content filter
+  (see Holding a studio's text for review).
 - customDomain, customDomainVerified (Phase 9); timestamps.
 
 ### PatchNote ("Updates" in the admin and the portal)
 Draft/publish workflow. Fields: gameProject (rel), title, slug (unique
 per project), summary, content (Lexical), versionLabel, isPublished,
-publishedAt, timestamps.
+publishedAt, flagged and flagReasons (set by the content filter),
+timestamps.
 
 ### Issue ("Feedback" in the admin)
 A public feedback item, a bug or an idea. Fields: gameProject (rel),
@@ -88,8 +109,18 @@ Fields: issue (rel), browserTokenHash, timestamps. Unique constraint:
 `[issueId, browserTokenHash]`.
 
 ### Media (Payload built-in)
-Upload collection via `@payloadcms/storage-s3` → R2. Game logos, key
-art and update images.
+Upload collection via `@payloadcms/storage-s3` → R2, or local disk in
+`media/` without R2. Game logos, key art and update images: raster
+only (PNG, JPEG, WebP, GIF, AVIF), served only through
+`/api/media/file/`.
+
+### AbuseReport ("Abuse reports" in the admin; platform-level)
+A visitor's report about a portal, from "Report this page". Not
+tenant-scoped, and only super admins can see it. Fields: pageUrl (the
+reported `/g/<slug>` path), gameProject (rel, optional), reason (spam,
+scam or phishing, offensive, impersonation or copyright, other),
+details, reporterEmail (optional), status (open, resolved, dismissed),
+timestamps.
 
 ## Enums (Payload select options)
 
@@ -190,6 +221,24 @@ show "Shipped in <version>"; the update's page lists the item under
 "From your feedback". Issue and vote hooks revalidate the linked
 update's page.
 
+## Holding a studio's text for review
+
+The content filter that screens player submissions also screens a
+studio's own public text: a game's name and pitch, and an update's
+title, version label, summary and content. It runs on create and
+whenever that text changes, on every write path, and sets `flagged`
+and `flagReasons`.
+
+- A **held game** shows the neutral `/unavailable` page instead of its
+  portal; a **held update** is missing from the feed, its page, RSS
+  and the hub.
+- The studio sees the hold and its reasons in the admin, read-only.
+- A super admin approves by unticking `flagged`. Unchanged text isn't
+  screened again, so the approval sticks.
+
+Feedback items a studio writes, and link targets inside rich text,
+aren't screened.
+
 ## Contact form
 
 Configurable routing per GameProject:
@@ -211,10 +260,52 @@ selector. Public player `?view=board` remains read-only.
 
 ## Hosting
 
-- **Self-hosting** is free forever (MIT).
+- **Self-hosting** is free forever (MIT). Signup and the limits are
+  off by default; see `docs/self-hosting.md`.
 - **Hosted:** open signup, free during early access, with limits that
   keep each site minimal (Phase 8).
 - A paid hosted tier may come later. There is no billing work now.
+
+### Open signup (`CRITWIRE_OPEN_SIGNUP=1`)
+
+1. **`/signup`**: an email address and Turnstile. Every accepted
+   address lands on "Check your inbox", so the form never reveals which addresses have
+   accounts. A pending address gets its existing link again; a verified
+   one gets nothing.
+2. **`/verify/<token>`**: the link from the email. Opening it changes
+   nothing (mail scanners open links); the person chooses a password
+   there, which verifies the account and signs them in.
+3. **`/onboarding`**: game name, website and an optional store link.
+   That creates a studio they own and one game, in one transaction.
+4. **`/g/<slug>?welcome=1`**: the live portal with a "next steps"
+   panel (share this link, add your first update, turn on ideas). If
+   the filter held the name, `/onboarding?held=1` says the portal is
+   waiting for a quick review.
+
+Unverified accounts own nothing, so nothing of theirs is ever public.
+There are no invites; a super admin adds teammates in the admin.
+
+### Hosted limits
+
+One module, `src/lib/limits/`, driven by environment variables and off
+unless set. The hosted values are 3 games per studio, 100 MB of media
+per studio and 200 public feedback items per game. Studio users who
+reach a limit get a message in the admin; the admin dashboard lists
+the limits in force. A player's submission that would auto-publish at
+the feedback limit waits for review instead.
+
+### Abuse protection
+
+- Signup, verification, password recovery and abuse reports are behind
+  Turnstile and per-IP rate limits, and signup and recovery share a
+  per-address budget of 3 emails an hour.
+- **Suspension:** a super admin ticks the studio's `suspended`. Its
+  portals show `/unavailable`, its content and files leave the public
+  API, and its members can still sign in and delete but can't create
+  or update anything, drafts included. Unticking restores everything.
+- **Report this page:** every portal's footer links to
+  `/report-abuse`, which files an abuse report for super admins. Their
+  dashboard counts open reports, held games and held updates.
 
 ## Development phases
 
@@ -245,11 +336,14 @@ confirmation.
 7. **Polish + deploy** — React Email templates, SEO/OG, Turnstile
    everywhere, admin empty states, pino logging, Docker build
    optimization, Nginx hardening, production deploy.
-8. **Open signup** — signup, onboarding, invites, and the hosted
-   early-access limits.
+8. **Open signup** — signup with email verification, onboarding,
+   suspension, abuse reports, screening a studio's own text, and the
+   hosted early-access limits. No invites.
 9. **Custom domains** — domain input + verification in admin,
    Cloudflare DNS API CNAME verification, `next.config.ts` rewrites,
    Upstash domain cache, SSL via Cloudflare proxy.
 
-**Sequencing rule:** ship Phases 1–7 on the platform subdomain, get
-real user feedback, *then* open signup and build domains.
+**Sequencing rule:** the owner chose open signup from day one
+(2026-09-29), so Phase 8 ships with Phases 1–7 on the platform
+subdomain. Get real user feedback *before* building custom domains
+(Phase 9).

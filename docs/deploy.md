@@ -22,9 +22,17 @@ the Next.js + Payload app, and Nginx. Cloudflare sits in front.
      `TURNSTILE_SECRET_KEY` and `NEXT_PUBLIC_TURNSTILE_SITE_KEY`
      (Cloudflare Turnstile), and `UPSTASH_REDIS_REST_URL` +
      `UPSTASH_REDIS_REST_TOKEN` (voting refuses without Upstash too)
-   - `RESEND_API_KEY`, required once any studio routes contact to
-     email (without it those contact jobs fail), and
-     `RESEND_FROM_EMAIL` on a domain verified in Resend
+   - `RESEND_API_KEY`, required for open signup and password recovery,
+     and once any studio routes contact to email (without it those
+     contact jobs fail), and `RESEND_FROM_EMAIL` on a domain verified
+     in Resend
+   - hosted instance only: `CRITWIRE_OPEN_SIGNUP=1` and the three
+     limits (`CRITWIRE_LIMIT_GAMES_PER_STUDIO=3`,
+     `CRITWIRE_LIMIT_MEDIA_MB_PER_STUDIO=100`,
+     `CRITWIRE_LIMIT_PUBLIC_FEEDBACK_PER_GAME=200`); leave them unset
+     to self-host (see `docs/self-hosting.md`)
+   - R2 bucket: keep it private (no `r2.dev` URL, no custom domain);
+     without R2, uploads go to the `media` volume
    - `NEXT_PUBLIC_*` values are baked in at build time (compose passes
      them as build args), so rebuild after changing one
    - `LOG_LEVEL=info`
@@ -53,13 +61,27 @@ docker compose up -d --build
   `payload.config.ts`). New schema changes require a committed
   migration: `pnpm payload migrate:create <name>` during development.
 - Verify: `curl -s https://<domain>/api/health` → `{"db":"up","status":"ok"}`.
+- The app refuses to start on a bad `CRITWIRE_*` or
+  `RESEND_FROM_EMAIL` value, or while `public/media` holds files; the
+  log says which. See "Upgrading" in `docs/self-hosting.md`.
 - Logs: `docker compose logs -f app`.
 
 ## First-run bootstrap
 
-1. Visit `https://<domain>/admin` — create the first user (gets the
-   Super Admin role via the first-registration path).
-2. Create a Tenant, assign users to it with owner/member roles.
+The first super admin needs no signup and no email:
+
+1. Visit `https://<domain>/admin` and fill in Payload's first-user
+   form, choosing **Super Admin** under Roles.
+2. On a self-hosted instance, create a Tenant and assign users to it
+   with owner/member roles; users a super admin creates are verified
+   already. On the hosted instance, studios sign up at `/signup`
+   instead.
+
+## Volumes
+
+`docker-compose.yml` keeps two named volumes: `postgres_data` for the
+database, and `media` (mounted at `/app/media`) for uploads when R2
+isn't configured. Back up `media` too if you store uploads locally.
 
 ## Backups (set up during Phase 7 hardening)
 

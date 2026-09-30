@@ -37,6 +37,7 @@ in the same project.
 | `docs/patterns.md` | Writing any collection, hook, access control, Server Component, job, or validation code |
 | `docs/features.md` | Product scope, collections/fields, feedback board + voting, public stages, submission review and content filter, updates, contact form, hosting, build phases |
 | `docs/integrations.md` | R2, Upstash, Resend, Sentry, Turnstile, Cloudflare, the content filter, PgBouncer, backups, env vars |
+| `docs/self-hosting.md` | Which services are required, the first super admin, open signup and the hosted limits, upgrade steps |
 
 ## Stack
 
@@ -94,8 +95,9 @@ features.
 
 Nine sequential phases (full detail in `docs/features.md`). Each phase
 must be deployable. **Stop after each phase and wait for confirmation.**
-Do not build open signup (Phase 8) or custom domains (Phase 9) before
-Phases 1–7 have shipped and real users have touched the core product.
+The owner chose open signup from day one (2026-09-29), so Phase 8 (open
+signup, without invites) ships alongside Phases 1–7. Do not build custom
+domains (Phase 9) before real users have touched the core product.
 There is no billing phase; a paid hosted tier may come later.
 
 Output expectations per phase: list files created/changed; code is
@@ -154,6 +156,15 @@ How the E2E suite works:
   re-migrated on every run** (`payload migrate:fresh`); the config
   refuses any other name, or the same database as `DATABASE_URL`. Each
   run builds the app and serves it with `next start`.
+- Two servers share that build and database. `E2E_PORT` (3100) is the
+  hosted profile: open signup on, limits off. `E2E_PORT + 2` (3102) is
+  the self-hosted profile: signup off, email going only to the log,
+  and low limits (2 games, 1 MB of media, 3 public feedback items), for
+  the specs that check a limit or what a self-hosted instance shows.
+  The webhook sink listens on `E2E_PORT + 1`.
+- Without Resend, the 3100 server writes every email to
+  `test-results/outbox/` as JSON (`EMAIL_OUTBOX_DIR`), and specs read
+  verification and reset links from there (`tests/e2e/support/email.ts`).
 - The artifact is `playwright-report/`: a trace and screenshots for
   every test. Open it with `pnpm exec playwright show-report`.
 - Seed through REST in the `setup` project (`tests/e2e/auth.setup.ts`

@@ -24,12 +24,12 @@ Every collection defines `access` functions for `create`, `read`,
 `update`, `delete`. No collection ships without them.
 
 ```tsx
-// Example: issues
+// Example: issues (the plugin adds the tenant constraint to each)
 access: {
-  read: () => true,                          // public issues are world-readable
-  create: ({ req }) => isTenantMember(req),
-  update: ({ req }) => isTenantMember(req),
-  delete: ({ req }) => isTenantOwner(req),
+  read: issuesRead,               // src/access/publicRead.ts
+  create: tenantMemberAccess,
+  update: tenantMemberAccess,
+  delete: tenantOwnerAccess,
 }
 ```
 
@@ -37,9 +37,27 @@ access: {
 - Authorization lives in access control functions — never manual checks
   scattered through route handlers.
 - Field-level access control where a field is more sensitive than its
-  collection.
+  collection. Platform fields (`roles`, memberships, `email`,
+  `_verified`, `suspended`, `createdBy`, `flagged`) use
+  `superAdminFieldAccess`, not `admin.readOnly`, so studio users see
+  them read-only and super admins can still edit them.
 - Public (player-facing) reads go through Payload REST or Local API with
   read-only access; no authentication required.
+
+### Public reads
+
+`src/access/publicRead.ts` holds what an anonymous visitor may read,
+one `Where` per collection: held content (`flagged`) and suspended
+studios leave the public site through relationship paths such as
+`tenant.suspended` and `gameProject.flagged`, so there are no copied
+flags to keep in sync. Signed-in users get `true`, which the plugin
+narrows to their own studios. Add a new public collection's rule there.
+
+The one widening is `mediaFileReadOverride`, the plugin's
+`accessResultOverride` for media: on file reads only, a signed-in
+non-super-admin may also fetch what an anonymous visitor may, so
+portals' images don't 403 for a signed-in studio user. Lists,
+documents and the admin keep the tenant limit.
 
 ## Tenant isolation
 
@@ -50,6 +68,18 @@ access: {
   and the admin tenant switcher.
 - Media folders (`payload-folders`) are tenant-scoped too: a studio
   only sees its own folders.
+- **The tenant-write hook:** `enforceTenantWrite`
+  (`src/access/tenantWrite.ts`) runs as a `beforeChange` hook on the
+  plugin's tenant field for every tenant-scoped collection. A studio
+  user may only write into a studio they belong to (400), and not while
+  it's suspended (403). It's a hook, not a `validate`, because Payload
+  skips field validation on draft saves. Writes without a user (votes,
+  public submissions, seeds) and super admins pass.
+- **Self-service studios** are created only by `createStudio`
+  (`src/lib/onboarding/`): the studio and the membership as the system,
+  then the game as the new owner with `overrideAccess: false`, so every
+  studio rule applies to it. `POST /api/users` and `POST /api/tenants`
+  stay super-admin-only.
 - Escape hatch: `payload.db.drizzle` for complex queries — must include
   explicit tenant scoping, since the plugin can't filter raw Drizzle.
 
@@ -72,9 +102,19 @@ services. The established hooks:
   content filter sets `flagged` / `flagReasons` on create, or when the
   title or description changes), then **auto-publish** (a new,
   unflagged submission becomes `PUBLISHED` when the game's
-  `reviewSubmissions` is off), then **promote** (status →
-  `PUBLISHED`: create the Issue with `req`, same transaction, copying
-  the type, and set the report's `issue` in the same write).
+  `reviewSubmissions` is off and the game has room for another public
+  item), then **promote** (status → `PUBLISHED`: create the Issue with
+  `req`, same transaction, copying the type, and set the report's
+  `issue` in the same write).
+- **Screening a studio's text** (GameProject and PatchNote
+  `beforeChange`): `screenTextHook(textOf)` (`src/hooks/screenText.ts`)
+  is the one screening hook, IssueReport's included. It screens on
+  create or when the text `textOf` builds changes, so a super admin's
+  approval (unticking `flagged`) sticks. The held fields come from
+  `moderationFields()` (`src/fields/moderation.ts`), so their access
+  can't drift between collections.
+- **Tenant `afterChange`** — `revalidateSuspension` revalidates every
+  portal of the studio when `suspended` changes.
 - **IssueVote `afterChange` / `beforeDelete`** — own `upvoteCount`
   through `$inc`: increment on create, decrement in `beforeDelete` (so
   a concurrent withdrawal of the same vote can't decrement twice).
@@ -87,6 +127,24 @@ by its URL (`/g/<slug>`); a subtree only by its route pattern, route
 groups included (`PORTAL_ROUTE` and `UPDATES_ROUTE` in `src/lib/game-portal/paths.ts`), because Next never tags
 pages with a concrete path's layout.
 
+## Hosted limits
+
+`src/lib/limits/` is the only place that knows the limits: `getLimits()`
+reads them from the environment (off unless set, checked at boot), with
+one count and one assertion per limit, and `describeLimits()` words
+them for the dashboard. Its hooks (`checkGamesLimit`, `checkMediaLimit`,
+`checkPublicFeedbackLimit` in `hooks.ts`) are collection `beforeChange`
+hooks that the collections only register.
+
+- They check only a studio user's writes into their own studio. Super
+  admins and system writes pass, and a write into another studio is
+  left to the tenant-write hook, so a limit message never reveals
+  another studio's counts.
+- A limit is a `LimitReachedError` (403), whose message the admin shows
+  as its toast word for word. Never let a limit fail a player's
+  request: system writes ask first (`hasPublicFeedbackRoom`).
+- Counts use the Local API with `req`, in the write's transaction.
+
 ## Data access
 
 - Server Components and Server Actions use the Local API:
@@ -96,8 +154,30 @@ pages with a concrete path's layout.
   `@payload-config`).
 - Public portal reads pass `overrideAccess: false`, so collection
   access decides what a player sees. Privileged reads live only in named
-  helpers (`getContactRoute`, `getHasVoted`) that return only what the
-  page needs, never secrets.
+  helpers (`getContactRoute`, `getHasVoted`, `portalExists`) that return
+  only what the page needs, never secrets.
+- Portal pages and the portal layout get their game with
+  `requirePortalProject(slug)`, never `getGameProject` + `notFound()`:
+  a held or suspended portal redirects to `/unavailable`, an unknown
+  one is a 404. Call it in every page as well as the layout, because
+  Next re-renders pages without the layout on client navigation. Route
+  handlers that return a `Response` use `getGameProject` and answer 404.
+- Multi-step writes that must succeed or fail together run in
+  `withTransaction` (`src/lib/payload/`), passing its `req` to each
+  Local API call.
+- Pages and admin components that read `isOpenSignup()` render per
+  request (`await connection()`, or a request API such as `headers`,
+  `searchParams` or `payload.auth`). The Docker image is built with an
+  empty environment, so a prerendered page would keep the flag off.
+
+## Uploads
+
+Files are served only through `/api/media/file/<name>`, which checks
+access on every request. Never link or render an upload by another
+path: local uploads live in `media/`, outside `public/`, the image
+optimizer is off, and the R2 bucket stays private. Render images with
+`ImageMedia`, which builds its `srcSet` from Payload's generated sizes.
+Media accepts raster images only (`mimeTypes`).
 - Draft Mode reads authorize the preview user: drafts only for a super
   admin in Draft Mode, still with `overrideAccess: false`.
 
@@ -111,7 +191,8 @@ freshness or optimistic state — justify it in the PR/commit.
 ## Validation
 
 - Zod at every public API boundary (contact and feedback submission,
-  `/api/vote`). Shared schemas in `/lib/validation`.
+  `/api/vote`, signup, verify, onboarding, password recovery and abuse
+  reports). Shared schemas in `/lib/validation`.
 - Inside Payload, prefer field-level validation on collections over
   duplicate Zod checks.
 
@@ -148,7 +229,13 @@ Every public form endpoint follows the same shape:
 5. Structured pino log + Sentry capture on failure.
 
 Steps 1–3 are `guardPublicForm` (`/lib/public-forms/guard.ts`); use it
-for any new form. In production, a form endpoint refuses to run without
+for any new form, with its own rate-limit `key` and `scope` (for
+example `signup`, `verify`, `password-reset`, `abuse-report`) so forms
+don't share a per-IP budget. Forms that send email to an address also
+spend that address's budget (`checkAccountEmailBudget`, 3 an hour,
+shared by signup and password recovery), and refuse when email isn't
+deliverable (`isEmailDeliverable`). Answer through `formResponse`: a
+303 back to the page for a browser, JSON for other clients. In production, a form endpoint refuses to run without
 Turnstile (`TURNSTILE_SECRET_KEY`) or Upstash. Only local development
 skips them, plus Upstash in E2E builds (`RATE_LIMIT_OPTIONAL=1`).
 Contact webhooks must be Discord's (`isAllowedDiscordWebhookUrl`,

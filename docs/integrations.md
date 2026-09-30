@@ -4,12 +4,12 @@
 | --- | --- | --- |
 | Cloudflare R2 | Object storage, zero egress | `@payloadcms/storage-s3` in `payload.config.ts` |
 | Upstash Redis | Rate limiting (domain cache in Phase 9) | `/lib/upstash` |
-| Resend | Transactional email | `/lib/email`, jobs queue tasks |
+| Resend | Transactional email: verification, password resets, contact forms | `/lib/email` (Payload's email adapter), jobs queue tasks |
 | Sentry | Error tracking | server + client + jobs instrumentation |
 | Better Stack | Uptime monitoring | external — pings health endpoint |
 | Cloudflare | DNS, CDN, SSL, Turnstile | DNS/proxy config; `/lib/turnstile` |
 | Tally | Optional contact/feedback forms (studio-owned) | `GameProjects` contact/reportForm; `TallyEmbed` |
-| `obscenity` (MIT, local) | Content filter for player submissions | `/lib/moderation/screenText.ts` |
+| `obscenity` (MIT, local) | Content filter for player submissions and studios' public text | `/lib/moderation/screenText.ts` |
 | DnD-Kit | Admin feedback kanban drag-and-drop | `src/components/admin/issues/*` |
 
 ## Tally (optional contact + feedback forms)
@@ -46,9 +46,10 @@ Components: `src/components/admin/issues/`. Collection:
 ## Content filter (`obscenity`, local)
 
 `screenText` (`src/lib/moderation/screenText.ts`) screens every native
-submission's title and description; the IssueReport `beforeChange`
-hook stores the result as `flagged` / `flagReasons`. It runs in
-process, with no external service or key:
+submission's title and description, a game's name and pitch, and an
+update's title, version label, summary and content; the
+`screenTextHook` `beforeChange` hook stores the result as `flagged` /
+`flagReasons`. It runs in process, with no external service or key:
 
 - **Words:** `obscenity` (MIT, pinned) with its `englishDataset` and
   recommended transformers, which catch leetspeak and look-alike
@@ -60,15 +61,23 @@ process, with no external service or key:
   `Shortened link: <host>`.
 
 A flagged submission always waits for a studio's review, even when
-the game's `reviewSubmissions` is off. `tests/int/content-screen`
-covers each failure mode.
+the game's `reviewSubmissions` is off. A flagged game or update is held
+off the public site until a super admin approves it (see
+`docs/features.md`). `tests/int/content-screen` covers each failure
+mode.
 
 ## Cloudflare R2 (media storage)
 
 - Via `@payloadcms/storage-s3` with **`region: 'auto'`** — R2 is
-  S3-compatible but region-less.
-- Attached to the Media collection; handles presigned URLs, client
-  uploads, and image optimization via Sharp.
+  S3-compatible but region-less. Off until `R2_BUCKET` is set; uploads
+  then go to local disk in `media/`.
+- Attached to the Media collection; Payload generates the image sizes
+  with Sharp before upload.
+- **The bucket stays private.** Files are served through
+  `/api/media/file/`, which checks access before the adapter streams
+  the file, so suspensions and holds take images down too. Don't turn
+  on an `r2.dev` URL or a custom domain for the bucket, and don't set
+  `disablePayloadAccessControl` or `generateFileURL`.
 - Also the destination for nightly `pg_dump` backups (zero egress makes
   restores free).
 - Do not hand-roll presigned URL logic — that was v6.1.
@@ -78,7 +87,9 @@ covers each failure mode.
 `/lib/upstash`. Two uses:
 
 1. **Rate limiting** (`/lib/upstash/rate-limit.ts`) — all public form
-   endpoints (contact, feedback submission, vote) limited by IP.
+   endpoints (contact, feedback submission, vote, signup, verify,
+   password recovery, abuse reports) limited by IP, plus a per-address
+   budget for the emails signup and password recovery send.
 2. **Domain → slug cache** (Phase 9, not built yet) — short TTL;
    consulted by the `next.config.ts` rewrite layer; invalidated by the
    GameProject `afterChange` hook when `customDomain` changes; cache
@@ -90,16 +101,34 @@ configure Upstash.
 
 ## Resend + React Email
 
+- **One transport:** `emailAdapter()` (`src/lib/email/adapter.ts`) is
+  Payload's `email` adapter. With `RESEND_API_KEY` it's the official
+  `@payloadcms/email-resend`, sending from `RESEND_FROM_EMAIL`
+  (`Name <address>` or a bare address; a malformed value stops boot).
+- **Without Resend, the outbox:** it never sends and never refuses. It
+  logs each message's recipient and subject, and the body only outside
+  production, so tokens never reach production logs. With
+  `EMAIL_OUTBOX_DIR` set (development and E2E only) it also writes each
+  message there as JSON.
+- `isEmailDeliverable()` is false only in production without Resend
+  (or an outbox directory); signup and password recovery then refuse.
+- **Auth emails** (`authEmails.ts`, one `AuthLinkEmail` template):
+  verification, "An account was created for you" (for users a super
+  admin creates, with no token) and password reset. Links come from
+  `NEXT_PUBLIC_SERVER_URL`, never the request's host.
 - Templates in `/lib/email` built with React Email.
-- Delivery happens inside the Payload Jobs Queue task
-  `email-contact-form`, not inline in request handlers. Without
-  `RESEND_API_KEY` the task fails and the job stays for a super admin
-  to retry.
+- Contact emails are sent inside the Payload Jobs Queue task
+  `email-contact-form` through `payload.sendEmail`, not inline in
+  request handlers. Without `RESEND_API_KEY` the task fails and the job
+  stays for a super admin to retry.
 - Log every delivery event via pino.
 
 ## Cloudflare Turnstile
 
-- Required on every public form: contact form, feedback form.
+- Required on every public form: contact, feedback, signup, verify,
+  "Forgot password?" and abuse reports. Payload's own login and reset
+  views don't have it: login has Payload's per-account lockout, and
+  reset needs a single-use token from the email.
 - Server-side verification in `/lib/turnstile`; reject on failure
   before doing any work. Production refuses submissions when
   `TURNSTILE_SECRET_KEY` is unset.
@@ -140,14 +169,30 @@ Single source of truth for deploy config (Docker Compose `.env`);
 - `DB_USER`, `DB_PASSWORD`, `DB_NAME`
 - `PAYLOAD_SECRET`, `NEXT_PUBLIC_SERVER_URL`, `CRON_SECRET`,
   `PREVIEW_SECRET`
+- `DATABASE_POOL_MAX`, `LOG_LEVEL`
 - `CRITWIRE_CONTACT_URL` — the home page's Contact link, a `mailto:`
   or `https:` URL; unset hides it, any other value stops the server at
   startup
-- R2: bucket, endpoint, access key ID, secret access key
+- `CRITWIRE_OPEN_SIGNUP` — `1` on the hosted instance only (signup,
+  onboarding, "Create your portal", "Report this page"); unset to
+  self-host, any other value stops the server at startup
+- `CRITWIRE_LIMIT_GAMES_PER_STUDIO`, `CRITWIRE_LIMIT_MEDIA_MB_PER_STUDIO`,
+  `CRITWIRE_LIMIT_PUBLIC_FEEDBACK_PER_GAME` — the hosted limits (3, 100
+  and 200 on the hosted instance); unset turns each off, anything but a
+  positive whole number stops the server at startup
+- R2: `R2_BUCKET`, `R2_ENDPOINT`, `R2_ACCESS_KEY_ID`,
+  `R2_SECRET_ACCESS_KEY`
 - `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`
 - `RESEND_API_KEY`, `RESEND_FROM_EMAIL`
-- Turnstile site key + secret key
-- Sentry DSN
+- `NEXT_PUBLIC_TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY`
+- `SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_DSN` (and `SENTRY_ORG`,
+  `SENTRY_PROJECT`, `SENTRY_AUTH_TOKEN` for source maps at build time)
+- Development and E2E only, never in production: `EMAIL_OUTBOX_DIR`,
+  `RATE_LIMIT_OPTIONAL`, `DISCORD_WEBHOOK_TEST_ORIGIN`, and the E2E
+  harness's `E2E_DATABASE_URL`, `E2E_PORT`
+
+`docs/self-hosting.md` says which services are required and what fails
+without each.
 
 Never commit secrets; keep `.env.example` current as variables are
 added.
@@ -158,9 +203,12 @@ added.
 - Collection- and field-level access control
 - Upstash rate limiting on public endpoints
 - Turnstile on public forms
-- Content filter on player submissions; review on by default
+- Content filter on player submissions (review on by default) and on
+  studios' public text (held for a super admin)
 - UUID identifiers (Payload default on Postgres)
-- R2 presigned URLs with restrictions
+- Uploads only through `/api/media/file/` (private R2 bucket, raster
+  images only)
+- Nothing an unverified or suspended account creates is public
 - Generic 404 on unknown/unverified custom domains
 - Hashed vote tokens in DB
 - HTTPS enforced via Cloudflare
