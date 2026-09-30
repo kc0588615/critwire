@@ -132,7 +132,7 @@ Out:
 - [x] Fable review: `architecture-reviewer`
 - [x] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
 - [x] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
-- [ ] Steps: `planner` writes Steps and Verification
+- [x] Steps: `planner` writes Steps and Verification
 
 ## Baseline
 
@@ -718,12 +718,435 @@ Every MUST-FIX is resolved in place. Items both reviewers raised are answered on
 
 ## Steps
 
+**How every step runs.** One step per session: do it, run its checks, tick it, add a Log line (UTC, what, results, the E2E pass count), commit code and plan together, and push `agent/feedback-pivot`.
+
+- **Base checks:** `pnpm exec tsc --noEmit` (it also compiles `tests/` and the screenshot harness), then `pnpm lint`: 0 errors and no more than Baseline's 20 warnings, none in a file the step touched.
+- **E2E:** `pnpm test:e2e`, all green, whenever code, markup, copy, routes or schema changed. The pass count moves as tests are added and deleted; the Log records it.
+- **Int:** `pnpm test:int` when a step touches `tests/int` or a module an int test imports.
+- **Schema changes:** `pnpm generate:types` (commit `src/payload-types.ts`), then `pnpm payload migrate:create <name>`, hand-edited as §10 says (data statements before the generated type changes; plain SQL, no app imports), then `pnpm payload migrate` and `pnpm payload migrate:status` on the mission database. `pnpm test:e2e` replays every migration on its fresh database, so a broken migration fails there too. Labels and `maxLength` don't change the schema; don't run `migrate:create` for them (it prompts).
+- **Admin components added or removed:** `pnpm generate:importmap` (commit `src/app/(payload)/admin/importMap.js`).
+- **The `dev` row:** `pnpm dev` records one in the mission database. Before `pnpm build`, `pnpm payload migrate` or `migrate:create`, run `psql "$(grep ^DATABASE_URL= .env | cut -d= -f2-)" -c "delete from payload_migrations where name='dev'"`.
+- **One heavy job at a time.** E2E, the screenshot harness and `pnpm build` share `.next`; E2E and the harness share the `_e2e` database. Stop any `pnpm dev` or `pnpm start` first. Ports: E2E 3100 (sink 3101), harness 3200, migration check 3300. If `systemctl --user is-active critwire-demo` says active, stop it. No Docker.
+- **E2E edits.** A spec changes in the step whose route, markup or copy breaks it. Paths and selectors change freely. An expected value changes only where §12 names the change; each step lists its own, and Verification collects them. Anything else that breaks is a bug in the code, not the test. Specs keep their own literal path helpers and don't import `paths.ts`, so they check the app's URLs independently. Spec file names stay.
+- **New tests land with their behaviour**, in the step that implements it. Verification maps each Definition-of-done test to its step.
+
+- [ ] S1 · Remove the site generator (M12 `remove_site_generator`)
+  - **First move the two helpers other code imports (F8):** `collectSiteMediaRefs` from `site-generator/media.ts` into `site-templates/flagship-game-v1/media.ts` (for `FlagshipSite`), and `siteConfigToPayloadSite` from `site-generator/storage.ts` into `src/seed/siteConfig.ts` (for the seed). Both die with the template in S13.
+  - **Delete:** `src/site-generator/`, `src/app/(frontend)/next/generate-site/`, `src/components/admin/game-pages/` and `tests/int/site-generator.int.spec.ts`. In `GamePages/index.ts`, drop the `beforeDocumentControls` entry; in `GamePages/siteFields.ts`, drop `generationField`.
+  - `pnpm remove openai`. The `site-generation` Upstash limit lived only in `service.ts`, so it goes with it.
+  - **The generator's env and docs:** the "AI site generation" block in `.env.example`; `OPENAI_API_KEY` in `tests/e2e/support/env.ts`; the OpenAI section, Upstash use 3 and the env-list entry in `docs/integrations.md`; `/site-generator` in `docs/architecture.md`'s tree; the `site-generator` bullet in AGENTS.md's int-test list. The rest of the docs change in S21.
+  - `pnpm generate:importmap`, `pnpm generate:types`, then **M12**. Its generated SQL must drop exactly §10 M12's columns and tables.
+  - **E2E (`tenant-isolation`):** S1.10's three generator tests are deleted. In their place, new **S1.10 "the site generator and the landing builder are gone"** (DoD test 7, first part): `POST /next/generate-site` with a valid body answers 404 for studio A's owner and for an anonymous caller. S13 extends it.
+  - **Verify:** base checks; `pnpm test:int` (2 files); migrate and `migrate:status`; `pnpm test:e2e`; `grep -rnE "site-generator|openai|OPENAI|generate-site" src tests docs AGENTS.md package.json .env.example --exclude-dir=migrations | grep -v tenant-isolation.spec.ts` prints nothing.
+
+- [ ] S2 · Feedback data model (M13 `feedback_model`)
+  - **`collections/options.ts`:** add `FEEDBACK_TYPE_OPTIONS` (Bug `BUG`, Idea `IDEA`); add In Progress (`IN_PROGRESS`) between Planned and Fixed; remove Feature Request.
+  - **Issues:** `type` (select, required, default BUG, indexed). `fixedInPatchNote` is labelled "Shipped in update"; its condition and filter stay.
+  - **IssueReports:** `type` (select, required, default BUG); `platform` and `gameVersion` shown only when `type` is BUG; `flagged` (checkbox, default false, indexed, admin read-only, sidebar); `flagReasons` (textarea, admin read-only, sidebar, shown when flagged). Nothing sets the flags until S17.
+  - **GameProjects `reportForm`:** relabel the group "Player feedback". Add `acceptIdeas` (default true) and `reviewSubmissions` (default true, labelled "Review submissions before they're public"), both shown only when the provider is native. `reviewSubmissions`'s help text says that turning review off doesn't publish submissions already waiting, and that flagged submissions always wait. Nothing reads either until S17.
+  - `createIssueFromPublishedReport` copies `type` onto the new issue.
+  - **The `Record<IssueStatus,…>` tables that stop compiling** each get an In Progress entry: `PILL_STYLES` in `components/admin/issues/kanban.tsx` (the kanban's new column) and `STATUS_SHAPES` in `components/game/IssueStatus.tsx` (`half`; S7 replaces this table).
+  - `pnpm generate:types`, then **M13**, hand-edited per §10 M13:
+    - the two `UPDATE … SET type='IDEA', category='OTHER' WHERE category='FEATURE_REQUEST'` statements come before the generated recreation of both category enums, with a comment saying why;
+    - the per-game loop renames each `new` slug to the first free `new-<n>` (n ≥ 2), through `db.execute`, in the migration's transaction;
+    - check the generated rest: `type` NOT NULL DEFAULT 'BUG' on both tables (indexed on `issues`), `ADD VALUE 'IN_PROGRESS'` before FIXED, the flag columns and index, and both `report_form_*` booleans DEFAULT true.
+  - **E2E:** no expected value changes. The public board and the kanban each gain an In Progress column from the options, and S6.2's per-column counts already iterate the options.
+  - **Verify:** base checks; migrate and `migrate:status`; `psql "$(grep ^DATABASE_URL= .env | cut -d= -f2-)" -Atc "select enum_range(null::enum_issues_category)" -c "select enum_range(null::enum_issues_status)"` shows no FEATURE_REQUEST and IN_PROGRESS before FIXED; `pnpm test:e2e`. S15 checks the data statements on real rows.
+
+- [ ] S3 · Admin labels and the kanban's tenant filter (F17)
+  - **Labels (§2):** Issues "Feedback" (singular "Feedback item"), IssueReports "Submissions", PatchNotes "Updates", IssueVotes "Votes". The kanban heading and its create button's `aria-label` read the collection's labels, passed from `list.tsx`'s `collectionConfig`, instead of the literal "Issues" (`list.client.tsx:50`).
+  - **F17, exactly as §8:**
+    - `list.tsx`: build `req` with `createLocalReq({ req: { headers: await headers() }, user }, payload)`, then `tenantFilter = (await collectionConfig.admin.baseFilter?.({ limit, page: 1, req, sort: '_order' })) ?? null`. Each column's `where` is `combineWhereConstraints([{ status: { equals } }, tenantFilter])` from `payload/shared`, still with `overrideAccess: false` and the user. `tenantFilter` goes to the client as a prop.
+    - `kanban.tsx`: `fetchMoreIssues` builds the same `where` and serialises its query with `qs-esm`'s `stringify`. Add `qs-esm` as a direct dependency pinned to the version Payload resolves (`pnpm why qs-esm`; §1 says `8.0.1`).
+    - `list.client.tsx`: `<IssuesKanban key={JSON.stringify(tenantFilter)} …>`, so a new selection remounts the board.
+  - **E2E (`admin-triage`):** `openKanban` expects the heading "Feedback" (§12). **New S6.2 step (F17):** in a super admin's browser, select studio A in the admin's tenant selector: B's issue isn't on the board. Switch the selector to B with no reload or navigation: B's issue appears and A's `reported` card is gone. The studio-owner steps stay as they are.
+  - **Verify:** base checks; `pnpm test:e2e`.
+
+- [ ] S4 · One module builds every portal URL (F2; no behaviour change)
+  - New `src/lib/game-portal/paths.ts`. `portalPaths(slug)` has the keys §1 lists and returns root-relative paths; callers add `getServerSideURL()` where they need absolute URLs.
+    - This step returns **today's** URLs (`/issues`, `/report`, `/patch-notes`), so no output changes; S6 switches them.
+    - `newFeedback(type?)` appends `?type=bug|idea`: lower case in URLs, while the stored values stay BUG and IDEA.
+    - `updateGuid(s)` builds `/g/<game>/patch-notes/<slug>`, with a comment saying the guid is frozen (§7).
+  - Move `PORTAL_ROUTE` and `PATCH_NOTES_ROUTE` from `hooks/portalRoutes.ts` into `paths.ts`, renaming the latter `UPDATES_ROUTE` (its value stays `…/(ops)/patch-notes` for now). Keep the file's comment on how Next matches route patterns, then delete the file.
+  - Replace every hand-written portal URL with `portalPaths` (F2's list): the route pages, both submit routes' `path`, `PatchNotesFeed.tsx`, `feed.xml/route.ts` (item link and guid built separately), `actions.ts` (`resolveSiteAction`'s internal refs), `SiteFooter.tsx`, `SiteNav.tsx`, `KnownIssues.tsx`, `LatestUpdate.tsx`, `jobs/contact.ts`, `MarketingHome.tsx`, `DEMO_PORTAL_HREF` in `components/marketing/links.ts`, `revalidateGameLanding.ts`, `revalidateGameProject.ts`, `revalidatePatchNotes.ts`, `revalidateGamePortal.ts` and the seed.
+  - **E2E:** no spec changes.
+  - **Verify:** base checks; `grep -rnF '/g/${' src | grep -v src/lib/game-portal/paths.ts` and `grep -rn "'/g/" src | grep -v src/lib/game-portal/paths.ts` print nothing; `pnpm test:e2e` passes unchanged.
+
+- [ ] S5 · Reserve the `new` feedback slug (F3)
+  - `paths.ts`: `RESERVED_FEEDBACK_SLUGS = ['new']` and `isReservedFeedbackSlug()`.
+  - New `collections/Issues/reservedSlug.ts` (§2):
+    - `issueSlugify`: synchronous; Payload's `slugify` from `payload/shared`, then, for a reserved result, a `ValidationError` on `slug` reading "`new` is reserved; choose another slug". Issues use `slugField({ disableUnique: true, slugify: issueSlugify })`.
+    - `rejectReservedSlug`: an Issues `beforeValidate` hook with the same error, for a slug typed by hand. It runs before `validateUniqueSlugPerProject`.
+  - `uniqueIssueSlug` (in `createIssueFromPublishedReport.ts`) treats reserved slugs as taken, so a report titled "New" becomes `new-2`.
+  - **E2E, new `reports-contact` S5.7 "a submission titled "New" never takes the form's URL [F3]"** (DoD test 1, slug part), in its own project:
+    - a report titled "New", published by the studio, gets a slug other than `new` (`new-2` here), and its public page answers 200 with that title;
+    - a studio creating an issue titled "New" with no slug over REST gets 400 with the error on `slug`;
+    - changing an existing issue's slug to `new` over REST gets the same 400.
+  - **Verify:** base checks; `pnpm test:e2e`.
+
+- [ ] S6 · Rename the routes and copy, and redirect every old URL (§5, §7)
+  - **Routes:** inside `(ops)`, move `issues/` → `feedback/`, `report/page.tsx` → `feedback/new/page.tsx`, `report/submit/` → `feedback/new/submit/`, and `patch-notes/` → `updates/` (with `page/[pageNumber]`, `[slug]` and `feed.xml`). The `(ops)` group itself goes in S12.
+  - `paths.ts` returns the new URLs, and `UPDATES_ROUTE` becomes `${PORTAL_ROUTE}/(ops)/updates`. `updateGuid` keeps `/patch-notes/`.
+  - `redirects.ts`: §7's four rules, after the IE rule (301 for GETs, 308 for `report/submit`).
+  - **RSS:** each item's `<link>` is `update(s)` and its `<guid isPermaLink="true">` is `updateGuid(s)`, byte-identical to today's. The channel title is "{game} — Updates", and the description no longer says "patch notes".
+  - **Copy:**
+    - updates pages: "Updates" in the page title, metadata and empty state; the back link reads "All updates";
+    - feedback page header per §5: title "Feedback"; purpose "Bugs and ideas from {game} players. Vote on the ones you care about."; "Report a bug" (`newFeedback('bug')`) and, when `reportForm.acceptIdeas` is on, "Suggest an idea" (`newFeedback('idea')`); metadata and empty states to match;
+    - the item page's back link reads "All feedback"; the form page's intro points to "feedback" instead of "known issues"; the contact page links to the feedback form;
+    - the PatchNotes `summary` help text says "updates feed", and code comments that name the old pages or routes follow.
+    - The template's nav labels stay until S11 replaces the chrome, and the form's title until S18.
+  - **E2E (paths unless noted):**
+    - every spec's path helpers move to `/feedback`, `/feedback/new` and `/updates`: `issuesPath`, `reportPath`, `feedPath`, the S5.3, S6.3 and S6.7 board URLs, S2.1's private-item URL and S2.2's nav hrefs;
+    - the form selector becomes `form[action$="/feedback/new/submit"]`, and S6.7 posts to `/feedback/new/submit`;
+    - S4.3's fix-link href moves to `/updates/`;
+    - `patch-notes`: S3.4's rename test expects the channel title "{game} — Updates", and S3.3's item links are `/updates/<slug>` (§12);
+    - S2.2's nav labels don't change here.
+  - **New `tests/e2e/redirects.spec.ts`, S7.1 "every old portal URL redirects permanently"** (DoD test 5), in its own project with 11 published updates, so page 2 exists:
+    - with `maxRedirects: 0`, each old URL answers 301 with the new URL as `Location`, and following it lands on a 200: `/issues?view=board` (the query survives), `/issues/<slug>`, `/report`, `/patch-notes`, `/patch-notes/page/2`, `/patch-notes/<slug>` and `/patch-notes/feed.xml`;
+    - a JSON POST to `/report/submit` answers 308 to `/feedback/new/submit`, and followed, it stores the report;
+    - the new feed's items link to `/updates/<slug>`, and their guids are still `<site>/g/<game>/patch-notes/<slug>`.
+  - **Verify:** base checks; `pnpm test:e2e`; `grep -nE "issues|report|patch-notes" src/lib/game-portal/paths.ts` shows only `updateGuid` and its comment.
+
+- [ ] S7 · Public stages and archived items (§3, F5)
+  - New `src/lib/game-portal/stages.ts`: §3's API exactly (`PUBLIC_STAGES`, the `STAGE_OF` record, `publicStage`, `statusesFor`, `ARCHIVED_STATUSES`), importing nothing from Payload.
+  - New `components/game/FeedbackStatus.tsx`, replacing `IssueStatus` and `IssueMeta`: the stage's mark (shape per stage) and label, a type tag ("Bug" or "Idea"), then the category and pin. `StatusMark` moves here, and `marketing/IssueLoop.tsx` imports it from here. List rows, the item page (and its notes' marks) and the landing's known-issues rows use it. The board's per-status headings keep the old label helpers until S8.
+  - **Archived:** `queryPublicIssues`, `queryBoardIssues` and `queryLandingIssues` add `status not_in ARCHIVED_STATUSES`; `getPublicIssue` doesn't. An archived item's page says "Archived" and shows `VoteCount` with no `VoteButton`. `/api/vote` selects `status` next to `tenant` and answers 409 for archived items, before the toggle.
+  - **E2E:**
+    - `issues-voting` S4.1: the badge step expects stage labels (the Reported, Investigating, Workaround Available and Needs More Info rows say "Under review"; the Fixed row says "Shipped"), still checking every row (§12).
+    - `portal-landing` S2.5 "follow issue changes": the status change goes REPORTED → PLANNED, expecting "Under review", then "Planned" (§12).
+    - `admin-triage` S6.3: the drag goes from Reported to **Planned**, in a viewport wide enough for both columns (`page.setViewportSize`); REST reports PLANNED; the public board's Planned column and the landing's row show it (§12).
+    - **New `issues-voting` S4.7 "an archived item leaves the board, the list and the landing, keeps its page and stops taking votes"** (DoD test 2, archived part), in its own project: a public CLOSED item with one vote isn't on the board, the list or the landing; its page answers 200, says "Archived", and shows the count with no vote button; `POST /api/vote` answers 409, and the stored count stays 1 (the `tally` helper).
+  - **Verify:** base checks; `pnpm test:e2e`.
+
+- [ ] S8 · The four-stage board and shared filters (§5, F1, F9)
+  - New `lib/game-portal/feedbackSearchParams.ts`: one parser map from `nuqs/server`:
+    - `view` (list or board; list by default), `type` (bug or idea), `stage` (a stage id), `category` (a category value; a stale `FEATURE_REQUEST` parses as unset), `q`, `sort` (top or latest) and `page`;
+    - the page's `createLoader` and the client's `useQueryStates` both use it.
+  - `IssueFilters` becomes `FeedbackFilters`: search ("Search feedback…"), category, type, stage and sort in list mode; only the type filter and the view toggle in board mode.
+  - `queryPublicIssues` gains `type` and `stage` (through `statusesFor`).
+  - New `queryBoardColumn({ projectID, stage, type })`: `limit: 25`; sorted pinned, votes, newest; a `select` of the card fields; `fixedInPatchNote` populated at depth 1 with `overrideAccess: false`.
+  - New `FeedbackBoard`:
+    - four regions, each named by its stage label alone (as the status columns are today);
+    - the four queries in one `Promise.all`; each count is its `totalDocs`;
+    - each card shows its title, type tag, votes and pin;
+    - past 25 items, "See all N" links to the list with `?stage=<id>`.
+  - `BOARD_ISSUE_LIMIT`, `queryBoardIssues` and `IssueStatus.tsx` go.
+  - **E2E:**
+    - **`issues-voting` S4.2 rewritten as "the board shows four public stages"** (DoD test 2). It gets its own describe and project, so S4.1's list stays as it is:
+      - each internal status sits in its stage's column, Planned and In progress included, and a CLOSED item is in none;
+      - the type filter narrows the board to ideas, and back;
+      - a column with 26 items shows 26 and "See all 26", which opens the list filtered to that stage (page 1 of 2, only that stage);
+      - the privacy and read-only steps are kept word for word.
+    - S4.1: the combobox indexes follow the new filter bar, and the placeholder is "Search feedback…" (selectors only).
+    - `admin-triage`: `boardColumn` finds the region by `publicStage(status).label`; S6.7's public column is "Under review" (§12).
+  - **Verify:** base checks; `pnpm test:e2e`.
+
+- [ ] S9 · The project theme: field, validation and M14 `portal_theme` (§2, §10)
+  - **Move, with the same behaviour:** `schema/theme.ts` and `schema/contrast.ts` → `src/lib/game-portal/theme.ts` and `contrast.ts`; `render/themeStyle.ts` and `fonts.ts` → `src/components/game/theme/`. Update every import: `GamePages/siteFields.ts`, the template, `(public)/not-found.tsx`, `tests/e2e/portal-landing.spec.ts`, `tests/screenshots/*` and `tests/int/site-config-parity.int.spec.ts`.
+  - **New `collections/GameProjects/theme.ts`:**
+    - the `theme` group field, built from the Zod schema: colour keys from `DEFAULT_THEME_COLORS`, options from the enums, defaults from the schema;
+    - `validateProjectTheme` (GameProjects `beforeChange`), exactly as §2 says: merge per level (the default theme, then `originalDoc.theme`, then `data.theme`, where `null` or `undefined` never overrides a value), `safeParse`, and on failure a `ValidationError` with paths `theme.colors.<key>`. The hook only throws.
+  - The Critter Connect seed also writes the project's `theme`: the palette its flagship page uses today.
+  - `pnpm generate:types`, then **M14**: the generated `theme_*` columns and enums, then, hand-written after them, the copy from each project's **published** flagship page, per the first four bullets of §10 M14 (all ten colours or none; the four selects cast through `::text::`; `banner_id` where the project has none; `description` from the tagline where the project has none). The lock-row, preference and drop statements belong to M15 (S13; see Decisions).
+  - Rendering doesn't change yet: the portal wears the landing's theme until S10.
+  - **E2E, new `portal-landing` "S2.4 project theme" (first part):** saving `theme` with low-contrast text on the background, low-contrast button text or a 3-digit hex answers 400; a save that sets only the accent answers 200, and the stored palette is the default with that accent. The old "S2.4 publishing a flagship page" stays until S10 and S12 take it apart.
+  - **Verify:** base checks; `pnpm test:int` (the parity test imports the moved schema); migrate and `migrate:status`; `pnpm test:e2e`.
+
+- [ ] S10 · The portal wears the project's theme (F6)
+  - `resolveProjectTheme(project)` in `lib/game-portal/theme.ts`: `safeParse` of `project.theme`; on failure, report to Sentry and use the default theme (§2).
+  - `SiteRoot` and `SiteFrame` take that theme: the landing (`FlagshipSite` and legacy blocks) and the ops pages (`PortalChrome`) pass `resolveProjectTheme(project)`, and a page's `site.theme` is no longer read. GameProjects writes already revalidate the whole portal.
+  - **E2E (`portal-landing`):**
+    - **S2.3 is deleted** (§12): both tests exercise `deriveAccentColors`, and `accentColor` no longer affects anything.
+    - The old S2.4 loses its three theme cases (low-contrast colours, low-contrast button text, 3-digit hex) and its two theme steps ("ops pages follow the published theme", "setting only the accent keeps the default palette"). Its heading and publish steps stay until S12.
+    - "S2.4 project theme" is completed: each rejected save leaves the landing's `.fs-root` style as it was; a valid save re-themes the cached updates page and the landing (eventually, through `--fs-accent`); after the accent-only save, the primary button's background is the accent.
+  - **Verify:** base checks; `pnpm test:e2e`.
+
+- [ ] S11 · Fixed portal chrome and the Official site link (§1 Moved, §5 Chrome, F11)
+  - New `lib/game-portal/links.ts`: `resolveProjectLinks`; one label table covering every link field, the gog, playstation, xbox, nintendo and youtube links included (F11); and `resolvePrimaryStoreUrl` without the `links.website` fallback. `actions.ts` imports them.
+  - `PORTAL_NAV` (Updates, Feedback, Contact) in `paths.ts`.
+  - New `components/game/PortalFrame.tsx` (with `PortalRoot`), `PortalNav.tsx`, `PortalNavLinks.tsx` and `PortalFooter.tsx` replace `SiteFrame`/`SiteRoot`, `SiteNav`, `SiteNavLinks` and `SiteFooter`, which are deleted. They take `project` and get the theme from `resolveProjectTheme`.
+    - **Nav:** the logo and name, linking to the hub; the three `PORTAL_NAV` links; an external "Official site" link to `links.website` when it's set, at every width (the phone rule that hides `.fs-nav-cta` doesn't apply to it).
+    - **Footer:** the name, the portal links, every outbound link the project has, and "Powered by Critwire". No tagline or legal-links switch.
+  - `FlagshipSite`, the legacy-block landing and the `(ops)` layout render `PortalFrame`. `PortalChrome` and `getPortalSiteConfig` go, so no ops page queries `game-pages` any more (F6). `(public)/not-found.tsx` uses `PortalRoot` with the default theme.
+  - **E2E (`portal-landing`):**
+    - S2.2's nav step expects Updates, Feedback and Contact, linking to `/updates`, `/feedback` and `/contact` (§12).
+    - **New S2.7 "the portal links back to the studio's own site"** (DoD test 8, chrome part): with `links.website` set, the banner has an "Official site" link to it at 1440 and at 390 px; without it, there's none. S2.6 stays.
+  - **Verify:** base checks; `pnpm test:e2e`.
+
+- [ ] S12 · The hub replaces the landing (§5 Hub, F12)
+  - `g/[gameSlug]/page.tsx` becomes the hub: `revalidate = 3600`, `generateStaticParams` returning `[]`, no Draft Mode, no configuration; `generateMetadata` unchanged.
+  - **`HubHeader`:** the design pass's title plate over the `banner`, or directly on the page when there's no art. The `h1` is the name, the pitch is `description`, and the build line comes from `availabilityFacts` (moved here). Links, deduplicated by URL: "Get the game" (`resolvePrimaryStoreUrl`) as the primary button, then the other store links, Discord and Official site. It carries no `aria-labelledby`, so S2.2's order check sees only the two sections.
+  - **`LatestUpdates`** (`#fs-latest-updates-heading`): `queryPublishedPatchNotes({ limit: 3 })`, then "All updates" and RSS.
+  - **`TopFeedback`** (`#fs-top-feedback-heading`): 5 open items from `queryTopFeedback`, today's compact `queryLandingIssues` (not shipped, not archived; pinned, then votes, then newest). Each row's text starts with its title, as the known-issues rows do today (S4.4 reads them), then `FeedbackStatus` and the votes. The section ends with "Report a bug", "Suggest an idea" (when `acceptIdeas` is on) and "See all feedback".
+  - An empty section invites the first update or the first report instead of disappearing.
+  - **The `(ops)` group goes:** its pages move up to `g/[gameSlug]/`, its layout is deleted, and `g/[gameSlug]/layout.tsx` 404s unknown slugs and renders `PortalFrame`. `UPDATES_ROUTE` becomes `${PORTAL_ROUTE}/updates`; update its comment's example.
+  - `revalidateIssueLanding`'s `LANDING_FIELDS` gains `type`.
+  - **GameProjects:** `description` is relabelled "Pitch", with `maxLength: 240` and §2's help text; `banner` is relabelled "Key art". `pnpm generate:types`; no migration.
+  - The landing's render path (`FlagshipSite`, the slots, `landingPage.ts`, `RenderGameBlocks`) is now unused; S13 deletes it with the rest.
+  - **Int:** `template-revalidation.int.spec.ts` is trimmed to its `_order` case and renamed `issue-revalidation.int.spec.ts` (F12). E2E S2.5 now observes the move between games.
+  - **E2E:**
+    - `portal-landing` S2.2 becomes the hub (§12): heading and share metadata unchanged; "the primary call to action is the first platform's store", with its selector in the hub header; section order `[fs-latest-updates-heading, fs-top-feedback-heading]`; the bare-project test is kept. **The trailer test is deleted**, and `links.trailer` leaves the fixture.
+    - S2.5 becomes the hub sections (§12): Latest updates lists v2, then v1, and never the draft; the top-feedback step is kept; the status-change and move-between-games steps read `#fs-top-feedback-heading`.
+    - The rest of the old S2.4 is deleted (§12): "publishes, keeps drafts private, and falls back when unpublished", and "rejects an unsafe or invalid configuration" with its tagline, raw-URL-ref and variant cases. The hub renders no page.
+    - `issues-voting` S4.4 and `admin-triage` S6.3 read the hub's `#fs-top-feedback-heading` rows (selectors only).
+    - `tenant-isolation` S1.9: "a studio user in Draft Mode sees only published marketing content and other studios' published pages" is deleted (§12). "studio B cannot preview studio A's landing page" stays until S13 removes the route.
+  - **Verify:** base checks; `pnpm test:int`; `pnpm test:e2e`, including S3.5 (updates pages stay ISR) and S3.4 (the new `UPDATES_ROUTE`).
+
+- [ ] S13 · Remove the landing builder (M15 `remove_landing_builder`)
+  - **Delete:** `src/collections/GamePages/`; the rest of `src/site-templates/`, then the directory; `src/blocks/game/`; `components/game/GameButtons.tsx`; `lib/validation/video.ts`; `lib/game-portal/landingPage.ts`; `src/seed/siteConfig.ts`; `app/(frontend)/next/site-preview/` and `lib/security/sitePreviewToken.ts`; the `game-pages` entries in `payload.config.ts` and `plugins/index.ts`. `resolveProjectSlug` types its argument without `GamePage`. The marketing `/next/preview` stays.
+  - **GameProjects:** remove `accentColor`, `links.trailer`, `availability.demoUrl` and the `meta` group, and the "AI site generation" and "action registry" wording in the admin descriptions.
+  - **Dashboard (`BeforeDashboard`, §8):** the Game Pages step becomes "Theme and links" (the game project) and "Review submissions" (the Submissions list), and no step mentions a landing page, patch notes or known issues any more.
+  - **Seed:** no landing page, `accentColor` or `meta`.
+  - `pnpm generate:types`, `pnpm generate:importmap`, then **M15**:
+    - first, hand-written: delete the lock rows that point at game pages, drop `payload_locked_documents_rels.game_pages_id`, and delete the `payload_preferences` rows keyed `collection-game-pages` or `collection-game-pages-%` (§10 M14, third bullet);
+    - then the generated drops: every `game_pages*` and `_game_pages_v*` table, the `enum_game_pages_*` types, and `game_projects.accent_color`, `links_trailer`, `availability_demo_url` and `meta_*`. Nothing else; media stays.
+  - **Int:** delete `site-config-parity.int.spec.ts` (F12).
+  - **Screenshot harness, so it compiles** (S14 finishes it): `setup.shots.ts` stops reading the flagship page and creating the legacy block landing (`legacy` leaves `ShotsWorld`) and reads the Critter Connect baseline style from the hub; `design.shots.ts`'s `applyTheme` PATCHes `game-projects.theme` for Riso and the default theme, and re-POSTs the seed for Critter Connect.
+  - **E2E:**
+    - `tenant-isolation`: `game-pages` leaves S1.1's list and the fixtures; S1.9's page fixtures and "studio B cannot preview studio A's landing page" are deleted (§12); the `GamePage` and `signSitePreviewToken` imports go.
+    - S1.10 (DoD test 7) gains: `GET /next/site-preview?token=x` answers 404; the super admin's `GET /api/game-pages` answers 404; `/admin/collections/game-pages` answers 404; the super admin's admin nav has no "Game Pages" link.
+    - `portal-landing` drops its `GamePage` import.
+  - **Verify:** base checks; `pnpm test:int` (1 file); migrate and `migrate:status`; `pnpm test:e2e`; `grep -rnE "game-pages|GamePage|site-templates|blocks/game|site-preview|sitePreview|accentColor|demoUrl" src tests --exclude-dir=migrations | grep -v tenant-isolation.spec.ts` prints nothing.
+
+- [ ] S14 · Prune the landing-only styles and point the screenshot harness at the hub
+  - `portal.css`: delete the landing-only rules §1 lists (features, gallery, adaptive, community band, final CTA, trailer, availability rows, and the hero variants `HubHeader` doesn't use). Keep the title plate, the tokens, the focus, motion and prose rules, and everything the hub, the portal pages and the forms use. Grep `src` for each selector before deleting it.
+  - **Harness, per §12:**
+    - `catalog.ts`: groups `critter-connect`, `riso` and `marketing`; the `default` group, its first-run shots, the legacy shot and the focus shots go (see Decisions). Themed pages: the hub, the feedback list, the board, the submit form as a bug (`?type=bug`) and as an idea (`?type=idea`), and the launch update's page. Marketing: `/`.
+    - `setup.shots.ts` sets `links.website` on Critter Connect, so the Official site link shows.
+    - `writeIndex.ts` shows only the sets that have a `meta.json`, under a title for this mission. Probes that name the landing name the hub.
+  - **Look:** `SHOTS_SET=after SHOTS_DIR=/tmp/feedback-pivot-wip SHOTS_THEMES=critter-connect,riso pnpm screenshots --project desktop`. Open the hub, list, board and update PNGs and fix anything the pruning broke. Never point a Look at the artifact directory.
+  - **Verify:** base checks; the Look run passes; `pnpm test:e2e`.
+
+- [ ] S15 · Migration check on a copy of the Critter Connect seed (§10 Check)
+  - **`tests/migrations/feedback-pivot/fixtures.sql`**, written against the `683de8d` schema, finding rows by slug (never by hard-coded IDs):
+    - in Critter Connect, an issue slugged `new` and another slugged `new-2`;
+    - an issue and a report with the category FEATURE_REQUEST;
+    - a second project, with no description, whose published flagship page sets 3 of the 10 colours, `typography` and a hero tagline. Set the other seven colours to NULL explicitly: the columns have defaults;
+    - a third project whose only flagship page is a draft with a full palette;
+    - a `collection-game-pages` preference row and a lock row on a game page, so the cleanup assertions test something (see Decisions).
+  - **`assert.sql`:** one `DO` block that raises on the first mismatch, covering every bullet of §10 Check step 3, plus the dropped `game_projects` columns and the lock rows.
+  - **Run it** with Verification's "Migration check" commands, and save `commands.sh`, `migrate.log` and `assert.log` in `/srv/critter-ai/agent-state/missions/feedback-pivot/migration-check/`.
+  - A failure is fixed in the migration it points at (none has shipped yet), then the check re-runs from the dump.
+  - **Verify:** `assert.sql` finishes without an exception. If a migration changed: base checks and `pnpm test:e2e`.
+
+- [ ] S16 · Content filter: failure modes, then the int test, then `screenText` (§4)
+  1. Re-read the Failure modes section below against §4, and add any mode found since.
+  2. `pnpm add obscenity@0.4.6` (exact version).
+  3. Create `src/lib/moderation/screenText.ts` exporting §4's `ScreenResult` type and a `screenText` that rejects with "not implemented". Write `tests/int/content-screen.int.spec.ts` from the Failure modes list, one `it` per mode. Run `pnpm test:int` and see every new test fail.
+  4. Implement §4's local filter: `RegExpMatcher` with `englishDataset` and `englishRecommendedTransformers`; the `cockpit` whitelist entry; the one link regex built from `SHORTENERS`; the host rule; the thresholds (3 or more links, or any shortener); the reason formats. The contract goes in the doc comment, once. The module exports only `screenText` and `ScreenResult`.
+  - Nothing calls it until S17.
+  - **Verify:** `pnpm test:int` (3 files) green; base checks. No E2E: no behaviour changes.
+
+- [ ] S17 · Moderation: screening, auto-publish and the submit endpoint (§4)
+  - **`IssueReports/hooks/screenReportText.ts`** (`beforeChange[0]`): on create, or on an update that changes `title` or `description`, it screens `` `${title}\n\n${description}` `` of the merged report and sets `flagged` and `flagReasons` (one reason per line; cleared when the text is clean). It doesn't catch.
+  - **`IssueReports/hooks/autoPublishReport.ts`** (`beforeChange[1]`): on create only, when the status is NEW, the report isn't flagged and the project's `reportForm.reviewSubmissions === false` (one `findByID`: depth 0, `select: { reportForm: true }`, through `req`), it sets the status to PUBLISHED. The existing promotion hook, now `beforeChange[2]`, creates the issue.
+  - **Submissions list (§8):** default columns title, type, gameProject, status, flagged and createdAt; `flagged` filterable; the status field's description reads "Flagged submissions wait here even when review is off."
+  - **`feedback/new/submit/route.ts`:**
+    - the Zod schema gains `type: z.enum(['BUG','IDEA']).default('BUG')`;
+    - an idea when `acceptIdeas` is off answers 400;
+    - an idea's platform and version are dropped before the write;
+    - the JSON reply is `{ id, ok, published }`; an HTML post gets a 303 to `newFeedback(type)` with `submitted=published` or `submitted=1`;
+    - `formResponse` takes an optional `submitted` value (default `'1'`);
+    - the guard order is unchanged.
+  - **E2E (`reports-contact`):**
+    - **S5.9 "with review on, a clean submission waits for the studio"** (DoD test 3, review part): on a project with default settings, a JSON submission answers `published: false`; the report is NEW and not flagged; the board doesn't list it.
+    - **S5.10 "turning ideas off refuses ideas"** (DoD test 3, ideas part; S18 adds the pages): with `acceptIdeas` off, a JSON POST with `type: 'IDEA'` answers 400 and stores nothing, and a bug still answers 200.
+    - **S5.11 "with review off, clean text publishes at once and flagged text waits"** (DoD test 4): with `reviewSubmissions` off, a clean submission answers `published: true` and is on the board at once, with its type. A title with one profanity, and a body with three links, each answer `published: false`, stay NEW and stay off the board. In the studio owner's admin, each shows Flagged checked and its reason (`Offensive word: …`, `3 links`).
+    - S5.1's `[?&]submitted=1` check keeps passing unchanged.
+  - **Verify:** base checks; `pnpm test:int`; `pnpm test:e2e`.
+
+- [ ] S18 · The submit form asks "Bug or idea?" (§5 Submit form)
+  - `feedback/new/page.tsx`, server-rendered, with no client JS. Tally and external providers render as they do today, whatever the type.
+  - **Native form:**
+    - the first control is "Bug or idea?": two links (`?type=bug`, `?type=idea`), with `aria-current` on the chosen one;
+    - the rest shows only once a type is chosen; with `acceptIdeas` off, the page goes straight to the bug form;
+    - Bug: title, "What happened?", category, email, platform, game version, and "Send report". Idea: title, "What's your idea?", category, email, and "Send idea". A hidden `type` input carries the choice;
+    - the h1 follows the type: "Report a bug", "Suggest an idea", or "Send feedback" before a choice (see Decisions).
+  - **Notices by `submitted`:** `published` adds "It's on the board now."; `1` adds "The team reviews submissions before they're public." Each starts with "Report sent." or "Idea sent.", which S5.1 reads.
+  - **E2E (`reports-contact`):**
+    - S5.1 picks "Bug" first, then fills the form as today (§12).
+    - **New S5.8 "a bug and an idea from the browser reach the board and the list with their types"** (DoD test 1): in the browser, submit a bug with platform and version, and an idea, whose form has no platform or version fields; the studio publishes both over REST; both are on the board and the list, tagged "Bug" and "Idea".
+    - S5.10 gains the pages: with `acceptIdeas` off, the feedback page and the hub (eventually) have no "Suggest an idea", and the form offers no type choice and shows the bug form.
+  - **Verify:** base checks; `pnpm test:e2e`.
+
+- [ ] S19 · Updates ↔ feedback (§6)
+  - **`FromYourFeedback`** on the update page: `queryShippedFeedback(noteID)` returns public FIXED items whose `fixedInPatchNote` is this update, sorted by votes; each shows its title link, type and `VoteCount`. The section hides when empty.
+  - **Shipped version** on list rows, board cards and the item page: the update's `versionLabel`, or its title, when the update is published; otherwise just "Shipped". The item page's note reads "Shipped in {version — title}" and links to the update (S4.3's link name `v2.1.0 — Harbor hotfix` stays). The list query populates `fixedInPatchNote` like the board's: depth 1, through access, selected fields.
+  - **Revalidation (rule 4):**
+    - new `src/hooks/revalidateUpdatePage.ts`: `revalidateUpdatePage(noteID, payload)` reads the update's slug, project and status and, when it's published, calls `revalidatePath(portalPaths(game).update(slug))`;
+    - new `Issues/hooks/revalidateLinkedUpdates.ts`: an `afterChange` hook that revalidates the old and the new update's page when `fixedInPatchNote` changes, or when a linked public item's `title`, `slug`, `status`, `type` or `isPublic` changes (never for `_order`-only writes), plus the same on `afterDelete` for a linked item;
+    - `adjustUpvoteCount` also selects `fixedInPatchNote` and `status`, and a vote on a public, shipped, linked item also revalidates that update's page.
+  - **Seed:** add an idea (PLANNED), an in-progress bug and a shipped bug linked to the launch update (§10 Seed).
+  - **E2E, new `patch-notes` S3.6 "an update lists the feedback it shipped"** (DoD test 6):
+    - an update's page lists its two shipped items with their votes, the higher first;
+    - a vote on one updates the cached page (eventually);
+    - linking a third item makes it appear (eventually);
+    - board cards and the item page show the version; an item shipped in a draft update shows "Shipped", never the draft's version or title.
+    - The update page stays ISR (S3.5).
+  - **Verify:** base checks; `pnpm test:e2e`.
+
+- [ ] S20 · Critwire's home page and its Contact link (§9)
+  - **`components/marketing/links.ts`** (no React imports): `GITHUB_REPO_URL`, and `getContactHref()`, which reads `CRITWIRE_CONTACT_URL`: unset or empty returns `null`, and anything but a `mailto:` or `https:` URL throws. `register()` in `src/instrumentation.ts` calls it once in the Node.js runtime. `environment.d.ts` and `.env.example` document the variable.
+  - **`(frontend)/page.tsx`** awaits `connection()`, reads `getContactHref()` and passes it to `MarketingHome`, rewritten per §9:
+    - the headline; the loop retold with stages (`IssueLoop`); what players get (updates with RSS, the board, the bug and idea forms, each linking into the demo through `portalPaths`); moderation on by default; "Free to self-host (MIT). Free hosted early access.";
+    - links to the demo portal, GitHub and Contact (Contact only when set). No signup button; "Sign in" stays. The marketing header links to GitHub.
+  - Copy that still describes the old product: `/`'s metadata, the `(frontend)` and `(public)` layout descriptions, and `BeforeLogin`.
+  - `tests/e2e/support/env.ts`: `CRITWIRE_CONTACT_URL: 'mailto:e2e@critwire.test'`.
+  - **E2E, new `tests/e2e/home.spec.ts`, S8.1 "the home page tells the feedback story and links to GitHub and Contact"** (DoD test 8, home part): `/` answers 200; it has a link to `https://github.com/kc0588615/critwire` and a "Contact" link to `mailto:e2e@critwire.test`; no link or button is named like sign up, signup, get started or create account; "Sign in" is there.
+  - **Fail-loud check:** after the E2E run, `CRITWIRE_CONTACT_URL='javascript:alert(1)' PORT=3000 pnpm start` must fail at startup. If Next only logs the error and keeps serving, make `register()` stop the process, and record it under Decisions.
+  - **Verify:** base checks; `pnpm test:e2e`; the fail-loud check.
+
+- [ ] S21 · Docs, README, .env.example and LICENSE (§13)
+  - **AGENTS.md:** the thesis becomes the Product direction; the scope guardrail adds "website builder"; the build-process paragraph matches the rewritten phases; the int-test list names `content-screen` and `issue-revalidation`, with their reasons; the `pnpm screenshots` entry matches the new catalog. Nothing mentions OpenAI, the generator, GamePages or the landing builder.
+  - `docs/features.md`, `docs/architecture.md`, `docs/patterns.md` and `docs/integrations.md` per §13; the `README.md` summary; `.env.example` reviewed end to end.
+  - **`LICENSE`:** the MIT text with "Copyright (c) 2026 Critwire contributors", or the holder the owner gave in H7 if it's answered by then.
+  - **Verify:** base checks; Verification's audits print nothing. No E2E: docs only.
+
+- [ ] S22 · Screenshots (Definition of done)
+  - Run `SHOTS_SET=after SHOTS_DIR=/srv/critter-ai/agent-state/missions/feedback-pivot/screenshots pnpm screenshots`, never alongside `pnpm test:e2e`. It must write 26 PNGs (6 portal pages × 2 themes × 2 widths, plus `/` at both widths), `after/meta.json`, `after/checks.json` and `index.html`.
+  - Open every PNG at both widths: the hub, the list, the board, both forms, and the update page's "From your feedback". Fix what reads wrong; if code changed, run `pnpm test:e2e`, then re-shoot.
+  - Fill in the screenshot record in Verification.
+  - **Verify:** the run passes with every probe; base checks, and `pnpm test:e2e` if code changed.
+
+- [ ] S23 · Full verification and the Summary
+  - Run Verification's commands in order, one at a time, and archive the E2E report and its log. Re-run the migration check if `git diff <S15's commit> -- src/migrations tests/migrations` isn't empty.
+  - **Write the Summary** (Definition of done):
+    - what was removed, and why;
+    - the four migrations and what each does;
+    - every field, collection and table removed, and what existing content was mapped where (§10's lists, the `/issues/new` exception included);
+    - the content filter's approach, its word list (`obscenity`'s `englishDataset`) and its licence (MIT);
+    - the E2E, int, migration-check and screenshot artifacts, with the commands that reproduce them;
+    - both review verdicts;
+    - open follow-ups, H7 included if it's still waiting.
+  - Set `status: done` in the front matter. Drop the two scratch databases and remove the temporary worktree.
+  - **Verify:** everything in Verification.
+
 ## Verification
+
+E2E comes first. Run everything from the worktree root, one heavy job at a time, with no `pnpm dev` or `pnpm start` running. The only test written in isolation is the content filter's int test; its failure modes are listed below, before any code.
+
+**Commands and what they must show (S23)**
+
+1. `pnpm test:e2e 2>&1 | tee /tmp/feedback-pivot-e2e.log`
+   - Every test passes, 0 failed; the config allows no retries. The count is Baseline's 73, minus the 10 tests the steps delete, plus the new ones; it must equal the last step's Log count.
+   - Artifact: copy `playwright-report/` to `/srv/critter-ai/agent-state/missions/feedback-pivot/e2e-final/`, and the log to `e2e-final/run.log`. Every test has a trace and screenshots (`trace: 'on'`, `screenshot: 'on'`).
+   - Reproduce with `pnpm test:e2e`. View with `pnpm exec playwright show-report /srv/critter-ai/agent-state/missions/feedback-pivot/e2e-final`.
+2. `pnpm exec tsc --noEmit`: exit 0.
+3. `pnpm lint`: 0 errors and no more than 20 warnings (Baseline), none in a file this mission added.
+4. `pnpm test:int`: 2 files, `content-screen` and `issue-revalidation`, all passing.
+5. Build: delete the `dev` row; `pnpm payload migrate:status` shows every migration run, the four new ones included; `pnpm build` exits 0.
+6. Migration check (commands below): `assert.log` ends without an exception.
+7. Screenshots (S22): the run passes with every probe.
+8. Audits. Each prints nothing:
+
+```
+grep -rniE "site-generator|openai|generate-site|site-preview|sitePreview|game-pages|GamePage|site-templates|blocks/game|accentColor|demoUrl" src docs AGENTS.md README.md .env.example package.json --exclude-dir=migrations
+grep -rlE "site-generator|OPENAI|generate-site|site-preview|game-pages|GamePage|site-templates|accentColor" tests | grep -vE "tests/e2e/tenant-isolation.spec.ts|tests/migrations/"
+grep -rnF '/g/${' src | grep -v src/lib/game-portal/paths.ts        # F2: every portal URL comes from paths.ts
+grep -rn "'/g/" src | grep -v src/lib/game-portal/paths.ts
+grep -rnE "Known issues|known issues|Patch notes|patch notes" src --include=*.ts --include=*.tsx --exclude-dir=migrations
+grep -nE '"(obscenity|qs-esm)": "[~^]' package.json                  # both pinned exactly
+```
+
+**Migration check (S15; S23 re-runs it if a migration changed).** The mission's database role has CREATEDB.
+
+```
+CHECK=/srv/critter-ai/agent-state/missions/feedback-pivot/migration-check; mkdir -p $CHECK
+U="$(grep ^DATABASE_URL= .env | cut -d= -f2-)"; B="${U%/*}"
+PRE=critwire_m_feedback_pivot_premig; COPY=critwire_m_feedback_pivot_migcheck
+psql "$U" -c "drop database if exists $PRE" -c "drop database if exists $COPY" -c "create database $PRE" -c "create database $COPY"
+git worktree add --detach /tmp/fp-premig 683de8d
+sed -e "s|^DATABASE_URL=.*|DATABASE_URL=$B/$PRE|" -e "s|^NEXT_PUBLIC_SERVER_URL=.*|NEXT_PUBLIC_SERVER_URL=http://localhost:3300|" .env > /tmp/fp-premig/.env
+cd /tmp/fp-premig && pnpm install --frozen-lockfile && pnpm payload migrate && SKIP_BUILD_STATIC_GENERATION=1 pnpm build
+PORT=3300 pnpm start        # in the background; wait for http://localhost:3300/api/health
+# over REST on :3300, as tests/screenshots/setup.shots.ts does: POST /api/users/first-register, then POST /api/tenants
+curl -fsS -X POST -H "Authorization: Bearer $(grep ^CRON_SECRET= .env | cut -d= -f2-)" http://localhost:3300/api/seed/critter-connect
+# stop the server, then:
+cd /srv/critter-ai/worktrees/feedback-pivot
+psql "$B/$PRE" -v ON_ERROR_STOP=1 -f tests/migrations/feedback-pivot/fixtures.sql
+pg_dump "$B/$PRE" | psql -v ON_ERROR_STOP=1 -q "$B/$COPY"
+DATABASE_URL="$B/$COPY" pnpm payload migrate 2>&1 | tee $CHECK/migrate.log
+psql "$B/$COPY" -v ON_ERROR_STOP=1 -f tests/migrations/feedback-pivot/assert.sql 2>&1 | tee $CHECK/assert.log
+```
+
+The shell doesn't keep variables between agent tool calls, so write the block into `$CHECK/commands.sh` and run it in pieces from there; it's then also the record of what ran. `migrate.log` must list M12 to M15 as run; `assert.log` must end without an `ERROR`.
+
+**New tests, the requirement each covers, and the step it lands in.** The first seven rows are the Definition of done's list; the other three are §12's remaining new tests.
+
+| Requirement | Spec › test | Step |
+|---|---|---|
+| A bug and an idea submitted and published | `reports-contact` › S5.8 a bug and an idea from the browser reach the board and the list with their types; S5.7 a submission titled "New" never takes the form's URL [F3] | S18, S5 |
+| The four-stage mapping on the board | `issues-voting` › S4.2 the board shows four public stages; S4.7 an archived item leaves the board, the list and the landing, keeps its page and stops taking votes | S8, S7 |
+| The ideas and review settings | `reports-contact` › S5.9 with review on, a clean submission waits for the studio; S5.10 turning ideas off refuses ideas | S17, S18 |
+| Review off: clean text auto-publishes, flagged text waits | `reports-contact` › S5.11 with review off, clean text publishes at once and flagged text waits | S17 |
+| Every old URL, including RSS, redirecting | `redirects` › S7.1 every old portal URL redirects permanently | S6 |
+| The update ↔ feedback links | `patch-notes` › S3.6 an update lists the feedback it shipped | S19 |
+| No generator in the admin or the API | `tenant-isolation` › S1.10 the site generator and the landing builder are gone | S1, S13 |
+| The home page and the portal's link back (Goal 3, 8) | `home` › S8.1 the home page tells the feedback story and links to GitHub and Contact; `portal-landing` › S2.7 the portal links back to the studio's own site | S20, S11 |
+| The theme stays valid and themable (Goal 3) | `portal-landing` › S2.4 project theme | S9, S10 |
+| The kanban follows the tenant selector (F17) | `admin-triage` › S6.2, its F17 step | S3 |
+
+**Existing tests whose expected values change.** §12 names each one; nothing else may change meaning.
+
+| Spec › test | Change | Step |
+|---|---|---|
+| `tenant-isolation` › S1.10 | the three generator tests become one "gone" test | S1, S13 |
+| `admin-triage` › every kanban test | heading "Issues" → "Feedback" | S3 |
+| `patch-notes` › S3.3, S3.4 | item links go to `/updates/<slug>`; the RSS channel title says "Updates" | S6 |
+| `issues-voting` › S4.3 | the fix link's href is `/updates/…` | S6 |
+| `issues-voting` › S4.1 | badges show stage labels | S7 |
+| `portal-landing` › S2.5 | the status change is REPORTED → PLANNED ("Under review" → "Planned") | S7 |
+| `admin-triage` › S6.3 | the drag goes Reported → Planned; the public Planned column | S7 |
+| `issues-voting` › S4.2 | rewritten as the four-stage test | S8 |
+| `admin-triage` › S6.7 | the public column is "Under review" | S8 |
+| `portal-landing` › S2.4 | the page-publishing tests become "project theme" | S9, S10, S12 |
+| `portal-landing` › S2.3 | deleted | S10 |
+| `portal-landing` › S2.2 | nav is Updates, Feedback, Contact (S11); hub section order, the store button in the hub header, the trailer test deleted (S12) | S11, S12 |
+| `portal-landing` › S2.5 | Latest updates lists v2, then v1 | S12 |
+| `tenant-isolation` › S1.9 | the two studio Draft Mode tests are deleted | S12, S13 |
+| `reports-contact` › S5.1 | picks "Bug" first | S18 |
+
+**Screenshot record** (S22). `DIR=/srv/critter-ai/agent-state/missions/feedback-pivot/screenshots`; reproduce with `SHOTS_SET=after SHOTS_DIR=$DIR pnpm screenshots` (add `--project desktop` or `--project mobile` for one width). The harness drops and re-seeds the `_e2e` database, so never run it alongside `pnpm test:e2e`.
+
+| Set | Step | Commit | UTC | Command | PNGs | Probes |
+|---|---|---|---|---|---|---|
+| after | S22 | | | | | |
+
+**Artifacts**
+
+- `/srv/critter-ai/agent-state/missions/feedback-pivot/e2e-final/`: the final Playwright HTML report (traces and screenshots for every test) and `run.log`.
+- `/srv/critter-ai/agent-state/missions/feedback-pivot/e2e-baseline/`: the pre-change report, for comparison.
+- `/srv/critter-ai/agent-state/missions/feedback-pivot/migration-check/`: `commands.sh`, `migrate.log`, `assert.log`.
+- `/srv/critter-ai/agent-state/missions/feedback-pivot/screenshots/index.html`, with `after/` (the PNGs, `meta.json`, `checks.json`).
+
+## Failure modes
+
+Only the content filter is tested in isolation (`tests/int/content-screen.int.spec.ts`, S16), because E2E can't enumerate its inputs cheaply. These are the ways `screenText` can fail. S16 writes one test per mode, then the code.
+
+1. **A missed term.** A profanity (`fuck`), a slur and a sexual term, each alone and inside a sentence, in any case (`FUCK`, `Fuck`), resolves `flagged: false`.
+2. **Missed obfuscation.** Leetspeak and look-alike spellings (`sh1t`, `a$$`, `f*ck`) pass.
+3. **Ordinary words flagged.** Any of assassin, Scunthorpe, class, analysis, cocktail, Hancock, therapist, grape, Essex, arsenal, cockroach, Hitchcock or cockpit is flagged; so is a plain bug report ("The game crashes when I open the map on Steam Deck.") or the empty string.
+4. **One or two links flagged.** `https://youtu.be/clip`; `https://www.a.com/x https://www.a.com/y` (each URL counts once: a scheme URL's `www.` isn't counted again); a clip plus a screenshot link in any spelling.
+5. **Three links missed**, in any mix: three `https://` links; `www.a.com, www.b.com and http://c.com`; the same URL three times.
+6. **A shortener missed**, with or without a scheme or `www.`: `https://bit.ly/x`, `bit.ly/abc`, `www.t.co/x`, `HTTPS://WWW.T.CO/x`, or one shortener among ordinary links.
+7. **A look-alike counted.** `https://notbit.ly/x` or `https://bit.ly.example.com/x` counted as a shortener; a bare `notbit.ly/x` or `at.co/y` counted as a link at all.
+8. **A flag without a reason.** Any flagged result with empty `reasons`.
+9. **Bad reasons.** A repeated word or shortener host gives duplicate reasons; more than five `Offensive word:` reasons; wording other than `Offensive word: "<matched text>"`, `<n> links` and `Shortened link: <host>`.
+10. **Mixed text half-screened.** Text with both a profanity and three links gives only one kind of reason.
 
 ## Decisions
 
 - **H6 picked up (2026-09-30).** The home page's Contact link reads `CRITWIRE_CONTACT_URL` (a `mailto:` or `https:` value; hidden when unset). Owner's value: `mailto:admin@critwire.com`, in the worktree `.env` and `/srv/critter-ai/agent-state/secrets/critwire.production.env`. H6's other two questions are moot after the pivot and were closed with a note.
 - **Owner (H6, 2026-09-30): existing production data need not be preserved.** Migrations may drop existing studio content instead of mapping it. This relaxes the brief's "Keep existing studio content" rule: map where it's cheap and obvious, drop otherwise, and list every drop in the Summary as before.
+- **Planner (2026-09-30): M14 is split in two, so there are four migrations, not three.** §10's M14 `portal_hub` becomes M14 `portal_theme` (the theme columns and the copy from the published flagship page, S9) and M15 `remove_landing_builder` (lock rows, preferences, the `game_pages*` tables and enums, and the dead project columns, S13). As one migration, it would force the theme move, the hub and the builder's removal into one session, with the app broken in between. The SQL, its order and the §10 Check are unchanged.
+- **Planner: step order.** The data model and the admin's F17 fix come first. Then one URL module, the reserved slug (F3, which the rename would otherwise introduce) and the rename, so every later test is written against the final URLs. Public stages and the board come before the hub, so the hub is built once from its final components. The theme, the chrome, the hub and the builder's removal follow, in that order, since each needs the one before. The migration check (S15) runs as soon as all four migrations exist.
+- **Planner: five of §12's new tests are split across steps**, each part landing with its behaviour: test 1 (the reserved slug in S5, the browser bug and idea in S18), test 2 (archived items in S7, the four stages in S8), test 3 (the endpoint in S17, the pages in S18), test 7 (the generator in S1, the builder in S13) and test 8 (the chrome in S11, the home page in S20).
+- **Planner: specs keep their own literal paths** and don't import `paths.ts`, so a wrong URL in the module can't also make its test pass. Spec file names stay. Two new specs: `redirects.spec.ts` (S7.x) and `home.spec.ts` (S8.x).
+- **Planner: the admin labels change in S3, with the kanban heading,** rather than with the data model, so the heading and its E2E selector change once.
+- **Planner: board cards show the type tag.** §5 lists a list row's contents but not a card's; test 1 needs both to show the type.
+- **Planner: the submit form's h1 follows the chosen type:** "Report a bug", "Suggest an idea", or "Send feedback" before a choice. §5 didn't name it.
+- **Planner: the migration check's fixtures NULL seven colours explicitly** (the `site_theme_colors_*` columns have defaults, so an insert would otherwise set all ten), and add a `collection-game-pages` preference and a lock row, so the cleanup assertions test something.
+- **Planner: screenshots are one "after" set** of §12's pages (hub, list, board, both forms, an update page) under Critter Connect and Riso, plus `/`. The `default` group, the first-run, legacy and focus shots go, and `index.html` shows only captured sets.
 
 ## Log
 
@@ -732,5 +1155,6 @@ Every MUST-FIX is resolved in place. Items both reviewers raised are answered on
 - 2026-09-30 05:35 UTC · Fable review: APPROVE_WITH_CHANGES. One MUST-FIX (the §4 link rule double-counts `https://www.` URLs), three misses (`screenText` throw contract, votes on archived items, M14 list-preference key) and five should-considers, all for the Revision stage. No code changed, so no checks ran.
 - 2026-09-30 05:29 UTC · Astra review: APPROVE_WITH_CHANGES. Two MUST-FIX (§8 kanban hand-rolls the tenant filter instead of the plugin's list filter; §10 reserved-slug rename can collide and old `/issues/new`-style links lose their item) and five should-considers, overlapping Fable on the link count, `screenText` contract, RSS GUIDs and archived votes. No code changed, so no checks ran.
 - 2026-09-30 05:55 UTC · Revision: `architect` resolved all MUST-FIX items. Link rule counts URLs; kanban reuses the plugin-installed `admin.baseFilter` (verified at `@payloadcms/next/dist/views/List/index.js:114`) and is keyed on it; M13 allocates collision-safe `new-<n>` slugs plus a `slugify` guard; `/issues/new` item redirect rejected under the H6 data decision. Also settled the `screenText` contract, archived votes (409), stable RSS guids, boot-time contact URL check, per-level theme merge and migration fixtures; rejected the `game-pages-list` key (doesn't exist in Payload 3.85.2). No code changed, so no checks ran.
+- 2026-09-30 06:06 UTC · Steps: `planner` wrote 23 steps (S1 generator removal … S23 full verification), Verification (DoD test → spec map, audits, migration check, artifacts) and Failure modes. Split §10 M14 into M14 `portal_theme` and M15 `remove_landing_builder` so the app stays working between steps (Decisions). No code changed, so no checks ran.
 
 ## Summary
