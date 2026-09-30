@@ -7,6 +7,7 @@ import React from 'react'
 import RichText from '@/components/RichText'
 import { formatDate } from '@/components/game/format'
 import { getGameProject } from '@/lib/game-portal/getGameProject'
+import { portalPaths } from '@/lib/game-portal/paths'
 import { getPublishedPatchNote } from '@/lib/game-portal/patchNotes'
 
 export const revalidate = 3600
@@ -32,7 +33,7 @@ export default async function PatchNoteDetailPage({ params }: Args) {
   return (
     <div className="fs-shell fs-ops">
       <article className="fs-column">
-        <Link className="fs-back" href={`/g/${gameSlug}/patch-notes`}>
+        <Link className="fs-back" href={portalPaths(gameSlug).updates}>
           All patch notes
         </Link>
         {note.versionLabel || published ? (

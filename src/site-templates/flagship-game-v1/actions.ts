@@ -1,5 +1,7 @@
 import type { GameProject } from '@/payload-types'
 
+import { portalPaths } from '@/lib/game-portal/paths'
+
 import type { SiteAction, SiteActionRef } from './schema/refs'
 
 /**
@@ -94,9 +96,10 @@ export const resolveSiteAction = (
   if (!action) return null
   const { ref } = action
   const label = action.label || DEFAULT_ACTION_LABELS[ref]
-  const internal = (path: string): ResolvedSiteAction => ({
+  const paths = portalPaths(project.slug)
+  const internal = (href: string): ResolvedSiteAction => ({
     external: false,
-    href: `/g/${project.slug}${path}`,
+    href,
     label,
     ref,
   })
@@ -105,13 +108,13 @@ export const resolveSiteAction = (
 
   switch (ref) {
     case 'contact':
-      return internal('/contact')
+      return internal(paths.contact)
     case 'issues':
-      return internal('/issues')
+      return internal(paths.feedback)
     case 'report':
-      return internal('/report')
+      return internal(paths.newFeedback())
     case 'updates':
-      return internal('/patch-notes')
+      return internal(paths.updates)
     case 'demo':
       return external(project.availability?.demoUrl)
     case 'discord':

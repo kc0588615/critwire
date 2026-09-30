@@ -76,7 +76,7 @@ services. The established hooks:
 Rule: any hook that mutates published content calls `revalidatePath()`
 or `revalidateTag()` **after** the DB write. A single page revalidates
 by its URL (`/g/<slug>`); a subtree only by its route pattern, route
-groups included (`src/hooks/portalRoutes.ts`), because Next never tags
+groups included (`PORTAL_ROUTE` and `UPDATES_ROUTE` in `src/lib/game-portal/paths.ts`), because Next never tags
 pages with a concrete path's layout.
 
 ## Data access

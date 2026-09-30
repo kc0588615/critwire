@@ -2,12 +2,12 @@ import type { BasePayload } from 'payload'
 
 import { revalidatePath } from 'next/cache'
 
-import { PORTAL_ROUTE } from './portalRoutes'
+import { PORTAL_ROUTE } from '@/lib/game-portal/paths'
 
 /**
  * Revalidates every public page under /g/[gameSlug] (the landing, patch
  * notes and their RSS feed, and the issue, report and contact pages) for
- * every game at once; see `portalRoutes.ts` for why it can't be narrower.
+ * every game at once; see `PORTAL_ROUTE` for why it can't be narrower.
  * `source` names what changed, for the log line.
  */
 export const revalidateGamePortal = (source: string, payload: BasePayload): void => {

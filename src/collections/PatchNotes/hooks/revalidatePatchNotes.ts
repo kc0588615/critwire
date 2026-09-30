@@ -5,7 +5,8 @@ import { extractID } from 'payload/shared'
 
 import type { PatchNote } from '../../../payload-types'
 
-import { PATCH_NOTES_ROUTE } from '../../../hooks/portalRoutes'
+import { UPDATES_ROUTE } from '@/lib/game-portal/paths'
+
 import { revalidateGameLanding } from '../../../hooks/revalidateGameLanding'
 
 /**
@@ -13,7 +14,7 @@ import { revalidateGameLanding } from '../../../hooks/revalidateGameLanding'
  * invalidates the patch-notes pages (feed, pagination, detail pages,
  * RSS) and the landing, which renders the latest published note live.
  */
-const revalidatePatchNotePages = (): void => revalidatePath(PATCH_NOTES_ROUTE, 'layout')
+const revalidatePatchNotePages = (): void => revalidatePath(UPDATES_ROUTE, 'layout')
 
 export const revalidatePatchNotes: CollectionAfterChangeHook<PatchNote> = async ({
   doc,

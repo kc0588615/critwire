@@ -12,6 +12,7 @@ import { TallyFormPanel } from '@/components/game/TallyEmbed'
 import { TurnstileField } from '@/components/game/TurnstileField'
 import { getReportRoute } from '@/lib/game-portal/formRoutes'
 import { getGameProject } from '@/lib/game-portal/getGameProject'
+import { portalPaths } from '@/lib/game-portal/paths'
 
 type Args = {
   params: Promise<{ gameSlug: string }>
@@ -25,6 +26,7 @@ export default async function ReportIssuePage({ params, searchParams }: Args) {
   if (!project) notFound()
 
   const route = getReportRoute(project.reportForm)
+  const paths = portalPaths(gameSlug)
 
   return (
     <div className="fs-shell fs-ops">
@@ -33,7 +35,7 @@ export default async function ReportIssuePage({ params, searchParams }: Args) {
           purpose={
             <>
               Tell the {project.name} team what went wrong. Check the{' '}
-              <Link className="fs-link" href={`/g/${gameSlug}/issues`}>
+              <Link className="fs-link" href={paths.feedback}>
                 known issues
               </Link>{' '}
               first: if your bug is there, vote on it.
@@ -81,7 +83,7 @@ export default async function ReportIssuePage({ params, searchParams }: Args) {
               </FormNotice>
             ) : null}
 
-            <form action={`/g/${gameSlug}/report/submit`} className="fs-form" method="post">
+            <form action={paths.feedbackSubmit} className="fs-form" method="post">
               <FormField id="title" label="Title">
                 {(control) => (
                   <input

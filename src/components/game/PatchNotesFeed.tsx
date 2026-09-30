@@ -5,6 +5,8 @@ import React from 'react'
 
 import type { GameProject, PatchNote } from '@/payload-types'
 
+import { portalPaths } from '@/lib/game-portal/paths'
+
 import { formatDate } from './format'
 import { PageHead } from './PageHead'
 
@@ -12,8 +14,8 @@ export const PatchNotesFeed: React.FC<{
   notes: PaginatedDocs<PatchNote>
   project: Pick<GameProject, 'name' | 'slug'>
 }> = ({ notes, project }) => {
-  const base = `/g/${project.slug}/patch-notes`
-  const rss = `${base}/feed.xml`
+  const paths = portalPaths(project.slug)
+  const { rss } = paths
 
   return (
     <div className="fs-shell fs-ops">
@@ -53,7 +55,7 @@ export const PatchNotesFeed: React.FC<{
                         </time>
                       ) : null}
                       <h2 className="fs-h3 mt-1">
-                        <Link className="fs-link" href={`${base}/${note.slug}`}>
+                        <Link className="fs-link" href={paths.update(note.slug)}>
                           {note.title}
                         </Link>
                       </h2>
@@ -73,7 +75,7 @@ export const PatchNotesFeed: React.FC<{
             {notes.hasPrevPage ? (
               <Link
                 className="fs-link fs-tap font-semibold"
-                href={notes.page === 2 ? base : `${base}/page/${(notes.page ?? 2) - 1}`}
+                href={paths.updatesPage((notes.page ?? 2) - 1)}
               >
                 Newer updates
               </Link>
@@ -86,7 +88,7 @@ export const PatchNotesFeed: React.FC<{
             {notes.hasNextPage ? (
               <Link
                 className="fs-link fs-tap font-semibold"
-                href={`${base}/page/${(notes.page ?? 1) + 1}`}
+                href={paths.updatesPage((notes.page ?? 1) + 1)}
               >
                 Older updates
               </Link>

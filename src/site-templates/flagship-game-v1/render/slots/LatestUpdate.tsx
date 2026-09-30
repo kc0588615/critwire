@@ -2,6 +2,7 @@ import Link from 'next/link'
 import React from 'react'
 
 import { formatDate } from '@/components/game/format'
+import { portalPaths } from '@/lib/game-portal/paths'
 
 import type { LatestUpdateSlot } from '../../schema/slots'
 import type { SiteRenderContext } from '../context'
@@ -18,7 +19,7 @@ export const LatestUpdateSection: React.FC<{
   if (!value.enabled) return null
   const note = ctx.latestPatchNote
   if (!note) return null
-  const base = `/g/${ctx.project.slug}`
+  const paths = portalPaths(ctx.project.slug)
   const published = formatDate(note.publishedAt)
 
   return (
@@ -36,13 +37,13 @@ export const LatestUpdateSection: React.FC<{
           </div>
           <div className="fs-entry-main">
             <h3 className="fs-h3">
-              <Link className="fs-link" href={`${base}/patch-notes/${note.slug}`}>
+              <Link className="fs-link" href={paths.update(note.slug)}>
                 {note.title}
               </Link>
             </h3>
             {note.summary ? <p className="fs-body mt-2 text-[var(--fs-muted-fg)]">{note.summary}</p> : null}
             <p className="mt-5">
-              <Link className="fs-link font-semibold" href={`${base}/patch-notes`}>
+              <Link className="fs-link font-semibold" href={paths.updates}>
                 All patch notes
               </Link>
             </p>

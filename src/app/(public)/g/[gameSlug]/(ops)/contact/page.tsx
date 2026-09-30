@@ -11,6 +11,7 @@ import { TallyFormPanel } from '@/components/game/TallyEmbed'
 import { TurnstileField } from '@/components/game/TurnstileField'
 import { getContactRoute } from '@/lib/game-portal/formRoutes'
 import { getGameProject } from '@/lib/game-portal/getGameProject'
+import { portalPaths } from '@/lib/game-portal/paths'
 
 type Args = {
   params: Promise<{ gameSlug: string }>
@@ -24,6 +25,7 @@ export default async function ContactPage({ params, searchParams }: Args) {
   if (!project) notFound()
 
   const route = (await getContactRoute(gameSlug)) ?? { kind: 'none' }
+  const paths = portalPaths(gameSlug)
 
   return (
     <div className="fs-shell fs-ops">
@@ -33,7 +35,7 @@ export default async function ContactPage({ params, searchParams }: Args) {
             <>
               Questions, feedback or press requests go straight to the {project.name} team. For
               bugs, use the{' '}
-              <Link className="fs-link" href={`/g/${gameSlug}/report`}>
+              <Link className="fs-link" href={paths.newFeedback()}>
                 report form
               </Link>
               .
@@ -80,7 +82,7 @@ export default async function ContactPage({ params, searchParams }: Args) {
               </FormNotice>
             ) : null}
 
-            <form action={`/g/${gameSlug}/contact/submit`} className="fs-form" method="post">
+            <form action={paths.contactSubmit} className="fs-form" method="post">
               <div className="fs-field-pair">
                 <FormField id="name" label="Name (optional)">
                   {(control) => (

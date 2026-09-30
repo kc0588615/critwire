@@ -4,6 +4,8 @@ import { revalidatePath } from 'next/cache'
 
 import type { GameProject } from '../payload-types'
 
+import { portalPaths } from '@/lib/game-portal/paths'
+
 import { resolveProjectSlug } from './resolveProjectSlug'
 
 /**
@@ -17,6 +19,7 @@ export const revalidateGameLanding = async (
   const slug = await resolveProjectSlug(gameProject, payload)
   if (!slug) return
 
-  payload.logger.info(`Revalidating game portal at /g/${slug}`)
-  revalidatePath(`/g/${slug}`)
+  const { hub } = portalPaths(slug)
+  payload.logger.info(`Revalidating game portal at ${hub}`)
+  revalidatePath(hub)
 }

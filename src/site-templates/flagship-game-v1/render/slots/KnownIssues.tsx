@@ -3,6 +3,7 @@ import React from 'react'
 
 import { issueStatusLabel, issueStatusShape, StatusMark } from '@/components/game/IssueStatus'
 import { VoteCount } from '@/components/game/VoteCount'
+import { portalPaths } from '@/lib/game-portal/paths'
 
 import type { KnownIssuesSlot } from '../../schema/slots'
 import type { SiteRenderContext } from '../context'
@@ -25,7 +26,7 @@ export const KnownIssuesSection: React.FC<{
 }> = ({ ctx, value }) => {
   if (!value.enabled) return null
   if (ctx.knownIssues.length === 0) return null
-  const base = `/g/${ctx.project.slug}`
+  const paths = portalPaths(ctx.project.slug)
 
   return (
     <section aria-labelledby="fs-known-issues-heading" className="fs-section">
@@ -38,7 +39,7 @@ export const KnownIssuesSection: React.FC<{
           {ctx.knownIssues.map((issue) => (
             <li key={issue.id}>
               {/* The row's text starts with the title: the status marker is an empty CSS shape. */}
-              <Link className="fs-issue-row" href={`${base}/issues/${issue.slug}`}>
+              <Link className="fs-issue-row" href={paths.feedbackItem(issue.slug)}>
                 <StatusMark shape={issueStatusShape(issue.status)} />
                 <span className="fs-issue-row-title">{issue.title}</span>
                 <span className="fs-issue-row-meta">
@@ -52,7 +53,7 @@ export const KnownIssuesSection: React.FC<{
           ))}
         </ul>
         <p className="mt-6">
-          <Link className="fs-link font-semibold" href={`${base}/issues`}>
+          <Link className="fs-link font-semibold" href={paths.feedback}>
             See all known issues
           </Link>
         </p>

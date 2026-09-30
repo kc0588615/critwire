@@ -142,7 +142,7 @@ at build time; each path renders on its first visit and is cached. The
 cache lives in Next's memory LRU only (`experimental.isrFlushToDisk:
 false`), because it also stores 404s for made-up slugs and would
 otherwise grow on disk without bound. A restart or deploy empties it.
-Subtrees revalidate by route pattern (`src/hooks/portalRoutes.ts`).
+Subtrees revalidate by route pattern (`PORTAL_ROUTE` and `UPDATES_ROUTE` in `src/lib/game-portal/paths.ts`).
 
 ## Project structure
 

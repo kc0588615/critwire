@@ -4,6 +4,7 @@ import React from 'react'
 import type { GameProject } from '@/payload-types'
 
 import { Media } from '@/components/Media'
+import { portalPaths } from '@/lib/game-portal/paths'
 
 import { resolveSiteAction, resolveSiteActions } from '../actions'
 import type { NavConfig } from '../schema/slots'
@@ -20,7 +21,7 @@ export const SiteNav: React.FC<{ project: GameProject; value: NavConfig }> = ({
   return (
     <header className="fs-nav">
       <div className="fs-shell fs-nav-bar">
-        <Link className="fs-nav-home" href={`/g/${project.slug}`}>
+        <Link className="fs-nav-home" href={portalPaths(project.slug).hub}>
           {project.logo && typeof project.logo === 'object' ? (
             <Media
               imgClassName="h-9 w-9 rounded-[var(--fs-radius-control)] object-cover"

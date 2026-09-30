@@ -7,6 +7,7 @@ import { NextRequest } from 'next/server'
 import { getPayload } from 'payload'
 import { extractID } from 'payload/shared'
 
+import { portalPaths } from '@/lib/game-portal/paths'
 import { verifySitePreviewToken } from '@/lib/security/sitePreviewToken'
 
 /**
@@ -71,5 +72,5 @@ export async function GET(req: NextRequest): Promise<Response> {
   }
 
   draft.enable()
-  redirect(`/g/${project.slug}`)
+  redirect(portalPaths(project.slug).hub)
 }

@@ -11,6 +11,7 @@ import { IssueMeta, issueStatusShape, StatusMark } from '@/components/game/Issue
 import { VoteButton } from '@/components/game/VoteButton'
 import { getGameProject } from '@/lib/game-portal/getGameProject'
 import { getHasVoted, getPublicIssue } from '@/lib/game-portal/issues'
+import { portalPaths } from '@/lib/game-portal/paths'
 
 // Reads the vote cookie and shows live counts — always dynamic.
 export const dynamic = 'force-dynamic'
@@ -46,10 +47,12 @@ export default async function IssueDetailPage({ params }: Args) {
       ? issue.fixedInPatchNote
       : null
 
+  const paths = portalPaths(gameSlug)
+
   return (
     <div className="fs-shell fs-ops">
       <article className="fs-column">
-        <Link className="fs-back" href={`/g/${gameSlug}/issues`}>
+        <Link className="fs-back" href={paths.feedback}>
           All known issues
         </Link>
         <IssueMeta className="mt-8" issue={issue} />
@@ -82,7 +85,7 @@ export default async function IssueDetailPage({ params }: Args) {
           <IssueNote heading="Fixed" status={issue.status}>
             <p>
               The fix shipped in{' '}
-              <Link className="fs-link" href={`/g/${gameSlug}/patch-notes/${fixedIn.slug}`}>
+              <Link className="fs-link" href={paths.update(fixedIn.slug)}>
                 {fixedIn.versionLabel ? `${fixedIn.versionLabel} — ` : ''}
                 {fixedIn.title}
               </Link>

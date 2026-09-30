@@ -7,6 +7,7 @@ import { z } from 'zod'
 import { ISSUE_CATEGORY_OPTIONS } from '@/collections/options'
 import { getReportRoute } from '@/lib/game-portal/formRoutes'
 import { getGameProject } from '@/lib/game-portal/getGameProject'
+import { portalPaths } from '@/lib/game-portal/paths'
 import { formResponse, guardPublicForm } from '@/lib/public-forms/guard'
 import { getLogger } from '@/lib/logger'
 
@@ -33,7 +34,7 @@ export async function POST(
   { params }: { params: Promise<{ gameSlug: string }> },
 ): Promise<Response> {
   const { gameSlug } = await params
-  const path = `/g/${gameSlug}/report`
+  const path = portalPaths(gameSlug).newFeedback()
 
   try {
     const guard = await guardPublicForm({

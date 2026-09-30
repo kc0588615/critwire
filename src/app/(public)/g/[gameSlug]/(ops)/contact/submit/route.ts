@@ -5,6 +5,7 @@ import { z } from 'zod'
 
 import { getContactRoute } from '@/lib/game-portal/formRoutes'
 import { getGameProject } from '@/lib/game-portal/getGameProject'
+import { portalPaths } from '@/lib/game-portal/paths'
 import { formResponse, guardPublicForm } from '@/lib/public-forms/guard'
 import { getLogger } from '@/lib/logger'
 
@@ -22,7 +23,7 @@ export async function POST(
   { params }: { params: Promise<{ gameSlug: string }> },
 ): Promise<Response> {
   const { gameSlug } = await params
-  const path = `/g/${gameSlug}/contact`
+  const path = portalPaths(gameSlug).contact
 
   try {
     const guard = await guardPublicForm({

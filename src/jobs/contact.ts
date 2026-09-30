@@ -5,8 +5,10 @@ import * as Sentry from '@sentry/nextjs'
 import type { GameProject } from '@/payload-types'
 
 import { renderContactFormEmail } from '@/lib/email/renderContactFormEmail'
+import { portalPaths } from '@/lib/game-portal/paths'
 import { getLogger } from '@/lib/logger'
 import { isAllowedDiscordWebhookUrl } from '@/lib/validation/discordWebhook'
+import { getServerSideURL } from '@/utilities/getURL'
 
 const log = getLogger('jobs.contact')
 
@@ -89,7 +91,7 @@ export const emailContactFormTask: TaskConfig<'email-contact-form'> = {
       const subject = input.subject?.trim()
         ? `[${project.name}] ${input.subject.trim()}`
         : `[${project.name}] Contact form submission`
-      const portalUrl = `${process.env.NEXT_PUBLIC_SERVER_URL ?? ''}/g/${input.gameSlug}`
+      const portalUrl = `${getServerSideURL()}${portalPaths(input.gameSlug).hub}`
       const { html, text } = await renderContactFormEmail({
         email: input.email || undefined,
         gameName: project.name,
@@ -161,7 +163,7 @@ export const discordWebhookContactTask: TaskConfig<'discord-webhook'> = {
                 { inline: true, name: 'Game', value: project.name },
               ],
               title: input.subject?.trim() || 'Contact form submission',
-              url: `${process.env.NEXT_PUBLIC_SERVER_URL ?? ''}/g/${input.gameSlug}/contact`,
+              url: `${getServerSideURL()}${portalPaths(input.gameSlug).contact}`,
             },
           ],
         }),

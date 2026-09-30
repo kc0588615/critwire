@@ -1,4 +1,5 @@
 import { getGameProject } from '@/lib/game-portal/getGameProject'
+import { portalPaths } from '@/lib/game-portal/paths'
 import { queryPublishedPatchNotes } from '@/lib/game-portal/patchNotes'
 import { getServerSideURL } from '@/utilities/getURL'
 
@@ -31,17 +32,19 @@ export async function GET(
   const notes = await queryPublishedPatchNotes({ limit: 20, page: 1, projectID: project.id })
 
   const base = getServerSideURL()
-  const feedUrl = `${base}/g/${gameSlug}/patch-notes`
+  const paths = portalPaths(gameSlug)
+  const feedUrl = `${base}${paths.updates}`
 
   const items = notes.docs
     .map((note) => {
-      const link = `${feedUrl}/${note.slug}`
+      const link = `${base}${paths.update(note.slug)}`
+      const guid = `${base}${paths.updateGuid(note.slug)}`
       const title = note.versionLabel ? `${note.versionLabel} — ${note.title}` : note.title
       return [
         '    <item>',
         `      <title>${escapeXml(title)}</title>`,
         `      <link>${escapeXml(link)}</link>`,
-        `      <guid isPermaLink="true">${escapeXml(link)}</guid>`,
+        `      <guid isPermaLink="true">${escapeXml(guid)}</guid>`,
         note.publishedAt
           ? `      <pubDate>${new Date(note.publishedAt).toUTCString()}</pubDate>`
           : null,
@@ -58,7 +61,7 @@ export async function GET(
   <channel>
     <title>${escapeXml(`${project.name} — Patch Notes`)}</title>
     <link>${escapeXml(feedUrl)}</link>
-    <atom:link href="${escapeXml(`${feedUrl}/feed.xml`)}" rel="self" type="application/rss+xml" />
+    <atom:link href="${escapeXml(`${base}${paths.rss}`)}" rel="self" type="application/rss+xml" />
     <description>${escapeXml(`Latest updates and patch notes for ${project.name}.`)}</description>
     <language>en</language>
 ${items}
