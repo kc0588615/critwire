@@ -1,25 +1,36 @@
 import Link from 'next/link'
 import React from 'react'
 
-import { FeedbackTypeTag, PinnedTag, StatusMark } from '@/components/game/FeedbackStatus'
+import {
+  FeedbackTypeTag,
+  PinnedTag,
+  shippedUpdate,
+  StatusMark,
+  updateName,
+} from '@/components/game/FeedbackStatus'
 import { VoteCount } from '@/components/game/VoteCount'
 import { feedbackHref, type FeedbackTypeParam, feedbackTypeOf } from '@/lib/game-portal/feedbackSearchParams'
 import { BOARD_COLUMN_LIMIT, type BoardCard, queryBoardColumn } from '@/lib/game-portal/issues'
 import type { PortalPaths } from '@/lib/game-portal/paths'
 import { PUBLIC_STAGES } from '@/lib/game-portal/stages'
 
-const Card: React.FC<{ issue: BoardCard; paths: PortalPaths }> = ({ issue, paths }) => (
-  <li className="fs-board-card">
-    <Link className="fs-link font-semibold" href={paths.feedbackItem(issue.slug)}>
-      {issue.title}
-    </Link>
-    <div className="fs-board-card-meta">
-      <VoteCount count={issue.upvoteCount ?? 0} variant="inline" />
-      <FeedbackTypeTag type={issue.type} />
-      {issue.isPinned ? <PinnedTag /> : null}
-    </div>
-  </li>
-)
+/** A card's stage is its column's, so a shipped card adds only its published update. */
+const Card: React.FC<{ issue: BoardCard; paths: PortalPaths }> = ({ issue, paths }) => {
+  const shippedIn = shippedUpdate(issue)
+  return (
+    <li className="fs-board-card">
+      <Link className="fs-link font-semibold" href={paths.feedbackItem(issue.slug)}>
+        {issue.title}
+      </Link>
+      <div className="fs-board-card-meta">
+        <VoteCount count={issue.upvoteCount ?? 0} variant="inline" />
+        <FeedbackTypeTag type={issue.type} />
+        {issue.isPinned ? <PinnedTag /> : null}
+        {shippedIn ? <span className="fs-meta">Shipped in {updateName(shippedIn)}</span> : null}
+      </div>
+    </li>
+  )
+}
 
 /**
  * Read-only: one region per public stage, named by the stage label

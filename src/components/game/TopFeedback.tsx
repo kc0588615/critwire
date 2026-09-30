@@ -7,6 +7,7 @@ import { queryTopFeedback } from '@/lib/game-portal/issues'
 import { portalPaths } from '@/lib/game-portal/paths'
 
 import { FeedbackActions } from './FeedbackActions'
+import { FeedbackRow } from './FeedbackRow'
 import { FeedbackStatus, FeedbackTypeTag } from './FeedbackStatus'
 import { HubSection } from './HubSection'
 import { VoteCount } from './VoteCount'
@@ -30,17 +31,11 @@ export const TopFeedback: React.FC<{
       ) : (
         <ul className="fs-rows">
           {items.map((item) => (
-            <li key={item.id}>
-              {/* The row's text starts with the title; the stage marker is an empty CSS shape. */}
-              <Link className="fs-issue-row" href={paths.feedbackItem(item.slug)}>
-                <span className="fs-issue-row-title">{item.title}</span>
-                <span className="fs-issue-row-meta">
-                  <FeedbackTypeTag type={item.type} />
-                  {item.upvoteCount ? <VoteCount count={item.upvoteCount} variant="inline" /> : null}
-                  <FeedbackStatus status={item.status} />
-                </span>
-              </Link>
-            </li>
+            <FeedbackRow href={paths.feedbackItem(item.slug)} key={item.id} title={item.title}>
+              <FeedbackTypeTag type={item.type} />
+              {item.upvoteCount ? <VoteCount count={item.upvoteCount} variant="inline" /> : null}
+              <FeedbackStatus issue={item} />
+            </FeedbackRow>
           ))}
         </ul>
       )}

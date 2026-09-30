@@ -1,7 +1,7 @@
 import config from '@payload-config'
 import fs from 'fs/promises'
 import path from 'path'
-import { getPayload } from 'payload'
+import { getPayload, type RequiredDataFromCollectionSlug } from 'payload'
 import { extractID } from 'payload/shared'
 
 import type { GameProject, Media } from '../payload-types'
@@ -217,31 +217,55 @@ export async function seedCritterConnect() {
     limit: 1,
   })
 
-  if (existingPatchNote.docs.length === 0) {
-    const note = await payload.create({
+  let launchNote = existingPatchNote.docs[0]
+  if (!launchNote) {
+    launchNote = await payload.create({
       collection: 'patch-notes',
       data: patchNoteSeed,
       draft: false,
     })
-    payload.logger.info(`Created patch note "${note.title}" (id: ${note.id})`)
+    payload.logger.info(`Created patch note "${launchNote.title}" (id: ${launchNote.id})`)
   } else {
-    const note = existingPatchNote.docs[0]
-    await payload.update({
+    launchNote = await payload.update({
       collection: 'patch-notes',
-      id: note.id,
+      id: launchNote.id,
       data: {
         ...patchNoteSeed,
         // Keep the original publish date stable once the launch note exists.
-        publishedAt: note.publishedAt ?? patchNoteSeed.publishedAt,
+        publishedAt: launchNote.publishedAt ?? patchNoteSeed.publishedAt,
       },
       draft: false,
     })
     payload.logger.info('Launch patch note already exists; refreshed seeded fields.')
   }
 
-  const issueSeed = {
-    tenant: tenant.id,
-    gameProject: project.id,
+  /** Creates the public item with this slug, or refreshes its seeded fields. */
+  const upsertIssue = async (
+    seed: Omit<RequiredDataFromCollectionSlug<'issues'>, 'gameProject' | 'tenant'> & {
+      slug: string
+    },
+  ) => {
+    const data = { ...seed, tenant: tenant.id, gameProject: project.id, isPublic: true }
+    const existing = await payload.find({
+      collection: 'issues',
+      where: {
+        and: [{ gameProject: { equals: project.id } }, { slug: { equals: seed.slug } }],
+      },
+      limit: 1,
+    })
+
+    if (existing.docs.length === 0) {
+      const issue = await payload.create({ collection: 'issues', data })
+      payload.logger.info(`Created public issue "${issue.title}" (id: ${issue.id})`)
+    } else {
+      await payload.update({ collection: 'issues', id: existing.docs[0].id, data })
+      payload.logger.info(`Public issue "${seed.title}" already exists; refreshed seeded fields.`)
+    }
+  }
+
+  // One item per public stage, so the demo board and the launch update's
+  // "From your feedback" have something to show.
+  await upsertIssue({
     title: 'Discovery card flickers when opened quickly',
     slug: SAMPLE_ISSUE_SLUG,
     summary: 'Rapidly opening a new discovery card can show a one-frame flicker on some GPUs.',
@@ -251,31 +275,32 @@ export async function seedCritterConnect() {
     type: 'BUG',
     category: 'VISUAL',
     status: 'REPORTED',
-    isPublic: true,
-  } as const
-
-  const existingIssue = await payload.find({
-    collection: 'issues',
-    where: {
-      and: [{ gameProject: { equals: project.id } }, { slug: { equals: SAMPLE_ISSUE_SLUG } }],
-    },
-    limit: 1,
   })
-
-  if (existingIssue.docs.length === 0) {
-    const issue = await payload.create({
-      collection: 'issues',
-      data: issueSeed,
-    })
-    payload.logger.info(`Created public issue "${issue.title}" (id: ${issue.id})`)
-  } else {
-    await payload.update({
-      collection: 'issues',
-      id: existingIssue.docs[0].id,
-      data: issueSeed,
-    })
-    payload.logger.info('Sample public issue already exists; refreshed seeded fields.')
-  }
+  await upsertIssue({
+    title: 'Sort the field binder by habitat',
+    slug: 'sort-binder-by-habitat',
+    summary: 'Let players group discovery cards by marsh, forest, ridge and coast.',
+    type: 'IDEA',
+    category: 'USER_INTERFACE',
+    status: 'PLANNED',
+  })
+  await upsertIssue({
+    title: 'Clue trail markers drift on the minimap',
+    slug: 'clue-markers-drift',
+    summary: 'Markers slide a few metres off their spot while the minimap rotates.',
+    type: 'BUG',
+    category: 'USER_INTERFACE',
+    status: 'IN_PROGRESS',
+  })
+  await upsertIssue({
+    title: 'Saving during a clue trail loses progress',
+    slug: 'save-loses-clue-progress',
+    summary: 'Quitting mid-trail reset the trail to its first clue.',
+    type: 'BUG',
+    category: 'GAMEPLAY',
+    status: 'FIXED',
+    fixedInPatchNote: launchNote.id,
+  })
 
   const reportSeed = {
     tenant: tenant.id,

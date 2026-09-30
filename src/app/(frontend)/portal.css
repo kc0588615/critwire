@@ -588,6 +588,11 @@
   .fs-issue-row-meta > .fs-status {
     grid-column: 3;
   }
+
+  /* Rows without a stage (an update's shipped feedback) keep no empty column. */
+  .fs-issue-row-meta:not(:has(> .fs-status)) {
+    grid-template-columns: 3.5rem 4rem;
+  }
 }
 
 /* A hub section's buttons, wrapping onto new rows as needed. */

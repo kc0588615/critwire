@@ -11,6 +11,10 @@ import {
   revalidateIssueLanding,
   revalidateIssueLandingDelete,
 } from './hooks/revalidateIssueLanding'
+import {
+  revalidateLinkedUpdates,
+  revalidateLinkedUpdatesDelete,
+} from './hooks/revalidateLinkedUpdates'
 import { issueSlugify, rejectReservedSlug } from './reservedSlug'
 
 export const Issues: CollectionConfig = {
@@ -129,7 +133,7 @@ export const Issues: CollectionConfig = {
       label: 'Shipped in update',
       admin: {
         condition: (data) => data?.status === 'FIXED',
-        description: 'Links the public issue to the patch note that fixed it.',
+        description: 'The update that shipped it. Its page lists this item under "From your feedback".',
       },
       filterOptions: sameGameProjectFilter,
     },
@@ -150,8 +154,8 @@ export const Issues: CollectionConfig = {
     },
   ],
   hooks: {
-    afterChange: [revalidateIssueLanding],
-    afterDelete: [revalidateIssueLandingDelete],
+    afterChange: [revalidateIssueLanding, revalidateLinkedUpdates],
+    afterDelete: [revalidateIssueLandingDelete, revalidateLinkedUpdatesDelete],
     beforeDelete: [deleteIssueVotes],
     beforeValidate: [rejectReservedSlug, validateUniqueSlugPerProject('issues')],
   },

@@ -519,7 +519,7 @@ export interface Issue {
    */
   workaroundText?: string | null;
   /**
-   * Links the public issue to the patch note that fixed it.
+   * The update that shipped it. Its page lists this item under "From your feedback".
    */
   fixedInPatchNote?: (number | null) | PatchNote;
   upvoteCount?: number | null;

@@ -7,11 +7,13 @@ const { revalidatePath } = vi.hoisted(() => ({ revalidatePath: vi.fn() }))
 vi.mock('next/cache', () => ({ revalidatePath }))
 
 import { revalidateIssueLanding } from '@/collections/Issues/hooks/revalidateIssueLanding'
+import { revalidateLinkedUpdates } from '@/collections/Issues/hooks/revalidateLinkedUpdates'
 
 const project = (id: number, slug: string): GameProject =>
   ({ id, name: slug, slug }) as GameProject
 
 const payload = {
+  findByID: vi.fn(),
   logger: { info: vi.fn() },
 }
 
@@ -19,6 +21,7 @@ const payload = {
 describe('issue hub revalidation', () => {
   beforeEach(() => {
     revalidatePath.mockClear()
+    payload.findByID.mockClear()
     payload.logger.info.mockClear()
   })
 
@@ -39,6 +42,28 @@ describe('issue hub revalidation', () => {
       req: { context: {}, payload },
     } as never)
 
+    expect(revalidatePath).not.toHaveBeenCalled()
+  })
+
+  it('skips the linked update page when a shipped item only changes kanban order', async () => {
+    const previousDoc = {
+      _order: 'a0',
+      fixedInPatchNote: 7,
+      gameProject: project(1, 'ordered-game'),
+      id: 11,
+      isPublic: true,
+      status: 'FIXED',
+      title: 'Shipped issue',
+    } as Issue
+    const doc = { ...previousDoc, _order: 'a1' } as Issue
+
+    await revalidateLinkedUpdates({
+      doc,
+      previousDoc,
+      req: { context: {}, payload },
+    } as never)
+
+    expect(payload.findByID).not.toHaveBeenCalled()
     expect(revalidatePath).not.toHaveBeenCalled()
   })
 })

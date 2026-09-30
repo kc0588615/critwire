@@ -15,6 +15,9 @@ export const BOARD_COLUMN_LIMIT = 25
 
 export type IssueSortKey = 'latest' | 'top'
 
+/** What a shipped item shows of its update: see `shippedUpdate`. */
+const SHIPPED_IN_SELECT = { _status: true, slug: true, title: true, versionLabel: true } as const
+
 export const queryPublicIssues = cache(
   async ({
     category,
@@ -54,10 +57,12 @@ export const queryPublicIssues = cache(
 
     return payload.find({
       collection: 'issues',
-      depth: 0,
+      depth: 1,
       limit: ISSUES_PER_PAGE,
+      // Through access, a fix note the visitor can't read (a draft) stays an ID.
       overrideAccess: false,
       page,
+      populate: { 'patch-notes': SHIPPED_IN_SELECT },
       sort: sortOrder,
       where: { and },
     })
@@ -93,7 +98,7 @@ export const queryBoardColumn = async ({
     depth: 1,
     limit: BOARD_COLUMN_LIMIT,
     overrideAccess: false,
-    populate: { 'patch-notes': { slug: true, title: true, versionLabel: true } },
+    populate: { 'patch-notes': SHIPPED_IN_SELECT },
     select: {
       fixedInPatchNote: true,
       isPinned: true,
@@ -139,6 +144,36 @@ export const queryTopFeedback = cache(async (projectID: number | string): Promis
   return result.docs
 })
 
+/**
+ * An update's "From your feedback": the public items it shipped, most
+ * voted first. Scoped to the update's own game as well as the link.
+ */
+export const queryShippedFeedback = cache(
+  async ({ noteID, projectID }: { noteID: number; projectID: number | string }) => {
+    const payload = await getPayload({ config })
+
+    const result = await payload.find({
+      collection: 'issues',
+      depth: 0,
+      overrideAccess: false,
+      pagination: false,
+      select: { slug: true, title: true, type: true, upvoteCount: true },
+      sort: ['-upvoteCount', '-createdAt'],
+      where: {
+        and: [
+          { gameProject: { equals: projectID } },
+          { fixedInPatchNote: { equals: noteID } },
+          { isPublic: { equals: true } },
+          { status: { in: statusesFor('shipped') } },
+        ],
+      },
+    })
+    return result.docs
+  },
+)
+
+export type ShippedFeedbackItem = Awaited<ReturnType<typeof queryShippedFeedback>>[number]
+
 export const getPublicIssue = cache(
   async ({
     projectID,
@@ -155,6 +190,7 @@ export const getPublicIssue = cache(
       // Through access, a fix note the visitor can't read (a draft) stays an ID.
       overrideAccess: false,
       pagination: false,
+      populate: { 'patch-notes': SHIPPED_IN_SELECT },
       where: {
         and: [
           { gameProject: { equals: projectID } },

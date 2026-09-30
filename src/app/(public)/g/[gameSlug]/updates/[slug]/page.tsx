@@ -6,6 +6,7 @@ import React from 'react'
 
 import RichText from '@/components/RichText'
 import { formatDate } from '@/components/game/format'
+import { FromYourFeedback } from '@/components/game/FromYourFeedback'
 import { getGameProject } from '@/lib/game-portal/getGameProject'
 import { portalPaths } from '@/lib/game-portal/paths'
 import { getPublishedPatchNote } from '@/lib/game-portal/patchNotes'
@@ -29,11 +30,12 @@ export default async function PatchNoteDetailPage({ params }: Args) {
   if (!note) notFound()
 
   const published = formatDate(note.publishedAt)
+  const paths = portalPaths(gameSlug)
 
   return (
     <div className="fs-shell fs-ops">
       <article className="fs-column">
-        <Link className="fs-back" href={portalPaths(gameSlug).updates}>
+        <Link className="fs-back" href={paths.updates}>
           All updates
         </Link>
         {note.versionLabel || published ? (
@@ -49,6 +51,7 @@ export default async function PatchNoteDetailPage({ params }: Args) {
         <h1 className="fs-page-title mt-3">{note.title}</h1>
         {note.summary ? <p className="fs-lead mt-5 text-[var(--fs-muted-fg)]">{note.summary}</p> : null}
         <RichText className="mx-0 mt-10" data={note.content} enableGutter={false} />
+        <FromYourFeedback noteID={note.id} paths={paths} projectID={project.id} />
       </article>
     </div>
   )

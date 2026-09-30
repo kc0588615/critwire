@@ -1,8 +1,16 @@
 import type { APIRequestContext, Page } from '@playwright/test'
 
-import type { GameProject, PatchNote } from '../../src/payload-types'
+import type { GameProject, Issue, PatchNote } from '../../src/payload-types'
 import { BASE_URL } from './support/env'
-import { createPatchNote, createProject, eventually, expect, test } from './support/fixtures'
+import {
+  castVote,
+  createIssue,
+  createPatchNote,
+  createProject,
+  eventually,
+  expect,
+  test,
+} from './support/fixtures'
 
 /**
  * Public patch notes under /g/<slug>/updates: the paginated feed,
@@ -359,5 +367,158 @@ test.describe('S3.4 the public pages follow edits', () => {
         await expect(header).toContainText('After Rename', { timeout: 1_000 })
       })
     })
+  })
+})
+
+test.describe('S3.6 an update lists the feedback it shipped', () => {
+  let project: GameProject
+  let update: PatchNote
+  let untitledVersion: PatchNote
+  let draftUpdate: PatchNote
+  /** Older, and voted on more at first. */
+  let top: Issue
+  /** Newer, voted on less at first. */
+  let low: Issue
+  let later: Issue
+  let inTitledUpdate: Issue
+  let inDraft: Issue
+  let privateItem: Issue
+  let notShipped: Issue
+
+  test.beforeAll(async ({ api, playwright, uniqueSlug, world }) => {
+    const aOwner = api('aOwner')
+    project = await createProject(aOwner, world.tenants.A.id, uniqueSlug('pn-shipped'))
+    update = await createPatchNote(aOwner, project, uniqueSlug('pn-shipped-v3'), {
+      title: 'Lighthouse update',
+      versionLabel: 'v3.0.0',
+    })
+    untitledVersion = await createPatchNote(aOwner, project, uniqueSlug('pn-shipped-harvest'), {
+      title: 'Harvest patch',
+    })
+    draftUpdate = await createPatchNote(aOwner, project, uniqueSlug('pn-shipped-draft'), {
+      title: 'Hidden patch',
+      versionLabel: 'v9.8.7',
+      _status: 'draft',
+    })
+    const shipped = (slug: string, title: string, note: PatchNote, data: Partial<Issue> = {}) =>
+      createIssue(aOwner, project, uniqueSlug(slug), { title, status: 'FIXED', fixedInPatchNote: note.id, ...data })
+
+    top = await shipped('pn-shipped-top', 'Fog hides the lighthouse beam', update)
+    low = await shipped('pn-shipped-low', 'Add a lighthouse keeper', update, { type: 'IDEA' })
+    privateItem = await shipped('pn-shipped-private', 'Internal lighthouse crash', update, { isPublic: false })
+    notShipped = await createIssue(aOwner, project, uniqueSlug('pn-shipped-planned'), {
+      title: 'Lighthouse photo mode',
+      status: 'PLANNED',
+      fixedInPatchNote: update.id,
+    })
+    later = await createIssue(aOwner, project, uniqueSlug('pn-shipped-later'), {
+      title: 'Beam flickers at dusk',
+      status: 'FIXED',
+    })
+    inTitledUpdate = await shipped('pn-shipped-harvest-item', 'Crops wilt overnight', untitledVersion)
+    inDraft = await shipped('pn-shipped-in-draft', 'Keeper walks through walls', draftUpdate)
+
+    await castVote(playwright, top.id)
+    await castVote(playwright, top.id)
+    await castVote(playwright, low.id)
+  })
+
+  const updatePath = () => `${feedPath(project.slug)}/${update.slug}`
+  const itemPath = (issue: Issue) => `/g/${project.slug}/feedback/${issue.slug}`
+  const fromYourFeedback = (page: Page) => page.getByRole('region', { name: 'From your feedback' })
+
+  test('the update page, the board, the list and the item pages link both ways', async ({
+    api,
+    page,
+    playwright,
+    request,
+  }) => {
+    await test.step('the update lists its public shipped items with their votes, most voted first', async () => {
+      await open(page, updatePath())
+      const rows = fromYourFeedback(page).getByRole('listitem')
+      await expect(rows).toHaveText([
+        new RegExp(`^${top.title}Bug.*2 votes$`),
+        new RegExp(`^${low.title}Idea.*1 vote$`),
+      ])
+      await expect(rows.first().getByRole('link')).toHaveAttribute('href', itemPath(top))
+      await expect(page.locator('body')).not.toContainText(privateItem.title)
+      await expect(page.locator('body')).not.toContainText(notShipped.title)
+    })
+
+    await test.step('a vote reorders the cached page', async () => {
+      await castVote(playwright, low.id)
+      await castVote(playwright, low.id)
+      await eventually(async () => {
+        await open(page, updatePath())
+        await expect(fromYourFeedback(page).getByRole('listitem')).toHaveText(
+          [new RegExp(`^${low.title}Idea.*3 votes$`), new RegExp(`^${top.title}Bug.*2 votes$`)],
+          { timeout: 1_000 },
+        )
+      })
+    })
+
+    await test.step('linking another item adds it', async () => {
+      const { status, body } = await api('aOwner').update('issues', later.id, { fixedInPatchNote: update.id })
+      expect(status, JSON.stringify(body)).toBe(200)
+      await eventually(async () => {
+        await open(page, updatePath())
+        await expect(fromYourFeedback(page).getByRole('listitem')).toHaveText(
+          [new RegExp(low.title), new RegExp(top.title), new RegExp(`^${later.title}Bug.*0 votes$`)],
+          { timeout: 1_000 },
+        )
+      })
+    })
+
+    await test.step('an update that shipped nothing has no such section', async () => {
+      await open(page, `${feedPath(project.slug)}/${draftUpdate.slug}`, 404)
+      await open(page, `${feedPath(project.slug)}/${untitledVersion.slug}`)
+      await expect(fromYourFeedback(page).getByRole('listitem')).toHaveText([new RegExp(inTitledUpdate.title)])
+    })
+
+    await test.step('Shipped cards name their published update: its version, else its title', async () => {
+      await open(page, `/g/${project.slug}/feedback?view=board`)
+      const shippedColumn = page.getByRole('region', { name: 'Shipped' })
+      const card = (issue: Issue) => shippedColumn.getByRole('listitem').filter({ hasText: issue.title })
+      await expect(card(top)).toContainText('Shipped in v3.0.0')
+      await expect(card(inTitledUpdate)).toContainText('Shipped in Harvest patch')
+      await expect(card(inDraft)).toBeVisible()
+      await expect(card(inDraft)).not.toContainText('Shipped in')
+      await expect(page.locator('body')).not.toContainText('v9.8.7')
+      await expect(page.locator('body')).not.toContainText(draftUpdate.title)
+    })
+
+    await test.step('list rows do too', async () => {
+      await open(page, `/g/${project.slug}/feedback?stage=shipped`)
+      const row = (issue: Issue) => page.getByRole('listitem').filter({ hasText: issue.title })
+      await expect(row(top)).toContainText('Shipped in v3.0.0')
+      await expect(row(inDraft)).toContainText('Shipped')
+      await expect(row(inDraft)).not.toContainText('Shipped in')
+      await expect(page.locator('body')).not.toContainText('v9.8.7')
+    })
+
+    await test.step('the item page names the update and links to it', async () => {
+      await open(page, itemPath(top))
+      await expect(page.locator('article')).toContainText('Shipped in v3.0.0')
+      const link = page.locator('article aside').getByRole('link', { name: 'v3.0.0 — Lighthouse update' })
+      await expect(page.locator('article aside')).toContainText('Shipped in v3.0.0 — Lighthouse update.')
+      await link.click()
+      await expect(page.getByRole('heading', { level: 1 })).toHaveText(update.title)
+    })
+
+    await test.step('an item shipped in a draft update says only "Shipped"', async () => {
+      await open(page, itemPath(inDraft))
+      await expect(page.locator('article')).toContainText('Shipped')
+      await expect(page.locator('article')).not.toContainText('Shipped in')
+      await expect(page.locator('body')).not.toContainText('v9.8.7')
+      await expect(page.locator('body')).not.toContainText(draftUpdate.title)
+    })
+
+    await test.step('the update page stays in the ISR cache', () =>
+      eventually(async () => {
+        const cached = await request.get(updatePath())
+        expect(cached.status()).toBe(200)
+        expect(cached.headers()['x-nextjs-cache']).toBe('HIT')
+      }),
+    )
   })
 })

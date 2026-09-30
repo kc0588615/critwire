@@ -1,6 +1,6 @@
 import React from 'react'
 
-import type { Issue } from '@/payload-types'
+import type { Issue, PatchNote } from '@/payload-types'
 
 import { FEEDBACK_TYPE_OPTIONS, ISSUE_CATEGORY_OPTIONS } from '@/collections/options'
 import { type PublicStage, publicStage } from '@/lib/game-portal/stages'
@@ -16,6 +16,23 @@ const feedbackTypeLabel = (type: Issue['type']): string =>
   FEEDBACK_TYPE_OPTIONS.find((option) => option.value === type)?.label ?? type
 
 /**
+ * The published update a shipped item links to, or null. Items are read
+ * through access, so a draft update stays an ID; the status check keeps
+ * it that way for readers who can see drafts.
+ */
+export const shippedUpdate = (
+  issue: Pick<Issue, 'fixedInPatchNote' | 'status'>,
+): null | PatchNote => {
+  const note = issue.fixedInPatchNote
+  if (issue.status !== 'FIXED' || note == null || typeof note !== 'object') return null
+  return note._status === 'published' ? note : null
+}
+
+/** An update's short name: its version, or its title when it has none. */
+export const updateName = (note: Pick<PatchNote, 'title' | 'versionLabel'>): string =>
+  note.versionLabel || note.title
+
+/**
  * An empty, CSS-drawn marker (globals.css). Never a character: it would
  * be announced and would land in the textContent that links and E2E read.
  */
@@ -25,17 +42,20 @@ export const StatusMark: React.FC<{ shape: StatusShape }> = ({ shape }) => (
 
 /**
  * The public stage's marker beside its label; the label is the
- * information, the marker a cue. An archived item has no stage, so no marker.
+ * information, the marker a cue. An archived item has no stage, so no
+ * marker. A shipped item names its published update: "Shipped in v2.1.0".
  */
-export const FeedbackStatus: React.FC<{ className?: string; status: Issue['status'] }> = ({
-  className,
-  status,
-}) => {
-  const stage = publicStage(status)
+export const FeedbackStatus: React.FC<{
+  className?: string
+  issue: Pick<Issue, 'fixedInPatchNote' | 'status'>
+}> = ({ className, issue }) => {
+  const stage = publicStage(issue.status)
+  const shippedIn = shippedUpdate(issue)
+  const label = stage?.label ?? ARCHIVED_LABEL
   return (
     <span className={className ? `fs-status ${className}` : 'fs-status'}>
       {stage ? <StatusMark shape={stage.shape} /> : null}
-      {stage?.label ?? ARCHIVED_LABEL}
+      {shippedIn ? `${label} in ${updateName(shippedIn)}` : label}
     </span>
   )
 }
@@ -49,12 +69,12 @@ export const FeedbackTypeTag: React.FC<{ type: Issue['type'] }> = ({ type }) => 
 /** An item's stage, type, category and pinned tag, in one wrapping row outside its title link. */
 export const FeedbackMeta: React.FC<{
   className?: string
-  issue: Pick<Issue, 'category' | 'isPinned' | 'status' | 'type'>
+  issue: Pick<Issue, 'category' | 'fixedInPatchNote' | 'isPinned' | 'status' | 'type'>
 }> = ({ className, issue }) => {
   const category = issueCategoryLabel(issue.category)
   return (
     <div className={className ? `fs-issue-meta ${className}` : 'fs-issue-meta'}>
-      <FeedbackStatus status={issue.status} />
+      <FeedbackStatus issue={issue} />
       <FeedbackTypeTag type={issue.type} />
       {category ? <span className="fs-meta">{category}</span> : null}
       {issue.isPinned ? <PinnedTag /> : null}

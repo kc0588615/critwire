@@ -7,7 +7,7 @@ import React from 'react'
 import type { Issue } from '@/payload-types'
 
 import RichText from '@/components/RichText'
-import { FeedbackMeta, StatusMark } from '@/components/game/FeedbackStatus'
+import { FeedbackMeta, shippedUpdate, StatusMark } from '@/components/game/FeedbackStatus'
 import { VoteButton } from '@/components/game/VoteButton'
 import { VoteCount } from '@/components/game/VoteCount'
 import { getGameProject } from '@/lib/game-portal/getGameProject'
@@ -48,10 +48,7 @@ export default async function IssueDetailPage({ params }: Args) {
 
   const archived = publicStage(issue.status) === null
   const hasVoted = archived ? false : await getHasVoted(issue.id)
-  const fixedIn =
-    issue.fixedInPatchNote && typeof issue.fixedInPatchNote === 'object'
-      ? issue.fixedInPatchNote
-      : null
+  const shippedIn = shippedUpdate(issue)
 
   const paths = portalPaths(gameSlug)
 
@@ -92,13 +89,13 @@ export default async function IssueDetailPage({ params }: Args) {
           </IssueNote>
         ) : null}
 
-        {issue.status === 'FIXED' && fixedIn?.slug ? (
-          <IssueNote heading="Fixed" status={issue.status}>
+        {shippedIn?.slug ? (
+          <IssueNote heading="Shipped" status={issue.status}>
             <p>
-              The fix shipped in{' '}
-              <Link className="fs-link" href={paths.update(fixedIn.slug)}>
-                {fixedIn.versionLabel ? `${fixedIn.versionLabel} — ` : ''}
-                {fixedIn.title}
+              Shipped in{' '}
+              <Link className="fs-link" href={paths.update(shippedIn.slug)}>
+                {shippedIn.versionLabel ? `${shippedIn.versionLabel} — ` : ''}
+                {shippedIn.title}
               </Link>
               .
             </p>
