@@ -601,6 +601,6 @@ SHOULD-CONSIDER:
 - 2026-09-30 09:45 UTC · Baseline: created the E2E database, migrated; tsc, lint (0 errors, 20 warnings), int (13/13) and E2E (75/75) pass.
 - 2026-09-30 10:13 UTC · Architecture: `architect` wrote 10 findings (incl. draft updates skipping the tenant check, scriptable SVG uploads, the demo slug) and the target design; added handoff H8 (terms/AUP, blocks nothing). Docs-only, no checks needed.
 - 2026-09-30 10:20 UTC · Fable review: APPROVE_WITH_CHANGES; 2 MUST-FIX (users can self-set `_verified`; email changes skip re-verification), plus 4 missed items and 5 suggestions. Docs-only, no checks needed.
-- 2026-09-30 10:52 UTC · Astra review: APPROVE_WITH_CHANGES; 5 MUST-FIX (2 overlap Fable: self-set `_verified`, email change; new: signup retry overwrites a pending password, `public/media` bypasses suspension, forgot-password lacks rate limit/Turnstile) and 5 suggestions. Docs-only, no checks needed.
+- 2026-09-30 10:21 UTC · Astra review: APPROVE_WITH_CHANGES; 5 MUST-FIX (2 overlap Fable: self-set `_verified`, email change; new: signup retry overwrites a pending password, `public/media` bypasses suspension, forgot-password lacks rate limit/Turnstile) and 5 suggestions. Docs-only, no checks needed.
 
 ## Summary
