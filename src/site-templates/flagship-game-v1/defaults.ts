@@ -4,39 +4,17 @@ import type { GameProject } from '@/payload-types'
 
 import { resolveSiteAction } from './actions'
 import { siteConfigV1Schema, type SiteConfigV1 } from './schema/config'
-import { contrastRatio, normalizeHexColor } from '@/lib/game-portal/contrast'
 import type { SiteAction, SiteActionRef } from './schema/refs'
 import { toSafeText } from './schema/text'
-import { DEFAULT_THEME_COLORS } from '@/lib/game-portal/theme'
 
 /**
  * Derives a complete, always-valid flagship configuration from project
  * facts alone. This is the first-run path for every project without a
  * published flagship page, so it must never throw: derived values are
- * sanitized and the result is parsed through the canonical schema.
+ * sanitized and the result is parsed through the canonical schema. Its
+ * theme is the schema default and unused: the frame renders the
+ * project's theme.
  */
-
-const ACCENT_FOREGROUND_CANDIDATES = [
-  DEFAULT_THEME_COLORS.background,
-  DEFAULT_THEME_COLORS.foreground,
-  '#000000',
-  '#ffffff',
-]
-
-export const deriveAccentColors = (
-  raw: null | string | undefined,
-): { accent: string; accentForeground: string } => {
-  let accent = normalizeHexColor(raw) ?? DEFAULT_THEME_COLORS.accent
-  // Accent must clear 3:1 against the fixed dark background; muddy
-  // user accents fall back to the default rather than failing.
-  if (contrastRatio(accent, DEFAULT_THEME_COLORS.background) < 3) {
-    accent = DEFAULT_THEME_COLORS.accent
-  }
-  const accentForeground =
-    ACCENT_FOREGROUND_CANDIDATES.find((candidate) => contrastRatio(candidate, accent) >= 4.5) ??
-    '#000000'
-  return { accent, accentForeground }
-}
 
 const firstResolvable = (refs: SiteActionRef[], project: GameProject): null | SiteAction => {
   for (const ref of refs) {
@@ -46,15 +24,11 @@ const firstResolvable = (refs: SiteActionRef[], project: GameProject): null | Si
 }
 
 export const deriveFlagshipDefault = (project: GameProject): SiteConfigV1 => {
-  const { accent, accentForeground } = deriveAccentColors(project.accentColor)
   const bannerId = project.banner == null ? null : extractID(project.banner)
   const storeAction = firstResolvable(['primary-store', 'demo', 'discord'], project)
   const hasDiscord = Boolean(project.links?.discord)
 
   return siteConfigV1Schema.parse({
-    theme: {
-      colors: { ...DEFAULT_THEME_COLORS, accent, accentForeground },
-    },
     nav: {
       links: [
         { label: null, ref: 'updates' },

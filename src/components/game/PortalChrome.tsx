@@ -7,8 +7,9 @@ import { SiteFrame } from '@/site-templates/flagship-game-v1/render/SiteFrame'
 
 /**
  * Frames the operational pages (updates, feedback, the form, contact)
- * and legacy block-based landings in the studio's published theme, nav
- * and footer, so every portal page matches the flagship landing.
+ * and legacy block-based landings in the project's theme and the
+ * published landing's nav and footer, so every portal page matches the
+ * flagship landing.
  */
 export const PortalChrome = async ({
   children,

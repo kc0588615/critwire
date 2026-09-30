@@ -179,9 +179,6 @@ export interface GameProject {
   description?: string | null;
   logo?: (number | null) | Media;
   banner?: (number | null) | Media;
-  /**
-   * Hex color, e.g. #7c3aed
-   */
   accentColor?: string | null;
   /**
    * Match your portal to your own site. Colours are checked for readable (WCAG) contrast when you save.

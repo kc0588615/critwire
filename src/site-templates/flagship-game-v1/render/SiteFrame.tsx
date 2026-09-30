@@ -4,6 +4,7 @@ import type { GameProject } from '@/payload-types'
 
 import { displayFontVariables } from '@/components/game/theme/fonts'
 import { themeStyle } from '@/components/game/theme/themeStyle'
+import { resolveProjectTheme } from '@/lib/game-portal/projectTheme'
 import type { SiteThemeV1 } from '@/lib/game-portal/theme'
 
 import type { SiteConfigV1 } from '../schema/config'
@@ -29,13 +30,17 @@ export const SiteRoot: React.FC<{ children: React.ReactNode; theme: SiteThemeV1 
   </div>
 )
 
-/** The studio's frame around every portal page: root, skip link, nav, main, footer. */
+/**
+ * The studio's frame around every portal page: root, skip link, nav,
+ * main, footer. The theme is always the project's; the config supplies
+ * only the nav and footer.
+ */
 export const SiteFrame: React.FC<{
   children: React.ReactNode
   config: SiteConfigV1
   project: GameProject
 }> = ({ children, config, project }) => (
-  <SiteRoot theme={config.theme}>
+  <SiteRoot theme={resolveProjectTheme(project)}>
     <a className="fs-skip" href="#fs-main">
       Skip to content
     </a>

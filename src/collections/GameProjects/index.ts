@@ -75,8 +75,9 @@ export const GameProjects: CollectionConfig = {
     {
       name: 'accentColor',
       type: 'text',
+      // Superseded by `theme` and read by nothing; M15 drops the column.
       admin: {
-        description: 'Hex color, e.g. #7c3aed',
+        hidden: true,
       },
       validate: (value: null | string | string[] | undefined) => {
         if (value == null || value === '') return true

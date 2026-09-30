@@ -31,17 +31,3 @@ export const contrastRatio = (a: string, b: string): number => {
   return (lighter + 0.05) / (darker + 0.05)
 }
 
-/**
- * Expands #abc to #aabbcc; returns null for anything that is not a
- * 3- or 6-digit hex color.
- */
-export const normalizeHexColor = (value: null | string | undefined): null | string => {
-  if (typeof value !== 'string') return null
-  const trimmed = value.trim().toLowerCase()
-  if (HEX_COLOR_RE.test(trimmed)) return trimmed
-  if (/^#[0-9a-f]{3}$/.test(trimmed)) {
-    const [r, g, b] = trimmed.slice(1)
-    return `#${r}${r}${g}${g}${b}${b}`
-  }
-  return null
-}

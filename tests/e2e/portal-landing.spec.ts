@@ -3,7 +3,6 @@ import { randomBytes } from 'node:crypto'
 import type { Page } from '@playwright/test'
 
 import type { GamePage, GameProject, Issue, Media } from '../../src/payload-types'
-import { contrastRatio } from '../../src/lib/game-portal/contrast'
 import { DEFAULT_THEME_COLORS } from '../../src/lib/game-portal/theme'
 import type { RestClient } from './support/api'
 import {
@@ -157,38 +156,6 @@ test.describe('S2.2 derived default landing', () => {
   })
 })
 
-test('S2.3 a white accent still gives the primary button readable text', async ({ api, page, uniqueSlug, world }) => {
-  const project = await createProject(api('aOwner'), world.tenants.A.id, uniqueSlug('land-white'), {
-    accentColor: '#ffffff',
-  })
-  await page.goto(`/g/${project.slug}`)
-  const button = page.locator('.fs-btn-primary').first()
-  await expect(button).toBeVisible()
-  const { color, background } = await button.evaluate((el) => {
-    const style = getComputedStyle(el)
-    return { color: style.color, background: style.backgroundColor }
-  })
-  const [fg, bg] = [rgbToHex(color), rgbToHex(background)]
-  expect(bg, 'the studio’s accent is the button colour').toBe('#ffffff')
-  expect(contrastRatio(fg, bg), `${fg} on ${bg}`).toBeGreaterThanOrEqual(4.5)
-})
-
-test('S2.3 an accent too dark for the page falls back to the default accent', async ({ api, page, uniqueSlug, world }) => {
-  const project = await createProject(api('aOwner'), world.tenants.A.id, uniqueSlug('land-dark'), {
-    accentColor: '#123456',
-  })
-  await page.goto(`/g/${project.slug}`)
-  const button = page.locator('.fs-btn-primary').first()
-  await expect(button).toBeVisible()
-  const { color, background } = await button.evaluate((el) => {
-    const style = getComputedStyle(el)
-    return { color: style.color, background: style.backgroundColor }
-  })
-  const [fg, bg] = [rgbToHex(color), rgbToHex(background)]
-  expect(bg).toBe(DEFAULT_THEME_COLORS.accent)
-  expect(contrastRatio(fg, bg), `${fg} on ${bg}`).toBeGreaterThanOrEqual(4.5)
-})
-
 test.describe('S2.4 publishing a flagship page', () => {
   let project: GameProject
   let landing: GamePage
@@ -261,15 +228,6 @@ test.describe('S2.4 publishing a flagship page', () => {
         'a raw URL as an action ref',
         (site) => ({ ...site, hero: { ...site.hero, primaryAction: { ref: 'https://evil.example', label: null } } }),
       ],
-      [
-        'low-contrast colours',
-        (site) => ({ ...site, theme: { colors: { ...DEFAULT_THEME_COLORS, foreground: '#2a2f3d' } } }),
-      ],
-      [
-        'low-contrast button text',
-        (site) => ({ ...site, theme: { colors: { ...DEFAULT_THEME_COLORS, accentForeground: '#67e8f9' } } }),
-      ],
-      ['a 3-digit hex colour', (site) => ({ ...site, theme: { colors: { ...DEFAULT_THEME_COLORS, accent: '#fff' } } })],
       ['an unapproved variant', (site) => ({ ...site, hero: { ...site.hero, variant: 'parallax' } })],
     ]
     for (const [name, mutate] of invalid) {
@@ -284,33 +242,6 @@ test.describe('S2.4 publishing a flagship page', () => {
 
   test('publishes, keeps drafts private, and falls back when unpublished', async ({ api, page }) => {
     const aMember = api('aMember')
-
-    await test.step('ops pages follow the published theme', async () => {
-      const opsPage = `/g/${project.slug}/updates`
-      // Warm the ISR cache first, so only revalidation can bring in the new theme.
-      await page.goto(opsPage)
-      const { status, body } = await publish(aMember, { ...siteLike('Accent only'), theme: { colors: { accent: '#f59e0b' } } })
-      expect(status, JSON.stringify(body)).toBe(200)
-      await eventually(async () => {
-        await page.goto(opsPage)
-        const accent = await page
-          .locator('.fs-root')
-          .evaluate((el) => getComputedStyle(el).getPropertyValue('--fs-accent').trim(), undefined, { timeout: 1_000 })
-        expect(accent).toBe('#f59e0b')
-      })
-    })
-
-    await test.step('setting only the accent keeps the default palette for the other colours', async () => {
-      const site = siteLike('Accent only')
-      const { status, body } = await publish(aMember, { ...site, theme: { colors: { accent: '#f59e0b' } } })
-      expect(status, JSON.stringify(body)).toBe(200)
-      expect(body.doc.site?.theme?.colors).toMatchObject({ ...DEFAULT_THEME_COLORS, accent: '#f59e0b' })
-      await expectLanding(page, project.slug, async () => {
-        await expect(page.getByRole('heading', { level: 1 })).toHaveText('Accent only', { timeout: 1_000 })
-      })
-      const background = await page.locator('.fs-btn-primary').first().evaluate((el) => getComputedStyle(el).backgroundColor)
-      expect(rgbToHex(background)).toBe('#f59e0b')
-    })
 
     await test.step('a valid publish shaped like admin data renders', async () => {
       const site = siteLike('Weather the storm')
@@ -355,14 +286,30 @@ test.describe('S2.4 publishing a flagship page', () => {
   })
 })
 
-test('S2.4 project theme', async ({ api, uniqueSlug, world }) => {
+test('S2.4 project theme', async ({ api, page, uniqueSlug, world }) => {
   const aMember = api('aMember')
   const project = await createProject(api('aOwner'), world.tenants.A.id, uniqueSlug('land-theme'))
+  const landing = `/g/${project.slug}`
+  const updates = `${landing}/updates`
   const storedColors = async () => {
     const { status, body } = await aMember.findByID('game-projects', project.id)
     expect(status).toBe(200)
     return body.theme?.colors
   }
+  const rootStyle = async (path: string) => {
+    await page.goto(path)
+    return page.locator('.fs-root').getAttribute('style', { timeout: 1_000 })
+  }
+  const accentOn = async (path: string) => {
+    await page.goto(path)
+    return page
+      .locator('.fs-root')
+      .evaluate((el) => getComputedStyle(el).getPropertyValue('--fs-accent').trim(), undefined, { timeout: 1_000 })
+  }
+
+  const landingStyle = await rootStyle(landing)
+  // Warm the ISR cache, so only revalidation can bring in the new theme.
+  expect(await accentOn(updates)).toBe(DEFAULT_THEME_COLORS.accent)
 
   const invalid: [string, keyof typeof DEFAULT_THEME_COLORS, string][] = [
     ['low-contrast text on the background', 'foreground', '#2a2f3d'],
@@ -377,6 +324,7 @@ test('S2.4 project theme', async ({ api, uniqueSlug, world }) => {
       expect(status, JSON.stringify(body)).toBe(400)
       expect(JSON.stringify(body)).toContain(`theme.colors.${key}`)
       expect(await storedColors()).toEqual(DEFAULT_THEME_COLORS)
+      expect(await rootStyle(landing)).toBe(landingStyle)
     })
   }
 
@@ -386,6 +334,17 @@ test('S2.4 project theme', async ({ api, uniqueSlug, world }) => {
     })
     expect(status, JSON.stringify(body)).toBe(200)
     expect(await storedColors()).toEqual({ ...DEFAULT_THEME_COLORS, accent: '#f59e0b' })
+  })
+
+  await test.step('a valid save re-themes the cached updates page and the landing', async () => {
+    await eventually(async () => {
+      expect(await accentOn(updates)).toBe('#f59e0b')
+    })
+    await eventually(async () => {
+      expect(await accentOn(landing)).toBe('#f59e0b')
+    })
+    const background = await page.locator('.fs-btn-primary').first().evaluate((el) => getComputedStyle(el).backgroundColor)
+    expect(rgbToHex(background)).toBe('#f59e0b')
   })
 })
 
