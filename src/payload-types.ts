@@ -76,6 +76,7 @@ export interface Config {
     pages: Page;
     media: Media;
     users: User;
+    'abuse-reports': AbuseReport;
     'payload-kv': PayloadKv;
     'payload-jobs': PayloadJob;
     'payload-folders': FolderInterface;
@@ -98,6 +99,7 @@ export interface Config {
     pages: PagesSelect<false> | PagesSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
     users: UsersSelect<false> | UsersSelect<true>;
+    'abuse-reports': AbuseReportsSelect<false> | AbuseReportsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-jobs': PayloadJobsSelect<false> | PayloadJobsSelect<true>;
     'payload-folders': PayloadFoldersSelect<false> | PayloadFoldersSelect<true>;
@@ -158,8 +160,49 @@ export interface Tenant {
    * Used in URLs. Lowercase letters, numbers, and hyphens only.
    */
   slug: string;
+  /**
+   * Hides the studio's portals and blocks its members' changes.
+   */
+  suspended?: boolean | null;
+  createdBy?: (number | null) | User;
   updatedAt: string;
   createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "users".
+ */
+export interface User {
+  id: number;
+  name?: string | null;
+  roles: ('admin' | 'user')[];
+  tenants?:
+    | {
+        tenant: number | Tenant;
+        roles: ('owner' | 'member')[];
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt: string;
+  createdAt: string;
+  email: string;
+  resetPasswordToken?: string | null;
+  resetPasswordExpiration?: string | null;
+  salt?: string | null;
+  hash?: string | null;
+  _verified?: boolean | null;
+  _verificationToken?: string | null;
+  loginAttempts?: number | null;
+  lockUntil?: string | null;
+  sessions?:
+    | {
+        id: string;
+        createdAt?: string | null;
+        expiresAt: string;
+      }[]
+    | null;
+  password?: string | null;
+  collection: 'users';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -290,6 +333,11 @@ export interface GameProject {
    */
   customDomain?: string | null;
   customDomainVerified?: boolean | null;
+  /**
+   * Held for review: not public until a Critwire admin approves it.
+   */
+  flagged?: boolean | null;
+  flagReasons?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -452,6 +500,11 @@ export interface PatchNote {
     [k: string]: unknown;
   };
   publishedAt?: string | null;
+  /**
+   * Held for review: not public until a Critwire admin approves it.
+   */
+  flagged?: boolean | null;
+  flagReasons?: string | null;
   updatedAt: string;
   createdAt: string;
   _status?: ('draft' | 'published') | null;
@@ -743,37 +796,18 @@ export interface MediaBlock {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "users".
+ * via the `definition` "abuse-reports".
  */
-export interface User {
+export interface AbuseReport {
   id: number;
-  name?: string | null;
-  roles: ('admin' | 'user')[];
-  tenants?:
-    | {
-        tenant: number | Tenant;
-        roles: ('owner' | 'member')[];
-        id?: string | null;
-      }[]
-    | null;
+  pageUrl: string;
+  gameProject?: (number | null) | GameProject;
+  reason: 'spam' | 'scam' | 'offensive' | 'impersonation' | 'other';
+  details?: string | null;
+  reporterEmail?: string | null;
+  status: 'open' | 'resolved' | 'dismissed';
   updatedAt: string;
   createdAt: string;
-  email: string;
-  resetPasswordToken?: string | null;
-  resetPasswordExpiration?: string | null;
-  salt?: string | null;
-  hash?: string | null;
-  loginAttempts?: number | null;
-  lockUntil?: string | null;
-  sessions?:
-    | {
-        id: string;
-        createdAt?: string | null;
-        expiresAt: string;
-      }[]
-    | null;
-  password?: string | null;
-  collection: 'users';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -928,6 +962,10 @@ export interface PayloadLockedDocument {
         value: number | User;
       } | null)
     | ({
+        relationTo: 'abuse-reports';
+        value: number | AbuseReport;
+      } | null)
+    | ({
         relationTo: 'payload-folders';
         value: number | FolderInterface;
       } | null);
@@ -980,6 +1018,8 @@ export interface PayloadMigration {
 export interface TenantsSelect<T extends boolean = true> {
   name?: T;
   slug?: T;
+  suspended?: T;
+  createdBy?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -1074,6 +1114,8 @@ export interface GameProjectsSelect<T extends boolean = true> {
       };
   customDomain?: T;
   customDomainVerified?: T;
+  flagged?: T;
+  flagReasons?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -1091,6 +1133,8 @@ export interface PatchNotesSelect<T extends boolean = true> {
   summary?: T;
   content?: T;
   publishedAt?: T;
+  flagged?: T;
+  flagReasons?: T;
   updatedAt?: T;
   createdAt?: T;
   _status?: T;
@@ -1376,6 +1420,8 @@ export interface UsersSelect<T extends boolean = true> {
   resetPasswordExpiration?: T;
   salt?: T;
   hash?: T;
+  _verified?: T;
+  _verificationToken?: T;
   loginAttempts?: T;
   lockUntil?: T;
   sessions?:
@@ -1385,6 +1431,20 @@ export interface UsersSelect<T extends boolean = true> {
         createdAt?: T;
         expiresAt?: T;
       };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "abuse-reports_select".
+ */
+export interface AbuseReportsSelect<T extends boolean = true> {
+  pageUrl?: T;
+  gameProject?: T;
+  reason?: T;
+  details?: T;
+  reporterEmail?: T;
+  status?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

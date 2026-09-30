@@ -1,6 +1,6 @@
 import type { CollectionConfig } from 'payload'
 
-import { isSuperAdmin, superAdminOnly } from '../../access/isSuperAdmin'
+import { isSuperAdmin, superAdminFieldAccess, superAdminOnly } from '../../access/isSuperAdmin'
 import { getTenantIDsByRole } from '../../access/tenantRoles'
 
 /**
@@ -47,6 +47,33 @@ export const Tenants: CollectionConfig = {
         }
         return true
       },
+    },
+    {
+      // Members can read it, so their admin can tell them.
+      name: 'suspended',
+      type: 'checkbox',
+      defaultValue: false,
+      index: true,
+      access: { create: superAdminFieldAccess, update: superAdminFieldAccess },
+      admin: {
+        description: "Hides the studio's portals and blocks its members' changes.",
+        position: 'sidebar',
+      },
+    },
+    {
+      // Set by onboarding; empty for studios a super admin creates. Unique,
+      // so a double submit fails its second insert instead of leaving an
+      // orphan studio.
+      name: 'createdBy',
+      type: 'relationship',
+      relationTo: 'users',
+      unique: true,
+      access: {
+        create: superAdminFieldAccess,
+        read: superAdminFieldAccess,
+        update: superAdminFieldAccess,
+      },
+      admin: { position: 'sidebar' },
     },
   ],
   timestamps: true,

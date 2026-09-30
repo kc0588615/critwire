@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
 import { createServer } from 'node:http'
 
@@ -7,7 +8,7 @@ import { extractID } from 'payload/shared'
 
 import type { Config, GameProject, Issue, IssueReport, Media, Page, PatchNote } from '../../../src/payload-types'
 import { type Query, RestClient } from './api'
-import { BASE_URL, type Role, ROLES, WEBHOOK_SINK_ORIGIN, WEBHOOK_SINK_PORT, WORLD_PATH } from './env'
+import { BASE_URL, PASSWORD, type Role, ROLES, WEBHOOK_SINK_ORIGIN, WEBHOOK_SINK_PORT, WORLD_PATH } from './env'
 
 /**
  * A request context with no cookies. Playwright applies the calling test's
@@ -44,6 +45,22 @@ export interface WebhookSink {
   redirect: (from: string, to: string) => void
 }
 
+/** A signed-in account a test created for itself. */
+export interface Account {
+  id: number
+  email: string
+  password: string
+  token: string
+  /** REST client acting as this account. */
+  client: RestClient
+}
+
+/** A studio a test created for itself, with its owner signed in. */
+export interface Studio {
+  tenant: { id: number; slug: string }
+  owner: Account
+}
+
 interface WorkerFixtures {
   world: World
   /** REST client acting as `role`, or anonymously. Worker-scoped so `beforeAll` can use it. */
@@ -55,6 +72,18 @@ interface WorkerFixtures {
    */
   uniqueSlug: (base: string) => string
   webhookSink: WebhookSink
+  /** Signs in over REST and returns a client for that account. */
+  signIn: (email: string, password: string) => Promise<Account>
+  /**
+   * A user the super admin creates with no studio, signed in. For specs
+   * that change an account's state, so they never touch `world`'s users.
+   */
+  seedUser: (label: string) => Promise<Account>
+  /**
+   * A studio the super admin creates with a fresh owner, signed in. For
+   * specs that change a studio's state, so they never touch `world`'s studios.
+   */
+  seedStudio: (label: string) => Promise<Studio>
 }
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
@@ -124,6 +153,54 @@ export const test = base.extend<{}, WorkerFixtures>({
     },
     { scope: 'worker' },
   ],
+  signIn: [
+    async ({ playwright }, use) => {
+      // Clients authenticate by header. This context never signs in, so
+      // it holds no session cookie that could override another account's.
+      const clients = await newRequestContext(playwright)
+      await use(async (email, password) => {
+        const login = await newRequestContext(playwright)
+        try {
+          const response = await login.post('/api/users/login', { data: { email, password } })
+          expect(response.status(), `sign in as ${email}`).toBe(200)
+          const { token, user } = (await response.json()) as { token: string; user: { id: number } }
+          return { id: user.id, email, password, token, client: new RestClient(clients, token) }
+        } finally {
+          await login.dispose()
+        }
+      })
+      await clients.dispose()
+    },
+    { scope: 'worker' },
+  ],
+  seedUser: [
+    async ({ api, signIn }, use) => {
+      await use(async (label) => {
+        const email = randomEmail(label)
+        await seed(api('superAdmin'), 'users', { email, password: PASSWORD, roles: ['user'] })
+        return signIn(email, PASSWORD)
+      })
+    },
+    { scope: 'worker' },
+  ],
+  seedStudio: [
+    async ({ api, signIn }, use) => {
+      await use(async (label) => {
+        const superAdmin = api('superAdmin')
+        const slug = `${label}-${randomUUID().slice(0, 8)}`
+        const tenant = await seed(superAdmin, 'tenants', { name: `Studio ${slug}`, slug })
+        const email = randomEmail(label)
+        await seed(superAdmin, 'users', {
+          email,
+          password: PASSWORD,
+          roles: ['user'],
+          tenants: [{ tenant: tenant.id, roles: ['owner'] }],
+        })
+        return { tenant: { id: tenant.id, slug }, owner: await signIn(email, PASSWORD) }
+      })
+    },
+    { scope: 'worker' },
+  ],
 })
 
 export { expect }
@@ -137,6 +214,9 @@ export const eventually = (check: () => Promise<void>): Promise<void> =>
   expect(check).toPass({ timeout: 5_000 })
 
 type Doc<C extends CollectionSlug> = Config['collections'][C]
+
+/** A fresh address for every account a test creates, so reruns and emails never collide. */
+export const randomEmail = (label: string): string => `${label}-${randomUUID()}@e2e.test`
 
 /** Creates a document and fails the calling test unless the server answers 201. */
 export async function seed<C extends CollectionSlug>(

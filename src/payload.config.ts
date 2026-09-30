@@ -6,6 +6,7 @@ import { fileURLToPath } from 'url'
 
 import { isSuperAdmin, superAdminOnly } from './access/isSuperAdmin'
 import type { User } from './payload-types'
+import { AbuseReports } from './collections/AbuseReports'
 import { GameProjects } from './collections/GameProjects'
 import { IssueReports } from './collections/IssueReports'
 import { Issues } from './collections/Issues'
@@ -86,6 +87,7 @@ export default buildConfig({
     Pages,
     Media,
     Users,
+    AbuseReports,
   ],
   cors: [getServerSideURL()].filter(Boolean),
   email: emailAdapter(),

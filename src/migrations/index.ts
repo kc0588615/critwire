@@ -13,6 +13,7 @@ import * as migration_20260930_060748_remove_site_generator from './20260930_060
 import * as migration_20260930_061601_feedback_model from './20260930_061601_feedback_model';
 import * as migration_20260930_072559_portal_theme from './20260930_072559_portal_theme';
 import * as migration_20260930_080647_remove_landing_builder from './20260930_080647_remove_landing_builder';
+import * as migration_20260930_111418_open_signup from './20260930_111418_open_signup';
 
 export const migrations = [
   {
@@ -88,6 +89,11 @@ export const migrations = [
   {
     up: migration_20260930_080647_remove_landing_builder.up,
     down: migration_20260930_080647_remove_landing_builder.down,
-    name: '20260930_080647_remove_landing_builder'
+    name: '20260930_080647_remove_landing_builder',
+  },
+  {
+    up: migration_20260930_111418_open_signup.up,
+    down: migration_20260930_111418_open_signup.down,
+    name: '20260930_111418_open_signup'
   },
 ];

@@ -2,12 +2,13 @@ import type { CollectionConfig, Condition } from 'payload'
 
 import { slugField } from 'payload'
 
-import { isSuperAdmin } from '../../access/isSuperAdmin'
+import { superAdminFieldAccess } from '../../access/isSuperAdmin'
 import {
   tenantMemberAccess,
   tenantMemberFieldRead,
   tenantOwnerAccess,
 } from '../../access/tenantAccess'
+import { moderationFields } from '../../fields/moderation'
 import { validateOptionalTallyUrl } from '../../lib/tally/parseTallyForm'
 import { validateContactDiscordWebhookUrl } from '../../lib/validation/discordWebhook'
 import { validateOptionalHttpUrl } from '../../lib/validation/url'
@@ -317,8 +318,8 @@ export const GameProjects: CollectionConfig = {
       type: 'checkbox',
       access: {
         // Set by the Phase 8 verification flow (or a super admin) only.
-        create: ({ req }) => isSuperAdmin(req.user),
-        update: ({ req }) => isSuperAdmin(req.user),
+        create: superAdminFieldAccess,
+        update: superAdminFieldAccess,
       },
       admin: {
         position: 'sidebar',
@@ -326,6 +327,7 @@ export const GameProjects: CollectionConfig = {
       },
       defaultValue: false,
     },
+    ...moderationFields(),
   ],
   hooks: {
     beforeChange: [validateProjectTheme],

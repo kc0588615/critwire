@@ -74,3 +74,17 @@ export const PLATFORM_OPTIONS = [
   { label: 'Android', value: 'android' },
   { label: 'Web', value: 'web' },
 ] as const
+
+export const ABUSE_REPORT_REASON_OPTIONS = [
+  { label: 'Spam', value: 'spam' },
+  { label: 'Scam or phishing', value: 'scam' },
+  { label: 'Offensive', value: 'offensive' },
+  { label: 'Impersonation or copyright', value: 'impersonation' },
+  { label: 'Other', value: 'other' },
+] as const
+
+export const ABUSE_REPORT_STATUS_OPTIONS = [
+  { label: 'Open', value: 'open' },
+  { label: 'Resolved', value: 'resolved' },
+  { label: 'Dismissed', value: 'dismissed' },
+] as const

@@ -835,7 +835,7 @@ The session that carries out the affected step copies the matching line into **D
     - `reports-contact.spec.ts`'s contact tests must pass unchanged: with `RESEND_API_KEY=''`, an email contact job still fails.
     - `grep -rn "api.resend.com" src` prints nothing.
 
-- [ ] Step 2: Data model and account rules, in the migration `open_signup` (§2, §4, F4)
+- [x] Step 2: Data model and account rules, in the migration `open_signup` (§2, §4, F4)
   - **Files:**
     - `src/access/isSuperAdmin.ts`: add `superAdminFieldAccess: FieldAccess`.
     - `src/collections/Users/index.ts`:
@@ -889,7 +889,7 @@ The session that carries out the affected step copies the matching line into **D
       - Tenant suspended (a privileged `findByID` on `tenants` with `select: { suspended: true }` and `req`): an `APIError` 403, "This studio is suspended, so changes can't be saved."
     - `src/plugins/index.ts`: `tenantField: { hooks: { beforeChange: [enforceTenantWrite] } }` replaces `validate: validateTenantMembership`.
     - `src/access/tenantAccess.ts`: delete `validateTenantMembership`.
-    - `tests/e2e/support/fixtures.ts`, two new fixtures:
+    - `tests/e2e/support/fixtures.ts`, two new fixtures (added early, in Step 2, as worker fixtures `seedStudio(label)` and `seedUser(label)` beside `signIn(email, password)`; the owner's REST client is `owner.client`):
       - `seedStudio(api, label)`: the super admin creates a tenant and an owner (fresh email, `PASSWORD`, owner membership), then signs the owner in over REST. Returns `{ tenant: { id, slug }, owner: { id, email, password, token }, client }`.
       - `seedUser(api, label)`: a user the super admin creates with no studio, signed in over REST. Returns `{ id, email, password, token }`.
 
@@ -1392,6 +1392,10 @@ OUT=/srv/critter-ai/agent-state/missions/open-signup
 - **Step 1 · A failed outbox write throws.** The outbox never refuses a message, but an unwritable `EMAIL_OUTBOX_DIR` (development and E2E only) fails loudly rather than silently dropping the email a test waits for. Outbox file names replace `:` and `.` in the ISO time with `-`, so they're valid on every filesystem.
 - **Step 1 · A malformed `RESEND_FROM_EMAIL` stops boot.** It must be `Name <address>` or a bare address (then the name is "Critwire").
 
+- **Step 2 · The account fixtures land in Step 2, not Step 3.** S9.2 needs a fresh user and S9.3 a fresh studio, so `signIn`, `seedUser` and `seedStudio` are worker fixtures now. They sign in on a throwaway request context and return a client that authenticates by header on a cookie-free one, so a new account's session cookie can never leak into the shared `anonymous` client.
+- **Step 2 · An abuse report's `reason` is required and its `status` is indexed.** The form always asks for a reason, and the super-admin dashboard counts open reports.
+- **Step 2 · The first user still gets a verification email.** Payload's first-register creates the user unverified (sending `verificationEmail`), then verifies them, which clears the token. That email's link lands on "This link has been used or is invalid. If you've already set your password, sign in", which is true for them. Accepted over detecting "no users yet" in the create hook, which would add a query to every signup for a one-time case.
+
 ## Log
 
 - 2026-09-30 09:45 UTC · Baseline: created the E2E database, migrated; tsc, lint (0 errors, 20 warnings), int (13/13) and E2E (75/75) pass.
@@ -1401,5 +1405,6 @@ OUT=/srv/critter-ai/agent-state/missions/open-signup
 - 2026-09-30 10:43 UTC · Revision: `architect` resolved all 7 MUST-FIX items (Fable 1–2, Astra 1–5): `_verified` and `email` super-admin-only; password moves from `/signup` to the verify form (no credential replacement without inbox proof); media moves out of `public/` and the Next image optimizer is off (new F11); forgot-password goes through a guarded route and REST/GraphQL `forgotPassword` is refused (new F12). Adopted 8 suggestions, declined 2 with reasons. No new handoff items. Docs-only, no checks needed.
 - 2026-09-30 11:05 UTC · Steps: `planner` wrote 18 steps in dependency order (hole-closing steps write their tests first; onboarding before signup; a second E2E server doubling as the self-hosted profile) and the Verification mapping each DoD item to a named test; 12 planner decisions (P1–P12) to be copied into Decisions by the step that applies them. Docs-only, no checks needed.
 - 2026-09-30 11:14 UTC · Step 1: `src/lib/email/` (Resend-or-outbox adapter, `renderEmail`, `AuthLinkEmail`, the three auth emails), `email: emailAdapter()` in the config, contact job via `payload.sendEmail`. tsc pass; lint 0 errors, 20 warnings (none in touched files); E2E 75/75 in 4.1 min (contact job still fails without `RESEND_API_KEY`); no `api.resend.com` left in `src`; rendered the three emails by hand: links use `NEXT_PUBLIC_SERVER_URL` and encode the token.
+- 2026-09-30 11:26 UTC · Step 2: migration `open_signup` (tenants `suspended`/`createdBy`, `flagged`/`flagReasons` on games and updates incl. versions, `abuse-reports`, `auth.verify` with the `_verified` backfill); `_verified`/`email` and the platform fields are super-admin-only; super-admin-created users start verified. Backfill check: a pre-existing user read `t` after migrating, then deleted. tsc pass; lint 0 errors, 20 warnings (none in touched files); E2E 81/81 in 4.3 min, incl. `accounts.spec.ts` S9.1–S9.4.
 
 ## Summary

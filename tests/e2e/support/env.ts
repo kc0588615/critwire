@@ -36,6 +36,9 @@ export const CREDENTIALS: Record<Role, { email: string; name: string }> = {
 }
 
 const AUTH_DIR = path.join(process.cwd(), 'test-results', '.auth')
+
+/** Where the server's outbox adapter writes every email it would send. */
+export const OUTBOX_DIR = path.join(process.cwd(), 'test-results', 'outbox')
 export const storageStatePath = (role: Role): string => path.join(AUTH_DIR, `${role}.json`)
 export const WORLD_PATH = path.join(AUTH_DIR, 'world.json')
 
@@ -86,4 +89,5 @@ export const serverEnv = ({ cronSecret = '' }: { cronSecret?: string } = {}): Re
   UPSTASH_REDIS_REST_TOKEN: '',
   CRON_SECRET: cronSecret,
   CRITWIRE_CONTACT_URL: E2E_CONTACT_URL,
+  EMAIL_OUTBOX_DIR: OUTBOX_DIR,
 })

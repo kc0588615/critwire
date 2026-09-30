@@ -3,6 +3,7 @@ import type { CollectionConfig } from 'payload'
 import { slugField } from 'payload'
 
 import { tenantMemberAccess, tenantOwnerAccess } from '../../access/tenantAccess'
+import { moderationFields } from '../../fields/moderation'
 import { populatePublishedAt } from '../../hooks/populatePublishedAt'
 import { validateUniqueSlugPerProject } from '../../hooks/validateUniqueSlugPerProject'
 import { revalidatePatchNotes, revalidatePatchNotesDelete } from './hooks/revalidatePatchNotes'
@@ -68,6 +69,7 @@ export const PatchNotes: CollectionConfig = {
         position: 'sidebar',
       },
     },
+    ...moderationFields(),
   ],
   hooks: {
     afterChange: [revalidatePatchNotes],
