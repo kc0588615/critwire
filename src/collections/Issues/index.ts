@@ -14,6 +14,7 @@ import {
 
 export const Issues: CollectionConfig = {
   slug: 'issues',
+  labels: { plural: 'Feedback', singular: 'Feedback item' },
   // Fractional-index `_order` field for admin kanban drag-and-drop
   // (see src/components/admin/issues/* — adapted from
   // https://gist.github.com/Dan6erbond/e0dd89744c21aaa8c25925717d589eeb).

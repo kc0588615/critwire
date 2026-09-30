@@ -7,7 +7,7 @@ import { CREDENTIALS, PASSWORD, storageStatePath, TURNSTILE_DUMMY_TOKEN } from '
 import { createIssue, createProject, eventually, expect, test } from './support/fixtures'
 
 /**
- * Studio triage in the admin panel: sign-in, the Issues kanban (moves,
+ * Studio triage in the admin panel: sign-in, the Feedback kanban (moves,
  * reordering, failed saves), the table view, and publishing a player
  * report.
  */
@@ -41,7 +41,7 @@ const card = (page: Page, issue: Pick<Issue, 'title'>): Locator =>
 async function openKanban(page: Page): Promise<void> {
   const response = await page.goto(KANBAN)
   expect(response?.status(), KANBAN).toBe(200)
-  await expect(page.getByRole('heading', { level: 1, name: 'Issues' })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: 'Feedback' })).toBeVisible()
 }
 
 /**
@@ -167,6 +167,34 @@ test.describe('S6.2–S6.7 triage as studio A', () => {
         await expect(bPage.locator('body')).not.toContainText(reported.title)
       } finally {
         await bContext.close()
+      }
+    })
+
+    await test.step("a super admin's board follows the tenant selector without a reload [F17]", async () => {
+      const adminContext = await browser.newContext({ storageState: storageStatePath('superAdmin') })
+      const adminPage = await adminContext.newPage()
+      const selector = adminPage.locator('.tenant-selector .rs__control')
+      const selectTenant = async (name: string): Promise<void> => {
+        // The selector lives in the nav, which starts collapsed at this width.
+        if (!(await selector.isVisible())) await adminPage.getByRole('button', { name: 'Open Menu' }).click()
+        await selector.click()
+        await adminPage.locator('.rs__option', { hasText: new RegExp(`^${name}$`) }).click()
+      }
+      const board = adminPage.locator('.list-header ~ div')
+      try {
+        await openKanban(adminPage)
+        await selectTenant('E2E Studio A')
+        await expect(board).toContainText(reported.title)
+        await expect(board).not.toContainText(bIssue.title)
+
+        // A reload or navigation would drop this marker.
+        await adminPage.evaluate(() => Object.assign(window, { __sameDocument: true }))
+        await selectTenant('E2E Studio B')
+        await expect(board).toContainText(bIssue.title)
+        await expect(board).not.toContainText(reported.title)
+        expect(await adminPage.evaluate(() => '__sameDocument' in window)).toBe(true)
+      } finally {
+        await adminContext.close()
       }
     })
   })

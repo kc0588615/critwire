@@ -9,6 +9,7 @@ import { revalidatePatchNotes, revalidatePatchNotesDelete } from './hooks/revali
 
 export const PatchNotes: CollectionConfig = {
   slug: 'patch-notes',
+  labels: { plural: 'Updates', singular: 'Update' },
   access: {
     // Anonymous readers only see published notes; studio members see
     // drafts of their own tenant (plugin adds the tenant constraint).

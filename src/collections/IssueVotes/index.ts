@@ -10,6 +10,7 @@ import { adjustUpvoteCount } from './hooks/adjustUpvoteCount'
 
 export const IssueVotes: CollectionConfig = {
   slug: 'issue-votes',
+  labels: { plural: 'Votes', singular: 'Vote' },
   access: {
     // Votes are only written by the public voting endpoint (Phase 5)
     // via the Local API with overrideAccess — never through REST/admin.

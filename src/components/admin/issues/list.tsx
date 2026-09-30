@@ -1,5 +1,8 @@
-import type { PaginatedDocs } from 'payload'
-import type { ListViewServerProps } from 'payload'
+import { getTranslation } from '@payloadcms/translations'
+import { headers } from 'next/headers'
+import type { ListViewServerProps, PaginatedDocs } from 'payload'
+import { createLocalReq } from 'payload'
+import { combineWhereConstraints } from 'payload/shared'
 
 import type { Issue } from '@/payload-types'
 
@@ -11,9 +14,9 @@ export default async function IssuesListView(props: ListViewServerProps) {
   // with access functions, the Payload instance, ...). Only the client
   // props may cross into the client component.
   const {
-    collectionConfig: _collectionConfig,
+    collectionConfig,
     data: _data,
-    i18n: _i18n,
+    i18n,
     limit: _limit,
     listSearchableFields: _listSearchableFields,
     locale: _locale,
@@ -25,6 +28,22 @@ export default async function IssuesListView(props: ListViewServerProps) {
     ...clientProps
   } = props
 
+  // The multi-tenant plugin scopes list views through `admin.baseFilter`
+  // (the tenant selector's cookie, else the user's studios). Only Payload's
+  // default list view applies it, so this custom view calls it the same
+  // way; Local API and REST queries never do.
+  const req = await createLocalReq(
+    { req: { headers: await headers() }, user: user ?? undefined },
+    payload,
+  )
+  const tenantFilter =
+    (await collectionConfig.admin.baseFilter?.({
+      limit: ISSUE_KANBAN_PAGE_SIZE,
+      page: 1,
+      req,
+      sort: '_order',
+    })) ?? null
+
   const results = await Promise.all(
     ISSUE_KANBAN_STATUSES.map(async (status) => {
       const result = await payload.find({
@@ -35,7 +54,7 @@ export default async function IssuesListView(props: ListViewServerProps) {
         page: 1,
         sort: '_order',
         user: user ?? undefined,
-        where: { status: { equals: status } },
+        where: combineWhereConstraints([{ status: { equals: status } }, tenantFilter ?? undefined]),
       })
       return { result: result as PaginatedDocs<Issue>, status }
     }),
@@ -45,5 +64,15 @@ export default async function IssuesListView(props: ListViewServerProps) {
     results.map(({ result, status }) => [status, result]),
   ) as Record<IssueStatus, PaginatedDocs<Issue>>
 
-  return <IssuesListViewClient {...clientProps} initialColumns={initialColumns} />
+  return (
+    <IssuesListViewClient
+      {...clientProps}
+      initialColumns={initialColumns}
+      labels={{
+        plural: getTranslation(collectionConfig.labels.plural, i18n),
+        singular: getTranslation(collectionConfig.labels.singular, i18n),
+      }}
+      tenantFilter={tenantFilter}
+    />
+  )
 }

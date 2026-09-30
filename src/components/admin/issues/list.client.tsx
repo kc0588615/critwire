@@ -13,10 +13,15 @@ import { cn } from '@/utilities/ui'
 
 import { IssuesKanban } from './kanban'
 
-type Props = ListViewClientProps & ComponentProps<typeof IssuesKanban>
+type Props = ListViewClientProps &
+  ComponentProps<typeof IssuesKanban> & {
+    labels: { plural: string; singular: string }
+  }
 
 export default function IssuesListViewClient({
   initialColumns,
+  labels,
+  tenantFilter,
   ...props
 }: Props) {
   const [mode, setMode] = useState<'kanban' | 'table'>('kanban')
@@ -47,11 +52,11 @@ export default function IssuesListViewClient({
           <header className="list-header mb-4">
             <div className="list-header__content">
               <div className="list-header__title-and-actions">
-                <h1 className="list-header__title">Issues</h1>
+                <h1 className="list-header__title">{labels.plural}</h1>
                 <div className="list-header__title-actions">
                   {props.hasCreatePermission ? (
                     <Button
-                      aria-label="Create new Issue"
+                      aria-label={`Create new ${labels.singular}`}
                       buttonStyle="pill"
                       el="link"
                       size="small"
@@ -65,7 +70,14 @@ export default function IssuesListViewClient({
             </div>
           </header>
           {props.BeforeListTable}
-          <IssuesKanban className="min-h-0 flex-1" initialColumns={initialColumns} />
+          {/* The tenant selector re-renders this view with a new filter; the
+              key remounts the board, whose columns are seeded state. */}
+          <IssuesKanban
+            className="min-h-0 flex-1"
+            initialColumns={initialColumns}
+            key={JSON.stringify(tenantFilter)}
+            tenantFilter={tenantFilter}
+          />
         </Gutter>
       ) : (
         <DefaultListView {...props} />

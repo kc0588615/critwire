@@ -30,8 +30,9 @@ import {
 import { CSS } from '@dnd-kit/utilities'
 import { toast } from '@payloadcms/ui'
 import Link from 'next/link'
-import type { PaginatedDocs } from 'payload'
-import { generateKeyBetween } from 'payload/shared'
+import type { PaginatedDocs, Where } from 'payload'
+import { combineWhereConstraints, generateKeyBetween } from 'payload/shared'
+import { stringify } from 'qs-esm'
 import React, { useCallback, useRef, useState } from 'react'
 
 import type { Issue } from '@/payload-types'
@@ -83,15 +84,19 @@ async function updateIssue(
   }
 }
 
-async function fetchMoreIssues(status: IssueStatus, page: number): Promise<ColumnState> {
-  const params = new URLSearchParams({
-    depth: '0',
-    limit: String(ISSUE_KANBAN_PAGE_SIZE),
-    page: String(page),
+async function fetchMoreIssues(
+  status: IssueStatus,
+  page: number,
+  tenantFilter: null | Where,
+): Promise<ColumnState> {
+  const query = stringify({
+    depth: 0,
+    limit: ISSUE_KANBAN_PAGE_SIZE,
+    page,
     sort: '_order',
-    'where[status][equals]': status,
+    where: combineWhereConstraints([{ status: { equals: status } }, tenantFilter ?? undefined]),
   })
-  const res = await fetch(`/api/issues?${params}`, { credentials: 'include' })
+  const res = await fetch(`/api/issues?${query}`, { credentials: 'include' })
   if (!res.ok) throw new Error(`Failed to load issues: ${res.status}`)
   return res.json() as Promise<ColumnState>
 }
@@ -339,10 +344,12 @@ function KanbanColumn({
 
 export type IssuesKanbanProps = {
   initialColumns: Record<IssueStatus, PaginatedDocs<Issue>>
+  /** The multi-tenant plugin's list filter, from the server view (null: no scoping). */
+  tenantFilter: null | Where
   className?: string
 }
 
-export function IssuesKanban({ className, initialColumns }: IssuesKanbanProps) {
+export function IssuesKanban({ className, initialColumns, tenantFilter }: IssuesKanbanProps) {
   const [columns, setColumns] = useState<Record<IssueStatus, ColumnState>>(() => ({
     ...initialColumns,
   }))
@@ -362,7 +369,7 @@ export function IssuesKanban({ className, initialColumns }: IssuesKanbanProps) {
       const nextPage = (columns[status].page ?? 1) + 1
       let result: ColumnState
       try {
-        result = await fetchMoreIssues(status, nextPage)
+        result = await fetchMoreIssues(status, nextPage, tenantFilter)
       } catch (err) {
         console.error(err)
         toast.error('Could not load more issues.')
@@ -376,7 +383,7 @@ export function IssuesKanban({ className, initialColumns }: IssuesKanbanProps) {
         },
       }))
     },
-    [columns],
+    [columns, tenantFilter],
   )
 
   const handleDragStart = useCallback(
