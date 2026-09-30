@@ -1,6 +1,7 @@
 import config from '@payload-config'
 import * as Sentry from '@sentry/nextjs'
 import { notFound } from 'next/navigation'
+import { NextResponse } from 'next/server'
 import { getPayload } from 'payload'
 import { z } from 'zod'
 
@@ -25,6 +26,24 @@ const onboardingSchema = z.object({
 const ONBOARDING = '/onboarding'
 
 const redirectTo = (req: Request, path: string): Response => Response.redirect(new URL(path, req.url), 303)
+
+/**
+ * The redirect after onboarding, selecting the new studio in the admin.
+ * The multi-tenant plugin sets `payload-tenant` only once an admin page
+ * has loaded in the browser, and a create view opened before that (the
+ * next steps' "Add your first update") saves with no studio. The cookie
+ * matches the plugin's own; the plugin still checks membership on every
+ * request.
+ */
+const redirectIntoStudio = (req: Request, path: string, tenantID: number): Response => {
+  const response = NextResponse.redirect(new URL(path, req.url), 303)
+  response.cookies.set('payload-tenant', String(tenantID), {
+    maxAge: 60 * 60 * 24 * 365,
+    path: '/',
+    sameSite: 'lax',
+  })
+  return response
+}
 
 /**
  * Creates a verified user's studio and first game from the onboarding form,
@@ -63,7 +82,11 @@ export async function POST(req: Request): Promise<Response> {
     if (!project) throw new Error(`Onboarding: user ${user.id}'s new studio has no game.`)
     log.info({ msg: 'Studio onboarded.', projectID: project.id, userID: user.id })
 
-    return redirectTo(req, project.flagged ? `${ONBOARDING}?held=1` : `${portalPaths(project.slug).hub}?welcome=1`)
+    return redirectIntoStudio(
+      req,
+      project.flagged ? `${ONBOARDING}?held=1` : `${portalPaths(project.slug).hub}?welcome=1`,
+      project.tenant,
+    )
   } catch (err) {
     Sentry.captureException(err)
     log.error({ err, msg: 'Onboarding failed.' })

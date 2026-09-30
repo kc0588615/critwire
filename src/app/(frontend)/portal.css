@@ -1008,6 +1008,44 @@
   text-decoration-color: currentColor;
 }
 
+/* ── Welcome: the next steps after onboarding ──────────── */
+
+.fs-welcome {
+  padding-top: 1.5rem;
+}
+
+.fs-welcome-steps {
+  display: grid;
+  gap: 1.25rem;
+  margin-top: 1rem;
+  padding-left: 1.25rem;
+  list-style: decimal;
+}
+
+.fs-welcome-steps > li > * + * {
+  margin-top: 0.25rem;
+}
+
+.fs-welcome-label {
+  font-weight: 700;
+}
+
+.fs-welcome-share {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  padding-top: 0.5rem;
+}
+
+.fs-welcome-url {
+  overflow-wrap: anywhere;
+  border-radius: var(--fs-radius-control);
+  padding: 0.375rem 0.625rem;
+  background: var(--fs-bg);
+  font-size: 0.9375rem;
+}
+
 /* ── Forms: report and contact (plan §5) ───────────────── */
 
 /* The form sits on one surface panel; the controls keep the bg fill and

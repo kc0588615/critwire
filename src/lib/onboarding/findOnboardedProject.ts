@@ -3,6 +3,8 @@ import type { Payload } from 'payload'
 export interface OnboardedProject {
   id: number
   slug: string
+  /** The studio the user created, which holds the game. */
+  tenant: number
   /** Screening held the game for review. */
   flagged: boolean
 }
@@ -36,5 +38,5 @@ export async function findOnboardedProject(payload: Payload, userID: number): Pr
   })
   if (!project?.slug) return null
 
-  return { flagged: Boolean(project.flagged), id: project.id, slug: project.slug }
+  return { flagged: Boolean(project.flagged), id: project.id, slug: project.slug, tenant: tenant.id }
 }

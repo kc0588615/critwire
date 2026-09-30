@@ -1,10 +1,10 @@
 import { randomUUID } from 'node:crypto'
 
-import type { APIRequestContext } from '@playwright/test'
+import type { APIRequestContext, Browser, BrowserContext, Page } from '@playwright/test'
 
 import type { GameProject, Tenant } from '../../src/payload-types'
 import type { RestClient } from './support/api'
-import { SECOND_BASE_URL } from './support/env'
+import { BASE_URL, SECOND_BASE_URL } from './support/env'
 import { type Account, expect, newRequestContext, onboard, test } from './support/fixtures'
 
 /**
@@ -31,6 +31,17 @@ async function onboardedBy(superAdmin: RestClient, user: Account): Promise<{ ten
   const games = await superAdmin.find('game-projects', { where: { tenant: { in: ids.join(',') } }, depth: 0 })
   expect(games.status).toBe(200)
   return { tenants: tenants.body.docs, games: games.body.docs }
+}
+
+/** A browser context with no session, whatever the project's `storageState`. */
+const freshContext = (browser: Browser): Promise<BrowserContext> =>
+  browser.newContext({ storageState: { cookies: [], origins: [] } })
+
+/** Fills in Payload's sign-in form; the caller asserts where it lands. */
+async function signInForm(page: Page, user: Account): Promise<void> {
+  await page.getByLabel('Email').fill(user.email)
+  await page.getByLabel('Password').fill(user.password)
+  await page.getByRole('button', { name: 'Login' }).click()
 }
 
 let request: APIRequestContext
@@ -173,6 +184,136 @@ test('S14.6 who may onboard: signed in, without a studio, on a hosted instance',
     try {
       const response = await second.post('/onboarding/submit', {
         form: input,
+        headers: { Authorization: `JWT ${user.token}` },
+        maxRedirects: 0,
+      })
+      expect(response.status()).toBe(404)
+    } finally {
+      await second.dispose()
+    }
+  })
+})
+
+test('S14.7 in the browser: sign in, onboard, and land on the portal with the next steps', async ({
+  api,
+  browser,
+  seedUser,
+}) => {
+  const user = await seedUser('s147')
+  const { name, slug } = freshName('Lantern Moss')
+  const context = await freshContext(browser)
+  try {
+    const page = await context.newPage()
+
+    await test.step('sign in, then fill in the onboarding form', async () => {
+      await page.goto('/admin/login')
+      await signInForm(page, user)
+      await expect(page).not.toHaveURL(/\/admin\/login/)
+      await page.goto('/onboarding')
+      await expect(page.getByRole('heading', { level: 1 })).toHaveText('Set up your game’s portal')
+      await page.getByLabel('Game name').fill(name)
+      await page.getByLabel('Your website').fill(WEBSITE)
+      await page.getByLabel('Store link (optional)').fill(STEAM_URL)
+      await page.getByRole('button', { name: 'Create my portal' }).click()
+      await expect(page).toHaveURL(`/g/${slug}?welcome=1`)
+      await expect(page.getByRole('heading', { level: 1 })).toHaveText(name)
+    })
+
+    const { body } = await api('superAdmin').find('game-projects', { where: { slug: { equals: slug } }, depth: 0 })
+    const [project] = body.docs
+    const tenantID = typeof project.tenant === 'object' ? project.tenant?.id : project.tenant
+
+    await test.step('the next steps: the link to share, the first update, ideas', async () => {
+      const panel = page.getByRole('region', { name: 'Your portal is live' })
+      const hubURL = `${BASE_URL}/g/${slug}`
+      await expect(panel.getByText(hubURL, { exact: true })).toBeVisible()
+      await context.grantPermissions(['clipboard-read', 'clipboard-write'])
+      await panel.getByRole('button', { name: 'Copy' }).click()
+      await expect(panel.getByText('Copied')).toBeVisible()
+      expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(hubURL)
+
+      await expect(panel.getByRole('link', { name: 'Add your first update' })).toHaveAttribute(
+        'href',
+        '/admin/collections/patch-notes/create',
+      )
+      await expect(panel.getByRole('link', { name: 'Turn on ideas' })).toHaveAttribute(
+        'href',
+        `/admin/collections/game-projects/${project.id}`,
+      )
+    })
+
+    await test.step('the new studio is selected, so a create form opened first has one', async () => {
+      const cookie = (await context.cookies()).find((c) => c.name === 'payload-tenant')
+      expect(cookie?.value).toBe(String(tenantID))
+    })
+  } finally {
+    await context.close()
+  }
+
+  await test.step('an anonymous visitor sees the hub without the panel', async () => {
+    const anonymous = await freshContext(browser)
+    try {
+      const page = await anonymous.newPage()
+      await page.goto(`/g/${slug}`)
+      await expect(page.getByRole('heading', { level: 1 })).toHaveText(name)
+      await expect(page.getByRole('region', { name: 'Your portal is live' })).toHaveCount(0)
+    } finally {
+      await anonymous.close()
+    }
+  })
+})
+
+test('S14.8 the onboarding page: sign in first, studios go to the admin, hosted only', async ({
+  browser,
+  playwright,
+  seedStudio,
+  seedUser,
+}) => {
+  await test.step('without a session it asks for sign-in, then comes back', async () => {
+    const user = await seedUser('s148')
+    const context = await freshContext(browser)
+    try {
+      const page = await context.newPage()
+      await page.goto('/onboarding')
+      await expect(page).toHaveURL('/admin/login?redirect=%2Fonboarding')
+      await signInForm(page, user)
+      await expect(page).toHaveURL('/onboarding')
+      await expect(page.getByRole('heading', { level: 1 })).toHaveText('Set up your game’s portal')
+
+      await page.goto('/onboarding?error=store')
+      // Scoped to main: Next's route announcer is an alert too.
+      const notice = page.getByRole('main').getByRole('alert')
+      await expect(notice).toContainText('That store link isn’t one we know')
+      await expect(notice).toContainText('Steam')
+    } finally {
+      await context.close()
+    }
+  })
+
+  await test.step('a studio owner goes to the admin, except to read the held notice', async () => {
+    const { owner } = await seedStudio('s148')
+    const context = await freshContext(browser)
+    try {
+      await context.addCookies([{ name: 'payload-token', value: owner.token, url: BASE_URL }])
+      const page = await context.newPage()
+      await page.goto('/onboarding')
+      await expect(page).toHaveURL(/\/admin\/?$/)
+
+      await page.goto('/onboarding?held=1')
+      await expect(page.getByRole('heading', { level: 1 })).toHaveText(
+        'Your portal is set up and waiting for a quick review',
+      )
+      await expect(page.getByRole('link', { name: 'Go to your admin' })).toHaveAttribute('href', '/admin')
+    } finally {
+      await context.close()
+    }
+  })
+
+  await test.step('the self-hosted server has no onboarding page', async () => {
+    const user = await seedUser('s148b')
+    const second = await newRequestContext(playwright, SECOND_BASE_URL)
+    try {
+      const response = await second.get('/onboarding', {
         headers: { Authorization: `JWT ${user.token}` },
         maxRedirects: 0,
       })

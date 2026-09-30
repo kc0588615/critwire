@@ -490,6 +490,52 @@
   font-size: 0.9375rem;
 }
 
+/* ── Account pages: signup, verification, onboarding ────── */
+
+/*
+ * The portal's form components (FormField, FormNotice, TurnstileField and
+ * the fs-form, fs-input and fs-btn classes) read --fs-* tokens; here they
+ * point at Critwire's palette. White panels on paper, ink text; the one
+ * colour beyond ink is the error square, which never carries text.
+ */
+.cw-account {
+  --fs-bg: var(--cw-paper);
+  --fs-fg: var(--cw-ink);
+  --fs-muted-fg: var(--cw-graphite);
+  --fs-surface: #ffffff;
+  --fs-border: var(--cw-rule);
+  --fs-radius: 0.25rem;
+  --fs-radius-control: 0.25rem;
+  --fs-success: var(--cw-ink);
+  --fs-error: #c0262d;
+
+  padding-block: clamp(2.5rem, 6vw, 4.5rem) clamp(4rem, 9vw, 7.5rem);
+}
+
+.cw-account-column {
+  display: grid;
+  gap: 1.5rem;
+  max-width: 36rem;
+}
+
+.cw-root .cw-account-title {
+  font-size: clamp(2rem, 1.4rem + 2.4vw, 3.25rem);
+  text-wrap: balance;
+}
+
+.cw-account-lede {
+  color: var(--cw-graphite);
+}
+
+/* Controls and buttons are tap targets at every width (at least 44 px). */
+.cw-account :where(.fs-input, .cw-btn) {
+  min-height: 2.75rem;
+}
+
+.cw-account .fs-form .cw-btn {
+  justify-self: start;
+}
+
 /* ── 404 ────────────────────────────────────────────────── */
 
 .cw-not-found {
