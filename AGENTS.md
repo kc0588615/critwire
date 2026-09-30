@@ -1,10 +1,27 @@
-# Critwire — Indie Game Developer Portal
+# Critwire — player feedback and updates for indie games
 
-Multi-tenant white-label SaaS: the **public ops layer for an indie game**.
-Each studio gets one hosted, branded portal: game website + patch notes +
-public issue tracker with player voting + contact form. Built for a solo
-founder selling B2B — every decision minimizes operational overhead and
-maximizes shipping velocity.
+A **player feedback board and updates hub for each indie game**, on a
+minimal, themable portal that links back to the studio's own website.
+Critwire complements website builders (Carrd, Wix, itch.io, Steam, a
+studio's own site) and does not compete with them.
+
+- **Audience:** indie game studios of one to a few people, most of whom
+  already have a website.
+- **Product:** per game, a feedback board (bugs and ideas, player voting,
+  four public stages) plus updates (patch notes with RSS), on a small
+  hub at `/g/<game>` in the studio's colours.
+- **Open source:** MIT. Self-hosting is free and always will be.
+- **Hosted:** open signup, free during early access, with limits that
+  keep each site minimal. A paid hosted tier may come later; there's no
+  billing work now.
+- **Moderation:** submissions are reviewed before they're public by
+  default. Auto-publishing is an opt-in per game and still goes through
+  the content filter.
+- **No AI site generation.**
+
+Multi-tenant: one tenant is one studio. Built for a solo founder, so
+every decision minimizes operational overhead and maximizes shipping
+velocity.
 
 **Payload CMS IS the app.** Not a CMS bolted onto a custom app. Payload
 provides auth, admin panel, collections, access control, hooks, rich text
@@ -18,8 +35,8 @@ in the same project.
 | --- | --- |
 | `docs/architecture.md` | Deployment, Docker, domain resolution, rendering/ISR, data access model, project structure |
 | `docs/patterns.md` | Writing any collection, hook, access control, Server Component, job, or validation code |
-| `docs/features.md` | Product scope, collections/fields, issue tracker + voting behavior, contact form, pricing tiers, build phases |
-| `docs/integrations.md` | R2, Upstash, Resend, Stripe, Sentry, Turnstile, Cloudflare, PgBouncer, backups, env vars |
+| `docs/features.md` | Product scope, collections/fields, feedback board + voting, public stages, submission review and content filter, updates, contact form, hosting, build phases |
+| `docs/integrations.md` | R2, Upstash, Resend, Sentry, Turnstile, Cloudflare, the content filter, PgBouncer, backups, env vars |
 
 ## Stack
 
@@ -65,19 +82,21 @@ Don't add them.
 ## Scope guardrail
 
 Every feature must answer yes to both: (1) does it help a player stay
-informed, report an issue, or find the game? (2) does it help a small
-studio present their game professionally with less overhead? The product
-is NOT a docs platform, ticketing system, forum, Discord replacement,
-sprint board, storefront, game backend, telemetry vendor, or SDK.
-Aggregation-first: link out to the studio's existing tools rather than
-building native features.
+informed, report a bug, suggest an idea, or find the game? (2) does it
+help a small studio hear from and answer its players with less
+overhead? The product is NOT a website builder, docs platform,
+ticketing system, forum, Discord replacement, sprint board, storefront,
+game backend, telemetry vendor, or SDK. Aggregation-first: link out to
+the studio's existing site and tools rather than building native
+features.
 
 ## Build process
 
 Nine sequential phases (full detail in `docs/features.md`). Each phase
 must be deployable. **Stop after each phase and wait for confirmation.**
-Do not build custom domains (Phase 8) or billing (Phase 9) before
+Do not build open signup (Phase 8) or custom domains (Phase 9) before
 Phases 1–7 have shipped and real users have touched the core product.
+There is no billing phase; a paid hosted tier may come later.
 
 Output expectations per phase: list files created/changed; code is
 production-oriented and minimal, with error handling and Sentry capture
@@ -100,9 +119,11 @@ where appropriate.
 - `pnpm test:e2e` — Playwright against a fresh production build on the
   disposable E2E database (see Testing)
 - `pnpm test:int` — vitest; the int files, no database needed
-- `pnpm screenshots` — design screenshots (Critter Connect demo, several
-  themes, 1440 and 390 px) against a production build on port 3200;
-  needs `SHOTS_SET=before|after` and an absolute `SHOTS_DIR`. Drops the
+- `pnpm screenshots` — design screenshots (the Critter Connect demo's
+  hub, feedback list and board, both submit forms and an update, under
+  the Critter Connect and Riso themes, plus the home page `/`; 1440 and
+  390 px) against a production build on port 3200; needs
+  `SHOTS_SET=before|after` and an absolute `SHOTS_DIR`. Drops the
   `_e2e` database like `pnpm test:e2e`, so never run the two together
   (see `playwright.screenshots.config.ts`)
 - `docker compose up -d --build` — full stack (see `docs/deploy.md`)
@@ -144,8 +165,8 @@ How the E2E suite works:
 Int tests (`tests/int`) exist only for invariants E2E can't reach:
 
 - `issue-revalidation` — an issue write that only moves a kanban card
-  must not revalidate the hub, and E2E can't observe a revalidation
-  that didn't happen.
+  must not revalidate the hub or the update it shipped in, and E2E
+  can't observe a revalidation that didn't happen.
 - `content-screen` — the content filter (`src/lib/moderation/screenText.ts`),
   one test per failure mode: missed words and leetspeak, false positives
   on game words, the link count, shorteners and look-alike hosts, and

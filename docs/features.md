@@ -2,25 +2,31 @@
 
 ## Thesis
 
-The **public ops layer for an indie game** — the unified surface where
-players find updates, known issues, and communication from the studio.
-Key promise: *"Set up the public ops layer for your game in an
-afternoon — publish updates, track known issues, and give players one
-place to look."*
+A **player feedback board and updates hub for each indie game**, on a
+minimal, themable portal that links back to the studio's own website.
+Critwire complements website builders and does not compete with them:
+the studio keeps its site (Carrd, Wix, itch.io, Steam or its own), and
+Critwire is where its players report bugs, suggest ideas, vote, and
+read what shipped.
 
-Each studio (tenant/Workspace) gets one hosted, branded portal doing
-three jobs well and one adequately:
-
-1. Public game website (core differentiator)
-2. Patch notes and updates (highest retention feature)
-3. Public issue tracker with player voting (most unique feature)
-4. Branded contact form routing to existing tools (adequate)
+- **Audience:** indie game studios of one to a few people, most of
+  whom already have a website.
+- **Product:** per game, a feedback board (bugs and ideas, votes, four
+  public stages) plus updates (patch notes with RSS), on a small hub
+  at `/g/<game>` in the studio's colours, with a contact form.
+- **Open source:** MIT. Self-hosting is free and always will be.
+- **Hosted:** see Hosting below.
+- **Moderation:** submissions are reviewed before they're public by
+  default. Auto-publishing is an opt-in per game and still goes
+  through the content filter.
+- **No AI site generation.**
 
 **Aggregation-first:** build native features only when no adequate
 external tool exists for the studio's public-facing needs; otherwise
-link out. The product is NOT: a documentation platform, ticketing
-system, forum, Discord replacement, sprint board, merch storefront,
-live game backend, telemetry vendor, or bug-reporting SDK.
+link out. The product is NOT: a website builder, documentation
+platform, ticketing system, forum, Discord replacement, sprint board,
+merch storefront, live game backend, telemetry vendor, or
+bug-reporting SDK.
 
 ## Collections
 
@@ -32,114 +38,157 @@ One tenant = one Workspace (studio). Plugin handles tenant field
 injection, admin tenant switcher, and access filtering.
 
 ### Users (Payload built-in, extended)
-Email/password + GitHub OAuth. Tenant association via plugin.
+Email/password (Payload auth). Tenant association via plugin.
 Roles: `admin` (global), `owner`, `member`.
 
 ### GameProject
-Primary game entity. Fields: name, slug (unique), description; logoUrl,
-bannerUrl, accentColor; customDomain, customDomainVerified; external
-links (steam, epic, itch, discord, support, docs, merch, playstation,
-xbox, nintendo, gog, youtube, pressKit, privacy, terms, trailer);
-availability facts (releaseState, releaseDate, currentVersion, demoUrl,
-platforms[] with platform/storeUrl/label); meta credits (developer,
-publisher, engine, rating); contact form config (target type, email,
-discord webhook, external URL, Tally); timestamps.
+Primary game entity; its slug is the portal's URL (`/g/<slug>`, unique
+across studios). Fields:
 
-Links and availability are **approved fact URLs**: the flagship
-template selects them by ref; it never rewrites them.
+- **Identity:** name, slug, pitch (`description`, one line, at most
+  240 characters), logo, key art (`banner`).
+- **Theme:** `theme.colors` (ten semantic colour tokens), typography,
+  shape, density, motion. Every save is validated whole against the
+  Zod schema in `src/lib/game-portal/theme.ts`, WCAG contrast
+  included; unset values fall back to the default theme.
+- **Links** (approved outbound URLs, shown as given): website, steam,
+  epic, itch, discord, support, docs, merch, playstation, xbox,
+  nintendo, gog, youtube, pressKit, privacy, terms. `website` is the
+  "Official site" link in the portal's nav and footer.
+- **Availability:** releaseState, releaseDate, currentVersion,
+  platforms[] (platform, storeUrl, label).
+- **Contact form** (`contact`): target, email, Discord webhook,
+  external URL, Tally.
+- **Feedback form** (`reportForm`): provider (native, Tally or
+  external); for the native form, `acceptIdeas` and
+  `reviewSubmissions` (both on by default).
+- customDomain, customDomainVerified (Phase 9); timestamps.
 
-### GamePage (flagship template)
-One landing page per project, rendered by the code-owned
-`flagship-game-v1` template (see `src/site-templates/`). Fields:
-gameProject (rel), kind, title, template, schemaVersion, `site` group
-(typed slot configuration: nav, theme, hero, availability, features,
-trailer, gallery, adaptive, latestUpdate, knownIssues, community,
-finalCta, footer), generation provenance group, drafts/versions.
-
-- Zod schemas in `src/site-templates/flagship-game-v1/schema` are
-  canonical; Payload fields mirror them (parity-tested). Publishing
-  runs full Zod validation including WCAG contrast; drafts may be
-  incomplete.
-- Section order is fixed by the template; config controls content,
-  variants, and semantic theme tokens only. Action links are approved
-  refs (`primary-store`, `demo`, `steam`, …, `contact`) — internal ops
-  refs always resolve to `/g/[slug]/…` routes regardless of
-  contact/report provider config.
-- `latestUpdate` and `knownIssues` slots query live published data
-  (explicit sorts — never the admin kanban `_order`).
-- The legacy `content` blocks field is hidden but still renders for
-  pages published before the template shipped; projects with no
-  usable page get a derived flagship default from project facts.
-- Authenticated draft preview via Payload live preview and the signed
-  `/next/site-preview` route.
-
-### PatchNote
+### PatchNote ("Updates" in the admin and the portal)
 Draft/publish workflow. Fields: gameProject (rel), title, slug (unique
 per project), summary, content (Lexical), versionLabel, isPublished,
 publishedAt, timestamps.
 
-### Issue
-Public tracker item. Fields: gameProject (rel), title, slug (unique per
-project), summary, details, category, status, isPublic, isPinned,
-needsMoreInfoText, workaroundText, fixedInPatchNote (rel, optional),
-upvoteCount (number, default 0), timestamps.
+### Issue ("Feedback" in the admin)
+A public feedback item, a bug or an idea. Fields: gameProject (rel),
+title, slug (unique per project; `new` is reserved for the submit
+form), summary, details, type, category, status, isPublic, isPinned,
+needsMoreInfoText, workaroundText, fixedInPatchNote ("Shipped in
+update", rel, optional), upvoteCount (number, default 0), timestamps.
 
-### IssueReport
-Inbound player report. Fields: gameProject (rel), issue (rel, optional
-— set when linked), title, description, category, submitterEmail /
-platform / gameVersion (all optional), status, timestamps.
+### IssueReport ("Submissions" in the admin)
+Inbound player submission. Fields: gameProject (rel), issue (rel,
+optional — set when linked), title, description, type, category,
+submitterEmail / platform / gameVersion (all optional; ideas carry no
+platform or version), status, flagged and flagReasons (set by the
+content filter), timestamps.
 
-### IssueVote
+### IssueVote ("Votes" in the admin)
 Fields: issue (rel), browserTokenHash, timestamps. Unique constraint:
 `[issueId, browserTokenHash]`.
 
 ### Media (Payload built-in)
-Upload collection via `@payloadcms/storage-s3` → R2. Game logos,
-banners, patch-note images, issue-report attachments.
+Upload collection via `@payloadcms/storage-s3` → R2. Game logos, key
+art and update images.
 
 ## Enums (Payload select options)
 
+Canonical values in `src/collections/options.ts`.
+
 ```ts
+FeedbackType = ['BUG', 'IDEA']
+
 IssueCategory = ['INFORMATION', 'PATCH_NOTES', 'GAMEPLAY', 'CRASHES',
-  'USER_INTERFACE', 'AUDIO', 'VISUAL', 'QUESTS', 'PERFORMANCE',
-  'FEATURE_REQUEST', 'OTHER']
+  'USER_INTERFACE', 'AUDIO', 'VISUAL', 'QUESTS', 'PERFORMANCE', 'OTHER']
 
 IssueStatus = ['REPORTED', 'INVESTIGATING', 'NEEDS_MORE_INFO',
-  'WORKAROUND_AVAILABLE', 'PLANNED', 'FIXED', 'CLOSED']
+  'WORKAROUND_AVAILABLE', 'PLANNED', 'IN_PROGRESS', 'FIXED', 'CLOSED']
 
 IssueReportStatus = ['NEW', 'PUBLISHED', 'LINKED', 'DISMISSED']
 
-ContactFormTarget = ['EMAIL', 'DISCORD_WEBHOOK', 'EXTERNAL_URL']
+ContactFormTarget = ['EMAIL', 'DISCORD_WEBHOOK', 'EXTERNAL_URL', 'TALLY']
 ```
 
-## Public issue tracker behavior
+## Public stages
+
+Players never see the internal statuses. One function
+(`publicStage` in `src/lib/game-portal/stages.ts`) maps them to four
+public stages; every public surface uses it.
+
+| Public stage | Internal statuses |
+| --- | --- |
+| Under review | `REPORTED`, `INVESTIGATING`, `NEEDS_MORE_INFO`, `WORKAROUND_AVAILABLE` |
+| Planned | `PLANNED` |
+| In progress | `IN_PROGRESS` |
+| Shipped | `FIXED` |
+| (archived) | `CLOSED` |
+
+An archived item leaves the board, the list and the hub, keeps its page
+(marked "Archived") and stops taking votes (`/api/vote` answers 409).
+
+## The portal
 
 Custom React Server Components using the Local API — **not** a Payload
-admin view.
+admin view. Every URL comes from `portalPaths` in
+`src/lib/game-portal/paths.ts`. The chrome (nav: Updates, Feedback,
+Contact) shows an "Official site" link back to the studio whenever
+`links.website` is set, and renders in the project's theme.
 
-- **List page:** search, sort (most upvoted / latest), category filters,
-  status badges, pinned items. nuqs for URL state.
-- **Detail page:** all Issue fields, upvote button with count, optional
-  workaround text, "Needs More Info" callout, patch-note link when
-  fixed.
+- **Hub** (`/g/<game>`): a small header (name, key art, pitch, the
+  build line, "Get the game", other stores, Discord, Official site),
+  then the three latest updates (with RSS) and the top five open
+  feedback items, with "Report a bug" and, when ideas are on, "Suggest
+  an idea".
+- **Feedback list** (`/feedback`): search, type, stage and category
+  filters, sort (most upvoted / latest), stage badges, type tags,
+  pinned items. nuqs for URL state (`feedbackSearchParams.ts`).
+- **Board** (`/feedback?view=board`): one column per public stage, 25
+  items each with "See all N" to the filtered list; type filter.
+  Read-only, no drag-and-drop for players.
+- **Item page** (`/feedback/<slug>`): all public fields, upvote button
+  with count, workaround and "Needs more info" callouts, and "Shipped
+  in <version>" linking to the update when it's published.
+- **Updates** (`/updates`, `/updates/<slug>`, `/updates/feed.xml`):
+  paginated feed, detail pages and RSS. An update's page lists "From
+  your feedback": the public items whose "Shipped in update" is that
+  update.
 - **Voting:** signed browser-token cookie, hashed in DB, one vote per
-  issue per token, IP rate-limited via Upstash.
-- **Public kanban:** `?view=board` renders issues grouped by status —
-  read-only Server Component, no drag-and-drop for players.
-- **Admin triage:** custom Issues list view (Kanban + Table) using
-  DnD-Kit and Payload `orderable` — drag status/order in admin only.
+  item per token, IP rate-limited via Upstash.
+- **Old URLs** (`/issues/*`, `/report`, `/patch-notes/*`) redirect
+  permanently (`redirects.ts`); RSS item GUIDs keep the old
+  `/patch-notes/` path so readers don't redeliver items.
 
-## Issue report flow
+## Submissions: submit, filter, review
 
 Configurable per GameProject (`reportForm`):
 
-- **native** (default) — Critwire form (Turnstile-protected) →
-  `issue-reports` review queue in Payload admin. Actions: **publish**
-  (afterChange hook creates an Issue from the report), **link** to an
-  existing Issue, or **dismiss**.
-- **tally** — embed or button to a studio-owned Tally form; submissions
-  stay in Tally.
-- **external** — link out to GitHub issue template, Linear, Discord, etc.
+- **native** (default) — the Critwire form at `/feedback/new`
+  (Turnstile-protected, rate-limited). It asks "Bug or idea?" first
+  (straight to the bug form when `acceptIdeas` is off; the route
+  refuses ideas then). Every submission lands in `issue-reports`:
+  1. **Content filter** (`screenText`, `src/lib/moderation/screenText.ts`):
+     on create and on a title or description change, sets `flagged`
+     and `flagReasons` (offensive words, three or more links, or any
+     link shortener). Local, no external service.
+  2. **Auto-publish:** when the game's `reviewSubmissions` is off, a
+     new unflagged submission is published at once. Flagged ones
+     always wait for a studio.
+  3. **Review queue** in the admin (Submissions): **publish**
+     (a `beforeChange` hook creates the feedback item from the
+     submission, copying its type), **link** to an existing item, or
+     **dismiss**.
+- **tally** — embed or button to a studio-owned Tally form;
+  submissions stay in Tally.
+- **external** — link out to a GitHub issue template, Linear, Discord,
+  etc.
+
+## Updates ↔ feedback
+
+A feedback item's "Shipped in update" (`fixedInPatchNote`) links it to
+the update that shipped it. The item's page, list row and board card
+show "Shipped in <version>"; the update's page lists the item under
+"From your feedback". Issue and vote hooks revalidate the linked
+update's page.
 
 ## Contact form
 
@@ -153,21 +202,19 @@ Configurable routing per GameProject:
 Native EMAIL / DISCORD_WEBHOOK paths are protected by Turnstile +
 Upstash rate limiting. Tally paths do not hit Critwire POST endpoints.
 
-## Admin issue triage
+## Admin feedback triage
 
-Issues collection list view includes a **Kanban** board (status columns,
-drag-and-drop via DnD-Kit + Payload `orderable`) and the standard
-**Table** view. Public player `?view=board` remains read-only.
+The Feedback (issues) list view includes a **Kanban** board (one column
+per internal status, drag-and-drop via DnD-Kit + Payload `orderable`)
+and the standard **Table** view. It follows the admin's tenant
+selector. Public player `?view=board` remains read-only.
 
-## Pricing tiers
+## Hosting
 
-| Tier | Price | Includes |
-| --- | --- | --- |
-| FREE | $0 | 1 project, public site, patch notes, issue tracker, contact form, 50 submissions/mo, platform branding, no custom domain, RSS |
-| INDIE | $19/mo | 1 project, unlimited submissions, custom domain, remove branding, attachments, email notifications |
-| STUDIO | $39/mo | Up to 5 projects, team seats, priority support, all INDIE features |
-
-Feature gating implemented via Payload access control (Phase 9).
+- **Self-hosting** is free forever (MIT).
+- **Hosted:** open signup, free during early access, with limits that
+  keep each site minimal (Phase 8).
+- A paid hosted tier may come later. There is no billing work now.
 
 ## Development phases
 
@@ -177,32 +224,32 @@ confirmation.
 1. **Foundation** — `create-payload-app` (website template);
    db-postgres adapter + PgBouncer-aware settings; Docker Compose
    (Postgres + PgBouncer + app); multi-tenant plugin; storage-s3 → R2;
-   Payload Auth (email + GitHub OAuth); Sentry; health endpoint;
-   Upstash connection; deploy to Hetzner with Nginx + Cloudflare DNS.
+   Payload Auth; Sentry; health endpoint; Upstash connection; deploy
+   to Hetzner with Nginx + Cloudflare DNS.
 2. **Collections + multi-tenancy** — define all collections, access
    control everywhere, verify tenant isolation with test tenants, slug
    validation/uniqueness.
-3. **Landing page editor** — Lexical blocks (hero, features, media
-   gallery, CTA, trailer); Page collection; public renderer at
-   `/g/[gameSlug]`; external links; on-demand revalidation; R2 uploads
-   through admin.
-4. **Patch notes** — draft/publish workflow, public feed with
-   pagination, detail pages, RSS, revalidation.
-5. **Public issue tracker** — list (search/sort/filter/badges), detail,
-   voting system, public `?view=board`, admin Issues kanban (DnD-Kit),
-   revalidation.
-6. **Issue reports + contact form** — Turnstile report form, admin
-   review queue, report→issue promotion hook, contact routing via jobs
-   queue, Resend, rate limiting on all public forms.
-7. **Polish + deploy** — React Email templates, onboarding flow, SEO/OG,
-   Turnstile everywhere, admin empty states, pino logging, Docker build
+3. **Portal hub + theme** — `/g/[gameSlug]` hub (identity header,
+   latest updates, top feedback); project theme with WCAG contrast
+   checks; nav and footer with the link back to the studio's site; R2
+   uploads through admin.
+4. **Updates** — draft/publish workflow, public feed with pagination,
+   detail pages, RSS, revalidation.
+5. **Feedback board** — bugs and ideas, four public stages, list
+   (search/filter/sort), board, item pages, voting, admin kanban
+   (DnD-Kit), updates ↔ feedback links, revalidation.
+6. **Submissions + contact** — Turnstile "Bug or idea?" form, content
+   filter, review queue and opt-in auto-publish, submission → item
+   promotion, contact routing via jobs queue, Resend, rate limiting on
+   all public forms.
+7. **Polish + deploy** — React Email templates, SEO/OG, Turnstile
+   everywhere, admin empty states, pino logging, Docker build
    optimization, Nginx hardening, production deploy.
-8. **Custom domains** — domain input + verification in admin, Cloudflare
-   DNS API CNAME verification, `next.config.ts` rewrites, Upstash
-   domain cache, SSL via Cloudflare proxy.
-9. **Billing** — Stripe Checkout, Customer Portal, webhook handler at
-   `/api/webhooks/stripe`, plan gating via access control, FREE-tier
-   usage tracking (50 submissions/mo).
+8. **Open signup** — signup, onboarding, invites, and the hosted
+   early-access limits.
+9. **Custom domains** — domain input + verification in admin,
+   Cloudflare DNS API CNAME verification, `next.config.ts` rewrites,
+   Upstash domain cache, SSL via Cloudflare proxy.
 
-**Sequencing rule:** ship Phases 1–7 on the platform subdomain, get real
-user feedback, *then* build domains and billing.
+**Sequencing rule:** ship Phases 1–7 on the platform subdomain, get
+real user feedback, *then* open signup and build domains.

@@ -37,8 +37,8 @@ the Next.js + Payload app, and Nginx. Cloudflare sits in front.
    `certs/origin.pem` and `certs/origin-key.pem` in `/opt/critwire`
    (`chmod 600`, directory is gitignored).
 8. **Cloudflare caching**: keep the defaults, which don't cache HTML or
-   XML. Don't add a "Cache Everything" rule for `/g/*`: the patch-notes
-   pages send `s-maxage=3600`, and the app's on-demand revalidation
+   XML. Don't add a "Cache Everything" rule for `/g/*`: the hub and the
+   updates pages send `s-maxage=3600`, and the app's on-demand revalidation
    can't purge Cloudflare, so edits would stay stale at the edge.
 
 ## Deploying

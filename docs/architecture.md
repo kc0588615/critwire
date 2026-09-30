@@ -52,7 +52,7 @@ How Payload replaces the v6.1 custom stack:
 | v6.1 (custom) | v7 (Payload) |
 | --- | --- |
 | Prisma schema + migrations | Collections config → Drizzle |
-| Clerk auth + OAuth | Payload Auth with GitHub OAuth |
+| Clerk auth + OAuth | Payload Auth |
 | Custom `forTenant()` extension | `@payloadcms/plugin-multi-tenant` |
 | Service layer + `ServiceContext` | Access control functions + hooks |
 | Custom dashboard pages | Payload admin panel + custom views |
@@ -86,7 +86,7 @@ Public routes fetch via Local API in Server Components:
 import { getPayload } from 'payload'
 import config from '@payload-config'
 
-export default async function GamePage({ params }) {
+export default async function HubPage({ params }) {
   const payload = await getPayload({ config })
   const project = await payload.find({
     collection: 'game-projects',
@@ -98,15 +98,22 @@ export default async function GamePage({ params }) {
 
 ## Public URL structure
 
+Built only by `portalPaths` (`src/lib/game-portal/paths.ts`).
+
 ```
-/g/[gameSlug]                     game landing page
-/g/[gameSlug]/patch-notes         patch notes feed
-/g/[gameSlug]/patch-notes/[slug]  patch note detail
-/g/[gameSlug]/issues              public issue board (?view=board for kanban)
-/g/[gameSlug]/issues/[slug]       issue detail
-/g/[gameSlug]/issues/report       submit issue report
-/g/[gameSlug]/contact             contact form
+/g/[gameSlug]                          game hub (identity, latest updates, top feedback)
+/g/[gameSlug]/updates                  updates feed (/updates/page/[n] for later pages)
+/g/[gameSlug]/updates/[slug]           update detail, with "From your feedback"
+/g/[gameSlug]/updates/feed.xml         RSS
+/g/[gameSlug]/feedback                 feedback list (?view=board for the four-stage board)
+/g/[gameSlug]/feedback/[slug]          feedback item
+/g/[gameSlug]/feedback/new             "Bug or idea?" submit form (?type=bug|idea)
+/g/[gameSlug]/contact                  contact form
 ```
+
+`feedback/new` is a static route, so `new` is a reserved item slug.
+The old `/issues/*`, `/report` and `/patch-notes/*` URLs redirect
+permanently (`redirects.ts`; 308 for the old form's POST).
 
 ## Custom domain resolution (Phase 8)
 
@@ -126,11 +133,12 @@ Keep the rewrite layer lightweight: resolution only, no business logic.
 
 | Route | Strategy |
 | --- | --- |
-| Marketing site | SSG |
-| Public landing page | SSR (reads Draft Mode for previews) |
-| Patch notes feed, pages, detail, RSS | ISR on first visit + on-demand revalidation |
-| Contact form | SSR |
-| Public issue tracker | SSR |
+| Home page `/` | Dynamic (reads `CRITWIRE_CONTACT_URL` at request time) |
+| Marketing CMS pages | SSG (Draft Mode previews) |
+| Game hub | ISR on first visit + on-demand revalidation |
+| Updates feed, pages, detail, RSS | ISR on first visit + on-demand revalidation |
+| Feedback list, board, item pages | SSR |
+| Submit and contact forms | SSR |
 | Payload admin panel | SSR (Payload-managed) |
 
 **Revalidation rule:** every Payload hook that modifies published
@@ -147,33 +155,34 @@ Subtrees revalidate by route pattern (`PORTAL_ROUTE` and `UPDATES_ROUTE` in `src
 ## Project structure
 
 ```
-/app
-  /(payload)            Payload admin routes (auto-generated)
-  /(public)/g/[gameSlug]  public game portal routes
-  /(marketing)          landing page, pricing
-  /api
-    /webhooks           Stripe webhooks
-    /health             health check
-    /contact            contact form endpoint
-    /vote               voting endpoint
-/collections            one file per collection config
-/site-templates         code-owned site templates (flagship-game-v1:
-                        canonical Zod schemas, slot registry, renderer,
-                        action registry, derived defaults)
-/blocks                 legacy Lexical landing-page blocks (hero,
-                        features, media-gallery, cta, trailer) — hidden
-                        since the flagship template shipped
-/components             shared UI (shadcn/ui)
-/lib
-  /validation           shared Zod schemas
-  /rate-limit           Upstash helpers
-  /turnstile            Turnstile verification
-  /domain-cache         Upstash domain → slug cache
-  /email                React Email templates, Resend helpers
-  /security             token hashing, cookie helpers
-/jobs                   Payload Jobs Queue task definitions
-payload.config.ts       main Payload configuration
-next.config.ts          Next.js config with domain rewrites
+/src
+  /app
+    /(payload)            Payload admin routes (auto-generated)
+    /(public)/g/[gameSlug]  public game portal routes
+    /(frontend)           home page, marketing CMS pages, previews
+    /api
+      /health             health check
+      /vote               voting endpoint
+      /seed               demo seed (CRON_SECRET)
+  /collections            one folder per collection config
+  /components
+    /game                 portal UI (hub, board, forms, chrome, theme)
+    /admin/issues         admin feedback kanban
+    /marketing            home page
+  /lib
+    /game-portal          portal paths, stages, theme, links, queries
+    /moderation           content filter (screenText)
+    /public-forms         guardPublicForm (Zod, Turnstile, rate limit)
+    /validation           shared Zod schemas
+    /upstash              Redis client, rate limits
+    /turnstile            Turnstile verification
+    /email                React Email templates
+    /security             vote-token hashing
+    /tally                Tally form URLs
+  /jobs                   Payload Jobs Queue task definitions
+  /migrations             Payload migrations (run on boot in production)
+  payload.config.ts       main Payload configuration
+next.config.ts / redirects.ts
 docker-compose.yml / Dockerfile / nginx.conf
 ```
 
@@ -190,5 +199,4 @@ docker-compose.yml / Dockerfile / nginx.conf
 - **Uptime:** Better Stack pings marketing site, canary tenant portal,
   admin login, health endpoint.
 - **Logging:** structured JSON via pino — hooks/access-control events,
-  Stripe webhooks, email delivery, contact form routing, domain
-  resolution.
+  email delivery, contact form routing, domain resolution.

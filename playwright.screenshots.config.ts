@@ -6,9 +6,10 @@ import { shotsTarget } from './tests/screenshots/catalog'
 import { SHOTS_CRON_SECRET } from './tests/screenshots/support'
 
 /**
- * Design screenshots: the Critter Connect demo under several themes, at
- * 1440 and 390 px, against a production build on the disposable E2E
- * database (dropped on every run, so never alongside `pnpm test:e2e`).
+ * Design screenshots: the Critter Connect demo's portal pages under the
+ * Critter Connect and Riso themes, plus the home page, at 1440 and
+ * 390 px, against a production build on the disposable E2E database
+ * (dropped on every run, so never alongside `pnpm test:e2e`).
  *
  *   SHOTS_SET=before|after SHOTS_DIR=/abs/dir [SHOTS_THEMES=critter-connect,riso,marketing] pnpm screenshots [--project desktop|mobile]
  *

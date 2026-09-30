@@ -61,17 +61,25 @@ services. The established hooks:
 - **GameProject `afterChange` / `afterDelete`** — revalidate every
   portal page by route pattern, which covers renamed and deleted slugs.
 - **PatchNote `beforeChange`** — stamp `publishedAt` on first publish
-  only; `afterChange` / `afterDelete` revalidate the patch-note pages.
-- **Issue `afterChange` / `afterDelete`** — revalidate the public issue
-  pages and the landing. **Issue `beforeDelete`** removes the issue's
-  votes in the same transaction.
-- **IssueReport `beforeChange`** — status → `PUBLISHED`: create the
-  Issue with `req` (same transaction) and set the report's `issue` in
-  the same write.
+  only; `afterChange` / `afterDelete` revalidate the updates pages and
+  the hub.
+- **Issue `afterChange` / `afterDelete`** — revalidate the hub when a
+  field it shows changes, and the page of any update the item is (or
+  was) linked to through "Shipped in update". A write that only moves
+  a kanban card (`_order`) revalidates nothing. **Issue
+  `beforeDelete`** removes the item's votes in the same transaction.
+- **IssueReport `beforeChange`**, in this order: **screen** (the
+  content filter sets `flagged` / `flagReasons` on create, or when the
+  title or description changes), then **auto-publish** (a new,
+  unflagged submission becomes `PUBLISHED` when the game's
+  `reviewSubmissions` is off), then **promote** (status →
+  `PUBLISHED`: create the Issue with `req`, same transaction, copying
+  the type, and set the report's `issue` in the same write).
 - **IssueVote `afterChange` / `beforeDelete`** — own `upvoteCount`
   through `$inc`: increment on create, decrement in `beforeDelete` (so
   a concurrent withdrawal of the same vote can't decrement twice).
-  Nothing else writes the counter.
+  Nothing else writes the counter. Both revalidate the hub and, for a
+  shipped item, its update's page.
 
 Rule: any hook that mutates published content calls `revalidatePath()`
 or `revalidateTag()` **after** the DB write. A single page revalidates
@@ -102,9 +110,8 @@ freshness or optimistic state — justify it in the PR/commit.
 
 ## Validation
 
-- Zod at every public API boundary (`/api/contact`, `/api/vote`, issue
-  report submission, Stripe webhooks). Shared schemas in
-  `/lib/validation`.
+- Zod at every public API boundary (contact and feedback submission,
+  `/api/vote`). Shared schemas in `/lib/validation`.
 - Inside Payload, prefer field-level validation on collections over
   duplicate Zod checks.
 
@@ -136,7 +143,7 @@ Every public form endpoint follows the same shape:
 
 1. Zod-parse the body.
 2. Verify Cloudflare Turnstile token (`/lib/turnstile`).
-3. Rate-limit by IP via Upstash (`/lib/rate-limit`).
+3. Rate-limit by IP via Upstash (`/lib/upstash/rate-limit.ts`).
 4. Do the work (Local API write, or enqueue a job).
 5. Structured pino log + Sentry capture on failure.
 
@@ -158,12 +165,9 @@ redirects).
 - `upvoteCount` is owned by the IssueVote hooks (see Hooks).
 - IP rate limiting via Upstash on the `/api/vote` endpoint.
 
-## Rich text / landing pages
+## Rich text
 
 - Lexical (via Payload) everywhere — no TipTap.
-- Landing pages use block-based fields: custom blocks in `/blocks`
-  (hero, features, media-gallery, cta, trailer). The public renderer
-  maps block types to React components.
 
 ## Error handling & observability
 

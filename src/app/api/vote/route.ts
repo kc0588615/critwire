@@ -68,7 +68,7 @@ export async function POST(req: Request): Promise<Response> {
 
     const payload = await getPayload({ config })
 
-    // Read as the anonymous visitor: private and unknown issues are both null.
+    // Read as the anonymous visitor: private and missing issues are both null.
     const issue = await payload.findByID({
       collection: 'issues',
       depth: 0,

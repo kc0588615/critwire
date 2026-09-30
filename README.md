@@ -1,9 +1,14 @@
-# Critwire — Indie Game Developer Portal
+# Critwire — player feedback and updates for indie games
 
-Multi-tenant white-label SaaS: the **public ops layer for an indie game**.
-Each studio gets one hosted, branded portal: game website + patch notes +
-public issue tracker with player voting + contact form. Built on Payload
-CMS inside Next.js; Payload is the app.
+A player feedback board and updates hub for each indie game, on a
+minimal, themable portal that links back to the studio's own website.
+Players report bugs, suggest ideas, vote, and follow each item through
+four stages (Under review, Planned, In progress, Shipped); studios post
+updates with RSS and review submissions before they go public. It
+complements a studio's website rather than replacing it.
+
+Open source under the MIT licence: self-hosting is free and always will
+be. Built on Payload CMS inside Next.js; Payload is the app.
 
 ## Read first
 
@@ -11,9 +16,10 @@ CMS inside Next.js; Payload is the app.
 - `docs/architecture.md` — deployment, rendering, data access, structure
 - `docs/patterns.md` — how collections, hooks, access control and jobs
   are written
-- `docs/features.md` — product scope and build phases
-- `docs/integrations.md` — R2, Upstash, Resend, Turnstile, Sentry and
-  env vars
+- `docs/features.md` — product scope, feedback and updates behaviour,
+  hosting and build phases
+- `docs/integrations.md` — R2, Upstash, Resend, Turnstile, Sentry, the
+  content filter and env vars
 - `docs/deploy.md` — production runbook
 
 ## Commands
