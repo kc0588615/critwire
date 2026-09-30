@@ -146,3 +146,7 @@ Int tests (`tests/int`) exist only for invariants E2E can't reach:
 - `issue-revalidation` — an issue write that only moves a kanban card
   must not revalidate the hub, and E2E can't observe a revalidation
   that didn't happen.
+- `content-screen` — the content filter (`src/lib/moderation/screenText.ts`),
+  one test per failure mode: missed words and leetspeak, false positives
+  on game words, the link count, shorteners and look-alike hosts, and
+  the reasons' wording. E2E can't enumerate these inputs cheaply.
