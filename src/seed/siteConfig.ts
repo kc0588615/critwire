@@ -1,5 +1,5 @@
-import type { GamePage } from '@/payload-types'
-import type { SiteConfigV1 } from '@/site-templates/flagship-game-v1/schema/config'
+import type { GamePage } from '../payload-types'
+import type { SiteConfigV1 } from '../site-templates/flagship-game-v1/schema/config'
 
 /** Converts canonical nullable action groups to Payload's optional group representation. */
 export const siteConfigToPayloadSite = (config: SiteConfigV1): GamePage['site'] => {

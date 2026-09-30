@@ -6,8 +6,8 @@ import { extractID } from 'payload/shared'
 
 import type { GameProject, Media } from '../payload-types'
 
-import { siteConfigToPayloadSite } from '../site-generator/storage'
 import { siteConfigV1Schema } from '../site-templates/flagship-game-v1/schema/config'
+import { siteConfigToPayloadSite } from './siteConfig'
 
 /**
  * Content seed for the Critter Connect demo project.

@@ -12,7 +12,7 @@ import { TrailerEmbed } from '../../blocks/game/Trailer/config'
 import { signSitePreviewToken } from '../../lib/security/sitePreviewToken'
 import { revalidateGamePage, revalidateGamePageDelete } from './hooks/revalidateGamePage'
 import { validatePublishedSiteConfig } from './hooks/validatePublishedSiteConfig'
-import { generationField, schemaVersionField, siteField, templateField } from './siteFields'
+import { schemaVersionField, siteField, templateField } from './siteFields'
 
 const sitePreviewUrl = (data: Record<string, unknown> | undefined): string =>
   typeof data?.id === 'number' ? `/next/site-preview?token=${signSitePreviewToken(data.id)}` : ''
@@ -34,11 +34,6 @@ export const GamePages: CollectionConfig = {
     delete: tenantOwnerAccess,
   },
   admin: {
-    components: {
-      edit: {
-        beforeDocumentControls: ['@/components/admin/game-pages/GenerateSiteControl'],
-      },
-    },
     defaultColumns: ['title', 'gameProject', 'kind', '_status', 'updatedAt'],
     group: 'Game Portal',
     livePreview: {
@@ -73,7 +68,6 @@ export const GamePages: CollectionConfig = {
     templateField,
     schemaVersionField,
     siteField,
-    generationField,
     {
       // Legacy v7 block composition, hidden since the flagship template
       // shipped. Existing published block pages keep rendering from it

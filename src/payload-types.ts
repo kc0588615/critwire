@@ -209,7 +209,7 @@ export interface GameProject {
     trailer?: string | null;
   };
   /**
-   * Release and platform facts shown on the public portal (and used by AI site generation).
+   * Release and platform facts shown on the public portal.
    */
   availability?: {
     releaseState?: ('comingSoon' | 'earlyAccess' | 'released' | 'freeToPlay') | null;
@@ -681,20 +681,6 @@ export interface GamePage {
       tagline?: string | null;
       showLegalLinks?: boolean | null;
     };
-  };
-  /**
-   * AI generation provenance — set by the site generator.
-   */
-  generation?: {
-    model?: string | null;
-    prompt?: string | null;
-    generatedAt?: string | null;
-    changeSummary?:
-      | {
-          item?: string | null;
-          id?: string | null;
-        }[]
-      | null;
   };
   content?: (GameHeroBlock | GameFeaturesBlock | MediaGalleryBlock | GameCTABlock | TrailerEmbedBlock)[] | null;
   updatedAt: string;
@@ -1620,19 +1606,6 @@ export interface GamePagesSelect<T extends boolean = true> {
           | {
               tagline?: T;
               showLegalLinks?: T;
-            };
-      };
-  generation?:
-    | T
-    | {
-        model?: T;
-        prompt?: T;
-        generatedAt?: T;
-        changeSummary?:
-          | T
-          | {
-              item?: T;
-              id?: T;
             };
       };
   content?:

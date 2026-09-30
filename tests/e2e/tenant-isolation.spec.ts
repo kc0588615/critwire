@@ -491,39 +491,13 @@ test.describe('S1.9 Draft Mode previews', () => {
   })
 })
 
-test.describe('S1.10 AI site generation', () => {
-  const generate = (client: RestClient, data: Record<string, unknown>) =>
-    client.raw<{ error?: string }>('POST', '/next/generate-site', { data })
-  const request = () => ({ gamePageId: a.page.id, prompt: 'Make the page moodier.', scope: 'full' })
-
-  test('requires a signed-in user of the page’s studio', async ({ api }) => {
-    await test.step('anonymous → 401', async () => {
-      expect((await generate(api('anonymous'), request())).status).toBe(401)
+test('S1.10 the site generator and the landing builder are gone', async ({ api }) => {
+  // A signed-in owner getting 404 proves removal, not just denial.
+  const request = { gamePageId: a.page.id, prompt: 'Make the page moodier.', scope: 'full' }
+  for (const role of ['aOwner', 'anonymous'] as const) {
+    await test.step(`${role} POST /next/generate-site → 404`, async () => {
+      const { status } = await api(role).raw('POST', '/next/generate-site', { data: request })
+      expect(status).toBe(404)
     })
-    await test.step('studio B on A’s page → 404', async () => {
-      expect((await generate(api('bOwner'), request())).status).toBe(404)
-    })
-  })
-
-  test('validates the request before generating', async ({ api }) => {
-    await test.step('a slot-scoped request without a slot → 400', async () => {
-      const { status, body } = await generate(api('aOwner'), { ...request(), scope: 'slot' })
-      expect(status).toBe(400)
-      expect(body.error).toContain('Choose a slot')
-    })
-    await test.step('naming the slot passes validation (503: no OpenAI key here)', async () => {
-      const { status, body } = await generate(api('aOwner'), { ...request(), scope: 'slot', slot: 'hero' })
-      expect(status, JSON.stringify(body)).toBe(503)
-    })
-  })
-
-  test('without an OpenAI key answers 503 and leaves the draft alone', async ({ api }) => {
-    const aOwner = api('aOwner')
-    const before = await aOwner.findByID('game-pages', a.page.id, { draft: true })
-    const { status, body } = await generate(aOwner, request())
-    expect(status, JSON.stringify(body)).toBe(503)
-    const after = await aOwner.findByID('game-pages', a.page.id, { draft: true })
-    expect(after.body.updatedAt).toBe(before.body.updatedAt)
-    expect(after.body.site).toEqual(before.body.site)
-  })
+  }
 })

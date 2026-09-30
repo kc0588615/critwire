@@ -83,8 +83,8 @@ export const GameProjects: CollectionConfig = {
       },
     },
     {
-      // Approved fact URLs. The flagship template's action registry and
-      // AI generation may SELECT these by ref, never rewrite them.
+      // Approved fact URLs. The flagship template's action registry may
+      // SELECT these by ref, never rewrite them.
       name: 'links',
       type: 'group',
       admin: {
@@ -123,7 +123,7 @@ export const GameProjects: CollectionConfig = {
       type: 'group',
       admin: {
         description:
-          'Release and platform facts shown on the public portal (and used by AI site generation).',
+          'Release and platform facts shown on the public portal.',
       },
       fields: [
         {

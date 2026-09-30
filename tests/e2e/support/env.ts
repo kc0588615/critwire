@@ -79,7 +79,6 @@ export const serverEnv = ({ cronSecret = '' }: { cronSecret?: string } = {}): Re
   RESEND_API_KEY: '',
   SENTRY_DSN: '',
   NEXT_PUBLIC_SENTRY_DSN: '',
-  OPENAI_API_KEY: '',
   UPSTASH_REDIS_REST_URL: '',
   UPSTASH_REDIS_REST_TOKEN: '',
   CRON_SECRET: cronSecret,

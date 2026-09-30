@@ -46,7 +46,7 @@ publisher, engine, rating); contact form config (target type, email,
 discord webhook, external URL, Tally); timestamps.
 
 Links and availability are **approved fact URLs**: the flagship
-template and AI generation select them by ref; they never rewrite them.
+template selects them by ref; it never rewrites them.
 
 ### GamePage (flagship template)
 One landing page per project, rendered by the code-owned
@@ -72,13 +72,6 @@ finalCta, footer), generation provenance group, drafts/versions.
   usable page get a derived flagship default from project facts.
 - Authenticated draft preview via Payload live preview and the signed
   `/next/site-preview` route.
-- The admin document controls expose **Generate with AI** only for a
-  saved, unmodified page. Full, theme-only, and single-slot requests go
-  through `/next/generate-site`, which rechecks tenant access, limits
-  usage per tenant, sends a deliberately redacted context, validates
-  structured output twice, and writes a new draft version only. The AI
-  cannot publish, reorder sections, emit code/classes, invent URLs, or
-  access `contact.*` / `reportForm.*` provider configuration.
 
 ### PatchNote
 Draft/publish workflow. Fields: gameProject (rel), title, slug (unique

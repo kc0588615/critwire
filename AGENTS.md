@@ -99,7 +99,7 @@ where appropriate.
 - `pnpm test` — `test:int`, then `test:e2e`
 - `pnpm test:e2e` — Playwright against a fresh production build on the
   disposable E2E database (see Testing)
-- `pnpm test:int` — vitest; the three int files, no database needed
+- `pnpm test:int` — vitest; the int files, no database needed
 - `pnpm screenshots` — design screenshots (Critter Connect demo, several
   themes, 1440 and 390 px) against a production build on port 3200;
   needs `SHOTS_SET=before|after` and an absolute `SHOTS_DIR`. Drops the
@@ -143,8 +143,6 @@ How the E2E suite works:
 
 Int tests (`tests/int`) exist only for invariants E2E can't reach:
 
-- `site-generator` — needs a fake model: E2E has no OpenAI key and can't
-  see the model's input or force its failures.
 - `site-config-parity` — checks the Zod schema and the Payload field
   tree agree down to every enum option.
 - `template-revalidation` — the landing renders dynamically, so E2E

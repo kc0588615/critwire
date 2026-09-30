@@ -6,9 +6,9 @@ import type { GameProject, Media } from '@/payload-types'
 
 import { queryLandingIssues } from '@/lib/game-portal/issues'
 import { getLatestPublishedPatchNote } from '@/lib/game-portal/patchNotes'
-import { collectSiteMediaRefs } from '@/site-generator/media'
 
 import type { SiteConfigV1 } from './schema/config'
+import { collectSiteMediaRefs } from './media'
 import { flagshipSlots, SLOT_ORDER } from './registry'
 import type { SiteRenderContext } from './render/context'
 import { SiteFrame } from './render/SiteFrame'

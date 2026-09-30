@@ -130,27 +130,6 @@ export const schemaVersionField: Field = {
   defaultValue: 1,
 }
 
-export const generationField: Field = {
-  // Written by the AI generation endpoint (rollout step 3); read-only
-  // provenance in the admin UI.
-  name: 'generation',
-  type: 'group',
-  admin: {
-    description: 'AI generation provenance — set by the site generator.',
-  },
-  fields: [
-    { name: 'model', type: 'text', admin: { readOnly: true } },
-    { name: 'prompt', type: 'textarea', admin: { readOnly: true } },
-    { name: 'generatedAt', type: 'date', admin: { readOnly: true } },
-    {
-      name: 'changeSummary',
-      type: 'array',
-      admin: { readOnly: true },
-      fields: [{ name: 'item', type: 'text' }],
-    },
-  ],
-}
-
 export const siteField: Field = {
   name: 'site',
   type: 'group',

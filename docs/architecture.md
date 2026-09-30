@@ -160,9 +160,6 @@ Subtrees revalidate by route pattern (`src/hooks/portalRoutes.ts`).
 /site-templates         code-owned site templates (flagship-game-v1:
                         canonical Zod schemas, slot registry, renderer,
                         action registry, derived defaults)
-/site-generator         redacted context builder, SiteGenerator boundary,
-                        OpenAI structured-output adapter, scope policy,
-                        and atomic draft-only orchestration
 /blocks                 legacy Lexical landing-page blocks (hero,
                         features, media-gallery, cta, trailer) — hidden
                         since the flagship template shipped

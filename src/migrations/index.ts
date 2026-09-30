@@ -9,6 +9,7 @@ import * as migration_20260926_042239_reconcile_issue_upvote_counts from './2026
 import * as migration_20260926_054934_remove_website_template from './20260926_054934_remove_website_template';
 import * as migration_20260926_055704_backfill_media_folder_tenants from './20260926_055704_backfill_media_folder_tenants';
 import * as migration_20260929_074053_design_default_theme from './20260929_074053_design_default_theme';
+import * as migration_20260930_060748_remove_site_generator from './20260930_060748_remove_site_generator';
 
 export const migrations = [
   {
@@ -64,6 +65,11 @@ export const migrations = [
   {
     up: migration_20260929_074053_design_default_theme.up,
     down: migration_20260929_074053_design_default_theme.down,
-    name: '20260929_074053_design_default_theme'
+    name: '20260929_074053_design_default_theme',
+  },
+  {
+    up: migration_20260930_060748_remove_site_generator.up,
+    down: migration_20260930_060748_remove_site_generator.down,
+    name: '20260930_060748_remove_site_generator'
   },
 ];
