@@ -78,7 +78,7 @@ Out:
 - [x] Architecture: `architect` writes findings and the target design
 - [x] Fable review: `architecture-reviewer`
 - [x] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
-- [ ] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
+- [x] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
 - [ ] Steps: `planner` writes Steps and Verification
 
 ## Baseline
@@ -95,7 +95,7 @@ Commit `7e8272a`, 2026-09-30 09:38–09:44 UTC.
 
 ## Architecture
 
-Checked against the code at `27d23a3` and against Payload 3.85.2's own source in `node_modules`. Paths under `payload/dist/…`, `plugin-multi-tenant/dist/…` and similar are that source.
+Checked against the code at `27d23a3` and against Payload 3.85.2's and Next 16.2.6's own source in `node_modules`. Paths under `payload/dist/…`, `plugin-multi-tenant/dist/…`, `next/dist/…` and similar are that source. Revised after both reviews (see **Revision notes**); F11 and F12 were added in the revision.
 
 ### Findings
 
@@ -135,18 +135,35 @@ Ranked by impact.
 - **Breaks:** blocker for suspension and holds; DRY.
 - **What's already right:**
   - Every public read goes through `overrideAccess: false`: `getGameProject.ts:17-24`, `patchNotes.ts`, `issues.ts`, and the vote route's anonymous `findByID` (`api/vote/route.ts:72-79`). So changing the collections' anonymous `read` access covers every portal page, the RSS feed, votes, both submit routes and the REST API at once.
-  - Payload applies `read`'s `Where` to media files too (`uploads/checkFileAccess.js`).
+  - Payload applies `read`'s `Where` to files at `/api/media/file/<name>` (`uploads/checkFileAccess.js`). F11 covers the paths around it.
   - `not_equals: true` also matches `NULL` (`drizzle/queries/parseParams.js:225-227`), so an unset flag counts as "not held".
 - **Fix:** §7 and §8.
 
-**F4 · Self-service accounts: creation is closed and there's no email verification.**
+**F11 · Uploaded files have public paths that skip access control (added in revision).**
+- **Where:** `Media.ts:43-44` stores uploads in `public/media`, and every `Media` render goes through Next's image optimizer (`ImageMedia` → `next/image`, `next.config.ts:29-46`).
+- **Why it fails:**
+  - Next serves `public/` itself, with no Payload check: in production every file present at start-up (`next/dist/server/lib/router-utils/filesystem.js:161-183`), in development every file. After any restart, `/media/<filename>` serves a suspended studio's banner whatever §7 says.
+  - The optimizer fetches `/api/media/file/…` anonymously (`next/dist/server/image-optimizer.js:1013-1022`) and caches the result on disk for at least 4 hours (`minimumCacheTTL`, `shared/lib/image-config.js:57`). When the upstream later refuses (403 after a suspension), Next stores the old entry again with a short TTL (`server/response-cache/index.js:290-301`), so the copy is served indefinitely. An uploader can warm it on purpose by requesting `/_next/image?url=…` before a suspension.
+  - Media responses carry no `Cache-Control`, so Cloudflare applies its default edge TTL to image extensions.
+- **Effect:** suspensions and holds don't take images down, and an abuser can keep them reachable deliberately.
+- **What's already right:** `/api/media/file/<name>` checks `read` on every request, for local files and for R2: `uploads/endpoints/getFile.js:19-27` runs `checkFileAccess` before the storage adapter's handler, and the project doesn't set `disablePayloadAccessControl`.
+- **Fix:** §7b. Uploads leave `public/`, the optimizer is off, and `/api/media/file/` is the only way to a file.
+
+**F4 · Self-service accounts: creation is closed, there's no email verification, and the auth fields are self-writable.**
 - **Where:** users and tenants can only be created by a super admin (`Users/index.ts:10`, `Tenants/index.ts:13`), and only a super admin can assign memberships (`plugins/index.ts:50-56`). Users are `auth: true` without `verify` (`Users/index.ts:27`).
 - **Payload facts the design depends on:**
-  - With `auth.verify`, login refuses `_verified === false` (`auth/operations/login.js:184`). But `resetPassword` signs the user in without checking it (`auth/operations/resetPassword.js:64-110`). A session therefore doesn't prove the email was verified, so onboarding must check `_verified` itself.
-  - `create` sends a verification email for every new user, whoever creates it (`collections/operations/create.js:228-243`). Users a super admin creates (in the admin, and in `tests/e2e/auth.setup.ts:46-53`) would start unverified and be locked out. First-register already verifies (`auth/operations/registerFirstUser.js:43-49`).
+  - With `auth.verify`, login refuses `_verified === false` (`auth/operations/login.js:184`). `resetPassword` still issues a token without checking it (`auth/operations/resetPassword.js:64-110`), but the JWT strategy authenticates nobody whose `_verified` is false (`auth/strategies/jwt.js:72`), so that token opens nothing. A signed-in user is therefore a verified one; onboarding asserts it (§6).
+  - `_verified` uses `defaultAccess` (any signed-in user) for create, read and update (`auth/baseFields/verification.js`, `auth/defaultAccess.js`), and `email` has no field access at all (`auth/baseFields/email.js`). `Users.access.update` lets a user update their own document, so a verified user can change their address and stay verified, and could write their own `_verified`. `mergeBaseFields` (`fields/mergeBaseFields.js`) deep-merges a same-named field in `Users.fields` over Payload's base field, which is how §4 restricts both.
+  - `create` sends a verification email for every new user, whoever creates it (`collections/operations/create.js:228-243`), and gives every new user a `_verificationToken`, verified or not (`:182-184`). Users a super admin creates (in the admin, and in `tests/e2e/auth.setup.ts:46-53`) would start unverified and be locked out. First-register already verifies (`auth/operations/registerFirstUser.js:43-49`).
   - Existing rows need `_verified = true` when `verify` is turned on.
-- **Already right:** the plugin's access wrapper suits self-service users. A user without a studio gets `false` on every studio collection and reads only their own user (`plugin-multi-tenant/dist/utilities/withTenantAccess.js`).
-- **Fix:** keep user and tenant creation over REST/GraphQL super-admin-only, and open it only through the two guarded routes (§5, §6).
+- **Already right:** the plugin's access wrapper suits self-service users. A user without a studio gets `false` on every studio collection and reads only their own user (`plugin-multi-tenant/dist/utilities/withTenantAccess.js`). It also wraps `unlock`, so a user can only unlock themselves or teammates.
+- **Fix:** keep user and tenant creation over REST/GraphQL super-admin-only, open it only through the guarded routes (§5, §6), and make `_verified` and `email` super-admin fields (§4).
+
+**F12 · Payload's forgot-password endpoint will mail any address, with no Turnstile or rate limit (added in revision).**
+- **Where:** Payload's built-in `POST /api/users/forgot-password` and GraphQL `forgotPasswordUsers`, open to anonymous callers (`auth/operations/forgotPassword.js`). Its admin view (`/admin/forgot`) posts straight to it.
+- **Effect:** harmless today only because there's no email transport (F5). Once §3 adds Resend, anyone can make the instance send mail to any inbox, unthrottled, from the owner's sending domain.
+- **Breaks:** `AGENTS.md` rule 8 (rate limit and Turnstile on every public form endpoint).
+- **Fix:** §4a.
 
 **F5 · There's no email transport, and the only email path calls Resend by hand.**
 - **No transport:** `src/payload.config.ts` configures no `email`, so Payload's console adapter would log only the subject of verification and reset emails. Nobody could ever verify.
@@ -163,7 +180,7 @@ Ranked by impact.
 **F7 · There are no hosted limits, and one path would turn a limit into a player's error.**
 - **The natural checkpoints:** collection `beforeChange` hooks, which every write path runs (admin, REST, Local API, onboarding).
 - **The trap:** `autoPublishReport` publishes a player's submission inside the public submit request (`IssueReports/hooks/autoPublishReport.ts:16-30`), and `createIssueFromPublishedReport` creates the public item in the same write (`:81-96`). A limit on public items would fail the player's POST with "Something went wrong".
-- **Fix:** auto-publish asks the limit first, and leaves the submission waiting at the limit (§11).
+- **Fix:** auto-publish asks the limit first, and the limit hooks check only studio users' writes (§11).
 
 **F8 · The demo seed writes into the newest studio, and the demo slug can be claimed.**
 - **Where:** `src/seed/critterConnect.ts:68-69` takes `tenants.docs[0]` under Payload's default sort, `-createdAt` (`drizzle/queries/buildOrderBy.js:8-11`). It then upserts the `critter-connect` game with that tenant (`:117-119`, `:150-190`).
@@ -197,41 +214,46 @@ Ranked by impact.
 #### 1. Flow
 
 ```
-/signup (email, password, Turnstile) --POST /signup/submit--> user (unverified) + verification email
+/signup (email, Turnstile) --POST /signup/submit--> pending user (unverified, unusable random password) + verification email
    -> /signup?submitted=1  "Check your inbox"
-email link -> /verify/<token> (verifies) -> "Email confirmed" -> /admin/login?redirect=/onboarding (Payload)
+email link -> /verify/<token>   GET: "Choose a password" form, no side effect
+   --POST /verify/submit (token, password, Turnstile)--> one transaction: set password + verify email
+   -> Payload login (session cookie) -> 303 /onboarding
 /onboarding (game name, website, store?) --POST /onboarding/submit--> one transaction:
-   tenant (createdBy = user) + membership (owner) + game (created as the user)
+   tenant (createdBy = user) + membership (owner) + game (created as the user, tenant set explicitly)
    -> 303 /g/<slug>?welcome=1 (live hub + next-steps panel), or /onboarding?held=1
 ```
 
 - **Why the user comes first:** the verification token lives on the user, so the user has to exist before verification.
+- **Why the password is chosen on the verify page:** only the inbox owner has the link, so only the inbox owner ever sets a credential. Submitting an address on `/signup` sets nothing: pre-registering someone else's address makes an account nobody can use until its owner opens the link, and a mail scanner that opens the link changes nothing.
 - **Why the studio and game come after:** unverified accounts own nothing. There's nothing to hide, no slug squatting, and no clean-up job. This also follows the Goal's order: sign up, verify, then enter the three things.
-- **Why there's a sign-in step:** Payload won't give a session without the password. Minting one ourselves would mean reimplementing auth.
+- **No separate sign-in step:** the verify route calls Payload's own `login` (`@payloadcms/next/auth`), which opens the session and sets the cookie. That's Payload's operation, not a session we mint.
 
 #### 2. Data model: one migration, `open_signup`
 
 - **users:**
   - `auth.verify` adds `_verified` and `_verificationToken`.
   - The migration backfills `_verified = true` for existing users.
+  - `_verified` and `email` become super-admin fields for writes (§4). That's access config, not schema.
 - **tenants:**
   - `suspended`: checkbox, default false, indexed. Create and update are super-admin-only; members can read it, so their admin can tell them.
   - `createdBy`: relationship to users, `unique`, create/read/update super-admin-only. Onboarding sets it; it stays `NULL` for studios a super admin makes. The unique index makes onboarding idempotent: a double submit fails its second insert instead of leaving an orphan studio.
 - **game-projects and patch-notes (patch-notes' versions table too):**
-  - `flagged` (checkbox, default false, indexed) and `flagReasons` (textarea).
-  - Both are read-only in the admin, and create/update is super-admin-only.
-  - Field access is applied in `beforeValidate`, before collection hooks, so the screening hook can set them in `beforeChange` while studios can't clear them.
+  - `flagged` (checkbox, default false, indexed) and `flagReasons` (textarea), defined once by `moderationFields()` in `src/fields/moderation.ts`, so their access and admin settings can't drift.
+  - Create and update are super-admin-only field access. Studio users see both read-only, and a super admin can untick `flagged` to approve (§9). No `admin.readOnly`, which would lock super admins out too.
+  - Field access is applied in `beforeValidate` (`fields/hooks/beforeValidate/promise.js:215-226`), before collection hooks, so the screening hook can set them in `beforeChange` while studios can't clear them.
+  - IssueReports keeps its own `flagged` fields: there the studio decides by publishing, so they stay read-only for everyone.
 - **abuse-reports (new; platform-level, not in the multi-tenant plugin):**
   - Fields:
     - `pageUrl`: text, required.
-    - `gameProject`: relationship, optional.
+    - `gameProject`: relationship, optional. Like every relationship here its foreign key is `ON DELETE SET NULL`, so deleting a game clears it and `pageUrl` stays the record.
     - `reason`: select (spam, scam or phishing, offensive, impersonation or copyright, other).
     - `details`: textarea.
     - `reporterEmail`: email, optional.
     - `status`: select (open, resolved, dismissed), default open.
     - timestamps.
   - Access: super admin only for everything, and `admin.hidden` for everyone else, as for `IssueVotes` and `jobs`. Only the report route creates them, through the Local API.
-- **media:** no schema change; `mimeTypes` is config.
+- **media:** no schema change; `mimeTypes`, `staticDir`, the WebP sizes and the response headers are config (§7b).
 - **After the schema changes:** regenerate types and the import map, and generate the migration with `migrate:create`, plus the `_verified` backfill.
 
 #### 3. Email
@@ -243,46 +265,76 @@ email link -> /verify/<token> (verifies) -> "Email confirmed" -> /admin/login?re
   - It logs `to` and `subject`. Outside production it also logs the HTML, so a developer can click the link; tokens never reach production logs.
   - When `EMAIL_OUTBOX_DIR` is set, it also writes each message there as a JSON file, creating the directory if needed. The E2E harness sets it and reads it. Nothing else is test-specific.
 - **`isEmailDeliverable()`** is true when Resend is configured, when not in production, or when `EMAIL_OUTBOX_DIR` is set.
-  - Signup refuses when it's false (production without Resend), the way forms refuse without Turnstile.
+  - Signup and password recovery refuse when it's false (production without Resend), the way forms refuse without Turnstile.
   - Super admins can still create users without Resend, because the outbox adapter never throws.
-- **One template, `AuthLinkEmail`** (heading, one sentence, a button and the plain link), rendered by `renderAuthLinkEmail`. It backs:
-  - `Users.auth.verify.generateEmailHTML` and `generateEmailSubject`, with the link `${getServerSideURL()}/verify/<token>`;
-  - `auth.forgotPassword.generateEmailHTML` and `generateEmailSubject`, with the link `${getServerSideURL()}/admin/reset/<token>` (Payload's reset view);
-  - the signup route's resend (§5).
+- **One template, `AuthLinkEmail`** (heading, one sentence, a button and the plain link), rendered by `renderAuthLinkEmail`. `src/lib/email/authEmails.ts` holds the three messages, each a function returning `{ subject, html }`:
+  - `verificationEmail(token)`: "Confirm your email and choose a password", linking to `${getServerSideURL()}/verify/<token>`. `Users.auth.verify.generateEmailHTML` and `generateEmailSubject` use it, and so does the signup route's resend (§5).
+  - `accountCreatedEmail()`: "An account was created for you", linking to `/admin/login`, with no token. `generateEmailHTML` picks it when the new user is already verified (a super admin created them, §4), so such users never receive a live verification link.
+  - `passwordResetEmail(token)`: linking to `${getServerSideURL()}/admin/reset/<token>` (Payload's reset view), for `auth.forgotPassword`.
 
   Links never come from the request's host (F5).
 - **The contact job** sends through `req.payload.sendEmail`. It keeps its explicit "`RESEND_API_KEY` unset → throw" rule, so a contact email never lands in a log counted as delivered, and failed jobs are still retried.
 
 #### 4. Accounts and sign-in: Payload's built-ins, styled
 
-- **`Users.auth`:** the `verify` and `forgotPassword` templates above; Payload's defaults otherwise, including lockout after 5 failed logins.
+- **`Users.auth`:** the email messages above; Payload's defaults otherwise, including lockout after 5 failed logins.
+- **Fields a user can't write**, declared in `Users.fields` and merged over Payload's base fields (F4):
+  - `_verified`: `create` and `update` super-admin-only. Payload's own writes aren't affected: `verifyEmail` and `resetPassword` write through `payload.db`, and first-user registration updates through the Local API's default `overrideAccess`.
+  - `email`: `update` super-admin-only. An address can't be swapped after it's verified, so "verified" always means this address was confirmed. A super admin changes addresses and vouches for the new one.
+  - Field access applies to REST, GraphQL, the admin and Local API calls with `overrideAccess: false`. A denied field is dropped from the write (`fields/hooks/beforeValidate/promise.js:215-226`), and the admin shows both read-only to studio users.
+  - One helper, `superAdminFieldAccess` beside `superAdminOnly` in `src/access/isSuperAdmin.ts`, serves these, `tenants.suspended` and `createdBy`, and `moderationFields()`.
 - **A Users `beforeChange` hook on create:** a user a super admin creates gets `_verified: true`.
   - The super admin vouches for them.
   - `auth.setup.ts` keeps working unchanged.
-  - The admin never needs its hidden `_verified` toggle.
-  - Payload still emails them a harmless confirmation link; that's accepted.
-- **Sign-in, forgot and reset:** Payload's admin views `/admin/login`, `/admin/forgot` and `/admin/reset/<token>`, which the brief allows. Styled to match through:
+  - Their creation email is `accountCreatedEmail()`, with no verification link (§3).
+- **Sign-in and reset:** Payload's admin views `/admin/login` and `/admin/reset/<token>`, which the brief allows. Forgot password is §4a. Styled to match through:
   - `admin.components.graphics.Logo` and `Icon`: the Critwire wordmark;
   - `admin.meta`: title suffix and favicon;
   - `custom.scss`: the auth views;
   - `BeforeLogin`: "New to Critwire? Create your portal", when signup is open.
 
-  The login view's `?redirect=` sends the user back to onboarding; Payload's `getSafeRedirect` accepts `/onboarding`.
-- **`/verify/[token]`** (in `(frontend)`, dynamic, `noindex`) calls `payload.verifyEmail` while rendering, as Payload's own admin verify view does.
-  - On success: "Email confirmed. Sign in to set up your portal", linking to `/admin/login?redirect=%2Fonboarding`.
-  - On failure: "This link has been used or is invalid. If you've already confirmed, sign in."
-  - The GET having a side effect is intended: a mail scanner that opens the link does what the user wanted.
+  The login view's `?redirect=` sends a user whose session expired back to onboarding; Payload's `getSafeRedirect` accepts `/onboarding`.
+- **`/verify/[token]`** (in `(frontend)`, dynamic, `noindex`, 404 unless signup is open):
+  - **GET renders only.** When `findPendingUserByToken(token)` finds a user, it shows "Choose a password" (password, Turnstile). Otherwise: "This link has been used or is invalid. If you've already set your password, sign in."
+  - **`POST /verify/submit`:**
+    1. `guardPublicForm` validates `{ token, password (8-128) }`, checks Turnstile, and rate-limits by IP: key and scope `verify`, 10 per 10 minutes.
+    2. `findPendingUserByToken(token)` (`src/lib/accounts/pendingUser.ts`, a query: a privileged `find` on `_verificationToken` and `_verified: false`, with `showHiddenFields`). No match: back to the page with the "used or invalid" message.
+    3. `activateAccount({ userID, token, password })` (`src/lib/accounts/activateAccount.ts`, the command), in one transaction: `payload.update` sets the password (`overrideAccess`), then `payload.verifyEmail({ token })` marks the user verified and clears the token. If the token was used in between, `verifyEmail` throws and the password change rolls back.
+    4. `login({ collection: 'users', config, email, password })` from `@payloadcms/next/auth` sets the session cookie; Next copies it onto the route's redirect (`next/dist/server/route-modules/app-route/module.js:506-511`). 303 to `/onboarding`.
+  - Only unverified users match, so the token of a verified user (a used link, or one a super admin created) can never set a password.
+  - Payload's own `POST /api/users/verify/<token>` and `/admin/users/verify/<token>` stay. They need the same token and set no password, so an inbox owner who uses them gets a verified account and chooses a password through "Forgot password?".
+- **`withTransaction(fn)`** (`src/lib/payload/withTransaction.ts`) wraps `createLocalReq`, `initTransaction`, `commitTransaction` and `killTransaction` (all exported by `payload`) once, for `activateAccount` and `createStudio` (§6).
+
+#### 4a. Password recovery behind Turnstile and rate limits
+
+- **The form:** `admin.components.views.forgot` replaces Payload's view at `/admin/forgot` with `ForgotPasswordView` (`src/components/admin/ForgotPasswordView.tsx`).
+  - Payload resolves a view by key before its own, and renders it in the login page's minimal template (`@payloadcms/next/dist/views/Root/getRouteData.js:106-128`). The login page's "Forgot password?" link and the styling stay as they are.
+  - It's a plain form (email and `TurnstileField`) that posts to `POST /forgot-password/submit`, and shows "Check your inbox" on `?submitted=1`.
+  - When `!isEmailDeliverable()` it shows "Ask the person who runs this site to reset your password" instead of the form.
+- **`POST /forgot-password/submit`:**
+  1. `guardPublicForm`: `{ email }`, Turnstile, key and scope `password-reset`, 5 per hour per IP.
+  2. The per-address budget shared with signup (§5).
+  3. `payload.forgotPassword({ collection: 'users', data: { email } })` through the Local API. Payload stays silent for unknown addresses.
+  4. Every case 303s to `/admin/forgot?submitted=1`, so the form doesn't reveal which addresses have accounts. It refuses (500, Sentry) when email isn't deliverable, like signup.
+- **The raw endpoints:** a Users `beforeOperation` hook, `restrictPasswordRecovery`, throws `Forbidden` when `operation === 'forgotPassword'` and `req.payloadAPI !== 'local'`.
+  - REST requests carry `'REST'` and GraphQL `'GraphQL'` (`utilities/createPayloadRequest.js:64`); Local API calls carry `'local'` (`utilities/createLocalReq.js:87`).
+  - That closes `POST /api/users/forgot-password` and GraphQL's `forgotPasswordUsers` in one place, so the guarded route is the only way to send a reset email.
+- **Reset and login stay as Payload ships them:** reset sends nothing and needs a single-use 160-bit token that expires in an hour; login has the per-account lockout. See Rejected alternatives.
 
 #### 5. Signup: `/signup` and `POST /signup/submit`
 
 - **Availability:** both 404 unless `CRITWIRE_OPEN_SIGNUP=1` (§10).
-- **Shape:** a plain form and a route handler, the project's public-form shape.
-  - `guardPublicForm` validates `{ email, password (8-128) }`, checks Turnstile, and rate-limits by IP: key `signup`, 5 per hour.
-  - Then a per-address limit, `checkRateLimit({ key: 'signup-email', identifier: <sha256 of the lower-cased email>, limit: 3, windowSeconds: 3600 })`. Nobody can flood someone's inbox from many IPs.
+- **Shape:** a plain form (email and Turnstile) and a route handler, the project's public-form shape. The page says the link lets them choose a password.
+  - `guardPublicForm` validates `{ email }`, checks Turnstile, and rate-limits by IP: key and scope `signup`, 5 per hour. `key` names the Upstash budget; `scope` is required and joins the IP in the identifier (`guard.ts:14-17`).
+  - Then the per-address budget, `checkAccountEmailBudget(email)` (`src/lib/accounts/emailBudget.ts`): `checkRateLimit({ key: 'account-email', identifier: <sha256 of the lower-cased email>, limit: 3, windowSeconds: 3600 })`. Signup and password recovery share it, so nobody can flood an inbox from many IPs through either form. Over budget: nothing is sent, and the outcome page is the same.
 - **Refusal:** when `!isEmailDeliverable()`, the route answers 500 with a generic message and reports to Sentry.
 - **By case:**
-  - **New address:** `payload.create({ collection: 'users', data: { email, password }, overrideAccess: true })`. Only those two fields go in, so `roles` stays `['user']` and `tenants` stays empty. Payload sends the verification email inside the create's transaction, so a failed send rolls the user back.
-  - **Existing, unverified:** set the submitted password, rotate `_verificationToken` (Local API, `overrideAccess`) and send a new link. It's the only way to get a new link. It also defeats pre-registering someone else's address: only the inbox owner can verify, and the latest password submitted wins.
+  - **New address:** `payload.create({ collection: 'users', data: { email, password: <32 random bytes, base64url> }, overrideAccess: true })`.
+    - Payload requires a password (`auth/strategies/local/generatePasswordSaltHash.js`). This one is never shown, sent or stored in clear, so the account is unusable until its owner chooses a password on the verify page.
+    - Only those two fields go in, so `roles` stays `['user']` and `tenants` stays empty.
+    - Payload sends the verification email inside the create's transaction and awaits it (`create.js:228-243`), so a failed send rolls the user back and a retry starts clean.
+    - A concurrent signup for the same address fails on the unique email (a `ValidationError` on `email`) and is handled as the next case.
+  - **Existing, unverified:** resend the stored link. Read `_verificationToken` (`overrideAccess`, `showHiddenFields`) and send `verificationEmail(token)` with `payload.sendEmail`. Nothing is written: the password isn't touched and the token isn't rotated. A retry can't take the account over or invalidate the owner's link, and a failed send leaves nothing to recover; the user submits again.
   - **Existing, verified:** send nothing.
 - **One outcome page:** every case redirects to `/signup?submitted=1` ("Check your inbox"), so the form doesn't reveal which addresses have accounts. The page links to sign-in and to "Forgot password?".
 - **REST:** `POST /api/users` and `POST /api/tenants` stay super-admin-only.
@@ -292,20 +344,22 @@ email link -> /verify/<token> (verifies) -> "Email confirmed" -> /admin/login?re
 - **Availability:** both 404 unless signup is open.
 - **Authentication:** `payload.auth({ headers })`, which accepts the session cookie and the E2E's `JWT` header.
   - No user: redirect to `/admin/login?redirect=/onboarding`.
-  - `_verified !== true` (a session from a password reset, F4): 403, "Confirm your email first. Sign up again with the same address for a new link."
+  - Payload never authenticates an unverified user (F4). The route asserts `user._verified === true` and throws (500, Sentry) if that ever breaks, rather than keeping a user-facing branch nobody can reach.
   - The user already has a studio: redirect to `/admin`.
 - **Input (Zod over `readRequestBody`):**
   - `name`: 1-80 characters.
   - `website`: an http(s) URL, required.
   - `store`: optional. It maps to a link field by host through one new pure function beside `STORE_LINK_KEYS`, `storeLinkKey(url)`, which knows Steam, itch.io, Epic, GOG, PlayStation, Xbox and Nintendo. An unknown host is a form error listing those stores; others can be added in the admin later. `resolvePrimaryStoreUrl` then makes the store "Get the game" with no change.
-- **`createStudio({ user, input })`** (`src/lib/onboarding/createStudio.ts`, the one command) runs in one transaction, using `createLocalReq`, `initTransaction`, `commitTransaction` and `killTransaction` (all exported by `payload`):
+- **`createStudio({ user, input })`** (`src/lib/onboarding/createStudio.ts`, the one command) runs in one transaction through `withTransaction` (§4):
   1. **Create the tenant** with `overrideAccess`: name = the game name, slug = `uniqueSlug(name)` checked against tenants, `createdBy = user.id`.
   2. **Add the membership:** set `user.tenants = [{ tenant, roles: ['owner'] }]` with `overrideAccess`. The plugin's array field stays super-admin-only.
   3. **Create the game as the user:** set `req.user` to the updated user and create the game with `overrideAccess: false`.
      - Every studio rule then applies exactly as in the admin: the plugin's access, the tenant-write hook, the reserved slug, the games limit and screening.
-     - The data: name; `slug = uniqueSlug(name)` checked against game projects, with reserved slugs counted as taken; `links.website`; the store link; `reportForm.acceptIdeas: false`.
+     - The data: `tenant` = the new tenant's ID, set explicitly (the plugin's default comes only from the `payload-tenant` cookie and is `null` here, `plugin-multi-tenant/dist/fields/tenantField/index.js`); name; `slug = uniqueSlug(name)` checked against game projects, with reserved slugs counted as taken; `links.website`; the store link; `reportForm.acceptIdeas: false`.
      - Passing a slug explicitly also stops Payload regenerating it later (`fields/baseFields/slug/generateSlug.js`).
-  - A unique violation on `createdBy` (a double submit) redirects to `/admin`.
+  - **Unique violations** come back as a `ValidationError` naming the field (`@payloadcms/drizzle/dist/upsertRow/handleUpsertError.js`):
+    - on `createdBy` (a double submit): redirect to `/admin`;
+    - on a `slug` (another signup took it between the check and the insert): run the whole transaction again, at most 3 attempts in all; `uniqueSlug` then picks the next suffix.
 - **`uniqueSlug({ base, fallback, isTaken })`** (`src/utilities/uniqueSlug.ts`) is the report promotion's slugify and loop, extracted; `createIssueFromPublishedReport` uses it too.
 - **Where the user lands:**
   - On success: a 303 to `/g/<slug>?welcome=1`.
@@ -332,16 +386,30 @@ email link -> /verify/<token> (verifies) -> "Email confirmed" -> /admin/login?re
   | game projects | `flagged` not true, and `tenant.suspended` not true |
   | updates | `_status` is published, `flagged` not true, `tenant.suspended` not true, and `gameProject.flagged` not true |
   | feedback items | `isPublic`, `tenant.suspended` not true, and `gameProject.flagged` not true |
-  | media | `tenant.suspended` not true (file serving applies this too) |
+  | media | `tenant.suspended` not true, checked on every file request (§7b) |
 
   These are relationship paths in a Payload `Where`, so there are no copied flags to keep in sync.
 - **Unchanged:**
-  - Users read and update only themselves; studio users read only their own tenants.
+  - Users read only themselves. They can update their name and password, but not their `email` or `_verified` (§4). Studio users read only their own tenants.
   - Roles, memberships, `suspended`, `createdBy` and `flagged` are super-admin fields.
   - Submissions and votes are never public.
 - **Demo (F8):**
   - `isReservedGameSlug` reserves the home page's demo slug (from `links.ts`). A game-project write by a non-super-admin user can't use it, following the issues' `issueSlugify` and `rejectReservedSlug` pattern, and onboarding's `uniqueSlug` counts it as taken. Seeds (no user) and super admins may use it.
   - `seedCritterConnect` finds or creates the tenant with slug `critwire-demo`, and throws if `critter-connect` already belongs to another tenant.
+
+#### 7b. Media files: one serving path, checked on every request
+
+- **Storage outside `public/`:** `staticDir` becomes `path.resolve(process.cwd(), 'media')`: the project root under `pnpm dev` and `next start`, and `/app` in the image. `.gitignore` and `.dockerignore` swap `public/media` for `media`.
+- **Existing files:** `mv public/media/* media/` on dev machines and local-disk self-hosts. Rows store only filenames, so nothing else changes.
+  - `checkEnvironment` stops the server at boot while `public/media` still holds files, and says to move them. A forgotten move fails loud instead of leaving files public.
+  - `docs/self-hosting.md` gets an "Upgrading" note.
+- **Docker:** the image creates `/app/media` owned by `nextjs`, and `docker-compose.yml` mounts a named volume `media` there, so local-disk uploads are writable and survive a rebuild. Today the app container has no volume for them.
+- **No image optimizer:** `images: { unoptimized: true }` in `next.config.ts`. `localPatterns`, `qualities` and `remotePatterns` go, since they only configured the optimizer. `/_next/image` then answers 404 (`next/dist/server/next-server.js:198-200`), and no copy is cached outside Payload's check.
+  - `ImageMedia` renders Payload's generated sizes instead: a `<source srcSet>` inside its existing `<picture>`, built from `resource.sizes` (300 to 1920 px wide) with the component's `sizes`. `next/image` (unoptimized) still renders the fallback `<img>`, the fill layout and the blur placeholder.
+  - The display sizes (`thumbnail` to `xlarge`) are generated as WebP (`formatOptions: { format: 'webp' }`), which takes over the optimizer's format conversion. `og` keeps the upload's format for link previews.
+  - `VideoMedia` and its branch in `Media` go. F2's `mimeTypes` make videos impossible, and it links `/media/<filename>`.
+- **Cache headers:** `upload.modifyResponseHeaders` sets `Cache-Control: private, max-age=300` on every media file response. It applies to local files and to R2 (`storage-s3/dist/getFile.js:102-103` calls it too). Browsers keep a file for 5 minutes and Cloudflare doesn't cache it, so a suspension or hold reaches every visitor within 5 minutes, and nobody can keep a shared copy warm.
+- **R2:** the bucket stays private. Critwire never sets `disablePayloadAccessControl` or `generateFileURL`, and the docs say not to turn on an `r2.dev` URL or a custom domain for the bucket. Every file then goes through `/api/media/file/`, which checks access before the adapter streams it.
 
 #### 8. Portal availability
 
@@ -353,7 +421,7 @@ email link -> /verify/<token> (verifies) -> "Email confirmed" -> /admin/login?re
 - **Why every segment:** the redirect is decided wherever a segment renders, so it also holds on client-side navigation. A layout-only gate wouldn't, because Next re-renders pages without re-running a shared layout.
 - **`/unavailable`** (in `(public)`, static, default theme, `noindex`): "This portal is unavailable." No name and no reason; held and suspended portals share it, so it doesn't say which.
 - **Revalidation:**
-  - A Tenants `afterChange` hook calls `revalidateGamePortal` when `suspended` changes.
+  - A Tenants `afterChange` hook calls `revalidateGamePortal` once when `suspended` changes. One call covers every game of the studio: it revalidates the `/g/[gameSlug]` layout, which is every portal page of every game (`src/hooks/revalidateGamePortal.ts:13-16`).
   - `flagged` changes are already covered: any game-project write revalidates the portal, and a published update's write revalidates the updates and the hub.
 
 #### 9. Screening studio text, and holding it for review
@@ -376,11 +444,11 @@ email link -> /verify/<token> (verifies) -> "Email confirmed" -> /admin/login?re
 #### 10. Hosted flag and suspension
 
 - **`isOpenSignup()`** (`src/lib/hosting.ts`) reads `CRITWIRE_OPEN_SIGNUP`.
-  - `1` turns on signup, onboarding, the home page's call to action and the portal's "Report this page" link.
-  - Unset or empty turns all of them off. That's the self-hosted default.
+  - `1` turns on signup, verification, onboarding, the home page's call to action and the portal's "Report this page" link.
+  - Unset or empty turns all of them off. That's the self-hosted default. Password recovery (§4a) doesn't depend on it.
   - Any other value stops the server at boot (`checkEnvironment`).
 - **Suspension:**
-  - The portal redirects to `/unavailable`. Its updates, items, media and votes also disappear from REST and the vote route.
+  - The portal redirects to `/unavailable`. Its updates, items and votes also disappear from REST and the vote route, and its files answer 403 at `/api/media/file/` (§7b).
   - Members can still sign in and read, but every create or update in the studio fails with the 403 message (the hook in §7), drafts included.
   - Deletes stay allowed, since they can only remove content.
   - The dashboard shows a banner.
@@ -405,11 +473,12 @@ email link -> /verify/<token> (verifies) -> "Email confirmed" -> /admin/login?re
   | Public feedback items per game | 200 | Issues `beforeChange`, when an item becomes public (created with `isPublic`, `false → true`, or moved to another game while public) | the game's `isPublic` items, archived ones included |
 
   The media check is a collection hook, so it runs before the storage adapter's upload hook.
+- **Whose writes are checked:** studio users'. Super admins and system writes (seeds, a player's submission that auto-publishes) aren't checked by the hooks.
 - **The messages:**
   - "Your studio has reached its limit of 3 games on the hosted plan."
   - "This upload would take your studio past its 100 MB of media."
   - "This game has reached 200 public feedback items. Make older items private or delete them to add more."
-- **Auto-publish (F7):** `autoPublishReport` asks `hasPublicFeedbackRoom`, which uses the same count, and leaves a submission `NEW` at the limit. The player's POST never fails; a studio that publishes it in the admin gets the message.
+- **Auto-publish (F7):** `autoPublishReport` asks `hasPublicFeedbackRoom`, which uses the same count, and leaves a submission `NEW` at the limit. The Issues hook doesn't check this system write, so the player's POST never fails, even when a concurrent publish takes the last slot between the question and the write. A studio that publishes a waiting submission in the admin gets the message.
 - **Counting** uses the Local API with `req` (the same transaction), so no raw Drizzle is needed. Two concurrent writes can pass a limit by one; that's accepted for soft plan limits.
 - **The admin only explains:** the dashboard lists the active limits.
 
@@ -418,7 +487,7 @@ email link -> /verify/<token> (verifies) -> "Email confirmed" -> /admin/login?re
 - **The link:** `PortalFooter` shows "Report this page" (to `/report-abuse?page=/g/<slug>`) when signup is open. The flag is read at render time, and portal pages render at runtime.
 - **The form:** `/report-abuse` (in `(frontend)`, `noindex`, 404 when signup is off) names the portal being reported and asks for a reason, details and an optional email, with Turnstile.
 - **The submit route:** `POST /report-abuse/submit`
-  1. runs `guardPublicForm`, with key `abuse-report` and 5 per 10 minutes;
+  1. runs `guardPublicForm`, with key and scope `abuse-report` and 5 per 10 minutes;
   2. requires `page` to be a `/g/<slug>…` path;
   3. resolves the game project with a privileged lookup, so reports about held or suspended portals still resolve;
   4. creates the `abuse-reports` document through the Local API with `overrideAccess`;
@@ -441,21 +510,22 @@ email link -> /verify/<token> (verifies) -> "Email confirmed" -> /admin/login?re
     | Service | Needed |
     |---|---|
     | Postgres | required |
-    | Turnstile and Upstash | required in production for public forms, votes, signup and abuse reports |
+    | Turnstile and Upstash | required in production for public forms, votes, signup, password recovery and abuse reports |
     | Resend | optional |
-    | R2 | optional (local disk otherwise) |
+    | R2 | optional (local disk in `./media` otherwise); the bucket must stay private |
     | Sentry | optional |
 
-  - **Without Resend:** contact-by-email jobs fail and wait for a retry, signup refuses, and password-reset emails aren't delivered, so a super admin sets passwords in the admin.
+  - **Without Resend:** contact-by-email jobs fail and wait for a retry, signup refuses, and "Forgot password?" asks the user to contact whoever runs the site, so a super admin sets passwords in the admin.
   - **The first super admin:** the first-user form at `/admin`, choosing Super Admin. Users a super admin creates are verified automatically.
   - **Defaults:** `CRITWIRE_OPEN_SIGNUP` and the limits are all off.
+  - **Upgrading:** move `public/media` to `media` (§7b).
 - **Updated docs:**
   - `AGENTS.md`: a docs-map row, and a Phase 8 sequencing rule that reflects the owner's decision.
   - `docs/features.md`: user verification, Hosting, and Phase 8 without invites.
-  - `docs/architecture.md`: the new URLs (`/signup`, `/verify/<token>`, `/onboarding`, `/report-abuse`, `/unavailable`) and their rendering.
-  - `docs/patterns.md`: the tenant-write hook, public reads, `requirePortalProject`, the screening hook, and limits.
-  - `docs/integrations.md`: the Resend adapter and the new env vars.
-  - `docs/deploy.md`: the first-run bootstrap.
+  - `docs/architecture.md`: the new URLs (`/signup`, `/verify/<token>`, `/onboarding`, `/report-abuse`, `/unavailable`, the custom `/admin/forgot`) and their rendering, and media serving (§7b).
+  - `docs/patterns.md`: the tenant-write hook, public reads, `requirePortalProject`, the screening hook, `moderationFields()`, limits, and "uploads are served only through `/api/media/file/`".
+  - `docs/integrations.md`: the Resend adapter, the private R2 bucket and the new env vars.
+  - `docs/deploy.md`: the first-run bootstrap and the `media` volume.
   - `.env.example` and `environment.d.ts`.
 
 #### 14. E2E strategy
@@ -469,39 +539,52 @@ email link -> /verify/<token> (verifies) -> "Email confirmed" -> /admin/login?re
   - Playwright starts web servers in order and waits for each one's URL (`playwright/lib/runner/taskRunner.js`), so the second starts only after the first has migrated and built.
   - It reuses that `.next` build and the same database, and never runs `migrate:fresh`.
   - The app reads limits at runtime, so no app code knows about the tests.
+  - It inherits the build's `NEXT_PUBLIC_SERVER_URL` (3100). `serverURL` stays unset, so its admin calls its own API; its tests touch nothing that renders absolute links.
 - **New fixtures:**
   - `readEmail(to)` polls the outbox for the newest message to an address. Every run uses random addresses.
-  - `signUpStudio(playwright, name)` signs up, verifies, signs in and onboards over HTTP, with `TURNSTILE_DUMMY_TOKEN`. It returns `{ token, tenantID, project }`.
+  - `signUpStudio(playwright, name)` signs up, reads the link, posts the verify form with a password, signs in over REST for a JWT, and onboards over HTTP, with `TURNSTILE_DUMMY_TOKEN`. It returns `{ token, tenantID, project }`.
   - `limitsApi(role)` is a `RestClient` for port 3102.
 
 **New tests, by Definition-of-done item.**
 
 | Definition-of-done item | Test | Server |
 |---|---|---|
-| The whole signup flow | In the browser: `/signup`, "Check your inbox", the link from the outbox, "Email confirmed", `/admin/login?redirect=/onboarding`, onboarding, then `/g/<slug>?welcome=1` shows the game's name and the next steps. An anonymous context sees the hub. | 3100 |
-| Sign-in and password reset for these users | Sign out, then back in at `/admin/login`. `/admin/forgot`, the email in the outbox, `/admin/reset/<token>`, then signed in with the new password. | 3100 |
-| An unverified account's portal isn't public | An unverified signup's login is refused ("verify"). `/onboarding` redirects to sign-in. A session from a password reset is refused by `/onboarding/submit` (403). The slug the game would have had answers 404. | 3100 |
+| The whole signup flow | In the browser: `/signup` (email), "Check your inbox", the link from the outbox, "Choose a password", then straight to `/onboarding` signed in, onboarding, then `/g/<slug>?welcome=1` shows the game's name and the next steps. An anonymous context sees the hub. | 3100 |
+| Sign-in and password reset for these users | Sign out, then back in at `/admin/login`. "Forgot password?" opens the custom `/admin/forgot`; the form, the email in the outbox, `/admin/reset/<token>`, then signed in with the new password. | 3100 |
+| An unverified account's portal isn't public | A pending signup. Opening its link twice with GET, as a mail scanner would, leaves it unverified. Forgot and reset then take over its password: `POST /api/users/reset-password` returns a token, but with that token `GET /api/users/me` is `null`, `PATCH /api/users/<id> { "_verified": true }` is 403 and `/onboarding` redirects to sign-in. Login with the new password is refused ("verify"). A super admin still reads `_verified: false`. | 3100 |
 | A second signed-up user can't read or write the first's studio | Two `signUpStudio`s. B's lists hold none of A's projects, updates (drafts included), items, submissions, media, folders, users or tenants. B's `PATCH` and `DELETE` on A's documents are refused. B's creates with `tenant: A` are refused, **including a draft update (F1)**. A's project edit URL in the admin shows B nothing. | 3100 |
 | Each limit blocks, with a message | A fresh studio. The third game gets a 403 with the message, and saving it in the admin shows the toast. A 1.5 MB noise PNG (generated with `sharp`) gets a 403. The fourth public item gets a 403. A player's submission to a review-off game at the limit stays `NEW`, and the player sees the normal confirmation. | 3102 |
 | Nothing is blocked when limits are unset | The same actions all succeed: 3 games, the 1.5 MB PNG, 4 public items. | 3100 |
-| A suspended studio's portal and publishing | A super admin suspends the studio. The hub and item pages land on `/unavailable` with none of the game's text. Anonymous REST, the vote route and both submit routes find nothing. The owner's create and update, drafts included, get the 403 message. The dashboard shows the banner. Unsuspending brings the hub back (revalidation). | 3100 |
+| A suspended studio's portal and publishing | First fetch the hub, an update page, RSS, and the banner's `/api/media/file/` URLs (the original and one size), so every cache is warm. A super admin suspends the studio. The hub, update and item pages land on `/unavailable` with none of the game's text; RSS answers 404; both media URLs answer 403. Anonymous REST, the vote route and both submit routes find nothing. The owner's create and update, drafts included, get the 403 message. The dashboard shows the banner. Unsuspending brings the hub and the files back (revalidation). | 3100 |
 | The report-this-page flow | Footer link, form, submitted. The super admin sees the report with its game. `GET /api/abuse-reports` is 403 for studio users and anonymous visitors. | 3100 |
 
 **Other new tests:**
-- A held game name (a word from the filter's dataset) shows `/unavailable` until a super admin unticks `flagged`.
+- A held game name (a word from the filter's dataset) shows `/unavailable` until a super admin unticks `flagged` in the admin.
 - A held update is missing from the feed and RSS until it's approved.
-- An SVG upload is refused (F2).
+- Media (F2, F11): an SVG upload is refused; `/_next/image?url=/api/media/file/<name>&w=640&q=75` answers 404; a media response carries `Cache-Control: private, max-age=300`.
+- Password recovery (F12): `POST /api/users/forgot-password` and GraphQL's `forgotPasswordUsers` are refused, and the outbox gets nothing; `POST /forgot-password/submit` without a Turnstile token gets a 400.
+- Retries and addresses: a second signup for a pending address sends the same link and leaves the user unchanged (`updatedAt`); after the link is used it answers "used or invalid". A signed-in user's `PATCH` of their own `email` or `_verified` changes neither; a super admin's `email` change sticks. The email to a user a super admin creates has no `/verify/` link.
 - The home page's call to action links to `/signup`.
 - `POST /signup/submit` without a Turnstile token gets a 400.
 
-**Screenshots.** A new `signup` group in the screenshot harness captures `/signup`, `/signup?submitted=1`, `/verify/<token>`, `/onboarding` and `/g/<slug>?welcome=1`, plus the existing `/`, at 1440 and 390 px. They go into `/srv/critter-ai/agent-state/missions/open-signup/screenshots/` with an `index.html`. Opening a verification link consumes it, so setup creates one unverified user per width.
+**Screenshots.** A new `signup` group in the screenshot harness captures `/signup`, `/signup?submitted=1`, `/verify/<token>`, `/onboarding` and `/g/<slug>?welcome=1`, plus the existing `/`, at 1440 and 390 px. They go into `/srv/critter-ai/agent-state/missions/open-signup/screenshots/` with an `index.html`. Opening a verification link doesn't consume it, so one pending user serves both widths.
 
 ### Rejected alternatives
 
 - **Create the user, studio and game before verification and hide them until verified:** unverified strangers could squat slugs, it would need a clean-up job, and Payload won't give them a session anyway.
 - **Open `POST /api/users` and `POST /api/tenants` to anonymous callers:** it bypasses Turnstile and the rate limits, and exposes field-level roles to anonymous writes.
 - **Our own verification tokens, sessions or sign-in pages:** they reimplement Payload's auth, and the brief allows its admin views.
-- **Minting a session after verification to skip the sign-in step:** hand-rolled auth.
+- **Minting a session ourselves after verification:** hand-rolled auth. The verify route calls Payload's `login`.
+- **The password on `/signup`, with the latest submission winning for a pending account:** whoever submits last chooses the credential that the inbox owner then confirms, possibly through a mail scanner.
+- **The password on `/signup`, re-entered on the verify form:** a pre-registered address would lock its real owner out until a reset, and every user types the password twice.
+- **A verification link that verifies on GET:** mail scanners open links, so it would confirm without the owner.
+- **Rotating the verification token on every retry:** anyone could keep invalidating the owner's link. Resending the stored token writes nothing.
+- **Re-verifying a changed email instead of forbidding the change:** a pending-address flow for a need no studio has yet. A super admin changes addresses.
+- **A Next redirect from `/admin/forgot` to a frontend page:** Payload's view override by key is the extension point for this.
+- **Turnstile on Payload's login and reset:** reset sends nothing and needs a single-use 160-bit token that expires in an hour; login has Payload's per-account lockout. Neither view has room for a widget without replacing it.
+- **Keeping Next's image optimizer and purging its cache on suspension:** Next has no per-entry purge, and it stores stale entries again when the upstream fails.
+- **Public (CDN) caching of media:** a member's own authorised request would refresh the shared copy of a suspended studio's files.
+- **`serverURL` in `payload.config.ts`:** it joins Payload's CSRF allowlist (`payload/dist/config/sanitize.js:340-341`), so cookie sessions on any other origin stop authenticating, including the E2E's second server. Links already come from `getServerSideURL()`.
 - **Server Actions for signup and reports:** `guardPublicForm` works on `Request` route handlers, the project's public-form shape.
 - **An "unavailable" gate in the layout only:** Next re-renders pages without the layout on client navigation, so data would leak. Rendering the page inside the layout while pages call `notFound()` conflicts.
 - **A copied "public" flag on every document, kept in sync by hooks:** a sync hazard. A relationship `Where` in access is one place.
@@ -517,31 +600,39 @@ email link -> /verify/<token> (verifies) -> "Email confirmed" -> /admin/login?re
 
 ### Decisions (the conservative choices; record them under Decisions)
 
-- **Verify, then sign in, then onboard.** Only a verified, signed-in user creates a studio and game (§1).
-- **`CRITWIRE_OPEN_SIGNUP` gates signup, onboarding, the call to action and "Report this page", and is off by default.** The hosted instance sets it.
-- **Hosted limits:** 3 games per studio, 100 MB of uploads per studio (originals, in MiB), and 200 public feedback items per game.
+- **Confirm by choosing a password.** `/signup` takes an email; the password is chosen on the verify page, which then signs the user in. Only a verified, signed-in user creates a studio and game (§1).
+- **`CRITWIRE_OPEN_SIGNUP` gates signup, verification, onboarding, the call to action and "Report this page", and is off by default.** The hosted instance sets it.
+- **Hosted limits:** 3 games per studio, 100 MB of uploads per studio (originals, in MiB), and 200 public feedback items per game. They check studio users' writes.
 - **Games created at signup start with ideas off.** That matches the brief's "turn on ideas" next step and gives new accounts a smaller public surface. `reviewSubmissions` stays on.
 - **Suspended studios can still delete, but can't create or update anything.** Held and suspended portals share one neutral `/unavailable` page.
 - **Screening covers the game name, the pitch and the visible text of updates (the brief's list), with the filter unchanged.** Link targets in rich text and studio-written feedback items aren't screened; "Report this page" and suspension cover them.
-- **Users a super admin creates are verified automatically.**
+- **Users a super admin creates are verified automatically, and get no verification link.**
+- **Only a super admin changes a user's email address.**
+- **Password recovery goes only through the Turnstile-guarded form.** Payload's REST and GraphQL forgot-password are closed. Signup and recovery share a budget of 3 emails per address per hour.
+- **Uploads live in `./media` and are served only through `/api/media/file/`,** with Next's image optimizer off and `Cache-Control: private, max-age=300`.
 - **The owner's open-signup decision supersedes `AGENTS.md`'s Phase 8 sequencing rule, and the docs change to match.** Invites stay out of scope.
 
 ### Open questions for the owner
 
 - **H8 (added to `/srv/critter-ai/handoff/critwire.md`), blocks nothing:** Terms of service and an acceptable-use policy for hosted signup. Hosting strangers' portals usually needs both, linked from `/signup`. It's a legal call only the owner can make, and the mission ships without them.
 - **H3 stays `later`:** production signup needs `RESEND_API_KEY` and `RESEND_FROM_EMAIL` (on a domain verified in Resend) as well as H3's Turnstile and Upstash keys, all before deploy. Not asked again now.
+- The revision added no owner questions.
 
 **Production environment variables (names only):**
 - New: `CRITWIRE_OPEN_SIGNUP`, `CRITWIRE_LIMIT_GAMES_PER_STUDIO`, `CRITWIRE_LIMIT_MEDIA_MB_PER_STUDIO`, `CRITWIRE_LIMIT_PUBLIC_FEEDBACK_PER_GAME`.
-- Needed for signup: `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `NEXT_PUBLIC_TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY`, `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`.
+- Needed for signup and password recovery: `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `NEXT_PUBLIC_TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY`, `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`.
 - The existing ones stay as they are.
 - `EMAIL_OUTBOX_DIR` is for tests and development only.
 
 ### Risks
 
-- **The redirect from a cached portal page:** a `redirect()` in an ISR page has to be cached and revalidated like the page itself. The suspension test checks both suspending and unsuspending.
+- **The redirect from a cached portal page:** a `redirect()` in an ISR page has to be cached and revalidated like the page itself. The suspension test checks both suspending and unsuspending, with the pages warmed first.
 - **The second E2E server:** it adds about 1 GB of memory on an 11 GiB machine. If the two processes' job crons collide on contact jobs, turn off `jobs.shouldAutoRun` for the second one.
 - **The link-count rule:** it can hold updates with many links. The reasons say why, and a super admin approves them.
+- **Media without a CDN:** `private` caching sends each visitor's image requests to the origin (once per 5 minutes per browser), streamed by Node from disk or R2. That's fine at early-access scale; if image traffic becomes a load problem, this is the setting to revisit.
+- **WebP sizes only for new uploads:** existing uploads keep their sizes' current format until re-uploaded, so a page with large PNG key art is heavier than it was with Next's conversion until then.
+- **The boot check stops servers that haven't moved their media:** any checkout whose `public/media` still holds files (this worktree, the owner's dev checkout, the demo service) won't start until the files are moved. The message says how, and a Step must move this worktree's files.
+- **The verified-session invariant:** onboarding relies on Payload's JWT strategy refusing unverified users (`jwt.js:72`). The assertion makes a regression fail loud, and the unverified-account E2E catches it on a Payload upgrade.
 
 ## Architecture review (Fable)
 
@@ -590,6 +681,51 @@ SHOULD-CONSIDER:
 
 ## Revision notes
 
+Revised 2026-09-30 by `architect`. Everything was re-checked against Payload 3.85.2 and Next 16.2.6 in `node_modules`.
+
+**MUST-FIX items**
+- **Fable 1 / Astra 1 · Users can write `_verified`.** Resolved. `_verified` is declared in `Users.fields` with super-admin-only create and update, merged over the base field by `mergeBaseFields`. That covers REST, GraphQL, the admin and Local API calls with `overrideAccess: false` (§4, F4). The unverified-account E2E now runs forgot → reset → `PATCH _verified` and asserts `_verified` stays false (§14).
+  - **A correction to the premise:** the chain as written already fails today. Payload's JWT strategy authenticates no unverified user (`auth/strategies/jwt.js:72`), so the token from the reset can't make the PATCH. The field access is still added, so verification doesn't depend on that alone.
+  - F4's "a session doesn't prove verification" is corrected to match. Onboarding's unreachable 403 branch becomes an invariant assertion that fails loud (§6).
+- **Fable 2 / Astra 2 · Changing the email keeps verification.** Resolved. `email` update is super-admin-only (§4). §7's "Unchanged" now says users update only their name and password. The E2E asserts that a self-PATCH of `email` changes nothing (§14).
+- **Astra 3 · A signup retry replaces a pending account's password.** Resolved by moving the password to the verify page (§1, §4, §5):
+  - `/signup` takes only an email, and a new account gets an unusable random password.
+  - A retry resends the stored link and writes nothing: no password change, no token rotation.
+  - `GET /verify/<token>` has no side effect. Its POST sets the password, verifies and signs in through Payload's `login`, and it only matches unverified users.
+  - Only the inbox owner ever sets a credential, and a mail scanner changes nothing. "Latest password wins" is gone.
+- **Astra 4 (and Fable's first MISSED item) · Local media bypasses access control.** Resolved in the new F11 and §7b:
+  - `staticDir` moves to `./media`.
+  - A boot check refuses to start while `public/media` still holds files. Migration is `mv public/media/* media/`, documented under Upgrading.
+  - Docker gets a writable `media` volume.
+  - **A second bypass found in revision:** Next's image optimizer keeps serving cached copies after the upstream starts refusing (`response-cache/index.js:290-301`), and anyone can warm it. It's turned off; `ImageMedia` serves Payload's WebP sizes, and media responses are `private, max-age=300`, so no shared cache holds them.
+  - R2 stays behind `/api/media/file/` with a private bucket.
+  - The suspension E2E asserts 403 on warmed media URLs.
+- **Astra 5 · Password recovery bypasses abuse controls.** Resolved in the new F12 and §4a:
+  - `/admin/forgot` is replaced through Payload's view override by key. It posts to a `guardPublicForm` route (Turnstile, IP limit) that shares the per-address budget with signup.
+  - A Users `beforeOperation` hook refuses `forgotPassword` unless `req.payloadAPI === 'local'`, which closes REST and GraphQL.
+  - Reset and login stay as Payload ships them, with reasons under Rejected alternatives.
+
+**Fable's MISSED items**
+- **Explicit `tenant` on onboarding's game create:** adopted (§6, step 3).
+- **Tenant `afterChange` revalidating every game:** one call already does it. `revalidateGamePortal` revalidates the whole `/g/[gameSlug]` layout (`src/hooks/revalidateGamePortal.ts:13-16`), so there's no per-game loop. §8 says so.
+- **`guardPublicForm` scopes:** named. `signup`, `verify`, `password-reset` and `abuse-report` are each both key and scope, plus the shared per-address budget `account-email` (§4, §4a, §5, §12).
+
+**Self-found fix:** §2 had `flagged` as `admin.readOnly`, which would have stopped super admins from unticking it to approve. It now relies on super-admin-only field access, so studios see it read-only.
+
+**SHOULD-CONSIDER items adopted**
+- **Fable 1** (the verify form takes the password and signs in): adopted in a stronger form. The form sets the password (Astra 3).
+- **Fable 3** (`moderationFields()`): adopted for games and updates. IssueReports keeps its own fields, because the studio approves reports by publishing them.
+- **Fable 5** (the server on 3102 inherits 3100's URL): adopted as a harness note. `serverURL` stays unset, so 3102's admin calls itself.
+- **Astra 1:** same as Fable's second MISSED item.
+- **Astra 2** (suspension against cached pages, RSS and media URLs): adopted. The suspension E2E warms them first.
+- **Astra 3** (slug collisions): adopted. On a slug unique violation, the whole transaction is retried, at most 3 attempts (§6).
+- **Astra 4** (a concurrent publish against the precheck): adopted. The limit hooks check studio users' writes only, so auto-publish can't fail a player's POST (§11).
+- **Astra 5** (token rotation against failed delivery): resolved by not rotating. A resend writes nothing (§5).
+
+**SHOULD-CONSIDER items declined**
+- **Fable 2** (`serverURL`): Payload adds it to the CSRF allowlist (`config/sanitize.js:340-341`), which breaks cookie sessions on any other origin, including the E2E's second server. Links already come from `getServerSideURL()`.
+- **Fable 4** (a dangling `abuse-reports.gameProject`): it doesn't dangle. Relationship foreign keys in this schema are `ON DELETE SET NULL`, and `pageUrl` stays (§2).
+
 ## Steps
 
 ## Verification
@@ -602,5 +738,6 @@ SHOULD-CONSIDER:
 - 2026-09-30 10:13 UTC · Architecture: `architect` wrote 10 findings (incl. draft updates skipping the tenant check, scriptable SVG uploads, the demo slug) and the target design; added handoff H8 (terms/AUP, blocks nothing). Docs-only, no checks needed.
 - 2026-09-30 10:20 UTC · Fable review: APPROVE_WITH_CHANGES; 2 MUST-FIX (users can self-set `_verified`; email changes skip re-verification), plus 4 missed items and 5 suggestions. Docs-only, no checks needed.
 - 2026-09-30 10:21 UTC · Astra review: APPROVE_WITH_CHANGES; 5 MUST-FIX (2 overlap Fable: self-set `_verified`, email change; new: signup retry overwrites a pending password, `public/media` bypasses suspension, forgot-password lacks rate limit/Turnstile) and 5 suggestions. Docs-only, no checks needed.
+- 2026-09-30 10:43 UTC · Revision: `architect` resolved all 7 MUST-FIX items (Fable 1–2, Astra 1–5): `_verified` and `email` super-admin-only; password moves from `/signup` to the verify form (no credential replacement without inbox proof); media moves out of `public/` and the Next image optimizer is off (new F11); forgot-password goes through a guarded route and REST/GraphQL `forgotPassword` is refused (new F12). Adopted 8 suggestions, declined 2 with reasons. No new handoff items. Docs-only, no checks needed.
 
 ## Summary
