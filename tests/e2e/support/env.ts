@@ -18,6 +18,9 @@ export const TURNSTILE_DUMMY_TOKEN = 'XXXX.DUMMY.TOKEN.XXXX'
 /** Marketing preview secret baked into the E2E build; `/next/preview` must still demand a super admin. */
 export const PREVIEW_SECRET = 'e2e-preview-secret'
 
+/** The home page's Contact link in E2E and screenshot runs. */
+export const E2E_CONTACT_URL = 'mailto:e2e@critwire.test'
+
 export const AUTH_SETUP_PATTERN = /auth\.setup\.ts/
 
 export const ROLES = ['superAdmin', 'aOwner', 'aMember', 'bOwner'] as const
@@ -82,4 +85,5 @@ export const serverEnv = ({ cronSecret = '' }: { cronSecret?: string } = {}): Re
   UPSTASH_REDIS_REST_URL: '',
   UPSTASH_REDIS_REST_TOKEN: '',
   CRON_SECRET: cronSecret,
+  CRITWIRE_CONTACT_URL: E2E_CONTACT_URL,
 })

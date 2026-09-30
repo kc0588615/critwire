@@ -4,7 +4,7 @@ import { getServerSideURL } from './getURL'
 const defaultOpenGraph: Metadata['openGraph'] = {
   type: 'website',
   description:
-    'Critwire gives indie game teams one hosted portal for updates, known issues, player reports, and contact routing.',
+    'Critwire adds a player feedback board and updates with RSS to the website your indie game already has.',
   images: [
     {
       url: `${getServerSideURL()}/website-template-OG.webp`,

@@ -40,7 +40,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
 export const metadata: Metadata = {
   description:
-    'Critwire is the public ops layer for indie games: websites, patch notes, issue trackers, player reports, and contact routing.',
+    'Critwire adds a player feedback board and updates with RSS to the website your indie game already has.',
   metadataBase: new URL(getServerSideURL()),
   openGraph: mergeOpenGraph(),
   title: {

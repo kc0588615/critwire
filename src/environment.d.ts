@@ -12,6 +12,8 @@ declare global {
       TURNSTILE_SECRET_KEY?: string
       UPSTASH_REDIS_REST_URL?: string
       UPSTASH_REDIS_REST_TOKEN?: string
+      /** The home page's Contact link, a mailto: or https: URL; unset hides it. Checked at boot. */
+      CRITWIRE_CONTACT_URL?: string
       /** E2E only: lets a production build run without Upstash. Never set in production. */
       RATE_LIMIT_OPTIONAL?: string
       /** E2E only: the one non-Discord origin a contact webhook may target. Never set in production. */

@@ -322,6 +322,14 @@
   background-image: linear-gradient(currentColor, currentColor);
 }
 
+/* Planned's diamond: filled, and small enough that its corners stay in the marker column. */
+.cw-loop .status-mark[data-shape='diamond'] {
+  width: calc(var(--cw-mark) * 0.75);
+  height: calc(var(--cw-mark) * 0.75);
+  margin: calc(var(--cw-mark-y) + var(--cw-mark) * 0.125) calc(var(--cw-mark) * 0.125) 0;
+  background-image: linear-gradient(currentColor, currentColor);
+}
+
 .cw-loop-stage:nth-child(3) .status-mark {
   animation: cw-mark-fill 400ms ease-out 1400ms backwards;
 }
@@ -372,10 +380,24 @@
   gap: 2rem;
 }
 
-.cw-split-title {
+.cw-split-title,
+.cw-cta-title {
   max-width: 14em;
   font-size: clamp(1.75rem, 1.2rem + 1.6vw, 2.625rem);
   text-wrap: balance;
+}
+
+.cw-cta-title {
+  max-width: 24em;
+}
+
+/* Consecutive sections share one gap, not two. */
+.cw-section + .cw-section {
+  padding-top: 0;
+}
+
+.cw-stack > * + * {
+  margin-top: 1rem;
 }
 
 .cw-terms {
@@ -400,7 +422,8 @@
   line-height: 1.2;
 }
 
-.cw-term dd p {
+.cw-term dd p,
+.cw-note {
   max-width: 62ch;
   color: var(--cw-graphite);
 }

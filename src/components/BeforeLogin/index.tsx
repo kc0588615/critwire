@@ -5,7 +5,7 @@ const BeforeLogin: React.FC = () => {
     <div>
       <p>
         <b>Welcome to Critwire.</b>
-        {' Sign in to manage game portals, patch notes, public issues, reports, and contact routing.'}
+        {' Sign in to manage your games’ updates, player feedback and contact routing.'}
       </p>
     </div>
   )

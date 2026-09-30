@@ -21,7 +21,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
 
 export const metadata: Metadata = {
   description:
-    'Hosted public portals for indie games: official pages, patch notes, known issues, player reports, and contact routing.',
+    'Player feedback and updates for indie games: bug reports and ideas with voting, and updates with RSS.',
   metadataBase: new URL(getServerSideURL()),
   openGraph: mergeOpenGraph(),
   title: {
