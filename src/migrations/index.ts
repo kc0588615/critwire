@@ -10,6 +10,7 @@ import * as migration_20260926_054934_remove_website_template from './20260926_0
 import * as migration_20260926_055704_backfill_media_folder_tenants from './20260926_055704_backfill_media_folder_tenants';
 import * as migration_20260929_074053_design_default_theme from './20260929_074053_design_default_theme';
 import * as migration_20260930_060748_remove_site_generator from './20260930_060748_remove_site_generator';
+import * as migration_20260930_061601_feedback_model from './20260930_061601_feedback_model';
 
 export const migrations = [
   {
@@ -70,6 +71,11 @@ export const migrations = [
   {
     up: migration_20260930_060748_remove_site_generator.up,
     down: migration_20260930_060748_remove_site_generator.down,
-    name: '20260930_060748_remove_site_generator'
+    name: '20260930_060748_remove_site_generator',
+  },
+  {
+    up: migration_20260930_061601_feedback_model.up,
+    down: migration_20260930_061601_feedback_model.down,
+    name: '20260930_061601_feedback_model'
   },
 ];

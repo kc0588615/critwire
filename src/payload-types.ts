@@ -256,7 +256,7 @@ export interface GameProject {
     tallyDisplay?: ('embed' | 'button') | null;
   };
   /**
-   * Player bug/report intake. Prefer Tally so submissions and spam handling stay on their free tier.
+   * How players send bug reports and ideas. Prefer Tally so submissions and spam handling stay on their free tier.
    */
   reportForm?: {
     provider?: ('native' | 'tally' | 'external') | null;
@@ -269,6 +269,14 @@ export interface GameProject {
      * GitHub issue template, Linear form, Discord channel invite, etc.
      */
     externalUrl?: string | null;
+    /**
+     * Players can suggest ideas as well as report bugs.
+     */
+    acceptIdeas?: boolean | null;
+    /**
+     * When off, clean submissions publish at once. Submissions the content filter flags always wait for review, and turning this off does not publish submissions already waiting.
+     */
+    reviewSubmissions?: boolean | null;
   };
   /**
    * Custom domain (Phase 8). Verification required before it serves traffic.
@@ -854,6 +862,7 @@ export interface Issue {
     };
     [k: string]: unknown;
   } | null;
+  type: 'BUG' | 'IDEA';
   category:
     | 'INFORMATION'
     | 'PATCH_NOTES'
@@ -864,9 +873,16 @@ export interface Issue {
     | 'VISUAL'
     | 'QUESTS'
     | 'PERFORMANCE'
-    | 'FEATURE_REQUEST'
     | 'OTHER';
-  status: 'REPORTED' | 'INVESTIGATING' | 'NEEDS_MORE_INFO' | 'WORKAROUND_AVAILABLE' | 'PLANNED' | 'FIXED' | 'CLOSED';
+  status:
+    | 'REPORTED'
+    | 'INVESTIGATING'
+    | 'NEEDS_MORE_INFO'
+    | 'WORKAROUND_AVAILABLE'
+    | 'PLANNED'
+    | 'IN_PROGRESS'
+    | 'FIXED'
+    | 'CLOSED';
   isPublic?: boolean | null;
   isPinned?: boolean | null;
   /**
@@ -895,6 +911,7 @@ export interface IssueReport {
   gameProject: number | GameProject;
   title: string;
   description: string;
+  type: 'BUG' | 'IDEA';
   category:
     | 'INFORMATION'
     | 'PATCH_NOTES'
@@ -905,7 +922,6 @@ export interface IssueReport {
     | 'VISUAL'
     | 'QUESTS'
     | 'PERFORMANCE'
-    | 'FEATURE_REQUEST'
     | 'OTHER';
   status: 'NEW' | 'PUBLISHED' | 'LINKED' | 'DISMISSED';
   issue?: (number | null) | Issue;
@@ -915,6 +931,11 @@ export interface IssueReport {
    */
   platform?: string | null;
   gameVersion?: string | null;
+  flagged?: boolean | null;
+  /**
+   * Why the content filter held this submission, one reason per line.
+   */
+  flagReasons?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1413,6 +1434,8 @@ export interface GameProjectsSelect<T extends boolean = true> {
         tallyUrl?: T;
         tallyDisplay?: T;
         externalUrl?: T;
+        acceptIdeas?: T;
+        reviewSubmissions?: T;
       };
   customDomain?: T;
   customDomainVerified?: T;
@@ -1733,6 +1756,7 @@ export interface IssuesSelect<T extends boolean = true> {
   slug?: T;
   summary?: T;
   details?: T;
+  type?: T;
   category?: T;
   status?: T;
   isPublic?: T;
@@ -1753,12 +1777,15 @@ export interface IssueReportsSelect<T extends boolean = true> {
   gameProject?: T;
   title?: T;
   description?: T;
+  type?: T;
   category?: T;
   status?: T;
   issue?: T;
   submitterEmail?: T;
   platform?: T;
   gameVersion?: T;
+  flagged?: T;
+  flagReasons?: T;
   updatedAt?: T;
   createdAt?: T;
 }

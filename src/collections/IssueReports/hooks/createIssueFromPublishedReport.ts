@@ -82,6 +82,7 @@ export const createIssueFromPublishedReport: CollectionBeforeChangeHook<IssueRep
       summary: report.description,
       tenant: extractID(report.tenant),
       title: report.title,
+      type: report.type,
     },
     overrideAccess: true,
     req,

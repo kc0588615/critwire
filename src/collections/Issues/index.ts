@@ -5,7 +5,7 @@ import { slugField } from 'payload'
 import { tenantMemberAccess, tenantOwnerAccess } from '../../access/tenantAccess'
 import { sameGameProjectFilter } from '../../fields/sameGameProjectFilter'
 import { validateUniqueSlugPerProject } from '../../hooks/validateUniqueSlugPerProject'
-import { ISSUE_CATEGORY_OPTIONS, ISSUE_STATUS_OPTIONS } from '../options'
+import { FEEDBACK_TYPE_OPTIONS, ISSUE_CATEGORY_OPTIONS, ISSUE_STATUS_OPTIONS } from '../options'
 import { deleteIssueVotes } from './hooks/deleteIssueVotes'
 import {
   revalidateIssueLanding,
@@ -64,6 +64,14 @@ export const Issues: CollectionConfig = {
       type: 'richText',
     },
     {
+      name: 'type',
+      type: 'select',
+      defaultValue: 'BUG',
+      options: [...FEEDBACK_TYPE_OPTIONS],
+      required: true,
+      index: true,
+    },
+    {
       name: 'category',
       type: 'select',
       defaultValue: 'OTHER',
@@ -116,6 +124,7 @@ export const Issues: CollectionConfig = {
       name: 'fixedInPatchNote',
       type: 'relationship',
       relationTo: 'patch-notes',
+      label: 'Shipped in update',
       admin: {
         condition: (data) => data?.status === 'FIXED',
         description: 'Links the public issue to the patch note that fixed it.',

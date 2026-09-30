@@ -1,6 +1,11 @@
 // Canonical enums (docs/features.md). Values are stable API identifiers;
 // labels are for the admin UI.
 
+export const FEEDBACK_TYPE_OPTIONS = [
+  { label: 'Bug', value: 'BUG' },
+  { label: 'Idea', value: 'IDEA' },
+] as const
+
 export const ISSUE_CATEGORY_OPTIONS = [
   { label: 'Information', value: 'INFORMATION' },
   { label: 'Patch Notes', value: 'PATCH_NOTES' },
@@ -11,7 +16,6 @@ export const ISSUE_CATEGORY_OPTIONS = [
   { label: 'Visual', value: 'VISUAL' },
   { label: 'Quests', value: 'QUESTS' },
   { label: 'Performance', value: 'PERFORMANCE' },
-  { label: 'Feature Request', value: 'FEATURE_REQUEST' },
   { label: 'Other', value: 'OTHER' },
 ] as const
 
@@ -21,6 +25,7 @@ export const ISSUE_STATUS_OPTIONS = [
   { label: 'Needs More Info', value: 'NEEDS_MORE_INFO' },
   { label: 'Workaround Available', value: 'WORKAROUND_AVAILABLE' },
   { label: 'Planned', value: 'PLANNED' },
+  { label: 'In Progress', value: 'IN_PROGRESS' },
   { label: 'Fixed', value: 'FIXED' },
   { label: 'Closed', value: 'CLOSED' },
 ] as const

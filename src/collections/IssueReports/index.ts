@@ -1,10 +1,17 @@
-import type { CollectionConfig } from 'payload'
+import type { CollectionConfig, Condition } from 'payload'
 
 import { tenantMemberAccess, tenantOwnerAccess } from '../../access/tenantAccess'
 import { sameGameProjectFilter } from '../../fields/sameGameProjectFilter'
-import { ISSUE_CATEGORY_OPTIONS, ISSUE_REPORT_STATUS_OPTIONS } from '../options'
+import {
+  FEEDBACK_TYPE_OPTIONS,
+  ISSUE_CATEGORY_OPTIONS,
+  ISSUE_REPORT_STATUS_OPTIONS,
+} from '../options'
 import { createIssueFromPublishedReport } from './hooks/createIssueFromPublishedReport'
 import { validateReportStatus } from './hooks/validateReportStatus'
+
+// Platform and version only describe bugs.
+const isBug: Condition = (data) => data?.type === 'BUG'
 
 export const IssueReports: CollectionConfig = {
   slug: 'issue-reports',
@@ -41,6 +48,13 @@ export const IssueReports: CollectionConfig = {
       required: true,
     },
     {
+      name: 'type',
+      type: 'select',
+      defaultValue: 'BUG',
+      options: [...FEEDBACK_TYPE_OPTIONS],
+      required: true,
+    },
+    {
       name: 'category',
       type: 'select',
       defaultValue: 'OTHER',
@@ -70,12 +84,37 @@ export const IssueReports: CollectionConfig = {
       name: 'platform',
       type: 'text',
       admin: {
+        condition: isBug,
         description: 'e.g. Windows, Steam Deck, PS5',
       },
     },
     {
       name: 'gameVersion',
       type: 'text',
+      admin: {
+        condition: isBug,
+      },
+    },
+    {
+      // Set by the content filter when the report is created.
+      name: 'flagged',
+      type: 'checkbox',
+      defaultValue: false,
+      index: true,
+      admin: {
+        position: 'sidebar',
+        readOnly: true,
+      },
+    },
+    {
+      name: 'flagReasons',
+      type: 'textarea',
+      admin: {
+        condition: (data) => Boolean(data?.flagged),
+        description: 'Why the content filter held this submission, one reason per line.',
+        position: 'sidebar',
+        readOnly: true,
+      },
     },
   ],
   hooks: {

@@ -401,6 +401,7 @@ export async function seedCritterConnect() {
     details: lexicalFromText(
       'Reported on a handful of Windows/Nvidia setups. Investigating whether this is a shader warm-up issue on first open per session.',
     ),
+    type: 'BUG',
     category: 'VISUAL',
     status: 'REPORTED',
     isPublic: true,
@@ -435,6 +436,7 @@ export async function seedCritterConnect() {
     title: SAMPLE_REPORT_TITLE,
     description:
       'Fast-traveled from the marsh camp to the ridge outpost and the active clue trail marker was gone from the map. Had to reopen the discovery card to get it back.',
+    type: 'BUG',
     category: 'GAMEPLAY',
     submitterEmail: 'player@example.com',
     platform: 'Steam Deck',

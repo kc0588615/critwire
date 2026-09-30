@@ -57,6 +57,7 @@ const PILL_STYLES: Record<IssueStatus, Pick<ColumnDef, 'pillBg' | 'pillText'>> =
   NEEDS_MORE_INFO: { pillBg: 'bg-amber-500/10', pillText: 'text-amber-400' },
   WORKAROUND_AVAILABLE: { pillBg: 'bg-cyan-500/10', pillText: 'text-cyan-400' },
   PLANNED: { pillBg: 'bg-indigo-500/10', pillText: 'text-indigo-400' },
+  IN_PROGRESS: { pillBg: 'bg-orange-500/10', pillText: 'text-orange-400' },
   FIXED: { pillBg: 'bg-emerald-500/10', pillText: 'text-emerald-400' },
   CLOSED: { pillBg: 'bg-zinc-500/10', pillText: 'text-zinc-400' },
 }

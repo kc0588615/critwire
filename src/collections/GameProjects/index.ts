@@ -1,4 +1,4 @@
-import type { CollectionConfig } from 'payload'
+import type { CollectionConfig, Condition } from 'payload'
 
 import { slugField } from 'payload'
 
@@ -30,6 +30,9 @@ const externalLinkField = (name: string, label: string) => ({
   label,
   validate: validateOptionalHttpUrl,
 })
+
+// The ideas and review settings apply only to Critwire's own form.
+const isNativeReportForm: Condition = (_, siblingData) => siblingData?.provider === 'native'
 
 export const GameProjects: CollectionConfig = {
   slug: 'game-projects',
@@ -260,9 +263,10 @@ export const GameProjects: CollectionConfig = {
     {
       name: 'reportForm',
       type: 'group',
+      label: 'Player feedback',
       admin: {
         description:
-          'Player bug/report intake. Prefer Tally so submissions and spam handling stay on their free tier.',
+          'How players send bug reports and ideas. Prefer Tally so submissions and spam handling stay on their free tier.',
       },
       fields: [
         {
@@ -297,6 +301,27 @@ export const GameProjects: CollectionConfig = {
             description: 'GitHub issue template, Linear form, Discord channel invite, etc.',
           },
           validate: validateOptionalHttpUrl,
+        },
+        {
+          name: 'acceptIdeas',
+          type: 'checkbox',
+          defaultValue: true,
+          label: 'Accept ideas',
+          admin: {
+            condition: isNativeReportForm,
+            description: 'Players can suggest ideas as well as report bugs.',
+          },
+        },
+        {
+          name: 'reviewSubmissions',
+          type: 'checkbox',
+          defaultValue: true,
+          label: "Review submissions before they're public",
+          admin: {
+            condition: isNativeReportForm,
+            description:
+              'When off, clean submissions publish at once. Submissions the content filter flags always wait for review, and turning this off does not publish submissions already waiting.',
+          },
         },
       ],
     },

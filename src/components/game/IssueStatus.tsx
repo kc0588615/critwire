@@ -10,6 +10,7 @@ export type StatusShape = 'diamond' | 'dot' | 'half' | 'ring'
 const STATUS_SHAPES: Record<Issue['status'], StatusShape> = {
   CLOSED: 'ring',
   FIXED: 'dot',
+  IN_PROGRESS: 'half',
   INVESTIGATING: 'half',
   NEEDS_MORE_INFO: 'diamond',
   PLANNED: 'half',

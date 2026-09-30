@@ -73,6 +73,8 @@ export async function POST(
         submitterEmail: guard.data.submitterEmail || null,
         tenant: extractID(project.tenant),
         title: guard.data.title,
+        // Every report is a bug until the form asks "Bug or idea?".
+        type: 'BUG',
       },
       overrideAccess: true,
     })
