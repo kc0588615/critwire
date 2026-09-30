@@ -2,6 +2,8 @@ import type { CollectionConfig, Condition } from 'payload'
 
 import { tenantMemberAccess, tenantOwnerAccess } from '../../access/tenantAccess'
 import { sameGameProjectFilter } from '../../fields/sameGameProjectFilter'
+import { screenTextHook } from '../../hooks/screenText'
+import type { IssueReport } from '../../payload-types'
 import {
   FEEDBACK_TYPE_OPTIONS,
   ISSUE_CATEGORY_OPTIONS,
@@ -9,11 +11,14 @@ import {
 } from '../options'
 import { autoPublishReport } from './hooks/autoPublishReport'
 import { createIssueFromPublishedReport } from './hooks/createIssueFromPublishedReport'
-import { screenReportText } from './hooks/screenReportText'
 import { validateReportStatus } from './hooks/validateReportStatus'
 
 // Platform and version only describe bugs.
 const isBug: Condition = (data) => data?.type === 'BUG'
+
+const screenReportText = screenTextHook<IssueReport>(
+  ({ title, description }) => `${title ?? ''}\n\n${description ?? ''}`,
+)
 
 export const IssueReports: CollectionConfig = {
   slug: 'issue-reports',
@@ -102,7 +107,7 @@ export const IssueReports: CollectionConfig = {
       },
     },
     {
-      // Set by the content filter (`screenReportText`) whenever the text is written.
+      // Set by the content filter (`screenTextHook`) whenever the text is written.
       name: 'flagged',
       type: 'checkbox',
       defaultValue: false,

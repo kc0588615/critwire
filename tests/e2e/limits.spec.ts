@@ -5,7 +5,15 @@ import sharp from 'sharp'
 import type { GameProject } from '../../src/payload-types'
 import type { ApiResult, RestClient } from './support/api'
 import { SECOND_BASE_URL, SECOND_LIMITS, TURNSTILE_DUMMY_TOKEN } from './support/env'
-import { createIssue, createProject, expect, type Studio, test, uploadImage } from './support/fixtures'
+import {
+  asStudioAdmin,
+  createIssue,
+  createProject,
+  expect,
+  type Studio,
+  test,
+  uploadImage,
+} from './support/fixtures'
 
 /**
  * The hosted plan's limits. The second server runs with the low limits in
@@ -95,23 +103,17 @@ test('S12.1 with limits on, each blocks a studio user with its message', async (
   })
 
   await test.step('saving one more game in the admin shows the message as a toast', async () => {
-    const context = await browser.newContext({ baseURL: SECOND_BASE_URL, storageState: { cookies: [], origins: [] } })
-    try {
-      await context.addCookies([{ name: 'payload-token', value: studio.owner.token, url: SECOND_BASE_URL }])
-      const page = await context.newPage()
-      // The plugin selects a one-studio user's studio on their first admin
-      // page, in the browser; a create form opened before that has none.
-      await page.goto('/admin')
-      await expect.poll(async () => (await context.cookies()).find((c) => c.name === 'payload-tenant')?.value).toBe(
-        String(studio.tenant.id),
-      )
-      await page.goto('/admin/collections/game-projects/create')
-      await page.locator('#field-name').fill('One too many')
-      await page.getByRole('button', { name: 'Save', exact: true }).click()
-      await expect(page.locator('[data-sonner-toast][data-type="error"]')).toContainText(MESSAGES.games)
-    } finally {
-      await context.close()
-    }
+    await asStudioAdmin(
+      browser,
+      studio,
+      async (page) => {
+        await page.goto('/admin/collections/game-projects/create')
+        await page.locator('#field-name').fill('One too many')
+        await page.getByRole('button', { name: 'Save', exact: true }).click()
+        await expect(page.locator('[data-sonner-toast][data-type="error"]')).toContainText(MESSAGES.games)
+      },
+      SECOND_BASE_URL,
+    )
     const { body } = await superAdmin.find('game-projects', { where: { tenant: { equals: studio.tenant.id } } })
     expect(body.totalDocs).toBe(SECOND_LIMITS.games)
   })

@@ -6,9 +6,10 @@ import { hasPublicFeedbackRoom } from '@/lib/limits'
 import type { IssueReport } from '@/payload-types'
 
 // Publishes a clean new report when its game has review turned off. Runs
-// after `screenReportText` and before `createIssueFromPublishedReport`, which
-// then promotes it, so there's one path from report to issue. Only on create:
-// turning review off doesn't publish the backlog. A game at its public
+// after the content filter (`screenTextHook`) and before
+// `createIssueFromPublishedReport`, which then promotes it, so there's one
+// path from report to issue. Only on create: turning review off doesn't
+// publish the backlog. A game at its public
 // feedback limit keeps the submission waiting, so the player's POST never
 // fails on a limit.
 export const autoPublishReport: CollectionBeforeChangeHook<IssueReport> = async ({

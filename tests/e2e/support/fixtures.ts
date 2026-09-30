@@ -2,7 +2,14 @@ import { randomUUID } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
 import { createServer } from 'node:http'
 
-import { test as base, expect, type APIRequestContext, type PlaywrightWorkerArgs } from '@playwright/test'
+import {
+  test as base,
+  type APIRequestContext,
+  type Browser,
+  expect,
+  type Page as BrowserPage,
+  type PlaywrightWorkerArgs,
+} from '@playwright/test'
 import type { CollectionSlug } from 'payload'
 import { extractID } from 'payload/shared'
 import sharp from 'sharp'
@@ -244,6 +251,32 @@ export const eventually = (check: () => Promise<void>): Promise<void> =>
   expect(check).toPass({ timeout: 5_000 })
 
 type Doc<C extends CollectionSlug> = Config['collections'][C]
+
+/**
+ * Runs `run` on an admin page signed in as `account`, a `seedStudio` owner,
+ * then closes the browser context. It opens `/admin` first and waits for the
+ * studio cookie: the multi-tenant plugin selects a one-studio user's studio
+ * in the browser, so a create form opened before that saves with none.
+ */
+export async function asStudioAdmin(
+  browser: Browser,
+  { owner, tenant }: Studio,
+  run: (page: BrowserPage) => Promise<void>,
+  baseURL: string = BASE_URL,
+): Promise<void> {
+  const context = await browser.newContext({ baseURL, storageState: { cookies: [], origins: [] } })
+  try {
+    await context.addCookies([{ name: 'payload-token', value: owner.token, url: baseURL }])
+    const page = await context.newPage()
+    await page.goto('/admin')
+    await expect
+      .poll(async () => (await context.cookies()).find((c) => c.name === 'payload-tenant')?.value)
+      .toBe(String(tenant.id))
+    await run(page)
+  } finally {
+    await context.close()
+  }
+}
 
 /** A fresh address for every account a test creates, so reruns and emails never collide. */
 export const randomEmail = (label: string): string => `${label}-${randomUUID()}@e2e.test`

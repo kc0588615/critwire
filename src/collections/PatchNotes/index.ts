@@ -1,13 +1,30 @@
+import type { SerializedEditorState } from '@payloadcms/richtext-lexical/lexical'
 import type { CollectionConfig } from 'payload'
 
+import { convertLexicalToPlaintext } from '@payloadcms/richtext-lexical/plaintext'
 import { slugField } from 'payload'
 
 import { patchNotesRead } from '../../access/publicRead'
 import { tenantMemberAccess, tenantOwnerAccess } from '../../access/tenantAccess'
 import { moderationFields } from '../../fields/moderation'
 import { populatePublishedAt } from '../../hooks/populatePublishedAt'
+import { screenTextHook } from '../../hooks/screenText'
 import { validateUniqueSlugPerProject } from '../../hooks/validateUniqueSlugPerProject'
+import type { PatchNote } from '../../payload-types'
 import { revalidatePatchNotes, revalidatePatchNotesDelete } from './hooks/revalidatePatchNotes'
+
+// The content filter holds an update whose text it flags. Link targets
+// inside the content aren't screened, only what readers see.
+const screenUpdateText = screenTextHook<PatchNote>(({ title, versionLabel, summary, content }) =>
+  [
+    title,
+    versionLabel,
+    summary,
+    content ? convertLexicalToPlaintext({ data: content as SerializedEditorState }) : '',
+  ]
+    .map((part) => part ?? '')
+    .join('\n\n'),
+)
 
 export const PatchNotes: CollectionConfig = {
   slug: 'patch-notes',
@@ -72,7 +89,7 @@ export const PatchNotes: CollectionConfig = {
   hooks: {
     afterChange: [revalidatePatchNotes],
     afterDelete: [revalidatePatchNotesDelete],
-    beforeChange: [populatePublishedAt],
+    beforeChange: [populatePublishedAt, screenUpdateText],
     beforeValidate: [validateUniqueSlugPerProject('patch-notes')],
   },
   indexes: [

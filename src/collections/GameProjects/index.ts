@@ -10,6 +10,7 @@ import {
   tenantOwnerAccess,
 } from '../../access/tenantAccess'
 import { moderationFields } from '../../fields/moderation'
+import { screenTextHook } from '../../hooks/screenText'
 import { checkGamesLimit } from '../../lib/limits/hooks'
 import { validateOptionalTallyUrl } from '../../lib/tally/parseTallyForm'
 import { validateContactDiscordWebhookUrl } from '../../lib/validation/discordWebhook'
@@ -26,6 +27,7 @@ import {
   revalidateGameProjectDelete,
 } from './hooks/revalidateGameProject'
 import { themeField, validateProjectTheme } from './theme'
+import type { GameProject } from '../../payload-types'
 
 const externalLinkField = (name: string, label: string) => ({
   name,
@@ -33,6 +35,11 @@ const externalLinkField = (name: string, label: string) => ({
   label,
   validate: validateOptionalHttpUrl,
 })
+
+// The content filter holds a game whose name or pitch it flags.
+const screenGameText = screenTextHook<GameProject>(
+  ({ name, description }) => `${name ?? ''}\n\n${description ?? ''}`,
+)
 
 // The ideas and review settings apply only to Critwire's own form.
 const isNativeReportForm: Condition = (_, siblingData) => siblingData?.provider === 'native'
@@ -332,7 +339,7 @@ export const GameProjects: CollectionConfig = {
     ...moderationFields(),
   ],
   hooks: {
-    beforeChange: [validateProjectTheme, checkGamesLimit],
+    beforeChange: [validateProjectTheme, checkGamesLimit, screenGameText],
     afterChange: [revalidateGameProject],
     afterDelete: [revalidateGameProjectDelete],
   },
