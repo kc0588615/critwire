@@ -74,7 +74,7 @@ Out:
 
 ## Stages
 
-- [ ] Baseline: install, migrate, run typecheck, lint, unit and E2E tests; record the results under Baseline
+- [x] Baseline: install, migrate, run typecheck, lint, unit and E2E tests; record the results under Baseline
 - [ ] Architecture: `architect` writes findings and the target design
 - [ ] Fable review: `architecture-reviewer`
 - [ ] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
@@ -82,6 +82,16 @@ Out:
 - [ ] Steps: `planner` writes Steps and Verification
 
 ## Baseline
+
+Commit `7e8272a`, 2026-09-30 09:38–09:44 UTC.
+
+- **Setup:** created the disposable E2E database `critwire_m_open_signup_e2e` and added `E2E_DATABASE_URL`, a generated `CRON_SECRET` (for `pnpm seed:critter-connect`) and `CRITWIRE_CONTACT_URL` (H6) to the worktree `.env`. `pnpm install --frozen-lockfile`: up to date. `pnpm payload migrate`: all 15 migrations applied to the fresh mission database, no `dev` row.
+- **Typecheck** (`pnpm exec tsc --noEmit`): pass.
+- **Lint** (`pnpm lint`): pass, 0 errors, 20 warnings (all `@typescript-eslint/no-unused-vars`). Pre-existing; don't add new ones.
+- **Int** (`pnpm test:int`): 2 files, 13 tests passed.
+- **E2E** (`pnpm test:e2e`): 75 passed, 0 failed, 4.1 min. Report: `/srv/critter-ai/agent-state/missions/open-signup/e2e-baseline/` (`pnpm exec playwright show-report <dir>`; `run.log` alongside).
+- **Ports:** the E2E suite serves on 3100 (sink on 3101); `critwire-demo` was inactive.
+- **Handoff:** no items with `Status: done`. H3 (production keys) is `later`, H7 (LICENSE copyright) is waiting and blocks nothing.
 
 ## Architecture
 
@@ -98,5 +108,7 @@ Out:
 ## Decisions
 
 ## Log
+
+- 2026-09-30 09:45 UTC · Baseline: created the E2E database, migrated; tsc, lint (0 errors, 20 warnings), int (13/13) and E2E (75/75) pass.
 
 ## Summary
