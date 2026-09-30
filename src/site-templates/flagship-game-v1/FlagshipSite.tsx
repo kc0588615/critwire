@@ -4,6 +4,7 @@ import React from 'react'
 
 import type { GameProject, Media } from '@/payload-types'
 
+import { PortalFrame } from '@/components/game/PortalFrame'
 import { queryLandingIssues } from '@/lib/game-portal/issues'
 import { getLatestPublishedPatchNote } from '@/lib/game-portal/patchNotes'
 
@@ -11,7 +12,6 @@ import type { SiteConfigV1 } from './schema/config'
 import { collectSiteMediaRefs } from './media'
 import { flagshipSlots, SLOT_ORDER } from './registry'
 import type { SiteRenderContext } from './render/context'
-import { SiteFrame } from './render/SiteFrame'
 
 /**
  * The fixed flagship-game-v1 renderer. Section order is code-owned
@@ -57,7 +57,7 @@ export const FlagshipSite: React.FC<{
   }
 
   return (
-    <SiteFrame config={siteConfig} project={project}>
+    <PortalFrame project={project}>
       {SLOT_ORDER.map((slotId) => {
         const slot = flagshipSlots[slotId]
         const Section = slot.render as React.ComponentType<{
@@ -66,6 +66,6 @@ export const FlagshipSite: React.FC<{
         }>
         return <Section ctx={ctx} key={slotId} value={siteConfig[slotId]} />
       })}
-    </SiteFrame>
+    </PortalFrame>
   )
 }

@@ -112,9 +112,8 @@ test.describe('S2.2 derived default landing', () => {
     await test.step('portal links stay on /g/<slug> although contact and reports are external', async () => {
       const nav = page.getByRole('navigation', { name: 'Site' })
       for (const [label, path] of [
-        ['Patch notes', 'updates'],
-        ['Known issues', 'feedback'],
-        ['Report a bug', 'feedback/new'],
+        ['Updates', 'updates'],
+        ['Feedback', 'feedback'],
         ['Contact', 'contact'],
       ]) {
         await expect(nav.getByRole('link', { name: label, exact: true })).toHaveAttribute(
@@ -439,4 +438,29 @@ test('S2.6 an uploaded logo renders in the portal header', async ({ api, page, u
   await expect.poll(() => image.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBeGreaterThan(0)
   const src = await image.evaluate((img: HTMLImageElement) => img.currentSrc)
   expect((await page.request.get(src)).status()).toBe(200)
+})
+
+test('S2.7 the portal links back to the studio’s own site', async ({ api, page, uniqueSlug, world }) => {
+  const WEBSITE = 'https://example.com/e2e-studio'
+  const aOwner = api('aOwner')
+  const withSite = await createProject(aOwner, world.tenants.A.id, uniqueSlug('land-site'), {
+    links: { website: WEBSITE },
+  })
+  const withoutSite = await createProject(aOwner, world.tenants.A.id, uniqueSlug('land-no-site'))
+  const officialSite = () => page.getByRole('banner').getByRole('link', { name: 'Official site' })
+
+  for (const width of [1440, 390]) {
+    await test.step(`${width} px`, async () => {
+      await page.setViewportSize({ width, height: 900 })
+      for (const path of ['', '/feedback']) {
+        await page.goto(`/g/${withSite.slug}${path}`)
+        await expect(officialSite()).toBeVisible()
+        await expect(officialSite()).toHaveAttribute('href', WEBSITE)
+
+        await page.goto(`/g/${withoutSite.slug}${path}`)
+        await expect(page.getByRole('banner')).toBeVisible()
+        await expect(officialSite()).toHaveCount(0)
+      }
+    })
+  }
 })

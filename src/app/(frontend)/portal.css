@@ -265,20 +265,15 @@
   white-space: nowrap;
 }
 
-.fs-nav-cta {
+/* The way back to the studio's own website, at every width: the portal
+   complements that site, so leaving for it is always one tap away. */
+.fs-nav-site {
   grid-area: cta;
-}
-
-/* Phones: the game's name gets the row. The landing hero repeats the call to
-   action, and the ops pages are what players come to the portal for. */
-@media (max-width: 39.99rem) {
-  .fs-nav-cta {
-    display: none;
-  }
+  white-space: nowrap;
 }
 
 /* Below 64rem the links scroll sideways to the screen edge: no hamburger, so
-   the four pages players come for stay one tap away. */
+   the pages players come for stay one tap away. */
 .fs-nav-links {
   display: flex;
   grid-area: links;

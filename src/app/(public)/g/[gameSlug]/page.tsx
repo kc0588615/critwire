@@ -6,7 +6,7 @@ import React from 'react'
 
 import { RenderGameBlocks } from '@/blocks/game/RenderGameBlocks'
 import { LivePreviewListener } from '@/components/LivePreviewListener'
-import { PortalChrome } from '@/components/game/PortalChrome'
+import { PortalFrame } from '@/components/game/PortalFrame'
 import { getGameProject } from '@/lib/game-portal/getGameProject'
 import {
   getLandingPage,
@@ -62,10 +62,10 @@ export default async function GameLandingPage({
 
   if (page?.content?.length) {
     return (
-      <PortalChrome project={project}>
+      <PortalFrame project={project}>
         {listener}
         <RenderGameBlocks blocks={page.content} project={project} />
-      </PortalChrome>
+      </PortalFrame>
     )
   }
 

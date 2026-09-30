@@ -88,16 +88,3 @@ export const resolveFlagshipConfig = (
     media,
   }
 }
-
-/**
- * The site config every portal page frames itself with: the published
- * flagship landing's, or the default derived from project facts when the
- * landing is absent or built from legacy blocks. Never reads drafts, so
- * the ops pages always show what players see on the published landing.
- */
-export const getPortalSiteConfig = cache(async (project: GameProject): Promise<SiteConfigV1> => {
-  const page = await getLandingPage(project.id, false)
-  return page?.template === 'flagship-game-v1'
-    ? resolveFlagshipConfig(page, project, { draft: false }).config
-    : deriveFlagshipDefault(project)
-})

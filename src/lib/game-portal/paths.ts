@@ -34,6 +34,21 @@ export const portalPaths = (gameSlug: string) => {
 
 export type PortalPaths = ReturnType<typeof portalPaths>
 
+/** The portal's fixed navigation: the same three pages in the nav and the footer of every game. */
+export const PORTAL_NAV = [
+  { key: 'updates', label: 'Updates' },
+  { key: 'feedback', label: 'Feedback' },
+  { key: 'contact', label: 'Contact' },
+] as const satisfies readonly { key: keyof PortalPaths; label: string }[]
+
+export type PortalNavLink = { href: string; label: string }
+
+/** `PORTAL_NAV` resolved to one game's URLs. */
+export const portalNavLinks = (gameSlug: string): PortalNavLink[] => {
+  const paths = portalPaths(gameSlug)
+  return PORTAL_NAV.map(({ key, label }) => ({ href: paths[key], label }))
+}
+
 /**
  * Feedback item slugs that would collide with a static route beside
  * `feedback/[slug]`: `feedback/new` is the submit form, and Next serves

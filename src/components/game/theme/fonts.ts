@@ -31,5 +31,5 @@ const scienceGothic = Science_Gothic({
   variable: '--font-science-gothic',
 })
 
-/** Classes that define the three display-face variables; `SiteRoot` applies them. */
+/** Classes that define the three display-face variables; `PortalRoot` applies them. */
 export const displayFontVariables = [archivo.variable, youngSerif.variable, scienceGothic.variable].join(' ')

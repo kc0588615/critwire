@@ -4,19 +4,13 @@ import React from 'react'
 import type { GameProject } from '@/payload-types'
 
 import { Media } from '@/components/Media'
-import { portalPaths } from '@/lib/game-portal/paths'
+import { PROJECT_LINK_LABELS } from '@/lib/game-portal/links'
+import { portalNavLinks, portalPaths } from '@/lib/game-portal/paths'
 
-import { resolveSiteAction, resolveSiteActions } from '../actions'
-import type { NavConfig } from '../schema/slots'
-import { SiteNavLinks } from './SiteNavLinks'
-import { SiteActionLink } from './ui'
+import { PortalNavLinks } from './PortalNavLinks'
 
-export const SiteNav: React.FC<{ project: GameProject; value: NavConfig }> = ({
-  project,
-  value,
-}) => {
-  const links = resolveSiteActions(value.links, project)
-  const cta = resolveSiteAction(value.cta, project)
+export const PortalNav: React.FC<{ project: GameProject }> = ({ project }) => {
+  const website = project.links?.website
 
   return (
     <header className="fs-nav">
@@ -30,11 +24,16 @@ export const SiteNav: React.FC<{ project: GameProject; value: NavConfig }> = ({
           ) : null}
           <span className="fs-display fs-nav-name">{project.name}</span>
         </Link>
-        <SiteNavLinks links={links} />
-        {cta ? (
-          <div className="fs-nav-cta">
-            <SiteActionLink action={cta} variant="primary" />
-          </div>
+        <PortalNavLinks links={portalNavLinks(project.slug)} />
+        {website ? (
+          <a
+            className="fs-btn fs-btn-secondary fs-nav-site"
+            href={website}
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            {PROJECT_LINK_LABELS.website}
+          </a>
         ) : null}
       </div>
     </header>
