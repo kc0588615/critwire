@@ -4,7 +4,9 @@ import { portalPaths } from '@/lib/game-portal/paths'
  * Critwire's own destinations, shared by the header, footer and home page.
  * No React imports: `instrumentation-node.ts` loads this file at boot.
  */
-export const DEMO_PORTAL = portalPaths('critter-connect')
+/** The demo game's slug: reserved for super admins and the demo seed. */
+export const DEMO_GAME_SLUG = 'critter-connect'
+export const DEMO_PORTAL = portalPaths(DEMO_GAME_SLUG)
 export const DEMO_PORTAL_HREF = DEMO_PORTAL.hub
 export const SIGN_IN_HREF = '/admin'
 export const GITHUB_REPO_URL = 'https://github.com/kc0588615/critwire'

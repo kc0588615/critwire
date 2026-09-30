@@ -1,4 +1,4 @@
-import type { CollectionBeforeValidateHook } from 'payload'
+import type { CollectionBeforeValidateHook, CollectionSlug } from 'payload'
 import type { Slugify } from 'payload/shared'
 
 import { ValidationError } from 'payload'
@@ -6,9 +6,10 @@ import { slugify } from 'payload/shared'
 
 import { isReservedFeedbackSlug } from '@/lib/game-portal/paths'
 
-const reservedSlugError = (slug: string) =>
+/** The field error for a reserved slug; the game projects' rule reuses it. */
+export const reservedSlugError = (collection: CollectionSlug, slug: string) =>
   new ValidationError({
-    collection: 'issues',
+    collection,
     errors: [{ message: `\`${slug}\` is reserved; choose another slug`, path: 'slug' }],
   })
 
@@ -20,7 +21,7 @@ const reservedSlugError = (slug: string) =>
  */
 export const issueSlugify: Slugify = ({ valueToSlugify }) => {
   const slug = slugify(valueToSlugify)
-  if (slug && isReservedFeedbackSlug(slug)) throw reservedSlugError(slug)
+  if (slug && isReservedFeedbackSlug(slug)) throw reservedSlugError('issues', slug)
   return slug
 }
 
@@ -29,6 +30,6 @@ export const issueSlugify: Slugify = ({ valueToSlugify }) => {
  * Payload stores `data.slug` as given, without calling `issueSlugify`.
  */
 export const rejectReservedSlug: CollectionBeforeValidateHook = ({ data }) => {
-  if (typeof data?.slug === 'string' && isReservedFeedbackSlug(data.slug)) throw reservedSlugError(data.slug)
+  if (typeof data?.slug === 'string' && isReservedFeedbackSlug(data.slug)) throw reservedSlugError('issues', data.slug)
   return data
 }

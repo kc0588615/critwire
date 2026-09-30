@@ -2,7 +2,7 @@ import type { Page } from '@playwright/test'
 import { extractID } from 'payload/shared'
 
 import type { GameProject, PayloadJob } from '../../src/payload-types'
-import type { ApiError, RestClient } from './support/api'
+import { fieldErrors, type RestClient } from './support/api'
 import { storageStatePath, TURNSTILE_DUMMY_TOKEN } from './support/env'
 import { createIssue, createProject, createReport, expect, test } from './support/fixtures'
 
@@ -445,10 +445,6 @@ test.describe('S5.7 reserved feedback slugs', () => {
     message: '`new` is reserved; choose another slug',
     path: 'slug',
   })
-
-  /** The field errors of a Payload ValidationError response. */
-  const fieldErrors = (errors: ApiError[] | undefined) =>
-    errors?.flatMap((error) => (error.data as { errors?: unknown[] } | undefined)?.errors ?? [])
 
   test('S5.7 a submission titled "New" never takes the form\'s URL [F3]', async ({ api, page }) => {
     const aOwner = api('aOwner')

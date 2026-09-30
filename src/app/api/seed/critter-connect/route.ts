@@ -1,6 +1,9 @@
 import * as Sentry from '@sentry/nextjs'
 
+import { getLogger } from '@/lib/logger'
 import { seedCritterConnect } from '@/seed/critterConnect'
+
+const log = getLogger('seed.critter-connect')
 
 export const dynamic = 'force-dynamic'
 
@@ -20,6 +23,9 @@ export async function POST(request: Request): Promise<Response> {
     return Response.json({ ok: true, ...result })
   } catch (err) {
     Sentry.captureException(err)
-    return Response.json({ error: 'Critter Connect seed failed' }, { status: 500 })
+    log.error({ err, msg: 'Critter Connect seed failed.' })
+    // Only the operator holding CRON_SECRET gets here, so the reason goes back to the script.
+    const reason = err instanceof Error ? err.message : String(err)
+    return Response.json({ error: `Critter Connect seed failed: ${reason}` }, { status: 500 })
   }
 }

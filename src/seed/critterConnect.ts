@@ -6,6 +6,7 @@ import { extractID } from 'payload/shared'
 
 import type { GameProject, Media } from '../payload-types'
 
+import { DEMO_GAME_SLUG } from '../components/marketing/links'
 import { mergeTheme, type SiteThemeV1 } from '../lib/game-portal/theme'
 
 /**
@@ -18,7 +19,8 @@ import { mergeTheme, type SiteThemeV1 } from '../lib/game-portal/theme'
  * Local API and is intended to run from that route.
  */
 
-const GAME_SLUG = 'critter-connect'
+const GAME_SLUG = DEMO_GAME_SLUG
+const DEMO_TENANT = { name: 'Critwire Demo', slug: 'critwire-demo' } as const
 const LAUNCH_PATCH_NOTE_SLUG = 'v0-1-0-launch'
 const SAMPLE_ISSUE_SLUG = 'card-flicker-on-open'
 const SAMPLE_REPORT_TITLE = 'Clue trail disappears after fast travel'
@@ -65,11 +67,29 @@ const lexicalFromText = (text: string) => ({
 export async function seedCritterConnect() {
   const payload = await getPayload({ config })
 
-  const tenants = await payload.find({ collection: 'tenants', limit: 1 })
-  const tenant = tenants.docs[0]
-  if (!tenant) {
-    throw new Error('No tenant found - create one in the admin UI first.')
+  // The demo lives in its own studio, never in whichever studio is newest.
+  const tenants = await payload.find({
+    collection: 'tenants',
+    where: { slug: { equals: DEMO_TENANT.slug } },
+    limit: 1,
+  })
+  const existingProject = await payload.find({
+    collection: 'game-projects',
+    where: { slug: { equals: GAME_SLUG } },
+    depth: 0,
+    limit: 1,
+  })
+  let project = existingProject.docs[0] as GameProject | undefined
+  const projectTenantID = project?.tenant ? extractID(project.tenant) : null
+  // Checked before any write, so a refused run changes nothing.
+  if (project && projectTenantID !== tenants.docs[0]?.id) {
+    throw new Error(
+      `The game "${GAME_SLUG}" belongs to another studio (tenant id: ${projectTenantID}); ` +
+        `move or rename it before seeding the demo into "${DEMO_TENANT.slug}".`,
+    )
   }
+
+  const tenant = tenants.docs[0] ?? (await payload.create({ collection: 'tenants', data: DEMO_TENANT }))
   payload.logger.info(`Using tenant "${tenant.name}" (id: ${tenant.id})`)
 
   const ensureMedia = async (filename: string, alt: string): Promise<Media> => {
@@ -148,13 +168,6 @@ export async function seedCritterConnect() {
     },
   }
 
-  const existingProject = await payload.find({
-    collection: 'game-projects',
-    where: { slug: { equals: GAME_SLUG } },
-    limit: 1,
-  })
-
-  let project = existingProject.docs[0] as GameProject | undefined
   if (!project) {
     project = await payload.create({
       collection: 'game-projects',

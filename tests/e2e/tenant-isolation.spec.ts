@@ -2,7 +2,7 @@ import type { Browser, Page as BrowserPage } from '@playwright/test'
 import type { CollectionSlug } from 'payload'
 
 import type { GameProject, Issue, IssueReport, Media, PatchNote } from '../../src/payload-types'
-import type { RestClient } from './support/api'
+import { type ApiResult, fieldErrors, type RestClient } from './support/api'
 import { BASE_URL, PREVIEW_SECRET, type Role, storageStatePath } from './support/env'
 import {
   castVote,
@@ -235,6 +235,41 @@ test.describe('S1.11 cross-tenant draft writes [F1]', () => {
     expect(after.status).toBe(200)
     expect(after.body.tenant).toBe(world.tenants.B.id)
     expect(after.body.gameProject).toBe(bProject.id)
+  })
+})
+
+test('S1.12 only a super admin can give a game the demo’s slug [F8]', async ({ api, uniqueSlug, world }) => {
+  const aOwner = api('aOwner')
+  const superAdmin = api('superAdmin')
+  const reserved = expect.objectContaining({ message: '`critter-connect` is reserved; choose another slug', path: 'slug' })
+  const expectReserved = ({ status, body }: ApiResult<unknown>) => {
+    expect(status, JSON.stringify(body)).toBe(400)
+    expect(fieldErrors(body.errors)).toContainEqual(reserved)
+  }
+
+  await test.step('a studio owner can’t create it, by slug or by a name that slugifies to it', async () => {
+    const tenant = world.tenants.A.id
+    expectReserved(await aOwner.create('game-projects', { name: 'Demo copy', slug: 'critter-connect', tenant }))
+    expectReserved(await aOwner.create('game-projects', { name: 'Critter Connect', tenant }))
+  })
+
+  await test.step('nor rename a game to it, by slug or by name', async () => {
+    const project = await createProject(aOwner, world.tenants.A.id, uniqueSlug('iso-demo-rename'))
+    expectReserved(await aOwner.update('game-projects', project.id, { slug: 'critter-connect' }))
+    expectReserved(await aOwner.update('game-projects', project.id, { name: 'Critter Connect', generateSlug: true }))
+    const after = await superAdmin.findByID('game-projects', project.id, { depth: 0 })
+    expect(after.body.slug).toBe(project.slug)
+  })
+
+  await test.step('a super admin can', async () => {
+    const created = await superAdmin.create('game-projects', { name: 'Critter Connect', tenant: world.tenants.B.id })
+    try {
+      expect(created.status, JSON.stringify(created.body)).toBe(201)
+      expect(created.body.doc.slug).toBe('critter-connect')
+    } finally {
+      // The slug is global: free it for retries and the home page's demo link.
+      if (created.status === 201) expect((await superAdmin.remove('game-projects', created.body.doc.id)).status).toBe(200)
+    }
   })
 })
 

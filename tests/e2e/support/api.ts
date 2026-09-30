@@ -10,6 +10,10 @@ export interface ApiError {
   data?: unknown
 }
 
+/** The field errors of a Payload ValidationError response. */
+export const fieldErrors = (errors: ApiError[] | undefined) =>
+  errors?.flatMap((error) => (error.data as { errors?: unknown[] } | undefined)?.errors ?? [])
+
 /** Every call resolves, whatever the status, so tests can assert on it. */
 export interface ApiResult<T> {
   status: number

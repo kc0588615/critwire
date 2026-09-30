@@ -26,6 +26,7 @@ import {
   revalidateGameProject,
   revalidateGameProjectDelete,
 } from './hooks/revalidateGameProject'
+import { gameSlugify, rejectReservedGameSlug } from './reservedSlug'
 import { themeField, validateProjectTheme } from './theme'
 import type { GameProject } from '../../payload-types'
 
@@ -66,7 +67,7 @@ export const GameProjects: CollectionConfig = {
       required: true,
     },
     // Globally unique — it is the public URL namespace (/g/[gameSlug]).
-    slugField({ useAsSlug: 'name' }),
+    slugField({ slugify: gameSlugify, useAsSlug: 'name' }),
     {
       name: 'description',
       type: 'textarea',
@@ -339,6 +340,7 @@ export const GameProjects: CollectionConfig = {
     ...moderationFields(),
   ],
   hooks: {
+    beforeValidate: [rejectReservedGameSlug],
     beforeChange: [validateProjectTheme, checkGamesLimit, screenGameText],
     afterChange: [revalidateGameProject],
     afterDelete: [revalidateGameProjectDelete],

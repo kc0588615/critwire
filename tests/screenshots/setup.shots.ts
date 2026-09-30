@@ -6,7 +6,7 @@ import { expect, test as setup } from '@playwright/test'
 import type { GameProject } from '../../src/payload-types'
 import { RestClient } from '../e2e/support/api'
 import { PASSWORD } from '../e2e/support/env'
-import { castVote, createIssue, createPatchNote, lexical, newRequestContext, seed } from '../e2e/support/fixtures'
+import { castVote, createIssue, createPatchNote, lexical, newRequestContext } from '../e2e/support/fixtures'
 import { type ShotsWorld, WORLD_PATH } from './catalog'
 import { rootStyle, SHOTS_CRON_SECRET } from './support'
 
@@ -20,13 +20,13 @@ setup('seed the Critter Connect demo and the screenshot fixtures', async ({ page
   await mkdir(path.dirname(WORLD_PATH), { recursive: true })
   const anonymous = await newRequestContext(playwright)
 
-  const superToken = await setup.step('register the first user and create one studio', async () => {
+  // The seed creates the demo's own studio.
+  const superToken = await setup.step('register the first user', async () => {
     const response = await anonymous.post('/api/users/first-register', {
       data: { email: 'shots@shots.test', name: 'Screenshot Admin', password: PASSWORD, roles: ['admin'] },
     })
     expect(response.status(), 'screenshot database is not fresh: first-register refused').toBe(200)
     const { token } = (await response.json()) as { token: string }
-    await seed(new RestClient(anonymous, token), 'tenants', { name: 'Critwire Demo Studio', slug: 'demo-studio' })
     return token
   })
   const admin = new RestClient(anonymous, superToken)
