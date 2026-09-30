@@ -2,6 +2,7 @@ import type { CollectionConfig } from 'payload'
 
 import { slugField } from 'payload'
 
+import { patchNotesRead } from '../../access/publicRead'
 import { tenantMemberAccess, tenantOwnerAccess } from '../../access/tenantAccess'
 import { moderationFields } from '../../fields/moderation'
 import { populatePublishedAt } from '../../hooks/populatePublishedAt'
@@ -12,12 +13,9 @@ export const PatchNotes: CollectionConfig = {
   slug: 'patch-notes',
   labels: { plural: 'Updates', singular: 'Update' },
   access: {
-    // Anonymous readers only see published notes; studio members see
-    // drafts of their own tenant (plugin adds the tenant constraint).
-    read: ({ req }) => {
-      if (req.user) return true
-      return { _status: { equals: 'published' } }
-    },
+    // Anonymous readers only see published notes that aren't held; studio
+    // members see drafts of their own tenant (plugin adds the tenant constraint).
+    read: patchNotesRead,
     create: tenantMemberAccess,
     update: tenantMemberAccess,
     delete: tenantOwnerAccess,

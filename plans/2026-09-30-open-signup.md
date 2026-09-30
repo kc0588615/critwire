@@ -905,7 +905,7 @@ The session that carries out the affected step copies the matching line into **D
       - After `suspended: false`, a create works again.
   - **Checks:** standard.
 
-- [ ] Step 4: Public visibility, `requirePortalProject` and `/unavailable` (§7, §8, F3; P1)
+- [x] Step 4: Public visibility, `requirePortalProject` and `/unavailable` (§7, §8, F3; P1)
   - **Files:**
     - New `src/access/publicRead.ts`:
       - one `Where` per collection shape (§7's table), using relationship paths (`tenant.suspended`, `gameProject.flagged`) with `not_equals: true`, so `NULL` counts as not held;
@@ -1396,6 +1396,8 @@ OUT=/srv/critter-ai/agent-state/missions/open-signup
 - **Step 2 · An abuse report's `reason` is required and its `status` is indexed.** The form always asks for a reason, and the super-admin dashboard counts open reports.
 - **Step 2 · The first user still gets a verification email.** Payload's first-register creates the user unverified (sending `verificationEmail`), then verifies them, which clears the token. That email's link lands on "This link has been used or is invalid. If you've already set your password, sign in", which is true for them. Accepted over detecting "no users yet" in the create hook, which would add a query to every signup for a one-time case.
 - **Step 3 · Membership is checked before suspension.** A non-member gets the 400 membership error without the hook ever reading the target studio, so a write can't reveal whether another studio is suspended. A tenant ID that doesn't exist fails loudly (404) instead of passing.
+- **Step 4 · P1 · Signed-in visitors can read public media files.** The plugin's `accessResultOverride` for `media` (`mediaFileReadOverride`) gives signed-in non-super-admins, on file reads only, `{ or: [<plugin result>, <the anonymous rule>] }`, or the anonymous rule when the plugin says `false`. Lists, REST documents and the admin keep the tenant constraint; suspension still hides files from everyone outside the studio.
+- **Step 4 · `/unavailable` links to the home page,** like the 404 page, and still names no game and gives no reason. `src/access/anyone.ts` is deleted: media was its last user.
 
 ## Log
 
@@ -1408,5 +1410,6 @@ OUT=/srv/critter-ai/agent-state/missions/open-signup
 - 2026-09-30 11:14 UTC · Step 1: `src/lib/email/` (Resend-or-outbox adapter, `renderEmail`, `AuthLinkEmail`, the three auth emails), `email: emailAdapter()` in the config, contact job via `payload.sendEmail`. tsc pass; lint 0 errors, 20 warnings (none in touched files); E2E 75/75 in 4.1 min (contact job still fails without `RESEND_API_KEY`); no `api.resend.com` left in `src`; rendered the three emails by hand: links use `NEXT_PUBLIC_SERVER_URL` and encode the token.
 - 2026-09-30 11:26 UTC · Step 2: migration `open_signup` (tenants `suspended`/`createdBy`, `flagged`/`flagReasons` on games and updates incl. versions, `abuse-reports`, `auth.verify` with the `_verified` backfill); `_verified`/`email` and the platform fields are super-admin-only; super-admin-created users start verified. Backfill check: a pre-existing user read `t` after migrating, then deleted. tsc pass; lint 0 errors, 20 warnings (none in touched files); E2E 81/81 in 4.3 min, incl. `accounts.spec.ts` S9.1–S9.4.
 - 2026-09-30 11:31 UTC · Step 3: `enforceTenantWrite` (`src/access/tenantWrite.ts`) replaces `validateTenantMembership` as a `beforeChange` hook on the tenant field, so membership is checked on draft saves too (F1) and a suspended studio's members get a 403 on every create and update. Before the fix: S1.11 create-draft got 201 and move-draft got 200 (expected 400); S10.1 got 201 on a game create (expected 403). tsc pass; lint 0 errors, 20 warnings (none in touched files); E2E 84/84 in 4.3 min, incl. S1.11 and `suspension.spec.ts` S10.1.
+- 2026-09-30 11:45 UTC · Step 4: anonymous reads from `src/access/publicRead.ts` (held games and updates, suspended studios' games, updates, items and media leave the public site via `tenant.suspended`/`gameProject.flagged` paths), `mediaFileReadOverride` (P1), `requirePortalProject` on the layout and all 8 portal pages (held or suspended → `/unavailable`, unknown → 404), static noindex `/unavailable`, Tenants `revalidateSuspension`. Before the fix: S10.2 got 403 for studio B's owner on `/api/media/file/s102-banner.png` (expected 200). tsc pass; lint 0 errors, 20 warnings (none in touched files); E2E 88/88 in 4.6 min, incl. S10.2, S10.3, S13.1, S13.2 and S2.1's 404; build lists `/unavailable` as static.
 
 ## Summary

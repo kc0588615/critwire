@@ -2,6 +2,7 @@ import type { CollectionConfig } from 'payload'
 
 import { isSuperAdmin, superAdminFieldAccess, superAdminOnly } from '../../access/isSuperAdmin'
 import { getTenantIDsByRole } from '../../access/tenantRoles'
+import { revalidateSuspension } from './hooks/revalidateSuspension'
 
 /**
  * One tenant = one Workspace (studio). The multi-tenant plugin keys
@@ -76,5 +77,8 @@ export const Tenants: CollectionConfig = {
       admin: { position: 'sidebar' },
     },
   ],
+  hooks: {
+    afterChange: [revalidateSuspension],
+  },
   timestamps: true,
 }

@@ -10,7 +10,7 @@ import RichText from '@/components/RichText'
 import { FeedbackMeta, shippedUpdate, StatusMark } from '@/components/game/FeedbackStatus'
 import { VoteButton } from '@/components/game/VoteButton'
 import { VoteCount } from '@/components/game/VoteCount'
-import { getGameProject } from '@/lib/game-portal/getGameProject'
+import { getGameProject, requirePortalProject } from '@/lib/game-portal/getGameProject'
 import { getHasVoted, getPublicIssue } from '@/lib/game-portal/issues'
 import { portalPaths } from '@/lib/game-portal/paths'
 import { publicStage } from '@/lib/game-portal/stages'
@@ -40,8 +40,7 @@ const IssueNote: React.FC<{
 
 export default async function IssueDetailPage({ params }: Args) {
   const { gameSlug, slug } = await params
-  const project = await getGameProject(gameSlug)
-  if (!project) notFound()
+  const project = await requirePortalProject(gameSlug)
 
   const issue = await getPublicIssue({ projectID: project.id, slug })
   if (!issue) notFound()

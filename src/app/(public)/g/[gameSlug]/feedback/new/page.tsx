@@ -1,7 +1,6 @@
 import type { Metadata } from 'next'
 
 import Link from 'next/link'
-import { notFound } from 'next/navigation'
 import { createLoader, parseAsStringLiteral } from 'nuqs/server'
 import React from 'react'
 
@@ -20,7 +19,7 @@ import {
   feedbackTypeOf,
 } from '@/lib/game-portal/feedbackSearchParams'
 import { getReportRoute } from '@/lib/game-portal/formRoutes'
-import { getGameProject } from '@/lib/game-portal/getGameProject'
+import { getGameProject, requirePortalProject } from '@/lib/game-portal/getGameProject'
 import { portalPaths } from '@/lib/game-portal/paths'
 
 type Args = {
@@ -64,8 +63,7 @@ const chosenType = (
 export default async function NewFeedbackPage({ params, searchParams }: Args) {
   const { gameSlug } = await params
   const { error, submitted, type: typeParam } = await loadSearchParams(searchParams)
-  const project = await getGameProject(gameSlug)
-  if (!project) notFound()
+  const project = await requirePortalProject(gameSlug)
 
   const route = getReportRoute(project.reportForm)
   const paths = portalPaths(gameSlug)

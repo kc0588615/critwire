@@ -3,6 +3,7 @@ import type { CollectionConfig, Condition } from 'payload'
 import { slugField } from 'payload'
 
 import { superAdminFieldAccess } from '../../access/isSuperAdmin'
+import { gameProjectsRead } from '../../access/publicRead'
 import {
   tenantMemberAccess,
   tenantMemberFieldRead,
@@ -40,7 +41,7 @@ export const GameProjects: CollectionConfig = {
   access: {
     // Project config powers the public portal; sensitive fields are
     // gated at field level below.
-    read: () => true,
+    read: gameProjectsRead,
     create: tenantMemberAccess,
     update: tenantMemberAccess,
     delete: tenantOwnerAccess,

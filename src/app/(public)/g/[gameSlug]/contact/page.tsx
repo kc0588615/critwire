@@ -1,7 +1,6 @@
 import type { Metadata } from 'next'
 
 import Link from 'next/link'
-import { notFound } from 'next/navigation'
 import React from 'react'
 
 import { FormField } from '@/components/game/FormField'
@@ -10,7 +9,7 @@ import { PageHead } from '@/components/game/PageHead'
 import { TallyFormPanel } from '@/components/game/TallyEmbed'
 import { TurnstileField } from '@/components/game/TurnstileField'
 import { getContactRoute } from '@/lib/game-portal/formRoutes'
-import { getGameProject } from '@/lib/game-portal/getGameProject'
+import { getGameProject, requirePortalProject } from '@/lib/game-portal/getGameProject'
 import { portalPaths } from '@/lib/game-portal/paths'
 
 type Args = {
@@ -21,8 +20,7 @@ type Args = {
 export default async function ContactPage({ params, searchParams }: Args) {
   const { gameSlug } = await params
   const { error, submitted } = await searchParams
-  const project = await getGameProject(gameSlug)
-  if (!project) notFound()
+  const project = await requirePortalProject(gameSlug)
 
   const route = (await getContactRoute(gameSlug)) ?? { kind: 'none' }
   const paths = portalPaths(gameSlug)

@@ -1,12 +1,11 @@
 import type { Metadata } from 'next'
 
-import { notFound } from 'next/navigation'
 import React from 'react'
 
 import { HubHeader } from '@/components/game/HubHeader'
 import { LatestUpdates } from '@/components/game/LatestUpdates'
 import { TopFeedback } from '@/components/game/TopFeedback'
-import { getGameProject } from '@/lib/game-portal/getGameProject'
+import { getGameProject, requirePortalProject } from '@/lib/game-portal/getGameProject'
 import { getServerSideURL } from '@/utilities/getURL'
 
 // ISR safety net: the GameProjects, PatchNotes, Issues and vote hooks
@@ -22,8 +21,7 @@ export async function generateStaticParams() {
 /** A game's hub: who the game is, its latest updates and its top feedback. */
 export default async function GameHubPage({ params }: { params: Promise<{ gameSlug: string }> }) {
   const { gameSlug } = await params
-  const project = await getGameProject(gameSlug)
-  if (!project) notFound()
+  const project = await requirePortalProject(gameSlug)
 
   return (
     <>

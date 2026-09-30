@@ -5,6 +5,7 @@ import { createServer } from 'node:http'
 import { test as base, expect, type APIRequestContext, type PlaywrightWorkerArgs } from '@playwright/test'
 import type { CollectionSlug } from 'payload'
 import { extractID } from 'payload/shared'
+import sharp from 'sharp'
 
 import type { Config, GameProject, Issue, IssueReport, Media, Page, PatchNote } from '../../../src/payload-types'
 import { type Query, RestClient } from './api'
@@ -236,9 +237,24 @@ export const PNG_8PX = Buffer.from(
   'base64',
 )
 
-/** Uploads an 8×8 PNG to `tenant`'s media library and fails the calling test unless it's stored. */
-export async function uploadImage(client: RestClient, tenant: number, name: string, alt = name): Promise<Media> {
-  const { status, body } = await client.upload('media', { name, mimeType: 'image/png', buffer: PNG_8PX }, { alt, tenant })
+/**
+ * A solid PNG `width` px wide (3:2). Payload only generates the image
+ * sizes narrower than the upload, so tests of `sizes` need one wider than 300.
+ */
+export const pngOfWidth = (width: number): Promise<Buffer> =>
+  sharp({ create: { width, height: Math.round((width * 2) / 3), channels: 3, background: '#00ccff' } })
+    .png()
+    .toBuffer()
+
+/** Uploads a PNG (8×8 by default) to `tenant`'s media library and fails the calling test unless it's stored. */
+export async function uploadImage(
+  client: RestClient,
+  tenant: number,
+  name: string,
+  alt = name,
+  buffer: Buffer = PNG_8PX,
+): Promise<Media> {
+  const { status, body } = await client.upload('media', { name, mimeType: 'image/png', buffer }, { alt, tenant })
   expect(status, `upload ${name}: ${JSON.stringify(body)}`).toBe(201)
   return body.doc
 }

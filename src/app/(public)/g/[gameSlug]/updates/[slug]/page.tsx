@@ -7,7 +7,7 @@ import React from 'react'
 import RichText from '@/components/RichText'
 import { formatDate } from '@/components/game/format'
 import { FromYourFeedback } from '@/components/game/FromYourFeedback'
-import { getGameProject } from '@/lib/game-portal/getGameProject'
+import { getGameProject, requirePortalProject } from '@/lib/game-portal/getGameProject'
 import { portalPaths } from '@/lib/game-portal/paths'
 import { getPublishedPatchNote } from '@/lib/game-portal/patchNotes'
 
@@ -23,8 +23,7 @@ type Args = { params: Promise<{ gameSlug: string; slug: string }> }
 
 export default async function PatchNoteDetailPage({ params }: Args) {
   const { gameSlug, slug } = await params
-  const project = await getGameProject(gameSlug)
-  if (!project) notFound()
+  const project = await requirePortalProject(gameSlug)
 
   const note = await getPublishedPatchNote({ projectID: project.id, slug })
   if (!note) notFound()

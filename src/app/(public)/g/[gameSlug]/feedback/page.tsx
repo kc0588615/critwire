@@ -2,7 +2,6 @@ import type { Metadata } from 'next'
 import type { SearchParams } from 'nuqs/server'
 
 import Link from 'next/link'
-import { notFound } from 'next/navigation'
 import { createLoader } from 'nuqs/server'
 import React from 'react'
 
@@ -19,7 +18,7 @@ import {
   feedbackSearchParams,
   feedbackTypeOf,
 } from '@/lib/game-portal/feedbackSearchParams'
-import { getGameProject } from '@/lib/game-portal/getGameProject'
+import { getGameProject, requirePortalProject } from '@/lib/game-portal/getGameProject'
 import { queryPublicIssues } from '@/lib/game-portal/issues'
 import { type PortalPaths, portalPaths } from '@/lib/game-portal/paths'
 
@@ -78,8 +77,7 @@ export default async function FeedbackPage({ params, searchParams }: Args) {
   const { gameSlug } = await params
   const { page, view, ...filters } = await loadSearchParams(searchParams)
 
-  const project = await getGameProject(gameSlug)
-  if (!project) notFound()
+  const project = await requirePortalProject(gameSlug)
 
   const paths = portalPaths(gameSlug)
   const reportHref = paths.newFeedback()

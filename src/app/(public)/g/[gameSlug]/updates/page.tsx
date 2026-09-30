@@ -1,10 +1,9 @@
 import type { Metadata } from 'next'
 
-import { notFound } from 'next/navigation'
 import React from 'react'
 
 import { PatchNotesFeed } from '@/components/game/PatchNotesFeed'
-import { getGameProject } from '@/lib/game-portal/getGameProject'
+import { getGameProject, requirePortalProject } from '@/lib/game-portal/getGameProject'
 import { portalPaths } from '@/lib/game-portal/paths'
 import { queryPublishedPatchNotes } from '@/lib/game-portal/patchNotes'
 
@@ -20,8 +19,7 @@ type Args = { params: Promise<{ gameSlug: string }> }
 
 export default async function PatchNotesPage({ params }: Args) {
   const { gameSlug } = await params
-  const project = await getGameProject(gameSlug)
-  if (!project) notFound()
+  const project = await requirePortalProject(gameSlug)
 
   const notes = await queryPublishedPatchNotes({ page: 1, projectID: project.id })
 

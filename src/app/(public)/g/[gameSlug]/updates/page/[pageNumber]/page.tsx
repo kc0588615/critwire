@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation'
 import React from 'react'
 
 import { PatchNotesFeed } from '@/components/game/PatchNotesFeed'
-import { getGameProject } from '@/lib/game-portal/getGameProject'
+import { getGameProject, requirePortalProject } from '@/lib/game-portal/getGameProject'
 import { queryPublishedPatchNotes } from '@/lib/game-portal/patchNotes'
 
 export const revalidate = 3600
@@ -22,8 +22,7 @@ export default async function PatchNotesPaginatedPage({ params }: Args) {
   const page = Number(pageNumber)
   if (!Number.isInteger(page) || page < 2) notFound()
 
-  const project = await getGameProject(gameSlug)
-  if (!project) notFound()
+  const project = await requirePortalProject(gameSlug)
 
   const notes = await queryPublishedPatchNotes({ page, projectID: project.id })
   if (page > (notes.totalPages || 1)) notFound()

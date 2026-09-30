@@ -2,6 +2,7 @@ import type { CollectionConfig } from 'payload'
 
 import { slugField } from 'payload'
 
+import { issuesRead } from '../../access/publicRead'
 import { tenantMemberAccess, tenantOwnerAccess } from '../../access/tenantAccess'
 import { sameGameProjectFilter } from '../../fields/sameGameProjectFilter'
 import { validateUniqueSlugPerProject } from '../../hooks/validateUniqueSlugPerProject'
@@ -26,10 +27,7 @@ export const Issues: CollectionConfig = {
   orderable: true,
   access: {
     // The public board only shows issues the studio marked public.
-    read: ({ req }) => {
-      if (req.user) return true
-      return { isPublic: { equals: true } }
-    },
+    read: issuesRead,
     create: tenantMemberAccess,
     update: tenantMemberAccess,
     delete: tenantOwnerAccess,

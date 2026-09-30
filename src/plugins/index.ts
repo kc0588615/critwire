@@ -6,6 +6,7 @@ import { GenerateTitle, GenerateURL } from '@payloadcms/plugin-seo/types'
 
 import { Config, Page } from '@/payload-types'
 import { isSuperAdmin } from '@/access/isSuperAdmin'
+import { mediaFileReadOverride } from '@/access/publicRead'
 import { enforceTenantWrite } from '@/access/tenantWrite'
 import { getServerSideURL } from '@/utilities/getURL'
 
@@ -27,7 +28,8 @@ export const plugins: Plugin[] = [
       issues: {},
       'issue-reports': {},
       'issue-votes': {},
-      media: {},
+      // Signed-in visitors can still load other portals' files.
+      media: { accessResultOverride: mediaFileReadOverride },
       'payload-folders': {},
       // `pages` is deliberately NOT tenant-scoped: it is the platform
       // marketing site, managed by super admins only.
