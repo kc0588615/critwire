@@ -179,9 +179,13 @@ test.describe('S6.2–S6.7 triage as studio A', () => {
       const adminPage = await adminContext.newPage()
       const selector = adminPage.locator('.tenant-selector .rs__control')
       const selectTenant = async (name: string): Promise<void> => {
-        // The selector lives in the nav, which starts collapsed at this width.
-        if (!(await selector.isVisible())) await adminPage.getByRole('button', { name: 'Open Menu' }).click()
-        await selector.click()
+        // The selector lives in the nav, which starts collapsed at this width
+        // and can collapse just after the first paint, so retry until it opens.
+        await expect(async () => {
+          const openMenu = adminPage.getByRole('button', { name: 'Open Menu' })
+          if (await openMenu.isVisible()) await openMenu.click()
+          await selector.click({ timeout: 2_000 })
+        }).toPass({ timeout: 15_000 })
         await adminPage.locator('.rs__option', { hasText: new RegExp(`^${name}$`) }).click()
       }
       const board = adminPage.locator('.list-header ~ div')

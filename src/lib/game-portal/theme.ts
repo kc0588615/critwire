@@ -6,7 +6,7 @@ const hexColor = z.string().regex(HEX_COLOR_RE, 'Must be a 6-digit hex color lik
 
 /**
  * Semantic color tokens. WCAG contrast is enforced at the schema level
- * so no theme — authored or AI-generated — can ship unreadable text.
+ * so no studio's theme can ship unreadable text.
  */
 export const siteThemeColorsSchema = z
   .strictObject({
@@ -72,3 +72,43 @@ export const siteThemeSchema = z.strictObject({
   motion: siteMotionSchema.default('subtle'),
 })
 export type SiteThemeV1 = z.infer<typeof siteThemeSchema>
+
+export const DEFAULT_THEME: SiteThemeV1 = siteThemeSchema.parse({})
+
+type ColorKey = keyof SiteThemeColors
+const COLOR_KEYS = Object.keys(DEFAULT_THEME_COLORS) as ColorKey[]
+const TOKEN_KEYS = ['typography', 'shape', 'density', 'motion'] as const
+type TokenKey = (typeof TOKEN_KEYS)[number]
+
+/** A stored or submitted theme: any level or value may be missing. */
+export type ThemeLayer =
+  | null
+  | undefined
+  | ({ colors?: null | Partial<Record<ColorKey, unknown>> } & Partial<Record<TokenKey, unknown>>)
+
+/** Every key present, but not validated yet. */
+export type MergedTheme = { colors: Record<ColorKey, unknown> } & Record<TokenKey, unknown>
+
+const isSet = (value: unknown): boolean => value != null && value !== ''
+
+/**
+ * Lays each theme over the one before it, starting from the default
+ * theme. The merge is per level (`theme`, then `theme.colors`) and per
+ * known key, so a PATCH of one colour keeps the other nine, and an unset
+ * value (`null`, `undefined` or `''`) never overrides. Parse the result
+ * with `siteThemeSchema`.
+ */
+export const mergeTheme = (...layers: ThemeLayer[]): MergedTheme => {
+  const merged: MergedTheme = { ...DEFAULT_THEME, colors: { ...DEFAULT_THEME.colors } }
+  for (const layer of layers) {
+    if (!layer) continue
+    for (const key of COLOR_KEYS) {
+      const value = layer.colors?.[key]
+      if (isSet(value)) merged.colors[key] = value
+    }
+    for (const key of TOKEN_KEYS) {
+      if (isSet(layer[key])) merged[key] = layer[key]
+    }
+  }
+  return merged
+}

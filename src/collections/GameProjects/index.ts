@@ -23,6 +23,7 @@ import {
   revalidateGameProject,
   revalidateGameProjectDelete,
 } from './hooks/revalidateGameProject'
+import { themeField, validateProjectTheme } from './theme'
 
 const externalLinkField = (name: string, label: string) => ({
   name,
@@ -85,6 +86,7 @@ export const GameProjects: CollectionConfig = {
         return true
       },
     },
+    themeField,
     {
       // Approved fact URLs. The flagship template's action registry may
       // SELECT these by ref, never rewrite them.
@@ -364,6 +366,7 @@ export const GameProjects: CollectionConfig = {
     },
   ],
   hooks: {
+    beforeChange: [validateProjectTheme],
     afterChange: [revalidateGameProject],
     afterDelete: [revalidateGameProjectDelete],
   },

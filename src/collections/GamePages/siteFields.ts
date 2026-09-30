@@ -1,6 +1,6 @@
 import type { Field } from 'payload'
 
-import { HEX_COLOR_RE } from '../../site-templates/flagship-game-v1/schema/contrast'
+import { HEX_COLOR_RE } from '../../lib/game-portal/contrast'
 import { siteActionRefSchema } from '../../site-templates/flagship-game-v1/schema/refs'
 import {
   adaptiveKindSchema,
@@ -16,7 +16,7 @@ import {
   siteMotionSchema,
   siteShapeSchema,
   siteTypographySchema,
-} from '../../site-templates/flagship-game-v1/schema/theme'
+} from '../../lib/game-portal/theme'
 
 /**
  * Payload authoring fields for the flagship-game-v1 site configuration.

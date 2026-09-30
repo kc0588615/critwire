@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react'
 
-import type { SiteThemeV1 } from '../schema/theme'
+import type { SiteThemeV1 } from '@/lib/game-portal/theme'
 
 type DisplayVoice = {
   family: string
@@ -12,7 +12,7 @@ type DisplayVoice = {
   wordSpacing: string
 }
 
-/** The display voice per `typography` token; the faces come from `../fonts.ts`. */
+/** The display voice per `typography` token; the faces come from `./fonts.ts`. */
 const DISPLAY: Record<SiteThemeV1['typography'], DisplayVoice> = {
   editorial: {
     family: 'var(--font-young-serif), Georgia, serif',

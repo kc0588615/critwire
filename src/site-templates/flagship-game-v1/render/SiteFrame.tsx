@@ -2,12 +2,13 @@ import React from 'react'
 
 import type { GameProject } from '@/payload-types'
 
-import { displayFontVariables } from '../fonts'
+import { displayFontVariables } from '@/components/game/theme/fonts'
+import { themeStyle } from '@/components/game/theme/themeStyle'
+import type { SiteThemeV1 } from '@/lib/game-portal/theme'
+
 import type { SiteConfigV1 } from '../schema/config'
-import type { SiteThemeV1 } from '../schema/theme'
 import { SiteFooter } from './SiteFooter'
 import { SiteNav } from './SiteNav'
-import { themeStyle } from './themeStyle'
 
 /**
  * The only element that carries `.fs-root`: the theme's custom

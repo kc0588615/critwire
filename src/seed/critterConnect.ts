@@ -6,6 +6,7 @@ import { extractID } from 'payload/shared'
 
 import type { GameProject, Media } from '../payload-types'
 
+import { mergeTheme, type SiteThemeV1 } from '../lib/game-portal/theme'
 import { siteConfigV1Schema } from '../site-templates/flagship-game-v1/schema/config'
 import { siteConfigToPayloadSite } from './siteConfig'
 
@@ -24,6 +25,25 @@ const LAUNCH_PATCH_NOTE_SLUG = 'v0-1-0-launch'
 const SAMPLE_ISSUE_SLUG = 'card-flicker-on-open'
 const SAMPLE_REPORT_TITLE = 'Clue trail disappears after fast travel'
 const LANDING_PAGE_TITLE = 'Critter Connect Flagship Site'
+
+const CRITTER_CONNECT_THEME: SiteThemeV1 = {
+  colors: {
+    background: '#0f1f26',
+    foreground: '#e6f1f0',
+    mutedForeground: '#9ab5b8',
+    surface: '#172b33',
+    accent: '#f3b340',
+    accentForeground: '#10191c',
+    border: '#28444e',
+    success: '#5bd49c',
+    warning: '#ef8a50',
+    error: '#ff6f7d',
+  },
+  typography: 'technical',
+  shape: 'balanced',
+  density: 'cinematic',
+  motion: 'subtle',
+}
 
 const lexicalFromText = (text: string) => ({
   root: {
@@ -107,6 +127,7 @@ export async function seedCritterConnect() {
     banner: banner.id,
     logo: logo.id,
     accentColor: '#f3b340',
+    theme: CRITTER_CONNECT_THEME,
     links: {
       steam: 'https://store.steampowered.com/',
     },
@@ -157,6 +178,7 @@ export async function seedCritterConnect() {
       !project.logo ||
       extractID(project.logo) !== logo.id ||
       project.accentColor !== projectSeed.accentColor ||
+      JSON.stringify(mergeTheme(project.theme)) !== JSON.stringify(mergeTheme(CRITTER_CONNECT_THEME)) ||
       project.links?.steam !== projectSeed.links.steam ||
       project.availability?.releaseState !== projectSeed.availability.releaseState ||
       project.availability?.currentVersion !== projectSeed.availability.currentVersion ||
@@ -194,24 +216,7 @@ export async function seedCritterConnect() {
       ],
       cta: { label: 'Begin expedition', ref: 'primary-store' },
     },
-    theme: {
-      colors: {
-        background: '#0f1f26',
-        foreground: '#e6f1f0',
-        mutedForeground: '#9ab5b8',
-        surface: '#172b33',
-        accent: '#f3b340',
-        accentForeground: '#10191c',
-        border: '#28444e',
-        success: '#5bd49c',
-        warning: '#ef8a50',
-        error: '#ff6f7d',
-      },
-      typography: 'technical',
-      shape: 'balanced',
-      density: 'cinematic',
-      motion: 'subtle',
-    },
+    theme: CRITTER_CONNECT_THEME,
     hero: {
       variant: 'leftEditorial',
       eyebrow: 'A field expedition built on evidence',

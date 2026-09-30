@@ -4,10 +4,10 @@ import type { GameProject } from '@/payload-types'
 
 import { resolveSiteAction } from './actions'
 import { siteConfigV1Schema, type SiteConfigV1 } from './schema/config'
-import { contrastRatio, normalizeHexColor } from './schema/contrast'
+import { contrastRatio, normalizeHexColor } from '@/lib/game-portal/contrast'
 import type { SiteAction, SiteActionRef } from './schema/refs'
 import { toSafeText } from './schema/text'
-import { DEFAULT_THEME_COLORS } from './schema/theme'
+import { DEFAULT_THEME_COLORS } from '@/lib/game-portal/theme'
 
 /**
  * Derives a complete, always-valid flagship configuration from project

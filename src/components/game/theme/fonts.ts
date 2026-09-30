@@ -2,7 +2,7 @@ import { Archivo, Science_Gothic, Young_Serif } from 'next/font/google'
 
 /*
  * The portal's three display voices, one per `typography` token (see
- * DISPLAY in render/themeStyle.ts). Not preloaded: the voice depends on
+ * DISPLAY in themeStyle.ts). Not preloaded: the voice depends on
  * the studio's theme, so the browser downloads only the face that
  * `--fs-font-display` references.
  */

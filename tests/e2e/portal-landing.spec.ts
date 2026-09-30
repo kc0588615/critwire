@@ -3,8 +3,8 @@ import { randomBytes } from 'node:crypto'
 import type { Page } from '@playwright/test'
 
 import type { GamePage, GameProject, Issue, Media } from '../../src/payload-types'
-import { contrastRatio } from '../../src/site-templates/flagship-game-v1/schema/contrast'
-import { DEFAULT_THEME_COLORS } from '../../src/site-templates/flagship-game-v1/schema/theme'
+import { contrastRatio } from '../../src/lib/game-portal/contrast'
+import { DEFAULT_THEME_COLORS } from '../../src/lib/game-portal/theme'
 import type { RestClient } from './support/api'
 import {
   createIssue,
@@ -352,6 +352,40 @@ test.describe('S2.4 publishing a flagship page', () => {
         await expect(page.getByRole('heading', { level: 1 })).toHaveText(project.name, { timeout: 1_000 })
       })
     })
+  })
+})
+
+test('S2.4 project theme', async ({ api, uniqueSlug, world }) => {
+  const aMember = api('aMember')
+  const project = await createProject(api('aOwner'), world.tenants.A.id, uniqueSlug('land-theme'))
+  const storedColors = async () => {
+    const { status, body } = await aMember.findByID('game-projects', project.id)
+    expect(status).toBe(200)
+    return body.theme?.colors
+  }
+
+  const invalid: [string, keyof typeof DEFAULT_THEME_COLORS, string][] = [
+    ['low-contrast text on the background', 'foreground', '#2a2f3d'],
+    ['low-contrast button text', 'accentForeground', '#67e8f9'],
+    ['a 3-digit hex colour', 'accent', '#fff'],
+  ]
+  for (const [name, key, value] of invalid) {
+    await test.step(`rejects ${name}`, async () => {
+      const { status, body } = await aMember.update('game-projects', project.id, {
+        theme: { colors: { ...DEFAULT_THEME_COLORS, [key]: value } },
+      })
+      expect(status, JSON.stringify(body)).toBe(400)
+      expect(JSON.stringify(body)).toContain(`theme.colors.${key}`)
+      expect(await storedColors()).toEqual(DEFAULT_THEME_COLORS)
+    })
+  }
+
+  await test.step('setting only the accent keeps the default palette', async () => {
+    const { status, body } = await aMember.update('game-projects', project.id, {
+      theme: { colors: { accent: '#f59e0b' } },
+    })
+    expect(status, JSON.stringify(body)).toBe(200)
+    expect(await storedColors()).toEqual({ ...DEFAULT_THEME_COLORS, accent: '#f59e0b' })
   })
 })
 

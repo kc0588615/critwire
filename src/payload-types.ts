@@ -184,6 +184,30 @@ export interface GameProject {
    */
   accentColor?: string | null;
   /**
+   * Match your portal to your own site. Colours are checked for readable (WCAG) contrast when you save.
+   */
+  theme?: {
+    /**
+     * 6-digit hex colours, like #22d3ee.
+     */
+    colors?: {
+      background?: string | null;
+      foreground?: string | null;
+      mutedForeground?: string | null;
+      surface?: string | null;
+      accent?: string | null;
+      accentForeground?: string | null;
+      border?: string | null;
+      success?: string | null;
+      warning?: string | null;
+      error?: string | null;
+    };
+    typography?: ('modern' | 'editorial' | 'technical') | null;
+    shape?: ('sharp' | 'balanced' | 'soft') | null;
+    density?: ('compact' | 'cinematic') | null;
+    motion?: ('off' | 'subtle') | null;
+  };
+  /**
    * External links shown on the public portal.
    */
   links?: {
@@ -1372,6 +1396,28 @@ export interface GameProjectsSelect<T extends boolean = true> {
   logo?: T;
   banner?: T;
   accentColor?: T;
+  theme?:
+    | T
+    | {
+        colors?:
+          | T
+          | {
+              background?: T;
+              foreground?: T;
+              mutedForeground?: T;
+              surface?: T;
+              accent?: T;
+              accentForeground?: T;
+              border?: T;
+              success?: T;
+              warning?: T;
+              error?: T;
+            };
+        typography?: T;
+        shape?: T;
+        density?: T;
+        motion?: T;
+      };
   links?:
     | T
     | {

@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import React from 'react'
 
-import { siteThemeSchema } from '@/site-templates/flagship-game-v1/schema/theme'
+import { siteThemeSchema } from '@/lib/game-portal/theme'
 import { SiteRoot } from '@/site-templates/flagship-game-v1/render/SiteFrame'
 
 /** Same page for every miss, in the default theme: nothing about any game leaks. */

@@ -1,4 +1,4 @@
-import { siteThemeSchema, type SiteThemeV1 } from '../../src/site-templates/flagship-game-v1/schema/theme'
+import { siteThemeSchema, type SiteThemeV1 } from '../../src/lib/game-portal/theme'
 
 /**
  * The build's own default theme: each build under test imports its own

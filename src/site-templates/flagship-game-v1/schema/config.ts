@@ -15,7 +15,7 @@ import {
   navConfigSchema,
   trailerSlotSchema,
 } from './slots'
-import { siteThemeSchema } from './theme'
+import { siteThemeSchema } from '@/lib/game-portal/theme'
 
 /**
  * The complete flagship-game-v1 site configuration. `prefault({})`

@@ -3,7 +3,7 @@ import path from 'node:path'
 import { type APIRequestContext, expect, type Page, test } from '@playwright/test'
 
 import type { GamePage } from '../../src/payload-types'
-import type { SiteThemeV1 } from '../../src/site-templates/flagship-game-v1/schema/theme'
+import type { SiteThemeV1 } from '../../src/lib/game-portal/theme'
 import { RestClient } from '../e2e/support/api'
 import { BASE_URL } from '../e2e/support/env'
 import { newRequestContext } from '../e2e/support/fixtures'
