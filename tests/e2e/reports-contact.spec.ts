@@ -2,9 +2,9 @@ import type { Page } from '@playwright/test'
 import { extractID } from 'payload/shared'
 
 import type { GameProject, PayloadJob } from '../../src/payload-types'
-import type { RestClient } from './support/api'
+import type { ApiError, RestClient } from './support/api'
 import { TURNSTILE_DUMMY_TOKEN } from './support/env'
-import { createProject, createReport, expect, test } from './support/fixtures'
+import { createIssue, createProject, createReport, expect, test } from './support/fixtures'
 
 /**
  * Player reports and the contact form: the public forms behind Turnstile,
@@ -13,6 +13,7 @@ import { createProject, createReport, expect, test } from './support/fixtures'
  */
 
 const reportPath = (slug: string) => `/g/${slug}/report`
+const issuePath = (game: string, slug: string) => `/g/${game}/issues/${slug}`
 const contactPath = (slug: string) => `/g/${slug}/contact`
 
 /** Loads `path` and fails unless the server answers 200. */
@@ -418,5 +419,57 @@ test.describe('S5.4–S5.6 contact form', () => {
     expect(jobs, 'the undelivered job is kept').toHaveLength(1)
     expect(jobs[0].completedAt ?? null).toBeNull()
     expect(jobs[0].log ?? []).toContainEqual(expect.objectContaining({ state: 'failed' }))
+  })
+})
+
+test.describe('S5.7 reserved feedback slugs', () => {
+  let project: GameProject
+
+  test.beforeAll(async ({ api, uniqueSlug, world }) => {
+    project = await createProject(api('aOwner'), world.tenants.A.id, uniqueSlug('rc-reserved'))
+  })
+
+  const reservedSlugError = expect.objectContaining({
+    message: '`new` is reserved; choose another slug',
+    path: 'slug',
+  })
+
+  /** The field errors of a Payload ValidationError response. */
+  const fieldErrors = (errors: ApiError[] | undefined) =>
+    errors?.flatMap((error) => (error.data as { errors?: unknown[] } | undefined)?.errors ?? [])
+
+  test('S5.7 a submission titled "New" never takes the form\'s URL [F3]', async ({ api, page }) => {
+    const aOwner = api('aOwner')
+
+    await test.step('a published report titled "New" gets the slug new-2', async () => {
+      const report = await createReport(aOwner, project, { title: 'New' })
+      const { status, body } = await aOwner.update('issue-reports', report.id, { status: 'PUBLISHED' }, { depth: 1 })
+      expect(status, JSON.stringify(body)).toBe(200)
+      expect(body.doc.issue).toMatchObject({ slug: 'new-2', title: 'New' })
+    })
+
+    await test.step('its public page answers 200 with its title', async () => {
+      const response = await page.goto(issuePath(project.slug, 'new-2'))
+      expect(response?.status()).toBe(200)
+      await expect(page.getByRole('heading', { level: 1 })).toHaveText('New')
+    })
+
+    await test.step('a studio issue titled "New" with no slug is refused on its slug', async () => {
+      const { status, body } = await aOwner.create('issues', {
+        category: 'OTHER',
+        gameProject: project.id,
+        tenant: extractID(project.tenant!),
+        title: 'New',
+      })
+      expect(status, JSON.stringify(body)).toBe(400)
+      expect(fieldErrors(body.errors)).toContainEqual(reservedSlugError)
+    })
+
+    await test.step('changing an existing slug to "new" is refused the same way', async () => {
+      const issue = await createIssue(aOwner, project, 'lamp-flickers')
+      const { status, body } = await aOwner.update('issues', issue.id, { slug: 'new' })
+      expect(status, JSON.stringify(body)).toBe(400)
+      expect(fieldErrors(body.errors)).toContainEqual(reservedSlugError)
+    })
   })
 })

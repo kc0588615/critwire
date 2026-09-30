@@ -3,6 +3,7 @@ import type { CollectionBeforeChangeHook, PayloadRequest } from 'payload'
 import { ValidationError } from 'payload'
 import { extractID } from 'payload/shared'
 
+import { isReservedFeedbackSlug } from '@/lib/game-portal/paths'
 import type { IssueReport } from '@/payload-types'
 
 const slugify = (value: string): string => {
@@ -15,6 +16,7 @@ const slugify = (value: string): string => {
   return slug || 'issue'
 }
 
+// Reserved slugs count as taken, so a report titled "New" becomes `new-2`.
 const uniqueIssueSlug = async ({
   projectID,
   req,
@@ -24,11 +26,9 @@ const uniqueIssueSlug = async ({
   req: PayloadRequest
   title: string
 }): Promise<string> => {
-  const base = slugify(title)
-  let candidate = base
-  let suffix = 2
+  const isTaken = async (candidate: string): Promise<boolean> => {
+    if (isReservedFeedbackSlug(candidate)) return true
 
-  while (true) {
     const existing = await req.payload.find({
       collection: 'issues',
       depth: 0,
@@ -40,12 +40,19 @@ const uniqueIssueSlug = async ({
         and: [{ gameProject: { equals: projectID } }, { slug: { equals: candidate } }],
       },
     })
+    return Boolean(existing.docs[0])
+  }
 
-    if (!existing.docs[0]) return candidate
+  const base = slugify(title)
+  let candidate = base
+  let suffix = 2
 
+  while (await isTaken(candidate)) {
     candidate = `${base}-${suffix}`
     suffix += 1
   }
+
+  return candidate
 }
 
 // Creates the public Issue in the report's own transaction and links it in

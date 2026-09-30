@@ -11,6 +11,7 @@ import {
   revalidateIssueLanding,
   revalidateIssueLandingDelete,
 } from './hooks/revalidateIssueLanding'
+import { issueSlugify, rejectReservedSlug } from './reservedSlug'
 
 export const Issues: CollectionConfig = {
   slug: 'issues',
@@ -54,8 +55,8 @@ export const Issues: CollectionConfig = {
       type: 'text',
       required: true,
     },
-    // Unique per game project via the compound index below.
-    slugField({ disableUnique: true }),
+    // Unique per game project via the compound index below; `new` is reserved.
+    slugField({ disableUnique: true, slugify: issueSlugify }),
     {
       name: 'summary',
       type: 'textarea',
@@ -152,7 +153,7 @@ export const Issues: CollectionConfig = {
     afterChange: [revalidateIssueLanding],
     afterDelete: [revalidateIssueLandingDelete],
     beforeDelete: [deleteIssueVotes],
-    beforeValidate: [validateUniqueSlugPerProject('issues')],
+    beforeValidate: [rejectReservedSlug, validateUniqueSlugPerProject('issues')],
   },
   indexes: [
     {

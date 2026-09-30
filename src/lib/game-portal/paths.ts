@@ -35,6 +35,15 @@ export const portalPaths = (gameSlug: string) => {
 export type PortalPaths = ReturnType<typeof portalPaths>
 
 /**
+ * Feedback item slugs that would collide with a static route beside
+ * `feedback/[slug]`: `feedback/new` is the submit form, and Next serves
+ * the static route first, so an item slugged `new` would be unreachable.
+ */
+export const RESERVED_FEEDBACK_SLUGS: readonly string[] = ['new']
+
+export const isReservedFeedbackSlug = (slug: string): boolean => RESERVED_FEEDBACK_SLUGS.includes(slug)
+
+/**
  * Portal route patterns for `revalidatePath(pattern, 'layout')`.
  *
  * Next tags a cached page with its exact URL and with its route's
