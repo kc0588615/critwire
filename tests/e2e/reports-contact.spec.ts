@@ -28,6 +28,14 @@ async function submitWithTurnstile(page: Page, button: string): Promise<void> {
   await page.getByRole('button', { name: button }).click()
 }
 
+/** Answers the form's "Bug or idea?" and waits for that form. */
+async function chooseType(page: Page, name: 'Bug' | 'Idea'): Promise<void> {
+  const option = page.getByRole('group', { name: 'Bug or idea?' }).getByRole('link', { name: new RegExp(`^${name}`) })
+  await option.click()
+  await expect(page).toHaveURL(new RegExp(`[?&]type=${name.toLowerCase()}`))
+  await expect(option).toHaveAttribute('aria-current', 'true')
+}
+
 /** Posts a public form as JSON, the way a script or the API would. */
 const submitForm = (client: RestClient, path: string, data: Record<string, unknown>) =>
   client.raw<{ error?: string; id?: number; ok?: boolean; published?: boolean }>('POST', `${path}/submit`, { data })
@@ -60,6 +68,10 @@ test.describe('S5.1–S5.3 player reports', () => {
   test('S5.1 a player files a report in the browser and only the studio sees it', async ({ api, page, world }) => {
     const title = 'Raft drifts through the pier'
     await open(page, reportPath(project.slug))
+
+    await test.step('the player picks "Bug" first', async () => {
+      await chooseType(page, 'Bug')
+    })
 
     await test.step('the Turnstile widget issues a token and the submit lands', async () => {
       await page.getByLabel('Title').fill(title)
@@ -474,6 +486,78 @@ test.describe('S5.7 reserved feedback slugs', () => {
   })
 })
 
+test.describe('S5.8 bugs and ideas', () => {
+  test('S5.8 a bug and an idea from the browser reach the board and the list with their types', async ({
+    api,
+    page,
+    uniqueSlug,
+    world,
+  }) => {
+    const aOwner = api('aOwner')
+    const project = await createProject(aOwner, world.tenants.A.id, uniqueSlug('rc-bug-idea'))
+    const bug = 'Anchor chain clips through the dock'
+    const idea = 'Let the lighthouse keeper name the boat'
+
+    await test.step('before a choice the page asks "Bug or idea?" and shows no form', async () => {
+      await open(page, reportPath(project.slug))
+      await expect(page.getByRole('heading', { level: 1 })).toHaveText('Send feedback')
+      await expect(page.locator('form[action$="/feedback/new/submit"]')).toHaveCount(0)
+    })
+
+    await test.step('a bug with its platform and version', async () => {
+      await chooseType(page, 'Bug')
+      await expect(page.getByRole('heading', { level: 1 })).toHaveText('Report a bug')
+      await page.getByLabel('Title').fill(bug)
+      await page.getByLabel('What happened').fill('Dropping anchor at the dock pulls the chain through the planks.')
+      await page.getByLabel('Platform (optional)').fill('Windows')
+      await page.getByLabel('Game version (optional)').fill('1.5.0')
+      await submitWithTurnstile(page, 'Send report')
+      await expect(page).toHaveURL(/[?&]submitted=1/)
+      await expect(page.getByText('Report sent. The team reviews submissions before they’re public.')).toBeVisible()
+    })
+
+    await test.step('an idea, whose form has no platform or version', async () => {
+      await chooseType(page, 'Idea')
+      await expect(page.getByRole('heading', { level: 1 })).toHaveText('Suggest an idea')
+      await expect(page.getByLabel('Platform (optional)')).toHaveCount(0)
+      await expect(page.getByLabel('Game version (optional)')).toHaveCount(0)
+      await page.getByLabel('Title').fill(idea)
+      await page.getByLabel('What’s your idea?').fill('A name plate on the boat, set by the keeper once per save.')
+      await submitWithTurnstile(page, 'Send idea')
+      await expect(page).toHaveURL(/[?&]submitted=1/)
+      await expect(page.getByText('Idea sent.')).toBeVisible()
+    })
+
+    await test.step('the studio sees each with its type and publishes both', async () => {
+      for (const [title, expected] of [
+        [bug, { type: 'BUG', platform: 'Windows', gameVersion: '1.5.0' }],
+        [idea, { type: 'IDEA', platform: null, gameVersion: null }],
+      ] as const) {
+        const { body } = await aOwner.find('issue-reports', { where: { title: { equals: title } } })
+        expect(body.docs).toHaveLength(1)
+        expect(body.docs[0]).toMatchObject({ status: 'NEW', ...expected })
+        const { status } = await aOwner.update('issue-reports', body.docs[0].id, { status: 'PUBLISHED' })
+        expect(status).toBe(200)
+      }
+    })
+
+    for (const [view, item] of [
+      ['board', '.fs-board-card'],
+      ['list', '.fs-issue-item'],
+    ] as const) {
+      await test.step(`the ${view} lists both, tagged Bug and Idea`, async () => {
+        await open(page, `/g/${project.slug}/feedback${view === 'board' ? '?view=board' : ''}`)
+        for (const [title, tag] of [
+          [bug, 'Bug'],
+          [idea, 'Idea'],
+        ] as const) {
+          await expect(page.locator(item).filter({ hasText: title }).locator('.fs-tag').first()).toHaveText(tag)
+        }
+      })
+    }
+  })
+})
+
 test.describe('S5.9–S5.11 moderation and feedback settings', () => {
   const clean = {
     category: 'GAMEPLAY',
@@ -527,10 +611,36 @@ test.describe('S5.9–S5.11 moderation and feedback settings', () => {
     })
   })
 
-  test('S5.10 turning ideas off refuses ideas', async ({ api, uniqueSlug, world }) => {
+  test('S5.10 turning ideas off refuses ideas', async ({ api, page, uniqueSlug, world }) => {
     const aOwner = api('aOwner')
     const project = await createProject(aOwner, world.tenants.A.id, uniqueSlug('rc-no-ideas'), {
       reportForm: { provider: 'native', acceptIdeas: false },
+    })
+    const suggestIdea = () => page.getByRole('link', { name: 'Suggest an idea' })
+
+    await test.step('the feedback page offers no "Suggest an idea"', async () => {
+      await open(page, `/g/${project.slug}/feedback`)
+      await expect(page.getByRole('link', { name: 'Report a bug' })).toBeVisible()
+      await expect(suggestIdea()).toHaveCount(0)
+    })
+
+    await test.step('neither does the hub', async () => {
+      await expect(async () => {
+        await open(page, `/g/${project.slug}`)
+        await expect(page.getByRole('link', { name: 'Report a bug' })).toBeVisible({ timeout: 1_000 })
+        await expect(suggestIdea()).toHaveCount(0, { timeout: 1_000 })
+      }).toPass({ timeout: 20_000 })
+    })
+
+    await test.step('the form offers no type choice and shows the bug form, even when asked for an idea', async () => {
+      for (const path of [reportPath(project.slug), `${reportPath(project.slug)}?type=idea`]) {
+        await open(page, path)
+        await expect(page.getByRole('group', { name: 'Bug or idea?' })).toHaveCount(0)
+        await expect(page.getByRole('heading', { level: 1 })).toHaveText('Report a bug')
+        await expect(page.getByLabel('What happened')).toBeVisible()
+        await expect(page.getByLabel('Platform (optional)')).toBeVisible()
+        await expect(page.locator('input[name="type"]')).toHaveValue('BUG')
+      }
     })
 
     await test.step('an idea answers 400 and stores nothing', async () => {

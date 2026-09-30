@@ -1064,6 +1064,72 @@
   min-height: 65px;
 }
 
+/* "Bug or idea?": two radio-like cards that link to each form. They take
+   the controls' bg fill and muted-fg border; the chosen one is marked in fg
+   (border and a filled dot), since the accent is never on surface (§2). */
+.fs-type-choice {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.fs-type-options {
+  display: grid;
+  gap: 0.75rem;
+}
+
+@media (min-width: 30rem) {
+  .fs-type-options {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.fs-type-option {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 0.75rem;
+  row-gap: 0.125rem;
+  align-items: baseline;
+  border: 1px solid var(--fs-muted-fg);
+  border-radius: var(--fs-radius-control);
+  padding: 0.875rem 1rem;
+  background: var(--fs-bg);
+  color: var(--fs-fg);
+  text-decoration: none;
+}
+
+.fs-type-option::before {
+  width: 0.75rem;
+  height: 0.75rem;
+  border: 2px solid var(--fs-muted-fg);
+  border-radius: 999px;
+  align-self: center;
+  content: '';
+}
+
+.fs-type-option:hover {
+  border-color: var(--fs-fg);
+}
+
+.fs-type-option[aria-current] {
+  border-color: var(--fs-fg);
+  box-shadow: inset 0 0 0 1px var(--fs-fg);
+}
+
+.fs-type-option[aria-current]::before {
+  border-color: var(--fs-fg);
+  background: var(--fs-fg);
+}
+
+.fs-type-option-name {
+  font-weight: 700;
+}
+
+.fs-type-option-hint {
+  grid-column: 2;
+  color: var(--fs-muted-fg);
+  font-size: 0.875rem;
+}
+
 /* A Tally form (button or iframe), then the line saying Tally hosts it. The
    iframe keeps the form's own Tally background, so it gets the control radius. */
 .fs-tally {

@@ -2,31 +2,76 @@ import type { Metadata } from 'next'
 
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import { createLoader, parseAsStringLiteral } from 'nuqs/server'
 import React from 'react'
 
+import type { GameProject } from '@/payload-types'
+
 import { ISSUE_CATEGORY_OPTIONS } from '@/collections/options'
+import { FeedbackTypeChoice } from '@/components/game/FeedbackTypeChoice'
 import { FormField } from '@/components/game/FormField'
 import { FormNotice } from '@/components/game/FormNotice'
 import { PageHead } from '@/components/game/PageHead'
 import { TallyFormPanel } from '@/components/game/TallyEmbed'
 import { TurnstileField } from '@/components/game/TurnstileField'
+import {
+  type FeedbackTypeParam,
+  feedbackSearchParams,
+  feedbackTypeOf,
+} from '@/lib/game-portal/feedbackSearchParams'
 import { getReportRoute } from '@/lib/game-portal/formRoutes'
 import { getGameProject } from '@/lib/game-portal/getGameProject'
 import { portalPaths } from '@/lib/game-portal/paths'
 
 type Args = {
   params: Promise<{ gameSlug: string }>
-  searchParams: Promise<{ error?: string; submitted?: string }>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
 }
 
-export default async function ReportIssuePage({ params, searchParams }: Args) {
+const loadSearchParams = createLoader({
+  error: parseAsStringLiteral(['1'] as const),
+  /** Set by the submit route: `published` when the item went straight onto the board. */
+  submitted: parseAsStringLiteral(['1', 'published'] as const),
+  type: feedbackSearchParams.type,
+})
+
+/** The copy that follows the chosen type; `null` is the page before a choice. */
+const COPY = {
+  bug: {
+    describe: 'What happened?',
+    hint: 'What you were doing, what you expected, and what happened instead.',
+    purpose: 'what went wrong',
+    sent: 'Report sent.',
+    submit: 'Send report',
+    title: 'Report a bug',
+  },
+  idea: {
+    describe: 'What’s your idea?',
+    hint: 'What you would like to see, and what it would change for you.',
+    purpose: 'what you would like to see',
+    sent: 'Idea sent.',
+    submit: 'Send idea',
+    title: 'Suggest an idea',
+  },
+} as const satisfies Record<FeedbackTypeParam, Record<string, string>>
+
+/** The chosen type; a studio that takes no ideas only takes bugs. */
+const chosenType = (
+  project: Pick<GameProject, 'reportForm'>,
+  type: FeedbackTypeParam | null,
+): FeedbackTypeParam | null => (project.reportForm?.acceptIdeas === false ? 'bug' : type)
+
+export default async function NewFeedbackPage({ params, searchParams }: Args) {
   const { gameSlug } = await params
-  const { error, submitted } = await searchParams
+  const { error, submitted, type: typeParam } = await loadSearchParams(searchParams)
   const project = await getGameProject(gameSlug)
   if (!project) notFound()
 
   const route = getReportRoute(project.reportForm)
   const paths = portalPaths(gameSlug)
+  const acceptsIdeas = project.reportForm?.acceptIdeas !== false
+  const type = chosenType(project, typeParam)
+  const copy = type ? COPY[type] : null
 
   return (
     <div className="fs-shell fs-ops">
@@ -34,14 +79,15 @@ export default async function ReportIssuePage({ params, searchParams }: Args) {
         <PageHead
           purpose={
             <>
-              Tell the {project.name} team what went wrong. Check the{' '}
+              Tell the {project.name} team{' '}
+              {copy ? copy.purpose : 'what went wrong or what you would like to see'}. Check the{' '}
               <Link className="fs-link" href={paths.feedback}>
                 feedback
               </Link>{' '}
-              first: if your bug is there, vote on it.
+              first: if it’s already there, vote on it.
             </>
           }
-          title="Report a bug"
+          title={copy ? copy.title : 'Send feedback'}
         />
 
         {route.kind === 'tally' ? (
@@ -71,107 +117,117 @@ export default async function ReportIssuePage({ params, searchParams }: Args) {
           </div>
         ) : (
           <>
-            {submitted === '1' || submitted === 'published' ? (
+            {copy && submitted ? (
               <FormNotice className="mb-6" tone="success">
-                Report sent. The {project.name} team can see it now.
+                {copy.sent}{' '}
+                {submitted === 'published'
+                  ? 'It’s on the board now.'
+                  : 'The team reviews submissions before they’re public.'}
               </FormNotice>
             ) : null}
-            {error === '1' ? (
+            {error ? (
               <FormNotice className="mb-6" tone="error">
-                Your report wasn’t sent, so nothing reached the studio. Check the fields, complete
-                the verification and send it again.
+                Your feedback wasn’t sent, so nothing reached the studio. Check the fields,
+                complete the verification and send it again.
               </FormNotice>
             ) : null}
 
-            <form action={paths.feedbackSubmit} className="fs-form" method="post">
-              <FormField id="title" label="Title">
-                {(control) => (
-                  <input
-                    {...control}
-                    className="fs-input"
-                    maxLength={160}
-                    minLength={3}
-                    name="title"
-                    required
-                    type="text"
-                  />
-                )}
-              </FormField>
+            {type && copy ? (
+              <form action={paths.feedbackSubmit} className="fs-form" method="post">
+                {acceptsIdeas ? <FeedbackTypeChoice chosen={type} paths={paths} /> : null}
+                <input name="type" type="hidden" value={feedbackTypeOf(type)} />
 
-              <FormField
-                hint="What you were doing, what you expected, and what happened instead."
-                id="description"
-                label="What happened?"
-              >
-                {(control) => (
-                  <textarea
-                    {...control}
-                    className="fs-input fs-textarea"
-                    maxLength={5000}
-                    minLength={10}
-                    name="description"
-                    required
-                  />
-                )}
-              </FormField>
-
-              <FormField id="category" label="Category">
-                {(control) => (
-                  <select
-                    {...control}
-                    className="fs-input"
-                    defaultValue="OTHER"
-                    name="category"
-                    required
-                  >
-                    {ISSUE_CATEGORY_OPTIONS.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                )}
-              </FormField>
-
-              <div className="fs-field-pair">
-                <FormField id="submitterEmail" label="Email (optional)">
-                  {(control) => (
-                    <input {...control} className="fs-input" name="submitterEmail" type="email" />
-                  )}
-                </FormField>
-                <FormField id="platform" label="Platform (optional)">
+                <FormField id="title" label="Title">
                   {(control) => (
                     <input
                       {...control}
                       className="fs-input"
-                      maxLength={120}
-                      name="platform"
-                      placeholder="Windows, Steam Deck, PS5"
+                      maxLength={160}
+                      minLength={3}
+                      name="title"
+                      required
                       type="text"
                     />
                   )}
                 </FormField>
-              </div>
 
-              <FormField id="gameVersion" label="Game version (optional)">
-                {(control) => (
-                  <input
-                    {...control}
-                    className="fs-input"
-                    maxLength={120}
-                    name="gameVersion"
-                    type="text"
-                  />
+                <FormField hint={copy.hint} id="description" label={copy.describe}>
+                  {(control) => (
+                    <textarea
+                      {...control}
+                      className="fs-input fs-textarea"
+                      maxLength={5000}
+                      minLength={10}
+                      name="description"
+                      required
+                    />
+                  )}
+                </FormField>
+
+                <FormField id="category" label="Category">
+                  {(control) => (
+                    <select
+                      {...control}
+                      className="fs-input"
+                      defaultValue="OTHER"
+                      name="category"
+                      required
+                    >
+                      {ISSUE_CATEGORY_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </FormField>
+
+                {type === 'bug' ? (
+                  <>
+                    <div className="fs-field-pair">
+                      <EmailField />
+                      <FormField id="platform" label="Platform (optional)">
+                        {(control) => (
+                          <input
+                            {...control}
+                            className="fs-input"
+                            maxLength={120}
+                            name="platform"
+                            placeholder="Windows, Steam Deck, PS5"
+                            type="text"
+                          />
+                        )}
+                      </FormField>
+                    </div>
+
+                    <FormField id="gameVersion" label="Game version (optional)">
+                      {(control) => (
+                        <input
+                          {...control}
+                          className="fs-input"
+                          maxLength={120}
+                          name="gameVersion"
+                          type="text"
+                        />
+                      )}
+                    </FormField>
+                  </>
+                ) : (
+                  <EmailField />
                 )}
-              </FormField>
 
-              <div className="fs-form-submit">
-                <TurnstileField />
-                <button className="fs-btn fs-btn-primary" type="submit">
-                  Send report
-                </button>
+                <div className="fs-form-submit">
+                  <TurnstileField />
+                  <button className="fs-btn fs-btn-primary" type="submit">
+                    {copy.submit}
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <div className="fs-form">
+                <FeedbackTypeChoice chosen={null} paths={paths} />
               </div>
-            </form>
+            )}
           </>
         )}
       </div>
@@ -179,13 +235,23 @@ export default async function ReportIssuePage({ params, searchParams }: Args) {
   )
 }
 
-export async function generateMetadata({ params }: Args): Promise<Metadata> {
+const EmailField: React.FC = () => (
+  <FormField id="submitterEmail" label="Email (optional)">
+    {(control) => <input {...control} className="fs-input" name="submitterEmail" type="email" />}
+  </FormField>
+)
+
+export async function generateMetadata({ params, searchParams }: Args): Promise<Metadata> {
   const { gameSlug } = await params
+  const { type: typeParam } = await loadSearchParams(searchParams)
   const project = await getGameProject(gameSlug)
   if (!project) return {}
 
+  const type = chosenType(project, typeParam)
   return {
-    description: `Tell the ${project.name} team what went wrong.`,
-    title: `Report a bug in ${project.name}`,
+    description: `Tell the ${project.name} team ${
+      type ? COPY[type].purpose : 'what went wrong or what you would like to see'
+    }.`,
+    title: type ? `${COPY[type].title} — ${project.name}` : `Send feedback — ${project.name}`,
   }
 }
