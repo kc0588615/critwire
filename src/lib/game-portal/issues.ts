@@ -7,11 +7,11 @@ import { cache } from 'react'
 
 import type { Issue } from '@/payload-types'
 
-import { ARCHIVED_STATUSES, statusesFor } from '@/lib/game-portal/stages'
+import { ARCHIVED_STATUSES, type PublicStageId, statusesFor } from '@/lib/game-portal/stages'
 import { VOTE_TOKEN_COOKIE, hashVoteToken, verifyVoteToken } from '@/lib/security/voteToken'
 
 export const ISSUES_PER_PAGE = 20
-export const BOARD_ISSUE_LIMIT = 200
+export const BOARD_COLUMN_LIMIT = 25
 
 export type IssueSortKey = 'latest' | 'top'
 
@@ -22,12 +22,16 @@ export const queryPublicIssues = cache(
     projectID,
     search,
     sort,
+    stage,
+    type,
   }: {
     category?: null | string
     page: number
     projectID: number | string
     search?: null | string
     sort: IssueSortKey
+    stage?: null | PublicStageId
+    type?: Issue['type'] | null
   }): Promise<PaginatedDocs<Issue>> => {
     const payload = await getPayload({ config })
 
@@ -37,6 +41,8 @@ export const queryPublicIssues = cache(
       { status: { not_in: ARCHIVED_STATUSES } },
     ]
     if (category) and.push({ category: { equals: category } })
+    if (type) and.push({ type: { equals: type } })
+    if (stage) and.push({ status: { in: statusesFor(stage) } })
     if (search) {
       and.push({
         or: [{ title: { contains: search } }, { summary: { contains: search } }],
@@ -58,25 +64,51 @@ export const queryPublicIssues = cache(
   },
 )
 
-export const queryBoardIssues = cache(async (projectID: number | string): Promise<Issue[]> => {
+/**
+ * One board column: a stage's public items, pinned first, then by votes,
+ * then newest. `totalDocs` is the column's true count; past the limit,
+ * the board links to the list filtered to the stage. A fix note the
+ * visitor can't read (a draft) stays an ID.
+ */
+export const queryBoardColumn = async ({
+  projectID,
+  stage,
+  type,
+}: {
+  projectID: number | string
+  stage: PublicStageId
+  type?: Issue['type'] | null
+}) => {
   const payload = await getPayload({ config })
-  const result = await payload.find({
+
+  const and: Where[] = [
+    { gameProject: { equals: projectID } },
+    { isPublic: { equals: true } },
+    { status: { in: statusesFor(stage) } },
+  ]
+  if (type) and.push({ type: { equals: type } })
+
+  return payload.find({
     collection: 'issues',
-    depth: 0,
-    limit: BOARD_ISSUE_LIMIT,
+    depth: 1,
+    limit: BOARD_COLUMN_LIMIT,
     overrideAccess: false,
-    pagination: false,
-    sort: ['-isPinned', '-upvoteCount'],
-    where: {
-      and: [
-        { gameProject: { equals: projectID } },
-        { isPublic: { equals: true } },
-        { status: { not_in: ARCHIVED_STATUSES } },
-      ],
+    populate: { 'patch-notes': { slug: true, title: true, versionLabel: true } },
+    select: {
+      fixedInPatchNote: true,
+      isPinned: true,
+      slug: true,
+      status: true,
+      title: true,
+      type: true,
+      upvoteCount: true,
     },
+    sort: ['-isPinned', '-upvoteCount', '-createdAt'],
+    where: { and },
   })
-  return result.docs
-})
+}
+
+export type BoardCard = Awaited<ReturnType<typeof queryBoardColumn>>['docs'][number]
 
 export const LANDING_ISSUE_LIMIT = 4
 

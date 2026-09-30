@@ -42,6 +42,10 @@ export const FeedbackStatus: React.FC<{ className?: string; status: Issue['statu
 
 export const PinnedTag: React.FC = () => <span className="fs-tag">Pinned</span>
 
+export const FeedbackTypeTag: React.FC<{ type: Issue['type'] }> = ({ type }) => (
+  <span className="fs-tag">{feedbackTypeLabel(type)}</span>
+)
+
 /** An item's stage, type, category and pinned tag, in one wrapping row outside its title link. */
 export const FeedbackMeta: React.FC<{
   className?: string
@@ -51,7 +55,7 @@ export const FeedbackMeta: React.FC<{
   return (
     <div className={className ? `fs-issue-meta ${className}` : 'fs-issue-meta'}>
       <FeedbackStatus status={issue.status} />
-      <span className="fs-tag">{feedbackTypeLabel(issue.type)}</span>
+      <FeedbackTypeTag type={issue.type} />
       {category ? <span className="fs-meta">{category}</span> : null}
       {issue.isPinned ? <PinnedTag /> : null}
     </div>

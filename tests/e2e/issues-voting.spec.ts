@@ -32,7 +32,7 @@ const listedTitles = (page: Page, slug: string): Promise<string[]> =>
     .locator(`a[href^="${issuesPath(slug)}/"]:not([href^="${issuesPath(slug)}/new"])`)
     .allTextContents()
 
-test.describe('S4.1–S4.3 issue list, board and detail', () => {
+test.describe('S4.1 and S4.3 issue list and detail', () => {
   let project: GameProject
   let pinned: Issue
   let audio: Issue
@@ -131,7 +131,7 @@ test.describe('S4.1–S4.3 issue list, board and detail', () => {
     })
 
     await test.step('"Latest" lists newest first, pinned still on top', async () => {
-      await page.getByRole('combobox').nth(1).selectOption('latest')
+      await page.getByRole('combobox', { name: 'Sort by' }).selectOption('latest')
       await expect(page).toHaveURL(/[?&]sort=latest/)
       await expect
         .poll(() => listedTitles(page, project.slug))
@@ -139,58 +139,25 @@ test.describe('S4.1–S4.3 issue list, board and detail', () => {
     })
 
     await test.step('the category dropdown narrows the list', async () => {
-      await page.getByRole('combobox').first().selectOption('QUESTS')
+      await page.getByRole('combobox', { name: 'Category' }).selectOption('QUESTS')
       await expect(page).toHaveURL(/[?&]category=QUESTS/)
       await expect.poll(() => listedTitles(page, project.slug)).toEqual([needsInfo.title])
     })
 
     await test.step('the search box narrows the list', async () => {
-      await page.getByRole('combobox').first().selectOption('')
+      await page.getByRole('combobox', { name: 'Category' }).selectOption('')
       await expect(page).not.toHaveURL(/category=/)
-      await page.getByPlaceholder('Search issues…').fill('lantern')
-      await page.getByPlaceholder('Search issues…').press('Enter')
+      await page.getByPlaceholder('Search feedback…').fill('lantern')
+      await page.getByPlaceholder('Search feedback…').press('Enter')
       await expect(page).toHaveURL(/[?&]q=lantern/)
       await expect.poll(() => listedTitles(page, project.slug)).toEqual([fixedUnreleased.title])
     })
 
     await test.step('the search also matches summaries', async () => {
-      await page.getByPlaceholder('Search issues…').fill('reverb')
-      await page.getByPlaceholder('Search issues…').press('Enter')
+      await page.getByPlaceholder('Search feedback…').fill('reverb')
+      await page.getByPlaceholder('Search feedback…').press('Enter')
       await expect(page).toHaveURL(/[?&]q=reverb/)
       await expect.poll(() => listedTitles(page, project.slug)).toEqual([audio.title])
-    })
-  })
-
-  test('S4.2 the board sorts public issues into status columns and nothing drags', async ({ page }) => {
-    await open(page, issuesPath(project.slug))
-    await page.getByRole('button', { name: 'Board view' }).click()
-    await expect(page).toHaveURL(/[?&]view=board/)
-    await expect(page.getByRole('button', { name: 'List view' })).toBeVisible()
-
-    const column = (label: string) => page.getByRole('region', { name: label, exact: true })
-
-    await test.step('each issue sits in its status column', async () => {
-      await expect(column('Reported').getByRole('link')).toHaveText([audio.title])
-      await expect(column('Investigating').getByRole('link')).toHaveText([pinned.title])
-      await expect(column('Investigating')).toContainText('Pinned')
-      await expect(column('Workaround Available').getByRole('link')).toHaveText([workaround.title])
-      await expect(column('Needs More Info').getByRole('link')).toHaveText([needsInfo.title])
-      // The board orders by pin and votes only, so equal-vote cards have no set order.
-      await expect(column('Fixed').getByRole('link')).toHaveCount(2)
-      expect((await column('Fixed').getByRole('link').allTextContents()).sort()).toEqual(
-        [fixedReleased.title, fixedUnreleased.title].sort(),
-      )
-      await expect(column('Planned').getByRole('link')).toHaveCount(0)
-      await expect(column('Closed').getByRole('link')).toHaveCount(0)
-    })
-
-    await test.step('private and other studios’ issues are absent', async () => {
-      await expect(page.locator('body')).not.toContainText(privateIssue.title)
-      await expect(page.locator('body')).not.toContainText(bIssue.title)
-    })
-
-    await test.step('the public board is read-only', async () => {
-      await expect(page.locator('[draggable="true"], [aria-roledescription="draggable"]')).toHaveCount(0)
     })
   })
 
@@ -227,6 +194,109 @@ test.describe('S4.1–S4.3 issue list, board and detail', () => {
     })
 
     await test.step('a private issue is 404', () => open(page, detail(privateIssue), 404))
+  })
+})
+
+test.describe('S4.2 the four-stage board', () => {
+  let project: GameProject
+  let reported: Issue
+  let investigating: Issue
+  let needsInfo: Issue
+  let workaround: Issue
+  let plannedIdea: Issue
+  let inProgressIdea: Issue
+  let fixed: Issue
+  let closed: Issue
+  let privateIssue: Issue
+  let bIssue: Issue
+  /** Fills the Shipped column past its 25-card limit. */
+  const EXTRA_SHIPPED = 25
+
+  test.beforeAll(async ({ api, uniqueSlug, world }) => {
+    const aOwner = api('aOwner')
+    const bOwner = api('bOwner')
+    project = await createProject(aOwner, world.tenants.A.id, uniqueSlug('stage-board'))
+    const item = (key: string, data: Partial<Issue>) => createIssue(aOwner, project, uniqueSlug(`sb-${key}`), data)
+
+    reported = await item('reported', { title: 'Fishing line snaps' })
+    investigating = await item('investigating', { title: 'Fog flickers', status: 'INVESTIGATING', isPinned: true })
+    needsInfo = await item('needs-info', { title: 'Seeds vanish', status: 'NEEDS_MORE_INFO' })
+    workaround = await item('workaround', { title: 'Door sticks', status: 'WORKAROUND_AVAILABLE' })
+    plannedIdea = await item('planned', { title: 'Add a photo mode', status: 'PLANNED', type: 'IDEA' })
+    inProgressIdea = await item('in-progress', { title: 'Controller remapping', status: 'IN_PROGRESS', type: 'IDEA' })
+    await Promise.all(
+      Array.from({ length: EXTRA_SHIPPED }, (_, n) => item(`shipped-${n}`, { title: `Shipped fix ${n}`, status: 'FIXED' })),
+    )
+    // Newest in Shipped, so it's among the 25 cards the column shows.
+    fixed = await item('fixed', { title: 'Boat drifts at anchor', status: 'FIXED' })
+    closed = await item('closed', { title: 'Old launcher prompt', status: 'CLOSED' })
+    privateIssue = await item('private', { title: 'Internal perf build', isPublic: false })
+
+    const bProject = await createProject(bOwner, world.tenants.B.id, uniqueSlug('stage-board-b'))
+    bIssue = await createIssue(bOwner, bProject, uniqueSlug('sb-b'), { title: 'Studio B stage glitch' })
+  })
+
+  test('the board shows four public stages', async ({ page }) => {
+    await open(page, issuesPath(project.slug))
+    await page.getByRole('button', { name: 'Board view' }).click()
+    await expect(page).toHaveURL(/[?&]view=board/)
+    await expect(page.getByRole('button', { name: 'List view' })).toBeVisible()
+
+    const column = (label: string) => page.getByRole('region', { name: label, exact: true })
+    /** A column's card titles, sorted: equal-vote cards have no set order. */
+    const cards = async (label: string) =>
+      (await column(label).getByRole('listitem').getByRole('link').allTextContents()).sort()
+
+    await test.step('each internal status sits in its stage column, and CLOSED in none', async () => {
+      await expect(page.locator('.fs-board').getByRole('region')).toHaveCount(4)
+      await expect(column('Under review').getByRole('listitem')).toHaveCount(4)
+      expect(await cards('Under review')).toEqual(
+        [reported, investigating, needsInfo, workaround].map((issue) => issue.title).sort(),
+      )
+      // Pinned first.
+      await expect(column('Under review').getByRole('listitem').first()).toContainText(investigating.title)
+      await expect(column('Under review').getByRole('listitem').first()).toContainText('Pinned')
+      await expect(column('Under review').locator('.fs-count')).toHaveText('4')
+      expect(await cards('Planned')).toEqual([plannedIdea.title])
+      await expect(column('Planned').getByRole('listitem')).toContainText('Idea')
+      expect(await cards('In progress')).toEqual([inProgressIdea.title])
+      await expect(column('Shipped').getByRole('listitem').getByRole('link', { name: fixed.title })).toBeVisible()
+      await expect(page.locator('body')).not.toContainText(closed.title)
+    })
+
+    await test.step('the type filter narrows the board to ideas, and back', async () => {
+      await page.getByRole('combobox', { name: 'Type' }).selectOption('idea')
+      await expect(page).toHaveURL(/[?&]type=idea/)
+      await expect(column('Under review').getByRole('listitem')).toHaveCount(0)
+      await expect(column('Shipped').getByRole('listitem')).toHaveCount(0)
+      expect(await cards('Planned')).toEqual([plannedIdea.title])
+      expect(await cards('In progress')).toEqual([inProgressIdea.title])
+      await page.getByRole('combobox', { name: 'Type' }).selectOption('')
+      await expect(page).not.toHaveURL(/type=/)
+      await expect(column('Under review').getByRole('listitem')).toHaveCount(4)
+    })
+
+    await test.step('a full column shows its true count and links to the list filtered to its stage', async () => {
+      const total = EXTRA_SHIPPED + 1
+      await expect(column('Shipped').locator('.fs-count')).toHaveText(String(total))
+      await expect(column('Shipped').getByRole('listitem')).toHaveCount(25)
+      await column('Shipped').getByRole('link', { name: `See all ${total}` }).click()
+      await expect(page).toHaveURL(/[?&]stage=shipped/)
+      await expect(page).not.toHaveURL(/view=board/)
+      await expect(page.getByText('Page 1 of 2')).toBeVisible()
+      await expect(page.locator('.fs-issue-list .fs-status')).toHaveText(Array(20).fill('Shipped'))
+    })
+
+    await open(page, `${issuesPath(project.slug)}?view=board`)
+
+    await test.step('private and other studios’ issues are absent', async () => {
+      await expect(page.locator('body')).not.toContainText(privateIssue.title)
+      await expect(page.locator('body')).not.toContainText(bIssue.title)
+    })
+
+    await test.step('the public board is read-only', async () => {
+      await expect(page.locator('[draggable="true"], [aria-roledescription="draggable"]')).toHaveCount(0)
+    })
   })
 })
 

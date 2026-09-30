@@ -1,6 +1,7 @@
 import type { Locator, Page } from '@playwright/test'
 
 import { ISSUE_STATUS_OPTIONS } from '../../src/collections/options'
+import { publicStage } from '../../src/lib/game-portal/stages'
 import type { GameProject, Issue } from '../../src/payload-types'
 import type { RestClient } from './support/api'
 import { CREDENTIALS, PASSWORD, storageStatePath, TURNSTILE_DUMMY_TOKEN } from './support/env'
@@ -75,9 +76,12 @@ async function statusOf(client: RestClient, issue: Pick<Issue, 'id'>): Promise<I
   return body.status
 }
 
-/** Public board column; the same shape as S4.2's. */
-const boardColumn = (page: Page, status: IssueStatus): Locator =>
-  page.getByRole('region', { name: LABEL[status], exact: true })
+/** The public board column of `status`'s stage; the same shape as S4.2's. */
+const boardColumn = (page: Page, status: IssueStatus): Locator => {
+  const stage = publicStage(status)
+  if (!stage) throw new Error(`boardColumn: ${status} is archived, so it's on no column`)
+  return page.getByRole('region', { name: stage.label, exact: true })
+}
 
 test('S6.1 the login page speaks Critwire and a studio owner signs in to the dashboard', async ({ browser }) => {
   const context = await browser.newContext()

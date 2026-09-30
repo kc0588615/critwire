@@ -849,11 +849,6 @@
   .fs-filters-view {
     margin-left: auto;
   }
-
-  /* Board view: the toggle is the only control, so it starts the row. */
-  .fs-filters-view:only-child {
-    margin-left: 0;
-  }
 }
 
 /* Status, category and the pinned tag, outside the title link. */
@@ -902,13 +897,14 @@
   }
 }
 
-/* Issue board: 16rem status columns that scroll sideways, snapping to a
+/* Feedback board: one stage per column, at least 16rem wide, sharing the
+   width when it fits and otherwise scrolling sideways, snapping to a
    column, out to the screen's gutter. Positioned, so the cards' sr-only
    vote words are clipped by it instead of widening the page. */
 .fs-board {
   position: relative;
   display: grid;
-  grid-auto-columns: 16rem;
+  grid-auto-columns: minmax(16rem, 1fr);
   grid-auto-flow: column;
   align-items: start;
   gap: 1.5rem;
@@ -968,6 +964,10 @@
 
 .fs-board-card .fs-tag {
   background: var(--fs-bg);
+}
+
+.fs-board-more {
+  margin-top: 0.25rem;
 }
 
 /* ── Issue detail: the vote and the studio's note ───────── */

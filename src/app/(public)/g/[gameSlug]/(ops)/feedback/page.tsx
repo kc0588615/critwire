@@ -3,52 +3,39 @@ import type { SearchParams } from 'nuqs/server'
 
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { createLoader, parseAsInteger, parseAsString, parseAsStringLiteral } from 'nuqs/server'
+import { createLoader } from 'nuqs/server'
 import React from 'react'
 
 import type { Issue } from '@/payload-types'
 
-import { IssueFilters } from '@/components/game/IssueFilters'
-import { FeedbackMeta, PinnedTag, StatusMark } from '@/components/game/FeedbackStatus'
-import { issueStatusLabel, issueStatusShape } from '@/components/game/IssueStatus'
+import { FeedbackBoard } from '@/components/game/FeedbackBoard'
+import { FeedbackFilters } from '@/components/game/FeedbackFilters'
+import { FeedbackMeta } from '@/components/game/FeedbackStatus'
 import { PageHead } from '@/components/game/PageHead'
 import { VoteCount } from '@/components/game/VoteCount'
-import { ISSUE_STATUS_OPTIONS } from '@/collections/options'
+import {
+  feedbackHref,
+  feedbackSearchParams,
+  feedbackTypeOf,
+} from '@/lib/game-portal/feedbackSearchParams'
 import { getGameProject } from '@/lib/game-portal/getGameProject'
-import { type IssueSortKey, queryBoardIssues, queryPublicIssues } from '@/lib/game-portal/issues'
+import { queryPublicIssues } from '@/lib/game-portal/issues'
 import { type PortalPaths, portalPaths } from '@/lib/game-portal/paths'
 
 // Search/filter/sort via URL state — always server-rendered fresh.
 export const dynamic = 'force-dynamic'
 
-const loadSearchParams = createLoader({
-  category: parseAsString.withDefault(''),
-  page: parseAsInteger.withDefault(1),
-  q: parseAsString.withDefault(''),
-  sort: parseAsStringLiteral(['top', 'latest'] as const).withDefault('top'),
-  view: parseAsStringLiteral(['list', 'board'] as const).withDefault('list'),
-})
+const loadSearchParams = createLoader(feedbackSearchParams)
 
 type Args = {
   params: Promise<{ gameSlug: string }>
   searchParams: Promise<SearchParams>
 }
 
-type ListFilters = { category: string; q: string; sort: IssueSortKey }
+type ListFilters = Omit<Awaited<ReturnType<typeof loadSearchParams>>, 'page' | 'view'>
 
 const purpose = (game: string) =>
   `Bugs and ideas from ${game} players. Vote on the ones you care about.`
-
-/** A list page's URL that keeps the current filters. */
-const listPageHref = (base: string, { category, q, sort }: ListFilters, page: number): string => {
-  const query = new URLSearchParams()
-  if (category) query.set('category', category)
-  if (q) query.set('q', q)
-  if (sort !== 'top') query.set('sort', sort)
-  if (page > 1) query.set('page', String(page))
-  const search = query.toString()
-  return search ? `${base}?${search}` : base
-}
 
 const NoFeedback: React.FC<{ reportHref: string }> = ({ reportHref }) => (
   <p className="fs-empty">
@@ -57,6 +44,15 @@ const NoFeedback: React.FC<{ reportHref: string }> = ({ reportHref }) => (
       Send it
     </Link>
     .
+  </p>
+)
+
+const NoMatch: React.FC<{ clearHref: string }> = ({ clearHref }) => (
+  <p className="fs-empty">
+    No feedback matches these filters.{' '}
+    <Link className="fs-link" href={clearHref}>
+      Clear filters
+    </Link>
   </p>
 )
 
@@ -77,45 +73,9 @@ const IssueRow: React.FC<{ issue: Issue; paths: PortalPaths }> = ({ issue, paths
   </li>
 )
 
-/** Read-only: one region per status, named by the status label alone. */
-const IssueBoard: React.FC<{ issues: Issue[]; paths: PortalPaths }> = ({ issues, paths }) => (
-  <div className="fs-board">
-    {ISSUE_STATUS_OPTIONS.map((status) => {
-      const column = issues.filter((issue) => issue.status === status.value)
-      const labelId = `fs-board-${status.value}`
-      return (
-        <section aria-labelledby={labelId} className="fs-board-column" key={status.value}>
-          <h2 className="fs-board-head">
-            <StatusMark shape={issueStatusShape(status.value)} />
-            <span id={labelId}>{issueStatusLabel(status.value)}</span>
-            <span className="fs-count">{column.length}</span>
-          </h2>
-          {column.length === 0 ? (
-            <p className="fs-meta">None</p>
-          ) : (
-            <ul className="fs-board-cards">
-              {column.map((issue) => (
-                <li className="fs-board-card" key={issue.id}>
-                  <Link className="fs-link font-semibold" href={paths.feedbackItem(issue.slug)}>
-                    {issue.title}
-                  </Link>
-                  <div className="fs-board-card-meta">
-                    <VoteCount count={issue.upvoteCount ?? 0} variant="inline" />
-                    {issue.isPinned ? <PinnedTag /> : null}
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-      )
-    })}
-  </div>
-)
-
 export default async function FeedbackPage({ params, searchParams }: Args) {
   const { gameSlug } = await params
-  const { category, page, q, sort, view } = await loadSearchParams(searchParams)
+  const { page, view, ...filters } = await loadSearchParams(searchParams)
 
   const project = await getGameProject(gameSlug)
   if (!project) notFound()
@@ -123,7 +83,6 @@ export default async function FeedbackPage({ params, searchParams }: Args) {
   const paths = portalPaths(gameSlug)
   const reportHref = paths.newFeedback()
   const acceptIdeas = project.reportForm?.acceptIdeas !== false
-  const boardIssues = view === 'board' ? await queryBoardIssues(project.id) : null
 
   return (
     <div className="fs-shell fs-ops">
@@ -144,19 +103,26 @@ export default async function FeedbackPage({ params, searchParams }: Args) {
           purpose={purpose(project.name)}
           title="Feedback"
         />
-        <IssueFilters />
+        <FeedbackFilters />
       </div>
 
-      {boardIssues ? (
-        boardIssues.length === 0 ? (
-          <NoFeedback reportHref={reportHref} />
-        ) : (
-          <IssueBoard issues={boardIssues} paths={paths} />
-        )
+      {view === 'board' ? (
+        <FeedbackBoard
+          empty={
+            filters.type ? (
+              <NoMatch clearHref={feedbackHref(paths.feedback, { view })} />
+            ) : (
+              <NoFeedback reportHref={reportHref} />
+            )
+          }
+          paths={paths}
+          projectID={project.id}
+          type={filters.type}
+        />
       ) : (
         <div className="fs-column-wide">
           <IssueList
-            filters={{ category, q, sort }}
+            filters={filters}
             page={page}
             paths={paths}
             projectID={project.id}
@@ -182,25 +148,22 @@ const IssueList = async ({
   reportHref: string
 }) => {
   const issues = await queryPublicIssues({
-    category: filters.category || null,
+    category: filters.category,
     page: Math.max(1, page),
     projectID,
     search: filters.q || null,
     sort: filters.sort,
+    stage: filters.stage,
+    type: filters.type ? feedbackTypeOf(filters.type) : null,
   })
 
   if (issues.docs.length === 0) {
-    const filtered = Boolean(filters.category || filters.q)
+    const filtered = Boolean(filters.category || filters.q || filters.stage || filters.type)
     if (!filtered && issues.totalDocs === 0) return <NoFeedback reportHref={reportHref} />
-    return (
-      <p className="fs-empty">
-        No feedback matches these filters.{' '}
-        <Link className="fs-link" href={paths.feedback}>
-          Clear filters
-        </Link>
-      </p>
-    )
+    return <NoMatch clearHref={paths.feedback} />
   }
+
+  const pageHref = (target: number) => feedbackHref(paths.feedback, { ...filters, page: target })
 
   return (
     <>
@@ -214,7 +177,7 @@ const IssueList = async ({
           {issues.hasPrevPage ? (
             <Link
               className="fs-link fs-tap font-semibold"
-              href={listPageHref(paths.feedback, filters, (issues.page ?? 2) - 1)}
+              href={pageHref((issues.page ?? 2) - 1)}
             >
               Previous page
             </Link>
@@ -227,7 +190,7 @@ const IssueList = async ({
           {issues.hasNextPage ? (
             <Link
               className="fs-link fs-tap font-semibold"
-              href={listPageHref(paths.feedback, filters, (issues.page ?? 1) + 1)}
+              href={pageHref((issues.page ?? 1) + 1)}
             >
               Next page
             </Link>
