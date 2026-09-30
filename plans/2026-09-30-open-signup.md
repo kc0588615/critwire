@@ -77,7 +77,7 @@ Out:
 - [x] Baseline: install, migrate, run typecheck, lint, unit and E2E tests; record the results under Baseline
 - [x] Architecture: `architect` writes findings and the target design
 - [x] Fable review: `architecture-reviewer`
-- [ ] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
+- [x] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
 - [ ] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
 - [ ] Steps: `planner` writes Steps and Verification
 
@@ -570,6 +570,24 @@ SHOULD-CONSIDER:
 
 ## Architecture review (Astra)
 
+VERDICT: APPROVE_WITH_CHANGES
+
+MUST-FIX:
+
+1. **Verification is user-writable (§4, §7).** Payload permits authenticated users to update `_verified`, and password reset can authenticate an unverified user. Restrict verification-state writes to trusted operations; enforce this across all account-update interfaces.
+2. **Email changes retain verification (§7).** Self-service email updates let verified accounts claim unverified addresses. Either prohibit these changes or require verification of the replacement address.
+3. **Signup retries replace credentials without ownership proof (§5).** An attacker can overwrite a pending account’s password; the recipient then verifies the attacker’s credentials by opening the newest email, potentially automatically through a mail scanner. Require inbox ownership before setting replacement credentials.
+4. **Local media bypasses suspension (§7–§10).** Files under `public/media` remain accessible outside Payload’s access controls. Move storage outside the public directory, migrate existing files, and ensure supported serving paths enforce suspension.
+5. **Password recovery bypasses abuse controls (§4).** Default forgot-password endpoints send email without the proposed signup protections. Apply rate limiting and Turnstile to public recovery submissions, including direct API access, as required by AGENTS.md.
+
+SHOULD-CONSIDER:
+
+1. Explicitly assign the new tenant when onboarding creates its game; membership alone does not select it.
+2. Test suspension against previously cached pages, RSS, and direct media URLs.
+3. Handle concurrent slug collisions with bounded retries.
+4. Ensure concurrent feedback publication cannot turn the limit precheck into a failed player submission.
+5. Define recovery when token rotation succeeds but verification-email delivery fails.
+
 ## Revision notes
 
 ## Steps
@@ -583,5 +601,6 @@ SHOULD-CONSIDER:
 - 2026-09-30 09:45 UTC · Baseline: created the E2E database, migrated; tsc, lint (0 errors, 20 warnings), int (13/13) and E2E (75/75) pass.
 - 2026-09-30 10:13 UTC · Architecture: `architect` wrote 10 findings (incl. draft updates skipping the tenant check, scriptable SVG uploads, the demo slug) and the target design; added handoff H8 (terms/AUP, blocks nothing). Docs-only, no checks needed.
 - 2026-09-30 10:20 UTC · Fable review: APPROVE_WITH_CHANGES; 2 MUST-FIX (users can self-set `_verified`; email changes skip re-verification), plus 4 missed items and 5 suggestions. Docs-only, no checks needed.
+- 2026-09-30 10:52 UTC · Astra review: APPROVE_WITH_CHANGES; 5 MUST-FIX (2 overlap Fable: self-set `_verified`, email change; new: signup retry overwrites a pending password, `public/media` bypasses suspension, forgot-password lacks rate limit/Turnstile) and 5 suggestions. Docs-only, no checks needed.
 
 ## Summary
