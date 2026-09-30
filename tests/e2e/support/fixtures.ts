@@ -278,6 +278,33 @@ export async function asStudioAdmin(
   }
 }
 
+/** The onboarding form's fields; `store` is optional. */
+export interface OnboardingInput {
+  name: string
+  website: string
+  store?: string
+}
+
+/**
+ * Posts the onboarding form as the account holding `token` (anonymously
+ * without one), fails the calling test unless the server answers 303, and
+ * returns where it redirects: a path with its query.
+ */
+export async function onboard(
+  request: APIRequestContext,
+  token: string | undefined,
+  input: OnboardingInput,
+): Promise<string> {
+  const response = await request.post('/onboarding/submit', {
+    form: { store: '', ...input },
+    headers: token ? { Authorization: `JWT ${token}` } : {},
+    maxRedirects: 0,
+  })
+  expect(response.status(), `onboard ${input.name}`).toBe(303)
+  const location = new URL(response.headers().location ?? '', BASE_URL)
+  return `${location.pathname}${location.search}`
+}
+
 /** A fresh address for every account a test creates, so reruns and emails never collide. */
 export const randomEmail = (label: string): string => `${label}-${randomUUID()}@e2e.test`
 

@@ -51,6 +51,38 @@ const STORE_LINK_KEYS = [
   'nintendo',
 ] as const satisfies readonly ProjectLinkKey[]
 
+export type StoreLinkKey = (typeof STORE_LINK_KEYS)[number]
+
+/** The domain each store link lives on; a subdomain of it matches too. */
+const STORE_DOMAINS: Record<StoreLinkKey, string> = {
+  steam: 'steampowered.com',
+  epic: 'epicgames.com',
+  itch: 'itch.io',
+  gog: 'gog.com',
+  playstation: 'playstation.com',
+  xbox: 'xbox.com',
+  nintendo: 'nintendo.com',
+}
+
+/** The store names `storeLinkKey` knows, for form hints and errors. */
+export const KNOWN_STORE_NAMES = STORE_LINK_KEYS.map((key) => PROJECT_LINK_LABELS[key])
+
+/** The store link field a URL belongs in, by its host, or `null` for any other host or a non-URL. */
+export const storeLinkKey = (url: string): null | StoreLinkKey => {
+  let host: string
+  try {
+    host = new URL(url).hostname.toLowerCase()
+  } catch {
+    return null
+  }
+  return (
+    STORE_LINK_KEYS.find((key) => {
+      const domain = STORE_DOMAINS[key]
+      return host === domain || host.endsWith(`.${domain}`)
+    }) ?? null
+  )
+}
+
 /** The hub header's secondary links, in order. */
 const HUB_LINK_KEYS = [...STORE_LINK_KEYS, 'discord', 'website'] as const
 

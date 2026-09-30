@@ -99,6 +99,7 @@ export const serverEnv = ({ cronSecret = '' }: { cronSecret?: string } = {}): Re
   UPSTASH_REDIS_REST_TOKEN: '',
   CRON_SECRET: cronSecret,
   CRITWIRE_CONTACT_URL: E2E_CONTACT_URL,
+  CRITWIRE_OPEN_SIGNUP: '1',
   EMAIL_OUTBOX_DIR: OUTBOX_DIR,
   CRITWIRE_LIMIT_GAMES_PER_STUDIO: '',
   CRITWIRE_LIMIT_MEDIA_MB_PER_STUDIO: '',

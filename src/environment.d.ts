@@ -16,6 +16,8 @@ declare global {
       UPSTASH_REDIS_REST_TOKEN?: string
       /** The home page's Contact link, a mailto: or https: URL; unset hides it. Checked at boot. */
       CRITWIRE_CONTACT_URL?: string
+      /** Hosted instances only: `1` opens signup and onboarding. Unset or empty to self-host; anything else stops boot. */
+      CRITWIRE_OPEN_SIGNUP?: string
       /** Hosted-plan limits; unset or empty turns each off. Positive whole numbers only, checked at boot. */
       CRITWIRE_LIMIT_GAMES_PER_STUDIO?: string
       CRITWIRE_LIMIT_MEDIA_MB_PER_STUDIO?: string

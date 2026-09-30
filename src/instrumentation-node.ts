@@ -1,4 +1,5 @@
 import { getContactHref } from '@/components/marketing/links'
+import { isOpenSignup } from '@/lib/hosting'
 import { getLimits } from '@/lib/limits'
 import { assertNoLegacyPublicMedia } from '@/lib/media/storage'
 
@@ -10,6 +11,7 @@ import { assertNoLegacyPublicMedia } from '@/lib/media/storage'
 export function checkEnvironment(): void {
   try {
     getContactHref()
+    isOpenSignup()
     assertNoLegacyPublicMedia()
     getLimits()
   } catch (error) {

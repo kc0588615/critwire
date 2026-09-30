@@ -5,19 +5,10 @@ import { extractID } from 'payload/shared'
 
 import { isReservedFeedbackSlug } from '@/lib/game-portal/paths'
 import type { IssueReport } from '@/payload-types'
-
-const slugify = (value: string): string => {
-  const slug = value
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-
-  return slug || 'issue'
-}
+import { uniqueSlug } from '@/utilities/uniqueSlug'
 
 // Reserved slugs count as taken, so a report titled "New" becomes `new-2`.
-const uniqueIssueSlug = async ({
+const uniqueIssueSlug = ({
   projectID,
   req,
   title,
@@ -25,35 +16,27 @@ const uniqueIssueSlug = async ({
   projectID: number | string
   req: PayloadRequest
   title: string
-}): Promise<string> => {
-  const isTaken = async (candidate: string): Promise<boolean> => {
-    if (isReservedFeedbackSlug(candidate)) return true
+}): Promise<string> =>
+  uniqueSlug({
+    base: title,
+    fallback: 'issue',
+    isTaken: async (candidate) => {
+      if (isReservedFeedbackSlug(candidate)) return true
 
-    const existing = await req.payload.find({
-      collection: 'issues',
-      depth: 0,
-      limit: 1,
-      overrideAccess: true,
-      pagination: false,
-      req,
-      where: {
-        and: [{ gameProject: { equals: projectID } }, { slug: { equals: candidate } }],
-      },
-    })
-    return Boolean(existing.docs[0])
-  }
-
-  const base = slugify(title)
-  let candidate = base
-  let suffix = 2
-
-  while (await isTaken(candidate)) {
-    candidate = `${base}-${suffix}`
-    suffix += 1
-  }
-
-  return candidate
-}
+      const existing = await req.payload.find({
+        collection: 'issues',
+        depth: 0,
+        limit: 1,
+        overrideAccess: true,
+        pagination: false,
+        req,
+        where: {
+          and: [{ gameProject: { equals: projectID } }, { slug: { equals: candidate } }],
+        },
+      })
+      return Boolean(existing.docs[0])
+    },
+  })
 
 // Creates the public Issue in the report's own transaction and links it in
 // the same write, so a failed save leaves neither an orphan issue nor an
