@@ -3,7 +3,7 @@ import { extractID } from 'payload/shared'
 
 import type { GameProject, PayloadJob } from '../../src/payload-types'
 import type { ApiError, RestClient } from './support/api'
-import { TURNSTILE_DUMMY_TOKEN } from './support/env'
+import { storageStatePath, TURNSTILE_DUMMY_TOKEN } from './support/env'
 import { createIssue, createProject, createReport, expect, test } from './support/fixtures'
 
 /**
@@ -30,7 +30,7 @@ async function submitWithTurnstile(page: Page, button: string): Promise<void> {
 
 /** Posts a public form as JSON, the way a script or the API would. */
 const submitForm = (client: RestClient, path: string, data: Record<string, unknown>) =>
-  client.raw<{ error?: string; id?: number; ok?: boolean }>('POST', `${path}/submit`, { data })
+  client.raw<{ error?: string; id?: number; ok?: boolean; published?: boolean }>('POST', `${path}/submit`, { data })
 
 const setContact = (client: RestClient, project: GameProject, contact: GameProject['contact']) =>
   client.update('game-projects', project.id, { contact })
@@ -470,6 +470,153 @@ test.describe('S5.7 reserved feedback slugs', () => {
       const { status, body } = await aOwner.update('issues', issue.id, { slug: 'new' })
       expect(status, JSON.stringify(body)).toBe(400)
       expect(fieldErrors(body.errors)).toContainEqual(reservedSlugError)
+    })
+  })
+})
+
+test.describe('S5.9–S5.11 moderation and feedback settings', () => {
+  const clean = {
+    category: 'GAMEPLAY',
+    description: 'Let players pin a quest so its marker stays on the compass.',
+    turnstileToken: TURNSTILE_DUMMY_TOKEN,
+  }
+
+  /** The studio's view of the one report titled `title`. */
+  async function reportTitled(client: RestClient, title: string) {
+    const { body } = await client.find('issue-reports', { where: { title: { equals: title } } })
+    expect(body.docs).toHaveLength(1)
+    return body.docs[0]
+  }
+
+  /** The titles on the game's public board. */
+  async function boardTitles(page: Page, slug: string): Promise<string[]> {
+    await open(page, `/g/${slug}/feedback?view=board`)
+    return page.locator('.fs-board-card').getByRole('link').allTextContents()
+  }
+
+  test('S5.9 with review on, a clean submission waits for the studio', async ({ api, page, uniqueSlug, world }) => {
+    const aOwner = api('aOwner')
+    const project = await createProject(aOwner, world.tenants.A.id, uniqueSlug('rc-review-on'))
+    const title = 'Pin a quest to the compass'
+
+    await test.step('the endpoint answers published: false', async () => {
+      const { status, body } = await submitForm(api('anonymous'), reportPath(project.slug), {
+        ...clean,
+        title,
+        type: 'IDEA',
+        platform: 'Windows',
+        gameVersion: '1.0.0',
+      })
+      expect(status, JSON.stringify(body)).toBe(200)
+      expect(body).toMatchObject({ ok: true, published: false })
+    })
+
+    await test.step('the idea is NEW, not flagged, and has no platform or version', async () => {
+      expect(await reportTitled(aOwner, title)).toMatchObject({
+        type: 'IDEA',
+        status: 'NEW',
+        flagged: false,
+        issue: null,
+        platform: null,
+        gameVersion: null,
+      })
+    })
+
+    await test.step('the board does not list it', async () => {
+      expect(await boardTitles(page, project.slug)).not.toContain(title)
+    })
+  })
+
+  test('S5.10 turning ideas off refuses ideas', async ({ api, uniqueSlug, world }) => {
+    const aOwner = api('aOwner')
+    const project = await createProject(aOwner, world.tenants.A.id, uniqueSlug('rc-no-ideas'), {
+      reportForm: { provider: 'native', acceptIdeas: false },
+    })
+
+    await test.step('an idea answers 400 and stores nothing', async () => {
+      const title = 'Add a photo mode'
+      const { status } = await submitForm(api('anonymous'), reportPath(project.slug), { ...clean, title, type: 'IDEA' })
+      expect(status).toBe(400)
+      const { body } = await aOwner.find('issue-reports', { where: { title: { equals: title } } })
+      expect(body.docs).toHaveLength(0)
+    })
+
+    await test.step('a bug still answers 200', async () => {
+      const { status, body } = await submitForm(api('anonymous'), reportPath(project.slug), {
+        ...clean,
+        title: 'Photo button does nothing',
+        description: 'Pressing P in the harbor does nothing at all.',
+        type: 'BUG',
+      })
+      expect(status, JSON.stringify(body)).toBe(200)
+    })
+  })
+
+  test('S5.11 with review off, clean text publishes at once and flagged text waits', async ({
+    api,
+    browser,
+    page,
+    uniqueSlug,
+    world,
+  }) => {
+    const aOwner = api('aOwner')
+    const project = await createProject(aOwner, world.tenants.A.id, uniqueSlug('rc-review-off'), {
+      reportForm: { provider: 'native', reviewSubmissions: false },
+    })
+    const cleanTitle = 'Let the raft carry two players'
+    const flagged = [
+      {
+        title: 'This fucking door will not open',
+        description: 'The cellar door in the harbor never opens, whatever I press.',
+        reason: /^Offensive word: ".+"$/,
+      },
+      {
+        title: 'Clips of the lighthouse glitch',
+        description: 'See https://youtu.be/a and https://youtu.be/b and https://youtu.be/c for the glitch.',
+        reason: /^3 links$/,
+      },
+    ]
+
+    await test.step('a clean idea answers published: true', async () => {
+      const { status, body } = await submitForm(api('anonymous'), reportPath(project.slug), {
+        ...clean,
+        title: cleanTitle,
+        type: 'IDEA',
+      })
+      expect(status, JSON.stringify(body)).toBe(200)
+      expect(body).toMatchObject({ ok: true, published: true })
+      expect(await reportTitled(aOwner, cleanTitle)).toMatchObject({ status: 'PUBLISHED', flagged: false })
+    })
+
+    await test.step('each flagged submission answers published: false and stays NEW', async () => {
+      for (const { description, title } of flagged) {
+        const { status, body } = await submitForm(api('anonymous'), reportPath(project.slug), {
+          ...clean,
+          title,
+          description,
+        })
+        expect(status, JSON.stringify(body)).toBe(200)
+        expect(body).toMatchObject({ ok: true, published: false })
+        expect(await reportTitled(aOwner, title)).toMatchObject({ status: 'NEW', flagged: true, issue: null })
+      }
+    })
+
+    await test.step('the board lists the clean idea, tagged Idea, and neither flagged one', async () => {
+      expect(await boardTitles(page, project.slug)).toEqual([cleanTitle])
+      await expect(page.locator('.fs-board-card')).toContainText('Idea')
+    })
+
+    await test.step("the studio owner's admin shows each flag and its reason", async () => {
+      const context = await browser.newContext({ storageState: storageStatePath('aOwner') })
+      const adminPage = await context.newPage()
+      for (const { reason, title } of flagged) {
+        const report = await reportTitled(aOwner, title)
+        await adminPage.goto(`/admin/collections/issue-reports/${report.id}`)
+        await expect(adminPage.locator('#field-title')).toHaveValue(title)
+        await expect(adminPage.locator('#field-flagged')).toBeChecked()
+        await expect(adminPage.locator('#field-flagReasons')).toHaveValue(reason)
+      }
+      await context.close()
     })
   })
 })

@@ -71,7 +71,7 @@ export default async function ReportIssuePage({ params, searchParams }: Args) {
           </div>
         ) : (
           <>
-            {submitted === '1' ? (
+            {submitted === '1' || submitted === 'published' ? (
               <FormNotice className="mb-6" tone="success">
                 Report sent. The {project.name} team can see it now.
               </FormNotice>

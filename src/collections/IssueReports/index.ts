@@ -7,7 +7,9 @@ import {
   ISSUE_CATEGORY_OPTIONS,
   ISSUE_REPORT_STATUS_OPTIONS,
 } from '../options'
+import { autoPublishReport } from './hooks/autoPublishReport'
 import { createIssueFromPublishedReport } from './hooks/createIssueFromPublishedReport'
+import { screenReportText } from './hooks/screenReportText'
 import { validateReportStatus } from './hooks/validateReportStatus'
 
 // Platform and version only describe bugs.
@@ -26,7 +28,7 @@ export const IssueReports: CollectionConfig = {
     delete: tenantOwnerAccess,
   },
   admin: {
-    defaultColumns: ['title', 'gameProject', 'category', 'status', 'createdAt'],
+    defaultColumns: ['title', 'type', 'gameProject', 'status', 'flagged', 'createdAt'],
     group: 'Game Portal',
     useAsTitle: 'title',
   },
@@ -69,6 +71,9 @@ export const IssueReports: CollectionConfig = {
       options: [...ISSUE_REPORT_STATUS_OPTIONS],
       required: true,
       index: true,
+      admin: {
+        description: 'Flagged submissions wait here even when review is off.',
+      },
     },
     {
       // Set when the report is linked to (or promoted into) an issue.
@@ -97,7 +102,7 @@ export const IssueReports: CollectionConfig = {
       },
     },
     {
-      // Set by the content filter when the report is created.
+      // Set by the content filter (`screenReportText`) whenever the text is written.
       name: 'flagged',
       type: 'checkbox',
       defaultValue: false,
@@ -119,7 +124,8 @@ export const IssueReports: CollectionConfig = {
     },
   ],
   hooks: {
-    beforeChange: [createIssueFromPublishedReport],
+    // In order: screen, then auto-publish, then promote to an issue.
+    beforeChange: [screenReportText, autoPublishReport, createIssueFromPublishedReport],
     beforeValidate: [validateReportStatus],
   },
   timestamps: true,

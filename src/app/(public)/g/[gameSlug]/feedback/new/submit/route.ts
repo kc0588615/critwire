@@ -4,7 +4,7 @@ import { getPayload } from 'payload'
 import { extractID } from 'payload/shared'
 import { z } from 'zod'
 
-import { ISSUE_CATEGORY_OPTIONS } from '@/collections/options'
+import { FEEDBACK_TYPE_OPTIONS, ISSUE_CATEGORY_OPTIONS } from '@/collections/options'
 import { getReportRoute } from '@/lib/game-portal/formRoutes'
 import { getGameProject } from '@/lib/game-portal/getGameProject'
 import { portalPaths } from '@/lib/game-portal/paths'
@@ -14,10 +14,15 @@ import { getLogger } from '@/lib/logger'
 const log = getLogger('public.issue-report')
 
 type IssueCategory = (typeof ISSUE_CATEGORY_OPTIONS)[number]['value']
+type FeedbackType = (typeof FEEDBACK_TYPE_OPTIONS)[number]['value']
 
 const issueCategoryValues = ISSUE_CATEGORY_OPTIONS.map((option) => option.value) as [
   IssueCategory,
   ...IssueCategory[],
+]
+const feedbackTypeValues = FEEDBACK_TYPE_OPTIONS.map((option) => option.value) as [
+  FeedbackType,
+  ...FeedbackType[],
 ]
 
 const reportSchema = z.object({
@@ -27,6 +32,7 @@ const reportSchema = z.object({
   platform: z.string().trim().max(120).optional().or(z.literal('')),
   submitterEmail: z.email().optional().or(z.literal('')),
   title: z.string().trim().min(3).max(160),
+  type: z.enum(feedbackTypeValues).default('BUG'),
 })
 
 export async function POST(
@@ -34,7 +40,8 @@ export async function POST(
   { params }: { params: Promise<{ gameSlug: string }> },
 ): Promise<Response> {
   const { gameSlug } = await params
-  const path = portalPaths(gameSlug).newFeedback()
+  const paths = portalPaths(gameSlug)
+  let path = paths.newFeedback()
 
   try {
     const guard = await guardPublicForm({
@@ -45,6 +52,9 @@ export async function POST(
     if (!guard.ok) {
       return formResponse({ json: { error: guard.error }, path, req, status: guard.status })
     }
+    const { type } = guard.data
+    const isBug = type === 'BUG'
+    path = paths.newFeedback(isBug ? 'bug' : 'idea')
 
     const project = await getGameProject(gameSlug)
     if (!project?.tenant) {
@@ -61,6 +71,15 @@ export async function POST(
       })
     }
 
+    if (!isBug && project.reportForm?.acceptIdeas === false) {
+      return formResponse({
+        json: { error: 'This game does not accept ideas.' },
+        path,
+        req,
+        status: 400,
+      })
+    }
+
     const payload = await getPayload({ config })
     const report = await payload.create({
       collection: 'issue-reports',
@@ -68,25 +87,35 @@ export async function POST(
         category: guard.data.category,
         description: guard.data.description,
         gameProject: project.id,
-        gameVersion: guard.data.gameVersion || null,
-        platform: guard.data.platform || null,
+        // Platform and version only describe bugs.
+        gameVersion: (isBug && guard.data.gameVersion) || null,
+        platform: (isBug && guard.data.platform) || null,
         status: 'NEW',
         submitterEmail: guard.data.submitterEmail || null,
         tenant: extractID(project.tenant),
         title: guard.data.title,
-        // Every report is a bug until the form asks "Bug or idea?".
-        type: 'BUG',
+        type,
       },
       overrideAccess: true,
     })
 
+    // The report's hooks screened it and published it when review is off.
+    const published = report.status === 'PUBLISHED'
+
     log.info({
       msg: 'Public issue report submitted.',
       projectID: project.id,
+      published,
       reportID: report.id,
     })
 
-    return formResponse({ json: { id: report.id, ok: true }, path, req, status: 200 })
+    return formResponse({
+      json: { id: report.id, ok: true, published },
+      path,
+      req,
+      status: 200,
+      submitted: published ? 'published' : '1',
+    })
   } catch (err) {
     Sentry.captureException(err)
     log.error({ err, msg: 'Public issue report submission failed.' })

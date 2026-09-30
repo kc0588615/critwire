@@ -548,6 +548,9 @@ export interface IssueReport {
     | 'QUESTS'
     | 'PERFORMANCE'
     | 'OTHER';
+  /**
+   * Flagged submissions wait here even when review is off.
+   */
   status: 'NEW' | 'PUBLISHED' | 'LINKED' | 'DISMISSED';
   issue?: (number | null) | Issue;
   submitterEmail?: string | null;

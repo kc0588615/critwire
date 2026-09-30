@@ -56,22 +56,25 @@ const wantsJSON = (req: Request): boolean =>
 
 /**
  * JSON for API clients; for a plain HTML form post, a 303 back to the
- * form's page with `?submitted=1` or `?error=1`.
+ * form's page with `?submitted=<submitted>` (default `1`) or `?error=1`.
  */
 export const formResponse = ({
   json,
   path,
   req,
   status,
+  submitted = '1',
 }: {
   json: Record<string, unknown>
   path: string
   req: Request
   status: number
+  submitted?: string
 }): Response => {
   if (wantsJSON(req)) return Response.json(json, { status })
 
   const url = new URL(path, req.url)
-  url.searchParams.set(status >= 400 ? 'error' : 'submitted', '1')
+  if (status >= 400) url.searchParams.set('error', '1')
+  else url.searchParams.set('submitted', submitted)
   return Response.redirect(url, 303)
 }
