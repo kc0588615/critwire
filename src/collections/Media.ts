@@ -7,6 +7,7 @@ import {
 } from '@payloadcms/richtext-lexical'
 import { authenticated } from '../access/authenticated'
 import { mediaRead } from '../access/publicRead'
+import { checkMediaLimit } from '../lib/limits/hooks'
 import { MEDIA_DIR } from '../lib/media/storage'
 
 /** Display sizes are WebP, which the image optimizer used to convert to. */
@@ -20,6 +21,9 @@ export const Media: CollectionConfig = {
     delete: authenticated,
     read: mediaRead,
     update: authenticated,
+  },
+  hooks: {
+    beforeChange: [checkMediaLimit],
   },
   fields: [
     {

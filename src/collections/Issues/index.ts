@@ -6,6 +6,7 @@ import { issuesRead } from '../../access/publicRead'
 import { tenantMemberAccess, tenantOwnerAccess } from '../../access/tenantAccess'
 import { sameGameProjectFilter } from '../../fields/sameGameProjectFilter'
 import { validateUniqueSlugPerProject } from '../../hooks/validateUniqueSlugPerProject'
+import { checkPublicFeedbackLimit } from '../../lib/limits/hooks'
 import { FEEDBACK_TYPE_OPTIONS, ISSUE_CATEGORY_OPTIONS, ISSUE_STATUS_OPTIONS } from '../options'
 import { deleteIssueVotes } from './hooks/deleteIssueVotes'
 import {
@@ -154,6 +155,7 @@ export const Issues: CollectionConfig = {
   hooks: {
     afterChange: [revalidateIssueLanding, revalidateLinkedUpdates],
     afterDelete: [revalidateIssueLandingDelete, revalidateLinkedUpdatesDelete],
+    beforeChange: [checkPublicFeedbackLimit],
     beforeDelete: [deleteIssueVotes],
     beforeValidate: [rejectReservedSlug, validateUniqueSlugPerProject('issues')],
   },

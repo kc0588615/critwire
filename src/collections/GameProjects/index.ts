@@ -10,6 +10,7 @@ import {
   tenantOwnerAccess,
 } from '../../access/tenantAccess'
 import { moderationFields } from '../../fields/moderation'
+import { checkGamesLimit } from '../../lib/limits/hooks'
 import { validateOptionalTallyUrl } from '../../lib/tally/parseTallyForm'
 import { validateContactDiscordWebhookUrl } from '../../lib/validation/discordWebhook'
 import { validateOptionalHttpUrl } from '../../lib/validation/url'
@@ -331,7 +332,7 @@ export const GameProjects: CollectionConfig = {
     ...moderationFields(),
   ],
   hooks: {
-    beforeChange: [validateProjectTheme],
+    beforeChange: [validateProjectTheme, checkGamesLimit],
     afterChange: [revalidateGameProject],
     afterDelete: [revalidateGameProjectDelete],
   },

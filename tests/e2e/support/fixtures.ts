@@ -9,7 +9,16 @@ import sharp from 'sharp'
 
 import type { Config, GameProject, Issue, IssueReport, Media, Page, PatchNote } from '../../../src/payload-types'
 import { type Query, RestClient } from './api'
-import { BASE_URL, PASSWORD, type Role, ROLES, WEBHOOK_SINK_ORIGIN, WEBHOOK_SINK_PORT, WORLD_PATH } from './env'
+import {
+  BASE_URL,
+  PASSWORD,
+  type Role,
+  ROLES,
+  SECOND_BASE_URL,
+  WEBHOOK_SINK_ORIGIN,
+  WEBHOOK_SINK_PORT,
+  WORLD_PATH,
+} from './env'
 
 /**
  * A request context with no cookies. Playwright applies the calling test's
@@ -17,8 +26,11 @@ import { BASE_URL, PASSWORD, type Role, ROLES, WEBHOOK_SINK_ORIGIN, WEBHOOK_SINK
  * included, so a context first made under `test.use({ storageState })`
  * would otherwise be signed in, even a worker-scoped one.
  */
-export const newRequestContext = (playwright: PlaywrightWorkerArgs['playwright']): Promise<APIRequestContext> =>
-  playwright.request.newContext({ baseURL: BASE_URL, storageState: { cookies: [], origins: [] } })
+export const newRequestContext = (
+  playwright: PlaywrightWorkerArgs['playwright'],
+  baseURL: string = BASE_URL,
+): Promise<APIRequestContext> =>
+  playwright.request.newContext({ baseURL, storageState: { cookies: [], origins: [] } })
 
 /** What `auth.setup.ts` created on the fresh database. */
 export interface World {
@@ -67,6 +79,12 @@ interface WorkerFixtures {
   /** REST client acting as `role`, or anonymously. Worker-scoped so `beforeAll` can use it. */
   api: (role: Role | 'anonymous') => RestClient
   /**
+   * REST client on the second server (hosted limits on, signup off), as
+   * `role`, as an account a test created, or anonymously. Both servers
+   * share the database, so seed through `api` and the account fixtures.
+   */
+  secondApi: (as: Role | 'anonymous' | Pick<Account, 'token'>) => RestClient
+  /**
    * Suffixes `base` with the worker index. Playwright restarts the worker,
    * and so re-runs `beforeAll`, after an unexpected failure; unique slugs
    * keep that re-seed from colliding with the first one.
@@ -107,6 +125,17 @@ export const test = base.extend<{}, WorkerFixtures>({
       }
       await use((role) => clients[role])
       await Promise.all(contexts.map((context) => context.dispose()))
+    },
+    { scope: 'worker' },
+  ],
+  secondApi: [
+    async ({ playwright, world }, use) => {
+      const context = await newRequestContext(playwright, SECOND_BASE_URL)
+      await use((as) => {
+        if (as === 'anonymous') return new RestClient(context)
+        return new RestClient(context, typeof as === 'string' ? world.users[as].token : as.token)
+      })
+      await context.dispose()
     },
     { scope: 'worker' },
   ],

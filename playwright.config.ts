@@ -1,7 +1,7 @@
 import { defineConfig, devices } from '@playwright/test'
 import 'dotenv/config'
 
-import { AUTH_SETUP_PATTERN, BASE_URL, serverEnv } from './tests/e2e/support/env'
+import { AUTH_SETUP_PATTERN, BASE_URL, SECOND_BASE_URL, secondServerEnv, serverEnv } from './tests/e2e/support/env'
 
 // Fails fast, before anything starts, unless the E2E database is disposable.
 const env = serverEnv()
@@ -33,13 +33,26 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'], channel: 'chromium' },
     },
   ],
-  webServer: {
-    command: 'pnpm e2e:server',
-    url: `${BASE_URL}/api/health`,
-    timeout: 420_000,
-    reuseExistingServer: false,
-    stdout: 'pipe',
-    stderr: 'pipe',
-    env,
-  },
+  // Started in order: the second waits for the first to migrate and build.
+  webServer: [
+    {
+      command: 'pnpm e2e:server',
+      url: `${BASE_URL}/api/health`,
+      timeout: 420_000,
+      reuseExistingServer: false,
+      stdout: 'pipe',
+      stderr: 'pipe',
+      env,
+    },
+    {
+      // Same build and database, never migrates or builds (see `secondServerEnv`).
+      command: 'pnpm start',
+      url: `${SECOND_BASE_URL}/api/health`,
+      timeout: 120_000,
+      reuseExistingServer: false,
+      stdout: 'pipe',
+      stderr: 'pipe',
+      env: secondServerEnv(),
+    },
+  ],
 })

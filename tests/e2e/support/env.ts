@@ -5,6 +5,16 @@ import path from 'node:path'
 export const E2E_PORT = Number(process.env.E2E_PORT ?? 3100)
 export const BASE_URL = `http://localhost:${E2E_PORT}`
 
+/**
+ * The second server: the same build and database with the hosted limits
+ * on and signup off, so it's also the self-hosted profile (P2).
+ */
+export const SECOND_PORT = E2E_PORT + 2
+export const SECOND_BASE_URL = `http://localhost:${SECOND_PORT}`
+
+/** The low limits the second server runs with. */
+export const SECOND_LIMITS = { games: 2, mediaMB: 1, publicFeedback: 3 } as const
+
 /** The only non-Discord origin the server accepts as a contact webhook (F21). */
 export const WEBHOOK_SINK_PORT = E2E_PORT + 1
 export const WEBHOOK_SINK_ORIGIN = `http://127.0.0.1:${WEBHOOK_SINK_PORT}`
@@ -90,4 +100,22 @@ export const serverEnv = ({ cronSecret = '' }: { cronSecret?: string } = {}): Re
   CRON_SECRET: cronSecret,
   CRITWIRE_CONTACT_URL: E2E_CONTACT_URL,
   EMAIL_OUTBOX_DIR: OUTBOX_DIR,
+  CRITWIRE_LIMIT_GAMES_PER_STUDIO: '',
+  CRITWIRE_LIMIT_MEDIA_MB_PER_STUDIO: '',
+  CRITWIRE_LIMIT_PUBLIC_FEEDBACK_PER_GAME: '',
+})
+
+/**
+ * Environment for the second server (`pnpm start` on `SECOND_PORT`). It
+ * reuses the first server's build and database; the app reads these at
+ * runtime, so no rebuild is needed.
+ */
+export const secondServerEnv = (): Record<string, string> => ({
+  ...serverEnv(),
+  PORT: String(SECOND_PORT),
+  CRITWIRE_OPEN_SIGNUP: '',
+  EMAIL_OUTBOX_DIR: '',
+  CRITWIRE_LIMIT_GAMES_PER_STUDIO: String(SECOND_LIMITS.games),
+  CRITWIRE_LIMIT_MEDIA_MB_PER_STUDIO: String(SECOND_LIMITS.mediaMB),
+  CRITWIRE_LIMIT_PUBLIC_FEEDBACK_PER_GAME: String(SECOND_LIMITS.publicFeedback),
 })

@@ -1,4 +1,5 @@
 import { getContactHref } from '@/components/marketing/links'
+import { getLimits } from '@/lib/limits'
 import { assertNoLegacyPublicMedia } from '@/lib/media/storage'
 
 /**
@@ -10,6 +11,7 @@ export function checkEnvironment(): void {
   try {
     getContactHref()
     assertNoLegacyPublicMedia()
+    getLimits()
   } catch (error) {
     console.error(error)
     process.exit(1)
