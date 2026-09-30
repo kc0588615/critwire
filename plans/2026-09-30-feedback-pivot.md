@@ -131,7 +131,7 @@ Out:
 - [x] Architecture: `architect` writes findings and the target design
 - [x] Fable review: `architecture-reviewer`
 - [x] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
-- [ ] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
+- [x] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
 - [ ] Steps: `planner` writes Steps and Verification
 
 ## Baseline
@@ -162,7 +162,7 @@ Verified against `683de8d`, most impact first.
 - **F7. The landing builder is website-building, which the brief cuts, and it's heavy to keep.** It covers GamePages (drafts, versions, live preview, `/next/site-preview` Draft Mode), 10 slot renderers, `normalize.ts` (200 lines reshaping Payload data for Zod), a parity int test, and a hidden legacy `content` blocks field that still renders (`GamePages/index.ts:77-88`: "dropped in a later cleanup migration" that never came), plus its five blocks in `src/blocks/game/`.
 - **F8. The template and the seed depend on the generator.** `FlagshipSite.tsx:9` imports `collectSiteMediaRefs` from `site-generator/media`, and `seed/critterConnect.ts:9` imports `siteConfigToPayloadSite` from `site-generator/storage`. The dependency points the wrong way (separation of concerns): deleting `src/site-generator/` by itself breaks the build. See the sequencing note in §1.
 - **F9. The filter params are declared twice, with different types.** In `IssueFilters.tsx:13-21` (client), `sort` and `view` are free strings; in `issues/page.tsx:28-34` (server), they're literals. This breaks DRY, and adding `type` and `stage` would double the drift. Fix: one parser map shared by `createLoader` and `useQueryStates`.
-- **F10. The kanban ignores the tenant selector (F17).** `components/admin/issues/list.tsx:28-41` and `kanban.tsx#fetchMoreIssues` query without the plugin's list filter, so a super admin or a multi-studio user sees every studio's issues. Access still applies, so nothing leaks. We touch these files anyway: `PILL_STYLES` is a `Record<IssueStatus,…>`, so adding `IN_PROGRESS` forces an edit. Fix in §8.
+- **F10. The kanban ignores the tenant selector (F17).** `components/admin/issues/list.tsx:28-41` and `kanban.tsx:85-96` (`fetchMoreIssues`) query without the plugin's list filter, so a super admin or a multi-studio user sees every studio's issues. Access still applies, so nothing leaks. The plugin's filter is `admin.baseFilter`, which only Payload's default list view applies (`@payloadcms/next/dist/views/List/index.js:114-124`); a custom list view's Local API and REST calls never get it (§8). A second bug: the tenant selector calls `router.refresh()`, but `IssuesKanban` seeds its state from `initialColumns` once (`kanban.tsx:345`), so a new selection wouldn't show even with the filter. We touch these files anyway: `PILL_STYLES` is a `Record<IssueStatus,…>`, so adding `IN_PROGRESS` forces an edit. Fix in §8.
 - **F11. Link fields the admin says are public are never shown.** `GameProjects/index.ts:86-119` describes the links as "shown on the public portal", but `gog`, `playstation`, `xbox`, `nintendo` and `youtube` are missing from `EXTERNAL_LINK_LABELS` (`actions.ts:39-48`). The `meta` group (developer, publisher, engine, rating) is rendered nowhere; only the generator read it. The hub needs the store links (Goal 3). Fix: label all of them in `links.ts` and drop `meta`.
 - **F12. Three int tests lose their reason to exist.** `template-revalidation` exists because "the landing renders dynamically" (AGENTS.md). The hub becomes ISR, so E2E can now observe the case where an issue moves between games (S2.5). `site-config-parity` guards a field tree that goes away, and `site-generator` tests deleted code.
 
@@ -197,12 +197,13 @@ Verified against `683de8d`, most impact first.
 - `availabilityFacts` → the hub header.
 
 **New:**
-- `lib/game-portal/paths.ts`. `portalPaths(slug)` returns `hub`, `feedback`, `feedbackItem(s)`, `newFeedback(type?)`, `feedbackSubmit`, `updates`, `updatesPage(n)`, `update(s)`, `rss`, `contact` and `contactSubmit`. The module also holds `RESERVED_FEEDBACK_SLUGS = ['new']`, `PORTAL_NAV` (Updates, Feedback, Contact) and the revalidation patterns now in `hooks/portalRoutes.ts` (`PORTAL_ROUTE`, and `UPDATES_ROUTE`, which replaces `PATCH_NOTES_ROUTE`).
+- `lib/game-portal/paths.ts`. `portalPaths(slug)` returns `hub`, `feedback`, `feedbackItem(s)`, `newFeedback(type?)`, `feedbackSubmit`, `updates`, `updatesPage(n)`, `update(s)`, `updateGuid(s)` (§7), `rss`, `contact` and `contactSubmit`. The module also holds `RESERVED_FEEDBACK_SLUGS = ['new']` with `isReservedFeedbackSlug()`, `PORTAL_NAV` (Updates, Feedback, Contact) and the revalidation patterns now in `hooks/portalRoutes.ts` (`PORTAL_ROUTE`, and `UPDATES_ROUTE`, which replaces `PATCH_NOTES_ROUTE`).
 - `lib/game-portal/stages.ts` (§3) and `lib/game-portal/feedbackSearchParams.ts` (§5).
 - `lib/moderation/screenText.ts` (§4).
-- Collection code: `collections/GameProjects/theme.ts` (the field and its validation hook), `IssueReports/hooks/{screenReportText,autoPublishReport}.ts`, `Issues/hooks/{rejectReservedSlug,revalidateLinkedUpdates}.ts`, and `src/hooks/revalidateUpdatePage.ts`.
+- Collection code: `collections/GameProjects/theme.ts` (the field and its validation hook), `IssueReports/hooks/{screenReportText,autoPublishReport}.ts`, `Issues/reservedSlug.ts` (the slug field's `slugify` option and the `rejectReservedSlug` hook, §2), `Issues/hooks/revalidateLinkedUpdates.ts`, and `src/hooks/revalidateUpdatePage.ts`.
 - Components: `HubHeader`, `LatestUpdates`, `TopFeedback`, `FeedbackBoard` and `FromYourFeedback`. `IssueFilters` becomes `FeedbackFilters`, and `IssueStatus` becomes `FeedbackStatus` (stage mark, label and type tag).
-- `LICENSE` and `tests/int/content-screen.int.spec.ts`.
+- `LICENSE`, `tests/int/content-screen.int.spec.ts`, and the migration check's `tests/migrations/feedback-pivot/{fixtures,assert}.sql` (§10).
+- Dependency: `qs-esm` as a direct dependency, pinned to the `8.0.1` Payload already resolves, for the kanban's REST query (§8).
 
 **Sequencing (F8):** remove the generator in the same step as `FlagshipSite` and the seed rewrite, or after it. If the generator goes first, that step moves `collectSiteMediaRefs` into the template and `siteConfigToPayloadSite` into the seed. Either order keeps every step building.
 
@@ -239,9 +240,13 @@ The kanban heading reads the collection label instead of the literal "Issues" (`
 | game-projects | `banner` | Relabelled "Key art". |
 | game-projects | Removed | `accentColor`, `links.trailer`, `availability.demoUrl` and the `meta` group (M14). |
 
-**Theme validation.** `validateProjectTheme` (GameProjects `beforeChange`) merges the default theme, then `originalDoc.theme`, then `data.theme`, and runs the theme schema's `safeParse`. A failure throws a `ValidationError` with paths `theme.colors.<key>`; the hook only throws (CQS). Rendering reads `project.theme` through `safeParse`. If a stored theme ever fails (it shouldn't), we report it to Sentry and use the default theme, the same policy as `landingPage.ts:72-81` today.
+**Theme validation.** `validateProjectTheme` (GameProjects `beforeChange`) merges the default theme, then `originalDoc.theme`, then `data.theme`, and runs the theme schema's `safeParse`. The merge is per level (`theme`, then `theme.colors`), and `null` or `undefined` never overrides a value: a REST PATCH of one colour arrives as a partial nested object, and a shallow spread would drop the other nine and report a misleading error. A failure throws a `ValidationError` with paths `theme.colors.<key>`; the hook only throws (CQS). Rendering reads `project.theme` through `safeParse`. If a stored theme ever fails (it shouldn't), we report it to Sentry and use the default theme, the same policy as `landingPage.ts:72-81` today.
 
-**Reserved slugs.** `rejectReservedSlug` (Issues `beforeValidate`) rejects `new`, and `uniqueIssueSlug` treats reserved slugs as taken.
+**Reserved slugs.** Payload writes an Issue's slug at two points, so `Issues/reservedSlug.ts` guards both with `isReservedFeedbackSlug()`:
+- **Generated slugs.** `slugField`'s `generateSlug` is a *field* `beforeChange` hook (`payload/dist/fields/baseFields/slug/generateSlug.js`). It runs after every collection hook and slugifies `data.slug || data.title` on create, so an admin-created item titled "New" gets `new` after any `beforeValidate` check has passed. Issues therefore pass `slugField({ disableUnique: true, slugify: issueSlugify })`, Payload's documented override. `issueSlugify` is synchronous (the create path assigns its return value without `await`), calls Payload's own `slugify` (`payload/shared`), and throws a `ValidationError` on `slug` ("`new` is reserved; choose another slug") for a reserved result. The admin's generate-slug button uses the same function.
+- **Hand-set slugs on update.** With the generate box unchecked (the state after every create), Payload stores `data.slug` as typed. `rejectReservedSlug` (Issues `beforeValidate`) rejects it, with the same error.
+- **Promotion.** `uniqueIssueSlug` treats reserved slugs as taken, so a report titled "New" becomes `new-2` (or the next free suffix).
+- M13 renames any existing `new` slug (§10).
 
 **Moderation state lives on the submission.** The review queue is the existing report `status` (NEW, PUBLISHED, LINKED, DISMISSED), plus `flagged` and `flagReasons`. No new status and no new collection.
 
@@ -268,6 +273,7 @@ export const ARCHIVED_STATUSES: IssueStatus[] = …                          // 
 
 - Because `STAGE_OF` is a `Record<IssueStatus, …>`, adding a status is a compile error until it's mapped (fail fast).
 - The list, board, hub and update-page queries add `status not_in ARCHIVED_STATUSES`. `getPublicIssue` doesn't, so archived items stay reachable by link, and their page says "Archived".
+- **Voting.** Every public stage takes votes, Shipped included: a vote on a shipped item still tells the studio what mattered, and §6 keeps the update page's counts fresh. Archived items don't: their page shows the count (`VoteCount`) without `VoteButton`, and `/api/vote`, which already loads the issue (`vote/route.ts:70-80`), selects `status` next to `tenant` and answers 409 for `ARCHIVED_STATUSES` before the toggle. Casting and withdrawing both stop, so an archived count is frozen, and the rule holds on the server, not just in the UI.
 - "Workaround" and "Needs more info" stay as notes on the item page, unchanged (`issues/[slug]/page.tsx:69-79`).
 - Status shapes are now defined per stage instead of per status.
 
@@ -283,7 +289,7 @@ POST /g/<game>/feedback/new/submit
     beforeChange[0] screenReportText   on create, or on an update that changes title/description:
                                        { flagged, reasons } = await screenText(`${title}\n\n${description}`)
     beforeChange[1] autoPublishReport  create only; status NEW, !flagged and reportForm.reviewSubmissions === false
-                                       → status = 'PUBLISHED'  (one findByID of the project, select reportForm)
+                                       → status = 'PUBLISHED'  (one findByID of the project, select reportForm, via req)
     beforeChange[2] createIssueFromPublishedReport   the existing hook; now copies `type`
   → the new Issue's afterChange revalidates the hub
   reply: { id, ok, published }; an HTML post gets a 303 to …/feedback/new?type=…&submitted=published|1
@@ -293,6 +299,7 @@ POST /g/<game>/feedback/new/submit
 - A flag never blocks the studio: it can publish a flagged report by hand. The flag only stops auto-publish.
 - Auto-publish reuses the existing promotion hook, so there's one path from report to issue.
 - Auto-publish happens only when a report is created. Turning review off doesn't publish the backlog. Existing NEW reports keep `flagged: false`, because SQL can't screen them.
+- `autoPublishReport` reads `reportForm` itself, with one `findByID` (primary key, depth 0, through `req` so it's in the transaction). The route doesn't pass the setting through `req.context`: the hook also runs for reports created in the admin or over REST, and one code path is simpler than a context shortcut plus a fallback.
 - `formResponse` takes an optional `submitted` value (default `'1'`), so the form can say either "It's on the board now" or "The team reviews submissions before they're public".
 
 **The filter's interface**, `src/lib/moderation/screenText.ts`:
@@ -304,8 +311,8 @@ export const screenText = async (text: string): Promise<ScreenResult> => …
 
 - This function is the whole interface. Callers import only it, and the implementation stays private to the module.
 - The async signature means a hosted moderation provider can replace the body later without changing the hooks.
-- The doc comment states the contract: if a provider fails, it returns `flagged: true` with the reason "Screening unavailable"; it never throws and never lets text through.
-- The local implementation doesn't catch errors. A throw is a bug and fails the submission loudly (the route's catch sends it to Sentry, and nothing is stored).
+- **The contract, stated once in the doc comment:** `screenText` resolves with a verdict on all of the text, or it rejects. It never resolves `flagged: false` for text it didn't screen. Callers don't catch: a rejection fails the write, so nothing is stored and nothing auto-publishes. On the submit route, its existing catch (`report/submit/route.ts:87-90`) reports the error to Sentry and answers 500; in the admin, the save shows the error.
+- The local implementation does no I/O, so it only rejects on a bug. A future provider keeps the same contract: on an outage it may reject, or resolve `flagged: true` with the reason "Screening unavailable", but never resolve clean.
 
 **The local filter:**
 - **Word list and matcher: `obscenity@0.4.6`.** MIT, no dependencies, about 150 kB unpacked, last updated 2026-01. I checked it in the npm registry and ran it locally.
@@ -313,8 +320,16 @@ export const screenText = async (text: string): Promise<ScreenResult> => …
   - Its built-in whitelists avoid false positives on words that merely contain a bad word. These came back clean: assassin, Scunthorpe, class, analysis, cocktail, Hancock, therapist, grape, Essex, arsenal, cockroach, Hitchcock.
   - The module adds one game-specific whitelist entry, `cockpit`, the only false positive the probe found that game text is likely to use.
   - Why not vendor a list: we would have to write our own normaliser and whitelist, which is the hard part.
-- **Spam links:** counts `https?://` and `www.` occurrences. It flags 3 or more, or any link through a shortener (`bit.ly`, `tinyurl.com`, `t.co`, `goo.gl`, `is.gd`, `rb.gy`, `cutt.ly`). One or two links, such as a clip or a screenshot, pass.
-- **Reasons:** `Offensive word: "<matched text>"` (deduplicated, at most 5), `3 links`, `Shortened link: bit.ly`.
+- **Spam links: it counts URLs, not tokens.**
+  - One global, case-insensitive regex has three alternatives, built from the shortener list `SHORTENERS` (`bit.ly`, `tinyurl.com`, `t.co`, `goo.gl`, `is.gd`, `rb.gy`, `cutt.ly`):
+    1. `https?://` followed by non-space characters;
+    2. `\bwww\.` followed by non-space characters;
+    3. `\b(?:<shortener>)/` followed by non-space characters, for a bare `bit.ly/abc`.
+  - Each match is one link. Matching runs left to right and consumes the whole URL, so `https://www.example.com/clip` is one match: its `www.` is never matched again. There's no lookbehind and no second pass.
+  - The host of each match is the leading `[a-z0-9.-]` run after any scheme, lowercased, without a leading `www.`. A link is a shortener when its host is exactly one in `SHORTENERS`, so `https://notbit.ly/x` and `https://bit.ly.example.com/x` are ordinary links, and a bare `notbit.ly/x` doesn't match at all.
+  - It flags 3 or more links, or any shortener. One or two links, such as a clip and a screenshot, pass however they're written.
+  - Probed in Node: `https://www.a.com/x https://www.a.com/y` counts 2; `www.a.com, www.b.com and http://c.com` counts 3; `bit.ly/abc`, `https://bit.ly/x` and `HTTPS://WWW.T.CO/x` are shorteners; `notbit.ly/x` and `at.co/y` don't match.
+- **Reasons:** `Offensive word: "<matched text>"` (deduplicated, at most 5), `<n> links`, `Shortened link: <host>` (one per host).
 
 #### 5. Portal
 
@@ -371,7 +386,7 @@ The `(ops)` group goes. `g/[gameSlug]/layout.tsx` both 404s unknown slugs and re
   - A hidden `type` input carries the choice.
 - The Zod schema has `type: z.enum(['BUG','IDEA']).default('BUG')`, so stale forms posting through the 308 redirect keep working. For ideas, platform and version are dropped before the write.
 
-**Item page:** shows the stage (or "Archived"), the type tag and the notes as today. The fix note reads "Shipped in {version — title}" and links to the update. The back link is "All feedback".
+**Item page:** shows the stage (or "Archived", with the vote count but no vote button, §3), the type tag and the notes as today. The fix note reads "Shipped in {version — title}" and links to the update. The back link is "All feedback".
 
 #### 6. Updates ↔ feedback
 
@@ -399,15 +414,20 @@ These go in `redirects.ts`, which `next.config.ts` already wires in:
 - **Why `redirects.ts`:** it's declarative, runs before routing and the ISR cache, leaves no code behind in the old directories, and is the established place. AGENTS.md rules out middleware (`proxy.ts`), and route handlers would keep dead routes around.
 - **Status codes:** 301 for GETs, because feed readers treat a 301 as "update the subscription". 308 for the submit URL, so a stale form's POST isn't turned into a GET.
 - The destinations are path templates on the same host, so these can't become open redirects.
+- **RSS guids don't change.** Each item's `<link>` moves to `/updates/<slug>`, but its `<guid isPermaLink="true">` stays byte-identical to today's (`<site>/g/<game>/patch-notes/<slug>`), built by `portalPaths(game).updateGuid(slug)`. That URL still resolves through the 301, so it stays a valid permalink, and subscribers don't get the last 20 updates again. The feed route already writes the two elements separately (`feed.xml/route.ts:43-44`). `updateGuid` is the one place the old path survives, and its comment says why it's frozen.
+- **The one old URL that can't follow its item.** Before the pivot, `/g/<game>/issues/new` was the page of an item whose slug was `new`, if one existed. M13 renames that item to `new-<n>` (§10), and the `issues/:rest*` rule sends the old URL to `/feedback/new`, the submit form, not to `new-<n>`. `redirects.ts` is static, and following the item would need a lookup route kept alive for a row that almost certainly doesn't exist (a report titled exactly "New"). Accepted under the owner's H6 decision that existing production data need not be preserved: the item survives under its new slug and is on the board and in the list, and the Summary lists the exception. Every other old item URL keeps its slug and lands on the same item.
 
 #### 8. Admin
 
 - **Submissions list:** default columns title, type, gameProject, status, flagged, createdAt, and `flagged` is filterable. The status field's description says: "Flagged submissions wait here even when review is off."
 - **Kanban:** gains an In Progress column (a `PILL_STYLES` entry).
-- **F17 fix:**
-  - `list.tsx` reads the selected studio with the plugin's own `getTenantFromCookie(await headers(), 'number')` (exported from `@payloadcms/plugin-multi-tenant/utilities`). When a studio is selected, it adds `{ tenant: { equals: selected } }` to each column's query.
-  - It passes that `Where` to the client, and `fetchMoreIssues` adds it to its REST query.
-  - This only narrows the result: access (`overrideAccess: false` plus the user) still decides what's allowed, so a forged cookie can't widen anything.
+- **F17 fix: reuse the plugin's list filter, exactly as Payload's own list view does.** Nothing here builds a tenant clause.
+  - **What the plugin provides.** For every tenant-scoped collection, it installs `admin.baseFilter`: `combineFilters` around `filterDocumentsByTenants` (`@payloadcms/plugin-multi-tenant/dist/index.js:318-335`). That returns `{ tenant: { in: [selected] } }` for the selected studio, the user's studios when nothing is selected, or `null` for a super admin with no selection (`dist/filters/filterDocumentsByTenants.js`). Our plugin config keeps it on (`src/plugins/index.ts:23-62` sets no `useBaseFilter: false`).
+  - **Why the kanban must call it itself.** Only Payload's admin list view (`@payloadcms/next/dist/views/List/index.js:114-124`), Lexical's link and block fields, and folder views read `admin.baseFilter`, as its type doc says (`payload/dist/collections/config/types.d.ts:238-247`). Nothing under `payload/dist/collections/operations/` references it, so Local API `find` and REST `GET /api/issues` never apply it. A custom `views.list.Component` gets `collectionConfig` in its server props but no `req` (`ListViewServerPropsOnly`, `ServerProps` in `payload/dist/config/types.d.ts:308-320`).
+  - **Server (`list.tsx`).** It builds a request with Payload's `createLocalReq({ req: { headers: await headers() }, user }, payload)` and calls `collectionConfig.admin.baseFilter({ limit, page: 1, req, sort: '_order' })`. That's the configured plugin filter, combined with any base filter the collection sets, and the same call the default list view makes. Each column's `where` is `combineWhereConstraints([{ status: { equals } }, tenantFilter])` (`payload/shared`, the helper the list view uses at line 123).
+  - **Client (`kanban.tsx`).** `list.tsx` passes `tenantFilter` (a plain `Where`, or `null`) as a prop. `fetchMoreIssues` builds its `where` with the same `combineWhereConstraints` and serialises its query with `qs-esm`'s `stringify`, the format Payload's REST API parses, instead of today's hand-built `URLSearchParams`.
+  - **Remount on a new selection.** `list.client.tsx` renders `<IssuesKanban key={JSON.stringify(tenantFilter)} …>`. The selector's `router.refresh()` (`TenantSelectionProvider/index.client.js:65-75`) re-renders the server view with the new cookie, and the new key replaces the stale `useState` seeded from `initialColumns`.
+  - **It only narrows.** Every query keeps `overrideAccess: false` plus the user, so a forged `payload-tenant` cookie yields `tenant in [forged] AND access`, never more.
   - No per-game selector: the triage redesign is out of scope.
 - **Dashboard (`BeforeDashboard`):** the Game Pages step becomes "Theme and links" (on the game project) and "Review submissions".
 
@@ -426,6 +446,7 @@ These go in `redirects.ts`, which `next.config.ts` already wires in:
 - `getContactHref()` in `links.ts` reads `CRITWIRE_CONTACT_URL`.
 - Unset or empty returns `null`, and the link is hidden.
 - Anything that isn't a URL with the protocol `mailto:` or `https:` throws. That fails loudly and rules out `javascript:` links.
+- **Checked at boot.** `register()` in `src/instrumentation.ts` calls `getContactHref()` once in the Node.js runtime, so a bad value stops the server at startup instead of failing the home page on every visit. After that, the same function can only return the value or `null`, because the environment doesn't change while the server runs. `links.ts` stays free of React imports so instrumentation can load it.
 - The home page calls `await connection()` before reading the variable. Today `/` is prerendered at build time, and the Docker build has no runtime env, so a build-time read would hide the link in production forever.
 - Only the home page shows the link: putting it in the shared footer would make every marketing page dynamic.
 - The variable is documented in `.env.example` and `environment.d.ts`, and E2E sets `CRITWIRE_CONTACT_URL=mailto:e2e@critwire.test`.
@@ -444,16 +465,16 @@ Each migration is created with `pnpm payload migrate:create`, then hand-edited s
 - Adds IN_PROGRESS to `enum_issues_status`. PostgreSQL 16 allows `ADD VALUE` inside the transaction as long as nothing there uses the new value.
 - Adds `issue_reports.flagged` (default false, indexed) and `issue_reports.flag_reasons`.
 - Adds `game_projects.report_form_accept_ideas` and `report_form_review_submissions`, both default true, so existing games get review on.
-- Runs `UPDATE issues SET slug = 'new-' || id WHERE slug = 'new'`.
+- **Renames reserved slugs without collisions.** `gameProject_slug_1_idx` is unique on `(game_project_id, slug)` (`20260707_132058_phase2_collections.ts:179`), so a blind `new-<id>` could hit an existing slug and abort the migration. Instead, for each issue whose slug is `new` (at most one per game, by that index), a short loop in the migration's `up` picks the first `new-<n>`, n ≥ 2, that no issue in that game uses, then updates that one row. That's the sequence `uniqueIssueSlug` follows, so the result matches what promotion would have produced. It's plain SQL through `db.execute`, in the migration's transaction, and it can't violate the index. The old URL is covered in §7.
 
 **M14 `portal_hub`**
 - Adds the `game_projects.theme_*` columns and their enums, with the schema defaults.
-- Copies from each project's **published** flagship page (`_status = 'published' AND template = 'flagship-game-v1'`; the main table holds the published version, and drafts live only in `_game_pages_v`):
+- Copies from each project's **published** flagship page (`_status = 'published' AND template = 'flagship-game-v1'`). Reading the main table is correct: Payload writes it only when a save isn't a draft (`payload/dist/collections/operations/utilities/update.js:253-256`), so a draft saved over a published page stays in `_game_pages_v` and the main row keeps the published version. A page that was never published, or was unpublished, has `_status = 'draft'` there and is skipped. The copy:
   - the ten `site_theme_colors_*`, only when all ten are set (the old renderer treated a partial palette as unset);
   - `typography`, `shape`, `density` and `motion` when set, cast through `::text::` to the new enums;
   - `banner_id` from `site_hero_background_media_id`, where the project has no banner;
   - `description` from `site_hero_tagline`, where the project has none.
-- Deletes the lock rows that point at game pages, drops `payload_locked_documents_rels.game_pages_id`, and deletes `payload_preferences` keyed `collection-game-pages%`.
+- Deletes the lock rows that point at game pages, drops `payload_locked_documents_rels.game_pages_id`, and deletes `payload_preferences` keyed `collection-game-pages` or `collection-game-pages-%`. In Payload 3.85.2 those are the only keys for a collection: the list view's (`@payloadcms/next/dist/views/List/index.js:71`) and each document's (`@payloadcms/ui/dist/providers/DocumentInfo/index.js:134`). There's no `game-pages-list` key, and the folder-view key (`<slug>-collection-folder`) exists only for collections with folders, which game-pages doesn't have.
 - Drops every `game_pages*` and `_game_pages_v*` table and the `enum_game_pages_*` types.
 - Drops `game_projects.accent_color`, `links_trailer`, `availability_demo_url` and `meta_{developer,publisher,engine,rating}`.
 - Media used only by pages stays in the library.
@@ -465,11 +486,22 @@ Each migration is created with `pnpm payload migrate:create`, then hand-edited s
 - the AI provenance
 - `accentColor` on projects without a published flagship page (with one, the page's full theme replaces it)
 - the trailer and demo URLs, and the meta credits
+- the old `/issues/new` URL of an item slugged `new` (the item stays, as `new-<n>`; §7)
 
-**Check (for Verification).**
-1. At `683de8d`, migrate a fresh database, run the Critter Connect seed route, and `pg_dump` the result into a copy.
-2. On this branch, run `pnpm payload migrate` on the copy.
-3. Expect Critter Connect to keep the seed's theme (`#0f1f26` background, technical typography), its banner and its description; its issue and report to be BUG; and no `game_pages` tables to remain.
+**Check (for Verification).** Two SQL files in `tests/migrations/feedback-pivot/` make it repeatable, since the seed alone has no collisions, ideas or partial themes.
+1. At `683de8d`, migrate a fresh database, run the Critter Connect seed route, then apply `fixtures.sql`, which adds:
+   - in Critter Connect, an issue with the slug `new` and another with `new-2`;
+   - an issue and a report with the category FEATURE_REQUEST;
+   - a second project with a published flagship page that sets 3 of the 10 colours, `typography`, and a hero tagline, on a project with no description;
+   - a third project whose only flagship page is a draft with a full palette.
+2. `pg_dump` the result into a copy. On this branch, run `pnpm payload migrate` on the copy.
+3. Run `assert.sql`, a `DO` block that raises on the first mismatch, and save its psql output next to the E2E report:
+   - Critter Connect keeps the seed's theme (`#0f1f26` background, technical typography), its banner and its description, and its seeded issue and report are BUG;
+   - `new` became `new-3`, and `new-2` is unchanged;
+   - the FEATURE_REQUEST rows are IDEA with the category OTHER;
+   - the partial-palette project has the default palette but the page's typography, and its description is the tagline;
+   - the draft-only project has the default theme;
+   - no `game_pages*` or `_game_pages_v*` table, `enum_game_pages_*` type or `collection-game-pages%` preference row remains.
 
 **Seed** (`src/seed/critterConnect.ts`; the route stays, per H5).
 - Writes the project with its `theme` (the current Critter Connect palette), and drops the landing page, `meta` and the `site-generator` import.
@@ -478,8 +510,8 @@ Each migration is created with `pnpm payload migrate:create`, then hand-edited s
 
 #### 11. Security
 
-- **Tenant isolation.** There are no new collections. The new fields sit on existing tenant-scoped collections under the plugin. The moderation hook reads only the report's own project, which is already validated. The kanban filter only narrows.
-- **Vote integrity.** The vote route and counter hooks are unchanged. A submission isn't an issue until it's published, so it can't be voted on. Archived items keep their votes.
+- **Tenant isolation.** There are no new collections. The new fields sit on existing tenant-scoped collections under the plugin. The moderation hook reads only the report's own project, which is already validated. The kanban uses the plugin's own list filter, which only narrows (§8).
+- **Vote integrity.** The counter hooks are unchanged, and the vote route only gains the archived check (§3), which rejects more and never less. A submission isn't an issue until it's published, so it can't be voted on. Archived items keep their votes, and their counts are frozen.
 - **Fail-closed forms.**
   - The submit route keeps `guardPublicForm`, which refuses to run in production without Turnstile and Upstash.
   - The old submit URL reaches it through a 308.
@@ -515,7 +547,7 @@ Each migration is created with `pnpm payload migrate:create`, then hand-edited s
 - **`reports-contact.spec.ts`:** paths become `/feedback/new(/submit)`; S5.1 picks "Bug" first; the form selector becomes `form[action$="/feedback/new/submit"]`; S5.3 uses the new board path. The contact tests are unchanged.
 - **`admin-triage.spec.ts`:**
   - The kanban heading becomes "Feedback".
-  - S6.2 gets the In Progress column (derived from the options) and an F17 step: a super admin with studio A selected sees none of B's items.
+  - S6.2 gets the In Progress column (derived from the options) and an F17 step: a super admin with studio A selected sees none of B's items, and switching the selector to B shows B's items without a reload (the remount).
   - S6.3 drags an item from Reported to **Planned**, with a wider viewport so both columns are on screen, then checks the public "Planned" column and the hub. Reported → Investigating is now invisible to players, so "the public board follows" would prove nothing.
   - S6.7: new submit path, and the public column is "Under review".
 - **`patch-notes.spec.ts`:** `feedPath` becomes `/updates`, and the page and RSS channel titles say "Updates". S3.5 keeps its meaning (update pages stay ISR).
@@ -526,17 +558,17 @@ Each migration is created with `pnpm payload migrate:create`, then hand-edited s
 - **Support files:** `support/env.ts` drops `OPENAI_API_KEY` and adds `CRITWIRE_CONTACT_URL`. The fixtures stay as they are, since `type` defaults to BUG.
 
 **New E2E tests (Definition of done):**
-1. **Bug and idea.** In the browser, submit a bug (with platform and version) and an idea (its form has no platform or version fields). After the studio publishes both, they're on the board and the list with their types. A report titled "New" publishes under a reachable slug.
+1. **Bug and idea.** In the browser, submit a bug (with platform and version) and an idea (its form has no platform or version fields). After the studio publishes both, they're on the board and the list with their types. A report titled "New" publishes under a reachable slug. A studio creating an issue titled "New" with no slug, over REST, gets a 400 with the error on `slug`.
 2. **Four stages** (the S4.2 rewrite).
    - Each internal status sits in its stage column, including Planned and In progress.
-   - A CLOSED item is absent from the board, the list and the hub, but its page is reachable and marked Archived.
+   - A CLOSED item is absent from the board, the list and the hub, but its page is reachable and marked Archived. It shows its vote count but no vote button, and `POST /api/vote` for it answers 409 and leaves the count unchanged.
    - The type filter narrows the board.
    - A column with more than 25 items shows its true count and a link to the filtered list.
 3. **Settings.**
    - With `acceptIdeas` off: no "Suggest an idea", no idea choice on the form, and a POST with `type=IDEA` answers 400.
    - With review on (the default): a clean submission stays NEW and off the board.
 4. **Review off.** Clean text is on the board immediately. Flagged text (one profanity, and a body with 3 links) stays NEW and off the board, with `flagged` and the reason visible in the admin.
-5. **Redirects.** Each old URL answers 301 or 308 with the right `Location`, and following it lands on a 200. The URLs: the list with `?view=board`, an item, the form, a POST to `report/submit`, the updates feed, feed page 2, an update page, and `feed.xml`.
+5. **Redirects.** Each old URL answers 301 or 308 with the right `Location`, and following it lands on a 200. The URLs: the list with `?view=board`, an item, the form, a POST to `report/submit`, the updates feed, feed page 2, an update page, and `feed.xml`. The new feed's items link to `/updates/<slug>`, and their guids are still the `/patch-notes/<slug>` URLs.
 6. **Updates ↔ feedback.**
    - An update page lists its shipped items with their votes.
    - A vote on one of them updates the cached update page (eventually).
@@ -552,8 +584,10 @@ Each migration is created with `pnpm payload migrate:create`, then hand-edited s
   - a missed profanity, slur or sexual term;
   - missed leetspeak;
   - whitelisted game words flagged;
-  - 1 or 2 links flagged;
-  - 3 links, or a shortener, missed;
+  - 1 or 2 links flagged, including two `https://www.` links (each URL counts once);
+  - 3 links missed, whatever mix of `https://`, `http://` and bare `www.` they use;
+  - a shortener missed, with or without a scheme (`https://bit.ly/x`, `bit.ly/x`, `www.t.co/x`);
+  - a look-alike host flagged as a shortener (`notbit.ly/x`, `https://bit.ly.example.com/x`);
   - empty reasons on a flagged result;
   - duplicate reasons.
 - Update AGENTS.md's int-test list.
@@ -598,10 +632,18 @@ Each migration is created with `pnpm payload migrate:create`, then hand-edited s
 - **Showing or hiding the bug-only fields in client JS:** a URL-driven `type` works without JS and gives "Report a bug" and "Suggest an idea" direct links.
 - **Vendoring a word list:** LDNOOBW is CC-BY-4.0, and a plain list would need our own normaliser and whitelist. `obscenity` is MIT, has no dependencies and already has both.
 - **A `shippedInVersion` field** would duplicate `fixedInPatchNote.versionLabel`, which already says it.
+- **A hand-built `{ tenant: { equals } }` for the kanban** breaks rule 2 (tenant scoping through the plugin), and it would skip any other base filter on the collection.
+- **The plugin's `getTenantListFilter` export** is the same function, but the call site would repeat the plugin's config (field name, tenants slug, `userHasAccessToAllTenants`); `collectionConfig.admin.baseFilter` is the configured instance.
+- **Loading more kanban cards through a server action** would need its own auth and request setup for what the REST API already does under access control.
+- **A lookup route that sends `/issues/new` to the renamed item** keeps a dead route alive for a row that almost certainly doesn't exist; see §7.
+- **Only a `beforeValidate` check for reserved slugs** misses slugs that Payload generates later, in the slug field's `beforeChange` hook (§2).
+- **Closing votes on shipped items** would freeze the "From your feedback" counts and remove a signal studios want. It would save only the vote hook's update-page revalidation, since status and link changes still revalidate that page.
+- **Passing `reviewSubmissions` through `req.context`** saves one primary-key read but needs a fallback for admin and REST creates, so there would be two paths.
 
 ### Risks and resolved questions
 
-- **RSS duplicates, once.** Item links and guids change with the path, so existing subscribers will see the last 20 updates again as new. Accepted: there are few subscribers today, and keeping the old guids forever isn't worth it.
+- **RSS duplicates: avoided.** Item links move, but guids keep their pre-pivot value (§7), so subscribers see nothing again.
+- **The old URL of an item slugged `new`** lands on the submit form, not on the renamed item (§7). Accepted under H6; listed in the Summary.
 - **Enum migration order.** In M13, the data updates must come before the generated enum recreation. The migration's comment says so.
 - **`obscenity` false positives.** The probe found cockpit, "Dickson" and "tit" (the bird). A flag only makes an item wait for review, and the whitelist lives in the module and the int test.
 - **The home page becomes dynamic** (`connection()`). It does no database work, so this costs nothing.
@@ -656,6 +698,24 @@ SHOULD-CONSIDER:
 
 ## Revision notes
 
+Every MUST-FIX is resolved in place. Items both reviewers raised are answered once.
+
+**MUST-FIX**
+- **Fable 1 / Astra SC2 (link count).** §4 now counts URLs with one left-to-right regex (scheme, bare `www.`, or a bare shortener path), so `https://www.…` is one match. The shortener check uses each match's exact host. I probed the cases in Node, and §12's failure modes now agree (two `https://www.` links pass; look-alike hosts aren't shorteners). Repeats of the same URL each count, because pasting a link again is itself a spam signal.
+- **Astra 1 (kanban tenant filter).** §8 rewritten. The kanban calls the plugin-installed `collectionConfig.admin.baseFilter` with a `createLocalReq` request, the same call Payload's list view makes, and combines it with `combineWhereConstraints`. The client's REST "load more" gets the same `Where` through `qs-esm`. Evidence that a custom view must do this itself: `admin.baseFilter` is read only by the admin list view, Lexical and folders, never by Local API or REST operations (file and line refs in §8 and F10). While checking, I found a second F17 bug: a new selection never replaced the kanban's `useState`. It's fixed by keying the kanban on the filter (F10, §8, S6.2).
+- **Astra 2 (reserved slugs).** §10 M13 now picks the first free `new-<n>` per game, with the `uniqueIssueSlug` sequence, so it can't hit `gameProject_slug_1_idx`. The redirect half is rejected: `redirects.ts` is static, and a per-item lookup route for a row that almost certainly doesn't exist isn't worth keeping. So an old `/issues/new` goes to the form, stated in §7, Risks and the Summary list, under the owner's H6 decision. While checking, I found that a `beforeValidate` guard can't see slugs Payload generates later, so §2 adds a synchronous `slugify` override, and §12 test 1 covers it.
+
+**Missed / should-consider**
+- **`screenText` contract (Fable missed, Astra SC1).** §4 states one contract: resolve a verdict or reject, never resolve clean for unscreened text. Callers don't catch, so a rejection stores and publishes nothing.
+- **Votes on archived and shipped items (Fable missed, Astra SC5).** §3: shipped items keep voting. Archived items show the count read-only, and `/api/vote` answers 409. Also §5, §11 and §12 test 2.
+- **M14 `game-pages-list` key (Fable missed): rejected.** Payload 3.85.2 keys list preferences `collection-<slug>` (`@payloadcms/next/dist/views/List/index.js:71`) and documents `collection-<slug>-<id>`. `game-pages-list` never exists. §10 now names the two keys and cites both.
+- **Contact URL at boot (Fable SC1).** Adopted in §9: `instrumentation.ts` `register()` calls `getContactHref()` once.
+- **`reviewSubmissions` re-read (Fable SC2).** Kept the `findByID` and dropped `req.context` (§4, Rejected alternatives): admin and REST creates need it anyway.
+- **RSS guids (Fable SC3, Astra SC3).** Adopted in §7: guids stay the pre-pivot URLs through `updateGuid`. Risks and §12 test 5 are updated.
+- **Per-level theme merge (Fable SC4).** Adopted in §2, and `null` never overrides a value.
+- **`_status = 'published'` read (Fable SC5).** §10 explains it, citing Payload's update operation.
+- **Migration coverage (Astra SC4).** §10 Check adds `fixtures.sql` and `assert.sql`, covering a slug collision, FEATURE_REQUEST rows, a partial palette and a draft-only page.
+
 ## Steps
 
 ## Verification
@@ -671,5 +731,6 @@ SHOULD-CONSIDER:
 - 2026-09-30 05:20 UTC · Architecture: `architect` wrote 12 findings and the target design. Collection slugs stay; reports and issues get a Bug/Idea `type`; the filter uses `obscenity` (MIT) plus a link rule; GamePages and the site templates go; there are three migrations. Filed H7 (LICENSE holder, not blocking). The repo is public, so no visibility item is needed. No code changed, so no checks ran.
 - 2026-09-30 05:35 UTC · Fable review: APPROVE_WITH_CHANGES. One MUST-FIX (the §4 link rule double-counts `https://www.` URLs), three misses (`screenText` throw contract, votes on archived items, M14 list-preference key) and five should-considers, all for the Revision stage. No code changed, so no checks ran.
 - 2026-09-30 05:29 UTC · Astra review: APPROVE_WITH_CHANGES. Two MUST-FIX (§8 kanban hand-rolls the tenant filter instead of the plugin's list filter; §10 reserved-slug rename can collide and old `/issues/new`-style links lose their item) and five should-considers, overlapping Fable on the link count, `screenText` contract, RSS GUIDs and archived votes. No code changed, so no checks ran.
+- 2026-09-30 05:55 UTC · Revision: `architect` resolved all MUST-FIX items. Link rule counts URLs; kanban reuses the plugin-installed `admin.baseFilter` (verified at `@payloadcms/next/dist/views/List/index.js:114`) and is keyed on it; M13 allocates collision-safe `new-<n>` slugs plus a `slugify` guard; `/issues/new` item redirect rejected under the H6 data decision. Also settled the `screenText` contract, archived votes (409), stable RSS guids, boot-time contact URL check, per-level theme merge and migration fixtures; rejected the `game-pages-list` key (doesn't exist in Payload 3.85.2). No code changed, so no checks ran.
 
 ## Summary
