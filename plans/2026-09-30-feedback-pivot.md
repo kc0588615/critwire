@@ -129,7 +129,7 @@ Out:
 
 - [x] Baseline: install, migrate, run typecheck, lint, unit and E2E tests; record the results under Baseline
 - [x] Architecture: `architect` writes findings and the target design
-- [ ] Fable review: `architecture-reviewer`
+- [x] Fable review: `architecture-reviewer`
 - [ ] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
 - [ ] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
 - [ ] Steps: `planner` writes Steps and Verification
@@ -617,6 +617,25 @@ Each migration is created with `pnpm payload migrate:create`, then hand-edited s
 
 ## Architecture review (Fable)
 
+VERDICT: APPROVE_WITH_CHANGES
+
+Checked against the code at `ab95970`. Every finding cites real code: the 200-item cap and in-memory counts (`issues.ts:13,58-72`, `issues/page.tsx:87-95`), the `new` slug shadowing introduced by `feedback/new` (`createIssueFromPublishedReport.ts:8-16`), vote revalidation reaching only the landing while update pages are ISR (`adjustUpvoteCount.ts:30-32`, `patch-notes/[slug]/page.tsx:12`), the theme locked inside the landing config plus a second accent source (`PortalChrome.tsx`, `defaults.ts:26-39`), the wrong-way imports (`FlagshipSite.tsx:9`, `seed/critterConnect.ts:9`), the parser drift (`IssueFilters.tsx:13-21` vs `issues/page.tsx:28-34`), the unfiltered kanban queries (`list.tsx:28-41`, `kanban.tsx#fetchMoreIssues`) and the unlabelled store links (`actions.ts:39-48`). External facts verified: `getTenantFromCookie(headers, 'number' | 'text')` is exported from `@payloadcms/plugin-multi-tenant/utilities`; `obscenity@0.4.6` is MIT and current in the registry; `nuqs/server` carries no `server-only` guard and exports `createLoader`; the M14 source columns (`site_hero_tagline`, `site_hero_background_media_id`, `template`, `site_theme_*`) exist in `20260712_082516_flagship_site_config.ts`; the E2E fixtures don't reference the removed project fields. The design matches the brief's Goal, Product direction, Scope and Decision rules, and the moderation and tenant/vote/form-protection stances in §11 hold up. Nothing here is over-engineered: each new module replaces duplicated literals or a real bug.
+
+MUST-FIX:
+1. **§4 spam-link rule double-counts.** "Counts `https?://` and `www.` occurrences" scores `https://www.example.com/clip` as 2, so two ordinary screenshot links (`https://www.…` twice) reach the "3 or more" threshold and get flagged, contradicting "one or two links pass" and the int test's "1 or 2 links flagged" failure mode. Count URLs, not tokens: one regex that matches either `https?://\S+` or a bare `www.` not preceded by `//`, then count matches; extract the host from each match for the shortener check.
+
+MISSED:
+- **`screenText`'s contract contradicts itself.** §4 states the doc comment promises "never throws and never lets text through" (a failing provider returns `flagged: true`, "Screening unavailable") and, two lines later, that the local implementation "doesn't catch errors" and throws to the route. Pick one for the interface and state it once: either callers handle throws (the local rule, fail-loud) and a future provider wraps its network errors into the flagged result itself, or the interface never throws. As written, the hook author can't know which to code for.
+- **Archived items still accept votes.** `/api/vote` checks only read access (`vote/route.ts:70-80`), and §3 keeps CLOSED items reachable by link with their vote counts. The design doesn't say whether the item page still renders `VoteButton` for archived (or shipped) items. Decide and state it; if votes stay open, note it as deliberate.
+- **M14 preference cleanup misses the list-view key.** Payload keys per-document preferences `collection-game-pages-<id>` (matches the `collection-game-pages%` pattern) but list preferences `game-pages-list`. Add `key = 'game-pages-list'` to the delete, or the orphan rows stay forever.
+
+SHOULD-CONSIDER:
+1. §9: validate `CRITWIRE_CONTACT_URL` once at boot (`instrumentation.ts` `register()`), not per request. A typo in the env var would otherwise 500 the marketing home page on every visit; failing at startup is earlier and louder, and `getContactHref()` then only reads.
+2. §4: `autoPublishReport` re-reads the project the route already loaded. Passing `reviewSubmissions` through `req.context` from the route would save the query, but only if the admin create path is also covered; if not, keep the `findByID` and say so. Either is fine; just don't do both.
+3. §6 / Risks: the RSS duplicate-once could be avoided by keeping each item's `guid` stable (the old path or the note ID) while `link` moves. Cheap if the feed builder already separates the two; skip otherwise.
+4. §2: for the theme `beforeChange` merge, note that the merge is per level (`theme`, then `theme.colors`), since a REST PATCH of one colour arrives as a partial nested object; a shallow spread would wipe the other nine before `safeParse` and produce a misleading validation error.
+5. §10: state explicitly that the `_status = 'published'` main-table read is correct because Payload keeps the published document in the main table when a later draft is saved (drafts go to `_game_pages_v`); a reviewer who assumes the opposite will flag it as data loss.
+
 ## Architecture review (Astra)
 
 ## Revision notes
@@ -634,5 +653,6 @@ Each migration is created with `pnpm payload migrate:create`, then hand-edited s
 
 - 2026-09-30 04:58 UTC · Baseline: E2E db and env set up, migrations applied; tsc pass, lint 0 errors/20 warnings, int 9/9, E2E 73/73. Picked up H6 (contact address, data-preservation decision) and closed it.
 - 2026-09-30 05:20 UTC · Architecture: `architect` wrote 12 findings and the target design. Collection slugs stay; reports and issues get a Bug/Idea `type`; the filter uses `obscenity` (MIT) plus a link rule; GamePages and the site templates go; there are three migrations. Filed H7 (LICENSE holder, not blocking). The repo is public, so no visibility item is needed. No code changed, so no checks ran.
+- 2026-09-30 05:35 UTC · Fable review: APPROVE_WITH_CHANGES. One MUST-FIX (the §4 link rule double-counts `https://www.` URLs), three misses (`screenText` throw contract, votes on archived items, M14 list-preference key) and five should-considers, all for the Revision stage. No code changed, so no checks ran.
 
 ## Summary
