@@ -4,7 +4,7 @@ import { extractID } from 'payload/shared'
 import type { GameProject, PayloadJob } from '../../src/payload-types'
 import { fieldErrors, type RestClient } from './support/api'
 import { storageStatePath, TURNSTILE_DUMMY_TOKEN } from './support/env'
-import { createIssue, createProject, createReport, expect, test } from './support/fixtures'
+import { createIssue, createProject, createReport, expect, submitWithTurnstile, test } from './support/fixtures'
 
 /**
  * Player reports and the contact form: the public forms behind Turnstile,
@@ -20,12 +20,6 @@ const contactPath = (slug: string) => `/g/${slug}/contact`
 async function open(page: Page, path: string): Promise<void> {
   const response = await page.goto(path)
   expect(response?.status(), path).toBe(200)
-}
-
-/** Waits for the real Turnstile widget to issue its token, then submits. */
-async function submitWithTurnstile(page: Page, button: string): Promise<void> {
-  await expect(page.locator('input[name="cf-turnstile-response"]')).toHaveValue(/.+/, { timeout: 20_000 })
-  await page.getByRole('button', { name: button }).click()
 }
 
 /** Answers the form's "Bug or idea?" and waits for that form. */

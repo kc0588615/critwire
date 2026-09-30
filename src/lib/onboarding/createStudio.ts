@@ -1,8 +1,9 @@
-import { type Payload, type PayloadRequest, ValidationError } from 'payload'
+import type { Payload, PayloadRequest } from 'payload'
 
 import { isReservedGameSlug } from '@/collections/GameProjects/reservedSlug'
 import type { StoreLinkKey } from '@/lib/game-portal/links'
 import { getLogger } from '@/lib/logger'
+import { uniqueViolationPath } from '@/lib/payload/uniqueViolationPath'
 import { withTransaction } from '@/lib/payload/withTransaction'
 import type { User } from '@/payload-types'
 import { uniqueSlug } from '@/utilities/uniqueSlug'
@@ -25,12 +26,6 @@ export class StudioExistsError extends Error {
 const log = getLogger('onboarding')
 
 const MAX_ATTEMPTS = 3
-
-/** The field a unique-index violation names, when `error` is one on `collection`. */
-const uniqueViolationPath = (error: unknown, collection: string): string | undefined =>
-  error instanceof ValidationError && error.data.collection === collection
-    ? error.data.errors[0]?.path
-    : undefined
 
 const isSlugTaken =
   (req: PayloadRequest, collection: 'game-projects' | 'tenants') =>

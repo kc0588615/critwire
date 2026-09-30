@@ -22,6 +22,7 @@ import {
   type Role,
   ROLES,
   SECOND_BASE_URL,
+  TURNSTILE_DUMMY_TOKEN,
   WEBHOOK_SINK_ORIGIN,
   WEBHOOK_SINK_PORT,
   WORLD_PATH,
@@ -301,8 +302,47 @@ export async function onboard(
     maxRedirects: 0,
   })
   expect(response.status(), `onboard ${input.name}`).toBe(303)
+  return locationOf(response)
+}
+
+/** Waits for the real Turnstile widget to issue its token, then submits. */
+export async function submitWithTurnstile(page: BrowserPage, button: string): Promise<void> {
+  await expect(page.locator('input[name="cf-turnstile-response"]')).toHaveValue(/.+/, { timeout: 20_000 })
+  await page.getByRole('button', { name: button }).click()
+}
+
+/** Where a form post redirected: the path with its query. */
+const locationOf = (response: Awaited<ReturnType<APIRequestContext['post']>>): string => {
   const location = new URL(response.headers().location ?? '', BASE_URL)
   return `${location.pathname}${location.search}`
+}
+
+/**
+ * Posts the signup form for `email` and fails the calling test unless it
+ * answers "Check your inbox". The server has sent any email by then.
+ */
+export async function startSignup(request: APIRequestContext, email: string): Promise<void> {
+  const response = await request.post('/signup/submit', {
+    form: { email, turnstileToken: TURNSTILE_DUMMY_TOKEN },
+    maxRedirects: 0,
+  })
+  expect(response.status(), `sign up ${email}`).toBe(303)
+  expect(locationOf(response)).toBe('/signup?submitted=1')
+}
+
+/**
+ * Posts the verify page's form: `password` for the account `token`
+ * verifies. Returns where it redirects: `/onboarding` once verified (the
+ * context then holds the session cookie), or back to `/verify/<token>`
+ * when the link was used.
+ */
+export async function verifyAccount(request: APIRequestContext, token: string, password: string): Promise<string> {
+  const response = await request.post('/verify/submit', {
+    form: { password, token, turnstileToken: TURNSTILE_DUMMY_TOKEN },
+    maxRedirects: 0,
+  })
+  expect(response.status(), 'verify').toBe(303)
+  return locationOf(response)
 }
 
 /** A fresh address for every account a test creates, so reruns and emails never collide. */
