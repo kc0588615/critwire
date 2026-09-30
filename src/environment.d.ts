@@ -8,6 +8,8 @@ declare global {
       LOG_LEVEL?: string
       RESEND_API_KEY?: string
       RESEND_FROM_EMAIL?: string
+      /** Development and E2E only: without Resend, also write each email here as JSON. */
+      EMAIL_OUTBOX_DIR?: string
       NEXT_PUBLIC_TURNSTILE_SITE_KEY?: string
       TURNSTILE_SECRET_KEY?: string
       UPSTASH_REDIS_REST_URL?: string

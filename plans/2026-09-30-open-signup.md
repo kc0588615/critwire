@@ -813,7 +813,7 @@ The session that carries out the affected step copies the matching line into **D
 
 ### Checklist
 
-- [ ] Step 1: One email transport, the auth-email templates, and the contact job through Payload (§3, F5)
+- [x] Step 1: One email transport, the auth-email templates, and the contact job through Payload (§3, F5)
   - **Files:**
     - `package.json`, `pnpm-lock.yaml`: `pnpm add @payloadcms/email-resend@3.85.2`, pinned exactly like the other `@payloadcms/*` packages.
     - New `src/lib/email/adapter.ts` with `emailAdapter()` and `isEmailDeliverable()` (§3):
@@ -1388,6 +1388,10 @@ OUT=/srv/critter-ai/agent-state/missions/open-signup
 
 ## Decisions
 
+- **Step 1 · The contact email loses its own 10-second timeout.** It now sends through `@payloadcms/email-resend`, which has no timeout option, so a hung Resend call waits for Node's fetch timeouts instead. Accepted over a second hand-rolled Resend client (F5, DRY): the job runs off the request path and is retried on failure.
+- **Step 1 · A failed outbox write throws.** The outbox never refuses a message, but an unwritable `EMAIL_OUTBOX_DIR` (development and E2E only) fails loudly rather than silently dropping the email a test waits for. Outbox file names replace `:` and `.` in the ISO time with `-`, so they're valid on every filesystem.
+- **Step 1 · A malformed `RESEND_FROM_EMAIL` stops boot.** It must be `Name <address>` or a bare address (then the name is "Critwire").
+
 ## Log
 
 - 2026-09-30 09:45 UTC · Baseline: created the E2E database, migrated; tsc, lint (0 errors, 20 warnings), int (13/13) and E2E (75/75) pass.
@@ -1396,5 +1400,6 @@ OUT=/srv/critter-ai/agent-state/missions/open-signup
 - 2026-09-30 10:21 UTC · Astra review: APPROVE_WITH_CHANGES; 5 MUST-FIX (2 overlap Fable: self-set `_verified`, email change; new: signup retry overwrites a pending password, `public/media` bypasses suspension, forgot-password lacks rate limit/Turnstile) and 5 suggestions. Docs-only, no checks needed.
 - 2026-09-30 10:43 UTC · Revision: `architect` resolved all 7 MUST-FIX items (Fable 1–2, Astra 1–5): `_verified` and `email` super-admin-only; password moves from `/signup` to the verify form (no credential replacement without inbox proof); media moves out of `public/` and the Next image optimizer is off (new F11); forgot-password goes through a guarded route and REST/GraphQL `forgotPassword` is refused (new F12). Adopted 8 suggestions, declined 2 with reasons. No new handoff items. Docs-only, no checks needed.
 - 2026-09-30 11:05 UTC · Steps: `planner` wrote 18 steps in dependency order (hole-closing steps write their tests first; onboarding before signup; a second E2E server doubling as the self-hosted profile) and the Verification mapping each DoD item to a named test; 12 planner decisions (P1–P12) to be copied into Decisions by the step that applies them. Docs-only, no checks needed.
+- 2026-09-30 11:14 UTC · Step 1: `src/lib/email/` (Resend-or-outbox adapter, `renderEmail`, `AuthLinkEmail`, the three auth emails), `email: emailAdapter()` in the config, contact job via `payload.sendEmail`. tsc pass; lint 0 errors, 20 warnings (none in touched files); E2E 75/75 in 4.1 min (contact job still fails without `RESEND_API_KEY`); no `api.resend.com` left in `src`; rendered the three emails by hand: links use `NEXT_PUBLIC_SERVER_URL` and encode the token.
 
 ## Summary

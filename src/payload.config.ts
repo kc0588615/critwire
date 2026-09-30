@@ -15,6 +15,7 @@ import { Pages } from './collections/Pages'
 import { PatchNotes } from './collections/PatchNotes'
 import { Tenants } from './collections/Tenants'
 import { Users } from './collections/Users'
+import { emailAdapter } from './lib/email/adapter'
 import { discordWebhookContactTask, emailContactFormTask } from './jobs/contact'
 import { migrations } from './migrations'
 import { plugins } from './plugins'
@@ -87,6 +88,7 @@ export default buildConfig({
     Users,
   ],
   cors: [getServerSideURL()].filter(Boolean),
+  email: emailAdapter(),
   plugins,
   secret: process.env.PAYLOAD_SECRET,
   sharp,

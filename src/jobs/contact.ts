@@ -83,8 +83,9 @@ export const emailContactFormTask: TaskConfig<'email-contact-form'> = {
         )
       }
 
-      const apiKey = process.env.RESEND_API_KEY
-      if (!apiKey) {
+      // Without Resend the transport is the outbox, which would count an
+      // undelivered message as sent; fail so a super admin can retry it.
+      if (!process.env.RESEND_API_KEY) {
         throw new Error('Contact job: RESEND_API_KEY is not set, so the email cannot be sent.')
       }
 
@@ -101,26 +102,8 @@ export const emailContactFormTask: TaskConfig<'email-contact-form'> = {
         subject: input.subject || undefined,
       })
 
-      const response = await fetch('https://api.resend.com/emails', {
-        body: JSON.stringify({
-          from: process.env.RESEND_FROM_EMAIL ?? 'Critwire <notifications@critwire.local>',
-          html,
-          reply_to: input.email || undefined,
-          subject,
-          text,
-          to,
-        }),
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
-        },
-        method: 'POST',
-        signal: AbortSignal.timeout(DELIVERY_TIMEOUT_MS),
-      })
-
-      if (!response.ok) {
-        throw new Error(`Resend contact email failed with ${response.status}: ${await response.text()}`)
-      }
+      // Resend's adapter throws on a refused send, so the job fails and is retried.
+      await req.payload.sendEmail({ html, replyTo: input.email || undefined, subject, text, to })
 
       log.info({ msg: 'Contact email sent.', projectID: project.id, to })
       return { output: { sent: true } }
