@@ -4,6 +4,7 @@ import config from '@payload-config'
 import { headers } from 'next/headers'
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
+import { connection } from 'next/server'
 import { getPayload } from 'payload'
 import React from 'react'
 
@@ -25,6 +26,7 @@ type Args = {
  * Rendered per request: it reads the session and the signup flag.
  */
 export default async function OnboardingPage({ searchParams }: Args) {
+  await connection()
   if (!isOpenSignup()) notFound()
 
   const payload = await getPayload({ config })

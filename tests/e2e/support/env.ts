@@ -99,6 +99,9 @@ export const serverEnv = ({ cronSecret = '' }: { cronSecret?: string } = {}): Re
   UPSTASH_REDIS_REST_TOKEN: '',
   CRON_SECRET: cronSecret,
   CRITWIRE_CONTACT_URL: E2E_CONTACT_URL,
+  // On at runtime only: `e2e:server` builds with it empty, as the Docker
+  // image does, so a page that bakes the flag in at build fails here, and
+  // one that bakes it on fails on the second server (P3).
   CRITWIRE_OPEN_SIGNUP: '1',
   EMAIL_OUTBOX_DIR: OUTBOX_DIR,
   CRITWIRE_LIMIT_GAMES_PER_STUDIO: '',

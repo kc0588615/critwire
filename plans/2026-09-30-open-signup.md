@@ -2,7 +2,7 @@
 mission: open-signup
 project: critwire
 branch: agent/open-signup
-status: active
+status: done
 started: 2026-09-30 09:38 UTC
 ---
 
@@ -1282,7 +1282,7 @@ The session that carries out the affected step copies the matching line into **D
     - Look at every PNG: the hub's key art renders, the forms fit at 390 px, and the home page shows "Create your portal".
   - **Checks:** tsc and lint. Also run the full E2E suite if `tests/e2e/support` changed.
 
-- [ ] Step 18: Full verification, artifacts and Summary
+- [x] Step 18: Full verification, artifacts and Summary
   - Run the whole **Verification** below, in order.
   - Update H3 in `/srv/critter-ai/handoff/critwire.md`. Keep its status (`later`) and don't ask again; add that:
     - production signup and password recovery also need `RESEND_API_KEY`, and `RESEND_FROM_EMAIL` on a domain verified in Resend;
@@ -1335,7 +1335,7 @@ OUT=/srv/critter-ai/agent-state/missions/open-signup
 5. **Build:**
    1. `psql "$DB" -c "delete from payload_migrations where name='dev'"`.
    2. `pnpm payload migrate:status` lists `…_open_signup` as run.
-   3. `pnpm build` exits 0. It builds with `.env`, where signup is off, so nothing that depends on the flag may be prerendered (P3).
+   3. `pnpm build` exits 0. It builds with `.env`, where signup is off, so nothing that depends on the flag may be prerendered (P3): the route table lists `/`, `/signup`, `/verify/[token]`, `/onboarding` and `/report-abuse` as `ƒ`.
 6. **Boot checks**, after the build. Each must print `exit 1` (124 means the server didn't stop), and its log must name the problem:
    ```bash
    CRITWIRE_OPEN_SIGNUP=yes PORT=3199 timeout 90 pnpm start > /tmp/boot-flag.log 2>&1; echo "exit $?"
@@ -1347,7 +1347,8 @@ OUT=/srv/critter-ai/agent-state/missions/open-signup
 8. **Screenshots:** rerun Step 17's command if any UI changed after Step 17. Every probe must pass, and `$OUT/screenshots/index.html` must exist.
 9. **Audits.** Each of these prints nothing:
    ```bash
-   grep -rn "validateTenantMembership\|screenReportText\|VideoMedia\|api.resend.com" src
+   grep -rn "validateTenantMembership\|VideoMedia\|api.resend.com" src
+   ls src/collections/IssueReports/hooks/screenReportText.ts 2>/dev/null   # Step 7 deleted it; `IssueReports` keeps the name for its `screenTextHook` instance
    grep -nE "remotePatterns|localPatterns|qualities" next.config.ts
    grep -rn "if (!project) notFound()" 'src/app/(public)/g'           # F3: the copied gate is gone
    grep -rnF '/g/${' src | grep -v src/lib/game-portal/paths.ts        # portal URLs come from paths.ts
@@ -1448,6 +1449,8 @@ OUT=/srv/critter-ai/agent-state/missions/open-signup
 - **Step 15 · Critwire's palette and wordmark moved to `src/components/marketing/brand.css`,** which `marketing.css` imports (inside its layer, as before) and the admin's `custom.scss` `@use`s, so the admin copies no colours. `critwireFont` moved to `src/fonts.ts` beside `bodyFont`, since the admin uses it too. `Wordmark` takes `linked={false}` for the breadcrumb icon, which Payload already wraps in a link. The sign-in views are ink on paper with a yellow-on-ink button in the light theme; the dark theme keeps Payload's colours.
 - **Step 17 · The frontend admin bar shows only to super admins.** The first onboarding capture showed a new signed-up user the website template's black "Dashboard · New Page · Logout" bar; creating pages and previews are super-admin-only, so the bar offered a stranger actions they can't take. `AdminBar` now shows when `isSuperAdmin` holds for the `/api/users/me` user (which includes `roles`); `isSuperAdmin` takes `Pick<User, 'roles'>` for that. S14.7 checks a new studio user doesn't see it, and S1.9's super admin preview checks the super admin does.
 - **Step 17 · Signup shots get two harness options:** `Shot.signedIn` (the plan's) and `Shot.ready`, a selector to wait for, because the welcome panel renders after hydration. The setup reads the session token of a verified user from its request context's cookie instead of signing in again, and doesn't reuse the E2E `signUpStudio` fixture, which depends on the E2E world's super admin.
+- **Step 18 · `/onboarding` renders per request, and the E2E build runs with signup off.** Step 18's `pnpm build` (signup off, as in `.env` and the Docker image) listed `/onboarding` as static: the page called `notFound()` for the flag before it read `headers()`, so Next baked a 404 that a hosted server would serve after every verification. It now calls `await connection()` first, like the other flag pages. The suite missed it because the E2E build had the flag on; `e2e:server` now builds with `CRITWIRE_OPEN_SIGNUP=` (empty, as Docker does) and only the 3100 server turns it on, so a page baked "off" fails on 3100 and one baked "on" fails on 3102. With the fix reverted, that build failed S14.7 and S14.8 (404 instead of the form and the sign-in redirect).
+- **Step 18 · The `screenReportText` audit now checks the deleted file.** `IssueReports` names its `screenTextHook` instance `screenReportText`, like `screenGameText` and `screenUpdateText`; the grep matched that name, not the standalone hook Step 7 deleted.
 
 ## Log
 
@@ -1474,5 +1477,44 @@ OUT=/srv/critter-ai/agent-state/missions/open-signup
 - 2026-09-30 14:56 UTC · Step 15: `BeforeDashboard` by role (super admin: held games, held updates, open abuse reports and studios, each linking to its filtered list; studio: each portal's link and status, the suspended banner, next steps, active limits; no studio: "Set up your portal" with signup open, else who to ask), "Create your portal" on `/admin/login`, the Critwire wordmark as the admin's Logo and Icon, `titleSuffix` and favicons, styled sign-in views, the F9 plugin comment. tsc pass; lint 0 errors, 20 warnings (none in touched files); E2E 131/131 in 7.5 min (new `admin-dashboard.spec.ts` S18.1–S18.4; S10.3 checks the banner; S6.1 checks "Your portals"). Looked at the login, dashboard and no-studio screenshots; the home page's wordmark still renders after the CSS move.
 - 2026-09-30 15:02 UTC · Step 16: new `docs/self-hosting.md` (services table with what fails without each, first super admin, `CRITWIRE_OPEN_SIGNUP` and the limits with hosted values, Upgrading: `public/media` → `media/` and the Docker volume); `AGENTS.md` (docs-map row, Phase 8 from day one without invites, the second E2E server and the outbox); `features.md` (verification, suspension/createdBy, held text, abuse reports, Hosting, Phase 8); `architecture.md` (new URLs and their rendering, media serving); `patterns.md` (public reads and the media override, tenant-write hook, `createStudio`, screening and `moderationFields()`, limits, `requirePortalProject`, `withTransaction`, per-request flag pages, uploads); `integrations.md` (email adapter and outbox, private R2, env vars); `deploy.md` (bootstrap, volumes, hosted env); README link; removed the Vercel env leftover. tsc pass; lint 0 errors, 20 warnings (none in touched files); every `environment.d.ts` variable is in `.env.example` and `docs/integrations.md` (E2E-only ones marked); `next-sitemap.config.cjs` loads. Docs step, no E2E.
 - 2026-09-30 15:20 UTC · Step 17: a `signup` screenshot group (`/signup`, `?submitted=1`, `/verify/<token>`, `/onboarding` signed in, `/g/<slug>?welcome=1`) seeded by the setup (a pending signup, a verified user with no studio whose session is saved, a signed-up studio "Lantern Keep"), plus an assertion that the seed put `critter-connect` in `critwire-demo`; `isPortalGroup` lists the portal groups. The first run's onboarding capture showed the template admin bar to the new user, so the bar is now super-admin-only (see Decisions). tsc pass; lint 0 errors, 20 warnings (none in touched files); E2E 131/131 in 7.6 min, incl. the new admin-bar checks in S14.7 and S1.9; screenshots 37/37 with 0 failed probes over 36 captures, `index.html` lists the signup group and the home page at 1440 and 390 px; looked at every signup and home PNG and the hub's key art.
+- 2026-09-30 15:47 UTC · Step 18: first E2E run 131/131 in 7.5 min, then the build showed `/onboarding` static (see Decisions); fixed with `connection()` and made the E2E build signup-off (with the fix reverted: S14.7, S14.8 fail with 404). Final: E2E 131/131 in 7.6 min (artifact `e2e-final/`, 52 outbox emails); tsc pass; lint 0 errors, 20 warnings (all in pre-mission migrations); int 13/13; `open_signup` run; build exit 0 with every flag page `ƒ`, and that signup-off build serves `/onboarding` with `CRITWIRE_OPEN_SIGNUP=1` (307 to sign-in) and 404s without it; boot checks all `exit 1` naming the problem; audits print nothing (the `screenReportText` audit corrected); migration unchanged since Step 2, no visual change since Step 17, so neither rerun; H3 updated.
 
 ## Summary
+
+**What shipped.** Anyone can create a portal on the hosted instance, on their own:
+- **Signup:** `/signup` (email, Turnstile, IP rate limit, a per-address email budget) sends a verification link. `/verify/<token>` sets the password and signs the user in. `/onboarding` asks for the game's name, website and an optional store link, then creates the studio, its owner and one game in one transaction. It lands on `/g/<slug>?welcome=1` with a next-steps panel (share the link, add your first update, turn on ideas). Nothing an unverified account makes is public.
+- **Sign-in and password recovery:** Payload's auth views, branded for Critwire. "Forgot password" goes through a guarded route (Turnstile, rate limit), and Payload's REST/GraphQL `forgotPassword` is refused. Emails send through Resend, or go to a file outbox in development and E2E.
+- **Abuse protection:** the content filter screens a studio's own text (game name and pitch, update title, version, summary and content). Flagged text is held for super-admin review. A super admin can suspend a studio: its portal shows a neutral `/unavailable` and its members can't write. On the hosted instance, "Report this page" in every portal's footer files an abuse report to a super-admin queue.
+- **Limits:** `src/lib/limits/` holds one check per limit, enforced on the server. All three are off unless set, so self-hosted instances are unlimited. A write at a limit gets a clear 403 message in the admin and over REST.
+- **Admin:** a dashboard for each role (the super admin's queues; each studio's portals, status, next steps and limits; "Set up your portal" for a user without a studio). The home page shows "Create your portal" when signup is open.
+- **Hardening found on the way:** draft saves skipped the studio-membership check (F1). Uploads now accept only raster images (no scriptable SVG) and are stored outside `public/`, so every file read goes through the access check (F2, F11). The demo's slug is reserved (F8). The new `/onboarding` page was being prerendered as a 404 in signup-off builds, which a hosted server would have served after every verification; found at Step 18, fixed, and now caught by the E2E build.
+- **Tenant isolation holds** for signed-up studios (S1.13: B can't list, read, edit, delete or create into A's game, updates, feedback, submissions, media, folders, owner or studio).
+- **Docs:** new `docs/self-hosting.md`, plus updates to `AGENTS.md`, `features.md`, `architecture.md`, `patterns.md`, `integrations.md` and `deploy.md`.
+
+**Hosted limits** (production sets them; unset elsewhere): 3 games per studio (`CRITWIRE_LIMIT_GAMES_PER_STUDIO=3`), 100 MB of media per studio (`CRITWIRE_LIMIT_MEDIA_MB_PER_STUDIO=100`), 200 public feedback items per game (`CRITWIRE_LIMIT_PUBLIC_FEEDBACK_PER_GAME=200`).
+
+**Production environment variables** (names only; `.env.example` and `docs/integrations.md` describe each):
+- Core: `DATABASE_URL`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `PAYLOAD_SECRET`, `NEXT_PUBLIC_SERVER_URL`, `CRON_SECRET`, `PREVIEW_SECRET`; optional `DATABASE_POOL_MAX`, `LOG_LEVEL`.
+- Hosted instance: `CRITWIRE_OPEN_SIGNUP=1`, the three `CRITWIRE_LIMIT_*` above, `CRITWIRE_CONTACT_URL`.
+- New and required for signup and password recovery: `RESEND_API_KEY`, `RESEND_FROM_EMAIL` (a domain verified in Resend).
+- Form protection: `NEXT_PUBLIC_TURNSTILE_SITE_KEY` (baked in at build), `TURNSTILE_SECRET_KEY`, `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`.
+- Storage and monitoring: `R2_BUCKET`, `R2_ENDPOINT`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` (the bucket stays private); `SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_DSN`, and for source maps `SENTRY_ORG`, `SENTRY_PROJECT`, `SENTRY_AUTH_TOKEN`.
+- Never in production: `EMAIL_OUTBOX_DIR`, `RATE_LIMIT_OPTIONAL`, `DISCORD_WEBHOOK_TEST_ORIGIN`, `E2E_DATABASE_URL`, `E2E_PORT`. `VERCEL_PROJECT_PRODUCTION_URL` was removed.
+
+**Handoff items** (`/srv/critter-ai/handoff/critwire.md`), none blocking this branch:
+- H3 `later`: production keys (Turnstile, Upstash, Resend), now also noting that signup and recovery need `RESEND_API_KEY` and `RESEND_FROM_EMAIL`, and the hosted flag and limits. Needed before any production deploy.
+- H7 waiting: the LICENSE's copyright holder (ships as "Critwire contributors").
+- H8 waiting: terms of service and acceptable-use policy (signup ships without them).
+
+**After merging:** in `/srv/critter-ai/critwire`, run `mv public/media/* media/`, then restart `critwire-demo`. The server refuses to boot while `public/media` holds files. Docker deploys need the new `media` volume (`docs/deploy.md`).
+
+**Artifacts** (in `/srv/critter-ai/agent-state/missions/open-signup/`):
+- E2E: `e2e-final/`, 131/131 passed, with a trace and screenshots for every test. It also holds `run.log`, `outbox/` (every email the run sent) and `boot-checks/`. Reproduce with `pnpm test:e2e`; view with `pnpm exec playwright show-report /srv/critter-ai/agent-state/missions/open-signup/e2e-final`.
+- Screenshots: `screenshots/index.html` (signup, verify, onboarding, next steps, `/` and every portal page at 1440 and 390 px).
+
+**Reviews:**
+- Fable: APPROVE_WITH_CHANGES (2 MUST-FIX).
+- Astra: APPROVE_WITH_CHANGES (5 MUST-FIX, 2 shared with Fable).
+- The architect resolved all 7 in the Revision.
+
+Branch `agent/open-signup` is pushed and not merged.
