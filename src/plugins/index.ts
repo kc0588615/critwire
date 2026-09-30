@@ -23,7 +23,6 @@ export const plugins: Plugin[] = [
   multiTenantPlugin<Config>({
     collections: {
       'game-projects': {},
-      'game-pages': {},
       'patch-notes': {},
       issues: {},
       'issue-reports': {},

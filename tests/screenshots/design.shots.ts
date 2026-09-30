@@ -2,7 +2,6 @@ import path from 'node:path'
 
 import { type APIRequestContext, expect, type Page, test } from '@playwright/test'
 
-import type { GamePage } from '../../src/payload-types'
 import type { SiteThemeV1 } from '../../src/lib/game-portal/theme'
 import { RestClient } from '../e2e/support/api'
 import { BASE_URL } from '../e2e/support/env'
@@ -25,37 +24,32 @@ const { set, dir } = shotsTarget()
 
 const THEMES: Record<'default' | 'riso', SiteThemeV1> = { default: DEFAULT_THEME, riso: RISO_THEME }
 
-/** Publishes `group`'s theme on the Critter Connect landing and waits until the landing renders it. */
+/** Sets `group`'s theme on the Critter Connect project and waits until its hub renders it. */
 async function applyTheme(
   group: Exclude<Group, 'marketing'>,
   world: ShotsWorld,
   request: APIRequestContext,
   page: Page,
 ): Promise<void> {
-  const landing = `/g/${world.cc.slug}`
+  const hub = `/g/${world.cc.slug}`
   if (group === 'critter-connect') {
     const response = await request.post('/api/seed/critter-connect', {
       headers: { Authorization: `Bearer ${SHOTS_CRON_SECRET}` },
     })
     expect(response.status(), await response.text()).toBe(200)
-    await reloadUntil(page, landing, rootStyle, world.cc.baselineStyle, 'the landing never showed the seeded theme')
+    await reloadUntil(page, hub, rootStyle, world.cc.baselineStyle, 'the hub never showed the seeded theme')
     return
   }
   const theme = THEMES[group]
   const admin = new RestClient(request, world.superToken)
-  const current = await admin.findByID('game-pages', world.cc.landingID, { depth: 0 })
-  expect(current.status).toBe(200)
-  const { status, body } = await admin.update('game-pages', world.cc.landingID, {
-    site: { ...current.body.site, theme },
-    _status: 'published',
-  } as Partial<GamePage>)
+  const { status, body } = await admin.update('game-projects', world.cc.projectID, { theme })
   expect(status, JSON.stringify(body)).toBe(200)
   await reloadUntil(
     page,
-    landing,
+    hub,
     (p) => rootToken(p, '--fs-bg'),
     theme.colors.background,
-    `the landing never showed the ${group} theme`,
+    `the hub never showed the ${group} theme`,
   )
 }
 
@@ -64,7 +58,7 @@ for (const group of selectedGroups()) {
     test.describe.configure({ timeout: 120_000 })
 
     let world: ShotsWorld
-    /** The landing's `.fs-root` style under this group's theme; every themed page must match it. */
+    /** The hub's `.fs-root` style under this group's theme; every themed page must match it. */
     let groupStyle: null | string = null
 
     test.beforeAll(async ({ browser, playwright }) => {

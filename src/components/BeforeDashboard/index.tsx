@@ -20,18 +20,18 @@ const BeforeDashboard: React.FC = () => {
         </section>
         <section>
           <h5>2. Create the game portal</h5>
-          <p>Add the game project, external links, branding, and contact routing target.</p>
+          <p>Add the game project with its pitch, key art, store links and contact routing.</p>
           <Link href="/admin/collections/game-projects">Open Game Projects</Link>
         </section>
         <section>
-          <h5>3. Publish public content</h5>
-          <p>Publish a landing page, patch notes, and public known issues when ready.</p>
-          <Link href="/admin/collections/game-pages">Open Game Pages</Link>
+          <h5>3. Theme and links</h5>
+          <p>Match the portal to your own site&apos;s colours and type, and link back to your website.</p>
+          <Link href="/admin/collections/game-projects">Open Game Projects</Link>
         </section>
         <section>
-          <h5>4. Triage player reports</h5>
-          <p>Review incoming reports, publish them as public issues, link them, or dismiss them.</p>
-          <Link href="/admin/collections/issue-reports">Open Issue Reports</Link>
+          <h5>4. Review submissions</h5>
+          <p>Publish player bug reports and ideas to the feedback board, link duplicates, or dismiss them.</p>
+          <Link href="/admin/collections/issue-reports">Open Submissions</Link>
         </section>
       </div>
     </div>

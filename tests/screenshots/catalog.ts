@@ -11,15 +11,14 @@ export interface ShotsWorld {
   superToken: string
   cc: {
     slug: string
-    landingID: number
-    /** `.fs-root` style of the landing right after the seed, before any theme switch. */
+    projectID: number
+    /** `.fs-root` style of the hub right after the seed, before any theme switch. */
     baselineStyle: string
     patchNote: string
     calloutIssue: string
     plainIssue: string
   }
   bare: { slug: string }
-  legacy: { slug: string }
   marketingSlug: string
 }
 
@@ -76,7 +75,6 @@ export const ONCE_SHOTS: Record<Group, Shot[]> = {
     { id: 'bare-patch-notes', label: 'First run: no patch notes', path: (w) => `/g/${w.bare.slug}/updates`, themed: false },
     { id: 'bare-issues', label: 'First run: no issues', path: (w) => `/g/${w.bare.slug}/feedback`, themed: false },
     { id: 'bare-contact', label: 'First run: contact not set up', path: (w) => `/g/${w.bare.slug}/contact`, themed: false },
-    { id: 'legacy-landing', label: 'Legacy block landing', path: (w) => `/g/${w.legacy.slug}`, themed: false },
   ],
   riso: [],
   'critter-connect': [],

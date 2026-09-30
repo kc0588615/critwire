@@ -1,8 +1,7 @@
 import type { Browser, Page as BrowserPage } from '@playwright/test'
 import type { CollectionSlug } from 'payload'
 
-import { signSitePreviewToken } from '../../src/lib/security/sitePreviewToken'
-import type { GamePage, GameProject, Issue, IssueReport, Media, PatchNote } from '../../src/payload-types'
+import type { GameProject, Issue, IssueReport, Media, PatchNote } from '../../src/payload-types'
 import type { RestClient } from './support/api'
 import { BASE_URL, PREVIEW_SECRET, type Role, storageStatePath } from './support/env'
 import {
@@ -41,7 +40,6 @@ interface StudioA {
   publishedNote: PatchNote
   draftNote: PatchNote
   report: IssueReport
-  page: GamePage
   media: Media
   folderID: number
 }
@@ -50,6 +48,15 @@ let a: StudioA
 let bProject: GameProject
 
 const idsOf = (docs: { id: number | string }[]): (number | string)[] => docs.map((doc) => doc.id)
+
+/** A browser page signed in as `role`, or anonymous. */
+async function browse(browser: Browser, role: Role | 'anonymous'): Promise<BrowserPage> {
+  const context = await browser.newContext({
+    baseURL: BASE_URL,
+    storageState: role === 'anonymous' ? undefined : storageStatePath(role),
+  })
+  return context.newPage()
+}
 
 async function countVotes(superAdmin: RestClient, issueID: number): Promise<number> {
   const { status, body } = await superAdmin.find('issue-votes', {
@@ -81,9 +88,6 @@ test.beforeAll(async ({ api, uniqueSlug, world }) => {
     publishedNote: await createPatchNote(aOwner, project, uniqueSlug('iso-v1')),
     draftNote: await createPatchNote(aOwner, project, uniqueSlug('iso-v2'), { _status: 'draft' }),
     report: await createReport(aOwner, project),
-    page: await seed(aOwner, 'game-pages', { gameProject: project.id, tenant, title: 'Iso A landing', _status: 'draft' }, {
-      draft: true,
-    }),
     media,
     folderID: folder.body.doc.id,
   }
@@ -95,7 +99,6 @@ test.describe('S1.1 cross-tenant reads', () => {
     ['issues', (s) => [s.publicIssue.id, s.privateIssue.id]],
     ['patch-notes', (s) => [s.publishedNote.id, s.draftNote.id], { draft: true }],
     ['issue-reports', (s) => [s.report.id]],
-    ['game-pages', (s) => [s.page.id], { draft: true }],
     ['media', (s) => [s.media.id]],
   ]
 
@@ -372,41 +375,17 @@ test('S1.8 issue slugs are unique per project, not globally', async ({ api, worl
 
 test.describe('S1.9 Draft Mode previews', () => {
   const TEXT = {
-    aPublished: 'Iso A published heading',
     marketingPublished: 'Iso marketing published hero',
     marketingDraft: 'Iso marketing draft hero',
   }
 
-  let aPreviewProject: GameProject
-  let aLanding: GamePage
   let marketingSlug: string
 
-  const heroBlock = (heading: string) => [{ blockType: 'gameHero' as const, heading }]
   const marketingPreviewURL = (path: string) =>
     `/next/preview?${new URLSearchParams({ path, previewSecret: PREVIEW_SECRET })}`
 
-  /** A browser page signed in as `role`, or anonymous. */
-  async function browse(browser: Browser, role: Role | 'anonymous'): Promise<BrowserPage> {
-    const context = await browser.newContext({
-      baseURL: BASE_URL,
-      storageState: role === 'anonymous' ? undefined : storageStatePath(role),
-    })
-    return context.newPage()
-  }
-
-  test.beforeAll(async ({ api, uniqueSlug, world }) => {
-    const aOwner = api('aOwner')
+  test.beforeAll(async ({ api, uniqueSlug }) => {
     const superAdmin = api('superAdmin')
-
-    aPreviewProject = await createProject(aOwner, world.tenants.A.id, uniqueSlug('iso-a-preview'))
-    aLanding = await seed(aOwner, 'game-pages', {
-      gameProject: aPreviewProject.id,
-      tenant: world.tenants.A.id,
-      title: 'Iso A preview landing',
-      template: null,
-      content: heroBlock(TEXT.aPublished),
-      _status: 'published',
-    })
 
     marketingSlug = uniqueSlug('iso-marketing')
     const page = await seed(superAdmin, 'pages', {
@@ -443,22 +422,43 @@ test.describe('S1.9 Draft Mode previews', () => {
     await expect(page.getByText(TEXT.marketingDraft)).toBeVisible()
     await page.context().close()
   })
-
-  test('studio B cannot preview studio A’s landing page', async ({ browser }) => {
-    const page = await browse(browser, 'bOwner')
-    const response = await page.goto(`/next/site-preview?token=${signSitePreviewToken(aLanding.id)}`)
-    expect(response?.status()).toBe(403)
-    await page.context().close()
-  })
 })
 
-test('S1.10 the site generator and the landing builder are gone', async ({ api }) => {
-  // A signed-in owner getting 404 proves removal, not just denial.
-  const request = { gamePageId: a.page.id, prompt: 'Make the page moodier.', scope: 'full' }
+test('S1.10 the site generator and the landing builder are gone', async ({ api, browser }) => {
+  // A signed-in owner or super admin getting 404 proves removal, not just denial.
+  const request = { gamePageId: 1, prompt: 'Make the page moodier.', scope: 'full' }
   for (const role of ['aOwner', 'anonymous'] as const) {
     await test.step(`${role} POST /next/generate-site → 404`, async () => {
       const { status } = await api(role).raw('POST', '/next/generate-site', { data: request })
       expect(status).toBe(404)
     })
+  }
+
+  await test.step('GET /next/site-preview → 404', async () => {
+    const { status } = await api('aOwner').raw('GET', '/next/site-preview?token=x')
+    expect(status).toBe(404)
+  })
+
+  await test.step('super admin GET /api/game-pages → 404', async () => {
+    const { status } = await api('superAdmin').raw('GET', '/api/game-pages')
+    expect(status).toBe(404)
+  })
+
+  const page = await browse(browser, 'superAdmin')
+  try {
+    await test.step('/admin/collections/game-pages → 404', async () => {
+      const response = await page.goto('/admin/collections/game-pages')
+      expect(response?.status()).toBe(404)
+    })
+
+    await test.step('the admin nav has no Game Pages link', async () => {
+      await page.goto('/admin')
+      const nav = page.locator('nav.nav__wrap')
+      await expect(nav.locator('a[href="/admin/collections/issues"]')).toBeAttached()
+      await expect(nav.locator('a[href^="/admin/collections/game-pages"]')).toHaveCount(0)
+      await expect(nav.getByText('Game Pages')).toHaveCount(0)
+    })
+  } finally {
+    await page.context().close()
   }
 })

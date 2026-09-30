@@ -7,8 +7,6 @@ import { extractID } from 'payload/shared'
 import type { GameProject, Media } from '../payload-types'
 
 import { mergeTheme, type SiteThemeV1 } from '../lib/game-portal/theme'
-import { siteConfigV1Schema } from '../site-templates/flagship-game-v1/schema/config'
-import { siteConfigToPayloadSite } from './siteConfig'
 
 /**
  * Content seed for the Critter Connect demo project.
@@ -24,7 +22,6 @@ const GAME_SLUG = 'critter-connect'
 const LAUNCH_PATCH_NOTE_SLUG = 'v0-1-0-launch'
 const SAMPLE_ISSUE_SLUG = 'card-flicker-on-open'
 const SAMPLE_REPORT_TITLE = 'Clue trail disappears after fast travel'
-const LANDING_PAGE_TITLE = 'Critter Connect Flagship Site'
 
 const CRITTER_CONNECT_THEME: SiteThemeV1 = {
   colors: {
@@ -126,7 +123,6 @@ export async function seedCritterConnect() {
       'Build a field binder of hard-won discoveries. Follow real places, unlock clue trails, and turn player reports into better expeditions.',
     banner: banner.id,
     logo: logo.id,
-    accentColor: '#f3b340',
     theme: CRITTER_CONNECT_THEME,
     links: {
       steam: 'https://store.steampowered.com/',
@@ -145,10 +141,6 @@ export async function seedCritterConnect() {
           label: 'Playable',
         },
       ],
-    },
-    meta: {
-      developer: 'Critwire Demo Studio',
-      engine: 'Godot',
     },
     contact: {
       target: 'EMAIL' as const,
@@ -177,7 +169,6 @@ export async function seedCritterConnect() {
       extractID(project.banner) !== banner.id ||
       !project.logo ||
       extractID(project.logo) !== logo.id ||
-      project.accentColor !== projectSeed.accentColor ||
       JSON.stringify(mergeTheme(project.theme)) !== JSON.stringify(mergeTheme(CRITTER_CONNECT_THEME)) ||
       project.links?.steam !== projectSeed.links.steam ||
       project.availability?.releaseState !== projectSeed.availability.releaseState ||
@@ -189,8 +180,6 @@ export async function seedCritterConnect() {
           storeUrl: storeUrl ?? undefined,
         })),
       ) !== JSON.stringify(projectSeed.availability.platforms) ||
-      project.meta?.developer !== projectSeed.meta.developer ||
-      project.meta?.engine !== projectSeed.meta.engine ||
       project.contact?.target !== projectSeed.contact.target ||
       project.contact?.email !== projectSeed.contact.email
 
@@ -204,153 +193,6 @@ export async function seedCritterConnect() {
     } else {
       payload.logger.info(`Game project "${project.name}" already exists (id: ${project.id})`)
     }
-  }
-
-  const flagshipConfig = siteConfigV1Schema.parse({
-    nav: {
-      links: [
-        { label: 'Field notes', ref: 'updates' },
-        { label: 'Field board', ref: 'issues' },
-        { label: 'Send report', ref: 'report' },
-        { label: 'Contact', ref: 'contact' },
-      ],
-      cta: { label: 'Begin expedition', ref: 'primary-store' },
-    },
-    theme: CRITTER_CONNECT_THEME,
-    hero: {
-      variant: 'leftEditorial',
-      eyebrow: 'A field expedition built on evidence',
-      heading: 'Every clue earns its place in the binder.',
-      tagline:
-        'Track real places, decode wildlife evidence, and turn every discovery into a field card worth keeping.',
-      // The logo is a square app icon the nav already shows; the title plate carries the name.
-      showLogo: false,
-      backgroundMedia: banner.id,
-      primaryAction: { label: 'Begin expedition', ref: 'primary-store' },
-      secondaryAction: { label: 'Check the field board', ref: 'issues' },
-    },
-    availability: {
-      heading: 'Expedition access',
-      note: 'The field binder is expanding throughout early access.',
-    },
-    features: {
-      variant: 'editorialThree',
-      heading: 'Observe. Classify. Connect.',
-      intro: 'A discovery loop where evidence matters more than guesswork.',
-      items: [
-        {
-          title: 'Follow living clue trails',
-          body: 'Read habitat, behavior, geography, and morphology together before naming your find.',
-          media: banner.id,
-        },
-        {
-          title: 'Build a field binder',
-          body: 'Each verified discovery becomes a card that records what you learned and where you learned it.',
-          media: logo.id,
-        },
-        {
-          title: 'Improve every expedition',
-          body: 'Public updates, known issues, and field reports keep the trail between players and the studio open.',
-          media: null,
-        },
-      ],
-    },
-    trailer: {
-      enabled: false,
-      heading: 'Watch the field briefing',
-      poster: banner.id,
-    },
-    gallery: {
-      variant: 'editorialMosaic',
-      heading: 'Inside the field binder',
-      items: [
-        {
-          media: banner.id,
-          alt: 'Critter Connect field expedition interface over a wilderness scene',
-          caption: 'Follow evidence across a living landscape.',
-        },
-        {
-          media: logo.id,
-          alt: 'A glowing Critter Connect discovery card with filled clue slots',
-          caption: 'Turn observations into a permanent field record.',
-        },
-      ],
-    },
-    adaptive: {
-      kind: 'systems',
-      heading: 'A field system that rewards careful observation',
-      body: 'Classification, habitat, geography, morphology, behavior, life cycle, key facts, and conservation remain visible as connected evidence trails—not trivia hidden behind a score.',
-      media: logo.id,
-      items: [
-        {
-          title: 'Evidence before answers',
-          body: 'Clues narrow possibilities while leaving the final connection to the player.',
-        },
-        {
-          title: 'A binder with history',
-          body: 'Every completed card remembers the expedition that earned it.',
-        },
-      ],
-    },
-    latestUpdate: { enabled: true, heading: 'Latest field note' },
-    knownIssues: { enabled: true, variant: 'compact', heading: 'Current field status' },
-    community: {
-      enabled: true,
-      variant: 'artworkBanner',
-      heading: 'Help improve the next expedition',
-      body: 'Share a field report, follow known tracks, and see what the studio is investigating.',
-      background: banner.id,
-      actions: [
-        { label: 'Send a field report', ref: 'report' },
-        { label: 'See known issues', ref: 'issues' },
-      ],
-    },
-    finalCta: {
-      enabled: true,
-      heading: 'Your field binder is waiting.',
-      subheading: 'Begin the expedition, then help shape every trail that follows.',
-      // No art: Community already shows the banner as a band just above.
-      background: null,
-      primaryAction: { label: 'Begin expedition', ref: 'primary-store' },
-      secondaryAction: { label: 'Read the field notes', ref: 'updates' },
-    },
-    footer: {
-      tagline: 'Observe carefully. Connect the evidence.',
-      showLegalLinks: true,
-    },
-  })
-
-  const existingLandingPage = await payload.find({
-    collection: 'game-pages',
-    depth: 0,
-    draft: true,
-    limit: 1,
-    where: {
-      and: [{ gameProject: { equals: project.id } }, { kind: { equals: 'landing' } }],
-    },
-  })
-  const landingData = {
-    _status: 'published' as const,
-    gameProject: project.id,
-    kind: 'landing' as const,
-    schemaVersion: flagshipConfig.schemaVersion,
-    site: siteConfigToPayloadSite(flagshipConfig),
-    template: flagshipConfig.template,
-    tenant: tenant.id,
-    title: LANDING_PAGE_TITLE,
-  }
-
-  if (existingLandingPage.docs[0]) {
-    await payload.update({
-      collection: 'game-pages',
-      data: landingData,
-      draft: false,
-      id: existingLandingPage.docs[0].id,
-    })
-    payload.logger.info('Refreshed the published Critter Connect flagship site.')
-  } else {
-    await payload.create({ collection: 'game-pages', data: landingData, draft: false })
-    payload.logger.info('Created the published Critter Connect flagship site.')
   }
 
   const patchNoteSeed = {

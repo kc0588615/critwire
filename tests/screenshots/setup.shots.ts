@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 
 import { expect, test as setup } from '@playwright/test'
@@ -52,17 +52,11 @@ setup('seed the Critter Connect demo and the screenshot fixtures', async ({ page
     return body.docs[0] as GameProject
   })
 
-  const { baselineStyle, landingID } = await setup.step('record the landing and the theme the seed publishes', async () => {
-    const { status, body } = await admin.find('game-pages', {
-      where: { gameProject: { equals: cc.id }, kind: { equals: 'landing' } },
-      depth: 0,
-    })
-    expect(status).toBe(200)
-    expect(body.docs).toHaveLength(1)
+  const baselineStyle = await setup.step('record the theme the seed gives the hub', async () => {
     await page.goto(`/g/${cc.slug}`)
     const style = await rootStyle(page)
-    expect(style, 'the seeded landing has no .fs-root').toBeTruthy()
-    return { baselineStyle: style as string, landingID: body.docs[0].id }
+    expect(style, 'the seeded hub has no .fs-root').toBeTruthy()
+    return style as string
   })
 
   const { calloutIssue } = await setup.step('add a patch note, four issues and their votes', async () => {
@@ -126,53 +120,6 @@ setup('seed the Critter Connect demo and the screenshot fixtures', async ({ page
     }),
   )
 
-  const legacy = await setup.step('create a project whose published landing uses game blocks', async () => {
-    const project = await createProject(admin, tenant, 'tide-runners', {
-      name: 'Tide Runners',
-      description: 'A co-op raft racer through flooded city streets.',
-    })
-    const art = await admin.upload(
-      'media',
-      {
-        name: 'tide-runners-hero.png',
-        mimeType: 'image/png',
-        buffer: await readFile(path.resolve('public/critter-connect/field-binder-hero.png')),
-      },
-      { alt: 'Tide Runners key art', tenant },
-    )
-    expect(art.status, JSON.stringify(art.body)).toBe(201)
-    await seed(admin, 'game-pages', {
-      gameProject: project.id,
-      tenant,
-      title: 'Tide Runners landing',
-      template: null,
-      _status: 'published',
-      content: [
-        {
-          blockType: 'gameHero',
-          heading: 'Race the tide',
-          tagline: 'Four rafts, one flooded city, and a clock that never stops.',
-          backgroundImage: art.body.doc.id,
-        },
-        {
-          blockType: 'gameFeatures',
-          heading: 'Why crews keep coming back',
-          items: [
-            { title: 'Shared rafts', description: 'Steer, paddle and bail together, or sink together.' },
-            { title: 'Shifting streets', description: 'Every tide reshapes the course.' },
-          ],
-        },
-        {
-          blockType: 'gameCTA',
-          heading: 'Wishlist Tide Runners',
-          text: 'Get told the moment the next playtest opens.',
-          buttons: [{ label: 'Wishlist on Steam', url: 'https://store.steampowered.com/', variant: 'primary' }],
-        },
-      ],
-    })
-    return project
-  })
-
   const marketingSlug = await setup.step('publish a marketing page', async () => {
     const slug = 'about-critwire'
     await seed(admin, 'pages', {
@@ -203,14 +150,13 @@ setup('seed the Critter Connect demo and the screenshot fixtures', async ({ page
     superToken,
     cc: {
       slug: cc.slug,
-      landingID,
+      projectID: cc.id,
       baselineStyle,
       patchNote: 'v0-1-0-launch',
       calloutIssue,
       plainIssue: 'card-flicker-on-open',
     },
     bare: { slug: bare.slug },
-    legacy: { slug: legacy.slug },
     marketingSlug,
   }
   await writeFile(WORLD_PATH, JSON.stringify(world, null, 2))

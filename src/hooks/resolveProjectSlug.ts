@@ -1,6 +1,6 @@
 import type { BasePayload } from 'payload'
 
-import type { GamePage } from '../payload-types'
+import type { GameProject } from '../payload-types'
 
 /**
  * Resolves a gameProject relationship value (ID or populated doc) to
@@ -8,7 +8,7 @@ import type { GamePage } from '../payload-types'
  * depth-0 docs.
  */
 export const resolveProjectSlug = async (
-  gameProject: GamePage['gameProject'] | null | undefined,
+  gameProject: GameProject | null | number | undefined,
   payload: BasePayload,
 ): Promise<null | string> => {
   if (gameProject == null) return null

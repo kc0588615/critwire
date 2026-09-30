@@ -69,7 +69,6 @@ export interface Config {
   collections: {
     tenants: Tenant;
     'game-projects': GameProject;
-    'game-pages': GamePage;
     'patch-notes': PatchNote;
     issues: Issue;
     'issue-reports': IssueReport;
@@ -92,7 +91,6 @@ export interface Config {
   collectionsSelect: {
     tenants: TenantsSelect<false> | TenantsSelect<true>;
     'game-projects': GameProjectsSelect<false> | GameProjectsSelect<true>;
-    'game-pages': GamePagesSelect<false> | GamePagesSelect<true>;
     'patch-notes': PatchNotesSelect<false> | PatchNotesSelect<true>;
     issues: IssuesSelect<false> | IssuesSelect<true>;
     'issue-reports': IssueReportsSelect<false> | IssueReportsSelect<true>;
@@ -182,7 +180,6 @@ export interface GameProject {
   description?: string | null;
   logo?: (number | null) | Media;
   banner?: (number | null) | Media;
-  accentColor?: string | null;
   /**
    * Match your portal to your own site. Colours are checked for readable (WCAG) contrast when you save.
    */
@@ -227,10 +224,6 @@ export interface GameProject {
     pressKit?: string | null;
     privacy?: string | null;
     terms?: string | null;
-    /**
-     * YouTube or Vimeo video URL used by the landing page trailer section.
-     */
-    trailer?: string | null;
   };
   /**
    * Release and platform facts shown on the public portal.
@@ -242,7 +235,6 @@ export interface GameProject {
      * e.g. v1.2.0
      */
     currentVersion?: string | null;
-    demoUrl?: string | null;
     platforms?:
       | {
           platform:
@@ -255,15 +247,6 @@ export interface GameProject {
           id?: string | null;
         }[]
       | null;
-  };
-  /**
-   * Optional credits shown on the public portal.
-   */
-  meta?: {
-    developer?: string | null;
-    publisher?: string | null;
-    engine?: string | null;
-    rating?: string | null;
   };
   /**
    * Where public contact form submissions are routed.
@@ -430,388 +413,6 @@ export interface FolderInterface {
   folderType?: 'media'[] | null;
   updatedAt: string;
   createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "game-pages".
- */
-export interface GamePage {
-  id: number;
-  tenant?: (number | null) | Tenant;
-  gameProject: number | GameProject;
-  kind: 'landing';
-  title: string;
-  /**
-   * Which renderer this page uses. Empty = legacy blocks.
-   */
-  template?: 'flagship-game-v1' | null;
-  schemaVersion?: number | null;
-  /**
-   * Flagship template configuration. Section order is fixed by the template; these fields control content, variants, and theme.
-   */
-  site?: {
-    nav?: {
-      links?:
-        | {
-            ref?:
-              | (
-                  | 'primary-store'
-                  | 'demo'
-                  | 'steam'
-                  | 'epic'
-                  | 'itch'
-                  | 'discord'
-                  | 'updates'
-                  | 'issues'
-                  | 'report'
-                  | 'contact'
-                )
-              | null;
-            /**
-             * Optional label override.
-             */
-            label?: string | null;
-            id?: string | null;
-          }[]
-        | null;
-      cta?: {
-        ref?:
-          | (
-              | 'primary-store'
-              | 'demo'
-              | 'steam'
-              | 'epic'
-              | 'itch'
-              | 'discord'
-              | 'updates'
-              | 'issues'
-              | 'report'
-              | 'contact'
-            )
-          | null;
-        /**
-         * Optional label override.
-         */
-        label?: string | null;
-      };
-    };
-    theme?: {
-      /**
-       * Semantic tokens. WCAG contrast is enforced on publish.
-       */
-      colors?: {
-        background?: string | null;
-        foreground?: string | null;
-        mutedForeground?: string | null;
-        surface?: string | null;
-        accent?: string | null;
-        accentForeground?: string | null;
-        border?: string | null;
-        success?: string | null;
-        warning?: string | null;
-        error?: string | null;
-      };
-      typography?: ('modern' | 'editorial' | 'technical') | null;
-      shape?: ('sharp' | 'balanced' | 'soft') | null;
-      density?: ('compact' | 'cinematic') | null;
-      motion?: ('off' | 'subtle') | null;
-    };
-    hero?: {
-      variant?: ('centeredCinematic' | 'leftEditorial' | 'split' | 'trailerBackground') | null;
-      eyebrow?: string | null;
-      /**
-       * Falls back to the project name.
-       */
-      heading?: string | null;
-      /**
-       * Falls back to the project description.
-       */
-      tagline?: string | null;
-      showLogo?: boolean | null;
-      backgroundMedia?: (number | null) | Media;
-      primaryAction?: {
-        ref?:
-          | (
-              | 'primary-store'
-              | 'demo'
-              | 'steam'
-              | 'epic'
-              | 'itch'
-              | 'discord'
-              | 'updates'
-              | 'issues'
-              | 'report'
-              | 'contact'
-            )
-          | null;
-        /**
-         * Optional label override.
-         */
-        label?: string | null;
-      };
-      secondaryAction?: {
-        ref?:
-          | (
-              | 'primary-store'
-              | 'demo'
-              | 'steam'
-              | 'epic'
-              | 'itch'
-              | 'discord'
-              | 'updates'
-              | 'issues'
-              | 'report'
-              | 'contact'
-            )
-          | null;
-        /**
-         * Optional label override.
-         */
-        label?: string | null;
-      };
-    };
-    /**
-     * Platform facts come from the game project — this controls presentation.
-     */
-    availability?: {
-      enabled?: boolean | null;
-      heading?: string | null;
-      note?: string | null;
-    };
-    features?: {
-      variant?: ('editorialThree' | 'cardGrid' | 'alternating' | 'featurePlusTwo') | null;
-      heading?: string | null;
-      intro?: string | null;
-      items?:
-        | {
-            title?: string | null;
-            body?: string | null;
-            media?: (number | null) | Media;
-            id?: string | null;
-          }[]
-        | null;
-    };
-    /**
-     * The video URL is the project links.trailer fact.
-     */
-    trailer?: {
-      enabled?: boolean | null;
-      heading?: string | null;
-      poster?: (number | null) | Media;
-    };
-    gallery?: {
-      variant?: ('editorialMosaic' | 'horizontalStrip' | 'carousel' | 'twoColumn') | null;
-      heading?: string | null;
-      items?:
-        | {
-            media?: (number | null) | Media;
-            alt?: string | null;
-            caption?: string | null;
-            id?: string | null;
-          }[]
-        | null;
-    };
-    adaptive?: {
-      kind?: ('story' | 'world' | 'characters' | 'modes' | 'roadmap' | 'systems' | 'philosophy') | null;
-      heading?: string | null;
-      body?: string | null;
-      media?: (number | null) | Media;
-      items?:
-        | {
-            title?: string | null;
-            body?: string | null;
-            id?: string | null;
-          }[]
-        | null;
-    };
-    latestUpdate?: {
-      enabled?: boolean | null;
-      heading?: string | null;
-    };
-    knownIssues?: {
-      enabled?: boolean | null;
-      variant?: ('compact' | 'pinned' | 'recentlyFixed') | null;
-      heading?: string | null;
-    };
-    community?: {
-      enabled?: boolean | null;
-      variant?: ('artworkBanner' | 'split') | null;
-      heading?: string | null;
-      body?: string | null;
-      background?: (number | null) | Media;
-      actions?:
-        | {
-            ref?:
-              | (
-                  | 'primary-store'
-                  | 'demo'
-                  | 'steam'
-                  | 'epic'
-                  | 'itch'
-                  | 'discord'
-                  | 'updates'
-                  | 'issues'
-                  | 'report'
-                  | 'contact'
-                )
-              | null;
-            /**
-             * Optional label override.
-             */
-            label?: string | null;
-            id?: string | null;
-          }[]
-        | null;
-    };
-    finalCta?: {
-      enabled?: boolean | null;
-      heading?: string | null;
-      subheading?: string | null;
-      background?: (number | null) | Media;
-      primaryAction?: {
-        ref?:
-          | (
-              | 'primary-store'
-              | 'demo'
-              | 'steam'
-              | 'epic'
-              | 'itch'
-              | 'discord'
-              | 'updates'
-              | 'issues'
-              | 'report'
-              | 'contact'
-            )
-          | null;
-        /**
-         * Optional label override.
-         */
-        label?: string | null;
-      };
-      secondaryAction?: {
-        ref?:
-          | (
-              | 'primary-store'
-              | 'demo'
-              | 'steam'
-              | 'epic'
-              | 'itch'
-              | 'discord'
-              | 'updates'
-              | 'issues'
-              | 'report'
-              | 'contact'
-            )
-          | null;
-        /**
-         * Optional label override.
-         */
-        label?: string | null;
-      };
-    };
-    footer?: {
-      tagline?: string | null;
-      showLegalLinks?: boolean | null;
-    };
-  };
-  content?: (GameHeroBlock | GameFeaturesBlock | MediaGalleryBlock | GameCTABlock | TrailerEmbedBlock)[] | null;
-  updatedAt: string;
-  createdAt: string;
-  _status?: ('draft' | 'published') | null;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "GameHeroBlock".
- */
-export interface GameHeroBlock {
-  /**
-   * Defaults to the game name when empty.
-   */
-  heading?: string | null;
-  tagline?: string | null;
-  backgroundImage?: (number | null) | Media;
-  showLogo?: boolean | null;
-  /**
-   * Call-to-action buttons linking out (store page, Discord, …).
-   */
-  buttons?:
-    | {
-        label: string;
-        url: string;
-        variant?: ('primary' | 'secondary') | null;
-        id?: string | null;
-      }[]
-    | null;
-  id?: string | null;
-  blockName?: string | null;
-  blockType: 'gameHero';
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "GameFeaturesBlock".
- */
-export interface GameFeaturesBlock {
-  heading?: string | null;
-  items: {
-    title: string;
-    description?: string | null;
-    image?: (number | null) | Media;
-    id?: string | null;
-  }[];
-  id?: string | null;
-  blockName?: string | null;
-  blockType: 'gameFeatures';
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "MediaGalleryBlock".
- */
-export interface MediaGalleryBlock {
-  heading?: string | null;
-  items: {
-    image: number | Media;
-    caption?: string | null;
-    id?: string | null;
-  }[];
-  id?: string | null;
-  blockName?: string | null;
-  blockType: 'mediaGallery';
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "GameCTABlock".
- */
-export interface GameCTABlock {
-  heading: string;
-  text?: string | null;
-  /**
-   * Call-to-action buttons linking out (store page, Discord, …).
-   */
-  buttons?:
-    | {
-        label: string;
-        url: string;
-        variant?: ('primary' | 'secondary') | null;
-        id?: string | null;
-      }[]
-    | null;
-  id?: string | null;
-  blockName?: string | null;
-  blockType: 'gameCTA';
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "TrailerEmbedBlock".
- */
-export interface TrailerEmbedBlock {
-  heading?: string | null;
-  /**
-   * YouTube or Vimeo video URL.
-   */
-  url: string;
-  id?: string | null;
-  blockName?: string | null;
-  blockType: 'trailerEmbed';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1296,10 +897,6 @@ export interface PayloadLockedDocument {
         value: number | GameProject;
       } | null)
     | ({
-        relationTo: 'game-pages';
-        value: number | GamePage;
-      } | null)
-    | ({
         relationTo: 'patch-notes';
         value: number | PatchNote;
       } | null)
@@ -1395,7 +992,6 @@ export interface GameProjectsSelect<T extends boolean = true> {
   description?: T;
   logo?: T;
   banner?: T;
-  accentColor?: T;
   theme?:
     | T
     | {
@@ -1437,7 +1033,6 @@ export interface GameProjectsSelect<T extends boolean = true> {
         pressKit?: T;
         privacy?: T;
         terms?: T;
-        trailer?: T;
       };
   availability?:
     | T
@@ -1445,7 +1040,6 @@ export interface GameProjectsSelect<T extends boolean = true> {
         releaseState?: T;
         releaseDate?: T;
         currentVersion?: T;
-        demoUrl?: T;
         platforms?:
           | T
           | {
@@ -1454,14 +1048,6 @@ export interface GameProjectsSelect<T extends boolean = true> {
               label?: T;
               id?: T;
             };
-      };
-  meta?:
-    | T
-    | {
-        developer?: T;
-        publisher?: T;
-        engine?: T;
-        rating?: T;
       };
   contact?:
     | T
@@ -1487,289 +1073,6 @@ export interface GameProjectsSelect<T extends boolean = true> {
   customDomainVerified?: T;
   updatedAt?: T;
   createdAt?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "game-pages_select".
- */
-export interface GamePagesSelect<T extends boolean = true> {
-  tenant?: T;
-  gameProject?: T;
-  kind?: T;
-  title?: T;
-  template?: T;
-  schemaVersion?: T;
-  site?:
-    | T
-    | {
-        nav?:
-          | T
-          | {
-              links?:
-                | T
-                | {
-                    ref?: T;
-                    label?: T;
-                    id?: T;
-                  };
-              cta?:
-                | T
-                | {
-                    ref?: T;
-                    label?: T;
-                  };
-            };
-        theme?:
-          | T
-          | {
-              colors?:
-                | T
-                | {
-                    background?: T;
-                    foreground?: T;
-                    mutedForeground?: T;
-                    surface?: T;
-                    accent?: T;
-                    accentForeground?: T;
-                    border?: T;
-                    success?: T;
-                    warning?: T;
-                    error?: T;
-                  };
-              typography?: T;
-              shape?: T;
-              density?: T;
-              motion?: T;
-            };
-        hero?:
-          | T
-          | {
-              variant?: T;
-              eyebrow?: T;
-              heading?: T;
-              tagline?: T;
-              showLogo?: T;
-              backgroundMedia?: T;
-              primaryAction?:
-                | T
-                | {
-                    ref?: T;
-                    label?: T;
-                  };
-              secondaryAction?:
-                | T
-                | {
-                    ref?: T;
-                    label?: T;
-                  };
-            };
-        availability?:
-          | T
-          | {
-              enabled?: T;
-              heading?: T;
-              note?: T;
-            };
-        features?:
-          | T
-          | {
-              variant?: T;
-              heading?: T;
-              intro?: T;
-              items?:
-                | T
-                | {
-                    title?: T;
-                    body?: T;
-                    media?: T;
-                    id?: T;
-                  };
-            };
-        trailer?:
-          | T
-          | {
-              enabled?: T;
-              heading?: T;
-              poster?: T;
-            };
-        gallery?:
-          | T
-          | {
-              variant?: T;
-              heading?: T;
-              items?:
-                | T
-                | {
-                    media?: T;
-                    alt?: T;
-                    caption?: T;
-                    id?: T;
-                  };
-            };
-        adaptive?:
-          | T
-          | {
-              kind?: T;
-              heading?: T;
-              body?: T;
-              media?: T;
-              items?:
-                | T
-                | {
-                    title?: T;
-                    body?: T;
-                    id?: T;
-                  };
-            };
-        latestUpdate?:
-          | T
-          | {
-              enabled?: T;
-              heading?: T;
-            };
-        knownIssues?:
-          | T
-          | {
-              enabled?: T;
-              variant?: T;
-              heading?: T;
-            };
-        community?:
-          | T
-          | {
-              enabled?: T;
-              variant?: T;
-              heading?: T;
-              body?: T;
-              background?: T;
-              actions?:
-                | T
-                | {
-                    ref?: T;
-                    label?: T;
-                    id?: T;
-                  };
-            };
-        finalCta?:
-          | T
-          | {
-              enabled?: T;
-              heading?: T;
-              subheading?: T;
-              background?: T;
-              primaryAction?:
-                | T
-                | {
-                    ref?: T;
-                    label?: T;
-                  };
-              secondaryAction?:
-                | T
-                | {
-                    ref?: T;
-                    label?: T;
-                  };
-            };
-        footer?:
-          | T
-          | {
-              tagline?: T;
-              showLegalLinks?: T;
-            };
-      };
-  content?:
-    | T
-    | {
-        gameHero?: T | GameHeroBlockSelect<T>;
-        gameFeatures?: T | GameFeaturesBlockSelect<T>;
-        mediaGallery?: T | MediaGalleryBlockSelect<T>;
-        gameCTA?: T | GameCTABlockSelect<T>;
-        trailerEmbed?: T | TrailerEmbedBlockSelect<T>;
-      };
-  updatedAt?: T;
-  createdAt?: T;
-  _status?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "GameHeroBlock_select".
- */
-export interface GameHeroBlockSelect<T extends boolean = true> {
-  heading?: T;
-  tagline?: T;
-  backgroundImage?: T;
-  showLogo?: T;
-  buttons?:
-    | T
-    | {
-        label?: T;
-        url?: T;
-        variant?: T;
-        id?: T;
-      };
-  id?: T;
-  blockName?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "GameFeaturesBlock_select".
- */
-export interface GameFeaturesBlockSelect<T extends boolean = true> {
-  heading?: T;
-  items?:
-    | T
-    | {
-        title?: T;
-        description?: T;
-        image?: T;
-        id?: T;
-      };
-  id?: T;
-  blockName?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "MediaGalleryBlock_select".
- */
-export interface MediaGalleryBlockSelect<T extends boolean = true> {
-  heading?: T;
-  items?:
-    | T
-    | {
-        image?: T;
-        caption?: T;
-        id?: T;
-      };
-  id?: T;
-  blockName?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "GameCTABlock_select".
- */
-export interface GameCTABlockSelect<T extends boolean = true> {
-  heading?: T;
-  text?: T;
-  buttons?:
-    | T
-    | {
-        label?: T;
-        url?: T;
-        variant?: T;
-        id?: T;
-      };
-  id?: T;
-  blockName?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "TrailerEmbedBlock_select".
- */
-export interface TrailerEmbedBlockSelect<T extends boolean = true> {
-  heading?: T;
-  url?: T;
-  id?: T;
-  blockName?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

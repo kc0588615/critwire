@@ -6,7 +6,6 @@ import { fileURLToPath } from 'url'
 
 import { isSuperAdmin, superAdminOnly } from './access/isSuperAdmin'
 import type { User } from './payload-types'
-import { GamePages } from './collections/GamePages'
 import { GameProjects } from './collections/GameProjects'
 import { IssueReports } from './collections/IssueReports'
 import { Issues } from './collections/Issues'
@@ -79,7 +78,6 @@ export default buildConfig({
   collections: [
     Tenants,
     GameProjects,
-    GamePages,
     PatchNotes,
     Issues,
     IssueReports,

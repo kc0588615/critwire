@@ -11,7 +11,6 @@ import {
 import { validateOptionalTallyUrl } from '../../lib/tally/parseTallyForm'
 import { validateContactDiscordWebhookUrl } from '../../lib/validation/discordWebhook'
 import { validateOptionalHttpUrl } from '../../lib/validation/url'
-import { validateOptionalVideoUrl } from '../../lib/validation/video'
 import {
   CONTACT_FORM_TARGET_OPTIONS,
   PLATFORM_OPTIONS,
@@ -78,25 +77,8 @@ export const GameProjects: CollectionConfig = {
       label: 'Key art',
       relationTo: 'media',
     },
-    {
-      name: 'accentColor',
-      type: 'text',
-      // Superseded by `theme` and read by nothing; M15 drops the column.
-      admin: {
-        hidden: true,
-      },
-      validate: (value: null | string | string[] | undefined) => {
-        if (value == null || value === '') return true
-        if (typeof value !== 'string' || !/^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i.test(value)) {
-          return 'Must be a hex color like #7c3aed.'
-        }
-        return true
-      },
-    },
     themeField,
     {
-      // Approved fact URLs. The flagship template's action registry may
-      // SELECT these by ref, never rewrite them.
       name: 'links',
       type: 'group',
       admin: {
@@ -119,15 +101,6 @@ export const GameProjects: CollectionConfig = {
         externalLinkField('pressKit', 'Press Kit'),
         externalLinkField('privacy', 'Privacy Policy'),
         externalLinkField('terms', 'Terms of Service'),
-        {
-          name: 'trailer',
-          type: 'text',
-          label: 'Trailer Video',
-          admin: {
-            description: 'YouTube or Vimeo video URL used by the landing page trailer section.',
-          },
-          validate: validateOptionalVideoUrl,
-        },
       ],
     },
     {
@@ -157,11 +130,6 @@ export const GameProjects: CollectionConfig = {
           maxLength: 40,
         },
         {
-          name: 'demoUrl',
-          type: 'text',
-          validate: validateOptionalHttpUrl,
-        },
-        {
           // Array order is the priority order: the first platform with
           // a store URL is the "primary store" action target.
           name: 'platforms',
@@ -189,19 +157,6 @@ export const GameProjects: CollectionConfig = {
           ],
           maxRows: 12,
         },
-      ],
-    },
-    {
-      name: 'meta',
-      type: 'group',
-      admin: {
-        description: 'Optional credits shown on the public portal.',
-      },
-      fields: [
-        { name: 'developer', type: 'text', maxLength: 80 },
-        { name: 'publisher', type: 'text', maxLength: 80 },
-        { name: 'engine', type: 'text', maxLength: 80 },
-        { name: 'rating', type: 'text', maxLength: 80 },
       ],
     },
     {
