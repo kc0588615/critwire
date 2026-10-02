@@ -1,7 +1,14 @@
 import { defineConfig, devices } from '@playwright/test'
 import 'dotenv/config'
 
-import { AUTH_SETUP_PATTERN, BASE_URL, SECOND_BASE_URL, secondServerEnv, serverEnv } from './tests/e2e/support/env'
+import {
+  AUTH_SETUP_PATTERN,
+  BASE_URL,
+  fakeUpstashServer,
+  SECOND_BASE_URL,
+  secondServerEnv,
+  serverEnv,
+} from './tests/e2e/support/env'
 
 // Fails fast, before anything starts, unless the E2E database is disposable.
 const env = serverEnv()
@@ -33,8 +40,10 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'], channel: 'chromium' },
     },
   ],
-  // Started in order: the second waits for the first to migrate and build.
+  // Started in order: the Upstash stand-in first, so the app never boots
+  // against nothing; the second app server waits for the first to migrate and build.
   webServer: [
+    fakeUpstashServer(),
     {
       command: 'pnpm e2e:server',
       url: `${BASE_URL}/api/health`,

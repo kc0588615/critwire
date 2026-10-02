@@ -1,7 +1,7 @@
 import { defineConfig, devices } from '@playwright/test'
 import 'dotenv/config'
 
-import { BASE_URL, serverEnv } from './tests/e2e/support/env'
+import { BASE_URL, fakeUpstashServer, serverEnv } from './tests/e2e/support/env'
 import { shotsTarget } from './tests/screenshots/catalog'
 import { SHOTS_CRON_SECRET } from './tests/screenshots/support'
 
@@ -73,13 +73,17 @@ export default defineConfig({
       },
     },
   ],
-  webServer: {
-    command: 'pnpm e2e:server',
-    url: `${BASE_URL}/api/health`,
-    timeout: 420_000,
-    reuseExistingServer: false,
-    stdout: 'pipe',
-    stderr: 'pipe',
-    env: process.env.SHOTS_SKIP_BUILD === '1' ? { ...env, E2E_SKIP_BUILD: '1' } : env,
-  },
+  // The Upstash stand-in first: the app server is configured to use it.
+  webServer: [
+    fakeUpstashServer(),
+    {
+      command: 'pnpm e2e:server',
+      url: `${BASE_URL}/api/health`,
+      timeout: 420_000,
+      reuseExistingServer: false,
+      stdout: 'pipe',
+      stderr: 'pipe',
+      env: process.env.SHOTS_SKIP_BUILD === '1' ? { ...env, E2E_SKIP_BUILD: '1' } : env,
+    },
+  ],
 })

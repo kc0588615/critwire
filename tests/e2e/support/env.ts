@@ -19,6 +19,25 @@ export const SECOND_LIMITS = { games: 2, mediaMB: 1, publicFeedback: 3 } as cons
 export const WEBHOOK_SINK_PORT = E2E_PORT + 1
 export const WEBHOOK_SINK_ORIGIN = `http://127.0.0.1:${WEBHOOK_SINK_PORT}`
 
+/**
+ * The Upstash stand-in (`support/fakeUpstash.ts`). Only the first server
+ * uses it; the second has no Upstash, as a self-hosted instance may not.
+ */
+export const FAKE_UPSTASH_PORT = E2E_PORT + 3
+export const FAKE_UPSTASH_URL = `http://127.0.0.1:${FAKE_UPSTASH_PORT}`
+export const FAKE_UPSTASH_TOKEN = 'e2e-fake-upstash-token'
+
+/** The `webServer` entry that starts the stand-in; list it before the app servers. */
+export const fakeUpstashServer = () => ({
+  command: 'pnpm exec tsx tests/e2e/support/fakeUpstash.ts',
+  url: FAKE_UPSTASH_URL,
+  timeout: 30_000,
+  reuseExistingServer: false,
+  stdout: 'pipe' as const,
+  stderr: 'pipe' as const,
+  env: { E2E_PORT: String(E2E_PORT) },
+})
+
 /** Cloudflare's documented always-pass Turnstile test keys. */
 export const TURNSTILE_TEST_SITE_KEY = '1x00000000000000000000AA'
 export const TURNSTILE_TEST_SECRET_KEY = '1x0000000000000000000000000000000AA'
@@ -95,8 +114,8 @@ export const serverEnv = ({ cronSecret = '' }: { cronSecret?: string } = {}): Re
   RESEND_API_KEY: '',
   SENTRY_DSN: '',
   NEXT_PUBLIC_SENTRY_DSN: '',
-  UPSTASH_REDIS_REST_URL: '',
-  UPSTASH_REDIS_REST_TOKEN: '',
+  UPSTASH_REDIS_REST_URL: FAKE_UPSTASH_URL,
+  UPSTASH_REDIS_REST_TOKEN: FAKE_UPSTASH_TOKEN,
   CRON_SECRET: cronSecret,
   CRITWIRE_CONTACT_URL: E2E_CONTACT_URL,
   // On at runtime only: `e2e:server` builds with it empty, as the Docker
@@ -117,6 +136,8 @@ export const serverEnv = ({ cronSecret = '' }: { cronSecret?: string } = {}): Re
 export const secondServerEnv = (): Record<string, string> => ({
   ...serverEnv(),
   PORT: String(SECOND_PORT),
+  UPSTASH_REDIS_REST_URL: '',
+  UPSTASH_REDIS_REST_TOKEN: '',
   CRITWIRE_OPEN_SIGNUP: '',
   EMAIL_OUTBOX_DIR: '',
   CRITWIRE_LIMIT_GAMES_PER_STUDIO: String(SECOND_LIMITS.games),

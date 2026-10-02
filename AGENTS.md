@@ -162,6 +162,11 @@ How the E2E suite works:
   and low limits (2 games, 1 MB of media, 3 public feedback items), for
   the specs that check a limit or what a self-hosted instance shows.
   The webhook sink listens on `E2E_PORT + 1`.
+- An Upstash stand-in (`tests/e2e/support/fakeUpstash.ts`) listens on
+  `E2E_PORT + 3`, and only the 3100 server uses it, so that server runs
+  the real Upstash client. It answers the rate-limit calls as
+  "allowed" and any command the app isn't known to send with an error.
+  The 3102 server has no Upstash, as a self-hosted instance may not.
 - Without Resend, the 3100 server writes every email to
   `test-results/outbox/` as JSON (`EMAIL_OUTBOX_DIR`), and specs read
   verification and reset links from there (`tests/e2e/support/email.ts`).
