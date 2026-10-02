@@ -42,6 +42,14 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     '/buttons/*': ['./src/lib/share/fonts/DejaVuSans.ttf'],
   },
+  // The app owns its framing policy, on every response (nginx must not set
+  // one; tests/int/nginx-headers checks). 'self' keeps admin live preview
+  // working. To let a route be framed elsewhere, append a later entry for
+  // it with its own `frame-ancestors`: when entries match the same path
+  // and key, Next sends the last one.
+  headers: async () => [
+    { source: '/:path*', headers: [{ key: 'Content-Security-Policy', value: "frame-ancestors 'self'" }] },
+  ],
   reactStrictMode: true,
   redirects,
   turbopack: {

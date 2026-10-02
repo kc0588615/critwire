@@ -49,6 +49,25 @@ the Next.js + Payload app, and Nginx. Cloudflare sits in front.
    updates pages send `s-maxage=3600`, and the app's on-demand revalidation
    can't purge Cloudflare, so edits would stay stale at the edge.
 
+## Security headers
+
+- **The app owns its framing policy.** Every response carries
+  `Content-Security-Policy: frame-ancestors 'self'` (`headers()` in
+  `next.config.ts`), so it holds behind any proxy, or none. nginx must
+  not set `X-Frame-Options` or `Content-Security-Policy`, and must not
+  hide the app's `Content-Security-Policy`: a second policy would
+  override or narrow the app's. `nginx.conf` keeps its other security
+  headers, and `pnpm test:int` fails if it breaks either rule.
+- nginx mounts `nginx.conf` read-only and reads it at start, so after
+  a pull that changes it, run `docker compose restart nginx`.
+- **Known limitation: per-IP limits see Cloudflare, not the player.**
+  nginx forwards `$remote_addr` as `X-Real-IP`, and behind Cloudflare's
+  proxy that's a Cloudflare edge address. Until nginx takes the
+  client's address from `CF-Connecting-IP`, trusted only from
+  Cloudflare's published IP ranges, every player who arrives through
+  the same edge shares one rate-limit budget, and busy periods can
+  undercount referrals.
+
 ## Deploying
 
 ```bash

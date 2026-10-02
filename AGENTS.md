@@ -187,3 +187,8 @@ Int tests (`tests/int`) exist only for invariants E2E can't reach:
   one test per failure mode: missed words and leetspeak, false positives
   on game words, the link count, shorteners and look-alike hosts, and
   the reasons' wording. E2E can't enumerate these inputs cheaply.
+- `nginx-headers` — `nginx.conf` must not set `X-Frame-Options` or a
+  `Content-Security-Policy`, nor hide the app's, and keeps its five
+  other security headers. The app owns its framing policy
+  (`next.config.ts`), and E2E serves `next start` without nginx, so
+  only a static check sees the proxy's headers.
