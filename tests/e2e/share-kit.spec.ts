@@ -91,9 +91,9 @@ test.describe('the admin Share tab', () => {
         await expect(panel).toBeVisible()
       })
 
-      await test.step('two tabs, with "Links and buttons" selected', async () => {
+      await test.step('three tabs (Discord is on), with "Links and buttons" selected', async () => {
         const tabs = panel.getByRole('tablist', { name: 'What to put on your site' }).getByRole('tab')
-        await expect(tabs).toHaveText(['Links and buttons', 'Embed'])
+        await expect(tabs).toHaveText(['Links and buttons', 'Embed', 'Discord'])
         await expect(tabs.first()).toHaveAttribute('aria-selected', 'true')
         await expect(tabs.last()).toHaveAttribute('aria-selected', 'false')
         await expect(panel.getByRole('tabpanel', { name: 'Links and buttons' })).toBeVisible()

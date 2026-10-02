@@ -89,7 +89,8 @@
   font-weight: 700;
 }
 
-.share-kit-platform-list {
+.share-kit-platform-list,
+.share-kit-list {
   display: grid;
   gap: 0.375rem;
   margin: 0;
@@ -245,6 +246,72 @@
   display: block;
   max-width: 100%;
   height: auto;
+}
+
+/* The Discord tab. */
+.share-kit-subtitle {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+/* What came of the last action, marked by a bar so it never relies on colour. */
+.share-kit-status {
+  margin: 0;
+  max-width: 60ch;
+  border-left: 3px solid var(--kit-fg);
+  padding: 0.25rem 0 0.25rem 0.75rem;
+  font-weight: 600;
+}
+
+.share-kit-status:empty {
+  display: none;
+}
+
+.share-kit-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+/* A link or button that does something: filled, or outlined when secondary. */
+.share-kit-action {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--kit-target);
+  border: 1px solid var(--kit-fg);
+  border-radius: var(--kit-radius);
+  padding: 0.375rem 1rem;
+  background: var(--kit-fg);
+  color: var(--kit-bg);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.share-kit-action-secondary {
+  border-color: var(--kit-control);
+  background: transparent;
+  color: var(--kit-fg);
+}
+
+.share-kit-action:hover {
+  text-decoration: underline;
+}
+
+.share-kit-action-secondary:hover {
+  border-color: var(--kit-fg);
+}
+
+.share-kit-action:disabled {
+  cursor: progress;
+  opacity: 0.7;
+}
+
+.share-kit-action:focus-visible {
+  outline: 2px solid var(--kit-fg);
+  outline-offset: 2px;
 }
 
 @media (max-width: 40rem) {

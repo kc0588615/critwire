@@ -783,7 +783,10 @@ test('E12 the Share tab’s Embed tab gives the host page’s snippet, a live pr
       await page.keyboard.press('ArrowLeft')
       await expect(links).toBeFocused()
       await expect(panel.getByRole('tabpanel', { name: 'Links and buttons' })).toBeVisible()
+      // Discord is on for this server, so its tab is the last.
       await page.keyboard.press('End')
+      await expect(tabs.getByRole('tab', { name: 'Discord' })).toBeFocused()
+      await page.keyboard.press('ArrowLeft')
       await expect(embed).toBeFocused()
       await expect(kit).toBeVisible()
     })

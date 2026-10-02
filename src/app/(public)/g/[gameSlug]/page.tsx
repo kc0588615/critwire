@@ -6,6 +6,7 @@ import { HubHeader } from '@/components/game/HubHeader'
 import { LatestUpdates } from '@/components/game/LatestUpdates'
 import { TopFeedback } from '@/components/game/TopFeedback'
 import { WelcomePanel } from '@/components/game/WelcomePanel'
+import { isDiscordOn } from '@/lib/discord/config'
 import { getGameProject, requirePortalProject } from '@/lib/game-portal/getGameProject'
 import { getServerSideURL } from '@/utilities/getURL'
 
@@ -32,6 +33,7 @@ export default async function GameHubPage({ params }: { params: Promise<{ gameSl
       {/* Reads `?welcome=1` in the browser, so the cached hub never varies by it. */}
       <Suspense fallback={null}>
         <WelcomePanel
+          discordOn={isDiscordOn()}
           project={{ id: project.id, slug: project.slug }}
           siteURL={getServerSideURL()}
         />

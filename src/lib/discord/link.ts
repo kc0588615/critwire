@@ -36,3 +36,28 @@ export const linkGame = async ({
     user,
   })
 }
+
+/**
+ * Unlinks a game from its server, as the signed-in user, through the same
+ * checks as `linkGame`. Deleting the webhook at Discord is the caller's,
+ * once this has committed.
+ */
+export const unlinkGame = async ({
+  gameID,
+  payload,
+  user,
+}: {
+  gameID: number
+  payload: Payload
+  user: User
+}): Promise<void> => {
+  await payload.update({
+    collection: 'game-projects',
+    context: { disableRevalidate: true, discordLink: true },
+    data: { discord: { channelId: null, guildId: null, webhookUrl: null } },
+    depth: 0,
+    id: gameID,
+    overrideAccess: false,
+    user,
+  })
+}

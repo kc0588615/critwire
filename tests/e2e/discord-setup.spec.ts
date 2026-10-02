@@ -1,5 +1,11 @@
+import { gameShareHref } from '../../src/lib/admin/paths'
 import { sign } from '../../src/lib/security/sign'
-import { BASE_URL, DISCORD_TEST_APPLICATION_ID, WEBHOOK_SINK_ORIGIN } from './support/env'
+import {
+  BASE_URL,
+  DISCORD_TEST_APPLICATION_ID,
+  SECOND_BASE_URL,
+  WEBHOOK_SINK_ORIGIN,
+} from './support/env'
 import {
   discordCallback,
   discordCode,
@@ -9,7 +15,13 @@ import {
   startDiscordInstall,
   stateOf,
 } from './support/discord'
-import { createProject, expect, test } from './support/fixtures'
+import {
+  asStudioAdmin,
+  createProject,
+  expect,
+  newRequestContext,
+  test,
+} from './support/fixtures'
 
 /**
  * "Add critwire to your Discord": the install link, Discord's
@@ -86,6 +98,91 @@ test('D11 a studio links a game to its Discord, and linking again replaces the w
   const deletes = await deletesOf(request)
   expect(deletes).toContain(webhookDeletePath(firstLink?.webhookUrl as string))
   expect(deletes).not.toContain(webhookDeletePath(secondLink?.webhookUrl as string))
+})
+
+test('D11 the Discord tab installs critwire, shows the link, and disconnects it', async ({
+  browser,
+  request,
+  seedStudio,
+}) => {
+  const studio = await seedStudio('d11-tab')
+  const { tenant, owner } = studio
+  const game = await createProject(owner.client, tenant.id, `${tenant.slug}-game`)
+  const target = { guild: snowflake(), channel: snowflake() }
+  const installURL = `${BASE_URL}/api/discord/install?game=${game.id}`
+
+  await asStudioAdmin(browser, studio, async (page) => {
+    const panel = page.getByRole('region', { name: 'Put critwire on your site' })
+    const discordTab = panel.getByRole('tab', { name: 'Discord' })
+    const kit = panel.getByRole('tabpanel', { name: 'Discord' })
+    const add = kit.getByRole('link', { name: 'Add critwire to your Discord' })
+
+    await test.step('not linked: the tab offers the install', async () => {
+      await page.goto(gameShareHref(game.id))
+      await discordTab.click()
+      await expect(discordTab).toHaveAttribute('aria-selected', 'true')
+      await expect(kit.getByText('Send to critwire')).toBeVisible()
+      await expect(add).toHaveAttribute('href', installURL)
+    })
+
+    await test.step('adding it goes through Discord’s screen and back to the linked tab', async () => {
+      // Nothing reaches the real Discord. A redirect's target escapes `page.route`, so the
+      // install's own answer is caught: its real 303 to Discord's screen becomes the studio
+      // approving there, a redirect to the callback with that screen's `state`.
+      await page.route('https://discord.com/**', (route) => route.abort())
+      await page.route(
+        (url) => url.pathname === '/api/discord/install',
+        async (route) => {
+          const install = await route.fetch({ maxRedirects: 0 })
+          const authorize = new URL(install.headers().location ?? '', BASE_URL)
+          if (`${authorize.origin}${authorize.pathname}` !== 'https://discord.com/oauth2/authorize') {
+            return route.fulfill({ response: install })
+          }
+          const query = new URLSearchParams({
+            code: discordCode(target),
+            state: authorize.searchParams.get('state') ?? '',
+          })
+          return route.fulfill({
+            headers: { location: `${BASE_URL}/api/discord/callback?${query}` },
+            status: 302,
+          })
+        },
+      )
+      await add.click()
+      await expect(page).toHaveURL(`${gameShareHref(game.id)}?discord=linked`)
+      await expect(discordTab).toHaveAttribute('aria-selected', 'true')
+      await expect(kit.getByRole('status')).toHaveText('Your game is linked to your Discord server.')
+      await expect(kit.getByRole('heading', { name: 'Linked to your Discord server' })).toBeVisible()
+      await expect(kit.getByRole('link', { name: 'Open the posts channel' })).toHaveAttribute(
+        'href',
+        `https://discord.com/channels/${target.guild}/${target.channel}`,
+      )
+      await expect(kit.getByRole('link', { name: 'Add critwire again' })).toHaveAttribute(
+        'href',
+        installURL,
+      )
+    })
+
+    const { body: linked } = await owner.client.findByID('game-projects', game.id, { depth: 0 })
+    const webhookUrl = linked.discord?.webhookUrl as string
+    expect(linked.discord).toMatchObject({ guildId: target.guild, channelId: target.channel })
+
+    await test.step('Disconnect clears the link and deletes the webhook', async () => {
+      await kit.getByRole('button', { name: 'Disconnect' }).click()
+      await expect(kit.getByRole('status')).toHaveText('Disconnected from Discord.')
+      await expect(add).toBeVisible()
+      await expect(kit.getByRole('link', { name: 'Open the posts channel' })).toHaveCount(0)
+      const { body } = await owner.client.findByID('game-projects', game.id, { depth: 0 })
+      expect(body.discord ?? {}).toMatchObject({ guildId: null, channelId: null, webhookUrl: null })
+      await expect.poll(() => deletesOf(request)).toContain(webhookDeletePath(webhookUrl))
+    })
+
+    await test.step('cancelling on Discord’s screen says so', async () => {
+      await page.goto(`${gameShareHref(game.id)}?discord=cancelled`)
+      await expect(discordTab).toHaveAttribute('aria-selected', 'true')
+      await expect(kit.getByRole('status')).toHaveText('You cancelled on Discord, so nothing changed.')
+    })
+  })
 })
 
 test('D12 only the studio that owns a game can link it', async ({
@@ -198,4 +295,86 @@ test('D12 a suspended studio can’t link, and the new webhook is deleted', asyn
   expect((await superAdmin.findByID('game-projects', game.id, { depth: 0 })).body.discord?.guildId ?? null).toBeNull()
   // The webhook Discord made for it is gone too.
   await expect.poll(async () => (await deletesOf(request)).length).toBe(deletesBefore + 1)
+})
+
+test('D13 the welcome panel offers Discord, and a server with Discord off shows none of it', async ({
+  browser,
+  playwright,
+  seedStudio,
+}) => {
+  const studio = await seedStudio('d13')
+  const { tenant, owner } = studio
+  // One game per server, so neither server's cached hub can stand in for the other's.
+  const game = await createProject(owner.client, tenant.id, `${tenant.slug}-game`)
+  const offGame = await createProject(owner.client, tenant.id, `${tenant.slug}-off`)
+
+  await test.step('the welcome panel’s Discord tab carries the install link', async () => {
+    const context = await browser.newContext({ storageState: { cookies: [], origins: [] } })
+    try {
+      const page = await context.newPage()
+      await page.goto(`/g/${game.slug}?welcome=1`)
+      const panel = page.getByRole('region', { name: 'Put critwire on your site' })
+      await panel.getByRole('tab', { name: 'Discord' }).click()
+      const kit = panel.getByRole('tabpanel', { name: 'Discord' })
+      await expect(kit.getByRole('link', { name: 'Add critwire to your Discord' })).toHaveAttribute(
+        'href',
+        `${BASE_URL}/api/discord/install?game=${game.id}`,
+      )
+      // The hub can't know the link; the admin's Share tab does.
+      await expect(kit.getByRole('link', { name: 'Share tab in the admin' })).toHaveAttribute(
+        'href',
+        `${BASE_URL}${gameShareHref(game.id)}`,
+      )
+      await expect(kit.getByRole('button', { name: 'Disconnect' })).toHaveCount(0)
+    } finally {
+      await context.close()
+    }
+  })
+
+  await test.step('Discord off: no tab on the hub or in the admin', async () => {
+    const context = await browser.newContext({
+      baseURL: SECOND_BASE_URL,
+      storageState: { cookies: [], origins: [] },
+    })
+    try {
+      const page = await context.newPage()
+      await page.goto(`/g/${offGame.slug}?welcome=1`)
+      const tabs = page
+        .getByRole('region', { name: 'Put critwire on your site' })
+        .getByRole('tablist', { name: 'What to put on your site' })
+        .getByRole('tab')
+      await expect(tabs).toHaveText(['Links and buttons', 'Embed'])
+    } finally {
+      await context.close()
+    }
+    await asStudioAdmin(
+      browser,
+      studio,
+      async (page) => {
+        await page.goto(gameShareHref(offGame.id))
+        await expect(
+          page
+            .getByRole('tablist', { name: 'What to put on your site' })
+            .getByRole('tab'),
+        ).toHaveText(['Links and buttons', 'Embed'])
+      },
+      SECOND_BASE_URL,
+    )
+  })
+
+  await test.step('Discord off: its routes answer 404', async () => {
+    const second = await newRequestContext(playwright, SECOND_BASE_URL)
+    try {
+      const install = await second.get(`/api/discord/install?game=${offGame.id}`, {
+        headers: { Authorization: `JWT ${owner.token}` },
+        maxRedirects: 0,
+      })
+      expect(install.status()).toBe(404)
+      const callback = await second.get('/api/discord/callback?code=x&state=y', { maxRedirects: 0 })
+      expect(callback.status()).toBe(404)
+      expect((await second.post('/api/discord/interactions', { data: {} })).status()).toBe(404)
+    } finally {
+      await second.dispose()
+    }
+  })
 })

@@ -12,12 +12,15 @@ import { nextSteps } from '@/lib/onboarding/nextSteps'
  * search params aren't in its cache key, and only the browser shows this.
  * It holds nothing private, so anyone adding `?welcome=1` sees no more
  * than the studio's own public links. `siteURL` is the configured site
- * URL, never the host the hub was opened on.
+ * URL, never the host the hub was opened on. With `discordOn`, the kit's
+ * Discord tab offers the install, but can't know the link: that's in the
+ * admin's Share tab.
  */
-export const WelcomePanel: React.FC<{ project: { id: number; slug: string }; siteURL: string }> = ({
-  project,
-  siteURL,
-}) => {
+export const WelcomePanel: React.FC<{
+  discordOn: boolean
+  project: { id: number; slug: string }
+  siteURL: string
+}> = ({ discordOn, project, siteURL }) => {
   const searchParams = useSearchParams()
   if (searchParams.get('welcome') !== '1') return null
 
@@ -32,7 +35,12 @@ export const WelcomePanel: React.FC<{ project: { id: number; slug: string }; sit
             <li key={step.key}>
               {step.key === 'share' ? (
                 // The kit itself, under its own heading: the step's link would only open it in the admin.
-                <SharePanel headingLevel={3} siteURL={siteURL} slug={project.slug} />
+                <SharePanel
+                  discord={discordOn ? { gameID: project.id, link: 'unknown' } : undefined}
+                  headingLevel={3}
+                  siteURL={siteURL}
+                  slug={project.slug}
+                />
               ) : (
                 <>
                   {/* The admin is another app: a full page load, not a client navigation. */}
