@@ -35,11 +35,12 @@ in the same project.
 | --- | --- |
 | `docs/architecture.md` | Deployment, Docker, domain resolution, rendering/ISR, data access model, project structure |
 | `docs/patterns.md` | Writing any collection, hook, access control, Server Component, job, or validation code |
-| `docs/features.md` | Product scope, collections/fields, feedback board + voting, public stages, submission review and content filter, updates, contact form, hosting, build phases |
-| `docs/integrations.md` | R2, Upstash, Resend, Sentry, Turnstile, Cloudflare, the content filter, PgBouncer, backups, env vars |
+| `docs/features.md` | Product scope, collections/fields, feedback board + voting, public stages, submission review and content filter, Discord, updates, contact form, hosting, build phases |
+| `docs/integrations.md` | R2, Upstash, Resend, Sentry, Turnstile, Cloudflare, Discord, the content filter, PgBouncer, backups, env vars |
 | `docs/self-hosting.md` | Which services are required, the first super admin, open signup and the hosted limits, upgrade steps |
 | `docs/share.md` | The "Put critwire on your site" kit: links, `?ref=` tags, button images, the live badge, the referral counter, Steam, what works where |
 | `docs/embed.md` | The embed: the loader `/embed/v1.js` and its attributes, the board and updates widgets, voting through the item page, caching, the JSON feeds' contracts, privacy, protocol v1, what works where |
+| `docs/discord.md` | Discord: `/feedback` and Send to critwire, posts to a studio's channel, the Discord tab, what's stored, self-hosting your own Discord app step by step, troubleshooting, limits |
 
 ## Stack
 

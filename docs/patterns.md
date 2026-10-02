@@ -41,6 +41,17 @@ access: {
   `_verified`, `suspended`, `createdBy`, `flagged`) use
   `superAdminFieldAccess`, not `admin.readOnly`, so studio users see
   them read-only and super admins can still edit them.
+- **Fields only server code writes** (`GameProject.discord`) use
+  `discordLinkFieldAccess` (`src/access/discordLink.ts`): a super
+  admin, or a Local API write that passes `context: { discordLink: true }`.
+  REST and GraphQL clients can't set `req.context`, so they can't forge
+  the field. The writers live in one module (`src/lib/discord/link.ts`)
+  and write as the signed-in user (`overrideAccess: false`, `user`), so
+  collection access, the tenant scope and `enforceTenantWrite` still
+  apply. The one system write, `stopPosting`, only clears the link
+  whose webhook just failed (compare and clear in its `where`). Keep
+  such writers out of `'use server'` files: every export there is a
+  callable endpoint.
 - Public (player-facing) reads go through Payload REST or Local API with
   read-only access; no authentication required.
 
@@ -120,6 +131,15 @@ services. The established hooks:
   a concurrent withdrawal of the same vote can't decrement twice).
   Nothing else writes the counter. Both revalidate the hub and, for a
   shipped item, its update's page.
+- **Discord posts** (PatchNote and Issue `afterChange`):
+  `queueDiscordUpdatePost` queues when an update becomes visible
+  (published and not held, and it wasn't before);
+  `queueDiscordStagePost` queues on update when a public item's public
+  stage changes to Planned, In progress or Shipped. Both go through
+  `queueDiscordPost` (`src/lib/discord/posts.ts`), which checks the
+  env first and reads the game's webhook with a privileged helper
+  (`gameWebhook`), passing `req` only to stay in the write's
+  transaction.
 
 Rule: any hook that mutates published content calls `revalidatePath()`
 or `revalidateTag()` **after** the DB write. A single page revalidates
@@ -242,10 +262,34 @@ Tasks are defined in `/jobs` and registered in `payload.config.ts`:
   Discord.
 - `email-contact-form` — contact submission via Resend to the studio's
   configured email.
+- `discord-update-post`, `discord-stage-post` (`src/jobs/discord.ts`)
+  — a game's Discord post for a published update, or for an item that
+  reached a public stage (`docs/discord.md`).
 
 The app is a persistent server, so the built-in scheduler just works —
 no cron workarounds. The submit route runs its own job (`jobs.runByID`);
 the autorun cron retries failures.
+
+- **Delayed and merged jobs:** queue with `waitUntil` and give the
+  task a `concurrency` key with `supersedes: true`
+  (`jobs.enableConcurrencyControl` is on). Queuing again for the same
+  key deletes the pending job, so quick changes become one job, run by
+  the autorun after the last one's delay. The Discord posts wait 60 s.
+- **Their own queue when servers differ:** Discord posts run on the
+  `discord` queue, which `jobs.autoRun` adds only when Discord is on.
+  A server with Discord off that shares the database (E2E's second
+  server) never claims a post and completes it unsent.
+- **Read as an anonymous visitor in jobs.** A job's `req.user` is
+  whoever ran the queue: nobody for the autorun, a super admin or the
+  `CRON_SECRET` bearer for `/api/payload-jobs/run`, and `publicRead`
+  gives any signed-in user everything. So a job that must respect what
+  the public can see reads without the job's `req` and with
+  `overrideAccess: false`, as the portal's queries do. Privileged reads
+  and writes are named helpers with `overrideAccess: true` and no
+  `req` (`gameWebhook`, the post log, `stopPosting`).
+- **No `@payload-config` in modules the config imports** (hooks, jobs,
+  access): take `payload` or `req` from the caller, so there's no
+  import cycle through the config.
 
 - Jobs are super-admin only: the jobs collection and `jobs.access.run`
   (or the `CRON_SECRET` bearer). They hold every studio's messages.
@@ -278,7 +322,37 @@ Turnstile (`TURNSTILE_SECRET_KEY`) or Upstash. Only local development
 skips them, plus Upstash in E2E builds (`RATE_LIMIT_OPTIONAL=1`).
 Contact webhooks must be Discord's (`isAllowedDiscordWebhookUrl`,
 checked on save and again before sending, which also refuses
-redirects).
+redirects). Every Discord webhook call, contact or post, goes through
+`executeDiscordWebhook` (`src/lib/discord/webhook.ts`), which adds
+`allowed_mentions: { parse: [] }` and throws `DiscordWebhookGoneError`
+on a deleted webhook.
+
+## The Discord interactions endpoint
+
+`POST /api/discord/interactions` is public but isn't a form: Discord's
+servers call it, so there's no Turnstile and no client IP to limit.
+Its shape, in order (`src/app/api/discord/interactions/route.ts`):
+
+1. 404 when Discord is off, before reading the request.
+2. Read the raw body and verify it before parsing: the
+   `X-Signature-Timestamp` within ±300 s and the Ed25519
+   `X-Signature-Ed25519` over timestamp‖body, with Node's `crypto`
+   (`src/lib/discord/verify.ts`). Any failure is a bare 401 with no
+   Sentry event: Discord sends bad signatures on purpose when the
+   endpoint URL is saved.
+3. Zod on the interaction (`src/lib/discord/interactions.ts`): our
+   application ID, a server, a member. Anything else is a 400.
+4. Answer within Discord's 3 s. Commands answer at once with a form or
+   an ephemeral message, with no writes. A form submission is answered
+   after its report is saved: Zod on the values, the game bound to the
+   form and still linked, a rate limit per Discord account and game
+   (Upstash capped at 1 s), then `createPlayerReport`, the web form's
+   own path (`src/lib/game-portal/reports.ts`). A unique
+   `discord.interactionId` turns a replay into "That was already
+   sent."
+5. On a throw: Sentry, the log, and an ephemeral "nothing was sent"
+   reply. A submission over 2 s logs a warning. Every reply is
+   ephemeral with `allowed_mentions: { parse: [] }`.
 
 ## Public JSON endpoints
 

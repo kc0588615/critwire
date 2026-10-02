@@ -6,8 +6,10 @@ onboarding (`/g/<game>?welcome=1`). It gives links, button images and a
 live badge, with snippets ready to paste for the place you pick. It
 links out to the pages a studio already has; it never replaces them.
 
-The panel has two tabs: **Links and buttons** (the default, this page)
-and **Embed** (below, and `docs/embed.md`).
+The panel has up to three tabs: **Links and buttons** (the default,
+this page), **Embed** (below, and `docs/embed.md`) and, when the
+instance has Discord set up, **Discord** (below, and
+`docs/discord.md`).
 
 Code: `src/lib/share/` (the kit, buttons, badge and image renderer),
 `src/components/share/` (the panel) and
@@ -93,11 +95,35 @@ button) and a **Mode** (Auto, Light or Dark). The tab then shows:
 
 Only the selected tab loads, so the preview loads only when shown.
 
+## The Discord tab
+
+Shown only when the instance sets the three `DISCORD_*` variables
+(`docs/discord.md`). **Add critwire to your Discord** sends the studio
+to Discord's own screen, where it picks the server and the channel
+critwire posts in, then back to this tab. One authorization installs
+`/feedback` and Send to critwire in that server and links the server
+to the game.
+
+- **Not linked:** what players and moderators can do, the button, and
+  what Discord will ask for (Manage Server and Manage Webhooks).
+- **Linked:** "Linked to your Discord server", **Open the posts
+  channel**, how posts are timed, how several games share a server,
+  **Add critwire again** (to change the channel) and **Disconnect**.
+  When the webhook was deleted in Discord, the tab says posts are off.
+- **On the welcome page** the tab can't show the link: it offers the
+  button and points to the admin's Share tab.
+- Coming back from Discord, `?discord=linked`, `cancelled` or `failed`
+  selects the tab and says what happened.
+
+Links in Discord posts and replies carry `?ref=discord`, counted under
+"Discord" in "Where players come from".
+
 ## Where players come from
 
 Every kit link except RSS carries `?ref=<place>`: `steam`, `itch`,
 `carrd`, `linktree`, `website` or `readme`. The embed's links carry
-`?ref=embed`, counted under "Embed". The game's Share tab shows
+`?ref=embed`, counted under "Embed", and links in Discord posts and
+replies carry `?ref=discord`, counted under "Discord". The game's Share tab shows
 the last 30 days (UTC) under "Where players come from": a row per day
 with visits and a column per place, plus totals.
 
@@ -156,6 +182,7 @@ format but hasn't been tried on it yet.
 | Linktree | Yes, one link each | Only as a link's thumbnail (upload the PNG) | No | Add link |
 | A README | Yes | Yes, Markdown snippet (should work) | Should work | The README file |
 | Your own site | Yes | Yes, HTML snippet | Yes | Anywhere in your HTML |
+| Discord | Through the Discord tab: `/feedback`, Send to critwire, and posts with links (`docs/discord.md`); not tried on the real Discord yet | No | No | The Discord tab: Add critwire to your Discord |
 
 The badge is live only where the page loads it from your instance's
 URL. Where a platform makes you upload an image, the upload is a copy

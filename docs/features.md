@@ -82,6 +82,10 @@ across studios). Fields:
   `reviewSubmissions` (both on by default).
 - **Review:** `flagged` and `flagReasons`, set by the content filter
   (see Holding a studio's text for review).
+- **Discord** (`discord`): the linked server, the posts channel and
+  its webhook URL. Read by the studio's members; written only by the
+  "Add critwire to your Discord" flow, Disconnect and super admins
+  (see Discord).
 - customDomain, customDomainVerified (Phase 9); timestamps.
 
 ### PatchNote ("Updates" in the admin and the portal)
@@ -102,7 +106,11 @@ Inbound player submission. Fields: gameProject (rel), issue (rel,
 optional — set when linked), title, description, type, category,
 submitterEmail / platform / gameVersion (all optional; ideas carry no
 platform or version), status, flagged and flagReasons (set by the
-content filter), timestamps.
+content filter), timestamps. Reports from Discord also carry
+`discord`: the sender's user ID and username, and for Send to
+critwire a link to the message, read-only for the studio and never
+public; plus `interactionId`, unique and super-admin only, which makes
+a replayed request create nothing.
 
 ### IssueVote ("Votes" in the admin)
 Fields: issue (rel), browserTokenHash, timestamps. Unique constraint:
@@ -120,6 +128,13 @@ tenant-scoped, and only super admins can see it. Fields: pageUrl (the
 reported `/g/<slug>` path), gameProject (rel, optional), reason (spam,
 scam or phishing, offensive, impersonation or copyright, other),
 details, reporterEmail (optional), status (open, resolved, dismissed),
+timestamps.
+
+### DiscordPost ("Discord posts"; platform-level)
+What critwire has posted to Discord, so each update is posted once and
+each public stage once. Not tenant-scoped; super admins only, and only
+the post jobs write it. Fields: gameProject (rel), patchNote (rel,
+unique), issue (rel), stage (planned, in-progress, shipped),
 timestamps.
 
 ## Enums (Payload select options)
@@ -237,6 +252,26 @@ Configurable per GameProject (`reportForm`):
   submissions stay in Tally.
 - **external** — link out to a GitHub issue template, Linear, Discord,
   etc.
+
+## Discord
+
+Optional, off unless the instance sets its Discord app's variables.
+Full detail in `docs/discord.md`.
+
+- **Feedback from Discord:** players run `/feedback` (Bug or Idea) and
+  fill in a Discord form; moderators turn a player's message into a
+  report with **Send to critwire** (Manage Messages needed), credited
+  to its author. Both create a submission through the same path as the
+  web form, so the content filter and the game's review setting apply.
+  Rate-limited per Discord account and game.
+- **Posts to Discord:** when an update is published, and when a public
+  item reaches Planned, In progress or Shipped, about a minute after
+  the last change. Never for held or private content or suspended
+  studios.
+- **Setup:** the Discord tab of "Put critwire on your site": one
+  Discord authorization picks the server and the posts channel.
+- **No voting from Discord.** A Discord account would be a second vote
+  for the same person.
 
 ## Updates ↔ feedback
 

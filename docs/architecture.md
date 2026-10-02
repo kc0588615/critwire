@@ -160,6 +160,19 @@ otherwise each answers 404:
 /report-abuse?page=/g/<slug> "Report this page" → POST /report-abuse/submit
 ```
 
+### Discord URLs
+
+Only when the instance sets its Discord variables (`docs/discord.md`);
+otherwise each answers 404:
+
+```
+POST /api/discord/interactions   Discord's signed interactions: /feedback, Send to critwire, their forms
+GET  /api/discord/install?game=<id>   a studio member's "Add critwire to your Discord" → Discord's screen
+GET  /api/discord/callback       Discord's redirect back: links the game, then the Share tab with ?discord=
+```
+
+They're explicit routes, which win over Payload's `/api/[...slug]`.
+
 The submit routes are public form endpoints (`guardPublicForm`), except
 onboarding's, which needs a signed-in user. Each answers a browser with
 a 303 back to its page (`?submitted=1`, `?error=1`) and a JSON client
@@ -276,11 +289,12 @@ disk and R2 alike. So a suspended studio's files answer 403 there.
       /health             health check
       /vote               voting endpoint
       /referrals          referral counter (JSON only, Upstash only)
+      /discord            interactions, install, callback (Discord on only)
       /seed               demo seed (CRON_SECRET)
   /collections            one folder per collection config
   /components
     /game                 portal UI (hub, board, forms, chrome, theme, referral ping)
-    /share                "Put critwire on your site" panel: links and buttons, and the Embed tab (client, no data access)
+    /share                "Put critwire on your site" panel: links and buttons, the Embed tab and the Discord tab (client, no data access)
     /embed                the embed widgets (board, updates, frame, "Powered by")
     /accounts             AccountPage, the signup/verify/onboarding shell
     /admin                forgot-password view, logo, feedback kanban, Share tab
@@ -297,6 +311,7 @@ disk and R2 alike. So a suspended studio's files answer 403 there.
     /share                share kit, platforms, buttons, badge, image renderer + font
     /embed                embed snippets, protocol, cache headers, theme, platforms
     /referrals            referral counter (Upstash)
+    /discord              Discord app: config, signatures, interactions, commands, OAuth, game links, posts, webhooks
     /payload              withTransaction, unique-violation helper
     /moderation           content filter (screenText)
     /public-forms         guardPublicForm (Zod, Turnstile, rate limit)
@@ -304,7 +319,7 @@ disk and R2 alike. So a suspended studio's files answer 403 there.
     /upstash              Redis client, rate limits
     /turnstile            Turnstile verification
     /email                Resend-or-outbox adapter, React Email templates
-    /security             vote-token hashing
+    /security             vote-token hashing, signed values (sign.ts)
     /tally                Tally form URLs
   /jobs                   Payload Jobs Queue task definitions
   /migrations             Payload migrations (run on boot in production)

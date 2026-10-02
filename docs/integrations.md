@@ -12,6 +12,7 @@
 | `obscenity` (MIT, local) | Content filter for player submissions and studios' public text | `/lib/moderation/screenText.ts` |
 | DnD-Kit | Admin feedback kanban drag-and-drop | `src/components/admin/issues/*` |
 | `opentype.js` (MIT, local) + DejaVu Sans | Text in the button images and the live badge, drawn as paths | `/lib/share/images.ts`, `/lib/share/fonts` |
+| Discord (optional) | `/feedback` and Send to critwire through HTTP interactions; posts through the webhook made at install; no bot (`docs/discord.md`) | `/lib/discord`, `/app/api/discord/*`, `/jobs/discord.ts` |
 
 ## Tally (optional contact + feedback forms)
 
@@ -115,7 +116,10 @@ dependency) turns that SVG into a 2× PNG. The production runner
    endpoints (contact, feedback submission, vote, signup, verify,
    password recovery, abuse reports) and referral counts, limited by
    IP, plus a per-address budget for the emails signup and password
-   recovery send.
+   recovery send. Discord reports are limited per Discord account and
+   game instead (`discord-report`, 5 per 10 minutes; `discord-import`,
+   30 per 10 minutes per moderator), with a 1 s Upstash timeout to stay
+   inside Discord's 3 s (`docs/discord.md`).
 2. **The referral counter** (`/lib/referrals/counter.ts`,
    `docs/share.md`) — arrivals through kit links, one hash per game and
    UTC day, `referrals:<gameID>:<YYYY-MM-DD>`, with a field per `ref`
@@ -239,9 +243,15 @@ Single source of truth for deploy config (Docker Compose `.env`);
 - `NEXT_PUBLIC_TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY`
 - `SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_DSN` (and `SENTRY_ORG`,
   `SENTRY_PROJECT`, `SENTRY_AUTH_TOKEN` for source maps at build time)
+- `DISCORD_APPLICATION_ID`, `DISCORD_PUBLIC_KEY`,
+  `DISCORD_CLIENT_SECRET` — the instance's Discord app
+  (`docs/discord.md`); all three or none, a blank value counts as
+  unset, and a partial or malformed set stops the server at startup
 - Development and E2E only, never in production: `EMAIL_OUTBOX_DIR`,
-  `RATE_LIMIT_OPTIONAL`, `DISCORD_WEBHOOK_TEST_ORIGIN`, and the E2E
-  harness's `E2E_DATABASE_URL`, `E2E_PORT`
+  `RATE_LIMIT_OPTIONAL`, `DISCORD_WEBHOOK_TEST_ORIGIN`,
+  `DISCORD_API_BASE_URL` (a loopback stand-in for Discord's API; any
+  other host stops the server at startup), and the E2E harness's
+  `E2E_DATABASE_URL`, `E2E_PORT`
 
 `docs/self-hosting.md` says which services are required and what fails
 without each.
@@ -256,7 +266,9 @@ added.
 - Upstash rate limiting on public endpoints
 - Public JSON endpoints accept only `application/json` and send no CORS
   headers, so other sites can't make players' browsers call them
-- Turnstile on public forms
+- Turnstile on public forms; Discord interactions, which can't carry
+  Turnstile, are verified by their Ed25519 signature and timestamp
+  instead, and rate-limited per Discord account
 - Content filter on player submissions (review on by default) and on
   studios' public text (held for a super admin)
 - UUID identifiers (Payload default on Postgres)

@@ -17,6 +17,7 @@ For the server itself (Docker Compose, Nginx, Cloudflare, backups), see
 | Resend | Optional | `RESEND_API_KEY`, `RESEND_FROM_EMAIL` | Emails go to the server log (the full body only outside production). Contact-by-email jobs fail and wait for a super admin to retry them. "Forgot password?" tells people to ask whoever runs the site, so a super admin sets passwords in the admin. Open signup refuses. |
 | Cloudflare R2 | Optional | `R2_BUCKET`, `R2_ENDPOINT`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` | Uploads stay on local disk in `./media` (the `media` volume under Docker). |
 | Sentry | Optional | `SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_DSN` | Errors reach only the log. |
+| Discord | Optional | `DISCORD_APPLICATION_ID`, `DISCORD_PUBLIC_KEY`, `DISCORD_CLIENT_SECRET` | No `/feedback` or Send to critwire in studios' servers, no posts to their channels, and no Discord tab; `/api/discord/*` answers 404. Everything else works. Setting it up: `docs/discord.md`. In production it also needs Upstash. |
 
 **Keep the R2 bucket private.** Don't turn on its `r2.dev` URL or give
 it a custom domain. Every file is served through `/api/media/file/`,
