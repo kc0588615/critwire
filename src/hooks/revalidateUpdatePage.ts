@@ -1,4 +1,4 @@
-import type { BasePayload } from 'payload'
+import type { PayloadRequest } from 'payload'
 
 import { revalidatePath } from 'next/cache'
 
@@ -16,21 +16,22 @@ import { resolveProjectSlug } from './resolveProjectSlug'
  */
 export const revalidateUpdatePage = async (
   noteID: PatchNote['id'],
-  payload: BasePayload,
+  req: PayloadRequest,
 ): Promise<void> => {
-  const note = await payload.findByID({
+  const note = await req.payload.findByID({
     collection: 'patch-notes',
     depth: 0,
     disableErrors: true,
     id: noteID,
+    req,
     select: { _status: true, gameProject: true, slug: true },
   })
   if (note?._status !== 'published' || !note.slug) return
 
-  const gameSlug = await resolveProjectSlug(note.gameProject, payload)
+  const gameSlug = await resolveProjectSlug(note.gameProject, req)
   if (!gameSlug) return
 
   const path = portalPaths(gameSlug).update(note.slug)
-  payload.logger.info(`Revalidating update page at ${path}`)
+  req.payload.logger.info(`Revalidating update page at ${path}`)
   revalidatePath(path)
 }

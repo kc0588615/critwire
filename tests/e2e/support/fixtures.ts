@@ -15,6 +15,7 @@ import { extractID } from 'payload/shared'
 import sharp from 'sharp'
 
 import type { Config, GameProject, Issue, IssueReport, Media, Page, PatchNote } from '../../../src/payload-types'
+import { screenText } from '../../../src/lib/moderation/screenText'
 import { type Query, RestClient } from './api'
 import { type EmbedHost, startEmbedHost } from './embedHost'
 import { verificationToken } from './email'
@@ -247,7 +248,7 @@ export const test = base.extend<{}, WorkerFixtures>({
     async ({ api, signIn }, use) => {
       await use(async (label) => {
         const superAdmin = api('superAdmin')
-        const slug = `${label}-${randomUUID().slice(0, 8)}`
+        const slug = await cleanSlug(label)
         const tenant = await seed(superAdmin, 'tenants', { name: `Studio ${slug}`, slug })
         const email = randomEmail(label)
         await seed(superAdmin, 'users', {
@@ -401,6 +402,18 @@ export async function verifyAccount(request: APIRequestContext, token: string, p
   })
   expect(response.status(), 'verify').toBe(303)
   return locationOf(response)
+}
+
+/**
+ * `label` plus a random suffix the content filter passes. Raw hex can read as
+ * leetspeak ("455" is flagged), and a flagged name holds the studio's games,
+ * which then 404 for players.
+ */
+const cleanSlug = async (label: string): Promise<string> => {
+  for (;;) {
+    const slug = `${label}-${randomUUID().slice(0, 8)}`
+    if (!(await screenText(slug)).flagged) return slug
+  }
 }
 
 /** A fresh address for every account a test creates, so reruns and emails never collide. */

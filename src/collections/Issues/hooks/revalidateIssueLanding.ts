@@ -29,9 +29,9 @@ const LANDING_FIELDS = [
 export const revalidateIssueLanding: CollectionAfterChangeHook<Issue> = async ({
   doc,
   previousDoc,
-  req: { context, payload },
+  req,
 }) => {
-  if (context.disableRevalidate) return doc
+  if (req.context.disableRevalidate) return doc
   // Issues that never appeared publicly can't affect the hub.
   if (!doc.isPublic && !previousDoc?.isPublic) return doc
   const projectChanged =
@@ -47,19 +47,19 @@ export const revalidateIssueLanding: CollectionAfterChangeHook<Issue> = async ({
   }
 
   if (projectChanged && previousDoc) {
-    if (previousDoc.isPublic) await revalidateGameLanding(previousDoc.gameProject, payload)
-    if (doc.isPublic) await revalidateGameLanding(doc.gameProject, payload)
+    if (previousDoc.isPublic) await revalidateGameLanding(previousDoc.gameProject, req)
+    if (doc.isPublic) await revalidateGameLanding(doc.gameProject, req)
   } else {
-    await revalidateGameLanding(doc.gameProject, payload)
+    await revalidateGameLanding(doc.gameProject, req)
   }
   return doc
 }
 
 export const revalidateIssueLandingDelete: CollectionAfterDeleteHook<Issue> = async ({
   doc,
-  req: { context, payload },
+  req,
 }) => {
-  if (context.disableRevalidate || !doc?.isPublic) return doc
-  await revalidateGameLanding(doc.gameProject, payload)
+  if (req.context.disableRevalidate || !doc?.isPublic) return doc
+  await revalidateGameLanding(doc.gameProject, req)
   return doc
 }

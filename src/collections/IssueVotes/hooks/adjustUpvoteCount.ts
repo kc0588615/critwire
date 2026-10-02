@@ -31,9 +31,9 @@ export const adjustUpvoteCount = async ({
   })) as Pick<Issue, 'fixedInPatchNote' | 'gameProject' | 'isPublic' | 'status'>
 
   if (!issue.isPublic || req.context.disableRevalidate) return
-  await revalidateGameLanding(issue.gameProject, req.payload)
+  await revalidateGameLanding(issue.gameProject, req)
   // A shipped item's votes also show on the update that shipped it.
   if (issue.status === 'FIXED' && issue.fixedInPatchNote != null) {
-    await revalidateUpdatePage(extractID(issue.fixedInPatchNote), req.payload)
+    await revalidateUpdatePage(extractID(issue.fixedInPatchNote), req)
   }
 }

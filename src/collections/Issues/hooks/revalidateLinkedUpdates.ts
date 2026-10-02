@@ -27,9 +27,9 @@ const linkedNoteID = (issue: Partial<Issue> | undefined): null | PatchNote['id']
 export const revalidateLinkedUpdates: CollectionAfterChangeHook<Issue> = async ({
   doc,
   previousDoc,
-  req: { context, payload },
+  req,
 }) => {
-  if (context.disableRevalidate) return doc
+  if (req.context.disableRevalidate) return doc
   // Items that never appeared publicly were never listed on an update.
   if (!doc.isPublic && !previousDoc?.isPublic) return doc
 
@@ -41,16 +41,16 @@ export const revalidateLinkedUpdates: CollectionAfterChangeHook<Issue> = async (
   if (!linkChanged && !(note != null && shownFieldChanged)) return doc
 
   const notes = new Set([previousNote, note].filter((id): id is PatchNote['id'] => id != null))
-  for (const id of notes) await revalidateUpdatePage(id, payload)
+  for (const id of notes) await revalidateUpdatePage(id, req)
   return doc
 }
 
 export const revalidateLinkedUpdatesDelete: CollectionAfterDeleteHook<Issue> = async ({
   doc,
-  req: { context, payload },
+  req,
 }) => {
   const note = linkedNoteID(doc)
-  if (context.disableRevalidate || !doc?.isPublic || note == null) return doc
-  await revalidateUpdatePage(note, payload)
+  if (req.context.disableRevalidate || !doc?.isPublic || note == null) return doc
+  await revalidateUpdatePage(note, req)
   return doc
 }

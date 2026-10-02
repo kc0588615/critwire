@@ -20,6 +20,7 @@ export const validateUniqueSlugPerProject =
       depth: 0,
       limit: 1,
       overrideAccess: true,
+      req,
       where: {
         and: [
           { slug: { equals: slug } },

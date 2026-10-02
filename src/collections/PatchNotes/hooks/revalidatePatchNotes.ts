@@ -19,9 +19,9 @@ const revalidatePatchNotePages = (): void => revalidatePath(UPDATES_ROUTE, 'layo
 export const revalidatePatchNotes: CollectionAfterChangeHook<PatchNote> = async ({
   doc,
   previousDoc,
-  req: { context, payload },
+  req,
 }) => {
-  if (!context.disableRevalidate) {
+  if (!req.context.disableRevalidate) {
     const projectChanged =
       // On create, previousDoc is an empty object.
       previousDoc?.gameProject != null &&
@@ -32,10 +32,10 @@ export const revalidatePatchNotes: CollectionAfterChangeHook<PatchNote> = async 
       revalidatePatchNotePages()
     }
     if (doc._status === 'published') {
-      await revalidateGameLanding(doc.gameProject, payload)
+      await revalidateGameLanding(doc.gameProject, req)
     }
     if (wasPublished && (projectChanged || doc._status !== 'published')) {
-      await revalidateGameLanding(previousDoc.gameProject, payload)
+      await revalidateGameLanding(previousDoc.gameProject, req)
     }
   }
   return doc
@@ -43,11 +43,11 @@ export const revalidatePatchNotes: CollectionAfterChangeHook<PatchNote> = async 
 
 export const revalidatePatchNotesDelete: CollectionAfterDeleteHook<PatchNote> = async ({
   doc,
-  req: { context, payload },
+  req,
 }) => {
-  if (!context.disableRevalidate && doc) {
+  if (!req.context.disableRevalidate && doc) {
     revalidatePatchNotePages()
-    await revalidateGameLanding(doc.gameProject, payload)
+    await revalidateGameLanding(doc.gameProject, req)
   }
   return doc
 }
