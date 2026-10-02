@@ -49,6 +49,7 @@ const eslintConfig = [
       'src/payload-generated-schema.ts',
       // Playwright output: the HTML report bundles its own trace viewer.
       'playwright-report/',
+      'playwright-report-shots/',
       'test-results/',
     ],
   },

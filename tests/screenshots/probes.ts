@@ -63,11 +63,17 @@ async function noSideScroll(page: Page): Promise<ProbeResult> {
   return result('no-side-scroll', scrollWidth <= innerWidth, `scrollWidth ${scrollWidth}, innerWidth ${innerWidth}`)
 }
 
-/** 2. At 390 px, visible buttons, form controls and header links are at least 44 px tall. */
-async function tapTargets(page: Page): Promise<ProbeResult> {
-  const short = await page.evaluate((min) => {
+/**
+ * 2. At 390 px, visible buttons, form controls and header links inside
+ * `scope` are at least 44 px tall. A scope the page lacks fails, so the
+ * probe never passes vacuously.
+ */
+async function tapTargets(page: Page, scope = ':root'): Promise<ProbeResult> {
+  const short = await page.evaluate(([min, scopeSelector]) => {
+    const host = document.querySelector(scopeSelector)
+    if (!host) return [`no ${scopeSelector} on the page`]
     const selector = 'button, [role="button"], input:not([type="hidden"]), select, textarea, header a'
-    return [...document.querySelectorAll<HTMLElement>(selector)]
+    return [...host.querySelectorAll<HTMLElement>(selector)]
       .filter((el) => {
         const rect = el.getBoundingClientRect()
         // Visually hidden (sr-only) and off-screen elements aren't targets.
@@ -76,8 +82,9 @@ async function tapTargets(page: Page): Promise<ProbeResult> {
       .map((el) => ({ el, height: el.getBoundingClientRect().height }))
       .filter(({ height }) => height < min)
       .map(({ el, height }) => `${el.tagName.toLowerCase()} "${(el.textContent || el.getAttribute('name') || '').trim().slice(0, 30)}" ${height.toFixed(1)}px`)
-  }, MIN_TARGET_PX)
-  return result('tap-targets', short.length === 0, short.length ? short.join('; ') : `all ≥ ${MIN_TARGET_PX}px`)
+  }, [MIN_TARGET_PX, scope] as const)
+  const where = scope === ':root' ? '' : ` in ${scope}`
+  return result('tap-targets', short.length === 0, short.length ? short.join('; ') : `all ≥ ${MIN_TARGET_PX}px${where}`)
 }
 
 /** 3. The focused element wears the 2px solid ring in the surface's foreground colour. */
@@ -138,7 +145,7 @@ async function oneRoot(page: Page): Promise<ProbeResult> {
 export async function probePage(page: Page, { group, shot, width, requests }: ProbeTarget): Promise<ProbeResult[]> {
   const portal = isPortalGroup(group)
   const results: ProbeResult[] = []
-  if (width === MOBILE_WIDTH) results.push(await noSideScroll(page), await tapTargets(page))
+  if (width === MOBILE_WIDTH) results.push(await noSideScroll(page), await tapTargets(page, shot.tapScope))
   if (MOTION_PAGES.has(shot.id)) results.push(await motionSettled(page))
   if (portal && PROSE_PAGES.has(shot.id)) results.push(await proseColor(page))
   results.push(noFontHosts(requests))

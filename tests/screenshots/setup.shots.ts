@@ -12,20 +12,27 @@ import {
   castVote,
   createIssue,
   createPatchNote,
+  createProject,
   lexical,
   newRequestContext,
   onboard,
   startSignup,
   verifyAccount,
 } from '../e2e/support/fixtures'
-import { ONBOARDING_STATE_PATH, type ShotsWorld, WORLD_PATH } from './catalog'
+import { ONBOARDING_STATE_PATH, type ShotsWorld, STUDIO_STATE_PATH, WORLD_PATH } from './catalog'
 import { rootStyle, SHOTS_CRON_SECRET } from './support'
+import { RISO_THEME } from './themes'
+
+/** Visits from tagged kit links, counted for Lantern Keep's Share tab. */
+const REFERRALS = { steam: 6, itch: 3, readme: 2, carrd: 1 } as const
 
 /**
  * Seeds the freshly migrated database with the Critter Connect demo plus
  * the fixtures every capture shares, over HTTP only, so any build (before
  * or after the design pass) gets identical data. The signup shots get a
  * pending signup, a signed-in user with no studio, and a signed-up studio.
+ * The reach shots get that studio's session and referral counts, and a
+ * Riso-themed game in the demo studio for its badge.
  */
 setup('seed the Critter Connect demo and the screenshot fixtures', async ({ page, playwright }) => {
   setup.setTimeout(180_000)
@@ -54,15 +61,14 @@ setup('seed the Critter Connect demo and the screenshot fixtures', async ({ page
     const project = body.docs[0] as GameProject
     const demo = await admin.find('tenants', { where: { slug: { equals: 'critwire-demo' } }, depth: 0 })
     expect(demo.body.docs, 'the seed made the critwire-demo studio').toHaveLength(1)
-    expect(project.tenant && extractID(project.tenant), 'the seed put critter-connect in critwire-demo').toBe(
-      demo.body.docs[0].id,
-    )
+    const demoTenant = demo.body.docs[0].id as number
+    expect(project.tenant && extractID(project.tenant), 'the seed put critter-connect in critwire-demo').toBe(demoTenant)
     // The seed has no website, so without this the Official site link never shows.
     const updated = await admin.update('game-projects', project.id, {
       links: { ...project.links, website: 'https://critterconnect.example' },
     })
     expect(updated.status, JSON.stringify(updated.body)).toBe(200)
-    return project
+    return { ...project, demoTenant }
   })
 
   const baselineStyle = await setup.step('record the theme the seed gives the hub', async () => {
@@ -135,10 +141,31 @@ setup('seed the Critter Connect demo and the screenshot fixtures', async ({ page
     const studio = await newRequestContext(playwright)
     const token = await signUpAndVerify(studio, 'studio@shots.test')
     const location = await onboard(studio, token, { name: 'Lantern Keep', website: 'https://lanternkeep.example' })
+    await studio.storageState({ path: STUDIO_STATE_PATH })
     await studio.dispose()
     const welcomeSlug = /^\/g\/([^/?]+)\?welcome=1$/.exec(location)?.[1]
     expect(welcomeSlug, `Lantern Keep onboarded to ${location}`).toBeDefined()
     return { verifyToken, welcomeSlug: welcomeSlug as string }
+  })
+
+  const reach = await setup.step('add a Riso game for its badge, and count Lantern Keep’s referrals', async () => {
+    const riso = await createProject(admin, cc.demoTenant, 'riso-rally', { name: 'Riso Rally', theme: RISO_THEME })
+    const statuses = ['REPORTED', 'INVESTIGATING', 'PLANNED', 'PLANNED', 'IN_PROGRESS', 'FIXED'] as const
+    for (const [i, status] of statuses.entries()) {
+      await createIssue(admin, riso, `riso-item-${i + 1}`, { status })
+    }
+    await createPatchNote(admin, riso, 'v2-3', { versionLabel: 'v2.3', publishedAt: new Date().toISOString() })
+
+    const welcome = await admin.find('game-projects', { where: { slug: { equals: signup.welcomeSlug } }, depth: 0 })
+    expect(welcome.body.docs, 'Lantern Keep exists').toHaveLength(1)
+    const welcomeID = (welcome.body.docs[0] as GameProject).id
+    for (const [ref, count] of Object.entries(REFERRALS)) {
+      for (let i = 0; i < count; i++) {
+        const response = await anonymous.post('/api/referrals', { data: { game: welcomeID, ref } })
+        expect(response.status(), `referral ${ref}: ${await response.text()}`).toBe(204)
+      }
+    }
+    return { welcomeID, risoSlug: riso.slug }
   })
 
   const world: ShotsWorld = {
@@ -150,6 +177,7 @@ setup('seed the Critter Connect demo and the screenshot fixtures', async ({ page
       launchUpdate: 'v0-1-0-launch',
     },
     signup,
+    reach,
   }
   await writeFile(WORLD_PATH, JSON.stringify(world, null, 2))
   await anonymous.dispose()

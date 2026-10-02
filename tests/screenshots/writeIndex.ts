@@ -55,7 +55,13 @@ export async function writeIndex(dir: string): Promise<void> {
       return `<h2>${set}</h2><ul>${items}</ul>`
     }),
   )
-  const groups = GROUPS.map((group) => {
+  // A run of some groups only (`SHOTS_THEMES`) lists only what this directory has.
+  const captured = GROUPS.filter((group) =>
+    shotsFor(group).some((shot) =>
+      WIDTHS.some((width) => sets.some((set) => existsSync(path.join(dir, set, shotFile(group, shot.id, width))))),
+    ),
+  )
+  const groups = captured.map((group) => {
     const rows = shotsFor(group)
       .map((shot) => {
         const widths = WIDTHS.map((width) => {
@@ -67,7 +73,7 @@ export async function writeIndex(dir: string): Promise<void> {
       .join('')
     return `<h2 id="${group}">${escape(GROUP_LABELS[group])}</h2>${rows}`
   }).join('')
-  const nav = GROUPS.map((group) => `<a href="#${group}">${escape(GROUP_LABELS[group])}</a>`).join(' | ')
+  const nav = captured.map((group) => `<a href="#${group}">${escape(GROUP_LABELS[group])}</a>`).join(' | ')
 
   const html = `<!doctype html>
 <html lang="en">

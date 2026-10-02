@@ -9,9 +9,9 @@ import { newRequestContext } from '../e2e/support/fixtures'
 import {
   GROUP_LABELS,
   isPortalGroup,
-  ONBOARDING_STATE_PATH,
   type PortalGroup,
   selectedGroups,
+  SESSION_STATE_PATHS,
   type Shot,
   shotFile,
   shotsFor,
@@ -65,27 +65,43 @@ for (const group of selectedGroups()) {
 
     test.beforeAll(async ({ browser, playwright }) => {
       world = await readWorld()
-      if (!isPortalGroup(group)) return
+      // `reach` shows the Critter Connect badge, which the riso group may have left in its theme.
+      if (!isPortalGroup(group) && group !== 'reach') return
       const page = await browser.newPage({ baseURL: BASE_URL })
       const request = await newRequestContext(playwright)
-      await applyTheme(group, world, request, page)
-      groupStyle = await rootStyle(page)
+      await applyTheme(isPortalGroup(group) ? group : 'critter-connect', world, request, page)
+      if (isPortalGroup(group)) groupStyle = await rootStyle(page)
       await request.dispose()
       await page.close()
     })
 
     const capture = (shot: Shot): void => {
-      test(shot.label, async ({ page }) => {
-        const url = shot.path(world)
+      test(shot.label, async ({ context, page }) => {
         const requests: string[] = []
         page.on('request', (request) => requests.push(request.url()))
-        await page.goto(url)
-        // Portal pages are ISR-cached: wait until each one wears the group's theme.
-        if (groupStyle !== null) {
-          await reloadUntil(page, url, rootStyle, groupStyle, `${url} never showed the ${group} theme`)
+        if (shot.adminTheme) {
+          await context.addCookies([{ name: 'payload-theme', value: shot.adminTheme, url: BASE_URL }])
+        }
+        if (shot.html) {
+          await page.setContent(shot.html(world, BASE_URL))
+        } else {
+          const url = shot.path(world)
+          await page.goto(url)
+          // Portal pages are ISR-cached: wait until each one wears the group's theme.
+          if (groupStyle !== null) {
+            await reloadUntil(page, url, rootStyle, groupStyle, `${url} never showed the ${group} theme`)
+          }
         }
         if (shot.ready) await expect(page.locator(shot.ready)).toBeVisible()
+        if (shot.adminTheme) await expect(page.locator('html')).toHaveAttribute('data-theme', shot.adminTheme)
         await settle(page)
+        if (shot.html) {
+          // `settle` ignores decode failures; a host page's images are the subject, so a broken one fails.
+          const broken = await page.evaluate(() =>
+            [...document.images].filter((image) => image.naturalWidth === 0).map((image) => image.src),
+          )
+          expect(broken, 'images that failed to load').toEqual([])
+        }
         const width = page.viewportSize()?.width
         if (!width) throw new Error('the project has no viewport')
         const file = shotFile(group, shot.id, width)
@@ -99,13 +115,14 @@ for (const group of selectedGroups()) {
     }
 
     for (const shot of shotsFor(group)) {
-      if (!shot.signedIn) {
+      const { session } = shot
+      if (!session) {
         capture(shot)
         continue
       }
       test.describe(() => {
         // Read when the test's context opens, after the setup project wrote it.
-        test.use({ storageState: ONBOARDING_STATE_PATH })
+        test.use({ storageState: SESSION_STATE_PATHS[session] })
         capture(shot)
       })
     }
