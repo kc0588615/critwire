@@ -14,7 +14,7 @@ import { acceptsIdeas, getReportRoute } from '@/lib/game-portal/formRoutes'
  * when the game's review is off.
  */
 
-type FeedbackType = (typeof FEEDBACK_TYPE_OPTIONS)[number]['value']
+export type FeedbackType = (typeof FEEDBACK_TYPE_OPTIONS)[number]['value']
 type IssueCategory = (typeof ISSUE_CATEGORY_OPTIONS)[number]['value']
 
 const feedbackTypeValues = FEEDBACK_TYPE_OPTIONS.map((option) => option.value) as [
@@ -52,9 +52,12 @@ export const reportRefusal = (
  * type, so no caller can skip that check.
  */
 export const createPlayerReport = async ({
+  discord,
   fields,
   project,
 }: {
+  /** Who sent it from Discord. Private: promotion never copies it to the public item. */
+  discord?: { interactionId: string; messageUrl?: string; userId: string; username: string }
   fields: { category: IssueCategory; submitterEmail?: string } & ReportFields
   project: ReportProject
 }): Promise<IssueReport> => {
@@ -69,6 +72,7 @@ export const createPlayerReport = async ({
     data: {
       category: fields.category,
       description: fields.description,
+      discord,
       gameProject: project.id,
       // Platform and version only describe bugs.
       gameVersion: (isBug && fields.gameVersion) || null,

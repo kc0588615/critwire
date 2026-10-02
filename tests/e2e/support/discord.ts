@@ -122,3 +122,117 @@ export const linkDiscord = async (
   if (install.status() !== 303) throw new Error(`install answered ${install.status()}`)
   return discordCallback(request, { code: discordCode(target), state: stateOf(install) }, token)
 }
+
+/** Where an interaction happens: a server and one of its channels. */
+export interface DiscordPlace {
+  guild: string
+  channel: string
+}
+
+/** The member who sent it. Permissions default to Send Messages only. */
+export interface DiscordMember {
+  id: string
+  username: string
+  permissions?: string
+}
+
+const SEND_MESSAGES = '2048'
+
+/** What every interaction in a server carries, with a fresh interaction ID. */
+const guildInteraction = (place: DiscordPlace, member: DiscordMember) => ({
+  application_id: DISCORD_TEST_APPLICATION_ID,
+  channel_id: place.channel,
+  guild_id: place.guild,
+  id: snowflake(),
+  member: {
+    permissions: member.permissions ?? SEND_MESSAGES,
+    user: { id: member.id, username: member.username },
+  },
+  token: 'e2e-interaction-token',
+  version: 1,
+})
+
+/** `/feedback type:<kind>`. */
+export const feedbackCommand = (place: DiscordPlace, member: DiscordMember, kind: 'bug' | 'idea') => ({
+  ...guildInteraction(place, member),
+  data: { id: snowflake(), name: 'feedback', options: [{ name: 'type', type: 3, value: kind }], type: 1 },
+  type: 2,
+})
+
+/** One field of a form the endpoint answered with: a Label holding a text input or a select. */
+export interface DiscordFormField {
+  type: 18
+  label: string
+  component: {
+    type: 3 | 4
+    custom_id: string
+    options?: { label: string; value: string }[]
+    required?: boolean
+    style?: number
+    min_length?: number
+    max_length?: number
+    value?: string
+  }
+}
+
+export interface DiscordForm {
+  custom_id: string
+  title: string
+  components: DiscordFormField[]
+}
+
+/** The reply to an interaction: a form (type 9) or a message (type 4). */
+export interface DiscordReply {
+  type: number
+  data: {
+    content?: string
+    flags?: number
+    allowed_mentions?: { parse: string[] }
+  } & Partial<DiscordForm>
+}
+
+/** Sends a signed interaction and returns its 200 reply. */
+export const interact = async (request: APIRequestContext, payload: unknown): Promise<DiscordReply> => {
+  const response = await signedInteraction(request, payload)
+  if (response.status() !== 200) {
+    throw new Error(`interaction answered ${response.status()}: ${await response.text()}`)
+  }
+  return (await response.json()) as DiscordReply
+}
+
+/** Sends a command that must answer with a form, and returns the form. */
+export const openForm = async (request: APIRequestContext, payload: unknown): Promise<DiscordForm> => {
+  const reply = await interact(request, payload)
+  if (reply.type !== 9) throw new Error(`expected a form, got ${JSON.stringify(reply)}`)
+  return reply.data as DiscordForm
+}
+
+/** The custom IDs of a form's fields, in order. */
+export const fieldIDs = (form: DiscordForm): string[] => form.components.map((field) => field.component.custom_id)
+
+/**
+ * Submitting `form` with `values` by field ID; a select gets its one value.
+ * Discord's current layout wraps each field in a Label; `layout: 'row'`
+ * sends the older Action Row shape instead.
+ */
+export const formSubmission = (
+  place: DiscordPlace,
+  member: DiscordMember,
+  form: DiscordForm,
+  values: Record<string, string>,
+  { layout = 'label' }: { layout?: 'label' | 'row' } = {},
+) => ({
+  ...guildInteraction(place, member),
+  data: {
+    components: form.components.map((field, index) => {
+      const { custom_id, type } = field.component
+      const value = values[custom_id] ?? ''
+      const submitted = type === 3 ? { custom_id, type, values: [value] } : { custom_id, type, value }
+      return layout === 'row'
+        ? { components: [submitted], id: index + 1, type: 1 }
+        : { component: submitted, id: index + 1, type: 18 }
+    }),
+    custom_id: form.custom_id,
+  },
+  type: 5,
+})
