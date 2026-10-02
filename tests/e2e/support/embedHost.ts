@@ -10,8 +10,11 @@ export interface EmbedHostQuery {
   theme?: EmbedTheme
   stage?: string
   type?: string
-  /** The loader's `<script>` (the default) or the bare iframe. */
-  kind?: 'iframe' | 'script'
+  /**
+   * The loader's `<script>` (the default), the bare iframe, or the script
+   * without `data-game`, as a broken paste would be.
+   */
+  kind?: 'iframe' | 'no-game' | 'script'
   /** The host page's own colours. */
   bg?: 'dark' | 'light'
 }
@@ -51,7 +54,13 @@ export async function startEmbedHost(siteURL: string): Promise<EmbedHost> {
       stage: params.get('stage') ?? undefined,
       type: params.get('type') ?? undefined,
     })
-    const snippet = params.get('kind') === 'iframe' ? snippets.iframe : snippets.script
+    const kind = params.get('kind')
+    const snippet =
+      kind === 'iframe'
+        ? snippets.iframe
+        : kind === 'no-game'
+          ? snippets.script.replace(/ data-game="[^"]*"/, '')
+          : snippets.script
     const [background, foreground] = BACKGROUND[params.get('bg') === 'dark' ? 'dark' : 'light']
     res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' })
     res.end(`<!doctype html>

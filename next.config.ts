@@ -7,7 +7,7 @@ import { fileURLToPath } from 'url'
 const __filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(__filename)
 import { redirects } from './redirects'
-import { EMBED_CACHE_CONTROL } from './src/lib/embed/cacheControl'
+import { EMBED_CACHE_CONTROL, LOADER_CACHE_CONTROL } from './src/lib/embed/cacheControl'
 
 const nextConfig: NextConfig = {
   // Required by the multi-stage Dockerfile (copies .next/standalone).
@@ -62,6 +62,8 @@ const nextConfig: NextConfig = {
         { key: 'Cache-Control', value: EMBED_CACHE_CONTROL },
       ],
     },
+    // The loader is a contract: cached for a day, at the edge and in browsers.
+    { source: '/embed/v1.js', headers: [{ key: 'Cache-Control', value: LOADER_CACHE_CONTROL }] },
   ],
   reactStrictMode: true,
   redirects,

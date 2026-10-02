@@ -1,7 +1,8 @@
-import type { ConsoleMessage, Page } from '@playwright/test'
+import type { ConsoleMessage, FrameLocator, Page } from '@playwright/test'
 
 import type { GameProject, PatchNote } from '../../src/payload-types'
-import { EMBED_CACHE_CONTROL } from '../../src/lib/embed/cacheControl'
+import { EMBED_CACHE_CONTROL, LOADER_CACHE_CONTROL } from '../../src/lib/embed/cacheControl'
+import { LOADER_PATH } from '../../src/lib/embed/snippets'
 import { embedPalettes } from '../../src/lib/embed/theme'
 import { hexToRgb } from '../../src/lib/game-portal/contrast'
 import { portalPaths } from '../../src/lib/game-portal/paths'
@@ -28,6 +29,19 @@ const embedBackground = (page: Page) =>
     .frameLocator('iframe')
     .locator('.cw-embed')
     .evaluate((element) => getComputedStyle(element).backgroundColor)
+
+/** The `.cw-embed` font, framed (a `FrameLocator`) or opened directly (a `Page`). */
+const embedFont = (root: FrameLocator | Page) =>
+  root.locator('.cw-embed').evaluate((element) => getComputedStyle(element).fontFamily)
+
+/** The frame's height on the host page, and the height of the content inside it. */
+const frameHeights = async (page: Page) => ({
+  frame: await page.locator('iframe').evaluate((element) => element.getBoundingClientRect().height),
+  content: await page
+    .frameLocator('iframe')
+    .locator('.cw-embed-frame')
+    .evaluate((element) => element.getBoundingClientRect().height),
+})
 
 test('E1.2 the updates widget shows the newest updates and links out', async ({
   api,
@@ -108,6 +122,55 @@ test('E1.2 the updates widget shows the newest updates and links out', async ({
     await expect(frame.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/)
   })
 
+  await test.step('through the script: the frame sits right after it and fits its content', async () => {
+    await page.goto(embedHost.url({ game: project.slug, widget: 'updates' }))
+    await expect(frame.getByRole('heading', { level: 2 })).toHaveText(['Harbor hotfix', 'Update 3', 'Update 2'])
+    const next = await page.evaluate(
+      (src) => document.querySelector(`script[src$="${src}"]`)?.nextElementSibling?.tagName,
+      LOADER_PATH,
+    )
+    expect(next).toBe('IFRAME')
+    await expect
+      .poll(async () => {
+        const { content, frame } = await frameHeights(page)
+        return Math.abs(frame - content)
+      })
+      .toBeLessThanOrEqual(1)
+    // The loader's placeholder height, before the first resize message.
+    expect((await frameHeights(page)).frame).not.toBe(400)
+  })
+
+  await test.step('a resize message from anywhere but its own frame changes nothing (R2)', async () => {
+    const before = (await frameHeights(page)).frame
+    await page.evaluate(
+      () =>
+        new Promise<void>((resolve) => {
+          // Messages to one window arrive in order: once the marker does, the loader has seen the forgery.
+          window.addEventListener('message', (event) => {
+            if (event.data === 'after-forgery') resolve()
+          })
+          window.postMessage({ critwire: 1, type: 'resize', height: 37 }, '*')
+          window.postMessage('after-forgery', '*')
+        }),
+    )
+    expect((await frameHeights(page)).frame).toBe(before)
+  })
+
+  await test.step('a snippet without data-game logs one error, adds no frame and breaks nothing (R6)', async () => {
+    const loaderErrors: string[] = []
+    const uncaught: string[] = []
+    page.on('console', (message) => {
+      if (message.type() === 'error' && message.location().url.endsWith(LOADER_PATH)) loaderErrors.push(message.text())
+    })
+    page.on('pageerror', (error) => uncaught.push(error.message))
+    // `goto` waits for `load`, which waits for the async loader to run.
+    await page.goto(embedHost.url({ game: project.slug, widget: 'updates', kind: 'no-game' }))
+    expect(loaderErrors).toEqual([expect.stringContaining('data-game')])
+    expect(uncaught).toEqual([])
+    await expect(page.locator('iframe')).toHaveCount(0)
+    await expect(page.getByRole('heading', { name: 'Studio site' })).toBeVisible()
+  })
+
   await test.step('"No updates yet" for a game that has none', async () => {
     const quiet = await createProject(aOwner, world.tenants.A.id, uniqueSlug('embed-updates-none'))
     await page.goto(embedHost.url({ game: quiet.slug, widget: 'updates', kind: 'iframe' }))
@@ -144,6 +207,32 @@ test('E3 light, dark and auto give the predicted palettes, with no font or image
     })
   }
 
+  await test.step('through the script, the frame uses the host page’s font, which never leaves the browser (R4)', async () => {
+    const embedRequests: string[] = []
+    page.on('request', (request) => {
+      if (new URL(request.url()).pathname.includes('/embed/updates')) embedRequests.push(request.url())
+    })
+    await page.goto(embedHost.url({ game: project.slug, widget: 'updates' }))
+    await expect.poll(() => embedFont(page.frameLocator('iframe'))).toBe('Georgia, serif')
+    expect(embedRequests.length).toBeGreaterThan(0)
+    for (const url of embedRequests) expect(url).not.toMatch(/font|georgia/i)
+  })
+
+  await test.step('a crafted or overlong font is ignored (R5)', async () => {
+    const opened = async (font: string) => {
+      // A new document each time: a change of fragment alone wouldn't rerun the boot script.
+      await page.goto('about:blank')
+      await page.goto(`${BASE_URL}${portalPaths(project.slug).embed('updates')}?theme=light#font=${encodeURIComponent(font)}`)
+      await expect(page.getByRole('heading', { name: 'Updates' })).toBeVisible()
+      return embedFont(page)
+    }
+    // The control: a valid font applies when opened directly too.
+    expect(await opened('Georgia, serif')).toBe('Georgia, serif')
+    for (const font of ['Georgia; } body { background: red', 'x, serif; color: red', `"${'x'.repeat(200)}", serif`]) {
+      expect(await opened(font), font).toBe('system-ui, sans-serif')
+    }
+  })
+
   await test.step('the frame requests no image and no font file (R8)', async () => {
     await page.waitForLoadState('networkidle')
     expect(downloads).toEqual([])
@@ -173,6 +262,13 @@ test('E7 the embeds may be framed anywhere; the portal only by itself', async ({
         expect(response.headers()['content-security-policy'], path).toBe(ANY)
         expect(response.headers()['cache-control'], path).toBe(EMBED_CACHE_CONTROL)
       }
+    })
+
+    await test.step('the loader is long-cached, as a versioned contract', async () => {
+      const response = await player.get(LOADER_PATH)
+      expect(response.status()).toBe(200)
+      expect(response.headers()['content-type']).toMatch(/javascript/)
+      expect(response.headers()['cache-control']).toBe(LOADER_CACHE_CONTROL)
     })
 
     await test.step('the host page frames the embed with no violation', async () => {

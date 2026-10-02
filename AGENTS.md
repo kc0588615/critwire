@@ -196,3 +196,10 @@ Int tests (`tests/int`) exist only for invariants E2E can't reach:
   other security headers. The app owns its framing policy
   (`next.config.ts`), and E2E serves `next start` without nginx, so
   only a static check sees the proxy's headers.
+- `embed-loader` — the loader, `public/embed/v1.js`, stays under the
+  Brief's 5 KB gzipped (zlib's default level) and never names the APIs
+  it must not use: cookies, storage, `fetch(`, `XMLHttpRequest`,
+  `sendBeacon`, `document.title` or `.innerHTML`. It's pasted into
+  studios' sites and long cached, and E2E can't see a size budget.
+  `prebuild` runs this file alone, so `pnpm build` (and the Docker
+  build) stops on a loader that breaks it.
