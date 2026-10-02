@@ -4,8 +4,12 @@
  * components can import it.
  */
 
-/** The `ref` values the referral counter accepts. Later missions append theirs (`embed`, `discord`). */
-export const REF_SOURCES = ['steam', 'itch', 'carrd', 'linktree', 'website', 'readme'] as const
+/**
+ * The `ref` values the referral counter accepts: the kit's platforms, then
+ * `embed`, which tags every link out of an embed. Later missions append
+ * theirs (`discord`).
+ */
+export const REF_SOURCES = ['steam', 'itch', 'carrd', 'linktree', 'website', 'readme', 'embed'] as const
 export type RefSource = (typeof REF_SOURCES)[number]
 
 export const isRefSource = (value: unknown): value is RefSource =>
@@ -20,7 +24,7 @@ export const SNIPPET_FORMATS = {
 export type SnippetFormat = keyof typeof SNIPPET_FORMATS
 
 export type SharePlatform = {
-  id: RefSource
+  id: Exclude<RefSource, 'embed'>
   label: string
   /** The snippets this place accepts; none means links and image uploads only. */
   formats: readonly SnippetFormat[]
@@ -53,3 +57,11 @@ export const SHARE_PLATFORMS: readonly SharePlatform[] = [
   { id: 'website', label: 'Your website', formats: ['html'] },
   { id: 'readme', label: 'README', formats: ['markdown'] },
 ]
+
+/** A source's name in "Where players come from": its platform's label, or "Embed". */
+export function refSourceLabel(source: RefSource): string {
+  if (source === 'embed') return 'Embed'
+  const platform = SHARE_PLATFORMS.find((candidate) => candidate.id === source)
+  if (!platform) throw new Error(`No share platform for ref "${source}".`)
+  return platform.label
+}

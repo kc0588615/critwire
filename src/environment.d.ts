@@ -17,6 +17,8 @@ declare global {
       CRITWIRE_CONTACT_URL?: string
       /** Hosted instances only: `1` opens signup and onboarding. Unset or empty to self-host; anything else stops boot. */
       CRITWIRE_OPEN_SIGNUP?: string
+      /** Self-hosted only: `1` hides "Powered by Critwire". With open signup, or anything else, stops boot. */
+      CRITWIRE_HIDE_POWERED_BY?: string
       /** Hosted-plan limits; unset or empty turns each off. Positive whole numbers only, checked at boot. */
       CRITWIRE_LIMIT_GAMES_PER_STUDIO?: string
       CRITWIRE_LIMIT_MEDIA_MB_PER_STUDIO?: string

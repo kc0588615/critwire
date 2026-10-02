@@ -3,7 +3,7 @@ import React from 'react'
 
 import { getLogger } from '@/lib/logger'
 import { isReferralCounterOn, readReferrals, type ReferralDay } from '@/lib/referrals/counter'
-import { SHARE_PLATFORMS } from '@/lib/share/platforms'
+import { REF_SOURCES, type RefSource, refSourceLabel } from '@/lib/share/platforms'
 
 const log = getLogger('admin.referrals')
 
@@ -35,11 +35,9 @@ const CountsTable: React.FC<{ days: ReferralDay[] }> = ({ days }) => {
     )
   }
 
-  const sources = SHARE_PLATFORMS.filter((platform) =>
-    visited.some((day) => day.counts[platform.id]),
-  )
-  const total = (id: (typeof sources)[number]['id']) =>
-    visited.reduce((sum, day) => sum + (day.counts[id] ?? 0), 0)
+  const sources = REF_SOURCES.filter((source) => visited.some((day) => day.counts[source]))
+  const total = (source: RefSource) =>
+    visited.reduce((sum, day) => sum + (day.counts[source] ?? 0), 0)
 
   return (
     // Scrolls on its own on narrow screens, so the table keeps its table semantics.
@@ -50,8 +48,8 @@ const CountsTable: React.FC<{ days: ReferralDay[] }> = ({ days }) => {
           <tr>
             <th scope="col">Day</th>
             {sources.map((source) => (
-              <th key={source.id} scope="col">
-                {source.label}
+              <th key={source} scope="col">
+                {refSourceLabel(source)}
               </th>
             ))}
           </tr>
@@ -63,7 +61,7 @@ const CountsTable: React.FC<{ days: ReferralDay[] }> = ({ days }) => {
                 <time dateTime={day}>{dayLabel.format(new Date(`${day}T00:00:00Z`))}</time>
               </th>
               {sources.map((source) => (
-                <td key={source.id}>{counts[source.id] ?? 0}</td>
+                <td key={source}>{counts[source] ?? 0}</td>
               ))}
             </tr>
           ))}
@@ -72,7 +70,7 @@ const CountsTable: React.FC<{ days: ReferralDay[] }> = ({ days }) => {
           <tr>
             <th scope="row">Total</th>
             {sources.map((source) => (
-              <td key={source.id}>{total(source.id)}</td>
+              <td key={source}>{total(source)}</td>
             ))}
           </tr>
         </tfoot>

@@ -5,9 +5,12 @@ import type { GameProject } from '@/payload-types'
 
 import { resolveProjectLinks } from '@/lib/game-portal/links'
 import { portalNavLinks, portalPaths } from '@/lib/game-portal/paths'
-import { isOpenSignup, reportAbuseHref } from '@/lib/hosting'
+import { isOpenSignup, isPoweredByShown, reportAbuseHref } from '@/lib/hosting'
 
-/** The portal's footer. On the hosted instance (open signup) it also offers "Report this page". */
+/**
+ * The portal's footer. On the hosted instance (open signup) it also offers
+ * "Report this page"; a self-hosted one may hide "Powered by".
+ */
 export const PortalFooter: React.FC<{ project: GameProject }> = ({ project }) => (
   <footer className="fs-footer">
     <div className="fs-shell fs-footer-main">
@@ -36,12 +39,14 @@ export const PortalFooter: React.FC<{ project: GameProject }> = ({ project }) =>
         © {new Date().getFullYear()} {project.name}
       </span>
       <span className="fs-footer-end">
-        <span>
-          Powered by{' '}
-          <Link className="fs-link" href="/">
-            Critwire
-          </Link>
-        </span>
+        {isPoweredByShown() ? (
+          <span>
+            Powered by{' '}
+            <Link className="fs-link" href="/">
+              Critwire
+            </Link>
+          </span>
+        ) : null}
         {isOpenSignup() ? (
           <Link
             className="fs-link"

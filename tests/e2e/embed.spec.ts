@@ -10,7 +10,7 @@ import { portalPaths } from '../../src/lib/game-portal/paths'
 import { ARCHIVED_STATUSES, PUBLIC_STAGES, type PublicStageId, statusesFor } from '../../src/lib/game-portal/stages'
 import { DEFAULT_THEME_COLORS } from '../../src/lib/game-portal/theme'
 import { withRef } from '../../src/lib/share/kit'
-import { BASE_URL } from './support/env'
+import { BASE_URL, SECOND_BASE_URL } from './support/env'
 import { createIssue, createPatchNote, createProject, expect, newRequestContext, test } from './support/fixtures'
 
 /**
@@ -706,4 +706,47 @@ test('E7 the embeds may be framed anywhere; the portal only by itself', async ({
   } finally {
     await player.dispose()
   }
+})
+
+test('E11 "Powered by Critwire" links home with ref=embed; a self-hosted instance can hide it', async ({
+  api,
+  embedHost,
+  page,
+  uniqueSlug,
+  world,
+}) => {
+  const aOwner = api('aOwner')
+  const hosted = await createProject(aOwner, world.tenants.A.id, uniqueSlug('embed-powered'))
+  // A game no 3100 page renders: both servers share the build's ISR cache.
+  const selfHosted = await createProject(aOwner, world.tenants.A.id, uniqueSlug('embed-unbranded'))
+  const frame = page.frameLocator('iframe')
+
+  await test.step('hosted (3100): each embed’s last line links home, tagged, in a new tab', async () => {
+    for (const widget of ['board', 'updates'] as const) {
+      await page.goto(embedHost.url({ game: hosted.slug, widget }))
+      const line = frame.locator('.cw-embed-powered')
+      await expect(line, widget).toHaveText('Powered by Critwire')
+      const link = line.getByRole('link', { name: 'Critwire' })
+      await expect(link, widget).toHaveAttribute('href', tagged('/'))
+      await expect(link, widget).toHaveAttribute('target', '_blank')
+    }
+  })
+
+  await test.step('hosted (3100): the portal footer shows it too', async () => {
+    await page.goto(portalPaths(hosted.slug).hub)
+    await expect(page.getByRole('contentinfo')).toContainText('Powered by Critwire')
+  })
+
+  await test.step('self-hosted (3102, CRITWIRE_HIDE_POWERED_BY=1): neither embed nor the footer shows it', async () => {
+    const paths = portalPaths(selfHosted.slug)
+    for (const widget of ['board', 'updates'] as const) {
+      await page.goto(`${SECOND_BASE_URL}${paths.embed(widget)}`)
+      await expect(page.locator('#cw-embed-heading'), widget).toBeVisible()
+      await expect(page.locator('.cw-embed'), widget).not.toContainText('Powered by')
+    }
+    await page.goto(`${SECOND_BASE_URL}${paths.hub}`)
+    await expect(page.getByRole('heading', { level: 1, name: selfHosted.name })).toBeVisible()
+    await expect(page.getByRole('contentinfo')).toBeVisible()
+    await expect(page.getByRole('contentinfo')).not.toContainText('Powered by')
+  })
 })

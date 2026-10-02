@@ -11,6 +11,28 @@ export function isOpenSignup(): boolean {
   throw new Error(`CRITWIRE_OPEN_SIGNUP must be 1, or empty to turn signup off (got "${raw}").`)
 }
 
+/**
+ * Whether portals and embeds show "Powered by Critwire". A self-hosted
+ * instance may hide it with `CRITWIRE_HIDE_POWERED_BY=1`; the hosted one,
+ * with open signup, always shows it. Any other value, or hiding it with
+ * open signup on, throws. Checked at boot by `instrumentation-node.ts`.
+ */
+export function isPoweredByShown(): boolean {
+  const raw = process.env.CRITWIRE_HIDE_POWERED_BY?.trim()
+  if (!raw) return true
+  if (raw !== '1') {
+    throw new Error(
+      `CRITWIRE_HIDE_POWERED_BY must be 1, or empty to show "Powered by Critwire" (got "${raw}").`,
+    )
+  }
+  if (isOpenSignup()) {
+    throw new Error(
+      'CRITWIRE_HIDE_POWERED_BY=1 is for self-hosted instances; the hosted one (CRITWIRE_OPEN_SIGNUP=1) always shows "Powered by Critwire".',
+    )
+  }
+  return false
+}
+
 /** Where "Create your portal" leads. */
 export const SIGNUP_PATH = '/signup'
 

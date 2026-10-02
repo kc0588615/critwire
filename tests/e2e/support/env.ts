@@ -7,7 +7,8 @@ export const BASE_URL = `http://localhost:${E2E_PORT}`
 
 /**
  * The second server: the same build and database with the hosted limits
- * on and signup off, so it's also the self-hosted profile (P2).
+ * on, signup off and "Powered by" hidden, so it's also the self-hosted
+ * profile (P2).
  */
 export const SECOND_PORT = E2E_PORT + 2
 export const SECOND_BASE_URL = `http://localhost:${SECOND_PORT}`
@@ -122,6 +123,7 @@ export const serverEnv = ({ cronSecret = '' }: { cronSecret?: string } = {}): Re
   // image does, so a page that bakes the flag in at build fails here, and
   // one that bakes it on fails on the second server (P3).
   CRITWIRE_OPEN_SIGNUP: '1',
+  CRITWIRE_HIDE_POWERED_BY: '',
   EMAIL_OUTBOX_DIR: OUTBOX_DIR,
   CRITWIRE_LIMIT_GAMES_PER_STUDIO: '',
   CRITWIRE_LIMIT_MEDIA_MB_PER_STUDIO: '',
@@ -139,6 +141,7 @@ export const secondServerEnv = (): Record<string, string> => ({
   UPSTASH_REDIS_REST_URL: '',
   UPSTASH_REDIS_REST_TOKEN: '',
   CRITWIRE_OPEN_SIGNUP: '',
+  CRITWIRE_HIDE_POWERED_BY: '1',
   EMAIL_OUTBOX_DIR: '',
   CRITWIRE_LIMIT_GAMES_PER_STUDIO: String(SECOND_LIMITS.games),
   CRITWIRE_LIMIT_MEDIA_MB_PER_STUDIO: String(SECOND_LIMITS.mediaMB),

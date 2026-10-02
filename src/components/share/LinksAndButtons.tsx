@@ -4,7 +4,7 @@ import React, { useId, useMemo, useState } from 'react'
 
 import { BUTTON_SCHEMES, type ButtonScheme } from '@/lib/share/buttons'
 import { shareKit, type ShareItem } from '@/lib/share/kit'
-import { SHARE_PLATFORMS, SNIPPET_FORMATS, type RefSource } from '@/lib/share/platforms'
+import { SHARE_PLATFORMS, type SharePlatform, SNIPPET_FORMATS } from '@/lib/share/platforms'
 
 import { CopyButton } from './CopyButton'
 
@@ -47,7 +47,7 @@ const ShareImage: React.FC<{ item: ShareItem }> = ({ item }) => (
  */
 export const LinksAndButtons: React.FC<{ siteURL: string; slug: string }> = ({ siteURL, slug }) => {
   const id = useId()
-  const [platformID, setPlatformID] = useState<RefSource>(SHARE_PLATFORMS[0].id)
+  const [platformID, setPlatformID] = useState<SharePlatform['id']>(SHARE_PLATFORMS[0].id)
   const [scheme, setScheme] = useState<ButtonScheme>('light')
   const platform = SHARE_PLATFORMS.find((candidate) => candidate.id === platformID) ?? SHARE_PLATFORMS[0]
   const kit = useMemo(() => shareKit({ platform, scheme, siteURL, slug }), [platform, scheme, siteURL, slug])

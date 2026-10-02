@@ -271,6 +271,15 @@ test.describe('the portal counts tagged arrivals', () => {
         .poll(async () => shownReferrals(browser, game))
         .toMatchObject({ totals: { Steam: 2 } })
     })
+
+    await test.step('an arrival through an embed’s link counts under Embed', async () => {
+      await page.goto(`${hub}?ref=embed`)
+      await expectURL(page, hub)
+      expect(await answeredRefs(pings, game, 3)).toEqual(['steam', 'steam', 'embed'])
+      await expect
+        .poll(async () => shownReferrals(browser, game))
+        .toMatchObject({ totals: { Steam: 2, Embed: 1 } })
+    })
   })
 
   test('S22.3 client-side navigation within the game counts each tagged arrival once', async ({
