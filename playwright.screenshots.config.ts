@@ -11,12 +11,14 @@ import { SHOTS_CRON_SECRET } from './tests/screenshots/support'
  * "check your inbox", the verify page, onboarding and a new portal's
  * next steps) and the share kit (the welcome panel's kit, the studio's
  * admin dashboard and Share tab in light and dark, and the buttons and
- * badges on a white and a near-black host page), at 1440 and 390 px,
+ * badges on a white and a near-black host page) and the embeds (the
+ * board, the updates widget, the floating button and its open dialog on
+ * a studio's page, light and dark), at 1440 and 390 px,
  * against a production build on the disposable E2E database (dropped on
  * every run, so never alongside `pnpm test:e2e`). Emails go to the E2E
  * outbox, where the setup reads the verification links.
  *
- *   SHOTS_SET=before|after SHOTS_DIR=/abs/dir [SHOTS_THEMES=critter-connect,riso,marketing,signup,reach] pnpm screenshots [--project desktop|mobile]
+ *   SHOTS_SET=before|after SHOTS_DIR=/abs/dir [SHOTS_THEMES=critter-connect,riso,marketing,signup,reach,embed] pnpm screenshots [--project desktop|mobile]
  *
  * Writes `<SHOTS_DIR>/<set>/<group>--<page>--<width>.png` and rewrites
  * `<SHOTS_DIR>/index.html` with every captured set side by side. "after"

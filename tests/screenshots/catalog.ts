@@ -1,5 +1,6 @@
 import path from 'node:path'
 
+import type { EmbedHostQuery } from '../e2e/support/embedHost'
 import { gameShareHref } from '../../src/lib/admin/paths'
 import { portalPaths } from '../../src/lib/game-portal/paths'
 import { BUTTON_SCHEMES, buttonPath, SHARE_BUTTONS } from '../../src/lib/share/buttons'
@@ -46,7 +47,7 @@ export const STUDIO_STATE_PATH = path.join(process.cwd(), 'test-results', 'shots
 export const SESSION_STATE_PATHS = { onboarding: ONBOARDING_STATE_PATH, studio: STUDIO_STATE_PATH } as const
 export type Session = keyof typeof SESSION_STATE_PATHS
 
-export const GROUPS = ['critter-connect', 'riso', 'marketing', 'signup', 'reach'] as const
+export const GROUPS = ['critter-connect', 'riso', 'marketing', 'signup', 'reach', 'embed'] as const
 export type Group = (typeof GROUPS)[number]
 
 /** The groups that shoot the demo's portal pages under a theme. */
@@ -59,6 +60,7 @@ export const GROUP_LABELS: Record<Group, string> = {
   marketing: 'Critwire home page',
   signup: 'Sign up and onboarding',
   reach: 'Share kit, badges and buttons',
+  embed: "Embeds on a studio's page",
 }
 
 interface ShotBase {
@@ -75,13 +77,20 @@ interface ShotBase {
    * on admin pages, Payload's own chrome is below 44 px and not ours to resize.
    */
   tapScope?: string
+  /** The accessible name of a button to click before the capture, such as the floating "Feedback". */
+  click?: string
 }
 
-/** A page the app serves, or a page built with `page.setContent` whose URLs are relative to `origin`. */
+/**
+ * A page the app serves, a page built with `page.setContent` whose URLs
+ * are relative to `origin`, or a studio's page on the embed host
+ * (`startEmbedHost`, cross-site from the app) carrying an embed snippet.
+ */
 export type Shot = ShotBase &
   (
-    | { path: (world: ShotsWorld) => string; html?: never }
-    | { html: (world: ShotsWorld, origin: string) => string; path?: never }
+    | { path: (world: ShotsWorld) => string; html?: never; host?: never }
+    | { html: (world: ShotsWorld, origin: string) => string; path?: never; host?: never }
+    | { host: (world: ShotsWorld) => EmbedHostQuery; path?: never; html?: never }
   )
 
 const cc = (world: ShotsWorld, rest = ''): string => `/g/${world.cc.slug}${rest}`
@@ -181,6 +190,25 @@ const REACH_SHOTS: Shot[] = [
   { id: 'host-near-black', label: 'Buttons and badges on a near-black page', html: hostPage('near-black') },
 ]
 
+/**
+ * Each widget in its own mode on a host page of the same colours. The
+ * closed button shows the widget itself; the open one, the board it opens.
+ */
+const EMBED_SHOTS: Shot[] = (['light', 'dark'] as const).flatMap((mode): Shot[] => {
+  const on = (widget: EmbedHostQuery['widget']) => (world: ShotsWorld): EmbedHostQuery => ({
+    game: world.cc.slug,
+    widget,
+    theme: mode,
+    bg: mode,
+  })
+  return [
+    { id: `board-${mode}`, label: `Board, ${mode}`, host: on('board') },
+    { id: `updates-${mode}`, label: `Updates, ${mode}`, host: on('updates') },
+    { id: `button-${mode}`, label: `Floating button, ${mode}`, host: on('button'), ready: 'main > button' },
+    { id: `dialog-${mode}`, label: `Floating button's dialog open, ${mode}`, host: on('button'), click: 'Feedback' },
+  ]
+})
+
 export const isPortalGroup = (group: Group): group is PortalGroup =>
   (PORTAL_GROUPS as readonly string[]).includes(group)
 
@@ -188,6 +216,7 @@ const OTHER_SHOTS: Record<Exclude<Group, PortalGroup>, Shot[]> = {
   marketing: MARKETING_SHOTS,
   signup: SIGNUP_SHOTS,
   reach: REACH_SHOTS,
+  embed: EMBED_SHOTS,
 }
 
 export const shotsFor = (group: Group): Shot[] => (isPortalGroup(group) ? PORTAL_SHOTS : OTHER_SHOTS[group])

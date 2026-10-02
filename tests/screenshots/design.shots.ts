@@ -4,6 +4,7 @@ import { type APIRequestContext, expect, type Page, test } from '@playwright/tes
 
 import type { SiteThemeV1 } from '../../src/lib/game-portal/theme'
 import { RestClient } from '../e2e/support/api'
+import { type EmbedHost, frameHeights, startEmbedHost } from '../e2e/support/embedHost'
 import { BASE_URL } from '../e2e/support/env'
 import { newRequestContext } from '../e2e/support/fixtures'
 import {
@@ -62,17 +63,24 @@ for (const group of selectedGroups()) {
     let world: ShotsWorld
     /** The hub's `.fs-root` style under this group's theme; every themed page must match it. */
     let groupStyle: null | string = null
+    /** The studio's page that `host` shots load, on another site than the app. */
+    let host: EmbedHost | null = null
 
     test.beforeAll(async ({ browser, playwright }) => {
       world = await readWorld()
-      // `reach` shows the Critter Connect badge, which the riso group may have left in its theme.
-      if (!isPortalGroup(group) && group !== 'reach') return
+      if (group === 'embed') host = await startEmbedHost(BASE_URL)
+      // `reach` shows the Critter Connect badge and `embed` its widgets, which the riso group may have left in its theme.
+      if (!isPortalGroup(group) && group !== 'reach' && group !== 'embed') return
       const page = await browser.newPage({ baseURL: BASE_URL })
       const request = await newRequestContext(playwright)
       await applyTheme(isPortalGroup(group) ? group : 'critter-connect', world, request, page)
       if (isPortalGroup(group)) groupStyle = await rootStyle(page)
       await request.dispose()
       await page.close()
+    })
+
+    test.afterAll(async () => {
+      await host?.close()
     })
 
     const capture = (shot: Shot): void => {
@@ -84,6 +92,9 @@ for (const group of selectedGroups()) {
         }
         if (shot.html) {
           await page.setContent(shot.html(world, BASE_URL))
+        } else if (shot.host) {
+          if (!host) throw new Error(`${shot.id}: the ${group} group started no embed host`)
+          await page.goto(host.url(shot.host(world)))
         } else {
           const url = shot.path(world)
           await page.goto(url)
@@ -92,7 +103,9 @@ for (const group of selectedGroups()) {
             await reloadUntil(page, url, rootStyle, groupStyle, `${url} never showed the ${group} theme`)
           }
         }
+        if (shot.click) await page.getByRole('button', { name: shot.click }).click()
         if (shot.ready) await expect(page.locator(shot.ready)).toBeVisible()
+        if (shot.host) await embedShown(page)
         if (shot.adminTheme) await expect(page.locator('html')).toHaveAttribute('data-theme', shot.adminTheme)
         await settle(page)
         if (shot.html) {
@@ -127,6 +140,24 @@ for (const group of selectedGroups()) {
       })
     }
   })
+}
+
+/**
+ * Waits until the widget's frame, when the page has one, shows its
+ * heading and, inline, has resized to its content. The dialog's frame
+ * keeps its fixed height and scrolls.
+ */
+async function embedShown(page: Page): Promise<void> {
+  const frame = page.locator('iframe')
+  if (!(await frame.count())) return
+  await expect(frame.contentFrame().getByRole('heading', { level: 1 })).toBeVisible()
+  if (await page.locator('dialog iframe').count()) return
+  await expect
+    .poll(async () => {
+      const { content, frame } = await frameHeights(page)
+      return Math.abs(content - frame)
+    }, { message: 'the frame never resized to its content' })
+    .toBeLessThanOrEqual(1)
 }
 
 /**

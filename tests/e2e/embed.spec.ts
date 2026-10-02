@@ -12,6 +12,7 @@ import { portalPaths } from '../../src/lib/game-portal/paths'
 import { ARCHIVED_STATUSES, PUBLIC_STAGES, type PublicStageId, statusesFor } from '../../src/lib/game-portal/stages'
 import { DEFAULT_THEME_COLORS } from '../../src/lib/game-portal/theme'
 import { withRef } from '../../src/lib/share/kit'
+import { frameHeights } from './support/embedHost'
 import { BASE_URL, SECOND_BASE_URL, storageStatePath } from './support/env'
 import { createIssue, createPatchNote, createProject, expect, newRequestContext, test } from './support/fixtures'
 
@@ -40,15 +41,6 @@ const embedBackground = (page: Page) =>
 /** The `.cw-embed` font, framed (a `FrameLocator`) or opened directly (a `Page`). */
 const embedFont = (root: FrameLocator | Page) =>
   root.locator('.cw-embed').evaluate((element) => getComputedStyle(element).fontFamily)
-
-/** The frame's height on the host page, and the height of the content inside it. */
-const frameHeights = async (page: Page) => ({
-  frame: await page.locator('iframe').evaluate((element) => element.getBoundingClientRect().height),
-  content: await page
-    .frameLocator('iframe')
-    .locator('.cw-embed-frame')
-    .evaluate((element) => element.getBoundingClientRect().height),
-})
 
 test('E1.1 the board widget shows true counts, filters in place and links out', async ({
   api,

@@ -1,7 +1,7 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 
-import type { Page } from '@playwright/test'
+import type { Frame, Page } from '@playwright/test'
 
 import { type Group, isPortalGroup, type Shot } from './catalog'
 
@@ -54,13 +54,13 @@ const resolveColor = (page: Page, scope: string, expression: string): Promise<st
     [scope, expression] as const,
   )
 
-/** 1. At 390 px the page never scrolls sideways. */
-async function noSideScroll(page: Page): Promise<ProbeResult> {
+/** 1. At 390 px the page (or an embed's frame, `where`) never scrolls sideways. */
+async function noSideScroll(page: Frame | Page, where = ''): Promise<ProbeResult> {
   const { scrollWidth, innerWidth } = await page.evaluate(() => ({
     scrollWidth: document.documentElement.scrollWidth,
     innerWidth: window.innerWidth,
   }))
-  return result('no-side-scroll', scrollWidth <= innerWidth, `scrollWidth ${scrollWidth}, innerWidth ${innerWidth}`)
+  return result('no-side-scroll', scrollWidth <= innerWidth, `scrollWidth ${scrollWidth}, innerWidth ${innerWidth}${where}`)
 }
 
 /**
@@ -68,7 +68,7 @@ async function noSideScroll(page: Page): Promise<ProbeResult> {
  * `scope` are at least 44 px tall. A scope the page lacks fails, so the
  * probe never passes vacuously.
  */
-async function tapTargets(page: Page, scope = ':root'): Promise<ProbeResult> {
+async function tapTargets(page: Frame | Page, scope = ':root', where?: string): Promise<ProbeResult> {
   const short = await page.evaluate(([min, scopeSelector]) => {
     const host = document.querySelector(scopeSelector)
     if (!host) return [`no ${scopeSelector} on the page`]
@@ -83,8 +83,8 @@ async function tapTargets(page: Page, scope = ':root'): Promise<ProbeResult> {
       .filter(({ height }) => height < min)
       .map(({ el, height }) => `${el.tagName.toLowerCase()} "${(el.textContent || el.getAttribute('name') || '').trim().slice(0, 30)}" ${height.toFixed(1)}px`)
   }, [MIN_TARGET_PX, scope] as const)
-  const where = scope === ':root' ? '' : ` in ${scope}`
-  return result('tap-targets', short.length === 0, short.length ? short.join('; ') : `all ≥ ${MIN_TARGET_PX}px${where}`)
+  const at = where ?? (scope === ':root' ? '' : ` in ${scope}`)
+  return result('tap-targets', short.length === 0, short.length ? short.join('; ') : `all ≥ ${MIN_TARGET_PX}px${at}`)
 }
 
 /** 3. The focused element wears the 2px solid ring in the surface's foreground colour. */
@@ -145,7 +145,15 @@ async function oneRoot(page: Page): Promise<ProbeResult> {
 export async function probePage(page: Page, { group, shot, width, requests }: ProbeTarget): Promise<ProbeResult[]> {
   const portal = isPortalGroup(group)
   const results: ProbeResult[] = []
-  if (width === MOBILE_WIDTH) results.push(await noSideScroll(page), await tapTargets(page, shot.tapScope))
+  if (width === MOBILE_WIDTH) {
+    results.push(await noSideScroll(page), await tapTargets(page, shot.tapScope))
+    // An embed's own controls live in its frame, on the app's origin.
+    const widget = shot.host ? page.frames().find((frame) => frame !== page.mainFrame()) : undefined
+    if (widget) {
+      const where = " in the widget's frame"
+      results.push(await noSideScroll(widget, where), await tapTargets(widget, ':root', where))
+    }
+  }
   if (MOTION_PAGES.has(shot.id)) results.push(await motionSettled(page))
   if (portal && PROSE_PAGES.has(shot.id)) results.push(await proseColor(page))
   results.push(noFontHosts(requests))

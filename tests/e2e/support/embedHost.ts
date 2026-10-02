@@ -1,6 +1,8 @@
 import { createServer } from 'node:http'
 import type { AddressInfo } from 'node:net'
 
+import type { Page } from '@playwright/test'
+
 import { type EmbedTheme, type EmbedWidget, embedSnippets } from '../../../src/lib/embed/snippets'
 
 /** What the host page embeds, and how. */
@@ -88,3 +90,12 @@ export async function startEmbedHost(siteURL: string): Promise<EmbedHost> {
     close: () => new Promise((resolve) => server.close(() => resolve())),
   }
 }
+
+/** The frame's height on the host page, and the height of the content inside it. */
+export const frameHeights = async (page: Page) => ({
+  frame: await page.locator('iframe').evaluate((element) => element.getBoundingClientRect().height),
+  content: await page
+    .frameLocator('iframe')
+    .locator('.cw-embed-frame')
+    .evaluate((element) => element.getBoundingClientRect().height),
+})

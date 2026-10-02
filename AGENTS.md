@@ -128,7 +128,9 @@ where appropriate.
   the Critter Connect and Riso themes, plus the home page `/`, signup
   and onboarding, and the `reach` group: the share kit, the admin
   dashboard and Share tab in light and dark, and the buttons and badges
-  on a host page; 1440 and 390 px) against a production build on port
+  on a host page; and the `embed` group: the board, updates, floating
+  button and its dialog on a studio's page, light and dark; 1440 and
+  390 px) against a production build on port
   3200; needs `SHOTS_SET=before|after` and an absolute `SHOTS_DIR`
   (`SHOTS_THEMES` picks groups). Drops the
   `_e2e` database like `pnpm test:e2e`, so never run the two together
