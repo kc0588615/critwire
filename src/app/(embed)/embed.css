@@ -211,3 +211,12 @@ body {
 .cw-embed-none {
   margin-block: 0.75rem;
 }
+
+.cw-embed-voted {
+  padding: 0 0.5rem;
+  border-radius: 999px;
+  background: var(--fs-accent);
+  color: var(--fs-accent-fg);
+  font-size: 0.875rem;
+  font-weight: 600;
+}

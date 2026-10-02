@@ -1,12 +1,13 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 
 import type { EmbedFeedbackRow } from '@/lib/game-portal/feeds'
 
 import { FeedbackTypeTag, StatusMark } from '@/components/game/FeedbackStatus'
 import { VoteCount } from '@/components/game/VoteCount'
 import { embedURL } from '@/lib/embed/links'
+import { isVoteMessage } from '@/lib/embed/protocol'
 import { type FeedbackTypeParam, feedbackTypeOf } from '@/lib/game-portal/feedbackSearchParams'
 import { PUBLIC_STAGES, type PublicStage, type PublicStageId } from '@/lib/game-portal/stages'
 
@@ -22,6 +23,13 @@ export type EmbedBoardView = {
 }
 
 type Filter = { stage: null | PublicStageId; type: FeedbackTypeParam | null }
+
+/** A vote the item page reported in this page view, by item id. */
+type Votes = Record<string, { votes: number; voted: boolean }>
+
+/** One named popup, reused for every vote link. */
+const VOTE_WINDOW = 'critwire-vote'
+const VOTE_WINDOW_FEATURES = 'popup,width=480,height=640'
 
 const TYPE_FILTERS: { label: string; type: FeedbackTypeParam | null }[] = [
   { label: 'All', type: null },
@@ -52,15 +60,20 @@ const FilterButton: React.FC<{
 /**
  * An item: its vote count, its title and its stage. Both links open the
  * item's page; the row's `url` is the feed's, untagged, so it's tagged here.
+ * The vote link opens it in a popup, where the player votes on critwire's
+ * own page; `vote` is what that page reported back.
  */
-const Row: React.FC<{ row: EmbedFeedbackRow }> = ({ row }) => {
+const Row: React.FC<{
+  onVote: React.MouseEventHandler<HTMLAnchorElement>
+  row: EmbedFeedbackRow
+  vote: undefined | Votes[string]
+}> = ({ onVote, row, vote }) => {
   const href = embedURL(row.url)
   return (
     <li className="cw-embed-row">
-      {/* S8 opens this in a popup, where the vote is cast on critwire's own page. */}
-      <EmbedLink className="cw-embed-vote" href={href}>
+      <EmbedLink className="cw-embed-vote" href={href} onClick={onVote}>
         <span className="sr-only">Vote for {row.title}, </span>
-        <VoteCount count={row.votes} variant="inline" />
+        <VoteCount count={vote?.votes ?? row.votes} variant="inline" />
       </EmbedLink>
       <div className="min-w-0">
         <EmbedLink className="fs-link font-semibold" href={href}>
@@ -74,6 +87,7 @@ const Row: React.FC<{ row: EmbedFeedbackRow }> = ({ row }) => {
               : STAGES[row.stage].label}
           </span>
           <FeedbackTypeTag type={feedbackTypeOf(row.type)} />
+          {vote?.voted ? <span className="cw-embed-voted">Voted</span> : null}
         </div>
       </div>
     </li>
@@ -83,7 +97,8 @@ const Row: React.FC<{ row: EmbedFeedbackRow }> = ({ row }) => {
 /**
  * The board widget. Every view arrives with the page, so a filter is
  * local state: no request, no URL change, and nothing in the host page's
- * history. Every link opens the portal in a new tab.
+ * history. Every link opens the portal in a new tab, and a vote link in a
+ * popup when the browser allows one.
  */
 export const EmbedBoard: React.FC<{
   acceptsIdeas: boolean
@@ -92,6 +107,28 @@ export const EmbedBoard: React.FC<{
   views: EmbedBoardView[]
 }> = ({ acceptsIdeas, initial, newFeedback, views }) => {
   const [filter, setFilter] = useState<Filter>(initial)
+  const [votes, setVotes] = useState<Votes>({})
+  const popup = useRef<null | Window>(null)
+
+  // Only the window this embed opened, on critwire's own origin, can report a vote.
+  useEffect(() => {
+    const onMessage = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin || !popup.current || event.source !== popup.current) return
+      if (!isVoteMessage(event.data)) return
+      const { issueId, votes: count, voted } = event.data
+      setVotes((previous) => ({ ...previous, [issueId]: { votes: count, voted } }))
+    }
+    window.addEventListener('message', onMessage)
+    return () => window.removeEventListener('message', onMessage)
+  }, [])
+
+  // A blocked popup returns null, and the link's own new tab opens instead.
+  const onVote: React.MouseEventHandler<HTMLAnchorElement> = (event) => {
+    const opened = window.open(event.currentTarget.href, VOTE_WINDOW, VOTE_WINDOW_FEATURES)
+    if (!opened) return
+    event.preventDefault()
+    popup.current = opened
+  }
   const viewOf = ({ stage, type }: Filter): EmbedBoardView => {
     const view = views.find((candidate) => candidate.stage === stage && candidate.type === type)
     if (!view) throw new Error(`No board view for stage ${stage}, type ${type}`)
@@ -153,7 +190,7 @@ export const EmbedBoard: React.FC<{
           ) : (
             <ul className="fs-rows cw-embed-rows">
               {view.rows.map((row) => (
-                <Row key={row.id} row={row} />
+                <Row key={row.id} onVote={onVote} row={row} vote={votes[row.id]} />
               ))}
             </ul>
           )}

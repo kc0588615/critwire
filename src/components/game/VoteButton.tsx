@@ -3,6 +3,7 @@
 import React, { useState, useTransition } from 'react'
 
 import { FormNotice } from '@/components/game/FormNotice'
+import { notifyOpener } from '@/lib/embed/protocol'
 
 const NETWORK_ERROR = 'Your vote didn’t count. Reload the page and try again.'
 
@@ -43,6 +44,8 @@ export const VoteButton: React.FC<{
         setCount(json.upvoteCount)
         setVoted(json.voted)
         setChange((previous) => ({ delta: json.voted ? 1 : -1, id: (previous?.id ?? 0) + 1 }))
+        // An embed that opened this page in a popup shows the new count.
+        notifyOpener({ issueId: String(issueId), votes: json.upvoteCount, voted: json.voted })
       } catch {
         setError(NETWORK_ERROR)
       }

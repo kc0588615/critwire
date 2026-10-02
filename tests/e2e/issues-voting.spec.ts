@@ -1,7 +1,6 @@
 import type { Page, PlaywrightWorkerArgs } from '@playwright/test'
 
 import type { GameProject, Issue, PatchNote } from '../../src/payload-types'
-import type { RestClient } from './support/api'
 import {
   castVote,
   createIssue,
@@ -10,6 +9,7 @@ import {
   eventually,
   expect,
   newRequestContext,
+  tally,
   test,
 } from './support/fixtures'
 
@@ -333,15 +333,6 @@ async function postVote(
   } finally {
     await player.dispose()
   }
-}
-
-/** The issue's stored counter and its vote rows, both read as super admin. */
-async function tally(superAdmin: RestClient, issueID: number) {
-  const issue = await superAdmin.findByID('issues', issueID, { depth: 0 })
-  const votes = await superAdmin.find('issue-votes', { where: { issue: { equals: issueID } }, limit: 1 })
-  expect(issue.status).toBe(200)
-  expect(votes.status).toBe(200)
-  return { upvoteCount: issue.body.upvoteCount, rows: votes.body.totalDocs, updatedAt: issue.body.updatedAt }
 }
 
 test.describe('S4.4 voting in the browser', () => {

@@ -583,3 +583,12 @@ export async function castVote(
     await player.dispose()
   }
 }
+
+/** The issue's stored counter and its vote rows, both read as super admin. */
+export async function tally(superAdmin: RestClient, issueID: number) {
+  const issue = await superAdmin.findByID('issues', issueID, { depth: 0 })
+  const votes = await superAdmin.find('issue-votes', { where: { issue: { equals: issueID } }, limit: 1 })
+  expect(issue.status).toBe(200)
+  expect(votes.status).toBe(200)
+  return { upvoteCount: issue.body.upvoteCount, rows: votes.body.totalDocs, updatedAt: issue.body.updatedAt }
+}
