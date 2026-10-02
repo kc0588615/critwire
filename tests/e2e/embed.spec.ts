@@ -264,6 +264,21 @@ test('E7 the embeds may be framed anywhere; the portal only by itself', async ({
       }
     })
 
+    await test.step('both feeds, and an unknown game’s 404s: CORS and the cache header (K1)', async () => {
+      const unknown = portalPaths(uniqueSlug('embed-no-such-game'))
+      for (const [path, status] of [
+        [paths.feedbackJSON, 200],
+        [paths.updatesJSON, 200],
+        [unknown.feedbackJSON, 404],
+        [unknown.updatesJSON, 404],
+      ] as const) {
+        const response = await player.get(path, { maxRedirects: 0 })
+        expect(response.status(), path).toBe(status)
+        expect(response.headers()['access-control-allow-origin'], path).toBe('*')
+        expect(response.headers()['cache-control'], path).toBe(EMBED_CACHE_CONTROL)
+      }
+    })
+
     await test.step('the loader is long-cached, as a versioned contract', async () => {
       const response = await player.get(LOADER_PATH)
       expect(response.status()).toBe(200)

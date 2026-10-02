@@ -21,6 +21,17 @@ export const RANKED_SORT: Sort = ['-isPinned', '-upvoteCount', '-createdAt']
 /** What a shipped item shows of its update: see `shippedUpdate`. */
 const SHIPPED_IN_SELECT = { _status: true, slug: true, title: true, versionLabel: true } as const
 
+/** What a board card shows of an item. */
+const BOARD_SELECT = {
+  fixedInPatchNote: true,
+  isPinned: true,
+  slug: true,
+  status: true,
+  title: true,
+  type: true,
+  upvoteCount: true,
+} as const
+
 /**
  * The public items of one game: those of `stage`, or every stage when
  * none is given (archived items are in no stage), optionally of one type.
@@ -129,21 +140,40 @@ export const queryBoardColumn = async ({
     limit,
     overrideAccess: false,
     populate: { 'patch-notes': SHIPPED_IN_SELECT },
-    select: {
-      fixedInPatchNote: true,
-      isPinned: true,
-      slug: true,
-      status: true,
-      title: true,
-      type: true,
-      upvoteCount: true,
-    },
+    select: BOARD_SELECT,
     sort: RANKED_SORT,
     where: { and: publicIssuesWhere({ projectID, stage, type }) },
   })
 }
 
 export type BoardCard = Awaited<ReturnType<typeof queryBoardColumn>>['docs'][number]
+
+/** At most this many items in `feedback.json`; the portal list has the rest. */
+export const FEEDBACK_FEED_LIMIT = 500
+
+/**
+ * `feedback.json`'s items: every public stage, ranked, with what a board
+ * card shows plus the summary and the date. A fix note the visitor can't
+ * read (a draft or a held one) stays an ID.
+ */
+export const queryFeedbackFeed = async (projectID: number | string) => {
+  const payload = await getPayload({ config })
+
+  const result = await payload.find({
+    collection: 'issues',
+    depth: 1,
+    limit: FEEDBACK_FEED_LIMIT,
+    overrideAccess: false,
+    pagination: false,
+    populate: { 'patch-notes': SHIPPED_IN_SELECT },
+    select: { ...BOARD_SELECT, createdAt: true, summary: true },
+    sort: RANKED_SORT,
+    where: { and: publicIssuesWhere({ projectID }) },
+  })
+  return result.docs
+}
+
+export type FeedIssue = Awaited<ReturnType<typeof queryFeedbackFeed>>[number]
 
 export const TOP_FEEDBACK_LIMIT = 5
 

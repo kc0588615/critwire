@@ -539,6 +539,21 @@ export const createReport = (
   })
 
 /**
+ * Holds a game or an update as the content filter would, or releases it
+ * (`held: false`), as the super admin does. Held content leaves the public site.
+ */
+export async function hold(
+  superAdmin: RestClient,
+  collection: 'game-projects' | 'patch-notes',
+  id: number,
+  held = true,
+): Promise<void> {
+  const data = held ? { flagged: true, flagReasons: 'Held by an E2E test.' } : { flagged: false }
+  const { status, body } = await superAdmin.update(collection, id, data)
+  expect(status, JSON.stringify(body)).toBe(200)
+}
+
+/**
  * Casts one player vote through the public endpoint. Each call uses a
  * fresh cookie jar, so each call is a different player.
  */

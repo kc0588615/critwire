@@ -11,6 +11,10 @@ export type FeedbackTypeParam = (typeof FEEDBACK_TYPE_PARAMS)[number]
 export const feedbackTypeOf = (param: FeedbackTypeParam) =>
   param.toUpperCase() as Uppercase<FeedbackTypeParam>
 
+/** A stored type as URLs and the feeds carry it. */
+export const feedbackTypeParam = (type: Uppercase<FeedbackTypeParam>): FeedbackTypeParam =>
+  type.toLowerCase() as FeedbackTypeParam
+
 /**
  * The feedback page's URL state, shared by the page's loader and the
  * filter bar. `nuqs/server` has no server-only guard, so client code

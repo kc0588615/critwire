@@ -2,12 +2,12 @@ import type { APIRequestContext, APIResponse } from '@playwright/test'
 import sharp from 'sharp'
 
 import type { GameProject } from '../../src/payload-types'
-import type { RestClient } from './support/api'
 import {
   createIssue,
   createPatchNote,
   createProject,
   expect,
+  hold,
   newRequestContext,
   test,
 } from './support/fixtures'
@@ -21,7 +21,6 @@ import { svgHeight, svgTitle } from './support/svg'
  */
 
 const FIVE_MINUTES = 'public, max-age=300, s-maxage=300'
-const HELD_REASON = 'Held by an E2E test.'
 const NEUTRAL_TITLE = 'feedback: unavailable'
 
 const badgePath = (slug: string, format: 'svg' | 'png'): string => `/g/${slug}/badge.${format}`
@@ -51,11 +50,6 @@ async function badgeSVG(slug: string): Promise<string> {
   expect(svg).not.toContain('<text')
   expect(svg).not.toMatch(/<script|href=/i)
   return svg
-}
-
-async function hold(superAdmin: RestClient, collection: 'game-projects' | 'patch-notes', id: number): Promise<void> {
-  const { status, body } = await superAdmin.update(collection, id, { flagged: true, flagReasons: HELD_REASON })
-  expect(status, JSON.stringify(body)).toBe(200)
 }
 
 test('S21.1 the badge counts public items per public stage', async ({ seedStudio }) => {

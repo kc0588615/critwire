@@ -1,6 +1,6 @@
 import { getGameProject } from '@/lib/game-portal/getGameProject'
 import { portalPaths } from '@/lib/game-portal/paths'
-import { queryPublishedPatchNotes, updateFeedTitle } from '@/lib/game-portal/patchNotes'
+import { FEED_UPDATES_LIMIT, queryPublishedPatchNotes, updateFeedTitle } from '@/lib/game-portal/patchNotes'
 import { escapeXml } from '@/utilities/escapeXml'
 import { getServerSideURL } from '@/utilities/getURL'
 
@@ -22,7 +22,7 @@ export async function GET(
     return new Response('Not found', { status: 404 })
   }
 
-  const notes = await queryPublishedPatchNotes({ limit: 20, page: 1, projectID: project.id })
+  const notes = await queryPublishedPatchNotes({ limit: FEED_UPDATES_LIMIT, page: 1, projectID: project.id })
 
   const base = getServerSideURL()
   const paths = portalPaths(gameSlug)
