@@ -279,8 +279,22 @@ test.describe('S3.4 the public pages follow edits', () => {
       title: 'Pulled back',
       publishedAt: publishedOn(3, 2),
     })
+    // The feed's links prefetch both notes' pages. A prefetch render that
+    // reads the note before the unpublish but stores its ISR entry after
+    // the hook's revalidatePath stays cached as fresh for an hour: a real
+    // race (plan F1, handoff H15), not this test's subject. So let the
+    // pulled note's prefetch finish first. Next requests a route's segments
+    // one at a time, the page segment last. Kept out of open(), which
+    // eventually() calls.
+    const pulledPath = `${feedPath(project.slug)}/${pulled.slug}`
+    const pulledPrefetch = page.waitForResponse(
+      (response) =>
+        new URL(response.url()).pathname === pulledPath &&
+        (response.request().headers()['next-router-segment-prefetch'] ?? '').endsWith('/__PAGE__'),
+    )
     await open(page, feedPath(project.slug))
     expect(await feedTitles(page)).toEqual([pulled.title, kept.title])
+    await (await pulledPrefetch).finished()
 
     const { status, body } = await aOwner.update('patch-notes', pulled.id, { _status: 'draft' })
     expect(status, JSON.stringify(body)).toBe(200)
