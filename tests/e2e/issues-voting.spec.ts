@@ -442,6 +442,36 @@ test.describe('S4.5–S4.6 voting API', () => {
     expect((await tally(api('superAdmin'), privateIssue.id)).rows).toBe(0)
   })
 
+  test('S4.5 votes are JSON only, so other sites can\'t post them [F7]', async ({ api, playwright, uniqueSlug }) => {
+    // A cross-site form or `no-cors` fetch can only send CORS-safelisted
+    // types; a valid JSON body under any of them must not vote.
+    const superAdmin = api('superAdmin')
+    const issue = await createIssue(api('aOwner'), project, uniqueSlug('vote-json-only'), { title: 'Lamps hum' })
+    const json = JSON.stringify({ issueId: issue.id })
+    const player = await newRequestContext(playwright)
+    try {
+      for (const contentType of ['text/plain', 'text/plain; x=application/json', 'text/plain;charset=UTF-8']) {
+        const reply = await player.post('/api/vote', { data: json, headers: { 'Content-Type': contentType } })
+        expect(reply.status(), contentType).toBe(400)
+      }
+      const form = await player.post('/api/vote', { form: { issueId: String(issue.id) } })
+      expect(form.status(), 'urlencoded form').toBe(400)
+      const multipart = await player.post('/api/vote', { multipart: { issueId: String(issue.id) } })
+      expect(multipart.status(), 'multipart form').toBe(400)
+      expect(await tally(superAdmin, issue.id)).toMatchObject({ upvoteCount: 0, rows: 0 })
+
+      // Real clients may add parameters to the JSON type.
+      const real = await player.post('/api/vote', {
+        data: json,
+        headers: { 'Content-Type': 'Application/JSON; charset=utf-8' },
+      })
+      expect(real.status(), await real.text()).toBe(200)
+      expect(await tally(superAdmin, issue.id)).toMatchObject({ upvoteCount: 1, rows: 1 })
+    } finally {
+      await player.dispose()
+    }
+  })
+
   test('S4.5 a tampered cookie is replaced and counted as a new voter', async ({ api, playwright }) => {
     const first = await postVote(playwright, { issueId: publicIssue.id })
     expect(first.body).toMatchObject({ voted: true, upvoteCount: 1, issuedNewToken: true })

@@ -1,6 +1,6 @@
 /**
  * The only place that builds a portal URL. Paths are root-relative;
- * callers that need an absolute URL prefix `getServerSideURL()`.
+ * callers that need an absolute URL pass them to `absoluteURL`.
  */
 export const portalPaths = (gameSlug: string) => {
   const hub = `/g/${gameSlug}`
@@ -10,6 +10,9 @@ export const portalPaths = (gameSlug: string) => {
   const contact = `${hub}/contact`
 
   return {
+    /** The live badge image (see `docs/share.md`). */
+    badge: (format: 'png' | 'svg') => `${hub}/badge.${format}`,
+    board: `${feedback}?view=board`,
     contact,
     contactSubmit: `${contact}/submit`,
     feedback,
@@ -18,6 +21,8 @@ export const portalPaths = (gameSlug: string) => {
     hub,
     /** The form, preset to a type when one is given. URLs carry the type in lower case. */
     newFeedback: (type?: 'bug' | 'idea') => (type ? `${newFeedback}?type=${type}` : newFeedback),
+    /** The friendly alias studios paste; it redirects to `board`. */
+    roadmap: `${hub}/roadmap`,
     rss: `${updates}/feed.xml`,
     update: (slug: string) => `${updates}/${slug}`,
     /**

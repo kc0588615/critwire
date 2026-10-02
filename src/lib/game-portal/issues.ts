@@ -18,6 +18,26 @@ export type IssueSortKey = 'latest' | 'top'
 /** What a shipped item shows of its update: see `shippedUpdate`. */
 const SHIPPED_IN_SELECT = { _status: true, slug: true, title: true, versionLabel: true } as const
 
+/**
+ * The public items of one game: those of `stage`, or every stage when
+ * none is given (archived items are in no stage), optionally of one type.
+ * The list, the board and the badge share it, so their counts agree.
+ */
+export const publicIssuesWhere = ({
+  projectID,
+  stage,
+  type,
+}: {
+  projectID: number | string
+  stage?: null | PublicStageId
+  type?: Issue['type'] | null
+}): Where[] => [
+  { gameProject: { equals: projectID } },
+  { isPublic: { equals: true } },
+  stage ? { status: { in: statusesFor(stage) } } : { status: { not_in: ARCHIVED_STATUSES } },
+  ...(type ? [{ type: { equals: type } }] : []),
+]
+
 export const queryPublicIssues = cache(
   async ({
     category,
@@ -38,14 +58,8 @@ export const queryPublicIssues = cache(
   }): Promise<PaginatedDocs<Issue>> => {
     const payload = await getPayload({ config })
 
-    const and: Where[] = [
-      { gameProject: { equals: projectID } },
-      { isPublic: { equals: true } },
-      { status: { not_in: ARCHIVED_STATUSES } },
-    ]
+    const and = publicIssuesWhere({ projectID, stage, type })
     if (category) and.push({ category: { equals: category } })
-    if (type) and.push({ type: { equals: type } })
-    if (stage) and.push({ status: { in: statusesFor(stage) } })
     if (search) {
       and.push({
         or: [{ title: { contains: search } }, { summary: { contains: search } }],
@@ -86,13 +100,6 @@ export const queryBoardColumn = async ({
 }) => {
   const payload = await getPayload({ config })
 
-  const and: Where[] = [
-    { gameProject: { equals: projectID } },
-    { isPublic: { equals: true } },
-    { status: { in: statusesFor(stage) } },
-  ]
-  if (type) and.push({ type: { equals: type } })
-
   return payload.find({
     collection: 'issues',
     depth: 1,
@@ -109,7 +116,7 @@ export const queryBoardColumn = async ({
       upvoteCount: true,
     },
     sort: ['-isPinned', '-upvoteCount', '-createdAt'],
-    where: { and },
+    where: { and: publicIssuesWhere({ projectID, stage, type }) },
   })
 }
 

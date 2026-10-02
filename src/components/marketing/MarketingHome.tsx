@@ -1,8 +1,6 @@
 import Link from 'next/link'
 import React from 'react'
 
-import { feedbackHref } from '@/lib/game-portal/feedbackSearchParams'
-
 import { IssueLoop } from './IssueLoop'
 import { DEMO_PORTAL, GITHUB_REPO_URL } from './links'
 
@@ -18,7 +16,7 @@ const PORTAL_PAGES = [
   {
     description:
       'Bugs and ideas in four stages: Under review, Planned, In progress and Shipped. Players find theirs, vote on it and skip the duplicate.',
-    href: feedbackHref(DEMO_PORTAL.feedback, { view: 'board' }),
+    href: DEMO_PORTAL.board,
     link: 'Critter Connect’s feedback board',
     term: 'Feedback board',
   },

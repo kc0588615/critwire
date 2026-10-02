@@ -98,4 +98,28 @@ test.describe('S7.1 redirects', () => {
       expect(latest).toContain(`<guid isPermaLink="true">${BASE_URL}${game}/patch-notes/${note.slug}</guid>`)
     })
   })
+
+  test('S7.2 /roadmap is a temporary alias for the board that keeps the query', async () => {
+    const game = `/g/${project.slug}`
+
+    await test.step('it answers 307 to the board view, with ref kept', async () => {
+      const hop = await player.get(`${game}/roadmap?ref=itch`, { maxRedirects: 0 })
+      expect(hop.status()).toBe(307)
+      const location = new URL(locationOf(hop.headers()))
+      expect(location.pathname).toBe(`${game}/feedback`)
+      expect(location.searchParams.get('view')).toBe('board')
+      expect(location.searchParams.get('ref')).toBe('itch')
+    })
+
+    await test.step('followed, it serves the board', async () => {
+      const followed = await player.get(`${game}/roadmap?ref=itch`)
+      expect(followed.status()).toBe(200)
+      expect(new URL(followed.url()).searchParams.get('view')).toBe('board')
+    })
+
+    await test.step("an unknown game's alias ends in the board's 404", async () => {
+      const followed = await player.get('/g/no-such-game-rd/roadmap')
+      expect(followed.status()).toBe(404)
+    })
+  })
 })

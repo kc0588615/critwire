@@ -32,5 +32,14 @@ export const redirects: NextConfig['redirects'] = async () => {
     },
   ]
 
-  return [internetExplorerRedirect, ...portalRenames]
+  // The board's friendly alias, the URL studios paste. 307, not 301:
+  // browsers cache a 301 for good, and the alias may become a page of its
+  // own. Next merges the request's query, so `?ref=` reaches the board.
+  const roadmapAlias = {
+    destination: '/g/:game/feedback?view=board',
+    permanent: false,
+    source: '/g/:game/roadmap',
+  }
+
+  return [internetExplorerRedirect, ...portalRenames, roadmapAlias]
 }

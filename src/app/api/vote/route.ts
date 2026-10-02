@@ -6,7 +6,7 @@ import { z } from 'zod'
 
 import { ARCHIVED_STATUSES } from '@/lib/game-portal/stages'
 import { getLogger } from '@/lib/logger'
-import { getClientIP } from '@/lib/public-forms/request'
+import { getClientIP, isJSONRequest } from '@/lib/public-forms/request'
 import { checkRateLimit } from '@/lib/upstash/rate-limit'
 import {
   VOTE_TOKEN_COOKIE,
@@ -29,6 +29,12 @@ const voteSchema = z.object({
  * removes the caller's row.
  */
 export async function POST(req: Request): Promise<Response> {
+  // Before the body is read: a cross-site form must not vote (F7 in
+  // plans/2026-10-02-reach.md).
+  if (!isJSONRequest(req)) {
+    return Response.json({ error: 'Expected application/json.' }, { status: 400 })
+  }
+
   try {
     const { success } = await checkRateLimit({
       identifier: await getClientIP(),

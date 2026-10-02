@@ -9,6 +9,18 @@ export const getClientIP = async (): Promise<string> => {
   )
 }
 
+/**
+ * Whether the request's media type is exactly `application/json`
+ * (parameters such as `charset` allowed). JSON-only endpoints check this
+ * before reading the body: cross-site forms and `no-cors` fetches can
+ * only send CORS-safelisted types, so they're refused, and a cross-site
+ * JSON fetch needs a preflight that these routes never answer. Not
+ * `includes()`, as `readRequestBody` uses: `text/plain;
+ * x=application/json` is still a safelisted type.
+ */
+export const isJSONRequest = (req: Request): boolean =>
+  (req.headers.get('content-type') ?? '').split(';')[0]?.trim().toLowerCase() === 'application/json'
+
 export const readRequestBody = async (req: Request): Promise<Record<string, unknown>> => {
   const contentType = req.headers.get('content-type') ?? ''
 
