@@ -1,4 +1,4 @@
-import { portalPaths } from '@/lib/game-portal/paths'
+import { gameEditHref, gameShareHref } from '@/lib/admin/paths'
 
 export interface NextStep {
   key: 'ideas' | 'share' | 'update'
@@ -9,15 +9,15 @@ export interface NextStep {
 
 /**
  * What a new studio does after onboarding, in order. The hub's welcome
- * panel and the admin dashboard both show these. `share`'s href is the
- * hub's path; callers that show it prefix the site's URL.
+ * panel and the admin dashboard both show these. Each `href` is an admin
+ * URL; the welcome panel shows the share kit inline instead of its link.
  */
-export const nextSteps = (project: { id: number; slug: string }): NextStep[] => [
+export const nextSteps = (project: { id: number }): NextStep[] => [
   {
     key: 'share',
-    label: 'Share this link',
-    description: 'Put it on your site, your store page and your Discord, so players know where to send feedback.',
-    href: portalPaths(project.slug).hub,
+    label: 'Put critwire on your site',
+    description: 'Links, buttons and a live badge for Steam, itch.io, your site or README.',
+    href: gameShareHref(project.id),
   },
   {
     key: 'update',
@@ -29,6 +29,6 @@ export const nextSteps = (project: { id: number; slug: string }): NextStep[] => 
     key: 'ideas',
     label: 'Turn on ideas',
     description: 'Bug reports are open. Let players suggest ideas too, under Player feedback.',
-    href: `/admin/collections/game-projects/${project.id}`,
+    href: gameEditHref(project.id),
   },
 ]

@@ -1,5 +1,6 @@
 import type { Browser, Page } from '@playwright/test'
 
+import { gameEditHref, gameShareHref } from '../../src/lib/admin/paths'
 import { BASE_URL, SECOND_BASE_URL, SECOND_LIMITS, storageStatePath } from './support/env'
 import { asStudioAdmin, createPatchNote, createProject, expect, test } from './support/fixtures'
 
@@ -94,21 +95,25 @@ test('S18.2 a studio owner’s dashboard lists each portal’s status, the next 
     ] as const) {
       const row = portals.getByRole('listitem').filter({ hasText: game.name })
       await expect(row, game.name).toContainText(status)
+      await expect(row.getByRole('link', { name: game.name, exact: true })).toHaveAttribute('href', gameEditHref(game.id))
+      // Each row's Share link opens its own game's Share tab.
+      await expect(row.getByRole('link', { name: `Share ${game.name}` })).toHaveAttribute('href', gameShareHref(game.id))
       // Absolute, on the site's configured URL.
       const portal = new RegExp(`^https?://[^/]+/g/${game.slug}$`)
       await expect(row.getByRole('link', { name: portal })).toHaveAttribute('href', portal)
     }
-    // The next steps are for the game the studio started with.
+    // The next steps are for the game the studio started with, and each is a plain link.
     const steps = page.getByRole('heading', { name: 'Next steps' }).locator('..')
-    await expect(steps).toContainText('Share this link')
+    await expect(steps.getByRole('link')).toHaveCount(3)
+    await expect(steps.getByRole('link', { name: 'Put critwire on your site' })).toHaveAttribute(
+      'href',
+      gameShareHref(live.id),
+    )
     await expect(steps.getByRole('link', { name: 'Add your first update' })).toHaveAttribute(
       'href',
       '/admin/collections/patch-notes/create',
     )
-    await expect(steps.getByRole('link', { name: 'Turn on ideas' })).toHaveAttribute(
-      'href',
-      `/admin/collections/game-projects/${live.id}`,
-    )
+    await expect(steps.getByRole('link', { name: 'Turn on ideas' })).toHaveAttribute('href', gameEditHref(live.id))
   }
 
   await test.step('with no limits set, none are listed', () =>

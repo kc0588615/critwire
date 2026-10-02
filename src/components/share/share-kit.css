@@ -8,6 +8,7 @@
  *   --kit-border               dividers
  *   --kit-control              control outlines
  *   --kit-radius               corners
+ *   --kit-title-size           the title, 1.5rem unless the host sets it
  */
 
 .share-kit {
@@ -16,7 +17,7 @@
 
 .share-kit-title {
   margin: 0;
-  font-size: 1.5rem;
+  font-size: var(--kit-title-size, 1.5rem);
   font-weight: 700;
   line-height: 1.25;
 }

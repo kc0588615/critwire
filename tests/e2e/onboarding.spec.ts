@@ -227,14 +227,17 @@ test('S14.7 in the browser: sign in, onboard, and land on the portal with the ne
     const [project] = body.docs
     const tenantID = typeof project.tenant === 'object' ? project.tenant?.id : project.tenant
 
-    await test.step('the next steps: the link to share, the first update, ideas', async () => {
+    await test.step('the next steps: the share kit, the first update, ideas', async () => {
       const panel = page.getByRole('region', { name: 'Your portal is live' })
-      const hubURL = `${BASE_URL}/g/${slug}`
-      await expect(panel.getByText(hubURL, { exact: true })).toBeVisible()
+      // The kit inline, under its own heading only.
+      const kit = panel.getByRole('region', { name: 'Put critwire on your site' })
+      await expect(kit).toBeVisible()
+      await expect(panel.getByText('Put critwire on your site', { exact: true })).toHaveCount(1)
+      await expect(kit.getByRole('radio', { name: 'Steam', exact: true })).toBeChecked()
       await context.grantPermissions(['clipboard-read', 'clipboard-write'])
-      await panel.getByRole('button', { name: 'Copy' }).click()
-      await expect(panel.getByText('Copied')).toBeVisible()
-      expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(hubURL)
+      await kit.getByRole('button', { name: 'Copy Hub URL' }).click()
+      await expect(kit.getByText('Copied')).toBeVisible()
+      expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(`${BASE_URL}/g/${slug}?ref=steam`)
 
       await expect(panel.getByRole('link', { name: 'Add your first update' })).toHaveAttribute(
         'href',
@@ -244,6 +247,11 @@ test('S14.7 in the browser: sign in, onboard, and land on the portal with the ne
         'href',
         `/admin/collections/game-projects/${project.id}`,
       )
+      // Its own context, so Playwright's automatic screenshot doesn't cover it.
+      await test.info().attach('welcome-panel', {
+        body: await panel.screenshot(),
+        contentType: 'image/png',
+      })
     })
 
     await test.step('the new studio is selected, so a create form opened first has one', async () => {

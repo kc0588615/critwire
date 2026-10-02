@@ -278,9 +278,11 @@ selector. Public player `?view=board` remains read-only.
 3. **`/onboarding`**: game name, website and an optional store link.
    That creates a studio they own and one game, in one transaction.
 4. **`/g/<slug>?welcome=1`**: the live portal with a "next steps"
-   panel (share this link, add your first update, turn on ideas). If
-   the filter held the name, `/onboarding?held=1` says the portal is
-   waiting for a quick review.
+   panel: "Put critwire on your site" (the share kit inline: links,
+   buttons and the live badge), add your first update, turn on ideas.
+   The admin dashboard lists the same steps as links, the first one to
+   the game's **Share** tab. If the filter held the name,
+   `/onboarding?held=1` says the portal is waiting for a quick review.
 
 Unverified accounts own nothing, so nothing of theirs is ever public.
 There are no invites; a super admin adds teammates in the admin.

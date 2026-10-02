@@ -5,11 +5,12 @@ import type { Payload } from 'payload'
 import React from 'react'
 
 import { findStudioOverviews, type PortalStatus, type StudioGame } from '@/lib/admin/dashboard'
+import { gameEditHref, gameShareHref } from '@/lib/admin/paths'
 import { portalPaths } from '@/lib/game-portal/paths'
 import { describeLimits } from '@/lib/limits'
 import { nextSteps } from '@/lib/onboarding/nextSteps'
 import type { User } from '@/payload-types'
-import { getServerSideURL } from '@/utilities/getURL'
+import { absoluteURL } from '@/utilities/getURL'
 
 import { baseClass } from './baseClass'
 
@@ -19,7 +20,7 @@ const STATUS: Record<PortalStatus, { label: string; pillStyle: PillStyle }> = {
   suspended: { label: 'Unavailable: suspended', pillStyle: 'error' },
 }
 
-const portalURL = (game: Pick<StudioGame, 'slug'>): string => `${getServerSideURL()}${portalPaths(game.slug).hub}`
+const portalURL = (game: Pick<StudioGame, 'slug'>): string => absoluteURL(portalPaths(game.slug).hub)
 
 /** A studio member's portals, what to do next, and the hosted plan's limits. */
 export async function StudioDashboard({ payload, user }: { payload: Payload; user: User }) {
@@ -43,13 +44,16 @@ export async function StudioDashboard({ payload, user }: { payload: Payload; use
             <ul className={`${baseClass}__games`}>
               {studio.games.map((game) => (
                 <li key={game.id}>
-                  <Link href={`/admin/collections/game-projects/${game.id}`}>{game.name}</Link>
+                  <Link href={gameEditHref(game.id)}>{game.name}</Link>
                   <Pill pillStyle={STATUS[game.status].pillStyle} size="small">
                     {STATUS[game.status].label}
                   </Pill>
                   <a className={`${baseClass}__url`} href={portalURL(game)}>
                     {portalURL(game)}
                   </a>
+                  <Link aria-label={`Share ${game.name}`} href={gameShareHref(game.id)}>
+                    Share
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -66,15 +70,9 @@ export async function StudioDashboard({ payload, user }: { payload: Payload; use
           <ol>
             {nextSteps(firstGame).map((step) => (
               <li key={step.key}>
-                {step.key === 'share' ? (
-                  <>
-                    <strong>{step.label}</strong>: <a href={portalURL(firstGame)}>{portalURL(firstGame)}</a>
-                  </>
-                ) : (
-                  <Link href={step.href}>
-                    <strong>{step.label}</strong>
-                  </Link>
-                )}
+                <Link href={step.href}>
+                  <strong>{step.label}</strong>
+                </Link>
                 <p>{step.description}</p>
               </li>
             ))}

@@ -31,7 +31,10 @@ export default async function GameHubPage({ params }: { params: Promise<{ gameSl
     <>
       {/* Reads `?welcome=1` in the browser, so the cached hub never varies by it. */}
       <Suspense fallback={null}>
-        <WelcomePanel project={{ id: project.id, slug: project.slug }} />
+        <WelcomePanel
+          project={{ id: project.id, slug: project.slug }}
+          siteURL={getServerSideURL()}
+        />
       </Suspense>
       <HubHeader project={project} />
       <LatestUpdates project={project} />
