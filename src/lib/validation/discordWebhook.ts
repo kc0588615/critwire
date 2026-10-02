@@ -31,6 +31,17 @@ export const isAllowedDiscordWebhookUrl = (value: string): boolean => {
   return url.protocol === 'https:' && url.port === '' && DISCORD_WEBHOOK_HOSTS.has(url.hostname)
 }
 
+/** Payload validator for a Discord webhook URL field. Empty is allowed. */
+export const validateDiscordWebhookUrl = (
+  value: null | string | string[] | undefined,
+): string | true => {
+  if (value == null || value === '') return true
+  if (typeof value !== 'string' || !isAllowedDiscordWebhookUrl(value)) {
+    return 'Must be a Discord webhook URL, e.g. https://discord.com/api/webhooks/…'
+  }
+  return true
+}
+
 /**
  * Payload validator for `contact.discordWebhookUrl`. Applies only while the
  * project routes contact to Discord, so a stale value in the hidden field
@@ -41,9 +52,5 @@ export const validateContactDiscordWebhookUrl = (
   { siblingData }: { siblingData: Partial<{ target: null | string }> },
 ): string | true => {
   if (siblingData?.target !== 'DISCORD_WEBHOOK') return true
-  if (value == null || value === '') return true
-  if (typeof value !== 'string' || !isAllowedDiscordWebhookUrl(value)) {
-    return 'Must be a Discord webhook URL, e.g. https://discord.com/api/webhooks/…'
-  }
-  return true
+  return validateDiscordWebhookUrl(value)
 }

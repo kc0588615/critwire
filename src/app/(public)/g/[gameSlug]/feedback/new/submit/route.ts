@@ -1,39 +1,31 @@
-import config from '@payload-config'
 import * as Sentry from '@sentry/nextjs'
-import { getPayload } from 'payload'
-import { extractID } from 'payload/shared'
 import { z } from 'zod'
 
-import { FEEDBACK_TYPE_OPTIONS, ISSUE_CATEGORY_OPTIONS } from '@/collections/options'
-import { acceptsIdeas, getReportRoute } from '@/lib/game-portal/formRoutes'
+import { ISSUE_CATEGORY_OPTIONS } from '@/collections/options'
 import { getGameProject } from '@/lib/game-portal/getGameProject'
 import { portalPaths } from '@/lib/game-portal/paths'
+import { createPlayerReport, reportFieldsSchema, reportRefusal } from '@/lib/game-portal/reports'
 import { formResponse, guardPublicForm } from '@/lib/public-forms/guard'
 import { getLogger } from '@/lib/logger'
 
 const log = getLogger('public.issue-report')
 
 type IssueCategory = (typeof ISSUE_CATEGORY_OPTIONS)[number]['value']
-type FeedbackType = (typeof FEEDBACK_TYPE_OPTIONS)[number]['value']
 
 const issueCategoryValues = ISSUE_CATEGORY_OPTIONS.map((option) => option.value) as [
   IssueCategory,
   ...IssueCategory[],
 ]
-const feedbackTypeValues = FEEDBACK_TYPE_OPTIONS.map((option) => option.value) as [
-  FeedbackType,
-  ...FeedbackType[],
-]
 
-const reportSchema = z.object({
+const reportSchema = reportFieldsSchema.extend({
   category: z.enum(issueCategoryValues),
-  description: z.string().trim().min(10).max(5000),
-  gameVersion: z.string().trim().max(120).optional().or(z.literal('')),
-  platform: z.string().trim().max(120).optional().or(z.literal('')),
   submitterEmail: z.email().optional().or(z.literal('')),
-  title: z.string().trim().min(3).max(160),
-  type: z.enum(feedbackTypeValues).default('BUG'),
 })
+
+const REFUSAL_ERRORS = {
+  'no-ideas': 'This game does not accept ideas.',
+  'not-native': 'This game does not accept reports here.',
+} as const
 
 export async function POST(
   req: Request,
@@ -61,43 +53,12 @@ export async function POST(
       return formResponse({ json: { error: 'Game not found.' }, path, req, status: 404 })
     }
 
-    // A studio that collects reports in Tally or elsewhere gets no native ones.
-    if (getReportRoute(project.reportForm).kind !== 'native') {
-      return formResponse({
-        json: { error: 'This game does not accept reports here.' },
-        path,
-        req,
-        status: 400,
-      })
+    const refusal = reportRefusal(project, type)
+    if (refusal) {
+      return formResponse({ json: { error: REFUSAL_ERRORS[refusal] }, path, req, status: 400 })
     }
 
-    if (!isBug && !acceptsIdeas(project)) {
-      return formResponse({
-        json: { error: 'This game does not accept ideas.' },
-        path,
-        req,
-        status: 400,
-      })
-    }
-
-    const payload = await getPayload({ config })
-    const report = await payload.create({
-      collection: 'issue-reports',
-      data: {
-        category: guard.data.category,
-        description: guard.data.description,
-        gameProject: project.id,
-        // Platform and version only describe bugs.
-        gameVersion: (isBug && guard.data.gameVersion) || null,
-        platform: (isBug && guard.data.platform) || null,
-        status: 'NEW',
-        submitterEmail: guard.data.submitterEmail || null,
-        tenant: extractID(project.tenant),
-        title: guard.data.title,
-        type,
-      },
-      overrideAccess: true,
-    })
+    const report = await createPlayerReport({ fields: guard.data, project })
 
     // The report's hooks screened it and published it when review is off.
     const published = report.status === 'PUBLISHED'

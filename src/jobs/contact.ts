@@ -4,10 +4,10 @@ import * as Sentry from '@sentry/nextjs'
 
 import type { GameProject } from '@/payload-types'
 
+import { executeDiscordWebhook } from '@/lib/discord/webhook'
 import { renderContactFormEmail } from '@/lib/email/renderContactFormEmail'
 import { portalPaths } from '@/lib/game-portal/paths'
 import { getLogger } from '@/lib/logger'
-import { isAllowedDiscordWebhookUrl } from '@/lib/validation/discordWebhook'
 import { getServerSideURL } from '@/utilities/getURL'
 
 const log = getLogger('jobs.contact')
@@ -32,8 +32,6 @@ const multilineField = (name: keyof ContactTaskInput) => ({
   type: 'textarea' as const,
   required: true,
 })
-
-const DELIVERY_TIMEOUT_MS = 10_000
 
 const contactInputSchema = [
   textField('projectID'),
@@ -129,36 +127,23 @@ export const discordWebhookContactTask: TaskConfig<'discord-webhook'> = {
           `Contact job: project ${project.id} no longer routes contact to a Discord webhook.`,
         )
       }
-      // Checked again here: values saved before the allowlist existed skipped it.
-      if (!isAllowedDiscordWebhookUrl(webhookUrl)) {
-        throw new Error(`Contact job: project ${project.id} has a webhook URL that is not Discord's.`)
-      }
-
-      const response = await fetch(webhookUrl, {
-        body: JSON.stringify({
-          embeds: [
-            {
-              color: 0x5865f2,
-              description: input.message,
-              fields: [
-                { inline: true, name: 'Name', value: input.name || 'Anonymous player' },
-                { inline: true, name: 'Email', value: input.email || 'Not provided' },
-                { inline: true, name: 'Game', value: project.name },
-              ],
-              title: input.subject?.trim() || 'Contact form submission',
-              url: `${getServerSideURL()}${portalPaths(input.gameSlug).contact}`,
-            },
-          ],
-        }),
-        headers: { 'Content-Type': 'application/json' },
-        method: 'POST',
-        redirect: 'error',
-        signal: AbortSignal.timeout(DELIVERY_TIMEOUT_MS),
+      // A deleted webhook throws DiscordWebhookGoneError: the job fails and is
+      // retried like any other failure, and the studio's URL is left as is.
+      await executeDiscordWebhook(webhookUrl, {
+        embeds: [
+          {
+            color: 0x5865f2,
+            description: input.message,
+            fields: [
+              { inline: true, name: 'Name', value: input.name || 'Anonymous player' },
+              { inline: true, name: 'Email', value: input.email || 'Not provided' },
+              { inline: true, name: 'Game', value: project.name },
+            ],
+            title: input.subject?.trim() || 'Contact form submission',
+            url: `${getServerSideURL()}${portalPaths(input.gameSlug).contact}`,
+          },
+        ],
       })
-
-      if (!response.ok) {
-        throw new Error(`Discord webhook failed with ${response.status}: ${await response.text()}`)
-      }
 
       log.info({ msg: 'Discord contact webhook sent.', projectID: project.id })
       return { output: { sent: true } }

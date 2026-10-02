@@ -243,12 +243,14 @@ test.describe('S5.4–S5.6 contact form', () => {
       await expect(page.getByText('Message sent.')).toBeVisible()
     })
 
-    await test.step('the webhook got exactly one embed with the subject, message and game', async () => {
+    await test.step('the webhook got exactly one embed with the subject, message and game, and no mentions', async () => {
       const received = webhookSink.received(hookPath)
       expect(received).toHaveLength(1)
-      const { embeds } = received[0].body as {
+      const { allowed_mentions, embeds } = received[0].body as {
+        allowed_mentions: { parse: string[] }
         embeds: { title: string; description: string; fields: { name: string; value: string }[] }[]
       }
+      expect(allowed_mentions, 'player text must never ping anyone').toEqual({ parse: [] })
       expect(embeds).toHaveLength(1)
       expect(embeds[0]).toMatchObject({ title: 'Loved the harbor level', description: message('Discord') })
       expect(embeds[0].fields).toContainEqual(expect.objectContaining({ name: 'Game', value: 'Harbor Lights' }))
