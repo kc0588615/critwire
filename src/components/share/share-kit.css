@@ -1,0 +1,169 @@
+/*
+ * The share kit, styled only through --kit-* variables, so it follows
+ * whatever surrounds it: portal.css maps them from the game's --fs-*
+ * theme, and the admin's Share view from Payload's --theme-*.
+ *   --kit-fg, --kit-muted-fg   text, and muted text
+ *   --kit-bg                   code values and image previews
+ *   --kit-surface              each button's card
+ *   --kit-border               dividers
+ *   --kit-control              control outlines
+ *   --kit-radius               corners
+ */
+
+.share-kit {
+  color: var(--kit-fg);
+}
+
+.share-kit-title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.share-kit-body {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.share-kit-heading {
+  margin: 1rem 0 0;
+  border-top: 1px solid var(--kit-border);
+  padding-top: 1.25rem;
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+.share-kit-note {
+  margin: 0;
+  max-width: 60ch;
+  color: var(--kit-muted-fg);
+}
+
+.share-kit-choice {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+  margin: 0;
+  border: 0;
+  padding: 0;
+}
+
+.share-kit-legend {
+  margin-bottom: 0.5rem;
+  padding: 0;
+  font-weight: 700;
+}
+
+.share-kit-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  cursor: pointer;
+}
+
+.share-kit-option input {
+  margin: 0;
+  accent-color: var(--kit-fg);
+}
+
+.share-kit-rows,
+.share-kit-item {
+  display: grid;
+  gap: 0.5rem;
+}
+
+/* Label, value, button and its result on one line; the value wraps. */
+.share-kit-row {
+  display: grid;
+  grid-template-columns: 7rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.25rem 0.75rem;
+}
+
+.share-kit-row-label,
+.share-kit-item-label {
+  font-weight: 600;
+}
+
+.share-kit-item-label {
+  margin: 0;
+}
+
+.share-kit-value {
+  overflow-wrap: anywhere;
+  border-radius: var(--kit-radius);
+  padding: 0.375rem 0.625rem;
+  background: var(--kit-bg);
+  font-size: 0.875rem;
+}
+
+.share-kit-copy {
+  border: 1px solid var(--kit-control);
+  border-radius: var(--kit-radius);
+  padding: 0.375rem 0.875rem;
+  background: transparent;
+  color: var(--kit-fg);
+  font: inherit;
+  cursor: pointer;
+}
+
+.share-kit-copy:hover {
+  border-color: var(--kit-fg);
+}
+
+.share-kit-copy:focus-visible,
+.share-kit-option input:focus-visible {
+  outline: 2px solid var(--kit-fg);
+  outline-offset: 2px;
+}
+
+/* The result sits under the value, so the button never moves. */
+.share-kit-row .copy-result {
+  grid-column: 2 / -1;
+  color: var(--kit-muted-fg);
+  font-size: 0.875rem;
+}
+
+.share-kit-row .copy-result:empty {
+  display: none;
+}
+
+.share-kit-items {
+  display: grid;
+  gap: 1rem;
+}
+
+.share-kit-item {
+  border-radius: var(--kit-radius);
+  padding: 1rem;
+  background: var(--kit-surface);
+}
+
+.share-kit-preview {
+  display: flex;
+  border-radius: var(--kit-radius);
+  padding: 1rem;
+  background: var(--kit-bg);
+}
+
+.share-kit-preview img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+@media (max-width: 40rem) {
+  .share-kit-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .share-kit-row-label {
+    grid-column: 1 / -1;
+  }
+
+  .share-kit-row .copy-result {
+    grid-column: 1 / -1;
+  }
+}

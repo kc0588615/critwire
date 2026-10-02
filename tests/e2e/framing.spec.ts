@@ -4,6 +4,7 @@ import type { AddressInfo } from 'node:net'
 import type { ConsoleMessage } from '@playwright/test'
 
 import type { GameProject, PatchNote } from '../../src/payload-types'
+import { gameShareHref } from '../../src/lib/admin/paths'
 import { portalPaths } from '../../src/lib/game-portal/paths'
 import { BASE_URL, storageStatePath } from './support/env'
 import { createPatchNote, createProject, expect, newRequestContext, test } from './support/fixtures'
@@ -41,9 +42,11 @@ test('S19.1 portal and admin pages send frame-ancestors self', async ({ browser,
   const context = await browser.newContext({ storageState: storageStatePath('aOwner') })
   try {
     const page = await context.newPage()
-    const response = await page.goto('/admin')
-    expect(new URL(page.url()).pathname).toBe('/admin')
-    expect(response?.headers()['content-security-policy']).toBe(POLICY)
+    for (const path of ['/admin', gameShareHref(project.id)]) {
+      const response = await page.goto(path)
+      expect(new URL(page.url()).pathname, path).toBe(path)
+      expect(response?.headers()['content-security-policy'], path).toBe(POLICY)
+    }
   } finally {
     await context.close()
   }

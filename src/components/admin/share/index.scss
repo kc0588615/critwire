@@ -1,0 +1,13 @@
+// The share kit in the admin follows Payload's light or dark theme.
+.share-view {
+  --kit-fg: var(--theme-text);
+  --kit-muted-fg: var(--theme-elevation-650);
+  --kit-bg: var(--theme-elevation-100);
+  --kit-surface: var(--theme-elevation-50);
+  --kit-border: var(--theme-elevation-150);
+  --kit-control: var(--theme-elevation-400);
+  --kit-radius: var(--style-radius-s);
+
+  padding-block: calc(var(--base) * 1.5) calc(var(--base) * 3);
+  max-width: 64rem;
+}

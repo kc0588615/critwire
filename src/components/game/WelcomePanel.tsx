@@ -1,42 +1,20 @@
 'use client'
 
 import { useSearchParams } from 'next/navigation'
-import React, { useState } from 'react'
+import React from 'react'
 
+import { CopyButton } from '@/components/share/CopyButton'
 import { nextSteps } from '@/lib/onboarding/nextSteps'
 import { getClientSideURL } from '@/utilities/getURL'
-
-const COPY_RESULTS = {
-  copied: 'Copied',
-  failed: 'Couldn’t copy: select the link instead',
-} as const
 
 /** The hub's absolute address, with a button that copies it. */
 const ShareLink: React.FC<{ path: string }> = ({ path }) => {
   const url = `${getClientSideURL()}${path}`
-  const [result, setResult] = useState<keyof typeof COPY_RESULTS | null>(null)
-
-  const copy = () => {
-    // No clipboard API outside a secure context (plain http on a LAN).
-    if (!navigator.clipboard) {
-      setResult('failed')
-      return
-    }
-    navigator.clipboard.writeText(url).then(
-      () => setResult('copied'),
-      () => setResult('failed'),
-    )
-  }
 
   return (
     <div className="fs-welcome-share">
       <code className="fs-welcome-url">{url}</code>
-      <button className="fs-btn fs-btn-secondary" onClick={copy} type="button">
-        Copy
-      </button>
-      <span aria-live="polite" className="fs-meta">
-        {result ? COPY_RESULTS[result] : null}
-      </span>
+      <CopyButton className="fs-btn fs-btn-secondary" label="Copy the link" text={url} />
     </div>
   )
 }

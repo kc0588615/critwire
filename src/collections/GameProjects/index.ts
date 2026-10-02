@@ -9,6 +9,7 @@ import {
   tenantMemberFieldRead,
   tenantOwnerAccess,
 } from '../../access/tenantAccess'
+import { GAME_SHARE_VIEW_PATH } from '../../lib/admin/paths'
 import { moderationFields } from '../../fields/moderation'
 import { screenTextHook } from '../../hooks/screenText'
 import { checkGamesLimit } from '../../lib/limits/hooks'
@@ -56,6 +57,18 @@ export const GameProjects: CollectionConfig = {
     delete: tenantOwnerAccess,
   },
   admin: {
+    components: {
+      views: {
+        edit: {
+          // "Put critwire on your site": the game's links, buttons and badge.
+          share: {
+            Component: '@/components/admin/share/ShareView',
+            path: GAME_SHARE_VIEW_PATH,
+            tab: { href: GAME_SHARE_VIEW_PATH, label: 'Share', order: 100 },
+          },
+        },
+      },
+    },
     defaultColumns: ['name', 'slug', 'updatedAt'],
     group: 'Game Portal',
     useAsTitle: 'name',
