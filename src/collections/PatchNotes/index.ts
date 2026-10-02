@@ -11,6 +11,7 @@ import { populatePublishedAt } from '../../hooks/populatePublishedAt'
 import { screenTextHook } from '../../hooks/screenText'
 import { validateUniqueSlugPerProject } from '../../hooks/validateUniqueSlugPerProject'
 import type { PatchNote } from '../../payload-types'
+import { queueDiscordUpdatePost } from './hooks/queueDiscordUpdatePost'
 import { revalidatePatchNotes, revalidatePatchNotesDelete } from './hooks/revalidatePatchNotes'
 
 // The content filter holds an update whose text it flags. Link targets
@@ -87,7 +88,7 @@ export const PatchNotes: CollectionConfig = {
     ...moderationFields(),
   ],
   hooks: {
-    afterChange: [revalidatePatchNotes],
+    afterChange: [revalidatePatchNotes, queueDiscordUpdatePost],
     afterDelete: [revalidatePatchNotesDelete],
     beforeChange: [populatePublishedAt, screenUpdateText],
     beforeValidate: [validateUniqueSlugPerProject('patch-notes')],

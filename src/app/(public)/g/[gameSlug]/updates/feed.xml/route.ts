@@ -1,6 +1,7 @@
 import { getGameProject } from '@/lib/game-portal/getGameProject'
 import { portalPaths } from '@/lib/game-portal/paths'
-import { FEED_UPDATES_LIMIT, queryPublishedPatchNotes, updateFeedTitle } from '@/lib/game-portal/patchNotes'
+import { FEED_UPDATES_LIMIT, queryPublishedPatchNotes } from '@/lib/game-portal/patchNotes'
+import { updateFeedTitle } from '@/lib/game-portal/updateTitle'
 import { escapeXml } from '@/utilities/escapeXml'
 import { getServerSideURL } from '@/utilities/getURL'
 

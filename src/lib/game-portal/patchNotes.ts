@@ -14,10 +14,6 @@ export const LATEST_UPDATES_LIMIT = 3
 /** How many updates the feeds list (RSS and JSON Feed). */
 export const FEED_UPDATES_LIMIT = 20
 
-/** An update's title in a feed (RSS and JSON Feed): "<version> — <title>", or the title alone. */
-export const updateFeedTitle = (note: Pick<PatchNote, 'title' | 'versionLabel'>): string =>
-  note.versionLabel ? `${note.versionLabel} — ${note.title}` : note.title
-
 export const queryPublishedPatchNotes = cache(
   async ({
     limit = PATCH_NOTES_PER_PAGE,

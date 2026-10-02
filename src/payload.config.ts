@@ -19,6 +19,9 @@ import { Tenants } from './collections/Tenants'
 import { Users } from './collections/Users'
 import { emailAdapter } from './lib/email/adapter'
 import { discordWebhookContactTask, emailContactFormTask } from './jobs/contact'
+import { discordUpdatePostTask } from './jobs/discord'
+import { isDiscordOn } from './lib/discord/config'
+import { DISCORD_QUEUE } from './lib/discord/posts'
 import { migrations } from './migrations'
 import { plugins } from './plugins'
 import { defaultLexical } from '@/fields/defaultLexical'
@@ -148,7 +151,13 @@ export default buildConfig({
     // Adds `concurrency_key`: Discord post jobs supersede the pending
     // post for the same update or item, so quick changes become one post.
     enableConcurrencyControl: true,
-    autoRun: [{ cron: '* * * * *', limit: 10, queue: 'default' }],
-    tasks: [emailContactFormTask, discordWebhookContactTask],
+    // Discord posts have their own queue, run only where Discord is on:
+    // servers sharing a database (E2E's two) never complete a post unsent.
+    // At most 10 a minute keeps a webhook under Discord's 30.
+    autoRun: () => [
+      { cron: '* * * * *', limit: 10, queue: 'default' },
+      ...(isDiscordOn() ? [{ cron: '* * * * *', limit: 10, queue: DISCORD_QUEUE }] : []),
+    ],
+    tasks: [emailContactFormTask, discordWebhookContactTask, discordUpdatePostTask],
   },
 })

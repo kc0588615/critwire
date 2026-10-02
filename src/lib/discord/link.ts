@@ -1,15 +1,16 @@
-import config from '@payload-config'
-import { getPayload, type Payload } from 'payload'
+import type { Payload, PayloadRequest } from 'payload'
 
 import type { DiscordLink } from '@/lib/discord/oauth'
-import { type FeedbackType, reportRefusal } from '@/lib/game-portal/reports'
-import type { GameProject, User } from '@/payload-types'
+import type { User } from '@/payload-types'
 
 /**
- * The only writers of `GameProject.discord`. Each writes through the
- * Local API with `context.discordLink`, the one thing
- * `discordLinkFieldAccess` admits besides a super admin. The fields render
- * nowhere public, so the writes skip revalidation.
+ * The only writers of `GameProject.discord`, and the privileged read of its
+ * webhook. Each writes through the Local API with `context.discordLink`,
+ * the one thing `discordLinkFieldAccess` admits besides a super admin. The
+ * fields render nowhere public, so the writes skip revalidation.
+ *
+ * Collection hooks and jobs import this module, so it never imports
+ * `@payload-config`: callers pass `payload` or `req`.
  */
 
 /**
@@ -64,37 +65,29 @@ export const unlinkGame = async ({
   })
 }
 
-/** A select in a Discord form lists at most 25 options. */
-const MAX_GUILD_GAMES = 25
-
-export type GuildGame = Pick<GameProject, 'id' | 'name' | 'reportForm' | 'slug' | 'tenant'>
-
 /**
- * The games linked to a Discord server that take reports of `type` now,
- * by name, at most 25. Only the link lookup is privileged, and it returns
- * IDs: the games themselves are read as an anonymous visitor, so a held
- * game or a suspended studio's game drops out through the public read rule.
+ * The webhook a game posts to, or `null`. Privileged: the writer behind a
+ * hook may have no user, and a job's runner may be anyone, while the URL
+ * is readable only by the game's studio. A hook passes `req` only to stay
+ * in its write's transaction; a job passes none.
  */
-export const guildGames = async (guildId: string, type: FeedbackType): Promise<GuildGame[]> => {
-  const payload = await getPayload({ config })
-  const linked = await payload.find({
+export const gameWebhook = async ({
+  gameID,
+  payload,
+  req,
+}: {
+  gameID: number
+  payload: Payload
+  req?: PayloadRequest
+}): Promise<null | string> => {
+  const game = await payload.findByID({
     collection: 'game-projects',
     depth: 0,
+    disableErrors: true,
+    id: gameID,
     overrideAccess: true,
-    pagination: false,
-    select: { slug: true },
-    where: { 'discord.guildId': { equals: guildId } },
+    req,
+    select: { discord: true },
   })
-  if (linked.docs.length === 0) return []
-
-  const visible = await payload.find({
-    collection: 'game-projects',
-    depth: 0,
-    overrideAccess: false,
-    pagination: false,
-    select: { name: true, reportForm: true, slug: true, tenant: true },
-    sort: 'name',
-    where: { id: { in: linked.docs.map((game) => game.id) } },
-  })
-  return visible.docs.filter((game) => reportRefusal(game, type) === null).slice(0, MAX_GUILD_GAMES)
+  return game?.discord?.webhookUrl || null
 }

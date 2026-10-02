@@ -3,9 +3,9 @@ import type { GameProject, Issue, PatchNote } from '@/payload-types'
 import { EMBED_CACHE_CONTROL } from '@/lib/embed/cacheControl'
 import { type FeedbackTypeParam, feedbackTypeParam } from '@/lib/game-portal/feedbackSearchParams'
 import { portalPaths, type PortalPaths } from '@/lib/game-portal/paths'
-import { updateFeedTitle } from '@/lib/game-portal/patchNotes'
 import { shippedUpdate } from '@/lib/game-portal/shipped'
 import { publicStage, type PublicStageId } from '@/lib/game-portal/stages'
+import { updateFeedTitle } from '@/lib/game-portal/updateTitle'
 import { absoluteURL } from '@/utilities/getURL'
 
 /**

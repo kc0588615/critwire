@@ -2,6 +2,8 @@ import { randomInt, sign } from 'node:crypto'
 
 import type { APIRequestContext, APIResponse } from '@playwright/test'
 
+import type { PayloadJob } from '../../../src/payload-types'
+import type { RestClient } from './api'
 import type { RecordedRequest } from './fakeDiscord'
 import {
   DISCORD_TEST_APPLICATION_ID,
@@ -266,3 +268,43 @@ export const formSubmission = (
   },
   type: 5,
 })
+
+/** The concurrency key of the post an update or a feedback item queues. */
+export const postKey = (subject: { update: number } | { issue: number }): string =>
+  'update' in subject ? `discord-update:${subject.update}` : `discord-stage:${subject.issue}`
+
+/** Discord post jobs under `key` that haven't run yet, as a super admin sees them. */
+export const pendingDiscordPosts = async (superAdmin: RestClient, key: string): Promise<PayloadJob[]> => {
+  const { status, body } = await superAdmin.find('payload-jobs', {
+    depth: 0,
+    limit: 100,
+    where: {
+      and: [
+        { concurrencyKey: { equals: key } },
+        { completedAt: { exists: false } },
+        { processing: { equals: false } },
+      ],
+    },
+  })
+  if (status !== 200) throw new Error(`payload-jobs answered ${status}: ${JSON.stringify(body)}`)
+  return body.docs
+}
+
+/**
+ * "A minute passes" for the posts under `keys`: makes their pending jobs
+ * due, then runs the `discord` queue through the REST endpoint as the
+ * super admin. That's deliberate: the run endpoint hands its caller's
+ * request, and so its user, to every job, and a super admin reads
+ * everything (F5). The jobs must still post only what's public.
+ */
+export const runDiscordPosts = async (superAdmin: RestClient, keys: string[]): Promise<void> => {
+  const due = new Date(Date.now() - 1000).toISOString()
+  for (const key of keys) {
+    for (const job of await pendingDiscordPosts(superAdmin, key)) {
+      const { status, body } = await superAdmin.update('payload-jobs', job.id, { waitUntil: due })
+      if (status !== 200) throw new Error(`making job ${job.id} due answered ${status}: ${JSON.stringify(body)}`)
+    }
+  }
+  const { status, body } = await superAdmin.raw('GET', '/api/payload-jobs/run?queue=discord')
+  if (status !== 200) throw new Error(`the discord queue run answered ${status}: ${JSON.stringify(body)}`)
+}
