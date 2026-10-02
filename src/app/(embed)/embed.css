@@ -1,0 +1,109 @@
+/*
+ * The embed document (src/app/(embed)). Unlayered, so it wins over
+ * globals.css and portal.css. The portal's components read --fs-*; here
+ * those come from one of the two palettes `embedStyle()` sets, by the
+ * mode the boot script put on <html>. Fonts are the host page's.
+ */
+
+/* The frame sizes to its content, so nothing may hold it open. */
+body {
+  min-height: 0;
+  background: transparent;
+}
+
+/* Contains its children's margins, so the height EmbedFrame reports is the whole widget. */
+.cw-embed-frame {
+  display: flow-root;
+}
+
+.cw-embed {
+  --fs-bg: var(--cw-light-bg);
+  --fs-fg: var(--cw-light-fg);
+  --fs-muted-fg: var(--cw-light-muted-fg);
+  --fs-surface: var(--cw-light-surface);
+  --fs-accent: var(--cw-light-accent);
+  --fs-accent-fg: var(--cw-light-accent-fg);
+  --fs-border: var(--cw-light-border);
+  --fs-success: var(--cw-light-success);
+  --fs-warning: var(--cw-light-warning);
+  --fs-error: var(--cw-light-error);
+  --fs-font-display: var(--cw-font, system-ui, sans-serif);
+
+  color-scheme: light;
+  padding: 1rem clamp(0.75rem, 3vw, 1.25rem);
+  font-family: var(--cw-font, system-ui, sans-serif);
+  font-size: 1rem;
+}
+
+/* The dark palette: chosen, or `auto` on a dark system. Keep the two blocks equal. */
+:root[data-mode='dark'] .cw-embed {
+  --fs-bg: var(--cw-dark-bg);
+  --fs-fg: var(--cw-dark-fg);
+  --fs-muted-fg: var(--cw-dark-muted-fg);
+  --fs-surface: var(--cw-dark-surface);
+  --fs-accent: var(--cw-dark-accent);
+  --fs-accent-fg: var(--cw-dark-accent-fg);
+  --fs-border: var(--cw-dark-border);
+  --fs-success: var(--cw-dark-success);
+  --fs-warning: var(--cw-dark-warning);
+  --fs-error: var(--cw-dark-error);
+
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-mode='auto'] .cw-embed {
+    --fs-bg: var(--cw-dark-bg);
+    --fs-fg: var(--cw-dark-fg);
+    --fs-muted-fg: var(--cw-dark-muted-fg);
+    --fs-surface: var(--cw-dark-surface);
+    --fs-accent: var(--cw-dark-accent);
+    --fs-accent-fg: var(--cw-dark-accent-fg);
+    --fs-border: var(--cw-dark-border);
+    --fs-success: var(--cw-dark-success);
+    --fs-warning: var(--cw-dark-warning);
+    --fs-error: var(--cw-dark-error);
+
+    color-scheme: dark;
+  }
+}
+
+/* A held game or a suspended studio: nothing at all, so the frame collapses. */
+.cw-embed[data-empty] {
+  padding: 0;
+}
+
+.cw-embed-title {
+  margin-bottom: 0.75rem;
+  font-size: 1.125rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.cw-embed .fs-h3 {
+  font-size: 1.0625rem;
+}
+
+.cw-embed .fs-feed > li {
+  padding-block: 1.25rem;
+}
+
+.cw-embed .fs-feed > li:first-child {
+  padding-top: 0;
+}
+
+.cw-embed-shipped {
+  margin-top: 0.75rem;
+}
+
+.cw-embed-shipped .fs-issue-row {
+  padding-block: 0.625rem;
+}
+
+.cw-embed .fs-hub-links {
+  margin-top: 1rem;
+}
+
+.cw-embed-powered {
+  margin-top: 1rem;
+}

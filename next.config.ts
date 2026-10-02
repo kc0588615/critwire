@@ -7,6 +7,7 @@ import { fileURLToPath } from 'url'
 const __filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(__filename)
 import { redirects } from './redirects'
+import { EMBED_CACHE_CONTROL } from './src/lib/embed/cacheControl'
 
 const nextConfig: NextConfig = {
   // Required by the multi-stage Dockerfile (copies .next/standalone).
@@ -46,11 +47,21 @@ const nextConfig: NextConfig = {
   },
   // The app owns its framing policy, on every response (nginx must not set
   // one; tests/int/nginx-headers checks). 'self' keeps admin live preview
-  // working. To let a route be framed elsewhere, append a later entry for
-  // it with its own `frame-ancestors`: when entries match the same path
-  // and key, Next sends the last one.
+  // working. When entries match the same path and key, Next sends the last
+  // one, so the embeds are exempted by a later entry with their own
+  // `frame-ancestors`.
   headers: async () => [
     { source: '/:path*', headers: [{ key: 'Content-Security-Policy', value: "frame-ancestors 'self'" }] },
+    // The two widgets: any site may frame them, and every cache in front
+    // keeps them 5 minutes at most in total. Next keeps a Cache-Control set
+    // here, on dynamic pages too (E2E asserts the exact value).
+    {
+      source: '/g/:game/embed/:widget',
+      headers: [
+        { key: 'Content-Security-Policy', value: 'frame-ancestors *' },
+        { key: 'Cache-Control', value: EMBED_CACHE_CONTROL },
+      ],
+    },
   ],
   reactStrictMode: true,
   redirects,

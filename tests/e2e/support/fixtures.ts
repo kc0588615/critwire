@@ -16,6 +16,7 @@ import sharp from 'sharp'
 
 import type { Config, GameProject, Issue, IssueReport, Media, Page, PatchNote } from '../../../src/payload-types'
 import { type Query, RestClient } from './api'
+import { type EmbedHost, startEmbedHost } from './embedHost'
 import { verificationToken } from './email'
 import {
   BASE_URL,
@@ -105,6 +106,8 @@ interface WorkerFixtures {
    */
   uniqueSlug: (base: string) => string
   webhookSink: WebhookSink
+  /** A studio's page on another site (127.0.0.1), carrying an embed snippet for the 3100 server. */
+  embedHost: EmbedHost
   /** Signs in over REST and returns a client for that account. */
   signIn: (email: string, password: string) => Promise<Account>
   /**
@@ -199,6 +202,14 @@ export const test = base.extend<{}, WorkerFixtures>({
         },
       })
       await new Promise<void>((resolve) => server.close(() => resolve()))
+    },
+    { scope: 'worker' },
+  ],
+  embedHost: [
+    async ({}, use) => {
+      const host = await startEmbedHost(BASE_URL)
+      await use(host)
+      await host.close()
     },
     { scope: 'worker' },
   ],

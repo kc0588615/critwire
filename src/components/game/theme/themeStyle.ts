@@ -74,19 +74,23 @@ export const paletteVars = (colors: SiteThemeV1['colors'], prefix: string): CSSP
     [`${prefix}-error`]: colors.error,
   }) as CSSProperties
 
+/** The theme's two corner radii, for surfaces and for controls. */
+export const radiusVars = (shape: SiteThemeV1['shape']): CSSProperties => {
+  const [radius, radiusControl] = RADIUS[shape]
+  return { '--fs-radius': radius, '--fs-radius-control': radiusControl } as CSSProperties
+}
+
 /**
  * Maps validated theme tokens to the `--fs-*` custom properties the
  * flagship stylesheet and components consume. Only these variables —
  * never raw values — appear in component styling.
  */
 export const themeStyle = (theme: SiteThemeV1): CSSProperties => {
-  const [radius, radiusControl] = RADIUS[theme.shape]
   const voice = DISPLAY[theme.typography]
 
   return {
     ...paletteVars(theme.colors, '--fs'),
-    '--fs-radius': radius,
-    '--fs-radius-control': radiusControl,
+    ...radiusVars(theme.shape),
     '--fs-section-y': SECTION_Y[theme.density],
     '--fs-font-display': voice.family,
     '--fs-display-weight': voice.weight,
