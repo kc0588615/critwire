@@ -97,6 +97,41 @@ export const buttonSVG = (id: ShareButtonID, scheme: ButtonScheme): string => {
   })
 }
 
+const BADGE = { height: 24, fontSize: 12, padding: 8 } as const
+
+/** What a badge says and how it looks: a label segment, then a value segment. */
+export type BadgeModel = {
+  label: string
+  value: string
+  colors: { label: string; labelText: string; value: string; valueText: string; border: string }
+  radius: number
+}
+
+/** A two-segment badge, like `feedback | 3 planned · v1.4`, outlined. */
+export const badgeSVG = ({ label, value, colors, radius }: BadgeModel): string => {
+  const { height, fontSize, padding } = BADGE
+  const baseline = centredBaseline(height, fontSize)
+  const labelText = glyphPath(label, padding, baseline, fontSize)
+  const split = Math.ceil(padding + labelText.width + padding)
+  const valueText = glyphPath(value, split + padding, baseline, fontSize)
+  const width = Math.ceil(split + padding + valueText.width + padding)
+  const corner = radius > 0 ? ` rx="${radius}"` : ''
+
+  return svgDocument({
+    width,
+    height,
+    label: `${label}: ${value}`,
+    body:
+      `<rect width="${width}" height="${height}"${corner} fill="${colors.value}"/>` +
+      `<rect width="${split}" height="${height}"${corner} fill="${colors.label}"/>` +
+      // Squares off the label segment's right-hand corners.
+      (radius > 0 ? `<rect x="${split - radius}" width="${radius}" height="${height}" fill="${colors.label}"/>` : '') +
+      `<path fill="${colors.labelText}" d="${labelText.d}"/>` +
+      `<path fill="${colors.valueText}" d="${valueText.d}"/>` +
+      `<rect x="0.5" y="0.5" width="${width - 1}" height="${height - 1}"${corner} fill="none" stroke="${colors.border}"/>`,
+  })
+}
+
 export type ImageBody = string | Uint8Array
 
 /** A PNG of `svg` at twice its size, for the builders that only take uploads. */

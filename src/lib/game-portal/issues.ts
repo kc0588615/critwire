@@ -7,7 +7,7 @@ import { cache } from 'react'
 
 import type { Issue } from '@/payload-types'
 
-import { ARCHIVED_STATUSES, type PublicStageId, statusesFor } from '@/lib/game-portal/stages'
+import { ARCHIVED_STATUSES, PUBLIC_STAGES, type PublicStageId, statusesFor } from '@/lib/game-portal/stages'
 import { VOTE_TOKEN_COOKIE, hashVoteToken, verifyVoteToken } from '@/lib/security/voteToken'
 
 export const ISSUES_PER_PAGE = 20
@@ -37,6 +37,24 @@ export const publicIssuesWhere = ({
   stage ? { status: { in: statusesFor(stage) } } : { status: { not_in: ARCHIVED_STATUSES } },
   ...(type ? [{ type: { equals: type } }] : []),
 ]
+
+/** How many public items each public stage has, in stage order. */
+export const countPublicIssuesByStage = async (
+  projectID: number | string,
+): Promise<{ stage: (typeof PUBLIC_STAGES)[number]; count: number }[]> => {
+  const payload = await getPayload({ config })
+
+  return Promise.all(
+    PUBLIC_STAGES.map(async (stage) => {
+      const { totalDocs } = await payload.count({
+        collection: 'issues',
+        overrideAccess: false,
+        where: { and: publicIssuesWhere({ projectID, stage: stage.id }) },
+      })
+      return { stage, count: totalDocs }
+    }),
+  )
+}
 
 export const queryPublicIssues = cache(
   async ({

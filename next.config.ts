@@ -41,6 +41,8 @@ const nextConfig: NextConfig = {
   // output must carry it (keys are route globs; `[` would be a glob class).
   outputFileTracingIncludes: {
     '/buttons/*': ['./src/lib/share/fonts/DejaVuSans.ttf'],
+    '/g/*/badge.svg': ['./src/lib/share/fonts/DejaVuSans.ttf'],
+    '/g/*/badge.png': ['./src/lib/share/fonts/DejaVuSans.ttf'],
   },
   // The app owns its framing policy, on every response (nginx must not set
   // one; tests/int/nginx-headers checks). 'self' keeps admin live preview

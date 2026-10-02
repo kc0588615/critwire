@@ -61,3 +61,37 @@ export const getPublishedPatchNote = cache(
     return result.docs[0] ?? null
   },
 )
+
+const VERSION_LABEL_MAX = 24
+
+/**
+ * The version of the newest published update that has one, trimmed and
+ * cut to 24 characters, or `null`. Read through access, so drafts and
+ * held updates are skipped. Payload compiles `not_equals: ''` to
+ * `IS NULL OR <> ''`, so `exists` is needed too: without it, a newer
+ * update with no version would hide an older one's.
+ */
+export const getLatestVersionLabel = async (projectID: number | string): Promise<null | string> => {
+  const payload = await getPayload({ config })
+
+  const result = await payload.find({
+    collection: 'patch-notes',
+    depth: 0,
+    limit: 1,
+    overrideAccess: false,
+    pagination: false,
+    select: { versionLabel: true },
+    sort: '-publishedAt',
+    where: {
+      and: [
+        { gameProject: { equals: projectID } },
+        { _status: { equals: 'published' } },
+        { versionLabel: { exists: true } },
+        { versionLabel: { not_equals: '' } },
+      ],
+    },
+  })
+  const label = result.docs[0]?.versionLabel?.trim()
+  if (!label) return null
+  return Array.from(label).slice(0, VERSION_LABEL_MAX).join('').trimEnd()
+}
