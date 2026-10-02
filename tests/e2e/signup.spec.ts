@@ -111,7 +111,9 @@ test('S15.1 sign up, verify through the emailed link, onboard, and see the live 
       await expect(page.getByRole('heading', { level: 1 })).toHaveText(name)
       await expect(page.getByRole('link', { name: 'Get the game' }).first()).toHaveAttribute('href', STEAM_URL)
       const panel = page.getByRole('region', { name: 'Your portal is live' })
-      await expect(panel.getByText(`${BASE_URL}/g/${slug}`, { exact: true })).toBeVisible()
+      // The share kit opens on Steam, so its hub URL carries that platform's tag.
+      const kit = panel.getByRole('region', { name: 'Put critwire on your site' })
+      await expect(kit.getByText(`${BASE_URL}/g/${slug}?ref=steam`, { exact: true })).toBeVisible()
       await expect(panel.getByRole('link', { name: 'Add your first update' })).toBeVisible()
       await expect(panel.getByRole('link', { name: 'Turn on ideas' })).toBeVisible()
     })
