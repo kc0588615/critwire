@@ -6,9 +6,9 @@ import { extractID } from 'payload/shared'
 import type { DiscordPost } from '@/payload-types'
 
 import { isDiscordOn } from '@/lib/discord/config'
-import { gameWebhook } from '@/lib/discord/link'
-import { updatePostMessage } from '@/lib/discord/posts'
-import { executeDiscordWebhook } from '@/lib/discord/webhook'
+import { gameWebhook, stopPosting } from '@/lib/discord/link'
+import { postedStage, stagePostMessage, updatePostMessage } from '@/lib/discord/posts'
+import { DiscordWebhookGoneError, executeDiscordWebhook } from '@/lib/discord/webhook'
 import { getLogger } from '@/lib/logger'
 
 const log = getLogger('jobs.discord')
@@ -27,7 +27,8 @@ const RETRIES = { attempts: 3, backoff: { delay: 60_000, type: 'exponential' as 
 /**
  * Posts `message` to the game's webhook, then records it, so a crash in
  * between gives a duplicate post on retry, never a silent miss. `false`
- * when the game has no webhook.
+ * when the game has no webhook, or its webhook was deleted in Discord,
+ * which turns the game's posts off.
  */
 const deliver = async ({
   gameID,
@@ -43,7 +44,14 @@ const deliver = async ({
   const url = await gameWebhook({ gameID, payload })
   if (!url) return false
 
-  await executeDiscordWebhook(url, message)
+  try {
+    await executeDiscordWebhook(url, message)
+  } catch (err) {
+    if (!(err instanceof DiscordWebhookGoneError)) throw err
+    await stopPosting({ failedUrl: url, gameID, payload })
+    log.info({ gameID, status: err.status }, 'The game’s Discord webhook is gone, so its posts are off')
+    return false
+  }
   await payload.create({
     collection: 'discord-posts',
     data: { gameProject: gameID, ...record },
@@ -52,6 +60,17 @@ const deliver = async ({
   })
   return true
 }
+
+/** The game's name and slug as an anonymous visitor reads them: `null` when it's held or its studio is suspended. */
+const publicGame = (payload: Payload, gameID: number) =>
+  payload.findByID({
+    collection: 'game-projects',
+    depth: 0,
+    disableErrors: true,
+    id: gameID,
+    overrideAccess: false,
+    select: { name: true, slug: true },
+  })
 
 /** Posts a published update once. `false` when it isn't public now or was already posted. */
 const postUpdate = async (payload: Payload, patchNoteID: number): Promise<boolean> => {
@@ -66,14 +85,7 @@ const postUpdate = async (payload: Payload, patchNoteID: number): Promise<boolea
   })
   if (!note) return false
   const gameID = Number(extractID(note.gameProject))
-  const game = await payload.findByID({
-    collection: 'game-projects',
-    depth: 0,
-    disableErrors: true,
-    id: gameID,
-    overrideAccess: false,
-    select: { name: true, slug: true },
-  })
+  const game = await publicGame(payload, gameID)
   if (!game) return false
 
   const posts = await payload.count({
@@ -93,6 +105,61 @@ const postUpdate = async (payload: Payload, patchNoteID: number): Promise<boolea
   return posted
 }
 
+/**
+ * Posts the public stage a feedback item is in now, if critwire announces
+ * it and it isn't the stage it last posted, so a quick round trip posts
+ * nothing. `false` when the item isn't public now.
+ */
+const postStage = async (payload: Payload, issueID: number): Promise<boolean> => {
+  if (!isDiscordOn()) return false
+
+  const issue = await payload.findByID({
+    collection: 'issues',
+    depth: 0,
+    disableErrors: true,
+    id: issueID,
+    overrideAccess: false,
+    select: { gameProject: true, slug: true, status: true, title: true },
+  })
+  if (!issue) return false
+  const gameID = Number(extractID(issue.gameProject))
+  const game = await publicGame(payload, gameID)
+  if (!game) return false
+  const stage = postedStage(issue.status)
+  if (!stage) return false
+
+  const latest = await payload.find({
+    collection: 'discord-posts',
+    depth: 0,
+    limit: 1,
+    overrideAccess: true,
+    pagination: false,
+    select: { stage: true },
+    sort: '-id',
+    where: { issue: { equals: issueID } },
+  })
+  if (latest.docs[0]?.stage === stage) return false
+
+  const posted = await deliver({
+    gameID,
+    message: stagePostMessage(game, issue, stage),
+    payload,
+    record: { issue: issueID, stage },
+  })
+  if (posted) log.info({ gameID, issueID, stage }, 'Posted a feedback stage to Discord')
+  return posted
+}
+
+/** A post task's result, with any failure sent to Sentry before the queue retries it. */
+const postResult = async (post: Promise<boolean>): Promise<{ output: { posted: boolean } }> => {
+  try {
+    return { output: { posted: await post } }
+  } catch (err) {
+    Sentry.captureException(err)
+    throw err
+  }
+}
+
 export const discordUpdatePostTask: TaskConfig<'discord-update-post'> = {
   slug: 'discord-update-post',
   // A newer change replaces the update's pending post, so quick changes become one post.
@@ -100,12 +167,15 @@ export const discordUpdatePostTask: TaskConfig<'discord-update-post'> = {
   inputSchema: [{ name: 'patchNoteID', type: 'number', required: true }],
   outputSchema: [{ name: 'posted', type: 'checkbox', required: true }],
   retries: RETRIES,
-  handler: async ({ input, req }) => {
-    try {
-      return { output: { posted: await postUpdate(req.payload, input.patchNoteID) } }
-    } catch (err) {
-      Sentry.captureException(err)
-      throw err
-    }
-  },
+  handler: ({ input, req }) => postResult(postUpdate(req.payload, input.patchNoteID)),
+}
+
+export const discordStagePostTask: TaskConfig<'discord-stage-post'> = {
+  slug: 'discord-stage-post',
+  // A newer stage change replaces the item's pending post; the job posts the stage it's in when it runs.
+  concurrency: { key: ({ input }) => `discord-stage:${input.issueID}`, supersedes: true },
+  inputSchema: [{ name: 'issueID', type: 'number', required: true }],
+  outputSchema: [{ name: 'posted', type: 'checkbox', required: true }],
+  retries: RETRIES,
+  handler: ({ input, req }) => postResult(postStage(req.payload, input.issueID)),
 }

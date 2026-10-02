@@ -3,10 +3,7 @@ import type { CollectionConfig } from 'payload'
 import type { User } from '@/payload-types'
 
 import { isSuperAdmin, superAdminOnly } from '../access/isSuperAdmin'
-import { PUBLIC_STAGES } from '../lib/game-portal/stages'
-
-/** The public stages critwire announces in Discord. */
-export const DISCORD_POSTED_STAGES = PUBLIC_STAGES.filter((stage) => stage.id !== 'under-review')
+import { DISCORD_POSTED_STAGES } from '../lib/discord/posts'
 
 /**
  * What critwire has posted to Discord: one row per update, and one per

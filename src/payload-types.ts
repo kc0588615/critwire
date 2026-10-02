@@ -125,6 +125,7 @@ export interface Config {
       'email-contact-form': TaskEmailContactForm;
       'discord-webhook': TaskDiscordWebhook;
       'discord-update-post': TaskDiscordUpdatePost;
+      'discord-stage-post': TaskDiscordStagePost;
       schedulePublish: TaskSchedulePublish;
       inline: {
         input: unknown;
@@ -908,7 +909,13 @@ export interface PayloadJob {
     | {
         executedAt: string;
         completedAt: string;
-        taskSlug: 'inline' | 'email-contact-form' | 'discord-webhook' | 'discord-update-post' | 'schedulePublish';
+        taskSlug:
+          | 'inline'
+          | 'email-contact-form'
+          | 'discord-webhook'
+          | 'discord-update-post'
+          | 'discord-stage-post'
+          | 'schedulePublish';
         taskID: string;
         input?:
           | {
@@ -941,7 +948,16 @@ export interface PayloadJob {
         id?: string | null;
       }[]
     | null;
-  taskSlug?: ('inline' | 'email-contact-form' | 'discord-webhook' | 'discord-update-post' | 'schedulePublish') | null;
+  taskSlug?:
+    | (
+        | 'inline'
+        | 'email-contact-form'
+        | 'discord-webhook'
+        | 'discord-update-post'
+        | 'discord-stage-post'
+        | 'schedulePublish'
+      )
+    | null;
   queue?: string | null;
   waitUntil?: string | null;
   processing?: boolean | null;
@@ -1647,6 +1663,18 @@ export interface TaskDiscordWebhook {
 export interface TaskDiscordUpdatePost {
   input: {
     patchNoteID: number;
+  };
+  output: {
+    posted: boolean;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskDiscord-stage-post".
+ */
+export interface TaskDiscordStagePost {
+  input: {
+    issueID: number;
   };
   output: {
     posted: boolean;

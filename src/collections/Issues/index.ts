@@ -9,6 +9,7 @@ import { validateUniqueSlugPerProject } from '../../hooks/validateUniqueSlugPerP
 import { checkPublicFeedbackLimit } from '../../lib/limits/hooks'
 import { FEEDBACK_TYPE_OPTIONS, ISSUE_CATEGORY_OPTIONS, ISSUE_STATUS_OPTIONS } from '../options'
 import { deleteIssueVotes } from './hooks/deleteIssueVotes'
+import { queueDiscordStagePost } from './hooks/queueDiscordStagePost'
 import {
   revalidateIssueLanding,
   revalidateIssueLandingDelete,
@@ -153,7 +154,7 @@ export const Issues: CollectionConfig = {
     },
   ],
   hooks: {
-    afterChange: [revalidateIssueLanding, revalidateLinkedUpdates],
+    afterChange: [revalidateIssueLanding, revalidateLinkedUpdates, queueDiscordStagePost],
     afterDelete: [revalidateIssueLandingDelete, revalidateLinkedUpdatesDelete],
     beforeChange: [checkPublicFeedbackLimit],
     beforeDelete: [deleteIssueVotes],

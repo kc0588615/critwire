@@ -59,7 +59,7 @@ export interface SinkRequest {
 /**
  * Local stand-in for a Discord webhook, on the only non-Discord origin the
  * server accepts (`DISCORD_WEBHOOK_TEST_ORIGIN`). Answers 204 like Discord,
- * unless a path is set to redirect.
+ * unless a path is set to redirect or to answer with another status.
  */
 export interface WebhookSink {
   url: (path: string) => string
@@ -67,6 +67,8 @@ export interface WebhookSink {
   received: (path: string) => SinkRequest[]
   /** Answers requests on `from` with a 307 to `to` on the sink. */
   redirect: (from: string, to: string) => void
+  /** Answers requests on `path` with `status`, as Discord answers 404 for a deleted webhook. */
+  respond: (path: string, status: number) => void
 }
 
 /** A signed-in account a test created for itself. */
@@ -172,6 +174,7 @@ export const test = base.extend<{}, WorkerFixtures>({
     async ({}, use) => {
       const requests = new Map<string, SinkRequest[]>()
       const redirects = new Map<string, string>()
+      const statuses = new Map<string, number>()
       const server = createServer((req, res) => {
         const path = new URL(req.url ?? '/', WEBHOOK_SINK_ORIGIN).pathname
         const chunks: Buffer[] = []
@@ -187,7 +190,7 @@ export const test = base.extend<{}, WorkerFixtures>({
           requests.set(path, [...(requests.get(path) ?? []), { method: req.method ?? '', body }])
           const target = redirects.get(path)
           if (target) res.writeHead(307, { Location: `${WEBHOOK_SINK_ORIGIN}${target}` })
-          else res.writeHead(204)
+          else res.writeHead(statuses.get(path) ?? 204)
           res.end()
         })
       })
@@ -200,6 +203,9 @@ export const test = base.extend<{}, WorkerFixtures>({
         received: (path) => requests.get(path) ?? [],
         redirect: (from, to) => {
           redirects.set(from, to)
+        },
+        respond: (path, status) => {
+          statuses.set(path, status)
         },
       })
       await new Promise<void>((resolve) => server.close(() => resolve()))

@@ -19,7 +19,7 @@ import { Tenants } from './collections/Tenants'
 import { Users } from './collections/Users'
 import { emailAdapter } from './lib/email/adapter'
 import { discordWebhookContactTask, emailContactFormTask } from './jobs/contact'
-import { discordUpdatePostTask } from './jobs/discord'
+import { discordStagePostTask, discordUpdatePostTask } from './jobs/discord'
 import { isDiscordOn } from './lib/discord/config'
 import { DISCORD_QUEUE } from './lib/discord/posts'
 import { migrations } from './migrations'
@@ -158,6 +158,6 @@ export default buildConfig({
       { cron: '* * * * *', limit: 10, queue: 'default' },
       ...(isDiscordOn() ? [{ cron: '* * * * *', limit: 10, queue: DISCORD_QUEUE }] : []),
     ],
-    tasks: [emailContactFormTask, discordWebhookContactTask, discordUpdatePostTask],
+    tasks: [emailContactFormTask, discordWebhookContactTask, discordUpdatePostTask, discordStagePostTask],
   },
 })

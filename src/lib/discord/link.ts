@@ -91,3 +91,29 @@ export const gameWebhook = async ({
   })
   return game?.discord?.webhookUrl || null
 }
+
+/**
+ * Turns posting off for a game whose webhook `failedUrl` was deleted in
+ * Discord: clears the channel and webhook, keeping the server link for
+ * `/feedback`. Compare and clear: it only touches the game while its
+ * webhook is still `failedUrl`, so a link made since the job read it is
+ * kept. A system write with no user, so `enforceTenantWrite` lets it through.
+ */
+export const stopPosting = async ({
+  failedUrl,
+  gameID,
+  payload,
+}: {
+  failedUrl: string
+  gameID: number
+  payload: Payload
+}): Promise<void> => {
+  await payload.update({
+    collection: 'game-projects',
+    context: { disableRevalidate: true, discordLink: true },
+    data: { discord: { channelId: null, webhookUrl: null } },
+    depth: 0,
+    overrideAccess: true,
+    where: { and: [{ id: { equals: gameID } }, { 'discord.webhookUrl': { equals: failedUrl } }] },
+  })
+}

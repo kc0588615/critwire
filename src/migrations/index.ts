@@ -16,6 +16,7 @@ import * as migration_20260930_080647_remove_landing_builder from './20260930_08
 import * as migration_20260930_111418_open_signup from './20260930_111418_open_signup';
 import * as migration_20261002_144959_discord from './20261002_144959_discord';
 import * as migration_20261002_160638_discord_update_posts from './20261002_160638_discord_update_posts';
+import * as migration_20261002_161631_discord_stage_posts from './20261002_161631_discord_stage_posts';
 
 export const migrations = [
   {
@@ -107,5 +108,10 @@ export const migrations = [
     up: migration_20261002_160638_discord_update_posts.up,
     down: migration_20261002_160638_discord_update_posts.down,
     name: '20261002_160638_discord_update_posts',
+  },
+  {
+    up: migration_20261002_161631_discord_stage_posts.up,
+    down: migration_20261002_161631_discord_stage_posts.down,
+    name: '20261002_161631_discord_stage_posts',
   },
 ];
