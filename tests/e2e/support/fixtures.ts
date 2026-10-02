@@ -491,7 +491,7 @@ export const contentLayout = (text: string): Page['layout'] => [
   { blockType: 'content', columns: [{ size: 'full', richText: lexical(text) }] },
 ]
 
-const tenantOf = (project: GameProject): number => {
+export const tenantOf = (project: GameProject): number => {
   const tenant = project.tenant == null ? null : extractID(project.tenant)
   if (tenant == null) throw new Error(`game project ${project.id} has no tenant`)
   return tenant

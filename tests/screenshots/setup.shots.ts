@@ -6,6 +6,7 @@ import { extractID } from 'payload/shared'
 
 import type { GameProject } from '../../src/payload-types'
 import { RestClient } from '../e2e/support/api'
+import { linkDiscord } from '../e2e/support/discord'
 import { verificationToken } from '../e2e/support/email'
 import { PASSWORD } from '../e2e/support/env'
 import {
@@ -17,11 +18,15 @@ import {
   newRequestContext,
   onboard,
   startSignup,
+  tenantOf,
   verifyAccount,
 } from '../e2e/support/fixtures'
 import { ONBOARDING_STATE_PATH, type ShotsWorld, STUDIO_STATE_PATH, WORLD_PATH } from './catalog'
 import { rootStyle, SHOTS_CRON_SECRET } from './support'
 import { RISO_THEME } from './themes'
+
+/** Where the linked game posts: fixed IDs, so the "Open the posts channel" link is the same every run. */
+const DISCORD_TARGET = { guild: '120000000000000001', channel: '120000000000000002' } as const
 
 /** Visits from tagged kit links, counted for Lantern Keep's Share tab. */
 const REFERRALS = { steam: 6, itch: 3, readme: 2, carrd: 1 } as const
@@ -32,7 +37,9 @@ const REFERRALS = { steam: 6, itch: 3, readme: 2, carrd: 1 } as const
  * or after the design pass) gets identical data. The signup shots get a
  * pending signup, a signed-in user with no studio, and a signed-up studio.
  * The reach shots get that studio's session and referral counts, and a
- * Riso-themed game in the demo studio for its badge.
+ * Riso-themed game in the demo studio for its badge. The discord shots
+ * get a second Lantern Keep game, linked to a server through the real
+ * install and callback with the Discord stand-in's code.
  */
 setup('seed the Critter Connect demo and the screenshot fixtures', async ({ page, playwright }) => {
   setup.setTimeout(180_000)
@@ -145,7 +152,7 @@ setup('seed the Critter Connect demo and the screenshot fixtures', async ({ page
     await studio.dispose()
     const welcomeSlug = /^\/g\/([^/?]+)\?welcome=1$/.exec(location)?.[1]
     expect(welcomeSlug, `Lantern Keep onboarded to ${location}`).toBeDefined()
-    return { verifyToken, welcomeSlug: welcomeSlug as string }
+    return { verifyToken, welcomeSlug: welcomeSlug as string, studioToken: token }
   })
 
   const reach = await setup.step('add a Riso game for its badge, and count Lantern Keep’s referrals', async () => {
@@ -168,6 +175,18 @@ setup('seed the Critter Connect demo and the screenshot fixtures', async ({ page
     return { welcomeID, risoSlug: riso.slug }
   })
 
+  const discord = await setup.step('add a second Lantern Keep game and link it to Discord', async () => {
+    const lantern = await admin.findByID('game-projects', reach.welcomeID, { depth: 0 })
+    expect(lantern.status).toBe(200)
+    const second = await createProject(admin, tenantOf(lantern.body), 'lantern-keep-tides', {
+      name: 'Lantern Keep: Tides',
+    })
+    const callback = await linkDiscord(anonymous, signup.studioToken, second.id, DISCORD_TARGET)
+    expect(callback.status(), await callback.text()).toBe(303)
+    expect(callback.headers().location, 'the callback reports the link').toContain('discord=linked')
+    return { unlinkedID: reach.welcomeID, linkedID: second.id }
+  })
+
   const world: ShotsWorld = {
     superToken,
     cc: {
@@ -176,8 +195,9 @@ setup('seed the Critter Connect demo and the screenshot fixtures', async ({ page
       baselineStyle,
       launchUpdate: 'v0-1-0-launch',
     },
-    signup,
+    signup: { verifyToken: signup.verifyToken, welcomeSlug: signup.welcomeSlug },
     reach,
+    discord,
   }
   await writeFile(WORLD_PATH, JSON.stringify(world, null, 2))
   await anonymous.dispose()

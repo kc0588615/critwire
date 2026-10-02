@@ -104,6 +104,11 @@ for (const group of selectedGroups()) {
           }
         }
         if (shot.click) await page.getByRole('button', { name: shot.click }).click()
+        if (shot.tab) {
+          const tab = page.getByRole('tab', { name: shot.tab })
+          await tab.click()
+          await expect(tab).toHaveAttribute('aria-selected', 'true')
+        }
         if (shot.ready) await expect(page.locator(shot.ready)).toBeVisible()
         if (shot.host) await embedShown(page)
         if (shot.adminTheme) await expect(page.locator('html')).toHaveAttribute('data-theme', shot.adminTheme)

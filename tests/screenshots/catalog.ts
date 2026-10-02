@@ -34,6 +34,12 @@ export interface ShotsWorld {
     /** A Riso-themed game in the demo studio, for its badge. */
     risoSlug: string
   }
+  discord: {
+    /** Lantern Keep's ID again: not linked to Discord. */
+    unlinkedID: number
+    /** The studio user's second game, linked to a server and a posts channel. */
+    linkedID: number
+  }
 }
 
 export const WORLD_PATH = path.join(process.cwd(), 'test-results', 'shots', 'world.json')
@@ -47,7 +53,7 @@ export const STUDIO_STATE_PATH = path.join(process.cwd(), 'test-results', 'shots
 export const SESSION_STATE_PATHS = { onboarding: ONBOARDING_STATE_PATH, studio: STUDIO_STATE_PATH } as const
 export type Session = keyof typeof SESSION_STATE_PATHS
 
-export const GROUPS = ['critter-connect', 'riso', 'marketing', 'signup', 'reach', 'embed'] as const
+export const GROUPS = ['critter-connect', 'riso', 'marketing', 'signup', 'reach', 'embed', 'discord'] as const
 export type Group = (typeof GROUPS)[number]
 
 /** The groups that shoot the demo's portal pages under a theme. */
@@ -61,6 +67,7 @@ export const GROUP_LABELS: Record<Group, string> = {
   signup: 'Sign up and onboarding',
   reach: 'Share kit, badges and buttons',
   embed: "Embeds on a studio's page",
+  discord: 'Share tab: the Discord tab',
 }
 
 interface ShotBase {
@@ -79,6 +86,8 @@ interface ShotBase {
   tapScope?: string
   /** The accessible name of a button to click before the capture, such as the floating "Feedback". */
   click?: string
+  /** The accessible name of a tab to select before the capture, such as the Share kit's "Discord". */
+  tab?: string
 }
 
 /**
@@ -209,6 +218,30 @@ const EMBED_SHOTS: Shot[] = (['light', 'dark'] as const).flatMap((mode): Shot[] 
   ]
 })
 
+/** The admin Share tab with its Discord tab selected, for a game not linked and one linked, light and dark. */
+const DISCORD_SHOTS: Shot[] = (['light', 'dark'] as const).flatMap((adminTheme): Shot[] => [
+  {
+    id: `not-linked-${adminTheme}`,
+    label: `Not linked: Add critwire to your Discord, ${adminTheme}`,
+    path: (w) => gameShareHref(w.discord.unlinkedID),
+    session: 'studio',
+    adminTheme,
+    tab: 'Discord',
+    ready: '.share-kit-body a[href*="/api/discord/install"]',
+    tapScope: '.share-view',
+  },
+  {
+    id: `linked-${adminTheme}`,
+    label: `Linked: the posts channel and Disconnect, ${adminTheme}`,
+    path: (w) => gameShareHref(w.discord.linkedID),
+    session: 'studio',
+    adminTheme,
+    tab: 'Discord',
+    ready: '.share-kit-subtitle',
+    tapScope: '.share-view',
+  },
+])
+
 export const isPortalGroup = (group: Group): group is PortalGroup =>
   (PORTAL_GROUPS as readonly string[]).includes(group)
 
@@ -217,6 +250,7 @@ const OTHER_SHOTS: Record<Exclude<Group, PortalGroup>, Shot[]> = {
   signup: SIGNUP_SHOTS,
   reach: REACH_SHOTS,
   embed: EMBED_SHOTS,
+  discord: DISCORD_SHOTS,
 }
 
 export const shotsFor = (group: Group): Shot[] => (isPortalGroup(group) ? PORTAL_SHOTS : OTHER_SHOTS[group])
