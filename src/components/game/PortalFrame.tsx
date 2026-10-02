@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { Suspense } from 'react'
 
 import type { GameProject } from '@/payload-types'
 
@@ -6,9 +6,11 @@ import { displayFontVariables } from '@/components/game/theme/fonts'
 import { themeStyle } from '@/components/game/theme/themeStyle'
 import { resolveProjectTheme } from '@/lib/game-portal/projectTheme'
 import type { SiteThemeV1 } from '@/lib/game-portal/theme'
+import { isReferralCounterOn } from '@/lib/referrals/counter'
 
 import { PortalFooter } from './PortalFooter'
 import { PortalNav } from './PortalNav'
+import { ReferralPing } from './ReferralPing'
 
 /**
  * The only element that carries `.fs-root`: the theme's custom
@@ -32,7 +34,8 @@ export const PortalRoot: React.FC<{ children: React.ReactNode; theme: SiteThemeV
 /**
  * The frame around every page of a game's portal, in the project's
  * theme: root, skip link, nav, main, footer. Nothing in it is
- * configurable beyond the project's own facts.
+ * configurable beyond the project's own facts. Where the referral counter
+ * is on (Upstash), every page reports arrivals from tagged kit links.
  */
 export const PortalFrame: React.FC<{ children: React.ReactNode; project: GameProject }> = ({
   children,
@@ -47,5 +50,11 @@ export const PortalFrame: React.FC<{ children: React.ReactNode; project: GamePro
       {children}
     </main>
     <PortalFooter project={project} />
+    {isReferralCounterOn() ? (
+      // `useSearchParams` needs a boundary, so cached pages stay prerendered.
+      <Suspense fallback={null}>
+        <ReferralPing gameID={project.id} />
+      </Suspense>
+    ) : null}
   </PortalRoot>
 )
