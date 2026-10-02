@@ -159,6 +159,36 @@ export const feedbackCommand = (place: DiscordPlace, member: DiscordMember, kind
   type: 2,
 })
 
+/** A message in a server's channel, as Discord resolves it for a message command. */
+export interface DiscordMessage {
+  id: string
+  content: string
+  author: { id: string; username: string }
+}
+
+/** "Send to critwire" on `message`, by `member`. */
+export const sendCommand = (place: DiscordPlace, member: DiscordMember, message: DiscordMessage) => ({
+  ...guildInteraction(place, member),
+  data: {
+    id: snowflake(),
+    name: 'Send to critwire',
+    resolved: {
+      messages: {
+        [message.id]: {
+          ...message,
+          author: { ...message.author, discriminator: '0', global_name: null },
+          channel_id: place.channel,
+          timestamp: new Date().toISOString(),
+          type: 0,
+        },
+      },
+    },
+    target_id: message.id,
+    type: 3,
+  },
+  type: 2,
+})
+
 /** One field of a form the endpoint answered with: a Label holding a text input or a select. */
 export interface DiscordFormField {
   type: 18

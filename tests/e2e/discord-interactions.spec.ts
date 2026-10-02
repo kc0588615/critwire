@@ -22,6 +22,7 @@ import {
   openForm,
   pingInteraction,
   postInteraction,
+  sendCommand,
   signatureHeaders,
   signedInteraction,
   snowflake,
@@ -422,5 +423,146 @@ test('D6 a server with several games: the player picks one, and a form stays bou
     const reply = await interact(request, feedbackCommand({ channel: snowflake(), guild: snowflake() }, sender, 'bug'))
     expectPrivateReply(reply)
     expect(reply.data.content).toBe('This server isn’t linked to a game on critwire that takes bugs here.')
+  })
+})
+
+const MANAGE_MESSAGES = '8192'
+const ADMINISTRATOR = '8'
+const SEND_MESSAGES = '2048'
+
+test('D4 only moderators send a message to critwire, credited to its author', async ({
+  api,
+  request,
+  seedStudio,
+}) => {
+  const { tenant, owner } = await seedStudio('d4')
+  const game = await createProject(owner.client, tenant.id, `${tenant.slug}-game`, { name: 'Tidewater' })
+  const place = await linkToNewServer(request, owner.token, game)
+  // A legacy name may hold a ':'; it goes last in the form's ID, so it can't break parsing.
+  const author = { id: snowflake(), username: 'old:sailor' }
+  const message = {
+    author,
+    content: 'Boats should dock automatically\nSteering into the pier every time gets tiring fast.',
+    id: snowflake(),
+  }
+  const moderator = { ...player('harbor_mod'), permissions: MANAGE_MESSAGES }
+
+  await test.step('Send Messages alone is refused, with no form', async () => {
+    const reply = await interact(request, sendCommand(place, { ...moderator, permissions: SEND_MESSAGES }, message))
+    expectPrivateReply(reply)
+    expect(reply.data.content).toBe('Only members who can manage messages can send messages to critwire.')
+  })
+
+  const form = await openForm(request, sendCommand(place, moderator, message))
+  await test.step('Manage Messages gets the form, prefilled, with a Type select', async () => {
+    expect(form.custom_id).toBe(`cw1:send:${game.id}:${message.id}:${author.id}:${author.username}`)
+    expect(form.custom_id.length).toBeLessThanOrEqual(100)
+    expect(form.title).toBe('Send to critwire: Tidewater')
+    expect(fieldIDs(form)).toEqual(['type', 'title', 'details'])
+    expect(form.components[0].component.options).toEqual([
+      { label: 'Bug', value: 'bug' },
+      { label: 'Idea', value: 'idea' },
+    ])
+    expect(form.components[1].component.value).toBe('Boats should dock automatically')
+    expect(form.components[2].component.value).toBe(message.content)
+  })
+
+  await test.step('Administrator gets the form too', async () => {
+    const asAdmin = await openForm(request, sendCommand(place, { ...moderator, permissions: ADMINISTRATOR }, message))
+    expect(asAdmin.custom_id).toBe(form.custom_id)
+  })
+
+  await test.step('a message with no text is refused', async () => {
+    const reply = await interact(request, sendCommand(place, moderator, { ...message, content: '  ', id: snowflake() }))
+    expectPrivateReply(reply)
+    expect(reply.data.content).toBe('That message has no text to send.')
+  })
+
+  const values = {
+    details: 'Steering into the pier every time gets tiring fast. Let boats dock on their own.',
+    title: 'Boats should dock automatically',
+    type: 'idea',
+  }
+
+  await test.step('a moderator who lost the permission while the form was open sends nothing', async () => {
+    const reply = await interact(
+      request,
+      formSubmission(place, { ...moderator, permissions: SEND_MESSAGES }, form, values),
+    )
+    expectPrivateReply(reply)
+    expect(reply.data.content).toBe('Only members who can manage messages can send messages to critwire.')
+    expect(await reportsOn(owner.client, game)).toHaveLength(0)
+  })
+
+  await test.step('sent as an Idea: an IDEA credited to the author, with the message link', async () => {
+    const reply = await interact(request, formSubmission(place, moderator, form, values))
+    expectPrivateReply(reply)
+    expect(reply.data.content).toBe('Sent to critwire as an idea for **Tidewater**, credited to @old:sailor.')
+    const reports = await reportsOn(owner.client, game)
+    expect(reports).toHaveLength(1)
+    expect(reports[0]).toMatchObject({
+      description: values.details,
+      discord: {
+        messageUrl: `https://discord.com/channels/${place.guild}/${place.channel}/${message.id}`,
+        userId: author.id,
+        username: author.username,
+      },
+      status: 'NEW',
+      title: values.title,
+      type: 'IDEA',
+    })
+    const [asSuperAdmin] = await reportsOn(api('superAdmin'), game)
+    expect(asSuperAdmin.discord?.interactionId).toMatch(/^\d+$/)
+  })
+})
+
+/**
+ * The sliding window's buckets start on multiples of its length. Ten
+ * seconds from the next one, wait for it, so a test's requests never
+ * straddle two buckets (where the previous one only partly counts).
+ */
+const awayFromBucketEdge = async (windowMs: number) => {
+  const left = windowMs - (Date.now() % windowMs)
+  if (left < 10_000) await new Promise((resolve) => setTimeout(resolve, left + 100))
+}
+
+test('D5 /feedback allows 5 reports per Discord user per game in 10 minutes', async ({
+  request,
+  seedStudio,
+}) => {
+  const { tenant, owner } = await seedStudio('d5')
+  const x = await createProject(owner.client, tenant.id, `${tenant.slug}-x`, { name: 'Game X' })
+  const y = await createProject(owner.client, tenant.id, `${tenant.slug}-y`, { name: 'Game Y' })
+  const place = await linkToNewServer(request, owner.token, x)
+  await linkToNewServer(request, owner.token, y, place.guild)
+  const u = player('busy_player')
+  const v = player('other_player')
+
+  const send = async (member: DiscordMember, game: GameProject, n: number) => {
+    const form = await openForm(request, feedbackCommand(place, member, 'bug'))
+    return interact(
+      request,
+      formSubmission(place, member, form, { ...BUG, game: String(game.id), title: `${BUG.title} #${n}` }),
+    )
+  }
+
+  await awayFromBucketEdge(600_000)
+  await test.step('user U on game X: 5 accepted, the 6th refused', async () => {
+    for (let n = 1; n <= 5; n++) {
+      expect((await send(u, x, n)).data.content, `report ${n}`).toContain('for **Game X** is in.')
+    }
+    const refused = await send(u, x, 6)
+    expectPrivateReply(refused)
+    expect(refused.data.content).toBe(
+      'You’ve sent several reports for **Game X** in the last few minutes. Try again later.',
+    )
+    expect(await reportsOn(owner.client, x)).toHaveLength(5)
+  })
+
+  await test.step('user V on game X, and user U on game Y, are accepted', async () => {
+    expect((await send(v, x, 7)).data.content).toContain('for **Game X** is in.')
+    expect((await send(u, y, 8)).data.content).toContain('for **Game Y** is in.')
+    expect(await reportsOn(owner.client, x)).toHaveLength(6)
+    expect(await reportsOn(owner.client, y)).toHaveLength(1)
   })
 })

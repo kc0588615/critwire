@@ -7,6 +7,7 @@ import {
   ApplicationCommandType,
   GUILD_CONTEXT,
   GUILD_INSTALL,
+  SEND_COMMAND_NAME,
 } from '@/lib/discord/interactions'
 import { requestToken } from '@/lib/discord/oauth'
 import { getLogger } from '@/lib/logger'
@@ -39,7 +40,7 @@ export const DISCORD_COMMANDS = [
     // Manage Messages: Discord hides it from other members by default.
     default_member_permissions: '8192',
     integration_types: [GUILD_INSTALL],
-    name: 'Send to critwire',
+    name: SEND_COMMAND_NAME,
     type: ApplicationCommandType.MESSAGE,
   },
 ] as const

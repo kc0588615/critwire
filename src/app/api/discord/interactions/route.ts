@@ -1,7 +1,7 @@
 import * as Sentry from '@sentry/nextjs'
 
 import { getDiscordConfig } from '@/lib/discord/config'
-import { handleFeedbackCommand, handleFormSubmit } from '@/lib/discord/feedback'
+import { handleFeedbackCommand, handleFormSubmit, handleSendCommand } from '@/lib/discord/feedback'
 import {
   ephemeralMessage,
   type Interaction,
@@ -18,10 +18,10 @@ const log = getLogger('discord.interactions')
 /** A form submission slower than this risks Discord's 3 s; warn before players see timeouts. */
 const SLOW_SUBMISSION_MS = 2000
 
-const respond = (interaction: Exclude<Interaction, { type: 1 }>): Promise<InteractionResponse> =>
-  interaction.type === InteractionType.APPLICATION_COMMAND
-    ? handleFeedbackCommand(interaction)
-    : handleFormSubmit(interaction)
+const respond = (interaction: Exclude<Interaction, { type: 1 }>): Promise<InteractionResponse> => {
+  if (interaction.type === InteractionType.MODAL_SUBMIT) return handleFormSubmit(interaction)
+  return 'command' in interaction ? handleSendCommand(interaction) : handleFeedbackCommand(interaction)
+}
 
 /**
  * Discord's interactions endpoint: every command and form submission

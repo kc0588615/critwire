@@ -12,10 +12,13 @@ import { FAKE_UPSTASH_PORT, FAKE_UPSTASH_TOKEN } from './env'
  * - `HINCRBY`, `HGETALL` and `EXPIRE` on hashes (the referral counter);
  * - `EVALSHA` in exactly the shape of `@upstash/ratelimit` 2.0.8's
  *   sliding-window `limit` call (`dist/index.js:1595-1600`): three keys,
- *   then `tokens, now, window, increment`. It answers `[tokens - 1, tokens]`,
- *   which the library reads as allowed (`remaining >= 0`), so rate-limited
- *   routes go through the real client but never hit a limit. If an upgrade
- *   changes that call, those routes answer 500 in E2E.
+ *   then `tokens, now, window, increment`. For keys under
+ *   `ratelimit:discord-` it runs that script's logic (`dist/index.js:229-272`),
+ *   so the Discord limits can be hit: they're keyed per Discord user and
+ *   game, which each spec makes fresh. Every other key is answered
+ *   `[tokens - 1, tokens]`, which the library reads as allowed
+ *   (`remaining >= 0`): the web forms share one client IP across specs.
+ *   If an upgrade changes that call, those routes answer 500 in E2E.
  *
  * Routes: `POST /` (one command), `POST /pipeline` and `POST /multi-exec`
  * (arrays of commands, answered per command), `GET /` (health) and
@@ -26,6 +29,36 @@ type Entry = { hash: Map<string, string>; expiresAt: null | number }
 type Reply = { error: string } | { result: unknown }
 
 const store = new Map<string, Entry>()
+
+/** The sliding window's per-bucket request counts, which expire like the script's PEXPIRE. */
+const counters = new Map<string, { count: number; expiresAt: number }>()
+
+const counter = (key: string): number => {
+  const entry = counters.get(key)
+  if (entry && entry.expiresAt <= Date.now()) counters.delete(key)
+  return counters.get(key)?.count ?? 0
+}
+
+/** Only the Discord limits are enforced; see the header. */
+const ENFORCED_PREFIX = 'ratelimit:discord-'
+
+/** `@upstash/ratelimit` 2.0.8's sliding-window `limit` script, without dynamic limits. */
+const slidingWindow = (
+  [currentKey, previousKey]: string[],
+  tokens: number,
+  now: number,
+  window: number,
+  incrementBy: number,
+): [number, number] => {
+  const percentageInCurrent = (now % window) / window
+  const previous = Math.floor((1 - percentageInCurrent) * counter(previousKey))
+  const current = counter(currentKey)
+  if (incrementBy > 0 && previous + current >= tokens) return [-1, tokens]
+  const next = current + incrementBy
+  const expiresAt = counters.get(currentKey)?.expiresAt ?? Date.now() + window * 2 + 1000
+  counters.set(currentKey, { count: next, expiresAt })
+  return [tokens - (next + previous), tokens]
+}
 
 const live = (key: string): Entry | undefined => {
   const entry = store.get(key)
@@ -68,9 +101,14 @@ const run = (command: unknown): Reply => {
     }
     case 'evalsha': {
       // [sha, numkeys, k1, k2, k3, tokens, now, window, increment]
-      const tokens = integer(args[5])
-      if (args.length !== 9 || args[1] !== '3' || tokens === null) {
+      const [tokens, now, window, increment] = args.slice(5).map(integer)
+      if (args.length !== 9 || args[1] !== '3' || tokens === null || now === null || !window || increment === null) {
         return { error: `ERR unsupported EVALSHA ${JSON.stringify(args)}` }
+      }
+      if (args[2].startsWith(ENFORCED_PREFIX)) {
+        // Dynamic limits (k3) are off in the app: the key must be empty.
+        if (args[4] !== '') return { error: `ERR unsupported dynamic limit ${JSON.stringify(args)}` }
+        return { result: slidingWindow(args.slice(2, 4), tokens, now, window, increment) }
       }
       return { result: [tokens - 1, tokens] }
     }
