@@ -2,6 +2,7 @@ import type { CollectionConfig, Condition } from 'payload'
 
 import { slugField } from 'payload'
 
+import { discordLinkFieldAccess } from '../../access/discordLink'
 import { superAdminFieldAccess } from '../../access/isSuperAdmin'
 import { gameProjectsRead } from '../../access/publicRead'
 import {
@@ -14,7 +15,10 @@ import { moderationFields } from '../../fields/moderation'
 import { screenTextHook } from '../../hooks/screenText'
 import { checkGamesLimit } from '../../lib/limits/hooks'
 import { validateOptionalTallyUrl } from '../../lib/tally/parseTallyForm'
-import { validateContactDiscordWebhookUrl } from '../../lib/validation/discordWebhook'
+import {
+  validateContactDiscordWebhookUrl,
+  validateDiscordWebhookUrl,
+} from '../../lib/validation/discordWebhook'
 import { validateOptionalHttpUrl } from '../../lib/validation/url'
 import {
   CONTACT_FORM_TARGET_OPTIONS,
@@ -349,6 +353,44 @@ export const GameProjects: CollectionConfig = {
         readOnly: true,
       },
       defaultValue: false,
+    },
+    {
+      // The game's Discord server and the webhook critwire posts through.
+      // Only the "Add critwire to your Discord" flow writes it; the
+      // webhook URL lets anyone post to the studio's channel.
+      name: 'discord',
+      type: 'group',
+      label: 'Discord',
+      access: {
+        create: discordLinkFieldAccess,
+        read: tenantMemberFieldRead,
+        update: discordLinkFieldAccess,
+      },
+      admin: {
+        condition: (data) => Boolean(data?.discord?.guildId),
+        description: 'Managed from the Share tab.',
+        position: 'sidebar',
+        readOnly: true,
+      },
+      fields: [
+        {
+          name: 'guildId',
+          type: 'text',
+          label: 'Server ID',
+          index: true,
+        },
+        {
+          name: 'channelId',
+          type: 'text',
+          label: 'Channel ID',
+        },
+        {
+          name: 'webhookUrl',
+          type: 'text',
+          label: 'Webhook URL',
+          validate: validateDiscordWebhookUrl,
+        },
+      ],
     },
     ...moderationFields(),
   ],

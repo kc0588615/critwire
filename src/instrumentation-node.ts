@@ -1,4 +1,5 @@
 import { getContactHref } from '@/components/marketing/links'
+import { getDiscordConfig } from '@/lib/discord/config'
 import { isOpenSignup, isPoweredByShown } from '@/lib/hosting'
 import { getLimits } from '@/lib/limits'
 import { assertNoLegacyPublicMedia } from '@/lib/media/storage'
@@ -15,6 +16,7 @@ export function checkEnvironment(): void {
     isPoweredByShown()
     assertNoLegacyPublicMedia()
     getLimits()
+    getDiscordConfig()
   } catch (error) {
     console.error(error)
     process.exit(1)

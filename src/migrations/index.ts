@@ -14,6 +14,7 @@ import * as migration_20260930_061601_feedback_model from './20260930_061601_fee
 import * as migration_20260930_072559_portal_theme from './20260930_072559_portal_theme';
 import * as migration_20260930_080647_remove_landing_builder from './20260930_080647_remove_landing_builder';
 import * as migration_20260930_111418_open_signup from './20260930_111418_open_signup';
+import * as migration_20261002_144959_discord from './20261002_144959_discord';
 
 export const migrations = [
   {
@@ -94,6 +95,11 @@ export const migrations = [
   {
     up: migration_20260930_111418_open_signup.up,
     down: migration_20260930_111418_open_signup.down,
-    name: '20260930_111418_open_signup'
+    name: '20260930_111418_open_signup',
+  },
+  {
+    up: migration_20261002_144959_discord.up,
+    down: migration_20261002_144959_discord.down,
+    name: '20261002_144959_discord'
   },
 ];

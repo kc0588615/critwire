@@ -1,5 +1,6 @@
 import type { CollectionConfig, Condition } from 'payload'
 
+import { superAdminFieldAccess } from '../../access/isSuperAdmin'
 import { tenantMemberAccess, tenantOwnerAccess } from '../../access/tenantAccess'
 import { sameGameProjectFilter } from '../../fields/sameGameProjectFilter'
 import { screenTextHook } from '../../hooks/screenText'
@@ -126,6 +127,50 @@ export const IssueReports: CollectionConfig = {
         position: 'sidebar',
         readOnly: true,
       },
+    },
+    {
+      // Who sent it from Discord, for the studio to follow up. Never
+      // public: promotion to an item doesn't copy it.
+      name: 'discord',
+      type: 'group',
+      label: 'Discord',
+      access: {
+        create: superAdminFieldAccess,
+        update: superAdminFieldAccess,
+      },
+      admin: {
+        condition: (data) => Boolean(data?.discord?.userId),
+        position: 'sidebar',
+      },
+      fields: [
+        {
+          name: 'userId',
+          type: 'text',
+          label: 'User ID',
+        },
+        {
+          name: 'username',
+          type: 'text',
+        },
+        {
+          // Set when a moderator sent a player's message with "Send to critwire".
+          name: 'messageUrl',
+          type: 'text',
+          label: 'Message',
+        },
+        {
+          // Makes a replayed Discord submission fail the insert. Means
+          // nothing to a studio.
+          name: 'interactionId',
+          type: 'text',
+          access: {
+            create: superAdminFieldAccess,
+            read: superAdminFieldAccess,
+            update: superAdminFieldAccess,
+          },
+          unique: true,
+        },
+      ],
     },
   ],
   hooks: {

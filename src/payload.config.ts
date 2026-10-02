@@ -7,6 +7,7 @@ import { fileURLToPath } from 'url'
 import { isSuperAdmin, superAdminOnly } from './access/isSuperAdmin'
 import type { User } from './payload-types'
 import { AbuseReports } from './collections/AbuseReports'
+import { DiscordPosts } from './collections/DiscordPosts'
 import { GameProjects } from './collections/GameProjects'
 import { IssueReports } from './collections/IssueReports'
 import { Issues } from './collections/Issues'
@@ -101,6 +102,7 @@ export default buildConfig({
     Media,
     Users,
     AbuseReports,
+    DiscordPosts,
   ],
   cors: [getServerSideURL()].filter(Boolean),
   email: emailAdapter(),
@@ -143,6 +145,9 @@ export default buildConfig({
     // Single-VPS deployment: queued contact jobs are run explicitly by
     // the submit handler after enqueueing, and this autorun is a backup
     // for transient failures or process restarts.
+    // Adds `concurrency_key`: Discord post jobs supersede the pending
+    // post for the same update or item, so quick changes become one post.
+    enableConcurrencyControl: true,
     autoRun: [{ cron: '* * * * *', limit: 10, queue: 'default' }],
     tasks: [emailContactFormTask, discordWebhookContactTask],
   },

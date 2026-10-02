@@ -77,6 +77,7 @@ export interface Config {
     media: Media;
     users: User;
     'abuse-reports': AbuseReport;
+    'discord-posts': DiscordPost;
     'payload-kv': PayloadKv;
     'payload-jobs': PayloadJob;
     'payload-folders': FolderInterface;
@@ -100,6 +101,7 @@ export interface Config {
     media: MediaSelect<false> | MediaSelect<true>;
     users: UsersSelect<false> | UsersSelect<true>;
     'abuse-reports': AbuseReportsSelect<false> | AbuseReportsSelect<true>;
+    'discord-posts': DiscordPostsSelect<false> | DiscordPostsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-jobs': PayloadJobsSelect<false> | PayloadJobsSelect<true>;
     'payload-folders': PayloadFoldersSelect<false> | PayloadFoldersSelect<true>;
@@ -333,6 +335,14 @@ export interface GameProject {
    */
   customDomain?: string | null;
   customDomainVerified?: boolean | null;
+  /**
+   * Managed from the Share tab.
+   */
+  discord?: {
+    guildId?: string | null;
+    channelId?: string | null;
+    webhookUrl?: string | null;
+  };
   /**
    * Held for review: not public until a Critwire admin approves it.
    */
@@ -617,6 +627,12 @@ export interface IssueReport {
    * Why the content filter held this submission, one reason per line.
    */
   flagReasons?: string | null;
+  discord?: {
+    userId?: string | null;
+    username?: string | null;
+    messageUrl?: string | null;
+    interactionId?: string | null;
+  };
   updatedAt: string;
   createdAt: string;
 }
@@ -811,6 +827,19 @@ export interface AbuseReport {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "discord-posts".
+ */
+export interface DiscordPost {
+  id: number;
+  gameProject: number | GameProject;
+  patchNote?: (number | null) | PatchNote;
+  issue?: (number | null) | Issue;
+  stage?: ('planned' | 'in-progress' | 'shipped') | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
@@ -915,6 +944,10 @@ export interface PayloadJob {
   queue?: string | null;
   waitUntil?: string | null;
   processing?: boolean | null;
+  /**
+   * Used for concurrency control. Jobs with the same key are subject to exclusive/supersedes rules.
+   */
+  concurrencyKey?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -964,6 +997,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'abuse-reports';
         value: number | AbuseReport;
+      } | null)
+    | ({
+        relationTo: 'discord-posts';
+        value: number | DiscordPost;
       } | null)
     | ({
         relationTo: 'payload-folders';
@@ -1114,6 +1151,13 @@ export interface GameProjectsSelect<T extends boolean = true> {
       };
   customDomain?: T;
   customDomainVerified?: T;
+  discord?:
+    | T
+    | {
+        guildId?: T;
+        channelId?: T;
+        webhookUrl?: T;
+      };
   flagged?: T;
   flagReasons?: T;
   updatedAt?: T;
@@ -1182,6 +1226,14 @@ export interface IssueReportsSelect<T extends boolean = true> {
   gameVersion?: T;
   flagged?: T;
   flagReasons?: T;
+  discord?:
+    | T
+    | {
+        userId?: T;
+        username?: T;
+        messageUrl?: T;
+        interactionId?: T;
+      };
   updatedAt?: T;
   createdAt?: T;
 }
@@ -1448,6 +1500,18 @@ export interface AbuseReportsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "discord-posts_select".
+ */
+export interface DiscordPostsSelect<T extends boolean = true> {
+  gameProject?: T;
+  patchNote?: T;
+  issue?: T;
+  stage?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv_select".
  */
 export interface PayloadKvSelect<T extends boolean = true> {
@@ -1482,6 +1546,7 @@ export interface PayloadJobsSelect<T extends boolean = true> {
   queue?: T;
   waitUntil?: T;
   processing?: T;
+  concurrencyKey?: T;
   updatedAt?: T;
   createdAt?: T;
 }
