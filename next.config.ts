@@ -37,6 +37,11 @@ const nextConfig: NextConfig = {
 
     return webpackConfig
   },
+  // The share images read their font from disk at runtime, so the standalone
+  // output must carry it (keys are route globs; `[` would be a glob class).
+  outputFileTracingIncludes: {
+    '/buttons/*': ['./src/lib/share/fonts/DejaVuSans.ttf'],
+  },
   reactStrictMode: true,
   redirects,
   turbopack: {

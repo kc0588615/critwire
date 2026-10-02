@@ -1,6 +1,7 @@
 import { getGameProject } from '@/lib/game-portal/getGameProject'
 import { portalPaths } from '@/lib/game-portal/paths'
 import { queryPublishedPatchNotes } from '@/lib/game-portal/patchNotes'
+import { escapeXml } from '@/utilities/escapeXml'
 import { getServerSideURL } from '@/utilities/getURL'
 
 export const revalidate = 3600
@@ -10,14 +11,6 @@ export const revalidate = 3600
 export async function generateStaticParams() {
   return []
 }
-
-const escapeXml = (value: string): string =>
-  value
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&apos;')
 
 export async function GET(
   _req: Request,
