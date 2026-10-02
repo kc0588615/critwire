@@ -1,7 +1,7 @@
 import { defineConfig, devices } from '@playwright/test'
 import 'dotenv/config'
 
-import { BASE_URL, fakeUpstashServer, serverEnv } from './tests/e2e/support/env'
+import { BASE_URL, fakeDiscordServer, fakeUpstashServer, serverEnv } from './tests/e2e/support/env'
 import { shotsTarget } from './tests/screenshots/catalog'
 import { SHOTS_CRON_SECRET } from './tests/screenshots/support'
 
@@ -77,9 +77,10 @@ export default defineConfig({
       },
     },
   ],
-  // The Upstash stand-in first: the app server is configured to use it.
+  // The Upstash and Discord stand-ins first: the app server is configured to use them.
   webServer: [
     fakeUpstashServer(),
+    fakeDiscordServer(),
     {
       command: 'pnpm e2e:server',
       url: `${BASE_URL}/api/health`,

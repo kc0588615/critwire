@@ -174,6 +174,13 @@ How the E2E suite works:
   the real Upstash client. It answers the rate-limit calls as
   "allowed" and any command the app isn't known to send with an error.
   The 3102 server has no Upstash, as a self-hosted instance may not.
+- A Discord stand-in (`tests/e2e/support/fakeDiscord.ts`) listens on
+  `E2E_PORT + 4` and is the 3100 server's `DISCORD_API_BASE_URL`, so
+  nothing calls the real Discord; it answers any call the app isn't
+  known to make with a 404 and logs it, and lists what it received at
+  `GET /debug/requests`. Specs sign interactions with a fixed-seed
+  Ed25519 test key pair (`DISCORD_TEST_KEYS` in `support/env.ts`,
+  helpers in `support/discord.ts`). The 3102 server runs with Discord off.
 - Without Resend, the 3100 server writes every email to
   `test-results/outbox/` as JSON (`EMAIL_OUTBOX_DIR`), and specs read
   verification and reset links from there (`tests/e2e/support/email.ts`).

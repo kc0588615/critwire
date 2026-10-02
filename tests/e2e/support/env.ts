@@ -1,3 +1,4 @@
+import { createPrivateKey, createPublicKey, type KeyObject } from 'node:crypto'
 import path from 'node:path'
 
 /** Shared E2E constants. Imported by `playwright.config.ts`, so keep it free of test-runner imports. */
@@ -38,6 +39,50 @@ export const fakeUpstashServer = () => ({
   stderr: 'pipe' as const,
   env: { E2E_PORT: String(E2E_PORT) },
 })
+
+/**
+ * The Discord stand-in (`support/fakeDiscord.ts`): the app's
+ * `DISCORD_API_BASE_URL` on the first server, so nothing calls the real
+ * Discord. The second server runs with Discord off.
+ */
+export const FAKE_DISCORD_PORT = E2E_PORT + 4
+export const FAKE_DISCORD_URL = `http://127.0.0.1:${FAKE_DISCORD_PORT}`
+
+/** The `webServer` entry that starts the stand-in; list it before the app servers. */
+export const fakeDiscordServer = () => ({
+  command: 'pnpm exec tsx tests/e2e/support/fakeDiscord.ts',
+  url: FAKE_DISCORD_URL,
+  timeout: 30_000,
+  reuseExistingServer: false,
+  stdout: 'pipe' as const,
+  stderr: 'pipe' as const,
+  env: { E2E_PORT: String(E2E_PORT) },
+})
+
+export const DISCORD_TEST_APPLICATION_ID = '100000000000000001'
+export const DISCORD_TEST_CLIENT_SECRET = 'e2e-discord-client-secret'
+
+export interface DiscordTestKeys {
+  privateKey: KeyObject
+  /** The raw 32-byte public key in hex, as Discord shows it. */
+  publicKey: string
+}
+
+/** An Ed25519 key pair from a fixed 32-byte seed, so the server's env and the specs agree. */
+const discordKeysFromSeed = (seedHex: string): DiscordTestKeys => {
+  const privateKey = createPrivateKey({
+    format: 'der',
+    key: Buffer.from(`302e020100300506032b657004220420${seedHex}`, 'hex'),
+    type: 'pkcs8',
+  })
+  // The SPKI DER is a 12-byte header, then the key's 32 bytes.
+  const spki = createPublicKey(privateKey).export({ format: 'der', type: 'spki' })
+  return { privateKey, publicKey: spki.subarray(12).toString('hex') }
+}
+
+/** The app's key pair, and one Discord never used. */
+export const DISCORD_TEST_KEYS = discordKeysFromSeed('11'.repeat(32))
+export const DISCORD_WRONG_KEYS = discordKeysFromSeed('22'.repeat(32))
 
 /** Cloudflare's documented always-pass Turnstile test keys. */
 export const TURNSTILE_TEST_SITE_KEY = '1x00000000000000000000AA'
@@ -119,6 +164,10 @@ export const serverEnv = ({ cronSecret = '' }: { cronSecret?: string } = {}): Re
   UPSTASH_REDIS_REST_TOKEN: FAKE_UPSTASH_TOKEN,
   CRON_SECRET: cronSecret,
   CRITWIRE_CONTACT_URL: E2E_CONTACT_URL,
+  DISCORD_APPLICATION_ID: DISCORD_TEST_APPLICATION_ID,
+  DISCORD_PUBLIC_KEY: DISCORD_TEST_KEYS.publicKey,
+  DISCORD_CLIENT_SECRET: DISCORD_TEST_CLIENT_SECRET,
+  DISCORD_API_BASE_URL: FAKE_DISCORD_URL,
   // On at runtime only: `e2e:server` builds with it empty, as the Docker
   // image does, so a page that bakes the flag in at build fails here, and
   // one that bakes it on fails on the second server (P3).
@@ -143,6 +192,10 @@ export const secondServerEnv = (): Record<string, string> => ({
   CRITWIRE_OPEN_SIGNUP: '',
   CRITWIRE_HIDE_POWERED_BY: '1',
   EMAIL_OUTBOX_DIR: '',
+  DISCORD_APPLICATION_ID: '',
+  DISCORD_PUBLIC_KEY: '',
+  DISCORD_CLIENT_SECRET: '',
+  DISCORD_API_BASE_URL: '',
   CRITWIRE_LIMIT_GAMES_PER_STUDIO: String(SECOND_LIMITS.games),
   CRITWIRE_LIMIT_MEDIA_MB_PER_STUDIO: String(SECOND_LIMITS.mediaMB),
   CRITWIRE_LIMIT_PUBLIC_FEEDBACK_PER_GAME: String(SECOND_LIMITS.publicFeedback),

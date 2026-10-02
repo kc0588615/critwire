@@ -1,4 +1,5 @@
 import * as Sentry from '@sentry/nextjs'
+import { PHASE_PRODUCTION_BUILD } from 'next/constants'
 
 export async function register(): Promise<void> {
   if (process.env.NEXT_RUNTIME === 'nodejs') {
@@ -12,6 +13,11 @@ export async function register(): Promise<void> {
       enabled: Boolean(process.env.SENTRY_DSN),
       tracesSampleRate: Number(process.env.SENTRY_TRACES_SAMPLE_RATE ?? 0.1),
     })
+  }
+  // After Sentry, so a failed registration reaches it; never while `next build` collects page data.
+  if (process.env.NEXT_RUNTIME === 'nodejs' && process.env.NEXT_PHASE !== PHASE_PRODUCTION_BUILD) {
+    const { syncDiscordCommands } = await import('./lib/discord/commands')
+    syncDiscordCommands()
   }
 }
 

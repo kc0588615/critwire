@@ -4,6 +4,7 @@ import 'dotenv/config'
 import {
   AUTH_SETUP_PATTERN,
   BASE_URL,
+  fakeDiscordServer,
   fakeUpstashServer,
   SECOND_BASE_URL,
   secondServerEnv,
@@ -40,10 +41,11 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'], channel: 'chromium' },
     },
   ],
-  // Started in order: the Upstash stand-in first, so the app never boots
+  // Started in order: the Upstash and Discord stand-ins first, so the app never boots
   // against nothing; the second app server waits for the first to migrate and build.
   webServer: [
     fakeUpstashServer(),
+    fakeDiscordServer(),
     {
       command: 'pnpm e2e:server',
       url: `${BASE_URL}/api/health`,
