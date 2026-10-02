@@ -38,6 +38,7 @@ in the same project.
 | `docs/features.md` | Product scope, collections/fields, feedback board + voting, public stages, submission review and content filter, updates, contact form, hosting, build phases |
 | `docs/integrations.md` | R2, Upstash, Resend, Sentry, Turnstile, Cloudflare, the content filter, PgBouncer, backups, env vars |
 | `docs/self-hosting.md` | Which services are required, the first super admin, open signup and the hosted limits, upgrade steps |
+| `docs/share.md` | The "Put critwire on your site" kit: links, `?ref=` tags, button images, the live badge, the referral counter, Steam, what works where |
 
 ## Stack
 

@@ -110,7 +110,14 @@ Built only by `portalPaths` (`src/lib/game-portal/paths.ts`).
 /g/[gameSlug]/feedback/[slug]          feedback item
 /g/[gameSlug]/feedback/new             "Bug or idea?" submit form (?type=bug|idea)
 /g/[gameSlug]/contact                  contact form
+/g/[gameSlug]/roadmap                  alias: 307 to feedback?view=board, keeping the query
+/g/[gameSlug]/badge.svg, badge.png     live badge (stage counts, latest version)
+/buttons/<button>-<light|dark>.<svg|png>   hosted button images, the same for every game
 ```
+
+The share kit (`docs/share.md`) links these with `?ref=<place>`; the
+portal's `ReferralPing` strips the tag and reports it to
+`POST /api/referrals`, which counts in Upstash only.
 
 `feedback/new` is a static route, so `new` is a reserved item slug.
 The old `/issues/*`, `/report` and `/patch-notes/*` URLs redirect
@@ -120,7 +127,8 @@ Every portal page and the layout get their game through
 `requirePortalProject(slug)` (`src/lib/game-portal/getGameProject.ts`):
 a held game or a suspended studio's game redirects to `/unavailable`,
 an unknown slug is a 404. The RSS feed and the submit routes answer 404
-for both.
+for both. The badge answers all three with one neutral image instead,
+so host pages never show a broken image.
 
 ### Accounts, hosting and moderation URLs
 
@@ -172,6 +180,8 @@ Keep the rewrite layer lightweight: resolution only, no business logic.
 | Feedback list, board, item pages | SSR |
 | Submit and contact forms | SSR |
 | Payload admin panel | SSR (Payload-managed) |
+| Live badge (`badge.svg`, `badge.png`) | Dynamic, HTTP-cached 5 minutes (`s-maxage=300`); no server cache, so nothing to revalidate |
+| Button images (`/buttons/*`) | Dynamic, memoized per process, HTTP-cached a day |
 
 **Revalidation rule:** every Payload hook that modifies published
 content calls `revalidatePath()` / `revalidateTag()` after the DB
@@ -187,6 +197,15 @@ Subtrees revalidate by route pattern (`PORTAL_ROUTE` and `UPDATES_ROUTE` in `src
 Pages that read `CRITWIRE_OPEN_SIGNUP` must render per request: the
 Docker image is built without the runtime environment, so a prerendered
 page would keep the build's value.
+
+## Framing
+
+The app owns its framing policy: `headers()` in `next.config.ts` sends
+`Content-Security-Policy: frame-ancestors 'self'` on every response,
+so it holds behind any proxy, or none. nginx sets no framing header
+(`docs/deploy.md`, Security headers; `tests/int/nginx-headers` checks).
+A route that may be framed elsewhere gets a later `headers()` entry
+with its own `frame-ancestors`; Next sends the last matching one.
 
 ## Media serving
 
@@ -220,18 +239,21 @@ disk and R2 alike. So a suspended studio's files answer 403 there.
     /(payload)            Payload admin routes (auto-generated)
     /(public)/g/[gameSlug]  public game portal routes
     /(public)/unavailable   held or suspended portal
+    /(public)/buttons       hosted button images
     /(frontend)           home page, marketing CMS pages, previews,
                           signup, verify, onboarding, report-abuse,
                           forgot-password
     /api
       /health             health check
       /vote               voting endpoint
+      /referrals          referral counter (JSON only, Upstash only)
       /seed               demo seed (CRON_SECRET)
   /collections            one folder per collection config
   /components
-    /game                 portal UI (hub, board, forms, chrome, theme)
+    /game                 portal UI (hub, board, forms, chrome, theme, referral ping)
+    /share                "Put critwire on your site" panel (client, no data access)
     /accounts             AccountPage, the signup/verify/onboarding shell
-    /admin                forgot-password view, logo, feedback kanban
+    /admin                forgot-password view, logo, feedback kanban, Share tab
     /BeforeDashboard      admin dashboard for each role
     /marketing            home page
   /lib
@@ -241,7 +263,9 @@ disk and R2 alike. So a suspended studio's files answer 403 there.
     /limits               hosted-plan limits and their hooks
     /hosting.ts           the open-signup flag
     /media                where local uploads live
-    /admin                dashboard queries
+    /admin                dashboard queries, admin paths
+    /share                share kit, platforms, buttons, badge, image renderer + font
+    /referrals            referral counter (Upstash)
     /payload              withTransaction, unique-violation helper
     /moderation           content filter (screenText)
     /public-forms         guardPublicForm (Zod, Turnstile, rate limit)

@@ -13,7 +13,7 @@ For the server itself (Docker Compose, Nginx, Cloudflare, backups), see
 | --- | --- | --- | --- |
 | PostgreSQL 16 | Required | `DATABASE_URL` (compose also uses `DB_USER`, `DB_PASSWORD`, `DB_NAME`) | Nothing runs. |
 | Cloudflare Turnstile | Required in production | `NEXT_PUBLIC_TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY` | Every public form refuses submissions: feedback, contact, "Forgot password?", and with open signup also signup, verification and abuse reports. Local development runs the forms without it. |
-| Upstash Redis | Required in production | `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` | The same forms refuse, and so does voting. Local development runs without rate limits. |
+| Upstash Redis | Required in production | `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` | The same forms refuse, and so does voting. The referral counter ("Where players come from") is off; the share kit's links, buttons and badge still work. Local development runs without rate limits. |
 | Resend | Optional | `RESEND_API_KEY`, `RESEND_FROM_EMAIL` | Emails go to the server log (the full body only outside production). Contact-by-email jobs fail and wait for a super admin to retry them. "Forgot password?" tells people to ask whoever runs the site, so a super admin sets passwords in the admin. Open signup refuses. |
 | Cloudflare R2 | Optional | `R2_BUCKET`, `R2_ENDPOINT`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` | Uploads stay on local disk in `./media` (the `media` volume under Docker). |
 | Sentry | Optional | `SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_DSN` | Errors reach only the log. |

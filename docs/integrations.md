@@ -3,7 +3,7 @@
 | Service | Purpose | Where in code |
 | --- | --- | --- |
 | Cloudflare R2 | Object storage, zero egress | `@payloadcms/storage-s3` in `payload.config.ts` |
-| Upstash Redis | Rate limiting (domain cache in Phase 9) | `/lib/upstash` |
+| Upstash Redis | Rate limiting, the referral counter (domain cache in Phase 9) | `/lib/upstash`, `/lib/referrals` |
 | Resend | Transactional email: verification, password resets, contact forms | `/lib/email` (Payload's email adapter), jobs queue tasks |
 | Sentry | Error tracking | server + client + jobs instrumentation |
 | Better Stack | Uptime monitoring | external — pings health endpoint |
@@ -11,6 +11,7 @@
 | Tally | Optional contact/feedback forms (studio-owned) | `GameProjects` contact/reportForm; `TallyEmbed` |
 | `obscenity` (MIT, local) | Content filter for player submissions and studios' public text | `/lib/moderation/screenText.ts` |
 | DnD-Kit | Admin feedback kanban drag-and-drop | `src/components/admin/issues/*` |
+| `opentype.js` (MIT, local) + DejaVu Sans | Text in the button images and the live badge, drawn as paths | `/lib/share/images.ts`, `/lib/share/fonts` |
 
 ## Tally (optional contact + feedback forms)
 
@@ -66,6 +67,30 @@ off the public site until a super admin approves it (see
 `docs/features.md`). `tests/int/content-screen` covers each failure
 mode.
 
+## `opentype.js` and DejaVu Sans (share images)
+
+The hosted buttons and the live badge (`docs/share.md`) are SVG with
+their text drawn as glyph paths, never `<text>`, and sharp (already a
+dependency) turns that SVG into a 2× PNG. The production runner
+(`node:24-alpine`) has no fonts, so `<text>` would render blank there.
+
+- **`opentype.js` is pinned at exactly 1.3.4**, with `@types/opentype.js`
+  1.3.x. 1.3.5 (2026-04-29) isn't a small patch but a rebuild from the
+  2.0 line (new entry points, dependencies inlined), and 2.0.0
+  (2026-05-06) is too new. Don't bump it casually; after any bump,
+  `share-kit.spec.ts`, `badge.spec.ts` and the standalone check below
+  must pass.
+- **The font** is `src/lib/share/fonts/DejaVuSans.ttf`, with its
+  licence beside it (`LICENSE`, from the `fonts-dejavu-core`
+  package). It's read once per process and never sent to browsers, so
+  it isn't subset; glyphs it lacks render as boxes.
+- **The standalone output must carry the font.** `next.config.ts`
+  traces it into the button and badge routes
+  (`outputFileTracingIncludes`). After `pnpm build`,
+  `.next/standalone/src/lib/share/fonts/DejaVuSans.ttf` must exist,
+  and `/buttons/give-feedback-dark.png` served by
+  `node .next/standalone/server.js` must show its label.
+
 ## Cloudflare R2 (media storage)
 
 - Via `@payloadcms/storage-s3` with **`region: 'auto'`** — R2 is
@@ -84,13 +109,25 @@ mode.
 
 ## Upstash Redis
 
-`/lib/upstash`. Two uses:
+`/lib/upstash`. Three uses:
 
 1. **Rate limiting** (`/lib/upstash/rate-limit.ts`) — all public form
    endpoints (contact, feedback submission, vote, signup, verify,
-   password recovery, abuse reports) limited by IP, plus a per-address
-   budget for the emails signup and password recovery send.
-2. **Domain → slug cache** (Phase 9, not built yet) — short TTL;
+   password recovery, abuse reports) and referral counts, limited by
+   IP, plus a per-address budget for the emails signup and password
+   recovery send.
+2. **The referral counter** (`/lib/referrals/counter.ts`,
+   `docs/share.md`) — arrivals through kit links, one hash per game and
+   UTC day, `referrals:<gameID>:<YYYY-MM-DD>`, with a field per `ref`
+   source. Counting is one MULTI (`HINCRBY`, then `EXPIRE` 35 days), so
+   about three commands per page view that carries a valid `ref`
+   (with the rate limit); views without one cost nothing. Each hit
+   resets the TTL, so a day's key lives 35 days after its last hit.
+   Opening a game's Share tab reads 30 days in one pipeline of 30
+   `HGETALL`. Without Upstash the counter is off. Keys aren't
+   namespaced per instance (nor are rate limits), so use one Upstash
+   database per instance.
+3. **Domain → slug cache** (Phase 9, not built yet) — short TTL;
    consulted by the `next.config.ts` rewrite layer; invalidated by the
    GameProject `afterChange` hook when `customDomain` changes; cache
    miss falls through to a Payload Local API query.
@@ -159,6 +196,10 @@ routes where failure matters; don't swallow errors.
 - Cloudflare doesn't cache the app's HTML or RSS (its defaults). The app
   caches them itself (ISR) and revalidates on every write, which a
   Cloudflare "Cache Everything" rule would bypass. See `docs/deploy.md`.
+- Cloudflare does cache `.svg` and `.png` by default, and honours
+  `s-maxage`: the live badge for 5 minutes, the button images for a
+  day. The badge redirects any query string to its bare URL, so
+  cache-busters can't multiply its cache entries.
 
 ## Environment variables
 
@@ -202,6 +243,8 @@ added.
 - Tenant isolation via multi-tenant plugin access control
 - Collection- and field-level access control
 - Upstash rate limiting on public endpoints
+- Public JSON endpoints accept only `application/json` and send no CORS
+  headers, so other sites can't make players' browsers call them
 - Turnstile on public forms
 - Content filter on player submissions (review on by default) and on
   studios' public text (held for a super admin)
@@ -213,4 +256,5 @@ added.
 - Hashed vote tokens in DB
 - HTTPS enforced via Cloudflare
 - Docker containers run as non-root
-- Nginx security headers
+- Nginx security headers; the app owns its framing policy
+  (`frame-ancestors 'self'`)

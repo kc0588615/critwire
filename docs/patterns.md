@@ -162,6 +162,13 @@ hooks that the collections only register.
   one is a 404. Call it in every page as well as the layout, because
   Next re-renders pages without the layout on client navigation. Route
   handlers that return a `Response` use `getGameProject` and answer 404.
+- **The badge is the one exception** (`src/lib/share/badge.ts`): an
+  unknown, held or suspended game gets the same neutral image, byte for
+  byte, with status 200, because a host page would otherwise show a
+  broken image and the response would tell unknown games from held
+  ones. A badge URL with any query string gets a 308 to the bare URL,
+  decided from `req.url` before any read, so made-up query strings cost
+  neither a render nor a cache entry.
 - Multi-step writes that must succeed or fail together run in
   `withTransaction` (`src/lib/payload/`), passing its `req` to each
   Local API call.
@@ -191,7 +198,7 @@ freshness or optimistic state — justify it in the PR/commit.
 ## Validation
 
 - Zod at every public API boundary (contact and feedback submission,
-  `/api/vote`, signup, verify, onboarding, password recovery and abuse
+  `/api/vote`, `/api/referrals`, signup, verify, onboarding, password recovery and abuse
   reports). Shared schemas in `/lib/validation`.
 - Inside Payload, prefer field-level validation on collections over
   duplicate Zod checks.
@@ -241,6 +248,31 @@ skips them, plus Upstash in E2E builds (`RATE_LIMIT_OPTIONAL=1`).
 Contact webhooks must be Discord's (`isAllowedDiscordWebhookUrl`,
 checked on save and again before sending, which also refuses
 redirects).
+
+## Public JSON endpoints
+
+`/api/vote` and `/api/referrals` are called by the portal's own
+scripts, never by forms, and follow one shape:
+
+1. `isJSONRequest(req)` (`src/lib/public-forms/request.ts`) first: the
+   media type must be exactly `application/json`, or the route answers
+   400 without reading the body. Forms and `no-cors` fetches can only
+   send `text/plain` and the form encodings, `text/plain;
+   x=application/json` included, which is why it doesn't use
+   `includes()`.
+2. No CORS headers. A cross-site JSON fetch needs a preflight, which
+   Next answers with no `Access-Control-*` header, so it fails and the
+   browser never sends the request.
+3. Then Zod on the body, an Upstash rate limit by IP, and a read of
+   the target through access (`overrideAccess: false`), before the
+   work.
+4. Sentry capture and a pino log on failure, answered with a 500.
+
+The referral beacon (`ReferralPing`) sends
+`Content-Type: application/json` explicitly and ignores the answer, so
+it never affects the page. It has no Turnstile: it isn't a form and
+has no user input. The whitelist, the public-game check and the rate
+limit bound it instead.
 
 ## Voting model
 
