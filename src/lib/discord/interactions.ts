@@ -36,7 +36,8 @@ export const Permissions = {
   MANAGE_MESSAGES: 1n << 13n,
 } as const
 
-const snowflake = z.string().regex(/^\d{17,20}$/)
+/** A Discord ID. */
+export const snowflake = z.string().regex(/^\d{17,20}$/)
 
 const pingSchema = z.object({
   application_id: snowflake,

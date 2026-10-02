@@ -1,4 +1,8 @@
+import { discordFetch } from '@/lib/discord/config'
+import { getLogger } from '@/lib/logger'
 import { isAllowedDiscordWebhookUrl } from '@/lib/validation/discordWebhook'
+
+const log = getLogger('discord.webhook')
 
 const DELIVERY_TIMEOUT_MS = 10_000
 
@@ -40,5 +44,25 @@ export const executeDiscordWebhook = async (
   }
   if (!response.ok) {
     throw new Error(`Discord webhook failed with ${response.status}: ${await response.text()}`)
+  }
+}
+
+/**
+ * Deletes a webhook critwire created, through Discord's API with the
+ * webhook's own token. Best effort: a failure is logged (by webhook ID,
+ * never the token) and swallowed, since the link it belonged to is
+ * already gone; the studio can remove it in Server Settings → Integrations.
+ */
+export const deleteDiscordWebhook = async (url: string): Promise<void> => {
+  const match = /^\/api\/webhooks\/(\d+)\/([^/]+)$/.exec(new URL(url).pathname)
+  if (!match) {
+    log.warn('Not deleting a webhook whose URL has no ID and token')
+    return
+  }
+  const [, id, token] = match
+  try {
+    await discordFetch(`/webhooks/${id}/${token}`, { method: 'DELETE' })
+  } catch (error) {
+    log.warn({ err: error, webhookId: id }, 'Could not delete a Discord webhook')
   }
 }

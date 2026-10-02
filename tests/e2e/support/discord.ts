@@ -70,3 +70,55 @@ export const discordRequests = async (request: APIRequestContext): Promise<Recor
   if (!response.ok()) throw new Error(`fake Discord /debug/requests answered ${response.status()}`)
   return (await response.json()) as RecordedRequest[]
 }
+
+export const INSTALL_PATH = '/api/discord/install'
+export const CALLBACK_PATH = '/api/discord/callback'
+
+const authHeaders = (token?: string): Record<string, string> =>
+  token ? { Authorization: `JWT ${token}` } : {}
+
+/** "Add critwire to your Discord" for `gameID`, as `token`'s user (or anonymously); no redirects followed. */
+export const startDiscordInstall = (
+  request: APIRequestContext,
+  gameID: number,
+  token?: string,
+): Promise<APIResponse> =>
+  request.get(`${INSTALL_PATH}?game=${gameID}`, { headers: authHeaders(token), maxRedirects: 0 })
+
+/** Discord sending the browser back to the callback with `query`, as `token`'s user; no redirects followed. */
+export const discordCallback = (
+  request: APIRequestContext,
+  query: Record<string, string>,
+  token?: string,
+): Promise<APIResponse> =>
+  request.get(`${CALLBACK_PATH}?${new URLSearchParams(query)}`, {
+    headers: authHeaders(token),
+    maxRedirects: 0,
+  })
+
+/** The `state` on the authorize URL an install answered with. */
+export const stateOf = (install: APIResponse): string => {
+  const state = new URL(install.headers().location ?? '').searchParams.get('state')
+  if (!state) throw new Error(`No state in ${install.headers().location}`)
+  return state
+}
+
+/** The stand-in's authorization code for a studio that picked `guild` and `channel`. */
+export const discordCode = ({ guild, channel }: { guild: string; channel: string }): string =>
+  `guild-${guild}-channel-${channel}`
+
+/**
+ * Links `gameID` to `guild` and `channel` through the real install and
+ * callback, as `token`'s user, the way a studio does on Discord's screen.
+ * Returns the callback's answer.
+ */
+export const linkDiscord = async (
+  request: APIRequestContext,
+  token: string,
+  gameID: number,
+  target: { guild: string; channel: string },
+): Promise<APIResponse> => {
+  const install = await startDiscordInstall(request, gameID, token)
+  if (install.status() !== 303) throw new Error(`install answered ${install.status()}`)
+  return discordCallback(request, { code: discordCode(target), state: stateOf(install) }, token)
+}
