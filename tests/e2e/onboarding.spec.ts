@@ -39,6 +39,8 @@ const freshContext = (browser: Browser): Promise<BrowserContext> =>
 
 /** Fills in Payload's sign-in form; the caller asserts where it lands. */
 async function signInForm(page: Page, user: Account): Promise<void> {
+  // Payload's forms reset a value typed before they hydrate.
+  await page.waitForLoadState('networkidle')
   await page.getByLabel('Email').fill(user.email)
   await page.getByLabel('Password').fill(user.password)
   await page.getByRole('button', { name: 'Login' }).click()
