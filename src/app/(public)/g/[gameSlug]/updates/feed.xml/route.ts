@@ -1,6 +1,6 @@
 import { getGameProject } from '@/lib/game-portal/getGameProject'
 import { portalPaths } from '@/lib/game-portal/paths'
-import { queryPublishedPatchNotes } from '@/lib/game-portal/patchNotes'
+import { queryPublishedPatchNotes, updateFeedTitle } from '@/lib/game-portal/patchNotes'
 import { escapeXml } from '@/utilities/escapeXml'
 import { getServerSideURL } from '@/utilities/getURL'
 
@@ -32,10 +32,9 @@ export async function GET(
     .map((note) => {
       const link = `${base}${paths.update(note.slug)}`
       const guid = `${base}${paths.updateGuid(note.slug)}`
-      const title = note.versionLabel ? `${note.versionLabel} — ${note.title}` : note.title
       return [
         '    <item>',
-        `      <title>${escapeXml(title)}</title>`,
+        `      <title>${escapeXml(updateFeedTitle(note))}</title>`,
         `      <link>${escapeXml(link)}</link>`,
         `      <guid isPermaLink="true">${escapeXml(guid)}</guid>`,
         note.publishedAt

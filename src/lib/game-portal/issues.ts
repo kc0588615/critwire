@@ -15,6 +15,9 @@ export const BOARD_COLUMN_LIMIT = 25
 
 export type IssueSortKey = 'latest' | 'top'
 
+/** The ranked order: pinned first, then by votes, then newest. */
+export const RANKED_SORT: Sort = ['-isPinned', '-upvoteCount', '-createdAt']
+
 /** What a shipped item shows of its update: see `shippedUpdate`. */
 const SHIPPED_IN_SELECT = { _status: true, slug: true, title: true, versionLabel: true } as const
 
@@ -84,8 +87,7 @@ export const queryPublicIssues = cache(
       })
     }
 
-    const sortOrder: Sort =
-      sort === 'top' ? ['-isPinned', '-upvoteCount', '-createdAt'] : ['-isPinned', '-createdAt']
+    const sortOrder: Sort = sort === 'top' ? RANKED_SORT : ['-isPinned', '-createdAt']
 
     return payload.find({
       collection: 'issues',
@@ -102,18 +104,21 @@ export const queryPublicIssues = cache(
 )
 
 /**
- * One board column: a stage's public items, pinned first, then by votes,
- * then newest. `totalDocs` is the column's true count; past the limit,
- * the board links to the list filtered to the stage. A fix note the
- * visitor can't read (a draft) stays an ID.
+ * One board column: a stage's public items, or every public stage's when
+ * `stage` is null, pinned first, then by votes, then newest. `totalDocs`
+ * is the column's true count; past the limit, the board links to the list
+ * filtered to the stage. A fix note the visitor can't read (a draft)
+ * stays an ID.
  */
 export const queryBoardColumn = async ({
+  limit = BOARD_COLUMN_LIMIT,
   projectID,
   stage,
   type,
 }: {
+  limit?: number
   projectID: number | string
-  stage: PublicStageId
+  stage: null | PublicStageId
   type?: Issue['type'] | null
 }) => {
   const payload = await getPayload({ config })
@@ -121,7 +126,7 @@ export const queryBoardColumn = async ({
   return payload.find({
     collection: 'issues',
     depth: 1,
-    limit: BOARD_COLUMN_LIMIT,
+    limit,
     overrideAccess: false,
     populate: { 'patch-notes': SHIPPED_IN_SELECT },
     select: {
@@ -133,7 +138,7 @@ export const queryBoardColumn = async ({
       type: true,
       upvoteCount: true,
     },
-    sort: ['-isPinned', '-upvoteCount', '-createdAt'],
+    sort: RANKED_SORT,
     where: { and: publicIssuesWhere({ projectID, stage, type }) },
   })
 }
@@ -157,7 +162,7 @@ export const queryTopFeedback = cache(async (projectID: number | string): Promis
     limit: TOP_FEEDBACK_LIMIT,
     overrideAccess: false,
     pagination: false,
-    sort: ['-isPinned', '-upvoteCount', '-createdAt'],
+    sort: RANKED_SORT,
     where: {
       and: [
         { gameProject: { equals: projectID } },
@@ -172,14 +177,24 @@ export const queryTopFeedback = cache(async (projectID: number | string): Promis
 /**
  * An update's "From your feedback": the public items it shipped, most
  * voted first. Scoped to the update's own game as well as the link.
+ * Every item unless a `limit` is given.
  */
 export const queryShippedFeedback = cache(
-  async ({ noteID, projectID }: { noteID: number; projectID: number | string }) => {
+  async ({
+    limit,
+    noteID,
+    projectID,
+  }: {
+    limit?: number
+    noteID: number
+    projectID: number | string
+  }) => {
     const payload = await getPayload({ config })
 
     const result = await payload.find({
       collection: 'issues',
       depth: 0,
+      limit,
       overrideAccess: false,
       pagination: false,
       select: { slug: true, title: true, type: true, upvoteCount: true },

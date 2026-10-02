@@ -7,12 +7,13 @@ import React from 'react'
 import type { Issue } from '@/payload-types'
 
 import RichText from '@/components/RichText'
-import { FeedbackMeta, shippedUpdate, StatusMark } from '@/components/game/FeedbackStatus'
+import { FeedbackMeta, StatusMark } from '@/components/game/FeedbackStatus'
 import { VoteButton } from '@/components/game/VoteButton'
 import { VoteCount } from '@/components/game/VoteCount'
 import { getGameProject, requirePortalProject } from '@/lib/game-portal/getGameProject'
 import { getHasVoted, getPublicIssue } from '@/lib/game-portal/issues'
 import { portalPaths } from '@/lib/game-portal/paths'
+import { shippedUpdate } from '@/lib/game-portal/shipped'
 import { publicStage } from '@/lib/game-portal/stages'
 
 // Reads the vote cookie and shows live counts — always dynamic.

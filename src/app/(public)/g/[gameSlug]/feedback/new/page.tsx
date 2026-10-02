@@ -18,7 +18,7 @@ import {
   feedbackSearchParams,
   feedbackTypeOf,
 } from '@/lib/game-portal/feedbackSearchParams'
-import { getReportRoute } from '@/lib/game-portal/formRoutes'
+import { acceptsIdeas, getReportRoute } from '@/lib/game-portal/formRoutes'
 import { getGameProject, requirePortalProject } from '@/lib/game-portal/getGameProject'
 import { portalPaths } from '@/lib/game-portal/paths'
 
@@ -58,7 +58,7 @@ const COPY = {
 const chosenType = (
   project: Pick<GameProject, 'reportForm'>,
   type: FeedbackTypeParam | null,
-): FeedbackTypeParam | null => (project.reportForm?.acceptIdeas === false ? 'bug' : type)
+): FeedbackTypeParam | null => (acceptsIdeas(project) ? type : 'bug')
 
 export default async function NewFeedbackPage({ params, searchParams }: Args) {
   const { gameSlug } = await params
@@ -67,7 +67,7 @@ export default async function NewFeedbackPage({ params, searchParams }: Args) {
 
   const route = getReportRoute(project.reportForm)
   const paths = portalPaths(gameSlug)
-  const acceptsIdeas = project.reportForm?.acceptIdeas !== false
+  const takesIdeas = acceptsIdeas(project)
   const type = chosenType(project, typeParam)
   const copy = type ? COPY[type] : null
 
@@ -132,7 +132,7 @@ export default async function NewFeedbackPage({ params, searchParams }: Args) {
 
             {type && copy ? (
               <form action={paths.feedbackSubmit} className="fs-form" method="post">
-                {acceptsIdeas ? <FeedbackTypeChoice chosen={type} paths={paths} /> : null}
+                {takesIdeas ? <FeedbackTypeChoice chosen={type} paths={paths} /> : null}
                 <input name="type" type="hidden" value={feedbackTypeOf(type)} />
 
                 <FormField id="title" label="Title">

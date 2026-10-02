@@ -4,12 +4,10 @@ import React from 'react'
 import type { GameProject } from '@/payload-types'
 
 import { portalPaths } from '@/lib/game-portal/paths'
-import { queryPublishedPatchNotes } from '@/lib/game-portal/patchNotes'
+import { LATEST_UPDATES_LIMIT, queryPublishedPatchNotes } from '@/lib/game-portal/patchNotes'
 
 import { HubSection } from './HubSection'
 import { UpdateEntry } from './UpdateEntry'
-
-const LATEST_UPDATES_LIMIT = 3
 
 /** The hub's three newest published updates, then the full feed and its RSS. */
 export const LatestUpdates: React.FC<{ project: Pick<GameProject, 'id' | 'name' | 'slug'> }> = async ({

@@ -66,6 +66,10 @@ export const getContactRoute = cache(async (slug: string): Promise<ContactRoute 
   return project ? resolveContactRoute(project.contact) : null
 })
 
+/** Whether the studio takes ideas as well as bugs. `reportForm` is publicly readable. */
+export const acceptsIdeas = (project: Pick<GameProject, 'reportForm'>): boolean =>
+  project.reportForm?.acceptIdeas !== false
+
 /** `reportForm` is publicly readable, so this works on the visitor's view of the project. */
 export const getReportRoute = (reportForm: GameProject['reportForm']): ReportRoute => {
   if (reportForm?.provider === 'tally' && reportForm.tallyUrl && parseTallyForm(reportForm.tallyUrl)) {

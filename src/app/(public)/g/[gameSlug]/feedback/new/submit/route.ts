@@ -5,7 +5,7 @@ import { extractID } from 'payload/shared'
 import { z } from 'zod'
 
 import { FEEDBACK_TYPE_OPTIONS, ISSUE_CATEGORY_OPTIONS } from '@/collections/options'
-import { getReportRoute } from '@/lib/game-portal/formRoutes'
+import { acceptsIdeas, getReportRoute } from '@/lib/game-portal/formRoutes'
 import { getGameProject } from '@/lib/game-portal/getGameProject'
 import { portalPaths } from '@/lib/game-portal/paths'
 import { formResponse, guardPublicForm } from '@/lib/public-forms/guard'
@@ -71,7 +71,7 @@ export async function POST(
       })
     }
 
-    if (!isBug && project.reportForm?.acceptIdeas === false) {
+    if (!isBug && !acceptsIdeas(project)) {
       return formResponse({
         json: { error: 'This game does not accept ideas.' },
         path,

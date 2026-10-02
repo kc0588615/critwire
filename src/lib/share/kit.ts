@@ -38,7 +38,7 @@ export type ShareItem = {
 export type ShareKit = { links: ShareLink[]; buttons: ShareItem[]; badge: ShareItem }
 
 /** `URL.searchParams` keeps a query the path already has (the board's `view`). */
-const withRef = (url: string, ref: string): string => {
+export const withRef = (url: string, ref: string): string => {
   const tagged = new URL(url)
   tagged.searchParams.set('ref', ref)
   return tagged.toString()

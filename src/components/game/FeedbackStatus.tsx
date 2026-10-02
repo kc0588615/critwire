@@ -1,8 +1,9 @@
 import React from 'react'
 
-import type { Issue, PatchNote } from '@/payload-types'
+import type { Issue } from '@/payload-types'
 
 import { FEEDBACK_TYPE_OPTIONS, ISSUE_CATEGORY_OPTIONS } from '@/collections/options'
+import { shippedUpdate, updateName } from '@/lib/game-portal/shipped'
 import { type PublicStage, publicStage } from '@/lib/game-portal/stages'
 
 export type StatusShape = PublicStage['shape']
@@ -14,23 +15,6 @@ export const issueCategoryLabel = (category: Issue['category']): null | string =
 
 const feedbackTypeLabel = (type: Issue['type']): string =>
   FEEDBACK_TYPE_OPTIONS.find((option) => option.value === type)?.label ?? type
-
-/**
- * The published update a shipped item links to, or null. Items are read
- * through access, so a draft update stays an ID; the status check keeps
- * it that way for readers who can see drafts.
- */
-export const shippedUpdate = (
-  issue: Pick<Issue, 'fixedInPatchNote' | 'status'>,
-): null | PatchNote => {
-  const note = issue.fixedInPatchNote
-  if (issue.status !== 'FIXED' || note == null || typeof note !== 'object') return null
-  return note._status === 'published' ? note : null
-}
-
-/** An update's short name: its version, or its title when it has none. */
-export const updateName = (note: Pick<PatchNote, 'title' | 'versionLabel'>): string =>
-  note.versionLabel || note.title
 
 /**
  * An empty, CSS-drawn marker (globals.css). Never a character: it would

@@ -57,6 +57,24 @@ const SECTION_Y: Record<SiteThemeV1['density'], string> = {
 }
 
 /**
+ * One palette as `<prefix>-*` custom properties: `--fs` for the portal,
+ * and a light and a dark set for the embed.
+ */
+export const paletteVars = (colors: SiteThemeV1['colors'], prefix: string): CSSProperties =>
+  ({
+    [`${prefix}-bg`]: colors.background,
+    [`${prefix}-fg`]: colors.foreground,
+    [`${prefix}-muted-fg`]: colors.mutedForeground,
+    [`${prefix}-surface`]: colors.surface,
+    [`${prefix}-accent`]: colors.accent,
+    [`${prefix}-accent-fg`]: colors.accentForeground,
+    [`${prefix}-border`]: colors.border,
+    [`${prefix}-success`]: colors.success,
+    [`${prefix}-warning`]: colors.warning,
+    [`${prefix}-error`]: colors.error,
+  }) as CSSProperties
+
+/**
  * Maps validated theme tokens to the `--fs-*` custom properties the
  * flagship stylesheet and components consume. Only these variables —
  * never raw values — appear in component styling.
@@ -66,16 +84,7 @@ export const themeStyle = (theme: SiteThemeV1): CSSProperties => {
   const voice = DISPLAY[theme.typography]
 
   return {
-    '--fs-bg': theme.colors.background,
-    '--fs-fg': theme.colors.foreground,
-    '--fs-muted-fg': theme.colors.mutedForeground,
-    '--fs-surface': theme.colors.surface,
-    '--fs-accent': theme.colors.accent,
-    '--fs-accent-fg': theme.colors.accentForeground,
-    '--fs-border': theme.colors.border,
-    '--fs-success': theme.colors.success,
-    '--fs-warning': theme.colors.warning,
-    '--fs-error': theme.colors.error,
+    ...paletteVars(theme.colors, '--fs'),
     '--fs-radius': radius,
     '--fs-radius-control': radiusControl,
     '--fs-section-y': SECTION_Y[theme.density],

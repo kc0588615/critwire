@@ -15,8 +15,12 @@ export const portalPaths = (gameSlug: string) => {
     board: `${feedback}?view=board`,
     contact,
     contactSubmit: `${contact}/submit`,
+    /** An embeddable widget (see `docs/embed.md`). */
+    embed: (widget: 'board' | 'updates') => `${hub}/embed/${widget}`,
     feedback,
     feedbackItem: (slug: string) => `${feedback}/${slug}`,
+    /** The public feedback feed, a versioned JSON contract. */
+    feedbackJSON: `${hub}/feedback.json`,
     feedbackSubmit: `${newFeedback}/submit`,
     hub,
     /** The form, preset to a type when one is given. URLs carry the type in lower case. */
@@ -32,6 +36,8 @@ export const portalPaths = (gameSlug: string) => {
      */
     updateGuid: (slug: string) => `${hub}/patch-notes/${slug}`,
     updates,
+    /** The updates as JSON Feed 1.1, a versioned contract. */
+    updatesJSON: `${hub}/updates.json`,
     /** Page 1 is the feed itself. */
     updatesPage: (page: number) => (page <= 1 ? updates : `${updates}/page/${page}`),
   }

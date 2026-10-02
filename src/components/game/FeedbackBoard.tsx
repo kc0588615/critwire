@@ -1,17 +1,12 @@
 import Link from 'next/link'
 import React from 'react'
 
-import {
-  FeedbackTypeTag,
-  PinnedTag,
-  shippedUpdate,
-  StatusMark,
-  updateName,
-} from '@/components/game/FeedbackStatus'
+import { FeedbackTypeTag, PinnedTag, StatusMark } from '@/components/game/FeedbackStatus'
 import { VoteCount } from '@/components/game/VoteCount'
 import { feedbackHref, type FeedbackTypeParam, feedbackTypeOf } from '@/lib/game-portal/feedbackSearchParams'
 import { BOARD_COLUMN_LIMIT, type BoardCard, queryBoardColumn } from '@/lib/game-portal/issues'
 import type { PortalPaths } from '@/lib/game-portal/paths'
+import { shippedUpdate, updateName } from '@/lib/game-portal/shipped'
 import { PUBLIC_STAGES } from '@/lib/game-portal/stages'
 
 /** A card's stage is its column's, so a shipped card adds only its published update. */
