@@ -39,6 +39,7 @@ in the same project.
 | `docs/integrations.md` | R2, Upstash, Resend, Sentry, Turnstile, Cloudflare, the content filter, PgBouncer, backups, env vars |
 | `docs/self-hosting.md` | Which services are required, the first super admin, open signup and the hosted limits, upgrade steps |
 | `docs/share.md` | The "Put critwire on your site" kit: links, `?ref=` tags, button images, the live badge, the referral counter, Steam, what works where |
+| `docs/embed.md` | The embed: the loader `/embed/v1.js` and its attributes, the board and updates widgets, voting through the item page, caching, the JSON feeds' contracts, privacy, protocol v1, what works where |
 
 ## Stack
 

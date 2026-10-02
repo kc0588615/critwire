@@ -127,6 +127,13 @@ by its URL (`/g/<slug>`); a subtree only by its route pattern, route
 groups included (`PORTAL_ROUTE` and `UPDATES_ROUTE` in `src/lib/game-portal/paths.ts`), because Next never tags
 pages with a concrete path's layout.
 
+The embeds and the JSON feeds are outside this rule: they keep no
+server cache (`force-dynamic`, no `revalidate`), so no hook refreshes
+them. Their freshness is `EMBED_CACHE_CONTROL`
+(`src/lib/embed/cacheControl.ts`), at most 5 minutes behind any cache
+(`docs/embed.md`, Caching). Don't give them ISR: an expired entry is
+served once more after `revalidatePath`, and the edge would keep it.
+
 ## Hosted limits
 
 `src/lib/limits/` is the only place that knows the limits: `getLimits()`
@@ -162,6 +169,10 @@ hooks that the collections only register.
   one is a 404. Call it in every page as well as the layout, because
   Next re-renders pages without the layout on client navigation. Route
   handlers that return a `Response` use `getGameProject` and answer 404.
+- **Embed routes** (`src/app/(embed)/`) use `getGameProject`, never
+  `requirePortalProject`: its redirect would send the frame to
+  `/unavailable`, which other sites can't frame. A missing game renders an empty embed, with no
+  text and no theme, in the layout and every page.
 - **The badge is the one exception** (`src/lib/share/badge.ts`): an
   unknown, held or suspended game gets the same neutral image, byte for
   byte, with status 200, because a host page would otherwise show a
@@ -176,6 +187,26 @@ hooks that the collections only register.
   request (`await connection()`, or a request API such as `headers`,
   `searchParams` or `payload.auth`). The Docker image is built with an
   empty environment, so a prerendered page would keep the flag off.
+
+## Embeds
+
+- **Links are plain anchors** (`EmbedLink`): `target="_blank"
+  rel="noopener"`, tagged through `embedHref` / `embedURL`
+  (`src/lib/embed/links.ts`). Never `next/link`, which would prefetch
+  on every host page view and navigate inside the frame.
+- **No forms, no vote control, no `/api/vote` call.** Votes happen on
+  the item page, in a popup (`docs/embed.md`, Voting). The board's
+  filters are local state, never the URL, so nothing reaches the host
+  page's history.
+- **No images and no `next/font`**: the widget downloads no font file
+  and uses the host's font through `--cw-font`.
+- **The client gets only what it renders.** The board's rows are
+  `EmbedFeedbackRow`s built key by key by `feedbackRow`, which
+  `feedback.json`'s mapping spreads, so a row never carries a field
+  the feed doesn't have.
+- **`public/embed/v1.js` and protocol v1 are contracts**: they may only
+  gain optional attributes and message types. Anything incompatible is
+  `/embed/v2.js`.
 
 ## Uploads
 
@@ -267,6 +298,13 @@ scripts, never by forms, and follow one shape:
    the target through access (`overrideAccess: false`), before the
    work.
 4. Sentry capture and a pino log on failure, answered with a 500.
+
+The public feeds (`feedback.json`, `updates.json`) are the opposite
+case: read-only GETs that any site may read. Every answer, 404s
+included, goes through `feedResponse` (`src/lib/game-portal/feeds.ts`):
+`Access-Control-Allow-Origin: *`, never
+`Access-Control-Allow-Credentials`, and `EMBED_CACHE_CONTROL`. They
+read no cookies and show nothing the portal doesn't.
 
 The referral beacon (`ReferralPing`) sends
 `Content-Type: application/json` explicitly and ignores the answer, so

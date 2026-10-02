@@ -185,9 +185,34 @@ Contact) shows an "Official site" link back to the studio whenever
   update.
 - **Voting:** signed browser-token cookie, hashed in DB, one vote per
   item per token, IP rate-limited via Upstash.
+- **JSON feeds** (`/feedback.json`, contract v1, and `/updates.json`,
+  JSON Feed 1.1): the public items and updates, readable from any
+  site, never more than the portal shows (`docs/embed.md`).
 - **Old URLs** (`/issues/*`, `/report`, `/patch-notes/*`) redirect
   permanently (`redirects.ts`); RSS item GUIDs keep the old
   `/patch-notes/` path so readers don't redeliver items.
+
+## The embed
+
+A studio pastes one `<script>` tag (`/embed/v1.js`) into its own site
+and gets the game's **board** (public items with votes, stage and type
+filters) or its **updates** (the latest three, with "From your
+feedback"), or a floating **Feedback** button that opens the board in
+a dialog. Wix takes the iframe instead. Full detail in
+`docs/embed.md`.
+
+- An iframe from critwire, in the game's colours and the host page's
+  font, light, dark or following the visitor. No forms and no images:
+  reporting, suggesting and reading open critwire's own pages.
+- **Voting** opens the item page in a popup, where the portal's own
+  cookie counts one vote per browser across the portal and every
+  site. No site can vote for a player.
+- Every copy is at most 5 minutes old; a held or suspended game gives
+  an empty embed. No cookies, and nothing read from the host page but
+  its font.
+- "Powered by Critwire" follows the portal footer's rule.
+- The **Embed** tab of "Put critwire on your site" builds the
+  snippets, with a live preview and per-platform instructions.
 
 ## Submissions: submit, filter, review
 
@@ -279,7 +304,8 @@ selector. Public player `?view=board` remains read-only.
    That creates a studio they own and one game, in one transaction.
 4. **`/g/<slug>?welcome=1`**: the live portal with a "next steps"
    panel: "Put critwire on your site" (the share kit inline: links,
-   buttons and the live badge), add your first update, turn on ideas.
+   buttons and the live badge, and the embed), add your first update,
+   turn on ideas.
    The admin dashboard lists the same steps as links, the first one to
    the game's **Share** tab. If the filter held the name,
    `/onboarding?held=1` says the portal is waiting for a quick review.

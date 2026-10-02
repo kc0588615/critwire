@@ -200,6 +200,13 @@ routes where failure matters; don't swallow errors.
   `s-maxage`: the live badge for 5 minutes, the button images for a
   day. The badge redirects any query string to its bare URL, so
   cache-busters can't multiply its cache entries.
+- The embeds and JSON feeds keep no server cache and send
+  `public, max-age=60, s-maxage=240`. One narrow Cache Rule (in
+  `docs/deploy.md`) lets Cloudflare honour it, so every copy is at
+  most 5 minutes old without a purge. The loader, `/embed/v1.js`, is a
+  `.js` file, cached by default for its one-day header.
+- With Bot Fight Mode on, Cloudflare may set its own `__cf_bm` cookie
+  on the embeds; the app sets none (`docs/embed.md`, Privacy).
 
 ## Environment variables
 
@@ -217,6 +224,10 @@ Single source of truth for deploy config (Docker Compose `.env`);
 - `CRITWIRE_OPEN_SIGNUP` — `1` on the hosted instance only (signup,
   onboarding, "Create your portal", "Report this page"); unset to
   self-host, any other value stops the server at startup
+- `CRITWIRE_HIDE_POWERED_BY` — `1` hides "Powered by Critwire" in
+  the portal footer and the embeds, on a self-hosted instance only;
+  unset or empty shows it. Any other value, or `1` with
+  `CRITWIRE_OPEN_SIGNUP=1`, stops the server at startup
 - `CRITWIRE_LIMIT_GAMES_PER_STUDIO`, `CRITWIRE_LIMIT_MEDIA_MB_PER_STUDIO`,
   `CRITWIRE_LIMIT_PUBLIC_FEEDBACK_PER_GAME` — the hosted limits (3, 100
   and 200 on the hosted instance); unset turns each off, anything but a
@@ -257,4 +268,6 @@ added.
 - HTTPS enforced via Cloudflare
 - Docker containers run as non-root
 - Nginx security headers; the app owns its framing policy
-  (`frame-ancestors 'self'`)
+  (`frame-ancestors 'self'`, `*` on the embeds only) and COOP
+- Public feeds (`feedback.json`, `updates.json`) are the only
+  cross-origin reads: GET only, no credentials, public fields only

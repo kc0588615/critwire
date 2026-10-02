@@ -6,6 +6,9 @@ onboarding (`/g/<game>?welcome=1`). It gives links, button images and a
 live badge, with snippets ready to paste for the place you pick. It
 links out to the pages a studio already has; it never replaces them.
 
+The panel has two tabs: **Links and buttons** (the default, this page)
+and **Embed** (below, and `docs/embed.md`).
+
 Code: `src/lib/share/` (the kit, buttons, badge and image renderer),
 `src/components/share/` (the panel) and
 `src/components/admin/share/` (the Share tab).
@@ -73,10 +76,28 @@ each public stage, then the latest update's version, for example
 Text in the buttons and the badge is drawn as shapes (DejaVu Sans), so
 it looks the same everywhere, with or without fonts installed.
 
+## The Embed tab
+
+The board, the updates or the floating button, on the studio's own
+site (`docs/embed.md`). Pick a **Widget** (Board, Updates or Floating
+button) and a **Mode** (Auto, Light or Dark). The tab then shows:
+
+- the script snippet, with a copy button;
+- for Board and Updates, also the iframe snippet and the bare URL, for
+  builders that take no scripts (Wix's "Embed a site");
+- a live preview of the widget at a fixed 520 px height (the floating
+  button previews the board it opens);
+- "Where it works": per-platform instructions, grouped by what each
+  place takes (the script, the iframe, or links instead), from
+  `EMBED_PLATFORMS` in `src/lib/embed/platforms.ts`.
+
+Only the selected tab loads, so the preview loads only when shown.
+
 ## Where players come from
 
 Every kit link except RSS carries `?ref=<place>`: `steam`, `itch`,
-`carrd`, `linktree`, `website` or `readme`. The game's Share tab shows
+`carrd`, `linktree`, `website` or `readme`. The embed's links carry
+`?ref=embed`, counted under "Embed". The game's Share tab shows
 the last 30 days (UTC) under "Where players come from": a row per day
 with visits and a column per place, plus totals.
 

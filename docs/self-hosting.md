@@ -60,6 +60,25 @@ A player's submission to a game at its feedback limit is still
 accepted; it waits in the studio's review queue instead of going
 public.
 
+## "Powered by Critwire"
+
+The portal footer and every embed end with "Powered by Critwire". A
+self-hosted instance can hide it with `CRITWIRE_HIDE_POWERED_BY=1`.
+Unset or empty shows it. Any other value stops the server at startup,
+and so does `1` together with `CRITWIRE_OPEN_SIGNUP=1`: the hosted
+instance always shows it.
+
+## Embeds without a CDN
+
+The embeds and JSON feeds (`docs/embed.md`) keep no server cache.
+Behind Cloudflare with the Cache Rule in `docs/deploy.md`, each URL
+renders at most once every 4 minutes per data centre. Without a shared
+cache, every view whose browser copy (1 minute) has expired renders at
+the origin: up to 15 small indexed queries for the board, about five
+for the updates. That's fine for most games; if a studio with heavy
+traffic embeds the board, put a CDN in front that honours
+`s-maxage`.
+
 ## Upgrading
 
 ### Uploads moved out of `public/media`

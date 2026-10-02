@@ -47,7 +47,59 @@ the Next.js + Payload app, and Nginx. Cloudflare sits in front.
 8. **Cloudflare caching**: keep the defaults, which don't cache HTML or
    XML. Don't add a "Cache Everything" rule for `/g/*`: the hub and the
    updates pages send `s-maxage=3600`, and the app's on-demand revalidation
-   can't purge Cloudflare, so edits would stay stale at the edge.
+   can't purge Cloudflare, so edits would stay stale at the edge. The one
+   exception is the narrow rule for the embeds and JSON feeds below
+   ("Cache Rule for embeds and feeds"), which honours their 4-minute
+   `s-maxage`.
+
+## Cache Rule for embeds and feeds
+
+The embeds (`/g/<game>/embed/board`, `/g/<game>/embed/updates`) and
+the JSON feeds (`/g/<game>/feedback.json`, `/g/<game>/updates.json`)
+load on every view of the studios' pages, so Cloudflare should cache
+them. They keep no server cache and send
+`Cache-Control: public, max-age=60, s-maxage=240`, so every copy is at
+most 5 minutes old with no purge (`docs/embed.md`, Caching). The app's
+header is the only source of TTLs.
+
+Cloudflare dashboard → the zone → Caching → Cache Rules → Create rule:
+
+- **When incoming requests match** (custom filter expression, "Edit
+  expression"):
+  ```
+  starts_with(http.request.uri.path, "/g/") and (http.request.uri.path contains "/embed/" or http.request.uri.path.extension eq "json")
+  ```
+- **Cache eligibility:** Eligible for cache.
+- **Edge TTL:** Use cache-control header if present, bypass cache if
+  not.
+- **Browser TTL:** Respect origin TTL.
+- **Cache key:** leave the default, query string included. Next's
+  `_rsc` parameter keeps RSC payloads apart from HTML only while the
+  query string is in the key; the loader adds only the snippet's own
+  `theme`, `stage` and `type`, so one snippet is one entry.
+
+Keep the rule this narrow: it must never match the hub or the updates
+pages (their `s-maxage=3600` would then be honoured). Optionally turn
+on Smart Tiered Cache (Caching → Tiered Cache), so one data centre
+fetches for the others. The loader, `/embed/v1.js`, needs no rule:
+Cloudflare caches `.js` by default and honours its one-day header.
+
+**Check after the deploy**, with a real game's slug:
+
+```bash
+curl -sI https://<domain>/g/<game>/embed/board >/dev/null
+curl -sI https://<domain>/g/<game>/embed/board | grep -iE '^(cf-cache-status|cache-control|content-security-policy):'
+# cf-cache-status: HIT
+# cache-control: public, max-age=60, s-maxage=240
+# content-security-policy: frame-ancestors *
+curl -sI https://<domain>/g/<game> | grep -i '^cf-cache-status:'
+# cf-cache-status: DYNAMIC
+```
+
+The first request may answer `MISS`; the second must be `HIT`, with
+the header as the app sent it. The hub must stay `DYNAMIC`. If Bot
+Fight Mode is on, check that no `set-cookie: __cf_bm` comes back on
+the embed.
 
 ## Security headers
 

@@ -112,8 +112,18 @@ Built only by `portalPaths` (`src/lib/game-portal/paths.ts`).
 /g/[gameSlug]/contact                  contact form
 /g/[gameSlug]/roadmap                  alias: 307 to feedback?view=board, keeping the query
 /g/[gameSlug]/badge.svg, badge.png     live badge (stage counts, latest version)
+/g/[gameSlug]/feedback.json            public feedback feed (contract v1)
+/g/[gameSlug]/updates.json             updates as JSON Feed 1.1
+/g/[gameSlug]/embed/board              board widget, framable by any site
+/g/[gameSlug]/embed/updates            updates widget, framable by any site
 /buttons/<button>-<light|dark>.<svg|png>   hosted button images, the same for every game
+/embed/v1.js                           the embed loader (static, a versioned contract)
 ```
+
+The embed (`docs/embed.md`) is a second root layout,
+`src/app/(embed)/`, with no portal chrome and no web font. Both route
+groups name the segment `[gameSlug]`, so they share the `/g/` prefix,
+and the portal's layout never wraps an embed.
 
 The share kit (`docs/share.md`) links these with `?ref=<place>`; the
 portal's `ReferralPing` strips the tag and reports it to
@@ -126,8 +136,10 @@ permanently (`redirects.ts`; 308 for the old form's POST).
 Every portal page and the layout get their game through
 `requirePortalProject(slug)` (`src/lib/game-portal/getGameProject.ts`):
 a held game or a suspended studio's game redirects to `/unavailable`,
-an unknown slug is a 404. The RSS feed and the submit routes answer 404
-for both. The badge answers all three with one neutral image instead,
+an unknown slug is a 404. The RSS feed, the JSON feeds and the submit
+routes answer 404 for both. The embeds use `getGameProject` too: a
+held, suspended or unknown game gets an empty embed that collapses to
+nothing on the host page. The badge answers all three with one neutral image instead,
 so host pages never show a broken image.
 
 ### Accounts, hosting and moderation URLs
@@ -182,6 +194,8 @@ Keep the rewrite layer lightweight: resolution only, no business logic.
 | Payload admin panel | SSR (Payload-managed) |
 | Live badge (`badge.svg`, `badge.png`) | Dynamic, HTTP-cached 5 minutes (`s-maxage=300`); no server cache, so nothing to revalidate |
 | Button images (`/buttons/*`) | Dynamic, memoized per process, HTTP-cached a day |
+| Embeds (`/g/<game>/embed/*`) and JSON feeds (`feedback.json`, `updates.json`) | Dynamic (`force-dynamic`), HTTP-cached 5 minutes in total (`EMBED_CACHE_CONTROL`: `max-age=60, s-maxage=240`); no server cache, so nothing to revalidate |
+| Embed loader (`/embed/v1.js`) | Static file, HTTP-cached a day (`LOADER_CACHE_CONTROL`) |
 
 **Revalidation rule:** every Payload hook that modifies published
 content calls `revalidatePath()` / `revalidateTag()` after the DB
@@ -198,14 +212,28 @@ Pages that read `CRITWIRE_OPEN_SIGNUP` must render per request: the
 Docker image is built without the runtime environment, so a prerendered
 page would keep the build's value.
 
-## Framing
+## Framing and COOP
 
-The app owns its framing policy: `headers()` in `next.config.ts` sends
-`Content-Security-Policy: frame-ancestors 'self'` on every response,
-so it holds behind any proxy, or none. nginx sets no framing header
+The app owns its framing policy and its Cross-Origin-Opener-Policy:
+`headers()` in `next.config.ts` sends
+`Content-Security-Policy: frame-ancestors 'self'` and
+`Cross-Origin-Opener-Policy: same-origin-allow-popups` on every
+response, so they hold behind any proxy, or none. nginx sets neither
 (`docs/deploy.md`, Security headers; `tests/int/nginx-headers` checks).
-A route that may be framed elsewhere gets a later `headers()` entry
-with its own `frame-ancestors`; Next sends the last matching one.
+A route that needs another value gets a later `headers()` entry; Next
+sends the last matching one for each header. Today:
+
+- the embeds (`/g/:game/embed/:widget`) send `frame-ancestors *`, and
+  their `Cache-Control`;
+- feedback item pages (`/g/:game/feedback/:slug`) send COOP
+  `unsafe-none`, so the embed's vote popup keeps its opener and can
+  report the vote back; a later entry gives `/g/:game/feedback/new`
+  `same-origin-allow-popups` again;
+- `/embed/v1.js` gets its one-day `Cache-Control`.
+
+Next 16.2 keeps a `Cache-Control` set in `headers()` on dynamic pages
+and static files; E2E asserts the exact values, so an upgrade that
+changes this fails the suite.
 
 ## Media serving
 
@@ -240,6 +268,7 @@ disk and R2 alike. So a suspended studio's files answer 403 there.
     /(public)/g/[gameSlug]  public game portal routes
     /(public)/unavailable   held or suspended portal
     /(public)/buttons       hosted button images
+    /(embed)/g/[gameSlug]/embed  embed widgets (their own root layout)
     /(frontend)           home page, marketing CMS pages, previews,
                           signup, verify, onboarding, report-abuse,
                           forgot-password
@@ -251,7 +280,8 @@ disk and R2 alike. So a suspended studio's files answer 403 there.
   /collections            one folder per collection config
   /components
     /game                 portal UI (hub, board, forms, chrome, theme, referral ping)
-    /share                "Put critwire on your site" panel (client, no data access)
+    /share                "Put critwire on your site" panel: links and buttons, and the Embed tab (client, no data access)
+    /embed                the embed widgets (board, updates, frame, "Powered by")
     /accounts             AccountPage, the signup/verify/onboarding shell
     /admin                forgot-password view, logo, feedback kanban, Share tab
     /BeforeDashboard      admin dashboard for each role
@@ -261,10 +291,11 @@ disk and R2 alike. So a suspended studio's files answer 403 there.
     /accounts             signup, pending users, activation, email budget
     /onboarding           createStudio, next steps
     /limits               hosted-plan limits and their hooks
-    /hosting.ts           the open-signup flag
+    /hosting.ts           the open-signup flag, "Powered by Critwire"
     /media                where local uploads live
     /admin                dashboard queries, admin paths
     /share                share kit, platforms, buttons, badge, image renderer + font
+    /embed                embed snippets, protocol, cache headers, theme, platforms
     /referrals            referral counter (Upstash)
     /payload              withTransaction, unique-violation helper
     /moderation           content filter (screenText)
@@ -278,6 +309,7 @@ disk and R2 alike. So a suspended studio's files answer 403 there.
   /jobs                   Payload Jobs Queue task definitions
   /migrations             Payload migrations (run on boot in production)
   payload.config.ts       main Payload configuration
+public/embed/v1.js        the embed loader (hand-written, no build step)
 next.config.ts / redirects.ts
 docker-compose.yml / Dockerfile / nginx.conf
 ```
