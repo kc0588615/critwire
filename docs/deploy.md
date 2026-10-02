@@ -51,13 +51,19 @@ the Next.js + Payload app, and Nginx. Cloudflare sits in front.
 
 ## Security headers
 
-- **The app owns its framing policy.** Every response carries
-  `Content-Security-Policy: frame-ancestors 'self'` (`headers()` in
-  `next.config.ts`), so it holds behind any proxy, or none. nginx must
-  not set `X-Frame-Options` or `Content-Security-Policy`, and must not
-  hide the app's `Content-Security-Policy`: a second policy would
-  override or narrow the app's. `nginx.conf` keeps its other security
-  headers, and `pnpm test:int` fails if it breaks either rule.
+- **The app owns its framing policy and COOP.** Every response carries
+  `Content-Security-Policy: frame-ancestors 'self'` and
+  `Cross-Origin-Opener-Policy: same-origin-allow-popups` (`headers()`
+  in `next.config.ts`), so they hold behind any proxy, or none. Two
+  exceptions: the embeds send `frame-ancestors *`, and feedback item
+  pages send COOP `unsafe-none`, so the embed's vote popup keeps its
+  opener and can report the vote back. nginx must not set
+  `X-Frame-Options`, `Content-Security-Policy` or
+  `Cross-Origin-Opener-Policy`, and must not hide the app's
+  `Content-Security-Policy` or `Cross-Origin-Opener-Policy`: a second
+  value would override or narrow the app's. `nginx.conf` keeps its
+  four other security headers, and `pnpm test:int` fails if it breaks
+  any of these rules.
 - nginx mounts `nginx.conf` read-only and reads it at start, so after
   a pull that changes it, run `docker compose restart nginx`.
 - **Known limitation: per-IP limits see Cloudflare, not the player.**

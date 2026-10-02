@@ -685,6 +685,24 @@ test('E7 the embeds may be framed anywhere; the portal only by itself', async ({
         expect(response.headers()['content-security-policy'], path).toBe(SELF)
       }
     })
+
+    await test.step('COOP: item pages keep their opener for the vote popup (V2); every other page keeps it apart', async () => {
+      const item = await player.get(paths.feedbackItem(issue.slug), { maxRedirects: 0 })
+      expect(item.status()).toBe(200)
+      expect(item.headers()['cross-origin-opener-policy']).toBe('unsafe-none')
+      for (const path of [
+        paths.hub,
+        paths.board,
+        paths.update(note.slug),
+        paths.newFeedback(),
+        paths.newFeedback('idea'),
+        '/admin/login',
+      ]) {
+        const response = await player.get(path, { maxRedirects: 0 })
+        expect(response.status(), path).toBe(200)
+        expect(response.headers()['cross-origin-opener-policy'], path).toBe('same-origin-allow-popups')
+      }
+    })
   } finally {
     await player.dispose()
   }

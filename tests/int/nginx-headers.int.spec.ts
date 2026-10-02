@@ -3,10 +3,11 @@ import path from 'node:path'
 
 import { describe, expect, it } from 'vitest'
 
-// The app owns its framing policy (`headers()` in next.config.ts sends
-// `frame-ancestors`). E2E serves `next start` without nginx, so only this
-// static check stops nginx from setting a second policy again. One test per
-// failure mode N1–N8 in the reach mission plan, plus the committed file.
+// The app owns its framing policy and COOP (`headers()` in next.config.ts
+// sends `frame-ancestors` and `Cross-Origin-Opener-Policy`). E2E serves
+// `next start` without nginx, so only this static check stops nginx from
+// setting a second policy again. One test per failure mode: N1–N8 in the
+// reach mission plan, N9–N10 in the embed one, plus the committed file.
 
 /** Headers nginx keeps adding: the app doesn't send them. */
 const KEPT_HEADERS = [
@@ -14,7 +15,6 @@ const KEPT_HEADERS = [
   'X-Content-Type-Options',
   'Permissions-Policy',
   'Referrer-Policy',
-  'Cross-Origin-Opener-Policy',
 ] as const
 
 /** `directive header` pairs that must never appear, in any case, and why. */
@@ -22,6 +22,9 @@ const FORBIDDEN: Record<string, string> = {
   'add_header X-Frame-Options': 'the app sets frame-ancestors, and X-Frame-Options would block the embed routes',
   'add_header Content-Security-Policy': 'a second policy intersects with the app’s and blocks the embed routes',
   'proxy_hide_header Content-Security-Policy': 'it strips the app’s framing policy',
+  'add_header Cross-Origin-Opener-Policy':
+    'the app owns COOP, and a second value would cut the embed’s vote popup off from its opener',
+  'proxy_hide_header Cross-Origin-Opener-Policy': 'it strips the app’s COOP, the item pages’ unsafe-none included',
 }
 
 /**
@@ -55,7 +58,7 @@ const directives = (conf: string): string[] => {
     .filter(Boolean)
 }
 
-/** Every way `conf` breaks the framing rules; empty when it's fine. */
+/** Every way `conf` breaks the header rules; empty when it's fine. */
 const nginxHeaderProblems = (conf: string): string[] => {
   const found = directives(conf)
   if (found.length === 0) return ['nginx.conf has no directives']
@@ -82,8 +85,7 @@ const KEPT_LINES = `
   add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
   add_header X-Content-Type-Options nosniff always;
   add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()" always;
-  add_header Referrer-Policy strict-origin-when-cross-origin always;
-  add_header Cross-Origin-Opener-Policy same-origin-allow-popups always;`
+  add_header Referrer-Policy strict-origin-when-cross-origin always;`
 
 /** A config shaped like ours, with `serverExtra` at server level and `locationExtra` in `location /`. */
 const conf = ({
@@ -110,7 +112,7 @@ ${locationExtra}
 const xFrameProblem = expect.stringMatching(/^Forbidden: add_header X-Frame-Options /)
 
 describe('nginx-headers', () => {
-  it('passes a config with the five kept headers and nothing forbidden', () => {
+  it('passes a config with the four kept headers and nothing forbidden', () => {
     expect(nginxHeaderProblems(conf())).toEqual([])
   })
 
@@ -176,8 +178,34 @@ describe('nginx-headers', () => {
       { serverExtra: '#add_header Content-Security-Policy "default-src *";' },
       { locationExtra: '    proxy_buffering off; # proxy_hide_header Content-Security-Policy;' },
       { locationExtra: '    proxy_buffering off; #add_header X-Frame-Options DENY;' },
+      { serverExtra: '  # add_header Cross-Origin-Opener-Policy same-origin-allow-popups always;' },
     ]) {
       expect(nginxHeaderProblems(conf(extra)), JSON.stringify(extra)).toEqual([])
+    }
+  })
+
+  it('N9. fails on add_header Cross-Origin-Opener-Policy anywhere, in any case, and says the app owns it', () => {
+    const line = 'add_header Cross-Origin-Opener-Policy same-origin-allow-popups always;'
+    for (const extra of [
+      { serverExtra: `  ${line}` },
+      { locationExtra: `    ${line}` },
+      { serverExtra: `  ${line.toUpperCase()}` },
+      { locationExtra: '    Add_Header cross-origin-opener-policy same-origin;' },
+    ]) {
+      expect(nginxHeaderProblems(conf(extra)), JSON.stringify(extra)).toEqual([
+        expect.stringMatching(/^Forbidden: add_header Cross-Origin-Opener-Policy \(the app owns COOP/),
+      ])
+    }
+  })
+
+  it('N10. fails on proxy_hide_header Cross-Origin-Opener-Policy, in any case', () => {
+    for (const line of [
+      'proxy_hide_header Cross-Origin-Opener-Policy;',
+      'PROXY_HIDE_HEADER cross-origin-opener-policy;',
+    ]) {
+      expect(nginxHeaderProblems(conf({ locationExtra: line })), line).toEqual([
+        expect.stringMatching(/^Forbidden: proxy_hide_header Cross-Origin-Opener-Policy /),
+      ])
     }
   })
 

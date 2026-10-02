@@ -45,13 +45,19 @@ const nextConfig: NextConfig = {
     '/g/*/badge.svg': ['./src/lib/share/fonts/DejaVuSans.ttf'],
     '/g/*/badge.png': ['./src/lib/share/fonts/DejaVuSans.ttf'],
   },
-  // The app owns its framing policy, on every response (nginx must not set
-  // one; tests/int/nginx-headers checks). 'self' keeps admin live preview
-  // working. When entries match the same path and key, Next sends the last
-  // one, so the embeds are exempted by a later entry with their own
-  // `frame-ancestors`.
+  // The app owns its framing policy and COOP, on every response (nginx must
+  // not set either; tests/int/nginx-headers checks). 'self' keeps admin live
+  // preview working. When entries match the same path and key, Next sends
+  // the last one, so the embeds and the item pages are exempted by later
+  // entries.
   headers: async () => [
-    { source: '/:path*', headers: [{ key: 'Content-Security-Policy', value: "frame-ancestors 'self'" }] },
+    {
+      source: '/:path*',
+      headers: [
+        { key: 'Content-Security-Policy', value: "frame-ancestors 'self'" },
+        { key: 'Cross-Origin-Opener-Policy', value: 'same-origin-allow-popups' },
+      ],
+    },
     // The two widgets: any site may frame them, and every cache in front
     // keeps them 5 minutes at most in total. Next keeps a Cache-Control set
     // here, on dynamic pages too (E2E asserts the exact value).
@@ -61,6 +67,15 @@ const nextConfig: NextConfig = {
         { key: 'Content-Security-Policy', value: 'frame-ancestors *' },
         { key: 'Cache-Control', value: EMBED_CACHE_CONTROL },
       ],
+    },
+    // Feedback item pages keep their opener, so the embed's vote popup can
+    // report back: a popup opened from a cross-site frame that lands on a
+    // same-origin-allow-popups page loses `window.opener`...
+    { source: '/g/:game/feedback/:slug', headers: [{ key: 'Cross-Origin-Opener-Policy', value: 'unsafe-none' }] },
+    // ...but the form, which the entry above also matches, doesn't.
+    {
+      source: '/g/:game/feedback/new',
+      headers: [{ key: 'Cross-Origin-Opener-Policy', value: 'same-origin-allow-popups' }],
     },
     // The loader is a contract: cached for a day, at the edge and in browsers.
     { source: '/embed/v1.js', headers: [{ key: 'Cache-Control', value: LOADER_CACHE_CONTROL }] },
