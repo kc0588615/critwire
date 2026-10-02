@@ -16,7 +16,7 @@ export const nextSteps = (project: { id: number }): NextStep[] => [
   {
     key: 'share',
     label: 'Put critwire on your site',
-    description: 'Links, buttons and a live badge for Steam, itch.io, your site or README.',
+    description: 'Links, buttons, a live badge, and your board and updates embedded in your own site.',
     href: gameShareHref(project.id),
   },
   {

@@ -1,23 +1,17 @@
 'use client'
 
-import React, { useId, useMemo, useState } from 'react'
+import React, { useMemo, useState } from 'react'
 
-import { BUTTON_SCHEMES, type ButtonScheme } from '@/lib/share/buttons'
+import type { ButtonScheme } from '@/lib/share/buttons'
 import { shareKit, type ShareItem } from '@/lib/share/kit'
 import { SHARE_PLATFORMS, type SharePlatform, SNIPPET_FORMATS } from '@/lib/share/platforms'
 
-import { CopyButton } from './CopyButton'
+import { CopyRow, KitChoice } from './KitControls'
 
-const SCHEME_LABELS: Record<ButtonScheme, string> = { light: 'Light', dark: 'Dark' }
-
-/** One copyable value. `copyLabel` is the button's accessible name, unique in the panel. */
-const CopyRow: React.FC<{ copyLabel: string; label: string; value: string }> = ({ copyLabel, label, value }) => (
-  <div className="share-kit-row">
-    <span className="share-kit-row-label">{label}</span>
-    <code className="share-kit-value">{value}</code>
-    <CopyButton className="share-kit-copy" label={copyLabel} text={value} />
-  </div>
-)
+const SCHEMES: readonly { id: ButtonScheme; label: string }[] = [
+  { id: 'light', label: 'Light' },
+  { id: 'dark', label: 'Dark' },
+]
 
 /** A button or the badge: its preview, the snippets the platform takes, and its image URLs. */
 const ShareImage: React.FC<{ item: ShareItem }> = ({ item }) => (
@@ -46,7 +40,6 @@ const ShareImage: React.FC<{ item: ShareItem }> = ({ item }) => (
  * choice is local state: the kit is pure, so nothing is fetched.
  */
 export const LinksAndButtons: React.FC<{ siteURL: string; slug: string }> = ({ siteURL, slug }) => {
-  const id = useId()
   const [platformID, setPlatformID] = useState<SharePlatform['id']>(SHARE_PLATFORMS[0].id)
   const [scheme, setScheme] = useState<ButtonScheme>('light')
   const platform = SHARE_PLATFORMS.find((candidate) => candidate.id === platformID) ?? SHARE_PLATFORMS[0]
@@ -54,21 +47,12 @@ export const LinksAndButtons: React.FC<{ siteURL: string; slug: string }> = ({ s
 
   return (
     <div className="share-kit-body">
-      <fieldset className="share-kit-choice">
-        <legend className="share-kit-legend">Where will you put it?</legend>
-        {SHARE_PLATFORMS.map((candidate) => (
-          <label className="share-kit-option" key={candidate.id}>
-            <input
-              checked={candidate.id === platform.id}
-              name={`${id}-platform`}
-              onChange={() => setPlatformID(candidate.id)}
-              type="radio"
-              value={candidate.id}
-            />
-            {candidate.label}
-          </label>
-        ))}
-      </fieldset>
+      <KitChoice
+        legend="Where will you put it?"
+        onChange={setPlatformID}
+        options={SHARE_PLATFORMS}
+        value={platform.id}
+      />
       {platform.guidance ? <p className="share-kit-note">{platform.guidance}</p> : null}
 
       <h3 className="share-kit-heading">Links</h3>
@@ -83,21 +67,12 @@ export const LinksAndButtons: React.FC<{ siteURL: string; slug: string }> = ({ s
       </div>
 
       <h3 className="share-kit-heading">Buttons</h3>
-      <fieldset className="share-kit-choice">
-        <legend className="share-kit-legend">For a page that’s</legend>
-        {BUTTON_SCHEMES.map((candidate) => (
-          <label className="share-kit-option" key={candidate}>
-            <input
-              checked={candidate === scheme}
-              name={`${id}-scheme`}
-              onChange={() => setScheme(candidate)}
-              type="radio"
-              value={candidate}
-            />
-            {SCHEME_LABELS[candidate]}
-          </label>
-        ))}
-      </fieldset>
+      <KitChoice
+        legend="For a page that’s"
+        onChange={setScheme}
+        options={SCHEMES}
+        value={scheme}
+      />
       <div className="share-kit-items">
         {kit.buttons.map((item) => (
           <ShareImage item={item} key={item.id} />

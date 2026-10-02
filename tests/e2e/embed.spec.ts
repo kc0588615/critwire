@@ -1,8 +1,10 @@
 import type { ConsoleMessage, FrameLocator, Page, Response } from '@playwright/test'
 
 import type { GameProject, Issue, PatchNote } from '../../src/payload-types'
+import { gameShareHref } from '../../src/lib/admin/paths'
 import { EMBED_CACHE_CONTROL, LOADER_CACHE_CONTROL } from '../../src/lib/embed/cacheControl'
-import { LOADER_PATH } from '../../src/lib/embed/snippets'
+import { EMBED_PLATFORMS, EMBED_SUPPORT, EMBED_SUPPORT_GROUPS } from '../../src/lib/embed/platforms'
+import { type EmbedTheme, type EmbedWidget, embedSnippets, LOADER_PATH } from '../../src/lib/embed/snippets'
 import { embedPalettes } from '../../src/lib/embed/theme'
 import { hexToRgb } from '../../src/lib/game-portal/contrast'
 import { feedbackHref } from '../../src/lib/game-portal/feedbackSearchParams'
@@ -10,7 +12,7 @@ import { portalPaths } from '../../src/lib/game-portal/paths'
 import { ARCHIVED_STATUSES, PUBLIC_STAGES, type PublicStageId, statusesFor } from '../../src/lib/game-portal/stages'
 import { DEFAULT_THEME_COLORS } from '../../src/lib/game-portal/theme'
 import { withRef } from '../../src/lib/share/kit'
-import { BASE_URL, SECOND_BASE_URL } from './support/env'
+import { BASE_URL, SECOND_BASE_URL, storageStatePath } from './support/env'
 import { createIssue, createPatchNote, createProject, expect, newRequestContext, test } from './support/fixtures'
 
 /**
@@ -749,4 +751,103 @@ test('E11 "Powered by Critwire" links home with ref=embed; a self-hosted instanc
     await expect(page.getByRole('contentinfo')).toBeVisible()
     await expect(page.getByRole('contentinfo')).not.toContainText('Powered by')
   })
+})
+
+test('E12 the Share tab’s Embed tab gives the host page’s snippet, a live preview and where it works', async ({
+  api,
+  browser,
+  embedHost,
+  uniqueSlug,
+  world,
+}) => {
+  const project = await createProject(api('aOwner'), world.tenants.A.id, uniqueSlug('embed-kit'))
+  const { dark } = embedPalettes(DEFAULT_THEME_COLORS)
+  const snippets = (widget: EmbedWidget, theme: EmbedTheme) =>
+    embedSnippets({ siteURL: BASE_URL, slug: project.slug, widget, theme })
+  const context = await browser.newContext({ storageState: storageStatePath('aOwner') })
+  await context.grantPermissions(['clipboard-read', 'clipboard-write'])
+  const page = await context.newPage()
+  const panel = page.getByRole('region', { name: 'Put critwire on your site' })
+  const tabs = panel.getByRole('tablist', { name: 'What to put on your site' })
+  const kit = panel.getByRole('tabpanel', { name: 'Embed' })
+  const preview = kit.locator('iframe')
+  const copied = async (name: string) => {
+    await kit.getByRole('button', { name, exact: true }).click()
+    return page.evaluate(() => navigator.clipboard.readText())
+  }
+
+  try {
+    await test.step('the arrow keys move between the tabs and select them', async () => {
+      await page.goto(gameShareHref(project.id))
+      const links = tabs.getByRole('tab', { name: 'Links and buttons' })
+      const embed = tabs.getByRole('tab', { name: 'Embed' })
+      await links.focus()
+      await page.keyboard.press('ArrowRight')
+      await expect(embed).toBeFocused()
+      await expect(embed).toHaveAttribute('aria-selected', 'true')
+      await expect(links).toHaveAttribute('aria-selected', 'false')
+      await expect(panel.getByRole('tabpanel')).toHaveCount(1)
+      await expect(kit).toBeVisible()
+      await page.keyboard.press('ArrowLeft')
+      await expect(links).toBeFocused()
+      await expect(panel.getByRole('tabpanel', { name: 'Links and buttons' })).toBeVisible()
+      await page.keyboard.press('End')
+      await expect(embed).toBeFocused()
+      await expect(kit).toBeVisible()
+    })
+
+    await test.step('Board in Auto is the default, and its script is the one the host page carries', async () => {
+      await expect(kit.getByRole('radio', { name: 'Board', exact: true })).toBeChecked()
+      await expect(kit.getByRole('radio', { name: 'Auto', exact: true })).toBeChecked()
+      const script = await copied('Copy script snippet')
+      expect(script).toBe(snippets('board', 'auto').script)
+      const host = await (await fetch(embedHost.url({ game: project.slug, widget: 'board', theme: 'auto' }))).text()
+      expect(host).toContain(script)
+      expect(await copied('Copy iframe snippet')).toBe(snippets('board', 'auto').iframe)
+      expect(await copied('Copy embed URL')).toBe(snippets('board', 'auto').url)
+      await expect(preview).toHaveAttribute('src', snippets('board', 'auto').url)
+      await expect(page.frameLocator('iframe[title^="Preview"]').getByRole('heading', { name: 'Feedback' })).toBeVisible()
+    })
+
+    await test.step('Dark: the snippets follow, and the preview shows the board in the dark palette', async () => {
+      await kit.getByRole('radio', { name: 'Dark', exact: true }).check()
+      expect(await copied('Copy script snippet')).toBe(snippets('board', 'dark').script)
+      await expect(preview).toHaveAttribute('src', snippets('board', 'dark').url)
+      const frame = page.frameLocator('iframe[title^="Preview"]')
+      await expect(frame.getByRole('heading', { name: 'Feedback' })).toBeVisible()
+      await expect
+        .poll(() => frame.locator('.cw-embed').evaluate((element) => getComputedStyle(element).backgroundColor))
+        .toBe(rgb(dark.background))
+    })
+
+    await test.step('Updates previews the updates widget', async () => {
+      await kit.getByRole('radio', { name: 'Updates', exact: true }).check()
+      expect(await copied('Copy script snippet')).toBe(snippets('updates', 'dark').script)
+      expect(await copied('Copy iframe snippet')).toBe(snippets('updates', 'dark').iframe)
+      await expect(page.frameLocator('iframe[title^="Preview"]').getByRole('heading', { name: 'Updates' })).toBeVisible()
+    })
+
+    await test.step('the floating button has no iframe snippet, and previews the board it opens', async () => {
+      await kit.getByRole('radio', { name: 'Floating button', exact: true }).check()
+      expect(await copied('Copy script snippet')).toBe(snippets('button', 'dark').script)
+      await expect(kit.getByRole('button', { name: /^Copy (iframe snippet|embed URL)$/ })).toHaveCount(0)
+      await expect(preview).toHaveAttribute('src', snippets('button', 'dark').url)
+      await expect(page.frameLocator('iframe[title^="Preview"]').getByRole('heading', { name: 'Feedback' })).toBeVisible()
+    })
+
+    await test.step('where it works, grouped as the docs group it', async () => {
+      for (const group of EMBED_SUPPORT_GROUPS) {
+        const heading = kit.getByRole('heading', { name: EMBED_SUPPORT[group], exact: true })
+        await expect(heading).toBeVisible()
+        for (const platform of EMBED_PLATFORMS.filter((candidate) => candidate.support === group)) {
+          await expect(kit.getByRole('listitem').filter({ hasText: platform.name }).first()).toBeVisible()
+        }
+      }
+      await expect(kit.getByRole('listitem').filter({ hasText: 'Wix' })).toContainText('Embed a site')
+      // Its own context, so Playwright's automatic screenshot doesn't cover it.
+      await test.info().attach('share-tab-embed', { body: await page.screenshot({ fullPage: true }), contentType: 'image/png' })
+    })
+  } finally {
+    await context.close()
+  }
 })
