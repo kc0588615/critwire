@@ -1,12 +1,15 @@
 import type { ConsoleMessage, FrameLocator, Page } from '@playwright/test'
 
-import type { GameProject, PatchNote } from '../../src/payload-types'
+import type { GameProject, Issue, PatchNote } from '../../src/payload-types'
 import { EMBED_CACHE_CONTROL, LOADER_CACHE_CONTROL } from '../../src/lib/embed/cacheControl'
 import { LOADER_PATH } from '../../src/lib/embed/snippets'
 import { embedPalettes } from '../../src/lib/embed/theme'
 import { hexToRgb } from '../../src/lib/game-portal/contrast'
+import { feedbackHref } from '../../src/lib/game-portal/feedbackSearchParams'
 import { portalPaths } from '../../src/lib/game-portal/paths'
+import { ARCHIVED_STATUSES, PUBLIC_STAGES, type PublicStageId, statusesFor } from '../../src/lib/game-portal/stages'
 import { DEFAULT_THEME_COLORS } from '../../src/lib/game-portal/theme'
+import { withRef } from '../../src/lib/share/kit'
 import { BASE_URL } from './support/env'
 import { createIssue, createPatchNote, createProject, expect, newRequestContext, test } from './support/fixtures'
 
@@ -19,7 +22,7 @@ import { createIssue, createPatchNote, createProject, expect, newRequestContext,
 const SELF = "frame-ancestors 'self'"
 const ANY = 'frame-ancestors *'
 
-const tagged = (path: string) => `${BASE_URL}${path}?ref=embed`
+const tagged = (path: string) => withRef(`${BASE_URL}${path}`, 'embed')
 const rgb = (hex: string) => `rgb(${hexToRgb(hex).join(', ')})`
 const day = (n: number) => new Date(Date.UTC(2026, 0, n)).toISOString()
 
@@ -41,6 +44,250 @@ const frameHeights = async (page: Page) => ({
     .frameLocator('iframe')
     .locator('.cw-embed-frame')
     .evaluate((element) => element.getBoundingClientRect().height),
+})
+
+test('E1.1 the board widget shows true counts, filters in place and links out', async ({
+  api,
+  context,
+  embedHost,
+  page,
+  uniqueSlug,
+  world,
+}) => {
+  test.setTimeout(120_000)
+  const aOwner = api('aOwner')
+  const project = await createProject(aOwner, world.tenants.A.id, uniqueSlug('embed-board'))
+  const paths = portalPaths(project.slug)
+  const summary = (n: number) => `Private-looking summary number ${n} of ${project.slug}`
+  // Oldest first, all without votes, so the ranked order is newest first.
+  const planned: Issue[] = []
+  for (let n = 1; n <= 12; n++) {
+    planned.push(
+      await createIssue(aOwner, project, uniqueSlug(`embed-board-planned-${n}`), {
+        title: `Planned item ${n}`,
+        summary: summary(n),
+        status: 'PLANNED',
+        type: n <= 8 ? 'BUG' : 'IDEA',
+      }),
+    )
+  }
+  const shipped = await createIssue(aOwner, project, uniqueSlug('embed-board-shipped'), {
+    title: 'Shipped idea',
+    summary: summary(13),
+    status: 'FIXED',
+    type: 'IDEA',
+  })
+  const newest = planned[11]
+  const frame = page.frameLocator('iframe')
+  const stageFilter = frame.getByRole('group', { name: 'Stage' })
+  const typeFilter = frame.getByRole('group', { name: 'Type' })
+  const rows = frame.locator('.cw-embed-rows > li')
+
+  /** The public items of a stage (or all) and type, counted through REST as a visitor. */
+  const restCount = async (stage: null | PublicStageId, type?: 'BUG' | 'IDEA') => {
+    const { status, body } = await api('anonymous').find('issues', {
+      limit: 1,
+      where: {
+        and: [
+          { gameProject: { equals: project.id } },
+          { isPublic: { equals: true } },
+          stage ? { status: { in: statusesFor(stage) } } : { status: { not_in: ARCHIVED_STATUSES } },
+          ...(type ? [{ type: { equals: type } }] : []),
+        ],
+      },
+    })
+    expect(status).toBe(200)
+    return body.totalDocs
+  }
+
+  await test.step('through the script: the board renders and its frame fits its content', async () => {
+    await page.goto(embedHost.url({ game: project.slug, widget: 'board' }))
+    await expect(frame.getByRole('heading', { level: 1, name: 'Feedback' })).toBeVisible()
+    await expect(rows).toHaveCount(10)
+    // Ranked: no votes anywhere, so newest first, the shipped item included.
+    await expect(rows.nth(0)).toContainText(shipped.title)
+    await expect(rows.nth(1)).toContainText(newest.title)
+    await expect
+      .poll(async () => {
+        const { content, frame } = await frameHeights(page)
+        return Math.abs(frame - content)
+      })
+      .toBeLessThanOrEqual(1)
+  })
+
+  await test.step('each stage’s count matches REST, and "See all" the true total (W1)', async () => {
+    await expect(stageFilter.getByRole('button', { name: `All ${await restCount(null)}` })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+    for (const stage of PUBLIC_STAGES) {
+      await expect(stageFilter.getByRole('button', { name: `${stage.label} ${await restCount(stage.id)}` })).toHaveAttribute(
+        'aria-pressed',
+        'false',
+      )
+    }
+    await expect(frame.getByRole('link', { name: 'See all 13' })).toHaveAttribute('href', tagged(paths.feedback))
+  })
+
+  await test.step('the frame’s HTML and data hold no item’s summary (W2)', async () => {
+    const embedURL = page.frames().find((f) => f.url().includes('/embed/board'))!.url()
+    const response = await page.request.get(embedURL)
+    expect(response.status()).toBe(200)
+    const html = await response.text()
+    expect(html).toContain(newest.title)
+    // The RSC payload carries every view: the shipped item is in one even though the first view leaves it out.
+    expect(html).toContain(shipped.title)
+    for (let n = 1; n <= 13; n++) expect(html).not.toContain(summary(n))
+  })
+
+  await test.step('filters switch views in place: no request, no URL change, no history entry (W3)', async () => {
+    await page.waitForLoadState('networkidle')
+    const requests: string[] = []
+    page.on('request', (request) => requests.push(request.url()))
+    const historyLength = await page.evaluate(() => window.history.length)
+    const embedURL = page.frames().find((f) => f.url().includes('/embed/board'))!.url()
+
+    await stageFilter.getByRole('button', { name: /^Planned / }).click()
+    await expect(stageFilter.getByRole('button', { name: 'Planned 12' })).toHaveAttribute('aria-pressed', 'true')
+    await expect(rows).toHaveCount(10)
+    await expect(frame.getByRole('link', { name: 'See all 12' })).toHaveAttribute(
+      'href',
+      tagged(feedbackHref(paths.feedback, { stage: 'planned' })),
+    )
+
+    await typeFilter.getByRole('button', { name: 'Ideas' }).click()
+    await expect(typeFilter.getByRole('button', { name: 'Ideas' })).toHaveAttribute('aria-pressed', 'true')
+    // The stage counts follow the type.
+    await expect(stageFilter.getByRole('button', { name: 'All 5' })).toBeVisible()
+    await expect(stageFilter.getByRole('button', { name: 'Planned 4' })).toBeVisible()
+    await expect(rows).toHaveCount(4)
+    await expect(frame.getByRole('link', { name: /^See all/ })).toHaveCount(0)
+
+    await typeFilter.getByRole('button', { name: 'Bugs' }).click()
+    await expect(stageFilter.getByRole('button', { name: 'Planned 8' })).toBeVisible()
+    await expect(stageFilter.getByRole('button', { name: 'Shipped 0' })).toBeVisible()
+    await expect(rows).toHaveCount(8)
+
+    await stageFilter.getByRole('button', { name: 'Under review 0' }).click()
+    await expect(frame.getByText('Nothing here yet.')).toBeVisible()
+    await typeFilter.getByRole('button', { name: 'All', exact: true }).click()
+
+    expect(requests).toEqual([])
+    expect(await page.evaluate(() => window.history.length)).toBe(historyLength)
+    expect(page.frames().some((f) => f.url() === embedURL)).toBe(true)
+  })
+
+  await test.step('Shipped shows its item, and the frame shrinks to fit (R1)', async () => {
+    await stageFilter.getByRole('button', { name: 'Planned 12' }).click()
+    await expect(rows).toHaveCount(10)
+    await expect
+      .poll(async () => {
+        const { content, frame } = await frameHeights(page)
+        return Math.abs(frame - content)
+      })
+      .toBeLessThanOrEqual(1)
+    const tall = (await frameHeights(page)).frame
+
+    await stageFilter.getByRole('button', { name: 'Shipped 1' }).click()
+    await expect(rows).toHaveCount(1)
+    await expect(rows.first()).toContainText('Shipped idea')
+    await expect(rows.first()).toContainText('Shipped')
+    await expect
+      .poll(async () => {
+        const { content, frame } = await frameHeights(page)
+        return frame < tall - 200 && Math.abs(frame - content) <= 1
+      })
+      .toBe(true)
+  })
+
+  await test.step('"See all 12" opens the portal list with 12 items', async () => {
+    await stageFilter.getByRole('button', { name: 'Planned 12' }).click()
+    const opened = context.waitForEvent('page')
+    await frame.getByRole('link', { name: 'See all 12' }).click()
+    const portal = await opened
+    await portal.waitForLoadState()
+    expect(new URL(portal.url()).searchParams.get('ref')).toBe('embed')
+    await expect(portal.locator('.fs-issue-item')).toHaveCount(12)
+    await portal.close()
+  })
+
+  await test.step('links open the portal in a new tab, with ref=embed (W5)', async () => {
+    await page.waitForLoadState('networkidle')
+    const embedURL = page.frames().find((f) => f.url().includes('/embed/board'))!.url()
+    const portalRequests: string[] = []
+    page.on('request', (request) => {
+      if (new URL(request.url()).pathname.startsWith('/g/')) portalRequests.push(request.url())
+    })
+
+    await expect(frame.getByRole('link', { name: 'Report a bug' })).toHaveAttribute('href', tagged(paths.newFeedback('bug')))
+    await expect(frame.getByRole('link', { name: 'Suggest an idea' })).toHaveAttribute(
+      'href',
+      tagged(paths.newFeedback('idea')),
+    )
+    // S8 turns the vote link into a popup; until then it is the item page.
+    await expect(frame.getByRole('link', { name: `Vote for ${newest.title}, 0 votes` })).toHaveAttribute(
+      'href',
+      tagged(paths.feedbackItem(newest.slug)),
+    )
+
+    const opened = context.waitForEvent('page')
+    await frame.getByRole('link', { name: newest.title, exact: true }).click()
+    const portal = await opened
+    await portal.waitForLoadState()
+    expect(portal.url()).toBe(tagged(paths.feedbackItem(newest.slug)))
+    await expect(portal.getByRole('heading', { level: 1 })).toHaveText(newest.title)
+    await portal.close()
+
+    expect(page.frames().some((f) => f.url() === embedURL)).toBe(true)
+    expect(portalRequests).toEqual([])
+  })
+
+  await test.step('the snippet’s stage and type set the first view', async () => {
+    await page.goto(embedHost.url({ game: project.slug, widget: 'board', stage: 'planned', type: 'idea' }))
+    await expect(stageFilter.getByRole('button', { name: 'Planned 4' })).toHaveAttribute('aria-pressed', 'true')
+    await expect(typeFilter.getByRole('button', { name: 'Ideas' })).toHaveAttribute('aria-pressed', 'true')
+    await expect(rows).toHaveCount(4)
+  })
+
+  await test.step('a stage holding &, # and / reaches the frame encoded, and the board shows All (R3)', async () => {
+    const stage = 'planned&type=idea#top/x'
+    await page.goto(embedHost.url({ game: project.slug, widget: 'board', stage }))
+    await expect(stageFilter.getByRole('button', { name: 'All 13' })).toHaveAttribute('aria-pressed', 'true')
+    await expect(typeFilter.getByRole('button', { name: 'All', exact: true })).toHaveAttribute('aria-pressed', 'true')
+    const src = new URL(await page.locator('iframe').getAttribute('src').then((value) => value!))
+    expect(src.searchParams.get('stage')).toBe(stage)
+    expect(src.searchParams.get('type')).toBeNull()
+  })
+
+  await test.step('a game that takes bugs only offers no ideas, and an empty board says so (W4)', async () => {
+    const bugsOnly = await createProject(aOwner, world.tenants.A.id, uniqueSlug('embed-board-bugs'), {
+      reportForm: { provider: 'native', acceptIdeas: false },
+    })
+    await page.goto(embedHost.url({ game: bugsOnly.slug, widget: 'board', kind: 'iframe', type: 'idea' }))
+    await expect(frame.getByText('No feedback yet.')).toBeVisible()
+    await expect(frame.getByRole('link', { name: 'Report a bug' })).toHaveAttribute(
+      'href',
+      tagged(portalPaths(bugsOnly.slug).newFeedback('bug')),
+    )
+    await expect(frame.getByRole('link', { name: 'Suggest an idea' })).toHaveCount(0)
+
+    await createIssue(aOwner, bugsOnly, uniqueSlug('embed-board-bugs-item'), { title: 'Only a bug' })
+    // A new context: the browser may keep the empty board for 60 s.
+    const fresh = await page.context().browser()!.newContext()
+    try {
+      const again = await fresh.newPage()
+      await again.goto(embedHost.url({ game: bugsOnly.slug, widget: 'board', kind: 'iframe', type: 'idea' }))
+      const board = again.frameLocator('iframe')
+      await expect(board.locator('.cw-embed-rows > li')).toHaveCount(1)
+      await expect(board.getByRole('group', { name: 'Type' }).getByRole('button')).toHaveText(['All', 'Bugs'])
+      await expect(board.getByRole('group', { name: 'Type' }).getByRole('button', { name: 'All', exact: true })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      )
+    } finally {
+      await fresh.close()
+    }
+  })
 })
 
 test('E1.2 the updates widget shows the newest updates and links out', async ({
@@ -255,8 +502,9 @@ test('E7 the embeds may be framed anywhere; the portal only by itself', async ({
   const player = await newRequestContext(playwright)
 
   try {
-    await test.step('the updates embed and an unknown game’s empty embed: frame-ancestors * and the cache header', async () => {
-      for (const path of [paths.embed('updates'), portalPaths(uniqueSlug('embed-no-such-game')).embed('updates')]) {
+    await test.step('both embeds, and an unknown game’s empty ones: frame-ancestors * and the cache header', async () => {
+      const unknown = portalPaths(uniqueSlug('embed-no-such-game'))
+      for (const path of [paths.embed('board'), paths.embed('updates'), unknown.embed('board'), unknown.embed('updates')]) {
         const response = await player.get(path, { maxRedirects: 0 })
         expect(response.status(), path).toBe(200)
         expect(response.headers()['content-security-policy'], path).toBe(ANY)

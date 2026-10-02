@@ -65,11 +65,11 @@ async function expectFeedsMissing(player: APIRequestContext, slug: string): Prom
   }
 }
 
-/** The updates widget through the script, in a browser context with no cache. */
-async function loadUpdatesEmbed(browser: Browser, embedHost: EmbedHost, slug: string) {
+/** A widget through the script, in a browser context with no cache. */
+async function loadEmbed(browser: Browser, embedHost: EmbedHost, slug: string, widget: 'board' | 'updates') {
   const context = await browser.newContext()
   const page = await context.newPage()
-  await page.goto(embedHost.url({ game: slug, widget: 'updates' }))
+  await page.goto(embedHost.url({ game: slug, widget }))
   return { context, page, frame: page.frameLocator('iframe') }
 }
 
@@ -305,18 +305,19 @@ test('E9 a held game and a suspended studio give an empty embed and no feeds, un
   const aOwner = api('aOwner')
   const held = await createProject(aOwner, world.tenants.A.id, uniqueSlug('feeds-held'))
   await createPatchNote(aOwner, held, uniqueSlug('feeds-held-update'), { title: 'Held game update' })
-  await createIssue(aOwner, held, uniqueSlug('feeds-held-item'))
+  await createIssue(aOwner, held, uniqueSlug('feeds-held-item'), { title: 'Held game item' })
 
   const studio = await seedStudio('feeds-suspended')
   const suspended = await createProject(studio.owner.client, studio.tenant.id, `${studio.tenant.slug}-game`)
   await createPatchNote(studio.owner.client, suspended, `${studio.tenant.slug}-update`, {
     title: 'Suspended game update',
   })
-  await createIssue(studio.owner.client, suspended, `${studio.tenant.slug}-item`)
+  await createIssue(studio.owner.client, suspended, `${studio.tenant.slug}-item`, { title: 'Suspended game item' })
 
-  const games: [GameProject, string][] = [
-    [held, 'Held game update'],
-    [suspended, 'Suspended game update'],
+  // Each game, with its update's title and its item's.
+  const games: [GameProject, string, string][] = [
+    [held, 'Held game update', 'Held game item'],
+    [suspended, 'Suspended game update', 'Suspended game item'],
   ]
   const setSuspended = async (value: boolean) => {
     const { status, body } = await superAdmin.update('tenants', studio.tenant.id, { suspended: value })
@@ -324,10 +325,13 @@ test('E9 a held game and a suspended studio give an empty embed and no feeds, un
   }
 
   const expectPublic = async (player: APIRequestContext) => {
-    for (const [game, title] of games) {
-      const embed = await loadUpdatesEmbed(browser, embedHost, game.slug)
-      await expect(embed.frame.getByRole('heading', { name: title })).toBeVisible()
-      await embed.context.close()
+    for (const [game, update, item] of games) {
+      const updates = await loadEmbed(browser, embedHost, game.slug, 'updates')
+      await expect(updates.frame.getByRole('heading', { name: update })).toBeVisible()
+      await updates.context.close()
+      const board = await loadEmbed(browser, embedHost, game.slug, 'board')
+      await expect(board.frame.getByRole('link', { name: item, exact: true })).toBeVisible()
+      await board.context.close()
       const paths = portalPaths(game.slug)
       expect((await (await getFeed(player, paths.feedbackJSON)).json()).items).toHaveLength(1)
       expect((await (await getFeed(player, paths.updatesJSON)).json()).items).toHaveLength(1)
@@ -344,19 +348,21 @@ test('E9 a held game and a suspended studio give an empty embed and no feeds, un
     await setSuspended(true)
 
     for (const [game] of games) {
-      await test.step(`${game.slug}: an empty frame of height 0 with no text (K3, K4)`, async () => {
-        const embed = await loadUpdatesEmbed(browser, embedHost, game.slug)
-        await expect
-          .poll(() => embed.page.locator('iframe').evaluate((element) => element.getBoundingClientRect().height))
-          .toBe(0)
-        await expect(embed.frame.locator('.cw-embed[data-empty]')).toHaveCount(1)
-        expect(await embed.frame.locator('body').innerText()).toBe('')
-        await embed.context.close()
+      for (const widget of ['board', 'updates'] as const) {
+        await test.step(`${game.slug}: an empty ${widget} frame of height 0 with no text (K3, K4)`, async () => {
+          const embed = await loadEmbed(browser, embedHost, game.slug, widget)
+          await expect
+            .poll(() => embed.page.locator('iframe').evaluate((element) => element.getBoundingClientRect().height))
+            .toBe(0)
+          await expect(embed.frame.locator('.cw-embed[data-empty]')).toHaveCount(1)
+          expect(await embed.frame.locator('body').innerText()).toBe('')
+          await embed.context.close()
 
-        const response = await player.get(portalPaths(game.slug).embed('updates'))
-        expect(response.status()).toBe(200)
-        expect(response.headers()['cache-control']).toBe(EMBED_CACHE_CONTROL)
-      })
+          const response = await player.get(portalPaths(game.slug).embed(widget))
+          expect(response.status()).toBe(200)
+          expect(response.headers()['cache-control']).toBe(EMBED_CACHE_CONTROL)
+        })
+      }
 
       await test.step(`${game.slug}: both feeds 404, with CORS (K2)`, async () => {
         await expectFeedsMissing(player, game.slug)
@@ -374,7 +380,7 @@ test('E9 a held game and a suspended studio give an empty embed and no feeds, un
   }
 })
 
-test('E10 an edit shows in the next response of the embed and both feeds', async ({
+test('E10 an edit shows in the next response of both embeds and both feeds', async ({
   api,
   playwright,
   uniqueSlug,
@@ -390,11 +396,13 @@ test('E10 an edit shows in the next response of the embed and both feeds', async
   const issue = await createIssue(aOwner, project, uniqueSlug('feeds-fresh-item'), { title: 'Lantern flickers' })
 
   const player = await newRequestContext(playwright)
-  const updatesEmbed = async () => {
-    const response = await player.get(paths.embed('updates'))
+  const embedHTML = async (widget: 'board' | 'updates') => {
+    const response = await player.get(paths.embed(widget))
     expect(response.status()).toBe(200)
     return response.text()
   }
+  const updatesEmbed = () => embedHTML('updates')
+  const boardEmbed = () => embedHTML('board')
   const feedbackItem = async () => (await (await getFeed(player, paths.feedbackJSON)).json()).items[0]
   const updates = async () => (await (await getFeed(player, paths.updatesJSON)).json()).items
 
@@ -407,6 +415,8 @@ test('E10 an edit shows in the next response of the embed and both feeds', async
     await test.step('before: the item is open, and the update lists nothing', async () => {
       expect(await feedbackItem()).toMatchObject({ title: 'Lantern flickers', stage: 'under-review', shipped_in: null })
       expect(await updatesEmbed()).not.toContain('From your feedback')
+      expect(await boardEmbed()).toContain('Lantern flickers')
+      expect(await boardEmbed()).not.toContain('Shipped in')
       // Cached nowhere on the server: these responses must not be what the next ones show.
     })
 
@@ -419,12 +429,14 @@ test('E10 an edit shows in the next response of the embed and both feeds', async
       const html = await updatesEmbed()
       expect(html).toContain('From your feedback')
       expect(html).toContain('Lantern flickers')
+      expect(await boardEmbed()).toContain('Shipped in v1.0')
     })
 
     await test.step('editing the item’s title', async () => {
       await update('issues', issue.id, { title: 'Lantern flickers at dusk' })
       expect((await feedbackItem()).title).toBe('Lantern flickers at dusk')
       expect(await updatesEmbed()).toContain('Lantern flickers at dusk')
+      expect(await boardEmbed()).toContain('Lantern flickers at dusk')
     })
 
     await test.step('publishing an update', async () => {

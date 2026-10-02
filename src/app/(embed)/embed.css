@@ -107,3 +107,107 @@ body {
 .cw-embed-powered {
   margin-top: 1rem;
 }
+
+/* ── The board ──────────────────────────────────────────── */
+
+/* The title, then the form links; beside each other when there's room. */
+.cw-embed-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0 1.25rem;
+}
+
+.cw-embed-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 1.25rem;
+  margin-bottom: 0.5rem;
+}
+
+/* A row of toggle buttons, wrapping on narrow frames. */
+.cw-embed-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.cw-embed-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-height: 2.75rem;
+  border: 1px solid var(--fs-border);
+  border-radius: var(--fs-radius-control);
+  padding: 0.375rem 0.75rem;
+  background: transparent;
+  color: var(--fs-fg);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: pointer;
+}
+
+.cw-embed-filter:hover {
+  border-color: var(--fs-muted-fg);
+}
+
+.cw-embed-filter[aria-pressed='true'] {
+  border-color: var(--fs-accent);
+  background: var(--fs-accent);
+  color: var(--fs-accent-fg);
+}
+
+.cw-embed-count {
+  font-variant-numeric: tabular-nums;
+  opacity: 0.8;
+}
+
+/* An item: its vote link in a fixed left column, then the title and its meta. */
+.cw-embed-row {
+  display: grid;
+  grid-template-columns: 3.5rem minmax(0, 1fr);
+  align-items: start;
+  column-gap: 0.875rem;
+  padding-block: 0.75rem;
+  line-height: 1.4;
+}
+
+.cw-embed-vote {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  border: 1px solid var(--fs-border);
+  border-radius: var(--fs-radius-control);
+  color: var(--fs-fg);
+  text-decoration: none;
+}
+
+.cw-embed-vote:hover {
+  border-color: var(--fs-accent);
+}
+
+.cw-embed-vote .fs-vote-inline {
+  color: inherit;
+}
+
+.cw-embed-row-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.75rem;
+  margin-top: 0.375rem;
+}
+
+.cw-embed-row-meta .fs-status {
+  font-size: 0.875rem;
+}
+
+.cw-embed-none {
+  margin-block: 0.75rem;
+}
