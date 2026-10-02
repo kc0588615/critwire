@@ -1,4 +1,4 @@
-import type { ConsoleMessage, FrameLocator, Page } from '@playwright/test'
+import type { ConsoleMessage, FrameLocator, Page, Response } from '@playwright/test'
 
 import type { GameProject, Issue, PatchNote } from '../../src/payload-types'
 import { EMBED_CACHE_CONTROL, LOADER_CACHE_CONTROL } from '../../src/lib/embed/cacheControl'
@@ -21,6 +21,8 @@ import { createIssue, createPatchNote, createProject, expect, newRequestContext,
 
 const SELF = "frame-ancestors 'self'"
 const ANY = 'frame-ancestors *'
+/** The floating button's dark background, from `public/embed/v1.js`. */
+const BUTTON_DARK = '#16171d'
 
 const tagged = (path: string) => withRef(`${BASE_URL}${path}`, 'embed')
 const rgb = (hex: string) => `rgb(${hexToRgb(hex).join(', ')})`
@@ -425,6 +427,76 @@ test('E1.2 the updates widget shows the newest updates and links out', async ({
   })
 })
 
+test('E2 the floating button opens the board in a dialog, which Escape inside it closes', async ({
+  api,
+  embedHost,
+  page,
+  uniqueSlug,
+  world,
+}) => {
+  const aOwner = api('aOwner')
+  const project = await createProject(aOwner, world.tenants.A.id, uniqueSlug('embed-button'))
+  await createIssue(aOwner, project, uniqueSlug('embed-button-item'), { title: 'A bug from the button' })
+  const button = page.getByRole('button', { name: 'Feedback' })
+  const dialog = page.getByRole('dialog', { name: 'Feedback' })
+  const board = page.locator('dialog iframe').contentFrame()
+
+  await test.step('the script adds a fixed button, and no frame until it’s clicked', async () => {
+    await page.goto(embedHost.url({ game: project.slug, widget: 'button' }))
+    await expect(button).toBeVisible()
+    expect(await button.evaluate((element) => getComputedStyle(element).position)).toBe('fixed')
+    // The button inherits the host page's font.
+    expect(await button.evaluate((element) => getComputedStyle(element).fontFamily)).toBe('Georgia, serif')
+    await expect(page.locator('iframe')).toHaveCount(0)
+    await expect(dialog).toHaveCount(0)
+  })
+
+  await test.step('a click opens the dialog with the board, in the host page’s font', async () => {
+    await button.click()
+    await expect(dialog).toBeVisible()
+    await expect(board.getByRole('heading', { level: 1, name: 'Feedback' })).toBeVisible()
+    await expect(board.locator('.cw-embed-rows > li')).toHaveCount(1)
+    await expect(board.locator('.cw-embed-rows > li')).toContainText('A bug from the button')
+    await expect.poll(() => embedFont(board)).toBe('Georgia, serif')
+    const src = new URL((await page.locator('dialog iframe').getAttribute('src'))!)
+    expect(src.pathname).toBe(portalPaths(project.slug).embed('board'))
+  })
+
+  await test.step('Escape inside the frame closes the dialog, and focus returns to the button (R7)', async () => {
+    await board.getByRole('group', { name: 'Stage' }).getByRole('button', { name: 'All 1' }).click()
+    await page.keyboard.press('Escape')
+    await expect(dialog).toBeHidden()
+    await expect(button).toBeFocused()
+  })
+
+  await test.step('it opens again on the same frame, and Close closes it', async () => {
+    await button.click()
+    await expect(dialog).toBeVisible()
+    await expect(page.locator('iframe')).toHaveCount(1)
+    await dialog.getByRole('button', { name: 'Close' }).click()
+    await expect(dialog).toBeHidden()
+    await expect(button).toBeFocused()
+  })
+
+  for (const { theme, system } of [
+    { theme: 'dark', system: 'light' },
+    { theme: 'auto', system: 'dark' },
+  ] as const) {
+    await test.step(`${theme} on a ${system} system: a dark button and a dark board`, async () => {
+      await page.emulateMedia({ colorScheme: system })
+      await page.goto(embedHost.url({ game: project.slug, widget: 'button', theme }))
+      await expect
+        .poll(() => button.evaluate((element) => getComputedStyle(element).backgroundColor))
+        .toBe(rgb(BUTTON_DARK))
+      await button.click()
+      await expect(board.getByRole('heading', { level: 1, name: 'Feedback' })).toBeVisible()
+      await expect
+        .poll(() => board.locator('.cw-embed').evaluate((element) => getComputedStyle(element).backgroundColor))
+        .toBe(rgb(embedPalettes(DEFAULT_THEME_COLORS).dark.background))
+    })
+  }
+})
+
 test('E3 light, dark and auto give the predicted palettes, with no font or image', async ({
   api,
   embedHost,
@@ -483,6 +555,62 @@ test('E3 light, dark and auto give the predicted palettes, with no font or image
   await test.step('the frame requests no image and no font file (R8)', async () => {
     await page.waitForLoadState('networkidle')
     expect(downloads).toEqual([])
+  })
+})
+
+test('E6 the loader, the embeds and the feeds set no cookies', async ({
+  api,
+  context,
+  embedHost,
+  page,
+  uniqueSlug,
+  world,
+}) => {
+  const aOwner = api('aOwner')
+  const project = await createProject(aOwner, world.tenants.A.id, uniqueSlug('embed-cookies'))
+  const paths = portalPaths(project.slug)
+  await createIssue(aOwner, project, uniqueSlug('embed-cookies-item'))
+  await createPatchNote(aOwner, project, uniqueSlug('embed-cookies-update'))
+  const hostCookie = { name: 'studio_session', value: 'the-studio-s-own', domain: '127.0.0.1', path: '/' }
+  await context.addCookies([hostCookie])
+  const appResponses: Response[] = []
+  context.on('response', (response) => {
+    if (response.url().startsWith(BASE_URL)) appResponses.push(response)
+  })
+
+  await test.step('the three widgets on the host page, and the dialog', async () => {
+    for (const widget of ['board', 'updates'] as const) {
+      await page.goto(embedHost.url({ game: project.slug, widget }))
+      await expect(page.frameLocator('iframe').getByRole('heading', { level: 1 })).toBeVisible()
+      await page.waitForLoadState('networkidle')
+    }
+    await page.goto(embedHost.url({ game: project.slug, widget: 'button' }))
+    await page.getByRole('button', { name: 'Feedback' }).click()
+    await expect(page.locator('dialog iframe').contentFrame().getByRole('heading', { level: 1 })).toBeVisible()
+    await page.waitForLoadState('networkidle')
+  })
+
+  await test.step('both feeds, fetched from the host page', async () => {
+    const statuses = await page.evaluate(
+      (urls) => Promise.all(urls.map((url) => fetch(url).then((response) => response.status))),
+      [`${BASE_URL}${paths.feedbackJSON}`, `${BASE_URL}${paths.updatesJSON}`],
+    )
+    expect(statuses).toEqual([200, 200])
+  })
+
+  await test.step('no answer from critwire sets a cookie', async () => {
+    const seen = appResponses.map((response) => new URL(response.url()).pathname)
+    for (const path of [LOADER_PATH, paths.embed('board'), paths.embed('updates'), paths.feedbackJSON, paths.updatesJSON]) {
+      expect(seen, path).toContain(path)
+    }
+    for (const response of appResponses) {
+      expect(await response.headerValue('set-cookie'), response.url()).toBeNull()
+    }
+  })
+
+  await test.step('the browser holds only the host page’s own cookie, unchanged', async () => {
+    const cookies = (await context.cookies()).map(({ domain, name, path, value }) => ({ domain, name, path, value }))
+    expect(cookies).toEqual([hostCookie])
   })
 })
 
