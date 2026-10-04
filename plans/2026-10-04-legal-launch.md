@@ -156,7 +156,7 @@ Out:
 
 - [x] Baseline: install, migrate, run typecheck, lint, unit and E2E tests; record the results under Baseline
 - [x] Architecture: `architect` writes findings and the target design
-- [ ] Fable review: `architecture-reviewer`
+- [x] Fable review: `architecture-reviewer`
 - [ ] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
 - [ ] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
 - [ ] Steps: `planner` writes Steps and Verification
@@ -710,6 +710,35 @@ Nothing new needs it:
 
 ## Architecture review (Fable)
 
+Checked at `980dcb3` against the code and the installed Payload (`payload`, `@payloadcms/next`, `@payloadcms/drizzle`, `@payloadcms/plugin-multi-tenant`) and Next.
+
+VERDICT: APPROVE_WITH_CHANGES
+
+What I verified and found right:
+- Every line reference in F1–F8 opens to what the finding says (`feedback/new/submit/route.ts:22`, `reports.ts:61,81`, `IssueReports/index.ts:92`, `Users/index.ts:24,26`, `Tenants/index.ts:64-78` is `createdBy` with `ON DELETE set null`, `docs/architecture.md:339-340`, `docs/integrations.md:107-108`, `docs/deploy.md:163`, `LICENSE:3`, `src/Footer/Component.tsx:23`, `MarketingHome.tsx:105-106`). The `submitterEmail` grep matches the list exactly.
+- F4: `payload/dist/config/defaults.js:64` sets `deleteJobOnComplete: true`; `runJobs/index.js:400` deletes with `db.deleteMany` (no `req`), so `payload_jobs_log` rows (which do carry `input`, `queues/config/collection.js:114`) cascade with the job. Setting the flag explicitly is the right call.
+- F5: `afterTenantDelete.js` runs `payload.delete` per collection in `Promise.all` without `req`: outside the transaction, hooks on, so the `GameProjects` `afterDelete` hook will run on studio deletes and the vote race is real.
+- The gate: `views/Root/index.js:118` checks `permissions.canAccessAdmin` on every admin render; `handleAuthRedirect.js` sends a signed-in user to `/admin/unauthorized?redirect=<full /admin/... route>`; `getRouteData.js:106` resolves `admin.components.views.unauthorized` before the built-in view. Replacing that view is supported. `/onboarding` and `/onboarding/submit` have no admin guard today, so the explicit check there is needed, and the design has it.
+- Migration: Payload emits `NOT NULL` for required relationships (`issue_reports.game_project_id integer NOT NULL` in the phase2 migration), so `legal_acceptances.user_id NOT NULL` + `SET NULL` will indeed make a hard delete fail loudly.
+- `deleteContactJobs`' JSON path query: `@payloadcms/drizzle/dist/queries/parseParams.js:79-163` builds `->>` traversal for `json` fields, so `where: { 'input.projectID': { equals } }` is supported, not a gamble.
+- `outputFileTracingIncludes` keys go through picomatch with `contains: true` (`next/dist/build/collect-build-traces.js:463-470`), so `'/**'` matches every route, and the font precedent is the same mechanism.
+- `instrumentation-node.ts:12` already has `checkEnvironment()`; nothing in `src/`, the seed or `tests/` hard-deletes a user, so `access.delete: () => false` breaks nothing.
+- Sentry: `src/instrumentation.ts` and `instrumentation-client.ts` set no `sendDefaultPii`, so the inventory's "never kept in our logs" holds for Sentry too if a DSN is ever set.
+
+MUST-FIX:
+1. **The API write gate leaves `tenants` open.** `requireLegalAcceptance` hangs off the plugin's tenant field, so it covers only the tenant-scoped collections. `Tenants.access.update` (`src/collections/Tenants/index.ts:21-25`) lets an owner change the studio's `name` and `slug` through REST/GraphQL, both of which are public on the portal, and no tenant field exists on `tenants` itself. The design states "one hook closes [the API]" and the E2E asserts "a REST write gets a 403" only for a tenant-scoped collection. Add the same check as a collection `beforeChange` on `Tenants` (one function, two hook signatures, or a tiny wrapper), and make the E2E try a `PATCH /api/tenants/<id>` too. Users' self-updates (`name`, `password`) can stay open: they're account actions, not content.
+
+MISSED:
+- **Password recovery for an anonymized account.** `POST /forgot-password/submit` will find `deleted-<id>@deleted.invalid` and ask Resend to send to a `.invalid` address, which Resend refuses, so the route logs an error and captures it in Sentry on every such request. Have the forgot route (or `restrictPasswordRecovery`) treat a `deleted` user like an unknown address: same generic answer, no send. Cheap, and it keeps the "fail loud" log free of noise that isn't a failure.
+- **The warning text on Discord deviates from the Brief.** The Brief gives one exact sentence for every free-text field "including the Discord `/feedback` form"; the design uses an 88-character short form because a Label `description` caps at 100. That's the right call, but it's a Brief deviation and belongs under **Decisions**, and the Summary's "anything the documents promise that the code doesn't do" must not claim the exact sentence is shown on Discord.
+
+SHOULD-CONSIDER:
+1. Keep `{new Date().getFullYear()}` in `src/Footer/Component.tsx` and change only the holder; a static "© 2026" goes stale, and Goal 7 is about the name, not the year.
+2. In `anonymizeUser`, assert the result: after the update, `sessions` must be `[]` and `email` must equal the new value, else throw. `sessions` is a hidden auth field; if a future Payload stops accepting it from Local API data, the E2E would catch it, but a one-line check inside the command keeps the policy's "ends every session" true at the source.
+3. `needsLegalAcceptance` runs on every admin render and server function. Memoizing per `req` (as the write hook does) also covers the admin path, since `canAccessAdmin` and the view share the request. State in the plan that the cost is one `count` per request, not per call.
+4. `safeNext` should also reject a `next` that starts with `/admin` but contains a backslash or `%5C`, and anything with a scheme; `new URL()` is fine for the check. Spell the rule out so the planner's step doesn't re-derive it.
+5. The `Tenants` `createdBy` field reads as super-admin only, so a studio member never sees "Deleted user" anywhere; the E2E assertion "createdBy shows Deleted user" must run as a super admin. Note it in the spec outline so the implementer doesn't assert it from a member session.
+
 ## Architecture review (Astra)
 
 ## Revision notes
@@ -726,5 +755,6 @@ Nothing new needs it:
 
 - 2026-10-04 21:22 UTC: Baseline. tsc, lint (0 errors, 20 warnings), int (34/34) and E2E (181/181) all pass on the unchanged base.
 - 2026-10-04 21:52 UTC: Architecture. The `architect` wrote findings (privacy audit with corrections to the brief's inventory: the Tenants field is `createdBy`, studios see Discord IDs, Turnstile gets IPs, Namecheap DNS/mail, no backups despite the docs, unbounded journal) and the target design (runtime front-matter versions, admin-access gate, `legal-acceptances`, anonymize-on-delete, delete delivered contact jobs). Plan-only change; no code to verify. The handoff items it proposes (journal retention, the live-config facts) get filed by the Steps.
+- 2026-10-04 21:58 UTC: Fable review. `architecture-reviewer` verified F1–F8 against the code and installed Payload/Next: APPROVE_WITH_CHANGES, one MUST-FIX (the API write gate misses `Tenants` updates), two misses (password recovery for anonymized accounts; record the shortened Discord warning under Decisions), five SHOULD-CONSIDER. Plan-only change; no code to verify.
 
 ## Summary
