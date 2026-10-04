@@ -7,6 +7,7 @@ import { extractID } from 'payload/shared'
 import type { GameProject } from '../../src/payload-types'
 import { RestClient } from '../e2e/support/api'
 import { linkDiscord } from '../e2e/support/discord'
+import { acceptLegal } from '../e2e/support/legal'
 import { verificationToken } from '../e2e/support/email'
 import { PASSWORD } from '../e2e/support/env'
 import {
@@ -204,8 +205,9 @@ setup('seed the Critter Connect demo and the screenshot fixtures', async ({ page
 })
 
 /**
- * Signs `email` up through the emailed link with the shared password and
- * returns the session token `request` now holds.
+ * Signs `email` up through the emailed link with the shared password,
+ * accepts the legal documents as that account, and returns the session
+ * token `request` now holds.
  */
 async function signUpAndVerify(request: APIRequestContext, email: string): Promise<string> {
   await startSignup(request, email)
@@ -213,5 +215,6 @@ async function signUpAndVerify(request: APIRequestContext, email: string): Promi
   const { cookies } = await request.storageState()
   const token = cookies.find((cookie) => cookie.name === 'payload-token')?.value
   expect(token, `${email} is signed in after verifying`).toBeTruthy()
+  expect(await acceptLegal(request, token as string, { next: '/onboarding' })).toBe('/onboarding')
   return token as string
 }

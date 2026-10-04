@@ -1,15 +1,26 @@
-import type { APIRequestContext, APIResponse } from '@playwright/test'
+import type { APIRequestContext, APIResponse, Browser, Page } from '@playwright/test'
 
-import { BASE_URL } from './support/env'
-import { type Account, expect, newRequestContext, test } from './support/fixtures'
-import { acceptLegal, legalDigest, legalFrontMatter } from './support/legal'
+import type { RestClient } from './support/api'
+import { emailsTo, verificationToken } from './support/email'
+import { BASE_URL, PASSWORD, TURNSTILE_DUMMY_TOKEN } from './support/env'
+import {
+  type Account,
+  expect,
+  newRequestContext,
+  randomEmail,
+  startSignup,
+  test,
+  verifyAccount,
+} from './support/fixtures'
+import { acceptLegal, type LegalConsentOptions, legalConsentForm, legalDigest, legalFrontMatter } from './support/legal'
 
 /**
- * Agreement to the Terms of Service and Privacy Policy (plan S3, Goal 2):
- * the `/legal/accept` page and its submit route, the only place an
- * acceptance is recorded, and who may read or write the records. Nothing
- * sends an account here yet; the gate comes in S5. Every test makes its
- * own accounts, so `world`'s users never change state.
+ * Agreement to the Terms of Service and Privacy Policy (plan S3–S4, Goal
+ * 2): the `/legal/accept` page and its submit route, the only place an
+ * acceptance is recorded; who may read or write the records; and
+ * signup's boxes, which are required but record nothing. Nothing sends an
+ * account to `/legal/accept` yet; the gate comes in S5. Every test makes
+ * its own accounts, so `world`'s users never change state.
  */
 
 const LOGIN = '/admin/login?redirect=%2Flegal%2Faccept'
@@ -25,13 +36,43 @@ const locationOf = (response: APIResponse): string => {
   return `${location.pathname}${location.search}`
 }
 
-/** `/legal/accept/submit`'s form with both boxes and the current versions. */
-const completeForm = () => ({
-  acceptTerms: 'on',
-  confirmAge: 'on',
-  privacyVersion: legalFrontMatter('privacy').version,
-  termsVersion: legalFrontMatter('terms').version,
-})
+/** A browser page with `account`'s session only (none without one). */
+async function pageAs(browser: Browser, account?: Pick<Account, 'token'>): Promise<Page> {
+  const context = await browser.newContext({ storageState: { cookies: [], origins: [] } })
+  if (account) await context.addCookies([{ name: 'payload-token', value: account.token, url: BASE_URL }])
+  return context.newPage()
+}
+
+/**
+ * The two consent boxes on `page`: unticked and required, with the Brief's
+ * labels, both documents linked in a new tab, and hidden inputs carrying
+ * the current versions. Returns the boxes.
+ */
+async function expectConsentFields(page: Page) {
+  const agree = page.getByRole('checkbox', { name: AGREE, exact: true })
+  const age = page.getByRole('checkbox', { name: AGE, exact: true })
+  for (const box of [agree, age]) {
+    await expect(box).not.toBeChecked()
+    await expect(box).toHaveAttribute('required', '')
+  }
+
+  const label = page.locator('label[for="acceptTerms"]')
+  for (const [name, href] of [
+    ['Terms of Service', '/legal/terms'],
+    ['Privacy Policy', '/legal/privacy'],
+  ] as const) {
+    const link = label.getByRole('link', { name, exact: true })
+    await expect(link).toHaveAttribute('href', href)
+    await expect(link).toHaveAttribute('target', '_blank')
+    await expect(link).toHaveAttribute('rel', /noopener/)
+  }
+
+  await expect(page.locator('input[type="hidden"][name="termsVersion"]')).toHaveValue(legalFrontMatter('terms').version)
+  await expect(page.locator('input[type="hidden"][name="privacyVersion"]')).toHaveValue(
+    legalFrontMatter('privacy').version,
+  )
+  return { agree, age }
+}
 
 /** Where GET `/legal/accept<query>` redirects `account`, or the status when it doesn't. */
 async function acceptPageRedirect(request: APIRequestContext, account: Pick<Account, 'token'>, query: string) {
@@ -51,7 +92,7 @@ test('LA1 /legal/accept: sign in first; super admins and accounts that accepted 
       expect(page.status()).toBe(307)
       expect(page.headers().location).toBe(LOGIN)
 
-      const submit = await request.post('/legal/accept/submit', { form: completeForm(), maxRedirects: 0 })
+      const submit = await request.post('/legal/accept/submit', { form: legalConsentForm(), maxRedirects: 0 })
       expect(submit.status()).toBe(303)
       expect(locationOf(submit)).toBe(LOGIN)
     })
@@ -63,7 +104,7 @@ test('LA1 /legal/accept: sign in first; super admins and accounts that accepted 
     })
 
     await test.step('an account that accepted goes on to next', async () => {
-      const accepted = await seedUser('la1-accepted', { accept: true })
+      const accepted = await seedUser('la1-accepted')
       expect(await acceptPageRedirect(request, accepted, '?next=%2Fonboarding')).toEqual({
         location: '/onboarding',
         status: 307,
@@ -71,7 +112,7 @@ test('LA1 /legal/accept: sign in first; super admins and accounts that accepted 
     })
 
     await test.step('an account that hasn’t accepted sees the page', async () => {
-      const fresh = await seedUser('la1-fresh')
+      const fresh = await seedUser('la1-fresh', { accept: false })
       expect(await acceptPageRedirect(request, fresh, '?next=%2Fonboarding')).toEqual({ status: 200 })
     })
   } finally {
@@ -83,38 +124,14 @@ test('LA2 the page: two unticked, required, linked boxes for the current version
   browser,
   seedUser,
 }) => {
-  const user = await seedUser('la2')
-  const context = await browser.newContext({ storageState: { cookies: [], origins: [] } })
+  const user = await seedUser('la2', { accept: false })
+  const page = await pageAs(browser, user)
   try {
-    await context.addCookies([{ name: 'payload-token', value: user.token, url: BASE_URL }])
-    const page = await context.newPage()
     await page.goto('/legal/accept?next=%2Fonboarding')
 
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Agree to the Terms to continue')
     await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/)
-
-    const agree = page.getByRole('checkbox', { name: AGREE, exact: true })
-    const age = page.getByRole('checkbox', { name: AGE, exact: true })
-    for (const box of [agree, age]) {
-      await expect(box).not.toBeChecked()
-      await expect(box).toHaveAttribute('required', '')
-    }
-
-    const label = page.locator('label[for="acceptTerms"]')
-    for (const [name, href] of [
-      ['Terms of Service', '/legal/terms'],
-      ['Privacy Policy', '/legal/privacy'],
-    ] as const) {
-      const link = label.getByRole('link', { name, exact: true })
-      await expect(link).toHaveAttribute('href', href)
-      await expect(link).toHaveAttribute('target', '_blank')
-      await expect(link).toHaveAttribute('rel', /noopener/)
-    }
-
-    await expect(page.locator('input[type="hidden"][name="termsVersion"]')).toHaveValue(legalFrontMatter('terms').version)
-    await expect(page.locator('input[type="hidden"][name="privacyVersion"]')).toHaveValue(
-      legalFrontMatter('privacy').version,
-    )
+    const { agree, age } = await expectConsentFields(page)
     await expect(page.getByRole('link', { name: 'Log out' })).toHaveAttribute('href', '/admin/logout')
     await test.info().attach('legal-accept', { body: await page.screenshot({ fullPage: true }), contentType: 'image/png' })
 
@@ -128,7 +145,7 @@ test('LA2 the page: two unticked, required, linked boxes for the current version
     await expect(page).toHaveURL('/onboarding')
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Set up your game’s portal')
   } finally {
-    await context.close()
+    await page.context().close()
   }
 })
 
@@ -138,7 +155,7 @@ test('LA3 a missing box or an old version is refused and records nothing', async
   playwright,
   seedUser,
 }) => {
-  const user = await seedUser('la3')
+  const user = await seedUser('la3', { accept: false })
   const request = await newRequestContext(playwright)
   const { version: terms } = legalFrontMatter('terms')
   const { version: privacy } = legalFrontMatter('privacy')
@@ -161,17 +178,15 @@ test('LA3 a missing box or an old version is refused and records nothing', async
     expect(records.body.totalDocs).toBe(0)
 
     await test.step('the error page explains, with the boxes unticked', async () => {
-      const context = await browser.newContext({ storageState: { cookies: [], origins: [] } })
+      const page = await pageAs(browser, user)
       try {
-        await context.addCookies([{ name: 'payload-token', value: user.token, url: BASE_URL }])
-        const page = await context.newPage()
         await page.goto('/legal/accept?next=%2Fonboarding&error=1')
         // Scoped to main: Next's route announcer is an alert too.
         await expect(page.getByRole('main').getByRole('alert')).toHaveText(REFUSED)
         await expect(page.getByRole('checkbox', { name: AGREE, exact: true })).not.toBeChecked()
         await expect(page.getByRole('checkbox', { name: AGE, exact: true })).not.toBeChecked()
       } finally {
-        await context.close()
+        await page.context().close()
       }
     })
   } finally {
@@ -180,7 +195,7 @@ test('LA3 a missing box or an old version is refused and records nothing', async
 })
 
 test('LA4 accepting records both versions and digests once', async ({ api, playwright, seedUser }) => {
-  const user = await seedUser('la4')
+  const user = await seedUser('la4', { accept: false })
   const request = await newRequestContext(playwright)
   const superAdmin = api('superAdmin')
   try {
@@ -229,7 +244,7 @@ const UNSAFE_NEXT = [
 const SAFE_NEXT = ['/onboarding', '/admin', '/admin/collections/game-projects?limit=10']
 
 test('LA5 next goes only to onboarding or the admin, as its parsed path', async ({ playwright, seedUser }) => {
-  const user = await seedUser('la5', { accept: true })
+  const user = await seedUser('la5')
   const request = await newRequestContext(playwright)
   try {
     for (const next of UNSAFE_NEXT) {
@@ -248,7 +263,7 @@ test('LA5 next goes only to onboarding or the admin, as its parsed path', async 
       })
     }
     const twice = await request.post('/legal/accept/submit?next=%2Fonboarding&next=%2Fadmin', {
-      form: completeForm(),
+      form: legalConsentForm(),
       headers: jwt(user),
       maxRedirects: 0,
     })
@@ -269,7 +284,7 @@ test('LA5 next goes only to onboarding or the admin, as its parsed path', async 
 })
 
 test('LA6 only super admins read the records, and nobody writes one over REST', async ({ api, seedUser }) => {
-  const user = await seedUser('la6', { accept: true })
+  const user = await seedUser('la6')
   const superAdmin = api('superAdmin')
 
   const { status, body } = await superAdmin.find('legal-acceptances', { where: { user: { equals: user.id } } })
@@ -296,4 +311,89 @@ test('LA6 only super admins read the records, and nobody writes one over REST', 
     expect((await api(role).create('legal-acceptances', forged)).status, role).toBe(403)
   }
   expect((await user.client.find('legal-acceptances')).status, 'the account itself').toBe(403)
+})
+
+/** The account with `email`, if any, as a super admin reads it. */
+async function usersWithEmail(superAdmin: RestClient, email: string) {
+  const { status, body } = await superAdmin.find('users', { where: { email: { equals: email } }, depth: 0 })
+  expect(status).toBe(200)
+  return body.docs
+}
+
+/** The acceptance records of the account with `email`. */
+async function recordsOf(superAdmin: RestClient, email: string): Promise<number> {
+  const { status, body } = await superAdmin.find('legal-acceptances', { where: { 'user.email': { equals: email } } })
+  expect(status).toBe(200)
+  return body.totalDocs
+}
+
+test('LA7 signup asks for both boxes, refuses a request without them, and records nothing', async ({
+  api,
+  browser,
+  playwright,
+}) => {
+  const superAdmin = api('superAdmin')
+
+  await test.step('the form: two unticked, required, linked boxes for the current versions', async () => {
+    const page = await pageAs(browser)
+    try {
+      await page.goto('/signup')
+      await expectConsentFields(page)
+    } finally {
+      await page.context().close()
+    }
+  })
+
+  const request = await newRequestContext(playwright)
+  const { version: terms } = legalFrontMatter('terms')
+  const { version: privacy } = legalFrontMatter('privacy')
+  try {
+    for (const [label, consent] of [
+      ['without the agreement box', { omit: 'acceptTerms' }],
+      ['without the age box', { omit: 'confirmAge' }],
+      ['with an old Terms version', { versions: { terms: `${terms}-old` } }],
+      ['with an old Privacy version', { versions: { privacy: `${privacy}-old` } }],
+    ] as [string, LegalConsentOptions][]) {
+      await test.step(`refused ${label}`, async () => {
+        const email = randomEmail('la7-refused')
+        const body = { email, turnstileToken: TURNSTILE_DUMMY_TOKEN, ...legalConsentForm(consent) }
+
+        const json = await request.post('/signup/submit', { data: body, maxRedirects: 0 })
+        expect(json.status(), 'JSON').toBe(400)
+
+        const form = await request.post('/signup/submit', { form: body, maxRedirects: 0 })
+        expect(form.status(), 'form').toBe(303)
+        expect(locationOf(form)).toBe('/signup?error=1')
+
+        expect(await usersWithEmail(superAdmin, email), 'no account').toHaveLength(0)
+        expect(await emailsTo(email), 'no email').toHaveLength(0)
+        expect(await recordsOf(superAdmin, email), 'no record').toBe(0)
+      })
+    }
+
+    await test.step('a complete signup records nothing, and neither does verifying', async () => {
+      const email = randomEmail('la7-complete')
+      await startSignup(request, email)
+      expect(await usersWithEmail(superAdmin, email), 'a pending account').toHaveLength(1)
+      expect(await recordsOf(superAdmin, email), 'after /signup').toBe(0)
+
+      expect(await verifyAccount(request, await verificationToken(email), PASSWORD)).toBe('/onboarding')
+      expect(await recordsOf(superAdmin, email), 'after /verify').toBe(0)
+    })
+  } finally {
+    await request.dispose()
+  }
+
+  await test.step('the page shows the error with the boxes unticked', async () => {
+    const page = await pageAs(browser)
+    try {
+      await page.goto('/signup?error=1')
+      await expect(page.getByRole('main').getByRole('alert')).toHaveText(
+        'That didn’t go through. Check your email address, tick both boxes and try again.',
+      )
+      await expectConsentFields(page)
+    } finally {
+      await page.context().close()
+    }
+  })
 })

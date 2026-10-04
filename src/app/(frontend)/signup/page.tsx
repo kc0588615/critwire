@@ -9,6 +9,7 @@ import { AccountPage } from '@/components/accounts/AccountPage'
 import { FormField } from '@/components/game/FormField'
 import { FormNotice } from '@/components/game/FormNotice'
 import { TurnstileField } from '@/components/game/TurnstileField'
+import { LegalConsentFields } from '@/components/legal/LegalConsentFields'
 import { isOpenSignup } from '@/lib/hosting'
 
 type Args = {
@@ -45,7 +46,7 @@ export default async function SignupPage({ searchParams }: Args) {
       lede="A feedback board and updates for your game, on a page that links back to your site. Free during early access."
       notices={
         error === '1' ? (
-          <FormNotice tone="error">That didn’t go through. Check your email address and try again.</FormNotice>
+          <FormNotice tone="error">That didn’t go through. Check your email address, tick both boxes and try again.</FormNotice>
         ) : null
       }
       title="Create your portal"
@@ -64,6 +65,8 @@ export default async function SignupPage({ searchParams }: Args) {
             />
           )}
         </FormField>
+
+        <LegalConsentFields />
 
         <TurnstileField />
 

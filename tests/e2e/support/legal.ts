@@ -36,9 +36,7 @@ export function legalFrontMatter(slug: LegalSlug): LegalFrontMatter & { body: st
 /** The SHA-256 (hex) of the file's bytes, as `sha256sum` prints it. */
 export const legalDigest = (slug: LegalSlug): string => createHash('sha256').update(legalBytes(slug)).digest('hex')
 
-export interface AcceptLegalOptions {
-  /** `next` as sent in the form's action; omitted when undefined. */
-  next?: string
+export interface LegalConsentOptions {
   /** A box left unticked. */
   omit?: 'acceptTerms' | 'confirmAge'
   /** The versions the form says it showed; the files' own by default. */
@@ -46,16 +44,11 @@ export interface AcceptLegalOptions {
 }
 
 /**
- * Posts `/legal/accept`'s form as the account `token` signs in, the way the
- * page does: both boxes ticked and the documents' versions, unless the
- * options change them. Fails unless it answers 303, and returns where it
- * redirects (path and query).
+ * The consent boxes' fields as the signup and `/legal/accept` forms post
+ * them: both boxes ticked and the documents' versions, unless the options
+ * change them.
  */
-export async function acceptLegal(
-  request: APIRequestContext,
-  token: string,
-  { next, omit, versions = {} }: AcceptLegalOptions = {},
-): Promise<string> {
+export function legalConsentForm({ omit, versions = {} }: LegalConsentOptions = {}): Record<string, string> {
   const form: Record<string, string> = {
     acceptTerms: 'on',
     confirmAge: 'on',
@@ -63,10 +56,27 @@ export async function acceptLegal(
     termsVersion: versions.terms ?? legalFrontMatter('terms').version,
   }
   if (omit) delete form[omit]
+  return form
+}
 
+export interface AcceptLegalOptions extends LegalConsentOptions {
+  /** `next` as sent in the form's action; omitted when undefined. */
+  next?: string
+}
+
+/**
+ * Posts `/legal/accept`'s form as the account `token` signs in, the way the
+ * page does (`legalConsentForm`). Fails unless it answers 303, and returns
+ * where it redirects (path and query).
+ */
+export async function acceptLegal(
+  request: APIRequestContext,
+  token: string,
+  { next, ...consent }: AcceptLegalOptions = {},
+): Promise<string> {
   const query = next === undefined ? '' : `?next=${encodeURIComponent(next)}`
   const response = await request.post(`/legal/accept/submit${query}`, {
-    form,
+    form: legalConsentForm(consent),
     headers: { Authorization: `JWT ${token}` },
     maxRedirects: 0,
   })

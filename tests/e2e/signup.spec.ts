@@ -5,6 +5,7 @@ import type { APIRequestContext, Browser, BrowserContext, PlaywrightWorkerArgs }
 import type { RestClient } from './support/api'
 import { emailsTo, linkTo, readEmail, tokenOf, verificationToken } from './support/email'
 import { BASE_URL, SECOND_BASE_URL } from './support/env'
+import { legalConsentForm } from './support/legal'
 import {
   expect,
   newRequestContext,
@@ -81,6 +82,8 @@ test('S15.1 sign up, verify through the emailed link, onboard, and see the live 
       await expect(page.getByRole('heading', { level: 1 })).toHaveText('Create your portal')
       await expect(page.getByText('We’ll email you a link to choose your password.')).toBeVisible()
       await page.getByLabel('Email').fill(email)
+      await page.getByRole('checkbox', { name: 'I agree to the Terms of Service and acknowledge the Privacy Policy' }).check()
+      await page.getByRole('checkbox', { name: 'I confirm I’m at least 18 years old.' }).check()
       await submitWithTurnstile(page, 'Send my link')
       await expect(page).toHaveURL('/signup?submitted=1')
       await expect(page.getByRole('heading', { level: 1 })).toHaveText('Check your inbox')
@@ -231,7 +234,9 @@ test('S15.5 two verifications at once with one link: exactly one password signs 
 
 test('S15.6 signup and verification refuse a missing Turnstile token', async ({ api }) => {
   const anonymous = api('anonymous')
-  const signup = await anonymous.raw('POST', '/signup/submit', { data: { email: randomEmail('s156') } })
+  const signup = await anonymous.raw('POST', '/signup/submit', {
+    data: { email: randomEmail('s156'), ...legalConsentForm() },
+  })
   expect(signup.status).toBe(400)
 
   const email = randomEmail('s156-verify')

@@ -9,7 +9,7 @@ import { LegalCopyText } from './LegalCopyText'
  * The two consent boxes, unticked and required, for signup and
  * `/legal/accept`, and the versions they're ticked for in hidden inputs.
  * The server checks both boxes and that those versions are still current
- * (`withLegalConsent`), so a page left open across a version bump is
+ * (`legalConsentSchema`), so a page left open across a version bump is
  * refused rather than recorded against text it didn't show.
  */
 export const LegalConsentFields: React.FC = () => {

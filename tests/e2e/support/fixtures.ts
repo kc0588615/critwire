@@ -19,7 +19,7 @@ import { screenText } from '../../../src/lib/moderation/screenText'
 import { type Query, RestClient } from './api'
 import { type EmbedHost, startEmbedHost } from './embedHost'
 import { verificationToken } from './email'
-import { acceptLegal } from './legal'
+import { acceptLegal, legalConsentForm } from './legal'
 import {
   BASE_URL,
   PASSWORD,
@@ -94,7 +94,10 @@ export interface SignedUpStudio extends Studio {
 }
 
 export interface SeedAccountOptions {
-  /** Accept the current Terms and Privacy Policy as the new account (default false). */
+  /**
+   * Accept the current Terms and Privacy Policy as the new account
+   * (default true). Specs about acceptance state pass `false`.
+   */
   accept?: boolean
 }
 
@@ -122,8 +125,8 @@ interface WorkerFixtures {
   /**
    * A user the super admin creates with no studio, signed in. For specs
    * that change an account's state, so they never touch `world`'s users.
-   * With `accept`, it has accepted the legal documents through
-   * `/legal/accept`.
+   * It has accepted the legal documents through `/legal/accept`, unless
+   * `accept` is false.
    */
   seedUser: (label: string, options?: SeedAccountOptions) => Promise<Account>
   /**
@@ -134,7 +137,8 @@ interface WorkerFixtures {
   seedStudio: (label: string, options?: SeedAccountOptions) => Promise<Studio>
   /**
    * A studio made the way a stranger makes one (§14): signup, the emailed
-   * link, a password, then onboarding a game called `name` over HTTP.
+   * link, a password, accepting the legal documents, then onboarding a
+   * game called `name` over HTTP.
    */
   signUpStudio: (name: string) => Promise<SignedUpStudio>
 }
@@ -252,7 +256,7 @@ export const test = base.extend<{}, WorkerFixtures>({
   seedUser: [
     async ({ api, playwright, signIn }, use) => {
       const request = await newRequestContext(playwright)
-      await use(async (label, { accept = false } = {}) => {
+      await use(async (label, { accept = true } = {}) => {
         const email = randomEmail(label)
         await seed(api('superAdmin'), 'users', { email, password: PASSWORD, roles: ['user'] })
         const account = await signIn(email, PASSWORD)
@@ -266,7 +270,7 @@ export const test = base.extend<{}, WorkerFixtures>({
   seedStudio: [
     async ({ api, playwright, signIn }, use) => {
       const request = await newRequestContext(playwright)
-      await use(async (label, { accept = false } = {}) => {
+      await use(async (label, { accept = true } = {}) => {
         const superAdmin = api('superAdmin')
         const slug = await cleanSlug(label)
         const tenant = await seed(superAdmin, 'tenants', { name: `Studio ${slug}`, slug })
@@ -296,6 +300,7 @@ export const test = base.extend<{}, WorkerFixtures>({
             '/onboarding',
           )
           const owner = await signIn(email, PASSWORD)
+          expect(await acceptLegal(request, owner.token, { next: '/onboarding' })).toBe('/onboarding')
           const location = await onboard(request, owner.token, {
             name,
             website: 'https://studio.example.com',
@@ -400,12 +405,13 @@ const locationOf = (response: Awaited<ReturnType<APIRequestContext['post']>>): s
 }
 
 /**
- * Posts the signup form for `email` and fails the calling test unless it
- * answers "Check your inbox". The server has sent any email by then.
+ * Posts the signup form for `email`, both boxes ticked for the current
+ * versions, and fails the calling test unless it answers "Check your
+ * inbox". The server has sent any email by then.
  */
 export async function startSignup(request: APIRequestContext, email: string): Promise<void> {
   const response = await request.post('/signup/submit', {
-    form: { email, turnstileToken: TURNSTILE_DUMMY_TOKEN },
+    form: { email, turnstileToken: TURNSTILE_DUMMY_TOKEN, ...legalConsentForm() },
     maxRedirects: 0,
   })
   expect(response.status(), `sign up ${email}`).toBe(303)

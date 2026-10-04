@@ -52,7 +52,7 @@ export default async function VerifyPage({ params, searchParams }: Args) {
 
   return (
     <AccountPage
-      lede="Your email is confirmed once you set it. Then you’re one step from your portal."
+      lede="Your email is confirmed once you set it. Then you’ll confirm the Terms and set up your portal."
       notices={
         error === '1' ? (
           <FormNotice tone="error">

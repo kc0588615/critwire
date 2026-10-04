@@ -10,12 +10,19 @@ import { isEmailDeliverable } from '@/lib/email/adapter'
 import { isOpenSignup, SIGNUP_PATH } from '@/lib/hosting'
 import { getLogger } from '@/lib/logger'
 import { formResponse, guardPublicForm } from '@/lib/public-forms/guard'
+import { legalConsentSchema } from '@/lib/validation/legalConsent'
 
 const log = getLogger('signup')
 
-const signupSchema = z.object({
-  email: z.string().trim().toLowerCase().pipe(z.email().max(254)),
-})
+// Both boxes are required and checked here, for the versions the page
+// showed, but they aren't the recorded acceptance: whoever types an
+// address hasn't shown they own it. The verified holder accepts at
+// `/legal/accept` after `/verify`.
+const signupSchema = z
+  .object({
+    email: z.string().trim().toLowerCase().pipe(z.email().max(254)),
+  })
+  .and(legalConsentSchema)
 
 /**
  * Starts an account from an email address (§5). Every accepted address

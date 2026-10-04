@@ -87,7 +87,8 @@ test('S6.1 the login page speaks Critwire and a studio owner signs in to the das
   const context = await browser.newContext()
   const page = await context.newPage()
   try {
-    await page.goto('/admin/login')
+    // Payload's forms reset a value typed before they hydrate.
+    await page.goto('/admin/login', { waitUntil: 'networkidle' })
     await expect(page.getByText('Welcome to Critwire.')).toBeVisible()
     await test.step('sign in through the form', async () => {
       await page.getByLabel('Email').fill(CREDENTIALS.aOwner.email)

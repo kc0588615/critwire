@@ -6,11 +6,13 @@ import { expect, test as setup } from '@playwright/test'
 import { RestClient } from './support/api'
 import { BASE_URL, CREDENTIALS, PASSWORD, ROLES, storageStatePath, WORLD_PATH } from './support/env'
 import type { World } from './support/fixtures'
+import { acceptLegal } from './support/legal'
 
 /**
  * Seeds the freshly migrated E2E database: one super admin, two studios
- * (tenants A and B) and their users, then signs every role in and saves
- * its session for the specs.
+ * (tenants A and B) and their users, then signs every role in, has each
+ * studio user accept the legal documents, and saves its session for the
+ * specs.
  */
 setup('seed a fresh database and sign in every role', async ({ playwright }) => {
   await mkdir(path.dirname(WORLD_PATH), { recursive: true })
@@ -63,6 +65,8 @@ setup('seed a fresh database and sign in every role', async ({ playwright }) => 
       expect(response.status(), `${role} login`).toBe(200)
       const { token, user } = (await response.json()) as { token: string; user: { id: number } }
       signedIn[role] = { id: user.id, email: CREDENTIALS[role].email, token }
+      // Super admins are never asked (they act for the operator).
+      if (role !== 'superAdmin') expect(await acceptLegal(context, token), `${role} accepts`).toBe('/admin')
       await context.storageState({ path: storageStatePath(role) })
       await context.dispose()
     }
