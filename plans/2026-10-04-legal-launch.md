@@ -157,7 +157,7 @@ Out:
 - [x] Baseline: install, migrate, run typecheck, lint, unit and E2E tests; record the results under Baseline
 - [x] Architecture: `architect` writes findings and the target design
 - [x] Fable review: `architecture-reviewer`
-- [ ] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
+- [x] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
 - [ ] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
 - [ ] Steps: `planner` writes Steps and Verification
 
@@ -741,6 +741,26 @@ SHOULD-CONSIDER:
 
 ## Architecture review (Astra)
 
+Run at `16f7513` (`astra-review`, exit 0).
+
+VERDICT: APPROVE_WITH_CHANGES
+
+MUST-FIX:
+
+1. **The write gate misses `Tenants`.** Owners can still update studio records through REST/GraphQL without accepting. Apply the shared acceptance check to `Tenants` writes and verify this bypass is closed.
+
+2. **Signup acceptance is attributed to an unverified identity.** Anyone can submit another person’s email and satisfy that future account’s gate. Require confirmation by the verified account holder before treating signup acceptance as authoritative; a reminder on `/verify` does not establish agreement.
+
+3. **Acceptance is not bound to the versions displayed.** Both submit paths record whatever versions are current when the request arrives. A deployment between rendering and submission can record agreement to unseen documents. Submit the displayed versions, validate them against current versions, and require renewed confirmation on mismatch.
+
+4. **Contact-data deletion remains best-effort.** Payload catches completed-job deletion failures and only logs them; setting `deleteJobOnComplete: true` does not change this. Delivered addresses can remain indefinitely, contradicting Goal 5. Add recoverable cleanup for completed jobs and their logs, with failure-path verification and retention wording that matches actual behavior.
+
+SHOULD-CONSIDER:
+
+1. Resolve studio cleanup’s transaction boundary explicitly. Parallel deletes outside the parent transaction can partially commit; a null guard and passing E2E run do not establish failure atomicity.
+2. Treat `deleted` as a terminal account state across login, recovery and subsequent updates, rather than relying solely on one-time credential replacement.
+3. Preserve an immutable document snapshot for each accepted version, and prevent document changes from silently reusing that version.
+
 ## Revision notes
 
 ## Steps
@@ -756,5 +776,6 @@ SHOULD-CONSIDER:
 - 2026-10-04 21:22 UTC: Baseline. tsc, lint (0 errors, 20 warnings), int (34/34) and E2E (181/181) all pass on the unchanged base.
 - 2026-10-04 21:52 UTC: Architecture. The `architect` wrote findings (privacy audit with corrections to the brief's inventory: the Tenants field is `createdBy`, studios see Discord IDs, Turnstile gets IPs, Namecheap DNS/mail, no backups despite the docs, unbounded journal) and the target design (runtime front-matter versions, admin-access gate, `legal-acceptances`, anonymize-on-delete, delete delivered contact jobs). Plan-only change; no code to verify. The handoff items it proposes (journal retention, the live-config facts) get filed by the Steps.
 - 2026-10-04 21:58 UTC: Fable review. `architecture-reviewer` verified F1–F8 against the code and installed Payload/Next: APPROVE_WITH_CHANGES, one MUST-FIX (the API write gate misses `Tenants` updates), two misses (password recovery for anonymized accounts; record the shortened Discord warning under Decisions), five SHOULD-CONSIDER. Plan-only change; no code to verify.
+- 2026-10-04 21:59 UTC: Astra review. APPROVE_WITH_CHANGES with four MUST-FIX (the `Tenants` write gate, as Fable found; signup acceptance tied to an unverified email; acceptance not bound to the displayed versions; completed contact-job deletion is best-effort in Payload) and three SHOULD-CONSIDER. Plan-only change; no code to verify.
 
 ## Summary
