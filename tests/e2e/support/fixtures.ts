@@ -19,6 +19,7 @@ import { screenText } from '../../../src/lib/moderation/screenText'
 import { type Query, RestClient } from './api'
 import { type EmbedHost, startEmbedHost } from './embedHost'
 import { verificationToken } from './email'
+import { acceptLegal } from './legal'
 import {
   BASE_URL,
   PASSWORD,
@@ -92,6 +93,11 @@ export interface SignedUpStudio extends Studio {
   project: GameProject
 }
 
+export interface SeedAccountOptions {
+  /** Accept the current Terms and Privacy Policy as the new account (default false). */
+  accept?: boolean
+}
+
 interface WorkerFixtures {
   world: World
   /** REST client acting as `role`, or anonymously. Worker-scoped so `beforeAll` can use it. */
@@ -116,13 +122,16 @@ interface WorkerFixtures {
   /**
    * A user the super admin creates with no studio, signed in. For specs
    * that change an account's state, so they never touch `world`'s users.
+   * With `accept`, it has accepted the legal documents through
+   * `/legal/accept`.
    */
-  seedUser: (label: string) => Promise<Account>
+  seedUser: (label: string, options?: SeedAccountOptions) => Promise<Account>
   /**
    * A studio the super admin creates with a fresh owner, signed in. For
-   * specs that change a studio's state, so they never touch `world`'s studios.
+   * specs that change a studio's state, so they never touch `world`'s
+   * studios. `accept` as for `seedUser`.
    */
-  seedStudio: (label: string) => Promise<Studio>
+  seedStudio: (label: string, options?: SeedAccountOptions) => Promise<Studio>
   /**
    * A studio made the way a stranger makes one (§14): signup, the emailed
    * link, a password, then onboarding a game called `name` over HTTP.
@@ -241,18 +250,23 @@ export const test = base.extend<{}, WorkerFixtures>({
     { scope: 'worker' },
   ],
   seedUser: [
-    async ({ api, signIn }, use) => {
-      await use(async (label) => {
+    async ({ api, playwright, signIn }, use) => {
+      const request = await newRequestContext(playwright)
+      await use(async (label, { accept = false } = {}) => {
         const email = randomEmail(label)
         await seed(api('superAdmin'), 'users', { email, password: PASSWORD, roles: ['user'] })
-        return signIn(email, PASSWORD)
+        const account = await signIn(email, PASSWORD)
+        if (accept) expect(await acceptLegal(request, account.token)).toBe('/admin')
+        return account
       })
+      await request.dispose()
     },
     { scope: 'worker' },
   ],
   seedStudio: [
-    async ({ api, signIn }, use) => {
-      await use(async (label) => {
+    async ({ api, playwright, signIn }, use) => {
+      const request = await newRequestContext(playwright)
+      await use(async (label, { accept = false } = {}) => {
         const superAdmin = api('superAdmin')
         const slug = await cleanSlug(label)
         const tenant = await seed(superAdmin, 'tenants', { name: `Studio ${slug}`, slug })
@@ -263,8 +277,11 @@ export const test = base.extend<{}, WorkerFixtures>({
           roles: ['user'],
           tenants: [{ tenant: tenant.id, roles: ['owner'] }],
         })
-        return { tenant: { id: tenant.id, slug }, owner: await signIn(email, PASSWORD) }
+        const owner = await signIn(email, PASSWORD)
+        if (accept) expect(await acceptLegal(request, owner.token)).toBe('/admin')
+        return { tenant: { id: tenant.id, slug }, owner }
       })
+      await request.dispose()
     },
     { scope: 'worker' },
   ],

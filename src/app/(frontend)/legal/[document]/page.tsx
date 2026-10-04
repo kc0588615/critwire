@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation'
 import React from 'react'
 
 import { getLegalDocument, type LegalDocument } from '@/lib/legal/documents'
+import { legalVersionLine } from '@/lib/legal/format'
 import { isLegalSlug, LEGAL_SLUGS } from '@/lib/legal/paths'
 
 type Args = {
@@ -24,18 +25,15 @@ async function loadDocument(params: Args['params']): Promise<LegalDocument> {
   return getLegalDocument(document)
 }
 
-// "4 October 2026", from the front matter's YYYY-MM-DD.
-const dateLabel = new Intl.DateTimeFormat('en-GB', { dateStyle: 'long', timeZone: 'UTC' })
-
 /**
  * critwire.com's Terms, Privacy Policy and Copyright Policy, rendered from
  * `legal/<slug>.md`. The markdown is a trusted repo file, so its HTML is
  * rendered as is. A draft says so, and isn't indexed.
  */
 export default async function LegalDocumentPage({ params }: Args) {
-  const { body, effective, status, title, version } = await loadDocument(params)
+  const legalDocument = await loadDocument(params)
+  const { body, status, title } = legalDocument
   const isDraft = status === 'draft'
-  const date = dateLabel.format(new Date(`${effective}T00:00:00Z`))
 
   return (
     <article className="cw-page">
@@ -43,9 +41,7 @@ export default async function LegalDocumentPage({ params }: Args) {
         <div className="cw-page-column cw-legal">
           <header className="cw-legal-header">
             <h1 className="cw-legal-title">{title}</h1>
-            <p className="cw-legal-version">
-              Version {version} · {isDraft ? `Draft of ${date}` : `Effective ${date}`}
-            </p>
+            <p className="cw-legal-version">{legalVersionLine(legalDocument)}</p>
             {isDraft ? (
               <p className="cw-legal-draft" role="note">
                 This is a draft under legal review. It isn’t final.

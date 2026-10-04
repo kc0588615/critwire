@@ -1072,7 +1072,7 @@ Planner: Opus 5.5, 2026-10-04, from the revised Architecture, the Revision notes
     - After the run, `ls .next/standalone/legal/` lists the three files.
     - `pnpm install --frozen-lockfile` is up to date.
 
-- [ ] S3 · **Acceptance records and `/legal/accept` (Goal 2; nothing is enforced yet).**
+- [x] S3 · **Acceptance records and `/legal/accept` (Goal 2; nothing is enforced yet).**
   - **`src/collections/LegalAcceptances.ts`,** exactly as Goal 2 says:
     - fields `user`, `termsVersion`, `privacyVersion`, `termsDigest` and `privacyDigest`, with timestamps and no IP;
     - `read` is `superAdminOnly`; create, update and delete are `() => false`;
@@ -1655,6 +1655,11 @@ These pass through as their parsed path and query: `/onboarding`, `/admin` and `
   - The gate's step then changes only enforcement and its own tests.
 - **S2: no `dynamicParams = false` on `/legal/[document]`.** With it, Next 16 logs `Error: Internal: NoFallbackError` on the server for every unknown path, so any stray `/legal/x` hit would put a false error in the journal. The page keeps `generateStaticParams` (the three documents build static, `●`) and returns the 404 through its own `isLegalSlug` check and `notFound()`. LP2 proves `/legal/unknown` and `/legal/terms.md` are still 404s.
 - **S2: `LEGAL_SLUGS`, `isLegalSlug` and the titles live in `src/lib/legal/paths.ts`** (no fs), and `documents.ts` takes each title from `LEGAL_LINKS` and re-exports the slug type, so the slugs and titles are written once.
+- **S3: the generated `down` of `legal_acceptances` was fixed by hand.** `DROP TABLE "legal_acceptances" CASCADE` already drops the lock table's foreign key, so Payload's following `DROP CONSTRAINT` failed and `migrate:down` refused to run. The line is removed, with a comment, and down → up was proven on `critwire_m_legal_launch`.
+- **S3: one refined `legalConsentSchema`, which signup intersects with its email (`.and()`) in S4.** A `withLegalConsent(shape)` helper lost Zod 4's type inference inside the refinement, and Zod 4 can't `.extend()` a refined object.
+- **S3: `next` travels in the form's action (`/legal/accept/submit?next=…`), not a hidden field.** The route reads it with `getAll('next')`, so a repeated `next` is refused by `safeNext` on the route exactly as on the page (SN8).
+- **S3: the age box reads "I confirm I’m at least 18 years old." with a typographic apostrophe,** as all of the site's copy does. The specs assert that exact text.
+- **S3: small shared pieces.** `legalVersionLine` (`src/lib/legal/format.ts`) gives the legal pages and `/legal/accept` the same version line; `LEGAL_CONTACT_EMAIL` sits in `copy.ts`; `LegalCopyText` renders a copy sentence's parts with the documents linked, for S10 to reuse; `acceptLegal` gained an `omit` option for LA3.
 
 ## Log
 
@@ -1666,5 +1671,6 @@ These pass through as their parsed path and query: `/onboarding`, `/admin` and `
 - 2026-10-04 22:37 UTC: Steps. The `planner` wrote 17 steps (S1 legal drafts and handoff items through S17 full verification), the Verification (commands, specs against the Definition of done, artifact location), Failure modes, and nine Decisions (four migrations, one per step that needs it; `.invalid` email rule moves to S8; documents stay at 0.1 until ship, among others). Plan-only change; no code to verify.
 - 2026-10-04 22:55 UTC: S1. Wrote `legal/terms.md`, `privacy.md` and `copyright.md` (v0.1, draft, 2026-10-04), covering every Brief bullet and every inventory row, cookies by name and lifetime. Placeholders (grep): `[LLC street address]` ×3 docs, `[county]`, `[cap: suggestion for the lawyer: …]`, `[DMCA agent: pending registration]`, `[repeat-infringer threshold]`, `[Upstash region]`, `[log retention]`, `[backups]`, `[backup retention]`, `[mailbox provider]`, `[retention of emails to admin@critwire.com]`: exactly the Architecture's list. Filed H16–H19 (numbers were free) and the H8 note; H17 points at `dmca.copyright.gov/osp/login.html` (200). tsc pass; lint 0 errors, 20 warnings.
 - 2026-10-04 22:52 UTC: S2. Loader `src/lib/legal/documents.ts` (strict front matter + Zod, lazy read, memoized in production, SHA-256 digest), `src/lib/legal/paths.ts` (`LEGAL_LINKS`, `safeNext`, `acceptHref`), the static `/legal/[document]` page (version line, draft banner, noindex, `marked@15.0.12` pinned), the boot check, and `legal/*.md` traced into standalone. Loader check written first and failing, then 29/29 DL1–DL12 pass (`agent-state/missions/legal-launch/loader-check/`). tsc pass; lint 0 errors, 20 warnings; `pnpm test:e2e legal-pages home`: 7/7; `.next/standalone/legal/` has all three; frozen lockfile up to date. Dropped `dynamicParams = false` (Decisions).
+- 2026-10-04 23:06 UTC: S3. `legal-acceptances` collection (super-admin read, no REST writes, no IP) and migration `legal_acceptances` (generated `down` fixed: CASCADE already drops the lock FK; up → down → up proven), `needsLegalAcceptance` (memoized per request) and `recordLegalAcceptance` (refuses non-current versions, stores both digests), the shared consent schema, `LegalConsentFields`, `/legal/accept` and its submit route (303s, `safeNext`), and the `{ accept }` fixture option (default false). tsc pass; lint 0 errors, 20 warnings; `pnpm test:e2e legal-acceptance legal-pages tenant-isolation accounts`: 45/45 (LA1–LA6 included).
 
 ## Summary

@@ -1084,6 +1084,27 @@
   resize: vertical;
 }
 
+/* Consent checkboxes (signup, /legal/accept): the box, then its label. */
+.fs-consent {
+  display: grid;
+  gap: 1rem;
+}
+
+.fs-check {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: start;
+  line-height: 1.45;
+}
+
+.fs-check input {
+  width: 1.25rem;
+  height: 1.25rem;
+  margin-top: 0.125rem;
+  accent-color: var(--fs-fg);
+}
+
 /* Email beside platform from 40rem; one column on phones. */
 .fs-field-pair {
   display: grid;

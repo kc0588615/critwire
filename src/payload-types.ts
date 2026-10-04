@@ -78,6 +78,7 @@ export interface Config {
     users: User;
     'abuse-reports': AbuseReport;
     'discord-posts': DiscordPost;
+    'legal-acceptances': LegalAcceptance;
     'payload-kv': PayloadKv;
     'payload-jobs': PayloadJob;
     'payload-folders': FolderInterface;
@@ -102,6 +103,7 @@ export interface Config {
     users: UsersSelect<false> | UsersSelect<true>;
     'abuse-reports': AbuseReportsSelect<false> | AbuseReportsSelect<true>;
     'discord-posts': DiscordPostsSelect<false> | DiscordPostsSelect<true>;
+    'legal-acceptances': LegalAcceptancesSelect<false> | LegalAcceptancesSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-jobs': PayloadJobsSelect<false> | PayloadJobsSelect<true>;
     'payload-folders': PayloadFoldersSelect<false> | PayloadFoldersSelect<true>;
@@ -842,6 +844,20 @@ export interface DiscordPost {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "legal-acceptances".
+ */
+export interface LegalAcceptance {
+  id: number;
+  user: number | User;
+  termsVersion: string;
+  privacyVersion: string;
+  termsDigest: string;
+  privacyDigest: string;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
@@ -1018,6 +1034,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'discord-posts';
         value: number | DiscordPost;
+      } | null)
+    | ({
+        relationTo: 'legal-acceptances';
+        value: number | LegalAcceptance;
       } | null)
     | ({
         relationTo: 'payload-folders';
@@ -1524,6 +1544,19 @@ export interface DiscordPostsSelect<T extends boolean = true> {
   patchNote?: T;
   issue?: T;
   stage?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "legal-acceptances_select".
+ */
+export interface LegalAcceptancesSelect<T extends boolean = true> {
+  user?: T;
+  termsVersion?: T;
+  privacyVersion?: T;
+  termsDigest?: T;
+  privacyDigest?: T;
   updatedAt?: T;
   createdAt?: T;
 }

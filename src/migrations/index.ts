@@ -17,6 +17,7 @@ import * as migration_20260930_111418_open_signup from './20260930_111418_open_s
 import * as migration_20261002_144959_discord from './20261002_144959_discord';
 import * as migration_20261002_160638_discord_update_posts from './20261002_160638_discord_update_posts';
 import * as migration_20261002_161631_discord_stage_posts from './20261002_161631_discord_stage_posts';
+import * as migration_20261004_225524_legal_acceptances from './20261004_225524_legal_acceptances';
 
 export const migrations = [
   {
@@ -114,4 +115,9 @@ export const migrations = [
     down: migration_20261002_161631_discord_stage_posts.down,
     name: '20261002_161631_discord_stage_posts',
   },
-];
+  {
+    up: migration_20261004_225524_legal_acceptances.up,
+    down: migration_20261004_225524_legal_acceptances.down,
+    name: '20261004_225524_legal_acceptances',
+  },
+]

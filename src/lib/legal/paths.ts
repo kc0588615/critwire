@@ -51,3 +51,6 @@ export function safeNext(next: unknown): string {
 export function acceptHref(next: unknown): string {
   return `/legal/accept?next=${encodeURIComponent(safeNext(next))}`
 }
+
+/** Where `/legal/accept` sends someone with no session: sign in, then come back. */
+export const LEGAL_ACCEPT_LOGIN = `/admin/login?redirect=${encodeURIComponent('/legal/accept')}`

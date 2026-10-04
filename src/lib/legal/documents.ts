@@ -32,8 +32,13 @@ export type LegalDocument = {
   version: string
 }
 
+/** A document version: 1–32 letters, digits, dots or dashes, starting with a letter or digit. */
+export const legalVersionSchema = z
+  .string()
+  .regex(/^[0-9A-Za-z][0-9A-Za-z.-]{0,31}$/, 'must be 1–32 letters, digits, dots or dashes')
+
 const frontMatterSchema = z.strictObject({
-  version: z.string().regex(/^[0-9A-Za-z][0-9A-Za-z.-]{0,31}$/, 'must be 1–32 letters, digits, dots or dashes'),
+  version: legalVersionSchema,
   effective: z.iso.date(),
   status: z.enum(['draft', 'final']),
 })

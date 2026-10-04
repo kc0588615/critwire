@@ -12,6 +12,7 @@ import { GameProjects } from './collections/GameProjects'
 import { IssueReports } from './collections/IssueReports'
 import { Issues } from './collections/Issues'
 import { IssueVotes } from './collections/IssueVotes'
+import { LegalAcceptances } from './collections/LegalAcceptances'
 import { Media } from './collections/Media'
 import { Pages } from './collections/Pages'
 import { PatchNotes } from './collections/PatchNotes'
@@ -106,6 +107,7 @@ export default buildConfig({
     Users,
     AbuseReports,
     DiscordPosts,
+    LegalAcceptances,
   ],
   cors: [getServerSideURL()].filter(Boolean),
   email: emailAdapter(),
