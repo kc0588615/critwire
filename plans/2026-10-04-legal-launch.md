@@ -930,7 +930,7 @@ Planner: Opus 5.5, 2026-10-04, from the revised Architecture, the Revision notes
   - Then the documents' audit against the code as built (S15), and screenshots of the audited pages (S16).
 - **The sweep runs in the background during E2E.** Both E2E servers run the `default` queue every minute. From S6 on, Payload's scheduler queues `purge-contact-jobs` there, so it can run at any moment. No test may depend on a completed contact job still existing, or on when the sweep runs. S5.14 is written to pass either way.
 
-- [ ] S1 · **The three legal drafts, and the handoff items.**
+- [x] S1 · **The three legal drafts, and the handoff items.**
   - **Files:** `legal/terms.md`, `legal/privacy.md`, `legal/copyright.md`. No code.
   - **Front matter,** exactly: `version: 0.1`, `effective: 2026-10-04`, `status: draft`. Bare values, no quotes, LF line endings.
   - **How to write them:**
@@ -1662,5 +1662,6 @@ These pass through as their parsed path and query: `/onboarding`, `/admin` and `
 - 2026-10-04 21:59 UTC: Astra review. APPROVE_WITH_CHANGES with four MUST-FIX (the `Tenants` write gate, as Fable found; signup acceptance tied to an unverified email; acceptance not bound to the displayed versions; completed contact-job deletion is best-effort in Payload) and three SHOULD-CONSIDER. Plan-only change; no code to verify.
 - 2026-10-04 22:20 UTC: Revision. The `architect` resolved all four MUST-FIX items: the `Tenants` write gate; acceptance recorded only by the verified holder at `/legal/accept`; versions bound through hidden fields; a scheduled `purge-contact-jobs` sweep backing up Payload's best-effort delete. It also folded in the cheap review suggestions and fixed two problems neither review found: studio/game deletes that fail today, and the open `payload-jobs-stats` global. Decisions recorded. Plan-only change; no code to verify.
 - 2026-10-04 22:37 UTC: Steps. The `planner` wrote 17 steps (S1 legal drafts and handoff items through S17 full verification), the Verification (commands, specs against the Definition of done, artifact location), Failure modes, and nine Decisions (four migrations, one per step that needs it; `.invalid` email rule moves to S8; documents stay at 0.1 until ship, among others). Plan-only change; no code to verify.
+- 2026-10-04 22:55 UTC: S1. Wrote `legal/terms.md`, `privacy.md` and `copyright.md` (v0.1, draft, 2026-10-04), covering every Brief bullet and every inventory row, cookies by name and lifetime. Placeholders (grep): `[LLC street address]` ×3 docs, `[county]`, `[cap: suggestion for the lawyer: …]`, `[DMCA agent: pending registration]`, `[repeat-infringer threshold]`, `[Upstash region]`, `[log retention]`, `[backups]`, `[backup retention]`, `[mailbox provider]`, `[retention of emails to admin@critwire.com]`: exactly the Architecture's list. Filed H16–H19 (numbers were free) and the H8 note; H17 points at `dmca.copyright.gov/osp/login.html` (200). tsc pass; lint 0 errors, 20 warnings.
 
 ## Summary
