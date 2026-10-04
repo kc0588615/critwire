@@ -1037,7 +1037,7 @@ Planner: Opus 5.5, 2026-10-04, from the revised Architecture, the Revision notes
     - The handoff items match the format, and H8 has its note.
     - tsc and lint still pass.
 
-- [ ] S2 · **The document loader, the legal pages and the boot check (Goal 1).**
+- [x] S2 · **The document loader, the legal pages and the boot check (Goal 1).**
   - **First:** write the throwaway loader check from Failure modes DL1–DL12 in `/tmp/legal-loader-check.ts`, and run it from the repo root with `pnpm exec tsx`. It must fail, since there's no loader yet. Then write the code.
   - **`src/lib/legal/documents.ts`,** exactly as the Architecture says:
     - server only, and no `@payload-config`;
@@ -1653,6 +1653,8 @@ These pass through as their parsed path and query: `/onboarding`, `/admin` and `
 - **Planner: test accounts accept by default from S4, one step before the gate (S5).**
   - The `{ accept }` option arrives in S3, defaulting to `false`, and S4 flips the default.
   - The gate's step then changes only enforcement and its own tests.
+- **S2: no `dynamicParams = false` on `/legal/[document]`.** With it, Next 16 logs `Error: Internal: NoFallbackError` on the server for every unknown path, so any stray `/legal/x` hit would put a false error in the journal. The page keeps `generateStaticParams` (the three documents build static, `●`) and returns the 404 through its own `isLegalSlug` check and `notFound()`. LP2 proves `/legal/unknown` and `/legal/terms.md` are still 404s.
+- **S2: `LEGAL_SLUGS`, `isLegalSlug` and the titles live in `src/lib/legal/paths.ts`** (no fs), and `documents.ts` takes each title from `LEGAL_LINKS` and re-exports the slug type, so the slugs and titles are written once.
 
 ## Log
 
@@ -1663,5 +1665,6 @@ These pass through as their parsed path and query: `/onboarding`, `/admin` and `
 - 2026-10-04 22:20 UTC: Revision. The `architect` resolved all four MUST-FIX items: the `Tenants` write gate; acceptance recorded only by the verified holder at `/legal/accept`; versions bound through hidden fields; a scheduled `purge-contact-jobs` sweep backing up Payload's best-effort delete. It also folded in the cheap review suggestions and fixed two problems neither review found: studio/game deletes that fail today, and the open `payload-jobs-stats` global. Decisions recorded. Plan-only change; no code to verify.
 - 2026-10-04 22:37 UTC: Steps. The `planner` wrote 17 steps (S1 legal drafts and handoff items through S17 full verification), the Verification (commands, specs against the Definition of done, artifact location), Failure modes, and nine Decisions (four migrations, one per step that needs it; `.invalid` email rule moves to S8; documents stay at 0.1 until ship, among others). Plan-only change; no code to verify.
 - 2026-10-04 22:55 UTC: S1. Wrote `legal/terms.md`, `privacy.md` and `copyright.md` (v0.1, draft, 2026-10-04), covering every Brief bullet and every inventory row, cookies by name and lifetime. Placeholders (grep): `[LLC street address]` ×3 docs, `[county]`, `[cap: suggestion for the lawyer: …]`, `[DMCA agent: pending registration]`, `[repeat-infringer threshold]`, `[Upstash region]`, `[log retention]`, `[backups]`, `[backup retention]`, `[mailbox provider]`, `[retention of emails to admin@critwire.com]`: exactly the Architecture's list. Filed H16–H19 (numbers were free) and the H8 note; H17 points at `dmca.copyright.gov/osp/login.html` (200). tsc pass; lint 0 errors, 20 warnings.
+- 2026-10-04 22:52 UTC: S2. Loader `src/lib/legal/documents.ts` (strict front matter + Zod, lazy read, memoized in production, SHA-256 digest), `src/lib/legal/paths.ts` (`LEGAL_LINKS`, `safeNext`, `acceptHref`), the static `/legal/[document]` page (version line, draft banner, noindex, `marked@15.0.12` pinned), the boot check, and `legal/*.md` traced into standalone. Loader check written first and failing, then 29/29 DL1–DL12 pass (`agent-state/missions/legal-launch/loader-check/`). tsc pass; lint 0 errors, 20 warnings; `pnpm test:e2e legal-pages home`: 7/7; `.next/standalone/legal/` has all three; frozen lockfile up to date. Dropped `dynamicParams = false` (Decisions).
 
 ## Summary

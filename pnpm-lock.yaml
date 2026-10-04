@@ -85,6 +85,9 @@ importers:
       lucide-react:
         specifier: 0.563.0
         version: 0.563.0(react@19.2.6)
+      marked:
+        specifier: 15.0.12
+        version: 15.0.12
       next:
         specifier: 16.2.6
         version: 16.2.6(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(@playwright/test@1.58.2)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)(sass@1.77.4)

@@ -38,9 +38,12 @@ const nextConfig: NextConfig = {
 
     return webpackConfig
   },
-  // The share images read their font from disk at runtime, so the standalone
-  // output must carry it (keys are route globs; `[` would be a glob class).
+  // The share images read their font from disk at runtime, and the legal
+  // pages, the boot check and the acceptance check read legal/*.md, so the
+  // standalone output must carry them (keys are route globs; `[` would be
+  // a glob class).
   outputFileTracingIncludes: {
+    '/**': ['./legal/*.md'],
     '/buttons/*': ['./src/lib/share/fonts/DejaVuSans.ttf'],
     '/g/*/badge.svg': ['./src/lib/share/fonts/DejaVuSans.ttf'],
     '/g/*/badge.png': ['./src/lib/share/fonts/DejaVuSans.ttf'],

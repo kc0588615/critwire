@@ -477,6 +477,31 @@
   font-size: 0.9375rem;
 }
 
+/* ── Legal documents: /legal/terms, privacy, copyright ──── */
+
+.cw-legal-header {
+  display: grid;
+  gap: 0.75rem;
+  margin-bottom: clamp(2rem, 4vw, 3rem);
+}
+
+.cw-root .cw-legal-title {
+  font-size: clamp(2rem, 1.4rem + 2.4vw, 3.25rem);
+  text-wrap: balance;
+}
+
+.cw-legal-version {
+  color: var(--cw-graphite);
+}
+
+/* A draft's banner: the yellow field, ink text. */
+.cw-legal-draft {
+  border-radius: 0.25rem;
+  padding: 0.75rem 1rem;
+  background: var(--cw-yellow);
+  font-weight: 700;
+}
+
 /* ── Account pages: signup, verification, onboarding ────── */
 
 /*
