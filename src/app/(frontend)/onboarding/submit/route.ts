@@ -8,6 +8,8 @@ import { z } from 'zod'
 import { portalPaths } from '@/lib/game-portal/paths'
 import { storeLinkKey } from '@/lib/game-portal/links'
 import { isOpenSignup } from '@/lib/hosting'
+import { needsLegalAcceptance } from '@/lib/legal/acceptance'
+import { acceptHref } from '@/lib/legal/paths'
 import { getLogger } from '@/lib/logger'
 import { createStudio, StudioExistsError } from '@/lib/onboarding/createStudio'
 import { findOnboardedProject } from '@/lib/onboarding/findOnboardedProject'
@@ -58,6 +60,7 @@ export async function POST(req: Request): Promise<Response> {
     if (!user) return redirectTo(req, `/admin/login?redirect=${encodeURIComponent(ONBOARDING)}`)
     // Payload never authenticates an unverified user; fail loud if that breaks.
     if (user._verified !== true) throw new Error(`Onboarding: user ${user.id} is signed in but not verified.`)
+    if (await needsLegalAcceptance({ payload, user })) return redirectTo(req, acceptHref(ONBOARDING))
     if (user.tenants?.length) return redirectTo(req, '/admin')
 
     const parsed = onboardingSchema.safeParse(await readRequestBody(req))

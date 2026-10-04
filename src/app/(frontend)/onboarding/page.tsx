@@ -13,6 +13,8 @@ import { FormField } from '@/components/game/FormField'
 import { FormNotice } from '@/components/game/FormNotice'
 import { KNOWN_STORE_NAMES } from '@/lib/game-portal/links'
 import { isOpenSignup } from '@/lib/hosting'
+import { needsLegalAcceptance } from '@/lib/legal/acceptance'
+import { acceptHref } from '@/lib/legal/paths'
 
 const STORES = new Intl.ListFormat('en', { type: 'disjunction' }).format(KNOWN_STORE_NAMES)
 
@@ -34,6 +36,7 @@ export default async function OnboardingPage({ searchParams }: Args) {
   if (!user) redirect(`/admin/login?redirect=${encodeURIComponent('/onboarding')}`)
   // Payload never authenticates an unverified user; fail loud if that breaks.
   if (user._verified !== true) throw new Error(`Onboarding: user ${user.id} is signed in but not verified.`)
+  if (await needsLegalAcceptance({ payload, user })) redirect(acceptHref('/onboarding'))
 
   const { error, held } = await searchParams
 

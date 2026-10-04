@@ -25,6 +25,8 @@ import {
 const STEAM_URL = 'https://store.steampowered.com/app/480/Spacewar/'
 const WEBSITE = 'https://studio.example.com'
 const NEW_PASSWORD = 'signup-password-1234'
+const AGREE = 'I agree to the Terms of Service and acknowledge the Privacy Policy'
+const AGE = 'I confirm I’m at least 18 years old.'
 
 /** A browser context with no session, whatever the project's `storageState`. */
 const freshContext = (browser: Browser): Promise<BrowserContext> =>
@@ -82,8 +84,8 @@ test('S15.1 sign up, verify through the emailed link, onboard, and see the live 
       await expect(page.getByRole('heading', { level: 1 })).toHaveText('Create your portal')
       await expect(page.getByText('We’ll email you a link to choose your password.')).toBeVisible()
       await page.getByLabel('Email').fill(email)
-      await page.getByRole('checkbox', { name: 'I agree to the Terms of Service and acknowledge the Privacy Policy' }).check()
-      await page.getByRole('checkbox', { name: 'I confirm I’m at least 18 years old.' }).check()
+      await page.getByRole('checkbox', { name: AGREE }).check()
+      await page.getByRole('checkbox', { name: AGE }).check()
       await submitWithTurnstile(page, 'Send my link')
       await expect(page).toHaveURL('/signup?submitted=1')
       await expect(page.getByRole('heading', { level: 1 })).toHaveText('Check your inbox')
@@ -93,7 +95,7 @@ test('S15.1 sign up, verify through the emailed link, onboard, and see the live 
       await expect(main.getByRole('link', { name: 'reset your password' })).toHaveAttribute('href', '/admin/forgot')
     })
 
-    await test.step('the emailed link asks for a password, then signs in to onboarding', async () => {
+    await test.step('the emailed link asks for a password, signs in, and the Terms come before onboarding', async () => {
       const message = await readEmail(email)
       expect(message.subject).toBe('Confirm your email and choose a password')
       await page.goto(linkTo(message, '/verify/'))
@@ -101,6 +103,10 @@ test('S15.1 sign up, verify through the emailed link, onboard, and see the live 
       await expect(page.getByLabel('Email')).toHaveValue(email)
       await page.getByLabel('Password').fill(NEW_PASSWORD)
       await submitWithTurnstile(page, 'Set password and continue')
+      await expect(page).toHaveURL('/legal/accept?next=%2Fonboarding')
+      await page.getByRole('checkbox', { name: AGREE }).check()
+      await page.getByRole('checkbox', { name: AGE }).check()
+      await page.getByRole('button', { name: 'Agree and continue' }).click()
       await expect(page).toHaveURL('/onboarding')
       await expect(page.getByRole('heading', { level: 1 })).toHaveText('Set up your game’s portal')
     })

@@ -45,6 +45,9 @@ export default buildConfig({
       views: {
         // Password recovery goes through Turnstile and rate limits (§4a).
         forgot: { Component: '@/components/admin/ForgotPasswordView' },
+        // Where the admin guard turns away an account that hasn't accepted
+        // the current Terms; it goes on to `/legal/accept`.
+        unauthorized: { Component: '@/components/admin/LegalGateView' },
       },
     },
     importMap: {

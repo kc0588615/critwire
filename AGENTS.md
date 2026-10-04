@@ -193,6 +193,10 @@ How the E2E suite works:
   creates the game projects it needs through the REST factories in
   `tests/e2e/support/fixtures.ts`, so specs never depend on each
   other's data.
+- Specs reach the database directly only through
+  `tests/e2e/support/db.ts`, and only for what REST deliberately can't
+  do (putting an acceptance or a timestamp into a past state) and for
+  whole-database scans. It refuses any database not ending in `_e2e`.
 
 Int tests (`tests/int`) exist only for invariants E2E can't reach:
 

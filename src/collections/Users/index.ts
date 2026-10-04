@@ -2,7 +2,7 @@ import type { CollectionConfig } from 'payload'
 
 import type { User } from '@/payload-types'
 
-import { authenticated } from '../../access/authenticated'
+import { adminPanelAccess } from '../../access/adminPanelAccess'
 import { isSuperAdmin, superAdminFieldAccess, superAdminOnly } from '../../access/isSuperAdmin'
 import { accountCreatedEmail, passwordResetEmail, verificationEmail } from '../../lib/email/authEmails'
 import { restrictPasswordRecovery } from './hooks/restrictPasswordRecovery'
@@ -21,7 +21,7 @@ const resetEmail = (args?: { token?: string }) => {
 export const Users: CollectionConfig = {
   slug: 'users',
   access: {
-    admin: authenticated,
+    admin: adminPanelAccess,
     create: superAdminOnly,
     delete: superAdminOnly,
     read: ({ req }) => {

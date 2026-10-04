@@ -1,32 +1,40 @@
 import type { APIRequestContext, APIResponse, Browser, Page } from '@playwright/test'
 
 import type { RestClient } from './support/api'
+import { ageLegalAcceptance } from './support/db'
 import { emailsTo, verificationToken } from './support/email'
 import { BASE_URL, PASSWORD, TURNSTILE_DUMMY_TOKEN } from './support/env'
 import {
   type Account,
+  createProject,
   expect,
+  lexical,
   newRequestContext,
+  onboard,
   randomEmail,
   startSignup,
+  type Studio,
   test,
   verifyAccount,
 } from './support/fixtures'
 import { acceptLegal, type LegalConsentOptions, legalConsentForm, legalDigest, legalFrontMatter } from './support/legal'
 
 /**
- * Agreement to the Terms of Service and Privacy Policy (plan S3–S4, Goal
+ * Agreement to the Terms of Service and Privacy Policy (plan S3–S5, Goal
  * 2): the `/legal/accept` page and its submit route, the only place an
- * acceptance is recorded; who may read or write the records; and
- * signup's boxes, which are required but record nothing. Nothing sends an
- * account to `/legal/accept` yet; the gate comes in S5. Every test makes
- * its own accounts, so `world`'s users never change state.
+ * acceptance is recorded; who may read or write the records; signup's
+ * boxes, which are required but record nothing; and the gate, which sends
+ * an account that hasn't accepted the current versions to `/legal/accept`
+ * before the admin, onboarding or any write. Every test makes its own
+ * accounts, so `world`'s users never change state.
  */
 
 const LOGIN = '/admin/login?redirect=%2Flegal%2Faccept'
 const AGREE = 'I agree to the Terms of Service and acknowledge the Privacy Policy'
 const AGE = 'I confirm I’m at least 18 years old.'
 const REFUSED = 'Tick both boxes to continue. If a document changed while this page was open, the versions above are the new ones.'
+const GATED = 'Accept the current Terms of Service and Privacy Policy at /legal/accept before making changes.'
+const DEEP_LINK = '/admin/collections/patch-notes/create'
 
 const jwt = (account: Pick<Account, 'token'>) => ({ Authorization: `JWT ${account.token}` })
 
@@ -396,4 +404,256 @@ test('LA7 signup asks for both boxes, refuses a request without them, and record
       await page.context().close()
     }
   })
+})
+
+/** Ticks both boxes on `/legal/accept` in the browser and agrees. */
+async function agreeInBrowser(page: Page): Promise<void> {
+  await expect(page).toHaveURL(/^[^?]*\/legal\/accept\?/)
+  await page.getByRole('checkbox', { name: AGREE, exact: true }).check()
+  await page.getByRole('checkbox', { name: AGE, exact: true }).check()
+  await page.getByRole('button', { name: 'Agree and continue' }).click()
+}
+
+/** Where `path` lands in the browser for `account`: path and query. */
+async function landing(page: Page, path: string): Promise<string> {
+  await page.goto(path)
+  const url = new URL(page.url())
+  return `${url.pathname}${url.search}`
+}
+
+const acceptURL = (next: string) => `/legal/accept?next=${encodeURIComponent(next)}`
+
+/**
+ * The writes the gate stops, as `studio`'s owner: a REST create of an
+ * update in `project`, a REST rename of the studio, and the same rename
+ * over GraphQL. Each answers with the HTTP status (GraphQL's from its
+ * error's `statusCode`) and the error message, if any.
+ */
+async function studioWrites(studio: Studio, projectID: number, label: string) {
+  const { client } = studio.owner
+  const update = await client.create('patch-notes', {
+    content: lexical(`Notes for ${label}`),
+    gameProject: projectID,
+    slug: label,
+    tenant: studio.tenant.id,
+    title: `Patch ${label}`,
+    _status: 'published',
+  })
+  const rename = await client.update('tenants', studio.tenant.id, { name: `Renamed ${label}` })
+  const graphql = await client.raw<{
+    data?: { updateTenant: { name: string } | null }
+    errors?: { extensions?: { statusCode?: number }; message: string }[]
+  }>('POST', '/api/graphql', {
+    data: {
+      query: `mutation { updateTenant(id: ${studio.tenant.id}, data: { name: "GraphQL ${label}" }) { name } }`,
+    },
+  })
+  const graphqlError = graphql.body.errors?.[0]
+  return {
+    update: { status: update.status, message: update.body.errors?.[0]?.message },
+    rename: { status: rename.status, message: rename.body.errors?.[0]?.message },
+    graphql: graphqlError
+      ? { status: graphqlError.extensions?.statusCode, message: graphqlError.message }
+      : { status: graphql.status, message: undefined },
+  }
+}
+
+const refusedByGate = { status: 403, message: GATED }
+
+/** `userID`'s acceptance records, as the super admin reads them. */
+async function acceptancesOf(superAdmin: RestClient, userID: number) {
+  const { status, body } = await superAdmin.find('legal-acceptances', {
+    where: { user: { equals: userID } },
+    depth: 0,
+  })
+  expect(status).toBe(200)
+  return body.docs
+}
+
+test('LA8 a new account accepts on /legal/accept after verifying, then onboards', async ({
+  api,
+  browser,
+  playwright,
+  signIn,
+}) => {
+  const email = randomEmail('la8')
+  const request = await newRequestContext(playwright)
+  try {
+    await startSignup(request, email)
+    expect(await verifyAccount(request, await verificationToken(email), PASSWORD)).toBe('/onboarding')
+  } finally {
+    await request.dispose()
+  }
+  const account = await signIn(email, PASSWORD)
+  expect(await acceptancesOf(api('superAdmin'), account.id), 'after /signup and /verify').toHaveLength(0)
+
+  const page = await pageAs(browser, account)
+  try {
+    expect(await landing(page, '/onboarding')).toBe('/legal/accept?next=%2Fonboarding')
+    await agreeInBrowser(page)
+    await expect(page).toHaveURL('/onboarding')
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Set up your game’s portal')
+  } finally {
+    await page.context().close()
+  }
+
+  const records = await acceptancesOf(api('superAdmin'), account.id)
+  expect(records).toHaveLength(1)
+  expect(records[0]).toMatchObject({
+    privacyDigest: legalDigest('privacy'),
+    privacyVersion: legalFrontMatter('privacy').version,
+    termsDigest: legalDigest('terms'),
+    termsVersion: legalFrontMatter('terms').version,
+  })
+})
+
+test('LA9 until an account accepts, the admin, onboarding and writes send it to /legal/accept', async ({
+  api,
+  browser,
+  playwright,
+  seedStudio,
+  seedUser,
+  signIn,
+  uniqueSlug,
+}) => {
+  const superAdmin = api('superAdmin')
+  const studio = await seedStudio('la9', { accept: false })
+  const user = await seedUser('la9-user', { accept: false })
+  const project = await createProject(superAdmin, studio.tenant.id, uniqueSlug('la9-game'))
+  const studioName = (await superAdmin.findByID('tenants', studio.tenant.id)).body.name
+
+  await test.step('a deep admin link and onboarding go to /legal/accept, with that next', async () => {
+    for (const [label, account] of [
+      ['studio owner', studio.owner],
+      ['user without a studio', user],
+    ] as const) {
+      const page = await pageAs(browser, account)
+      try {
+        expect(await landing(page, DEEP_LINK), label).toBe(acceptURL(DEEP_LINK))
+        expect(await landing(page, '/onboarding'), label).toBe(acceptURL('/onboarding'))
+      } finally {
+        await page.context().close()
+      }
+    }
+  })
+
+  await test.step('posting the onboarding form goes there too, and makes no studio', async () => {
+    const request = await newRequestContext(playwright)
+    const name = `La9 Onboard ${uniqueSlug('x')}`
+    try {
+      expect(await onboard(request, user.token, { name, website: 'https://studio.example.com' })).toBe(
+        acceptURL('/onboarding'),
+      )
+    } finally {
+      await request.dispose()
+    }
+    const { body } = await superAdmin.find('game-projects', { where: { name: { equals: name } }, depth: 0 })
+    expect(body.totalDocs).toBe(0)
+    expect((await superAdmin.findByID('users', user.id, { depth: 0 })).body.tenants ?? []).toHaveLength(0)
+  })
+
+  await test.step('REST and GraphQL writes are refused with the gate’s message', async () => {
+    expect(await studioWrites(studio, project.id, uniqueSlug('la9-before'))).toEqual({
+      update: refusedByGate,
+      rename: refusedByGate,
+      graphql: refusedByGate,
+    })
+    expect((await superAdmin.findByID('tenants', studio.tenant.id)).body.name).toBe(studioName)
+    const { body } = await superAdmin.find('patch-notes', { where: { gameProject: { equals: project.id } } })
+    expect(body.totalDocs).toBe(0)
+  })
+
+  await test.step('me still answers, and Log out still works', async () => {
+    const me = await studio.owner.client.raw<{ user: { id: number } | null }>('GET', '/api/users/me')
+    expect(me.status).toBe(200)
+    expect(me.body.user?.id).toBe(studio.owner.id)
+
+    // A session of its own, so logging it out leaves the others signed in.
+    const second = await signIn(user.email, PASSWORD)
+    const page = await pageAs(browser, second)
+    try {
+      expect(await landing(page, '/admin')).toBe(acceptURL('/admin'))
+      await page.getByRole('link', { name: 'Log out' }).click()
+      await expect(page).toHaveURL(/\/admin\/login/)
+      const after = await second.client.raw<{ user: unknown }>('GET', '/api/users/me')
+      expect(after.body.user).toBeNull()
+    } finally {
+      await page.context().close()
+    }
+  })
+
+  await test.step('after accepting in the browser, the deep link opens and both writes work', async () => {
+    const page = await pageAs(browser, studio.owner)
+    try {
+      await page.goto(DEEP_LINK)
+      await agreeInBrowser(page)
+      await expect(page).toHaveURL(DEEP_LINK)
+      await expect(page.locator('#field-title')).toBeVisible()
+    } finally {
+      await page.context().close()
+    }
+
+    const label = uniqueSlug('la9-after')
+    const writes = await studioWrites(studio, project.id, label)
+    expect(writes.update.status).toBe(201)
+    expect(writes.rename.status).toBe(200)
+    expect(writes.graphql).toEqual({ status: 200, message: undefined })
+    expect((await superAdmin.findByID('tenants', studio.tenant.id)).body.name).toBe(`GraphQL ${label}`)
+  })
+})
+
+test('LA10 a version bump sends an account back to /legal/accept', async ({
+  api,
+  browser,
+  playwright,
+  seedStudio,
+}) => {
+  const superAdmin = api('superAdmin')
+  const studio = await seedStudio('la10')
+  await ageLegalAcceptance(studio.owner.id)
+
+  const page = await pageAs(browser, studio.owner)
+  try {
+    expect(await landing(page, '/admin')).toBe(acceptURL('/admin'))
+    expect(await landing(page, '/onboarding')).toBe(acceptURL('/onboarding'))
+  } finally {
+    await page.context().close()
+  }
+  expect(await studio.owner.client.update('tenants', studio.tenant.id, { name: 'La10 renamed' })).toMatchObject({
+    status: 403,
+    body: { errors: [{ message: GATED }] },
+  })
+
+  const request = await newRequestContext(playwright)
+  try {
+    expect(await acceptLegal(request, studio.owner.token)).toBe('/admin')
+  } finally {
+    await request.dispose()
+  }
+  expect(await acceptancesOf(superAdmin, studio.owner.id)).toHaveLength(2)
+  expect((await studio.owner.client.update('tenants', studio.tenant.id, { name: 'La10 renamed' })).status).toBe(200)
+})
+
+test('LA11 a super admin is never sent to /legal/accept', async ({ api, browser, playwright, seedStudio, world }) => {
+  const superAdmin = api('superAdmin')
+  const admin = world.users.superAdmin
+  expect(await acceptancesOf(superAdmin, admin.id), 'no record').toHaveLength(0)
+
+  const page = await pageAs(browser, admin)
+  try {
+    expect(await landing(page, '/admin')).toBe('/admin')
+    await expect(page.getByRole('heading', { name: 'Across all studios' })).toBeVisible()
+  } finally {
+    await page.context().close()
+  }
+
+  const studio = await seedStudio('la11')
+  expect((await superAdmin.update('tenants', studio.tenant.id, { name: 'La11 renamed' })).status).toBe(200)
+
+  const request = await newRequestContext(playwright)
+  try {
+    expect(await acceptPageRedirect(request, admin, '')).toEqual({ location: '/admin', status: 307 })
+  } finally {
+    await request.dispose()
+  }
 })

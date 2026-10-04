@@ -7,6 +7,7 @@ import { GenerateTitle, GenerateURL } from '@payloadcms/plugin-seo/types'
 import { Config, Page } from '@/payload-types'
 import { isSuperAdmin } from '@/access/isSuperAdmin'
 import { mediaFileReadOverride } from '@/access/publicRead'
+import { requireLegalAcceptance } from '@/access/legalWrite'
 import { enforceTenantWrite } from '@/access/tenantWrite'
 import { getServerSideURL } from '@/utilities/getURL'
 
@@ -56,9 +57,10 @@ export const plugins: Plugin[] = [
         update: ({ req }) => isSuperAdmin(req.user),
       },
     },
-    // Membership and suspension, on every save including drafts. The
-    // plugin's own validator only checks the tenant is present.
-    tenantField: { hooks: { beforeChange: [enforceTenantWrite] } },
+    // Membership and suspension, then the legal gate, on every save
+    // including drafts. The plugin's own validator only checks the tenant
+    // is present.
+    tenantField: { hooks: { beforeChange: [enforceTenantWrite, requireLegalAcceptance] } },
     userHasAccessToAllTenants: (user) => isSuperAdmin(user),
   }),
   s3Storage({
