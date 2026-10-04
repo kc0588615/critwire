@@ -28,3 +28,37 @@ export async function ageLegalAcceptance(userID: number): Promise<void> {
   )
   if (!rowCount) throw new Error(`ageLegalAcceptance: user ${userID} has no acceptance to age.`)
 }
+
+/**
+ * How many rows, across every table in the database, hold `needle` in
+ * their text form, JSON included. Read-only.
+ */
+export async function countInDatabase(needle: string): Promise<number> {
+  return withClient(async (client) => {
+    await client.query('set default_transaction_read_only = on')
+    const { rows: tables } = await client.query<{ name: string }>(
+      `select quote_ident(table_name) as name from information_schema.tables
+       where table_schema = 'public' and table_type = 'BASE TABLE'`,
+    )
+    let count = 0
+    for (const { name } of tables) {
+      const { rows } = await client.query<{ n: number }>(
+        `select count(*)::int as n from public.${name} as r where strpos(r::text, $1) > 0`,
+        [needle],
+      )
+      count += rows[0].n
+    }
+    return count
+  })
+}
+
+/** Moves job `jobID`'s `createdAt` back by `days`. Fails unless the job exists. */
+export async function ageJob(jobID: number, days: number): Promise<void> {
+  const { rowCount } = await withClient((client) =>
+    client.query(`update payload_jobs set created_at = created_at - make_interval(days => $2) where id = $1`, [
+      jobID,
+      days,
+    ]),
+  )
+  if (!rowCount) throw new Error(`ageJob: there is no job ${jobID}.`)
+}

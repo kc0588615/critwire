@@ -1,10 +1,14 @@
+import { randomUUID } from 'node:crypto'
+
 import type { Page } from '@playwright/test'
 import { extractID } from 'payload/shared'
 
 import type { GameProject, PayloadJob } from '../../src/payload-types'
 import { fieldErrors, type RestClient } from './support/api'
+import { ageJob, countInDatabase } from './support/db'
 import { storageStatePath, TURNSTILE_DUMMY_TOKEN } from './support/env'
 import { createIssue, createProject, createReport, expect, submitWithTurnstile, test } from './support/fixtures'
+import { runDueJobs } from './support/jobs'
 
 /**
  * Player reports and the contact form: the public forms behind Turnstile,
@@ -427,6 +431,107 @@ test.describe('S5.4–S5.6 contact form', () => {
     expect(jobs, 'the undelivered job is kept').toHaveLength(1)
     expect(jobs[0].completedAt ?? null).toBeNull()
     expect(jobs[0].log ?? []).toContainEqual(expect.objectContaining({ state: 'failed' }))
+  })
+})
+
+test.describe('S5.13–S5.14 contact messages aren’t kept', () => {
+  // The sweep also runs on the servers' own autorun, at any moment, so these
+  // tests hold whether it ran before `runDueJobs` or only then.
+
+  test('S5.13 a delivered contact message leaves nothing in the database', async ({
+    api,
+    uniqueSlug,
+    webhookSink,
+    world,
+  }) => {
+    const id = randomUUID()
+    const email = `player-${id}@e2e.test`
+    const hookPath = `/api/webhooks/${uniqueSlug('s513')}/${id}`
+    const project = await createProject(api('aOwner'), world.tenants.A.id, uniqueSlug('rc-contact-kept'), {
+      contact: { target: 'DISCORD_WEBHOOK', discordWebhookUrl: webhookSink.url(hookPath) },
+    })
+
+    const { status } = await submitForm(api('anonymous'), contactPath(project.slug), {
+      email,
+      message: `A message that mustn’t outlive its delivery, ${id}.`,
+      turnstileToken: TURNSTILE_DUMMY_TOKEN,
+    })
+    expect(status).toBe(200)
+    expect(webhookSink.received(hookPath), 'the message was delivered').toHaveLength(1)
+    expect(JSON.stringify(webhookSink.received(hookPath)[0].body)).toContain(email)
+
+    await expect
+      .poll(() => contactJobs(api('superAdmin'), 'discord-webhook', `A message that mustn’t outlive its delivery, ${id}.`))
+      .toHaveLength(0)
+    expect(await countInDatabase(email), 'the address is nowhere in the database').toBe(0)
+  })
+
+  test('S5.14 the sweep deletes delivered and month-old contact jobs, and nothing else', async ({ api }) => {
+    const superAdmin = api('superAdmin')
+    const id = randomUUID()
+    const marker = (label: string) => `s514-${label}-${id}`
+    const input = (label: string) => ({
+      email: `${marker(label)}@e2e.test`,
+      gameSlug: 'gone',
+      message: marker(label),
+      projectID: '0',
+    })
+    const failed = { error: { message: 'E2E: delivery failed' }, hasError: true, totalTried: 3 }
+    const create = async (data: Partial<PayloadJob>): Promise<PayloadJob> => {
+      const { status, body } = await superAdmin.create('payload-jobs', data)
+      expect(status, JSON.stringify(body)).toBe(201)
+      return body.doc
+    }
+
+    const now = new Date().toISOString()
+    // A: delivered, but Payload's own delete failed, so the job and its log keep the input.
+    const delivered = await create({
+      completedAt: now,
+      input: input('a'),
+      log: [
+        {
+          completedAt: now,
+          executedAt: now,
+          input: input('a'),
+          output: { sent: true },
+          state: 'succeeded',
+          taskID: '1',
+          taskSlug: 'discord-webhook',
+        },
+      ],
+      taskSlug: 'discord-webhook',
+    })
+    // B: undelivered and recent, still kept for a retry.
+    const recent = await create({ ...failed, input: input('b'), taskSlug: 'email-contact-form' })
+    // C: undelivered for 31 days.
+    const stale = await create({ ...failed, input: input('c'), taskSlug: 'discord-webhook' })
+    await ageJob(stale.id, 31)
+    // D: a control, not a contact job, as old as C.
+    const otherTask = await create({
+      ...failed,
+      input: { marker: marker('d'), patchNoteID: 0 },
+      queue: 'discord',
+      taskSlug: 'discord-update-post',
+    })
+    await ageJob(otherTask.id, 31)
+    expect(delivered.log, 'A’s log row holds its input too').toHaveLength(1)
+
+    await runDueJobs(superAdmin, { queue: 'default', where: { taskSlug: { equals: 'purge-contact-jobs' } } })
+
+    for (const [label, job] of [
+      ['a', delivered],
+      ['c', stale],
+    ] as const) {
+      expect(await countInDatabase(marker(label)), `${label} is gone, its log included`).toBe(0)
+      expect((await superAdmin.findByID('payload-jobs', job.id)).status).toBe(404)
+    }
+    for (const [label, job] of [
+      ['b', recent],
+      ['d', otherTask],
+    ] as const) {
+      expect(await countInDatabase(marker(label)), `${label} stays`).toBe(1)
+      expect((await superAdmin.findByID('payload-jobs', job.id)).status).toBe(200)
+    }
   })
 })
 

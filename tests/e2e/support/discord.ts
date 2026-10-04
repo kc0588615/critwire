@@ -5,6 +5,7 @@ import type { APIRequestContext, APIResponse } from '@playwright/test'
 import type { PayloadJob } from '../../../src/payload-types'
 import type { RestClient } from './api'
 import type { RecordedRequest } from './fakeDiscord'
+import { runDueJobs } from './jobs'
 import {
   DISCORD_TEST_APPLICATION_ID,
   DISCORD_TEST_KEYS,
@@ -291,20 +292,11 @@ export const pendingDiscordPosts = async (superAdmin: RestClient, key: string): 
 }
 
 /**
- * "A minute passes" for the posts under `keys`: makes their pending jobs
- * due, then runs the `discord` queue through the REST endpoint as the
- * super admin. That's deliberate: the run endpoint hands its caller's
+ * "A minute passes" for the posts under `keys`: `runDueJobs` makes their
+ * pending jobs due and runs the `discord` queue through the REST endpoint
+ * as the super admin until they've run. That's deliberate: the run endpoint hands its caller's
  * request, and so its user, to every job, and a super admin reads
  * everything (F5). The jobs must still post only what's public.
  */
-export const runDiscordPosts = async (superAdmin: RestClient, keys: string[]): Promise<void> => {
-  const due = new Date(Date.now() - 1000).toISOString()
-  for (const key of keys) {
-    for (const job of await pendingDiscordPosts(superAdmin, key)) {
-      const { status, body } = await superAdmin.update('payload-jobs', job.id, { waitUntil: due })
-      if (status !== 200) throw new Error(`making job ${job.id} due answered ${status}: ${JSON.stringify(body)}`)
-    }
-  }
-  const { status, body } = await superAdmin.raw('GET', '/api/payload-jobs/run?queue=discord')
-  if (status !== 200) throw new Error(`the discord queue run answered ${status}: ${JSON.stringify(body)}`)
-}
+export const runDiscordPosts = (superAdmin: RestClient, keys: string[]): Promise<void> =>
+  runDueJobs(superAdmin, { queue: 'discord', where: { concurrencyKey: { in: keys } } })

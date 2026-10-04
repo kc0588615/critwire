@@ -381,6 +381,15 @@ test.describe('S1.7 platform and system collections', () => {
     })
   })
 
+  test('S1.14 only a super admin reads or moves the job scheduler’s state', async ({ api }) => {
+    const path = '/api/globals/payload-jobs-stats'
+    const aOwner = api('aOwner')
+    expect((await aOwner.raw('GET', path)).status).toBe(403)
+    const update = await aOwner.raw('POST', path, { data: { stats: { scheduledRuns: {} } } })
+    expect(update.status, JSON.stringify(update.body)).toBe(403)
+    expect((await api('superAdmin').raw('GET', path)).status).toBe(200)
+  })
+
   test('studio users cannot change the marketing site [F2]', async ({ api, uniqueSlug }) => {
     const aOwner = api('aOwner')
     await test.step('create a marketing page', async () => {

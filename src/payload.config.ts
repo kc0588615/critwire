@@ -19,19 +19,22 @@ import { PatchNotes } from './collections/PatchNotes'
 import { Tenants } from './collections/Tenants'
 import { Users } from './collections/Users'
 import { emailAdapter } from './lib/email/adapter'
-import { discordWebhookContactTask, emailContactFormTask } from './jobs/contact'
+import { discordWebhookContactTask, emailContactFormTask, purgeContactJobsTask } from './jobs/contact'
 import { discordStagePostTask, discordUpdatePostTask } from './jobs/discord'
 import { isDiscordOn } from './lib/discord/config'
 import { DISCORD_QUEUE } from './lib/discord/posts'
 import { migrations } from './migrations'
 import { plugins } from './plugins'
+import { lockJobStatsGlobal } from './lib/payload/lockJobStatsGlobal'
 import { defaultLexical } from '@/fields/defaultLexical'
 import { getServerSideURL } from './utilities/getURL'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
-export default buildConfig({
+// `purge-contact-jobs` is scheduled, so Payload adds its scheduler's
+// global; only super admins may read or move it.
+export default lockJobStatsGlobal(buildConfig({
   admin: {
     components: {
       // Above the sign-in form: the welcome line, and signup when it's open.
@@ -163,6 +166,16 @@ export default buildConfig({
       { cron: '* * * * *', limit: 10, queue: 'default' },
       ...(isDiscordOn() ? [{ cron: '* * * * *', limit: 10, queue: DISCORD_QUEUE }] : []),
     ],
-    tasks: [emailContactFormTask, discordWebhookContactTask, discordUpdatePostTask, discordStagePostTask],
+    // Payload's default, stated because the Privacy Policy depends on it:
+    // a delivered contact message's job, and its log, are deleted at once.
+    // `purge-contact-jobs` deletes any that Payload failed to.
+    deleteJobOnComplete: true,
+    tasks: [
+      emailContactFormTask,
+      discordWebhookContactTask,
+      purgeContactJobsTask,
+      discordUpdatePostTask,
+      discordStagePostTask,
+    ],
   },
-})
+}))

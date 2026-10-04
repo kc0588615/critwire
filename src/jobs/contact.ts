@@ -1,4 +1,4 @@
-import type { PayloadRequest, TaskConfig } from 'payload'
+import type { PayloadRequest, TaskConfig, Where } from 'payload'
 
 import * as Sentry from '@sentry/nextjs'
 
@@ -8,6 +8,7 @@ import { executeDiscordWebhook } from '@/lib/discord/webhook'
 import { renderContactFormEmail } from '@/lib/email/renderContactFormEmail'
 import { portalPaths } from '@/lib/game-portal/paths'
 import { getLogger } from '@/lib/logger'
+import { deleteWhereOrThrow } from '@/lib/payload/deleteWhereOrThrow'
 import { getServerSideURL } from '@/utilities/getURL'
 
 const log = getLogger('jobs.contact')
@@ -103,7 +104,7 @@ export const emailContactFormTask: TaskConfig<'email-contact-form'> = {
       // Resend's adapter throws on a refused send, so the job fails and is retried.
       await req.payload.sendEmail({ html, replyTo: input.email || undefined, subject, text, to })
 
-      log.info({ msg: 'Contact email sent.', projectID: project.id, to })
+      log.info({ msg: 'Contact email sent.', projectID: project.id })
       return { output: { sent: true } }
     } catch (err) {
       Sentry.captureException(err)
@@ -147,6 +148,47 @@ export const discordWebhookContactTask: TaskConfig<'discord-webhook'> = {
 
       log.info({ msg: 'Discord contact webhook sent.', projectID: project.id })
       return { output: { sent: true } }
+    } catch (err) {
+      Sentry.captureException(err)
+      throw err
+    }
+  },
+}
+
+/** The tasks whose input holds a player's contact message. */
+export const CONTACT_TASKS = [emailContactFormTask.slug, discordWebhookContactTask.slug]
+
+/** Deletes the contact jobs matching `where`, in any state, with `req`; throws unless all of them go. */
+export const deleteContactJobs = ({ req, where }: { req: PayloadRequest; where: Where }): Promise<void> =>
+  deleteWhereOrThrow({
+    collection: 'payload-jobs',
+    req,
+    where: { and: [{ taskSlug: { in: CONTACT_TASKS } }, where] },
+  })
+
+const UNDELIVERED_DAYS = 30
+
+/**
+ * The Privacy Policy's promise about contact messages: a delivered one is
+ * gone at once, and an undelivered one after 30 days. Payload deletes a
+ * completed job itself (`deleteJobOnComplete`), but only logs a failure to,
+ * so this sweep deletes any completed contact job it left, and every one
+ * older than 30 days, whatever its state. Their log rows cascade. It runs
+ * every 10 minutes on the `default` queue's autorun; a failed run is
+ * reported and the next one tries again, so it isn't retried.
+ */
+export const purgeContactJobsTask: TaskConfig<'purge-contact-jobs'> = {
+  slug: 'purge-contact-jobs',
+  retries: 0,
+  schedule: [{ cron: '*/10 * * * *', queue: 'default' }],
+  handler: async ({ req }) => {
+    try {
+      const cutoff = new Date(Date.now() - UNDELIVERED_DAYS * 24 * 60 * 60 * 1000).toISOString()
+      await deleteContactJobs({
+        req,
+        where: { or: [{ completedAt: { exists: true } }, { createdAt: { less_than: cutoff } }] },
+      })
+      return { output: {} }
     } catch (err) {
       Sentry.captureException(err)
       throw err
