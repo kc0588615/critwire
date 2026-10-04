@@ -154,7 +154,7 @@ Out:
 
 ## Stages
 
-- [ ] Baseline: install, migrate, run typecheck, lint, unit and E2E tests; record the results under Baseline
+- [x] Baseline: install, migrate, run typecheck, lint, unit and E2E tests; record the results under Baseline
 - [ ] Architecture: `architect` writes findings and the target design
 - [ ] Fable review: `architecture-reviewer`
 - [ ] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
@@ -162,6 +162,15 @@ Out:
 - [ ] Steps: `planner` writes Steps and Verification
 
 ## Baseline
+
+Run on 2026-10-04 at `05522ea` (= `main` at `3054287` plus the mission start), against the mission's own databases (`critwire_m_legal_launch`, `critwire_m_legal_launch_e2e`).
+
+- `pnpm install --frozen-lockfile`: already up to date.
+- `pnpm payload migrate`: nothing to run; 19 migrations applied, the latest `20261002_161631_discord_stage_posts`. No `dev` row in `payload_migrations`.
+- `pnpm exec tsc --noEmit`: pass.
+- `pnpm lint`: pass, 0 errors and 20 warnings (unused args, already on `main`).
+- `pnpm test:int`: pass, 4 files, 34 tests.
+- `pnpm test:e2e`: pass, 181 tests in 11.3 min (the run includes the production `next build`).
 
 ## Architecture
 
@@ -177,6 +186,10 @@ Out:
 
 ## Decisions
 
+- **H7 (copyright holder):** Danby answered "Copyright (c) 2026 Haunted Pavement LLC". That's Goal 7 already, so the scope doesn't change; the item stays `done` until the step that changes the LICENSE closes it.
+
 ## Log
+
+- 2026-10-04 21:22 UTC: Baseline. tsc, lint (0 errors, 20 warnings), int (34/34) and E2E (181/181) all pass on the unchanged base.
 
 ## Summary
