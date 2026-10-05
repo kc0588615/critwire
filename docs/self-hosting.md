@@ -7,6 +7,32 @@ them on. You create the accounts and studios in the admin.
 For the server itself (Docker Compose, Nginx, Cloudflare, backups), see
 `docs/deploy.md`. Every variable below is documented in `.env.example`.
 
+## Your own terms: `legal/`
+
+Critwire's code is open source under the MIT License. Each self-hosted
+instance is run by its own operator under its own terms: critwire.com's
+Terms of Service, Privacy Policy and Copyright Policy cover only the
+hosted service at critwire.com, and don't apply to your instance.
+
+`legal/` holds critwire.com's documents (`terms.md`, `privacy.md`,
+`copyright.md`), and every instance serves them at `/legal/*`, links
+them in its footers and on its forms, and asks every account but a
+super admin to accept the Terms and the Privacy Policy. **Replace them
+with your own before anyone else uses your instance.** They name
+Haunted Pavement LLC, critwire.com's services and its contact address,
+none of which is true of yours.
+
+- Keep the three file names and the front matter: exactly `version`,
+  `effective` (`YYYY-MM-DD`) and `status` (`draft` or `final`). The
+  server refuses to start on a missing file or invalid front matter.
+- While a document's `status` is `draft`, its page says it's a draft
+  under legal review and isn't indexed.
+- Any change to the Terms' or the Privacy Policy's text needs a new
+  `version`; every account then accepts again at its next visit.
+- Your Privacy Policy should describe the services your instance
+  actually uses (the table below), and how long your server keeps its
+  logs (`docs/deploy.md`, Logs and how long they're kept).
+
 ## Services
 
 | Service | Needed | Variables | Without it |
@@ -33,7 +59,9 @@ game's images go offline with it. A public bucket URL would skip that.
    it as owner or member.
 
 No signup is involved, and no email is needed: users a super admin
-creates are verified already. Their "An account was created for you"
+creates are verified already. At their first sign-in they accept the
+Terms of Service and Privacy Policy in `legal/` (super admins never do),
+so replace those first (see Your own terms). Their "An account was created for you"
 email goes to the log without Resend, so tell them their password
 yourself.
 

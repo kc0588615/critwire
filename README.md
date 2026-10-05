@@ -23,6 +23,8 @@ be. Built on Payload CMS inside Next.js; Payload is the app.
 - `docs/deploy.md` — production runbook
 - `docs/self-hosting.md` — which services you need, the first super
   admin, open signup and the hosted limits (all off by default)
+- `legal/` — critwire.com's Terms of Service, Privacy Policy and
+  Copyright Policy; a self-hosted instance replaces them with its own
 
 ## Commands
 

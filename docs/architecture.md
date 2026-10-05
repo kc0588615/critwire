@@ -148,13 +148,20 @@ so host pages never show a broken image.
 /unavailable                 a held or suspended portal; names no game and gives no reason
 /admin/forgot                "Forgot password?" (a custom Payload view) → POST /forgot-password/submit
 /admin/login, /admin/reset/<token>   Payload's own views, in Critwire's styling
+/admin/unauthorized          LegalGateView: an account that must accept goes on to /legal/accept
+/legal/terms, /legal/privacy, /legal/copyright   the documents in legal/, on every instance
+/legal/accept?next=<path>    the two consent boxes → POST /legal/accept/submit (signed in; records the acceptance)
 ```
+
+`next` is kept only when it's `/onboarding` or under `/admin`
+(`safeNext`, `src/lib/legal/paths.ts`); anything else becomes
+`/admin`.
 
 Only with open signup (`CRITWIRE_OPEN_SIGNUP=1`, `src/lib/hosting.ts`);
 otherwise each answers 404:
 
 ```
-/signup                      email + Turnstile → POST /signup/submit
+/signup                      email, the two consent boxes + Turnstile → POST /signup/submit
 /verify/<token>              "Choose a password" → POST /verify/submit (verifies, signs in)
 /onboarding                  game name, website, store → POST /onboarding/submit
 /report-abuse?page=/g/<slug> "Report this page" → POST /report-abuse/submit
@@ -174,7 +181,7 @@ GET  /api/discord/callback       Discord's redirect back: links the game, then t
 They're explicit routes, which win over Payload's `/api/[...slug]`.
 
 The submit routes are public form endpoints (`guardPublicForm`), except
-onboarding's, which needs a signed-in user. Each answers a browser with
+onboarding's and `/legal/accept/submit`, which need a signed-in user. Each answers a browser with
 a 303 back to its page (`?submitted=1`, `?error=1`) and a JSON client
 with JSON.
 
@@ -199,6 +206,8 @@ Keep the rewrite layer lightweight: resolution only, no business logic.
 | Home page `/` | Dynamic (reads `CRITWIRE_CONTACT_URL` and the signup flag at request time) |
 | `/signup`, `/verify/<token>`, `/onboarding`, `/report-abuse` | Dynamic, `noindex` (read the signup flag or the session per request) |
 | `/unavailable` | Static, `noindex` |
+| `/legal/<document>` | Static (`generateStaticParams`; the files change only with a deploy), `noindex` while a draft |
+| `/legal/accept` | Dynamic, `noindex` (reads the session) |
 | Marketing CMS pages | SSG (Draft Mode previews) |
 | Game hub | ISR on first visit + on-demand revalidation |
 | Updates feed, pages, detail, RSS | ISR on first visit + on-demand revalidation |
@@ -284,25 +293,29 @@ disk and R2 alike. So a suspended studio's files answer 403 there.
     /(embed)/g/[gameSlug]/embed  embed widgets (their own root layout)
     /(frontend)           home page, marketing CMS pages, previews,
                           signup, verify, onboarding, report-abuse,
-                          forgot-password
+                          forgot-password, legal (documents, accept)
     /api
       /health             health check
       /vote               voting endpoint
       /referrals          referral counter (JSON only, Upstash only)
       /discord            interactions, install, callback (Discord on only)
       /seed               demo seed (CRON_SECRET)
+  /access                 access functions, the tenant-write and legal-write checks, adminPanelAccess
   /collections            one folder per collection config
   /components
     /game                 portal UI (hub, board, forms, chrome, theme, referral ping)
     /share                "Put critwire on your site" panel: links and buttons, the Embed tab and the Discord tab (client, no data access)
     /embed                the embed widgets (board, updates, frame, "Powered by")
     /accounts             AccountPage, the signup/verify/onboarding shell
-    /admin                forgot-password view, logo, feedback kanban, Share tab
+    /legal                notice, sensitive-info warning, consent boxes, footer links
+    /AfterLogin           the legal links under the admin's sign-in form
+    /admin                forgot-password view, legal gate view, logo, feedback kanban, Share tab
     /BeforeDashboard      admin dashboard for each role
     /marketing            home page
   /lib
     /game-portal          portal paths, stages, theme, links, queries
-    /accounts             signup, pending users, activation, email budget
+    /accounts             signup, pending users, activation, email budget, anonymizeUser
+    /legal                document loader, versions, acceptance checks, shared copy, paths
     /onboarding           createStudio, next steps
     /limits               hosted-plan limits and their hooks
     /hosting.ts           the open-signup flag, "Powered by Critwire"
@@ -312,7 +325,7 @@ disk and R2 alike. So a suspended studio's files answer 403 there.
     /embed                embed snippets, protocol, cache headers, theme, platforms
     /referrals            referral counter (Upstash)
     /discord              Discord app: config, signatures, interactions, commands, OAuth, game links, posts, webhooks
-    /payload              withTransaction, unique-violation helper
+    /payload              withTransaction, unique-violation helper, deleteWhereOrThrow, lockJobStatsGlobal
     /moderation           content filter (screenText)
     /public-forms         guardPublicForm (Zod, Turnstile, rate limit)
     /validation           shared Zod schemas
@@ -324,6 +337,7 @@ disk and R2 alike. So a suspended studio's files answer 403 there.
   /jobs                   Payload Jobs Queue task definitions
   /migrations             Payload migrations (run on boot in production)
   payload.config.ts       main Payload configuration
+legal/                    critwire.com's Terms, Privacy and Copyright (markdown, versioned front matter)
 public/embed/v1.js        the embed loader (hand-written, no build step)
 next.config.ts / redirects.ts
 docker-compose.yml / Dockerfile / nginx.conf

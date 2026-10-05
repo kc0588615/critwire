@@ -42,7 +42,10 @@ fields, which only a super admin writes:
   refuses its members' creates and updates (see Hosting).
 - `createdBy`: the user whose onboarding created the studio (unique,
   so one self-service studio per user); empty for studios a super
-  admin makes.
+  admin makes. It shows "Deleted user" once that account is deleted.
+
+Deleting a studio deletes everything in it (see Deleting games,
+studios and accounts).
 
 ### Users (Payload built-in, extended)
 Email/password (Payload auth). Tenant association via plugin.
@@ -58,6 +61,14 @@ Roles: `admin` (global), `owner`, `member`.
 - Password recovery goes only through the guarded "Forgot password?"
   form (`/admin/forgot`); Payload's REST and GraphQL forgot-password
   operations are refused.
+- **The legal gate:** an account that isn't a super admin and hasn't
+  accepted the current Terms of Service and Privacy Policy goes to
+  `/legal/accept` before the admin or onboarding, and the API refuses
+  its writes (see Legal documents and agreement).
+- `deleted` (super admins only, in the sidebar as "Delete this
+  account"): ticking it anonymizes the account, and nothing unticks
+  it. Users are never hard-deleted (see Deleting games, studios and
+  accounts).
 
 ### GameProject
 Primary game entity; its slug is the portal's URL (`/g/<slug>`, unique
@@ -113,6 +124,14 @@ critwire a link to the message, read-only for the studio and never
 public; plus `interactionId`, unique and super-admin only, which makes
 a replayed request create nothing.
 
+### LegalAcceptance ("Legal acceptances"; platform-level)
+Each time an account accepted the Terms of Service and Privacy Policy.
+Not tenant-scoped; only super admins can read it, and nobody can
+create, edit or delete one through the API. Fields: user (rel),
+termsVersion, privacyVersion, termsDigest and privacyDigest (the
+SHA-256 of each document as served), timestamps (`createdAt` is the
+acceptance time). No IP address.
+
 ### IssueVote ("Votes" in the admin)
 Fields: issue (rel), browserTokenHash, timestamps. Unique constraint:
 `[issueId, browserTokenHash]`.
@@ -128,8 +147,9 @@ A visitor's report about a portal, from "Report this page". Not
 tenant-scoped, and only super admins can see it. Fields: pageUrl (the
 reported `/g/<slug>` path), gameProject (rel, optional), reason (spam,
 scam or phishing, offensive, impersonation or copyright, other),
-details, reporterEmail (optional), status (open, resolved, dismissed),
-timestamps.
+details, reporterEmail (optional; the form asks only for someone 13 or
+older), status (open, resolved, dismissed), timestamps. Deleting the
+game clears gameProject and keeps the report and its pageUrl.
 
 ### DiscordPost ("Discord posts"; platform-level)
 What critwire has posted to Discord, so each update is posted once and
@@ -273,6 +293,10 @@ Full detail in `docs/discord.md`.
   Discord authorization picks the server and the posts channel.
 - **No voting from Discord.** A Discord account would be a second vote
   for the same person.
+- **Notice and warning:** every text field in the Discord forms warns
+  against sensitive information (a shorter sentence than the web's,
+  because Discord allows 100 characters), and both confirmations end
+  with the Terms notice.
 
 ## Updates ↔ feedback
 
@@ -312,6 +336,19 @@ Configurable routing per GameProject:
 Native EMAIL / DISCORD_WEBHOOK paths are protected by Turnstile +
 Upstash rate limiting. Tally paths do not hit Critwire POST endpoints.
 
+**The player's email isn't kept.** The native form's email is
+optional ("Email (optional, 13 or older), so the {game} team can
+reply") and travels only in the delivery job's input:
+
+- **Delivered:** Payload deletes the job at once
+  (`jobs.deleteJobOnComplete`). If that delete fails, the
+  `purge-contact-jobs` sweep, every 10 minutes, deletes it.
+- **Not delivered:** the job keeps the message for retries until it's
+  delivered, a super admin deletes it, its game or studio is deleted,
+  or 30 days pass; the sweep deletes it then, in any state.
+- A delivered message lives on in the studio's inbox (the email is its
+  Reply-To) or Discord channel, under the studio's control.
+
 ## Admin feedback triage
 
 The Feedback (issues) list view includes a **Kanban** board (one column
@@ -329,16 +366,20 @@ selector. Public player `?view=board` remains read-only.
 
 ### Open signup (`CRITWIRE_OPEN_SIGNUP=1`)
 
-1. **`/signup`**: an email address and Turnstile. Every accepted
+1. **`/signup`**: an email address, the two consent boxes (see Legal
+   documents and agreement) and Turnstile. Every accepted
    address lands on "Check your inbox", so the form never reveals which addresses have
    accounts. A pending address gets its existing link again; a verified
    one gets nothing.
 2. **`/verify/<token>`**: the link from the email. Opening it changes
    nothing (mail scanners open links); the person chooses a password
    there, which verifies the account and signs them in.
-3. **`/onboarding`**: game name, website and an optional store link.
+3. **`/legal/accept`**: the same two boxes again, now ticked by the
+   verified, signed-in holder of the address. Only this records the
+   acceptance.
+4. **`/onboarding`**: game name, website and an optional store link.
    That creates a studio they own and one game, in one transaction.
-4. **`/g/<slug>?welcome=1`**: the live portal with a "next steps"
+5. **`/g/<slug>?welcome=1`**: the live portal with a "next steps"
    panel: "Put critwire on your site" (the share kit inline: links,
    buttons and the live badge, and the embed), add your first update,
    turn on ideas.
@@ -370,6 +411,57 @@ the feedback limit waits for review instead.
 - **Report this page:** every portal's footer links to
   `/report-abuse`, which files an abuse report for super admins. Their
   dashboard counts open reports, held games and held updates.
+
+## Legal documents and agreement
+
+critwire.com's Terms of Service, Privacy Policy and Copyright Policy
+live in `legal/` (`terms.md`, `privacy.md`, `copyright.md`). They
+describe the hosted service only; a self-hosted instance replaces them
+(`docs/self-hosting.md`).
+
+- **Versions:** each file's front matter holds `version`, `effective`
+  and `status` (`draft` or `final`), and is the one source of the
+  versions. Any change to a document's text bumps its version.
+- **The pages** (`/legal/terms`, `/legal/privacy`, `/legal/copyright`)
+  show the version and date, and while a document is a draft, a banner
+  saying it's a draft under legal review; drafts aren't indexed.
+- **Signup** asks for two unticked, required boxes, checked on the
+  server: "I agree to the Terms of Service and acknowledge the Privacy
+  Policy" (both linked) and "I confirm I'm at least 18 years old."
+  Hidden fields carry the versions the page showed, so a stale page is
+  refused like a missing box.
+- **`/legal/accept`** asks for the same boxes and records the
+  acceptance (a LegalAcceptance with both versions and digests). Any
+  signed-in account that isn't a super admin and hasn't accepted both
+  current versions goes there before the admin or onboarding, and the
+  API refuses its writes until it does. That covers new accounts,
+  accounts a super admin created, and everyone again after a version
+  bump. Super admins act for the operator and never accept.
+- **Players** see "By sending this, you agree to the Terms of Service
+  and acknowledge the Privacy Policy." beside the submit button of the
+  feedback, contact and abuse-report forms, and a warning against
+  passwords, keys, payment, health or other sensitive details at the
+  top of each form, which every free-text field names in its
+  `aria-describedby`. Discord shows both too (see Discord).
+- **Footer links** (Terms · Privacy · Copyright) on the home page,
+  every portal page, the account pages and the admin's sign-in.
+
+## Deleting games, studios and accounts
+
+- **A game** (owner or super admin): its feedback items with their
+  votes, its submissions, its updates, its Discord post records and its
+  waiting contact messages go with it, in the delete's transaction.
+  Any failure undoes the whole delete.
+- **A studio** (super admins): its games (as above), then everything
+  else the studio holds, its media files last, then its place in every
+  user's memberships, in one transaction.
+- **An account** (super admins tick `deleted`): the email becomes
+  `deleted-<id>@deleted.invalid`, the name "Deleted user", the password
+  random; its roles drop to user, and every session and reset or
+  verification token is cleared. It can't sign in, recover a password
+  or be changed again, and a super admin can't delete their own
+  account. Its studios and their content stay, and so do its legal
+  acceptances, which no longer identify anyone.
 
 ## Development phases
 

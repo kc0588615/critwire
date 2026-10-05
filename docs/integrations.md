@@ -12,6 +12,7 @@
 | `obscenity` (MIT, local) | Content filter for player submissions and studios' public text | `/lib/moderation/screenText.ts` |
 | DnD-Kit | Admin feedback kanban drag-and-drop | `src/components/admin/issues/*` |
 | `opentype.js` (MIT, local) + DejaVu Sans | Text in the button images and the live badge, drawn as paths | `/lib/share/images.ts`, `/lib/share/fonts` |
+| `marked` (MIT, local) | Renders the legal documents in `legal/` to HTML | `src/app/(frontend)/legal/[document]/page.tsx` |
 | Discord (optional) | `/feedback` and Send to critwire through HTTP interactions; posts through the webhook made at install; no bot (`docs/discord.md`) | `/lib/discord`, `/app/api/discord/*`, `/jobs/discord.ts` |
 
 ## Tally (optional contact + feedback forms)
@@ -92,6 +93,14 @@ dependency) turns that SVG into a 2× PNG. The production runner
   and `/buttons/give-feedback-dark.png` served by
   `node .next/standalone/server.js` must show its label.
 
+## `marked` (legal pages)
+
+The three legal pages render `legal/<slug>.md` with `marked`, pinned at
+exactly 15.0.12. Its input is a trusted file from the repo, never user
+content, so its HTML is rendered as is, without sanitizing. Don't use
+it for anything a user writes: Lexical renders that. The pages are
+static, so `marked` runs when they're built.
+
 ## Cloudflare R2 (media storage)
 
 - Via `@payloadcms/storage-s3` with **`region: 'auto'`** — R2 is
@@ -161,7 +170,14 @@ configure Upstash.
 - Contact emails are sent inside the Payload Jobs Queue task
   `email-contact-form` through `payload.sendEmail`, not inline in
   request handlers. Without `RESEND_API_KEY` the task fails and the job
-  stays for a super admin to retry.
+  stays for a super admin to retry, for at most 30 days
+  (`purge-contact-jobs`).
+- **Reply-To:** a contact email's Reply-To is the player's email, when
+  they gave one, so the studio replies straight to the player. The
+  address passes through Resend and lives on in the studio's inbox;
+  critwire deletes its own copy, the job, once the email is sent
+  (`docs/patterns.md`, Jobs). The log line for a sent message names
+  only the game, never the recipient or the player.
 - Log every delivery event via pino.
 
 ## Cloudflare Turnstile

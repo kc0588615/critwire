@@ -54,6 +54,53 @@ access: {
   callable endpoint.
 - Public (player-facing) reads go through Payload REST or Local API with
   read-only access; no authentication required.
+- **Records only server code writes** (`legal-acceptances`) set
+  `create`, `update` and `delete` to `() => false` and are written
+  through the Local API with `overrideAccess: true` by one named
+  command (`recordLegalAcceptance`), so no client can forge or edit
+  one.
+
+### The legal gate
+
+An account that isn't a super admin must have accepted the current
+Terms of Service and Privacy Policy before it reaches the admin,
+onboarding or any write. One query decides it everywhere:
+`needsLegalAcceptance` (`src/lib/legal/acceptance.ts`) counts the
+account's acceptances of both current versions, and memoizes the
+answer in `req.context`, so a request costs one count however many
+checks share it.
+
+- **The admin:** `adminPanelAccess` is `Users.access.admin`. Payload
+  sends an account it refuses to `/admin/unauthorized`, which
+  `LegalGateView` replaces: it redirects to `acceptHref(redirect)`.
+- **Onboarding:** the page and its submit route check right after the
+  session and redirect to `acceptHref('/onboarding')`.
+- **API writes:** `assertLegalAcceptance` (`src/access/legalWrite.ts`)
+  answers 403 until the account accepts. `requireLegalAcceptance` runs
+  it as a `beforeChange` hook on the plugin's tenant field, beside
+  `enforceTenantWrite`, so every tenant-scoped write passes it;
+  `requireLegalAcceptanceForTenant` does the same on `Tenants`, which
+  has no tenant field. Writes with no user and super admins pass.
+  Reads, sign-in and an account's own name and password stay open:
+  `/legal/accept` needs them.
+- **Only `/legal/accept/submit` records an acceptance,** for a signed-in
+  account. Signup checks the same boxes, but whoever fills in `/signup`
+  hasn't shown they own the address, so no record rests on it; the
+  verified holder ticks them again at `/legal/accept`.
+- **Bound to what was shown:** `legalConsentSchema`
+  (`src/lib/validation/`) compares the versions from the form's hidden
+  fields with the current ones at parse time, and
+  `recordLegalAcceptance` refuses any other versions, whoever calls it.
+
+**Versions come from front matter.** `legal/<slug>.md` holds `version`,
+`effective` and `status`, read at runtime by `getLegalDocument`
+(`src/lib/legal/documents.ts`): lazily, never at import, memoized in
+production, and checked at boot (`assertLegalDocuments` in
+`checkEnvironment`), so a broken document stops the server.
+**A version names one text:** any change to a document's text, even a
+typo, bumps its `version`, and every account accepts again. Each
+acceptance also stores both files' SHA-256 digests, so the exact text
+someone accepted can be found in git even if the rule is broken once.
 
 ### Public reads
 
@@ -85,7 +132,9 @@ documents and the admin keep the tenant limit.
   user may only write into a studio they belong to (400), and not while
   it's suspended (403). It's a hook, not a `validate`, because Payload
   skips field validation on draft saves. Writes without a user (votes,
-  public submissions, seeds) and super admins pass.
+  public submissions, seeds) and super admins pass. The legal gate's
+  `requireLegalAcceptance` hangs on the same field (see The legal
+  gate).
 - **Self-service studios** are created only by `createStudio`
   (`src/lib/onboarding/`): the studio and the membership as the system,
   then the game as the new owner with `overrideAccess: false`, so every
@@ -126,6 +175,12 @@ services. The established hooks:
   can't drift between collections.
 - **Tenant `afterChange`** — `revalidateSuspension` revalidates every
   portal of the studio when `suspended` changes.
+- **GameProject and Tenant `beforeDelete`** — `deleteGameContent` and
+  `deleteStudioContent` delete what the game or studio holds, in the
+  delete's transaction (see Deleting games and studios).
+- **Users** — `guardAccountDeletion` (`beforeChange`),
+  `anonymizeDeletedUser` (`afterChange`) and `refuseDeletedLogin`
+  (`beforeLogin`) (see Account deletion).
 - **IssueVote `afterChange` / `beforeDelete`** — own `upvoteCount`
   through `$inc`: increment on create, decrement in `beforeDelete` (so
   a concurrent withdrawal of the same vote can't decrement twice).
@@ -153,6 +208,70 @@ them. Their freshness is `EMBED_CACHE_CONTROL`
 (`src/lib/embed/cacheControl.ts`), at most 5 minutes behind any cache
 (`docs/embed.md`, Caching). Don't give them ISR: an expired entry is
 served once more after `revalidatePath`, and the edge would keep it.
+
+## Deleting games and studios
+
+A delete that takes dependent rows with it does so in its own
+transaction, before the row goes, through `deleteWhereOrThrow`
+(`src/lib/payload/`): a Local API delete with `where`, `req` and
+`overrideAccess` that throws one error naming every document it failed
+to delete. Payload's bulk delete only reports failures, so never call
+it bare where a partial delete would break a promise.
+
+- **`deleteGameContent`** (GameProject `beforeDelete`): Discord post
+  records, submissions, feedback items (each removes its votes),
+  updates with their versions, then waiting contact jobs
+  (`deleteContactJobs`). The keys to the game are NOT NULL, so the
+  game can't go first. Each delete runs its collection's hooks, so
+  items and updates revalidate themselves.
+- **`deleteStudioContent`** (Tenant `beforeDelete`) replaces the
+  plugin's cleanup (`cleanupAfterTenantDelete: false`), which ran after
+  the delete, outside its transaction, and dropped failures. It
+  deletes the studio's games first, then every other collection in
+  `TENANT_SCOPED_COLLECTIONS` (exported from `src/plugins/index.ts`,
+  so a newly scoped collection is cleaned too), media last because
+  files can't roll back, then the studio from every user's
+  memberships.
+
+## Account deletion
+
+Users are never hard-deleted (`access.delete: () => false`). A super
+admin ticks `deleted`, and:
+
+- `anonymizeDeletedUser` (`afterChange`) calls `anonymizeUser`
+  (`src/lib/accounts/`), one Local API update in the same transaction
+  with `context: { anonymizing: true }`: a `.invalid` email, "Deleted
+  user", a random password (a `beforeChange` hook can't set one),
+  `roles: ['user']`, no sessions (which revokes every JWT) and no
+  reset or verification token. It reads the account back and throws
+  unless the email changed and no session is left.
+- `guardAccountDeletion` (`beforeChange`) makes `deleted` terminal:
+  it refuses a super admin deleting their own account and, once
+  deleted, any change but studio memberships, unless
+  `context.anonymizing` is set.
+- `refuseDeletedLogin` (`beforeLogin`) is the second lock on sign-in.
+- `accountEmail` (`src/lib/validation/`) is signup's and password
+  recovery's one email rule; it refuses `.invalid`, so neither reaches
+  a deleted account.
+
+What points to the account (`Tenants.createdBy`, memberships, legal
+acceptances) stays and now shows "Deleted user".
+
+## Shared legal copy
+
+Every legal sentence is written once, in `src/lib/legal/copy.ts` (no
+React, no fs, so Discord code can import it): the submit notice, the
+sensitive-info warning and Discord's shorter one, `/feedback`'s
+description and the consent boxes' labels. A sentence that names
+documents is stored in parts, and each surface links them its own way:
+`LegalCopyText` on the web, `noticeMarkdown` on Discord. The web uses
+one component each (`src/components/legal/`): `LegalNotice` beside a
+player form's submit button (which names it in `aria-describedby`),
+`SensitiveInfoWarning` once at the top of the form (every free-text
+field names it through `FormField`'s `describedBy`),
+`LegalConsentFields` for the boxes and their hidden versions, and
+`LegalLinks` for footers. Links come from `LEGAL_LINKS`
+(`src/lib/legal/paths.ts`).
 
 ## Hosted limits
 
@@ -249,8 +368,10 @@ freshness or optimistic state — justify it in the PR/commit.
 ## Validation
 
 - Zod at every public API boundary (contact and feedback submission,
-  `/api/vote`, `/api/referrals`, signup, verify, onboarding, password recovery and abuse
-  reports). Shared schemas in `/lib/validation`.
+  `/api/vote`, `/api/referrals`, signup, verify, onboarding, password recovery, abuse
+  reports and `/legal/accept/submit`). Shared schemas in
+  `/lib/validation`: `accountEmail`, and `legalConsentSchema`, which
+  signup intersects with its email (`.and()`).
 - Inside Payload, prefer field-level validation on collections over
   duplicate Zod checks.
 
@@ -265,6 +386,9 @@ Tasks are defined in `/jobs` and registered in `payload.config.ts`:
 - `discord-update-post`, `discord-stage-post` (`src/jobs/discord.ts`)
   — a game's Discord post for a published update, or for an item that
   reached a public stage (`docs/discord.md`).
+- `purge-contact-jobs` (`src/jobs/contact.ts`) — every 10 minutes on
+  the `default` queue (Payload's `schedule`), deletes every contact
+  job that completed and every one older than 30 days, in any state.
 
 The app is a persistent server, so the built-in scheduler just works —
 no cron workarounds. The submit route runs its own job (`jobs.runByID`);
@@ -296,9 +420,25 @@ the autorun cron retries failures.
 - Contact tasks deliver or throw. A missing project, a changed routing
   target, an unset `RESEND_API_KEY` or a disallowed webhook URL throws,
   so the job keeps its input and error instead of disappearing.
+- **A contact job holds a player's message and optional email, and the
+  Privacy Policy promises how long.** Three layers remove it, each
+  failing loudly: `jobs.deleteJobOnComplete: true` (stated in
+  `payload.config.ts`, though it's Payload's default) deletes it on
+  delivery; `purge-contact-jobs` deletes any completed one Payload
+  failed to delete, and any older than 30 days; and deleting its game
+  or studio deletes it. All go through `deleteContactJobs`, which
+  matches the two contact task slugs (`CONTACT_TASKS`). Never log a
+  contact job's input or recipient.
+- **The scheduler's global is locked.** A scheduled task makes Payload
+  add the `payload-jobs-stats` global with default access, so any
+  signed-in account could move `lastScheduledRun` and postpone the
+  sweep. `lockJobStatsGlobal` (`src/lib/payload/`) wraps the built
+  config and limits it to super admins, and throws if the global is
+  missing. The scheduler writes through `payload.db`, which skips
+  access.
 - Recovering a failed job: fix the configuration, then as a super admin
   open the job in the admin and untick `hasError`; the autorun picks it
-  up again.
+  up again. A contact job can be recovered only within its 30 days.
 
 ## Public form endpoints
 

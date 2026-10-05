@@ -34,6 +34,15 @@ the post log `src/collections/DiscordPosts.ts`, and the tab in
   ping `@everyone` or anyone else.
 - **No voting from Discord.** A Discord account would be a second
   vote for the same person. Players vote on the portal.
+- **Terms notice and sensitive-info warning:** `/feedback`'s
+  description says that sending accepts critwire's Terms and Privacy
+  Policy, every text field in both forms carries the warning "Don’t
+  include passwords, keys, tokens, payment or health details, or
+  anything sensitive.", and both confirmations end with the web form's
+  notice, linking the Terms of Service and the Privacy Policy. Discord
+  allows 100 characters in a field's description and a command's, so
+  Discord shows this shorter warning, not the web forms' full sentence;
+  the copy lives in `src/lib/legal/copy.ts`, shared with the web.
 
 When a server has several of a studio's games, the form starts with a
 **Game** select. Only games that are public and take that kind of
@@ -246,6 +255,7 @@ more than 5 minutes off are refused.
 
 ## Deleting a game
 
-Deleting a game leaves its webhook in the Discord server. Nothing posts
+Deleting a game deletes its submissions, Discord ones included, and its
+post log rows. It leaves its webhook in the Discord server. Nothing posts
 to it any more; remove it in Server Settings → Integrations → Webhooks.
 Disconnect the game first to have critwire remove it for you.

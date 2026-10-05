@@ -139,8 +139,16 @@ docker compose up -d --build
   migration: `pnpm payload migrate:create <name>` during development.
 - Verify: `curl -s https://<domain>/api/health` → `{"db":"up","status":"ok"}`.
 - The app refuses to start on a bad `CRITWIRE_*` or
-  `RESEND_FROM_EMAIL` value, or while `public/media` holds files; the
+  `RESEND_FROM_EMAIL` value, while `public/media` holds files, or when
+  a document in `legal/` is missing or its front matter is invalid; the
   log says which. See "Upgrading" in `docs/self-hosting.md`.
+- **The legal documents ship inside the build.** The server reads
+  `legal/*.md` at runtime, and `next.config.ts` traces them into the
+  standalone output (`outputFileTracingIncludes`), which the Docker
+  image copies. After `pnpm build`, `.next/standalone/legal/terms.md`
+  must exist. A change to a document's text bumps its `version`, so
+  every studio account accepts it again at its next visit
+  (`docs/patterns.md`, The legal gate).
 - Logs: `docker compose logs -f app`.
 
 ## First-run bootstrap
@@ -182,6 +190,32 @@ find /opt/critwire/backups -name 'critwire-*.sql.gz' -mtime +30 -delete
 
 Test a restore monthly:
 `gunzip -c backup.sql.gz | docker compose exec -T postgres psql -U "$DB_USER" "$DB_NAME"`.
+
+## Logs and how long they're kept
+
+The app logs structured JSON to standard output: events with internal
+IDs, and error details when something fails. It doesn't log IP
+addresses, players' names or contact emails. Without Resend, the email
+outbox logs each email's recipient and subject (`docs/integrations.md`).
+
+A privacy policy has to say how long logs are kept, so give them a time
+limit:
+
+- **Under systemd** (logs in the journal): add a journald drop-in, then
+  restart journald. It applies to every service on the server.
+  ```bash
+  sudo mkdir -p /etc/systemd/journald.conf.d
+  printf '[Journal]\nMaxRetentionSec=30day\n' \
+    | sudo tee /etc/systemd/journald.conf.d/retention.conf
+  sudo systemctl restart systemd-journald
+  ```
+- **Under Docker Compose:** Docker's default `json-file` log driver
+  keeps a container's log, without any limit, until the container is
+  removed. Either send the logs to the journal (`"log-driver":
+  "journald"` in `/etc/docker/daemon.json`, then restart Docker and
+  recreate the containers) and set the limit above, or rotate them by
+  size (`max-size` and `max-file`), which bounds their size but not
+  their age.
 
 ## Monitoring
 
