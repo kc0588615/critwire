@@ -7,11 +7,12 @@ import { checkAccountEmailBudget } from '@/lib/accounts/emailBudget'
 import { isEmailDeliverable } from '@/lib/email/adapter'
 import { getLogger } from '@/lib/logger'
 import { formResponse, guardPublicForm } from '@/lib/public-forms/guard'
+import { accountEmail } from '@/lib/validation/accountEmail'
 
 const log = getLogger('password-recovery')
 
 const recoverySchema = z.object({
-  email: z.string().trim().toLowerCase().pipe(z.email().max(254)),
+  email: accountEmail,
 })
 
 const FORGOT = '/admin/forgot'

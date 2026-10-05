@@ -5,6 +5,9 @@ import type { User } from '@/payload-types'
 import { adminPanelAccess } from '../../access/adminPanelAccess'
 import { isSuperAdmin, superAdminFieldAccess, superAdminOnly } from '../../access/isSuperAdmin'
 import { accountCreatedEmail, passwordResetEmail, verificationEmail } from '../../lib/email/authEmails'
+import { anonymizeDeletedUser } from './hooks/anonymizeDeletedUser'
+import { guardAccountDeletion } from './hooks/guardAccountDeletion'
+import { refuseDeletedLogin } from './hooks/refuseDeletedLogin'
 import { restrictPasswordRecovery } from './hooks/restrictPasswordRecovery'
 import { verifyUsersSuperAdminsCreate } from './hooks/verifyUsersSuperAdminsCreate'
 
@@ -23,7 +26,9 @@ export const Users: CollectionConfig = {
   access: {
     admin: adminPanelAccess,
     create: superAdminOnly,
-    delete: superAdminOnly,
+    // No hard deletes: a super admin ticks `deleted`, which anonymizes the
+    // account and keeps what points to it.
+    delete: () => false,
     read: ({ req }) => {
       if (!req.user) return false
       if (isSuperAdmin(req.user)) return true
@@ -85,9 +90,25 @@ export const Users: CollectionConfig = {
       },
       saveToJWT: true,
     },
+    {
+      // Data, like a studio's `suspended`. Ticking it scrubs the account
+      // (`anonymizeDeletedUser`), and nothing unticks it (`guardAccountDeletion`).
+      name: 'deleted',
+      type: 'checkbox',
+      label: 'Delete this account',
+      defaultValue: false,
+      access: { create: superAdminFieldAccess, update: superAdminFieldAccess },
+      admin: {
+        description:
+          "Removes the email, name, password and sign-ins; shows as 'Deleted user'. Studios and their content stay. Can't be undone.",
+        position: 'sidebar',
+      },
+    },
   ],
   hooks: {
-    beforeChange: [verifyUsersSuperAdminsCreate],
+    afterChange: [anonymizeDeletedUser],
+    beforeChange: [verifyUsersSuperAdminsCreate, guardAccountDeletion],
+    beforeLogin: [refuseDeletedLogin],
     beforeOperation: [restrictPasswordRecovery],
   },
   timestamps: true,

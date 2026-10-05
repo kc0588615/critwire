@@ -187,6 +187,10 @@ export interface User {
   id: number;
   name?: string | null;
   roles: ('admin' | 'user')[];
+  /**
+   * Removes the email, name, password and sign-ins; shows as 'Deleted user'. Studios and their content stay. Can't be undone.
+   */
+  deleted?: boolean | null;
   tenants?:
     | {
         tenant: number | Tenant;
@@ -1511,6 +1515,7 @@ export interface MediaSelect<T extends boolean = true> {
 export interface UsersSelect<T extends boolean = true> {
   name?: T;
   roles?: T;
+  deleted?: T;
   tenants?:
     | T
     | {

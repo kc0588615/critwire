@@ -10,6 +10,7 @@ import { isEmailDeliverable } from '@/lib/email/adapter'
 import { isOpenSignup, SIGNUP_PATH } from '@/lib/hosting'
 import { getLogger } from '@/lib/logger'
 import { formResponse, guardPublicForm } from '@/lib/public-forms/guard'
+import { accountEmail } from '@/lib/validation/accountEmail'
 import { legalConsentSchema } from '@/lib/validation/legalConsent'
 
 const log = getLogger('signup')
@@ -20,7 +21,7 @@ const log = getLogger('signup')
 // `/legal/accept` after `/verify`.
 const signupSchema = z
   .object({
-    email: z.string().trim().toLowerCase().pipe(z.email().max(254)),
+    email: accountEmail,
   })
   .and(legalConsentSchema)
 
