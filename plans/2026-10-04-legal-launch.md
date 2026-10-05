@@ -2,7 +2,7 @@
 mission: legal-launch
 project: critwire
 branch: agent/legal-launch
-status: active
+status: done
 started: 2026-10-04 21:06 UTC
 ---
 
@@ -1408,7 +1408,7 @@ Planner: Opus 5.5, 2026-10-04, from the revised Architecture, the Revision notes
     - the footer links show.
   - **Verify:** tsc and lint.
 
-- [ ] S17 · **Full verification, the Summary and `status: done`.**
+- [x] S17 · **Full verification, the Summary and `status: done`.**
   - **Run the Verification section below, in order.** Fix anything that fails, and rerun the full suite after any fix.
   - **The migration check:** rerun it if `git diff <S14's commit> -- src/migrations tests/migrations` isn't empty. Then drop `critwire_m_legal_launch_premig` and `critwire_m_legal_launch_migcheck`, and remove `/tmp/ll-premig`.
   - **Finish the Summary:**
@@ -1704,6 +1704,9 @@ These pass through as their parsed path and query: `/onboarding`, `/admin` and `
     - `marketing.css` makes a legal page's table a block that scrolls on its own, so the four-column "Outside services" table scrolls inside its box instead of widening the page.
   - **Code in the legal documents showed tailwind typography's backticks.** A `marketing.css` rule can't remove them, because it's imported into `@layer components` and the plugin's rules are in `utilities`. The page uses the plugin's own `prose-code:before:content-none prose-code:after:content-none` instead.
   - **Not changed: the space above the submit button on the bug, contact and abuse forms is blank in the shots.** That's where the Turnstile widget goes. It's a cross-origin iframe, and Chromium leaves those blank in a full-page capture below the first viewport. Signup's widget sits inside the first viewport and does show. The always-pass token is filled, as `settle` checks, and the feedback-pivot mission's shots have the same blank, so this predates the mission.
+- **S17 · Two audit hits that aren't defects, so nothing changed:**
+  - The holder grep (`Critwire contributors|© …Critwire`) prints only lines in `plans/`: older plans, and this one's own findings, which quote the old text as history. Nothing outside `plans/` matches, as S12 found.
+  - The copy grep matches `MarketingHome.tsx:121`, "Run it on your own server with only Postgres". That's the self-hosting sentence, and it's accurate. The pattern was aimed at the old filter claim (Findings, "Copy that promises safety…"), which S12 replaced with "inside critwire, with no outside service".
 
 ## Log
 
@@ -1729,10 +1732,87 @@ These pass through as their parsed path and query: `/onboarding`, `/admin` and `
 - 2026-10-05 00:53 UTC: S14. `tests/migrations/legal-launch/fixtures.sql` (a verified owner of `critwire-demo` with its membership, a pending `email-contact-form` job holding an email, a guard that the seed's report still has `player@example.com`) and `assert.sql` (one `DO` block, MC1–MC9). On a copy of the Critter Connect seed at `3054287`: `migrate.log` lists the four migrations, `assert.log` prints nine `ok` notices and no `ERROR`, and `assert-unmigrated.log` raises at MC1 (`agent-state/missions/legal-launch/migration-check/`, with `commands.sh`). Scratch databases and `/tmp/ll-premig` kept for S17. tsc pass; lint 0 errors, 20 warnings.
 - 2026-10-05 01:08 UTC: S15. Three audit agents checked the documents against HEAD; the mismatches are fixed in code (Payload logger redacts job inputs, Gravatar and telemetry off, a suspended studio can't be renamed, the contact hint) or in the documents (deletes and the gate, suspension, limits, nine Privacy details), all under Decisions. Docs updated (`features.md`, `patterns.md`, `deploy.md`, `integrations.md`), H18's Why corrected; placeholders unchanged. Summary's inventory and placeholders drafted. tsc pass; lint 0 errors, 20 warnings; `pnpm test:e2e legal-pages legal-acceptance suspension admin-dashboard reports-contact` 45/45, its log (`agent-state/missions/legal-launch/s15/e2e-targeted.log`) shows job inputs redacted and no player email.
 - 2026-10-05 01:34 UTC: S16. A `legal` group in `catalog.ts` (the three documents, signup, `/legal/accept` with a new `accept` session that a super admin made and that hasn't accepted, and the bug, contact and abuse forms). `setup.shots.ts` makes that session, and the config header and AGENTS.md mention the group. The probes caught the 20 px consent boxes and, once `no-side-scroll` measured against the viewport, the Privacy tables' overflow. Both are fixed, and the typography backticks are gone (Decisions). `SHOTS_THEMES=legal,signup,marketing pnpm screenshots`: 29/29; `agent-state/missions/legal-launch/screenshots/` holds 16 `after/legal--*.png`, the signup and marketing shots, `index.html`, and `after/checks.json` with 28 entries and no failed probe. Checked by eye at 390 and 1440 px. tsc pass; lint 0 errors, 20 warnings; `pnpm test:e2e legal-pages legal-acceptance signup` 24/24 (`s16/e2e-targeted.log`).
+- 2026-10-05 01:52 UTC: S17. Full Verification at `7caaa94`: frozen install up to date; tsc pass; lint 0 errors, 20 warnings; int 34/34; generated types and import map current; four new migrations run; `pnpm build` passes with `legal/` in standalone; full `pnpm test:e2e` 207/207, none failed or flaky (`e2e-final/`, `e2e-final-run.log`). Migration, loader and screenshot artifacts checked (no migration or shot page changed, so neither was rerun); audits pass, two non-defect hits recorded under Decisions. Scratch databases and `/tmp/ll-premig` removed. Summary written; `status: done`.
 
 ## Summary
 
-*Drafted in S15 from the final documents; S17 completes it.*
+The documents are **drafts for Haunted Pavement LLC's Wisconsin lawyer to review, not legal advice.** The code already does what they say. Signup stays off (`CRITWIRE_OPEN_SIGNUP` untouched); production, `/srv/apps/critwire` and `critwire_live` weren't touched. Branch `agent/legal-launch` is pushed, not merged.
+
+### What changed, goal by goal
+
+1. **Three legal documents.** `legal/terms.md`, `privacy.md` and `copyright.md` (v0.1, `status: draft`, effective 2026-10-04), in plain English. Every Brief bullet is covered, and the Privacy Policy comes from an audit of the code and the installed Payload, Next and plugin. Each says it covers critwire.com only, and that self-hosted instances run under their own terms (so does `docs/self-hosting.md`). A strict front-matter loader (`src/lib/legal/documents.ts`) reads them at runtime, a boot check fails on a broken one, and the standalone build ships them. They render at `/legal/terms`, `/legal/privacy` and `/legal/copyright` with their version, effective date and a draft banner.
+2. **Agreement.**
+   - Signup has two unticked boxes (Terms and Privacy; 18 or older), both required and checked by the server.
+   - A `legal-acceptances` collection records the user, both versions, both documents' SHA-256 digests and the time, with no IP. Only super admins can read it.
+   - A gate sends every signed-in user who isn't a super admin, and hasn't accepted the current versions, to `/legal/accept` before the admin or onboarding. It refuses their REST and GraphQL writes, `Tenants` included, with a 403. A version bump asks again.
+3. **Notices.**
+   - The submit notice and the sensitive-information warning appear on the feedback, contact and abuse-report forms. The warning is linked from every free-text field and the notice from the submit button.
+   - On Discord, every text field carries a shortened warning, both confirmations end with the notice, and `/feedback`'s description carries it too.
+   - Terms · Privacy · Copyright links are in the site footer, every portal page's base row and the admin sign-in.
+4. **The feedback form's email is gone:** the field, the route (a stale field is stripped), `reports.ts`, the collection, the seed, the types, the docs and the tests. The `drop_submitter_email` migration drops the column.
+5. **Contact emails aren't kept.** The new label reads "Email (optional, 13 or older)…". A delivered job is deleted, and a `purge-contact-jobs` sweep every 10 minutes backs that up and removes undelivered ones after 30 days. The log line no longer names the address, and Payload's logger redacts job inputs.
+6. **Deletion.**
+   - Users are never hard-deleted. A super admin marks one `deleted`, which anonymizes the account: `deleted-<id>@deleted.invalid`, "Deleted user", a random password, no sessions, tokens or memberships. Its acceptance records stay. The studio's `createdBy` then shows the deleted user, and the studio's content stays.
+   - Deleting a game or a studio deletes its content in one transaction. Before, deleting a game with feedback failed.
+7. **Copyright holder.** `LICENSE` and the site footer name Haunted Pavement LLC. H7 is closed.
+8. **Copy.** The home page, README and docs promise nothing about backups or keeping data. Backups are the operator's job (`docs/deploy.md`).
+- **Found by the S15 audit and fixed in code:**
+  - Gravatar avatars and Payload telemetry are off, so neither gets account data.
+  - A suspended studio can no longer be renamed.
+
+### Results and artifacts
+
+Run on 2026-10-05 at `7caaa94` (S16's commit; S17 changes only this plan):
+- `pnpm install --frozen-lockfile` up to date.
+- `tsc --noEmit` passes.
+- `pnpm lint`: 0 errors and 20 warnings, the baseline's.
+- `pnpm test:int`: 4 files, 34/34.
+- The generated types and import map are current.
+- `pnpm payload migrate:status` shows all four new migrations run.
+- `pnpm build` passes, and `.next/standalone/legal/` has all three documents.
+- **Full E2E: 207/207 passed in 13.0 min, with none failed or flaky** (the baseline had 181).
+  - Report: `/srv/critter-ai/agent-state/missions/legal-launch/e2e-final/`, with a trace for each of the 207 tests. View it with `pnpm exec playwright show-report /srv/critter-ai/agent-state/missions/legal-launch/e2e-final`.
+  - Log: `…/legal-launch/e2e-final-run.log`. No `purge-contact-jobs` error; job inputs show as `[Redacted]`.
+  - Rerun with `pnpm test:e2e`, with `E2E_DATABASE_URL` set to a database whose name ends in `_e2e`.
+- **Migration check:** `…/legal-launch/migration-check/` (`commands.sh`).
+  - `migrate.log` lists the four migrations.
+  - `assert.log` passes MC1–MC9 with no `ERROR`.
+  - `assert-unmigrated.log` raises.
+  - No migration changed since S14, so it wasn't rerun. The scratch databases and `/tmp/ll-premig` are removed.
+- **Loader check:** `…/legal-launch/loader-check/`, 29/29 (DL1–DL12).
+- **Screenshots:** `…/legal-launch/screenshots/index.html`.
+  - 16 `after/legal--*.png` (8 pages at 1440 and 390 px), plus the signup and marketing groups.
+  - `after/checks.json` has 28 entries and no failed probe.
+- **Audits:** all pass, with two notes (Decisions, S17).
+
+### Reviews
+
+- **Fable** (`architecture-reviewer`): APPROVE_WITH_CHANGES, one MUST-FIX (the write gate missed `Tenants` updates).
+- **Astra:** APPROVE_WITH_CHANGES, four MUST-FIX:
+  - the `Tenants` gate;
+  - acceptance tied to an unverified email;
+  - acceptance not bound to the versions shown;
+  - Payload's best-effort job deletion.
+- The Revision resolved every MUST-FIX.
+
+### Deviations from the Brief (Decisions)
+
+- **Discord's warning is shortened:** 88 characters, not the Brief's exact sentence, because Discord caps field labels at 100. The command description carries a 94-character notice, and the confirmations carry the full one.
+- **Signup records nothing.** The record comes from the verified holder ticking the boxes on `/legal/accept`, so new accounts tick them twice.
+- **Undelivered contact messages expire after 30 days** (the Brief allowed "until retried or cleared").
+- **Deleting a game deletes its content.**
+- **Four migrations instead of one:** `legal_acceptances`, `contact_job_sweep`, `users_deleted` and `drop_submitter_email`.
+- **Each acceptance also stores both documents' digests.** No personal data.
+
+### Handoff
+
+- **Waiting on Danby:**
+  - H16: fill in the placeholders, and the lawyer's review; then `status: final` and new versions.
+  - H17: register the DMCA agent ($6).
+  - H18: keep the server's logs 30 days at most.
+  - H19: turn signup back on once the legal launch is live.
+- H8 points at them.
+- H7 is closed.
 
 ### Data inventory (critwire.com, from `legal/privacy.md` v0.1 as built)
 
@@ -1769,6 +1849,9 @@ These pass through as their parsed path and query: `/onboarding`, `/admin` and `
 
 ### Promises the code doesn't keep
 
-None found in S15's audit. S17 rechecks after the full run.
+None.
+- S15's audit found none.
+- S16 changed only styling and the screenshot probes, not what the documents describe.
+- The full run passes the specs behind each promise: LP, LA, AD, S5.12–S5.15, S17.4, D2/D4 and S10.1.
 
 The documents are drafts for Haunted Pavement LLC's Wisconsin lawyer to review, not legal advice.
