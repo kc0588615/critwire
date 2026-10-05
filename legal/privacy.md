@@ -15,15 +15,15 @@ It says what critwire collects, why, where it's kept, for how long, and which ou
 - Players don't have accounts. The feedback form doesn't ask for an email.
 - Studios have accounts: an email, an optional name and a password.
 - No ads, no analytics, and we don't sell anyone's data.
-- IP addresses are used briefly to stop abuse, and never kept in our database or logs.
+- IP addresses are used briefly to stop abuse, and never kept in our database. They can appear in our web server's error log, as "Server logs" describes.
 - Critwire's server is run on Oracle Cloud in Chicago, in the United States.
 
 ## Studio accounts
 
-- **What:** your email address, your name if you give one, a hash of your password (never the password itself), your sign-in sessions, the tokens in your verification and password-reset emails, and a count of failed sign-ins with any lock time.
+- **What:** your email address, your name if you give one, a hash of your password (never the password itself), your sign-in sessions, the tokens in your verification and password-reset emails, a count of failed sign-ins with any lock time, the studios you belong to and your role in each, when the account was created and changed, and your settings in the admin (such as how its lists are sorted).
 - **Why:** to let you sign in, and to send you account emails (verifying your address and resetting your password).
 - **Where:** critwire's database, on our server on Oracle Cloud in Chicago. Account emails are sent through Resend.
-- **How long:** until the account is deleted. That includes a signup that was never finished, which leaves an account holding only the email address. See "Deleting an account, a game or a studio" below.
+- **How long:** until the account is deleted. That includes a signup that was never finished, which leaves an account holding only the email address and the unused link we sent to it. See "Deleting an account, a game or a studio" below.
 
 ## Cookies
 
@@ -31,9 +31,10 @@ Critwire sets only these cookies. Each one does something you asked for, and non
 
 | Cookie | What it's for | How long |
 |---|---|---|
-| `payload-token` | Keeps an account holder signed in | 2 hours after your last activity |
+| `payload-token` | Keeps an account holder signed in | 2 hours, renewed while you use the admin |
 | `payload-tenant` | Remembers which studio you're working on in the admin | Up to 1 year |
-| `payload-theme` | Remembers the admin's light or dark theme | Up to 1 year |
+| `payload-theme` | Remembers the admin's light or dark theme, if you choose one | Up to 1 year |
+| `payload-lng` | Remembers the admin's language, if you choose one on your account page | 1 year |
 | `cw_vote_token` | A random token that lets one browser vote once per item. Set only when you first vote | 1 year |
 | `__prerender_bypass` | Lets critwire's own staff preview a draft page. Never set for anyone else | Until the browser closes |
 
@@ -52,14 +53,14 @@ The bot check on public forms (Cloudflare Turnstile) and any Tally form a studio
 - **Why:** to run your portals.
 - **Where:** critwire's database, and images on our server's disk.
 - **How long:** until you delete it or the studio is deleted. Deleting a game deletes its updates and its feedback. Deleting one person's account keeps the studio's content.
-- **Images are kept exactly as uploaded,** including any metadata embedded in the file, such as the place a photo was taken. Remove it before you upload if you don't want it shared.
+- **JPEG and PNG images are kept exactly as uploaded,** including any metadata embedded in the file, such as the place a photo was taken. Remove it before you upload if you don't want it shared. GIF, WebP and AVIF images, and images you crop in critwire, are saved again without it.
 
 ## Player feedback
 
 - **What:** a title and a description, the type (bug or idea), a category, and the platform and game version if you give them. Critwire doesn't ask for your name or email.
 - **Why:** to put your feedback on the studio's board.
 - **Where:** critwire's database.
-- **How long:** until the studio deletes it or the game, or the studio is deleted. Studios review feedback before it's public, unless they choose to publish it automatically. Published feedback is public.
+- **How long:** until the studio deletes it or the game, or the studio is deleted. Studios review feedback before it's public, unless they choose to publish it automatically. Publishing copies the title, description, type and category to a public item on the studio's board, which stays until the studio deletes it, the game or the studio is deleted.
 
 ## Feedback sent from Discord
 
@@ -73,14 +74,14 @@ When a studio connects its Discord server, players there can send feedback with 
 
 ## Contact messages to a studio
 
-- **What:** your name and email if you give them (both optional, and the email only if you're 13 or older), a subject and your message.
+- **What:** your name and email if you give them (both optional, and the email only if you're 13 or older), a subject if you give one, and your message.
 - **Why:** to deliver your message to the studio, by email or to the studio's Discord channel.
 - **Where:** critwire's job queue, in our database, until it's delivered.
 - **How long:**
   - Once your message is delivered, critwire deletes it, your email included. If that delete ever fails, a cleanup that runs every 10 minutes deletes it.
-  - A message that couldn't be delivered is kept for retries until a retry delivers it (then it's deleted as above), one of our administrators deletes it, its game or studio is deleted, or 30 days have passed since you sent it, whichever comes first.
+  - A message that couldn't be delivered is tried 3 times within a few minutes. If none of them delivers it, it's kept until one of our administrators retries it (once it's delivered, it's deleted as above) or deletes it, its game or studio is deleted, or 30 days have passed since you sent it, whichever comes first.
   - A delivered message lives on in the studio's own inbox or Discord, under the studio's control.
-- **Who handles it:** Resend, when it's sent by email (your email address is the reply-to address and appears in the message), or Discord, when it's sent to the studio's channel (your email appears in the post).
+- **Who handles it:** Resend, when it's sent by email (your email address is the reply-to address and appears in the message), or Discord, when it's sent to the studio's channel (your name and email, if you gave them, appear in the post).
 
 ## Abuse reports
 
@@ -99,7 +100,7 @@ When a studio connects its Discord server, players there can send feedback with 
 
 - **IP addresses:** when you send a form, vote, or follow a link that counts referrals, your IP address is used as a key to limit how often that can happen. The keys are held by Upstash ([Upstash region]) and expire within about 2 hours.
 - **Bot checks:** public forms use Cloudflare Turnstile. The check loads from Cloudflare in your browser, and critwire sends Cloudflare your IP address to confirm it.
-- IP addresses are never kept in critwire's database or logs.
+- IP addresses are never kept in critwire's database, and critwire itself doesn't log them. Our web server's error messages can include one, as "Server logs" describes.
 - **Discord user IDs:** used the same way to limit how often someone sends feedback from Discord, at Upstash, for about 20 minutes.
 - **Account emails:** a hash (SHA-256) of an email address is used at Upstash to limit how many account emails go to one address, for about 2 hours.
 - **Referral counts:** how many visits a game got from each source, per day. These are counts, not personal data. Each day's count is kept at Upstash for 35 days after its last visit.
@@ -110,7 +111,11 @@ A studio can choose to show a form hosted by Tally on its portal instead of crit
 
 ## Server logs
 
-- **What:** events about what the server did, with internal ID numbers, and error details when something fails. Error details can include technical details of the request that failed. The logs don't hold IP addresses or players' names.
+- **What:** events about what the server did, with internal ID numbers, and error details when something fails.
+  - Error details can include technical details of the request that failed, and rarely what was sent in it: when saving to the database fails, the error can repeat what was being saved, such as a piece of feedback, an abuse report's email, or a Discord username.
+  - When our web server can't reach critwire, or a visitor's connection breaks off mid-reply, its error message includes the visitor's IP address and the page they asked for.
+  - A contact message's name, email and text are removed from the error logged when its delivery fails.
+  - Otherwise, the logs don't hold IP addresses, emails or players' names.
 - **Why:** to run critwire and fix it.
 - **Where:** our server's system log.
 - **How long:** [log retention].
@@ -131,7 +136,7 @@ Critwire itself doesn't make backups of its database. [backups], kept for [backu
 | Cloudflare Turnstile | Bot checks on public forms | Your IP address and what the check reads from your browser |
 | Upstash ([Upstash region]) | Rate limits and referral counts | IP addresses, Discord user IDs and email hashes, briefly; referral counts |
 | Resend (us-east-1) | Sends account emails, and contact messages by email | The recipient's address, the email, and a player's email as reply-to |
-| Discord | Feedback from a studio's Discord server, and posts to the studio's channel, when a studio connects it | What's posted to the studio's channel, including a contact message's email |
+| Discord | Feedback from a studio's Discord server, and posts to the studio's channel, when a studio connects it | What's posted to the studio's channel, including a contact message's name and email |
 | Namecheap | critwire.com's domain name, and forwarding mail to admin@critwire.com | Email sent to admin@critwire.com |
 | Tally | Forms, only on portals whose studio chose one | What you type into that form |
 
@@ -149,13 +154,13 @@ Email admin@critwire.com to ask what we hold about you, or to have it corrected 
 
 ## Deleting an account, a game or a studio
 
-- **An account:** email admin@critwire.com. Deleting an account replaces its email, name and password, ends every sign-in, and blocks it from signing in again. It then shows as "Deleted user". The studios it belonged to and their content stay, and so do its acceptance records, as described above.
+- **An account:** email admin@critwire.com. Deleting an account replaces its email, name and password, ends every sign-in, and blocks it from signing in again. It then shows as "Deleted user", and stays listed in the studios it belonged to. Those studios and their content stay, and so do its acceptance records, as described above.
 - **A game:** deleting a game deletes its updates, its feedback and their votes, its Discord post records, and any contact messages still waiting to be delivered.
 - **A studio:** deleting a studio deletes its games, with everything above, and all its other content, images included. Abuse reports about it stay, as described above.
 
 ## Changes to this policy
 
-When we change this policy, it gets a new version number and date, and we publish it here. Account holders accept the new version before they can keep managing their studio.
+When we change this policy, it gets a new version number and date, and we publish it here. Account holders accept the new version before they can use the admin, or add to or change their studio's content, again.
 
 ## Contact
 

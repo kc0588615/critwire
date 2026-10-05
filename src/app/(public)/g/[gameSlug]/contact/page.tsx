@@ -92,7 +92,7 @@ export default async function ContactPage({ params, searchParams }: Args) {
               </FormField>
 
               <FormField
-                hint="Sent to the team with your message; critwire doesn’t keep it."
+                hint="Sent to the team with your message; critwire doesn’t keep it once it’s delivered."
                 id="email"
                 label={`Email (optional, 13 or older), so the ${project.name} team can reply`}
               >

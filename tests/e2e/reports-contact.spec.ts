@@ -510,7 +510,7 @@ test('S5.15 the feedback and contact forms warn against sensitive details and sh
     })
     const email = form.getByLabel(`Email (optional, 13 or older), so the ${name} team can reply`, { exact: true })
     await expect(email).toHaveAttribute('type', 'email')
-    await expect(email).toHaveAccessibleDescription('Sent to the team with your message; critwire doesn’t keep it.')
+    await expect(email).toHaveAccessibleDescription('Sent to the team with your message; critwire doesn’t keep it once it’s delivered.')
     await test.info().attach('s515-contact-form', { body: await page.screenshot({ fullPage: true }), contentType: 'image/png' })
   })
 })

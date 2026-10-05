@@ -434,7 +434,8 @@ describe the hosted service only; a self-hosted instance replaces them
   acceptance (a LegalAcceptance with both versions and digests). Any
   signed-in account that isn't a super admin and hasn't accepted both
   current versions goes there before the admin or onboarding, and the
-  API refuses its writes until it does. That covers new accounts,
+  API refuses its creates and updates until it does (deletes stay
+  open, as they add nothing). That covers new accounts,
   accounts a super admin created, and everyone again after a version
   bump. Super admins act for the operator and never accept.
 - **Players** see "By sending this, you agree to the Terms of Service

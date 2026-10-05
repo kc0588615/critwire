@@ -51,7 +51,7 @@ Only send a notice or counter-notice if you're sure it's accurate. Under U.S. la
 
 ## Repeat infringers
 
-A studio that receives [repeat-infringer threshold] valid notices is suspended. A suspended studio's portals are hidden, and its members can't make changes. We may also close the accounts involved, as our [Terms of Service](/legal/terms) describe.
+We suspend a studio that receives [repeat-infringer threshold] valid notices. A suspended studio's portals are hidden, and its members can't add or change anything in it. We may also close the accounts involved, as our [Terms of Service](/legal/terms) describe.
 
 ## Self-hosted instances
 

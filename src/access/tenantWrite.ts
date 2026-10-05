@@ -6,6 +6,9 @@ import type { Tenant } from '@/payload-types'
 import { isSuperAdmin } from './isSuperAdmin'
 import { getTenantIDsByRole } from './tenantRoles'
 
+/** What a member of a suspended studio is told when a change is refused. */
+export const SUSPENDED_STUDIO_MESSAGE = 'This studio is suspended, so changes can’t be saved.'
+
 /**
  * `beforeChange` hook on the multi-tenant plugin's `tenant` field: a
  * studio user may only write into a studio they belong to, and not while
@@ -38,7 +41,7 @@ export const enforceTenantWrite: FieldHook = async ({ collection, previousValue,
     req,
     select: { suspended: true },
   })
-  if (suspended) throw new APIError('This studio is suspended, so changes can’t be saved.', 403)
+  if (suspended) throw new APIError(SUSPENDED_STUDIO_MESSAGE, 403)
 
   return value
 }

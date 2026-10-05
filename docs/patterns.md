@@ -64,7 +64,7 @@ access: {
 
 An account that isn't a super admin must have accepted the current
 Terms of Service and Privacy Policy before it reaches the admin,
-onboarding or any write. One query decides it everywhere:
+onboarding or any create or update. One query decides it everywhere:
 `needsLegalAcceptance` (`src/lib/legal/acceptance.ts`) counts the
 account's acceptances of both current versions, and memoizes the
 answer in `req.context`, so a request costs one count however many
@@ -82,7 +82,9 @@ checks share it.
   `requireLegalAcceptanceForTenant` does the same on `Tenants`, which
   has no tenant field. Writes with no user and super admins pass.
   Reads, sign-in and an account's own name and password stay open:
-  `/legal/accept` needs them.
+  `/legal/accept` needs them. Deletes stay open too: field hooks don't
+  run on delete, and removing content adds nothing to agree to. The
+  Terms say "add to or change", not "manage", for this reason.
 - **Only `/legal/accept/submit` records an acceptance,** for a signed-in
   account. Signup checks the same boxes, but whoever fills in `/signup`
   hasn't shown they own the address, so no record rests on it; the
@@ -131,7 +133,9 @@ documents and the admin keep the tenant limit.
   plugin's tenant field for every tenant-scoped collection. A studio
   user may only write into a studio they belong to (400), and not while
   it's suspended (403). It's a hook, not a `validate`, because Payload
-  skips field validation on draft saves. Writes without a user (votes,
+  skips field validation on draft saves. `Tenants` has no tenant field,
+  so `refuseSuspendedStudioChange` refuses its owners' changes to a
+  suspended studio the same way. Writes without a user (votes,
   public submissions, seeds) and super admins pass. The legal gate's
   `requireLegalAcceptance` hangs on the same field (see The legal
   gate).

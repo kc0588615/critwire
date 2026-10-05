@@ -1,7 +1,7 @@
 import { postgresAdapter } from '@payloadcms/db-postgres'
 import sharp from 'sharp'
 import path from 'path'
-import { buildConfig, PayloadRequest } from 'payload'
+import { buildConfig, defaultLoggerOptions, PayloadRequest } from 'payload'
 import { fileURLToPath } from 'url'
 
 import { isSuperAdmin, superAdminOnly } from './access/isSuperAdmin'
@@ -36,6 +36,9 @@ const dirname = path.dirname(filename)
 // global; only super admins may read or move it.
 export default lockJobStatsGlobal(buildConfig({
   admin: {
+    // Payload's default is Gravatar, which would send every account
+    // holder's IP and an email hash to a third party (Privacy Policy).
+    avatar: 'default',
     components: {
       // Above the sign-in form: the welcome line, and signup when it's open.
       beforeLogin: ['@/components/BeforeLogin'],
@@ -89,6 +92,16 @@ export default lockJobStatsGlobal(buildConfig({
       ],
     },
   },
+  // Payload's own logger (pretty, as by default), minus job inputs: on a
+  // failed task it logs the whole job, and a contact job's input holds a
+  // player's name, email and message, which the Privacy Policy keeps out
+  // of the logs. The error and the job's ID are still logged.
+  logger: {
+    destination: defaultLoggerOptions,
+    options: { redact: ['job.input', 'job.log[*].input'] },
+  },
+  // No usage pings to Payload's servers (Privacy Policy: no analytics).
+  telemetry: false,
   // This config helps us configure global or default features that the other editors can inherit
   editor: defaultLexical,
   db: postgresAdapter({

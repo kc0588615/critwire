@@ -120,6 +120,9 @@ test('S18.2 a studio owner’s dashboard lists each portal’s status, the next 
     asStudioAdmin(browser, studio, async (page) => {
       await expectPortals(page)
       await expect(page.getByRole('heading', { name: 'Hosted plan limits' })).toHaveCount(0)
+      // The account icon is Payload's own, never a Gravatar (Privacy Policy).
+      await expect(page.getByRole('link', { name: 'Account' }).locator('svg')).toBeVisible()
+      await expect(page.locator('img[src*="gravatar.com"]')).toHaveCount(0)
     }),
   )
 

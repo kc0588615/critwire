@@ -47,13 +47,13 @@ Feedback about critwire itself, such as ideas or suggestions for the service, is
 ## Review, holds, removal, suspension and closure
 
 - We may review any content, hold it back from being public, or remove it, including when our content filter flags it.
-- We may suspend or close an account or a studio, for example if it breaks these Terms, puts other people at risk, or gets repeated copyright notices. A suspended studio's portals are hidden, and its members can't make changes.
+- We may suspend or close an account or a studio, for example if it breaks these Terms, puts other people at risk, or gets repeated copyright notices. A suspended studio's portals are hidden, and its members can't add or change anything in it, though they can still delete its content.
 - Where it's practical and lawful, we'll tell you what we did and why.
 - You can close your account at any time by emailing admin@critwire.com. Our Privacy Policy explains what deleting an account removes and what stays.
 
 ## Changes to the service
 
-We may change critwire, limit it, or stop offering it, in whole or in part. We'll give notice where it's practical. The hosted service is free during early access. It may gain limits or paid plans later, and we'll tell account holders before any paid plan applies to them.
+We may change critwire, limit it, or stop offering it, in whole or in part. We'll give notice where it's practical. The hosted service is free during early access, with limits that keep each site small. We may change those limits or add paid plans later, and we'll tell account holders before any paid plan applies to them.
 
 ## Critwire is not a system of record
 
@@ -77,7 +77,7 @@ If someone makes a claim against us because of content you posted or sent, or be
 
 ## Changes to these Terms
 
-When we change these Terms or our Privacy Policy, the changed document gets a new version number and date, and we publish it here. Account holders then accept the new version at /legal/accept before they can keep managing their studio. Anything you send without an account is covered by the version in place when you send it.
+When we change these Terms or our Privacy Policy, the changed document gets a new version number and date, and we publish it here. Account holders then accept the new version at /legal/accept before they can use the admin, or add to or change their studio's content, again. Anything you send without an account is covered by the version in place when you send it.
 
 ## Law and courts
 

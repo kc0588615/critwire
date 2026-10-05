@@ -1370,7 +1370,7 @@ Planner: Opus 5.5, 2026-10-04, from the revised Architecture, the Revision notes
     - Keep the two scratch databases and `/tmp/ll-premig` until S17.
   - **Verify:** `migrate.log` lists the four migrations; `assert.log` ends without an `ERROR`; tsc and lint.
 
-- [ ] S15 · **The documents match the code as built.**
+- [x] S15 · **The documents match the code as built.**
   - **Re-check every statement in `legal/*.md` against the code at HEAD:**
     - each inventory row: what, why, where, how long, and who handles it;
     - the cookies' names and lifetimes;
@@ -1675,6 +1675,27 @@ These pass through as their parsed path and query: `/onboarding`, `/admin` and `
 - **S11: `noticeMarkdown(href)` takes one function from document to URL, not two URLs.** It renders `SUBMIT_NOTICE`'s parts, as `LegalCopyText` does on the web, so the Discord notice can't drift from the web's sentence; `feedback.ts` passes `absoluteURL(LEGAL_LINKS[document].href)`.
 - **S11: every Discord text field is built by one `textField` helper in `feedback.ts`, which always adds the short warning.** A new text field can't be added without it; the selects (Game, Type) don't go through it and carry none. `TextFieldSpec` is exported from `interactions.ts` for it.
 - **S14: the fixture's studio user is an owner of `critwire-demo`, not a member of `demo-studio`.** The seed puts Critter Connect in its own `critwire-demo` studio; `demo-studio` (made by the check's `seed` part) stays empty. A membership in the studio that holds the content is the realistic case. `commands.sh` also has an `unmigrated` part, which saves `assert-unmigrated.log` and fails unless it holds an `ERROR`.
+- **S15: the audit's mismatches, and which side changed.** Three read-only agents checked every statement in `legal/*.md` against HEAD and the installed Payload 3.85.2, Next 16.2.6 and the plugin.
+  - **Code changed:**
+    - Payload's logger redacts `job.input` and `job.log[*].input`. A failed task logged the whole job, so every failed contact delivery wrote the player's name, email and message to the journal. The error and the job's ID are still logged, so the failure stays loud; the targeted E2E run's log shows `"input": "[Redacted]"` and no player address.
+    - `admin.avatar: 'default'` and `telemetry: false`. Payload's defaults sent each account holder's IP and email hash to Gravatar, and hashed IDs to Payload's telemetry server, and the policy lists neither. Turning them off collects less, where adding them to the policy would collect the same.
+    - `refuseSuspendedStudioChange` on `Tenants`: an owner could still rename a suspended studio or change its slug, against the documents and the field's own description. S10.1 now checks it.
+    - The contact form's email hint says "doesn’t keep it once it’s delivered", since an undelivered message is kept up to 30 days.
+  - **Documents changed:**
+    - **Deletes stay open to an account that hasn't accepted** (Terms, Privacy, `features.md`, `patterns.md`): they now say it must accept "before it can use the admin, or add to or change its studio's content, again". Gating deletes would block nothing anyone agrees to.
+    - **Suspension** (Terms, Copyright): members "can't add or change anything", and the Terms add that they can still delete, as `suspension.spec.ts` asserts on purpose. The repeat-infringer sentence is an operator action ("We suspend…"), since nothing counts notices.
+    - **The Terms' limits:** the hosted service already has limits; it "may change those limits or add paid plans later".
+    - **Privacy:**
+      - accounts also hold memberships and roles, timestamps and admin preferences;
+      - a pending signup also holds its unused link;
+      - the `payload-lng` cookie;
+      - only JPEG and PNG keep their metadata;
+      - publishing copies the feedback to a public item that stays until the studio deletes it;
+      - the subject is optional;
+      - a failed delivery is tried 3 times within minutes, then waits for an administrator or the 30 days;
+      - a Discord contact post shows the name too;
+      - the logs: a rare failed save can repeat what was sent, and Caddy's own error lines hold IPs (the ops Caddyfile is the owner's, so the policy says it instead of a filter; H18's Why now says so too).
+  - The versions stay `0.1`, and the placeholders still match H16, H17 and H18.
 
 ## Log
 
@@ -1698,5 +1719,47 @@ These pass through as their parsed path and query: `/onboarding`, `/admin` and `
 - 2026-10-05 00:42 UTC: S12. `LICENSE` and the site footer name Haunted Pavement LLC (the footer keeps `getFullYear()`); the home page's filter runs "inside critwire, with no outside service"; `docs/architecture.md` and `docs/integrations.md` make backups the operator's job, and `docs/deploy.md`'s section is "Backups (the operator's job)", saying critwire makes none. Copy grep checked: README ("free and always will be" is the MIT licence), `docs/architecture.md:134,215,242`, `deploy.md:111`, `embed.md:184`, `features.md:171-174,208,324`, `self-hosting.md:7,58`, `share.md:62` and the home page (also for keep/store/reliable/secure/lost/uptime): no promise left. H7 closed. tsc pass; lint 0 errors, 20 warnings; `pnpm test:e2e home legal-pages` 8/8; the holder grep prints nothing outside `plans/` (the older plans and this one quote the old line as history), and `copyright (c)` shows only `LICENSE` and DejaVu's licence.
 - 2026-10-05 00:46 UTC: S13. Docs: `features.md` (Users' gate and `deleted`, LegalAcceptance, the signup's `/legal/accept` step, contact-email retention, new sections Legal documents and agreement, Deleting games, studios and accounts), `architecture.md` (`/legal/*` URLs, rendering rows, structure, `legal/`), `patterns.md` (The legal gate with "a version names one text" and why only `/legal/accept` records, Deleting games and studios with `deleteWhereOrThrow`, Account deletion, Shared legal copy, the sweep and the stats-global lock), `integrations.md` (`marked`, Resend's Reply-To), `discord.md` (the shortened warning and the notice; a game's delete), `deploy.md` (Logs and how long they're kept, with the journald drop-in; `legal/` in the standalone output), `self-hosting.md` (Your own terms: `legal/`, MIT and own-terms), the AGENTS.md docs-map row and a README line. Every named symbol and path greps to a file; relative links resolve (the one hit, `share.md:36`, is example syntax in code). tsc pass; lint 0 errors, 20 warnings; no E2E (docs only).
 - 2026-10-05 00:53 UTC: S14. `tests/migrations/legal-launch/fixtures.sql` (a verified owner of `critwire-demo` with its membership, a pending `email-contact-form` job holding an email, a guard that the seed's report still has `player@example.com`) and `assert.sql` (one `DO` block, MC1–MC9). On a copy of the Critter Connect seed at `3054287`: `migrate.log` lists the four migrations, `assert.log` prints nine `ok` notices and no `ERROR`, and `assert-unmigrated.log` raises at MC1 (`agent-state/missions/legal-launch/migration-check/`, with `commands.sh`). Scratch databases and `/tmp/ll-premig` kept for S17. tsc pass; lint 0 errors, 20 warnings.
+- 2026-10-05 01:08 UTC: S15. Three audit agents checked the documents against HEAD; the mismatches are fixed in code (Payload logger redacts job inputs, Gravatar and telemetry off, a suspended studio can't be renamed, the contact hint) or in the documents (deletes and the gate, suspension, limits, nine Privacy details), all under Decisions. Docs updated (`features.md`, `patterns.md`, `deploy.md`, `integrations.md`), H18's Why corrected; placeholders unchanged. Summary's inventory and placeholders drafted. tsc pass; lint 0 errors, 20 warnings; `pnpm test:e2e legal-pages legal-acceptance suspension admin-dashboard reports-contact` 45/45, its log (`agent-state/missions/legal-launch/s15/e2e-targeted.log`) shows job inputs redacted and no player email.
 
 ## Summary
+
+*Drafted in S15 from the final documents; S17 completes it.*
+
+### Data inventory (critwire.com, from `legal/privacy.md` v0.1 as built)
+
+| What | Why | Where | How long | Who handles it |
+|---|---|---|---|---|
+| Studio account: email, optional name, password hash, sessions, verification and reset tokens, failed sign-ins and lock time, memberships and roles, timestamps, admin preferences | Sign-in and account emails | Postgres on the Oracle Cloud server (us-chicago-1) | Until the account is deleted (anonymized); a never-finished signup keeps its email and unused link with no expiry | Oracle Cloud; Resend sends the account emails |
+| Cookies: `payload-token`, `payload-tenant`, `payload-theme`, `payload-lng`, `cw_vote_token`, `__prerender_bypass` | Sign-in, admin settings, one vote per browser, staff previews | The visitor's browser | 2 h (renewed in the admin); up to 1 year; 1 year; 1 year; session | None |
+| Legal acceptances: user, both versions, both SHA-256 digests, time; no IP | Prove what was agreed, and to which text | Postgres; super admins only | Kept after the account is deleted (it then shows no email or name) | Oracle Cloud |
+| Studio content: studios, games, contact settings, updates, triage, images | Run the portals | Postgres; images on the server's disk | Until deleted; deleting a game or studio deletes its content; JPEG/PNG keep their metadata | Oracle Cloud |
+| Player feedback: title, description, type, category, platform, version; no name or email | The studio's board | Postgres | Until the studio deletes it, the game or the studio; a published copy stays until the studio deletes it | Oracle Cloud |
+| Discord feedback: the above plus Discord user ID, username, message link | Follow-up on Discord | Postgres; studio members only | As feedback | Discord |
+| Contact messages: optional name and email (13+), optional subject, message | Deliver to the studio | Payload's job queue in Postgres | Deleted on delivery (sweep every 10 min backs it up); undelivered: 3 tries, then until an admin acts, the game/studio is deleted, or 30 days | Resend (email, reply-to) or Discord (post shows name and email) |
+| Abuse reports: page URL, reason, details, game, optional email (13+) | Moderation | Postgres; super admins only | Until an admin deletes it; kept with the URL after the game goes | Oracle Cloud |
+| Votes: hash of the browser's token, item, time | One vote per browser | Postgres; token in the `cw_vote_token` cookie | Until withdrawn, or the item, game or studio is deleted; cookie 1 year | Oracle Cloud |
+| IP addresses | Rate limits; Turnstile bot checks | Upstash keys; Cloudflare | Upstash about 2 h; never in Postgres; Caddy's own error lines | Upstash ([Upstash region]), Cloudflare Turnstile |
+| Discord user IDs, SHA-256 email hashes | Rate limits | Upstash | About 20 min; about 2 h | Upstash |
+| Referral counts per game, day and source | The studio's counter | Upstash | 35 days after the last visit | Upstash |
+| Server logs: internal IDs, errors (rarely a failed save's values; Caddy's errors include IPs; job inputs redacted) | Run and fix critwire | The server's journal | [log retention] (H18) | Oracle Cloud |
+| Email to admin@critwire.com | Requests and notices | Forwarded by Namecheap to [mailbox provider] | [retention of emails to admin@critwire.com] | Namecheap, [mailbox provider] |
+| Backups | n/a: critwire makes none | [backups] | [backup retention] | Oracle Cloud, if any |
+| Tally forms (only where a studio chose one) | The studio's own form | Tally | Tally's and the studio's terms | Tally |
+
+### Placeholders left in the documents
+
+- `[LLC street address]`: all three documents, twice each (H16).
+- `[county]`: Terms, Law and courts (H16).
+- `[cap: suggestion for the lawyer: the greater of US$100 or the fees paid to critwire in the 12 months before the claim]`: Terms, Limitation of liability (H16).
+- `[repeat-infringer threshold]`: Copyright, Repeat infringers (H16).
+- `[DMCA agent: pending registration]`: Copyright, Where to send it (H17).
+- `[Upstash region]`: Privacy, twice (H16).
+- `[log retention]`: Privacy, Server logs (H18).
+- `[mailbox provider]` and `[retention of emails to admin@critwire.com]`: Privacy, Email to admin@critwire.com (H16).
+- `[backups]` and `[backup retention]`: Privacy, Backups (H16).
+
+### Promises the code doesn't keep
+
+None found in S15's audit. S17 rechecks after the full run.
+
+The documents are drafts for Haunted Pavement LLC's Wisconsin lawyer to review, not legal advice.

@@ -62,6 +62,7 @@ test('S10.1 a suspended studio can’t publish', async ({ api, seedStudio }) => 
   const draft = await createPatchNote(client, project, 'draft', { _status: 'draft' })
   const issue = await createIssue(client, project, 'item')
 
+  const studioName = (await superAdmin.findByID('tenants', tenant.id, { depth: 0 })).body.name
   const suspend = (suspended: boolean) => setSuspended(superAdmin, tenant.id, suspended)
   await suspend(true)
 
@@ -89,6 +90,7 @@ test('S10.1 a suspended studio can’t publish', async ({ api, seedStudio }) => 
     expectSuspended(await client.update('patch-notes', draft.id, { _status: 'published' }))
     expectSuspended(await client.update('patch-notes', draft.id, { title: 'Draft edit' }, { draft: true }))
     expectSuspended(await client.update('patch-notes', published.id, { title: 'Published edit' }))
+    expectSuspended(await client.update('tenants', tenant.id, { name: 'Renamed while suspended' }))
   })
 
   await test.step('nothing changed', async () => {
@@ -97,6 +99,8 @@ test('S10.1 a suspended studio can’t publish', async ({ api, seedStudio }) => 
     const note = await superAdmin.findByID('patch-notes', draft.id, { draft: true, depth: 0 })
     expect(note.body._status).toBe('draft')
     expect(note.body.title).toBe(draft.title)
+    const studio = await superAdmin.findByID('tenants', tenant.id, { depth: 0 })
+    expect(studio.body.name).toBe(studioName)
   })
 
   await test.step('deleting an item still works', async () => {

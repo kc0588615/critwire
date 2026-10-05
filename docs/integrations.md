@@ -299,3 +299,6 @@ added.
   (`frame-ancestors 'self'`, `*` on the embeds only) and COOP
 - Public feeds (`feedback.json`, `updates.json`) are the only
   cross-origin reads: GET only, no credentials, public fields only
+- No calls home from the admin: `admin.avatar: 'default'` (Payload's
+  default loads each account's Gravatar) and `telemetry: false`, both
+  in `src/payload.config.ts`, as the Privacy Policy lists neither

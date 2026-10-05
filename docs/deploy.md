@@ -198,6 +198,15 @@ IDs, and error details when something fails. It doesn't log IP
 addresses, players' names or contact emails. Without Resend, the email
 outbox logs each email's recipient and subject (`docs/integrations.md`).
 
+- Payload's own logger (`logger` in `src/payload.config.ts`) redacts
+  job inputs, because a failed task logs its whole job and a contact
+  job's input is a player's message.
+- A failed database write can repeat its values in the error, so a
+  rare error may hold feedback text or an abuse reporter's email.
+- The reverse proxy logs the client's IP address with its own errors
+  (for example, the app not answering, or a client dropping the
+  connection). The Privacy Policy says so.
+
 A privacy policy has to say how long logs are kept, so give them a time
 limit:
 
