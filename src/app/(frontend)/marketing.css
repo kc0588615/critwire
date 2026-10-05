@@ -502,6 +502,13 @@
   font-weight: 700;
 }
 
+/* The Privacy Policy's tables fit a phone, and one still too wide scrolls on its own, never the page. */
+.cw-legal .prose table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
 /* /legal/accept: the two documents and their versions. */
 .cw-legal-accept-documents {
   display: grid;

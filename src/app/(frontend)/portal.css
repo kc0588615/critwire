@@ -1100,10 +1100,11 @@
   line-height: 1.45;
 }
 
+/* A 44px-tall target around a 20px box (drawn centred), pulled up so the box sits on the label's first line. */
 .fs-check input {
   width: 1.25rem;
-  height: 1.25rem;
-  margin-top: 0.125rem;
+  height: 2.75rem;
+  margin: -0.6625rem 0 0;
   accent-color: var(--fs-fg);
 }
 

@@ -15,12 +15,15 @@ import { SHOTS_CRON_SECRET } from './tests/screenshots/support'
  * board, the updates widget, the floating button and its open dialog on
  * a studio's page, light and dark) and the Discord tab (the admin Share
  * tab with Discord selected, for a game not linked and one linked, light
- * and dark), at 1440 and 390 px,
+ * and dark) and the legal group (the three legal pages, signup's boxes,
+ * `/legal/accept` for an account that hasn't accepted, and the bug,
+ * contact and abuse-report forms with their notice and warning), at 1440
+ * and 390 px,
  * against a production build on the disposable E2E database (dropped on
  * every run, so never alongside `pnpm test:e2e`). Emails go to the E2E
  * outbox, where the setup reads the verification links.
  *
- *   SHOTS_SET=before|after SHOTS_DIR=/abs/dir [SHOTS_THEMES=critter-connect,riso,marketing,signup,reach,embed,discord] pnpm screenshots [--project desktop|mobile]
+ *   SHOTS_SET=before|after SHOTS_DIR=/abs/dir [SHOTS_THEMES=critter-connect,riso,marketing,signup,reach,embed,discord,legal] pnpm screenshots [--project desktop|mobile]
  *
  * Writes `<SHOTS_DIR>/<set>/<group>--<page>--<width>.png` and rewrites
  * `<SHOTS_DIR>/index.html` with every captured set side by side. "after"

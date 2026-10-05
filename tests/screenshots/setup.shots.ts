@@ -18,11 +18,12 @@ import {
   lexical,
   newRequestContext,
   onboard,
+  seed,
   startSignup,
   tenantOf,
   verifyAccount,
 } from '../e2e/support/fixtures'
-import { ONBOARDING_STATE_PATH, type ShotsWorld, STUDIO_STATE_PATH, WORLD_PATH } from './catalog'
+import { ACCEPT_STATE_PATH, ONBOARDING_STATE_PATH, type ShotsWorld, STUDIO_STATE_PATH, WORLD_PATH } from './catalog'
 import { rootStyle, SHOTS_CRON_SECRET } from './support'
 import { RISO_THEME } from './themes'
 
@@ -40,7 +41,8 @@ const REFERRALS = { steam: 6, itch: 3, readme: 2, carrd: 1 } as const
  * The reach shots get that studio's session and referral counts, and a
  * Riso-themed game in the demo studio for its badge. The discord shots
  * get a second Lantern Keep game, linked to a server through the real
- * install and callback with the Discord stand-in's code.
+ * install and callback with the Discord stand-in's code. The legal shots
+ * get a signed-in account a super admin made, which hasn't accepted.
  */
 setup('seed the Critter Connect demo and the screenshot fixtures', async ({ page, playwright }) => {
   setup.setTimeout(180_000)
@@ -186,6 +188,17 @@ setup('seed the Critter Connect demo and the screenshot fixtures', async ({ page
     expect(callback.status(), await callback.text()).toBe(303)
     expect(callback.headers().location, 'the callback reports the link').toContain('discord=linked')
     return { unlinkedID: reach.welcomeID, linkedID: second.id }
+  })
+
+  await setup.step('make an account as the super admin, sign it in, and leave the documents unaccepted', async () => {
+    await seed(admin, 'users', { email: 'accept@shots.test', password: PASSWORD, roles: ['user'] })
+    const user = await newRequestContext(playwright)
+    const login = await user.post('/api/users/login', { data: { email: 'accept@shots.test', password: PASSWORD } })
+    expect(login.status(), 'sign in as accept@shots.test').toBe(200)
+    const accept = await user.get('/legal/accept', { maxRedirects: 0 })
+    expect(accept.status(), 'a signed-in account that hasn’t accepted sees /legal/accept').toBe(200)
+    await user.storageState({ path: ACCEPT_STATE_PATH })
+    await user.dispose()
   })
 
   const world: ShotsWorld = {

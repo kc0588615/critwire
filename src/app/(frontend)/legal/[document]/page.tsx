@@ -48,7 +48,11 @@ export default async function LegalDocumentPage({ params }: Args) {
               </p>
             ) : null}
           </header>
-          <div className="prose" dangerouslySetInnerHTML={{ __html: marked.parse(body, { async: false }) }} />
+          <div
+            // Cookie and file names read as names, without typography's backticks.
+            className="prose prose-code:before:content-none prose-code:after:content-none"
+            dangerouslySetInnerHTML={{ __html: marked.parse(body, { async: false }) }}
+          />
         </div>
       </div>
     </article>

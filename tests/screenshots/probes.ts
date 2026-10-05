@@ -54,13 +54,19 @@ const resolveColor = (page: Page, scope: string, expression: string): Promise<st
     [scope, expression] as const,
   )
 
-/** 1. At 390 px the page (or an embed's frame, `where`) never scrolls sideways. */
+/**
+ * 1. At 390 px the page (or an embed's frame, `where`) never scrolls
+ * sideways. A page is measured against the viewport, not `innerWidth`:
+ * under `isMobile`, Chromium widens the layout viewport to fit content
+ * that's too wide, so `innerWidth` grows with it.
+ */
 async function noSideScroll(page: Frame | Page, where = ''): Promise<ProbeResult> {
   const { scrollWidth, innerWidth } = await page.evaluate(() => ({
     scrollWidth: document.documentElement.scrollWidth,
     innerWidth: window.innerWidth,
   }))
-  return result('no-side-scroll', scrollWidth <= innerWidth, `scrollWidth ${scrollWidth}, innerWidth ${innerWidth}${where}`)
+  const width = 'viewportSize' in page ? (page.viewportSize()?.width ?? innerWidth) : innerWidth
+  return result('no-side-scroll', scrollWidth <= width, `scrollWidth ${scrollWidth}, width ${width}${where}`)
 }
 
 /**

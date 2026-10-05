@@ -3,6 +3,8 @@ import path from 'node:path'
 import type { EmbedHostQuery } from '../e2e/support/embedHost'
 import { gameShareHref } from '../../src/lib/admin/paths'
 import { portalPaths } from '../../src/lib/game-portal/paths'
+import { reportAbuseHref } from '../../src/lib/hosting'
+import { LEGAL_LINKS, LEGAL_SLUGS } from '../../src/lib/legal/paths'
 import { BUTTON_SCHEMES, buttonPath, SHARE_BUTTONS } from '../../src/lib/share/buttons'
 
 /**
@@ -50,10 +52,17 @@ export const ONBOARDING_STATE_PATH = path.join(process.cwd(), 'test-results', 's
 /** The session of Lantern Keep's studio user, for shots with `session: 'studio'`. */
 export const STUDIO_STATE_PATH = path.join(process.cwd(), 'test-results', 'shots', 'studio-user.json')
 
-export const SESSION_STATE_PATHS = { onboarding: ONBOARDING_STATE_PATH, studio: STUDIO_STATE_PATH } as const
+/** The session of an account a super admin made, which hasn't accepted the legal documents, for shots with `session: 'accept'`. */
+export const ACCEPT_STATE_PATH = path.join(process.cwd(), 'test-results', 'shots', 'accept-user.json')
+
+export const SESSION_STATE_PATHS = {
+  accept: ACCEPT_STATE_PATH,
+  onboarding: ONBOARDING_STATE_PATH,
+  studio: STUDIO_STATE_PATH,
+} as const
 export type Session = keyof typeof SESSION_STATE_PATHS
 
-export const GROUPS = ['critter-connect', 'riso', 'marketing', 'signup', 'reach', 'embed', 'discord'] as const
+export const GROUPS = ['critter-connect', 'riso', 'marketing', 'signup', 'reach', 'embed', 'discord', 'legal'] as const
 export type Group = (typeof GROUPS)[number]
 
 /** The groups that shoot the demo's portal pages under a theme. */
@@ -68,6 +77,7 @@ export const GROUP_LABELS: Record<Group, string> = {
   reach: 'Share kit, badges and buttons',
   embed: "Embeds on a studio's page",
   discord: 'Share tab: the Discord tab',
+  legal: 'Legal pages, agreement and player notices',
 }
 
 interface ShotBase {
@@ -242,6 +252,20 @@ const DISCORD_SHOTS: Shot[] = (['light', 'dark'] as const).flatMap((adminTheme):
   },
 ])
 
+/**
+ * The three documents, the two places a studio agrees to them, and the
+ * three forms where players see the notice and the warning. The seed
+ * routes Critter Connect's contact form to email.
+ */
+const LEGAL_SHOTS: Shot[] = [
+  ...LEGAL_SLUGS.map((slug): Shot => ({ id: slug, label: LEGAL_LINKS[slug].title, path: () => LEGAL_LINKS[slug].href })),
+  { id: 'signup', label: 'Sign up: the two boxes', path: () => '/signup' },
+  { id: 'accept', label: 'Accept the Terms and Privacy Policy', path: () => '/legal/accept', session: 'accept' },
+  { id: 'submit-bug', label: 'Submit form: a bug', path: (w) => portalPaths(w.cc.slug).newFeedback('bug') },
+  { id: 'contact', label: 'Contact form, by email', path: (w) => portalPaths(w.cc.slug).contact },
+  { id: 'report-abuse', label: 'Report this page', path: (w) => reportAbuseHref(portalPaths(w.cc.slug).hub) },
+]
+
 export const isPortalGroup = (group: Group): group is PortalGroup =>
   (PORTAL_GROUPS as readonly string[]).includes(group)
 
@@ -251,6 +275,7 @@ const OTHER_SHOTS: Record<Exclude<Group, PortalGroup>, Shot[]> = {
   reach: REACH_SHOTS,
   embed: EMBED_SHOTS,
   discord: DISCORD_SHOTS,
+  legal: LEGAL_SHOTS,
 }
 
 export const shotsFor = (group: Group): Shot[] => (isPortalGroup(group) ? PORTAL_SHOTS : OTHER_SHOTS[group])
