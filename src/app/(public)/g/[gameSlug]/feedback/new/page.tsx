@@ -13,6 +13,8 @@ import { FormNotice } from '@/components/game/FormNotice'
 import { PageHead } from '@/components/game/PageHead'
 import { TallyFormPanel } from '@/components/game/TallyEmbed'
 import { TurnstileField } from '@/components/game/TurnstileField'
+import { LEGAL_NOTICE_ID, LegalNotice } from '@/components/legal/LegalNotice'
+import { SENSITIVE_INFO_WARNING_ID, SensitiveInfoWarning } from '@/components/legal/SensitiveInfoWarning'
 import {
   type FeedbackTypeParam,
   feedbackSearchParams,
@@ -134,8 +136,9 @@ export default async function NewFeedbackPage({ params, searchParams }: Args) {
               <form action={paths.feedbackSubmit} className="fs-form" method="post">
                 {takesIdeas ? <FeedbackTypeChoice chosen={type} paths={paths} /> : null}
                 <input name="type" type="hidden" value={feedbackTypeOf(type)} />
+                <SensitiveInfoWarning />
 
-                <FormField id="title" label="Title">
+                <FormField describedBy={SENSITIVE_INFO_WARNING_ID} id="title" label="Title">
                   {(control) => (
                     <input
                       {...control}
@@ -149,7 +152,7 @@ export default async function NewFeedbackPage({ params, searchParams }: Args) {
                   )}
                 </FormField>
 
-                <FormField hint={copy.hint} id="description" label={copy.describe}>
+                <FormField describedBy={SENSITIVE_INFO_WARNING_ID} hint={copy.hint} id="description" label={copy.describe}>
                   {(control) => (
                     <textarea
                       {...control}
@@ -182,7 +185,7 @@ export default async function NewFeedbackPage({ params, searchParams }: Args) {
 
                 {type === 'bug' ? (
                   <div className="fs-field-pair">
-                    <FormField id="platform" label="Platform (optional)">
+                    <FormField describedBy={SENSITIVE_INFO_WARNING_ID} id="platform" label="Platform (optional)">
                       {(control) => (
                         <input
                           {...control}
@@ -194,7 +197,7 @@ export default async function NewFeedbackPage({ params, searchParams }: Args) {
                         />
                       )}
                     </FormField>
-                    <FormField id="gameVersion" label="Game version (optional)">
+                    <FormField describedBy={SENSITIVE_INFO_WARNING_ID} id="gameVersion" label="Game version (optional)">
                       {(control) => (
                         <input
                           {...control}
@@ -209,8 +212,9 @@ export default async function NewFeedbackPage({ params, searchParams }: Args) {
                 ) : null}
 
                 <div className="fs-form-submit">
+                  <LegalNotice />
                   <TurnstileField />
-                  <button className="fs-btn fs-btn-primary" type="submit">
+                  <button aria-describedby={LEGAL_NOTICE_ID} className="fs-btn fs-btn-primary" type="submit">
                     {copy.submit}
                   </button>
                 </div>

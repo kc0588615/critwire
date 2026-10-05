@@ -21,3 +21,16 @@ export const CONFIRM_AGE = 'I confirm I’m at least 18 years old.'
 
 /** Where legal requests go: account closure, privacy and copyright. */
 export const LEGAL_CONTACT_EMAIL = 'admin@critwire.com'
+
+/** Beside every button that sends a player's submission. */
+export const SUBMIT_NOTICE: readonly LegalCopyPart[] = [
+  'By sending this, you agree to the ',
+  { document: 'terms' },
+  ' and acknowledge the ',
+  { document: 'privacy' },
+  '.',
+]
+
+/** Beside every free-text field a player fills in. */
+export const SENSITIVE_INFO_WARNING =
+  'Don’t include passwords, API keys, access tokens, private keys, payment details, health information or anything else confidential or sensitive.'

@@ -381,8 +381,10 @@
   padding-block: 1.25rem 1.5rem;
 }
 
-/* "Powered by Critwire" and, on the hosted instance, "Report this page". */
-.fs-footer-end {
+/* "Powered by Critwire", on the hosted instance "Report this page", and
+   always critwire's legal links. */
+.fs-footer-end,
+.fs-footer-legal {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem 1.5rem;
@@ -1105,7 +1107,7 @@
   accent-color: var(--fs-fg);
 }
 
-/* Email beside platform from 40rem; one column on phones. */
+/* Platform beside game version from 40rem; one column on phones. */
 .fs-field-pair {
   display: grid;
   gap: 1.5rem;
@@ -1115,6 +1117,19 @@
   .fs-field-pair {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+}
+
+/* A player form's warning, at the top of its fields: set off by a rule. */
+.fs-sensitive-warning {
+  max-width: 40em;
+  border-inline-start: 0.1875rem solid var(--fs-fg);
+  padding-inline-start: 0.75rem;
+}
+
+/* The Terms notice heads the submit row, on a line of its own. */
+.fs-legal-notice {
+  flex-basis: 100%;
+  max-width: 40em;
 }
 
 /* Verification, then the submit at the row's end; they stack when narrow. */

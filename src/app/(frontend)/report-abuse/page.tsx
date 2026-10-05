@@ -9,6 +9,8 @@ import { AccountPage } from '@/components/accounts/AccountPage'
 import { FormField } from '@/components/game/FormField'
 import { FormNotice } from '@/components/game/FormNotice'
 import { TurnstileField } from '@/components/game/TurnstileField'
+import { LEGAL_NOTICE_ID, LegalNotice } from '@/components/legal/LegalNotice'
+import { SENSITIVE_INFO_WARNING_ID, SensitiveInfoWarning } from '@/components/legal/SensitiveInfoWarning'
 import { ABUSE_REPORT_REASON_OPTIONS } from '@/collections/options'
 import { parsePortalPath } from '@/lib/game-portal/paths'
 import { isOpenSignup } from '@/lib/hosting'
@@ -65,6 +67,7 @@ export default async function ReportAbusePage({ searchParams }: Args) {
     >
       <form action="/report-abuse/submit" className="fs-form" method="post">
         <input name="page" type="hidden" value={page} />
+        <SensitiveInfoWarning />
 
         <FormField id="reason" label="Reason">
           {(control) => (
@@ -88,6 +91,7 @@ export default async function ReportAbusePage({ searchParams }: Args) {
         </FormField>
 
         <FormField
+          describedBy={SENSITIVE_INFO_WARNING_ID}
           hint="What you saw, and where on the page."
           id="details"
           label="Details (optional)"
@@ -105,7 +109,7 @@ export default async function ReportAbusePage({ searchParams }: Args) {
         <FormField
           hint="Only if you’d like us to be able to reply."
           id="email"
-          label="Your email (optional)"
+          label="Your email (optional, 13 or older)"
         >
           {(control) => (
             <input
@@ -119,9 +123,11 @@ export default async function ReportAbusePage({ searchParams }: Args) {
           )}
         </FormField>
 
+        <LegalNotice />
+
         <TurnstileField />
 
-        <button className="cw-btn" type="submit">
+        <button aria-describedby={LEGAL_NOTICE_ID} className="cw-btn" type="submit">
           Send report
         </button>
       </form>

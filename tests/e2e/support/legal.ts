@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 
-import { type APIRequestContext, expect } from '@playwright/test'
+import { type APIRequestContext, expect, type Locator } from '@playwright/test'
 
 import { BASE_URL } from './env'
 
@@ -83,4 +83,69 @@ export async function acceptLegal(
   expect(response.status(), 'accept the legal documents').toBe(303)
   const location = new URL(response.headers().location ?? '', BASE_URL)
   return `${location.pathname}${location.search}`
+}
+
+/** The Brief's warning, beside every free-text field a player fills in (Goal 3). */
+export const SENSITIVE_INFO_WARNING =
+  'Don’t include passwords, API keys, access tokens, private keys, payment details, health information or anything else confidential or sensitive.'
+
+/** The Brief's notice, beside every submit button a player presses (Goal 3). */
+export const SUBMIT_NOTICE = 'By sending this, you agree to the Terms of Service and acknowledge the Privacy Policy.'
+
+/** The three documents as the footers link them: name, then path. */
+export const LEGAL_FOOTER_LINKS = [
+  ['Terms', '/legal/terms'],
+  ['Privacy', '/legal/privacy'],
+  ['Copyright', '/legal/copyright'],
+] as const
+
+/** `scope`'s navigation `label` links the three documents, in order. */
+export async function expectLegalLinks(scope: Locator, label: string): Promise<void> {
+  const nav = scope.getByRole('navigation', { name: label, exact: true })
+  await expect(nav, label).toBeVisible()
+  await expect(nav.getByRole('link')).toHaveText(LEGAL_FOOTER_LINKS.map(([name]) => name))
+  for (const [name, href] of LEGAL_FOOTER_LINKS) {
+    await expect(nav.getByRole('link', { name, exact: true })).toHaveAttribute('href', href)
+  }
+}
+
+const DESCRIBED_BY_WARNING = /(^|\s)sensitive-info-warning(\s|$)/
+
+/**
+ * A player form's warning and notice (plan S10): the warning once, linked
+ * from each of `textFields` (by label) and from every text input or
+ * textarea in the form, so none is missed; the notice beside the `submit`
+ * button, describing it and linking the Terms and the Privacy Policy.
+ */
+export async function expectPlayerFormNotices(
+  form: Locator,
+  { submit, textFields }: { submit: string; textFields: readonly string[] },
+): Promise<void> {
+  const warning = form.getByText(SENSITIVE_INFO_WARNING, { exact: true })
+  await expect(warning).toHaveCount(1)
+  await expect(warning).toHaveAttribute('id', 'sensitive-info-warning')
+
+  const controls = form.locator('textarea, input[type="text"]')
+  await expect(controls).toHaveCount(textFields.length)
+  for (const label of textFields) {
+    await expect(form.getByLabel(label, { exact: true }), label).toHaveAttribute('aria-describedby', DESCRIBED_BY_WARNING)
+  }
+  for (const control of await controls.all()) {
+    await expect(control).toHaveAttribute('aria-describedby', DESCRIBED_BY_WARNING)
+  }
+
+  const notice = form.getByText(SUBMIT_NOTICE, { exact: true })
+  await expect(notice).toHaveCount(1)
+  await expect(notice.getByRole('link', { name: 'Terms of Service', exact: true })).toHaveAttribute('href', '/legal/terms')
+  await expect(notice.getByRole('link', { name: 'Privacy Policy', exact: true })).toHaveAttribute('href', '/legal/privacy')
+
+  const button = form.getByRole('button', { name: submit, exact: true })
+  await expect(button).toHaveAccessibleDescription(SUBMIT_NOTICE)
+  // Beside it: the notice ends at most 150 px above the button, with the
+  // verification widget at most between them.
+  const [noticeBox, buttonBox] = [await notice.boundingBox(), await button.boundingBox()]
+  expect(noticeBox && buttonBox, 'both are laid out').toBeTruthy()
+  const gap = buttonBox!.y - (noticeBox!.y + noticeBox!.height)
+  expect(gap, 'the notice sits just above the submit button').toBeGreaterThanOrEqual(0)
+  expect(gap, 'the notice sits just above the submit button').toBeLessThanOrEqual(150)
 }

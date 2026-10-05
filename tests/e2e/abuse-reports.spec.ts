@@ -8,6 +8,7 @@ import {
   submitWithTurnstile,
   test,
 } from './support/fixtures'
+import { expectPlayerFormNotices } from './support/legal'
 
 /**
  * On the hosted instance (open signup), every portal's footer has "Report
@@ -55,7 +56,7 @@ test('S17.1 a player reports a portal and a super admin reads it', async ({
 
   await page.getByLabel('Reason').selectOption({ label: 'Scam or phishing' })
   await page.getByLabel('Details (optional)').fill('Asks players for their Steam password.')
-  await page.getByLabel('Your email (optional)').fill('player@e2e.test')
+  await page.getByLabel('Your email (optional, 13 or older)', { exact: true }).fill('player@e2e.test')
   await submitWithTurnstile(page, 'Send report')
 
   await expect(page.getByRole('heading', { level: 1, name: 'Report sent' })).toBeVisible()
@@ -177,4 +178,20 @@ test('S17.3 a self-hosted instance takes no abuse reports', async ({
   } finally {
     await second.dispose()
   }
+})
+
+test('S17.4 the report form warns against sensitive details and shows the Terms notice', async ({
+  api,
+  page,
+  uniqueSlug,
+  world,
+}) => {
+  const hub = `/g/${(await createProject(api('aOwner'), world.tenants.A.id, uniqueSlug('s174'))).slug}`
+  await page.goto(`/report-abuse?page=${encodeURIComponent(hub)}`)
+  const form = page.locator('form[action="/report-abuse/submit"]')
+  await expectPlayerFormNotices(form, { submit: 'Send report', textFields: ['Details (optional)'] })
+  const email = form.getByLabel('Your email (optional, 13 or older)', { exact: true })
+  await expect(email).toHaveAttribute('type', 'email')
+  await expect(email).toHaveAccessibleDescription('Only if you’d like us to be able to reply.')
+  await test.info().attach('s174-report-form', { body: await page.screenshot({ fullPage: true }), contentType: 'image/png' })
 })

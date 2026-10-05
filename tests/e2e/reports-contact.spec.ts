@@ -9,6 +9,7 @@ import { ageJob, countInDatabase } from './support/db'
 import { storageStatePath, TURNSTILE_DUMMY_TOKEN } from './support/env'
 import { createIssue, createProject, createReport, expect, submitWithTurnstile, test } from './support/fixtures'
 import { runDueJobs } from './support/jobs'
+import { expectPlayerFormNotices } from './support/legal'
 
 /**
  * Player reports and the contact form: the public forms behind Turnstile,
@@ -468,6 +469,49 @@ test.describe('S5.4–S5.6 contact form', () => {
     expect(jobs, 'the undelivered job is kept').toHaveLength(1)
     expect(jobs[0].completedAt ?? null).toBeNull()
     expect(jobs[0].log ?? []).toContainEqual(expect.objectContaining({ state: 'failed' }))
+  })
+})
+
+test('S5.15 the feedback and contact forms warn against sensitive details and show the Terms notice', async ({
+  api,
+  page,
+  uniqueSlug,
+  webhookSink,
+  world,
+}) => {
+  const name = 'Lantern Keepers'
+  const project = await createProject(api('aOwner'), world.tenants.A.id, uniqueSlug('rc-notices'), {
+    name,
+    contact: { target: 'DISCORD_WEBHOOK', discordWebhookUrl: webhookSink.url(`/api/webhooks/${uniqueSlug('s515')}/token`) },
+  })
+  const feedbackForm = page.locator('form[action$="/feedback/new/submit"]')
+
+  await test.step('the bug form', async () => {
+    await open(page, reportPath(project.slug))
+    await chooseType(page, 'Bug')
+    await expectPlayerFormNotices(feedbackForm, {
+      submit: 'Send report',
+      textFields: ['Title', 'What happened?', 'Platform (optional)', 'Game version (optional)'],
+    })
+    await test.info().attach('s515-bug-form', { body: await page.screenshot({ fullPage: true }), contentType: 'image/png' })
+  })
+
+  await test.step('the idea form', async () => {
+    await chooseType(page, 'Idea')
+    await expectPlayerFormNotices(feedbackForm, { submit: 'Send idea', textFields: ['Title', 'What’s your idea?'] })
+  })
+
+  await test.step('the contact form, and its email label and hint', async () => {
+    await open(page, contactPath(project.slug))
+    const form = page.locator('form[action$="/contact/submit"]')
+    await expectPlayerFormNotices(form, {
+      submit: 'Send message',
+      textFields: ['Name (optional)', 'Subject (optional)', 'Message'],
+    })
+    const email = form.getByLabel(`Email (optional, 13 or older), so the ${name} team can reply`, { exact: true })
+    await expect(email).toHaveAttribute('type', 'email')
+    await expect(email).toHaveAccessibleDescription('Sent to the team with your message; critwire doesn’t keep it.')
+    await test.info().attach('s515-contact-form', { body: await page.screenshot({ fullPage: true }), contentType: 'image/png' })
   })
 })
 

@@ -8,6 +8,8 @@ import { FormNotice } from '@/components/game/FormNotice'
 import { PageHead } from '@/components/game/PageHead'
 import { TallyFormPanel } from '@/components/game/TallyEmbed'
 import { TurnstileField } from '@/components/game/TurnstileField'
+import { LEGAL_NOTICE_ID, LegalNotice } from '@/components/legal/LegalNotice'
+import { SENSITIVE_INFO_WARNING_ID, SensitiveInfoWarning } from '@/components/legal/SensitiveInfoWarning'
 import { getContactRoute } from '@/lib/game-portal/formRoutes'
 import { getGameProject, requirePortalProject } from '@/lib/game-portal/getGameProject'
 import { portalPaths } from '@/lib/game-portal/paths'
@@ -81,26 +83,23 @@ export default async function ContactPage({ params, searchParams }: Args) {
             ) : null}
 
             <form action={paths.contactSubmit} className="fs-form" method="post">
-              <div className="fs-field-pair">
-                <FormField id="name" label="Name (optional)">
-                  {(control) => (
-                    <input
-                      {...control}
-                      className="fs-input"
-                      maxLength={120}
-                      name="name"
-                      type="text"
-                    />
-                  )}
-                </FormField>
-                <FormField id="email" label="Email (optional)">
-                  {(control) => (
-                    <input {...control} className="fs-input" name="email" type="email" />
-                  )}
-                </FormField>
-              </div>
+              <SensitiveInfoWarning />
 
-              <FormField id="subject" label="Subject (optional)">
+              <FormField describedBy={SENSITIVE_INFO_WARNING_ID} id="name" label="Name (optional)">
+                {(control) => (
+                  <input {...control} className="fs-input" maxLength={120} name="name" type="text" />
+                )}
+              </FormField>
+
+              <FormField
+                hint="Sent to the team with your message; critwire doesn’t keep it."
+                id="email"
+                label={`Email (optional, 13 or older), so the ${project.name} team can reply`}
+              >
+                {(control) => <input {...control} className="fs-input" name="email" type="email" />}
+              </FormField>
+
+              <FormField describedBy={SENSITIVE_INFO_WARNING_ID} id="subject" label="Subject (optional)">
                 {(control) => (
                   <input
                     {...control}
@@ -112,7 +111,7 @@ export default async function ContactPage({ params, searchParams }: Args) {
                 )}
               </FormField>
 
-              <FormField id="message" label="Message">
+              <FormField describedBy={SENSITIVE_INFO_WARNING_ID} id="message" label="Message">
                 {(control) => (
                   <textarea
                     {...control}
@@ -126,8 +125,9 @@ export default async function ContactPage({ params, searchParams }: Args) {
               </FormField>
 
               <div className="fs-form-submit">
+                <LegalNotice />
                 <TurnstileField />
-                <button className="fs-btn fs-btn-primary" type="submit">
+                <button aria-describedby={LEGAL_NOTICE_ID} className="fs-btn fs-btn-primary" type="submit">
                   Send message
                 </button>
               </div>

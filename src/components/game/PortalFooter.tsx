@@ -3,13 +3,16 @@ import React from 'react'
 
 import type { GameProject } from '@/payload-types'
 
+import { LegalLinks } from '@/components/legal/LegalLinks'
 import { resolveProjectLinks } from '@/lib/game-portal/links'
 import { portalNavLinks, portalPaths } from '@/lib/game-portal/paths'
 import { isOpenSignup, isPoweredByShown, reportAbuseHref } from '@/lib/hosting'
 
 /**
- * The portal's footer. On the hosted instance (open signup) it also offers
- * "Report this page"; a self-hosted one may hide "Powered by".
+ * The portal's footer. Its base row always links critwire's own legal
+ * documents, apart from the studio's links above; on the hosted instance
+ * (open signup) it also offers "Report this page", and a self-hosted one
+ * may hide "Powered by".
  */
 export const PortalFooter: React.FC<{ project: GameProject }> = ({ project }) => (
   <footer className="fs-footer">
@@ -38,7 +41,7 @@ export const PortalFooter: React.FC<{ project: GameProject }> = ({ project }) =>
       <span>
         © {new Date().getFullYear()} {project.name}
       </span>
-      <span className="fs-footer-end">
+      <div className="fs-footer-end">
         {isPoweredByShown() ? (
           <span>
             Powered by{' '}
@@ -56,7 +59,8 @@ export const PortalFooter: React.FC<{ project: GameProject }> = ({ project }) =>
             Report this page
           </Link>
         ) : null}
-      </span>
+        <LegalLinks className="fs-footer-legal" label="Critwire legal" linkClassName="fs-link" />
+      </div>
     </div>
   </footer>
 )

@@ -39,6 +39,8 @@ export default lockJobStatsGlobal(buildConfig({
     components: {
       // Above the sign-in form: the welcome line, and signup when it's open.
       beforeLogin: ['@/components/BeforeLogin'],
+      // Below it: the Terms, Privacy and Copyright links every footer has.
+      afterLogin: ['@/components/AfterLogin'],
       // The top of the dashboard, by role (§13).
       beforeDashboard: ['@/components/BeforeDashboard'],
       graphics: {
