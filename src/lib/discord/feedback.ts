@@ -16,6 +16,7 @@ import {
   type SendCommand,
   sendFormID,
   TEXT_INPUT_MAX,
+  type TextFieldSpec,
   truncate,
 } from '@/lib/discord/interactions'
 import { portalPaths } from '@/lib/game-portal/paths'
@@ -25,6 +26,8 @@ import {
   reportFieldsSchema,
   reportRefusal,
 } from '@/lib/game-portal/reports'
+import { noticeMarkdown, SENSITIVE_INFO_WARNING_SHORT } from '@/lib/legal/copy'
+import { LEGAL_LINKS } from '@/lib/legal/paths'
 import { getLogger } from '@/lib/logger'
 import { withRef } from '@/lib/share/kit'
 import { checkRateLimit, RateLimitUnavailableError } from '@/lib/upstash/rate-limit'
@@ -102,6 +105,16 @@ const FIELD_NAMES: Record<string, string> = {
 const boardURL = (game: GuildGame): string =>
   withRef(absoluteURL(portalPaths(game.slug).board), 'discord')
 
+/** The notice that sending accepts the Terms, ending every confirmation. */
+const legalNotice = (): string => noticeMarkdown((document) => absoluteURL(LEGAL_LINKS[document].href))
+
+/** A free-text field, with the warning against sensitive information under its label. */
+const textField = (field: Omit<TextFieldSpec, 'description' | 'kind'>): TextFieldSpec => ({
+  ...field,
+  description: SENSITIVE_INFO_WARNING_SHORT,
+  kind: 'text',
+})
+
 const gamePicker = (games: GuildGame[]) => ({
   custom_id: FormField.GAME,
   kind: 'select' as const,
@@ -126,21 +139,20 @@ export const handleFeedbackCommand = async (
     customID: feedbackFormID(kind, single?.id ?? null),
     fields: [
       ...(single ? [] : [gamePicker(games)]),
-      { custom_id: FormField.TITLE, kind: 'text', label: 'Title', max_length: 160, min_length: 3, required: true },
-      {
+      textField({ custom_id: FormField.TITLE, label: 'Title', max_length: 160, min_length: 3, required: true }),
+      textField({
         custom_id: FormField.DETAILS,
-        kind: 'text',
         label: details,
         max_length: TEXT_INPUT_MAX,
         min_length: 10,
         paragraph: true,
         required: true,
-      },
+      }),
       // Platform and version only describe bugs.
       ...(kind === 'bug'
         ? [
-            { custom_id: FormField.PLATFORM, kind: 'text' as const, label: 'Platform', max_length: 120, required: false },
-            { custom_id: FormField.VERSION, kind: 'text' as const, label: 'Game version', max_length: 120, required: false },
+            textField({ custom_id: FormField.PLATFORM, label: 'Platform', max_length: 120, required: false }),
+            textField({ custom_id: FormField.VERSION, label: 'Game version', max_length: 120, required: false }),
           ]
         : []),
     ],
@@ -188,23 +200,21 @@ export const handleSendCommand = async (interaction: SendCommand): Promise<Inter
           { label: 'Idea', value: 'idea' },
         ],
       },
-      {
+      textField({
         custom_id: FormField.TITLE,
-        kind: 'text',
         label: 'Title',
         max_length: TITLE_MAX,
         required: true,
         value: truncate(text.split('\n')[0].trim(), TITLE_MAX),
-      },
-      {
+      }),
+      textField({
         custom_id: FormField.DETAILS,
-        kind: 'text',
         label: 'Details',
         max_length: TEXT_INPUT_MAX,
         paragraph: true,
         required: true,
         value: truncate(text, TEXT_INPUT_MAX),
-      },
+      }),
     ],
     title: single ? `Send to critwire: ${single.name}` : 'Send to critwire',
   })
@@ -298,13 +308,13 @@ export const handleFormSubmit = async (interaction: FormSubmit): Promise<Interac
 
   if (isImport) {
     return ephemeralMessage(
-      `Sent to critwire as ${aNoun} for **${gameName}**, credited to @${escapeMarkdown(sender.username)}.`,
+      `Sent to critwire as ${aNoun} for **${gameName}**, credited to @${escapeMarkdown(sender.username)}.\n${legalNotice()}`,
     )
   }
   const next = published
     ? 'It’s on the board now.'
     : 'The studio reviews reports before they go on the board.'
   return ephemeralMessage(
-    `Thanks, your ${noun} for **${gameName}** is in. ${next}\n<${boardURL(game)}>`,
+    `Thanks, your ${noun} for **${gameName}** is in. ${next}\n<${boardURL(game)}>\n${legalNotice()}`,
   )
 }

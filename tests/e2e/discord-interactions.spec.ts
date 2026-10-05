@@ -10,6 +10,7 @@ import {
   SECOND_BASE_URL,
 } from './support/env'
 import {
+  type DiscordForm,
   type DiscordMember,
   type DiscordPlace,
   discordRequests,
@@ -34,6 +35,23 @@ import { createProject, expect, hold, newRequestContext, test } from './support/
  * Every request is signed with the fixed-seed test key pair; nothing
  * calls the real Discord.
  */
+
+/** The Brief's notice and Discord's shorter warning, as players read them. */
+const FEEDBACK_DESCRIPTION =
+  'Send a bug or idea to the game’s team. Sending it accepts critwire’s Terms and Privacy Policy.'
+const WARNING = 'Don’t include passwords, keys, tokens, payment or health details, or anything sensitive.'
+const NOTICE = `By sending this, you agree to the [Terms of Service](<${BASE_URL}/legal/terms>) and acknowledge the [Privacy Policy](<${BASE_URL}/legal/privacy>).`
+
+/** Every text field carries the warning under its label; a select carries none. */
+const expectWarnings = (form: DiscordForm) => {
+  for (const field of form.components) {
+    expect(field, field.component.custom_id).toEqual(
+      field.component.type === 4
+        ? expect.objectContaining({ description: WARNING })
+        : expect.not.objectContaining({ description: expect.anything() }),
+    )
+  }
+}
 
 test('D1 only requests Discord signed, within five minutes, get through', async ({
   playwright,
@@ -123,6 +141,7 @@ test('D4 the commands are registered at boot, once, as the app', async ({ reques
   const feedback = commands.find((c) => c.name === 'feedback')
   expect(feedback).toMatchObject({
     contexts: [0],
+    description: FEEDBACK_DESCRIPTION,
     integration_types: [0],
     options: [
       {
@@ -137,6 +156,8 @@ test('D4 the commands are registered at boot, once, as the app', async ({ reques
     ],
     type: 1,
   })
+  // Discord refuses a description over 100 characters.
+  expect(FEEDBACK_DESCRIPTION.length).toBeLessThanOrEqual(100)
   // Everyone may use /feedback.
   expect(feedback).not.toHaveProperty('default_member_permissions')
   expect(commands.find((c) => c.name === 'Send to critwire')).toMatchObject({
@@ -201,7 +222,7 @@ test('D2 /feedback files a private report in the review queue, once', async ({
   const sender = player('harbor_player')
 
   const bugForm = await openForm(request, feedbackCommand(place, sender, 'bug'))
-  await test.step('the bug form: bound to the game, no picker, with platform and version', async () => {
+  await test.step('the bug form: bound to the game, no picker, with platform, version and the warning', async () => {
     expect(bugForm.custom_id).toBe(`cw1:fb:bug:${game.id}`)
     expect(bugForm.title).toBe('Report a bug: Harbor Lights')
     expect(fieldIDs(bugForm)).toEqual(['title', 'details', 'platform', 'version'])
@@ -213,6 +234,7 @@ test('D2 /feedback files a private report in the review queue, once', async ({
     ])
     expect(bugForm.components.every((field) => field.type === 18)).toBe(true)
     expect(bugForm.components[1].component).toMatchObject({ max_length: 4000, min_length: 10, required: true, style: 2 })
+    expectWarnings(bugForm)
   })
 
   await test.step('the idea form has neither', async () => {
@@ -220,19 +242,20 @@ test('D2 /feedback files a private report in the review queue, once', async ({
     expect(ideaForm.custom_id).toBe(`cw1:fb:idea:${game.id}`)
     expect(fieldIDs(ideaForm)).toEqual(['title', 'details'])
     expect(ideaForm.components[1].label).toBe('Your idea')
+    expectWarnings(ideaForm)
   })
 
   const body = JSON.stringify(formSubmission(place, sender, bugForm, BUG))
   const headers = signatureHeaders(body)
   const submission = JSON.parse(body) as { id: string }
 
-  await test.step('submitting answers privately, with the board link tagged ref=discord', async () => {
+  await test.step('submitting answers privately, with the board link tagged ref=discord and the notice', async () => {
     const response = await postInteraction(request, body, headers)
     expect(response.status()).toBe(200)
     const reply = (await response.json()) as Awaited<ReturnType<typeof interact>>
     expectPrivateReply(reply)
     expect(reply.data.content).toBe(
-      `Thanks, your bug report for **${game.name}** is in. The studio reviews reports before they go on the board.\n${boardLink(game)}`,
+      `Thanks, your bug report for **${game.name}** is in. The studio reviews reports before they go on the board.\n${boardLink(game)}\n${NOTICE}`,
     )
   })
 
@@ -319,7 +342,7 @@ test('D3 Discord reports go through the content filter, and their sender never g
       ),
     )
     expect(reply.data.content).toBe(
-      `Thanks, your idea for **Lantern Tide** is in. It’s on the board now.\n${boardLink(game)}`,
+      `Thanks, your idea for **Lantern Tide** is in. It’s on the board now.\n${boardLink(game)}\n${NOTICE}`,
     )
   })
 
@@ -363,6 +386,7 @@ test('D6 a server with several games: the player picks one, and a form stays bou
     expect(bugForm.custom_id).toBe('cw1:fb:bug:-')
     expect(bugForm.title).toBe('Report a bug')
     expect(fieldIDs(bugForm)).toEqual(['game', 'title', 'details', 'platform', 'version'])
+    expectWarnings(bugForm)
     expect(bugForm.components[0].component.options).toEqual([
       { label: 'Anchor Isle', value: String(isle.id) },
       { label: 'Beacon Bay', value: String(bay.id) },
@@ -454,7 +478,7 @@ test('D4 only moderators send a message to critwire, credited to its author', as
   })
 
   const form = await openForm(request, sendCommand(place, moderator, message))
-  await test.step('Manage Messages gets the form, prefilled, with a Type select', async () => {
+  await test.step('Manage Messages gets the form, prefilled, with a Type select and the warning', async () => {
     expect(form.custom_id).toBe(`cw1:send:${game.id}:${message.id}:${author.id}:${author.username}`)
     expect(form.custom_id.length).toBeLessThanOrEqual(100)
     expect(form.title).toBe('Send to critwire: Tidewater')
@@ -465,6 +489,7 @@ test('D4 only moderators send a message to critwire, credited to its author', as
     ])
     expect(form.components[1].component.value).toBe('Boats should dock automatically')
     expect(form.components[2].component.value).toBe(message.content)
+    expectWarnings(form)
   })
 
   await test.step('Administrator gets the form too', async () => {
@@ -494,10 +519,12 @@ test('D4 only moderators send a message to critwire, credited to its author', as
     expect(await reportsOn(owner.client, game)).toHaveLength(0)
   })
 
-  await test.step('sent as an Idea: an IDEA credited to the author, with the message link', async () => {
+  await test.step('sent as an Idea: an IDEA credited to the author, with the message link and the notice', async () => {
     const reply = await interact(request, formSubmission(place, moderator, form, values))
     expectPrivateReply(reply)
-    expect(reply.data.content).toBe('Sent to critwire as an idea for **Tidewater**, credited to @old:sailor.')
+    expect(reply.data.content).toBe(
+      `Sent to critwire as an idea for **Tidewater**, credited to @old:sailor.\n${NOTICE}`,
+    )
     const reports = await reportsOn(owner.client, game)
     expect(reports).toHaveLength(1)
     expect(reports[0]).toMatchObject({

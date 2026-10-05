@@ -10,6 +10,7 @@ import {
   SEND_COMMAND_NAME,
 } from '@/lib/discord/interactions'
 import { requestToken } from '@/lib/discord/oauth'
+import { DISCORD_FEEDBACK_DESCRIPTION } from '@/lib/legal/copy'
 import { getLogger } from '@/lib/logger'
 
 const log = getLogger('discord.commands')
@@ -18,7 +19,7 @@ const log = getLogger('discord.commands')
 export const DISCORD_COMMANDS = [
   {
     contexts: [GUILD_CONTEXT],
-    description: 'Send a bug report or an idea to the game’s team',
+    description: DISCORD_FEEDBACK_DESCRIPTION,
     integration_types: [GUILD_INSTALL],
     name: 'feedback',
     options: [

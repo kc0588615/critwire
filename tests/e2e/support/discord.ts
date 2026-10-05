@@ -196,6 +196,7 @@ export const sendCommand = (place: DiscordPlace, member: DiscordMember, message:
 export interface DiscordFormField {
   type: 18
   label: string
+  description?: string
   component: {
     type: 3 | 4
     custom_id: string

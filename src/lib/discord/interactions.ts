@@ -261,6 +261,7 @@ export const ephemeralMessage = (content: string) => ({
 /** Discord's limits on a form. */
 const CUSTOM_ID_MAX = 100
 const FORM_TITLE_MAX = 45
+const LABEL_DESCRIPTION_MAX = 100
 const SELECT_OPTION_LABEL_MAX = 100
 export const TEXT_INPUT_MAX = 4000
 
@@ -270,6 +271,19 @@ const TextInputStyle = { PARAGRAPH: 2, SHORT: 1 } as const
 export const truncate = (text: string, max: number): string =>
   text.length <= max ? text : `${text.slice(0, max - 1).trimEnd()}…`
 
+export type TextFieldSpec = {
+  custom_id: string
+  /** Shown under the field's label, at most 100 characters. */
+  description?: string
+  kind: 'text'
+  label: string
+  max_length: number
+  min_length?: number
+  paragraph?: boolean
+  required: boolean
+  value?: string
+}
+
 type FormFieldSpec =
   | {
       custom_id: string
@@ -277,16 +291,7 @@ type FormFieldSpec =
       label: string
       options: { label: string; value: string }[]
     }
-  | {
-      custom_id: string
-      kind: 'text'
-      label: string
-      max_length: number
-      min_length?: number
-      paragraph?: boolean
-      required: boolean
-      value?: string
-    }
+  | TextFieldSpec
 
 /** A form (modal) of Labels, each holding a Text Input or a String Select. At most 5 fields. */
 export const formResponse = ({
@@ -300,6 +305,11 @@ export const formResponse = ({
 }) => {
   if (fields.length > 5) throw new Error(`A Discord form holds at most 5 fields (got ${fields.length}).`)
   if (customID.length > CUSTOM_ID_MAX) throw new Error(`A form's custom_id is too long: ${customID}`)
+  for (const field of fields) {
+    if (field.kind === 'text' && field.description && field.description.length > LABEL_DESCRIPTION_MAX) {
+      throw new Error(`A field's description is too long: ${field.description}`)
+    }
+  }
   return {
     data: {
       components: fields.map((field) => ({
@@ -325,6 +335,7 @@ export const formResponse = ({
                 type: ComponentType.TEXT_INPUT,
                 value: field.value,
               },
+        description: field.kind === 'text' ? field.description : undefined,
         label: field.label,
         type: ComponentType.LABEL,
       })),
