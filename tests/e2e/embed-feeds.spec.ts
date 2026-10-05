@@ -86,7 +86,8 @@ test('E8 the feeds show what the portal shows, and nothing private', async ({
   const project = await createProject(aOwner, world.tenants.A.id, uniqueSlug('feeds'))
   const paths = portalPaths(project.slug)
   const slug = (label: string) => uniqueSlug(`feeds-${label}`)
-  const email = `feeds-${project.slug}@e2e.test`
+  // A report's platform is private: promotion never copies it to the item.
+  const privateDetail = `platform-${project.slug}`
 
   // Updates, oldest first: two published, a draft and a held one.
   const plain = await createPatchNote(aOwner, project, slug('plain'), { title: 'Quiet update' })
@@ -99,12 +100,12 @@ test('E8 the feeds show what the portal shows, and nothing private', async ({
   const heldNote = await createPatchNote(aOwner, project, slug('held-note'), { title: 'Held update' })
   await hold(superAdmin, 'patch-notes', heldNote.id)
 
-  // Items, oldest first. The first comes from a player's report, with an email.
+  // Items, oldest first. The first comes from a player's report, with a private platform.
   const report = await createReport(aOwner, project, {
     title: 'Compass points south',
     description: 'The needle always points south.',
     category: 'AUDIO',
-    submitterEmail: email,
+    platform: privateDetail,
   })
   const published = await aOwner.update('issue-reports', report.id, { status: 'PUBLISHED' })
   expect(published.status, JSON.stringify(published.body)).toBe(200)
@@ -139,7 +140,7 @@ test('E8 the feeds show what the portal shows, and nothing private', async ({
   // Never in a feed: a private item, an archived one and a submission still under review.
   await createIssue(aOwner, project, slug('private'), { title: 'Private item', status: 'PLANNED', isPublic: false })
   await createIssue(aOwner, project, slug('archived'), { title: 'Archived item', status: 'CLOSED' })
-  await createReport(aOwner, project, { title: 'Report under review', submitterEmail: email })
+  await createReport(aOwner, project, { title: 'Report under review', platform: privateDetail })
   await castVote(playwright, idea.id)
   await castVote(playwright, idea.id)
   await castVote(playwright, shipped.id)
@@ -220,7 +221,7 @@ test('E8 the feeds show what the portal shows, and nothing private', async ({
       ])
 
       for (const secret of [
-        email,
+        privateDetail,
         'Private item',
         'Archived item',
         'Report under review',
@@ -267,7 +268,7 @@ test('E8 the feeds show what the portal shows, and nothing private', async ({
         },
       ])
       expect(sorted(feed.items[0])).toEqual(UPDATE_ITEM_KEYS)
-      for (const secret of ['Draft update', 'Held update', email]) expect(text, secret).not.toContain(secret)
+      for (const secret of ['Draft update', 'Held update', privateDetail]) expect(text, secret).not.toContain(secret)
     })
 
     await test.step('another site may fetch both, but never with credentials (C4)', async () => {

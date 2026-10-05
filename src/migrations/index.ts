@@ -20,6 +20,7 @@ import * as migration_20261002_161631_discord_stage_posts from './20261002_16163
 import * as migration_20261004_225524_legal_acceptances from './20261004_225524_legal_acceptances';
 import * as migration_20261004_234836_contact_job_sweep from './20261004_234836_contact_job_sweep';
 import * as migration_20261005_000942_users_deleted from './20261005_000942_users_deleted';
+import * as migration_20261005_001725_drop_submitter_email from './20261005_001725_drop_submitter_email';
 
 export const migrations = [
   {
@@ -131,5 +132,10 @@ export const migrations = [
     up: migration_20261005_000942_users_deleted.up,
     down: migration_20261005_000942_users_deleted.down,
     name: '20261005_000942_users_deleted',
+  },
+  {
+    up: migration_20261005_001725_drop_submitter_email.up,
+    down: migration_20261005_001725_drop_submitter_email.down,
+    name: '20261005_001725_drop_submitter_email'
   },
 ];

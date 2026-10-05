@@ -25,7 +25,7 @@ export const IssueReports: CollectionConfig = {
   slug: 'issue-reports',
   labels: { plural: 'Submissions', singular: 'Submission' },
   access: {
-    // Never public: reports may contain emails and unvetted content.
+    // Never public: reports hold unvetted content and Discord identities.
     // The public submission endpoint (Phase 6) creates reports via the
     // Local API with overrideAccess after Turnstile + rate limiting.
     read: tenantMemberAccess,
@@ -87,10 +87,6 @@ export const IssueReports: CollectionConfig = {
       type: 'relationship',
       relationTo: 'issues',
       filterOptions: sameGameProjectFilter,
-    },
-    {
-      name: 'submitterEmail',
-      type: 'email',
     },
     {
       name: 'platform',

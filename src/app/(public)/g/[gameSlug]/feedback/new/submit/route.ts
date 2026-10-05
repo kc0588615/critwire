@@ -19,7 +19,6 @@ const issueCategoryValues = ISSUE_CATEGORY_OPTIONS.map((option) => option.value)
 
 const reportSchema = reportFieldsSchema.extend({
   category: z.enum(issueCategoryValues),
-  submitterEmail: z.email().optional().or(z.literal('')),
 })
 
 const REFUSAL_ERRORS = {

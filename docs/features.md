@@ -104,9 +104,10 @@ update", rel, optional), upvoteCount (number, default 0), timestamps.
 ### IssueReport ("Submissions" in the admin)
 Inbound player submission. Fields: gameProject (rel), issue (rel,
 optional — set when linked), title, description, type, category,
-submitterEmail / platform / gameVersion (all optional; ideas carry no
-platform or version), status, flagged and flagReasons (set by the
-content filter), timestamps. Reports from Discord also carry
+platform / gameVersion (both optional; ideas carry neither), status,
+flagged and flagReasons (set by the content filter), timestamps. There
+is no email field: the form asks a player for nothing that identifies
+them. Reports from Discord also carry
 `discord`: the sender's user ID and username, and for Send to
 critwire a link to the message, read-only for the studio and never
 public; plus `interactionId`, unique and super-admin only, which makes

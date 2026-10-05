@@ -20,6 +20,9 @@ const reportPath = (slug: string) => `/g/${slug}/feedback/new`
 const issuePath = (game: string, slug: string) => `/g/${game}/feedback/${slug}`
 const contactPath = (slug: string) => `/g/${slug}/contact`
 
+/** The email field the feedback form used to have, which a cached page or a script may still send. */
+const STALE_EMAIL_FIELD = 'submitterEmail'
+
 /** Loads `path` and fails unless the server answers 200. */
 async function open(page: Page, path: string): Promise<void> {
   const response = await page.goto(path)
@@ -75,7 +78,6 @@ test.describe('S5.1–S5.3 player reports', () => {
       await page.getByLabel('Title').fill(title)
       await page.getByLabel('What happened').fill('Paddling into the pier clips the raft straight through it.')
       await page.getByLabel('Category').selectOption('GAMEPLAY')
-      await page.getByLabel('Email (optional)').fill('player@e2e.test')
       await page.getByLabel('Platform (optional)').fill('Steam Deck')
       await page.getByLabel('Game version (optional)').fill('1.4.2')
       await submitWithTurnstile(page, 'Send report')
@@ -89,7 +91,6 @@ test.describe('S5.1–S5.3 player reports', () => {
       expect(body.docs[0]).toMatchObject({
         status: 'NEW',
         category: 'GAMEPLAY',
-        submitterEmail: 'player@e2e.test',
         platform: 'Steam Deck',
         gameVersion: '1.4.2',
         gameProject: { id: project.id },
@@ -150,6 +151,42 @@ test.describe('S5.1–S5.3 player reports', () => {
       turnstileToken: TURNSTILE_DUMMY_TOKEN,
     })
     expect(status).toBe(400)
+  })
+
+  test('S5.12 the feedback form asks for no email, and the route stores none sent anyway', async ({ api, page }) => {
+    for (const name of ['Bug', 'Idea'] as const) {
+      await test.step(`the ${name.toLowerCase()} form has no email field`, async () => {
+        await open(page, reportPath(project.slug))
+        await chooseType(page, name)
+        const form = page.locator('form[action$="/feedback/new/submit"]')
+        await expect(form.getByLabel('Title')).toBeVisible()
+        await expect(form.locator('input[type="email"]')).toHaveCount(0)
+        await expect(form.getByLabel(/email/i)).toHaveCount(0)
+        await expect(form.getByText(/email/i)).toHaveCount(0)
+      })
+    }
+
+    const id = randomUUID()
+    const address = `player-${id}@e2e.test`
+    const title = `Report with a stale email ${id.slice(0, 8)}`
+
+    await test.step('a post that still sends the old email field files the report', async () => {
+      const { status, body } = await submitForm(api('anonymous'), reportPath(project.slug), {
+        title,
+        description: 'Sent from a page cached before the email field went away.',
+        category: 'OTHER',
+        [STALE_EMAIL_FIELD]: address,
+        turnstileToken: TURNSTILE_DUMMY_TOKEN,
+      })
+      expect(status, JSON.stringify(body)).toBe(200)
+      const { body: found } = await api('aOwner').find('issue-reports', { where: { title: { equals: title } } })
+      expect(found.docs).toHaveLength(1)
+      expect(found.docs[0]).not.toHaveProperty(STALE_EMAIL_FIELD)
+    })
+
+    await test.step('the address is nowhere in the database', async () => {
+      expect(await countInDatabase(address)).toBe(0)
+    })
   })
 
   test('S5.3 publishing a report links its new issue in the same write [F5]', async ({ api }) => {

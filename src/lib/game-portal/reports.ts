@@ -58,7 +58,7 @@ export const createPlayerReport = async ({
 }: {
   /** Who sent it from Discord. Private: promotion never copies it to the public item. */
   discord?: { interactionId: string; messageUrl?: string; userId: string; username: string }
-  fields: { category: IssueCategory; submitterEmail?: string } & ReportFields
+  fields: { category: IssueCategory } & ReportFields
   project: ReportProject
 }): Promise<IssueReport> => {
   const refusal = reportRefusal(project, fields.type)
@@ -78,7 +78,6 @@ export const createPlayerReport = async ({
       gameVersion: (isBug && fields.gameVersion) || null,
       platform: (isBug && fields.platform) || null,
       status: 'NEW',
-      submitterEmail: fields.submitterEmail || null,
       tenant: extractID(project.tenant),
       title: fields.title,
       type: fields.type,

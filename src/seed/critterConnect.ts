@@ -323,7 +323,6 @@ export async function seedCritterConnect() {
       'Fast-traveled from the marsh camp to the ridge outpost and the active clue trail marker was gone from the map. Had to reopen the discovery card to get it back.',
     type: 'BUG',
     category: 'GAMEPLAY',
-    submitterEmail: 'player@example.com',
     platform: 'Steam Deck',
     gameVersion: 'v0.1.0',
   } as const

@@ -181,23 +181,19 @@ export default async function NewFeedbackPage({ params, searchParams }: Args) {
                 </FormField>
 
                 {type === 'bug' ? (
-                  <>
-                    <div className="fs-field-pair">
-                      <EmailField />
-                      <FormField id="platform" label="Platform (optional)">
-                        {(control) => (
-                          <input
-                            {...control}
-                            className="fs-input"
-                            maxLength={120}
-                            name="platform"
-                            placeholder="Windows, Steam Deck, PS5"
-                            type="text"
-                          />
-                        )}
-                      </FormField>
-                    </div>
-
+                  <div className="fs-field-pair">
+                    <FormField id="platform" label="Platform (optional)">
+                      {(control) => (
+                        <input
+                          {...control}
+                          className="fs-input"
+                          maxLength={120}
+                          name="platform"
+                          placeholder="Windows, Steam Deck, PS5"
+                          type="text"
+                        />
+                      )}
+                    </FormField>
                     <FormField id="gameVersion" label="Game version (optional)">
                       {(control) => (
                         <input
@@ -209,10 +205,8 @@ export default async function NewFeedbackPage({ params, searchParams }: Args) {
                         />
                       )}
                     </FormField>
-                  </>
-                ) : (
-                  <EmailField />
-                )}
+                  </div>
+                ) : null}
 
                 <div className="fs-form-submit">
                   <TurnstileField />
@@ -232,12 +226,6 @@ export default async function NewFeedbackPage({ params, searchParams }: Args) {
     </div>
   )
 }
-
-const EmailField: React.FC = () => (
-  <FormField id="submitterEmail" label="Email (optional)">
-    {(control) => <input {...control} className="fs-input" name="submitterEmail" type="email" />}
-  </FormField>
-)
 
 export async function generateMetadata({ params, searchParams }: Args): Promise<Metadata> {
   const { gameSlug } = await params

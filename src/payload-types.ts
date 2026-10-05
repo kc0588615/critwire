@@ -629,7 +629,6 @@ export interface IssueReport {
    */
   status: 'NEW' | 'PUBLISHED' | 'LINKED' | 'DISMISSED';
   issue?: (number | null) | Issue;
-  submitterEmail?: string | null;
   /**
    * e.g. Windows, Steam Deck, PS5
    */
@@ -1278,7 +1277,6 @@ export interface IssueReportsSelect<T extends boolean = true> {
   category?: T;
   status?: T;
   issue?: T;
-  submitterEmail?: T;
   platform?: T;
   gameVersion?: T;
   flagged?: T;
