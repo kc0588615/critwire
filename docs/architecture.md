@@ -336,8 +336,8 @@ docker-compose.yml / Dockerfile / nginx.conf
   `CRON_SECRET` set. Do not run `pnpm dev` against a database currently
   owned by the Docker app stack; Payload dev push can leave development
   migration state that blocks the production-like container on restart.
-- **Backups:** daily `pg_dump` cron on the VPS, 30-day retention,
-  uploaded to R2 (zero egress for restore), restore tested monthly.
+- **Backups:** the operator's job; critwire makes none itself.
+  `docs/deploy.md` shows one way (a daily `pg_dump` uploaded to R2).
 - **Errors:** Sentry on Next.js server, client, and jobs-queue tasks.
 - **Uptime:** Better Stack pings marketing site, canary tenant portal,
   admin login, health endpoint.

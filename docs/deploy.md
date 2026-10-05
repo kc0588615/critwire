@@ -160,9 +160,10 @@ The first super admin needs no signup and no email:
 database, and `media` (mounted at `/app/media`) for uploads when R2
 isn't configured. Back up `media` too if you store uploads locally.
 
-## Backups (set up during Phase 7 hardening)
+## Backups (the operator's job)
 
-Daily `pg_dump` from the postgres container, uploaded to R2, 30-day
+Critwire makes no backups itself. If you want them, here is one way: a
+daily `pg_dump` from the postgres container, uploaded to R2, with 30-day
 retention. Use a locked-down R2 bucket and credentials scoped to that
 bucket:
 

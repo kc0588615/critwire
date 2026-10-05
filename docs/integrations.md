@@ -104,8 +104,8 @@ dependency) turns that SVG into a 2× PNG. The production runner
   the file, so suspensions and holds take images down too. Don't turn
   on an `r2.dev` URL or a custom domain for the bucket, and don't set
   `disablePayloadAccessControl` or `generateFileURL`.
-- Also the destination for nightly `pg_dump` backups (zero egress makes
-  restores free).
+- Can also hold an instance's backups, if its operator makes them
+  (critwire makes none itself; see `docs/deploy.md`).
 - Do not hand-roll presigned URL logic — that was v6.1.
 
 ## Upstash Redis

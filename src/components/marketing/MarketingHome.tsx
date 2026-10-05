@@ -103,7 +103,7 @@ export function MarketingHome({
             </p>
             <p className="cw-note">
               A built-in filter screens every submission for profanity, slurs, sexual content and
-              spam links, on your own server with no outside service. Whatever it flags still
+              spam links, inside critwire, with no outside service. Whatever it flags still
               waits for you, with the reason in your admin. You can also turn ideas off and take
               bug reports only.
             </p>

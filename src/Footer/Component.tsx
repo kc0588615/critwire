@@ -22,7 +22,7 @@ export function Footer() {
           </ul>
         </nav>
         <LegalLinks className="cw-footer-links" label="Legal" linkClassName="cw-tap" />
-        <p className="cw-footer-copy">© {new Date().getFullYear()} Critwire</p>
+        <p className="cw-footer-copy">© {new Date().getFullYear()} Haunted Pavement LLC</p>
       </div>
     </footer>
   )
