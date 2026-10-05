@@ -2,6 +2,7 @@ import type { CollectionConfig } from 'payload'
 
 import { isSuperAdmin, superAdminFieldAccess, superAdminOnly } from '../../access/isSuperAdmin'
 import { getTenantIDsByRole } from '../../access/tenantRoles'
+import { deleteStudioContent } from './hooks/deleteStudioContent'
 import { requireLegalAcceptanceForTenant } from './hooks/requireLegalAcceptanceForTenant'
 import { revalidateSuspension } from './hooks/revalidateSuspension'
 
@@ -81,6 +82,7 @@ export const Tenants: CollectionConfig = {
   hooks: {
     afterChange: [revalidateSuspension],
     beforeChange: [requireLegalAcceptanceForTenant],
+    beforeDelete: [deleteStudioContent],
   },
   timestamps: true,
 }

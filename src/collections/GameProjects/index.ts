@@ -27,6 +27,7 @@ import {
   REPORT_FORM_PROVIDER_OPTIONS,
   TALLY_DISPLAY_OPTIONS,
 } from '../options'
+import { deleteGameContent } from './hooks/deleteGameContent'
 import {
   revalidateGameProject,
   revalidateGameProjectDelete,
@@ -399,6 +400,7 @@ export const GameProjects: CollectionConfig = {
     beforeChange: [validateProjectTheme, checkGamesLimit, screenGameText],
     afterChange: [revalidateGameProject],
     afterDelete: [revalidateGameProjectDelete],
+    beforeDelete: [deleteGameContent],
   },
   timestamps: true,
 }

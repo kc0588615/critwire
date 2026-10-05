@@ -1,4 +1,5 @@
 import { multiTenantPlugin } from '@payloadcms/plugin-multi-tenant'
+import type { MultiTenantPluginConfig } from '@payloadcms/plugin-multi-tenant/types'
 import { seoPlugin } from '@payloadcms/plugin-seo'
 import { s3Storage } from '@payloadcms/storage-s3'
 import { Plugin } from 'payload'
@@ -21,20 +22,30 @@ const generateURL: GenerateURL<Page> = ({ doc }) => {
   return doc?.slug ? `${url}/${doc.slug}` : url
 }
 
+const tenantScopedCollections = {
+  'game-projects': {},
+  'patch-notes': {},
+  issues: {},
+  'issue-reports': {},
+  'issue-votes': {},
+  // Signed-in visitors can still load other portals' files.
+  media: { accessResultOverride: mediaFileReadOverride },
+  'payload-folders': {},
+  // `pages` is deliberately NOT tenant-scoped: it is the platform
+  // marketing site, managed by super admins only.
+} satisfies MultiTenantPluginConfig<Config>['collections']
+
+/** Every collection the multi-tenant plugin scopes; deleting a studio empties each of them. */
+export const TENANT_SCOPED_COLLECTIONS = Object.keys(
+  tenantScopedCollections,
+) as (keyof typeof tenantScopedCollections)[]
+
 export const plugins: Plugin[] = [
   multiTenantPlugin<Config>({
-    collections: {
-      'game-projects': {},
-      'patch-notes': {},
-      issues: {},
-      'issue-reports': {},
-      'issue-votes': {},
-      // Signed-in visitors can still load other portals' files.
-      media: { accessResultOverride: mediaFileReadOverride },
-      'payload-folders': {},
-      // `pages` is deliberately NOT tenant-scoped: it is the platform
-      // marketing site, managed by super admins only.
-    },
+    collections: tenantScopedCollections,
+    // The plugin's cleanup runs outside the delete's transaction and drops
+    // failures; the Tenants `deleteStudioContent` hook replaces it.
+    cleanupAfterTenantDelete: false,
     tenantsArrayField: {
       includeDefaultField: true,
       rowFields: [
