@@ -27,6 +27,8 @@ export interface ShotsWorld {
   signup: {
     /** A pending signup's verification token; opening its page doesn't use it. */
     verifyToken: string
+    /** The HTML of that signup's verification email, as the outbox holds it. */
+    verifyEmailHtml: string
     /** The game a studio onboarded through signup, for the hub's welcome panel. */
     welcomeSlug: string
   }
@@ -62,7 +64,17 @@ export const SESSION_STATE_PATHS = {
 } as const
 export type Session = keyof typeof SESSION_STATE_PATHS
 
-export const GROUPS = ['critter-connect', 'riso', 'marketing', 'signup', 'reach', 'embed', 'discord', 'legal'] as const
+export const GROUPS = [
+  'critter-connect',
+  'riso',
+  'marketing',
+  'signup',
+  'reach',
+  'embed',
+  'discord',
+  'legal',
+  'admin',
+] as const
 export type Group = (typeof GROUPS)[number]
 
 /** The groups that shoot the demo's portal pages under a theme. */
@@ -78,6 +90,7 @@ export const GROUP_LABELS: Record<Group, string> = {
   embed: "Embeds on a studio's page",
   discord: 'Share tab: the Discord tab',
   legal: 'Legal pages, agreement and player notices',
+  admin: 'Admin: sign-in, password reset, the Issues kanban and the legal gate',
 }
 
 interface ShotBase {
@@ -86,7 +99,9 @@ interface ShotBase {
   /** Shot as this user (`SESSION_STATE_PATHS`) instead of anonymously. */
   session?: Session
   /** The admin's colour scheme, set with Payload's `payload-theme` cookie. */
-  adminTheme?: 'dark' | 'light'
+  adminTheme?: Mode
+  /** The visitor's system colour scheme (`prefers-color-scheme`), emulated before the page loads. */
+  scheme?: Mode
   /** A selector the page must show before the capture, for content that renders after hydration. */
   ready?: string
   /**
@@ -114,6 +129,16 @@ export type Shot = ShotBase &
 
 const cc = (world: ShotsWorld, rest = ''): string => `/g/${world.cc.slug}${rest}`
 
+const MODES = ['light', 'dark'] as const
+type Mode = (typeof MODES)[number]
+
+/**
+ * `shot` once per mode, as `<id>-<mode>`: through the visitor's system
+ * scheme for critwire's pages, or Payload's theme cookie for the admin.
+ */
+const inModes = (via: 'adminTheme' | 'scheme', shot: Shot): Shot[] =>
+  MODES.map((mode) => ({ ...shot, id: `${shot.id}-${mode}`, label: `${shot.label}, ${mode}`, [via]: mode }))
+
 /** The portal pages, shot under each theme group; they wait for the group's theme. */
 const PORTAL_SHOTS: Shot[] = [
   { id: 'hub', label: 'Hub', path: (w) => cc(w) },
@@ -124,13 +149,22 @@ const PORTAL_SHOTS: Shot[] = [
   { id: 'update', label: 'Launch update', path: (w) => cc(w, `/updates/${w.cc.launchUpdate}`) },
 ]
 
-const MARKETING_SHOTS: Shot[] = [{ id: 'home', label: 'Home', path: () => '/' }]
+const MARKETING_SHOTS: Shot[] = [
+  ...inModes('scheme', { id: 'home', label: 'Home', path: () => '/' }),
+  ...inModes('scheme', { id: 'not-found', label: 'Page not found', path: () => '/no-such-page' }),
+  { id: 'portal-not-found', label: 'Portal not found', path: () => '/g/no-such-game' },
+]
 
 const SIGNUP_SHOTS: Shot[] = [
-  { id: 'signup', label: 'Sign up', path: () => '/signup' },
-  { id: 'signup-submitted', label: 'Sign up: check your inbox', path: () => '/signup?submitted=1' },
-  { id: 'verify', label: 'Verify: choose a password', path: (w) => `/verify/${encodeURIComponent(w.signup.verifyToken)}` },
-  { id: 'onboarding', label: 'Onboarding: your first game', path: () => '/onboarding', session: 'onboarding' },
+  ...(
+    [
+      { id: 'signup', label: 'Sign up', path: () => '/signup' },
+      { id: 'signup-submitted', label: 'Sign up: check your inbox', path: () => '/signup?submitted=1' },
+      { id: 'verify', label: 'Verify: choose a password', path: (w) => `/verify/${encodeURIComponent(w.signup.verifyToken)}` },
+      { id: 'onboarding', label: 'Onboarding: your first game', path: () => '/onboarding', session: 'onboarding' },
+    ] satisfies Shot[]
+  ).flatMap((shot) => inModes('scheme', shot)),
+  { id: 'email-verify', label: 'The verification email', html: (w) => w.signup.verifyEmailHtml },
   {
     id: 'welcome',
     label: 'New portal with its next steps',
@@ -258,13 +292,69 @@ const DISCORD_SHOTS: Shot[] = (['light', 'dark'] as const).flatMap((adminTheme):
  * routes Critter Connect's contact form to email.
  */
 const LEGAL_SHOTS: Shot[] = [
-  ...LEGAL_SLUGS.map((slug): Shot => ({ id: slug, label: LEGAL_LINKS[slug].title, path: () => LEGAL_LINKS[slug].href })),
-  { id: 'signup', label: 'Sign up: the two boxes', path: () => '/signup' },
-  { id: 'accept', label: 'Accept the Terms and Privacy Policy', path: () => '/legal/accept', session: 'accept' },
+  ...(
+    [
+      ...LEGAL_SLUGS.map((slug): Shot => ({ id: slug, label: LEGAL_LINKS[slug].title, path: () => LEGAL_LINKS[slug].href })),
+      { id: 'signup', label: 'Sign up: the two boxes', path: () => '/signup' },
+      { id: 'accept', label: 'Accept the Terms and Privacy Policy', path: () => '/legal/accept', session: 'accept' },
+    ] satisfies Shot[]
+  ).flatMap((shot) => inModes('scheme', shot)),
   { id: 'submit-bug', label: 'Submit form: a bug', path: (w) => portalPaths(w.cc.slug).newFeedback('bug') },
   { id: 'contact', label: 'Contact form, by email', path: (w) => portalPaths(w.cc.slug).contact },
-  { id: 'report-abuse', label: 'Report this page', path: (w) => reportAbuseHref(portalPaths(w.cc.slug).hub) },
+  ...inModes('scheme', {
+    id: 'report-abuse',
+    label: 'Report this page',
+    path: (w) => reportAbuseHref(portalPaths(w.cc.slug).hub),
+  }),
 ]
+
+/** A seeded Lantern Keep issue, whose card shows the kanban has loaded. */
+export const KANBAN_READY_TITLE = 'Lantern goes dark after loading a save'
+
+/**
+ * Payload's sign-in, forgot and reset views, the studio's Issues kanban,
+ * and the legal gate's fallback, in both admin themes. The tap-target
+ * probe looks only at critwire's own parts: the sign-in's welcome, the
+ * forgot form, the board, and the gate's view. Reset is Payload's own
+ * form, so it looks only at the header, which has no targets.
+ */
+const ADMIN_SHOTS: Shot[] = (
+  [
+    { id: 'login', label: 'Sign in', path: () => '/admin/login', ready: '.before-login', tapScope: '.before-login' },
+    {
+      id: 'forgot',
+      label: 'Forgot password',
+      path: () => '/admin/forgot',
+      ready: 'form[action="/forgot-password/submit"]',
+      tapScope: 'form[action="/forgot-password/submit"]',
+    },
+    {
+      id: 'reset',
+      label: 'Reset password',
+      path: () => '/admin/reset/shots-dummy-token',
+      ready: '.reset-password__wrap form',
+      tapScope: '.reset-password__wrap .form-header',
+    },
+    {
+      id: 'kanban',
+      label: 'Issues kanban',
+      path: () => '/admin/collections/issues',
+      session: 'studio',
+      ready: `text=${KANBAN_READY_TITLE}`,
+      tapScope: '.list-header ~ div',
+    },
+    {
+      // The studio has accepted the documents (`signUpAndVerify`), so the
+      // gate shows its fallback instead of redirecting to `/legal/accept`.
+      id: 'legal-gate',
+      label: 'Legal gate: no access',
+      path: () => '/admin/unauthorized',
+      session: 'studio',
+      ready: 'a[href="/admin/logout"]',
+      tapScope: '.template-minimal__wrap',
+    },
+  ] satisfies Shot[]
+).flatMap((shot) => inModes('adminTheme', shot))
 
 export const isPortalGroup = (group: Group): group is PortalGroup =>
   (PORTAL_GROUPS as readonly string[]).includes(group)
@@ -276,6 +366,7 @@ const OTHER_SHOTS: Record<Exclude<Group, PortalGroup>, Shot[]> = {
   embed: EMBED_SHOTS,
   discord: DISCORD_SHOTS,
   legal: LEGAL_SHOTS,
+  admin: ADMIN_SHOTS,
 }
 
 export const shotsFor = (group: Group): Shot[] => (isPortalGroup(group) ? PORTAL_SHOTS : OTHER_SHOTS[group])

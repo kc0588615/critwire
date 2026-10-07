@@ -4,11 +4,11 @@ import path from 'node:path'
 import { type APIRequestContext, expect, test as setup } from '@playwright/test'
 import { extractID } from 'payload/shared'
 
-import type { GameProject } from '../../src/payload-types'
+import type { GameProject, Issue } from '../../src/payload-types'
 import { RestClient } from '../e2e/support/api'
 import { linkDiscord } from '../e2e/support/discord'
 import { acceptLegal } from '../e2e/support/legal'
-import { verificationToken } from '../e2e/support/email'
+import { linkTo, readEmail, tokenOf, verificationToken } from '../e2e/support/email'
 import { PASSWORD } from '../e2e/support/env'
 import {
   castVote,
@@ -23,12 +23,37 @@ import {
   tenantOf,
   verifyAccount,
 } from '../e2e/support/fixtures'
-import { ACCEPT_STATE_PATH, ONBOARDING_STATE_PATH, type ShotsWorld, STUDIO_STATE_PATH, WORLD_PATH } from './catalog'
+import {
+  ACCEPT_STATE_PATH,
+  KANBAN_READY_TITLE,
+  ONBOARDING_STATE_PATH,
+  type ShotsWorld,
+  STUDIO_STATE_PATH,
+  WORLD_PATH,
+} from './catalog'
 import { rootStyle, SHOTS_CRON_SECRET } from './support'
 import { RISO_THEME } from './themes'
 
 /** Where the linked game posts: fixed IDs, so the "Open the posts channel" link is the same every run. */
 const DISCORD_TARGET = { guild: '120000000000000001', channel: '120000000000000002' } as const
+
+/** Lantern Keep's issues for the kanban, one per column it fills. */
+const KANBAN_ISSUES: [string, Partial<Issue>][] = [
+  ['lantern-dark-on-load', { title: KANBAN_READY_TITLE, status: 'REPORTED', category: 'GAMEPLAY' }],
+  ['tide-timer-144hz', { title: 'Tide timer runs fast at 144 Hz', status: 'INVESTIGATING', category: 'PERFORMANCE' }],
+  [
+    'rumble-after-cutscene',
+    {
+      title: 'Controller rumble stays on after a cutscene',
+      status: 'NEEDS_MORE_INFO',
+      category: 'GAMEPLAY',
+      needsMoreInfoText: 'Which controller were you using, and which cutscene was it?',
+    },
+  ],
+  ['rebind-lantern-key', { title: 'Let players rebind the lantern key', status: 'PLANNED', category: 'USER_INTERFACE' }],
+  ['journal-text-4k', { title: 'Keeper’s journal text is tiny at 4K', status: 'IN_PROGRESS', category: 'VISUAL' }],
+  ['fog-through-stairs', { title: 'Fog clips through the lighthouse stairs', status: 'FIXED', category: 'VISUAL' }],
+]
 
 /** Visits from tagged kit links, counted for Lantern Keep's Share tab. */
 const REFERRALS = { steam: 6, itch: 3, readme: 2, carrd: 1 } as const
@@ -141,7 +166,8 @@ setup('seed the Critter Connect demo and the screenshot fixtures', async ({ page
 
   const signup = await setup.step('sign up a pending user, a user with no studio, and a studio', async () => {
     await startSignup(anonymous, 'pending@shots.test')
-    const verifyToken = await verificationToken('pending@shots.test')
+    const verifyEmail = await readEmail('pending@shots.test')
+    const verifyToken = tokenOf(linkTo(verifyEmail, '/verify/'))
 
     const onboardingUser = await newRequestContext(playwright)
     await signUpAndVerify(onboardingUser, 'onboarding@shots.test')
@@ -155,7 +181,7 @@ setup('seed the Critter Connect demo and the screenshot fixtures', async ({ page
     await studio.dispose()
     const welcomeSlug = /^\/g\/([^/?]+)\?welcome=1$/.exec(location)?.[1]
     expect(welcomeSlug, `Lantern Keep onboarded to ${location}`).toBeDefined()
-    return { verifyToken, welcomeSlug: welcomeSlug as string, studioToken: token }
+    return { verifyToken, verifyEmailHtml: verifyEmail.html, welcomeSlug: welcomeSlug as string, studioToken: token }
   })
 
   const reach = await setup.step('add a Riso game for its badge, and count Lantern Keep’s referrals', async () => {
@@ -164,7 +190,11 @@ setup('seed the Critter Connect demo and the screenshot fixtures', async ({ page
     for (const [i, status] of statuses.entries()) {
       await createIssue(admin, riso, `riso-item-${i + 1}`, { status })
     }
-    await createPatchNote(admin, riso, 'v2-3', { versionLabel: 'v2.3', publishedAt: new Date().toISOString() })
+    // Armenian and Georgian have glyphs only in the badge's DejaVu fallback (D36).
+    await createPatchNote(admin, riso, 'v2-3', {
+      versionLabel: 'v2.3 · Երկու · ორი',
+      publishedAt: new Date().toISOString(),
+    })
 
     const welcome = await admin.find('game-projects', { where: { slug: { equals: signup.welcomeSlug } }, depth: 0 })
     expect(welcome.body.docs, 'Lantern Keep exists').toHaveLength(1)
@@ -178,9 +208,10 @@ setup('seed the Critter Connect demo and the screenshot fixtures', async ({ page
     return { welcomeID, risoSlug: riso.slug }
   })
 
-  const discord = await setup.step('add a second Lantern Keep game and link it to Discord', async () => {
+  const discord = await setup.step('add Lantern Keep’s issues, and a second game linked to Discord', async () => {
     const lantern = await admin.findByID('game-projects', reach.welcomeID, { depth: 0 })
     expect(lantern.status).toBe(200)
+    for (const [slug, data] of KANBAN_ISSUES) await createIssue(admin, lantern.body, slug, data)
     const second = await createProject(admin, tenantOf(lantern.body), 'lantern-keep-tides', {
       name: 'Lantern Keep: Tides',
     })
@@ -209,7 +240,7 @@ setup('seed the Critter Connect demo and the screenshot fixtures', async ({ page
       baselineStyle,
       launchUpdate: 'v0-1-0-launch',
     },
-    signup: { verifyToken: signup.verifyToken, welcomeSlug: signup.welcomeSlug },
+    signup: { verifyToken: signup.verifyToken, verifyEmailHtml: signup.verifyEmailHtml, welcomeSlug: signup.welcomeSlug },
     reach,
     discord,
   }

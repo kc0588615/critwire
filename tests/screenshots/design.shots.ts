@@ -19,7 +19,7 @@ import {
   shotsTarget,
   type ShotsWorld,
 } from './catalog'
-import { probeMarketingFocus, probePage, recordChecks } from './probes'
+import { FOCUS_PAGES, probeMarketingFocus, probePage, recordChecks } from './probes'
 import { readWorld, reloadUntil, rootStyle, rootToken, SHOTS_CRON_SECRET } from './support'
 import { RISO_THEME } from './themes'
 
@@ -90,6 +90,7 @@ for (const group of selectedGroups()) {
         if (shot.adminTheme) {
           await context.addCookies([{ name: 'payload-theme', value: shot.adminTheme, url: BASE_URL }])
         }
+        if (shot.scheme) await page.emulateMedia({ colorScheme: shot.scheme })
         if (shot.html) {
           await page.setContent(shot.html(world, BASE_URL))
         } else if (shot.host) {
@@ -110,6 +111,8 @@ for (const group of selectedGroups()) {
           await expect(tab).toHaveAttribute('aria-selected', 'true')
         }
         if (shot.ready) await expect(page.locator(shot.ready)).toBeVisible()
+        // A redirect would capture another page under this one's name (the legal gate's, for one).
+        if (shot.path) expect(new URL(page.url()).pathname, 'the page redirected').toBe(new URL(shot.path(world), BASE_URL).pathname)
         if (shot.host) await embedShown(page)
         if (shot.adminTheme) await expect(page.locator('html')).toHaveAttribute('data-theme', shot.adminTheme)
         await settle(page)
@@ -126,7 +129,7 @@ for (const group of selectedGroups()) {
         const probes = set === 'after' ? await probePage(page, { group, shot, width, requests }) : []
         await page.screenshot({ path: path.join(dir, set, file), fullPage: true, animations: 'disabled' })
         if (set !== 'after') return
-        if (shot.id === 'home') probes.push(await probeMarketingFocus(page))
+        if (FOCUS_PAGES.has(shot.id)) probes.push(await probeMarketingFocus(page))
         await recordChecks(dir, file, probes)
         for (const probe of probes) expect.soft(probe.pass, `${probe.probe}: ${probe.detail}`).toBe(true)
       })
