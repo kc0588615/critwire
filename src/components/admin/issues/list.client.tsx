@@ -13,6 +13,9 @@ import { cn } from '@/utilities/ui'
 
 import { IssuesKanban } from './kanban'
 
+const switchOption = (pressed: boolean): string =>
+  cn('issues-list__switch-option', pressed && 'issues-list__switch-option--pressed')
+
 type Props = ListViewClientProps &
   ComponentProps<typeof IssuesKanban> & {
     labels: { plural: string; singular: string }
@@ -27,11 +30,11 @@ export default function IssuesListViewClient({
   const [mode, setMode] = useState<'kanban' | 'table'>('kanban')
 
   return (
-    <div className="flex min-h-screen flex-col overflow-y-auto">
-      <div className="mt-4 mr-8 flex self-end gap-1">
+    <div className="issues-list">
+      <div className="issues-list__switch">
         <Button
           buttonStyle="tab"
-          className={cn('my-0', mode === 'kanban' && 'bg-zinc-200 dark:bg-zinc-800')}
+          className={switchOption(mode === 'kanban')}
           onClick={() => setMode('kanban')}
           size="small"
         >
@@ -39,7 +42,7 @@ export default function IssuesListViewClient({
         </Button>
         <Button
           buttonStyle="tab"
-          className={cn('my-0', mode === 'table' && 'bg-zinc-200 dark:bg-zinc-800')}
+          className={switchOption(mode === 'table')}
           onClick={() => setMode('table')}
           size="small"
         >
@@ -48,8 +51,8 @@ export default function IssuesListViewClient({
       </div>
 
       {mode === 'kanban' ? (
-        <Gutter className="flex flex-1 flex-col">
-          <header className="list-header mb-4">
+        <Gutter className="issues-list__body">
+          <header className="list-header issues-list__header">
             <div className="list-header__content">
               <div className="list-header__title-and-actions">
                 <h1 className="list-header__title">{labels.plural}</h1>
@@ -73,7 +76,6 @@ export default function IssuesListViewClient({
           {/* The tenant selector re-renders this view with a new filter; the
               key remounts the board, whose columns are seeded state. */}
           <IssuesKanban
-            className="min-h-0 flex-1"
             initialColumns={initialColumns}
             key={JSON.stringify(tenantFilter)}
             tenantFilter={tenantFilter}

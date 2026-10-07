@@ -28,7 +28,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { toast } from '@payloadcms/ui'
+import { Button, toast } from '@payloadcms/ui'
 import Link from 'next/link'
 import type { PaginatedDocs, Where } from 'payload'
 import { combineWhereConstraints, generateKeyBetween } from 'payload/shared'
@@ -46,28 +46,16 @@ import './kanban.css'
 type ColumnDef = {
   id: IssueStatus
   label: string
-  pillBg: string
-  pillText: string
 }
 
 type ColumnState = PaginatedDocs<Issue>
 
-const PILL_STYLES: Record<IssueStatus, Pick<ColumnDef, 'pillBg' | 'pillText'>> = {
-  REPORTED: { pillBg: 'bg-blue-500/10', pillText: 'text-blue-400' },
-  INVESTIGATING: { pillBg: 'bg-violet-500/10', pillText: 'text-violet-400' },
-  NEEDS_MORE_INFO: { pillBg: 'bg-amber-500/10', pillText: 'text-amber-400' },
-  WORKAROUND_AVAILABLE: { pillBg: 'bg-cyan-500/10', pillText: 'text-cyan-400' },
-  PLANNED: { pillBg: 'bg-indigo-500/10', pillText: 'text-indigo-400' },
-  IN_PROGRESS: { pillBg: 'bg-orange-500/10', pillText: 'text-orange-400' },
-  FIXED: { pillBg: 'bg-emerald-500/10', pillText: 'text-emerald-400' },
-  CLOSED: { pillBg: 'bg-zinc-500/10', pillText: 'text-zinc-400' },
-}
-
 const COLUMNS: ColumnDef[] = ISSUE_STATUS_OPTIONS.map((status) => ({
   id: status.value,
   label: status.label,
-  ...PILL_STYLES[status.value],
 }))
+
+const block = 'issues-kanban'
 
 async function updateIssue(
   issueId: number | string,
@@ -211,40 +199,26 @@ function IssueCard({
       style={style}
       {...attributes}
       {...listeners}
-      className={cn(
-        'card flex-col gap-2',
-        'cursor-grab active:cursor-grabbing select-none',
-        'transition-opacity duration-150',
-        isDragging ? 'opacity-30' : 'opacity-100',
-      )}
+      className={cn(`${block}__card`, isDragging && `${block}__card--dragging`)}
     >
-      <div className="flex items-start justify-between gap-2">
-        <p className={cn('text-sm font-semibold leading-snug', 'text-(--theme-elevation-1000)')}>
+      <div className={`${block}__card-head`}>
+        <p className={`${block}__card-title`}>
           {issue.isPinned ? '📌 ' : ''}
           {issue.title}
         </p>
-        <span
-          className={cn(
-            'shrink-0 rounded px-1.5 py-0.5 font-mono text-xs',
-            'bg-(--theme-elevation-100) text-(--theme-elevation-800)',
-          )}
-        >
-          ▲ {issue.upvoteCount ?? 0}
-        </span>
+        <span className={`${block}__card-votes`}>▲ {issue.upvoteCount ?? 0}</span>
       </div>
 
-      <div className="flex flex-wrap gap-1.5 text-xs text-(--theme-elevation-400)">
+      <div className={`${block}__card-meta`}>
         {game ? <span>{game}</span> : null}
         {issue.category ? <span>· {issue.category.replaceAll('_', ' ')}</span> : null}
         {issue.isPublic === false ? <span>· private</span> : null}
       </div>
 
-      {issue.summary ? (
-        <p className="line-clamp-2 text-xs text-(--theme-elevation-400)">{issue.summary}</p>
-      ) : null}
+      {issue.summary ? <p className={`${block}__card-summary`}>{issue.summary}</p> : null}
 
       <Link
-        className="text-xs inline-block"
+        className={`${block}__card-link`}
         href={`/admin/collections/issues/${issue.id}`}
         onClick={(e) => e.stopPropagation()}
         onPointerDown={(e) => e.stopPropagation()}
@@ -288,37 +262,16 @@ function KanbanColumn({
   const { setNodeRef } = useDroppable({ id: column.id })
 
   return (
-    <div className="flex h-full w-72 shrink-0 flex-col">
-      <div className="mb-2 flex items-center justify-between px-1">
-        <span className={cn('text-sm font-semibold', 'text-(--theme-elevation-800)')}>
-          {column.label}
-        </span>
-        <span
-          className={cn('rounded px-2 py-0.5 font-mono text-xs', column.pillBg, column.pillText)}
-        >
-          {state.totalDocs}
-        </span>
+    <div className={`${block}__column`}>
+      <div className={`${block}__head`}>
+        <span>{column.label}</span>
+        <span className={`${block}__count`}>{state.totalDocs}</span>
       </div>
 
       <SortableContext items={ids} strategy={verticalListSortingStrategy}>
-        <div
-          ref={setNodeRef}
-          className={cn(
-            'flex min-h-20 flex-1 flex-col gap-2 rounded border p-2 transition-colors duration-150',
-            'border-(--theme-border-color) bg-(--theme-elevation-50)',
-            isOver && 'border-(--theme-success-200) bg-(--theme-success-50)',
-          )}
-        >
+        <div ref={setNodeRef} className={cn(`${block}__drop`, isOver && `${block}__drop--over`)}>
           {ids.length === 0 ? (
-            <div
-              className={cn(
-                'flex h-15 items-center justify-center text-xs italic',
-                'text-(--theme-elevation-400)',
-                isOver && 'text-(--theme-success-500)',
-              )}
-            >
-              {isOver ? 'Drop here' : 'No issues'}
-            </div>
+            <div className={`${block}__empty`}>{isOver ? 'Drop here' : 'No issues'}</div>
           ) : (
             state.docs.map((issue) => <SortableIssueCard key={issue.id} issue={issue} />)
           )}
@@ -326,17 +279,9 @@ function KanbanColumn({
       </SortableContext>
 
       {state.hasNextPage ? (
-        <button
-          className={cn(
-            'mt-2 w-full rounded border py-1.5 text-xs transition-colors duration-150',
-            'border-(--theme-border-color) text-(--theme-elevation-500)',
-            'hover:bg-(--theme-elevation-100) hover:text-(--theme-elevation-800)',
-          )}
-          onClick={onLoadMore}
-          type="button"
-        >
+        <Button buttonStyle="secondary" className={`${block}__more`} onClick={onLoadMore}>
           Load more ({state.docs.length} / {state.totalDocs})
-        </button>
+        </Button>
       ) : null}
     </div>
   )
@@ -346,10 +291,9 @@ export type IssuesKanbanProps = {
   initialColumns: Record<IssueStatus, PaginatedDocs<Issue>>
   /** The multi-tenant plugin's list filter, from the server view (null: no scoping). */
   tenantFilter: null | Where
-  className?: string
 }
 
-export function IssuesKanban({ className, initialColumns, tenantFilter }: IssuesKanbanProps) {
+export function IssuesKanban({ initialColumns, tenantFilter }: IssuesKanbanProps) {
   const [columns, setColumns] = useState<Record<IssueStatus, ColumnState>>(() => ({
     ...initialColumns,
   }))
@@ -440,7 +384,7 @@ export function IssuesKanban({ className, initialColumns, tenantFilter }: Issues
   )
 
   return (
-    <div className={cn('flex w-full items-stretch overflow-x-auto', className)}>
+    <div className={block}>
       <DndContext
         collisionDetection={(args) => {
           const pointerHits = pointerWithin(args)
@@ -451,7 +395,7 @@ export function IssuesKanban({ className, initialColumns, tenantFilter }: Issues
         onDragStart={handleDragStart}
         sensors={sensors}
       >
-        <div className="flex min-w-max items-stretch gap-4">
+        <div className={`${block}__columns`}>
           {COLUMNS.map((col) => (
             <KanbanColumn
               column={col}
@@ -466,7 +410,7 @@ export function IssuesKanban({ className, initialColumns, tenantFilter }: Issues
         </div>
         <DragOverlay dropAnimation={{ duration: 120, easing: 'ease' }}>
           {activeIssue ? (
-            <div className="rotate-1 shadow-xl">
+            <div className={`${block}__overlay`}>
               <IssueCard issue={activeIssue} />
             </div>
           ) : null}

@@ -1,68 +1,85 @@
-// The share kit in the admin follows Payload's light or dark theme; a
-// primary action is cw's accent fill, the same in both.
+// The share kit in the admin, from cw's roles, which follow Payload's
+// light or dark theme (custom.scss); a primary action is cw's accent fill,
+// the same in both.
 .share-view {
-  --kit-fg: var(--theme-text);
-  --kit-muted-fg: var(--theme-elevation-650);
-  --kit-bg: var(--theme-elevation-100);
-  --kit-surface: var(--theme-elevation-50);
-  --kit-border: var(--theme-elevation-150);
-  --kit-control: var(--theme-elevation-400);
+  --kit-fg: var(--cte-text);
+  --kit-muted-fg: var(--cte-text-muted);
+  --kit-bg: var(--cte-canvas);
+  --kit-surface: var(--cte-surface);
+  --kit-border: var(--cte-border);
+  --kit-control: var(--cte-text-muted);
   --kit-accent: var(--cte-accent);
   --kit-accent-fg: var(--cte-accent-text);
-  --kit-radius: var(--style-radius-s);
-  --kit-radius-surface: var(--style-radius-m);
+  --kit-radius: var(--radius-s);
+  --kit-radius-surface: var(--radius-m);
 
-  padding-block: calc(var(--base) * 1.5) calc(var(--base) * 3);
+  padding-block: var(--space-xl) calc(2 * var(--space-xxl));
   max-width: 64rem;
 }
 
+// "Where players come from": a section over a divider, its table with
+// a header at s medium, numbers on the data role and inset-shadow rules.
 .referral-counts {
-  margin-top: calc(var(--base) * 2);
-  border-top: 1px solid var(--theme-elevation-150);
-  padding-top: calc(var(--base) * 1.25);
+  margin-top: var(--space-xxl);
+  box-shadow: inset 0 var(--border-s) 0 var(--cte-border);
+  padding-top: var(--space-l);
+  color: var(--cte-text);
+  font-size: var(--size-m);
+  letter-spacing: var(--letter-spacing-m);
+  line-height: var(--line-m);
 }
 
 .referral-counts-title {
   margin: 0;
-  font-size: 1.5rem;
-  font-weight: 700;
-  line-height: 1.25;
+  font-size: var(--size-l);
+  font-weight: var(--weight-ui-heavy);
+  letter-spacing: var(--letter-spacing-l);
+  line-height: var(--line-l);
 }
 
 .referral-counts-note {
-  margin: calc(var(--base) * 0.5) 0 0;
+  margin: var(--space-xs) 0 0;
   max-width: 60ch;
-  color: var(--theme-elevation-650);
+  color: var(--cte-text-muted);
 }
 
 .referral-counts-scroll {
-  margin-top: var(--base);
+  margin-top: var(--space-m);
   max-width: 100%;
   overflow-x: auto;
 }
 
 .referral-counts-table {
   border-collapse: collapse;
-  font-variant-numeric: tabular-nums;
 
   caption {
-    padding-bottom: calc(var(--base) * 0.5);
-    color: var(--theme-elevation-650);
+    padding-bottom: var(--space-xs);
+    color: var(--cte-text-muted);
     text-align: left;
   }
 
   th,
   td {
-    border-bottom: 1px solid var(--theme-elevation-150);
-    padding: calc(var(--base) * 0.4) calc(var(--base) * 0.75);
+    box-shadow: inset 0 calc(-1 * var(--border-s)) 0 var(--cte-border);
+    padding: var(--space-xs) var(--space-m);
     white-space: nowrap;
   }
 
   th {
+    font-weight: var(--weight-ui-regular);
     text-align: left;
   }
 
+  thead th {
+    font-size: var(--size-s);
+    font-weight: var(--weight-ui-medium);
+    letter-spacing: var(--letter-spacing-s);
+    line-height: var(--line-s);
+  }
+
   td {
+    font-family: var(--font-data);
+    font-variant-numeric: tabular-nums;
     text-align: right;
   }
 
@@ -72,7 +89,14 @@
 
   tfoot th,
   tfoot td {
-    border-bottom: 0;
-    font-weight: 700;
+    box-shadow: none;
+  }
+
+  tfoot th {
+    font-weight: var(--weight-ui-heavy);
+  }
+
+  tfoot td {
+    font-weight: var(--weight-data-heavy);
   }
 }

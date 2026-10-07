@@ -2,7 +2,7 @@
  * The share kit on cw (plan §4), styled only through --kit-* variables
  * for colour and corners, so it follows whatever surrounds it: portal.css
  * maps them from the game's --fs-* theme, and the admin's Share view from
- * Payload's --theme-* and cw's roles. Sizes are cw's tokens, which both
+ * cw's roles. Sizes are cw's tokens, which both
  * entry points load.
  *   --kit-fg, --kit-muted-fg       text, and muted text
  *   --kit-bg                       code values and image previews

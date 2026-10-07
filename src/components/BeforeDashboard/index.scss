@@ -1,52 +1,89 @@
-@import '@payloadcms/ui/scss';
-
+// The dashboard's top (plan §4): the title l brand heavy, panels and
+// queue tiles on cw's Popover surface, counts xl ui heavy. Payload's Pill
+// and Banner inside come themed through its variables (custom.scss).
 .dashboard .before-dashboard {
-  margin-bottom: base(1.5);
+  margin-bottom: var(--space-xl);
+  font-size: var(--size-m);
+  letter-spacing: var(--letter-spacing-m);
+  line-height: var(--line-m);
 
-  & h2,
+  &__title {
+    margin: 0 0 var(--space-m);
+    font-family: var(--font-brand);
+    font-size: var(--size-l);
+    font-weight: var(--weight-brand-heavy);
+    letter-spacing: var(--letter-spacing-l);
+    line-height: var(--line-l);
+  }
+
   & h3 {
-    margin: 0 0 base(0.5);
+    margin: 0 0 var(--space-s);
+    font-size: var(--size-m);
+    font-weight: var(--weight-ui-heavy);
+    letter-spacing: var(--letter-spacing-m);
+    line-height: var(--line-m);
   }
 
   & p {
-    color: var(--theme-elevation-650);
-    margin: 0 0 base(0.5);
+    margin: 0 0 var(--space-xs);
+    color: var(--cte-text-muted);
+  }
+
+  // :where keeps these at the block's weight, so __url's colour wins.
+  & :where(a) {
+    color: inherit;
+    text-decoration-line: underline;
+    text-decoration-thickness: var(--border-s);
+    text-underline-offset: 0.2em;
+
+    &:hover {
+      text-decoration-thickness: var(--border-l);
+    }
   }
 
   &__queues {
     display: grid;
-    gap: base(0.5);
+    gap: var(--space-s);
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     list-style: none;
     margin: 0;
     padding: 0;
 
     & a {
-      border: 1px solid var(--theme-elevation-150);
-      border-radius: 6px;
       display: block;
-      padding: base(0.75);
+      border-radius: var(--radius-m);
+      padding: var(--space-m);
+      background: var(--cte-surface);
+      box-shadow: var(--border-shadow-s);
       text-decoration: none;
+      transition: background-color var(--motion-duration) var(--motion-easing);
+
+      &:hover {
+        background: var(--cte-surface-muted);
+      }
     }
   }
 
   &__count {
     display: block;
-    font-size: base(1.5);
-    font-weight: 600;
-    line-height: 1;
-    margin-bottom: base(0.25);
+    margin-bottom: var(--space-xxs);
+    font-size: var(--size-xl);
+    font-weight: var(--weight-ui-heavy);
+    letter-spacing: var(--letter-spacing-xl);
+    line-height: var(--line-xl);
+    font-variant-numeric: tabular-nums;
   }
 
   &__studio,
   &__panel {
-    border: 1px solid var(--theme-elevation-150);
-    border-radius: 6px;
-    margin-bottom: base(0.75);
-    padding: base(0.75);
+    margin-bottom: var(--space-m);
+    border-radius: var(--radius-m);
+    padding: var(--space-m);
+    background: var(--cte-surface);
+    box-shadow: var(--border-shadow-s);
 
     & li + li {
-      margin-top: base(0.5);
+      margin-top: var(--space-xs);
     }
   }
 
@@ -54,7 +91,7 @@
     & ol,
     & ul {
       margin: 0;
-      padding-left: base(1);
+      padding-left: var(--space-l);
     }
   }
 
@@ -67,20 +104,22 @@
       align-items: center;
       display: flex;
       flex-wrap: wrap;
-      gap: base(0.25) base(0.5);
+      gap: var(--space-xs) var(--space-s);
     }
   }
 
   &__url {
-    color: var(--theme-elevation-650);
+    color: var(--cte-text-muted);
     overflow-wrap: anywhere;
   }
 
   &__action {
-    font-weight: 600;
+    font-weight: var(--weight-ui-medium);
   }
 
-  & a:hover {
-    opacity: 0.85;
+  @media (prefers-reduced-motion: reduce) {
+    &__queues a {
+      transition: none;
+    }
   }
 }

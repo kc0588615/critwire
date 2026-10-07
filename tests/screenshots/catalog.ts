@@ -340,8 +340,8 @@ const ADMIN_SHOTS: Shot[] = (
       label: 'Issues kanban',
       path: () => '/admin/collections/issues',
       session: 'studio',
-      ready: `text=${KANBAN_READY_TITLE}`,
-      tapScope: '.list-header ~ div',
+      ready: `.issues-kanban__card-title:has-text("${KANBAN_READY_TITLE}")`,
+      tapScope: '.issues-kanban',
     },
     {
       // The studio has accepted the documents (`signUpAndVerify`), so the

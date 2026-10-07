@@ -1,16 +1,242 @@
 /*
- * Tailwind for the admin Issues views only: the admin loads no Tailwind
- * of its own. Payload's styles sit in @layer payload-default, so the
- * later utilities layer wins, as the components' classes expect.
- * - No preflight: it would reset the rest of the admin.
- * - The theme is inlined and emits no variables: Payload defines some of
- *   the same names (--color-blue-500, --font-mono) on :root.
- * - Only this folder is scanned, and `table` is excluded because it
- *   would override Payload's `.table`.
+ * The admin Issues views on cw (plan §4, D20): plain BEM on cw's tokens and
+ * roles, which custom.scss loads and which follow Payload's light or dark
+ * theme. Payload's styles sit in @layer payload-default, so these
+ * unlayered rules win where they meet.
  */
-@layer theme, utilities;
-@import 'tailwindcss/theme.css' layer(theme) theme(reference inline);
-@import 'tailwindcss/utilities.css' layer(utilities) source(none);
-@source './';
-@source not inline('table');
-@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+
+/* The list view: the Kanban/Table switch over the board or Payload's table. */
+.issues-list {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  overflow-y: auto;
+}
+
+.issues-list__switch {
+  display: flex;
+  align-self: flex-end;
+  gap: var(--space-xxs);
+  margin: var(--space-m) var(--space-xxl) 0 0;
+}
+
+/* cw's toggle through Payload's tab button (custom.scss); pressed is n3
+   with the heavy weight, as Payload's selected tab (D8). */
+.issues-list__switch-option {
+  margin-block: 0;
+}
+
+/* More specific than custom.scss's tab rule, which it overrides. */
+.btn.btn--style-tab.issues-list__switch-option--pressed {
+  --bg-color: var(--cte-surface-muted);
+  --btn-font-weight: var(--weight-ui-heavy);
+}
+
+.issues-list__body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+
+.issues-list__header {
+  margin-bottom: var(--space-m);
+}
+
+/* The board: columns side by side, scrolling sideways on its own. */
+.issues-kanban {
+  display: flex;
+  flex: 1;
+  align-items: stretch;
+  width: 100%;
+  min-height: 0;
+  overflow-x: auto;
+  color: var(--cte-text);
+  font-size: var(--size-m);
+  letter-spacing: var(--letter-spacing-m);
+  line-height: var(--line-m);
+}
+
+.issues-kanban__columns {
+  display: flex;
+  align-items: stretch;
+  gap: var(--space-m);
+  min-width: max-content;
+}
+
+.issues-kanban__column {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  width: 18rem;
+  height: 100%;
+}
+
+.issues-kanban__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-xs);
+  padding-inline: var(--space-xxs);
+  font-weight: var(--weight-ui-medium);
+}
+
+/* The emphasis chip, the same for every status (D20). */
+.issues-kanban__count {
+  border-radius: var(--radius-s);
+  padding: 0 var(--space-xs);
+  background: var(--cte-surface-muted);
+  font-family: var(--font-data);
+  font-size: var(--size-s);
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--weight-data-medium);
+  letter-spacing: var(--letter-spacing-s);
+  line-height: var(--line-s);
+}
+
+/* The drop area: surface with an edge; while a card is over it, cw's
+   accent tint with the 2 px edge, where only n10 text sits (A10). */
+.issues-kanban__drop {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-xs);
+  min-height: 5rem;
+  border-radius: var(--radius-m);
+  padding: var(--space-xs);
+  background: var(--cte-surface);
+  box-shadow: var(--border-shadow-s);
+  transition-duration: var(--motion-duration);
+  transition-property: background-color, box-shadow;
+  transition-timing-function: var(--motion-easing);
+}
+
+.issues-kanban__drop--over {
+  background: var(--color-1-transparent);
+  box-shadow: var(--border-shadow-l);
+}
+
+.issues-kanban__empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 3.75rem;
+  color: var(--cte-text-muted);
+  font-size: var(--size-s);
+  letter-spacing: var(--letter-spacing-s);
+  line-height: var(--line-s);
+}
+
+.issues-kanban__drop--over .issues-kanban__empty {
+  color: var(--cte-text);
+}
+
+/* A card is cw's Popover: canvas in light, surface in dark, with an edge. */
+.issues-kanban__card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  border-radius: var(--radius-m);
+  padding: var(--space-m);
+  background: light-dark(var(--cte-canvas), var(--cte-surface));
+  box-shadow: var(--border-shadow-s);
+  cursor: grab;
+  user-select: none;
+  transition: opacity var(--motion-duration) var(--motion-easing);
+}
+
+.issues-kanban__card:active {
+  cursor: grabbing;
+}
+
+.issues-kanban__card--dragging {
+  opacity: 0.3;
+}
+
+.issues-kanban__card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-xs);
+}
+
+.issues-kanban__card-title {
+  margin: 0;
+  font-weight: var(--weight-ui-medium);
+}
+
+.issues-kanban__card-votes {
+  flex-shrink: 0;
+  border-radius: var(--radius-s);
+  padding: 0 var(--space-xs);
+  background: var(--cte-surface-muted);
+  font-family: var(--font-data);
+  font-size: var(--size-s);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--letter-spacing-s);
+  line-height: var(--line-s);
+}
+
+.issues-kanban__card-meta,
+.issues-kanban__card-summary {
+  margin: 0;
+  color: var(--cte-text-muted);
+  font-size: var(--size-s);
+  letter-spacing: var(--letter-spacing-s);
+  line-height: var(--line-s);
+}
+
+.issues-kanban__card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xxs) var(--space-xs);
+}
+
+.issues-kanban__card-summary {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+.issues-kanban__card-link {
+  align-self: flex-start;
+  color: inherit;
+  font-size: var(--size-s);
+  letter-spacing: var(--letter-spacing-s);
+  line-height: var(--line-s);
+  text-decoration-line: underline;
+  text-decoration-thickness: var(--border-s);
+  text-underline-offset: 0.2em;
+}
+
+.issues-kanban__card-link:hover {
+  text-decoration-thickness: var(--border-l);
+}
+
+/* "Load more": Payload's secondary button, cw's outline (custom.scss),
+   at critwire's tap target (D10). */
+.issues-kanban__more {
+  width: 100%;
+  min-height: var(--tap-min);
+  margin: var(--space-xs) 0 0;
+}
+
+/* The card under the pointer: a 2 px edge, without rotation or shadow. */
+.issues-kanban__overlay > .issues-kanban__card {
+  box-shadow: var(--border-shadow-l);
+  cursor: grabbing;
+}
+
+.issues-kanban :focus-visible {
+  outline: var(--focus-ring-outline);
+  outline-offset: var(--focus-ring-offset);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .issues-kanban__drop,
+  .issues-kanban__card {
+    transition: none;
+  }
+}

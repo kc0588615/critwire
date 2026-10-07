@@ -23,21 +23,21 @@ const LABEL = Object.fromEntries(ISSUE_STATUS_OPTIONS.map(({ label, value }) => 
 
 /** A kanban column, found by its header label. */
 const column = (page: Page, status: IssueStatus): Locator =>
-  page.locator('div.w-72').filter({ has: page.locator(':scope > div:first-child', { hasText: LABEL[status] }) })
+  page.locator('.issues-kanban__column').filter({ has: page.locator('.issues-kanban__head', { hasText: LABEL[status] }) })
 
 /** The column's drop area, which holds its cards. */
-const dropArea = (page: Page, status: IssueStatus): Locator => column(page, status).locator('div.min-h-20')
+const dropArea = (page: Page, status: IssueStatus): Locator => column(page, status).locator('.issues-kanban__drop')
 
 /** The column's card count pill. */
 const countPill = (page: Page, status: IssueStatus): Locator =>
-  column(page, status).locator(':scope > div:first-child > span').last()
+  column(page, status).locator('.issues-kanban__count')
 
 /** Card titles in a column, top to bottom (pin marker stripped). */
 const cardTitles = async (page: Page, status: IssueStatus): Promise<string[]> =>
-  (await dropArea(page, status).locator('.card p.font-semibold').allTextContents()).map((t) => t.replace(/^📌 /, ''))
+  (await dropArea(page, status).locator('.issues-kanban__card .issues-kanban__card-title').allTextContents()).map((t) => t.replace(/^📌 /, ''))
 
 const card = (page: Page, issue: Pick<Issue, 'title'>): Locator =>
-  page.locator('.card').filter({ has: page.locator('p.font-semibold', { hasText: issue.title }) })
+  page.locator('.issues-kanban__card').filter({ has: page.locator('.issues-kanban__card-title', { hasText: issue.title }) })
 
 async function openKanban(page: Page): Promise<void> {
   const response = await page.goto(KANBAN)
@@ -52,7 +52,7 @@ async function openKanban(page: Page): Promise<void> {
  */
 async function drag(page: Page, issue: Pick<Issue, 'title'>, target: Locator): Promise<void> {
   // Grab the title: the card's "Open →" link swallows pointer-down.
-  const title = card(page, issue).locator('p.font-semibold')
+  const title = card(page, issue).locator('.issues-kanban__card-title')
   await title.scrollIntoViewIfNeeded()
   const handle = await title.boundingBox()
   const drop = await target.boundingBox()
