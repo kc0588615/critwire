@@ -1,0 +1,35 @@
+/*
+ * Critwire's wordmark (plan §8, D15): "critwire" in the brand role at its
+ * heavy weight, in cw's text colour. The DOM text stays "Critwire"; CSS
+ * sets it lowercase. Unlayered and imported by Wordmark.tsx, so it loads
+ * wherever the wordmark renders: critwire's pages and the admin.
+ */
+.cw-wordmark {
+  display: inline-flex;
+  align-items: center;
+  color: var(--cte-text);
+  font-family: var(--font-brand);
+  font-size: var(--size-l);
+  font-weight: var(--weight-brand-heavy);
+  letter-spacing: var(--letter-spacing-l);
+  line-height: var(--line-l);
+  text-decoration: none;
+  text-transform: lowercase;
+}
+
+/* The linked wordmark is a tap target (D10). */
+a.cw-wordmark {
+  min-height: var(--tap-min);
+}
+
+.cw-wordmark--xl {
+  font-size: var(--size-xl);
+  letter-spacing: var(--letter-spacing-xl);
+  line-height: var(--line-xl);
+}
+
+.cw-wordmark--m {
+  font-size: var(--size-m);
+  letter-spacing: var(--letter-spacing-m);
+  line-height: var(--line-m);
+}

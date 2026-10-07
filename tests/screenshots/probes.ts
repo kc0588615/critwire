@@ -388,12 +388,12 @@ export async function probePage(page: Page, { group, shot, width, requests }: Pr
 
 /**
  * No capture shows focus: after the home capture, Tab to the first link
- * and check its ring is Ink. Runs after the screenshot so the ring
- * never shows in it.
+ * and check its ring is cw's, `--focus-ring-color` (D28). Runs after the
+ * screenshot so the ring never shows in it.
  */
 export async function probeMarketingFocus(page: Page): Promise<ProbeResult> {
   await page.keyboard.press('Tab')
-  return focusRing(page, '.cw-root', 'var(--cw-ink)')
+  return focusRing(page, '.cw-root', 'var(--focus-ring-color)')
 }
 
 /**

@@ -14,14 +14,14 @@ export function Footer() {
           <ul className="cw-footer-links">
             {MARKETING_NAV.map(({ href, label }) => (
               <li key={href}>
-                <Link className="cw-tap" href={href}>
+                <Link className="fs-tap fs-link" href={href}>
                   {label}
                 </Link>
               </li>
             ))}
           </ul>
         </nav>
-        <LegalLinks className="cw-footer-links" label="Legal" linkClassName="cw-tap" />
+        <LegalLinks className="cw-footer-links" label="Legal" linkClassName="fs-tap fs-link" />
         <p className="cw-footer-copy">© {new Date().getFullYear()} Haunted Pavement LLC</p>
       </div>
     </footer>

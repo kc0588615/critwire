@@ -45,7 +45,7 @@ export const AdminBar: React.FC<{
 
   return (
     <div
-      className={cn(baseClass, 'py-2 bg-black text-white', {
+      className={cn(baseClass, {
         block: show,
         hidden: !show,
       })}
@@ -53,12 +53,7 @@ export const AdminBar: React.FC<{
       <div className="container">
         <PayloadAdminBar
           {...adminBarProps}
-          className="py-2 text-white"
-          classNames={{
-            controls: 'font-medium text-white',
-            logo: 'text-white',
-            user: 'text-white',
-          }}
+          classNames={{ controls: `${baseClass}__controls` }}
           cmsURL={getClientSideURL()}
           collectionSlug={collection}
           collectionLabels={{
@@ -73,8 +68,13 @@ export const AdminBar: React.FC<{
               router.refresh()
             })
           }}
+          // Resets of the bar's own inline styles (a dark fixed strip in
+          // its own font), so index.scss's cw toolbar shows through.
           style={{
             backgroundColor: 'transparent',
+            color: 'inherit',
+            fontFamily: 'inherit',
+            fontSize: 'inherit',
             padding: 0,
             position: 'relative',
             zIndex: 'unset',

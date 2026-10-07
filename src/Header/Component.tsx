@@ -13,7 +13,7 @@ export function Header() {
           <ul className="cw-header-links">
             {MARKETING_NAV.map(({ href, label, wideOnly }) => (
               <li className={wideOnly ? 'cw-header-wide' : undefined} key={href}>
-                <Link className="cw-tap" href={href}>
+                <Link className="fs-tap fs-link cw-nav-link" href={href}>
                   {label}
                 </Link>
               </li>

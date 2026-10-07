@@ -1,25 +1,26 @@
 /*
- * Critwire's own site (plan §3–§7): the "Addendum" slip. One loud
- * yellow field, everything else ink on paper; no second accent, no
- * gradients or shadows. Imported into `@layer components`, so Tailwind
- * utilities on the same element win. The shadcn variables are
- * re-pointed here, so `Button` and `CMSLink` follow the same palette.
- * The palette itself and the wordmark are in brand.css, which the admin
- * shares.
+ * Critwire's own site on cw (plan §4): the canvas and text roles, the
+ * brand role for headings, flat surfaces separated by edges. Imported
+ * into `@layer components`, so Tailwind utilities on the same element
+ * win. The shadcn and prose variables are re-pointed here, so `Button`,
+ * `CMSLink` and rich text follow cw. The wordmark is in
+ * components/marketing/wordmark.css.
  */
 
 @import '../../components/marketing/brand.css';
 
 .cw-root {
+  /* The old palette's edge, for the sections not yet on cw (the home
+     page, the account and legal pages); removed with brand.css (S15). */
   --cw-rule: color-mix(in srgb, var(--cw-ink) 12%, transparent);
   --cw-header-h: 4.5rem;
-  --cw-gutter: clamp(1rem, 4vw, 2.5rem);
+  --cw-gutter: clamp(var(--space-l), 4vw, var(--space-xxl));
 
-  --background: var(--cw-paper);
-  --foreground: var(--cw-ink);
-  --primary: var(--cw-ink);
-  --primary-foreground: var(--cw-yellow);
-  --border: var(--cw-rule);
+  --background: var(--cte-canvas);
+  --foreground: var(--cte-text);
+  --primary: var(--cte-accent);
+  --primary-foreground: var(--cte-accent-text);
+  --border: var(--cte-border);
 
   /* The shared control layer (portal.css: fs-btn, fs-input, fs-link and
      the form classes) on cw's roles. Links are underlined in currentColor:
@@ -39,28 +40,32 @@
   --fs-radius-control: var(--radius-s);
   --fs-link-line: currentColor;
 
-  /* Rich text: tailwind.config.mjs maps every prose colour to these. */
-  --prose-fg: var(--cw-ink);
-  --prose-muted: var(--cw-graphite);
-  --prose-border: var(--cw-rule);
-  --prose-code-bg: #ffffff;
-  --prose-link-line: var(--cw-ink);
-  --prose-size: 1.125rem;
+  /* Rich text: tailwind.config.mjs maps every prose colour, the sizes and
+     the measure to these. Body text is cw's m step on the editorial role. */
+  --prose-fg: var(--cte-text);
+  --prose-muted: var(--cte-text-muted);
+  --prose-border: var(--cte-border);
+  --prose-code-bg: var(--cte-surface);
+  --prose-link-line: var(--fs-link-line);
+  --prose-size: var(--size-m);
+  --prose-line: var(--line-m);
   --prose-measure: 62ch;
 
-  background: var(--cw-paper);
-  color: var(--cw-ink);
-  font-family: var(--font-body), system-ui, sans-serif;
-  font-size: 1.125rem;
-  line-height: 1.6;
+  background: var(--cte-canvas);
+  color: var(--cte-text);
+  font-family: var(--font-ui);
+  font-size: var(--size-m);
+  font-weight: var(--weight-ui-regular);
+  letter-spacing: var(--letter-spacing-m);
+  line-height: var(--line-m);
 }
 
-/* Headings speak in Anybody, wide; body and numerals stay Atkinson. */
+/* Headings speak in the brand role, heavy, and each sets its own cw step.
+   The font's own leading covers a heading that sets only a size. */
 .cw-root :where(h1, h2, h3, h4) {
-  font-family: var(--font-critwire), system-ui, sans-serif;
-  font-stretch: 108%;
-  font-weight: 750;
-  line-height: 1.05;
+  font-family: var(--font-brand);
+  font-weight: var(--weight-brand-heavy);
+  line-height: normal;
 }
 
 /* ── Layout ─────────────────────────────────────────────── */
@@ -74,7 +79,8 @@
   flex: 1 0 auto;
 }
 
-/* ── Buttons ────────────────────────────────────────────── */
+/* ── Old controls, until the home page (S8) and the account and legal
+   pages (S9) move to the shared .fs-btn, .fs-link and .fs-tap ── */
 
 .cw-btn {
   display: inline-flex;
@@ -102,7 +108,6 @@
   transform: scale(0.98);
 }
 
-/* A plain text link sized as a tap target (header, footer, secondary actions). */
 .cw-tap {
   display: inline-flex;
   align-items: center;
@@ -117,26 +122,39 @@
   text-underline-offset: 0.25em;
 }
 
-/* ── Header: transparent, in flow, over whatever field starts the page ── */
+/* ── Header: cw's Navigation menu on the canvas, over a divider ── */
 
 .cw-header {
   position: relative;
   z-index: 1;
+  background: var(--cte-canvas);
+  box-shadow: var(--border-shadow-s);
 }
 
 .cw-header-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
+  gap: var(--space-m);
   height: var(--cw-header-h);
 }
 
 .cw-header-links {
   display: flex;
   align-items: center;
-  gap: 1.5rem;
-  font-size: 0.9375rem;
+  gap: var(--space-xxs);
+}
+
+/* A Navigation menu link: the underline is the cue (A7), the hover a
+   surface-muted fill. */
+.cw-nav-link {
+  border-radius: var(--radius-s);
+  padding-inline: var(--space-s);
+  transition: background-color var(--motion-duration) var(--motion-easing);
+}
+
+.cw-nav-link:hover {
+  background: var(--cte-surface-muted);
 }
 
 /* At 390 px the header keeps the wordmark and "Sign in". */
@@ -150,41 +168,38 @@
   }
 }
 
-/* ── Footer: the ink band ───────────────────────────────── */
+/* ── Footer: the surface, over a divider ────────────────── */
 
 .cw-footer {
-  padding-block: 2.5rem;
-  background: var(--cw-ink);
-  color: var(--cw-paper);
+  padding-block: var(--space-xxl);
+  background: var(--cte-surface);
+  box-shadow: var(--border-shadow-s);
 }
 
 .cw-footer-bar {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 0.5rem;
-}
-
-.cw-footer .cw-wordmark {
-  color: var(--cw-yellow);
+  gap: var(--space-s);
 }
 
 .cw-footer-links {
   display: flex;
   flex-wrap: wrap;
-  gap: 0 1.5rem;
-  font-size: 0.9375rem;
+  gap: 0 var(--space-l);
 }
 
 .cw-footer-copy {
-  font-size: 0.875rem;
+  color: var(--cte-text-muted);
+  font-size: var(--size-s);
+  line-height: var(--line-s);
 }
 
 @media (width >= 48rem) {
   .cw-footer-bar {
     flex-direction: row;
     align-items: center;
-    gap: 2.5rem;
+    gap: var(--space-xxl);
   }
 
   .cw-footer-copy {
@@ -192,7 +207,7 @@
   }
 }
 
-/* An inline link that reads as one (underlined), sized as a tap target with `.cw-tap`. */
+/* An inline link that reads as one (underlined), until S8 and S9 move to `.fs-link`. */
 .cw-link {
   text-decoration: underline;
   text-decoration-thickness: 1px;
@@ -452,17 +467,17 @@
   }
 }
 
-/* ── CMS pages: one 62ch column on paper ────────────────── */
+/* ── CMS pages: one 62ch column on the canvas ───────────── */
 
-/* Heroes and blocks stack with one rhythm; a high-impact hero's slip
-   is pulled up under the header like the home page's. */
+/* Heroes and blocks stack with one rhythm; a high-impact hero's band
+   starts right under the header, like the home page's. */
 .cw-page {
-  --cw-page-top: clamp(2.5rem, 6vw, 4.5rem);
-  padding-block: var(--cw-page-top) clamp(4rem, 9vw, 7.5rem);
+  --cw-page-top: clamp(var(--space-xxl), 6vw, calc(2 * var(--space-xxl)));
+  padding-block: var(--cw-page-top) clamp(calc(2 * var(--space-xxl)), 9vw, calc(3 * var(--space-xxl)));
 }
 
 .cw-page > * + * {
-  margin-top: clamp(2rem, 4vw, 3rem);
+  margin-top: clamp(var(--space-xl), 4vw, var(--space-xxl));
 }
 
 .cw-page > .cw-slip:first-child {
@@ -474,25 +489,28 @@
   margin-inline: auto;
 }
 
-/* A call to action closes a section with an ink rule, not a card. */
+/* A call to action closes a section with a divider, not a card. */
 .cw-cta {
-  padding-top: 1.5rem;
-  border-top: 2px solid var(--cw-ink);
+  padding-top: var(--space-l);
+  box-shadow: 0 calc(-1 * var(--border-s)) 0 0 var(--border-default-color);
 }
 
 .cw-cta .cw-actions {
-  margin-top: 1.5rem;
+  margin-top: var(--space-l);
 }
 
+/* Media sits on the canvas inside a divider-weight edge. */
 .cw-media-img {
-  border: 1px solid var(--cw-rule);
-  border-radius: 0.25rem;
+  border-radius: var(--radius-m);
+  box-shadow: var(--border-shadow-s);
 }
 
 .cw-caption {
-  margin-top: 0.75rem;
-  color: var(--cw-graphite);
-  font-size: 0.9375rem;
+  margin-top: var(--space-s);
+  color: var(--cte-text-muted);
+  font-size: var(--size-s);
+  letter-spacing: var(--letter-spacing-s);
+  line-height: var(--line-s);
 }
 
 /* ── Legal documents: /legal/terms, privacy, copyright ──── */
@@ -591,35 +609,28 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1.5rem;
-  padding-block: clamp(4rem, 14vh, 9rem);
+  gap: var(--space-l);
+  padding-block: clamp(calc(2 * var(--space-xxl)), 14vh, calc(4 * var(--space-xxl)));
   text-align: center;
 }
 
-.cw-root .cw-not-found-code {
-  font-size: clamp(6rem, 3rem + 12vw, 12rem);
-  font-stretch: 130%;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  line-height: 0.85;
+.cw-root .cw-not-found-title {
+  font-size: var(--size-xl);
+  letter-spacing: var(--letter-spacing-xl);
+  line-height: var(--line-xl);
 }
 
 .cw-not-found-text {
   max-width: 34em;
-  color: var(--cw-graphite);
-  font-size: 1.3125rem;
-  line-height: 1.5;
+  color: var(--cte-text-muted);
 }
 
 /* ── Focus and motion ───────────────────────────────────── */
 
+/* cw's ring: half-strength text colour, offset clear of any fill (A11, D28). */
 .cw-root :focus-visible {
-  outline: 2px solid var(--cw-ink);
-  outline-offset: 2px;
-}
-
-.cw-footer :focus-visible {
-  outline-color: var(--cw-yellow);
+  outline: var(--focus-ring-outline);
+  outline-offset: var(--focus-ring-offset);
 }
 
 /* Mirrors the portal's rule: durations drop to zero rather than
@@ -636,7 +647,7 @@
     transition-duration: 0s !important;
   }
 
-  .cw-root .cw-btn:active {
+  .cw-root :is(.cw-btn, .fs-btn):active {
     transform: none;
   }
 }

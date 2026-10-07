@@ -180,7 +180,7 @@
   --ease-cw-large: var(--motion-large-easing);
 }
 
-/* The shadcn names Button and CMSLink use; marketing.css gives them values. */
+/* The shadcn names the base layer below uses; marketing.css points them at cw's roles. */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -193,7 +193,7 @@
   .container {
     width: 100%;
     margin-inline: auto;
-    padding-inline: 1rem;
+    padding-inline: var(--space-l);
   }
 
   @variant sm {
@@ -205,7 +205,7 @@
   @variant md {
     .container {
       max-width: var(--breakpoint-md);
-      padding-inline: 2rem;
+      padding-inline: var(--space-xxl);
     }
   }
 

@@ -16,6 +16,7 @@
   --prose-code-bg: var(--fs-surface);
   --prose-link-line: var(--fs-link-line);
   --prose-size: 1.0625rem;
+  --prose-line: 1.6;
   --prose-measure: 68ch;
   --fs-gutter: clamp(1rem, 4vw, 2.5rem);
   /* A text link's underline: the accent, a decoration only (critwire's

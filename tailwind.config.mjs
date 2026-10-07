@@ -1,13 +1,25 @@
 /**
- * The one place rich text is styled. Every prose colour, the size and
- * the measure point at `--prose-*` variables that the surface's root
- * sets (`.fs-root` in portal.css; the marketing root from S18), so
- * `.prose` follows the page it sits on instead of assuming a dark or
- * light one. This block is appended after the plugin's defaults, so it
- * wins over them.
+ * The one place rich text is styled. Every prose colour, the body size,
+ * its leading and the measure point at `--prose-*` variables that the
+ * surface's root sets (`.cw-root` in marketing.css, `.fs-root` in
+ * portal.css), so `.prose` follows the page it sits on instead of
+ * assuming a dark or light one. The headings, the gaps and the faces are
+ * cw's steps and roles (plan §4). This block is appended after the
+ * plugin's defaults, so it wins over them.
  *
  * @type {import('tailwindcss').Config}
  */
+const heading = (step) => ({
+  fontSize: `var(--size-${step})`,
+  fontWeight: 'var(--weight-brand-heavy)',
+  letterSpacing: `var(--letter-spacing-${step})`,
+  lineHeight: `var(--line-${step})`,
+  marginBottom: 'var(--space-m)',
+  marginTop: 'var(--space-l)',
+})
+
+const gap = { marginBottom: 'var(--space-m)', marginTop: 'var(--space-m)' }
+
 const config = {
   theme: {
     extend: {
@@ -33,8 +45,23 @@ const config = {
             '--tw-prose-kbd-shadows': 'var(--prose-border)',
             '--tw-prose-pre-bg': 'var(--prose-code-bg)',
             fontSize: 'var(--prose-size)',
-            lineHeight: '1.6',
+            lineHeight: 'var(--prose-line)',
             maxWidth: 'var(--prose-measure)',
+            h1: heading('xl'),
+            h2: heading('l'),
+            h3: heading('m'),
+            h4: heading('m'),
+            p: { ...gap, fontFamily: 'var(--font-editorial)' },
+            // One key per element, as the plugin names them, so its
+            // `> :first-child` rule (later in its order) still zeroes the top gap.
+            ul: gap,
+            ol: gap,
+            blockquote: gap,
+            pre: gap,
+            figure: gap,
+            table: gap,
+            li: { marginBottom: 'var(--space-xs)', marginTop: 'var(--space-xs)' },
+            'code, kbd, pre': { fontFamily: 'var(--font-data)' },
             a: {
               textDecorationColor: 'var(--prose-link-line)',
             },

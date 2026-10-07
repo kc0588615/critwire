@@ -1,7 +1,24 @@
 @import '@payloadcms/ui/scss';
 
+// cw's Toolbar group: the canvas with a bottom divider, its controls in
+// ui medium. The bar's own inline styles keep its links' spacing, and
+// its padding (reset to 0 inline) sits on this wrapper instead.
 .admin-bar {
+  position: relative;
+  z-index: 2;
+  padding-block: var(--space-xs);
+  background: var(--cte-canvas);
+  box-shadow: var(--border-shadow-s);
+  color: var(--cte-text);
+  font-family: var(--font-ui);
+  font-size: var(--size-m);
+  line-height: var(--line-m);
+
   @include small-break {
     display: none;
   }
+}
+
+.admin-bar__controls {
+  font-weight: var(--weight-ui-medium);
 }
