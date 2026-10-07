@@ -43,6 +43,13 @@ in the same project.
 | `docs/embed.md` | The embed: the loader `/embed/v1.js` and its attributes, the board and updates widgets, voting through the item page, caching, the JSON feeds' contracts, privacy, protocol v1, what works where |
 | `docs/discord.md` | Discord: `/feedback` and Send to critwire, posts to a studio's channel, the Discord tab, what's stored, self-hosting your own Discord app step by step, troubleshooting, limits |
 
+## UI work
+
+For UI work, follow GUI.md and use graphical-ui, graphical-convert, or graphical-audit as appropriate.
+Read the skills directly, since agents here don't discover them:
+`.agents/skills/graphical-ui/SKILL.md`, `.agents/skills/graphical-convert/SKILL.md`
+and `.agents/skills/graphical-audit/SKILL.md`.
+
 ## Stack
 
 - **Framework:** Payload CMS 3.73.0+ inside Next.js. TypeScript strict.
