@@ -119,10 +119,11 @@ WCAG AA wins over snapshot values: 4.5:1 for text, 3:1 for large text, field bou
 - **D34.** The live badge's radius is `SHAPE_RADIUS[shape].control`, since the badge is a control-sized chip; `SHAPE_RADIUS` in `src/lib/game-portal/theme.ts` is the one table.
 - **D37.** `light-dark()` ships unrewritten: `next.config.ts` excludes it from Lightning CSS (`experimental.lightningCssFeatures`), as Tailwind does, so each token resolves against the `color-scheme` of the element using it. Keep that exclusion while the tokens use `light-dark()`.
 - **D38.** Tailwind's width utilities read `--spacing-*` before `--container-*`, so with cw's spacing names `max-w-xl` is 25 px. Size containers in CSS, not with `max-w-<cw step>`.
+- **D40.** Payload's folder drag count (`.drag-overlay-selection__card-count`) sets its text in success-50 on success-600; under the ramp mapping that's a tint on cw's text colour, so its text is the canvas (21:1). Payload's toast close buttons turn a tint on hover over a tint, as in stock Payload; left as they are (G9).
 
 ### Selectors into Payload's own views
 
-The only ones: D26's three rules (the required asterisk, the errored blocks header, the relationship load error), and the minimal template's field edge (`.template-minimal .field-type :is(input, textarea)`). Everything else in the admin is themed through Payload's documented variables.
+The only ones: D26's three rules (the required asterisk, the errored blocks header, the relationship load error), D40's folder drag count, the minimal template's field edge and focus ring (`.template-minimal .field-type :is(input, textarea)`, the edge on fields without an error), and the breadcrumb's wordmark slot (`.step-nav__home`). Payload's buttons are themed only by setting its button variables on `.btn--style-primary|secondary|pill|tab`. Everything else in the admin is themed through Payload's documented variables.
 
 ### Gaps
 

@@ -1,13 +1,8 @@
 import React from 'react'
 
 import { Wordmark } from '@/components/marketing/Wordmark'
-import { critwireFont } from '@/fonts'
 
-/** The breadcrumb's first step, which Payload already wraps in a link to the dashboard. */
+/** The breadcrumb's first step, the small wordmark; Payload already wraps it in a link to the dashboard. */
 export default function Icon() {
-  return (
-    <span className={critwireFont.variable}>
-      <Wordmark linked={false} />
-    </span>
-  )
+  return <Wordmark linked={false} size="m" />
 }
