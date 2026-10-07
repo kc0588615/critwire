@@ -25,7 +25,7 @@ import { createIssue, createPatchNote, createProject, expect, newRequestContext,
 const SELF = "frame-ancestors 'self'"
 const ANY = 'frame-ancestors *'
 /** The floating button's dark background, from `public/embed/v1.js`. */
-const BUTTON_DARK = '#16171d'
+const BUTTON_DARK = '#000000'
 
 const tagged = (path: string) => withRef(`${BASE_URL}${path}`, 'embed')
 const rgb = (hex: string) => `rgb(${hexToRgb(hex).join(', ')})`

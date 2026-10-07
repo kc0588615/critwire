@@ -2,7 +2,8 @@
  * The embed document (src/app/(embed)). Unlayered, so it wins over
  * globals.css and portal.css. The portal's components read --fs-*; here
  * those come from one of the two palettes `embedStyle()` sets, by the
- * mode the boot script put on <html>. Fonts are the host page's.
+ * mode the boot script put on <html>. Fonts are the host page's. Sizes,
+ * spacing, radii and weights are cw's steps, as in portal.css.
  */
 
 /* The frame sizes to its content, so nothing may hold it open. */
@@ -27,12 +28,15 @@ body {
   --fs-success: var(--cw-light-success);
   --fs-warning: var(--cw-light-warning);
   --fs-error: var(--cw-light-error);
-  --fs-font-display: var(--cw-font, system-ui, sans-serif);
+  /* The host page's font in every role (D13); .fs-root reads --font-ui. */
+  --font-ui: var(--cw-font, system-ui, sans-serif);
+  --font-brand: var(--font-ui);
+  --font-editorial: var(--font-ui);
+  --font-data: var(--font-ui);
+  --fs-font-display: var(--font-ui);
 
   color-scheme: light;
-  padding: 1rem clamp(0.75rem, 3vw, 1.25rem);
-  font-family: var(--cw-font, system-ui, sans-serif);
-  font-size: 1rem;
+  padding: var(--space-m) var(--space-l);
 }
 
 /* The dark palette: chosen, or `auto` on a dark system. Keep the two blocks equal. */
@@ -73,19 +77,24 @@ body {
   padding: 0;
 }
 
+/* The widget's title: l, heavy. Entries below it step down to m. */
 .cw-embed-title {
-  margin-bottom: 0.75rem;
-  font-size: 1.125rem;
-  font-weight: 700;
-  line-height: 1.3;
+  margin-bottom: var(--space-m);
+  font-size: var(--size-l);
+  font-weight: var(--weight-ui-heavy);
+  letter-spacing: var(--letter-spacing-l);
+  line-height: var(--line-l);
 }
 
-.cw-embed .fs-h3 {
-  font-size: 1.0625rem;
+.cw-embed .fs-h3,
+.cw-embed .fs-issue-row-title {
+  font-size: var(--size-m);
+  letter-spacing: var(--letter-spacing-m);
+  line-height: var(--line-m);
 }
 
 .cw-embed .fs-feed > li {
-  padding-block: 1.25rem;
+  padding-block: var(--space-l);
 }
 
 .cw-embed .fs-feed > li:first-child {
@@ -93,19 +102,16 @@ body {
 }
 
 .cw-embed-shipped {
-  margin-top: 0.75rem;
+  margin-top: var(--space-m);
 }
 
 .cw-embed-shipped .fs-issue-row {
-  padding-block: 0.625rem;
+  padding-block: var(--space-s);
 }
 
-.cw-embed .fs-hub-links {
-  margin-top: 1rem;
-}
-
+.cw-embed .fs-hub-links,
 .cw-embed-powered {
-  margin-top: 1rem;
+  margin-top: var(--space-m);
 }
 
 /* ── The board ──────────────────────────────────────────── */
@@ -116,54 +122,65 @@ body {
   flex-wrap: wrap;
   align-items: baseline;
   justify-content: space-between;
-  gap: 0 1.25rem;
+  gap: 0 var(--space-l);
 }
 
 .cw-embed-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 0 1.25rem;
-  margin-bottom: 0.5rem;
+  gap: 0 var(--space-l);
+  margin-bottom: var(--space-xs);
 }
 
-/* A row of toggle buttons, wrapping on narrow frames. */
+/* The form links and "See all": text links, medium. */
+.cw-embed-action {
+  font-weight: var(--weight-ui-medium);
+}
+
+/* cw's toggle group, wrapping on narrow frames. */
 .cw-embed-filters {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-bottom: 0.75rem;
+  gap: var(--space-xxs);
+  margin-bottom: var(--space-m);
 }
 
+/* A toggle: no fill at rest, the surface on hover, and the accent fill
+   with accent-fg when pressed (D8). The height keeps the 44px target. */
 .cw-embed-filter {
   display: inline-flex;
   align-items: center;
-  gap: 0.375rem;
-  min-height: 2.75rem;
-  border: 1px solid var(--fs-border);
+  gap: var(--space-xs);
+  min-height: var(--tap-min);
+  border: 0;
   border-radius: var(--fs-radius-control);
-  padding: 0.375rem 0.75rem;
+  padding: var(--space-xs) var(--space-s);
   background: transparent;
   color: var(--fs-fg);
   font: inherit;
-  font-size: 0.875rem;
-  font-weight: 600;
-  line-height: 1.2;
+  font-size: var(--size-m);
+  font-weight: var(--weight-ui-medium);
+  letter-spacing: var(--letter-spacing-m);
+  line-height: var(--line-m);
   cursor: pointer;
+  transition-duration: var(--motion-duration);
+  transition-property: background-color, color;
+  transition-timing-function: var(--motion-easing);
 }
 
 .cw-embed-filter:hover {
-  border-color: var(--fs-muted-fg);
+  background: var(--fs-surface);
 }
 
 .cw-embed-filter[aria-pressed='true'] {
-  border-color: var(--fs-accent);
   background: var(--fs-accent);
   color: var(--fs-accent-fg);
 }
 
+/* The count beside a stage: regular, so the label leads. */
 .cw-embed-count {
   font-variant-numeric: tabular-nums;
-  opacity: 0.8;
+  font-weight: var(--weight-ui-regular);
 }
 
 /* An item: its vote link in a fixed left column, then the title and its meta. */
@@ -171,52 +188,42 @@ body {
   display: grid;
   grid-template-columns: 3.5rem minmax(0, 1fr);
   align-items: start;
-  column-gap: 0.875rem;
-  padding-block: 0.75rem;
-  line-height: 1.4;
+  column-gap: var(--space-m);
+  padding-block: var(--space-m);
 }
 
+/* The vote link: an outline Button (.fs-btn-secondary), square at the tap size. */
 .cw-embed-vote {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 2.75rem;
-  min-height: 2.75rem;
-  border: 1px solid var(--fs-border);
-  border-radius: var(--fs-radius-control);
-  color: var(--fs-fg);
-  text-decoration: none;
-}
-
-.cw-embed-vote:hover {
-  border-color: var(--fs-accent);
+  min-width: var(--tap-min);
+  padding-inline: var(--space-s);
 }
 
 .cw-embed-vote .fs-vote-inline {
   color: inherit;
 }
 
+.cw-embed-row-main {
+  min-width: 0;
+}
+
+.cw-embed-row-title {
+  font-weight: var(--weight-ui-heavy);
+}
+
 .cw-embed-row-meta {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.25rem 0.75rem;
-  margin-top: 0.375rem;
-}
-
-.cw-embed-row-meta .fs-status {
-  font-size: 0.875rem;
+  gap: var(--space-xxs) var(--space-m);
+  margin-top: var(--space-xs);
 }
 
 .cw-embed-none {
-  margin-block: 0.75rem;
+  margin-block: var(--space-m);
 }
 
+/* A vote this page view made: cw's chip (.fs-tag) in the accent fill. */
 .cw-embed-voted {
-  padding: 0 0.5rem;
-  border-radius: 999px;
   background: var(--fs-accent);
   color: var(--fs-accent-fg);
-  font-size: 0.875rem;
-  font-weight: 600;
 }

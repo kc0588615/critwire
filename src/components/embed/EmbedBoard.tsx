@@ -71,12 +71,12 @@ const Row: React.FC<{
   const href = embedURL(row.url)
   return (
     <li className="cw-embed-row">
-      <EmbedLink className="cw-embed-vote" href={href} onClick={onVote}>
+      <EmbedLink className="fs-btn fs-btn-secondary cw-embed-vote" href={href} onClick={onVote}>
         <span className="sr-only">Vote for {row.title}, </span>
         <VoteCount count={vote?.votes ?? row.votes} variant="inline" />
       </EmbedLink>
-      <div className="min-w-0">
-        <EmbedLink className="fs-link font-semibold" href={href}>
+      <div className="cw-embed-row-main">
+        <EmbedLink className="fs-link cw-embed-row-title" href={href}>
           {row.title}
         </EmbedLink>
         <div className="cw-embed-row-meta">
@@ -87,7 +87,7 @@ const Row: React.FC<{
               : STAGES[row.stage].label}
           </span>
           <FeedbackTypeTag type={feedbackTypeOf(row.type)} />
-          {vote?.voted ? <span className="cw-embed-voted">Voted</span> : null}
+          {vote?.voted ? <span className="fs-tag cw-embed-voted">Voted</span> : null}
         </div>
       </div>
     </li>
@@ -144,11 +144,11 @@ export const EmbedBoard: React.FC<{
           Feedback
         </h1>
         <p className="cw-embed-actions">
-          <EmbedLink className="fs-link fs-tap font-semibold" href={newFeedback.bug}>
+          <EmbedLink className="fs-link fs-tap cw-embed-action" href={newFeedback.bug}>
             Report a bug
           </EmbedLink>
           {acceptsIdeas ? (
-            <EmbedLink className="fs-link fs-tap font-semibold" href={newFeedback.idea}>
+            <EmbedLink className="fs-link fs-tap cw-embed-action" href={newFeedback.idea}>
               Suggest an idea
             </EmbedLink>
           ) : null}
@@ -195,7 +195,7 @@ export const EmbedBoard: React.FC<{
             </ul>
           )}
           {view.seeAll ? (
-            <EmbedLink className="fs-link fs-tap font-semibold" href={view.seeAll}>
+            <EmbedLink className="fs-link fs-tap cw-embed-action" href={view.seeAll}>
               {`See all ${view.total}`}
             </EmbedLink>
           ) : null}

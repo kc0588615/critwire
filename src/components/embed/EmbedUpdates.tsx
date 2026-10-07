@@ -51,11 +51,11 @@ export const EmbedUpdates: React.FC<{ project: Pick<GameProject, 'id' | 'slug'> 
         </ul>
       )}
       <p className="fs-hub-links">
-        <EmbedLink className="fs-link font-semibold" href={embedHref(paths.updates)}>
+        <EmbedLink className="fs-link" href={embedHref(paths.updates)}>
           All updates
         </EmbedLink>
         {/* Untagged, as in the share kit: a tag would only count the subscription. */}
-        <EmbedLink className="fs-link font-semibold" href={absoluteURL(paths.rss)}>
+        <EmbedLink className="fs-link" href={absoluteURL(paths.rss)}>
           RSS
         </EmbedLink>
       </p>
@@ -79,12 +79,12 @@ const EmbedUpdate: React.FC<{
             {published}
           </time>
         ) : null}
-        <h2 className="fs-h3 mt-1">
+        <h2 className="fs-h3 mt-xxs">
           <EmbedLink className="fs-link" href={href}>
             {note.title}
           </EmbedLink>
         </h2>
-        {note.summary ? <p className="fs-body mt-2 text-[var(--fs-muted-fg)]">{note.summary}</p> : null}
+        {note.summary ? <p className="fs-body fs-muted mt-s">{note.summary}</p> : null}
         {items.length > 0 ? (
           <div className="cw-embed-shipped">
             <h3 className="fs-meta">From your feedback</h3>

@@ -19,8 +19,10 @@
 
   var TITLES = { board: 'Feedback', updates: 'Updates', button: 'Feedback' }
   var MAX_HEIGHT = 20000
-  // The button and its dialog sit on the host page, outside the game's theme, so they're neutral.
-  var COLOURS = { light: ['#ffffff', '#16171d'], dark: ['#16171d', '#ececf1'] }
+  // The button and its dialog sit on the host page, outside the game's theme, so they're neutral:
+  // cw neutral-1/neutral-10 per mode (src/lib/theme/cw.ts). The pill is cw's xl radius; the grey
+  // edge keeps it visible on any host colour.
+  var COLOURS = { light: ['#ffffff', '#000000'], dark: ['#000000', '#ffffff'] }
   var PILL =
     'min-height:44px;padding:0 20px;border:1px solid rgba(128,128,128,.4);border-radius:22px;font:inherit;cursor:pointer;'
 
@@ -75,7 +77,7 @@
     button.type = 'button'
     button.textContent = 'Feedback'
     button.style.cssText =
-      PILL + 'position:fixed;right:16px;bottom:16px;z-index:2147483000;box-shadow:0 4px 16px rgba(0,0,0,.25)'
+      PILL + 'position:fixed;right:16px;bottom:16px;z-index:2147483000'
     script.parentNode.insertBefore(button, script.nextSibling)
 
     // `auto` follows the visitor's setting, as the board does; anything else unknown counts as auto.
@@ -96,7 +98,7 @@
         dialog = document.createElement('dialog')
         dialog.setAttribute('aria-label', 'Feedback')
         dialog.style.cssText =
-          'width:min(720px,calc(100vw - 32px));max-width:none;max-height:none;box-sizing:border-box;padding:8px;border:0;border-radius:12px'
+          'width:min(720px,calc(100vw - 32px));max-width:none;max-height:none;box-sizing:border-box;padding:19px;border:0;border-radius:7px'
         var close = document.createElement('button')
         close.type = 'button'
         close.textContent = 'Close'

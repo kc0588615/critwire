@@ -12,7 +12,7 @@ import { cwTokensCSS } from '@/lib/theme/tokensCss'
 // on it, and both style entry points load the two. E2E can't see the source
 // drifting from the snapshot (`gui/themes/cw.md`) or from the generated
 // file, so this test does. `prebuild` runs it beside `embed-loader`. One test
-// per failure mode T1–T6 in the cw-theme mission plan.
+// per failure mode T1–T7 in the cw-theme mission plan.
 
 const read = (file: string) => readFileSync(path.join(process.cwd(), file), 'utf8')
 
@@ -156,5 +156,15 @@ describe('cw-tokens', () => {
     for (const file of ['src/styles/cw.css', 'src/styles/cw-tokens.css']) {
       expect(withoutComments(read(file)), file).not.toMatch(/color-scheme/)
     }
+  })
+
+  it('T7. the embed loader paints its button and dialog in cw neutral-1 on neutral-10, per mode', () => {
+    // v1.js has no build step, so it can't import cw.ts; it carries the two pairs as literals.
+    const match = read('public/embed/v1.js').match(/var COLOURS = (\{[^}]+\})/)
+    if (!match) throw new Error('public/embed/v1.js no longer declares COLOURS')
+    expect(JSON.parse(match[1].replace(/(\w+):/g, '"$1":').replace(/'/g, '"'))).toEqual({
+      light: [CW.light.neutral[1], CW.light.neutral[10]],
+      dark: [CW.dark.neutral[1], CW.dark.neutral[10]],
+    })
   })
 })
