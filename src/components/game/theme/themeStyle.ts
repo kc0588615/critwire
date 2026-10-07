@@ -1,23 +1,23 @@
 import type { CSSProperties } from 'react'
 
+import { backgroundScheme } from '@/lib/game-portal/contrast'
 import { SHAPE_RADIUS, type SiteThemeV1 } from '@/lib/game-portal/theme'
 
 type DisplayVoice = {
   family: string
-  leading: number
-  scale: number
   stretch: string
   tracking: string
   weight: number | string
   wordSpacing: string
 }
 
-/** The display voice per `typography` token; the faces come from `./fonts.ts`. */
+/**
+ * The display voice per `typography` token; the faces come from `./fonts.ts`.
+ * Sizes and line heights are cw's text steps for every voice (portal.css).
+ */
 const DISPLAY: Record<SiteThemeV1['typography'], DisplayVoice> = {
   editorial: {
     family: 'var(--font-young-serif), Georgia, serif',
-    leading: 1,
-    scale: 0.94,
     stretch: '100%',
     tracking: '-0.02em',
     weight: 400,
@@ -25,8 +25,6 @@ const DISPLAY: Record<SiteThemeV1['typography'], DisplayVoice> = {
   },
   modern: {
     family: 'var(--font-archivo), system-ui, sans-serif',
-    leading: 0.95,
-    scale: 1,
     stretch: '78%',
     tracking: '-0.012em',
     weight: 800,
@@ -34,11 +32,8 @@ const DISPLAY: Record<SiteThemeV1['typography'], DisplayVoice> = {
     wordSpacing: '0.08em',
   },
   // cw's own voice: its brand font at the heavy weight, on cw's tracking.
-  // S18 replaces scale and leading with cw's type steps.
   standard: {
     family: 'var(--font-brand)',
-    leading: 1,
-    scale: 0.9,
     stretch: '100%',
     tracking: 'var(--letter-spacing-xl)',
     weight: 'var(--weight-brand-heavy)',
@@ -46,8 +41,6 @@ const DISPLAY: Record<SiteThemeV1['typography'], DisplayVoice> = {
   },
   technical: {
     family: 'var(--font-science-gothic), system-ui, sans-serif',
-    leading: 1,
-    scale: 0.78,
     stretch: '112%',
     tracking: '0',
     weight: 700,
@@ -55,9 +48,10 @@ const DISPLAY: Record<SiteThemeV1['typography'], DisplayVoice> = {
   },
 }
 
+/** A hub section's vertical padding: multiples of cw's largest space step. */
 const SECTION_Y: Record<SiteThemeV1['density'], string> = {
-  cinematic: 'clamp(4.5rem, 9vw, 8rem)',
-  compact: 'clamp(2.75rem, 5vw, 4.5rem)',
+  cinematic: 'clamp(calc(var(--space-xxl) * 2), 9vw, calc(var(--space-xxl) * 3.5))',
+  compact: 'clamp(var(--space-xxl), 5vw, calc(var(--space-xxl) * 2))',
 }
 
 /**
@@ -86,13 +80,16 @@ export const radiusVars = (shape: SiteThemeV1['shape']): CSSProperties => {
 
 /**
  * Maps validated theme tokens to the `--fs-*` custom properties the
- * flagship stylesheet and components consume. Only these variables —
- * never raw values — appear in component styling.
+ * portal stylesheet and components consume, beside cw's tokens. Only
+ * these variables, never raw values, appear in component styling. The
+ * `motion` token is the root's `data-fs-motion` (`PortalRoot`).
  */
 export const themeStyle = (theme: SiteThemeV1): CSSProperties => {
   const voice = DISPLAY[theme.typography]
 
   return {
+    // Native controls, scrollbars and Turnstile follow the palette's mode.
+    colorScheme: backgroundScheme(theme.colors.background),
     ...paletteVars(theme.colors, '--fs'),
     ...radiusVars(theme.shape),
     '--fs-section-y': SECTION_Y[theme.density],
@@ -101,7 +98,5 @@ export const themeStyle = (theme: SiteThemeV1): CSSProperties => {
     '--fs-display-stretch': voice.stretch,
     '--fs-display-tracking': voice.tracking,
     '--fs-display-word-spacing': voice.wordSpacing,
-    '--fs-display-scale': voice.scale,
-    '--fs-display-leading': voice.leading,
   } as CSSProperties
 }

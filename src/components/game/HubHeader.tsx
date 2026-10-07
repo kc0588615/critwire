@@ -65,7 +65,7 @@ export const HubHeader: React.FC<{ project: GameProject }> = ({ project }) => {
     <>
       <h1 className="fs-h1">{project.name}</h1>
       {project.description ? (
-        <p className="fs-lead fs-hero-tagline">{project.description}</p>
+        <p className="fs-lead fs-muted fs-hero-tagline">{project.description}</p>
       ) : null}
       {primary || secondary.length > 0 ? (
         <div className="fs-hero-actions">

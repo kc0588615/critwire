@@ -42,7 +42,7 @@ export const PortalFrame: React.FC<{ children: React.ReactNode; project: GamePro
   project,
 }) => (
   <PortalRoot theme={resolveProjectTheme(project)}>
-    <a className="fs-skip" href="#fs-main">
+    <a className="fs-btn fs-btn-primary fs-skip" href="#fs-main">
       Skip to content
     </a>
     <PortalNav project={project} />

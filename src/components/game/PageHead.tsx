@@ -10,9 +10,9 @@ export const PageHead: React.FC<{
   title: string
 }> = ({ action, purpose, title }) => (
   <div className="fs-page-head">
-    <div>
+    <div className="fs-page-head-text">
       <h1 className="fs-page-title">{title}</h1>
-      <p className="fs-lead mt-3 text-[var(--fs-muted-fg)]">{purpose}</p>
+      <p className="fs-lead fs-muted">{purpose}</p>
     </div>
     {action ? <div className="fs-page-head-action">{action}</div> : null}
   </div>

@@ -15,10 +15,10 @@
   --prose-border: var(--fs-border);
   --prose-code-bg: var(--fs-surface);
   --prose-link-line: var(--fs-link-line);
-  --prose-size: 1.0625rem;
-  --prose-line: 1.6;
+  --prose-size: var(--size-m);
+  --prose-line: var(--line-m);
   --prose-measure: 68ch;
-  --fs-gutter: clamp(1rem, 4vw, 2.5rem);
+  --fs-gutter: clamp(var(--space-l), 4vw, var(--space-xxl));
   /* A text link's underline: the accent, a decoration only (critwire's
      own pages use currentColor, marketing.css). */
   --fs-link-line: var(--fs-accent);
@@ -77,8 +77,11 @@
   padding-top: calc(var(--fs-section-y) / 2);
 }
 
-/* ── Type scale (plan §4) ───────────────────────────────── */
+/* ── Type scale: cw's text steps (plan §7) ─────────────────── */
 
+/* The studio's display voice (themeStyle's DISPLAY) sets family, weight,
+   width and tracking; the size and line height are cw's, for every voice.
+   A long word breaks rather than widening a 390px screen. */
 .fs-display,
 .fs-h1,
 .fs-h2,
@@ -87,78 +90,100 @@
   font-stretch: var(--fs-display-stretch);
   font-weight: var(--fs-display-weight);
   letter-spacing: var(--fs-display-tracking);
+  overflow-wrap: anywhere;
   word-spacing: var(--fs-display-word-spacing);
 }
 
-/* Hero title: the hub's one loud line. */
+/* Hero title: the hub's one loud line, xxl (xl on phones). */
 .fs-h1 {
   max-width: 12em;
-  font-size: calc(clamp(2.75rem, 1.5rem + 5vw, 6rem) * var(--fs-display-scale));
-  line-height: var(--fs-display-leading);
+  font-size: var(--size-xl);
+  line-height: var(--line-xl);
   text-wrap: balance;
 }
 
-/* Section title on the hub. */
+/* Section title on the hub, and an ops page's title: xl (l on phones). */
+.fs-h2,
+.fs-page-title {
+  font-size: var(--size-l);
+  line-height: var(--line-l);
+  text-wrap: balance;
+}
+
 .fs-h2 {
   max-width: 20em;
-  font-size: calc(clamp(1.875rem, 1.3rem + 1.9vw, 3rem) * var(--fs-display-scale));
-  line-height: 1.05;
-  text-wrap: balance;
 }
 
-/* Ops page title (patch notes, issues, forms). */
-.fs-page-title {
-  font-size: calc(clamp(2.25rem, 1.8rem + 1.5vw, 3.25rem) * var(--fs-display-scale));
-  line-height: 1.05;
-  text-wrap: balance;
+@media (min-width: 40rem) {
+  .fs-h1 {
+    font-size: var(--size-xxl);
+    line-height: var(--line-xxl);
+  }
+
+  .fs-h2,
+  .fs-page-title {
+    font-size: var(--size-xl);
+    line-height: var(--line-xl);
+  }
 }
 
-/* Entry title: a patch note, an issue, a feature. Body face. */
+/* Entry title: a patch note, an issue, a feature. The ui face, heavy. */
 .fs-h3 {
-  font-size: 1.25rem;
-  font-weight: 700;
-  line-height: 1.3;
+  font-size: var(--size-l);
+  font-weight: var(--weight-ui-heavy);
+  letter-spacing: var(--letter-spacing-l);
+  line-height: var(--line-l);
 }
 
 .fs-lead {
   max-width: 36em;
-  font-size: 1.1875rem;
-  line-height: 1.55;
+  font-size: var(--size-l);
+  letter-spacing: var(--letter-spacing-l);
+  line-height: var(--line-l);
 }
 
 .fs-body {
   max-width: 68ch;
-  font-size: 1.0625rem;
-  line-height: 1.6;
+  font-size: var(--size-m);
+  letter-spacing: var(--letter-spacing-m);
+  line-height: var(--line-m);
+}
+
+/* The muted text role, for a lede or a purpose line. */
+.fs-muted {
+  color: var(--fs-muted-fg);
 }
 
 .fs-meta {
   color: var(--fs-muted-fg);
-  font-size: 0.875rem;
-  font-weight: 500;
-  letter-spacing: 0.005em;
-  line-height: 1.45;
+  font-size: var(--size-s);
+  font-weight: var(--weight-ui-medium);
+  letter-spacing: var(--letter-spacing-s);
+  line-height: var(--line-s);
 }
 
-/* Numbers always use the body face, with digits that line up. */
+/* Numbers always use the ui face, heavy, with digits that line up. */
 .fs-tally,
 .fs-version {
   font-variant-numeric: tabular-nums;
-  font-weight: 700;
-  line-height: 1;
+  font-weight: var(--weight-ui-heavy);
 }
 
 .fs-tally {
-  font-size: 1.75rem;
+  font-size: var(--size-l);
+  letter-spacing: var(--letter-spacing-l);
+  line-height: var(--line-l);
 }
 
 .fs-version {
-  font-size: 1rem;
+  font-size: var(--size-m);
+  letter-spacing: var(--letter-spacing-m);
+  line-height: var(--line-m);
 }
 
 /* A hub section's title. */
 .fs-section-head {
-  margin-bottom: 2.5rem;
+  margin-bottom: var(--space-xl);
 }
 
 /* ── Controls: cw's Button and Field (plan §4) ─────────── */
@@ -267,7 +292,7 @@
   position: sticky;
   top: 0;
   z-index: 50;
-  border-bottom: 1px solid var(--fs-border);
+  border-bottom: var(--border-s) solid var(--fs-border);
   background: var(--fs-bg);
 }
 
@@ -278,24 +303,26 @@
     'links links';
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  column-gap: 1.5rem;
-  padding-top: 0.625rem;
+  column-gap: var(--space-xl);
+  padding-top: var(--space-s);
 }
 
 .fs-nav-home {
   display: flex;
   grid-area: home;
   align-items: center;
-  gap: 0.75rem;
+  gap: var(--space-m);
   min-width: 0;
-  min-height: 2.75rem;
+  min-height: var(--tap-min);
   color: var(--fs-fg);
 }
 
+/* The name keeps to one line, so it never breaks inside a word. */
 .fs-nav-name {
   overflow: hidden;
-  font-size: calc(1.25rem * var(--fs-display-scale));
-  line-height: 1.2;
+  overflow-wrap: normal;
+  font-size: var(--size-l);
+  line-height: var(--line-l);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -312,10 +339,11 @@
 .fs-nav-links {
   display: flex;
   grid-area: links;
-  gap: 1.5rem;
+  gap: var(--space-xxs);
   margin-inline: calc(-1 * var(--fs-gutter));
   overflow-x: auto;
-  padding-inline: var(--fs-gutter);
+  /* The first label lines up with the shell; its link pads it by s. */
+  padding-inline: calc(var(--fs-gutter) - var(--space-s));
   scrollbar-width: none;
   white-space: nowrap;
 }
@@ -328,7 +356,7 @@
   .fs-nav-bar {
     grid-template-areas: 'home links cta';
     grid-template-columns: auto minmax(0, 1fr) auto;
-    padding-block: 0.75rem;
+    padding-block: var(--space-m);
   }
 
   .fs-nav-links {
@@ -338,28 +366,33 @@
   }
 }
 
+/* cw's Navigation menu link: fg text, the surface on hover. */
 .fs-nav-link {
   position: relative;
   display: inline-flex;
   align-items: center;
-  min-height: 2.75rem;
-  color: var(--fs-muted-fg);
-  font-size: 0.9375rem;
-  font-weight: 600;
-  transition: color 150ms ease;
-}
-
-.fs-nav-link:hover,
-.fs-nav-link[aria-current] {
+  min-height: var(--tap-min);
+  border-radius: var(--fs-radius-control);
+  padding: var(--space-xs) var(--space-s);
   color: var(--fs-fg);
+  font-size: var(--size-m);
+  font-weight: var(--weight-ui-regular);
+  letter-spacing: var(--letter-spacing-m);
+  line-height: var(--line-m);
+  transition: background-color var(--motion-duration) var(--motion-easing);
 }
 
-/* Current page: an accent bar on bg (a fill, not text). */
+.fs-nav-link:hover {
+  background: var(--fs-surface);
+}
+
+/* Current page: the accent bar under the label (a fill, not text), kept
+   over cw's selected fill so the current page reads at rest. */
 .fs-nav-link[aria-current]::after {
   position: absolute;
-  inset-inline: 0;
-  bottom: 0.375rem;
-  height: 2px;
+  inset-inline: var(--space-s);
+  bottom: var(--space-xxs);
+  height: var(--border-l);
   background: var(--fs-accent);
   content: '';
 }
@@ -367,50 +400,56 @@
 /* ── Footer ─────────────────────────────────────────────── */
 
 .fs-footer {
-  border-top: 1px solid var(--fs-border);
+  border-top: var(--border-s) solid var(--fs-border);
   background: var(--fs-surface);
 }
 
 .fs-footer-main {
   display: grid;
-  gap: 2rem;
-  padding-block: 3rem 2rem;
+  gap: var(--space-xl);
+  padding-block: var(--space-xxl) var(--space-xl);
 }
 
 @media (min-width: 48rem) {
   .fs-footer-main {
     grid-template-columns: minmax(0, 20rem) minmax(0, 1fr);
-    gap: 3rem;
+    gap: var(--space-xxl);
   }
 }
 
 .fs-footer-name {
-  font-size: 1.375rem;
-  line-height: 1.1;
+  font-size: var(--size-l);
+  line-height: var(--line-l);
 }
 
-/* Two even columns on phones; one wrapping row, packed left, once there's room. */
+/* Two even columns on phones; one wrapping row, packed left, once there's
+   room. Each link pads itself, as in the nav. */
 .fs-footer-links {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  column-gap: 1.5rem;
+  gap: var(--space-xxs);
+  margin-inline: calc(-1 * var(--space-s));
 }
 
 @media (min-width: 48rem) {
   .fs-footer-links {
     display: flex;
     flex-wrap: wrap;
-    column-gap: 2rem;
   }
+}
+
+/* The footer sits on the surface, so a link's hover fill is the page colour. */
+.fs-footer .fs-nav-link:hover {
+  background: var(--fs-bg);
 }
 
 .fs-footer-base {
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
-  gap: 0.5rem 1.5rem;
-  border-top: 1px solid var(--fs-border);
-  padding-block: 1.25rem 1.5rem;
+  gap: var(--space-xs) var(--space-l);
+  border-top: var(--border-s) solid var(--fs-border);
+  padding-block: var(--space-l) var(--space-xl);
 }
 
 /* "Powered by Critwire", on the hosted instance "Report this page", and
@@ -419,7 +458,7 @@
 .fs-footer-legal {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem 1.5rem;
+  gap: var(--space-xs) var(--space-l);
 }
 
 /* ── Hub header: the title plate (plan §5) ─────────────── */
@@ -432,15 +471,14 @@
 }
 
 .fs-hero-tagline {
-  margin-top: 1.5rem;
-  color: var(--fs-muted-fg);
+  margin-top: var(--space-l);
 }
 
 .fs-hero-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.75rem;
-  margin-top: 2rem;
+  gap: var(--space-m);
+  margin-top: var(--space-xl);
 }
 
 /* Phones: the art on top at 16:10, the plate stepping up into its
@@ -457,9 +495,9 @@
 
 .fs-hero-plate {
   position: relative;
-  margin: -3.5rem 1.25rem 0 0;
+  margin: calc(-1.5 * var(--space-xxl)) var(--space-l) 0 0;
   border-top-right-radius: var(--fs-radius);
-  padding: 1.5rem 1.25rem 0 var(--fs-hero-inset);
+  padding: var(--space-xl) var(--space-l) 0 var(--fs-hero-inset);
   background: var(--fs-bg);
 }
 
@@ -483,7 +521,7 @@
     width: min(calc(var(--fs-hero-inset) + 52rem), 64%);
     /* Keep a band of untouched art above the plate, however tall it grows. */
     margin: clamp(8rem, 22vh, 14rem) 0 0;
-    padding: 2.5rem 3rem 0 var(--fs-hero-inset);
+    padding: var(--space-xxl) var(--space-xxl) 0 var(--fs-hero-inset);
   }
 }
 
@@ -496,28 +534,30 @@
 .fs-build-line {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem 1.5rem;
-  margin-top: 2rem;
-  border-top: 1px solid var(--fs-border);
-  padding-top: 1rem;
+  gap: var(--space-xs) var(--space-l);
+  margin-top: var(--space-xl);
+  border-top: var(--border-s) solid var(--fs-border);
+  padding-top: var(--space-m);
   color: var(--fs-muted-fg);
-  font-size: 0.9375rem;
-  font-weight: 600;
+  font-size: var(--size-s);
+  font-weight: var(--weight-ui-medium);
   font-variant-numeric: tabular-nums;
-  line-height: 1.45;
+  letter-spacing: var(--letter-spacing-s);
+  line-height: var(--line-s);
 }
 
-/* The one hub moment: the plate settles into the art. Transform
-   only, so the title paints at the first frame; the root motion rules
-   below land it on its end state. `backwards`, not `both`: the end state
-   is the plate's own, so nothing stays attached once it has settled. */
+/* The one hub moment: the plate settles into the art, on cw's large
+   motion. Transform only, so the title paints at the first frame; the
+   root motion rules below land it on its end state. `backwards`, not
+   `both`: the end state is the plate's own, so nothing stays attached
+   once it has settled. */
 .fs-hero-settle {
-  animation: fs-settle 700ms cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+  animation: fs-settle var(--motion-large-duration) var(--motion-large-easing) backwards;
 }
 
 @keyframes fs-settle {
   from {
-    transform: translateY(1.25rem);
+    transform: translateY(var(--space-l));
   }
 
   to {
@@ -645,19 +685,21 @@
   }
 }
 
-/* A hub section's buttons, wrapping onto new rows as needed. */
+/* A hub section's buttons, after its list, wrapping onto new rows as needed. */
 .fs-action-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.75rem;
+  gap: var(--space-m);
+  margin-top: var(--space-xl);
 }
 
 /* The links that close a hub section: the full page, and RSS for updates. */
 .fs-hub-links {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem 1.5rem;
-  margin-top: 1.5rem;
+  gap: var(--space-xs) var(--space-l);
+  margin-top: var(--space-l);
+  font-weight: var(--weight-ui-medium);
 }
 
 /* A dated entry: version and date in a fixed left column, then the rest.
@@ -681,15 +723,21 @@
 /* ── Ops pages: one calm reading column (plan §5) ──────── */
 
 .fs-ops {
-  padding-block: clamp(2.5rem, 5vw, 4rem) clamp(3.5rem, 7vw, 6rem);
+  padding-block: clamp(var(--space-xxl), 5vw, calc(var(--space-xxl) * 1.75))
+    clamp(calc(var(--space-xxl) * 1.5), 7vw, calc(var(--space-xxl) * 2.5));
 }
 
 /* Title and purpose, with the page's action beside them on wide screens. */
 .fs-page-head {
   display: grid;
-  gap: 1.25rem 2rem;
+  gap: var(--space-l) var(--space-xl);
   align-items: end;
-  margin-bottom: clamp(2rem, 4vw, 3rem);
+  margin-bottom: clamp(var(--space-xl), 4vw, var(--space-xxl));
+}
+
+.fs-page-head-text {
+  display: grid;
+  gap: var(--space-s);
 }
 
 @media (min-width: 48rem) {
@@ -701,7 +749,19 @@
 .fs-page-head-action {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.75rem;
+  gap: var(--space-m);
+}
+
+/* A page with one message, centred: the 404 and an unavailable portal. */
+.fs-standalone {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-m);
+  padding-block: calc(var(--space-xxl) * 2.5);
+  text-align: center;
 }
 
 /* A text link with a 44px target. */
@@ -1069,23 +1129,32 @@
   --kit-title-size: var(--size-m);
   --kit-title-line: var(--line-m);
 
-  padding-top: 1.5rem;
+  padding-top: var(--space-xl);
 }
 
 .fs-welcome-steps {
   display: grid;
-  gap: 1.25rem;
-  margin-top: 1rem;
-  padding-left: 1.25rem;
+  gap: var(--space-l);
+  margin-top: var(--space-m);
+  padding-left: var(--space-l);
   list-style: decimal;
 }
 
 .fs-welcome-steps > li > * + * {
-  margin-top: 0.25rem;
+  margin-top: var(--space-xxs);
 }
 
 .fs-welcome-label {
-  font-weight: 700;
+  font-weight: var(--weight-ui-heavy);
+}
+
+/* An update's "From your feedback", after its notes. */
+.fs-from-feedback {
+  margin-top: var(--space-xxl);
+}
+
+.fs-from-feedback > .fs-rows {
+  margin-top: var(--space-m);
 }
 
 
@@ -1308,20 +1377,16 @@
 
 /* ── Focus, skip link and motion ────────────────────────── */
 
+/* A primary Button (.fs-btn-primary), off screen until it has focus. */
 .fs-skip {
   position: absolute;
   top: -100%;
-  left: 1rem;
+  left: var(--space-m);
   z-index: 100;
-  border-radius: var(--fs-radius-control);
-  padding: 0.625rem 1rem;
-  background: var(--fs-accent);
-  color: var(--fs-accent-fg);
-  font-weight: 700;
 }
 
 .fs-skip:focus-visible {
-  top: 1rem;
+  top: var(--space-m);
 }
 
 /* Two-tone ring (WCAG C40, D12): fg outline around a bg halo, at least

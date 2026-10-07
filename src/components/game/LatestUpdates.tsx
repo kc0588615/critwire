@@ -40,10 +40,10 @@ export const LatestUpdates: React.FC<{ project: Pick<GameProject, 'id' | 'name' 
             ))}
           </ul>
           <p className="fs-hub-links">
-            <Link className="fs-link font-semibold" href={paths.updates}>
+            <Link className="fs-link" href={paths.updates}>
               All updates
             </Link>
-            <a className="fs-link font-semibold" href={paths.rss}>
+            <a className="fs-link" href={paths.rss}>
               RSS
             </a>
           </p>

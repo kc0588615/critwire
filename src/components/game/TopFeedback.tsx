@@ -39,12 +39,12 @@ export const TopFeedback: React.FC<{
           ))}
         </ul>
       )}
-      <div className="fs-action-row mt-6">
+      <div className="fs-action-row">
         <FeedbackActions project={project} />
       </div>
       {items.length > 0 ? (
         <p className="fs-hub-links">
-          <Link className="fs-link font-semibold" href={paths.feedback}>
+          <Link className="fs-link" href={paths.feedback}>
             See all feedback
           </Link>
         </p>

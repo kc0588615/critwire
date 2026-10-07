@@ -8,9 +8,9 @@ import { DEFAULT_THEME } from '@/lib/game-portal/theme'
 export default function NotFound() {
   return (
     <PortalRoot theme={DEFAULT_THEME}>
-      <main className="fs-shell flex flex-1 flex-col items-center justify-center gap-4 py-24 text-center">
+      <main className="fs-shell fs-standalone">
         <h1 className="fs-h1">404</h1>
-        <p className="fs-lead text-[var(--fs-muted-fg)]">There’s no page at this address.</p>
+        <p className="fs-lead fs-muted">There’s no page at this address.</p>
         <Link className="fs-link" href="/">
           Go to the home page
         </Link>

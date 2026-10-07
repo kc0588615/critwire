@@ -14,7 +14,7 @@ import { DEFAULT_THEME } from '@/lib/game-portal/theme'
 export default function UnavailablePage() {
   return (
     <PortalRoot theme={DEFAULT_THEME}>
-      <main className="fs-shell flex flex-1 flex-col items-center justify-center gap-4 py-24 text-center">
+      <main className="fs-shell fs-standalone">
         <h1 className="fs-h1">This portal is unavailable.</h1>
         <Link className="fs-link" href="/">
           Go to the home page

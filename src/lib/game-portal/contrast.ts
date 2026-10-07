@@ -31,3 +31,14 @@ export const contrastRatio = (a: string, b: string): number => {
   return (lighter + 0.05) / (darker + 0.05)
 }
 
+
+/** Below this background luminance, a palette counts as a dark one. */
+const DARK_LUMINANCE = 0.18
+
+/**
+ * The colour scheme a palette's background belongs to: the portal's
+ * `color-scheme` (native controls, scrollbars, Turnstile) and the
+ * embed's own-mode choice both read it.
+ */
+export const backgroundScheme = (background: string): 'dark' | 'light' =>
+  relativeLuminance(background) < DARK_LUMINANCE ? 'dark' : 'light'

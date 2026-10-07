@@ -1,16 +1,13 @@
 import type { CSSProperties } from 'react'
 
 import { paletteVars, radiusVars } from '@/components/game/theme/themeStyle'
-import { contrastRatio, relativeLuminance } from '@/lib/game-portal/contrast'
+import { backgroundScheme, contrastRatio } from '@/lib/game-portal/contrast'
 import {
   DEFAULT_THEME_COLORS,
   type SiteThemeColors,
   siteThemeColorsSchema,
   type SiteThemeV1,
 } from '@/lib/game-portal/theme'
-
-/** Below this background luminance, a game's own palette counts as its dark one. */
-const DARK_LUMINANCE = 0.18
 
 /**
  * The scheme a game's palette doesn't cover: a fixed neutral palette.
@@ -54,7 +51,7 @@ const withGameAccent = (neutral: SiteThemeColors, game: SiteThemeColors): SiteTh
  * own scheme as is; the other scheme is neutral, in the game's accent.
  */
 export const embedPalettes = (colors: SiteThemeColors): Record<'dark' | 'light', SiteThemeColors> => {
-  const own = relativeLuminance(colors.background) < DARK_LUMINANCE ? 'dark' : 'light'
+  const own = backgroundScheme(colors.background)
   const other = own === 'dark' ? 'light' : 'dark'
   return {
     [own]: colors,

@@ -21,11 +21,11 @@ export const FromYourFeedback: React.FC<{
   if (items.length === 0) return null
 
   return (
-    <section aria-labelledby="fs-from-feedback-heading" className="mt-12">
+    <section aria-labelledby="fs-from-feedback-heading" className="fs-from-feedback">
       <h2 className="fs-h2" id="fs-from-feedback-heading">
         From your feedback
       </h2>
-      <ul className="fs-rows mt-4">
+      <ul className="fs-rows">
         {items.map((item) => (
           <FeedbackRow href={paths.feedbackItem(item.slug)} key={item.id} title={item.title}>
             <FeedbackTypeTag type={item.type} />
