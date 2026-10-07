@@ -98,6 +98,10 @@ test('S15.1 sign up, verify through the emailed link, onboard, and see the live 
     await test.step('the emailed link asks for a password, signs in, and the Terms come before onboarding', async () => {
       const message = await readEmail(email)
       expect(message.subject).toBe('Confirm your email and choose a password')
+      // B3: email-safe, so no web font or stylesheet, and the link survives the template.
+      expect(message.html, 'no @font-face (B3)').not.toContain('@font-face')
+      expect(message.html, 'no Google Fonts (B3)').not.toContain('fonts.googleapis.com')
+      expect(message.html, 'no <link> (B3)').not.toContain('<link')
       await page.goto(linkTo(message, '/verify/'))
       await expect(page.getByRole('heading', { level: 1 })).toHaveText('Choose a password')
       await expect(page.getByLabel('Email')).toHaveValue(email)
