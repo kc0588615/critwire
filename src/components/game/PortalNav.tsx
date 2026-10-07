@@ -18,7 +18,7 @@ export const PortalNav: React.FC<{ project: GameProject }> = ({ project }) => {
         <Link className="fs-nav-home" href={portalPaths(project.slug).hub}>
           {project.logo && typeof project.logo === 'object' ? (
             <Media
-              imgClassName="h-9 w-9 rounded-[var(--fs-radius-control)] object-cover"
+              imgClassName="fs-nav-logo"
               resource={project.logo}
               size="36px"
             />

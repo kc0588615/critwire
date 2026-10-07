@@ -25,13 +25,13 @@ export const UpdateEntry: React.FC<{
             {published}
           </time>
         ) : null}
-        <Title className="fs-h3 mt-1">
+        <Title className="fs-h3 mt-xxs">
           <Link className="fs-link" href={href}>
             {note.title}
           </Link>
         </Title>
         {note.summary ? (
-          <p className="fs-body mt-2 text-[var(--fs-muted-fg)]">{note.summary}</p>
+          <p className="fs-body fs-muted mt-s">{note.summary}</p>
         ) : null}
       </div>
     </article>

@@ -29,7 +29,7 @@ const IssueNote: React.FC<{
 }> = ({ children, heading, status }) => {
   const stage = publicStage(status)
   return (
-    <aside className="fs-note mt-10">
+    <aside className="fs-note mt-xxl">
       <h2 className="fs-note-head">
         {stage ? <StatusMark shape={stage.shape} /> : null}
         {heading}
@@ -58,13 +58,13 @@ export default async function IssueDetailPage({ params }: Args) {
         <Link className="fs-back" href={paths.feedback}>
           All feedback
         </Link>
-        <FeedbackMeta className="mt-8" issue={issue} />
-        <h1 className="fs-page-title mt-3">{issue.title}</h1>
+        <FeedbackMeta className="mt-xxl" issue={issue} />
+        <h1 className="fs-page-title mt-m">{issue.title}</h1>
         {issue.summary ? (
-          <p className="fs-lead mt-5 text-[var(--fs-muted-fg)]">{issue.summary}</p>
+          <p className="fs-lead fs-muted mt-l">{issue.summary}</p>
         ) : null}
 
-        <div className="mt-8">
+        <div className="mt-xxl">
           {/* An archived item's count is frozen: /api/vote refuses it too. */}
           {archived ? (
             <VoteCount count={issue.upvoteCount ?? 0} variant="tally" />
@@ -103,7 +103,7 @@ export default async function IssueDetailPage({ params }: Args) {
         ) : null}
 
         {issue.details ? (
-          <RichText className="mx-0 mt-10" data={issue.details} enableGutter={false} />
+          <RichText className="mx-zero mt-xxl" data={issue.details} enableGutter={false} />
         ) : null}
       </article>
     </div>

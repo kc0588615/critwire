@@ -62,7 +62,7 @@ export const TallyEmbed: React.FC<TallyEmbedProps> = ({
   if (!parsed) return <p className={className}>{UNAVAILABLE}</p>
 
   return (
-    <div className={className ? `fs-tally ${className}` : 'fs-tally'}>
+    <div className={className ? `fs-tally-form ${className}` : 'fs-tally-form'}>
       <iframe
         className="fs-tally-frame"
         data-tally-src={parsed.embedUrl}
@@ -109,7 +109,7 @@ export const TallyFormPanel: React.FC<TallyFormPanelProps> = ({
     <div className="fs-form">
       {description ? <p>{description}</p> : null}
       {display === 'button' ? (
-        <div className="fs-tally">
+        <div className="fs-tally-form">
           <div>
             <a
               className="fs-btn fs-btn-primary"

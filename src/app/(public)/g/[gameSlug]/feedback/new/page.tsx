@@ -118,7 +118,7 @@ export default async function NewFeedbackPage({ params, searchParams }: Args) {
         ) : (
           <>
             {copy && submitted ? (
-              <FormNotice className="mb-6" tone="success">
+              <FormNotice className="mb-xl" tone="success">
                 {copy.sent}{' '}
                 {submitted === 'published'
                   ? 'It’s on the board now.'
@@ -126,7 +126,7 @@ export default async function NewFeedbackPage({ params, searchParams }: Args) {
               </FormNotice>
             ) : null}
             {error ? (
-              <FormNotice className="mb-6" tone="error">
+              <FormNotice className="mb-xl" tone="error">
                 Your feedback wasn’t sent, so nothing reached the studio. Check the fields,
                 complete the verification and send it again.
               </FormNotice>

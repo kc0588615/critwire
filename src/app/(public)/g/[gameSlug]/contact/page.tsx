@@ -71,12 +71,12 @@ export default async function ContactPage({ params, searchParams }: Args) {
         ) : route.kind === 'form' ? (
           <>
             {submitted === '1' ? (
-              <FormNotice className="mb-6" tone="success">
+              <FormNotice className="mb-xl" tone="success">
                 Message sent. If you left an email address, the {project.name} team can reply to it.
               </FormNotice>
             ) : null}
             {error === '1' ? (
-              <FormNotice className="mb-6" tone="error">
+              <FormNotice className="mb-xl" tone="error">
                 Your message wasn’t sent, so nothing reached the studio. Check the fields, complete
                 the verification and send it again.
               </FormNotice>

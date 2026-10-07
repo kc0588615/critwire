@@ -58,7 +58,7 @@ export const VoteButton: React.FC<{
         <button
           aria-disabled={pending || undefined}
           aria-pressed={voted}
-          className={`fs-btn fs-vote-btn ${voted ? 'fs-btn-primary' : 'fs-btn-secondary'}`}
+          className={`fs-btn ${voted ? 'fs-btn-primary' : 'fs-btn-secondary'}`}
           onClick={toggle}
           type="button"
         >

@@ -38,7 +38,7 @@ export default async function PatchNoteDetailPage({ params }: Args) {
           All updates
         </Link>
         {note.versionLabel || published ? (
-          <p className="fs-meta-line mt-8">
+          <p className="fs-meta-line mt-xxl">
             {note.versionLabel ? <span className="fs-version">{note.versionLabel}</span> : null}
             {published ? (
               <time className="fs-meta" dateTime={note.publishedAt ?? undefined}>
@@ -47,9 +47,9 @@ export default async function PatchNoteDetailPage({ params }: Args) {
             ) : null}
           </p>
         ) : null}
-        <h1 className="fs-page-title mt-3">{note.title}</h1>
-        {note.summary ? <p className="fs-lead mt-5 text-[var(--fs-muted-fg)]">{note.summary}</p> : null}
-        <RichText className="mx-0 mt-10" data={note.content} enableGutter={false} />
+        <h1 className="fs-page-title mt-m">{note.title}</h1>
+        {note.summary ? <p className="fs-lead fs-muted mt-l">{note.summary}</p> : null}
+        <RichText className="mx-zero mt-xxl" data={note.content} enableGutter={false} />
         <FromYourFeedback noteID={note.id} paths={paths} projectID={project.id} />
       </article>
     </div>

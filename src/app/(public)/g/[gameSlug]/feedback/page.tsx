@@ -59,7 +59,7 @@ const NoMatch: React.FC<{ clearHref: string }> = ({ clearHref }) => (
 const IssueRow: React.FC<{ issue: Issue; paths: PortalPaths }> = ({ issue, paths }) => (
   <li className="fs-issue-item">
     <VoteCount count={issue.upvoteCount ?? 0} variant="tally" />
-    <div className="min-w-0">
+    <div className="fs-issue-item-main">
       <h2 className="fs-h3">
         <Link className="fs-link" href={paths.feedbackItem(issue.slug)}>
           {issue.title}
@@ -67,7 +67,7 @@ const IssueRow: React.FC<{ issue: Issue; paths: PortalPaths }> = ({ issue, paths
       </h2>
       <FeedbackMeta issue={issue} />
       {issue.summary ? (
-        <p className="fs-body mt-2 line-clamp-2 text-[var(--fs-muted-fg)]">{issue.summary}</p>
+        <p className="fs-body fs-muted fs-issue-item-summary">{issue.summary}</p>
       ) : null}
     </div>
   </li>
@@ -163,7 +163,7 @@ const IssueList = async ({
         <nav aria-label="Pagination" className="fs-pagination">
           {issues.hasPrevPage ? (
             <Link
-              className="fs-link fs-tap font-semibold"
+              className="fs-link fs-tap"
               href={pageHref((issues.page ?? 2) - 1)}
             >
               Previous page
@@ -176,7 +176,7 @@ const IssueList = async ({
           </span>
           {issues.hasNextPage ? (
             <Link
-              className="fs-link fs-tap font-semibold"
+              className="fs-link fs-tap"
               href={pageHref((issues.page ?? 1) + 1)}
             >
               Next page

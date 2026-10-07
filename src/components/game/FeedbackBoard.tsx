@@ -14,7 +14,7 @@ const Card: React.FC<{ issue: BoardCard; paths: PortalPaths }> = ({ issue, paths
   const shippedIn = shippedUpdate(issue)
   return (
     <li className="fs-board-card">
-      <Link className="fs-link font-semibold" href={paths.feedbackItem(issue.slug)}>
+      <Link className="fs-link fs-board-card-title" href={paths.feedbackItem(issue.slug)}>
         {issue.title}
       </Link>
       <div className="fs-board-card-meta">
@@ -76,7 +76,7 @@ export const FeedbackBoard = async ({
             )}
             {result.totalDocs > BOARD_COLUMN_LIMIT ? (
               <Link
-                className="fs-link fs-tap fs-board-more font-semibold"
+                className="fs-link fs-tap fs-board-more"
                 href={feedbackHref(paths.feedback, { stage: stage.id, type })}
               >
                 See all {result.totalDocs}

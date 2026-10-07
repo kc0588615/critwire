@@ -22,7 +22,7 @@ export const PatchNotesFeed: React.FC<{
       <div className="fs-column-wide">
         <PageHead
           action={
-            <a className="fs-link fs-tap font-semibold" href={rss}>
+            <a className="fs-link fs-tap" href={rss}>
               RSS
             </a>
           }
@@ -52,7 +52,7 @@ export const PatchNotesFeed: React.FC<{
           <nav aria-label="Pagination" className="fs-pagination">
             {notes.hasPrevPage ? (
               <Link
-                className="fs-link fs-tap font-semibold"
+                className="fs-link fs-tap"
                 href={paths.updatesPage((notes.page ?? 2) - 1)}
               >
                 Newer updates
@@ -65,7 +65,7 @@ export const PatchNotesFeed: React.FC<{
             </span>
             {notes.hasNextPage ? (
               <Link
-                className="fs-link fs-tap font-semibold"
+                className="fs-link fs-tap"
                 href={paths.updatesPage((notes.page ?? 1) + 1)}
               >
                 Older updates
