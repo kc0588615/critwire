@@ -121,10 +121,12 @@ WCAG AA wins over snapshot values: 4.5:1 for text, 3:1 for large text, field bou
 - **D38.** Tailwind's width utilities read `--spacing-*` before `--container-*`, so with cw's spacing names `max-w-xl` is 25 px. Size containers in CSS, not with `max-w-<cw step>`.
 - **D40.** Payload's folder drag count (`.drag-overlay-selection__card-count`) sets its text in success-50 on success-600; under the ramp mapping that's a tint on cw's text colour, so its text is the canvas (21:1). Payload's toast close buttons turn a tint on hover over a tint, as in stock Payload; left as they are (G9).
 
+- **D46.** Motion that CSS can't reach reads `CW.motion` through `cubicBezier` (`src/lib/theme/cw.ts`): the Issues kanban's drag uses cw's small motion, and stops under reduced motion. Payload's buttons get it through `--btn-base-transition`. The embed loader's pill pads its sides with space l and spaces its Close button by space s.
+
 ### Selectors into Payload's own views
 
 The only ones: D26's three rules (the required asterisk, the errored blocks header, the relationship load error), D40's folder drag count, the minimal template's field edge and focus ring (`.template-minimal .field-type :is(input, textarea)`, the edge on fields without an error), and the breadcrumb's wordmark slot (`.step-nav__home`). Payload's buttons are themed only by setting its button variables on `.btn--style-primary|secondary|pill|tab`. Everything else in the admin is themed through Payload's documented variables.
 
 ### Gaps
 
-The unresolved gaps G1–G8 (Payload's built-in field edges, native `<select>` popups and Turnstile, old-default rows, faint light status marks, and others) are listed in `plans/2026-10-07-cw-theme.md`, Architecture §11, and in that plan's Summary.
+The unresolved gaps G1 and G3–G10 (Payload's built-in field edges, native `<select>` popups and Turnstile, old-default rows, faint light status marks, the link underline offset, and others) are listed in `plans/2026-10-07-cw-theme.md`, Architecture §11 and Decisions, and in that plan's Summary.

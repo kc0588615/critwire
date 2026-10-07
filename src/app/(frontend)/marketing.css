@@ -148,6 +148,7 @@
 .cw-footer-copy {
   color: var(--cte-text-muted);
   font-size: var(--size-s);
+  letter-spacing: var(--letter-spacing-s);
   line-height: var(--line-s);
 }
 

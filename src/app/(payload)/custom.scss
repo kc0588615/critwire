@@ -84,6 +84,12 @@ $cw-statuses: (
 // Payload's disabled one.
 .btn {
   --btn-font-weight: var(--weight-ui-medium);
+  --btn-base-transition: var(--motion-duration) var(--motion-easing);
+
+  // Stops when the visitor asks for less motion, as on critwire's other surfaces.
+  @media (prefers-reduced-motion: reduce) {
+    --btn-base-transition: 0s;
+  }
 
   // cw's primary, with its label in the accent text (D6, A1). The fill
   // stays exact on hover, as cw's does.

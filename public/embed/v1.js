@@ -20,11 +20,11 @@
   var TITLES = { board: 'Feedback', updates: 'Updates', button: 'Feedback' }
   var MAX_HEIGHT = 20000
   // The button and its dialog sit on the host page, outside the game's theme, so they're neutral:
-  // cw neutral-1/neutral-10 per mode (src/lib/theme/cw.ts). The pill is cw's xl radius; the grey
-  // edge keeps it visible on any host colour.
+  // cw neutral-1/neutral-10 per mode (src/lib/theme/cw.ts). The pill is cw's xl radius, padded by
+  // its l space; the grey edge keeps it visible on any host colour.
   var COLOURS = { light: ['#ffffff', '#000000'], dark: ['#000000', '#ffffff'] }
   var PILL =
-    'min-height:44px;padding:0 20px;border:1px solid rgba(128,128,128,.4);border-radius:22px;font:inherit;cursor:pointer;'
+    'min-height:44px;padding:0 19px;border:1px solid rgba(128,128,128,.4);border-radius:22px;font:inherit;cursor:pointer;'
 
   var script = document.currentScript
   var data = script ? script.dataset : {}
@@ -102,7 +102,7 @@
         var close = document.createElement('button')
         close.type = 'button'
         close.textContent = 'Close'
-        close.style.cssText = PILL + 'display:block;margin:0 0 8px auto;background:transparent;color:inherit'
+        close.style.cssText = PILL + 'display:block;margin:0 0 9px auto;background:transparent;color:inherit'
         close.addEventListener('click', function () {
           dialog.close()
         })

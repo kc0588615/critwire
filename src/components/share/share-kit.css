@@ -12,7 +12,8 @@
  *   --kit-accent, --kit-accent-fg  a primary action's fill and its label
  *   --kit-radius                   controls' corners
  *   --kit-radius-surface           items' and previews' corners
- *   --kit-title-size, -line        the title, cw's l unless the host sets it
+ *   --kit-title-size, -line,       the title, cw's l unless the host
+ *     -tracking                    sets it
  */
 
 .share-kit {
@@ -26,6 +27,7 @@
   margin: 0;
   font-size: var(--kit-title-size, var(--size-l));
   font-weight: var(--weight-ui-heavy);
+  letter-spacing: var(--kit-title-tracking, var(--letter-spacing-l));
   line-height: var(--kit-title-line, var(--line-l));
 }
 

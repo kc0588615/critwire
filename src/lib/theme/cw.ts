@@ -131,3 +131,6 @@ export const CW = {
     accentText: '#000000',
   },
 } as const satisfies CwTheme
+
+/** A motion curve as CSS and the Web Animations API write it. */
+export const cubicBezier = (easing: readonly number[]): string => `cubic-bezier(${easing.join(', ')})`

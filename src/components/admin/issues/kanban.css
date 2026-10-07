@@ -234,9 +234,11 @@
   outline-offset: var(--focus-ring-offset);
 }
 
+/* !important, to outrank the transition dnd-kit sets inline on a card
+   moving aside. */
 @media (prefers-reduced-motion: reduce) {
   .issues-kanban__drop,
   .issues-kanban__card {
-    transition: none;
+    transition: none !important;
   }
 }

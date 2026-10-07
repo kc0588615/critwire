@@ -1169,6 +1169,7 @@
      Variables, because share-kit.css is unlayered and outranks this layer. */
   --kit-title-size: var(--size-m);
   --kit-title-line: var(--line-m);
+  --kit-title-tracking: var(--letter-spacing-m);
 
   padding-top: var(--space-xl);
 }

@@ -2,6 +2,7 @@ import {
   BORDER_STEPS,
   COLOR_STEPS,
   CW,
+  cubicBezier,
   FONT_ROLES,
   type Mode,
   NEUTRAL_STEPS,
@@ -30,8 +31,6 @@ const perMode = (value: (mode: Mode) => string) => {
   const dark = value('dark')
   return light === dark ? light : `light-dark(${light}, ${dark})`
 }
-
-const cubicBezier = (easing: readonly number[]) => `cubic-bezier(${easing.join(', ')})`
 
 /** A neutral step at an opacity, as the snapshot writes shadow colours. */
 const shadowColor = (mode: Mode, step: (typeof NEUTRAL_STEPS)[number], opacity: number) =>

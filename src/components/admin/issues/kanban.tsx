@@ -38,7 +38,9 @@ import React, { useCallback, useRef, useState } from 'react'
 import type { Issue } from '@/payload-types'
 
 import { ISSUE_STATUS_OPTIONS } from '@/collections/options'
+import { CW, cubicBezier } from '@/lib/theme/cw'
 import { cn } from '@/utilities/ui'
+import { usePrefersReducedMotion } from '@/utilities/usePrefersReducedMotion'
 
 import { ISSUE_KANBAN_PAGE_SIZE, type IssueStatus } from './constants'
 import './kanban.css'
@@ -56,6 +58,14 @@ const COLUMNS: ColumnDef[] = ISSUE_STATUS_OPTIONS.map((status) => ({
 }))
 
 const block = 'issues-kanban'
+
+/**
+ * cw's small motion for a card moving aside and for the drop, as the
+ * cards' own transitions in kanban.css. kanban.css stops the first under
+ * reduced motion; the drop runs on the Web Animations API, so the board
+ * leaves it out.
+ */
+const CARD_MOTION = { duration: CW.motion.small.duration, easing: cubicBezier(CW.motion.small.easing) }
 
 async function updateIssue(
   issueId: number | string,
@@ -233,6 +243,7 @@ function SortableIssueCard({ issue }: { issue: Issue }) {
   const { attributes, isDragging, listeners, setNodeRef, transform, transition } = useSortable({
     data: { issue, type: 'issue' },
     id: issue.id,
+    transition: CARD_MOTION,
   })
 
   return (
@@ -298,6 +309,7 @@ export function IssuesKanban({ initialColumns, tenantFilter }: IssuesKanbanProps
     ...initialColumns,
   }))
   const [activeIssue, setActiveIssue] = useState<Issue | null>(null)
+  const reduceMotion = usePrefersReducedMotion()
   const [overColumn, setOverColumn] = useState<IssueStatus | null>(null)
 
   // Column the active drag started in; null when no drag is active.
@@ -408,7 +420,7 @@ export function IssuesKanban({ initialColumns, tenantFilter }: IssuesKanbanProps
             />
           ))}
         </div>
-        <DragOverlay dropAnimation={{ duration: 120, easing: 'ease' }}>
+        <DragOverlay dropAnimation={reduceMotion ? null : CARD_MOTION}>
           {activeIssue ? (
             <div className={`${block}__overlay`}>
               <IssueCard issue={activeIssue} />
