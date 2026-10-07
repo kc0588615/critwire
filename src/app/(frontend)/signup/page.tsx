@@ -34,8 +34,8 @@ export default async function SignupPage({ searchParams }: Args) {
         title="Check your inbox"
       >
         <p className="cw-account-lede">
-          Already have an account? <Link className="cw-link" href="/admin/login">Sign in</Link>, or{' '}
-          <Link className="cw-link" href="/admin/forgot">reset your password</Link>.
+          Already have an account? <Link className="fs-link" href="/admin/login">Sign in</Link>, or{' '}
+          <Link className="fs-link" href="/admin/forgot">reset your password</Link>.
         </p>
       </AccountPage>
     )
@@ -70,12 +70,12 @@ export default async function SignupPage({ searchParams }: Args) {
 
         <TurnstileField />
 
-        <button className="cw-btn" type="submit">
+        <button className="fs-btn fs-btn-primary" type="submit">
           Send my link
         </button>
       </form>
       <p className="cw-account-lede">
-        Already have an account? <Link className="cw-link" href="/admin/login">Sign in</Link>
+        Already have an account? <Link className="fs-link" href="/admin/login">Sign in</Link>
       </p>
     </AccountPage>
   )

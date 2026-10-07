@@ -38,7 +38,7 @@ export default async function ReportAbusePage({ searchParams }: Args) {
         title="Report sent"
       >
         <div>
-          <Link className="cw-btn" href={page && parsePortalPath(page) ? page : '/'}>
+          <Link className="fs-btn fs-btn-primary" href={page && parsePortalPath(page) ? page : '/'}>
             Back to the page
           </Link>
         </div>
@@ -127,7 +127,7 @@ export default async function ReportAbusePage({ searchParams }: Args) {
 
         <TurnstileField />
 
-        <button aria-describedby={LEGAL_NOTICE_ID} className="cw-btn" type="submit">
+        <button aria-describedby={LEGAL_NOTICE_ID} className="fs-btn fs-btn-primary" type="submit">
           Send report
         </button>
       </form>

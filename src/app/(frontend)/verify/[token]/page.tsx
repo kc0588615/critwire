@@ -37,7 +37,7 @@ export default async function VerifyPage({ params, searchParams }: Args) {
         lede={
           <>
             This link has been used or is invalid. If you’ve already set your password,{' '}
-            <Link className="cw-link" href="/admin/login">
+            <Link className="fs-link" href="/admin/login">
               sign in
             </Link>
             .
@@ -86,7 +86,7 @@ export default async function VerifyPage({ params, searchParams }: Args) {
 
         <TurnstileField />
 
-        <button className="cw-btn" type="submit">
+        <button className="fs-btn fs-btn-primary" type="submit">
           Set password and continue
         </button>
       </form>

@@ -7,12 +7,11 @@
  * components/marketing/wordmark.css.
  */
 
-@import '../../components/marketing/brand.css';
-
+/* Critwire's pages follow the visitor's system setting, with no toggle;
+   every colour below is a light-dark() token, so this one line switches
+   them all. The layout's viewport meta says the same to the browser. */
 .cw-root {
-  /* The old palette's edge, for the sections not yet on cw (the account
-     and legal pages); removed with brand.css (S15). */
-  --cw-rule: color-mix(in srgb, var(--cw-ink) 12%, transparent);
+  color-scheme: light dark;
   --cw-header-h: 4.5rem;
   --cw-gutter: clamp(var(--space-l), 4vw, var(--space-xxl));
 
@@ -23,9 +22,9 @@
   --border: var(--cte-border);
 
   /* The shared control layer (portal.css: fs-btn, fs-input, fs-link and
-     the form classes) on cw's roles. Links are underlined in currentColor:
-     color-1 is 2.08:1 on white (A7). .cw-account keeps the old palette
-     until its own step. */
+     the form classes) on cw's roles, for every page here, the account
+     pages' forms included. Links are underlined in currentColor: color-1
+     is 2.08:1 on white (A7). */
   --fs-bg: var(--cte-canvas);
   --fs-fg: var(--cte-text);
   --fs-muted-fg: var(--cte-text-muted);
@@ -77,49 +76,6 @@
 
 .cw-main {
   flex: 1 0 auto;
-}
-
-/* ── Old controls, until the account and legal pages (S9) move to the
-   shared .fs-btn, .fs-link and .fs-tap ── */
-
-.cw-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 2.75rem;
-  border-radius: 0.25rem;
-  padding: 0.625rem 1.25rem;
-  background: var(--cw-ink);
-  color: var(--cw-yellow);
-  font-size: 1rem;
-  font-weight: 700;
-  line-height: 1.2;
-  text-decoration: none;
-  transition: transform 120ms ease;
-}
-
-.cw-btn:hover {
-  text-decoration: underline;
-  text-decoration-thickness: 2px;
-  text-underline-offset: 0.2em;
-}
-
-.cw-btn:active {
-  transform: scale(0.98);
-}
-
-.cw-tap {
-  display: inline-flex;
-  align-items: center;
-  min-height: 2.75rem;
-  font-weight: 600;
-  text-decoration: none;
-}
-
-.cw-tap:hover {
-  text-decoration: underline;
-  text-decoration-thickness: 2px;
-  text-underline-offset: 0.25em;
 }
 
 /* ── Header: cw's Navigation menu on the canvas, over a divider ── */
@@ -205,17 +161,6 @@
   .cw-footer-copy {
     margin-inline-start: auto;
   }
-}
-
-/* An inline link that reads as one (underlined), until S9 moves to `.fs-link`. */
-.cw-link {
-  text-decoration: underline;
-  text-decoration-thickness: 1px;
-  text-underline-offset: 0.25em;
-}
-
-.cw-link:hover {
-  text-decoration-thickness: 2px;
 }
 
 /* ── Home: the hero band ────────────────────────────────── */
@@ -487,12 +432,15 @@
 
 /* ── CMS pages: one 62ch column on the canvas ───────────── */
 
-/* Heroes and blocks stack with one rhythm; a high-impact hero's band
-   starts right under the header, like the home page's. */
-.cw-page {
+/* CMS, legal and account pages share one top and bottom gap. */
+.cw-page,
+.cw-account {
   --cw-page-top: clamp(var(--space-xxl), 6vw, calc(2 * var(--space-xxl)));
   padding-block: var(--cw-page-top) clamp(calc(2 * var(--space-xxl)), 9vw, calc(3 * var(--space-xxl)));
 }
+
+/* Heroes and blocks stack with one rhythm; a high-impact hero's band
+   starts right under the header, like the home page's. */
 
 .cw-page > * + * {
   margin-top: clamp(var(--space-xl), 4vw, var(--space-xxl));
@@ -531,29 +479,36 @@
   line-height: var(--line-s);
 }
 
+/* ── Page titles and their muted lines ─────────────────── */
+
+/* The legal, account and 404 pages open on one title: xl, brand heavy. */
+.cw-root :is(.cw-legal-title, .cw-account-title, .cw-not-found-title) {
+  font-size: var(--size-xl);
+  letter-spacing: var(--letter-spacing-xl);
+  line-height: var(--line-xl);
+  text-wrap: balance;
+}
+
+/* The version line, the ledes and the 404's text: m, muted. */
+:is(.cw-legal-version, .cw-account-lede, .cw-not-found-text) {
+  color: var(--cte-text-muted);
+}
+
 /* ── Legal documents: /legal/terms, privacy, copyright ──── */
 
 .cw-legal-header {
   display: grid;
-  gap: 0.75rem;
-  margin-bottom: clamp(2rem, 4vw, 3rem);
+  gap: var(--space-m);
+  margin-bottom: clamp(var(--space-xl), 4vw, var(--space-xxl));
 }
 
-.cw-root .cw-legal-title {
-  font-size: clamp(2rem, 1.4rem + 2.4vw, 3.25rem);
-  text-wrap: balance;
-}
-
-.cw-legal-version {
-  color: var(--cw-graphite);
-}
-
-/* A draft's banner: the yellow field, ink text. */
+/* A draft's banner: color-1 at 20 %, carrying only text-strong (A10). */
 .cw-legal-draft {
-  border-radius: 0.25rem;
-  padding: 0.75rem 1rem;
-  background: var(--cw-yellow);
-  font-weight: 700;
+  border-radius: var(--radius-s);
+  padding: var(--space-s) var(--space-m);
+  background: var(--color-1-transparent);
+  color: var(--cte-text);
+  font-weight: var(--weight-ui-heavy);
 }
 
 /* The Privacy Policy's tables fit a phone, and one still too wide scrolls on its own, never the page. */
@@ -566,58 +521,25 @@
 /* /legal/accept: the two documents and their versions. */
 .cw-legal-accept-documents {
   display: grid;
-  gap: 0.5rem;
+  gap: var(--space-xs);
 }
 
 /* ── Account pages: signup, verification, onboarding ────── */
 
-/*
- * The portal's form components (FormField, FormNotice, TurnstileField and
- * the fs-form, fs-input and fs-btn classes) read --fs-* tokens; here they
- * point at Critwire's palette. White panels on paper, ink text; the one
- * colour beyond ink is the error square, which never carries text.
- */
-.cw-account {
-  --fs-bg: var(--cw-paper);
-  --fs-fg: var(--cw-ink);
-  --fs-muted-fg: var(--cw-graphite);
-  --fs-surface: #ffffff;
-  --fs-border: var(--cw-rule);
-  --fs-radius: 0.25rem;
-  --fs-radius-control: 0.25rem;
-  --fs-success: var(--cw-ink);
-  --fs-error: #c0262d;
-
-  padding-block: clamp(2.5rem, 6vw, 4.5rem) clamp(4rem, 9vw, 7.5rem);
-}
-
+/* One narrow column; the forms are the shared .fs-form on .cw-root's roles. */
 .cw-account-column {
   display: grid;
-  gap: 1.5rem;
+  gap: var(--space-xl);
   max-width: 36rem;
-}
-
-.cw-root .cw-account-title {
-  font-size: clamp(2rem, 1.4rem + 2.4vw, 3.25rem);
-  text-wrap: balance;
-}
-
-.cw-account-lede {
-  color: var(--cw-graphite);
 }
 
 /* The reported page's path on "Report this page"; long paths wrap. */
 .cw-account-path {
-  color: var(--cw-ink);
+  color: var(--cte-text);
   overflow-wrap: anywhere;
 }
 
-/* Controls and buttons are tap targets at every width (at least 44 px). */
-.cw-account :where(.fs-input, .cw-btn) {
-  min-height: 2.75rem;
-}
-
-.cw-account .fs-form .cw-btn {
+.cw-account .fs-form > .fs-btn {
   justify-self: start;
 }
 
@@ -632,15 +554,8 @@
   text-align: center;
 }
 
-.cw-root .cw-not-found-title {
-  font-size: var(--size-xl);
-  letter-spacing: var(--letter-spacing-xl);
-  line-height: var(--line-xl);
-}
-
 .cw-not-found-text {
   max-width: 34em;
-  color: var(--cte-text-muted);
 }
 
 /* ── Focus and motion ───────────────────────────────────── */
@@ -665,7 +580,7 @@
     transition-duration: 0s !important;
   }
 
-  .cw-root :is(.cw-btn, .fs-btn):active {
+  .cw-root .fs-btn:active {
     transform: none;
   }
 }

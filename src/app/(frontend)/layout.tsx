@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 
 import { bodyFont, critwireFont, cwFontVariables } from '@/fonts'
 import { cn } from '@/utilities/ui'
@@ -49,4 +49,10 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
   },
+}
+
+// Critwire's pages follow the visitor's system setting, with no toggle
+// (`.cw-root` in marketing.css sets the same for its own colours).
+export const viewport: Viewport = {
+  colorScheme: 'light dark',
 }

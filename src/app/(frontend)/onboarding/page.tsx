@@ -49,7 +49,7 @@ export default async function OnboardingPage({ searchParams }: Args) {
         title="Your portal is set up and waiting for a quick review"
       >
         <div>
-          <Link className="cw-btn" href="/admin">
+          <Link className="fs-btn fs-btn-primary" href="/admin">
             Go to your admin
           </Link>
         </div>
@@ -110,7 +110,7 @@ export default async function OnboardingPage({ searchParams }: Args) {
           )}
         </FormField>
 
-        <button className="cw-btn" type="submit">
+        <button className="fs-btn fs-btn-primary" type="submit">
           Create my portal
         </button>
       </form>

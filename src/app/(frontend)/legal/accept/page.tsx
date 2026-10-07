@@ -50,7 +50,7 @@ export default async function LegalAcceptPage({ searchParams }: Args) {
       <ul className="cw-legal-accept-documents">
         {documents.map((legalDocument) => (
           <li key={legalDocument.slug}>
-            <a className="cw-link" href={LEGAL_LINKS[legalDocument.slug].href} rel="noopener" target="_blank">
+            <a className="fs-link" href={LEGAL_LINKS[legalDocument.slug].href} rel="noopener" target="_blank">
               {legalDocument.title}
             </a>
             <span className="cw-account-lede"> · {legalVersionLine(legalDocument)}</span>
@@ -67,21 +67,21 @@ export default async function LegalAcceptPage({ searchParams }: Args) {
 
       <form action={`/legal/accept/submit?next=${encodeURIComponent(next)}`} className="fs-form" method="post">
         <LegalConsentFields />
-        <button className="cw-btn" type="submit">
+        <button className="fs-btn fs-btn-primary" type="submit">
           Agree and continue
         </button>
       </form>
 
       <p className="cw-account-lede">
         If you don’t agree, email{' '}
-        <a className="cw-link" href={`mailto:${LEGAL_CONTACT_EMAIL}`}>
+        <a className="fs-link" href={`mailto:${LEGAL_CONTACT_EMAIL}`}>
           {LEGAL_CONTACT_EMAIL}
         </a>{' '}
         to close your account.
       </p>
       <p>
         {/* Never prefetched: rendering the logout view signs you out. */}
-        <Link className="cw-link" href="/admin/logout" prefetch={false}>
+        <Link className="fs-link" href="/admin/logout" prefetch={false}>
           Log out
         </Link>
       </p>
