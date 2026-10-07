@@ -1,71 +1,80 @@
 /*
- * The share kit, styled only through --kit-* variables, so it follows
- * whatever surrounds it: portal.css maps them from the game's --fs-*
- * theme, and the admin's Share view from Payload's --theme-*.
- *   --kit-fg, --kit-muted-fg   text, and muted text
- *   --kit-bg                   code values and image previews
- *   --kit-surface              each button's card
- *   --kit-border               dividers
- *   --kit-control              control outlines
- *   --kit-radius               corners
- *   --kit-title-size           the title, 1.5rem unless the host sets it
+ * The share kit on cw (plan §4), styled only through --kit-* variables
+ * for colour and corners, so it follows whatever surrounds it: portal.css
+ * maps them from the game's --fs-* theme, and the admin's Share view from
+ * Payload's --theme-* and cw's roles. Sizes are cw's tokens, which both
+ * entry points load.
+ *   --kit-fg, --kit-muted-fg       text, and muted text
+ *   --kit-bg                       code values and image previews
+ *   --kit-surface                  items, and a control's hover
+ *   --kit-border                   dividers, and outline buttons' edges
+ *   --kit-control                  the radio chips' edges
+ *   --kit-accent, --kit-accent-fg  a primary action's fill and its label
+ *   --kit-radius                   controls' corners
+ *   --kit-radius-surface           items' and previews' corners
+ *   --kit-title-size, -line        the title, cw's l unless the host sets it
  */
 
 .share-kit {
-  /* The tap-target floor. Payload's admin sets a 12px root, so 2.75rem alone falls short there. */
-  --kit-target: max(2.75rem, 44px);
   color: var(--kit-fg);
+  font-size: var(--size-m);
+  letter-spacing: var(--letter-spacing-m);
+  line-height: var(--line-m);
 }
 
 .share-kit-title {
   margin: 0;
-  font-size: var(--kit-title-size, 1.5rem);
-  font-weight: 700;
-  line-height: 1.25;
+  font-size: var(--kit-title-size, var(--size-l));
+  font-weight: var(--weight-ui-heavy);
+  line-height: var(--kit-title-line, var(--line-l));
 }
 
 .share-kit-body {
   display: grid;
-  gap: 1rem;
-  margin-top: 1rem;
+  gap: var(--space-m);
+  margin-top: var(--space-m);
 }
 
-/* The tabs: a row over a divider. The selected one is bold and underlined
-   by a thick bar, so it never relies on colour. */
+/* cw's Tabs: triggers over an edge, the gap between them l. The selected
+   one keeps a 2px bar (D7), so it never relies on colour; rest is muted. */
 .share-kit-tabs {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.25rem;
-  margin-top: 1rem;
-  border-bottom: 1px solid var(--kit-border);
+  gap: 0 var(--space-l);
+  margin-top: var(--space-m);
+  border-bottom: var(--border-s) solid var(--kit-border);
 }
 
 .share-kit-tab {
-  min-height: var(--kit-target);
-  margin-bottom: -1px;
+  min-height: var(--tap-min);
+  margin-bottom: calc(-1 * var(--border-s));
   border: 0;
-  border-bottom: 3px solid transparent;
-  padding: 0.375rem 1rem;
+  border-bottom: var(--border-l) solid transparent;
+  padding: var(--space-xs) 0;
   background: transparent;
   color: var(--kit-muted-fg);
   font: inherit;
+  font-weight: var(--weight-ui-regular);
   cursor: pointer;
+  transition: color var(--motion-duration) var(--motion-easing);
 }
 
-.share-kit-tab:hover {
+.share-kit-tab:hover,
+.share-kit-tab[aria-selected='true'] {
   color: var(--kit-fg);
 }
 
 .share-kit-tab[aria-selected='true'] {
   border-bottom-color: var(--kit-fg);
-  color: var(--kit-fg);
-  font-weight: 700;
 }
 
 .share-kit-tab:focus-visible,
-.share-kit [role='tabpanel']:focus-visible {
-  outline: 2px solid var(--kit-fg);
-  outline-offset: 2px;
+.share-kit [role='tabpanel']:focus-visible,
+.share-kit-copy:focus-visible,
+.share-kit-option:has(input:focus-visible),
+.share-kit-action:focus-visible {
+  outline: var(--focus-ring-width) solid var(--kit-fg);
+  outline-offset: var(--focus-ring-offset);
 }
 
 /* The live embed, at a fixed height: the admin doesn't run the loader. */
@@ -73,37 +82,44 @@
   display: block;
   width: 100%;
   height: 520px;
-  border: 1px solid var(--kit-border);
-  border-radius: var(--kit-radius);
+  border: var(--border-s) solid var(--kit-border);
+  border-radius: var(--kit-radius-surface);
   background: var(--kit-bg);
 }
 
 .share-kit-platforms {
   display: grid;
-  gap: 0.5rem;
+  gap: var(--space-xs);
 }
 
 .share-kit-platform-group {
   margin: 0;
-  font-size: 1rem;
-  font-weight: 700;
+  font-size: var(--size-m);
+  font-weight: var(--weight-ui-heavy);
+  line-height: var(--line-m);
 }
 
 .share-kit-platform-list,
 .share-kit-list {
   display: grid;
-  gap: 0.375rem;
+  gap: var(--space-xxs);
   margin: 0;
   max-width: 70ch;
-  padding-left: 1.25rem;
+  padding-left: var(--space-l);
 }
 
+/* A section: a divider above, then its heading. */
 .share-kit-heading {
-  margin: 1rem 0 0;
-  border-top: 1px solid var(--kit-border);
-  padding-top: 1.25rem;
-  font-size: 1.125rem;
-  font-weight: 700;
+  margin: var(--space-m) 0 0;
+  border-top: var(--border-s) solid var(--kit-border);
+  padding-top: var(--space-l);
+}
+
+.share-kit-heading,
+.share-kit-subtitle {
+  font-size: var(--size-m);
+  font-weight: var(--weight-ui-heavy);
+  line-height: var(--line-m);
 }
 
 .share-kit-note {
@@ -112,59 +128,61 @@
   color: var(--kit-muted-fg);
 }
 
+/* cw's Toggle group, as radio chips. */
 .share-kit-choice {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: var(--space-xs);
   margin: 0;
   border: 0;
   padding: 0;
 }
 
 .share-kit-legend {
-  margin-bottom: 0.5rem;
+  margin-bottom: var(--space-xs);
   padding: 0;
-  font-weight: 700;
+  font-weight: var(--weight-ui-medium);
 }
 
-/* Each choice is a 44px chip. Its radio covers it, border included and
-   invisibly, so the native control is the whole target and keeps its
-   keyboard behaviour. */
+/* Each choice is a chip at the tap-target floor (D10), its edge an inset
+   shadow. Its radio covers it invisibly, so the native control is the
+   whole target and keeps its keyboard behaviour. */
 .share-kit-option {
   position: relative;
   display: inline-flex;
   align-items: center;
-  min-height: var(--kit-target);
-  border: 1px solid var(--kit-control);
+  min-height: var(--tap-min);
   border-radius: var(--kit-radius);
-  padding: 0 1rem;
+  padding: var(--space-xs) var(--space-s);
+  box-shadow: inset 0 0 0 var(--border-s) var(--kit-control);
+  font-weight: var(--weight-ui-medium);
+  transition: box-shadow var(--motion-duration) var(--motion-easing);
 }
 
 .share-kit-option input {
   position: absolute;
-  inset: -1px;
-  width: calc(100% + 2px);
-  height: calc(100% + 2px);
+  inset: 0;
+  width: 100%;
+  height: 100%;
   margin: 0;
   opacity: 0;
   cursor: pointer;
 }
 
-/* Chosen: a doubled border and bold text, so it never relies on colour. */
-.share-kit-option:has(input:checked) {
-  border-color: var(--kit-fg);
-  box-shadow: inset 0 0 0 1px var(--kit-fg);
-  font-weight: 700;
+.share-kit-option:hover {
+  box-shadow: inset 0 0 0 var(--border-s) var(--kit-fg);
 }
 
-.share-kit-option:hover {
-  border-color: var(--kit-fg);
+/* Chosen: a doubled edge and heavy text, so it never relies on colour. */
+.share-kit-option:has(input:checked) {
+  box-shadow: inset 0 0 0 var(--border-l) var(--kit-fg);
+  font-weight: var(--weight-ui-heavy);
 }
 
 .share-kit-rows,
 .share-kit-item {
   display: grid;
-  gap: 0.5rem;
+  gap: var(--space-s);
 }
 
 /* Label, value, button and its result on one line; the value wraps. */
@@ -172,12 +190,12 @@
   display: grid;
   grid-template-columns: 7rem minmax(0, 1fr) auto;
   align-items: center;
-  gap: 0.25rem 0.75rem;
+  gap: var(--space-xxs) var(--space-m);
 }
 
 .share-kit-row-label,
 .share-kit-item-label {
-  font-weight: 600;
+  font-weight: var(--weight-ui-medium);
 }
 
 .share-kit-item-label {
@@ -187,37 +205,70 @@
 .share-kit-value {
   overflow-wrap: anywhere;
   border-radius: var(--kit-radius);
-  padding: 0.375rem 0.625rem;
+  padding: var(--space-xs) var(--space-s);
   background: var(--kit-bg);
-  font-size: 0.875rem;
+  font-family: var(--font-data);
+  font-size: var(--size-s);
+  letter-spacing: var(--letter-spacing-s);
+  line-height: var(--line-s);
 }
 
-.share-kit-copy {
-  min-height: var(--kit-target);
-  border: 1px solid var(--kit-control);
+/* cw's Button: copy and secondary actions are outline, a primary action
+   is the accent fill with its label in accent-fg (D6, A1). */
+.share-kit-copy,
+.share-kit-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--tap-min);
+  border: 0;
   border-radius: var(--kit-radius);
-  padding: 0.375rem 0.875rem;
+  padding: var(--space-xs) var(--space-m);
+  font: inherit;
+  font-weight: var(--weight-ui-medium);
+  text-decoration: none;
+  cursor: pointer;
+  transition-duration: var(--motion-duration);
+  transition-property: background-color, color, transform;
+  transition-timing-function: var(--motion-easing);
+}
+
+.share-kit-copy:active,
+.share-kit-action:active {
+  transform: translateY(var(--motion-press-distance));
+}
+
+.share-kit-copy,
+.share-kit-action-secondary {
+  box-shadow: inset 0 0 0 var(--border-s) var(--kit-border);
   background: transparent;
   color: var(--kit-fg);
-  font: inherit;
-  cursor: pointer;
 }
 
-.share-kit-copy:hover {
-  border-color: var(--kit-fg);
+.share-kit-copy:hover,
+.share-kit-action-secondary:hover {
+  background: var(--kit-surface);
 }
 
-.share-kit-copy:focus-visible,
-.share-kit-option:has(input:focus-visible) {
-  outline: 2px solid var(--kit-fg);
-  outline-offset: 2px;
+.share-kit-action:not(.share-kit-action-secondary) {
+  background: var(--kit-accent);
+  color: var(--kit-accent-fg);
+}
+
+/* Busy while it saves: cw's disabled, in a pair every host checks. */
+.share-kit-action:disabled {
+  background: var(--kit-surface);
+  color: var(--kit-muted-fg);
+  cursor: progress;
 }
 
 /* The result sits under the value, so the button never moves. */
 .share-kit-row .copy-result {
   grid-column: 2 / -1;
   color: var(--kit-muted-fg);
-  font-size: 0.875rem;
+  font-size: var(--size-s);
+  letter-spacing: var(--letter-spacing-s);
+  line-height: var(--line-s);
 }
 
 .share-kit-row .copy-result:empty {
@@ -226,19 +277,21 @@
 
 .share-kit-items {
   display: grid;
-  gap: 1rem;
+  gap: var(--space-m);
 }
 
+/* cw's Popover surface. */
 .share-kit-item {
-  border-radius: var(--kit-radius);
-  padding: 1rem;
+  border-radius: var(--kit-radius-surface);
+  padding: var(--space-m);
   background: var(--kit-surface);
+  box-shadow: inset 0 0 0 var(--border-s) var(--kit-border);
 }
 
 .share-kit-preview {
   display: flex;
   border-radius: var(--kit-radius);
-  padding: 1rem;
+  padding: var(--space-m);
   background: var(--kit-bg);
 }
 
@@ -251,17 +304,15 @@
 /* The Discord tab. */
 .share-kit-subtitle {
   margin: 0;
-  font-size: 1.125rem;
-  font-weight: 700;
 }
 
 /* What came of the last action, marked by a bar so it never relies on colour. */
 .share-kit-status {
   margin: 0;
   max-width: 60ch;
-  border-left: 3px solid var(--kit-fg);
-  padding: 0.25rem 0 0.25rem 0.75rem;
-  font-weight: 600;
+  border-left: var(--border-l) solid var(--kit-fg);
+  padding: var(--space-xxs) 0 var(--space-xxs) var(--space-s);
+  font-weight: var(--weight-ui-medium);
 }
 
 .share-kit-status:empty {
@@ -271,47 +322,7 @@
 .share-kit-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.75rem;
-}
-
-/* A link or button that does something: filled, or outlined when secondary. */
-.share-kit-action {
-  display: inline-flex;
-  align-items: center;
-  min-height: var(--kit-target);
-  border: 1px solid var(--kit-fg);
-  border-radius: var(--kit-radius);
-  padding: 0.375rem 1rem;
-  background: var(--kit-fg);
-  color: var(--kit-bg);
-  font: inherit;
-  font-weight: 600;
-  text-decoration: none;
-  cursor: pointer;
-}
-
-.share-kit-action-secondary {
-  border-color: var(--kit-control);
-  background: transparent;
-  color: var(--kit-fg);
-}
-
-.share-kit-action:hover {
-  text-decoration: underline;
-}
-
-.share-kit-action-secondary:hover {
-  border-color: var(--kit-fg);
-}
-
-.share-kit-action:disabled {
-  cursor: progress;
-  opacity: 0.7;
-}
-
-.share-kit-action:focus-visible {
-  outline: 2px solid var(--kit-fg);
-  outline-offset: 2px;
+  gap: var(--space-s);
 }
 
 @media (max-width: 40rem) {
@@ -325,5 +336,16 @@
 
   .share-kit-row .copy-result {
     grid-column: 1 / -1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .share-kit * {
+    transition-duration: 0s;
+  }
+
+  .share-kit-copy:active,
+  .share-kit-action:active {
+    transform: none;
   }
 }

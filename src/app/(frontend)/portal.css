@@ -22,14 +22,18 @@
      own pages use currentColor, marketing.css). */
   --fs-link-line: var(--fs-accent);
   /* The share kit (share-kit.css) in the game's theme, on the token
-     contract below: control outlines are muted-fg, like other controls. */
+     contract below: chip edges are muted-fg, like other controls, and a
+     primary action is the accent fill with accent-fg on it. */
   --kit-fg: var(--fs-fg);
   --kit-muted-fg: var(--fs-muted-fg);
   --kit-bg: var(--fs-bg);
   --kit-surface: var(--fs-surface);
   --kit-border: var(--fs-border);
   --kit-control: var(--fs-muted-fg);
+  --kit-accent: var(--fs-accent);
+  --kit-accent-fg: var(--fs-accent-fg);
   --kit-radius: var(--fs-radius-control);
+  --kit-radius-surface: var(--fs-radius);
 
   background: var(--fs-bg);
   color: var(--fs-fg);
@@ -1060,8 +1064,9 @@
 
 .fs-welcome {
   /* The share kit is the first step, so its title reads as a step label.
-     A variable, because share-kit.css is unlayered and outranks this layer. */
-  --kit-title-size: 1.0625rem;
+     Variables, because share-kit.css is unlayered and outranks this layer. */
+  --kit-title-size: var(--size-m);
+  --kit-title-line: var(--line-m);
 
   padding-top: 1.5rem;
 }
