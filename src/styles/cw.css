@@ -1,0 +1,66 @@
+/*
+ * cw's roles, built on the primitives in cw-tokens.css (generated from
+ * src/lib/theme/cw.ts), which every entry point loads first: globals.css
+ * with @import, the admin's custom.scss with @use. So this file imports
+ * nothing (Sass would hoist a nested @import and resolve it from the entry
+ * point's folder) and sets no color-scheme: each surface owns its mode, and
+ * light-dark() follows it. Critwire's departures from the snapshot live
+ * here, each named (GUI.md, Local decisions).
+ */
+:root {
+  /* Each colour at 20 %, cw's -transparent rule. */
+  --color-1-transparent: color-mix(in srgb, var(--color-1) 20%, transparent);
+  --color-2-transparent: color-mix(in srgb, var(--color-2) 20%, transparent);
+  --color-3-transparent: color-mix(in srgb, var(--color-3) 20%, transparent);
+  --color-4-transparent: color-mix(in srgb, var(--color-4) 20%, transparent);
+  --success-transparent: color-mix(in srgb, var(--success) 20%, transparent);
+  --warning-transparent: color-mix(in srgb, var(--warning) 20%, transparent);
+  --error-transparent: color-mix(in srgb, var(--error) 20%, transparent);
+  --neutral-1-transparent: color-mix(in srgb, var(--neutral-1) 20%, transparent);
+  --neutral-2-transparent: color-mix(in srgb, var(--neutral-2) 20%, transparent);
+  --neutral-3-transparent: color-mix(in srgb, var(--neutral-3) 20%, transparent);
+  --neutral-4-transparent: color-mix(in srgb, var(--neutral-4) 20%, transparent);
+  --neutral-5-transparent: color-mix(in srgb, var(--neutral-5) 20%, transparent);
+  --neutral-6-transparent: color-mix(in srgb, var(--neutral-6) 20%, transparent);
+  --neutral-7-transparent: color-mix(in srgb, var(--neutral-7) 20%, transparent);
+  --neutral-8-transparent: color-mix(in srgb, var(--neutral-8) 20%, transparent);
+  --neutral-9-transparent: color-mix(in srgb, var(--neutral-9) 20%, transparent);
+  --neutral-10-transparent: color-mix(in srgb, var(--neutral-10) 20%, transparent);
+
+  /* Edges. D4: the snapshot's black 10 % edge vanishes on dark neutrals, so dark mode uses n4. */
+  --border-default-color: light-dark(rgb(0 0 0 / 0.1), var(--neutral-4));
+  --border-shadow-none: 0 0 0 0 transparent;
+  --border-shadow-s: 0 0 0 var(--border-s) var(--border-default-color);
+  --border-shadow-m: 0 0 0 var(--border-m) var(--border-default-color);
+  --border-shadow-l: 0 0 0 var(--border-l) var(--border-default-color);
+
+  /* Focus. D28: the colour is its own role, so the screenshot probe resolves the same expression. */
+  --focus-ring-color: color-mix(in srgb, var(--neutral-10) var(--focus-ring-mix), transparent);
+  --focus-ring-outline: var(--focus-ring-width) solid var(--focus-ring-color);
+
+  /* Font roles. The faces are next/font variables from src/fonts.ts (D1: Inter for GT Standard M). */
+  --font-ui: var(--font-cw-sans), var(--font-ui-fallback);
+  --font-brand: var(--font-cw-sans), var(--font-brand-fallback);
+  --font-editorial: var(--font-cw-sans), var(--font-editorial-fallback);
+  --font-data: var(--font-cw-mono), var(--font-data-fallback);
+
+  /* The content roles, as the snapshot assigns them. */
+  --cte-canvas: var(--neutral-1);
+  --cte-surface: var(--neutral-2);
+  --cte-surface-muted: var(--neutral-3);
+  --cte-text: var(--neutral-10);
+  --cte-text-muted: var(--neutral-7);
+  --cte-border: var(--border-default-color);
+  --cte-accent: var(--color-1);
+  --cte-accent-text: var(--accent-text);
+  --cte-danger: var(--error);
+  --cte-focus: var(--color-1);
+  --cte-font: var(--font-ui);
+  --cte-font-size: var(--size-m);
+  --cte-font-weight: var(--weight-ui-regular);
+  --cte-line-height: var(--line-m);
+  --cte-letter-spacing: var(--letter-spacing-m);
+
+  /* D10: critwire keeps a 44 px tap target over cw's 34 px controls. */
+  --tap-min: 44px;
+}

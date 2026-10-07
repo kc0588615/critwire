@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 
-import { bodyFont, critwireFont } from '@/fonts'
+import { bodyFont, critwireFont, cwFontVariables } from '@/fonts'
 import { cn } from '@/utilities/ui'
 import React from 'react'
 
@@ -17,7 +17,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const { isEnabled } = await draftMode()
 
   return (
-    <html className={cn(bodyFont.variable, critwireFont.variable)} lang="en">
+    <html className={cn(cwFontVariables, bodyFont.variable, critwireFont.variable)} lang="en">
       <head>
         <link href="/favicon.ico" rel="icon" sizes="32x32" />
         <link href="/favicon.svg" rel="icon" type="image/svg+xml" />

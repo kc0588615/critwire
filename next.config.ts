@@ -17,6 +17,11 @@ const nextConfig: NextConfig = {
     // included. Keep that cache in Next's memory LRU (cacheMaxMemorySize,
     // 50 MB), which evicts; on disk, anyone could grow it without bound.
     isrFlushToDisk: false,
+    // cw's tokens are light-dark() pairs that each surface's color-scheme
+    // resolves where they're used. For the default targets Lightning CSS
+    // would rewrite them into variables fixed at :root, and invalid
+    // wherever no color-scheme is declared. Tailwind excludes it the same way.
+    lightningCssFeatures: { exclude: ['light-dark'] },
   },
   // Temporarily required on Windows until Next.js fixes Turbopack Sass resolution.
   // See: https://github.com/vercel/next.js/issues/86431

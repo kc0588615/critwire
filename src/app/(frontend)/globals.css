@@ -1,9 +1,13 @@
 /*
  * The shared Tailwind entry for Critwire's site and the studio portals.
- * Each surface owns its palette: marketing.css on .cw-root, portal.css
- * (from the studio's theme) on .fs-root. Nothing here sets a colour.
+ * cw's tokens, then its roles, load first and unlayered (the admin loads
+ * the same two files from custom.scss). Each surface owns its palette:
+ * marketing.css on .cw-root, portal.css (from the studio's theme) on
+ * .fs-root. Nothing here sets a colour.
  */
 @import 'tailwindcss';
+@import '../../styles/cw-tokens.css';
+@import '../../styles/cw.css';
 @import './marketing.css' layer(components);
 @import './portal.css' layer(components);
 
@@ -83,7 +87,96 @@
   --breakpoint-lg: 64rem;
   --breakpoint-xl: 80rem;
   --breakpoint-2xl: 86rem;
-  --font-sans: var(--font-body), system-ui, sans-serif;
+  --font-sans: var(--font-ui);
+  --font-mono: var(--font-data);
+  --default-transition-duration: var(--motion-duration);
+  --default-transition-timing-function: var(--motion-easing);
+}
+
+/*
+ * cw's utilities (mt-m, text-s, rounded-m, bg-neutral-3, font-ui …), each
+ * pointing at its token. `reference` keeps Tailwind from re-declaring the
+ * variables, which would make the ones sharing a name refer to themselves.
+ * Tailwind's own scales stay beside them for now (plan D29). Width utilities
+ * read --spacing-* before --container-*, so `max-w-xl` would be 25px: size
+ * containers in CSS.
+ */
+@theme inline reference {
+  --color-color-1: var(--color-1);
+  --color-color-2: var(--color-2);
+  --color-color-3: var(--color-3);
+  --color-color-4: var(--color-4);
+  --color-color-1-transparent: var(--color-1-transparent);
+  --color-color-2-transparent: var(--color-2-transparent);
+  --color-color-3-transparent: var(--color-3-transparent);
+  --color-color-4-transparent: var(--color-4-transparent);
+  --color-neutral-1: var(--neutral-1);
+  --color-neutral-2: var(--neutral-2);
+  --color-neutral-3: var(--neutral-3);
+  --color-neutral-4: var(--neutral-4);
+  --color-neutral-5: var(--neutral-5);
+  --color-neutral-6: var(--neutral-6);
+  --color-neutral-7: var(--neutral-7);
+  --color-neutral-8: var(--neutral-8);
+  --color-neutral-9: var(--neutral-9);
+  --color-neutral-10: var(--neutral-10);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-error: var(--error);
+
+  --spacing-zero: var(--space-zero);
+  --spacing-xxs: var(--space-xxs);
+  --spacing-xs: var(--space-xs);
+  --spacing-s: var(--space-s);
+  --spacing-m: var(--space-m);
+  --spacing-l: var(--space-l);
+  --spacing-xl: var(--space-xl);
+  --spacing-xxl: var(--space-xxl);
+
+  --text-xxs: var(--size-xxs);
+  --text-xxs--line-height: var(--line-xxs);
+  --text-xxs--letter-spacing: var(--letter-spacing-xxs);
+  --text-xs: var(--size-xs);
+  --text-xs--line-height: var(--line-xs);
+  --text-xs--letter-spacing: var(--letter-spacing-xs);
+  --text-s: var(--size-s);
+  --text-s--line-height: var(--line-s);
+  --text-s--letter-spacing: var(--letter-spacing-s);
+  --text-m: var(--size-m);
+  --text-m--line-height: var(--line-m);
+  --text-m--letter-spacing: var(--letter-spacing-m);
+  --text-l: var(--size-l);
+  --text-l--line-height: var(--line-l);
+  --text-l--letter-spacing: var(--letter-spacing-l);
+  --text-xl: var(--size-xl);
+  --text-xl--line-height: var(--line-xl);
+  --text-xl--letter-spacing: var(--letter-spacing-xl);
+  --text-xxl: var(--size-xxl);
+  --text-xxl--line-height: var(--line-xxl);
+  --text-xxl--letter-spacing: var(--letter-spacing-xxl);
+
+  --radius-zero: var(--radius-zero);
+  --radius-xs: var(--radius-xs);
+  --radius-s: var(--radius-s);
+  --radius-m: var(--radius-m);
+  --radius-l: var(--radius-l);
+  --radius-xl: var(--radius-xl);
+  --radius-full: var(--radius-full);
+
+  --shadow-none: var(--shadow-none);
+  --shadow-s: var(--shadow-s);
+  --shadow-m: var(--shadow-m);
+  --shadow-l: var(--shadow-l);
+
+  --font-weight-regular: var(--weight-ui-regular);
+  --font-weight-medium: var(--weight-ui-medium);
+  --font-weight-heavy: var(--weight-ui-heavy);
+  --font-ui: var(--font-ui);
+  --font-brand: var(--font-brand);
+  --font-data: var(--font-data);
+
+  --ease-cw: var(--motion-easing);
+  --ease-cw-large: var(--motion-large-easing);
 }
 
 /* The shadcn names Button and CMSLink use; marketing.css gives them values. */

@@ -117,6 +117,8 @@ WCAG AA wins over snapshot values: 4.5:1 for text, 3:1 for large text, field bou
 - **D28.** The focus ring's colour is its own role, `--focus-ring-color`; the screenshot probe resolves that same expression.
 - **D33.** The share buttons and the email button use cw Button's radius `s` (5 px); the 9 px colour mark uses `xs` (2 px).
 - **D34.** The live badge's radius is `SHAPE_RADIUS[shape].control`, since the badge is a control-sized chip; `SHAPE_RADIUS` in `src/lib/game-portal/theme.ts` is the one table.
+- **D37.** `light-dark()` ships unrewritten: `next.config.ts` excludes it from Lightning CSS (`experimental.lightningCssFeatures`), as Tailwind does, so each token resolves against the `color-scheme` of the element using it. Keep that exclusion while the tokens use `light-dark()`.
+- **D38.** Tailwind's width utilities read `--spacing-*` before `--container-*`, so with cw's spacing names `max-w-xl` is 25 px. Size containers in CSS, not with `max-w-<cw step>`.
 
 ### Selectors into Payload's own views
 
