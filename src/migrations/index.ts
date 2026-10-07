@@ -22,6 +22,7 @@ import * as migration_20261004_234836_contact_job_sweep from './20261004_234836_
 import * as migration_20261005_000942_users_deleted from './20261005_000942_users_deleted';
 import * as migration_20261005_001725_drop_submitter_email from './20261005_001725_drop_submitter_email';
 import * as migration_20261007_123110_cw_typography_standard from './20261007_123110_cw_typography_standard';
+import * as migration_20261007_125048_cw_portal_defaults from './20261007_125048_cw_portal_defaults';
 
 export const migrations = [
   {
@@ -142,6 +143,11 @@ export const migrations = [
   {
     up: migration_20261007_123110_cw_typography_standard.up,
     down: migration_20261007_123110_cw_typography_standard.down,
-    name: '20261007_123110_cw_typography_standard'
+    name: '20261007_123110_cw_typography_standard',
+  },
+  {
+    up: migration_20261007_125048_cw_portal_defaults.up,
+    down: migration_20261007_125048_cw_portal_defaults.down,
+    name: '20261007_125048_cw_portal_defaults'
   },
 ];

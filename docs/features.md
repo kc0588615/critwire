@@ -76,10 +76,15 @@ across studios). Fields:
 
 - **Identity:** name, slug, pitch (`description`, one line, at most
   240 characters), logo, key art (`banner`).
-- **Theme:** `theme.colors` (ten semantic colour tokens), typography,
-  shape, density, motion. Every save is validated whole against the
-  Zod schema in `src/lib/game-portal/theme.ts`, WCAG contrast
-  included; unset values fall back to the default theme.
+- **Theme:** `theme.colors` (ten semantic colour tokens), typography
+  (`standard`, `modern`, `editorial`, `technical`), shape, density,
+  motion. Every save is validated whole against the Zod schema in
+  `src/lib/game-portal/theme.ts`, WCAG contrast included; unset values
+  fall back to the default theme. The default is cw dark (critwire's
+  design language, `src/lib/theme/cw.ts`) with `standard` typography.
+  Themes saved before that default existed keep their look: migration
+  `cw_portal_defaults` wrote the old default into each slot they had
+  left unset, and never changed a value a studio set.
 - **Links** (approved outbound URLs, shown as given): website, steam,
   epic, itch, discord, support, docs, merch, playstation, xbox,
   nintendo, gog, youtube, pressKit, privacy, terms. `website` is the

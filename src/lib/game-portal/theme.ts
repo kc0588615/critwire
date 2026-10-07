@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import type { RadiusStep } from '@/lib/theme/cw'
+import { CW, type RadiusStep } from '@/lib/theme/cw'
 
 import { HEX_COLOR_RE, contrastRatio } from './contrast'
 
@@ -47,18 +47,23 @@ export const siteThemeColorsSchema = z
   })
 export type SiteThemeColors = z.infer<typeof siteThemeColorsSchema>
 
-/** Passes every contrast refinement; used as the schema default and in derived defaults. */
+const { neutral, accentText } = CW.dark
+
+/**
+ * cw dark: the portal's default palette, and the one any unset slot
+ * falls back to. Passes every contrast refinement (`DEFAULT_THEME` below
+ * parses it when the module loads). The border is n4, the dark edge that
+ * stays visible (D4).
+ */
 export const DEFAULT_THEME_COLORS: SiteThemeColors = {
-  background: '#1f2030',
-  foreground: '#f1f1f5',
-  mutedForeground: '#a9acc2',
-  surface: '#282a3d',
-  accent: '#aeb8ff',
-  accentForeground: '#1f2030',
-  border: '#3b3e56',
-  success: '#6fd39b',
-  warning: '#f2a05c',
-  error: '#ff7b86',
+  background: neutral[1],
+  foreground: neutral[10],
+  mutedForeground: neutral[7],
+  surface: neutral[2],
+  accent: CW.color[1],
+  accentForeground: accentText,
+  border: neutral[4],
+  ...CW.status,
 }
 
 export const siteTypographySchema = z.enum(['standard', 'modern', 'editorial', 'technical'])
@@ -79,13 +84,14 @@ export const SHAPE_RADIUS: Record<z.infer<typeof siteShapeSchema>, { surface: Ra
 
 export const siteThemeSchema = z.strictObject({
   colors: siteThemeColorsSchema.default(DEFAULT_THEME_COLORS),
-  typography: siteTypographySchema.default('modern'),
+  typography: siteTypographySchema.default('standard'),
   shape: siteShapeSchema.default('balanced'),
   density: siteDensitySchema.default('cinematic'),
   motion: siteMotionSchema.default('subtle'),
 })
 export type SiteThemeV1 = z.infer<typeof siteThemeSchema>
 
+/** Parsed when the module loads, so a default that fails the schema throws at once. */
 export const DEFAULT_THEME: SiteThemeV1 = siteThemeSchema.parse({})
 
 type ColorKey = keyof SiteThemeColors
