@@ -257,7 +257,7 @@ export interface GameProject {
       warning?: string | null;
       error?: string | null;
     };
-    typography?: ('modern' | 'editorial' | 'technical') | null;
+    typography?: ('standard' | 'modern' | 'editorial' | 'technical') | null;
     shape?: ('sharp' | 'balanced' | 'soft') | null;
     density?: ('compact' | 'cinematic') | null;
     motion?: ('off' | 'subtle') | null;

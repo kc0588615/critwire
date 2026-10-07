@@ -8,7 +8,7 @@ type DisplayVoice = {
   scale: number
   stretch: string
   tracking: string
-  weight: number
+  weight: number | string
   wordSpacing: string
 }
 
@@ -32,6 +32,17 @@ const DISPLAY: Record<SiteThemeV1['typography'], DisplayVoice> = {
     weight: 800,
     // The 78% width narrows the space too; without this, words run together.
     wordSpacing: '0.08em',
+  },
+  // cw's own voice: its brand font at the heavy weight, on cw's tracking.
+  // S18 replaces scale and leading with cw's type steps.
+  standard: {
+    family: 'var(--font-brand)',
+    leading: 1,
+    scale: 0.9,
+    stretch: '100%',
+    tracking: 'var(--letter-spacing-xl)',
+    weight: 'var(--weight-brand-heavy)',
+    wordSpacing: '0',
   },
   technical: {
     family: 'var(--font-science-gothic), system-ui, sans-serif',

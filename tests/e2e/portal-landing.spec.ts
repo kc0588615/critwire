@@ -191,6 +191,22 @@ test('S2.4 project theme', async ({ api, page, uniqueSlug, world }) => {
     const background = await page.locator('.fs-btn-primary').first().evaluate((el) => getComputedStyle(el).backgroundColor)
     expect(rgbToHex(background)).toBe('#f59e0b')
   })
+
+  await test.step('the standard typography saves and sets the title in cw’s brand font', async () => {
+    const { status, body } = await aMember.update('game-projects', project.id, { theme: { typography: 'standard' } })
+    expect(status, JSON.stringify(body)).toBe(200)
+    expect(body.doc.theme?.typography).toBe('standard')
+    await eventually(async () => {
+      await page.goto(hub)
+      const title = await page
+        .locator('.fs-h1')
+        .evaluate((el) => ({ family: getComputedStyle(el).fontFamily, weight: getComputedStyle(el).fontWeight }), undefined, {
+          timeout: 1_000,
+        })
+      expect(title.family).toMatch(/\bInter\b/)
+      expect(title.weight).toBe('700')
+    })
+  })
 })
 
 test.describe('S2.5 hub sections', () => {

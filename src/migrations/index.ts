@@ -21,6 +21,7 @@ import * as migration_20261004_225524_legal_acceptances from './20261004_225524_
 import * as migration_20261004_234836_contact_job_sweep from './20261004_234836_contact_job_sweep';
 import * as migration_20261005_000942_users_deleted from './20261005_000942_users_deleted';
 import * as migration_20261005_001725_drop_submitter_email from './20261005_001725_drop_submitter_email';
+import * as migration_20261007_123110_cw_typography_standard from './20261007_123110_cw_typography_standard';
 
 export const migrations = [
   {
@@ -136,6 +137,11 @@ export const migrations = [
   {
     up: migration_20261005_001725_drop_submitter_email.up,
     down: migration_20261005_001725_drop_submitter_email.down,
-    name: '20261005_001725_drop_submitter_email'
+    name: '20261005_001725_drop_submitter_email',
+  },
+  {
+    up: migration_20261007_123110_cw_typography_standard.up,
+    down: migration_20261007_123110_cw_typography_standard.down,
+    name: '20261007_123110_cw_typography_standard'
   },
 ];

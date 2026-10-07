@@ -61,7 +61,7 @@ export const DEFAULT_THEME_COLORS: SiteThemeColors = {
   error: '#ff7b86',
 }
 
-export const siteTypographySchema = z.enum(['modern', 'editorial', 'technical'])
+export const siteTypographySchema = z.enum(['standard', 'modern', 'editorial', 'technical'])
 export const siteShapeSchema = z.enum(['sharp', 'balanced', 'soft'])
 export const siteDensitySchema = z.enum(['compact', 'cinematic'])
 export const siteMotionSchema = z.enum(['off', 'subtle'])
