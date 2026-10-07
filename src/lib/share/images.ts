@@ -18,18 +18,27 @@ import { SHARE_BUTTONS, type ButtonFile, type ButtonScheme, type ImageFormat, ty
  * has fonts (the production runner has none).
  */
 
-const FONT_FILE = path.join(process.cwd(), 'src/lib/share/fonts/DejaVuSans.ttf')
+const FONTS_DIR = path.join(process.cwd(), 'src/lib/share/fonts')
 
-let font: Font | undefined
+const fonts = new Map<string, Font>()
 
-/** DejaVu Sans, read once per process. `next.config.ts` traces the file into the standalone output. */
-const shareFont = (): Font => {
+/**
+ * A font from `src/lib/share/fonts/`, read once per process. A route that
+ * draws with one needs it traced in `next.config.ts`, so the standalone
+ * output has the file.
+ */
+export const readFont = (fileName: string): Font => {
+  let font = fonts.get(fileName)
   if (!font) {
-    const file = readFileSync(FONT_FILE)
+    const file = readFileSync(path.join(FONTS_DIR, fileName))
     font = parse(file.buffer.slice(file.byteOffset, file.byteOffset + file.byteLength))
+    fonts.set(fileName, font)
   }
   return font
 }
+
+/** DejaVu Sans, the share images' face. */
+const shareFont = (): Font => readFont('DejaVuSans.ttf')
 
 /** `text` as one SVG path at `size` px, with its baseline at `y`, and how wide it is. */
 export const glyphPath = (text: string, x: number, y: number, size: number): { d: string; width: number } => {

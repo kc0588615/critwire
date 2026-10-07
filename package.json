@@ -25,6 +25,7 @@
     "test": "pnpm run test:int && pnpm run test:e2e",
     "test:e2e": "cross-env NODE_OPTIONS=--no-deprecation playwright test",
     "test:int": "cross-env NODE_OPTIONS=--no-deprecation vitest run --config ./vitest.config.mts",
+    "generate:brand": "tsx src/lib/theme/brand.ts",
     "generate:theme": "tsx src/lib/theme/generate.ts"
   },
   "dependencies": {

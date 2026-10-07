@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import React from 'react'
 
+import { HOME_TITLE } from './copy'
 import { IssueLoop } from './IssueLoop'
 import { DEMO_PORTAL, GITHUB_REPO_URL } from './links'
 
@@ -52,7 +53,7 @@ export function MarketingHome({
       <section aria-labelledby="cw-home-title" className="cw-slip">
         <div className="cw-shell cw-slip-grid">
           <h1 className="cw-hero-title" id="cw-home-title">
-            Player feedback and updates for the game site you already have.
+            {HOME_TITLE}
           </h1>
           <div className="cw-slip-copy">
             <p className="cw-lede">

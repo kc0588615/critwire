@@ -127,6 +127,10 @@ where appropriate.
   admin components
 - `pnpm generate:theme` — regenerate `src/styles/cw-tokens.css` from
   `src/lib/theme/cw.ts` after changing it (commit the result)
+- `pnpm generate:brand` — redraw the favicons (`public/favicon.svg`,
+  `.ico`) and the default share image (`public/og.png`) from
+  `src/lib/theme/cw.ts`; rerun only when cw's brand colours or the
+  wordmark change (commit the result)
 - `pnpm payload migrate:create <name>` — create a migration after
   schema changes (commit it; prod runs them on boot via `prodMigrations`)
 - `pnpm payload migrate` — apply migrations locally
