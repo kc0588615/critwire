@@ -10,8 +10,8 @@
 @import '../../components/marketing/brand.css';
 
 .cw-root {
-  /* The old palette's edge, for the sections not yet on cw (the home
-     page, the account and legal pages); removed with brand.css (S15). */
+  /* The old palette's edge, for the sections not yet on cw (the account
+     and legal pages); removed with brand.css (S15). */
   --cw-rule: color-mix(in srgb, var(--cw-ink) 12%, transparent);
   --cw-header-h: 4.5rem;
   --cw-gutter: clamp(var(--space-l), 4vw, var(--space-xxl));
@@ -79,8 +79,8 @@
   flex: 1 0 auto;
 }
 
-/* ── Old controls, until the home page (S8) and the account and legal
-   pages (S9) move to the shared .fs-btn, .fs-link and .fs-tap ── */
+/* ── Old controls, until the account and legal pages (S9) move to the
+   shared .fs-btn, .fs-link and .fs-tap ── */
 
 .cw-btn {
   display: inline-flex;
@@ -207,7 +207,7 @@
   }
 }
 
-/* An inline link that reads as one (underlined), until S8 and S9 move to `.fs-link`. */
+/* An inline link that reads as one (underlined), until S9 moves to `.fs-link`. */
 .cw-link {
   text-decoration: underline;
   text-decoration-thickness: 1px;
@@ -218,54 +218,62 @@
   text-decoration-thickness: 2px;
 }
 
-/* ── Home: the slip ─────────────────────────────────────── */
+/* ── Home: the hero band ────────────────────────────────── */
 
-/* Pulled up under the transparent header, so the yellow starts at the top. */
+/* Pulled up under the header, so the band starts right below its divider.
+   color-1 at 20 % carries only text-strong (n10): text-muted is 4.49:1
+   there (A10), so the muted roles point at the text on the band. */
 .cw-slip {
+  --cte-text-muted: var(--cte-text);
+  --fs-muted-fg: var(--cte-text);
+  --prose-muted: var(--cte-text);
+
   margin-top: calc(-1 * var(--cw-header-h));
-  padding-block: calc(var(--cw-header-h) + clamp(1.5rem, 5vw, 4rem)) clamp(3.5rem, 8vw, 6.5rem);
-  background: var(--cw-yellow);
+  padding-block: calc(var(--cw-header-h) + clamp(var(--space-l), 5vw, calc(2 * var(--space-xxl))))
+    clamp(calc(2 * var(--space-xxl)), 8vw, calc(3 * var(--space-xxl)));
+  background: var(--color-1-transparent);
 }
 
 .cw-slip-grid {
   display: grid;
-  gap: clamp(2rem, 4vw, 3rem);
+  gap: clamp(var(--space-xl), 4vw, var(--space-xxl));
 }
 
 .cw-root .cw-hero-title {
   max-width: 22ch;
-  font-size: clamp(2.5rem, 1rem + 5vw, 5.5rem);
-  font-stretch: 100%;
-  font-weight: 800;
-  letter-spacing: -0.015em;
-  line-height: 0.95;
+  font-size: var(--size-xl);
+  letter-spacing: var(--letter-spacing-xl);
+  line-height: var(--line-xl);
   text-wrap: balance;
 }
 
 @media (width >= 40rem) {
   .cw-root .cw-hero-title {
-    font-stretch: 112%;
+    font-size: var(--size-xxl);
+    letter-spacing: var(--letter-spacing-xxl);
+    line-height: var(--line-xxl);
   }
 }
 
 .cw-lede {
   max-width: 34em;
-  font-size: 1.3125rem;
-  line-height: 1.5;
+  font-size: var(--size-l);
+  letter-spacing: var(--letter-spacing-l);
+  line-height: var(--line-l);
 }
 
 .cw-actions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.75rem 1.75rem;
-  margin-top: 2rem;
+  gap: var(--space-m) var(--space-xl);
+  margin-top: var(--space-xl);
 }
 
 @media (width >= 64rem) {
   .cw-slip-grid {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    column-gap: clamp(3rem, 6vw, 6rem);
+    column-gap: clamp(var(--space-xxl), 6vw, calc(2 * var(--space-xxl)));
   }
 
   .cw-hero-title {
@@ -277,103 +285,102 @@
 
 /*
  * The one motion moment (plan §7): each stage appears as the wire reaches
- * its marker (0, 0.6, 1.2, 1.8 s), then the third marker fills halfway and
- * the fourth fully. Fill mode is `backwards` only, so once played the
- * elements rest on their own styles and no animation stays in effect.
- * Reduced motion zeroes every duration (below), showing the end state.
+ * its marker, one beat (two large motions) apart, then the third marker
+ * fills to its half and the fourth fully. Fill mode is `backwards` only,
+ * so once played the elements rest on their own styles and no animation
+ * stays in effect. Reduced motion zeroes every duration (below), showing
+ * the end state. The markers are the stages' own .status-mark shapes; the
+ * wire runs between them, never through a hollow one.
  */
 .cw-loop {
-  --cw-mark: 1.125rem;
-  --cw-mark-y: 0.1875rem;
-  --cw-stage-gap: 1.75rem;
+  --cw-beat: calc(2 * var(--motion-large-duration));
+  --cw-mark: var(--space-m);
+  --cw-mark-y: calc((var(--line-s) - var(--cw-mark)) / 2);
+  --cw-stage-gap: var(--space-xl);
   display: grid;
   gap: var(--cw-stage-gap);
   align-content: start;
-  color: var(--cw-ink);
+  color: var(--cte-text);
 }
 
 .cw-loop-stage {
   position: relative;
   display: grid;
   grid-template-columns: var(--cw-mark) minmax(0, 1fr);
-  column-gap: 1rem;
-  animation: cw-stage-in 400ms ease-out backwards;
+  column-gap: var(--space-m);
+  animation: cw-stage-in var(--motion-large-duration) var(--motion-large-easing) backwards;
 }
 
 .cw-loop-stage:nth-child(2) {
-  animation-delay: 600ms;
+  animation-delay: var(--cw-beat);
 }
 
 .cw-loop-stage:nth-child(3) {
-  animation-delay: 1200ms;
+  animation-delay: calc(2 * var(--cw-beat));
 }
 
 .cw-loop-stage:nth-child(4) {
-  animation-delay: 1800ms;
+  animation-delay: calc(3 * var(--cw-beat));
 }
 
-/* The wire: one ink segment from each marker's centre to the next. */
+/* The wire: from the bottom of each marker to the top of the next. */
 .cw-loop-stage:not(:last-child)::before {
   position: absolute;
-  top: calc(var(--cw-mark-y) + var(--cw-mark) / 2);
-  bottom: calc(-1 * (var(--cw-stage-gap) + var(--cw-mark-y) + var(--cw-mark) / 2));
-  left: calc(var(--cw-mark) / 2 - 1px);
-  width: 2px;
+  top: calc(var(--cw-mark-y) + var(--cw-mark));
+  bottom: calc(-1 * (var(--cw-stage-gap) + var(--cw-mark-y)));
+  left: calc((var(--cw-mark) - var(--border-l)) / 2);
+  width: var(--border-l);
   background: currentColor;
   content: '';
   transform-origin: top;
-  animation: cw-wire-draw 600ms linear backwards;
+  animation: cw-wire-draw var(--cw-beat) linear backwards;
   animation-delay: inherit;
 }
 
 .cw-loop .status-mark[data-shape] {
-  position: relative;
-  z-index: 1;
   grid-row: 1 / span 2;
-  width: var(--cw-mark);
-  height: var(--cw-mark);
   margin-top: var(--cw-mark-y);
-  border: 2px solid currentColor;
-  background-color: var(--cw-yellow);
   background-repeat: no-repeat;
+  background-size: 100% 100%;
 }
 
-.cw-loop .status-mark[data-shape='dot'] {
-  background-image: linear-gradient(currentColor, currentColor);
-}
-
-/* Planned's diamond: filled, and small enough that its corners stay in the marker column. */
+/* The diamond is one ring smaller (globals.css); centre it on the line. */
 .cw-loop .status-mark[data-shape='diamond'] {
-  width: calc(var(--cw-mark) * 0.75);
-  height: calc(var(--cw-mark) * 0.75);
-  margin: calc(var(--cw-mark-y) + var(--cw-mark) * 0.125) calc(var(--cw-mark) * 0.125) 0;
-  background-image: linear-gradient(currentColor, currentColor);
+  margin-top: calc(var(--cw-mark-y) + var(--border-l) / 2);
+}
+
+/* Shipped's dot fills as an image, so it grows like In progress's half. */
+.cw-loop .status-mark[data-shape='dot'] {
+  background: linear-gradient(var(--mark, currentColor), var(--mark, currentColor)) no-repeat;
 }
 
 .cw-loop-stage:nth-child(3) .status-mark {
-  animation: cw-mark-fill 400ms ease-out 1400ms backwards;
+  animation: cw-mark-fill var(--motion-large-duration) var(--motion-large-easing)
+    calc(2 * var(--cw-beat) + var(--motion-large-duration)) backwards;
 }
 
 .cw-loop-stage:nth-child(4) .status-mark {
-  animation: cw-mark-fill 400ms ease-out 1800ms backwards;
+  animation: cw-mark-fill var(--motion-large-duration) var(--motion-large-easing)
+    calc(3 * var(--cw-beat)) backwards;
 }
 
 .cw-loop-name {
-  color: var(--cw-graphite);
-  font-size: 0.9375rem;
-  font-weight: 700;
-  line-height: 1.5;
+  font-size: var(--size-s);
+  font-weight: var(--weight-ui-heavy);
+  letter-spacing: var(--letter-spacing-s);
+  line-height: var(--line-s);
 }
 
 .cw-loop-detail {
-  font-size: 1.25rem;
-  line-height: 1.35;
+  font-size: var(--size-l);
+  letter-spacing: var(--letter-spacing-l);
+  line-height: var(--line-l);
 }
 
 @keyframes cw-stage-in {
   from {
     opacity: 0;
-    transform: translateY(0.375rem);
+    transform: translateY(var(--space-xs));
   }
 }
 
@@ -389,26 +396,35 @@
   }
 }
 
-/* ── Home: what players get ─────────────────────────────── */
+/* ── Home: what players get, review, the call to action ── */
 
 .cw-section {
-  padding-block: clamp(4rem, 9vw, 7.5rem);
+  padding-block: clamp(calc(2 * var(--space-xxl)), 9vw, calc(3 * var(--space-xxl)));
 }
 
 .cw-split {
   display: grid;
-  gap: 2rem;
+  gap: var(--space-xl);
 }
 
-.cw-split-title,
-.cw-cta-title {
+.cw-root :is(.cw-split-title, .cw-cta-title) {
   max-width: 14em;
-  font-size: clamp(1.75rem, 1.2rem + 1.6vw, 2.625rem);
+  font-size: var(--size-l);
+  letter-spacing: var(--letter-spacing-l);
+  line-height: var(--line-l);
   text-wrap: balance;
 }
 
-.cw-cta-title {
+.cw-root .cw-cta-title {
   max-width: 24em;
+}
+
+@media (width >= 40rem) {
+  .cw-root :is(.cw-split-title, .cw-cta-title) {
+    font-size: var(--size-xl);
+    letter-spacing: var(--letter-spacing-xl);
+    line-height: var(--line-xl);
+  }
 }
 
 /* Consecutive sections share one gap, not two. */
@@ -417,35 +433,37 @@
 }
 
 .cw-stack > * + * {
-  margin-top: 1rem;
+  margin-top: var(--space-m);
 }
 
 .cw-terms {
   display: grid;
 }
 
+/* Rows separated by dividers, the list closed by one. */
 .cw-term {
   display: grid;
-  gap: 0.5rem 2rem;
-  padding-block: 1.5rem;
-  border-top: 1px solid var(--cw-rule);
+  gap: var(--space-xs) var(--space-xl);
+  padding-block: var(--space-l);
+  border-top: var(--border-s) solid var(--cte-border);
 }
 
 .cw-term:last-child {
-  border-bottom: 1px solid var(--cw-rule);
+  border-bottom: var(--border-s) solid var(--cte-border);
 }
 
 .cw-root .cw-term dt {
-  font-family: var(--font-critwire), system-ui, sans-serif;
-  font-size: 1.375rem;
-  font-weight: 700;
-  line-height: 1.2;
+  font-family: var(--font-brand);
+  font-size: var(--size-l);
+  font-weight: var(--weight-brand-heavy);
+  letter-spacing: var(--letter-spacing-l);
+  line-height: var(--line-l);
 }
 
 .cw-term dd p,
 .cw-note {
   max-width: 62ch;
-  color: var(--cw-graphite);
+  color: var(--cte-text-muted);
 }
 
 @media (width >= 48rem) {
@@ -457,12 +475,12 @@
 @media (width >= 64rem) {
   .cw-split {
     grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
-    column-gap: clamp(3rem, 6vw, 6rem);
+    column-gap: clamp(var(--space-xxl), 6vw, calc(2 * var(--space-xxl)));
   }
 
   .cw-split-title {
     position: sticky;
-    top: 2rem;
+    top: var(--space-xl);
     align-self: start;
   }
 }

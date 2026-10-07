@@ -61,7 +61,7 @@ export function MarketingHome({
               move from Under review to the update that ships it.
             </p>
             <div className="cw-actions">
-              <Link className="cw-btn" href={DEMO_PORTAL.hub}>
+              <Link className="fs-btn fs-btn-primary" href={DEMO_PORTAL.hub}>
                 See a live portal
               </Link>
             </div>
@@ -81,7 +81,7 @@ export function MarketingHome({
                 <dt>{term}</dt>
                 <dd>
                   <p>{description}</p>
-                  <Link className="cw-tap cw-link" href={href}>
+                  <Link className="fs-tap fs-link" href={href}>
                     {link}
                   </Link>
                 </dd>
@@ -123,15 +123,15 @@ export function MarketingHome({
             </p>
             <div className="cw-actions">
               {signupHref ? (
-                <Link className="cw-btn" href={signupHref}>
+                <Link className="fs-btn fs-btn-primary" href={signupHref}>
                   Create your portal
                 </Link>
               ) : null}
-              <a className="cw-btn" href={GITHUB_REPO_URL}>
+              <a className="fs-btn fs-btn-secondary" href={GITHUB_REPO_URL}>
                 Critwire on GitHub
               </a>
               {contactHref ? (
-                <a className="cw-tap cw-link" href={contactHref}>
+                <a className="fs-tap fs-link" href={contactHref}>
                   Contact
                 </a>
               ) : null}
