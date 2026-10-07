@@ -1,4 +1,4 @@
-import { Anybody, Atkinson_Hyperlegible_Next, Geist_Mono, Inter } from 'next/font/google'
+import { Geist_Mono, Inter } from 'next/font/google'
 
 /**
  * cw's face for its ui, brand and editorial roles (`--font-ui` and the
@@ -25,25 +25,3 @@ export const cwMono = Geist_Mono({
 
 /** Both cw faces' variables, for the class of `<html>` in each root layout. */
 export const cwFontVariables = `${cwSans.variable} ${cwMono.variable}`
-
-/**
- * Body and UI face for every surface (marketing and portal), and every
- * numeral. Self-hosted by next/font at build time; the class goes on
- * `<html>` in both root layouts and defines `--font-body`.
- */
-export const bodyFont = Atkinson_Hyperlegible_Next({
-  display: 'swap',
-  subsets: ['latin', 'latin-ext'],
-  variable: '--font-body',
-})
-
-/**
- * Critwire's own display face (its site and the admin's wordmark, never a
- * studio's portal); defines `--font-critwire`.
- */
-export const critwireFont = Anybody({
-  axes: ['wdth'],
-  display: 'swap',
-  subsets: ['latin', 'latin-ext'],
-  variable: '--font-critwire',
-})
