@@ -14,10 +14,13 @@
   --prose-muted: var(--fs-muted-fg);
   --prose-border: var(--fs-border);
   --prose-code-bg: var(--fs-surface);
-  --prose-link-line: var(--fs-accent);
+  --prose-link-line: var(--fs-link-line);
   --prose-size: 1.0625rem;
   --prose-measure: 68ch;
   --fs-gutter: clamp(1rem, 4vw, 2.5rem);
+  /* A text link's underline: the accent, a decoration only (critwire's
+     own pages use currentColor, marketing.css). */
+  --fs-link-line: var(--fs-accent);
   /* The share kit (share-kit.css) in the game's theme, on the token
      contract below: control outlines are muted-fg, like other controls. */
   --kit-fg: var(--fs-fg);
@@ -30,9 +33,10 @@
 
   background: var(--fs-bg);
   color: var(--fs-fg);
-  font-family: var(--font-body), system-ui, sans-serif;
-  font-size: 1.0625rem;
-  line-height: 1.6;
+  font-family: var(--font-ui);
+  font-size: var(--size-m);
+  letter-spacing: var(--letter-spacing-m);
+  line-height: var(--line-m);
 }
 
 /*
@@ -152,64 +156,86 @@
   margin-bottom: 2.5rem;
 }
 
-/* ── Controls ───────────────────────────────────────────── */
+/* ── Controls: cw's Button and Field (plan §4) ─────────── */
 
+/*
+ * One control geometry, cw's: padding xs/m, text m in ui medium, radius
+ * --fs-radius-control, and a 1px press on the small motion. The height
+ * keeps the 44px tap target over cw's 34px (D10). Edges are inset
+ * box-shadows in --fs-control-edge, so they never change a control's size
+ * and the focus ring below keeps them beside its halo.
+ */
 .fs-btn {
+  --fs-control-edge: var(--border-shadow-none);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  min-height: 2.75rem;
-  border: 1px solid transparent;
+  gap: var(--space-xs);
+  min-height: var(--tap-min);
   border-radius: var(--fs-radius-control);
-  padding: 0.625rem 1.125rem;
-  font-size: 0.9375rem;
-  font-weight: 700;
-  line-height: 1.2;
+  padding: var(--space-xs) var(--space-m);
+  box-shadow: var(--fs-control-edge);
+  font-size: var(--size-m);
+  font-weight: var(--weight-ui-medium);
+  letter-spacing: var(--letter-spacing-m);
+  line-height: var(--line-m);
   text-decoration: none;
   white-space: nowrap;
-  transition:
-    background-color 150ms ease,
-    border-color 150ms ease,
-    transform 120ms ease;
+  transition-duration: var(--motion-duration);
+  transition-property: background-color, box-shadow, color, transform;
+  transition-timing-function: var(--motion-easing);
 }
 
 .fs-btn:active {
-  transform: scale(0.98);
+  transform: translateY(var(--motion-press-distance));
 }
 
-.fs-btn-primary {
-  border-color: var(--fs-accent);
+/* Busy (the vote while it saves): still focusable, so aria-disabled, not disabled. */
+.fs-btn[aria-disabled='true'] {
+  cursor: progress;
+}
+
+/* Primary, and a pressed toggle (the vote): the accent fill with its label
+   in accent-fg (D6, A1). The fill stays exact on hover, as cw's does, so
+   the pair keeps its checked contrast. */
+.fs-btn-primary,
+.fs-btn[aria-pressed='true'] {
   background: var(--fs-accent);
   color: var(--fs-accent-fg);
 }
 
-/* The accent fill stays exact on hover, so accent-fg keeps its checked contrast. */
-.fs-btn-primary:hover {
-  text-decoration: underline;
-  text-decoration-thickness: 1px;
-  text-underline-offset: 0.2em;
-}
-
+/* cw's outline Button: a divider-weight edge, the surface on hover. */
 .fs-btn-secondary {
-  border-color: var(--fs-muted-fg);
+  --fs-control-edge: inset 0 0 0 var(--border-s) var(--fs-border);
   background: transparent;
   color: var(--fs-fg);
 }
 
 .fs-btn-secondary:hover {
-  border-color: var(--fs-fg);
+  background: var(--fs-surface);
 }
 
+/* cw's Field input, with the field boundary in muted-fg (D5, A3): the
+   schema checks it against bg and surface, so it reads under any theme. */
 .fs-input {
+  --fs-control-edge: inset 0 0 0 var(--border-s) var(--fs-muted-fg);
   width: 100%;
-  min-height: 2.75rem;
-  border: 1px solid var(--fs-muted-fg);
+  min-height: var(--tap-min);
   border-radius: var(--fs-radius-control);
-  padding: 0.5rem 0.75rem;
+  padding: var(--space-xs) var(--space-s);
   background: var(--fs-bg);
+  box-shadow: var(--fs-control-edge);
   color: var(--fs-fg);
   font: inherit;
+  font-size: var(--size-m);
+  font-weight: var(--weight-ui-regular);
+  letter-spacing: var(--letter-spacing-m);
+  line-height: var(--line-m);
+  transition: box-shadow var(--motion-duration) var(--motion-easing);
+}
+
+.fs-input:hover {
+  --fs-control-edge: inset 0 0 0 var(--border-s) var(--fs-fg);
 }
 
 .fs-input::placeholder {
@@ -217,16 +243,17 @@
   opacity: 1;
 }
 
+/* A text link: the underline is the cue, in --fs-link-line. */
 .fs-link {
   color: inherit;
   text-decoration-line: underline;
-  text-decoration-color: var(--fs-accent);
-  text-decoration-thickness: 1px;
+  text-decoration-color: var(--fs-link-line);
+  text-decoration-thickness: var(--border-s);
   text-underline-offset: 0.2em;
 }
 
 .fs-link:hover {
-  text-decoration-thickness: 2px;
+  text-decoration-thickness: var(--border-l);
 }
 
 /* ── Nav: a solid bar; one row on desktop, two below 64rem ── */
@@ -676,32 +703,37 @@
 .fs-tap {
   display: inline-flex;
   align-items: center;
-  min-height: 2.75rem;
+  min-height: var(--tap-min);
 }
 
-/* Back to the list: a CSS chevron, never an arrow character. */
+/* Back to the list: a CSS chevron, never an arrow character, then the
+   underlined label. */
 .fs-back {
   display: inline-flex;
   align-items: center;
-  gap: 0.625rem;
-  min-height: 2.75rem;
+  gap: var(--space-s);
+  min-height: var(--tap-min);
   color: var(--fs-muted-fg);
-  font-size: 0.9375rem;
-  font-weight: 600;
-  transition: color 150ms ease;
+  font-weight: var(--weight-ui-medium);
+  text-decoration-line: underline;
+  text-decoration-color: var(--fs-link-line);
+  text-decoration-thickness: var(--border-s);
+  text-underline-offset: 0.2em;
+  transition: color var(--motion-duration) var(--motion-easing);
 }
 
 .fs-back::before {
   width: 0.45em;
   height: 0.45em;
-  border-bottom: 2px solid currentColor;
-  border-left: 2px solid currentColor;
+  border-bottom: var(--border-l) solid currentColor;
+  border-left: var(--border-l) solid currentColor;
   content: '';
   transform: rotate(45deg);
 }
 
 .fs-back:hover {
   color: var(--fs-fg);
+  text-decoration-thickness: var(--border-l);
 }
 
 /* Version and date on one line above a detail page's title. */
@@ -768,7 +800,7 @@
 }
 
 .fs-select {
-  padding-right: 0.5rem;
+  padding-right: var(--space-xs);
 }
 
 @media (min-width: 40rem) {
@@ -798,17 +830,19 @@
   margin-top: 0.5rem;
 }
 
-/* Not interactive, so no border: a quiet fill carrying fg text. */
+/* cw's emphasis chip. Not interactive, so no edge: a quiet fill carrying
+   fg text (the portal has no surface-muted, so it's the surface). */
 .fs-tag {
   display: inline-flex;
   align-items: center;
   border-radius: var(--fs-radius-control);
-  padding: 0.0625rem 0.5rem;
+  padding: 0 var(--space-xs);
   background: var(--fs-surface);
   color: var(--fs-fg);
-  font-size: 0.8125rem;
-  font-weight: 600;
-  line-height: 1.5;
+  font-size: var(--size-s);
+  font-weight: var(--weight-ui-medium);
+  letter-spacing: var(--letter-spacing-s);
+  line-height: var(--line-s);
 }
 
 /* Issue list: the vote tally in a fixed left column, then the entry. */
@@ -928,10 +962,6 @@
     border-color 150ms ease,
     color 150ms ease,
     transform 120ms ease;
-}
-
-.fs-vote-btn[aria-disabled='true'] {
-  cursor: progress;
 }
 
 /* Clips the count's roll to its own line; the count is one number. */
@@ -1055,30 +1085,38 @@
 
 /* ── Forms: report and contact (plan §5) ───────────────── */
 
-/* The form sits on one surface panel; the controls keep the bg fill and
-   muted-fg border, both schema-checked against surface. */
+/* The form sits on one cw Popover surface; the controls keep the bg fill
+   and muted-fg edge, both schema-checked against surface. */
 .fs-form {
   display: grid;
-  gap: 1.5rem;
+  gap: var(--space-m);
   border-radius: var(--fs-radius);
-  padding: clamp(1.25rem, 4vw, 2rem);
+  padding: var(--space-l);
   background: var(--fs-surface);
+  box-shadow: 0 0 0 var(--border-s) var(--fs-border);
 }
 
 .fs-field {
   display: grid;
-  gap: 0.5rem;
+  gap: var(--space-xs);
   align-content: start;
 }
 
+/* cw's Field label and description. */
 .fs-label {
-  font-size: 0.9375rem;
-  font-weight: 700;
-  line-height: 1.35;
+  font-size: var(--size-m);
+  font-weight: var(--weight-ui-medium);
+  letter-spacing: var(--letter-spacing-m);
+  line-height: var(--line-m);
 }
 
 .fs-hint {
   max-width: 36em;
+  color: var(--fs-muted-fg);
+  font-size: var(--size-s);
+  font-weight: var(--weight-ui-regular);
+  letter-spacing: var(--letter-spacing-s);
+  line-height: var(--line-s);
 }
 
 .fs-textarea {
@@ -1089,29 +1127,30 @@
 /* Consent checkboxes (signup, /legal/accept): the box, then its label. */
 .fs-consent {
   display: grid;
-  gap: 1rem;
+  gap: var(--space-m);
 }
 
 .fs-check {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
-  gap: 0.75rem;
+  gap: var(--space-m);
   align-items: start;
-  line-height: 1.45;
+  line-height: var(--line-m);
 }
 
-/* A 44px-tall target around a 20px box (drawn centred), pulled up so the box sits on the label's first line. */
+/* The native box in fg (D9), 20px, inside a 44px-tall target drawn centred
+   on the label's first line. */
 .fs-check input {
   width: 1.25rem;
-  height: 2.75rem;
-  margin: -0.6625rem 0 0;
+  height: var(--tap-min);
+  margin: calc((var(--line-m) - var(--tap-min)) / 2) 0 0;
   accent-color: var(--fs-fg);
 }
 
 /* Platform beside game version from 40rem; one column on phones. */
 .fs-field-pair {
   display: grid;
-  gap: 1.5rem;
+  gap: var(--space-m);
 }
 
 @media (min-width: 40rem) {
@@ -1123,8 +1162,8 @@
 /* A player form's warning, at the top of its fields: set off by a rule. */
 .fs-sensitive-warning {
   max-width: 40em;
-  border-inline-start: 0.1875rem solid var(--fs-fg);
-  padding-inline-start: 0.75rem;
+  border-inline-start: var(--border-l) solid var(--fs-fg);
+  padding-inline-start: var(--space-m);
 }
 
 /* The Terms notice heads the submit row, on a line of its own. */
@@ -1139,9 +1178,9 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
-  border-top: 1px solid var(--fs-border);
-  padding-top: 1.5rem;
+  gap: var(--space-m);
+  box-shadow: inset 0 var(--border-s) 0 var(--fs-border);
+  padding-top: var(--space-l);
 }
 
 /* Reserves the widget's height, so the button doesn't jump when it loads. */
@@ -1227,34 +1266,37 @@
   border-radius: var(--fs-radius-control);
 }
 
-/* A form's outcome: fg text beside a status shape; the colour is only the shape's fill. */
+/* A form's outcome, as cw's Toast: fg text beside a status shape (D6); the
+   colour is only the shape's fill. */
 .fs-notice {
   display: flex;
   align-items: baseline;
-  gap: 0.75rem;
+  gap: var(--space-m);
   border-radius: var(--fs-radius);
-  padding: 1rem 1.25rem;
+  padding: var(--space-m);
   background: var(--fs-surface);
+  box-shadow: 0 0 0 var(--border-s) var(--fs-border);
   color: var(--fs-fg);
-  font-size: 0.9375rem;
-  font-weight: 600;
-  line-height: 1.5;
+  font-size: var(--size-m);
+  font-weight: var(--weight-ui-medium);
+  letter-spacing: var(--letter-spacing-m);
+  line-height: var(--line-m);
 }
 
 .fs-notice::before {
   flex: none;
-  width: 0.625rem;
-  height: 0.625rem;
+  width: var(--space-s);
+  height: var(--space-s);
   content: '';
 }
 
 .fs-notice[data-tone='success']::before {
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   background: var(--fs-success);
 }
 
 .fs-notice[data-tone='error']::before {
-  border-radius: 1px;
+  border-radius: var(--radius-xs);
   background: var(--fs-error);
 }
 
@@ -1276,12 +1318,15 @@
   top: 1rem;
 }
 
-/* Two-tone ring (WCAG C40): fg outline around a bg halo, at least 4.5:1
-   against the page, a surface or an accent fill under any valid theme. */
+/* Two-tone ring (WCAG C40, D12): fg outline around a bg halo, at least
+   4.5:1 against the page, a surface or an accent fill under any valid
+   theme, on cw's ring geometry. A control keeps its edge inside it. */
 .fs-root :focus-visible {
-  outline: 2px solid var(--fs-fg);
-  outline-offset: 2px;
-  box-shadow: 0 0 0 2px var(--fs-bg);
+  outline: var(--focus-ring-width) solid var(--fs-fg);
+  outline-offset: var(--focus-ring-offset);
+  box-shadow:
+    var(--fs-control-edge, var(--border-shadow-none)),
+    0 0 0 var(--focus-ring-offset) var(--fs-bg);
 }
 
 /* The theme's motion token and the user's preference both stop every

@@ -21,6 +21,24 @@
   --primary-foreground: var(--cw-yellow);
   --border: var(--cw-rule);
 
+  /* The shared control layer (portal.css: fs-btn, fs-input, fs-link and
+     the form classes) on cw's roles. Links are underlined in currentColor:
+     color-1 is 2.08:1 on white (A7). .cw-account keeps the old palette
+     until its own step. */
+  --fs-bg: var(--cte-canvas);
+  --fs-fg: var(--cte-text);
+  --fs-muted-fg: var(--cte-text-muted);
+  --fs-surface: var(--cte-surface);
+  --fs-border: var(--cte-border);
+  --fs-accent: var(--cte-accent);
+  --fs-accent-fg: var(--cte-accent-text);
+  --fs-success: var(--success);
+  --fs-warning: var(--warning);
+  --fs-error: var(--cte-danger);
+  --fs-radius: var(--radius-m);
+  --fs-radius-control: var(--radius-s);
+  --fs-link-line: currentColor;
+
   /* Rich text: tailwind.config.mjs maps every prose colour to these. */
   --prose-fg: var(--cw-ink);
   --prose-muted: var(--cw-graphite);

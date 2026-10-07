@@ -3,30 +3,28 @@ import { Slot } from '@radix-ui/react-slot'
 import { type VariantProps, cva } from 'class-variance-authority'
 import * as React from 'react'
 
-// Styled only through the shadcn variables marketing.css re-points
-// (primary, foreground), so CMS links follow Critwire's palette. Focus
-// is the root's 2px ring; nothing here overrides the outline.
-const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 rounded-sm text-center text-base leading-tight font-bold decoration-2 underline-offset-[0.2em] transition-transform motion-safe:active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 [&_svg]:shrink-0",
-  {
-    variants: {
-      variant: {
-        default: 'bg-primary text-primary-foreground hover:underline',
-        outline: 'border-2 border-foreground text-foreground hover:underline',
-        link: 'text-foreground underline decoration-1 underline-offset-4 hover:decoration-2',
-      },
-      size: {
-        clear: '',
-        default: 'min-h-11 px-5 py-2.5',
-        lg: 'min-h-12 px-6 py-3',
-      },
+// cw's Button through the shared control layer (portal.css), which reads
+// the --fs-* roles; on critwire's pages marketing.css points them at cw's
+// roles, so CMS links follow the theme. cw has one control size, so `lg`
+// is `default`, and `clear` (a link) adds nothing. Focus is the root's ring.
+const buttonVariants = cva('', {
+  variants: {
+    variant: {
+      default: 'fs-btn fs-btn-primary',
+      outline: 'fs-btn fs-btn-secondary',
+      link: 'fs-link',
     },
-    defaultVariants: {
-      variant: 'default',
-      size: 'default',
+    size: {
+      clear: '',
+      default: '',
+      lg: '',
     },
   },
-)
+  defaultVariants: {
+    variant: 'default',
+    size: 'default',
+  },
+})
 
 export interface ButtonProps
   extends React.ComponentProps<'button'>,

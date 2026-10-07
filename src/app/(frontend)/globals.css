@@ -47,25 +47,26 @@
   .status-mark {
     display: inline-block;
     flex: none;
-    width: 0.75rem;
-    height: 0.75rem;
-    border-radius: 999px;
+    width: var(--space-m);
+    height: var(--space-m);
+    border-radius: var(--radius-full);
   }
 
   .status-mark[data-shape='ring'] {
-    border: 2px solid var(--mark, currentColor);
+    border: var(--border-l) solid var(--mark, currentColor);
   }
 
   .status-mark[data-shape='half'] {
-    border: 2px solid var(--mark, currentColor);
+    border: var(--border-l) solid var(--mark, currentColor);
     background: linear-gradient(90deg, var(--mark, currentColor) 50%, transparent 50%);
   }
 
+  /* One ring's width smaller, so the rotated square stays inside the mark's column. */
   .status-mark[data-shape='diamond'] {
-    width: 0.625rem;
-    height: 0.625rem;
-    margin-inline: 0.0625rem;
-    border-radius: 1px;
+    width: calc(var(--space-m) - var(--border-l));
+    height: calc(var(--space-m) - var(--border-l));
+    margin-inline: calc(var(--border-l) / 2);
+    border-radius: var(--radius-xs);
     background: var(--mark, currentColor);
     transform: rotate(45deg);
   }
