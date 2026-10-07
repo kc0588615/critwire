@@ -82,7 +82,24 @@
 @source inline("lg:col-span-8");
 @source inline("lg:col-span-12");
 
+/*
+ * Tailwind's own design scales are gone (plan D22): only cw's utilities,
+ * below, exist. The resets come first, so what this block and the cw
+ * mapping define after them survives. The breakpoints stay.
+ */
 @theme {
+  --color-*: initial;
+  --spacing-*: initial;
+  --text-*: initial;
+  --font-*: initial;
+  --font-weight-*: initial;
+  --leading-*: initial;
+  --tracking-*: initial;
+  --radius-*: initial;
+  --shadow-*: initial;
+  --ease-*: initial;
+  --animate-*: initial;
+
   --breakpoint-sm: 40rem;
   --breakpoint-md: 48rem;
   --breakpoint-lg: 64rem;
@@ -98,9 +115,8 @@
  * cw's utilities (mt-m, text-s, rounded-m, bg-neutral-3, font-ui …), each
  * pointing at its token. `reference` keeps Tailwind from re-declaring the
  * variables, which would make the ones sharing a name refer to themselves.
- * Tailwind's own scales stay beside them for now (plan D29). Width utilities
- * read --spacing-* before --container-*, so `max-w-xl` would be 25px: size
- * containers in CSS.
+ * Width utilities read --spacing-* before --container-*, so `max-w-xl`
+ * would be 25px: size containers in CSS.
  */
 @theme inline reference {
   --color-color-1: var(--color-1);
