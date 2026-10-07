@@ -281,6 +281,67 @@ disk and R2 alike. So a suspended studio's files answer 403 there.
   (`mediaFileReadOverride`); lists and documents keep the tenant
   limit.
 
+## Styling: the cw theme
+
+Critwire's own UI and brand use **cw**, the design language in
+`GUI.md` and `gui/` (follow them for UI work). Its values are defined
+once, and every surface reads them as named tokens.
+
+- **The source:** `src/lib/theme/cw.ts` holds cw as typed data: text
+  steps, spacing, radii, borders, weights, motion, font fallbacks, the
+  four colours, the status colours and the ten neutrals for light and
+  dark. It is the only file with cw's literal values.
+- **`pnpm generate:theme`** (`src/lib/theme/generate.ts`, through
+  `tokensCss.ts`) writes `src/styles/cw-tokens.css`: every value as a
+  CSS variable, mode-dependent ones once as `light-dark(<light>, <dark>)`.
+  The file is generated and committed; edit `cw.ts`, then rerun.
+- **`src/styles/cw.css`** is hand-written and holds no cw literal: the
+  roles built on the tokens (`--cte-*`, the 20 % `-transparent` colours,
+  edges as inset shadows, the focus ring, the font roles `--font-ui`,
+  `--font-brand`, `--font-editorial`, `--font-data`).
+- **`pnpm generate:brand`** (`src/lib/theme/brand.ts`) draws
+  `public/favicon.svg`, `public/favicon.ico` and the default share
+  image `public/og.png` from `cw.ts` and the wordmark. Rerun it only
+  when cw's brand colours or the wordmark change, and commit the result.
+- **Fonts** (`src/fonts.ts`): Inter for the ui, brand and editorial
+  roles and Geist Mono for data, self-hosted by `next/font` at build
+  time, so no page calls a font service.
+- **The guard:** `tests/int/cw-tokens.int.spec.ts` fails when `cw.ts`
+  drifts from the snapshot in `gui/themes/cw.md`, when the committed
+  `cw-tokens.css` differs from what `cw.ts` generates, when either
+  entry point stops loading the tokens and roles, or when the loader's
+  colours drift from `cw.ts`. `prebuild` runs it.
+
+Two style entry points load the tokens, then the roles, directly (no
+nested CSS import):
+
+| Entry point | Loads them with | Renders |
+| --- | --- | --- |
+| `src/app/(frontend)/globals.css` | `@import` after `tailwindcss` | `(frontend)`, `(public)` and `(embed)` |
+| `src/app/(payload)/custom.scss` | `@use` | the Payload admin and its custom views |
+
+Tailwind's `@theme` resets its own default scales, so only cw utilities
+exist. `marketing.css`, `portal.css`, `embed.css`, `share-kit.css`,
+`kanban.css` and the custom views' SCSS load no tokens themselves;
+they always render under one of the two entry points. Server output
+that isn't CSS (emails, the share buttons and badge, the brand files,
+the portal's default theme, the embed's neutral palette) imports
+`CW` from `cw.ts`. `public/embed/v1.js` can't import, so it carries
+its two colours as literals, which the int test keeps equal to
+`cw.ts`.
+
+**Light and dark.** Each surface sets its own `color-scheme`, and
+`light-dark()` in the tokens follows it; no rule is written twice per
+mode.
+
+| Surface | Mode |
+| --- | --- |
+| Critwire's pages (`(frontend)`) | The visitor's system setting: the layout's `viewport.colorScheme` and `.cw-root` are `light dark`. No toggle. |
+| Admin | Payload's own light, dark or auto switch: Payload sets `color-scheme: dark` on `html[data-theme='dark']`, and `custom.scss` maps Payload's variables onto cw. |
+| Portals | The game's theme: `themeStyle` sets `colorScheme` from the palette's background (`backgroundScheme` in `src/lib/game-portal/contrast.ts`). New games default to cw dark. |
+| Embeds | `data-theme` / `?theme=`: `.cw-embed` sets `color-scheme` per mode (`docs/embed.md`, Modes and fonts). |
+| Emails | cw light only (`src/lib/email/templates/styles.ts`), inline styles and no web font. |
+
 ## Project structure
 
 ```
@@ -334,6 +395,8 @@ disk and R2 alike. So a suspended studio's files answer 403 there.
     /email                Resend-or-outbox adapter, React Email templates
     /security             vote-token hashing, signed values (sign.ts)
     /tally                Tally form URLs
+    /theme                cw.ts (cw's values), the token and brand generators
+  /styles                 cw-tokens.css (generated) and cw.css (roles)
   /jobs                   Payload Jobs Queue task definitions
   /migrations             Payload migrations (run on boot in production)
   payload.config.ts       main Payload configuration

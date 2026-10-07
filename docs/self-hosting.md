@@ -110,6 +110,17 @@ traffic embeds the board, put a CDN in front that honours
 
 ## Upgrading
 
+### The cw look
+
+Critwire's pages, the admin, emails and brand files moved to cw
+(`docs/architecture.md`, Styling). Nothing to do: the two migrations
+run on boot. New games default to cw dark with `standard` typography,
+and every theme saved before keeps its look, because the migration
+writes the old default into each slot a saved theme left unset. If you
+replaced `public/favicon.svg`, `public/favicon.ico` or the default
+share image with your own, keep yours when you merge; the default share image is now
+`public/og.png`.
+
 ### Uploads moved out of `public/media`
 
 Uploads used to live in `public/media`, where Next served them without
