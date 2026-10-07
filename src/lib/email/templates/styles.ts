@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react'
 
-import { CW } from '@/lib/theme/cw'
+import { CW, TAP_MIN } from '@/lib/theme/cw'
 
 /**
  * The emails' styles: cw light, email-safe (D19). Inline styles only, a
@@ -50,13 +50,20 @@ export const body: CSSProperties = {
 }
 
 /** cw's primary Button: color-1 with its accent text (A1). */
+/**
+ * react-email's `Button` sets its label's line height to 120 %, so the block
+ * padding that makes the button critwire's tap floor (D10) is half of what
+ * the label leaves of it.
+ */
+const BUTTON_LABEL_LINE = text.m.size * 1.2
+
 export const button: CSSProperties = {
   ...textStep('m'),
   backgroundColor: CW.color[1],
   borderRadius: px(radius.s),
   color: accentText,
   fontWeight: weights.medium,
-  padding: `${px(space.xs)} ${px(space.m)}`,
+  padding: `${px((TAP_MIN - BUTTON_LABEL_LINE) / 2)} ${px(space.m)}`,
   textDecoration: 'none',
 }
 

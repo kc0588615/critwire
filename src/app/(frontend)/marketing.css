@@ -175,7 +175,9 @@
   --prose-muted: var(--cte-text);
 
   margin-top: calc(-1 * var(--cw-header-h));
-  padding-block: calc(var(--cw-header-h) + clamp(var(--space-l), 5vw, calc(2 * var(--space-xxl))))
+  /* The opaque header covers the overlap, so the visible top padding is the
+     clamp alone: at least xxl, or a phone's band starts tight under it. */
+  padding-block: calc(var(--cw-header-h) + clamp(var(--space-xxl), 5vw, calc(2 * var(--space-xxl))))
     clamp(calc(2 * var(--space-xxl)), 8vw, calc(3 * var(--space-xxl)));
   background: var(--color-1-transparent);
 }

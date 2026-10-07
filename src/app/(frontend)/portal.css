@@ -94,37 +94,28 @@
   word-spacing: var(--fs-display-word-spacing);
 }
 
-/* Hero title: the hub's one loud line, xxl (xl on phones). */
+/* The display titles keep their step at every width: the entry titles and
+   the lede below them sit on l, so a title stepped down to l on a phone would
+   read no larger than its own content (seen in S24's shots). */
+
+/* Hero title: the hub's one loud line, xxl. */
 .fs-h1 {
   max-width: 12em;
+  font-size: var(--size-xxl);
+  line-height: var(--line-xxl);
+  text-wrap: balance;
+}
+
+/* Section title on the hub, and an ops page's title: xl. */
+.fs-h2,
+.fs-page-title {
   font-size: var(--size-xl);
   line-height: var(--line-xl);
   text-wrap: balance;
 }
 
-/* Section title on the hub, and an ops page's title: xl (l on phones). */
-.fs-h2,
-.fs-page-title {
-  font-size: var(--size-l);
-  line-height: var(--line-l);
-  text-wrap: balance;
-}
-
 .fs-h2 {
   max-width: 20em;
-}
-
-@media (min-width: 40rem) {
-  .fs-h1 {
-    font-size: var(--size-xxl);
-    line-height: var(--line-xxl);
-  }
-
-  .fs-h2,
-  .fs-page-title {
-    font-size: var(--size-xl);
-    line-height: var(--line-xl);
-  }
 }
 
 /* Entry title: a patch note, an issue, a feature. The ui face, heavy. */
@@ -135,11 +126,21 @@
   line-height: var(--line-l);
 }
 
+/* The lede under a title: m on phones, where l would wrap a short purpose
+   line to three lines and rival the title; l from 40rem. */
 .fs-lead {
   max-width: 36em;
-  font-size: var(--size-l);
-  letter-spacing: var(--letter-spacing-l);
-  line-height: var(--line-l);
+  font-size: var(--size-m);
+  letter-spacing: var(--letter-spacing-m);
+  line-height: var(--line-m);
+}
+
+@media (min-width: 40rem) {
+  .fs-lead {
+    font-size: var(--size-l);
+    letter-spacing: var(--letter-spacing-l);
+    line-height: var(--line-l);
+  }
 }
 
 .fs-body {
@@ -326,14 +327,22 @@
   object-fit: cover;
 }
 
-/* The name keeps to one line, so it never breaks inside a word. */
+/* The name keeps to one line, so it never breaks inside a word: m on
+   phones, where it shares the row with the site link, l from 40rem. */
 .fs-nav-name {
   overflow: hidden;
   overflow-wrap: normal;
-  font-size: var(--size-l);
-  line-height: var(--line-l);
+  font-size: var(--size-m);
+  line-height: var(--line-m);
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+@media (min-width: 40rem) {
+  .fs-nav-name {
+    font-size: var(--size-l);
+    line-height: var(--line-l);
+  }
 }
 
 /* The way back to the studio's own website, at every width: the portal
@@ -1332,6 +1341,7 @@
   column-gap: var(--space-m);
   row-gap: var(--space-xxs);
   align-items: baseline;
+  align-content: start;
   min-height: var(--tap-min);
   border-radius: var(--fs-radius-control);
   padding: var(--space-m);

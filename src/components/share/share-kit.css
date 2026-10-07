@@ -23,6 +23,13 @@
   line-height: var(--line-m);
 }
 
+/* Inline code is on cw's data role in both hosts: the portal gets it from
+   Tailwind's preflight, but the admin has none, so `<code>` there would fall
+   back to the browser's monospace. */
+.share-kit code {
+  font-family: var(--font-data);
+}
+
 .share-kit-title {
   margin: 0;
   font-size: var(--kit-title-size, var(--size-l));
@@ -204,11 +211,14 @@
   margin: 0;
 }
 
+/* A read-only well: the canvas fill sets it off an item's surface, and the
+   edge sets it off the page itself, where the fill alone is invisible. */
 .share-kit-value {
   overflow-wrap: anywhere;
   border-radius: var(--kit-radius);
   padding: var(--space-xs) var(--space-s);
   background: var(--kit-bg);
+  box-shadow: inset 0 0 0 var(--border-s) var(--kit-border);
   font-family: var(--font-data);
   font-size: var(--size-s);
   letter-spacing: var(--letter-spacing-s);

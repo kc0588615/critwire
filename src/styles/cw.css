@@ -60,7 +60,4 @@
   --cte-font-weight: var(--weight-ui-regular);
   --cte-line-height: var(--line-m);
   --cte-letter-spacing: var(--letter-spacing-m);
-
-  /* D10: critwire keeps a 44 px tap target over cw's 34 px controls. */
-  --tap-min: 44px;
 }

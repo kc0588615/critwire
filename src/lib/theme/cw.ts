@@ -132,5 +132,11 @@ export const CW = {
   },
 } as const satisfies CwTheme
 
+/**
+ * Critwire's own floor, not a cw value (D10): every control is at least this
+ * tall and wide, over cw's 34 px controls. `--tap-min` is generated from it.
+ */
+export const TAP_MIN = 44
+
 /** A motion curve as CSS and the Web Animations API write it. */
 export const cubicBezier = (easing: readonly number[]): string => `cubic-bezier(${easing.join(', ')})`
