@@ -9,6 +9,18 @@ const dirname = path.dirname(__filename)
 import { redirects } from './redirects'
 import { EMBED_CACHE_CONTROL, LOADER_CACHE_CONTROL } from './src/lib/embed/cacheControl'
 
+/**
+ * The share images' face and its per-character fallback
+ * (`src/lib/share/images.ts`), with their licences, which must travel
+ * with every copy of the fonts.
+ */
+const SHARE_IMAGE_FONTS = [
+  './src/lib/share/fonts/Inter-Medium.ttf',
+  './src/lib/share/fonts/OFL.txt',
+  './src/lib/share/fonts/DejaVuSans.ttf',
+  './src/lib/share/fonts/LICENSE',
+]
+
 const nextConfig: NextConfig = {
   // Required by the multi-stage Dockerfile (copies .next/standalone).
   output: 'standalone',
@@ -43,15 +55,16 @@ const nextConfig: NextConfig = {
 
     return webpackConfig
   },
-  // The share images read their font from disk at runtime, and the legal
+  // The share images read their fonts from disk at runtime, and the legal
   // pages, the boot check and the acceptance check read legal/*.md, so the
   // standalone output must carry them (keys are route globs; `[` would be
-  // a glob class).
+  // a glob class). InterDisplay-Bold.ttf is only for `pnpm generate:brand`
+  // and is never traced.
   outputFileTracingIncludes: {
     '/**': ['./legal/*.md'],
-    '/buttons/*': ['./src/lib/share/fonts/DejaVuSans.ttf'],
-    '/g/*/badge.svg': ['./src/lib/share/fonts/DejaVuSans.ttf'],
-    '/g/*/badge.png': ['./src/lib/share/fonts/DejaVuSans.ttf'],
+    '/buttons/*': SHARE_IMAGE_FONTS,
+    '/g/*/badge.svg': SHARE_IMAGE_FONTS,
+    '/g/*/badge.png': SHARE_IMAGE_FONTS,
   },
   // The app owns its framing policy and COOP, on every response (nginx must
   // not set either; tests/int/nginx-headers checks). 'self' keeps admin live

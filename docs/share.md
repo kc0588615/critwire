@@ -46,8 +46,13 @@ Twelve fixed files: `/buttons/<button>-<scheme>.<format>`, where
 `light` or `dark`, and `<format>` is `svg` or `png`. For example
 `/buttons/give-feedback-dark.png`.
 
-- They're the same for every game, in Critwire's colours: light suits
-  light pages, dark suits dark ones.
+- They're the same for every game, in critwire's cw colours: a cw
+  outline button with a small cyan mark beside the label. Light (white,
+  black text, a pale grey edge) suits light pages; dark (black, white
+  text, a dark grey edge) suits dark ones.
+- **Their sizes never change:** 36 px tall, and `give-feedback` 156,
+  `roadmap` 120 and `whats-new` 136 px wide. Studios lay out around
+  them, so a restyle keeps the widths and centres the label inside.
 - The PNG is drawn at twice the SVG's size, for sharp screens.
 - They're cached for a day (`Cache-Control: public, max-age=86400,
   s-maxage=86400`). Any other file name is a 404.
@@ -65,18 +70,20 @@ each public stage, then the latest update's version, for example
 - The version is the newest published update's version label, cut to
   24 characters. Updates without one are skipped.
 - It follows the game's theme: its accent, surface, text and border
-  colours, and its corner shape.
+  colours, and its corner shape (the same corner as the portal's
+  buttons).
 - **Caching:** every answer is cached for 5 minutes (`max-age=300,
   s-maxage=300`), so a new item, a hold or a suspension shows within
   that. A badge URL with a query string (`?v=2`) gets a 308 to the bare
   URL, so each game and format has one cache entry.
 - **The neutral image:** an unknown game, a held game and a suspended
-  studio's game all get the same grey image, `feedback` /
+  studio's game all get the same grey image (cw light), `feedback` /
   `unavailable`, with status 200. A host page never shows a broken
   image, and the badge never reveals whether a game exists.
 
-Text in the buttons and the badge is drawn as shapes (DejaVu Sans), so
-it looks the same everywhere, with or without fonts installed.
+Text in the buttons and the badge is drawn as shapes, in Inter Medium
+(DejaVu Sans for characters Inter lacks), so it looks the same
+everywhere, with or without fonts installed.
 
 ## The Embed tab
 

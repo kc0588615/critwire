@@ -26,6 +26,7 @@ export const STATUSES = ['success', 'warning', 'error'] as const
 export type Mode = 'light' | 'dark'
 export type Hex = `#${string}`
 export type NeutralStep = (typeof NEUTRAL_STEPS)[number]
+export type RadiusStep = (typeof RADIUS_STEPS)[number]
 type CubicBezier = readonly [number, number, number, number]
 
 export type CwTheme = {
@@ -34,7 +35,7 @@ export type CwTheme = {
   /** px */
   space: Record<(typeof SPACE_STEPS)[number], number>
   /** px */
-  radius: Record<(typeof RADIUS_STEPS)[number], number>
+  radius: Record<RadiusStep, number>
   /** px */
   border: Record<(typeof BORDER_STEPS)[number], number>
   /** The fallbacks after each role's face (the face itself is `src/fonts.ts`), and its weights. */

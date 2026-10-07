@@ -17,9 +17,14 @@ export const svgTitle = (svg: string): string => {
   return decode(match[1])
 }
 
-/** The root element's `height` attribute, in px. */
-export const svgHeight = (svg: string): number => {
-  const match = /<svg\b[^>]*\sheight="([\d.]+)"/.exec(svg)
-  if (!match) throw new Error(`No height on the root <svg>: ${svg.slice(0, 200)}`)
+const rootSize = (svg: string, attribute: 'height' | 'width'): number => {
+  const match = new RegExp(`<svg\\b[^>]*\\s${attribute}="([\\d.]+)"`).exec(svg)
+  if (!match) throw new Error(`No ${attribute} on the root <svg>: ${svg.slice(0, 200)}`)
   return Number(match[1])
 }
+
+/** The root element's `height` attribute, in px. */
+export const svgHeight = (svg: string): number => rootSize(svg, 'height')
+
+/** The root element's `width` attribute, in px. */
+export const svgWidth = (svg: string): number => rootSize(svg, 'width')

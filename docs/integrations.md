@@ -11,7 +11,7 @@
 | Tally | Optional contact/feedback forms (studio-owned) | `GameProjects` contact/reportForm; `TallyEmbed` |
 | `obscenity` (MIT, local) | Content filter for player submissions and studios' public text | `/lib/moderation/screenText.ts` |
 | DnD-Kit | Admin feedback kanban drag-and-drop | `src/components/admin/issues/*` |
-| `opentype.js` (MIT, local) + DejaVu Sans | Text in the button images and the live badge, drawn as paths | `/lib/share/images.ts`, `/lib/share/fonts` |
+| `opentype.js` (MIT, local) + Inter Medium and DejaVu Sans | Text in the button images and the live badge, drawn as paths | `/lib/share/images.ts`, `/lib/share/fonts` |
 | `marked` (MIT, local) | Renders the legal documents in `legal/` to HTML | `src/app/(frontend)/legal/[document]/page.tsx` |
 | Discord (optional) | `/feedback` and Send to critwire through HTTP interactions; posts through the webhook made at install; no bot (`docs/discord.md`) | `/lib/discord`, `/app/api/discord/*`, `/jobs/discord.ts` |
 
@@ -69,7 +69,7 @@ off the public site until a super admin approves it (see
 `docs/features.md`). `tests/int/content-screen` covers each failure
 mode.
 
-## `opentype.js` and DejaVu Sans (share images)
+## `opentype.js`, Inter and DejaVu Sans (share images)
 
 The hosted buttons and the live badge (`docs/share.md`) are SVG with
 their text drawn as glyph paths, never `<text>`, and sharp (already a
@@ -82,16 +82,27 @@ dependency) turns that SVG into a 2× PNG. The production runner
   (2026-05-06) is too new. Don't bump it casually; after any bump,
   `share-kit.spec.ts`, `badge.spec.ts` and the standalone check below
   must pass.
-- **The font** is `src/lib/share/fonts/DejaVuSans.ttf`, with its
-  licence beside it (`LICENSE`, from the `fonts-dejavu-core`
-  package). It's read once per process and never sent to browsers, so
-  it isn't subset; glyphs it lacks render as boxes.
-- **The standalone output must carry the font.** `next.config.ts`
-  traces it into the button and badge routes
-  (`outputFileTracingIncludes`). After `pnpm build`,
-  `.next/standalone/src/lib/share/fonts/DejaVuSans.ttf` must exist,
-  and `/buttons/give-feedback-dark.png` served by
-  `node .next/standalone/server.js` must show its label.
+- **The fonts** are in `src/lib/share/fonts/`, each read once per
+  process and never sent to browsers, so they aren't subset:
+  - `Inter-Medium.ttf` (Inter 4.1, OFL, licence in `OFL.txt`) is the
+    face, cw's ui font at its medium weight.
+  - `DejaVuSans.ttf` (licence in `LICENSE`, from the
+    `fonts-dejavu-core` package) draws any character Inter has no glyph
+    for, run by run, such as Armenian or Georgian in a version label.
+    Glyphs neither has render as boxes.
+  - `InterDisplay-Bold.ttf` is only for `pnpm generate:brand` (the
+    favicons and `og.png`), which runs at development time; it's never
+    traced.
+- **The standalone output must carry both runtime fonts.**
+  `next.config.ts` traces `Inter-Medium.ttf` and `DejaVuSans.ttf`, with
+  their licences, into the button and badge routes
+  (`outputFileTracingIncludes`). Each font's path is spelled out to the
+  file, because the build traces a path that names only the fonts
+  directory as the whole directory. After `pnpm build`, both
+  fonts must exist under `.next/standalone/src/lib/share/fonts/`, and
+  `InterDisplay-Bold.ttf` must not, and
+  `/buttons/give-feedback-dark.png` and `/g/no-such-game/badge.png`
+  served by `node .next/standalone/server.js` must show their labels.
 
 ## `marked` (legal pages)
 

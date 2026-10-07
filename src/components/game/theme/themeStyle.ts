@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react'
 
-import type { SiteThemeV1 } from '@/lib/game-portal/theme'
+import { SHAPE_RADIUS, type SiteThemeV1 } from '@/lib/game-portal/theme'
 
 type DisplayVoice = {
   family: string
@@ -44,13 +44,6 @@ const DISPLAY: Record<SiteThemeV1['typography'], DisplayVoice> = {
   },
 }
 
-/** `shape` maps to [surface radius, control radius]. */
-const RADIUS: Record<SiteThemeV1['shape'], [surface: string, control: string]> = {
-  balanced: ['0.5rem', '0.375rem'],
-  sharp: ['0px', '0px'],
-  soft: ['1rem', '0.625rem'],
-}
-
 const SECTION_Y: Record<SiteThemeV1['density'], string> = {
   cinematic: 'clamp(4.5rem, 9vw, 8rem)',
   compact: 'clamp(2.75rem, 5vw, 4.5rem)',
@@ -74,10 +67,10 @@ export const paletteVars = (colors: SiteThemeV1['colors'], prefix: string): CSSP
     [`${prefix}-error`]: colors.error,
   }) as CSSProperties
 
-/** The theme's two corner radii, for surfaces and for controls. */
+/** The theme's two corner radii, for surfaces and for controls, as cw radius tokens. */
 export const radiusVars = (shape: SiteThemeV1['shape']): CSSProperties => {
-  const [radius, radiusControl] = RADIUS[shape]
-  return { '--fs-radius': radius, '--fs-radius-control': radiusControl } as CSSProperties
+  const { surface, control } = SHAPE_RADIUS[shape]
+  return { '--fs-radius': `var(--radius-${surface})`, '--fs-radius-control': `var(--radius-${control})` } as CSSProperties
 }
 
 /**

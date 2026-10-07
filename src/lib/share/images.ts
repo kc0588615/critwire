@@ -7,6 +7,7 @@ import { parse, type Font } from 'opentype.js'
 import path from 'path'
 import sharp from 'sharp'
 
+import { CW } from '@/lib/theme/cw'
 import { escapeXml } from '@/utilities/escapeXml'
 
 import { SHARE_BUTTONS, type ButtonFile, type ButtonScheme, type ImageFormat, type ShareButtonID } from './buttons'
@@ -18,38 +19,67 @@ import { SHARE_BUTTONS, type ButtonFile, type ButtonScheme, type ImageFormat, ty
  * has fonts (the production runner has none).
  */
 
-const FONTS_DIR = path.join(process.cwd(), 'src/lib/share/fonts')
-
 const fonts = new Map<string, Font>()
 
 /**
- * A font from `src/lib/share/fonts/`, read once per process. A route that
- * draws with one needs it traced in `next.config.ts`, so the standalone
- * output has the file.
+ * The font at `file`, read once per process. Callers spell out the full
+ * path of each file: the build traces a path into the route that reads
+ * it, and a path naming only the fonts directory would carry every font
+ * in it, `InterDisplay-Bold.ttf` included. A route that draws with a
+ * font also has it traced in `next.config.ts`, so the standalone output
+ * has the file.
  */
-export const readFont = (fileName: string): Font => {
-  let font = fonts.get(fileName)
+export const readFont = (file: string): Font => {
+  let font = fonts.get(file)
   if (!font) {
-    const file = readFileSync(path.join(FONTS_DIR, fileName))
-    font = parse(file.buffer.slice(file.byteOffset, file.byteOffset + file.byteLength))
-    fonts.set(fileName, font)
+    const bytes = readFileSync(file)
+    font = parse(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength))
+    fonts.set(file, font)
   }
   return font
 }
 
-/** DejaVu Sans, the share images' face. */
-const shareFont = (): Font => readFont('DejaVuSans.ttf')
+/**
+ * The share images' face, Inter Medium, and DejaVu Sans for the
+ * characters Inter has no glyph for (Armenian and Georgian, in a version
+ * label), so those draw as letters, not boxes.
+ */
+const shareFonts = (): { face: Font; fallback: Font } => ({
+  face: readFont(path.join(process.cwd(), 'src/lib/share/fonts/Inter-Medium.ttf')),
+  fallback: readFont(path.join(process.cwd(), 'src/lib/share/fonts/DejaVuSans.ttf')),
+})
+
+/** `text` split into runs that one font draws: Inter where it has the glyph, else DejaVu. */
+const fontRuns = (text: string): { font: Font; text: string }[] => {
+  const { face, fallback } = shareFonts()
+  const runs: { font: Font; text: string }[] = []
+  for (const char of text) {
+    const font = face.charToGlyph(char).index === 0 ? fallback : face
+    const last = runs.at(-1)
+    if (last?.font === font) last.text += char
+    else runs.push({ font, text: char })
+  }
+  return runs
+}
+
+/** How wide `text` draws at `size` px. */
+const textWidth = (text: string, size: number): number =>
+  fontRuns(text).reduce((width, run) => width + run.font.getAdvanceWidth(run.text, size), 0)
 
 /** `text` as one SVG path at `size` px, with its baseline at `y`, and how wide it is. */
 export const glyphPath = (text: string, x: number, y: number, size: number): { d: string; width: number } => {
-  const face = shareFont()
-  return { d: face.getPath(text, x, y, size).toPathData(2), width: face.getAdvanceWidth(text, size) }
+  let d = ''
+  let advance = 0
+  for (const run of fontRuns(text)) {
+    d += run.font.getPath(run.text, x + advance, y, size).toPathData(2)
+    advance += run.font.getAdvanceWidth(run.text, size)
+  }
+  return { d, width: advance }
 }
 
 /** The baseline that centres capital letters of `size` px in a box `height` px tall. */
 export const centredBaseline = (height: number, size: number): number => {
-  const face = shareFont()
-  // Measured from "H": DejaVu's OS/2 table predates `sCapHeight`.
+  const { face } = shareFonts()
   const capHeight = (face.charToGlyph('H').getBoundingBox().y2 / face.unitsPerEm) * size
   if (!Number.isFinite(capHeight) || capHeight <= 0) throw new Error(`Bad cap height from the share font: ${capHeight}`)
   return (height + capHeight) / 2
@@ -74,39 +104,60 @@ export const svgDocument = ({
   )
 }
 
-const BUTTON = { height: 36, fontSize: 15, padding: 16, dot: 4, gap: 8, radius: 8 } as const
+const BUTTON = {
+  height: 36,
+  // The label's text step, and the smaller one it drops to should a label
+  // ever leave less than the minimum side padding (D16).
+  textSteps: [CW.text.m.size, CW.text.s.size],
+  minPadding: CW.space.m,
+  mark: CW.space.s,
+  markRadius: CW.radius.xs,
+  gap: CW.space.xs,
+  edge: CW.border.s,
+  radius: CW.radius.s,
+} as const
 
-// Critwire's brand (`src/components/marketing/brand.css`): the buttons are
-// generic, not themed per game.
-const BUTTON_PALETTES: Record<ButtonScheme, { background: string; border: string; text: string; dot: string }> = {
-  light: { background: '#ffffff', border: '#1d1f55', text: '#1d1f55', dot: '#f6d33c' },
-  dark: { background: '#1d1f55', border: '#4a4d6e', text: '#ffffff', dot: '#f6d33c' },
+/** cw's outline Button in the scheme's mode, with a color-1 mark. Generic, not themed per game. */
+const buttonPalette = (scheme: ButtonScheme): { background: string; border: string; text: string; mark: string } => {
+  const { neutral } = CW[scheme]
+  return { background: neutral[1], border: neutral[4], text: neutral[10], mark: CW.color[1] }
 }
 
-/** One hosted button: a yellow dot and its label on a rounded rectangle. */
+/**
+ * One hosted button: a color-1 mark and its label, centred in the
+ * button's published width. Throws when no text step leaves the minimum
+ * side padding, since the width can't change.
+ */
 export const buttonSVG = (id: ShareButtonID, scheme: ButtonScheme): string => {
   const button = SHARE_BUTTONS.find((candidate) => candidate.id === id)
   if (!button) throw new Error(`Unknown share button: ${id}`)
-  const palette = BUTTON_PALETTES[scheme]
-  const { height, fontSize, padding, dot, gap, radius } = BUTTON
+  const palette = buttonPalette(scheme)
+  const { height, textSteps, minPadding, mark, markRadius, gap, edge, radius } = BUTTON
+  const { width } = button
 
-  const textX = padding + dot * 2 + gap
-  const label = glyphPath(button.label, textX, centredBaseline(height, fontSize), fontSize)
-  const width = Math.ceil(textX + label.width + padding)
+  const contentWidth = (size: number): number => mark + gap + textWidth(button.label, size)
+  const fontSize = textSteps.find((size) => (width - contentWidth(size)) / 2 >= minPadding)
+  if (fontSize === undefined) {
+    throw new Error(`The "${button.label}" button leaves under ${minPadding} px of side padding in ${width} px`)
+  }
+  const markX = (width - contentWidth(fontSize)) / 2
+  const label = glyphPath(button.label, markX + mark + gap, centredBaseline(height, fontSize), fontSize)
+  const inset = edge / 2
 
   return svgDocument({
     width,
     height,
     label: button.label,
     body:
-      `<rect x="0.5" y="0.5" width="${width - 1}" height="${height - 1}" rx="${radius}" ` +
-      `fill="${palette.background}" stroke="${palette.border}"/>` +
-      `<circle cx="${padding + dot}" cy="${height / 2}" r="${dot}" fill="${palette.dot}"/>` +
+      `<rect x="${inset}" y="${inset}" width="${width - edge}" height="${height - edge}" rx="${radius}" ` +
+      `fill="${palette.background}" stroke="${palette.border}" stroke-width="${edge}"/>` +
+      `<rect x="${markX.toFixed(2)}" y="${(height - mark) / 2}" width="${mark}" height="${mark}" rx="${markRadius}" ` +
+      `fill="${palette.mark}"/>` +
       `<path fill="${palette.text}" d="${label.d}"/>`,
   })
 }
 
-const BADGE = { height: 24, fontSize: 12, padding: 8 } as const
+const BADGE = { height: 24, fontSize: CW.text.s.size, padding: CW.space.s } as const
 
 /** What a badge says and how it looks: a label segment, then a value segment. */
 export type BadgeModel = {

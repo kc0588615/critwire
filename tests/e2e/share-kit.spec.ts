@@ -5,18 +5,21 @@ import { gameEditHref, gameShareHref } from '../../src/lib/admin/paths'
 import { portalPaths } from '../../src/lib/game-portal/paths'
 import { BASE_URL, storageStatePath } from './support/env'
 import { createProject, expect, newRequestContext, test } from './support/fixtures'
-import { svgHeight, svgTitle } from './support/svg'
+import { svgHeight, svgTitle, svgWidth } from './support/svg'
 
 /**
  * The "Put critwire on your site" kit: the hosted button images studios
  * link from Steam, itch.io, Carrd, Linktree and READMEs.
  */
 
+// The published sizes are a contract with studios' pages, which lay out
+// around them, so they're stated here rather than imported.
 const BUTTONS = [
-  { id: 'give-feedback', label: 'Give feedback' },
-  { id: 'roadmap', label: 'Roadmap' },
-  { id: 'whats-new', label: "What's new" },
+  { id: 'give-feedback', label: 'Give feedback', width: 156 },
+  { id: 'roadmap', label: 'Roadmap', width: 120 },
+  { id: 'whats-new', label: "What's new", width: 136 },
 ] as const
+const BUTTON_HEIGHT = 36
 
 const ONE_DAY = 'public, max-age=86400, s-maxage=86400'
 
@@ -24,7 +27,7 @@ test.describe('S20.1 the hosted button images', () => {
   test('every button answers in both schemes and formats, and nothing else does', async ({ playwright }) => {
     const player = await newRequestContext(playwright)
 
-    for (const { id, label } of BUTTONS) {
+    for (const { id, label, width } of BUTTONS) {
       for (const scheme of ['light', 'dark']) {
         await test.step(`${id}-${scheme}`, async () => {
           const svgFile = `/buttons/${id}-${scheme}.svg`
@@ -39,6 +42,9 @@ test.describe('S20.1 the hosted button images', () => {
           expect(svg, svgFile).toContain('<path')
           expect(svg, svgFile).not.toContain('<text')
           expect(svg, svgFile).not.toMatch(/<script|href=/i)
+          // B4: the published size.
+          expect(svgWidth(svg), `${svgFile} width`).toBe(width)
+          expect(svgHeight(svg), `${svgFile} height`).toBe(BUTTON_HEIGHT)
 
           const pngFile = `/buttons/${id}-${scheme}.png`
           const pngResponse = await player.get(pngFile)
@@ -47,7 +53,8 @@ test.describe('S20.1 the hosted button images', () => {
           expect(pngResponse.headers()['cache-control'], pngFile).toBe(ONE_DAY)
           const png = await sharp(await pngResponse.body()).metadata()
           expect(png.format, pngFile).toBe('png')
-          expect(png.height, `${pngFile} is 2×`).toBe(svgHeight(svg) * 2)
+          expect(png.width, `${pngFile} is 2× (B4)`).toBe(width * 2)
+          expect(png.height, `${pngFile} is 2×`).toBe(BUTTON_HEIGHT * 2)
         })
       }
     }

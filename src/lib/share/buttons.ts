@@ -5,11 +5,16 @@ import type { PortalPaths } from '@/lib/game-portal/paths'
  * `/buttons/[file]` serves them. Pure, so client components can import it.
  */
 
+/**
+ * `width` is each image's published width in px (36 px tall; the PNG is
+ * twice both). It's a contract: studios' pages lay out around it and
+ * cache the images for long, so a restyle never changes it.
+ */
 export const SHARE_BUTTONS = [
-  { id: 'give-feedback', label: 'Give feedback', link: 'feedback' },
-  { id: 'roadmap', label: 'Roadmap', link: 'roadmap' },
-  { id: 'whats-new', label: "What's new", link: 'updates' },
-] as const satisfies readonly { id: string; label: string; link: keyof PortalPaths }[]
+  { id: 'give-feedback', label: 'Give feedback', link: 'feedback', width: 156 },
+  { id: 'roadmap', label: 'Roadmap', link: 'roadmap', width: 120 },
+  { id: 'whats-new', label: "What's new", link: 'updates', width: 136 },
+] as const satisfies readonly { id: string; label: string; link: keyof PortalPaths; width: number }[]
 
 export type ShareButton = (typeof SHARE_BUTTONS)[number]
 export type ShareButtonID = ShareButton['id']

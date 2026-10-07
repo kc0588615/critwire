@@ -16,7 +16,8 @@ const WORDMARK = 'critwire'
 
 // The brand role at its heavy weight: Inter's display cut, as `next/font`
 // sets it at these sizes (D1). Drawn as glyph paths, so no file needs a font.
-const face = readFont('InterDisplay-Bold.ttf')
+// Only this script reads it, so no route traces it.
+const face = readFont(path.join(import.meta.dirname, '../share/fonts/InterDisplay-Bold.ttf'))
 
 /** The favicon's own size: the mark's corner is cw's m radius at this size. */
 const FAVICON_SIZE = 32

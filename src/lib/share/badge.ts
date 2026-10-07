@@ -4,7 +4,8 @@ import { getGameProject } from '@/lib/game-portal/getGameProject'
 import { countPublicIssuesByStage } from '@/lib/game-portal/issues'
 import { getLatestVersionLabel } from '@/lib/game-portal/patchNotes'
 import { resolveProjectTheme } from '@/lib/game-portal/projectTheme'
-import type { SiteThemeV1 } from '@/lib/game-portal/theme'
+import { SHAPE_RADIUS, type SiteThemeV1 } from '@/lib/game-portal/theme'
+import { CW } from '@/lib/theme/cw'
 
 import type { ImageFormat } from './buttons'
 import { type BadgeModel, type ImageBody, badgeSVG, constantImage, encodeImage, imageResponse } from './images'
@@ -20,7 +21,8 @@ const BADGE_LABEL = 'feedback'
 const FIVE_MINUTES_SECONDS = 300
 const ONE_DAY_SECONDS = 86_400
 
-const RADIUS: Record<SiteThemeV1['shape'], number> = { sharp: 0, balanced: 4, soft: 8 }
+/** The badge is a control-sized chip, so it takes the shape's control radius. */
+const badgeRadius = (shape: SiteThemeV1['shape']): number => CW.radius[SHAPE_RADIUS[shape].control]
 
 /**
  * What a held game, a suspended studio's game and an unknown slug all
@@ -30,8 +32,15 @@ const RADIUS: Record<SiteThemeV1['shape'], number> = { sharp: 0, balanced: 4, so
 const NEUTRAL_BADGE: BadgeModel = {
   label: BADGE_LABEL,
   value: 'unavailable',
-  colors: { label: '#555555', labelText: '#ffffff', value: '#eeeeee', valueText: '#333333', border: '#bbbbbb' },
-  radius: RADIUS.balanced,
+  // cw light.
+  colors: {
+    label: CW.light.neutral[8],
+    labelText: CW.light.neutral[1],
+    value: CW.light.neutral[3],
+    valueText: CW.light.neutral[10],
+    border: CW.light.neutral[4],
+  },
+  radius: badgeRadius('balanced'),
 }
 
 const neutralBadgeImage = (format: ImageFormat): Promise<ImageBody> =>
@@ -63,7 +72,7 @@ const gameBadgeModel = async (project: GameProject): Promise<BadgeModel> => {
       valueText: colors.foreground,
       border: colors.border,
     },
-    radius: RADIUS[shape],
+    radius: badgeRadius(shape),
   }
 }
 

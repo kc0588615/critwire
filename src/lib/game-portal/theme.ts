@@ -1,5 +1,7 @@
 import { z } from 'zod'
 
+import type { RadiusStep } from '@/lib/theme/cw'
+
 import { HEX_COLOR_RE, contrastRatio } from './contrast'
 
 const hexColor = z.string().regex(HEX_COLOR_RE, 'Must be a 6-digit hex color like #22d3ee')
@@ -63,6 +65,17 @@ export const siteTypographySchema = z.enum(['modern', 'editorial', 'technical'])
 export const siteShapeSchema = z.enum(['sharp', 'balanced', 'soft'])
 export const siteDensitySchema = z.enum(['compact', 'cinematic'])
 export const siteMotionSchema = z.enum(['off', 'subtle'])
+
+/**
+ * `shape` on cw's radius scale: the step for surfaces (cards, forms,
+ * dialogs) and the one for controls (buttons, fields, the badge). The
+ * portal, the embeds and the badge all read this one table.
+ */
+export const SHAPE_RADIUS: Record<z.infer<typeof siteShapeSchema>, { surface: RadiusStep; control: RadiusStep }> = {
+  sharp: { surface: 'zero', control: 'zero' },
+  balanced: { surface: 'm', control: 's' },
+  soft: { surface: 'l', control: 'm' },
+}
 
 export const siteThemeSchema = z.strictObject({
   colors: siteThemeColorsSchema.default(DEFAULT_THEME_COLORS),
