@@ -96,7 +96,7 @@ WCAG AA wins over snapshot values: 4.5:1 for text, 3:1 for large text, field bou
 - **D7.** Rest tabs use n7, and the selected tab keeps a 2 px bar.
 - **D8.** Pressed is the accent fill (embed), or n3 plus heavy weight (admin).
 - **D9.** The checkbox stays native, with `accent-color` = text (cw's `controlSize` has no resolved values).
-- **D10.** The 44 px tap-target floor is kept over cw's 34 px controls.
+- **D10.** The 44 px tap-target floor is kept over cw's 34 px controls. It's `TAP_MIN` in `src/lib/theme/cw.ts`, generated as `--tap-min`.
 - **D11.** Portals: cw dark is the default theme, with `standard` typography, the `SHAPE_RADIUS` steps, density as multiples of `--space-xxl`, and cw's motion curves. The studio's saved theme applies on top.
 - **D12.** The portal's two-tone fg/bg focus ring is kept: it's the only ring guaranteed under any valid studio palette, where cw's 50 % ring could fall to about 2:1.
 - **D13.** Embeds use the host page's font for every role.

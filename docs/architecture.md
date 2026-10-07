@@ -290,7 +290,9 @@ once, and every surface reads them as named tokens.
 - **The source:** `src/lib/theme/cw.ts` holds cw as typed data: text
   steps, spacing, radii, borders, weights, motion, font fallbacks, the
   four colours, the status colours and the ten neutrals for light and
-  dark. It is the only file with cw's literal values.
+  dark. It is the only file with cw's literal values. Beside them it
+  exports `TAP_MIN`, critwire's own 44 px tap-target floor (not a cw
+  value), which the generator writes as `--tap-min` and the emails use.
 - **`pnpm generate:theme`** (`src/lib/theme/generate.ts`, through
   `tokensCss.ts`) writes `src/styles/cw-tokens.css`: every value as a
   CSS variable, mode-dependent ones once as `light-dark(<light>, <dark>)`.
