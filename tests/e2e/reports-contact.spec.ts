@@ -9,7 +9,7 @@ import { ageJob, countInDatabase } from './support/db'
 import { storageStatePath, TURNSTILE_DUMMY_TOKEN } from './support/env'
 import { createIssue, createProject, createReport, expect, submitWithTurnstile, test } from './support/fixtures'
 import { runDueJobs } from './support/jobs'
-import { expectPlayerFormNotices } from './support/legal'
+import { expectPlayerFormNotices, SENSITIVE_INFO_WARNING } from './support/legal'
 
 /**
  * Player reports and the contact form: the public forms behind Turnstile,
@@ -163,7 +163,8 @@ test.describe('S5.1–S5.3 player reports', () => {
         await expect(form.getByLabel('Title')).toBeVisible()
         await expect(form.locator('input[type="email"]')).toHaveCount(0)
         await expect(form.getByLabel(/email/i)).toHaveCount(0)
-        await expect(form.getByText(/email/i)).toHaveCount(0)
+        // The only words about email are the warning not to write one.
+        await expect(form.getByText(/email/i)).toHaveText([SENSITIVE_INFO_WARNING])
       })
     }
 
@@ -506,7 +507,7 @@ test('S5.15 the feedback and contact forms warn against sensitive details and sh
     const form = page.locator('form[action$="/contact/submit"]')
     await expectPlayerFormNotices(form, {
       submit: 'Send message',
-      textFields: ['Name (optional)', 'Subject (optional)', 'Message'],
+      textFields: ['Nickname (optional)', 'Subject (optional)', 'Message'],
     })
     const email = form.getByLabel(`Email (optional, 13 or older), so the ${name} team can reply`, { exact: true })
     await expect(email).toHaveAttribute('type', 'email')

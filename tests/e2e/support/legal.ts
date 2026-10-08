@@ -85,9 +85,11 @@ export async function acceptLegal(
   return `${location.pathname}${location.search}`
 }
 
-/** The Brief's warning, beside every free-text field a player fills in (Goal 3). */
-export const SENSITIVE_INFO_WARNING =
-  'Don’t include passwords, API keys, access tokens, private keys, payment details, health information or anything else confidential or sensitive.'
+/**
+ * The player warning, beside every free-text field a player fills in, on the
+ * web and in Discord (plans/2026-10-08-cc-site.md, Goal 4).
+ */
+export const SENSITIVE_INFO_WARNING = 'Don’t write your real name, email, school, where you live or any password.'
 
 /** The Brief's notice, beside every submit button a player presses (Goal 3). */
 export const SUBMIT_NOTICE = 'By sending this, you agree to the Terms of Service and acknowledge the Privacy Policy.'

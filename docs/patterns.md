@@ -265,8 +265,8 @@ acceptances) stays and now shows "Deleted user".
 
 Every legal sentence is written once, in `src/lib/legal/copy.ts` (no
 React, no fs, so Discord code can import it): the submit notice, the
-sensitive-info warning and Discord's shorter one, `/feedback`'s
-description and the consent boxes' labels. A sentence that names
+sensitive-info warning (one sentence for the web and Discord, so at
+most 100 characters), `/feedback`'s description and the consent boxes' labels. A sentence that names
 documents is stored in parts, and each surface links them its own way:
 `LegalCopyText` on the web, `noticeMarkdown` on Discord. The web uses
 one component each (`src/components/legal/`): `LegalNotice` beside a

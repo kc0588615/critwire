@@ -29,6 +29,7 @@ import {
   snowflake,
 } from './support/discord'
 import { createProject, expect, hold, newRequestContext, test } from './support/fixtures'
+import { SENSITIVE_INFO_WARNING } from './support/legal'
 
 /**
  * Discord's interactions endpoint (plans/2026-10-02-discord.md §5, §13).
@@ -36,10 +37,9 @@ import { createProject, expect, hold, newRequestContext, test } from './support/
  * calls the real Discord.
  */
 
-/** The Brief's notice and Discord's shorter warning, as players read them. */
+/** The command's notice and the player warning, as players read them. */
 const FEEDBACK_DESCRIPTION =
-  'Send a bug or idea to the game’s team. Sending it accepts critwire’s Terms and Privacy Policy.'
-const WARNING = 'Don’t include passwords, keys, tokens, payment or health details, or anything sensitive.'
+  'Send a bug or idea to the game’s team. Sending it accepts the Terms and Privacy Policy.'
 const NOTICE = `By sending this, you agree to the [Terms of Service](<${BASE_URL}/legal/terms>) and acknowledge the [Privacy Policy](<${BASE_URL}/legal/privacy>).`
 
 /** Every text field carries the warning under its label; a select carries none. */
@@ -47,7 +47,7 @@ const expectWarnings = (form: DiscordForm) => {
   for (const field of form.components) {
     expect(field, field.component.custom_id).toEqual(
       field.component.type === 4
-        ? expect.objectContaining({ description: WARNING })
+        ? expect.objectContaining({ description: SENSITIVE_INFO_WARNING })
         : expect.not.objectContaining({ description: expect.anything() }),
     )
   }

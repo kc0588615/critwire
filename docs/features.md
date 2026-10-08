@@ -303,10 +303,9 @@ Full detail in `docs/discord.md`.
   Discord authorization picks the server and the posts channel.
 - **No voting from Discord.** A Discord account would be a second vote
   for the same person.
-- **Notice and warning:** every text field in the Discord forms warns
-  against sensitive information (a shorter sentence than the web's,
-  because Discord allows 100 characters), and both confirmations end
-  with the Terms notice.
+- **Notice and warning:** every text field in the Discord forms carries
+  the web forms' warning against sharing personal details, and both
+  confirmations end with the Terms notice.
 
 ## Updates ↔ feedback
 
@@ -450,9 +449,9 @@ describe the hosted service only; a self-hosted instance replaces them
   bump. Super admins act for the operator and never accept.
 - **Players** see "By sending this, you agree to the Terms of Service
   and acknowledge the Privacy Policy." beside the submit button of the
-  feedback, contact and abuse-report forms, and a warning against
-  passwords, keys, payment, health or other sensitive details at the
-  top of each form, which every free-text field names in its
+  feedback, contact and abuse-report forms, and a warning in
+  plain words for grades 6–12 ("Don’t write your real name, email,
+  school, where you live or any password.") at the top of each form, which every free-text field names in its
   `aria-describedby`. Discord shows both too (see Discord).
 - **Footer links** (Terms · Privacy · Copyright) on critwire's own pages,
   every portal page, the account pages and the admin's sign-in.

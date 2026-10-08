@@ -85,7 +85,7 @@ export default async function ContactPage({ params, searchParams }: Args) {
             <form action={paths.contactSubmit} className="fs-form" method="post">
               <SensitiveInfoWarning />
 
-              <FormField describedBy={SENSITIVE_INFO_WARNING_ID} id="name" label="Name (optional)">
+              <FormField describedBy={SENSITIVE_INFO_WARNING_ID} id="name" label="Nickname (optional)">
                 {(control) => (
                   <input {...control} className="fs-input" maxLength={120} name="name" type="text" />
                 )}

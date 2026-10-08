@@ -31,20 +31,20 @@ export const SUBMIT_NOTICE: readonly LegalCopyPart[] = [
   '.',
 ]
 
-/** Beside every free-text field a player fills in. */
+/**
+ * Beside every free-text field a player fills in, on the web and in Discord.
+ * Players may be in grades 6–12, so it names what not to share in their
+ * words. At most 100 characters: a Discord form field's description limit.
+ */
 export const SENSITIVE_INFO_WARNING =
-  'Don’t include passwords, API keys, access tokens, private keys, payment details, health information or anything else confidential or sensitive.'
+  'Don’t write your real name, email, school, where you live or any password.'
 
 /**
- * Discord's shorter warning: a form field's description holds at most 100
- * characters, too few for `SENSITIVE_INFO_WARNING`.
+ * `/feedback`'s description in Discord, at most 100 characters. Neutral words:
+ * any game's server can use it, and the reply links the documents.
  */
-export const SENSITIVE_INFO_WARNING_SHORT =
-  'Don’t include passwords, keys, tokens, payment or health details, or anything sensitive.'
-
-/** `/feedback`'s description in Discord, at most 100 characters. */
 export const DISCORD_FEEDBACK_DESCRIPTION =
-  'Send a bug or idea to the game’s team. Sending it accepts critwire’s Terms and Privacy Policy.'
+  'Send a bug or idea to the game’s team. Sending it accepts the Terms and Privacy Policy.'
 
 /**
  * `SUBMIT_NOTICE` as Discord markdown: each document a masked link to

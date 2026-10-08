@@ -26,7 +26,7 @@ import {
   reportFieldsSchema,
   reportRefusal,
 } from '@/lib/game-portal/reports'
-import { noticeMarkdown, SENSITIVE_INFO_WARNING_SHORT } from '@/lib/legal/copy'
+import { noticeMarkdown, SENSITIVE_INFO_WARNING } from '@/lib/legal/copy'
 import { LEGAL_LINKS } from '@/lib/legal/paths'
 import { getLogger } from '@/lib/logger'
 import { withRef } from '@/lib/share/kit'
@@ -111,7 +111,7 @@ const legalNotice = (): string => noticeMarkdown((document) => absoluteURL(LEGAL
 /** A free-text field, with the warning against sensitive information under its label. */
 const textField = (field: Omit<TextFieldSpec, 'description' | 'kind'>): TextFieldSpec => ({
   ...field,
-  description: SENSITIVE_INFO_WARNING_SHORT,
+  description: SENSITIVE_INFO_WARNING,
   kind: 'text',
 })
 
