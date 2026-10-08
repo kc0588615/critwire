@@ -21,16 +21,17 @@ header's links lead to the portal's 404.
 
 Critwire's code is open source under the MIT License. Each self-hosted
 instance is run by its own operator under its own terms: critwire.com's
-Terms of Service, Privacy Policy and Copyright Policy cover only the
-hosted service at critwire.com, and don't apply to your instance.
+Terms of Service, Privacy Policy and Copyright Policy cover only
+critwire.com, which is Critter Connect's feedback and updates site, and
+don't apply to your instance.
 
 `legal/` holds critwire.com's documents (`terms.md`, `privacy.md`,
 `copyright.md`), and every instance serves them at `/legal/*`, links
 them in its footers and on its forms, and asks every account but a
 super admin to accept the Terms and the Privacy Policy. **Replace them
 with your own before anyone else uses your instance.** They name
-Haunted Pavement LLC, critwire.com's services and its contact address,
-none of which is true of yours.
+Haunted Pavement LLC, Critter Connect, critwire.com's services and its
+contact address, none of which is true of yours.
 
 - Keep the three file names and the front matter: exactly `version`,
   `effective` (`YYYY-MM-DD`) and `status` (`draft` or `final`). The
@@ -121,16 +122,29 @@ traffic embeds the board, put a CDN in front that honours
 
 ## Upgrading
 
-### The cw look
+### The cc look and the site identity
 
-Critwire's pages, the admin, emails and brand files moved to cw
-(`docs/architecture.md`, Styling). Nothing to do: the two migrations
-run on boot. New games default to cw dark with `standard` typography,
-and every theme saved before keeps its look, because the migration
-writes the old default into each slot a saved theme left unset. If you
-replaced `public/favicon.svg`, `public/favicon.ico` or the default
-share image with your own, keep yours when you merge; the default share image is now
-`public/og.png`.
+Critwire's pages, the portals, the embeds, the admin, emails, the share
+images and the brand files moved to cc, Critter Connect's design
+language (`GUI.md`, and `docs/architecture.md`, Styling). Nothing to
+run: the migrations apply on boot.
+
+- **Themes:** new games get the cc dark palette with `standard`
+  typography, and a game on that default shows cc light and dark by the
+  visitor's system. Every theme saved before keeps its look in one
+  mode: `cw_portal_defaults` wrote the old default into each slot a
+  saved theme left unset, and `cc_portal_defaults` changed only the
+  column defaults.
+- **Fonts:** Nunito and Open Runde, self-hosted from `public/fonts/`
+  (OFL, licences beside them), in place of the old fonts. Pages make no
+  font request to a third party.
+- **`/` is your game's hub**, not critwire's home page, which is gone.
+  Set `SITE` in `src/lib/site.ts` and the files in `public/brand/` (see
+  Your site), then run `pnpm generate:brand` for the favicons and the
+  default share image (`public/og.png`). Delete the old home page's
+  contact-link variable from your `.env` (the one step 4 of "This
+  release on critwire.com" in `docs/deploy.md` deletes): nothing reads
+  it any more.
 
 ### Uploads moved out of `public/media`
 

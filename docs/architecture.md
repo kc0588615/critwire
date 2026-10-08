@@ -353,11 +353,19 @@ mode.
 
 | Surface | Mode |
 | --- | --- |
-| Critwire's pages (`(frontend)`) | The visitor's system setting: the layout's `viewport.colorScheme` and `.cw-root` are `light dark`. No toggle. |
+| The site's pages (`(frontend)`) | The visitor's system setting: the layout's `viewport.colorScheme` and `.cw-root` are `light dark`. No toggle. |
 | Admin | Payload's own light, dark or auto switch: Payload sets `color-scheme: dark` on `html[data-theme='dark']`, and `custom.scss` maps Payload's variables onto the theme. |
-| Portals | The game's theme: `themeStyle` sets `colorScheme` from the palette's background (`backgroundScheme` in `src/lib/game-portal/contrast.ts`). New games default to cc dark. |
-| Embeds | `data-theme` / `?theme=`: `.cw-embed` sets `color-scheme` per mode (`docs/embed.md`, Modes and fonts). |
+| Portals | The game's palette, through `portalPalettes` (`src/lib/game-portal/theme.ts`): a palette equal to the default (cc dark, which new games get) shows `CC_PALETTES`, cc light and dark by the visitor's system setting; any other saved palette is one mode, its `color-scheme` from its background (`backgroundScheme` in `src/lib/game-portal/contrast.ts`). |
+| Embeds | `data-theme` / `?theme=`: `.cw-embed` sets `color-scheme` per mode (`docs/embed.md`, Modes and fonts). The default palette gets `CC_PALETTES`; any other serves its own scheme, and cc's other mode in the game's accent where it reads (`src/lib/embed/theme.ts`). |
 | Emails | The theme's light mode only (`src/lib/email/templates/styles.ts`), inline styles and no web font. |
+
+**The default palette is a contract.** "Equal to the default" is how
+the portal and the embeds know a game wants both modes, and the
+database's column defaults hold the same values (migration
+`cc_portal_defaults`). A future change to `DEFAULT_THEME_COLORS` ships
+a migration that decides explicitly what rows equal to the old default,
+and unset slots, become; it must never happen silently (the comment at
+`DEFAULT_THEME_COLORS`, and `docs/features.md`, Theme).
 
 ## Project structure
 
@@ -417,6 +425,7 @@ mode.
   /styles                 tokens.css (generated), fonts.css (faces) and roles.css (roles)
   /jobs                   Payload Jobs Queue task definitions
   /migrations             Payload migrations (run on boot in production)
+  /seed                   the Critter Connect demo seed, the one-off content command (siteContent.ts) and their shared data
   payload.config.ts       main Payload configuration
 legal/                    critwire.com's Terms, Privacy and Copyright (markdown, versioned front matter)
 public/embed/v1.js        the embed loader (hand-written, no build step)
@@ -428,13 +437,15 @@ docker-compose.yml / Dockerfile / nginx.conf
 
 - **Local seeding:** run content seeds through the app process, for
   example `pnpm seed:critter-connect` against a running local app with
-  `CRON_SECRET` set. Do not run `pnpm dev` against a database currently
+  `CRON_SECRET` set. Never run the seed on critwire.com: it would put
+  the demo's sample content back (`docs/deploy.md`, The content
+  command). Do not run `pnpm dev` against a database currently
   owned by the Docker app stack; Payload dev push can leave development
   migration state that blocks the production-like container on restart.
 - **Backups:** the operator's job; critwire makes none itself.
   `docs/deploy.md` shows one way (a daily `pg_dump` uploaded to R2).
 - **Errors:** Sentry on Next.js server, client, and jobs-queue tasks.
-- **Uptime:** Better Stack pings marketing site, canary tenant portal,
-  admin login, health endpoint.
+- **Uptime:** Better Stack pings the site's game hub, admin login,
+  health endpoint.
 - **Logging:** structured JSON via pino — hooks/access-control events,
   email delivery, contact form routing, domain resolution.

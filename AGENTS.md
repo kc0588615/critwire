@@ -19,6 +19,12 @@ studio's own site) and does not compete with them.
   the content filter.
 - **No AI site generation.**
 
+**critwire.com serves one game:** it is Critter Connect's feedback and
+updates site (`SITE` in `src/lib/site.ts`; `/` redirects to its hub),
+in the game's cc look (`GUI.md`), with signup and the other
+multi-studio machinery dormant. Its deploy steps are in
+`docs/deploy.md`.
+
 Multi-tenant: one tenant is one studio. Built for a solo founder, so
 every decision minimizes operational overhead and maximizes shipping
 velocity.

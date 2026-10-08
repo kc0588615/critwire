@@ -11,6 +11,7 @@
 | Tally | Optional contact/feedback forms (studio-owned) | `GameProjects` contact/reportForm; `TallyEmbed` |
 | `obscenity` (MIT, local) | Content filter for player submissions and studios' public text | `/lib/moderation/screenText.ts` |
 | DnD-Kit | Admin feedback kanban drag-and-drop | `src/components/admin/issues/*` |
+| Nunito and Open Runde (OFL, self-hosted) | The pages' fonts: Nunito for the ui, brand and editorial roles, Open Runde for data; no font service is called | `src/styles/fonts.css`, `public/fonts/` |
 | `opentype.js` (MIT, local) + Nunito Bold and DejaVu Sans | Text in the button images and the live badge, drawn as paths | `/lib/share/images.ts`, `/lib/share/fonts` |
 | `marked` (MIT, local) | Renders the legal documents in `legal/` to HTML | `src/app/(frontend)/legal/[document]/page.tsx` |
 | Discord (optional) | `/feedback` and Send to critwire through HTTP interactions; posts through the webhook made at install; no bot (`docs/discord.md`) | `/lib/discord`, `/app/api/discord/*`, `/jobs/discord.ts` |
@@ -254,8 +255,9 @@ Single source of truth for deploy config (Docker Compose `.env`);
   onboarding, "Create your portal", "Report this page"); unset to
   self-host, any other value stops the server at startup
 - `CRITWIRE_HIDE_POWERED_BY` — `1` hides "Powered by Critwire" in
-  the portal footer and the embeds, on a self-hosted instance only;
-  unset or empty shows it. Any other value, or `1` with
+  the portal footer and the embeds, on an instance without open signup
+  (critwire.com, which serves only Critter Connect, sets it); unset or
+  empty shows it. Any other value, or `1` with
   `CRITWIRE_OPEN_SIGNUP=1`, stops the server at startup
 - `CRITWIRE_LIMIT_GAMES_PER_STUDIO`, `CRITWIRE_LIMIT_MEDIA_MB_PER_STUDIO`,
   `CRITWIRE_LIMIT_PUBLIC_FEEDBACK_PER_GAME` — the hosted limits (3, 100

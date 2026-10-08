@@ -21,6 +21,16 @@ read what shipped.
   through the content filter.
 - **No AI site generation.**
 
+**critwire.com** serves one game: it is Critter Connect's public
+feedback and updates site, operated by Haunted Pavement LLC, in the
+game's cc look and following the visitor's light or dark setting. `/`
+redirects to the game's hub, and "Powered by Critwire" is hidden there.
+Its players are students in grades 6–12 without accounts, so the site
+collects as little as it can (`legal/privacy.md`). Everything below
+still describes the product: open signup, onboarding, the hosted
+limits, the share kit and Discord stay in the code, dormant on
+critwire.com, and work on any instance that turns them on.
+
 **Aggregation-first:** build native features only when no adequate
 external tool exists for the studio's public-facing needs; otherwise
 link out. The product is NOT: a website builder, documentation
@@ -86,7 +96,10 @@ across studios). Fields:
   `cw_portal_defaults` wrote the old default into each slot they had
   left unset, and never changed a value a studio set. Migration
   `cc_portal_defaults` then changed only the column defaults to cc
-  dark; no stored palette changed. The default's value is a
+  dark; no stored palette changed. A game whose palette equals the
+  default shows cc light and cc dark by the visitor's system setting;
+  any other saved palette is one mode, the same whatever the visitor's
+  system. The default's value is a
   compatibility contract: a future change to it ships a migration that
   decides explicitly what rows equal to the old default, and unset
   slots, become.
@@ -425,8 +438,9 @@ the feedback limit waits for review instead.
 
 critwire.com's Terms of Service, Privacy Policy and Copyright Policy
 live in `legal/` (`terms.md`, `privacy.md`, `copyright.md`). They
-describe the hosted service only; a self-hosted instance replaces them
-(`docs/self-hosting.md`).
+describe critwire.com as it runs today, Critter Connect's feedback and
+updates site, with a short section on its admin accounts; a self-hosted
+instance replaces them (`docs/self-hosting.md`).
 
 - **Versions:** each file's front matter holds `version`, `effective`
   and `status` (`draft` or `final`), and is the one source of the

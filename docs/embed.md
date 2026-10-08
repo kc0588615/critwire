@@ -77,7 +77,9 @@ do.
   accent colour, or the neutral accent where the game's wouldn't read
   on it. `auto` follows the visitor's setting live. The neutral
   palettes are the theme's own neutrals (`src/lib/theme/tokens.ts`):
-  white in light, Critter Connect's dark teal `#051411` in dark.
+  white in light, Critter Connect's dark teal `#051411` in dark. A game
+  on the default palette (cc dark) gets cc light and cc dark as they
+  are, as its portal does.
 - **The loader's own pieces:** the floating button and its dialog sit
   on the host page, so they don't take the game's colours. They're
   white with black text in light and dark teal `#051411` with white

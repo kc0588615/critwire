@@ -10,6 +10,15 @@ complements a studio's website rather than replacing it.
 Open source under the MIT licence: self-hosting is free and always will
 be. Built on Payload CMS inside Next.js; Payload is the app.
 
+**critwire.com** is one game's site: Critter Connect's public feedback
+and updates site, run by Haunted Pavement LLC, in the game's own cc
+look, light and dark. `/` opens the game's hub. The multi-studio
+machinery (signup, onboarding, the hosted limits, the share kit,
+Discord) stays in the code, off there. A self-hosted instance replaces
+the site's identity: `src/lib/site.ts` (the game, name and operator),
+the brand files in `public/brand/`, and the documents in `legal/`
+(`docs/self-hosting.md`).
+
 ## Read first
 
 - `AGENTS.md` — stack, non-negotiable rules, commands and testing rules
@@ -24,7 +33,9 @@ be. Built on Payload CMS inside Next.js; Payload is the app.
 - `docs/self-hosting.md` — which services you need, the first super
   admin, open signup and the hosted limits (all off by default)
 - `legal/` — critwire.com's Terms of Service, Privacy Policy and
-  Copyright Policy; a self-hosted instance replaces them with its own
+  Copyright Policy, for Critter Connect's site; a self-hosted instance
+  replaces them with its own
+- `GUI.md` and `gui/` — the cc design language, for UI work
 
 ## Commands
 
