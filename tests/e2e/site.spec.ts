@@ -3,6 +3,7 @@ import sharp from 'sharp'
 
 import type { GameProject } from '../../src/payload-types'
 import { portalNavLinks, portalPaths } from '../../src/lib/game-portal/paths'
+import { DEFAULT_THEME_COLORS } from '../../src/lib/game-portal/theme'
 import { LEGAL_LINKS, LEGAL_SLUGS } from '../../src/lib/legal/paths'
 import { SITE } from '../../src/lib/site'
 import { BASE_URL } from './support/env'
@@ -190,5 +191,34 @@ test('X5 the titles: the game names its own pages, the site names the rest', asy
   for (const path of ['/admin/login', `/g/${uniqueSlug('x5-missing')}`]) {
     await page.goto(path)
     await expect(page, path).toHaveTitle(new RegExp(`. \\| ${SITE.name}$`))
+  }
+})
+
+test('X6 the default palette follows the system; a custom one keeps its own', async ({
+  api,
+  page,
+  uniqueSlug,
+  world,
+}) => {
+  const custom = await createProject(api('superAdmin'), world.tenants.A.id, uniqueSlug('x6'), {
+    theme: { colors: { ...DEFAULT_THEME_COLORS, accent: '#f59e0b' } },
+  })
+  const rootBackground = () =>
+    page.locator('.fs-root').evaluate((root) => getComputedStyle(root).backgroundColor)
+
+  // cc's n1 in each mode: the game's own canvas.
+  for (const [colorScheme, canvas] of [
+    ['light', 'rgb(255, 255, 255)'],
+    ['dark', 'rgb(5, 20, 17)'],
+  ] as const) {
+    await page.emulateMedia({ colorScheme })
+    for (const [path, background] of [
+      [HUB, canvas],
+      [`/g/${uniqueSlug('x6-missing')}`, canvas],
+      [portalPaths(custom.slug).hub, 'rgb(5, 20, 17)'],
+    ]) {
+      await page.goto(path)
+      expect(await rootBackground(), `${path} ${colorScheme}`).toBe(background)
+    }
   }
 })

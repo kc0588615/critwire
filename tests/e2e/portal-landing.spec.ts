@@ -151,7 +151,7 @@ test('S2.4 project theme', async ({ api, page, uniqueSlug, world }) => {
     await page.goto(path)
     return page
       .locator('.fs-root')
-      .evaluate((el) => getComputedStyle(el).getPropertyValue('--fs-accent').trim(), undefined, { timeout: 1_000 })
+      .evaluate((el) => getComputedStyle(el).getPropertyValue('--fs-light-accent').trim(), undefined, { timeout: 1_000 })
   }
 
   const hubStyle = await rootStyle(hub)

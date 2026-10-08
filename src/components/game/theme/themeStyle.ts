@@ -1,7 +1,13 @@
 import type { CSSProperties } from 'react'
 
 import { backgroundScheme } from '@/lib/game-portal/contrast'
-import { SHAPE_RADIUS, type SiteThemeV1 } from '@/lib/game-portal/theme'
+import {
+  portalPalettes,
+  SHAPE_RADIUS,
+  type SiteThemeColors,
+  type SiteThemeV1,
+} from '@/lib/game-portal/theme'
+import type { Mode } from '@/lib/theme/tokens'
 
 type DisplayVoice = {
   family: string
@@ -54,11 +60,8 @@ const SECTION_Y: Record<SiteThemeV1['density'], string> = {
   compact: 'clamp(var(--space-xxl), 5vw, calc(var(--space-xxl) * 2))',
 }
 
-/**
- * One palette as `<prefix>-*` custom properties: `--fs` for the portal,
- * and a light and a dark set for the embed.
- */
-export const paletteVars = (colors: SiteThemeV1['colors'], prefix: string): CSSProperties =>
+/** One palette's ten slots as `<prefix>-<slot>` custom properties. */
+const slotVars = (colors: SiteThemeColors, prefix: string): CSSProperties =>
   ({
     [`${prefix}-bg`]: colors.background,
     [`${prefix}-fg`]: colors.foreground,
@@ -71,6 +74,16 @@ export const paletteVars = (colors: SiteThemeV1['colors'], prefix: string): CSSP
     [`${prefix}-warning`]: colors.warning,
     [`${prefix}-error`]: colors.error,
   }) as CSSProperties
+
+/**
+ * Both modes' palettes as `--fs-light-*` and `--fs-dark-*`. portal.css
+ * maps them onto `--fs-*` for every `.fs-root` (the embed's root is one
+ * too), by the root's `color-scheme`.
+ */
+export const paletteVars = (palettes: Record<Mode, SiteThemeColors>): CSSProperties => ({
+  ...slotVars(palettes.light, '--fs-light'),
+  ...slotVars(palettes.dark, '--fs-dark'),
+})
 
 /** The theme's corner radii, for surfaces, controls and buttons, as the theme's radius tokens. */
 export const radiusVars = (shape: SiteThemeV1['shape']): CSSProperties => {
@@ -90,11 +103,13 @@ export const radiusVars = (shape: SiteThemeV1['shape']): CSSProperties => {
  */
 export const themeStyle = (theme: SiteThemeV1): CSSProperties => {
   const voice = DISPLAY[theme.typography]
+  const { light, dark } = portalPalettes(theme.colors)
 
   return {
-    // Native controls, scrollbars and Turnstile follow the palette's mode.
-    colorScheme: backgroundScheme(theme.colors.background),
-    ...paletteVars(theme.colors, '--fs'),
+    // The mode the palettes are picked by; native controls, scrollbars and
+    // Turnstile follow it too. The default palette follows the system.
+    colorScheme: light === dark ? backgroundScheme(light.background) : 'light dark',
+    ...paletteVars({ light, dark }),
     ...radiusVars(theme.shape),
     '--fs-section-y': SECTION_Y[theme.density],
     '--fs-font-display': voice.family,

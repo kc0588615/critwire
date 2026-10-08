@@ -1,5 +1,3 @@
-import { randomUUID } from 'node:crypto'
-
 import type { APIRequestContext, Browser, BrowserContext, PlaywrightWorkerArgs } from '@playwright/test'
 
 import type { RestClient } from './support/api'
@@ -7,6 +5,7 @@ import { emailsTo, linkTo, readEmail, tokenOf, verificationToken } from './suppo
 import { BASE_URL, SECOND_BASE_URL } from './support/env'
 import { legalConsentForm } from './support/legal'
 import {
+  cleanId,
   expect,
   newRequestContext,
   randomEmail,
@@ -72,7 +71,7 @@ test.afterAll(async () => {
 
 test('S15.1 sign up, verify through the emailed link, onboard, and see the live portal', async ({ browser }) => {
   const email = randomEmail('s151')
-  const id = randomUUID().slice(0, 8)
+  const id = await cleanId()
   const name = `Tidewater ${id}`
   const slug = `tidewater-${id}`
   const context = await freshContext(browser)

@@ -3,40 +3,19 @@ import type { CSSProperties } from 'react'
 import { paletteVars, radiusVars } from '@/components/game/theme/themeStyle'
 import { backgroundScheme, contrastRatio } from '@/lib/game-portal/contrast'
 import {
-  DEFAULT_THEME_COLORS,
+  CC_PALETTES,
+  isDefaultPalette,
   type SiteThemeColors,
   siteThemeColorsSchema,
   type SiteThemeV1,
 } from '@/lib/game-portal/theme'
-import { TOKENS } from '@/lib/theme/tokens'
-
-const { neutral: light } = TOKENS.light
+import type { Mode } from '@/lib/theme/tokens'
 
 /**
- * The scheme a game's palette doesn't cover: a fixed neutral palette,
- * the theme in that mode, with light's muted text on n8 (A2). Light's
- * accent is neutral-10 with neutral-1 on it, for a game whose accent
- * doesn't read on white. Parsed at load, so a constant that fails the
- * theme's contrast rules throws at once.
- */
-const NEUTRAL: Record<'dark' | 'light', SiteThemeColors> = {
-  dark: DEFAULT_THEME_COLORS,
-  light: siteThemeColorsSchema.parse({
-    background: light[1],
-    foreground: light[10],
-    mutedForeground: light[8],
-    surface: light[2],
-    accent: light[10],
-    accentForeground: light[1],
-    border: light[4],
-    ...TOKENS.status,
-  }),
-}
-
-/**
- * The neutral palette carrying the game's accent pair where it reads (at
- * least 3:1 on the neutral background), else the swapped pair (the theme
- * guarantees 4.5:1 between the two), else the neutral accent.
+ * cc in the scheme the game's palette doesn't cover, carrying the game's
+ * accent pair where it reads (at least 3:1 on cc's background), else the
+ * swapped pair (the theme guarantees 4.5:1 between the two), else cc's
+ * accent. A9's special light accent is gone: color-1 is 4.03:1 on white.
  */
 const withGameAccent = (neutral: SiteThemeColors, game: SiteThemeColors): SiteThemeColors => {
   const reads = (fill: string) => contrastRatio(fill, neutral.background) >= 3
@@ -50,28 +29,26 @@ const withGameAccent = (neutral: SiteThemeColors, game: SiteThemeColors): SiteTh
 }
 
 /**
- * The embed's light and dark palettes. The game's own palette serves its
- * own scheme as is; the other scheme is neutral, in the game's accent.
+ * The embed's light and dark palettes. The default palette is cc in both
+ * modes, as on the portal. Otherwise the game's own palette serves its
+ * own scheme as is, and the other scheme is cc's, in the game's accent.
  */
-export const embedPalettes = (colors: SiteThemeColors): Record<'dark' | 'light', SiteThemeColors> => {
+export const embedPalettes = (colors: SiteThemeColors): Record<Mode, SiteThemeColors> => {
+  if (isDefaultPalette(colors)) return CC_PALETTES
   const own = backgroundScheme(colors.background)
   const other = own === 'dark' ? 'light' : 'dark'
   return {
     [own]: colors,
-    [other]: siteThemeColorsSchema.parse(withGameAccent(NEUTRAL[other], colors)),
-  } as Record<'dark' | 'light', SiteThemeColors>
+    [other]: siteThemeColorsSchema.parse(withGameAccent(CC_PALETTES[other], colors)),
+  } as Record<Mode, SiteThemeColors>
 }
 
 /**
- * The embed root's custom properties: both palettes, as `--cw-light-*`
- * and `--cw-dark-*` (`embed.css` maps one onto `--fs-*` by mode), and
- * the theme's radii. One response serves every visitor's mode.
+ * The embed root's custom properties: both palettes (portal.css maps them
+ * onto `--fs-*` by the `color-scheme` embed.css gives each mode), and the
+ * theme's radii. One response serves every visitor's mode.
  */
-export const embedStyle = (theme: SiteThemeV1): CSSProperties => {
-  const { dark, light } = embedPalettes(theme.colors)
-  return {
-    ...paletteVars(light, '--cw-light'),
-    ...paletteVars(dark, '--cw-dark'),
-    ...radiusVars(theme.shape),
-  }
-}
+export const embedStyle = (theme: SiteThemeV1): CSSProperties => ({
+  ...paletteVars(embedPalettes(theme.colors)),
+  ...radiusVars(theme.shape),
+})

@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import { TOKENS, type RadiusStep } from '@/lib/theme/tokens'
+import { type Mode, type NeutralStep, type RadiusStep, TOKENS } from '@/lib/theme/tokens'
 
 import { HEX_COLOR_RE, contrastRatio } from './contrast'
 
@@ -47,30 +47,45 @@ export const siteThemeColorsSchema = z
   })
 export type SiteThemeColors = z.infer<typeof siteThemeColorsSchema>
 
-const { neutral, accentText } = TOKENS.dark
+/** cc in one mode, from the theme's tokens: muted text is n8 in light (A2) and n7 in dark. */
+const ccPalette = (mode: Mode, muted: NeutralStep): SiteThemeColors => {
+  const { neutral, accentText } = TOKENS[mode]
+  return siteThemeColorsSchema.parse({
+    background: neutral[1],
+    foreground: neutral[10],
+    mutedForeground: neutral[muted],
+    surface: neutral[2],
+    accent: TOKENS.color[1],
+    accentForeground: accentText,
+    border: neutral[4],
+    ...TOKENS.status,
+  })
+}
+
+/**
+ * cc light and dark, as the game has them. The label on the accent is
+ * each mode's accent text (A1); the border is n4, the edge that stays
+ * visible (A4). Parsed when the module loads, so a palette that fails a
+ * contrast refinement throws at once.
+ */
+export const CC_PALETTES: Record<Mode, SiteThemeColors> = {
+  light: ccPalette('light', 8),
+  dark: ccPalette('dark', 7),
+}
 
 /**
  * cc dark: the portal's default palette, and the one any unset slot
- * falls back to. Passes every contrast refinement (`DEFAULT_THEME` below
- * parses it when the module loads). The label on the accent is the dark
- * accent text, n1 (A1); the border is n4, the edge that stays visible (A4).
+ * falls back to. A game whose palette equals it gets both of
+ * `CC_PALETTES`, by the visitor's system (`portalPalettes`).
  *
  * A compatibility contract (D48): the database's column defaults hold
  * these values (migration `cc_portal_defaults`), and a palette equal to
- * them is what the default means. Changing them ships a migration that
- * decides explicitly what rows equal to the old default, and unset slots,
- * become; it must never happen silently.
+ * them is what the default means, both modes included. Changing them
+ * ships a migration that decides explicitly whether rows equal to the old
+ * default move to the new one (keeping both modes) or keep their look in
+ * one mode, and what unset slots get; it must never happen silently.
  */
-export const DEFAULT_THEME_COLORS: SiteThemeColors = {
-  background: neutral[1],
-  foreground: neutral[10],
-  mutedForeground: neutral[7],
-  surface: neutral[2],
-  accent: TOKENS.color[1],
-  accentForeground: accentText,
-  border: neutral[4],
-  ...TOKENS.status,
-}
+export const DEFAULT_THEME_COLORS: SiteThemeColors = CC_PALETTES.dark
 
 export const siteTypographySchema = z.enum(['standard', 'modern', 'editorial', 'technical'])
 export const siteShapeSchema = z.enum(['sharp', 'balanced', 'soft'])
@@ -141,3 +156,15 @@ export const mergeTheme = (...layers: ThemeLayer[]): MergedTheme => {
   }
   return merged
 }
+
+/** Whether a palette is the default one, slot for slot (hex compared lower-case). */
+export const isDefaultPalette = (colors: SiteThemeColors): boolean =>
+  COLOR_KEYS.every((key) => colors[key].toLowerCase() === DEFAULT_THEME_COLORS[key].toLowerCase())
+
+/**
+ * The palette a portal shows in each mode: cc light and dark for the
+ * default palette, otherwise the game's own palette in both, so a saved
+ * palette looks the same whatever the visitor's system.
+ */
+export const portalPalettes = (colors: SiteThemeColors): Record<Mode, SiteThemeColors> =>
+  isDefaultPalette(colors) ? CC_PALETTES : { light: colors, dark: colors }

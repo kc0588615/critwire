@@ -1,9 +1,9 @@
 /*
  * The embed document (src/app/(embed)). Unlayered, so it wins over
  * globals.css and portal.css. The portal's components read --fs-*; here
- * those come from one of the two palettes `embedStyle()` sets, by the
- * mode the boot script put on <html>. Fonts are the host page's. Sizes,
- * spacing, radii and weights are cw's steps, as in portal.css.
+ * those come from the two palettes `embedStyle()` sets, by the mode the
+ * boot script put on <html>. Fonts are the host page's. Sizes, spacing,
+ * radii and weights are cc's steps, as in portal.css.
  */
 
 /* The host page's font in every role (D13), on the root, so nothing in the
@@ -28,53 +28,20 @@ body {
 }
 
 .cw-embed {
-  --fs-bg: var(--cw-light-bg);
-  --fs-fg: var(--cw-light-fg);
-  --fs-muted-fg: var(--cw-light-muted-fg);
-  --fs-surface: var(--cw-light-surface);
-  --fs-accent: var(--cw-light-accent);
-  --fs-accent-fg: var(--cw-light-accent-fg);
-  --fs-border: var(--cw-light-border);
-  --fs-success: var(--cw-light-success);
-  --fs-warning: var(--cw-light-warning);
-  --fs-error: var(--cw-light-error);
   --fs-font-display: var(--font-ui);
 
   color-scheme: light;
   padding: var(--space-m) var(--space-l);
 }
 
-/* The dark palette: chosen, or `auto` on a dark system. Keep the two blocks equal. */
+/* The mode the boot script put on <html> picks the palette (portal.css
+   maps --fs-* by color-scheme): dark, or the visitor's system for auto. */
 :root[data-mode='dark'] .cw-embed {
-  --fs-bg: var(--cw-dark-bg);
-  --fs-fg: var(--cw-dark-fg);
-  --fs-muted-fg: var(--cw-dark-muted-fg);
-  --fs-surface: var(--cw-dark-surface);
-  --fs-accent: var(--cw-dark-accent);
-  --fs-accent-fg: var(--cw-dark-accent-fg);
-  --fs-border: var(--cw-dark-border);
-  --fs-success: var(--cw-dark-success);
-  --fs-warning: var(--cw-dark-warning);
-  --fs-error: var(--cw-dark-error);
-
   color-scheme: dark;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root[data-mode='auto'] .cw-embed {
-    --fs-bg: var(--cw-dark-bg);
-    --fs-fg: var(--cw-dark-fg);
-    --fs-muted-fg: var(--cw-dark-muted-fg);
-    --fs-surface: var(--cw-dark-surface);
-    --fs-accent: var(--cw-dark-accent);
-    --fs-accent-fg: var(--cw-dark-accent-fg);
-    --fs-border: var(--cw-dark-border);
-    --fs-success: var(--cw-dark-success);
-    --fs-warning: var(--cw-dark-warning);
-    --fs-error: var(--cw-dark-error);
-
-    color-scheme: dark;
-  }
+:root[data-mode='auto'] .cw-embed {
+  color-scheme: light dark;
 }
 
 /* A held game or a suspended studio: nothing at all, so the frame collapses. */

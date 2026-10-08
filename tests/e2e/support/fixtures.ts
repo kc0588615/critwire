@@ -434,16 +434,21 @@ export async function verifyAccount(request: APIRequestContext, token: string, p
 }
 
 /**
- * `label` plus a random suffix the content filter passes. Raw hex can read as
- * leetspeak ("455" is flagged), and a flagged name holds the studio's games,
- * which then 404 for players.
+ * A random 8-character id the content filter passes inside `text(id)` (by
+ * default, the id alone). Raw hex can read as leetspeak ("455" and "b000b"
+ * are flagged), and a flagged name holds the studio's games, which then 404
+ * for players.
  */
-const cleanSlug = async (label: string): Promise<string> => {
+export const cleanId = async (text: (id: string) => string = (id) => id): Promise<string> => {
   for (;;) {
-    const slug = `${label}-${randomUUID().slice(0, 8)}`
-    if (!(await screenText(slug)).flagged) return slug
+    const id = randomUUID().slice(0, 8)
+    if (!(await screenText(text(id))).flagged) return id
   }
 }
+
+/** `label` plus a random suffix, the whole slug passing the content filter. */
+const cleanSlug = async (label: string): Promise<string> =>
+  `${label}-${await cleanId((id) => `${label}-${id}`)}`
 
 /** A fresh address for every account a test creates, so reruns and emails never collide. */
 export const randomEmail = (label: string): string => `${label}-${randomUUID()}@e2e.test`

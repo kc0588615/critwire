@@ -6,6 +6,41 @@
  * `@layer components`, so Tailwind utilities on the same element win.
  */
 
+/*
+ * The palette: themeStyle() and embedStyle() set both modes' slots,
+ * --fs-light-* and --fs-dark-*, and this is the one place that maps them
+ * onto --fs-*, by the root's color-scheme (D3). Browsers without
+ * light-dark() get the light palette. A palette in one mode sets both
+ * sets equal, so it looks the same everywhere.
+ */
+.fs-root {
+  --fs-bg: var(--fs-light-bg);
+  --fs-fg: var(--fs-light-fg);
+  --fs-muted-fg: var(--fs-light-muted-fg);
+  --fs-surface: var(--fs-light-surface);
+  --fs-accent: var(--fs-light-accent);
+  --fs-accent-fg: var(--fs-light-accent-fg);
+  --fs-border: var(--fs-light-border);
+  --fs-success: var(--fs-light-success);
+  --fs-warning: var(--fs-light-warning);
+  --fs-error: var(--fs-light-error);
+}
+
+@supports (color: light-dark(white, black)) {
+  .fs-root {
+    --fs-bg: light-dark(var(--fs-light-bg), var(--fs-dark-bg));
+    --fs-fg: light-dark(var(--fs-light-fg), var(--fs-dark-fg));
+    --fs-muted-fg: light-dark(var(--fs-light-muted-fg), var(--fs-dark-muted-fg));
+    --fs-surface: light-dark(var(--fs-light-surface), var(--fs-dark-surface));
+    --fs-accent: light-dark(var(--fs-light-accent), var(--fs-dark-accent));
+    --fs-accent-fg: light-dark(var(--fs-light-accent-fg), var(--fs-dark-accent-fg));
+    --fs-border: light-dark(var(--fs-light-border), var(--fs-dark-border));
+    --fs-success: light-dark(var(--fs-light-success), var(--fs-dark-success));
+    --fs-warning: light-dark(var(--fs-light-warning), var(--fs-dark-warning));
+    --fs-error: light-dark(var(--fs-light-error), var(--fs-dark-error));
+  }
+}
+
 .fs-root {
   /* Rich text: tailwind.config.mjs maps every prose colour to these.
      Each text pair is one the theme schema guarantees (fg and muted-fg

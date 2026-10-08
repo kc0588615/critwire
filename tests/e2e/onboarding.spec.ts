@@ -1,11 +1,9 @@
-import { randomUUID } from 'node:crypto'
-
 import type { APIRequestContext, Browser, BrowserContext, Page } from '@playwright/test'
 
 import type { GameProject, Tenant } from '../../src/payload-types'
 import type { RestClient } from './support/api'
 import { BASE_URL, SECOND_BASE_URL } from './support/env'
-import { type Account, expect, newRequestContext, onboard, test } from './support/fixtures'
+import { type Account, cleanId, expect, newRequestContext, onboard, test } from './support/fixtures'
 
 /**
  * Onboarding (§6): a verified user with no studio enters a game's name, their
@@ -16,9 +14,9 @@ import { type Account, expect, newRequestContext, onboard, test } from './suppor
 const STEAM_URL = 'https://store.steampowered.com/app/480/Spacewar/'
 const WEBSITE = 'https://studio.example.com'
 
-/** A name no other test uses, and the slug onboarding gives it. */
-const freshName = (label: string): { name: string; slug: string } => {
-  const id = randomUUID().slice(0, 8)
+/** A name no other test uses, and the slug onboarding gives it. Only the label decides whether it's flagged. */
+const freshName = async (label: string): Promise<{ name: string; slug: string }> => {
+  const id = await cleanId()
   return { name: `${label} ${id}`, slug: `${label.toLowerCase().replace(/ /g, '-')}-${id}` }
 }
 
@@ -59,7 +57,7 @@ test.afterAll(async () => {
 test('S14.1 a verified user without a studio onboards and gets a live portal', async ({ api, page, seedUser }) => {
   const superAdmin = api('superAdmin')
   const user = await seedUser('s141')
-  const { name, slug } = freshName('Harbor Lights')
+  const { name, slug } = await freshName('Harbor Lights')
 
   const location = await onboard(request, user.token, { name, website: WEBSITE, store: STEAM_URL })
   expect(location).toBe(`/g/${slug}?welcome=1`)
@@ -91,7 +89,7 @@ test('S14.1 a verified user without a studio onboards and gets a live portal', a
 
 test('S14.2 a store link on an unknown host is refused, and nothing is created', async ({ api, seedUser }) => {
   const user = await seedUser('s142')
-  const { name } = freshName('Unknown Store')
+  const { name } = await freshName('Unknown Store')
 
   const location = await onboard(request, user.token, {
     name,
@@ -107,7 +105,7 @@ test('S14.2 a store link on an unknown host is refused, and nothing is created',
 
 test('S14.3 two submits at once for one user make one studio and one game', async ({ api, seedUser }) => {
   const user = await seedUser('s143')
-  const { name, slug } = freshName('Double Click')
+  const { name, slug } = await freshName('Double Click')
   const input = { name, website: WEBSITE }
 
   const locations = await Promise.all([onboard(request, user.token, input), onboard(request, user.token, input)])
@@ -122,7 +120,7 @@ test('S14.3 two submits at once for one user make one studio and one game', asyn
 
 test('S14.4 two users onboarding one name at once get distinct slugs', async ({ api, seedUser }) => {
   const [first, second] = await Promise.all([seedUser('s144a'), seedUser('s144b')])
-  const { name, slug } = freshName('Same Name')
+  const { name, slug } = await freshName('Same Name')
 
   const locations = await Promise.all(
     [first, second].map((user) => onboard(request, user.token, { name, website: WEBSITE })),
@@ -148,7 +146,7 @@ test('S14.5 the demo slug is taken, and a name the filter flags is held', async 
 
   await test.step('a flagged name lands on ?held=1, and its portal isn’t public', async () => {
     const user = await seedUser('s145b')
-    const { name, slug } = freshName('Fucking Harbor')
+    const { name, slug } = await freshName('Fucking Harbor')
     expect(await onboard(request, user.token, { name, website: WEBSITE })).toBe('/onboarding?held=1')
 
     const { games } = await onboardedBy(superAdmin, user)
@@ -166,7 +164,7 @@ test('S14.6 who may onboard: signed in, without a studio, on a hosted instance',
   seedUser,
   world,
 }) => {
-  const input = { name: freshName('Nobody').name, website: WEBSITE }
+  const input = { name: (await freshName('Nobody')).name, website: WEBSITE }
 
   await test.step('without a session: sign in first, then come back', async () => {
     expect(await onboard(request, undefined, input)).toBe('/admin/login?redirect=%2Fonboarding')
@@ -202,7 +200,7 @@ test('S14.7 in the browser: sign in, onboard, and land on the portal with the ne
   seedUser,
 }) => {
   const user = await seedUser('s147')
-  const { name, slug } = freshName('Lantern Moss')
+  const { name, slug } = await freshName('Lantern Moss')
   const context = await freshContext(browser)
   try {
     const page = await context.newPage()

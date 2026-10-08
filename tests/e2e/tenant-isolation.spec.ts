@@ -1,5 +1,3 @@
-import { randomUUID } from 'node:crypto'
-
 import type { Browser, Page as BrowserPage } from '@playwright/test'
 import type { CollectionSlug } from 'payload'
 
@@ -9,6 +7,7 @@ import { BASE_URL, PREVIEW_SECRET, type Role, storageStatePath, TURNSTILE_DUMMY_
 import {
   asStudioAdmin,
   castVote,
+  cleanId,
   contentLayout,
   createIssue,
   createPatchNote,
@@ -572,7 +571,7 @@ test.describe('S1.13 two studios that signed up stay apart [DoD]', () => {
   let targets: Target[]
 
   test.beforeAll(async ({ api, signUpStudio }) => {
-    const id = randomUUID().slice(0, 8)
+    const id = await cleanId()
     a = await signUpStudio(`Isolation A ${id}`)
     b = await signUpStudio(`Isolation B ${id}`)
     const client = a.owner.client
