@@ -21,7 +21,7 @@
 // a header at s medium, numbers on the data role and inset-shadow rules.
 .referral-counts {
   margin-top: var(--space-xxl);
-  box-shadow: inset 0 var(--border-s) 0 var(--cte-border);
+  box-shadow: inset 0 var(--stroke-s) 0 var(--cte-border);
   padding-top: var(--space-l);
   color: var(--cte-text);
   font-size: var(--size-m);
@@ -60,7 +60,7 @@
 
   th,
   td {
-    box-shadow: inset 0 calc(-1 * var(--border-s)) 0 var(--cte-border);
+    box-shadow: inset 0 calc(-1 * var(--stroke-s)) 0 var(--cte-border);
     padding: var(--space-xs) var(--space-m);
     white-space: nowrap;
   }

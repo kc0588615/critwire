@@ -305,16 +305,19 @@ once, and every surface reads them as named tokens.
   `public/favicon.svg`, `public/favicon.ico` and the default share
   image `public/og.png` from `cw.ts` and the wordmark. Rerun it only
   when cw's brand colours or the wordmark change, and commit the result.
-- **Fonts** (`src/fonts.ts`): Inter for the ui, brand and editorial
-  roles and Geist Mono for data, self-hosted by `next/font` at build
-  time, so no page calls a font service.
+- **Fonts** (`src/styles/fonts.css`): Nunito for the ui, brand and
+  editorial roles and Open Runde for data, as plain `@font-face` rules
+  on the files in `public/fonts/` (each folder with its `OFL.txt`), so
+  no page calls a font service. `--face-sans` and `--face-data` there
+  are the one place a face is named.
 - **The guard:** `tests/int/cw-tokens.int.spec.ts` fails when `cw.ts`
   drifts from the snapshot in `gui/themes/cw.md`, when the committed
   `cw-tokens.css` differs from what `cw.ts` generates, when either
-  entry point stops loading the tokens and roles, or when the loader's
+  entry point stops loading the tokens, faces and roles, when a face
+  in `fonts.css` names a missing file, or when the loader's
   colours drift from `cw.ts`. `prebuild` runs it.
 
-Two style entry points load the tokens, then the roles, directly (no
+Two style entry points load the tokens, the faces, then the roles, directly (no
 nested CSS import):
 
 | Entry point | Loads them with | Renders |

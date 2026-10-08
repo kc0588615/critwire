@@ -1,12 +1,13 @@
 /*
  * The shared Tailwind entry for Critwire's site and the studio portals.
- * cw's tokens, then its roles, load first and unlayered (the admin loads
- * the same two files from custom.scss). Each surface owns its palette:
+ * cw's tokens, the faces, then cw's roles load first and unlayered (the
+ * admin loads the same three files from custom.scss). Each surface owns its palette:
  * marketing.css on .cw-root, portal.css (from the studio's theme) on
  * .fs-root. Nothing here sets a colour.
  */
 @import 'tailwindcss';
 @import '../../styles/cw-tokens.css';
+@import '../../styles/fonts.css';
 @import '../../styles/cw.css';
 @import './marketing.css' layer(components);
 @import './portal.css' layer(components);
@@ -53,19 +54,19 @@
   }
 
   .status-mark[data-shape='ring'] {
-    border: var(--border-l) solid var(--mark, currentColor);
+    border: var(--stroke-l) solid var(--mark, currentColor);
   }
 
   .status-mark[data-shape='half'] {
-    border: var(--border-l) solid var(--mark, currentColor);
+    border: var(--stroke-l) solid var(--mark, currentColor);
     background: linear-gradient(90deg, var(--mark, currentColor) 50%, transparent 50%);
   }
 
   /* One ring's width smaller, so the rotated square stays inside the mark's column. */
   .status-mark[data-shape='diamond'] {
-    width: calc(var(--space-m) - var(--border-l));
-    height: calc(var(--space-m) - var(--border-l));
-    margin-inline: calc(var(--border-l) / 2);
+    width: calc(var(--space-m) - var(--stroke-l));
+    height: calc(var(--space-m) - var(--stroke-l));
+    margin-inline: calc(var(--stroke-l) / 2);
     border-radius: var(--radius-xs);
     background: var(--mark, currentColor);
     transform: rotate(45deg);

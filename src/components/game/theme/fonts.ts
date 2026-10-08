@@ -2,8 +2,8 @@ import { Archivo, Science_Gothic, Young_Serif } from 'next/font/google'
 
 /*
  * The portal's three extra display voices, one per `typography` token
- * (see DISPLAY in themeStyle.ts); `standard` is cw's brand font, from
- * src/fonts.ts. Not preloaded: the voice depends on
+ * (see DISPLAY in themeStyle.ts); `standard` is the site's brand font,
+ * from src/styles/fonts.css. Not preloaded: the voice depends on
  * the studio's theme, so the browser downloads only the face that
  * `--fs-font-display` references.
  */

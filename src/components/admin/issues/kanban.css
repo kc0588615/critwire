@@ -207,12 +207,12 @@
   letter-spacing: var(--letter-spacing-s);
   line-height: var(--line-s);
   text-decoration-line: underline;
-  text-decoration-thickness: var(--border-s);
+  text-decoration-thickness: var(--stroke-s);
   text-underline-offset: 0.2em;
 }
 
 .issues-kanban__card-link:hover {
-  text-decoration-thickness: var(--border-l);
+  text-decoration-thickness: var(--stroke-l);
 }
 
 /* "Load more": Payload's secondary button, cw's outline (custom.scss),

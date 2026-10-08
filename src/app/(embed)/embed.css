@@ -6,6 +6,16 @@
  * spacing, radii and weights are cw's steps, as in portal.css.
  */
 
+/* The host page's font in every role (D13), on the root, so nothing in the
+   document names fonts.css's faces and the frame downloads no font file
+   (cc-site D53); .fs-root reads --font-ui. */
+:root {
+  --font-ui: var(--cw-font, system-ui, sans-serif);
+  --font-brand: var(--font-ui);
+  --font-editorial: var(--font-ui);
+  --font-data: var(--font-ui);
+}
+
 /* The frame sizes to its content, so nothing may hold it open. */
 body {
   min-height: 0;
@@ -28,11 +38,6 @@ body {
   --fs-success: var(--cw-light-success);
   --fs-warning: var(--cw-light-warning);
   --fs-error: var(--cw-light-error);
-  /* The host page's font in every role (D13); .fs-root reads --font-ui. */
-  --font-ui: var(--cw-font, system-ui, sans-serif);
-  --font-brand: var(--font-ui);
-  --font-editorial: var(--font-ui);
-  --font-data: var(--font-ui);
   --fs-font-display: var(--font-ui);
 
   color-scheme: light;

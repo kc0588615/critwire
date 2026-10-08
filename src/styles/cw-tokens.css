@@ -3,8 +3,9 @@
  * and rerun, never this file (the int test cw-tokens fails on a hand edit).
  * cw's primitives, named as in gui/themes/cw.md. A value that differs between
  * the modes is written once as light-dark(<light>, <dark>), which follows the
- * color-scheme of the surface using it. The one name that isn't cw's is
- * --tap-min, critwire's tap-target floor (D10). The roles are in
+ * color-scheme of the surface using it. The names that aren't cw's are
+ * --tap-min, critwire's tap-target floor (D10), and --stroke-s/--stroke-l,
+ * its stroke widths (cc-site D7). The roles are in
  * src/styles/cw.css.
  */
 :root {
@@ -79,6 +80,8 @@
   --focus-ring-mix: 50%;
   --icon-stroke-width: 2;
   --tap-min: 44px;
+  --stroke-s: 1px;
+  --stroke-l: 2px;
   --color-1: #31c3e8;
   --color-2: #76ef6b;
   --color-3: #009ff0;

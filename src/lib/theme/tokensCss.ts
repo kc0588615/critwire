@@ -10,6 +10,7 @@ import {
   SHADOW_STEPS,
   SPACE_STEPS,
   STATUSES,
+  STROKE,
   TAP_MIN,
   TEXT_STEPS,
   WEIGHTS,
@@ -20,8 +21,9 @@ const HEADER = `/*
  * and rerun, never this file (the int test cw-tokens fails on a hand edit).
  * cw's primitives, named as in gui/themes/cw.md. A value that differs between
  * the modes is written once as light-dark(<light>, <dark>), which follows the
- * color-scheme of the surface using it. The one name that isn't cw's is
- * --tap-min, critwire's tap-target floor (D10). The roles are in
+ * color-scheme of the surface using it. The names that aren't cw's are
+ * --tap-min, critwire's tap-target floor (D10), and --stroke-s/--stroke-l,
+ * its stroke widths (cc-site D7). The roles are in
  * src/styles/cw.css.
  */
 `
@@ -73,6 +75,8 @@ const declarations = (): [string, string][] => [
   ['--focus-ring-mix', `${CW.focus.mix}%`],
   ['--icon-stroke-width', String(CW.iconStrokeWidth)],
   ['--tap-min', px(TAP_MIN)],
+  ['--stroke-s', px(STROKE.s)],
+  ['--stroke-l', px(STROKE.l)],
   ...COLOR_STEPS.map((step): [string, string] => [`--color-${step}`, CW.color[step]]),
   ...STATUSES.map((status): [string, string] => [`--${status}`, CW.status[status]]),
   ['--accent-text', perMode((mode) => CW[mode].accentText)],

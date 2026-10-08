@@ -38,7 +38,7 @@ export type CwTheme = {
   radius: Record<RadiusStep, number>
   /** px */
   border: Record<(typeof BORDER_STEPS)[number], number>
-  /** The fallbacks after each role's face (the face itself is `src/fonts.ts`), and its weights. */
+  /** The fallbacks after each role's face (the face itself is `src/styles/fonts.css`), and its weights. */
   fonts: Record<
     (typeof FONT_ROLES)[number],
     { fallback: readonly string[]; weights: Record<(typeof WEIGHTS)[number], number> }
@@ -137,6 +137,14 @@ export const CW = {
  * tall and wide, over cw's 34 px controls. `--tap-min` is generated from it.
  */
 export const TAP_MIN = 44
+
+/**
+ * Critwire's stroke widths, not cw steps (cc-site D7): edges, rings, bars
+ * and underlines. The theme's `--border-*` steps describe its own borders,
+ * and a theme whose steps are 0 px would erase every field boundary.
+ * `--stroke-s` and `--stroke-l` are generated from it.
+ */
+export const STROKE = { s: 1, l: 2 } as const
 
 /** A motion curve as CSS and the Web Animations API write it. */
 export const cubicBezier = (easing: readonly number[]): string => `cubic-bezier(${easing.join(', ')})`

@@ -100,6 +100,8 @@ const nextConfig: NextConfig = {
     },
     // The loader is a contract: cached for a day, at the edge and in browsers.
     { source: '/embed/v1.js', headers: [{ key: 'Cache-Control', value: LOADER_CACHE_CONTROL }] },
+    // A face's file name carries its family, subset and weight, and a new face is a new name.
+    { source: '/fonts/:path*', headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }] },
   ],
   reactStrictMode: true,
   redirects,

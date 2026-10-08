@@ -276,8 +276,8 @@
   position: absolute;
   top: calc(var(--cw-mark-y) + var(--cw-mark));
   bottom: calc(-1 * (var(--cw-stage-gap) + var(--cw-mark-y)));
-  left: calc((var(--cw-mark) - var(--border-l)) / 2);
-  width: var(--border-l);
+  left: calc((var(--cw-mark) - var(--stroke-l)) / 2);
+  width: var(--stroke-l);
   background: currentColor;
   content: '';
   transform-origin: top;
@@ -294,7 +294,7 @@
 
 /* The diamond is one ring smaller (globals.css); centre it on the line. */
 .cw-loop .status-mark[data-shape='diamond'] {
-  margin-top: calc(var(--cw-mark-y) + var(--border-l) / 2);
+  margin-top: calc(var(--cw-mark-y) + var(--stroke-l) / 2);
 }
 
 /* Shipped's dot fills as an image, so it grows like In progress's half. */
@@ -393,11 +393,11 @@
   display: grid;
   gap: var(--space-xs) var(--space-xl);
   padding-block: var(--space-l);
-  border-top: var(--border-s) solid var(--cte-border);
+  border-top: var(--stroke-s) solid var(--cte-border);
 }
 
 .cw-term:last-child {
-  border-bottom: var(--border-s) solid var(--cte-border);
+  border-bottom: var(--stroke-s) solid var(--cte-border);
 }
 
 .cw-root .cw-term dt {
@@ -461,7 +461,7 @@
 /* A call to action closes a section with a divider, not a card. */
 .cw-cta {
   padding-top: var(--space-l);
-  box-shadow: 0 calc(-1 * var(--border-s)) 0 0 var(--border-default-color);
+  box-shadow: 0 calc(-1 * var(--stroke-s)) 0 0 var(--border-default-color);
 }
 
 .cw-cta .cw-actions {

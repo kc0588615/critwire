@@ -1,6 +1,7 @@
 /*
  * cw's roles, built on the primitives in cw-tokens.css (generated from
- * src/lib/theme/cw.ts), which every entry point loads first: globals.css
+ * src/lib/theme/cw.ts) and the faces in fonts.css, which every entry
+ * point loads first: globals.css
  * with @import, the admin's custom.scss with @use. So this file imports
  * nothing (Sass would hoist a nested @import and resolve it from the entry
  * point's folder) and sets no color-scheme: each surface owns its mode, and
@@ -30,19 +31,19 @@
   /* Edges. D4: the snapshot's black 10 % edge vanishes on dark neutrals, so dark mode uses n4. */
   --border-default-color: light-dark(rgb(0 0 0 / 0.1), var(--neutral-4));
   --border-shadow-none: 0 0 0 0 transparent;
-  --border-shadow-s: 0 0 0 var(--border-s) var(--border-default-color);
-  --border-shadow-m: 0 0 0 var(--border-m) var(--border-default-color);
-  --border-shadow-l: 0 0 0 var(--border-l) var(--border-default-color);
+  --border-shadow-s: 0 0 0 var(--stroke-s) var(--border-default-color);
+  --border-shadow-m: 0 0 0 var(--stroke-s) var(--border-default-color);
+  --border-shadow-l: 0 0 0 var(--stroke-l) var(--border-default-color);
 
   /* Focus. D28: the colour is its own role, so the screenshot probe resolves the same expression. */
   --focus-ring-color: color-mix(in srgb, var(--neutral-10) var(--focus-ring-mix), transparent);
   --focus-ring-outline: var(--focus-ring-width) solid var(--focus-ring-color);
 
-  /* Font roles. The faces are next/font variables from src/fonts.ts (D1: Inter for GT Standard M). */
-  --font-ui: var(--font-cw-sans), var(--font-ui-fallback);
-  --font-brand: var(--font-cw-sans), var(--font-brand-fallback);
-  --font-editorial: var(--font-cw-sans), var(--font-editorial-fallback);
-  --font-data: var(--font-cw-mono), var(--font-data-fallback);
+  /* Font roles. The faces are fonts.css's (GUI.md, Local decisions: Nunito for GT Maru). */
+  --font-ui: var(--face-sans), var(--font-ui-fallback);
+  --font-brand: var(--face-sans), var(--font-brand-fallback);
+  --font-editorial: var(--face-sans), var(--font-editorial-fallback);
+  --font-data: var(--face-data), var(--font-data-fallback);
 
   /* The content roles, as the snapshot assigns them. */
   --cte-canvas: var(--neutral-1);

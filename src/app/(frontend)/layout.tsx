@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from 'next'
 
-import { cwFontVariables } from '@/fonts'
 import React from 'react'
 
 import { AdminBar } from '@/components/AdminBar'
@@ -16,7 +15,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const { isEnabled } = await draftMode()
 
   return (
-    <html className={cwFontVariables} lang="en">
+    <html lang="en">
       <head>
         <link href="/favicon.ico" rel="icon" sizes="32x32" />
         <link href="/favicon.svg" rel="icon" type="image/svg+xml" />

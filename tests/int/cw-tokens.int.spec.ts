@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { readFileSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 
 import { describe, expect, it } from 'vitest'
@@ -12,7 +12,8 @@ import { cwTokensCSS } from '@/lib/theme/tokensCss'
 // on it, and both style entry points load the two. E2E can't see the source
 // drifting from the snapshot (`gui/themes/cw.md`) or from the generated
 // file, so this test does. `prebuild` runs it beside `embed-loader`. One test
-// per failure mode T1–T7 in the cw-theme mission plan.
+// per failure mode T1–T7 in the cw-theme mission plan, and T5's faces and
+// T9 from the cc-site plan.
 
 const read = (file: string) => readFileSync(path.join(process.cwd(), file), 'utf8')
 
@@ -137,19 +138,21 @@ describe('cw-tokens', () => {
     expect([...generated.entries()].filter(([name, value]) => /^--neutral-/.test(name) && value.startsWith('light-dark('))).toHaveLength(10)
   })
 
-  it('T5. each entry point loads the tokens, then the roles, directly', () => {
-    expect(loads(read('src/app/(frontend)/globals.css')).slice(0, 4)).toEqual([
+  it('T5. each entry point loads the tokens, then the faces, then the roles, directly', () => {
+    expect(loads(read('src/app/(frontend)/globals.css')).slice(0, 5)).toEqual([
       "@import 'tailwindcss';",
       "@import '../../styles/cw-tokens.css';",
+      "@import '../../styles/fonts.css';",
       "@import '../../styles/cw.css';",
       "@import './marketing.css' layer(components);",
     ])
-    expect(loads(read('src/app/(payload)/custom.scss')).slice(0, 2)).toEqual([
+    expect(loads(read('src/app/(payload)/custom.scss')).slice(0, 3)).toEqual([
       "@use '../../styles/cw-tokens';",
+      "@use '../../styles/fonts';",
       "@use '../../styles/cw';",
     ])
     expect(withoutComments(read('src/app/(payload)/custom.scss')).trimStart()).toMatch(/^@use '..\/..\/styles\/cw-tokens';/)
-    expect(loads(read('src/styles/cw.css'))).toEqual([])
+    for (const file of ['src/styles/fonts.css', 'src/styles/cw.css']) expect(loads(read(file)), file).toEqual([])
   })
 
   it('T6. neither token file sets color-scheme, which belongs to each surface', () => {
@@ -166,5 +169,20 @@ describe('cw-tokens', () => {
       light: [CW.light.neutral[1], CW.light.neutral[10]],
       dark: [CW.dark.neutral[1], CW.dark.neutral[10]],
     })
+  })
+
+  it('T9. every face in fonts.css is a file under public/, and every font folder carries its licence', () => {
+    // A missing face falls back silently, and E2E can't tell Nunito from its fallback.
+    const urls = [...withoutComments(read('src/styles/fonts.css')).matchAll(/url\(["']?([^"')]+)["']?\)/g)].map(([, url]) => url)
+    expect(urls.length, 'fonts.css names no face').toBeGreaterThan(0)
+    for (const url of urls) {
+      expect(url, `${url} is served from public/`).toMatch(/^\/fonts\//)
+      expect(existsSync(path.join(process.cwd(), 'public', url)), `public${url}`).toBe(true)
+    }
+    const folders = readdirSync(path.join(process.cwd(), 'public/fonts'), { withFileTypes: true }).filter((entry) => entry.isDirectory())
+    expect(folders.length).toBeGreaterThan(0)
+    for (const folder of folders) {
+      expect(existsSync(path.join(process.cwd(), 'public/fonts', folder.name, 'OFL.txt')), `public/fonts/${folder.name}/OFL.txt`).toBe(true)
+    }
   })
 })

@@ -192,7 +192,7 @@ test('S2.4 project theme', async ({ api, page, uniqueSlug, world }) => {
     expect(rgbToHex(background)).toBe('#f59e0b')
   })
 
-  await test.step('the standard typography saves and sets the title in cw’s brand font', async () => {
+  await test.step('the standard typography saves and sets the title in the site’s brand font', async () => {
     const { status, body } = await aMember.update('game-projects', project.id, { theme: { typography: 'standard' } })
     expect(status, JSON.stringify(body)).toBe(200)
     expect(body.doc.theme?.typography).toBe('standard')
@@ -203,7 +203,7 @@ test('S2.4 project theme', async ({ api, page, uniqueSlug, world }) => {
         .evaluate((el) => ({ family: getComputedStyle(el).fontFamily, weight: getComputedStyle(el).fontWeight }), undefined, {
           timeout: 1_000,
         })
-      expect(title.family).toMatch(/\bInter\b/)
+      expect(title.family).toMatch(/\bNunito\b/)
       expect(title.weight).toBe('700')
     })
   })

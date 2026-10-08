@@ -1,4 +1,5 @@
 @use '../../styles/cw-tokens';
+@use '../../styles/fonts';
 @use '../../styles/cw';
 
 // Payload's theme variables on cw (plan §3, D21), checked against
@@ -109,14 +110,14 @@ $cw-statuses: (
   &.btn--style-secondary {
     --bg-color: transparent;
     --color: var(--cte-text);
-    --btn-border: var(--border-s) solid var(--neutral-4);
+    --btn-border: var(--stroke-s) solid var(--neutral-4);
     --hover-bg: var(--neutral-3-transparent);
     --hover-color: var(--color);
     --hover-btn-border: var(--btn-border);
 
     &.btn--disabled {
       --color: var(--neutral-6);
-      --btn-border: var(--border-s) solid var(--neutral-4-transparent);
+      --btn-border: var(--stroke-s) solid var(--neutral-4-transparent);
       --hover-bg: var(--bg-color);
     }
   }
@@ -207,7 +208,7 @@ label.field-label:not(.unstyled) .required,
 
   & .btn {
     --btn-line-height: var(--line-m);
-    --btn-padding-block-start: calc((var(--tap-min) - var(--line-m)) / 2 - var(--border-s));
+    --btn-padding-block-start: calc((var(--tap-min) - var(--line-m)) / 2 - var(--stroke-s));
     --btn-padding-block-end: var(--btn-padding-block-start);
     --btn-padding-inline-start: var(--space-m);
     --btn-padding-inline-end: var(--space-m);
