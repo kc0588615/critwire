@@ -203,7 +203,7 @@ Keep the rewrite layer lightweight: resolution only, no business logic.
 
 | Route | Strategy |
 | --- | --- |
-| Home page `/` | Dynamic (reads `CRITWIRE_CONTACT_URL` and the signup flag at request time) |
+| `/` | A 307 to the site's game hub, `SITE.gameSlug` in `src/lib/site.ts` (`redirects.ts`: before routing, no database) |
 | `/signup`, `/verify/<token>`, `/onboarding`, `/report-abuse` | Dynamic, `noindex` (read the signup flag or the session per request) |
 | `/unavailable` | Static, `noindex` |
 | `/legal/<document>` | Static (`generateStaticParams`; the files change only with a deploy), `noindex` while a draft |
@@ -366,7 +366,7 @@ mode.
     /(public)/unavailable   held or suspended portal
     /(public)/buttons       hosted button images
     /(embed)/g/[gameSlug]/embed  embed widgets (their own root layout)
-    /(frontend)           home page, marketing CMS pages, previews,
+    /(frontend)           CMS pages, previews,
                           signup, verify, onboarding, report-abuse,
                           forgot-password, legal (documents, accept)
     /api
@@ -386,7 +386,7 @@ mode.
     /AfterLogin           the legal links under the admin's sign-in form
     /admin                forgot-password view, legal gate view, logo, feedback kanban, Share tab
     /BeforeDashboard      admin dashboard for each role
-    /marketing            home page
+    /site                 the site's chrome: the game's lockup (BrandLogo)
   /lib
     /game-portal          portal paths, stages, theme, links, queries
     /accounts             signup, pending users, activation, email budget, anonymizeUser
@@ -394,6 +394,7 @@ mode.
     /onboarding           createStudio, next steps
     /limits               hosted-plan limits and their hooks
     /hosting.ts           the open-signup flag, "Powered by Critwire"
+    /site.ts              the site's game, name, operator and brand files (SITE)
     /media                where local uploads live
     /admin                dashboard queries, admin paths
     /share                share kit, platforms, buttons, badge, image renderer + font

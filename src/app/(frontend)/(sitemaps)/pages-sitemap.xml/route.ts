@@ -2,6 +2,8 @@ import { getServerSideSitemap } from 'next-sitemap'
 import { getPayload } from 'payload'
 import config from '@payload-config'
 import { unstable_cache } from 'next/cache'
+import { portalPaths } from '@/lib/game-portal/paths'
+import { SITE } from '@/lib/site'
 import { shouldSkipBuildStaticGeneration } from '@/utilities/staticGeneration'
 
 const getPagesSitemap = unstable_cache(
@@ -31,7 +33,8 @@ const getPagesSitemap = unstable_cache(
       },
     })
 
-    // `/` is the fixed marketing home; CMS pages all live at `/<slug>`.
+    // `/` redirects to the site's game, so its hub's pages stand in for it;
+    // CMS pages all live at `/<slug>`.
     const pages = (results.docs ?? [])
       .filter((page) => Boolean(page?.slug))
       .map((page) => ({
@@ -39,7 +42,10 @@ const getPagesSitemap = unstable_cache(
         lastmod: page.updatedAt || dateFallback,
       }))
 
-    return [{ loc: `${SITE_URL}/`, lastmod: dateFallback }, ...pages]
+    const { feedback, hub, updates } = portalPaths(SITE.gameSlug)
+    const site = [hub, updates, feedback].map((path) => ({ loc: `${SITE_URL}${path}`, lastmod: dateFallback }))
+
+    return [...site, ...pages]
   },
   ['pages-sitemap'],
   {

@@ -1,8 +1,10 @@
 import React from 'react'
 
-import { Wordmark } from '@/components/marketing/Wordmark'
+import { SITE } from '@/lib/site'
 
-/** The breadcrumb's first step, the small wordmark; Payload already wraps it in a link to the dashboard. */
+/** The breadcrumb's first step, the site's favicon; Payload already wraps it in a link to the dashboard. */
 export default function Icon() {
-  return <Wordmark linked={false} size="m" />
+  // The favicon as served, at Payload's icon size: nothing for next/image to optimise.
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img alt={SITE.name} className="cw-admin-icon" height={18} src="/favicon.svg" width={18} />
 }

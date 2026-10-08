@@ -4,11 +4,11 @@ import type { Slugify } from 'payload/shared'
 import { slugify } from 'payload/shared'
 
 import { isSuperAdmin } from '../../access/isSuperAdmin'
-import { DEMO_GAME_SLUG } from '../../components/marketing/links'
+import { SITE } from '../../lib/site'
 import { reservedSlugError } from '../Issues/reservedSlug'
 
-/** Slugs no studio may take: the home page links to the demo as a live portal. */
-export const isReservedGameSlug = (slug: string): boolean => slug === DEMO_GAME_SLUG
+/** Slugs no studio may take: `/` opens the site's own game (`SITE.gameSlug`). */
+export const isReservedGameSlug = (slug: string): boolean => slug === SITE.gameSlug
 
 // Seeds write with no user; super admins may place the demo by hand.
 const mayUseReservedSlug = (req: PayloadRequest): boolean => !req.user || isSuperAdmin(req.user)

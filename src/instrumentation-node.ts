@@ -1,4 +1,3 @@
-import { getContactHref } from '@/components/marketing/links'
 import { getDiscordConfig } from '@/lib/discord/config'
 import { isOpenSignup, isPoweredByShown } from '@/lib/hosting'
 import { assertLegalDocuments } from '@/lib/legal/documents'
@@ -12,7 +11,6 @@ import { assertNoLegacyPublicMedia } from '@/lib/media/storage'
  */
 export function checkEnvironment(): void {
   try {
-    getContactHref()
     isOpenSignup()
     isPoweredByShown()
     assertNoLegacyPublicMedia()

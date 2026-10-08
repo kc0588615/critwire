@@ -169,14 +169,14 @@ label.field-label:not(.unstyled) .required,
 }
 
 // The sign-in, forgot-password, reset and legal-gate views (Payload's
-// minimal template): the wordmark (xl, in Logo) on the canvas, text m,
+// minimal template): the game's lockup (in Logo) on the canvas, text m,
 // links underlined.
 .template-minimal {
   font-size: var(--size-m);
   letter-spacing: var(--letter-spacing-m);
   line-height: var(--line-m);
 
-  & a:not(.btn, .cw-wordmark) {
+  & a:not(.btn, .brand-logo) {
     color: inherit;
     text-decoration: underline;
     text-underline-offset: 0.2em;
@@ -232,9 +232,16 @@ label.field-label:not(.unstyled) .required,
   }
 }
 
-// The breadcrumb's first step is the wordmark (Icon, at m), wider than
-// Payload's square icon slot.
-.step-nav__home:has(.cw-wordmark) {
-  width: auto;
-  height: auto;
+// The lockup on the sign-in views: l tall, about 290 px wide, which a
+// 390 px screen holds.
+.cw-admin-logo {
+  --brand-logo-h: var(--line-l);
+}
+
+// The breadcrumb's first step is the favicon (Icon), filling Payload's
+// square icon slot at each width.
+.cw-admin-icon {
+  display: block;
+  width: 100%;
+  height: 100%;
 }

@@ -30,8 +30,10 @@ platforms), and the feeds in `src/lib/game-portal/feeds.ts`.
   corner that opens the board in a dialog. Escape or Close shuts it,
   and focus returns to the button.
 
-Every link opens critwire's own page in a new tab, tagged `?ref=embed`,
-so arrivals count under "Embed" in "Where players come from". The
+Every link opens the game's portal page in a new tab, tagged
+`?ref=embed`, so arrivals count under "Embed" in "Where players come
+from"; only "Powered by Critwire" leads elsewhere, to critwire's
+repository. The
 embed contains no forms and no images, and downloads no font file.
 
 ## The snippets
@@ -210,9 +212,9 @@ Contract version 1, served as `application/json; charset=utf-8`.
 
 ## "Powered by Critwire"
 
-Each embed ends with a muted "Powered by Critwire" line, linking to the
-instance's home page with `?ref=embed`. It follows the portal footer's
-rule:
+Each embed ends with a muted "Powered by Critwire" line, linking to
+critwire's repository (`CRITWIRE_REPO_URL` in `src/lib/hosting.ts`),
+since `/` is the site's own game. It follows the portal footer's rule:
 
 - the hosted instance (`CRITWIRE_OPEN_SIGNUP=1`) always shows it;
 - a self-hosted instance hides it, in the embeds and the portal footer

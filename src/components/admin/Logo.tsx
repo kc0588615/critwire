@@ -1,8 +1,8 @@
 import React from 'react'
 
-import { Wordmark } from '@/components/marketing/Wordmark'
+import { BrandLogo } from '@/components/site/BrandLogo'
 
-/** The sign-in, forgot-password and reset views' logo: Critwire's wordmark at xl, linking home. */
+/** The sign-in, forgot-password and reset views' logo: the game's lockup for the admin's scheme, linking home. */
 export default function Logo() {
-  return <Wordmark size="xl" />
+  return <BrandLogo className="cw-admin-logo" />
 }

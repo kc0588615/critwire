@@ -23,7 +23,7 @@ const metaContent = (page: Page, property: string) =>
   page.locator(`head meta[property="${property}"]`).first().getAttribute('content')
 
 test('B1 pages without their own image share /og.png, a 1200×630 PNG', async ({ page }) => {
-  for (const path of ['/', '/legal/terms']) {
+  for (const path of ['/legal/privacy', '/legal/terms']) {
     await page.goto(path)
     expect(await metaContent(page, 'og:image'), path).toMatch(/\/og\.png$/)
     expect(await metaContent(page, 'og:image:width'), path).toBe('1200')

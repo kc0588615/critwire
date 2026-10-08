@@ -7,7 +7,7 @@ import RichText from '@/components/RichText'
 import { HeroLinks } from '@/heros/HeroLinks'
 
 /**
- * The home page's hero band, for a CMS page that wants the loud
+ * The hero band, for a CMS page that wants the loud
  * opening. The media sits below on the canvas rather than behind the
  * text, so the text keeps the palette's guaranteed contrast.
  */

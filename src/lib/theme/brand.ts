@@ -5,7 +5,6 @@ import { writeFileSync } from 'node:fs'
 import path from 'node:path'
 import sharp from 'sharp'
 
-import { HOME_TITLE } from '@/components/marketing/copy'
 import { readFont, svgDocument } from '@/lib/share/images'
 import { DEFAULT_OG_IMAGE } from '@/utilities/mergeOpenGraph'
 
@@ -13,6 +12,8 @@ import { TOKENS } from './tokens'
 
 const PUBLIC_DIR = path.join(import.meta.dirname, '../../../public')
 const WORDMARK = 'critwire'
+/** The share image's line; S8 of plans/2026-10-08-cc-site.md redraws the image for Critter Connect. */
+const OG_TITLE = 'Player feedback and updates for the game site you already have.'
 
 // The brand role at its heavy weight: Inter's display cut, as `next/font`
 // sets it at these sizes (D1). Drawn as glyph paths, so no file needs a font.
@@ -96,11 +97,11 @@ const wrap = (text: string, size: number, width: number): string[] =>
     return lines
   }, [])
 
-/** The dark mode: the mark and the wordmark at the top, the home page's headline at the bottom. */
+/** The dark mode: the mark and the wordmark at the top, `OG_TITLE` at the bottom. */
 const ogSVG = (): string => {
   const { height, width } = DEFAULT_OG_IMAGE
   const { neutral } = TOKENS.dark
-  const lines = wrap(HOME_TITLE, OG.title, width - OG.pad * 2)
+  const lines = wrap(OG_TITLE, OG.title, width - OG.pad * 2)
   if (lines.length > OG.maxTitleLines) throw new Error(`The share image's title needs ${lines.length} lines`)
   const firstBaseline = height - OG.pad - OG.titleLeading * (lines.length - 1)
   const title = lines

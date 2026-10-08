@@ -6,7 +6,7 @@ import type { GameProject } from '@/payload-types'
 import { LegalLinks } from '@/components/legal/LegalLinks'
 import { resolveProjectLinks } from '@/lib/game-portal/links'
 import { portalNavLinks, portalPaths } from '@/lib/game-portal/paths'
-import { isOpenSignup, isPoweredByShown, reportAbuseHref } from '@/lib/hosting'
+import { CRITWIRE_REPO_URL, isOpenSignup, isPoweredByShown, reportAbuseHref } from '@/lib/hosting'
 
 /**
  * The portal's footer. Its base row always links critwire's own legal
@@ -45,9 +45,9 @@ export const PortalFooter: React.FC<{ project: GameProject }> = ({ project }) =>
         {isPoweredByShown() ? (
           <span>
             Powered by{' '}
-            <Link className="fs-link" href="/">
+            <a className="fs-link" href={CRITWIRE_REPO_URL} rel="noopener noreferrer" target="_blank">
               Critwire
-            </Link>
+            </a>
           </span>
         ) : null}
         {isOpenSignup() ? (

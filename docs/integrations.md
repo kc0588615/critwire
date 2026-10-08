@@ -249,9 +249,6 @@ Single source of truth for deploy config (Docker Compose `.env`);
 - `PAYLOAD_SECRET`, `NEXT_PUBLIC_SERVER_URL`, `CRON_SECRET`,
   `PREVIEW_SECRET`
 - `DATABASE_POOL_MAX`, `LOG_LEVEL`
-- `CRITWIRE_CONTACT_URL` — the home page's Contact link, a `mailto:`
-  or `https:` URL; unset hides it, any other value stops the server at
-  startup
 - `CRITWIRE_OPEN_SIGNUP` — `1` on the hosted instance only (signup,
   onboarding, "Create your portal", "Report this page"); unset to
   self-host, any other value stops the server at startup

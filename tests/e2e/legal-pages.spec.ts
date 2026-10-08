@@ -65,8 +65,8 @@ test('LP3 the site, portal and sign-in footers link the three documents', async 
   const hub = `/g/${project.slug}`
   const footer = page.getByRole('contentinfo')
 
-  await test.step('the home page', async () => {
-    await page.goto('/')
+  await test.step('a site page', async () => {
+    await page.goto('/legal/privacy')
     await expectLegalLinks(footer, 'Legal')
   })
 

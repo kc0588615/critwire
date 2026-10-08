@@ -1,6 +1,7 @@
 import type { Browser, Page } from '@playwright/test'
 
 import { gameEditHref, gameShareHref } from '../../src/lib/admin/paths'
+import { SITE } from '../../src/lib/site'
 import { BASE_URL, SECOND_BASE_URL, SECOND_LIMITS, storageStatePath } from './support/env'
 import { asStudioAdmin, createPatchNote, createProject, expect, test } from './support/fixtures'
 
@@ -169,7 +170,7 @@ test('S18.3 a user with no studio is offered onboarding only while signup is ope
   )
 })
 
-test('S18.4 the sign-in page carries Critwire’s wordmark, and signup while it’s open', async ({ browser }) => {
+test('S18.4 the sign-in page carries the site’s lockup, and signup while it’s open', async ({ browser }) => {
   for (const [baseURL, signupOpen] of [
     [BASE_URL, true],
     [SECOND_BASE_URL, false],
@@ -179,7 +180,7 @@ test('S18.4 the sign-in page carries Critwire’s wordmark, and signup while it�
       const page = await context.newPage()
       await page.goto('/admin/login')
       await expect(page).toHaveTitle(/ \| Critwire$/)
-      await expect(page.locator('.login__brand').getByRole('link', { name: 'Critwire' })).toHaveAttribute('href', '/')
+      await expect(page.locator('.login__brand').getByRole('link', { name: SITE.name })).toHaveAttribute('href', '/')
       await expect(page.getByText('Welcome to Critwire.')).toBeVisible()
       const signup = page.getByRole('link', { name: 'Create your portal' })
       if (signupOpen) await expect(signup).toHaveAttribute('href', '/signup')

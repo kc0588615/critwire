@@ -454,7 +454,7 @@ describe the hosted service only; a self-hosted instance replaces them
   passwords, keys, payment, health or other sensitive details at the
   top of each form, which every free-text field names in its
   `aria-describedby`. Discord shows both too (see Discord).
-- **Footer links** (Terms · Privacy · Copyright) on the home page,
+- **Footer links** (Terms · Privacy · Copyright) on critwire's own pages,
   every portal page, the account pages and the admin's sign-in.
 
 ## Deleting games, studios and accounts

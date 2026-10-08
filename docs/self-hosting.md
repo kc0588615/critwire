@@ -7,6 +7,16 @@ them on. You create the accounts and studios in the admin.
 For the server itself (Docker Compose, Nginx, Cloudflare, backups), see
 `docs/deploy.md`. Every variable below is documented in `.env.example`.
 
+## Your site: `src/lib/site.ts`
+
+`/` opens one game's hub, and critwire's own pages (the legal documents,
+the 404s, the admin sign-in) carry that game's name, lockup and
+operator. All of it is `SITE` in `src/lib/site.ts`, with the brand files
+in `public/brand/`, which are Critter Connect's and not covered by the
+MIT licence. Replace both with your own. `SITE.gameSlug` must name a
+game that exists on your instance: until it does, `/` and the site
+header's links lead to the portal's 404.
+
 ## Your own terms: `legal/`
 
 Critwire's code is open source under the MIT License. Each self-hosted
@@ -70,7 +80,7 @@ yourself.
 All of these are off by default. The hosted instance turns them on.
 
 - `CRITWIRE_OPEN_SIGNUP=1` opens `/signup`, email verification,
-  onboarding, the home page's "Create your portal" and the portals'
+  onboarding, the admin sign-in's "Create your portal" and the portals'
   "Report this page" link, whose reports only super admins see. Unset or
   empty turns all of them off; those URLs then answer 404. Any other
   value stops the server at startup. Signup needs Resend in production.
@@ -91,7 +101,8 @@ public.
 
 ## "Powered by Critwire"
 
-The portal footer and every embed end with "Powered by Critwire". A
+The portal footer and every embed end with "Powered by Critwire",
+linking to critwire's repository. A
 self-hosted instance can hide it with `CRITWIRE_HIDE_POWERED_BY=1`.
 Unset or empty shows it. Any other value stops the server at startup,
 and so does `1` together with `CRITWIRE_OPEN_SIGNUP=1`: the hosted

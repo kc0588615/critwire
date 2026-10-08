@@ -1,5 +1,8 @@
 import type { NextConfig } from 'next'
 
+import { portalPaths } from './src/lib/game-portal/paths'
+import { SITE } from './src/lib/site'
+
 export const redirects: NextConfig['redirects'] = async () => {
   const internetExplorerRedirect = {
     destination: '/ie-incompatible.html',
@@ -41,5 +44,9 @@ export const redirects: NextConfig['redirects'] = async () => {
     source: '/g/:game/roadmap',
   }
 
-  return [internetExplorerRedirect, ...portalRenames, roadmapAlias]
+  // critwire.com is the game's site: `/` opens its hub (D24). 307 for the
+  // same reason as the alias; the query passes through (`/?ref=x`).
+  const siteHome = { destination: portalPaths(SITE.gameSlug).hub, permanent: false, source: '/' }
+
+  return [internetExplorerRedirect, ...portalRenames, roadmapAlias, siteHome]
 }

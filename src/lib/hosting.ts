@@ -1,6 +1,6 @@
 /**
  * Whether this instance offers open signup: `/signup`, verification,
- * onboarding, the home page's call to action and the portals' "Report
+ * onboarding, the admin sign-in's call to action and the portals' "Report
  * this page" link. Only the hosted instance turns it on; unset or empty
  * is the self-hosted default. Checked at boot by `instrumentation-node.ts`.
  */
@@ -32,6 +32,9 @@ export function isPoweredByShown(): boolean {
   }
   return false
 }
+
+/** Critwire's source, where "Powered by Critwire" leads: `/` is the site's own game (D27). */
+export const CRITWIRE_REPO_URL = 'https://github.com/kc0588615/critwire'
 
 /** Where "Create your portal" leads. */
 export const SIGNUP_PATH = '/signup'

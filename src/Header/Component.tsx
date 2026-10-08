@@ -1,18 +1,20 @@
 import Link from 'next/link'
 import React from 'react'
 
-import { MARKETING_NAV } from '@/components/marketing/links'
-import { Wordmark } from '@/components/marketing/Wordmark'
+import { BrandLogo } from '@/components/site/BrandLogo'
+import { portalNavLinks } from '@/lib/game-portal/paths'
+import { SITE } from '@/lib/site'
 
+/** Critwire's own pages: the game's lockup, linking home, and the hub's pages (D28). */
 export function Header() {
   return (
     <header className="cw-header">
       <div className="cw-shell cw-header-bar">
-        <Wordmark />
-        <nav aria-label="Main">
+        <BrandLogo className="cw-header-logo" />
+        <nav aria-label="Main" className="cw-header-nav">
           <ul className="cw-header-links">
-            {MARKETING_NAV.map(({ href, label, wideOnly }) => (
-              <li className={wideOnly ? 'cw-header-wide' : undefined} key={href}>
+            {portalNavLinks(SITE.gameSlug).map(({ href, label }) => (
+              <li key={href}>
                 <Link className="fs-tap fs-link cw-nav-link" href={href}>
                   {label}
                 </Link>

@@ -1,0 +1,45 @@
+/*
+ * The game's lockup (BrandLogo): the light file on light schemes, the dark
+ * file on dark ones. Public pages follow the system setting; the admin
+ * follows its own switch, which Payload writes to `html[data-theme]`.
+ * Unlayered and imported by BrandLogo.tsx, so it loads wherever the
+ * lockup renders: critwire's pages and the admin. Its height is
+ * `--brand-logo-h`, l by default; a surface sets it on the lockup's class,
+ * from any layer, since nothing here sets it.
+ */
+.brand-logo {
+  display: inline-flex;
+  align-items: center;
+}
+
+/* The linked lockup is a tap target (D10). */
+a.brand-logo {
+  min-height: var(--tap-min);
+}
+
+.brand-logo-img {
+  width: auto;
+  height: var(--brand-logo-h, var(--size-l));
+}
+
+.brand-logo-dark {
+  display: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .brand-logo-light {
+    display: none;
+  }
+
+  :root:not([data-theme]) .brand-logo-dark {
+    display: block;
+  }
+}
+
+[data-theme='dark'] .brand-logo-light {
+  display: none;
+}
+
+[data-theme='dark'] .brand-logo-dark {
+  display: block;
+}

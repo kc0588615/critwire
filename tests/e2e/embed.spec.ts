@@ -11,6 +11,7 @@ import { feedbackHref } from '../../src/lib/game-portal/feedbackSearchParams'
 import { portalPaths } from '../../src/lib/game-portal/paths'
 import { ARCHIVED_STATUSES, PUBLIC_STAGES, type PublicStageId, statusesFor } from '../../src/lib/game-portal/stages'
 import { DEFAULT_THEME_COLORS } from '../../src/lib/game-portal/theme'
+import { CRITWIRE_REPO_URL } from '../../src/lib/hosting'
 import { withRef } from '../../src/lib/share/kit'
 import { frameHeights } from './support/embedHost'
 import { BASE_URL, SECOND_BASE_URL, storageStatePath } from './support/env'
@@ -702,7 +703,7 @@ test('E7 the embeds may be framed anywhere; the portal only by itself', async ({
   }
 })
 
-test('E11 "Powered by Critwire" links home with ref=embed; a self-hosted instance can hide it', async ({
+test('E11 "Powered by Critwire" links to critwire’s repository; a self-hosted instance can hide it', async ({
   api,
   embedHost,
   page,
@@ -715,13 +716,13 @@ test('E11 "Powered by Critwire" links home with ref=embed; a self-hosted instanc
   const selfHosted = await createProject(aOwner, world.tenants.A.id, uniqueSlug('embed-unbranded'))
   const frame = page.frameLocator('iframe')
 
-  await test.step('hosted (3100): each embed’s last line links home, tagged, in a new tab', async () => {
+  await test.step('hosted (3100): each embed’s last line links to the repository, in a new tab', async () => {
     for (const widget of ['board', 'updates'] as const) {
       await page.goto(embedHost.url({ game: hosted.slug, widget }))
       const line = frame.locator('.cw-embed-powered')
       await expect(line, widget).toHaveText('Powered by Critwire')
       const link = line.getByRole('link', { name: 'Critwire' })
-      await expect(link, widget).toHaveAttribute('href', tagged('/'))
+      await expect(link, widget).toHaveAttribute('href', CRITWIRE_REPO_URL)
       await expect(link, widget).toHaveAttribute('target', '_blank')
     }
   })

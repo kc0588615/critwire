@@ -6,8 +6,8 @@ import { extractID } from 'payload/shared'
 
 import type { GameProject, Media } from '../payload-types'
 
-import { DEMO_GAME_SLUG } from '../components/marketing/links'
 import { mergeTheme, type SiteThemeV1 } from '../lib/game-portal/theme'
+import { SITE } from '../lib/site'
 
 /**
  * Content seed for the Critter Connect demo project.
@@ -19,7 +19,7 @@ import { mergeTheme, type SiteThemeV1 } from '../lib/game-portal/theme'
  * Local API and is intended to run from that route.
  */
 
-const GAME_SLUG = DEMO_GAME_SLUG
+const GAME_SLUG = SITE.gameSlug
 const DEMO_TENANT = { name: 'Critwire Demo', slug: 'critwire-demo' } as const
 const LAUNCH_PATCH_NOTE_SLUG = 'v0-1-0-launch'
 const SAMPLE_ISSUE_SLUG = 'card-flicker-on-open'
