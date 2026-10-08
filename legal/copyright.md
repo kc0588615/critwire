@@ -1,12 +1,12 @@
 ---
-version: 0.1
-effective: 2026-10-04
+version: 0.2
+effective: 2026-10-08
 status: draft
 ---
 
-critwire.com is run by Haunted Pavement LLC, a Wisconsin limited liability company ("we" and "us"). You can reach us at admin@critwire.com, or by post at [LLC street address].
+critwire.com is Critter Connect's feedback and updates site. It's run by Haunted Pavement LLC, a Wisconsin limited liability company ("we" and "us"). You can reach us at admin@critwire.com, or by post at [LLC street address].
 
-This policy covers only content hosted at critwire.com. Critwire's code is open source under the MIT License, so anyone can run their own copy. Each self-hosted copy is run by its own operator under its own terms, and this policy doesn't apply to it.
+This policy covers only content hosted at critwire.com: player feedback, and the updates and images the game's team posts. The site runs on critwire, open-source software under the MIT License; anyone can run their own copy, under their own terms, and this policy doesn't apply to those copies.
 
 We respect copyright, and we respond to notices that follow the U.S. Digital Millennium Copyright Act (DMCA).
 
@@ -29,7 +29,7 @@ Our designated agent is [DMCA agent: pending registration]. Until the agent is r
 
 ## What we do with a notice
 
-When we receive a valid notice, we remove the material or disable access to it promptly. We tell the studio whose portal it was on, and send them a copy of the notice. Players send feedback without an account, so we can't usually reach the person who sent a piece of feedback.
+When we receive a valid notice, we remove the material or disable access to it promptly. Players send feedback without an account, so we can't usually reach the person who sent a piece of feedback. When the material was posted under an admin account, we tell that admin and send them a copy of the notice.
 
 ## Counter-notices
 
@@ -51,11 +51,11 @@ Only send a notice or counter-notice if you're sure it's accurate. Under U.S. la
 
 ## Repeat infringers
 
-We suspend a studio that receives [repeat-infringer threshold] valid notices. A suspended studio's portals are hidden, and its members can't add or change anything in it. We may also close the accounts involved, as our [Terms of Service](/legal/terms) describe.
+We close the account of an admin whose posts receive [repeat-infringer threshold] valid notices, as our [Terms of Service](/legal/terms) describe. Players don't have accounts, so we can't single out one player; we remove each piece of infringing feedback, and may stop publishing feedback that copies the same material.
 
-## Self-hosted instances
+## Other sites
 
-We don't host or control content on self-hosted copies of critwire. Send notices about one of them to its own operator.
+We don't host or control the game at play.critterconnect.org, critterconnect.org, or other copies of critwire. Send notices about them to whoever runs them.
 
 ## Contact
 
