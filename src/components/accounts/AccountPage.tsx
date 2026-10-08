@@ -4,7 +4,7 @@ import React from 'react'
  * The shell every account page shares (signup, verification, onboarding,
  * abuse reports): one narrow column on the canvas with a heading, a lede,
  * the page's notices, then its form. The portal's form components
- * (`FormField`, `FormNotice`, `TurnstileField`) read cw's roles, which
+ * (`FormField`, `FormNotice`, `TurnstileField`) read the theme's roles, which
  * `.cw-root` maps onto their `--fs-*` variables (site.css).
  */
 export const AccountPage: React.FC<{

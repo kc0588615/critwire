@@ -69,7 +69,7 @@ export const AdminBar: React.FC<{
             })
           }}
           // Resets of the bar's own inline styles (a dark fixed strip in
-          // its own font), so index.scss's cw toolbar shows through.
+          // its own font), so index.scss's cc toolbar shows through.
           style={{
             backgroundColor: 'transparent',
             color: 'inherit',

@@ -33,7 +33,7 @@ export default async function SignupPage({ searchParams }: Args) {
         lede="If that address can sign up, a link to choose your password is on its way. It can take a minute; check your spam folder too."
         title="Check your inbox"
       >
-        <p className="cw-account-lede">
+        <p className="cw-account-note">
           Already have an account? <Link className="fs-link" href="/admin/login">Sign in</Link>, or{' '}
           <Link className="fs-link" href="/admin/forgot">reset your password</Link>.
         </p>
@@ -74,7 +74,7 @@ export default async function SignupPage({ searchParams }: Args) {
           Send my link
         </button>
       </form>
-      <p className="cw-account-lede">
+      <p className="cw-account-note">
         Already have an account? <Link className="fs-link" href="/admin/login">Sign in</Link>
       </p>
     </AccountPage>

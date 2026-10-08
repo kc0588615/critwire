@@ -1,13 +1,13 @@
 /*
- * Critwire's own site on cw (plan §4): the canvas and text roles, the
- * brand role for headings, flat surfaces separated by edges. Imported
- * into `@layer components`, so Tailwind utilities on the same element
- * win. The shadcn and prose variables are re-pointed here, so `Button`,
- * `CMSLink` and rich text follow cw. The lockup is in
+ * The site's own pages on cc: the canvas and text roles, the brand role
+ * for headings, flat surfaces separated by edges. Imported into
+ * `@layer components`, so Tailwind utilities on the same element win. The
+ * shadcn and prose variables are re-pointed here, so `Button`, `CMSLink`
+ * and rich text follow cc. The lockup is in
  * components/site/brand-logo.css.
  */
 
-/* Critwire's pages follow the visitor's system setting, with no toggle;
+/* The site's pages follow the visitor's system setting, with no toggle;
    every colour below is a light-dark() token, so this one line switches
    them all. The layout's viewport meta says the same to the browser. */
 .cw-root {
@@ -41,7 +41,7 @@
   --fs-link-line: currentColor;
 
   /* Rich text: tailwind.config.mjs maps every prose colour, the sizes and
-     the measure to these. Body text is cw's m step on the editorial role. */
+     the measure to these. Body text is cc's m step on the editorial role (D9). */
   --prose-fg: var(--cte-text);
   --prose-muted: var(--cte-text-muted);
   --prose-border: var(--cte-border);
@@ -61,7 +61,7 @@
   line-height: var(--line-s);
 }
 
-/* Headings speak in the brand role, heavy, and each sets its own cw step.
+/* Headings speak in the brand role, heavy, and each sets its own cc step.
    The font's own leading covers a heading that sets only a size. */
 .cw-root :where(h1, h2, h3, h4) {
   font-family: var(--font-brand);
@@ -80,7 +80,7 @@
   flex: 1 0 auto;
 }
 
-/* ── Header: cw's Navigation menu on the canvas, over a divider ── */
+/* ── Header: cc's Navigation menu on the canvas, over a divider ── */
 
 .cw-header {
   position: relative;
@@ -129,8 +129,8 @@
   }
 }
 
-/* A Navigation menu link: the underline is the cue (A7), the hover a
-   surface-muted fill. */
+/* A Navigation menu link: the underline is the cue (A7), the hover cc's
+   n3 fill. */
 .cw-nav-link {
   border-radius: var(--radius-s);
   padding-inline: var(--space-s);
@@ -266,9 +266,24 @@
   text-wrap: balance;
 }
 
-/* The version line, the ledes and the 404's text: m, muted. */
-:is(.cw-legal-version, .cw-account-lede, .cw-not-found-text) {
+/* The version line is meta: s medium, muted (D9). */
+.cw-legal-version {
   color: var(--cte-text-muted);
+  font-weight: var(--weight-ui-medium);
+}
+
+/* An account page's side lines (a version, "Already have an account?"):
+   the body's s, muted. */
+.cw-account-note {
+  color: var(--cte-text-muted);
+}
+
+/* The ledes and the 404's text: cc's l, muted (D9). */
+:is(.cw-account-lede, .cw-not-found-text) {
+  color: var(--cte-text-muted);
+  font-size: var(--size-l);
+  letter-spacing: var(--letter-spacing-l);
+  line-height: var(--line-l);
 }
 
 /* ── Legal documents: /legal/terms, privacy, copyright ──── */
@@ -279,7 +294,8 @@
   margin-bottom: clamp(var(--space-xl), 4vw, var(--space-xxl));
 }
 
-/* A draft's banner: color-1 at 20 %, carrying only text-strong (A10). */
+/* A draft's banner: color-1 at 20 %, carrying only text-strong, n10
+   (16.32:1 light, 14.95:1 dark; A10). */
 .cw-legal-draft {
   border-radius: var(--radius-s);
   padding: var(--space-s) var(--space-m);
@@ -337,7 +353,7 @@
 
 /* ── Focus and motion ───────────────────────────────────── */
 
-/* cw's ring: half-strength text colour, offset clear of any fill (A11, D28). */
+/* cc's ring: 2 px of color-1, offset clear of any fill (A5). */
 .cw-root :focus-visible {
   outline: var(--focus-ring-outline);
   outline-offset: var(--focus-ring-offset);

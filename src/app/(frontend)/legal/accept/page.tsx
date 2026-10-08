@@ -53,7 +53,7 @@ export default async function LegalAcceptPage({ searchParams }: Args) {
             <a className="fs-link" href={LEGAL_LINKS[legalDocument.slug].href} rel="noopener" target="_blank">
               {legalDocument.title}
             </a>
-            <span className="cw-account-lede"> · {legalVersionLine(legalDocument)}</span>
+            <span className="cw-account-note"> · {legalVersionLine(legalDocument)}</span>
           </li>
         ))}
       </ul>
@@ -72,7 +72,7 @@ export default async function LegalAcceptPage({ searchParams }: Args) {
         </button>
       </form>
 
-      <p className="cw-account-lede">
+      <p className="cw-account-note">
         If you don’t agree, email{' '}
         <a className="fs-link" href={`mailto:${LEGAL_CONTACT_EMAIL}`}>
           {LEGAL_CONTACT_EMAIL}
