@@ -13,7 +13,7 @@ type DisplayVoice = {
 
 /**
  * The display voice per `typography` token; the faces come from `./fonts.ts`.
- * Sizes and line heights are cw's text steps for every voice (portal.css).
+ * Sizes and line heights are the theme's text steps for every voice (portal.css).
  */
 const DISPLAY: Record<SiteThemeV1['typography'], DisplayVoice> = {
   editorial: {
@@ -48,7 +48,7 @@ const DISPLAY: Record<SiteThemeV1['typography'], DisplayVoice> = {
   },
 }
 
-/** A hub section's vertical padding: multiples of cw's largest space step. */
+/** A hub section's vertical padding: multiples of the theme's largest space step. */
 const SECTION_Y: Record<SiteThemeV1['density'], string> = {
   cinematic: 'clamp(calc(var(--space-xxl) * 2), 9vw, calc(var(--space-xxl) * 3.5))',
   compact: 'clamp(var(--space-xxl), 5vw, calc(var(--space-xxl) * 2))',
@@ -72,15 +72,19 @@ export const paletteVars = (colors: SiteThemeV1['colors'], prefix: string): CSSP
     [`${prefix}-error`]: colors.error,
   }) as CSSProperties
 
-/** The theme's two corner radii, for surfaces and for controls, as cw radius tokens. */
+/** The theme's corner radii, for surfaces, controls and buttons, as the theme's radius tokens. */
 export const radiusVars = (shape: SiteThemeV1['shape']): CSSProperties => {
-  const { surface, control } = SHAPE_RADIUS[shape]
-  return { '--fs-radius': `var(--radius-${surface})`, '--fs-radius-control': `var(--radius-${control})` } as CSSProperties
+  const { surface, control, button } = SHAPE_RADIUS[shape]
+  return {
+    '--fs-radius': `var(--radius-${surface})`,
+    '--fs-radius-control': `var(--radius-${control})`,
+    '--fs-radius-button': `var(--radius-${button})`,
+  } as CSSProperties
 }
 
 /**
  * Maps validated theme tokens to the `--fs-*` custom properties the
- * portal stylesheet and components consume, beside cw's tokens. Only
+ * portal stylesheet and components consume, beside the theme's tokens. Only
  * these variables, never raw values, appear in component styling. The
  * `motion` token is the root's `data-fs-motion` (`PortalRoot`).
  */

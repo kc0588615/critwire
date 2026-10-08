@@ -22,9 +22,9 @@
   --border: var(--cte-border);
 
   /* The shared control layer (portal.css: fs-btn, fs-input, fs-link and
-     the form classes) on cw's roles, for every page here, the account
-     pages' forms included. Links are underlined in currentColor: color-1
-     is 2.08:1 on white (A7). */
+     the form classes) on the theme's roles, for every page here, the
+     account pages' forms included: buttons are cc's pills (D11). Links are
+     underlined in currentColor: color-1 is 4.03:1 on white (A7). */
   --fs-bg: var(--cte-canvas);
   --fs-fg: var(--cte-text);
   --fs-muted-fg: var(--cte-text-muted);
@@ -37,6 +37,7 @@
   --fs-error: var(--cte-danger);
   --fs-radius: var(--radius-m);
   --fs-radius-control: var(--radius-s);
+  --fs-radius-button: var(--radius-full);
   --fs-link-line: currentColor;
 
   /* Rich text: tailwind.config.mjs maps every prose colour, the sizes and
@@ -52,11 +53,12 @@
 
   background: var(--cte-canvas);
   color: var(--cte-text);
+  /* UI text is cc's s; prose sets m above (D9). */
   font-family: var(--font-ui);
-  font-size: var(--size-m);
+  font-size: var(--size-s);
   font-weight: var(--weight-ui-regular);
-  letter-spacing: var(--letter-spacing-m);
-  line-height: var(--line-m);
+  letter-spacing: var(--letter-spacing-s);
+  line-height: var(--line-s);
 }
 
 /* Headings speak in the brand role, heavy, and each sets its own cw step.

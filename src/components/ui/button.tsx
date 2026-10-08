@@ -3,9 +3,9 @@ import { Slot } from '@radix-ui/react-slot'
 import { type VariantProps, cva } from 'class-variance-authority'
 import * as React from 'react'
 
-// cw's Button through the shared control layer (portal.css), which reads
-// the --fs-* roles; on critwire's pages site.css points them at cw's
-// roles, so CMS links follow the theme. cw has one control size, so `lg`
+// cc's Button through the shared control layer (portal.css), which reads
+// the --fs-* roles; on critwire's pages site.css points them at the
+// theme's roles, so CMS links follow it. cc has one control size, so `lg`
 // is `default`, and `clear` (a link) adds nothing. Focus is the root's ring.
 const buttonVariants = cva('', {
   variants: {

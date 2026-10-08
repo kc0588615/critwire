@@ -36,12 +36,13 @@
   --kit-radius: var(--fs-radius-control);
   --kit-radius-surface: var(--fs-radius);
 
+  /* UI text is cc's s; reading text (.fs-body, prose) sets m itself (D9). */
   background: var(--fs-bg);
   color: var(--fs-fg);
   font-family: var(--font-ui);
-  font-size: var(--size-m);
-  letter-spacing: var(--letter-spacing-m);
-  line-height: var(--line-m);
+  font-size: var(--size-s);
+  letter-spacing: var(--letter-spacing-s);
+  line-height: var(--line-s);
 }
 
 /*
@@ -49,7 +50,8 @@
  * the accent is only a fill (with --fs-accent-fg on it) or a
  * decoration; --fs-border only draws dividers; interactive boundaries
  * use --fs-muted-fg. Every pair used is one the theme schema checks,
- * so any valid theme reads. No all-caps text, shadows or gradients.
+ * so any valid theme reads. No all-caps text or gradients; the only
+ * shadow is cc's popover shadow m on cards and notices (D15).
  */
 
 /* ── Layout ─────────────────────────────────────────────── */
@@ -77,10 +79,10 @@
   padding-top: calc(var(--fs-section-y) / 2);
 }
 
-/* ── Type scale: cw's text steps (plan §7) ─────────────────── */
+/* ── Type scale: cc's text steps (D9) ─────────────────────── */
 
 /* The studio's display voice (themeStyle's DISPLAY) sets family, weight,
-   width and tracking; the size and line height are cw's, for every voice.
+   width and tracking; the size and line height are the theme's, for every voice.
    A long word breaks rather than widening a 390px screen. */
 .fs-display,
 .fs-h1,
@@ -187,14 +189,14 @@
   margin-bottom: var(--space-xl);
 }
 
-/* ── Controls: cw's Button and Field (plan §4) ─────────── */
+/* ── Controls: cc's Button and Field ────────────────────── */
 
 /*
- * One control geometry, cw's: padding xs/m, text m in ui medium, radius
- * --fs-radius-control, and a 1px press on the small motion. The height
- * keeps the 44px tap target over cw's 34px (D10). Edges are inset
- * box-shadows in --fs-control-edge, so they never change a control's size
- * and the focus ring below keeps them beside its halo.
+ * cc's Button: a pill (--fs-radius-button, D11), padding s/l, label s in
+ * ui medium, and a 1px press on the small motion. Its height, s + line s
+ * + s, is the 44px tap target (D10). Edges are inset box-shadows in
+ * --fs-control-edge, so they never change a control's size and the focus
+ * ring below keeps them beside its halo.
  */
 .fs-btn {
   --fs-control-edge: var(--border-shadow-none);
@@ -203,13 +205,13 @@
   justify-content: center;
   gap: var(--space-xs);
   min-height: var(--tap-min);
-  border-radius: var(--fs-radius-control);
-  padding: var(--space-xs) var(--space-m);
+  border-radius: var(--fs-radius-button);
+  padding: var(--space-s) var(--space-l);
   box-shadow: var(--fs-control-edge);
-  font-size: var(--size-m);
+  font-size: var(--size-s);
   font-weight: var(--weight-ui-medium);
-  letter-spacing: var(--letter-spacing-m);
-  line-height: var(--line-m);
+  letter-spacing: var(--letter-spacing-s);
+  line-height: var(--line-s);
   text-decoration: none;
   white-space: nowrap;
   transition-duration: var(--motion-duration);
@@ -227,15 +229,16 @@
 }
 
 /* Primary, and a pressed toggle (the vote): the accent fill with its label
-   in accent-fg (D6, A1). The fill stays exact on hover, as cw's does, so
-   the pair keeps its checked contrast. */
+   in accent-fg (A1). The fill stays exact on hover, as cc's does, so the
+   pair keeps its checked contrast. */
 .fs-btn-primary,
 .fs-btn[aria-pressed='true'] {
   background: var(--fs-accent);
   color: var(--fs-accent-fg);
 }
 
-/* cw's outline Button: a divider-weight edge, the surface on hover. */
+/* cc's outline Button: a 1px edge in the border role (A4), the surface on
+   hover (the palette's nearest slot to cc's n3 hover). */
 .fs-btn-secondary {
   --fs-control-edge: inset 0 0 0 var(--stroke-s) var(--fs-border);
   background: transparent;
@@ -246,22 +249,24 @@
   background: var(--fs-surface);
 }
 
-/* cw's Field input, with the field boundary in muted-fg (D5, A3): the
-   schema checks it against bg and surface, so it reads under any theme. */
+/* cc's Text field and Select: the surface fill (the palette's nearest slot
+   to cc's n3), padding s/m, text s, with the field boundary in muted-fg
+   (A3): the schema checks fg and muted-fg against surface and muted-fg
+   against bg, so the field and its edge read under any theme. */
 .fs-input {
   --fs-control-edge: inset 0 0 0 var(--stroke-s) var(--fs-muted-fg);
   width: 100%;
   min-height: var(--tap-min);
   border-radius: var(--fs-radius-control);
-  padding: var(--space-xs) var(--space-s);
-  background: var(--fs-bg);
+  padding: var(--space-s) var(--space-m);
+  background: var(--fs-surface);
   box-shadow: var(--fs-control-edge);
   color: var(--fs-fg);
   font: inherit;
-  font-size: var(--size-m);
+  font-size: var(--size-s);
   font-weight: var(--weight-ui-regular);
-  letter-spacing: var(--letter-spacing-m);
-  line-height: var(--line-m);
+  letter-spacing: var(--letter-spacing-s);
+  line-height: var(--line-s);
   transition: box-shadow var(--motion-duration) var(--motion-easing);
 }
 
@@ -274,7 +279,8 @@
   opacity: 1;
 }
 
-/* A text link: the underline is the cue, in --fs-link-line. */
+/* A text link: the underline is the cue, in --fs-link-line. cc has no link;
+   color-1 as text fails 4.5:1, so the text keeps its colour (A7). */
 .fs-link {
   color: inherit;
   text-decoration-line: underline;
@@ -285,6 +291,23 @@
 
 .fs-link:hover {
   text-decoration-thickness: var(--stroke-l);
+}
+
+/* ── Surfaces: cc's Popover and Toast (D15) ──────────────── */
+
+/* Board cards, the studio's note, forms and notices: the surface fill,
+   the 1px edge in the border role (A4), cc's shadow m and the theme's
+   surface radius. Each sets its own padding. The shadow is black at 5 and
+   7.5 %, so it shows on light palettes and dark ones stay flat, as cc is. */
+.fs-board-card,
+.fs-note,
+.fs-form,
+.fs-notice {
+  border-radius: var(--fs-radius);
+  background: var(--fs-surface);
+  box-shadow:
+    0 0 0 var(--stroke-s) var(--fs-border),
+    var(--shadow-m);
 }
 
 /* ── Nav: a solid bar; one row on desktop, two below 64rem ── */
@@ -564,7 +587,7 @@
   line-height: var(--line-s);
 }
 
-/* The one hub moment: the plate settles into the art, on cw's large
+/* The one hub moment: the plate settles into the art, on the theme's large
    motion. Transform only, so the title paints at the first frame; the
    root motion rules below land it on its end state. `backwards`, not
    `both`: the end state is the plate's own, so nothing stays attached
@@ -922,15 +945,15 @@
   margin-top: var(--space-s);
 }
 
-/* cw's emphasis chip. Not interactive, so no edge: a quiet fill carrying
-   fg text (the portal has no surface-muted, so it's the surface). */
+/* cc's emphasis-type chip: the accent fill with accent-fg on it (A10), a
+   pair the schema checks. Not interactive, so no edge. */
 .fs-tag {
   display: inline-flex;
   align-items: center;
   border-radius: var(--fs-radius-control);
   padding: 0 var(--space-xs);
-  background: var(--fs-surface);
-  color: var(--fs-fg);
+  background: var(--fs-accent);
+  color: var(--fs-accent-fg);
   font-size: var(--size-s);
   font-weight: var(--weight-ui-medium);
   letter-spacing: var(--letter-spacing-s);
@@ -1026,15 +1049,12 @@
   gap: var(--space-s);
 }
 
-/* cw's Popover surface: the surface, an edge, padding m; its title m
+/* A board card: cc's Popover surface (Surfaces, above), padding m; its title
    medium, then the meta. */
 .fs-board-card {
   display: grid;
   gap: var(--space-xs);
-  border-radius: var(--fs-radius);
   padding: var(--space-m);
-  background: var(--fs-surface);
-  box-shadow: 0 0 0 var(--stroke-s) var(--fs-border);
 }
 
 .fs-board-card-title {
@@ -1049,10 +1069,6 @@
   font-size: var(--size-s);
   letter-spacing: var(--letter-spacing-s);
   line-height: var(--line-s);
-}
-
-.fs-board-card .fs-tag {
-  background: var(--fs-bg);
 }
 
 .fs-board-more {
@@ -1087,7 +1103,7 @@
   display: inline-block;
 }
 
-/* The count rolls on cw's small motion. */
+/* The count rolls on the theme's small motion. */
 .fs-vote-count[data-roll='up'] {
   animation: fs-roll-up var(--motion-duration) var(--motion-easing);
 }
@@ -1108,7 +1124,7 @@
   }
 }
 
-/* +1 or −1 rises off the button's end and fades on cw's large motion;
+/* +1 or −1 rises off the button's end and fades on the theme's large motion;
    hidden when it lands. */
 .fs-vote-ghost {
   position: absolute;
@@ -1147,16 +1163,13 @@
   flex-basis: 100%;
 }
 
-/* The studio's note: needs more info, a workaround, or the fix. cw's
-   Popover surface, as a board card; its title heavy, as it heads a part
-   of the page. */
+/* The studio's note: needs more info, a workaround, or the fix. cc's
+   Popover surface (Surfaces, above), as a board card; its title heavy, as it
+   heads a part of the page. */
 .fs-note {
   display: grid;
   gap: var(--space-xs);
-  border-radius: var(--fs-radius);
   padding: var(--space-m);
-  background: var(--fs-surface);
-  box-shadow: 0 0 0 var(--stroke-s) var(--fs-border);
 }
 
 .fs-note-head {
@@ -1211,15 +1224,12 @@
 
 /* ── Forms: report and contact (plan §5) ───────────────── */
 
-/* The form sits on one cw Popover surface; the controls keep the bg fill
-   and muted-fg edge, both schema-checked against surface. */
+/* The form sits on one cc Popover surface (Surfaces, above); its fields share
+   the surface fill and keep the muted-fg edge (A3). */
 .fs-form {
   display: grid;
   gap: var(--space-m);
-  border-radius: var(--fs-radius);
   padding: var(--space-l);
-  background: var(--fs-surface);
-  box-shadow: 0 0 0 var(--stroke-s) var(--fs-border);
 }
 
 .fs-field {
@@ -1228,12 +1238,12 @@
   align-content: start;
 }
 
-/* cw's Field label and description. */
+/* cc's Field label (s, medium) and description (s, muted, A2). */
 .fs-label {
-  font-size: var(--size-m);
+  font-size: var(--size-s);
   font-weight: var(--weight-ui-medium);
-  letter-spacing: var(--letter-spacing-m);
-  line-height: var(--line-m);
+  letter-spacing: var(--letter-spacing-s);
+  line-height: var(--line-s);
 }
 
 .fs-hint {
@@ -1256,21 +1266,23 @@
   gap: var(--space-m);
 }
 
+/* cc's Checkbox: the label s, beside the box. */
 .fs-check {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   gap: var(--space-m);
   align-items: start;
-  line-height: var(--line-m);
+  line-height: var(--line-s);
 }
 
-/* The native box in fg (D9), 20px, inside a 44px-tall target drawn centred
-   on the label's first line. */
+/* The native box, checked in the accent (cc's checked fill; the schema
+   holds it at 3:1 on bg, D14), 20px, inside a 44px-tall target drawn
+   centred on the label's first line. */
 .fs-check input {
   width: 1.25rem;
   height: var(--tap-min);
-  margin: calc((var(--line-m) - var(--tap-min)) / 2) 0 0;
-  accent-color: var(--fs-fg);
+  margin: calc((var(--line-s) - var(--tap-min)) / 2) 0 0;
+  accent-color: var(--fs-accent);
 }
 
 /* Platform beside game version from 40rem; one column on phones. */
@@ -1399,21 +1411,18 @@
   border-radius: var(--fs-radius-control);
 }
 
-/* A form's outcome, as cw's Toast: fg text beside a status shape (D6); the
-   colour is only the shape's fill. */
+/* A form's outcome, as cc's Toast (Surfaces, above): its title, s medium, in fg
+   beside a status shape; the colour is only the shape's fill (A7). */
 .fs-notice {
   display: flex;
   align-items: baseline;
   gap: var(--space-m);
-  border-radius: var(--fs-radius);
   padding: var(--space-m);
-  background: var(--fs-surface);
-  box-shadow: 0 0 0 var(--stroke-s) var(--fs-border);
   color: var(--fs-fg);
-  font-size: var(--size-m);
+  font-size: var(--size-s);
   font-weight: var(--weight-ui-medium);
-  letter-spacing: var(--letter-spacing-m);
-  line-height: var(--line-m);
+  letter-spacing: var(--letter-spacing-s);
+  line-height: var(--line-s);
 }
 
 .fs-notice::before {
@@ -1428,8 +1437,10 @@
   background: var(--fs-success);
 }
 
+/* Square corners: the theme's xs (8px) would round this 12px square into
+   the success dot, and the tones must differ by shape. */
 .fs-notice[data-tone='error']::before {
-  border-radius: var(--radius-xs);
+  border-radius: var(--radius-zero);
   background: var(--fs-error);
 }
 
@@ -1449,7 +1460,7 @@
 
 /* Two-tone ring (WCAG C40, D12): fg outline around a bg halo, at least
    4.5:1 against the page, a surface or an accent fill under any valid
-   theme, on cw's ring geometry. A control keeps its edge inside it. */
+   theme, on the theme's ring geometry (A5). A control keeps its edge inside it. */
 .fs-root :focus-visible {
   outline: var(--focus-ring-width) solid var(--fs-fg);
   outline-offset: var(--focus-ring-offset);

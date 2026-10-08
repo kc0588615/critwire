@@ -87,7 +87,7 @@ const Row: React.FC<{
               : STAGES[row.stage].label}
           </span>
           <FeedbackTypeTag type={feedbackTypeOf(row.type)} />
-          {vote?.voted ? <span className="fs-tag cw-embed-voted">Voted</span> : null}
+          {vote?.voted ? <span className="fs-tag">Voted</span> : null}
         </div>
       </div>
     </li>

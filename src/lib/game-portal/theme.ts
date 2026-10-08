@@ -79,13 +79,17 @@ export const siteMotionSchema = z.enum(['off', 'subtle'])
 
 /**
  * `shape` on the theme's radius scale: the step for surfaces (cards, forms,
- * dialogs) and the one for controls (buttons, fields, the badge). The
+ * dialogs), the one for controls (fields, chips, the badge), and the one
+ * for buttons, which are cc's pills unless the shape is sharp (D11). The
  * portal, the embeds and the badge all read this one table.
  */
-export const SHAPE_RADIUS: Record<z.infer<typeof siteShapeSchema>, { surface: RadiusStep; control: RadiusStep }> = {
-  sharp: { surface: 'zero', control: 'zero' },
-  balanced: { surface: 'm', control: 's' },
-  soft: { surface: 'l', control: 'm' },
+export const SHAPE_RADIUS: Record<
+  z.infer<typeof siteShapeSchema>,
+  { surface: RadiusStep; control: RadiusStep; button: RadiusStep }
+> = {
+  sharp: { surface: 'zero', control: 'zero', button: 'zero' },
+  balanced: { surface: 'm', control: 's', button: 'full' },
+  soft: { surface: 'l', control: 'm', button: 'full' },
 }
 
 export const siteThemeSchema = z.strictObject({
