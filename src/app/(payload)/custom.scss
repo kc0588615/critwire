@@ -68,8 +68,13 @@ $statuses: (
 
   --theme-text: var(--cte-text);
   --theme-border-color: var(--cte-border);
-  // cc's Dialog backdrop: n10 at 20 % in light, n1 at 20 % in dark.
-  --theme-overlay: light-dark(var(--neutral-10-transparent), var(--neutral-1-transparent));
+  // cc's Dialog backdrop: n10 at 20 % in light, n1 at 20 % in dark. The
+  // light value first, for browsers without light-dark(), as the tokens do (D3).
+  --theme-overlay: var(--neutral-10-transparent);
+
+  @supports (color: light-dark(white, black)) {
+    --theme-overlay: light-dark(var(--neutral-10-transparent), var(--neutral-1-transparent));
+  }
 
   --font-body: var(--font-ui);
   --font-mono: var(--font-data);
@@ -81,6 +86,12 @@ $statuses: (
   --accessibility-outline: var(--focus-ring-outline);
   --accessibility-outline-offset: var(--focus-ring-offset);
   --nav-trans-time: var(--motion-duration);
+
+  // Payload stops only its template's own transition under reduced motion;
+  // the nav's open, close and fades read this.
+  @media (prefers-reduced-motion: reduce) {
+    --nav-trans-time: 0s;
+  }
 }
 
 // Payload's buttons, through its own button variables only. Each style's

@@ -26,20 +26,24 @@ a.brand-logo {
   display: none;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme]) .brand-logo-light {
+/* Only where the colours can follow the scheme: without light-dark() the
+   tokens keep their light values (D3), so the light lockup stays. */
+@supports (color: light-dark(white, black)) {
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme]) .brand-logo-light {
+      display: none;
+    }
+
+    :root:not([data-theme]) .brand-logo-dark {
+      display: block;
+    }
+  }
+
+  [data-theme='dark'] .brand-logo-light {
     display: none;
   }
 
-  :root:not([data-theme]) .brand-logo-dark {
+  [data-theme='dark'] .brand-logo-dark {
     display: block;
   }
-}
-
-[data-theme='dark'] .brand-logo-light {
-  display: none;
-}
-
-[data-theme='dark'] .brand-logo-dark {
-  display: block;
 }
