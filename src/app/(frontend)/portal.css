@@ -200,7 +200,9 @@
   line-height: var(--line-s);
 }
 
-/* Numbers always use the ui face, heavy, with digits that line up. */
+/* Numbers are heavy, with digits that line up. Tallies and counts take
+   cc's data face (the embed maps it to the host's font); a version is a
+   label, so it keeps the ui face. */
 .fs-tally,
 .fs-version {
   font-variant-numeric: tabular-nums;
@@ -208,6 +210,8 @@
 }
 
 .fs-tally {
+  font-family: var(--font-data);
+  font-weight: var(--weight-data-heavy);
   font-size: var(--size-l);
   letter-spacing: var(--letter-spacing-l);
   line-height: var(--line-l);
@@ -681,8 +685,9 @@
 
 .fs-vote-inline {
   color: var(--fs-muted-fg);
+  font-family: var(--font-data);
   font-variant-numeric: tabular-nums;
-  font-weight: var(--weight-ui-medium);
+  font-weight: var(--weight-data-medium);
   white-space: nowrap;
 }
 
@@ -955,6 +960,8 @@
   flex: 1 1 9rem;
 }
 
+/* A native select: cc's Select geometry through .fs-input; the arrow and
+   its popup are the browser's (kept), so the end padding is xs. */
 .fs-select {
   padding-right: var(--space-xs);
 }
@@ -1078,9 +1085,10 @@
 .fs-count {
   margin-left: auto;
   color: var(--fs-muted-fg);
+  font-family: var(--font-data);
   font-size: var(--size-s);
   font-variant-numeric: tabular-nums;
-  font-weight: var(--weight-ui-medium);
+  font-weight: var(--weight-data-medium);
   letter-spacing: var(--letter-spacing-s);
   line-height: var(--line-s);
 }
@@ -1137,6 +1145,7 @@
   display: inline-flex;
   overflow: hidden;
   min-width: 1ch;
+  font-family: var(--font-data);
   font-variant-numeric: tabular-nums;
 }
 
@@ -1172,9 +1181,10 @@
   right: var(--space-m);
   bottom: 100%;
   color: var(--fs-fg);
+  font-family: var(--font-data);
   font-size: var(--size-s);
   font-variant-numeric: tabular-nums;
-  font-weight: var(--weight-ui-heavy);
+  font-weight: var(--weight-data-heavy);
   letter-spacing: var(--letter-spacing-s);
   line-height: var(--line-s);
   opacity: 0;
@@ -1367,10 +1377,14 @@
   min-height: 65px;
 }
 
-/* "Bug or idea?": two radio-like cards that link to each form, on cw's
-   control geometry. They take the controls' bg fill and muted-fg edge; the
-   chosen one is marked in fg (a doubled edge and a filled dot, kept: the
-   accent is never on surface, §2). */
+/* "Bug or idea?": cc's Radio group, two rows that link to each form. A row
+   is radius s and padding s; at rest it has no fill, on hover and when
+   chosen the page colour, the palette's nearest slot to cc's n3 on the
+   form's surface. That fill alone is too faint, so each row keeps the
+   muted-fg control edge and the chosen one doubles it in fg (kept). The
+   radio is cc's: a muted-fg ring at rest, and when chosen the accent with
+   an accent-fg dot, on the chosen row's page colour (both pairs the
+   schema checks: accent on bg 3:1, accent-fg on accent 4.5:1). */
 .fs-type-choice {
   display: grid;
   gap: var(--space-xs);
@@ -1391,18 +1405,20 @@
   --fs-control-edge: inset 0 0 0 var(--stroke-s) var(--fs-muted-fg);
   display: grid;
   grid-template-columns: auto 1fr;
-  column-gap: var(--space-m);
+  column-gap: var(--space-xs);
   row-gap: var(--space-xxs);
   align-items: baseline;
   align-content: start;
   min-height: var(--tap-min);
   border-radius: var(--fs-radius-control);
-  padding: var(--space-m);
-  background: var(--fs-bg);
+  padding: var(--space-s);
+  background: transparent;
   box-shadow: var(--fs-control-edge);
   color: var(--fs-fg);
   text-decoration: none;
-  transition: box-shadow var(--motion-duration) var(--motion-easing);
+  transition-duration: var(--motion-duration);
+  transition-property: background-color, box-shadow;
+  transition-timing-function: var(--motion-easing);
 }
 
 .fs-type-option::before {
@@ -1416,15 +1432,21 @@
 
 .fs-type-option:hover {
   --fs-control-edge: inset 0 0 0 var(--stroke-s) var(--fs-fg);
+  background: var(--fs-bg);
 }
 
 .fs-type-option[aria-current] {
   --fs-control-edge: inset 0 0 0 var(--stroke-l) var(--fs-fg);
+  background: var(--fs-bg);
 }
 
 .fs-type-option[aria-current]::before {
-  border-color: var(--fs-fg);
-  background: var(--fs-fg);
+  border-color: var(--fs-accent);
+  background: radial-gradient(
+    circle,
+    var(--fs-accent-fg) 0 var(--space-xxs),
+    var(--fs-accent) var(--space-xxs)
+  );
 }
 
 .fs-type-option-name {
