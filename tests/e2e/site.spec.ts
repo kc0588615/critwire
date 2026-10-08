@@ -1,20 +1,25 @@
-import type { APIRequestContext } from '@playwright/test'
+import type { APIRequestContext, Page } from '@playwright/test'
 import sharp from 'sharp'
 
 import type { GameProject } from '../../src/payload-types'
+import { embedSnippets } from '../../src/lib/embed/snippets'
 import { portalNavLinks, portalPaths } from '../../src/lib/game-portal/paths'
 import { DEFAULT_THEME_COLORS } from '../../src/lib/game-portal/theme'
 import { LEGAL_LINKS, LEGAL_SLUGS } from '../../src/lib/legal/paths'
+import { shareKit } from '../../src/lib/share/kit'
+import { SHARE_PLATFORMS } from '../../src/lib/share/platforms'
 import { SITE } from '../../src/lib/site'
+import type { EmbedHostQuery } from './support/embedHost'
 import { BASE_URL } from './support/env'
-import { createProject, expect, newRequestContext, test } from './support/fixtures'
+import { createIssue, createProject, expect, newRequestContext, test } from './support/fixtures'
 
 /**
  * critwire.com is Critter Connect's site (`src/lib/site.ts`): `/` opens the
  * game's hub, and critwire's own pages carry the game's lockup, the hub's
  * pages and the operator's legal links, and the icons are the game's own
- * files. The game exists only while this spec runs, as on a fresh
- * instance nobody has set up.
+ * files. The snippets the game's own sites paste (H24) come from the same
+ * builders as here. The game exists only while this spec runs, as on a
+ * fresh instance nobody has set up.
  */
 
 const HUB = portalPaths(SITE.gameSlug).hub
@@ -221,4 +226,64 @@ test('X6 the default palette follows the system; a custom one keeps its own', as
       expect(await rootBackground(), `${path} ${colorScheme}`).toBe(background)
     }
   }
+})
+
+/** The floating button play.critterconnect.org pastes, with this server in place of critwire.com. */
+const BUTTON = { siteURL: BASE_URL, slug: SITE.gameSlug, theme: 'auto', widget: 'button' } as const
+
+/** The button on a studio's page opens the game's board, showing `title`, in its dialog. */
+const buttonOpensTheBoard = async (page: Page, hostURL: string, title: string) => {
+  const button = page.getByRole('button', { name: 'Feedback' })
+  const dialog = page.getByRole('dialog', { name: 'Feedback' })
+  const frame = page.locator('dialog iframe')
+  const board = frame.contentFrame()
+
+  await page.goto(hostURL)
+  await button.click()
+  await expect(dialog).toBeVisible()
+  await expect(board.getByRole('heading', { level: 1, name: 'Feedback' })).toBeVisible()
+  await expect(board.locator('.cw-embed-rows > li', { hasText: title })).toBeVisible()
+  // The font travels in the fragment; the rest is the URL the snippet promises.
+  const src = new URL((await frame.getAttribute('src'))!)
+  expect(`${src.origin}${src.pathname}${src.search}`).toBe(embedSnippets(BUTTON).url)
+}
+
+for (const [id, kind, how] of [
+  ['X7', 'script', 'the pasted snippet'],
+  ['X8', 'injected', 'the snippet added after load, as next/script adds it'],
+] as const) {
+  test(`${id} on another site, ${how} opens the game’s board`, async ({
+    api,
+    embedHost,
+    page,
+    uniqueSlug,
+  }) => {
+    const item = await createIssue(api('superAdmin'), game, uniqueSlug(id.toLowerCase()), {
+      title: `A bug from the in-game button (${id})`,
+    })
+    const query: EmbedHostQuery = {
+      game: BUTTON.slug,
+      theme: BUTTON.theme,
+      widget: BUTTON.widget,
+      kind,
+    }
+    await buttonOpensTheBoard(page, embedHost.url(query), item.title)
+  })
+}
+
+test('X9 critterconnect.org’s “Give feedback” link reaches the feedback page', async ({ page }) => {
+  const website = SHARE_PLATFORMS.find((platform) => platform.id === 'website')!
+  const { buttons } = shareKit({
+    platform: website,
+    scheme: 'light',
+    siteURL: BASE_URL,
+    slug: SITE.gameSlug,
+  })
+  const giveFeedback = buttons.find((button) => button.id === 'give-feedback')!
+  expect(giveFeedback.href).toBe(`${BASE_URL}${portalPaths(SITE.gameSlug).feedback}?ref=website`)
+
+  await page.goto(giveFeedback.href)
+  await expect(page).toHaveURL(giveFeedback.href)
+  await expect(page).toHaveTitle(`${SITE.name} feedback`)
+  await expect(page.getByRole('heading', { level: 1, name: 'Feedback' })).toBeVisible()
 })

@@ -13,10 +13,11 @@ export interface EmbedHostQuery {
   stage?: string
   type?: string
   /**
-   * The loader's `<script>` (the default), the bare iframe, or the script
-   * without `data-game`, as a broken paste would be.
+   * The loader's `<script>` (the default), the bare iframe, the script
+   * without `data-game`, as a broken paste would be, or the script added
+   * after the page has loaded, as `next/script` with `afterInteractive` adds it.
    */
-  kind?: 'iframe' | 'no-game' | 'script'
+  kind?: 'iframe' | 'injected' | 'no-game' | 'script'
   /** The host page's own colours. */
   bg?: 'dark' | 'light'
 }
@@ -29,6 +30,21 @@ export interface EmbedHost {
 }
 
 const BACKGROUND = { dark: ['#16171d', '#ececf1'], light: ['#ffffff', '#16171d'] } as const
+
+/**
+ * The snippet held inert in a `<template>`, then copied attribute by
+ * attribute onto a created `<script>` once the page has loaded, as
+ * `next/script` does: the loader then runs with no parser-inserted tag.
+ */
+const injected = (script: string) => `<template id="snippet">${script}</template>
+<script>
+addEventListener('load', () => {
+  const pasted = document.getElementById('snippet').content.querySelector('script')
+  const script = document.createElement('script')
+  for (const { name, value } of pasted.attributes) script.setAttribute(name, value)
+  document.body.appendChild(script)
+})
+</script>`
 
 /**
  * A loopback server on 127.0.0.1 with a random port, so it's cross-site
@@ -62,7 +78,9 @@ export async function startEmbedHost(siteURL: string): Promise<EmbedHost> {
         ? snippets.iframe
         : kind === 'no-game'
           ? snippets.script.replace(/ data-game="[^"]*"/, '')
-          : snippets.script
+          : kind === 'injected'
+            ? injected(snippets.script)
+            : snippets.script
     const [background, foreground] = BACKGROUND[params.get('bg') === 'dark' ? 'dark' : 'light']
     res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' })
     res.end(`<!doctype html>
