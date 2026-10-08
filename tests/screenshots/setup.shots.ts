@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process'
-import { mkdir, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 
 import { type APIRequestContext, expect, test as setup } from '@playwright/test'
@@ -7,6 +7,7 @@ import { extractID } from 'payload/shared'
 
 import type { ContactFormEmailProps } from '../../src/lib/email/templates/ContactFormEmail'
 import { portalPaths } from '../../src/lib/game-portal/paths'
+import { SAMPLE_CONTENT, SITE_STUDIO } from '../../src/seed/critterConnectData'
 import type { GameProject, Issue, PayloadJob } from '../../src/payload-types'
 import { RestClient } from '../e2e/support/api'
 import { linkDiscord } from '../e2e/support/discord'
@@ -24,6 +25,7 @@ import {
   seed,
   startSignup,
   tenantOf,
+  uploadImage,
   verifyAccount,
 } from '../e2e/support/fixtures'
 import {
@@ -36,6 +38,9 @@ import {
 } from './catalog'
 import { rootStyle, SHOTS_CRON_SECRET } from './support'
 import { RISO_THEME } from './themes'
+
+/** The demo's old key art, now only a fixture: the banner the riso group shows. */
+const KEY_ART = path.join(process.cwd(), 'tests', 'screenshots', 'fixtures', 'key-art.png')
 
 /** Where the linked game posts: fixed IDs, so the "Open the posts channel" link is the same every run. */
 const DISCORD_TARGET = { guild: '120000000000000001', channel: '120000000000000002' } as const
@@ -79,7 +84,7 @@ const REFERRALS = { steam: 6, itch: 3, readme: 2, carrd: 1 } as const
  * or after the design pass) gets identical data. The signup shots get a
  * pending signup, a signed-in user with no studio, and a signed-up studio.
  * The reach shots get that studio's session and referral counts, and a
- * Riso-themed game in the demo studio for its badge. The discord shots
+ * Riso-themed game in Critter Connect's studio for its badge. The discord shots
  * get a second Lantern Keep game, linked to a server through the real
  * install and callback with the Discord stand-in's code. The legal shots
  * get a signed-in account a super admin made, which hasn't accepted. The
@@ -102,7 +107,7 @@ setup('seed the Critter Connect demo and the screenshot fixtures', async ({ page
   })
   const admin = new RestClient(anonymous, superToken)
 
-  const cc = await setup.step('run the Critter Connect seed and add the official site', async () => {
+  const cc = await setup.step('run the Critter Connect seed, and upload the key art for Riso', async () => {
     const response = await anonymous.post('/api/seed/critter-connect', {
       headers: { Authorization: `Bearer ${SHOTS_CRON_SECRET}` },
     })
@@ -111,16 +116,13 @@ setup('seed the Critter Connect demo and the screenshot fixtures', async ({ page
     expect(status).toBe(200)
     expect(body.docs).toHaveLength(1)
     const project = body.docs[0] as GameProject
-    const demo = await admin.find('tenants', { where: { slug: { equals: 'critwire-demo' } }, depth: 0 })
-    expect(demo.body.docs, 'the seed made the critwire-demo studio').toHaveLength(1)
-    const demoTenant = demo.body.docs[0].id as number
-    expect(project.tenant && extractID(project.tenant), 'the seed put critter-connect in critwire-demo').toBe(demoTenant)
-    // The seed has no website, so without this the Official site link never shows.
-    const updated = await admin.update('game-projects', project.id, {
-      links: { ...project.links, website: 'https://critterconnect.example' },
-    })
-    expect(updated.status, JSON.stringify(updated.body)).toBe(200)
-    return { ...project, demoTenant }
+    const studio = await admin.find('tenants', { where: { slug: { equals: SITE_STUDIO.slug } }, depth: 0 })
+    expect(studio.body.docs, `the seed made the ${SITE_STUDIO.slug} studio`).toHaveLength(1)
+    const studioID = studio.body.docs[0].id as number
+    expect(project.tenant && extractID(project.tenant), `the seed put critter-connect in ${SITE_STUDIO.slug}`).toBe(studioID)
+    // Critter Connect has no key art; the riso group sets this as the banner, so the art-and-plate header stays covered.
+    const keyArt = await uploadImage(admin, studioID, 'key-art.png', 'Field binder key art', await readFile(KEY_ART))
+    return { ...project, studioID, keyArtID: keyArt.id }
   })
 
   const baselineStyle = await setup.step('record the theme the seed gives the hub', async () => {
@@ -251,7 +253,7 @@ setup('seed the Critter Connect demo and the screenshot fixtures', async ({ page
   })
 
   const reach = await setup.step('add a Riso game for its badge, and count Lantern Keep’s referrals', async () => {
-    const riso = await createProject(admin, cc.demoTenant, 'riso-rally', { name: 'Riso Rally', theme: RISO_THEME })
+    const riso = await createProject(admin, cc.studioID, 'riso-rally', { name: 'Riso Rally', theme: RISO_THEME })
     const statuses = ['REPORTED', 'INVESTIGATING', 'PLANNED', 'PLANNED', 'IN_PROGRESS', 'FIXED'] as const
     for (const [i, status] of statuses.entries()) {
       await createIssue(admin, riso, `riso-item-${i + 1}`, { status })
@@ -304,7 +306,8 @@ setup('seed the Critter Connect demo and the screenshot fixtures', async ({ page
       slug: cc.slug,
       projectID: cc.id,
       baselineStyle,
-      launchUpdate: 'v0-1-0-launch',
+      launchUpdate: SAMPLE_CONTENT.update.slug,
+      keyArtID: cc.keyArtID,
       item,
     },
     signup: { verifyToken: signup.verifyToken, welcomeSlug: signup.welcomeSlug },

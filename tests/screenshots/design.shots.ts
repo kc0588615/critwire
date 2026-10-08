@@ -45,7 +45,8 @@ async function applyTheme(
   }
   const theme = THEMES[group]
   const admin = new RestClient(request, world.superToken)
-  const { status, body } = await admin.update('game-projects', world.cc.projectID, { theme })
+  // The key art comes with Riso, so its shots cover the art-and-plate header; the seed clears it again.
+  const { status, body } = await admin.update('game-projects', world.cc.projectID, { theme, banner: world.cc.keyArtID })
   expect(status, JSON.stringify(body)).toBe(200)
   await reloadUntil(
     page,

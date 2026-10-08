@@ -23,6 +23,8 @@ export interface ShotsWorld {
     baselineStyle: string
     /** The seed's launch update, whose page shows "From your feedback". */
     launchUpdate: string
+    /** The key art the riso group shows as the hub's banner; Critter Connect has none. */
+    keyArtID: number
     /** A public item the setup creates, so its page is the same whatever the seed holds. */
     item: string
   }
@@ -41,7 +43,7 @@ export interface ShotsWorld {
   reach: {
     /** Lantern Keep's ID: the studio user's game, with a few referrals counted. */
     welcomeID: number
-    /** A Riso-themed game in the demo studio, for its badge. */
+    /** A Riso-themed game in Critter Connect's studio, for its badge. */
     risoSlug: string
   }
   discord: {

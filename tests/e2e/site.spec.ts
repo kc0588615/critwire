@@ -283,7 +283,8 @@ test('X9 critterconnect.org’s “Give feedback” link reaches the feedback pa
   expect(giveFeedback.href).toBe(`${BASE_URL}${portalPaths(SITE.gameSlug).feedback}?ref=website`)
 
   await page.goto(giveFeedback.href)
-  await expect(page).toHaveURL(giveFeedback.href)
+  // The feedback page, `?ref=` or not: ReferralPing strips it once counted, so the exact URL races that strip.
+  await expect(page).toHaveURL((url) => url.pathname === portalPaths(SITE.gameSlug).feedback)
   await expect(page).toHaveTitle(`${SITE.name} feedback`)
   await expect(page.getByRole('heading', { level: 1, name: 'Feedback' })).toBeVisible()
 })
