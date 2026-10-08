@@ -109,7 +109,7 @@ body {
   font-weight: var(--weight-ui-medium);
 }
 
-/* cw's toggle group, wrapping on narrow frames. */
+/* cc's Toggle group (gap xxs), wrapping on narrow frames. */
 .cw-embed-filters {
   display: flex;
   flex-wrap: wrap;
@@ -117,8 +117,10 @@ body {
   margin-bottom: var(--space-m);
 }
 
-/* A toggle: no fill at rest, the surface on hover, and the accent fill
-   with accent-fg when pressed (D8). The height keeps the 44px target. */
+/* cc's Toggle: radius s, padding xs/s, gap xs, label s medium. No fill at
+   rest, the surface on hover (the nearest palette slot to cc's n3), and the
+   accent fill with accent-fg when pressed (A9: n3 alone is 1.10:1 on the
+   page). The height keeps the 44px target (cc's control l). */
 .cw-embed-filter {
   display: inline-flex;
   align-items: center;
@@ -130,10 +132,10 @@ body {
   background: transparent;
   color: var(--fs-fg);
   font: inherit;
-  font-size: var(--size-m);
+  font-size: var(--size-s);
   font-weight: var(--weight-ui-medium);
-  letter-spacing: var(--letter-spacing-m);
-  line-height: var(--line-m);
+  letter-spacing: var(--letter-spacing-s);
+  line-height: var(--line-s);
   cursor: pointer;
   transition-duration: var(--motion-duration);
   transition-property: background-color, color;
@@ -149,10 +151,12 @@ body {
   color: var(--fs-accent-fg);
 }
 
-/* The count beside a stage: regular, so the label leads. */
+/* The count beside a stage: a tally in the data role (the host's font
+   here), regular, so the label leads. */
 .cw-embed-count {
+  font-family: var(--font-data);
   font-variant-numeric: tabular-nums;
-  font-weight: var(--weight-ui-regular);
+  font-weight: var(--weight-data-regular);
 }
 
 /* An item: its vote link in a fixed left column, then the title and its meta. */

@@ -80,10 +80,11 @@ do.
   white in light, Critter Connect's dark teal `#051411` in dark.
 - **The loader's own pieces:** the floating button and its dialog sit
   on the host page, so they don't take the game's colours. They're
-  white with black text in light and black with white text in dark
-  (cw's neutral-1 and neutral-10), flat with no shadow. The button is
-  a 22 px-radius pill with a thin translucent grey edge, which shows on
-  any page background; the dialog has a 7 px radius and 19 px padding.
+  white with black text in light and dark teal `#051411` with white
+  text in dark (cc's neutral-1 and neutral-10), flat with no shadow.
+  The button is a full pill padded 24 px at the sides, with a thin
+  translucent grey edge, which shows on any page background; the
+  dialog has a 22 px radius and 24 px padding, and 12 px under Close.
 - **Font:** the widget uses the font the host page gives its own
   iframe (`font-family: inherit`). Web fonts the host page loads
   (Google Fonts, `@font-face`) don't exist inside an iframe, so the
