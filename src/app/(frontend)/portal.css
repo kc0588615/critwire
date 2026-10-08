@@ -616,9 +616,10 @@
   }
 }
 
-/* No art: no plate. The title runs at full scale on the page. */
+/* No art: no plate. The title runs at full scale on the page, a half
+   step below the nav, as neighbouring sections share their space. */
 .fs-hero-bare {
-  padding-block: calc(var(--fs-section-y) * 1.25) 0;
+  padding-block: calc(var(--fs-section-y) / 2) 0;
 }
 
 /* The build line: the game's live facts under the title, as separate items. */
@@ -1311,9 +1312,20 @@
   line-height: var(--line-s);
 }
 
+/* The field grows with its text, so there's no resize grip for cc's
+   rounded corner to cut through. Where it can't grow, the grip comes back
+   and its corner takes at most radius xs, so the grip sits inside it. */
 .fs-textarea {
   min-height: 9rem;
-  resize: vertical;
+  field-sizing: content;
+  resize: none;
+}
+
+@supports not (field-sizing: content) {
+  .fs-textarea {
+    border-end-end-radius: min(var(--fs-radius-control), var(--radius-xs));
+    resize: vertical;
+  }
 }
 
 /* Consent checkboxes (signup, /legal/accept): the box, then its label. */

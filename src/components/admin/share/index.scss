@@ -68,6 +68,11 @@
     box-shadow: inset 0 calc(-1 * var(--stroke-s)) 0 var(--cte-border);
     padding: var(--space-xs) var(--space-m);
     white-space: nowrap;
+
+    // Five sources fit a 390px screen, as they did before cc's wider cells.
+    @media (max-width: 48rem) {
+      padding-inline: var(--space-s);
+    }
   }
 
   th {

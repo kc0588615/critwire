@@ -35,6 +35,16 @@
   font-family: var(--font-data);
 }
 
+/* Inline code in the kit's sentences (GUI.md D18): a step down, regular,
+   in an edged chip. The value wells (.share-kit-value) are code too. */
+.share-kit code:not(.share-kit-value) {
+  border: var(--stroke-s) solid var(--kit-border);
+  border-radius: var(--radius-xs);
+  padding: 0 var(--space-xxs);
+  font-size: 0.875em;
+  font-weight: var(--weight-data-regular);
+}
+
 .share-kit-title {
   margin: 0;
   font-size: var(--kit-title-size, var(--size-l));

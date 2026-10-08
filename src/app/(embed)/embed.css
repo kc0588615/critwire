@@ -14,6 +14,19 @@
   --font-brand: var(--font-ui);
   --font-editorial: var(--font-ui);
   --font-data: var(--font-ui);
+
+  /* cc's tracking and its 700 medium belong to its faces (GUI.md D17): on
+     the host's font, letters keep their own spacing and medium text (meta,
+     links, filters, tallies) stays regular, so only titles are heavy. */
+  --letter-spacing-xxs: normal;
+  --letter-spacing-xs: normal;
+  --letter-spacing-s: normal;
+  --letter-spacing-m: normal;
+  --letter-spacing-l: normal;
+  --letter-spacing-xl: normal;
+  --letter-spacing-xxl: normal;
+  --weight-ui-medium: var(--weight-ui-regular);
+  --weight-data-medium: var(--weight-data-regular);
 }
 
 /* The frame sizes to its content, so nothing may hold it open. */

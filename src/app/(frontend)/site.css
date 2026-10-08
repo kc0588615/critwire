@@ -326,9 +326,15 @@
   max-width: 36rem;
 }
 
-/* The reported page's path on "Report this page"; long paths wrap. */
+/* The reported page's path on "Report this page", as inline code (GUI.md
+   D18); long paths wrap. */
 .cw-account-path {
+  border: var(--stroke-s) solid var(--cte-border);
+  border-radius: var(--radius-xs);
+  padding: 0 var(--space-xxs);
   color: var(--cte-text);
+  font-size: 0.875em;
+  font-weight: var(--weight-data-regular);
   overflow-wrap: anywhere;
 }
 

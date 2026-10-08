@@ -1,10 +1,10 @@
 /**
  * The one place rich text is styled. Every prose colour, the body size,
  * its leading and the measure point at `--prose-*` variables that the
- * surface's root sets (`.cw-root` in marketing.css, `.fs-root` in
+ * surface's root sets (`.cw-root` in site.css, `.fs-root` in
  * portal.css), so `.prose` follows the page it sits on instead of
  * assuming a dark or light one. The headings, the gaps and the faces are
- * cw's steps and roles (plan §4). This block is appended after the
+ * cc's steps and roles. This block is appended after the
  * plugin's defaults, so it wins over them.
  *
  * @type {import('tailwindcss').Config}
@@ -62,6 +62,17 @@ const config = {
             table: gap,
             li: { marginBottom: 'var(--space-xs)', marginTop: 'var(--space-xs)' },
             'code, kbd, pre': { fontFamily: 'var(--font-data)' },
+            // Inline code (GUI.md D18): the data face a step down, regular,
+            // in an n4-edged chip in place of the plugin's backticks.
+            code: {
+              border: 'var(--stroke-s) solid var(--prose-border)',
+              borderRadius: 'var(--radius-xs)',
+              fontSize: '0.875em',
+              fontWeight: 'var(--weight-data-regular)',
+              padding: '0 var(--space-xxs)',
+            },
+            'code::before': { content: 'none' },
+            'code::after': { content: 'none' },
             a: {
               textDecorationColor: 'var(--prose-link-line)',
             },

@@ -65,7 +65,7 @@ Critwire's decisions on top of the cc snapshot above, from the mission plan `pla
 - **Nunito** stands in for GT Maru (paid) in the `ui`, `brand` and `editorial` roles. **Open Runde** takes the `data` role, as in the snapshot. Both are OFL and self-hosted from `public/fonts/nunito/` and `public/fonts/open-runde/`, each folder with its `OFL.txt`, declared in `src/styles/fonts.css` with the game's own `@font-face` rules; no page requests a third-party font host.
 - `--face-sans` and `--face-data` in `src/styles/fonts.css` are the one swap point: a licensed GT Maru replaces Nunito there, behind the role tokens `--font-ui`, `--font-brand`, `--font-editorial` and `--font-data`.
 - Server-side images (share buttons, badge, favicons, OG) use static **Nunito Bold** from `src/lib/share/fonts/` (ExtraBold for `generate:brand` only), because the renderer reads TTF and not WOFF2. DejaVu Sans stays as the per-character fallback, so studio-written badge text keeps its script coverage. cc's tracking (−0.04 em) is drawn into the images.
-- Emails use cc's ui fallback, `sans-serif`; no web font. Embeds use the host page's font for every role.
+- Emails use cc's ui fallback, `sans-serif`; no web font. Embeds use the host page's font for every role. Neither takes cc's tracking or its 700 medium (D17).
 - **Icons:** `lucide-react` at cc's `--icon-stroke-width` of 2, in place of the paid Central set. No other icon package.
 
 ### Accessibility departures
@@ -80,7 +80,7 @@ WCAG AA wins over snapshot values: 4.5:1 for text, 3:1 for large text, field bou
 | A4 | Component edges (cards, panels, dividers, outline buttons, share images) | `--border-default-color` n4 at 20 %: 1.04 light, 1.08 dark (invisible) | **n4** solid at 1 px, cc's own Separator and outline-Button edge | light 1.25 on n1, 1.21 on n2; dark 1.75, 1.51 (decorative: text or fills identify every control) |
 | A5 | Focus ring (critwire's own pages, the admin) | none (`initial`; cc's focus is a 20 % color-1 border, invisible) | the game's ring: 2 px solid color-1, offset 2 px | light 4.03 on n1, 3.90 on n2, 3.67 on n3, 3.14 on the 20 % color-1 banner; dark 4.67, 4.03, 3.51, 3.71 |
 | A6 | Fonts | GT Maru (paid) | Nunito (above) | n/a |
-| A7 | color-1 and status colours as text | used as text and link colour (Preview card trigger) | fills and marks only, always with a word or shape; links underlined in currentColor | color-1 4.03 on light n1 and on dark n2 (fails 4.5); success 2.24, warning 1.23, error 4.05 on light n1; error 4.02 on dark n2 |
+| A7 | color-1 and status colours as text | used as text and link colour (Preview card trigger) | fills and marks only, always with a word or shape; links underlined, in currentColor on critwire's own pages and in the accent in portals and embeds (an underline is a mark: color-1 4.03 / 4.67 ≥ 3, and a saved palette's accent passes `siteThemeSchema`) | color-1 4.03 on light n1 and on dark n2 (fails 4.5); success 2.24, warning 1.23, error 4.05 on light n1; error 4.02 on dark n2 |
 | A8 | Tabs (share kit, Discord tab, kanban/table switch) | rest n7; selected = n1 fill on the n3 list | rest **text-muted**; selected n1 fill **plus heavy weight** (a non-colour cue) | rest light 3.68 → 6.85 on n3; the selected fill against the list is 1.10 light / 1.33 dark, too faint alone |
 | A9 | Pressed toggles (embed filters) | n3 fill | accent fill with accent text; the admin switch: n3 plus heavy weight | n3 vs n1 1.10 / 1.33 → color-1 vs n1 4.03 / 4.67 |
 | A10 | Tag chips (`.fs-tag`) | emphasis-type: color-1 with an n2 label | color-1 (the palette's accent) with accent text | 3.90 → 5.21 light; 4.03 → 4.67 dark |
@@ -116,7 +116,7 @@ The game keeps cc's lightness for each dark step with a cool green-teal hue (OKL
 - **D6.** Component edges: 1 px n4, cc's Separator edge (A4).
 - **D7.** cc's border steps are all 0 px, so stroke widths are critwire's own: `STROKE` s 1 / l 2, generated as `--stroke-s`/`--stroke-l`, replaces every use of `--border-*` as a width. cc's 0 px `--border-*` steps stay defined and unused.
 - **D8.** Focus: the game's 2 px color-1 ring, offset 2 px, on critwire's own pages and in the admin. Portals and embeds keep the two-tone fg/bg ring, the only ring guaranteed under any valid saved palette.
-- **D9.** Type scale: UI text s; prose and the email body m; lede l; h3 l; h2 xl; h1 xxl; meta s, medium weight, muted; fine print xs; tracking −0.04 em throughout.
+- **D9.** Type scale: UI text s; prose and the email body m; lede l; h3 l; h2 xl; h1 xxl; meta s, medium weight, muted; fine print xs; tracking −0.04 em throughout on cc's faces (D17).
 - **D10.** The 44 px tap floor (`TAP_MIN`, generated as `--tap-min`) stays, and now equals cc's own control height (padding s + line s + 12).
 - **D11.** `SHAPE_RADIUS` gains `button` (sharp: zero; balanced and soft: full), written as `--fs-radius-button`; buttons are cc pills.
 - **D12.** Tabs are cc's segmented control: rest text-muted, selected n1 plus heavy weight (A8).
@@ -124,6 +124,8 @@ The game keeps cc's lightness for each dark step with a cool green-teal hue (OKL
 - **D14.** The checkbox stays native, with `accent-color` set to the accent.
 - **D15.** Cards and notices: the surface fill, the A4 edge, cc's shadow m and `--fs-radius`.
 - **D16.** Fonts: Nunito and Open Runde through `fonts.css` from `public/fonts/`; `--face-sans`/`--face-data` are the one swap point. Images use static Nunito Bold (ExtraBold for the generator) with DejaVu per character, and draw cc's tracking.
+- **D17.** cc's −0.04 em tracking and its 700 medium belong to its faces. Surfaces set in another face take neither: embeds (the host page's font) set every `--letter-spacing-*` to `normal` and medium to regular in `embed.css`, and the emails (`sans-serif`) do the same in `email/templates/styles.ts`. Titles stay heavy, so the hierarchy reads as it did on cw. The share images draw Nunito, so they keep both.
+- **D18.** Inline `code` (rich text, the share kit's sentences, the reported page's path): the data face at 0.875 em, regular, in a chip with a 1 px n4 edge (A4), radius xs and padding xxs at the sides, in place of the typography plugin's backticks. Open Runde sets larger than Nunito at one size, so the step down keeps it in the line, and the edge marks it as code without a fill the portal palette lacks. `pre` blocks keep the plugin's reset.
 
 Still in force from the cw theme (`plans/2026-10-07-cw-theme.md`):
 

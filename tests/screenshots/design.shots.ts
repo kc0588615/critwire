@@ -1,6 +1,8 @@
+import { writeFile } from 'node:fs/promises'
 import path from 'node:path'
 
 import { type APIRequestContext, expect, type Page, test } from '@playwright/test'
+import sharp from 'sharp'
 
 import type { SiteThemeV1 } from '../../src/lib/game-portal/theme'
 import { RestClient } from '../e2e/support/api'
@@ -128,7 +130,7 @@ for (const group of selectedGroups()) {
         if (!width) throw new Error('the project has no viewport')
         const file = shotFile(group, shot.id, width)
         const probes = set === 'after' ? await probePage(page, { group, shot, width, requests }) : []
-        await page.screenshot({ path: path.join(dir, set, file), fullPage: true, animations: 'disabled' })
+        await writeFile(path.join(dir, set, file), await fullPageShot(page))
         if (set !== 'after') return
         if (FOCUS_PAGES.has(shot.id)) probes.push(await probeSiteFocus(page))
         await recordChecks(dir, file, probes)
@@ -167,6 +169,59 @@ async function embedShown(page: Page): Promise<void> {
       return Math.abs(content - frame)
     }, { message: 'the frame never resized to its content' })
     .toBeLessThanOrEqual(1)
+}
+
+/**
+ * The full-page capture. Chromium doesn't draw a cross-site frame outside
+ * the viewport, so Cloudflare's Turnstile widget below the first screen is
+ * blank in a full-page capture, and its content is in a closed shadow root,
+ * so only the captured pixels show it. Where a page has the widget, the
+ * viewport grows to the whole page (no form page sizes by the viewport's
+ * height) and the capture is retaken until the widget's area is drawn and
+ * the same twice, past its spinner.
+ */
+async function fullPageShot(page: Page): Promise<Buffer> {
+  const capture = () => page.screenshot({ fullPage: true, animations: 'disabled' })
+  const widget = page.locator('.cf-turnstile')
+  if (!(await widget.count())) return capture()
+  const viewport = page.viewportSize()
+  if (!viewport) throw new Error('the project has no viewport')
+  const height = await page.evaluate(() => document.documentElement.scrollHeight)
+  await page.setViewportSize({ height, width: viewport.width })
+  try {
+    let image = Buffer.alloc(0)
+    let previous = Buffer.alloc(0)
+    await expect
+      .poll(
+        async () => {
+          image = await capture()
+          const box = await widget.evaluate((element) => {
+            const rect = element.getBoundingClientRect()
+            return { height: rect.height, left: rect.left + window.scrollX, top: rect.top + window.scrollY, width: rect.width }
+          })
+          const scale = ((await sharp(image).metadata()).width ?? 0) / viewport.width
+          // `stats()` reads its input, not the pipeline, so the area is cut out first.
+          const area = await sharp(image)
+            .extract({
+              height: Math.round(box.height * scale),
+              left: Math.round(box.left * scale),
+              top: Math.round(box.top * scale),
+              width: Math.round(box.width * scale),
+            })
+            .png()
+            .toBuffer()
+          const { channels } = await sharp(area).stats()
+          const settled = channels.some((channel) => channel.stdev > 0) && area.equals(previous)
+          previous = area
+          return settled
+        },
+        { intervals: [250], message: "the capture never showed Turnstile's widget, settled", timeout: 20_000 },
+      )
+      .toBe(true)
+    return image
+  } finally {
+    await page.setViewportSize(viewport)
+  }
 }
 
 /**
