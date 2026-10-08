@@ -30,7 +30,7 @@ export const ContactFormEmail: React.FC<ContactFormEmailProps> = ({
       <Heading as="h1" style={heading}>
         New contact form submission
       </Heading>
-      <Text style={{ ...body, margin: 0 }}>A player sent a message from the {gameName} portal.</Text>
+      <Text style={{ ...body, margin: 0 }}>A player sent a message from {gameName}’s contact page.</Text>
 
       <Hr style={divider} />
 
@@ -47,7 +47,7 @@ export const ContactFormEmail: React.FC<ContactFormEmailProps> = ({
 
       <Hr style={divider} />
 
-      <Text style={{ ...small, margin: 0 }}>Sent via Critwire. Portal: {portalUrl}</Text>
+      <Text style={{ ...small, margin: 0 }}>Sent from your game’s feedback page: {portalUrl}</Text>
     </EmailLayout>
   )
 }

@@ -1,3 +1,4 @@
+import { SITE } from '@/lib/site'
 import { getServerSideURL } from '@/utilities/getURL'
 
 import { renderAuthLinkEmail } from './renderAuthLinkEmail'
@@ -18,20 +19,20 @@ export const verificationEmail = (token: string): Promise<AuthEmail> =>
     buttonLabel: 'Confirm and choose a password',
     heading: 'Confirm your email',
     sentence:
-      'Open this link to confirm your email address and choose the password for your Critwire account.',
+      `Open this link to confirm your email address and choose the password for your ${SITE.name} account.`,
     url: link(`/verify/${encodeURIComponent(token)}`),
   })
 
 export const accountCreatedEmail = (): Promise<AuthEmail> =>
   authEmail('An account was created for you', {
     buttonLabel: 'Sign in',
-    heading: 'Your Critwire account is ready',
-    sentence: 'An administrator of this Critwire site created an account for this email address.',
+    heading: `Your ${SITE.name} account is ready`,
+    sentence: `An administrator of the ${SITE.name} site created an account for this email address.`,
     url: link('/admin/login'),
   })
 
 export const passwordResetEmail = (token: string): Promise<AuthEmail> =>
-  authEmail('Reset your Critwire password', {
+  authEmail(`Reset your ${SITE.name} password`, {
     buttonLabel: 'Choose a new password',
     heading: 'Reset your password',
     sentence:

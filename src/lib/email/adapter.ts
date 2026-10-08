@@ -6,10 +6,11 @@ import { mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 
 import { getLogger } from '@/lib/logger'
+import { SITE } from '@/lib/site'
 
 const log = getLogger('email')
 
-const DEFAULT_SENDER = 'Critwire <notifications@critwire.local>'
+const DEFAULT_SENDER = `${SITE.name} <notifications@critwire.local>`
 
 type Sender = { address: string; name: string }
 
@@ -17,7 +18,7 @@ type Sender = { address: string; name: string }
 const parseSender = (value: string): Sender => {
   const named = /^\s*(.+?)\s*<([^<>\s]+@[^<>\s]+)>\s*$/.exec(value)
   if (named) return { address: named[2], name: named[1] }
-  if (/^[^<>\s]+@[^<>\s]+$/.test(value.trim())) return { address: value.trim(), name: 'Critwire' }
+  if (/^[^<>\s]+@[^<>\s]+$/.test(value.trim())) return { address: value.trim(), name: SITE.name }
   throw new Error(`RESEND_FROM_EMAIL must look like "Name <address>"; got "${value}".`)
 }
 

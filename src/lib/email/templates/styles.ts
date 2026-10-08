@@ -3,8 +3,8 @@ import type { CSSProperties } from 'react'
 import { STROKE, TAP_MIN, TOKENS } from '@/lib/theme/tokens'
 
 /**
- * The emails' styles: the theme's light mode, email-safe (D19). Inline
- * styles only, a border rather than a box shadow, and the theme's fallback font stack, so no
+ * The emails' styles: cc light, email-safe (D22). Inline styles only, a
+ * border rather than a box shadow, and the ui role's fallback stack, so no
  * client has to load a web font.
  */
 
@@ -18,6 +18,7 @@ const px = (value: number): string => `${value}px`
 
 const textStep = (step: keyof typeof text): CSSProperties => ({
   fontSize: px(text[step].size),
+  letterSpacing: `${text[step].letterSpacing}em`,
   lineHeight: px(text[step].lineHeight),
 })
 
@@ -51,21 +52,21 @@ export const body: CSSProperties = {
   margin: `0 0 ${px(space.l)}`,
 }
 
-/** The theme's primary Button: color-1 with its accent text (A1). */
 /**
- * react-email's `Button` sets its label's line height to 120 %, so the block
- * padding that makes the button critwire's tap floor (D10) is half of what
- * the label leaves of it.
+ * cc's primary Button: a color-1 pill with its accent text (A1: black,
+ * 5.21:1), label s ui medium, padded l at the sides. react-email's `Button`
+ * sets its label's line height to 120 %, so the block padding that makes the
+ * button critwire's tap floor (D10) is half of what the label leaves of it.
  */
-const BUTTON_LABEL_LINE = text.m.size * 1.2
+const BUTTON_LABEL_LINE = text.s.size * 1.2
 
 export const button: CSSProperties = {
-  ...textStep('m'),
+  ...textStep('s'),
   backgroundColor: TOKENS.color[1],
-  borderRadius: px(radius.s),
+  borderRadius: px(radius.full),
   color: accentText,
   fontWeight: weights.medium,
-  padding: `${px((TAP_MIN - BUTTON_LABEL_LINE) / 2)} ${px(space.m)}`,
+  padding: `${px((TAP_MIN - BUTTON_LABEL_LINE) / 2)} ${px(space.l)}`,
   textDecoration: 'none',
 }
 

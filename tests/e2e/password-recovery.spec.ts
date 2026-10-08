@@ -1,5 +1,6 @@
 import type { APIRequestContext, Browser, BrowserContext, PlaywrightWorkerArgs } from '@playwright/test'
 
+import { SITE } from '../../src/lib/site'
 import type { RestClient } from './support/api'
 import { emailsTo, linkTo, readEmail } from './support/email'
 import { SECOND_BASE_URL, TURNSTILE_DUMMY_TOKEN } from './support/env'
@@ -17,7 +18,7 @@ import {
  * guarded form at `/admin/forgot`, and a reset never verifies an account.
  */
 
-const RESET_SUBJECT = 'Reset your Critwire password'
+const RESET_SUBJECT = `Reset your ${SITE.name} password`
 const NEW_PASSWORD = 'recovered-password-1234'
 
 type Playwright = PlaywrightWorkerArgs['playwright']
