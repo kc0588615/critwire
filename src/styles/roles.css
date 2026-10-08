@@ -1,15 +1,17 @@
 /*
- * cw's roles, built on the primitives in cw-tokens.css (generated from
- * src/lib/theme/cw.ts) and the faces in fonts.css, which every entry
- * point loads first: globals.css
- * with @import, the admin's custom.scss with @use. So this file imports
- * nothing (Sass would hoist a nested @import and resolve it from the entry
- * point's folder) and sets no color-scheme: each surface owns its mode, and
- * light-dark() follows it. Critwire's departures from the snapshot live
- * here, each named (GUI.md, Local decisions).
+ * The theme's roles, built on the primitives in tokens.css (generated from
+ * src/lib/theme/tokens.ts) and the faces in fonts.css, which every entry
+ * point loads first: globals.css with @import, the admin's custom.scss
+ * with @use. So this file imports nothing (Sass would hoist a nested
+ * @import and resolve it from the entry point's folder) and sets no
+ * color-scheme: each surface owns its mode, and light-dark() follows it.
+ * A role that differs between the modes is written as tokens.css writes
+ * one: its light value for every browser, then the pair where light-dark()
+ * is supported (D3). Critwire's departures from the snapshot live here,
+ * each named (GUI.md, Local decisions).
  */
 :root {
-  /* Each colour at 20 %, cw's -transparent rule. */
+  /* Each colour at 20 %, cc's -transparent rule. */
   --color-1-transparent: color-mix(in srgb, var(--color-1) 20%, transparent);
   --color-2-transparent: color-mix(in srgb, var(--color-2) 20%, transparent);
   --color-3-transparent: color-mix(in srgb, var(--color-3) 20%, transparent);
@@ -28,15 +30,15 @@
   --neutral-9-transparent: color-mix(in srgb, var(--neutral-9) 20%, transparent);
   --neutral-10-transparent: color-mix(in srgb, var(--neutral-10) 20%, transparent);
 
-  /* Edges. D4: the snapshot's black 10 % edge vanishes on dark neutrals, so dark mode uses n4. */
-  --border-default-color: light-dark(rgb(0 0 0 / 0.1), var(--neutral-4));
+  /* Edges. A4: the snapshot's n4 at 20 % is invisible, so edges are n4, cc's own Separator edge. */
+  --border-default-color: var(--neutral-4);
   --border-shadow-none: 0 0 0 0 transparent;
   --border-shadow-s: 0 0 0 var(--stroke-s) var(--border-default-color);
   --border-shadow-m: 0 0 0 var(--stroke-s) var(--border-default-color);
   --border-shadow-l: 0 0 0 var(--stroke-l) var(--border-default-color);
 
-  /* Focus. D28: the colour is its own role, so the screenshot probe resolves the same expression. */
-  --focus-ring-color: color-mix(in srgb, var(--neutral-10) var(--focus-ring-mix), transparent);
+  /* Focus. A5: the game's ring, color-1, where the snapshot has none. The colour is its own role, so the screenshot probe resolves it. */
+  --focus-ring-color: var(--color-1);
   --focus-ring-outline: var(--focus-ring-width) solid var(--focus-ring-color);
 
   /* Font roles. The faces are fonts.css's (GUI.md, Local decisions: Nunito for GT Maru). */
@@ -50,15 +52,25 @@
   --cte-surface: var(--neutral-2);
   --cte-surface-muted: var(--neutral-3);
   --cte-text: var(--neutral-10);
-  --cte-text-muted: var(--neutral-7);
+  /* A2: the snapshot's n7 is 4.04:1 on light n1, so light uses n8 (7.53); dark keeps n7 (8.21). */
+  --cte-text-muted: var(--neutral-8);
   --cte-border: var(--border-default-color);
   --cte-accent: var(--color-1);
   --cte-accent-text: var(--accent-text);
   --cte-danger: var(--error);
   --cte-focus: var(--color-1);
   --cte-font: var(--font-ui);
-  --cte-font-size: var(--size-m);
+  --cte-font-size: var(--size-s);
   --cte-font-weight: var(--weight-ui-regular);
-  --cte-line-height: var(--line-m);
-  --cte-letter-spacing: var(--letter-spacing-m);
+  --cte-line-height: var(--line-s);
+  --cte-letter-spacing: var(--letter-spacing-s);
+  --cte-detail-font-size: var(--size-xs);
+  --cte-detail-line-height: var(--line-xs);
+  --cte-detail-letter-spacing: var(--letter-spacing-xs);
+}
+
+@supports (color: light-dark(white, black)) {
+  :root {
+    --cte-text-muted: light-dark(var(--neutral-8), var(--neutral-7));
+  }
 }

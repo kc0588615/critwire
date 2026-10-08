@@ -6,7 +6,7 @@ import { PUBLIC_STAGES, type PublicStageId } from '@/lib/game-portal/stages'
 /**
  * One Critter Connect bug, from a player's report to the update that
  * shipped it, told through the portal's four public stages. The markers
- * are the stages' own shapes; marketing.css draws the wire.
+ * are the stages' own shapes; site.css draws the wire.
  */
 const STEPS: Record<PublicStageId, { detail: string; name: string }> = {
   'under-review': {

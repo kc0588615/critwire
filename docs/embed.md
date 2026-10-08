@@ -74,8 +74,8 @@ do.
   (dark or light). The other scheme is a neutral palette in the game's
   accent colour, or the neutral accent where the game's wouldn't read
   on it. `auto` follows the visitor's setting live. The neutral
-  palettes are critwire's own cw neutrals (`src/lib/theme/cw.ts`):
-  white and black.
+  palettes are the theme's own neutrals (`src/lib/theme/tokens.ts`):
+  white in light, Critter Connect's dark teal `#051411` in dark.
 - **The loader's own pieces:** the floating button and its dialog sit
   on the host page, so they don't take the game's colours. They're
   white with black text in light and black with white text in dark

@@ -125,11 +125,11 @@ where appropriate.
   collection change (commit the result)
 - `pnpm generate:importmap` — regenerate admin import map after adding
   admin components
-- `pnpm generate:theme` — regenerate `src/styles/cw-tokens.css` from
-  `src/lib/theme/cw.ts` after changing it (commit the result)
+- `pnpm generate:theme` — regenerate `src/styles/tokens.css` from
+  `src/lib/theme/tokens.ts` after changing it (commit the result)
 - `pnpm generate:brand` — redraw the favicons (`public/favicon.svg`,
   `.ico`) and the default share image (`public/og.png`) from
-  `src/lib/theme/cw.ts`; rerun only when cw's brand colours or the
+  `src/lib/theme/tokens.ts`; rerun only when the brand colours or the
   wordmark change (commit the result)
 - `pnpm payload migrate:create <name>` — create a migration after
   schema changes (commit it; prod runs them on boot via `prodMigrations`)
@@ -239,11 +239,15 @@ Int tests (`tests/int`) exist only for invariants E2E can't reach:
   it must not use: cookies, storage, `fetch(`, `XMLHttpRequest`,
   `sendBeacon`, `document.title` or `.innerHTML`. It's pasted into
   studios' sites and long cached, and E2E can't see a size budget.
-  `prebuild` runs this file and `cw-tokens`, so `pnpm build` (and the
+  `prebuild` runs this file and `theme-tokens`, so `pnpm build` (and the
   Docker build) stops on a loader that breaks it.
-- `cw-tokens` — cw's values live once, in `src/lib/theme/cw.ts`: they
-  match the snapshot in `gui/themes/cw.md`, the committed
-  `src/styles/cw-tokens.css` is what `pnpm generate:theme` writes from
-  them, and both style entry points (`globals.css`, the admin's
-  `custom.scss`) load the tokens, then the roles in `src/styles/cw.css`.
+- `theme-tokens` — the theme's values live once, in
+  `src/lib/theme/tokens.ts`: they match the snapshot in
+  `gui/themes/cc.md` (the dark neutrals are the game's, with the
+  snapshot's kept beside them), the committed `src/styles/tokens.css` is
+  what `pnpm generate:theme` writes from them, every colour that differs
+  between the modes has its light value for browsers without
+  `light-dark()`, and both style entry points (`globals.css`, the
+  admin's `custom.scss`) load the tokens, the faces in
+  `src/styles/fonts.css`, then the roles in `src/styles/roles.css`.
   E2E can't see source drift. `prebuild` runs it too.

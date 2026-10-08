@@ -20,7 +20,7 @@
   --prose-measure: 68ch;
   --fs-gutter: clamp(var(--space-l), 4vw, var(--space-xxl));
   /* A text link's underline: the accent, a decoration only (critwire's
-     own pages use currentColor, marketing.css). */
+     own pages use currentColor, site.css). */
   --fs-link-line: var(--fs-accent);
   /* The share kit (share-kit.css) in the game's theme, on the token
      contract below: chip edges are muted-fg, like other controls, and a

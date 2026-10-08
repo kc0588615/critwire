@@ -9,7 +9,7 @@ import { describe, expect, it } from 'vitest'
 // The loader (`public/embed/v1.js`) is pasted into studios' sites and long
 // cached, so it's a contract: under 5 KB gzipped, and it never sets
 // cookies, uses storage, makes requests of its own or reads the host page.
-// `prebuild` runs this file (and `cw-tokens`), so `pnpm build` stops on a
+// `prebuild` runs this file (and `theme-tokens`), so `pnpm build` stops on a
 // loader that breaks it. The check reads the source as text and never
 // parses it: a tripwire against accidents, strict on comments and strings
 // too. E2E checks what the loader actually does. One test per failure mode

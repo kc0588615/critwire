@@ -1,5 +1,5 @@
-// `pnpm generate:brand`: draws critwire's brand files from cw.ts into public/:
-// the favicons and the default share image. Rerun only when cw.ts's brand
+// `pnpm generate:brand`: draws critwire's brand files from tokens.ts into public/:
+// the favicons and the default share image. Rerun only when tokens.ts's brand
 // colours or the wordmark change, and commit the result.
 import { writeFileSync } from 'node:fs'
 import path from 'node:path'
@@ -9,7 +9,7 @@ import { HOME_TITLE } from '@/components/marketing/copy'
 import { readFont, svgDocument } from '@/lib/share/images'
 import { DEFAULT_OG_IMAGE } from '@/utilities/mergeOpenGraph'
 
-import { CW } from './cw'
+import { TOKENS } from './tokens'
 
 const PUBLIC_DIR = path.join(import.meta.dirname, '../../../public')
 const WORDMARK = 'critwire'
@@ -19,7 +19,7 @@ const WORDMARK = 'critwire'
 // Only this script reads it, so no route traces it.
 const face = readFont(path.join(import.meta.dirname, '../share/fonts/InterDisplay-Bold.ttf'))
 
-/** The favicon's own size: the mark's corner is cw's m radius at this size. */
+/** The favicon's own size: the mark's corner is the theme's m radius at this size. */
 const FAVICON_SIZE = 32
 /** How much of the mark's height the "c" fills. */
 const GLYPH_SHARE = 0.6
@@ -37,10 +37,10 @@ const mark = (x: number, y: number, size: number): string => {
   const glyphHeight = size * GLYPH_SHARE
   const unit = face.getPath('c', 0, 0, 1).getBoundingBox()
   const glyphWidth = glyphHeight * ((unit.x2 - unit.x1) / (unit.y2 - unit.y1))
-  const radius = (CW.radius.m * size) / FAVICON_SIZE
+  const radius = (TOKENS.radius.m * size) / FAVICON_SIZE
   return (
-    `<rect x="${x}" y="${y}" width="${size}" height="${size}" rx="${radius}" fill="${CW.color[1]}"/>` +
-    `<path fill="${CW.light.accentText}" d="${inkPath('c', x + (size - glyphWidth) / 2, y + (size - glyphHeight) / 2, glyphHeight)}"/>`
+    `<rect x="${x}" y="${y}" width="${size}" height="${size}" rx="${radius}" fill="${TOKENS.color[1]}"/>` +
+    `<path fill="${TOKENS.light.accentText}" d="${inkPath('c', x + (size - glyphWidth) / 2, y + (size - glyphHeight) / 2, glyphHeight)}"/>`
   )
 }
 
@@ -96,10 +96,10 @@ const wrap = (text: string, size: number, width: number): string[] =>
     return lines
   }, [])
 
-/** cw dark: the mark and the wordmark at the top, the home page's headline at the bottom. */
+/** The dark mode: the mark and the wordmark at the top, the home page's headline at the bottom. */
 const ogSVG = (): string => {
   const { height, width } = DEFAULT_OG_IMAGE
-  const { neutral } = CW.dark
+  const { neutral } = TOKENS.dark
   const lines = wrap(HOME_TITLE, OG.title, width - OG.pad * 2)
   if (lines.length > OG.maxTitleLines) throw new Error(`The share image's title needs ${lines.length} lines`)
   const firstBaseline = height - OG.pad - OG.titleLeading * (lines.length - 1)

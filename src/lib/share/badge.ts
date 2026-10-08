@@ -5,7 +5,7 @@ import { countPublicIssuesByStage } from '@/lib/game-portal/issues'
 import { getLatestVersionLabel } from '@/lib/game-portal/patchNotes'
 import { resolveProjectTheme } from '@/lib/game-portal/projectTheme'
 import { SHAPE_RADIUS, type SiteThemeV1 } from '@/lib/game-portal/theme'
-import { CW } from '@/lib/theme/cw'
+import { TOKENS } from '@/lib/theme/tokens'
 
 import type { ImageFormat } from './buttons'
 import { type BadgeModel, type ImageBody, badgeSVG, constantImage, encodeImage, imageResponse } from './images'
@@ -22,7 +22,7 @@ const FIVE_MINUTES_SECONDS = 300
 const ONE_DAY_SECONDS = 86_400
 
 /** The badge is a control-sized chip, so it takes the shape's control radius. */
-const badgeRadius = (shape: SiteThemeV1['shape']): number => CW.radius[SHAPE_RADIUS[shape].control]
+const badgeRadius = (shape: SiteThemeV1['shape']): number => TOKENS.radius[SHAPE_RADIUS[shape].control]
 
 /**
  * What a held game, a suspended studio's game and an unknown slug all
@@ -32,13 +32,13 @@ const badgeRadius = (shape: SiteThemeV1['shape']): number => CW.radius[SHAPE_RAD
 const NEUTRAL_BADGE: BadgeModel = {
   label: BADGE_LABEL,
   value: 'unavailable',
-  // cw light.
+  // The theme's light mode.
   colors: {
-    label: CW.light.neutral[8],
-    labelText: CW.light.neutral[1],
-    value: CW.light.neutral[3],
-    valueText: CW.light.neutral[10],
-    border: CW.light.neutral[4],
+    label: TOKENS.light.neutral[8],
+    labelText: TOKENS.light.neutral[1],
+    value: TOKENS.light.neutral[3],
+    valueText: TOKENS.light.neutral[10],
+    border: TOKENS.light.neutral[4],
   },
   radius: badgeRadius('balanced'),
 }

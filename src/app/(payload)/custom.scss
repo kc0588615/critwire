@@ -1,6 +1,6 @@
-@use '../../styles/cw-tokens';
+@use '../../styles/tokens';
 @use '../../styles/fonts';
-@use '../../styles/cw';
+@use '../../styles/roles';
 
 // Payload's theme variables on cw (plan §3, D21), checked against
 // @payloadcms/ui 3.85.2's scss/{app,colors,vars}.scss. Unlayered, so they
@@ -11,7 +11,7 @@
 // Payload's elevation steps, each on the cw neutral that plays its part.
 // The elevations rather than `--color-base-*`, because cw's two neutral
 // ramps aren't mirror images and Payload uses the elevations in both modes.
-$cw-elevations: (
+$elevations: (
   0: 1,
   50: 2,
   100: 3,
@@ -36,21 +36,21 @@ $cw-elevations: (
 );
 
 // Payload's three status ramps; its `success` ramp is its accent, so it's cw's color-1.
-$cw-statuses: (
+$statuses: (
   success: --color-1,
   warning: --warning,
   error: --error,
 );
 
 :root {
-  @each $step, $neutral in $cw-elevations {
+  @each $step, $neutral in $elevations {
     --theme-elevation-#{$step}: var(--neutral-#{$neutral});
   }
 
   // Tints up to 300, the colour itself from 350 to 500 (Payload uses no
   // 350), and text on tints (550 and up) in cw's text. Same in both modes,
   // as cw's colours are.
-  @each $name, $colour in $cw-statuses {
+  @each $name, $colour in $statuses {
     @for $i from 1 through 19 {
       $step: $i * 50;
 

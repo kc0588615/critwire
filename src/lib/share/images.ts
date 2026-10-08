@@ -7,7 +7,7 @@ import { parse, type Font } from 'opentype.js'
 import path from 'path'
 import sharp from 'sharp'
 
-import { CW } from '@/lib/theme/cw'
+import { STROKE, TOKENS } from '@/lib/theme/tokens'
 import { escapeXml } from '@/utilities/escapeXml'
 
 import { SHARE_BUTTONS, type ButtonFile, type ButtonScheme, type ImageFormat, type ShareButtonID } from './buttons'
@@ -108,19 +108,19 @@ const BUTTON = {
   height: 36,
   // The label's text step, and the smaller one it drops to should a label
   // ever leave less than the minimum side padding (D16).
-  textSteps: [CW.text.m.size, CW.text.s.size],
-  minPadding: CW.space.m,
-  mark: CW.space.s,
-  markRadius: CW.radius.xs,
-  gap: CW.space.xs,
-  edge: CW.border.s,
-  radius: CW.radius.s,
+  textSteps: [TOKENS.text.m.size, TOKENS.text.s.size],
+  minPadding: TOKENS.space.m,
+  mark: TOKENS.space.s,
+  markRadius: TOKENS.radius.xs,
+  gap: TOKENS.space.xs,
+  edge: STROKE.s,
+  radius: TOKENS.radius.s,
 } as const
 
-/** cw's outline Button in the scheme's mode, with a color-1 mark. Generic, not themed per game. */
+/** The theme's outline Button in the scheme's mode, with a color-1 mark. Generic, not themed per game. */
 const buttonPalette = (scheme: ButtonScheme): { background: string; border: string; text: string; mark: string } => {
-  const { neutral } = CW[scheme]
-  return { background: neutral[1], border: neutral[4], text: neutral[10], mark: CW.color[1] }
+  const { neutral } = TOKENS[scheme]
+  return { background: neutral[1], border: neutral[4], text: neutral[10], mark: TOKENS.color[1] }
 }
 
 /**
@@ -157,7 +157,7 @@ export const buttonSVG = (id: ShareButtonID, scheme: ButtonScheme): string => {
   })
 }
 
-const BADGE = { height: 24, fontSize: CW.text.s.size, padding: CW.space.s } as const
+const BADGE = { height: 24, fontSize: TOKENS.text.s.size, padding: TOKENS.space.s } as const
 
 /** What a badge says and how it looks: a label segment, then a value segment. */
 export type BadgeModel = {

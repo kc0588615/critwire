@@ -80,11 +80,16 @@ across studios). Fields:
   (`standard`, `modern`, `editorial`, `technical`), shape, density,
   motion. Every save is validated whole against the Zod schema in
   `src/lib/game-portal/theme.ts`, WCAG contrast included; unset values
-  fall back to the default theme. The default is cw dark (critwire's
-  design language, `src/lib/theme/cw.ts`) with `standard` typography.
+  fall back to the default theme. The default is cc dark (Critter
+  Connect's design language, `src/lib/theme/tokens.ts`) with `standard` typography.
   Themes saved before that default existed keep their look: migration
   `cw_portal_defaults` wrote the old default into each slot they had
-  left unset, and never changed a value a studio set.
+  left unset, and never changed a value a studio set. Migration
+  `cc_portal_defaults` then changed only the column defaults to cc
+  dark; no stored palette changed. The default's value is a
+  compatibility contract: a future change to it ships a migration that
+  decides explicitly what rows equal to the old default, and unset
+  slots, become.
 - **Links** (approved outbound URLs, shown as given): website, steam,
   epic, itch, discord, support, docs, merch, playstation, xbox,
   nintendo, gog, youtube, pressKit, privacy, terms. `website` is the

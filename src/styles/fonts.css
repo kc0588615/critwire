@@ -5,7 +5,7 @@
  * and --face-data are the one place a face is named (GUI.md, Local
  * decisions), so a licensed GT Maru replaces Nunito here, and only here.
  * Every entry point loads this between the tokens and the roles, so it
- * imports nothing; the int test cw-tokens checks both, and that every
+ * imports nothing; the int test theme-tokens checks both, and that every
  * url() below is a file under public/.
  */
 @font-face {

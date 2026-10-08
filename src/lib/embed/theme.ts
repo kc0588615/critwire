@@ -8,27 +8,28 @@ import {
   siteThemeColorsSchema,
   type SiteThemeV1,
 } from '@/lib/game-portal/theme'
-import { CW } from '@/lib/theme/cw'
+import { TOKENS } from '@/lib/theme/tokens'
 
-const { neutral: light } = CW.light
+const { neutral: light } = TOKENS.light
 
 /**
  * The scheme a game's palette doesn't cover: a fixed neutral palette,
- * cw in that mode. Light's accent is neutral-10 with neutral-1 on it,
- * since cw's color-1 is 2.08:1 on white (A9). Parsed at load, so a
- * constant that fails the theme's contrast rules throws at once.
+ * the theme in that mode, with light's muted text on n8 (A2). Light's
+ * accent is neutral-10 with neutral-1 on it, for a game whose accent
+ * doesn't read on white. Parsed at load, so a constant that fails the
+ * theme's contrast rules throws at once.
  */
 const NEUTRAL: Record<'dark' | 'light', SiteThemeColors> = {
   dark: DEFAULT_THEME_COLORS,
   light: siteThemeColorsSchema.parse({
     background: light[1],
     foreground: light[10],
-    mutedForeground: light[7],
+    mutedForeground: light[8],
     surface: light[2],
     accent: light[10],
     accentForeground: light[1],
     border: light[4],
-    ...CW.status,
+    ...TOKENS.status,
   }),
 }
 

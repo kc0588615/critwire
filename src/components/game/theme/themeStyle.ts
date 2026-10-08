@@ -31,7 +31,7 @@ const DISPLAY: Record<SiteThemeV1['typography'], DisplayVoice> = {
     // The 78% width narrows the space too; without this, words run together.
     wordSpacing: '0.08em',
   },
-  // cw's own voice: its brand font at the heavy weight, on cw's tracking.
+  // The theme's own voice: its brand font at the heavy weight, on its tracking.
   standard: {
     family: 'var(--font-brand)',
     stretch: '100%',

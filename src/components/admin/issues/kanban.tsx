@@ -38,7 +38,7 @@ import React, { useCallback, useRef, useState } from 'react'
 import type { Issue } from '@/payload-types'
 
 import { ISSUE_STATUS_OPTIONS } from '@/collections/options'
-import { CW, cubicBezier } from '@/lib/theme/cw'
+import { TOKENS, cubicBezier } from '@/lib/theme/tokens'
 import { cn } from '@/utilities/ui'
 import { usePrefersReducedMotion } from '@/utilities/usePrefersReducedMotion'
 
@@ -60,12 +60,12 @@ const COLUMNS: ColumnDef[] = ISSUE_STATUS_OPTIONS.map((status) => ({
 const block = 'issues-kanban'
 
 /**
- * cw's small motion for a card moving aside and for the drop, as the
+ * The theme's small motion for a card moving aside and for the drop, as the
  * cards' own transitions in kanban.css. kanban.css stops the first under
  * reduced motion; the drop runs on the Web Animations API, so the board
  * leaves it out.
  */
-const CARD_MOTION = { duration: CW.motion.small.duration, easing: cubicBezier(CW.motion.small.easing) }
+const CARD_MOTION = { duration: TOKENS.motion.small.duration, easing: cubicBezier(TOKENS.motion.small.easing) }
 
 async function updateIssue(
   issueId: number | string,

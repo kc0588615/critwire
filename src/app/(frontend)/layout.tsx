@@ -50,7 +50,7 @@ export const metadata: Metadata = {
 }
 
 // Critwire's pages follow the visitor's system setting, with no toggle
-// (`.cw-root` in marketing.css sets the same for its own colours).
+// (`.cw-root` in site.css sets the same for its own colours).
 export const viewport: Viewport = {
   colorScheme: 'light dark',
 }

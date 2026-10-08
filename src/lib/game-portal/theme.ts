@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import { CW, type RadiusStep } from '@/lib/theme/cw'
+import { TOKENS, type RadiusStep } from '@/lib/theme/tokens'
 
 import { HEX_COLOR_RE, contrastRatio } from './contrast'
 
@@ -47,23 +47,29 @@ export const siteThemeColorsSchema = z
   })
 export type SiteThemeColors = z.infer<typeof siteThemeColorsSchema>
 
-const { neutral, accentText } = CW.dark
+const { neutral, accentText } = TOKENS.dark
 
 /**
- * cw dark: the portal's default palette, and the one any unset slot
+ * cc dark: the portal's default palette, and the one any unset slot
  * falls back to. Passes every contrast refinement (`DEFAULT_THEME` below
- * parses it when the module loads). The border is n4, the dark edge that
- * stays visible (D4).
+ * parses it when the module loads). The label on the accent is the dark
+ * accent text, n1 (A1); the border is n4, the edge that stays visible (A4).
+ *
+ * A compatibility contract (D48): the database's column defaults hold
+ * these values (migration `cc_portal_defaults`), and a palette equal to
+ * them is what the default means. Changing them ships a migration that
+ * decides explicitly what rows equal to the old default, and unset slots,
+ * become; it must never happen silently.
  */
 export const DEFAULT_THEME_COLORS: SiteThemeColors = {
   background: neutral[1],
   foreground: neutral[10],
   mutedForeground: neutral[7],
   surface: neutral[2],
-  accent: CW.color[1],
+  accent: TOKENS.color[1],
   accentForeground: accentText,
   border: neutral[4],
-  ...CW.status,
+  ...TOKENS.status,
 }
 
 export const siteTypographySchema = z.enum(['standard', 'modern', 'editorial', 'technical'])
@@ -72,7 +78,7 @@ export const siteDensitySchema = z.enum(['compact', 'cinematic'])
 export const siteMotionSchema = z.enum(['off', 'subtle'])
 
 /**
- * `shape` on cw's radius scale: the step for surfaces (cards, forms,
+ * `shape` on the theme's radius scale: the step for surfaces (cards, forms,
  * dialogs) and the one for controls (buttons, fields, the badge). The
  * portal, the embeds and the badge all read this one table.
  */

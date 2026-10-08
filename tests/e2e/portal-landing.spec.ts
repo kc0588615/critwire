@@ -2,6 +2,7 @@ import type { Page } from '@playwright/test'
 
 import type { GameProject, Issue } from '../../src/payload-types'
 import { DEFAULT_THEME_COLORS } from '../../src/lib/game-portal/theme'
+import { TOKENS } from '../../src/lib/theme/tokens'
 import {
   createIssue,
   createPatchNote,
@@ -204,7 +205,7 @@ test('S2.4 project theme', async ({ api, page, uniqueSlug, world }) => {
           timeout: 1_000,
         })
       expect(title.family).toMatch(/\bNunito\b/)
-      expect(title.weight).toBe('700')
+      expect(title.weight).toBe(String(TOKENS.fonts.brand.weights.heavy))
     })
   })
 })

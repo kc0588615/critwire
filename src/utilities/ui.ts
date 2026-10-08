@@ -7,11 +7,11 @@
 import { type ClassValue, clsx } from 'clsx'
 import { extendTailwindMerge } from 'tailwind-merge'
 
-import { RADIUS_STEPS, SHADOW_STEPS, SPACE_STEPS, TEXT_STEPS, WEIGHTS } from '@/lib/theme/cw'
+import { RADIUS_STEPS, SHADOW_STEPS, SPACE_STEPS, TEXT_STEPS, WEIGHTS } from '@/lib/theme/tokens'
 
 // tailwind-merge knows only Tailwind's default scales, so it would keep
-// `mx-auto` beside `mx-zero` and read `text-m` as a colour. It learns cw's
-// step names (globals.css maps them to utilities) from cw.ts.
+// `mx-auto` beside `mx-zero` and read `text-m` as a colour. It learns the
+// theme's step names (globals.css maps them to utilities) from tokens.ts.
 const twMerge = extendTailwindMerge({
   extend: {
     theme: {

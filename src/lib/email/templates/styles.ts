@@ -1,16 +1,18 @@
 import type { CSSProperties } from 'react'
 
-import { CW, TAP_MIN } from '@/lib/theme/cw'
+import { STROKE, TAP_MIN, TOKENS } from '@/lib/theme/tokens'
 
 /**
- * The emails' styles: cw light, email-safe (D19). Inline styles only, a
- * border rather than a box shadow, and cw's fallback font stack, so no
+ * The emails' styles: the theme's light mode, email-safe (D19). Inline
+ * styles only, a border rather than a box shadow, and the theme's fallback font stack, so no
  * client has to load a web font.
  */
 
-const { neutral, accentText } = CW.light
-const { radius, space, text } = CW
-const { weights } = CW.fonts.ui
+const { neutral, accentText } = TOKENS.light
+/** A2: the snapshot's muted n7 is 3.91:1 on the n2 body, so muted text is n8 (7.28). */
+const muted = neutral[8]
+const { radius, space, text } = TOKENS
+const { weights } = TOKENS.fonts.ui
 
 const px = (value: number): string => `${value}px`
 
@@ -22,14 +24,14 @@ const textStep = (step: keyof typeof text): CSSProperties => ({
 export const page: CSSProperties = {
   backgroundColor: neutral[2],
   color: neutral[10],
-  fontFamily: CW.fonts.ui.fallback.join(','),
+  fontFamily: TOKENS.fonts.ui.fallback.join(','),
   margin: 0,
   padding: `0 ${px(space.m)}`,
 }
 
 export const card: CSSProperties = {
   backgroundColor: neutral[1],
-  border: `${px(CW.border.s)} solid ${neutral[4]}`,
+  border: `${px(STROKE.s)} solid ${neutral[4]}`,
   borderRadius: px(radius.m),
   margin: `${px(space.xxl)} auto`,
   maxWidth: '560px',
@@ -49,7 +51,7 @@ export const body: CSSProperties = {
   margin: `0 0 ${px(space.l)}`,
 }
 
-/** cw's primary Button: color-1 with its accent text (A1). */
+/** The theme's primary Button: color-1 with its accent text (A1). */
 /**
  * react-email's `Button` sets its label's line height to 120 %, so the block
  * padding that makes the button critwire's tap floor (D10) is half of what
@@ -59,7 +61,7 @@ const BUTTON_LABEL_LINE = text.m.size * 1.2
 
 export const button: CSSProperties = {
   ...textStep('m'),
-  backgroundColor: CW.color[1],
+  backgroundColor: TOKENS.color[1],
   borderRadius: px(radius.s),
   color: accentText,
   fontWeight: weights.medium,
@@ -69,7 +71,7 @@ export const button: CSSProperties = {
 
 export const small: CSSProperties = {
   ...textStep('s'),
-  color: neutral[7],
+  color: muted,
   margin: `${px(space.l)} 0 0`,
 }
 
@@ -81,14 +83,14 @@ export const link: CSSProperties = {
 
 /** `borderTop`, not `borderColor`: react-email's `Hr` sets its own grey `borderTop`. */
 export const divider: CSSProperties = {
-  borderTop: `${px(CW.border.s)} solid ${neutral[4]}`,
+  borderTop: `${px(STROKE.s)} solid ${neutral[4]}`,
   margin: `${px(space.l)} 0`,
 }
 
-/** A field's name over its value; sentence case, as cw sets no all-caps. */
+/** A field's name over its value; sentence case, as the theme sets no all-caps. */
 export const label: CSSProperties = {
   ...textStep('s'),
-  color: neutral[7],
+  color: muted,
   fontWeight: weights.medium,
   margin: `0 0 ${px(space.xxs)}`,
 }

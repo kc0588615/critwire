@@ -22,7 +22,7 @@
   // The button and its dialog sit on the host page, outside the game's theme, so they're neutral:
   // cw neutral-1/neutral-10 per mode (src/lib/theme/cw.ts). The pill is cw's xl radius, padded by
   // its l space; the grey edge keeps it visible on any host colour.
-  var COLOURS = { light: ['#ffffff', '#000000'], dark: ['#000000', '#ffffff'] }
+  var COLOURS = { light: ['#ffffff', '#000000'], dark: ['#051411', '#ffffff'] }
   var PILL =
     'min-height:44px;padding:0 19px;border:1px solid rgba(128,128,128,.4);border-radius:22px;font:inherit;cursor:pointer;'
 

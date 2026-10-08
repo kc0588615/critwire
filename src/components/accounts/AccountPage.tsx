@@ -5,7 +5,7 @@ import React from 'react'
  * abuse reports): one narrow column on the canvas with a heading, a lede,
  * the page's notices, then its form. The portal's form components
  * (`FormField`, `FormNotice`, `TurnstileField`) read cw's roles, which
- * `.cw-root` maps onto their `--fs-*` variables (marketing.css).
+ * `.cw-root` maps onto their `--fs-*` variables (site.css).
  */
 export const AccountPage: React.FC<{
   children?: React.ReactNode

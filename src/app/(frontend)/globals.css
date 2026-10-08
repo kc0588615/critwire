@@ -1,15 +1,15 @@
 /*
  * The shared Tailwind entry for Critwire's site and the studio portals.
- * cw's tokens, the faces, then cw's roles load first and unlayered (the
- * admin loads the same three files from custom.scss). Each surface owns its palette:
- * marketing.css on .cw-root, portal.css (from the studio's theme) on
+ * The theme's tokens, the faces, then its roles load first and unlayered
+ * (the admin loads the same three files from custom.scss). Each surface owns its palette:
+ * site.css on .cw-root, portal.css (from the studio's theme) on
  * .fs-root. Nothing here sets a colour.
  */
 @import 'tailwindcss';
-@import '../../styles/cw-tokens.css';
+@import '../../styles/tokens.css';
 @import '../../styles/fonts.css';
-@import '../../styles/cw.css';
-@import './marketing.css' layer(components);
+@import '../../styles/roles.css';
+@import './site.css' layer(components);
 @import './portal.css' layer(components);
 
 @config '../../../tailwind.config.mjs';
@@ -62,12 +62,14 @@
     background: linear-gradient(90deg, var(--mark, currentColor) 50%, transparent 50%);
   }
 
-  /* One ring's width smaller, so the rotated square stays inside the mark's column. */
+  /* One ring's width smaller, so the rotated square stays inside the mark's column.
+     Square corners: any theme radius (cc's xs is 8 px) rounds this small a square
+     into the dot, and the stages must differ by shape. */
   .status-mark[data-shape='diamond'] {
     width: calc(var(--space-m) - var(--stroke-l));
     height: calc(var(--space-m) - var(--stroke-l));
     margin-inline: calc(var(--stroke-l) / 2);
-    border-radius: var(--radius-xs);
+    border-radius: var(--radius-zero);
     background: var(--mark, currentColor);
     transform: rotate(45deg);
   }
@@ -84,9 +86,9 @@
 @source inline("lg:col-span-12");
 
 /*
- * Tailwind's own design scales are gone (plan D22): only cw's utilities,
- * below, exist. The resets come first, so what this block and the cw
- * mapping define after them survives. The breakpoints stay.
+ * Tailwind's own design scales are gone (cw-theme D22): only the theme's
+ * utilities, below, exist. The resets come first, so what this block and
+ * the theme's mapping define after them survives. The breakpoints stay.
  */
 @theme {
   --color-*: initial;
@@ -113,7 +115,7 @@
 }
 
 /*
- * cw's utilities (mt-m, text-s, rounded-m, bg-neutral-3, font-ui …), each
+ * The theme's utilities (mt-m, text-s, rounded-m, bg-neutral-3, font-ui …), each
  * pointing at its token. `reference` keeps Tailwind from re-declaring the
  * variables, which would make the ones sharing a name refer to themselves.
  * Width utilities read --spacing-* before --container-*, so `max-w-xl`
@@ -193,11 +195,11 @@
   --font-brand: var(--font-brand);
   --font-data: var(--font-data);
 
-  --ease-cw: var(--motion-easing);
-  --ease-cw-large: var(--motion-large-easing);
+  --ease-small: var(--motion-easing);
+  --ease-large: var(--motion-large-easing);
 }
 
-/* The shadcn names the base layer below uses; marketing.css points them at cw's roles. */
+/* The shadcn names the base layer below uses; site.css points them at the theme's roles. */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
