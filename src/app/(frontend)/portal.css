@@ -385,15 +385,19 @@
   object-fit: cover;
 }
 
-/* The name keeps to one line, so it never breaks inside a word: m on
-   phones, where it shares the row with the site link, l from 40rem. */
+/* The name wraps between words onto two lines at most, never inside a
+   word: m on phones, where it shares the row with the site link's cc pill,
+   l from 40rem. One line cut "Critter Connect" to "Critter Con…" at 390px. */
 .fs-nav-name {
+  display: -webkit-box;
   overflow: hidden;
   overflow-wrap: normal;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
   font-size: var(--size-m);
   line-height: var(--line-m);
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  text-wrap: balance;
 }
 
 @media (min-width: 40rem) {
@@ -442,7 +446,9 @@
   }
 }
 
-/* cw's Navigation menu link: fg text, the surface on hover. */
+/* cc's Navigation menu link: s, ui regular, padding xs/s, the control
+   radius. Its hover fill is n3, which no palette slot carries; the surface
+   is the nearest, a non-essential cue (the label and the bar carry the state). */
 .fs-nav-link {
   position: relative;
   display: inline-flex;
@@ -451,10 +457,10 @@
   border-radius: var(--fs-radius-control);
   padding: var(--space-xs) var(--space-s);
   color: var(--fs-fg);
-  font-size: var(--size-m);
+  font-size: var(--size-s);
   font-weight: var(--weight-ui-regular);
-  letter-spacing: var(--letter-spacing-m);
-  line-height: var(--line-m);
+  letter-spacing: var(--letter-spacing-s);
+  line-height: var(--line-s);
   transition: background-color var(--motion-duration) var(--motion-easing);
 }
 
@@ -463,7 +469,7 @@
 }
 
 /* Current page: the accent bar under the label (a fill, not text), kept
-   over cw's selected fill so the current page reads at rest. */
+   over cc's selected n3 fill, which is too faint to read at rest (A11). */
 .fs-nav-link[aria-current]::after {
   position: absolute;
   inset-inline: var(--space-s);
