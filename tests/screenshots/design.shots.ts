@@ -19,8 +19,8 @@ import {
   shotsTarget,
   type ShotsWorld,
 } from './catalog'
-import { FOCUS_PAGES, probeMarketingFocus, probePage, recordChecks } from './probes'
-import { readWorld, reloadUntil, rootStyle, rootToken, SHOTS_CRON_SECRET } from './support'
+import { FOCUS_PAGES, probePage, probeSiteFocus, recordChecks } from './probes'
+import { computedRgb, readWorld, reloadUntil, rootBackground, rootStyle, SHOTS_CRON_SECRET } from './support'
 import { RISO_THEME } from './themes'
 
 const { set, dir } = shotsTarget()
@@ -50,8 +50,8 @@ async function applyTheme(
   await reloadUntil(
     page,
     hub,
-    (p) => rootToken(p, '--fs-bg'),
-    theme.colors.background,
+    rootBackground,
+    computedRgb(theme.colors.background),
     `the hub never showed the ${group} theme`,
   )
 }
@@ -129,7 +129,7 @@ for (const group of selectedGroups()) {
         const probes = set === 'after' ? await probePage(page, { group, shot, width, requests }) : []
         await page.screenshot({ path: path.join(dir, set, file), fullPage: true, animations: 'disabled' })
         if (set !== 'after') return
-        if (FOCUS_PAGES.has(shot.id)) probes.push(await probeMarketingFocus(page))
+        if (FOCUS_PAGES.has(shot.id)) probes.push(await probeSiteFocus(page))
         await recordChecks(dir, file, probes)
         for (const probe of probes) expect.soft(probe.pass, `${probe.probe}: ${probe.detail}`).toBe(true)
       })

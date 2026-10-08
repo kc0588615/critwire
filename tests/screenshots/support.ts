@@ -2,6 +2,8 @@ import { readFile } from 'node:fs/promises'
 
 import { expect, type Page } from '@playwright/test'
 
+import { hexToRgb } from '../../src/lib/game-portal/contrast'
+
 import { type ShotsWorld, WORLD_PATH } from './catalog'
 
 /** Bearer for `/api/seed/critter-connect`, baked only into the harness's own server. */
@@ -15,8 +17,16 @@ export const rootStyle = async (page: Page): Promise<null | string> => {
   return (await root.count()) ? root.getAttribute('style') : null
 }
 
-export const rootToken = (page: Page, token: string): Promise<string> =>
-  page.locator('.fs-root').first().evaluate((el, name) => getComputedStyle(el).getPropertyValue(name).trim(), token)
+/**
+ * The computed background of the page's `.fs-root`, as `rgb(r, g, b)`.
+ * It reads what the visitor sees, so it holds whether the theme carries
+ * one palette or a light and a dark one.
+ */
+export const rootBackground = (page: Page): Promise<string> =>
+  page.locator('.fs-root').first().evaluate((el) => getComputedStyle(el).backgroundColor)
+
+/** A `#rrggbb` colour as the `rgb(r, g, b)` a computed style reports. */
+export const computedRgb = (hex: string): string => `rgb(${hexToRgb(hex).join(', ')})`
 
 /**
  * Reloads `path` every second, for up to 60 s, until `read` returns

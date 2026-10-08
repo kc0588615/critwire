@@ -23,14 +23,20 @@ export interface ShotsWorld {
     baselineStyle: string
     /** The seed's launch update, whose page shows "From your feedback". */
     launchUpdate: string
+    /** A public item the setup creates, so its page is the same whatever the seed holds. */
+    item: string
   }
   signup: {
     /** A pending signup's verification token; opening its page doesn't use it. */
     verifyToken: string
-    /** The HTML of that signup's verification email, as the outbox holds it. */
-    verifyEmailHtml: string
     /** The game a studio onboarded through signup, for the hub's welcome panel. */
     welcomeSlug: string
+  }
+  email: {
+    /** The HTML of the pending signup's verification email, as the outbox holds it. */
+    verifyHtml: string
+    /** The HTML of the email a message sent through Critter Connect's contact form becomes. */
+    contactHtml: string
   }
   reach: {
     /** Lantern Keep's ID: the studio user's game, with a few referrals counted. */
@@ -67,12 +73,13 @@ export type Session = keyof typeof SESSION_STATE_PATHS
 export const GROUPS = [
   'critter-connect',
   'riso',
-  'marketing',
+  'site',
   'signup',
   'reach',
   'embed',
   'discord',
   'legal',
+  'email',
   'admin',
 ] as const
 export type Group = (typeof GROUPS)[number]
@@ -84,12 +91,13 @@ export type PortalGroup = (typeof PORTAL_GROUPS)[number]
 export const GROUP_LABELS: Record<Group, string> = {
   'critter-connect': 'Portal, Critter Connect theme',
   riso: 'Portal, Riso lime (light test theme)',
-  marketing: 'Critwire home page',
+  site: 'Site pages: page not found and portal not found',
   signup: 'Sign up and onboarding',
   reach: 'Share kit, badges and buttons',
   embed: "Embeds on a studio's page",
   discord: 'Share tab: the Discord tab',
   legal: 'Legal pages, agreement and player notices',
+  email: 'Emails: verification and the contact form',
   admin: 'Admin: sign-in, password reset, the Issues kanban and the legal gate',
 }
 
@@ -133,26 +141,52 @@ const MODES = ['light', 'dark'] as const
 type Mode = (typeof MODES)[number]
 
 /**
- * `shot` once per mode, as `<id>-<mode>`: through the visitor's system
+ * `shot` in `mode`, as `<id>-<mode>`: through the visitor's system
  * scheme for critwire's pages, or Payload's theme cookie for the admin.
  */
+const inMode = (via: 'adminTheme' | 'scheme', mode: Mode, shot: Shot): Shot => ({
+  ...shot,
+  id: `${shot.id}-${mode}`,
+  label: `${shot.label}, ${mode}`,
+  [via]: mode,
+})
+
+/** `shot` once per mode (`inMode`). */
 const inModes = (via: 'adminTheme' | 'scheme', shot: Shot): Shot[] =>
-  MODES.map((mode) => ({ ...shot, id: `${shot.id}-${mode}`, label: `${shot.label}, ${mode}`, [via]: mode }))
+  MODES.map((mode) => inMode(via, mode, shot))
+
+const HUB_SHOT: Shot = { id: 'hub', label: 'Hub', path: (w) => cc(w) }
 
 /** The portal pages, shot under each theme group; they wait for the group's theme. */
 const PORTAL_SHOTS: Shot[] = [
-  { id: 'hub', label: 'Hub', path: (w) => cc(w) },
+  HUB_SHOT,
+  { id: 'updates', label: 'Updates list', path: (w) => cc(w, '/updates') },
+  { id: 'update', label: 'Launch update', path: (w) => cc(w, `/updates/${w.cc.launchUpdate}`) },
   { id: 'feedback', label: 'Feedback list', path: (w) => cc(w, '/feedback') },
   { id: 'board', label: 'Feedback board', path: (w) => cc(w, '/feedback?view=board') },
+  { id: 'item', label: 'Feedback item', path: (w) => cc(w, `/feedback/${w.cc.item}`) },
   { id: 'submit-bug', label: 'Submit form: a bug', path: (w) => cc(w, '/feedback/new?type=bug') },
   { id: 'submit-idea', label: 'Submit form: an idea', path: (w) => cc(w, '/feedback/new?type=idea') },
-  { id: 'update', label: 'Launch update', path: (w) => cc(w, `/updates/${w.cc.launchUpdate}`) },
+  { id: 'contact', label: 'Contact form, by email', path: (w) => cc(w, '/contact') },
 ]
 
-const MARKETING_SHOTS: Shot[] = [
-  ...inModes('scheme', { id: 'home', label: 'Home', path: () => '/' }),
+/**
+ * Critter Connect's own theme follows the visitor's system, so every page
+ * is shot in both schemes. A saved theme like Riso ignores the system:
+ * every page in light, and the hub in dark to prove it.
+ */
+const PORTAL_GROUP_SHOTS: Record<PortalGroup, Shot[]> = {
+  'critter-connect': PORTAL_SHOTS.flatMap((shot) => inModes('scheme', shot)),
+  riso: [
+    ...PORTAL_SHOTS.map((shot) => inMode('scheme', 'light', shot)),
+    inMode('scheme', 'dark', HUB_SHOT),
+  ],
+}
+
+/** The site's own pages: the two 404s. `/` has no shot, as it opens Critter Connect's hub. */
+const SITE_SHOTS: Shot[] = [
   ...inModes('scheme', { id: 'not-found', label: 'Page not found', path: () => '/no-such-page' }),
-  { id: 'portal-not-found', label: 'Portal not found', path: () => '/g/no-such-game' },
+  ...inModes('scheme', { id: 'portal-not-found', label: 'Portal not found', path: () => '/g/no-such-game' }),
 ]
 
 const SIGNUP_SHOTS: Shot[] = [
@@ -164,7 +198,6 @@ const SIGNUP_SHOTS: Shot[] = [
       { id: 'onboarding', label: 'Onboarding: your first game', path: () => '/onboarding', session: 'onboarding' },
     ] satisfies Shot[]
   ).flatMap((shot) => inModes('scheme', shot)),
-  { id: 'email-verify', label: 'The verification email', html: (w) => w.signup.verifyEmailHtml },
   {
     id: 'welcome',
     label: 'New portal with its next steps',
@@ -288,8 +321,8 @@ const DISCORD_SHOTS: Shot[] = (['light', 'dark'] as const).flatMap((adminTheme):
 
 /**
  * The three documents, the two places a studio agrees to them, and the
- * three forms where players see the notice and the warning. The seed
- * routes Critter Connect's contact form to email.
+ * abuse-report form. The player forms, with their notice and warning,
+ * are in the portal groups.
  */
 const LEGAL_SHOTS: Shot[] = [
   ...(
@@ -299,13 +332,17 @@ const LEGAL_SHOTS: Shot[] = [
       { id: 'accept', label: 'Accept the Terms and Privacy Policy', path: () => '/legal/accept', session: 'accept' },
     ] satisfies Shot[]
   ).flatMap((shot) => inModes('scheme', shot)),
-  { id: 'submit-bug', label: 'Submit form: a bug', path: (w) => portalPaths(w.cc.slug).newFeedback('bug') },
-  { id: 'contact', label: 'Contact form, by email', path: (w) => portalPaths(w.cc.slug).contact },
   ...inModes('scheme', {
     id: 'report-abuse',
     label: 'Report this page',
     path: (w) => reportAbuseHref(portalPaths(w.cc.slug).hub),
   }),
+]
+
+/** The emails, as the setup captured them. */
+const EMAIL_SHOTS: Shot[] = [
+  { id: 'email-verify', label: 'The verification email', html: (w) => w.email.verifyHtml },
+  { id: 'email-contact', label: 'A contact-form message', html: (w) => w.email.contactHtml },
 ]
 
 /** A seeded Lantern Keep issue, whose card shows the kanban has loaded. */
@@ -360,16 +397,18 @@ export const isPortalGroup = (group: Group): group is PortalGroup =>
   (PORTAL_GROUPS as readonly string[]).includes(group)
 
 const OTHER_SHOTS: Record<Exclude<Group, PortalGroup>, Shot[]> = {
-  marketing: MARKETING_SHOTS,
+  site: SITE_SHOTS,
   signup: SIGNUP_SHOTS,
   reach: REACH_SHOTS,
   embed: EMBED_SHOTS,
   discord: DISCORD_SHOTS,
   legal: LEGAL_SHOTS,
+  email: EMAIL_SHOTS,
   admin: ADMIN_SHOTS,
 }
 
-export const shotsFor = (group: Group): Shot[] => (isPortalGroup(group) ? PORTAL_SHOTS : OTHER_SHOTS[group])
+export const shotsFor = (group: Group): Shot[] =>
+  isPortalGroup(group) ? PORTAL_GROUP_SHOTS[group] : OTHER_SHOTS[group]
 
 export const WIDTHS = [1440, 390] as const
 

@@ -29,15 +29,15 @@ const MOBILE_WIDTH = 390
 const MIN_TARGET_PX = 44
 const FONT_HOSTS = ['fonts.googleapis.com', 'fonts.gstatic.com', 'raw.githubusercontent.com']
 /** Pages whose motion moment must be settled once loaded under reduced motion. */
-const MOTION_PAGES = new Set(['hub', 'home-light', 'home-dark'])
-/** Critwire's pages whose focus ring is checked, after the capture. */
-export const FOCUS_PAGES = new Set(['home-light', 'home-dark'])
+const MOTION_PAGES = new Set(['hub-light', 'hub-dark'])
+/** The site's own pages whose focus ring is checked, after the capture. */
+export const FOCUS_PAGES = new Set(['terms-light', 'terms-dark'])
 /** WCAG AA: text, large text (24 px, or 18.66 px at weight 700), and a field's edge (1.4.11). */
 const CONTRAST_FLOOR = { text: 4.5, large: 3, edge: 3, largePx: 24, largeBoldPx: 18.66, bold: 700 } as const
 /** How many failures a contrast result names. */
 const CONTRAST_LISTED = 20
 /** Pages with studio-written rich text. */
-const PROSE_PAGES = new Set(['update'])
+const PROSE_PAGES = new Set(['update-light', 'update-dark'])
 
 const result = (probe: string, pass: boolean, detail: string): ProbeResult => ({ probe, pass, detail })
 
@@ -387,11 +387,11 @@ export async function probePage(page: Page, { group, shot, width, requests }: Pr
 }
 
 /**
- * No capture shows focus: after the home capture, Tab to the first link
- * and check its ring is cw's, `--focus-ring-color` (D28). Runs after the
- * screenshot so the ring never shows in it.
+ * No capture shows focus: after a site page's capture, Tab to the first
+ * link and check its ring is the site's, `--focus-ring-color` (D28). Runs
+ * after the screenshot so the ring never shows in it.
  */
-export async function probeMarketingFocus(page: Page): Promise<ProbeResult> {
+export async function probeSiteFocus(page: Page): Promise<ProbeResult> {
   await page.keyboard.press('Tab')
   return focusRing(page, '.cw-root', 'var(--focus-ring-color)')
 }

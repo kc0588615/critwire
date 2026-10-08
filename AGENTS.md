@@ -139,25 +139,25 @@ where appropriate.
   disposable E2E database (see Testing)
 - `pnpm test:int` — vitest; the int files, no database needed
 - `pnpm screenshots` — design screenshots (the Critter Connect demo's
-  hub, feedback list and board, both submit forms and an update, under
-  the Critter Connect and Riso themes, plus the home page `/` and the
-  404s, signup, onboarding and the verification email, and the `reach`
-  group: the share kit, the admin
-  dashboard and Share tab in light and dark, and the buttons and badges
-  on a host page; and the `embed` group: the board, updates, floating
-  button and its dialog on a studio's page, light and dark; and the
-  `discord` group: the Share tab's Discord tab, not linked and linked,
-  light and dark; and the `legal` group: the three legal pages, signup,
-  `/legal/accept` and the bug, contact and abuse-report forms; and the
-  `admin` group: sign-in, forgot, reset, the Issues kanban and the legal
-  gate, light and dark; critwire's own pages are shot under both system
-  colour schemes; 1440 and
-  390 px) against a production build on port
-  3200; needs `SHOTS_SET=before|after` and an absolute `SHOTS_DIR`
-  (`SHOTS_THEMES` picks groups). "after" runs also probe the quality
-  floor, contrast included, into `after/checks.json`. Drops the
-  `_e2e` database like `pnpm test:e2e`, so never run the two together
-  (see `playwright.screenshots.config.ts`)
+  hub, updates list and an update, feedback list, board and an item,
+  both submit forms and contact, under the Critter Connect theme in
+  both system schemes and the Riso theme in light, plus its hub in
+  dark; the `site` group: the 404s; signup and onboarding; the `reach`
+  group: the share kit, the admin dashboard and Share tab in light and
+  dark, and the buttons and badges on a host page; the `embed` group:
+  the board, updates, floating button and its dialog on a studio's
+  page, light and dark; the `discord` group: the Share tab's Discord
+  tab, not linked and linked, light and dark; the `legal` group: the
+  three legal pages, signup, `/legal/accept` and the abuse-report
+  form; the `email` group: the verification and contact-form emails;
+  and the `admin` group: sign-in, forgot, reset, the Issues kanban and
+  the legal gate, light and dark; critwire's own pages are shot under
+  both system colour schemes; 1440 and 390 px) against a production
+  build on port 3200; needs `SHOTS_SET=before|after` and an absolute
+  `SHOTS_DIR` (`SHOTS_THEMES` picks groups). "after" runs also probe
+  the quality floor, contrast included, into `after/checks.json`.
+  Drops the `_e2e` database like `pnpm test:e2e`, so never run the two
+  together (see `playwright.screenshots.config.ts`)
 - `docker compose up -d --build` — full stack (see `docs/deploy.md`)
 
 Local Postgres for dev: `DATABASE_URL` in `.env` must point at a running

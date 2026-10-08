@@ -1,15 +1,18 @@
+import { execFileSync } from 'node:child_process'
 import { mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 
 import { type APIRequestContext, expect, test as setup } from '@playwright/test'
 import { extractID } from 'payload/shared'
 
-import type { GameProject, Issue } from '../../src/payload-types'
+import type { ContactFormEmailProps } from '../../src/lib/email/templates/ContactFormEmail'
+import { portalPaths } from '../../src/lib/game-portal/paths'
+import type { GameProject, Issue, PayloadJob } from '../../src/payload-types'
 import { RestClient } from '../e2e/support/api'
 import { linkDiscord } from '../e2e/support/discord'
 import { acceptLegal } from '../e2e/support/legal'
 import { linkTo, readEmail, tokenOf, verificationToken } from '../e2e/support/email'
-import { PASSWORD } from '../e2e/support/env'
+import { BASE_URL, PASSWORD, TURNSTILE_DUMMY_TOKEN } from '../e2e/support/env'
 import {
   castVote,
   createIssue,
@@ -55,6 +58,18 @@ const KANBAN_ISSUES: [string, Partial<Issue>][] = [
   ['fog-through-stairs', { title: 'Fog clips through the lighthouse stairs', status: 'FIXED', category: 'VISUAL' }],
 ]
 
+/** A player's message through Critter Connect's contact form, for the contact email. */
+const CONTACT_MESSAGE = {
+  name: 'Sam',
+  email: 'sam@shots.test',
+  subject: 'The map is slow on my Chromebook',
+  message:
+    'Hi! The map takes a long time to load on my school Chromebook, and the animals pop in late. Is there a setting that makes it faster?',
+} as const
+
+/** Renders a contact email with the app's template, outside Playwright's JSX transform (D62). */
+const RENDER_CONTACT_EMAIL = path.join(process.cwd(), 'tests', 'screenshots', 'renderContactEmail.ts')
+
 /** Visits from tagged kit links, counted for Lantern Keep's Share tab. */
 const REFERRALS = { steam: 6, itch: 3, readme: 2, carrd: 1 } as const
 
@@ -67,7 +82,9 @@ const REFERRALS = { steam: 6, itch: 3, readme: 2, carrd: 1 } as const
  * Riso-themed game in the demo studio for its badge. The discord shots
  * get a second Lantern Keep game, linked to a server through the real
  * install and callback with the Discord stand-in's code. The legal shots
- * get a signed-in account a super admin made, which hasn't accepted.
+ * get a signed-in account a super admin made, which hasn't accepted. The
+ * email shots get the verification email and the email a message through
+ * Critter Connect's contact form becomes.
  */
 setup('seed the Critter Connect demo and the screenshot fixtures', async ({ page, playwright }) => {
   setup.setTimeout(180_000)
@@ -113,7 +130,7 @@ setup('seed the Critter Connect demo and the screenshot fixtures', async ({ page
     return style as string
   })
 
-  await setup.step('add a patch note, four issues and their votes', async () => {
+  const item = await setup.step('add a patch note, four issues and their votes', async () => {
     const note = await createPatchNote(admin, cc, 'v0-1-1', {
       title: 'Clue trail and Steam Deck fixes',
       versionLabel: 'v0.1.1',
@@ -162,6 +179,8 @@ setup('seed the Critter Connect demo and the screenshot fixtures', async ({ page
     for (const [issueID, count] of votes) {
       for (let i = 0; i < count; i++) await castVote(playwright, issueID)
     }
+    // The item page's shot: the setup's own item, so the page is the same whatever the seed holds.
+    return pinned.slug
   })
 
   const signup = await setup.step('sign up a pending user, a user with no studio, and a studio', async () => {
@@ -182,6 +201,53 @@ setup('seed the Critter Connect demo and the screenshot fixtures', async ({ page
     const welcomeSlug = /^\/g\/([^/?]+)\?welcome=1$/.exec(location)?.[1]
     expect(welcomeSlug, `Lantern Keep onboarded to ${location}`).toBeDefined()
     return { verifyToken, verifyEmailHtml: verifyEmail.html, welcomeSlug: welcomeSlug as string, studioToken: token }
+  })
+
+  const contactHtml = await setup.step('send a contact message, and render its email', async () => {
+    const { status, body } = await admin.findByID('game-projects', cc.id, { depth: 0 })
+    expect(status).toBe(200)
+    const project = body as GameProject
+    // Read from the project, which the content command may change: the job emails this address.
+    expect(project.contact?.target, 'Critter Connect routes its contact form to email').toBe('EMAIL')
+    expect(project.contact?.email, 'Critter Connect has a contact address').toBeTruthy()
+
+    const response = await anonymous.post(portalPaths(project.slug).contactSubmit, {
+      data: { ...CONTACT_MESSAGE, turnstileToken: TURNSTILE_DUMMY_TOKEN },
+    })
+    expect(response.status(), await response.text()).toBe(200)
+    const jobs = await admin.find('payload-jobs', {
+      where: { taskSlug: { equals: 'email-contact-form' } },
+      depth: 0,
+      limit: 100,
+    })
+    expect(jobs.status).toBe(200)
+    const job = (jobs.body.docs as PayloadJob[]).find(
+      (doc) => (doc.input as { message?: string } | null)?.message === CONTACT_MESSAGE.message,
+    )
+    expect(job, 'the message queued an email-contact-form job').toBeDefined()
+
+    // The props `emailContactFormTask` builds from the job's input and the project.
+    const input = (job as PayloadJob).input as {
+      email?: string
+      gameSlug: string
+      message: string
+      name?: string
+      subject?: string
+    }
+    const props: ContactFormEmailProps = {
+      email: input.email || undefined,
+      gameName: project.name,
+      message: input.message,
+      name: input.name || undefined,
+      portalUrl: `${BASE_URL}${portalPaths(input.gameSlug).hub}`,
+      subject: input.subject || undefined,
+    }
+    const html = execFileSync('pnpm', ['exec', 'tsx', RENDER_CONTACT_EMAIL], {
+      input: JSON.stringify(props),
+      encoding: 'utf8',
+    })
+    expect(html, 'the rendered email carries the message').toContain('school Chromebook')
+    return html
   })
 
   const reach = await setup.step('add a Riso game for its badge, and count Lantern Keep’s referrals', async () => {
@@ -239,8 +305,10 @@ setup('seed the Critter Connect demo and the screenshot fixtures', async ({ page
       projectID: cc.id,
       baselineStyle,
       launchUpdate: 'v0-1-0-launch',
+      item,
     },
-    signup: { verifyToken: signup.verifyToken, verifyEmailHtml: signup.verifyEmailHtml, welcomeSlug: signup.welcomeSlug },
+    signup: { verifyToken: signup.verifyToken, welcomeSlug: signup.welcomeSlug },
+    email: { verifyHtml: signup.verifyEmailHtml, contactHtml },
     reach,
     discord,
   }
