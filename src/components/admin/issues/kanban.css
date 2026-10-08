@@ -1,5 +1,5 @@
 /*
- * The admin Issues views on cw (plan §4, D20): plain BEM on cw's tokens and
+ * The admin Issues views on cc (plan §7): plain BEM on cc's tokens and
  * roles, which custom.scss loads and which follow Payload's light or dark
  * theme. Payload's styles sit in @layer payload-default, so these
  * unlayered rules win where they meet.
@@ -20,8 +20,8 @@
   margin: var(--space-m) var(--space-xxl) 0 0;
 }
 
-/* cw's toggle through Payload's tab button (custom.scss); pressed is n3
-   with the heavy weight, as Payload's selected tab (D8). */
+/* cc's Toggle through Payload's tab button (custom.scss); pressed is n3
+   with the heavy weight, as Payload's selected tab (A9, D13). */
 .issues-list__switch-option {
   margin-block: 0;
 }
@@ -42,7 +42,8 @@
   margin-bottom: var(--space-m);
 }
 
-/* The board: columns side by side, scrolling sideways on its own. */
+/* The board: columns side by side, scrolling sideways on its own. UI text
+   is cc's s (D9). */
 .issues-kanban {
   display: flex;
   flex: 1;
@@ -51,9 +52,9 @@
   min-height: 0;
   overflow-x: auto;
   color: var(--cte-text);
-  font-size: var(--size-m);
-  letter-spacing: var(--letter-spacing-m);
-  line-height: var(--line-m);
+  font-size: var(--size-s);
+  letter-spacing: var(--letter-spacing-s);
+  line-height: var(--line-s);
 }
 
 .issues-kanban__columns {
@@ -81,11 +82,13 @@
   font-weight: var(--weight-ui-medium);
 }
 
-/* The emphasis chip, the same for every status (D20). */
+/* cc's emphasis chip, the same for every status: color-1 with the accent
+   text (A10). */
 .issues-kanban__count {
   border-radius: var(--radius-s);
   padding: 0 var(--space-xs);
-  background: var(--cte-surface-muted);
+  background: var(--cte-accent);
+  color: var(--cte-accent-text);
   font-family: var(--font-data);
   font-size: var(--size-s);
   font-variant-numeric: tabular-nums;
@@ -94,7 +97,7 @@
   line-height: var(--line-s);
 }
 
-/* The drop area: surface with an edge; while a card is over it, cw's
+/* The drop area: surface with an edge; while a card is over it, cc's
    accent tint with the 2 px edge, where only n10 text sits (A10). */
 .issues-kanban__drop {
   display: flex;
@@ -131,15 +134,16 @@
   color: var(--cte-text);
 }
 
-/* A card is cw's Popover: canvas in light, surface in dark, with an edge. */
+/* A card is cc's Popover: n1 on the column's n2, the 1px edge (A4) and
+   shadow m. */
 .issues-kanban__card {
   display: flex;
   flex-direction: column;
   gap: var(--space-xs);
   border-radius: var(--radius-m);
   padding: var(--space-m);
-  background: light-dark(var(--cte-canvas), var(--cte-surface));
-  box-shadow: var(--border-shadow-s);
+  background: var(--cte-canvas);
+  box-shadow: var(--border-shadow-s), var(--shadow-m);
   cursor: grab;
   user-select: none;
   transition: opacity var(--motion-duration) var(--motion-easing);
@@ -215,7 +219,7 @@
   text-decoration-thickness: var(--stroke-l);
 }
 
-/* "Load more": Payload's secondary button, cw's outline (custom.scss),
+/* "Load more": Payload's secondary button, cc's outline (custom.scss),
    at critwire's tap target (D10). */
 .issues-kanban__more {
   width: 100%;
@@ -223,9 +227,9 @@
   margin: var(--space-xs) 0 0;
 }
 
-/* The card under the pointer: a 2 px edge, without rotation or shadow. */
+/* The card under the pointer: a 2 px edge and shadow m, without rotation. */
 .issues-kanban__overlay > .issues-kanban__card {
-  box-shadow: var(--border-shadow-l);
+  box-shadow: var(--border-shadow-l), var(--shadow-m);
   cursor: grabbing;
 }
 

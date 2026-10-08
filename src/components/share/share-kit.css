@@ -1,29 +1,34 @@
 /*
- * The share kit on cw (plan §4), styled only through --kit-* variables
+ * The share kit on cc (plan §7), styled only through --kit-* variables
  * for colour and corners, so it follows whatever surrounds it: portal.css
  * maps them from the game's --fs-* theme, and the admin's Share view from
- * cw's roles. Sizes are cw's tokens, which both
- * entry points load.
+ * cc's roles. Sizes are cc's tokens, which both entry points load.
  *   --kit-fg, --kit-muted-fg       text, and muted text
- *   --kit-bg                       code values and image previews
+ *   --kit-bg                       code values, image previews, the
+ *                                  selected tab
  *   --kit-surface                  items, and a control's hover
+ *   --kit-list                     the tab list's fill
  *   --kit-border                   dividers, and outline buttons' edges
  *   --kit-control                  the radio chips' edges
  *   --kit-accent, --kit-accent-fg  a primary action's fill and its label
+ *   --kit-focus                    the focus ring
  *   --kit-radius                   controls' corners
- *   --kit-radius-surface           items' and previews' corners
- *   --kit-title-size, -line,       the title, cw's l unless the host
+ *   --kit-radius-button            buttons' corners
+ *   --kit-radius-surface           items', previews' and the tab list's
+ *                                  corners
+ *   --kit-title-size, -line,       the title, cc's l unless the host
  *     -tracking                    sets it
  */
 
+/* UI text is cc's s (D9). */
 .share-kit {
   color: var(--kit-fg);
-  font-size: var(--size-m);
-  letter-spacing: var(--letter-spacing-m);
-  line-height: var(--line-m);
+  font-size: var(--size-s);
+  letter-spacing: var(--letter-spacing-s);
+  line-height: var(--line-s);
 }
 
-/* Inline code is on cw's data role in both hosts: the portal gets it from
+/* Inline code is on cc's data role in both hosts: the portal gets it from
    Tailwind's preflight, but the admin has none, so `<code>` there would fall
    back to the browser's monospace. */
 .share-kit code {
@@ -44,28 +49,35 @@
   margin-top: var(--space-m);
 }
 
-/* cw's Tabs: triggers over an edge, the gap between them l. The selected
-   one keeps a 2px bar (D7), so it never relies on colour; rest is muted. */
+/* cc's Tabs, a segmented control: the list filled, radius m, padding and
+   gap xxs; triggers radius s, padding xxs/s, at the tap floor (D10). Rest
+   is muted; the selected one takes the page fill and the heavy weight, so
+   it never relies on the fill alone (A8, D12). */
 .share-kit-tabs {
   display: flex;
   flex-wrap: wrap;
-  gap: 0 var(--space-l);
+  gap: var(--space-xxs);
+  width: fit-content;
+  max-width: 100%;
   margin-top: var(--space-m);
-  border-bottom: var(--stroke-s) solid var(--kit-border);
+  border-radius: var(--kit-radius-surface);
+  padding: var(--space-xxs);
+  background: var(--kit-list);
 }
 
 .share-kit-tab {
   min-height: var(--tap-min);
-  margin-bottom: calc(-1 * var(--stroke-s));
   border: 0;
-  border-bottom: var(--stroke-l) solid transparent;
-  padding: var(--space-xs) 0;
+  border-radius: var(--kit-radius);
+  padding: var(--space-xxs) var(--space-s);
   background: transparent;
   color: var(--kit-muted-fg);
   font: inherit;
-  font-weight: var(--weight-ui-regular);
+  font-weight: var(--weight-ui-medium);
   cursor: pointer;
-  transition: color var(--motion-duration) var(--motion-easing);
+  transition-duration: var(--motion-duration);
+  transition-property: background-color, color;
+  transition-timing-function: var(--motion-easing);
 }
 
 .share-kit-tab:hover,
@@ -74,7 +86,8 @@
 }
 
 .share-kit-tab[aria-selected='true'] {
-  border-bottom-color: var(--kit-fg);
+  background: var(--kit-bg);
+  font-weight: var(--weight-ui-heavy);
 }
 
 .share-kit-tab:focus-visible,
@@ -82,7 +95,7 @@
 .share-kit-copy:focus-visible,
 .share-kit-option:has(input:focus-visible),
 .share-kit-action:focus-visible {
-  outline: var(--focus-ring-width) solid var(--kit-fg);
+  outline: var(--focus-ring-width) solid var(--kit-focus);
   outline-offset: var(--focus-ring-offset);
 }
 
@@ -103,9 +116,9 @@
 
 .share-kit-platform-group {
   margin: 0;
-  font-size: var(--size-m);
+  font-size: var(--size-s);
   font-weight: var(--weight-ui-heavy);
-  line-height: var(--line-m);
+  line-height: var(--line-s);
 }
 
 .share-kit-platform-list,
@@ -137,7 +150,7 @@
   color: var(--kit-muted-fg);
 }
 
-/* cw's Toggle group, as radio chips. */
+/* cc's Toggle group, as radio chips. */
 .share-kit-choice {
   display: flex;
   flex-wrap: wrap;
@@ -153,8 +166,8 @@
   font-weight: var(--weight-ui-medium);
 }
 
-/* Each choice is a chip at the tap-target floor (D10), its edge an inset
-   shadow. Its radio covers it invisibly, so the native control is the
+/* Each choice is a chip at the tap-target floor (D10): cc's Toggle, radius
+   s and padding xs/s, its edge an inset shadow. Its radio covers it invisibly, so the native control is the
    whole target and keeps its keyboard behaviour. */
 .share-kit-option {
   position: relative;
@@ -182,7 +195,9 @@
   box-shadow: inset 0 0 0 var(--stroke-s) var(--kit-fg);
 }
 
-/* Chosen: a doubled edge and heavy text, so it never relies on colour. */
+/* Chosen: a doubled edge and heavy text, so it never relies on colour.
+   cc's pressed Toggle is an n3 fill, too faint alone (A9); the cue is
+   kept, as on the type choice. */
 .share-kit-option:has(input:checked) {
   box-shadow: inset 0 0 0 var(--stroke-l) var(--kit-fg);
   font-weight: var(--weight-ui-heavy);
@@ -225,8 +240,9 @@
   line-height: var(--line-s);
 }
 
-/* cw's Button: copy and secondary actions are outline, a primary action
-   is the accent fill with its label in accent-fg (D6, A1). */
+/* cc's Button: a pill, padding s/l, label s medium (D11). Copy and
+   secondary actions are outline, a primary action is the accent fill with
+   its label in accent-fg (A1, A4). */
 .share-kit-copy,
 .share-kit-action {
   display: inline-flex;
@@ -234,8 +250,8 @@
   justify-content: center;
   min-height: var(--tap-min);
   border: 0;
-  border-radius: var(--kit-radius);
-  padding: var(--space-xs) var(--space-m);
+  border-radius: var(--kit-radius-button);
+  padding: var(--space-s) var(--space-l);
   font: inherit;
   font-weight: var(--weight-ui-medium);
   text-decoration: none;
@@ -267,7 +283,7 @@
   color: var(--kit-accent-fg);
 }
 
-/* Busy while it saves: cw's disabled, in a pair every host checks. */
+/* Busy while it saves: cc's disabled, in a pair every host checks. */
 .share-kit-action:disabled {
   background: var(--kit-surface);
   color: var(--kit-muted-fg);
@@ -292,12 +308,15 @@
   gap: var(--space-m);
 }
 
-/* cw's Popover surface. */
+/* cc's Popover surface, as the portal's cards (D15): the surface, the
+   1px edge (A4), shadow m and padding m. */
 .share-kit-item {
   border-radius: var(--kit-radius-surface);
   padding: var(--space-m);
   background: var(--kit-surface);
-  box-shadow: inset 0 0 0 var(--stroke-s) var(--kit-border);
+  box-shadow:
+    inset 0 0 0 var(--stroke-s) var(--kit-border),
+    var(--shadow-m);
 }
 
 .share-kit-preview {

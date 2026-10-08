@@ -58,17 +58,22 @@
      own pages use currentColor, site.css). */
   --fs-link-line: var(--fs-accent);
   /* The share kit (share-kit.css) in the game's theme, on the token
-     contract below: chip edges are muted-fg, like other controls, and a
-     primary action is the accent fill with accent-fg on it. */
+     contract below: chip edges are muted-fg, like other controls, the tab
+     list is the surface (the palette has no n3), the focus ring is the
+     foreground, and a primary action is the accent fill with accent-fg
+     on it. */
   --kit-fg: var(--fs-fg);
   --kit-muted-fg: var(--fs-muted-fg);
   --kit-bg: var(--fs-bg);
   --kit-surface: var(--fs-surface);
+  --kit-list: var(--fs-surface);
   --kit-border: var(--fs-border);
   --kit-control: var(--fs-muted-fg);
   --kit-accent: var(--fs-accent);
   --kit-accent-fg: var(--fs-accent-fg);
+  --kit-focus: var(--fs-fg);
   --kit-radius: var(--fs-radius-control);
+  --kit-radius-button: var(--fs-radius-button);
   --kit-radius-surface: var(--fs-radius);
 
   /* UI text is cc's s; reading text (.fs-body, prose) sets m itself (D9). */

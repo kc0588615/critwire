@@ -1,16 +1,20 @@
-// The share kit in the admin, from cw's roles, which follow Payload's
-// light or dark theme (custom.scss); a primary action is cw's accent fill,
-// the same in both.
+// The share kit in the admin, from cc's roles, which follow Payload's
+// light or dark theme (custom.scss): the tab list on n3 as cc's Tabs, the
+// focus ring the admin's color-1 (D8), and a primary action cc's accent
+// fill, the same in both.
 .share-view {
   --kit-fg: var(--cte-text);
   --kit-muted-fg: var(--cte-text-muted);
   --kit-bg: var(--cte-canvas);
   --kit-surface: var(--cte-surface);
+  --kit-list: var(--cte-surface-muted);
   --kit-border: var(--cte-border);
   --kit-control: var(--cte-text-muted);
   --kit-accent: var(--cte-accent);
   --kit-accent-fg: var(--cte-accent-text);
+  --kit-focus: var(--focus-ring-color);
   --kit-radius: var(--radius-s);
+  --kit-radius-button: var(--radius-full);
   --kit-radius-surface: var(--radius-m);
 
   padding-block: var(--space-xl) calc(2 * var(--space-xxl));
@@ -18,15 +22,16 @@
 }
 
 // "Where players come from": a section over a divider, its table with
-// a header at s medium, numbers on the data role and inset-shadow rules.
+// a header at s medium, numbers on the data role and inset-shadow rules;
+// UI text s (D9).
 .referral-counts {
   margin-top: var(--space-xxl);
   box-shadow: inset 0 var(--stroke-s) 0 var(--cte-border);
   padding-top: var(--space-l);
   color: var(--cte-text);
-  font-size: var(--size-m);
-  letter-spacing: var(--letter-spacing-m);
-  line-height: var(--line-m);
+  font-size: var(--size-s);
+  letter-spacing: var(--letter-spacing-s);
+  line-height: var(--line-s);
 }
 
 .referral-counts-title {

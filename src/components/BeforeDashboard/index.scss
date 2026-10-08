@@ -1,11 +1,12 @@
-// The dashboard's top (plan §4): the title l brand heavy, panels and
-// queue tiles on cw's Popover surface, counts xl ui heavy. Payload's Pill
-// and Banner inside come themed through its variables (custom.scss).
+// The dashboard's top (plan §7), NoStudioDashboard's included: UI text s
+// (D9), the title l brand heavy, panels and queue tiles on cc's Popover
+// surface as the portal's cards (D15), counts xl on the data role. Payload's
+// Pill and Banner inside come themed through its variables (custom.scss).
 .dashboard .before-dashboard {
   margin-bottom: var(--space-xl);
-  font-size: var(--size-m);
-  letter-spacing: var(--letter-spacing-m);
-  line-height: var(--line-m);
+  font-size: var(--size-s);
+  letter-spacing: var(--letter-spacing-s);
+  line-height: var(--line-s);
 
   &__title {
     margin: 0 0 var(--space-m);
@@ -49,12 +50,13 @@
     margin: 0;
     padding: 0;
 
+    // cc's Toggle hover: n3.
     & a {
       display: block;
       border-radius: var(--radius-m);
       padding: var(--space-m);
       background: var(--cte-surface);
-      box-shadow: var(--border-shadow-s);
+      box-shadow: var(--border-shadow-s), var(--shadow-m);
       text-decoration: none;
       transition: background-color var(--motion-duration) var(--motion-easing);
 
@@ -67,8 +69,9 @@
   &__count {
     display: block;
     margin-bottom: var(--space-xxs);
+    font-family: var(--font-data);
     font-size: var(--size-xl);
-    font-weight: var(--weight-ui-heavy);
+    font-weight: var(--weight-data-heavy);
     letter-spacing: var(--letter-spacing-xl);
     line-height: var(--line-xl);
     font-variant-numeric: tabular-nums;
@@ -80,7 +83,7 @@
     border-radius: var(--radius-m);
     padding: var(--space-m);
     background: var(--cte-surface);
-    box-shadow: var(--border-shadow-s);
+    box-shadow: var(--border-shadow-s), var(--shadow-m);
 
     & li + li {
       margin-top: var(--space-xs);
