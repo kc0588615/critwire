@@ -1,4 +1,4 @@
-# GUI — cw design language
+# GUI — cc design language
 
 Use this guide and the accompanying skills to build with the supplied theme. The download contains Markdown guidance and theme references. Implement the theme in the receiving app’s existing styling system and components.
 
@@ -58,75 +58,87 @@ For interface creation or revision, read Interface judgment and Foundations, the
 
 ## Local decisions
 
-Critwire's decisions on top of the cw snapshot above, from the mission plan `plans/2026-10-07-cw-theme.md` (Architecture §5, §6 and §11). Everything above this section is the downloaded guidance, unedited. Where a decision and the snapshot disagree, the decision wins.
+Critwire's decisions on top of the cc snapshot above, from the mission plan `plans/2026-10-08-cc-site.md` (Architecture §3–§5 and §14). Everything above this section is the downloaded guidance (phaser-june `75799a8`), unedited. Where a decision and the snapshot disagree, the decision wins. The game's own implementation of cc (phaser-june's `globals.css`) is followed unless accessibility requires otherwise.
 
 ### Fonts and icons
 
-- **Inter** replaces GT Standard M (paid) for the `ui`, `brand` and `editorial` roles. It's OFL, self-hosted with `next/font/google`, `latin` and `latin-ext`, variable `wght`, loaded with `axes: ['opsz']` so optical sizing works. It's the closest free face: a neutral neo-grotesque in the same Standard/Akzidenz lineage, with horizontal terminals, a straight-legged R, a large x-height, tabular figures and UI-size text cuts; its optical-size axis stands in for GT Standard's size-specific cuts. Geist, Instrument Sans, Schibsted Grotesk and Public Sans were rejected as more geometric or with more character than the original. A licensed GT Standard replaces it in one place, `src/fonts.ts`, behind the role tokens `--font-ui`, `--font-brand` and `--font-editorial`.
-- **Geist Mono** (OFL, self-hosted the same way) fills the `data` role ("Sidebar Geist Mono").
-- Server-side images (share buttons, badge, favicons, OG) use Inter Medium (InterDisplay Bold for the brand assets), with DejaVu Sans as the per-character fallback (D17).
-- **Icons:** `lucide-react` at cw's `--icon-stroke-width` of 2, in place of the paid Central set. No other icon package.
+- **Nunito** stands in for GT Maru (paid) in the `ui`, `brand` and `editorial` roles. **Open Runde** takes the `data` role, as in the snapshot. Both are OFL and self-hosted from `public/fonts/nunito/` and `public/fonts/open-runde/`, each folder with its `OFL.txt`, declared in `src/styles/fonts.css` with the game's own `@font-face` rules; no page requests a third-party font host.
+- `--face-sans` and `--face-data` in `src/styles/fonts.css` are the one swap point: a licensed GT Maru replaces Nunito there, behind the role tokens `--font-ui`, `--font-brand`, `--font-editorial` and `--font-data`.
+- Server-side images (share buttons, badge, favicons, OG) use static **Nunito Bold** from `src/lib/share/fonts/` (ExtraBold for `generate:brand` only), because the renderer reads TTF and not WOFF2. DejaVu Sans stays as the per-character fallback, so studio-written badge text keeps its script coverage. cc's tracking (−0.04 em) is drawn into the images.
+- Emails use cc's ui fallback, `sans-serif`; no web font. Embeds use the host page's font for every role.
+- **Icons:** `lucide-react` at cc's `--icon-stroke-width` of 2, in place of the paid Central set. No other icon package.
 
 ### Accessibility departures
 
-WCAG AA wins over snapshot values: 4.5:1 for text, 3:1 for large text, field boundaries and focus indicators. Each fix uses another cw token, never a new colour.
+WCAG AA wins over snapshot values: 4.5:1 for text, 3:1 for large text, field boundaries and focus indicators. Each fix uses another cc token, never a new colour. Ratios are WCAG 2.x, computed as `src/lib/game-portal/contrast.ts` does; light / dark.
 
-| # | Where | cw snapshot | Replacement | Ratio before → after |
+| # | Where | cc snapshot | Replacement | Ratio before → after |
 |---|---|---|---|---|
-| A1 | Light primary label (and Form/Dialog action) | neutral-1 on color-1 | neutral-10 (`--cte-accent-text`) | 2.08 → 10.10 |
-| A2 | Light danger label | neutral-1 on error | neutral-10 | 3.16 → 6.64 (dark already 6.64) |
-| A3 | Field, select and checkbox boundaries, light and dark | `rgb(0 0 0 / .1)`, the same on black | text-muted n7 | light 1.25 → 5.22 (n1), 4.99 (n2); dark ≈1.0 → 8.30 (n1), 6.45 (n2) |
-| A4 | Component edges in dark (cards, popups, outline buttons, dividers) | `rgb(0 0 0 / .1)`; n4-transparent | n4 `#37383a`, cw's own dark separator edge | 1.79 on n1, 1.39 on n2, 1.21 on n3 (light edge: 1.25) |
-| A5 | Tabs, rest trigger | n6 | text-muted n7, both modes | light 2.95 → 5.22; dark 4.69 → 8.30 |
-| A6 | Field error text, light | error as text | n10 text plus an error mark | 3.16 → 21 |
-| A7 | Light color-1, success, warning, error as text, links or the only edge | as text | fills and marks only; links underlined in currentColor | color-1 2.08, success 1.47, warning 1.99, error 3.16 on n1 |
-| A8 | Toggle pressed / selected | n3 fill only | accent fill (embed), or n3 plus heavy weight (admin switch) | n3 vs n1: 1.14 light, 1.48 dark |
-| A9 | Embed light neutral palette accent | color-1 | n10, with n1 on it | 2.08 → 21.00 |
-| A10 | Muted text on the light hero band | n7 | n10 on the band only | 4.49 → 18.06 |
-| A11 | Focus ring | 50 % n10 mix, kept | 2 px offset, never drawn over a color-1 fill | light 3.95 (n1), 3.95 (n2), 3.87 (n3), 3.84 on the hero band; dark 5.32, 5.09, 4.72, 4.92 on the band |
+| A1 | Labels on color-1 and on status fills (primary and danger buttons, tags, the badge label, the email button) | `--cte-accent-text` n2 (`#fcfbfa` / `#241f16`); the game's buttons use n1 | light **n10** `#000000`; dark **n1** `#051411` (the game's own dark label) | on color-1: light 3.90 → 5.21, dark 4.06 → 4.67; on error 4.05 → 5.19 light, 4.66 dark; on success 9.39 / 8.42; on warning 17.02 / 15.27 |
+| A2 | Muted text, light | n7 `#837e72` | **n8** `#595449` | 4.04 → 7.53 on n1; 3.91 → 7.28 on n2; 3.68 → 6.85 on n3. Dark n7 stays: 8.21 / 7.09 / 6.17 |
+| A3 | Field, select and checkbox boundaries | n4 at 0 px | 1 px (`--stroke-s`) **text-muted** | light 1.25 → 7.53 on n1 (7.28 on the n2 fill); dark 1.75 → 8.21 on n1 (7.09 on n2) |
+| A4 | Component edges (cards, panels, dividers, outline buttons, share images) | `--border-default-color` n4 at 20 %: 1.04 light, 1.08 dark (invisible) | **n4** solid at 1 px, cc's own Separator and outline-Button edge | light 1.25 on n1, 1.21 on n2; dark 1.75, 1.51 (decorative: text or fills identify every control) |
+| A5 | Focus ring (critwire's own pages, the admin) | none (`initial`; cc's focus is a 20 % color-1 border, invisible) | the game's ring: 2 px solid color-1, offset 2 px | light 4.03 on n1, 3.90 on n2, 3.67 on n3, 3.14 on the 20 % color-1 banner; dark 4.67, 4.03, 3.51, 3.71 |
+| A6 | Fonts | GT Maru (paid) | Nunito (above) | n/a |
+| A7 | color-1 and status colours as text | used as text and link colour (Preview card trigger) | fills and marks only, always with a word or shape; links underlined in currentColor | color-1 4.03 on light n1 and on dark n2 (fails 4.5); success 2.24, warning 1.23, error 4.05 on light n1; error 4.02 on dark n2 |
+| A8 | Tabs (share kit, Discord tab, kanban/table switch) | rest n7; selected = n1 fill on the n3 list | rest **text-muted**; selected n1 fill **plus heavy weight** (a non-colour cue) | rest light 3.68 → 6.85 on n3; the selected fill against the list is 1.10 light / 1.33 dark, too faint alone |
+| A9 | Pressed toggles (embed filters) | n3 fill | accent fill with accent text; the admin switch: n3 plus heavy weight | n3 vs n1 1.10 / 1.33 → color-1 vs n1 4.03 / 4.67 |
+| A10 | Tag chips (`.fs-tag`) | emphasis-type: color-1 with an n2 label | color-1 (the palette's accent) with accent text | 3.90 → 5.21 light; 4.03 → 4.67 dark |
+| A11 | Portal nav, the current page | navigation-active (color-1 fill, n2 label) / Navigation menu link selected n3 | the accent bar under the link (kept from cw) | label 3.90 → n10 21; bar color-1 4.03 / 4.67 ≥ 3 |
+| A12 | Dark neutrals | cc's warm ramp (`#000000 #241f16 …`) | the game's teal ramp, at the same OKLCH lightness (table below) | text on canvas 21.00 → 18.84; every other pair within 1.12× of the snapshot's |
+
+cc's 0-opacity shadows `s` and `l` stay: cc is flat by design. Shadow `m` shows on light popups only, also as designed. The brand logo's accent `#6FA8BC` is 2.62:1 on white; as a logo it's exempt from 1.4.3 and 1.4.11, and it's used as staged.
+
+### Dark neutrals: snapshot and game
+
+The game keeps cc's lightness for each dark step with a cool green-teal hue (OKLCH h 180), so its panels and the game board read as one surface. Critwire follows the game (D2). Light neutrals are the snapshot's in both. This table is documentation, and no test parses it; `SNAPSHOT_DARK_NEUTRALS` in `src/lib/theme/tokens.ts` is the copy the `theme-tokens` int test checks against `gui/themes/cc.md`.
+
+| Step | Snapshot (`cc.md`, dark) | Game (used) |
+|---|---|---|
+| neutral-1 | `#000000` | `#051411` |
+| neutral-2 | `#241f16` | `#142320` |
+| neutral-3 | `#2f2a21` | `#1f2e2b` |
+| neutral-4 | `#413c32` | `#30413d` |
+| neutral-5 | `#5b564b` | `#4a5b57` |
+| neutral-6 | `#888377` | `#768884` |
+| neutral-7 | `#b0aa9e` | `#9dafab` |
+| neutral-8 | `#d4cec2` | `#c7d1cf` |
+| neutral-9 | `#f5f4f1` | `#ecf7f4` |
+| neutral-10 | `#ffffff` | `#ffffff` |
 
 ### Design decisions
 
-- **D1.** Inter replaces GT Standard M for the ui, brand and editorial roles, loaded with `axes: ['opsz']`; Geist Mono for data.
-- **D2.** `src/lib/theme/cw.ts` is the single literal source. `src/styles/cw-tokens.css` is generated from it, and `src/styles/cw.css` holds the roles with no `@import`. Each entry point (`globals.css`, `custom.scss`) loads the tokens, then the roles. An int test guards drift and runs in `prebuild`.
-- **D3.** Modes use `light-dark()`, with a `color-scheme` per surface.
-- **D4.** The dark edge is n4.
-- **D5.** Field boundaries use text-muted (n7) in both modes.
-- **D6.** Labels on color-1 and on status fills are `#000` in both modes.
-- **D7.** Rest tabs use n7, and the selected tab keeps a 2 px bar.
-- **D8.** Pressed is the accent fill (embed), or n3 plus heavy weight (admin).
-- **D9.** The checkbox stays native, with `accent-color` = text (cw's `controlSize` has no resolved values).
-- **D10.** The 44 px tap-target floor is kept over cw's 34 px controls. It's `TAP_MIN` in `src/lib/theme/cw.ts`, generated as `--tap-min`.
-- **D11.** Portals: cw dark is the default theme, with `standard` typography, the `SHAPE_RADIUS` steps, density as multiples of `--space-xxl`, and cw's motion curves. The studio's saved theme applies on top.
-- **D12.** The portal's two-tone fg/bg focus ring is kept: it's the only ring guaranteed under any valid studio palette, where cw's 50 % ring could fall to about 2:1.
-- **D13.** Embeds use the host page's font for every role.
-- **D14.** The embed loader: n1/n10 colours, the 22 px pill (cw xl), dialog radius m and padding l, flat. Its `rgba(128,128,128,.4)` edge is kept for unknown host backgrounds (1.61 on white, 1.66 on black).
-- **D15.** The wordmark is lowercased with CSS; the DOM text stays "Critwire", and screen readers announce "critwire", deliberately. The favicon is a "c" on color-1; the admin Icon is the small wordmark.
-- **D16.** Share buttons keep their published widths (156 / 120 / 136 px). cw's outline Button geometry is centred in them: a 9 px color-1 mark, a 6 px gap and an Inter Medium label at 15 px. Floor `--space-m` of side padding; fallback: the label drops to 13 px.
-- **D17.** Inter Medium replaces DejaVu as the images' face. DejaVu Sans stays as the per-character fallback, so studio-written badge text keeps today's script coverage.
-- **D18.** The default OG image is `public/og.png`, 1200×630, through one constant.
-- **D19.** Emails are cw light, with borders instead of box shadows and cw's fallback font stack; no web fonts.
-- **D20.** The Issues kanban is BEM CSS; its count chips are neutral.
-- **D21.** Payload: `--theme-*` is overridden unlayered; buttons go through Payload's button variables; only the minimal template gets the field edge.
-- **D22.** Tailwind's default design namespaces are reset; the same `@theme` redefines `--font-sans`, `--font-mono` and `--default-transition-*` from cw roles.
-- **D23.** Saved portal themes keep their look: a migration writes the old default into every unset slot of the columns whose default changes; set values never change.
-- **D24.** cw's 0-opacity shadows stay; separation comes from edges.
-- **D25.** Two ordered migrations: the first adds the `standard` typography enum value alone; the second sets the column defaults and completes saved themes.
-- **D26.** In Payload's own views, three rules where the error colour meets text: the required asterisk and the errored blocks header get `light-dark(n10, error)`, and the relationship load error's text gets `#000`.
-- **D27.** Generators run by hand, with their outputs committed: `generate:theme` (the tokens CSS) and `generate:brand` (favicons, OG). `prebuild` runs only the int tests.
-- **D28.** The focus ring's colour is its own role, `--focus-ring-color`; the screenshot probe resolves that same expression.
-- **D33.** The share buttons and the email button use cw Button's radius `s` (5 px); the 9 px colour mark uses `xs` (2 px).
-- **D34.** The live badge's radius is `SHAPE_RADIUS[shape].control`, since the badge is a control-sized chip; `SHAPE_RADIUS` in `src/lib/game-portal/theme.ts` is the one table.
-- **D37.** `light-dark()` ships unrewritten: `next.config.ts` excludes it from Lightning CSS (`experimental.lightningCssFeatures`), as Tailwind does, so each token resolves against the `color-scheme` of the element using it. Keep that exclusion while the tokens use `light-dark()`.
-- **D38.** Tailwind's width utilities read `--spacing-*` before `--container-*`, so with cw's spacing names `max-w-xl` is 25 px. Size containers in CSS, not with `max-w-<cw step>`.
-- **D40.** Payload's folder drag count (`.drag-overlay-selection__card-count`) sets its text in success-50 on success-600; under the ramp mapping that's a tint on cw's text colour, so its text is the canvas (21:1). Payload's toast close buttons turn a tint on hover over a tint, as in stock Payload; left as they are (G9).
+- **D1.** Theme-neutral names: `src/lib/theme/tokens.ts` (`TOKENS`), the generated `src/styles/tokens.css`, `src/styles/fonts.css`, `src/styles/roles.css`, and the int test `theme-tokens`. No cw value or theme-named identifier remains (migration history excepted).
+- **D2.** Dark neutrals follow the game (A12). `tokens.ts` keeps the snapshot's beside them (`SNAPSHOT_DARK_NEUTRALS`), so the code records exactly what it departs from.
+- **D3.** Modes are `light-dark()` with a `color-scheme` per surface, and the light value as the fallback for browsers without `light-dark()`: tokens set their light value first and the `light-dark()` pair inside `@supports`; portal and embed palettes map `--fs-light-*`/`--fs-dark-*` the same way.
+- **D4.** Labels on color-1 and on status fills: n10 in light, n1 in dark (A1).
+- **D5.** Field boundaries: 1 px text-muted (A3).
+- **D6.** Component edges: 1 px n4, cc's Separator edge (A4).
+- **D7.** cc's border steps are all 0 px, so stroke widths are critwire's own: `STROKE` s 1 / l 2, generated as `--stroke-s`/`--stroke-l`, replaces every use of `--border-*` as a width. cc's 0 px `--border-*` steps stay defined and unused.
+- **D8.** Focus: the game's 2 px color-1 ring, offset 2 px, on critwire's own pages and in the admin. Portals and embeds keep the two-tone fg/bg ring, the only ring guaranteed under any valid saved palette.
+- **D9.** Type scale: UI text s; prose and the email body m; lede l; h3 l; h2 xl; h1 xxl; meta s, medium weight, muted; fine print xs; tracking −0.04 em throughout.
+- **D10.** The 44 px tap floor (`TAP_MIN`, generated as `--tap-min`) stays, and now equals cc's own control height (padding s + line s + 12).
+- **D11.** `SHAPE_RADIUS` gains `button` (sharp: zero; balanced and soft: full), written as `--fs-radius-button`; buttons are cc pills.
+- **D12.** Tabs are cc's segmented control: rest text-muted, selected n1 plus heavy weight (A8).
+- **D13.** Pressed toggles: the accent fill in embeds; n3 plus heavy weight for the admin switch (A9).
+- **D14.** The checkbox stays native, with `accent-color` set to the accent.
+- **D15.** Cards and notices: the surface fill, the A4 edge, cc's shadow m and `--fs-radius`.
+- **D16.** Fonts: Nunito and Open Runde through `fonts.css` from `public/fonts/`; `--face-sans`/`--face-data` are the one swap point. Images use static Nunito Bold (ExtraBold for the generator) with DejaVu per character, and draw cc's tracking.
 
-- **D46.** Motion that CSS can't reach reads `CW.motion` through `cubicBezier` (`src/lib/theme/cw.ts`): the Issues kanban's drag uses cw's small motion, and stops under reduced motion. Payload's buttons get it through `--btn-base-transition`. The embed loader's pill pads its sides with space l and spaces its Close button by space s.
+Still in force from the cw theme (`plans/2026-10-07-cw-theme.md`):
+
+- `light-dark()` ships unrewritten: `next.config.ts` excludes it from Lightning CSS (`experimental.lightningCssFeatures`), as Tailwind does, so each token resolves against the `color-scheme` of the element using it. Keep that exclusion while the tokens use `light-dark()`.
+- Tailwind's width utilities read `--spacing-*` before `--container-*`, so with cc's spacing names `max-w-xl` is 32 px. Size containers in CSS, not with `max-w-<cc step>`.
+- Tailwind's default design namespaces are reset; the same `@theme` redefines `--font-sans`, `--font-mono` and `--default-transition-*` from cc's roles.
+- Generators run by hand, with their outputs committed: `generate:theme` (the tokens CSS) and `generate:brand` (favicons, OG). `prebuild` runs only the int tests.
+- Payload is themed through its `--theme-*` variables, overridden unlayered in `custom.scss`, and its buttons only through Payload's button variables on `.btn--style-primary|secondary|pill|tab`.
 
 ### Selectors into Payload's own views
 
-The only ones: D26's three rules (the required asterisk, the errored blocks header, the relationship load error), D40's folder drag count, the minimal template's field edge and focus ring (`.template-minimal .field-type :is(input, textarea)`, the edge on fields without an error), and the breadcrumb's wordmark slot (`.step-nav__home`). Payload's buttons are themed only by setting its button variables on `.btn--style-primary|secondary|pill|tab`. Everything else in the admin is themed through Payload's documented variables.
+The only ones: where the error colour meets text (cc error is 4.05 as text on light n1 and 4.02 on dark n2), the required asterisk and the errored blocks header use n10 in both modes, and the relationship load error's text on its error fill uses `--cte-accent-text`; the folder drag count (`.drag-overlay-selection__card-count`) sets its text in the canvas; the minimal template's field edge and focus ring (`.template-minimal .field-type :is(input, textarea)`); and the breadcrumb's home slot (`.step-nav__home`). Everything else in the admin is themed through Payload's documented variables: elevation 0 n1, 50 n2, 100 n3, 150–200 n4, 250–300 n5, 350 n6, 400–650 text-muted, 700–750 n8, 800–850 n9, 900–1000 n10.
 
 ### Gaps
 
-The unresolved gaps G1 and G3–G10 (Payload's built-in field edges, native `<select>` popups and Turnstile, old-default rows, faint light status marks, the link underline offset, and others) are listed in `plans/2026-10-07-cw-theme.md`, Architecture §11 and Decisions, and in that plan's Summary.
+- **G2 (blocked).** Payload's button radius is a compiled Sass literal (`$style-radius-m: 4px` in `@payloadcms/ui`), so admin buttons can't become cc pills through variables. They keep 4 px.
+- **Payload's built-in field edges** stay elevation-150 = n4: 1.25:1 in light, 1.75:1 in dark, as in stock Payload. Darkening them needs a scoped rule over Payload's input selectors, which is the owner's call (handoff H21, still open).
+- The mission's remaining gaps are listed in its plan's Summary.
