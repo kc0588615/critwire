@@ -127,10 +127,10 @@ where appropriate.
   admin components
 - `pnpm generate:theme` — regenerate `src/styles/tokens.css` from
   `src/lib/theme/tokens.ts` after changing it (commit the result)
-- `pnpm generate:brand` — redraw the favicons (`public/favicon.svg`,
-  `.ico`) and the default share image (`public/og.png`) from
-  `src/lib/theme/tokens.ts`; rerun only when the brand colours or the
-  wordmark change (commit the result)
+- `pnpm generate:brand` — write the favicons (`public/favicon.svg`,
+  `.ico`), `public/apple-touch-icon.png` and the default share image
+  (`public/og.png`) from the game's files in `public/brand/`; rerun only
+  when those files change (commit the result)
 - `pnpm payload migrate:create <name>` — create a migration after
   schema changes (commit it; prod runs them on boot via `prodMigrations`)
 - `pnpm payload migrate` — apply migrations locally

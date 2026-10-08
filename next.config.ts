@@ -58,7 +58,7 @@ const nextConfig: NextConfig = {
   // The share images read their fonts from disk at runtime, and the legal
   // pages, the boot check and the acceptance check read legal/*.md, so the
   // standalone output must carry them (keys are route globs; `[` would be
-  // a glob class). InterDisplay-Bold.ttf is only for `pnpm generate:brand`
+  // a glob class). Nunito-ExtraBold.ttf is only for `pnpm generate:brand`
   // and is never traced.
   outputFileTracingIncludes: {
     '/**': ['./legal/*.md'],

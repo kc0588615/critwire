@@ -4,9 +4,9 @@ import sharp from 'sharp'
 import { expect, newRequestContext, test } from './support/fixtures'
 
 /**
- * Critwire's brand files: the default share image (`/og.png`), which every
- * page without its own image falls back to, and the favicons, drawn from
- * cw by `pnpm generate:brand`.
+ * The site's brand files: the default share image (`/og.png`), which every
+ * page without its own image falls back to, and the favicons, written by
+ * `pnpm generate:brand` from the game's own files.
  */
 
 let visitor: APIRequestContext

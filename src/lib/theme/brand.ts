@@ -1,64 +1,41 @@
-// `pnpm generate:brand`: draws critwire's brand files from tokens.ts into public/:
-// the favicons and the default share image. Rerun only when tokens.ts's brand
-// colours or the wordmark change, and commit the result.
-import { writeFileSync } from 'node:fs'
+// `pnpm generate:brand`: writes the site's brand files into public/ from the
+// game's own files in public/brand/ (`SITE` in src/lib/site.ts): the favicons,
+// the apple-touch icon and the default share image. Rerun only when those
+// files change, and commit the result.
+import { readFileSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import sharp from 'sharp'
 
 import { readFont, svgDocument } from '@/lib/share/images'
+import { SITE } from '@/lib/site'
 import { DEFAULT_OG_IMAGE } from '@/utilities/mergeOpenGraph'
 
 import { TOKENS } from './tokens'
 
 const PUBLIC_DIR = path.join(import.meta.dirname, '../../../public')
-const WORDMARK = 'critwire'
-/** The share image's line; S8 of plans/2026-10-08-cc-site.md redraws the image for Critter Connect. */
-const OG_TITLE = 'Player feedback and updates for the game site you already have.'
-
-// The brand role at its heavy weight: Inter's display cut, as `next/font`
-// sets it at these sizes (D1). Drawn as glyph paths, so no file needs a font.
-// Only this script reads it, so no route traces it.
-const face = readFont(path.join(import.meta.dirname, '../share/fonts/InterDisplay-Bold.ttf'))
-
-/** The favicon's own size: the mark's corner is the theme's m radius at this size. */
-const FAVICON_SIZE = 32
-/** How much of the mark's height the "c" fills. */
-const GLYPH_SHARE = 0.6
+const FAVICON_SVG = '/brand/favicon.svg'
 const ICO_SIZES = [16, 32, 48] as const
+const APPLE_TOUCH_SIZE = 512
+/** The share image's line: what the site is, no game fact. */
+const OG_LINE = 'Feedback and updates'
 
-/** `text` as one path whose ink box's top left corner is at `x`, `y`, `height` px tall. */
-const inkPath = (text: string, x: number, y: number, height: number): string => {
-  const unit = face.getPath(text, 0, 0, 1).getBoundingBox()
-  const size = height / (unit.y2 - unit.y1)
-  return face.getPath(text, x - unit.x1 * size, y - unit.y1 * size, size).toPathData(2)
-}
+// The brand role at its heavy weight, as the hub's title sets it. Drawn as
+// glyph paths, so the image needs no font. Only this script reads it, so no
+// route traces it.
+const face = readFont(path.join(import.meta.dirname, '../share/fonts/Nunito-ExtraBold.ttf'))
 
-/** The mark: a lowercase "c" on a color-1 square, centred; `size` px square at `x`, `y`. */
-const mark = (x: number, y: number, size: number): string => {
-  const glyphHeight = size * GLYPH_SHARE
-  const unit = face.getPath('c', 0, 0, 1).getBoundingBox()
-  const glyphWidth = glyphHeight * ((unit.x2 - unit.x1) / (unit.y2 - unit.y1))
-  const radius = (TOKENS.radius.m * size) / FAVICON_SIZE
-  return (
-    `<rect x="${x}" y="${y}" width="${size}" height="${size}" rx="${radius}" fill="${TOKENS.color[1]}"/>` +
-    `<path fill="${TOKENS.light.accentText}" d="${inkPath('c', x + (size - glyphWidth) / 2, y + (size - glyphHeight) / 2, glyphHeight)}"/>`
-  )
-}
+/** The file at `publicPath` (a URL path under public/). */
+const read = (publicPath: string): Buffer => readFileSync(path.join(PUBLIC_DIR, publicPath))
 
-const faviconSVG = svgDocument({
-  body: mark(0, 0, FAVICON_SIZE),
-  height: FAVICON_SIZE,
-  label: WORDMARK,
-  width: FAVICON_SIZE,
-})
+const write = (file: string, data: Buffer | string) => writeFileSync(path.join(PUBLIC_DIR, file), data)
 
-/** A PNG of `svg` (drawn `from` px square) at `size` px square. */
-const squarePNG = async (svg: string, from: number, size: number): Promise<Buffer> => {
-  const png = await sharp(Buffer.from(svg), { density: (72 * size) / from })
-    .png({ compressionLevel: 9 })
-    .toBuffer()
-  const { height, width } = await sharp(png).metadata()
-  if (width !== size || height !== size) throw new Error(`Expected a ${size} px PNG, got ${width}×${height}`)
+/** The PNG at `publicPath`, which must be `size` px square. */
+const squarePNG = async (publicPath: string, size: number): Promise<Buffer> => {
+  const png = read(publicPath)
+  const { format, height, width } = await sharp(png).metadata()
+  if (format !== 'png' || width !== size || height !== size) {
+    throw new Error(`Expected ${publicPath} to be a ${size} px PNG, got ${format} ${width}×${height}`)
+  }
   return png
 }
 
@@ -82,52 +59,51 @@ const icoFile = (pngs: { png: Buffer; size: number }[]): Buffer => {
   return Buffer.concat([header, ...entries, ...pngs.map(({ png }) => png)])
 }
 
+/**
+ * The lockup at `publicPath` as a nested `<svg>`, `height` px tall with its
+ * top left corner at `x`, `y`. Its viewBox is the drawing's tight box.
+ */
+const lockup = (publicPath: string, x: number, y: number, height: number): { svg: string; width: number } => {
+  const source = read(publicPath).toString('utf8')
+  const match = /^\s*<svg\b([^>]*)>([\s\S]*)<\/svg>\s*$/.exec(source)
+  const viewBox = match?.[1]?.match(/\bviewBox="([^"]+)"/)?.[1]
+  const [, , boxWidth, boxHeight] = viewBox?.split(' ').map(Number) ?? []
+  if (!match || !viewBox || !boxWidth || !boxHeight) {
+    throw new Error(`Expected ${publicPath} to be one <svg> with a viewBox`)
+  }
+  const width = (height * boxWidth) / boxHeight
+  return {
+    svg: `<svg x="${x}" y="${y}" width="${width.toFixed(2)}" height="${height}" viewBox="${viewBox}">${match[2]}</svg>`,
+    width,
+  }
+}
+
 // The share image's layout, in px of the 1200×630 canvas.
-const OG = { pad: 80, mark: 120, gap: 40, wordmark: 136, title: 60, titleLeading: 68, maxTitleLines: 3 } as const
+const OG = { pad: 80, lockup: 112, line: 72 } as const
 
-/** `text` broken into lines no wider than `width` at `size` px. */
-const wrap = (text: string, size: number, width: number): string[] =>
-  text.split(' ').reduce<string[]>((lines, word) => {
-    const last = lines.at(-1)
-    if (last !== undefined && face.getAdvanceWidth(`${last} ${word}`, size) <= width) {
-      lines[lines.length - 1] = `${last} ${word}`
-    } else {
-      lines.push(word)
-    }
-    return lines
-  }, [])
-
-/** The dark mode: the mark and the wordmark at the top, `OG_TITLE` at the bottom. */
+/** The dark mode: the dark lockup at the top, `OG_LINE` at the bottom. */
 const ogSVG = (): string => {
   const { height, width } = DEFAULT_OG_IMAGE
   const { neutral } = TOKENS.dark
-  const lines = wrap(OG_TITLE, OG.title, width - OG.pad * 2)
-  if (lines.length > OG.maxTitleLines) throw new Error(`The share image's title needs ${lines.length} lines`)
-  const firstBaseline = height - OG.pad - OG.titleLeading * (lines.length - 1)
-  const title = lines
-    .map((line, index) => face.getPath(line, OG.pad, firstBaseline + OG.titleLeading * index, OG.title).toPathData(2))
-    .join('')
-  const wordmark = face.getPath(WORDMARK, OG.pad + OG.mark + OG.gap, OG.pad + OG.mark, OG.wordmark).toPathData(2)
+  const logo = lockup(SITE.logo.dark, OG.pad, OG.pad, OG.lockup)
+  if (logo.width > width - OG.pad * 2) throw new Error(`The share image's lockup is ${logo.width} px wide`)
+  if (face.getAdvanceWidth(OG_LINE, OG.line) > width - OG.pad * 2) throw new Error("The share image's line is too wide")
+  const line = face.getPath(OG_LINE, OG.pad, height - OG.pad, OG.line).toPathData(2)
 
   return svgDocument({
-    body:
-      `<rect width="${width}" height="${height}" fill="${neutral[1]}"/>` +
-      mark(OG.pad, OG.pad, OG.mark) +
-      `<path fill="${neutral[10]}" d="${wordmark}"/>` +
-      `<path fill="${neutral[7]}" d="${title}"/>`,
+    body: `<rect width="${width}" height="${height}" fill="${neutral[1]}"/>` + logo.svg + `<path fill="${neutral[7]}" d="${line}"/>`,
     height,
     label: DEFAULT_OG_IMAGE.alt,
     width,
   })
 }
 
-const write = (file: string, data: Buffer | string) => writeFileSync(path.join(PUBLIC_DIR, file), data)
-
-write('favicon.svg', `${faviconSVG}\n`)
+write('favicon.svg', read(FAVICON_SVG))
 write(
   'favicon.ico',
   icoFile(
-    await Promise.all(ICO_SIZES.map(async (size) => ({ png: await squarePNG(faviconSVG, FAVICON_SIZE, size), size }))),
+    await Promise.all(ICO_SIZES.map(async (size) => ({ png: await squarePNG(`/brand/favicon-${size}.png`, size), size }))),
   ),
 )
+write('apple-touch-icon.png', await squarePNG(SITE.appIcon, APPLE_TOUCH_SIZE))
 write('og.png', await sharp(Buffer.from(ogSVG())).png({ compressionLevel: 9 }).toBuffer())

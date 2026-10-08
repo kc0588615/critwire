@@ -90,9 +90,12 @@ dependency) turns that SVG into a 2× PNG. The production runner
     `fonts-dejavu-core` package) draws any character Inter has no glyph
     for, run by run, such as Armenian or Georgian in a version label.
     Glyphs neither has render as boxes.
-  - `InterDisplay-Bold.ttf` is only for `pnpm generate:brand` (the
-    favicons and `og.png`), which runs at development time; it's never
-    traced.
+  - `Nunito-ExtraBold.ttf` (Nunito 3.602, OFL, licence in
+    `OFL-Nunito.txt`, from the `static/` folder of Google Fonts' Nunito
+    download) is only for `pnpm generate:brand` (the line in `og.png`),
+    which runs at development time; it's never traced.
+    `Nunito-Bold.ttf`, from the same download, is the face the button
+    and badge labels move to (cc's ui medium).
 - **The standalone output must carry both runtime fonts.**
   `next.config.ts` traces `Inter-Medium.ttf` and `DejaVuSans.ttf`, with
   their licences, into the button and badge routes
@@ -100,7 +103,7 @@ dependency) turns that SVG into a 2× PNG. The production runner
   file, because the build traces a path that names only the fonts
   directory as the whole directory. After `pnpm build`, both
   fonts must exist under `.next/standalone/src/lib/share/fonts/`, and
-  `InterDisplay-Bold.ttf` must not, and
+  `Nunito-ExtraBold.ttf` must not, and
   `/buttons/give-feedback-dark.png` and `/g/no-such-game/badge.png`
   served by `node .next/standalone/server.js` must show their labels.
 

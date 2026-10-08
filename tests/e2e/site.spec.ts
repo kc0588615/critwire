@@ -1,4 +1,5 @@
 import type { APIRequestContext } from '@playwright/test'
+import sharp from 'sharp'
 
 import type { GameProject } from '../../src/payload-types'
 import { portalNavLinks, portalPaths } from '../../src/lib/game-portal/paths'
@@ -10,8 +11,9 @@ import { createProject, expect, newRequestContext, test } from './support/fixtur
 /**
  * critwire.com is Critter Connect's site (`src/lib/site.ts`): `/` opens the
  * game's hub, and critwire's own pages carry the game's lockup, the hub's
- * pages and the operator's legal links. The game exists only while this
- * spec runs, as on a fresh instance nobody has set up.
+ * pages and the operator's legal links, and the icons are the game's own
+ * files. The game exists only while this spec runs, as on a fresh
+ * instance nobody has set up.
  */
 
 const HUB = portalPaths(SITE.gameSlug).hub
@@ -86,4 +88,28 @@ test('X2 the site chrome: the lockup, the hub’s pages and the legal links', as
     }
     await expect(footer).toContainText(`© ${new Date().getFullYear()} ${SITE.operator}`)
   })
+})
+
+test('X3 the icons are the game’s own files', async () => {
+  const bytesOf = async (path: string): Promise<Buffer> => {
+    const response = await visitor.get(path)
+    expect(response.status(), path).toBe(200)
+    return response.body()
+  }
+
+  expect(Buffer.compare(await bytesOf('/favicon.svg'), await bytesOf('/brand/favicon.svg'))).toBe(0)
+
+  // The ICO's 16-byte directory entries give each image's byte length (at 8) and offset (at 12).
+  const ico = await bytesOf('/favicon.ico')
+  for (const [index, size] of [16, 32, 48].entries()) {
+    const entry = 6 + index * 16
+    const image = ico.subarray(ico.readUInt32LE(entry + 12), ico.readUInt32LE(entry + 12) + ico.readUInt32LE(entry + 8))
+    expect(Buffer.compare(image, await bytesOf(`/brand/favicon-${size}.png`)), `${size} px`).toBe(0)
+  }
+
+  const appleTouch = await visitor.get('/apple-touch-icon.png')
+  expect(appleTouch.status()).toBe(200)
+  expect(appleTouch.headers()['content-type']).toBe('image/png')
+  const { format, height, width } = await sharp(await appleTouch.body()).metadata()
+  expect({ format, height, width }).toEqual({ format: 'png', height: 512, width: 512 })
 })

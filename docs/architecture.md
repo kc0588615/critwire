@@ -308,10 +308,13 @@ once, and every surface reads them as named tokens.
   roles built on the tokens (`--cte-*`, the 20 % `-transparent` colours,
   edges as inset shadows, the focus ring, the font roles `--font-ui`,
   `--font-brand`, `--font-editorial`, `--font-data`).
-- **`pnpm generate:brand`** (`src/lib/theme/brand.ts`) draws
-  `public/favicon.svg`, `public/favicon.ico` and the default share
-  image `public/og.png` from `tokens.ts` and the wordmark. Rerun it only
-  when the brand colours or the wordmark change, and commit the result.
+- **`pnpm generate:brand`** (`src/lib/theme/brand.ts`) writes
+  `public/favicon.svg` and `public/apple-touch-icon.png` (copies of the
+  game's files in `public/brand/`), `public/favicon.ico` (the game's
+  16/32/48 px PNGs, byte for byte) and the default share image
+  `public/og.png` (the dark lockup and one line on cc's dark canvas).
+  Rerun it only when the files in `public/brand/` change, and commit the
+  result.
 - **Fonts** (`src/styles/fonts.css`): Nunito for the ui, brand and
   editorial roles and Open Runde for data, as plain `@font-face` rules
   on the files in `public/fonts/` (each folder with its `OFL.txt`), so

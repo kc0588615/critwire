@@ -25,7 +25,7 @@ const fonts = new Map<string, Font>()
  * The font at `file`, read once per process. Callers spell out the full
  * path of each file: the build traces a path into the route that reads
  * it, and a path naming only the fonts directory would carry every font
- * in it, `InterDisplay-Bold.ttf` included. A route that draws with a
+ * in it, `Nunito-ExtraBold.ttf` included. A route that draws with a
  * font also has it traced in `next.config.ts`, so the standalone output
  * has the file.
  */
