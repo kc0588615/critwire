@@ -63,10 +63,13 @@ const config = {
             li: { marginBottom: 'var(--space-xs)', marginTop: 'var(--space-xs)' },
             'code, kbd, pre': { fontFamily: 'var(--font-data)' },
             // Inline code (GUI.md D18): the data face a step down, regular,
-            // in an n4-edged chip in place of the plugin's backticks.
+            // in an n4-edged chip closed on each line, in place of the
+            // plugin's backticks.
             code: {
+              WebkitBoxDecorationBreak: 'clone',
               border: 'var(--stroke-s) solid var(--prose-border)',
               borderRadius: 'var(--radius-xs)',
+              boxDecorationBreak: 'clone',
               fontSize: '0.875em',
               fontWeight: 'var(--weight-data-regular)',
               padding: '0 var(--space-xxs)',

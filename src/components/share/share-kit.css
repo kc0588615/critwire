@@ -36,10 +36,13 @@
 }
 
 /* Inline code in the kit's sentences (GUI.md D18): a step down, regular,
-   in an edged chip. The value wells (.share-kit-value) are code too. */
+   in an edged chip, closed on each line it wraps onto. The value wells
+   (.share-kit-value) are code too. */
 .share-kit code:not(.share-kit-value) {
   border: var(--stroke-s) solid var(--kit-border);
   border-radius: var(--radius-xs);
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
   padding: 0 var(--space-xxs);
   font-size: 0.875em;
   font-weight: var(--weight-data-regular);

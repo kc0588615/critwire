@@ -327,10 +327,12 @@
 }
 
 /* The reported page's path on "Report this page", as inline code (GUI.md
-   D18); long paths wrap. */
+   D18); long paths wrap, the chip closed on each line. */
 .cw-account-path {
   border: var(--stroke-s) solid var(--cte-border);
   border-radius: var(--radius-xs);
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
   padding: 0 var(--space-xxs);
   color: var(--cte-text);
   font-size: 0.875em;
