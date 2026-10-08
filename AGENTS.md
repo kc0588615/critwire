@@ -134,6 +134,15 @@ where appropriate.
 - `pnpm payload migrate:create <name>` — create a migration after
   schema changes (commit it; prod runs them on boot via `prodMigrations`)
 - `pnpm payload migrate` — apply migrations locally
+- `pnpm content:critter-connect` — the one-off content command
+  (`src/seed/siteContent.ts`): turns `.env`'s database from the demo
+  seed into Critter Connect's real site. A dry run prints the database,
+  the changes and a plan ID; `--apply <plan-id>` makes exactly those
+  changes in one locked transaction. It refuses, writing nothing, unless
+  every sample it deletes is exactly what the seed wrote. Restart the
+  app afterwards. Proven by the mission's rehearsal against a live copy
+  (`plans/2026-10-08-cc-site.md`, §8); never run `seed:critter-connect`
+  on critwire.com after it
 - `pnpm test` — `test:int`, then `test:e2e`
 - `pnpm test:e2e` — Playwright against a fresh production build on the
   disposable E2E database (see Testing)

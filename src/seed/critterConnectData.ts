@@ -263,12 +263,20 @@ export const SAMPLE_CONTENT = {
 
 /**
  * Per collection, the values of the fields the seed doesn't write, as a
- * sample keeps them until someone edits it. With `SAMPLE_CONTENT` they
- * make up a whole unedited sample.
+ * sample keeps them until someone edits it (read at depth 0 from the copy
+ * of live's data). With `SAMPLE_CONTENT` they make up a whole unedited
+ * sample; a sample's own value wins over its collection's default.
  */
 export const SAMPLE_DEFAULTS = {
-  items: { isPinned: false, needsMoreInfoText: null, workaroundText: null },
-  report: { issue: null, flagged: false, flagReasons: null, discord: {} },
+  // Three of the four items have no details, which are stored as null.
+  items: { details: null, isPinned: false, needsMoreInfoText: null, workaroundText: null },
+  // Payload reads an unset group as its subfields, each null.
+  report: {
+    issue: null,
+    flagged: false,
+    flagReasons: null,
+    discord: { userId: null, username: null, messageUrl: null, interactionId: null },
+  },
   update: { flagged: false, flagReasons: null },
 } as const
 
