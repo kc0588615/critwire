@@ -494,7 +494,7 @@
 }
 
 /* "Powered by Critwire", on the hosted instance "Report this page", and
-   always critwire's legal links. */
+   always the site's legal links. */
 .fs-footer-end,
 .fs-footer-legal {
   display: flex;

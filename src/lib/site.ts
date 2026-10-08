@@ -9,6 +9,9 @@ export const SITE = {
   name: 'Critter Connect',
   gameSlug: 'critter-connect',
   operator: 'Haunted Pavement LLC',
+  /** The site's own description: its pages' and share cards' default. */
+  description:
+    'Critter Connect’s feedback board and updates: report a bug, suggest an idea and see what’s new.',
   /** The lockup for each colour scheme: dark text on light, light text on dark. */
   logo: { light: '/brand/critterconnect-logo-light.svg', dark: '/brand/critterconnect-logo.svg' },
   appIcon: '/brand/app-icon-512.png',

@@ -6,6 +6,7 @@ import type { GameProject, Issue } from '../../src/payload-types'
 import type { RestClient } from './support/api'
 import { CREDENTIALS, PASSWORD, storageStatePath, TURNSTILE_DUMMY_TOKEN } from './support/env'
 import { createIssue, createProject, eventually, expect, test } from './support/fixtures'
+import { SITE } from '../../src/lib/site'
 
 /**
  * Studio triage in the admin panel: sign-in, the Feedback kanban (moves,
@@ -83,13 +84,13 @@ const boardColumn = (page: Page, status: IssueStatus): Locator => {
   return page.getByRole('region', { name: stage.label, exact: true })
 }
 
-test('S6.1 the login page speaks Critwire and a studio owner signs in to the dashboard', async ({ browser }) => {
+test('S6.1 the login page welcomes to the site and a studio owner signs in to the dashboard', async ({ browser }) => {
   const context = await browser.newContext()
   const page = await context.newPage()
   try {
     // Payload's forms reset a value typed before they hydrate.
     await page.goto('/admin/login', { waitUntil: 'networkidle' })
-    await expect(page.getByText('Welcome to Critwire.')).toBeVisible()
+    await expect(page.getByText(`Welcome to ${SITE.name}.`)).toBeVisible()
     await test.step('sign in through the form', async () => {
       await page.getByLabel('Email').fill(CREDENTIALS.aOwner.email)
       await page.getByLabel('Password').fill(PASSWORD)

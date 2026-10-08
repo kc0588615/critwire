@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation'
 import React from 'react'
 
 import { PatchNotesFeed } from '@/components/game/PatchNotesFeed'
-import { getGameProject, requirePortalProject } from '@/lib/game-portal/getGameProject'
+import { requirePortalProject } from '@/lib/game-portal/getGameProject'
 import { queryPublishedPatchNotes } from '@/lib/game-portal/patchNotes'
 
 export const revalidate = 3600
@@ -32,10 +32,9 @@ export default async function PatchNotesPaginatedPage({ params }: Args) {
 
 export async function generateMetadata({ params }: Args): Promise<Metadata> {
   const { gameSlug, pageNumber } = await params
-  const project = await getGameProject(gameSlug)
-  if (!project) return {}
+  const project = await requirePortalProject(gameSlug)
 
   return {
-    title: `${project.name} updates, page ${pageNumber}`,
+    title: { absolute: `${project.name} updates, page ${pageNumber}` },
   }
 }

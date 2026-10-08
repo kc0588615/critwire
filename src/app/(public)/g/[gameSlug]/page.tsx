@@ -7,8 +7,9 @@ import { LatestUpdates } from '@/components/game/LatestUpdates'
 import { TopFeedback } from '@/components/game/TopFeedback'
 import { WelcomePanel } from '@/components/game/WelcomePanel'
 import { isDiscordOn } from '@/lib/discord/config'
-import { getGameProject, requirePortalProject } from '@/lib/game-portal/getGameProject'
+import { requirePortalProject } from '@/lib/game-portal/getGameProject'
 import { getServerSideURL } from '@/utilities/getURL'
+import { mergeOpenGraph } from '@/utilities/mergeOpenGraph'
 
 // ISR safety net: the GameProjects, PatchNotes, Issues and vote hooks
 // revalidate the hub on every change it shows.
@@ -51,8 +52,7 @@ export async function generateMetadata({
   params: Promise<{ gameSlug: string }>
 }): Promise<Metadata> {
   const { gameSlug } = await params
-  const project = await getGameProject(gameSlug)
-  if (!project) return {}
+  const project = await requirePortalProject(gameSlug)
 
   const banner =
     project.banner && typeof project.banner === 'object' && project.banner.url
@@ -61,17 +61,16 @@ export async function generateMetadata({
 
   return {
     description: project.description ?? undefined,
-    openGraph: {
+    openGraph: mergeOpenGraph({
       description: project.description ?? undefined,
       images: banner,
-      siteName: 'Critwire',
       title: project.name,
-    },
+    }),
     twitter: {
       card: 'summary_large_image',
       images: banner?.map((image) => image.url),
       title: project.name,
     },
-    title: project.name,
+    title: { absolute: project.name },
   }
 }

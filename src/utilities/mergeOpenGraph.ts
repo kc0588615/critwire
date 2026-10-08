@@ -4,7 +4,7 @@ import { SITE } from '@/lib/site'
 
 import { getServerSideURL } from './getURL'
 
-/** Critwire's default share image, drawn by `pnpm generate:brand`, for any page without its own. */
+/** The site's default share image, drawn by `pnpm generate:brand`, for any page without its own. */
 export const DEFAULT_OG_IMAGE = {
   alt: SITE.name,
   height: 630,
@@ -14,11 +14,10 @@ export const DEFAULT_OG_IMAGE = {
 
 const defaultOpenGraph: Metadata['openGraph'] = {
   type: 'website',
-  description:
-    'Critwire adds a player feedback board and updates with RSS to the website your indie game already has.',
+  description: SITE.description,
   images: [DEFAULT_OG_IMAGE],
-  siteName: 'Critwire',
-  title: 'Critwire',
+  siteName: SITE.name,
+  title: SITE.name,
 }
 
 export const mergeOpenGraph = (og?: Metadata['openGraph']): Metadata['openGraph'] => {

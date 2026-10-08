@@ -1,5 +1,7 @@
 import type { Metadata } from 'next'
 
+import { SITE } from '@/lib/site'
+
 import type { Media, Page, Config } from '../payload-types'
 
 import { mergeOpenGraph } from './mergeOpenGraph'
@@ -18,9 +20,7 @@ export const generateMeta = async (args: {
 
   const ogImage = getImageURL(doc?.meta?.image)
 
-  const title = doc?.meta?.title
-    ? doc?.meta?.title + ' | Critwire'
-    : 'Critwire'
+  const title = doc?.meta?.title ? `${doc.meta.title} | ${SITE.name}` : SITE.name
 
   return {
     description: doc?.meta?.description,
@@ -36,6 +36,7 @@ export const generateMeta = async (args: {
       title,
       url: Array.isArray(doc?.slug) ? doc?.slug.join('/') : '/',
     }),
-    title,
+    // Already suffixed: the layout's template would add the site's name twice.
+    title: { absolute: title },
   }
 }

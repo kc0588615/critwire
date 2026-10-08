@@ -18,7 +18,7 @@ import {
   feedbackSearchParams,
   feedbackTypeOf,
 } from '@/lib/game-portal/feedbackSearchParams'
-import { getGameProject, requirePortalProject } from '@/lib/game-portal/getGameProject'
+import { requirePortalProject } from '@/lib/game-portal/getGameProject'
 import { queryPublicIssues } from '@/lib/game-portal/issues'
 import { type PortalPaths, portalPaths } from '@/lib/game-portal/paths'
 
@@ -192,11 +192,10 @@ const IssueList = async ({
 
 export async function generateMetadata({ params }: Args): Promise<Metadata> {
   const { gameSlug } = await params
-  const project = await getGameProject(gameSlug)
-  if (!project) return {}
+  const project = await requirePortalProject(gameSlug)
 
   return {
     description: purpose(project.name),
-    title: `${project.name} feedback`,
+    title: { absolute: `${project.name} feedback` },
   }
 }

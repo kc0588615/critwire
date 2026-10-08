@@ -1,25 +1,18 @@
-import type { Metadata, Viewport } from 'next'
-
 import React from 'react'
 
 import { AdminBar } from '@/components/AdminBar'
 import { Footer } from '@/Footer/Component'
 import { Header } from '@/Header/Component'
-import { mergeOpenGraph } from '@/utilities/mergeOpenGraph'
+import { siteMetadata, siteViewport } from '@/utilities/siteMetadata'
 import { draftMode } from 'next/headers'
 
 import './globals.css'
-import { getServerSideURL } from '@/utilities/getURL'
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const { isEnabled } = await draftMode()
 
   return (
     <html lang="en">
-      <head>
-        <link href="/favicon.ico" rel="icon" sizes="32x32" />
-        <link href="/favicon.svg" rel="icon" type="image/svg+xml" />
-      </head>
       <body className="cw-root">
         <AdminBar
           adminBarProps={{
@@ -35,22 +28,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   )
 }
 
-export const metadata: Metadata = {
-  description:
-    'Critwire adds a player feedback board and updates with RSS to the website your indie game already has.',
-  metadataBase: new URL(getServerSideURL()),
-  openGraph: mergeOpenGraph(),
-  title: {
-    default: 'Critwire',
-    template: '%s | Critwire',
-  },
-  twitter: {
-    card: 'summary_large_image',
-  },
-}
+export const metadata = siteMetadata
 
-// Critwire's pages follow the visitor's system setting, with no toggle
-// (`.cw-root` in site.css sets the same for its own colours).
-export const viewport: Viewport = {
-  colorScheme: 'light dark',
-}
+// `.cw-root` in site.css sets the same `color-scheme` for its own colours.
+export const viewport = siteViewport

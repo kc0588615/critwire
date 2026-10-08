@@ -12,6 +12,7 @@ import {
   test,
   uploadImage,
 } from './support/fixtures'
+import { SITE } from '../../src/lib/site'
 
 /**
  * The public game hub at /g/<slug>: the header built from project
@@ -95,7 +96,7 @@ test.describe('S2.2 the hub', () => {
 
     await test.step('heading and share metadata', async () => {
       await expect(page.getByRole('heading', { level: 1 })).toHaveText(rich.name)
-      await expect(page.locator('meta[property="og:site_name"]')).toHaveAttribute('content', 'Critwire')
+      await expect(page.locator('meta[property="og:site_name"]')).toHaveAttribute('content', SITE.name)
       await expect(page.locator('meta[name="twitter:card"]')).toHaveAttribute('content', /.+/)
     })
 

@@ -21,7 +21,7 @@ import {
   feedbackTypeOf,
 } from '@/lib/game-portal/feedbackSearchParams'
 import { acceptsIdeas, getReportRoute } from '@/lib/game-portal/formRoutes'
-import { getGameProject, requirePortalProject } from '@/lib/game-portal/getGameProject'
+import { requirePortalProject } from '@/lib/game-portal/getGameProject'
 import { portalPaths } from '@/lib/game-portal/paths'
 
 type Args = {
@@ -234,14 +234,13 @@ export default async function NewFeedbackPage({ params, searchParams }: Args) {
 export async function generateMetadata({ params, searchParams }: Args): Promise<Metadata> {
   const { gameSlug } = await params
   const { type: typeParam } = await loadSearchParams(searchParams)
-  const project = await getGameProject(gameSlug)
-  if (!project) return {}
+  const project = await requirePortalProject(gameSlug)
 
   const type = chosenType(project, typeParam)
   return {
     description: `Tell the ${project.name} team ${
       type ? COPY[type].purpose : 'what went wrong or what you would like to see'
     }.`,
-    title: type ? `${COPY[type].title} — ${project.name}` : `Send feedback — ${project.name}`,
+    title: { absolute: type ? `${COPY[type].title} — ${project.name}` : `Send feedback — ${project.name}` },
   }
 }

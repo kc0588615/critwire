@@ -11,9 +11,10 @@ import { mediaFileReadOverride } from '@/access/publicRead'
 import { requireLegalAcceptance } from '@/access/legalWrite'
 import { enforceTenantWrite } from '@/access/tenantWrite'
 import { getServerSideURL } from '@/utilities/getURL'
+import { SITE } from '@/lib/site'
 
 const generateTitle: GenerateTitle<Page> = ({ doc }) => {
-  return doc?.title ? `${doc.title} | Critwire` : 'Critwire'
+  return doc?.title ? `${doc.title} | ${SITE.name}` : SITE.name
 }
 
 const generateURL: GenerateURL<Page> = ({ doc }) => {

@@ -3,6 +3,7 @@ import type { Metadata } from 'next'
 import React from 'react'
 
 import { EMBED_BOOT_SCRIPT } from '@/lib/embed/boot'
+import { SITE } from '@/lib/site'
 
 import '../(frontend)/globals.css'
 import './embed.css'
@@ -26,5 +27,5 @@ export default function EmbedLayout({ children }: { children: React.ReactNode })
 
 export const metadata: Metadata = {
   robots: { index: false },
-  title: 'Critwire',
+  title: SITE.name,
 }

@@ -59,7 +59,7 @@ export const PortalFooter: React.FC<{ project: GameProject }> = ({ project }) =>
             Report this page
           </Link>
         ) : null}
-        <LegalLinks className="fs-footer-legal" label="Critwire legal" linkClassName="fs-link" />
+        <LegalLinks className="fs-footer-legal" label="Legal" linkClassName="fs-link" />
       </div>
     </div>
   </footer>

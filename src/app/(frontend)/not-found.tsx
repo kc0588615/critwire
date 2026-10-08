@@ -1,3 +1,5 @@
+import type { Metadata } from 'next'
+
 import Link from 'next/link'
 import React from 'react'
 
@@ -11,4 +13,8 @@ export default function NotFound() {
       </Link>
     </div>
   )
+}
+
+export const metadata: Metadata = {
+  title: 'Page not found',
 }

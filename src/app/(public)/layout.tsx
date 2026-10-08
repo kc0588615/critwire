@@ -1,10 +1,7 @@
-import type { Metadata } from 'next'
-
 import { NuqsAdapter } from 'nuqs/adapters/next/app'
 import React from 'react'
 
-import { mergeOpenGraph } from '@/utilities/mergeOpenGraph'
-import { getServerSideURL } from '@/utilities/getURL'
+import { siteMetadata, siteViewport } from '@/utilities/siteMetadata'
 
 import '../(frontend)/globals.css'
 
@@ -18,16 +15,6 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
   )
 }
 
-export const metadata: Metadata = {
-  description:
-    'Player feedback and updates for indie games: bug reports and ideas with voting, and updates with RSS.',
-  metadataBase: new URL(getServerSideURL()),
-  openGraph: mergeOpenGraph(),
-  title: {
-    default: 'Critwire',
-    template: '%s | Critwire',
-  },
-  twitter: {
-    card: 'summary_large_image',
-  },
-}
+export const metadata = siteMetadata
+
+export const viewport = siteViewport

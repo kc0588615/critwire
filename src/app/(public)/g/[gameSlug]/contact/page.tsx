@@ -11,7 +11,7 @@ import { TurnstileField } from '@/components/game/TurnstileField'
 import { LEGAL_NOTICE_ID, LegalNotice } from '@/components/legal/LegalNotice'
 import { SENSITIVE_INFO_WARNING_ID, SensitiveInfoWarning } from '@/components/legal/SensitiveInfoWarning'
 import { getContactRoute } from '@/lib/game-portal/formRoutes'
-import { getGameProject, requirePortalProject } from '@/lib/game-portal/getGameProject'
+import { requirePortalProject } from '@/lib/game-portal/getGameProject'
 import { portalPaths } from '@/lib/game-portal/paths'
 
 type Args = {
@@ -92,7 +92,7 @@ export default async function ContactPage({ params, searchParams }: Args) {
               </FormField>
 
               <FormField
-                hint="Sent to the team with your message; critwire doesn’t keep it once it’s delivered."
+                hint="Sent to the team with your message; this site doesn’t keep it once it’s delivered."
                 id="email"
                 label={`Email (optional, 13 or older), so the ${project.name} team can reply`}
               >
@@ -146,11 +146,10 @@ export default async function ContactPage({ params, searchParams }: Args) {
 
 export async function generateMetadata({ params }: Args): Promise<Metadata> {
   const { gameSlug } = await params
-  const project = await getGameProject(gameSlug)
-  if (!project) return {}
+  const project = await requirePortalProject(gameSlug)
 
   return {
     description: `Questions, feedback or press requests for the ${project.name} team.`,
-    title: `Contact the ${project.name} team`,
+    title: { absolute: `Contact the ${project.name} team` },
   }
 }

@@ -179,9 +179,9 @@ test('S18.4 the sign-in page carries the site’s lockup, and signup while it’
     try {
       const page = await context.newPage()
       await page.goto('/admin/login')
-      await expect(page).toHaveTitle(/ \| Critwire$/)
+      await expect(page).toHaveTitle(new RegExp(` \\| ${SITE.name}$`))
       await expect(page.locator('.login__brand').getByRole('link', { name: SITE.name })).toHaveAttribute('href', '/')
-      await expect(page.getByText('Welcome to Critwire.')).toBeVisible()
+      await expect(page.getByText(`Welcome to ${SITE.name}.`)).toBeVisible()
       const signup = page.getByRole('link', { name: 'Create your portal' })
       if (signupOpen) await expect(signup).toHaveAttribute('href', '/signup')
       else await expect(signup).toHaveCount(0)

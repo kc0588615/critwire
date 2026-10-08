@@ -10,7 +10,7 @@ import RichText from '@/components/RichText'
 import { FeedbackMeta, StatusMark } from '@/components/game/FeedbackStatus'
 import { VoteButton } from '@/components/game/VoteButton'
 import { VoteCount } from '@/components/game/VoteCount'
-import { getGameProject, requirePortalProject } from '@/lib/game-portal/getGameProject'
+import { requirePortalProject } from '@/lib/game-portal/getGameProject'
 import { getHasVoted, getPublicIssue } from '@/lib/game-portal/issues'
 import { portalPaths } from '@/lib/game-portal/paths'
 import { shippedUpdate } from '@/lib/game-portal/shipped'
@@ -112,14 +112,13 @@ export default async function IssueDetailPage({ params }: Args) {
 
 export async function generateMetadata({ params }: Args): Promise<Metadata> {
   const { gameSlug, slug } = await params
-  const project = await getGameProject(gameSlug)
-  if (!project) return {}
+  const project = await requirePortalProject(gameSlug)
 
   const issue = await getPublicIssue({ projectID: project.id, slug })
-  if (!issue) return {}
+  if (!issue) notFound()
 
   return {
     description: issue.summary ?? undefined,
-    title: `${issue.title} — ${project.name}`,
+    title: { absolute: `${issue.title} — ${project.name}` },
   }
 }

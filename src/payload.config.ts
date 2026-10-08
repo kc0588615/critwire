@@ -26,6 +26,7 @@ import { DISCORD_QUEUE } from './lib/discord/posts'
 import { migrations } from './migrations'
 import { plugins } from './plugins'
 import { lockJobStatsGlobal } from './lib/payload/lockJobStatsGlobal'
+import { SITE } from './lib/site'
 import { defaultLexical } from '@/fields/defaultLexical'
 import { getServerSideURL } from './utilities/getURL'
 
@@ -62,11 +63,13 @@ export default lockJobStatsGlobal(buildConfig({
       baseDir: path.resolve(dirname),
     },
     meta: {
+      // The same files as siteMetadata's icons.
       icons: [
-        { rel: 'icon', sizes: '32x32', url: '/favicon.ico' },
         { rel: 'icon', type: 'image/svg+xml', url: '/favicon.svg' },
+        { rel: 'icon', sizes: '16x16 32x32 48x48', url: '/favicon.ico' },
+        { rel: 'apple-touch-icon', url: '/apple-touch-icon.png' },
       ],
-      titleSuffix: ' | Critwire',
+      titleSuffix: ` | ${SITE.name}`,
     },
     user: Users.slug,
     livePreview: {

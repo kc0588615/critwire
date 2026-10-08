@@ -2,6 +2,7 @@ import { verificationToken } from './support/email'
 import { BASE_URL, SECOND_BASE_URL } from './support/env'
 import { createProject, expect, newRequestContext, randomEmail, startSignup, test } from './support/fixtures'
 import { expectLegalLinks, LEGAL_SLUGS, legalFrontMatter } from './support/legal'
+import { SITE } from '../../src/lib/site'
 
 /**
  * critwire.com's three legal documents (plan S2, Goal 1), rendered from
@@ -31,7 +32,7 @@ for (const slug of LEGAL_SLUGS) {
     const response = await page.goto(`/legal/${slug}`)
     expect(response?.status()).toBe(200)
 
-    await expect(page).toHaveTitle(`${TITLES[slug]} | Critwire`)
+    await expect(page).toHaveTitle(`${TITLES[slug]} | ${SITE.name}`)
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(TITLES[slug])
     await expect(page.getByText(`Version ${version} · Draft of ${longDate(effective)}`, { exact: true })).toBeVisible()
     await expect(page.getByRole('note')).toHaveText(DRAFT_BANNER)
@@ -73,14 +74,14 @@ test('LP3 the site, portal and sign-in footers link the three documents', async 
   await test.step('a portal hub, with "Powered by" (3100)', async () => {
     await page.goto(hub)
     await expect(footer).toContainText('Powered by Critwire')
-    await expectLegalLinks(footer, 'Critwire legal')
+    await expectLegalLinks(footer, 'Legal')
   })
 
   await test.step('a portal hub, with "Powered by" hidden (3102)', async () => {
     await page.goto(`${SECOND_BASE_URL}${hub}`)
     await expect(page.getByRole('heading', { level: 1, name: project.name })).toBeVisible()
     await expect(footer).not.toContainText('Powered by')
-    await expectLegalLinks(footer, 'Critwire legal')
+    await expectLegalLinks(footer, 'Legal')
   })
 
   await test.step('signup', async () => {

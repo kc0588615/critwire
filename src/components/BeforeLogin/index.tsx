@@ -2,13 +2,14 @@ import Link from 'next/link'
 import React from 'react'
 
 import { isOpenSignup, SIGNUP_PATH } from '@/lib/hosting'
+import { SITE } from '@/lib/site'
 
 /** Above the sign-in form. The login view reads the session, so this renders per request (P3). */
 const BeforeLogin: React.FC = () => {
   return (
     <div className="before-login">
       <p>
-        <b>Welcome to Critwire.</b>
+        <b>{`Welcome to ${SITE.name}.`}</b>
         {' Sign in to manage your games’ updates, player feedback and contact routing.'}
       </p>
       {isOpenSignup() ? (
