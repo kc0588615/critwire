@@ -40,16 +40,17 @@ export const readFont = (file: string): Font => {
 }
 
 /**
- * The share images' face, Inter Medium, and DejaVu Sans for the
- * characters Inter has no glyph for (Armenian and Georgian, in a version
- * label), so those draw as letters, not boxes.
+ * The share images' face, Nunito Bold (cc's ui font at its medium
+ * weight), and DejaVu Sans for the characters Nunito has no glyph for
+ * (Armenian and Georgian, in a version label), so those draw as letters,
+ * not boxes.
  */
 const shareFonts = (): { face: Font; fallback: Font } => ({
-  face: readFont(path.join(process.cwd(), 'src/lib/share/fonts/Inter-Medium.ttf')),
+  face: readFont(path.join(process.cwd(), 'src/lib/share/fonts/Nunito-Bold.ttf')),
   fallback: readFont(path.join(process.cwd(), 'src/lib/share/fonts/DejaVuSans.ttf')),
 })
 
-/** `text` split into runs that one font draws: Inter where it has the glyph, else DejaVu. */
+/** `text` split into runs that one font draws: Nunito where it has the glyph, else DejaVu. */
 const fontRuns = (text: string): { font: Font; text: string }[] => {
   const { face, fallback } = shareFonts()
   const runs: { font: Font; text: string }[] = []
@@ -62,24 +63,40 @@ const fontRuns = (text: string): { font: Font; text: string }[] => {
   return runs
 }
 
-/** How wide `text` draws at `size` px. */
-const textWidth = (text: string, size: number): number =>
-  fontRuns(text).reduce((width, run) => width + run.font.getAdvanceWidth(run.text, size), 0)
+export type TextStep = keyof typeof TOKENS.text
 
-/** `text` as one SVG path at `size` px, with its baseline at `y`, and how wide it is. */
-export const glyphPath = (text: string, x: number, y: number, size: number): { d: string; width: number } => {
+/**
+ * The step's size and its tracking, which opentype.js adds after every
+ * glyph, as CSS `letter-spacing` does, so a label draws as wide as cc's
+ * text of that step.
+ */
+const textStyle = (step: TextStep): { size: number; options: { letterSpacing: number } } => ({
+  size: TOKENS.text[step].size,
+  options: { letterSpacing: TOKENS.text[step].letterSpacing },
+})
+
+/** How wide `text` draws at `step`. */
+const textWidth = (text: string, step: TextStep): number => {
+  const { size, options } = textStyle(step)
+  return fontRuns(text).reduce((width, run) => width + run.font.getAdvanceWidth(run.text, size, options), 0)
+}
+
+/** `text` as one SVG path at `step`, with its baseline at `y`, and how wide it is. */
+export const glyphPath = (text: string, x: number, y: number, step: TextStep): { d: string; width: number } => {
+  const { size, options } = textStyle(step)
   let d = ''
   let advance = 0
   for (const run of fontRuns(text)) {
-    d += run.font.getPath(run.text, x + advance, y, size).toPathData(2)
-    advance += run.font.getAdvanceWidth(run.text, size)
+    d += run.font.getPath(run.text, x + advance, y, size, options).toPathData(2)
+    advance += run.font.getAdvanceWidth(run.text, size, options)
   }
   return { d, width: advance }
 }
 
-/** The baseline that centres capital letters of `size` px in a box `height` px tall. */
-export const centredBaseline = (height: number, size: number): number => {
+/** The baseline that centres capital letters at `step` in a box `height` px tall. */
+export const centredBaseline = (height: number, step: TextStep): number => {
   const { face } = shareFonts()
+  const { size } = textStyle(step)
   const capHeight = (face.charToGlyph('H').getBoundingBox().y2 / face.unitsPerEm) * size
   if (!Number.isFinite(capHeight) || capHeight <= 0) throw new Error(`Bad cap height from the share font: ${capHeight}`)
   return (height + capHeight) / 2
@@ -107,42 +124,43 @@ export const svgDocument = ({
 const BUTTON = {
   height: 36,
   // The label's text step, and the smaller one it drops to should a label
-  // ever leave less than the minimum side padding (D16).
-  textSteps: [TOKENS.text.m.size, TOKENS.text.s.size],
+  // ever leave less than the minimum side padding (D21).
+  textSteps: ['s', 'xs'],
   minPadding: TOKENS.space.m,
   mark: TOKENS.space.s,
-  markRadius: TOKENS.radius.xs,
   gap: TOKENS.space.xs,
   edge: STROKE.s,
-  radius: TOKENS.radius.s,
 } as const
 
-/** The theme's outline Button in the scheme's mode, with a color-1 mark. Generic, not themed per game. */
+/** cc's outline Button in the scheme's mode, with a color-1 mark. Generic, not themed per game. */
 const buttonPalette = (scheme: ButtonScheme): { background: string; border: string; text: string; mark: string } => {
   const { neutral } = TOKENS[scheme]
   return { background: neutral[1], border: neutral[4], text: neutral[10], mark: TOKENS.color[1] }
 }
 
 /**
- * One hosted button: a color-1 mark and its label, centred in the
- * button's published width. Throws when no text step leaves the minimum
- * side padding, since the width can't change.
+ * One hosted button: a pill with a color-1 circle and its label, centred
+ * in the button's published width. Throws when no text step leaves the
+ * minimum side padding, since the width can't change.
  */
 export const buttonSVG = (id: ShareButtonID, scheme: ButtonScheme): string => {
   const button = SHARE_BUTTONS.find((candidate) => candidate.id === id)
   if (!button) throw new Error(`Unknown share button: ${id}`)
   const palette = buttonPalette(scheme)
-  const { height, textSteps, minPadding, mark, markRadius, gap, edge, radius } = BUTTON
+  const { height, textSteps, minPadding, mark, gap, edge } = BUTTON
   const { width } = button
 
-  const contentWidth = (size: number): number => mark + gap + textWidth(button.label, size)
-  const fontSize = textSteps.find((size) => (width - contentWidth(size)) / 2 >= minPadding)
-  if (fontSize === undefined) {
+  const contentWidth = (step: TextStep): number => mark + gap + textWidth(button.label, step)
+  const step = textSteps.find((candidate) => (width - contentWidth(candidate)) / 2 >= minPadding)
+  if (step === undefined) {
     throw new Error(`The "${button.label}" button leaves under ${minPadding} px of side padding in ${width} px`)
   }
-  const markX = (width - contentWidth(fontSize)) / 2
-  const label = glyphPath(button.label, markX + mark + gap, centredBaseline(height, fontSize), fontSize)
+  const markX = (width - contentWidth(step)) / 2
+  const label = glyphPath(button.label, markX + mark + gap, centredBaseline(height, step), step)
   const inset = edge / 2
+  // cc's full radius as SVG draws it: past half the height, `rx` would
+  // stretch to half the width and the ends would turn elliptical.
+  const radius = (height - edge) / 2
 
   return svgDocument({
     width,
@@ -151,31 +169,34 @@ export const buttonSVG = (id: ShareButtonID, scheme: ButtonScheme): string => {
     body:
       `<rect x="${inset}" y="${inset}" width="${width - edge}" height="${height - edge}" rx="${radius}" ` +
       `fill="${palette.background}" stroke="${palette.border}" stroke-width="${edge}"/>` +
-      `<rect x="${markX.toFixed(2)}" y="${(height - mark) / 2}" width="${mark}" height="${mark}" rx="${markRadius}" ` +
-      `fill="${palette.mark}"/>` +
+      `<circle cx="${(markX + mark / 2).toFixed(2)}" cy="${height / 2}" r="${mark / 2}" fill="${palette.mark}"/>` +
       `<path fill="${palette.text}" d="${label.d}"/>`,
   })
 }
 
-const BADGE = { height: 24, fontSize: TOKENS.text.s.size, padding: TOKENS.space.s } as const
+const BADGE = { height: 24, text: 's', padding: TOKENS.space.s } as const
 
 /** What a badge says and how it looks: a label segment, then a value segment. */
 export type BadgeModel = {
   label: string
   value: string
   colors: { label: string; labelText: string; value: string; valueText: string; border: string }
+  /** The shape's control radius; drawn at most half the height, past which the corners would turn elliptical. */
   radius: number
 }
 
 /** A two-segment badge, like `feedback | 3 planned · v1.4`, outlined. */
-export const badgeSVG = ({ label, value, colors, radius }: BadgeModel): string => {
-  const { height, fontSize, padding } = BADGE
-  const baseline = centredBaseline(height, fontSize)
-  const labelText = glyphPath(label, padding, baseline, fontSize)
+export const badgeSVG = ({ label, value, colors, radius: controlRadius }: BadgeModel): string => {
+  const { height, text, padding } = BADGE
+  const radius = Math.min(controlRadius, height / 2)
+  const baseline = centredBaseline(height, text)
+  const labelText = glyphPath(label, padding, baseline, text)
   const split = Math.ceil(padding + labelText.width + padding)
-  const valueText = glyphPath(value, split + padding, baseline, fontSize)
+  const valueText = glyphPath(value, split + padding, baseline, text)
   const width = Math.ceil(split + padding + valueText.width + padding)
   const corner = radius > 0 ? ` rx="${radius}"` : ''
+  // The outline is inset half its width, so its corner is too, to stay concentric.
+  const edgeCorner = radius > 0 ? ` rx="${radius - 0.5}"` : ''
 
   return svgDocument({
     width,
@@ -188,7 +209,7 @@ export const badgeSVG = ({ label, value, colors, radius }: BadgeModel): string =
       (radius > 0 ? `<rect x="${split - radius}" width="${radius}" height="${height}" fill="${colors.label}"/>` : '') +
       `<path fill="${colors.labelText}" d="${labelText.d}"/>` +
       `<path fill="${colors.valueText}" d="${valueText.d}"/>` +
-      `<rect x="0.5" y="0.5" width="${width - 1}" height="${height - 1}"${corner} fill="none" stroke="${colors.border}"/>`,
+      `<rect x="0.5" y="0.5" width="${width - 1}" height="${height - 1}"${edgeCorner} fill="none" stroke="${colors.border}"/>`,
   })
 }
 

@@ -11,7 +11,7 @@
 | Tally | Optional contact/feedback forms (studio-owned) | `GameProjects` contact/reportForm; `TallyEmbed` |
 | `obscenity` (MIT, local) | Content filter for player submissions and studios' public text | `/lib/moderation/screenText.ts` |
 | DnD-Kit | Admin feedback kanban drag-and-drop | `src/components/admin/issues/*` |
-| `opentype.js` (MIT, local) + Inter Medium and DejaVu Sans | Text in the button images and the live badge, drawn as paths | `/lib/share/images.ts`, `/lib/share/fonts` |
+| `opentype.js` (MIT, local) + Nunito Bold and DejaVu Sans | Text in the button images and the live badge, drawn as paths | `/lib/share/images.ts`, `/lib/share/fonts` |
 | `marked` (MIT, local) | Renders the legal documents in `legal/` to HTML | `src/app/(frontend)/legal/[document]/page.tsx` |
 | Discord (optional) | `/feedback` and Send to critwire through HTTP interactions; posts through the webhook made at install; no bot (`docs/discord.md`) | `/lib/discord`, `/app/api/discord/*`, `/jobs/discord.ts` |
 
@@ -69,7 +69,7 @@ off the public site until a super admin approves it (see
 `docs/features.md`). `tests/int/content-screen` covers each failure
 mode.
 
-## `opentype.js`, Inter and DejaVu Sans (share images)
+## `opentype.js`, Nunito and DejaVu Sans (share images)
 
 The hosted buttons and the live badge (`docs/share.md`) are SVG with
 their text drawn as glyph paths, never `<text>`, and sharp (already a
@@ -84,20 +84,18 @@ dependency) turns that SVG into a 2× PNG. The production runner
   must pass.
 - **The fonts** are in `src/lib/share/fonts/`, each read once per
   process and never sent to browsers, so they aren't subset:
-  - `Inter-Medium.ttf` (Inter 4.1, OFL, licence in `OFL.txt`) is the
-    face, cw's ui font at its medium weight.
+  - `Nunito-Bold.ttf` (Nunito 3.602, OFL, licence in `OFL.txt`, from
+    the `static/` folder of Google Fonts' Nunito download) is the face,
+    cc's ui font at its medium weight, drawn with cc's tracking.
   - `DejaVuSans.ttf` (licence in `LICENSE`, from the
-    `fonts-dejavu-core` package) draws any character Inter has no glyph
-    for, run by run, such as Armenian or Georgian in a version label.
-    Glyphs neither has render as boxes.
-  - `Nunito-ExtraBold.ttf` (Nunito 3.602, OFL, licence in
-    `OFL-Nunito.txt`, from the `static/` folder of Google Fonts' Nunito
-    download) is only for `pnpm generate:brand` (the line in `og.png`),
-    which runs at development time; it's never traced.
-    `Nunito-Bold.ttf`, from the same download, is the face the button
-    and badge labels move to (cc's ui medium).
+    `fonts-dejavu-core` package) draws any character Nunito has no
+    glyph for, run by run, such as Armenian or Georgian in a version
+    label. Glyphs neither has render as boxes.
+  - `Nunito-ExtraBold.ttf`, from the same download, is only for
+    `pnpm generate:brand` (the line in `og.png`), which runs at
+    development time; it's never traced.
 - **The standalone output must carry both runtime fonts.**
-  `next.config.ts` traces `Inter-Medium.ttf` and `DejaVuSans.ttf`, with
+  `next.config.ts` traces `Nunito-Bold.ttf` and `DejaVuSans.ttf`, with
   their licences, into the button and badge routes
   (`outputFileTracingIncludes`). Each font's path is spelled out to the
   file, because the build traces a path that names only the fonts

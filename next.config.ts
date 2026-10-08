@@ -15,7 +15,7 @@ import { EMBED_CACHE_CONTROL, LOADER_CACHE_CONTROL } from './src/lib/embed/cache
  * with every copy of the fonts.
  */
 const SHARE_IMAGE_FONTS = [
-  './src/lib/share/fonts/Inter-Medium.ttf',
+  './src/lib/share/fonts/Nunito-Bold.ttf',
   './src/lib/share/fonts/OFL.txt',
   './src/lib/share/fonts/DejaVuSans.ttf',
   './src/lib/share/fonts/LICENSE',
