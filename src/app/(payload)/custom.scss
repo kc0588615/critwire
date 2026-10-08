@@ -2,40 +2,42 @@
 @use '../../styles/fonts';
 @use '../../styles/roles';
 
-// Payload's theme variables on cw (plan §3, D21), checked against
-// @payloadcms/ui 3.85.2's scss/{app,colors,vars}.scss. Unlayered, so they
-// beat Payload's `@layer payload-default` in both of its modes. Payload's
-// switch sets `color-scheme: dark` on html[data-theme='dark'] and leaves
-// light at `normal`, so light-dark() follows it.
+// Payload's theme variables on cc (plan §3.3, GUI.md Local decisions),
+// checked against @payloadcms/ui 3.85.2's scss/{app,colors,vars}.scss.
+// Unlayered, so they beat Payload's `@layer payload-default` in both of its
+// modes. Payload's switch sets `color-scheme: dark` on html[data-theme='dark']
+// and leaves light at `normal`, so light-dark() follows it.
 
-// Payload's elevation steps, each on the cw neutral that plays its part.
-// The elevations rather than `--color-base-*`, because cw's two neutral
+// Payload's elevation steps, each on the cc variable that plays its part.
+// The elevations rather than `--color-base-*`, because cc's two neutral
 // ramps aren't mirror images and Payload uses the elevations in both modes.
+// 400–650 are Payload's muted text, so they take cc's muted text (A2: light
+// n8, 7.53:1 on n1; dark n7, 8.21:1), not n7, which is 4.04:1 in light.
 $elevations: (
-  0: 1,
-  50: 2,
-  100: 3,
-  150: 4,
-  200: 4,
-  250: 5,
-  300: 5,
-  350: 6,
-  400: 7,
-  450: 7,
-  500: 7,
-  550: 7,
-  600: 7,
-  650: 7,
-  700: 8,
-  750: 8,
-  800: 9,
-  850: 9,
-  900: 10,
-  950: 10,
-  1000: 10,
+  0: --neutral-1,
+  50: --neutral-2,
+  100: --neutral-3,
+  150: --neutral-4,
+  200: --neutral-4,
+  250: --neutral-5,
+  300: --neutral-5,
+  350: --neutral-6,
+  400: --cte-text-muted,
+  450: --cte-text-muted,
+  500: --cte-text-muted,
+  550: --cte-text-muted,
+  600: --cte-text-muted,
+  650: --cte-text-muted,
+  700: --neutral-8,
+  750: --neutral-8,
+  800: --neutral-9,
+  850: --neutral-9,
+  900: --neutral-10,
+  950: --neutral-10,
+  1000: --neutral-10,
 );
 
-// Payload's three status ramps; its `success` ramp is its accent, so it's cw's color-1.
+// Payload's three status ramps; its `success` ramp is its accent, so it's cc's color-1.
 $statuses: (
   success: --color-1,
   warning: --warning,
@@ -43,13 +45,13 @@ $statuses: (
 );
 
 :root {
-  @each $step, $neutral in $elevations {
-    --theme-elevation-#{$step}: var(--neutral-#{$neutral});
+  @each $step, $colour in $elevations {
+    --theme-elevation-#{$step}: var(#{$colour});
   }
 
   // Tints up to 300, the colour itself from 350 to 500 (Payload uses no
-  // 350), and text on tints (550 and up) in cw's text. Same in both modes,
-  // as cw's colours are.
+  // 350), and text on tints (550 and up) in cc's text. Same in both modes,
+  // as cc's colours are.
   @each $name, $colour in $statuses {
     @for $i from 1 through 19 {
       $step: $i * 50;
@@ -66,6 +68,7 @@ $statuses: (
 
   --theme-text: var(--cte-text);
   --theme-border-color: var(--cte-border);
+  // cc's Dialog backdrop: n10 at 20 % in light, n1 at 20 % in dark.
   --theme-overlay: light-dark(var(--neutral-10-transparent), var(--neutral-1-transparent));
 
   --font-body: var(--font-ui);
@@ -82,7 +85,9 @@ $statuses: (
 
 // Payload's buttons, through its own button variables only. Each style's
 // disabled state is set too, as an unlayered style would otherwise win over
-// Payload's disabled one.
+// Payload's disabled one. The style rules name the style class alone, as
+// Payload's do: a split button (Pages' Publish and its schedule menu) carries
+// it on a wrapper that isn't `.btn`, and its two halves read the variables.
 .btn {
   --btn-font-weight: var(--weight-ui-medium);
   --btn-base-transition: var(--motion-duration) var(--motion-easing);
@@ -91,90 +96,108 @@ $statuses: (
   @media (prefers-reduced-motion: reduce) {
     --btn-base-transition: 0s;
   }
+}
 
-  // cw's primary, with its label in the accent text (D6, A1). The fill
-  // stays exact on hover, as cw's does.
-  &.btn--style-primary {
-    --bg-color: var(--cte-accent);
-    --color: var(--cte-accent-text);
-    --hover-bg: var(--bg-color);
-    --hover-color: var(--color);
+// cc's three Button variants are pills. `.btn` reads its radius from
+// --style-radius-s, so the variable is set on the variant alone (D74).
+.btn--style-primary,
+.btn--style-secondary,
+.btn--style-pill {
+  --style-radius-s: var(--radius-full);
+}
 
-    &.btn--disabled {
-      --bg-color: var(--neutral-3);
-      --color: var(--neutral-6);
-    }
-  }
+// A split button's menu half is a compiled 4 px (G2), so the whole split
+// button keeps cc's radius s rather than half a pill.
+.btn--withPopup {
+  --style-radius-s: var(--radius-s);
+}
 
-  // cw's outline.
-  &.btn--style-secondary {
-    --bg-color: transparent;
-    --color: var(--cte-text);
-    --btn-border: var(--stroke-s) solid var(--neutral-4);
-    --hover-bg: var(--neutral-3-transparent);
-    --hover-color: var(--color);
-    --hover-btn-border: var(--btn-border);
+// cc's primary, with its label in the accent text (A1). The fill stays
+// exact on hover, as cc's does.
+.btn--style-primary {
+  --bg-color: var(--cte-accent);
+  --color: var(--cte-accent-text);
+  --hover-bg: var(--bg-color);
+  --hover-color: var(--color);
 
-    &.btn--disabled {
-      --color: var(--neutral-6);
-      --btn-border: var(--stroke-s) solid var(--neutral-4-transparent);
-      --hover-bg: var(--bg-color);
-    }
-  }
-
-  // cw's secondary.
-  &.btn--style-pill {
-    --bg-color: var(--cte-surface-muted);
-    --color: var(--cte-text);
-    --hover-bg: var(--neutral-4-transparent);
-    --hover-color: var(--color);
-
-    &.btn--disabled {
-      --color: var(--neutral-6);
-      --hover-bg: var(--bg-color);
-    }
-  }
-
-  // cw's toggle. Payload marks the selected tab disabled: pressed is n3
-  // with the heavy weight (D8).
-  &.btn--style-tab {
-    --bg-color: transparent;
-    --color: var(--cte-text);
-    --hover-bg: var(--cte-surface-muted);
-    --hover-color: var(--color);
-
-    &.btn--disabled {
-      --btn-font-weight: var(--weight-ui-heavy);
-      --bg-color: var(--cte-surface-muted);
-      --hover-bg: var(--bg-color);
-    }
+  &.btn--disabled {
+    --bg-color: var(--neutral-3);
+    --color: var(--neutral-6);
   }
 }
 
-// D26: the three rules where Payload puts its error colour on text. In light,
-// cw's error is 3.16:1 on n1, so the text is n10; in dark it reads 6.64:1.
+// cc's outline.
+.btn--style-secondary {
+  --bg-color: transparent;
+  --color: var(--cte-text);
+  --btn-border: var(--stroke-s) solid var(--neutral-4);
+  --hover-bg: var(--neutral-3-transparent);
+  --hover-color: var(--color);
+  --hover-btn-border: var(--btn-border);
+
+  &.btn--disabled {
+    --color: var(--neutral-6);
+    --btn-border: var(--stroke-s) solid var(--neutral-4-transparent);
+    --hover-bg: var(--bg-color);
+  }
+}
+
+// cc's secondary: color-1 at 20 % with the text colour (n10 on it over the
+// canvas: 16.29:1 light, 14.98:1 dark). The fill stays exact on hover, as cc's does.
+.btn--style-pill {
+  --bg-color: var(--color-1-transparent);
+  --color: var(--cte-text);
+  --hover-bg: var(--bg-color);
+  --hover-color: var(--color);
+
+  &.btn--disabled {
+    --bg-color: var(--neutral-3);
+    --color: var(--neutral-6);
+    --hover-bg: var(--bg-color);
+  }
+}
+
+// cc's toggle. Payload marks the selected tab disabled: pressed is n3
+// with the heavy weight (A9).
+.btn--style-tab {
+  --bg-color: transparent;
+  --color: var(--cte-text);
+  --hover-bg: var(--cte-surface-muted);
+  --hover-color: var(--color);
+
+  &.btn--disabled {
+    --btn-font-weight: var(--weight-ui-heavy);
+    --bg-color: var(--cte-surface-muted);
+    --hover-bg: var(--bg-color);
+  }
+}
+
+// The three rules where Payload puts its error colour on text. cc's error is
+// 4.05:1 as text on light n1 and 4.02:1 on dark n2, so the text is n10 in
+// both modes (21 / 18.84), beside the asterisk or the errored block.
 label.field-label:not(.unstyled) .required,
 .blocks-field--has-error > .array-field__header {
-  color: light-dark(var(--neutral-10), var(--error));
+  color: var(--neutral-10);
 }
 
+// Its text sits on the error fill: the accent text, 5.19:1 light, 4.66:1 dark (A1).
 .relationship__error-loading {
   color: var(--cte-accent-text);
 }
 
-// D40: the folder drag's count puts success-50, a tint here, on success-600,
-// cw's text colour; its own text is the canvas (21:1).
+// The folder drag's count puts success-50, a tint here, on success-600,
+// cc's text colour; its own text is the canvas (21:1 light, 18.84:1 dark).
 .drag-overlay-selection__card-count {
   color: var(--cte-canvas);
 }
 
 // The sign-in, forgot-password, reset and legal-gate views (Payload's
-// minimal template): the game's lockup (in Logo) on the canvas, text m,
-// links underlined.
+// minimal template): the game's lockup (in Logo) on the canvas, cc's form
+// text s (D9), links underlined.
 .template-minimal {
-  font-size: var(--size-m);
-  letter-spacing: var(--letter-spacing-m);
-  line-height: var(--line-m);
+  font-size: var(--size-s);
+  letter-spacing: var(--letter-spacing-s);
+  line-height: var(--line-s);
 
   & a:not(.btn, .brand-logo) {
     color: inherit;
@@ -182,9 +205,9 @@ label.field-label:not(.unstyled) .required,
     text-underline-offset: 0.2em;
   }
 
-  // cw's field boundary in text-muted (D5), which Payload's n4 edge (G1)
+  // The field boundary in text-muted (A3), which Payload's n4 edge (H21)
   // doesn't reach; its error edge stays. Payload drops the outline on a
-  // focused field, so cw's ring comes back.
+  // focused field, so the game's ring comes back (A5).
   & .field-type:not(.error) :is(input, textarea) {
     border-color: var(--cte-text-muted);
 
@@ -199,19 +222,19 @@ label.field-label:not(.unstyled) .required,
     outline-offset: var(--focus-ring-offset);
   }
 
-  // D10's 44 px floor, as on critwire's other forms. Buttons get it from
-  // cw's padding through Payload's button variables: the line, plus the
-  // block padding, plus the 1 px border on each side.
+  // The 44 px floor, as on critwire's other forms. Buttons get it through
+  // Payload's button variables: cc's line s, plus the block padding, plus
+  // the 1 px border on each side; cc's side padding l.
   & .field-type input {
     min-height: var(--tap-min);
   }
 
   & .btn {
-    --btn-line-height: var(--line-m);
-    --btn-padding-block-start: calc((var(--tap-min) - var(--line-m)) / 2 - var(--stroke-s));
+    --btn-line-height: var(--line-s);
+    --btn-padding-block-start: calc((var(--tap-min) - var(--line-s)) / 2 - var(--stroke-s));
     --btn-padding-block-end: var(--btn-padding-block-start);
-    --btn-padding-inline-start: var(--space-m);
-    --btn-padding-inline-end: var(--space-m);
+    --btn-padding-inline-start: var(--space-l);
+    --btn-padding-inline-end: var(--space-l);
   }
 
   & .before-login {
