@@ -759,6 +759,6 @@ Architect, 2026-10-20. This is the one revision, covering both reviews. Evidence
 - 2026-10-20 05:55 UTC: Architecture. architect wrote findings + target design (base.json/species.json split, raw snapshots, derive rules, countries rule, D1–D12); ~25 live API calls, evidence in agent-state arch/. No code changed.
 - 2026-10-20 06:01 UTC: Fable review. APPROVE_WITH_CHANGES; 1 MUST-FIX (SPARQL UNDEF for null IUCN id → throw instead), 2 missed (MX false positives in region rule, rename/derive sequencing), 5 should-consider. Plan-only change.
 - 2026-10-20 06:02 UTC: Astra review. APPROVE_WITH_CHANGES; 3 MUST-FIX (region rule auto-excludes valid records → review signals; occurrence-license provenance gap; P846 multi-value must null before cross-check), 4 should-consider. Plan-only change.
-- 2026-10-20 06:24 UTC: Revision. architect resolved all 5 MUST-FIX + 2 missed (countries rule → review signals + 1-record-outside-core stray rule; license filter CC0/CC-BY; multi-value before cross-check; UNDEF throw; 3-commit green migration); all should-consider adopted. ~230 GBIF calls, evidence in agent-state revision/. Plan-only change.
+- 2026-10-20 06:22 UTC: Revision. architect resolved all 5 MUST-FIX + 2 missed (countries rule → review signals + 1-record-outside-core stray rule; license filter CC0/CC-BY; multi-value before cross-check; UNDEF throw; 3-commit green migration); all should-consider adopted. ~230 GBIF calls, evidence in agent-state revision/. Plan-only change.
 
 ## Summary
