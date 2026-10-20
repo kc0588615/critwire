@@ -788,7 +788,7 @@ Every step is one commit (the code, the plan check-off and one Log line), pushed
     - V4's COL raw lines;
     - F4;
     - a second run the same day leaves `git diff --exit-code data/raw/col` clean.
-- [ ] S4 · GBIF ingest and its snapshot. After this step all three raw snapshots are committed.
+- [x] S4 · GBIF ingest and its snapshot. After this step all three raw snapshots are committed.
   - `scripts/ingest/gbif.ts` per §3: the checklist allowlist, the country enumeration, the v2 match with its fields stripped, the occurrence facets with the parameters in fixed order, facet sorting and the `facetLimit` guard.
   - `raw.ts`: add `assertOpenLicenses` and `gbifTaxonKey`.
   - Tests first: G7 in `scripts/derive/gbif.test.ts`.
@@ -1030,5 +1030,6 @@ Failure modes checked by a negative run instead of a unit test (D11):
 - 2026-10-20 06:37 UTC: S2. `http.ts` (UA, 500 ms pacing, retries/backoff, stderr log), `raw.ts`, `ingest.ts` CLI, `ingest/wikidata.ts` (§3 template, bindings sorted); `ingest`+`test` scripts. W11 red (1 fail, no module) then green. Live ingest: 441 bindings, 76 names → 1 item each, 188 KB, retrieved 2026-10-20; 2nd run no churn; `ingest nope` exit 2; typecheck+test+build green.
 
 - 2026-10-20 06:38 UTC: S3. `ingest/col.ts` (3LR → allowlisted release COL26.10 key 316595, 76 matches keyed by name, `created/modified/modifiedBy` stripped), `raw.ts` `omitKeys` + `assertNoIucnData`. Live: 76 matches, 464 KB, no IUCN/volatile keys; 2nd run no churn; F4 (timeout 10) exit 124, snapshot intact, no temp file. typecheck+test+build green. Noted for S7: subgenus in `usage.name` (2), Zaglossus spelling variant, 2 COL synonyms, Chelonoidis abingdonii higherrank.
+- 2026-10-20 06:43 UTC: S4. `ingest/gbif.ts` (backbone checklist allowlist, country enum 250, v2 match w/ timeTaken/timings/additionalStatus/left/right stripped, occurrence facets fixed param order, sorted, facetLimit guard), `raw.ts` GBIF types + `assertOpenLicenses` + `gbifTaxonKey`. G7 red (1 fail) then green. Live: 76 species all with occurrences, 288 KB, 397,200 records / 521 country entries (= revision evidence exactly), Blanding's CA+US, Ili pika count 0, no IUCN/volatile keys. typecheck+test+build green. Noted for S7: 4 GBIF synonyms (Emydoidea, Smutsia gigantea, Smutsia temminckii, Tapirus bairdii), not just 2.
 
 ## Summary

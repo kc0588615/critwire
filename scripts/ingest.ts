@@ -1,13 +1,14 @@
 // Usage: pnpm ingest <source>. Fetches one source for every base species and writes data/raw/<source>/snapshot.json,
 // only after every request succeeded (the old snapshot stays on failure). Request log goes to stderr.
 import { fetchCol } from "./ingest/col.ts";
+import { fetchGbif } from "./ingest/gbif.ts";
 import { fetchWikidata } from "./ingest/wikidata.ts";
 import { readJson } from "./json.ts";
 import { utcDate, writeSnapshot, type Snapshots, type Source } from "./raw.ts";
 import { baseFile, validateBase, type BaseSpecies } from "./species.ts";
 
 type Fetcher<S extends Source> = (base: BaseSpecies[]) => Promise<Omit<Snapshots[S], "retrieved">>;
-const fetchers: { [S in Source]: Fetcher<S> } = { wikidata: fetchWikidata, col: fetchCol };
+const fetchers: { [S in Source]: Fetcher<S> } = { wikidata: fetchWikidata, col: fetchCol, gbif: fetchGbif };
 
 const source = process.argv[2];
 if (!source || !Object.hasOwn(fetchers, source)) {

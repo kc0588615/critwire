@@ -1,0 +1,94 @@
+// GBIF ingest (plan §3): the pinned legacy backbone checklist, the country enumeration, one v2 name match per base
+// species, and one occurrence country/license facet query per species-rank match. Fetch and normalize only; no fs.
+import { getJson } from "../http.ts";
+import {
+  assertNoIucnData, assertOpenLicenses, gbifTaxonKey, omitKeys,
+  type GbifChecklist, type GbifMatchResponse, type GbifOccurrenceResponse, type GbifSnapshot,
+} from "../raw.ts";
+import type { BaseSpecies } from "../species.ts";
+
+const API = "https://api.gbif.org";
+// The legacy GBIF Backbone Taxonomy: ids.gbif and Wikidata P846 are its keys (D2).
+export const BACKBONE_KEY = "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c";
+const FACET_LIMIT = 300;
+// Zoos/gardens (LIVING_SPECIMEN) and FOSSIL_SPECIMEN are left out by listing the allowed values (negation is a 400).
+const BASIS_OF_RECORD = [
+  "HUMAN_OBSERVATION", "OBSERVATION", "MACHINE_OBSERVATION", "PRESERVED_SPECIMEN", "MATERIAL_SAMPLE", "MATERIAL_CITATION", "OCCURRENCE",
+];
+// Timing diagnostics, IUCN status, and nested-set indexes that move on every backbone rebuild.
+const MATCH_DROP = new Set(["timeTaken", "timings", "additionalStatus", "left", "right"]);
+
+export const gbifMatchUrl = (name: string) =>
+  `${API}/v2/species/match?checklistKey=${BACKBONE_KEY}&scientificName=${encodeURIComponent(name)}`;
+
+// Parameters in a fixed order, so the stored URL (sources[].url) is stable.
+export const gbifOccurrenceUrl = (taxonKey: number) =>
+  `${API}/v1/occurrence/search?` + [
+    `checklistKey=${BACKBONE_KEY}`, `taxonKey=${taxonKey}`, "facet=country", "facet=license", `facetLimit=${FACET_LIMIT}`, "limit=0",
+    "occurrenceStatus=PRESENT", "hasGeospatialIssue=false", "hasCoordinate=true", "license=CC0_1_0", "license=CC_BY_4_0",
+    ...BASIS_OF_RECORD.map((b) => `basisOfRecord=${b}`),
+  ].join("&");
+
+const isString = (v: unknown): v is string => typeof v === "string" && v.length > 0;
+
+// The checklist record is allowlisted to the fields derive cites.
+function toChecklist(r: Record<string, unknown>): GbifChecklist {
+  const checklist = { key: r.key, title: r.title, doi: r.doi, license: r.license, pubDate: r.pubDate };
+  for (const [k, v] of Object.entries(checklist)) if (!isString(v)) throw new Error(`gbif: checklist ${k} missing (${JSON.stringify(v)})`);
+  if (checklist.key !== BACKBONE_KEY) throw new Error(`gbif: checklist key ${String(checklist.key)} is not ${BACKBONE_KEY}`);
+  return checklist as GbifChecklist;
+}
+
+function toCountries(rows: unknown): GbifSnapshot["countries"] {
+  if (!Array.isArray(rows) || rows.length === 0) throw new Error("gbif: country enumeration is not a non-empty array");
+  const countries: GbifSnapshot["countries"] = {};
+  for (const { iso2, gbifRegion, title } of rows as Record<string, unknown>[]) {
+    if (!isString(iso2) || !/^[A-Z]{2}$/.test(iso2) || !isString(gbifRegion) || !isString(title)) {
+      throw new Error(`gbif: bad country row ${JSON.stringify({ iso2, gbifRegion, title })}`);
+    }
+    if (Object.hasOwn(countries, iso2)) throw new Error(`gbif: duplicate country ${iso2}`);
+    countries[iso2] = { gbifRegion, title };
+  }
+  return countries;
+}
+
+function toMatch(url: string, r: unknown): GbifMatchResponse {
+  const match = omitKeys(r, MATCH_DROP) as GbifMatchResponse;
+  if (!isString(match?.diagnostics?.matchType)) throw new Error(`gbif: ${url}: no diagnostics.matchType in ${JSON.stringify(r).slice(0, 300)}`);
+  return match;
+}
+
+// Facets sorted by field and counts by name (ties in count order aren't stable); a saturated facet throws.
+function toOccurrences(url: string, r: unknown): GbifOccurrenceResponse {
+  const o = r as GbifOccurrenceResponse & { results?: unknown[] };
+  if (!Number.isInteger(o?.count) || !Array.isArray(o.facets)) throw new Error(`gbif: ${url}: no count/facets in ${JSON.stringify(r).slice(0, 300)}`);
+  if (o.results?.length) throw new Error(`gbif: ${url}: limit=0 returned ${o.results.length} results`);
+  const facets = o.facets
+    .map((f) => {
+      if (f.counts.length >= FACET_LIMIT) throw new Error(`gbif: ${url}: facet ${f.field} saturated (${f.counts.length} ≥ ${FACET_LIMIT})`);
+      return { ...f, counts: [...f.counts].sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0)) };
+    })
+    .sort((a, b) => (a.field < b.field ? -1 : a.field > b.field ? 1 : 0));
+  const occurrences = { ...o, facets };
+  assertOpenLicenses(occurrences);
+  return occurrences;
+}
+
+export async function fetchGbif(base: BaseSpecies[]): Promise<Omit<GbifSnapshot, "retrieved">> {
+  const checklist = toChecklist((await getJson(`${API}/v1/dataset/${BACKBONE_KEY}`)) as Record<string, unknown>);
+  const countries = toCountries(await getJson(`${API}/v1/enumeration/country`));
+  const species: GbifSnapshot["species"] = {};
+  for (const { scientificName } of base) {
+    const matchUrl = gbifMatchUrl(scientificName);
+    const match = toMatch(matchUrl, await getJson(matchUrl));
+    let occurrences = null;
+    if (match.usage?.rank === "SPECIES") {
+      const url = gbifOccurrenceUrl(gbifTaxonKey(match));
+      occurrences = { url, response: toOccurrences(url, await getJson(url)) };
+    }
+    species[scientificName] = { match: { url: matchUrl, response: match }, occurrences };
+  }
+  const snapshot = { checklist, countries, species };
+  assertNoIucnData(snapshot);
+  return snapshot;
+}

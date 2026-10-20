@@ -23,7 +23,28 @@ export interface ColSnapshot {
   matches: Record<string, Fetched>;
 }
 
-export interface Snapshots { wikidata: WikidataSnapshot; col: ColSnapshot }
+export interface GbifUsage {
+  key: string; name: string; canonicalName: string; rank: string; status?: string; genericName?: string; specificEpithet?: string;
+}
+export interface GbifMatchResponse {
+  usage?: GbifUsage;
+  acceptedUsage?: GbifUsage;
+  classification?: { key: string; name: string; rank: string }[];
+  diagnostics: { matchType: string; confidence?: number };
+  synonym?: boolean;
+}
+export interface GbifFacet { field: string; counts: { name: string; count: number }[] }
+export interface GbifOccurrenceResponse { count: number; facets: GbifFacet[] }
+export interface GbifChecklist { key: string; title: string; doi: string; license: string; pubDate: string }
+
+export interface GbifSnapshot {
+  retrieved: string;
+  checklist: GbifChecklist;
+  countries: Record<string, { gbifRegion: string; title: string }>;
+  species: Record<string, { match: Fetched<GbifMatchResponse>; occurrences: Fetched<GbifOccurrenceResponse> | null }>;
+}
+
+export interface Snapshots { wikidata: WikidataSnapshot; col: ColSnapshot; gbif: GbifSnapshot }
 export type Source = keyof Snapshots;
 
 const snapshotFile = (source: Source) => new URL(`../data/raw/${source}/snapshot.json`, import.meta.url);
@@ -61,4 +82,26 @@ export async function writeSnapshot<S extends Source>(source: S, snapshot: Snaps
   const url = snapshotFile(source);
   await mkdir(new URL(".", url), { recursive: true });
   await writeJson(url, snapshot, { canonical: true });
+}
+
+// GBIF occurrence counts may come only from CC0 1.0 and CC BY 4.0 records (D7). Throws unless the LICENSE facet
+// holds only those and its counts sum to `count`. Called by ingest and derive.
+export const OPEN_GBIF_LICENSES: ReadonlySet<string> = new Set(["CC0_1_0", "CC_BY_4_0"]);
+export function assertOpenLicenses(response: GbifOccurrenceResponse): void {
+  const facet = response.facets.find((f) => f.field === "LICENSE");
+  if (!facet && response.count > 0) throw new Error(`gbif: no LICENSE facet for ${response.count} records`);
+  let sum = 0;
+  for (const { name, count } of facet?.counts ?? []) {
+    if (!OPEN_GBIF_LICENSES.has(name)) throw new Error(`gbif: non-open license ${name} (${count} records)`);
+    sum += count;
+  }
+  if (sum !== response.count) throw new Error(`gbif: LICENSE counts sum to ${sum}, count is ${response.count}`);
+}
+
+// The GBIF taxon whose occurrences are counted: the accepted key (covers its synonyms), else the usage key.
+export function gbifTaxonKey(match: GbifMatchResponse): number {
+  const raw = match.acceptedUsage?.key ?? match.usage?.key;
+  const key = Number(raw);
+  if (typeof raw !== "string" || !/^\d+$/.test(raw) || !Number.isSafeInteger(key)) throw new Error(`gbif: taxon key ${JSON.stringify(raw)} is not an integer`);
+  return key;
 }
