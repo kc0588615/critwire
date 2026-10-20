@@ -2,7 +2,7 @@
 mission: critwire-ingest
 project: critwire
 branch: agent/critwire-ingest
-status: active
+status: done
 started: 2026-10-20 05:35 UTC
 ---
 
@@ -1044,5 +1044,24 @@ Failure modes checked by a negative run instead of a unit test (D11):
 - 2026-10-20 08:05 UTC: S9. AGENTS.md "Data": file owners, command order (seed:cc → ingest → derive → db:load; test), never hand-edit derived, countries = "with records" not native range, CC0/CC BY only + CC BY 4.0 field + no DOI, §5.4 rule + constants, overrides format. `plans/001-mvp.md`: Record (`range.countriesWithRecords`, no realms, sources[] shape), Crosswalk (`ids.gbif` legacy backbone, `ids.col` = COL XR key), Range (MVP) text + RESOLVE realms later, Step 2 without Natural Earth (done mark in S11), step-3 GBIF derived dataset, realms under Later. typecheck+test (41)+build green; V2 seed:cc (CC 677eb61a) no diff; V3 derive twice + purity no diff.
 - 2026-10-20 07:03 UTC: S10. Spot-checked 1, 25, 28, 2, 18 vs fresh Wikidata EntityData, ChecklistBank taxon+classification, GBIF species + stored occurrence URL: 55/55 fields ok, 0 rule bugs; fresh occurrence counts = raw exactly (no drift). Findings for PR: 18 base IUCN 22971 = Wikidata P627 of *Vidumelon wattii* (snail), own item 39621; Blanding's license filter keeps 1,309/11,390 records (89% CC BY-NC), countries unchanged. Screenshots: Wikidata only (COL blank in headless_shell, gbif.org Cloudflare-blocks it). Upstream note: Wikidata banner says the Query service is migrating to a new endpoint; ingest may need it later. V7 wikidata+col same-day re-ingest: no churn; V8 ok. Artifacts `spot-checks/` (spot-checks.md, raw/, screenshots/), scripts in `smoke/`. Plan-only change.
 - 2026-10-20 07:04 UTC: S11. origin/main a57313f already ancestor, no rebase. PR body `$L/pr-body.md` (coverage, 214 entries by kind, 10 suspect CC IUCN ids, identity/not-found/synonyms/multi-value, countries rule + override howto, license cost, verification). Opened PR #3 (https://github.com/kc0588615/critwire/pull/3); 001-mvp step 2 "Done: PR #3". Plan-only change; V9 after push.
+- 2026-10-20 07:06 UTC: Final pass. V0–V8 green (41 tests, every §7 id; derive twice byte-identical; V4 invariants; V5 findings; db 76|73|1|472|76 x2; V7 wikidata+col no churn; V8 spot-checks on current species.json). Summary written, status done. Transcript `verify/verify-20261020T0704Z.log`.
 
 ## Summary
+
+PR #3 (https://github.com/kc0588615/critwire/pull/3), no merge, no deploy. Raw snapshots from Wikidata, COL (COL26.10) and GBIF committed in `data/raw/`; offline `pnpm derive` writes `data/species.json` + `data/review/mismatches.json`; `data/review/country-overrides.json` = `[]`.
+
+Coverage (of 76): ids.wikidata 76, ids.gbif 73, ids.col 69, ids.inaturalist 74, ids.ncbi 75; taxonomy from COL 69 (rest keep base, with an identity/not-found entry).
+
+Countries (`range.countriesWithRecords`): listed 72, `[]` 1, `null` 3, 472 codes.
+- `[]`: 47 Ochotona iliensis (Ili pika; its records aren't CC0/CC BY).
+- `null`: 9 Dendrobates tinctorius, 19 Chelonoidis niger (GBIF identity), 27 Zaglossus bruijnii (not found in COL or GBIF; spelling `bruijni`).
+
+Mismatches: 214 entries. country-borderline review 95; country-captive-suspect blocking 38 (excluded strays) + review 53; identity blocking 7; iucn-id blocking 10 (4, 12, 15, 17, 18, 19, 20, 21, 22, 62: CC IUCN ids look wrong, owner to check in CC); multi-value blocking 2 (35, 40 iNaturalist); not-found blocking 3 + info 1; synonym-info info 4 (1, 55, 63, 70); no-records info 1 (47).
+
+Countries rule as set (`scripts/derive/countries.ts`): GBIF occurrence facets, `occurrenceStatus=PRESENT`, has coordinate, no geospatial issue, no LIVING_/FOSSIL_SPECIMEN, `ZZ` dropped, CC0 1.0 + CC BY 4.0 records only (field CC BY 4.0). Region = GBIF `gbifRegion`, NORTH_AMERICA + LATIN_AMERICA merged (`MERGED_REGIONS`). Core = region with most countries (tie: most records; still tied: all core). Outside core ≤ `STRAY_MAX` = 1 record: excluded, captive-suspect blocking; outside core ≥ 2: kept, captive-suspect review; in core, species ≥ `BORDERLINE_MIN_SPECIES_RECORDS` = 50 and country ≤ `BORDERLINE_MAX` = 2: kept, borderline review; else kept. Overrides (`keep`/`remove`) applied last.
+
+Spot-checked vs fresh source APIs: 1 Emydoidea blandingii, 2 Apalone spinifera, 18 Rafetus swinhoei, 25 Panthera tigris, 28 Elephas maximus: 55/55 fields ok, 0 rule bugs. Finding: 18's base IUCN id 22971 belongs to a snail (*Vidumelon wattii*) on Wikidata.
+
+Reviews: Fable APPROVE_WITH_CHANGES, Astra APPROVE_WITH_CHANGES; revision resolved every MUST-FIX.
+
+Artifacts (`/srv/critter-ai/agent-state/missions/critwire-ingest/`): `verify/verify-20261020T0704Z.log` (reproduce: Verification block), `verify/test.txt`, `verify/derive.txt`, `verify/churn-{wikidata,col}.diff` (empty), `spot-checks/`, `ingest-*.log`, `pr-body.md`.
