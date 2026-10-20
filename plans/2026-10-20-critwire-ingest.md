@@ -131,7 +131,7 @@ Out:
 - [x] Fable review: `architecture-reviewer`
 - [x] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
 - [x] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
-- [ ] Steps: `planner` writes Steps and Verification
+- [x] Steps: `planner` writes Steps and Verification
 
 ## Baseline
 
@@ -746,7 +746,271 @@ Architect, 2026-10-20. This is the one revision, covering both reviews. Evidence
 
 ## Steps
 
+Planner, 2026-10-20. How the steps map onto the migration (§1, D15):
+- S1–S4 are migration commit 1 (`base.json` plus the ingest code). Each raw snapshot goes in with the code that wrote it, which is commit 2.
+- S5–S7 add pure rule modules that nothing calls yet.
+- S8 is the switch commit, done in one commit.
+- Until S8, `data/species.json`, `Species`, `load.ts` and `db/schema.sql` stay exactly as step 1 left them.
+
+Every step is one commit (the code, the plan check-off and one Log line), pushed. "Green" means `pnpm typecheck && pnpm test && pnpm build`; there is no `test` script before S2. `L` is `/srv/critter-ai/agent-state/missions/critwire-ingest`. A step's §7 tests are written first, named after their id (`test("K4 …")`), and run red before the code is written (put the failing count in the Log). V0–V9 are defined in Verification, F1–F9 in Failure modes.
+
+- [ ] S1 · Split `data/base.json` from `data/species.json`; harden seed:cc.
+  - `scripts/species.ts`: add `BaseSpecies` (`ids: {iucn}`), `baseFile` and `validateBase()`. It requires `id`, `slug`, `scientificName` and `ids.iucn` to be unique, and `ids.iucn` to be a positive integer.
+  - Add `scripts/json.ts` (§2).
+  - `scripts/seed-cc.ts`:
+    - reads and writes only `data/base.json`, through `json.ts`;
+    - runs `validateBase` on the base it reads and on the result before writing;
+    - throws when a profile matches a record that is already matched (finding 3).
+  - `data/base.json`: a one-off mechanical copy of `data/species.json` without the five null ids, made with a node one-liner, not with seed:cc. `species.json`, `Species`, `load.ts` and the schema stay untouched.
+  - Checks:
+    - green;
+    - V2. If CC has moved, record the diff in the Log, restore `base.json` and never merge it;
+    - F1;
+    - `pnpm -s db:load` prints `loaded 76 species`.
+- [ ] S2 · HTTP client, raw module, ingest CLI, Wikidata ingest and its snapshot.
+  - Add `scripts/http.ts`, `scripts/raw.ts` (snapshot types, `readSnapshot`/`writeSnapshot`, `utcDate`), `scripts/ingest.ts` and `scripts/ingest/wikidata.ts` (the exact §3 template, bindings sorted).
+  - `package.json`: add `ingest` and `test`.
+  - Tests first: W11 in `scripts/derive/wikidata.test.ts`.
+  - Run `pnpm ingest wikidata 2>> $L/ingest-wikidata.log` and commit `data/raw/wikidata/snapshot.json`.
+  - Checks:
+    - green;
+    - `retrieved` is today's UTC date, and there are about 441 bindings;
+    - `jq -e '[.response.results.bindings[] | select(.item) | [.name.value, .item.value]] | unique | group_by(.[0]) | length == 76 and all(.[]; length == 1)' data/raw/wikidata/snapshot.json`;
+    - a second run the same day leaves `git diff --exit-code data/raw/wikidata` clean;
+    - `pnpm ingest nope` exits non-zero with a usage message.
+- [ ] S3 · COL ingest and its snapshot.
+  - `scripts/ingest/col.ts`: resolve 3LR to the allowlisted release record, then fetch the 76 matches, keyed by name as `{url, response}`. Strip `created`, `modified` and `modifiedBy` wherever they appear.
+  - `raw.ts`: add `assertNoIucnData`, which runs before the write.
+  - Run `pnpm ingest col 2>> $L/ingest-col.log` and commit `data/raw/col/snapshot.json`.
+  - Checks:
+    - green;
+    - `jq -e '(.matches | length) == 76 and (.release | .key and .alias and .version and .issued and .doi and .license)' data/raw/col/snapshot.json`;
+    - V4's COL raw lines;
+    - F4;
+    - a second run the same day leaves `git diff --exit-code data/raw/col` clean.
+- [ ] S4 · GBIF ingest and its snapshot. After this step all three raw snapshots are committed.
+  - `scripts/ingest/gbif.ts` per §3: the checklist allowlist, the country enumeration, the v2 match with its fields stripped, the occurrence facets with the parameters in fixed order, facet sorting and the `facetLimit` guard.
+  - `raw.ts`: add `assertOpenLicenses` and `gbifTaxonKey`.
+  - Tests first: G7 in `scripts/derive/gbif.test.ts`.
+  - Run `pnpm ingest gbif 2>> $L/ingest-gbif.log` and commit `data/raw/gbif/snapshot.json`.
+  - Checks:
+    - green;
+    - `jq -e '(.species | length) == 76 and all(.species[]; .occurrences != null)' data/raw/gbif/snapshot.json`;
+    - V4's GBIF raw lines;
+    - `jq -e '.species["Emydoidea blandingii"].occurrences.response.facets[] | select(.field == "COUNTRY") | [.counts[].name] == ["CA","US"]' data/raw/gbif/snapshot.json`;
+    - `du -h` shows roughly 0.3–0.7 MB.
+- [ ] S5 · Countries rule, the riskiest logic.
+  - Tests first: K1–K10 in `scripts/derive/countries.test.ts`.
+  - Then `scripts/derive/countries.ts`: the §5.4 constants with their justification at the top, the §5.5 override validation and application, and entries in the §5.6 shape.
+  - `species.ts`: add the `Mismatch` and `CountryOverride` types. This only adds types; `Species` doesn't change.
+  - Checks:
+    - green;
+    - smoke run: a throwaway `$L/smoke/countries.ts` (never committed) runs the rule on `data/raw/gbif` for all 76 species with no overrides, and prints the tallies of `$L/revision/final-rule.txt`. Expect about 482 codes across 75 species, Ili pika `[]`, 39 strays, and 54 plus 97 review flags. Record any drift in the Log.
+- [ ] S6 · Wikidata rules.
+  - Tests first: W1–W10, added to `scripts/derive/wikidata.test.ts`.
+  - Then `scripts/derive/wikidata.ts`:
+    - the staleness check (W7), pooled values, cardinality first and the P627 rule;
+    - it returns the Wikidata ids, the entries, and the P846 and P10585 evidence (none, one or several values) that S7 uses.
+  - Checks:
+    - green;
+    - smoke run on the real snapshot: all 76 have `ids.wikidata`, species 4, 18, 19 and 21 get `iucn-id`, and species 35 and 40 get `multi-value` on `ids.inaturalist`.
+- [ ] S7 · COL and GBIF rules.
+  - Tests first: C1–C9 in `scripts/derive/col.test.ts`, and G1–G6 in `gbif.test.ts`.
+  - Then `scripts/derive/col.ts` and `scripts/derive/gbif.ts` (§5.2 and §5.3, including the lump guard). Their license maps throw on an unknown license.
+  - Checks:
+    - green;
+    - smoke run: species 22 gets `not-found` on `ids.col`, and species 1 and 55 get `synonym-info` on `ids.gbif`. Record the counts of settled COL and GBIF matches in the Log.
+- [ ] S8 · Switch commit (migration 3 of 3), in one commit.
+  - Tests first: S1 in `scripts/derive/record.test.ts`.
+  - Then `scripts/derive/record.ts`. It is pure: it builds the §4 record in a fixed key order, builds `sources[]`, and asserts that every field is cited exactly once. This module is the planner's layout choice, so that S1 needs no file system.
+  - `species.ts`: add `range` and `sources` to `Species`, and add the `Source` type.
+  - `scripts/derive.ts`, the CLI per §2 and §5:
+    - validates its inputs and checks staleness;
+    - runs the rules in id order and sorts the entries per §5.6;
+    - writes both outputs;
+    - prints the coverage per field, the number of taxonomies from COL, the country totals (including the species with `[]` and with `null`), and the entries by kind and severity.
+  - Also in this commit:
+    - `data/review/country-overrides.json`, containing `[]`;
+    - the `derive` script in `package.json`;
+    - `db/schema.sql` and `scripts/load.ts` per §6.
+  - Run `pnpm -s derive | tee $L/derive-S8.txt`, then `git add -A data/`.
+  - Checks: green; V3, V4, V5 and V6; F2 and F3.
+- [ ] S9 · seed:cc after the switch, and the docs.
+  - `AGENTS.md`, "Data" section:
+    - who owns each file (§8);
+    - the commands and their order: `pnpm seed:cc`, then `pnpm ingest <source>` if a name or IUCN id changed, then `pnpm derive`, then `pnpm db:load`; plus `pnpm test`;
+    - the derived files are never hand-edited;
+    - the field means "countries with records, not native range";
+    - counts come only from CC0 and CC BY records, and the field is CC BY 4.0;
+    - the §5.4 rule and its constants, and the overrides format.
+  - `plans/001-mvp.md`:
+    - the Brief's "Plan edits": the Range (MVP) text, the Crosswalk, Step 2 without Natural Earth (the "done" mark comes in S11), realms under Later, and the Record without `realms`;
+    - the Architecture's "Notes for `plans/001-mvp.md`": the Record's `range` and `sources[]` shape, `ids.col` as the COL XR key, the license basis and the missing DOI, and the step-3 GBIF derived dataset.
+  - Checks: green; V2, then V3. seed:cc must leave `base.json` and the derived files byte-identical.
+- [ ] S10 · Spot-checks and the same-day no-churn check.
+  - The species are 1 (Blanding's turtle), 25 (tiger), 28 (Asian elephant), 2 (spiny softshell) and 18 (*Rafetus swinhoei*), as in §8.
+  - For each one, compare the published ids, taxonomy, countries and mismatch entries with fresh responses from each source's own site, not with `data/raw`:
+    - Wikidata: `https://www.wikidata.org/wiki/Special:EntityData/<Q>.json` (P225, P627, P846, P10585, P3151, P685);
+    - COL: `https://api.checklistbank.org/dataset/<key>/taxon/<ids.col>` and its `/classification` (what `catalogueoflife.org/data/taxon/<id>` shows);
+    - GBIF: `https://api.gbif.org/v1/species/<ids.gbif>`, and the occurrence URL stored in `sources[].url`;
+    - the human pages, for the owner: `wikidata.org/wiki/<Q>`, `catalogueoflife.org/data/taxon/<id>` and `gbif.org/species/<key>`. Take screenshots where possible with `~/.cache/ms-playwright/chromium_headless_shell-1208/chrome-linux/headless_shell --screenshot=<png> --window-size=1280,1600 --virtual-time-budget=15000 <url>`.
+  - Save the responses and screenshots in `$L/spot-checks/`, plus `spot-checks.md`: its first line is `git rev-parse HEAD:data/species.json`, followed by a table of species, field, published value, source value and verdict.
+  - Run V7.
+  - If this finds a rule bug, add a fix step before S11, with a failing test first. Record upstream drift in the Log.
+  - Commit the plan only.
+- [ ] S11 · Rebase and open the PR.
+  - Run `git fetch origin`. If `git merge-base --is-ancestor origin/main HEAD` fails:
+    1. `git rebase origin/main`;
+    2. re-run V1–V4;
+    3. `git push --force-with-lease origin agent/critwire-ingest`.
+  - Write `$L/pr-body.md` (not in the repo), with:
+    1. what changed and why in 2–3 lines, and "no merge, no deploy";
+    2. coverage per field out of 76 (`ids.wikidata`, `gbif`, `col`, `inaturalist`, `ncbi`), the number of taxonomies from COL, and the species with countries, with `[]` and with `null`, plus the total codes. These come from V3's `derive.txt`;
+    3. the mismatch counts by kind and severity;
+    4. the findings in plain words:
+       - the CC IUCN ids that look wrong: each `iucn-id` entry, with the base id and what Wikidata says, for the owner to check in CC (CC isn't changed here);
+       - the GBIF synonyms, the two iNaturalist ids, and the COL not-found;
+    5. the countries rule as finally set (§5.4 constants), and the review queue: the strays excluded, the captive-suspect and borderline flags, and how to settle them in `country-overrides.json`;
+    6. the license-filter cost: only CC0 and CC BY 4.0 records are counted. Measured on 2026-10-20, that drops 130,844 of 528,044 filtered records (25%) and 123 of 644 country entries, and leaves Ili pika blank. The field is CC BY 4.0, and GBIF aggregates have no DOI (a step-3 item);
+    7. the verification results and artifact paths, and the review verdicts (Fable and Astra both APPROVE_WITH_CHANGES; the revision resolved every MUST-FIX).
+  - Run `gh pr create --base main --head agent/critwire-ingest --title "step 2: Wikidata ids, COL taxonomy, GBIF countries" --body-file $L/pr-body.md`. If a PR already exists, run `gh pr edit agent/critwire-ingest --body-file …` instead.
+  - Mark step 2 in `plans/001-mvp.md` as "Done: PR #<n>", then commit and push.
+  - Checks: V9.
+
+Notes for the implementing sessions:
+- The evidence numbers (441 bindings, 482/39/54/97) were taken on 2026-10-20. Expect upstream drift and record it in the Log; never tune a rule to match a number.
+- Smoke scripts and scratch files go in `$L/smoke/` and are never committed. Run ingests one at a time; the pacing is per process.
+- If a smoke run exposes a bug from an earlier step, fix it in the current step with a failing test first, and say so in the Log.
+
 ## Verification
+
+Run this from the worktree, as one bash session. It writes its own transcript.
+
+```bash
+set -euo pipefail
+cd /srv/critter-ai/worktrees/critwire-ingest
+L=/srv/critter-ai/agent-state/missions/critwire-ingest; V=$L/verify; mkdir -p "$V"
+exec > >(tee "$V/verify-$(date -u +%Y%m%dT%H%MZ).log") 2>&1
+
+# V0 preflight: clean tree, critwire_dev only
+test -z "$(git status --porcelain)"
+node -e 'process.loadEnvFile(); if (!/\/critwire_dev(\?|$)/.test(process.env.DATABASE_URL ?? "")) { console.error("DATABASE_URL is not critwire_dev"); process.exit(1) }'
+
+# V1 install, typecheck, unit tests (every §7 id present), build
+pnpm install --frozen-lockfile
+pnpm typecheck
+pnpm test 2>&1 | tee "$V/test.txt"
+for id in W{1..11} C{1..9} G{1..7} K{1..10} S1; do grep -qw "$id" "$V/test.txt" || { echo "missing test $id"; exit 1; }; done
+pnpm build
+
+# V2 seed:cc idempotent; doesn't touch derived files (if CC moved: Log + PR note, restore, never merge)
+pnpm -s seed:cc /srv/critter-ai/critter-connect/db/content/animals
+git diff --exit-code data/
+
+# V3 derive determinism and purity
+pnpm -s derive | tee "$V/derive.txt"
+git diff --exit-code data/
+rm data/species.json data/review/mismatches.json
+pnpm -s derive >/dev/null
+git diff --exit-code data/
+
+# V4 output and raw invariants
+jq -e 'length == 76 and . == sort_by(.id)' data/species.json
+jq -e '. == sort_by(.speciesId, .field, .kind, (.country // ""))' data/review/mismatches.json
+jq -e '. == []' data/review/country-overrides.json
+jq -en --slurpfile b data/base.json --slurpfile s data/species.json '[$b[0], $s[0]] | transpose | all(.[];
+  .[0] as $x | .[1] as $y
+  | ($x | del(.ids, .taxonomy)) == ($y | {id, slug, scientificName, commonName, photo, replacedBy})
+  and $y.ids.iucn == $x.ids.iucn
+  and ($y.ids.col != null or $y.taxonomy == $x.taxonomy)
+  and ($y.ids.gbif != null or $y.range.countriesWithRecords == null)
+  and ($y.range | keys) == ["countriesWithRecords"] and ($y | has("traits") | not)
+  and ($y.sources | length) >= 1)'
+if grep -qiE 'iucn|additionalStatus' data/raw/col/snapshot.json data/raw/gbif/snapshot.json; then echo "IUCN data in raw"; exit 1; fi
+jq -e '[paths | .[-1] | select(. == "left" or . == "right" or . == "timeTaken" or . == "timings" or . == "additionalStatus")] | length == 0' data/raw/gbif/snapshot.json
+jq -e '[paths | .[-1] | select(. == "created" or . == "modified" or . == "modifiedBy")] | length == 0' data/raw/col/snapshot.json
+
+# V5 expected live findings (2026-10-20). A miss is a bug unless it's upstream drift: then record it in Decisions and adjust this list.
+m=data/review/mismatches.json
+has() { jq -e --argjson id "$1" --arg f "$2" --arg k "$3" 'any(.[]; .speciesId == $id and .field == $f and .kind == $k)' $m >/dev/null || { echo "missing $*"; exit 1; }; }
+for id in 4 18 19 21; do has $id ids.iucn iucn-id; done
+for id in 35 40; do has $id ids.inaturalist multi-value; done
+for id in 1 55; do has $id ids.gbif synonym-info; done
+has 22 ids.col not-found
+has 47 range.countriesWithRecords no-records
+jq -e '.[] | select(.id == 47) | .range.countriesWithRecords == []' data/species.json
+jq -e '.[] | select(.id == 1) | .range.countriesWithRecords == ["CA","US"]' data/species.json
+jq -e '(.[] | select(.id == 25) | .range.countriesWithRecords) as $c | (["DE","RU","US"] - $c) == [] and ($c - ["CA","DK","KE","MW","NL","SE"]) == $c' data/species.json
+jq -e 'any(.[]; .speciesId == 25 and .country == "DE" and .kind == "country-captive-suspect" and .severity == "review")' $m
+jq -e 'any(.[]; .speciesId == 28 and .country == "US" and .kind == "country-captive-suspect" and .severity == "review")' $m
+
+# V6 db:load twice into critwire_dev; DB matches species.json (null vs [] round-trips)
+test "$(pnpm -s db:load)" = "loaded 76 species"
+test "$(pnpm -s db:load)" = "loaded 76 species"
+want=$(jq -r '[length, (map(select(.range.countriesWithRecords != null)) | length), (map(select(.range.countriesWithRecords == [])) | length), (map(.range.countriesWithRecords // [] | length) | add), (map(select(.sources | length >= 1)) | length)] | map(tostring) | join("|")' data/species.json)
+got=$(psql -d critwire_dev -XAtc "select count(*), count(*) filter (where countries_with_records is not null), count(*) filter (where countries_with_records = '{}'), coalesce(sum(cardinality(countries_with_records)), 0), count(*) filter (where jsonb_array_length(sources) >= 1) from species")
+echo "db want $want got $got"; test "$want" = "$got"
+
+# V7 same-day raw no-churn (wikidata, col). Any diff must be explained in the Log as an upstream change. Restores HEAD after.
+today=$(date -u +%F)
+for s in wikidata col; do
+  if [ "$(jq -r .retrieved data/raw/$s/snapshot.json)" != "$today" ]; then pnpm -s ingest $s 2>> "$L/ingest-$s.log"; git add data/raw/$s; fi
+  pnpm -s ingest $s 2>> "$L/ingest-$s.log"
+  git diff --exit-code data/raw/$s > "$V/churn-$s.diff" || echo "CHURN in $s: see $V/churn-$s.diff"
+  git restore --source=HEAD --staged --worktree data/raw/$s
+done
+
+# V8 spot-checks done on the current data
+head -1 "$L/spot-checks/spot-checks.md" | grep -q "$(git rev-parse HEAD:data/species.json)"
+
+# V9 (after the final push) delivery
+test -z "$(git status --porcelain)"
+git fetch -q origin && git merge-base --is-ancestor origin/main HEAD
+test "$(git rev-parse HEAD)" = "$(git rev-parse origin/agent/critwire-ingest)"
+gh pr view agent/critwire-ingest --json state,baseRefName -q '.state + " " + .baseRefName' | grep -qx 'OPEN main'
+```
+
+**Artifacts**, all in `/srv/critter-ai/agent-state/missions/critwire-ingest/`:
+- `verify/verify-<UTC>.log`: the full transcript. Reproduce it by re-running the block above.
+- `verify/test.txt`.
+- `verify/derive.txt`: the numbers for the PR and the Summary.
+- `verify/churn-*.diff`, when V7 finds churn.
+- `spot-checks/`: `spot-checks.md`, the fetched responses and the screenshots.
+- `ingest-{wikidata,col,gbif}.log`.
+- `pr-body.md`.
+
+**Final pass, after S11** (the mission flow):
+1. Run V0–V8.
+2. Write the Summary: the coverage and kind counts from `derive.txt`, the final countries rule (§5.4 plus its constants), the species with `[]` and with `null` countries, the 5 spot-checked species with their verdicts, and the artifact paths.
+3. Set `status: done`, commit and push.
+4. Run V9.
+
+## Failure modes
+
+The unit-tested failure modes are §7's list: W1–W11, C1–C9, G1–G7, K1–K10 and S1. Each one is written, and seen failing, before its code, in the step named above.
+
+Failure modes checked by a negative run instead of a unit test (D11):
+- **F1 · seed:cc matches one record twice.**
+  - Setup: copy the CC profiles to `T=$(mktemp -d)`, then copy one profile to `$T/zz-dup.json`.
+  - Pass: `pnpm -s seed:cc "$T"` exits non-zero and `git diff --exit-code data/` stays clean.
+  - Step: S1.
+- **F2 · Invalid base.**
+  - Setup: back up `data/base.json`, then give `.[1]` the `scientificName` of `.[0]`.
+  - Pass: `pnpm -s derive` exits non-zero and names the duplicate.
+  - Step: S8, after `git add -A data/`.
+- **F3 · Stale raw.**
+  - Setup: rename `.[0].scientificName` to a new, unique name.
+  - Pass: `pnpm -s derive` exits non-zero, naming `pnpm ingest wikidata`. Then `git checkout -- data/base.json && git diff --exit-code data/`, which proves derive wrote nothing.
+  - Step: S8.
+- **F4 · Interrupted ingest.**
+  - Setup: `timeout 10 node --import tsx scripts/ingest.ts col` (a single process, so the kill reaches it).
+  - Pass: it exits non-zero, and `git status --porcelain --ignored data/` is empty: the old snapshot is intact and no temp file is left.
+  - Step: S3.
+- **F5 · IUCN data or volatile keys in raw.** Ingest throws (`assertNoIucnData`), and V4's raw lines check it. The strip runs on every live v2 match, which carries `additionalStatus`.
+- **F6 · A saturated GBIF facet** (`counts.length ≥ 300`). Ingest throws. This is checked by code review only: today's maximum is about 40 countries.
+- **F7 · Non-determinism** (clock, locale sorting, Map order, unsorted arrays). Caught by V3.
+- **F8 · A derived record drifts from base** (names, photo, `ids.iucn`, or the taxonomy when `ids.col` is null). Caught by V4's jq invariant.
+- **F9 · Touching the live `critwire` db.** Caught by V0's guard; `load.ts` reads `DATABASE_URL` only.
 
 ## Decisions
 
@@ -760,5 +1024,6 @@ Architect, 2026-10-20. This is the one revision, covering both reviews. Evidence
 - 2026-10-20 06:01 UTC: Fable review. APPROVE_WITH_CHANGES; 1 MUST-FIX (SPARQL UNDEF for null IUCN id → throw instead), 2 missed (MX false positives in region rule, rename/derive sequencing), 5 should-consider. Plan-only change.
 - 2026-10-20 06:02 UTC: Astra review. APPROVE_WITH_CHANGES; 3 MUST-FIX (region rule auto-excludes valid records → review signals; occurrence-license provenance gap; P846 multi-value must null before cross-check), 4 should-consider. Plan-only change.
 - 2026-10-20 06:22 UTC: Revision. architect resolved all 5 MUST-FIX + 2 missed (countries rule → review signals + 1-record-outside-core stray rule; license filter CC0/CC-BY; multi-value before cross-check; UNDEF throw; 3-commit green migration); all should-consider adopted. ~230 GBIF calls, evidence in agent-state revision/. Plan-only change.
+- 2026-10-20 06:33 UTC: Steps. planner wrote S1–S11 (base split, 3 ingests w/ snapshots, rule modules test-first, switch commit, seed:cc+docs, spot-checks, PR), Verification V0–V9, Failure modes F1–F9. Plan-only change.
 
 ## Summary
