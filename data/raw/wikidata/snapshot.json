@@ -1,0 +1,7683 @@
+{
+  "endpoint": "https://query.wikidata.org/sparql",
+  "query": "SELECT DISTINCT ?name ?item ?prop ?value ?iucnItem ?iucnItemName WHERE {\n  VALUES (?name ?iucn) { (\"Emydoidea blandingii\" \"7709\") (\"Apalone spinifera\" \"163451\") (\"Rhinoderma darwinii\" \"19513\") (\"Platysternon megacephalum\" \"9605\") (\"Rhacophorus nigropalmatus\" \"59008\") (\"Agalychnis callidryas\" \"55290\") (\"Trichobatrachus robustus\" \"54443\") (\"Ascaphus truei\" \"54414\") (\"Dendrobates tinctorius\" \"55204\") (\"Pipa pipa\" \"58163\") (\"Conraua goliath\" \"5263\") (\"Heosemys spinosa\" \"104303\") (\"Dyscophus antongilii\" \"6937\") (\"Breviceps macrops\" \"3070\") (\"Malacochersus tornieri\" \"9041\") (\"Nasikabatrachus sahyadrensis\" \"58051\") (\"Carettochelys insculpta\" \"28859\") (\"Rafetus swinhoei\" \"22971\") (\"Chelonoidis niger\" \"9010\") (\"Centrochelys sulcata\" \"9781\") (\"Astrochelys radiata\" \"3901\") (\"Chelonoidis abingdonii\" \"3902\") (\"Daubentonia madagascariensis\" \"6302\") (\"Manis javanica\" \"12763\") (\"Panthera tigris\" \"15955\") (\"Mustela nigripes\" \"14020\") (\"Zaglossus bruijnii\" \"23179\") (\"Elephas maximus\" \"7140\") (\"Okapia johnstoni\" \"15188\") (\"Bradypus pygmaeus\" \"61925\") (\"Lasiorhinus krefftii\" \"11343\") (\"Cryptochloris wintoni\" \"5748\") (\"Canis simensis\" \"3748\") (\"Rhinopithecus roxellana\" \"19596\") (\"Ailurus fulgens\" \"714\") (\"Priodontes maximus\" \"18144\") (\"Macrotis lagotis\" \"12650\") (\"Pseudoryx nghetinhensis\" \"18597\") (\"Equus grevyi\" \"7950\") (\"Pongo abelii\" \"121097935\") (\"Loxodonta cyclotis\" \"181007989\") (\"Marmota vancouverensis\" \"12828\") (\"Dendrolagus goodfellowi\" \"6429\") (\"Rhinoceros sondaicus\" \"19495\") (\"Pteropus livingstonii\" \"18732\") (\"Rhynchocyon chrysopygus\" \"19705\") (\"Ochotona iliensis\" \"15050\") (\"Sarcophilus harrisii\" \"40540\") (\"Solenodon paradoxus\" \"20321\") (\"Addax nasomaculatus\" \"512\") (\"Panthera onca\" \"15953\") (\"Myrmecophaga tridactyla\" \"14224\") (\"Tapirus terrestris\" \"21474\") (\"Bradypus variegatus\" \"3038\") (\"Smutsia gigantea\" \"12762\") (\"Pan troglodytes\" \"15933\") (\"Orycteropus afer\" \"41504\") (\"Acinonyx jubatus\" \"219\") (\"Manis crassicaudata\" \"12761\") (\"Ailuropoda melanoleuca\" \"712\") (\"Indri indri\" \"10826\") (\"Andrias davidianus\" \"179010104\") (\"Smutsia temminckii\" \"12765\") (\"Loxodonta africana\" \"181008073\") (\"Lycaon pictus\" \"12436\") (\"Diceros bicornis\" \"6557\") (\"Zaglossus bartoni\" \"136552\") (\"Beatragus hunteri\" \"6234\") (\"Nanger dama\" \"8968\") (\"Tapirus bairdii\" \"21471\") (\"Tremarctos ornatus\" \"22066\") (\"Chrysocyon brachyurus\" \"4819\") (\"Pteronura brasiliensis\" \"18711\") (\"Ambystoma mexicanum\" \"1095\") (\"Cryptobranchus alleganiensis\" \"59077\") (\"Phyllobates terribilis\" \"55264\") }\n  { ?item wdt:P225 ?name .\n    OPTIONAL { VALUES (?prop ?p) { (\"P627\" wdt:P627) (\"P846\" wdt:P846) (\"P10585\" wdt:P10585) (\"P3151\" wdt:P3151) (\"P685\" wdt:P685) }\n               ?item ?p ?value . } }\n  UNION\n  { ?iucnItem wdt:P627 ?iucn . OPTIONAL { ?iucnItem wdt:P225 ?iucnItemName . } }\n} ORDER BY ?name ?item ?prop ?value ?iucnItem ?iucnItemName",
+  "response": {
+    "head": {
+      "vars": [
+        "name",
+        "item",
+        "prop",
+        "value",
+        "iucnItem",
+        "iucnItemName"
+      ]
+    },
+    "results": {
+      "bindings": [
+        {
+          "iucnItem": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q23907"
+          },
+          "iucnItemName": {
+            "type": "literal",
+            "value": "Acinonyx jubatus"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Acinonyx jubatus"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q23907"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Acinonyx jubatus"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P10585"
+          },
+          "value": {
+            "type": "literal",
+            "value": "9BTZ"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q23907"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Acinonyx jubatus"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P3151"
+          },
+          "value": {
+            "type": "literal",
+            "value": "41955"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q23907"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Acinonyx jubatus"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P627"
+          },
+          "value": {
+            "type": "literal",
+            "value": "219"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q23907"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Acinonyx jubatus"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P685"
+          },
+          "value": {
+            "type": "literal",
+            "value": "32536"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q23907"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Acinonyx jubatus"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P846"
+          },
+          "value": {
+            "type": "literal",
+            "value": "2435270"
+          }
+        },
+        {
+          "iucnItem": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q190154"
+          },
+          "iucnItemName": {
+            "type": "literal",
+            "value": "Addax nasomaculatus"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Addax nasomaculatus"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q190154"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Addax nasomaculatus"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P10585"
+          },
+          "value": {
+            "type": "literal",
+            "value": "652YZ"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q190154"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Addax nasomaculatus"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P3151"
+          },
+          "value": {
+            "type": "literal",
+            "value": "42395"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q190154"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Addax nasomaculatus"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P627"
+          },
+          "value": {
+            "type": "literal",
+            "value": "512"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q190154"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Addax nasomaculatus"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P685"
+          },
+          "value": {
+            "type": "literal",
+            "value": "59515"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q190154"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Addax nasomaculatus"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P846"
+          },
+          "value": {
+            "type": "literal",
+            "value": "2441101"
+          }
+        },
+        {
+          "iucnItem": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q337616"
+          },
+          "iucnItemName": {
+            "type": "literal",
+            "value": "Agalychnis callidryas"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Agalychnis callidryas"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q337616"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Agalychnis callidryas"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P10585"
+          },
+          "value": {
+            "type": "literal",
+            "value": "65JNR"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q337616"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Agalychnis callidryas"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P3151"
+          },
+          "value": {
+            "type": "literal",
+            "value": "23702"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q337616"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Agalychnis callidryas"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P627"
+          },
+          "value": {
+            "type": "literal",
+            "value": "55290"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q337616"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Agalychnis callidryas"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P685"
+          },
+          "value": {
+            "type": "literal",
+            "value": "197464"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q337616"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Agalychnis callidryas"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P846"
+          },
+          "value": {
+            "type": "literal",
+            "value": "2428197"
+          }
+        },
+        {
+          "iucnItem": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q33602"
+          },
+          "iucnItemName": {
+            "type": "literal",
+            "value": "Ailuropoda melanoleuca"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Ailuropoda melanoleuca"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q33602"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Ailuropoda melanoleuca"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P10585"
+          },
+          "value": {
+            "type": "literal",
+            "value": "6673Q"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q33602"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Ailuropoda melanoleuca"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P3151"
+          },
+          "value": {
+            "type": "literal",
+            "value": "41659"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q33602"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Ailuropoda melanoleuca"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P627"
+          },
+          "value": {
+            "type": "literal",
+            "value": "712"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q33602"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Ailuropoda melanoleuca"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P685"
+          },
+          "value": {
+            "type": "literal",
+            "value": "9646"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q33602"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Ailuropoda melanoleuca"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P846"
+          },
+          "value": {
+            "type": "literal",
+            "value": "2433399"
+          }
+        },
+        {
+          "iucnItem": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q41960"
+          },
+          "iucnItemName": {
+            "type": "literal",
+            "value": "Ailurus fulgens"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Ailurus fulgens"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q41960"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Ailurus fulgens"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P10585"
+          },
+          "value": {
+            "type": "literal",
+            "value": "65V3W"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q41960"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Ailurus fulgens"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P3151"
+          },
+          "value": {
+            "type": "literal",
+            "value": "41653"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q41960"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Ailurus fulgens"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P3151"
+          },
+          "value": {
+            "type": "literal",
+            "value": "418148"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q41960"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Ailurus fulgens"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P627"
+          },
+          "value": {
+            "type": "literal",
+            "value": "714"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q41960"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Ailurus fulgens"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P685"
+          },
+          "value": {
+            "type": "literal",
+            "value": "9649"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q41960"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Ailurus fulgens"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P846"
+          },
+          "value": {
+            "type": "literal",
+            "value": "5219446"
+          }
+        },
+        {
+          "iucnItem": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q22718"
+          },
+          "iucnItemName": {
+            "type": "literal",
+            "value": "Ambystoma mexicanum"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Ambystoma mexicanum"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q22718"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Ambystoma mexicanum"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P10585"
+          },
+          "value": {
+            "type": "literal",
+            "value": "CQ4M"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q22718"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Ambystoma mexicanum"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P3151"
+          },
+          "value": {
+            "type": "literal",
+            "value": "26777"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q22718"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Ambystoma mexicanum"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P627"
+          },
+          "value": {
+            "type": "literal",
+            "value": "1095"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q22718"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Ambystoma mexicanum"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P685"
+          },
+          "value": {
+            "type": "literal",
+            "value": "8296"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q22718"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Ambystoma mexicanum"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P846"
+          },
+          "value": {
+            "type": "literal",
+            "value": "2431950"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q61312"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Andrias davidianus"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P10585"
+          },
+          "value": {
+            "type": "literal",
+            "value": "DTJQ"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q61312"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Andrias davidianus"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P3151"
+          },
+          "value": {
+            "type": "literal",
+            "value": "26813"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q61312"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Andrias davidianus"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P627"
+          },
+          "value": {
+            "type": "literal",
+            "value": "1272"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q61312"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Andrias davidianus"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P685"
+          },
+          "value": {
+            "type": "literal",
+            "value": "141262"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q61312"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Andrias davidianus"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P846"
+          },
+          "value": {
+            "type": "literal",
+            "value": "2432037"
+          }
+        },
+        {
+          "iucnItem": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q650232"
+          },
+          "iucnItemName": {
+            "type": "literal",
+            "value": "Apalone spinifera"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Apalone spinifera"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q650232"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Apalone spinifera"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P10585"
+          },
+          "value": {
+            "type": "literal",
+            "value": "F6QR"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q650232"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Apalone spinifera"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P3151"
+          },
+          "value": {
+            "type": "literal",
+            "value": "39556"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q650232"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Apalone spinifera"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P627"
+          },
+          "value": {
+            "type": "literal",
+            "value": "163451"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q650232"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Apalone spinifera"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P685"
+          },
+          "value": {
+            "type": "literal",
+            "value": "55534"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q650232"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Apalone spinifera"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P846"
+          },
+          "value": {
+            "type": "literal",
+            "value": "2442680"
+          }
+        },
+        {
+          "iucnItem": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q996518"
+          },
+          "iucnItemName": {
+            "type": "literal",
+            "value": "Ascaphus truei"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Ascaphus truei"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q996518"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Ascaphus truei"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P3151"
+          },
+          "value": {
+            "type": "literal",
+            "value": "24543"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q996518"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Ascaphus truei"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P627"
+          },
+          "value": {
+            "type": "literal",
+            "value": "54414"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q996518"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Ascaphus truei"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P685"
+          },
+          "value": {
+            "type": "literal",
+            "value": "8439"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q996518"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Ascaphus truei"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P846"
+          },
+          "value": {
+            "type": "literal",
+            "value": "2429804"
+          }
+        },
+        {
+          "iucnItem": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q1384328"
+          },
+          "iucnItemName": {
+            "type": "literal",
+            "value": "Carinurella paradoxa"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Astrochelys radiata"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q630954"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Astrochelys radiata"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P10585"
+          },
+          "value": {
+            "type": "literal",
+            "value": "J439"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q630954"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Astrochelys radiata"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P3151"
+          },
+          "value": {
+            "type": "literal",
+            "value": "73695"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q630954"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Astrochelys radiata"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P627"
+          },
+          "value": {
+            "type": "literal",
+            "value": "9014"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q630954"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Astrochelys radiata"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P685"
+          },
+          "value": {
+            "type": "literal",
+            "value": "66190"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q630954"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Astrochelys radiata"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P846"
+          },
+          "value": {
+            "type": "literal",
+            "value": "2441666"
+          }
+        },
+        {
+          "iucnItem": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q623439"
+          },
+          "iucnItemName": {
+            "type": "literal",
+            "value": "Beatragus hunteri"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Beatragus hunteri"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q623439"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Beatragus hunteri"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P10585"
+          },
+          "value": {
+            "type": "literal",
+            "value": "68FMV"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q623439"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Beatragus hunteri"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P3151"
+          },
+          "value": {
+            "type": "literal",
+            "value": "74108"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q623439"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Beatragus hunteri"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P627"
+          },
+          "value": {
+            "type": "literal",
+            "value": "6234"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q623439"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Beatragus hunteri"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P685"
+          },
+          "value": {
+            "type": "literal",
+            "value": "59527"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q623439"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Beatragus hunteri"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P846"
+          },
+          "value": {
+            "type": "literal",
+            "value": "4262734"
+          }
+        },
+        {
+          "iucnItem": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q244121"
+          },
+          "iucnItemName": {
+            "type": "literal",
+            "value": "Bradypus pygmaeus"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Bradypus pygmaeus"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q244121"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Bradypus pygmaeus"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P10585"
+          },
+          "value": {
+            "type": "literal",
+            "value": "5X42Z"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q244121"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Bradypus pygmaeus"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P3151"
+          },
+          "value": {
+            "type": "literal",
+            "value": "74116"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q244121"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Bradypus pygmaeus"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P627"
+          },
+          "value": {
+            "type": "literal",
+            "value": "61925"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q244121"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Bradypus pygmaeus"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P685"
+          },
+          "value": {
+            "type": "literal",
+            "value": "652851"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q244121"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Bradypus pygmaeus"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P846"
+          },
+          "value": {
+            "type": "literal",
+            "value": "2436352"
+          }
+        },
+        {
+          "iucnItem": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q148752"
+          },
+          "iucnItemName": {
+            "type": "literal",
+            "value": "Bradypus variegatus"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Bradypus variegatus"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q148752"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Bradypus variegatus"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P10585"
+          },
+          "value": {
+            "type": "literal",
+            "value": "N5F8"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q148752"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Bradypus variegatus"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P3151"
+          },
+          "value": {
+            "type": "literal",
+            "value": "47067"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q148752"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Bradypus variegatus"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P627"
+          },
+          "value": {
+            "type": "literal",
+            "value": "3038"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q148752"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Bradypus variegatus"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P685"
+          },
+          "value": {
+            "type": "literal",
+            "value": "9355"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q148752"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Bradypus variegatus"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P846"
+          },
+          "value": {
+            "type": "literal",
+            "value": "2436353"
+          }
+        },
+        {
+          "iucnItem": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q303632"
+          },
+          "iucnItemName": {
+            "type": "literal",
+            "value": "Breviceps macrops"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Breviceps macrops"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q303632"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Breviceps macrops"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P10585"
+          },
+          "value": {
+            "type": "literal",
+            "value": "5X3GX"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q303632"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Breviceps macrops"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P3151"
+          },
+          "value": {
+            "type": "literal",
+            "value": "25004"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q303632"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Breviceps macrops"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P627"
+          },
+          "value": {
+            "type": "literal",
+            "value": "3070"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q303632"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Breviceps macrops"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P685"
+          },
+          "value": {
+            "type": "literal",
+            "value": "879198"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q303632"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Breviceps macrops"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P846"
+          },
+          "value": {
+            "type": "literal",
+            "value": "5218077"
+          }
+        },
+        {
+          "iucnItem": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q188957"
+          },
+          "iucnItemName": {
+            "type": "literal",
+            "value": "Canis simensis"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Canis simensis"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q188957"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Canis simensis"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P10585"
+          },
+          "value": {
+            "type": "literal",
+            "value": "5WXTW"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q188957"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Canis simensis"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P3151"
+          },
+          "value": {
+            "type": "literal",
+            "value": "42045"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q188957"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Canis simensis"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P627"
+          },
+          "value": {
+            "type": "literal",
+            "value": "3748"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q188957"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Canis simensis"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P685"
+          },
+          "value": {
+            "type": "literal",
+            "value": "32534"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q188957"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Canis simensis"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P846"
+          },
+          "value": {
+            "type": "literal",
+            "value": "5219143"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q457742"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Carettochelys insculpta"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P10585"
+          },
+          "value": {
+            "type": "literal",
+            "value": "R7VH"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q457742"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Carettochelys insculpta"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P3151"
+          },
+          "value": {
+            "type": "literal",
+            "value": "39536"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q457742"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Carettochelys insculpta"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P627"
+          },
+          "value": {
+            "type": "literal",
+            "value": "3898"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q457742"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Carettochelys insculpta"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P685"
+          },
+          "value": {
+            "type": "literal",
+            "value": "44489"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q457742"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Carettochelys insculpta"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P846"
+          },
+          "value": {
+            "type": "literal",
+            "value": "2442506"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q301016"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Centrochelys sulcata"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P10585"
+          },
+          "value": {
+            "type": "literal",
+            "value": "S9KW"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q301016"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Centrochelys sulcata"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P3151"
+          },
+          "value": {
+            "type": "literal",
+            "value": "40089"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q301016"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Centrochelys sulcata"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P627"
+          },
+          "value": {
+            "type": "literal",
+            "value": "163423"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q301016"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Centrochelys sulcata"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P685"
+          },
+          "value": {
+            "type": "literal",
+            "value": "101698"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q301016"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Centrochelys sulcata"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P846"
+          },
+          "value": {
+            "type": "literal",
+            "value": "2441533"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q4045992"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Chelonoidis abingdonii"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P10585"
+          },
+          "value": {
+            "type": "literal",
+            "value": "TVKZ"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q4045992"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Chelonoidis abingdonii"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P3151"
+          },
+          "value": {
+            "type": "literal",
+            "value": "146000"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q4045992"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Chelonoidis abingdonii"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P627"
+          },
+          "value": {
+            "type": "literal",
+            "value": "9017"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q4045992"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Chelonoidis abingdonii"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P685"
+          },
+          "value": {
+            "type": "literal",
+            "value": "106734"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q4045992"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Chelonoidis abingdonii"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P846"
+          },
+          "value": {
+            "type": "literal",
+            "value": "7451150"
+          }
+        },
+        {
+          "iucnItem": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q28049777"
+          },
+          "iucnItemName": {
+            "type": "literal",
+            "value": "Geochelone gigantea"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Chelonoidis niger"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q486672"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Chelonoidis niger"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P10585"
+          },
+          "value": {
+            "type": "literal",
+            "value": "5Y2Z9"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q486672"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Chelonoidis niger"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P3151"
+          },
+          "value": {
+            "type": "literal",
+            "value": "57386"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q486672"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Chelonoidis niger"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P627"
+          },
+          "value": {
+            "type": "literal",
+            "value": "9023"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q486672"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Chelonoidis niger"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P685"
+          },
+          "value": {
+            "type": "literal",
+            "value": "66189"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q486672"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Chelonoidis niger"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P846"
+          },
+          "value": {
+            "type": "literal",
+            "value": "5220266"
+          }
+        },
+        {
+          "iucnItem": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q184389"
+          },
+          "iucnItemName": {
+            "type": "literal",
+            "value": "Chrysocyon brachyurus"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Chrysocyon brachyurus"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q184389"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Chrysocyon brachyurus"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P10585"
+          },
+          "value": {
+            "type": "literal",
+            "value": "5YNGG"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q184389"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Chrysocyon brachyurus"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P3151"
+          },
+          "value": {
+            "type": "literal",
+            "value": "42091"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q184389"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Chrysocyon brachyurus"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P627"
+          },
+          "value": {
+            "type": "literal",
+            "value": "4819"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q184389"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Chrysocyon brachyurus"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P685"
+          },
+          "value": {
+            "type": "literal",
+            "value": "68728"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q184389"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Chrysocyon brachyurus"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P846"
+          },
+          "value": {
+            "type": "literal",
+            "value": "2434450"
+          }
+        },
+        {
+          "iucnItem": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q739887"
+          },
+          "iucnItemName": {
+            "type": "literal",
+            "value": "Conraua goliath"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Conraua goliath"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q739887"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Conraua goliath"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P3151"
+          },
+          "value": {
+            "type": "literal",
+            "value": "25737"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q739887"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Conraua goliath"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P627"
+          },
+          "value": {
+            "type": "literal",
+            "value": "5263"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q739887"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Conraua goliath"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P685"
+          },
+          "value": {
+            "type": "literal",
+            "value": "143458"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q739887"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Conraua goliath"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P846"
+          },
+          "value": {
+            "type": "literal",
+            "value": "2428946"
+          }
+        },
+        {
+          "iucnItem": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q369467"
+          },
+          "iucnItemName": {
+            "type": "literal",
+            "value": "Cryptobranchus alleganiensis"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Cryptobranchus alleganiensis"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q369467"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Cryptobranchus alleganiensis"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P10585"
+          },
+          "value": {
+            "type": "literal",
+            "value": "6BKKP"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q369467"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Cryptobranchus alleganiensis"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P3151"
+          },
+          "value": {
+            "type": "literal",
+            "value": "26804"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q369467"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Cryptobranchus alleganiensis"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P627"
+          },
+          "value": {
+            "type": "literal",
+            "value": "59077"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q369467"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Cryptobranchus alleganiensis"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P685"
+          },
+          "value": {
+            "type": "literal",
+            "value": "43048"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q369467"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Cryptobranchus alleganiensis"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P846"
+          },
+          "value": {
+            "type": "literal",
+            "value": "2432031"
+          }
+        },
+        {
+          "iucnItem": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q1770353"
+          },
+          "iucnItemName": {
+            "type": "literal",
+            "value": "Cryptochloris wintoni"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Cryptochloris wintoni"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q1770353"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Cryptochloris wintoni"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P10585"
+          },
+          "value": {
+            "type": "literal",
+            "value": "ZWJ3"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q1770353"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Cryptochloris wintoni"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P3151"
+          },
+          "value": {
+            "type": "literal",
+            "value": "42533"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q1770353"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Cryptochloris wintoni"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P627"
+          },
+          "value": {
+            "type": "literal",
+            "value": "5748"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q1770353"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Cryptochloris wintoni"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P685"
+          },
+          "value": {
+            "type": "literal",
+            "value": "745252"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q1770353"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Cryptochloris wintoni"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P846"
+          },
+          "value": {
+            "type": "literal",
+            "value": "5218453"
+          }
+        },
+        {
+          "iucnItem": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q186778"
+          },
+          "iucnItemName": {
+            "type": "literal",
+            "value": "Daubentonia madagascariensis"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Daubentonia madagascariensis"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q186778"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Daubentonia madagascariensis"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P10585"
+          },
+          "value": {
+            "type": "literal",
+            "value": "34B7X"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q186778"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Daubentonia madagascariensis"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P3151"
+          },
+          "value": {
+            "type": "literal",
+            "value": "43558"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q186778"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Daubentonia madagascariensis"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P627"
+          },
+          "value": {
+            "type": "literal",
+            "value": "6302"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q186778"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Daubentonia madagascariensis"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P685"
+          },
+          "value": {
+            "type": "literal",
+            "value": "31869"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q186778"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Daubentonia madagascariensis"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P846"
+          },
+          "value": {
+            "type": "literal",
+            "value": "5219587"
+          }
+        },
+        {
+          "iucnItem": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q1478869"
+          },
+          "iucnItemName": {
+            "type": "literal",
+            "value": "Dendrobates tinctorius"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Dendrobates tinctorius"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q1478869"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Dendrobates tinctorius"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P10585"
+          },
+          "value": {
+            "type": "literal",
+            "value": "6CK4Y"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q1478869"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Dendrobates tinctorius"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P3151"
+          },
+          "value": {
+            "type": "literal",
+            "value": "21141"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q1478869"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Dendrobates tinctorius"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P627"
+          },
+          "value": {
+            "type": "literal",
+            "value": "55204"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q1478869"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Dendrobates tinctorius"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P685"
+          },
+          "value": {
+            "type": "literal",
+            "value": "92724"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q1478869"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Dendrobates tinctorius"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P846"
+          },
+          "value": {
+            "type": "literal",
+            "value": "5218024"
+          }
+        },
+        {
+          "iucnItem": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q209581"
+          },
+          "iucnItemName": {
+            "type": "literal",
+            "value": "Dendrolagus goodfellowi"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Dendrolagus goodfellowi"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q209581"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Dendrolagus goodfellowi"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P10585"
+          },
+          "value": {
+            "type": "literal",
+            "value": "34QBR"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q209581"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Dendrolagus goodfellowi"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P3151"
+          },
+          "value": {
+            "type": "literal",
+            "value": "42906"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q209581"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Dendrolagus goodfellowi"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P627"
+          },
+          "value": {
+            "type": "literal",
+            "value": "6429"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q209581"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Dendrolagus goodfellowi"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P685"
+          },
+          "value": {
+            "type": "literal",
+            "value": "69260"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q209581"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Dendrolagus goodfellowi"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P846"
+          },
+          "value": {
+            "type": "literal",
+            "value": "2440222"
+          }
+        },
+        {
+          "iucnItem": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q95036"
+          },
+          "iucnItemName": {
+            "type": "literal",
+            "value": "Diceros bicornis"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Diceros bicornis"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q95036"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Diceros bicornis"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P10585"
+          },
+          "value": {
+            "type": "literal",
+            "value": "35JVB"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q95036"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Diceros bicornis"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P3151"
+          },
+          "value": {
+            "type": "literal",
+            "value": "43350"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q95036"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Diceros bicornis"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P627"
+          },
+          "value": {
+            "type": "literal",
+            "value": "6557"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q95036"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Diceros bicornis"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P685"
+          },
+          "value": {
+            "type": "literal",
+            "value": "9805"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q95036"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Diceros bicornis"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P846"
+          },
+          "value": {
+            "type": "literal",
+            "value": "5220111"
+          }
+        },
+        {
+          "iucnItem": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q226081"
+          },
+          "iucnItemName": {
+            "type": "literal",
+            "value": "Dyscophus antongilii"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Dyscophus antongilii"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q226081"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Dyscophus antongilii"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P10585"
+          },
+          "value": {
+            "type": "literal",
+            "value": "388VL"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q226081"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Dyscophus antongilii"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P3151"
+          },
+          "value": {
+            "type": "literal",
+            "value": "25154"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q226081"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Dyscophus antongilii"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P627"
+          },
+          "value": {
+            "type": "literal",
+            "value": "6937"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q226081"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Dyscophus antongilii"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P685"
+          },
+          "value": {
+            "type": "literal",
+            "value": "272187"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q226081"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Dyscophus antongilii"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P846"
+          },
+          "value": {
+            "type": "literal",
+            "value": "5216573"
+          }
+        },
+        {
+          "iucnItem": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q133006"
+          },
+          "iucnItemName": {
+            "type": "literal",
+            "value": "Elephas maximus"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Elephas maximus"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q133006"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Elephas maximus"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P10585"
+          },
+          "value": {
+            "type": "literal",
+            "value": "398D9"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q133006"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Elephas maximus"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P3151"
+          },
+          "value": {
+            "type": "literal",
+            "value": "43697"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q133006"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Elephas maximus"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P627"
+          },
+          "value": {
+            "type": "literal",
+            "value": "7140"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q133006"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Elephas maximus"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P685"
+          },
+          "value": {
+            "type": "literal",
+            "value": "9783"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q133006"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Elephas maximus"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P846"
+          },
+          "value": {
+            "type": "literal",
+            "value": "5219461"
+          }
+        },
+        {
+          "iucnItem": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q185526"
+          },
+          "iucnItemName": {
+            "type": "literal",
+            "value": "Emydoidea blandingii"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Emydoidea blandingii"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q185526"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Emydoidea blandingii"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P3151"
+          },
+          "value": {
+            "type": "literal",
+            "value": "39885"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q185526"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Emydoidea blandingii"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P627"
+          },
+          "value": {
+            "type": "literal",
+            "value": "7709"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q185526"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Emydoidea blandingii"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P846"
+          },
+          "value": {
+            "type": "literal",
+            "value": "2442885"
+          }
+        },
+        {
+          "iucnItem": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q219565"
+          },
+          "iucnItemName": {
+            "type": "literal",
+            "value": "Equus grevyi"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Equus grevyi"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q219565"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Equus grevyi"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P3151"
+          },
+          "value": {
+            "type": "literal",
+            "value": "43339"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q219565"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Equus grevyi"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P627"
+          },
+          "value": {
+            "type": "literal",
+            "value": "7950"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q219565"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Equus grevyi"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P685"
+          },
+          "value": {
+            "type": "literal",
+            "value": "9792"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q219565"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Equus grevyi"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P846"
+          },
+          "value": {
+            "type": "literal",
+            "value": "2440894"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q2532001"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Heosemys spinosa"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P10585"
+          },
+          "value": {
+            "type": "literal",
+            "value": "3KVXC"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q2532001"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Heosemys spinosa"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P3151"
+          },
+          "value": {
+            "type": "literal",
+            "value": "40005"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q2532001"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Heosemys spinosa"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P627"
+          },
+          "value": {
+            "type": "literal",
+            "value": "9942"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q2532001"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Heosemys spinosa"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P685"
+          },
+          "value": {
+            "type": "literal",
+            "value": "55547"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q2532001"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Heosemys spinosa"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P846"
+          },
+          "value": {
+            "type": "literal",
+            "value": "2443326"
+          }
+        },
+        {
+          "iucnItem": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q203868"
+          },
+          "iucnItemName": {
+            "type": "literal",
+            "value": "Indri indri"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Indri indri"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q203868"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Indri indri"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P10585"
+          },
+          "value": {
+            "type": "literal",
+            "value": "3PNXK"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q203868"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Indri indri"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P3151"
+          },
+          "value": {
+            "type": "literal",
+            "value": "43600"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q203868"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Indri indri"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P627"
+          },
+          "value": {
+            "type": "literal",
+            "value": "10826"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q203868"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Indri indri"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P685"
+          },
+          "value": {
+            "type": "literal",
+            "value": "34827"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q203868"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Indri indri"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P846"
+          },
+          "value": {
+            "type": "literal",
+            "value": "2436432"
+          }
+        },
+        {
+          "iucnItem": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q1134186"
+          },
+          "iucnItemName": {
+            "type": "literal",
+            "value": "Lasiorhinus krefftii"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Lasiorhinus krefftii"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q1134186"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Lasiorhinus krefftii"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P10585"
+          },
+          "value": {
+            "type": "literal",
+            "value": "3SG6V"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q1134186"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Lasiorhinus krefftii"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P3151"
+          },
+          "value": {
+            "type": "literal",
+            "value": "43003"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q1134186"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Lasiorhinus krefftii"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P627"
+          },
+          "value": {
+            "type": "literal",
+            "value": "11343"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q1134186"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Lasiorhinus krefftii"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P685"
+          },
+          "value": {
+            "type": "literal",
+            "value": "30667"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q1134186"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Lasiorhinus krefftii"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P846"
+          },
+          "value": {
+            "type": "literal",
+            "value": "5219997"
+          }
+        },
+        {
+          "iucnItem": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q36557"
+          },
+          "iucnItemName": {
+            "type": "literal",
+            "value": "Loxodonta africana"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Loxodonta africana"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q36557"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Loxodonta africana"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P10585"
+          },
+          "value": {
+            "type": "literal",
+            "value": "3W9KV"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q36557"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Loxodonta africana"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P3151"
+          },
+          "value": {
+            "type": "literal",
+            "value": "43694"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q36557"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Loxodonta africana"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P627"
+          },
+          "value": {
+            "type": "literal",
+            "value": "181008073"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q36557"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Loxodonta africana"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P685"
+          },
+          "value": {
+            "type": "literal",
+            "value": "9785"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q36557"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Loxodonta africana"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P846"
+          },
+          "value": {
+            "type": "literal",
+            "value": "2435350"
+          }
+        },
+        {
+          "iucnItem": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q189514"
+          },
+          "iucnItemName": {
+            "type": "literal",
+            "value": "Loxodonta cyclotis"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Loxodonta cyclotis"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q189514"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Loxodonta cyclotis"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P10585"
+          },
+          "value": {
+            "type": "literal",
+            "value": "3W9KX"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q189514"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Loxodonta cyclotis"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P3151"
+          },
+          "value": {
+            "type": "literal",
+            "value": "357910"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q189514"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Loxodonta cyclotis"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P627"
+          },
+          "value": {
+            "type": "literal",
+            "value": "181007989"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q189514"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Loxodonta cyclotis"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P685"
+          },
+          "value": {
+            "type": "literal",
+            "value": "99490"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q189514"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Loxodonta cyclotis"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P846"
+          },
+          "value": {
+            "type": "literal",
+            "value": "2435349"
+          }
+        },
+        {
+          "iucnItem": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q173651"
+          },
+          "iucnItemName": {
+            "type": "literal",
+            "value": "Lycaon pictus"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Lycaon pictus"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q173651"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Lycaon pictus"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P10585"
+          },
+          "value": {
+            "type": "literal",
+            "value": "73256"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q173651"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Lycaon pictus"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P3151"
+          },
+          "value": {
+            "type": "literal",
+            "value": "42093"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q173651"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Lycaon pictus"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P627"
+          },
+          "value": {
+            "type": "literal",
+            "value": "12436"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q173651"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Lycaon pictus"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P685"
+          },
+          "value": {
+            "type": "literal",
+            "value": "9622"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q173651"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Lycaon pictus"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P846"
+          },
+          "value": {
+            "type": "literal",
+            "value": "5219317"
+          }
+        },
+        {
+          "iucnItem": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q371667"
+          },
+          "iucnItemName": {
+            "type": "literal",
+            "value": "Macrotis lagotis"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Macrotis lagotis"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q371667"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Macrotis lagotis"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P10585"
+          },
+          "value": {
+            "type": "literal",
+            "value": "3XC4Y"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q371667"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Macrotis lagotis"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P3151"
+          },
+          "value": {
+            "type": "literal",
+            "value": "43325"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q371667"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Macrotis lagotis"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P627"
+          },
+          "value": {
+            "type": "literal",
+            "value": "12650"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q371667"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Macrotis lagotis"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P685"
+          },
+          "value": {
+            "type": "literal",
+            "value": "92651"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q371667"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Macrotis lagotis"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P846"
+          },
+          "value": {
+            "type": "literal",
+            "value": "5219460"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q832357"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Malacochersus tornieri"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P10585"
+          },
+          "value": {
+            "type": "literal",
+            "value": "3XKH4"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q832357"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Malacochersus tornieri"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P3151"
+          },
+          "value": {
+            "type": "literal",
+            "value": "40063"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q832357"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Malacochersus tornieri"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P627"
+          },
+          "value": {
+            "type": "literal",
+            "value": "12696"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q832357"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Malacochersus tornieri"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P685"
+          },
+          "value": {
+            "type": "literal",
+            "value": "286009"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q832357"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Malacochersus tornieri"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P846"
+          },
+          "value": {
+            "type": "literal",
+            "value": "2441842"
+          }
+        },
+        {
+          "iucnItem": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q752467"
+          },
+          "iucnItemName": {
+            "type": "literal",
+            "value": "Manis crassicaudata"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Manis crassicaudata"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q752467"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Manis crassicaudata"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P10585"
+          },
+          "value": {
+            "type": "literal",
+            "value": "7VRVK"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q752467"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Manis crassicaudata"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P3151"
+          },
+          "value": {
+            "type": "literal",
+            "value": "43362"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q752467"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Manis crassicaudata"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P627"
+          },
+          "value": {
+            "type": "literal",
+            "value": "12761"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q752467"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Manis crassicaudata"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P685"
+          },
+          "value": {
+            "type": "literal",
+            "value": "1496684"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q752467"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Manis crassicaudata"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P846"
+          },
+          "value": {
+            "type": "literal",
+            "value": "5219633"
+          }
+        },
+        {
+          "iucnItem": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q269728"
+          },
+          "iucnItemName": {
+            "type": "literal",
+            "value": "Manis javanica"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Manis javanica"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q269728"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Manis javanica"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P3151"
+          },
+          "value": {
+            "type": "literal",
+            "value": "43364"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q269728"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Manis javanica"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P627"
+          },
+          "value": {
+            "type": "literal",
+            "value": "12763"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q269728"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Manis javanica"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P685"
+          },
+          "value": {
+            "type": "literal",
+            "value": "9974"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q269728"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Manis javanica"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P846"
+          },
+          "value": {
+            "type": "literal",
+            "value": "5219628"
+          }
+        },
+        {
+          "iucnItem": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q746636"
+          },
+          "iucnItemName": {
+            "type": "literal",
+            "value": "Marmota vancouverensis"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Marmota vancouverensis"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q746636"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Marmota vancouverensis"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P3151"
+          },
+          "value": {
+            "type": "literal",
+            "value": "46091"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q746636"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Marmota vancouverensis"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P627"
+          },
+          "value": {
+            "type": "literal",
+            "value": "12828"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q746636"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Marmota vancouverensis"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P685"
+          },
+          "value": {
+            "type": "literal",
+            "value": "93167"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q746636"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Marmota vancouverensis"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P846"
+          },
+          "value": {
+            "type": "literal",
+            "value": "2437365"
+          }
+        },
+        {
+          "iucnItem": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q402885"
+          },
+          "iucnItemName": {
+            "type": "literal",
+            "value": "Mustela nigripes"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Mustela nigripes"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q402885"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Mustela nigripes"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P10585"
+          },
+          "value": {
+            "type": "literal",
+            "value": "44QY2"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q402885"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Mustela nigripes"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P3151"
+          },
+          "value": {
+            "type": "literal",
+            "value": "41809"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q402885"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Mustela nigripes"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P627"
+          },
+          "value": {
+            "type": "literal",
+            "value": "14020"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q402885"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Mustela nigripes"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P685"
+          },
+          "value": {
+            "type": "literal",
+            "value": "77151"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q402885"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Mustela nigripes"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P846"
+          },
+          "value": {
+            "type": "literal",
+            "value": "5218985"
+          }
+        },
+        {
+          "iucnItem": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q203033"
+          },
+          "iucnItemName": {
+            "type": "literal",
+            "value": "Myrmecophaga tridactyla"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Myrmecophaga tridactyla"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q203033"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Myrmecophaga tridactyla"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P10585"
+          },
+          "value": {
+            "type": "literal",
+            "value": "45B2F"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q203033"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Myrmecophaga tridactyla"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P3151"
+          },
+          "value": {
+            "type": "literal",
+            "value": "47107"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q203033"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Myrmecophaga tridactyla"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P627"
+          },
+          "value": {
+            "type": "literal",
+            "value": "14224"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q203033"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Myrmecophaga tridactyla"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P685"
+          },
+          "value": {
+            "type": "literal",
+            "value": "71006"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q203033"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Myrmecophaga tridactyla"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P846"
+          },
+          "value": {
+            "type": "literal",
+            "value": "2436346"
+          }
+        },
+        {
+          "iucnItem": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q725736"
+          },
+          "iucnItemName": {
+            "type": "literal",
+            "value": "Nanger dama"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Nanger dama"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q725736"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Nanger dama"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P10585"
+          },
+          "value": {
+            "type": "literal",
+            "value": "45LTS"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q725736"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Nanger dama"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P3151"
+          },
+          "value": {
+            "type": "literal",
+            "value": "74723"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q725736"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Nanger dama"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P627"
+          },
+          "value": {
+            "type": "literal",
+            "value": "8968"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q725736"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Nanger dama"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P685"
+          },
+          "value": {
+            "type": "literal",
+            "value": "67940"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q725736"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Nanger dama"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P846"
+          },
+          "value": {
+            "type": "literal",
+            "value": "4262713"
+          }
+        },
+        {
+          "iucnItem": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q311152"
+          },
+          "iucnItemName": {
+            "type": "literal",
+            "value": "Nasikabatrachus sahyadrensis"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Nasikabatrachus sahyadrensis"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q311152"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Nasikabatrachus sahyadrensis"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P10585"
+          },
+          "value": {
+            "type": "literal",
+            "value": "6S6FD"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q311152"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Nasikabatrachus sahyadrensis"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P3151"
+          },
+          "value": {
+            "type": "literal",
+            "value": "25307"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q311152"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Nasikabatrachus sahyadrensis"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P627"
+          },
+          "value": {
+            "type": "literal",
+            "value": "58051"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q311152"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Nasikabatrachus sahyadrensis"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P685"
+          },
+          "value": {
+            "type": "literal",
+            "value": "251754"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q311152"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Nasikabatrachus sahyadrensis"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P846"
+          },
+          "value": {
+            "type": "literal",
+            "value": "2421431"
+          }
+        },
+        {
+          "iucnItem": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q1508891"
+          },
+          "iucnItemName": {
+            "type": "literal",
+            "value": "Ochotona iliensis"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Ochotona iliensis"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q1508891"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Ochotona iliensis"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P3151"
+          },
+          "value": {
+            "type": "literal",
+            "value": "43176"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q1508891"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Ochotona iliensis"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P627"
+          },
+          "value": {
+            "type": "literal",
+            "value": "15050"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q1508891"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Ochotona iliensis"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P685"
+          },
+          "value": {
+            "type": "literal",
+            "value": "221160"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q1508891"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Ochotona iliensis"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P846"
+          },
+          "value": {
+            "type": "literal",
+            "value": "2436969"
+          }
+        },
+        {
+          "iucnItem": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q82037"
+          },
+          "iucnItemName": {
+            "type": "literal",
+            "value": "Okapia johnstoni"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Okapia johnstoni"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q82037"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Okapia johnstoni"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P10585"
+          },
+          "value": {
+            "type": "literal",
+            "value": "492B3"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q82037"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Okapia johnstoni"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P3151"
+          },
+          "value": {
+            "type": "literal",
+            "value": "42155"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q82037"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Okapia johnstoni"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P627"
+          },
+          "value": {
+            "type": "literal",
+            "value": "15188"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q82037"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Okapia johnstoni"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P685"
+          },
+          "value": {
+            "type": "literal",
+            "value": "86973"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q82037"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Okapia johnstoni"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P846"
+          },
+          "value": {
+            "type": "literal",
+            "value": "2441207"
+          }
+        },
+        {
+          "iucnItem": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q46212"
+          },
+          "iucnItemName": {
+            "type": "literal",
+            "value": "Orycteropus afer"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Orycteropus afer"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q46212"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Orycteropus afer"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P10585"
+          },
+          "value": {
+            "type": "literal",
+            "value": "74ZNF"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q46212"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Orycteropus afer"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P3151"
+          },
+          "value": {
+            "type": "literal",
+            "value": "47062"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q46212"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Orycteropus afer"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P627"
+          },
+          "value": {
+            "type": "literal",
+            "value": "41504"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q46212"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Orycteropus afer"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P685"
+          },
+          "value": {
+            "type": "literal",
+            "value": "9818"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q46212"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Orycteropus afer"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P846"
+          },
+          "value": {
+            "type": "literal",
+            "value": "5218416"
+          }
+        },
+        {
+          "iucnItem": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q4126704"
+          },
+          "iucnItemName": {
+            "type": "literal",
+            "value": "Pan troglodytes"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Pan troglodytes"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q4126704"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Pan troglodytes"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P10585"
+          },
+          "value": {
+            "type": "literal",
+            "value": "4C92G"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q4126704"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Pan troglodytes"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P3151"
+          },
+          "value": {
+            "type": "literal",
+            "value": "43577"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q4126704"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Pan troglodytes"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P627"
+          },
+          "value": {
+            "type": "literal",
+            "value": "15933"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q4126704"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Pan troglodytes"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P685"
+          },
+          "value": {
+            "type": "literal",
+            "value": "9598"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q4126704"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Pan troglodytes"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P846"
+          },
+          "value": {
+            "type": "literal",
+            "value": "5219534"
+          }
+        },
+        {
+          "iucnItem": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q35694"
+          },
+          "iucnItemName": {
+            "type": "literal",
+            "value": "Panthera onca"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Panthera onca"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q35694"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Panthera onca"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P10585"
+          },
+          "value": {
+            "type": "literal",
+            "value": "4CGXQ"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q35694"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Panthera onca"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P3151"
+          },
+          "value": {
+            "type": "literal",
+            "value": "41970"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q35694"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Panthera onca"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P627"
+          },
+          "value": {
+            "type": "literal",
+            "value": "15953"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q35694"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Panthera onca"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P685"
+          },
+          "value": {
+            "type": "literal",
+            "value": "9690"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q35694"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Panthera onca"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P846"
+          },
+          "value": {
+            "type": "literal",
+            "value": "5219426"
+          }
+        },
+        {
+          "iucnItem": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q19939"
+          },
+          "iucnItemName": {
+            "type": "literal",
+            "value": "Panthera tigris"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Panthera tigris"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q19939"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Panthera tigris"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P10585"
+          },
+          "value": {
+            "type": "literal",
+            "value": "4CGXS"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q19939"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Panthera tigris"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P3151"
+          },
+          "value": {
+            "type": "literal",
+            "value": "41967"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q19939"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Panthera tigris"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P627"
+          },
+          "value": {
+            "type": "literal",
+            "value": "15955"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q19939"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Panthera tigris"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P685"
+          },
+          "value": {
+            "type": "literal",
+            "value": "9694"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q19939"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Panthera tigris"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P846"
+          },
+          "value": {
+            "type": "literal",
+            "value": "5219416"
+          }
+        },
+        {
+          "iucnItem": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q963997"
+          },
+          "iucnItemName": {
+            "type": "literal",
+            "value": "Phyllobates terribilis"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Phyllobates terribilis"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q963997"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Phyllobates terribilis"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P10585"
+          },
+          "value": {
+            "type": "literal",
+            "value": "6VF89"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q963997"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Phyllobates terribilis"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P3151"
+          },
+          "value": {
+            "type": "literal",
+            "value": "21217"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q963997"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Phyllobates terribilis"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P627"
+          },
+          "value": {
+            "type": "literal",
+            "value": "55264"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q963997"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Phyllobates terribilis"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P685"
+          },
+          "value": {
+            "type": "literal",
+            "value": "111132"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q963997"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Phyllobates terribilis"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P846"
+          },
+          "value": {
+            "type": "literal",
+            "value": "5218020"
+          }
+        },
+        {
+          "iucnItem": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q220414"
+          },
+          "iucnItemName": {
+            "type": "literal",
+            "value": "Pipa pipa"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Pipa pipa"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q220414"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Pipa pipa"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P10585"
+          },
+          "value": {
+            "type": "literal",
+            "value": "4J2ZG"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q220414"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Pipa pipa"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P3151"
+          },
+          "value": {
+            "type": "literal",
+            "value": "25462"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q220414"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Pipa pipa"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P627"
+          },
+          "value": {
+            "type": "literal",
+            "value": "58163"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q220414"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Pipa pipa"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P685"
+          },
+          "value": {
+            "type": "literal",
+            "value": "251750"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q220414"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Pipa pipa"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P846"
+          },
+          "value": {
+            "type": "literal",
+            "value": "2423966"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q754035"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Platysternon megacephalum"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P10585"
+          },
+          "value": {
+            "type": "literal",
+            "value": "4JZ39"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q754035"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Platysternon megacephalum"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P3151"
+          },
+          "value": {
+            "type": "literal",
+            "value": "39688"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q754035"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Platysternon megacephalum"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P627"
+          },
+          "value": {
+            "type": "literal",
+            "value": "17585"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q754035"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Platysternon megacephalum"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P685"
+          },
+          "value": {
+            "type": "literal",
+            "value": "55544"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q754035"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Platysternon megacephalum"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P846"
+          },
+          "value": {
+            "type": "literal",
+            "value": "2441884"
+          }
+        },
+        {
+          "iucnItem": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q543424"
+          },
+          "iucnItemName": {
+            "type": "literal",
+            "value": "Pongo abelii"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Pongo abelii"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q543424"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Pongo abelii"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P10585"
+          },
+          "value": {
+            "type": "literal",
+            "value": "4LTSY"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q543424"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Pongo abelii"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P3151"
+          },
+          "value": {
+            "type": "literal",
+            "value": "569678"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q543424"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Pongo abelii"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P3151"
+          },
+          "value": {
+            "type": "literal",
+            "value": "67982"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q543424"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Pongo abelii"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P627"
+          },
+          "value": {
+            "type": "literal",
+            "value": "121097935"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q543424"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Pongo abelii"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P685"
+          },
+          "value": {
+            "type": "literal",
+            "value": "9601"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q543424"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Pongo abelii"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P846"
+          },
+          "value": {
+            "type": "literal",
+            "value": "5707420"
+          }
+        },
+        {
+          "iucnItem": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q755719"
+          },
+          "iucnItemName": {
+            "type": "literal",
+            "value": "Priodontes maximus"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Priodontes maximus"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q755719"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Priodontes maximus"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P10585"
+          },
+          "value": {
+            "type": "literal",
+            "value": "4MF3Z"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q755719"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Priodontes maximus"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P3151"
+          },
+          "value": {
+            "type": "literal",
+            "value": "47085"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q755719"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Priodontes maximus"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P627"
+          },
+          "value": {
+            "type": "literal",
+            "value": "18144"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q755719"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Priodontes maximus"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P685"
+          },
+          "value": {
+            "type": "literal",
+            "value": "183752"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q755719"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Priodontes maximus"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P846"
+          },
+          "value": {
+            "type": "literal",
+            "value": "5220096"
+          }
+        },
+        {
+          "iucnItem": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q218792"
+          },
+          "iucnItemName": {
+            "type": "literal",
+            "value": "Pseudoryx nghetinhensis"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Pseudoryx nghetinhensis"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q218792"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Pseudoryx nghetinhensis"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P10585"
+          },
+          "value": {
+            "type": "literal",
+            "value": "78GTN"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q218792"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Pseudoryx nghetinhensis"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P3151"
+          },
+          "value": {
+            "type": "literal",
+            "value": "74973"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q218792"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Pseudoryx nghetinhensis"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P627"
+          },
+          "value": {
+            "type": "literal",
+            "value": "18597"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q218792"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Pseudoryx nghetinhensis"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P685"
+          },
+          "value": {
+            "type": "literal",
+            "value": "97363"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q218792"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Pseudoryx nghetinhensis"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P846"
+          },
+          "value": {
+            "type": "literal",
+            "value": "4262655"
+          }
+        },
+        {
+          "iucnItem": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q83774"
+          },
+          "iucnItemName": {
+            "type": "literal",
+            "value": "Pteronura brasiliensis"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Pteronura brasiliensis"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q83774"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Pteronura brasiliensis"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P10585"
+          },
+          "value": {
+            "type": "literal",
+            "value": "4PZZR"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q83774"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Pteronura brasiliensis"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P3151"
+          },
+          "value": {
+            "type": "literal",
+            "value": "41845"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q83774"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Pteronura brasiliensis"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P627"
+          },
+          "value": {
+            "type": "literal",
+            "value": "18711"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q83774"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Pteronura brasiliensis"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P685"
+          },
+          "value": {
+            "type": "literal",
+            "value": "9672"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q83774"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Pteronura brasiliensis"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P846"
+          },
+          "value": {
+            "type": "literal",
+            "value": "2433681"
+          }
+        },
+        {
+          "iucnItem": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q1049623"
+          },
+          "iucnItemName": {
+            "type": "literal",
+            "value": "Pteropus livingstonii"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Pteropus livingstonii"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q1049623"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Pteropus livingstonii"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P10585"
+          },
+          "value": {
+            "type": "literal",
+            "value": "78M4Z"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q1049623"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Pteropus livingstonii"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P3151"
+          },
+          "value": {
+            "type": "literal",
+            "value": "40879"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q1049623"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Pteropus livingstonii"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P627"
+          },
+          "value": {
+            "type": "literal",
+            "value": "18732"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q1049623"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Pteropus livingstonii"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P685"
+          },
+          "value": {
+            "type": "literal",
+            "value": "589508"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q1049623"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Pteropus livingstonii"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P846"
+          },
+          "value": {
+            "type": "literal",
+            "value": "5218694"
+          }
+        },
+        {
+          "iucnItem": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q3074062"
+          },
+          "iucnItemName": {
+            "type": "literal",
+            "value": "Vidumelon wattii"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Rafetus swinhoei"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q1075096"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Rafetus swinhoei"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P10585"
+          },
+          "value": {
+            "type": "literal",
+            "value": "793TZ"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q1075096"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Rafetus swinhoei"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P3151"
+          },
+          "value": {
+            "type": "literal",
+            "value": "39569"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q1075096"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Rafetus swinhoei"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P627"
+          },
+          "value": {
+            "type": "literal",
+            "value": "39621"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q1075096"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Rafetus swinhoei"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P685"
+          },
+          "value": {
+            "type": "literal",
+            "value": "904230"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q1075096"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Rafetus swinhoei"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P846"
+          },
+          "value": {
+            "type": "literal",
+            "value": "2442647"
+          }
+        },
+        {
+          "iucnItem": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q1190196"
+          },
+          "iucnItemName": {
+            "type": "literal",
+            "value": "Rhacophorus nigropalmatus"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Rhacophorus nigropalmatus"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q1190196"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Rhacophorus nigropalmatus"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P10585"
+          },
+          "value": {
+            "type": "literal",
+            "value": "6X5RD"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q1190196"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Rhacophorus nigropalmatus"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P3151"
+          },
+          "value": {
+            "type": "literal",
+            "value": "26490"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q1190196"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Rhacophorus nigropalmatus"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P627"
+          },
+          "value": {
+            "type": "literal",
+            "value": "59008"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q1190196"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Rhacophorus nigropalmatus"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P685"
+          },
+          "value": {
+            "type": "literal",
+            "value": "143446"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q1190196"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Rhacophorus nigropalmatus"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P846"
+          },
+          "value": {
+            "type": "literal",
+            "value": "5217285"
+          }
+        },
+        {
+          "iucnItem": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q170311"
+          },
+          "iucnItemName": {
+            "type": "literal",
+            "value": "Rhinoceros sondaicus"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Rhinoceros sondaicus"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q170311"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Rhinoceros sondaicus"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P10585"
+          },
+          "value": {
+            "type": "literal",
+            "value": "4S84X"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q170311"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Rhinoceros sondaicus"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P3151"
+          },
+          "value": {
+            "type": "literal",
+            "value": "43346"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q170311"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Rhinoceros sondaicus"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P627"
+          },
+          "value": {
+            "type": "literal",
+            "value": "19495"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q170311"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Rhinoceros sondaicus"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P685"
+          },
+          "value": {
+            "type": "literal",
+            "value": "102233"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q170311"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Rhinoceros sondaicus"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P846"
+          },
+          "value": {
+            "type": "literal",
+            "value": "5220112"
+          }
+        },
+        {
+          "iucnItem": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q586567"
+          },
+          "iucnItemName": {
+            "type": "literal",
+            "value": "Rhinoderma darwinii"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Rhinoderma darwinii"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q586567"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Rhinoderma darwinii"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P10585"
+          },
+          "value": {
+            "type": "literal",
+            "value": "78TQQ"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q586567"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Rhinoderma darwinii"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P3151"
+          },
+          "value": {
+            "type": "literal",
+            "value": "26681"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q586567"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Rhinoderma darwinii"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P627"
+          },
+          "value": {
+            "type": "literal",
+            "value": "19513"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q586567"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Rhinoderma darwinii"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P685"
+          },
+          "value": {
+            "type": "literal",
+            "value": "43563"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q586567"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Rhinoderma darwinii"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P846"
+          },
+          "value": {
+            "type": "literal",
+            "value": "5217388"
+          }
+        },
+        {
+          "iucnItem": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q756080"
+          },
+          "iucnItemName": {
+            "type": "literal",
+            "value": "Rhinopithecus roxellana"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Rhinopithecus roxellana"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q756080"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Rhinopithecus roxellana"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P10585"
+          },
+          "value": {
+            "type": "literal",
+            "value": "4S9MN"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q756080"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Rhinopithecus roxellana"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P3151"
+          },
+          "value": {
+            "type": "literal",
+            "value": "75028"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q756080"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Rhinopithecus roxellana"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P627"
+          },
+          "value": {
+            "type": "literal",
+            "value": "19596"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q756080"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Rhinopithecus roxellana"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P685"
+          },
+          "value": {
+            "type": "literal",
+            "value": "61622"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q756080"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Rhinopithecus roxellana"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P846"
+          },
+          "value": {
+            "type": "literal",
+            "value": "7262005"
+          }
+        },
+        {
+          "iucnItem": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q1333257"
+          },
+          "iucnItemName": {
+            "type": "literal",
+            "value": "Rhynchocyon chrysopygus"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Rhynchocyon chrysopygus"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q1333257"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Rhynchocyon chrysopygus"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P10585"
+          },
+          "value": {
+            "type": "literal",
+            "value": "4SRP9"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q1333257"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Rhynchocyon chrysopygus"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P3151"
+          },
+          "value": {
+            "type": "literal",
+            "value": "43222"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q1333257"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Rhynchocyon chrysopygus"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P627"
+          },
+          "value": {
+            "type": "literal",
+            "value": "19705"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q1333257"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Rhynchocyon chrysopygus"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P685"
+          },
+          "value": {
+            "type": "literal",
+            "value": "320636"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q1333257"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Rhynchocyon chrysopygus"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P846"
+          },
+          "value": {
+            "type": "literal",
+            "value": "5220103"
+          }
+        },
+        {
+          "iucnItem": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q134964"
+          },
+          "iucnItemName": {
+            "type": "literal",
+            "value": "Sarcophilus harrisii"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Sarcophilus harrisii"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q134964"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Sarcophilus harrisii"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P10585"
+          },
+          "value": {
+            "type": "literal",
+            "value": "6XMTZ"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q134964"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Sarcophilus harrisii"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P3151"
+          },
+          "value": {
+            "type": "literal",
+            "value": "40232"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q134964"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Sarcophilus harrisii"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P627"
+          },
+          "value": {
+            "type": "literal",
+            "value": "40540"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q134964"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Sarcophilus harrisii"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P685"
+          },
+          "value": {
+            "type": "literal",
+            "value": "9305"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q134964"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Sarcophilus harrisii"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P846"
+          },
+          "value": {
+            "type": "literal",
+            "value": "2435451"
+          }
+        },
+        {
+          "iucnItem": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q20085878"
+          },
+          "iucnItemName": {
+            "type": "literal",
+            "value": "Smutsia gigantea"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Smutsia gigantea"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q20085878"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Smutsia gigantea"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P3151"
+          },
+          "value": {
+            "type": "literal",
+            "value": "75082"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q20085878"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Smutsia gigantea"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P627"
+          },
+          "value": {
+            "type": "literal",
+            "value": "12762"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q20085878"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Smutsia gigantea"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P685"
+          },
+          "value": {
+            "type": "literal",
+            "value": "1559511"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q20085878"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Smutsia gigantea"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P846"
+          },
+          "value": {
+            "type": "literal",
+            "value": "5786559"
+          }
+        },
+        {
+          "iucnItem": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q28173017"
+          },
+          "iucnItemName": {
+            "type": "literal",
+            "value": "Smutsia temminckii"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Smutsia temminckii"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q28173017"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Smutsia temminckii"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P3151"
+          },
+          "value": {
+            "type": "literal",
+            "value": "75083"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q28173017"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Smutsia temminckii"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P627"
+          },
+          "value": {
+            "type": "literal",
+            "value": "12765"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q28173017"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Smutsia temminckii"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P685"
+          },
+          "value": {
+            "type": "literal",
+            "value": "302418"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q28173017"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Smutsia temminckii"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P846"
+          },
+          "value": {
+            "type": "literal",
+            "value": "5786560"
+          }
+        },
+        {
+          "iucnItem": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q754041"
+          },
+          "iucnItemName": {
+            "type": "literal",
+            "value": "Solenodon paradoxus"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Solenodon paradoxus"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q754041"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Solenodon paradoxus"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P10585"
+          },
+          "value": {
+            "type": "literal",
+            "value": "4Y66C"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q754041"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Solenodon paradoxus"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P3151"
+          },
+          "value": {
+            "type": "literal",
+            "value": "46337"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q754041"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Solenodon paradoxus"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P627"
+          },
+          "value": {
+            "type": "literal",
+            "value": "20321"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q754041"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Solenodon paradoxus"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P685"
+          },
+          "value": {
+            "type": "literal",
+            "value": "79805"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q754041"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Solenodon paradoxus"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P846"
+          },
+          "value": {
+            "type": "literal",
+            "value": "5219470"
+          }
+        },
+        {
+          "iucnItem": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q215997"
+          },
+          "iucnItemName": {
+            "type": "literal",
+            "value": "Tapirus bairdii"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Tapirus bairdii"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q215997"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Tapirus bairdii"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P10585"
+          },
+          "value": {
+            "type": "literal",
+            "value": "54TGH"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q215997"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Tapirus bairdii"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P3151"
+          },
+          "value": {
+            "type": "literal",
+            "value": "43355"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q215997"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Tapirus bairdii"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P627"
+          },
+          "value": {
+            "type": "literal",
+            "value": "21471"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q215997"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Tapirus bairdii"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P685"
+          },
+          "value": {
+            "type": "literal",
+            "value": "56117"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q215997"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Tapirus bairdii"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P846"
+          },
+          "value": {
+            "type": "literal",
+            "value": "2440897"
+          }
+        },
+        {
+          "iucnItem": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q220271"
+          },
+          "iucnItemName": {
+            "type": "literal",
+            "value": "Tapirus terrestris"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Tapirus terrestris"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q220271"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Tapirus terrestris"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P10585"
+          },
+          "value": {
+            "type": "literal",
+            "value": "54TGS"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q220271"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Tapirus terrestris"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P3151"
+          },
+          "value": {
+            "type": "literal",
+            "value": "43353"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q220271"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Tapirus terrestris"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P627"
+          },
+          "value": {
+            "type": "literal",
+            "value": "21474"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q220271"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Tapirus terrestris"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P685"
+          },
+          "value": {
+            "type": "literal",
+            "value": "9801"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q220271"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Tapirus terrestris"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P846"
+          },
+          "value": {
+            "type": "literal",
+            "value": "2440898"
+          }
+        },
+        {
+          "iucnItem": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q137641"
+          },
+          "iucnItemName": {
+            "type": "literal",
+            "value": "Tremarctos ornatus"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Tremarctos ornatus"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q137641"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Tremarctos ornatus"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P10585"
+          },
+          "value": {
+            "type": "literal",
+            "value": "5832V"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q137641"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Tremarctos ornatus"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P3151"
+          },
+          "value": {
+            "type": "literal",
+            "value": "41657"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q137641"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Tremarctos ornatus"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P627"
+          },
+          "value": {
+            "type": "literal",
+            "value": "22066"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q137641"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Tremarctos ornatus"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P685"
+          },
+          "value": {
+            "type": "literal",
+            "value": "9638"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q137641"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Tremarctos ornatus"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P846"
+          },
+          "value": {
+            "type": "literal",
+            "value": "2433401"
+          }
+        },
+        {
+          "iucnItem": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q1028620"
+          },
+          "iucnItemName": {
+            "type": "literal",
+            "value": "Trichobatrachus robustus"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Trichobatrachus robustus"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q1028620"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Trichobatrachus robustus"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P10585"
+          },
+          "value": {
+            "type": "literal",
+            "value": "589RN"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q1028620"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Trichobatrachus robustus"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P3151"
+          },
+          "value": {
+            "type": "literal",
+            "value": "24510"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q1028620"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Trichobatrachus robustus"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P627"
+          },
+          "value": {
+            "type": "literal",
+            "value": "54443"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q1028620"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Trichobatrachus robustus"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P685"
+          },
+          "value": {
+            "type": "literal",
+            "value": "111096"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q1028620"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Trichobatrachus robustus"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P846"
+          },
+          "value": {
+            "type": "literal",
+            "value": "2429660"
+          }
+        },
+        {
+          "iucnItem": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q809557"
+          },
+          "iucnItemName": {
+            "type": "literal",
+            "value": "Zaglossus bartoni"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Zaglossus bartoni"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q809557"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Zaglossus bartoni"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P10585"
+          },
+          "value": {
+            "type": "literal",
+            "value": "7GC5K"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q809557"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Zaglossus bartoni"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P3151"
+          },
+          "value": {
+            "type": "literal",
+            "value": "43248"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q809557"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Zaglossus bartoni"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P627"
+          },
+          "value": {
+            "type": "literal",
+            "value": "136552"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q809557"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Zaglossus bartoni"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P685"
+          },
+          "value": {
+            "type": "literal",
+            "value": "1684342"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q809557"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Zaglossus bartoni"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P846"
+          },
+          "value": {
+            "type": "literal",
+            "value": "2433385"
+          }
+        },
+        {
+          "iucnItem": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q635949"
+          },
+          "iucnItemName": {
+            "type": "literal",
+            "value": "Zaglossus bruijnii"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Zaglossus bruijnii"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q635949"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Zaglossus bruijnii"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P10585"
+          },
+          "value": {
+            "type": "literal",
+            "value": "7GBTL"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q635949"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Zaglossus bruijnii"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P3151"
+          },
+          "value": {
+            "type": "literal",
+            "value": "75237"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q635949"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Zaglossus bruijnii"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P627"
+          },
+          "value": {
+            "type": "literal",
+            "value": "23179"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q635949"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Zaglossus bruijnii"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P685"
+          },
+          "value": {
+            "type": "literal",
+            "value": "33543"
+          }
+        },
+        {
+          "item": {
+            "type": "uri",
+            "value": "http://www.wikidata.org/entity/Q635949"
+          },
+          "name": {
+            "type": "literal",
+            "value": "Zaglossus bruijnii"
+          },
+          "prop": {
+            "type": "literal",
+            "value": "P846"
+          },
+          "value": {
+            "type": "literal",
+            "value": "2433391"
+          }
+        }
+      ]
+    }
+  },
+  "retrieved": "2026-10-20"
+}

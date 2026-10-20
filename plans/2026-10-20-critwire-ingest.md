@@ -767,7 +767,7 @@ Every step is one commit (the code, the plan check-off and one Log line), pushed
     - V2. If CC has moved, record the diff in the Log, restore `base.json` and never merge it;
     - F1;
     - `pnpm -s db:load` prints `loaded 76 species`.
-- [ ] S2 · HTTP client, raw module, ingest CLI, Wikidata ingest and its snapshot.
+- [x] S2 · HTTP client, raw module, ingest CLI, Wikidata ingest and its snapshot.
   - Add `scripts/http.ts`, `scripts/raw.ts` (snapshot types, `readSnapshot`/`writeSnapshot`, `utcDate`), `scripts/ingest.ts` and `scripts/ingest/wikidata.ts` (the exact §3 template, bindings sorted).
   - `package.json`: add `ingest` and `test`.
   - Tests first: W11 in `scripts/derive/wikidata.test.ts`.
@@ -1026,5 +1026,6 @@ Failure modes checked by a negative run instead of a unit test (D11):
 - 2026-10-20 06:22 UTC: Revision. architect resolved all 5 MUST-FIX + 2 missed (countries rule → review signals + 1-record-outside-core stray rule; license filter CC0/CC-BY; multi-value before cross-check; UNDEF throw; 3-commit green migration); all should-consider adopted. ~230 GBIF calls, evidence in agent-state revision/. Plan-only change.
 - 2026-10-20 06:33 UTC: Steps. planner wrote S1–S11 (base split, 3 ingests w/ snapshots, rule modules test-first, switch commit, seed:cc+docs, spot-checks, PR), Verification V0–V9, Failure modes F1–F9. Plan-only change.
 - 2026-10-20 06:34 UTC: S1. `data/base.json` (copy of species.json, ids→{iucn}), `scripts/json.ts`, `BaseSpecies`/`validateBase`, seed:cc writes base.json + throws on double match. typecheck+build green; V2 seed:cc (CC 677eb61a) no diff; F1 dup profile exits 1, data/ clean; db:load 76.
+- 2026-10-20 06:37 UTC: S2. `http.ts` (UA, 500 ms pacing, retries/backoff, stderr log), `raw.ts`, `ingest.ts` CLI, `ingest/wikidata.ts` (§3 template, bindings sorted); `ingest`+`test` scripts. W11 red (1 fail, no module) then green. Live ingest: 441 bindings, 76 names → 1 item each, 188 KB, retrieved 2026-10-20; 2nd run no churn; `ingest nope` exit 2; typecheck+test+build green.
 
 ## Summary
