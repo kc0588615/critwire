@@ -806,7 +806,7 @@ Every step is one commit (the code, the plan check-off and one Log line), pushed
   - Checks:
     - green;
     - smoke run: a throwaway `$L/smoke/countries.ts` (never committed) runs the rule on `data/raw/gbif` for all 76 species with no overrides, and prints the tallies of `$L/revision/final-rule.txt`. Expect about 482 codes across 75 species, Ili pika `[]`, 39 strays, and 54 plus 97 review flags. Record any drift in the Log.
-- [ ] S6 · Wikidata rules.
+- [x] S6 · Wikidata rules.
   - Tests first: W1–W10, added to `scripts/derive/wikidata.test.ts`.
   - Then `scripts/derive/wikidata.ts`:
     - the staleness check (W7), pooled values, cardinality first and the P627 rule;
@@ -934,7 +934,7 @@ jq -e '[paths | .[-1] | select(. == "created" or . == "modified" or . == "modifi
 # V5 expected live findings (2026-10-20). A miss is a bug unless it's upstream drift: then record it in Decisions and adjust this list.
 m=data/review/mismatches.json
 has() { jq -e --argjson id "$1" --arg f "$2" --arg k "$3" 'any(.[]; .speciesId == $id and .field == $f and .kind == $k)' $m >/dev/null || { echo "missing $*"; exit 1; }; }
-for id in 4 18 19 21; do has $id ids.iucn iucn-id; done
+for id in 4 12 15 17 18 19 20 21 22 62; do has $id ids.iucn iucn-id; done
 for id in 35 40; do has $id ids.inaturalist multi-value; done
 for id in 1 55; do has $id ids.gbif synonym-info; done
 has 22 ids.col not-found
@@ -1017,6 +1017,7 @@ Failure modes checked by a negative run instead of a unit test (D11):
 
 - 2026-10-20 (Revision): GBIF country facets count only CC0 + CC BY 4.0 records (`license=CC0_1_0&license=CC_BY_4_0`); field published as CC BY 4.0. Why: AGENTS.md requires a license per third-party field; CC BY-NC records can't be republished under one clear license. Cost: ~25% of records, 123/644 country entries, Ili pika blank. Must be stated in the PR body; owner can revisit.
 - 2026-10-20 (Revision): regions are review signals only; sole automatic exclusion = single record outside the species' core region (core = region with most countries; Americas merged). Overrides support `keep`/`remove`.
+- 2026-10-20 (S6): `iucn-id` fires on 10 species, not the 4 the plan expected. The brief's "no P627 at all" species (12 Heosemys, 15 Malacochersus, 17 Carettochelys, 20 Centrochelys, 22 C. abingdonii, 62 Andrias; plus 4 Platysternon) have no item carrying the *base* id, but their own P225 item has one P627 that differs from base, so §5.1's rule flags them. Rule unchanged; V5 list extended to all 10. All 10 go in the PR as suspect CC IUCN ids.
 
 ## Log
 
@@ -1032,5 +1033,6 @@ Failure modes checked by a negative run instead of a unit test (D11):
 - 2026-10-20 06:38 UTC: S3. `ingest/col.ts` (3LR → allowlisted release COL26.10 key 316595, 76 matches keyed by name, `created/modified/modifiedBy` stripped), `raw.ts` `omitKeys` + `assertNoIucnData`. Live: 76 matches, 464 KB, no IUCN/volatile keys; 2nd run no churn; F4 (timeout 10) exit 124, snapshot intact, no temp file. typecheck+test+build green. Noted for S7: subgenus in `usage.name` (2), Zaglossus spelling variant, 2 COL synonyms, Chelonoidis abingdonii higherrank.
 - 2026-10-20 06:43 UTC: S4. `ingest/gbif.ts` (backbone checklist allowlist, country enum 250, v2 match w/ timeTaken/timings/additionalStatus/left/right stripped, occurrence facets fixed param order, sorted, facetLimit guard), `raw.ts` GBIF types + `assertOpenLicenses` + `gbifTaxonKey`. G7 red (1 fail) then green. Live: 76 species all with occurrences, 288 KB, 397,200 records / 521 country entries (= revision evidence exactly), Blanding's CA+US, Ili pika count 0, no IUCN/volatile keys. typecheck+test+build green. Noted for S7: 4 GBIF synonyms (Emydoidea, Smutsia gigantea, Smutsia temminckii, Tapirus bairdii), not just 2.
 - 2026-10-20 06:51 UTC: S5. `derive/countries.ts` (§5.4 constants + justification, core by countries/records/all-tied, Americas merged, stray/captive-suspect/borderline, `parseOverrides` + keep/remove applied last, null countries reject overrides, calls `assertOpenLicenses`), `Mismatch`/`CountryOverride` types. K1–K10 red (1 fail, no module) then green. Smoke on raw gbif: 76 species, 482 codes, Ili pika `[]`, 39 strays, 54 captive-suspect + 97 borderline review (= revision evidence, no drift). typecheck+test+build green.
+- 2026-10-20 07:05 UTC: S6. `derive/wikidata.ts` (`assertWikidataFresh`, `bindingsByName`, `deriveWikidata`: pooled values, cardinality first, P846/P10585 multi-value entries + evidence handed to S7, P627 rule, Q-id/integer validation). W1–W10 red (1 fail, no module) then green (22 tests). Smoke on raw: 76/76 ids.wikidata, inat 74, ncbi 75; iucn-id on 4,12,15,17,18,19,20,21,22,62 (see Decisions); multi-value inat 35, 40; ncbi not-found info 1; no P846/P10585 multi. typecheck+test+build green.
 
 ## Summary
