@@ -9,11 +9,16 @@
   },
   "scripts": {
     "build": "tsx scripts/build.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "seed:cc": "tsx scripts/seed-cc.ts",
+    "db:load": "tsx scripts/load.ts"
   },
   "devDependencies": {
     "@types/node": "^26.6.5",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2"
+  },
+  "dependencies": {
+    "postgres": "^3.4.9"
   }
 }
