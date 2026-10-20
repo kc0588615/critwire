@@ -1,0 +1,2044 @@
+[
+  {
+    "id": 1,
+    "slug": "blandings-turtle",
+    "scientificName": "Emydoidea blandingii",
+    "commonName": "Blanding's Turtle",
+    "taxonomy": {
+      "class": "Reptilia",
+      "order": "Testudines",
+      "family": "Emydidae",
+      "genus": "Emydoidea"
+    },
+    "ids": {
+      "iucn": 7709,
+      "gbif": null,
+      "col": null,
+      "wikidata": null,
+      "inaturalist": null,
+      "ncbi": null
+    },
+    "photo": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/44/Blanding%27s_turtle_%28Emydoidea_blandingii%29_%2817812011862%29.jpg/500px-Blanding%27s_turtle_%28Emydoidea_blandingii%29_%2817812011862%29.jpg",
+      "credit": "Andrew C",
+      "license": "CC BY 2.0",
+      "page": "https://commons.wikimedia.org/wiki/File:Blanding%27s_turtle_(Emydoidea_blandingii)_(17812011862).jpg"
+    },
+    "replacedBy": null
+  },
+  {
+    "id": 2,
+    "slug": "spiny-softshell-turtle",
+    "scientificName": "Apalone spinifera",
+    "commonName": "Spiny Softshell Turtle",
+    "taxonomy": {
+      "class": "Reptilia",
+      "order": "Testudines",
+      "family": "Trionychidae",
+      "genus": "Apalone"
+    },
+    "ids": {
+      "iucn": 163451,
+      "gbif": null,
+      "col": null,
+      "wikidata": null,
+      "inaturalist": null,
+      "ncbi": null
+    },
+    "photo": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/67/Spiny_softshell_turtle_%28Apalone_spinifera%29.jpg/500px-Spiny_softshell_turtle_%28Apalone_spinifera%29.jpg",
+      "credit": "U.S. Fish and Wildlife Service Headquarters",
+      "license": "Public domain",
+      "page": "https://commons.wikimedia.org/wiki/File:Spiny_softshell_turtle_(Apalone_spinifera).jpg"
+    },
+    "replacedBy": null
+  },
+  {
+    "id": 3,
+    "slug": "darwin-frog",
+    "scientificName": "Rhinoderma darwinii",
+    "commonName": "Darwin Frog",
+    "taxonomy": {
+      "class": "Amphibia",
+      "order": "Anura",
+      "family": "Rhinodermatidae",
+      "genus": "Rhinoderma"
+    },
+    "ids": {
+      "iucn": 19513,
+      "gbif": null,
+      "col": null,
+      "wikidata": null,
+      "inaturalist": null,
+      "ncbi": null
+    },
+    "photo": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f1/Ranita_de_Darwin_%28Rhinoderma_darwinii%29.png/500px-Ranita_de_Darwin_%28Rhinoderma_darwinii%29.png",
+      "credit": "Ong ranita",
+      "license": "CC BY-SA 4.0",
+      "page": "https://commons.wikimedia.org/wiki/File:Ranita_de_Darwin_(Rhinoderma_darwinii).png"
+    },
+    "replacedBy": null
+  },
+  {
+    "id": 4,
+    "slug": "big-headed-turtle",
+    "scientificName": "Platysternon megacephalum",
+    "commonName": "Big-headed Turtle",
+    "taxonomy": {
+      "class": "Reptilia",
+      "order": "Testudines",
+      "family": "Platysternidae",
+      "genus": "Platysternon"
+    },
+    "ids": {
+      "iucn": 9605,
+      "gbif": null,
+      "col": null,
+      "wikidata": null,
+      "inaturalist": null,
+      "ncbi": null
+    },
+    "photo": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/ba/Big-headed_Turtle_HK.jpg/500px-Big-headed_Turtle_HK.jpg",
+      "credit": "Chetatata",
+      "license": "CC BY-SA 4.0",
+      "page": "https://commons.wikimedia.org/wiki/File:Big-headed_Turtle_HK.jpg"
+    },
+    "replacedBy": null
+  },
+  {
+    "id": 5,
+    "slug": "wallaces-flying-frog",
+    "scientificName": "Rhacophorus nigropalmatus",
+    "commonName": "Wallace's Flying Frog",
+    "taxonomy": {
+      "class": "Amphibia",
+      "order": "Anura",
+      "family": "Rhacophoridae",
+      "genus": "Rhacophorus"
+    },
+    "ids": {
+      "iucn": 59008,
+      "gbif": null,
+      "col": null,
+      "wikidata": null,
+      "inaturalist": null,
+      "ncbi": null
+    },
+    "photo": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/45/Rhacophorus_nigropalmatus.jpg/500px-Rhacophorus_nigropalmatus.jpg",
+      "credit": "Rushenb",
+      "license": "CC BY-SA 4.0",
+      "page": "https://commons.wikimedia.org/wiki/File:Rhacophorus_nigropalmatus.jpg"
+    },
+    "replacedBy": null
+  },
+  {
+    "id": 6,
+    "slug": "red-eyed-tree-frog",
+    "scientificName": "Agalychnis callidryas",
+    "commonName": "Red-eyed Tree Frog",
+    "taxonomy": {
+      "class": "Amphibia",
+      "order": "Anura",
+      "family": "Phyllomedusidae",
+      "genus": "Agalychnis"
+    },
+    "ids": {
+      "iucn": 55290,
+      "gbif": null,
+      "col": null,
+      "wikidata": null,
+      "inaturalist": null,
+      "ncbi": null
+    },
+    "photo": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e3/Red-eyed_Tree_Frog_%28Agalychnis_callidryas%29_1.png/500px-Red-eyed_Tree_Frog_%28Agalychnis_callidryas%29_1.png",
+      "credit": "Red-eyed Tree Frog (Agalychnis callidryas) 3.jpg: Geoff Gallice from Gainesville, FL, USA derivative work: B kimmel",
+      "license": "CC BY 2.0",
+      "page": "https://commons.wikimedia.org/wiki/File:Red-eyed_Tree_Frog_(Agalychnis_callidryas)_1.png"
+    },
+    "replacedBy": null
+  },
+  {
+    "id": 7,
+    "slug": "hairy-frog",
+    "scientificName": "Trichobatrachus robustus",
+    "commonName": "Hairy Frog",
+    "taxonomy": {
+      "class": "Amphibia",
+      "order": "Anura",
+      "family": "Arthroleptidae",
+      "genus": "Trichobatrachus"
+    },
+    "ids": {
+      "iucn": 54443,
+      "gbif": null,
+      "col": null,
+      "wikidata": null,
+      "inaturalist": null,
+      "ncbi": null
+    },
+    "photo": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/24/Trichobatrachus_robustus.JPG/500px-Trichobatrachus_robustus.JPG",
+      "credit": "Gustavocarra",
+      "license": "CC BY-SA 4.0",
+      "page": "https://commons.wikimedia.org/wiki/File:Trichobatrachus_robustus.JPG"
+    },
+    "replacedBy": null
+  },
+  {
+    "id": 8,
+    "slug": "coastal-tailed-frog",
+    "scientificName": "Ascaphus truei",
+    "commonName": "Coastal Tailed Frog",
+    "taxonomy": {
+      "class": "Amphibia",
+      "order": "Anura",
+      "family": "Ascaphidae",
+      "genus": "Ascaphus"
+    },
+    "ids": {
+      "iucn": 54414,
+      "gbif": null,
+      "col": null,
+      "wikidata": null,
+      "inaturalist": null,
+      "ncbi": null
+    },
+    "photo": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/0f/Ascaphus_truei_web.jpg/500px-Ascaphus_truei_web.jpg",
+      "credit": "Mokele",
+      "license": "CC BY-SA 3.0",
+      "page": "https://commons.wikimedia.org/wiki/File:Ascaphus_truei_web.jpg"
+    },
+    "replacedBy": null
+  },
+  {
+    "id": 9,
+    "slug": "dyeing-poison-dart-frog",
+    "scientificName": "Dendrobates tinctorius",
+    "commonName": "Dyeing Poison Dart Frog",
+    "taxonomy": {
+      "class": "Amphibia",
+      "order": "Anura",
+      "family": "Dendrobatidae",
+      "genus": "Dendrobates"
+    },
+    "ids": {
+      "iucn": 55204,
+      "gbif": null,
+      "col": null,
+      "wikidata": null,
+      "inaturalist": null,
+      "ncbi": null
+    },
+    "photo": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/17/Dendrobates_tinctorius_-_Karlsruhe_Zoo_05.jpg/500px-Dendrobates_tinctorius_-_Karlsruhe_Zoo_05.jpg",
+      "credit": "H. Zell",
+      "license": "CC BY-SA 3.0",
+      "page": "https://commons.wikimedia.org/wiki/File:Dendrobates_tinctorius_-_Karlsruhe_Zoo_05.jpg"
+    },
+    "replacedBy": null
+  },
+  {
+    "id": 10,
+    "slug": "suriname-toad",
+    "scientificName": "Pipa pipa",
+    "commonName": "Suriname Toad",
+    "taxonomy": {
+      "class": "Amphibia",
+      "order": "Anura",
+      "family": "Pipidae",
+      "genus": "Pipa"
+    },
+    "ids": {
+      "iucn": 58163,
+      "gbif": null,
+      "col": null,
+      "wikidata": null,
+      "inaturalist": null,
+      "ncbi": null
+    },
+    "photo": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a2/Pipa_pipa01.jpg/500px-Pipa_pipa01.jpg",
+      "credit": "Hugo Claessen",
+      "license": "CC BY-SA 2.5",
+      "page": "https://commons.wikimedia.org/wiki/File:Pipa_pipa01.jpg"
+    },
+    "replacedBy": null
+  },
+  {
+    "id": 11,
+    "slug": "goliath-frog",
+    "scientificName": "Conraua goliath",
+    "commonName": "Goliath Frog",
+    "taxonomy": {
+      "class": "Amphibia",
+      "order": "Anura",
+      "family": "Conrauidae",
+      "genus": "Conraua"
+    },
+    "ids": {
+      "iucn": 5263,
+      "gbif": null,
+      "col": null,
+      "wikidata": null,
+      "inaturalist": null,
+      "ncbi": null
+    },
+    "photo": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/60/Conraua_goliath_photo_from_iNaturalist_539752953.jpg/500px-Conraua_goliath_photo_from_iNaturalist_539752953.jpg",
+      "credit": "jeanlouisamiet",
+      "license": "CC BY 4.0",
+      "page": "https://commons.wikimedia.org/wiki/File:Conraua_goliath_photo_from_iNaturalist_539752953.jpg"
+    },
+    "replacedBy": null
+  },
+  {
+    "id": 12,
+    "slug": "spiny-hill-turtle",
+    "scientificName": "Heosemys spinosa",
+    "commonName": "Spiny Hill Turtle",
+    "taxonomy": {
+      "class": "Reptilia",
+      "order": "Testudines",
+      "family": "Geoemydidae",
+      "genus": "Heosemys"
+    },
+    "ids": {
+      "iucn": 104303,
+      "gbif": null,
+      "col": null,
+      "wikidata": null,
+      "inaturalist": null,
+      "ncbi": null
+    },
+    "photo": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/6c/Spiny_Turtle_%28Heosemys_spinosa%29_%287783322772%29.jpg/500px-Spiny_Turtle_%28Heosemys_spinosa%29_%287783322772%29.jpg",
+      "credit": "Bernard DUPONT from FRANCE",
+      "license": "CC BY-SA 2.0",
+      "page": "https://commons.wikimedia.org/wiki/File:Spiny_Turtle_(Heosemys_spinosa)_(7783322772).jpg"
+    },
+    "replacedBy": null
+  },
+  {
+    "id": 13,
+    "slug": "madagascar-tomato-frog",
+    "scientificName": "Dyscophus antongilii",
+    "commonName": "Madagascar Tomato Frog",
+    "taxonomy": {
+      "class": "Amphibia",
+      "order": "Anura",
+      "family": "Microhylidae",
+      "genus": "Dyscophus"
+    },
+    "ids": {
+      "iucn": 6937,
+      "gbif": null,
+      "col": null,
+      "wikidata": null,
+      "inaturalist": null,
+      "ncbi": null
+    },
+    "photo": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/5/51/Dyscophus_antongilii02.jpg",
+      "credit": "Franco Andreone - [:it:Wikipedia:Autorizzazioni_ottenute/Franco_Andreone see authorization]",
+      "license": "CC BY-SA 2.5",
+      "page": "https://commons.wikimedia.org/wiki/File:Dyscophus_antongilii02.jpg"
+    },
+    "replacedBy": null
+  },
+  {
+    "id": 14,
+    "slug": "desert-rain-frog",
+    "scientificName": "Breviceps macrops",
+    "commonName": "Desert Rain Frog",
+    "taxonomy": {
+      "class": "Amphibia",
+      "order": "Anura",
+      "family": "Brevicipitidae",
+      "genus": "Breviceps"
+    },
+    "ids": {
+      "iucn": 3070,
+      "gbif": null,
+      "col": null,
+      "wikidata": null,
+      "inaturalist": null,
+      "ncbi": null
+    },
+    "photo": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/db/Breviceps_macrops_454407799.jpg/500px-Breviceps_macrops_454407799.jpg",
+      "credit": "Dylan Leonard",
+      "license": "CC BY-SA 4.0",
+      "page": "https://commons.wikimedia.org/wiki/File:Breviceps_macrops_454407799.jpg"
+    },
+    "replacedBy": null
+  },
+  {
+    "id": 15,
+    "slug": "pancake-tortoise",
+    "scientificName": "Malacochersus tornieri",
+    "commonName": "Pancake Tortoise",
+    "taxonomy": {
+      "class": "Reptilia",
+      "order": "Testudines",
+      "family": "Testudinidae",
+      "genus": "Malacochersus"
+    },
+    "ids": {
+      "iucn": 9041,
+      "gbif": null,
+      "col": null,
+      "wikidata": null,
+      "inaturalist": null,
+      "ncbi": null
+    },
+    "photo": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c7/Malacochersus_tornieri_-_Buffalo_Zoo.jpg/500px-Malacochersus_tornieri_-_Buffalo_Zoo.jpg",
+      "credit": "Dave Pape",
+      "license": "Public domain",
+      "page": "https://commons.wikimedia.org/wiki/File:Malacochersus_tornieri_-_Buffalo_Zoo.jpg"
+    },
+    "replacedBy": null
+  },
+  {
+    "id": 16,
+    "slug": "purple-frog",
+    "scientificName": "Nasikabatrachus sahyadrensis",
+    "commonName": "Purple Frog",
+    "taxonomy": {
+      "class": "Amphibia",
+      "order": "Anura",
+      "family": "Nasikabatrachidae",
+      "genus": "Nasikabatrachus"
+    },
+    "ids": {
+      "iucn": 58051,
+      "gbif": null,
+      "col": null,
+      "wikidata": null,
+      "inaturalist": null,
+      "ncbi": null
+    },
+    "photo": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/08/Nasikabatrachus_sahyadrensis.jpg/500px-Nasikabatrachus_sahyadrensis.jpg",
+      "credit": "Original uploader was Karthickbala at ta.wikipedia",
+      "license": "CC BY-SA 3.0",
+      "page": "https://commons.wikimedia.org/wiki/File:Nasikabatrachus_sahyadrensis.jpg"
+    },
+    "replacedBy": null
+  },
+  {
+    "id": 17,
+    "slug": "pig-nosed-turtle",
+    "scientificName": "Carettochelys insculpta",
+    "commonName": "Pig-nosed Turtle",
+    "taxonomy": {
+      "class": "Reptilia",
+      "order": "Testudines",
+      "family": "Carettochelyidae",
+      "genus": "Carettochelys"
+    },
+    "ids": {
+      "iucn": 28859,
+      "gbif": null,
+      "col": null,
+      "wikidata": null,
+      "inaturalist": null,
+      "ncbi": null
+    },
+    "photo": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/bb/Carettochelys_insculpta_01.JPG/500px-Carettochelys_insculpta_01.JPG",
+      "credit": "Bjoertvedt",
+      "license": "CC BY-SA 3.0",
+      "page": "https://commons.wikimedia.org/wiki/File:Carettochelys_insculpta_01.JPG"
+    },
+    "replacedBy": null
+  },
+  {
+    "id": 18,
+    "slug": "yangtze-giant-softshell-turtle",
+    "scientificName": "Rafetus swinhoei",
+    "commonName": "Yangtze Giant Softshell Turtle",
+    "taxonomy": {
+      "class": "Reptilia",
+      "order": "Testudines",
+      "family": "Trionychidae",
+      "genus": "Rafetus"
+    },
+    "ids": {
+      "iucn": 22971,
+      "gbif": null,
+      "col": null,
+      "wikidata": null,
+      "inaturalist": null,
+      "ncbi": null
+    },
+    "photo": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d8/R%C3%B9a_%C4%90%E1%BB%93ng_M%C3%B4.jpg/500px-R%C3%B9a_%C4%90%E1%BB%93ng_M%C3%B4.jpg",
+      "credit": "Phuongcacanh at Vietnamese Wikipedia",
+      "license": "CC BY-SA 3.0",
+      "page": "https://commons.wikimedia.org/wiki/File:R%C3%B9a_%C4%90%E1%BB%93ng_M%C3%B4.jpg"
+    },
+    "replacedBy": null
+  },
+  {
+    "id": 19,
+    "slug": "floreana-giant-tortoise",
+    "scientificName": "Chelonoidis niger",
+    "commonName": "Floreana Giant Tortoise",
+    "taxonomy": {
+      "class": "Reptilia",
+      "order": "Testudines",
+      "family": "Testudinidae",
+      "genus": "Chelonoidis"
+    },
+    "ids": {
+      "iucn": 9010,
+      "gbif": null,
+      "col": null,
+      "wikidata": null,
+      "inaturalist": null,
+      "ncbi": null
+    },
+    "photo": null,
+    "replacedBy": null
+  },
+  {
+    "id": 20,
+    "slug": "african-spurred-tortoise",
+    "scientificName": "Centrochelys sulcata",
+    "commonName": "African Spurred Tortoise",
+    "taxonomy": {
+      "class": "Reptilia",
+      "order": "Testudines",
+      "family": "Testudinidae",
+      "genus": "Centrochelys"
+    },
+    "ids": {
+      "iucn": 9781,
+      "gbif": null,
+      "col": null,
+      "wikidata": null,
+      "inaturalist": null,
+      "ncbi": null
+    },
+    "photo": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/27/Sulcata_Tortoise_%285%29_%288679964197%29.jpg/500px-Sulcata_Tortoise_%285%29_%288679964197%29.jpg",
+      "credit": "John5199",
+      "license": "CC BY 2.0",
+      "page": "https://commons.wikimedia.org/wiki/File:Sulcata_Tortoise_(5)_(8679964197).jpg"
+    },
+    "replacedBy": null
+  },
+  {
+    "id": 21,
+    "slug": "radiated-tortoise",
+    "scientificName": "Astrochelys radiata",
+    "commonName": "Radiated Tortoise",
+    "taxonomy": {
+      "class": "Reptilia",
+      "order": "Testudines",
+      "family": "Testudinidae",
+      "genus": "Astrochelys"
+    },
+    "ids": {
+      "iucn": 3901,
+      "gbif": null,
+      "col": null,
+      "wikidata": null,
+      "inaturalist": null,
+      "ncbi": null
+    },
+    "photo": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/92/Radiated_tortoise_%28Astrochelys_radiata%29_Tsimanampetsotsa.jpg/500px-Radiated_tortoise_%28Astrochelys_radiata%29_Tsimanampetsotsa.jpg",
+      "credit": "Charles J. Sharp",
+      "license": "CC BY-SA 4.0",
+      "page": "https://commons.wikimedia.org/wiki/File:Radiated_tortoise_(Astrochelys_radiata)_Tsimanampetsotsa.jpg"
+    },
+    "replacedBy": null
+  },
+  {
+    "id": 22,
+    "slug": "pinta-island-tortoise",
+    "scientificName": "Chelonoidis abingdonii",
+    "commonName": "Pinta Island Tortoise",
+    "taxonomy": {
+      "class": "Reptilia",
+      "order": "Testudines",
+      "family": "Testudinidae",
+      "genus": "Chelonoidis"
+    },
+    "ids": {
+      "iucn": 3902,
+      "gbif": null,
+      "col": null,
+      "wikidata": null,
+      "inaturalist": null,
+      "ncbi": null
+    },
+    "photo": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a5/Lonesome_George_in_profile.png/500px-Lonesome_George_in_profile.png",
+      "credit": "Mike Weston",
+      "license": "CC BY 2.0",
+      "page": "https://commons.wikimedia.org/wiki/File:Lonesome_George_in_profile.png"
+    },
+    "replacedBy": null
+  },
+  {
+    "id": 23,
+    "slug": "aye-aye",
+    "scientificName": "Daubentonia madagascariensis",
+    "commonName": "Aye-aye",
+    "taxonomy": {
+      "class": "Mammalia",
+      "order": "Primates",
+      "family": "Daubentoniidae",
+      "genus": "Daubentonia"
+    },
+    "ids": {
+      "iucn": 6302,
+      "gbif": null,
+      "col": null,
+      "wikidata": null,
+      "inaturalist": null,
+      "ncbi": null
+    },
+    "photo": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a2/Wild_aye_aye.jpg/500px-Wild_aye_aye.jpg",
+      "credit": "nomis-simon",
+      "license": "CC BY 2.0",
+      "page": "https://commons.wikimedia.org/wiki/File:Wild_aye_aye.jpg"
+    },
+    "replacedBy": null
+  },
+  {
+    "id": 24,
+    "slug": "sunda-pangolin",
+    "scientificName": "Manis javanica",
+    "commonName": "Sunda Pangolin",
+    "taxonomy": {
+      "class": "Mammalia",
+      "order": "Pholidota",
+      "family": "Manidae",
+      "genus": "Manis"
+    },
+    "ids": {
+      "iucn": 12763,
+      "gbif": null,
+      "col": null,
+      "wikidata": null,
+      "inaturalist": null,
+      "ncbi": null
+    },
+    "photo": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/42/Pangolin_borneo.jpg/500px-Pangolin_borneo.jpg",
+      "credit": "Piekfrosch at German Wikipedia (Original text: Piekfrosch (Wikipedia-User))",
+      "license": "CC BY-SA 3.0",
+      "page": "https://commons.wikimedia.org/wiki/File:Pangolin_borneo.jpg"
+    },
+    "replacedBy": null
+  },
+  {
+    "id": 25,
+    "slug": "tiger",
+    "scientificName": "Panthera tigris",
+    "commonName": "Tiger",
+    "taxonomy": {
+      "class": "Mammalia",
+      "order": "Carnivora",
+      "family": "Felidae",
+      "genus": "Panthera"
+    },
+    "ids": {
+      "iucn": 15955,
+      "gbif": null,
+      "col": null,
+      "wikidata": null,
+      "inaturalist": null,
+      "ncbi": null
+    },
+    "photo": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b0/Bengal_tiger_%28Panthera_tigris_tigris%29_female_3_crop.jpg/500px-Bengal_tiger_%28Panthera_tigris_tigris%29_female_3_crop.jpg",
+      "credit": "Charles J. Sharp",
+      "license": "CC BY-SA 4.0",
+      "page": "https://commons.wikimedia.org/wiki/File:Bengal_tiger_(Panthera_tigris_tigris)_female_3_crop.jpg"
+    },
+    "replacedBy": null
+  },
+  {
+    "id": 26,
+    "slug": "black-footed-ferret",
+    "scientificName": "Mustela nigripes",
+    "commonName": "Black-footed Ferret",
+    "taxonomy": {
+      "class": "Mammalia",
+      "order": "Carnivora",
+      "family": "Mustelidae",
+      "genus": "Mustela"
+    },
+    "ids": {
+      "iucn": 14020,
+      "gbif": null,
+      "col": null,
+      "wikidata": null,
+      "inaturalist": null,
+      "ncbi": null
+    },
+    "photo": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/cf/Mustela_nigripes_2.jpg/500px-Mustela_nigripes_2.jpg",
+      "credit": "USFWS Mountain Prairie",
+      "license": "Public domain",
+      "page": "https://commons.wikimedia.org/wiki/File:Mustela_nigripes_2.jpg"
+    },
+    "replacedBy": null
+  },
+  {
+    "id": 27,
+    "slug": "western-long-beaked-echidna",
+    "scientificName": "Zaglossus bruijnii",
+    "commonName": "Western Long-beaked Echidna",
+    "taxonomy": {
+      "class": "Mammalia",
+      "order": "Monotremata",
+      "family": "Tachyglossidae",
+      "genus": "Zaglossus"
+    },
+    "ids": {
+      "iucn": 23179,
+      "gbif": null,
+      "col": null,
+      "wikidata": null,
+      "inaturalist": null,
+      "ncbi": null
+    },
+    "photo": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/3b/Long-beakedEchidna.jpg/500px-Long-beakedEchidna.jpg",
+      "credit": "User:Jaganath",
+      "license": "CC BY-SA 3.0",
+      "page": "https://commons.wikimedia.org/wiki/File:Long-beakedEchidna.jpg"
+    },
+    "replacedBy": null
+  },
+  {
+    "id": 28,
+    "slug": "asian-elephant",
+    "scientificName": "Elephas maximus",
+    "commonName": "Asian Elephant",
+    "taxonomy": {
+      "class": "Mammalia",
+      "order": "Proboscidea",
+      "family": "Elephantidae",
+      "genus": "Elephas"
+    },
+    "ids": {
+      "iucn": 7140,
+      "gbif": null,
+      "col": null,
+      "wikidata": null,
+      "inaturalist": null,
+      "ncbi": null
+    },
+    "photo": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/98/Elephas_maximus_%28Bandipur%29.jpg/500px-Elephas_maximus_%28Bandipur%29.jpg",
+      "credit": "Yathin S Krishnappa",
+      "license": "CC BY-SA 3.0",
+      "page": "https://commons.wikimedia.org/wiki/File:Elephas_maximus_(Bandipur).jpg"
+    },
+    "replacedBy": null
+  },
+  {
+    "id": 29,
+    "slug": "okapi",
+    "scientificName": "Okapia johnstoni",
+    "commonName": "Okapi",
+    "taxonomy": {
+      "class": "Mammalia",
+      "order": "Artiodactyla",
+      "family": "Giraffidae",
+      "genus": "Okapia"
+    },
+    "ids": {
+      "iucn": 15188,
+      "gbif": null,
+      "col": null,
+      "wikidata": null,
+      "inaturalist": null,
+      "ncbi": null
+    },
+    "photo": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/3a/Saint-Aignan_%28Loir-et-Cher%29._Okapi.jpg/500px-Saint-Aignan_%28Loir-et-Cher%29._Okapi.jpg",
+      "credit": "Daniel Jolivet",
+      "license": "CC BY 2.0",
+      "page": "https://commons.wikimedia.org/wiki/File:Saint-Aignan_(Loir-et-Cher)._Okapi.jpg"
+    },
+    "replacedBy": null
+  },
+  {
+    "id": 30,
+    "slug": "pygmy-three-toed-sloth",
+    "scientificName": "Bradypus pygmaeus",
+    "commonName": "Pygmy Three-toed Sloth",
+    "taxonomy": {
+      "class": "Mammalia",
+      "order": "Pilosa",
+      "family": "Bradypodidae",
+      "genus": "Bradypus"
+    },
+    "ids": {
+      "iucn": 61925,
+      "gbif": null,
+      "col": null,
+      "wikidata": null,
+      "inaturalist": null,
+      "ncbi": null
+    },
+    "photo": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a0/Perezoso_La_Mochila.jpg/500px-Perezoso_La_Mochila.jpg",
+      "credit": "Lider Sucre",
+      "license": "CC BY-SA 3.0",
+      "page": "https://commons.wikimedia.org/wiki/File:Perezoso_La_Mochila.jpg"
+    },
+    "replacedBy": null
+  },
+  {
+    "id": 31,
+    "slug": "northern-hairy-nosed-wombat",
+    "scientificName": "Lasiorhinus krefftii",
+    "commonName": "Northern Hairy-nosed Wombat",
+    "taxonomy": {
+      "class": "Mammalia",
+      "order": "Diprotodontia",
+      "family": "Vombatidae",
+      "genus": "Lasiorhinus"
+    },
+    "ids": {
+      "iucn": 11343,
+      "gbif": null,
+      "col": null,
+      "wikidata": null,
+      "inaturalist": null,
+      "ncbi": null
+    },
+    "photo": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/0/00/Haarnasenwombat_%28Lasiorhinus_krefftii%29.jpg",
+      "credit": "Unknown author",
+      "license": "CC BY-SA 2.0 de",
+      "page": "https://commons.wikimedia.org/wiki/File:Haarnasenwombat_(Lasiorhinus_krefftii).jpg"
+    },
+    "replacedBy": null
+  },
+  {
+    "id": 32,
+    "slug": "de-wintons-golden-mole",
+    "scientificName": "Cryptochloris wintoni",
+    "commonName": "De Winton's Golden Mole",
+    "taxonomy": {
+      "class": "Mammalia",
+      "order": "Afrosoricida",
+      "family": "Chrysochloridae",
+      "genus": "Cryptochloris"
+    },
+    "ids": {
+      "iucn": 5748,
+      "gbif": null,
+      "col": null,
+      "wikidata": null,
+      "inaturalist": null,
+      "ncbi": null
+    },
+    "photo": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/6a/De_Winton%27s_golden_mole_%28Cryptochloris_wintoni%29.jpg/500px-De_Winton%27s_golden_mole_%28Cryptochloris_wintoni%29.jpg",
+      "credit": "Jp le Roux",
+      "license": "CC BY-SA 4.0",
+      "page": "https://commons.wikimedia.org/wiki/File:De_Winton%27s_golden_mole_(Cryptochloris_wintoni).jpg"
+    },
+    "replacedBy": null
+  },
+  {
+    "id": 33,
+    "slug": "ethiopian-wolf",
+    "scientificName": "Canis simensis",
+    "commonName": "Ethiopian Wolf",
+    "taxonomy": {
+      "class": "Mammalia",
+      "order": "Carnivora",
+      "family": "Canidae",
+      "genus": "Canis"
+    },
+    "ids": {
+      "iucn": 3748,
+      "gbif": null,
+      "col": null,
+      "wikidata": null,
+      "inaturalist": null,
+      "ncbi": null
+    },
+    "photo": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e8/Ethiopian_wolf_%28Canis_simensis_citernii%29.jpg/500px-Ethiopian_wolf_%28Canis_simensis_citernii%29.jpg",
+      "credit": "Charles J. Sharp",
+      "license": "CC BY-SA 4.0",
+      "page": "https://commons.wikimedia.org/wiki/File:Ethiopian_wolf_(Canis_simensis_citernii).jpg"
+    },
+    "replacedBy": null
+  },
+  {
+    "id": 34,
+    "slug": "golden-snub-nosed-monkey",
+    "scientificName": "Rhinopithecus roxellana",
+    "commonName": "Golden Snub-nosed Monkey",
+    "taxonomy": {
+      "class": "Mammalia",
+      "order": "Primates",
+      "family": "Cercopithecidae",
+      "genus": "Rhinopithecus"
+    },
+    "ids": {
+      "iucn": 19596,
+      "gbif": null,
+      "col": null,
+      "wikidata": null,
+      "inaturalist": null,
+      "ncbi": null
+    },
+    "photo": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c8/Golden_Snub-nosed_Monkeys%2C_Qinling_Mountains_-_China.jpg/500px-Golden_Snub-nosed_Monkeys%2C_Qinling_Mountains_-_China.jpg",
+      "credit": "Giovanni Mari",
+      "license": "CC BY-SA 2.0",
+      "page": "https://commons.wikimedia.org/wiki/File:Golden_Snub-nosed_Monkeys,_Qinling_Mountains_-_China.jpg"
+    },
+    "replacedBy": null
+  },
+  {
+    "id": 35,
+    "slug": "red-panda",
+    "scientificName": "Ailurus fulgens",
+    "commonName": "Red Panda",
+    "taxonomy": {
+      "class": "Mammalia",
+      "order": "Carnivora",
+      "family": "Ailuridae",
+      "genus": "Ailurus"
+    },
+    "ids": {
+      "iucn": 714,
+      "gbif": null,
+      "col": null,
+      "wikidata": null,
+      "inaturalist": null,
+      "ncbi": null
+    },
+    "photo": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/fd/Red_Panda%2C_Gentle_Tree-Dweller_of_the_Himalayas.jpg/500px-Red_Panda%2C_Gentle_Tree-Dweller_of_the_Himalayas.jpg",
+      "credit": "Sunuwargr",
+      "license": "CC BY-SA 4.0",
+      "page": "https://commons.wikimedia.org/wiki/File:Red_Panda,_Gentle_Tree-Dweller_of_the_Himalayas.jpg"
+    },
+    "replacedBy": null
+  },
+  {
+    "id": 36,
+    "slug": "giant-armadillo",
+    "scientificName": "Priodontes maximus",
+    "commonName": "Giant Armadillo",
+    "taxonomy": {
+      "class": "Mammalia",
+      "order": "Cingulata",
+      "family": "Chlamyphoridae",
+      "genus": "Priodontes"
+    },
+    "ids": {
+      "iucn": 18144,
+      "gbif": null,
+      "col": null,
+      "wikidata": null,
+      "inaturalist": null,
+      "ncbi": null
+    },
+    "photo": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/06/Priodontes_maximus_at_R%C3%A9gina.jpg/500px-Priodontes_maximus_at_R%C3%A9gina.jpg",
+      "credit": "Guillaume Delaitre",
+      "license": "CC BY 4.0",
+      "page": "https://commons.wikimedia.org/wiki/File:Priodontes_maximus_at_R%C3%A9gina.jpg"
+    },
+    "replacedBy": null
+  },
+  {
+    "id": 37,
+    "slug": "greater-bilby",
+    "scientificName": "Macrotis lagotis",
+    "commonName": "Greater Bilby",
+    "taxonomy": {
+      "class": "Mammalia",
+      "order": "Peramelemorphia",
+      "family": "Thylacomyidae",
+      "genus": "Macrotis"
+    },
+    "ids": {
+      "iucn": 12650,
+      "gbif": null,
+      "col": null,
+      "wikidata": null,
+      "inaturalist": null,
+      "ncbi": null
+    },
+    "photo": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/ed/Bilby_at_Sydney_Wildlife_World.jpg/500px-Bilby_at_Sydney_Wildlife_World.jpg",
+      "credit": "Dcoetzee",
+      "license": "Public domain",
+      "page": "https://commons.wikimedia.org/wiki/File:Bilby_at_Sydney_Wildlife_World.jpg"
+    },
+    "replacedBy": null
+  },
+  {
+    "id": 38,
+    "slug": "saola",
+    "scientificName": "Pseudoryx nghetinhensis",
+    "commonName": "Saola",
+    "taxonomy": {
+      "class": "Mammalia",
+      "order": "Artiodactyla",
+      "family": "Bovidae",
+      "genus": "Pseudoryx"
+    },
+    "ids": {
+      "iucn": 18597,
+      "gbif": null,
+      "col": null,
+      "wikidata": null,
+      "inaturalist": null,
+      "ncbi": null
+    },
+    "photo": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/69/Pseudoryx_nghetinhensis_318197.jpg/500px-Pseudoryx_nghetinhensis_318197.jpg",
+      "credit": "James Hardcastle",
+      "license": "CC BY 4.0",
+      "page": "https://commons.wikimedia.org/wiki/File:Pseudoryx_nghetinhensis_318197.jpg"
+    },
+    "replacedBy": null
+  },
+  {
+    "id": 39,
+    "slug": "grevys-zebra",
+    "scientificName": "Equus grevyi",
+    "commonName": "Grévy's Zebra",
+    "taxonomy": {
+      "class": "Mammalia",
+      "order": "Perissodactyla",
+      "family": "Equidae",
+      "genus": "Equus"
+    },
+    "ids": {
+      "iucn": 7950,
+      "gbif": null,
+      "col": null,
+      "wikidata": null,
+      "inaturalist": null,
+      "ncbi": null
+    },
+    "photo": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/74/Grevy%27s_Zebra_Stallion.jpg/500px-Grevy%27s_Zebra_Stallion.jpg",
+      "credit": "Rainbirder",
+      "license": "CC BY-SA 2.0",
+      "page": "https://commons.wikimedia.org/wiki/File:Grevy%27s_Zebra_Stallion.jpg"
+    },
+    "replacedBy": null
+  },
+  {
+    "id": 40,
+    "slug": "sumatran-orangutan",
+    "scientificName": "Pongo abelii",
+    "commonName": "Sumatran Orangutan",
+    "taxonomy": {
+      "class": "Mammalia",
+      "order": "Primates",
+      "family": "Hominidae",
+      "genus": "Pongo"
+    },
+    "ids": {
+      "iucn": 121097935,
+      "gbif": null,
+      "col": null,
+      "wikidata": null,
+      "inaturalist": null,
+      "ncbi": null
+    },
+    "photo": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/2c/Sumatra-Orang-Utan_im_Pongoland.jpg/500px-Sumatra-Orang-Utan_im_Pongoland.jpg",
+      "credit": "Fiver, der Hellseher",
+      "license": "CC BY-SA 4.0",
+      "page": "https://commons.wikimedia.org/wiki/File:Sumatra-Orang-Utan_im_Pongoland.jpg"
+    },
+    "replacedBy": null
+  },
+  {
+    "id": 41,
+    "slug": "african-forest-elephant",
+    "scientificName": "Loxodonta cyclotis",
+    "commonName": "African Forest Elephant",
+    "taxonomy": {
+      "class": "Mammalia",
+      "order": "Proboscidea",
+      "family": "Elephantidae",
+      "genus": "Loxodonta"
+    },
+    "ids": {
+      "iucn": 181007989,
+      "gbif": null,
+      "col": null,
+      "wikidata": null,
+      "inaturalist": null,
+      "ncbi": null
+    },
+    "photo": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f3/Loxodontacyclotis.jpg/500px-Loxodontacyclotis.jpg",
+      "credit": "Thomas Breuer",
+      "license": "CC BY 2.5",
+      "page": "https://commons.wikimedia.org/wiki/File:Loxodontacyclotis.jpg"
+    },
+    "replacedBy": null
+  },
+  {
+    "id": 42,
+    "slug": "vancouver-island-marmot",
+    "scientificName": "Marmota vancouverensis",
+    "commonName": "Vancouver Island Marmot",
+    "taxonomy": {
+      "class": "Mammalia",
+      "order": "Rodentia",
+      "family": "Sciuridae",
+      "genus": "Marmota"
+    },
+    "ids": {
+      "iucn": 12828,
+      "gbif": null,
+      "col": null,
+      "wikidata": null,
+      "inaturalist": null,
+      "ncbi": null
+    },
+    "photo": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/02/Vancouver_Island_marmot_%28Marmota_vancouverensis%29_Mt_Washington.jpg/500px-Vancouver_Island_marmot_%28Marmota_vancouverensis%29_Mt_Washington.jpg",
+      "credit": "Charles J. Sharp",
+      "license": "CC BY-SA 4.0",
+      "page": "https://commons.wikimedia.org/wiki/File:Vancouver_Island_marmot_(Marmota_vancouverensis)_Mt_Washington.jpg"
+    },
+    "replacedBy": null
+  },
+  {
+    "id": 43,
+    "slug": "goodfellows-tree-kangaroo",
+    "scientificName": "Dendrolagus goodfellowi",
+    "commonName": "Goodfellow's Tree-kangaroo",
+    "taxonomy": {
+      "class": "Mammalia",
+      "order": "Diprotodontia",
+      "family": "Macropodidae",
+      "genus": "Dendrolagus"
+    },
+    "ids": {
+      "iucn": 6429,
+      "gbif": null,
+      "col": null,
+      "wikidata": null,
+      "inaturalist": null,
+      "ncbi": null
+    },
+    "photo": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/56/Tree_kangaroo2.jpg/500px-Tree_kangaroo2.jpg",
+      "credit": "Tim Williams",
+      "license": "CC BY 2.0",
+      "page": "https://commons.wikimedia.org/wiki/File:Tree_kangaroo2.jpg"
+    },
+    "replacedBy": null
+  },
+  {
+    "id": 44,
+    "slug": "javan-rhinoceros",
+    "scientificName": "Rhinoceros sondaicus",
+    "commonName": "Javan Rhinoceros",
+    "taxonomy": {
+      "class": "Mammalia",
+      "order": "Perissodactyla",
+      "family": "Rhinocerotidae",
+      "genus": "Rhinoceros"
+    },
+    "ids": {
+      "iucn": 19495,
+      "gbif": null,
+      "col": null,
+      "wikidata": null,
+      "inaturalist": null,
+      "ncbi": null
+    },
+    "photo": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/ce/Rhinoceros_sondaicus_in_London_Zoo.jpg/500px-Rhinoceros_sondaicus_in_London_Zoo.jpg",
+      "credit": "T.Dixon. The Zoological Society of London",
+      "license": "Public domain",
+      "page": "https://commons.wikimedia.org/wiki/File:Rhinoceros_sondaicus_in_London_Zoo.jpg"
+    },
+    "replacedBy": null
+  },
+  {
+    "id": 45,
+    "slug": "livingstones-flying-fox",
+    "scientificName": "Pteropus livingstonii",
+    "commonName": "Livingstone's Flying Fox",
+    "taxonomy": {
+      "class": "Mammalia",
+      "order": "Chiroptera",
+      "family": "Pteropodidae",
+      "genus": "Pteropus"
+    },
+    "ids": {
+      "iucn": 18732,
+      "gbif": null,
+      "col": null,
+      "wikidata": null,
+      "inaturalist": null,
+      "ncbi": null
+    },
+    "photo": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/ca/Bristol.zoo.livfruitbat.arp.jpg/500px-Bristol.zoo.livfruitbat.arp.jpg",
+      "credit": "Adrian Pingstone",
+      "license": "Public domain",
+      "page": "https://commons.wikimedia.org/wiki/File:Bristol.zoo.livfruitbat.arp.jpg"
+    },
+    "replacedBy": null
+  },
+  {
+    "id": 46,
+    "slug": "golden-rumped-sengi",
+    "scientificName": "Rhynchocyon chrysopygus",
+    "commonName": "Golden-rumped Sengi",
+    "taxonomy": {
+      "class": "Mammalia",
+      "order": "Macroscelidea",
+      "family": "Macroscelididae",
+      "genus": "Rhynchocyon"
+    },
+    "ids": {
+      "iucn": 19705,
+      "gbif": null,
+      "col": null,
+      "wikidata": null,
+      "inaturalist": null,
+      "ncbi": null
+    },
+    "photo": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/16/Rhynchocyon_chrysopygus.jpg/500px-Rhynchocyon_chrysopygus.jpg",
+      "credit": "Simon Tonge",
+      "license": "CC0",
+      "page": "https://commons.wikimedia.org/wiki/File:Rhynchocyon_chrysopygus.jpg"
+    },
+    "replacedBy": null
+  },
+  {
+    "id": 47,
+    "slug": "ili-pika",
+    "scientificName": "Ochotona iliensis",
+    "commonName": "Ili Pika",
+    "taxonomy": {
+      "class": "Mammalia",
+      "order": "Lagomorpha",
+      "family": "Ochotonidae",
+      "genus": "Ochotona"
+    },
+    "ids": {
+      "iucn": 15050,
+      "gbif": null,
+      "col": null,
+      "wikidata": null,
+      "inaturalist": null,
+      "ncbi": null
+    },
+    "photo": null,
+    "replacedBy": null
+  },
+  {
+    "id": 48,
+    "slug": "tasmanian-devil",
+    "scientificName": "Sarcophilus harrisii",
+    "commonName": "Tasmanian Devil",
+    "taxonomy": {
+      "class": "Mammalia",
+      "order": "Dasyuromorphia",
+      "family": "Dasyuridae",
+      "genus": "Sarcophilus"
+    },
+    "ids": {
+      "iucn": 40540,
+      "gbif": null,
+      "col": null,
+      "wikidata": null,
+      "inaturalist": null,
+      "ncbi": null
+    },
+    "photo": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/43/Sarcophilus_harrisii_taranna.jpg/500px-Sarcophilus_harrisii_taranna.jpg",
+      "credit": "JJ Harrison (https://www.jjharrison.com.au/)",
+      "license": "CC BY-SA 3.0",
+      "page": "https://commons.wikimedia.org/wiki/File:Sarcophilus_harrisii_taranna.jpg"
+    },
+    "replacedBy": null
+  },
+  {
+    "id": 49,
+    "slug": "hispaniolan-solenodon",
+    "scientificName": "Solenodon paradoxus",
+    "commonName": "Hispaniolan Solenodon",
+    "taxonomy": {
+      "class": "Mammalia",
+      "order": "Eulipotyphla",
+      "family": "Solenodontidae",
+      "genus": "Solenodon"
+    },
+    "ids": {
+      "iucn": 20321,
+      "gbif": null,
+      "col": null,
+      "wikidata": null,
+      "inaturalist": null,
+      "ncbi": null
+    },
+    "photo": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/09/Hispaniolan_Solenodon_crop.jpg/500px-Hispaniolan_Solenodon_crop.jpg",
+      "credit": "Seb az86556",
+      "license": "CC BY-SA 3.0",
+      "page": "https://commons.wikimedia.org/wiki/File:Hispaniolan_Solenodon_crop.jpg"
+    },
+    "replacedBy": null
+  },
+  {
+    "id": 50,
+    "slug": "addax",
+    "scientificName": "Addax nasomaculatus",
+    "commonName": "Addax",
+    "taxonomy": {
+      "class": "Mammalia",
+      "order": "Artiodactyla",
+      "family": "Bovidae",
+      "genus": "Addax"
+    },
+    "ids": {
+      "iucn": 512,
+      "gbif": null,
+      "col": null,
+      "wikidata": null,
+      "inaturalist": null,
+      "ncbi": null
+    },
+    "photo": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8d/A_big_male_Addax_showing_as_the_power_of_his_horns.jpg/500px-A_big_male_Addax_showing_as_the_power_of_his_horns.jpg",
+      "credit": "HaytemBouchri93",
+      "license": "CC BY-SA 4.0",
+      "page": "https://commons.wikimedia.org/wiki/File:A_big_male_Addax_showing_as_the_power_of_his_horns.jpg"
+    },
+    "replacedBy": null
+  },
+  {
+    "id": 51,
+    "slug": "jaguar",
+    "scientificName": "Panthera onca",
+    "commonName": "Jaguar",
+    "taxonomy": {
+      "class": "Mammalia",
+      "order": "Carnivora",
+      "family": "Felidae",
+      "genus": "Panthera"
+    },
+    "ids": {
+      "iucn": 15953,
+      "gbif": null,
+      "col": null,
+      "wikidata": null,
+      "inaturalist": null,
+      "ncbi": null
+    },
+    "photo": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/0a/Standing_jaguar.jpg/500px-Standing_jaguar.jpg",
+      "credit": "USFWS",
+      "license": "Public domain",
+      "page": "https://commons.wikimedia.org/wiki/File:Standing_jaguar.jpg"
+    },
+    "replacedBy": null
+  },
+  {
+    "id": 52,
+    "slug": "giant-anteater",
+    "scientificName": "Myrmecophaga tridactyla",
+    "commonName": "Giant Anteater",
+    "taxonomy": {
+      "class": "Mammalia",
+      "order": "Pilosa",
+      "family": "Myrmecophagidae",
+      "genus": "Myrmecophaga"
+    },
+    "ids": {
+      "iucn": 14224,
+      "gbif": null,
+      "col": null,
+      "wikidata": null,
+      "inaturalist": null,
+      "ncbi": null
+    },
+    "photo": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/3b/Myresluger2.jpg/500px-Myresluger2.jpg",
+      "credit": "Malene Thyssen",
+      "license": "CC BY-SA 3.0",
+      "page": "https://commons.wikimedia.org/wiki/File:Myresluger2.jpg"
+    },
+    "replacedBy": null
+  },
+  {
+    "id": 53,
+    "slug": "lowland-tapir",
+    "scientificName": "Tapirus terrestris",
+    "commonName": "Lowland Tapir",
+    "taxonomy": {
+      "class": "Mammalia",
+      "order": "Perissodactyla",
+      "family": "Tapiridae",
+      "genus": "Tapirus"
+    },
+    "ids": {
+      "iucn": 21474,
+      "gbif": null,
+      "col": null,
+      "wikidata": null,
+      "inaturalist": null,
+      "ncbi": null
+    },
+    "photo": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/36/South_American_tapir_%28Tapirus_terrestris%29.JPG/500px-South_American_tapir_%28Tapirus_terrestris%29.JPG",
+      "credit": "Charles J. Sharp",
+      "license": "CC BY-SA 4.0",
+      "page": "https://commons.wikimedia.org/wiki/File:South_American_tapir_(Tapirus_terrestris).JPG"
+    },
+    "replacedBy": null
+  },
+  {
+    "id": 54,
+    "slug": "brown-throated-sloth",
+    "scientificName": "Bradypus variegatus",
+    "commonName": "Brown-throated Sloth",
+    "taxonomy": {
+      "class": "Mammalia",
+      "order": "Pilosa",
+      "family": "Bradypodidae",
+      "genus": "Bradypus"
+    },
+    "ids": {
+      "iucn": 3038,
+      "gbif": null,
+      "col": null,
+      "wikidata": null,
+      "inaturalist": null,
+      "ncbi": null
+    },
+    "photo": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/18/Bradypus.jpg/500px-Bradypus.jpg",
+      "credit": "Stefan Laube (Tauchgurke)",
+      "license": "Public domain",
+      "page": "https://commons.wikimedia.org/wiki/File:Bradypus.jpg"
+    },
+    "replacedBy": null
+  },
+  {
+    "id": 55,
+    "slug": "giant-pangolin",
+    "scientificName": "Smutsia gigantea",
+    "commonName": "Giant Pangolin",
+    "taxonomy": {
+      "class": "Mammalia",
+      "order": "Pholidota",
+      "family": "Manidae",
+      "genus": "Smutsia"
+    },
+    "ids": {
+      "iucn": 12762,
+      "gbif": null,
+      "col": null,
+      "wikidata": null,
+      "inaturalist": null,
+      "ncbi": null
+    },
+    "photo": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/0c/Giant_pangolin_%28Manis_gigantea%29%2C_Natural_History_Museum%2C_London%2C_Mammals_Gallery.JPG/500px-Giant_pangolin_%28Manis_gigantea%29%2C_Natural_History_Museum%2C_London%2C_Mammals_Gallery.JPG",
+      "credit": "John Cummings",
+      "license": "CC BY-SA 3.0",
+      "page": "https://commons.wikimedia.org/wiki/File:Giant_pangolin_(Manis_gigantea),_Natural_History_Museum,_London,_Mammals_Gallery.JPG"
+    },
+    "replacedBy": null
+  },
+  {
+    "id": 56,
+    "slug": "chimpanzee",
+    "scientificName": "Pan troglodytes",
+    "commonName": "Chimpanzee",
+    "taxonomy": {
+      "class": "Mammalia",
+      "order": "Primates",
+      "family": "Hominidae",
+      "genus": "Pan"
+    },
+    "ids": {
+      "iucn": 15933,
+      "gbif": null,
+      "col": null,
+      "wikidata": null,
+      "inaturalist": null,
+      "ncbi": null
+    },
+    "photo": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/42/015_Chimpanzee_at_Kibale_forest_National_Park_Photo_by_Giles_Laurent.jpg/500px-015_Chimpanzee_at_Kibale_forest_National_Park_Photo_by_Giles_Laurent.jpg",
+      "credit": "Giles Laurent",
+      "license": "CC BY-SA 4.0",
+      "page": "https://commons.wikimedia.org/wiki/File:015_Chimpanzee_at_Kibale_forest_National_Park_Photo_by_Giles_Laurent.jpg"
+    },
+    "replacedBy": null
+  },
+  {
+    "id": 57,
+    "slug": "aardvark",
+    "scientificName": "Orycteropus afer",
+    "commonName": "Aardvark",
+    "taxonomy": {
+      "class": "Mammalia",
+      "order": "Tubulidentata",
+      "family": "Orycteropodidae",
+      "genus": "Orycteropus"
+    },
+    "ids": {
+      "iucn": 41504,
+      "gbif": null,
+      "col": null,
+      "wikidata": null,
+      "inaturalist": null,
+      "ncbi": null
+    },
+    "photo": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f0/Orycteropus_afer_175359469.jpg/500px-Orycteropus_afer_175359469.jpg",
+      "credit": "Kelly Abram",
+      "license": "CC BY 4.0",
+      "page": "https://commons.wikimedia.org/wiki/File:Orycteropus_afer_175359469.jpg"
+    },
+    "replacedBy": null
+  },
+  {
+    "id": 58,
+    "slug": "cheetah",
+    "scientificName": "Acinonyx jubatus",
+    "commonName": "Cheetah",
+    "taxonomy": {
+      "class": "Mammalia",
+      "order": "Carnivora",
+      "family": "Felidae",
+      "genus": "Acinonyx"
+    },
+    "ids": {
+      "iucn": 219,
+      "gbif": null,
+      "col": null,
+      "wikidata": null,
+      "inaturalist": null,
+      "ncbi": null
+    },
+    "photo": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/92/Male_cheetah_facing_left_in_South_Africa.jpg/500px-Male_cheetah_facing_left_in_South_Africa.jpg",
+      "credit": "AfricanConservation",
+      "license": "CC BY-SA 4.0",
+      "page": "https://commons.wikimedia.org/wiki/File:Male_cheetah_facing_left_in_South_Africa.jpg"
+    },
+    "replacedBy": null
+  },
+  {
+    "id": 59,
+    "slug": "indian-pangolin",
+    "scientificName": "Manis crassicaudata",
+    "commonName": "Indian Pangolin",
+    "taxonomy": {
+      "class": "Mammalia",
+      "order": "Pholidota",
+      "family": "Manidae",
+      "genus": "Manis"
+    },
+    "ids": {
+      "iucn": 12761,
+      "gbif": null,
+      "col": null,
+      "wikidata": null,
+      "inaturalist": null,
+      "ncbi": null
+    },
+    "photo": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/30/Scaly_ant_eater_by_Dushy_Ranetunge_2.jpg/500px-Scaly_ant_eater_by_Dushy_Ranetunge_2.jpg",
+      "credit": "Dushy Ranetunge",
+      "license": "CC BY-SA 3.0",
+      "page": "https://commons.wikimedia.org/wiki/File:Scaly_ant_eater_by_Dushy_Ranetunge_2.jpg"
+    },
+    "replacedBy": null
+  },
+  {
+    "id": 60,
+    "slug": "giant-panda",
+    "scientificName": "Ailuropoda melanoleuca",
+    "commonName": "Giant Panda",
+    "taxonomy": {
+      "class": "Mammalia",
+      "order": "Carnivora",
+      "family": "Ursidae",
+      "genus": "Ailuropoda"
+    },
+    "ids": {
+      "iucn": 712,
+      "gbif": null,
+      "col": null,
+      "wikidata": null,
+      "inaturalist": null,
+      "ncbi": null
+    },
+    "photo": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/0f/Grosser_Panda.JPG/500px-Grosser_Panda.JPG",
+      "credit": "J. Patrick Fischer",
+      "license": "CC BY-SA 3.0",
+      "page": "https://commons.wikimedia.org/wiki/File:Grosser_Panda.JPG"
+    },
+    "replacedBy": null
+  },
+  {
+    "id": 61,
+    "slug": "indri",
+    "scientificName": "Indri indri",
+    "commonName": "Indri",
+    "taxonomy": {
+      "class": "Mammalia",
+      "order": "Primates",
+      "family": "Indriidae",
+      "genus": "Indri"
+    },
+    "ids": {
+      "iucn": 10826,
+      "gbif": null,
+      "col": null,
+      "wikidata": null,
+      "inaturalist": null,
+      "ncbi": null
+    },
+    "photo": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/0d/Indri_%28Indri_indri%29.jpg/500px-Indri_%28Indri_indri%29.jpg",
+      "credit": "Charles J. Sharp",
+      "license": "CC BY-SA 4.0",
+      "page": "https://commons.wikimedia.org/wiki/File:Indri_(Indri_indri).jpg"
+    },
+    "replacedBy": null
+  },
+  {
+    "id": 62,
+    "slug": "chinese-giant-salamander",
+    "scientificName": "Andrias davidianus",
+    "commonName": "Chinese Giant Salamander",
+    "taxonomy": {
+      "class": "Amphibia",
+      "order": "Caudata",
+      "family": "Cryptobranchidae",
+      "genus": "Andrias"
+    },
+    "ids": {
+      "iucn": 179010104,
+      "gbif": null,
+      "col": null,
+      "wikidata": null,
+      "inaturalist": null,
+      "ncbi": null
+    },
+    "photo": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a0/Velemlok_%C4%8D%C3%ADnsk%C3%BD_zoo_praha_1.jpg/500px-Velemlok_%C4%8D%C3%ADnsk%C3%BD_zoo_praha_1.jpg",
+      "credit": "Petr Hamerník",
+      "license": "CC BY-SA 4.0",
+      "page": "https://commons.wikimedia.org/wiki/File:Velemlok_%C4%8D%C3%ADnsk%C3%BD_zoo_praha_1.jpg"
+    },
+    "replacedBy": null
+  },
+  {
+    "id": 63,
+    "slug": "temmincks-pangolin",
+    "scientificName": "Smutsia temminckii",
+    "commonName": "Temminck's Pangolin",
+    "taxonomy": {
+      "class": "Mammalia",
+      "order": "Pholidota",
+      "family": "Manidae",
+      "genus": "Smutsia"
+    },
+    "ids": {
+      "iucn": 12765,
+      "gbif": null,
+      "col": null,
+      "wikidata": null,
+      "inaturalist": null,
+      "ncbi": null
+    },
+    "photo": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/6b/Manis_temminckii_%2829645803646%29.jpg/500px-Manis_temminckii_%2829645803646%29.jpg",
+      "credit": "U.S. Fish and Wildlife Service Headquarters",
+      "license": "CC BY 2.0",
+      "page": "https://commons.wikimedia.org/wiki/File:Manis_temminckii_(29645803646).jpg"
+    },
+    "replacedBy": null
+  },
+  {
+    "id": 64,
+    "slug": "african-savanna-elephant",
+    "scientificName": "Loxodonta africana",
+    "commonName": "African Savanna Elephant",
+    "taxonomy": {
+      "class": "Mammalia",
+      "order": "Proboscidea",
+      "family": "Elephantidae",
+      "genus": "Loxodonta"
+    },
+    "ids": {
+      "iucn": 181008073,
+      "gbif": null,
+      "col": null,
+      "wikidata": null,
+      "inaturalist": null,
+      "ncbi": null
+    },
+    "photo": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/94/178_Male_African_bush_elephant_in_Etosha_National_Park_Photo_by_Giles_Laurent.jpg/500px-178_Male_African_bush_elephant_in_Etosha_National_Park_Photo_by_Giles_Laurent.jpg",
+      "credit": "Giles Laurent",
+      "license": "CC BY-SA 4.0",
+      "page": "https://commons.wikimedia.org/wiki/File:178_Male_African_bush_elephant_in_Etosha_National_Park_Photo_by_Giles_Laurent.jpg"
+    },
+    "replacedBy": null
+  },
+  {
+    "id": 65,
+    "slug": "african-wild-dog",
+    "scientificName": "Lycaon pictus",
+    "commonName": "African Wild Dog",
+    "taxonomy": {
+      "class": "Mammalia",
+      "order": "Carnivora",
+      "family": "Canidae",
+      "genus": "Lycaon"
+    },
+    "ids": {
+      "iucn": 12436,
+      "gbif": null,
+      "col": null,
+      "wikidata": null,
+      "inaturalist": null,
+      "ncbi": null
+    },
+    "photo": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/75/African_Wild_Dog_at_Working_with_Wildlife.jpg/500px-African_Wild_Dog_at_Working_with_Wildlife.jpg",
+      "credit": "AfricanConservation",
+      "license": "CC BY-SA 4.0",
+      "page": "https://commons.wikimedia.org/wiki/File:African_Wild_Dog_at_Working_with_Wildlife.jpg"
+    },
+    "replacedBy": null
+  },
+  {
+    "id": 66,
+    "slug": "black-rhinoceros",
+    "scientificName": "Diceros bicornis",
+    "commonName": "Black Rhinoceros",
+    "taxonomy": {
+      "class": "Mammalia",
+      "order": "Perissodactyla",
+      "family": "Rhinocerotidae",
+      "genus": "Diceros"
+    },
+    "ids": {
+      "iucn": 6557,
+      "gbif": null,
+      "col": null,
+      "wikidata": null,
+      "inaturalist": null,
+      "ncbi": null
+    },
+    "photo": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/69/Black_Rhino_at_Working_with_Wildlife.jpg/500px-Black_Rhino_at_Working_with_Wildlife.jpg",
+      "credit": "AfricanConservation",
+      "license": "CC BY-SA 4.0",
+      "page": "https://commons.wikimedia.org/wiki/File:Black_Rhino_at_Working_with_Wildlife.jpg"
+    },
+    "replacedBy": null
+  },
+  {
+    "id": 67,
+    "slug": "eastern-long-beaked-echidna",
+    "scientificName": "Zaglossus bartoni",
+    "commonName": "Eastern Long-beaked Echidna",
+    "taxonomy": {
+      "class": "Mammalia",
+      "order": "Monotremata",
+      "family": "Tachyglossidae",
+      "genus": "Zaglossus"
+    },
+    "ids": {
+      "iucn": 136552,
+      "gbif": null,
+      "col": null,
+      "wikidata": null,
+      "inaturalist": null,
+      "ncbi": null
+    },
+    "photo": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f5/Zaglossus_bartoni_-_MUSE.JPG/500px-Zaglossus_bartoni_-_MUSE.JPG",
+      "credit": "Unknown author",
+      "license": "CC BY-SA 3.0",
+      "page": "https://commons.wikimedia.org/wiki/File:Zaglossus_bartoni_-_MUSE.JPG"
+    },
+    "replacedBy": null
+  },
+  {
+    "id": 68,
+    "slug": "hirola",
+    "scientificName": "Beatragus hunteri",
+    "commonName": "Hirola",
+    "taxonomy": {
+      "class": "Mammalia",
+      "order": "Artiodactyla",
+      "family": "Bovidae",
+      "genus": "Beatragus"
+    },
+    "ids": {
+      "iucn": 6234,
+      "gbif": null,
+      "col": null,
+      "wikidata": null,
+      "inaturalist": null,
+      "ncbi": null
+    },
+    "photo": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/6d/Beatragus_hunteri_176040791.jpg/500px-Beatragus_hunteri_176040791.jpg",
+      "credit": "Jan Ebr",
+      "license": "CC BY 4.0",
+      "page": "https://commons.wikimedia.org/wiki/File:Beatragus_hunteri_176040791.jpg"
+    },
+    "replacedBy": null
+  },
+  {
+    "id": 69,
+    "slug": "dama-gazelle",
+    "scientificName": "Nanger dama",
+    "commonName": "Dama Gazelle",
+    "taxonomy": {
+      "class": "Mammalia",
+      "order": "Artiodactyla",
+      "family": "Bovidae",
+      "genus": "Nanger"
+    },
+    "ids": {
+      "iucn": 8968,
+      "gbif": null,
+      "col": null,
+      "wikidata": null,
+      "inaturalist": null,
+      "ncbi": null
+    },
+    "photo": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a5/Gazella_dama_ruficollis_3zz.jpg/500px-Gazella_dama_ruficollis_3zz.jpg",
+      "credit": "Photo by David J. Stang",
+      "license": "CC BY-SA 4.0",
+      "page": "https://commons.wikimedia.org/wiki/File:Gazella_dama_ruficollis_3zz.jpg"
+    },
+    "replacedBy": null
+  },
+  {
+    "id": 70,
+    "slug": "bairds-tapir",
+    "scientificName": "Tapirus bairdii",
+    "commonName": "Baird's Tapir",
+    "taxonomy": {
+      "class": "Mammalia",
+      "order": "Perissodactyla",
+      "family": "Tapiridae",
+      "genus": "Tapirus"
+    },
+    "ids": {
+      "iucn": 21471,
+      "gbif": null,
+      "col": null,
+      "wikidata": null,
+      "inaturalist": null,
+      "ncbi": null
+    },
+    "photo": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b1/Baird%27s_tapir_mother_with_baby_%2892151%29.jpg/500px-Baird%27s_tapir_mother_with_baby_%2892151%29.jpg",
+      "credit": "Rhododendrites",
+      "license": "CC BY-SA 4.0",
+      "page": "https://commons.wikimedia.org/wiki/File:Baird%27s_tapir_mother_with_baby_(92151).jpg"
+    },
+    "replacedBy": null
+  },
+  {
+    "id": 71,
+    "slug": "andean-bear",
+    "scientificName": "Tremarctos ornatus",
+    "commonName": "Andean Bear",
+    "taxonomy": {
+      "class": "Mammalia",
+      "order": "Carnivora",
+      "family": "Ursidae",
+      "genus": "Tremarctos"
+    },
+    "ids": {
+      "iucn": 22066,
+      "gbif": null,
+      "col": null,
+      "wikidata": null,
+      "inaturalist": null,
+      "ncbi": null
+    },
+    "photo": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/56/Tremarctos_ornatus_in_Jardim_Zool%C3%B3gico_de_Curitiba.jpg/500px-Tremarctos_ornatus_in_Jardim_Zool%C3%B3gico_de_Curitiba.jpg",
+      "credit": "Wilfredor",
+      "license": "CC0",
+      "page": "https://commons.wikimedia.org/wiki/File:Tremarctos_ornatus_in_Jardim_Zool%C3%B3gico_de_Curitiba.jpg"
+    },
+    "replacedBy": null
+  },
+  {
+    "id": 72,
+    "slug": "maned-wolf",
+    "scientificName": "Chrysocyon brachyurus",
+    "commonName": "Maned Wolf",
+    "taxonomy": {
+      "class": "Mammalia",
+      "order": "Carnivora",
+      "family": "Canidae",
+      "genus": "Chrysocyon"
+    },
+    "ids": {
+      "iucn": 4819,
+      "gbif": null,
+      "col": null,
+      "wikidata": null,
+      "inaturalist": null,
+      "ncbi": null
+    },
+    "photo": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a3/Lobo_Guar%C3%A1_andando.jpg/500px-Lobo_Guar%C3%A1_andando.jpg",
+      "credit": "Jonathan Wilkins",
+      "license": "CC BY-SA 3.0",
+      "page": "https://commons.wikimedia.org/wiki/File:Lobo_Guar%C3%A1_andando.jpg"
+    },
+    "replacedBy": null
+  },
+  {
+    "id": 73,
+    "slug": "giant-otter",
+    "scientificName": "Pteronura brasiliensis",
+    "commonName": "Giant Otter",
+    "taxonomy": {
+      "class": "Mammalia",
+      "order": "Carnivora",
+      "family": "Mustelidae",
+      "genus": "Pteronura"
+    },
+    "ids": {
+      "iucn": 18711,
+      "gbif": null,
+      "col": null,
+      "wikidata": null,
+      "inaturalist": null,
+      "ncbi": null
+    },
+    "photo": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/21/Giant_otters_%28Pteronura_brasiliensis%29.jpg/500px-Giant_otters_%28Pteronura_brasiliensis%29.jpg",
+      "credit": "Charles J. Sharp",
+      "license": "CC BY-SA 4.0",
+      "page": "https://commons.wikimedia.org/wiki/File:Giant_otters_(Pteronura_brasiliensis).jpg"
+    },
+    "replacedBy": null
+  },
+  {
+    "id": 74,
+    "slug": "axolotl",
+    "scientificName": "Ambystoma mexicanum",
+    "commonName": "Axolotl",
+    "taxonomy": {
+      "class": "Amphibia",
+      "order": "Caudata",
+      "family": "Ambystomatidae",
+      "genus": "Ambystoma"
+    },
+    "ids": {
+      "iucn": 1095,
+      "gbif": null,
+      "col": null,
+      "wikidata": null,
+      "inaturalist": null,
+      "ncbi": null
+    },
+    "photo": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/00/Axolotl_ganz.jpg/500px-Axolotl_ganz.jpg",
+      "credit": "LoKiLeCh",
+      "license": "CC BY-SA 3.0",
+      "page": "https://commons.wikimedia.org/wiki/File:Axolotl_ganz.jpg"
+    },
+    "replacedBy": null
+  },
+  {
+    "id": 75,
+    "slug": "hellbender",
+    "scientificName": "Cryptobranchus alleganiensis",
+    "commonName": "Hellbender",
+    "taxonomy": {
+      "class": "Amphibia",
+      "order": "Caudata",
+      "family": "Cryptobranchidae",
+      "genus": "Cryptobranchus"
+    },
+    "ids": {
+      "iucn": 59077,
+      "gbif": null,
+      "col": null,
+      "wikidata": null,
+      "inaturalist": null,
+      "ncbi": null
+    },
+    "photo": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/87/Hellbender.jpg/500px-Hellbender.jpg",
+      "credit": "Brian Gratwicke",
+      "license": "CC BY 2.0",
+      "page": "https://commons.wikimedia.org/wiki/File:Hellbender.jpg"
+    },
+    "replacedBy": null
+  },
+  {
+    "id": 76,
+    "slug": "golden-poison-frog",
+    "scientificName": "Phyllobates terribilis",
+    "commonName": "Golden Poison Frog",
+    "taxonomy": {
+      "class": "Amphibia",
+      "order": "Anura",
+      "family": "Dendrobatidae",
+      "genus": "Phyllobates"
+    },
+    "ids": {
+      "iucn": 55264,
+      "gbif": null,
+      "col": null,
+      "wikidata": null,
+      "inaturalist": null,
+      "ncbi": null
+    },
+    "photo": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/6e/Schrecklicherpfeilgiftfrosch-01.jpg/500px-Schrecklicherpfeilgiftfrosch-01.jpg",
+      "credit": "Wilfried Berns",
+      "license": "CC BY-SA 2.0 de",
+      "page": "https://commons.wikimedia.org/wiki/File:Schrecklicherpfeilgiftfrosch-01.jpg"
+    },
+    "replacedBy": null
+  }
+]

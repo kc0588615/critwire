@@ -36,3 +36,8 @@ GitHub `origin` is the hub; only pushed work exists on the other machine.
 
 ## Commands
 - `pnpm install`, `pnpm build` (writes `dist/`), `pnpm typecheck`.
+
+## Data
+- `data/species.json`: committed source of truth, sorted by `id`, 2-space JSON.
+- `pnpm seed:cc <cc-repo>/db/content/animals`: (re)writes `data/species.json` from Critter Connect profiles, open fields only. Keeps ids (match `ids.iucn`, then `scientificName`); new animals get max id + 1. Idempotent.
+- `pnpm db:load`: rebuilds `db/schema.sql` tables in `DATABASE_URL` and loads `data/`, one transaction.
