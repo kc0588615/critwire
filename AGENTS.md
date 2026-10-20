@@ -38,6 +38,31 @@ GitHub `origin` is the hub; only pushed work exists on the other machine.
 - `pnpm install`, `pnpm build` (writes `dist/`), `pnpm typecheck`.
 
 ## Data
-- `data/species.json`: committed source of truth, sorted by `id`, 2-space JSON.
-- `pnpm seed:cc <cc-repo>/db/content/animals`: (re)writes `data/species.json` from Critter Connect profiles, open fields only. Keeps ids (match `ids.iucn`, then `scientificName`); new animals get max id + 1. Idempotent.
-- `pnpm db:load`: rebuilds `db/schema.sql` tables in `DATABASE_URL` and loads `data/`, one transaction.
+Files and owners (never hand-edit derived files):
+- `data/base.json`: registry (id, slug, names, step-1 taxonomy, `ids.iucn`, photo, `replacedBy`), sorted by `id`. Writer: `pnpm seed:cc`.
+- `data/raw/{wikidata,col,gbif}/snapshot.json`: normalized API responses, keys sorted, one UTC `retrieved` per file. Writer: `pnpm ingest <source>`.
+- `data/review/country-overrides.json`: owner only (see Countries).
+- `data/species.json`, `data/review/mismatches.json`: derived. Writer: `pnpm derive` only.
+
+Commands, in order:
+1. `pnpm seed:cc <cc-repo>/db/content/animals`: (re)writes `base.json` from Critter Connect profiles, open fields only. Keeps ids (match `ids.iucn`, then `scientificName`); new animals get max id + 1; throws on a double match. Idempotent.
+2. `pnpm ingest wikidata|col|gbif` (one at a time; ≤ 2 req/s): only if a name or IUCN id changed, or to refresh. Logs to stderr; mission runs `2>> <state>/ingest-<s>.log`. All or nothing.
+3. `pnpm derive`: offline, pure (no network, clock or `species.json` read); refuses stale raw and names the ingest to re-run. Prints coverage and mismatch counts.
+4. `pnpm db:load`: rebuilds `db/schema.sql` tables in `DATABASE_URL` and loads `species.json`, one transaction.
+- `pnpm test`: unit tests of derive rules (`node:test`).
+
+Rules (details: `plans/2026-10-20-critwire-ingest.md` §5):
+- Disagreements are never auto-fixed: id `null` (or base value kept) + entry in `mismatches.json` (severity `blocking`, `review` or `info`).
+- `ids.gbif`: legacy GBIF backbone key (checklist `d7dddbf4-…`). `ids.col`: stable COL id, also COL XR key (GBIF default since 2026-06). Taxonomy from COL only when identity settled; else base.
+- `sources[]` cites every third-party field once; `critwire base` covers `ids.iucn` and fallback taxonomy.
+
+Countries (`range.countriesWithRecords`):
+- Means "countries with records", NOT native range. ISO alpha-2, sorted. `null` = GBIF taxon not settled; `[]` = settled, nothing counted.
+- GBIF occurrence facets: `occurrenceStatus=PRESENT`, no geospatial issue, has coordinate, `basisOfRecord` without `LIVING_SPECIMEN`/`FOSSIL_SPECIMEN`, `ZZ` dropped.
+- Counts only CC0 1.0 + CC BY 4.0 records (`assertOpenLicenses`); field published CC BY 4.0. GBIF aggregates have no DOI.
+- Rule (constants top of `scripts/derive/countries.ts`): region = GBIF `gbifRegion`, NORTH_AMERICA + LATIN_AMERICA merged (`MERGED_REGIONS`). Core = region with most countries (tie: most records; still tied: all core).
+  - outside core, ≤ `STRAY_MAX` (1) record: excluded, `country-captive-suspect` blocking;
+  - outside core, ≥ 2: kept, `country-captive-suspect` review;
+  - in core, species ≥ `BORDERLINE_MIN_SPECIES_RECORDS` (50) records, country ≤ `BORDERLINE_MAX` (2): kept, `country-borderline` review;
+  - else kept.
+- Overrides, applied last: `[{"speciesId": 25, "country": "RU", "action": "keep"|"remove", "reason": "…"}]`. `keep` publishes (restores stray / confirms flag), `remove` withholds. Exactly those keys, known species, `^[A-Z]{2}$` not `ZZ`, non-empty reason, unique (speciesId, country); no `keep` without records; none on `null`-countries species. Overridden country gets no `country-*` entry.
