@@ -129,7 +129,7 @@ Out:
 - [x] Baseline: install, migrate, run typecheck, lint, unit and E2E tests; record the results under Baseline
 - [x] Architecture: `architect` writes findings and the target design
 - [x] Fable review: `architecture-reviewer`
-- [ ] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
+- [x] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
 - [ ] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
 - [ ] Steps: `planner` writes Steps and Verification
 
@@ -578,6 +578,23 @@ SHOULD-CONSIDER:
 
 ## Architecture review (Astra)
 
+VERDICT: APPROVE_WITH_CHANGES
+
+MUST-FIX:
+
+1. **Country filtering makes unsupported identity decisions (§5.4).** Political regions automatically exclude documented valid records (tiger RU, cheetah IR, jaguar US), while top countries and known same-region captive suspects remain unflagged. Empty overrides leave these defects in the output. Use regional differences as review signals, not automatic exclusions; flag known captive suspects regardless of whether retained.
+
+2. **Provenance contract violates AGENTS.md (§4).** Omitting the occurrence license does not satisfy “every third-party field … records its source and license.” “Leave the field out” means withholding the unsupported data field, not merely its license attribute. Establish an explicit, supported licensing basis before publishing countries. Preserve provenance for base taxonomy used as fallback, too.
+
+3. **Multi-valued GBIF IDs can be published (§5.3).** Wikidata P846 containing both `usageKey` and `acceptedKey` passes the proposed cross-check, despite the brief requiring multi-valued properties to produce null plus a `multi-value` entry. Resolve cardinality before compatibility checks.
+
+SHOULD-CONSIDER:
+
+1. An unchanged epithet does not establish that an accepted taxon has the same scope. Treat the epithet check as a warning heuristic, not proof that synonym-expanded occurrences belong to the intended species.
+2. Specify how ambiguous Wikidata items affect downstream COL/GBIF cross-checks; do not silently treat ambiguity as absent evidence.
+3. Remove the contradictory SPARQL `UNDEF` path; enforce the non-null IUCN-ID prerequisite at query construction.
+4. Land the base-file migration, derive pipeline, loader changes and regenerated output together.
+
 ## Revision notes
 
 ## Steps
@@ -591,5 +608,6 @@ SHOULD-CONSIDER:
 - 2026-10-20 05:36 UTC: Baseline. typecheck, build, db:load x2, seed:cc idempotency all pass; no lint/tests/E2E exist.
 - 2026-10-20 05:55 UTC: Architecture. architect wrote findings + target design (base.json/species.json split, raw snapshots, derive rules, countries rule, D1–D12); ~25 live API calls, evidence in agent-state arch/. No code changed.
 - 2026-10-20 06:01 UTC: Fable review. APPROVE_WITH_CHANGES; 1 MUST-FIX (SPARQL UNDEF for null IUCN id → throw instead), 2 missed (MX false positives in region rule, rename/derive sequencing), 5 should-consider. Plan-only change.
+- 2026-10-20 06:02 UTC: Astra review. APPROVE_WITH_CHANGES; 3 MUST-FIX (region rule auto-excludes valid records → review signals; occurrence-license provenance gap; P846 multi-value must null before cross-check), 4 should-consider. Plan-only change.
 
 ## Summary
