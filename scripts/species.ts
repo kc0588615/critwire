@@ -14,6 +14,20 @@ export interface BaseSpecies {
   replacedBy: number[] | null;
 }
 
+// One citation in a record's sources[] (plan §4): the published fields one source filled. A type, not an interface,
+// so it is assignable to postgres.js's JSONValue in load.ts.
+export type Source = {
+  source: string;
+  fields: string[];
+  license: string;
+  retrieved?: string;
+  url: string;
+  doi?: string;
+  release?: { key: number; alias: string; version: string; issued: string };
+  checklistKey?: string;
+};
+
+// Built by scripts/derive/record.ts in this key order.
 export interface Species {
   id: number;
   slug: string;
@@ -21,14 +35,17 @@ export interface Species {
   commonName: string;
   taxonomy: Taxonomy;
   ids: {
-    iucn: number | null;
+    iucn: number;
     gbif: number | null;
     col: string | null;
     wikidata: string | null;
     inaturalist: number | null;
     ncbi: number | null;
   };
+  // ISO alpha-2 codes of countries with records (never native range); null when the GBIF taxon isn't settled.
+  range: { countriesWithRecords: string[] | null };
   photo: Photo | null;
+  sources: Source[];
   replacedBy: number[] | null;
 }
 
@@ -53,6 +70,8 @@ export interface CountryOverride { speciesId: number; country: string; action: "
 
 export const baseFile = new URL("../data/base.json", import.meta.url);
 export const speciesFile = new URL("../data/species.json", import.meta.url);
+export const mismatchesFile = new URL("../data/review/mismatches.json", import.meta.url);
+export const overridesFile = new URL("../data/review/country-overrides.json", import.meta.url);
 
 // Throws unless ids, slugs, scientific names and IUCN ids are unique and ids and IUCN ids are positive integers.
 // Step 2 keys all raw data by scientificName, so a duplicate name would silently merge two species.
