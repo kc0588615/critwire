@@ -126,7 +126,7 @@ Out:
 
 ## Stages
 
-- [ ] Baseline: install, migrate, run typecheck, lint, unit and E2E tests; record the results under Baseline
+- [x] Baseline: install, migrate, run typecheck, lint, unit and E2E tests; record the results under Baseline
 - [ ] Architecture: `architect` writes findings and the target design
 - [ ] Fable review: `architecture-reviewer`
 - [ ] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
@@ -134,6 +134,13 @@ Out:
 - [ ] Steps: `planner` writes Steps and Verification
 
 ## Baseline
+
+2026-10-20, base `0b692e6` (main `a57313f`). Node 24.21.0, pnpm 11.10.0, Postgres 16.15, PostGIS 3.4.2 in `critwire_dev`.
+- `pnpm install --frozen-lockfile`: up to date.
+- `pnpm typecheck`: pass. `pnpm build`: pass (placeholder `dist/`).
+- No lint script, no unit tests, no E2E suite in the repo (as the brief says).
+- `pnpm db:load` twice against `critwire_dev`: `loaded 76 species` both times.
+- `pnpm seed:cc /srv/critter-ai/critter-connect/db/content/animals` (CC `677eb61a`, 76 profiles): rewrote `data/species.json` with no diff (idempotent).
 
 ## Architecture
 
@@ -150,5 +157,7 @@ Out:
 ## Decisions
 
 ## Log
+
+- 2026-10-20 05:36 UTC: Baseline. typecheck, build, db:load x2, seed:cc idempotency all pass; no lint/tests/E2E exist.
 
 ## Summary
