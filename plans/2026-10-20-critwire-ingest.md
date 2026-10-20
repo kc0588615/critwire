@@ -128,7 +128,7 @@ Out:
 
 - [x] Baseline: install, migrate, run typecheck, lint, unit and E2E tests; record the results under Baseline
 - [x] Architecture: `architect` writes findings and the target design
-- [ ] Fable review: `architecture-reviewer`
+- [x] Fable review: `architecture-reviewer`
 - [ ] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
 - [ ] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
 - [ ] Steps: `planner` writes Steps and Verification
@@ -556,6 +556,26 @@ Per the owner's rule, write the failure-mode list into the test files first, the
 
 ## Architecture review (Fable)
 
+Fable, 2026-10-20. Checked findings against `scripts/seed-cc.ts`, `scripts/species.ts`, `scripts/load.ts`, `scripts/build.ts`, `db/schema.sql`, `data/species.json` (76 records, 76 unique names, 0 null `ids.iucn`, only `ids.iucn` filled). Re-ran ~12 polite live calls: GBIF v2 match (tiger, Blanding's, Apalone, ferret), `enumeration/country`, pinned occurrence facets, ChecklistBank `3LR` + 5 matches, and the SPARQL template with 3 names. No IUCN calls.
+
+Findings 1–6 are real and the cited lines are accurate (`seed-cc.ts:70-71` Maps with last-wins, `:77-89` second-match overwrite, `:79` dup check only on the no-match path, `:93-97` slug-only uniqueness; `species.ts` one type for input and output; schema has no countries/sources). Finding 4 confirmed live: v2 match returns `additionalStatus[{datasetAlias:"IUCN", status:"ENDANGERED", statusCode:"EN", …}]`; v1 doesn't, but v2 is the only one that pins the backbone, so strip-and-guard is right. Live shapes match the design: ChecklistBank match has `usage.classification` (genus→domain, kingdom present), `type` comes back `variant` for every exact name sent without authorship (so `exact|variant` + `usage.name == N` is necessary, not optional); `Chelonoidis abingdonii` matches `higherrank` to the genus (→ `not-found`, base taxonomy, as designed); P10585 values are the stable ids (`4JZ39`, `793TZ`); pinned facets differ from unpinned (11,390 vs 11,393), so the `checklistKey` pin is doing something. The SPARQL template parses and binds `?name` on both UNION branches, so `iucnItem` rows attach to the right species. The base.json/species.json split (D1) is the correct fix for findings 1–2 and is not over-engineered; module count, `severity`, and the test list are proportionate.
+
+VERDICT: APPROVE_WITH_CHANGES
+
+MUST-FIX:
+1. **`UNDEF` in the SPARQL VALUES is a live hazard, and dead text.** If `?iucn` is `UNDEF`, the second UNION branch `?iucnItem wdt:P627 ?iucn` has an unbound object and joins every Wikidata item with a P627 (hundreds of thousands of rows for that one name): a timeout or a multi-MB snapshot. `validateBase()` (finding 3) already requires non-null `ids.iucn` and `seed-cc.ts:39` already rejects a missing `iucnId`, so the case can't occur. Make it explicit: `wikidataQuery(base)` throws on a null id and §3 drops the "UNDEF for a null IUCN id" sentence. Fail fast, no silent blow-up path.
+
+MISSED:
+1. **The region rule excludes a large native country on the sample set.** *Apalone spinifera* today (brief's filters): US 18,207, MX 1,012, CA 475, AR 13, PT 11, IT 7, CN 1. GBIF puts MX in `LATIN_AMERICA` and `NORTH_AMERICA` holds only 4 countries (US, CA, GL, BM), so MX (5% of records, native range along the Rio Grande) is excluded as `country-captive-suspect`. Same for *Mustela nigripes* MX (reintroduced; the brief says not to tell native from introduced). These aren't in the §5.4 false-positive list and "captive-suspect" is the wrong word for a 1,012-record neighbour. The override path covers it, so not a defect, but R1 should name the US/MX seam, and the spot-check list should include Apalone. See SHOULD-CONSIDER 1 for a one-line rule change.
+2. **Migration window.** §1 does `git mv data/species.json data/base.json` before derive exists; between that step and the first `pnpm derive`, `pnpm db:load` has no input and `load.ts` won't typecheck against the new `Species` (required `range`, `sources`). `build.ts` is unaffected (it reads nothing). The planner must order Steps so the rename, the type change, `load.ts`, derive and the first derived `species.json` land in one step (or one commit), so every commit keeps `pnpm typecheck` and `pnpm db:load` green.
+
+SHOULD-CONSIDER:
+1. Countries: treat `NORTH_AMERICA` and `LATIN_AMERICA` as one region for the core test. Cost: axolotl US 2 and CA 3 are then kept (rule 3 doesn't catch counts of 2–3) and need `remove` overrides. Gain: Apalone MX 1,012, ferret MX, jaguar US 140 stop being flagged. The architect's "would still miss the MX/US split" argument cuts the other way once Apalone is on the table. Either way, document the choice in `derive/countries.ts`.
+2. COL status: ChecklistBank also returns `provisionally accepted`. The rule sends it to `not-found`, which misdescribes it. Report it as `identity` with `values.col.status`, or accept it with an info entry; pick one and state it.
+3. Wikidata `sources[].url`: the brief asks for a query URL. `https://www.wikidata.org/wiki/Special:EntityData/Q185526.json` is both per-species and a verifiable query; prefer it over the HTML entity page, or store both.
+4. GBIF v2 match also returns `left`/`right` (nested-set indexes) that move whenever the backbone is rebuilt; drop them with `diagnostics.timeTaken`/`timings` to cut raw churn.
+5. §5.6 says "every null `ids.*` has exactly one entry", but the 0-items Wikidata case writes one entry for three nulls. Reword to "is explained by exactly one entry" so the invariant the tests check is the one the text states.
+
 ## Architecture review (Astra)
 
 ## Revision notes
@@ -570,5 +590,6 @@ Per the owner's rule, write the failure-mode list into the test files first, the
 
 - 2026-10-20 05:36 UTC: Baseline. typecheck, build, db:load x2, seed:cc idempotency all pass; no lint/tests/E2E exist.
 - 2026-10-20 05:55 UTC: Architecture. architect wrote findings + target design (base.json/species.json split, raw snapshots, derive rules, countries rule, D1–D12); ~25 live API calls, evidence in agent-state arch/. No code changed.
+- 2026-10-20 06:01 UTC: Fable review. APPROVE_WITH_CHANGES; 1 MUST-FIX (SPARQL UNDEF for null IUCN id → throw instead), 2 missed (MX false positives in region rule, rename/derive sequencing), 5 should-consider. Plan-only change.
 
 ## Summary
