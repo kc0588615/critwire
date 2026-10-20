@@ -1,16 +1,17 @@
-// Seeds data/species.json from Critter Connect profiles (db/content/animals/*.json), open fields only.
+// Seeds data/base.json from Critter Connect profiles (db/content/animals/*.json), open fields only.
 // Never copies redList, systems, habitats, range, sources, clues, facts or traits (IUCN data, copyrighted text, game content).
 // Usage: pnpm seed:cc <path-to-animals-dir>
 import { existsSync } from "node:fs";
-import { readdir, readFile, writeFile } from "node:fs/promises";
+import { readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
-import { speciesFile, type Photo, type Species } from "./species.ts";
+import { readJson, writeJson } from "./json.ts";
+import { baseFile, validateBase, type BaseSpecies, type Photo, type Taxonomy } from "./species.ts";
 
 interface CcProfile {
   id: number;
   commonName: string;
   scientificName: string;
-  taxonomy: Species["taxonomy"];
+  taxonomy: Taxonomy;
   iucnId: number;
   photo?: Photo | null;
 }
@@ -65,16 +66,21 @@ const profiles = await Promise.all(
   files.map(async f => readProfile(JSON.parse(await readFile(join(dir, f), "utf8")), f)),
 );
 
-const existing: Species[] = existsSync(speciesFile) ? JSON.parse(await readFile(speciesFile, "utf8")) : [];
+const existing: BaseSpecies[] = existsSync(baseFile) ? await readJson(baseFile) : [];
+validateBase(existing);
 const firstSeed = existing.length === 0;
-const byIucn = new Map(existing.filter(s => s.ids.iucn != null).map(s => [s.ids.iucn, s]));
+const byIucn = new Map(existing.map(s => [s.ids.iucn, s]));
 const byName = new Map(existing.map(s => [s.scientificName, s]));
 const records = new Map(existing.map(s => [s.id, s]));
+const matched = new Set<number>();
 let nextId = Math.max(0, ...existing.map(s => s.id)) + 1;
-const emptyIds: Species["ids"] = { iucn: null, gbif: null, col: null, wikidata: null, inaturalist: null, ncbi: null };
 
 for (const p of profiles) {
   const match = byIucn.get(p.iucnId) ?? byName.get(p.scientificName);
+  if (match) {
+    if (matched.has(match.id)) throw new Error(`${p.scientificName}: matches record ${match.id}, already matched by another profile`);
+    matched.add(match.id);
+  }
   const id = match?.id ?? (firstSeed ? p.id : nextId++);
   if (!match && records.has(id)) throw new Error(`duplicate id ${id} (${p.scientificName})`);
   records.set(id, {
@@ -83,18 +89,14 @@ for (const p of profiles) {
     scientificName: p.scientificName,
     commonName: p.commonName,
     taxonomy: p.taxonomy,
-    ids: { ...emptyIds, ...match?.ids, iucn: p.iucnId },
+    ids: { iucn: p.iucnId },
     photo: p.photo ?? null,
     replacedBy: match?.replacedBy ?? null,
   });
 }
 
-const species = [...records.values()].sort((a, b) => a.id - b.id);
-const slugs = new Set<string>();
-for (const s of species) {
-  if (slugs.has(s.slug)) throw new Error(`duplicate slug ${s.slug}`);
-  slugs.add(s.slug);
-}
+const base = [...records.values()].sort((a, b) => a.id - b.id);
+validateBase(base);
 
-await writeFile(speciesFile, JSON.stringify(species, null, 2) + "\n");
-console.log(`wrote ${species.length} species to data/species.json`);
+await writeJson(baseFile, base);
+console.log(`wrote ${base.length} species to data/base.json`);

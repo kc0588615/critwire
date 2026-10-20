@@ -754,7 +754,7 @@ Planner, 2026-10-20. How the steps map onto the migration (§1, D15):
 
 Every step is one commit (the code, the plan check-off and one Log line), pushed. "Green" means `pnpm typecheck && pnpm test && pnpm build`; there is no `test` script before S2. `L` is `/srv/critter-ai/agent-state/missions/critwire-ingest`. A step's §7 tests are written first, named after their id (`test("K4 …")`), and run red before the code is written (put the failing count in the Log). V0–V9 are defined in Verification, F1–F9 in Failure modes.
 
-- [ ] S1 · Split `data/base.json` from `data/species.json`; harden seed:cc.
+- [x] S1 · Split `data/base.json` from `data/species.json`; harden seed:cc.
   - `scripts/species.ts`: add `BaseSpecies` (`ids: {iucn}`), `baseFile` and `validateBase()`. It requires `id`, `slug`, `scientificName` and `ids.iucn` to be unique, and `ids.iucn` to be a positive integer.
   - Add `scripts/json.ts` (§2).
   - `scripts/seed-cc.ts`:
@@ -1025,5 +1025,6 @@ Failure modes checked by a negative run instead of a unit test (D11):
 - 2026-10-20 06:02 UTC: Astra review. APPROVE_WITH_CHANGES; 3 MUST-FIX (region rule auto-excludes valid records → review signals; occurrence-license provenance gap; P846 multi-value must null before cross-check), 4 should-consider. Plan-only change.
 - 2026-10-20 06:22 UTC: Revision. architect resolved all 5 MUST-FIX + 2 missed (countries rule → review signals + 1-record-outside-core stray rule; license filter CC0/CC-BY; multi-value before cross-check; UNDEF throw; 3-commit green migration); all should-consider adopted. ~230 GBIF calls, evidence in agent-state revision/. Plan-only change.
 - 2026-10-20 06:33 UTC: Steps. planner wrote S1–S11 (base split, 3 ingests w/ snapshots, rule modules test-first, switch commit, seed:cc+docs, spot-checks, PR), Verification V0–V9, Failure modes F1–F9. Plan-only change.
+- 2026-10-20 06:34 UTC: S1. `data/base.json` (copy of species.json, ids→{iucn}), `scripts/json.ts`, `BaseSpecies`/`validateBase`, seed:cc writes base.json + throws on double match. typecheck+build green; V2 seed:cc (CC 677eb61a) no diff; F1 dup profile exits 1, data/ clean; db:load 76.
 
 ## Summary
