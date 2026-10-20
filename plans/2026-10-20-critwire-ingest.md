@@ -778,7 +778,7 @@ Every step is one commit (the code, the plan check-off and one Log line), pushed
     - `jq -e '[.response.results.bindings[] | select(.item) | [.name.value, .item.value]] | unique | group_by(.[0]) | length == 76 and all(.[]; length == 1)' data/raw/wikidata/snapshot.json`;
     - a second run the same day leaves `git diff --exit-code data/raw/wikidata` clean;
     - `pnpm ingest nope` exits non-zero with a usage message.
-- [ ] S3 · COL ingest and its snapshot.
+- [x] S3 · COL ingest and its snapshot.
   - `scripts/ingest/col.ts`: resolve 3LR to the allowlisted release record, then fetch the 76 matches, keyed by name as `{url, response}`. Strip `created`, `modified` and `modifiedBy` wherever they appear.
   - `raw.ts`: add `assertNoIucnData`, which runs before the write.
   - Run `pnpm ingest col 2>> $L/ingest-col.log` and commit `data/raw/col/snapshot.json`.
@@ -820,6 +820,7 @@ Every step is one commit (the code, the plan check-off and one Log line), pushed
   - Checks:
     - green;
     - smoke run: species 22 gets `not-found` on `ids.col`, and species 1 and 55 get `synonym-info` on `ids.gbif`. Record the counts of settled COL and GBIF matches in the Log.
+  - From the S3 snapshot (decide in S7, test first): `usage.name` carries a subgenus for *Marmota vancouverensis* (`Marmota (Petromarmota) vancouverensis`) and *Ochotona iliensis* (`Ochotona (Conothoa) iliensis`). The brief's "canonical names are equal" means comparing without the subgenus; a literal `usage.name == N` would blank both. *Zaglossus bruijnii* → `Zaglossus bruijni` (spelling variant, not equal → `not-found`). COL synonyms: *Tapirus bairdii*, *Trichobatrachus robustus* (→ `identity`).
 - [ ] S8 · Switch commit (migration 3 of 3), in one commit.
   - Tests first: S1 in `scripts/derive/record.test.ts`.
   - Then `scripts/derive/record.ts`. It is pure: it builds the §4 record in a fixed key order, builds `sources[]`, and asserts that every field is cited exactly once. This module is the planner's layout choice, so that S1 needs no file system.
@@ -1027,5 +1028,7 @@ Failure modes checked by a negative run instead of a unit test (D11):
 - 2026-10-20 06:33 UTC: Steps. planner wrote S1–S11 (base split, 3 ingests w/ snapshots, rule modules test-first, switch commit, seed:cc+docs, spot-checks, PR), Verification V0–V9, Failure modes F1–F9. Plan-only change.
 - 2026-10-20 06:34 UTC: S1. `data/base.json` (copy of species.json, ids→{iucn}), `scripts/json.ts`, `BaseSpecies`/`validateBase`, seed:cc writes base.json + throws on double match. typecheck+build green; V2 seed:cc (CC 677eb61a) no diff; F1 dup profile exits 1, data/ clean; db:load 76.
 - 2026-10-20 06:37 UTC: S2. `http.ts` (UA, 500 ms pacing, retries/backoff, stderr log), `raw.ts`, `ingest.ts` CLI, `ingest/wikidata.ts` (§3 template, bindings sorted); `ingest`+`test` scripts. W11 red (1 fail, no module) then green. Live ingest: 441 bindings, 76 names → 1 item each, 188 KB, retrieved 2026-10-20; 2nd run no churn; `ingest nope` exit 2; typecheck+test+build green.
+
+- 2026-10-20 06:38 UTC: S3. `ingest/col.ts` (3LR → allowlisted release COL26.10 key 316595, 76 matches keyed by name, `created/modified/modifiedBy` stripped), `raw.ts` `omitKeys` + `assertNoIucnData`. Live: 76 matches, 464 KB, no IUCN/volatile keys; 2nd run no churn; F4 (timeout 10) exit 124, snapshot intact, no temp file. typecheck+test+build green. Noted for S7: subgenus in `usage.name` (2), Zaglossus spelling variant, 2 COL synonyms, Chelonoidis abingdonii higherrank.
 
 ## Summary
