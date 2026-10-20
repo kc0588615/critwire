@@ -799,7 +799,7 @@ Every step is one commit (the code, the plan check-off and one Log line), pushed
     - V4's GBIF raw lines;
     - `jq -e '.species["Emydoidea blandingii"].occurrences.response.facets[] | select(.field == "COUNTRY") | [.counts[].name] == ["CA","US"]' data/raw/gbif/snapshot.json`;
     - `du -h` shows roughly 0.3–0.7 MB.
-- [ ] S5 · Countries rule, the riskiest logic.
+- [x] S5 · Countries rule, the riskiest logic.
   - Tests first: K1–K10 in `scripts/derive/countries.test.ts`.
   - Then `scripts/derive/countries.ts`: the §5.4 constants with their justification at the top, the §5.5 override validation and application, and entries in the §5.6 shape.
   - `species.ts`: add the `Mismatch` and `CountryOverride` types. This only adds types; `Species` doesn't change.
@@ -1031,5 +1031,6 @@ Failure modes checked by a negative run instead of a unit test (D11):
 
 - 2026-10-20 06:38 UTC: S3. `ingest/col.ts` (3LR → allowlisted release COL26.10 key 316595, 76 matches keyed by name, `created/modified/modifiedBy` stripped), `raw.ts` `omitKeys` + `assertNoIucnData`. Live: 76 matches, 464 KB, no IUCN/volatile keys; 2nd run no churn; F4 (timeout 10) exit 124, snapshot intact, no temp file. typecheck+test+build green. Noted for S7: subgenus in `usage.name` (2), Zaglossus spelling variant, 2 COL synonyms, Chelonoidis abingdonii higherrank.
 - 2026-10-20 06:43 UTC: S4. `ingest/gbif.ts` (backbone checklist allowlist, country enum 250, v2 match w/ timeTaken/timings/additionalStatus/left/right stripped, occurrence facets fixed param order, sorted, facetLimit guard), `raw.ts` GBIF types + `assertOpenLicenses` + `gbifTaxonKey`. G7 red (1 fail) then green. Live: 76 species all with occurrences, 288 KB, 397,200 records / 521 country entries (= revision evidence exactly), Blanding's CA+US, Ili pika count 0, no IUCN/volatile keys. typecheck+test+build green. Noted for S7: 4 GBIF synonyms (Emydoidea, Smutsia gigantea, Smutsia temminckii, Tapirus bairdii), not just 2.
+- 2026-10-20 06:51 UTC: S5. `derive/countries.ts` (§5.4 constants + justification, core by countries/records/all-tied, Americas merged, stray/captive-suspect/borderline, `parseOverrides` + keep/remove applied last, null countries reject overrides, calls `assertOpenLicenses`), `Mismatch`/`CountryOverride` types. K1–K10 red (1 fail, no module) then green. Smoke on raw gbif: 76 species, 482 codes, Ili pika `[]`, 39 strays, 54 captive-suspect + 97 borderline review (= revision evidence, no drift). typecheck+test+build green.
 
 ## Summary

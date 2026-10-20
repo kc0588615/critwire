@@ -32,6 +32,25 @@ export interface Species {
   replacedBy: number[] | null;
 }
 
+// One review entry in data/review/mismatches.json (plan §5.6). Built with the keys in this order.
+export type Severity = "blocking" | "review" | "info";
+export type MismatchKind =
+  | "not-found" | "multi-value" | "identity" | "iucn-id" | "synonym-info" | "status-info" | "taxonomy-info"
+  | "country-captive-suspect" | "country-borderline" | "no-records";
+export interface Mismatch {
+  speciesId: number;
+  scientificName: string;
+  field: string;
+  kind: MismatchKind;
+  severity: Severity;
+  country?: string;
+  values: Record<string, unknown>;
+  reason: string;
+}
+
+// One element of data/review/country-overrides.json (owner-owned, plan §5.5).
+export interface CountryOverride { speciesId: number; country: string; action: "keep" | "remove"; reason: string }
+
 export const baseFile = new URL("../data/base.json", import.meta.url);
 export const speciesFile = new URL("../data/species.json", import.meta.url);
 
