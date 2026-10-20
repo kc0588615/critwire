@@ -1,7 +1,7 @@
 // COL ingest via ChecklistBank (plan §3): resolve the current release (3LR), then one name match per base species.
 // Fetch and normalize only; no fs. The classification comes from the match response itself (D3).
 import { getJson } from "../http.ts";
-import { assertNoIucnData, omitKeys, type ColRelease, type ColSnapshot, type Fetched } from "../raw.ts";
+import { assertNoIucnData, omitKeys, type ColMatchResponse, type ColRelease, type ColSnapshot, type Fetched } from "../raw.ts";
 import type { BaseSpecies } from "../species.ts";
 
 const API = "https://api.checklistbank.org";
@@ -25,10 +25,10 @@ export const colMatchUrl = (key: number, name: string) =>
 
 export async function fetchCol(base: BaseSpecies[]): Promise<Omit<ColSnapshot, "retrieved">> {
   const release = toRelease((await getJson(`${API}/dataset/3LR`)) as Record<string, unknown>);
-  const matches: Record<string, Fetched> = {};
+  const matches: Record<string, Fetched<ColMatchResponse>> = {};
   for (const { scientificName } of base) {
     const url = colMatchUrl(release.key, scientificName);
-    const response = omitKeys(await getJson(url), VOLATILE) as Record<string, unknown>;
+    const response = omitKeys(await getJson(url), VOLATILE) as ColMatchResponse;
     if (typeof response.match !== "boolean") throw new Error(`col: ${url}: no boolean "match" in ${JSON.stringify(response).slice(0, 300)}`);
     matches[scientificName] = { url, response };
   }

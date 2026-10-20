@@ -17,10 +17,16 @@ export interface Fetched<T = unknown> { url: string; response: T }
 
 export interface ColRelease { key: number; alias: string; title: string; version: string; issued: string; doi: string; license: string; url: string }
 
+// ChecklistBank name match (only the fields the COL rule reads). For an accepted usage the classification starts at
+// its parent; for a synonym it starts at the accepted name (id == usage.parentId).
+export interface ColTaxon { id: string; name: string; rank: string; status?: string }
+export interface ColUsage extends ColTaxon { parentId?: string; classification?: ColTaxon[] }
+export interface ColMatchResponse { match: boolean; type?: string; usage?: ColUsage }
+
 export interface ColSnapshot {
   retrieved: string;
   release: ColRelease;
-  matches: Record<string, Fetched>;
+  matches: Record<string, Fetched<ColMatchResponse>>;
 }
 
 export interface GbifUsage {
