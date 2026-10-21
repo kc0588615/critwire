@@ -2,7 +2,7 @@
 mission: critwire-release
 project: critwire
 branch: agent/critwire-release
-status: active
+status: done
 started: 2026-10-21 05:13 UTC
 ---
 
@@ -1277,7 +1277,18 @@ Typecheck, read-only tests, and derived-file freshness passed. Build/E2E not rer
 - 2026-10-21 06:45 UTC: S12 done: origin/main already an ancestor, no rebase. V5: 2 strict builds hash-identical (157 files), db 76, db:load ok. V8: GitHub clone at HEAD, frozen install, `unshare -n` (DNS fails), empty HOME, `critwire_offline` socket: build ok, 76 rows, no `~/.duckdb`, hashes = worktree. V9: E2E 20/20, 0 skipped/flaky, report + traces + `docs-375.png` + access log in `$L/e2e`, Caddy gone. Transcript `$L/verify/s12-20261021T0641Z.log` (exit 1 only from its last line `pgrep … && fail`, which returns 1 when no Caddy is left: expected; in the full V block it's mid-script). PR #6 opened (`$L/pr-body.md`); `plans/001-mvp.md` step 3 → PR #6. V10 passed.
 - 2026-10-21 06:43 UTC: S13 done: Verification V0–V10 as one script (`$L/verify/verify.sh`, lines copied verbatim from the plan), exit 0. Transcript `$L/verify/verify-20261021T0642Z.log`. Typecheck pass, unit 66/66 (every §12 id present); derive = committed, twice stable, pure, `DOI current`; V3 data checks + tag `gbif-dd-b58ac1e3105b` = deposit sha; V4 register verify: GETs only, no POST, no password, tree clean; V5 two strict builds hash-identical (157 files), db 76; V6 dist contents ok, no clock time; V7 F1–F3 messages exact in throwaway copy; V8 offline proof (GitHub clone at HEAD, `unshare -n`, empty HOME, `critwire_offline`): hashes = worktree, no `~/.duckdb`; V9 E2E 20/20, 0 skipped/flaky, artifacts `$L/e2e`, Caddy gone; V10 no secret, tree clean, PR #6 OPEN main. Numbers unchanged: PR body not edited.
 - 2026-10-21 06:45 UTC: Astra code review (`--code origin/main`): APPROVE, 0 MUST-FIX, 2 SHOULD-CONSIDER (GBIF paging fixture test >300 datasets; slug filename pattern) put in Summary for owner. Docs-only; no checks needed.
+- 2026-10-21 06:50 UTC: Final verification (mission step 7): origin/main still an ancestor; `$L/verify/verify.sh` (V0–V10) exit 0, transcript `$L/verify/verify-20261021T0645Z.log`; unit 66/66, derive stable + `DOI current`, two strict builds + offline build hash-identical (157 files), E2E 20/20 (0 skipped/flaky, artifacts `$L/e2e`), PR #6 OPEN. Summary written, `status: done`.
 
 ## Summary
 
-- Astra code review: APPROVE, no MUST-FIX. SHOULD-CONSIDER for the owner (not done): (1) fixture test for GBIF dataset-facet paging past 300 datasets (`scripts/ingest/gbif.ts:104`; live max so far 125); (2) a safe-filename pattern check on slugs in `scripts/build/inputs.ts:19` (today only all-digit slugs are refused; `slugify` in `seed-cc.ts` makes them).
+`pnpm build` (offline, deterministic) turns committed `data/` into the full static site: rebuilds the `DATABASE_URL` db under an advisory lock, writes `dist/` from `species.json` via pinned `@duckdb/node-api` (no extensions). PR #6 (https://github.com/kc0588615/critwire/pull/6), branch `agent/critwire-release`.
+
+- **Files** (`dist/`, 157): `index.html` 34,627 B; `v1/species.json` 232,572 B; `v1/species.parquet` 32,127 B; `v1/species.csv` 30,906 B; `v1/attribution.json` 83,532 B; `v1/species/{id,slug}.json` 152 files, 436,242 B. No `ranges.parquet` (no use yet).
+- **GBIF derived dataset:** DOI `10.15468/dd.ky9cyt` (https://doi.org/10.15468/dd.ky9cyt), 454 datasets, 396,627 records, 73 taxa; `sourceUrl` = GitHub permalink at e883106 (`data/`), kept reachable by tag `gbif-dd-b58ac1e3105b` (never move/delete). DOI on the 72 countries source entries, in `attribution.json` and the docs `#credits`.
+- **Sources in `attribution.json`:** Catalogue of Life (CC BY 4.0, 69 records), GBIF Backbone Taxonomy (CC BY 4.0, 73), GBIF.org occurrence search (CC BY 4.0, 72, DOI above), Wikidata (CC0 1.0, 76), critwire base (CC BY 4.0, 76); plus 74 photo credits (Wikimedia Commons, credit + license + page).
+- **Re-ingest delta:** none in statuses (72/1/3), country codes (472) or mismatches (214, 60 blocking, left for owner); only GBIF `retrieved` and record counts in 40 entries (`$L/reingest-delta.md`).
+- **Verification:** typecheck, unit 66/66, derive twice byte-identical, two builds hash-identical, offline build (fresh GitHub clone, `unshare -n`, empty HOME) hash-identical, E2E 20/20, 0 skipped. Final transcript `$L/verify/verify-20261021T0645Z.log`.
+- **E2E artifact:** `/srv/critter-ai/agent-state/missions/critwire-release/e2e/` (HTML report, traces, screenshots incl. `docs-375.png`, `caddy-access.log`). Reproduce: `pnpm build && E2E_ARTIFACTS=<dir> pnpm e2e` (full block: `$L/verify/verify.sh`).
+- **Reviews:** architecture: Fable APPROVE; Astra APPROVE_WITH_CHANGES (3 MUST-FIX resolved in revision). Code: Astra APPROVE, no MUST-FIX.
+- Astra code review SHOULD-CONSIDER for the owner (not done): (1) fixture test for GBIF dataset-facet paging past 300 datasets (`scripts/ingest/gbif.ts:104`; live max so far 125); (2) a safe-filename pattern check on slugs in `scripts/build/inputs.ts:19` (today only all-digit slugs are refused; `slugify` in `seed-cc.ts` makes them).
+- **Release:** per H2, the mission's next unit rebases, re-verifies, merges PR #6, runs `deploy critwire` and smoke-tests critwire.com; results recorded here. Owner action only if that unit blocks.
