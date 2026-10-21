@@ -1,0 +1,3969 @@
+[
+  {
+    "speciesId": 1,
+    "scientificName": "Emydoidea blandingii",
+    "field": "ids.gbif",
+    "kind": "synonym-info",
+    "severity": "info",
+    "values": {
+      "gbif": {
+        "usageKey": 2442885,
+        "status": "SYNONYM",
+        "accepted": {
+          "key": 5220530,
+          "name": "Emys blandingii"
+        }
+      }
+    },
+    "reason": "The GBIF backbone calls Emydoidea blandingii (2442885) a synonym of Emys blandingii (5220530); the countries are counted for 5220530, which covers all its synonyms."
+  },
+  {
+    "speciesId": 1,
+    "scientificName": "Emydoidea blandingii",
+    "field": "ids.ncbi",
+    "kind": "not-found",
+    "severity": "info",
+    "values": {
+      "wikidata": []
+    },
+    "reason": "Wikidata Q185526 has no P685."
+  },
+  {
+    "speciesId": 2,
+    "scientificName": "Apalone spinifera",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "AR",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "AMERICAS",
+        "speciesRecords": 4174,
+        "coreRegions": [
+          "AMERICAS"
+        ]
+      }
+    },
+    "reason": "AR has 1 record of 4174; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 2,
+    "scientificName": "Apalone spinifera",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "blocking",
+    "country": "PT",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "EUROPE",
+        "speciesRecords": 4174,
+        "coreRegions": [
+          "AMERICAS"
+        ]
+      }
+    },
+    "reason": "PT (EUROPE) has 1 record, outside the core region (AMERICAS); excluded as a stray. Restore with keep in country-overrides.json."
+  },
+  {
+    "speciesId": 4,
+    "scientificName": "Platysternon megacephalum",
+    "field": "ids.iucn",
+    "kind": "iucn-id",
+    "severity": "blocking",
+    "values": {
+      "base": 9605,
+      "wikidata": [
+        "17585"
+      ]
+    },
+    "reason": "Wikidata Q754035 (P225 Platysternon megacephalum) has P627 17585. Kept 9605."
+  },
+  {
+    "speciesId": 4,
+    "scientificName": "Platysternon megacephalum",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "blocking",
+    "country": "BR",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "AMERICAS",
+        "speciesRecords": 43,
+        "coreRegions": [
+          "ASIA"
+        ]
+      }
+    },
+    "reason": "BR (AMERICAS) has 1 record, outside the core region (ASIA); excluded as a stray. Restore with keep in country-overrides.json."
+  },
+  {
+    "speciesId": 4,
+    "scientificName": "Platysternon megacephalum",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "blocking",
+    "country": "CD",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "AFRICA",
+        "speciesRecords": 43,
+        "coreRegions": [
+          "ASIA"
+        ]
+      }
+    },
+    "reason": "CD (AFRICA) has 1 record, outside the core region (ASIA); excluded as a stray. Restore with keep in country-overrides.json."
+  },
+  {
+    "speciesId": 4,
+    "scientificName": "Platysternon megacephalum",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "review",
+    "country": "RE",
+    "values": {
+      "gbif": {
+        "records": 2,
+        "region": "AFRICA",
+        "speciesRecords": 43,
+        "coreRegions": [
+          "ASIA"
+        ]
+      }
+    },
+    "reason": "RE (AFRICA) has 2 records, outside the core region (ASIA); kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 5,
+    "scientificName": "Rhacophorus nigropalmatus",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "BN",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "ASIA",
+        "speciesRecords": 51,
+        "coreRegions": [
+          "ASIA"
+        ]
+      }
+    },
+    "reason": "BN has 1 record of 51; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 6,
+    "scientificName": "Agalychnis callidryas",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "US",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "AMERICAS",
+        "speciesRecords": 1881,
+        "coreRegions": [
+          "AMERICAS"
+        ]
+      }
+    },
+    "reason": "US has 1 record of 1881; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 7,
+    "scientificName": "Trichobatrachus robustus",
+    "field": "ids.col",
+    "kind": "identity",
+    "severity": "blocking",
+    "values": {
+      "col": {
+        "id": "589RN",
+        "status": "synonym",
+        "accepted": {
+          "id": "687FL",
+          "name": "Astylosternus robustus"
+        }
+      }
+    },
+    "reason": "COL 589RN calls Trichobatrachus robustus a synonym of Astylosternus robustus (687FL); ids.col is null and the taxonomy is the base one."
+  },
+  {
+    "speciesId": 7,
+    "scientificName": "Trichobatrachus robustus",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "AO",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "AFRICA",
+        "speciesRecords": 102,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "AO has 1 record of 102; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 7,
+    "scientificName": "Trichobatrachus robustus",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "CD",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "AFRICA",
+        "speciesRecords": 102,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "CD has 1 record of 102; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 7,
+    "scientificName": "Trichobatrachus robustus",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "CF",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "AFRICA",
+        "speciesRecords": 102,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "CF has 1 record of 102; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 7,
+    "scientificName": "Trichobatrachus robustus",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "CG",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "AFRICA",
+        "speciesRecords": 102,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "CG has 1 record of 102; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 9,
+    "scientificName": "Dendrobates tinctorius",
+    "field": "ids.col",
+    "kind": "identity",
+    "severity": "blocking",
+    "values": {
+      "col": "6CJSY",
+      "wikidata": [
+        "6CK4Y"
+      ]
+    },
+    "reason": "COL matches Dendrobates tinctorius to 6CJSY, but Wikidata P10585 is 6CK4Y; ids.col is null and the taxonomy is the base one."
+  },
+  {
+    "speciesId": 9,
+    "scientificName": "Dendrobates tinctorius",
+    "field": "ids.gbif",
+    "kind": "identity",
+    "severity": "blocking",
+    "values": {
+      "gbif": {
+        "usageKey": 9724339
+      },
+      "wikidata": [
+        5218024
+      ]
+    },
+    "reason": "GBIF matches Dendrobates tinctorius to 9724339, but Wikidata P846 is 5218024; ids.gbif and the countries are null."
+  },
+  {
+    "speciesId": 10,
+    "scientificName": "Pipa pipa",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "TT",
+    "values": {
+      "gbif": {
+        "records": 2,
+        "region": "AMERICAS",
+        "speciesRecords": 345,
+        "coreRegions": [
+          "AMERICAS"
+        ]
+      }
+    },
+    "reason": "TT has 2 records of 345; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 11,
+    "scientificName": "Conraua goliath",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "GQ",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "AFRICA",
+        "speciesRecords": 65,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "GQ has 1 record of 65; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 12,
+    "scientificName": "Heosemys spinosa",
+    "field": "ids.iucn",
+    "kind": "iucn-id",
+    "severity": "blocking",
+    "values": {
+      "base": 104303,
+      "wikidata": [
+        "9942"
+      ]
+    },
+    "reason": "Wikidata Q2532001 (P225 Heosemys spinosa) has P627 9942. Kept 104303."
+  },
+  {
+    "speciesId": 12,
+    "scientificName": "Heosemys spinosa",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "review",
+    "country": "US",
+    "values": {
+      "gbif": {
+        "records": 3,
+        "region": "AMERICAS",
+        "speciesRecords": 27,
+        "coreRegions": [
+          "ASIA"
+        ]
+      }
+    },
+    "reason": "US (AMERICAS) has 3 records, outside the core region (ASIA); kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 14,
+    "scientificName": "Breviceps macrops",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "NA",
+    "values": {
+      "gbif": {
+        "records": 2,
+        "region": "AFRICA",
+        "speciesRecords": 72,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "NA has 2 records of 72; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 15,
+    "scientificName": "Malacochersus tornieri",
+    "field": "ids.iucn",
+    "kind": "iucn-id",
+    "severity": "blocking",
+    "values": {
+      "base": 9041,
+      "wikidata": [
+        "12696"
+      ]
+    },
+    "reason": "Wikidata Q832357 (P225 Malacochersus tornieri) has P627 12696. Kept 9041."
+  },
+  {
+    "speciesId": 15,
+    "scientificName": "Malacochersus tornieri",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "blocking",
+    "country": "DE",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "EUROPE",
+        "speciesRecords": 49,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "DE (EUROPE) has 1 record, outside the core region (AFRICA); excluded as a stray. Restore with keep in country-overrides.json."
+  },
+  {
+    "speciesId": 17,
+    "scientificName": "Carettochelys insculpta",
+    "field": "ids.iucn",
+    "kind": "iucn-id",
+    "severity": "blocking",
+    "values": {
+      "base": 28859,
+      "wikidata": [
+        "3898"
+      ]
+    },
+    "reason": "Wikidata Q457742 (P225 Carettochelys insculpta) has P627 3898. Kept 28859."
+  },
+  {
+    "speciesId": 17,
+    "scientificName": "Carettochelys insculpta",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "review",
+    "country": "ID",
+    "values": {
+      "gbif": {
+        "records": 2,
+        "region": "ASIA",
+        "speciesRecords": 1024,
+        "coreRegions": [
+          "OCEANIA"
+        ]
+      }
+    },
+    "reason": "ID (ASIA) has 2 records, outside the core region (OCEANIA); kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 17,
+    "scientificName": "Carettochelys insculpta",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "review",
+    "country": "SG",
+    "values": {
+      "gbif": {
+        "records": 2,
+        "region": "ASIA",
+        "speciesRecords": 1024,
+        "coreRegions": [
+          "OCEANIA"
+        ]
+      }
+    },
+    "reason": "SG (ASIA) has 2 records, outside the core region (OCEANIA); kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 17,
+    "scientificName": "Carettochelys insculpta",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "blocking",
+    "country": "US",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "AMERICAS",
+        "speciesRecords": 1024,
+        "coreRegions": [
+          "OCEANIA"
+        ]
+      }
+    },
+    "reason": "US (AMERICAS) has 1 record, outside the core region (OCEANIA); excluded as a stray. Restore with keep in country-overrides.json."
+  },
+  {
+    "speciesId": 18,
+    "scientificName": "Rafetus swinhoei",
+    "field": "ids.iucn",
+    "kind": "iucn-id",
+    "severity": "blocking",
+    "values": {
+      "base": 22971,
+      "wikidata": [
+        "39621"
+      ],
+      "wikidataItemsWithBaseId": {
+        "Q3074062": "Vidumelon wattii"
+      }
+    },
+    "reason": "Wikidata Q1075096 (P225 Rafetus swinhoei) has P627 39621; 22971 is P627 of Q3074062 (Vidumelon wattii). Kept 22971."
+  },
+  {
+    "speciesId": 19,
+    "scientificName": "Chelonoidis niger",
+    "field": "ids.gbif",
+    "kind": "identity",
+    "severity": "blocking",
+    "values": {
+      "gbif": {
+        "usageKey": 9527499
+      },
+      "wikidata": [
+        5220266
+      ]
+    },
+    "reason": "GBIF matches Chelonoidis niger to 9527499, but Wikidata P846 is 5220266; ids.gbif and the countries are null."
+  },
+  {
+    "speciesId": 19,
+    "scientificName": "Chelonoidis niger",
+    "field": "ids.iucn",
+    "kind": "iucn-id",
+    "severity": "blocking",
+    "values": {
+      "base": 9010,
+      "wikidata": [
+        "9023"
+      ],
+      "wikidataItemsWithBaseId": {
+        "Q28049777": "Geochelone gigantea"
+      }
+    },
+    "reason": "Wikidata Q486672 (P225 Chelonoidis niger) has P627 9023; 9010 is P627 of Q28049777 (Geochelone gigantea). Kept 9010."
+  },
+  {
+    "speciesId": 20,
+    "scientificName": "Centrochelys sulcata",
+    "field": "ids.iucn",
+    "kind": "iucn-id",
+    "severity": "blocking",
+    "values": {
+      "base": 9781,
+      "wikidata": [
+        "163423"
+      ]
+    },
+    "reason": "Wikidata Q301016 (P225 Centrochelys sulcata) has P627 163423. Kept 9781."
+  },
+  {
+    "speciesId": 20,
+    "scientificName": "Centrochelys sulcata",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "EG",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "AFRICA",
+        "speciesRecords": 73,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "EG has 1 record of 73; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 20,
+    "scientificName": "Centrochelys sulcata",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "ML",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "AFRICA",
+        "speciesRecords": 73,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "ML has 1 record of 73; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 20,
+    "scientificName": "Centrochelys sulcata",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "MR",
+    "values": {
+      "gbif": {
+        "records": 2,
+        "region": "AFRICA",
+        "speciesRecords": 73,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "MR has 2 records of 73; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 20,
+    "scientificName": "Centrochelys sulcata",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "NG",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "AFRICA",
+        "speciesRecords": 73,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "NG has 1 record of 73; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 20,
+    "scientificName": "Centrochelys sulcata",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "SD",
+    "values": {
+      "gbif": {
+        "records": 2,
+        "region": "AFRICA",
+        "speciesRecords": 73,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "SD has 2 records of 73; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 20,
+    "scientificName": "Centrochelys sulcata",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "SN",
+    "values": {
+      "gbif": {
+        "records": 2,
+        "region": "AFRICA",
+        "speciesRecords": 73,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "SN has 2 records of 73; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 20,
+    "scientificName": "Centrochelys sulcata",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "blocking",
+    "country": "DE",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "EUROPE",
+        "speciesRecords": 73,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "DE (EUROPE) has 1 record, outside the core region (AFRICA); excluded as a stray. Restore with keep in country-overrides.json."
+  },
+  {
+    "speciesId": 20,
+    "scientificName": "Centrochelys sulcata",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "blocking",
+    "country": "ES",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "EUROPE",
+        "speciesRecords": 73,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "ES (EUROPE) has 1 record, outside the core region (AFRICA); excluded as a stray. Restore with keep in country-overrides.json."
+  },
+  {
+    "speciesId": 20,
+    "scientificName": "Centrochelys sulcata",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "review",
+    "country": "MQ",
+    "values": {
+      "gbif": {
+        "records": 3,
+        "region": "AMERICAS",
+        "speciesRecords": 73,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "MQ (AMERICAS) has 3 records, outside the core region (AFRICA); kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 20,
+    "scientificName": "Centrochelys sulcata",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "review",
+    "country": "MX",
+    "values": {
+      "gbif": {
+        "records": 2,
+        "region": "AMERICAS",
+        "speciesRecords": 73,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "MX (AMERICAS) has 2 records, outside the core region (AFRICA); kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 20,
+    "scientificName": "Centrochelys sulcata",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "blocking",
+    "country": "NL",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "EUROPE",
+        "speciesRecords": 73,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "NL (EUROPE) has 1 record, outside the core region (AFRICA); excluded as a stray. Restore with keep in country-overrides.json."
+  },
+  {
+    "speciesId": 20,
+    "scientificName": "Centrochelys sulcata",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "blocking",
+    "country": "SG",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "ASIA",
+        "speciesRecords": 73,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "SG (ASIA) has 1 record, outside the core region (AFRICA); excluded as a stray. Restore with keep in country-overrides.json."
+  },
+  {
+    "speciesId": 20,
+    "scientificName": "Centrochelys sulcata",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "review",
+    "country": "TH",
+    "values": {
+      "gbif": {
+        "records": 2,
+        "region": "ASIA",
+        "speciesRecords": 73,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "TH (ASIA) has 2 records, outside the core region (AFRICA); kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 20,
+    "scientificName": "Centrochelys sulcata",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "review",
+    "country": "US",
+    "values": {
+      "gbif": {
+        "records": 4,
+        "region": "AMERICAS",
+        "speciesRecords": 73,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "US (AMERICAS) has 4 records, outside the core region (AFRICA); kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 21,
+    "scientificName": "Astrochelys radiata",
+    "field": "ids.iucn",
+    "kind": "iucn-id",
+    "severity": "blocking",
+    "values": {
+      "base": 3901,
+      "wikidata": [
+        "9014"
+      ],
+      "wikidataItemsWithBaseId": {
+        "Q1384328": "Carinurella paradoxa"
+      }
+    },
+    "reason": "Wikidata Q630954 (P225 Astrochelys radiata) has P627 9014; 3901 is P627 of Q1384328 (Carinurella paradoxa). Kept 3901."
+  },
+  {
+    "speciesId": 21,
+    "scientificName": "Astrochelys radiata",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "MU",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "AFRICA",
+        "speciesRecords": 78,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "MU has 1 record of 78; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 21,
+    "scientificName": "Astrochelys radiata",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "SC",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "AFRICA",
+        "speciesRecords": 78,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "SC has 1 record of 78; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 21,
+    "scientificName": "Astrochelys radiata",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "blocking",
+    "country": "DE",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "EUROPE",
+        "speciesRecords": 78,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "DE (EUROPE) has 1 record, outside the core region (AFRICA); excluded as a stray. Restore with keep in country-overrides.json."
+  },
+  {
+    "speciesId": 22,
+    "scientificName": "Chelonoidis abingdonii",
+    "field": "ids.col",
+    "kind": "not-found",
+    "severity": "blocking",
+    "values": {
+      "col": {
+        "match": true,
+        "type": "higherrank",
+        "name": "Chelonoidis",
+        "rank": "genus",
+        "kingdom": "Animalia"
+      }
+    },
+    "reason": "COL has no accepted Animalia species named Chelonoidis abingdonii (match higherrank: genus Chelonoidis); ids.col is null and the taxonomy is the base one."
+  },
+  {
+    "speciesId": 22,
+    "scientificName": "Chelonoidis abingdonii",
+    "field": "ids.iucn",
+    "kind": "iucn-id",
+    "severity": "blocking",
+    "values": {
+      "base": 3902,
+      "wikidata": [
+        "9017"
+      ]
+    },
+    "reason": "Wikidata Q4045992 (P225 Chelonoidis abingdonii) has P627 9017. Kept 3902."
+  },
+  {
+    "speciesId": 23,
+    "scientificName": "Daubentonia madagascariensis",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "blocking",
+    "country": "CN",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "ASIA",
+        "speciesRecords": 69,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "CN (ASIA) has 1 record, outside the core region (AFRICA); excluded as a stray. Restore with keep in country-overrides.json."
+  },
+  {
+    "speciesId": 23,
+    "scientificName": "Daubentonia madagascariensis",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "blocking",
+    "country": "FR",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "EUROPE",
+        "speciesRecords": 69,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "FR (EUROPE) has 1 record, outside the core region (AFRICA); excluded as a stray. Restore with keep in country-overrides.json."
+  },
+  {
+    "speciesId": 24,
+    "scientificName": "Manis javanica",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "BN",
+    "values": {
+      "gbif": {
+        "records": 2,
+        "region": "ASIA",
+        "speciesRecords": 226,
+        "coreRegions": [
+          "ASIA"
+        ]
+      }
+    },
+    "reason": "BN has 2 records of 226; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 24,
+    "scientificName": "Manis javanica",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "IN",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "ASIA",
+        "speciesRecords": 226,
+        "coreRegions": [
+          "ASIA"
+        ]
+      }
+    },
+    "reason": "IN has 1 record of 226; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 25,
+    "scientificName": "Panthera tigris",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "BD",
+    "values": {
+      "gbif": {
+        "records": 2,
+        "region": "ASIA",
+        "speciesRecords": 3251,
+        "coreRegions": [
+          "ASIA"
+        ]
+      }
+    },
+    "reason": "BD has 2 records of 3251; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 25,
+    "scientificName": "Panthera tigris",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "VN",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "ASIA",
+        "speciesRecords": 3251,
+        "coreRegions": [
+          "ASIA"
+        ]
+      }
+    },
+    "reason": "VN has 1 record of 3251; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 25,
+    "scientificName": "Panthera tigris",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "review",
+    "country": "BR",
+    "values": {
+      "gbif": {
+        "records": 14,
+        "region": "AMERICAS",
+        "speciesRecords": 3251,
+        "coreRegions": [
+          "ASIA"
+        ]
+      }
+    },
+    "reason": "BR (AMERICAS) has 14 records, outside the core region (ASIA); kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 25,
+    "scientificName": "Panthera tigris",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "blocking",
+    "country": "CA",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "AMERICAS",
+        "speciesRecords": 3251,
+        "coreRegions": [
+          "ASIA"
+        ]
+      }
+    },
+    "reason": "CA (AMERICAS) has 1 record, outside the core region (ASIA); excluded as a stray. Restore with keep in country-overrides.json."
+  },
+  {
+    "speciesId": 25,
+    "scientificName": "Panthera tigris",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "review",
+    "country": "DE",
+    "values": {
+      "gbif": {
+        "records": 6,
+        "region": "EUROPE",
+        "speciesRecords": 3251,
+        "coreRegions": [
+          "ASIA"
+        ]
+      }
+    },
+    "reason": "DE (EUROPE) has 6 records, outside the core region (ASIA); kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 25,
+    "scientificName": "Panthera tigris",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "blocking",
+    "country": "DK",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "EUROPE",
+        "speciesRecords": 3251,
+        "coreRegions": [
+          "ASIA"
+        ]
+      }
+    },
+    "reason": "DK (EUROPE) has 1 record, outside the core region (ASIA); excluded as a stray. Restore with keep in country-overrides.json."
+  },
+  {
+    "speciesId": 25,
+    "scientificName": "Panthera tigris",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "blocking",
+    "country": "KE",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "AFRICA",
+        "speciesRecords": 3251,
+        "coreRegions": [
+          "ASIA"
+        ]
+      }
+    },
+    "reason": "KE (AFRICA) has 1 record, outside the core region (ASIA); excluded as a stray. Restore with keep in country-overrides.json."
+  },
+  {
+    "speciesId": 25,
+    "scientificName": "Panthera tigris",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "blocking",
+    "country": "MW",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "AFRICA",
+        "speciesRecords": 3251,
+        "coreRegions": [
+          "ASIA"
+        ]
+      }
+    },
+    "reason": "MW (AFRICA) has 1 record, outside the core region (ASIA); excluded as a stray. Restore with keep in country-overrides.json."
+  },
+  {
+    "speciesId": 25,
+    "scientificName": "Panthera tigris",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "blocking",
+    "country": "NL",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "EUROPE",
+        "speciesRecords": 3251,
+        "coreRegions": [
+          "ASIA"
+        ]
+      }
+    },
+    "reason": "NL (EUROPE) has 1 record, outside the core region (ASIA); excluded as a stray. Restore with keep in country-overrides.json."
+  },
+  {
+    "speciesId": 25,
+    "scientificName": "Panthera tigris",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "review",
+    "country": "RU",
+    "values": {
+      "gbif": {
+        "records": 8,
+        "region": "EUROPE",
+        "speciesRecords": 3251,
+        "coreRegions": [
+          "ASIA"
+        ]
+      }
+    },
+    "reason": "RU (EUROPE) has 8 records, outside the core region (ASIA); kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 25,
+    "scientificName": "Panthera tigris",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "blocking",
+    "country": "SE",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "EUROPE",
+        "speciesRecords": 3251,
+        "coreRegions": [
+          "ASIA"
+        ]
+      }
+    },
+    "reason": "SE (EUROPE) has 1 record, outside the core region (ASIA); excluded as a stray. Restore with keep in country-overrides.json."
+  },
+  {
+    "speciesId": 25,
+    "scientificName": "Panthera tigris",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "review",
+    "country": "US",
+    "values": {
+      "gbif": {
+        "records": 64,
+        "region": "AMERICAS",
+        "speciesRecords": 3251,
+        "coreRegions": [
+          "ASIA"
+        ]
+      }
+    },
+    "reason": "US (AMERICAS) has 64 records, outside the core region (ASIA); kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 25,
+    "scientificName": "Panthera tigris",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "review",
+    "country": "ZA",
+    "values": {
+      "gbif": {
+        "records": 2,
+        "region": "AFRICA",
+        "speciesRecords": 3251,
+        "coreRegions": [
+          "ASIA"
+        ]
+      }
+    },
+    "reason": "ZA (AFRICA) has 2 records, outside the core region (ASIA); kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 26,
+    "scientificName": "Mustela nigripes",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "MX",
+    "values": {
+      "gbif": {
+        "records": 2,
+        "region": "AMERICAS",
+        "speciesRecords": 132,
+        "coreRegions": [
+          "AMERICAS"
+        ]
+      }
+    },
+    "reason": "MX has 2 records of 132; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 27,
+    "scientificName": "Zaglossus bruijnii",
+    "field": "ids.col",
+    "kind": "not-found",
+    "severity": "blocking",
+    "values": {
+      "col": {
+        "match": true,
+        "type": "variant",
+        "name": "Zaglossus bruijni",
+        "rank": "species",
+        "kingdom": "Animalia"
+      }
+    },
+    "reason": "COL has no accepted Animalia species named Zaglossus bruijnii (match variant: species Zaglossus bruijni); ids.col is null and the taxonomy is the base one."
+  },
+  {
+    "speciesId": 27,
+    "scientificName": "Zaglossus bruijnii",
+    "field": "ids.gbif",
+    "kind": "not-found",
+    "severity": "blocking",
+    "values": {
+      "gbif": {
+        "matchType": "VARIANT",
+        "rank": "SPECIES",
+        "canonicalName": "Zaglossus bruijni",
+        "kingdom": "Animalia"
+      }
+    },
+    "reason": "The GBIF backbone has no exact Animalia species match for Zaglossus bruijnii (VARIANT: SPECIES Zaglossus bruijni); ids.gbif and the countries are null."
+  },
+  {
+    "speciesId": 28,
+    "scientificName": "Elephas maximus",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "BD",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "ASIA",
+        "speciesRecords": 6877,
+        "coreRegions": [
+          "ASIA"
+        ]
+      }
+    },
+    "reason": "BD has 1 record of 6877; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 28,
+    "scientificName": "Elephas maximus",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "BT",
+    "values": {
+      "gbif": {
+        "records": 2,
+        "region": "ASIA",
+        "speciesRecords": 6877,
+        "coreRegions": [
+          "ASIA"
+        ]
+      }
+    },
+    "reason": "BT has 2 records of 6877; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 28,
+    "scientificName": "Elephas maximus",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "LA",
+    "values": {
+      "gbif": {
+        "records": 2,
+        "region": "ASIA",
+        "speciesRecords": 6877,
+        "coreRegions": [
+          "ASIA"
+        ]
+      }
+    },
+    "reason": "LA has 2 records of 6877; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 28,
+    "scientificName": "Elephas maximus",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "VN",
+    "values": {
+      "gbif": {
+        "records": 2,
+        "region": "ASIA",
+        "speciesRecords": 6877,
+        "coreRegions": [
+          "ASIA"
+        ]
+      }
+    },
+    "reason": "VN has 2 records of 6877; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 28,
+    "scientificName": "Elephas maximus",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "review",
+    "country": "BE",
+    "values": {
+      "gbif": {
+        "records": 3,
+        "region": "EUROPE",
+        "speciesRecords": 6877,
+        "coreRegions": [
+          "ASIA"
+        ]
+      }
+    },
+    "reason": "BE (EUROPE) has 3 records, outside the core region (ASIA); kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 28,
+    "scientificName": "Elephas maximus",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "blocking",
+    "country": "BR",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "AMERICAS",
+        "speciesRecords": 6877,
+        "coreRegions": [
+          "ASIA"
+        ]
+      }
+    },
+    "reason": "BR (AMERICAS) has 1 record, outside the core region (ASIA); excluded as a stray. Restore with keep in country-overrides.json."
+  },
+  {
+    "speciesId": 28,
+    "scientificName": "Elephas maximus",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "blocking",
+    "country": "CF",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "AFRICA",
+        "speciesRecords": 6877,
+        "coreRegions": [
+          "ASIA"
+        ]
+      }
+    },
+    "reason": "CF (AFRICA) has 1 record, outside the core region (ASIA); excluded as a stray. Restore with keep in country-overrides.json."
+  },
+  {
+    "speciesId": 28,
+    "scientificName": "Elephas maximus",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "review",
+    "country": "DE",
+    "values": {
+      "gbif": {
+        "records": 9,
+        "region": "EUROPE",
+        "speciesRecords": 6877,
+        "coreRegions": [
+          "ASIA"
+        ]
+      }
+    },
+    "reason": "DE (EUROPE) has 9 records, outside the core region (ASIA); kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 28,
+    "scientificName": "Elephas maximus",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "review",
+    "country": "DK",
+    "values": {
+      "gbif": {
+        "records": 3,
+        "region": "EUROPE",
+        "speciesRecords": 6877,
+        "coreRegions": [
+          "ASIA"
+        ]
+      }
+    },
+    "reason": "DK (EUROPE) has 3 records, outside the core region (ASIA); kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 28,
+    "scientificName": "Elephas maximus",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "blocking",
+    "country": "NL",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "EUROPE",
+        "speciesRecords": 6877,
+        "coreRegions": [
+          "ASIA"
+        ]
+      }
+    },
+    "reason": "NL (EUROPE) has 1 record, outside the core region (ASIA); excluded as a stray. Restore with keep in country-overrides.json."
+  },
+  {
+    "speciesId": 28,
+    "scientificName": "Elephas maximus",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "review",
+    "country": "US",
+    "values": {
+      "gbif": {
+        "records": 4461,
+        "region": "AMERICAS",
+        "speciesRecords": 6877,
+        "coreRegions": [
+          "ASIA"
+        ]
+      }
+    },
+    "reason": "US (AMERICAS) has 4461 records, outside the core region (ASIA); kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 29,
+    "scientificName": "Okapia johnstoni",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "blocking",
+    "country": "DE",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "EUROPE",
+        "speciesRecords": 17,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "DE (EUROPE) has 1 record, outside the core region (AFRICA); excluded as a stray. Restore with keep in country-overrides.json."
+  },
+  {
+    "speciesId": 29,
+    "scientificName": "Okapia johnstoni",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "review",
+    "country": "US",
+    "values": {
+      "gbif": {
+        "records": 2,
+        "region": "AMERICAS",
+        "speciesRecords": 17,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "US (AMERICAS) has 2 records, outside the core region (AFRICA); kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 35,
+    "scientificName": "Ailurus fulgens",
+    "field": "ids.inaturalist",
+    "kind": "multi-value",
+    "severity": "blocking",
+    "values": {
+      "wikidata": [
+        "41653",
+        "418148"
+      ]
+    },
+    "reason": "Wikidata Q41960 has 2 P3151 values (41653, 418148); ids.inaturalist is null."
+  },
+  {
+    "speciesId": 35,
+    "scientificName": "Ailurus fulgens",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "review",
+    "country": "US",
+    "values": {
+      "gbif": {
+        "records": 23,
+        "region": "AMERICAS",
+        "speciesRecords": 62,
+        "coreRegions": [
+          "ASIA"
+        ]
+      }
+    },
+    "reason": "US (AMERICAS) has 23 records, outside the core region (ASIA); kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 36,
+    "scientificName": "Priodontes maximus",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "VE",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "AMERICAS",
+        "speciesRecords": 510,
+        "coreRegions": [
+          "AMERICAS"
+        ]
+      }
+    },
+    "reason": "VE has 1 record of 510; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 39,
+    "scientificName": "Equus grevyi",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "ZM",
+    "values": {
+      "gbif": {
+        "records": 2,
+        "region": "AFRICA",
+        "speciesRecords": 436,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "ZM has 2 records of 436; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 39,
+    "scientificName": "Equus grevyi",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "review",
+    "country": "FR",
+    "values": {
+      "gbif": {
+        "records": 5,
+        "region": "EUROPE",
+        "speciesRecords": 436,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "FR (EUROPE) has 5 records, outside the core region (AFRICA); kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 39,
+    "scientificName": "Equus grevyi",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "blocking",
+    "country": "NL",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "EUROPE",
+        "speciesRecords": 436,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "NL (EUROPE) has 1 record, outside the core region (AFRICA); excluded as a stray. Restore with keep in country-overrides.json."
+  },
+  {
+    "speciesId": 39,
+    "scientificName": "Equus grevyi",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "review",
+    "country": "US",
+    "values": {
+      "gbif": {
+        "records": 2,
+        "region": "AMERICAS",
+        "speciesRecords": 436,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "US (AMERICAS) has 2 records, outside the core region (AFRICA); kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 40,
+    "scientificName": "Pongo abelii",
+    "field": "ids.inaturalist",
+    "kind": "multi-value",
+    "severity": "blocking",
+    "values": {
+      "wikidata": [
+        "569678",
+        "67982"
+      ]
+    },
+    "reason": "Wikidata Q543424 has 2 P3151 values (569678, 67982); ids.inaturalist is null."
+  },
+  {
+    "speciesId": 40,
+    "scientificName": "Pongo abelii",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "review",
+    "country": "US",
+    "values": {
+      "gbif": {
+        "records": 81,
+        "region": "AMERICAS",
+        "speciesRecords": 167,
+        "coreRegions": [
+          "ASIA"
+        ]
+      }
+    },
+    "reason": "US (AMERICAS) has 81 records, outside the core region (ASIA); kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 41,
+    "scientificName": "Loxodonta cyclotis",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "CD",
+    "values": {
+      "gbif": {
+        "records": 2,
+        "region": "AFRICA",
+        "speciesRecords": 90,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "CD has 2 records of 90; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 41,
+    "scientificName": "Loxodonta cyclotis",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "CM",
+    "values": {
+      "gbif": {
+        "records": 2,
+        "region": "AFRICA",
+        "speciesRecords": 90,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "CM has 2 records of 90; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 41,
+    "scientificName": "Loxodonta cyclotis",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "GN",
+    "values": {
+      "gbif": {
+        "records": 2,
+        "region": "AFRICA",
+        "speciesRecords": 90,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "GN has 2 records of 90; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 41,
+    "scientificName": "Loxodonta cyclotis",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "GQ",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "AFRICA",
+        "speciesRecords": 90,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "GQ has 1 record of 90; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 41,
+    "scientificName": "Loxodonta cyclotis",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "KE",
+    "values": {
+      "gbif": {
+        "records": 2,
+        "region": "AFRICA",
+        "speciesRecords": 90,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "KE has 2 records of 90; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 41,
+    "scientificName": "Loxodonta cyclotis",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "RW",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "AFRICA",
+        "speciesRecords": 90,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "RW has 1 record of 90; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 41,
+    "scientificName": "Loxodonta cyclotis",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "ZA",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "AFRICA",
+        "speciesRecords": 90,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "ZA has 1 record of 90; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 43,
+    "scientificName": "Dendrolagus goodfellowi",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "review",
+    "country": "DE",
+    "values": {
+      "gbif": {
+        "records": 3,
+        "region": "EUROPE",
+        "speciesRecords": 16,
+        "coreRegions": [
+          "OCEANIA"
+        ]
+      }
+    },
+    "reason": "DE (EUROPE) has 3 records, outside the core region (OCEANIA); kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 43,
+    "scientificName": "Dendrolagus goodfellowi",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "review",
+    "country": "US",
+    "values": {
+      "gbif": {
+        "records": 2,
+        "region": "AMERICAS",
+        "speciesRecords": 16,
+        "coreRegions": [
+          "OCEANIA"
+        ]
+      }
+    },
+    "reason": "US (AMERICAS) has 2 records, outside the core region (OCEANIA); kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 47,
+    "scientificName": "Ochotona iliensis",
+    "field": "range.countriesWithRecords",
+    "kind": "no-records",
+    "severity": "info",
+    "values": {
+      "gbif": {
+        "speciesRecords": 0
+      }
+    },
+    "reason": "No CC0 or CC BY 4.0 records with a known country match the filters."
+  },
+  {
+    "speciesId": 48,
+    "scientificName": "Sarcophilus harrisii",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "review",
+    "country": "US",
+    "values": {
+      "gbif": {
+        "records": 31,
+        "region": "AMERICAS",
+        "speciesRecords": 35009,
+        "coreRegions": [
+          "OCEANIA"
+        ]
+      }
+    },
+    "reason": "US (AMERICAS) has 31 records, outside the core region (OCEANIA); kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 50,
+    "scientificName": "Addax nasomaculatus",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "blocking",
+    "country": "BR",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "AMERICAS",
+        "speciesRecords": 46,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "BR (AMERICAS) has 1 record, outside the core region (AFRICA); excluded as a stray. Restore with keep in country-overrides.json."
+  },
+  {
+    "speciesId": 50,
+    "scientificName": "Addax nasomaculatus",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "blocking",
+    "country": "DE",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "EUROPE",
+        "speciesRecords": 46,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "DE (EUROPE) has 1 record, outside the core region (AFRICA); excluded as a stray. Restore with keep in country-overrides.json."
+  },
+  {
+    "speciesId": 50,
+    "scientificName": "Addax nasomaculatus",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "review",
+    "country": "MX",
+    "values": {
+      "gbif": {
+        "records": 2,
+        "region": "AMERICAS",
+        "speciesRecords": 46,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "MX (AMERICAS) has 2 records, outside the core region (AFRICA); kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 50,
+    "scientificName": "Addax nasomaculatus",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "review",
+    "country": "US",
+    "values": {
+      "gbif": {
+        "records": 3,
+        "region": "AMERICAS",
+        "speciesRecords": 46,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "US (AMERICAS) has 3 records, outside the core region (AFRICA); kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 51,
+    "scientificName": "Panthera onca",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "HN",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "AMERICAS",
+        "speciesRecords": 138459,
+        "coreRegions": [
+          "AMERICAS"
+        ]
+      }
+    },
+    "reason": "HN has 1 record of 138459; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 51,
+    "scientificName": "Panthera onca",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "SR",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "AMERICAS",
+        "speciesRecords": 138459,
+        "coreRegions": [
+          "AMERICAS"
+        ]
+      }
+    },
+    "reason": "SR has 1 record of 138459; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 51,
+    "scientificName": "Panthera onca",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "UY",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "AMERICAS",
+        "speciesRecords": 138459,
+        "coreRegions": [
+          "AMERICAS"
+        ]
+      }
+    },
+    "reason": "UY has 1 record of 138459; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 52,
+    "scientificName": "Myrmecophaga tridactyla",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "GT",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "AMERICAS",
+        "speciesRecords": 2709,
+        "coreRegions": [
+          "AMERICAS"
+        ]
+      }
+    },
+    "reason": "GT has 1 record of 2709; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 52,
+    "scientificName": "Myrmecophaga tridactyla",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "MX",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "AMERICAS",
+        "speciesRecords": 2709,
+        "coreRegions": [
+          "AMERICAS"
+        ]
+      }
+    },
+    "reason": "MX has 1 record of 2709; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 52,
+    "scientificName": "Myrmecophaga tridactyla",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "SR",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "AMERICAS",
+        "speciesRecords": 2709,
+        "coreRegions": [
+          "AMERICAS"
+        ]
+      }
+    },
+    "reason": "SR has 1 record of 2709; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 52,
+    "scientificName": "Myrmecophaga tridactyla",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "blocking",
+    "country": "DE",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "EUROPE",
+        "speciesRecords": 2709,
+        "coreRegions": [
+          "AMERICAS"
+        ]
+      }
+    },
+    "reason": "DE (EUROPE) has 1 record, outside the core region (AMERICAS); excluded as a stray. Restore with keep in country-overrides.json."
+  },
+  {
+    "speciesId": 54,
+    "scientificName": "Bradypus variegatus",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "HN",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "AMERICAS",
+        "speciesRecords": 2012,
+        "coreRegions": [
+          "AMERICAS"
+        ]
+      }
+    },
+    "reason": "HN has 1 record of 2012; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 54,
+    "scientificName": "Bradypus variegatus",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "MX",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "AMERICAS",
+        "speciesRecords": 2012,
+        "coreRegions": [
+          "AMERICAS"
+        ]
+      }
+    },
+    "reason": "MX has 1 record of 2012; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 54,
+    "scientificName": "Bradypus variegatus",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "SR",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "AMERICAS",
+        "speciesRecords": 2012,
+        "coreRegions": [
+          "AMERICAS"
+        ]
+      }
+    },
+    "reason": "SR has 1 record of 2012; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 55,
+    "scientificName": "Smutsia gigantea",
+    "field": "ids.gbif",
+    "kind": "synonym-info",
+    "severity": "info",
+    "values": {
+      "gbif": {
+        "usageKey": 5786559,
+        "status": "SYNONYM",
+        "accepted": {
+          "key": 5219631,
+          "name": "Manis gigantea"
+        }
+      }
+    },
+    "reason": "The GBIF backbone calls Smutsia gigantea (5786559) a synonym of Manis gigantea (5219631); the countries are counted for 5219631, which covers all its synonyms."
+  },
+  {
+    "speciesId": 56,
+    "scientificName": "Pan troglodytes",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "GH",
+    "values": {
+      "gbif": {
+        "records": 2,
+        "region": "AFRICA",
+        "speciesRecords": 2926,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "GH has 2 records of 2926; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 56,
+    "scientificName": "Pan troglodytes",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "GW",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "AFRICA",
+        "speciesRecords": 2926,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "GW has 1 record of 2926; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 56,
+    "scientificName": "Pan troglodytes",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "KE",
+    "values": {
+      "gbif": {
+        "records": 2,
+        "region": "AFRICA",
+        "speciesRecords": 2926,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "KE has 2 records of 2926; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 56,
+    "scientificName": "Pan troglodytes",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "ML",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "AFRICA",
+        "speciesRecords": 2926,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "ML has 1 record of 2926; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 56,
+    "scientificName": "Pan troglodytes",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "SS",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "AFRICA",
+        "speciesRecords": 2926,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "SS has 1 record of 2926; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 56,
+    "scientificName": "Pan troglodytes",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "TD",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "AFRICA",
+        "speciesRecords": 2926,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "TD has 1 record of 2926; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 56,
+    "scientificName": "Pan troglodytes",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "review",
+    "country": "AU",
+    "values": {
+      "gbif": {
+        "records": 2,
+        "region": "OCEANIA",
+        "speciesRecords": 2926,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "AU (OCEANIA) has 2 records, outside the core region (AFRICA); kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 56,
+    "scientificName": "Pan troglodytes",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "blocking",
+    "country": "BE",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "EUROPE",
+        "speciesRecords": 2926,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "BE (EUROPE) has 1 record, outside the core region (AFRICA); excluded as a stray. Restore with keep in country-overrides.json."
+  },
+  {
+    "speciesId": 56,
+    "scientificName": "Pan troglodytes",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "review",
+    "country": "BR",
+    "values": {
+      "gbif": {
+        "records": 14,
+        "region": "AMERICAS",
+        "speciesRecords": 2926,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "BR (AMERICAS) has 14 records, outside the core region (AFRICA); kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 56,
+    "scientificName": "Pan troglodytes",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "review",
+    "country": "DE",
+    "values": {
+      "gbif": {
+        "records": 2,
+        "region": "EUROPE",
+        "speciesRecords": 2926,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "DE (EUROPE) has 2 records, outside the core region (AFRICA); kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 56,
+    "scientificName": "Pan troglodytes",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "review",
+    "country": "DK",
+    "values": {
+      "gbif": {
+        "records": 26,
+        "region": "EUROPE",
+        "speciesRecords": 2926,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "DK (EUROPE) has 26 records, outside the core region (AFRICA); kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 56,
+    "scientificName": "Pan troglodytes",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "blocking",
+    "country": "FR",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "EUROPE",
+        "speciesRecords": 2926,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "FR (EUROPE) has 1 record, outside the core region (AFRICA); excluded as a stray. Restore with keep in country-overrides.json."
+  },
+  {
+    "speciesId": 56,
+    "scientificName": "Pan troglodytes",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "blocking",
+    "country": "NU",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "OCEANIA",
+        "speciesRecords": 2926,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "NU (OCEANIA) has 1 record, outside the core region (AFRICA); excluded as a stray. Restore with keep in country-overrides.json."
+  },
+  {
+    "speciesId": 56,
+    "scientificName": "Pan troglodytes",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "blocking",
+    "country": "RU",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "EUROPE",
+        "speciesRecords": 2926,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "RU (EUROPE) has 1 record, outside the core region (AFRICA); excluded as a stray. Restore with keep in country-overrides.json."
+  },
+  {
+    "speciesId": 56,
+    "scientificName": "Pan troglodytes",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "review",
+    "country": "SE",
+    "values": {
+      "gbif": {
+        "records": 2,
+        "region": "EUROPE",
+        "speciesRecords": 2926,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "SE (EUROPE) has 2 records, outside the core region (AFRICA); kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 56,
+    "scientificName": "Pan troglodytes",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "review",
+    "country": "US",
+    "values": {
+      "gbif": {
+        "records": 85,
+        "region": "AMERICAS",
+        "speciesRecords": 2926,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "US (AMERICAS) has 85 records, outside the core region (AFRICA); kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 57,
+    "scientificName": "Orycteropus afer",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "AO",
+    "values": {
+      "gbif": {
+        "records": 2,
+        "region": "AFRICA",
+        "speciesRecords": 244,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "AO has 2 records of 244; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 57,
+    "scientificName": "Orycteropus afer",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "BF",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "AFRICA",
+        "speciesRecords": 244,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "BF has 1 record of 244; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 57,
+    "scientificName": "Orycteropus afer",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "GH",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "AFRICA",
+        "speciesRecords": 244,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "GH has 1 record of 244; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 57,
+    "scientificName": "Orycteropus afer",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "ML",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "AFRICA",
+        "speciesRecords": 244,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "ML has 1 record of 244; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 57,
+    "scientificName": "Orycteropus afer",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "NE",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "AFRICA",
+        "speciesRecords": 244,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "NE has 1 record of 244; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 57,
+    "scientificName": "Orycteropus afer",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "SD",
+    "values": {
+      "gbif": {
+        "records": 2,
+        "region": "AFRICA",
+        "speciesRecords": 244,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "SD has 2 records of 244; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 57,
+    "scientificName": "Orycteropus afer",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "SL",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "AFRICA",
+        "speciesRecords": 244,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "SL has 1 record of 244; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 57,
+    "scientificName": "Orycteropus afer",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "TG",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "AFRICA",
+        "speciesRecords": 244,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "TG has 1 record of 244; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 57,
+    "scientificName": "Orycteropus afer",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "ZW",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "AFRICA",
+        "speciesRecords": 244,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "ZW has 1 record of 244; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 57,
+    "scientificName": "Orycteropus afer",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "review",
+    "country": "US",
+    "values": {
+      "gbif": {
+        "records": 5,
+        "region": "AMERICAS",
+        "speciesRecords": 244,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "US (AMERICAS) has 5 records, outside the core region (AFRICA); kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 58,
+    "scientificName": "Acinonyx jubatus",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "AO",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "AFRICA",
+        "speciesRecords": 5269,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "AO has 1 record of 5269; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 58,
+    "scientificName": "Acinonyx jubatus",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "CD",
+    "values": {
+      "gbif": {
+        "records": 2,
+        "region": "AFRICA",
+        "speciesRecords": 5269,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "CD has 2 records of 5269; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 58,
+    "scientificName": "Acinonyx jubatus",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "DZ",
+    "values": {
+      "gbif": {
+        "records": 2,
+        "region": "AFRICA",
+        "speciesRecords": 5269,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "DZ has 2 records of 5269; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 58,
+    "scientificName": "Acinonyx jubatus",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "EG",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "AFRICA",
+        "speciesRecords": 5269,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "EG has 1 record of 5269; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 58,
+    "scientificName": "Acinonyx jubatus",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "NG",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "AFRICA",
+        "speciesRecords": 5269,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "NG has 1 record of 5269; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 58,
+    "scientificName": "Acinonyx jubatus",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "TD",
+    "values": {
+      "gbif": {
+        "records": 2,
+        "region": "AFRICA",
+        "speciesRecords": 5269,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "TD has 2 records of 5269; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 58,
+    "scientificName": "Acinonyx jubatus",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "review",
+    "country": "AU",
+    "values": {
+      "gbif": {
+        "records": 11,
+        "region": "OCEANIA",
+        "speciesRecords": 5269,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "AU (OCEANIA) has 11 records, outside the core region (AFRICA); kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 58,
+    "scientificName": "Acinonyx jubatus",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "review",
+    "country": "DE",
+    "values": {
+      "gbif": {
+        "records": 2,
+        "region": "EUROPE",
+        "speciesRecords": 5269,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "DE (EUROPE) has 2 records, outside the core region (AFRICA); kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 58,
+    "scientificName": "Acinonyx jubatus",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "blocking",
+    "country": "IQ",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "ASIA",
+        "speciesRecords": 5269,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "IQ (ASIA) has 1 record, outside the core region (AFRICA); excluded as a stray. Restore with keep in country-overrides.json."
+  },
+  {
+    "speciesId": 58,
+    "scientificName": "Acinonyx jubatus",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "review",
+    "country": "IR",
+    "values": {
+      "gbif": {
+        "records": 32,
+        "region": "ASIA",
+        "speciesRecords": 5269,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "IR (ASIA) has 32 records, outside the core region (AFRICA); kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 58,
+    "scientificName": "Acinonyx jubatus",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "review",
+    "country": "NL",
+    "values": {
+      "gbif": {
+        "records": 3,
+        "region": "EUROPE",
+        "speciesRecords": 5269,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "NL (EUROPE) has 3 records, outside the core region (AFRICA); kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 58,
+    "scientificName": "Acinonyx jubatus",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "review",
+    "country": "US",
+    "values": {
+      "gbif": {
+        "records": 56,
+        "region": "AMERICAS",
+        "speciesRecords": 5269,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "US (AMERICAS) has 56 records, outside the core region (AFRICA); kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 59,
+    "scientificName": "Manis crassicaudata",
+    "field": "ids.col",
+    "kind": "identity",
+    "severity": "blocking",
+    "values": {
+      "col": "3XVJJ",
+      "wikidata": [
+        "7VRVK"
+      ]
+    },
+    "reason": "COL matches Manis crassicaudata to 3XVJJ, but Wikidata P10585 is 7VRVK; ids.col is null and the taxonomy is the base one."
+  },
+  {
+    "speciesId": 60,
+    "scientificName": "Ailuropoda melanoleuca",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "review",
+    "country": "DE",
+    "values": {
+      "gbif": {
+        "records": 2,
+        "region": "EUROPE",
+        "speciesRecords": 29,
+        "coreRegions": [
+          "ASIA"
+        ]
+      }
+    },
+    "reason": "DE (EUROPE) has 2 records, outside the core region (ASIA); kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 60,
+    "scientificName": "Ailuropoda melanoleuca",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "blocking",
+    "country": "US",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "AMERICAS",
+        "speciesRecords": 29,
+        "coreRegions": [
+          "ASIA"
+        ]
+      }
+    },
+    "reason": "US (AMERICAS) has 1 record, outside the core region (ASIA); excluded as a stray. Restore with keep in country-overrides.json."
+  },
+  {
+    "speciesId": 62,
+    "scientificName": "Andrias davidianus",
+    "field": "ids.iucn",
+    "kind": "iucn-id",
+    "severity": "blocking",
+    "values": {
+      "base": 179010104,
+      "wikidata": [
+        "1272"
+      ]
+    },
+    "reason": "Wikidata Q61312 (P225 Andrias davidianus) has P627 1272. Kept 179010104."
+  },
+  {
+    "speciesId": 63,
+    "scientificName": "Smutsia temminckii",
+    "field": "ids.gbif",
+    "kind": "synonym-info",
+    "severity": "info",
+    "values": {
+      "gbif": {
+        "usageKey": 5786560,
+        "status": "SYNONYM",
+        "accepted": {
+          "key": 5219630,
+          "name": "Manis temminckii"
+        }
+      }
+    },
+    "reason": "The GBIF backbone calls Smutsia temminckii (5786560) a synonym of Manis temminckii (5219630); the countries are counted for 5219630, which covers all its synonyms."
+  },
+  {
+    "speciesId": 64,
+    "scientificName": "Loxodonta africana",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "AO",
+    "values": {
+      "gbif": {
+        "records": 2,
+        "region": "AFRICA",
+        "speciesRecords": 6675,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "AO has 2 records of 6675; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 64,
+    "scientificName": "Loxodonta africana",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "CF",
+    "values": {
+      "gbif": {
+        "records": 2,
+        "region": "AFRICA",
+        "speciesRecords": 6675,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "CF has 2 records of 6675; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 64,
+    "scientificName": "Loxodonta africana",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "NG",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "AFRICA",
+        "speciesRecords": 6675,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "NG has 1 record of 6675; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 64,
+    "scientificName": "Loxodonta africana",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "SD",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "AFRICA",
+        "speciesRecords": 6675,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "SD has 1 record of 6675; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 64,
+    "scientificName": "Loxodonta africana",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "SS",
+    "values": {
+      "gbif": {
+        "records": 2,
+        "region": "AFRICA",
+        "speciesRecords": 6675,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "SS has 2 records of 6675; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 64,
+    "scientificName": "Loxodonta africana",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "TD",
+    "values": {
+      "gbif": {
+        "records": 2,
+        "region": "AFRICA",
+        "speciesRecords": 6675,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "TD has 2 records of 6675; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 64,
+    "scientificName": "Loxodonta africana",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "review",
+    "country": "DE",
+    "values": {
+      "gbif": {
+        "records": 4,
+        "region": "EUROPE",
+        "speciesRecords": 6675,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "DE (EUROPE) has 4 records, outside the core region (AFRICA); kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 64,
+    "scientificName": "Loxodonta africana",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "review",
+    "country": "DK",
+    "values": {
+      "gbif": {
+        "records": 2,
+        "region": "EUROPE",
+        "speciesRecords": 6675,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "DK (EUROPE) has 2 records, outside the core region (AFRICA); kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 64,
+    "scientificName": "Loxodonta africana",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "review",
+    "country": "PL",
+    "values": {
+      "gbif": {
+        "records": 4,
+        "region": "EUROPE",
+        "speciesRecords": 6675,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "PL (EUROPE) has 4 records, outside the core region (AFRICA); kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 64,
+    "scientificName": "Loxodonta africana",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "review",
+    "country": "US",
+    "values": {
+      "gbif": {
+        "records": 7,
+        "region": "AMERICAS",
+        "speciesRecords": 6675,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "US (AMERICAS) has 7 records, outside the core region (AFRICA); kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 65,
+    "scientificName": "Lycaon pictus",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "CD",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "AFRICA",
+        "speciesRecords": 436,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "CD has 1 record of 436; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 65,
+    "scientificName": "Lycaon pictus",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "CF",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "AFRICA",
+        "speciesRecords": 436,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "CF has 1 record of 436; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 65,
+    "scientificName": "Lycaon pictus",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "MZ",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "AFRICA",
+        "speciesRecords": 436,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "MZ has 1 record of 436; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 65,
+    "scientificName": "Lycaon pictus",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "UG",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "AFRICA",
+        "speciesRecords": 436,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "UG has 1 record of 436; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 65,
+    "scientificName": "Lycaon pictus",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "review",
+    "country": "BR",
+    "values": {
+      "gbif": {
+        "records": 4,
+        "region": "AMERICAS",
+        "speciesRecords": 436,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "BR (AMERICAS) has 4 records, outside the core region (AFRICA); kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 65,
+    "scientificName": "Lycaon pictus",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "blocking",
+    "country": "KR",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "ASIA",
+        "speciesRecords": 436,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "KR (ASIA) has 1 record, outside the core region (AFRICA); excluded as a stray. Restore with keep in country-overrides.json."
+  },
+  {
+    "speciesId": 65,
+    "scientificName": "Lycaon pictus",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "review",
+    "country": "US",
+    "values": {
+      "gbif": {
+        "records": 95,
+        "region": "AMERICAS",
+        "speciesRecords": 436,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "US (AMERICAS) has 95 records, outside the core region (AFRICA); kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 66,
+    "scientificName": "Diceros bicornis",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "AO",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "AFRICA",
+        "speciesRecords": 718,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "AO has 1 record of 718; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 66,
+    "scientificName": "Diceros bicornis",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "CF",
+    "values": {
+      "gbif": {
+        "records": 2,
+        "region": "AFRICA",
+        "speciesRecords": 718,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "CF has 2 records of 718; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 66,
+    "scientificName": "Diceros bicornis",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "MW",
+    "values": {
+      "gbif": {
+        "records": 2,
+        "region": "AFRICA",
+        "speciesRecords": 718,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "MW has 2 records of 718; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 66,
+    "scientificName": "Diceros bicornis",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "NG",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "AFRICA",
+        "speciesRecords": 718,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "NG has 1 record of 718; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 66,
+    "scientificName": "Diceros bicornis",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "RW",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "AFRICA",
+        "speciesRecords": 718,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "RW has 1 record of 718; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 66,
+    "scientificName": "Diceros bicornis",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "blocking",
+    "country": "DE",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "EUROPE",
+        "speciesRecords": 718,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "DE (EUROPE) has 1 record, outside the core region (AFRICA); excluded as a stray. Restore with keep in country-overrides.json."
+  },
+  {
+    "speciesId": 66,
+    "scientificName": "Diceros bicornis",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "review",
+    "country": "FR",
+    "values": {
+      "gbif": {
+        "records": 2,
+        "region": "EUROPE",
+        "speciesRecords": 718,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "FR (EUROPE) has 2 records, outside the core region (AFRICA); kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 66,
+    "scientificName": "Diceros bicornis",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "review",
+    "country": "US",
+    "values": {
+      "gbif": {
+        "records": 245,
+        "region": "AMERICAS",
+        "speciesRecords": 718,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "US (AMERICAS) has 245 records, outside the core region (AFRICA); kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 68,
+    "scientificName": "Beatragus hunteri",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "blocking",
+    "country": "US",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "AMERICAS",
+        "speciesRecords": 24,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "US (AMERICAS) has 1 record, outside the core region (AFRICA); excluded as a stray. Restore with keep in country-overrides.json."
+  },
+  {
+    "speciesId": 69,
+    "scientificName": "Nanger dama",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "ET",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "AFRICA",
+        "speciesRecords": 404,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "ET has 1 record of 404; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 69,
+    "scientificName": "Nanger dama",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "KE",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "AFRICA",
+        "speciesRecords": 404,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "KE has 1 record of 404; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 69,
+    "scientificName": "Nanger dama",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "NE",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "AFRICA",
+        "speciesRecords": 404,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "NE has 1 record of 404; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 69,
+    "scientificName": "Nanger dama",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "SN",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "AFRICA",
+        "speciesRecords": 404,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "SN has 1 record of 404; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 69,
+    "scientificName": "Nanger dama",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "TD",
+    "values": {
+      "gbif": {
+        "records": 2,
+        "region": "AFRICA",
+        "speciesRecords": 404,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "TD has 2 records of 404; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 69,
+    "scientificName": "Nanger dama",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "review",
+    "country": "ES",
+    "values": {
+      "gbif": {
+        "records": 390,
+        "region": "EUROPE",
+        "speciesRecords": 404,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "ES (EUROPE) has 390 records, outside the core region (AFRICA); kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 69,
+    "scientificName": "Nanger dama",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "blocking",
+    "country": "PA",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "AMERICAS",
+        "speciesRecords": 404,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "PA (AMERICAS) has 1 record, outside the core region (AFRICA); excluded as a stray. Restore with keep in country-overrides.json."
+  },
+  {
+    "speciesId": 69,
+    "scientificName": "Nanger dama",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "review",
+    "country": "US",
+    "values": {
+      "gbif": {
+        "records": 7,
+        "region": "AMERICAS",
+        "speciesRecords": 404,
+        "coreRegions": [
+          "AFRICA"
+        ]
+      }
+    },
+    "reason": "US (AMERICAS) has 7 records, outside the core region (AFRICA); kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 70,
+    "scientificName": "Tapirus bairdii",
+    "field": "ids.col",
+    "kind": "identity",
+    "severity": "blocking",
+    "values": {
+      "col": {
+        "id": "54TGH",
+        "status": "synonym",
+        "accepted": {
+          "id": "54TF2",
+          "name": "Tapirella bairdii"
+        }
+      }
+    },
+    "reason": "COL 54TGH calls Tapirus bairdii a synonym of Tapirella bairdii (54TF2); ids.col is null and the taxonomy is the base one."
+  },
+  {
+    "speciesId": 70,
+    "scientificName": "Tapirus bairdii",
+    "field": "ids.gbif",
+    "kind": "synonym-info",
+    "severity": "info",
+    "values": {
+      "gbif": {
+        "usageKey": 2440897,
+        "status": "SYNONYM",
+        "accepted": {
+          "key": 8395500,
+          "name": "Tapirella bairdii"
+        }
+      }
+    },
+    "reason": "The GBIF backbone calls Tapirus bairdii (2440897) a synonym of Tapirella bairdii (8395500); the countries are counted for 8395500, which covers all its synonyms."
+  },
+  {
+    "speciesId": 70,
+    "scientificName": "Tapirus bairdii",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "CO",
+    "values": {
+      "gbif": {
+        "records": 2,
+        "region": "AMERICAS",
+        "speciesRecords": 3107,
+        "coreRegions": [
+          "AMERICAS"
+        ]
+      }
+    },
+    "reason": "CO has 2 records of 3107; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 70,
+    "scientificName": "Tapirus bairdii",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "US",
+    "values": {
+      "gbif": {
+        "records": 2,
+        "region": "AMERICAS",
+        "speciesRecords": 3107,
+        "coreRegions": [
+          "AMERICAS"
+        ]
+      }
+    },
+    "reason": "US has 2 records of 3107; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 71,
+    "scientificName": "Tremarctos ornatus",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "PA",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "AMERICAS",
+        "speciesRecords": 3010,
+        "coreRegions": [
+          "AMERICAS"
+        ]
+      }
+    },
+    "reason": "PA has 1 record of 3010; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 71,
+    "scientificName": "Tremarctos ornatus",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "blocking",
+    "country": "DE",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "EUROPE",
+        "speciesRecords": 3010,
+        "coreRegions": [
+          "AMERICAS"
+        ]
+      }
+    },
+    "reason": "DE (EUROPE) has 1 record, outside the core region (AMERICAS); excluded as a stray. Restore with keep in country-overrides.json."
+  },
+  {
+    "speciesId": 71,
+    "scientificName": "Tremarctos ornatus",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "review",
+    "country": "JP",
+    "values": {
+      "gbif": {
+        "records": 2,
+        "region": "ASIA",
+        "speciesRecords": 3010,
+        "coreRegions": [
+          "AMERICAS"
+        ]
+      }
+    },
+    "reason": "JP (ASIA) has 2 records, outside the core region (AMERICAS); kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 72,
+    "scientificName": "Chrysocyon brachyurus",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "PE",
+    "values": {
+      "gbif": {
+        "records": 2,
+        "region": "AMERICAS",
+        "speciesRecords": 1267,
+        "coreRegions": [
+          "AMERICAS"
+        ]
+      }
+    },
+    "reason": "PE has 2 records of 1267; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 72,
+    "scientificName": "Chrysocyon brachyurus",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "UY",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "AMERICAS",
+        "speciesRecords": 1267,
+        "coreRegions": [
+          "AMERICAS"
+        ]
+      }
+    },
+    "reason": "UY has 1 record of 1267; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 73,
+    "scientificName": "Pteronura brasiliensis",
+    "field": "ids.col",
+    "kind": "identity",
+    "severity": "blocking",
+    "values": {
+      "col": "4PZZS",
+      "wikidata": [
+        "4PZZR"
+      ]
+    },
+    "reason": "COL matches Pteronura brasiliensis to 4PZZS, but Wikidata P10585 is 4PZZR; ids.col is null and the taxonomy is the base one."
+  },
+  {
+    "speciesId": 73,
+    "scientificName": "Pteronura brasiliensis",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "PY",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "AMERICAS",
+        "speciesRecords": 843,
+        "coreRegions": [
+          "AMERICAS"
+        ]
+      }
+    },
+    "reason": "PY has 1 record of 843; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 73,
+    "scientificName": "Pteronura brasiliensis",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "SR",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "AMERICAS",
+        "speciesRecords": 843,
+        "coreRegions": [
+          "AMERICAS"
+        ]
+      }
+    },
+    "reason": "SR has 1 record of 843; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 74,
+    "scientificName": "Ambystoma mexicanum",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "CA",
+    "values": {
+      "gbif": {
+        "records": 2,
+        "region": "AMERICAS",
+        "speciesRecords": 229,
+        "coreRegions": [
+          "AMERICAS"
+        ]
+      }
+    },
+    "reason": "CA has 2 records of 229; kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 74,
+    "scientificName": "Ambystoma mexicanum",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "review",
+    "country": "DE",
+    "values": {
+      "gbif": {
+        "records": 2,
+        "region": "EUROPE",
+        "speciesRecords": 229,
+        "coreRegions": [
+          "AMERICAS"
+        ]
+      }
+    },
+    "reason": "DE (EUROPE) has 2 records, outside the core region (AMERICAS); kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 74,
+    "scientificName": "Ambystoma mexicanum",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "review",
+    "country": "NZ",
+    "values": {
+      "gbif": {
+        "records": 2,
+        "region": "OCEANIA",
+        "speciesRecords": 229,
+        "coreRegions": [
+          "AMERICAS"
+        ]
+      }
+    },
+    "reason": "NZ (OCEANIA) has 2 records, outside the core region (AMERICAS); kept. Settle with keep or remove in country-overrides.json."
+  },
+  {
+    "speciesId": 74,
+    "scientificName": "Ambystoma mexicanum",
+    "field": "range.countriesWithRecords",
+    "kind": "country-captive-suspect",
+    "severity": "blocking",
+    "country": "UA",
+    "values": {
+      "gbif": {
+        "records": 1,
+        "region": "EUROPE",
+        "speciesRecords": 229,
+        "coreRegions": [
+          "AMERICAS"
+        ]
+      }
+    },
+    "reason": "UA (EUROPE) has 1 record, outside the core region (AMERICAS); excluded as a stray. Restore with keep in country-overrides.json."
+  },
+  {
+    "speciesId": 76,
+    "scientificName": "Phyllobates terribilis",
+    "field": "range.countriesWithRecords",
+    "kind": "country-borderline",
+    "severity": "review",
+    "country": "BR",
+    "values": {
+      "gbif": {
+        "records": 2,
+        "region": "AMERICAS",
+        "speciesRecords": 299,
+        "coreRegions": [
+          "AMERICAS"
+        ]
+      }
+    },
+    "reason": "BR has 2 records of 299; kept. Settle with keep or remove in country-overrides.json."
+  }
+]

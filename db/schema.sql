@@ -16,9 +16,11 @@ create table species (
   wikidata_id text,
   inaturalist_id int,
   ncbi_id int,
+  countries_with_records text[], -- null: GBIF taxon not settled; '{}': settled, no countries
   photo_url text,
   photo_credit text,
   photo_license text,
   photo_page text,
+  sources jsonb not null,
   replaced_by int[]
 );

@@ -11,7 +11,10 @@
     "build": "tsx scripts/build.ts",
     "typecheck": "tsc --noEmit",
     "seed:cc": "tsx scripts/seed-cc.ts",
-    "db:load": "tsx scripts/load.ts"
+    "db:load": "tsx scripts/load.ts",
+    "ingest": "tsx scripts/ingest.ts",
+    "derive": "tsx scripts/derive.ts",
+    "test": "tsx --test scripts/derive/*.test.ts"
   },
   "devDependencies": {
     "@types/node": "^26.6.5",

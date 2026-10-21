@@ -10,6 +10,7 @@ if (!url) throw new Error("DATABASE_URL not set");
 const schema = await readFile(new URL("../db/schema.sql", import.meta.url), "utf8");
 const species: Species[] = JSON.parse(await readFile(speciesFile, "utf8"));
 
+const sql = postgres(url, { onnotice: () => {} });
 const rows = species.map(s => ({
   id: s.id,
   slug: s.slug,
@@ -25,14 +26,15 @@ const rows = species.map(s => ({
   wikidata_id: s.ids.wikidata,
   inaturalist_id: s.ids.inaturalist,
   ncbi_id: s.ids.ncbi,
+  countries_with_records: s.range.countriesWithRecords,
   photo_url: s.photo?.url ?? null,
   photo_credit: s.photo?.credit ?? null,
   photo_license: s.photo?.license ?? null,
   photo_page: s.photo?.page ?? null,
+  sources: sql.json(s.sources),
   replaced_by: s.replacedBy,
 }));
 
-const sql = postgres(url, { onnotice: () => {} });
 try {
   await sql.begin(async tx => {
     await tx.unsafe(schema);
