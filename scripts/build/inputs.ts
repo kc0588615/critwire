@@ -1,14 +1,16 @@
 // The build's inputs (plan §3.2), checked offline before anything is written, in every build (strict and --draft).
 import { assertDerivedFiles, deriveAll, readDeriveInputs } from "../derive/pipeline.ts";
+import type { Registration } from "../gbif/derived-dataset.ts";
 import type { Species } from "../species.ts";
 import { assertRecordKeys } from "./columns.ts";
 
-// doi: the current GBIF derived-dataset DOI; null only in a --draft build.
-export interface BuildInputs { species: Species[]; doi: string | null }
+// registration: the GBIF derived dataset whose DOI the records cite (current); null only in a --draft build.
+export interface BuildInputs { species: Species[]; registration: Registration | null }
 
 export async function readBuildInputs({ draft }: { draft: boolean }): Promise<BuildInputs> {
   // Freshness: the committed derived files must equal derive's output byte for byte.
-  const result = deriveAll(await readDeriveInputs());
+  const inputs = await readDeriveInputs();
+  const result = deriveAll(inputs);
   await assertDerivedFiles(result);
   const species = result.records;
 
@@ -23,5 +25,5 @@ export async function readBuildInputs({ draft }: { draft: boolean }): Promise<Bu
   if (result.doi === null && !draft) {
     throw new Error("no current GBIF derived-dataset DOI (registration missing or stale): see AGENTS.md, GBIF DOI refresh; pnpm build --draft for a preview");
   }
-  return { species, doi: result.doi };
+  return { species, registration: result.doi === null ? null : inputs.registration };
 }

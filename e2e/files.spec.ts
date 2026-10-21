@@ -25,7 +25,7 @@ test.beforeAll(async () => { species = await records(); db = await openDuckDB();
 test.afterAll(() => db.close());
 
 test("every /v1 file downloads with the built bytes", async ({ request }) => {
-  const paths = [...TABLES, ...species.flatMap((s) => [`species/${s.id}.json`, `species/${s.slug}.json`])];
+  const paths = [...TABLES, "attribution.json", ...species.flatMap((s) => [`species/${s.id}.json`, `species/${s.slug}.json`])];
   for (const path of paths) {
     const res = await request.get(`/v1/${path}`);
     expect(res.status(), path).toBe(200);

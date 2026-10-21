@@ -16,7 +16,7 @@ export interface RecordInput {
 }
 
 // Citable fields, in the fixed order sources[].fields uses.
-const FIELDS = ["ids.iucn", "ids.gbif", "ids.col", "ids.wikidata", "ids.inaturalist", "ids.ncbi", "taxonomy", "range.countriesWithOpenRecords"] as const;
+export const FIELDS = ["ids.iucn", "ids.gbif", "ids.col", "ids.wikidata", "ids.inaturalist", "ids.ncbi", "taxonomy", "range.countriesWithOpenRecords"] as const;
 type Field = (typeof FIELDS)[number];
 
 const WIKIDATA_LICENSE = "CC0 1.0";
