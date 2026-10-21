@@ -128,7 +128,7 @@ Out:
 
 ## Stages
 
-- [ ] Baseline: install, migrate, run typecheck, lint, unit and E2E tests; record the results under Baseline
+- [x] Baseline: install, migrate, run typecheck, lint, unit and E2E tests; record the results under Baseline
 - [ ] Architecture: `architect` writes findings and the target design
 - [ ] Fable review: `architecture-reviewer`
 - [ ] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
@@ -136,6 +136,17 @@ Out:
 - [ ] Steps: `planner` writes Steps and Verification
 
 ## Baseline
+
+At `26ad8d4` (main `aa66ff6` + mission start), Node 24.21.0, pnpm 11.10.0, db `critwire_dev`:
+- `pnpm install --frozen-lockfile`: ok (deps: postgres, tsx, typescript, @types/node; no DuckDB, no Playwright package).
+- `pnpm typecheck`: pass.
+- Lint: no lint script in the repo; none run.
+- `pnpm test`: 42/42 pass.
+- `pnpm derive`: ok, no diff vs committed `data/`; second run also no diff (deterministic). Coverage: taxonomy from COL 69/76; countries ok 72 (472 codes), no-open-records 1 (47), identity-unsettled 3 (9, 19, 27); 214 mismatch entries (60 blocking).
+- `pnpm db:load`: loaded 76 species.
+- `pnpm build`: placeholder; writes `dist/index.html` + empty `dist/v1/`.
+- E2E: no suite exists yet (built in this mission).
+- Tools present: `/usr/bin/caddy` v2.11.7; Playwright Chromium 1208 browsers in `~/.cache/ms-playwright`.
 
 ## Architecture
 
@@ -152,5 +163,7 @@ Out:
 ## Decisions
 
 ## Log
+
+- 2026-10-21 05:13 UTC: Baseline recorded; typecheck pass, 42/42 unit, derive deterministic, db:load 76, build placeholder ok; no lint/E2E yet.
 
 ## Summary
