@@ -67,7 +67,8 @@
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-21",
-        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5220530&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5220530&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE",
+        "doi": "10.15468/dd.ky9cyt"
       },
       {
         "source": "Wikidata",
@@ -160,7 +161,8 @@
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-21",
-        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2442680&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2442680&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE",
+        "doi": "10.15468/dd.ky9cyt"
       },
       {
         "source": "Wikidata",
@@ -252,7 +254,8 @@
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-21",
-        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5217388&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5217388&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE",
+        "doi": "10.15468/dd.ky9cyt"
       },
       {
         "source": "Wikidata",
@@ -349,7 +352,8 @@
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-21",
-        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2441884&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2441884&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE",
+        "doi": "10.15468/dd.ky9cyt"
       },
       {
         "source": "Wikidata",
@@ -444,7 +448,8 @@
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-21",
-        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5217285&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5217285&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE",
+        "doi": "10.15468/dd.ky9cyt"
       },
       {
         "source": "Wikidata",
@@ -542,7 +547,8 @@
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-21",
-        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2428197&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2428197&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE",
+        "doi": "10.15468/dd.ky9cyt"
       },
       {
         "source": "Wikidata",
@@ -623,7 +629,8 @@
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-21",
-        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2429660&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2429660&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE",
+        "doi": "10.15468/dd.ky9cyt"
       },
       {
         "source": "Wikidata",
@@ -716,7 +723,8 @@
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-21",
-        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2429804&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2429804&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE",
+        "doi": "10.15468/dd.ky9cyt"
       },
       {
         "source": "Wikidata",
@@ -870,7 +878,8 @@
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-21",
-        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2423966&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2423966&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE",
+        "doi": "10.15468/dd.ky9cyt"
       },
       {
         "source": "Wikidata",
@@ -962,7 +971,8 @@
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-21",
-        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2428946&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2428946&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE",
+        "doi": "10.15468/dd.ky9cyt"
       },
       {
         "source": "Wikidata",
@@ -1057,7 +1067,8 @@
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-21",
-        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2443326&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2443326&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE",
+        "doi": "10.15468/dd.ky9cyt"
       },
       {
         "source": "Wikidata",
@@ -1148,7 +1159,8 @@
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-21",
-        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5216573&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5216573&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE",
+        "doi": "10.15468/dd.ky9cyt"
       },
       {
         "source": "Wikidata",
@@ -1240,7 +1252,8 @@
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-21",
-        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5218077&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5218077&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE",
+        "doi": "10.15468/dd.ky9cyt"
       },
       {
         "source": "Wikidata",
@@ -1332,7 +1345,8 @@
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-21",
-        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2441842&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2441842&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE",
+        "doi": "10.15468/dd.ky9cyt"
       },
       {
         "source": "Wikidata",
@@ -1423,7 +1437,8 @@
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-21",
-        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2421431&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2421431&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE",
+        "doi": "10.15468/dd.ky9cyt"
       },
       {
         "source": "Wikidata",
@@ -1517,7 +1532,8 @@
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-21",
-        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2442506&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2442506&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE",
+        "doi": "10.15468/dd.ky9cyt"
       },
       {
         "source": "Wikidata",
@@ -1608,7 +1624,8 @@
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-21",
-        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2442647&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2442647&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE",
+        "doi": "10.15468/dd.ky9cyt"
       },
       {
         "source": "Wikidata",
@@ -1775,7 +1792,8 @@
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-21",
-        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2441533&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2441533&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE",
+        "doi": "10.15468/dd.ky9cyt"
       },
       {
         "source": "Wikidata",
@@ -1869,7 +1887,8 @@
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-21",
-        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2441666&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2441666&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE",
+        "doi": "10.15468/dd.ky9cyt"
       },
       {
         "source": "Wikidata",
@@ -1943,7 +1962,8 @@
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-21",
-        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=7451150&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=7451150&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE",
+        "doi": "10.15468/dd.ky9cyt"
       },
       {
         "source": "Wikidata",
@@ -2035,7 +2055,8 @@
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-21",
-        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5219587&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5219587&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE",
+        "doi": "10.15468/dd.ky9cyt"
       },
       {
         "source": "Wikidata",
@@ -2135,7 +2156,8 @@
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-21",
-        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5219628&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5219628&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE",
+        "doi": "10.15468/dd.ky9cyt"
       },
       {
         "source": "Wikidata",
@@ -2241,7 +2263,8 @@
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-21",
-        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5219416&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5219416&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE",
+        "doi": "10.15468/dd.ky9cyt"
       },
       {
         "source": "Wikidata",
@@ -2334,7 +2357,8 @@
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-21",
-        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5218985&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5218985&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE",
+        "doi": "10.15468/dd.ky9cyt"
       },
       {
         "source": "Wikidata",
@@ -2494,7 +2518,8 @@
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-21",
-        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5219461&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5219461&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE",
+        "doi": "10.15468/dd.ky9cyt"
       },
       {
         "source": "Wikidata",
@@ -2587,7 +2612,8 @@
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-21",
-        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2441207&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2441207&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE",
+        "doi": "10.15468/dd.ky9cyt"
       },
       {
         "source": "Wikidata",
@@ -2679,7 +2705,8 @@
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-21",
-        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2436352&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2436352&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE",
+        "doi": "10.15468/dd.ky9cyt"
       },
       {
         "source": "Wikidata",
@@ -2770,7 +2797,8 @@
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-21",
-        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5219997&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5219997&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE",
+        "doi": "10.15468/dd.ky9cyt"
       },
       {
         "source": "Wikidata",
@@ -2861,7 +2889,8 @@
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-21",
-        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5218453&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5218453&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE",
+        "doi": "10.15468/dd.ky9cyt"
       },
       {
         "source": "Wikidata",
@@ -2952,7 +2981,8 @@
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-21",
-        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5219143&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5219143&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE",
+        "doi": "10.15468/dd.ky9cyt"
       },
       {
         "source": "Wikidata",
@@ -3043,7 +3073,8 @@
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-21",
-        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=7262005&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=7262005&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE",
+        "doi": "10.15468/dd.ky9cyt"
       },
       {
         "source": "Wikidata",
@@ -3138,7 +3169,8 @@
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-21",
-        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5219446&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5219446&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE",
+        "doi": "10.15468/dd.ky9cyt"
       },
       {
         "source": "Wikidata",
@@ -3237,7 +3269,8 @@
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-21",
-        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5220096&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5220096&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE",
+        "doi": "10.15468/dd.ky9cyt"
       },
       {
         "source": "Wikidata",
@@ -3328,7 +3361,8 @@
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-21",
-        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5219460&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5219460&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE",
+        "doi": "10.15468/dd.ky9cyt"
       },
       {
         "source": "Wikidata",
@@ -3420,7 +3454,8 @@
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-21",
-        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=4262655&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=4262655&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE",
+        "doi": "10.15468/dd.ky9cyt"
       },
       {
         "source": "Wikidata",
@@ -3516,7 +3551,8 @@
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-21",
-        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2440894&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2440894&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE",
+        "doi": "10.15468/dd.ky9cyt"
       },
       {
         "source": "Wikidata",
@@ -3609,7 +3645,8 @@
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-21",
-        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5707420&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5707420&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE",
+        "doi": "10.15468/dd.ky9cyt"
       },
       {
         "source": "Wikidata",
@@ -3712,7 +3749,8 @@
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-21",
-        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2435349&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2435349&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE",
+        "doi": "10.15468/dd.ky9cyt"
       },
       {
         "source": "Wikidata",
@@ -3803,7 +3841,8 @@
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-21",
-        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2437365&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2437365&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE",
+        "doi": "10.15468/dd.ky9cyt"
       },
       {
         "source": "Wikidata",
@@ -3896,7 +3935,8 @@
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-21",
-        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2440222&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2440222&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE",
+        "doi": "10.15468/dd.ky9cyt"
       },
       {
         "source": "Wikidata",
@@ -3988,7 +4028,8 @@
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-21",
-        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5220112&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5220112&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE",
+        "doi": "10.15468/dd.ky9cyt"
       },
       {
         "source": "Wikidata",
@@ -4079,7 +4120,8 @@
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-21",
-        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5218694&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5218694&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE",
+        "doi": "10.15468/dd.ky9cyt"
       },
       {
         "source": "Wikidata",
@@ -4170,7 +4212,8 @@
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-21",
-        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5220103&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5220103&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE",
+        "doi": "10.15468/dd.ky9cyt"
       },
       {
         "source": "Wikidata",
@@ -4337,7 +4380,8 @@
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-21",
-        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2435451&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2435451&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE",
+        "doi": "10.15468/dd.ky9cyt"
       },
       {
         "source": "Wikidata",
@@ -4429,7 +4473,8 @@
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-21",
-        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5219470&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5219470&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE",
+        "doi": "10.15468/dd.ky9cyt"
       },
       {
         "source": "Wikidata",
@@ -4529,7 +4574,8 @@
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-21",
-        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2441101&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2441101&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE",
+        "doi": "10.15468/dd.ky9cyt"
       },
       {
         "source": "Wikidata",
@@ -4639,7 +4685,8 @@
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-21",
-        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5219426&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5219426&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE",
+        "doi": "10.15468/dd.ky9cyt"
       },
       {
         "source": "Wikidata",
@@ -4743,7 +4790,8 @@
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-21",
-        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2436346&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2436346&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE",
+        "doi": "10.15468/dd.ky9cyt"
       },
       {
         "source": "Wikidata",
@@ -4845,7 +4893,8 @@
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-21",
-        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2440898&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2440898&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE",
+        "doi": "10.15468/dd.ky9cyt"
       },
       {
         "source": "Wikidata",
@@ -4947,7 +4996,8 @@
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-21",
-        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2436353&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2436353&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE",
+        "doi": "10.15468/dd.ky9cyt"
       },
       {
         "source": "Wikidata",
@@ -5046,7 +5096,8 @@
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-21",
-        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5219631&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5219631&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE",
+        "doi": "10.15468/dd.ky9cyt"
       },
       {
         "source": "Wikidata",
@@ -5163,7 +5214,8 @@
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-21",
-        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5219534&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5219534&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE",
+        "doi": "10.15468/dd.ky9cyt"
       },
       {
         "source": "Wikidata",
@@ -5274,7 +5326,8 @@
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-21",
-        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5218416&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5218416&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE",
+        "doi": "10.15468/dd.ky9cyt"
       },
       {
         "source": "Wikidata",
@@ -5386,7 +5439,8 @@
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-21",
-        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2435270&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2435270&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE",
+        "doi": "10.15468/dd.ky9cyt"
       },
       {
         "source": "Wikidata",
@@ -5463,7 +5517,8 @@
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-21",
-        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5219633&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5219633&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE",
+        "doi": "10.15468/dd.ky9cyt"
       },
       {
         "source": "Wikidata",
@@ -5556,7 +5611,8 @@
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-21",
-        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2433399&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2433399&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE",
+        "doi": "10.15468/dd.ky9cyt"
       },
       {
         "source": "Wikidata",
@@ -5647,7 +5703,8 @@
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-21",
-        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2436432&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2436432&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE",
+        "doi": "10.15468/dd.ky9cyt"
       },
       {
         "source": "Wikidata",
@@ -5738,7 +5795,8 @@
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-21",
-        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2432037&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2432037&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE",
+        "doi": "10.15468/dd.ky9cyt"
       },
       {
         "source": "Wikidata",
@@ -5841,7 +5899,8 @@
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-21",
-        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5219630&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5219630&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE",
+        "doi": "10.15468/dd.ky9cyt"
       },
       {
         "source": "Wikidata",
@@ -5963,7 +6022,8 @@
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-21",
-        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2435350&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2435350&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE",
+        "doi": "10.15468/dd.ky9cyt"
       },
       {
         "source": "Wikidata",
@@ -6069,7 +6129,8 @@
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-21",
-        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5219317&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5219317&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE",
+        "doi": "10.15468/dd.ky9cyt"
       },
       {
         "source": "Wikidata",
@@ -6171,7 +6232,8 @@
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-21",
-        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5220111&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5220111&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE",
+        "doi": "10.15468/dd.ky9cyt"
       },
       {
         "source": "Wikidata",
@@ -6262,7 +6324,8 @@
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-21",
-        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2433385&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2433385&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE",
+        "doi": "10.15468/dd.ky9cyt"
       },
       {
         "source": "Wikidata",
@@ -6353,7 +6416,8 @@
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-21",
-        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=4262734&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=4262734&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE",
+        "doi": "10.15468/dd.ky9cyt"
       },
       {
         "source": "Wikidata",
@@ -6450,7 +6514,8 @@
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-21",
-        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=4262713&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=4262713&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE",
+        "doi": "10.15468/dd.ky9cyt"
       },
       {
         "source": "Wikidata",
@@ -6531,7 +6596,8 @@
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-21",
-        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=8395500&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=8395500&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE",
+        "doi": "10.15468/dd.ky9cyt"
       },
       {
         "source": "Wikidata",
@@ -6630,7 +6696,8 @@
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-21",
-        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2433401&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2433401&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE",
+        "doi": "10.15468/dd.ky9cyt"
       },
       {
         "source": "Wikidata",
@@ -6727,7 +6794,8 @@
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-21",
-        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2434450&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2434450&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE",
+        "doi": "10.15468/dd.ky9cyt"
       },
       {
         "source": "Wikidata",
@@ -6811,7 +6879,8 @@
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-21",
-        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2433681&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2433681&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE",
+        "doi": "10.15468/dd.ky9cyt"
       },
       {
         "source": "Wikidata",
@@ -6906,7 +6975,8 @@
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-21",
-        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2431950&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2431950&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE",
+        "doi": "10.15468/dd.ky9cyt"
       },
       {
         "source": "Wikidata",
@@ -6997,7 +7067,8 @@
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-21",
-        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2432031&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2432031&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE",
+        "doi": "10.15468/dd.ky9cyt"
       },
       {
         "source": "Wikidata",
@@ -7089,7 +7160,8 @@
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-21",
-        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5218020&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5218020&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE",
+        "doi": "10.15468/dd.ky9cyt"
       },
       {
         "source": "Wikidata",
