@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>critwire: open species data</title>
+<meta name="description" content="Free, open data about {{species}} animals: names, taxonomy, matching ids and countries with open records, as JSON, CSV and Parquet files.">
+<style>
+:root { color-scheme: light dark; --fg: #1d2420; --muted: #56605a; --bg: #fbfcfa; --line: #d5dcd6; --code: #eef2ee; --link: #1f6b45; }
+@media (prefers-color-scheme: dark) {
+  :root { --fg: #e4e9e5; --muted: #a3ada6; --bg: #141816; --line: #323a35; --code: #1f2522; --link: #7fd1a3; }
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 1.0625rem/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+main { max-width: 42rem; margin: 0 auto; padding: 1.5rem 1rem 4rem; }
+h1 { font-size: 2rem; line-height: 1.2; margin: 0 0 .25rem; }
+h2 { font-size: 1.4rem; margin: 2.5rem 0 .75rem; padding-top: 1rem; border-top: 1px solid var(--line); }
+h3 { font-size: 1.1rem; margin: 1.75rem 0 .5rem; }
+p, ul, dl, pre { margin: 0 0 1rem; }
+a { color: var(--link); overflow-wrap: anywhere; }
+code { font: .9em/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; overflow-wrap: anywhere; }
+pre { background: var(--code); border: 1px solid var(--line); border-radius: 6px; padding: .75rem; overflow-x: auto; }
+pre code { overflow-wrap: normal; white-space: pre; }
+pre.wrap code { white-space: pre-wrap; overflow-wrap: anywhere; }
+:not(pre) > code { background: var(--code); border-radius: 4px; padding: .05em .3em; }
+dt { font-weight: 600; margin-top: .75rem; }
+dd { margin: .15rem 0 0 1rem; overflow-wrap: anywhere; }
+dt.group { margin-top: 1.5rem; }
+.lead { font-size: 1.15rem; color: var(--muted); margin-bottom: 1.5rem; }
+nav ul { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: .25rem 1rem; }
+.note { color: var(--muted); font-size: .95rem; }
+details { border: 1px solid var(--line); border-radius: 6px; padding: .5rem .75rem; }
+summary { cursor: pointer; font-weight: 600; }
+details ul { margin-top: .75rem; padding-left: 1.25rem; }
+details li { margin-bottom: .4rem; overflow-wrap: anywhere; }
+</style>
+</head>
+<body>
+<main>
+<header>
+<h1>critwire</h1>
+<p class="lead">Free, open facts about {{species}} animals, ready for science class, research projects and nature apps.</p>
+<nav aria-label="Sections">
+<ul>
+<li><a href="#about">About</a></li>
+<li><a href="#files">Files</a></li>
+<li><a href="#fields">Fields</a></li>
+<li><a href="#licenses">Licenses</a></li>
+<li><a href="#credits">Credits</a></li>
+<li><a href="#cite">Cite</a></li>
+</ul>
+</nav>
+</header>
+
+<section id="about">
+<h2>About</h2>
+<p>critwire gives every animal one clean record: its common and scientific names, where it sits on the tree of life, the ids other science databases use for it, and the countries where people have shared open records of it. Some records also have a photo with its credit.</p>
+<p>Scientists keep information about the same animal in many different databases, and those databases do not always agree. critwire checks the big open ones against each other. When they agree, the answer goes in the record. When they disagree, critwire leaves the value empty until a person has looked at it, so you never get a guess dressed up as a fact.</p>
+<p>Everything is a plain file on this website. There is no account, no key and no limit: download a file, open it in a spreadsheet, or read it straight from code. critwire was built for the game <a href="https://play.critterconnect.org">Critter Connect</a>, which uses these same files.</p>
+<p>The quickest start, in <a href="https://duckdb.org/">DuckDB</a>:</p>
+<pre><code data-example="sql">SELECT * FROM 'https://critwire.com/v1/species.parquet';</code></pre>
+<p class="note">The <code>/v1/</code> in each address is the version. Inside v1 we only add things: fields keep their names and meanings, and an id always means the same animal.</p>
+</section>
+
+<section id="files">
+<h2>Files</h2>
+<p>Every file holds the same {{species}} records. Pick the format that suits your tool.</p>
+<dl>
+<dt><a href="/v1/species.json"><code>/v1/species.json</code></a></dt>
+<dd>All records as one JSON array. Best for web pages and apps.</dd>
+<dt><a href="/v1/species.csv"><code>/v1/species.csv</code></a></dt>
+<dd>One row per animal, for spreadsheets. It leaves out <code>sources</code> (see <a href="#fields">Fields</a>).</dd>
+<dt><a href="/v1/species.parquet"><code>/v1/species.parquet</code></a></dt>
+<dd>All records with the same nested shape as the JSON, for DuckDB, pandas, polars or R. Tools can read just the parts they need straight from the web.</dd>
+<dt><a href="/v1/species/51.json"><code>/v1/species/{id}.json</code></a> and <a href="/v1/species/jaguar.json"><code>/v1/species/{slug}.json</code></a></dt>
+<dd>One record per file, by its number or by its name in the address. Both files hold the same record.</dd>
+<dt><a href="/v1/attribution.json"><code>/v1/attribution.json</code></a></dt>
+<dd>Every source, license and photo credit, plus the datasets behind the country lists. The <a href="#credits">Credits</a> below are made from it.</dd>
+</dl>
+<p class="note">Files are served with open CORS and byte ranges, so a web page on any site can fetch them.</p>
+
+<h3>Download with curl</h3>
+<pre><code data-example="shell">curl -fsSO https://critwire.com/v1/species.json
+curl -fsSO https://critwire.com/v1/species.csv
+curl -fsSO https://critwire.com/v1/species.parquet
+curl -fsSO https://critwire.com/v1/attribution.json
+curl -fsS https://critwire.com/v1/species/51.json
+curl -fsS https://critwire.com/v1/species/jaguar.json</code></pre>
+
+<h3>Ask questions with DuckDB</h3>
+<p>Which animals have open records in Brazil?</p>
+<pre><code data-example="sql">SELECT id, commonName, scientificName
+FROM 'https://critwire.com/v1/species.parquet'
+WHERE list_contains("range".countriesWithOpenRecords, 'BR')
+ORDER BY commonName;</code></pre>
+<p>How many animals are in each class, from the CSV?</p>
+<pre><code data-example="sql">SELECT taxonomy_class, count(*) AS animals
+FROM 'https://critwire.com/v1/species.csv'
+GROUP BY taxonomy_class
+ORDER BY animals DESC;</code></pre>
+<p>One animal from the JSON, with the ids other databases use:</p>
+<pre><code data-example="sql">SELECT commonName, ids.gbif, ids.col, ids.wikidata
+FROM read_json('https://critwire.com/v1/species.json')
+WHERE slug = 'jaguar';</code></pre>
+</section>
+
+<section id="fields">
+<h2>Fields</h2>
+<p>Each record has these fields, in this order. A field that is <code>null</code> (an empty cell in the CSV) means critwire does not know the value yet, or the sources disagree and a person has not settled it. critwire never fills a gap with a guess.</p>
+<dl>
+<dt><code>id</code></dt>
+<dd>critwire's number for the animal. It never changes and is never given to another animal.</dd>
+<dt><code>slug</code></dt>
+<dd>A short, readable name for web addresses, like <code>jaguar</code>.</dd>
+<dt><code>scientificName</code></dt>
+<dd>The two-part Latin name scientists use, like <code>Panthera onca</code>.</dd>
+<dt><code>commonName</code></dt>
+<dd>The everyday English name.</dd>
+
+<dt class="group"><code>taxonomy</code></dt>
+<dd>Where the animal sits on the tree of life. It comes from the Catalogue of Life when critwire is sure both name the same animal.</dd>
+<dt><code>taxonomy.class</code></dt>
+<dd>The class, like <code>Mammalia</code> (mammals) or <code>Reptilia</code> (reptiles).</dd>
+<dt><code>taxonomy.order</code></dt>
+<dd>The order, like <code>Carnivora</code>.</dd>
+<dt><code>taxonomy.family</code></dt>
+<dd>The family, like <code>Felidae</code> (cats).</dd>
+<dt><code>taxonomy.genus</code></dt>
+<dd>The genus, the first part of the scientific name.</dd>
+
+<dt class="group"><code>ids</code></dt>
+<dd>The animal's id in other databases, so you can join critwire with them. <code>null</code> means the match is not settled.</dd>
+<dt><code>ids.iucn</code></dt>
+<dd>The <a href="https://www.iucnredlist.org/">IUCN Red List</a> species id. critwire keeps only this number, no Red List data (see <a href="#licenses">Licenses</a>).</dd>
+<dt><code>ids.gbif</code></dt>
+<dd>The GBIF Backbone Taxonomy key, for occurrence records on <a href="https://www.gbif.org/">GBIF</a>.</dd>
+<dt><code>ids.col</code></dt>
+<dd>The <a href="https://www.catalogueoflife.org/">Catalogue of Life</a> id.</dd>
+<dt><code>ids.wikidata</code></dt>
+<dd>The <a href="https://www.wikidata.org/">Wikidata</a> item, like <code>Q35694</code>.</dd>
+<dt><code>ids.inaturalist</code></dt>
+<dd>The <a href="https://www.inaturalist.org/">iNaturalist</a> taxon id.</dd>
+<dt><code>ids.ncbi</code></dt>
+<dd>The <a href="https://www.ncbi.nlm.nih.gov/taxonomy">NCBI Taxonomy</a> id, used for DNA data.</dd>
+
+<dt class="group"><code>range</code></dt>
+<dd>Where the animal has been recorded.</dd>
+<dt><code>range.countriesWithOpenRecords</code></dt>
+<dd>
+<p>Two-letter country codes (ISO 3166-1, like <code>BR</code> for Brazil), sorted. This is <strong>not</strong> the animal's native range. It lists the countries where GBIF holds open records of it: sightings and museum specimens shared under the CC0 or CC BY licenses. Records in zoos, fossils and records with location problems are left out.</p>
+<p>A country with a single record far outside the animal's main region is usually a pet, a zoo animal or a mistake, so it is left out until a person checks it. The list is never empty: when there is no country, it is <code>null</code>, and <code>range.status</code> tells you why.</p>
+</dd>
+<dt><code>range.status</code></dt>
+<dd>
+<p>Always present. One of:</p>
+<ul>
+<li><code>ok</code>: at least one country is listed ({{statusOk}} animals).</li>
+<li><code>no-open-records</code>: critwire knows which GBIF animal this is, but no country is left after the open-license and quality checks, so the countries are <code>null</code> ({{statusNoOpenRecords}}).</li>
+<li><code>identity-unsettled</code>: critwire could not confirm which GBIF animal this is, so it counted nothing and the countries are <code>null</code> ({{statusIdentityUnsettled}}).</li>
+</ul>
+</dd>
+
+<dt class="group"><code>photo</code></dt>
+<dd>A photo from Wikimedia Commons, or <code>null</code>. Show its credit and license wherever you show the photo.</dd>
+<dt><code>photo.url</code></dt>
+<dd>The image file.</dd>
+<dt><code>photo.credit</code></dt>
+<dd>Who took or owns the photo.</dd>
+<dt><code>photo.license</code></dt>
+<dd>The photo's license, like <code>CC BY 2.0</code>.</dd>
+<dt><code>photo.page</code></dt>
+<dd>The photo's page on Wikimedia Commons, with its full details.</dd>
+
+<dt class="group"><code>sources</code></dt>
+<dd>A list saying where each value came from: one entry per source. It is in the JSON and Parquet files, not the CSV. In Parquet, a key an entry leaves out is <code>null</code>.</dd>
+<dt><code>sources[].source</code></dt>
+<dd>The source's name, like <code>Catalogue of Life</code>.</dd>
+<dt><code>sources[].fields</code></dt>
+<dd>The fields this source filled in.</dd>
+<dt><code>sources[].license</code></dt>
+<dd>The license of what came from this source.</dd>
+<dt><code>sources[].retrieved</code></dt>
+<dd>The date critwire fetched it (YYYY-MM-DD).</dd>
+<dt><code>sources[].url</code></dt>
+<dd>The exact address critwire asked, so you can check the answer yourself.</dd>
+<dt><code>sources[].doi</code></dt>
+<dd>The source's DOI, a permanent link for citing it.</dd>
+<dt><code>sources[].checklistKey</code></dt>
+<dd>For GBIF: the checklist the id belongs to.</dd>
+<dt class="group"><code>sources[].release</code></dt>
+<dd>For the Catalogue of Life: the release critwire used.</dd>
+<dt><code>sources[].release.key</code></dt>
+<dd>The release's dataset key on ChecklistBank.</dd>
+<dt><code>sources[].release.alias</code></dt>
+<dd>Its short name, like <code>COL26.10</code>.</dd>
+<dt><code>sources[].release.version</code></dt>
+<dd>Its version.</dd>
+<dt><code>sources[].release.issued</code></dt>
+<dd>The date it came out.</dd>
+
+<dt class="group"><code>replacedBy</code></dt>
+<dd>Usually <code>null</code>. If critwire ever retires a record (say, two turn out to be the same animal), this lists the ids that replace it. Retired ids are never reused.</dd>
+</dl>
+
+<h3>CSV column names</h3>
+<p>The CSV flattens each record: a column is the field's path in snake_case, with dots turned into underscores. So <code>taxonomy.class</code> becomes <code>taxonomy_class</code> and <code>range.countriesWithOpenRecords</code> becomes <code>range_countries_with_open_records</code>. Lists (countries and <code>replaced_by</code>) are joined with <code>;</code>, and <code>null</code> is an empty cell. The file is UTF-8.</p>
+</section>
+
+<section id="licenses">
+<h2>Licenses</h2>
+<p>You may use critwire's data for anything, including school work and apps you sell, as long as you give credit (see <a href="#cite">Cite</a>).</p>
+<ul>
+<li><strong>critwire's own data</strong> (records, ids, the country lists we work out) is <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>: use it freely and credit "critwire". The full terms are in <a href="https://github.com/kc0588615/critwire/blob/main/DATA-LICENSE.md">DATA-LICENSE.md</a>.</li>
+<li><strong>Values from other sources</strong> keep their own license, recorded in each record's <code>sources</code>. All of them are open: CC0 or CC BY 4.0.</li>
+<li><strong>Photos</strong> keep their own license, in <code>photo.license</code>. Some need the same license on anything you make with them (the "SA" in CC BY-SA), so check before you reuse one.</li>
+<li><strong>Country lists</strong> are counted only from CC0 and CC BY 4.0 records on GBIF. The records themselves belong to the groups that shared them; they are listed under <a href="#credits">Credits</a>.</li>
+<li><strong>IUCN:</strong> critwire stores only the Red List species id (<code>ids.iucn</code>) so you can match records. It holds no IUCN data. To use Red List data, get it from IUCN under their terms.</li>
+<li><strong>The code</strong> that builds these files is MIT licensed: <a href="https://github.com/kc0588615/critwire/blob/main/LICENSE">LICENSE</a>.</li>
+</ul>
+</section>
+
+<section id="credits">
+<h2>Credits</h2>
+<p>critwire is built on the work of these open projects. The same list, ready for code, is in <a href="/v1/attribution.json"><code>attribution.json</code></a>.</p>
+<dl>
+{{sources}}
+</dl>
+
+<h3>GBIF occurrence data</h3>
+{{gbifDerivedDataset}}
+
+<h3>Photos</h3>
+<details>
+<summary>{{photoCount}} photos from Wikimedia Commons</summary>
+<ul>
+{{photos}}
+</ul>
+</details>
+</section>
+
+<section id="cite">
+<h2>Cite</h2>
+<p>When you use critwire's data, credit it like this:</p>
+<pre class="wrap"><code>{{critwireCredit}}</code></pre>
+<p>In a school report, a footnote or the sources list is enough. In an app, put it on an about or credits screen. If you show photos, show each photo's credit and license too. In research, also cite the sources you rely on: their citations are in <a href="#credits">Credits</a>, and the GBIF DOI covers the country lists.</p>
+</section>
+</main>
+</body>
+</html>

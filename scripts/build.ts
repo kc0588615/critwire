@@ -1,6 +1,6 @@
 // pnpm build [--draft] (plan §3): checks data/ offline, rebuilds DATABASE_URL from it, then writes the static site to
 // dist/. A plain build refuses without a current GBIF derived-dataset DOI; --draft builds without one (previews, E2E).
-import { copyFile, mkdir, readdir, rm, stat, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, readdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadDatabase } from "./db.ts";
@@ -8,6 +8,7 @@ import { loadEnv, requireEnv } from "./env.ts";
 import { formatJson } from "./json.ts";
 import { speciesFile } from "./species.ts";
 import { buildAttribution } from "./build/attribution.ts";
+import { docsTemplate, renderDocs } from "./build/docs.ts";
 import { readBuildInputs } from "./build/inputs.ts";
 import { writeTables } from "./build/tables.ts";
 
@@ -19,6 +20,8 @@ for (const arg of args) if (arg !== "--draft") throw new Error(`unknown argument
 loadEnv();
 const url = requireEnv("DATABASE_URL");
 const { species, registration } = await readBuildInputs({ draft: args.includes("--draft") });
+const attribution = buildAttribution(species, registration);
+const docs = renderDocs(await readFile(docsTemplate, "utf8"), attribution, species);
 await loadDatabase(url, species);
 console.log(`loaded ${species.length} species`);
 
@@ -31,23 +34,8 @@ for (const s of species) {
   await writeFile(new URL(`species/${s.slug}.json`, v1), json);
 }
 await writeTables(speciesFile, v1);
-await writeFile(new URL("attribution.json", v1), formatJson(buildAttribution(species, registration)));
-await writeFile(
-  new URL("index.html", out),
-  `<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>critwire</title>
-</head>
-<body>
-<h1>critwire</h1>
-<p>Open species data for nature apps. Coming soon.</p>
-</body>
-</html>
-`,
-);
+await writeFile(new URL("attribution.json", v1), formatJson(attribution));
+await writeFile(new URL("index.html", out), docs);
 
 // Every file with its size in bytes, sorted by path (for the PR body).
 const dist = fileURLToPath(out);
