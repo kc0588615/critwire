@@ -15,7 +15,7 @@ export interface BaseSpecies {
 }
 
 // One citation in a record's sources[] (plan §4): the published fields one source filled. A type, not an interface,
-// so it is assignable to postgres.js's JSONValue in load.ts.
+// so it is assignable to postgres.js's JSON parameter types in db.ts.
 export type Source = {
   source: string;
   fields: string[];

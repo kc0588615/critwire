@@ -1,4 +1,4 @@
-// JSON file io for data/: 2-space JSON plus a newline, written atomically (temp file, then rename).
+// JSON file io: 2-space JSON plus a newline, written atomically (temp file, then rename).
 import { readFile, rename, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
@@ -14,10 +14,15 @@ function sortKeys(value: unknown): unknown {
   return Object.fromEntries(entries.map(([k, v]) => [k, sortKeys(v)]));
 }
 
-// canonical: keys sorted recursively (raw snapshots). Otherwise key order is the caller's.
-export async function writeJson(url: URL, value: unknown, { canonical = false } = {}): Promise<void> {
+// The bytes of every JSON file critwire writes (data/ and dist/). canonical: keys sorted recursively (raw snapshots).
+// Otherwise key order is the caller's.
+export function formatJson(value: unknown, { canonical = false } = {}): string {
+  return JSON.stringify(canonical ? sortKeys(value) : value, null, 2) + "\n";
+}
+
+export async function writeJson(url: URL, value: unknown, options: { canonical?: boolean } = {}): Promise<void> {
   const path = fileURLToPath(url);
   const tmp = `${path}.tmp-${process.pid}`;
-  await writeFile(tmp, JSON.stringify(canonical ? sortKeys(value) : value, null, 2) + "\n");
+  await writeFile(tmp, formatJson(value, options));
   await rename(tmp, path);
 }

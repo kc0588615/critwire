@@ -1,4 +1,4 @@
--- critwire tables. Rebuilt from data/ on every load (scripts/load.ts).
+-- critwire tables. Rebuilt from data/ on every load (scripts/db.ts).
 drop table if exists species;
 
 create table species (
