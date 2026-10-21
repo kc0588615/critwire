@@ -41,13 +41,16 @@ export interface GbifMatchResponse {
 }
 export interface GbifFacet { field: string; counts: { name: string; count: number }[] }
 export interface GbifOccurrenceResponse { count: number; facets: GbifFacet[] }
+// The datasetKey facet of the countries query, all pages merged: dataset UUID → record count. `url` is page 0.
+export interface GbifDatasets { url: string; counts: Record<string, number> }
 export interface GbifChecklist { key: string; title: string; doi: string; license: string; pubDate: string }
 
 export interface GbifSnapshot {
   retrieved: string;
   checklist: GbifChecklist;
   countries: Record<string, { gbifRegion: string; title: string }>;
-  species: Record<string, { match: Fetched<GbifMatchResponse>; occurrences: Fetched<GbifOccurrenceResponse> | null }>;
+  // datasets is null exactly when occurrences is.
+  species: Record<string, { match: Fetched<GbifMatchResponse>; occurrences: Fetched<GbifOccurrenceResponse> | null; datasets: GbifDatasets | null }>;
 }
 
 export interface Snapshots { wikidata: WikidataSnapshot; col: ColSnapshot; gbif: GbifSnapshot }

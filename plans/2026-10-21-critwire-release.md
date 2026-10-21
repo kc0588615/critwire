@@ -777,7 +777,7 @@ Planner, 2026-10-21. Conventions:
     - lock: `pnpm -s db:load > $L/smoke/l1 & a=$!; pnpm -s db:load > $L/smoke/l2 & b=$!; wait $a; wait $b; cat $L/smoke/l1 $L/smoke/l2` prints `loaded 76 species` twice;
     - no `.env`: with `DB=$(node -e 'process.loadEnvFile();process.stdout.write(process.env.DATABASE_URL)')`, `(cd "$(mktemp -d)" && DATABASE_URL="$DB" $W/node_modules/.bin/tsx $W/scripts/load.ts)` prints `loaded 76 species`. Without `DATABASE_URL` it exits non-zero and names it;
     - freshness smoke: `$L/smoke/fresh.mts` (`.mts`: outside the package, tsx defaults to CJS) runs `assertDerivedFiles(deriveAll(await readDeriveInputs()))`. It passes on HEAD. After adding one space in `data/review/mismatches.json` it throws naming `pnpm derive`. Then `git checkout -- data/review/mismatches.json`.
-- [ ] S2 · GBIF dataset counts: the ingest code and the live re-ingest (findings 3 and 4; §5 Ingest; A5).
+- [x] S2 · GBIF dataset counts: the ingest code and the live re-ingest (findings 3 and 4; §5 Ingest; A5).
   - `scripts/ingest/gbif.ts`:
     - `OCCURRENCE_FILTERS` is shared by `gbifOccurrenceUrl` (URLs stay byte-identical) and the new `gbifDatasetsUrl(taxonKey, offset)`;
     - page until `counts: []`, with the per-page and final checks of §5;
@@ -1247,5 +1247,6 @@ test "$(cat "$X/duckdb.txt")" = "$(jq length data/species.json)"
 - 2026-10-21 05:47 UTC: Revision by `architect`: 3 Astra MUST-FIX resolved (§6 persisted request + `gbif-dd-*` tag, `assertDerivedFiles`, O_EXCL lock), 8 SHOULD-CONSIDER taken. Docs-only; no checks needed.
 - 2026-10-21 05:59 UTC: Steps S1–S13, Verification V0–V10 + release smoke X1–X6, Failure modes (§12 ids, F1–F9) written by `planner`. Register tests renamed RG1–RG8 (G1–G7 taken). Docs-only; no checks needed.
 - 2026-10-21 06:20 UTC: S1 done: `env.ts`, `db.ts` (advisory lock), `derive/pipeline.ts` (`readDeriveInputs`/`deriveAll`/`derivedFiles`/`assertDerivedFiles`), `formatJson`; `load.ts`, `derive.ts` thin CLIs. Green (typecheck, 42/42, build); derive stdout + `data/` unchanged; 2 parallel loads ok, load waits 4 s on a held lock; db rows sha256 identical to pre-refactor; load without `.env` ok, without `DATABASE_URL` exits 1 naming it; freshness smoke passes, fails `data/review/mismatches.json is stale: run pnpm derive` on one added space. Note: `speciesRows` passes `sources` as the array (postgres.js serializes by the jsonb column type; a JSON string got double-encoded).
+- 2026-10-21 06:12 UTC: S2 done: `OCCURRENCE_FILTERS` + `gbifDatasetsUrl`, datasetKey facet paged to an empty page with per-page count/UUID/dup/positive checks and final sum; `species[N].datasets` in raw. 76 committed countries URLs byte-identical before ingest. Live `ingest gbif` ok first try (151 dataset pages; jaguar 125 datasets, max 125, none needed a 3rd page). All S2 jq checks pass; owner files + wikidata/col raw untouched; no IUCN. Delta (`$L/reingest-delta.md`): statuses 72/1/3, 472 codes, 214 entries (60 blocking) unchanged, no `range` change; only GBIF `retrieved` → 2026-10-21 and record counts in 40 entries (species 57, 58, 64, 66). Derive twice stable; green (typecheck, 42/42, build).
 
 ## Summary

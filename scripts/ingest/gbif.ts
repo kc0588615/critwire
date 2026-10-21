@@ -1,9 +1,10 @@
 // GBIF ingest (plan §3): the pinned legacy backbone checklist, the country enumeration, one v2 name match per base
-// species, and one occurrence country/license facet query per species-rank match. Fetch and normalize only; no fs.
+// species, and per species-rank match one occurrence country/license facet query plus the datasetKey facet paged to
+// the end (the derived dataset's contribution counts). Fetch and normalize only; no fs.
 import { getJson } from "../http.ts";
 import {
   assertNoIucnData, assertOpenLicenses, gbifTaxonKey, omitKeys,
-  type GbifChecklist, type GbifMatchResponse, type GbifOccurrenceResponse, type GbifSnapshot,
+  type GbifChecklist, type GbifDatasets, type GbifFacet, type GbifMatchResponse, type GbifOccurrenceResponse, type GbifSnapshot,
 } from "../raw.ts";
 import type { BaseSpecies } from "../species.ts";
 
@@ -21,13 +22,23 @@ const MATCH_DROP = new Set(["timeTaken", "timings", "additionalStatus", "left", 
 export const gbifMatchUrl = (name: string) =>
   `${API}/v2/species/match?checklistKey=${BACKBONE_KEY}&scientificName=${encodeURIComponent(name)}`;
 
+// The record filters of the countries rule, shared by every occurrence query so the counts agree.
+const OCCURRENCE_FILTERS = [
+  "occurrenceStatus=PRESENT", "hasGeospatialIssue=false", "hasCoordinate=true", "license=CC0_1_0", "license=CC_BY_4_0",
+  ...BASIS_OF_RECORD.map((b) => `basisOfRecord=${b}`),
+];
+const UUID = /^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/;
+
 // Parameters in a fixed order, so the stored URL (sources[].url) is stable.
+const occurrenceSearchUrl = (taxonKey: number, facets: string[]) =>
+  `${API}/v1/occurrence/search?` +
+  [`checklistKey=${BACKBONE_KEY}`, `taxonKey=${taxonKey}`, ...facets, "limit=0", ...OCCURRENCE_FILTERS].join("&");
+
 export const gbifOccurrenceUrl = (taxonKey: number) =>
-  `${API}/v1/occurrence/search?` + [
-    `checklistKey=${BACKBONE_KEY}`, `taxonKey=${taxonKey}`, "facet=country", "facet=license", `facetLimit=${FACET_LIMIT}`, "limit=0",
-    "occurrenceStatus=PRESENT", "hasGeospatialIssue=false", "hasCoordinate=true", "license=CC0_1_0", "license=CC_BY_4_0",
-    ...BASIS_OF_RECORD.map((b) => `basisOfRecord=${b}`),
-  ].join("&");
+  occurrenceSearchUrl(taxonKey, ["facet=country", "facet=license", `facetLimit=${FACET_LIMIT}`]);
+
+export const gbifDatasetsUrl = (taxonKey: number, offset: number) =>
+  occurrenceSearchUrl(taxonKey, ["facet=datasetKey", `facetLimit=${FACET_LIMIT}`, `facetOffset=${offset}`]);
 
 const isString = (v: unknown): v is string => typeof v === "string" && v.length > 0;
 
@@ -74,6 +85,35 @@ function toOccurrences(url: string, r: unknown): GbifOccurrenceResponse {
   return occurrences;
 }
 
+// One datasetKey facet page: same `count` as the countries query, UUID keys not seen on earlier pages, positive counts.
+function toDatasetPage(url: string, r: unknown, count: number, seen: Record<string, number>): GbifFacet["counts"] {
+  const o = r as GbifOccurrenceResponse & { results?: unknown[] };
+  if (o?.count !== count) throw new Error(`gbif: ${url}: count ${String(o?.count)} ≠ countries query count ${count} (index moved; re-run)`);
+  if (o.results?.length) throw new Error(`gbif: ${url}: limit=0 returned ${o.results.length} results`);
+  if (!Array.isArray(o.facets) || o.facets.some((f) => f.field !== "DATASET_KEY")) throw new Error(`gbif: ${url}: unexpected facets in ${JSON.stringify(r).slice(0, 300)}`);
+  const counts = o.facets[0]?.counts ?? [];
+  for (const { name, count: n } of counts) {
+    if (typeof name !== "string" || !UUID.test(name)) throw new Error(`gbif: ${url}: bad datasetKey ${JSON.stringify(name)}`);
+    if (Object.hasOwn(seen, name)) throw new Error(`gbif: ${url}: datasetKey ${name} repeated across pages`);
+    if (!Number.isSafeInteger(n) || n < 1) throw new Error(`gbif: ${url}: datasetKey ${name} count ${JSON.stringify(n)}`);
+  }
+  return counts;
+}
+
+// Pages the datasetKey facet until an empty page (never trusting a short page or the facet limit); counts must sum to `count`.
+async function fetchDatasets(taxonKey: number, count: number): Promise<GbifDatasets> {
+  const counts: Record<string, number> = {};
+  for (let offset = 0; ; offset += FACET_LIMIT) {
+    const url = gbifDatasetsUrl(taxonKey, offset);
+    const page = toDatasetPage(url, await getJson(url), count, counts);
+    if (page.length === 0) break;
+    for (const { name, count: n } of page) counts[name] = n;
+  }
+  const sum = Object.values(counts).reduce((a, n) => a + n, 0);
+  if (sum !== count) throw new Error(`gbif: taxon ${taxonKey}: datasetKey counts sum to ${sum}, count is ${count}`);
+  return { url: gbifDatasetsUrl(taxonKey, 0), counts };
+}
+
 export async function fetchGbif(base: BaseSpecies[]): Promise<Omit<GbifSnapshot, "retrieved">> {
   const checklist = toChecklist((await getJson(`${API}/v1/dataset/${BACKBONE_KEY}`)) as Record<string, unknown>);
   const countries = toCountries(await getJson(`${API}/v1/enumeration/country`));
@@ -82,11 +122,14 @@ export async function fetchGbif(base: BaseSpecies[]): Promise<Omit<GbifSnapshot,
     const matchUrl = gbifMatchUrl(scientificName);
     const match = toMatch(matchUrl, await getJson(matchUrl));
     let occurrences = null;
+    let datasets = null;
     if (match.usage?.rank === "SPECIES") {
-      const url = gbifOccurrenceUrl(gbifTaxonKey(match));
+      const taxonKey = gbifTaxonKey(match);
+      const url = gbifOccurrenceUrl(taxonKey);
       occurrences = { url, response: toOccurrences(url, await getJson(url)) };
+      datasets = await fetchDatasets(taxonKey, occurrences.response.count);
     }
-    species[scientificName] = { match: { url: matchUrl, response: match }, occurrences };
+    species[scientificName] = { match: { url: matchUrl, response: match }, occurrences, datasets };
   }
   const snapshot = { checklist, countries, species };
   assertNoIucnData(snapshot);

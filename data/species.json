@@ -55,7 +55,7 @@
           "ids.gbif"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v2/species/match?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&scientificName=Emydoidea%20blandingii",
         "doi": "10.15468/39omei",
         "checklistKey": "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c"
@@ -66,7 +66,7 @@
           "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5220530&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
       },
       {
@@ -148,7 +148,7 @@
           "ids.gbif"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v2/species/match?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&scientificName=Apalone%20spinifera",
         "doi": "10.15468/39omei",
         "checklistKey": "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c"
@@ -159,7 +159,7 @@
           "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2442680&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
       },
       {
@@ -240,7 +240,7 @@
           "ids.gbif"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v2/species/match?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&scientificName=Rhinoderma%20darwinii",
         "doi": "10.15468/39omei",
         "checklistKey": "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c"
@@ -251,7 +251,7 @@
           "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5217388&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
       },
       {
@@ -337,7 +337,7 @@
           "ids.gbif"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v2/species/match?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&scientificName=Platysternon%20megacephalum",
         "doi": "10.15468/39omei",
         "checklistKey": "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c"
@@ -348,7 +348,7 @@
           "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2441884&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
       },
       {
@@ -432,7 +432,7 @@
           "ids.gbif"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v2/species/match?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&scientificName=Rhacophorus%20nigropalmatus",
         "doi": "10.15468/39omei",
         "checklistKey": "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c"
@@ -443,7 +443,7 @@
           "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5217285&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
       },
       {
@@ -530,7 +530,7 @@
           "ids.gbif"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v2/species/match?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&scientificName=Agalychnis%20callidryas",
         "doi": "10.15468/39omei",
         "checklistKey": "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c"
@@ -541,7 +541,7 @@
           "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2428197&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
       },
       {
@@ -611,7 +611,7 @@
           "ids.gbif"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v2/species/match?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&scientificName=Trichobatrachus%20robustus",
         "doi": "10.15468/39omei",
         "checklistKey": "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c"
@@ -622,7 +622,7 @@
           "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2429660&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
       },
       {
@@ -704,7 +704,7 @@
           "ids.gbif"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v2/species/match?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&scientificName=Ascaphus%20truei",
         "doi": "10.15468/39omei",
         "checklistKey": "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c"
@@ -715,7 +715,7 @@
           "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2429804&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
       },
       {
@@ -858,7 +858,7 @@
           "ids.gbif"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v2/species/match?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&scientificName=Pipa%20pipa",
         "doi": "10.15468/39omei",
         "checklistKey": "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c"
@@ -869,7 +869,7 @@
           "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2423966&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
       },
       {
@@ -950,7 +950,7 @@
           "ids.gbif"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v2/species/match?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&scientificName=Conraua%20goliath",
         "doi": "10.15468/39omei",
         "checklistKey": "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c"
@@ -961,7 +961,7 @@
           "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2428946&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
       },
       {
@@ -1045,7 +1045,7 @@
           "ids.gbif"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v2/species/match?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&scientificName=Heosemys%20spinosa",
         "doi": "10.15468/39omei",
         "checklistKey": "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c"
@@ -1056,7 +1056,7 @@
           "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2443326&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
       },
       {
@@ -1136,7 +1136,7 @@
           "ids.gbif"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v2/species/match?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&scientificName=Dyscophus%20antongilii",
         "doi": "10.15468/39omei",
         "checklistKey": "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c"
@@ -1147,7 +1147,7 @@
           "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5216573&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
       },
       {
@@ -1228,7 +1228,7 @@
           "ids.gbif"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v2/species/match?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&scientificName=Breviceps%20macrops",
         "doi": "10.15468/39omei",
         "checklistKey": "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c"
@@ -1239,7 +1239,7 @@
           "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5218077&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
       },
       {
@@ -1320,7 +1320,7 @@
           "ids.gbif"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v2/species/match?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&scientificName=Malacochersus%20tornieri",
         "doi": "10.15468/39omei",
         "checklistKey": "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c"
@@ -1331,7 +1331,7 @@
           "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2441842&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
       },
       {
@@ -1411,7 +1411,7 @@
           "ids.gbif"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v2/species/match?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&scientificName=Nasikabatrachus%20sahyadrensis",
         "doi": "10.15468/39omei",
         "checklistKey": "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c"
@@ -1422,7 +1422,7 @@
           "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2421431&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
       },
       {
@@ -1505,7 +1505,7 @@
           "ids.gbif"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v2/species/match?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&scientificName=Carettochelys%20insculpta",
         "doi": "10.15468/39omei",
         "checklistKey": "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c"
@@ -1516,7 +1516,7 @@
           "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2442506&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
       },
       {
@@ -1596,7 +1596,7 @@
           "ids.gbif"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v2/species/match?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&scientificName=Rafetus%20swinhoei",
         "doi": "10.15468/39omei",
         "checklistKey": "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c"
@@ -1607,7 +1607,7 @@
           "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2442647&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
       },
       {
@@ -1763,7 +1763,7 @@
           "ids.gbif"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v2/species/match?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&scientificName=Centrochelys%20sulcata",
         "doi": "10.15468/39omei",
         "checklistKey": "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c"
@@ -1774,7 +1774,7 @@
           "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2441533&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
       },
       {
@@ -1857,7 +1857,7 @@
           "ids.gbif"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v2/species/match?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&scientificName=Astrochelys%20radiata",
         "doi": "10.15468/39omei",
         "checklistKey": "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c"
@@ -1868,7 +1868,7 @@
           "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2441666&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
       },
       {
@@ -1931,7 +1931,7 @@
           "ids.gbif"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v2/species/match?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&scientificName=Chelonoidis%20abingdonii",
         "doi": "10.15468/39omei",
         "checklistKey": "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c"
@@ -1942,7 +1942,7 @@
           "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=7451150&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
       },
       {
@@ -2023,7 +2023,7 @@
           "ids.gbif"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v2/species/match?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&scientificName=Daubentonia%20madagascariensis",
         "doi": "10.15468/39omei",
         "checklistKey": "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c"
@@ -2034,7 +2034,7 @@
           "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5219587&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
       },
       {
@@ -2123,7 +2123,7 @@
           "ids.gbif"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v2/species/match?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&scientificName=Manis%20javanica",
         "doi": "10.15468/39omei",
         "checklistKey": "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c"
@@ -2134,7 +2134,7 @@
           "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5219628&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
       },
       {
@@ -2229,7 +2229,7 @@
           "ids.gbif"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v2/species/match?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&scientificName=Panthera%20tigris",
         "doi": "10.15468/39omei",
         "checklistKey": "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c"
@@ -2240,7 +2240,7 @@
           "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5219416&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
       },
       {
@@ -2322,7 +2322,7 @@
           "ids.gbif"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v2/species/match?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&scientificName=Mustela%20nigripes",
         "doi": "10.15468/39omei",
         "checklistKey": "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c"
@@ -2333,7 +2333,7 @@
           "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5218985&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
       },
       {
@@ -2482,7 +2482,7 @@
           "ids.gbif"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v2/species/match?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&scientificName=Elephas%20maximus",
         "doi": "10.15468/39omei",
         "checklistKey": "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c"
@@ -2493,7 +2493,7 @@
           "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5219461&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
       },
       {
@@ -2575,7 +2575,7 @@
           "ids.gbif"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v2/species/match?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&scientificName=Okapia%20johnstoni",
         "doi": "10.15468/39omei",
         "checklistKey": "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c"
@@ -2586,7 +2586,7 @@
           "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2441207&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
       },
       {
@@ -2667,7 +2667,7 @@
           "ids.gbif"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v2/species/match?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&scientificName=Bradypus%20pygmaeus",
         "doi": "10.15468/39omei",
         "checklistKey": "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c"
@@ -2678,7 +2678,7 @@
           "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2436352&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
       },
       {
@@ -2758,7 +2758,7 @@
           "ids.gbif"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v2/species/match?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&scientificName=Lasiorhinus%20krefftii",
         "doi": "10.15468/39omei",
         "checklistKey": "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c"
@@ -2769,7 +2769,7 @@
           "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5219997&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
       },
       {
@@ -2849,7 +2849,7 @@
           "ids.gbif"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v2/species/match?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&scientificName=Cryptochloris%20wintoni",
         "doi": "10.15468/39omei",
         "checklistKey": "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c"
@@ -2860,7 +2860,7 @@
           "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5218453&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
       },
       {
@@ -2940,7 +2940,7 @@
           "ids.gbif"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v2/species/match?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&scientificName=Canis%20simensis",
         "doi": "10.15468/39omei",
         "checklistKey": "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c"
@@ -2951,7 +2951,7 @@
           "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5219143&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
       },
       {
@@ -3031,7 +3031,7 @@
           "ids.gbif"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v2/species/match?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&scientificName=Rhinopithecus%20roxellana",
         "doi": "10.15468/39omei",
         "checklistKey": "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c"
@@ -3042,7 +3042,7 @@
           "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=7262005&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
       },
       {
@@ -3126,7 +3126,7 @@
           "ids.gbif"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v2/species/match?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&scientificName=Ailurus%20fulgens",
         "doi": "10.15468/39omei",
         "checklistKey": "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c"
@@ -3137,7 +3137,7 @@
           "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5219446&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
       },
       {
@@ -3225,7 +3225,7 @@
           "ids.gbif"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v2/species/match?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&scientificName=Priodontes%20maximus",
         "doi": "10.15468/39omei",
         "checklistKey": "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c"
@@ -3236,7 +3236,7 @@
           "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5220096&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
       },
       {
@@ -3316,7 +3316,7 @@
           "ids.gbif"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v2/species/match?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&scientificName=Macrotis%20lagotis",
         "doi": "10.15468/39omei",
         "checklistKey": "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c"
@@ -3327,7 +3327,7 @@
           "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5219460&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
       },
       {
@@ -3408,7 +3408,7 @@
           "ids.gbif"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v2/species/match?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&scientificName=Pseudoryx%20nghetinhensis",
         "doi": "10.15468/39omei",
         "checklistKey": "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c"
@@ -3419,7 +3419,7 @@
           "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=4262655&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
       },
       {
@@ -3504,7 +3504,7 @@
           "ids.gbif"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v2/species/match?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&scientificName=Equus%20grevyi",
         "doi": "10.15468/39omei",
         "checklistKey": "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c"
@@ -3515,7 +3515,7 @@
           "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2440894&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
       },
       {
@@ -3597,7 +3597,7 @@
           "ids.gbif"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v2/species/match?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&scientificName=Pongo%20abelii",
         "doi": "10.15468/39omei",
         "checklistKey": "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c"
@@ -3608,7 +3608,7 @@
           "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5707420&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
       },
       {
@@ -3700,7 +3700,7 @@
           "ids.gbif"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v2/species/match?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&scientificName=Loxodonta%20cyclotis",
         "doi": "10.15468/39omei",
         "checklistKey": "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c"
@@ -3711,7 +3711,7 @@
           "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2435349&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
       },
       {
@@ -3791,7 +3791,7 @@
           "ids.gbif"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v2/species/match?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&scientificName=Marmota%20vancouverensis",
         "doi": "10.15468/39omei",
         "checklistKey": "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c"
@@ -3802,7 +3802,7 @@
           "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2437365&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
       },
       {
@@ -3884,7 +3884,7 @@
           "ids.gbif"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v2/species/match?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&scientificName=Dendrolagus%20goodfellowi",
         "doi": "10.15468/39omei",
         "checklistKey": "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c"
@@ -3895,7 +3895,7 @@
           "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2440222&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
       },
       {
@@ -3976,7 +3976,7 @@
           "ids.gbif"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v2/species/match?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&scientificName=Rhinoceros%20sondaicus",
         "doi": "10.15468/39omei",
         "checklistKey": "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c"
@@ -3987,7 +3987,7 @@
           "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5220112&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
       },
       {
@@ -4067,7 +4067,7 @@
           "ids.gbif"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v2/species/match?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&scientificName=Pteropus%20livingstonii",
         "doi": "10.15468/39omei",
         "checklistKey": "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c"
@@ -4078,7 +4078,7 @@
           "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5218694&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
       },
       {
@@ -4158,7 +4158,7 @@
           "ids.gbif"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v2/species/match?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&scientificName=Rhynchocyon%20chrysopygus",
         "doi": "10.15468/39omei",
         "checklistKey": "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c"
@@ -4169,7 +4169,7 @@
           "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5220103&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
       },
       {
@@ -4242,7 +4242,7 @@
           "ids.gbif"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v2/species/match?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&scientificName=Ochotona%20iliensis",
         "doi": "10.15468/39omei",
         "checklistKey": "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c"
@@ -4325,7 +4325,7 @@
           "ids.gbif"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v2/species/match?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&scientificName=Sarcophilus%20harrisii",
         "doi": "10.15468/39omei",
         "checklistKey": "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c"
@@ -4336,7 +4336,7 @@
           "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2435451&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
       },
       {
@@ -4417,7 +4417,7 @@
           "ids.gbif"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v2/species/match?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&scientificName=Solenodon%20paradoxus",
         "doi": "10.15468/39omei",
         "checklistKey": "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c"
@@ -4428,7 +4428,7 @@
           "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5219470&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
       },
       {
@@ -4517,7 +4517,7 @@
           "ids.gbif"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v2/species/match?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&scientificName=Addax%20nasomaculatus",
         "doi": "10.15468/39omei",
         "checklistKey": "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c"
@@ -4528,7 +4528,7 @@
           "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2441101&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
       },
       {
@@ -4627,7 +4627,7 @@
           "ids.gbif"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v2/species/match?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&scientificName=Panthera%20onca",
         "doi": "10.15468/39omei",
         "checklistKey": "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c"
@@ -4638,7 +4638,7 @@
           "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5219426&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
       },
       {
@@ -4731,7 +4731,7 @@
           "ids.gbif"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v2/species/match?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&scientificName=Myrmecophaga%20tridactyla",
         "doi": "10.15468/39omei",
         "checklistKey": "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c"
@@ -4742,7 +4742,7 @@
           "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2436346&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
       },
       {
@@ -4833,7 +4833,7 @@
           "ids.gbif"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v2/species/match?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&scientificName=Tapirus%20terrestris",
         "doi": "10.15468/39omei",
         "checklistKey": "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c"
@@ -4844,7 +4844,7 @@
           "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2440898&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
       },
       {
@@ -4935,7 +4935,7 @@
           "ids.gbif"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v2/species/match?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&scientificName=Bradypus%20variegatus",
         "doi": "10.15468/39omei",
         "checklistKey": "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c"
@@ -4946,7 +4946,7 @@
           "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2436353&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
       },
       {
@@ -5034,7 +5034,7 @@
           "ids.gbif"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v2/species/match?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&scientificName=Smutsia%20gigantea",
         "doi": "10.15468/39omei",
         "checklistKey": "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c"
@@ -5045,7 +5045,7 @@
           "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5219631&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
       },
       {
@@ -5151,7 +5151,7 @@
           "ids.gbif"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v2/species/match?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&scientificName=Pan%20troglodytes",
         "doi": "10.15468/39omei",
         "checklistKey": "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c"
@@ -5162,7 +5162,7 @@
           "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5219534&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
       },
       {
@@ -5262,7 +5262,7 @@
           "ids.gbif"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v2/species/match?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&scientificName=Orycteropus%20afer",
         "doi": "10.15468/39omei",
         "checklistKey": "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c"
@@ -5273,7 +5273,7 @@
           "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5218416&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
       },
       {
@@ -5374,7 +5374,7 @@
           "ids.gbif"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v2/species/match?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&scientificName=Acinonyx%20jubatus",
         "doi": "10.15468/39omei",
         "checklistKey": "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c"
@@ -5385,7 +5385,7 @@
           "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2435270&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
       },
       {
@@ -5451,7 +5451,7 @@
           "ids.gbif"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v2/species/match?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&scientificName=Manis%20crassicaudata",
         "doi": "10.15468/39omei",
         "checklistKey": "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c"
@@ -5462,7 +5462,7 @@
           "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5219633&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
       },
       {
@@ -5544,7 +5544,7 @@
           "ids.gbif"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v2/species/match?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&scientificName=Ailuropoda%20melanoleuca",
         "doi": "10.15468/39omei",
         "checklistKey": "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c"
@@ -5555,7 +5555,7 @@
           "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2433399&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
       },
       {
@@ -5635,7 +5635,7 @@
           "ids.gbif"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v2/species/match?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&scientificName=Indri%20indri",
         "doi": "10.15468/39omei",
         "checklistKey": "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c"
@@ -5646,7 +5646,7 @@
           "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2436432&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
       },
       {
@@ -5726,7 +5726,7 @@
           "ids.gbif"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v2/species/match?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&scientificName=Andrias%20davidianus",
         "doi": "10.15468/39omei",
         "checklistKey": "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c"
@@ -5737,7 +5737,7 @@
           "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2432037&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
       },
       {
@@ -5829,7 +5829,7 @@
           "ids.gbif"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v2/species/match?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&scientificName=Smutsia%20temminckii",
         "doi": "10.15468/39omei",
         "checklistKey": "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c"
@@ -5840,7 +5840,7 @@
           "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5219630&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
       },
       {
@@ -5951,7 +5951,7 @@
           "ids.gbif"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v2/species/match?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&scientificName=Loxodonta%20africana",
         "doi": "10.15468/39omei",
         "checklistKey": "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c"
@@ -5962,7 +5962,7 @@
           "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2435350&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
       },
       {
@@ -6057,7 +6057,7 @@
           "ids.gbif"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v2/species/match?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&scientificName=Lycaon%20pictus",
         "doi": "10.15468/39omei",
         "checklistKey": "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c"
@@ -6068,7 +6068,7 @@
           "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5219317&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
       },
       {
@@ -6159,7 +6159,7 @@
           "ids.gbif"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v2/species/match?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&scientificName=Diceros%20bicornis",
         "doi": "10.15468/39omei",
         "checklistKey": "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c"
@@ -6170,7 +6170,7 @@
           "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5220111&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
       },
       {
@@ -6250,7 +6250,7 @@
           "ids.gbif"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v2/species/match?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&scientificName=Zaglossus%20bartoni",
         "doi": "10.15468/39omei",
         "checklistKey": "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c"
@@ -6261,7 +6261,7 @@
           "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2433385&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
       },
       {
@@ -6341,7 +6341,7 @@
           "ids.gbif"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v2/species/match?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&scientificName=Beatragus%20hunteri",
         "doi": "10.15468/39omei",
         "checklistKey": "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c"
@@ -6352,7 +6352,7 @@
           "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=4262734&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
       },
       {
@@ -6438,7 +6438,7 @@
           "ids.gbif"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v2/species/match?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&scientificName=Nanger%20dama",
         "doi": "10.15468/39omei",
         "checklistKey": "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c"
@@ -6449,7 +6449,7 @@
           "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=4262713&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
       },
       {
@@ -6519,7 +6519,7 @@
           "ids.gbif"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v2/species/match?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&scientificName=Tapirus%20bairdii",
         "doi": "10.15468/39omei",
         "checklistKey": "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c"
@@ -6530,7 +6530,7 @@
           "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=8395500&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
       },
       {
@@ -6618,7 +6618,7 @@
           "ids.gbif"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v2/species/match?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&scientificName=Tremarctos%20ornatus",
         "doi": "10.15468/39omei",
         "checklistKey": "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c"
@@ -6629,7 +6629,7 @@
           "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2433401&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
       },
       {
@@ -6715,7 +6715,7 @@
           "ids.gbif"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v2/species/match?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&scientificName=Chrysocyon%20brachyurus",
         "doi": "10.15468/39omei",
         "checklistKey": "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c"
@@ -6726,7 +6726,7 @@
           "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2434450&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
       },
       {
@@ -6799,7 +6799,7 @@
           "ids.gbif"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v2/species/match?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&scientificName=Pteronura%20brasiliensis",
         "doi": "10.15468/39omei",
         "checklistKey": "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c"
@@ -6810,7 +6810,7 @@
           "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2433681&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
       },
       {
@@ -6894,7 +6894,7 @@
           "ids.gbif"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v2/species/match?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&scientificName=Ambystoma%20mexicanum",
         "doi": "10.15468/39omei",
         "checklistKey": "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c"
@@ -6905,7 +6905,7 @@
           "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2431950&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
       },
       {
@@ -6985,7 +6985,7 @@
           "ids.gbif"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v2/species/match?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&scientificName=Cryptobranchus%20alleganiensis",
         "doi": "10.15468/39omei",
         "checklistKey": "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c"
@@ -6996,7 +6996,7 @@
           "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2432031&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
       },
       {
@@ -7077,7 +7077,7 @@
           "ids.gbif"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v2/species/match?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&scientificName=Phyllobates%20terribilis",
         "doi": "10.15468/39omei",
         "checklistKey": "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c"
@@ -7088,7 +7088,7 @@
           "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
+        "retrieved": "2026-10-21",
         "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5218020&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
       },
       {

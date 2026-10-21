@@ -1008,9 +1008,57 @@
       "title": "Zimbabwe"
     }
   },
-  "retrieved": "2026-10-20",
+  "retrieved": "2026-10-21",
   "species": {
     "Acinonyx jubatus": {
+      "datasets": {
+        "counts": {
+          "040c5662-da76-4782-a48e-cdea1892d14c": 6,
+          "04169fce-7d4f-41f7-9dff-245960f5b59e": 1,
+          "0daed095-478a-4af6-abf5-18acb790fbb2": 2,
+          "19cb2741-a430-4139-8680-e11eba996978": 10,
+          "1d04e739-98a9-4e16-9970-8f8f3bf9e9e3": 1,
+          "1da75725-1eb5-4e17-b586-ffad7b783987": 4,
+          "22a66350-7947-4a49-84a3-39c7c1b0881f": 1,
+          "2aa02cf8-c402-412c-9ad1-585e1e185bef": 5,
+          "2ba30ed2-6f82-480c-a892-4c8749508324": 38,
+          "355ffa2e-36ce-44aa-9772-2f433169100c": 5,
+          "3c2eb73a-82c8-4373-956f-1cb9473f76ba": 3,
+          "41fc5c40-5e81-496f-9733-6b5681b3b7a5": 16,
+          "436c8c67-f230-4b05-9f11-08b2bc098ec9": 12,
+          "4ec9e37d-1af5-4dc2-9c2f-97fcf5f22867": 8,
+          "50c9509d-22c7-4a22-a47d-8c48425ef4a7": 470,
+          "5a659248-1f70-11e3-b2c5-00145eb45e9a": 2,
+          "5e1d2d54-f5db-43ac-87c5-55a9f79ac718": 2,
+          "65908f95-5ab6-48d9-bf6d-6da274ed730e": 30,
+          "6a01a01f-10a9-49bc-b0d1-2bd04493dc20": 28,
+          "6ac3f774-d9fb-4796-b3e9-92bf6c81c084": 153,
+          "6ce7290f-47f6-4046-8356-371f5b6749df": 3,
+          "77b04b75-97f5-4d3c-9184-8cc5c12d71ae": 3165,
+          "7a25f7aa-03fb-4322-aaeb-66719e1a9527": 2,
+          "7e380070-f762-11e1-a439-00145eb45e9a": 4,
+          "7f6dd0f7-9ed4-49c0-bb71-b2a9c7fed9f1": 1,
+          "830eb5d0-f762-11e1-a439-00145eb45e9a": 1,
+          "84f4df14-f762-11e1-a439-00145eb45e9a": 1,
+          "854f602e-f762-11e1-a439-00145eb45e9a": 1,
+          "8e912d78-6259-44e3-8f58-debb3081a15f": 2,
+          "999d8fed-d06d-48d8-87ee-cc36e6c8456c": 6,
+          "a01e0862-fbb2-4b63-b05a-dfee0be9ccbe": 4,
+          "a6474305-bc0e-48e2-9bd5-4cd60fc79c15": 6,
+          "aab94105-e9c4-48b6-b866-882edcfa9a76": 5,
+          "b15d4952-7d20-46f1-8a3e-556a512b04c5": 44,
+          "b84a3711-b4ca-4e4f-adac-80dfaea98d1c": 1,
+          "bb109a7a-6c5a-4cad-a1b9-b750016e9d82": 1,
+          "be614ad1-d0d1-4e27-a3e4-212aca8b5da6": 2,
+          "cf3753af-0fde-4de8-9bae-efa08bf5c2f6": 3,
+          "d45cd682-b4a0-4118-bfc8-eea3fb752aff": 1190,
+          "e1beb83c-9b83-4d17-ac5e-d24e09507ec5": 1,
+          "f11db245-3f9f-4fc6-a0cc-12b4124d081b": 1,
+          "f9eb2f96-4962-4b05-b56c-accf68160734": 25,
+          "fe903576-72e1-446a-b019-479f537adabe": 1
+        },
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2435270&facet=datasetKey&facetLimit=300&facetOffset=0&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+      },
       "match": {
         "response": {
           "classification": [
@@ -1073,7 +1121,7 @@
       },
       "occurrences": {
         "response": {
-          "count": 5269,
+          "count": 5267,
           "endOfRecords": false,
           "facets": [
             {
@@ -1119,7 +1167,7 @@
                   "name": "IR"
                 },
                 {
-                  "count": 224,
+                  "count": 223,
                   "name": "KE"
                 },
                 {
@@ -1127,7 +1175,7 @@
                   "name": "MW"
                 },
                 {
-                  "count": 48,
+                  "count": 47,
                   "name": "NA"
                 },
                 {
@@ -1180,7 +1228,7 @@
                   "name": "CC0_1_0"
                 },
                 {
-                  "count": 5084,
+                  "count": 5082,
                   "name": "CC_BY_4_0"
                 }
               ],
@@ -1195,6 +1243,21 @@
       }
     },
     "Addax nasomaculatus": {
+      "datasets": {
+        "counts": {
+          "2aa02cf8-c402-412c-9ad1-585e1e185bef": 3,
+          "355ffa2e-36ce-44aa-9772-2f433169100c": 4,
+          "4d028294-7e88-4bed-8519-176af6a4b78f": 6,
+          "50c9509d-22c7-4a22-a47d-8c48425ef4a7": 19,
+          "5a659248-1f70-11e3-b2c5-00145eb45e9a": 3,
+          "6ac3f774-d9fb-4796-b3e9-92bf6c81c084": 1,
+          "6ce7290f-47f6-4046-8356-371f5b6749df": 4,
+          "7a25f7aa-03fb-4322-aaeb-66719e1a9527": 3,
+          "96ca66b4-f762-11e1-a439-00145eb45e9a": 2,
+          "ffe38a37-d659-4b1a-a935-5a5264e3cc0a": 1
+        },
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2441101&facet=datasetKey&facetLimit=300&facetOffset=0&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+      },
       "match": {
         "response": {
           "classification": [
@@ -1335,6 +1398,41 @@
       }
     },
     "Agalychnis callidryas": {
+      "datasets": {
+        "counts": {
+          "040c5662-da76-4782-a48e-cdea1892d14c": 6,
+          "09c4287e-e6d5-4552-a07f-bff8a00833d8": 18,
+          "1c5c3e48-7fc0-4d4f-96e6-c4df2c747f34": 2,
+          "26098c25-8f7f-4c71-97ac-1d3db181c65e": 2,
+          "2b4fd3ed-ff26-436b-8274-83263ebdb66a": 83,
+          "2e64dedd-0996-4cd6-b6cd-4f055a46c38c": 1,
+          "4d749d70-e2e1-11dd-8102-b8a03c50a862": 2,
+          "50c9509d-22c7-4a22-a47d-8c48425ef4a7": 943,
+          "5719db5a-b15f-4dad-9a11-6cde70b5ed0e": 2,
+          "6ac3f774-d9fb-4796-b3e9-92bf6c81c084": 42,
+          "76dd8f0d-2daa-4a69-9fcd-55e04230334a": 9,
+          "78122332-6315-41bd-914b-e9c1342d9093": 1,
+          "78f98484-a7ef-4e6c-8b51-7464f1209591": 6,
+          "7a25f7aa-03fb-4322-aaeb-66719e1a9527": 88,
+          "7f6dd0f7-9ed4-49c0-bb71-b2a9c7fed9f1": 4,
+          "7feba584-f762-11e1-a439-00145eb45e9a": 5,
+          "821cc27a-e3bb-4bc5-ac34-89ada245069d": 219,
+          "84b4d6e4-f762-11e1-a439-00145eb45e9a": 5,
+          "852628c6-f762-11e1-a439-00145eb45e9a": 6,
+          "861d3d64-f762-11e1-a439-00145eb45e9a": 4,
+          "8935e64a-f762-11e1-a439-00145eb45e9a": 10,
+          "8e479b8f-ac16-4bed-a11a-bc7e27c31663": 90,
+          "9661bc40-f762-11e1-a439-00145eb45e9a": 30,
+          "a8ee9bc6-5914-427d-9fba-f8545250ac34": 33,
+          "baf0dd21-64e7-46ea-95d0-e359c2f8e61b": 1,
+          "c287bcb5-ee4a-456f-86b6-dae0e6fe7958": 12,
+          "cece4fc2-1fec-4bb5-a335-7252548e3f0b": 24,
+          "d8cd16ba-bb74-4420-821e-083f2bac17c2": 6,
+          "dce00a1f-f6b4-4e11-9771-92c62c40ad80": 224,
+          "f11db245-3f9f-4fc6-a0cc-12b4124d081b": 3
+        },
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2428197&facet=datasetKey&facetLimit=300&facetOffset=0&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+      },
       "match": {
         "response": {
           "classification": [
@@ -1459,6 +1557,20 @@
       }
     },
     "Ailuropoda melanoleuca": {
+      "datasets": {
+        "counts": {
+          "040c5662-da76-4782-a48e-cdea1892d14c": 6,
+          "04169fce-7d4f-41f7-9dff-245960f5b59e": 1,
+          "1d04e739-98a9-4e16-9970-8f8f3bf9e9e3": 1,
+          "3959ee49-7678-4a88-9049-5dfc55ccebf3": 1,
+          "3f0f641c-cd4b-4694-8e47-c47be23ac2a9": 1,
+          "41fc5c40-5e81-496f-9733-6b5681b3b7a5": 9,
+          "50c9509d-22c7-4a22-a47d-8c48425ef4a7": 4,
+          "6ac3f774-d9fb-4796-b3e9-92bf6c81c084": 2,
+          "bb109a7a-6c5a-4cad-a1b9-b750016e9d82": 4
+        },
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2433399&facet=datasetKey&facetLimit=300&facetOffset=0&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+      },
       "match": {
         "response": {
           "classification": [
@@ -1563,6 +1675,28 @@
       }
     },
     "Ailurus fulgens": {
+      "datasets": {
+        "counts": {
+          "040c5662-da76-4782-a48e-cdea1892d14c": 6,
+          "0daed095-478a-4af6-abf5-18acb790fbb2": 1,
+          "22a66350-7947-4a49-84a3-39c7c1b0881f": 1,
+          "2599eef3-f643-48a3-aa03-346ec2df7451": 1,
+          "2aa02cf8-c402-412c-9ad1-585e1e185bef": 1,
+          "41fc5c40-5e81-496f-9733-6b5681b3b7a5": 3,
+          "50c9509d-22c7-4a22-a47d-8c48425ef4a7": 5,
+          "5a659248-1f70-11e3-b2c5-00145eb45e9a": 1,
+          "6ac3f774-d9fb-4796-b3e9-92bf6c81c084": 1,
+          "75018539-6328-41de-b875-7c2e61dc1635": 1,
+          "830eb5d0-f762-11e1-a439-00145eb45e9a": 9,
+          "84b5b072-2832-4c72-ad17-eb90bcb0c5ac": 12,
+          "854f602e-f762-11e1-a439-00145eb45e9a": 2,
+          "8da6980a-7ebb-456c-94eb-5f6086de6570": 6,
+          "926f3dd4-89d9-4cbd-8ed7-32fb6fcfa861": 2,
+          "b15d4952-7d20-46f1-8a3e-556a512b04c5": 9,
+          "c6b86c40-ff71-4e5e-902c-111f400d0d56": 1
+        },
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5219446&facet=datasetKey&facetLimit=300&facetOffset=0&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+      },
       "match": {
         "response": {
           "classification": [
@@ -1675,6 +1809,26 @@
       }
     },
     "Ambystoma mexicanum": {
+      "datasets": {
+        "counts": {
+          "0159cf6b-6a46-4365-96f1-d7ca2511f082": 6,
+          "040c5662-da76-4782-a48e-cdea1892d14c": 1,
+          "1c5c3e48-7fc0-4d4f-96e6-c4df2c747f34": 4,
+          "63ed64cb-90b7-4ecc-b94c-3a0317742379": 39,
+          "6ac3f774-d9fb-4796-b3e9-92bf6c81c084": 2,
+          "76dd8f0d-2daa-4a69-9fcd-55e04230334a": 2,
+          "78f98484-a7ef-4e6c-8b51-7464f1209591": 6,
+          "7a25f7aa-03fb-4322-aaeb-66719e1a9527": 3,
+          "7e34ea34-f762-11e1-a439-00145eb45e9a": 3,
+          "7feba584-f762-11e1-a439-00145eb45e9a": 30,
+          "a72ac6ef-6f55-4b17-a1d1-b213d5bb8977": 113,
+          "aad97542-a068-449d-adb3-a8e937f64cb4": 2,
+          "c287bcb5-ee4a-456f-86b6-dae0e6fe7958": 2,
+          "cece4fc2-1fec-4bb5-a335-7252548e3f0b": 3,
+          "f6cc0fcc-1605-4bd4-bbea-dd12f697a2ba": 13
+        },
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2431950&facet=datasetKey&facetLimit=300&facetOffset=0&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+      },
       "match": {
         "response": {
           "classification": [
@@ -1787,6 +1941,15 @@
       }
     },
     "Andrias davidianus": {
+      "datasets": {
+        "counts": {
+          "88dc0756-f762-11e1-a439-00145eb45e9a": 53,
+          "8e479b8f-ac16-4bed-a11a-bc7e27c31663": 1,
+          "c287bcb5-ee4a-456f-86b6-dae0e6fe7958": 6,
+          "cece4fc2-1fec-4bb5-a335-7252548e3f0b": 1
+        },
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2432037&facet=datasetKey&facetLimit=300&facetOffset=0&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+      },
       "match": {
         "response": {
           "classification": [
@@ -1883,6 +2046,65 @@
       }
     },
     "Apalone spinifera": {
+      "datasets": {
+        "counts": {
+          "040c5662-da76-4782-a48e-cdea1892d14c": 2,
+          "09c4287e-e6d5-4552-a07f-bff8a00833d8": 32,
+          "1c5c3e48-7fc0-4d4f-96e6-c4df2c747f34": 2,
+          "28573c0a-b833-41b1-9999-56c6b9bce519": 4,
+          "395dfaad-8b0d-47e2-a2ea-bf8a3fd5c10c": 29,
+          "3ca53690-d42a-4b49-9f7d-e247d8eee7a5": 4,
+          "3cc72eb1-0f9e-496d-96e9-3cf6f7d94b0a": 58,
+          "4ec02cdc-1266-473e-8609-dc280706ca7b": 2,
+          "50c9509d-22c7-4a22-a47d-8c48425ef4a7": 1580,
+          "51fa0155-a545-4154-ac20-b89dbb2c312b": 57,
+          "531ed831-f35f-4bd5-9d83-bf260fc8236d": 7,
+          "63ed64cb-90b7-4ecc-b94c-3a0317742379": 4,
+          "65dfe059-f1c1-4ec9-9a05-d6877a1d2842": 69,
+          "6ac3f774-d9fb-4796-b3e9-92bf6c81c084": 3,
+          "6b40ed11-b526-44d8-a868-c092ebb64f64": 94,
+          "71e82020-f762-11e1-a439-00145eb45e9a": 4,
+          "74f92761-3a24-4d85-9bfb-00b1fee0119d": 11,
+          "75018539-6328-41de-b875-7c2e61dc1635": 3,
+          "76dd8f0d-2daa-4a69-9fcd-55e04230334a": 416,
+          "78122332-6315-41bd-914b-e9c1342d9093": 2,
+          "78f98484-a7ef-4e6c-8b51-7464f1209591": 108,
+          "7a25f7aa-03fb-4322-aaeb-66719e1a9527": 26,
+          "7f6dd0f7-9ed4-49c0-bb71-b2a9c7fed9f1": 5,
+          "7f9894f2-f762-11e1-a439-00145eb45e9a": 5,
+          "7feba584-f762-11e1-a439-00145eb45e9a": 24,
+          "81a975b3-d86f-434e-ad9e-16bc43f68a36": 123,
+          "821cc27a-e3bb-4bc5-ac34-89ada245069d": 244,
+          "84b4d6e4-f762-11e1-a439-00145eb45e9a": 3,
+          "84e823d2-f762-11e1-a439-00145eb45e9a": 45,
+          "852628c6-f762-11e1-a439-00145eb45e9a": 106,
+          "861d3d64-f762-11e1-a439-00145eb45e9a": 17,
+          "8935e64a-f762-11e1-a439-00145eb45e9a": 4,
+          "8d88898d-a2c4-4616-a1fe-431b9c06b671": 2,
+          "8e479b8f-ac16-4bed-a11a-bc7e27c31663": 208,
+          "91025c69-111a-45c0-8440-59cb9efbdff7": 16,
+          "914831e7-a602-46a1-9c2c-0932cdcfff3a": 20,
+          "9dc617c0-f3aa-4f6d-b9e8-6d49527f6644": 94,
+          "a4b86c5c-0b93-4fe5-96e8-d1af3166d45f": 15,
+          "a8ee9bc6-5914-427d-9fba-f8545250ac34": 16,
+          "ad0d4b56-c620-45a5-9152-7a0da3bd48e8": 62,
+          "b23dae1f-1b66-432f-908b-be7737aff2b8": 3,
+          "b6015b60-6f96-43a9-88e5-2f41854e8f07": 126,
+          "beddb937-47b8-48f6-8efb-e347383aa9b5": 24,
+          "c62f7574-d65a-4018-87a2-b96d6df5231b": 6,
+          "ce60f32b-6e6f-4a6d-b18a-4b09d4943b3a": 10,
+          "cece4fc2-1fec-4bb5-a335-7252548e3f0b": 21,
+          "d5fafa95-7de2-48c0-bf10-3480bcca4a2b": 100,
+          "d6cc311c-c5ab-4f23-9a20-10514f9eb9c4": 94,
+          "d8cd16ba-bb74-4420-821e-083f2bac17c2": 2,
+          "dab57200-c600-4f26-b657-cf217443034e": 68,
+          "dce00a1f-f6b4-4e11-9771-92c62c40ad80": 153,
+          "e36f3c64-f9b8-4811-8bc7-b0452841f1fc": 19,
+          "e45118fa-be82-4bc3-9c5b-98d91cfd8dd8": 7,
+          "fca6147f-6460-445a-9e6a-5ebc5eddf703": 15
+        },
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2442680&facet=datasetKey&facetLimit=300&facetOffset=0&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+      },
       "match": {
         "response": {
           "classification": [
@@ -1990,6 +2212,45 @@
       }
     },
     "Ascaphus truei": {
+      "datasets": {
+        "counts": {
+          "040c5662-da76-4782-a48e-cdea1892d14c": 2,
+          "09c4287e-e6d5-4552-a07f-bff8a00833d8": 353,
+          "0bf094c6-8a9a-4164-9902-f245920e016d": 5,
+          "186605f8-4f62-4e3a-be58-c6b3b0bc47be": 1,
+          "2e64dedd-0996-4cd6-b6cd-4f055a46c38c": 16,
+          "395dfaad-8b0d-47e2-a2ea-bf8a3fd5c10c": 11,
+          "3d84f407-8a76-473a-b8c8-54a58d5f581b": 3,
+          "50c9509d-22c7-4a22-a47d-8c48425ef4a7": 140,
+          "5b11525e-c116-48a0-956f-4147ecd97237": 1,
+          "6209915a-47fa-4045-abf9-0fb05ee4b01c": 1,
+          "74f92761-3a24-4d85-9bfb-00b1fee0119d": 26,
+          "75018539-6328-41de-b875-7c2e61dc1635": 11,
+          "76dd8f0d-2daa-4a69-9fcd-55e04230334a": 6,
+          "78122332-6315-41bd-914b-e9c1342d9093": 901,
+          "78f98484-a7ef-4e6c-8b51-7464f1209591": 3,
+          "7a25f7aa-03fb-4322-aaeb-66719e1a9527": 170,
+          "821cc27a-e3bb-4bc5-ac34-89ada245069d": 253,
+          "84b4d6e4-f762-11e1-a439-00145eb45e9a": 5,
+          "852628c6-f762-11e1-a439-00145eb45e9a": 344,
+          "88d7437e-f762-11e1-a439-00145eb45e9a": 3,
+          "8935e64a-f762-11e1-a439-00145eb45e9a": 15,
+          "8e479b8f-ac16-4bed-a11a-bc7e27c31663": 259,
+          "8eddc200-f535-4c65-9b4d-f723eafe607e": 157,
+          "92d4b180-a103-11de-88ae-b8a03c50a862": 3,
+          "96c25708-f762-11e1-a439-00145eb45e9a": 16,
+          "a8ee9bc6-5914-427d-9fba-f8545250ac34": 29,
+          "c287bcb5-ee4a-456f-86b6-dae0e6fe7958": 8,
+          "cc75dca7-0de4-435b-8e3a-c1b2f1db8eed": 1,
+          "cece4fc2-1fec-4bb5-a335-7252548e3f0b": 318,
+          "d5fafa95-7de2-48c0-bf10-3480bcca4a2b": 5,
+          "d8cd16ba-bb74-4420-821e-083f2bac17c2": 1,
+          "dce00a1f-f6b4-4e11-9771-92c62c40ad80": 51,
+          "df9c8b86-9d36-4e29-91b3-4274dff053e5": 17,
+          "fca6147f-6460-445a-9e6a-5ebc5eddf703": 47
+        },
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2429804&facet=datasetKey&facetLimit=300&facetOffset=0&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+      },
       "match": {
         "response": {
           "classification": [
@@ -2090,6 +2351,25 @@
       }
     },
     "Astrochelys radiata": {
+      "datasets": {
+        "counts": {
+          "1c5c3e48-7fc0-4d4f-96e6-c4df2c747f34": 3,
+          "289f7f33-8ac4-4779-9883-e713f2aa5250": 2,
+          "369913ee-c7a5-4371-a497-643e9d93bdfc": 18,
+          "41c2febd-9dc8-4cd1-bfcd-038b7c7f550a": 10,
+          "4f5c812c-ead7-4a8b-b270-c7bee01f12ae": 3,
+          "50c9509d-22c7-4a22-a47d-8c48425ef4a7": 22,
+          "6ac3f774-d9fb-4796-b3e9-92bf6c81c084": 8,
+          "6ed43f52-25d1-4d56-a821-63a8564b81f6": 1,
+          "76dd8f0d-2daa-4a69-9fcd-55e04230334a": 3,
+          "7c441c85-aaba-4775-87b0-180e1afa7e53": 2,
+          "821cc27a-e3bb-4bc5-ac34-89ada245069d": 3,
+          "88d7437e-f762-11e1-a439-00145eb45e9a": 1,
+          "91aa3d5b-6f77-4135-a823-cef438a60dfa": 1,
+          "f553f8f9-b147-4f09-86e5-0d1ce1a91ce0": 1
+        },
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2441666&facet=datasetKey&facetLimit=300&facetOffset=0&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+      },
       "match": {
         "response": {
           "classification": [
@@ -2197,6 +2477,15 @@
       }
     },
     "Beatragus hunteri": {
+      "datasets": {
+        "counts": {
+          "2aa02cf8-c402-412c-9ad1-585e1e185bef": 1,
+          "4ec9e37d-1af5-4dc2-9c2f-97fcf5f22867": 19,
+          "50c9509d-22c7-4a22-a47d-8c48425ef4a7": 2,
+          "a01e0862-fbb2-4b63-b05a-dfee0be9ccbe": 2
+        },
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=4262734&facet=datasetKey&facetLimit=300&facetOffset=0&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+      },
       "match": {
         "response": {
           "classification": [
@@ -2297,6 +2586,13 @@
       }
     },
     "Bradypus pygmaeus": {
+      "datasets": {
+        "counts": {
+          "50c9509d-22c7-4a22-a47d-8c48425ef4a7": 2,
+          "6ac3f774-d9fb-4796-b3e9-92bf6c81c084": 2
+        },
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2436352&facet=datasetKey&facetLimit=300&facetOffset=0&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+      },
       "match": {
         "response": {
           "classification": [
@@ -2393,6 +2689,62 @@
       }
     },
     "Bradypus variegatus": {
+      "datasets": {
+        "counts": {
+          "040c5662-da76-4782-a48e-cdea1892d14c": 16,
+          "0b7d7b92-b33a-4eba-ae40-1ef13b13ea6b": 3,
+          "0daed095-478a-4af6-abf5-18acb790fbb2": 11,
+          "112716aa-0f53-483d-9089-fd21494ecb66": 1,
+          "1a017764-ffb6-4880-801f-27e209a1f7e0": 3,
+          "1d04e739-98a9-4e16-9970-8f8f3bf9e9e3": 29,
+          "1da75725-1eb5-4e17-b586-ffad7b783987": 9,
+          "22a66350-7947-4a49-84a3-39c7c1b0881f": 10,
+          "2599eef3-f643-48a3-aa03-346ec2df7451": 8,
+          "2f98a4d0-01b1-4316-8246-cf8d6a984f4c": 5,
+          "3251d789-0ac6-418a-b3a7-7c10b20e4e12": 7,
+          "355ffa2e-36ce-44aa-9772-2f433169100c": 2,
+          "371b386a-d67b-4646-897e-a27cc1101067": 41,
+          "399c550f-4189-405b-9738-1248f7423124": 1,
+          "41fc5c40-5e81-496f-9733-6b5681b3b7a5": 38,
+          "42b8e94f-796f-4d21-b981-6a1e23e0497d": 20,
+          "43386ac1-772a-4be2-9f08-0f8aaef94f29": 1,
+          "4599115a-02fb-4e22-9a2d-7ac4c0d177e7": 3,
+          "46eb90e8-a067-4005-a320-3aa3f83fbe23": 5,
+          "4885f6dd-9c4d-4242-8ce7-24769a2cfd6d": 1,
+          "4d749d70-e2e1-11dd-8102-b8a03c50a862": 7,
+          "50c9509d-22c7-4a22-a47d-8c48425ef4a7": 1303,
+          "536616e8-947c-49b5-9bc5-58caf5f03302": 1,
+          "5a659248-1f70-11e3-b2c5-00145eb45e9a": 8,
+          "64a88778-8de7-4dd0-af39-2d094102cbde": 6,
+          "65908f95-5ab6-48d9-bf6d-6da274ed730e": 1,
+          "6ac3f774-d9fb-4796-b3e9-92bf6c81c084": 105,
+          "6c41b69e-6a38-49e6-ab8d-99f1d0516f91": 1,
+          "74599f53-47ec-44dc-915a-3edaddbcb8fd": 3,
+          "7591fe81-ac71-49b6-af31-d016138074a2": 2,
+          "7a25f7aa-03fb-4322-aaeb-66719e1a9527": 6,
+          "821cc27a-e3bb-4bc5-ac34-89ada245069d": 80,
+          "835ff8be-ea5c-45e4-b3f3-126852ac56fe": 3,
+          "847e2306-f762-11e1-a439-00145eb45e9a": 5,
+          "84aefc7e-f762-11e1-a439-00145eb45e9a": 1,
+          "854f602e-f762-11e1-a439-00145eb45e9a": 2,
+          "87b8eaf5-a3ee-4144-80a2-cc6eaf71503a": 3,
+          "96ca66b4-f762-11e1-a439-00145eb45e9a": 1,
+          "9ca88105-a818-4819-a608-cd13be1069e0": 8,
+          "a4555281-5046-424f-9cd1-e7c103234416": 1,
+          "b15d4952-7d20-46f1-8a3e-556a512b04c5": 5,
+          "c182220b-8d5f-43e7-8375-9b54d71cee7b": 14,
+          "c8565eef-a9f6-49a4-bf8d-7c8416361a99": 2,
+          "cb411101-febb-4fac-a374-8edd23548b35": 1,
+          "d3b6cb30-0a64-4f82-91ea-0bb14637ee17": 2,
+          "da285c2a-0cf0-4637-87d8-6e2b5cd8ea01": 1,
+          "dc68ef79-97f5-4984-9dc4-c463c7be5870": 5,
+          "e1beb83c-9b83-4d17-ac5e-d24e09507ec5": 1,
+          "eeadb643-2fed-49d9-959e-efdab9c47455": 3,
+          "f11db245-3f9f-4fc6-a0cc-12b4124d081b": 1,
+          "ffe38a37-d659-4b1a-a935-5a5264e3cc0a": 216
+        },
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2436353&facet=datasetKey&facetLimit=300&facetOffset=0&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+      },
       "match": {
         "response": {
           "classification": [
@@ -2533,6 +2885,18 @@
       }
     },
     "Breviceps macrops": {
+      "datasets": {
+        "counts": {
+          "1aaec653-c71c-4695-9b6e-0e26214dd817": 11,
+          "3f82f967-0b3c-4cf7-a54e-071b7fae3139": 13,
+          "50c9509d-22c7-4a22-a47d-8c48425ef4a7": 1,
+          "5ca354eb-7675-4422-81e0-784bd8ae29d5": 9,
+          "9a9dcc47-fdca-4881-998a-9596dcedff6a": 21,
+          "cece4fc2-1fec-4bb5-a335-7252548e3f0b": 9,
+          "d8cd16ba-bb74-4420-821e-083f2bac17c2": 8
+        },
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5218077&facet=datasetKey&facetLimit=300&facetOffset=0&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+      },
       "match": {
         "response": {
           "classification": [
@@ -2633,6 +2997,17 @@
       }
     },
     "Canis simensis": {
+      "datasets": {
+        "counts": {
+          "22a66350-7947-4a49-84a3-39c7c1b0881f": 1,
+          "355ffa2e-36ce-44aa-9772-2f433169100c": 3,
+          "41fc5c40-5e81-496f-9733-6b5681b3b7a5": 5,
+          "50c9509d-22c7-4a22-a47d-8c48425ef4a7": 11,
+          "6ac3f774-d9fb-4796-b3e9-92bf6c81c084": 6,
+          "7f6dd0f7-9ed4-49c0-bb71-b2a9c7fed9f1": 5
+        },
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5219143&facet=datasetKey&facetLimit=300&facetOffset=0&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+      },
       "match": {
         "response": {
           "classification": [
@@ -2729,6 +3104,29 @@
       }
     },
     "Carettochelys insculpta": {
+      "datasets": {
+        "counts": {
+          "09c4287e-e6d5-4552-a07f-bff8a00833d8": 1,
+          "0debafd0-6c8a-11de-8225-b8a03c50a862": 24,
+          "17c7ded5-a12d-4686-968b-159ce38dd8f4": 1,
+          "358fbd61-739f-4102-afc9-9d468f571e4d": 73,
+          "39905320-6c8a-11de-8226-b8a03c50a862": 4,
+          "3ca53690-d42a-4b49-9f7d-e247d8eee7a5": 14,
+          "50c9509d-22c7-4a22-a47d-8c48425ef4a7": 2,
+          "793c3890-6c8a-11de-8226-b8a03c50a862": 25,
+          "7e358b5a-bddb-4f8d-992a-09886d6ca3ef": 43,
+          "7e380070-f762-11e1-a439-00145eb45e9a": 1,
+          "821cc27a-e3bb-4bc5-ac34-89ada245069d": 3,
+          "a79c2b50-6c8a-11de-8226-b8a03c50a862": 4,
+          "b929f23d-290f-4e85-8f17-764c55b3b284": 1,
+          "bf0f5d5f-f16e-4abe-9cd5-e4e7c4c630e2": 687,
+          "cece4fc2-1fec-4bb5-a335-7252548e3f0b": 4,
+          "dce00a1f-f6b4-4e11-9771-92c62c40ad80": 1,
+          "dce8feb0-6c89-11de-8225-b8a03c50a862": 135,
+          "fa375330-6c8a-11de-8226-b8a03c50a862": 1
+        },
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2442506&facet=datasetKey&facetLimit=300&facetOffset=0&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+      },
       "match": {
         "response": {
           "classification": [
@@ -2836,6 +3234,27 @@
       }
     },
     "Centrochelys sulcata": {
+      "datasets": {
+        "counts": {
+          "040c5662-da76-4782-a48e-cdea1892d14c": 2,
+          "09c4287e-e6d5-4552-a07f-bff8a00833d8": 2,
+          "4d028294-7e88-4bed-8519-176af6a4b78f": 4,
+          "50c9509d-22c7-4a22-a47d-8c48425ef4a7": 12,
+          "5e1d2d54-f5db-43ac-87c5-55a9f79ac718": 2,
+          "6ac3f774-d9fb-4796-b3e9-92bf6c81c084": 5,
+          "6ed43f52-25d1-4d56-a821-63a8564b81f6": 1,
+          "7048dd38-6676-4398-af63-dee3e60941b9": 34,
+          "8e479b8f-ac16-4bed-a11a-bc7e27c31663": 2,
+          "8e912d78-6259-44e3-8f58-debb3081a15f": 2,
+          "91025c69-111a-45c0-8440-59cb9efbdff7": 1,
+          "91aa3d5b-6f77-4135-a823-cef438a60dfa": 1,
+          "a307e4d7-1de2-4adc-95d5-a0a8d5f57236": 1,
+          "d8cd16ba-bb74-4420-821e-083f2bac17c2": 2,
+          "f3278405-0943-41a0-9f04-3a7733ec344d": 1,
+          "f553f8f9-b147-4f09-86e5-0d1ce1a91ce0": 1
+        },
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2441533&facet=datasetKey&facetLimit=300&facetOffset=0&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+      },
       "match": {
         "response": {
           "classification": [
@@ -2991,6 +3410,14 @@
       }
     },
     "Chelonoidis abingdonii": {
+      "datasets": {
+        "counts": {
+          "6ac3f774-d9fb-4796-b3e9-92bf6c81c084": 4,
+          "821cc27a-e3bb-4bc5-ac34-89ada245069d": 1,
+          "cece4fc2-1fec-4bb5-a335-7252548e3f0b": 4
+        },
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=7451150&facet=datasetKey&facetLimit=300&facetOffset=0&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+      },
       "match": {
         "response": {
           "classification": [
@@ -3082,6 +3509,24 @@
       }
     },
     "Chelonoidis niger": {
+      "datasets": {
+        "counts": {
+          "09c4287e-e6d5-4552-a07f-bff8a00833d8": 23,
+          "0d8f74b3-42b9-488f-9ec1-1faefaff1d1c": 1,
+          "1c5c3e48-7fc0-4d4f-96e6-c4df2c747f34": 2,
+          "423d9318-4dd4-4d31-81cb-27778c44a3bc": 1,
+          "50c9509d-22c7-4a22-a47d-8c48425ef4a7": 178,
+          "6ac3f774-d9fb-4796-b3e9-92bf6c81c084": 22,
+          "76dd8f0d-2daa-4a69-9fcd-55e04230334a": 2,
+          "7f6dd0f7-9ed4-49c0-bb71-b2a9c7fed9f1": 8,
+          "821cc27a-e3bb-4bc5-ac34-89ada245069d": 3,
+          "84b4d6e4-f762-11e1-a439-00145eb45e9a": 1,
+          "861d3d64-f762-11e1-a439-00145eb45e9a": 3,
+          "8e479b8f-ac16-4bed-a11a-bc7e27c31663": 1,
+          "ad0d4b56-c620-45a5-9152-7a0da3bd48e8": 2
+        },
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=9527499&facet=datasetKey&facetLimit=300&facetOffset=0&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+      },
       "match": {
         "response": {
           "classification": [
@@ -3173,6 +3618,36 @@
       }
     },
     "Chrysocyon brachyurus": {
+      "datasets": {
+        "counts": {
+          "040c5662-da76-4782-a48e-cdea1892d14c": 2,
+          "0daed095-478a-4af6-abf5-18acb790fbb2": 1,
+          "2177d641-eeca-41c0-b6ab-0f1b2dcd9a79": 1,
+          "32487dda-3868-4723-aa77-98245206f466": 1,
+          "3251d789-0ac6-418a-b3a7-7c10b20e4e12": 1,
+          "41fc5c40-5e81-496f-9733-6b5681b3b7a5": 10,
+          "431b19b9-b5b4-4bcb-ae11-072899dd4c52": 1,
+          "4d749d70-e2e1-11dd-8102-b8a03c50a862": 3,
+          "50c9509d-22c7-4a22-a47d-8c48425ef4a7": 131,
+          "512c11b0-a103-11de-88ae-b8a03c50a862": 6,
+          "5a659248-1f70-11e3-b2c5-00145eb45e9a": 2,
+          "65908f95-5ab6-48d9-bf6d-6da274ed730e": 24,
+          "673e5c7e-2437-4ffe-b575-29e11da4f880": 1,
+          "6ac3f774-d9fb-4796-b3e9-92bf6c81c084": 5,
+          "7a25f7aa-03fb-4322-aaeb-66719e1a9527": 1,
+          "830eb5d0-f762-11e1-a439-00145eb45e9a": 2,
+          "8cc8f167-d9eb-4b50-905a-34895bb13325": 7,
+          "a6058f47-15ae-412e-b316-912dd6e2ec9b": 97,
+          "d0d5ef85-71b2-4da6-b6f6-c1c3d60987d3": 4,
+          "d3b6cb30-0a64-4f82-91ea-0bb14637ee17": 124,
+          "d4205f84-a671-464a-ac1c-474144f46fa8": 1,
+          "e2483380-16f7-11df-b5b3-b8a03c50a862": 129,
+          "f3db09ca-8c7c-4820-988f-9a0546c941e4": 1,
+          "f5ff14cd-c64e-404a-940f-8a0dc7de554b": 2,
+          "ffe38a37-d659-4b1a-a935-5a5264e3cc0a": 710
+        },
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2434450&facet=datasetKey&facetLimit=300&facetOffset=0&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+      },
       "match": {
         "response": {
           "classification": [
@@ -3293,6 +3768,19 @@
       }
     },
     "Conraua goliath": {
+      "datasets": {
+        "counts": {
+          "09c4287e-e6d5-4552-a07f-bff8a00833d8": 1,
+          "1c5c3e48-7fc0-4d4f-96e6-c4df2c747f34": 1,
+          "50c9509d-22c7-4a22-a47d-8c48425ef4a7": 6,
+          "7e380070-f762-11e1-a439-00145eb45e9a": 2,
+          "821cc27a-e3bb-4bc5-ac34-89ada245069d": 41,
+          "88d7437e-f762-11e1-a439-00145eb45e9a": 1,
+          "8e479b8f-ac16-4bed-a11a-bc7e27c31663": 5,
+          "cece4fc2-1fec-4bb5-a335-7252548e3f0b": 8
+        },
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2428946&facet=datasetKey&facetLimit=300&facetOffset=0&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+      },
       "match": {
         "response": {
           "classification": [
@@ -3393,6 +3881,32 @@
       }
     },
     "Cryptobranchus alleganiensis": {
+      "datasets": {
+        "counts": {
+          "02242d2f-b43f-44d1-8e53-4c51af461f5b": 1,
+          "09c4287e-e6d5-4552-a07f-bff8a00833d8": 22,
+          "2e64dedd-0996-4cd6-b6cd-4f055a46c38c": 3,
+          "395dfaad-8b0d-47e2-a2ea-bf8a3fd5c10c": 3,
+          "3cc72eb1-0f9e-496d-96e9-3cf6f7d94b0a": 16,
+          "3d84f407-8a76-473a-b8c8-54a58d5f581b": 32,
+          "50c9509d-22c7-4a22-a47d-8c48425ef4a7": 44,
+          "65dfe059-f1c1-4ec9-9a05-d6877a1d2842": 36,
+          "6863f850-572a-41f1-aa58-c7b40b4e1a5c": 1,
+          "76dd8f0d-2daa-4a69-9fcd-55e04230334a": 144,
+          "78122332-6315-41bd-914b-e9c1342d9093": 1,
+          "7a25f7aa-03fb-4322-aaeb-66719e1a9527": 1,
+          "821cc27a-e3bb-4bc5-ac34-89ada245069d": 63,
+          "852628c6-f762-11e1-a439-00145eb45e9a": 1,
+          "8935e64a-f762-11e1-a439-00145eb45e9a": 2,
+          "8e479b8f-ac16-4bed-a11a-bc7e27c31663": 196,
+          "a8ee9bc6-5914-427d-9fba-f8545250ac34": 15,
+          "c287bcb5-ee4a-456f-86b6-dae0e6fe7958": 2,
+          "cece4fc2-1fec-4bb5-a335-7252548e3f0b": 6,
+          "d8cd16ba-bb74-4420-821e-083f2bac17c2": 3,
+          "dce00a1f-f6b4-4e11-9771-92c62c40ad80": 4
+        },
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2432031&facet=datasetKey&facetLimit=300&facetOffset=0&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+      },
       "match": {
         "response": {
           "classification": [
@@ -3489,6 +4003,12 @@
       }
     },
     "Cryptochloris wintoni": {
+      "datasets": {
+        "counts": {
+          "821cc27a-e3bb-4bc5-ac34-89ada245069d": 1
+        },
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5218453&facet=datasetKey&facetLimit=300&facetOffset=0&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+      },
       "match": {
         "response": {
           "classification": [
@@ -3581,6 +4101,22 @@
       }
     },
     "Daubentonia madagascariensis": {
+      "datasets": {
+        "counts": {
+          "009a76f6-0960-4a56-a116-63991e6bb037": 1,
+          "040c5662-da76-4782-a48e-cdea1892d14c": 1,
+          "3959ee49-7678-4a88-9049-5dfc55ccebf3": 1,
+          "44ff990f-945e-4b37-9060-fc7de856b1ea": 1,
+          "4d749d70-e2e1-11dd-8102-b8a03c50a862": 1,
+          "50c9509d-22c7-4a22-a47d-8c48425ef4a7": 15,
+          "5a659248-1f70-11e3-b2c5-00145eb45e9a": 3,
+          "6ac3f774-d9fb-4796-b3e9-92bf6c81c084": 5,
+          "76f80707-d78e-4657-9590-7ac74f6283b1": 38,
+          "7e380070-f762-11e1-a439-00145eb45e9a": 2,
+          "d8cd16ba-bb74-4420-821e-083f2bac17c2": 1
+        },
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5219587&facet=datasetKey&facetLimit=300&facetOffset=0&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+      },
       "match": {
         "response": {
           "classification": [
@@ -3685,6 +4221,44 @@
       }
     },
     "Dendrobates tinctorius": {
+      "datasets": {
+        "counts": {
+          "1c5c3e48-7fc0-4d4f-96e6-c4df2c747f34": 2,
+          "217b0d4f-c87e-4063-b6c5-78277e40e866": 2,
+          "2b4fd3ed-ff26-436b-8274-83263ebdb66a": 5,
+          "337bb331-6fda-4ab9-83a3-7f858d207ea4": 1,
+          "4c6575de-cac0-4bce-a71f-e7f73984717a": 2,
+          "50c9509d-22c7-4a22-a47d-8c48425ef4a7": 26,
+          "5889bb53-efcf-42a6-81ba-624d127a76c2": 1,
+          "64be02e0-0c64-11dd-84d1-b8a03c50a862": 1,
+          "65dfe059-f1c1-4ec9-9a05-d6877a1d2842": 7,
+          "6ac3f774-d9fb-4796-b3e9-92bf6c81c084": 1,
+          "6ed43f52-25d1-4d56-a821-63a8564b81f6": 1,
+          "7247dc2e-b862-4555-b533-7701d183271b": 3,
+          "76dd8f0d-2daa-4a69-9fcd-55e04230334a": 6,
+          "7a25f7aa-03fb-4322-aaeb-66719e1a9527": 8,
+          "7ad079e7-f905-444f-a228-01746e3b7c6b": 1,
+          "7e34ea34-f762-11e1-a439-00145eb45e9a": 2,
+          "821cc27a-e3bb-4bc5-ac34-89ada245069d": 5,
+          "861d3d64-f762-11e1-a439-00145eb45e9a": 1,
+          "89f4279a-5e4c-4f5f-ba8c-9eb26b9ed2d1": 5,
+          "912e4246-9db3-4c5a-be79-31a721ae5ae1": 134,
+          "91aa3d5b-6f77-4135-a823-cef438a60dfa": 1,
+          "a8b1ac30-ff1a-4419-8d23-e6a584360d3f": 11,
+          "cece4fc2-1fec-4bb5-a335-7252548e3f0b": 1,
+          "d4f0993a-0f72-445e-8d5c-1b685e5268b1": 6,
+          "d50dfb8a-27e2-4642-bce9-bcf1b3040cfb": 7,
+          "d5fafa95-7de2-48c0-bf10-3480bcca4a2b": 20,
+          "d8cd16ba-bb74-4420-821e-083f2bac17c2": 1,
+          "dce00a1f-f6b4-4e11-9771-92c62c40ad80": 5,
+          "e42bf2ce-364f-444c-ba0e-c5947cc5f4b3": 1,
+          "f3d6d354-239e-4686-a267-8c9516fe2aab": 1,
+          "f553f8f9-b147-4f09-86e5-0d1ce1a91ce0": 1,
+          "f946666e-67dc-4848-9fa8-2162f3559e33": 13,
+          "ffe38a37-d659-4b1a-a935-5a5264e3cc0a": 20
+        },
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=9724339&facet=datasetKey&facetLimit=300&facetOffset=0&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+      },
       "match": {
         "response": {
           "classification": [
@@ -3809,6 +4383,17 @@
       }
     },
     "Dendrolagus goodfellowi": {
+      "datasets": {
+        "counts": {
+          "0daed095-478a-4af6-abf5-18acb790fbb2": 4,
+          "2aa02cf8-c402-412c-9ad1-585e1e185bef": 2,
+          "355ffa2e-36ce-44aa-9772-2f433169100c": 3,
+          "821cc27a-e3bb-4bc5-ac34-89ada245069d": 3,
+          "aad97542-a068-449d-adb3-a8e937f64cb4": 1,
+          "b929f23d-290f-4e85-8f17-764c55b3b284": 3
+        },
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2440222&facet=datasetKey&facetLimit=300&facetOffset=0&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+      },
       "match": {
         "response": {
           "classification": [
@@ -3913,6 +4498,33 @@
       }
     },
     "Diceros bicornis": {
+      "datasets": {
+        "counts": {
+          "040c5662-da76-4782-a48e-cdea1892d14c": 68,
+          "0daed095-478a-4af6-abf5-18acb790fbb2": 1,
+          "1d04e739-98a9-4e16-9970-8f8f3bf9e9e3": 4,
+          "1da75725-1eb5-4e17-b586-ffad7b783987": 3,
+          "22a66350-7947-4a49-84a3-39c7c1b0881f": 1,
+          "2aa02cf8-c402-412c-9ad1-585e1e185bef": 1,
+          "3959ee49-7678-4a88-9049-5dfc55ccebf3": 3,
+          "41fc5c40-5e81-496f-9733-6b5681b3b7a5": 9,
+          "44ff990f-945e-4b37-9060-fc7de856b1ea": 1,
+          "50c9509d-22c7-4a22-a47d-8c48425ef4a7": 294,
+          "5a659248-1f70-11e3-b2c5-00145eb45e9a": 1,
+          "6ac3f774-d9fb-4796-b3e9-92bf6c81c084": 108,
+          "6ce7290f-47f6-4046-8356-371f5b6749df": 2,
+          "7a25f7aa-03fb-4322-aaeb-66719e1a9527": 2,
+          "84f4df14-f762-11e1-a439-00145eb45e9a": 1,
+          "854f602e-f762-11e1-a439-00145eb45e9a": 5,
+          "999d8fed-d06d-48d8-87ee-cc36e6c8456c": 5,
+          "a01e0862-fbb2-4b63-b05a-dfee0be9ccbe": 19,
+          "b84a3711-b4ca-4e4f-adac-80dfaea98d1c": 1,
+          "bb109a7a-6c5a-4cad-a1b9-b750016e9d82": 1,
+          "be614ad1-d0d1-4e27-a3e4-212aca8b5da6": 7,
+          "f11db245-3f9f-4fc6-a0cc-12b4124d081b": 179
+        },
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5220111&facet=datasetKey&facetLimit=300&facetOffset=0&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+      },
       "match": {
         "response": {
           "classification": [
@@ -3975,7 +4587,7 @@
       },
       "occurrences": {
         "response": {
-          "count": 718,
+          "count": 716,
           "endOfRecords": false,
           "facets": [
             {
@@ -4005,7 +4617,7 @@
                   "name": "MW"
                 },
                 {
-                  "count": 152,
+                  "count": 151,
                   "name": "NA"
                 },
                 {
@@ -4017,7 +4629,7 @@
                   "name": "RW"
                 },
                 {
-                  "count": 94,
+                  "count": 93,
                   "name": "TZ"
                 },
                 {
@@ -4042,7 +4654,7 @@
                   "name": "CC0_1_0"
                 },
                 {
-                  "count": 423,
+                  "count": 421,
                   "name": "CC_BY_4_0"
                 }
               ],
@@ -4057,6 +4669,16 @@
       }
     },
     "Dyscophus antongilii": {
+      "datasets": {
+        "counts": {
+          "040c5662-da76-4782-a48e-cdea1892d14c": 1,
+          "50c9509d-22c7-4a22-a47d-8c48425ef4a7": 10,
+          "6ac3f774-d9fb-4796-b3e9-92bf6c81c084": 5,
+          "8e479b8f-ac16-4bed-a11a-bc7e27c31663": 9,
+          "dce00a1f-f6b4-4e11-9771-92c62c40ad80": 1
+        },
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5216573&facet=datasetKey&facetLimit=300&facetOffset=0&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+      },
       "match": {
         "response": {
           "classification": [
@@ -4153,6 +4775,50 @@
       }
     },
     "Elephas maximus": {
+      "datasets": {
+        "counts": {
+          "0310b080-ec4b-11dc-b73e-b8a03c50a862": 3,
+          "040c5662-da76-4782-a48e-cdea1892d14c": 31,
+          "04169fce-7d4f-41f7-9dff-245960f5b59e": 1,
+          "22a66350-7947-4a49-84a3-39c7c1b0881f": 1,
+          "2aa02cf8-c402-412c-9ad1-585e1e185bef": 1,
+          "3732112e-848c-4fcc-b62d-e5acb9d12099": 396,
+          "3959ee49-7678-4a88-9049-5dfc55ccebf3": 1,
+          "3c2eb73a-82c8-4373-956f-1cb9473f76ba": 1,
+          "4099f348-4ec0-4fca-99e6-ad5c3eb3c05a": 19,
+          "41fc5c40-5e81-496f-9733-6b5681b3b7a5": 7,
+          "4837d6b0-19fe-4fe4-9ddf-b62dd17a060e": 1,
+          "4b286126-5658-44ac-b958-cc8fc0f511e1": 203,
+          "4d749d70-e2e1-11dd-8102-b8a03c50a862": 1,
+          "50c9509d-22c7-4a22-a47d-8c48425ef4a7": 877,
+          "5118b71e-6eb2-45c7-a52d-a4d61a5b9dc0": 7,
+          "5a659248-1f70-11e3-b2c5-00145eb45e9a": 6,
+          "65908f95-5ab6-48d9-bf6d-6da274ed730e": 1,
+          "6ac3f774-d9fb-4796-b3e9-92bf6c81c084": 100,
+          "6ce7290f-47f6-4046-8356-371f5b6749df": 4,
+          "7528e073-dea9-4172-a1cb-27c684f2a4b5": 1,
+          "78b270c5-a5fe-4f1d-b87e-eb0dd7b7ae02": 3,
+          "7a25f7aa-03fb-4322-aaeb-66719e1a9527": 1,
+          "7e380070-f762-11e1-a439-00145eb45e9a": 18,
+          "7f6dd0f7-9ed4-49c0-bb71-b2a9c7fed9f1": 12,
+          "84b5b072-2832-4c72-ad17-eb90bcb0c5ac": 149,
+          "926f3dd4-89d9-4cbd-8ed7-32fb6fcfa861": 1,
+          "a013718d-4d97-4fea-85d4-7f976c6cbb35": 2,
+          "a307e4d7-1de2-4adc-95d5-a0a8d5f57236": 1,
+          "b045f965-8a06-4b9c-a1b1-a9b5a1628b52": 245,
+          "b15d4952-7d20-46f1-8a3e-556a512b04c5": 4434,
+          "b211f32f-326b-43d3-8012-2fbce0cc6dcc": 1,
+          "b219d9b5-ab67-46a2-85b6-278cd7e30f93": 154,
+          "bb109a7a-6c5a-4cad-a1b9-b750016e9d82": 1,
+          "c6b86c40-ff71-4e5e-902c-111f400d0d56": 130,
+          "d8cd16ba-bb74-4420-821e-083f2bac17c2": 4,
+          "dc0167b0-0bec-40cc-bbf7-ec353baa73a7": 4,
+          "f11db245-3f9f-4fc6-a0cc-12b4124d081b": 3,
+          "f6a1c126-1719-4a8f-be6a-299b389ce86a": 51,
+          "ffe38a37-d659-4b1a-a935-5a5264e3cc0a": 1
+        },
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5219461&facet=datasetKey&facetLimit=300&facetOffset=0&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+      },
       "match": {
         "response": {
           "classification": [
@@ -4325,6 +4991,40 @@
       }
     },
     "Emydoidea blandingii": {
+      "datasets": {
+        "counts": {
+          "040c5662-da76-4782-a48e-cdea1892d14c": 6,
+          "09c4287e-e6d5-4552-a07f-bff8a00833d8": 1,
+          "289f7f33-8ac4-4779-9883-e713f2aa5250": 1,
+          "4ec02cdc-1266-473e-8609-dc280706ca7b": 26,
+          "50c9509d-22c7-4a22-a47d-8c48425ef4a7": 741,
+          "51fa0155-a545-4154-ac20-b89dbb2c312b": 18,
+          "64be02e0-0c64-11dd-84d1-b8a03c50a862": 1,
+          "6ac3f774-d9fb-4796-b3e9-92bf6c81c084": 1,
+          "74f92761-3a24-4d85-9bfb-00b1fee0119d": 112,
+          "76dd8f0d-2daa-4a69-9fcd-55e04230334a": 59,
+          "78122332-6315-41bd-914b-e9c1342d9093": 1,
+          "78f98484-a7ef-4e6c-8b51-7464f1209591": 5,
+          "821cc27a-e3bb-4bc5-ac34-89ada245069d": 32,
+          "84b4d6e4-f762-11e1-a439-00145eb45e9a": 2,
+          "852628c6-f762-11e1-a439-00145eb45e9a": 1,
+          "861d3d64-f762-11e1-a439-00145eb45e9a": 4,
+          "88d7437e-f762-11e1-a439-00145eb45e9a": 1,
+          "8935e64a-f762-11e1-a439-00145eb45e9a": 2,
+          "8e479b8f-ac16-4bed-a11a-bc7e27c31663": 188,
+          "a8ee9bc6-5914-427d-9fba-f8545250ac34": 7,
+          "b6015b60-6f96-43a9-88e5-2f41854e8f07": 1,
+          "cece4fc2-1fec-4bb5-a335-7252548e3f0b": 4,
+          "d3b6cb30-0a64-4f82-91ea-0bb14637ee17": 53,
+          "d5fafa95-7de2-48c0-bf10-3480bcca4a2b": 5,
+          "d6cc311c-c5ab-4f23-9a20-10514f9eb9c4": 1,
+          "d8cd16ba-bb74-4420-821e-083f2bac17c2": 5,
+          "dce00a1f-f6b4-4e11-9771-92c62c40ad80": 22,
+          "df9c8b86-9d36-4e29-91b3-4274dff053e5": 1,
+          "fca6147f-6460-445a-9e6a-5ebc5eddf703": 8
+        },
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5220530&facet=datasetKey&facetLimit=300&facetOffset=0&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+      },
       "match": {
         "response": {
           "acceptedUsage": {
@@ -4432,6 +5132,30 @@
       }
     },
     "Equus grevyi": {
+      "datasets": {
+        "counts": {
+          "040c5662-da76-4782-a48e-cdea1892d14c": 3,
+          "04169fce-7d4f-41f7-9dff-245960f5b59e": 2,
+          "1c8388f5-5c12-46ba-a486-07d1b4f8b78c": 257,
+          "1d04e739-98a9-4e16-9970-8f8f3bf9e9e3": 1,
+          "2aa02cf8-c402-412c-9ad1-585e1e185bef": 1,
+          "355ffa2e-36ce-44aa-9772-2f433169100c": 1,
+          "3959ee49-7678-4a88-9049-5dfc55ccebf3": 5,
+          "3c2eb73a-82c8-4373-956f-1cb9473f76ba": 1,
+          "41fc5c40-5e81-496f-9733-6b5681b3b7a5": 9,
+          "50c9509d-22c7-4a22-a47d-8c48425ef4a7": 115,
+          "5a659248-1f70-11e3-b2c5-00145eb45e9a": 1,
+          "6ac3f774-d9fb-4796-b3e9-92bf6c81c084": 16,
+          "6ce7290f-47f6-4046-8356-371f5b6749df": 2,
+          "7f6dd0f7-9ed4-49c0-bb71-b2a9c7fed9f1": 1,
+          "854f602e-f762-11e1-a439-00145eb45e9a": 5,
+          "999d8fed-d06d-48d8-87ee-cc36e6c8456c": 8,
+          "a01e0862-fbb2-4b63-b05a-dfee0be9ccbe": 5,
+          "b15d4952-7d20-46f1-8a3e-556a512b04c5": 2,
+          "d8cd16ba-bb74-4420-821e-083f2bac17c2": 1
+        },
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2440894&facet=datasetKey&facetLimit=300&facetOffset=0&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+      },
       "match": {
         "response": {
           "classification": [
@@ -4552,6 +5276,19 @@
       }
     },
     "Heosemys spinosa": {
+      "datasets": {
+        "counts": {
+          "040c5662-da76-4782-a48e-cdea1892d14c": 1,
+          "09c4287e-e6d5-4552-a07f-bff8a00833d8": 2,
+          "1c5c3e48-7fc0-4d4f-96e6-c4df2c747f34": 1,
+          "50c9509d-22c7-4a22-a47d-8c48425ef4a7": 18,
+          "75018539-6328-41de-b875-7c2e61dc1635": 1,
+          "821cc27a-e3bb-4bc5-ac34-89ada245069d": 2,
+          "cece4fc2-1fec-4bb5-a335-7252548e3f0b": 1,
+          "d3b6cb30-0a64-4f82-91ea-0bb14637ee17": 1
+        },
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2443326&facet=datasetKey&facetLimit=300&facetOffset=0&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+      },
       "match": {
         "response": {
           "classification": [
@@ -4659,6 +5396,22 @@
       }
     },
     "Indri indri": {
+      "datasets": {
+        "counts": {
+          "0daed095-478a-4af6-abf5-18acb790fbb2": 2,
+          "44ff990f-945e-4b37-9060-fc7de856b1ea": 1,
+          "4d749d70-e2e1-11dd-8102-b8a03c50a862": 5,
+          "50c9509d-22c7-4a22-a47d-8c48425ef4a7": 140,
+          "5a659248-1f70-11e3-b2c5-00145eb45e9a": 6,
+          "6ac3f774-d9fb-4796-b3e9-92bf6c81c084": 6,
+          "76f80707-d78e-4657-9590-7ac74f6283b1": 1805,
+          "7e380070-f762-11e1-a439-00145eb45e9a": 9,
+          "7f6dd0f7-9ed4-49c0-bb71-b2a9c7fed9f1": 20,
+          "977e06c0-e58a-11de-ad5c-998cc9e29689": 4,
+          "b71ccc3d-8db2-4433-86a3-c70169338b80": 36
+        },
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2436432&facet=datasetKey&facetLimit=300&facetOffset=0&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+      },
       "match": {
         "response": {
           "classification": [
@@ -4755,6 +5508,17 @@
       }
     },
     "Lasiorhinus krefftii": {
+      "datasets": {
+        "counts": {
+          "0645ccdb-e001-4ab0-9729-51f1755e007e": 12,
+          "39905320-6c8a-11de-8226-b8a03c50a862": 10,
+          "50c9509d-22c7-4a22-a47d-8c48425ef4a7": 1,
+          "84a649ce-ff81-420d-9c41-aa1de59e3766": 3,
+          "a79c2b50-6c8a-11de-8226-b8a03c50a862": 36,
+          "e4473544-f4cd-4429-b791-39d6e1fdb0a4": 46
+        },
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5219997&facet=datasetKey&facetLimit=300&facetOffset=0&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+      },
       "match": {
         "response": {
           "classification": [
@@ -4851,6 +5615,66 @@
       }
     },
     "Loxodonta africana": {
+      "datasets": {
+        "counts": {
+          "026af01f-d227-476f-9e81-d5273eca6a2b": 376,
+          "040c5662-da76-4782-a48e-cdea1892d14c": 7,
+          "0daed095-478a-4af6-abf5-18acb790fbb2": 3,
+          "19cb2741-a430-4139-8680-e11eba996978": 14,
+          "1c8388f5-5c12-46ba-a486-07d1b4f8b78c": 528,
+          "1d04e739-98a9-4e16-9970-8f8f3bf9e9e3": 1,
+          "1da75725-1eb5-4e17-b586-ffad7b783987": 1,
+          "22a66350-7947-4a49-84a3-39c7c1b0881f": 2,
+          "27f86b34-76dc-485d-a833-b158c6d79bf4": 199,
+          "2aa02cf8-c402-412c-9ad1-585e1e185bef": 2,
+          "2ba30ed2-6f82-480c-a892-4c8749508324": 24,
+          "2bf5bb6b-0b1d-4881-ba5e-9e0f0d19c9b1": 44,
+          "3959ee49-7678-4a88-9049-5dfc55ccebf3": 1,
+          "3ad882bb-cd21-4201-8b83-3684bfc6d830": 1,
+          "3b4d96d3-a468-4ed2-86a4-25011f510356": 17,
+          "3df1e027-bae7-4ac8-9ce0-24aeb10036ad": 6,
+          "41fc5c40-5e81-496f-9733-6b5681b3b7a5": 5,
+          "436c8c67-f230-4b05-9f11-08b2bc098ec9": 489,
+          "4496b1b1-1ea9-4eef-bcca-90adc41038df": 3,
+          "44ff990f-945e-4b37-9060-fc7de856b1ea": 1,
+          "4d749d70-e2e1-11dd-8102-b8a03c50a862": 1,
+          "50c9509d-22c7-4a22-a47d-8c48425ef4a7": 3096,
+          "5a659248-1f70-11e3-b2c5-00145eb45e9a": 14,
+          "5ccdb68f-6b41-478b-bef3-034ad06cbaf4": 45,
+          "5e1d2d54-f5db-43ac-87c5-55a9f79ac718": 8,
+          "6a01a01f-10a9-49bc-b0d1-2bd04493dc20": 139,
+          "6ac3f774-d9fb-4796-b3e9-92bf6c81c084": 852,
+          "6ce7290f-47f6-4046-8356-371f5b6749df": 2,
+          "78b270c5-a5fe-4f1d-b87e-eb0dd7b7ae02": 1,
+          "7a25f7aa-03fb-4322-aaeb-66719e1a9527": 4,
+          "7e380070-f762-11e1-a439-00145eb45e9a": 75,
+          "7f6dd0f7-9ed4-49c0-bb71-b2a9c7fed9f1": 1,
+          "821cc27a-e3bb-4bc5-ac34-89ada245069d": 1,
+          "830eb5d0-f762-11e1-a439-00145eb45e9a": 2,
+          "84aefc7e-f762-11e1-a439-00145eb45e9a": 1,
+          "84f4df14-f762-11e1-a439-00145eb45e9a": 1,
+          "854f602e-f762-11e1-a439-00145eb45e9a": 1,
+          "8e912d78-6259-44e3-8f58-debb3081a15f": 8,
+          "96ca66b4-f762-11e1-a439-00145eb45e9a": 10,
+          "999d8fed-d06d-48d8-87ee-cc36e6c8456c": 31,
+          "9c92d48c-13d3-462f-8a6c-ee1f4bb6984a": 1,
+          "a01e0862-fbb2-4b63-b05a-dfee0be9ccbe": 33,
+          "aad97542-a068-449d-adb3-a8e937f64cb4": 1,
+          "b84a3711-b4ca-4e4f-adac-80dfaea98d1c": 2,
+          "bdc80cd9-35d8-4b23-9df1-e8b1c50229a5": 1,
+          "be614ad1-d0d1-4e27-a3e4-212aca8b5da6": 10,
+          "c46b6fda-86e6-47a2-a295-d863c5cf7039": 20,
+          "cf3753af-0fde-4de8-9bae-efa08bf5c2f6": 50,
+          "d8cd16ba-bb74-4420-821e-083f2bac17c2": 9,
+          "e1beb83c-9b83-4d17-ac5e-d24e09507ec5": 2,
+          "f11db245-3f9f-4fc6-a0cc-12b4124d081b": 2,
+          "f86a681d-7db8-483b-819a-248def18b70a": 1,
+          "f9eb2f96-4962-4b05-b56c-accf68160734": 175,
+          "fa473ee2-0d34-4e45-a2cc-1749525a5a51": 243,
+          "fe903576-72e1-446a-b019-479f537adabe": 96
+        },
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2435350&facet=datasetKey&facetLimit=300&facetOffset=0&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+      },
       "match": {
         "response": {
           "classification": [
@@ -4913,7 +5737,7 @@
       },
       "occurrences": {
         "response": {
-          "count": 6675,
+          "count": 6663,
           "endOfRecords": false,
           "facets": [
             {
@@ -4971,7 +5795,7 @@
                   "name": "GQ"
                 },
                 {
-                  "count": 1354,
+                  "count": 1351,
                   "name": "KE"
                 },
                 {
@@ -5023,7 +5847,7 @@
                   "name": "TD"
                 },
                 {
-                  "count": 538,
+                  "count": 531,
                   "name": "TZ"
                 },
                 {
@@ -5035,7 +5859,7 @@
                   "name": "US"
                 },
                 {
-                  "count": 1499,
+                  "count": 1497,
                   "name": "ZA"
                 },
                 {
@@ -5056,7 +5880,7 @@
                   "name": "CC0_1_0"
                 },
                 {
-                  "count": 5291,
+                  "count": 5279,
                   "name": "CC_BY_4_0"
                 }
               ],
@@ -5071,6 +5895,23 @@
       }
     },
     "Loxodonta cyclotis": {
+      "datasets": {
+        "counts": {
+          "040c5662-da76-4782-a48e-cdea1892d14c": 4,
+          "3b4d96d3-a468-4ed2-86a4-25011f510356": 7,
+          "3df1e027-bae7-4ac8-9ce0-24aeb10036ad": 1,
+          "4d749d70-e2e1-11dd-8102-b8a03c50a862": 4,
+          "50c9509d-22c7-4a22-a47d-8c48425ef4a7": 57,
+          "5a659248-1f70-11e3-b2c5-00145eb45e9a": 1,
+          "6ac3f774-d9fb-4796-b3e9-92bf6c81c084": 3,
+          "7e380070-f762-11e1-a439-00145eb45e9a": 6,
+          "7f6dd0f7-9ed4-49c0-bb71-b2a9c7fed9f1": 1,
+          "96ca66b4-f762-11e1-a439-00145eb45e9a": 2,
+          "999d8fed-d06d-48d8-87ee-cc36e6c8456c": 1,
+          "b211f32f-326b-43d3-8012-2fbce0cc6dcc": 3
+        },
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2435349&facet=datasetKey&facetLimit=300&facetOffset=0&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+      },
       "match": {
         "response": {
           "classification": [
@@ -5219,6 +6060,37 @@
       }
     },
     "Lycaon pictus": {
+      "datasets": {
+        "counts": {
+          "040c5662-da76-4782-a48e-cdea1892d14c": 4,
+          "0daed095-478a-4af6-abf5-18acb790fbb2": 2,
+          "1d04e739-98a9-4e16-9970-8f8f3bf9e9e3": 2,
+          "1da75725-1eb5-4e17-b586-ffad7b783987": 1,
+          "22a66350-7947-4a49-84a3-39c7c1b0881f": 3,
+          "2aa02cf8-c402-412c-9ad1-585e1e185bef": 1,
+          "2ba30ed2-6f82-480c-a892-4c8749508324": 1,
+          "355ffa2e-36ce-44aa-9772-2f433169100c": 6,
+          "3b4d96d3-a468-4ed2-86a4-25011f510356": 4,
+          "41fc5c40-5e81-496f-9733-6b5681b3b7a5": 9,
+          "50c9509d-22c7-4a22-a47d-8c48425ef4a7": 231,
+          "5a659248-1f70-11e3-b2c5-00145eb45e9a": 2,
+          "5e1d2d54-f5db-43ac-87c5-55a9f79ac718": 2,
+          "6ac3f774-d9fb-4796-b3e9-92bf6c81c084": 37,
+          "6ce7290f-47f6-4046-8356-371f5b6749df": 3,
+          "7a25f7aa-03fb-4322-aaeb-66719e1a9527": 1,
+          "821cc27a-e3bb-4bc5-ac34-89ada245069d": 9,
+          "830eb5d0-f762-11e1-a439-00145eb45e9a": 4,
+          "854f602e-f762-11e1-a439-00145eb45e9a": 3,
+          "8e912d78-6259-44e3-8f58-debb3081a15f": 2,
+          "999d8fed-d06d-48d8-87ee-cc36e6c8456c": 1,
+          "a01e0862-fbb2-4b63-b05a-dfee0be9ccbe": 13,
+          "a307e4d7-1de2-4adc-95d5-a0a8d5f57236": 1,
+          "b15d4952-7d20-46f1-8a3e-556a512b04c5": 89,
+          "e2062334-2f77-4f18-bba7-7108c0b3d54d": 1,
+          "ffe38a37-d659-4b1a-a935-5a5264e3cc0a": 4
+        },
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5219317&facet=datasetKey&facetLimit=300&facetOffset=0&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+      },
       "match": {
         "response": {
           "classification": [
@@ -5379,6 +6251,32 @@
       }
     },
     "Macrotis lagotis": {
+      "datasets": {
+        "counts": {
+          "040c5662-da76-4782-a48e-cdea1892d14c": 1,
+          "0645ccdb-e001-4ab0-9729-51f1755e007e": 120837,
+          "0debafd0-6c8a-11de-8225-b8a03c50a862": 11,
+          "19729f12-88c3-4e56-a84f-b42a5cf052ad": 2473,
+          "358fbd61-739f-4102-afc9-9d468f571e4d": 1821,
+          "37beb6ea-e591-41e3-b781-e384250dc42c": 3,
+          "39905320-6c8a-11de-8226-b8a03c50a862": 57,
+          "40c0f670-ee87-4576-be9d-2725e0b47035": 27008,
+          "50c9509d-22c7-4a22-a47d-8c48425ef4a7": 3,
+          "5a659248-1f70-11e3-b2c5-00145eb45e9a": 1,
+          "793c3890-6c8a-11de-8226-b8a03c50a862": 69,
+          "7c93d290-6c8b-11de-8226-b8a03c50a862": 95,
+          "7e358b5a-bddb-4f8d-992a-09886d6ca3ef": 2,
+          "84a649ce-ff81-420d-9c41-aa1de59e3766": 5,
+          "8db49bef-d87e-403d-ae19-32db175ab91e": 2,
+          "96ca66b4-f762-11e1-a439-00145eb45e9a": 3,
+          "a79c2b50-6c8a-11de-8226-b8a03c50a862": 28,
+          "dce8feb0-6c89-11de-8225-b8a03c50a862": 203,
+          "e4473544-f4cd-4429-b791-39d6e1fdb0a4": 1211,
+          "f065976c-a96a-42d2-900a-ce5d788376e9": 1,
+          "fa375330-6c8a-11de-8226-b8a03c50a862": 88
+        },
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5219460&facet=datasetKey&facetLimit=300&facetOffset=0&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+      },
       "match": {
         "response": {
           "classification": [
@@ -5475,6 +6373,23 @@
       }
     },
     "Malacochersus tornieri": {
+      "datasets": {
+        "counts": {
+          "040c5662-da76-4782-a48e-cdea1892d14c": 2,
+          "50c9509d-22c7-4a22-a47d-8c48425ef4a7": 5,
+          "6ac3f774-d9fb-4796-b3e9-92bf6c81c084": 3,
+          "6b524ea4-2593-49de-8e38-cbd87965265b": 4,
+          "76dd8f0d-2daa-4a69-9fcd-55e04230334a": 11,
+          "7a25f7aa-03fb-4322-aaeb-66719e1a9527": 4,
+          "821cc27a-e3bb-4bc5-ac34-89ada245069d": 3,
+          "84b4d6e4-f762-11e1-a439-00145eb45e9a": 1,
+          "8e479b8f-ac16-4bed-a11a-bc7e27c31663": 11,
+          "999d8fed-d06d-48d8-87ee-cc36e6c8456c": 1,
+          "a8ee9bc6-5914-427d-9fba-f8545250ac34": 1,
+          "cece4fc2-1fec-4bb5-a335-7252548e3f0b": 3
+        },
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2441842&facet=datasetKey&facetLimit=300&facetOffset=0&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+      },
       "match": {
         "response": {
           "classification": [
@@ -5574,6 +6489,23 @@
       }
     },
     "Manis crassicaudata": {
+      "datasets": {
+        "counts": {
+          "040c5662-da76-4782-a48e-cdea1892d14c": 4,
+          "1d04e739-98a9-4e16-9970-8f8f3bf9e9e3": 1,
+          "41fc5c40-5e81-496f-9733-6b5681b3b7a5": 3,
+          "4b286126-5658-44ac-b958-cc8fc0f511e1": 1,
+          "50c9509d-22c7-4a22-a47d-8c48425ef4a7": 1,
+          "5a659248-1f70-11e3-b2c5-00145eb45e9a": 1,
+          "84aefc7e-f762-11e1-a439-00145eb45e9a": 1,
+          "84b5b072-2832-4c72-ad17-eb90bcb0c5ac": 21,
+          "a013718d-4d97-4fea-85d4-7f976c6cbb35": 3,
+          "c6b86c40-ff71-4e5e-902c-111f400d0d56": 7,
+          "d3b6cb30-0a64-4f82-91ea-0bb14637ee17": 1,
+          "d8cd16ba-bb74-4420-821e-083f2bac17c2": 4
+        },
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5219633&facet=datasetKey&facetLimit=300&facetOffset=0&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+      },
       "match": {
         "response": {
           "classification": [
@@ -5682,6 +6614,32 @@
       }
     },
     "Manis javanica": {
+      "datasets": {
+        "counts": {
+          "040c5662-da76-4782-a48e-cdea1892d14c": 67,
+          "0daed095-478a-4af6-abf5-18acb790fbb2": 1,
+          "1d04e739-98a9-4e16-9970-8f8f3bf9e9e3": 1,
+          "355ffa2e-36ce-44aa-9772-2f433169100c": 5,
+          "41fc5c40-5e81-496f-9733-6b5681b3b7a5": 4,
+          "4bc6e742-69ea-4ed5-a6e5-21f674d9f884": 3,
+          "50c9509d-22c7-4a22-a47d-8c48425ef4a7": 11,
+          "5a659248-1f70-11e3-b2c5-00145eb45e9a": 7,
+          "65908f95-5ab6-48d9-bf6d-6da274ed730e": 1,
+          "6ac3f774-d9fb-4796-b3e9-92bf6c81c084": 2,
+          "6ce7290f-47f6-4046-8356-371f5b6749df": 1,
+          "821cc27a-e3bb-4bc5-ac34-89ada245069d": 8,
+          "830eb5d0-f762-11e1-a439-00145eb45e9a": 4,
+          "84b5b072-2832-4c72-ad17-eb90bcb0c5ac": 91,
+          "8eddc200-f535-4c65-9b4d-f723eafe607e": 1,
+          "96ca66b4-f762-11e1-a439-00145eb45e9a": 4,
+          "a307e4d7-1de2-4adc-95d5-a0a8d5f57236": 1,
+          "afdd8aa3-056a-4c36-90e6-2f20f2b6dd46": 1,
+          "bb109a7a-6c5a-4cad-a1b9-b750016e9d82": 1,
+          "d8cd16ba-bb74-4420-821e-083f2bac17c2": 11,
+          "ea9f5b0b-ad97-45ea-935a-ba2784c80cbb": 1
+        },
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5219628&facet=datasetKey&facetLimit=300&facetOffset=0&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+      },
       "match": {
         "response": {
           "classification": [
@@ -5814,6 +6772,17 @@
       }
     },
     "Marmota vancouverensis": {
+      "datasets": {
+        "counts": {
+          "040c5662-da76-4782-a48e-cdea1892d14c": 1,
+          "0daed095-478a-4af6-abf5-18acb790fbb2": 11,
+          "1e4180fe-8864-4c82-afaf-ad8a82cd76db": 1,
+          "50c9509d-22c7-4a22-a47d-8c48425ef4a7": 39,
+          "5b11525e-c116-48a0-956f-4147ecd97237": 3,
+          "8eddc200-f535-4c65-9b4d-f723eafe607e": 1
+        },
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2437365&facet=datasetKey&facetLimit=300&facetOffset=0&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+      },
       "match": {
         "response": {
           "classification": [
@@ -5910,6 +6879,33 @@
       }
     },
     "Mustela nigripes": {
+      "datasets": {
+        "counts": {
+          "04169fce-7d4f-41f7-9dff-245960f5b59e": 1,
+          "0daed095-478a-4af6-abf5-18acb790fbb2": 11,
+          "1d04e739-98a9-4e16-9970-8f8f3bf9e9e3": 10,
+          "1da75725-1eb5-4e17-b586-ffad7b783987": 1,
+          "1e4180fe-8864-4c82-afaf-ad8a82cd76db": 3,
+          "41fc5c40-5e81-496f-9733-6b5681b3b7a5": 6,
+          "4837d6b0-19fe-4fe4-9ddf-b62dd17a060e": 1,
+          "4bc6e742-69ea-4ed5-a6e5-21f674d9f884": 1,
+          "50c9509d-22c7-4a22-a47d-8c48425ef4a7": 4,
+          "830eb5d0-f762-11e1-a439-00145eb45e9a": 1,
+          "84aefc7e-f762-11e1-a439-00145eb45e9a": 1,
+          "84e6e5f8-f762-11e1-a439-00145eb45e9a": 1,
+          "854f602e-f762-11e1-a439-00145eb45e9a": 2,
+          "8631295a-f762-11e1-a439-00145eb45e9a": 1,
+          "88d8974c-f762-11e1-a439-00145eb45e9a": 9,
+          "96275bf2-8999-4869-95d5-4903a84391b0": 1,
+          "9dab876a-98bf-4ba2-b425-0d40947eebd4": 9,
+          "a9ae9ece-e753-4fb9-8595-a37d0f5aa59c": 1,
+          "b15d4952-7d20-46f1-8a3e-556a512b04c5": 51,
+          "dab57200-c600-4f26-b657-cf217443034e": 13,
+          "f36b26ac-97d1-40f6-a9a0-484defff98e7": 3,
+          "f86a681d-7db8-483b-819a-248def18b70a": 1
+        },
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5218985&facet=datasetKey&facetLimit=300&facetOffset=0&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+      },
       "match": {
         "response": {
           "classification": [
@@ -6014,6 +7010,84 @@
       }
     },
     "Myrmecophaga tridactyla": {
+      "datasets": {
+        "counts": {
+          "0086f7d6-07a1-40b4-a20c-bca803162788": 5,
+          "04169fce-7d4f-41f7-9dff-245960f5b59e": 1,
+          "0b7d7b92-b33a-4eba-ae40-1ef13b13ea6b": 3,
+          "0daed095-478a-4af6-abf5-18acb790fbb2": 8,
+          "1850e2cd-37d5-4c56-9927-a20cae8acdc4": 6,
+          "191cb056-d760-4b06-a7dd-ac247a45f05d": 13,
+          "1da75725-1eb5-4e17-b586-ffad7b783987": 3,
+          "1ef66bdc-801a-4e64-b83a-66125d1aebab": 4,
+          "2585fcc6-647f-4fb7-a25a-07c515c9d079": 3,
+          "2599eef3-f643-48a3-aa03-346ec2df7451": 22,
+          "2aa02cf8-c402-412c-9ad1-585e1e185bef": 4,
+          "2bee4a91-9d92-430e-a87e-ab32d3b1ce47": 2,
+          "3251d789-0ac6-418a-b3a7-7c10b20e4e12": 2,
+          "342dd753-d406-499e-8f7a-41c1e228276d": 9,
+          "355ffa2e-36ce-44aa-9772-2f433169100c": 4,
+          "371b386a-d67b-4646-897e-a27cc1101067": 5,
+          "41fc5c40-5e81-496f-9733-6b5681b3b7a5": 20,
+          "42b8e94f-796f-4d21-b981-6a1e23e0497d": 51,
+          "44ff990f-945e-4b37-9060-fc7de856b1ea": 1,
+          "4d749d70-e2e1-11dd-8102-b8a03c50a862": 14,
+          "50c9509d-22c7-4a22-a47d-8c48425ef4a7": 234,
+          "512c11b0-a103-11de-88ae-b8a03c50a862": 11,
+          "5a659248-1f70-11e3-b2c5-00145eb45e9a": 6,
+          "5cdf1efd-4cda-4b34-a03d-18b45eecb783": 17,
+          "5d1e5f0d-811c-4ab0-bb38-f141cc0174de": 11,
+          "64a88778-8de7-4dd0-af39-2d094102cbde": 3,
+          "65908f95-5ab6-48d9-bf6d-6da274ed730e": 181,
+          "68367736-6990-42f3-b0d1-41b0a6db8236": 4,
+          "68f49e46-9480-41dc-a51c-f600bb9a5f60": 15,
+          "6ac3f774-d9fb-4796-b3e9-92bf6c81c084": 29,
+          "6ce7290f-47f6-4046-8356-371f5b6749df": 1,
+          "6ed43f52-25d1-4d56-a821-63a8564b81f6": 2,
+          "6fcaf879-9272-46ef-b531-880cc410598b": 1,
+          "707853f6-cc81-4408-9e5a-8aa2f4f50ebc": 18,
+          "71d58564-f762-11e1-a439-00145eb45e9a": 2,
+          "75018539-6328-41de-b875-7c2e61dc1635": 3,
+          "780173b1-d9f0-4418-bc61-5410aba0008a": 3,
+          "7b74d9fa-7434-4a6f-8a8c-8509db729039": 1,
+          "7f6dd0f7-9ed4-49c0-bb71-b2a9c7fed9f1": 1,
+          "7f9acd13-804d-4e26-af83-f92b869c841d": 2,
+          "80b61b18-e5ca-4cae-87b3-2b7f6fa1cd8e": 1,
+          "821cc27a-e3bb-4bc5-ac34-89ada245069d": 6,
+          "847e2306-f762-11e1-a439-00145eb45e9a": 3,
+          "854f602e-f762-11e1-a439-00145eb45e9a": 1,
+          "91aa3d5b-6f77-4135-a823-cef438a60dfa": 2,
+          "9385df78-d4bc-4a7a-aa62-85abfc05ae6e": 6,
+          "a3a24344-5bc9-44dd-9b5f-a3ae991c4810": 25,
+          "a4ed8c6c-0d35-46c4-bfb9-c0205ef1af0e": 2,
+          "a5be4674-3ee0-4aab-9ce6-c602a7d71d18": 1,
+          "a6058f47-15ae-412e-b316-912dd6e2ec9b": 37,
+          "ade65535-e4b7-47af-8456-f71df55d0f5d": 17,
+          "b7700738-3e8b-4b9a-a105-3a2109555109": 1,
+          "b9d6d7ee-16fb-46ed-bb40-f75cfa16e48c": 9,
+          "bb109a7a-6c5a-4cad-a1b9-b750016e9d82": 6,
+          "bb5fb23d-80b8-4867-8590-577543fbe5e6": 7,
+          "cf557dff-b9cb-4a23-bf74-a927fef0d7b6": 41,
+          "d0d5ef85-71b2-4da6-b6f6-c1c3d60987d3": 2,
+          "d3b6cb30-0a64-4f82-91ea-0bb14637ee17": 1018,
+          "d4205f84-a671-464a-ac1c-474144f46fa8": 1,
+          "d6eccd69-9da3-4bfa-b6bf-02223823d4ea": 5,
+          "d922c79f-58ea-4a46-9611-b55bf71e1efa": 5,
+          "dba75ea0-cb3e-49f1-b818-0069f507c6e7": 4,
+          "dc68ef79-97f5-4984-9dc4-c463c7be5870": 2,
+          "e2483380-16f7-11df-b5b3-b8a03c50a862": 43,
+          "e550b7a5-439c-42d6-917a-5990a633347d": 50,
+          "ea004df3-d296-4ca8-8cd9-aa5e771d3935": 6,
+          "ec69bdff-20b1-4142-aca7-43be27573c77": 1,
+          "f3e6c11f-60c6-48d5-b815-6b7778a93fbc": 12,
+          "f553f8f9-b147-4f09-86e5-0d1ce1a91ce0": 2,
+          "f7739f2a-9d89-40c2-a262-813832add25d": 13,
+          "f946666e-67dc-4848-9fa8-2162f3559e33": 20,
+          "ff665a40-bc1d-43bd-b45b-21f17a5cf0f3": 1,
+          "ffe38a37-d659-4b1a-a935-5a5264e3cc0a": 634
+        },
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2436346&facet=datasetKey&facetLimit=300&facetOffset=0&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+      },
       "match": {
         "response": {
           "classification": [
@@ -6166,6 +7240,21 @@
       }
     },
     "Nanger dama": {
+      "datasets": {
+        "counts": {
+          "1da75725-1eb5-4e17-b586-ffad7b783987": 3,
+          "2aa02cf8-c402-412c-9ad1-585e1e185bef": 2,
+          "355ffa2e-36ce-44aa-9772-2f433169100c": 1,
+          "4d028294-7e88-4bed-8519-176af6a4b78f": 1,
+          "50c9509d-22c7-4a22-a47d-8c48425ef4a7": 1,
+          "5a659248-1f70-11e3-b2c5-00145eb45e9a": 1,
+          "6ce7290f-47f6-4046-8356-371f5b6749df": 3,
+          "7a25f7aa-03fb-4322-aaeb-66719e1a9527": 1,
+          "7d515e86-f762-11e1-a439-00145eb45e9a": 390,
+          "96ca66b4-f762-11e1-a439-00145eb45e9a": 1
+        },
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=4262713&facet=datasetKey&facetLimit=300&facetOffset=0&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+      },
       "match": {
         "response": {
           "classification": [
@@ -6290,6 +7379,17 @@
       }
     },
     "Nasikabatrachus sahyadrensis": {
+      "datasets": {
+        "counts": {
+          "2872be02-f6f7-4125-81fe-eeb319de6e53": 1,
+          "4c627c3e-5c70-4874-9c03-e8de46e4a9c3": 1,
+          "50c9509d-22c7-4a22-a47d-8c48425ef4a7": 13,
+          "6ac3f774-d9fb-4796-b3e9-92bf6c81c084": 1,
+          "7f6dd0f7-9ed4-49c0-bb71-b2a9c7fed9f1": 1,
+          "c6b86c40-ff71-4e5e-902c-111f400d0d56": 6
+        },
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2421431&facet=datasetKey&facetLimit=300&facetOffset=0&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+      },
       "match": {
         "response": {
           "classification": [
@@ -6386,6 +7486,10 @@
       }
     },
     "Ochotona iliensis": {
+      "datasets": {
+        "counts": {},
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2436969&facet=datasetKey&facetLimit=300&facetOffset=0&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+      },
       "match": {
         "response": {
           "classification": [
@@ -6468,6 +7572,18 @@
       }
     },
     "Okapia johnstoni": {
+      "datasets": {
+        "counts": {
+          "1da75725-1eb5-4e17-b586-ffad7b783987": 1,
+          "41fc5c40-5e81-496f-9733-6b5681b3b7a5": 1,
+          "5a659248-1f70-11e3-b2c5-00145eb45e9a": 1,
+          "609217ee-054d-441d-a850-356cbc2fb385": 11,
+          "6ac3f774-d9fb-4796-b3e9-92bf6c81c084": 1,
+          "821cc27a-e3bb-4bc5-ac34-89ada245069d": 1,
+          "d8cd16ba-bb74-4420-821e-083f2bac17c2": 1
+        },
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2441207&facet=datasetKey&facetLimit=300&facetOffset=0&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+      },
       "match": {
         "response": {
           "classification": [
@@ -6576,6 +7692,45 @@
       }
     },
     "Orycteropus afer": {
+      "datasets": {
+        "counts": {
+          "026af01f-d227-476f-9e81-d5273eca6a2b": 12,
+          "040c5662-da76-4782-a48e-cdea1892d14c": 3,
+          "0daed095-478a-4af6-abf5-18acb790fbb2": 2,
+          "19cb2741-a430-4139-8680-e11eba996978": 8,
+          "1d04e739-98a9-4e16-9970-8f8f3bf9e9e3": 1,
+          "1da75725-1eb5-4e17-b586-ffad7b783987": 1,
+          "22a66350-7947-4a49-84a3-39c7c1b0881f": 3,
+          "2aa02cf8-c402-412c-9ad1-585e1e185bef": 1,
+          "355ffa2e-36ce-44aa-9772-2f433169100c": 11,
+          "3b4d96d3-a468-4ed2-86a4-25011f510356": 4,
+          "3df1e027-bae7-4ac8-9ce0-24aeb10036ad": 2,
+          "41fc5c40-5e81-496f-9733-6b5681b3b7a5": 12,
+          "423d9318-4dd4-4d31-81cb-27778c44a3bc": 1,
+          "436c8c67-f230-4b05-9f11-08b2bc098ec9": 5,
+          "4496b1b1-1ea9-4eef-bcca-90adc41038df": 1,
+          "50c9509d-22c7-4a22-a47d-8c48425ef4a7": 56,
+          "52aa4c08-2be0-49fe-9563-b97a02058add": 29,
+          "5a659248-1f70-11e3-b2c5-00145eb45e9a": 4,
+          "5e1d2d54-f5db-43ac-87c5-55a9f79ac718": 2,
+          "6ac3f774-d9fb-4796-b3e9-92bf6c81c084": 11,
+          "6ce7290f-47f6-4046-8356-371f5b6749df": 2,
+          "788fbea1-8f16-49fa-8daa-6ebd9c9b6ff9": 1,
+          "821cc27a-e3bb-4bc5-ac34-89ada245069d": 4,
+          "830eb5d0-f762-11e1-a439-00145eb45e9a": 1,
+          "854f602e-f762-11e1-a439-00145eb45e9a": 2,
+          "8e912d78-6259-44e3-8f58-debb3081a15f": 3,
+          "96ca66b4-f762-11e1-a439-00145eb45e9a": 12,
+          "a01e0862-fbb2-4b63-b05a-dfee0be9ccbe": 19,
+          "bb109a7a-6c5a-4cad-a1b9-b750016e9d82": 1,
+          "cf3753af-0fde-4de8-9bae-efa08bf5c2f6": 1,
+          "d8cd16ba-bb74-4420-821e-083f2bac17c2": 1,
+          "e92b9edf-27b5-4e21-bbdd-70d29b962ae7": 24,
+          "f9eb2f96-4962-4b05-b56c-accf68160734": 1,
+          "fe903576-72e1-446a-b019-479f537adabe": 2
+        },
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5218416&facet=datasetKey&facetLimit=300&facetOffset=0&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+      },
       "match": {
         "response": {
           "classification": [
@@ -6638,7 +7793,7 @@
       },
       "occurrences": {
         "response": {
-          "count": 244,
+          "count": 243,
           "endOfRecords": false,
           "facets": [
             {
@@ -6704,7 +7859,7 @@
                   "name": "TG"
                 },
                 {
-                  "count": 10,
+                  "count": 9,
                   "name": "TZ"
                 },
                 {
@@ -6737,7 +7892,7 @@
                   "name": "CC0_1_0"
                 },
                 {
-                  "count": 177,
+                  "count": 176,
                   "name": "CC_BY_4_0"
                 }
               ],
@@ -6752,6 +7907,54 @@
       }
     },
     "Pan troglodytes": {
+      "datasets": {
+        "counts": {
+          "026af01f-d227-476f-9e81-d5273eca6a2b": 264,
+          "0310b080-ec4b-11dc-b73e-b8a03c50a862": 1,
+          "04169fce-7d4f-41f7-9dff-245960f5b59e": 1,
+          "0daed095-478a-4af6-abf5-18acb790fbb2": 2,
+          "1832266b-d4bd-4a84-b861-50a3b1851921": 4,
+          "1da75725-1eb5-4e17-b586-ffad7b783987": 3,
+          "22a66350-7947-4a49-84a3-39c7c1b0881f": 1,
+          "355ffa2e-36ce-44aa-9772-2f433169100c": 10,
+          "369f3a0a-f72b-403a-acef-aba99bc64b2f": 1,
+          "3959ee49-7678-4a88-9049-5dfc55ccebf3": 7,
+          "3b4d96d3-a468-4ed2-86a4-25011f510356": 47,
+          "3df1e027-bae7-4ac8-9ce0-24aeb10036ad": 9,
+          "41fc5c40-5e81-496f-9733-6b5681b3b7a5": 11,
+          "44ff990f-945e-4b37-9060-fc7de856b1ea": 1,
+          "4d749d70-e2e1-11dd-8102-b8a03c50a862": 15,
+          "50c9509d-22c7-4a22-a47d-8c48425ef4a7": 128,
+          "5a659248-1f70-11e3-b2c5-00145eb45e9a": 14,
+          "5ccdb68f-6b41-478b-bef3-034ad06cbaf4": 83,
+          "65908f95-5ab6-48d9-bf6d-6da274ed730e": 2,
+          "6ac3f774-d9fb-4796-b3e9-92bf6c81c084": 35,
+          "6cc96790-9e4b-4cf7-b3ce-b7df987e8eb8": 107,
+          "6ce7290f-47f6-4046-8356-371f5b6749df": 1,
+          "75018539-6328-41de-b875-7c2e61dc1635": 2,
+          "7a25f7aa-03fb-4322-aaeb-66719e1a9527": 4,
+          "7e380070-f762-11e1-a439-00145eb45e9a": 65,
+          "7f6dd0f7-9ed4-49c0-bb71-b2a9c7fed9f1": 1828,
+          "821cc27a-e3bb-4bc5-ac34-89ada245069d": 32,
+          "830eb5d0-f762-11e1-a439-00145eb45e9a": 5,
+          "854f602e-f762-11e1-a439-00145eb45e9a": 2,
+          "88d8974c-f762-11e1-a439-00145eb45e9a": 1,
+          "962f59bc-f762-11e1-a439-00145eb45e9a": 1,
+          "96ca66b4-f762-11e1-a439-00145eb45e9a": 11,
+          "999d8fed-d06d-48d8-87ee-cc36e6c8456c": 1,
+          "9a228813-6288-4aba-a8f8-480e425b5f62": 2,
+          "9fc74265-28a7-4d62-97ea-33eb5588562e": 2,
+          "a307e4d7-1de2-4adc-95d5-a0a8d5f57236": 4,
+          "a6474305-bc0e-48e2-9bd5-4cd60fc79c15": 1,
+          "b15d4952-7d20-46f1-8a3e-556a512b04c5": 72,
+          "b7ec1bf8-819b-11e2-bad2-00145eb45e9a": 1,
+          "c053c6ad-e590-4c69-a141-5fd9c8ebbe3c": 1,
+          "d1c25c97-2a1b-4324-9bf4-2c0c316c38b9": 108,
+          "fe9354ec-7577-49f9-8ef4-a0498d238d55": 22,
+          "ffe38a37-d659-4b1a-a935-5a5264e3cc0a": 14
+        },
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5219534&facet=datasetKey&facetLimit=300&facetOffset=0&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+      },
       "match": {
         "response": {
           "classification": [
@@ -6968,6 +8171,136 @@
       }
     },
     "Panthera onca": {
+      "datasets": {
+        "counts": {
+          "029723b6-7060-4bcc-93cf-a5246e946152": 39,
+          "040c5662-da76-4782-a48e-cdea1892d14c": 9,
+          "04169fce-7d4f-41f7-9dff-245960f5b59e": 1,
+          "06a00852-f764-4fb8-80d4-ca51f0918459": 1,
+          "06e98c3e-2801-4d29-8e81-943a13bb3785": 134690,
+          "08a10339-b5e6-447b-896f-aa0de57c454e": 88,
+          "09ba0f35-f702-4cfb-a66c-b0f80273e4c8": 191,
+          "09d2da7b-4699-4e45-b0da-73c982660c98": 11,
+          "0daed095-478a-4af6-abf5-18acb790fbb2": 6,
+          "0f470232-4bf2-45dc-aa04-11ef174cf0cd": 4,
+          "0fca9cb2-caaa-499d-bf3d-8920c69a3a35": 60,
+          "112716aa-0f53-483d-9089-fd21494ecb66": 10,
+          "14060458-0ad8-4f09-965f-a402d81dc9cd": 9,
+          "191cb056-d760-4b06-a7dd-ac247a45f05d": 18,
+          "1d04e739-98a9-4e16-9970-8f8f3bf9e9e3": 17,
+          "1da75725-1eb5-4e17-b586-ffad7b783987": 2,
+          "1ef66bdc-801a-4e64-b83a-66125d1aebab": 1,
+          "2177d641-eeca-41c0-b6ab-0f1b2dcd9a79": 2,
+          "226b536c-25f9-4f6b-b144-edcbdffa3566": 1,
+          "22a66350-7947-4a49-84a3-39c7c1b0881f": 15,
+          "2585fcc6-647f-4fb7-a25a-07c515c9d079": 15,
+          "2599eef3-f643-48a3-aa03-346ec2df7451": 30,
+          "2701b53d-83ee-41b3-83d3-f7356341c751": 1,
+          "27a8cc6d-18ec-4d68-b941-a0c481cd3dbf": 1,
+          "2aa02cf8-c402-412c-9ad1-585e1e185bef": 2,
+          "2bee4a91-9d92-430e-a87e-ab32d3b1ce47": 1,
+          "2dad0cd2-e880-4ec3-90e5-d3f479528cbd": 17,
+          "30d4462d-7ee6-4fbe-bd2e-01122e42e8dd": 155,
+          "3251d789-0ac6-418a-b3a7-7c10b20e4e12": 2,
+          "32682bd4-45ff-472b-b4fa-eb75d271c1ce": 2,
+          "355ffa2e-36ce-44aa-9772-2f433169100c": 3,
+          "371b386a-d67b-4646-897e-a27cc1101067": 4,
+          "41fc5c40-5e81-496f-9733-6b5681b3b7a5": 31,
+          "421e1495-841c-42a2-be34-d36a26249120": 16,
+          "42b8e94f-796f-4d21-b981-6a1e23e0497d": 369,
+          "4311c009-e258-45b9-9e57-d0b1d04f6157": 6,
+          "4550fd0d-a9c2-43fe-961a-dbe08b7b83cc": 1,
+          "4c6575de-cac0-4bce-a71f-e7f73984717a": 1,
+          "4d749d70-e2e1-11dd-8102-b8a03c50a862": 26,
+          "50c9509d-22c7-4a22-a47d-8c48425ef4a7": 391,
+          "512c11b0-a103-11de-88ae-b8a03c50a862": 16,
+          "5132504b-355b-47e2-8910-fa547184340a": 4,
+          "5381c29f-b090-488a-8693-0038708c904f": 2,
+          "57bc4619-f450-4786-b80f-f656c78e72bb": 1,
+          "5a659248-1f70-11e3-b2c5-00145eb45e9a": 19,
+          "5d1e5f0d-811c-4ab0-bb38-f141cc0174de": 1,
+          "6424b95e-eee2-41fc-9450-bac5d6767525": 1,
+          "64a88778-8de7-4dd0-af39-2d094102cbde": 1,
+          "65908f95-5ab6-48d9-bf6d-6da274ed730e": 4,
+          "68367736-6990-42f3-b0d1-41b0a6db8236": 4,
+          "68f49e46-9480-41dc-a51c-f600bb9a5f60": 142,
+          "6aae6e06-9a2b-4a23-950f-a1cab05641b4": 77,
+          "6ac3f774-d9fb-4796-b3e9-92bf6c81c084": 12,
+          "6ce7290f-47f6-4046-8356-371f5b6749df": 2,
+          "6ed43f52-25d1-4d56-a821-63a8564b81f6": 1,
+          "71d58564-f762-11e1-a439-00145eb45e9a": 16,
+          "7a25f7aa-03fb-4322-aaeb-66719e1a9527": 5,
+          "7d0775ec-119a-43ca-8121-cdb142869169": 31,
+          "7e91c8b2-de7c-4585-a722-12da9f5d031a": 4,
+          "7f6dd0f7-9ed4-49c0-bb71-b2a9c7fed9f1": 1,
+          "7fabfa2e-f762-11e1-a439-00145eb45e9a": 1,
+          "7ff8361e-f762-11e1-a439-00145eb45e9a": 8,
+          "7fffa0a2-f762-11e1-a439-00145eb45e9a": 3,
+          "800ea6f6-f762-11e1-a439-00145eb45e9a": 29,
+          "802f2cdc-f762-11e1-a439-00145eb45e9a": 4,
+          "804a818f-c1e8-4347-a2f2-02a5f22e1a82": 2,
+          "805bbcde-f762-11e1-a439-00145eb45e9a": 75,
+          "807e6f90-f762-11e1-a439-00145eb45e9a": 3,
+          "80d3003c-f762-11e1-a439-00145eb45e9a": 53,
+          "821cc27a-e3bb-4bc5-ac34-89ada245069d": 5,
+          "82d3b0c5-d3f4-46af-b54f-a0bbf1980dd2": 1,
+          "830eb5d0-f762-11e1-a439-00145eb45e9a": 3,
+          "847e2306-f762-11e1-a439-00145eb45e9a": 2,
+          "84ac15e3-985f-4268-ac83-d09cc85a1310": 230,
+          "854f602e-f762-11e1-a439-00145eb45e9a": 2,
+          "87213c27-8362-48ee-af75-d636d44eb2f3": 10,
+          "872173cc-1f44-4903-b7b6-99e0ab484025": 36,
+          "87b8eaf5-a3ee-4144-80a2-cc6eaf71503a": 2,
+          "8cc8f167-d9eb-4b50-905a-34895bb13325": 2,
+          "8eddc200-f535-4c65-9b4d-f723eafe607e": 1,
+          "8ffeca3a-6ef4-43fb-8319-d82fe17dccc7": 1,
+          "91aa3d5b-6f77-4135-a823-cef438a60dfa": 1,
+          "96275bf2-8999-4869-95d5-4903a84391b0": 25,
+          "a4555281-5046-424f-9cd1-e7c103234416": 2,
+          "a4edfc8b-ab0e-4427-aecd-897d2a0b9925": 8,
+          "a5be4674-3ee0-4aab-9ce6-c602a7d71d18": 9,
+          "a6058f47-15ae-412e-b316-912dd6e2ec9b": 148,
+          "a984bfc4-ab1f-4e4e-bc7f-e84314f5328f": 25,
+          "a9ae9ece-e753-4fb9-8595-a37d0f5aa59c": 1,
+          "ade65535-e4b7-47af-8456-f71df55d0f5d": 3,
+          "b15d4952-7d20-46f1-8a3e-556a512b04c5": 52,
+          "b7700738-3e8b-4b9a-a105-3a2109555109": 22,
+          "bb109a7a-6c5a-4cad-a1b9-b750016e9d82": 13,
+          "bbee2ef2-1389-43e6-bde8-ac8e38c6cc6e": 8,
+          "c0d0888f-ca9b-449d-8c50-782ba41e192a": 3,
+          "ca2e422f-be48-42a5-bca5-a37cada435c8": 4,
+          "cb1a521c-29f7-4751-8661-898d16d0caa6": 6,
+          "cf557dff-b9cb-4a23-bf74-a927fef0d7b6": 3,
+          "d0d7ddf4-c5c9-4049-b6a5-9130eadc014a": 3,
+          "d3b6cb30-0a64-4f82-91ea-0bb14637ee17": 4,
+          "d4f0993a-0f72-445e-8d5c-1b685e5268b1": 1,
+          "d8cd16ba-bb74-4420-821e-083f2bac17c2": 2,
+          "dab57200-c600-4f26-b657-cf217443034e": 11,
+          "dba75ea0-cb3e-49f1-b818-0069f507c6e7": 1,
+          "dd08f438-2915-424a-a861-873eaa031b95": 2,
+          "def8c45c-c3c3-48cd-91ad-95cb0c45f575": 23,
+          "e0638e8b-f649-4a4b-a88f-2469a9c08763": 28,
+          "e1f5f6e9-d700-4e47-aa81-339d1be28b74": 5,
+          "e2483380-16f7-11df-b5b3-b8a03c50a862": 24,
+          "e550b7a5-439c-42d6-917a-5990a633347d": 1,
+          "e869945c-5510-477b-a2cc-3698c714125b": 152,
+          "e9ba8fcf-8aac-4c98-a415-a25e9bacd54c": 1,
+          "ec272ca5-5454-4320-8d9d-87c1876f0d52": 125,
+          "ef037b0c-9525-45b3-94a7-4bc2cdbb79df": 1,
+          "f11db245-3f9f-4fc6-a0cc-12b4124d081b": 1,
+          "f3d6d354-239e-4686-a267-8c9516fe2aab": 1,
+          "f553f8f9-b147-4f09-86e5-0d1ce1a91ce0": 1,
+          "f582cb50-5bdf-458b-bd5e-35b871974179": 1,
+          "f6cc0fcc-1605-4bd4-bbea-dd12f697a2ba": 30,
+          "f75482a0-f244-4bd2-aff9-92130e99bbe2": 1,
+          "f7739f2a-9d89-40c2-a262-813832add25d": 2,
+          "f7e9c171-bb78-4934-84f6-93707d0d028e": 6,
+          "f9232cc7-b88c-468d-bb94-b42595c73c42": 5,
+          "f946666e-67dc-4848-9fa8-2162f3559e33": 33,
+          "ffe38a37-d659-4b1a-a935-5a5264e3cc0a": 595
+        },
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5219426&facet=datasetKey&facetLimit=300&facetOffset=0&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+      },
       "match": {
         "response": {
           "classification": [
@@ -7140,6 +8473,52 @@
       }
     },
     "Panthera tigris": {
+      "datasets": {
+        "counts": {
+          "009a76f6-0960-4a56-a116-63991e6bb037": 1,
+          "040c5662-da76-4782-a48e-cdea1892d14c": 57,
+          "04169fce-7d4f-41f7-9dff-245960f5b59e": 1,
+          "06a00852-f764-4fb8-80d4-ca51f0918459": 1,
+          "0daed095-478a-4af6-abf5-18acb790fbb2": 6,
+          "1d04e739-98a9-4e16-9970-8f8f3bf9e9e3": 2,
+          "1da75725-1eb5-4e17-b586-ffad7b783987": 6,
+          "22a66350-7947-4a49-84a3-39c7c1b0881f": 4,
+          "2aa02cf8-c402-412c-9ad1-585e1e185bef": 3,
+          "355ffa2e-36ce-44aa-9772-2f433169100c": 2,
+          "369f3a0a-f72b-403a-acef-aba99bc64b2f": 2,
+          "3732112e-848c-4fcc-b62d-e5acb9d12099": 14,
+          "3c2eb73a-82c8-4373-956f-1cb9473f76ba": 1,
+          "41fc5c40-5e81-496f-9733-6b5681b3b7a5": 11,
+          "44ff990f-945e-4b37-9060-fc7de856b1ea": 2,
+          "4b286126-5658-44ac-b958-cc8fc0f511e1": 8,
+          "50c9509d-22c7-4a22-a47d-8c48425ef4a7": 341,
+          "5a659248-1f70-11e3-b2c5-00145eb45e9a": 12,
+          "65908f95-5ab6-48d9-bf6d-6da274ed730e": 1,
+          "6ac3f774-d9fb-4796-b3e9-92bf6c81c084": 26,
+          "6ce7290f-47f6-4046-8356-371f5b6749df": 4,
+          "78dcfcbd-03c4-4d47-8618-830aac6f2ee5": 2,
+          "7a25f7aa-03fb-4322-aaeb-66719e1a9527": 7,
+          "7f6dd0f7-9ed4-49c0-bb71-b2a9c7fed9f1": 1,
+          "7f9b9e18-e266-4bc0-ac29-37b86c5fc24f": 1,
+          "830eb5d0-f762-11e1-a439-00145eb45e9a": 5,
+          "84b5b072-2832-4c72-ad17-eb90bcb0c5ac": 257,
+          "84e6e5f8-f762-11e1-a439-00145eb45e9a": 1,
+          "8da6980a-7ebb-456c-94eb-5f6086de6570": 4,
+          "b15d4952-7d20-46f1-8a3e-556a512b04c5": 33,
+          "b219d9b5-ab67-46a2-85b6-278cd7e30f93": 3,
+          "bb109a7a-6c5a-4cad-a1b9-b750016e9d82": 1,
+          "c053c6ad-e590-4c69-a141-5fd9c8ebbe3c": 5,
+          "c6b86c40-ff71-4e5e-902c-111f400d0d56": 63,
+          "d3b6cb30-0a64-4f82-91ea-0bb14637ee17": 1,
+          "d8cd16ba-bb74-4420-821e-083f2bac17c2": 37,
+          "dc0167b0-0bec-40cc-bbf7-ec353baa73a7": 3,
+          "f11db245-3f9f-4fc6-a0cc-12b4124d081b": 3,
+          "f6a1c126-1719-4a8f-be6a-299b389ce86a": 2,
+          "ff8a7785-27c8-4162-907e-658e28a09ba1": 2306,
+          "ffe38a37-d659-4b1a-a935-5a5264e3cc0a": 11
+        },
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5219416&facet=datasetKey&facetLimit=300&facetOffset=0&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+      },
       "match": {
         "response": {
           "classification": [
@@ -7320,6 +8699,16 @@
       }
     },
     "Phyllobates terribilis": {
+      "datasets": {
+        "counts": {
+          "040c5662-da76-4782-a48e-cdea1892d14c": 2,
+          "28f1d761-f1fe-4f1f-8a3d-00ff2d9ae127": 287,
+          "5f19459c-0da2-4d2a-8180-87a917410b07": 1,
+          "6ac3f774-d9fb-4796-b3e9-92bf6c81c084": 7,
+          "f1c297ca-528e-4e2a-a014-3664f345258f": 2
+        },
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5218020&facet=datasetKey&facetLimit=300&facetOffset=0&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+      },
       "match": {
         "response": {
           "classification": [
@@ -7420,6 +8809,52 @@
       }
     },
     "Pipa pipa": {
+      "datasets": {
+        "counts": {
+          "040c5662-da76-4782-a48e-cdea1892d14c": 4,
+          "04c79865-fbc8-4771-a540-11a3e9be930b": 1,
+          "09c4287e-e6d5-4552-a07f-bff8a00833d8": 9,
+          "186605f8-4f62-4e3a-be58-c6b3b0bc47be": 2,
+          "1c5c3e48-7fc0-4d4f-96e6-c4df2c747f34": 5,
+          "26098c25-8f7f-4c71-97ac-1d3db181c65e": 1,
+          "2e64dedd-0996-4cd6-b6cd-4f055a46c38c": 1,
+          "4d749d70-e2e1-11dd-8102-b8a03c50a862": 6,
+          "50c9509d-22c7-4a22-a47d-8c48425ef4a7": 34,
+          "5818223b-9b8e-432c-9fca-cb4c43387e6a": 1,
+          "590a3cab-64b0-4648-9293-ada3843153fe": 16,
+          "5d1e5f0d-811c-4ab0-bb38-f141cc0174de": 1,
+          "5f19459c-0da2-4d2a-8180-87a917410b07": 3,
+          "6ed43f52-25d1-4d56-a821-63a8564b81f6": 1,
+          "6f0b28dc-60cf-4378-b0c4-c6c6979ffcbc": 1,
+          "7247dc2e-b862-4555-b533-7701d183271b": 1,
+          "74f92761-3a24-4d85-9bfb-00b1fee0119d": 1,
+          "76dd8f0d-2daa-4a69-9fcd-55e04230334a": 2,
+          "78f98484-a7ef-4e6c-8b51-7464f1209591": 2,
+          "7a25f7aa-03fb-4322-aaeb-66719e1a9527": 2,
+          "7e34ea34-f762-11e1-a439-00145eb45e9a": 7,
+          "821cc27a-e3bb-4bc5-ac34-89ada245069d": 20,
+          "861d3d64-f762-11e1-a439-00145eb45e9a": 3,
+          "8e479b8f-ac16-4bed-a11a-bc7e27c31663": 18,
+          "912e4246-9db3-4c5a-be79-31a721ae5ae1": 39,
+          "91aa3d5b-6f77-4135-a823-cef438a60dfa": 1,
+          "92d4b180-a103-11de-88ae-b8a03c50a862": 2,
+          "948986e9-1f4d-484e-b1e2-35355081033e": 1,
+          "b6d8dc14-1d70-4d50-b6e4-8fc7e8c4d4e3": 1,
+          "bb82a8fc-fc97-4d2a-84e7-fc4595a1ccb6": 2,
+          "c287bcb5-ee4a-456f-86b6-dae0e6fe7958": 2,
+          "cece4fc2-1fec-4bb5-a335-7252548e3f0b": 38,
+          "d3b6cb30-0a64-4f82-91ea-0bb14637ee17": 8,
+          "d4f0993a-0f72-445e-8d5c-1b685e5268b1": 1,
+          "d8cd16ba-bb74-4420-821e-083f2bac17c2": 24,
+          "dce00a1f-f6b4-4e11-9771-92c62c40ad80": 23,
+          "ecfe949a-8443-4f14-8c32-d36074ff21e7": 1,
+          "f553f8f9-b147-4f09-86e5-0d1ce1a91ce0": 1,
+          "f946666e-67dc-4848-9fa8-2162f3559e33": 5,
+          "fccafd83-a934-4021-a112-4ae5fd39c14b": 1,
+          "ffe38a37-d659-4b1a-a935-5a5264e3cc0a": 53
+        },
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2423966&facet=datasetKey&facetLimit=300&facetOffset=0&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+      },
       "match": {
         "response": {
           "classification": [
@@ -7556,6 +8991,26 @@
       }
     },
     "Platysternon megacephalum": {
+      "datasets": {
+        "counts": {
+          "040c5662-da76-4782-a48e-cdea1892d14c": 1,
+          "09c4287e-e6d5-4552-a07f-bff8a00833d8": 3,
+          "50c9509d-22c7-4a22-a47d-8c48425ef4a7": 11,
+          "71d58564-f762-11e1-a439-00145eb45e9a": 1,
+          "777dddfc-9b3a-4a68-a2a2-464275f52197": 1,
+          "7e380070-f762-11e1-a439-00145eb45e9a": 2,
+          "821cc27a-e3bb-4bc5-ac34-89ada245069d": 1,
+          "8e479b8f-ac16-4bed-a11a-bc7e27c31663": 3,
+          "91aa3d5b-6f77-4135-a823-cef438a60dfa": 1,
+          "c287bcb5-ee4a-456f-86b6-dae0e6fe7958": 12,
+          "cece4fc2-1fec-4bb5-a335-7252548e3f0b": 2,
+          "d5fafa95-7de2-48c0-bf10-3480bcca4a2b": 1,
+          "d8cd16ba-bb74-4420-821e-083f2bac17c2": 1,
+          "dce00a1f-f6b4-4e11-9771-92c62c40ad80": 2,
+          "f553f8f9-b147-4f09-86e5-0d1ce1a91ce0": 1
+        },
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2441884&facet=datasetKey&facetLimit=300&facetOffset=0&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+      },
       "match": {
         "response": {
           "classification": [
@@ -7679,6 +9134,19 @@
       }
     },
     "Pongo abelii": {
+      "datasets": {
+        "counts": {
+          "355ffa2e-36ce-44aa-9772-2f433169100c": 3,
+          "44ff990f-945e-4b37-9060-fc7de856b1ea": 1,
+          "50c9509d-22c7-4a22-a47d-8c48425ef4a7": 56,
+          "5a659248-1f70-11e3-b2c5-00145eb45e9a": 1,
+          "6ac3f774-d9fb-4796-b3e9-92bf6c81c084": 4,
+          "821cc27a-e3bb-4bc5-ac34-89ada245069d": 18,
+          "b15d4952-7d20-46f1-8a3e-556a512b04c5": 81,
+          "bb109a7a-6c5a-4cad-a1b9-b750016e9d82": 3
+        },
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5707420&facet=datasetKey&facetLimit=300&facetOffset=0&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+      },
       "match": {
         "response": {
           "classification": [
@@ -7783,6 +9251,49 @@
       }
     },
     "Priodontes maximus": {
+      "datasets": {
+        "counts": {
+          "040c5662-da76-4782-a48e-cdea1892d14c": 2,
+          "0daed095-478a-4af6-abf5-18acb790fbb2": 1,
+          "191cb056-d760-4b06-a7dd-ac247a45f05d": 7,
+          "1d04e739-98a9-4e16-9970-8f8f3bf9e9e3": 1,
+          "2599eef3-f643-48a3-aa03-346ec2df7451": 28,
+          "27ba6d5f-df84-4da4-8520-ae83e0afe7d9": 1,
+          "2bee4a91-9d92-430e-a87e-ab32d3b1ce47": 1,
+          "41fc5c40-5e81-496f-9733-6b5681b3b7a5": 4,
+          "42b8e94f-796f-4d21-b981-6a1e23e0497d": 149,
+          "4d749d70-e2e1-11dd-8102-b8a03c50a862": 8,
+          "50c9509d-22c7-4a22-a47d-8c48425ef4a7": 21,
+          "512c11b0-a103-11de-88ae-b8a03c50a862": 6,
+          "5818223b-9b8e-432c-9fca-cb4c43387e6a": 1,
+          "5a659248-1f70-11e3-b2c5-00145eb45e9a": 1,
+          "5d1e5f0d-811c-4ab0-bb38-f141cc0174de": 3,
+          "64a88778-8de7-4dd0-af39-2d094102cbde": 1,
+          "65908f95-5ab6-48d9-bf6d-6da274ed730e": 9,
+          "68f49e46-9480-41dc-a51c-f600bb9a5f60": 9,
+          "6ed43f52-25d1-4d56-a821-63a8564b81f6": 1,
+          "71d58564-f762-11e1-a439-00145eb45e9a": 2,
+          "7f9161a5-3d90-4d07-9e95-433f0d9e0afe": 2,
+          "821cc27a-e3bb-4bc5-ac34-89ada245069d": 1,
+          "847e2306-f762-11e1-a439-00145eb45e9a": 1,
+          "89f4279a-5e4c-4f5f-ba8c-9eb26b9ed2d1": 1,
+          "91aa3d5b-6f77-4135-a823-cef438a60dfa": 1,
+          "9385df78-d4bc-4a7a-aa62-85abfc05ae6e": 14,
+          "95ed754e-2c50-4a54-bbb2-aca8069eb9a1": 3,
+          "a6058f47-15ae-412e-b316-912dd6e2ec9b": 1,
+          "bb109a7a-6c5a-4cad-a1b9-b750016e9d82": 4,
+          "bf7fdb09-cf1f-4b4c-9d10-79015c4f3083": 2,
+          "cf557dff-b9cb-4a23-bf74-a927fef0d7b6": 32,
+          "d3b6cb30-0a64-4f82-91ea-0bb14637ee17": 3,
+          "d4f0993a-0f72-445e-8d5c-1b685e5268b1": 2,
+          "dc68ef79-97f5-4984-9dc4-c463c7be5870": 1,
+          "e2ddfdc4-c1ce-46f9-8466-3b92865a0d62": 3,
+          "f553f8f9-b147-4f09-86e5-0d1ce1a91ce0": 1,
+          "f946666e-67dc-4848-9fa8-2162f3559e33": 9,
+          "ffe38a37-d659-4b1a-a935-5a5264e3cc0a": 173
+        },
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5220096&facet=datasetKey&facetLimit=300&facetOffset=0&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+      },
       "match": {
         "response": {
           "classification": [
@@ -7915,6 +9426,14 @@
       }
     },
     "Pseudoryx nghetinhensis": {
+      "datasets": {
+        "counts": {
+          "38aee501-3c26-4686-9c32-a0991b651db7": 1,
+          "50c9509d-22c7-4a22-a47d-8c48425ef4a7": 1,
+          "854f602e-f762-11e1-a439-00145eb45e9a": 1
+        },
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=4262655&facet=datasetKey&facetLimit=300&facetOffset=0&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+      },
       "match": {
         "response": {
           "classification": [
@@ -8015,6 +9534,46 @@
       }
     },
     "Pteronura brasiliensis": {
+      "datasets": {
+        "counts": {
+          "0086f7d6-07a1-40b4-a20c-bca803162788": 5,
+          "09ba0f35-f702-4cfb-a66c-b0f80273e4c8": 209,
+          "191cb056-d760-4b06-a7dd-ac247a45f05d": 1,
+          "1ef66bdc-801a-4e64-b83a-66125d1aebab": 1,
+          "2599eef3-f643-48a3-aa03-346ec2df7451": 9,
+          "2bee4a91-9d92-430e-a87e-ab32d3b1ce47": 1,
+          "3251d789-0ac6-418a-b3a7-7c10b20e4e12": 1,
+          "41fc5c40-5e81-496f-9733-6b5681b3b7a5": 13,
+          "42b8e94f-796f-4d21-b981-6a1e23e0497d": 63,
+          "4d749d70-e2e1-11dd-8102-b8a03c50a862": 7,
+          "50c9509d-22c7-4a22-a47d-8c48425ef4a7": 228,
+          "512c11b0-a103-11de-88ae-b8a03c50a862": 3,
+          "5a659248-1f70-11e3-b2c5-00145eb45e9a": 2,
+          "5cdf1efd-4cda-4b34-a03d-18b45eecb783": 1,
+          "6ac3f774-d9fb-4796-b3e9-92bf6c81c084": 22,
+          "6ed43f52-25d1-4d56-a821-63a8564b81f6": 1,
+          "707853f6-cc81-4408-9e5a-8aa2f4f50ebc": 1,
+          "71d58564-f762-11e1-a439-00145eb45e9a": 1,
+          "7ad079e7-f905-444f-a228-01746e3b7c6b": 1,
+          "7f6dd0f7-9ed4-49c0-bb71-b2a9c7fed9f1": 18,
+          "821cc27a-e3bb-4bc5-ac34-89ada245069d": 1,
+          "8cc8f167-d9eb-4b50-905a-34895bb13325": 1,
+          "91aa3d5b-6f77-4135-a823-cef438a60dfa": 1,
+          "ade65535-e4b7-47af-8456-f71df55d0f5d": 7,
+          "b7ec1bf8-819b-11e2-bad2-00145eb45e9a": 14,
+          "b9d6d7ee-16fb-46ed-bb40-f75cfa16e48c": 1,
+          "bb109a7a-6c5a-4cad-a1b9-b750016e9d82": 4,
+          "ca2e422f-be48-42a5-bca5-a37cada435c8": 3,
+          "e2ddfdc4-c1ce-46f9-8466-3b92865a0d62": 1,
+          "e550b7a5-439c-42d6-917a-5990a633347d": 1,
+          "f3d6d354-239e-4686-a267-8c9516fe2aab": 1,
+          "f553f8f9-b147-4f09-86e5-0d1ce1a91ce0": 1,
+          "f7739f2a-9d89-40c2-a262-813832add25d": 1,
+          "f946666e-67dc-4848-9fa8-2162f3559e33": 32,
+          "ffe38a37-d659-4b1a-a935-5a5264e3cc0a": 186
+        },
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2433681&facet=datasetKey&facetLimit=300&facetOffset=0&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+      },
       "match": {
         "response": {
           "classification": [
@@ -8151,6 +9710,13 @@
       }
     },
     "Pteropus livingstonii": {
+      "datasets": {
+        "counts": {
+          "50c9509d-22c7-4a22-a47d-8c48425ef4a7": 1,
+          "d8cd16ba-bb74-4420-821e-083f2bac17c2": 109
+        },
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5218694&facet=datasetKey&facetLimit=300&facetOffset=0&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+      },
       "match": {
         "response": {
           "classification": [
@@ -8243,6 +9809,12 @@
       }
     },
     "Rafetus swinhoei": {
+      "datasets": {
+        "counts": {
+          "50c9509d-22c7-4a22-a47d-8c48425ef4a7": 1
+        },
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2442647&facet=datasetKey&facetLimit=300&facetOffset=0&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+      },
       "match": {
         "response": {
           "classification": [
@@ -8330,6 +9902,18 @@
       }
     },
     "Rhacophorus nigropalmatus": {
+      "datasets": {
+        "counts": {
+          "040c5662-da76-4782-a48e-cdea1892d14c": 1,
+          "26098c25-8f7f-4c71-97ac-1d3db181c65e": 3,
+          "50c9509d-22c7-4a22-a47d-8c48425ef4a7": 42,
+          "821cc27a-e3bb-4bc5-ac34-89ada245069d": 1,
+          "a9a26231-2150-4d5a-bbfc-82d39eba9c60": 1,
+          "d8cd16ba-bb74-4420-821e-083f2bac17c2": 1,
+          "e2062334-2f77-4f18-bba7-7108c0b3d54d": 2
+        },
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5217285&facet=datasetKey&facetLimit=300&facetOffset=0&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+      },
       "match": {
         "response": {
           "classification": [
@@ -8442,6 +10026,14 @@
       }
     },
     "Rhinoceros sondaicus": {
+      "datasets": {
+        "counts": {
+          "50c9509d-22c7-4a22-a47d-8c48425ef4a7": 1,
+          "84b5b072-2832-4c72-ad17-eb90bcb0c5ac": 9,
+          "d8cd16ba-bb74-4420-821e-083f2bac17c2": 2
+        },
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5220112&facet=datasetKey&facetLimit=300&facetOffset=0&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+      },
       "match": {
         "response": {
           "classification": [
@@ -8542,6 +10134,26 @@
       }
     },
     "Rhinoderma darwinii": {
+      "datasets": {
+        "counts": {
+          "0409a304-cc5d-4af6-b509-5b6667905117": 41,
+          "09c4287e-e6d5-4552-a07f-bff8a00833d8": 7,
+          "1c5c3e48-7fc0-4d4f-96e6-c4df2c747f34": 4,
+          "50c9509d-22c7-4a22-a47d-8c48425ef4a7": 12,
+          "78f98484-a7ef-4e6c-8b51-7464f1209591": 1,
+          "7e380070-f762-11e1-a439-00145eb45e9a": 2,
+          "821cc27a-e3bb-4bc5-ac34-89ada245069d": 8,
+          "861d3d64-f762-11e1-a439-00145eb45e9a": 3,
+          "8e479b8f-ac16-4bed-a11a-bc7e27c31663": 8,
+          "92d4b180-a103-11de-88ae-b8a03c50a862": 28,
+          "cece4fc2-1fec-4bb5-a335-7252548e3f0b": 15,
+          "d8cd16ba-bb74-4420-821e-083f2bac17c2": 1,
+          "dc9294e3-3d6d-4a96-baa6-5225140c183b": 1,
+          "dce00a1f-f6b4-4e11-9771-92c62c40ad80": 1,
+          "e2483380-16f7-11df-b5b3-b8a03c50a862": 5
+        },
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5217388&facet=datasetKey&facetLimit=300&facetOffset=0&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+      },
       "match": {
         "response": {
           "classification": [
@@ -8642,6 +10254,18 @@
       }
     },
     "Rhinopithecus roxellana": {
+      "datasets": {
+        "counts": {
+          "0df816bd-0cef-463a-94c2-b03e13ea7128": 1,
+          "41fc5c40-5e81-496f-9733-6b5681b3b7a5": 11,
+          "50c9509d-22c7-4a22-a47d-8c48425ef4a7": 6,
+          "84b5b072-2832-4c72-ad17-eb90bcb0c5ac": 1,
+          "908f4357-4e0b-40f8-8fb2-9e04c0b37137": 2,
+          "bb109a7a-6c5a-4cad-a1b9-b750016e9d82": 2,
+          "d8cd16ba-bb74-4420-821e-083f2bac17c2": 5
+        },
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=7262005&facet=datasetKey&facetLimit=300&facetOffset=0&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+      },
       "match": {
         "response": {
           "classification": [
@@ -8738,6 +10362,23 @@
       }
     },
     "Rhynchocyon chrysopygus": {
+      "datasets": {
+        "counts": {
+          "0e1cf30b-0231-4f46-83c3-45fcc57f2515": 3,
+          "16ac65ab-57e4-4441-8057-431ca60e4205": 1583,
+          "1d04e739-98a9-4e16-9970-8f8f3bf9e9e3": 1,
+          "50c9509d-22c7-4a22-a47d-8c48425ef4a7": 11,
+          "6ac3f774-d9fb-4796-b3e9-92bf6c81c084": 2,
+          "6ce7290f-47f6-4046-8356-371f5b6749df": 4,
+          "7a25f7aa-03fb-4322-aaeb-66719e1a9527": 2,
+          "821cc27a-e3bb-4bc5-ac34-89ada245069d": 2,
+          "854f602e-f762-11e1-a439-00145eb45e9a": 8,
+          "999d8fed-d06d-48d8-87ee-cc36e6c8456c": 6,
+          "bb109a7a-6c5a-4cad-a1b9-b750016e9d82": 1,
+          "ea9f5b0b-ad97-45ea-935a-ba2784c80cbb": 1
+        },
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5220103&facet=datasetKey&facetLimit=300&facetOffset=0&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+      },
       "match": {
         "response": {
           "classification": [
@@ -8834,6 +10475,39 @@
       }
     },
     "Sarcophilus harrisii": {
+      "datasets": {
+        "counts": {
+          "040c5662-da76-4782-a48e-cdea1892d14c": 1,
+          "04169fce-7d4f-41f7-9dff-245960f5b59e": 1,
+          "0645ccdb-e001-4ab0-9729-51f1755e007e": 2,
+          "0daed095-478a-4af6-abf5-18acb790fbb2": 38,
+          "0debafd0-6c8a-11de-8225-b8a03c50a862": 14,
+          "1da75725-1eb5-4e17-b586-ffad7b783987": 1,
+          "2985efd1-45b1-46de-b6db-0465d2834a5a": 24824,
+          "37beb6ea-e591-41e3-b781-e384250dc42c": 3,
+          "39905320-6c8a-11de-8226-b8a03c50a862": 53,
+          "41fc5c40-5e81-496f-9733-6b5681b3b7a5": 15,
+          "4ffe66a0-6c8b-11de-8226-b8a03c50a862": 9855,
+          "50c9509d-22c7-4a22-a47d-8c48425ef4a7": 72,
+          "5a659248-1f70-11e3-b2c5-00145eb45e9a": 2,
+          "609217ee-054d-441d-a850-356cbc2fb385": 3,
+          "6ce7290f-47f6-4046-8356-371f5b6749df": 1,
+          "7447a228-a4cf-414b-87e4-3aba15275580": 1,
+          "793c3890-6c8a-11de-8226-b8a03c50a862": 5,
+          "7a25f7aa-03fb-4322-aaeb-66719e1a9527": 2,
+          "7c93d290-6c8b-11de-8226-b8a03c50a862": 2,
+          "7ebef267-9d72-4c21-a276-cc84281a8590": 1,
+          "7f6dd0f7-9ed4-49c0-bb71-b2a9c7fed9f1": 2,
+          "84a649ce-ff81-420d-9c41-aa1de59e3766": 10,
+          "854f602e-f762-11e1-a439-00145eb45e9a": 1,
+          "a79c2b50-6c8a-11de-8226-b8a03c50a862": 7,
+          "b15d4952-7d20-46f1-8a3e-556a512b04c5": 31,
+          "bb109a7a-6c5a-4cad-a1b9-b750016e9d82": 2,
+          "dce8feb0-6c89-11de-8225-b8a03c50a862": 41,
+          "fa375330-6c8a-11de-8226-b8a03c50a862": 19
+        },
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2435451&facet=datasetKey&facetLimit=300&facetOffset=0&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+      },
       "match": {
         "response": {
           "classification": [
@@ -8934,6 +10608,24 @@
       }
     },
     "Smutsia gigantea": {
+      "datasets": {
+        "counts": {
+          "0496122f-8430-488b-bf78-64debf9cc2e4": 1,
+          "1d04e739-98a9-4e16-9970-8f8f3bf9e9e3": 1,
+          "3b4d96d3-a468-4ed2-86a4-25011f510356": 5,
+          "3df1e027-bae7-4ac8-9ce0-24aeb10036ad": 1,
+          "41fc5c40-5e81-496f-9733-6b5681b3b7a5": 1,
+          "4d749d70-e2e1-11dd-8102-b8a03c50a862": 1,
+          "5a659248-1f70-11e3-b2c5-00145eb45e9a": 3,
+          "821cc27a-e3bb-4bc5-ac34-89ada245069d": 1,
+          "8e912d78-6259-44e3-8f58-debb3081a15f": 11,
+          "96ca66b4-f762-11e1-a439-00145eb45e9a": 1,
+          "a01e0862-fbb2-4b63-b05a-dfee0be9ccbe": 1,
+          "bb109a7a-6c5a-4cad-a1b9-b750016e9d82": 1,
+          "fba36b75-451a-40e3-af18-297f151bcc91": 1
+        },
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5219631&facet=datasetKey&facetLimit=300&facetOffset=0&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+      },
       "match": {
         "response": {
           "acceptedUsage": {
@@ -9074,6 +10766,18 @@
       }
     },
     "Smutsia temminckii": {
+      "datasets": {
+        "counts": {
+          "026af01f-d227-476f-9e81-d5273eca6a2b": 4,
+          "040c5662-da76-4782-a48e-cdea1892d14c": 5,
+          "355ffa2e-36ce-44aa-9772-2f433169100c": 2,
+          "41fc5c40-5e81-496f-9733-6b5681b3b7a5": 3,
+          "50c9509d-22c7-4a22-a47d-8c48425ef4a7": 17,
+          "5a659248-1f70-11e3-b2c5-00145eb45e9a": 4,
+          "a01e0862-fbb2-4b63-b05a-dfee0be9ccbe": 2
+        },
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5219630&facet=datasetKey&facetLimit=300&facetOffset=0&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+      },
       "match": {
         "response": {
           "acceptedUsage": {
@@ -9230,6 +10934,20 @@
       }
     },
     "Solenodon paradoxus": {
+      "datasets": {
+        "counts": {
+          "040c5662-da76-4782-a48e-cdea1892d14c": 6,
+          "1d04e739-98a9-4e16-9970-8f8f3bf9e9e3": 1,
+          "355ffa2e-36ce-44aa-9772-2f433169100c": 14,
+          "41fc5c40-5e81-496f-9733-6b5681b3b7a5": 2,
+          "50c9509d-22c7-4a22-a47d-8c48425ef4a7": 3,
+          "8eddc200-f535-4c65-9b4d-f723eafe607e": 2,
+          "96275bf2-8999-4869-95d5-4903a84391b0": 1,
+          "b6015b60-6f96-43a9-88e5-2f41854e8f07": 1,
+          "bb109a7a-6c5a-4cad-a1b9-b750016e9d82": 4
+        },
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=5219470&facet=datasetKey&facetLimit=300&facetOffset=0&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+      },
       "match": {
         "response": {
           "classification": [
@@ -9330,6 +11048,52 @@
       }
     },
     "Tapirus bairdii": {
+      "datasets": {
+        "counts": {
+          "08a10339-b5e6-447b-896f-aa0de57c454e": 1979,
+          "09d2da7b-4699-4e45-b0da-73c982660c98": 8,
+          "0daed095-478a-4af6-abf5-18acb790fbb2": 2,
+          "1d04e739-98a9-4e16-9970-8f8f3bf9e9e3": 6,
+          "22a66350-7947-4a49-84a3-39c7c1b0881f": 3,
+          "2dad0cd2-e880-4ec3-90e5-d3f479528cbd": 7,
+          "371b386a-d67b-4646-897e-a27cc1101067": 1,
+          "41fc5c40-5e81-496f-9733-6b5681b3b7a5": 8,
+          "4d749d70-e2e1-11dd-8102-b8a03c50a862": 2,
+          "50c9509d-22c7-4a22-a47d-8c48425ef4a7": 273,
+          "57bc4619-f450-4786-b80f-f656c78e72bb": 1,
+          "5a659248-1f70-11e3-b2c5-00145eb45e9a": 1,
+          "5dbf40d0-0d2d-46af-a205-c83ff2e74098": 1,
+          "6ac3f774-d9fb-4796-b3e9-92bf6c81c084": 10,
+          "6ce7290f-47f6-4046-8356-371f5b6749df": 2,
+          "800ea6f6-f762-11e1-a439-00145eb45e9a": 16,
+          "802f2cdc-f762-11e1-a439-00145eb45e9a": 2,
+          "804a818f-c1e8-4347-a2f2-02a5f22e1a82": 2,
+          "805bbcde-f762-11e1-a439-00145eb45e9a": 48,
+          "807e6f90-f762-11e1-a439-00145eb45e9a": 3,
+          "80d3003c-f762-11e1-a439-00145eb45e9a": 33,
+          "835ff8be-ea5c-45e4-b3f3-126852ac56fe": 2,
+          "847e2306-f762-11e1-a439-00145eb45e9a": 5,
+          "854f602e-f762-11e1-a439-00145eb45e9a": 13,
+          "87213c27-8362-48ee-af75-d636d44eb2f3": 1,
+          "96275bf2-8999-4869-95d5-4903a84391b0": 1,
+          "a5be4674-3ee0-4aab-9ce6-c602a7d71d18": 3,
+          "a9147b92-3932-4514-bacd-1cfdafb36699": 1,
+          "b6015b60-6f96-43a9-88e5-2f41854e8f07": 2,
+          "bb109a7a-6c5a-4cad-a1b9-b750016e9d82": 3,
+          "bbee2ef2-1389-43e6-bde8-ac8e38c6cc6e": 2,
+          "c0d0888f-ca9b-449d-8c50-782ba41e192a": 1,
+          "cb1a521c-29f7-4751-8661-898d16d0caa6": 4,
+          "d0d7ddf4-c5c9-4049-b6a5-9130eadc014a": 2,
+          "e0638e8b-f649-4a4b-a88f-2469a9c08763": 4,
+          "ef037b0c-9525-45b3-94a7-4bc2cdbb79df": 2,
+          "f11db245-3f9f-4fc6-a0cc-12b4124d081b": 1,
+          "f6cc0fcc-1605-4bd4-bbea-dd12f697a2ba": 2,
+          "f86a681d-7db8-483b-819a-248def18b70a": 1,
+          "f9232cc7-b88c-468d-bb94-b42595c73c42": 570,
+          "faeb7430-9940-4131-8982-9986bc4a0952": 79
+        },
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=8395500&facet=datasetKey&facetLimit=300&facetOffset=0&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+      },
       "match": {
         "response": {
           "acceptedUsage": {
@@ -9466,6 +11230,78 @@
       }
     },
     "Tapirus terrestris": {
+      "datasets": {
+        "counts": {
+          "0086f7d6-07a1-40b4-a20c-bca803162788": 5,
+          "05d2d309-cebb-46eb-8863-0df342c006cd": 769,
+          "07dd136a-13f2-4814-aa0e-f4cf2b0c73f5": 67,
+          "0b33986b-9b62-451e-ba7a-9c2e777e5580": 1,
+          "0daed095-478a-4af6-abf5-18acb790fbb2": 6,
+          "13cc33ab-c1b2-491f-b4e1-6d07b59be814": 186,
+          "191cb056-d760-4b06-a7dd-ac247a45f05d": 139,
+          "1da75725-1eb5-4e17-b586-ffad7b783987": 1,
+          "1ef66bdc-801a-4e64-b83a-66125d1aebab": 2,
+          "22a66350-7947-4a49-84a3-39c7c1b0881f": 2,
+          "24a988ee-bcb2-4ea3-99a3-a8994d6e8014": 30,
+          "2599eef3-f643-48a3-aa03-346ec2df7451": 33,
+          "2aa02cf8-c402-412c-9ad1-585e1e185bef": 1,
+          "2bee4a91-9d92-430e-a87e-ab32d3b1ce47": 9,
+          "3251d789-0ac6-418a-b3a7-7c10b20e4e12": 1,
+          "371b386a-d67b-4646-897e-a27cc1101067": 6,
+          "41fc5c40-5e81-496f-9733-6b5681b3b7a5": 32,
+          "42b8e94f-796f-4d21-b981-6a1e23e0497d": 942,
+          "44ff990f-945e-4b37-9060-fc7de856b1ea": 1,
+          "491579b6-6430-4c8f-a6e6-9475df170ce8": 4,
+          "4c6575de-cac0-4bce-a71f-e7f73984717a": 2,
+          "4d749d70-e2e1-11dd-8102-b8a03c50a862": 26,
+          "4f3b1624-c42b-4877-8668-a345080fc71b": 2,
+          "50c9509d-22c7-4a22-a47d-8c48425ef4a7": 357,
+          "512c11b0-a103-11de-88ae-b8a03c50a862": 12,
+          "5818223b-9b8e-432c-9fca-cb4c43387e6a": 4,
+          "5889bb53-efcf-42a6-81ba-624d127a76c2": 5,
+          "5a659248-1f70-11e3-b2c5-00145eb45e9a": 8,
+          "5d1e5f0d-811c-4ab0-bb38-f141cc0174de": 16,
+          "6424b95e-eee2-41fc-9450-bac5d6767525": 1,
+          "65908f95-5ab6-48d9-bf6d-6da274ed730e": 25,
+          "68f49e46-9480-41dc-a51c-f600bb9a5f60": 39,
+          "6ac3f774-d9fb-4796-b3e9-92bf6c81c084": 20,
+          "6ce7290f-47f6-4046-8356-371f5b6749df": 3,
+          "6ed43f52-25d1-4d56-a821-63a8564b81f6": 1,
+          "71d58564-f762-11e1-a439-00145eb45e9a": 1,
+          "7f6dd0f7-9ed4-49c0-bb71-b2a9c7fed9f1": 2,
+          "821cc27a-e3bb-4bc5-ac34-89ada245069d": 22,
+          "830eb5d0-f762-11e1-a439-00145eb45e9a": 2,
+          "847e2306-f762-11e1-a439-00145eb45e9a": 1,
+          "89f4279a-5e4c-4f5f-ba8c-9eb26b9ed2d1": 2,
+          "8cc8f167-d9eb-4b50-905a-34895bb13325": 1,
+          "91aa3d5b-6f77-4135-a823-cef438a60dfa": 1,
+          "9385df78-d4bc-4a7a-aa62-85abfc05ae6e": 39,
+          "95ed754e-2c50-4a54-bbb2-aca8069eb9a1": 14,
+          "a4166558-6a9b-4de0-9771-d74c26633d84": 4,
+          "a6058f47-15ae-412e-b316-912dd6e2ec9b": 1445,
+          "b47ed41a-b9a4-4108-bdb3-5a61afdf1756": 1198,
+          "bb109a7a-6c5a-4cad-a1b9-b750016e9d82": 5,
+          "bb4b12a6-bb3e-4408-90b3-39ee19aa4c94": 2,
+          "bf7fdb09-cf1f-4b4c-9d10-79015c4f3083": 11,
+          "c168a6f7-8ba4-4c0c-8e5d-73227660d329": 37,
+          "cf557dff-b9cb-4a23-bf74-a927fef0d7b6": 78,
+          "cfdf21e1-935d-464d-895e-424264486402": 14,
+          "d0d5ef85-71b2-4da6-b6f6-c1c3d60987d3": 1,
+          "d3b6cb30-0a64-4f82-91ea-0bb14637ee17": 280,
+          "dc68ef79-97f5-4984-9dc4-c463c7be5870": 2,
+          "e2483380-16f7-11df-b5b3-b8a03c50a862": 1436,
+          "e2ddfdc4-c1ce-46f9-8466-3b92865a0d62": 24,
+          "e42bf2ce-364f-444c-ba0e-c5947cc5f4b3": 1,
+          "e5e93769-81c3-43b3-bfb5-0ecdc3ac693d": 153,
+          "f11db245-3f9f-4fc6-a0cc-12b4124d081b": 5,
+          "f3d6d354-239e-4686-a267-8c9516fe2aab": 1,
+          "f553f8f9-b147-4f09-86e5-0d1ce1a91ce0": 1,
+          "f7739f2a-9d89-40c2-a262-813832add25d": 28,
+          "f946666e-67dc-4848-9fa8-2162f3559e33": 14,
+          "ffe38a37-d659-4b1a-a935-5a5264e3cc0a": 2076
+        },
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2440898&facet=datasetKey&facetLimit=300&facetOffset=0&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+      },
       "match": {
         "response": {
           "classification": [
@@ -9606,6 +11442,57 @@
       }
     },
     "Tremarctos ornatus": {
+      "datasets": {
+        "counts": {
+          "040c5662-da76-4782-a48e-cdea1892d14c": 2,
+          "0daed095-478a-4af6-abf5-18acb790fbb2": 3,
+          "0e4d4d33-aee9-46e1-806d-9219e9d26b00": 2,
+          "14060458-0ad8-4f09-965f-a402d81dc9cd": 4,
+          "1651b49c-9c81-4dbc-9f3c-236f89e338aa": 1,
+          "171b1846-aa80-494f-a666-e59bf357e30d": 985,
+          "2253be9d-7fa1-4681-b6d6-63d66f90f95e": 2,
+          "22a66350-7947-4a49-84a3-39c7c1b0881f": 1,
+          "2599eef3-f643-48a3-aa03-346ec2df7451": 8,
+          "2aa02cf8-c402-412c-9ad1-585e1e185bef": 1,
+          "371b386a-d67b-4646-897e-a27cc1101067": 7,
+          "41fc5c40-5e81-496f-9733-6b5681b3b7a5": 11,
+          "4311c009-e258-45b9-9e57-d0b1d04f6157": 478,
+          "4d749d70-e2e1-11dd-8102-b8a03c50a862": 6,
+          "50c9509d-22c7-4a22-a47d-8c48425ef4a7": 64,
+          "517a8673-1d7a-4017-a5ea-f62e3c210d7f": 23,
+          "5355d3bf-9225-455b-9a54-5b2524b15287": 2,
+          "5a659248-1f70-11e3-b2c5-00145eb45e9a": 3,
+          "5e646863-fb2c-4ae5-8f46-47b28d507389": 2,
+          "61843ae6-3cb0-44e4-bc5e-94d0c3493fdf": 1,
+          "68f49e46-9480-41dc-a51c-f600bb9a5f60": 32,
+          "6ac3f774-d9fb-4796-b3e9-92bf6c81c084": 3,
+          "71d58564-f762-11e1-a439-00145eb45e9a": 3,
+          "74460a3a-4da8-440a-8f64-69f964623f52": 1,
+          "7a25f7aa-03fb-4322-aaeb-66719e1a9527": 1,
+          "7b4322d2-4415-4273-86ef-1b8317db089b": 1,
+          "811f7d86-f762-11e1-a439-00145eb45e9a": 1,
+          "821cc27a-e3bb-4bc5-ac34-89ada245069d": 1,
+          "847e2306-f762-11e1-a439-00145eb45e9a": 2,
+          "9ea3418b-790c-4932-acd1-90656498cae5": 1,
+          "9ffd7d8d-6c6a-4231-8150-1280dd10c674": 41,
+          "a5e4ff13-03cf-4c2d-804a-269a119ecf2b": 1,
+          "ab555988-8f25-416c-896a-136e1aae03bf": 10,
+          "aeae59af-613f-444a-ae46-5a6de1374ed8": 1,
+          "b15d4952-7d20-46f1-8a3e-556a512b04c5": 2,
+          "bf1673bb-d5af-4140-977f-245729b156f3": 1,
+          "cb16fc5b-70b7-420c-ad10-e3c6b7baf184": 660,
+          "d0936ec6-011b-4489-b531-660c3682f688": 27,
+          "d34866e1-86fd-439f-ac96-df71d2d29be9": 5,
+          "dc68ef79-97f5-4984-9dc4-c463c7be5870": 2,
+          "deb97a37-48cc-4b5d-83fe-4f7384769c5e": 1,
+          "def8c45c-c3c3-48cd-91ad-95cb0c45f575": 69,
+          "e38f8551-a3f4-4a0e-be60-b1fbf08c07c3": 1,
+          "e8686ae1-3421-4f61-b9c4-955c07bc2e0d": 1,
+          "ee0cf104-84bc-4f32-8e3e-a349537766db": 5,
+          "f39a612a-7817-4c3c-a1d9-a88bf098ea8d": 531
+        },
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2433401&facet=datasetKey&facetLimit=300&facetOffset=0&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+      },
       "match": {
         "response": {
           "classification": [
@@ -9734,6 +11621,24 @@
       }
     },
     "Trichobatrachus robustus": {
+      "datasets": {
+        "counts": {
+          "09c4287e-e6d5-4552-a07f-bff8a00833d8": 4,
+          "1c5c3e48-7fc0-4d4f-96e6-c4df2c747f34": 2,
+          "26098c25-8f7f-4c71-97ac-1d3db181c65e": 3,
+          "50c9509d-22c7-4a22-a47d-8c48425ef4a7": 3,
+          "6fe8b005-3a3d-481d-b90e-dcc44f4902b0": 1,
+          "7e380070-f762-11e1-a439-00145eb45e9a": 2,
+          "821cc27a-e3bb-4bc5-ac34-89ada245069d": 19,
+          "85e8c69c-f762-11e1-a439-00145eb45e9a": 1,
+          "861d3d64-f762-11e1-a439-00145eb45e9a": 37,
+          "8e479b8f-ac16-4bed-a11a-bc7e27c31663": 4,
+          "be37983f-6c78-4a85-a4b6-ef724bbdcf16": 3,
+          "cece4fc2-1fec-4bb5-a335-7252548e3f0b": 20,
+          "d5fafa95-7de2-48c0-bf10-3480bcca4a2b": 3
+        },
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2429660&facet=datasetKey&facetLimit=300&facetOffset=0&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+      },
       "match": {
         "response": {
           "classification": [
@@ -9858,6 +11763,13 @@
       }
     },
     "Zaglossus bartoni": {
+      "datasets": {
+        "counts": {
+          "26098c25-8f7f-4c71-97ac-1d3db181c65e": 3,
+          "821cc27a-e3bb-4bc5-ac34-89ada245069d": 5
+        },
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2433385&facet=datasetKey&facetLimit=300&facetOffset=0&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+      },
       "match": {
         "response": {
           "classification": [
@@ -9950,6 +11862,15 @@
       }
     },
     "Zaglossus bruijnii": {
+      "datasets": {
+        "counts": {
+          "355ffa2e-36ce-44aa-9772-2f433169100c": 2,
+          "50c9509d-22c7-4a22-a47d-8c48425ef4a7": 2,
+          "5a659248-1f70-11e3-b2c5-00145eb45e9a": 2,
+          "854f602e-f762-11e1-a439-00145eb45e9a": 1
+        },
+        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2433391&facet=datasetKey&facetLimit=300&facetOffset=0&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
+      },
       "match": {
         "response": {
           "classification": [
