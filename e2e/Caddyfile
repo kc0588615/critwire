@@ -1,0 +1,41 @@
+# E2E server (plan §9): :3100 is a copy of the live critwire.com block (ops Caddyfile), :3101 a second origin.
+# Admin off, so it can't touch the production Caddy. serving.spec.ts checks the copy for drift (root and log differ).
+{
+	admin off
+	auto_https off
+	persist_config off
+	default_bind 127.0.0.1
+}
+
+http://127.0.0.1:3100 {
+	root * {$CRITWIRE_DIST}
+	log {
+		output file {$E2E_ARTIFACTS}/caddy-access.log
+		format json
+	}
+	encode zstd gzip
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		-Server
+	}
+	@v1 path /v1/*
+	header @v1 {
+		Access-Control-Allow-Origin *
+		Access-Control-Allow-Methods "GET, HEAD, OPTIONS"
+		Access-Control-Allow-Headers Range
+		Access-Control-Expose-Headers "Content-Range, Content-Length, Accept-Ranges"
+	}
+	@preflight {
+		method OPTIONS
+		path /v1/*
+	}
+	respond @preflight 204
+	file_server
+}
+
+http://127.0.0.1:3101 {
+	root * {$CRITWIRE_FIXTURES}
+	file_server
+}

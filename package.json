@@ -15,9 +15,11 @@
     "ingest": "tsx scripts/ingest.ts",
     "derive": "tsx scripts/derive.ts",
     "gbif:register": "tsx scripts/gbif-register.ts",
+    "e2e": "playwright test",
     "test": "tsx --test scripts/derive/*.test.ts scripts/gbif/*.test.ts"
   },
   "devDependencies": {
+    "@playwright/test": "1.58.2",
     "@types/node": "^26.6.5",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2"

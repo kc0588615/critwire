@@ -904,7 +904,7 @@ Planner, 2026-10-21. Conventions:
     - V5's determinism lines;
     - F1, F2 and F3 (V7);
     - F4: V8, with `rsync -a --exclude node_modules --exclude dist --exclude .env --exclude .git $W/ "$O/cw/"` in place of the GitHub clone. Its hash list equals the worktree build's, and `test ! -e "$O/home/.duckdb"`.
-- [ ] S8 · E2E harness: Playwright and a local Caddy, with the `files`, `serving` and `duckdb` (HTTP) specs (§9; A10).
+- [x] S8 · E2E harness: Playwright and a local Caddy, with the `files`, `serving` and `duckdb` (HTTP) specs (§9; A10).
   - `pnpm add -DE @playwright/test@1.58.2`, plus the `e2e` script (`playwright test`) and the lockfile.
   - `playwright.config.ts`:
     - `workers: 1`, headless Chromium, `trace: 'on'`, `screenshot: 'on'`;
@@ -930,7 +930,7 @@ Planner, 2026-10-21. Conventions:
     - green;
     - `pnpm build && E2E_ARTIFACTS=$L/e2e pnpm e2e` passes, along with V9's `results.json`, report and trace lines (`docs-375.png` comes in S10). The access log holds an OPTIONS 204 with `Origin: http://127.0.0.1:3101` and a `species.parquet` 206;
     - F8;
-    - after: `pgrep -f e2e/Caddyfile` finds nothing, and `curl -s -o /dev/null -w '%{http_code}' https://critwire.com/` still gives 200 (production untouched).
+    - after: `pgrep -f '^caddy run --config e2e/Caddyfile'` finds nothing (anchored: an unanchored pattern matches the calling shell), and `curl -s -o /dev/null -w '%{http_code}' https://critwire.com/` still gives 200 (production untouched).
 - [ ] S9 · `attribution.json` and the source registry (§7; A9).
   - E2E first, run red: `e2e/attribution.spec.ts` (§9), and add `attribution.json` to the `files` spec's file list.
   - Save the requested citations in `$L/citations/`:
@@ -1128,7 +1128,7 @@ E2E_ARTIFACTS="$E" pnpm e2e
 jq -e '.stats.expected > 0 and .stats.unexpected == 0 and .stats.flaky == 0 and .stats.skipped == 0' "$E/results.json"   # 0 skipped on this VPS
 test -s "$E/playwright-report/index.html"; test -s "$E/docs-375.png"; test -s "$E/caddy-access.log"
 test "$(find "$E/test-results" -name trace.zip | wc -l)" -ge 1
-pgrep -f 'e2e/Caddyfile' && fail "E2E Caddy still running"
+pgrep -f '^caddy run --config e2e/Caddyfile' && fail "E2E Caddy still running"
 
 # V10 no secret in git or artifacts; delivery
 test "$(git log -p origin/main..HEAD | grep -cF -- "$PW")" = 0
@@ -1254,5 +1254,6 @@ test "$(cat "$X/duckdb.txt")" = "$(jq length data/species.json)"
 - 2026-10-21 06:23 UTC: S5 done: `scripts/gbif-register.ts` (preconditions 1–4, `withLock`, authed user listing paged to `endOfRecords` (limit 1000, GBIF's max; row count = `count`), `decide`, `checkDeposit` (sourceUrl regex, `ls-remote` tag incl. peeled `^{}`, unauthenticated raw file re-hashed), `createIntent`, single POST (own `fetch`, 60 s, no retry, one log line), `classifyPost`, read-back (record + usages paged; `readBackErrors` hard/warnings, then deposit), `registration.json` canonical, then intent deleted); `pnpm gbif:register`. `http.ts` now exports `USER_AGENT`, `logRequest`, `fetchFailure` (shared with the POST; getJson output unchanged). Green (typecheck, 66/66, build). Code pushed at 4f135dd, then live: F5a dirty → names `?? zz-dirty`, no network line; F5b throwaway copy (no `.env`/`.git`) → names `GBIF_PASSWORD` + H1, no network line; F5c clean+pushed → 1 authed listing GET 200 (empty), then `git tag gbif-dd-b58ac1e3105b 4f135dd… && git push origin gbif-dd-b58ac1e3105b`; F5d lock pid 999999 → names pid + path, lock kept, then deleted. No `, POST, ` or password in `$L/register-F5*.log`; state dir empty; tree clean.
 - 2026-10-21 06:23 UTC: S6 done: preflight green (typecheck, 66/66, build; derive clean, `DOI missing`, tag `gbif-dd-b58ac1e3105b`; HEAD = origin; no intent/lock). Tag pushed at e883106. `pnpm gbif:register` once: listing empty, deposit ok, one POST 201, read-back ok → DOI `10.15468/dd.ky9cyt` (`$L/register.log`). Derive: `DOI current`; only `doi` added on the 72 `GBIF.org occurrence search` entries (jq diff empty after removing it); mismatches + contributions unchanged; derive twice stable; green. Verify re-run: exit 0, no POST, tree clean, state dir empty. Public reads in `$L/gbif-dd/`: record (createdBy dinobytes215, sourceUrl as sent), 454 datasets summing 396,627; doi.org already 302 → gbif.org.
 - 2026-10-21 06:25 UTC: S7 done: `@duckdb/node-api` 1.5.6-r.2 exact (pnpm 11 auto-added its 10 packages to `minimumReleaseAgeExclude` in `pnpm-workspace.yaml`; `allowBuilds` unchanged). `build/columns.ts` (`RECORD_COLUMNS` → `readJsonColumns`, `csvSelect`, `assertRecordKeys`; identifiers always quoted, no keyword list), `build/inputs.ts` (`readBuildInputs`: deriveAll + assertDerivedFiles, keys, digit slugs, photo fields, DOI gate), `build/tables.ts` (`writeTables`, autoload/autoinstall off, threads 1), `build.ts` (args, loadEnv, inputs, `loadDatabase`, dist, file sizes). Green (typecheck, 66/66, strict build). dist: 156 files (index.html placeholder, species.json byte copy, parquet 32,127 B, csv 30,906 B, 152 per-record files, {id}={slug}), no ranges.parquet. `$L/smoke/read.mts`: Parquet rows = records, statuses 72/1/3, 366 sources; CSV header 21 cols, 76 rows = records. db 76. Two builds hash-identical, no clock time. F1/F2/F3 messages exact, nothing written; draft builds without DOI. F4 (rsync copy, `unshare -n`, empty HOME, `critwire_offline` socket): built, db 76, no `~/.duckdb`, hashes = worktree build.
+- 2026-10-21 06:32 UTC: S8 done: `@playwright/test` 1.58.2 exact (uses Chromium 1208, no download), `pnpm e2e`; `playwright.config.ts` (workers 1, headless, trace+screenshot on, list/html/json reporters + outputDir under `E2E_ARTIFACTS`, globalSetup `assertBuilt`, webServer Caddy `reuseExistingServer: false`); `e2e/Caddyfile` (admin/auto_https/persist_config off, `default_bind 127.0.0.1`, :3100 live block + root `{$CRITWIRE_DIST}` + JSON access log, :3101 fixtures); `e2e/helpers.ts` (paths, records, `assertBuilt`, per-test `?t=<uuid>` tag to pick requests from the shared access log, DuckDB with httpfs in `node_modules/.cache/critwire-duckdb`, `parquetRecords`, `csvRows`, `accessLog`); specs `files` (6), `serving` (6 incl. drift), `duckdb` (1 HTTP). tsconfig includes e2e + config; .gitignore E2E outputs. Green (typecheck, 66/66, strict build). E2E 12/12, 0 skipped, 12 traces, report, access log: OPTIONS 204 from `http://127.0.0.1:3101`, parquet 206s (DuckDB ranges `bytes=15743-32126` etc., suffix `bytes=-8`). F8: no dist → fails in globalSetup `… run pnpm build`. Drift negative: altered Allow-Headers fails the drift test. Caddy gone after the run; ports free; production 200. Verification V9 `pgrep` anchored (unanchored matched the calling shell).
 
 ## Summary
