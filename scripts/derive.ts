@@ -1,15 +1,21 @@
-// Derives data/species.json and data/review/mismatches.json from data/base.json, data/raw/ and
-// data/review/country-overrides.json (plan §5; derive/pipeline.ts). Validates every input and computes everything
-// before writing either file.
+// Derives data/species.json, data/review/mismatches.json and data/gbif-derived-dataset/contributions.json from
+// data/base.json, data/raw/, data/review/country-overrides.json and data/gbif-derived-dataset/registration.json
+// (plan §5; derive/pipeline.ts). Validates every input and computes everything before writing any file.
 // Usage: pnpm derive
-import { writeJson } from "./json.ts";
+import { mkdir } from "node:fs/promises";
+import { formatJson, writeJson } from "./json.ts";
 import { deriveAll, derivedFiles, readDeriveInputs } from "./derive/pipeline.ts";
+import { contributionsSha256, depositTag } from "./gbif/derived-dataset.ts";
 
 const byText = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
 
-const result = deriveAll(await readDeriveInputs());
-for (const { file, value } of derivedFiles(result)) await writeJson(file, value);
-const { records, entries } = result;
+const inputs = await readDeriveInputs();
+const result = deriveAll(inputs);
+for (const { file, value, canonical } of derivedFiles(result)) {
+  await mkdir(new URL(".", file), { recursive: true });
+  await writeJson(file, value, { canonical });
+}
+const { records, entries, contributions, doi } = result;
 
 // Summary for the PR body.
 const n = records.length;
@@ -28,3 +34,10 @@ const tally = new Map<string, number>();
 for (const e of entries) tally.set(`${e.kind} ${e.severity}`, (tally.get(`${e.kind} ${e.severity}`) ?? 0) + 1);
 console.log(`entries ${entries.length}`);
 for (const key of [...tally.keys()].sort(byText)) console.log(`  ${key} ${tally.get(key)}`);
+console.log(`gbif contributions: taxa ${contributions.taxa.length}, datasets ${Object.keys(contributions.datasets).length}, records ${contributions.records}`);
+if (doi !== null) {
+  console.log(`DOI current ${doi}`);
+} else {
+  const tag = depositTag(contributionsSha256(formatJson(contributions, { canonical: true })));
+  console.log(`DOI ${inputs.registration === null ? "missing" : "stale"}: commit, push, push tag ${tag}, then pnpm gbif:register`);
+}

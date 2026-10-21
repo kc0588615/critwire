@@ -10,7 +10,9 @@ export interface RecordInput {
   base: BaseSpecies;
   wikidata: { retrieved: string; ids: { wikidata: string | null; inaturalist: number | null; ncbi: number | null } };
   col: { retrieved: string; release: ColRelease; url: string; id: string | null; taxonomy: Taxonomy; taxonomySource: "col" | "base" };
-  gbif: { retrieved: string; checklist: GbifChecklist; url: string; id: number | null; occurrencesUrl: string | null; countries: string[] | null; rangeStatus: RangeStatus };
+  gbif: { retrieved: string; checklist: GbifChecklist; url: string; id: number | null; occurrencesUrl: string | null; countries: string[] | null; rangeStatus: RangeStatus;
+    // The current GBIF derived-dataset DOI (gbif/derived-dataset.ts currentDoi), cited on the countries entry only.
+    doi: string | null };
 }
 
 // Citable fields, in the fixed order sources[].fields uses.
@@ -57,7 +59,7 @@ export function buildRecord({ base, wikidata, col, gbif }: RecordInput): Species
     { source: "GBIF Backbone Taxonomy", fields: filled(["ids.gbif"]), license: gbifBackboneLicense(gbif.checklist.license),
       retrieved: gbif.retrieved, url: gbif.url, doi: gbif.checklist.doi, checklistKey: gbif.checklist.key },
     { source: "GBIF.org occurrence search", fields: filled(["range.countriesWithOpenRecords"]), license: OCCURRENCE_LICENSE,
-      retrieved: gbif.retrieved, url: gbif.occurrencesUrl ?? "" },
+      retrieved: gbif.retrieved, url: gbif.occurrencesUrl ?? "", ...(gbif.doi === null ? {} : { doi: gbif.doi }) },
     { source: "Wikidata", fields: filled(["ids.wikidata", "ids.inaturalist", "ids.ncbi"]), license: WIKIDATA_LICENSE,
       retrieved: wikidata.retrieved, url: `https://www.wikidata.org/wiki/Special:EntityData/${ids.wikidata}.json` },
     { source: BASE_SOURCE.source, fields: ["ids.iucn", ...taxonomyIf("base")], license: BASE_SOURCE.license, url: BASE_SOURCE.url },

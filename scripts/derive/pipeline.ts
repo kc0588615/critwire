@@ -6,7 +6,9 @@ import { fileURLToPath } from "node:url";
 import { formatJson, readJson } from "../json.ts";
 import { readSnapshot, type ColSnapshot, type GbifSnapshot, type WikidataSnapshot } from "../raw.ts";
 import { baseFile, mismatchesFile, overridesFile, speciesFile, validateBase, type BaseSpecies, type Mismatch, type Species } from "../species.ts";
+import { contributionsFile, currentDoi, registrationFile, type Contributions, type Registration } from "../gbif/derived-dataset.ts";
 import { deriveCol } from "./col.ts";
+import { gbifContributions } from "./contributions.ts";
 import { deriveCountries, parseOverrides } from "./countries.ts";
 import { deriveGbif } from "./gbif.ts";
 import { buildRecord } from "./record.ts";
@@ -18,9 +20,12 @@ export interface DeriveInputs {
   col: ColSnapshot;
   gbif: GbifSnapshot;
   overrides: unknown;
+  // data/gbif-derived-dataset/registration.json, null until pnpm gbif:register writes it.
+  registration: Registration | null;
 }
 
-export interface DeriveResult { records: Species[]; entries: Mismatch[] }
+// doi: the registration's DOI when it matches the contributions, else null (gbif/derived-dataset.ts currentDoi).
+export interface DeriveResult { records: Species[]; entries: Mismatch[]; contributions: Contributions; doi: string | null }
 
 const byText = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
 const root = fileURLToPath(new URL("../../", import.meta.url));
@@ -32,6 +37,7 @@ export async function readDeriveInputs(): Promise<DeriveInputs> {
     col: await readSnapshot("col"),
     gbif: await readSnapshot("gbif"),
     overrides: await readJson<unknown>(overridesFile),
+    registration: await readOptionalText(registrationFile).then((text) => (text === null ? null : JSON.parse(text) as Registration)),
   };
 }
 
@@ -41,8 +47,9 @@ function assertNames(source: string, keys: string[], base: BaseSpecies[]): void 
   if ([...keys].sort(byText).join("\n") !== want) throw new Error(`data/raw/${source} is stale: run pnpm ingest ${source}`);
 }
 
-// Validates every input and derives the records (sorted by id) and the review entries. Pure.
-export function deriveAll({ base: unsorted, wikidata, col, gbif, overrides: rawOverrides }: DeriveInputs): DeriveResult {
+// Validates every input and derives the records (sorted by id), the review entries, the GBIF contributions and the
+// DOI the countries entries cite. Pure.
+export function deriveAll({ base: unsorted, wikidata, col, gbif, overrides: rawOverrides, registration }: DeriveInputs): DeriveResult {
   validateBase(unsorted);
   const base = [...unsorted].sort((a, b) => a.id - b.id);
   assertWikidataFresh(wikidata, base);
@@ -51,9 +58,9 @@ export function deriveAll({ base: unsorted, wikidata, col, gbif, overrides: rawO
   const overrides = parseOverrides(rawOverrides, new Set(base.map((s) => s.id)));
 
   const bindings = bindingsByName(wikidata);
-  const records: Species[] = [];
   const entries: Mismatch[] = [];
-  for (const s of base) {
+  // Pass 1: the rules per species. The DOI depends on every species' contributions, so records are built after.
+  const rules = base.map((s) => {
     const N = s.scientificName;
     const w = deriveWikidata(s, bindings.get(N) ?? []);
     const c = deriveCol(s, col.matches[N].response, w.p10585);
@@ -63,31 +70,47 @@ export function deriveAll({ base: unsorted, wikidata, col, gbif, overrides: rawO
       throw new Error(`data/raw/gbif has no occurrences for taxon ${g.taxonKey} (${N}): run pnpm ingest gbif`);
     }
     const k = deriveCountries({ species: s, occurrences: occurrences?.response ?? null, regions: gbif.countries, overrides });
-    records.push(buildRecord({
-      base: s,
-      wikidata: { retrieved: wikidata.retrieved, ids: w.ids },
-      col: { retrieved: col.retrieved, release: col.release, url: col.matches[N].url, id: c.id, taxonomy: c.taxonomy, taxonomySource: c.taxonomySource },
-      gbif: { retrieved: gbif.retrieved, checklist: gbif.checklist, url: gbif.species[N].match.url, id: g.id, occurrencesUrl: occurrences?.url ?? null, countries: k.value, rangeStatus: k.status },
-    }));
     entries.push(...w.entries, ...c.entries, ...g.entries, ...k.entries);
-  }
+    return { s, w, c, g, k, occurrences };
+  });
+
+  const contributions = gbifContributions(gbif.retrieved, rules.map(({ s, g, occurrences }) => (
+    { speciesId: s.id, taxonKey: g.taxonKey, occurrences, datasets: gbif.species[s.scientificName].datasets })));
+  const doi = currentDoi(contributions, registration);
+  const records = rules.map(({ s, w, c, g, k, occurrences }) => buildRecord({
+    base: s,
+    wikidata: { retrieved: wikidata.retrieved, ids: w.ids },
+    col: { retrieved: col.retrieved, release: col.release, url: col.matches[s.scientificName].url, id: c.id, taxonomy: c.taxonomy, taxonomySource: c.taxonomySource },
+    gbif: { retrieved: gbif.retrieved, checklist: gbif.checklist, url: gbif.species[s.scientificName].match.url, id: g.id, occurrencesUrl: occurrences?.url ?? null, countries: k.value, rangeStatus: k.status, doi },
+  }));
   entries.sort((a, b) => a.speciesId - b.speciesId || byText(a.field, b.field) || byText(a.kind, b.kind) || byText(a.country ?? "", b.country ?? ""));
-  return { records, entries };
+  return { records, entries, contributions, doi };
 }
 
-// Every file pnpm derive writes, with its content.
-export function derivedFiles({ records, entries }: DeriveResult): { file: URL; value: unknown }[] {
+// Every file pnpm derive writes, with its content and format (canonical: keys sorted, json.ts formatJson).
+export function derivedFiles({ records, entries, contributions }: DeriveResult): { file: URL; value: unknown; canonical: boolean }[] {
   return [
-    { file: speciesFile, value: records },
-    { file: mismatchesFile, value: entries },
+    { file: speciesFile, value: records, canonical: false },
+    { file: mismatchesFile, value: entries, canonical: false },
+    { file: contributionsFile, value: contributions, canonical: true },
   ];
 }
 
 // Throws unless every committed derived file equals derive's output byte for byte.
 export async function assertDerivedFiles(result: DeriveResult): Promise<void> {
-  for (const { file, value } of derivedFiles(result)) {
-    if (await readFile(file, "utf8") !== formatJson(value)) {
+  for (const { file, value, canonical } of derivedFiles(result)) {
+    if (await readOptionalText(file) !== formatJson(value, { canonical })) {
       throw new Error(`${relative(root, fileURLToPath(file))} is stale: run pnpm derive`);
     }
+  }
+}
+
+// A file's text, or null when it doesn't exist.
+async function readOptionalText(url: URL): Promise<string | null> {
+  try {
+    return await readFile(url, "utf8");
+  } catch (e) {
+    if ((e as NodeJS.ErrnoException).code === "ENOENT") return null;
+    throw e;
   }
 }

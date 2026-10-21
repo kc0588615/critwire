@@ -14,7 +14,7 @@
     "db:load": "tsx scripts/load.ts",
     "ingest": "tsx scripts/ingest.ts",
     "derive": "tsx scripts/derive.ts",
-    "test": "tsx --test scripts/derive/*.test.ts"
+    "test": "tsx --test scripts/derive/*.test.ts scripts/gbif/*.test.ts"
   },
   "devDependencies": {
     "@types/node": "^26.6.5",
