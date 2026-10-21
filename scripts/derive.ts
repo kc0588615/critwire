@@ -45,7 +45,7 @@ for (const s of base) {
     base: s,
     wikidata: { retrieved: wikidata.retrieved, ids: w.ids },
     col: { retrieved: col.retrieved, release: col.release, url: col.matches[N].url, id: c.id, taxonomy: c.taxonomy, taxonomySource: c.taxonomySource },
-    gbif: { retrieved: gbif.retrieved, checklist: gbif.checklist, url: gbif.species[N].match.url, id: g.id, occurrencesUrl: occurrences?.url ?? null, countries: k.value },
+    gbif: { retrieved: gbif.retrieved, checklist: gbif.checklist, url: gbif.species[N].match.url, id: g.id, occurrencesUrl: occurrences?.url ?? null, countries: k.value, rangeStatus: k.status },
   }));
   entries.push(...w.entries, ...c.entries, ...g.entries, ...k.entries);
 }
@@ -61,11 +61,11 @@ for (const f of ["gbif", "col", "wikidata", "inaturalist", "ncbi"] as const) {
   console.log(`ids.${f} ${records.filter((r) => r.ids[f] !== null).length}/${n}`);
 }
 console.log(`taxonomy from COL ${records.filter((r) => r.sources.some((s) => s.source === "Catalogue of Life" && s.fields.includes("taxonomy"))).length}/${n}`);
-const countries = records.map((r) => r.range.countriesWithRecords);
-console.log(`countries: listed ${countries.filter((c) => c?.length).length}, empty ${countries.filter((c) => c?.length === 0).length}, null ${countries.filter((c) => c === null).length}, codes ${countries.reduce((a, c) => a + (c?.length ?? 0), 0)}`);
-for (const [label, c] of [["empty", (c: string[] | null) => c?.length === 0], ["null", (c: string[] | null) => c === null]] as const) {
-  const names = records.filter((r) => c(r.range.countriesWithRecords)).map((r) => `${r.id} ${r.scientificName}`);
-  if (names.length) console.log(`countries ${label}: ${names.join("; ")}`);
+const countries = records.map((r) => r.range.countriesWithOpenRecords);
+console.log(`countries: listed ${countries.filter((c) => c !== null).length}, codes ${countries.reduce((a, c) => a + (c?.length ?? 0), 0)}`);
+for (const status of ["no-open-records", "identity-unsettled"] as const) {
+  const names = records.filter((r) => r.range.status === status).map((r) => `${r.id} ${r.scientificName}`);
+  console.log(`countries ${status} ${names.length}${names.length ? `: ${names.join("; ")}` : ""}`);
 }
 const tally = new Map<string, number>();
 for (const e of entries) tally.set(`${e.kind} ${e.severity}`, (tally.get(`${e.kind} ${e.severity}`) ?? 0) + 1);

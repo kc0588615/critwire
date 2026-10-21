@@ -31,7 +31,7 @@
   {
     "speciesId": 2,
     "scientificName": "Apalone spinifera",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "AR",
@@ -50,7 +50,7 @@
   {
     "speciesId": 2,
     "scientificName": "Apalone spinifera",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "blocking",
     "country": "PT",
@@ -83,7 +83,7 @@
   {
     "speciesId": 4,
     "scientificName": "Platysternon megacephalum",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "blocking",
     "country": "BR",
@@ -102,7 +102,7 @@
   {
     "speciesId": 4,
     "scientificName": "Platysternon megacephalum",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "blocking",
     "country": "CD",
@@ -121,7 +121,7 @@
   {
     "speciesId": 4,
     "scientificName": "Platysternon megacephalum",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "review",
     "country": "RE",
@@ -140,7 +140,7 @@
   {
     "speciesId": 5,
     "scientificName": "Rhacophorus nigropalmatus",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "BN",
@@ -159,7 +159,7 @@
   {
     "speciesId": 6,
     "scientificName": "Agalychnis callidryas",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "US",
@@ -196,7 +196,7 @@
   {
     "speciesId": 7,
     "scientificName": "Trichobatrachus robustus",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "AO",
@@ -215,7 +215,7 @@
   {
     "speciesId": 7,
     "scientificName": "Trichobatrachus robustus",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "CD",
@@ -234,7 +234,7 @@
   {
     "speciesId": 7,
     "scientificName": "Trichobatrachus robustus",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "CF",
@@ -253,7 +253,7 @@
   {
     "speciesId": 7,
     "scientificName": "Trichobatrachus robustus",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "CG",
@@ -302,7 +302,7 @@
   {
     "speciesId": 10,
     "scientificName": "Pipa pipa",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "TT",
@@ -321,7 +321,7 @@
   {
     "speciesId": 11,
     "scientificName": "Conraua goliath",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "GQ",
@@ -354,7 +354,7 @@
   {
     "speciesId": 12,
     "scientificName": "Heosemys spinosa",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "review",
     "country": "US",
@@ -373,7 +373,7 @@
   {
     "speciesId": 14,
     "scientificName": "Breviceps macrops",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "NA",
@@ -406,7 +406,7 @@
   {
     "speciesId": 15,
     "scientificName": "Malacochersus tornieri",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "blocking",
     "country": "DE",
@@ -439,7 +439,7 @@
   {
     "speciesId": 17,
     "scientificName": "Carettochelys insculpta",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "review",
     "country": "ID",
@@ -458,7 +458,7 @@
   {
     "speciesId": 17,
     "scientificName": "Carettochelys insculpta",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "review",
     "country": "SG",
@@ -477,7 +477,7 @@
   {
     "speciesId": 17,
     "scientificName": "Carettochelys insculpta",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "blocking",
     "country": "US",
@@ -560,7 +560,7 @@
   {
     "speciesId": 20,
     "scientificName": "Centrochelys sulcata",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "EG",
@@ -579,7 +579,7 @@
   {
     "speciesId": 20,
     "scientificName": "Centrochelys sulcata",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "ML",
@@ -598,7 +598,7 @@
   {
     "speciesId": 20,
     "scientificName": "Centrochelys sulcata",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "MR",
@@ -617,7 +617,7 @@
   {
     "speciesId": 20,
     "scientificName": "Centrochelys sulcata",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "NG",
@@ -636,7 +636,7 @@
   {
     "speciesId": 20,
     "scientificName": "Centrochelys sulcata",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "SD",
@@ -655,7 +655,7 @@
   {
     "speciesId": 20,
     "scientificName": "Centrochelys sulcata",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "SN",
@@ -674,7 +674,7 @@
   {
     "speciesId": 20,
     "scientificName": "Centrochelys sulcata",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "blocking",
     "country": "DE",
@@ -693,7 +693,7 @@
   {
     "speciesId": 20,
     "scientificName": "Centrochelys sulcata",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "blocking",
     "country": "ES",
@@ -712,7 +712,7 @@
   {
     "speciesId": 20,
     "scientificName": "Centrochelys sulcata",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "review",
     "country": "MQ",
@@ -731,7 +731,7 @@
   {
     "speciesId": 20,
     "scientificName": "Centrochelys sulcata",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "review",
     "country": "MX",
@@ -750,7 +750,7 @@
   {
     "speciesId": 20,
     "scientificName": "Centrochelys sulcata",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "blocking",
     "country": "NL",
@@ -769,7 +769,7 @@
   {
     "speciesId": 20,
     "scientificName": "Centrochelys sulcata",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "blocking",
     "country": "SG",
@@ -788,7 +788,7 @@
   {
     "speciesId": 20,
     "scientificName": "Centrochelys sulcata",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "review",
     "country": "TH",
@@ -807,7 +807,7 @@
   {
     "speciesId": 20,
     "scientificName": "Centrochelys sulcata",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "review",
     "country": "US",
@@ -843,7 +843,7 @@
   {
     "speciesId": 21,
     "scientificName": "Astrochelys radiata",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "MU",
@@ -862,7 +862,7 @@
   {
     "speciesId": 21,
     "scientificName": "Astrochelys radiata",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "SC",
@@ -881,7 +881,7 @@
   {
     "speciesId": 21,
     "scientificName": "Astrochelys radiata",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "blocking",
     "country": "DE",
@@ -931,7 +931,7 @@
   {
     "speciesId": 23,
     "scientificName": "Daubentonia madagascariensis",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "blocking",
     "country": "CN",
@@ -950,7 +950,7 @@
   {
     "speciesId": 23,
     "scientificName": "Daubentonia madagascariensis",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "blocking",
     "country": "FR",
@@ -969,7 +969,7 @@
   {
     "speciesId": 24,
     "scientificName": "Manis javanica",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "BN",
@@ -988,7 +988,7 @@
   {
     "speciesId": 24,
     "scientificName": "Manis javanica",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "IN",
@@ -1007,7 +1007,7 @@
   {
     "speciesId": 25,
     "scientificName": "Panthera tigris",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "BD",
@@ -1026,7 +1026,7 @@
   {
     "speciesId": 25,
     "scientificName": "Panthera tigris",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "VN",
@@ -1045,7 +1045,7 @@
   {
     "speciesId": 25,
     "scientificName": "Panthera tigris",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "review",
     "country": "BR",
@@ -1064,7 +1064,7 @@
   {
     "speciesId": 25,
     "scientificName": "Panthera tigris",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "blocking",
     "country": "CA",
@@ -1083,7 +1083,7 @@
   {
     "speciesId": 25,
     "scientificName": "Panthera tigris",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "review",
     "country": "DE",
@@ -1102,7 +1102,7 @@
   {
     "speciesId": 25,
     "scientificName": "Panthera tigris",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "blocking",
     "country": "DK",
@@ -1121,7 +1121,7 @@
   {
     "speciesId": 25,
     "scientificName": "Panthera tigris",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "blocking",
     "country": "KE",
@@ -1140,7 +1140,7 @@
   {
     "speciesId": 25,
     "scientificName": "Panthera tigris",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "blocking",
     "country": "MW",
@@ -1159,7 +1159,7 @@
   {
     "speciesId": 25,
     "scientificName": "Panthera tigris",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "blocking",
     "country": "NL",
@@ -1178,7 +1178,7 @@
   {
     "speciesId": 25,
     "scientificName": "Panthera tigris",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "review",
     "country": "RU",
@@ -1197,7 +1197,7 @@
   {
     "speciesId": 25,
     "scientificName": "Panthera tigris",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "blocking",
     "country": "SE",
@@ -1216,7 +1216,7 @@
   {
     "speciesId": 25,
     "scientificName": "Panthera tigris",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "review",
     "country": "US",
@@ -1235,7 +1235,7 @@
   {
     "speciesId": 25,
     "scientificName": "Panthera tigris",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "review",
     "country": "ZA",
@@ -1254,7 +1254,7 @@
   {
     "speciesId": 26,
     "scientificName": "Mustela nigripes",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "MX",
@@ -1306,7 +1306,7 @@
   {
     "speciesId": 28,
     "scientificName": "Elephas maximus",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "BD",
@@ -1325,7 +1325,7 @@
   {
     "speciesId": 28,
     "scientificName": "Elephas maximus",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "BT",
@@ -1344,7 +1344,7 @@
   {
     "speciesId": 28,
     "scientificName": "Elephas maximus",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "LA",
@@ -1363,7 +1363,7 @@
   {
     "speciesId": 28,
     "scientificName": "Elephas maximus",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "VN",
@@ -1382,7 +1382,7 @@
   {
     "speciesId": 28,
     "scientificName": "Elephas maximus",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "review",
     "country": "BE",
@@ -1401,7 +1401,7 @@
   {
     "speciesId": 28,
     "scientificName": "Elephas maximus",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "blocking",
     "country": "BR",
@@ -1420,7 +1420,7 @@
   {
     "speciesId": 28,
     "scientificName": "Elephas maximus",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "blocking",
     "country": "CF",
@@ -1439,7 +1439,7 @@
   {
     "speciesId": 28,
     "scientificName": "Elephas maximus",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "review",
     "country": "DE",
@@ -1458,7 +1458,7 @@
   {
     "speciesId": 28,
     "scientificName": "Elephas maximus",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "review",
     "country": "DK",
@@ -1477,7 +1477,7 @@
   {
     "speciesId": 28,
     "scientificName": "Elephas maximus",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "blocking",
     "country": "NL",
@@ -1496,7 +1496,7 @@
   {
     "speciesId": 28,
     "scientificName": "Elephas maximus",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "review",
     "country": "US",
@@ -1515,7 +1515,7 @@
   {
     "speciesId": 29,
     "scientificName": "Okapia johnstoni",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "blocking",
     "country": "DE",
@@ -1534,7 +1534,7 @@
   {
     "speciesId": 29,
     "scientificName": "Okapia johnstoni",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "review",
     "country": "US",
@@ -1567,7 +1567,7 @@
   {
     "speciesId": 35,
     "scientificName": "Ailurus fulgens",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "review",
     "country": "US",
@@ -1586,7 +1586,7 @@
   {
     "speciesId": 36,
     "scientificName": "Priodontes maximus",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "VE",
@@ -1605,7 +1605,7 @@
   {
     "speciesId": 39,
     "scientificName": "Equus grevyi",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "ZM",
@@ -1624,7 +1624,7 @@
   {
     "speciesId": 39,
     "scientificName": "Equus grevyi",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "review",
     "country": "FR",
@@ -1643,7 +1643,7 @@
   {
     "speciesId": 39,
     "scientificName": "Equus grevyi",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "blocking",
     "country": "NL",
@@ -1662,7 +1662,7 @@
   {
     "speciesId": 39,
     "scientificName": "Equus grevyi",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "review",
     "country": "US",
@@ -1695,7 +1695,7 @@
   {
     "speciesId": 40,
     "scientificName": "Pongo abelii",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "review",
     "country": "US",
@@ -1714,7 +1714,7 @@
   {
     "speciesId": 41,
     "scientificName": "Loxodonta cyclotis",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "CD",
@@ -1733,7 +1733,7 @@
   {
     "speciesId": 41,
     "scientificName": "Loxodonta cyclotis",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "CM",
@@ -1752,7 +1752,7 @@
   {
     "speciesId": 41,
     "scientificName": "Loxodonta cyclotis",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "GN",
@@ -1771,7 +1771,7 @@
   {
     "speciesId": 41,
     "scientificName": "Loxodonta cyclotis",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "GQ",
@@ -1790,7 +1790,7 @@
   {
     "speciesId": 41,
     "scientificName": "Loxodonta cyclotis",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "KE",
@@ -1809,7 +1809,7 @@
   {
     "speciesId": 41,
     "scientificName": "Loxodonta cyclotis",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "RW",
@@ -1828,7 +1828,7 @@
   {
     "speciesId": 41,
     "scientificName": "Loxodonta cyclotis",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "ZA",
@@ -1847,7 +1847,7 @@
   {
     "speciesId": 43,
     "scientificName": "Dendrolagus goodfellowi",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "review",
     "country": "DE",
@@ -1866,7 +1866,7 @@
   {
     "speciesId": 43,
     "scientificName": "Dendrolagus goodfellowi",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "review",
     "country": "US",
@@ -1885,7 +1885,7 @@
   {
     "speciesId": 47,
     "scientificName": "Ochotona iliensis",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "no-records",
     "severity": "info",
     "values": {
@@ -1898,7 +1898,7 @@
   {
     "speciesId": 48,
     "scientificName": "Sarcophilus harrisii",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "review",
     "country": "US",
@@ -1917,7 +1917,7 @@
   {
     "speciesId": 50,
     "scientificName": "Addax nasomaculatus",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "blocking",
     "country": "BR",
@@ -1936,7 +1936,7 @@
   {
     "speciesId": 50,
     "scientificName": "Addax nasomaculatus",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "blocking",
     "country": "DE",
@@ -1955,7 +1955,7 @@
   {
     "speciesId": 50,
     "scientificName": "Addax nasomaculatus",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "review",
     "country": "MX",
@@ -1974,7 +1974,7 @@
   {
     "speciesId": 50,
     "scientificName": "Addax nasomaculatus",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "review",
     "country": "US",
@@ -1993,7 +1993,7 @@
   {
     "speciesId": 51,
     "scientificName": "Panthera onca",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "HN",
@@ -2012,7 +2012,7 @@
   {
     "speciesId": 51,
     "scientificName": "Panthera onca",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "SR",
@@ -2031,7 +2031,7 @@
   {
     "speciesId": 51,
     "scientificName": "Panthera onca",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "UY",
@@ -2050,7 +2050,7 @@
   {
     "speciesId": 52,
     "scientificName": "Myrmecophaga tridactyla",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "GT",
@@ -2069,7 +2069,7 @@
   {
     "speciesId": 52,
     "scientificName": "Myrmecophaga tridactyla",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "MX",
@@ -2088,7 +2088,7 @@
   {
     "speciesId": 52,
     "scientificName": "Myrmecophaga tridactyla",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "SR",
@@ -2107,7 +2107,7 @@
   {
     "speciesId": 52,
     "scientificName": "Myrmecophaga tridactyla",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "blocking",
     "country": "DE",
@@ -2126,7 +2126,7 @@
   {
     "speciesId": 54,
     "scientificName": "Bradypus variegatus",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "HN",
@@ -2145,7 +2145,7 @@
   {
     "speciesId": 54,
     "scientificName": "Bradypus variegatus",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "MX",
@@ -2164,7 +2164,7 @@
   {
     "speciesId": 54,
     "scientificName": "Bradypus variegatus",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "SR",
@@ -2201,7 +2201,7 @@
   {
     "speciesId": 56,
     "scientificName": "Pan troglodytes",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "GH",
@@ -2220,7 +2220,7 @@
   {
     "speciesId": 56,
     "scientificName": "Pan troglodytes",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "GW",
@@ -2239,7 +2239,7 @@
   {
     "speciesId": 56,
     "scientificName": "Pan troglodytes",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "KE",
@@ -2258,7 +2258,7 @@
   {
     "speciesId": 56,
     "scientificName": "Pan troglodytes",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "ML",
@@ -2277,7 +2277,7 @@
   {
     "speciesId": 56,
     "scientificName": "Pan troglodytes",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "SS",
@@ -2296,7 +2296,7 @@
   {
     "speciesId": 56,
     "scientificName": "Pan troglodytes",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "TD",
@@ -2315,7 +2315,7 @@
   {
     "speciesId": 56,
     "scientificName": "Pan troglodytes",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "review",
     "country": "AU",
@@ -2334,7 +2334,7 @@
   {
     "speciesId": 56,
     "scientificName": "Pan troglodytes",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "blocking",
     "country": "BE",
@@ -2353,7 +2353,7 @@
   {
     "speciesId": 56,
     "scientificName": "Pan troglodytes",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "review",
     "country": "BR",
@@ -2372,7 +2372,7 @@
   {
     "speciesId": 56,
     "scientificName": "Pan troglodytes",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "review",
     "country": "DE",
@@ -2391,7 +2391,7 @@
   {
     "speciesId": 56,
     "scientificName": "Pan troglodytes",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "review",
     "country": "DK",
@@ -2410,7 +2410,7 @@
   {
     "speciesId": 56,
     "scientificName": "Pan troglodytes",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "blocking",
     "country": "FR",
@@ -2429,7 +2429,7 @@
   {
     "speciesId": 56,
     "scientificName": "Pan troglodytes",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "blocking",
     "country": "NU",
@@ -2448,7 +2448,7 @@
   {
     "speciesId": 56,
     "scientificName": "Pan troglodytes",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "blocking",
     "country": "RU",
@@ -2467,7 +2467,7 @@
   {
     "speciesId": 56,
     "scientificName": "Pan troglodytes",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "review",
     "country": "SE",
@@ -2486,7 +2486,7 @@
   {
     "speciesId": 56,
     "scientificName": "Pan troglodytes",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "review",
     "country": "US",
@@ -2505,7 +2505,7 @@
   {
     "speciesId": 57,
     "scientificName": "Orycteropus afer",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "AO",
@@ -2524,7 +2524,7 @@
   {
     "speciesId": 57,
     "scientificName": "Orycteropus afer",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "BF",
@@ -2543,7 +2543,7 @@
   {
     "speciesId": 57,
     "scientificName": "Orycteropus afer",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "GH",
@@ -2562,7 +2562,7 @@
   {
     "speciesId": 57,
     "scientificName": "Orycteropus afer",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "ML",
@@ -2581,7 +2581,7 @@
   {
     "speciesId": 57,
     "scientificName": "Orycteropus afer",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "NE",
@@ -2600,7 +2600,7 @@
   {
     "speciesId": 57,
     "scientificName": "Orycteropus afer",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "SD",
@@ -2619,7 +2619,7 @@
   {
     "speciesId": 57,
     "scientificName": "Orycteropus afer",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "SL",
@@ -2638,7 +2638,7 @@
   {
     "speciesId": 57,
     "scientificName": "Orycteropus afer",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "TG",
@@ -2657,7 +2657,7 @@
   {
     "speciesId": 57,
     "scientificName": "Orycteropus afer",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "ZW",
@@ -2676,7 +2676,7 @@
   {
     "speciesId": 57,
     "scientificName": "Orycteropus afer",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "review",
     "country": "US",
@@ -2695,7 +2695,7 @@
   {
     "speciesId": 58,
     "scientificName": "Acinonyx jubatus",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "AO",
@@ -2714,7 +2714,7 @@
   {
     "speciesId": 58,
     "scientificName": "Acinonyx jubatus",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "CD",
@@ -2733,7 +2733,7 @@
   {
     "speciesId": 58,
     "scientificName": "Acinonyx jubatus",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "DZ",
@@ -2752,7 +2752,7 @@
   {
     "speciesId": 58,
     "scientificName": "Acinonyx jubatus",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "EG",
@@ -2771,7 +2771,7 @@
   {
     "speciesId": 58,
     "scientificName": "Acinonyx jubatus",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "NG",
@@ -2790,7 +2790,7 @@
   {
     "speciesId": 58,
     "scientificName": "Acinonyx jubatus",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "TD",
@@ -2809,7 +2809,7 @@
   {
     "speciesId": 58,
     "scientificName": "Acinonyx jubatus",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "review",
     "country": "AU",
@@ -2828,7 +2828,7 @@
   {
     "speciesId": 58,
     "scientificName": "Acinonyx jubatus",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "review",
     "country": "DE",
@@ -2847,7 +2847,7 @@
   {
     "speciesId": 58,
     "scientificName": "Acinonyx jubatus",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "blocking",
     "country": "IQ",
@@ -2866,7 +2866,7 @@
   {
     "speciesId": 58,
     "scientificName": "Acinonyx jubatus",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "review",
     "country": "IR",
@@ -2885,7 +2885,7 @@
   {
     "speciesId": 58,
     "scientificName": "Acinonyx jubatus",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "review",
     "country": "NL",
@@ -2904,7 +2904,7 @@
   {
     "speciesId": 58,
     "scientificName": "Acinonyx jubatus",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "review",
     "country": "US",
@@ -2937,7 +2937,7 @@
   {
     "speciesId": 60,
     "scientificName": "Ailuropoda melanoleuca",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "review",
     "country": "DE",
@@ -2956,7 +2956,7 @@
   {
     "speciesId": 60,
     "scientificName": "Ailuropoda melanoleuca",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "blocking",
     "country": "US",
@@ -3007,7 +3007,7 @@
   {
     "speciesId": 64,
     "scientificName": "Loxodonta africana",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "AO",
@@ -3026,7 +3026,7 @@
   {
     "speciesId": 64,
     "scientificName": "Loxodonta africana",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "CF",
@@ -3045,7 +3045,7 @@
   {
     "speciesId": 64,
     "scientificName": "Loxodonta africana",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "NG",
@@ -3064,7 +3064,7 @@
   {
     "speciesId": 64,
     "scientificName": "Loxodonta africana",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "SD",
@@ -3083,7 +3083,7 @@
   {
     "speciesId": 64,
     "scientificName": "Loxodonta africana",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "SS",
@@ -3102,7 +3102,7 @@
   {
     "speciesId": 64,
     "scientificName": "Loxodonta africana",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "TD",
@@ -3121,7 +3121,7 @@
   {
     "speciesId": 64,
     "scientificName": "Loxodonta africana",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "review",
     "country": "DE",
@@ -3140,7 +3140,7 @@
   {
     "speciesId": 64,
     "scientificName": "Loxodonta africana",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "review",
     "country": "DK",
@@ -3159,7 +3159,7 @@
   {
     "speciesId": 64,
     "scientificName": "Loxodonta africana",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "review",
     "country": "PL",
@@ -3178,7 +3178,7 @@
   {
     "speciesId": 64,
     "scientificName": "Loxodonta africana",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "review",
     "country": "US",
@@ -3197,7 +3197,7 @@
   {
     "speciesId": 65,
     "scientificName": "Lycaon pictus",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "CD",
@@ -3216,7 +3216,7 @@
   {
     "speciesId": 65,
     "scientificName": "Lycaon pictus",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "CF",
@@ -3235,7 +3235,7 @@
   {
     "speciesId": 65,
     "scientificName": "Lycaon pictus",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "MZ",
@@ -3254,7 +3254,7 @@
   {
     "speciesId": 65,
     "scientificName": "Lycaon pictus",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "UG",
@@ -3273,7 +3273,7 @@
   {
     "speciesId": 65,
     "scientificName": "Lycaon pictus",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "review",
     "country": "BR",
@@ -3292,7 +3292,7 @@
   {
     "speciesId": 65,
     "scientificName": "Lycaon pictus",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "blocking",
     "country": "KR",
@@ -3311,7 +3311,7 @@
   {
     "speciesId": 65,
     "scientificName": "Lycaon pictus",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "review",
     "country": "US",
@@ -3330,7 +3330,7 @@
   {
     "speciesId": 66,
     "scientificName": "Diceros bicornis",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "AO",
@@ -3349,7 +3349,7 @@
   {
     "speciesId": 66,
     "scientificName": "Diceros bicornis",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "CF",
@@ -3368,7 +3368,7 @@
   {
     "speciesId": 66,
     "scientificName": "Diceros bicornis",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "MW",
@@ -3387,7 +3387,7 @@
   {
     "speciesId": 66,
     "scientificName": "Diceros bicornis",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "NG",
@@ -3406,7 +3406,7 @@
   {
     "speciesId": 66,
     "scientificName": "Diceros bicornis",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "RW",
@@ -3425,7 +3425,7 @@
   {
     "speciesId": 66,
     "scientificName": "Diceros bicornis",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "blocking",
     "country": "DE",
@@ -3444,7 +3444,7 @@
   {
     "speciesId": 66,
     "scientificName": "Diceros bicornis",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "review",
     "country": "FR",
@@ -3463,7 +3463,7 @@
   {
     "speciesId": 66,
     "scientificName": "Diceros bicornis",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "review",
     "country": "US",
@@ -3482,7 +3482,7 @@
   {
     "speciesId": 68,
     "scientificName": "Beatragus hunteri",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "blocking",
     "country": "US",
@@ -3501,7 +3501,7 @@
   {
     "speciesId": 69,
     "scientificName": "Nanger dama",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "ET",
@@ -3520,7 +3520,7 @@
   {
     "speciesId": 69,
     "scientificName": "Nanger dama",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "KE",
@@ -3539,7 +3539,7 @@
   {
     "speciesId": 69,
     "scientificName": "Nanger dama",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "NE",
@@ -3558,7 +3558,7 @@
   {
     "speciesId": 69,
     "scientificName": "Nanger dama",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "SN",
@@ -3577,7 +3577,7 @@
   {
     "speciesId": 69,
     "scientificName": "Nanger dama",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "TD",
@@ -3596,7 +3596,7 @@
   {
     "speciesId": 69,
     "scientificName": "Nanger dama",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "review",
     "country": "ES",
@@ -3615,7 +3615,7 @@
   {
     "speciesId": 69,
     "scientificName": "Nanger dama",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "blocking",
     "country": "PA",
@@ -3634,7 +3634,7 @@
   {
     "speciesId": 69,
     "scientificName": "Nanger dama",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "review",
     "country": "US",
@@ -3689,7 +3689,7 @@
   {
     "speciesId": 70,
     "scientificName": "Tapirus bairdii",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "CO",
@@ -3708,7 +3708,7 @@
   {
     "speciesId": 70,
     "scientificName": "Tapirus bairdii",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "US",
@@ -3727,7 +3727,7 @@
   {
     "speciesId": 71,
     "scientificName": "Tremarctos ornatus",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "PA",
@@ -3746,7 +3746,7 @@
   {
     "speciesId": 71,
     "scientificName": "Tremarctos ornatus",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "blocking",
     "country": "DE",
@@ -3765,7 +3765,7 @@
   {
     "speciesId": 71,
     "scientificName": "Tremarctos ornatus",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "review",
     "country": "JP",
@@ -3784,7 +3784,7 @@
   {
     "speciesId": 72,
     "scientificName": "Chrysocyon brachyurus",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "PE",
@@ -3803,7 +3803,7 @@
   {
     "speciesId": 72,
     "scientificName": "Chrysocyon brachyurus",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "UY",
@@ -3836,7 +3836,7 @@
   {
     "speciesId": 73,
     "scientificName": "Pteronura brasiliensis",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "PY",
@@ -3855,7 +3855,7 @@
   {
     "speciesId": 73,
     "scientificName": "Pteronura brasiliensis",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "SR",
@@ -3874,7 +3874,7 @@
   {
     "speciesId": 74,
     "scientificName": "Ambystoma mexicanum",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "CA",
@@ -3893,7 +3893,7 @@
   {
     "speciesId": 74,
     "scientificName": "Ambystoma mexicanum",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "review",
     "country": "DE",
@@ -3912,7 +3912,7 @@
   {
     "speciesId": 74,
     "scientificName": "Ambystoma mexicanum",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "review",
     "country": "NZ",
@@ -3931,7 +3931,7 @@
   {
     "speciesId": 74,
     "scientificName": "Ambystoma mexicanum",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-captive-suspect",
     "severity": "blocking",
     "country": "UA",
@@ -3950,7 +3950,7 @@
   {
     "speciesId": 76,
     "scientificName": "Phyllobates terribilis",
-    "field": "range.countriesWithRecords",
+    "field": "range.countriesWithOpenRecords",
     "kind": "country-borderline",
     "severity": "review",
     "country": "BR",

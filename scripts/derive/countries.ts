@@ -1,5 +1,6 @@
-// Countries rule (plan §5.4, §5.5): range.countriesWithRecords from a settled GBIF taxon's licensed COUNTRY facet.
-// Pure: no fs, network or clock. The field means "countries with records", never native range.
+// Countries rule (plan §5.4, §5.5): range.countriesWithOpenRecords from a settled GBIF taxon's licensed COUNTRY facet.
+// Pure: no fs, network or clock. The field means "countries with CC0/CC BY records", never native range. It is never
+// [] (reads as "lives nowhere"): with no country left it is null and status says why.
 //
 // The minimum-records rule (the brief's guard against strays): a country outside the species' core region needs
 // more than STRAY_MAX counted records; inside the core one record is enough. Region alone never excludes.
@@ -15,14 +16,14 @@
 //   so spiny softshell MX, black-footed ferret MX and jaguar US aren't flagged. EUROPE and ASIA stay apart (tiger DE).
 // Owner overrides (data/review/country-overrides.json) apply last and replace the country's entry.
 import { assertOpenLicenses, type GbifOccurrenceResponse, type GbifSnapshot } from "../raw.ts";
-import type { CountryOverride, Mismatch } from "../species.ts";
+import type { CountryOverride, Mismatch, RangeStatus } from "../species.ts";
 
 export const STRAY_MAX = 1;
 export const BORDERLINE_MAX = 2;
 export const BORDERLINE_MIN_SPECIES_RECORDS = 50;
 export const MERGED_REGIONS: Readonly<Record<string, string>> = { NORTH_AMERICA: "AMERICAS", LATIN_AMERICA: "AMERICAS" };
 
-const FIELD = "range.countriesWithRecords";
+const FIELD = "range.countriesWithOpenRecords";
 const UNKNOWN_COUNTRY = "ZZ";
 const OVERRIDE_KEYS = ["action", "country", "reason", "speciesId"];
 
@@ -35,7 +36,8 @@ export interface CountriesInput {
   overrides: readonly CountryOverride[];
 }
 
-export interface CountriesResult { value: string[] | null; entries: Mismatch[] }
+// value is null unless status is ok, and never [].
+export interface CountriesResult { value: string[] | null; status: RangeStatus; entries: Mismatch[] }
 
 const byCode = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
 
@@ -43,7 +45,7 @@ export function deriveCountries({ species, occurrences, regions, overrides }: Co
   const mine = overrides.filter((o) => o.speciesId === species.id);
   if (occurrences === null) {
     if (mine.length) throw new Error(`country-overrides: species ${species.id} (${species.scientificName}) has null countries; remove its overrides`);
-    return { value: null, entries: [] };
+    return { value: null, status: "identity-unsettled", entries: [] };
   }
   assertOpenLicenses(occurrences);
 
@@ -58,7 +60,7 @@ export function deriveCountries({ species, occurrences, regions, overrides }: Co
     }
   }
   if (counts.size === 0) {
-    return { value: [], entries: [entry("no-records", "info", undefined, { gbif: { speciesRecords: 0 } }, "No CC0 or CC BY 4.0 records with a known country match the filters.")] };
+    return { value: null, status: "no-open-records", entries: [entry("no-records", "info", undefined, { gbif: { speciesRecords: 0 } }, "No CC0 or CC BY 4.0 records with a known country match the filters.")] };
   }
 
   const region = (c: string) => {
@@ -98,7 +100,8 @@ export function deriveCountries({ species, occurrences, regions, overrides }: Co
     entries.delete(o.country);
   }
   const sortedEntries = [...entries.keys()].sort(byCode).map((c) => entries.get(c)!);
-  return { value: [...published].sort(byCode), entries: sortedEntries };
+  if (published.size === 0) return { value: null, status: "no-open-records", entries: sortedEntries };
+  return { value: [...published].sort(byCode), status: "ok", entries: sortedEntries };
 }
 
 // Counted records per country from the COUNTRY facet, ZZ dropped. Throws on malformed counts.

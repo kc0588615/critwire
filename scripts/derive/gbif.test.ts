@@ -9,7 +9,7 @@
 //     that is neither ACCEPTED nor a synonym is accepted → ids.gbif and countries null + not-found (or identity for
 //     the status).
 // G5: a synonym whose accepted name has another epithet (a lump) publishes the other species' countries → id kept,
-//     countries null + identity (blocking) on range.countriesWithRecords.
+//     countries null + identity (blocking) on range.countriesWithOpenRecords.
 // G6: a usage or accepted key that isn't an integer is passed on, or an unknown backbone license is mapped → throws.
 // G7: a LICENSE facet containing CC_BY_NC_4_0 (or any license outside CC0 1.0 / CC BY 4.0), a missing LICENSE facet,
 //     or license counts that don't sum to `count` → throws (the country list must come only from CC0 and CC BY records).
@@ -98,7 +98,7 @@ test("G5 accepted name with another epithet (lump) → id kept, countries null +
   const r = deriveGbif(SPECIES, match({ accepted: usage("5220531", "Emys orbicularis") }), []);
   assert.equal(r.id, 2442885);
   assert.equal(r.taxonKey, null);
-  assert.deepEqual(kinds(r.entries), ["ids.gbif:synonym-info:info", "range.countriesWithRecords:identity:blocking"]);
+  assert.deepEqual(kinds(r.entries), ["ids.gbif:synonym-info:info", "range.countriesWithOpenRecords:identity:blocking"]);
   // A genus move with the same epithet is not a lump (Smutsia gigantea → Manis gigantea).
   const pangolin = deriveGbif({ id: 55, scientificName: "Smutsia gigantea" }, match({ usage: usage("5786559", "Smutsia gigantea", "SYNONYM"), accepted: usage("5219631", "Manis gigantea") }), []);
   assert.deepEqual([pangolin.id, pangolin.taxonKey], [5786559, 5219631]);

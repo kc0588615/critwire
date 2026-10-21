@@ -42,12 +42,15 @@ export interface Species {
     inaturalist: number | null;
     ncbi: number | null;
   };
-  // ISO alpha-2 codes of countries with records (never native range); null when the GBIF taxon isn't settled.
-  range: { countriesWithRecords: string[] | null };
+  // ISO alpha-2 codes of countries with CC0/CC BY records (never native range). Never []: null unless status is ok.
+  range: { countriesWithOpenRecords: string[] | null; status: RangeStatus };
   photo: Photo | null;
   sources: Source[];
   replacedBy: number[] | null;
 }
+
+// ok: at least one country; no-open-records: GBIF identity settled, no country left; identity-unsettled: not settled.
+export type RangeStatus = "ok" | "no-open-records" | "identity-unsettled";
 
 // One review entry in data/review/mismatches.json (plan §5.6). Built with the keys in this order.
 export type Severity = "blocking" | "review" | "info";

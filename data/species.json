@@ -19,10 +19,11 @@
       "ncbi": null
     },
     "range": {
-      "countriesWithRecords": [
+      "countriesWithOpenRecords": [
         "CA",
         "US"
-      ]
+      ],
+      "status": "ok"
     },
     "photo": {
       "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/44/Blanding%27s_turtle_%28Emydoidea_blandingii%29_%2817812011862%29.jpg/500px-Blanding%27s_turtle_%28Emydoidea_blandingii%29_%2817812011862%29.jpg",
@@ -62,7 +63,7 @@
       {
         "source": "GBIF.org occurrence search",
         "fields": [
-          "range.countriesWithRecords"
+          "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-20",
@@ -109,12 +110,13 @@
       "ncbi": 55534
     },
     "range": {
-      "countriesWithRecords": [
+      "countriesWithOpenRecords": [
         "AR",
         "CA",
         "MX",
         "US"
-      ]
+      ],
+      "status": "ok"
     },
     "photo": {
       "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/67/Spiny_softshell_turtle_%28Apalone_spinifera%29.jpg/500px-Spiny_softshell_turtle_%28Apalone_spinifera%29.jpg",
@@ -154,7 +156,7 @@
       {
         "source": "GBIF.org occurrence search",
         "fields": [
-          "range.countriesWithRecords"
+          "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-20",
@@ -202,10 +204,11 @@
       "ncbi": 43563
     },
     "range": {
-      "countriesWithRecords": [
+      "countriesWithOpenRecords": [
         "AR",
         "CL"
-      ]
+      ],
+      "status": "ok"
     },
     "photo": {
       "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f1/Ranita_de_Darwin_%28Rhinoderma_darwinii%29.png/500px-Ranita_de_Darwin_%28Rhinoderma_darwinii%29.png",
@@ -245,7 +248,7 @@
       {
         "source": "GBIF.org occurrence search",
         "fields": [
-          "range.countriesWithRecords"
+          "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-20",
@@ -293,7 +296,7 @@
       "ncbi": 55544
     },
     "range": {
-      "countriesWithRecords": [
+      "countriesWithOpenRecords": [
         "CN",
         "HK",
         "LA",
@@ -301,7 +304,8 @@
         "RE",
         "TH",
         "VN"
-      ]
+      ],
+      "status": "ok"
     },
     "photo": {
       "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/ba/Big-headed_Turtle_HK.jpg/500px-Big-headed_Turtle_HK.jpg",
@@ -341,7 +345,7 @@
       {
         "source": "GBIF.org occurrence search",
         "fields": [
-          "range.countriesWithRecords"
+          "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-20",
@@ -389,13 +393,14 @@
       "ncbi": 143446
     },
     "range": {
-      "countriesWithRecords": [
+      "countriesWithOpenRecords": [
         "BN",
         "ID",
         "MM",
         "MY",
         "TH"
-      ]
+      ],
+      "status": "ok"
     },
     "photo": {
       "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/45/Rhacophorus_nigropalmatus.jpg/500px-Rhacophorus_nigropalmatus.jpg",
@@ -435,7 +440,7 @@
       {
         "source": "GBIF.org occurrence search",
         "fields": [
-          "range.countriesWithRecords"
+          "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-20",
@@ -483,7 +488,7 @@
       "ncbi": 197464
     },
     "range": {
-      "countriesWithRecords": [
+      "countriesWithOpenRecords": [
         "BZ",
         "CR",
         "GT",
@@ -492,7 +497,8 @@
         "NI",
         "PA",
         "US"
-      ]
+      ],
+      "status": "ok"
     },
     "photo": {
       "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e3/Red-eyed_Tree_Frog_%28Agalychnis_callidryas%29_1.png/500px-Red-eyed_Tree_Frog_%28Agalychnis_callidryas%29_1.png",
@@ -532,7 +538,7 @@
       {
         "source": "GBIF.org occurrence search",
         "fields": [
-          "range.countriesWithRecords"
+          "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-20",
@@ -580,7 +586,7 @@
       "ncbi": 111096
     },
     "range": {
-      "countriesWithRecords": [
+      "countriesWithOpenRecords": [
         "AO",
         "CD",
         "CF",
@@ -589,7 +595,8 @@
         "GA",
         "GQ",
         "NG"
-      ]
+      ],
+      "status": "ok"
     },
     "photo": {
       "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/24/Trichobatrachus_robustus.JPG/500px-Trichobatrachus_robustus.JPG",
@@ -612,7 +619,7 @@
       {
         "source": "GBIF.org occurrence search",
         "fields": [
-          "range.countriesWithRecords"
+          "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-20",
@@ -661,10 +668,11 @@
       "ncbi": 8439
     },
     "range": {
-      "countriesWithRecords": [
+      "countriesWithOpenRecords": [
         "CA",
         "US"
-      ]
+      ],
+      "status": "ok"
     },
     "photo": {
       "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/0f/Ascaphus_truei_web.jpg/500px-Ascaphus_truei_web.jpg",
@@ -704,7 +712,7 @@
       {
         "source": "GBIF.org occurrence search",
         "fields": [
-          "range.countriesWithRecords"
+          "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-20",
@@ -752,7 +760,8 @@
       "ncbi": 92724
     },
     "range": {
-      "countriesWithRecords": null
+      "countriesWithOpenRecords": null,
+      "status": "identity-unsettled"
     },
     "photo": {
       "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/17/Dendrobates_tinctorius_-_Karlsruhe_Zoo_05.jpg/500px-Dendrobates_tinctorius_-_Karlsruhe_Zoo_05.jpg",
@@ -804,7 +813,7 @@
       "ncbi": 251750
     },
     "range": {
-      "countriesWithRecords": [
+      "countriesWithOpenRecords": [
         "BO",
         "BR",
         "CO",
@@ -816,7 +825,8 @@
         "SR",
         "TT",
         "VE"
-      ]
+      ],
+      "status": "ok"
     },
     "photo": {
       "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a2/Pipa_pipa01.jpg/500px-Pipa_pipa01.jpg",
@@ -856,7 +866,7 @@
       {
         "source": "GBIF.org occurrence search",
         "fields": [
-          "range.countriesWithRecords"
+          "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-20",
@@ -904,10 +914,11 @@
       "ncbi": 143458
     },
     "range": {
-      "countriesWithRecords": [
+      "countriesWithOpenRecords": [
         "CM",
         "GQ"
-      ]
+      ],
+      "status": "ok"
     },
     "photo": {
       "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/60/Conraua_goliath_photo_from_iNaturalist_539752953.jpg/500px-Conraua_goliath_photo_from_iNaturalist_539752953.jpg",
@@ -947,7 +958,7 @@
       {
         "source": "GBIF.org occurrence search",
         "fields": [
-          "range.countriesWithRecords"
+          "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-20",
@@ -995,13 +1006,14 @@
       "ncbi": 55547
     },
     "range": {
-      "countriesWithRecords": [
+      "countriesWithOpenRecords": [
         "ID",
         "MY",
         "SG",
         "TH",
         "US"
-      ]
+      ],
+      "status": "ok"
     },
     "photo": {
       "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/6c/Spiny_Turtle_%28Heosemys_spinosa%29_%287783322772%29.jpg/500px-Spiny_Turtle_%28Heosemys_spinosa%29_%287783322772%29.jpg",
@@ -1041,7 +1053,7 @@
       {
         "source": "GBIF.org occurrence search",
         "fields": [
-          "range.countriesWithRecords"
+          "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-20",
@@ -1089,9 +1101,10 @@
       "ncbi": 272187
     },
     "range": {
-      "countriesWithRecords": [
+      "countriesWithOpenRecords": [
         "MG"
-      ]
+      ],
+      "status": "ok"
     },
     "photo": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/5/51/Dyscophus_antongilii02.jpg",
@@ -1131,7 +1144,7 @@
       {
         "source": "GBIF.org occurrence search",
         "fields": [
-          "range.countriesWithRecords"
+          "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-20",
@@ -1179,10 +1192,11 @@
       "ncbi": 879198
     },
     "range": {
-      "countriesWithRecords": [
+      "countriesWithOpenRecords": [
         "NA",
         "ZA"
-      ]
+      ],
+      "status": "ok"
     },
     "photo": {
       "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/db/Breviceps_macrops_454407799.jpg/500px-Breviceps_macrops_454407799.jpg",
@@ -1222,7 +1236,7 @@
       {
         "source": "GBIF.org occurrence search",
         "fields": [
-          "range.countriesWithRecords"
+          "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-20",
@@ -1270,10 +1284,11 @@
       "ncbi": 286009
     },
     "range": {
-      "countriesWithRecords": [
+      "countriesWithOpenRecords": [
         "KE",
         "TZ"
-      ]
+      ],
+      "status": "ok"
     },
     "photo": {
       "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c7/Malacochersus_tornieri_-_Buffalo_Zoo.jpg/500px-Malacochersus_tornieri_-_Buffalo_Zoo.jpg",
@@ -1313,7 +1328,7 @@
       {
         "source": "GBIF.org occurrence search",
         "fields": [
-          "range.countriesWithRecords"
+          "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-20",
@@ -1361,9 +1376,10 @@
       "ncbi": 251754
     },
     "range": {
-      "countriesWithRecords": [
+      "countriesWithOpenRecords": [
         "IN"
-      ]
+      ],
+      "status": "ok"
     },
     "photo": {
       "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/08/Nasikabatrachus_sahyadrensis.jpg/500px-Nasikabatrachus_sahyadrensis.jpg",
@@ -1403,7 +1419,7 @@
       {
         "source": "GBIF.org occurrence search",
         "fields": [
-          "range.countriesWithRecords"
+          "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-20",
@@ -1451,12 +1467,13 @@
       "ncbi": 44489
     },
     "range": {
-      "countriesWithRecords": [
+      "countriesWithOpenRecords": [
         "AU",
         "ID",
         "PG",
         "SG"
-      ]
+      ],
+      "status": "ok"
     },
     "photo": {
       "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/bb/Carettochelys_insculpta_01.JPG/500px-Carettochelys_insculpta_01.JPG",
@@ -1496,7 +1513,7 @@
       {
         "source": "GBIF.org occurrence search",
         "fields": [
-          "range.countriesWithRecords"
+          "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-20",
@@ -1544,9 +1561,10 @@
       "ncbi": 904230
     },
     "range": {
-      "countriesWithRecords": [
+      "countriesWithOpenRecords": [
         "VN"
-      ]
+      ],
+      "status": "ok"
     },
     "photo": {
       "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d8/R%C3%B9a_%C4%90%E1%BB%93ng_M%C3%B4.jpg/500px-R%C3%B9a_%C4%90%E1%BB%93ng_M%C3%B4.jpg",
@@ -1586,7 +1604,7 @@
       {
         "source": "GBIF.org occurrence search",
         "fields": [
-          "range.countriesWithRecords"
+          "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-20",
@@ -1634,7 +1652,8 @@
       "ncbi": 66189
     },
     "range": {
-      "countriesWithRecords": null
+      "countriesWithOpenRecords": null,
+      "status": "identity-unsettled"
     },
     "photo": null,
     "sources": [
@@ -1697,7 +1716,7 @@
       "ncbi": 101698
     },
     "range": {
-      "countriesWithRecords": [
+      "countriesWithOpenRecords": [
         "BJ",
         "EG",
         "ML",
@@ -1711,7 +1730,8 @@
         "TD",
         "TH",
         "US"
-      ]
+      ],
+      "status": "ok"
     },
     "photo": {
       "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/27/Sulcata_Tortoise_%285%29_%288679964197%29.jpg/500px-Sulcata_Tortoise_%285%29_%288679964197%29.jpg",
@@ -1751,7 +1771,7 @@
       {
         "source": "GBIF.org occurrence search",
         "fields": [
-          "range.countriesWithRecords"
+          "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-20",
@@ -1799,12 +1819,13 @@
       "ncbi": 66190
     },
     "range": {
-      "countriesWithRecords": [
+      "countriesWithOpenRecords": [
         "MG",
         "MU",
         "RE",
         "SC"
-      ]
+      ],
+      "status": "ok"
     },
     "photo": {
       "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/92/Radiated_tortoise_%28Astrochelys_radiata%29_Tsimanampetsotsa.jpg/500px-Radiated_tortoise_%28Astrochelys_radiata%29_Tsimanampetsotsa.jpg",
@@ -1844,7 +1865,7 @@
       {
         "source": "GBIF.org occurrence search",
         "fields": [
-          "range.countriesWithRecords"
+          "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-20",
@@ -1892,9 +1913,10 @@
       "ncbi": 106734
     },
     "range": {
-      "countriesWithRecords": [
+      "countriesWithOpenRecords": [
         "EC"
-      ]
+      ],
+      "status": "ok"
     },
     "photo": {
       "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a5/Lonesome_George_in_profile.png/500px-Lonesome_George_in_profile.png",
@@ -1917,7 +1939,7 @@
       {
         "source": "GBIF.org occurrence search",
         "fields": [
-          "range.countriesWithRecords"
+          "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-20",
@@ -1966,9 +1988,10 @@
       "ncbi": 31869
     },
     "range": {
-      "countriesWithRecords": [
+      "countriesWithOpenRecords": [
         "MG"
-      ]
+      ],
+      "status": "ok"
     },
     "photo": {
       "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a2/Wild_aye_aye.jpg/500px-Wild_aye_aye.jpg",
@@ -2008,7 +2031,7 @@
       {
         "source": "GBIF.org occurrence search",
         "fields": [
-          "range.countriesWithRecords"
+          "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-20",
@@ -2056,7 +2079,7 @@
       "ncbi": 9974
     },
     "range": {
-      "countriesWithRecords": [
+      "countriesWithOpenRecords": [
         "BN",
         "ID",
         "IN",
@@ -2067,7 +2090,8 @@
         "PH",
         "SG",
         "TH"
-      ]
+      ],
+      "status": "ok"
     },
     "photo": {
       "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/42/Pangolin_borneo.jpg/500px-Pangolin_borneo.jpg",
@@ -2107,7 +2131,7 @@
       {
         "source": "GBIF.org occurrence search",
         "fields": [
-          "range.countriesWithRecords"
+          "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-20",
@@ -2155,7 +2179,7 @@
       "ncbi": 9694
     },
     "range": {
-      "countriesWithRecords": [
+      "countriesWithOpenRecords": [
         "BD",
         "BR",
         "BT",
@@ -2172,7 +2196,8 @@
         "US",
         "VN",
         "ZA"
-      ]
+      ],
+      "status": "ok"
     },
     "photo": {
       "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b0/Bengal_tiger_%28Panthera_tigris_tigris%29_female_3_crop.jpg/500px-Bengal_tiger_%28Panthera_tigris_tigris%29_female_3_crop.jpg",
@@ -2212,7 +2237,7 @@
       {
         "source": "GBIF.org occurrence search",
         "fields": [
-          "range.countriesWithRecords"
+          "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-20",
@@ -2260,11 +2285,12 @@
       "ncbi": 77151
     },
     "range": {
-      "countriesWithRecords": [
+      "countriesWithOpenRecords": [
         "CA",
         "MX",
         "US"
-      ]
+      ],
+      "status": "ok"
     },
     "photo": {
       "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/cf/Mustela_nigripes_2.jpg/500px-Mustela_nigripes_2.jpg",
@@ -2304,7 +2330,7 @@
       {
         "source": "GBIF.org occurrence search",
         "fields": [
-          "range.countriesWithRecords"
+          "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-20",
@@ -2352,7 +2378,8 @@
       "ncbi": 33543
     },
     "range": {
-      "countriesWithRecords": null
+      "countriesWithOpenRecords": null,
+      "status": "identity-unsettled"
     },
     "photo": {
       "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/3b/Long-beakedEchidna.jpg/500px-Long-beakedEchidna.jpg",
@@ -2404,7 +2431,7 @@
       "ncbi": 9783
     },
     "range": {
-      "countriesWithRecords": [
+      "countriesWithOpenRecords": [
         "BD",
         "BE",
         "BT",
@@ -2422,7 +2449,8 @@
         "TH",
         "US",
         "VN"
-      ]
+      ],
+      "status": "ok"
     },
     "photo": {
       "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/98/Elephas_maximus_%28Bandipur%29.jpg/500px-Elephas_maximus_%28Bandipur%29.jpg",
@@ -2462,7 +2490,7 @@
       {
         "source": "GBIF.org occurrence search",
         "fields": [
-          "range.countriesWithRecords"
+          "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-20",
@@ -2510,11 +2538,12 @@
       "ncbi": 86973
     },
     "range": {
-      "countriesWithRecords": [
+      "countriesWithOpenRecords": [
         "CD",
         "CG",
         "US"
-      ]
+      ],
+      "status": "ok"
     },
     "photo": {
       "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/3a/Saint-Aignan_%28Loir-et-Cher%29._Okapi.jpg/500px-Saint-Aignan_%28Loir-et-Cher%29._Okapi.jpg",
@@ -2554,7 +2583,7 @@
       {
         "source": "GBIF.org occurrence search",
         "fields": [
-          "range.countriesWithRecords"
+          "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-20",
@@ -2602,10 +2631,11 @@
       "ncbi": 652851
     },
     "range": {
-      "countriesWithRecords": [
+      "countriesWithOpenRecords": [
         "CR",
         "PA"
-      ]
+      ],
+      "status": "ok"
     },
     "photo": {
       "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a0/Perezoso_La_Mochila.jpg/500px-Perezoso_La_Mochila.jpg",
@@ -2645,7 +2675,7 @@
       {
         "source": "GBIF.org occurrence search",
         "fields": [
-          "range.countriesWithRecords"
+          "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-20",
@@ -2693,9 +2723,10 @@
       "ncbi": 30667
     },
     "range": {
-      "countriesWithRecords": [
+      "countriesWithOpenRecords": [
         "AU"
-      ]
+      ],
+      "status": "ok"
     },
     "photo": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/0/00/Haarnasenwombat_%28Lasiorhinus_krefftii%29.jpg",
@@ -2735,7 +2766,7 @@
       {
         "source": "GBIF.org occurrence search",
         "fields": [
-          "range.countriesWithRecords"
+          "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-20",
@@ -2783,9 +2814,10 @@
       "ncbi": 745252
     },
     "range": {
-      "countriesWithRecords": [
+      "countriesWithOpenRecords": [
         "ZA"
-      ]
+      ],
+      "status": "ok"
     },
     "photo": {
       "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/6a/De_Winton%27s_golden_mole_%28Cryptochloris_wintoni%29.jpg/500px-De_Winton%27s_golden_mole_%28Cryptochloris_wintoni%29.jpg",
@@ -2825,7 +2857,7 @@
       {
         "source": "GBIF.org occurrence search",
         "fields": [
-          "range.countriesWithRecords"
+          "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-20",
@@ -2873,9 +2905,10 @@
       "ncbi": 32534
     },
     "range": {
-      "countriesWithRecords": [
+      "countriesWithOpenRecords": [
         "ET"
-      ]
+      ],
+      "status": "ok"
     },
     "photo": {
       "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e8/Ethiopian_wolf_%28Canis_simensis_citernii%29.jpg/500px-Ethiopian_wolf_%28Canis_simensis_citernii%29.jpg",
@@ -2915,7 +2948,7 @@
       {
         "source": "GBIF.org occurrence search",
         "fields": [
-          "range.countriesWithRecords"
+          "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-20",
@@ -2963,9 +2996,10 @@
       "ncbi": 61622
     },
     "range": {
-      "countriesWithRecords": [
+      "countriesWithOpenRecords": [
         "CN"
-      ]
+      ],
+      "status": "ok"
     },
     "photo": {
       "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c8/Golden_Snub-nosed_Monkeys%2C_Qinling_Mountains_-_China.jpg/500px-Golden_Snub-nosed_Monkeys%2C_Qinling_Mountains_-_China.jpg",
@@ -3005,7 +3039,7 @@
       {
         "source": "GBIF.org occurrence search",
         "fields": [
-          "range.countriesWithRecords"
+          "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-20",
@@ -3053,13 +3087,14 @@
       "ncbi": 9649
     },
     "range": {
-      "countriesWithRecords": [
+      "countriesWithOpenRecords": [
         "BT",
         "CN",
         "IN",
         "NP",
         "US"
-      ]
+      ],
+      "status": "ok"
     },
     "photo": {
       "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/fd/Red_Panda%2C_Gentle_Tree-Dweller_of_the_Himalayas.jpg/500px-Red_Panda%2C_Gentle_Tree-Dweller_of_the_Himalayas.jpg",
@@ -3099,7 +3134,7 @@
       {
         "source": "GBIF.org occurrence search",
         "fields": [
-          "range.countriesWithRecords"
+          "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-20",
@@ -3146,7 +3181,7 @@
       "ncbi": 183752
     },
     "range": {
-      "countriesWithRecords": [
+      "countriesWithOpenRecords": [
         "AR",
         "BO",
         "BR",
@@ -3157,7 +3192,8 @@
         "PE",
         "PY",
         "VE"
-      ]
+      ],
+      "status": "ok"
     },
     "photo": {
       "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/06/Priodontes_maximus_at_R%C3%A9gina.jpg/500px-Priodontes_maximus_at_R%C3%A9gina.jpg",
@@ -3197,7 +3233,7 @@
       {
         "source": "GBIF.org occurrence search",
         "fields": [
-          "range.countriesWithRecords"
+          "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-20",
@@ -3245,9 +3281,10 @@
       "ncbi": 92651
     },
     "range": {
-      "countriesWithRecords": [
+      "countriesWithOpenRecords": [
         "AU"
-      ]
+      ],
+      "status": "ok"
     },
     "photo": {
       "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/ed/Bilby_at_Sydney_Wildlife_World.jpg/500px-Bilby_at_Sydney_Wildlife_World.jpg",
@@ -3287,7 +3324,7 @@
       {
         "source": "GBIF.org occurrence search",
         "fields": [
-          "range.countriesWithRecords"
+          "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-20",
@@ -3335,10 +3372,11 @@
       "ncbi": 97363
     },
     "range": {
-      "countriesWithRecords": [
+      "countriesWithOpenRecords": [
         "LA",
         "VN"
-      ]
+      ],
+      "status": "ok"
     },
     "photo": {
       "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/69/Pseudoryx_nghetinhensis_318197.jpg/500px-Pseudoryx_nghetinhensis_318197.jpg",
@@ -3378,7 +3416,7 @@
       {
         "source": "GBIF.org occurrence search",
         "fields": [
-          "range.countriesWithRecords"
+          "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-20",
@@ -3426,14 +3464,15 @@
       "ncbi": 9792
     },
     "range": {
-      "countriesWithRecords": [
+      "countriesWithOpenRecords": [
         "ET",
         "FR",
         "KE",
         "TZ",
         "US",
         "ZM"
-      ]
+      ],
+      "status": "ok"
     },
     "photo": {
       "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/74/Grevy%27s_Zebra_Stallion.jpg/500px-Grevy%27s_Zebra_Stallion.jpg",
@@ -3473,7 +3512,7 @@
       {
         "source": "GBIF.org occurrence search",
         "fields": [
-          "range.countriesWithRecords"
+          "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-20",
@@ -3521,11 +3560,12 @@
       "ncbi": 9601
     },
     "range": {
-      "countriesWithRecords": [
+      "countriesWithOpenRecords": [
         "ID",
         "MY",
         "US"
-      ]
+      ],
+      "status": "ok"
     },
     "photo": {
       "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/2c/Sumatra-Orang-Utan_im_Pongoland.jpg/500px-Sumatra-Orang-Utan_im_Pongoland.jpg",
@@ -3565,7 +3605,7 @@
       {
         "source": "GBIF.org occurrence search",
         "fields": [
-          "range.countriesWithRecords"
+          "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-20",
@@ -3612,7 +3652,7 @@
       "ncbi": 99490
     },
     "range": {
-      "countriesWithRecords": [
+      "countriesWithOpenRecords": [
         "CD",
         "CF",
         "CG",
@@ -3627,7 +3667,8 @@
         "RW",
         "UG",
         "ZA"
-      ]
+      ],
+      "status": "ok"
     },
     "photo": {
       "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f3/Loxodontacyclotis.jpg/500px-Loxodontacyclotis.jpg",
@@ -3667,7 +3708,7 @@
       {
         "source": "GBIF.org occurrence search",
         "fields": [
-          "range.countriesWithRecords"
+          "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-20",
@@ -3715,9 +3756,10 @@
       "ncbi": 93167
     },
     "range": {
-      "countriesWithRecords": [
+      "countriesWithOpenRecords": [
         "CA"
-      ]
+      ],
+      "status": "ok"
     },
     "photo": {
       "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/02/Vancouver_Island_marmot_%28Marmota_vancouverensis%29_Mt_Washington.jpg/500px-Vancouver_Island_marmot_%28Marmota_vancouverensis%29_Mt_Washington.jpg",
@@ -3757,7 +3799,7 @@
       {
         "source": "GBIF.org occurrence search",
         "fields": [
-          "range.countriesWithRecords"
+          "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-20",
@@ -3805,11 +3847,12 @@
       "ncbi": 69260
     },
     "range": {
-      "countriesWithRecords": [
+      "countriesWithOpenRecords": [
         "DE",
         "PG",
         "US"
-      ]
+      ],
+      "status": "ok"
     },
     "photo": {
       "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/56/Tree_kangaroo2.jpg/500px-Tree_kangaroo2.jpg",
@@ -3849,7 +3892,7 @@
       {
         "source": "GBIF.org occurrence search",
         "fields": [
-          "range.countriesWithRecords"
+          "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-20",
@@ -3897,10 +3940,11 @@
       "ncbi": 102233
     },
     "range": {
-      "countriesWithRecords": [
+      "countriesWithOpenRecords": [
         "ID",
         "TH"
-      ]
+      ],
+      "status": "ok"
     },
     "photo": {
       "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/ce/Rhinoceros_sondaicus_in_London_Zoo.jpg/500px-Rhinoceros_sondaicus_in_London_Zoo.jpg",
@@ -3940,7 +3984,7 @@
       {
         "source": "GBIF.org occurrence search",
         "fields": [
-          "range.countriesWithRecords"
+          "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-20",
@@ -3988,9 +4032,10 @@
       "ncbi": 589508
     },
     "range": {
-      "countriesWithRecords": [
+      "countriesWithOpenRecords": [
         "KM"
-      ]
+      ],
+      "status": "ok"
     },
     "photo": {
       "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/ca/Bristol.zoo.livfruitbat.arp.jpg/500px-Bristol.zoo.livfruitbat.arp.jpg",
@@ -4030,7 +4075,7 @@
       {
         "source": "GBIF.org occurrence search",
         "fields": [
-          "range.countriesWithRecords"
+          "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-20",
@@ -4078,9 +4123,10 @@
       "ncbi": 320636
     },
     "range": {
-      "countriesWithRecords": [
+      "countriesWithOpenRecords": [
         "KE"
-      ]
+      ],
+      "status": "ok"
     },
     "photo": {
       "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/16/Rhynchocyon_chrysopygus.jpg/500px-Rhynchocyon_chrysopygus.jpg",
@@ -4120,7 +4166,7 @@
       {
         "source": "GBIF.org occurrence search",
         "fields": [
-          "range.countriesWithRecords"
+          "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-20",
@@ -4168,7 +4214,8 @@
       "ncbi": 221160
     },
     "range": {
-      "countriesWithRecords": []
+      "countriesWithOpenRecords": null,
+      "status": "no-open-records"
     },
     "photo": null,
     "sources": [
@@ -4199,15 +4246,6 @@
         "url": "https://api.gbif.org/v2/species/match?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&scientificName=Ochotona%20iliensis",
         "doi": "10.15468/39omei",
         "checklistKey": "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c"
-      },
-      {
-        "source": "GBIF.org occurrence search",
-        "fields": [
-          "range.countriesWithRecords"
-        ],
-        "license": "CC BY 4.0",
-        "retrieved": "2026-10-20",
-        "url": "https://api.gbif.org/v1/occurrence/search?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&taxonKey=2436969&facet=country&facet=license&facetLimit=300&limit=0&occurrenceStatus=PRESENT&hasGeospatialIssue=false&hasCoordinate=true&license=CC0_1_0&license=CC_BY_4_0&basisOfRecord=HUMAN_OBSERVATION&basisOfRecord=OBSERVATION&basisOfRecord=MACHINE_OBSERVATION&basisOfRecord=PRESERVED_SPECIMEN&basisOfRecord=MATERIAL_SAMPLE&basisOfRecord=MATERIAL_CITATION&basisOfRecord=OCCURRENCE"
       },
       {
         "source": "Wikidata",
@@ -4251,10 +4289,11 @@
       "ncbi": 9305
     },
     "range": {
-      "countriesWithRecords": [
+      "countriesWithOpenRecords": [
         "AU",
         "US"
-      ]
+      ],
+      "status": "ok"
     },
     "photo": {
       "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/43/Sarcophilus_harrisii_taranna.jpg/500px-Sarcophilus_harrisii_taranna.jpg",
@@ -4294,7 +4333,7 @@
       {
         "source": "GBIF.org occurrence search",
         "fields": [
-          "range.countriesWithRecords"
+          "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-20",
@@ -4342,10 +4381,11 @@
       "ncbi": 79805
     },
     "range": {
-      "countriesWithRecords": [
+      "countriesWithOpenRecords": [
         "DO",
         "HT"
-      ]
+      ],
+      "status": "ok"
     },
     "photo": {
       "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/09/Hispaniolan_Solenodon_crop.jpg/500px-Hispaniolan_Solenodon_crop.jpg",
@@ -4385,7 +4425,7 @@
       {
         "source": "GBIF.org occurrence search",
         "fields": [
-          "range.countriesWithRecords"
+          "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-20",
@@ -4433,7 +4473,7 @@
       "ncbi": 59515
     },
     "range": {
-      "countriesWithRecords": [
+      "countriesWithOpenRecords": [
         "DZ",
         "KE",
         "LY",
@@ -4444,7 +4484,8 @@
         "TD",
         "TN",
         "US"
-      ]
+      ],
+      "status": "ok"
     },
     "photo": {
       "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8d/A_big_male_Addax_showing_as_the_power_of_his_horns.jpg/500px-A_big_male_Addax_showing_as_the_power_of_his_horns.jpg",
@@ -4484,7 +4525,7 @@
       {
         "source": "GBIF.org occurrence search",
         "fields": [
-          "range.countriesWithRecords"
+          "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-20",
@@ -4532,7 +4573,7 @@
       "ncbi": 9690
     },
     "range": {
-      "countriesWithRecords": [
+      "countriesWithOpenRecords": [
         "AR",
         "BO",
         "BR",
@@ -4553,7 +4594,8 @@
         "US",
         "UY",
         "VE"
-      ]
+      ],
+      "status": "ok"
     },
     "photo": {
       "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/0a/Standing_jaguar.jpg/500px-Standing_jaguar.jpg",
@@ -4593,7 +4635,7 @@
       {
         "source": "GBIF.org occurrence search",
         "fields": [
-          "range.countriesWithRecords"
+          "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-20",
@@ -4641,7 +4683,7 @@
       "ncbi": 71006
     },
     "range": {
-      "countriesWithRecords": [
+      "countriesWithOpenRecords": [
         "AR",
         "BO",
         "BR",
@@ -4656,7 +4698,8 @@
         "SR",
         "US",
         "VE"
-      ]
+      ],
+      "status": "ok"
     },
     "photo": {
       "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/3b/Myresluger2.jpg/500px-Myresluger2.jpg",
@@ -4696,7 +4739,7 @@
       {
         "source": "GBIF.org occurrence search",
         "fields": [
-          "range.countriesWithRecords"
+          "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-20",
@@ -4744,7 +4787,7 @@
       "ncbi": 9801
     },
     "range": {
-      "countriesWithRecords": [
+      "countriesWithOpenRecords": [
         "AR",
         "BO",
         "BR",
@@ -4757,7 +4800,8 @@
         "SR",
         "US",
         "VE"
-      ]
+      ],
+      "status": "ok"
     },
     "photo": {
       "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/36/South_American_tapir_%28Tapirus_terrestris%29.JPG/500px-South_American_tapir_%28Tapirus_terrestris%29.JPG",
@@ -4797,7 +4841,7 @@
       {
         "source": "GBIF.org occurrence search",
         "fields": [
-          "range.countriesWithRecords"
+          "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-20",
@@ -4845,7 +4889,7 @@
       "ncbi": 9355
     },
     "range": {
-      "countriesWithRecords": [
+      "countriesWithOpenRecords": [
         "BO",
         "BR",
         "CO",
@@ -4858,7 +4902,8 @@
         "PE",
         "SR",
         "VE"
-      ]
+      ],
+      "status": "ok"
     },
     "photo": {
       "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/18/Bradypus.jpg/500px-Bradypus.jpg",
@@ -4898,7 +4943,7 @@
       {
         "source": "GBIF.org occurrence search",
         "fields": [
-          "range.countriesWithRecords"
+          "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-20",
@@ -4946,7 +4991,7 @@
       "ncbi": 1559511
     },
     "range": {
-      "countriesWithRecords": [
+      "countriesWithOpenRecords": [
         "BJ",
         "CD",
         "CI",
@@ -4956,7 +5001,8 @@
         "LR",
         "NG",
         "UG"
-      ]
+      ],
+      "status": "ok"
     },
     "photo": {
       "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/0c/Giant_pangolin_%28Manis_gigantea%29%2C_Natural_History_Museum%2C_London%2C_Mammals_Gallery.JPG/500px-Giant_pangolin_%28Manis_gigantea%29%2C_Natural_History_Museum%2C_London%2C_Mammals_Gallery.JPG",
@@ -4996,7 +5042,7 @@
       {
         "source": "GBIF.org occurrence search",
         "fields": [
-          "range.countriesWithRecords"
+          "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-20",
@@ -5044,7 +5090,7 @@
       "ncbi": 9598
     },
     "range": {
-      "countriesWithRecords": [
+      "countriesWithOpenRecords": [
         "AU",
         "BR",
         "CD",
@@ -5072,7 +5118,8 @@
         "TZ",
         "UG",
         "US"
-      ]
+      ],
+      "status": "ok"
     },
     "photo": {
       "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/42/015_Chimpanzee_at_Kibale_forest_National_Park_Photo_by_Giles_Laurent.jpg/500px-015_Chimpanzee_at_Kibale_forest_National_Park_Photo_by_Giles_Laurent.jpg",
@@ -5112,7 +5159,7 @@
       {
         "source": "GBIF.org occurrence search",
         "fields": [
-          "range.countriesWithRecords"
+          "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-20",
@@ -5160,7 +5207,7 @@
       "ncbi": 9818
     },
     "range": {
-      "countriesWithRecords": [
+      "countriesWithOpenRecords": [
         "AO",
         "BF",
         "BJ",
@@ -5182,7 +5229,8 @@
         "ZA",
         "ZM",
         "ZW"
-      ]
+      ],
+      "status": "ok"
     },
     "photo": {
       "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f0/Orycteropus_afer_175359469.jpg/500px-Orycteropus_afer_175359469.jpg",
@@ -5222,7 +5270,7 @@
       {
         "source": "GBIF.org occurrence search",
         "fields": [
-          "range.countriesWithRecords"
+          "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-20",
@@ -5270,7 +5318,7 @@
       "ncbi": 32536
     },
     "range": {
-      "countriesWithRecords": [
+      "countriesWithOpenRecords": [
         "AO",
         "AU",
         "BJ",
@@ -5293,7 +5341,8 @@
         "ZA",
         "ZM",
         "ZW"
-      ]
+      ],
+      "status": "ok"
     },
     "photo": {
       "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/92/Male_cheetah_facing_left_in_South_Africa.jpg/500px-Male_cheetah_facing_left_in_South_Africa.jpg",
@@ -5333,7 +5382,7 @@
       {
         "source": "GBIF.org occurrence search",
         "fields": [
-          "range.countriesWithRecords"
+          "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-20",
@@ -5381,12 +5430,13 @@
       "ncbi": 1496684
     },
     "range": {
-      "countriesWithRecords": [
+      "countriesWithOpenRecords": [
         "IN",
         "LK",
         "NP",
         "PK"
-      ]
+      ],
+      "status": "ok"
     },
     "photo": {
       "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/30/Scaly_ant_eater_by_Dushy_Ranetunge_2.jpg/500px-Scaly_ant_eater_by_Dushy_Ranetunge_2.jpg",
@@ -5409,7 +5459,7 @@
       {
         "source": "GBIF.org occurrence search",
         "fields": [
-          "range.countriesWithRecords"
+          "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-20",
@@ -5458,10 +5508,11 @@
       "ncbi": 9646
     },
     "range": {
-      "countriesWithRecords": [
+      "countriesWithOpenRecords": [
         "CN",
         "DE"
-      ]
+      ],
+      "status": "ok"
     },
     "photo": {
       "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/0f/Grosser_Panda.JPG/500px-Grosser_Panda.JPG",
@@ -5501,7 +5552,7 @@
       {
         "source": "GBIF.org occurrence search",
         "fields": [
-          "range.countriesWithRecords"
+          "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-20",
@@ -5549,9 +5600,10 @@
       "ncbi": 34827
     },
     "range": {
-      "countriesWithRecords": [
+      "countriesWithOpenRecords": [
         "MG"
-      ]
+      ],
+      "status": "ok"
     },
     "photo": {
       "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/0d/Indri_%28Indri_indri%29.jpg/500px-Indri_%28Indri_indri%29.jpg",
@@ -5591,7 +5643,7 @@
       {
         "source": "GBIF.org occurrence search",
         "fields": [
-          "range.countriesWithRecords"
+          "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-20",
@@ -5639,9 +5691,10 @@
       "ncbi": 141262
     },
     "range": {
-      "countriesWithRecords": [
+      "countriesWithOpenRecords": [
         "CN"
-      ]
+      ],
+      "status": "ok"
     },
     "photo": {
       "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a0/Velemlok_%C4%8D%C3%ADnsk%C3%BD_zoo_praha_1.jpg/500px-Velemlok_%C4%8D%C3%ADnsk%C3%BD_zoo_praha_1.jpg",
@@ -5681,7 +5734,7 @@
       {
         "source": "GBIF.org occurrence search",
         "fields": [
-          "range.countriesWithRecords"
+          "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-20",
@@ -5729,7 +5782,7 @@
       "ncbi": 302418
     },
     "range": {
-      "countriesWithRecords": [
+      "countriesWithOpenRecords": [
         "AO",
         "BW",
         "KE",
@@ -5743,7 +5796,8 @@
         "UG",
         "ZA",
         "ZW"
-      ]
+      ],
+      "status": "ok"
     },
     "photo": {
       "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/6b/Manis_temminckii_%2829645803646%29.jpg/500px-Manis_temminckii_%2829645803646%29.jpg",
@@ -5783,7 +5837,7 @@
       {
         "source": "GBIF.org occurrence search",
         "fields": [
-          "range.countriesWithRecords"
+          "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-20",
@@ -5831,7 +5885,7 @@
       "ncbi": 9785
     },
     "range": {
-      "countriesWithRecords": [
+      "countriesWithOpenRecords": [
         "AO",
         "BJ",
         "BW",
@@ -5864,7 +5918,8 @@
         "ZA",
         "ZM",
         "ZW"
-      ]
+      ],
+      "status": "ok"
     },
     "photo": {
       "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/94/178_Male_African_bush_elephant_in_Etosha_National_Park_Photo_by_Giles_Laurent.jpg/500px-178_Male_African_bush_elephant_in_Etosha_National_Park_Photo_by_Giles_Laurent.jpg",
@@ -5904,7 +5959,7 @@
       {
         "source": "GBIF.org occurrence search",
         "fields": [
-          "range.countriesWithRecords"
+          "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-20",
@@ -5952,7 +6007,7 @@
       "ncbi": 9622
     },
     "range": {
-      "countriesWithRecords": [
+      "countriesWithOpenRecords": [
         "BJ",
         "BR",
         "BW",
@@ -5969,7 +6024,8 @@
         "ZA",
         "ZM",
         "ZW"
-      ]
+      ],
+      "status": "ok"
     },
     "photo": {
       "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/75/African_Wild_Dog_at_Working_with_Wildlife.jpg/500px-African_Wild_Dog_at_Working_with_Wildlife.jpg",
@@ -6009,7 +6065,7 @@
       {
         "source": "GBIF.org occurrence search",
         "fields": [
-          "range.countriesWithRecords"
+          "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-20",
@@ -6057,7 +6113,7 @@
       "ncbi": 9805
     },
     "range": {
-      "countriesWithRecords": [
+      "countriesWithOpenRecords": [
         "AO",
         "CF",
         "FR",
@@ -6070,7 +6126,8 @@
         "US",
         "ZA",
         "ZW"
-      ]
+      ],
+      "status": "ok"
     },
     "photo": {
       "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/69/Black_Rhino_at_Working_with_Wildlife.jpg/500px-Black_Rhino_at_Working_with_Wildlife.jpg",
@@ -6110,7 +6167,7 @@
       {
         "source": "GBIF.org occurrence search",
         "fields": [
-          "range.countriesWithRecords"
+          "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-20",
@@ -6158,9 +6215,10 @@
       "ncbi": 1684342
     },
     "range": {
-      "countriesWithRecords": [
+      "countriesWithOpenRecords": [
         "PG"
-      ]
+      ],
+      "status": "ok"
     },
     "photo": {
       "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f5/Zaglossus_bartoni_-_MUSE.JPG/500px-Zaglossus_bartoni_-_MUSE.JPG",
@@ -6200,7 +6258,7 @@
       {
         "source": "GBIF.org occurrence search",
         "fields": [
-          "range.countriesWithRecords"
+          "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-20",
@@ -6248,9 +6306,10 @@
       "ncbi": 59527
     },
     "range": {
-      "countriesWithRecords": [
+      "countriesWithOpenRecords": [
         "KE"
-      ]
+      ],
+      "status": "ok"
     },
     "photo": {
       "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/6d/Beatragus_hunteri_176040791.jpg/500px-Beatragus_hunteri_176040791.jpg",
@@ -6290,7 +6349,7 @@
       {
         "source": "GBIF.org occurrence search",
         "fields": [
-          "range.countriesWithRecords"
+          "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-20",
@@ -6338,7 +6397,7 @@
       "ncbi": 67940
     },
     "range": {
-      "countriesWithRecords": [
+      "countriesWithOpenRecords": [
         "ES",
         "ET",
         "KE",
@@ -6346,7 +6405,8 @@
         "SN",
         "TD",
         "US"
-      ]
+      ],
+      "status": "ok"
     },
     "photo": {
       "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a5/Gazella_dama_ruficollis_3zz.jpg/500px-Gazella_dama_ruficollis_3zz.jpg",
@@ -6386,7 +6446,7 @@
       {
         "source": "GBIF.org occurrence search",
         "fields": [
-          "range.countriesWithRecords"
+          "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-20",
@@ -6434,7 +6494,7 @@
       "ncbi": 56117
     },
     "range": {
-      "countriesWithRecords": [
+      "countriesWithOpenRecords": [
         "BZ",
         "CO",
         "CR",
@@ -6443,7 +6503,8 @@
         "NI",
         "PA",
         "US"
-      ]
+      ],
+      "status": "ok"
     },
     "photo": {
       "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b1/Baird%27s_tapir_mother_with_baby_%2892151%29.jpg/500px-Baird%27s_tapir_mother_with_baby_%2892151%29.jpg",
@@ -6466,7 +6527,7 @@
       {
         "source": "GBIF.org occurrence search",
         "fields": [
-          "range.countriesWithRecords"
+          "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-20",
@@ -6515,7 +6576,7 @@
       "ncbi": 9638
     },
     "range": {
-      "countriesWithRecords": [
+      "countriesWithOpenRecords": [
         "BO",
         "CO",
         "EC",
@@ -6524,7 +6585,8 @@
         "PE",
         "US",
         "VE"
-      ]
+      ],
+      "status": "ok"
     },
     "photo": {
       "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/56/Tremarctos_ornatus_in_Jardim_Zool%C3%B3gico_de_Curitiba.jpg/500px-Tremarctos_ornatus_in_Jardim_Zool%C3%B3gico_de_Curitiba.jpg",
@@ -6564,7 +6626,7 @@
       {
         "source": "GBIF.org occurrence search",
         "fields": [
-          "range.countriesWithRecords"
+          "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-20",
@@ -6612,7 +6674,7 @@
       "ncbi": 68728
     },
     "range": {
-      "countriesWithRecords": [
+      "countriesWithOpenRecords": [
         "AR",
         "BO",
         "BR",
@@ -6620,7 +6682,8 @@
         "PY",
         "US",
         "UY"
-      ]
+      ],
+      "status": "ok"
     },
     "photo": {
       "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a3/Lobo_Guar%C3%A1_andando.jpg/500px-Lobo_Guar%C3%A1_andando.jpg",
@@ -6660,7 +6723,7 @@
       {
         "source": "GBIF.org occurrence search",
         "fields": [
-          "range.countriesWithRecords"
+          "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-20",
@@ -6708,7 +6771,7 @@
       "ncbi": 9672
     },
     "range": {
-      "countriesWithRecords": [
+      "countriesWithOpenRecords": [
         "AR",
         "BO",
         "BR",
@@ -6720,7 +6783,8 @@
         "PY",
         "SR",
         "VE"
-      ]
+      ],
+      "status": "ok"
     },
     "photo": {
       "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/21/Giant_otters_%28Pteronura_brasiliensis%29.jpg/500px-Giant_otters_%28Pteronura_brasiliensis%29.jpg",
@@ -6743,7 +6807,7 @@
       {
         "source": "GBIF.org occurrence search",
         "fields": [
-          "range.countriesWithRecords"
+          "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-20",
@@ -6792,12 +6856,13 @@
       "ncbi": 8296
     },
     "range": {
-      "countriesWithRecords": [
+      "countriesWithOpenRecords": [
         "CA",
         "DE",
         "MX",
         "NZ"
-      ]
+      ],
+      "status": "ok"
     },
     "photo": {
       "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/00/Axolotl_ganz.jpg/500px-Axolotl_ganz.jpg",
@@ -6837,7 +6902,7 @@
       {
         "source": "GBIF.org occurrence search",
         "fields": [
-          "range.countriesWithRecords"
+          "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-20",
@@ -6885,9 +6950,10 @@
       "ncbi": 43048
     },
     "range": {
-      "countriesWithRecords": [
+      "countriesWithOpenRecords": [
         "US"
-      ]
+      ],
+      "status": "ok"
     },
     "photo": {
       "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/87/Hellbender.jpg/500px-Hellbender.jpg",
@@ -6927,7 +6993,7 @@
       {
         "source": "GBIF.org occurrence search",
         "fields": [
-          "range.countriesWithRecords"
+          "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-20",
@@ -6975,10 +7041,11 @@
       "ncbi": 111132
     },
     "range": {
-      "countriesWithRecords": [
+      "countriesWithOpenRecords": [
         "BR",
         "CO"
-      ]
+      ],
+      "status": "ok"
     },
     "photo": {
       "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/6e/Schrecklicherpfeilgiftfrosch-01.jpg/500px-Schrecklicherpfeilgiftfrosch-01.jpg",
@@ -7018,7 +7085,7 @@
       {
         "source": "GBIF.org occurrence search",
         "fields": [
-          "range.countriesWithRecords"
+          "range.countriesWithOpenRecords"
         ],
         "license": "CC BY 4.0",
         "retrieved": "2026-10-20",
