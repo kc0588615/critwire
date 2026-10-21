@@ -131,7 +131,7 @@ Out:
 - [x] Baseline: install, migrate, run typecheck, lint, unit and E2E tests; record the results under Baseline
 - [x] Architecture: `architect` writes findings and the target design
 - [x] Fable review: `architecture-reviewer`
-- [ ] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
+- [x] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
 - [ ] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
 - [ ] Steps: `planner` writes Steps and Verification
 
@@ -664,6 +664,20 @@ SHOULD-CONSIDER:
 
 ## Architecture review (Astra)
 
+Astra (gpt-6-astra, medium), 2026-10-21.
+
+VERDICT: APPROVE_WITH_CHANGES
+
+MUST-FIX:
+1. §6 read-back uses a `sourceUrl` generated from current HEAD. Committing `registration.json` changes HEAD, so subsequent verification rejects the existing registration. Persist the original request and verify/adopt against its original URL, including recovery after rebases.
+2. §6 registration validates fresh contributions but not fresh `species.json`. It can mint a DOI pointing to stale country lists. Compare committed species and mismatches with `deriveAll` before registration; enforce derived-output freshness before strict builds too.
+3. §6 intent handling lacks mutual exclusion. Concurrent registrations can both observe no intent and POST, minting duplicate DOIs. Require an exclusive lock covering reconciliation through result persistence, with atomic intent creation.
+
+SHOULD-CONSIDER:
+1. §5 equal totals detect some index changes, not all; describe facet consistency as best-effort.
+2. §8 distinguish null countries caused by `no-open-records` from `identity-unsettled`.
+3. Document the complete stale-DOI refresh workflow in AGENTS.md.
+
 ## Revision notes
 
 ## Steps
@@ -680,5 +694,6 @@ SHOULD-CONSIDER:
 - 2026-10-21 05:13 UTC: Baseline recorded; typecheck pass, 42/42 unit, derive deterministic, db:load 76, build placeholder ok; no lint/E2E yet.
 - 2026-10-21 05:35 UTC: Architecture written by `architect` (findings, target design, A1–A12, risks R1–R8); DuckDB node-api 1.5.6-r.2 smoke-tested on arm64 (deterministic Parquet). Docs-only change; no checks needed.
 - 2026-10-21 05:39 UTC: H2 (merge+deploy at end) picked up into Decisions. Fable review: APPROVE, 0 MUST-FIX, 5 SHOULD-CONSIDER. Docs-only; no checks needed.
+- 2026-10-21 05:40 UTC: Astra review: APPROVE_WITH_CHANGES, 3 MUST-FIX (§6 sourceUrl vs HEAD, stale species.json before register, register lock), 3 SHOULD-CONSIDER. Docs-only; no checks needed.
 
 ## Summary
