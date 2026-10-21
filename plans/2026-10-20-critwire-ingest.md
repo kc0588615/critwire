@@ -8,6 +8,8 @@ started: 2026-10-20 05:35 UTC
 
 # Mission: critwire step 2, ingest ids, taxonomy and countries
 
+> **Superseded (issue #4, 2026-10-21):** `range.countriesWithRecords` is now `range.countriesWithOpenRecords`, plus `range.status` (`ok` | `no-open-records` | `identity-unsettled`); never `[]`, `null` unless `ok`. Current contract: `AGENTS.md` (Countries), `plans/001-mvp.md` (Record). Text below is historical.
+
 This file is the mission's state. Agents: follow "In a mission session" in `~/.claude/CLAUDE.md`, and keep this file current.
 
 ## Brief

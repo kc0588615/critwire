@@ -1,20 +1,20 @@
 // Published record (plan §4): one data/species.json entry from a base species and the rule results, with sources[].
 // Pure: no fs, network or clock. Keys are built in a fixed order; every published ids.*, the taxonomy and non-null
-// countries are cited by exactly one source, which buildRecord asserts before returning.
+// countries are cited by exactly one source (range.status is critwire's own and uncited), which buildRecord asserts before returning.
 import { colLicense } from "./col.ts";
 import { gbifBackboneLicense } from "./gbif.ts";
 import type { ColRelease, GbifChecklist } from "../raw.ts";
-import type { BaseSpecies, Source, Species, Taxonomy } from "../species.ts";
+import type { BaseSpecies, RangeStatus, Source, Species, Taxonomy } from "../species.ts";
 
 export interface RecordInput {
   base: BaseSpecies;
   wikidata: { retrieved: string; ids: { wikidata: string | null; inaturalist: number | null; ncbi: number | null } };
   col: { retrieved: string; release: ColRelease; url: string; id: string | null; taxonomy: Taxonomy; taxonomySource: "col" | "base" };
-  gbif: { retrieved: string; checklist: GbifChecklist; url: string; id: number | null; occurrencesUrl: string | null; countries: string[] | null };
+  gbif: { retrieved: string; checklist: GbifChecklist; url: string; id: number | null; occurrencesUrl: string | null; countries: string[] | null; rangeStatus: RangeStatus };
 }
 
 // Citable fields, in the fixed order sources[].fields uses.
-const FIELDS = ["ids.iucn", "ids.gbif", "ids.col", "ids.wikidata", "ids.inaturalist", "ids.ncbi", "taxonomy", "range.countriesWithRecords"] as const;
+const FIELDS = ["ids.iucn", "ids.gbif", "ids.col", "ids.wikidata", "ids.inaturalist", "ids.ncbi", "taxonomy", "range.countriesWithOpenRecords"] as const;
 type Field = (typeof FIELDS)[number];
 
 const WIKIDATA_LICENSE = "CC0 1.0";
@@ -27,13 +27,15 @@ const byText = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
 
 function value(r: Species, f: Field): unknown {
   if (f === "taxonomy") return r.taxonomy;
-  if (f === "range.countriesWithRecords") return r.range.countriesWithRecords;
+  if (f === "range.countriesWithOpenRecords") return r.range.countriesWithOpenRecords;
   return r.ids[f.slice("ids.".length) as keyof Species["ids"]];
 }
 
 export function buildRecord({ base, wikidata, col, gbif }: RecordInput): Species {
   const N = base.scientificName;
   if (gbif.countries !== null && gbif.occurrencesUrl === null) throw new Error(`record: countries for ${N} without an occurrence query URL`);
+  if (gbif.countries?.length === 0) throw new Error(`record: empty countries for ${N}; publish null with a status instead`);
+  if ((gbif.countries !== null) !== (gbif.rangeStatus === "ok")) throw new Error(`record: countries ${JSON.stringify(gbif.countries)} with status ${gbif.rangeStatus} for ${N}`);
   const ids: Species["ids"] = {
     iucn: base.ids.iucn, gbif: gbif.id, col: col.id,
     wikidata: wikidata.ids.wikidata, inaturalist: wikidata.ids.inaturalist, ncbi: wikidata.ids.ncbi,
@@ -41,7 +43,7 @@ export function buildRecord({ base, wikidata, col, gbif }: RecordInput): Species
 
   const record: Species = {
     id: base.id, slug: base.slug, scientificName: N, commonName: base.commonName,
-    taxonomy: { ...col.taxonomy }, ids, range: { countriesWithRecords: gbif.countries === null ? null : [...gbif.countries] },
+    taxonomy: { ...col.taxonomy }, ids, range: { countriesWithOpenRecords: gbif.countries === null ? null : [...gbif.countries], status: gbif.rangeStatus },
     photo: base.photo, sources: [], replacedBy: base.replacedBy,
   };
 
@@ -54,7 +56,7 @@ export function buildRecord({ base, wikidata, col, gbif }: RecordInput): Species
       retrieved: col.retrieved, url: col.url, doi: col.release.doi, release: { key, alias, version, issued } },
     { source: "GBIF Backbone Taxonomy", fields: filled(["ids.gbif"]), license: gbifBackboneLicense(gbif.checklist.license),
       retrieved: gbif.retrieved, url: gbif.url, doi: gbif.checklist.doi, checklistKey: gbif.checklist.key },
-    { source: "GBIF.org occurrence search", fields: filled(["range.countriesWithRecords"]), license: OCCURRENCE_LICENSE,
+    { source: "GBIF.org occurrence search", fields: filled(["range.countriesWithOpenRecords"]), license: OCCURRENCE_LICENSE,
       retrieved: gbif.retrieved, url: gbif.occurrencesUrl ?? "" },
     { source: "Wikidata", fields: filled(["ids.wikidata", "ids.inaturalist", "ids.ncbi"]), license: WIKIDATA_LICENSE,
       retrieved: wikidata.retrieved, url: `https://www.wikidata.org/wiki/Special:EntityData/${ids.wikidata}.json` },

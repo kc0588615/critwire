@@ -13,7 +13,9 @@
 // K8: overrides: keep doesn't restore a stray or leaves its entry; remove doesn't drop; keep of a country with no
 //     counted records, an unknown species, a duplicate, bad keys/action/code/reason, or an override on a species
 //     whose countries are null are accepted → each throws.
-// K9: T == 0 gives null or throws → [] + no-records (info).
+// K9: T == 0 publishes [] or throws → null, status no-open-records, + no-records (info).
+// K11: status wrong or [] published: a list without ok; overrides removing every country leave []; an unsettled taxon
+//      is not identity-unsettled → null + the right status, never [].
 // K10: output depends on facet order → value and entries sorted and identical for shuffled input.
 import assert from "node:assert/strict";
 import { test } from "node:test";
@@ -58,7 +60,8 @@ test("K1 ZZ is dropped and doesn't count towards T", () => {
   assert.deepEqual(r.value, ["CA", "US"]);
   assert.deepEqual(r.entries, []); // T = 4 < 50, so CA 1 is not borderline
   const only = run({ ZZ: 7 });
-  assert.deepEqual(only.value, []);
+  assert.equal(only.value, null);
+  assert.equal(only.status, "no-open-records");
   assert.deepEqual(flags(only.entries), [":no-records:info"]);
 });
 
@@ -74,7 +77,7 @@ test("K3 T ≥ 50: in-core counts 1 and 2 are borderline, 3 is not", () => {
   assert.deepEqual(flags(r.entries), ["BD:country-borderline:review", "NP:country-borderline:review"]);
   const bd = r.entries.find((e) => e.country === "BD")!;
   assert.deepEqual(bd.values, { gbif: { records: 2, region: "ASIA", speciesRecords: 50, coreRegions: ["ASIA"] } });
-  assert.equal(bd.field, "range.countriesWithRecords");
+  assert.equal(bd.field, "range.countriesWithOpenRecords");
   assert.equal(bd.speciesId, 25);
   assert.equal(bd.scientificName, "Panthera tigris");
 });
@@ -149,7 +152,7 @@ test("K8 overrides: keep, remove, and every invalid override throws", () => {
   assert.throws(() => run(TIGER, [keep("FR")]), /FR.*no counted records|no counted records.*FR/);
   // override on a species whose countries are null
   assert.throws(() => deriveCountries({ species, occurrences: null, regions, overrides: [keep("DE")] }), /null/);
-  assert.deepEqual(deriveCountries({ species, occurrences: null, regions, overrides: [keep("DE", 3)] }), { value: null, entries: [] });
+  assert.deepEqual(deriveCountries({ species, occurrences: null, regions, overrides: [keep("DE", 3)] }), { value: null, status: "identity-unsettled", entries: [] });
 
   // parseOverrides validates the whole file
   const ids = new Set([3, 25]);
@@ -172,11 +175,12 @@ test("K8 overrides: keep, remove, and every invalid override throws", () => {
   for (const [input, re] of bad) assert.throws(() => parseOverrides(input, ids), re, JSON.stringify(input));
 });
 
-test("K9 T == 0 gives [] plus a no-records info entry", () => {
+test("K9 T == 0 gives null, no-open-records, plus a no-records info entry", () => {
   const r = deriveCountries({ species, occurrences: { count: 0, facets: [] }, regions, overrides: [] });
-  assert.deepEqual(r.value, []);
+  assert.equal(r.value, null);
+  assert.equal(r.status, "no-open-records");
   assert.deepEqual(flags(r.entries), [":no-records:info"]);
-  assert.equal(r.entries[0].field, "range.countriesWithRecords");
+  assert.equal(r.entries[0].field, "range.countriesWithOpenRecords");
   assert.equal("country" in r.entries[0], false);
 });
 
@@ -189,4 +193,19 @@ test("K10 value and entries are sorted and independent of facet order", () => {
   assert.deepEqual(a.value, [...a.value!].sort());
   const countries = a.entries.map((e) => e.country!);
   assert.deepEqual(countries, [...countries].sort());
+});
+
+test("K11 three statuses; never []", () => {
+  const ok = run(TIGER);
+  assert.equal(ok.status, "ok");
+  assert.ok(ok.value!.length > 0);
+  // Overrides removing every country: null + no-open-records, not [].
+  const gone = run({ KE: 3, TZ: 2 }, [remove("KE"), remove("TZ")]);
+  assert.deepEqual([gone.value, gone.status, gone.entries], [null, "no-open-records", []]);
+  const unsettled = deriveCountries({ species, occurrences: null, regions, overrides: [] });
+  assert.deepEqual([unsettled.value, unsettled.status], [null, "identity-unsettled"]);
+  for (const r of [ok, gone, unsettled, run({ ZZ: 2 })]) {
+    assert.notDeepEqual(r.value, []);
+    assert.equal(r.value !== null, r.status === "ok");
+  }
 });

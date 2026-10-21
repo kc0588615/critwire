@@ -68,7 +68,7 @@ export function deriveGbif(species: { id: number; scientificName: string }, matc
   entry("ids.gbif", "synonym-info", "info", { gbif: { usageKey, status, accepted: { key: acceptedKey, name: a.canonicalName } } },
     `The GBIF backbone calls ${N} (${usageKey}) a synonym of ${a.canonicalName} (${acceptedKey}); the countries are counted for ${acceptedKey}, which covers all its synonyms.`);
   if (epithet(a.canonicalName) !== epithet(N)) {
-    entry("range.countriesWithRecords", "identity", "blocking", { gbif: { usageKey, accepted: { key: acceptedKey, name: a.canonicalName } } },
+    entry("range.countriesWithOpenRecords", "identity", "blocking", { gbif: { usageKey, accepted: { key: acceptedKey, name: a.canonicalName } } },
       `GBIF's accepted name ${a.canonicalName} has another epithet than ${N} (a lump), so its records may be another species'; the countries are null.`);
     return { id: usageKey, taxonKey: null, entries };
   }

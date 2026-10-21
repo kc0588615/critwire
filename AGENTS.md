@@ -56,8 +56,9 @@ Rules (details: `plans/2026-10-20-critwire-ingest.md` §5):
 - `ids.gbif`: legacy GBIF backbone key (checklist `d7dddbf4-…`). `ids.col`: stable COL id, also COL XR key (GBIF default since 2026-06). Taxonomy from COL only when identity settled; else base.
 - `sources[]` cites every third-party field once; `critwire base` covers `ids.iucn` and fallback taxonomy.
 
-Countries (`range.countriesWithRecords`):
-- Means "countries with records", NOT native range. ISO alpha-2, sorted. `null` = GBIF taxon not settled; `[]` = settled, nothing counted.
+Countries (`range.countriesWithOpenRecords`):
+- Means "countries with open (CC0/CC BY) records", NOT native range. ISO alpha-2, sorted. Never `[]`: `null` unless `range.status` is `ok`.
+- `range.status` (always present): `ok` (≥ 1 country after filtering + overrides), `no-open-records` (GBIF identity settled, no country left), `identity-unsettled` (GBIF taxon not settled).
 - GBIF occurrence facets: `occurrenceStatus=PRESENT`, no geospatial issue, has coordinate, `basisOfRecord` without `LIVING_SPECIMEN`/`FOSSIL_SPECIMEN`, `ZZ` dropped.
 - Counts only CC0 1.0 + CC BY 4.0 records (`assertOpenLicenses`); field published CC BY 4.0. GBIF aggregates have no DOI.
 - Rule (constants top of `scripts/derive/countries.ts`): region = GBIF `gbifRegion`, NORTH_AMERICA + LATIN_AMERICA merged (`MERGED_REGIONS`). Core = region with most countries (tie: most records; still tied: all core).
@@ -65,4 +66,4 @@ Countries (`range.countriesWithRecords`):
   - outside core, ≥ 2: kept, `country-captive-suspect` review;
   - in core, species ≥ `BORDERLINE_MIN_SPECIES_RECORDS` (50) records, country ≤ `BORDERLINE_MAX` (2): kept, `country-borderline` review;
   - else kept.
-- Overrides, applied last: `[{"speciesId": 25, "country": "RU", "action": "keep"|"remove", "reason": "…"}]`. `keep` publishes (restores stray / confirms flag), `remove` withholds. Exactly those keys, known species, `^[A-Z]{2}$` not `ZZ`, non-empty reason, unique (speciesId, country); no `keep` without records; none on `null`-countries species. Overridden country gets no `country-*` entry.
+- Overrides, applied last: `[{"speciesId": 25, "country": "RU", "action": "keep"|"remove", "reason": "…"}]`. `keep` publishes (restores stray / confirms flag), `remove` withholds. Exactly those keys, known species, `^[A-Z]{2}$` not `ZZ`, non-empty reason, unique (speciesId, country); no `keep` without records; none on `identity-unsettled` species. Overridden country gets no `country-*` entry.
