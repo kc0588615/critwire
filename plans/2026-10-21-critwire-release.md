@@ -133,7 +133,7 @@ Out:
 - [x] Fable review: `architecture-reviewer`
 - [x] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
 - [x] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
-- [ ] Steps: `planner` writes Steps and Verification
+- [x] Steps: `planner` writes Steps and Verification
 
 ## Baseline
 
@@ -751,12 +751,492 @@ Architect, 2026-10-21. A single round; all 3 Astra MUST-FIX items are resolved, 
 
 ## Steps
 
+Planner, 2026-10-21. Conventions:
+- `W=/srv/critter-ai/worktrees/critwire-release`, `L=/srv/critter-ai/agent-state/missions/critwire-release`. Scratch and smoke scripts go in `$L/smoke/` and are never committed.
+- One commit per step (code, plan check-off, one Log line), pushed. Where a check needs a clean tree (S5, S6), commit and push the code first, run the check, then check off in a second commit.
+- **Green** = `pnpm typecheck && pnpm test && pnpm build`. From S7, `pnpm build` is the strict build, which needs S6's DOI. If S6 is blocked, use `pnpm build --draft` and say so in the Log.
+- §12 tests are written first, named by id (`test("D1 …")`), and run red before the code; put the failing count in the Log. §12's register tests G1–G8 are named **RG1–RG8**, because `scripts/derive/gbif.test.ts` already has G1–G7.
+- The S9 and S10 E2E specs are written first and seen failing, then the code.
+- Network use: S2 (ingest), S5 and S6 (GBIF registry, GitHub), and the E2E (httpfs install on its first run). The build never.
+- Run heavy jobs one at a time. Bash timeouts: ingest 1200000, register 600000, E2E and the offline proof 900000.
+- V-ids are in Verification and F-ids in Failure modes.
+
+- [ ] S1 · Foundations: env, db, json and the derive pipeline (findings 1, 2, 5, 6; §2). No output change.
+  - Before editing: `pnpm -s derive > $L/smoke/derive-baseline.txt`. This is S2's delta baseline.
+  - New files:
+    - `scripts/env.ts`: `loadEnv`, `requireEnv`;
+    - `scripts/db.ts`: `speciesRows`, and `loadDatabase` with `pg_advisory_xact_lock(hashtext('critwire.load'))` first in the transaction;
+    - `scripts/derive/pipeline.ts`: `readDeriveInputs`, `deriveAll` → `{records, entries}`, and `assertDerivedFiles` over `species.json` + `mismatches.json`.
+  - Changed files:
+    - `scripts/load.ts` becomes a thin CLI;
+    - `scripts/json.ts` gets `formatJson`, which `writeJson` uses;
+    - `scripts/derive.ts` becomes a CLI over the pipeline with the same stdout.
+  - Checks:
+    - green;
+    - `pnpm -s derive | diff $L/smoke/derive-baseline.txt -`, then `git diff --exit-code data/`;
+    - lock: `pnpm -s db:load > $L/smoke/l1 & a=$!; pnpm -s db:load > $L/smoke/l2 & b=$!; wait $a; wait $b; cat $L/smoke/l1 $L/smoke/l2` prints `loaded 76 species` twice;
+    - no `.env`: with `DB=$(node -e 'process.loadEnvFile();process.stdout.write(process.env.DATABASE_URL)')`, `(cd "$(mktemp -d)" && DATABASE_URL="$DB" $W/node_modules/.bin/tsx $W/scripts/load.ts)` prints `loaded 76 species`. Without `DATABASE_URL` it exits non-zero and names it;
+    - freshness smoke: `$L/smoke/fresh.ts` runs `assertDerivedFiles(deriveAll(await readDeriveInputs()))`. It passes on HEAD. After adding one space in `data/review/mismatches.json` it throws naming `pnpm derive`. Then `git checkout -- data/review/mismatches.json`.
+- [ ] S2 · GBIF dataset counts: the ingest code and the live re-ingest (findings 3 and 4; §5 Ingest; A5).
+  - `scripts/ingest/gbif.ts`:
+    - `OCCURRENCE_FILTERS` is shared by `gbifOccurrenceUrl` (URLs stay byte-identical) and the new `gbifDatasetsUrl(taxonKey, offset)`;
+    - page until `counts: []`, with the per-page and final checks of §5;
+    - the 300-entry throw stays for the country and license facets only.
+  - `scripts/raw.ts`: the `species[N].datasets` type.
+  - Before the ingest, `$L/smoke/urls.ts` asserts that `gbifOccurrenceUrl(taxonKey)` equals every committed `occurrences.url`.
+  - Run `pnpm ingest gbif 2>> $L/ingest-gbif.log`, then `pnpm -s derive | tee $L/derive-reingest.txt`.
+  - Commit `data/raw/gbif/snapshot.json`, `data/species.json` and `data/review/mismatches.json`.
+  - Write `$L/reingest-delta.md` for the PR:
+    - statuses, codes, and entries by kind and severity, before (`derive-baseline.txt`: 72/1/3, 472 codes, 214 entries, 60 blocking) and after;
+    - every species whose `range` changed (id, name, before → after), from `git show HEAD:data/species.json` (before the commit) against the new file.
+  - If the ingest throws because `count` moved (R2), re-run it once. If it throws again, record that in the Log and stop the step. Ingest is all-or-nothing, so no partial snapshot is left.
+  - Checks, with `S=data/raw/gbif/snapshot.json`:
+    - green;
+    - `jq -e '(.species | length) == 76 and all(.species[]; (.datasets == null) == (.occurrences == null))' $S`;
+    - `jq -e 'all(.species[] | select(.datasets); ([.datasets.counts[]] | add // 0) == .occurrences.response.count and (.datasets.url | test("facet=datasetKey") and test("facetOffset=0")) and all(.datasets.counts | to_entries[]; (.key | test("^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$")) and .value >= 1 and .value == (.value | floor)))' $S`;
+    - `jq -e '.species["Panthera onca"].datasets.counts | length >= 100' $S` (125 on 2026-10-21);
+    - after `git add data/`, a second `pnpm -s derive` leaves `git diff --exit-code data/` clean;
+    - `git diff --exit-code HEAD -- data/base.json data/review/country-overrides.json data/raw/wikidata data/raw/col`;
+    - `grep -qiE 'iucn|additionalStatus' $S` finds nothing.
+- [ ] S3 · Contributions and the DOI slot in derive (§5 Derive, finding 7, §1).
+  - Tests first, run red:
+    - D1–D7 in `scripts/derive/contributions.test.ts`;
+    - S3 in `scripts/derive/record.test.ts`;
+    - R1–R3 in `scripts/gbif/derived-dataset.test.ts`.
+  - `package.json` `test` becomes `tsx --test scripts/derive/*.test.ts scripts/gbif/*.test.ts`.
+  - Then:
+    - `scripts/derive/contributions.ts`;
+    - `scripts/gbif/derived-dataset.ts`: types, file URLs, `currentDoi`;
+    - `RecordInput.gbif.doi` in `scripts/derive/record.ts`;
+    - `pipeline.ts` reads `registration.json` if present. The result gains `contributions` and `doi`, and `assertDerivedFiles` also covers `contributions.json`;
+    - `scripts/derive.ts` writes `data/gbif-derived-dataset/contributions.json` (canonical) and prints `DOI current|missing|stale`. When the DOI isn't current, it also prints the tag `gbif-dd-<hex12>`.
+  - Commit `contributions.json`.
+  - Checks, with `C=data/gbif-derived-dataset/contributions.json`:
+    - green, with the red counts in the Log;
+    - `pnpm -s derive | tee $L/derive-S3.txt` prints `DOI missing` and `gbif-dd-$(sha256sum $C | cut -c1-12)`;
+    - `git diff --exit-code data/species.json data/review/mismatches.json`: a null DOI adds no key;
+    - `jq -e '.records == ([.datasets[]] | add) and .records == ([.taxa[].records] | add) and .taxa == (.taxa | sort_by(.taxonKey))' $C`;
+    - every settled species is counted and no unsettled one: `test "$(jq '[.taxa[].speciesIds[]] | length' $C)" = "$(jq '[.[] | select(.range.status != "identity-unsettled")] | length' data/species.json)"`;
+    - `jq -e --slurpfile g data/raw/gbif/snapshot.json '.retrieved == $g[0].retrieved' $C`;
+    - a second `pnpm -s derive` leaves `git diff --exit-code data/` clean.
+- [ ] S4 · Register core: pure functions, tests first (§6 decision table, POST outcome, read-back and state; A6).
+  - Tests first, run red:
+    - RG1–RG8, P1 and B1 in `scripts/gbif/register.test.ts`;
+    - L1–L3 in `scripts/gbif/state.test.ts`, using a temp `XDG_STATE_HOME`.
+  - Then:
+    - `scripts/gbif/register.ts`, all pure: `decide`, `classifyPost`, `requestBody`, `readBackErrors`;
+    - `scripts/gbif/state.ts`: `stateDir`, `withLock`, `readIntent`, `createIntent` (`wx`), `deleteIntent`.
+  - Nothing calls them yet.
+  - Checks:
+    - green, with the red counts in the Log;
+    - the tests leave nothing in `${XDG_STATE_HOME:-$HOME/.local/state}/critwire/`.
+- [ ] S5 · The `pnpm gbif:register` CLI, checked live without any POST (§6; A6, A7).
+  - `scripts/gbif-register.ts` runs:
+    1. preconditions 1–4;
+    2. `withLock`;
+    3. the listing (every page, with auth);
+    4. `decide`;
+    5. `checkDeposit`;
+    6. `createIntent`;
+    7. the single POST through its own `fetch` (60 s, no retry). It logs one stderr line in `getJson`'s format (`<time>, <status>, <ms>, 1, POST, <url>`);
+    8. `classifyPost`;
+    9. the read-back (every page);
+    10. writing `registration.json`;
+    11. deleting the intent.
+
+    Reads go through `getJson` with the auth header, and only URLs are logged.
+  - `package.json`: add the `gbif:register` script.
+  - Guard first: `test -z "$(git ls-remote --tags origin 'gbif-dd-*')"`, and there is no `data/gbif-derived-dataset/registration.json`. With no tag on origin, `checkDeposit` throws before any POST.
+  - Commit and push the code. Then run F5a–F5d, each `2>&1 | tee $L/register-F5<x>.log`, and check off with their results in the Log.
+  - Checks:
+    - green;
+    - F5a–F5d pass;
+    - no log contains `, POST, ` or the password (`grep -F`);
+    - neither `gbif-register-intent.json` nor `gbif-register.lock` exists in `${XDG_STATE_HOME:-$HOME/.local/state}/critwire/`.
+- [ ] S6 · Register the GBIF derived dataset (the one irreversible write), then derive the DOI in (§1 mission order, §6; A7).
+  1. Preflight:
+     - the tree is clean;
+     - after `git fetch origin`, HEAD equals `origin/agent/critwire-release`;
+     - green;
+     - `pnpm -s derive` leaves `git diff --exit-code data/` clean and prints `DOI missing` and the tag `T`;
+     - no intent or lock (S5's check).
+  2. `git tag "$T" HEAD && git push origin "$T"`. `git ls-remote origin "refs/tags/$T"` shows HEAD. This tag is lightweight and is never moved or deleted.
+  3. `pnpm gbif:register 2>&1 | tee $L/register.log`, once.
+     - Exit 0: `data/gbif-derived-dataset/registration.json` exists. Go on.
+     - "re-run to reconcile": re-run once. It lists first, then adopts.
+     - Any refusal, a second ambiguous outcome, or "more than 1 listed":
+       - never POST by hand, and never delete the intent or the lock unless the condition in the message is verified;
+       - add a handoff item and record it under Decisions;
+       - check S6 off as blocked, and add `S6b · finish the GBIF registration (H<n>)` just before S13;
+       - S7–S12 then build with `--draft`.
+  4. `pnpm -s derive | tee $L/derive-doi.txt` prints `DOI current`. Only the countries entries change:
+     - `diff <(jq 'walk(if type == "object" and .source == "GBIF.org occurrence search" then del(.doi) else . end)' data/species.json) <(git show HEAD:data/species.json | jq .)`;
+     - `jq -e --slurpfile r data/gbif-derived-dataset/registration.json '[.[].sources[] | select(.source == "GBIF.org occurrence search")] | length > 0 and all(.doi == $r[0].doi)' data/species.json`;
+     - `git diff --exit-code data/review/mismatches.json data/gbif-derived-dataset/contributions.json`.
+  5. Commit `registration.json` and `species.json`, and push.
+  6. Idempotence: `pnpm gbif:register 2>&1 | tee $L/register-verify.log` takes the verify path: exit 0, no `, POST, ` line, a clean tree, and no intent (F6).
+  7. Evidence, from public reads, in `$L/gbif-dd/`: `curl -sf https://api.gbif.org/v1/derivedDataset/<doi>`, and every page of `…/<doi>/datasets`. `doi.org` may lag by minutes (R8); just note it.
+  8. Under Decisions, record:
+     - the DOI;
+     - the `sourceUrl` (the GitHub permalink at the tagged commit) and why (A7);
+     - the tag.
+
+     Then check off, with the DOI in the Log.
+- [ ] S7 · `pnpm build`: inputs, the DOI gate, the db load, and the JSON, Parquet and CSV files (§3, §4; A1–A4, A8, A12).
+  - `pnpm add -E @duckdb/node-api@1.5.6-r.2`, and commit the lockfile. `allowBuilds` doesn't change.
+  - New files:
+    - `scripts/build/columns.ts`: `RECORD_COLUMNS`, plus the `read_json` columns, the key sets and the CSV select list, all generated from it;
+    - `scripts/build/inputs.ts`: `readBuildInputs` (§3.2);
+    - `scripts/build/tables.ts`: `writeTables`, with the DuckDB options of §4.
+  - `scripts/build.ts`, per §3:
+    - an unknown argument throws `unknown argument: <arg>`;
+    - `loadEnv`, then the inputs, then `loadDatabase`;
+    - `rm -rf dist`, then the JSON copies and the tables;
+    - it prints every file with its size.
+  - `dist/index.html` stays the placeholder until S10.
+  - Checks:
+    - green. `pnpm ls @duckdb/node-api` shows 1.5.6-r.2;
+    - `pnpm -s build | tee $L/smoke/build-S7.txt`, then from V6: `cmp dist/v1/species.json data/species.json`, the file count, the `{id}`/`{slug}` `cmp` loop, and no `ranges.parquet`;
+    - `$L/smoke/read.ts` reads the local files with DuckDB:
+      - Parquet: its rows equal the records, and the per-status counts and `sum(len(sources))` match `data/species.json`;
+      - CSV: the header is §4's 21 columns, in order, and the rows equal the records;
+    - `psql -d critwire_dev -XAtc 'select count(*) from species'` equals the records;
+    - V5's determinism lines;
+    - F1, F2 and F3 (V7);
+    - F4: V8, with `rsync -a --exclude node_modules --exclude dist --exclude .env --exclude .git $W/ "$O/cw/"` in place of the GitHub clone. Its hash list equals the worktree build's, and `test ! -e "$O/home/.duckdb"`.
+- [ ] S8 · E2E harness: Playwright and a local Caddy, with the `files`, `serving` and `duckdb` (HTTP) specs (§9; A10).
+  - `pnpm add -DE @playwright/test@1.58.2`, plus the `e2e` script (`playwright test`) and the lockfile.
+  - `playwright.config.ts`:
+    - `workers: 1`, headless Chromium, `trace: 'on'`, `screenshot: 'on'`;
+    - the html and json reporters and `outputDir` all under `E2E_ARTIFACTS`;
+    - `webServer` runs Caddy, with `reuseExistingServer: false`.
+  - `e2e/Caddyfile`:
+    - `admin off`, `auto_https off`, `persist_config off`;
+    - `:3100` is the live block, with root `{$CRITWIRE_DIST}` and a JSON access log;
+    - `:3101` serves `e2e/fixtures/`.
+  - `e2e/fixtures/index.html`.
+  - `e2e/helpers.ts`:
+    - the artifact dir and the data readers;
+    - the first check, which fails with `run pnpm build`;
+    - DuckDB, with httpfs in `node_modules/.cache/critwire-duckdb`.
+  - Specs:
+    - `e2e/files.spec.ts`;
+    - `e2e/serving.spec.ts`: Range, preflight, cross-origin with and without preflight, the access log's OPTIONS 204, and the drift test against the ops Caddyfile (read-only);
+    - `e2e/duckdb.spec.ts`, its HTTP Parquet part: the query, plus a 206 for `species.parquet` in the access log.
+  - `tsconfig.json` includes `e2e` and `playwright.config.ts`. `.gitignore` adds `e2e-artifacts/`, `test-results/` and `playwright-report/`.
+  - Checks:
+    - before: `ss -ltn | grep -E ':310[01] '` is empty;
+    - `pnpm exec playwright --version` is 1.58.2, and no browser download happens (it uses Chromium 1208);
+    - green;
+    - `pnpm build && E2E_ARTIFACTS=$L/e2e pnpm e2e` passes, along with V9's `results.json`, report and trace lines (`docs-375.png` comes in S10). The access log holds an OPTIONS 204 with `Origin: http://127.0.0.1:3101` and a `species.parquet` 206;
+    - F8;
+    - after: `pgrep -f e2e/Caddyfile` finds nothing, and `curl -s -o /dev/null -w '%{http_code}' https://critwire.com/` still gives 200 (production untouched).
+- [ ] S9 · `attribution.json` and the source registry (§7; A9).
+  - E2E first, run red: `e2e/attribution.spec.ts` (§9), and add `attribution.json` to the `files` spec's file list.
+  - Save the requested citations in `$L/citations/`:
+    - `https://api.checklistbank.org/dataset/316595` (`citation`);
+    - `https://api.gbif.org/v1/dataset/d7dddbf4-2cf0-4f39-9b2a-bb099caae36c` (`citation.text`).
+
+    Quote them verbatim, and compare them with "Verified facts".
+  - Then:
+    - `scripts/build/sources.ts`:
+      - `SOURCES`;
+      - `LICENSE_URLS`, covering every license string in the data: today the 10 photo licenses plus the source licenses;
+      - `COL_CITATIONS[316595]`;
+    - `scripts/build/attribution.ts`: `buildAttribution`, pure;
+    - `scripts/build.ts` writes `dist/v1/attribution.json`.
+  - Checks:
+    - green;
+    - the E2E passes with 0 skipped;
+    - `jq -e --slurpfile r data/gbif-derived-dataset/registration.json '.gbifDerivedDataset.doi == $r[0].doi and (.gbifDerivedDataset.datasets | length) == ($r[0].relatedDatasets | length)' dist/v1/attribution.json`;
+    - V5's determinism lines.
+- [ ] S10 · Docs page (§8).
+  - E2E first, run red:
+    - `e2e/docs.spec.ts` (§9 `docs`):
+      - every section;
+      - a 375×812 full-page screenshot, also written to `$E2E_ARTIFACTS/docs-375.png`;
+      - `scrollWidth ≤ 375`;
+      - same-origin links return 200, and every anchor target exists;
+      - external links are https, on the host allowlist;
+    - the docs-examples tests in `e2e/duckdb.spec.ts`:
+      - the origin swapped to the local server;
+      - shell examples run with `bash -euo pipefail` in a temp dir;
+      - SQL examples return at least one row;
+      - the curl examples cover every `/v1` file.
+  - Then `site/index.html`:
+    - prose written fresh for grades 6–12 and app makers;
+    - `#about`, `#files`, `#fields`, `#licenses`, `#credits`, `#cite`;
+    - inline CSS, no JS, no external assets;
+    - every field of §8, including the two kinds of null countries.
+  - `scripts/build/docs.ts`: `renderDocs`. `scripts/build.ts` renders `dist/index.html`.
+  - Checks:
+    - green;
+    - the E2E passes with 0 skipped;
+    - open `$L/e2e/docs-375.png` and check that it reads well on a phone; if it doesn't, fix it and re-run;
+    - V5's determinism lines.
+- [ ] S11 · Repo docs (§11; finding 8).
+  - `AGENTS.md`:
+    - the Stack DuckDB line;
+    - Commands: `pnpm build [--draft]`, `pnpm e2e`, `pnpm gbif:register`;
+    - Data: the two `data/gbif-derived-dataset/` files and their writers, and that the build refuses stale derived files;
+    - a "GBIF DOI refresh" section: §11's 7 steps, the tag rule, the VPS only, interrupted runs;
+    - Release: drop the cutover sentence, and add that a mission may merge and deploy at its end (owner, 2026-10-21; `~/AGENTS.md`).
+  - `README.md`: the `/v1/` files, the docs at `https://critwire.com/` and the dev commands; drop "Not live yet".
+  - `plans/001-mvp.md`:
+    - `:49`, `:57`, `:61`, `:65` and `:75` per §11;
+    - `:78`, step 3, gets the DOI. The PR number comes in S12.
+  - `DATA-LICENSE.md:7` per §11.
+  - Checks:
+    - green;
+    - `grep -nE 'cutover|critwire_live|extension writes Parquet|Not live yet|will cite' AGENTS.md README.md DATA-LICENSE.md plans/001-mvp.md` finds nothing;
+    - `grep -q 'GBIF DOI refresh' AGENTS.md`.
+- [ ] S12 · Rebase, offline proof, E2E, PR.
+  - Run `git fetch origin`. If `git merge-base --is-ancestor origin/main HEAD` fails:
+    1. `git rebase origin/main`;
+    2. green; `pnpm -s derive` leaves `data/` unchanged and prints `DOI current`;
+    3. `git push --force-with-lease origin agent/critwire-release`.
+
+    If the rebase makes the DOI stale (main changed a derive input), stop. Record it under Decisions, and add AGENTS.md's "GBIF DOI refresh" as new steps before S13.
+  - Run the Verification block's prelude, then V5, V8 (the GitHub clone at the pushed HEAD) and V9.
+  - Write `$L/pr-body.md` (not in the repo):
+    1. what and why, in 2–3 lines. The mission merges and deploys after the final review (H2);
+    2. the files with their sizes, from `pnpm -s build`; the `species/` files as a count and a total;
+    3. the GBIF derived dataset:
+       - the DOI and its citation;
+       - the contributing datasets and records;
+       - the `sourceUrl`, the `gbif-dd-*` tag, and why that `sourceUrl` (A7);
+    4. the re-ingest delta (`$L/reingest-delta.md`);
+    5. the E2E: passed/total, 0 skipped, the artifact `$L/e2e/` (report, traces, screenshots, `caddy-access.log`) and the reproduce command;
+    6. determinism, the offline proof, and the review verdicts: Fable APPROVE; Astra APPROVE_WITH_CHANGES, whose 3 MUST-FIX were resolved in the revision.
+  - `gh pr create --base main --head agent/critwire-release --title "step 3: build and release /v1 (Parquet, CSV, JSON, attribution, docs, GBIF DOI)" --body-file $L/pr-body.md`. If a PR already exists, use `gh pr edit agent/critwire-release --body-file $L/pr-body.md`.
+  - `plans/001-mvp.md` step 3: "implementation verified; owner deploy pending (PR #<n>)", with the DOI. Commit and push.
+  - Checks: V10.
+- [ ] S13 · Full Verification.
+  - Run the Verification block (V0–V10) as one session.
+  - If anything fails, add a fix step before this one, do it, and re-run.
+  - Log: the transcript path, the unit and E2E counts, determinism, and the offline proof.
+  - If a number changed, run `gh pr edit` with an updated `pr-body.md`.
+  - X1–X6 are the release unit's, after `deploy critwire`.
+
+Notes for the implementing sessions:
+- After S6, change no derive input (`data/base.json`, `data/raw/`, derive rules) except through "GBIF DOI refresh". Any change to the counts makes the DOI stale and needs a new one (R5).
+- Live numbers (125 jaguar datasets, 72/1/3) drift. Never tune a rule to a number; record the drift in the Log.
+- If a smoke run exposes a bug from an earlier step, fix it in the current step, with a failing test first where §12 covers it, and say so in the Log.
+
 ## Verification
+
+Run this from the worktree as one bash session; it writes its own transcript. Lint: the repo has none (Baseline), so `pnpm typecheck` is the static check.
+
+The final Verification is strict: V2–V4 and V6 need the DOI. The `--draft` forms noted under V5 and V8 are only for checks before a DOI exists (S6 blocked).
+
+```bash
+set -euo pipefail
+W=/srv/critter-ai/worktrees/critwire-release; cd "$W"
+L=/srv/critter-ai/agent-state/missions/critwire-release; V=$L/verify; E=$L/e2e; mkdir -p "$V"
+exec > >(tee "$V/verify-$(date -u +%Y%m%dT%H%MZ).log") 2>&1
+fail() { echo "FAIL: $*"; exit 1; }
+neg() { local want=$1 out; shift; if out=$("$@" 2>&1); then fail "expected failure: $*"; fi; grep -qF -- "$want" <<<"$out" || fail "wrong error from $*: $out"; }
+hashes() { (cd "$1" && find . -type f -print0 | sort -z | xargs -0 sha256sum); }
+envget() { node -e "process.loadEnvFile(); process.stdout.write(process.env.$1 ?? '')"; }
+DB=$(envget DATABASE_URL); PW=$(envget GBIF_PASSWORD); test -n "$PW"
+R=data/gbif-derived-dataset/registration.json; C=data/gbif-derived-dataset/contributions.json
+N=$(jq length data/species.json); ST=${XDG_STATE_HOME:-$HOME/.local/state}/critwire
+
+# V0 preflight: clean and pushed, scratch db only, E2E ports free, no register leftovers
+test -z "$(git status --porcelain)"
+git fetch -q origin; test "$(git rev-parse HEAD)" = "$(git rev-parse origin/agent/critwire-release)"
+[[ "$DB" =~ /critwire_dev(\?|$) ]] || fail "DATABASE_URL is not critwire_dev"
+ss -ltn | grep -qE ':310[01] ' && fail "E2E port busy"
+test ! -e "$ST/gbif-register.lock"; test ! -e "$ST/gbif-register-intent.json"
+
+# V1 install, typecheck, unit tests (every §12 id present)
+pnpm install --frozen-lockfile
+pnpm typecheck
+pnpm test 2>&1 | tee "$V/test.txt"
+for id in W{1..11} C{1..9} G{1..7} K{1..11} S{1..3} D{1..7} R{1..3} RG{1..8} P1 B1 L{1..3}; do grep -qw "$id" "$V/test.txt" || fail "missing test $id"; done
+
+# V2 derive: equals the committed files, twice byte-identical, pure (rebuilds its outputs from inputs alone), DOI current
+pnpm -s derive | tee "$V/derive.txt"; git diff --exit-code data/
+grep -q 'DOI current' "$V/derive.txt"
+pnpm -s derive >/dev/null; git diff --exit-code data/
+rm data/species.json data/review/mismatches.json "$C"; pnpm -s derive >/dev/null; git diff --exit-code data/
+
+# V3 data: DOI on every countries entry and nowhere else; registration = contributions; the tag holds the deposit; owner files untouched; no IUCN in raw
+jq -e --slurpfile r "$R" '[.[].sources[] | select(.doi == $r[0].doi)] as $d | ($d | length) > 0 and all($d[]; .source == "GBIF.org occurrence search") and all(.[].sources[] | select(.source == "GBIF.org occurrence search"); .doi == $r[0].doi)' data/species.json
+jq -e --slurpfile c "$C" '.relatedDatasets == $c[0].datasets and .records == $c[0].records' "$R"
+jq -e '.records == ([.datasets[]] | add) and .records == ([.taxa[].records] | add)' "$C"
+tag=gbif-dd-$(jq -r '.contributionsSha256[:12]' "$R"); dep=$(jq -r '.sourceUrl | capture("/tree/(?<s>[0-9a-f]{40})/data$").s' "$R")
+test "$(git ls-remote origin "refs/tags/$tag" | cut -f1)" = "$dep"
+git diff --exit-code origin/main -- data/base.json data/review/country-overrides.json
+grep -qiE 'iucn|additionalStatus' data/raw/gbif/snapshot.json && fail "IUCN data in raw"
+
+# V4 the GBIF registration still verifies (network reads only: no POST, no write)
+pnpm gbif:register 2>&1 | tee "$V/register-verify.txt"
+test -z "$(git status --porcelain)"
+grep -qF ', POST, ' "$V/register-verify.txt" && fail "POST in verify run"
+grep -qF -- "$PW" "$V/register-verify.txt" && fail "password in log"
+
+# V5 two strict builds: identical dist (file list + sha256); db loaded. Draft form: pnpm -s build --draft
+pnpm -s build | tee "$V/build.txt"; hashes dist > "$V/dist-1.sha"
+pnpm -s build >/dev/null; hashes dist > "$V/dist-2.sha"; cmp "$V/dist-1.sha" "$V/dist-2.sha"
+test "$(psql -d critwire_dev -XAtc 'select count(*) from species')" = "$N"
+test "$(pnpm -s db:load)" = "loaded $N species"
+
+# V6 dist contents
+cmp dist/v1/species.json data/species.json
+for f in index.html v1/species.parquet v1/species.csv v1/attribution.json; do test -s "dist/$f"; done
+test ! -e dist/v1/ranges.parquet
+test "$(find dist/v1/species -type f | wc -l)" = $((2 * N))
+jq -r '.[] | "\(.id) \(.slug)"' data/species.json | while read -r id slug; do cmp "dist/v1/species/$id.json" "dist/v1/species/$slug.json"; done
+jq -e --slurpfile r "$R" '.gbifDerivedDataset.doi == $r[0].doi' dist/v1/attribution.json
+grep -qF "$(jq -r .doi "$R")" dist/index.html
+grep -rqE '[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}' dist && fail "clock time in dist"
+
+# V7 F1-F3 in a throwaway copy (never the worktree; it has no .env, so it also proves loadEnv skips a missing .env)
+T=$(mktemp -d); rsync -a --exclude node_modules --exclude dist --exclude .env --exclude .git ./ "$T/cw/"
+(cd "$T/cw" && pnpm install --frozen-lockfile --offline >/dev/null)
+b() { env -C "$T/cw" DATABASE_URL="$DB" pnpm -s build "$@"; }
+neg 'unknown argument' b --nope                                                    # F1
+sed -i '0,/"slug": "/s//"slug":  "/' "$T/cw/data/species.json"
+neg 'is stale: run pnpm derive' b --draft; test ! -e "$T/cw/dist"                  # F2
+cp data/species.json "$T/cw/data/species.json"
+rm "$T/cw/$R"; (cd "$T/cw" && pnpm -s derive | grep -q 'DOI missing')
+neg 'no current GBIF derived-dataset DOI' b                                        # F3 strict refuses
+b --draft >/dev/null; jq -e '.gbifDerivedDataset == null' "$T/cw/dist/v1/attribution.json"   # F3 draft builds
+rm -rf "$T"
+
+# V8 offline proof (F4): fresh clone at the pushed HEAD, pnpm install --frozen-lockfile, empty HOME (no DuckDB
+# extension cache), no network, Postgres over the socket into a throwaway db (A11; never critwire_dev).
+# Draft form: "pnpm build --draft" here, compared with a worktree "pnpm build --draft".
+O=$(mktemp -d); git clone -q https://github.com/kc0588615/critwire "$O/cw"; git -C "$O/cw" checkout -q "$(git rev-parse HEAD)"
+(cd "$O/cw" && pnpm install --frozen-lockfile >/dev/null); mkdir "$O/home"
+off() { sudo unshare -n setpriv --reuid=critter-ai --regid=critter-ai --init-groups \
+  env -i HOME="$O/home" PATH="$PATH" COREPACK_HOME="$HOME/.cache/node/corepack" \
+  DATABASE_URL=postgres:///critwire_offline PGHOST=/var/run/postgresql bash -c "$1"; }
+off 'getent hosts api.gbif.org' && fail "network reachable inside unshare"
+dropdb --if-exists critwire_offline; createdb critwire_offline
+off "cd $O/cw && pnpm build" | tee "$V/offline-build.txt"
+test "$(psql -d critwire_offline -XAtc 'select count(*) from species')" = "$N"
+dropdb critwire_offline
+test ! -e "$O/home/.duckdb"
+hashes "$O/cw/dist" > "$V/dist-offline.sha"; cmp "$V/dist-1.sha" "$V/dist-offline.sha"
+rm -rf "$O"
+
+# V9 E2E: Playwright 1.58.2, headless Chromium 1208, local Caddy :3100 (live block copy) + :3101 (second origin), admin off
+rm -rf "$E"; pnpm -s build >/dev/null
+E2E_ARTIFACTS="$E" pnpm e2e
+jq -e '.stats.expected > 0 and .stats.unexpected == 0 and .stats.flaky == 0 and .stats.skipped == 0' "$E/results.json"   # 0 skipped on this VPS
+test -s "$E/playwright-report/index.html"; test -s "$E/docs-375.png"; test -s "$E/caddy-access.log"
+test "$(find "$E/test-results" -name trace.zip | wc -l)" -ge 1
+pgrep -f 'e2e/Caddyfile' && fail "E2E Caddy still running"
+
+# V10 no secret in git or artifacts; delivery
+test "$(git log -p origin/main..HEAD | grep -cF -- "$PW")" = 0
+test "$(grep -rlF -- "$PW" "$L" | wc -l)" = 0
+test -z "$(git status --porcelain)"
+git merge-base --is-ancestor origin/main HEAD
+gh pr view agent/critwire-release --json state,baseRefName -q '.state + " " + .baseRefName' | grep -qx 'OPEN main'
+```
+
+**E2E artifact** (DoD), in `/srv/critter-ai/agent-state/missions/critwire-release/e2e/`:
+- `playwright-report/`: open it with `pnpm exec playwright show-report $L/e2e/playwright-report`;
+- `test-results/`: a `trace.zip` and screenshots per test; open a trace with `pnpm exec playwright show-trace <trace.zip>`;
+- `results.json`;
+- `docs-375.png`;
+- `caddy-access.log`.
+
+Reproduce it from the worktree with `pnpm build && E2E_ARTIFACTS=/srv/critter-ai/agent-state/missions/critwire-release/e2e pnpm e2e`.
+
+**Other artifacts** in `$L`:
+- `verify/`: `verify-<UTC>.log` (the full transcript), `test.txt`, `derive.txt`, `build.txt` (file sizes for the PR), the `dist-*.sha` hash lists, `offline-build.txt` and `register-verify.txt`;
+- `register*.log` and `gbif-dd/`;
+- `ingest-gbif.log`, `derive-baseline.txt`, `derive-reingest.txt` and `reingest-delta.md`;
+- `citations/` and `pr-body.md`.
+
+**Release smoke, X1–X6.** The release unit runs these after `deploy critwire`. They are read-only requests to production. `dist/` must be the Verification build of the merged tree: the release rebases first, so the trees are equal.
+
+```bash
+set -euo pipefail; cd /srv/critter-ai/worktrees/critwire-release
+L=/srv/critter-ai/agent-state/missions/critwire-release; X=$L/release-smoke; mkdir -p "$X"
+exec > >(tee "$X/smoke-$(date -u +%Y%m%dT%H%MZ).log") 2>&1
+B=https://critwire.com; P=$B/v1/species.parquet; O='Origin: https://example.org'
+# X1 docs page: 200, same bytes as the build
+curl -sf "$B/" -o "$X/index.html"; cmp "$X/index.html" dist/index.html
+# X2 every /v1 file: 200, same bytes as the build
+for f in species.json species.csv species.parquet attribution.json; do curl -sf "$B/v1/$f" -o "$X/$f"; cmp "$X/$f" "dist/v1/$f"; done
+for f in dist/v1/species/*.json; do curl -sf "$B/v1/species/${f##*/}" | cmp - "$f"; done
+# X3 CORS on a cross-origin GET
+curl -sfI -H "$O" "$P" > "$X/get.h"
+grep -qi '^access-control-allow-origin: \*' "$X/get.h"
+grep -qi '^access-control-expose-headers: content-range, content-length, accept-ranges' "$X/get.h"
+# X4 preflight: 204 with the CORS headers
+curl -s -D "$X/options.h" -o /dev/null -X OPTIONS -H "$O" -H 'Access-Control-Request-Method: GET' -H 'Access-Control-Request-Headers: range' "$P"
+grep -qE '^HTTP/[0-9.]+ 204' "$X/options.h"; grep -qi '^access-control-allow-headers: range' "$X/options.h"
+# X5 Range: 206, exact Content-Range and bytes; a suffix range ends in PAR1
+size=$(stat -c %s dist/v1/species.parquet)
+curl -s -D "$X/range.h" -H "$O" -H 'Range: bytes=100-199' "$P" -o "$X/range.bin"
+grep -qE '^HTTP/[0-9.]+ 206' "$X/range.h"; grep -qi "^content-range: bytes 100-199/$size" "$X/range.h"
+cmp "$X/range.bin" <(tail -c +101 dist/v1/species.parquet | head -c 100)
+test "$(curl -s -H 'Range: bytes=-4' "$P")" = PAR1
+# X6 DuckDB reads the live Parquet over HTTPS (the docs' quickstart)
+node --input-type=module -e '
+import { DuckDBInstance } from "@duckdb/node-api";
+const db = await DuckDBInstance.create(":memory:", { extension_directory: "node_modules/.cache/critwire-duckdb", autoinstall_known_extensions: "true", autoload_known_extensions: "true" });
+const r = await (await db.connect()).runAndReadAll("SELECT count(*)::INTEGER FROM read_parquet(\x27https://critwire.com/v1/species.parquet\x27)");
+console.log(r.getRows()[0][0]);' > "$X/duckdb.txt"
+test "$(cat "$X/duckdb.txt")" = "$(jq length data/species.json)"
+```
+
+## Failure modes
+
+**Unit-tested** (§12). Each is written first, seen red in the step named, and has its id in the test title.
+- S3:
+  - D1–D7, `derive/contributions.test.ts`;
+  - S3, `derive/record.test.ts`;
+  - R1–R3, `gbif/derived-dataset.test.ts`.
+- S4, `gbif/register.test.ts`:
+  - RG1–RG8 are §12's G1–G8, one per decision-table row, in precedence order:
+    - RG1: verify;
+    - RG2: verify deletes a leftover intent with the same hash;
+    - RG3: a registration with other counts → refuse;
+    - RG4: an intent for another hash → refuse, ahead of any listing;
+    - RG5: 1 listed → adopt;
+    - RG6: more than 1 listed → refuse;
+    - RG7: 0 listed with an intent → refuse;
+    - RG8: 0 listed, no intent → post.
+  - P1 and B1 are in the same file.
+- S4, L1–L3: `gbif/state.test.ts`.
+
+**Checked by a negative run.** The messages are fixed, so V7 can match them.
+- **F1 · Unknown build argument.** The build throws `unknown argument: <arg>` and writes nothing. S7, V7.
+- **F2 · A derived file differs from derive's output.** Every build, strict or `--draft`, throws `data/<file> is stale: run pnpm derive` before it writes anything. S7, V7.
+- **F3 · No current DOI.** `pnpm build` throws `no current GBIF derived-dataset DOI …`, and `--draft` builds with `gbifDerivedDataset: null`. S7, V7.
+- **F4 · The build reaches the network** (a DuckDB extension autoload, a fetch). The offline build fails, or `$HOME/.duckdb` appears. S7, V8.
+- **F5 · gbif:register refuses before any POST, and leaves no intent and no lock.** S5:
+  - **a:** a dirty tree (`touch zz-dirty`, then remove it). It names the uncommitted changes, with no network line before;
+  - **b:** in a throwaway copy made as in V7 (`rsync` without `.env` and `.git`, then `pnpm install --frozen-lockfile --offline`), with `env -u GBIF_PASSWORD GBIF_USERNAME=x pnpm -s gbif:register`. It names `GBIF_PASSWORD` and H1, with no network line;
+  - **c:** a clean, pushed tree with no tag on origin. It lists (auth, 200), then throws with the exact `git tag gbif-dd-<hex12> <sha> && git push origin gbif-dd-<hex12>`. No `, POST, ` line;
+  - **d:** a hand-written lock (`{"pid": 999999, "startedAt": "x"}`) in the state dir. It names the pid and the lock path, and the lock stays. Delete it afterwards.
+- **F6 · A second register run after success.** It takes the verify path: exit 0, no POST, a clean tree. S6, V4.
+- **F7 · A dataset paging anomaly:**
+  - a page `count` differs from the countries query's;
+  - a duplicate or non-UUID key;
+  - a count ≤ 0;
+  - a sum ≠ `count`.
+
+  Ingest throws and the old snapshot stays. This isn't unit-tested: the sum and duplicate checks run on every live taxon, and any missing, extra or overlapping page breaks one of them. S2.
+- **F8 · The E2E on a missing or stale `dist/`.** It fails first with `run pnpm build`. Check: `rm -rf dist && E2E_ARTIFACTS=$(mktemp -d) pnpm e2e`, then `pnpm build`. S8.
+- **F9 · Touching the live `critwire` db or the production Caddy.**
+  - V0's `DATABASE_URL` guard;
+  - the E2E Caddy runs with `admin off` on :3100/:3101 only;
+  - the offline proof uses only `critwire_offline` (A11).
 
 ## Decisions
 
 - Architecture decisions A1–A12: see Architecture → "Decisions (for the lead to copy)" (single copy kept there, pending reviews).
 - Release (H2, owner 2026-10-21): overrides the brief's "no merge, no deploy". After Verification passes and Astra code-review fixes are done: rebase on `origin/main`, re-run checks, `gh pr merge --merge`, `deploy critwire`, smoke-test https://critwire.com (`/`, every `/v1` file, CORS, 206 Range). On failure: no merge (or leave site as `deploy` left it), handoff item, `MISSION_BLOCKED`. Record merge commit + smoke results in Summary. Step 3 in `plans/001-mvp.md` may then say done.
+- Steps (planner, 2026-10-21): register early (S6), before build work, so S7+ build strict with the real DOI. Cost: a later derive-input change (fix or rebase) makes the DOI stale and needs a second DOI; accepted. If S6 blocks: handoff item + `S6b` before S13, S7–S12 use `--draft`.
+- S11 also updates the project `AGENTS.md` release line (missions may merge + deploy at the end), per H2.
 
 ## Log
 
@@ -765,5 +1245,6 @@ Architect, 2026-10-21. A single round; all 3 Astra MUST-FIX items are resolved, 
 - 2026-10-21 05:39 UTC: H2 (merge+deploy at end) picked up into Decisions. Fable review: APPROVE, 0 MUST-FIX, 5 SHOULD-CONSIDER. Docs-only; no checks needed.
 - 2026-10-21 05:40 UTC: Astra review: APPROVE_WITH_CHANGES, 3 MUST-FIX (§6 sourceUrl vs HEAD, stale species.json before register, register lock), 3 SHOULD-CONSIDER. Docs-only; no checks needed.
 - 2026-10-21 05:47 UTC: Revision by `architect`: 3 Astra MUST-FIX resolved (§6 persisted request + `gbif-dd-*` tag, `assertDerivedFiles`, O_EXCL lock), 8 SHOULD-CONSIDER taken. Docs-only; no checks needed.
+- 2026-10-21 05:59 UTC: Steps S1–S13, Verification V0–V10 + release smoke X1–X6, Failure modes (§12 ids, F1–F9) written by `planner`. Register tests renamed RG1–RG8 (G1–G7 taken). Docs-only; no checks needed.
 
 ## Summary
