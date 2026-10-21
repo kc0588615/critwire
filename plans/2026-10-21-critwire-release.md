@@ -130,7 +130,7 @@ Out:
 
 - [x] Baseline: install, migrate, run typecheck, lint, unit and E2E tests; record the results under Baseline
 - [x] Architecture: `architect` writes findings and the target design
-- [ ] Fable review: `architecture-reviewer`
+- [x] Fable review: `architecture-reviewer`
 - [ ] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
 - [ ] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
 - [ ] Steps: `planner` writes Steps and Verification
@@ -647,6 +647,21 @@ None beyond H1 (`GBIF_PASSWORD`).
 
 ## Architecture review (Fable)
 
+Fable, 2026-10-21. Checked findings 1–10 against `scripts/load.ts`, `scripts/ingest/gbif.ts`, `scripts/derive.ts`, `scripts/derive/record.ts`, `scripts/json.ts`, `scripts/http.ts`, `db/schema.sql`, `tsconfig.json`, the cited doc lines and the ops Caddyfile `critwire.com` block. All ten are accurate (line numbers match; `loadEnvFile()` does throw ENOENT; `load.ts:39-43` holds no lock; `toOccurrences` throws at 300 for every facet; `Source.doi?` already exists so only `RecordInput.gbif.doi` is new). The design covers every checkable outcome and decision rule in the Brief: offline build, reuse of the load code with an advisory lock, exports from `species.json` with no DuckDB extensions, exhaustive `datasetKey` paging with sum checks, settled-only contributions deduped by taxon key, a separate register script with intent + listing reconciliation and read-back, DOI in `attribution.json`, docs and the countries source entry, Caddy-based serving tests with CORS/preflight/Range, the docs-example runner, and the doc updates. No derive rule changes. Schema untouched. Nothing weakens access control; credentials stay in `.env`/headers and only URLs are logged. Scope is proportionate; the register decision table is the brief's own requirement, not over-engineering.
+
+VERDICT: APPROVE
+
+MUST-FIX: none
+
+MISSED: none
+
+SHOULD-CONSIDER:
+1. §3/§4 DRY: define the record column spec once (name → DuckDB type, nested) and derive both the `read_json(columns=…)` string and the expected-key-set validation from it, so a new field can't be added to one and silently dropped by the other.
+2. §6 read-back: a mismatch on `title`/`description` after a successful create leaves a minted DOI with no scripted way out (every re-run adopts → read-back throws again). Treat `sourceUrl` + counts as hard failures (the brief's requirement) and title/description drift as a warning, or add an explicit `--adopt <doi>` path. Also classify all 4xx except 408/429 as "rejected" so a 409/422 doesn't park a dead intent.
+3. §11 `AGENTS.md`: spell out the refresh workflow R5 implies (`ingest gbif` → `derive` → `git rm` the stale `registration.json` → commit/push → `gbif:register` → `derive` → commit) and that plain `pnpm build`/`deploy` fails on a stale DOI. Otherwise the next agent's first re-ingest breaks deploy with no documented recovery.
+4. §9/§10: the drift test skips off this VPS, which contradicts "0 skipped in `results.json`" as a general rule; state the final-verification requirement as "0 skipped on this VPS", and note that the offline proof needs `--draft` until H1 is answered (Verification should give both forms).
+5. §6 intent path wording: `~/.local/state/critwire/` is per OS user, not per GBIF user; fine in practice (one account here), just say so.
+
 ## Architecture review (Astra)
 
 ## Revision notes
@@ -658,10 +673,12 @@ None beyond H1 (`GBIF_PASSWORD`).
 ## Decisions
 
 - Architecture decisions A1–A12: see Architecture → "Decisions (for the lead to copy)" (single copy kept there, pending reviews).
+- Release (H2, owner 2026-10-21): overrides the brief's "no merge, no deploy". After Verification passes and Astra code-review fixes are done: rebase on `origin/main`, re-run checks, `gh pr merge --merge`, `deploy critwire`, smoke-test https://critwire.com (`/`, every `/v1` file, CORS, 206 Range). On failure: no merge (or leave site as `deploy` left it), handoff item, `MISSION_BLOCKED`. Record merge commit + smoke results in Summary. Step 3 in `plans/001-mvp.md` may then say done.
 
 ## Log
 
 - 2026-10-21 05:13 UTC: Baseline recorded; typecheck pass, 42/42 unit, derive deterministic, db:load 76, build placeholder ok; no lint/E2E yet.
 - 2026-10-21 05:35 UTC: Architecture written by `architect` (findings, target design, A1–A12, risks R1–R8); DuckDB node-api 1.5.6-r.2 smoke-tested on arm64 (deterministic Parquet). Docs-only change; no checks needed.
+- 2026-10-21 05:39 UTC: H2 (merge+deploy at end) picked up into Decisions. Fable review: APPROVE, 0 MUST-FIX, 5 SHOULD-CONSIDER. Docs-only; no checks needed.
 
 ## Summary
