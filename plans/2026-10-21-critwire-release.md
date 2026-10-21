@@ -662,6 +662,6 @@ None beyond H1 (`GBIF_PASSWORD`).
 ## Log
 
 - 2026-10-21 05:13 UTC: Baseline recorded; typecheck pass, 42/42 unit, derive deterministic, db:load 76, build placeholder ok; no lint/E2E yet.
-- 2026-10-21 05:45 UTC: Architecture written by `architect` (findings, target design, A1–A12, risks R1–R8); DuckDB node-api 1.5.6-r.2 smoke-tested on arm64 (deterministic Parquet). Docs-only change; no checks needed.
+- 2026-10-21 05:35 UTC: Architecture written by `architect` (findings, target design, A1–A12, risks R1–R8); DuckDB node-api 1.5.6-r.2 smoke-tested on arm64 (deterministic Parquet). Docs-only change; no checks needed.
 
 ## Summary
