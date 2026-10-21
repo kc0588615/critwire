@@ -132,7 +132,7 @@ Out:
 - [x] Architecture: `architect` writes findings and the target design
 - [x] Fable review: `architecture-reviewer`
 - [x] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
-- [ ] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
+- [x] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
 - [ ] Steps: `planner` writes Steps and Verification
 
 ## Baseline
@@ -189,7 +189,9 @@ Architect, 2026-10-21. Throwaway evidence in `/tmp/arch-cw/` (not committed):
   - `process.loadEnvFile()` throws ENOENT when `.env` is missing, and never overrides variables that are already set.
 - **Offline:** `sudo unshare -n setpriv --reuid=critter-ai --regid=critter-ai --init-groups env -i HOME=<empty> PATH=$PATH COREPACK_HOME=~/.cache/node/corepack …` blocks DNS, while the socket, pnpm (corepack) and DuckDB still work.
 - **Playwright:** Chromium 1208 belongs to `@playwright/test` 1.58.0–1.58.2; hauntedpavement pins 1.58.2. Ports 3100–3102 are free.
-- **GitHub:** the repo is public, and `raw.githubusercontent.com/kc0588615/critwire/<sha>/…` and `github.com/…/tree/<sha>/data` resolve for pushed commits. PRs are merged with merge commits.
+- **GitHub:** the repo is public, and `raw.githubusercontent.com/kc0588615/critwire/<sha>/…` and `github.com/…/tree/<sha>/data` resolve for pushed commits. PRs are merged with merge commits. Origin has no tags today (`git ls-remote --tags origin` is empty). The mission's release step rebases the branch, which leaves the pre-rebase commits on no branch; GitHub doesn't promise to keep such commits.
+- **Derive cost:** `pnpm derive` takes 0.84 s here and changes nothing, so the build and `gbif:register` can re-run it in-process to prove freshness.
+- **Node has no `flock`**; `open(path, "wx")` (O_EXCL) is atomic on a local fs.
 
 ### Findings (ranked)
 
@@ -203,7 +205,7 @@ Architect, 2026-10-21. Throwaway evidence in `/tmp/arch-cw/` (not committed):
    - `:68` throws at 300 facet entries. That's right for countries, but fatal for datasets.
    - Fix: §5.
 4. **The filters live inside one URL builder** (`ingest/gbif.ts:25-30`). A second query needs exactly the same filters, and a copy would drift (DRY). Fix: a shared `OCCURRENCE_FILTERS`; the countries URL stays byte-identical, so `sources[].url` doesn't churn.
-5. **Derive is top-level script code** (`scripts/derive.ts:22-73`), so `gbif:register` can't prove its counts are fresh without re-implementing derive. Fix: `scripts/derive/pipeline.ts` with `readDeriveInputs()` and a pure `deriveAll()`; `derive.ts` stays the CLI.
+5. **Derive is top-level script code** (`scripts/derive.ts:22-73`), so neither `gbif:register` nor the build can prove the committed derived files are fresh without re-implementing derive. Today `load.ts:11` loads whatever `species.json` holds. Fix: `scripts/derive/pipeline.ts` with `readDeriveInputs()`, a pure `deriveAll()` and `assertDerivedFiles()`; `derive.ts` stays the CLI.
 6. **JSON formatting is fused with the atomic write** (`scripts/json.ts:18-23`), and `dist/` needs the same byte rules. Fix: a pure `formatJson(value, {canonical})`, used by `writeJson`.
 7. **The countries source has no DOI slot** (`scripts/derive/record.ts:59-60`). Fix: add `RecordInput.gbif.doi`, set on that entry only. No rule changes.
 8. **The docs have drifted:** `AGENTS.md:12` (DuckDB `postgres` extension), `AGENTS.md:34` and `plans/001-mvp.md:57,61,65,75,78` (cutover, `critwire_live`), `001-mvp.md:49` (`ranges.parquet`), `README.md:11` ("Not live yet"), `DATA-LICENSE.md:7` ("will cite"). Fix: §11.
@@ -228,11 +230,11 @@ Architect, 2026-10-21. Throwaway evidence in `/tmp/arch-cw/` (not committed):
 ```
 raw + base + overrides + registration.json ─► derive ─► species.json, mismatches.json, contributions.json
 contributions.json (committed, pushed) ─► gbif:register (network write) ─► registration.json
-species.json + contributions.json + registration.json ─► build ─► Postgres (DATABASE_URL) + dist/
+data/ (derive inputs + derived files) ─► build (re-runs deriveAll: must equal the committed files) ─► Postgres (DATABASE_URL) + dist/
 ```
 
 - Contributions don't depend on the registration, and the registration is a committed input, so derive is still a pure function of committed inputs.
-- **Mission order:** final `ingest gbif` → `derive` → commit and push → `gbif:register` (needs H1) → `derive` (the DOI goes into `sources[]`) → commit → strict build and E2E.
+- **Mission order:** final `ingest gbif` → `derive` → commit and push → push tag `gbif-dd-<hex12>` at that commit (§6) → `gbif:register` (needs H1) → `derive` (the DOI goes into `sources[]`) → commit → strict build and E2E. Later commits, the release rebase and the merge don't touch the registration: it is checked against `registration.json` and the tag, never HEAD.
 
 #### §2 Modules
 
@@ -242,15 +244,22 @@ scripts/db.ts                    speciesRows(species) (pure, moved from load.ts)
                                  sql.begin → pg_advisory_xact_lock(hashtext('critwire.load')) → schema → insert
 scripts/load.ts                  CLI pnpm db:load: loadEnv → readJson(speciesFile) → loadDatabase
 scripts/json.ts                  + formatJson(value, {canonical}) → 2-space JSON + "\n"; writeJson uses it
-scripts/derive/pipeline.ts       readDeriveInputs() (fs); deriveAll(inputs) → {records, entries, contributions} (pure)
+scripts/derive/pipeline.ts       readDeriveInputs() (fs, incl. registration.json); deriveAll(inputs) → {records, entries,
+                                 contributions, doi} (pure); assertDerivedFiles(result): the 3 committed files equal
+                                 formatJson of the result byte for byte, else throw "data/<file> is stale: run pnpm derive"
 scripts/derive/contributions.ts  gbifContributions() (pure) + contributions.test.ts
-scripts/derive.ts                CLI: deriveAll → 3 writes → summary (+ one line: DOI current | missing | stale)
+scripts/derive.ts                CLI: deriveAll → 3 writes → summary (+ one line: DOI current | missing | stale, and when
+                                 not current the tag to push: gbif-dd-<hex12>)
 scripts/ingest/gbif.ts           + OCCURRENCE_FILTERS, gbifDatasetsUrl(taxonKey, offset), dataset paging (§5)
 scripts/gbif/derived-dataset.ts  types Contributions, Registration; file URLs; currentDoi(contributions, registration) (pure)
 scripts/gbif/register.ts         pure: decide(), classifyPost(), requestBody(), readBackErrors() + register.test.ts
-scripts/gbif-register.ts         CLI pnpm gbif:register (§6)
+scripts/gbif/state.ts            stateDir; withLock(fn) (O_EXCL lock file); readIntent, createIntent ("wx"), deleteIntent
+                                 + state.test.ts
+scripts/gbif-register.ts         CLI pnpm gbif:register (§6), incl. checkDeposit (network reads)
 scripts/build.ts                 CLI pnpm build [--draft] (§3)
-scripts/build/inputs.ts          readBuildInputs(): parse + validate species.json, contributions, registration; DOI gate
+scripts/build/columns.ts         RECORD_COLUMNS: the one nested spec (key → DuckDB type, in record order) from which
+                                 the read_json columns, the record key check and the CSV select list are generated
+scripts/build/inputs.ts          readBuildInputs(): deriveAll + assertDerivedFiles; key check vs RECORD_COLUMNS; DOI gate
 scripts/build/tables.ts          writeTables(speciesFile, outDir): DuckDB → species.parquet, species.csv
 scripts/build/sources.ts         committed source registry: SOURCES, LICENSE_URLS, COL_CITATIONS (§7)
 scripts/build/attribution.ts     buildAttribution(inputs) (pure)
@@ -269,14 +278,13 @@ e2e/                             Caddyfile, fixtures/index.html, helpers.ts, *.s
 #### §3 `pnpm build [--draft]`
 
 1. **Arguments:** only `--draft` is accepted; anything else throws. Then `loadEnv()` and `requireEnv("DATABASE_URL")`.
-2. **`readBuildInputs()`**, offline, before anything is written:
-   - **`data/species.json`:**
-     - its bytes must equal `formatJson(parsed)`: derive's exact output, not hand-edited;
-     - the keys at each level (record, taxonomy, ids, range, photo) must be exactly the expected set, and `sources` keys a subset of the known set. This is needed because `read_json` drops unknown keys;
-     - records are sorted by `id`, and no slug matches `^\d+$` (it would collide with an `{id}.json` file);
+2. **`readBuildInputs()`**, offline, before anything is written, in every build (strict and `--draft`):
+   - **Freshness:** `result = deriveAll(await readDeriveInputs())`, then `assertDerivedFiles(result)`. `data/species.json`, `data/review/mismatches.json` and `contributions.json` must equal derive's output byte for byte. This covers hand edits, stale derives, formatting, `id` order and the DOI on the countries entries (derive sets it from `currentDoi`). Derive is offline and takes under 1 s.
+   - **`data/species.json`** (beyond what derive guarantees):
+     - the keys at each level (record, taxonomy, ids, range, photo) must be exactly the `RECORD_COLUMNS` set, and `sources` keys a subset of its set. This is needed because `read_json` drops unknown keys, so a field added to derive but not to the spec fails here and isn't silently dropped;
+     - no slug matches `^\d+$` (it would collide with an `{id}.json` file);
      - every non-null photo has a non-empty `url`, `credit`, `license` and `page`.
-   - **DOI consistency:** `doi = currentDoi(contributions, registration)`. Each countries source entry's `doi` must equal it (absent when null), else throw "run pnpm derive". `contributions.retrieved` must equal those entries' `retrieved`.
-   - **Gate:** if `doi` is null and `--draft` isn't set, throw: "no current GBIF derived-dataset DOI (registration missing or stale): run pnpm gbif:register, then pnpm derive; pnpm build --draft for a preview".
+   - **Gate:** `doi = result.doi`. If it is null and `--draft` isn't set, throw: "no current GBIF derived-dataset DOI (registration missing or stale): see AGENTS.md, GBIF DOI refresh; pnpm build --draft for a preview".
      - Deploy runs plain `pnpm build`, so a release can't ship uncited: it fails fast where it matters.
      - The mission and agents can still build and run E2E before H1.
 3. **`loadDatabase(DATABASE_URL, species)`:** the same code as `db:load`, with the advisory lock held for the whole load. It works over TCP (`.env`) or the socket (`postgres:///db` plus `PGHOST`).
@@ -299,7 +307,7 @@ The exports are written from `data/species.json`, never read back from the db. *
   - lossless, including `sources[]`;
   - read natively by DuckDB, pandas/pyarrow, polars and R arrow. Spreadsheet users get the CSV.
 - **DuckDB instance:** `DuckDBInstance.create(":memory:", {threads: "1", autoinstall_known_extensions: "false", autoload_known_extensions: "false"})`. Any extension use then fails instead of reaching for the network.
-- **One typed view feeds both tables:**
+- **One typed view feeds both tables.** Its `columns={…}` string is generated from `RECORD_COLUMNS` (keys quoted where they are SQL keywords), which renders exactly this:
 
 ```sql
 CREATE TEMP VIEW species AS SELECT * FROM read_json('<data/species.json>', format='array', columns={
@@ -319,7 +327,7 @@ COPY (SELECT * FROM species ORDER BY id) TO '<dist>/v1/species.parquet' (FORMAT 
   - A `sources` key that a record leaves out becomes NULL; the docs say so.
   - Snappy is DuckDB's default and the most widely readable codec, and the size difference is nil at 76 rows.
 
-**CSV (`species.csv`)** comes from the same view, through DuckDB's writer (`FORMAT csv, HEADER`), ordered by `id`.
+**CSV (`species.csv`)** comes from the same view, through DuckDB's writer (`FORMAT csv, HEADER`), ordered by `id`. Its select list is generated from `RECORD_COLUMNS` too (every leaf except `sources`).
 - Each column is its JSON path in snake_case, with `.` turned into `_`: `id, slug, scientific_name, common_name, taxonomy_class, taxonomy_order, taxonomy_family, taxonomy_genus, ids_iucn, ids_gbif, ids_col, ids_wikidata, ids_inaturalist, ids_ncbi, range_countries_with_open_records, range_status, photo_url, photo_credit, photo_license, photo_page, replaced_by`.
 - Countries and `replaced_by` are `;`-joined with `array_to_string`; NULL stays empty.
 - No `sources`: the docs say it's in the JSON and Parquet.
@@ -336,8 +344,8 @@ COPY (SELECT * FROM species ORDER BY id) TO '<dist>/v1/species.parquet' (FORMAT 
 - **Paging:** right after each species' countries query, page `…/v1/occurrence/search?checklistKey=…&taxonKey=K&facet=datasetKey&facetLimit=300&facetOffset=O&limit=0&<OCCURRENCE_FILTERS>` with O = 0, 300, …, **until a page returns `counts: []`**.
   - This runs for every species with an occurrence query: ingest doesn't know which species are settled, and the 3 extra cost 6 requests.
   - The 300-entry saturation throw doesn't apply to this facet.
-- **Checks on each page:**
-  - its `count` equals the countries query's `count`, which catches an index change mid-run;
+- **Checks on each page** (consistency is best-effort: equal totals catch an index change that moves `count`, not one that keeps it; the DOI records this one run's counts either way):
+  - its `count` equals the countries query's `count`;
   - keys are UUIDs, with no duplicates across pages;
   - counts are positive integers.
 
@@ -365,46 +373,63 @@ COPY (SELECT * FROM species ORDER BY id) TO '<dist>/v1/species.parquet' (FORMAT 
 This is the one network write, so it lives outside the build.
 - Reads use `getJson` (retries are safe for reads; auth goes in `init.headers`, and only URLs are logged).
 - The POST is a separate single `fetch` with a 60 s timeout and no retry.
+- Run it on the Oracle VPS only (AGENTS.md says so): the lock and the intent are local files, and the GBIF listing is the only guard across machines.
 
-**Preconditions**, all checked before any GBIF call:
+**State files** (`scripts/gbif/state.ts`) live in `${XDG_STATE_HOME:-~/.local/state}/critwire/`: outside git, because the tree must stay clean, and shared by every checkout of this OS user on this machine (per OS user, not per GBIF user; there is one of each here).
+- **Lock** `gbif-register.lock`. `withLock(fn)` creates it with `open(…, "wx")` (O_EXCL, atomic) holding `{pid, startedAt}`, runs the whole run inside it (reconciliation, POST, read-back, writing `registration.json`, deleting the intent), and deletes it in `finally`.
+  - If it already exists, throw: "gbif:register is running (pid N) or was killed; if pid N isn't running, delete <lock> and re-run (the intent still guards any POST)".
+  - It is never broken automatically, because two breakers could race.
+- **Intent** `gbif-register-intent.json`: `{contributionsSha256, request, startedAt}`, where `request` is the exact body about to be sent, `sourceUrl` included. `createIntent` writes it with `{flag: "wx"}` right before the POST. It survives crashes. Only a rejected POST, a written `registration.json` or a verify of the same hash deletes it. An unreadable intent counts as present.
+
+**Preconditions**, local, on every run, before any network call:
 1. `GBIF_USERNAME` and `GBIF_PASSWORD` are set; otherwise throw naming H1.
-2. `git status --porcelain` is empty; `sha` = HEAD.
-3. **Fresh:** `formatJson(deriveAll(await readDeriveInputs()).contributions, {canonical: true})` equals the bytes of `contributions.json`.
-4. **Public and exact:** `getJson("https://raw.githubusercontent.com/kc0588615/critwire/<sha>/data/gbif-derived-dataset/contributions.json")`, formatted canonically, equals the local bytes. This proves HEAD is pushed and public, and that it is exactly what gets sent.
-5. `contributions.datasets` is not empty.
+2. `git status --porcelain` is empty.
+3. **Fresh:** `assertDerivedFiles(deriveAll(await readDeriveInputs()))`, the same check as the build. `species.json`, `mismatches.json` and `contributions.json` must equal derive's output, so a DOI can't point at stale country lists.
+4. `contributions.datasets` is not empty.
 
-**Request:** `{title, description, sourceUrl, relatedDatasets: contributions.datasets}`. No `originalDownloadDOI` (no download exists) and no `registrationDate` (register now).
-- **`sourceUrl` = `https://github.com/kc0588615/critwire/tree/<sha>/data`.** That is the deposit: the country lists (`species.json`), the per-dataset counts (`contributions.json`) and the per-taxon queries (raw), at a commit that is immutable and already public. `critwire.com/v1` isn't live yet, and it changes with every data update, while the DOI's counts don't.
+`contributionsSha256` is the sha256 of the `contributions.json` bytes, and `tag` is `gbif-dd-<its first 12 hex>`.
+
+**Deposit check** `checkDeposit(sourceUrl, sha256)`: network reads, every failure hard.
+- `sourceUrl` matches `^https://github\.com/kc0588615/critwire/tree/([0-9a-f]{40})/data$`, which captures the commit.
+- `git ls-remote origin refs/tags/gbif-dd-<sha256[0:12]>` returns that commit.
+  - The tag keeps the commit reachable after the release rebase or a squash merge, which would otherwise orphan it.
+  - Missing: throw with the exact `git tag <tag> <commit> && git push origin <tag>`.
+- Unauthenticated `raw.githubusercontent.com/kc0588615/critwire/<commit>/data/gbif-derived-dataset/contributions.json`, re-formatted canonically, hashes to `sha256`. That proves the file is public and exact.
+
+**Request** (post only): `{title, description, sourceUrl, relatedDatasets: contributions.datasets}`. No `originalDownloadDOI` (no download exists) and no `registrationDate` (register now).
+- **`sourceUrl` = `https://github.com/kc0588615/critwire/tree/<HEAD>/data`.** That is the deposit: the country lists (`species.json`), the per-dataset counts (`contributions.json`) and the per-taxon queries (raw), at a commit that is immutable, public and held by its tag. `critwire.com/v1` isn't live yet, and it changes with every data update, while the DOI's counts don't.
+- **HEAD is used only here.** Verify and adopt check against `registration.json`, the intent and the tag, so later commits and rebases don't matter.
 - **`title`:** human-readable, no hash. For example: "critwire: countries with open (CC0, CC BY 4.0) GBIF occurrence records, N taxa".
 - **`description`:** the filters, the licenses, the file paths and `https://critwire.com/v1/`, ending with the line `contributions-sha256: <hex>`, which is the reconciliation key.
 
-**Decision:** a pure function `decide({registration, contributionsSha, datasets, intent, listing})`.
+**Decision:** a pure function `decide({registration, contributionsSha256, datasets, intent, listing})`. `listing` holds the user's datasets whose description carries this hash's line. The first matching row wins.
 
 | State | Action |
 |---|---|
-| `registration.json` exists, counts equal | **verify**: read back; write nothing; exit 0 |
-| `registration.json` exists, counts differ | **refuse**: "GBIF can't change a DOI's counts; for a new DOI, git rm registration.json, commit, push, re-run" |
+| `registration.json` exists, its `relatedDatasets` equal `contributions.datasets` | **verify** against `registration.json`: read back, then delete a leftover intent with the same hash; write nothing else; exit 0 |
+| `registration.json` exists, counts differ | **refuse**: "GBIF can't change a DOI's counts; for a new DOI see AGENTS.md, GBIF DOI refresh" |
 | missing: list all pages of `GET /derivedDataset/user/{user}`, then: | |
-| exactly 1 listed with this `contributions-sha256` | **adopt**: read back, write `registration.json`, delete the intent |
+| an intent for another hash | **refuse**: names the intent's `sourceUrl`; "check out that commit and re-run to adopt it, or delete <intent> only when sure nothing was created" |
+| exactly 1 listed | **adopt**: read back, write `registration.json`, delete the intent |
 | more than 1 listed | **refuse**: duplicates are already on GBIF; add a handoff item |
-| 0 listed, an intent file exists | **refuse**: "a POST at <time> may have registered; re-run later; delete <intent> only when sure nothing was created" |
-| 0 listed, no intent | **post** |
-
-**Intent record:** before the POST, write `${XDG_STATE_HOME:-~/.local/state}/critwire/gbif-register-intent.json` with `{contributionsSha256, sourceUrl, startedAt}`.
-- It lives outside git because the tree must stay clean.
-- It is per GBIF user, so every checkout on this VPS sees it.
+| 0 listed, an intent exists | **refuse**: "a POST at <time> may have registered; re-run later; delete <intent> only when sure nothing was created" |
+| 0 listed, no intent | **post**: `checkDeposit(HEAD sourceUrl, contributionsSha256)`, `createIntent`, POST |
 
 **POST outcome** (`classifyPost`):
 - **Created:** 200 or 201 with a parseable `doi`. Read back, then write `registration.json`, then delete the intent.
-- **Rejected:** 400, 401, 403 or 415 (GBIF validates before it creates). Delete the intent and throw with the first 300 characters of the body.
-- **Ambiguous:** anything else (5xx, timeout, network error, 2xx without a DOI). Keep the intent and throw "re-run to reconcile"; the next run lists first.
+- **Rejected:** any 4xx except 408 and 429 (GBIF validates before it creates). Delete the intent and throw with the first 300 characters of the body.
+- **Ambiguous:** everything else (408, 429, 5xx, timeout, network error, 2xx without a DOI). Keep the intent and throw "re-run to reconcile"; the next run lists first.
 
-**Read-back:**
-- `GET /derivedDataset/{doi}`: `title`, `description` and `sourceUrl` equal what was sent, and `createdBy` equals `GBIF_USERNAME`.
-- `GET /derivedDataset/{doi}/datasets`, all pages: the `datasetKey → numberRecords` map equals `contributions.datasets`.
-- On any mismatch it throws, writes nothing and keeps the intent, so the next run adopts the dataset.
+**Read-back** (`readBackErrors(expected, record, usages)` returns `{hard, warnings}`) reads `GET /derivedDataset/{doi}` and every page of `GET /derivedDataset/{doi}/datasets`. `expected` is the request after a POST, the intent (if any) on adopt, and `registration.json` on verify. `hash` is `contributionsSha256`, or on verify `registration.contributionsSha256` (a re-ingest can change `retrieved` without changing counts).
+- **Hard** (throw, write nothing, keep the intent):
+  - the `datasetKey → numberRecords` map equals `contributions.datasets`;
+  - `createdBy` equals `GBIF_USERNAME`;
+  - the description carries the `contributions-sha256: <hash>` line;
+  - `sourceUrl` equals `expected.sourceUrl` when there is one;
+  - `checkDeposit(record.sourceUrl, hash)` passes.
+- **Warning** (printed, the run still succeeds): `title` or the rest of `description` differs from `expected`. `registration.json` stores GBIF's values, so a minted DOI never ends up with every re-run throwing, and the brief's title check is still done and reported.
 
-**`registration.json`** (canonical, committed): `{doi, citation, title, description, sourceUrl, createdBy, contributionsSha256, records, relatedDatasets}`. `citation` is GBIF's text, verbatim. It holds no `created` or `modified` times. There's no PUT path: nothing needs one now, and PUT can't change counts.
+**`registration.json`** (canonical, committed): `{doi, citation, title, description, sourceUrl, createdBy, contributionsSha256, records, relatedDatasets}`, taken from GBIF's read-back. It is the persisted record that later verify runs check against. `citation` is GBIF's text, verbatim. It holds no `created` or `modified` times. There's no PUT path: nothing needs one now, and PUT can't change counts.
 
 #### §7 `attribution.json` and the source registry
 
@@ -457,7 +482,8 @@ This is the one network write, so it lives outside the build.
   - `#fields`: every field.
     - `range.status`.
     - "Countries with open records" is not native range: only CC0 and CC BY records count, and strays are excluded.
-    - A null id or null countries means "not settled": critwire never guesses, and a person reviews disagreements.
+    - A null id means "not settled": critwire never guesses, and a person reviews disagreements.
+    - Null countries have two meanings, told apart by `range.status`: `no-open-records` (we know the GBIF taxon, but no country is left after the open-license and quality filters) and `identity-unsettled` (we couldn't confirm which GBIF taxon it is, so nothing was counted).
     - The CSV column naming.
     - `sources` is only in the JSON and Parquet.
   - `#licenses`: `DATA-LICENSE.md` and `LICENSE` in plain words, with links to both on GitHub. IUCN gets an id only.
@@ -525,7 +551,7 @@ This is the one network write, so it lives outside the build.
   - If `registration.json` exists:
     - its DOI appears in `attribution.json`, in the docs `#credits` and in every countries source entry of `/v1/species.json`;
     - `datasets` equals `contributions.json` and sums to `records`.
-  - Otherwise: `test.skip('no GBIF registration yet (H1)')`. The final verification requires a strict build and 0 skipped in `results.json`.
+  - Otherwise: `test.skip('no GBIF registration yet (H1)')`. The final verification requires a strict build and 0 skipped in `results.json` **on this VPS**. Elsewhere the drift test may skip too.
 
 **Command:** `pnpm build && E2E_ARTIFACTS=<dir> pnpm e2e`.
 
@@ -551,7 +577,7 @@ sudo unshare -n setpriv --reuid=critter-ai --regid=critter-ai --init-groups \
 dropdb critwire_offline; test ! -e "$T/home/.duckdb"   # DuckDB fetched no extension
 ```
 
-  Its dist hash list must equal the worktree build's.
+  Its dist hash list must equal the worktree build's. Before H1, both builds use `pnpm build --draft` (a strict build refuses without a DOI). The final Verification uses plain `pnpm build`. Verification gives both forms.
 - **Never point the socket build at `critwire_dev`.** Peer auth connects as `critter-ai`, so the recreated table would belong to `critter-ai`, and the `critwire` role's next `drop table` would fail. That's why it uses the throwaway `critwire_offline`.
 
 #### §11 Docs and repo updates
@@ -559,7 +585,17 @@ dropdb critwire_offline; test ! -e "$T/home/.duckdb"   # DuckDB fetched no exten
 - **`AGENTS.md`:**
   - Stack: "`@duckdb/node-api` (pinned) writes Parquet and CSV from `data/species.json`; no DuckDB extensions at build time (offline)".
   - Commands: `pnpm build [--draft]`, `pnpm e2e`, `pnpm gbif:register`.
-  - Data: the two `data/gbif-derived-dataset/` files and their writers.
+  - Data: the two `data/gbif-derived-dataset/` files and their writers. `pnpm build` refuses derived files that differ from `pnpm derive`'s output.
+  - **GBIF DOI refresh** (a short section). Any `ingest gbif` that changes dataset counts makes the DOI stale: `pnpm derive` prints `DOI stale`, and plain `pnpm build`, and so `deploy`, fails until the refresh is done. Steps:
+    1. `pnpm derive`
+    2. `git rm data/gbif-derived-dataset/registration.json`
+    3. commit and push
+    4. `git tag gbif-dd-<hex12> && git push origin gbif-dd-<hex12>` (derive prints the name)
+    5. `pnpm gbif:register` (on the Oracle VPS only)
+    6. `pnpm derive`
+    7. commit and push
+
+    Never delete or move a `gbif-dd-*` tag: each one holds a DOI's deposit. If a run is interrupted, re-run it; it reconciles. Delete the lock or the intent only as its error message says.
   - Release: drop the cutover sentence.
 - **`plans/001-mvp.md`:**
   - `:49`: `ranges.parquet` moves to Later; the files are `species/{id}.json` and `species/{slug}.json`.
@@ -587,9 +623,16 @@ Only where E2E can't reach. The failure modes are written first, as in the exist
   - R1: no registration → null.
   - R2: an extra key, a missing key or a different count → null.
   - R3: equal counts → the DOI.
-- **`gbif/register.test.ts`:** G1–G7 cover every row of the decision table, plus `classifyPost`. A real POST mints a public DOI, so these paths can't be exercised live.
+- **`gbif/register.test.ts`** (a real POST mints a public DOI, so these paths can't be exercised live):
+  - G1–G8: every row of the decision table, in precedence order, including a verify that deletes a leftover intent with the same hash and an intent for another hash;
+  - P1: `classifyPost`. 200 or 201 with a DOI → created. 400, 401, 403, 404, 409, 415 and 422 → rejected. 408, 429, 5xx, a timeout, a network error, and a 2xx without a DOI → ambiguous;
+  - B1: `readBackErrors`. Counts, `createdBy`, the hash line and `sourceUrl` are hard; `title` and the rest of `description` are warnings only.
+- **`gbif/state.test.ts`**, using a temp `XDG_STATE_HOME`:
+  - L1: a second `withLock` while the first holds it → throws naming the pid, and the first lock stays;
+  - L2: the lock is gone after `fn` throws;
+  - L3: `createIntent` when an intent exists → throws.
 
-Build, docs and attribution get no unit tests; the E2E covers them.
+Build, docs, attribution and `assertDerivedFiles` get no unit tests. The E2E covers them, plus one Verification negative check: one changed byte in `data/species.json` makes `pnpm build --draft` fail naming `pnpm derive`.
 
 ### Decisions (for the lead to copy)
 
@@ -599,12 +642,16 @@ Build, docs and attribution get no unit tests; the E2E covers them.
 - **A4** `dist/v1/species.json` is a byte copy of `data/species.json`, and the `{id}` and `{slug}` files are identical copies.
 - **A5** Dataset counts go in the same GBIF snapshot (`species[N].datasets`), paged until an empty page, with sum checks. `pnpm derive` turns them into `data/gbif-derived-dataset/contributions.json`.
 - **A6** `pnpm gbif:register`:
-  - freshness: proven by `deriveAll` run in-process, a clean tree, and byte equality with raw.githubusercontent at HEAD;
+  - freshness: a clean tree, and `assertDerivedFiles` (species, mismatches and contributions equal `deriveAll`, run in-process);
+  - deposit: `checkDeposit`, meaning the tag on origin and the public raw file hashing to the contributions;
   - reconciliation: by the `contributions-sha256` line in the description;
-  - the intent record lives in `~/.local/state/critwire/`;
+  - mutual exclusion: an O_EXCL lock covering the whole run, and an O_EXCL intent holding the exact request. Both live in `~/.local/state/critwire/` (per OS user, this machine); register on the VPS only;
+  - verify and adopt check against `registration.json` or the intent, never HEAD;
+  - read-back: counts, `createdBy`, the hash line and `sourceUrl` are hard; title and description are warnings;
+  - any 4xx except 408 and 429 is rejected;
   - no PUT path, and changed counts are refused.
-- **A7** `sourceUrl` = `https://github.com/kc0588615/critwire/tree/<sha>/data`: public, immutable, and holding the lists, the counts and the queries.
-- **A8** A plain `pnpm build` refuses a missing or stale DOI; `--draft` covers the time before H1 and local previews. Deploy runs plain `pnpm build`.
+- **A7** `sourceUrl` = `https://github.com/kc0588615/critwire/tree/<sha>/data`: public, immutable, and holding the lists, the counts and the queries. A pushed tag `gbif-dd-<hex12>` keeps `<sha>` reachable through the release rebase and any squash merge. These are the repo's first tags; they are never moved or deleted.
+- **A8** Every build (strict and `--draft`) refuses committed derived files that differ from derive's output. A plain `pnpm build` also refuses a missing or stale DOI; `--draft` covers the time before H1 and local previews. Deploy runs plain `pnpm build`.
 - **A9** Citations are each source's own wording, verbatim, kept in a committed registry. The COL citation is keyed by release, so the build fails on a new release until its citation is added. COL raw isn't re-ingested, because that's outside the brief's scope.
 - **A10** The E2E Caddy copies the live block with `admin off`, on ports 3100 and 3101, adds an access log, and is drift-checked against the ops Caddyfile.
 - **A11** The offline proof uses a throwaway `critwire_offline` db over the socket, never `critwire_dev`.
@@ -613,13 +660,15 @@ Build, docs and attribution get no unit tests; the E2E covers them.
 ### Risks
 
 - **R1** The re-ingest can change statuses and countries, and a new GBIF match can change which species are settled. This is expected; the PR reports the delta.
-- **R2** GBIF's index can change between a species' countries query and its dataset pages. The per-page `count` check then makes the ingest throw; re-run it.
-- **R3** A squash merge would leave `<sha>` off `main`. The PR ref keeps it reachable, and the repo uses merge commits; the PR body asks for a merge commit.
+- **R2** GBIF's index can change between a species' countries query and its dataset pages. The per-page `count` check makes the ingest throw when `count` moves; re-run it. A change that keeps `count` equal goes undetected (best-effort).
+- **R3** The release rebase, or a squash merge, leaves `<sha>` on no branch. The `gbif-dd-*` tag keeps it reachable, and `checkDeposit` refuses to register or verify without it.
 - **R4** Each monthly COL release fails the build until `COL_CITATIONS` has its citation. That's deliberate and loud. Later: allowlist `citation` in the COL ingest at its next refresh and drop the table.
-- **R5** Every later GBIF re-ingest that changes any count makes the DOI stale. A plain build then fails until a new DOI is registered (git rm `registration.json`, then register).
+- **R5** Every later GBIF re-ingest that changes any count makes the DOI stale. A plain build, and so `deploy`, then fails until a new DOI is registered (AGENTS.md, GBIF DOI refresh).
 - **R6** The E2E needs the network the first time it installs httpfs. The build never does.
 - **R7** Caddy serves `.parquet` with no `Content-Type`. That's harmless for DuckDB and `fetch`; an optional ops tweak later, not a handoff item.
 - **R8** DataCite registers the DOI asynchronously, so `doi.org` can lag GBIF by minutes. The read-back uses GBIF's API, not doi.org.
+- **R9** The lock and intent are per machine. Two machines posting within the same seconds could both mint a DOI. The listing catches any finished POST, AGENTS.md limits registration to the VPS, and a duplicate would show up as "more than 1 listed" on the next run.
+- **R10** A killed run (SIGKILL, a reboot) leaves the lock behind. The next run refuses with the pid and the exact delete instruction; the intent still guards the POST.
 
 ### Rejected alternatives
 
@@ -633,6 +682,12 @@ Build, docs and attribution get no unit tests; the E2E covers them.
 - **A build that always renders without a DOI:** merging before registration would ship an uncited release, silently.
 - **A strict build with no `--draft`:** the mission couldn't run E2E before H1.
 - **The script committing its intent record:** heavier, and it breaks the clean-tree precondition. The listing hash is the real guard.
+- **A Postgres advisory lock for register:** it would add a db dependency to a script that has none, and each machine has its own db anyway.
+- **A `flock(1)` wrapper:** it needs a shell line in `package.json` or a re-exec. An O_EXCL file with a clear stale-lock message is simpler for a script that runs a few times a year.
+- **Breaking stale locks automatically:** two breakers can race. A manual delete is safe, and it's rare.
+- **Freshness checks in strict builds only:** a draft built from stale data is just as wrong, and one rule is simpler.
+- **An `--adopt <doi>` flag:** making title and description warnings removes the dead end without adding a path.
+- **`sourceUrl` at a tag URL (`tree/gbif-dd-…`):** tags can be moved. The sha is immutable, and the tag only keeps it reachable.
 - **`sourceUrl` = critwire.com/v1:** not public yet, and it changes.
 - **`sourceUrl` = a blob link to `contributions.json`:** the deposit is the lists plus the counts, not just the counts.
 - **A PUT update path:** GBIF's PUT can't change counts, and nothing needs it now.
@@ -680,6 +735,20 @@ SHOULD-CONSIDER:
 
 ## Revision notes
 
+Architect, 2026-10-21. A single round; all 3 Astra MUST-FIX items are resolved, and all 8 SHOULD-CONSIDER items are taken.
+- **Astra MF1** (`sourceUrl` from HEAD):
+  - the intent persists the exact request, `sourceUrl` included, and `registration.json` persists GBIF's read-back. Verify checks against `registration.json`, adopt against the intent and the listing, and HEAD is used only to build a new POST (§6);
+  - also fixed: the release rebase would orphan `<sha>`, and R3's claim that "the PR ref keeps it" was wrong. A pushed tag `gbif-dd-<hex12>` now holds it, checked by `checkDeposit` (§6, A7, R3).
+- **Astra MF2** (stale `species.json`): a shared `assertDerivedFiles` checks species, mismatches and contributions against `deriveAll`. It runs before any GBIF call in register and in every build, strict and draft. It replaces the build's separate format, sort, DOI and `retrieved` checks (§2, §3, §6, A6, A8, Finding 5).
+- **Astra MF3** (mutual exclusion): an O_EXCL lock covers the whole run, from reconciliation to writing `registration.json`; the intent is created with `wx`; there's no automatic lock breaking. Cross-machine registration is limited to the VPS (§6, §11, R9, R10, L1–L3).
+- **Fable SC1**: `build/columns.ts` `RECORD_COLUMNS` generates the `read_json` columns, the key check and the CSV select list (§2–§4).
+- **Fable SC2**: read-back now has hard fields (counts, `createdBy`, the hash line, `sourceUrl`, the deposit) and warnings (title, description), and `registration.json` stores GBIF's values. Any 4xx except 408 and 429 is rejected (§6, P1, B1). `--adopt` was rejected: it isn't needed.
+- **Fable SC3 / Astra SC3**: AGENTS.md gets a "GBIF DOI refresh" section, including the tag step and the rule never to delete tags (§11, R5).
+- **Fable SC4**: §9 now says "0 skipped on this VPS"; §10 gives the `--draft` form of the offline proof for before H1.
+- **Fable SC5**: §6 says the state is per OS user on this machine, not per GBIF user.
+- **Astra SC1**: facet consistency is described as best-effort (§5, R2).
+- **Astra SC2**: the docs tell `no-open-records` and `identity-unsettled` nulls apart (§8).
+
 ## Steps
 
 ## Verification
@@ -695,5 +764,6 @@ SHOULD-CONSIDER:
 - 2026-10-21 05:35 UTC: Architecture written by `architect` (findings, target design, A1–A12, risks R1–R8); DuckDB node-api 1.5.6-r.2 smoke-tested on arm64 (deterministic Parquet). Docs-only change; no checks needed.
 - 2026-10-21 05:39 UTC: H2 (merge+deploy at end) picked up into Decisions. Fable review: APPROVE, 0 MUST-FIX, 5 SHOULD-CONSIDER. Docs-only; no checks needed.
 - 2026-10-21 05:40 UTC: Astra review: APPROVE_WITH_CHANGES, 3 MUST-FIX (§6 sourceUrl vs HEAD, stale species.json before register, register lock), 3 SHOULD-CONSIDER. Docs-only; no checks needed.
+- 2026-10-21 05:47 UTC: Revision by `architect`: 3 Astra MUST-FIX resolved (§6 persisted request + `gbif-dd-*` tag, `assertDerivedFiles`, O_EXCL lock), 8 SHOULD-CONSIDER taken. Docs-only; no checks needed.
 
 ## Summary
