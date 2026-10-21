@@ -32,11 +32,14 @@ export interface Registration {
 // The registration's DOI when it recorded exactly these dataset counts, else null (missing or stale): GBIF can't
 // change a DOI's counts, so new counts need a new DOI.
 export function currentDoi(contributions: Contributions, registration: Registration | null): string | null {
-  if (registration === null) return null;
-  const want = Object.entries(contributions.datasets);
-  const got = registration.relatedDatasets;
-  if (want.length === 0 || Object.keys(got).length !== want.length) return null;
-  return want.every(([key, n]) => got[key] === n) ? registration.doi : null;
+  if (registration === null || Object.keys(contributions.datasets).length === 0) return null;
+  return sameCounts(contributions.datasets, registration.relatedDatasets) ? registration.doi : null;
+}
+
+// Two datasetKey → records maps hold the same keys and counts, in any order.
+export function sameCounts(a: Record<string, number>, b: Record<string, number>): boolean {
+  const entries = Object.entries(a);
+  return entries.length === Object.keys(b).length && entries.every(([key, n]) => Object.hasOwn(b, key) && b[key] === n);
 }
 
 export function contributionsSha256(bytes: string): string {
