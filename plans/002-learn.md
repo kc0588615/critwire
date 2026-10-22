@@ -2154,6 +2154,382 @@ id | common_name | scientific_name
 63 | Temminck's Pangolin | Smutsia temminckii
 ```
 
+### c14 · Higher or lower
+
+**Game use:** two cards side by side; the player guesses which animal has been recorded in more countries. The winner stays for the next round, and a tie counts for either guess. The game draws both animals from those with `range_status = 'ok'`, since for the others a count of 0 means "not settled", not "nowhere" (lesson 11).
+
+```sql
+-- q: c14
+-- status: ran
+-- params: [25, 74]
+-- show: cards
+WITH p AS (SELECT CAST(? AS INTEGER) AS first_id, CAST(? AS INTEGER) AS second_id)
+SELECT s.id, s.common_name, count(sc.country_code) AS countries_recorded
+FROM species AS s
+CROSS JOIN p
+LEFT JOIN species_countries AS sc ON sc.species_id = s.id
+WHERE s.id IN (p.first_id, p.second_id)
+GROUP BY s.id, s.common_name, p.first_id
+ORDER BY s.id <> p.first_id;
+```
+
+```text
+-- result: c14 · 2 rows · sha256 ea9a494e640f
+id | common_name | countries_recorded
+25 | Tiger | 16
+74 | Axolotl | 4
+```
+
+`ORDER BY s.id <> p.first_id` sorts by a true/false value (false first), so the first card the game passed in comes first. The game hides `countries_recorded` until the player has guessed.
+
+### c15 · Guess the class
+
+**Game use:** one card and a button per class (amphibian, mammal, reptile); the player picks the class. The buttons come from `taxa`, so a class critwire adds later gets its own button without a code change.
+
+```sql
+-- q: c15
+-- status: ran
+-- params: [74]
+WITH p AS (SELECT CAST(? AS INTEGER) AS answer_id)
+SELECT c.name AS class, c.name = t.class AS is_answer
+FROM taxa AS c
+CROSS JOIN p
+JOIN species_taxonomy AS t ON t.species_id = p.answer_id
+WHERE c.taxon_rank = 'class'
+ORDER BY c.name;
+```
+
+```text
+-- result: c15 · 3 rows · sha256 6b81753df071
+class | is_answer
+Amphibia | true
+Mammalia | false
+Reptilia | false
+```
+
+### c16 · Family pairs
+
+**Game use:** a memory game: eight face-down photo cards, and a pair is two animals from the same family (two bears, two pangolins), so a player learns the families while matching. The seed deals a different board.
+
+Each family's photo animals are numbered by shuffle key; a family plays when it has two, and the four families whose first card comes earliest make the board. The rows come out in deal order.
+
+```sql
+-- q: c16
+-- status: ran
+-- params: [7]
+-- show: cards
+WITH p AS (SELECT CAST(? AS INTEGER) AS seed),
+photo_deck AS (
+  SELECT t.species_id, t.family, (t.species_id * 619 + p.seed * 211) % 1009 AS shuffle
+  FROM species_taxonomy AS t
+  JOIN species AS s ON s.id = t.species_id
+  CROSS JOIN p
+  WHERE s.photo_url IS NOT NULL
+),
+ranked AS (
+  SELECT species_id, family, shuffle,
+         row_number() OVER (PARTITION BY family ORDER BY shuffle, species_id) AS nth
+  FROM photo_deck
+),
+board AS (
+  SELECT family, min(shuffle) AS first_card
+  FROM ranked
+  WHERE nth <= 2
+  GROUP BY family
+  HAVING count(*) = 2
+  ORDER BY first_card, family
+  LIMIT 4
+)
+SELECT s.id, s.common_name, r.family
+FROM ranked AS r
+JOIN board AS b ON b.family = r.family
+JOIN species AS s ON s.id = r.species_id
+WHERE r.nth <= 2
+ORDER BY r.shuffle, s.id;
+```
+
+```text
+-- result: c16 · 8 rows · sha256 96127d3a42ba
+id | common_name | family
+40 | Sumatran Orangutan | Hominidae
+71 | Andean Bear | Ursidae
+27 | Western Long-beaked Echidna | Tachyglossidae
+58 | Cheetah | Felidae
+60 | Giant Panda | Ursidae
+… 3 more rows
+```
+
+The game keeps `family` to check a pair and shows it only once the pair is found.
+
+### c17 · Only here
+
+**Game use:** "where am I?": cards for animals recorded in just one country; the player places each on a map. They make easy first rounds, with one right answer each.
+
+`HAVING count(*) = 1` keeps the animals with one country row, and `min` reads that one code out of the group (any aggregate would do, since there's only one).
+
+```sql
+-- q: c17
+-- status: ran
+-- show: cards
+SELECT s.id, s.common_name, min(sc.country_code) AS country_code
+FROM species AS s
+JOIN species_countries AS sc ON sc.species_id = s.id
+GROUP BY s.id, s.common_name
+HAVING count(*) = 1
+ORDER BY s.common_name;
+```
+
+```text
+-- result: c17 · 18 rows · sha256 15e84112611d
+id | common_name | country_code
+23 | Aye-aye | MG
+62 | Chinese Giant Salamander | CN
+32 | De Winton's Golden Mole | ZA
+67 | Eastern Long-beaked Echidna | PG
+33 | Ethiopian Wolf | ET
+… 13 more rows
+```
+
+One country in open records doesn't mean the animal lives nowhere else: it's where open records put it (lessons 9–11).
+
+### c18 · Globetrotters
+
+**Game use:** a "most travelled" badge row: the animals recorded on the most continents.
+
+Natural Earth's `continent` is one value per country, so `count(DISTINCT c.continent)` counts continents, not countries.
+
+```sql
+-- q: c18
+-- status: draft-table
+-- show: cards
+SELECT s.id, s.common_name, count(DISTINCT c.continent) AS continents
+FROM species AS s
+JOIN species_countries AS sc ON sc.species_id = s.id
+JOIN countries AS c ON c.code = sc.country_code
+GROUP BY s.id, s.common_name
+ORDER BY continents DESC, s.common_name
+LIMIT 5;
+```
+
+```text
+-- result: c18 · 5 rows · sha256 8823593d0198
+id | common_name | continents
+58 | Cheetah | 5
+56 | Chimpanzee | 5
+25 | Tiger | 5
+64 | African Savanna Elephant | 3
+20 | African Spurred Tortoise | 3
+```
+
+Animals kept in zoos far from home have open records too (c12), which is how an animal can reach continents it doesn't live on: a good moment for the game to say what "recorded in" means.
+
+### c19 · Animals per continent
+
+**Game use:** the continent buttons of a "pick a place" screen, each with its number of animals; tapping one lists its countries (c07, c03).
+
+```sql
+-- q: c19
+-- status: draft-table
+SELECT c.continent, count(DISTINCT sc.species_id) AS animals
+FROM species_countries AS sc
+JOIN countries AS c ON c.code = sc.country_code
+GROUP BY c.continent
+ORDER BY animals DESC, c.continent;
+```
+
+```text
+-- result: c19 · 7 rows · sha256 bda515e00328
+continent | animals
+North America | 36
+Africa | 28
+Asia | 20
+South America | 17
+Europe | 11
+… 2 more rows
+```
+
+An animal recorded on two continents counts on both, so the column adds up to more than the number of animals. `Seven seas (open ocean)` is Natural Earth's continent for islands far from any continent, such as Mauritius.
+
+### c20 · Where it's been recorded
+
+**Game use:** the "recorded in" panel on an animal's card, and the answer screen after c17 or c12: the countries by name, grouped by continent.
+
+```sql
+-- q: c20
+-- status: draft-table
+-- params: [74]
+SELECT c.continent, c.name
+FROM species_countries AS sc
+JOIN countries AS c ON c.code = sc.country_code
+WHERE sc.species_id = ?
+ORDER BY c.continent, c.name;
+```
+
+```text
+-- result: c20 · 4 rows · sha256 faa818e9083d
+continent | name
+Europe | Germany
+North America | Canada
+North America | Mexico
+Oceania | New Zealand
+```
+
+### c21 · Biggest families
+
+**Game use:** the shelves of a collection book, biggest family first; also which families can host an odd-one-out round (c06 needs three animals).
+
+```sql
+-- q: c21
+-- status: ran
+SELECT class, family, count(*) AS animals
+FROM species_taxonomy
+GROUP BY class, family
+ORDER BY animals DESC, family
+LIMIT 5;
+```
+
+```text
+-- result: c21 · 5 rows · sha256 f0a780935226
+class | family | animals
+Reptilia | Testudinidae | 5
+Mammalia | Bovidae | 4
+Mammalia | Manidae | 4
+Mammalia | Canidae | 3
+Mammalia | Elephantidae | 3
+```
+
+### c22 · Collection book
+
+**Game use:** progress in a collection game: per class, how many animals the player has collected out of all of them. The game keeps the player's collection itself (in the browser's storage) and passes it in as one parameter, the ids joined by commas.
+
+`string_split` cuts the text into a list, `CAST(… AS INTEGER[])` makes it a list of numbers, and `list_contains` tests whether an id is in it: these three are DuckDB's own (other databases have their own list functions). `count(*) FILTER (WHERE …)` is standard SQL: it counts only the rows that pass the filter, beside a plain `count(*)` of the whole group.
+
+```sql
+-- q: c22
+-- status: ran
+-- params: ["25,51,74,3,60"]
+WITH p AS (SELECT CAST(string_split(CAST(? AS VARCHAR), ',') AS INTEGER[]) AS ids)
+SELECT t.class,
+       count(*) FILTER (WHERE list_contains(p.ids, t.species_id)) AS collected,
+       count(*) AS total
+FROM species_taxonomy AS t
+CROSS JOIN p
+GROUP BY t.class
+ORDER BY t.class;
+```
+
+```text
+-- result: c22 · 3 rows · sha256 9d0074e7db0f
+class | collected | total
+Amphibia | 2 | 15
+Mammalia | 3 | 50
+Reptilia | 0 | 11
+```
+
+### c23 · Next and previous
+
+**Game use:** the arrows of a card viewer that pages through every animal A to Z; the first card has no previous one and the last has no next (`NULL`).
+
+`lag` and `lead` read the row before and after in the window's order. They run in a `WITH` first and the filter comes after: a `WHERE s.id = ?` in the same `SELECT` would leave one row, with no neighbours to read.
+
+```sql
+-- q: c23
+-- status: ran
+-- params: [51]
+WITH p AS (SELECT CAST(? AS INTEGER) AS current_id),
+ordered AS (
+  SELECT id, common_name,
+         lag(id) OVER (ORDER BY common_name, id) AS previous_id,
+         lead(id) OVER (ORDER BY common_name, id) AS next_id
+  FROM species
+)
+SELECT o.id, o.common_name, o.previous_id, o.next_id
+FROM ordered AS o
+JOIN p ON o.id = p.current_id;
+```
+
+```text
+-- result: c23 · 1 row · sha256 c7c358dbb306
+id | common_name | previous_id | next_id
+51 | Jaguar | 61 | 44
+```
+
+### c24 · Where this card's facts come from
+
+**Game use:** the "about this card" panel: each field of the card, the source it came from and that source's license, so a player can see where the facts come from (lesson 15).
+
+```sql
+-- q: c24
+-- status: ran
+-- params: [51]
+SELECT ss.field, so.name AS source, so.license
+FROM species_sources AS ss
+JOIN sources AS so ON so.name = ss.source_name
+WHERE ss.species_id = ?
+ORDER BY ss.field;
+```
+
+```text
+-- result: c24 · 8 rows · sha256 de983ba8d355
+field | source | license
+ids.col | Catalogue of Life | CC BY 4.0
+ids.gbif | GBIF Backbone Taxonomy | CC BY 4.0
+ids.inaturalist | Wikidata | CC0 1.0
+ids.iucn | critwire base | CC BY 4.0
+ids.ncbi | Wikidata | CC0 1.0
+… 3 more rows
+```
+
+`ids.iucn` comes from critwire itself: critwire keeps only the IUCN id, never IUCN's data (lesson 15).
+
+### c25 · Photo licenses
+
+**Game use:** the credits page of a game or app: how many of its photos come under each license, and which are share-alike (BY-SA), whose reuse must carry the same license.
+
+`photo_license LIKE 'CC BY-SA%'` is true or false for each license, and `NULL` for the animals with no photo (lesson 4).
+
+```sql
+-- q: c25
+-- status: ran
+SELECT coalesce(photo_license, 'no photo') AS license,
+       photo_license LIKE 'CC BY-SA%' AS share_alike,
+       count(*) AS animals
+FROM species
+GROUP BY photo_license
+ORDER BY animals DESC, license;
+```
+
+```text
+-- result: c25 · 11 rows · sha256 4770c953a1d4
+license | share_alike | animals
+CC BY-SA 4.0 | true | 24
+CC BY-SA 3.0 | true | 18
+CC BY 2.0 | false | 9
+Public domain | false | 8
+CC BY 4.0 | false | 5
+… 6 more rows
+```
+
+### c26 · Photos wanted
+
+**Game use:** a "help wanted" list on the Learn or docs page: the animals that still have no photo, with their Wikidata id, so a contributor can look for an openly licensed one. Games use the other side of it, c09.
+
+```sql
+-- q: c26
+-- status: ran
+SELECT id, common_name, scientific_name, wikidata_id
+FROM species
+WHERE photo_url IS NULL
+ORDER BY id;
+```
+
+```text
+-- result: c26 · 2 rows · sha256 ed7ab9c972e0
+id | common_name | scientific_name | wikidata_id
+19 | Floreana Giant Tortoise | Chelonoidis niger | Q486672
+47 | Ili Pika | Ochotona iliensis | Q1508891
+```
+
 ## 6. The countries file
 
 Written in step S19.
