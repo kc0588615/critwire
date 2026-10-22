@@ -249,7 +249,7 @@ Out:
 
 - [x] Baseline: install, migrate, run typecheck, lint, unit and E2E tests; record the results under Baseline
 - [x] Architecture: `architect` writes findings and the target design
-- [ ] Fable review: `architecture-reviewer`
+- [x] Fable review: `architecture-reviewer`
 - [ ] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
 - [ ] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
 - [ ] Steps: `planner` writes Steps and Verification
@@ -688,6 +688,28 @@ If both engines miss, DuckDB-WASM stays, and §10 states what the miss costs lea
 
 ## Architecture review (Fable)
 
+VERDICT: APPROVE_WITH_CHANGES
+
+Checked against the worktree on 2026-10-22: every cited line (`docs.ts:36-44`, `build.ts:24,28,38`, `columns.ts`, `site/index.html:9-12,62,63,93-96`, `e2e/duckdb.spec.ts:56-57`, `e2e/serving.spec.ts:31-36`, `db/schema.sql`, `sources.ts:65`, `pnpm-workspace.yaml`) reads as the findings say. Data facts in F5 recomputed from `data/species.json`: 143 taxa (3/22/50/68, no parent conflicts, genus = first word for all 76), 472 pairs over 107 codes, 591 unique (species, field) pairs, one license and one `retrieved` per source, 76 unique scientific names. Caddy 2.11.7, `ss`, `systemd-run` and `chromium-1208` are on the box. In node DuckDB 1.5.6 I reproduced F6 and found three more behaviours the design relies on without saying so (MUST-FIX 1–2, SHOULD-CONSIDER 1).
+
+MUST-FIX:
+1. **The two-database run-queries design can't declare the `species_countries → countries` FK.** §1 says DB 1 runs `setup` only and DB 2 runs `setup-countries` then `setup` "so the FK to `countries` exists", while `setup.sql` must be byte-identical in both. A `REFERENCES countries(code)` in `setup.sql` fails in DB 1 (no `countries` table), and DuckDB has no `ALTER TABLE … ADD FOREIGN KEY` (`Not implemented Error: No support for that ALTER TABLE option yet!`), so it can't be added afterwards either. Fix: `setup-countries.sql` runs *after* `setup.sql`, creates `countries`, then `DROP TABLE species_countries` and recreates it with both FKs (no other table references `species_countries`, so the drop works); `setup.sql` creates it with the `species` FK only. The ERD check (`--erd`) and the lessons from 10 on use DB 2. State this in §1 and §2.
+2. **"Reset database re-runs the setup" breaks on DuckDB's FK dependencies.** `DROP TABLE taxa` fails with `Could not drop the table because this table is main key table of the table "species"`, and `DROP TABLE taxa CASCADE` fails the same way. Learner-made tables from lessons 7 and 16 that reference `species` make the order unknowable. Fix: reset means discarding the database (`AsyncDuckDB.reset()` or a new instance) and re-running setup; `setup.sql` contains no `DROP`, and `run-queries` opens a fresh database per setup rather than dropping tables.
+3. **Mission B's build imports `esbuild` without declaring it.** F1 relies on esbuild being "already installed as a tsx dependency", but pnpm's strict layout doesn't hoist it (`ls node_modules` has no `esbuild`; only `node_modules/.pnpm/esbuild@0.28.2`), so `import "esbuild"` from `scripts/build/learn.ts` fails. §4 Build must say: add `esbuild` (exact pin), `@duckdb/duckdb-wasm` and `mermaid` as direct dependencies in B1. The spike's own `package.json` already does this; the repo one is the gap.
+
+MISSED:
+1. **A repo-side fix for F3 that needs no control-room change.** Caddy's ETag/Last-Modified come from mtime + size, so `writeLearn` can set the vendored engine files' mtime deterministically (for example to the npm package's own file mtime via `fs.utimes`) after `copyFile`; the hashed `app-<hash>.js` names already make the app stable. Browsers then revalidate with `If-None-Match` and get 304 instead of re-downloading 36 MB after every deploy, even before any `Cache-Control` is added. Record it as the B1 default and leave `Cache-Control`/precompression as the owner's improvement.
+2. **Classroom load on the server.** With the live config, 30 students loading cold at once trigger 30 on-the-fly zstd compressions of a 36 MB file on a 2-core box. The spike should run one concurrent-load measurement (for example 10 parallel `curl --compressed` fetches, timing and `caddy` CPU) and §1 should state it, because it changes how strongly precompression is recommended.
+3. **F2 misdates the pinned prerelease:** `1.33.1-dev57.0` (`latest`) was published 2026-06-22; 2026-09-29 is `1.33.1-dev65.0` (`next`). Doesn't change the design, but the pin rationale should use the right dates.
+4. **Path drift from the Definition of done**, which names `spike/run-queries.ts`; the design puts it at `<spike>/scripts/run-queries.ts`. Either move it or add the mapping to the plan so Verification finds it.
+
+SHOULD-CONSIDER:
+1. Don't rely on "the last statement's result is the block's result": node DuckDB returns the *first* result for `SELECT 1; SELECT 2`, and duckdb-wasm's `conn.query` behaviour is unverified. Always split blocks on top-level `;` (outside string literals and comments) and run statements one at a time; it also makes `-- expect: error` attributable to a statement.
+2. Measure with Playwright's full Chromium (`channel: "chromium"`, new headless) rather than the default `chromium_headless_shell`: it's closer to a real Chromebook's Chrome and avoids CDP domains (`SystemInfo`) that the shell may lack.
+3. Add to §1's "what only real hardware proves": phones and iOS Safari (WASM memory limits, `eh` support), since §7 promises the demo works on a phone and the spike only checks a 375 px viewport.
+4. `species.genus → taxa.name` can't enforce that the referenced row is a genus (a CHECK can't look across rows); say so in lesson 7 or 12 rather than letting learners assume the FK does it.
+5. `sql.js` and `coi` are already minimal; keep the rate-limiting proxy fallback in §1 out of the first run and add it only if check (b) actually fails, so the harness stays simple.
+
 ## Architecture review (Astra)
 
 ## Revision notes
@@ -706,5 +728,6 @@ If both engines miss, DuckDB-WASM stays, and §10 states what the miss costs lea
 
 - 2026-10-22 UTC · Baseline: install, typecheck, unit 66/66, build, E2E 20/20 green; dist + live /v1 hashes saved (identical, 157 files).
 - 2026-10-22 06:24 UTC · Architecture: architect wrote findings F1–F10 + target design (spike harness, learners schema v1, Mermaid ERD w/ committed SVG, 16-lesson path, B1/B2 split, PGlite thresholds). No code; nothing to verify beyond review.
+- 2026-10-22 06:29 UTC · Fable review: APPROVE_WITH_CHANGES, 3 MUST-FIX (species_countries FK order, reset = fresh db not DROP, esbuild/duckdb-wasm/mermaid direct deps). Design only; nothing to run.
 
 ## Summary
