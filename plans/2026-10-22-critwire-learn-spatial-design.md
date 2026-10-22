@@ -785,7 +785,7 @@ Planner, 2026-10-22. T12's 16 units in order, split where one session can't hold
     - `node $SP/run-queries.ts $W/$P --check` exits 0 without `--update` (002's recorded result) and writes `$M/queries.log`;
     - under `serve.ts`, `/learn/assets/duckdb-ext/v1.5.6/wasm_eh/spatial.duckdb_extension.wasm` answers 200, `application/wasm`, 23,626,951 bytes.
 
-- [ ] S2 · COG header reader and tile index (F2; T4 "common").
+- [x] S2 · COG header reader and tile index (F2; T4 "common"). Deviations (Decisions, S2): `cog.ts` is a library; `tile-bytes.ts` is the one CLI and writes both summaries.
   - Tests first, red: CG1–CG10 in `test/cog.test.ts`. Fixtures: the COG's first 262,144 bytes (`test/fixtures/cog/head.bin`, one Range read) and truncated or altered copies of it.
   - `scripts/cog.ts`: the one S3 fetch (Range + `If-Match`, counting; `200`/`412` abort); TIFF/BigTIFF IFDs, GeoKeys, GDAL metadata, ghost area; pixel ↔ EPSG:3857 ↔ lon/lat; tiles a window touches at a level.
   - `scripts/tile-bytes.ts`: the TileByteCounts of all 11 IFDs by Range (≈ 3.1 MB) into `downloads/cog-index/`; `lowerBound(window, level)`.
@@ -1266,6 +1266,9 @@ Only the spike tools that the Definition of done and the experiments' verdicts r
 - S1: wasm_threads parquet not copied: the coi bundle needs COOP/COEP, which the live Caddyfile doesn't send, so nothing here can boot it.
 - S1: `serve.ts` and `paths.ts`'s `CADDYFILES.proposed` kept unchanged (T2 "serve.ts unchanged"); there's no `Caddyfile.proposed`, so `--proposed` fails loudly in Caddy. `DUCKDB_EXT_TEST` renamed `DUCKDB_EXT_MIRRORED` (it now holds `spatial` only, no `inet`).
 - S1: 003 §2 carries 002's `setup` + `setup-counts` (and the sentence between them) byte for byte, so `setup-counts` stays `-- status: draft-table`; S12 relabels it `spike-table` with the runner change.
+- S2: `cog.ts` library only (HttpRangeSource = the one S3 fetch; PrefixSource(head, further) serves fetched bytes and sends the rest to a further Range or fails, CG4); `node scripts/tile-bytes.ts` is the one CLI: re-derives F2 into `out/cog/`, the index into `out/tile-bytes/`, offline `lowerBound(window, level)` from `downloads/cog-index/`.
+- S2: `assertPyramid` also requires the pyramid to end at the first level that fits one tile (GDAL's COG rule), so a missing overview fails without hard-coding 10; E4's clips reuse it.
+- S2 findings vs F2 (all 31 F2 checks pass): pixel y is 103.02166779498631 m (one ulp above x; test pins the file's value). IFD 1–9 TileByteCounts are 770,392 B, not F2's 867,180 (all 11 arrays: 3,080,792 B fetched + 8 B inline). F2's full-level "≈ 2,248,510,943" includes GDAL's 8 B per tile (4 B leader + 4 B repeated trailer); exact full-level tile bytes 2,242,349,355. File size = 9,246,384 + Σ tiles + 8 × 770,199 tiles, exactly. No sparse tiles at any level.
 
 ## Log
 
@@ -1276,5 +1279,6 @@ Only the spike tools that the Definition of done and the experiments' verdicts r
 - 2026-10-22 16:35 UTC: Revision (architect): all 5 MUST-FIX resolved (habitat summaries = committed `ingest habitat`, v004 1 km default; E3b value-checked vs geotiff.js; raster fn→SET→assert SHOW; est_area_km2 + E3c error per method; publication gated on Jung provenance), all SHOULD-CONSIDER adopted, new F12 (postgres can't read /srv/critter-ai). Plan-only; no grants left (pg_parameter_acl empty).
 - 2026-10-22 16:55 UTC: Steps (planner): 26 steps S1–S26, Verification V0–V12 + release smoke, Failure modes (13 test groups, T11 map). Plan-only; typecheck pass; header check + result diff dry-run vs 002/A1 log: 77/77 match.
 - 2026-10-22 17:08 UTC: S1. Spike scaffold: 74 files copied from A1 (provenance in `$SP/README.md`, 9 edited for paths/trim), pins installed (no ignored builds), `data/spike-tables.json` (countries). Spike typecheck pass, tests 82/82 (no edits beyond paths); copy proof 002 `--check --erd` 77/77, 0 diffs; 003 skeleton `--check` 1/1, `$M/queries.log` written; spatial wasm_eh 200 application/wasm 23,626,951 B. Guard: plans-only, 002 untouched, typecheck pass, test 66/66, dist = baseline (157), spike 719 MB, no Caddy, 3100–3102 free.
+- 2026-10-22 17:14 UTC: S2. `cog.ts` + `tile-bytes.ts`; CG1–CG10 red first (suite failed to load, 10/10), then 10/10 green; F2 re-derived 31/31 checks ok (`out/cog/`, `out/tile-bytes/`); (−60, −3) → col 129665, row 197741, tile 293,613 of 43,789 B; S3 3.61 MB for the step (fixture 262,144 + index run 3,342,936). Spike typecheck pass, tests 92/92. Guard: plans-only, 002 untouched, typecheck pass, test 66/66, dist = baseline (157), spike 723 MB, no Caddy, 3100–3102 free.
 
 ## Summary
