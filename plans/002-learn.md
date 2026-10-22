@@ -368,7 +368,7 @@ taxa | species | sources | species_sources | countries | species_countries | spe
 ### Room to grow (A2)
 
 New data joins on with new tables and no renames:
-- traits: `traits (name, unit, description)` + `species_traits (species_id, trait_name, value, unit, source_name)`; lesson 16 has learners design this one;
+- traits: `traits (name, unit, description)` + `species_traits (species_id, trait_name, value, source_name)` (the unit belongs to the trait, so it isn't repeated per value); lesson 16 has learners design this one;
 - habitats: `habitats` + `species_habitats`;
 - regions: `regions` + `country_regions`;
 - occurrences: `occurrences (id, species_id, country_code, …)`;
@@ -1054,7 +1054,671 @@ id | common_name
 
 **Check:** `result, any row order`.
 
-Lessons 9–16: written in step S16.
+### Lesson 9 · many-to-many
+
+**Concept:** many-to-many relationships; junction tables; joining through one. **Question:** Which animals have been recorded in Brazil?
+
+One animal has been recorded in many countries, and one country has records of many animals: a **many-to-many** relationship. Neither table can hold it in one column. A `countries` column on `species` would need a list in a single cell (lesson 14 says why that's a problem), and an `animals` column on `countries` would too. So the pairs get a table of their own, a **junction table**: each row of `species_countries` links one animal to one country. Its primary key is the pair (`species_id`, `country_code`), so the same pair can't be listed twice. On the ERD it's two one-to-many lines meeting at `species_countries`.
+
+These are the jaguar's rows (`BR` is Brazil's two-letter country code):
+
+```sql
+-- q: l09-pairs
+-- status: ran
+SELECT species_id, country_code
+FROM species_countries
+WHERE species_id = 51
+ORDER BY country_code;
+```
+
+```text
+-- result: l09-pairs · 20 rows · sha256 fac5baecc53a
+species_id | country_code
+51 | AR
+51 | BO
+51 | BR
+51 | BZ
+51 | CO
+… 15 more rows
+```
+
+To get from Brazil to animals, join through the junction table: keep its rows for `BR`, and pair each with its row in `species`.
+
+```sql
+-- q: l09
+-- status: ran
+-- show: cards
+SELECT s.id, s.common_name, s.scientific_name
+FROM species AS s
+JOIN species_countries AS sc ON sc.species_id = s.id
+WHERE sc.country_code = 'BR'
+ORDER BY s.common_name;
+```
+
+```text
+-- result: l09 · 12 rows · sha256 6eaf98efd284
+id | common_name | scientific_name
+65 | African Wild Dog | Lycaon pictus
+54 | Brown-throated Sloth | Bradypus variegatus
+56 | Chimpanzee | Pan troglodytes
+52 | Giant Anteater | Myrmecophaga tridactyla
+36 | Giant Armadillo | Priodontes maximus
+… 7 more rows
+```
+
+Look at the cards: the Tiger, the Chimpanzee and the African Wild Dog don't live wild in South America. A row in `species_countries` means the animal *has been recorded in that country in open records* (observations and specimens shared under CC0 or CC BY on GBIF, the Global Biodiversity Information Facility, after critwire's filters). Records of kept or introduced animals, and the odd stray, can count too. It is not the animal's native range, and Learn never calls it that.
+
+**Shown as:** cards, with a note under them that these are open records, not the native range.
+
+**Your turn:** Which animals have been recorded in India (country code `IN`)? Show each animal's `id` and `common_name`.
+
+```sql
+-- q: l09-ex
+-- status: ran
+-- show: cards
+SELECT s.id, s.common_name
+FROM species AS s
+JOIN species_countries AS sc ON sc.species_id = s.id
+WHERE sc.country_code = 'IN'
+ORDER BY s.common_name;
+```
+
+```text
+-- result: l09-ex · 6 rows · sha256 81a618928f75
+id | common_name
+28 | Asian Elephant
+59 | Indian Pangolin
+16 | Purple Frog
+35 | Red Panda
+24 | Sunda Pangolin
+… 1 more row
+```
+
+**Check:** `result, any row order`.
+
+### Lesson 10 · countries
+
+**Concept:** lookup tables; codes against names. **Question:** In which countries has the jaguar been recorded?
+
+`species_countries` stores a country as a two-letter code, `BR`, not as "Brazil". The code is short, never changes its spelling, and is the same in every language. Everything else about a country (its name, continent, region and subregion) is stored once, in the **lookup table** `countries`, whose primary key is `code`. One join turns codes into names:
+
+```sql
+-- q: l10
+-- status: draft-table
+SELECT c.code, c.name, c.continent
+FROM species_countries AS sc
+JOIN countries AS c ON c.code = sc.country_code
+WHERE sc.species_id = 51
+ORDER BY c.name;
+```
+
+```text
+-- result: l10 · 20 rows · sha256 2884cb4f7b3b
+code | name | continent
+AR | Argentina | South America
+BZ | Belize | North America
+BO | Bolivia | South America
+BR | Brazil | South America
+CO | Colombia | South America
+… 15 more rows
+```
+
+If a country's name changed, one row of `countries` would change, and every animal's list would show the new name. Had each animal stored the name itself, every copy would have to change, and a missed one would disagree with the rest.
+
+As in lesson 9, this is where the jaguar has been *recorded in open records*: the list can include countries where a record exists for another reason than a wild population.
+
+**Shown as:** a table (it's about countries, not animals).
+
+**Your turn:** On which continents has the Tiger (id 25) been recorded, and in how many countries on each? Show `continent` and the count as `recorded_in`, largest first. (The answer shows open records at work: zoos and introductions count.)
+
+```sql
+-- q: l10-ex
+-- status: draft-table
+SELECT c.continent, count(*) AS recorded_in
+FROM species_countries AS sc
+JOIN countries AS c ON c.code = sc.country_code
+WHERE sc.species_id = 25
+GROUP BY c.continent
+ORDER BY recorded_in DESC, c.continent;
+```
+
+```text
+-- result: l10-ex · 5 rows · sha256 1ff0bb972489
+continent | recorded_in
+Asia | 11
+Europe | 2
+Africa | 1
+North America | 1
+South America | 1
+```
+
+**Check:** `result, any row order`.
+
+### Lesson 11 · left-join
+
+**Concept:** `LEFT JOIN`; `NULL` from a missing partner. **Question:** Which animals have no country records, and why?
+
+A plain `JOIN` keeps only rows that found a partner, so an animal with no rows in `species_countries` drops out of every query in lessons 9 and 10 without a word. A **left join** keeps every row of the table on its left (the one before `LEFT JOIN`), partner or not. Where there's no partner, the right table's columns come back as `NULL`. So `WHERE sc.species_id IS NULL` keeps exactly the animals with no country rows:
+
+```sql
+-- q: l11
+-- status: ran
+-- show: cards
+SELECT s.id, s.common_name, s.range_status
+FROM species AS s
+LEFT JOIN species_countries AS sc ON sc.species_id = s.id
+WHERE sc.species_id IS NULL
+ORDER BY s.id;
+```
+
+```text
+-- result: l11 · 4 rows · sha256 f5fd7b6feb3f
+id | common_name | range_status
+9 | Dyeing Poison Dart Frog | identity-unsettled
+19 | Floreana Giant Tortoise | identity-unsettled
+27 | Western Long-beaked Echidna | identity-unsettled
+47 | Ili Pika | no-open-records
+```
+
+These are lesson 4's animals, and `range_status` says why each has no list: critwire isn't yet sure which GBIF taxon is the animal (`identity-unsettled`), or no country with open records was left after critwire's filters (`no-open-records`). Neither means "lives nowhere".
+
+`count(sc.country_code)` counts only rows with a partner, so with a left join, animals without any get 0 instead of vanishing:
+
+```sql
+-- q: l11-count
+-- status: ran
+-- show: cards
+SELECT s.id, s.common_name, count(sc.country_code) AS recorded_in
+FROM species AS s
+LEFT JOIN species_countries AS sc ON sc.species_id = s.id
+GROUP BY s.id, s.common_name
+ORDER BY recorded_in, s.id
+LIMIT 6;
+```
+
+```text
+-- result: l11-count · 6 rows · sha256 805e3ccfb46f
+id | common_name | recorded_in
+9 | Dyeing Poison Dart Frog | 0
+19 | Floreana Giant Tortoise | 0
+27 | Western Long-beaked Echidna | 0
+47 | Ili Pika | 0
+13 | Madagascar Tomato Frog | 1
+… 1 more row
+```
+
+**Shown as:** cards, with `range_status` or `recorded_in` on each.
+
+**Your turn:** Turn it around. Which countries in Africa have no animal recorded in critwire's open records yet? Show `code` and `name`. (Put `countries` on the left.)
+
+```sql
+-- q: l11-ex
+-- status: draft-table
+SELECT c.code, c.name
+FROM countries AS c
+LEFT JOIN species_countries AS sc ON sc.country_code = c.code
+WHERE c.continent = 'Africa' AND sc.country_code IS NULL
+ORDER BY c.name;
+```
+
+```text
+-- result: l11-ex · 8 rows · sha256 1895951860be
+code | name
+BI | Burundi
+CV | Cape Verde
+DJ | Djibouti
+ER | Eritrea
+LS | Lesotho
+… 3 more rows
+```
+
+**Check:** `result, any row order`.
+
+### Lesson 12 · hierarchy
+
+**Concept:** a table that points at itself; trees; self-joins; what a foreign key can't check. **Question:** How many mammals, amphibians and reptiles does critwire have?
+
+Each row of `taxa` has a `parent_name`, and that column is a foreign key to `taxa` itself: a genus points at its family, a family at its order, an order at its class, and a class at nothing (`NULL`). Rows pointing at rows of their own table form a **tree**. On the ERD it's the line from `taxa` back to `taxa`. One step down the tree, the families in the order Carnivora:
+
+```sql
+-- q: l12-tree
+-- status: ran
+SELECT name, taxon_rank
+FROM taxa
+WHERE parent_name = 'Carnivora'
+ORDER BY name;
+```
+
+```text
+-- result: l12-tree · 5 rows · sha256 a6b677895a4f
+name | taxon_rank
+Ailuridae | family
+Canidae | family
+Felidae | family
+Mustelidae | family
+Ursidae | family
+```
+
+To climb from an animal's genus to its class takes one join per step, each on `taxa` again under a new alias (`g`, `f`, `o`, `c`). Joining a table to itself is a **self-join**; lesson 8 already did one.
+
+```sql
+-- q: l12
+-- status: ran
+SELECT c.name AS class, count(*) AS animals
+FROM species AS s
+JOIN taxa AS g ON g.name = s.genus
+JOIN taxa AS f ON f.name = g.parent_name
+JOIN taxa AS o ON o.name = f.parent_name
+JOIN taxa AS c ON c.name = o.parent_name
+GROUP BY c.name
+ORDER BY c.name;
+```
+
+```text
+-- result: l12 · 3 rows · sha256 f695fe57da4f
+class | animals
+Amphibia | 15
+Mammalia | 50
+Reptilia | 11
+```
+
+**What the foreign key can't check.** `species.genus` must name a row of `taxa`, but nothing makes sure that row is a *genus*. Here a test animal goes in with a family, Felidae, as its genus, and the database accepts it (in the lesson this runs and is rolled back; on the page, Reset removes it):
+
+```sql
+-- q: l12-limit
+-- status: ran
+INSERT INTO species (id, slug, scientific_name, common_name, genus, range_status)
+VALUES (1001, 'test-cat', 'Testcat testus', 'Test Cat', 'Felidae', 'ok');
+SELECT s.id, s.genus, t.taxon_rank
+FROM species AS s
+JOIN taxa AS t ON t.name = s.genus
+WHERE s.id = 1001;
+```
+
+```text
+-- result: l12-limit · 1 row · sha256 ae4f2f0c9a55
+id | genus | taxon_rank
+1001 | Felidae | family
+```
+
+A foreign key checks that the value exists, nothing more. A check constraint can't help, because it sees only its own row, not the `taxa` row the genus points at. Enforcing it would take a trigger (code the database runs on every insert; DuckDB has none) or one table per rank, so critwire's data build checks it instead. That animal would now drop out of the class count above, because its "genus" is two steps from a class instead of three.
+
+**Shown as:** a table.
+
+**Your turn:** How many orders does each class have? Join `taxa` to itself once: each order's `parent_name` is its class. Show `class` and the count as `orders`.
+
+```sql
+-- q: l12-ex
+-- status: ran
+SELECT c.name AS class, count(*) AS orders
+FROM taxa AS o
+JOIN taxa AS c ON c.name = o.parent_name
+WHERE o.taxon_rank = 'order'
+GROUP BY c.name
+ORDER BY c.name;
+```
+
+```text
+-- result: l12-ex · 3 rows · sha256 0e9921e3a16c
+class | orders
+Amphibia | 2
+Mammalia | 19
+Reptilia | 1
+```
+
+**Check:** `result, any row order`.
+
+### Lesson 13 · views
+
+**Concept:** `CREATE VIEW`: a saved query that works like a table. **Question:** Can "animals with their class" be saved, so the four joins aren't typed every time?
+
+A **view** is a query with a name. `CREATE VIEW name AS SELECT …` stores the query, not its rows; every time you read the view, the database runs the query again, so a view never goes out of date. You read it like a table:
+
+```sql
+-- q: l13
+-- status: ran
+CREATE VIEW animal_classes AS
+SELECT s.id, s.common_name, c.name AS class
+FROM species AS s
+JOIN taxa AS g ON g.name = s.genus
+JOIN taxa AS f ON f.name = g.parent_name
+JOIN taxa AS o ON o.name = f.parent_name
+JOIN taxa AS c ON c.name = o.parent_name;
+
+SELECT id, common_name
+FROM animal_classes
+WHERE class = 'Reptilia'
+ORDER BY common_name;
+```
+
+```text
+-- result: l13 · 11 rows · sha256 1a31521ac0db
+id | common_name
+20 | African Spurred Tortoise
+4 | Big-headed Turtle
+1 | Blanding's Turtle
+19 | Floreana Giant Tortoise
+15 | Pancake Tortoise
+… 6 more rows
+```
+
+critwire's setup already made one view: `species_taxonomy` (lesson 6 listed it as a `VIEW`) holds each animal's `class`, `order_name`, `family` and `genus`, so later queries can join it instead of climbing the tree. On the page, a view you create lasts until Reset; creating it a second time fails, because the name is taken.
+
+**Shown as:** a table.
+
+**Your turn:** Create a view `country_counts` with each animal's `id`, `common_name`, and the number of countries it has been recorded in, as `recorded_in` (animals with none count 0: lesson 11). Then show the five rows with the highest `recorded_in`, highest first, ties by `id`.
+
+```sql
+-- q: l13-ex
+-- status: ran
+CREATE VIEW country_counts AS
+SELECT s.id, s.common_name, count(sc.country_code) AS recorded_in
+FROM species AS s
+LEFT JOIN species_countries AS sc ON sc.species_id = s.id
+GROUP BY s.id, s.common_name;
+
+SELECT id, common_name, recorded_in
+FROM country_counts
+ORDER BY recorded_in DESC, id
+LIMIT 5;
+```
+
+```text
+-- result: l13-ex · 5 rows · sha256 899c27b1d994
+id | common_name | recorded_in
+64 | African Savanna Elephant | 32
+56 | Chimpanzee | 27
+58 | Cheetah | 22
+57 | Aardvark | 21
+51 | Jaguar | 20
+```
+
+**Check:** `result, in order` (on the last statement's rows).
+
+### Lesson 14 · normalization
+
+**Concept:** normalization (first, second and third normal form); from a nested file to flat tables. **Question:** How does a record with a list of countries become rows?
+
+critwire publishes each animal as one record (`/v1/species.parquet`), with lists inside it: the countries, the sources. The learners' tables have no lists. Turning one into the other follows a set of rules called **normalization**. Each rule, or **normal form**, removes one way a table can contradict itself.
+
+The next two queries read critwire's file directly. They use DuckDB's own SQL, not standard SQL: `read_parquet` opens a file, `"range".countriesWithOpenRecords` reaches into the record, and `unnest` turns a list into rows. Learn's setup uses exactly these to build the tables. Here is the jaguar's record, with its countries as one list in one cell:
+
+```sql
+-- q: l14-list
+-- status: ran
+-- DuckDB only: reads the published file, not a learners' table
+SELECT id, slug, "range".countriesWithOpenRecords AS country_codes
+FROM read_parquet('species.parquet')
+WHERE slug = 'jaguar';
+```
+
+```text
+-- result: l14-list · 1 row · sha256 2aac6d391e87
+id | slug | country_codes
+51 | jaguar | [AR, BO, BR, BZ, CO, CR, EC, GF, GT, GY, HN, MX, NI, PA, PE,…
+```
+
+- **First normal form (1NF): one value per cell.** A list in a cell can't be joined, counted or checked against `countries` with a foreign key. `unnest` gives each list item its own row, which is how `species_countries` is filled:
+
+```sql
+-- q: l14-unnest
+-- status: ran
+-- DuckDB only: unnest turns a list into rows
+SELECT id, unnest("range".countriesWithOpenRecords) AS country_code
+FROM read_parquet('species.parquet')
+WHERE slug = 'jaguar'
+ORDER BY country_code;
+```
+
+```text
+-- result: l14-unnest · 20 rows · sha256 b463f81200a2
+id | country_code
+51 | AR
+51 | BO
+51 | BR
+51 | BZ
+51 | CO
+… 15 more rows
+```
+
+- **Second normal form (2NF): every column depends on the whole key.** The key of `species_countries` is (`species_id`, `country_code`). A country's name depends on `country_code` alone, so a `country_name` column there would repeat "Brazil" once per animal recorded in Brazil. It lives in `countries` (lesson 10).
+- **Third normal form (3NF): no column depends on another non-key column.** An animal's family depends on its genus, not on the animal: every *Panthera* is in Felidae. So `species` stores only the genus, and the family is in the genus's `taxa` row (lesson 8). A flat table with a `family` column would repeat each family once per animal, and one mistyped copy would put an animal in two families. These families would be repeated (`HAVING` filters groups after `GROUP BY`, as `WHERE` filters rows before it):
+
+```sql
+-- q: l14-repeat
+-- status: ran
+SELECT g.parent_name AS family, count(*) AS animals
+FROM species AS s
+JOIN taxa AS g ON g.name = s.genus
+GROUP BY g.parent_name
+HAVING count(*) > 1
+ORDER BY animals DESC, family;
+```
+
+```text
+-- result: l14-repeat · 16 rows · sha256 edbe3098db04
+family | animals
+Testudinidae | 5
+Bovidae | 4
+Manidae | 4
+Canidae | 3
+Elephantidae | 3
+… 11 more rows
+```
+
+Normalizing has a cost: answers need joins. Views (lesson 13) give the joins a name, so the data stays stored once and is still easy to read.
+
+**Shown as:** a table; the list cell shown as `[AR, BO, …]`.
+
+**Your turn:** Using `unnest` on the file, list the Tiger's (id 25) country codes, sorted, as `country_code`. Then compare with `SELECT country_code FROM species_countries WHERE species_id = 25`: it's the same list, because the setup built the table this way.
+
+```sql
+-- q: l14-ex
+-- status: ran
+SELECT unnest("range".countriesWithOpenRecords) AS country_code
+FROM read_parquet('species.parquet')
+WHERE id = 25
+ORDER BY country_code;
+```
+
+```text
+-- result: l14-ex · 16 rows · sha256 786dc3ee478e
+country_code
+BD
+BR
+BT
+CN
+DE
+… 11 more rows
+```
+
+**Check:** `result, any row order` (the query on `species_countries` passes too).
+
+### Lesson 15 · sources
+
+**Concept:** provenance (where each fact came from); licenses; share-alike. **Question:** Who filled in the jaguar's facts, and which photos are share-alike?
+
+critwire's facts come from other open projects, and each one's license says how it may be reused. `species_sources` records, for every animal, which source supplied which field (`field` is a path in critwire's record: `taxonomy`, `ids.col`, `range.countriesWithOpenRecords`, …), and `sources` holds each source's license and the date critwire retrieved it. `critwire base` marks critwire's own fields.
+
+```sql
+-- q: l15
+-- status: ran
+SELECT ss.field, ss.source_name, so.license, so.retrieved
+FROM species_sources AS ss
+JOIN sources AS so ON so.name = ss.source_name
+WHERE ss.species_id = 51
+ORDER BY ss.field;
+```
+
+```text
+-- result: l15 · 8 rows · sha256 bc64a29cc0b4
+field | source_name | license | retrieved
+ids.col | Catalogue of Life | CC BY 4.0 | 2026-10-20
+ids.gbif | GBIF Backbone Taxonomy | CC BY 4.0 | 2026-10-21
+ids.inaturalist | Wikidata | CC0 1.0 | 2026-10-20
+ids.iucn | critwire base | CC BY 4.0 | NULL
+ids.ncbi | Wikidata | CC0 1.0 | 2026-10-20
+… 3 more rows
+```
+
+Read it as provenance: the taxonomy is from the Catalogue of Life, the outside ids from Wikidata and GBIF, and the country list from GBIF's occurrence search, counting only open (CC0 and CC BY) records, which is why lessons 9–11 say "recorded in open records". `ids.iucn` is critwire's own: critwire stores only the animal's id at the IUCN Red List, never the Red List's data, because the Red List's terms of use don't allow critwire to republish it.
+
+Photos carry their own license. CC0 and public domain photos can be reused freely; CC BY needs the credit; **CC BY-SA** ("share-alike") also requires that anything made from the photo be shared under the same license. That's why every card shows its photo's credit and license, linked to the license's text.
+
+```sql
+-- q: l15-sa
+-- status: ran
+SELECT photo_license, count(*) AS photos
+FROM species
+WHERE photo_license LIKE 'CC BY-SA%'
+GROUP BY photo_license
+ORDER BY photo_license;
+```
+
+```text
+-- result: l15-sa · 5 rows · sha256 56e8889fea9a
+photo_license | photos
+CC BY-SA 2.0 | 3
+CC BY-SA 2.0 de | 2
+CC BY-SA 2.5 | 2
+CC BY-SA 3.0 | 18
+CC BY-SA 4.0 | 24
+```
+
+**Shown as:** a table.
+
+**Your turn:** For which animals did the taxonomy come from `critwire base` instead of the Catalogue of Life (because the Catalogue's match for them isn't settled)? Show `id` and `common_name`.
+
+```sql
+-- q: l15-ex
+-- status: ran
+SELECT s.id, s.common_name
+FROM species AS s
+JOIN species_sources AS ss ON ss.species_id = s.id
+WHERE ss.field = 'taxonomy' AND ss.source_name = 'critwire base'
+ORDER BY s.id;
+```
+
+```text
+-- result: l15-ex · 7 rows · sha256 603b3b920537
+id | common_name
+7 | Hairy Frog
+9 | Dyeing Poison Dart Frog
+22 | Pinta Island Tortoise
+27 | Western Long-beaked Echidna
+59 | Indian Pangolin
+… 2 more rows
+```
+
+**Check:** `result, any row order`.
+
+### Lesson 16 · design
+
+**Concept:** designing tables for new data; `CREATE TABLE` with keys. **Question:** How would critwire store body mass and diet?
+
+critwire will grow, and traits such as body mass and diet are likely next. Designing their tables uses everything so far:
+- **One column per trait on `species`** (`body_mass_kg`, `diet`) is simple, but every new trait changes `species`, most cells stay `NULL`, and there's nowhere to say which source gave each value.
+- **A table of traits, and a junction table of values.** `traits` lists each trait once, with its unit (a trait's unit depends on the trait, not on the animal: 3NF). `species_traits` holds one row per animal and trait, with the value and the source that supplied it (lesson 15). A new trait is a new row, not a new column. The cost: one `value` column holds every trait, so it's text, and sorting by body mass needs `CAST(value AS DOUBLE)`.
+
+The second design fits critwire's other tables. Its primary key (`species_id`, `trait_name`) allows one value per trait per animal; a trait with several values per animal (an animal that eats both fruit and insects) would need `value` in the key too. These are the questions a design answers before any data goes in. The traits table first (names and units, not facts about animals):
+
+```sql
+-- q: l16
+-- status: ran
+CREATE TABLE traits (
+  name        VARCHAR PRIMARY KEY,
+  unit        VARCHAR,
+  description VARCHAR NOT NULL
+);
+
+INSERT INTO traits VALUES
+  ('body_mass', 'kg', 'average adult body mass'),
+  ('diet', NULL, 'what the animal mainly eats');
+
+SELECT name, unit, description FROM traits ORDER BY name;
+```
+
+```text
+-- result: l16 · 2 rows · sha256 a7fe21fb63b8
+name | unit | description
+body_mass | kg | average adult body mass
+diet | NULL | what the animal mainly eats
+```
+
+The ERD gains a table and three lines (the same notation as §3):
+
+```text
+traits ||--o{ species_traits : "values of"
+species ||--o{ species_traits : "has traits"
+sources ||--o{ species_traits : "supplies"
+```
+
+**Shown as:** the ERD with the new lines drawn in, and a table.
+
+**Your turn:** Run the lesson's SQL first, so `traits` exists. Then create `species_traits`: `species_id` (whole number, points at `species`), `trait_name` (text, points at `traits`), `value` (text, required), `source_name` (text, required, points at `sources`), with the primary key (`species_id`, `trait_name`).
+
+```sql
+-- q: l16-ex
+-- status: ran
+-- the lesson's table, run first on the page
+CREATE TABLE traits (
+  name        VARCHAR PRIMARY KEY,
+  unit        VARCHAR,
+  description VARCHAR NOT NULL
+);
+
+-- the answer
+CREATE TABLE species_traits (
+  species_id  INTEGER REFERENCES species (id),
+  trait_name  VARCHAR REFERENCES traits (name),
+  value       VARCHAR NOT NULL,
+  source_name VARCHAR NOT NULL REFERENCES sources (name),
+  PRIMARY KEY (species_id, trait_name)
+);
+
+-- the check's verify query
+SELECT 'column' AS kind,
+       column_name || ' ' || data_type || CASE WHEN is_nullable = 'NO' THEN ' NOT NULL' ELSE '' END AS detail
+FROM information_schema.columns
+WHERE table_name = 'species_traits'
+UNION ALL
+SELECT 'key', constraint_text
+FROM duckdb_constraints()
+WHERE table_name = 'species_traits' AND constraint_type IN ('PRIMARY KEY', 'FOREIGN KEY', 'UNIQUE')
+ORDER BY kind, detail;
+```
+
+```text
+-- result: l16-ex · 8 rows · sha256 cec372f2d16e
+kind | detail
+column | source_name VARCHAR NOT NULL
+column | species_id INTEGER NOT NULL
+column | trait_name VARCHAR NOT NULL
+column | value VARCHAR NOT NULL
+key | FOREIGN KEY (source_name) REFERENCES sources("name")
+… 3 more rows
+```
+
+**Check:** `schema`. After the learner's SQL, the page runs the verify query (the last statement above) on the learner's database and compares its rows, in any order, with the expected rows: `l16-ex`'s result block. It reads the standard `information_schema.columns` and DuckDB's `duckdb_constraints()`, whose `constraint_text` is written by DuckDB, not copied from the learner, so `TEXT` for `VARCHAR`, `REFERENCES species` without `(id)`, or `NOT NULL` on a key column all pass. A missing key or a wrong column type fails, with the differing rows as the hint. The expected rows in full (the result block shows five; its hash covers all eight, so `run-queries` proves this list):
+
+| kind | detail |
+|---|---|
+| column | `source_name VARCHAR NOT NULL` |
+| column | `species_id INTEGER NOT NULL` |
+| column | `trait_name VARCHAR NOT NULL` |
+| column | `value VARCHAR NOT NULL` |
+| key | `FOREIGN KEY (source_name) REFERENCES sources("name")` |
+| key | `FOREIGN KEY (species_id) REFERENCES species(id)` |
+| key | `FOREIGN KEY (trait_name) REFERENCES traits("name")` |
+| key | `PRIMARY KEY(species_id, trait_name)` |
+
+### After lesson 16: where the advanced track attaches
+
+Mission A2 designs the spatial and raster lessons; they come after lesson 16 and need nothing in lessons 1–16 to change.
+- **They join on the keys that exist:** `species.id` (an occurrence or a habitat value belongs to an animal) and `countries.code` (a country's outline, from the same Natural Earth release as §6, as a geometry column in a new table keyed by `code`).
+- **New tables, same rules:** for example `occurrences (id, species_id, country_code, …)` (§2 Room to grow), created after the tables they point at, in the same `setup.sql`.
+- **DuckDB's `spatial` extension** loads from critwire's own extension mirror (§1, Q3), so the advanced lessons stay self-hosted. Their SQL is DuckDB's, labelled as in lesson 14; whether they also teach PostGIS's spellings is A2's call.
+- **Open records stay open records:** a point in `occurrences` is a record, not a range, as in lessons 9–11.
 
 ## 5. Cookbook
 
