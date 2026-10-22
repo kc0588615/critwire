@@ -1129,11 +1129,11 @@ grep -q '<foreignObject' "$SP/erd/schema.svg" && fail "foreignObject in SVG"
 # V9 spike evidence present, no off-origin request anywhere, and the spike reproduces (smoke)
 for r in bytes boot schema card-page throttle-validation duckdb-live pglite-live sqljs duckdb-proposed classroom coi/desktop coi/4x ext-mirror shell; do
   test -s "$SP/out/$r/summary.md" || fail "no $r summary"; done
-for j in "$SP"/out/*/results.json "$SP"/out/coi/*/results.json; do jq -e '(.blocked | length) == 0' "$j" >/dev/null || fail "off-origin request in $j"; done
+for j in "$SP"/out/*/results.json "$SP"/out/*/*/results.json; do jq -e '(.blocked | length) == 0' "$j" >/dev/null || fail "off-origin request in $j"; done
 test -s "$SP/README.md"; test -s "$SP/out/countries-match.md"; test -s "$SP/out/countries-sources.md"
-ls "$SP"/out/card-page/*.png "$SP"/out/duckdb-live/*.png > /dev/null
+ls "$SP"/out/card-page/*.png "$SP"/out/duckdb-live/*/*.png > /dev/null
 node "$SP/scripts/measure.ts" --smoke --out "$SP/out/verify-smoke"
-jq -e '.failures == 0 and (.blocked | length) == 0' "$SP/out/verify-smoke/results.json"
+jq -e '.failures == 0 and (.blocked | length) == 0' "$SP/out/verify-smoke/duckdb-eh-desktop/results.json"
 ports_free || fail "spike server left running"
 
 # V10 delivery
@@ -1273,7 +1273,7 @@ SHOULD-CONSIDER:
 
 - Mission B briefs go in `plans/briefs/` so a mission's own plan file can't collide with its brief.
 - Lessons (§4) and cookbook (§5) each split over two steps (S15/S16, S17/S18) to fit one session apiece; ~31 sessions total, under the 60 cap.
-- Final Verification: V9 checked `out/coi/summary.md`, but S9 writes coi evidence per label (`out/coi/{desktop,4x}/`, spike README). V9 now checks both label summaries and adds `out/coi/*/results.json` to the off-origin check. Evidence unchanged.
+- Final Verification: V9 checked `out/coi/summary.md`, but S9 writes coi evidence per label (`out/coi/{desktop,4x}/`, spike README). `measure.ts` likewise writes per cell (`out/<run>/<engine>-<profile>/`). V9 now checks both coi label summaries, `out/*/*/results.json` in the off-origin check (32 files, all blocked 0), `duckdb-live/*/*.png`, and the smoke at `verify-smoke/duckdb-eh-desktop/results.json`. Evidence unchanged.
 - **duckdb-wasm pin: `1.33.1-dev65.0`** (+ `-shell` same). Probed in node-blocking build: 1.32.0 = DuckDB v1.4.3 `d1dc88f950`; dev57.0 (npm `latest`) = v1.5.4 `08e34c447b`; dev65.0 (npm `next`, 2026-09-29, outside the 1-day gate) = v1.5.6 `069cc9f9b5`, a tagged release, = repo's node-api DuckDB. `inet` + `spatial` published for `wasm_eh` and `wasm_mvp` on all three (HTTP 200). Newest that meets §1's rule → dev65.0.
 - **Other spike pins:** `@electric-sql/pglite` 0.5.10 (0.5.11 of 2026-10-21 11:48 is inside pnpm's release-age gate; no exclude added), `mermaid` 12.2.0, `sql.js` 1.15.1, `esbuild` 0.28.2, `playwright` 1.58.2 (Chromium 145.0.7632.0 = cached `chromium-1208`, no download), `typescript` 7.0.2, `@types/node` 26.6.5, `@duckdb/node-api` 1.5.6-r.2 (repo's gate excludes copied).
 - **Build scripts:** spike installed with the repo's `allowBuilds: esbuild` only; `pnpm ignored-builds` = None. duckdb-wasm, duckdb-wasm-shell, pglite, mermaid need no build script → B1 adds them without an `allowBuilds` change.
