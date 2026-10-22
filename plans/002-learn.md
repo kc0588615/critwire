@@ -2,7 +2,7 @@
 
 critwire Learn is a set of pages on critwire.com where people aged 16 and up who are new to SQL learn relational databases and SQL by asking questions about critwire's animals. The SQL runs in the learner's browser (DuckDB-WASM), on tables the page builds from the public `/v1` files, and the answers come back as animal cards. This document is the design that mission B builds from: the engine, the learners' tables, the ERD, the lessons, a query cookbook, the new countries file, one small demo game, the site, the mission B briefs and the owner's choices. Research and measurements: `plans/2026-10-22-critwire-learn-design.md` (mission A1) and its spike.
 
-Every ```` ```sql ```` block in this file was run in DuckDB-WASM by the spike's `run-queries.ts`, and the ```` ```text ```` block after it is the result it gave (row count, a hash of the whole result, the first rows). Each block's `-- status:` says what it ran against: `ran` (today's data) or `draft-table` (needs the countries file mission B publishes; it ran against the spike's draft of it).
+Every ```` ```sql ```` block in this file was run in DuckDB-WASM by the spike's `run-queries.ts`, and the ```` ```text ```` block after it is the result it gave (row count, a hash of the whole result, the first rows). Each block's `-- status:` says what it ran against: `ran` (today's data) or `draft-table` (needs the countries file mission B publishes; it ran against the spike's draft of it). A block with `-- after: <id>, …` ran after those earlier blocks' SQL, in the same transaction, as a lesson's exercise runs on the page after the learner has run the lesson's own blocks (§1, "Exercise checks"); its result is its own last statement.
 
 ## 1. Engine and interface
 
@@ -164,8 +164,9 @@ async function fresh(bundle: DuckDBBundle): Promise<Live> {
 **Exercise checks** run in the page against today's data, so they keep working as the data grows; nothing stores expected rows.
 - `result`: the learner's result against the reference answer's, by position (column names ignored), as a multiset unless the exercise is ordered. Hints name the difference: column count, row count, row order ("check your ORDER BY"), column order, or "some rows differ".
 - `error`: the learner's last statement must fail with a constraint error (lesson 7: two animals can't share an id).
-- `schema`: a verify query on `information_schema` or `duckdb_constraints()` against expected rows written in the lesson, run on the learner's own tables (lesson 16).
-- **Pristine references:** right after every setup (start, Reset, Stop), before any learner statement, the page runs every reference answer of the whole path inside `BEGIN … ROLLBACK` and keeps the rows in memory. With one engine start per visit, a learner's `DELETE` in lesson 7 can't change lesson 9's expected answer. In the spike, after deleting India's country rows, the India exercise reported "Your result has 0 rows; the answer has 6. Changed the tables? Reset database brings them back."; after Reset it passed again. Mission B measures this step (16 small queries) and keeps it under 10 % of the setup's time; if it can't, it computes a lesson's reference when the lesson opens while no learner statement has changed data, and otherwise asks for Reset.
+- `schema`: a verify query on `information_schema` or `duckdb_constraints()` (its own block, `l16-check`), run on the learner's own tables, against its rows on the pristine database after the lesson's block and the answer (lesson 16).
+- **Prerequisites:** an exercise whose answer needs the lesson's own earlier blocks (lesson 16's `species_traits` points at `traits`, which `l16` creates) names them with `-- after:`. The learner runs them in the lesson's editor first, as "Your turn" says; the answer and "Show answer" hold only the exercise's own SQL, so running it after the lesson's block never repeats a `CREATE`. If the learner skipped the lesson's block, the answer's error names the missing table.
+- **Pristine references:** right after every setup (start, Reset, Stop), before any learner statement, the page runs every reference answer of the whole path inside `BEGIN … ROLLBACK`, each after its `-- after:` blocks in the same transaction (lesson 16: `l16`, `l16-ex`, then `l16-check`), and keeps the rows in memory. With one engine start per visit, a learner's `DELETE` in lesson 7 can't change lesson 9's expected answer. In the spike, after deleting India's country rows, the India exercise reported "Your result has 0 rows; the answer has 6. Changed the tables? Reset database brings them back."; after Reset it passed again. Mission B measures this step (16 exercises' references) and keeps it under 10 % of the setup's time; if it can't, it computes a lesson's reference when the lesson opens while no learner statement has changed data, and otherwise asks for Reset.
 
 **Reset and Stop both restart the engine** (terminate the worker, build a fresh database, setup, references), keeping the editor text.
 - Reset is how a learner undoes their own tables: DuckDB can't drop a table another table references (§2), so re-running the setup can't reset anything. 2.4 s on desktop, 14.2 s at 4×.
@@ -1660,14 +1661,7 @@ sources ||--o{ species_traits : "supplies"
 ```sql
 -- q: l16-ex
 -- status: ran
--- the lesson's table, run first on the page
-CREATE TABLE traits (
-  name        VARCHAR PRIMARY KEY,
-  unit        VARCHAR,
-  description VARCHAR NOT NULL
-);
-
--- the answer
+-- after: l16
 CREATE TABLE species_traits (
   species_id  INTEGER REFERENCES species (id),
   trait_name  VARCHAR REFERENCES traits (name),
@@ -1675,8 +1669,19 @@ CREATE TABLE species_traits (
   source_name VARCHAR NOT NULL REFERENCES sources (name),
   PRIMARY KEY (species_id, trait_name)
 );
+```
 
--- the check's verify query
+```text
+-- result: l16-ex · 0 rows · sha256 37bac4952bec
+Count
+```
+
+The check's verify query, which the page runs on the learner's database after their SQL:
+
+```sql
+-- q: l16-check
+-- status: ran
+-- after: l16, l16-ex
 SELECT 'column' AS kind,
        column_name || ' ' || data_type || CASE WHEN is_nullable = 'NO' THEN ' NOT NULL' ELSE '' END AS detail
 FROM information_schema.columns
@@ -1689,7 +1694,7 @@ ORDER BY kind, detail;
 ```
 
 ```text
--- result: l16-ex · 8 rows · sha256 cec372f2d16e
+-- result: l16-check · 8 rows · sha256 cec372f2d16e
 kind | detail
 column | source_name VARCHAR NOT NULL
 column | species_id INTEGER NOT NULL
@@ -1699,7 +1704,7 @@ key | FOREIGN KEY (source_name) REFERENCES sources("name")
 … 3 more rows
 ```
 
-**Check:** `schema`. After the learner's SQL, the page runs the verify query (the last statement above) on the learner's database and compares its rows, in any order, with the expected rows: `l16-ex`'s result block. It reads the standard `information_schema.columns` and DuckDB's `duckdb_constraints()`, whose `constraint_text` is written by DuckDB, not copied from the learner, so `TEXT` for `VARCHAR`, `REFERENCES species` without `(id)`, or `NOT NULL` on a key column all pass. A missing key or a wrong column type fails, with the differing rows as the hint. The expected rows in full (the result block shows five; its hash covers all eight, so `run-queries` proves this list):
+**Check:** `schema`. After the learner's SQL, the page runs `l16-check` on the learner's database (their `traits` from the lesson's block, their `species_traits` from the exercise) and compares its rows, in any order, with the expected rows: `l16-check` run after `l16` and `l16-ex` on the pristine database (§1, "Pristine references"), the result block above. It reads the standard `information_schema.columns` and DuckDB's `duckdb_constraints()`, whose `constraint_text` is written by DuckDB, not copied from the learner, so `TEXT` for `VARCHAR`, `REFERENCES species` without `(id)`, or `NOT NULL` on a key column all pass. A missing key or a wrong column type fails, with the differing rows as the hint. The expected rows in full (the result block shows five; its hash covers all eight, so `run-queries` proves this list):
 
 | kind | detail |
 |---|---|
@@ -2895,9 +2900,10 @@ Starting the engine is the slow part (§1: 15–22 s on a slow laptop even when 
 site/style.css                 shared colours, fonts and spacing (moved from site/index.html), linked by the docs page and Learn
 site/learn/
   layout.html                  the page shell: header, <main data-page>, footer, {{title}} {{main}} {{css}} {{js}} slots
-  lessons.json                 the path: [{ "slug", "title", "check" }] in lesson order
+  lessons.json                 the path: [{ "slug", "title", "check", "after"?, "verify"? }] in lesson order (lesson 16:
+                               "after": ["l16"], "verify": "l16-check", from the blocks' `-- after:` lines)
   lessons/<slug>.html          each lesson's text, with {{sql:<q-id>}} slots where its editors go
-  sql/<q-id>.sql               every lesson, cookbook and demo query (l09.sql, l09-pairs.sql, l09-ex.sql, c02.sql, d01.sql, …)
+  sql/<q-id>.sql               every lesson, cookbook and demo query (l09.sql, l09-pairs.sql, l09-ex.sql, l16-check.sql, c02.sql, d01.sql, …)
   cookbook.json                [{ "id", "title", "gameUse", "params" }] in cookbook order
   pages/                       index, schema, cookbook, playground and play page fragments
   schema.mmd, schema.svg       the ERD source and its committed rendering (§3)
@@ -2907,15 +2913,15 @@ site/learn/
   tsconfig.json                DOM lib, for src/
 ```
 
-- **The SQL lives once, in `sql/`.** Each file is the 002 block without its plan-only lines (`-- q:`, `-- status:`, `-- params:`), keeping `-- show: cards`. The lesson pages, the cookbook page, the game and E2E all read those files; after B1 they are the source, and this document is the design they started from.
+- **The SQL lives once, in `sql/`.** Each file is the 002 block without its plan-only lines (`-- q:`, `-- status:`, `-- params:`, `-- after:`), keeping `-- show: cards`. An exercise's `-- after:` list and a `schema` check's verify query go in `lessons.json` instead (`after`, `verify`), so the page and E2E know them. The lesson pages, the cookbook page, the game and E2E all read those files; after B1 they are the source, and this document is the design they started from.
 - **`fillTemplate`** moves out of `scripts/build/docs.ts` (its slot replacement and the "unknown slot" and "lacks the slots" checks) into `scripts/build/template.ts`, taking the template's name for its messages. The docs page and every Learn page use it, so every page has the same "a slot is missing or unfilled" guarantee.
 - **`scripts/build/learn.ts` (`writeLearn`)**, in order:
   1. **Vendors the engine.** Copies `duckdb-eh.wasm` and `duckdb-browser-eh.worker.js` from `node_modules/@duckdb/duckdb-wasm/dist/` to `dist/learn/assets/duckdb-<version>/`, after checking that the installed version equals the pin (the spike's `assets.ts` rule). Copies the parquet extension to its mirror path after checking its sha256. No `mvp`, no `coi` (§1).
   2. **Bundles the app** with esbuild's JS API: entry points `src/app.ts` and `learn.css`, `bundle`, `format: "esm"`, `minify`, file names `[name]-[hash]`, `.sql` loaded as text, a metafile from which it fills the `{{js}}` and `{{css}}` slots. esbuild's output is the same for the same inputs and version, so an unchanged app keeps its file name.
   3. **Sets every file under `dist/learn/assets/` to one fixed modification time** (2000-01-01 UTC), so Caddy's ETags stay the same across deploys and returning learners download nothing again (§1, Q2).
   4. **Writes the pages:** each lesson from `layout.html` and its fragment, in `lessons.json`'s order, with Previous and Next; each `{{sql:<q-id>}}` becomes a labelled `<textarea>` holding that file's text (HTML-escaped), and an exercise's answer goes into a hidden `data-answer` for "Show answer". Then the path index, the schema page (with the data dictionary from the `.mmd`, §3), the cookbook, the playground and the game.
-  5. **Refuses:** a `{{sql:…}}` slot with no file; a file in `sql/` that no page, `answers.ts` or the game uses; `answers.ts` importing a different set of exercise answers than `lessons.json` lists; a stale `schema.svg` (§3); a cookbook entry without its file.
-- **`answers.ts`** imports each lesson's exercise answer by name (16 imports), so the bundle can compute every reference answer at setup (§1, "Pristine references") whichever page the visit starts on.
+  5. **Refuses:** a `{{sql:…}}` slot with no file; a file in `sql/` that no page, `answers.ts` or the game uses; `answers.ts` importing a different set of exercise answers (and `after`/`verify` files) than `lessons.json` lists; a stale `schema.svg` (§3); a cookbook entry without its file.
+- **`answers.ts`** imports each lesson's exercise answer by name (16 imports, plus `l16-check` and the `after` files it needs), so the bundle can compute every reference answer at setup (§1, "Pristine references") whichever page the visit starts on.
 - **Lesson SQL in data attributes,** as the docs page's curl and DuckDB examples already do (`site/index.html`, read by `e2e/duckdb.spec.ts`): `data-sql="lesson"` on a lesson editor, `data-answer` and `data-check` on an exercise. The page code and E2E read the same attributes.
 - **Licence links on cards** come from `LICENSE_URLS` in `scripts/build/sources.ts`, which the bundle imports (§1). The build already fails on a photo license missing from it (`licenseUrl`, through `attribution.json`), so every license a card meets has its deed.
 - **New direct dependencies (B1), exact pins:** `esbuild` 0.28.2 (already in the store through `tsx`, already in `allowBuilds`) and `@duckdb/duckdb-wasm` 1.33.1-dev65.0 in `dependencies`, because `pnpm build`, and so `deploy`, needs them; `mermaid` 12.2.0 in `devDependencies`, for `pnpm erd` only. None has an install script, so `allowBuilds` stays as it is (the spike installed all three with it). pnpm doesn't hoist, so each must be a direct dependency to be importable. The page code imports nothing from `apache-arrow` directly.
@@ -2982,7 +2988,7 @@ The existing harness, unchanged in kind: `pnpm build` writes `dist/`, Playwright
 - `learn.spec.ts`:
   - `/learn/` lists the lessons in `lessons.json`'s order, and Previous and Next link them in that order.
   - Every lesson SQL file runs without an error, in its page; it renders cards exactly when it starts with `-- show: cards`, one card per row.
-  - Every exercise accepts its answer (`l<nn>-ex.sql`) and rejects a wrong one (a fixed wrong answer per check kind: a missing row, a wrong order for `in order`, a statement that succeeds for `error`, a missing constraint for `schema`).
+  - Every exercise accepts its answer (`l<nn>-ex.sql`, run after its `after` blocks in the lesson's editor, as a learner would: lesson 16 runs `l16` then `l16-ex`, with no "already exists") and rejects a wrong one (a fixed wrong answer per check kind: a missing row, a wrong order for `in order`, a statement that succeeds for `error`, a missing constraint for `schema`).
   - The Brazil lesson's cards are the animals whose `range.countriesWithOpenRecords` contains `BR` in `data/species.json`; the no-photo lesson's are those with `photo: null`; every card's credit line matches its record.
   - Reset: after a learner's `CREATE TABLE … REFERENCES species (id)` and a `DELETE FROM species_countries`, Reset brings back the setup's row counts and no learner table. Stop: a runaway query can be stopped and the next query runs.
   - One engine start per visit: moving through three lessons by their links starts the worker once (counted by `page.on("worker")`), and Back restores the previous lesson's page.

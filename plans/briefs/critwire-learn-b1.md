@@ -69,6 +69,7 @@ Out:
   - A missing engine `.wasm` makes `instantiate` hang without an error: `HEAD` it first. A worker that can't load only fires `error`: race it.
   - `mvp` loses every SQL error message; vendor `eh` only, and show "browser too old" without WebAssembly exception handling.
   - A multi-statement string returns the first statement's result: split statements (the spike's `sql.ts` lexer).
+  - An exercise's answer is its own SQL only; the lesson blocks it needs come from its `-- after:` line (002 §1 "Prerequisites", lesson 16), run first by the learner and, for the pristine reference, in the same `BEGIN … ROLLBACK`. Never copy a lesson's `CREATE` into an answer: the learner already ran it, so the answer would fail with "already exists".
   - The 21 M-row cross join kills the worker unless the last statement is streamed (`conn.send(sql, true)`) and cut at 10 000 rows.
   - Arrow returns `DATE`/`TIMESTAMP` as epoch ms: map them by Arrow type id (the spike's `engine.ts` `toResult`).
   - DuckDB declares foreign keys only in `CREATE TABLE`, refuses multi-row self-referencing inserts (one `INSERT` per taxon rank), and can't drop a referenced table: Reset is a restart, never a re-run of the setup.
