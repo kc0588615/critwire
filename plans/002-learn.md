@@ -3016,4 +3016,50 @@ The build is two missions, each with a ready-to-start brief in the ops format (G
 
 ## 10. For the owner
 
-Written in step S22.
+Choices that change cost, what goes public, or how Learn looks. Each has a recommendation and its cost. Answer in the PR or to the lead before B1 starts; without an answer, B1 and B2 build the recommendation (each brief says so). Items 1–5 matter to B1, 6–10 to B2, 11 to A2.
+
+1. **Accept DuckDB-WASM's start time on slow machines.**
+   **Recommendation:** accept it. On a low-end laptop or Chromebook a learner waits about 15–24 s for the first result of each visit once the engine is cached, and about 24–64 s on the very first visit (§1). PGlite is no faster there and needs about three times the memory; sql.js can't read Parquet. Learn softens the wait: one engine start per visit, lessons readable at once, progress on the Run button (§8).
+   **Cost:** that wait, on every first result of a visit on a slow device. The other option is a server that runs queries for learners, which critwire doesn't have and the brief rules out.
+
+2. **The engine pin: duckdb-wasm `1.33.1-dev65.0`.**
+   **Recommendation:** use it. It is npm's `next` build and carries DuckDB v1.5.6, a tagged DuckDB release and the same version as critwire's build-time `@duckdb/node-api`, so a query behaves the same in the build and in the browser. The newest duckdb-wasm without a dev label, 1.32.0, carries DuckDB v1.4.3; npm's `latest` tag itself already points at a dev build (1.33.1-dev57.0, DuckDB v1.5.4).
+   **Cost:** a "dev" label on a public dependency; B1 checks the installed version against the pin at every build, so it never moves unnoticed. Choosing 1.32.0 instead means re-running every 002 block on v1.4.3 and an extension mirror for that version.
+
+3. **The parquet extension: commit the binary.**
+   **Recommendation:** commit `parquet.duckdb_extension.wasm` (3.22 MB) under `site/learn/` with its sha256 checked at every build (§8). It isn't an npm package, and `pnpm build` must stay offline.
+   **Cost:** 3.22 MB in the public repo's history now, and about as much again at each DuckDB upgrade. The other option, a pinned download step, makes the build depend on `extensions.duckdb.org` being up at deploy time.
+
+4. **Publish `/v1/countries.{parquet,csv,json}` from Natural Earth.**
+   **Recommendation:** yes (§6). Natural Earth is public domain; all of the species' 107 codes, and `XK`, match. Existing files keep their exact bytes; `attribution.json` gains one entry and the docs page one rewording.
+   **Cost:** a new public file to keep for good (`/v1` only adds), and one line of docs about CSV readers turning Namibia's `NA` into a missing value.
+
+5. **Lesson order: the mockup's Brazil question is lesson 9, not lesson 4.**
+   **Recommendation:** keep it at 9. Its answer needs a join through `species_countries`, which a learner can only read after lesson 8 (one-to-many and the first join) and lesson 9 itself (many-to-many). The other fix, a ready-made view early that lesson 9 later explains, teaches a query the learner can't yet read.
+   **Cost:** the mockup's headline question comes later in the path. Cards still appear from lesson 1, and lesson 4 shows the no-photo state.
+
+6. **Light and dark follow the system setting.**
+   **Recommendation:** follow the system, as the docs page does; the mockup's dark card is the dark theme (§8).
+   **Cost:** two themes to check; B1's E2E screenshots both. Dark only would drop that work but ignore a learner's setting, against the docs page.
+
+7. **Caddy headers: precompression, `immutable` on `/learn/assets/*`, `no-cache` on `/v1/*`.**
+   **Recommendation:** approve all three, as one control-room change that B2 copies into `e2e/Caddyfile` (§8 Serving). Precompressed engine files cut the first load from 9.02 to 6.25 MB, a first visit at school Wi-Fi from 27.1 to 23.6 s and at slow 4G from 64.2 to 51.4 s, and Caddy's CPU for a class of 10 loading at once from 3.47 to 0.05 s (§1 Q3). `immutable` saves a returning visit's revalidation. `no-cache` on `/v1` keeps learners from reading yesterday's data out of a heuristically fresh cache once the other headers are on.
+   **Cost:** a change to the live Caddy block (the control room's), about 2 minutes of extra build time when the engine version changes (skipped when it hasn't), and `.br`/`.zst` copies of the engine files in `dist/`. Learn works without any of it.
+
+8. **Photos stay on Wikimedia, linked.**
+   **Recommendation:** link them, as today (§1 Q5). Every card shows its credit and license either way.
+   **Cost:** a school that blocks `wikimedia.org` sees cards without photos (the name and credit still show). Hosting copies on critwire.com would avoid that: today's 74 thumbnails are 5.7 MB (about 77 KB each, measured 2026-10-22), plus an ingest step to fetch and commit them as the data grows, and critwire redistributing CC BY-SA files under their terms. Revisit if a school reports the block.
+
+9. **No DuckDB shell link on the playground.**
+   **Recommendation:** leave it out (§1 Q4). Our own `<textarea>` editor works with screen readers and phone keyboards; the shell doesn't.
+   **Cost of adding it later:** 0.56 MB on top of the engine for those who open it, a second package pinned in lockstep with duckdb-wasm, and its `xterm` 5.3.0 dependency, which npm marks deprecated.
+
+10. **One real-device check before B2's game ships (about 15 minutes).**
+    **Recommendation:** do it. Open a lesson (run its query, check the exercise) and the game on an iPhone in Safari and, if one is at hand, on a Chromebook and in Firefox. B2 adds a handoff item when the game first runs on its branch; it doesn't block B2's release unless you say so.
+    **Cost:** 15 minutes of your time. Emulation here proved Chromium only: not WebKit's WASM memory limits, a Chromebook's tab discarding at 4 GB, phone keyboards, or Firefox (its test browser needs GTK packages on this server, which A1 left alone; installing them is the other way to cover Firefox).
+
+11. **For A2: self-hosted DuckDB extensions beyond parquet.**
+    **Recommendation:** decide in A2, per extension. Self-hosting works with signatures on (§1 Q3); `spatial` is 23.63 MB (4.53–6.33 MB on the wire) and would be loaded only in spatial lessons.
+    **Cost:** each committed extension adds its size to the public repo at every DuckDB upgrade, so `spatial` alone is about 24 MB per version.
+
+**Split of the build.** B1 then B2 (§9), about 32–38 and 18–24 sessions, rather than one mission of 45–50 that would sit close to the 60-session limit. Cost: two releases and two reviews instead of one; learners get the lessons sooner.
