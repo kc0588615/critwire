@@ -209,7 +209,7 @@ Out:
 - [x] Architecture: `architect` writes findings and the target design
 - [x] Fable review: `architecture-reviewer`
 - [x] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
-- [ ] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
+- [x] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
 - [ ] Steps: `planner` writes Steps and Verification
 
 ## Baseline
@@ -232,15 +232,22 @@ Architect, 2026-10-22. A2 builds nothing public; the "code in scope" is A1's des
 
 **One database change made here:** `CREATE EXTENSION postgis_raster` in `critwire_dev`, as `critter-ai` (superuser), about 16:02 UTC. It stays installed (the spike needs it; Baseline's "not installed" is now stale). `pnpm build` only drops `public.species` (F11), so the build is unaffected; Step 1's guard re-proves it.
 
+**Revised 2026-10-22 ~16:45 UTC** (the one revision round; see Revision notes). New live checks: GUC behaviour and `GRANT SET ON PARAMETER` (F1, the grant only inside a rolled-back transaction with a throwaway role: `pg_roles` and `pg_parameter_acl` show nothing left), COG overview byte totals (F2), Zenodo v004 files and zip layouts (F3), postgres file access (F12). Scratch output in `/tmp/a2arch/` only.
+
 ### Findings (ranked by impact)
 
 **F1. PostGIS reads the owner's COG out-db over `/vsicurl` today, but only in a superuser session.**
 - `postgis_full_version()`: PostGIS 3.4.2, GDAL 3.8.4 (2024-02-08), PROJ 9.4.0; `libgdal.so.34` links libcurl, libdeflate, libzstd, libLerc (`ldd /lib/aarch64-linux-gnu/libgdal.so.34`).
 - `pg_settings`: `postgis.enable_outdb_rasters` and `postgis.gdal_enabled_drivers` have context **`superuser`** (default `off` / `DISABLE_ALL`); `postgis.gdal_vsi_options` is `user`. The `.env` role `critwire` has `rolsuper = f`, so the brief's per-session `SET`s fail for it. `psql -d critwire_dev` as `critter-ai` is a superuser (peer auth).
-- With `'GTiff COG VRT MEM'` enabled, `ST_GDALDrivers()` lists COG, GTiff and VRT (read and write) and MEM (read).
+- `'GTiff COG'` alone is enough: `ST_GDALDrivers()` then lists only COG and GTiff (read/write), and the out-db read below (1405, 621 ms), `ST_Transform(rast, 6933, 'NearestNeighbor')`, `ST_AsGDALRaster(…, 'COG', …)` and `ST_FromGDALRaster(bytea)` all work (rechecked in the revision). VRT and MEM aren't enabled anywhere.
+- **The `SET`s can fail silently** (fail-fast gap):
+  - As a non-superuser, a `SET` before `rtpostgis` loads succeeds as a placeholder and is dropped when it loads (`SHOW` → `off`); after it loads, `SET` gives "permission denied" (Fable, as role `critwire`).
+  - As superuser, a misspelt `SET postgis.enable_outdb_raster = on` succeeds silently even after the library loaded (checked): PostGIS doesn't reserve its GUC prefix.
+  - So `SHOW` is the only proof. Every PostGIS session (spike, ingest, learner) runs the **capability check**: `SELECT postgis_raster_lib_version()` first (loads the library), then the two `SET`s, then assert `SHOW postgis.enable_outdb_rasters` = `on` and `SHOW postgis.gdal_enabled_drivers` contains the word `COG`. Anything else stops the run before any query.
+- **`GRANT SET ON PARAMETER postgis.enable_outdb_rasters, postgis.gdal_enabled_drivers TO <role>`** (PG 15+) works on this PG 16: an ordinary role is refused without it and can `SET` both with it (checked in a rolled-back transaction). It's narrower than superuser or `ALTER DATABASE … SET`.
 - Proof: a 1×1 `ST_MakeEmptyRaster` aligned to the COG grid at (−60, −3) (col 129665, row 197741), plus `ST_AddBand(rast, '/vsicurl/https://habitat-cog.s3.us-east-2.amazonaws.com/habitat_cog.tif', ARRAY[1], 1, 0)`, gives `ST_Value` = **1405** (both by cell and by point), `16BUI`, `isoutdb = t`, in 497 ms. TiTiler's `/cog/point/-60.0,-3.0` returns `[1405.0]` too (F7).
 - There is no `raster2pgsql` (`/usr/lib/postgresql/16/bin` has none) and no `gdalinfo`, so out-db windows are built in SQL: an empty raster aligned to the grid, then the out-db band. PostGIS then reads only that window (S: confirm by bytes for larger windows).
-- **Fix:** the spike's PostGIS connection is `critter-ai` over the Unix socket (`SPIKE_PG_URL=postgresql:///critwire_dev`, set in the spike README; never `.env`'s `DATABASE_URL`), and it works in its own schema (F11). It never runs `ALTER ROLE` or `ALTER DATABASE`. Lessons that run in a learner's own PostGIS say this needs a superuser (their own server) or a one-time `ALTER DATABASE … SET` by one, and why: these settings let GDAL read server files and the network.
+- **Fix:** the spike's PostGIS connection is `critter-ai` over the Unix socket (`SPIKE_PG_URL=postgresql:///critwire_dev`, set in the spike README; never `.env`'s `DATABASE_URL`), and it works in its own schema (F11). It runs the capability check on connect. It never runs `ALTER ROLE`, `ALTER DATABASE` or `GRANT`. Lessons that run in a learner's own PostGIS give, in this order: a one-time `GRANT SET ON PARAMETER … TO <their role>` run by their server's superuser (recommended); otherwise a superuser session or `ALTER DATABASE … SET`. They say why the settings are guarded (they let GDAL read server files and the network) and why the setup block checks `SHOW` (a mistyped or refused setting otherwise fails silently).
 
 **F2. The owner's COG, from its header** (bytes 0–262143, 206 in 0.26 s, parsed with a stdlib TIFF reader):
 - BigTIFF written by GDAL's COG driver: the ghost area says `LAYOUT=IFDS_BEFORE_DATA`, `BLOCK_ORDER=ROW_MAJOR`, `BLOCK_LEADER=SIZE_AS_UINT4`.
@@ -250,6 +257,18 @@ Architect, 2026-10-22. A2 builds nothing public; the "code in scope" is A1's des
 - The file is 3,640,482,547 bytes, Last-Modified 2025-11-26, ETag `"975827817c839f73a5ee49d2791393a4-212"`.
 - **The tile index is big:** IFD 0's TileOffsets (577,600 × 8 B = 4.62 MB at offset 4,008) and TileByteCounts (577,600 × 4 B = 2.31 MB at 4,624,808) sit in the first 9.25 MB. A reader that loads IFD 0's index whole pays about 6.9 MB before its first full-resolution pixel. GDAL reads it lazily; geotiff.js (S). This decides what option (a) costs per learner (§5).
 - One cold one-pixel read through PostGIS took 91,196 bytes over TLS (F6), of which the pixel's tile (index 293,613) is 43,789 bytes.
+- **Bytes per level** (revision: Range reads of IFD 1–9's TileByteCounts, 867,180 B; ETag unchanged). Pixel = ground size at the equator; at latitude φ it's × cos φ.
+
+  | level | px per side | pixel | cells | tile bytes |
+  |---|---|---|---|---|
+  | full | 388,996 | 103 m | 151.3 G | ≈ 2,248,510,943 (file − overviews − 9,246,388 header) |
+  | ÷4 | 97,249 | 412 m | 9.46 G | 312,223,541 |
+  | ÷8 | 48,625 | 824 m | 2.36 G | 97,241,594 |
+  | ÷16 | 24,313 | 1.65 km | 591 M | 30,062,515 |
+  | ÷32 | 12,157 | 3.30 km | 148 M | 9,399,182 |
+  | ÷1024 | 380 | 105 km | 144 k | 33,783 |
+
+  The ÷2 level is 929,337,498 B; ÷64 to ÷512 together are 4,427,103 B.
 
 **F3. The COG is Jung's level 2, with marine classes. Its version is still open, and the version decides the license.**
 - The ÷1024 overview (one tile) has 56 distinct values: nodata 0 (67 px); level-2 codes 101, 104–109, 201–202, 301–308, 401–407, 501–503, 505, 507, 510, 511, 513, 515, 801–803, 908–909, 1101–1105 and 1401–1405; plus 100, 300, 400, 500, 600, 900 and 1200.
@@ -266,6 +285,10 @@ Architect, 2026-10-22. A2 builds nothing public; the "code in scope" is A1's des
 
 - Zenodo's own instruction: "Please cite the published paper and state the used version of the habitat map."
 - The COG's metadata names no version. Critter Connect's repo has no provenance either: grepping it for `habitat_cog|jung|4058819|lvl2|titiler` finds only the env examples and `plans/040-more-animals-per-place.md` (its `habitat_colormap` labels).
+- **Class codes can only exclude a version, never confirm one** (Astra 4): a match says nothing between versions that share those codes, and the COG's processing (reprojection to 3857, resampling) is unrecorded. Only the owner can state which file it was made from and how. Until then the COG's provenance is **unconfirmed**.
+- **v004 is an explicitly identified, licensed alternative** (revision, `/api/records/4058819`; Zenodo answers `Range` with 206):
+  - `lvl2_frac_1km_ver004.zip`: 695,484,415 B, `md5:bd8508db8118f14d8da7bfa7950523d4`. Its central directory (one 64 KB Range read) lists 79 class files, one per level-1 or level-2 code (`…fraction_lvl2__<code>_<name>__ver004.tif`), each DEFLATE in the zip (49 KB to 60.2 MB). One inflated header (code 100): 36,308 × 18,154 px, **EPSG:4326**, pixel 0.0099157° (about 1.1 km at the equator), uint16, nodata 0, one row per strip, DEFLATE with predictor 2. The scale of the fraction values is (S): read it from v004's code zip or the paper.
+  - `iucn_habitatclassification_composite_lvl2_ver004.zip`: 2,454,999,319 B, `md5:d9bad21c2c9e80814f59a6e57d934fa9`. **One** 2,593,230,119-byte tif, DEFLATE in the zip, so no random access by Range (`/vsizip/` would inflate from the start).
 
 **F4. A1's names collide: lesson 16 creates `traits` and `species_traits`, and 002 §2 "Room to grow" gives critwire's real trait tables the same names.**
 - `plans/002-learn.md:1629` (`l16`, `CREATE TABLE traits`) and `:1665` (`l16-ex`, `CREATE TABLE species_traits`) run on the setup database.
@@ -324,7 +347,7 @@ Architect, 2026-10-22. A2 builds nothing public; the "code in scope" is A1's des
 - Non-null ids: iucn 76, wikidata 76, ncbi 75, inaturalist 74, gbif 73, col 69. `range.status`: ok 72, identity-unsettled 3, no-open-records 1.
 - Sources cited today: Catalogue of Life, GBIF Backbone Taxonomy, GBIF.org occurrence search, Wikidata, critwire base.
 - **Open GBIF records after critwire's filters** (the sum of each species' dataset counts): 397,183 in total; median 132 per species; max 153,922 (*Macrotis lagotis*); 3 species have over 10,000 and 21 over 1,000. A full points table is too big for a browser lesson, so it needs a capped sample or a grid summary.
-- Publishing points changes the GBIF derived-dataset counts. That means the DOI refresh in `AGENTS.md`, through the existing `contributions.json` + `pnpm gbif:register`, not a new mechanism.
+- Publishing points needs no new DOI mechanism. `contributions.json` already counts, per dataset, every record the countries query matches (`scripts/derive/contributions.ts:1-2`, from the datasetKey facet of the same `OCCURRENCE_FILTERS`, `scripts/ingest/gbif.ts:25-35`). A sample drawn **in the same `ingest gbif` run with the same filters** is a subset of those records, so the counts don't change and nothing is counted twice. Derive asserts it: every sampled record's `datasetKey` is in its taxon's counts, with no more sampled records than counted. The DOI refresh in `AGENTS.md` is then needed only when `ingest gbif` changes the counts, as today.
 - The species' `ids.iucn` is the SIS taxon id, so a learner's own IUCN download joins to `species.iucn_id` with no IUCN data on critwire's side.
 
 **F10. A1's query runner fits, with three changes.**
@@ -334,6 +357,8 @@ Architect, 2026-10-22. A2 builds nothing public; the "code in scope" is A1's des
 - Everything else reuses as is: statement splitting (`src/sql.ts`), every block in `BEGIN … ROLLBACK`, `-- after:`, the result rendering and hash, `--check`/`--update`, the `--erd` drift check (`erd-model.ts`), the port guard (`serve.ts`) and the Mermaid render (`erd.ts`).
 
 **F11. Spike tables in `critwire_dev` must never depend on `public.species`.** `pnpm build`/`db:load` runs `db/schema.sql` (`drop table if exists species`, line 2) inside one transaction (`scripts/db.ts:41-46`). Tables in another schema survive it, but a foreign key or view on `public.species` would make every build fail ("other objects depend on it"). **Fix:** schema `learn_spatial` only, referencing nothing in `public` but PostGIS's types and functions.
+
+**F12. The Postgres server can't open files under `/srv/critter-ai`** (revision, `namei -m`): `/srv/critter-ai` is `drwxr-x--- critter-ai` and the server runs as `postgres`. So neither the spike folder nor a repo checkout is readable by PostGIS out-db. **Fix:** PostGIS reads rasters only over `/vsicurl/`; a local raster goes in as bytes, either `ST_FromGDALRaster(bytea)` for a clip file or `ST_SetValues(…, double precision[][])` for a window read in Node by geotiff.js (both checked). Never `chmod` the home tree.
 
 **Already fine:**
 - Range on S3 (206).
@@ -354,7 +379,7 @@ Same conventions as 002: every ```` ```sql ```` block has `-- q:` and `-- status
 | 2 Grown schema and ERD | tables, columns, keys, cardinality (T5); `setup-grown` block; `plans/003-learn-erd.mmd` | `src/setup-grown.sql` (byte-checked against the block), `run-queries --erd`, `erd/grown.svg` and `.png` |
 | 3 Lessons for grown data | 4–8 lessons, each marked "runs today" (only if a spike table stands in) or "waits for mission C" | `queries.log` |
 | 4 Spatial track | 6–10 lessons; per lesson "runs in: browser (DuckDB spatial) / browser (geotiff.js) / your own PostGIS", backed by an experiment; PostGIS-style SQL, with paired DuckDB blocks where spellings differ (F5) | `queries.log`, `out/e1-pip/`, `out/e2-point/`, `out/e3-zonal/`, `out/e4-clip/` |
-| 5 Habitat raster | version and level (T7); credit; options (a)–(d) with disk, bandwidth, work, Chromebook fit, from measured bytes and times | `out/cog/`, `out/jung/`, `out/e*/`, `out/tile-bytes/` |
+| 5 Habitat raster | version and level, and the provenance gate (T7); credit; options (a)–(d) with disk, bandwidth, work, Chromebook fit, from measured bytes and times; the summary methods with resolution, rule and measured error (E3c); the habitat ingest (T5) | `out/cog/`, `out/jung/`, `out/e*/`, `out/tile-bytes/` |
 | 6 IUCN | quotes, the four cases, learner-own lessons, permission draft (T8) | `evidence/licenses/iucn/` |
 | 7 Build missions | brief paths, what each assumes from B (T9) | `plans/briefs/critwire-learn-c.md`, `…-d.md` |
 | 8 For the owner | choices with recommendation and cost (T10) | |
@@ -372,8 +397,9 @@ run-queries.ts       the CLI the Definition of done names (A1's scripts/run-quer
 scripts/             copied from A1: paths.ts (repointed to this mission), serve.ts, browser.ts, env.ts, build-site.ts,
                      plan-queries.ts, runner-client.ts, erd.ts, erd-model.ts; the CPU-quota launcher and VmHWM probe
                      cut out of A1's measure.ts (not the whole harness)
-                     new: cog.ts (TIFF/IFD reader + tile maths), tile-bytes.ts, pg.ts (SPIKE_PG_URL, session GUCs, bytes),
-                     jung.ts, e1-pip.ts, e2-point.ts, e3-zonal.ts, e4-clip.ts, grown-data.ts, licenses.ts (fetch + save + hash)
+                     new: cog.ts (TIFF/IFD reader + tile maths), tile-bytes.ts, pg.ts (SPIKE_PG_URL, capability check,
+                     session settings, bytes), jung.ts, e1-pip.ts, e2-point.ts, e3-zonal.ts (E3, E3b), e3c-methods.ts,
+                     e4-clip.ts, grown-data.ts, licenses.ts (fetch + save + hash)
 src/                 copied: engine.ts, sql.ts, format.ts, cards.ts, assets.ts, runner-page.ts, runner.html,
                      setup.sql (byte-identical to 002's `setup` block)
                      new: setup-grown.sql, pg-setup.sql, pip-page.ts + pip.html, raster-page.ts + raster.html
@@ -397,17 +423,18 @@ baseline/            exists
 
 - **Status:** `ran | spike-table | untested: <reason>`.
   - `ran`: reads only today's public data: the A1 setup tables built from `/v1/species.parquet`, or the owner's COG read live.
-  - `spike-table`: reads at least one table listed in `<spike>/data/spike-tables.json` (name → engine, file, source URL, license, built by). The registry lists `countries` (still A1's draft until B1 publishes it), every grown table, and every `learn_spatial` table, including the synthetic IUCN stand-in (T8).
+  - `spike-table`: reads at least one table listed in `<spike>/data/spike-tables.json` (name → engine, file, source URL, license, built by). The registry lists `countries` (still A1's draft until B1 publishes it), every grown table, and every `learn_spatial` table, including the synthetic IUCN stand-in (T8) and the in-db habitat clips (below).
+  - **Few live COG reads:** each raster lesson has exactly one `ran` block that reads the COG out-db over `/vsicurl` (the lesson's point: "this reads a 3.64 GB file by ranges"). Its other blocks read in-db clips that `pg-setup` loads from `<spike>/clips/*.cog.tif` with `ST_FromGDALRaster` (F12), so they're `spike-table` and don't touch S3. Verification names S3 as a dependency of those few `ran` blocks; the ETag check below makes a changed file fail loudly.
 - **Engine:** a new optional header, `-- engine: duckdb | postgis` (default `duckdb`). One engine per block; where spellings differ, the lesson shows a PostGIS block and a DuckDB block side by side.
   - **duckdb** (headless Chromium, A1's engine):
     - Boot runs `LOAD spatial` from the spike mirror (autoinstall/autoload off, signatures on), then `setup.sql` (must equal 002's `setup` block, checked as in A1), then `setup-grown.sql` (must equal 003's `setup-grown` block).
-    - Labels: `getTableNames` plus the whole-word test over the registry's names (A1's `mentionsCountries`, generalised).
   - **postgis** (postgres.js on `SPIKE_PG_URL`):
-    - One connection per run, with `SET search_path = learn_spatial, public`, `postgis.gdal_enabled_drivers = 'GTiff COG'`, `postgis.enable_outdb_rasters = on` and `statement_timeout = '60s'` (A1's block timeout). The lessons show these lines in their own setup block, which runs as `-- status: ran` too.
-    - `pg-setup.sql` (= 003's `pg-setup` block) builds `learn_spatial` from the same `data/` files the browser reads, so both engines see the same rows.
+    - One connection per run. On connect, `pg.ts` runs F1's **capability check** (`SELECT postgis_raster_lib_version()`, then `SET postgis.enable_outdb_rasters = on` and `SET postgis.gdal_enabled_drivers = 'GTiff COG'`, then assert both with `SHOW`) and refuses the run with the `SHOW` values if it fails. Then `SET search_path = learn_spatial, public` and `statement_timeout = '60s'` (A1's block timeout).
+    - 003's PostGIS setup block (`-- q: pg-session`, `-- status: ran`) shows the same lines, ending in a `SELECT` that returns both `SHOW` values, so a learner sees "on" and "GTiff COG" or knows the lesson won't work; the text says why (F1).
+    - `pg-setup.sql` (= 003's `pg-setup` block) builds `learn_spatial` from the same `data/` files the browser reads, so both engines see the same rows. Node passes file bytes as parameters (F12).
     - Each block runs inside `BEGIN … ROLLBACK`, statement by statement with A1's splitter.
-    - Labels: relation names from `EXPLAIN (FORMAT JSON)` for each query, plus the word test.
     - Values map to A1's `Result`: int8 to bigint, numeric to text, float8 to number. A `geometry`, `raster` or `bytea` column fails the run; the SQL must render it (`ST_AsText`, `round`).
+  - **Labels (both engines):** the whole-word test over the registry's names (A1's `mentionsCountries`, generalised), plus DuckDB's `getTableNames` where A1 already uses it. No `EXPLAIN` scan (KISS).
 - **ERD:** `--erd plans/003-learn-erd.mmd` runs A1's drift check against the DuckDB catalog after both setups. One rule is added: every entity and every line of `plans/002-learn-erd.mmd` appears in 003's ERD unchanged (no renames, no changed columns).
   - A1's parser accepts only its subset. Extend it only where the grown schema needs it: a `||--o|` line where the child's foreign key is also its primary key or unique, as in `country_shapes` (S).
 - **Determinism:** A1's rules (no `random`/`now`/`current_date`; `ORDER BY` a unique key or one row). Recorded floats are rounded in SQL. PostGIS blocks that read the COG are deterministic as long as the file's ETag stays `"975827817c839f73a5ee49d2791393a4-212"`. The runner records the ETag in the log header and fails if it changed.
@@ -423,7 +450,7 @@ Common to all:
 
 **E1. Point-in-polygon in the browser** (`pip.html`, `e1-pip.ts`):
 - **Shapes:** `data/v1/country_shapes.parquet` (`country_code`, WKB geometry) from Natural Earth 10m admin-0, chosen per code by A1's matching rule (002 §6). A 50m version too, to compare size and memory.
-- **Points:** `data/v1/occurrences.parquet`, a small open sample: GBIF `occurrence/search` for 3 species, at most 300 records each, `license` CC0_1_0 or CC_BY_4_0, `hasCoordinate=true`, `hasGeospatialIssue=false`, `occurrenceStatus=PRESENT`, at most 2 requests a second. The raw responses are saved, and each row keeps `gbifID`, `datasetKey`, `license`, lon/lat and GBIF's own `countryCode`.
+- **Points:** `data/v1/occurrences.parquet`, a small open sample: GBIF `occurrence/search` for 3 species fixed by `species.id` (chosen at the step, recorded in the README with their `ids.gbif`), at most 300 records each, with the repo's `OCCURRENCE_FILTERS` (`scripts/ingest/gbif.ts:26-29`, copied, not imported) plus `checklistKey` and `taxonKey` as in `occurrenceSearchUrl`, at most 2 requests a second. Every request URL and response goes in `downloads/gbif-sample/` and `downloads/SOURCES.md`, so the sample is reproducible and mission D's ingest uses the same query (F9). Each row keeps `gbifID`, `datasetKey`, `license`, lon/lat and GBIF's own `countryCode`. It stays in the spike (not published).
 - **Query:** `ST_Contains(c.geom, ST_Point(o.longitude, o.latitude))`, counts per country, set against GBIF's `countryCode` (agree, disagree, no polygon: the coastline-precision lesson). The same SQL runs in PostGIS on `learn_spatial` and must give the same counts.
 - **Records:** extension bytes and `LOAD` time; file bytes; query time; peak memory; screenshot.
 - **Fallbacks:** WKB in Parquet won't load as geometry → GeoJSON text plus `ST_GeomFromGeoJSON`, then WKT. Memory with 10m shapes over A1's 700 MB budget → 50m shapes (the code gaps A1 listed: GI, BV, UM) or shapes simplified at prep time.
@@ -449,13 +476,23 @@ Common to all:
      3. `ST_Area(geom::geography)` and `ST_Area(ST_Transform(geom, 6933))` for the polygon itself;
      4. after `ST_Transform(rast, 6933, 'NearestNeighbor')`, cells × the new pixel area.
 - **Records:** the Mercator overstatement (sec²φ: about 1.035 at 10.5° N, about 4 at 60°) for the "why projection matters" lesson; bytes; time; a check against TiTiler `/cog/statistics?categorical=true` for the same polygon.
-- **E3b (S):** can PostGIS read an overview out-db? Use an empty raster at k × 103.02 m pixels over the same file. If GDAL's downsampled read picks the ÷k overview, bytes ≈ that overview's tiles; else ≈ full resolution, or PostGIS refuses. This decides how build-time summaries are computed (§5, option c). Fallback: geotiff.js in Node reads overview tiles directly.
+- **E3b (S): can PostGIS read an overview out-db? Judged by values, never by bytes alone.** PostGIS's out-db loader may read `width × height` full-resolution pixels from an offset computed at the raster's own scale, so a coarse window can silently return the wrong block with small bytes (Fable). Attempts, each at ÷8 and ÷1024:
+  1. an empty raster at k × 103.02 m pixels over the polygon's bbox, out-db band on `/vsicurl/…`;
+  2. the overview opened as its own dataset, `GTIFF_DIR:<n>:/vsicurl/…` (S: GDAL gives an overview IFD no georeferencing, so the window is built in pixel coordinates).
+  - **Reference:** geotiff.js in Node reads the same ÷k window (`getImage(n)`, `readRasters({ window })`), an independent reader. At ÷1024 both must also equal F3's histogram of the single tile (the whole level).
+  - **Pass** only if the full class histograms are equal and 100 grid-sampled cells are equal. Any difference, an error or a refusal means **"PostGIS can't read overviews"**: overview reads then go through geotiff.js only (in Node; in PostGIS as `ST_SetValues` windows, F12). Bytes and time are recorded either way.
+- **E3c: what each summary method gets wrong** (Astra 3). For E3's two polygons, area per class three ways, each with its resolution and rule written next to it:
+  1. full-resolution COG count × (103.02 · cos φ_row)² (the E3 reference; it inherits the COG's unrecorded reprojection);
+  2. ÷8 and ÷16 overview counts × k² × (103.02 · cos φ_row)², read by E3b's validated path. A nearest-neighbour overview keeps one pixel per k × k block, so this is a 1-in-k² sample: it can miss or inflate small, thin or patchy classes (rivers, urban, mangroves);
+  3. Jung v004 `lvl2_frac_1km_ver004` (F3): Σ (fraction × geodesic cell area) per class, cells assigned by centre point in the polygon. This keeps the 100 m map's proportions inside each 1 km cell; its error sits in the border cells, reported as their share of the total.
+  - **Access:** Range-fetch only the zip members whose class occurs in method 1's histogram, each member whole (offsets from F3's central directory, at most 60.2 MB each), inflate with Python's `zlib` (`-I`), read windows with geotiff.js, and clip in PostGIS via `ST_SetValues` (F12). Self-check: per land cell, the fetched classes' fractions must sum to the full scale (S: the scale, F3). A shortfall names the missing classes. Each member's CRC-32 must equal the central directory's; members are deleted after the run, their sha256 recorded.
+  - **Records:** per class, the absolute and relative difference of methods 2 and 3 from method 1; classes under 1% of the polygon flagged; bytes and time. 003 §5 states each method's resolution, rule and measured error. Published numbers are labelled **estimated**, never "true area".
 
 **E4. Browser raster read of a PostGIS-cut COG clip** (`e4-clip.ts`, `raster.html`):
 - **Cut:** one region (Costa Rica, `CR`, a species code today) with `ST_AsGDALRaster(ST_Clip(rast, geom), 'COG', ARRAY['COMPRESS=DEFLATE', 'BLOCKSIZE=256', 'RESAMPLING=NEAREST'])`. Set nearest-neighbour explicitly, since the COG driver's default overview resampling isn't nearest for unpaletted data (S). The `bytea` is written to `clips/cr.cog.tif`.
 - **Validate** with `cog.ts`: ghost area `LAYOUT=IFDS_BEFORE_DATA`, tiles, overviews, EPSG:3857, nodata 0, and `OVR_RESAMPLING_ALG=NEAREST`. Its codes must be a subset of the full-file histogram. 100 grid-sampled cells must equal PostGIS `ST_Value`.
 - **Serve and read:** `site/learn/spike-data/cr.cog.tif`, same-origin on Caddy :3102. The page bundles geotiff.js with esbuild and runs `fromUrl`, `getImageCount`, `getImage(i)` (full resolution and one overview), then `readRasters({ window })` for a 256 × 256 window. It draws a class histogram table and a canvas preview. Screenshots at 1280 and 375 px.
-- **Records:** per-request bytes and Range from Caddy's log; the clip's file size; time; memory.
+- **Records:** per-request bytes and Range from Caddy's log; the clip's file size; time; memory. The clip is research evidence and stays in `<spike>` (T7's gate decides what D may publish).
 - **Check:** a Range request gets 206 with `Content-Range` and no `Content-Encoding` under the live block's `encode zstd gzip` (S). If Caddy mishandles it, record it as a control-room item, not a spike workaround.
 - **Option (a) price:** the same reads with geotiff.js in Node against S3 (counting `fetch`) show what a browser would pay if the bucket sent CORS, including whether geotiff.js loads F2's 6.9 MB tile index whole.
 
@@ -465,18 +502,27 @@ Common to all:
   - A1's six tables and the view are unchanged.
   - New tables go in `setup-grown.sql`, each created after the tables it points at; no `DROP`; foreign keys only in `CREATE TABLE` (002 §2). Mission C merges it into `setup.sql`.
   - New `sources` rows come from each new file's own source block, inserted before the tables that cite them, the way A1's countries attribution entry works (002 §6 "Credit"). Species files are never edited.
+  - **Every new table and derived field names its credit**: an entry in `scripts/build/sources.ts` (`SOURCES`, verbatim citation, `LICENSE_URLS`) and the `fields` it covers in `dist/v1/attribution.json`, so the build's existing checks (unknown source fails; registered but uncited fails, `scripts/build/attribution.ts:52-58`) cover the new files too. Mission C/D add the entries.
+- **Raster-derived data is ingest output, never build work** (`AGENTS.md`: the build is offline and loads only `data/`). The brief's "summaries computed at build time" option becomes "computed at ingest, committed"; 003 §5 says why. Mission D adds `pnpm ingest habitat`:
+  - **Input:** Jung v004 `lvl2_frac_1km_ver004.zip` by its Zenodo URL, downloaded whole into a temp dir outside the repo, md5 checked against the record (F3), deleted after. Not the owner's COG, whose provenance is unconfirmed (T7). Shapes: the committed Natural Earth file, by sha256.
+  - **Output, committed:** `data/raw/habitat/snapshot.json`, keys sorted, one UTC `retrieved`, with `source` (Zenodo record 4058819, version `004`, file name, md5, license `CC BY 4.0`; or, when the input is the COG, its URL, ETag and confirmed version), `method` (resolution 0.0099157°, EPSG:4326, Σ fraction × geodesic cell area, centre-in-polygon assignment, rounding, the shapes' sha256, the gbif snapshot's `retrieved`) and the values. Clips (option b), if chosen, go in `data/raw/habitat/clips/<cc>.cog.tif` with their sha256 in the snapshot and the same provenance.
+  - **Derive** validates it and refuses it as stale (`run pnpm ingest habitat`) when the shapes' sha256 or the gbif `retrieved` differ, or a code isn't in `habitat_classes`. **Build** only loads the derived file and copies clips.
+  - **Cost, one-off per refresh:** 695 MB at most from Zenodo (no owner egress), about 79 layers of 659 M cells, most of them nodata; time from E3c, scaled. Full resolution from the COG is out (2.25 GB of the owner's egress, 151 G cells on 2 CPUs; F2). The COG's ÷8 level (97 MB, 824 m, a 1-in-64 sample) is the documented fallback only if v004 can't be read, labelled as such.
+  - **Tool** (PostGIS via `ST_SetValues` windows, F12, or Node alone): mission D's architecture picks it from E3c's timings. An ingest that uses PostGIS runs F1's capability check, and needs a superuser session or `GRANT SET ON PARAMETER` for its role (a control-room change).
 - **Candidates** (section 1's ranking picks the final set; names follow 002 §2's conventions):
 
-  | Table | Keys | Fed by |
-  |---|---|---|
-  | `traits`, `species_traits` | exactly 002's shapes (F4); one source per trait | AnAge, AmphiBIO, a Testudines source (license permitting) |
-  | `habitat_classes` | `code` PK, `level1_code` FK → itself (NULL for level 1), `name` | Jung's legend, from Jung's CC BY files (never iucnredlist.org) |
-  | `country_habitats` | (`country_code`, `habitat_code`) PK, both FK; `cells`, `area_km2` (true area) | build-time summary from the COG (§5, option c) |
-  | `country_shapes` | `country_code` PK/FK → `countries`; `geom` | Natural Earth (public domain) |
-  | `occurrences` | `id` (gbifID) PK; `species_id` FK; `country_code` FK, nullable; lon/lat; `year`; `license`; `dataset_key`; `habitat_code` FK, nullable (Jung sampled at the point) | GBIF CC0/CC BY, capped per species |
-  | `ecoregions`, `biomes` | `ecoregions.biome_id` FK (3NF: RESOLVE repeats the biome name per row) | RESOLVE 2017 |
-  | `tree_nodes` | `id` PK, `parent_id` FK → itself, `species_id` UNIQUE FK, nullable | Open Tree (license permitting) |
-  | `species_names` | (`species_id`, `language`) PK | Wikidata (CC0) |
+  | Table | Keys | Fed by | Credit (`SOURCES` entry → fields) |
+  |---|---|---|---|
+  | `traits`, `species_traits` | exactly 002's shapes (F4); one source per trait | AnAge, AmphiBIO, a Testudines source (license permitting) | per trait: its dataset → `species_traits.value` |
+  | `habitat_classes` | `code` PK, `level1_code` FK → itself (NULL for level 1), `name` | v004's legend (code zip; never iucnredlist.org) | Jung et al. 2020 v004 → `name` |
+  | `country_habitats` | (`country_code`, `habitat_code`) PK, both FK; `est_area_km2` (estimated; the method lives in the source entry, never "true area") | `ingest habitat` (above) | Jung v004 + Natural Earth → `est_area_km2`, with critwire's method note |
+  | `country_shapes` | `country_code` PK/FK → `countries`; `geom` | Natural Earth (public domain) | Natural Earth, version pinned → `geom` |
+  | `occurrences` | `id` (gbifID) PK; `species_id` FK; `country_code` FK, nullable; lon/lat; `year`; `license`; `dataset_key`; `habitat_code` FK, nullable | GBIF CC0/CC BY, capped per species, sampled in `ingest gbif` with the countries filters (F9); `habitat_code` from `ingest habitat` | GBIF.org + the derived-dataset DOI → the row (`license`, `dataset_key` per row); Jung v004 → `habitat_code` |
+  | `ecoregions`, `biomes` | `ecoregions.biome_id` FK (3NF: RESOLVE repeats the biome name per row) | RESOLVE 2017 | RESOLVE (CC BY 4.0) → names, `geom` |
+  | `tree_nodes` | `id` PK, `parent_id` FK → itself, `species_id` UNIQUE FK, nullable | Open Tree (license permitting) | Open Tree synthesis version → the tree |
+  | `species_names` | (`species_id`, `language`) PK | Wikidata (CC0) | Wikidata → `name` |
+
+- **`occurrences.habitat_code`** is "the most common level-2 class in the record's 1 km cell (Jung v004 fractional layers)". It claims no 100 m precision for a point record, and it comes from the identified release. Docs and lessons name it that way. A country's share of a class is computed in SQL from `est_area_km2` (a window-function lesson), never stored.
 
 - **No species–habitat "preference" table:** which habitats a species uses comes from IUCN assessments, which is Red List data and never allowed. critwire's honest version is "habitat class at open-record points" (`occurrences.habitat_code`), named as such.
 - PostGIS-only learner-side objects (raster windows, `my_ranges`) aren't critwire's schema. §4 lists them in text, outside the ERD.
@@ -489,18 +535,22 @@ Common to all:
 | points, polygons, CRS; `ST_Contains`/`ST_Intersects`; spatial joins | browser, DuckDB `spatial` (E1), with PostGIS spellings beside it | self-hosted, no server; F5 differences called out |
 | distance and area | browser, with the spheroid functions' lat/lon order (F5) | |
 | why projection matters | browser (vector areas in 3857 vs 6933 vs spheroid) + PostGIS raster cell areas (E3) | the Antarctica overcount in F3 is the hook |
-| raster value at a point; zonal statistics | learner's own PostGIS (E2, E3), on a critwire-hosted clip or the owner's COG (owner's choice, §8); a browser companion reads the clip with geotiff.js (E4) and SQL runs on `country_habitats` | no raster in DuckDB (F5) |
+| raster value at a point; zonal statistics | learner's own PostGIS (E2, E3) after the `pg-session` capability check (T3), reading over `/vsicurl/` a critwire-hosted clip, the learner's own v004 download from Zenodo (CC BY 4.0), or the owner's COG (only once its provenance is confirmed, T7, and the owner allows the egress, §8); a browser companion reads the clip with geotiff.js (E4); browser SQL runs on the committed `country_habitats` (T5, ingest output) | no raster in DuckDB (F5) |
 | IUCN ranges vs records | learner's own PostGIS with their own download (T8) | IUCN terms |
+
+Zonal statistics lessons say what resolution they read and that a coarse overview is a sample (E3c); the area numbers they show are labelled estimated.
 
 #### T7. Identifying Jung's version and level (`jung.ts` → `out/jung/`)
 
 1. **Level:** 2 (F3), confirmed on the ÷256 overview (9 tiles) as well as the ÷1024 one.
-2. **Per-version code lists:** download the code zips (v002/v002_v2 339,590 B; v003 350,397 B; v004 2,149,859 B) and extract any legend or class table. Read each lvl2 composite zip's central directory with one Range request on its last 64 KB (names and sizes inside; never the 2.3–2.5 GB body).
-3. **Compare** the COG's code set (÷256 overview plus the E2/E3 windows) with each version's list. A version whose list lacks a code in the COG is excluded.
-4. **Decide:**
-   - If the CC BY-NC versions (001, 002) are excluded, the license is CC BY 4.0. The exact version for the citation is then the owner's answer (§8, plus a handoff item with `Blocks: nothing`), and the credit says "Jung et al. 2020, version 00X".
-   - If an NC version can't be excluded, the raster counts as **not hostable** until the owner confirms (decision rule), and §5 says so.
-- Class labels come from Jung's legend (CC BY), cited to Jung, never from iucnredlist.org.
+2. **Per-version code lists:** download the code zips (v002/v002_v2 339,590 B; v003 350,397 B; v004 2,149,859 B) and extract any legend or class table, plus the fraction-value scale (F3, S). Read each lvl2 composite zip's central directory with one Range request on its last 64 KB, and inflate the first 64 KB of its single tif (one more Range request) for the header: size, pixel, CRS, nodata, GDAL metadata. Never the 2.3–2.5 GB body.
+3. **Exclude:** a version whose code list lacks a code in the COG (÷256 overview plus the E2/E3 windows), or whose header contradicts the COG (e.g. a different nodata or data type), is excluded. A match only fails to exclude (F3).
+4. **The provenance gate (decides what may be published):**
+   - **Confirmed** = the owner states which Zenodo version and file the COG was made from, and how it was reprojected and resampled, **and** step 3 doesn't exclude that version. Only then may mission D publish anything cut or computed from the COG (clips, summaries, lessons that send learners to the bucket), credited "Jung et al. 2020, version 00X, reprojected to EPSG:3857 by <who>".
+   - **Otherwise** critwire publishes raster-derived data only from **v004 by URL** (Zenodo 4058819, CC BY 4.0, md5 checked, F3): summaries and point classes from the 1 km fractional layers (T5); clips, if chosen, cut from the v004 composite (a one-off 2.45 GB download in mission D, outside the repo, md5 checked; it can't be read by Range). This is D's default, so the owner's answer is a §8 item, not a handoff item (the brief: a handoff item only when the mission can't finish).
+   - If step 3 can't exclude the CC BY-NC versions (001, 002), §5 also says the COG itself counts as not hostable (decision rule).
+   - The spike may read the COG for research (E2–E4); its clips stay in `<spike>`.
+- Class labels come from v004's legend (CC BY), cited to Jung, never from iucnredlist.org.
 
 #### T8. IUCN (no IUCN data anywhere)
 
@@ -531,9 +581,12 @@ Common to all:
 - **C** builds the non-geometry datasets section 1 ranks top: ingest → snapshot → derive → `/v1` files, with attribution entries, the grown tables, the ERD update, the grown-data lessons, F4's lesson 16 change, and E2E.
 - **D** builds the spatial track:
   - vendoring `spatial` (owner's choice §8: commit about 23.6 MB per DuckDB version, or a pinned, sha256-checked fetch);
-  - the geometry files, the occurrence sample (with the GBIF DOI refresh), and the habitat summaries or clips per the owner's raster choice;
+  - the geometry files; the occurrence sample, drawn in `ingest gbif` with the countries filters so `contributions.json` and the DOI don't change because of it (F9);
+  - `pnpm ingest habitat` (T5): summaries and point classes from Jung v004's 1 km fractional layers, committed under `data/raw/habitat/` with version, file, md5, method and estimated-area labels; the build stays offline and only loads them. Clips per the owner's raster choice, committed the same way;
+  - the provenance gate (T7): nothing cut or computed from the owner's COG is published unless its provenance is confirmed; the default is v004 by URL;
+  - attribution entries for every new table and derived field (T5);
   - browser spatial lessons with E2E;
-  - PostGIS lessons as "run it in your own PostGIS" pages, kept working by a script that runs their SQL against `critwire_dev` (D's architecture designs it; the raster parts need a superuser, F1).
+  - PostGIS lessons as "run it in your own PostGIS" pages, kept working by a script that runs their SQL against `critwire_dev` (D's architecture designs it). It starts with F1's capability check and refuses to run if it fails; the raster parts need a superuser session or `GRANT SET ON PARAMETER` (F1). Postgres can't read the checkout (F12).
 - **Order:** C before D. D uses C's tables only where §7 says so.
 
 #### T10. Section 8 items the design already raises (each with a recommendation and its cost)
@@ -541,13 +594,15 @@ Common to all:
 - **Datasets to add first:** section 1's top three.
 - **Browser access to the raster:**
   - **Expected recommendation:** (c) precomputed summaries, plus (b) small regional clips hosted on critwire, with credit. No server, a few MB, nothing billed to the owner.
+    - (c) is computed once by `pnpm ingest habitat` and committed under `data/` (T5), never by the build. Its price: up to 695 MB from Zenodo per refresh, the time E3c measures, and the error E3c measures, stated beside the numbers.
+    - (b)'s clips are ingest output too, cut from the COG only if its provenance is confirmed (T7), else from the v004 composite (a one-off 2.45 GB download).
   - (a) bucket CORS: an S3 CORS rule (`AllowedOrigins https://critwire.com`, `AllowedMethods GET HEAD`, `AllowedHeaders Range`, `ExposeHeaders Content-Range Content-Length ETag Accept-Ranges`), with egress on the owner's AWS at E4's measured per-learner bytes.
   - (d) TiTiler: CORS works (F7), but it's a server outside critwire, with cold starts of about 4 s and the owner's Lambda costs.
   - The spike's numbers decide.
-- **Learner-side PostGIS raster lessons:** whether they may read the owner's bucket (egress per learner at E2/E3 bytes) or only critwire's clip.
+- **Learner-side PostGIS raster lessons:** whether they may read the owner's bucket (egress per learner at E2/E3 bytes; only after provenance is confirmed) or only critwire's clip and their own v004 download.
 - **Committing the `spatial` extension:** about 23.6 MB per DuckDB upgrade (A1 §10 item 11).
-- **The Jung version,** if T7 can't settle it.
-- **Publishing occurrence points:** a new public file, plus a GBIF DOI refresh whenever the counts change.
+- **The COG's provenance** (T7): which Zenodo version and file `habitat_cog.tif` was made from, and how it was reprojected. Recommendation: answer it if known, since it lets D cut clips from the COG; otherwise D uses v004 by URL and loses nothing but the 2.45 GB download for clips.
+- **Publishing occurrence points:** a new public file. It changes no DOI counts by itself when sampled as F9 says; the usual refresh applies when `ingest gbif` changes the counts.
 - **Whether to send the IUCN request.**
 - **WDPA and IUCN stay learner-download only.** WorldClim and CHELSA depending on their quoted terms.
 
@@ -557,13 +612,18 @@ Common to all:
 |---|---|
 | `LOAD spatial` or WKB geometry fails in WASM v1.5.6 | GeoJSON text plus `ST_GeomFromGeoJSON` (json extension, 0.8 MB); if spatial itself fails, those lessons move to the learner's PostGIS and §4 says so |
 | 10m shapes exceed the 700 MB memory budget at 4× | 50m or prep-time simplified shapes; record the size and memory of each |
-| PostGIS can't read overviews (E3b) | build-time summaries from overview tiles via geotiff.js in Node (reading only) |
+| A raster `SET` is refused or ineffective (F1) | `pg.ts` refuses the run with the `SHOW` values; nothing runs with outdb off. Fix the connection (superuser socket), never `ALTER` |
+| PostGIS can't read overviews: any value or histogram mismatch in E3b, an error or a refusal | overview reads go through geotiff.js (Node, or `ST_SetValues` windows in PostGIS); §4's PostGIS lessons read full resolution on small polygons only |
+| E3c's fetched classes don't sum to the full fraction scale | fetch the missing members it names; if the scale can't be read (F3, S), record it and give E3c only relative differences |
+| Zenodo refuses `Range`, or a member's CRC-32 doesn't match | record it; E3c downloads the whole zip once into `downloads/` (695 MB, md5 checked, deleted after; within the 2 GB budget) |
+| The COG's provenance stays unconfirmed (T7) | the default: v004 by URL for everything published; §8 records the question |
+| PostGIS can't open a local file (F12) | pass bytes (`ST_FromGDALRaster`, `ST_SetValues`); never `chmod` |
 | `ST_AsGDALRaster(…, 'COG')` fails or isn't a valid COG | `'GTiff'` with `TILED=YES`, `COMPRESS=DEFLATE`; geotiff.js reads tiled GeoTIFF too; record |
 | Clip overviews come out non-nearest | `RESAMPLING=NEAREST`; the codes-subset check catches it |
 | geotiff.js loads the whole 6.9 MB tile index from S3 | price it into option (a); critwire-hosted clips don't have the problem |
 | S3 unreachable, or the COG's ETag changed | experiments fail loudly; record it; the runner refuses a changed ETag (T3) |
 | IUCN archive unreadable | mark quotes unverified; handoff item (`Blocks: nothing`) |
-| Jung version not determinable | §8 item plus handoff; hostability by the decision rule |
+| Jung version not determinable | §8 item (no handoff: D defaults to v004); the COG's hostability by the decision rule |
 | A license is unclear | not hostable, said so in §1 |
 | Spike over 2 GB | delete extracted zips; clips only |
 | `pnpm build` changes, or `critwire_dev` is broken by spike objects | guard each step: `dist/` hash list compare (Baseline) and schema isolation (F11) |
@@ -572,25 +632,34 @@ Common to all:
 #### T12. Work units, in order (each sized for one session; the planner turns them into Steps)
 
 1. **Scaffold:** copy A1's pieces with provenance, pins, install (record build scripts), `build-site` with the spatial mirror, `serve`. Then `run-queries` on a skeleton 003 holding the `setup` block and one A1 lesson block, whose result must equal 002's (proves the copy).
-2. **COG and Jung:** `cog.ts`, `tile-bytes.ts` (index download), T7.
-3. **PostGIS:** `learn_spatial`, `pg.ts` (session and byte counters), E2 and E3 (with E3b).
-4. **E4:** the clip cut and validation, the browser read, the S3 price via geotiff.js in Node.
-5. **E1:** shapes and the GBIF sample to Parquet, the browser point-in-polygon, the PostGIS cross-check.
-6. **Licenses I:** Natural Earth (admin-1, physical), RESOLVE, Jung, AnAge, AmphiBIO, EltonTraits, PanTHERIA, COMBINE, the Testudines source.
-7. **Licenses II:** Wikidata, Open Tree, GBIF (via Wayback), WorldClim, CHELSA, WDPA. Sizes, join keys, the ranking.
-8. **IUCN:** T8 evidence, the four cases, the draft request (003 §6).
-9. **Grown schema:** `setup-grown.sql` and stand-in data, `plans/003-learn-erd.mmd`, render, `--erd` (003 §2).
-10. 003 §1 write-up and §3 grown-data lessons.
-11. 003 §4 spatial lessons, first half.
-12. 003 §4 spatial lessons, second half, plus the IUCN lessons (on the synthetic stand-in).
-13. 003 §5, the raster options with measured costs.
-14. The C and D briefs, and 003 §7.
-15. 003 §8, a completeness pass (every block run, every dataset quoted), and the Summary inputs.
+2. **COG and Jung:** `cog.ts`, `tile-bytes.ts` (index download), T7 (code lists, composite headers, the exclusion test, the gate's inputs for §5/§8).
+3. **PostGIS:** `learn_spatial`, `pg.ts` (capability check first, then session settings and byte counters), E2 and E3.
+4. **Overviews and methods:** E3b (value-checked against geotiff.js) and E3c (the three area methods, v004 members by Range).
+5. **E4:** the clip cut and validation, the browser read, the S3 price via geotiff.js in Node.
+6. **E1:** shapes and the GBIF sample to Parquet, the browser point-in-polygon, the PostGIS cross-check.
+7. **Licenses I:** Natural Earth (admin-1, physical), RESOLVE, Jung, AnAge, AmphiBIO, EltonTraits, PanTHERIA, COMBINE, the Testudines source.
+8. **Licenses II:** Wikidata, Open Tree, GBIF (via Wayback), WorldClim, CHELSA, WDPA. Sizes, join keys, the ranking.
+9. **IUCN:** T8 evidence, the four cases, the draft request (003 §6).
+10. **Grown schema:** `setup-grown.sql` and stand-in data, `plans/003-learn-erd.mmd`, render, `--erd` (003 §2).
+11. 003 §1 write-up and §3 grown-data lessons.
+12. 003 §4 spatial lessons, first half.
+13. 003 §4 spatial lessons, second half, plus the IUCN lessons (on the synthetic stand-in).
+14. 003 §5: the raster options with measured costs, each summary method's resolution, rule and measured error, the ingest design (T5) and the provenance gate (T7).
+15. The C and D briefs, and 003 §7.
+16. 003 §8, a completeness pass (every block run, every dataset quoted), and the Summary inputs.
 
 ### Rejected alternatives
 
 - PGlite with `pglite-postgis` for PostGIS-exact browser lessons: 18.8 MB, experimental, no raster; A1 already rejected PGlite on memory.
-- `ALTER ROLE critwire` / `ALTER DATABASE critwire_dev SET postgis.*`: persistent config for a spike; a superuser session is contained (F1).
+- `ALTER ROLE critwire` / `ALTER DATABASE critwire_dev SET postgis.*` / `GRANT SET ON PARAMETER` in `critwire_dev`: persistent config for a spike; a superuser session is contained (F1). The grant is what learners are offered (their own server).
+- Computing habitat summaries or clips in `pnpm build`: the build is offline and loads only `data/` (`AGENTS.md`); they're ingest output (T5).
+- Worldwide summaries from the COG at full resolution: 2.25 GB of the owner's egress and 151 G cells on 2 CPUs per refresh (F2).
+- Publishing nearest-overview counts as area: an overview keeps 1 pixel in k², so small and patchy classes are off (E3c); the 1 km fractional layers keep proportions per cell.
+- Calling the COG's version settled from class codes: codes only exclude (F3); the gate needs the owner's statement, else v004 by URL (T7).
+- v004's 100 m composite for the summaries: one 2.59 GB DEFLATE member, no Range access; the fractional layers are 695 MB, per class, and already aggregated.
+- Making the spike or checkout readable by `postgres` (`chmod` on `/srv/critter-ai`): widens a private home; bytes go in by parameter instead (F12).
+- `EXPLAIN (FORMAT JSON)` relation scans for labels: the registry word test suffices for a research doc (KISS, T3).
+- Enabling `VRT` and `MEM` drivers: not needed for any read, transform or COG write here (F1).
 - `raster2pgsql -R` tiling: the binary isn't installed and apt is out of scope; SQL windows do the job.
 - GDAL tracing (`CPL_CURL_VERBOSE`, `GDAL_HTTP_PROXY`, the server log or env): refused by PostGIS or needs a restart (F6).
 - A CORS proxy on the VPS so the spike browser can read S3: a server process that would misstate option (a); Node's geotiff.js measures it directly.
@@ -646,6 +715,29 @@ SHOULD-CONSIDER:
 
 ## Revision notes
 
+Architect, 2026-10-22, one round. All MUST-FIX resolved by design changes; none disputed.
+
+MUST-FIX:
+- **Fable 1 / Astra 1 (offline build):** T5's new block "Raster-derived data is ingest output": `pnpm ingest habitat` (mission D) commits `data/raw/habitat/snapshot.json` (+ clips) with version, file, md5, method, shapes sha256 and gbif `retrieved`. Derive refuses it as stale; the build only loads it. Mirrored in T6, T9 (D), T10 (b)/(c). Priced: F2's new bytes-per-level table; full resolution rejected (2.25 GB egress, 151 G cells); default input is v004's 1 km fractional zip (695 MB from Zenodo, no owner egress); the COG ÷8 (97 MB) is a labelled fallback only. E3c decides the method; E3b only decides which reader handles overviews.
+- **Fable 2 / Astra 2 (E3b by values):** E3b rewritten. It passes only if the class histograms and 100 sampled cells equal geotiff.js's read of the same ÷k window, and ÷1024 equals F3's histogram. Any mismatch, error or refusal means "PostGIS can't read overviews", and geotiff.js takes over. A second attempt via `GTIFF_DIR:` is added (S). T11 row.
+- **Fable 3 (silent `SET`):** F1 now records the facts. Fable's non-superuser drop; a superuser typo accepted silently (checked). F1 also defines the capability check: raster function first, then `SET`, then assert `SHOW` `on` and `COG`. It applies in `pg.ts` (refuses the run, T3), in 003's `pg-session` block with the learner text, in D's lesson script (T9) and in an ingest that uses PostGIS (T5). T11 row.
+- **Astra 3 (overview counts aren't area):** E3c compares, per class, full resolution, ÷8/÷16 (named as a 1-in-k² sample) and v004 1 km fractional (Σ fraction × geodesic cell area; error in border cells). Each method's resolution, rule and measured error goes in 003 §5. `country_habitats.area_km2 (true area)` becomes `est_area_km2` (labelled estimated; method in the source entry). `occurrences.habitat_code` is defined as the most common class in the 1 km cell. T5, T6, T12 unit 14.
+- **Astra 4 (provenance):** F3: codes exclude, never confirm. T7 step 4 is a gate. COG-derived publications need the owner's statement of version, file and processing, plus no exclusion; otherwise everything published comes from v004 by URL (Zenodo 4058819, CC BY 4.0, md5). That's D's default, so it's a §8 item, not a handoff. T9, T10, T11.
+
+New in the revision: **F12** (Postgres can't read `/srv/critter-ai`, so local rasters go in as bytes: `ST_FromGDALRaster` / `ST_SetValues`, both checked).
+
+SHOULD-CONSIDER adopted (all cheap):
+- `GRANT SET ON PARAMETER` offered first to learners. Verified on PG 16 in a rolled-back transaction (F1, T9).
+- VRT/MEM dropped. `'GTiff COG'` covers the out-db read, `ST_Transform`, the COG write and `ST_FromGDALRaster` (F1).
+- E1's sample: species fixed by `species.id`, the repo's `OCCURRENCE_FILTERS`, every URL saved (T4).
+- One live COG `ran` block per raster lesson; the rest read in-db clips (`spike-table`). S3 is named as a Verification dependency (T3).
+- GBIF DOI: the sample is drawn in the same `ingest gbif` run with the countries filters, so it's a subset of `contributions.json`; derive asserts it, and no extra refresh is needed (F9, T5, T9, T10).
+- Credits: a Credit column per new table and derived field, checked by the build's existing source checks (T5).
+- Labels by the registry word test only; no `EXPLAIN` (T3).
+- Astra's "capability checks as a prerequisite": the same as Fable 3.
+
+Declined: none.
+
 ## Steps
 
 ## Verification
@@ -662,5 +754,6 @@ SHOULD-CONSIDER:
 - 2026-10-22 16:17 UTC: Architecture (architect): 12 targets, findings checked live (COG header, PostGIS /vsicurl read = TiTiler value, TiTiler CORS ok, S3 none, IUCN terms via Wayback). `postgis_raster` now installed in `critwire_dev` (Baseline note superseded). Plan-only change; no code touched.
 - 2026-10-22 16:20 UTC: Fable review (architecture-reviewer): APPROVE WITH CHANGES, 3 MUST-FIX (offline build: habitat summaries as committed ingest; E3b validate overview reads by values; load raster lib before SET + assert SHOW). Plan-only.
 - 2026-10-22 16:21 UTC: Astra review: APPROVE_WITH_CHANGES, 4 MUST-FIX (offline build: COG summaries committed in data/; E3b pixel agreement w/ independent reader; overview counts not "true area", define resolution/aggregation; gate publication on confirmed Jung provenance). Plan-only.
+- 2026-10-22 16:35 UTC: Revision (architect): all 5 MUST-FIX resolved (habitat summaries = committed `ingest habitat`, v004 1 km default; E3b value-checked vs geotiff.js; raster fn→SET→assert SHOW; est_area_km2 + E3c error per method; publication gated on Jung provenance), all SHOULD-CONSIDER adopted, new F12 (postgres can't read /srv/critter-ai). Plan-only; no grants left (pg_parameter_acl empty).
 
 ## Summary
