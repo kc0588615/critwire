@@ -2513,13 +2513,13 @@
       "gbif": {
         "records": 2,
         "region": "AFRICA",
-        "speciesRecords": 244,
+        "speciesRecords": 243,
         "coreRegions": [
           "AFRICA"
         ]
       }
     },
-    "reason": "AO has 2 records of 244; kept. Settle with keep or remove in country-overrides.json."
+    "reason": "AO has 2 records of 243; kept. Settle with keep or remove in country-overrides.json."
   },
   {
     "speciesId": 57,
@@ -2532,13 +2532,13 @@
       "gbif": {
         "records": 1,
         "region": "AFRICA",
-        "speciesRecords": 244,
+        "speciesRecords": 243,
         "coreRegions": [
           "AFRICA"
         ]
       }
     },
-    "reason": "BF has 1 record of 244; kept. Settle with keep or remove in country-overrides.json."
+    "reason": "BF has 1 record of 243; kept. Settle with keep or remove in country-overrides.json."
   },
   {
     "speciesId": 57,
@@ -2551,13 +2551,13 @@
       "gbif": {
         "records": 1,
         "region": "AFRICA",
-        "speciesRecords": 244,
+        "speciesRecords": 243,
         "coreRegions": [
           "AFRICA"
         ]
       }
     },
-    "reason": "GH has 1 record of 244; kept. Settle with keep or remove in country-overrides.json."
+    "reason": "GH has 1 record of 243; kept. Settle with keep or remove in country-overrides.json."
   },
   {
     "speciesId": 57,
@@ -2570,13 +2570,13 @@
       "gbif": {
         "records": 1,
         "region": "AFRICA",
-        "speciesRecords": 244,
+        "speciesRecords": 243,
         "coreRegions": [
           "AFRICA"
         ]
       }
     },
-    "reason": "ML has 1 record of 244; kept. Settle with keep or remove in country-overrides.json."
+    "reason": "ML has 1 record of 243; kept. Settle with keep or remove in country-overrides.json."
   },
   {
     "speciesId": 57,
@@ -2589,13 +2589,13 @@
       "gbif": {
         "records": 1,
         "region": "AFRICA",
-        "speciesRecords": 244,
+        "speciesRecords": 243,
         "coreRegions": [
           "AFRICA"
         ]
       }
     },
-    "reason": "NE has 1 record of 244; kept. Settle with keep or remove in country-overrides.json."
+    "reason": "NE has 1 record of 243; kept. Settle with keep or remove in country-overrides.json."
   },
   {
     "speciesId": 57,
@@ -2608,13 +2608,13 @@
       "gbif": {
         "records": 2,
         "region": "AFRICA",
-        "speciesRecords": 244,
+        "speciesRecords": 243,
         "coreRegions": [
           "AFRICA"
         ]
       }
     },
-    "reason": "SD has 2 records of 244; kept. Settle with keep or remove in country-overrides.json."
+    "reason": "SD has 2 records of 243; kept. Settle with keep or remove in country-overrides.json."
   },
   {
     "speciesId": 57,
@@ -2627,13 +2627,13 @@
       "gbif": {
         "records": 1,
         "region": "AFRICA",
-        "speciesRecords": 244,
+        "speciesRecords": 243,
         "coreRegions": [
           "AFRICA"
         ]
       }
     },
-    "reason": "SL has 1 record of 244; kept. Settle with keep or remove in country-overrides.json."
+    "reason": "SL has 1 record of 243; kept. Settle with keep or remove in country-overrides.json."
   },
   {
     "speciesId": 57,
@@ -2646,13 +2646,13 @@
       "gbif": {
         "records": 1,
         "region": "AFRICA",
-        "speciesRecords": 244,
+        "speciesRecords": 243,
         "coreRegions": [
           "AFRICA"
         ]
       }
     },
-    "reason": "TG has 1 record of 244; kept. Settle with keep or remove in country-overrides.json."
+    "reason": "TG has 1 record of 243; kept. Settle with keep or remove in country-overrides.json."
   },
   {
     "speciesId": 57,
@@ -2665,13 +2665,13 @@
       "gbif": {
         "records": 1,
         "region": "AFRICA",
-        "speciesRecords": 244,
+        "speciesRecords": 243,
         "coreRegions": [
           "AFRICA"
         ]
       }
     },
-    "reason": "ZW has 1 record of 244; kept. Settle with keep or remove in country-overrides.json."
+    "reason": "ZW has 1 record of 243; kept. Settle with keep or remove in country-overrides.json."
   },
   {
     "speciesId": 57,
@@ -2684,7 +2684,7 @@
       "gbif": {
         "records": 5,
         "region": "AMERICAS",
-        "speciesRecords": 244,
+        "speciesRecords": 243,
         "coreRegions": [
           "AFRICA"
         ]
@@ -2703,13 +2703,13 @@
       "gbif": {
         "records": 1,
         "region": "AFRICA",
-        "speciesRecords": 5269,
+        "speciesRecords": 5267,
         "coreRegions": [
           "AFRICA"
         ]
       }
     },
-    "reason": "AO has 1 record of 5269; kept. Settle with keep or remove in country-overrides.json."
+    "reason": "AO has 1 record of 5267; kept. Settle with keep or remove in country-overrides.json."
   },
   {
     "speciesId": 58,
@@ -2722,13 +2722,13 @@
       "gbif": {
         "records": 2,
         "region": "AFRICA",
-        "speciesRecords": 5269,
+        "speciesRecords": 5267,
         "coreRegions": [
           "AFRICA"
         ]
       }
     },
-    "reason": "CD has 2 records of 5269; kept. Settle with keep or remove in country-overrides.json."
+    "reason": "CD has 2 records of 5267; kept. Settle with keep or remove in country-overrides.json."
   },
   {
     "speciesId": 58,
@@ -2741,13 +2741,13 @@
       "gbif": {
         "records": 2,
         "region": "AFRICA",
-        "speciesRecords": 5269,
+        "speciesRecords": 5267,
         "coreRegions": [
           "AFRICA"
         ]
       }
     },
-    "reason": "DZ has 2 records of 5269; kept. Settle with keep or remove in country-overrides.json."
+    "reason": "DZ has 2 records of 5267; kept. Settle with keep or remove in country-overrides.json."
   },
   {
     "speciesId": 58,
@@ -2760,13 +2760,13 @@
       "gbif": {
         "records": 1,
         "region": "AFRICA",
-        "speciesRecords": 5269,
+        "speciesRecords": 5267,
         "coreRegions": [
           "AFRICA"
         ]
       }
     },
-    "reason": "EG has 1 record of 5269; kept. Settle with keep or remove in country-overrides.json."
+    "reason": "EG has 1 record of 5267; kept. Settle with keep or remove in country-overrides.json."
   },
   {
     "speciesId": 58,
@@ -2779,13 +2779,13 @@
       "gbif": {
         "records": 1,
         "region": "AFRICA",
-        "speciesRecords": 5269,
+        "speciesRecords": 5267,
         "coreRegions": [
           "AFRICA"
         ]
       }
     },
-    "reason": "NG has 1 record of 5269; kept. Settle with keep or remove in country-overrides.json."
+    "reason": "NG has 1 record of 5267; kept. Settle with keep or remove in country-overrides.json."
   },
   {
     "speciesId": 58,
@@ -2798,13 +2798,13 @@
       "gbif": {
         "records": 2,
         "region": "AFRICA",
-        "speciesRecords": 5269,
+        "speciesRecords": 5267,
         "coreRegions": [
           "AFRICA"
         ]
       }
     },
-    "reason": "TD has 2 records of 5269; kept. Settle with keep or remove in country-overrides.json."
+    "reason": "TD has 2 records of 5267; kept. Settle with keep or remove in country-overrides.json."
   },
   {
     "speciesId": 58,
@@ -2817,7 +2817,7 @@
       "gbif": {
         "records": 11,
         "region": "OCEANIA",
-        "speciesRecords": 5269,
+        "speciesRecords": 5267,
         "coreRegions": [
           "AFRICA"
         ]
@@ -2836,7 +2836,7 @@
       "gbif": {
         "records": 2,
         "region": "EUROPE",
-        "speciesRecords": 5269,
+        "speciesRecords": 5267,
         "coreRegions": [
           "AFRICA"
         ]
@@ -2855,7 +2855,7 @@
       "gbif": {
         "records": 1,
         "region": "ASIA",
-        "speciesRecords": 5269,
+        "speciesRecords": 5267,
         "coreRegions": [
           "AFRICA"
         ]
@@ -2874,7 +2874,7 @@
       "gbif": {
         "records": 32,
         "region": "ASIA",
-        "speciesRecords": 5269,
+        "speciesRecords": 5267,
         "coreRegions": [
           "AFRICA"
         ]
@@ -2893,7 +2893,7 @@
       "gbif": {
         "records": 3,
         "region": "EUROPE",
-        "speciesRecords": 5269,
+        "speciesRecords": 5267,
         "coreRegions": [
           "AFRICA"
         ]
@@ -2912,7 +2912,7 @@
       "gbif": {
         "records": 56,
         "region": "AMERICAS",
-        "speciesRecords": 5269,
+        "speciesRecords": 5267,
         "coreRegions": [
           "AFRICA"
         ]
@@ -3015,13 +3015,13 @@
       "gbif": {
         "records": 2,
         "region": "AFRICA",
-        "speciesRecords": 6675,
+        "speciesRecords": 6663,
         "coreRegions": [
           "AFRICA"
         ]
       }
     },
-    "reason": "AO has 2 records of 6675; kept. Settle with keep or remove in country-overrides.json."
+    "reason": "AO has 2 records of 6663; kept. Settle with keep or remove in country-overrides.json."
   },
   {
     "speciesId": 64,
@@ -3034,13 +3034,13 @@
       "gbif": {
         "records": 2,
         "region": "AFRICA",
-        "speciesRecords": 6675,
+        "speciesRecords": 6663,
         "coreRegions": [
           "AFRICA"
         ]
       }
     },
-    "reason": "CF has 2 records of 6675; kept. Settle with keep or remove in country-overrides.json."
+    "reason": "CF has 2 records of 6663; kept. Settle with keep or remove in country-overrides.json."
   },
   {
     "speciesId": 64,
@@ -3053,13 +3053,13 @@
       "gbif": {
         "records": 1,
         "region": "AFRICA",
-        "speciesRecords": 6675,
+        "speciesRecords": 6663,
         "coreRegions": [
           "AFRICA"
         ]
       }
     },
-    "reason": "NG has 1 record of 6675; kept. Settle with keep or remove in country-overrides.json."
+    "reason": "NG has 1 record of 6663; kept. Settle with keep or remove in country-overrides.json."
   },
   {
     "speciesId": 64,
@@ -3072,13 +3072,13 @@
       "gbif": {
         "records": 1,
         "region": "AFRICA",
-        "speciesRecords": 6675,
+        "speciesRecords": 6663,
         "coreRegions": [
           "AFRICA"
         ]
       }
     },
-    "reason": "SD has 1 record of 6675; kept. Settle with keep or remove in country-overrides.json."
+    "reason": "SD has 1 record of 6663; kept. Settle with keep or remove in country-overrides.json."
   },
   {
     "speciesId": 64,
@@ -3091,13 +3091,13 @@
       "gbif": {
         "records": 2,
         "region": "AFRICA",
-        "speciesRecords": 6675,
+        "speciesRecords": 6663,
         "coreRegions": [
           "AFRICA"
         ]
       }
     },
-    "reason": "SS has 2 records of 6675; kept. Settle with keep or remove in country-overrides.json."
+    "reason": "SS has 2 records of 6663; kept. Settle with keep or remove in country-overrides.json."
   },
   {
     "speciesId": 64,
@@ -3110,13 +3110,13 @@
       "gbif": {
         "records": 2,
         "region": "AFRICA",
-        "speciesRecords": 6675,
+        "speciesRecords": 6663,
         "coreRegions": [
           "AFRICA"
         ]
       }
     },
-    "reason": "TD has 2 records of 6675; kept. Settle with keep or remove in country-overrides.json."
+    "reason": "TD has 2 records of 6663; kept. Settle with keep or remove in country-overrides.json."
   },
   {
     "speciesId": 64,
@@ -3129,7 +3129,7 @@
       "gbif": {
         "records": 4,
         "region": "EUROPE",
-        "speciesRecords": 6675,
+        "speciesRecords": 6663,
         "coreRegions": [
           "AFRICA"
         ]
@@ -3148,7 +3148,7 @@
       "gbif": {
         "records": 2,
         "region": "EUROPE",
-        "speciesRecords": 6675,
+        "speciesRecords": 6663,
         "coreRegions": [
           "AFRICA"
         ]
@@ -3167,7 +3167,7 @@
       "gbif": {
         "records": 4,
         "region": "EUROPE",
-        "speciesRecords": 6675,
+        "speciesRecords": 6663,
         "coreRegions": [
           "AFRICA"
         ]
@@ -3186,7 +3186,7 @@
       "gbif": {
         "records": 7,
         "region": "AMERICAS",
-        "speciesRecords": 6675,
+        "speciesRecords": 6663,
         "coreRegions": [
           "AFRICA"
         ]
@@ -3338,13 +3338,13 @@
       "gbif": {
         "records": 1,
         "region": "AFRICA",
-        "speciesRecords": 718,
+        "speciesRecords": 716,
         "coreRegions": [
           "AFRICA"
         ]
       }
     },
-    "reason": "AO has 1 record of 718; kept. Settle with keep or remove in country-overrides.json."
+    "reason": "AO has 1 record of 716; kept. Settle with keep or remove in country-overrides.json."
   },
   {
     "speciesId": 66,
@@ -3357,13 +3357,13 @@
       "gbif": {
         "records": 2,
         "region": "AFRICA",
-        "speciesRecords": 718,
+        "speciesRecords": 716,
         "coreRegions": [
           "AFRICA"
         ]
       }
     },
-    "reason": "CF has 2 records of 718; kept. Settle with keep or remove in country-overrides.json."
+    "reason": "CF has 2 records of 716; kept. Settle with keep or remove in country-overrides.json."
   },
   {
     "speciesId": 66,
@@ -3376,13 +3376,13 @@
       "gbif": {
         "records": 2,
         "region": "AFRICA",
-        "speciesRecords": 718,
+        "speciesRecords": 716,
         "coreRegions": [
           "AFRICA"
         ]
       }
     },
-    "reason": "MW has 2 records of 718; kept. Settle with keep or remove in country-overrides.json."
+    "reason": "MW has 2 records of 716; kept. Settle with keep or remove in country-overrides.json."
   },
   {
     "speciesId": 66,
@@ -3395,13 +3395,13 @@
       "gbif": {
         "records": 1,
         "region": "AFRICA",
-        "speciesRecords": 718,
+        "speciesRecords": 716,
         "coreRegions": [
           "AFRICA"
         ]
       }
     },
-    "reason": "NG has 1 record of 718; kept. Settle with keep or remove in country-overrides.json."
+    "reason": "NG has 1 record of 716; kept. Settle with keep or remove in country-overrides.json."
   },
   {
     "speciesId": 66,
@@ -3414,13 +3414,13 @@
       "gbif": {
         "records": 1,
         "region": "AFRICA",
-        "speciesRecords": 718,
+        "speciesRecords": 716,
         "coreRegions": [
           "AFRICA"
         ]
       }
     },
-    "reason": "RW has 1 record of 718; kept. Settle with keep or remove in country-overrides.json."
+    "reason": "RW has 1 record of 716; kept. Settle with keep or remove in country-overrides.json."
   },
   {
     "speciesId": 66,
@@ -3433,7 +3433,7 @@
       "gbif": {
         "records": 1,
         "region": "EUROPE",
-        "speciesRecords": 718,
+        "speciesRecords": 716,
         "coreRegions": [
           "AFRICA"
         ]
@@ -3452,7 +3452,7 @@
       "gbif": {
         "records": 2,
         "region": "EUROPE",
-        "speciesRecords": 718,
+        "speciesRecords": 716,
         "coreRegions": [
           "AFRICA"
         ]
@@ -3471,7 +3471,7 @@
       "gbif": {
         "records": 245,
         "region": "AMERICAS",
-        "speciesRecords": 718,
+        "speciesRecords": 716,
         "coreRegions": [
           "AFRICA"
         ]

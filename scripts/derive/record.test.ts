@@ -34,7 +34,7 @@ function input(over: { col?: Partial<RecordInput["col"]>; gbif?: Partial<RecordI
       retrieved: "2026-10-19",
       checklist: { key: "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c", title: "GBIF Backbone Taxonomy", doi: "10.15468/39omei", license: "http://creativecommons.org/licenses/by/4.0/legalcode", pubDate: "2023-08-28" },
       url: "https://api.gbif.org/v2/species/match?checklistKey=d7dddbf4-2cf0-4f39-9b2a-bb099caae36c&scientificName=Emydoidea%20blandingii",
-      id: 2442885, occurrencesUrl: OCC_URL, countries: ["CA", "US"], rangeStatus: "ok",
+      id: 2442885, occurrencesUrl: OCC_URL, countries: ["CA", "US"], rangeStatus: "ok", doi: null,
       ...over.gbif,
     },
   };
@@ -92,6 +92,19 @@ test("S2 no-open-records publishes null, uncited; [] and a status that disagrees
   assert.throws(() => buildRecord(input({ gbif: { countries: null, rangeStatus: "ok" } })), /status ok/);
   assert.throws(() => buildRecord(input({ gbif: { rangeStatus: "no-open-records" } })), /status no-open-records/);
   assert.throws(() => buildRecord(input({ gbif: { occurrencesUrl: null } })), /occurrence/);
+});
+
+test("S3 the derived-dataset DOI goes on the countries entry only; null leaves no doi key; null countries get no entry", () => {
+  const doi = "10.15468/dd.abc123";
+  const r = buildRecord(input({ gbif: { doi } }));
+  assert.deepEqual(r.sources.find((s) => s.source === "GBIF.org occurrence search"),
+    { source: "GBIF.org occurrence search", fields: ["range.countriesWithOpenRecords"], license: "CC BY 4.0", retrieved: "2026-10-19", url: OCC_URL, doi });
+  assert.deepEqual(r.sources.filter((s) => s.doi === doi).map((s) => s.source), ["GBIF.org occurrence search"]);
+  assert.equal("doi" in buildRecord(input()).sources.find((s) => s.source === "GBIF.org occurrence search")!, false);
+  for (const rangeStatus of ["no-open-records", "identity-unsettled"] as const) {
+    const unsettled = buildRecord(input({ gbif: { doi, countries: null, rangeStatus } }));
+    assert.equal(unsettled.sources.some((s) => s.source === "GBIF.org occurrence search" || s.doi === doi), false);
+  }
 });
 
 test("S1 assertCitations throws on a field cited twice, not at all, a null field cited, an unknown field, or an empty source", () => {

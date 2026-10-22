@@ -1,5 +1,6 @@
-// The only network entry point for ingest. Sequential, paced (≤ 2 req/s), retried with backoff, one stderr line per attempt.
-const USER_AGENT = "critwire-ingest/1.0 (+https://critwire.com; https://github.com/kc0588615/critwire)";
+// The network entry point for reads (ingest, gbif:register). Sequential, paced (≤ 2 req/s), retried with backoff, one
+// stderr line per attempt. gbif:register's single POST uses fetch itself (never retried) with USER_AGENT and logRequest.
+export const USER_AGENT = "critwire-ingest/1.0 (+https://critwire.com; https://github.com/kc0588615/critwire)";
 const MIN_GAP_MS = 500;
 const DEFAULT_TIMEOUT_MS = 30_000;
 const MAX_ATTEMPTS = 5;
@@ -15,6 +16,15 @@ function retryAfterMs(header: string | null): number | null {
   const ms = /^\d+$/.test(header.trim()) ? Number(header) * 1000 : Date.parse(header) - Date.now();
   return Number.isFinite(ms) ? Math.min(Math.max(ms, 0), RETRY_AFTER_CAP_MS) : null;
 }
+
+// The request log line on stderr: start time, status, duration, attempt, method, url (never headers or bodies).
+export function logRequest(start: number, status: number | string, attempt: number, method: string, url: string): void {
+  console.error(`${new Date(start).toISOString()}, ${status}, ${Date.now() - start}ms, ${attempt}, ${method}, ${url}`);
+}
+
+// A fetch that threw, as a log status: "timeout" or "network <message>".
+export const fetchFailure = (error: unknown) =>
+  (error as Error).name === "TimeoutError" ? "timeout" : `network ${(error as Error).message}`;
 
 export interface GetJsonInit extends RequestInit { timeoutMs?: number }
 
@@ -35,9 +45,9 @@ export async function getJson(url: string, { timeoutMs = DEFAULT_TIMEOUT_MS, ...
       body = await res.text();
       retryAfter = retryAfterMs(res.headers.get("retry-after"));
     } catch (error) {
-      status = (error as Error).name === "TimeoutError" ? "timeout" : `network ${(error as Error).message}`;
+      status = fetchFailure(error);
     }
-    console.error(`${new Date(lastStart).toISOString()}, ${status}, ${Date.now() - lastStart}ms, ${attempt}, ${method}, ${url}`);
+    logRequest(lastStart, status, attempt, method, url);
     const retryable = typeof status === "string" || status === 429 || status >= 500;
     if (retryable) {
       if (attempt >= MAX_ATTEMPTS) throw new Error(`${method} ${url}: ${status} after ${attempt} attempts: ${body.slice(0, 300)}`);
