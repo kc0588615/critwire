@@ -112,11 +112,11 @@ JOIN taxa AS o ON o.name = f.parent_name
 JOIN taxa AS c ON c.name = o.parent_name;
 ```
 
-The row count of every table and of the view, today (`countries` is the spike's draft, so this block is `draft-table`):
+The row count of every table and of the view, today (`countries` is the spike's draft, so this block is `spike-table`):
 
 ```sql
 -- q: setup-counts
--- status: draft-table
+-- status: spike-table
 SELECT (SELECT count(*) FROM taxa)              AS taxa,
        (SELECT count(*) FROM species)           AS species,
        (SELECT count(*) FROM sources)           AS sources,
