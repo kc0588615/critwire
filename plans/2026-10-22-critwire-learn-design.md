@@ -247,7 +247,7 @@ Out:
 
 ## Stages
 
-- [ ] Baseline: install, migrate, run typecheck, lint, unit and E2E tests; record the results under Baseline
+- [x] Baseline: install, migrate, run typecheck, lint, unit and E2E tests; record the results under Baseline
 - [ ] Architecture: `architect` writes findings and the target design
 - [ ] Fable review: `architecture-reviewer`
 - [ ] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
@@ -255,6 +255,16 @@ Out:
 - [ ] Steps: `planner` writes Steps and Verification
 
 ## Baseline
+
+2026-10-22, worktree HEAD `e3fd843` (= `origin/main` `871d0a6` + this plan; `git diff --stat origin/main HEAD` touches only this plan, so its build is `main`'s build).
+- `pnpm install --frozen-lockfile`: up to date. No lint script and no migrations: `pnpm build` rebuilds the schema in `critwire_dev` each run.
+- `pnpm typecheck`: pass. `pnpm test`: 66/66 pass.
+- `pnpm build`: pass, 157 files in `dist/`.
+- `E2E_ARTIFACTS=/srv/critter-ai/agent-state/missions/critwire-learn-design/baseline-e2e pnpm e2e`: 20/20 pass (report `baseline-e2e/playwright-report/`); no Caddy left running.
+- **dist hashes** (Definition of done): `spike/baseline/dist.sha256` (157 files, `sha256sum` from inside `dist/`). Live copies fetched from https://critwire.com into `spike/baseline/live/`, hashed in `spike/baseline/live.sha256`: identical to `dist.sha256`. Spike folder = `/srv/critter-ai/agent-state/missions/critwire-learn-design/spike/`.
+- Reproduce: `rm -rf dist && pnpm build && (cd dist && find . -type f | sort | xargs sha256sum) | diff - <spike>/baseline/dist.sha256`.
+- Brief's data facts confirmed from `data/species.json`: 76 species (Mammalia 50, Amphibia 15, Reptilia 11); `range.status` ok 72, identity-unsettled 3, no-open-records 1; 107 distinct country codes; `photo: null` for 19 `floreana-giant-tortoise` and 47 `ili-pika`; photo licenses CC BY-SA 49, CC BY 15, public domain 8, CC0 2.
+- `vision.png` present in the mission state folder.
 
 ## Architecture
 
@@ -275,5 +285,7 @@ Out:
 ## Decisions
 
 ## Log
+
+- 2026-10-22 UTC · Baseline: install, typecheck, unit 66/66, build, E2E 20/20 green; dist + live /v1 hashes saved (identical, 157 files).
 
 ## Summary
