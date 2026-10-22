@@ -200,7 +200,102 @@ Each new table is created after the tables it points at, in the same `setup.sql`
 
 ## 3. Entity relationship diagram
 
-Written in step S13.
+The ERD is the map of the learners' tables: every table is a box, every column a row in it, and every foreign key a line between two boxes. Lesson 6 teaches learners to read it, and every lesson can open it. Its source is plain text in the repo, `plans/002-learn-erd.mmd` (mission B moves it to `site/learn/schema.mmd`); the block below is the same text, and the spike's `run-queries --erd` fails if they differ.
+
+```mermaid
+%% critwire Learn: the learners' schema v1 (plans/002-learn.md §2, §3). Tables only; the view species_taxonomy is listed beside it.
+%% Keys: PK primary key, FK foreign key, UK unique. Lines: || exactly one, |o zero or one, |{ one or more, o{ zero or more.
+erDiagram
+    taxa {
+        VARCHAR name PK "Agalychnis, Phyllomedusidae, Anura, Amphibia"
+        VARCHAR taxon_rank "class, order, family or genus"
+        VARCHAR parent_name FK "the taxon one rank up; NULL for a class"
+    }
+    species {
+        INTEGER id PK "critwire's own id, never reused"
+        VARCHAR slug UK "red-eyed-tree-frog"
+        VARCHAR scientific_name UK "Agalychnis callidryas"
+        VARCHAR common_name "Red-eyed Tree Frog"
+        VARCHAR genus FK "a taxa row of rank genus"
+        VARCHAR range_status "ok, no-open-records or identity-unsettled"
+        VARCHAR photo_url "NULL when there is no photo"
+        VARCHAR photo_credit "who took the photo"
+        VARCHAR photo_license "CC BY-SA 4.0, CC BY 2.0, CC0, Public domain"
+        VARCHAR photo_page "the photo's Wikimedia Commons page"
+        INTEGER iucn_id UK "IUCN Red List taxon id"
+        BIGINT gbif_id UK "GBIF backbone taxon key"
+        VARCHAR col_id UK "Catalogue of Life id"
+        VARCHAR wikidata_id UK "Wikidata item"
+        INTEGER inaturalist_id UK "iNaturalist taxon id"
+        INTEGER ncbi_id UK "NCBI Taxonomy id"
+    }
+    countries {
+        VARCHAR code PK "ISO 3166-1 alpha-2, plus XK"
+        VARCHAR name UK "Brazil"
+        VARCHAR continent "South America"
+        VARCHAR region "Americas"
+        VARCHAR subregion "South America"
+    }
+    species_countries {
+        INTEGER species_id PK, FK "the animal"
+        VARCHAR country_code PK, FK "recorded there in open records"
+    }
+    sources {
+        VARCHAR name PK "Wikidata, Catalogue of Life, critwire base"
+        VARCHAR license "the license of what critwire took"
+        DATE retrieved "when critwire took it; NULL for critwire base"
+    }
+    species_sources {
+        INTEGER species_id PK, FK "the animal"
+        VARCHAR field PK "a path in the record, such as ids.col"
+        VARCHAR source_name FK "who supplied that field"
+    }
+
+    taxa |o--o{ taxa : "parent of"
+    taxa ||--o{ species : "genus of"
+    species ||--o{ species_countries : "recorded in"
+    countries ||--o{ species_countries : "has records of"
+    species ||--o{ species_sources : "fields from"
+    sources ||--|{ species_sources : "supplies"
+```
+
+GitHub draws the block above in the PR. The spike's offline render of it is `<spike>/erd/schema.svg` and `schema.png` (mission A1's state folder, `scripts/erd.ts`).
+
+**The view, beside the diagram.** `species_taxonomy (species_id, class, order_name, family, genus)` is a view, not a table: it stores nothing, it's the query that joins `species` to `taxa` four times (genus up to class). The ERD draws tables only, so the view appears in the legend under the picture and in the data dictionary, marked "view".
+
+**How to read it.**
+- A box is a table (an entity); each row is a column (an attribute) with its type, its key marks and a short note.
+- `PK` primary key: the column (or columns, as in both junction tables) that names exactly one row. `FK` foreign key: a value that must exist as a key in another table. `UK` unique: no two rows share it (the natural and outside ids).
+- A line is a foreign key, drawn from the table it points at to the table that holds it. Its ends say how many: `||` exactly one, `|o` zero or one, `o{` zero or more, `|{` one or more. So `taxa ||--o{ species` reads "each species has exactly one genus in `taxa`; a genus has zero or more species", and `taxa |o--o{ taxa` reads "each taxon has zero or one parent (classes have none)".
+- Many-to-many is two one-to-many lines into a junction table: `species ||--o{ species_countries` and `countries ||--o{ species_countries`.
+
+**What the check holds.** `run-queries --erd` (failure modes RQE1–RQE5) builds the database exactly as a Learn page does, reads its catalog (`information_schema.tables`, `information_schema.columns`, `duckdb_constraints()`) and fails on any drift: a table on one side only (the view drawn as a table counts), a column missing, extra or of another type, a `PK`/`FK`/`UK` mark the constraints don't back (or a constraint with no mark), a line with no foreign key behind it (or a foreign key with no line), and a `||` end on a nullable foreign key or a `|o` end on a NOT NULL one. The "one or more" ends (`|{`) are facts about the data, not constraints: every source is cited at least once because `sources` is built from the citations. The parser accepts only this subset of Mermaid and names the line of anything else, so no line is skipped unchecked.
+
+### Why Mermaid
+
+| Format | Crow's feet and keys | Renders offline here | Owner reviews it in a PR | Cost |
+|---|---|---|---|---|
+| **Mermaid `erDiagram`** | yes: cardinality ends, `PK`/`FK`/`UK`, a note per column | yes: `mermaid`'s browser bundle in Playwright's Chromium, which the E2E suite already runs | yes: GitHub draws `mermaid` blocks in Markdown | one pinned devDependency (`mermaid` 12.2.0), no install script |
+| DBML | keys and refs, yes | no renderer in the DBML project: `@dbml/core` parses and converts to SQL; pictures come from dbdiagram.io (hosted) or community renderers outside the project | no, shown as text | a hosted tool or an unofficial renderer |
+| PlantUML | IE notation, yes | needs Java (and Graphviz for some layouts) on the build machine | no, shown as text | a JVM on the VPS |
+| D2 | `sql_table` shape with constraints, crow's-foot arrowheads | a Go binary to pin and download for arm64 | no, shown as text | a binary outside npm |
+| DOT (Graphviz) | `crow` arrowheads, but tables and keys are hand-built HTML labels with no meaning a check can read | needs the `graphviz` apt package (out of scope) or a WASM port | no, shown as text | apt, and a drift check on free-form labels |
+
+Mermaid is the only one that is text with ER meaning, renders with what the VPS already has, and shows as a picture where the owner reviews. Rendering it in the learner's browser instead was rejected: `mermaid.min.js` is 5.5 MB (1.6 MB gzipped) to draw one static picture.
+
+### How the site shows it
+
+- **From every lesson:** a "Schema" button opens a `<dialog>` holding the SVG as an `<img>` (with alt text naming the six tables) and a link to `/learn/schema/`. A dialog keeps the learner's SQL in the editor; Escape closes it and focus returns to the button.
+- **`/learn/schema/`:** the same SVG, a link to open it alone (pinch-zoom on a phone: it is 1901 × 1166 px), and the **data dictionary**: one table per entity (column, type, keys, note), the view, and each relationship in words ("each species has exactly one genus; a genus has zero or more species"). The dictionary is the accessible equivalent of the picture, generated at build time from the same `.mmd` with the parser above, so the two can't disagree.
+- The SVG is drawn with `htmlLabels` off, so every label is SVG `<text>` and it renders inside `<img>` (HTML labels need `<foreignObject>`, which `<img>` won't draw). It is 142,522 bytes, 21,640 gzipped.
+
+### How mission B builds it (offline, no mermaid-cli)
+
+- **`pnpm erd`** (run by a person or agent after editing the `.mmd`, like `pnpm derive`): the spike's `scripts/erd.ts`, ported. It loads `mermaid`'s browser bundle into Playwright's Chromium with the route guard (any network request fails), runs Mermaid's parser (a syntax error fails with its message), renders, refuses `<foreignObject>` or a missing entity, sets the root `<svg>`'s `width`/`height` from its `viewBox` (so `<img>` needs no CSS) and `data-source-sha256` to the sha256 of the `.mmd`, and writes `site/learn/schema.svg` through a temp file and a rename (a failed run leaves the old SVG). The SVG is committed next to its source.
+- **`pnpm build`** stays offline and browserless: it hashes `site/learn/schema.mmd`, compares with the SVG's `data-source-sha256`, and refuses a mismatch with `site/learn/schema.svg is stale: run pnpm erd`, as derive refuses stale data. It copies the SVG and writes `/learn/schema/` with the data dictionary.
+- **E2E** `schema.spec.ts` runs the `--erd` drift check against the database the browser builds from the deployed files, and screenshots the dialog.
+- **Why not `@mermaid-js/mermaid-cli`:** it drives Puppeteer, whose install script downloads Chrome; the repo's `allowBuilds` only lets esbuild's script run, and Chrome for Testing has no linux-arm64 build for this VPS (F9). `mermaid` itself has no install script, and Playwright's Chromium is already here.
+- **Labels are measured where the SVG is made.** Mermaid sizes each box from the font in the rendering browser, so `pnpm erd` sets `Verdana, "DejaVu Sans", sans-serif`: DejaVu Sans (this VPS) and Verdana (most learners' machines) have close widths, so text fits on both.
 
 ## 4. Lessons: the core path
 
