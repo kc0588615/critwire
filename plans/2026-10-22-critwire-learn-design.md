@@ -857,7 +857,7 @@ Planner, 2026-10-22. Conventions:
     - the Caddy log shows `206` range reads of `species.parquet`;
     - `runScript('SELECT 1; SELECT 2')` returns 2, and an error in statement 2 of 3 says "statement 2".
 
-- [ ] S3 · Draft countries table from Natural Earth (§2 Countries source; F7; brief §6 research).
+- [x] S3 · Draft countries table from Natural Earth (§2 Countries source; F7; brief §6 research). Deviations (Decisions, S3): two narrow matching rules added (fold by ADM0_A3 = ISO_A3_EH; drop Overlay units); the CLI writes `$SP/draft/v1/`, which `build-site.ts` copies into `site/v1/`.
   - Downloads:
     - Natural Earth admin-0 `countries` and `map_units` attributes from one pinned release of `nvkelso/natural-earth-vector`, at the scale whose map units include GF, MQ and RE, into `downloads/naturalearth-<ver>/`;
     - `https://api.gbif.org/v1/enumeration/country` into `downloads/gbif-enum/`.
@@ -1258,6 +1258,10 @@ Only the spike tools that the Definition of done rests on are tested in isolatio
 - **S2: HTTP files are read whole.** Default config: one `GET` (200, whole file, no `Range`) per boot for a registered file; `HEAD` + whole `GET` for a URL (checked with a 73 MB file). With `reliableHeadRequests`/`allowFullHTTPReads: false`, duckdb-wasm's `HEAD` + `Range: bytes=0-` probe reaches Caddy without `Range`, gets 200, and the open fails. v1 is fine (setup reads all of a 32 KB file in one request); range reads for large files are an A2 question. Same without Playwright interception, so not a harness artefact. The S2 "206" check became "one 200 GET per boot".
 - **S2: `registerFileURL` is lazy:** `countries.parquet` (absent until S3) doesn't break boot.
 - Interception note: under `context.route`, Chromium adds `Cache-Control: no-cache`/`Pragma: no-cache` to every request, so revalidation/caching measurements (S6 MS6, "warm after rebuild") must not rely on the route guard's context alone; S6 decides.
+- **S3: countries source = Natural Earth v5.1.2** (tag, commit `f1890d9f15`), **1:10m** admin-0 `countries` + `map_units`. 110m lacks HK SG MU SC KM; 50m covers the 107 but lacks GI BV UM against GBIF; 10m gives 250 codes = GBIF's 250 exactly, so species recorded later in small territories still match. License: public domain, credit optional ("Made with Natural Earth."), quotes in `$SP/out/countries-sources.md`. GBIF enumeration: no stated license; `gbif.org/terms` 403 to this VPS; cross-check only, never published.
+- **S3: name = `NAME_EN`** (not `NAME_LONG`): both equal GBIF's title for 209 codes; `NAME_LONG` abbreviates ("Dem. Rep. Korea", "Lao PDR", "Heard I. …"), `NAME_EN` gives everyday names (Russia, Laos, Ivory Coast). Quirks for 002 §6: CN = "People's Republic of China", CC = "Cocos", TW = "Taiwan" (GBIF: Chinese Taipei); RE's `CONTINENT` = "Seven seas (open ocean)", MQ's = "North America". Published as Natural Earth has them, no edits.
+- **S3: two narrow rules on Natural Earth's own fields** (per the contingency): (1) several `countries` rows with one `ISO_A2_EH` (FR+Clipperton, KZ+Baykonur, BR+Brazilian Island, AU+3 dependencies) keep the row whose `ADM0_A3 = ISO_A3_EH`, failing unless exactly one is; (2) map units of `TYPE` "Overlay" (UNDOF `XD`, Korean DMZ ×2) are dropped. 13 units with no code (Somaliland, N. Cyprus, sovereign base areas, Bir Tawil, …) drop out. Result: 239 countries-layer + 11 map_units rows (BQ BV CC CX GF GP MQ RE SJ TK YT). TW via `ISO_A2_EH` (its `ISO_A2` is `CN-TW`).
+- **S3: draft lives in `$SP/draft/v1/`** (not `site/v1/` directly), because `build-site.ts` wipes `site/`; it copies `draft/v1/` in after the baseline files. Parquet written from the JSON with every column read as VARCHAR, so `NA` stays "NA" in both (checked: 250 rows, 0 null codes).
 
 ## Log
 
@@ -1269,5 +1273,6 @@ Only the spike tools that the Definition of done rests on are tested in isolatio
 - 2026-10-22 06:52 UTC · Steps: planner wrote S1–S22, Verification (V0–V10 script), Failure modes (94 cases). Plan only; nothing to run.
 - 2026-10-22 07:02 UTC · S1: spike scaffold in `$SP` (pins, frozen install, Caddyfile + proposed, serve/browser/build-site/bytes). Checks: guard clean, repo typecheck + 66/66, spike typecheck; `.wasm` = application/wasm; ETag stable across rebuild; `out/bytes/summary.md` (eh: 36.00 MB file, 7.98 zstd / 8.53 gzip live); serve exits 1 naming 3102/3100/3101; no Caddy left.
 - 2026-10-22 07:10 UTC · S2: `sql.ts` splitStatements (SQ1–7: 7 red → 7 green), `engine.ts` (manual eh/mvp, self-hosted parquet ext mirror, settings, registerFileURL, runScript w/ statement numbers), runner page, `boot-check.ts`. `out/boot`: 0 failures, eh+mvp count 76, v1.5.6 069cc9f9b5, blocked []; mvp error text = known defect. Guard clean, repo typecheck + 66/66, spike typecheck + 7/7, no Caddy left.
+- 2026-10-22 07:17 UTC · S3: Natural Earth v5.1.2 10m + GBIF enum downloaded (sha256 in SOURCES.md), `countries-draft.ts` (CD1–CD11: 10 red → 10 green), draft = 250 rows (11 from map_units), all 107 species codes + XK matched, FR/NO/XK/TW via ISO_A2_EH, GF/MQ/RE from map_units, NA = "NA" in JSON + Parquet; `out/countries-{match,sources}.md`. Guard clean, repo typecheck + 66/66, spike typecheck + 17/17.
 
 ## Summary
