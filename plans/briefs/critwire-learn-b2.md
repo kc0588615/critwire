@@ -52,7 +52,7 @@ Out:
 
 - **002 is the design**, and B1's code is how it was built: reuse B1's engine, `runScript`, cards, checks, page shell and soft navigation; add nothing that duplicates them. Where code shows 002 is wrong, choose the simplest fix, record it under Decisions, and update 002 in the same commit.
 - **Simplest approach that works**, no server process, no web framework, the build offline, everything self-hosted.
-- **Same for everyone:** no `random()` or `hash()` in any query (the shuffle key of 002 §5), and dates come in as parameters, never `current_date`.
+- **Same for everyone:** no `random()` or `hash()` in any query (the shuffle key of 002 §5; c02's buttons use its order key, so the answer isn't last most rounds), and dates come in as parameters, never `current_date`.
 - **Countries are "recorded there in open records"**, never native range; games say "recorded in", never "lives in".
 - **The real-device check** (002 §10: a lesson and the game on an iPhone, and a Chromebook if one is at hand) is the owner's: add it as a handoff item when the game first runs on this branch and carry on. It doesn't block the release unless the owner says so.
 - Choose freely between equal options and record the call under Decisions. Anything that changes cost, licensing or what goes public beyond this brief goes to the owner as a handoff item.

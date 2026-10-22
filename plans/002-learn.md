@@ -1737,6 +1737,12 @@ Queries a game or an app can run on the learners' tables as they are. Each entry
 
 1009 is a prime and 619 isn't a multiple of it, so every id below 1009 gets a different key: sorting by it never ties, and gives a shuffled deck that's the same everywhere (once ids pass 1009, ties are broken by `id`). Another seed starts the deck at another place. A date comes in as a parameter (the player's date in UTC), never as `current_date`, so a result depends only on its inputs and the data. When the data grows, the picks change too: a new animal joins every deck.
 
+A query that picks some rows by the shuffle key and then orders what it picked needs a second key, or the order repeats the pick. c02 takes the three lowest-keyed decoys, so sorting its four buttons by the same key would put the answer, whose key is usually higher, last most rounds (88 % of rounds over every photo-deck answer × seeds 1–10). Its buttons use the **order key**, the same arithmetic with the two multipliers swapped:
+
+`(id * 211 + seed * 619) % 1009`
+
+Over those same rounds it puts the answer on each of the four buttons 19–31 % of the time.
+
 **How a game loads one.** Mission B2 keeps each query in its own file, `site/learn/cookbook/<id>.sql` (`c01.sql`, …), which the page bundle imports as text. The cookbook page, the game and the E2E suite run that same file. The `-- params:` line exists only in this document: the cookbook page shows the example values in small inputs above the editor, and a game passes its own. Pure functions turn the rows into game state, and cards are drawn by the same card component the lessons use, with the species ids passed in explicitly.
 
 Countries mean what they mean in lessons 9–11: the animal was *recorded there in open records*. Games that use them say "recorded in", never "lives in".
@@ -1802,19 +1808,19 @@ SELECT s.id, s.common_name, c.is_answer
 FROM choices AS c
 JOIN species AS s ON s.id = c.species_id
 CROSS JOIN p
-ORDER BY (s.id * 619 + p.seed * 211) % 1009, s.id;
+ORDER BY (s.id * 211 + p.seed * 619) % 1009, s.id;
 ```
 
 ```text
--- result: c02 · 4 rows · sha256 3a0ca512ed1d
+-- result: c02 · 4 rows · sha256 cc28caab3632
 id | common_name | is_answer
-43 | Goodfellow's Tree-kangaroo | false
 30 | Pygmy Three-toed Sloth | false
-61 | Indri | false
 51 | Jaguar | true
+61 | Indri | false
+43 | Goodfellow's Tree-kangaroo | false
 ```
 
-The last `ORDER BY` shuffles the buttons too, so the answer isn't always first.
+The last `ORDER BY` uses the order key, not the shuffle key that picked the decoys, so the answer lands on any of the four buttons (§5).
 
 ### c03 · Who's been recorded here?
 
@@ -2838,7 +2844,7 @@ round | species_id | class | family
 … 5 more rows
 ```
 
-**A round's four names (`c02`),** with the round's answer and the round number (1–10) as its parameters: the answer plus three animals of the same class, shuffled, each with `is_answer`. The game draws the buttons in the order the rows come.
+**A round's four names (`c02`),** with the round's answer and the round number (1–10) as its parameters: the answer plus three animals of the same class, each with `is_answer`, sorted by the order key (§5) so the right button moves from round to round. The game draws the buttons in the order the rows come.
 
 The seed rotates one fixed shuffle (§5), so the day's ten are a different stretch of the same deck each day. Each day moves the start 211 steps on a key range of 1009, more than ten animals span, so on today's data no two consecutive days share an animal (checked for every day from 2026-10-22 to 2027-10-22); more animals only narrow the stretch.
 
