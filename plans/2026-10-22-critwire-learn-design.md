@@ -248,7 +248,7 @@ Out:
 ## Stages
 
 - [x] Baseline: install, migrate, run typecheck, lint, unit and E2E tests; record the results under Baseline
-- [ ] Architecture: `architect` writes findings and the target design
+- [x] Architecture: `architect` writes findings and the target design
 - [ ] Fable review: `architecture-reviewer`
 - [ ] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
 - [ ] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
@@ -267,6 +267,424 @@ Out:
 - `vision.png` present in the mission state folder.
 
 ## Architecture
+
+A1 builds nothing public, so the "code in scope" is the repo that Learn has to fit (build, docs template, E2E harness, data) plus the mockup. Each finding is a fact checked on 2026-10-22 against this worktree, `data/species.json`, npm/jsDelivr metadata or a live endpoint. **(S)** marks a fact the spike must confirm in the browser.
+
+### Findings (ranked by impact)
+
+**F1. DuckDB-WASM's browser entry needs a bundler, and esbuild is the only one the repo can install.** `@duckdb/duckdb-wasm@1.33.1-dev57.0` `dist/duckdb-browser.mjs` imports the bare specifier `apache-arrow`, so a static page can't load it directly. `pnpm-workspace.yaml:1-2` allows build scripts for esbuild only, and esbuild 0.28.2 (+ `@esbuild/linux-arm64`) is already installed as a tsx dependency. Fix: a pinned esbuild bundles the page code, duckdb-wasm and arrow into one ESM file. No `allowBuilds` change.
+
+**F2. duckdb-wasm runs a different DuckDB from the repo's, and it releases only dev builds.**
+- npm `latest` is the prerelease `1.33.1-dev57.0` (2026-09-29). The last plain release on npm is 1.32.0 (2025-12-16), and GitHub v1.31.0 says "Based on DuckDB v1.4.0". The repo builds with `@duckdb/node-api 1.5.6-r.2` (`package.json:28`; `SELECT version()` = v1.5.6).
+- So: (a) recorded results must come from the WASM engine itself; (b) the extension mirror path is keyed by the WASM build's DuckDB version, and a dev build may have no published extensions; (c) the repo's pnpm release-age gate (`pnpm-workspace.yaml:3-13` has to exclude day-old node-api builds) also blocks PGlite 0.5.11 (2026-10-21). PGlite is now 0.5.x, not the brief's 0.4.
+- Uncompressed sizes (jsDelivr listing):
+
+  | Package | Files |
+  |---|---|
+  | duckdb-wasm | `duckdb-eh.wasm` 35.9 MB; `duckdb-mvp.wasm` 41.3 MB; `duckdb-coi.wasm` 35.6 MB; each worker ≈ 0.8 MB |
+  | PGlite 0.5.10 | `pglite.wasm` 10.5 MB, `pglite.data` 6.2 MB, `initdb.wasm` 0.3 MB, `index.js` 1.9 MB |
+  | sql.js 1.15.1 | `sql-wasm.wasm` 0.68 MB |
+  | duckdb-wasm-shell | `shell_bg.wasm` 1.4 MB, plus its xterm dependencies |
+
+**F3. As configured, Caddy makes every learner download the engine again after each deploy.**
+- The live block (copied in `e2e/Caddyfile:10-36`) has `encode zstd gzip` and no `Cache-Control`.
+- Caddy 2.11.7 carries `application/wasm*` as an encode-matcher pattern, so the 36 MB WASM is compressed on the fly for every request on a 2-core ARM box (S: `curl`).
+- `scripts/build.ts:28` deletes and rewrites `dist/`, and Caddy's `file_server` ETag comes from mtime + size. Every deploy, even a data-only one, therefore changes the engine's ETag.
+- Fix (control room; owner's choice): a versioned asset directory with `Cache-Control: public, max-age=31536000, immutable`, and optionally `file_server { precompressed br zstd gzip }` with `.br` files the build writes. Learn must work without either. `e2e/serving.spec.ts:31-36` fails on drift, so any such change goes into the ops Caddyfile first and `e2e/Caddyfile` after it.
+
+**F4. The mockup's query and results don't fit critwire's data.** Checked with DuckDB on `dist/v1/species.parquet`:
+- (a) It teaches `WHERE` using a `JOIN`.
+- (b) `JOIN species_countries USING (species_id)` can't work when the primary key is `species.id` (the brief's naming). It needs `ON sc.species_id = s.id`.
+- (c) It selects only `scientific_name` but shows photos and common names.
+- (d) Capybara isn't one of the 76 animals.
+- (e) Brazil returns 12 animals, including Tiger, Chimpanzee and African Wild Dog. Those are open records outside the native range, and the lesson has to say so.
+- (f) There are no photo credits, and none of the 12 lacks a photo, so showing the no-photo state needs a second query (ids 19 and 47).
+
+**F5. Data facts the learners' schema depends on** (checked on `data/species.json`):
+- Taxonomy has 3 classes, 22 orders, 50 families and 68 genera. Each genus has exactly 1 family, each family 1 order, each order 1 class. No name is used at two ranks, and the genus equals the first word of `scientificName` for all 76. Taxon names therefore work as a natural key.
+- There are 472 species–country pairs across 107 codes. Four species have none: 9, 19 and 27 are `identity-unsettled`, 47 is `no-open-records`.
+- Non-null outside ids are unique: iucn 76, gbif 73, col 69, wikidata 76, inaturalist 74, ncbi 75.
+- `sources[]` has 5 sources, each with one license and one `retrieved` (null for `critwire base`). (species, field) is unique: 591 pairs.
+- `taxonomy.order` and `range` need quoting in DuckDB (`scripts/build/columns.ts:14,16`; `site/index.html:95`), so learner tables must avoid reserved names.
+- `db/schema.sql:4-27` already gives every scalar field a snake_case name (`scientific_name`, `order_name`, `iucn_id`, `photo_url`, `range_status`, …). The learner tables reuse those names.
+
+**F6. DuckDB checks foreign keys statement by statement.** Node DuckDB 1.5.6 accepts a self-referencing FK. But a multi-row `INSERT` whose child row points at a parent inserted by the same statement fails with "Violates foreign key constraint because key "name: a" does not exist". The setup therefore inserts `taxa` one rank at a time, top down. (S: check again in WASM.)
+
+**F7. Country matching has known traps.**
+- The 107 codes include GF, MQ and RE (French overseas regions), HK and NA.
+- In Natural Earth's admin-0 *countries* layer, France is one unit with `ISO_A2 = -99`, so GF/MQ/RE are expected only in the *map units* layer (S).
+- GBIF's `/v1/enumeration/country` (fetched: 250 entries with `iso2, iso3, isoNumerical, title, gbifRegion, enumName`) has no continent or subregion and states no license.
+- pandas' default CSV reader turns `NA` (Namibia) into a missing value, so the `countries.csv` docs need a note.
+
+**F8. The build renders exactly one page.**
+- `scripts/build/docs.ts:7` hard-codes `site/index.html`. The slot filler, with its unknown/unused-slot checks, lives inside `renderDocs` (`docs.ts:36-44`), and `scripts/build.ts:24,38` writes only `index.html`. Learn should extract that filler (DRY), not copy it.
+- `tsconfig.json` covers only `scripts` and `e2e`, with `types: ["node"]`. Browser code needs its own tsconfig with the DOM lib, and `pnpm typecheck` must run both.
+- `e2e/duckdb.spec.ts:57-58` pins the exact set of `/v1` file kinds the docs' curl examples cover. The countries files need a docs and test update in mission B.
+
+**F9. mermaid-cli can't run on this box, but Playwright's Chromium can render Mermaid.** `@mermaid-js/mermaid-cli` 12.0.0 drives puppeteer. Puppeteer's postinstall downloads Chrome, which `allowBuilds` blocks, and Chrome for Testing has no linux-arm64 build (this VPS is aarch64). Playwright 1.58.2 (`package.json:22`) and its `chromium-1208` are installed and already run the E2E suite, and `mermaid`'s own browser bundle renders in them.
+
+**F10. Card photos come straight from Wikimedia's servers.**
+- 72 are on `thumb.wikimedia.org`, 2 on `upload.wikimedia.org`, and 2 are null.
+- Wikimedia sends `access-control-allow-origin: *` (checked), so `<img crossorigin>` would work under COEP if `coi` were ever used.
+- Card credit links need the license deed URLs in `scripts/build/sources.ts:65` (`LICENSE_URLS`). The browser bundle imports that same registry.
+
+**Already fine:**
+- `/v1` CORS, Range and preflight (`e2e/serving.spec.ts:38-88`), and the offline build.
+- `.wasm` gets `application/wasm` from `/etc/mime.types` (S: `curl -I`).
+- The docs promise "Inside v1 we only add things" (`site/index.html:63`), so a new `/v1/countries.*` file fits.
+- Caddy's `file_server` serves `dir/index.html`, so `/learn/<slug>/` needs no routing config.
+- The docs' Brazil example uses DuckDB's `list_contains` (`site/index.html:93-96`). Learn teaches the standard-SQL join and can point out the difference.
+
+### Target design
+
+#### 1. The spike (`<spike>` = `/srv/critter-ai/agent-state/missions/critwire-learn-design/spike/`, outside the repo)
+
+```
+README.md              every command to reproduce, in order
+package.json           own deps, exact pins (+ pnpm-lock.yaml, pnpm-workspace.yaml with allowBuilds: esbuild; release-age excludes only if a pin needs one)
+Caddyfile              e2e/Caddyfile's globals + its :3100 block on http://127.0.0.1:3102 (root {$SPIKE_SITE}, log {$SPIKE_OUT}/caddy-access.log); the :3101 block dropped
+Caddyfile.proposed     Caddyfile + the control-room proposal: Cache-Control immutable on /learn/assets/*, precompressed br zstd gzip, COOP/COEP on /coi/* only
+src/                   browser code and SQL: engine.ts, cards.ts, check.ts, card-page.ts, runner-page.ts, pglite-page.ts, shell-page.ts, measure-worker.js, *.html,
+                       setup.sql, setup-countries.sql, setup-pglite.sql
+scripts/               Node 24 runs .ts directly: build-site.ts, serve.ts, measure.ts, run-queries.ts, erd.ts, countries-draft.ts
+downloads/<name>/      each untrusted download in its own new directory (naturalearth-<ver>/, gbif-enum/, duckdb-ext-<ver>/)
+site/                  generated web root: v1/ (copy of baseline/live/v1 + draft countries.parquet), learn/assets/duckdb-<ver>/, pglite/, sqljs/, pages, bundles
+erd/                   schema.svg, schema.png
+out/<run>/             results.json, summary.md, screenshots, caddy-access.log, env.txt (package versions, Chromium, CPU, SELECT version())
+baseline/              exists
+```
+
+**Pins:**
+- `@duckdb/duckdb-wasm` and `@duckdb/duckdb-wasm-shell` at the same version: the newest one older than the release-age gate whose `SELECT version()` is a tagged DuckDB release with `wasm_eh` extensions published under `extensions.duckdb.org/<version>/`. Check 1.32.0 and the newest dev build, and record both.
+- `@electric-sql/pglite`: the newest version outside the gate (0.5.10 today). `sql.js` 1.15.1.
+- `esbuild` 0.28.2 (the repo's).
+- `playwright` 1.58.2: the same version as the repo's `@playwright/test`, so it reuses `~/.cache/ms-playwright/chromium-1208` without a download.
+- `mermaid`: the newest version outside the gate.
+- `@duckdb/node-api` 1.5.6-r.2, used only to write the draft countries Parquet, never for results.
+
+**Serving:**
+- `scripts/serve.ts` checks with `ss -ltn` that 3102 is free, refuses to start while an E2E Caddy is on 3100/3101, runs `caddy run --config <Caddyfile|Caddyfile.proposed>`, and stops it on exit. `measure.ts` and `run-queries.ts` both use it.
+- The first spike step runs `curl -sI` on a `.wasm` (expect `application/wasm`). It then runs `curl -s -H 'Accept-Encoding: <zstd|gzip|br>' -o /dev/null -w '%{size_download}'` for every asset, to build a byte table that doesn't depend on the browser.
+
+**Page code:**
+- `src/engine.ts` is the one boot path for the card page, the runner and the measurements. It uses manual `mvp`/`eh` bundles with self-hosted URLs (never `getJsDelivrBundles`) and an `AsyncDuckDB` in a worker.
+- It sets `autoinstall_known_extensions=false` and `autoload_known_extensions=false`, so a missing extension fails loudly instead of fetching from extensions.duckdb.org.
+- It registers `species.parquet` (and, in draft mode, `countries.parquet`) with `registerFileURL(name, location.origin + '/v1/…', HTTP)`, then runs `setup.sql`. SQL never contains an origin, so the same text runs on critwire.com, in the spike and in E2E.
+- Timing marks: `nav → engine → setup → query → cards`.
+
+**Measurement harness (`scripts/measure.ts`):**
+- **Matrix:** engine {duckdb-eh, duckdb-mvp, pglite} × profile × {cold, warm}, 5 runs each, reporting median and max. Then duckdb-eh alone again under `Caddyfile.proposed`, to show the effect of caching and br. Cold means a new browser and context; warm means a reload in the same context. The profiles:
+
+  | Profile | CPU | Down / up | Latency |
+  |---|---|---|---|
+  | desktop | none | none | none |
+  | school-wifi | 4x | 5 / 1 Mbps | 100 ms |
+  | slow-4g | 6x | 1.6 / 0.75 Mbps | 150 ms |
+
+- **Throttling** uses CDP `Emulation.setCPUThrottlingRate` and `Network.emulateNetworkConditions` on the page session. DuckDB runs in a worker, so validate both before trusting them:
+  - (a) Time a fixed busy loop in a Worker at rate 1 and at rate 4. If the ratio is under 2.5, the worker isn't throttled: run every throttled profile, for every engine, under `systemd-run --user --scope -p CPUQuota=<100/rate>%` instead. That throttles every thread, is transient and needs no root. Record which method was used.
+  - (b) Check that the worker's `.wasm` download time ≈ bytes ÷ throughput. If it isn't, put a small rate-limiting Node proxy on 3102 in front of Caddy, which then listens on a Unix socket.
+
+  Every engine is measured the same way, so PGlite (main thread) and DuckDB (worker) compare fairly.
+- **Bytes:** the Caddy access log's `size` and `Content-Encoding` per request give the on-the-wire bytes, and file sizes give the uncompressed bytes. CDP `encodedDataLength` is a cross-check. Report per asset and in total, cold and warm. Warm under the live config shows the F3 re-download.
+- **Memory:**
+  - Peak renderer RSS: `VmHWM` from `/proc/<pid>/status`, with renderer pids from browser CDP `SystemInfo.getProcessInfo`. It covers page, worker and WASM.
+  - Main-thread JS heap from `Performance.getMetrics`.
+  - WASM linear memory: `memory.buffer.byteLength`, captured by wrapping `WebAssembly.instantiate*`. For DuckDB, `measure-worker.js` patches them and then `importScripts` the DuckDB worker; for PGlite, a page init script does it. WASM memory only grows, so the final value is the peak.
+- **Times** come from the page marks. Photo loading (a third-party host) is reported separately.
+- **Self-hosting proof:** `context.route('**')` allows only `127.0.0.1:3102` and the two Wikimedia hosts. Any other request is aborted and listed in the results; the list must be empty.
+- **coi gate:** run `/coi/` once on desktop and once at 4x under `Caddyfile.proposed`, checking `crossOriginIsolated`. Run the full matrix only if its median time to first result is at least 30 % lower than eh's; otherwise record the quick numbers.
+- **PGlite:** `pglite-page.ts` fetches `/v1/species.json`, builds the same tables with `setup-pglite.sql` (Postgres `jsonb_array_elements`), and runs the Brazil join. Same metrics, no cards, on the main thread (PGlite's default). Note how long it blocks the main thread.
+- **sql.js:** the curl byte table plus the assessment paragraph.
+- **Other browsers:** an optional functional check in Firefox, if `playwright install firefox` works without apt. WebKit needs apt packages, so it's out of scope; say so.
+
+**Extension mirror test:**
+- Download the `inet` (small) and `spatial` extensions for `wasm_eh` and `wasm_mvp`, for the pinned build's DuckDB version, into `downloads/duckdb-ext-<ver>/`. Copy them to `site/learn/assets/duckdb-ext/<version>/<platform>/<name>.duckdb_extension.wasm`.
+- Then run `SET custom_extension_repository = '<origin>/learn/assets/duckdb-ext'; INSTALL spatial; LOAD spatial; SELECT ST_AsText(ST_Point(1, 2));` with signature checks left on.
+- It passes if the result is right and no request leaves the origin. Record compressed bytes and what Caddy needs.
+- v1 lessons need no extension (S: `duckdb_extensions()` shows parquet and json statically linked). Vendoring extension binaries is A2's decision.
+
+**Shell (time-boxed to one session):** `shell-page.ts` bundles `@duckdb/duckdb-wasm-shell` with esbuild and calls `embed({ shellModule, container, resolveDatabase: () => db })` on the already-built database. It types `SELECT count(*) FROM species;` through `page.keyboard` and takes a screenshot. Record the bytes and notes on screen readers and phone keyboards. If the shell doesn't work within the time box, record why.
+
+**Card page:** reproduces the mockup as lesson 9 (§4): label, badge, question, concept line, a `<textarea>` with the join, a Run button, and cards with credits. It also runs the NULL lesson's query (ids 19 and 47) to show the no-photo state. Screenshots: desktop, 375 px, and a throttled run.
+
+**`scripts/run-queries.ts` contract:**
+- **Usage:** `node scripts/run-queries.ts <plans/002-learn.md> [--check|--update] [--erd plans/002-learn-erd.mmd]`. It starts the spike Caddy through `serve.ts` and opens `runner.html` in headless Chromium. That page boots `engine.ts` with the same bundle, version and setup SQL as the card page, and exposes `window.run(sql, params)`.
+- **Engine:** DuckDB-WASM in headless Chromium, never the node DuckDB. Node runs DuckDB 1.5.6 with `icu` loaded; the WASM build runs another version with another extension set (F2). The log has to hold what a learner's browser returns.
+- **Block headers:** every ```` ```sql ```` block starts with `-- q: <id>` (unique, `[a-z0-9-]+`) and `-- status: ran | draft-table | untested: <reason>`. Two optional headers:
+  - `-- params: <JSON array>`, bound to `?` through `prepare`.
+  - `-- expect: error <substring>`, for exercises that must hit a constraint error.
+
+  A missing or duplicate header fails the run.
+- **Setup blocks:** the blocks `q: setup` and `q: setup-countries` in 002 §2 must equal `src/setup.sql` and `src/setup-countries.sql` byte for byte, apart from the header lines. The plan therefore shows the real setup.
+- **Two databases:**
+  - DB 1 runs `setup` only, then every `ran` block. A `ran` block that touches `countries` fails there.
+  - DB 2 runs `setup-countries` first and then `setup`, so the FK to `countries` exists, then every `draft-table` block.
+
+  Each block runs inside `BEGIN … ROLLBACK` with its statements in order, and the last statement's result is the block's result. (S: does `conn.query` accept multi-statement text? If not, split on top-level `;`.)
+- **One rendering function:**
+  - The result line is `-- result: <id> · <n> rows · sha256 <first 12 hex of the full rendered result>`.
+  - Then a `col | col` header and the first 5 rows: NULL as `NULL`, lists as `[a, b]`, BigInt as digits, cells over 60 characters cut with `…`.
+  - Errors: `-- result: <id> · error: <first line>`. Untested blocks: `-- skipped: <id> · <reason>`.
+- **Log:** writes `/srv/critter-ai/agent-state/missions/critwire-learn-design/queries.log`. The first line names the engine (package version, bundle, `SELECT version()`, UTC time); then one result per block, in plan order.
+- **Comparison:**
+  - In the plan, every `ran`/`draft-table` block is followed by a ```` ```text ```` block holding exactly its rendered result.
+  - `--check` is the default and what Verification runs. It fails on any difference, and on a missing or orphan result block.
+  - `--update` rewrites the plan's result blocks from the log, snapshot-style; review the diff before committing.
+- **`--erd`:** compares the Mermaid entities and attributes with DB 2's `information_schema.columns` and `duckdb_constraints()`. It also checks that 002 §3's ```` ```mermaid ```` block equals the `.mmd` file. Any drift fails.
+- **Determinism:** every recorded query has an `ORDER BY` on a unique key, or returns one row. No `random()`, `hash()`, `uuid()` or `current_date`; "random" cookbook picks use arithmetic on ids, with the seed or date passed as a literal or a `?` parameter.
+
+**Other scripts:**
+- `scripts/erd.ts` loads `mermaid`'s browser bundle into a Playwright page and renders the `.mmd` it's given with `htmlLabels: false`, so labels are plain SVG text that renders inside `<img>`. It fails if the output contains `<foreignObject>`, and writes `erd/schema.svg` plus a PNG.
+- `scripts/countries-draft.ts` reads the attributes of Natural Earth admin-0 `countries` and `map_units` from a pinned release in `downloads/` (GeoJSON properties only; geometry dropped) and applies the §2 matching rule. It fails, listing the codes, if any of the 107 codes or `XK` doesn't match. It writes `site/v1/countries.parquet` (columns as in §2) and `out/countries-match.md`, which lists each code with the layer and field it matched and the name.
+
+#### 2. Learners' schema v1
+
+**How it's built:** `setup.sql` builds these tables in the browser from `species.parquet`, plus `countries.parquet` once mission B publishes it. Tables use standard types and constraints, and DuckDB-only syntax (`read_parquet`, `unnest`, struct access) appears only in this setup.
+
+**Naming:** entity tables are plural snake_case, junction tables are `<a>_<b>`, and FKs are `<entity>_id`, `_code` or `_name`. Scalar column names follow `db/schema.sql`.
+
+| Table | Columns and keys | Built from |
+|---|---|---|
+| `taxa` | `name` PK; `taxon_rank` NOT NULL CHECK in (class, order, family, genus); `parent_name` FK → `taxa.name`, NULL for classes | `DISTINCT taxonomy.*`, one INSERT per rank, top down (F6) |
+| `species` | `id` PK; `slug` UNIQUE NOT NULL; `scientific_name` UNIQUE NOT NULL; `common_name` NOT NULL; `genus` FK → `taxa.name`; `range_status` NOT NULL CHECK (3 values); `photo_url`, `photo_credit`, `photo_license`, `photo_page`; `iucn_id`, `gbif_id`, `col_id`, `wikidata_id`, `inaturalist_id`, `ncbi_id` (each UNIQUE, nullable) | the record's flat fields |
+| `countries` | `code` PK (ISO 3166-1 alpha-2, plus `XK`); `name` UNIQUE NOT NULL; `continent`, `region`, `subregion` NOT NULL | the spike's draft table, then `/v1/countries.parquet` (mission B) |
+| `species_countries` | `species_id` FK → `species.id`; `country_code` FK → `countries.code`; PK (`species_id`, `country_code`) | `unnest("range".countriesWithOpenRecords)`; means "countries with open records", never native range |
+| `sources` | `name` PK; `license` NOT NULL; `retrieved` DATE (NULL for critwire base) | `DISTINCT` over `unnest(sources)`; a source with two licenses or dates breaks the PK (fails loudly) |
+| `species_sources` | `species_id` FK; `field` (the file path, e.g. `ids.col`); `source_name` FK → `sources.name`; PK (`species_id`, `field`) | `unnest(sources)`, then `unnest(fields)` |
+| view `species_taxonomy` | `species_id`, `class`, `order_name`, `family`, `genus` | the 4-way `taxa` self-join; setup ships it for the cookbook and the game, and the views lesson explains it |
+
+**Expected counts today:** `taxa` 143 (3 + 22 + 50 + 68), `species` 76, `species_countries` 472, `sources` 5, `species_sources` 591, `countries` ≥ 107.
+
+**Left out of v1:** `replaced_by` (all null today; later a `species_replacements` table) and each record's source query URLs.
+
+**Room to grow (A2), with no renames:**
+- `traits` + `species_traits (species_id, trait_name, value, unit, source_name)`
+- `habitats` + `species_habitats`
+- `regions` + `country_regions`
+- `occurrences (id, species_id, country_code, …)`
+- new ranks as `taxa` rows, with the CHECK widened
+
+A future native range would be a new table, such as `species_native_countries`, never a new meaning for `species_countries`.
+
+**Countries source** (for 002 §6). The A1 research step finds the exact license quotes and the pinned release.
+- **Source:** Natural Earth admin-0 (public domain) supplies every published field. GBIF's enumeration is used only as an unpublished cross-check of the code set, because its license is unclear.
+- **Matching rule:**
+  - `code` = `ISO_A2_EH`, which fixes the `-99` codes for France, Norway and Kosovo; otherwise `ISO_A2`.
+  - Rows come from the `countries` layer. The `map_units` layer is used only for codes that have no country row (expected: GF, MQ, RE).
+  - `name` = `NAME_EN` (or `NAME_LONG`; pick by which matches). `continent` = `CONTINENT`, `region` = `REGION_UN`, `subregion` = `SUBREGION`.
+- **Mission B ingest** follows the existing pattern:
+  - `pnpm ingest naturalearth` writes `data/raw/naturalearth/snapshot.json`: attributes only, keys sorted, with `retrieved`.
+  - `pnpm derive` writes `data/countries.json` and refuses any species code without a row.
+  - The build writes `/v1/countries.{json,parquet,csv}`.
+- **Credit:** one new entry in `attribution.json`'s `sources` array, in the existing entry shape (`fields: ["countries"]`), so no existing file changes shape.
+
+#### 3. ERD
+
+- **Format: Mermaid `erDiagram`.** It's plain text with crow's-foot cardinality, `PK`/`FK`/`UK` markers and per-attribute comments, and GitHub renders it in Markdown, so the owner can review it in the PR. A1 writes `plans/002-learn-erd.mmd` and embeds the same text in 002 §3; `run-queries --erd` checks that the two match. The ERD shows tables only; the view is listed next to it.
+- **Relationships:**
+  - `taxa |o--o{ taxa`: parent of
+  - `taxa ||--o{ species`: genus of
+  - `species ||--o{ species_countries`
+  - `countries ||--o{ species_countries`
+  - `species ||--o{ species_sources`
+  - `sources ||--|{ species_sources`
+- **Spike:** `scripts/erd.ts` writes `<spike>/erd/schema.svg`.
+- **Mission B:**
+  - `git mv` the source to `site/learn/schema.mmd`.
+  - `pnpm erd` (Playwright Chromium plus a pinned `mermaid` devDependency; no new `allowBuilds`) writes `site/learn/schema.svg` with a `data-source-sha256` attribute on the root `<svg>`.
+  - `pnpm build` (offline, no browser) recomputes the hash and refuses a stale SVG with "site/learn/schema.svg is stale: run pnpm erd", like derive's stale check.
+  - The schema page's text data dictionary, the accessible equivalent of the picture, is generated from the same `.mmd` attributes and comments.
+  - E2E runs the `--erd` drift check against the database the browser builds.
+- **From every lesson:** a "Schema" button opens a `<dialog>` with the SVG (an `<img>` with alt text, plus a link to `/learn/schema/`), so the editor keeps the learner's text.
+
+#### 4. Learn: what 002 designs and mission B builds
+
+**002 outline (brief §1–10):**
+
+| § | Content | Evidence |
+|---|---|---|
+| 1 Engine and interface | answers to Q1–Q5 with numbers; the recommendation; what emulation proves and what only real hardware would | `out/<run>/summary.md` |
+| 2 Schema | the table above, plus the `setup` and `setup-countries` blocks | `src/setup*.sql` (byte-checked) |
+| 3 ERD | the `.mmd` embed and how it's rendered | `erd/schema.svg` |
+| 4 Lessons | the 16 lessons below, each with concept, question, SQL, result block, display, exercise with answer SQL, and check kind; a closing note on where A2's advanced track attaches (after lesson 16) | queries.log |
+| 5 Cookbook | at least 25 queries with ids `c01…`, each with its game use, SQL (`?` via `-- params`) and result | queries.log |
+| 6 Countries file | fields; Natural Earth vs GBIF with license quotes; ingest; the 107-code match table; credit; the `/v1` rule; the `NA` CSV note | `out/countries-match.md` |
+| 7 Demo | 2–3 ideas, the pick, its rules, its queries (by cookbook id), the phone layout | |
+| 8 Site | everything under "Site" below, with the Phase 2 viewer folded in | |
+| 9 Mission B | paths of the brief(s) | `plans/…-b1.md`, `…-b2.md` |
+| 10 For the owner | the choices listed at the end of this section, plus any the spike adds | |
+
+**Concept order: the Brazil question moves after joins, to lesson 9.** The `WHERE` lesson uses single-table questions that are just as real ("Which animals are frogs?", "Which animals are in the genus *Panthera*?"). Brazil then explains why there's a junction table: one animal has many countries, so countries live in their own table. A ready-made joined table early on would show a join's output before learners know about keys, and they would have to unlearn it.
+
+**Lesson path skeleton.** The lesson-writing step finalizes it; the slugs are the URLs.
+
+| # | slug | concept | question | shown as |
+|---|---|---|---|---|
+| 1 | tables | tables, rows, columns | What does critwire know about an animal? | cards + table |
+| 2 | select | SELECT, ORDER BY, LIMIT | Which animals come first from A to Z? | cards |
+| 3 | where | WHERE, AND/OR, LIKE | Which animals are frogs? | cards |
+| 4 | null | NULL, IS NULL | Which animals have no photo? | cards (no-photo state) |
+| 5 | counting | COUNT, GROUP BY | How many animals have each range status? | table |
+| 6 | erd | entities, attributes, reading the ERD | Where is each fact stored? (`information_schema.columns`) | ERD + table |
+| 7 | keys | PK `id`, alternate keys (`slug`, outside ids), FK, constraints | Can two animals share an id? | cards + constraint error |
+| 8 | one-to-many | 1:N, inner join | Which genus and family is the jaguar in? | cards |
+| 9 | many-to-many | junction table, join (the mockup) | Which animals have been recorded in Brazil? | cards + "not native range" note |
+| 10 | countries | lookup table | In which countries has the jaguar been recorded? | table (draft-table) |
+| 11 | left-join | LEFT JOIN, NULL again | Which animals have no country records, and why? | cards |
+| 12 | hierarchy | self-reference, tree | How many mammals, amphibians and reptiles? | table |
+| 13 | views | CREATE VIEW | Save "animals with their class" as a view | table |
+| 14 | normalization | 1NF/2NF/3NF; nested file → flat tables (DuckDB-labelled) | How do 76 records with lists become 472 rows? | table |
+| 15 | sources | provenance, licenses, open records ≠ native range | Who filled in the jaguar's taxonomy, and which photos are share-alike? | table |
+| 16 | design | designing a table for new data | How would critwire store body mass and diet? | ERD + schema check |
+
+**How results drive the interface** (one module each, pure where possible):
+- **Query results:** `engine.query(sql, params?)` returns `{ columns, rows }` as plain JS values, with BigInt converted to a number when that's safe.
+- **Cards:**
+  - When cards appear: a result shows as cards when it has a `species_id` or `id` column whose values are all species ids and unique. Otherwise it shows as a table.
+  - What a card shows: a lookup map built at boot (`SELECT id, common_name, scientific_name, photo_* FROM species`) supplies the title (common name), the italic scientific name, the photo and the credit. The row's other columns appear as small "column: value" lines.
+  - Credit: always visible, as "Photo: {credit}, {license, linked to its deed from `LICENSE_URLS`}, via Wikimedia Commons", linking to `photo_page`.
+  - No photo: a neutral placeholder that says "No photo yet".
+  - Other views: the Table tab always shows the raw result, and a result of one row with one number also shows as a large count. At most 200 rows are drawn ("showing 200 of N").
+- **Exercise checks:** they run in the page against today's data, so they keep working as the data grows (no stored expected rows). There are three kinds:
+  - `result` runs the reference answer and compares positionally: column names are ignored, and rows are compared as a multiset unless the exercise is `ordered`. Hints cover row count, column count, column order and row order.
+  - `error` expects the learner's statement to fail with a constraint error.
+  - `schema` runs a verify query (for example on `information_schema`) whose expected rows are written in the lesson.
+
+  "Show answer" reveals the reference, and "Reset database" re-runs the setup.
+- **Games:**
+  - They call cookbook queries by id: `site/learn/cookbook/<id>.sql`, imported as text by esbuild, so the cookbook page, the game and E2E share one source.
+  - They bind parameters (UTC date, seed) and map rows to game state with pure functions.
+  - They draw with the same card component, with cards as buttons.
+- **Lesson prose** gives no result counts, because the data grows; the result panel shows them.
+
+**Site:**
+- **URLs:**
+  - `/learn/`: the lesson path.
+  - `/learn/<slug>/`: lessons.
+  - `/learn/schema/` and `/learn/schema.svg`: the ERD and data dictionary.
+  - `/learn/cookbook/`.
+  - `/learn/playground/`: free SQL on every table, cards or table, and "Download CSV". This is the Phase 2 viewer from `plans/001-mvp.md:83`; ticking animals is deferred.
+  - `/play/<demo>/`.
+  - Assets under `/learn/assets/` (`duckdb-<version>/…` and a hashed `app-<hash>.js`).
+
+  URLs use slugs, not numbers, so inserting a lesson breaks no link.
+- **Build:** extend `pnpm build`; no framework.
+  - `scripts/build/template.ts` exports `fillTemplate`, extracted from `docs.ts:36-44`; the docs page uses it too.
+  - `scripts/build/learn.ts` (`writeLearn`):
+    - Copies the mvp and eh WASM files and workers from `node_modules/@duckdb/duckdb-wasm/dist` to `dist/learn/assets/duckdb-<version>/`. `selectBundle` picks one at runtime, and only that one downloads.
+    - Bundles `site/learn/src/*.ts` with esbuild's JS API (bundle, ESM, minify, `[name]-[hash]` file names, `.sql` loaded as text).
+    - Fills `site/learn/layout.html` with each lesson fragment `site/learn/lessons/<slug>.html`, in the order of `site/learn/lessons.json`.
+    - Writes the schema and cookbook pages and checks the ERD hash.
+  - Lesson SQL and exercises live in data attributes (`<pre><code data-sql="lesson">`, `data-answer`, `data-check`). That's the pattern the docs examples already use (`site/index.html:62`, read by `e2e/duckdb.spec.ts:25`).
+  - The shared CSS tokens move from `site/index.html:9-12` to `site/style.css`, which both the docs and Learn link. Light or dark follows the system setting, as the docs page already does.
+  - A new `site/learn/tsconfig.json` (DOM lib); `pnpm typecheck` runs both configs.
+- **Editor:** a plain `<textarea>` (with a label, `spellcheck=false`, `autocapitalize=off`, monospace), a Run button, and Ctrl/Cmd+Enter. Tab leaves the editor, so focus is never trapped. No syntax highlighting in v1.
+- **Accessibility and keyboard:**
+  - Semantic landmarks and headings.
+  - Status and a result summary ("12 rows") in an `aria-live="polite"` region.
+  - Cards are a list of `<article>` elements with headings, `alt="Photo of {common name}"` and visible credits.
+  - Tables are real `<table>`s with `<th scope="col">`.
+  - The ERD dialog, with the text data dictionary one link away.
+  - Visible focus styles and WCAG AA contrast in both themes.
+  - A layout that works at 375 px; game cards are buttons, so they work by keyboard and touch.
+- **Before the database loads:**
+  - The page is complete static HTML: lesson text, with the SQL already editable.
+  - Run is disabled and shows "Loading database: x of y MB", from DuckDB's instantiate progress.
+  - On failure, it shows the error and its reason, never an endless spinner.
+  - `<noscript>` explains that running SQL needs JavaScript.
+  - No pre-rendered results, because they would go stale.
+- **E2E** (the existing harness, serving `dist/` on 3100):
+  - `learn.spec.ts`:
+    - The path lists the lessons in order.
+    - Every lesson's SQL runs without error and matches its display kind.
+    - The Brazil and no-photo lessons are checked against `data/species.json`; expectations come from the data, as in `e2e/docs.spec.ts`.
+    - Each exercise accepts its answer and rejects a wrong one.
+    - The ERD dialog opens, a lesson can be run by keyboard alone, and pages fit 375 px.
+    - No request leaves the origin except to the photo hosts. `page.route` serves photos from a fixture image and asserts the requested URLs equal the data's `photo.url`.
+  - `schema.spec.ts`: ERD-to-database drift.
+  - `countries.spec.ts`: the files, their shape, and every species code joining.
+  - `serving.spec.ts`: `.wasm` content type and encoding.
+  - B2 adds `cookbook.spec.ts` (every query) and `play.spec.ts`.
+  - Artifacts as today: the HTML report and traces, plus screenshots of a lesson's cards, the no-photo state and the ERD.
+- **Mission B sizing:** as one mission it's about 45–50 sessions (6 pipeline stages, about 35 implementation steps, then review, verification and release). That's too close to 60, so split it:
+  - **B1 (about 32–38 sessions):**
+    - The countries file end to end: ingest, derive, build, attribution, docs, E2E.
+    - Engine vendoring and the app core.
+    - The ERD pipeline and schema page.
+    - The 16 lessons with their checks, and E2E.
+  - **B2 (about 18–24 sessions, after B1 is live):**
+    - The cookbook page and the playground with CSV download.
+    - The demo game, and E2E for the cookbook and game.
+    - Caddy cache headers, if the owner approves them.
+
+  The A1 Steps stage writes both briefs.
+
+#### 5. DuckDB-WASM vs PGlite: decision thresholds
+
+DuckDB-WASM (the better of eh and mvp, under the live Caddy config) must meet these medians:
+
+| Metric | Budget |
+|---|---|
+| Reliability | 0 failures in every run of every profile |
+| Warm time to first result, slow-4g profile (6x CPU) | ≤ 8 s |
+| Cold time to first result, school-wifi profile (4x CPU) | ≤ 40 s |
+| Peak renderer memory (`VmHWM`) | ≤ 700 MB |
+| Cold bytes; cold time on slow-4g | reported, no budget (paid once per device, then cached) |
+
+**When to recommend PGlite:**
+- DuckDB-WASM misses a budget even under the proposed Caddy config, **and** PGlite meets every budget, **and** PGlite is at least 1.5x better on each metric DuckDB missed.
+- Or DuckDB-WASM has a hard technical limit, meaning it can't run in a target configuration, and PGlite doesn't.
+
+If both engines miss, DuckDB-WASM stays, and §10 states what the miss costs learners and how to soften it. Smaller downloads alone never justify a switch. A switch would change `engine.ts` and the setup SQL (Postgres JSON functions instead of `unnest`), but not the standard SQL in the lessons. If the warm boot misses 8 s, first reconsider separate lesson pages (each page boots the engine), before reconsidering the engine.
+
+#### Brief questions: answered now, or left to the spike
+
+| Question | Answer now | The spike settles |
+|---|---|---|
+| Q1 Parquet in desktop browsers and on a Chromebook | expected to work: CORS and Range are proven by E2E, and parquet is built in | reliability at 4x/6x, whether throttling reaches the worker, what emulation can't prove |
+| Q2 size, startup, memory | raw sizes in F2 | every number |
+| Q3 self-hosting | WASM, workers and app: yes (npm files + esbuild, no CDN, autoinstall off). Caddy works unchanged; cache headers and br are recommended (F3) | the extension mirror (`inet`, `spatial`), `.wasm` MIME, compressed bytes |
+| Q4 shell vs own editor | our own `<textarea>` editor for lessons, cookbook, game and playground, since cards, checks and games need it. The shell stays out of mission B unless the spike shows it costs almost nothing | shell embed with tables preloaded; its bytes; keyboard and phone notes |
+| Q5 results → interface | the card rule, check kinds and game flow (§4) | the card screenshots |
+| Concept order | Brazil is lesson 9, after joins | — |
+| ERD format and offline SVG | Mermaid; commit the SVG with a source-hash check; render with Playwright + mermaid | that the SVG renders with no `foreignObject` |
+| Countries source | Natural Earth (public domain); GBIF's list only as an unpublished check | that all 107 codes and `XK` match |
+| PGlite vs DuckDB | thresholds in §5 | the numbers |
+
+**Owner choices this design already raises** (for 002 §10, each with its cost):
+- Caddy `Cache-Control` and precompression: a control-room change plus the e2e copy, and learners stop re-downloading the engine after each deploy.
+- Photos linked from Wikimedia vs critwire hosting its own copies: disk and bandwidth, against schools that block wikimedia.org.
+- Publishing `/v1/countries.*` from Natural Earth: a public addition.
+- The Brazil lesson as lesson 9 instead of the mockup's 04.
+- Light/dark following the system vs the mockup's dark only.
+- The B1/B2 split.
+
+### Rejected alternatives
+
+- PGlite as the default: the owner prefers DuckDB-WASM, so PGlite wins only through §5.
+- sql.js: no Parquet reader and SQLite's loose typing; only its size is assessed.
+- The `coi` bundle by default: needs COOP/COEP on every page and `crossorigin` photos, and threads can't speed up 76 rows. It gets only the quick check.
+- jsDelivr or any CDN for engine files: schools block CDNs, and the brief requires self-hosting.
+- An import map instead of a bundler: arrow and its own bare dependencies need many map entries, which break easily on upgrades.
+- A web framework: static pages plus one bundled module are enough; esbuild is needed only for the bare imports.
+- The DuckDB shell as the lesson interface: a terminal can't show cards or check exercises, and works poorly with screen readers and phone keyboards.
+- CodeMirror in v1: an extra dependency and bundle just for highlighting, while a textarea is fully accessible. Revisit after learner feedback.
+- Rendering Mermaid in the browser: about 3 MB of JS per page for a static picture.
+- mermaid-cli / puppeteer: blocked install script and no linux-arm64 Chrome (F9).
+- DBML, PlantUML, D2: no pinned offline renderer here (DBML's renderer is a hosted service, PlantUML needs Java, D2 a binary). DOT through a WASM Graphviz renders in Node, but its crow's-foot source is verbose and GitHub doesn't preview it.
+- One table per taxonomic rank (`classes`, `orders`, …): four tables, and a new table for every new rank. `taxa` grows by rows and teaches self-reference.
+- Taxonomy as text columns on `species` (as in `db/schema.sql`): repeats class, order and family on every animal, which is the 3NF problem lesson 14 teaches.
+- Integer ids for `taxa`: assigned by sort order, they would shift as the data grows. Taxon names are unique (F5).
+- Photos in their own 1:0..1 table: the NULL lesson wants `photo_url IS NULL`, and cards would need one more join.
+- Outside ids as rows of `species_ids (system, value)`: loses the one-UNIQUE-column-per-id example the alternate-keys lesson needs.
+- The Brazil lesson early, on a ready-made joined table: shows a join's output before keys, while single-table WHERE questions are just as real.
+- run-queries on the node DuckDB: a different DuckDB version and extension set from the browser's (F2).
+- Numbered lesson URLs: renumbering would break links.
+- Stored expected results for exercises: they break when the data grows; comparing with the reference query at check time doesn't.
+- One single-page app for all lessons: a router and state management for a gain the warm-boot budget may not need (§5).
+- GBIF's country enumeration as the countries source: no continent or subregion, and no stated license.
+- Committing DuckDB extension binaries in mission B: no v1 lesson needs one, and A2 decides.
 
 ## Architecture review (Fable)
 
@@ -287,5 +705,6 @@ Out:
 ## Log
 
 - 2026-10-22 UTC · Baseline: install, typecheck, unit 66/66, build, E2E 20/20 green; dist + live /v1 hashes saved (identical, 157 files).
+- 2026-10-22 06:24 UTC · Architecture: architect wrote findings F1–F10 + target design (spike harness, learners schema v1, Mermaid ERD w/ committed SVG, 16-lesson path, B1/B2 split, PGlite thresholds). No code; nothing to verify beyond review.
 
 ## Summary
