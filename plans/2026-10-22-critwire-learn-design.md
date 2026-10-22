@@ -974,7 +974,7 @@ Planner, 2026-10-22. Conventions:
     - mission B's `pnpm erd`, the `data-source-sha256` attribute, the build's stale refusal, and why not mermaid-cli (F9).
   - Checks: Guard; spike green; `erd.ts` exits 0 with no `<foreignObject>`; `run-queries $W/$P --check --erd $W/plans/002-learn-erd.mmd` exits 0; look at the PNG (Read tool): crow's feet and keys are readable.
 
-- [ ] S14 · 002 §1 Engine and interface (Q1–Q5; §5).
+- [x] S14 · 002 §1 Engine and interface (Q1–Q5; §5). Deviations (Decisions, S14): a result-cap probe added (`cap-check.ts`, runner `streamCapped`), since S4/S7 left the cap unproven; references for the whole path at each setup (one engine start per visit).
   - Numbers come only from `$SP/out/*/summary.md`, each citing its run folder.
   - Q1: reliability per bundle and profile; what emulation proves and what only real hardware would (Chromebook memory pressure, ChromeOS, Android, iOS Safari).
   - Q2: bytes, times and memory for eh, mvp and PGlite side by side; sql.js size and paragraph; coi's quick numbers.
@@ -1360,6 +1360,11 @@ Only the spike tools that the Definition of done rests on are tested in isolatio
 - **S13: ER3's trigger.** A `themeCSS` `@import` lands after mermaid's own rules, where browsers ignore it (no request, verified); a `background-image` in `themeCSS` is fetched and caught. So the guard is the real defence, not a scan of the SVG text.
 - **S13: SVG size** 142,522 B (21,640 gzip -9), 1901 × 1166 px; paths are ~55 % (row backgrounds and borders). Fine as one cached file; rendering in the browser instead would ship `mermaid.min.js` 5.5 MB (1.6 MB gzip).
 
+- **S14: results are capped by streaming, proven** (`$SP/out/cap/`, `scripts/cap-check.ts`, runner `streamCapped`). The last statement goes through `conn.send(sql, true)` and reading stops at 10 000 rows: the 21.2 M-row join stops in 0.14 s at a 387 MB renderer peak (was malloc failure, 2.6 GB). Same columns and row order as `runScript`. `cancelSent()` returns false after the early break, but closing that connection suffices (next query 50 ms). Rejected: `SELECT * FROM (…) LIMIT` wrap (bounded, 458 MB, but renames duplicate columns `a, a` → `a, a_1` and only fits queries). A sort over the join ends in `memory_limit`'s OOM (830 MB peak). Page keeps ≤ 10 000 rows, draws 200.
+- **S14: eh only.** Mission B vendors no `mvp` (it loses SQL error text, S2; slower, bigger); a browser without WASM exceptions gets a "too old" notice. coi stays out (S9).
+- **S14: references for the whole lesson path at every setup**, not per page: with one engine start per visit (S9), a learner's change in one lesson must not move another lesson's expected answer. B measures it (budget: ≤ 10 % of setup time); fallback = compute on lesson open while no learner statement has changed data, else ask for Reset.
+- **S14: start failures.** B's engine `HEAD`s the engine `.wasm` before `instantiate` (a 404 `.wasm` hangs duckdb-wasm, S12) and keeps S9's worker-error race. DML results read "N rows changed" (S5).
+
 ## Log
 
 - 2026-10-22 UTC · Baseline: install, typecheck, unit 66/66, build, E2E 20/20 green; dist + live /v1 hashes saved (identical, 157 files).
@@ -1381,5 +1386,6 @@ Only the spike tools that the Definition of done rests on are tested in isolatio
 - 2026-10-22 12:37 UTC · S11: `shell-page.ts` + `shell.html` (embed on engine.db, shell_bg.wasm vendored, xterm CSS), `shell-check.ts` → `out/shell`: 0 failures, blocked []; 76 typed at first prompt (WebGL side-channel + DOM text), URL-hash query 250, phone key events ok; known: no screen-reader output, on-screen-keyboard text dropped, busy typing lost, broken WebGL → no shell; +0.5 MB zstd. Q4 → own editor. boot-check 0 failures. Guard clean, repo typecheck + 66/66, spike typecheck + 40/40, no Caddy/Chromium left.
 - 2026-10-22 13:05 UTC · S12: RQ1–RQ24 first (26 fixture plans + test: 32 red → green; spike 72/72); `run-queries.ts` + `plan-queries.ts` (static checks before boot, per-statement labels, BEGIN … ROLLBACK isolation, render/hash, --check/--update), `sql.ts` `codeOnly`; found a 404 `.wasm` hangs duckdb-wasm (boot timeout now = boot failure). `plans/002-learn.md`: title, intro, 10 headings, §2 in full + `setup`/`setup-counts`. `--update` → `--check` exit 0, second `--update` no change, log line 1 = duckdb-wasm eh v1.5.6. Guard clean, repo typecheck + 66/66, spike typecheck, no Caddy/Chromium left.
 - 2026-10-22 13:14 UTC · S13: RQE1–5 + ER1–4 first (erd-drift.test.ts failed to load: 22; erd.test.ts 5/5 red → green; spike 99/99); `plans/002-learn-erd.mmd`; `erd-model.ts` + `run-queries --erd` (catalog vs ERD, embed check); `erd.ts` → `$SP/erd/schema.{svg,png}` (no foreignObject; PNG read: crow's feet, keys, notes readable); 002 §3 written (diagram, view, reading guide, Mermaid vs DBML/PlantUML/D2/DOT, dialog + `/learn/schema/` dictionary, `pnpm erd` + stale refusal, why not mermaid-cli). `run-queries 002 --check --erd` exit 0 ("6 tables, 1 view, 6 relationships match"); Guard ok (typecheck, test 66/66).
+- 2026-10-22 13:29 UTC · S14: `cap-check.ts` probe (`out/cap`: stream cap 10 047 rows 0.14 s / 387 MB vs 2.6 GB; wrap renames dup cols; sort → memory_limit OOM; 0 failures, blocked []); 002 §1 written (recommendation + key numbers vs PGlite, method, Q1–Q5, §5 verdict table, Caddy live vs proposed, shell vs editor, engine code, cards/checks/Reset/Stop/cap, emulation limits). `run-queries --check --erd` exit 0; spike typecheck + 99/99; Guard ok (typecheck, 66/66, only plans/); no Caddy/Chromium left.
 
 ## Summary

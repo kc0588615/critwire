@@ -6,7 +6,185 @@ Every ```` ```sql ```` block in this file was run in DuckDB-WASM by the spike's 
 
 ## 1. Engine and interface
 
-Written in step S14.
+**Recommendation: DuckDB-WASM 1.33.1-dev65.0 (DuckDB v1.5.6), `eh` bundle only, in a Web Worker, every file self-hosted from critwire.com, with critwire's own `<textarea>` editor and cards.** It met every budget the design set except one (warm start on a slow laptop), and PGlite, the one real alternative, missed that one too and also missed the memory budget. The fix for the slow warm start is page design (one engine start per visit, below), not another engine.
+
+Key numbers (medians of 5, live Caddy config; time to first result = page open → Brazil cards drawn):
+
+| | DuckDB-WASM eh | PGlite 0.5.10 |
+|---|---|---|
+| first load on the wire | 9.02 MB (40.28 MB uncompressed) | 6.44 MB (19.39 MB) |
+| first result, desktop: first visit / returning | 2.9 / 2.5 s | 4.0 / 2.4 s |
+| first result, school Wi-Fi (4× slower CPU): first visit / returning | 27.1 / 15.1 s | 35.7 / 14.0 s |
+| first result, slow 4G (6× slower CPU): first visit / returning | 64.2 / 22.0 s | 70.3 / 21.6 s |
+| peak memory of the tab (renderer RSS) | 0.50–0.52 GB | 1.07–1.44 GB |
+| longest freeze of the page while starting, desktop / 4× | 0 / 0.29 s | 2.8 / 20.3 s |
+
+Sources: `spike/out/duckdb-live/`, `spike/out/pglite-live/`, `spike/out/pglite-live-duckdb-probe/` (DuckDB's freeze at 4×). `spike/` is the mission's scratch folder, `/srv/critter-ai/agent-state/missions/critwire-learn-design/spike/`; each `out/<run>/summary.md` has every median and maximum, and `README.md` has the commands that reproduce it.
+
+### How it was measured
+
+- **Where:** Playwright 1.58.2's Chromium 145 (full browser, headless) on the 2-core ARM VPS, against the spike's copy of the live Caddy block on `127.0.0.1:3102`. The page is the Brazil lesson (lesson 9): boot, run `setup.sql`, run the join, draw 12 cards.
+- **Profiles:** desktop (no limits); school Wi-Fi (CPU 4× slower, 5 / 1 Mbps, 100 ms); slow 4G (CPU 6× slower, 1.6 / 0.75 Mbps, 150 ms). Each cell: 5 first visits (new browser profile, empty cache) and 5 returning visits (reload, cache warm).
+- **CPU throttling:** Chrome's own throttle (`Emulation.setCPUThrottlingRate`) slows the page 4.1× but the DuckDB worker only 1.01× (`spike/out/throttle-validation/`), so it can't emulate a slow laptop for a worker-based engine. Every throttled run instead ran the whole browser under a Linux CPU quota (`systemd-run --scope -p CPUQuota=25%` for 4×), which slows the worker 4.04×. Every engine was throttled the same way.
+- **Network throttling:** Chrome's network emulation does reach the worker: the engine `.wasm` took 12.9 s at school Wi-Fi against 12.9 s expected from its size (ratio 1.00).
+- **Bytes** from Caddy's access log (what left the server); **memory** from the renderer process's peak RSS (`VmHWM`, page + worker + WASM), the page's JS heap and the WASM linear memory; **times** from marks in the page.
+- **Self-hosting proof:** every run fails any request to a host other than the spike's own and the two Wikimedia photo hosts, and lists it. Every list is empty.
+
+### Q1. Can DuckDB-WASM reliably query critwire's Parquet files?
+
+**Yes, on desktop Chromium and on an emulated low-end Chromebook.** 0 failures in 30 loads per bundle (eh and mvp, 3 profiles × 5 first visits + 5 returning visits) plus 15 extra eh runs (rebuild, Reset, runaway query), and in 30 loads under the proposed Caddy config (`spike/out/duckdb-live/`, `spike/out/duckdb-proposed/`).
+
+What the spike learned on the way:
+- **Parquet needs an extension.** duckdb-wasm statically links only `core_functions`; `parquet` is a loadable extension in this build and in 1.32.0 alike. The page loads it from critwire's own extension mirror at start (0.74 MB on the wire), with automatic extension downloads turned off. See Q3.
+- **The file is read whole.** For a registered file duckdb-wasm makes one plain `GET` per fresh database (200, no `Range`): `species.parquet` is 32 KB, so that's right for v1. Range reads of large files are A2's question; with full-file reads disabled, duckdb-wasm's probe reached Caddy without a `Range` header and the open failed (`spike/out/boot/`).
+- **Use `eh`, drop `mvp`.** `mvp` (for browsers without WebAssembly exception handling) loses every SQL error message: a learner would read `_setThrew is not defined` instead of DuckDB's error. It's also slower (first result 3.4 / 31.3 / 73.1 s against eh's 2.9 / 27.1 / 64.2 s) and 1.08 MB bigger. eh needs Chrome 95, Firefox 100 or Safari 15.2 (2021–2022); an older browser gets a plain "your browser is too old for Learn's database" notice instead (§8).
+- **The threaded `coi` bundle doesn't work.** Its parquet extension imports non-shared memory and fails to link (`LinkError`), and its start hung past 60 s in 6 of 10 tries: no database in 10 of 10 (`spike/out/coi/`). It would also have needed `Cross-Origin-Embedder-Policy` on every page. A2 should check again only if DuckDB publishes shared-memory `wasm_threads` extensions.
+
+What a 4 GB Chromebook means for this, in short: a Learn tab peaks at about 0.5 GB, which a 4 GB Chromebook can hold as one heavy tab. With many tabs open, ChromeOS may discard it in the background, and coming back costs a returning-visit start (15–22 s at 4–6×). See "What emulation proves" below.
+
+### Q2. First-load size, start time and memory
+
+All three engines side by side (medians of 5; MB = 10^6 bytes; times to the first result):
+
+| | DuckDB-WASM eh | DuckDB-WASM mvp | PGlite 0.5.10 (PostgreSQL 18.6) | sql.js 1.15.1 (SQLite 3.54.0) |
+|---|---|---|---|---|
+| first load, wire (live: zstd on the fly) | 9.02 MB | 10.10 MB | 6.44 MB | 0.37 MB (files only) |
+| first load, uncompressed | 40.28 MB | 45.58 MB | 19.39 MB | 0.73 MB |
+| desktop: first visit / returning | 2.9 / 2.5 s | 3.4 / 2.9 s | 4.0 / 2.4 s | not run |
+| school Wi-Fi 4×: first visit / returning | 27.1 / 15.1 s | 31.3 / 16.9 s | 35.7 / 14.0 s | not run |
+| slow 4G 6×: first visit / returning | 64.2 / 22.0 s | 73.1 / 25.8 s | 70.3 / 21.6 s | not run |
+| peak renderer memory (worst profile) | 518 MB | 529 MB | 1 440 MB | not run |
+| WASM linear memory | 50 MB | 50 MB | 198 MB (+ 67 MB initdb) | |
+| page JS heap | < 10 MB | < 10 MB | 19–32 MB | |
+| where it runs | worker | worker | page's main thread | page's main thread |
+
+Sources: `spike/out/duckdb-live/`, `spike/out/pglite-live/`, `spike/out/sqljs/`, `spike/out/bytes/`. The same 7 tables and view, the same 37 columns, the same row counts and the same 12 Brazil rows were checked in PGlite before it was timed (`spike/out/pglite-check/`).
+
+- **Where DuckDB's time goes.** A returning visit downloads nothing (0 bytes), so its time is all CPU: at 6×, starting the worker and compiling the cached 36 MB module (with `LOAD parquet`) takes 17.8 s, the setup 3.4 s, the query and cards 0.8 s. On desktop the same steps take 2.0 / 0.4 / 0.1 s. Bytes matter only for the first visit.
+- **Deploys don't cost returning learners the engine again.** The build gives every vendored engine file a fixed modification time, so Caddy's ETag stays the same across deploys: in 15 of 15 "rebuild, then reload" runs no engine file was downloaded again, only 0.10 MB of page and data files.
+- **PGlite's real cost is a frozen page.** Postgres runs on the page's main thread, which froze for up to 2.8 s on desktop and 20.3 s at 4× while it started; the editor and buttons can't respond meanwhile. PGlite has a worker mode, which would stop the freezing but change neither its start time nor its memory.
+- **sql.js** is SQLite compiled to WebAssembly, and at 0.37 MB it is about 24 times smaller than DuckDB's first load. It is still the wrong engine for Learn. It can't read Parquet or fetch files, so the page would build every table from the JSON itself and could never read a growing `/v1` file in place. SQLite's typing is loose (an `INTEGER` column accepts `'abc'` unless the table is `STRICT`) and foreign keys are off until `PRAGMA foreign_keys = ON`: the opposite of what the keys and normalization lessons teach. It has no `information_schema` (lesson 6) and no path to spatial queries (A2). A small download doesn't outweigh teaching non-standard behaviour.
+- **The threaded `coi` bundle** never gave a database (Q1); its failed starts took 4.8 s on desktop and 37–42 s at 4×, longer than eh's whole start on the same page (2.3 / 14.7 s).
+
+**The engine decision (A1 plan, Architecture §5).** DuckDB-WASM had to meet: 0 failures; a returning visit's first result at slow 4G within 8 s; a first visit's first result at school Wi-Fi within 40 s; peak memory within 700 MB. PGlite would replace it only if DuckDB missed a budget even with the proposed Caddy config, PGlite met every budget, and PGlite was at least 1.5× better on what DuckDB missed.
+
+| budget | DuckDB eh, live | DuckDB eh, proposed Caddy | PGlite, live |
+|---|---|---|---|
+| 0 failures | met (0 of 30 + 15) | met (0 of 30) | met (0 of 30) |
+| returning visit, slow 4G ≤ 8 s | **missed**: 22.0 s | **missed**: 23.9 s | **missed**: 21.6 s |
+| first visit, school Wi-Fi ≤ 40 s | met: 27.1 s | met: 23.6 s | met: 35.7 s |
+| peak memory ≤ 700 MB | met: 518 MB | met: 516 MB | **missed**: 1 440 MB |
+
+PGlite misses two budgets and is only 1.02× faster (1.11× against the proposed config) on the one DuckDB misses, so DuckDB-WASM stays. Both engines need about 20 s of CPU to start on a 6× slower machine, so the answer is to start the engine rarely:
+- **One engine start per Learn visit.** Every lesson has its own static page and URL, but with JavaScript on, moving between lessons, the schema page, the cookbook and the playground swaps the page's content in place and keeps the running database (§8). A learner pays the start once per visit, not once per lesson.
+- **Readable before it's ready.** The lesson text and the editable SQL are plain HTML; only Run waits for the database, and it shows how much of the engine has loaded (§8).
+- **Restarts only when needed:** Reset, Stop, and recovery from a crashed worker or a failed allocation (Q5). A restart costs a returning visit's start (2.4 s desktop, 14.2 s at 4×, 21.0 s at 6×).
+
+What that leaves, for §10: on a low-end machine a learner waits about 15–24 s for the first result of each visit once the engine is cached, and about 24–64 s on the very first visit, depending on the network and the Caddy config.
+
+### Q3. Can everything be self-hosted?
+
+**Yes: the engine, its worker, its extensions and the application all come from critwire.com, and Caddy works unchanged.** No run in the spike made a request to any host other than critwire's own and the Wikimedia photo hosts.
+
+- **Engine files** are copied from the pinned npm package into `/learn/assets/duckdb-1.33.1-dev65.0/` (`duckdb-eh.wasm`, `duckdb-browser-eh.worker.js`) and loaded by URL, never through duckdb-wasm's jsDelivr helper. Schools often block CDNs, and the brief requires critwire.com to work alone.
+- **The application** (page code, duckdb-wasm's JS, Apache Arrow, the card and check code, `setup.sql` as text) is one esbuild bundle with a content hash in its name (§8).
+- **The extension mirror works with signatures on.** DuckDB's own layout under critwire's origin, `/learn/assets/duckdb-ext/v1.5.6/wasm_eh/<name>.duckdb_extension.wasm`, with the files byte-identical to `extensions.duckdb.org`. The page sets `custom_extension_repository` to it and turns off automatic installs and loads, so a missing extension fails with an error naming critwire's own URL instead of fetching from DuckDB's servers. `INSTALL` fetches nothing in the browser; `LOAD` makes the one request. `parquet`, `inet` and `spatial` loaded and answered (`POINT (1 2)`, `192.168.1.5`) with `allow_unsigned_extensions` off, and a copy of `inet` with one changed byte was refused ("signature is either missing or invalid"), so self-hosting needs no unsigned mode (`spike/out/ext-mirror/`).
+  - v1 needs only `parquet` (3.22 MB file, 0.74 MB on the wire). It isn't an npm package, so mission B's offline build needs the binary in the repo or a pinned download: §10.
+  - For A2: `spatial` is 23.63 MB (6.33 MB on the wire live, 4.53 MB precompressed), about 6× the parquet extension, and took 1.5 s to install, load and answer on desktop. Load it in spatial lessons only, never at start.
+- **What Caddy needs: nothing, to work.** It already serves `.wasm` (and `.duckdb_extension.wasm`) as `application/wasm`, everything is same-origin (no CORS), and mission B's fixed file times keep ETags stable across deploys (Q2). Two improvements are the control room's change and the owner's choice (§10), measured under `Caddyfile.proposed` (`spike/out/duckdb-proposed/`, `spike/out/bytes/`, `spike/out/classroom/`):
+
+  | | live (zstd on the fly) | proposed (precompressed br + zstd, `immutable`) |
+  |---|---|---|
+  | first load on the wire | 9.02 MB (engine `.wasm` 7.98 MB) | 6.25 MB (engine `.wasm` 5.47 MB br) |
+  | first visit: school Wi-Fi / slow 4G | 27.1 / 64.2 s | 23.6 / 51.4 s |
+  | returning visit | unchanged (CPU-bound) | unchanged |
+  | a class of 10 loading the engine at once: Caddy CPU (wall) | 3.47 s (1.89 s) | 0.05 s (0.09 s) |
+
+  - **Precompression** (`file_server { precompressed br zstd gzip }`, with `.br` and `.zst` files the build writes next to each engine file) cuts the first load by 31 % and saves Caddy about 0.35 CPU seconds per learner's first load on this 2-core server. Its cost is build time: brotli at level 11 takes about 2 minutes for the shipped eh files, which the build can skip when the versioned file hasn't changed.
+  - **`Cache-Control: public, max-age=31536000, immutable` on `/learn/assets/*`** saves the revalidation request on returning visits; safe because every engine and app file name carries its version or hash.
+  - Under that config, returning visits made no request for the `/v1` files at all (Chromium's heuristic freshness: `/v1` has no `Cache-Control`), so a learner could see yesterday's data for a while; with the live config they get 304s. If the control room adds headers, `/v1/*` should get `Cache-Control: no-cache` in the same change (§8, §10).
+  - `e2e/serving.spec.ts` fails when `e2e/Caddyfile` drifts from the live block, so any change goes into the ops Caddyfile first and the E2E copy after it.
+
+### Q4. The DuckDB shell, or our own editor?
+
+**Our own editor: a plain `<textarea>` with a Run button, everywhere (lessons, cookbook, game, playground).** The shell is cheap to embed but fails learners who most need help (`spike/out/shell/`).
+
+- **It works on critwire's tables.** `@duckdb/duckdb-wasm-shell` (same version, self-hosted) embeds with `embed({ shellModule, container, resolveDatabase: async () => engine.db })` on the database the setup already built: `SELECT count(*) FROM species;` returned 76 at the first prompt, and tables created in the shell are visible to the page. Its URL hash runs queries when it opens, so a cookbook entry could link to it.
+- **It costs little to download:** 0.39 MB `shell_bg.wasm` + 0.17 MB of page code on the wire, about 5 % on top of the engine, and 0.2–0.7 s to open after setup on desktop.
+- **But it fails screen readers:** results are either pixels on a canvas (WebGL, its default) or hidden from assistive technology (`aria-hidden` rows); its options can't turn on xterm's screen-reader mode, so a screen reader hears only "Terminal input".
+- **On-screen keyboards don't type in it:** it reads only raw key presses, so text from Android keyboards, input methods and dictation is dropped (Enter still arrives). Hardware keyboards work, and the layout fits 375 px.
+- **Keys typed while a query runs are lost**, and if the GPU is blocklisted (WebGL2 advertised, no context), the shell doesn't open at all.
+- **It can't do Learn's job:** a terminal can't draw cards or check exercises.
+- **Maintenance:** a second package from Rust/WebAssembly we can't patch without a Rust toolchain, kept in lockstep with duckdb-wasm, and depending on `xterm` 5.3.0, which npm marks deprecated.
+
+So the shell is at most an optional "open in the DuckDB shell" link on the playground for people who already know SQL, never the only way in (§10). Mission B doesn't build it.
+
+### Q5. How query results drive the interface
+
+The spike built this as the lesson 9 page (`spike/out/card-page/`: 20 checks, 0 failures; screenshots `brazil-1280.png`, `brazil-1280-dark.png`, `brazil-375.png`, `no-photo.png`). Mission B ports these modules; each is pure except the engine.
+
+**The engine** (`engine.ts`) is the one way a database comes into being: for the first start, for Reset and for Stop.
+
+```ts
+// One fresh database: new worker, instantiate the self-hosted eh bundle, settings, then setup.sql.
+async function fresh(bundle: DuckDBBundle): Promise<Live> {
+  const worker = new Worker(bundle.mainWorker);
+  const db = new AsyncDuckDB(new VoidLogger(), worker);
+  // A worker that fails to load only fires `error`; instantiate alone would wait forever.
+  await Promise.race([db.instantiate(bundle.mainModule, null, onProgress), workerError(worker)]);
+  await db.open({ path: ":memory:" });
+  for (const f of ["species.parquet", "countries.parquet"])
+    await db.registerFileURL(f, `${location.origin}/v1/${f}`, DuckDBDataProtocol.HTTP, false);
+  const conn = await db.connect();
+  await runScript(conn, [
+    "SET autoinstall_known_extensions = false",   // never fetch from extensions.duckdb.org
+    "SET autoload_known_extensions = false",
+    "SET memory_limit = '512MB'",                 // a runaway sort fails with DuckDB's own error, not a dead tab
+    `SET custom_extension_repository = '${location.origin}/learn/assets/duckdb-ext'`,
+    "LOAD parquet",
+  ].join(";\n"));
+  await runScript(conn, SETUP);                   // §2; esbuild imports setup.sql as text
+  return { db, conn };
+}
+```
+
+- **`runScript(text, params?)`** splits the text into statements (top-level `;`, outside quotes and comments), runs them in order and returns the last one's `{ columns, rows }` as plain values. A whole multi-statement string sent to DuckDB at once returns the *first* statement's result, which is why it splits. An error names its statement ("Error in statement 2 of 3: …") and keeps DuckDB's text. `params` bind to the last statement's `?`.
+- **Huge results are capped before they exist.** Running the 21-million-row join `SELECT * FROM species, species_countries, species_sources` the plain way made duckdb-wasm build the whole result: it failed with `malloc of size 2147483648 failed` after a 2.6 GB peak, and the worker kept 2.2 GB until a restart (`spike/out/duckdb-live/`). A 4 GB Chromebook would more likely crash the tab. Instead, the last statement is streamed (`conn.send(sql, true)`) and reading stops after 10 000 rows: the same join then took 0.14 s with a 387 MB peak, and the result kept the query's column names and row order exactly (`spike/out/cap/`). The page keeps at most 10 000 rows and draws at most 200 ("showing 200 of more than 10 000"). Statements before the last run as usual. Wrapping the learner's query in `SELECT * FROM (…) LIMIT …` also bounds memory, but it renames duplicate columns (`a, a` became `a, a_1`) and works only for queries, so it isn't used. A sort over the same join runs inside DuckDB's memory manager and stops at `memory_limit` with DuckDB's "Out of Memory Error"; the page explains that the query needed more memory than a browser tab gets.
+- **Start failures are loud.** A worker that can't load fails at once ("DuckDB worker failed to load: <url>"). A missing engine `.wasm` makes duckdb-wasm wait forever without an error (seen in the spike), so mission B's engine first sends a `HEAD` for the `.wasm` and fails with its HTTP status. The page shows "The database couldn't start: <reason>", never an endless spinner.
+
+**Results to cards.**
+- **Only when the SQL says so:** a result shows as cards only if the SQL's first line is `-- show: cards`; everything else is a table. Nothing is guessed from columns, so `SELECT count(*) AS id FROM species` is a table and a large count. Lesson 1 explains the line; it travels with the SQL into the cookbook, the playground and copy-paste.
+- **The card rule:** the key is the column `species_id` if the result has one, else `id`. Every value must be a whole number, appear once, and be a known species id; otherwise the page shows the table with one line saying why ("Cards need one row per animal, with its id in `id` or `species_id` (`id` 999 is not an animal's id)."). The query runner and mission B's E2E fail a `-- show: cards` query that breaks it.
+- **What a card shows:** title, scientific name and photo come from a lookup the page builds after setup (`SELECT id, common_name, scientific_name, photo_url, photo_credit, photo_license, photo_page FROM species`), never from the row, so `SELECT id FROM species` still draws full cards. The row's other columns appear as small "column: value" lines, except columns the card already shows.
+- **Credits:** always visible: "Photo: {credit}, {license linked to its deed}, via Wikimedia Commons" (linked to the file page). Deed URLs come from the repo's `LICENSE_URLS` (`scripts/build/sources.ts`), which the browser bundle imports; an unknown license fails the build, and public domain shows unlinked.
+- **No photo:** a neutral "No photo yet" box with `role="img"` and a label, and no credit line (ids 19 and 47).
+- **Photos** load straight from Wikimedia with `crossorigin="anonymous"`, `referrerpolicy="no-referrer"` and `loading="lazy"`. Wikimedia sends `access-control-allow-origin: *`, so `crossorigin` costs nothing and would keep working if a page ever became cross-origin isolated (checked: 12 of 12 load under COEP; without `crossorigin` they're blocked).
+- **The Table tab** always shows the raw result as a real `<table>`; a one-row, one-number result also shows as a large count. A statement that changes data says "N rows changed" rather than "1 row".
+
+**Exercise checks** run in the page against today's data, so they keep working as the data grows; nothing stores expected rows.
+- `result`: the learner's result against the reference answer's, by position (column names ignored), as a multiset unless the exercise is ordered. Hints name the difference: column count, row count, row order ("check your ORDER BY"), column order, or "some rows differ".
+- `error`: the learner's last statement must fail with a constraint error (lesson 7: two animals can't share an id).
+- `schema`: a verify query on `information_schema` or `duckdb_constraints()` against expected rows written in the lesson, run on the learner's own tables (lesson 16).
+- **Pristine references:** right after every setup (start, Reset, Stop), before any learner statement, the page runs every reference answer of the whole path inside `BEGIN … ROLLBACK` and keeps the rows in memory. With one engine start per visit, a learner's `DELETE` in lesson 7 can't change lesson 9's expected answer. In the spike, after deleting India's country rows, the India exercise reported "Your result has 0 rows; the answer has 6. Changed the tables? Reset database brings them back."; after Reset it passed again. Mission B measures this step (16 small queries) and keeps it under 10 % of the setup's time; if it can't, it computes a lesson's reference when the lesson opens while no learner statement has changed data, and otherwise asks for Reset.
+
+**Reset and Stop both restart the engine** (terminate the worker, build a fresh database, setup, references), keeping the editor text.
+- Reset is how a learner undoes their own tables: DuckDB can't drop a table another table references (§2), so re-running the setup can't reset anything. 2.4 s on desktop, 14.2 s at 4×.
+- Stop: while a query runs, Stop is enabled. A single-threaded worker can't be interrupted mid-query, so Stop restarts it ("Stopped. The query couldn't be interrupted, so the database was restarted; your changes are gone."). A late result from the old worker is dropped, because the page counts restarts. In the spike, Stop took 3.2 s on desktop and the next query ran.
+- A crashed worker, or a failed allocation (the WASM memory never shrinks), takes the same path and says why.
+
+**Games** read results the same way (§5, §7): each cookbook query is a `.sql` file the bundle imports as text, so the cookbook page, the game and E2E share one source. The game binds its parameters (today's UTC date, a seed) to `?`, turns rows into game state with pure functions, and draws the same card component with each card as a button, passing species ids explicitly (games don't use `-- show: cards`).
+
+### What emulation proves, and what only real devices can
+
+**Proven here** (Chromium 145, ARM server, CPU quota and network emulation): that the engine starts and answers reliably at 4× and 6× slower CPU and on slow networks; how long each step takes there; how many bytes cross the network; and the peak memory Chromium needs for a Learn tab (about 0.5 GB). Screenshots at 375 px check the layout.
+
+**Only real devices can show:**
+- **A real Chromebook's memory pressure:** whether ChromeOS discards a 0.5 GB tab in the background at 4 GB, and where a tab is killed. A Chromebook's GPU, thermal throttling and Chrome build are also untested.
+- **Phones:** Android Chrome, and how on-screen keyboards behave in the `<textarea>`.
+- **iOS Safari:** WebKit's own limits on WASM memory, and whether the eh bundle starts (Safari 15.2 and later support it). Every browser on iOS uses WebKit.
+- **Firefox:** not run. Playwright's Firefox for this ARM server needs GTK libraries, which means apt packages, outside this mission (`spike/out/firefox/`). Firefox 100 and later support the eh bundle.
+
+§10 asks the owner for one check of about 15 minutes before mission B2's demo ships: a lesson and the demo on an iPhone, and on a Chromebook if one is at hand.
 
 ## 2. The learners' schema, first version
 
