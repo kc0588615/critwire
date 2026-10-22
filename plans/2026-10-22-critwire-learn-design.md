@@ -252,7 +252,7 @@ Out:
 - [x] Fable review: `architecture-reviewer`
 - [x] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
 - [x] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
-- [ ] Steps: `planner` writes Steps and Verification
+- [x] Steps: `planner` writes Steps and Verification
 
 ## Baseline
 
@@ -796,13 +796,457 @@ Other items:
 
 ## Steps
 
+Planner, 2026-10-22. Conventions:
+- `W=/srv/critter-ai/worktrees/critwire-learn-design`, `M=/srv/critter-ai/agent-state/missions/critwire-learn-design`, `SP=$M/spike`, `P=plans/002-learn.md`. The spike lives only in `$SP` and is never committed. Every command a step adds goes, in order, into `$SP/README.md`.
+- One step per session: commit the plan (and any `plans/` file) with the check-off and one Log line, then push.
+- **Guard** (every step): `git -C $W diff --name-only origin/main...HEAD | grep -v '^plans/'` prints nothing, and `pnpm typecheck && pnpm test` pass. The repo has no lint script (Baseline), so `pnpm typecheck` is the static check.
+- **Spike green:** `pnpm -C $SP typecheck` (from S1) and `pnpm -C $SP test` (from S2, when the first tests exist).
+  - `typecheck` runs `tsc --noEmit` on `tsconfig.json` (scripts, Node types) and `src/tsconfig.json` (DOM lib).
+  - `test` is `node --test test/*.test.ts`. It holds only the Failure-mode tests, written first and seen failing; put the red count in the Log.
+- **Browser runs:** the spike's `playwright` 1.58.2, `channel: "chromium"`, headless, always through `scripts/browser.ts`: one launcher that starts `serve.ts` and installs the route guard (allows `127.0.0.1:3102`, `thumb.wikimedia.org`, `upload.wikimedia.org`; aborted requests go into `blocked`).
+  - Never while `pnpm e2e` runs. Heavy runs one at a time.
+  - Long runs: one engine × profile per command, Bash timeout 1800000, or `run_in_background`.
+- **Run output:** `$SP/out/<run>/` holds `summary.md`, `env.txt` and, for browser runs, `results.json` (with `blocked`: array, `failures`: number), screenshots and `caddy-access.log`.
+- **Downloads:** each into its own new `$SP/downloads/<name>/`, read by path from `$SP/scripts/`. Record URL, release and sha256 in `$SP/downloads/SOURCES.md`.
+- **002 conventions** (Verification greps them):
+  - sections `## 1. Engine and interface` … `## 10. For the owner`, numbered and titled as in the brief;
+  - lessons `### Lesson <n> · <slug>`, each with a `**Shown as:**` and a `**Check:**` line;
+  - cookbook entries `### c<nn> · <title>`, each with a `**Game use:**` line;
+  - q-ids: `setup`, `setup-counts`; `l<nn>` and `l<nn>-<word>` lesson queries; `l<nn>-ex` the exercise answer; `c<nn>` cookbook; `k<nn>` countries file; `d<nn>` demo extras;
+  - result blocks are written only by `run-queries --update`; read the diff before committing;
+  - ages 16+ and new to SQL; no result counts in prose; no Wikipedia prose; no IUCN data (only `iucn_id`); countries are "recorded there in open records", never native range.
+- **Decisions:** every pin, the countries layer and field choices, the throttle method, the engine pick and the brief paths, each with its reason.
+- **Contingencies:**
+  - S9 picks PGlite, or finds a DuckDB-WASM hard limit (§5): insert steps before S12 that port `engine.ts`, the setup and run-queries to it (lesson SQL unchanged); use the planner if that's more than two steps.
+  - No duckdb-wasm build meets S1's pin rule: pin the newest tagged-release build outside the gate, and S10 records the extension gap for A2.
+  - A species code Natural Earth can't match: add the narrowest rule on Natural Earth's own fields that matches it and record it. Never invent a row.
+  - A step outgrows its session: split it per the mission rules; the first part is done and checked.
+
+- [ ] S1 · Spike scaffold: pins, install, serving, vendored engine files (§1 Pins, Serving; F2, F3).
+  - Pins:
+    - `npm view @duckdb/duckdb-wasm time --json`: candidates 1.32.0 and the newest dev build outside pnpm's release-age gate. For each, the DuckDB version and source hash from the wasm (`strings duckdb-eh.wasm | grep -E '^v1\.[0-9]+\.[0-9]+'`), and `curl -sI https://extensions.duckdb.org/<ver>/wasm_{eh,mvp}/{inet,spatial}.duckdb_extension.wasm`. Pick by §1's rule; `@duckdb/duckdb-wasm-shell` at the same version.
+    - `@electric-sql/pglite` and `mermaid`: newest outside the gate. `sql.js` 1.15.1, `esbuild` 0.28.2, `playwright` 1.58.2, `typescript` (the repo's resolved version) + `@types/node`, `@duckdb/node-api` 1.5.6-r.2 (with the repo's gate excludes).
+  - `$SP/package.json` (exact pins; scripts `typecheck`, `test`), `pnpm-workspace.yaml` (`allowBuilds: esbuild` only; a gate exclude only where a pin needs one), `pnpm install`. Any "ignored build scripts" line goes under Decisions: B1 adds duckdb-wasm and mermaid to the repo.
+  - `Caddyfile`, `Caddyfile.proposed` (§1 layout), `scripts/serve.ts`, `scripts/browser.ts` (no page yet).
+  - `scripts/build-site.ts`:
+    - `site/v1/` = a copy of `baseline/live/v1/`;
+    - mvp + eh `.wasm` files and workers into `site/learn/assets/duckdb-<ver>/`, PGlite and sql.js files into `pglite-<ver>/` and `sqljs-<ver>/`; every copy's mtime set to 2000-01-01T00:00:00Z (F3);
+    - esbuild bundles every `src/*-page.ts` (ESM, `.sql` loaded as text) into `site/learn/assets/`;
+    - `--precompress` writes `.br`, `.zst`, `.gz` beside the vendored files (used in S9).
+  - Checks:
+    - Guard; spike green;
+    - under `serve.ts`, `curl -sI …/duckdb-eh.wasm` shows `content-type: application/wasm`;
+    - the ETag of `duckdb-eh.wasm` is the same before and after a second `build-site.ts`;
+    - `out/bytes/summary.md`: per vendored asset, its file size and `curl -s -o /dev/null -w '%{size_download}'` bytes with `Accept-Encoding` identity, gzip, zstd and br, under `Caddyfile`;
+    - `serve.ts` exits non-zero naming the port when something listens on 3102, and when something listens on 3100 (`node -e "require('net').createServer().listen(3100,'127.0.0.1')" &`, killed after);
+    - no spike Caddy left running (`pgrep -f "$SP/Caddyfile"` is empty).
+
+- [ ] S2 · Engine boot, both bundles, self-hosted (§1 Page code; Q1, first half).
+  - Tests first, red: SQ1–SQ7 in `test/sql.test.ts`.
+  - `src/sql.ts`: `splitStatements`, pure.
+  - `src/engine.ts`:
+    - `boot`, `restart`, `runScript`, timing marks;
+    - manual mvp and eh bundles from self-hosted URLs; `?bundle=eh|mvp` forces one, otherwise `selectBundle`;
+    - settings: autoinstall and autoload off, `memory_limit` 512 MB;
+    - registers `species.parquet` and `countries.parquet` with `registerFileURL` on `location.origin`; the setup text is optional until S4.
+  - `src/runner-page.ts` + `runner.html`: exposes `window.runScript`, `window.tableNames` and `window.engineInfo`.
+  - `scripts/boot-check.ts`, per bundle, → `out/boot/`: `SELECT version()`, `SELECT count(*) FROM read_parquet('species.parquet')`, the loaded rows of `duckdb_extensions()`, and `LOAD spatial`.
+  - Checks:
+    - Guard; spike green (SQ tests now pass);
+    - both bundles: count 76; `version()` matches S1's string (otherwise re-pin per S1 and record); parquet and json loaded; `LOAD spatial` errors without any request; `blocked` empty;
+    - the Caddy log shows `206` range reads of `species.parquet`;
+    - `runScript('SELECT 1; SELECT 2')` returns 2, and an error in statement 2 of 3 says "statement 2".
+
+- [ ] S3 · Draft countries table from Natural Earth (§2 Countries source; F7; brief §6 research).
+  - Downloads:
+    - Natural Earth admin-0 `countries` and `map_units` attributes from one pinned release of `nvkelso/natural-earth-vector`, at the scale whose map units include GF, MQ and RE, into `downloads/naturalearth-<ver>/`;
+    - `https://api.gbif.org/v1/enumeration/country` into `downloads/gbif-enum/`.
+  - `out/countries-sources.md`: each source's license or terms quoted verbatim, with URL, release and retrieval date. GBIF's enumeration has no stated license, so it's a cross-check only.
+  - Tests first, red: CD1–CD11 in `test/countries-draft.test.ts`, on small fixture GeoJSONs in `test/fixtures/`.
+  - `scripts/countries-draft.ts` (pure matcher + thin CLI) writes:
+    - `site/v1/countries.parquet` via `@duckdb/node-api`, columns `code, name, continent, region, subregion`;
+    - `site/v1/countries.json` (feeds PGlite only);
+    - `out/countries-match.md`: each of the 107 codes plus XK with its layer, field and name, and the GBIF differences.
+  - Checks:
+    - Guard; spike green; the CLI exits 0;
+    - every code in `data/species.json` is in the draft;
+    - FR, NO and XK come through `ISO_A2_EH`; GF, MQ and RE come from `map_units`;
+    - `NA` is the string `"NA"` (Namibia) in both the JSON and the Parquet;
+    - a fixture with one code removed fails, naming it.
+  - The name field (`NAME_EN` or `NAME_LONG`) and the scale go under Decisions.
+
+- [ ] S4 · Learners' schema v1 in the browser; F6 in WASM; restart and the memory limit (§2; F6).
+  - `src/setup.sql` per §2: `taxa` one INSERT per rank, top down → `species` → `sources` → `species_sources` → `countries` → `species_countries` → view `species_taxonomy`. Standard types and constraints; no `DROP`. `engine.ts` runs it at boot and in `restart()`.
+  - `scripts/schema-check.ts` → `out/schema/`:
+    - counts: `taxa` 143 (3 classes, 22 orders, 50 families, 68 genera), `species` 76, `species_countries` 472, `sources` 5, `species_sources` 591, `countries` = the draft's rows, `species_taxonomy` 76;
+    - F6 again in WASM, each case pass/fail with its error text in `out/schema/f6-wasm.md`: a self-referencing multi-row INSERT fails; `ALTER TABLE … ADD FOREIGN KEY` isn't implemented; `DROP TABLE species` fails while a child exists; `BEGIN; CREATE TABLE … REFERENCES species(id); INSERT …; <failing INSERT>; ROLLBACK` leaves `information_schema.tables` unchanged; what raw `conn.query('SELECT 1; SELECT 2')` returns; `getTableNames` expands a view over `countries`, ignores literals and returns `[]` for `CREATE`;
+    - restart: after `CREATE TABLE t (id INTEGER REFERENCES species(id))` and `DELETE FROM species_countries`, `restart()` gives the setup counts and no `t`; record its time;
+    - runaway: §1's cross join ends in DuckDB's out-of-memory error, the worker survives, and `SELECT 1` runs next. If the tab crashes instead, lower `memory_limit` and record it;
+    - fails loudly: setup against a copy of the draft Parquet without `BR` fails with an FK error.
+  - Checks: Guard; spike green; `schema-check.ts` exits 0; `blocked` empty.
+
+- [ ] S5 · Card page: the mockup as lesson 9, cards with credits, the no-photo state, one exercise (§1 Card page; §4 Cards, Exercise checks; Q5).
+  - Tests first, red: CR1–CR12 in `test/cards.test.ts`, CK1–CK11 in `test/check.test.ts`.
+  - `src/cards.ts`: the card rule (pure) and rendering. License deeds come from the repo's `scripts/build/sources.ts` `LICENSE_URLS`, imported by path, never copied.
+  - `src/check.ts`: the compare (pure); `result`, `error` and `schema` kinds; pristine references computed right after setup inside `BEGIN … ROLLBACK`.
+  - `src/card-page.ts` + `card.html`: "CRITWIRE LEARN · LESSON 09" label, "Beginner SQL" badge, question, concept line, labelled `<textarea>` with the Brazil join (`-- show: cards`), Run and Ctrl/Cmd+Enter, Cards and Table tabs, an `aria-live` status, Reset, Stop, one exercise with Check and Show answer, a Schema button.
+  - `scripts/card-check.ts` → `out/card-page/`:
+    - Brazil: card count = row count = the species with `BR` in `data/species.json`. Each card has a heading, the italic scientific name, `alt="Photo of …"`, a visible credit whose license link equals `LICENSE_URLS[license]`, and a link to `photo_page`;
+    - ids 19 and 47: two "No photo yet" placeholders, no `<img>`;
+    - `SELECT count(*) AS id FROM species` without the directive shows a table; `-- show: cards` with `SELECT 999 AS id` shows a table and the reason line;
+    - the exercise accepts its answer and rejects a wrong one. After `DELETE FROM species` the answer still checks against the pristine reference, and Reset restores the setup counts;
+    - keyboard only: Tab reaches the editor, Ctrl+Enter runs, Tab leaves the editor;
+    - screenshots at 1280 px, at 375 px (`scrollWidth <= innerWidth`), and of the no-photo state;
+    - `blocked` empty.
+  - Checks: Guard; spike green; `card-check.ts` exits 0; look at the screenshots (Read tool) next to `vision.png`.
+
+- [ ] S6 · Measurement harness, validated, plus a smoke run (§1 Measurement harness; MS1–MS9).
+  - MS1–MS9 are run-time assertions in `measure.ts`; write them before the measuring code.
+  - `scripts/measure.ts` (`--engine duckdb-eh|duckdb-mvp|pglite|coi --profile desktop|school-wifi|slow-4g --runs N --config live|proposed --out <dir>`, plus `--validate` and `--smoke`), `src/measure-worker.js` (wraps `WebAssembly.instantiate*`, then `importScripts` the DuckDB worker), and a page init script for PGlite.
+    - Cold = a new browser and context; warm = a reload in the same context.
+    - Metrics per §1: wire bytes and encodings from the Caddy log (CDP `encodedDataLength` as a cross-check), uncompressed sizes, the marks `nav → engine → setup → query → cards` (+ `restart`), photo time separately, renderer `VmHWM` (`SystemInfo.getProcessInfo` + `/proc/<pid>/status`), JS heap (`Performance.getMetrics`), WASM `memory.buffer.byteLength`.
+    - `results.json` per run and `summary.md` (median and max per cell); the first run of each profile is screenshotted.
+  - `--validate` → `out/throttle-validation/`:
+    - (a) a Worker busy loop at CPU rate 1 and 4. If the ratio is under 2.5, every throttled profile of every engine uses `systemd-run --user --scope -p CPUQuota=<100/rate>%` instead;
+    - (b) the worker's `.wasm` download time is within ±30 % of bytes ÷ throughput. Only if it isn't, add the rate-limiting proxy;
+    - the method used goes under Decisions.
+  - `--smoke`: desktop, duckdb-eh, live config, cold + warm, one run each; 12 Brazil cards, `failures` 0, `blocked` empty. Verification re-runs it.
+  - Checks: Guard; spike green; `--validate` and `--smoke` exit 0; the smoke's wire bytes for `duckdb-eh.wasm` are within 1 % of S1's zstd count.
+
+- [ ] S7 · DuckDB-WASM matrix under the live Caddy config (Q1, Q2; §5).
+  - duckdb-eh and duckdb-mvp × desktop, school-wifi, slow-4g × cold, warm, 5 runs each → `out/duckdb-live/`.
+  - duckdb-eh extras per profile:
+    - warm after rebuild: re-run `build-site.ts`, then reload; the engine files come back 304 or from cache, with the same ETag;
+    - restart time;
+    - the runaway query: an error, and the worker is alive after it.
+  - `summary.md`: median and max per cell, §5's budgets met or missed per bundle, the better bundle, the throttled screenshots, and what the peak `VmHWM` means for a 4 GB Chromebook.
+  - Checks: Guard; 5 runs in every cell; `blocked` empty in every `results.json`. A reliability failure is a result: keep its error and count it, never re-run it away.
+
+- [ ] S8 · PGlite and sql.js measured (§1 PGlite, sql.js).
+  - `src/setup-pglite.sql` builds the same tables from `/v1/species.json` and the draft `/v1/countries.json` with `jsonb_array_elements`. `src/pglite-page.ts` + `pglite.html`: the same marks, the Brazil join, no cards, main thread, total long-task time via `PerformanceObserver`.
+  - In the page, before measuring: the table counts equal S4's, and the Brazil join returns the same ids as DuckDB's.
+  - pglite × 3 profiles × cold, warm × 5 → `out/pglite-live/`.
+  - `out/sqljs/summary.md`: bytes from S1's table, and the assessment paragraph (no Parquet reader, SQLite's loose typing).
+  - Checks: Guard; spike green; counts and ids equal; `blocked` empty.
+
+- [ ] S9 · Proposed Caddy config, classroom load, coi gate; the engine decision (§1 Serving, coi gate; §5; F3).
+  - `build-site.ts --precompress`, then duckdb-eh × 3 profiles × cold, warm × 5 under `Caddyfile.proposed` → `out/duckdb-proposed/`. Add the proposed config's bytes to `out/bytes/summary.md`.
+  - Classroom → `out/classroom/`: 10 parallel `curl -s -H 'Accept-Encoding: zstd' -o /dev/null` of `duckdb-eh.wasm` under each Caddyfile; wall time, and Caddy's `utime + stime` from `/proc/<pid>/stat` before and after.
+  - coi → `out/coi/`: the `/coi/` page at desktop and at 4x under `Caddyfile.proposed`; `crossOriginIsolated === true`; photos load with `crossorigin`. The full matrix runs only if its median time to first result is at least 30 % below eh's.
+  - The engine decision: apply §5 to S7–S9 and record the verdict, with the numbers side by side, under Decisions. Anything but DuckDB-WASM: Contingencies.
+  - Checks: Guard; spike green; `blocked` empty; classroom numbers for both configs.
+
+- [ ] S10 · Self-hosted extension mirror; Firefox check (Q3; §1 Extension mirror).
+  - Download `inet` and `spatial` for `wasm_eh` and `wasm_mvp` at the pin's DuckDB version into `downloads/duckdb-ext-<ver>/`; copy them to `site/learn/assets/duckdb-ext/<ver>/<platform>/<name>.duckdb_extension.wasm`.
+  - A runner mode runs, on both bundles with signature checks on: `SET custom_extension_repository = '<origin>/learn/assets/duckdb-ext'; INSTALL spatial; LOAD spatial; SELECT ST_AsText(ST_Point(1, 2));`, and the same for `inet`.
+  - → `out/ext-mirror/`: the result `POINT (1 2)`, `blocked` empty, compressed bytes, the `.duckdb_extension.wasm` content type, and what Caddy needs. If no binaries exist for the version, record that for A2 and check off.
+  - Firefox: `pnpm -C $SP exec playwright install firefox` (no apt, no sudo). If it installs, run `card-check.ts` in it → `out/firefox/`; otherwise record why. WebKit needs apt: out of scope, say so.
+  - Checks: Guard; spike green; the outputs above exist.
+
+- [ ] S11 · DuckDB shell embed, time-boxed to this session (Q4; §1 Shell).
+  - `src/shell-page.ts` + `shell.html`: `embed({ shellModule, container, resolveDatabase: () => db })` on the database after setup.
+  - `scripts/shell-check.ts` → `out/shell/`: types `SELECT count(*) FROM species;` through `page.keyboard`, takes a screenshot, records the shell's bytes from the Caddy log, and notes on screen readers and phone keyboards.
+  - If it doesn't work within the session, `out/shell/summary.md` says why. Check off either way.
+  - Checks: Guard; spike green; `blocked` empty.
+
+- [ ] S12 · run-queries, and 002's skeleton with §2 (§1 run-queries contract; §2).
+  - Fixtures first, red: one plan per RQ1–RQ24 in `test/fixtures/run-queries/`, each with its expected exit code and message; `test/run-queries.test.ts` spawns the script on each.
+  - `scripts/run-queries.ts` per the contract (`--check` default, `--update`; `--erd` comes in S13). It reuses `browser.ts`, `engine.ts`, `sql.ts` and `cards.ts`; per-block timeout 60 s, boot 120 s; writes `$M/queries.log`.
+  - Create `$P`: title, one paragraph on what it is, the ten section headings. Write §2 in full:
+    - the tables: columns, PK, FK and UK, and what each is built from;
+    - naming; build order and why (F6); no `DROP`, a fresh database only by restart;
+    - the limits lessons state; what v1 leaves out; room to grow;
+    - the `setup` block (= `src/setup.sql`) and `setup-counts` with its result.
+  - Checks:
+    - Guard; spike green (the RQ fixtures pass);
+    - `node $SP/scripts/run-queries.ts $W/$P --update`, then `--check`, exits 0;
+    - a second `--update` leaves `git diff --exit-code $P` clean;
+    - the first line of `queries.log` names the engine, bundle and DuckDB version.
+
+- [ ] S13 · ERD: Mermaid source, offline SVG, drift check, 002 §3 (§3; F9).
+  - Fixtures first, red: ER1–ER4 and RQE1–RQE5.
+  - `plans/002-learn-erd.mmd`: the six tables with types, `PK`/`FK`/`UK` markers and attribute comments, and §3's relationships.
+  - `scripts/erd.ts` (mermaid's browser bundle in a Playwright page, `htmlLabels: false`, route guard) → `$SP/erd/schema.svg` and `schema.png`. `run-queries --erd`.
+  - 002 §3:
+    - the ```` ```mermaid ```` block (= the `.mmd`), and the view listed beside it;
+    - why Mermaid, against DBML, PlantUML, D2 and DOT;
+    - how the site shows it: the dialog from every lesson, and `/learn/schema/` with the text data dictionary;
+    - mission B's `pnpm erd`, the `data-source-sha256` attribute, the build's stale refusal, and why not mermaid-cli (F9).
+  - Checks: Guard; spike green; `erd.ts` exits 0 with no `<foreignObject>`; `run-queries $W/$P --check --erd $W/plans/002-learn-erd.mmd` exits 0; look at the PNG (Read tool): crow's feet and keys are readable.
+
+- [ ] S14 · 002 §1 Engine and interface (Q1–Q5; §5).
+  - Numbers come only from `$SP/out/*/summary.md`, each citing its run folder.
+  - Q1: reliability per bundle and profile; what emulation proves and what only real hardware would (Chromebook memory pressure, ChromeOS, Android, iOS Safari).
+  - Q2: bytes, times and memory for eh, mvp and PGlite side by side; sql.js size and paragraph; coi's quick numbers.
+  - Q3: self-hosting; the extension mirror; Caddy needs as a control-room change (cache headers, precompression with the classroom numbers, the fixed-mtime default).
+  - Q4: shell embed vs our own editor, with S11's evidence.
+  - Q5: results to cards (the rule), the three check kinds and pristine references, Reset and Stop, how a game reads results; the card screenshots' paths; the small pieces of engine and card code the design needs to show.
+  - The recommendation, per §5.
+  - Checks: Guard; `run-queries $W/$P --check --erd $W/plans/002-learn-erd.mmd` exits 0.
+
+- [ ] S15 · 002 §4 lessons 1–8 (tables to one-to-many).
+  - A short intro to the path: who it's for, how a lesson page works, the `-- show: cards` directive.
+  - Each lesson: concept and question; a plain explanation with every term explained; the SQL (`l<nn>`…) and its result block; `**Shown as:**`; "Your turn" with the `l<nn>-ex` answer and its result; `**Check:**` (`result`, ordered or not; `error`; or `schema` with its verify query and expected rows).
+  - Lesson 4 shows the no-photo state (ids 19, 47) and `range_status`. Lesson 6 reads the ERD and `information_schema.columns`. Lesson 7's exercise is an `error` check (`-- expect: error`).
+  - Checks: Guard; `--update`, read the diff, then `--check --erd` exits 0; lessons 1–8 each have `l<nn>-ex`, `**Shown as:**` and `**Check:**`; `-- show: cards` appears exactly in the lessons §4's path marks as cards.
+
+- [ ] S16 · 002 §4 lessons 9–16, and where advanced lessons attach.
+  - 9: the mockup's Brazil question as a junction-table join (`ON sc.species_id = s.id`), with the "open records, not native range" note (Tiger, Chimpanzee, African Wild Dog).
+  - 10: the countries lookup (`draft-table`).
+  - 11: LEFT JOIN; the four animals with no country records, and why.
+  - 12: the hierarchy as a self-join; what the genus FK can't check.
+  - 13: views. 14: normalization in plain words (1NF, 2NF, 3NF), with the DuckDB-labelled `unnest` from `species.parquet`. 15: sources and licenses, share-alike photos.
+  - 16: designing `species_traits`: a `schema` check on `information_schema` and `duckdb_constraints()`, plus the ERD lines it adds.
+  - Closing note: where A2's spatial and raster lessons attach, after lesson 16, and which tables they join on.
+  - Checks: as S15, for lessons 9–16; 16 lessons in total.
+
+- [ ] S17 · 002 §5 cookbook c01–c13.
+  - Intro: parameters (`?` through `-- params`), determinism (arithmetic on ids, date and seed as parameters, never `random()`), how a game loads `<id>.sql`.
+  - Includes the brief's eight: animal of the day (date parameter); a quiz with wrong answers from the same class; animals you could meet in country X; animals that share a country; family trees (`taxa`, `species_taxonomy`); odd one out; countries with the most animals; a seeded team of 5 with no two from the same family.
+  - Checks: Guard; `--update`, read the diff, then `--check --erd` exits 0; every `c<nn>` has `**Game use:**`.
+
+- [ ] S18 · 002 §5 cookbook c14 onward, at least 25 in total.
+  - More game and app queries in the same format (for example higher or lower on country counts, guess the class, memory pairs from one family, the photo-license mix, countries per continent as `draft-table`).
+  - Checks: as S17; at least 25 `c<nn>` blocks.
+
+- [ ] S19 · 002 §6 the countries file.
+  - From `out/countries-sources.md` and `out/countries-match.md`:
+    - fields and types;
+    - Natural Earth vs GBIF, with the verbatim license quotes and whether each can be hosted;
+    - the ingest: `pnpm ingest naturalearth`, a snapshot of attributes only with `retrieved`, and derive's refusal of an unmatched code;
+    - the matching rule and the table of the 107 codes (code, layer, field, name), XK noted;
+    - credit: §2's attribution entry and the docs line;
+    - the `/v1` rule: a new file; existing files keep their bytes (the Baseline hashes are the evidence);
+    - the `NA` CSV note; B1 relabels `draft-table` blocks `ran`.
+  - `k01`: every species code joins `countries` (`draft-table`; 0 unmatched).
+  - Checks: Guard; `--check --erd` exits 0; the match table has 107 code rows.
+
+- [ ] S20 · 002 §7 demo and §8 site.
+  - §7: two or three game ideas on the cards; the pick with its rules, its queries by cookbook id (extra `d<nn>` blocks if needed, run), the round flow, the phone layout (375 px, cards as buttons, touch and keyboard), what it shows before the database loads.
+  - §8: URLs; the build (`fillTemplate` extraction, `writeLearn`, the esbuild bundle, fixed mtime, direct dependencies with the pins from Decisions, `site/learn/tsconfig.json`, `site/style.css`); the editor; accessibility and keyboard; before the database loads; the Phase 2 viewer folded into `/learn/playground/`; the E2E plan on the local-Caddy harness (§4's specs and artifacts).
+  - Checks: Guard; `--check --erd` exits 0; every cookbook id §7 names exists in §5.
+
+- [ ] S21 · Mission B briefs, and 002 §9.
+  - `plans/briefs/critwire-learn-b1.md` and `plans/briefs/critwire-learn-b2.md`, in the ops brief format (`## Goal`, `## Why`, `## Scope`, `## Definition of done`, `## Decision rules`, `## Notes`). They sit under `plans/briefs/` so that a mission's own plan, `plans/<date>-<slug>.md`, can't collide with its brief; record that under Decisions.
+  - Each starts with a comment: copy to `/srv/critter-ai/agent-state/missions/briefs/<date>-critwire-learn-b<n>.md`, then `mission start critwire <that file>`; B2 only after B1 is live.
+  - Content per §4's split, with the session estimate:
+    - B1: the countries file end to end; engine vendoring and the app core; the ERD pipeline and schema page; the 16 lessons with their checks and E2E;
+    - B2: the cookbook page; the playground with CSV download; the demo game; their E2E; Caddy headers if the owner approves.
+  - Definition of done: typecheck, test, build, the named E2E specs and their artifacts, and every lesson and cookbook query run in E2E. Notes: the pins, the F1–F10 facts B needs, and pointers into 002.
+  - 002 §9: the paths and why it's split.
+  - Checks: Guard; each brief has the six headings and an estimate well under 60 sessions.
+
+- [ ] S22 · 002 §10, the 001 pointer, completeness pass.
+  - §10: every owner choice from §4's list plus any the spike added (for example vendoring extensions for A2, the iPhone and Chromebook check), each with a recommendation and its cost.
+  - `plans/001-mvp.md` Later: the "Phase 2 viewer" line points to `plans/002-learn.md` (one line).
+  - Run Verification V6–V8 and fix any gap. The Log line lists the Summary's inputs: engine and key numbers next to PGlite's, shell vs editor, extensions, lessons, cookbook count, demo, countries source, brief paths, owner choices.
+  - Checks: Guard; V6–V8 pass.
+
 ## Verification
+
+Run from the worktree as one bash session; it writes its own transcript. No lint script exists (Baseline), so `pnpm typecheck` is the static check. Nothing public changes, so the repo's E2E suite proves no regression, and the spike's browser runs are this mission's E2E evidence.
+
+```bash
+set -euo pipefail
+W=/srv/critter-ai/worktrees/critwire-learn-design; cd "$W"
+M=/srv/critter-ai/agent-state/missions/critwire-learn-design; SP=$M/spike; V=$M/verify; E=$M/e2e
+P=plans/002-learn.md; ERD=plans/002-learn-erd.mmd; mkdir -p "$V"
+exec > >(tee "$V/verify-$(date -u +%Y%m%dT%H%MZ).log") 2>&1
+fail() { echo "FAIL: $*"; exit 1; }
+hashes() { (cd "$1" && find . -type f | sort | xargs sha256sum); }
+ports_free() { ! ss -ltn | grep -qE '127\.0\.0\.1:310[012] '; }
+
+# V0 preflight: clean and pushed, scratch db, ports 3100-3102 free
+test -z "$(git status --porcelain)"
+git fetch -q origin; test "$(git rev-parse HEAD)" = "$(git rev-parse origin/agent/critwire-learn-design)"
+node -e 'process.loadEnvFile(); process.exit(new URL(process.env.DATABASE_URL).pathname === "/critwire_dev" ? 0 : 1)' || fail "DATABASE_URL is not critwire_dev"
+ports_free || fail "port 3100-3102 busy"
+
+# V1 scope: only plans/ changed (no scripts/, site/, e2e/, data/, db/, package.json or lockfile)
+git diff --name-only origin/main...HEAD | grep -v '^plans/' && fail "files outside plans/ changed"
+
+# V2 repo checks
+pnpm install --frozen-lockfile
+pnpm typecheck
+pnpm test
+
+# V3 dist unchanged: a fresh build hashes exactly as Baseline's build of origin/main
+rm -rf dist; pnpm -s build > "$V/build.txt"
+diff <(LC_ALL=C sort -k2 "$SP/baseline/dist.sha256") <(hashes dist | LC_ALL=C sort -k2) || fail "dist differs from main"
+
+# V4 E2E regression: the repo suite (Playwright 1.58.2, headless Chromium, local Caddy 3100/3101), same 20 as Baseline
+rm -rf "$E"; E2E_ARTIFACTS="$E" pnpm e2e
+jq -e '.stats.expected == 20 and .stats.unexpected == 0 and .stats.flaky == 0 and .stats.skipped == 0' "$E/results.json"
+test -s "$E/playwright-report/index.html"; test -s "$E/docs-375.png"
+pgrep -f 'caddy run --config e2e/Caddyfile' && fail "E2E Caddy still running"
+
+# V5 spike: frozen reinstall, typecheck, failure-mode tests (SQ, CD, CR, CK, RQ, RQE, ER)
+pnpm -C "$SP" install --frozen-lockfile
+pnpm -C "$SP" typecheck
+pnpm -C "$SP" test
+
+# V6 every SQL block in 002 ran: re-run in DuckDB-WASM (headless Chromium, spike Caddy on 3102), compare
+# with the recorded results, rewrite queries.log; ERD drift against the browser-built database
+node "$SP/scripts/run-queries.ts" "$W/$P" --check --erd "$W/$ERD"
+head -1 "$M/queries.log" | grep -q 'duckdb-wasm' || fail "queries.log engine line"
+grep '^-- status: untested: ' "$P" || true
+test "$(grep -c '^-- status: untested: ' "$P" || true)" -le 3 || fail "too many untested blocks"
+ports_free || fail "spike server left running"
+
+# V7 002 and the briefs are complete
+for n in 1 2 3 4 5 6 7 8 9 10; do grep -qE "^## $n\. " "$P" || fail "002 section $n missing"; done
+L=$(grep -cE '^### Lesson [0-9]+ · ' "$P"); test "$L" -ge 12 -a "$L" -le 16 || fail "lessons: $L"
+for n in $(grep -oE '^### Lesson [0-9]+' "$P" | grep -oE '[0-9]+$'); do
+  grep -qxF -- "-- q: l$(printf %02d "$n")-ex" "$P" || fail "lesson $n has no exercise"; done
+test "$(grep -c '^\*\*Shown as:\*\*' "$P")" = "$L"; test "$(grep -c '^\*\*Check:\*\*' "$P")" = "$L"
+C=$(grep -cE '^-- q: c[0-9]{2}$' "$P"); test "$C" -ge 25 || fail "cookbook: $C"
+test "$(grep -cE '^### c[0-9]{2} · ' "$P")" = "$C"; test "$(grep -c '^\*\*Game use:\*\*' "$P")" = "$C"
+for b in b1 b2; do f=plans/briefs/critwire-learn-$b.md
+  for h in Goal Why Scope 'Definition of done' 'Decision rules' Notes; do grep -qx "## $h" "$f" || fail "$f: no $h"; done; done
+grep 'Phase 2 viewer' plans/001-mvp.md | grep -q '002-learn.md' || fail "001 pointer"
+
+# V8 the ERD renders offline to SVG with the chosen tool
+node "$SP/scripts/erd.ts" "$W/$ERD"
+test -s "$SP/erd/schema.svg"; test -s "$SP/erd/schema.png"
+grep -q '<foreignObject' "$SP/erd/schema.svg" && fail "foreignObject in SVG"
+
+# V9 spike evidence present, no off-origin request anywhere, and the spike reproduces (smoke)
+for r in bytes boot schema card-page throttle-validation duckdb-live pglite-live sqljs duckdb-proposed classroom coi ext-mirror shell; do
+  test -s "$SP/out/$r/summary.md" || fail "no $r summary"; done
+for j in "$SP"/out/*/results.json; do jq -e '(.blocked | length) == 0' "$j" >/dev/null || fail "off-origin request in $j"; done
+test -s "$SP/README.md"; test -s "$SP/out/countries-match.md"; test -s "$SP/out/countries-sources.md"
+ls "$SP"/out/card-page/*.png "$SP"/out/duckdb-live/*.png > /dev/null
+node "$SP/scripts/measure.ts" --smoke --out "$SP/out/verify-smoke"
+jq -e '.failures == 0 and (.blocked | length) == 0' "$SP/out/verify-smoke/results.json"
+ports_free || fail "spike server left running"
+
+# V10 delivery
+test -z "$(git status --porcelain)"
+```
+
+What must hold: every command exits 0. V3's diff is empty (157 files). V4 is 20/20 with nothing skipped. V6 shows no result difference and no ERD drift. V7: 12–16 lessons, each with an exercise; at least 25 cookbook entries; both briefs complete; the 001 pointer. V9: every run folder has its summary, and no browser run made a request off the origin other than the two Wikimedia photo hosts.
+
+**Artifacts:**
+- Repo E2E, in `$M/e2e/`: `playwright-report/` (`pnpm exec playwright show-report $M/e2e/playwright-report`), `test-results/` with a `trace.zip` per test (`pnpm exec playwright show-trace <trace.zip>`), `results.json`, `docs-375.png`, `caddy-access.log`.
+- Spike, in `$SP/`: `out/<run>/` (`summary.md`, `results.json`, screenshots, `caddy-access.log`, `env.txt`), `erd/schema.{svg,png}`, `README.md` with every command in order.
+- `$M/queries.log`: each 002 block's result from DuckDB-WASM.
+- `$M/verify/verify-<UTC>.log`: this run's transcript.
+
+**Reproduce:** this script. Pieces alone: `node $SP/scripts/run-queries.ts $W/plans/002-learn.md --check --erd $W/plans/002-learn-erd.mmd`; `node $SP/scripts/measure.ts --smoke --out <dir>`; `rm -rf dist && pnpm build && E2E_ARTIFACTS=<dir> pnpm e2e`.
+
+**Release smoke** (the Release unit, not a step): after `deploy critwire`, fetch every path in `$SP/baseline/live.sha256` from https://critwire.com and diff the hashes against it. Any difference fails the release.
+
+## Failure modes
+
+Only the spike tools that the Definition of done rests on are tested in isolation. Each mode below is a test or fixture, written and seen failing before its code (step in brackets). "Fails" means a non-zero exit, or a thrown error, with a message naming the cause.
+
+**SQ · `splitStatements` (`src/sql.ts`), `test/sql.test.ts` [S2]**
+- SQ1 `;` inside a single-quoted string, including `''` escapes, doesn't split.
+- SQ2 `;` inside a double-quoted identifier doesn't split.
+- SQ3 `;` inside a `--` line comment or a `/* */` block comment doesn't split.
+- SQ4 No trailing `;`: the last statement is kept. A trailing `;` followed only by whitespace or comments adds no empty statement.
+- SQ5 Empty statements (`;;`) are dropped. Comment-only text gives zero statements, and `runScript` fails with "no SQL to run".
+- SQ6 Statement numbers are kept (1-based), so an error in statement 2 says "statement 2".
+- SQ7 An unterminated string, identifier or block comment fails; it's never passed through as one statement.
+
+**CD · `countries-draft.ts`, `test/countries-draft.test.ts` on fixture GeoJSONs [S3]**
+- CD1 A species code with no row fails, listing every unmatched code.
+- CD2 `ISO_A2 = -99` with a valid `ISO_A2_EH` uses `ISO_A2_EH` (FR, NO, XK).
+- CD3 A row with both codes `-99` gets no code; if a species needs it, CD1 fails.
+- CD4 `map_units` supplies only codes with no `countries` row (GF, MQ, RE); for a code with a country row, the country row wins.
+- CD5 Two rows with the same code fail, listing both.
+- CD6 Two rows with the same name fail.
+- CD7 An empty or null `name`, `continent`, `region` or `subregion` fails.
+- CD8 `NA` (Namibia) stays the string `"NA"` in the Parquet and the JSON.
+- CD9 The outputs have exactly `code, name, continent, region, subregion`: no geometry and no other field.
+- CD10 Codes missing from GBIF's enumeration are listed in the report and don't fail; XK is present.
+- CD11 An input file that's missing, or whose sha256 differs from `downloads/SOURCES.md`, fails.
+
+**CR · the card rule and cards (`src/cards.ts`), `test/cards.test.ts` [S5]**
+- CR1 Without `-- show: cards` the result is a table, even with a valid `id` column.
+- CR2 The directive counts only as the first non-blank line, exactly `-- show: cards`; anywhere else it's an ordinary comment.
+- CR3 With both `species_id` and `id`, the key is `species_id`.
+- CR4 No key column: table, plus the reason line.
+- CR5 A NULL key: table, plus the reason line.
+- CR6 Duplicate keys: table, plus the reason line.
+- CR7 A key that isn't a known species id (999, 0): table, plus the reason line.
+- CR8 A non-integer key (1.5, the string `'7'`): table, plus the reason line. A BigInt within the safe range is accepted.
+- CR9 Zero rows with the directive: an empty state ("No animals match"), not an error.
+- CR10 Over 200 rows: 200 cards and "showing 200 of N".
+- CR11 `photo_url` NULL: the "No photo yet" placeholder, no `<img>` and no credit. A photo: credit text, a license link to `LICENSE_URLS[license]`, and a link to `photo_page`. A license missing from `LICENSE_URLS` throws.
+- CR12 Other columns show as "column: value", with NULL shown as `NULL`.
+
+**CK · exercise checks (`src/check.ts`), `test/check.test.ts` [S5]**
+- CK1 The same rows under different column names pass.
+- CK2 The same rows in another order pass when unordered, and fail with the "row order" hint when ordered.
+- CK3 An extra or missing row fails with the row-count hint.
+- CK4 A different column count fails with the column-count hint.
+- CK5 Swapped columns fail with the "column order" hint (comparison is positional).
+- CK6 Duplicates count (multiset): `[a, a, b]` vs `[a, b, b]` fails.
+- CK7 NULL matches NULL; NULL doesn't match 0 or `''`.
+- CK8 BigInt `5n` matches the number 5; lists compare element by element.
+- CK9 Floats match within a relative 1e-9, so a different summing order still passes.
+- CK10 `error` kind: success fails with a hint; a non-constraint error (syntax) fails and shows it; a constraint error passes.
+- CK11 `schema` kind: the verify query's rows are compared, unordered, with the lesson's expected rows.
+
+**RQ · `run-queries.ts`, one fixture plan per mode in `test/fixtures/run-queries/`, `test/run-queries.test.ts` [S12]**
+- RQ1 A ```` ```sql ```` block without `-- q:` fails.
+- RQ2 A duplicate id fails.
+- RQ3 An id outside `[a-z0-9-]+` fails.
+- RQ4 A missing or unknown `-- status:` fails.
+- RQ5 `untested:` with an empty reason fails.
+- RQ6 A `ran` block that reads `countries` fails as mislabelled.
+- RQ7 A `ran` block `CREATE VIEW v AS SELECT * FROM countries; SELECT * FROM v;` fails as mislabelled (the word test catches the CREATE, `getTableNames` the SELECT).
+- RQ8 A `draft-table` block that reads no `countries` fails as mislabelled.
+- RQ9 Passes: `species_countries`, `countriesWithOpenRecords`, a `'countries'` literal and a `-- countries` comment in a `ran` block.
+- RQ10 A recorded result that differs in one cell, the row count or the hash fails, naming the id and showing the diff.
+- RQ11 A `ran` or `draft-table` block with no following ```` ```text ```` result fails; a result block whose id isn't the preceding block's, or with no block before it, fails.
+- RQ12 A statement error without `-- expect: error` fails, naming the id and the statement number.
+- RQ13 `-- expect: error X` fails when nothing errors, when the error lacks X, or when an earlier statement errors. An error in the last statement containing X passes and renders as `-- result: <id> · error: …`.
+- RQ14 Isolation passes: block A runs `DELETE FROM species; CREATE TABLE t (id INTEGER REFERENCES species(id));`, then block B still counts 76 species and can create `t` again.
+- RQ15 A block containing `BEGIN`, `COMMIT` or `ROLLBACK` fails, and the run stops; so does a failed `ROLLBACK`.
+- RQ16 A `-- show: cards` block whose result breaks the card rule (CR4–CR8) fails.
+- RQ17 `-- params` that isn't a JSON array, or whose length differs from the last statement's `?` count, fails. A correct one binds and passes.
+- RQ18 Determinism lint: `random(`, `hash(`, `uuid(`, `gen_random_uuid(`, `now(`, `current_date` or `current_timestamp` outside strings and comments fails; a last statement returning more than one row without `ORDER BY` fails.
+- RQ19 A `setup` block that differs from `src/setup.sql` by one byte (header lines aside), or a missing `setup` block, fails.
+- RQ20 Rendering is exact: NULL as `NULL`, lists as `[a, b]`, a BigInt above 2^53 as its digits, a 61-character cell cut to 60 plus `…`, `|` in a cell escaped as `\|`. The sha256 covers the full result: two results differing only in row 6 hash differently.
+- RQ21 A multi-statement block records the last statement's result (`SELECT 1; SELECT 2` gives 2).
+- RQ22 Port 3102 busy, or a listener on 3100/3101, fails before anything runs; no spike Caddy is left after any exit, including a failure.
+- RQ23 `--update` then `--check` passes, and a second `--update` changes nothing.
+- RQ24 An engine that can't boot (a missing `.wasm`) fails with the error within the boot timeout; it never hangs.
+
+**RQE · `run-queries --erd` [S13]**
+- RQE1 A table in the `.mmd` missing from the database, or a database table (not the view) missing from the `.mmd`, fails.
+- RQE2 A missing or extra attribute, or a type that differs after normalizing names (INTEGER, VARCHAR, DATE), fails.
+- RQE3 A `PK`, `FK` or `UK` marker that disagrees with `duckdb_constraints()` fails.
+- RQE4 A relationship with no matching FK, or an FK with no relationship, fails.
+- RQE5 002's ```` ```mermaid ```` block differing from the `.mmd` fails.
+
+**ER · `erd.ts` [S13]**
+- ER1 A Mermaid syntax error fails with the parser's message, and the previous SVG stays (write to a temp file, then rename).
+- ER2 An SVG containing `<foreignObject>` fails.
+- ER3 Any network request while rendering fails (route guard).
+- ER4 An empty SVG or PNG fails.
+
+**MS · `measure.ts` run-time assertions (it stops and writes why) [S6]**
+- MS1 A worker busy-loop ratio under 2.5 at rate 4 switches every throttled run to the CPUQuota method and records it; it never carries on silently.
+- MS2 A CPUQuota scope that fails to start stops the run.
+- MS3 A `.wasm` download time off by more than 30 % from bytes ÷ throughput stops that profile (check (b)).
+- MS4 No renderer pid, or a `VmHWM` of 0, stops the run.
+- MS5 No `WebAssembly.Memory` seen by the hook stops the run.
+- MS6 A warm run that downloads the engine again under the live config, outside "warm after rebuild", stops the run (cache broken).
+- MS7 A request the page made that's missing from the Caddy log stops the run.
+- MS8 Any off-origin request is listed in `blocked`, and the run fails.
+- MS9 A card count that differs from the Brazil row count counts as a failure.
 
 ## Code review (Astra)
 
 ## Release
 
 ## Decisions
+
+- Mission B briefs go in `plans/briefs/` so a mission's own plan file can't collide with its brief.
+- Lessons (§4) and cookbook (§5) each split over two steps (S15/S16, S17/S18) to fit one session apiece; ~31 sessions total, under the 60 cap.
 
 ## Log
 
@@ -811,5 +1255,6 @@ Other items:
 - 2026-10-22 06:29 UTC · Fable review: APPROVE_WITH_CHANGES, 3 MUST-FIX (species_countries FK order, reset = fresh db not DROP, esbuild/duckdb-wasm/mermaid direct deps). Design only; nothing to run.
 - 2026-10-22 06:30 UTC · Astra review: APPROVE_WITH_CHANGES, 3 MUST-FIX (one schema init sequence for both dbs, reset = fresh db + pristine refs, card detection needs explicit species metadata). Design only; nothing to run.
 - 2026-10-22 06:41 UTC · Revision: architect resolved all 6 MUST-FIX (one setup.sql w/ countries before species_countries; reset = engine.restart() fresh db, refs pristine via rollback; esbuild/duckdb-wasm/mermaid pinned direct deps; cards only on `-- show: cards`) + adopted review SC/MISSED items. DuckDB facts rechecked in node DuckDB 1.5.6.
+- 2026-10-22 06:52 UTC · Steps: planner wrote S1–S22, Verification (V0–V10 script), Failure modes (94 cases). Plan only; nothing to run.
 
 ## Summary
