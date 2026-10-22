@@ -810,7 +810,6 @@ Other items:
 - 2026-10-22 06:24 UTC · Architecture: architect wrote findings F1–F10 + target design (spike harness, learners schema v1, Mermaid ERD w/ committed SVG, 16-lesson path, B1/B2 split, PGlite thresholds). No code; nothing to verify beyond review.
 - 2026-10-22 06:29 UTC · Fable review: APPROVE_WITH_CHANGES, 3 MUST-FIX (species_countries FK order, reset = fresh db not DROP, esbuild/duckdb-wasm/mermaid direct deps). Design only; nothing to run.
 - 2026-10-22 06:30 UTC · Astra review: APPROVE_WITH_CHANGES, 3 MUST-FIX (one schema init sequence for both dbs, reset = fresh db + pristine refs, card detection needs explicit species metadata). Design only; nothing to run.
-
 - 2026-10-22 06:41 UTC · Revision: architect resolved all 6 MUST-FIX (one setup.sql w/ countries before species_countries; reset = engine.restart() fresh db, refs pristine via rollback; esbuild/duckdb-wasm/mermaid pinned direct deps; cards only on `-- show: cards`) + adopted review SC/MISSED items. DuckDB facts rechecked in node DuckDB 1.5.6.
 
 ## Summary
