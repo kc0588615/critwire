@@ -6,7 +6,7 @@ This extends [`002-learn.md`](002-learn.md) (engine, learners' schema, ERD and c
 
 ## 2. The grown schema and its ERD
 
-The grown schema adds tables to 002's first version without renaming or changing any of it. Its setup runs after 002's `setup`, copied here byte for byte, with the row counts it gives today:
+The grown schema adds tables to 002's first version without renaming or changing any of it. Its setup runs after 002's `setup`, copied here byte for byte. Every block in this file runs on the database both setups build, so the row counts below already include the grown setup's new `sources` rows:
 
 ```sql
 -- q: setup
@@ -127,9 +127,159 @@ SELECT (SELECT count(*) FROM taxa)              AS taxa,
 ```
 
 ```text
--- result: setup-counts · 1 row · sha256 a46604343811
+-- result: setup-counts · 1 row · sha256 95651e075a7c
 taxa | species | sources | species_sources | countries | species_countries | species_taxonomy
-143 | 76 | 5 | 591 | 250 | 472 | 76
+143 | 76 | 7 | 591 | 250 | 472 | 76
+```
+
+### The grown tables
+
+Each new table joins 002's schema through keys it already has (`species.id`, `countries.code`, `sources.name`); nothing in 002 is renamed or changed. `traits` and `species_traits` keep exactly the shapes 002 §2 "Room to grow" gave them (so lesson 16's exercise moves to its own names; see Disagreements with 002).
+
+| Table | Columns | Keys | Cardinality | Fed by (mission) | Credit |
+|---|---|---|---|---|---|
+| `traits` | `name`, `unit`, `description` | `name` PK | one row per trait; one source per trait | critwire's trait list over AnAge, AmphiBIO, the Amniote db (C) | critwire (the descriptions are its own words) |
+| `species_traits` | `species_id`, `trait_name`, `value` (text), `source_name` | (`species_id`, `trait_name`) PK; FKs → `species`, `traits`, `sources` | a species has 0..n traits, a trait 0..n species: `species_traits` is the many-to-many | AnAge, AmphiBIO, the Amniote db (C) | per row: its dataset → `value` |
+| `species_names` | `species_id`, `language`, `name` | (`species_id`, `language`) PK; FK → `species` | a species has 0..n names, at most one per language | Wikidata labels (C) | Wikidata (CC0) → `name` |
+| `habitat_classes` | `code`, `level1_code`, `name` | `code` PK; `level1_code` FK → `habitat_classes` (NULL for level 1) | a level-1 class has 1..n level-2 classes | Jung et al. 2020 v004 legend (D) | Jung v004 → `name` |
+| `country_habitats` | `country_code`, `habitat_code`, `est_area_km2` | (`country_code`, `habitat_code`) PK; FKs → `countries`, `habitat_classes` | many-to-many: a country has 0..n classes, a class 0..n countries | `pnpm ingest habitat` (D): v004 1 km fractions × each cell's area on the ellipsoid, inside Natural Earth's outline | Jung v004 + Natural Earth → `est_area_km2`, with the method; always "estimated" |
+| `country_shapes` | `country_code`, `geom` | `country_code` PK and FK → `countries` | a country has 0 or 1 outline | Natural Earth admin-0, version pinned (D) | Natural Earth → `geom` |
+| `occurrences` | `id` (GBIF's), `species_id`, `country_code`, `longitude`, `latitude`, `year`, `license`, `dataset_key`, `habitat_code` | `id` PK; FKs → `species`, `countries` (nullable), `habitat_classes` (nullable) | a species has 0..n records; a record has at most one country and one habitat class | a capped CC0 / CC BY sample in `pnpm ingest gbif` (D); `habitat_code` from `ingest habitat` | GBIF.org + the derived-dataset DOI → the row (`license`, `dataset_key` per row); Jung v004 → `habitat_code` |
+
+- **New `sources` rows** come from the file that cites them, before the table that points at them, as `species.parquet` brings its own: `species_traits.parquet` carries each row's source name, license and retrieval date, and the setup inserts the distinct ones. Wikidata is already a source.
+- **`occurrences.habitat_code`** is the most common level-2 class in the record's 1 km cell of v004's fractional layers: it claims no 100 m precision for a point record. It's NULL in the spike, where `ingest habitat` doesn't exist yet.
+- **A country's share of a class** is computed in SQL from `est_area_km2` (a window function, §3), never stored.
+- **No species–habitat table.** Which habitats a species uses comes from IUCN's assessments, which are Red List data (§6). critwire's honest version is "the habitat class at open-record points", `occurrences.habitat_code`.
+- **Designed, not built in the spike:** `tree_nodes (id PK, parent_id FK → tree_nodes, name, species_id UNIQUE FK → species)` from Open Tree (C, if its id match works) and `ecoregions`, `biomes` from RESOLVE (D, after the habitat track). DuckDB checks a self-referencing foreign key statement by statement, as `taxa` shows, so a real tree loads one depth level per `INSERT`: mission C ships a `depth` column and inserts by depth. Until then the self-join lesson uses `taxa` (§3).
+
+**What the spike loads** (the stand-ins; each file's source and license are in the spike's registry, `data/spike-tables.json`). Every row is real open data, matched by exact scientific name and never guessed:
+- `traits`, `species_traits`: AnAge Build 15 (CC BY 3.0) for adult mass, clutch size, female maturity and maximum longevity; AmphiBIO v1 (CC BY 4.0) for the amphibians' body length. Animals AnAge doesn't list under the same name have no rows here; mission C matches through Catalogue of Life synonyms and fills reptile gaps from the Amniote db.
+- `species_names`: every Wikidata label (`rdfs:label`) of every species.
+- `habitat_classes`: the classes v004's legend marks as mapped.
+- `country_habitats`: two countries only, Trinidad and Tobago and Åland, the polygons the spike's area experiment measured with v004's fractions (§5).
+- `country_shapes`, `occurrences`: the spike's Natural Earth shapes and GBIF sample (§4).
+
+The setup that builds them runs after `setup`, in the same database:
+
+```sql
+-- q: setup-grown
+-- status: spike-table
+-- critwire Learn: the grown tables (A2's design), run after setup.sql on the same database, from
+-- /v1/<table>.parquet. Same rules as setup.sql: each table after the tables it points at, foreign
+-- keys only in CREATE TABLE, nothing dropped. New sources rows come from the file that cites them,
+-- before the table that points at them. Needs the spatial extension (country_shapes.geom).
+
+INSERT INTO sources
+SELECT DISTINCT source_name, source_license, source_retrieved
+FROM read_parquet('species_traits.parquet');
+
+CREATE TABLE traits (
+  name        VARCHAR PRIMARY KEY,
+  unit        VARCHAR,
+  description VARCHAR NOT NULL
+);
+
+INSERT INTO traits
+SELECT name, unit, description FROM read_parquet('traits.parquet');
+
+-- One value per animal and trait, as text: CAST it to compare numbers. The unit is the trait's.
+CREATE TABLE species_traits (
+  species_id  INTEGER REFERENCES species (id),
+  trait_name  VARCHAR REFERENCES traits (name),
+  value       VARCHAR NOT NULL,
+  source_name VARCHAR NOT NULL REFERENCES sources (name),
+  PRIMARY KEY (species_id, trait_name)
+);
+
+INSERT INTO species_traits
+SELECT species_id, trait_name, value, source_name FROM read_parquet('species_traits.parquet');
+
+-- Names in other languages: Wikidata labels, one per language code.
+CREATE TABLE species_names (
+  species_id INTEGER NOT NULL REFERENCES species (id),
+  language   VARCHAR NOT NULL,
+  name       VARCHAR NOT NULL,
+  PRIMARY KEY (species_id, language)
+);
+
+INSERT INTO species_names
+SELECT species_id, language, name FROM read_parquet('species_names.parquet');
+
+-- The habitat map's classes (Jung et al. 2020, version 004): level 1 first, then level 2.
+CREATE TABLE habitat_classes (
+  code        INTEGER PRIMARY KEY,
+  level1_code INTEGER REFERENCES habitat_classes (code),
+  name        VARCHAR NOT NULL,
+  CHECK ((code % 100 = 0) = (level1_code IS NULL))
+);
+
+INSERT INTO habitat_classes
+SELECT code, level1_code, name FROM read_parquet('habitat_classes.parquet') WHERE level1_code IS NULL;
+
+INSERT INTO habitat_classes
+SELECT code, level1_code, name FROM read_parquet('habitat_classes.parquet') WHERE level1_code IS NOT NULL;
+
+-- Estimated area of each habitat class in a country, computed from the map: never a measured area.
+CREATE TABLE country_habitats (
+  country_code VARCHAR NOT NULL REFERENCES countries (code),
+  habitat_code INTEGER NOT NULL REFERENCES habitat_classes (code),
+  est_area_km2 DECIMAL(12, 2) NOT NULL CHECK (est_area_km2 >= 0),
+  PRIMARY KEY (country_code, habitat_code)
+);
+
+INSERT INTO country_habitats
+SELECT country_code, habitat_code, est_area_km2 FROM read_parquet('country_habitats.parquet');
+
+-- One outline per country (Natural Earth), longitude and latitude in degrees (WGS 84).
+CREATE TABLE country_shapes (
+  country_code VARCHAR PRIMARY KEY REFERENCES countries (code),
+  geom         GEOMETRY NOT NULL
+);
+
+-- DuckDB-WASM 1.33.1 can't store GeoParquet's GEOMETRY('OGC:CRS84') type, so the file's
+-- geometry is read as plain WKB (for the rest of the session) and turned into GEOMETRY here.
+SET enable_geoparquet_conversion = false;
+
+INSERT INTO country_shapes
+SELECT country_code, ST_GeomFromWKB(geom) FROM read_parquet('country_shapes.parquet');
+
+-- Open (CC0 / CC BY) occurrence records: where someone recorded the animal, not its native range.
+CREATE TABLE occurrences (
+  id           BIGINT PRIMARY KEY,
+  species_id   INTEGER NOT NULL REFERENCES species (id),
+  country_code VARCHAR REFERENCES countries (code),
+  longitude    DOUBLE NOT NULL CHECK (longitude BETWEEN -180 AND 180),
+  latitude     DOUBLE NOT NULL CHECK (latitude BETWEEN -90 AND 90),
+  year         INTEGER,
+  license      VARCHAR NOT NULL CHECK (license IN ('CC0 1.0', 'CC BY 4.0')),
+  dataset_key  VARCHAR NOT NULL,
+  habitat_code INTEGER REFERENCES habitat_classes (code)
+);
+
+INSERT INTO occurrences
+SELECT id, species_id, country_code, longitude, latitude, year, license, dataset_key, NULL
+FROM read_parquet('occurrences.parquet');
+```
+
+Row counts it gives, with 002's tables beside them where the grown setup adds rows:
+
+```sql
+-- q: setup-grown-counts
+-- status: spike-table
+SELECT (SELECT count(*) FROM sources)          AS sources,
+       (SELECT count(*) FROM traits)           AS traits,
+       (SELECT count(*) FROM species_traits)   AS species_traits,
+       (SELECT count(*) FROM species_names)    AS species_names,
+       (SELECT count(*) FROM habitat_classes)  AS habitat_classes,
+       (SELECT count(*) FROM country_habitats) AS country_habitats,
+       (SELECT count(*) FROM country_shapes)   AS country_shapes,
+       (SELECT count(*) FROM occurrences)      AS occurrences;
+```
+
+```text
+-- result: setup-grown-counts · 1 row · sha256 e690c0c6dc46
+sources | traits | species_traits | species_names | habitat_classes | country_habitats | country_shapes | occurrences
+7 | 5 | 179 | 5274 | 75 | 35 | 250 | 528
 ```
 
 ## 3. Lessons for the grown data
