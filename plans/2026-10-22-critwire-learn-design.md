@@ -929,7 +929,7 @@ Planner, 2026-10-22. Conventions:
   - `out/sqljs/summary.md`: bytes from S1's table, and the assessment paragraph (no Parquet reader, SQLite's loose typing).
   - Checks: Guard; spike green; counts and ids equal; `blocked` empty.
 
-- [ ] S9 · Proposed Caddy config, classroom load, coi gate; the engine decision (§1 Serving, coi gate; §5; F3).
+- [x] S9 · Proposed Caddy config, classroom load, coi gate; the engine decision (§1 Serving, coi gate; §5; F3). Deviations (Decisions, S9): coi can't read Parquet (hard limit), so no coi matrix; `Caddyfile.proposed` adds COEP on `/learn/assets/*` (worker scripts); the 4× coi run wraps the whole check in one CPUQuota scope; `bytes.ts` writes both configs into `out/bytes/`.
   - `build-site.ts --precompress`, then duckdb-eh × 3 profiles × cold, warm × 5 under `Caddyfile.proposed` → `out/duckdb-proposed/`. Add the proposed config's bytes to `out/bytes/summary.md`.
   - Classroom → `out/classroom/`: 10 parallel `curl -s -H 'Accept-Encoding: zstd' -o /dev/null` of `duckdb-eh.wasm` under each Caddyfile; wall time, and Caddy's `utime + stime` from `/proc/<pid>/stat` before and after.
   - coi → `out/coi/`: the `/coi/` page at desktop and at 4x under `Caddyfile.proposed`; `crossOriginIsolated === true`; photos load with `crossorigin`. The full matrix runs only if its median time to first result is at least 30 % below eh's.
@@ -1313,6 +1313,34 @@ Only the spike tools that the Definition of done rests on are tested in isolatio
   **§5 for PGlite:** reliability and cold school-wifi met; warm slow-4g missed (21.6 s, 1.02× DuckDB's, not 1.5×); memory missed (1.07 GB). So §5's switch rule isn't met; S9 records the verdict. PGlite's real cost is the frozen page (Postgres on the main thread; a worker variant exists but changes neither boot time nor memory). DuckDB's 4× figure is from one run (`$SP/out/pglite-live-duckdb-probe/`); S7's cells predate the probe.
 - **S8: sql.js not recommended** (`$SP/out/sqljs/summary.md`): 0.37 MB zstd (SQLite 3.54.0), ~24× smaller than DuckDB's first load, but no Parquet/HTTP reader, loose typing, FKs off by default, no `information_schema`, no spatial path. Not run in the browser (brief: paragraph + size).
 
+- **S9: coi (threads) is not viable: hard limit** (`$SP/out/coi/{desktop,4x}/`). (1) Under COEP the worker script needs `Cross-Origin-Embedder-Policy: require-corp` on its own response, or `new Worker` is `ERR_BLOCKED_BY_RESPONSE`; `Caddyfile.proposed` now sends it on `/learn/assets/*`. (2) coi needs the `wasm_threads` parquet extension (downloaded, sha256 in `SOURCES.md`); DuckDB publishes it, but it imports a **non-shared** `env.memory` (import section read by `coi-check.ts`; v1.4.3's build too), and `LOAD parquet` fails: `LinkError … mismatch in shared state of memory`. (3) Instantiate also hangs (> 60 s, no error) in 4/5 desktop and 2/5 4× boots. 10 of 10 coi boots gave no database. Even its time to failure (4.8 s desktop, 37–42 s at 4×) is slower than eh's whole engine boot on the same isolated page (2.3 / 14.7 s), so the 30 % gate isn't met: no coi matrix. A2 should re-check only if DuckDB ships shared-memory `wasm_threads` extensions.
+- **S9: cards always load photos with `crossorigin="anonymous"`.** Wikimedia sends `access-control-allow-origin: *` but no CORP, so under COEP a plain `<img>` is blocked; with `crossorigin` 12/12 load (`coi-check` control: same photo without it blocked on the isolated page, loads on a normal one). Harmless without COEP, so one rule for every page.
+- **S9: the engine fails loudly when its worker can't load.** A blocked/404 worker only fires `error`, and `instantiate` waited forever ("Loading database…"); `engine.ts` races it against the worker's `error` → "DuckDB worker failed to load: <url>". `bundleParam` validates `?bundle=` on both pages. → mission B's engine keeps both.
+- **S9: proposed Caddy config** (`$SP/out/duckdb-proposed/`, eh, 30 loads, 0 failures, `blocked` empty; `out/bytes/summary.md` now has live and proposed tables):
+
+  | eh, medians of 5 | live | proposed (precompressed br + immutable) |
+  |---|---|---|
+  | cold wire | 9.02 MB | 6.25 MB |
+  | desktop cold / warm | 2.9 / 2.5 s | 2.7 / 2.6 s |
+  | school-wifi (4×) cold / warm | 27.1 / 15.1 s | 23.6 / 15.7 s |
+  | slow-4g (6×) cold / warm | 64.2 / 22.0 s | 51.4 / 23.9 s |
+  | peak VmHWM | 0.52 GB | 0.52 GB |
+  | classroom: Caddy CPU for 10 parallel eh.wasm fetches | 3.47 s (1.89 s wall) | 0.05 s (0.09 s wall) |
+
+  Precompression: −31 % cold bytes, −13 to −20 % cold time on slow links, ~0.35 Caddy CPU s saved per learner's first load. Warm unchanged (CPU-bound). Immutable: a warm load sends only the page (304); live already reused the engine thanks to F3's fixed mtime, so its gain is no revalidation. Build cost: ~2 min per build to precompress the shipped eh files (brotli 11 on eh.wasm 106 s); all vendored files ~7 min. → §10 recommends precompression (br + zstd sidecars for the shipped engine files; B1 can skip recompressing when the versioned file is unchanged) and immutable caching as optional. Note: under the proposed run warm loads made no `/v1` request at all (live: 304s), most likely Chromium's heuristic freshness (no Cache-Control on `/v1`); 002 §8 should say whether `/v1` gets `Cache-Control: no-cache`.
+- **S9: engine decision (§5): DuckDB-WASM, `eh` bundle, stays.** Side by side, medians:
+
+  | §5 metric | budget | DuckDB eh live | DuckDB eh proposed | PGlite live |
+  |---|---|---|---|---|
+  | reliability | 0 failures | 0/30 (+15 extras) | 0/30 | 0/30 |
+  | warm first result, slow-4g | ≤ 8 s | 22.0 s **missed** | 23.9 s **missed** | 21.6 s **missed** |
+  | cold first result, school-wifi | ≤ 40 s | 27.1 s met | 23.6 s met | 35.7 s met |
+  | peak VmHWM | ≤ 700 MB | 0.52 GB met | 0.52 GB met | 1.07 GB **missed** |
+  | cold wire (desktop) | reported | 9.02 MB | 6.25 MB | 6.44 MB |
+  | cold first result, slow-4g | reported | 64.2 s | 51.4 s | 70.3 s |
+
+  The switch rule needs DuckDB to miss under the proposed config **and** PGlite to meet every budget **and** be ≥ 1.5× better on the missed metric: PGlite misses two budgets and is 1.02× (vs live) / 1.11× (vs proposed) on warm slow-4g. No hard limit for eh (coi's limit only rules out threads). Both miss the warm budget → per §5, DuckDB-WASM stays, and the softening comes first from the page design: **one engine boot per Learn visit** (lessons switch inside one page instead of each lesson page booting the engine), lesson text readable before the database is ready, restarts rare (S7). 002 §1/§8 and §10 state the cost: ~16 s (4×) / ~24 s (6×) to the first result on each visit on a low-end device once cached, ~24–51 s on the very first visit. No contingency steps needed.
+
 ## Log
 
 - 2026-10-22 UTC · Baseline: install, typecheck, unit 66/66, build, E2E 20/20 green; dist + live /v1 hashes saved (identical, 157 files).
@@ -1329,5 +1357,6 @@ Only the spike tools that the Definition of done rests on are tested in isolatio
 - 2026-10-22 08:00 UTC · S6: `measure.ts` (MS1–MS9 asserts first; matrix CLI, `--validate`, `--smoke`), `browser.ts` `launchMeasured` (CDP-launched Chromium, profile dir, host-resolver block, CPUQuota scope + cpu.max check), `wasm-hook.js` + `measure-worker.js`, card page `?measure`. `--validate` exit 0: CDP CPU 1.01× on the worker → CPUQuota (4.01×), network ratio 1.00/1.00. `--smoke` exit 0: 12/12 cards cold+warm, failures 0, blocked [], eh.wasm 7 976 059 B zstd = S1 exactly, warm 0 B. school-wifi 1-run check exit 0 (cards 27.1 s cold). card-check 0 failures; spike 40/40; guard clean, repo typecheck + 66/66, no Caddy/Chromium left.
 - 2026-10-22 09:24 UTC · S7: `measure.ts --extras` (rebuild + reload, Reset, runaway) + §5 budgets/notes in summary; MS2 fix (Chromium left the CPUQuota scope via D-Bus → no session bus, per-load check) and throttled cells re-run. `out/duckdb-live`: 6 cells × 5, 0 failures, blocked [] everywhere; eh better bundle; §5: warm slow-4g missed (22.0 s vs 8 s), rest met; ETag stable 15/15; runaway errors cleanly 15/15 (2.6 GB peak). Guard clean, repo typecheck + 66/66, spike typecheck + 40/40, no Caddy/Chromium left.
 - 2026-10-22 11:13 UTC · S8: `pglite.html` + `setup-pglite.sql` + `pglite-check.ts` (parity: tables, 37 columns, counts, 12 Brazil rows = DuckDB; blocked []); harness: main-thread freeze probe, MS3 on the concurrent batch. `out/pglite-live`: 3 cells × 5, 0 failures, blocked []; §5 for PGlite: warm slow-4g 21.6 s and memory 1.07 GB missed → switch rule not met. `out/sqljs/summary.md`. DuckDB smoke re-run green. Guard clean, repo typecheck + 66/66, spike typecheck + 40/40, no Caddy/Chromium left.
+- 2026-10-22 12:14 UTC · S9: coi vendored + `/coi/` page + `coi-check.ts`: hard limit (wasm_threads parquet ext non-shared memory → LinkError; instantiate hangs 6/10), gate not met, no coi matrix; photos crossorigin (12/12 under COEP); engine fails loudly on worker error. `build-site --precompress`, `bytes.ts` both configs, `classroom.ts` (Caddy CPU 3.47 s live vs 0.05 s precompressed). `out/duckdb-proposed`: 3 cells × 5, 0 failures, blocked []; warm slow-4g 23.9 s missed, rest met. Engine verdict: DuckDB-WASM eh stays (PGlite misses 2 budgets, 1.02–1.11× on the missed one). card-check, smoke, boot-check 0 failures; guard clean, repo typecheck + 66/66, spike typecheck + 40/40, no Caddy/Chromium left.
 
 ## Summary
