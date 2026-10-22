@@ -2,7 +2,7 @@
 mission: critwire-learn-design
 project: critwire
 branch: agent/critwire-learn-design
-status: active
+status: done
 started: 2026-10-22 06:00 UTC
 ---
 
@@ -1446,5 +1446,51 @@ SHOULD-CONSIDER:
 - 2026-10-22 14:57 UTC · S23: runner `-- after:` header (RQ26 fixtures static/fails/pass: 3 red → green; spike typecheck + 103/103); 002 `l16-ex` = `species_traits` DDL alone (after l16), new `l16-check` (after l16, l16-ex), same 8-row hash `cec372f2d16e`; §1 Prerequisites + Pristine references, §8 `lessons.json` after/verify, `sql/` plan-only lines, `answers.ts`, E2E; intro; B1 brief fact. `--update` diff read (l16-ex, l16-check only); `--check --erd` exit 0 (77 blocks, ERD 6/1/6). Guard ok (only plans/, typecheck, 66/66); V7 pass; ports free.
 - 2026-10-22 15:10 UTC · S24: c02 buttons by order key `(id*211 + seed*619) % 1009` (§5 intro, c02, §7, B2 brief). Answer position over 74 photo answers × seeds 1–10 (740 rounds, DuckDB-WASM, `$SP/out/s24-positions/`): old 30/28/29/653 (88 % last), new 181/227/190/142 (24/31/26/19 %); node-api scratch same. `--update` diff read (c02 row order only, same 4 rows); `--check --erd` exit 0 (77 blocks, ERD 6/1/6). Guard ok (only plans/, typecheck, 66/66); ports free.
 - 2026-10-22 15:24 UTC · S25: every statement streamed + capped (`$SP/src/engine.ts` `readCapped`, `serial`). cap-check "script:" cases red first on old code (`$SP/scratch/s25-red/`: malloc at 2 419 MB, 3.6 s); green: `<runaway>; SELECT count(*) FROM species` 76 in 0.13 s, peak 390 MB; runaway alone 10 000 rows truncated, 393 MB; later INSERT applies; exact-cap not truncated; empty result keeps columns. cap-check 0 failures (18 checks), boot-check 0, card-check 0, blocked [] each; spike typecheck + 103/103; `--check --erd` exit 0 (77 blocks, 0 differences, ERD 6/1/6). 002 §1 (Huge results, one call at a time), B1 engine fact. Guard ok (only plans/, typecheck, 66/66); ports free.
+- 2026-10-22 15:47 UTC · Final Verification V0–V10 exit 0 (`$M/verify/verify-20261022T1540Z.log`): only plans/ changed; typecheck, unit 66/66; dist = Baseline (157 files); repo E2E 20/20; spike typecheck + 103/103; 77 blocks, 0 failures, 0 differences, 0 untested, ERD 6/1/6; 16 lessons, 26 cookbook, briefs, 001 pointer; ERD SVG/PNG; 14 run summaries, blocked [] in all 32 results; smoke 0 failures. V9 paths fixed first (3 commits; Decisions). Summary written, status done.
 
 ## Summary
+
+**Done:** design for critwire Learn, a browser SQL course on critwire's data, in `plans/002-learn.md` (10 sections, every SQL block run in the browser) plus `plans/002-learn-erd.mmd`, and briefs for the two build missions. No public file changes: `dist/` is byte-identical to `main`.
+
+- **Engine: DuckDB-WASM, eh bundle** (`@duckdb/duckdb-wasm` 1.33.1-dev65.0 = DuckDB v1.5.6, same as the build). Measured against PGlite 0.5.10 under the live Caddy config, median of 5, headless Chromium; school Wi-Fi = 5 Mbps + 4× CPU, slow 4G = 1.6 Mbps + 6× CPU (cgroup):
+
+  | | DuckDB-WASM eh | PGlite |
+  |---|---|---|
+  | first-load bytes (wire) | 9.02 MB (6.25 MB precompressed) | 6.44 MB |
+  | first result, first visit: desktop / school Wi-Fi / slow 4G | 2.9 / 27.1 / 64.2 s | 4.0 / 35.7 / 70.3 s |
+  | first result, returning: desktop / school Wi-Fi / slow 4G | 2.5 / 15.1 / 22.0 s | 2.4 / 14.0 / 21.6 s |
+  | peak memory | 518 MB | 1 440 MB, main thread frozen 20.3 s at 4× |
+
+  PGlite misses two budgets (warm slow 4G, memory) and is at most 1.11× faster on the one DuckDB misses, so the switch rule isn't met. sql.js can't read Parquet. The coi (threads) bundle can't load the parquet extension (hard limit). Runaway queries: every statement is streamed and capped at 10 000 rows, so peak memory is about 390 MB, against a 2.6 GB malloc failure without the cap.
+- **Shell vs editor:** our own `<textarea>` editor. The DuckDB shell embed works (+0.56 MB) but has no screen-reader output, drops on-screen-keyboard text, and shows nothing when WebGL is broken.
+- **Self-hosted extensions work:** INSTALL/LOAD from our origin with signatures on (parquet, inet, spatial; a tampered file is refused). Learn commits only `parquet` (3.22 MB).
+- **Lessons (16, ages 16+):** tables, select, where, null, counting, erd, keys, one-to-many, many-to-many (the mockup's Brazil cards), countries, left-join, hierarchy, views, normalization, sources, design. Each has an exercise and a check.
+- **Cookbook:** 26 queries (c01–c26), each with a "Game use" note.
+- **Demo:** *Name that animal*: a photo card and four name buttons, with decoys from the same class (`d01` + `c02`; answer position spread 24/31/26/19 % over 740 rounds).
+- **Countries source:** Natural Earth v5.1.2 admin-0 1:10m (public domain). All 107 species codes plus `XK` match. Published as `/v1/countries.{parquet,csv,json}` in B1, additions only.
+- **Mission B briefs:** `plans/briefs/critwire-learn-b1.md` (countries file, engine, schema, ERD, 16 lessons; about 32–38 sessions), then `plans/briefs/critwire-learn-b2.md` (cookbook, playground + CSV, game; about 18–24).
+- **Your choices (002 §10).** Without an answer, B1 and B2 build the recommendation.
+  1. Accept the start time on slow machines.
+  2. Pin duckdb-wasm 1.33.1-dev65.0.
+  3. Commit the parquet extension binary.
+  4. Publish `/v1/countries`.
+  5. The Brazil lesson stays lesson 9.
+  6. Light and dark follow the system setting.
+  7. Caddy precompression, `immutable` on `/learn/assets/*`, `no-cache` on `/v1/*`.
+  8. Photos stay linked on Wikimedia.
+  9. No DuckDB shell link.
+  10. A 15-minute real-device check before B2's game ships.
+  11. Spatial extensions are decided in A2.
+
+  The recommendation on 1–10 is yes as listed.
+- **Reviews:**
+  - Architecture: Fable and Astra both APPROVE_WITH_CHANGES; all 6 MUST-FIX resolved.
+  - Code: Astra APPROVE_WITH_CHANGES; all 3 MUST-FIX fixed (S23–S25).
+  - Astra SHOULD-CONSIDER, open for B1: exercises that ask for sorted output are checked without regard to row order, so a missing `ORDER BY` still passes.
+- **Not covered:** Firefox and WebKit weren't run (Firefox needs GTK packages via apt); §10 item 10 covers real devices.
+- **Evidence** (`/srv/critter-ai/agent-state/missions/critwire-learn-design/`):
+  - `spike/out/<run>/` (summaries, results, screenshots) and `spike/README.md` (every command in order)
+  - `spike/erd/schema.{svg,png}`
+  - `queries.log`
+  - repo E2E in `e2e/` (`pnpm exec playwright show-report e2e/playwright-report`)
+  - `verify/verify-20261022T1540Z.log`
