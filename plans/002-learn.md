@@ -2532,7 +2532,249 @@ id | common_name | scientific_name | wikidata_id
 
 ## 6. The countries file
 
-Written in step S19.
+`/v1/countries.{parquet,csv,json}` is critwire's first new data since the species files: one row per country code, with the country's name, continent, UN region and UN subregion. It is reference data about places and says nothing about animals. Learners need it for the `countries` table (§2): without it a country is just a two-letter code, and lessons 10 and 11, the continent cookbook entries and the demo can't name a place or group countries by continent. Mission B1 publishes it before any Learn page goes live (§9).
+
+### Fields
+
+Every column is text and never empty. Rows are sorted by `code`, and every format holds the same rows.
+
+| Field | Type | Meaning | Natural Earth field |
+|---|---|---|---|
+| `code` | VARCHAR, unique | ISO 3166-1 alpha-2, plus `XK` for Kosovo (the code GBIF uses); the same codes as `range.countriesWithOpenRecords` in the species files | `ISO_A2_EH`, else `ISO_A2` (matching rule below) |
+| `name` | VARCHAR, unique | the everyday English name, such as Russia, Laos, Ivory Coast | `NAME_EN` |
+| `continent` | VARCHAR | Natural Earth's continent, such as `Africa`, `South America`; islands far from any continent have `Seven seas (open ocean)` | `CONTINENT` |
+| `region` | VARCHAR | the UN geoscheme region: `Africa`, `Americas`, `Asia`, `Europe`, `Oceania` (and `Antarctica`) | `REGION_UN` |
+| `subregion` | VARCHAR | the UN geoscheme subregion, such as `Middle Africa`, `Caribbean` | `SUBREGION` |
+
+- **Parquet and CSV:** flat, the five columns in this order, CSV with a header row.
+- **JSON:** an array of objects with exactly these five keys, like `species.json` is an array of records.
+- **Not in the file:** geometry (Natural Earth's shapes stay out: the file stays a few KB, and maps are A2's question), Natural Earth's other attributes, and anything from GBIF.
+- Names and continents are published as Natural Earth has them, unedited. Some read differently from other lists: `CN` is "People's Republic of China", `CC` is "Cocos", `TW` is "Taiwan", `TZ` is "Tanzania"; Mauritius, Réunion, the Seychelles and the Maldives are in `Seven seas (open ocean)`, Martinique in `North America`. The docs page says the names follow Natural Earth.
+
+### Source: Natural Earth, with GBIF's list as a check
+
+| | Natural Earth admin-0 | GBIF country enumeration |
+|---|---|---|
+| What | attributes of every admin-0 unit: ISO codes, names, continent, UN region and subregion | `https://api.gbif.org/v1/enumeration/country`: ISO codes, a title and GBIF's own region per country |
+| License | public domain (quote below) | none stated: the response has no license field or header, and `https://www.gbif.org/terms` answered 403 to the VPS (2026-10-22) |
+| Can critwire host it? | yes | no: unclear terms mean not hostable (the brief's decision rules) |
+| Use | every published field | a check of the code set only, never published |
+
+Natural Earth's `LICENSE.md` at the pinned commit (`https://raw.githubusercontent.com/nvkelso/natural-earth-vector/f1890d9f152c896d250a77557a5751a93d494776/LICENSE.md`), verbatim:
+
+> # Everything here is public domain.
+>
+> All versions of Natural Earth raster + vector map data found on this website are in the public domain. You may use the maps in any manner, including modifying the content and design, electronic dissemination, and offset printing. The primary authors, _Tom Patterson_ and _Nathaniel Vaughn Kelso_, and all other contributors renounce all financial claim to the maps and invites you to use them for personal, educational, and commercial purposes.
+>
+> # Credits
+>
+> No permission is needed to use Natural Earth. Crediting the authors is unnecessary.
+>
+> However, if you wish to cite the map data, simply use one of the following.
+>
+>     Short text: Made with Natural Earth.
+>
+>     Long text: Made with Natural Earth. Free vector and raster map data @ naturalearthdata.com.
+
+Its terms page (`https://www.naturalearthdata.com/about/terms-of-use/`) carries the same text, plus: "The authors provide Natural Earth as a public service and are not responsible for any problems relating to accuracy, content, design, and how it is used." The third-party releases listed there (Washington Post; EC JRC IES rivers and lakes for Europe; XNR roads for North America) license Natural Earth "for the sole purpose of creating a world base map"; none covers the admin-0 attribute fields critwire uses.
+
+GBIF's enumeration already reaches critwire for another job: `pnpm ingest gbif` stores it in `data/raw/gbif/snapshot.json`, and derive's countries rule reads its `gbifRegion` to spot captive and stray records. That stays as it is. The countries file doesn't change that rule, and the rule's regions are never published.
+
+### Release and scale
+
+- **Release:** `nvkelso/natural-earth-vector` tag `v5.1.2` (2022-05-13), commit `f1890d9f152c896d250a77557a5751a93d494776`; files `geojson/ne_10m_admin_0_countries.geojson` and `geojson/ne_10m_admin_0_map_units.geojson` (about 13 MB each, almost all geometry). sha256: countries `239eec57ac17f100a11e2536cffc56752c318b50ae765b0918ff7aab4ce8f255`, map units `57da82be755f4afccd8f3b14251bb2752f5df1395f47d2d86f817470c4a48862`.
+- **Scale 1:10m**, because it is the only one that covers the codes:
+  - 1:110m lacks HK, SG, MU, SC and KM, which species use today;
+  - 1:50m covers today's codes but lacks GI, BV and UM;
+  - 1:10m gives 250 codes, exactly GBIF's 250, so an animal recorded later in a small territory still matches.
+
+### Matching rule
+
+The spike's `countries-draft.ts` applies it and its tests CD1–CD11 cover it; B1 ports both (below).
+1. **Code:** `ISO_A2_EH` if it is two capital letters, else `ISO_A2` if it is. `ISO_A2` is `-99` for France, Norway and Kosovo and `CN-TW` for Taiwan; `ISO_A2_EH` fixes all four.
+2. **Rows come from the `countries` layer.** The `map_units` layer adds only codes with no `countries` row: BQ, BV, CC, CX, GF, GP, MQ, RE, SJ, TK, YT (France's overseas regions, Norway's Svalbard and Bouvet, Australia's islands, the Caribbean Netherlands, Tokelau). For a code with a `countries` row, that row wins.
+3. **One code, several `countries` rows:** keep the row whose `ADM0_A3` equals its `ISO_A3_EH` (the code's own unit), and fail unless exactly one does. Today: France (drops Clipperton Island), Kazakhstan (Baykonur Cosmodrome), Brazil (Brazilian Island), Australia (Indian Ocean Territories, Coral Sea Islands, Ashmore and Cartier Islands). Two `map_units` rows with one code fail.
+4. **Map units of `TYPE` `Overlay` are dropped:** UNDOF (code `XD`) and the two halves of the Korean Demilitarized Zone, which overlap real countries.
+5. Units with no code drop out (Somaliland, Northern Cyprus, the sovereign base areas, Bir Tawil, a few reefs and disputed areas). No species code needs one.
+6. `name`, `continent`, `region` and `subregion` must be non-empty and `name` unique; any failure stops the run and names the rows.
+
+If a future species code has no row, the fix is the narrowest new rule on Natural Earth's own fields that matches it, recorded with its reason, never a hand-made row.
+
+Against GBIF's enumeration: the same 250 codes both ways. 41 names differ, all spelling or official-name choices (for example `BO` Bolivia vs "Bolivia (Plurinational State of)", `CI` Ivory Coast vs "Côte d’Ivoire", `TW` Taiwan vs "Chinese Taipei"); the published name is Natural Earth's. The spike's `out/countries-match.md` lists all 41.
+
+### The codes the species use today
+
+Every code in today's `range.countriesWithOpenRecords`, with the layer and field that matched it and its `name` (2026-10-21 data). `XK` (Kosovo, `countries` layer, `ISO_A2_EH`) is in the file too but no species uses it yet; it's checked because GBIF uses it.
+
+| code | layer | field | name |
+|---|---|---|---|
+| AO | countries | ISO_A2 | Angola |
+| AR | countries | ISO_A2 | Argentina |
+| AU | countries | ISO_A2 | Australia |
+| BD | countries | ISO_A2 | Bangladesh |
+| BE | countries | ISO_A2 | Belgium |
+| BF | countries | ISO_A2 | Burkina Faso |
+| BJ | countries | ISO_A2 | Benin |
+| BN | countries | ISO_A2 | Brunei |
+| BO | countries | ISO_A2 | Bolivia |
+| BR | countries | ISO_A2 | Brazil |
+| BT | countries | ISO_A2 | Bhutan |
+| BW | countries | ISO_A2 | Botswana |
+| BZ | countries | ISO_A2 | Belize |
+| CA | countries | ISO_A2 | Canada |
+| CD | countries | ISO_A2 | Democratic Republic of the Congo |
+| CF | countries | ISO_A2 | Central African Republic |
+| CG | countries | ISO_A2 | Republic of the Congo |
+| CI | countries | ISO_A2 | Ivory Coast |
+| CL | countries | ISO_A2 | Chile |
+| CM | countries | ISO_A2 | Cameroon |
+| CN | countries | ISO_A2 | People's Republic of China |
+| CO | countries | ISO_A2 | Colombia |
+| CR | countries | ISO_A2 | Costa Rica |
+| DE | countries | ISO_A2 | Germany |
+| DK | countries | ISO_A2 | Denmark |
+| DO | countries | ISO_A2 | Dominican Republic |
+| DZ | countries | ISO_A2 | Algeria |
+| EC | countries | ISO_A2 | Ecuador |
+| EG | countries | ISO_A2 | Egypt |
+| ES | countries | ISO_A2 | Spain |
+| ET | countries | ISO_A2 | Ethiopia |
+| FR | countries | ISO_A2_EH | France |
+| GA | countries | ISO_A2 | Gabon |
+| GF | map_units | ISO_A2_EH | French Guiana |
+| GH | countries | ISO_A2 | Ghana |
+| GM | countries | ISO_A2 | The Gambia |
+| GN | countries | ISO_A2 | Guinea |
+| GQ | countries | ISO_A2 | Equatorial Guinea |
+| GT | countries | ISO_A2 | Guatemala |
+| GW | countries | ISO_A2 | Guinea-Bissau |
+| GY | countries | ISO_A2 | Guyana |
+| HK | countries | ISO_A2 | Hong Kong |
+| HN | countries | ISO_A2 | Honduras |
+| HT | countries | ISO_A2 | Haiti |
+| ID | countries | ISO_A2 | Indonesia |
+| IN | countries | ISO_A2 | India |
+| IR | countries | ISO_A2 | Iran |
+| JP | countries | ISO_A2 | Japan |
+| KE | countries | ISO_A2 | Kenya |
+| KH | countries | ISO_A2 | Cambodia |
+| KM | countries | ISO_A2 | Comoros |
+| LA | countries | ISO_A2 | Laos |
+| LK | countries | ISO_A2 | Sri Lanka |
+| LR | countries | ISO_A2 | Liberia |
+| LY | countries | ISO_A2 | Libya |
+| MA | countries | ISO_A2 | Morocco |
+| MG | countries | ISO_A2 | Madagascar |
+| ML | countries | ISO_A2 | Mali |
+| MM | countries | ISO_A2 | Myanmar |
+| MQ | map_units | ISO_A2_EH | Martinique |
+| MR | countries | ISO_A2 | Mauritania |
+| MU | countries | ISO_A2 | Mauritius |
+| MW | countries | ISO_A2 | Malawi |
+| MX | countries | ISO_A2 | Mexico |
+| MY | countries | ISO_A2 | Malaysia |
+| MZ | countries | ISO_A2 | Mozambique |
+| NA | countries | ISO_A2 | Namibia |
+| NE | countries | ISO_A2 | Niger |
+| NG | countries | ISO_A2 | Nigeria |
+| NI | countries | ISO_A2 | Nicaragua |
+| NL | countries | ISO_A2 | Netherlands |
+| NP | countries | ISO_A2 | Nepal |
+| NZ | countries | ISO_A2 | New Zealand |
+| PA | countries | ISO_A2 | Panama |
+| PE | countries | ISO_A2 | Peru |
+| PG | countries | ISO_A2 | Papua New Guinea |
+| PH | countries | ISO_A2 | Philippines |
+| PK | countries | ISO_A2 | Pakistan |
+| PL | countries | ISO_A2 | Poland |
+| PY | countries | ISO_A2 | Paraguay |
+| RE | map_units | ISO_A2_EH | Réunion |
+| RU | countries | ISO_A2 | Russia |
+| RW | countries | ISO_A2 | Rwanda |
+| SC | countries | ISO_A2 | Seychelles |
+| SD | countries | ISO_A2 | Sudan |
+| SE | countries | ISO_A2 | Sweden |
+| SG | countries | ISO_A2 | Singapore |
+| SL | countries | ISO_A2 | Sierra Leone |
+| SN | countries | ISO_A2 | Senegal |
+| SO | countries | ISO_A2 | Somalia |
+| SR | countries | ISO_A2 | Suriname |
+| SS | countries | ISO_A2 | South Sudan |
+| SZ | countries | ISO_A2 | Eswatini |
+| TD | countries | ISO_A2 | Chad |
+| TG | countries | ISO_A2 | Togo |
+| TH | countries | ISO_A2 | Thailand |
+| TN | countries | ISO_A2 | Tunisia |
+| TT | countries | ISO_A2 | Trinidad and Tobago |
+| TZ | countries | ISO_A2 | Tanzania |
+| UG | countries | ISO_A2 | Uganda |
+| US | countries | ISO_A2 | United States of America |
+| UY | countries | ISO_A2 | Uruguay |
+| VE | countries | ISO_A2 | Venezuela |
+| VN | countries | ISO_A2 | Vietnam |
+| ZA | countries | ISO_A2 | South Africa |
+| ZM | countries | ISO_A2 | Zambia |
+| ZW | countries | ISO_A2 | Zimbabwe |
+
+### How mission B1 builds it
+
+The same pipeline as the species data (AGENTS.md "Data"): snapshot committed, derive offline, build from `data/`.
+1. **`pnpm ingest naturalearth`** fetches the two 1:10m files above from `raw.githubusercontent.com` at the pinned commit (2 requests), refuses either unless its sha256 matches the pinned value, and writes `data/raw/naturalearth/snapshot.json`: per layer, each unit's properties only, cut to the fields the rule reads (`ADMIN` or `GEOUNIT`, `ADM0_A3`, `ISO_A2`, `ISO_A2_EH`, `ISO_A3_EH`, `TYPE`, `NAME_EN`, `CONTINENT`, `REGION_UN`, `SUBREGION`), keys sorted, plus `release`, `commit` and one UTC `retrieved`. Geometry is never written, so the snapshot stays small and its diffs readable. All or nothing, like the other ingests.
+2. **`pnpm derive`** gains `scripts/derive/naturalearth.ts` (the pure matcher, ported from `countries-draft.ts` with CD1–CD10 as its `node:test` tests; CD11's sha256 check moves into the ingest). It writes `data/countries.json`: a `source` block (name, license, release, `retrieved`, URL) and the rows. It refuses:
+   - a species code with no row, listing every such code (`data/countries.json: no Natural Earth row for XX, YY`);
+   - a snapshot whose `release` differs from the pinned one (`data/raw/naturalearth is stale: run pnpm ingest naturalearth`), the same message the other sources' stale checks give;
+   - every failure in the matching rule.
+   Derive stays pure (no network, no clock), and the `pnpm build` re-check of derived files covers `data/countries.json` like the others.
+3. **`pnpm build`** writes `/v1/countries.json`, `/v1/countries.parquet` and `/v1/countries.csv` through DuckDB from `data/countries.json`, every column read as VARCHAR (so `NA` stays text), sorted by `code`, with the species tables' fixed writer options so the bytes are the same every build. `db/schema.sql` doesn't change: nothing reads a Postgres copy of the countries.
+4. **Docs and E2E:** the docs page lists the three files with this section's field table; `e2e/countries.spec.ts` checks their shape and that every species code joins (§8); `e2e/duckdb.spec.ts`, which pins the set of `/v1` files the curl examples cover, gains the countries files.
+
+### Credit
+
+Natural Earth needs no credit; critwire gives it anyway, the same way it credits every source.
+- `attribution.json` gets one new entry in its `sources` array with only the keys entries already have: `source` "Natural Earth", `url` `https://www.naturalearthdata.com/`, `license` "Public domain" (already in `LICENSE_URLS`, with no license URL), `release` "v5.1.2", `retrieved`, `citation` "Made with Natural Earth. Free vector and raster map data @ naturalearthdata.com." (the long text the license suggests).
+- Its `fields` are file-qualified (`countries.name`, `countries.continent`, `countries.region`, `countries.subregion`) so no one reads them as species fields; its `records` is the number of country rows; its `notes` says both.
+- Today `buildAttribution` makes one entry per source a species record cites and throws on a registered source no record cites. B1 passes `data/countries.json` to it, merges the entry built from its `source` block into the sorted list, and counts that file as citing Natural Earth.
+- The docs page's "Used for N records" line says "Used for N countries" for this entry, and `e2e/docs.spec.ts` checks it.
+
+### The `/v1` rule: only additions
+
+The docs promise "Inside v1 we only add things". The countries file is three new files; no existing file changes shape or meaning.
+- `species.{json,parquet,csv}` and every `species/<id>.json` and `species/<slug>.json` keep their exact bytes. The evidence is the Baseline hash list (`spike/baseline/dist.sha256`, equal to the live site's on 2026-10-22): B1's `dist/` hashes must match it for every species file.
+- `attribution.json` gains one array entry; every existing entry stays the same JSON value (B1 checks it with `jq`).
+- `index.html` (the docs page) changes. Its "Every file holds the same {{species}} records" line stops being true and is reworded.
+- The species files don't point at the countries file and don't need it: `range.countriesWithOpenRecords` stays a list of codes.
+
+### Reading the CSV: `NA` is Namibia
+
+Namibia's code is `NA`, and some CSV readers treat that text as a missing value by default:
+- pandas `read_csv` turns it into `NaN`; pass `keep_default_na=False`;
+- R's `read.csv` turns it into `NA`; pass `na.strings = character(0)`.
+
+DuckDB's `read_csv` keeps it as the text `NA` (checked in the spike), as do the Parquet and JSON files. The docs page puts this note next to `countries.csv`. `species.csv` is unaffected: its countries cell is a `;`-joined list such as `NA;ZA`.
+
+### Until it's published
+
+The spike built a draft of this file with the same rule (`draft/v1/countries.parquet`, 250 rows), and every 002 block that reads `countries` ran against it and says `-- status: draft-table`. When B1 publishes the file, it relabels those blocks `ran`, re-runs them against the published file (results must be unchanged, since the rows are the same), and the runner's "a `ran` block reads `countries`" check is dropped with the label.
+
+### Check: every species code has a row
+
+Run after loading, this is the countries file's acceptance query: no code the species use is missing. The setup's foreign key from `species_countries` already refuses a missing code, so in a learner's database it can't fail; it's the query B1's `countries.spec.ts` runs against the published file, and lesson 11's left join is the same idea.
+
+```sql
+-- q: k01
+-- status: draft-table
+SELECT count(*) AS codes_used,
+       count(c.code) AS with_a_row,
+       count(*) - count(c.code) AS unmatched
+FROM (SELECT DISTINCT country_code FROM species_countries) AS used
+LEFT JOIN countries AS c ON c.code = used.country_code;
+```
+
+```text
+-- result: k01 · 1 row · sha256 6035c905e2ad
+codes_used | with_a_row | unmatched
+107 | 107 | 0
+```
 
 ## 7. Demo
 
