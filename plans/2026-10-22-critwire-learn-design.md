@@ -822,7 +822,7 @@ Planner, 2026-10-22. Conventions:
   - A species code Natural Earth can't match: add the narrowest rule on Natural Earth's own fields that matches it and record it. Never invent a row.
   - A step outgrows its session: split it per the mission rules; the first part is done and checked.
 
-- [ ] S1 · Spike scaffold: pins, install, serving, vendored engine files (§1 Pins, Serving; F2, F3).
+- [x] S1 · Spike scaffold: pins, install, serving, vendored engine files (§1 Pins, Serving; F2, F3).
   - Pins:
     - `npm view @duckdb/duckdb-wasm time --json`: candidates 1.32.0 and the newest dev build outside pnpm's release-age gate. For each, the DuckDB version and source hash from the wasm (`strings duckdb-eh.wasm | grep -E '^v1\.[0-9]+\.[0-9]+'`), and `curl -sI https://extensions.duckdb.org/<ver>/wasm_{eh,mvp}/{inet,spatial}.duckdb_extension.wasm`. Pick by §1's rule; `@duckdb/duckdb-wasm-shell` at the same version.
     - `@electric-sql/pglite` and `mermaid`: newest outside the gate. `sql.js` 1.15.1, `esbuild` 0.28.2, `playwright` 1.58.2, `typescript` (the repo's resolved version) + `@types/node`, `@duckdb/node-api` 1.5.6-r.2 (with the repo's gate excludes).
@@ -1247,6 +1247,12 @@ Only the spike tools that the Definition of done rests on are tested in isolatio
 
 - Mission B briefs go in `plans/briefs/` so a mission's own plan file can't collide with its brief.
 - Lessons (§4) and cookbook (§5) each split over two steps (S15/S16, S17/S18) to fit one session apiece; ~31 sessions total, under the 60 cap.
+- **duckdb-wasm pin: `1.33.1-dev65.0`** (+ `-shell` same). Probed in node-blocking build: 1.32.0 = DuckDB v1.4.3 `d1dc88f950`; dev57.0 (npm `latest`) = v1.5.4 `08e34c447b`; dev65.0 (npm `next`, 2026-09-29, outside the 1-day gate) = v1.5.6 `069cc9f9b5`, a tagged release, = repo's node-api DuckDB. `inet` + `spatial` published for `wasm_eh` and `wasm_mvp` on all three (HTTP 200). Newest that meets §1's rule → dev65.0.
+- **Other spike pins:** `@electric-sql/pglite` 0.5.10 (0.5.11 of 2026-10-21 11:48 is inside pnpm's release-age gate; no exclude added), `mermaid` 12.2.0, `sql.js` 1.15.1, `esbuild` 0.28.2, `playwright` 1.58.2 (Chromium 145.0.7632.0 = cached `chromium-1208`, no download), `typescript` 7.0.2, `@types/node` 26.6.5, `@duckdb/node-api` 1.5.6-r.2 (repo's gate excludes copied).
+- **Build scripts:** spike installed with the repo's `allowBuilds: esbuild` only; `pnpm ignored-builds` = None. duckdb-wasm, duckdb-wasm-shell, pglite, mermaid need no build script → B1 adds them without an `allowBuilds` change.
+- **Precompression cost:** `build-site.ts --precompress` (brotli 11, zstd 19, gzip 9 on 9 vendored files) takes 4 m 47 s on this box; eh.wasm on the wire: live on-the-fly zstd 7.98 MB vs precompressed br 5.47 MB / zstd 5.79 MB. Weighs into §10 (S9 adds classroom-load CPU).
+- **Fixed mtime works:** `duckdb-eh.wasm` ETag `"76xfr58qsqo0-lfjfa"` identical across a full `site/` rebuild (Last-Modified 2000-01-01). Spike `src/assets.ts` holds vendored files + versioned dirs; build fails if installed version ≠ pin.
+- `pglite.data` is served with no Content-Type (no `/etc/mime.types` entry); harmless for `fetch`, noted for S8.
 
 ## Log
 
@@ -1256,5 +1262,6 @@ Only the spike tools that the Definition of done rests on are tested in isolatio
 - 2026-10-22 06:30 UTC · Astra review: APPROVE_WITH_CHANGES, 3 MUST-FIX (one schema init sequence for both dbs, reset = fresh db + pristine refs, card detection needs explicit species metadata). Design only; nothing to run.
 - 2026-10-22 06:41 UTC · Revision: architect resolved all 6 MUST-FIX (one setup.sql w/ countries before species_countries; reset = engine.restart() fresh db, refs pristine via rollback; esbuild/duckdb-wasm/mermaid pinned direct deps; cards only on `-- show: cards`) + adopted review SC/MISSED items. DuckDB facts rechecked in node DuckDB 1.5.6.
 - 2026-10-22 06:52 UTC · Steps: planner wrote S1–S22, Verification (V0–V10 script), Failure modes (94 cases). Plan only; nothing to run.
+- 2026-10-22 07:02 UTC · S1: spike scaffold in `$SP` (pins, frozen install, Caddyfile + proposed, serve/browser/build-site/bytes). Checks: guard clean, repo typecheck + 66/66, spike typecheck; `.wasm` = application/wasm; ETag stable across rebuild; `out/bytes/summary.md` (eh: 36.00 MB file, 7.98 zstd / 8.53 gzip live); serve exits 1 naming 3102/3100/3101; no Caddy left.
 
 ## Summary
