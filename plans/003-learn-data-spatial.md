@@ -282,6 +282,129 @@ sources | traits | species_traits | species_names | habitat_classes | country_ha
 7 | 5 | 179 | 5274 | 75 | 35 | 250 | 528
 ```
 
+### The grown ERD
+
+The grown schema's entity relationship diagram, in 002 §3's notation and format. Its source is [`003-learn-erd.mmd`](003-learn-erd.mmd), and this block is the same text. 002's six tables and their lines appear in it unchanged: the source names 002's diagram on its `%% extends:` line, and the spike's runner fails if any of 002's entities or lines differ, or if the diagram and the database the two setups build disagree on a table, column, type, key or line. The spike renders it offline to SVG and PNG (`erd/grown.svg`, `erd/grown.png`), as 002's is rendered.
+
+One kind of line is new: `countries ||--o| country_shapes` says a country has zero or one outline, because the outline's foreign key, `country_code`, is also its primary key. The runner accepts `||--o|` only where the child's foreign key is its primary key or unique, and it refuses a "many" line on such a key. DuckDB's `DECIMAL(12, 2)` is drawn as `DECIMAL`, since Mermaid's types are single words.
+
+```mermaid
+%% critwire Learn: the grown schema (plans/003-learn-data-spatial.md §2): 002's schema v1, unchanged, plus the grown tables.
+%% extends: 002-learn-erd.mmd
+%% Tables only; the view species_taxonomy is listed beside it, and PostGIS-only learner objects are listed in §2's text.
+%% Keys: PK primary key, FK foreign key, UK unique. Lines: || exactly one, |o or o| zero or one, |{ one or more, o{ zero or more.
+erDiagram
+    taxa {
+        VARCHAR name PK "Agalychnis, Phyllomedusidae, Anura, Amphibia"
+        VARCHAR taxon_rank "class, order, family or genus"
+        VARCHAR parent_name FK "the taxon one rank up; NULL for a class"
+    }
+    species {
+        INTEGER id PK "critwire's own id, never reused"
+        VARCHAR slug UK "red-eyed-tree-frog"
+        VARCHAR scientific_name UK "Agalychnis callidryas"
+        VARCHAR common_name "Red-eyed Tree Frog"
+        VARCHAR genus FK "a taxa row of rank genus"
+        VARCHAR range_status "ok, no-open-records or identity-unsettled"
+        VARCHAR photo_url "NULL when there is no photo"
+        VARCHAR photo_credit "who took the photo"
+        VARCHAR photo_license "CC BY-SA 4.0, CC BY 2.0, CC0, Public domain"
+        VARCHAR photo_page "the photo's Wikimedia Commons page"
+        INTEGER iucn_id UK "IUCN Red List taxon id"
+        BIGINT gbif_id UK "GBIF backbone taxon key"
+        VARCHAR col_id UK "Catalogue of Life id"
+        VARCHAR wikidata_id UK "Wikidata item"
+        INTEGER inaturalist_id UK "iNaturalist taxon id"
+        INTEGER ncbi_id UK "NCBI Taxonomy id"
+    }
+    countries {
+        VARCHAR code PK "ISO 3166-1 alpha-2, plus XK"
+        VARCHAR name UK "Brazil"
+        VARCHAR continent "South America"
+        VARCHAR region "Americas"
+        VARCHAR subregion "South America"
+    }
+    species_countries {
+        INTEGER species_id PK, FK "the animal"
+        VARCHAR country_code PK, FK "recorded there in open records"
+    }
+    sources {
+        VARCHAR name PK "Wikidata, Catalogue of Life, critwire base"
+        VARCHAR license "the license of what critwire took"
+        DATE retrieved "when critwire took it; NULL for critwire base"
+    }
+    species_sources {
+        INTEGER species_id PK, FK "the animal"
+        VARCHAR field PK "a path in the record, such as ids.col"
+        VARCHAR source_name FK "who supplied that field"
+    }
+    traits {
+        VARCHAR name PK "adult_mass, clutch_size, body_length"
+        VARCHAR unit "g, young, days, years, mm; NULL when it has none"
+        VARCHAR description "what the trait measures, in critwire's words"
+    }
+    species_traits {
+        INTEGER species_id PK, FK "the animal"
+        VARCHAR trait_name PK, FK "the trait"
+        VARCHAR value "text: CAST it to compare numbers"
+        VARCHAR source_name FK "the dataset that gave the value"
+    }
+    species_names {
+        INTEGER species_id PK, FK "the animal"
+        VARCHAR language PK "a Wikidata language code, such as de"
+        VARCHAR name "Amerikanische Sumpfschildkröte"
+    }
+    habitat_classes {
+        INTEGER code PK "Jung v004 class, such as 105"
+        INTEGER level1_code FK "its level-1 class, such as 100; NULL for level 1"
+        VARCHAR name "Forest – Subtropical/tropical dry"
+    }
+    country_habitats {
+        VARCHAR country_code PK, FK "the country"
+        INTEGER habitat_code PK, FK "the habitat class"
+        DECIMAL est_area_km2 "estimated from the map, never measured"
+    }
+    country_shapes {
+        VARCHAR country_code PK, FK "the country"
+        GEOMETRY geom "Natural Earth outline, lon/lat degrees (WGS 84)"
+    }
+    occurrences {
+        BIGINT id PK "GBIF's record id"
+        INTEGER species_id FK "the animal recorded"
+        VARCHAR country_code FK "where the record is; NULL when unknown"
+        DOUBLE longitude "degrees east"
+        DOUBLE latitude "degrees north"
+        INTEGER year "NULL when the record has none"
+        VARCHAR license "CC0 1.0 or CC BY 4.0"
+        VARCHAR dataset_key "the GBIF dataset to credit"
+        INTEGER habitat_code FK "most common class in its 1 km cell; NULL if none"
+    }
+
+    taxa |o--o{ taxa : "parent of"
+    taxa ||--o{ species : "genus of"
+    species ||--o{ species_countries : "recorded in"
+    countries ||--o{ species_countries : "has records of"
+    species ||--o{ species_sources : "fields from"
+    sources ||--|{ species_sources : "supplies"
+    traits ||--o{ species_traits : "values of"
+    species ||--o{ species_traits : "has traits"
+    sources ||--o{ species_traits : "supplies"
+    species ||--o{ species_names : "named in"
+    habitat_classes |o--o{ habitat_classes : "level 1 of"
+    countries ||--o{ country_habitats : "estimated to hold"
+    habitat_classes ||--o{ country_habitats : "estimated in"
+    countries ||--o| country_shapes : "outlined by"
+    species ||--o{ occurrences : "recorded as"
+    countries |o--o{ occurrences : "contains"
+    habitat_classes |o--o{ occurrences : "class at"
+```
+
+**Outside the ERD.** These live only in your own PostGIS (§4, §6), not in critwire's schema, so the diagram leaves them out:
+- `learn_spatial.country_shapes` and `learn_spatial.occurrences`: the same rows as the grown tables, loaded by `pg-setup` from the same files, with PostGIS `geometry(Geometry, 4326)` and a spatial (GiST) index.
+- `learn_spatial.habitat_clips`: small clips of the habitat map stored in the database (§5), and the out-db raster windows a raster lesson builds inside a query over the full file.
+- your own IUCN range polygons, imported from your own download (§6), and `learn_spatial.example_ranges`, the hand-drawn synthetic stand-in the lessons are tested on.
+- 002's view `species_taxonomy`, unchanged, which 002's diagram also lists beside it rather than in it.
+
 ## 3. Lessons for the grown data
 
 ## 4. The advanced spatial track
@@ -532,3 +655,11 @@ Jung et al. 2020 (Zenodo 4058819, version 004) maps the classes of IUCN's Habita
 ## 8. For the owner
 
 ## Disagreements with 002
+
+003 changes nothing in `002-learn.md`; where its design and 002's differ, the build missions follow this section.
+
+- **Lesson 16's exercise moves to its own names.** 002's lesson 16 has learners create `traits` and `species_traits`, and 002 §2 "Room to grow" gives critwire's real trait tables the same names and shapes. Once mission C adds the real tables to the one setup every page runs, lesson 16's blocks fail with `Table with name "traits" already exists!` (and `"species_traits"`): the spike ran both after the grown setup and saw exactly that. The real tables keep 002's names, since nothing in 002's schema is renamed. Mission C moves the lesson and its exercise to `my_traits` and `my_species_traits`, and `l16-check` reads `table_name = 'my_species_traits'`. Its expected rows stay the same but one: `FOREIGN KEY (trait_name) REFERENCES my_traits("name")` instead of `… REFERENCES traits("name")` (the spike ran the renamed lesson, exercise and check). A grown-data lesson (§3) then sets the learner's design beside critwire's real tables.
+- **Habitats: map classes, not species preferences.** 002 §2 "Room to grow" lists `habitats` + `species_habitats`. 003 has `habitat_classes` and `country_habitats` instead, and no species–habitat table: which habitats a species uses comes from IUCN's assessments, which are Red List data critwire never stores (§6). The honest version is `occurrences.habitat_code`, the habitat class at an open record's location.
+- **Regions wait.** 002's `regions` + `country_regions` aren't in the grown schema. The candidates are ranked in §1 (Natural Earth's admin-1 regions, RESOLVE's ecoregions); `ecoregions` and `biomes` are designed in §2 but not built, and come after the habitat track.
+- **The grown tables have their own setup for now.** 002 puts every new table in the same `setup.sql`. 003 keeps them in `setup-grown`, run after 002's `setup`, so 002's setup stays byte for byte as A1 left it while the grown tables are stand-ins; mission C merges `setup-grown` into `setup.sql` when it publishes the files.
+- **One more kind of ERD line.** 002 §3's check ("What the check holds") accepts one-to-many lines only. The grown diagram adds `||--o|` for `country_shapes`, whose foreign key is also its primary key, and the check accepts it only on such a key and refuses a "many" line there (§2). Mission C's port of the check needs the same rule, and the rule that 002's entities and lines stay unchanged.
