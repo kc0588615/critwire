@@ -1722,7 +1722,437 @@ Mission A2 designs the spatial and raster lessons; they come after lesson 16 and
 
 ## 5. Cookbook
 
-Written in steps S17 and S18.
+Queries a game or an app can run on the learners' tables as they are. Each entry says what a game uses it for, then gives the SQL and its result on today's data. They are standard SQL, with a few tools the lessons don't teach: `WITH` (a named sub-query, a "common table expression"), window functions (`row_number() OVER (…)`) and `WITH RECURSIVE`. No lesson depends on them, so a learner can read the cookbook after lesson 13 (views) or not at all.
+
+**Parameters.** A game passes its own values (an animal's id, a country code, a date, a seed) through `?` placeholders, which the engine binds in order (`engine.runScript(text, params)`, §1). A value is never pasted into the SQL text, so nothing a player types can change the query. In this document each query's example values sit on its `-- params:` line, and run-queries binds them. A query that needs more than one value, or one value twice, binds each once in a first `WITH p AS (SELECT CAST(? AS …) AS …)` and uses it by name; the `CAST` fixes the type, since a JavaScript number arrives as a `DOUBLE`.
+
+**The same for everyone.** A game's "random" pick has to be the same for every player on the same day or seed, and the same every time the query runs, so nothing calls `random()`. A **shuffle key** mixes an animal's id with a seed by plain arithmetic instead:
+
+`(id * 619 + seed * 211) % 1009`
+
+1009 is a prime and 619 isn't a multiple of it, so every id below 1009 gets a different key: sorting by it never ties, and gives a shuffled deck that's the same everywhere (once ids pass 1009, ties are broken by `id`). Another seed starts the deck at another place. A date comes in as a parameter (the player's date in UTC), never as `current_date`, so a result depends only on its inputs and the data. When the data grows, the picks change too: a new animal joins every deck.
+
+**How a game loads one.** Mission B2 keeps each query in its own file, `site/learn/cookbook/<id>.sql` (`c01.sql`, …), which the page bundle imports as text. The cookbook page, the game and the E2E suite run that same file. The `-- params:` line exists only in this document: the cookbook page shows the example values in small inputs above the editor, and a game passes its own. Pure functions turn the rows into game state, and cards are drawn by the same card component the lessons use, with the species ids passed in explicitly.
+
+Countries mean what they mean in lessons 9–11: the animal was *recorded there in open records*. Games that use them say "recorded in", never "lives in".
+
+### c01 · Animal of the day
+
+**Game use:** a daily card on the Learn home page or in the demo, the same for everyone on the same UTC date; the next day brings the next animal, and every animal gets its day before any repeats.
+
+The deck is every animal sorted by its shuffle key (seed 0), numbered from 0. The day number (days since 2000-01-01) modulo the deck's size says which card is today's.
+
+```sql
+-- q: c01
+-- status: ran
+-- params: ["2026-10-22"]
+-- show: cards
+WITH p AS (SELECT CAST(? AS DATE) - DATE '2000-01-01' AS day_number),
+deck AS (
+  SELECT id, common_name, scientific_name,
+         row_number() OVER (ORDER BY (id * 619) % 1009, id) - 1 AS position,
+         count(*) OVER () AS deck_size
+  FROM species
+)
+SELECT d.id, d.common_name, d.scientific_name
+FROM deck AS d CROSS JOIN p
+WHERE d.position = p.day_number % d.deck_size;
+```
+
+```text
+-- result: c01 · 1 row · sha256 b44e31f2e1f7
+id | common_name | scientific_name
+47 | Ili Pika | Ochotona iliensis
+```
+
+On the example date the pick has no photo, so its card shows the "No photo yet" state.
+
+### c02 · Name that animal
+
+**Game use:** a quiz round: the game shows the answer's photo and four names as buttons. The three wrong names come from the same class as the answer (a mammal among mammals), so the round can't be won by spotting the only frog. The game draws the answer from c09's photo deck and uses the round number as the seed.
+
+```sql
+-- q: c02
+-- status: ran
+-- params: [51, 3]
+WITH p AS (SELECT CAST(? AS INTEGER) AS answer_id, CAST(? AS INTEGER) AS seed),
+answer AS (
+  SELECT t.species_id, t.class
+  FROM species_taxonomy AS t JOIN p ON t.species_id = p.answer_id
+),
+decoys AS (
+  SELECT t.species_id
+  FROM species_taxonomy AS t
+  JOIN answer AS a ON t.class = a.class AND t.species_id <> a.species_id
+  CROSS JOIN p
+  ORDER BY (t.species_id * 619 + p.seed * 211) % 1009, t.species_id
+  LIMIT 3
+),
+choices AS (
+  SELECT species_id, true AS is_answer FROM answer
+  UNION ALL
+  SELECT species_id, false FROM decoys
+)
+SELECT s.id, s.common_name, c.is_answer
+FROM choices AS c
+JOIN species AS s ON s.id = c.species_id
+CROSS JOIN p
+ORDER BY (s.id * 619 + p.seed * 211) % 1009, s.id;
+```
+
+```text
+-- result: c02 · 4 rows · sha256 3a0ca512ed1d
+id | common_name | is_answer
+43 | Goodfellow's Tree-kangaroo | false
+30 | Pygmy Three-toed Sloth | false
+61 | Indri | false
+51 | Jaguar | true
+```
+
+The last `ORDER BY` shuffles the buttons too, so the answer isn't always first.
+
+### c03 · Who's been recorded here?
+
+**Game use:** "pick a country": a map or a list of countries, and the animals recorded there as cards. An app can use it for "animals recorded where I live".
+
+```sql
+-- q: c03
+-- status: ran
+-- params: ["MX"]
+-- show: cards
+SELECT s.id, s.common_name, s.scientific_name
+FROM species AS s
+JOIN species_countries AS sc ON sc.species_id = s.id
+WHERE sc.country_code = ?
+ORDER BY s.common_name;
+```
+
+```text
+-- result: c03 · 10 rows · sha256 4e5ac7dfa4cd
+id | common_name | scientific_name
+50 | Addax | Addax nasomaculatus
+20 | African Spurred Tortoise | Centrochelys sulcata
+74 | Axolotl | Ambystoma mexicanum
+70 | Baird's Tapir | Tapirus bairdii
+26 | Black-footed Ferret | Mustela nigripes
+… 5 more rows
+```
+
+### c04 · Neighbours
+
+**Game use:** "who else is around?": after a player picks an animal, the animals recorded in the most of the same countries, as cards to collect next.
+
+The junction table joined to itself: one copy holds the chosen animal's countries, the other every other animal recorded in those countries.
+
+```sql
+-- q: c04
+-- status: ran
+-- params: [51]
+-- show: cards
+SELECT other.species_id AS id, s.common_name, count(*) AS shared_countries
+FROM species_countries AS mine
+JOIN species_countries AS other
+  ON other.country_code = mine.country_code AND other.species_id <> mine.species_id
+JOIN species AS s ON s.id = other.species_id
+WHERE mine.species_id = ?
+GROUP BY other.species_id, s.common_name
+ORDER BY shared_countries DESC, s.common_name
+LIMIT 5;
+```
+
+```text
+-- result: c04 · 5 rows · sha256 d1a3b03022f2
+id | common_name | shared_countries
+52 | Giant Anteater | 14
+54 | Brown-throated Sloth | 12
+53 | Lowland Tapir | 12
+73 | Giant Otter | 11
+36 | Giant Armadillo | 10
+```
+
+### c05 · Family tree
+
+**Game use:** the "family tree" panel on an animal's card, from class down to genus; a game can reveal it one rank at a time as hints.
+
+`WITH RECURSIVE` walks the hierarchy that lesson 12 joined by hand: start at the animal's genus, then repeatedly add the parent of the last row, until a class (which has no parent) ends the walk. It works whatever the number of ranks, so it keeps working if critwire adds ranks such as subfamily.
+
+```sql
+-- q: c05
+-- status: ran
+-- params: [51]
+WITH RECURSIVE lineage AS (
+  SELECT t.name, t.taxon_rank, t.parent_name, 1 AS depth
+  FROM species AS s JOIN taxa AS t ON t.name = s.genus
+  WHERE s.id = ?
+  UNION ALL
+  SELECT t.name, t.taxon_rank, t.parent_name, l.depth + 1
+  FROM lineage AS l JOIN taxa AS t ON t.name = l.parent_name
+)
+SELECT taxon_rank, name
+FROM lineage
+ORDER BY depth DESC;
+```
+
+```text
+-- result: c05 · 4 rows · sha256 5b4fa2cc93c6
+taxon_rank | name
+class | Mammalia
+order | Carnivora
+family | Felidae
+genus | Panthera
+```
+
+### c06 · Odd one out
+
+**Game use:** four cards, three from one family and one from another family of the same class; the player finds the odd one. The seed picks the family (one with at least three animals) and the cards.
+
+```sql
+-- q: c06
+-- status: ran
+-- params: [5]
+-- show: cards
+WITH p AS (SELECT CAST(? AS INTEGER) AS seed),
+families AS (
+  SELECT family, class,
+         row_number() OVER (ORDER BY family) - 1 AS position,
+         count(*) OVER () AS family_count
+  FROM species_taxonomy
+  GROUP BY family, class
+  HAVING count(*) >= 3
+),
+pick AS (
+  SELECT f.family, f.class FROM families AS f CROSS JOIN p
+  WHERE f.position = p.seed % f.family_count
+),
+trio AS (
+  SELECT t.species_id, false AS is_odd
+  FROM species_taxonomy AS t JOIN pick ON t.family = pick.family CROSS JOIN p
+  ORDER BY (t.species_id * 619 + p.seed * 211) % 1009, t.species_id
+  LIMIT 3
+),
+odd AS (
+  SELECT t.species_id, true AS is_odd
+  FROM species_taxonomy AS t JOIN pick ON t.class = pick.class AND t.family <> pick.family CROSS JOIN p
+  ORDER BY (t.species_id * 619 + p.seed * 211) % 1009, t.species_id
+  LIMIT 1
+),
+choices AS (
+  SELECT * FROM trio
+  UNION ALL
+  SELECT * FROM odd
+)
+SELECT s.id, s.common_name, t.family, c.is_odd
+FROM choices AS c
+JOIN species AS s ON s.id = c.species_id
+JOIN species_taxonomy AS t ON t.species_id = s.id
+CROSS JOIN p
+ORDER BY (s.id * 619 + p.seed * 211) % 1009, s.id;
+```
+
+```text
+-- result: c06 · 4 rows · sha256 428125ba9cf2
+id | common_name | family | is_odd
+18 | Yangtze Giant Softshell Turtle | Trionychidae | true
+15 | Pancake Tortoise | Testudinidae | false
+20 | African Spurred Tortoise | Testudinidae | false
+22 | Pinta Island Tortoise | Testudinidae | false
+```
+
+The game hides `family` and `is_odd` until the player has chosen; here they show what the round contains.
+
+### c07 · Countries with the most animals
+
+**Game use:** a leaderboard of countries, and the list a "pick a country" screen (c03) starts from.
+
+```sql
+-- q: c07
+-- status: draft-table
+SELECT c.code, c.name, count(*) AS animals
+FROM species_countries AS sc
+JOIN countries AS c ON c.code = sc.country_code
+GROUP BY c.code, c.name
+ORDER BY animals DESC, c.name
+LIMIT 10;
+```
+
+```text
+-- result: c07 · 10 rows · sha256 aa6f262a5ae4
+code | name | animals
+US | United States of America | 30
+KE | Kenya | 15
+BR | Brazil | 12
+CO | Colombia | 10
+MX | Mexico | 10
+… 5 more rows
+```
+
+### c08 · A team of five
+
+**Game use:** a seeded team for a card battle or a collection challenge: five animals, no two from the same family. Every player with the same seed gets the same team.
+
+Each family's animals are numbered by shuffle key, and only each family's first one stays; the five lowest keys among those make the team.
+
+```sql
+-- q: c08
+-- status: ran
+-- params: [42]
+-- show: cards
+WITH p AS (SELECT CAST(? AS INTEGER) AS seed),
+keyed AS (
+  SELECT t.species_id, t.family, (t.species_id * 619 + p.seed * 211) % 1009 AS shuffle
+  FROM species_taxonomy AS t CROSS JOIN p
+),
+ranked AS (
+  SELECT species_id, family, shuffle,
+         row_number() OVER (PARTITION BY family ORDER BY shuffle, species_id) AS nth
+  FROM keyed
+)
+SELECT s.id, s.common_name, r.family
+FROM ranked AS r
+JOIN species AS s ON s.id = r.species_id
+WHERE r.nth = 1
+ORDER BY r.shuffle, s.id
+LIMIT 5;
+```
+
+```text
+-- result: c08 · 5 rows · sha256 1036432de040
+id | common_name | family
+46 | Golden-rumped Sengi | Macroscelididae
+2 | Spiny Softshell Turtle | Trionychidae
+33 | Ethiopian Wolf | Canidae
+64 | African Savanna Elephant | Elephantidae
+20 | African Spurred Tortoise | Testudinidae
+```
+
+### c09 · The photo deck
+
+**Game use:** the deck for every round that shows a photo (c02's answers, a memory game): animals without a photo are left out, so no round asks a player to recognise a placeholder.
+
+```sql
+-- q: c09
+-- status: ran
+-- show: cards
+SELECT id, common_name
+FROM species
+WHERE photo_url IS NOT NULL
+ORDER BY id;
+```
+
+```text
+-- result: c09 · 74 rows · sha256 ca363718a2ab
+id | common_name
+1 | Blanding's Turtle
+2 | Spiny Softshell Turtle
+3 | Darwin Frog
+4 | Big-headed Turtle
+5 | Wallace's Flying Frog
+… 69 more rows
+```
+
+### c10 · Twenty questions
+
+**Game use:** a guessing game that reveals clues one at a time, from the vaguest (class) to the most telling (genus), with the number of countries the animal was recorded in as an extra clue. Fewer clues used, more points.
+
+`LEFT JOIN` keeps an animal with no country records, with a count of 0 (lesson 11).
+
+```sql
+-- q: c10
+-- status: ran
+-- params: [74]
+SELECT t.class, t.order_name, t.family, t.genus, count(sc.country_code) AS countries_recorded
+FROM species_taxonomy AS t
+LEFT JOIN species_countries AS sc ON sc.species_id = t.species_id
+WHERE t.species_id = ?
+GROUP BY t.class, t.order_name, t.family, t.genus;
+```
+
+```text
+-- result: c10 · 1 row · sha256 a39c38325d74
+class | order_name | family | genus | countries_recorded
+Amphibia | Caudata | Ambystomatidae | Ambystoma | 4
+```
+
+### c11 · Close cousins
+
+**Game use:** "match the cousins": pairs of animals in the same genus, for a matching or memory game where each pair is two cards.
+
+`species` joined to itself on `genus`; `b.id > a.id` keeps each pair once (not the Tiger with itself, and not both Tiger–Jaguar and Jaguar–Tiger).
+
+```sql
+-- q: c11
+-- status: ran
+SELECT a.genus, a.id AS first_id, a.common_name AS first_name, b.id AS second_id, b.common_name AS second_name
+FROM species AS a
+JOIN species AS b ON b.genus = a.genus AND b.id > a.id
+ORDER BY a.genus, a.id, b.id;
+```
+
+```text
+-- result: c11 · 8 rows · sha256 7e768cbe50bb
+genus | first_id | first_name | second_id | second_name
+Bradypus | 30 | Pygmy Three-toed Sloth | 54 | Brown-throated Sloth
+Chelonoidis | 19 | Floreana Giant Tortoise | 22 | Pinta Island Tortoise
+Loxodonta | 41 | African Forest Elephant | 64 | African Savanna Elephant
+Manis | 24 | Sunda Pangolin | 59 | Indian Pangolin
+Panthera | 25 | Tiger | 51 | Jaguar
+… 3 more rows
+```
+
+### c12 · Could they meet?
+
+**Game use:** the player picks two animals and guesses whether they've ever been recorded in the same country; the answer lists the countries. No rows means never.
+
+```sql
+-- q: c12
+-- status: ran
+-- params: [25, 28]
+SELECT a.country_code
+FROM species_countries AS a
+JOIN species_countries AS b ON b.country_code = a.country_code
+WHERE a.species_id = ? AND b.species_id = ?
+ORDER BY a.country_code;
+```
+
+```text
+-- result: c12 · 13 rows · sha256 5d7501ceb7c8
+country_code
+BD
+BT
+CN
+DE
+ID
+… 8 more rows
+```
+
+The Tiger and the Asian Elephant share countries in Asia, and some outside it, such as Germany (`DE`): animals kept in zoos have open records too.
+
+### c13 · Search box
+
+**Game use:** the search box of the playground or a game's "pick an animal" screen: animals whose common or scientific name contains what the player typed, in any mix of capitals.
+
+`lower` on both sides makes the match ignore capitals; `||` joins strings, so the pattern is `%` + the text + `%` (`%` matches any run of characters, lesson 3). A `%` the player types also acts as a wildcard, and so does `_` (any one character); a search box can live with that.
+
+```sql
+-- q: c13
+-- status: ran
+-- params: ["PANG"]
+-- show: cards
+WITH p AS (SELECT '%' || lower(CAST(? AS VARCHAR)) || '%' AS pattern)
+SELECT s.id, s.common_name, s.scientific_name
+FROM species AS s CROSS JOIN p
+WHERE lower(s.common_name) LIKE p.pattern OR lower(s.scientific_name) LIKE p.pattern
+ORDER BY s.common_name;
+```
+
+```text
+-- result: c13 · 4 rows · sha256 34ad113aeaa0
+id | common_name | scientific_name
+55 | Giant Pangolin | Smutsia gigantea
+59 | Indian Pangolin | Manis crassicaudata
+24 | Sunda Pangolin | Manis javanica
+63 | Temminck's Pangolin | Smutsia temminckii
+```
 
 ## 6. The countries file
 
