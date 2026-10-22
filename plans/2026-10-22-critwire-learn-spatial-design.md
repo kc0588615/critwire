@@ -205,7 +205,7 @@ Out:
 
 ## Stages
 
-- [ ] Baseline: install, migrate, run typecheck, lint, unit and E2E tests; record the results under Baseline
+- [x] Baseline: install, migrate, run typecheck, lint, unit and E2E tests; record the results under Baseline
 - [ ] Architecture: `architect` writes findings and the target design
 - [ ] Fable review: `architecture-reviewer`
 - [ ] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
@@ -213,6 +213,18 @@ Out:
 - [ ] Steps: `planner` writes Steps and Verification
 
 ## Baseline
+
+2026-10-22, worktree HEAD `222d265` (= `origin/main` `d6eeffb` + this plan; `git diff --stat origin/main HEAD` touches only this plan, so its build is `main`'s build). Spike folder `<spike>` = `/srv/critter-ai/agent-state/missions/critwire-learn-spatial-design/spike/`.
+- A1's `plans/002-learn.md` present on `main` (and `plans/002-learn-erd.mmd`): mission not blocked.
+- `pnpm install --frozen-lockfile`: up to date. No lint script and no migrations: `pnpm build` rebuilds the schema in `critwire_dev` each run.
+- `pnpm typecheck`: pass. `pnpm test`: 66/66 pass.
+- `pnpm build` (after `rm -rf dist`): pass, 157 files in `dist/`.
+- `E2E_ARTIFACTS=/srv/critter-ai/agent-state/missions/critwire-learn-spatial-design/baseline-e2e pnpm e2e`: 20/20 pass (report `baseline-e2e/playwright-report/`); no test Caddy left running.
+- **dist hashes** (Definition of done): `<spike>/baseline/dist.sha256` (157 files, `sha256sum` from inside `dist/`). Live files fetched from https://critwire.com into `<spike>/baseline/live/`, hashed in `<spike>/baseline/live.sha256`: identical to `dist.sha256`, and identical to A1's baseline list.
+- Reproduce: `rm -rf dist && pnpm build && (cd dist && find . -type f | sort | xargs sha256sum) | diff - <spike>/baseline/dist.sha256`.
+- Data facts confirmed from `data/species.json`: 76 species (Mammalia 50, Amphibia 15, Reptilia 11), 107 distinct country codes.
+- `critwire_dev`: `postgis` 3.4.2 installed; `postgis_raster` 3.4.2 available, not installed. Disk: 24 GB free.
+- No saved IUCN terms copy (`iucn-terms-of-use-*`) in the mission state folder yet; section 6 tries the live page and Wayback.
 
 ## Architecture
 
@@ -233,5 +245,7 @@ Out:
 ## Decisions
 
 ## Log
+
+- 2026-10-22 15:57 UTC: Baseline. typecheck pass, test 66/66, build 157 files, E2E 20/20; dist hashes = live = A1 baseline.
 
 ## Summary
