@@ -1269,6 +1269,12 @@ SHOULD-CONSIDER:
 
 ## Release
 
+- origin/main unchanged since base (`871d0a6`), no rebase. Full Verification re-run: exit 0 (`/srv/critter-ai/agent-state/missions/critwire-learn-design/verify/verify-20261022T1546Z.log`).
+- PR #7 merged (`gh pr merge 7 --merge`): merge commit `d6eeffbee401eb088b96c8a344a48ee7a40368c0`.
+- `deploy critwire` exit 0, last line: `deploy critwire: live at https://critwire.com` (`/srv/critter-ai/agent-state/missions/critwire-learn-design/release/deploy-20261022T1551Z.log`).
+- Smoke (`/srv/critter-ai/agent-state/missions/critwire-learn-design/release/smoke-20261022T1551Z.log`): all 157 paths of `spike/baseline/live.sha256` 200 and hash-identical (0 failures); CORS on `/v1/species.parquet` (`*`, `Range` allowed, range headers exposed); `Range: bytes=0-3` → 206, 4 B `PAR1`; OPTIONS → 204.
+Result: done
+
 ## Decisions
 
 - Mission B briefs go in `plans/briefs/` so a mission's own plan file can't collide with its brief.
@@ -1447,6 +1453,7 @@ SHOULD-CONSIDER:
 - 2026-10-22 15:10 UTC · S24: c02 buttons by order key `(id*211 + seed*619) % 1009` (§5 intro, c02, §7, B2 brief). Answer position over 74 photo answers × seeds 1–10 (740 rounds, DuckDB-WASM, `$SP/out/s24-positions/`): old 30/28/29/653 (88 % last), new 181/227/190/142 (24/31/26/19 %); node-api scratch same. `--update` diff read (c02 row order only, same 4 rows); `--check --erd` exit 0 (77 blocks, ERD 6/1/6). Guard ok (only plans/, typecheck, 66/66); ports free.
 - 2026-10-22 15:24 UTC · S25: every statement streamed + capped (`$SP/src/engine.ts` `readCapped`, `serial`). cap-check "script:" cases red first on old code (`$SP/scratch/s25-red/`: malloc at 2 419 MB, 3.6 s); green: `<runaway>; SELECT count(*) FROM species` 76 in 0.13 s, peak 390 MB; runaway alone 10 000 rows truncated, 393 MB; later INSERT applies; exact-cap not truncated; empty result keeps columns. cap-check 0 failures (18 checks), boot-check 0, card-check 0, blocked [] each; spike typecheck + 103/103; `--check --erd` exit 0 (77 blocks, 0 differences, ERD 6/1/6). 002 §1 (Huge results, one call at a time), B1 engine fact. Guard ok (only plans/, typecheck, 66/66); ports free.
 - 2026-10-22 15:47 UTC · Final Verification V0–V10 exit 0 (`$M/verify/verify-20261022T1540Z.log`): only plans/ changed; typecheck, unit 66/66; dist = Baseline (157 files); repo E2E 20/20; spike typecheck + 103/103; 77 blocks, 0 failures, 0 differences, 0 untested, ERD 6/1/6; 16 lessons, 26 cookbook, briefs, 001 pointer; ERD SVG/PNG; 14 run summaries, blocked [] in all 32 results; smoke 0 failures. V9 paths fixed first (3 commits; Decisions). Summary written, status done.
+- 2026-10-22 15:53 UTC · Release: no rebase needed; Verification exit 0; PR #7 merged (`d6eeffb`); `deploy critwire` ok; smoke 157/157 hashes = Baseline, CORS, 206, OPTIONS 204.
 
 ## Summary
 
@@ -1488,6 +1495,7 @@ SHOULD-CONSIDER:
   - Code: Astra APPROVE_WITH_CHANGES; all 3 MUST-FIX fixed (S23–S25).
   - Astra SHOULD-CONSIDER, open for B1: exercises that ask for sorted output are checked without regard to row order, so a missing `ORDER BY` still passes.
 - **Not covered:** Firefox and WebKit weren't run (Firefox needs GTK packages via apt); §10 item 10 covers real devices.
+- **Release:** PR #7 merged (`d6eeffb`), deployed; live site unchanged (157/157 hashes), CORS + 206 ok.
 - **Evidence** (`/srv/critter-ai/agent-state/missions/critwire-learn-design/`):
   - `spike/out/<run>/` (summaries, results, screenshots) and `spike/README.md` (every command in order)
   - `spike/erd/schema.{svg,png}`
