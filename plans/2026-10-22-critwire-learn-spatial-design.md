@@ -208,7 +208,7 @@ Out:
 - [x] Baseline: install, migrate, run typecheck, lint, unit and E2E tests; record the results under Baseline
 - [x] Architecture: `architect` writes findings and the target design
 - [x] Fable review: `architecture-reviewer`
-- [ ] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
+- [x] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
 - [ ] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
 - [ ] Steps: `planner` writes Steps and Verification
 
@@ -629,6 +629,21 @@ Covered by MUST-FIX 1 and 3; nothing else important.
 
 ## Architecture review (Astra)
 
+VERDICT: APPROVE_WITH_CHANGES
+
+MUST-FIX:
+
+1. **Offline build violation (T5/T10).** Remote COG summaries must be produced during ingest and committed under `data/`, with provenance. Builds must consume those snapshots without network access.
+2. **Insufficient raster correctness gate (E3b).** Bytes transferred cannot establish that an overview was read correctly. Require pixel/window agreement with an independent reader before using that path for published summaries.
+3. **Misleading habitat areas (T5/E3b).** Nearest-neighbour overview counts do not preserve full-resolution habitat proportions. Define resolution, aggregation method and approximation explicitly; do not publish these as unqualified “true area.”
+4. **Unresolved raster provenance (T7).** Excluding candidate versions by class codes does not establish the source version or complete attribution. Gate publication of clips and summaries on confirmed provenance; otherwise use an explicitly identified, licensed upstream release.
+
+SHOULD-CONSIDER:
+
+- Make raster capability checks a prerequisite for both the spike and learner setup; fail before queries if required settings are ineffective.
+- Define how occurrence samples contribute to the existing GBIF DOI accounting without replacing country-derived counts or double-counting records.
+- Specify attribution links for every new table and derived field, especially sampled habitat codes.
+
 ## Revision notes
 
 ## Steps
@@ -646,5 +661,6 @@ Covered by MUST-FIX 1 and 3; nothing else important.
 - 2026-10-22 15:57 UTC: Baseline. typecheck pass, test 66/66, build 157 files, E2E 20/20; dist hashes = live = A1 baseline.
 - 2026-10-22 16:17 UTC: Architecture (architect): 12 targets, findings checked live (COG header, PostGIS /vsicurl read = TiTiler value, TiTiler CORS ok, S3 none, IUCN terms via Wayback). `postgis_raster` now installed in `critwire_dev` (Baseline note superseded). Plan-only change; no code touched.
 - 2026-10-22 16:20 UTC: Fable review (architecture-reviewer): APPROVE WITH CHANGES, 3 MUST-FIX (offline build: habitat summaries as committed ingest; E3b validate overview reads by values; load raster lib before SET + assert SHOW). Plan-only.
+- 2026-10-22 16:21 UTC: Astra review: APPROVE_WITH_CHANGES, 4 MUST-FIX (offline build: COG summaries committed in data/; E3b pixel agreement w/ independent reader; overview counts not "true area", define resolution/aggregation; gate publication on confirmed Jung provenance). Plan-only.
 
 ## Summary
