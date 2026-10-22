@@ -767,7 +767,7 @@ Planner, 2026-10-22. T12's 16 units in order, split where one session can't hold
 - **Decisions:** every pin, every species, point and polygon pick, every fallback taken (T11), E3b's verdict and the ranking, each with its reason.
 - **Contingencies:** Failure modes say what each experiment does when it fails: record it and carry on. A step that outgrows its session is split per the mission rules.
 
-- [ ] S1 · Spike scaffold, and proof the copy reproduces A1 (T2, T12 u1; F10).
+- [x] S1 · Spike scaffold, and proof the copy reproduces A1 (T2, T12 u1; F10). Deviations (Decisions, S1): `spatial` mirrored for wasm_mvp too; no wasm_threads; `setup-counts` keeps `draft-table` until S12.
   - Copy from `$A1` with `cp`; each file's A1 path and sha256 (source and copy) go in README's provenance table:
     - `scripts/`: paths.ts (`BASELINE_V1` → `$SP/baseline/live/v1`, `DRAFT_V1` → `$SP/data/v1`), serve.ts, browser.ts (keeps the CPUQuota launcher), env.ts, build-site.ts, plan-queries.ts, runner-client.ts, erd.ts, erd-model.ts; the VmHWM probe cut from measure.ts into `scripts/vmhwm.ts`;
     - `scripts/run-queries.ts` → `$SP/run-queries.ts` (imports `./scripts/…`, `./src/…`);
@@ -1262,6 +1262,10 @@ Only the spike tools that the Definition of done and the experiments' verdicts r
 - `example_ranges.label = 'synthetic'`; `erd.ts --name`; S17 proves F4 clash via scratch plan (002 l16 fails "already exists" vs grown setup).
 - Wikidata: named properties only, never whole entities (P141 = Red List category); V9 scans for `"P141"`.
 - IUCN scan matches IUCN host names, not "iucn" (Jung's files are `iucn_habitatclassification_*`).
+- S1: `spatial` mirrored for wasm_mvp as well as wasm_eh (both already downloaded by A1, sha256-checked): the mvp bundle is the fallback for browsers without wasm exceptions, so a lesson on it needs the same extension. Boot still loads only `parquet` until S12.
+- S1: wasm_threads parquet not copied: the coi bundle needs COOP/COEP, which the live Caddyfile doesn't send, so nothing here can boot it.
+- S1: `serve.ts` and `paths.ts`'s `CADDYFILES.proposed` kept unchanged (T2 "serve.ts unchanged"); there's no `Caddyfile.proposed`, so `--proposed` fails loudly in Caddy. `DUCKDB_EXT_TEST` renamed `DUCKDB_EXT_MIRRORED` (it now holds `spatial` only, no `inet`).
+- S1: 003 §2 carries 002's `setup` + `setup-counts` (and the sentence between them) byte for byte, so `setup-counts` stays `-- status: draft-table`; S12 relabels it `spike-table` with the runner change.
 
 ## Log
 
@@ -1271,5 +1275,6 @@ Only the spike tools that the Definition of done and the experiments' verdicts r
 - 2026-10-22 16:21 UTC: Astra review: APPROVE_WITH_CHANGES, 4 MUST-FIX (offline build: COG summaries committed in data/; E3b pixel agreement w/ independent reader; overview counts not "true area", define resolution/aggregation; gate publication on confirmed Jung provenance). Plan-only.
 - 2026-10-22 16:35 UTC: Revision (architect): all 5 MUST-FIX resolved (habitat summaries = committed `ingest habitat`, v004 1 km default; E3b value-checked vs geotiff.js; raster fn→SET→assert SHOW; est_area_km2 + E3c error per method; publication gated on Jung provenance), all SHOULD-CONSIDER adopted, new F12 (postgres can't read /srv/critter-ai). Plan-only; no grants left (pg_parameter_acl empty).
 - 2026-10-22 16:55 UTC: Steps (planner): 26 steps S1–S26, Verification V0–V12 + release smoke, Failure modes (13 test groups, T11 map). Plan-only; typecheck pass; header check + result diff dry-run vs 002/A1 log: 77/77 match.
+- 2026-10-22 17:08 UTC: S1. Spike scaffold: 74 files copied from A1 (provenance in `$SP/README.md`, 9 edited for paths/trim), pins installed (no ignored builds), `data/spike-tables.json` (countries). Spike typecheck pass, tests 82/82 (no edits beyond paths); copy proof 002 `--check --erd` 77/77, 0 diffs; 003 skeleton `--check` 1/1, `$M/queries.log` written; spatial wasm_eh 200 application/wasm 23,626,951 B. Guard: plans-only, 002 untouched, typecheck pass, test 66/66, dist = baseline (157), spike 719 MB, no Caddy, 3100–3102 free.
 
 ## Summary
