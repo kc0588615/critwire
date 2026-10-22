@@ -148,7 +148,7 @@ async function fresh(bundle: DuckDBBundle): Promise<Live> {
 }
 ```
 
-- **`runScript(text, params?)`** splits the text into statements (top-level `;`, outside quotes and comments), runs them in order and returns the last one's `{ columns, rows }` as plain values. A whole multi-statement string sent to DuckDB at once returns the *first* statement's result, which is why it splits. An error names its statement ("Error in statement 2 of 3: …") and keeps DuckDB's text. `params` bind to the last statement's `?`.
+- **`runScript(text, params?)`** splits the text into statements (top-level `;`, outside quotes and comments), runs them in order and returns the last one's `{ columns, rows }` as plain values. A whole multi-statement string sent to DuckDB at once returns the *first* statement's result, which is why it splits. An error names its statement ("Error in statement 2 of 3: …") and keeps DuckDB's text. `params` bind to the last statement's `?`. `DATE` and `TIMESTAMP` cells come back as DuckDB writes them (`2026-10-20`, `2026-10-20 12:34:56`): Arrow hands them over as epoch milliseconds, which a learner would see as `1792454400000`.
 - **Huge results are capped before they exist.** Running the 21-million-row join `SELECT * FROM species, species_countries, species_sources` the plain way made duckdb-wasm build the whole result: it failed with `malloc of size 2147483648 failed` after a 2.6 GB peak, and the worker kept 2.2 GB until a restart (`spike/out/duckdb-live/`). A 4 GB Chromebook would more likely crash the tab. Instead, the last statement is streamed (`conn.send(sql, true)`) and reading stops after 10 000 rows: the same join then took 0.14 s with a 387 MB peak, and the result kept the query's column names and row order exactly (`spike/out/cap/`). The page keeps at most 10 000 rows and draws at most 200 ("showing 200 of more than 10 000"). Statements before the last run as usual. Wrapping the learner's query in `SELECT * FROM (…) LIMIT …` also bounds memory, but it renames duplicate columns (`a, a` became `a, a_1`) and works only for queries, so it isn't used. A sort over the same join runs inside DuckDB's memory manager and stops at `memory_limit` with DuckDB's "Out of Memory Error"; the page explains that the query needed more memory than a browser tab gets.
 - **Start failures are loud.** A worker that can't load fails at once ("DuckDB worker failed to load: <url>"). A missing engine `.wasm` makes duckdb-wasm wait forever without an error (seen in the spike), so mission B's engine first sends a `HEAD` for the `.wasm` and fails with its HTTP status. The page shows "The database couldn't start: <reason>", never an endless spinner.
 
@@ -477,7 +477,584 @@ Mermaid is the only one that is text with ER meaning, renders with what the VPS 
 
 ## 4. Lessons: the core path
 
-Written in steps S15 and S16.
+**Who it's for.** People aged 16 and up who have never written SQL. Each lesson asks one real question about critwire's animals, teaches the one idea needed to answer it, and ends with a "Your turn" exercise. Relational ideas (tables, keys, relationships, normalization) get lessons of their own, in the order the questions need them.
+
+**How a lesson page works.** The page shows the lesson text and an editor that already holds the lesson's SQL. While the database loads, Run is disabled and shows its progress (§8). Run (or Ctrl+Enter, Cmd+Enter on a Mac) sends the editor's text to DuckDB in the browser, and the result appears under it. The learner can change the SQL and run it again as often as they like. "Your turn" has its own editor, a Check button, and "Show answer". "Reset database" brings back the tables as the page built them (§1). The "Schema" button opens the ERD (§3) from every lesson.
+
+**Cards or a table.** A result shows as animal cards only when the SQL's first line is the comment `-- show: cards`. A line starting with `--` is a comment, a note DuckDB skips; Learn reads this one comment as "draw this result as cards". Without it, a result is a table. Lesson 1 says so, and the line travels with the SQL wherever it's pasted. Cards need one row per animal with the animal's `id` (or `species_id`) in it; the card takes the name and photo from `species`, and shows the row's other columns as small "column: value" lines.
+
+**How each lesson is written below.** Concept and question; a plain explanation; the lesson's SQL with the result it gave on today's data (the `text` block: row count, a hash of the whole result, the first rows); **Shown as**; "Your turn" with its answer and result; **Check**, the kind of check the page runs on the learner's answer (§1):
+- `result, any row order`: the learner's rows must equal the answer's, column by column, in any order;
+- `result, in order`: the same, and the row order must match too;
+- `error`: the learner's last statement must fail, with a constraint error.
+
+The lesson text gives no counts of animals or rows: the data grows, and the result panel shows today's numbers. Lessons that use countries say what they mean: the animal was *recorded there in open records*, not that it lives there naturally.
+
+### Lesson 1 · tables
+
+**Concept:** tables, rows and columns; comments, and `-- show: cards`. **Question:** What does critwire know about an animal?
+
+A database keeps its facts in **tables**. A table is a grid: each **row** is one thing (here, one animal), and each **column** is one kind of fact about it (its name, its genus, its photo). Every row of a table has the same columns. The table `species` has one row per animal.
+
+You ask a database for data with a **query**. This one says: from the table `species`, give me every column (`*` means "all columns") of every row, sorted by `id`. A table has no order of its own; `ORDER BY` asks for one, and lesson 2 explains it. The `;` ends the statement.
+
+The first line starts with `--`, so it's a **comment**: DuckDB skips it. Learn reads this particular comment as "show the result as animal cards". Delete it and run again: the same rows come back as a table.
+
+```sql
+-- q: l01
+-- status: ran
+-- show: cards
+SELECT * FROM species ORDER BY id;
+```
+
+```text
+-- result: l01 · 76 rows · sha256 4e2209b70375
+id | slug | scientific_name | common_name | genus | range_status | photo_url | photo_credit | photo_license | photo_page | iucn_id | gbif_id | col_id | wikidata_id | inaturalist_id | ncbi_id
+1 | blandings-turtle | Emydoidea blandingii | Blanding's Turtle | Emydoidea | ok | https://thumb.wikimedia.org/wikipedia/commons/thumb/4/44/Bla… | Andrew C | CC BY 2.0 | https://commons.wikimedia.org/wiki/File:Blanding%27s_turtle_… | 7709 | 2442885 | 39LSJ | Q185526 | 39885 | NULL
+2 | spiny-softshell-turtle | Apalone spinifera | Spiny Softshell Turtle | Apalone | ok | https://thumb.wikimedia.org/wikipedia/commons/thumb/6/67/Spi… | U.S. Fish and Wildlife Service Headquarters | Public domain | https://commons.wikimedia.org/wiki/File:Spiny_softshell_turt… | 163451 | 2442680 | F6QR | Q650232 | 39556 | 55534
+3 | darwin-frog | Rhinoderma darwinii | Darwin Frog | Rhinoderma | ok | https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f1/Ran… | Ong ranita | CC BY-SA 4.0 | https://commons.wikimedia.org/wiki/File:Ranita_de_Darwin_(Rh… | 19513 | 5217388 | 78TQQ | Q586567 | 26681 | 43563
+4 | big-headed-turtle | Platysternon megacephalum | Big-headed Turtle | Platysternon | ok | https://thumb.wikimedia.org/wikipedia/commons/thumb/b/ba/Big… | Chetatata | CC BY-SA 4.0 | https://commons.wikimedia.org/wiki/File:Big-headed_Turtle_HK… | 9605 | 2441884 | 4JZ39 | Q754035 | 39688 | 55544
+5 | wallaces-flying-frog | Rhacophorus nigropalmatus | Wallace's Flying Frog | Rhacophorus | ok | https://thumb.wikimedia.org/wikipedia/commons/thumb/4/45/Rha… | Rushenb | CC BY-SA 4.0 | https://commons.wikimedia.org/wiki/File:Rhacophorus_nigropal… | 59008 | 5217285 | 6X5RD | Q1190196 | 26490 | 143446
+… 71 more rows
+```
+
+**Shown as:** cards, one per row, with the row's other columns on each card; the Table tab shows the same rows as a grid.
+
+**Your turn:** critwire also has a table called `sources`: who supplied critwire's facts, under which license, and when. Show every column of every row of `sources`, sorted by `name`.
+
+```sql
+-- q: l01-ex
+-- status: ran
+SELECT * FROM sources ORDER BY name;
+```
+
+```text
+-- result: l01-ex · 5 rows · sha256 a3031e95b2d6
+name | license | retrieved
+Catalogue of Life | CC BY 4.0 | 2026-10-20
+GBIF Backbone Taxonomy | CC BY 4.0 | 2026-10-21
+GBIF.org occurrence search | CC BY 4.0 | 2026-10-21
+Wikidata | CC0 1.0 | 2026-10-20
+critwire base | CC BY 4.0 | NULL
+```
+
+**Check:** `result, any row order`.
+
+### Lesson 2 · select
+
+**Concept:** choosing columns with `SELECT`; `ORDER BY` and `LIMIT`. **Question:** Which animals come first from A to Z?
+
+Instead of `*`, you can name the columns you want, separated by commas, in the order you want them. `ORDER BY common_name` sorts the rows by that column, A to Z (add `DESC`, for "descending", to sort Z to A, or largest first). `LIMIT 5` keeps only the first five rows of the sorted result. Without `ORDER BY`, "the first five" would mean whichever five the database happened to read first, which can change.
+
+```sql
+-- q: l02
+-- status: ran
+-- show: cards
+SELECT id, common_name, scientific_name
+FROM species
+ORDER BY common_name
+LIMIT 5;
+```
+
+```text
+-- result: l02 · 5 rows · sha256 08ee0e8548f3
+id | common_name | scientific_name
+57 | Aardvark | Orycteropus afer
+50 | Addax | Addax nasomaculatus
+41 | African Forest Elephant | Loxodonta cyclotis
+64 | African Savanna Elephant | Loxodonta africana
+20 | African Spurred Tortoise | Centrochelys sulcata
+```
+
+**Shown as:** cards, in the query's order.
+
+**Your turn:** critwire gives each new animal the next free `id`, so the highest ids are the animals added most recently. Show the `id` and `common_name` of the five animals with the highest ids, highest first.
+
+```sql
+-- q: l02-ex
+-- status: ran
+SELECT id, common_name
+FROM species
+ORDER BY id DESC
+LIMIT 5;
+```
+
+```text
+-- result: l02-ex · 5 rows · sha256 cc8c90f4c5bc
+id | common_name
+76 | Golden Poison Frog
+75 | Hellbender
+74 | Axolotl
+73 | Giant Otter
+72 | Maned Wolf
+```
+
+**Check:** `result, in order` (the order is the question).
+
+### Lesson 3 · where
+
+**Concept:** filtering rows with `WHERE`; `AND`, `OR`; `LIKE`. **Question:** Which animals are frogs?
+
+`WHERE` keeps only the rows for which a condition is true. `genus = 'Panthera'` is true for rows whose genus is exactly `Panthera`; text values go in single quotes. Conditions combine: `a OR b` keeps rows where either is true, `a AND b` rows where both are.
+
+`species` has no "is a frog" column. The common name is a start: `LIKE` compares text with a pattern, where `%` stands for any run of characters, so `'%Frog%'` matches any name with "Frog" in it. `LIKE` is case-sensitive: `'%frog%'` would miss "Darwin Frog".
+
+```sql
+-- q: l03
+-- status: ran
+-- show: cards
+SELECT id, common_name, genus
+FROM species
+WHERE common_name LIKE '%Frog%'
+ORDER BY common_name;
+```
+
+```text
+-- result: l03 · 11 rows · sha256 0811f8f29737
+id | common_name | genus
+8 | Coastal Tailed Frog | Ascaphus
+3 | Darwin Frog | Rhinoderma
+14 | Desert Rain Frog | Breviceps
+9 | Dyeing Poison Dart Frog | Dendrobates
+76 | Golden Poison Frog | Phyllobates
+… 6 more rows
+```
+
+A name isn't a classification, though: the Suriname Toad is a frog too (it belongs to the frog order, Anura), and no pattern on names would find it. Lesson 8 answers the question properly with the `taxa` table.
+
+The big cats in the genus *Panthera*, and the cheetah, which has a genus of its own:
+
+```sql
+-- q: l03-or
+-- status: ran
+-- show: cards
+SELECT id, common_name, genus
+FROM species
+WHERE genus = 'Panthera' OR genus = 'Acinonyx'
+ORDER BY common_name;
+```
+
+```text
+-- result: l03-or · 3 rows · sha256 4e05e42c705e
+id | common_name | genus
+58 | Cheetah | Acinonyx
+51 | Jaguar | Panthera
+25 | Tiger | Panthera
+```
+
+**Shown as:** cards.
+
+**Your turn:** Which animals have "Turtle" or "Tortoise" in their common name? Show their `id` and `common_name`.
+
+```sql
+-- q: l03-ex
+-- status: ran
+-- show: cards
+SELECT id, common_name
+FROM species
+WHERE common_name LIKE '%Turtle%' OR common_name LIKE '%Tortoise%'
+ORDER BY common_name;
+```
+
+```text
+-- result: l03-ex · 11 rows · sha256 1a31521ac0db
+id | common_name
+20 | African Spurred Tortoise
+4 | Big-headed Turtle
+1 | Blanding's Turtle
+19 | Floreana Giant Tortoise
+15 | Pancake Tortoise
+… 6 more rows
+```
+
+**Check:** `result, any row order`.
+
+### Lesson 4 · null
+
+**Concept:** `NULL`, `IS NULL`; a missing value against a value that explains itself. **Question:** Which animals have no photo?
+
+Some animals have no photo yet, so their `photo_url` has no value at all. SQL calls a missing value **`NULL`**. `NULL` isn't zero and isn't empty text; it means "unknown". You test for it with `IS NULL` (or `IS NOT NULL`):
+
+```sql
+-- q: l04
+-- status: ran
+-- show: cards
+SELECT id, common_name, photo_url
+FROM species
+WHERE photo_url IS NULL
+ORDER BY id;
+```
+
+```text
+-- result: l04 · 2 rows · sha256 cb073c536764
+id | common_name | photo_url
+19 | Floreana Giant Tortoise | NULL
+47 | Ili Pika | NULL
+```
+
+The cards show what Learn does when there's no photo: a plain "No photo yet" box, and no credit line, because there's no photo to credit.
+
+Why not `photo_url = NULL`? Comparing anything with an unknown value gives "unknown", never true, so `WHERE` keeps no rows at all. This count is always zero:
+
+```sql
+-- q: l04-equals
+-- status: ran
+SELECT count(*) AS animals
+FROM species
+WHERE photo_url = NULL;
+```
+
+```text
+-- result: l04-equals · 1 row · sha256 5b42c9c5b42a
+animals
+0
+```
+
+Some facts aren't left `NULL` when they're missing; critwire says *why* instead. `range_status` tells whether critwire has a list of countries for an animal: `ok` (it has one), `no-open-records` (after critwire's filters, no country with open records is left), or `identity-unsettled` (critwire isn't yet sure which GBIF taxon is this animal, so it doesn't count its records). It's never `NULL`. `<>` means "is not equal to":
+
+```sql
+-- q: l04-status
+-- status: ran
+-- show: cards
+SELECT id, common_name, range_status
+FROM species
+WHERE range_status <> 'ok'
+ORDER BY id;
+```
+
+```text
+-- result: l04-status · 4 rows · sha256 f5fd7b6feb3f
+id | common_name | range_status
+9 | Dyeing Poison Dart Frog | identity-unsettled
+19 | Floreana Giant Tortoise | identity-unsettled
+27 | Western Long-beaked Echidna | identity-unsettled
+47 | Ili Pika | no-open-records
+```
+
+These animals will matter again in lesson 11, where some joins leave them out.
+
+**Shown as:** cards, including the no-photo state; the `= NULL` query as a large count.
+
+**Your turn:** `inaturalist_id` is the animal's id on iNaturalist, a website where people share sightings. Which animals have no iNaturalist id? Show their `id`, `common_name` and `inaturalist_id`.
+
+```sql
+-- q: l04-ex
+-- status: ran
+-- show: cards
+SELECT id, common_name, inaturalist_id
+FROM species
+WHERE inaturalist_id IS NULL
+ORDER BY id;
+```
+
+```text
+-- result: l04-ex · 2 rows · sha256 cc5f58385a95
+id | common_name | inaturalist_id
+35 | Red Panda | NULL
+40 | Sumatran Orangutan | NULL
+```
+
+**Check:** `result, any row order`.
+
+### Lesson 5 · counting
+
+**Concept:** `count`, `GROUP BY`; `AS` names a result column. **Question:** How many animals have each range status?
+
+`count(*)` counts rows. `count(photo_url)` counts only the rows where `photo_url` isn't `NULL`, so the two numbers below differ by the animals with no photo. `AS animals` names the result column.
+
+```sql
+-- q: l05-total
+-- status: ran
+SELECT count(*) AS animals, count(photo_url) AS with_photo
+FROM species;
+```
+
+```text
+-- result: l05-total · 1 row · sha256 30251f2f3e29
+animals | with_photo
+76 | 74
+```
+
+`GROUP BY range_status` puts the rows into groups, one per distinct value of `range_status`, and `count(*)` then counts each group. Every column in the `SELECT` must either be in the `GROUP BY` or be counted (or summed, averaged, …), because each group becomes one row.
+
+```sql
+-- q: l05
+-- status: ran
+SELECT range_status, count(*) AS animals
+FROM species
+GROUP BY range_status
+ORDER BY animals DESC, range_status;
+```
+
+```text
+-- result: l05 · 3 rows · sha256 985a7cf2aef8
+range_status | animals
+ok | 72
+identity-unsettled | 3
+no-open-records | 1
+```
+
+The second sort column, `range_status`, settles ties: two groups of the same size always come out in the same order.
+
+**Shown as:** a table; the first query as two large counts.
+
+**Your turn:** How many animals have each photo license? Show `photo_license` and the count as `animals`, largest first. (Animals with no photo form a group of their own, with `NULL` as the license.)
+
+```sql
+-- q: l05-ex
+-- status: ran
+SELECT photo_license, count(*) AS animals
+FROM species
+GROUP BY photo_license
+ORDER BY animals DESC, photo_license;
+```
+
+```text
+-- result: l05-ex · 11 rows · sha256 61eae971ec13
+photo_license | animals
+CC BY-SA 4.0 | 24
+CC BY-SA 3.0 | 18
+CC BY 2.0 | 9
+Public domain | 8
+CC BY 4.0 | 5
+… 6 more rows
+```
+
+**Check:** `result, any row order`.
+
+### Lesson 6 · erd
+
+**Concept:** entities and attributes; reading the ERD; the database describes itself. **Question:** Where is each fact stored?
+
+A database is designed around **entities**, the things it keeps facts about (animals, taxa, countries, sources), and their **attributes**, the facts themselves (a name, a rank, a license). Each entity becomes a table; each attribute a column. The **entity relationship diagram** (ERD, the "Schema" button) draws the whole design on one page: a box per table, a line per column with its type, and lines between the boxes for how tables connect. §3 explains every mark; this lesson needs three: `PK` (the column that names a row, lesson 7), `FK` (a column that points at a row of another table, lessons 7 and 8) and the lines.
+
+A database also describes itself, in tables of its own. `information_schema` is a standard set of them, the same in most SQL databases. `information_schema.tables` lists the tables:
+
+```sql
+-- q: l06
+-- status: ran
+SELECT table_name, table_type
+FROM information_schema.tables
+WHERE table_schema = 'main'
+ORDER BY table_name;
+```
+
+```text
+-- result: l06 · 7 rows · sha256 3e337557efab
+table_name | table_type
+countries | BASE TABLE
+sources | BASE TABLE
+species | BASE TABLE
+species_countries | BASE TABLE
+species_sources | BASE TABLE
+… 2 more rows
+```
+
+`BASE TABLE` is a table that stores rows; `VIEW` is a saved query that looks like a table (lesson 13). `information_schema.columns` lists every column, with its data type: `INTEGER` for whole numbers, `BIGINT` for very large ones, `VARCHAR` for text. `ordinal_position` is the column's place in its table:
+
+```sql
+-- q: l06-columns
+-- status: ran
+SELECT column_name, data_type
+FROM information_schema.columns
+WHERE table_name = 'species'
+ORDER BY ordinal_position;
+```
+
+```text
+-- result: l06-columns · 16 rows · sha256 c5d5829a06dd
+column_name | data_type
+id | INTEGER
+slug | VARCHAR
+scientific_name | VARCHAR
+common_name | VARCHAR
+genus | VARCHAR
+… 11 more rows
+```
+
+**Shown as:** the ERD dialog open beside a table.
+
+**Your turn:** Find on the ERD every table that has a column named `species_id`, then check it with a query on `information_schema.columns`: show `table_name`.
+
+```sql
+-- q: l06-ex
+-- status: ran
+SELECT table_name
+FROM information_schema.columns
+WHERE column_name = 'species_id'
+ORDER BY table_name;
+```
+
+```text
+-- result: l06-ex · 3 rows · sha256 ee953b2b48fa
+table_name
+species_countries
+species_sources
+species_taxonomy
+```
+
+**Check:** `result, any row order`. (The view counts: the ERD lists it beside the picture.)
+
+### Lesson 7 · keys
+
+**Concept:** primary key; alternate (natural) keys; foreign keys; constraints. **Question:** Can two animals share an id?
+
+A **key** is a column (or set of columns) whose value picks out exactly one row.
+- The **primary key** is the key a table picks as its main one. In `species` it's `id`, critwire's own number for an animal: it never changes and is never reused, even if an animal's name does.
+- **Alternate keys** are other columns that are just as unique: `slug` (the short name in critwire's URLs, such as `red-eyed-tree-frog`), `scientific_name`, and the animal's ids on other websites (`gbif_id`, `wikidata_id`, …). `slug` and `scientific_name` are also **natural keys**: they mean something to people, which is also why they can change.
+- A **foreign key** is a column whose value must exist as a key in another table. `species.genus` must be the `name` of a row in `taxa`.
+
+The rules a database enforces are called **constraints**. The standard table `information_schema.table_constraints` lists them (DuckDB also lists each `NOT NULL` rule, as a `CHECK`; this query leaves those out):
+
+```sql
+-- q: l07
+-- status: ran
+SELECT constraint_name, constraint_type
+FROM information_schema.table_constraints
+WHERE table_name = 'species'
+  AND constraint_type IN ('PRIMARY KEY', 'UNIQUE', 'FOREIGN KEY')
+ORDER BY constraint_type, constraint_name;
+```
+
+```text
+-- result: l07 · 10 rows · sha256 e6eae9d8d6bb
+constraint_name | constraint_type
+species_genus_name_fkey | FOREIGN KEY
+species_id_pkey | PRIMARY KEY
+species_col_id_key | UNIQUE
+species_gbif_id_key | UNIQUE
+species_inaturalist_id_key | UNIQUE
+… 5 more rows
+```
+
+Any key finds its one animal. By slug:
+
+```sql
+-- q: l07-slug
+-- status: ran
+-- show: cards
+SELECT id, slug
+FROM species
+WHERE slug = 'axolotl';
+```
+
+```text
+-- result: l07-slug · 1 row · sha256 c1509d22926c
+id | slug
+74 | axolotl
+```
+
+So, can two animals share an id? Try to add a second animal with the tiger's id, 25. `INSERT INTO` adds a row; the columns are listed in brackets, then their values in the same order. The database refuses, and nothing is added:
+
+```sql
+-- q: l07-same-id
+-- status: ran
+-- expect: error violates primary key constraint
+INSERT INTO species (id, slug, scientific_name, common_name, genus, range_status)
+VALUES (25, 'siberian-tiger', 'Panthera tigris altaica', 'Siberian Tiger', 'Panthera', 'ok');
+```
+
+```text
+-- result: l07-same-id · error: statement 1 of 1: Constraint Error: Duplicate key "id: 25" violates primary key constraint.
+```
+
+**Shown as:** a table; the slug lookup as a card; the refused `INSERT` as the database's error, which Learn shows as the expected outcome.
+
+**Your turn:** Try to add an animal in a genus critwire doesn't have: id 1000, slug `dracula-ant`, scientific name `Dracula ant`, common name `Dracula Ant`, genus `Dracula`, range status `ok`. Which constraint stops it?
+
+```sql
+-- q: l07-ex
+-- status: ran
+-- expect: error Violates foreign key constraint
+INSERT INTO species (id, slug, scientific_name, common_name, genus, range_status)
+VALUES (1000, 'dracula-ant', 'Dracula ant', 'Dracula Ant', 'Dracula', 'ok');
+```
+
+```text
+-- result: l07-ex · error: statement 1 of 1: Constraint Error: Violates foreign key constraint because key "name: Dracula" does not exist in the referenced table
+```
+
+**Check:** `error` (the foreign key on `genus`: `Dracula` isn't a `name` in `taxa`).
+
+### Lesson 8 · one-to-many
+
+**Concept:** one-to-many relationships; inner join; table aliases. **Question:** Which genus and family is the jaguar in?
+
+`taxa` holds the classification of critwire's animals: every class, order, family and genus, one row each, with its `taxon_rank` and its `parent_name`, the taxon one rank up. Each animal's `genus` points at one row of `taxa`, and one genus can have many animals: a **one-to-many** relationship. On the ERD it's the line `taxa ||--o{ species`: exactly one genus at the `taxa` end, zero or more animals at the `species` end. The family isn't stored in `species` at all; it's in the genus's row, as its `parent_name`.
+
+A **join** puts rows of two tables side by side wherever a condition is true. `JOIN taxa AS g ON g.name = s.genus` pairs each animal with the `taxa` row of its genus. `AS s` and `AS g` are short names (aliases) for the tables, so `s.genus` means "the `genus` column of `species`". A plain `JOIN` (an **inner join**) keeps only rows that found a partner.
+
+```sql
+-- q: l08
+-- status: ran
+-- show: cards
+SELECT s.id, s.genus, g.parent_name AS family
+FROM species AS s
+JOIN taxa AS g ON g.name = s.genus
+WHERE s.slug = 'jaguar';
+```
+
+```text
+-- result: l08 · 1 row · sha256 d23c7fc76384
+id | genus | family
+51 | Panthera | Felidae
+```
+
+Now lesson 3's question, properly. Frogs are the order Anura. The order is two steps up from the genus, so the query joins `taxa` twice: once for the genus's row, once more for the family's row, whose `parent_name` is the order.
+
+```sql
+-- q: l08-frogs
+-- status: ran
+-- show: cards
+SELECT s.id, s.common_name, g.parent_name AS family
+FROM species AS s
+JOIN taxa AS g ON g.name = s.genus
+JOIN taxa AS f ON f.name = g.parent_name
+WHERE f.parent_name = 'Anura'
+ORDER BY s.common_name;
+```
+
+```text
+-- result: l08-frogs · 12 rows · sha256 dcba99d91d6e
+id | common_name | family
+8 | Coastal Tailed Frog | Ascaphidae
+3 | Darwin Frog | Rhinodermatidae
+14 | Desert Rain Frog | Brevicipitidae
+9 | Dyeing Poison Dart Frog | Dendrobatidae
+76 | Golden Poison Frog | Dendrobatidae
+… 7 more rows
+```
+
+The Suriname Toad is in this list; the name pattern in lesson 3 missed it.
+
+**Shown as:** cards, with the family on each card.
+
+**Your turn:** Tortoises are the family Testudinidae. Which animals are tortoises? Show their `id` and `common_name`.
+
+```sql
+-- q: l08-ex
+-- status: ran
+-- show: cards
+SELECT s.id, s.common_name
+FROM species AS s
+JOIN taxa AS g ON g.name = s.genus
+WHERE g.parent_name = 'Testudinidae'
+ORDER BY s.common_name;
+```
+
+```text
+-- result: l08-ex · 5 rows · sha256 ba1fde517c7d
+id | common_name
+20 | African Spurred Tortoise
+19 | Floreana Giant Tortoise
+15 | Pancake Tortoise
+22 | Pinta Island Tortoise
+21 | Radiated Tortoise
+```
+
+**Check:** `result, any row order`.
+
+Lessons 9–16: written in step S16.
 
 ## 5. Cookbook
 
