@@ -251,7 +251,7 @@ Out:
 - [x] Architecture: `architect` writes findings and the target design
 - [x] Fable review: `architecture-reviewer`
 - [x] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
-- [ ] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
+- [x] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
 - [ ] Steps: `planner` writes Steps and Verification
 
 ## Baseline
@@ -272,10 +272,10 @@ A1 builds nothing public, so the "code in scope" is the repo that Learn has to f
 
 ### Findings (ranked by impact)
 
-**F1. DuckDB-WASM's browser entry needs a bundler, and esbuild is the only one the repo can install.** `@duckdb/duckdb-wasm@1.33.1-dev57.0` `dist/duckdb-browser.mjs` imports the bare specifier `apache-arrow`, so a static page can't load it directly. `pnpm-workspace.yaml:1-2` allows build scripts for esbuild only, and esbuild 0.28.2 (+ `@esbuild/linux-arm64`) is already installed as a tsx dependency. Fix: a pinned esbuild bundles the page code, duckdb-wasm and arrow into one ESM file. No `allowBuilds` change.
+**F1. DuckDB-WASM's browser entry needs a bundler, and esbuild is the only one the repo can install.** `@duckdb/duckdb-wasm@1.33.1-dev57.0` `dist/duckdb-browser.mjs` imports the bare specifier `apache-arrow`, so a static page can't load it directly. `pnpm-workspace.yaml:1-2` allows build scripts for esbuild only, and esbuild 0.28.2 (+ `@esbuild/linux-arm64`) is already installed as a tsx dependency. pnpm doesn't hoist it, though (`node_modules/esbuild` doesn't exist), so the build can't import it as is. Fix: esbuild `0.28.2` as a direct, exact-pinned dependency (§4 Build) bundles the page code, duckdb-wasm and arrow into one ESM file. No `allowBuilds` change.
 
 **F2. duckdb-wasm runs a different DuckDB from the repo's, and it releases only dev builds.**
-- npm `latest` is the prerelease `1.33.1-dev57.0` (2026-09-29). The last plain release on npm is 1.32.0 (2025-12-16), and GitHub v1.31.0 says "Based on DuckDB v1.4.0". The repo builds with `@duckdb/node-api 1.5.6-r.2` (`package.json:28`; `SELECT version()` = v1.5.6).
+- npm `latest` is the prerelease `1.33.1-dev57.0` (2026-06-22) and `next` is `1.33.1-dev65.0` (2026-09-29). The last plain release on npm is 1.32.0 (2025-12-16), and GitHub v1.31.0 says "Based on DuckDB v1.4.0". The repo builds with `@duckdb/node-api 1.5.6-r.2` (`package.json:28`; `SELECT version()` = v1.5.6).
 - So: (a) recorded results must come from the WASM engine itself; (b) the extension mirror path is keyed by the WASM build's DuckDB version, and a dev build may have no published extensions; (c) the repo's pnpm release-age gate (`pnpm-workspace.yaml:3-13` has to exclude day-old node-api builds) also blocks PGlite 0.5.11 (2026-10-21). PGlite is now 0.5.x, not the brief's 0.4.
 - Uncompressed sizes (jsDelivr listing):
 
@@ -290,7 +290,8 @@ A1 builds nothing public, so the "code in scope" is the repo that Learn has to f
 - The live block (copied in `e2e/Caddyfile:10-36`) has `encode zstd gzip` and no `Cache-Control`.
 - Caddy 2.11.7 carries `application/wasm*` as an encode-matcher pattern, so the 36 MB WASM is compressed on the fly for every request on a 2-core ARM box (S: `curl`).
 - `scripts/build.ts:28` deletes and rewrites `dist/`, and Caddy's `file_server` ETag comes from mtime + size. Every deploy, even a data-only one, therefore changes the engine's ETag.
-- Fix (control room; owner's choice): a versioned asset directory with `Cache-Control: public, max-age=31536000, immutable`, and optionally `file_server { precompressed br zstd gzip }` with `.br` files the build writes. Learn must work without either. `e2e/serving.spec.ts:31-36` fails on drift, so any such change goes into the ops Caddyfile first and `e2e/Caddyfile` after it.
+- Fix, repo side (B1 default, no Caddy change): `writeLearn` sets a fixed mtime (`fs.utimes`, 2000-01-01T00:00:00Z) on every vendored engine file after copying. The ETag (mtime + size) then survives deploys, so browsers get a 304 or reuse their cache instead of downloading 36 MB again. A new engine version gets a new directory (`duckdb-<version>/`), so a fixed mtime can't serve stale bytes. pnpm store files carry install-time mtimes (checked), so copying the source mtime wouldn't be stable.
+- Fix, control room (owner's choice): `Cache-Control: public, max-age=31536000, immutable` on `/learn/assets/*`, and optionally `file_server { precompressed br zstd gzip }` with `.br` files the build writes. Learn must work without either. `e2e/serving.spec.ts:31-36` fails on drift, so any such change goes into the ops Caddyfile first and `e2e/Caddyfile` after it.
 
 **F4. The mockup's query and results don't fit critwire's data.** Checked with DuckDB on `dist/v1/species.parquet`:
 - (a) It teaches `WHERE` using a `JOIN`.
@@ -308,7 +309,13 @@ A1 builds nothing public, so the "code in scope" is the repo that Learn has to f
 - `taxonomy.order` and `range` need quoting in DuckDB (`scripts/build/columns.ts:14,16`; `site/index.html:95`), so learner tables must avoid reserved names.
 - `db/schema.sql:4-27` already gives every scalar field a snake_case name (`scientific_name`, `order_name`, `iucn_id`, `photo_url`, `range_status`, …). The learner tables reuse those names.
 
-**F6. DuckDB checks foreign keys statement by statement.** Node DuckDB 1.5.6 accepts a self-referencing FK. But a multi-row `INSERT` whose child row points at a parent inserted by the same statement fails with "Violates foreign key constraint because key "name: a" does not exist". The setup therefore inserts `taxa` one rank at a time, top down. (S: check again in WASM.)
+**F6. DuckDB's foreign keys and statement handling constrain setup, reset and the runner.** Checked in node DuckDB 1.5.6 (S: check again in WASM):
+- FKs are checked statement by statement. A self-referencing FK works, but a multi-row `INSERT` whose child row points at a parent inserted by the same statement fails ("Violates foreign key constraint because key "name: a" does not exist"). The setup therefore inserts `taxa` one rank at a time, top down.
+- An FK can only be declared in `CREATE TABLE`: `ALTER TABLE … ADD FOREIGN KEY` is "Not implemented". So every referenced table must exist before its child, in one setup.
+- A parent can't be dropped while a child references it (`DROP TABLE species` fails while `species_countries` or a learner's `species_traits` exists; `CASCADE` doesn't help). Re-running setup can't reset a database.
+- `BEGIN; CREATE TABLE species_traits (… REFERENCES species(id)); INSERT …; <failing INSERT>; ROLLBACK` leaves the catalog exactly as before.
+- Multi-statement text returns the *first* statement's result (`SELECT 1; SELECT 2` gives 1). Text must be split into statements.
+- `getTableNames(sql)` (node-api and duckdb-wasm's `AsyncDuckDBConnection`) lists the tables a statement reads and expands views (a view over `countries` reports `countries`), ignores string literals, and returns `[]` for `CREATE TABLE` and `CREATE VIEW`.
 
 **F7. Country matching has known traps.**
 - The 107 codes include GF, MQ and RE (French overseas regions), HK and NA.
@@ -344,11 +351,11 @@ README.md              every command to reproduce, in order
 package.json           own deps, exact pins (+ pnpm-lock.yaml, pnpm-workspace.yaml with allowBuilds: esbuild; release-age excludes only if a pin needs one)
 Caddyfile              e2e/Caddyfile's globals + its :3100 block on http://127.0.0.1:3102 (root {$SPIKE_SITE}, log {$SPIKE_OUT}/caddy-access.log); the :3101 block dropped
 Caddyfile.proposed     Caddyfile + the control-room proposal: Cache-Control immutable on /learn/assets/*, precompressed br zstd gzip, COOP/COEP on /coi/* only
-src/                   browser code and SQL: engine.ts, cards.ts, check.ts, card-page.ts, runner-page.ts, pglite-page.ts, shell-page.ts, measure-worker.js, *.html,
-                       setup.sql, setup-countries.sql, setup-pglite.sql
+src/                   browser code and SQL: engine.ts, sql.ts, cards.ts, check.ts, card-page.ts, runner-page.ts, pglite-page.ts, shell-page.ts, measure-worker.js,
+                       *.html, setup.sql, setup-pglite.sql
 scripts/               Node 24 runs .ts directly: build-site.ts, serve.ts, measure.ts, run-queries.ts, erd.ts, countries-draft.ts
 downloads/<name>/      each untrusted download in its own new directory (naturalearth-<ver>/, gbif-enum/, duckdb-ext-<ver>/)
-site/                  generated web root: v1/ (copy of baseline/live/v1 + draft countries.parquet), learn/assets/duckdb-<ver>/, pglite/, sqljs/, pages, bundles
+site/                  generated web root: v1/ (copy of baseline/live/v1 + draft countries.{parquet,json}), learn/assets/duckdb-<ver>/, pglite/, sqljs/, pages, bundles
 erd/                   schema.svg, schema.png
 out/<run>/             results.json, summary.md, screenshots, caddy-access.log, env.txt (package versions, Chromium, CPU, SELECT version())
 baseline/              exists
@@ -358,22 +365,30 @@ baseline/              exists
 - `@duckdb/duckdb-wasm` and `@duckdb/duckdb-wasm-shell` at the same version: the newest one older than the release-age gate whose `SELECT version()` is a tagged DuckDB release with `wasm_eh` extensions published under `extensions.duckdb.org/<version>/`. Check 1.32.0 and the newest dev build, and record both.
 - `@electric-sql/pglite`: the newest version outside the gate (0.5.10 today). `sql.js` 1.15.1.
 - `esbuild` 0.28.2 (the repo's).
-- `playwright` 1.58.2: the same version as the repo's `@playwright/test`, so it reuses `~/.cache/ms-playwright/chromium-1208` without a download.
-- `mermaid`: the newest version outside the gate.
+- `playwright` 1.58.2: the same version as the repo's `@playwright/test`, so it reuses `~/.cache/ms-playwright/chromium-1208` without a download. Every script launches it with `channel: "chromium"` (full Chromium, new headless), not the default headless shell: closer to a Chromebook's Chrome, and it has the CDP domains (`SystemInfo`) the memory probe needs.
+- `mermaid`: the newest version outside the gate. Installing the spike with the repo's `allowBuilds` (esbuild only) shows whether `@duckdb/duckdb-wasm` or `mermaid` need any other build script; record it, since B1 adds both to the repo.
 - `@duckdb/node-api` 1.5.6-r.2, used only to write the draft countries Parquet, never for results.
 
 **Serving:**
 - `scripts/serve.ts` checks with `ss -ltn` that 3102 is free, refuses to start while an E2E Caddy is on 3100/3101, runs `caddy run --config <Caddyfile|Caddyfile.proposed>`, and stops it on exit. `measure.ts` and `run-queries.ts` both use it.
 - The first spike step runs `curl -sI` on a `.wasm` (expect `application/wasm`). It then runs `curl -s -H 'Accept-Encoding: <zstd|gzip|br>' -o /dev/null -w '%{size_download}'` for every asset, to build a byte table that doesn't depend on the browser.
+- **Classroom load:** 10 parallel `curl -H 'Accept-Encoding: zstd'` fetches of `duckdb-eh.wasm`, under `Caddyfile` (on-the-fly compression) and under `Caddyfile.proposed` (precompressed). Record wall time and Caddy's CPU seconds (`utime + stime` from `/proc/<caddy pid>/stat`, before and after). §10's precompression recommendation is weighted by this number.
 
 **Page code:**
 - `src/engine.ts` is the one boot path for the card page, the runner and the measurements. It uses manual `mvp`/`eh` bundles with self-hosted URLs (never `getJsDelivrBundles`) and an `AsyncDuckDB` in a worker.
-- It sets `autoinstall_known_extensions=false` and `autoload_known_extensions=false`, so a missing extension fails loudly instead of fetching from extensions.duckdb.org.
-- It registers `species.parquet` (and, in draft mode, `countries.parquet`) with `registerFileURL(name, location.origin + '/v1/…', HTTP)`, then runs `setup.sql`. SQL never contains an origin, so the same text runs on critwire.com, in the spike and in E2E.
-- Timing marks: `nav → engine → setup → query → cards`.
+- `boot()` and `restart()` share one function: new worker and `AsyncDuckDB`, `instantiate`, `open` (`:memory:`), settings, register files, run `setup.sql`. `restart()` first calls `db.terminate()`. Every fresh database comes from this path (F6: nothing is ever dropped to reset).
+- Settings: `autoinstall_known_extensions=false` and `autoload_known_extensions=false`, so a missing extension fails loudly instead of fetching from extensions.duckdb.org; `memory_limit` (start at 512 MB, then set from the measured peak), so a runaway query fails with DuckDB's out-of-memory error rather than killing the tab.
+- It always registers `species.parquet` and `countries.parquet` with `registerFileURL(name, location.origin + '/v1/…', HTTP)`. In the spike, `site/v1/countries.parquet` is the draft; in mission B it's the published file. SQL never contains an origin, so the same text runs on critwire.com, in the spike and in E2E.
+- `runScript(text, params?)` splits the text with `src/sql.ts` `splitStatements` (top-level `;` outside quotes, quoted identifiers and comments; pure), runs the statements in order and returns the last one's `{ columns, rows }`. An error names the statement's number. `params` bind to the last statement. The editor, the runner and the measurements all use it (F6: multi-statement text returns the first result).
+- Timing marks: `nav → engine → setup → query → cards`, plus `restart` when it runs.
 
 **Measurement harness (`scripts/measure.ts`):**
-- **Matrix:** engine {duckdb-eh, duckdb-mvp, pglite} × profile × {cold, warm}, 5 runs each, reporting median and max. Then duckdb-eh alone again under `Caddyfile.proposed`, to show the effect of caching and br. Cold means a new browser and context; warm means a reload in the same context. The profiles:
+- **Matrix:** engine {duckdb-eh, duckdb-mvp, pglite} × profile × {cold, warm}, 5 runs each, reporting median and max. Then duckdb-eh alone again under `Caddyfile.proposed`, to show the effect of caching and br. Cold means a new browser and context; warm means a reload in the same context. Three extra duckdb-eh cases per profile:
+  - **warm after rebuild:** rerun `build-site.ts` (which applies F3's fixed mtime), then reload. It passes if the engine files come back 304 or from cache, with the same ETag.
+  - **restart:** `engine.restart()` in a warm page (what Reset and Stop cost).
+  - **runaway query:** one cross join of `species` × `species_countries` × `species_sources`, to confirm `memory_limit` gives an error, not a crashed worker (S).
+
+  The profiles:
 
   | Profile | CPU | Down / up | Latency |
   |---|---|---|---|
@@ -383,7 +398,7 @@ baseline/              exists
 
 - **Throttling** uses CDP `Emulation.setCPUThrottlingRate` and `Network.emulateNetworkConditions` on the page session. DuckDB runs in a worker, so validate both before trusting them:
   - (a) Time a fixed busy loop in a Worker at rate 1 and at rate 4. If the ratio is under 2.5, the worker isn't throttled: run every throttled profile, for every engine, under `systemd-run --user --scope -p CPUQuota=<100/rate>%` instead. That throttles every thread, is transient and needs no root. Record which method was used.
-  - (b) Check that the worker's `.wasm` download time ≈ bytes ÷ throughput. If it isn't, put a small rate-limiting Node proxy on 3102 in front of Caddy, which then listens on a Unix socket.
+  - (b) Check that the worker's `.wasm` download time ≈ bytes ÷ throughput. Only if it isn't, put a small rate-limiting Node proxy on 3102 in front of Caddy, which then listens on a Unix socket.
 
   Every engine is measured the same way, so PGlite (main thread) and DuckDB (worker) compare fairly.
 - **Bytes:** the Caddy access log's `size` and `Content-Encoding` per request give the on-the-wire bytes, and file sizes give the uncompressed bytes. CDP `encodedDataLength` is a cross-check. Report per asset and in total, cold and warm. Warm under the live config shows the F3 re-download.
@@ -394,9 +409,10 @@ baseline/              exists
 - **Times** come from the page marks. Photo loading (a third-party host) is reported separately.
 - **Self-hosting proof:** `context.route('**')` allows only `127.0.0.1:3102` and the two Wikimedia hosts. Any other request is aborted and listed in the results; the list must be empty.
 - **coi gate:** run `/coi/` once on desktop and once at 4x under `Caddyfile.proposed`, checking `crossOriginIsolated`. Run the full matrix only if its median time to first result is at least 30 % lower than eh's; otherwise record the quick numbers.
-- **PGlite:** `pglite-page.ts` fetches `/v1/species.json`, builds the same tables with `setup-pglite.sql` (Postgres `jsonb_array_elements`), and runs the Brazil join. Same metrics, no cards, on the main thread (PGlite's default). Note how long it blocks the main thread.
+- **PGlite:** `pglite-page.ts` fetches `/v1/species.json` and the draft `/v1/countries.json`, builds the same tables with `setup-pglite.sql` (Postgres `jsonb_array_elements`), and runs the Brazil join. Same metrics, no cards, on the main thread (PGlite's default). Note how long it blocks the main thread.
 - **sql.js:** the curl byte table plus the assessment paragraph.
 - **Other browsers:** an optional functional check in Firefox, if `playwright install firefox` works without apt. WebKit needs apt packages, so it's out of scope; say so.
+- **What emulation can't prove** (002 §1 states it): throttled Chromium on this ARM server proves timing under CPU and network limits, and the peak memory Chrome needs. It can't prove a real Chromebook's memory pressure (tab discarding at 4 GB), ChromeOS GPU and thermal behaviour, Android Chrome, or iOS Safari (WebKit's WASM memory limits, and whether the `eh` bundle loads or `selectBundle` falls back to `mvp`). The 375 px screenshots check layout only, not mobile browsers. §10 asks the owner for one real-device check.
 
 **Extension mirror test:**
 - Download the `inet` (small) and `spatial` extensions for `wasm_eh` and `wasm_mvp`, for the pinned build's DuckDB version, into `downloads/duckdb-ext-<ver>/`. Copy them to `site/learn/assets/duckdb-ext/<version>/<platform>/<name>.duckdb_extension.wasm`.
@@ -409,38 +425,43 @@ baseline/              exists
 **Card page:** reproduces the mockup as lesson 9 (§4): label, badge, question, concept line, a `<textarea>` with the join, a Run button, and cards with credits. It also runs the NULL lesson's query (ids 19 and 47) to show the no-photo state. Screenshots: desktop, 375 px, and a throttled run.
 
 **`scripts/run-queries.ts` contract:**
-- **Usage:** `node scripts/run-queries.ts <plans/002-learn.md> [--check|--update] [--erd plans/002-learn-erd.mmd]`. It starts the spike Caddy through `serve.ts` and opens `runner.html` in headless Chromium. That page boots `engine.ts` with the same bundle, version and setup SQL as the card page, and exposes `window.run(sql, params)`.
+- **Path:** the Definition of done's `spike/run-queries.ts` is `<spike>/scripts/run-queries.ts`; Verification runs `node <spike>/scripts/run-queries.ts`.
+- **Usage:** `node scripts/run-queries.ts <plans/002-learn.md> [--check|--update] [--erd plans/002-learn-erd.mmd]`. It starts the spike Caddy through `serve.ts` and opens `runner.html` in headless Chromium. That page boots `engine.ts` with the same bundle, version and setup SQL as the card page, and exposes `window.runScript(text, params)` and `window.tableNames(sql)` (`conn.getTableNames`).
 - **Engine:** DuckDB-WASM in headless Chromium, never the node DuckDB. Node runs DuckDB 1.5.6 with `icu` loaded; the WASM build runs another version with another extension set (F2). The log has to hold what a learner's browser returns.
-- **Block headers:** every ```` ```sql ```` block starts with `-- q: <id>` (unique, `[a-z0-9-]+`) and `-- status: ran | draft-table | untested: <reason>`. Two optional headers:
-  - `-- params: <JSON array>`, bound to `?` through `prepare`.
-  - `-- expect: error <substring>`, for exercises that must hit a constraint error.
+- **Block headers:** every ```` ```sql ```` block starts with `-- q: <id>` (unique, `[a-z0-9-]+`) and `-- status: ran | draft-table | untested: <reason>`. Optional headers:
+  - `-- params: <JSON array>`, bound to the last statement's `?` through `prepare`.
+  - `-- expect: error <substring>`, for exercises that must hit a constraint error. Only the last statement may fail; an earlier error fails the run.
+  - `-- show: cards`: the result is drawn as cards (§4). It is not a plan-only header: the site shows it to learners as part of the SQL.
 
   A missing or duplicate header fails the run.
-- **Setup blocks:** the blocks `q: setup` and `q: setup-countries` in 002 §2 must equal `src/setup.sql` and `src/setup-countries.sql` byte for byte, apart from the header lines. The plan therefore shows the real setup.
-- **Two databases:**
-  - DB 1 runs `setup` only, then every `ran` block. A `ran` block that touches `countries` fails there.
-  - DB 2 runs `setup-countries` first and then `setup`, so the FK to `countries` exists, then every `draft-table` block.
-
-  Each block runs inside `BEGIN … ROLLBACK` with its statements in order, and the last statement's result is the block's result. (S: does `conn.query` accept multi-statement text? If not, split on top-level `;`.)
+- **Setup block:** `q: setup` in 002 §2 must equal `src/setup.sql` byte for byte, apart from the header lines, so the plan shows the real setup. The runner page runs it once at boot (it is the setup, so it has no result block); `q: setup-counts` records each table's row count.
+- **One database, one setup:** the same `setup.sql` builds every table, `countries` included, exactly as mission B ships it (§2). Every block runs inside `BEGIN … ROLLBACK`, so each sees the pristine database (F6: learner DDL with FKs and failed constraints roll back cleanly). A failed `ROLLBACK` stops the run.
+- **Labels are checked, not trusted:** a block is `draft-table` exactly when one of its statements reads `countries`: `getTableNames` reports it (this covers views), or the statement's text has the whole word `countries` outside comments and strings (`getTableNames` returns nothing for `CREATE`). `species_countries` and `countriesWithOpenRecords` don't match. A `ran` block that reads `countries`, or a `draft-table` block that doesn't, fails the run. The draft file therefore only shapes `draft-table` results; a `ran` block depends on it only in that setup needs every species code to exist in `countries`.
+- **Display check:** a `-- show: cards` block whose result fails the card rule (§4) fails the run.
 - **One rendering function:**
   - The result line is `-- result: <id> · <n> rows · sha256 <first 12 hex of the full rendered result>`.
   - Then a `col | col` header and the first 5 rows: NULL as `NULL`, lists as `[a, b]`, BigInt as digits, cells over 60 characters cut with `…`.
   - Errors: `-- result: <id> · error: <first line>`. Untested blocks: `-- skipped: <id> · <reason>`.
 - **Log:** writes `/srv/critter-ai/agent-state/missions/critwire-learn-design/queries.log`. The first line names the engine (package version, bundle, `SELECT version()`, UTC time); then one result per block, in plan order.
 - **Comparison:**
-  - In the plan, every `ran`/`draft-table` block is followed by a ```` ```text ```` block holding exactly its rendered result.
+  - In the plan, every `ran`/`draft-table` block except `q: setup` is followed by a ```` ```text ```` block holding exactly its rendered result.
   - `--check` is the default and what Verification runs. It fails on any difference, and on a missing or orphan result block.
   - `--update` rewrites the plan's result blocks from the log, snapshot-style; review the diff before committing.
-- **`--erd`:** compares the Mermaid entities and attributes with DB 2's `information_schema.columns` and `duckdb_constraints()`. It also checks that 002 §3's ```` ```mermaid ```` block equals the `.mmd` file. Any drift fails.
+- **`--erd`:** compares the Mermaid entities and attributes with the pristine database's `information_schema.columns` and `duckdb_constraints()`. It also checks that 002 §3's ```` ```mermaid ```` block equals the `.mmd` file. Any drift fails.
 - **Determinism:** every recorded query has an `ORDER BY` on a unique key, or returns one row. No `random()`, `hash()`, `uuid()` or `current_date`; "random" cookbook picks use arithmetic on ids, with the seed or date passed as a literal or a `?` parameter.
 
 **Other scripts:**
 - `scripts/erd.ts` loads `mermaid`'s browser bundle into a Playwright page and renders the `.mmd` it's given with `htmlLabels: false`, so labels are plain SVG text that renders inside `<img>`. It fails if the output contains `<foreignObject>`, and writes `erd/schema.svg` plus a PNG.
-- `scripts/countries-draft.ts` reads the attributes of Natural Earth admin-0 `countries` and `map_units` from a pinned release in `downloads/` (GeoJSON properties only; geometry dropped) and applies the §2 matching rule. It fails, listing the codes, if any of the 107 codes or `XK` doesn't match. It writes `site/v1/countries.parquet` (columns as in §2) and `out/countries-match.md`, which lists each code with the layer and field it matched and the name.
+- `scripts/countries-draft.ts` reads the attributes of Natural Earth admin-0 `countries` and `map_units` from a pinned release in `downloads/` (GeoJSON properties only; geometry dropped) and applies the §2 matching rule. It fails, listing the codes, if any of the 107 codes or `XK` doesn't match. It writes `site/v1/countries.parquet` and `countries.json` (columns as in §2; the JSON only feeds the PGlite measurement) and `out/countries-match.md`, which lists each code with the layer and field it matched and the name.
 
 #### 2. Learners' schema v1
 
-**How it's built:** `setup.sql` builds these tables in the browser from `species.parquet`, plus `countries.parquet` once mission B publishes it. Tables use standard types and constraints, and DuckDB-only syntax (`read_parquet`, `unnest`, struct access) appears only in this setup.
+**How it's built:** one `setup.sql`, run once on a fresh in-memory database, builds every table below from `species.parquet` and `countries.parquet`. It is the only initialization sequence: the spike, run-queries, every Learn page and E2E run the same text, and only the file behind `/v1/countries.parquet` differs (the spike's draft in A1, the published file in mission B). So `countries` always exists and `species_countries` always has both FKs.
+- **Order** (F6: FKs only in `CREATE TABLE`, checked per statement): `taxa` one rank at a time, top down → `species` → `sources` → `species_sources` → `countries` → `species_countries` → view `species_taxonomy`.
+- **No `DROP`**, ever: a fresh database comes only from `engine.restart()` (§1, §4).
+- **Fails loudly:** a species code missing from `countries`, a source with two licenses, or a taxon collision breaks a constraint, and the page shows the error. Mission B's E2E runs this setup, so a deploy can't ship a setup that fails.
+- Tables use standard types and constraints, and DuckDB-only syntax (`read_parquet`, `unnest`, struct access) appears only in this setup.
+- Mission B ships Learn only together with or after `/v1/countries.*` (B1 builds the countries file first), and then relabels 002's `draft-table` blocks `ran`.
 
 **Naming:** entity tables are plural snake_case, junction tables are `<a>_<b>`, and FKs are `<entity>_id`, `_code` or `_name`. Scalar column names follow `db/schema.sql`.
 
@@ -455,6 +476,10 @@ baseline/              exists
 | view `species_taxonomy` | `species_id`, `class`, `order_name`, `family`, `genus` | the 4-way `taxa` self-join; setup ships it for the cookbook and the game, and the views lesson explains it |
 
 **Expected counts today:** `taxa` 143 (3 + 22 + 50 + 68), `species` 76, `species_countries` 472, `sources` 5, `species_sources` 591, `countries` ≥ 107.
+
+**Limits the lessons state:**
+- `species.genus → taxa.name` can't make sure the referenced row is a genus: a CHECK can't look at another row. Lesson 12 says so (and that a trigger or a per-rank table would be needed), so learners don't assume an FK checks more than existence.
+- Taxon names are a natural key because no name is used twice today (F5); that's a fact about the data, not a rule of nomenclature. Mission B's `pnpm derive` refuses (blocking) a taxon name at two ranks or under two parents, so a collision fails at derive, not in learners' browsers. Fixing one would be a schema change (a surrogate `taxa.id`), decided then.
 
 **Left out of v1:** `replaced_by` (all null today; later a `species_replacements` table) and each record's source query URLs.
 
@@ -477,7 +502,10 @@ A future native range would be a new table, such as `species_native_countries`, 
   - `pnpm ingest naturalearth` writes `data/raw/naturalearth/snapshot.json`: attributes only, keys sorted, with `retrieved`.
   - `pnpm derive` writes `data/countries.json` and refuses any species code without a row.
   - The build writes `/v1/countries.{json,parquet,csv}`.
-- **Credit:** one new entry in `attribution.json`'s `sources` array, in the existing entry shape (`fields: ["countries"]`), so no existing file changes shape.
+- **Credit:** one new entry in `attribution.json`'s `sources` array, using only the keys entries already have, so no existing file changes shape.
+  - Today `buildAttribution` (`scripts/build/attribution.ts:42-79`) makes one entry per source the species records cite, with `records` = citing species records, and throws on a registered source no record cites. Natural Earth is cited by no species record.
+  - So B1 gives `data/countries.json` its own source block (name, license, `retrieved`, release), and `buildAttribution(species, countries, registration)` merges one entry built from it into the sorted list. Its `fields` are file-qualified (`countries.name`, `countries.continent`, `countries.region`, `countries.subregion`) so they can't be read as species fields; its `records` counts country rows; its `notes` says both. The unused-source check counts a source cited by the countries file.
+  - The docs page's "Used for N records" line (`scripts/build/docs.ts:26`) says "N countries" for this entry, and `e2e/docs.spec.ts` checks it.
 
 #### 3. ERD
 
@@ -505,7 +533,7 @@ A future native range would be a new table, such as `species_native_countries`, 
 | § | Content | Evidence |
 |---|---|---|
 | 1 Engine and interface | answers to Q1–Q5 with numbers; the recommendation; what emulation proves and what only real hardware would | `out/<run>/summary.md` |
-| 2 Schema | the table above, plus the `setup` and `setup-countries` blocks | `src/setup*.sql` (byte-checked) |
+| 2 Schema | the table above, plus the `setup` block and `setup-counts` | `src/setup.sql` (byte-checked) |
 | 3 ERD | the `.mmd` embed and how it's rendered | `erd/schema.svg` |
 | 4 Lessons | the 16 lessons below, each with concept, question, SQL, result block, display, exercise with answer SQL, and check kind; a closing note on where A2's advanced track attaches (after lesson 16) | queries.log |
 | 5 Cookbook | at least 25 queries with ids `c01…`, each with its game use, SQL (`?` via `-- params`) and result | queries.log |
@@ -521,7 +549,7 @@ A future native range would be a new table, such as `species_native_countries`, 
 
 | # | slug | concept | question | shown as |
 |---|---|---|---|---|
-| 1 | tables | tables, rows, columns | What does critwire know about an animal? | cards + table |
+| 1 | tables | tables, rows, columns; `--` comments, and Learn's `-- show: cards` | What does critwire know about an animal? | cards + table |
 | 2 | select | SELECT, ORDER BY, LIMIT | Which animals come first from A to Z? | cards |
 | 3 | where | WHERE, AND/OR, LIKE | Which animals are frogs? | cards |
 | 4 | null | NULL, IS NULL | Which animals have no photo? | cards (no-photo state) |
@@ -532,30 +560,34 @@ A future native range would be a new table, such as `species_native_countries`, 
 | 9 | many-to-many | junction table, join (the mockup) | Which animals have been recorded in Brazil? | cards + "not native range" note |
 | 10 | countries | lookup table | In which countries has the jaguar been recorded? | table (draft-table) |
 | 11 | left-join | LEFT JOIN, NULL again | Which animals have no country records, and why? | cards |
-| 12 | hierarchy | self-reference, tree | How many mammals, amphibians and reptiles? | table |
+| 12 | hierarchy | self-reference, tree; what an FK can't check (a genus row's rank) | How many mammals, amphibians and reptiles? | table |
 | 13 | views | CREATE VIEW | Save "animals with their class" as a view | table |
 | 14 | normalization | 1NF/2NF/3NF; nested file → flat tables (DuckDB-labelled) | How do 76 records with lists become 472 rows? | table |
 | 15 | sources | provenance, licenses, open records ≠ native range | Who filled in the jaguar's taxonomy, and which photos are share-alike? | table |
 | 16 | design | designing a table for new data | How would critwire store body mass and diet? | ERD + schema check |
 
 **How results drive the interface** (one module each, pure where possible):
-- **Query results:** `engine.query(sql, params?)` returns `{ columns, rows }` as plain JS values, with BigInt converted to a number when that's safe.
+- **Query results:** `engine.runScript(text, params?)` (§1) returns the last statement's `{ columns, rows }` as plain JS values, with BigInt converted to a number when that's safe.
 - **Cards:**
-  - When cards appear: a result shows as cards when it has a `species_id` or `id` column whose values are all species ids and unique. Otherwise it shows as a table.
+  - When cards appear: only when the SQL says so. A result shows as cards only if the text starts with the comment line `-- show: cards`; anything else is a table. Nothing is inferred from column names or values: `SELECT count(*) AS id FROM species` is a table. The directive is visible, travels with the SQL (lesson, cookbook file, playground, copy-paste), and lesson 1 explains it. Lessons marked "cards" in the path above start with it.
+  - The card key: column `species_id` if the result has one, else `id`. Its values must be non-null integers, unique, and all known species ids; otherwise the page shows a table and one line saying why ("Cards need one row per animal, with its id in `id` or `species_id`"). run-queries and E2E fail a `-- show: cards` query that breaks this rule.
   - What a card shows: a lookup map built at boot (`SELECT id, common_name, scientific_name, photo_* FROM species`) supplies the title (common name), the italic scientific name, the photo and the credit. The row's other columns appear as small "column: value" lines.
   - Credit: always visible, as "Photo: {credit}, {license, linked to its deed from `LICENSE_URLS`}, via Wikimedia Commons", linking to `photo_page`.
   - No photo: a neutral placeholder that says "No photo yet".
   - Other views: the Table tab always shows the raw result, and a result of one row with one number also shows as a large count. At most 200 rows are drawn ("showing 200 of N").
 - **Exercise checks:** they run in the page against today's data, so they keep working as the data grows (no stored expected rows). There are three kinds:
-  - `result` runs the reference answer and compares positionally: column names are ignored, and rows are compared as a multiset unless the exercise is `ordered`. Hints cover row count, column count, column order and row order.
-  - `error` expects the learner's statement to fail with a constraint error.
-  - `schema` runs a verify query (for example on `information_schema`) whose expected rows are written in the lesson.
+  - `result` compares the learner's result with the reference answer's, positionally: column names are ignored, and rows are compared as a multiset unless the exercise is `ordered`. Hints cover row count, column count, column order and row order.
+  - `error` expects the learner's last statement to fail with a constraint error.
+  - `schema` runs a verify query (for example on `information_schema`) whose expected rows are written in the lesson. It checks the learner's own tables, so it runs on the learner's database by design.
 
-  "Show answer" reveals the reference, and "Reset database" re-runs the setup.
+  **Pristine references:** right after setup (at boot and after every restart), before any learner statement, the page runs each `result` reference answer inside `BEGIN … ROLLBACK` and keeps its rows in memory for the page session. A learner's `DELETE`, `CREATE` or `DROP` can therefore never move the expected answer; a mismatch hint mentions that changed tables can cause it and offers Reset. No second database is kept, because a learner could reach it by name.
+
+  "Show answer" reveals the reference. **"Reset database" discards the database:** `engine.restart()` (terminate the worker, boot a new `AsyncDuckDB` from the cached files, setup, references), keeping the editor text. Nothing is dropped (F6). A page reload gives the same fresh state, since the database lives in memory.
+- **Limits and recovery:** `memory_limit` (§1) bounds a runaway query's memory, so it ends in an error, not a crashed tab. While a query runs, a Stop button is enabled; Stop calls `engine.restart()`, because a single-threaded worker can't be interrupted mid-query (`cancelSent` only stops streamed results between batches). A worker `error` event takes the same path and says the database was restarted. The 200-row cap bounds drawing, not execution.
 - **Games:**
   - They call cookbook queries by id: `site/learn/cookbook/<id>.sql`, imported as text by esbuild, so the cookbook page, the game and E2E share one source.
   - They bind parameters (UTC date, seed) and map rows to game state with pure functions.
-  - They draw with the same card component, with cards as buttons.
+  - They draw with the same card component, with cards as buttons, passing species ids explicitly (no display detection).
 - **Lesson prose** gives no result counts, because the data grows; the result panel shows them.
 
 **Site:**
@@ -570,9 +602,14 @@ A future native range would be a new table, such as `species_native_countries`, 
 
   URLs use slugs, not numbers, so inserting a lesson breaks no link.
 - **Build:** extend `pnpm build`; no framework.
+  - **New direct dependencies (B1), exact pins.** pnpm doesn't hoist transitive packages (`node_modules/esbuild` doesn't exist today; only `.pnpm/esbuild@0.28.2`), so `import "esbuild"` would fail without them:
+    - `dependencies` (what `pnpm build`, and so `deploy`, needs, like `@duckdb/node-api` today): `esbuild` `0.28.2` (the version tsx already resolves, so the store and `allowBuilds: esbuild` already cover it) and `@duckdb/duckdb-wasm` (the spike's pin).
+    - `devDependencies` (only `pnpm erd`): `mermaid` (the spike's pin).
+    - The page code imports nothing from `apache-arrow` directly; if it ever must, `apache-arrow` becomes a direct dependency pinned to duckdb-wasm's version.
+    - A pin younger than the release-age gate gets a `minimumReleaseAgeExclude` entry, as `@duckdb/node-api` has; no `allowBuilds` change (the spike's install proves it, §1).
   - `scripts/build/template.ts` exports `fillTemplate`, extracted from `docs.ts:36-44`; the docs page uses it too.
   - `scripts/build/learn.ts` (`writeLearn`):
-    - Copies the mvp and eh WASM files and workers from `node_modules/@duckdb/duckdb-wasm/dist` to `dist/learn/assets/duckdb-<version>/`. `selectBundle` picks one at runtime, and only that one downloads.
+    - Copies the mvp and eh WASM files and workers from `node_modules/@duckdb/duckdb-wasm/dist` to `dist/learn/assets/duckdb-<version>/`, then sets each copy's mtime to the fixed date (F3), so its ETag survives deploys. `selectBundle` picks one bundle at runtime, and only that one downloads.
     - Bundles `site/learn/src/*.ts` with esbuild's JS API (bundle, ESM, minify, `[name]-[hash]` file names, `.sql` loaded as text).
     - Fills `site/learn/layout.html` with each lesson fragment `site/learn/lessons/<slug>.html`, in the order of `site/learn/lessons.json`.
     - Writes the schema and cookbook pages and checks the ERD hash.
@@ -597,7 +634,8 @@ A future native range would be a new table, such as `species_native_countries`, 
 - **E2E** (the existing harness, serving `dist/` on 3100):
   - `learn.spec.ts`:
     - The path lists the lessons in order.
-    - Every lesson's SQL runs without error and matches its display kind.
+    - Every lesson's SQL runs without error, and it renders cards exactly when it starts with `-- show: cards` (card count = row count).
+    - Reset and Stop: after a learner `CREATE TABLE … REFERENCES species(id)` and a `DELETE FROM species`, Reset gives the setup's row counts and no learner table; a runaway query can be stopped and the next query runs.
     - The Brazil and no-photo lessons are checked against `data/species.json`; expectations come from the data, as in `e2e/docs.spec.ts`.
     - Each exercise accepts its answer and rejects a wrong one.
     - The ERD dialog opens, a lesson can be run by keyboard alone, and pages fit 375 px.
@@ -642,23 +680,24 @@ If both engines miss, DuckDB-WASM stays, and §10 states what the miss costs lea
 
 | Question | Answer now | The spike settles |
 |---|---|---|
-| Q1 Parquet in desktop browsers and on a Chromebook | expected to work: CORS and Range are proven by E2E, and parquet is built in | reliability at 4x/6x, whether throttling reaches the worker, what emulation can't prove |
+| Q1 Parquet in desktop browsers and on a Chromebook | expected to work: CORS and Range are proven by E2E, and parquet is built in | reliability at 4x/6x, whether throttling reaches the worker; what emulation can't prove (real Chromebook memory pressure, phones, iOS Safari: §1) |
 | Q2 size, startup, memory | raw sizes in F2 | every number |
-| Q3 self-hosting | WASM, workers and app: yes (npm files + esbuild, no CDN, autoinstall off). Caddy works unchanged; cache headers and br are recommended (F3) | the extension mirror (`inet`, `spatial`), `.wasm` MIME, compressed bytes |
+| Q3 self-hosting | WASM, workers and app: yes (npm files + esbuild, no CDN, autoinstall off). Caddy works unchanged; B1's fixed mtime keeps ETags across deploys, and cache headers and br are recommended (F3) | the extension mirror (`inet`, `spatial`), `.wasm` MIME, compressed bytes, classroom load, 304s after a rebuild |
 | Q4 shell vs own editor | our own `<textarea>` editor for lessons, cookbook, game and playground, since cards, checks and games need it. The shell stays out of mission B unless the spike shows it costs almost nothing | shell embed with tables preloaded; its bytes; keyboard and phone notes |
-| Q5 results → interface | the card rule, check kinds and game flow (§4) | the card screenshots |
+| Q5 results → interface | cards only on `-- show: cards`; check kinds with pristine references; reset/Stop by restart; game flow (§4) | the card screenshots, restart time, the `memory_limit` error |
 | Concept order | Brazil is lesson 9, after joins | — |
 | ERD format and offline SVG | Mermaid; commit the SVG with a source-hash check; render with Playwright + mermaid | that the SVG renders with no `foreignObject` |
 | Countries source | Natural Earth (public domain); GBIF's list only as an unpublished check | that all 107 codes and `XK` match |
 | PGlite vs DuckDB | thresholds in §5 | the numbers |
 
 **Owner choices this design already raises** (for 002 §10, each with its cost):
-- Caddy `Cache-Control` and precompression: a control-room change plus the e2e copy, and learners stop re-downloading the engine after each deploy.
+- Caddy `Cache-Control` and precompression: a control-room change plus the e2e copy. B1's fixed mtime already stops re-downloads after deploys (304s); these add no-revalidation caching and less CPU when a class loads at once (the spike's classroom-load number sizes the gain).
 - Photos linked from Wikimedia vs critwire hosting its own copies: disk and bandwidth, against schools that block wikimedia.org.
 - Publishing `/v1/countries.*` from Natural Earth: a public addition.
 - The Brazil lesson as lesson 9 instead of the mockup's 04.
 - Light/dark following the system vs the mockup's dark only.
 - The B1/B2 split.
+- One real-device check before B2's demo ships: the owner opens a lesson and the demo on an iPhone (Safari) and, if one is at hand, a Chromebook, about 15 minutes. Emulation can't prove either (§1).
 
 ### Rejected alternatives
 
@@ -685,6 +724,12 @@ If both engines miss, DuckDB-WASM stays, and §10 states what the miss costs lea
 - One single-page app for all lessons: a router and state management for a gain the warm-boot budget may not need (§5).
 - GBIF's country enumeration as the countries source: no continent or subregion, and no stated license.
 - Committing DuckDB extension binaries in mission B: no v1 lesson needs one, and A2 decides.
+- Two setups (`setup.sql` with `species_countries` holding the `species` FK only, then `setup-countries.sql` dropping and recreating it with both FKs): two schemas for one product, a `DROP` in the init path, and A1 would verify a schema B doesn't ship. The single setup plus the checked labels gives the same guarantee.
+- A second, pristine database (or `ATTACH ':memory:'`) for reference answers: the learner can reach it by name; references computed at boot can't be touched.
+- `AsyncDuckDB.reset()` for Reset: what it keeps (registered files, connections) is undocumented, and Stop needs terminate-and-restart anyway, so one path serves both.
+- Inferring cards from an `id`/`species_id` column: a number that happens to be a species id isn't an animal (`count(*) AS id`); the directive makes it explicit.
+- Renaming the species key to `species_id` so cards need no directive: the brief names `id`, and `species.species_id` reads worse in the keys lesson.
+- Copying the npm file's mtime to the vendored engine files: pnpm store files carry install-time mtimes, so the ETag would still change between installs.
 
 ## Architecture review (Fable)
 
@@ -727,6 +772,28 @@ SHOULD-CONSIDER:
 
 ## Revision notes
 
+2026-10-22, architect. DuckDB facts the fixes rely on were rechecked in node DuckDB 1.5.6 (now in F6); WASM rechecks are marked (S).
+
+MUST-FIX:
+- **Fable 1 / Astra 1 (setup and the `countries` FK):** went past Fable's drop-and-recreate to one `setup.sql` that always builds `countries` before `species_countries`, with both FKs. The spike, the runner, the pages and E2E all run it, and only the file behind `/v1/countries.parquet` changes (draft in A1, published in B). One database, every block in `BEGIN … ROLLBACK`. `draft-table` vs `ran` is no longer a matter of which tables exist: run-queries checks the labels with `getTableNames` (which expands views) plus a word test for `CREATE` statements. §1 (Page code, run-queries "One database" and "Labels"), §2 "How it's built", F6. Fable's variant is under Rejected alternatives.
+- **Fable 2 / Astra 2 (reset and pristine references):** Reset, Stop and a worker crash all go through `engine.restart()`: terminate the worker, start a new `AsyncDuckDB`, run setup. `setup.sql` has no `DROP`. Reference answers run right after setup, inside `BEGIN … ROLLBACK`, and stay in memory, so learner changes can't move them. run-queries isolates blocks by rollback. See §1 Page code, §2, §4 "Exercise checks", and the E2E Reset/Stop test.
+- **Fable 3 (direct dependencies):** §4 Build adds exact pins: `esbuild` `0.28.2` and `@duckdb/duckdb-wasm` in `dependencies`, `mermaid` in `devDependencies`, a gate exclude only where a pin needs one, and no `allowBuilds` change (the spike's install proves this). F1 updated.
+- **Astra 3 (card detection):** cards appear only when the SQL starts with `-- show: cards`; the key is `species_id`, else `id`, and is validated. Anything else, including `count(*) AS id`, shows as a table. run-queries and E2E fail a cards query that breaks the rule. See §4 Cards, the run-queries `-- show` header and lesson 1.
+
+Other items:
+- Fable MISSED 1 (fixed mtime): adopted as the B1 default with a constant date, not the npm file's mtime, because pnpm store mtimes are install-time (checked). The spike tests "warm after rebuild". F3, §1, §4 Build.
+- Fable MISSED 2 (classroom load): adopted, 10 parallel fetches under both Caddyfiles, recording Caddy CPU. §1 Serving, §10.
+- Fable MISSED 3 (dates): fixed in F2 (dev57.0 on 2026-06-22, `next` dev65.0 on 2026-09-29; checked on npm).
+- Fable MISSED 4 (path): mapping added under the run-queries contract.
+- Fable SC1 (split statements): adopted. `splitStatements` in `src/sql.ts` is shared by the page and the runner, and only the last statement may carry `expect: error`. §1.
+- Fable SC2 (full Chromium): adopted, `channel: "chromium"`. §1 Pins.
+- Fable SC3 / Astra SC4 (real devices): §1 "What emulation can't prove", the Q1 row, and an owner real-device check in §10.
+- Fable SC4 (genus FK can't check rank): §2 "Limits the lessons state", lesson 12.
+- Fable SC5 (proxy fallback): it was already conditional; the text now says "Only if".
+- Astra SC1 (cancellation, limits, recovery): adopted. `memory_limit`, Stop = restart (a single-threaded worker can't be interrupted), and a worker error takes the same path. §1, §4 "Limits and recovery", spike runaway-query case.
+- Astra SC2 (taxon collisions): B's derive refuses a name at two ranks or under two parents, so a collision fails at build time, not in learners' browsers. §2.
+- Astra SC3 (countries attribution): its own source block in `countries.json`, file-qualified `fields`, `records` = country rows, the unused-source check extended, and the docs line says "N countries". §2 Credit.
+
 ## Steps
 
 ## Verification
@@ -743,5 +810,7 @@ SHOULD-CONSIDER:
 - 2026-10-22 06:24 UTC · Architecture: architect wrote findings F1–F10 + target design (spike harness, learners schema v1, Mermaid ERD w/ committed SVG, 16-lesson path, B1/B2 split, PGlite thresholds). No code; nothing to verify beyond review.
 - 2026-10-22 06:29 UTC · Fable review: APPROVE_WITH_CHANGES, 3 MUST-FIX (species_countries FK order, reset = fresh db not DROP, esbuild/duckdb-wasm/mermaid direct deps). Design only; nothing to run.
 - 2026-10-22 06:30 UTC · Astra review: APPROVE_WITH_CHANGES, 3 MUST-FIX (one schema init sequence for both dbs, reset = fresh db + pristine refs, card detection needs explicit species metadata). Design only; nothing to run.
+
+- 2026-10-22 06:41 UTC · Revision: architect resolved all 6 MUST-FIX (one setup.sql w/ countries before species_countries; reset = engine.restart() fresh db, refs pristine via rollback; esbuild/duckdb-wasm/mermaid pinned direct deps; cards only on `-- show: cards`) + adopted review SC/MISSED items. DuckDB facts rechecked in node DuckDB 1.5.6.
 
 ## Summary
