@@ -210,7 +210,7 @@ Out:
 - [x] Fable review: `architecture-reviewer`
 - [x] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
 - [x] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
-- [ ] Steps: `planner` writes Steps and Verification
+- [x] Steps: `planner` writes Steps and Verification
 
 ## Baseline
 
@@ -740,13 +740,528 @@ Declined: none.
 
 ## Steps
 
+Planner, 2026-10-22. T12's 16 units in order, split where one session can't hold them, plus the run-queries extension (T3, S12–S13), placed after E1 because `pg-setup` loads E1's Parquet and E4's clip. Conventions:
+- `W=/srv/critter-ai/worktrees/critwire-learn-spatial-design`, `M=/srv/critter-ai/agent-state/missions/critwire-learn-spatial-design`, `SP=$M/spike`, `A1=/srv/critter-ai/agent-state/missions/critwire-learn-design/spike` (read only), `P=plans/003-learn-data-spatial.md`, `ERD=plans/003-learn-erd.mmd`, `COG=https://habitat-cog.s3.us-east-2.amazonaws.com/habitat_cog.tif`, `ETAG='"975827817c839f73a5ee49d2791393a4-212"'`. The spike lives only in `$SP`, never committed; every command a step runs goes, in order, into `$SP/README.md`.
+- One step per session: commit the plan and any `plans/` file with the check-off and one Log line, then push. Deviations go on the step's line ("Deviations (Decisions, Sn): …") and under Decisions.
+- **Guard** (end of every step):
+  - `git -C $W diff --name-only origin/main...HEAD | grep -v '^plans/'` prints nothing; `git -C $W diff --quiet origin/main...HEAD -- plans/002-learn.md plans/002-learn-erd.mmd` (002 untouched);
+  - `pnpm typecheck && pnpm test` (66 pass; no lint script, so typecheck is the static check);
+  - build guard: `rm -rf dist && pnpm -s build && (cd dist && find . -type f | sort | xargs sha256sum) | diff - $SP/baseline/dist.sha256` prints nothing (also catches a `learn_spatial` object that breaks the build, F11);
+  - `du -sb $SP` under 2,000,000,000, logged; `pgrep -af "$SP/Caddyfile"` empty; ports 3100–3102 free.
+- **Spike green:** `pnpm -C $SP typecheck && pnpm -C $SP test`. New tests (Failure modes) are written first and seen red; the red count goes in the Log.
+- **003 SQL changes:** `node $SP/scripts/build-site.ts`; `node $SP/run-queries.ts $W/$P --update`; read the diff (results change only where the step meant them to); then `node $SP/run-queries.ts $W/$P --check` exits 0 (with `--erd $W/$ERD` from S18 on). Result blocks are written only by `--update`.
+- **PostGIS:** only `SPIKE_PG_URL=postgresql:///critwire_dev` (critter-ai over the socket, F1), only through `scripts/pg.ts` and its capability check, only schema `learn_spatial` (F11). Never `.env`'s `DATABASE_URL` for the spike, never the `critwire` db, never `ALTER ROLE|DATABASE|SYSTEM`, `GRANT` or `chmod` (F12).
+- **S3, read only:** every COG read is a Range GET with `If-Match: $ETAG` through `cog.ts`'s one fetch function (it counts bytes); a `200` or `412` aborts. Never the whole file. Each run's bytes go in its `bytes.json`.
+- **Network:** Zenodo, GBIF and TiTiler at ≤ 2 req/s. Each download in its own new `$SP/downloads/<name>/`, recorded in `downloads/SOURCES.md` (URL, UTC, sha256); zips and extracted members deleted once their sha256 is recorded. Python only as `python3 -I`, scripts outside download dirs. No apt: an unavoidable package is a handoff item.
+- **No IUCN data:** no IUCN download, API call or file anywhere. Only the terms and spatial-data pages (T8), saved under `evidence/licenses/iucn/`. Wikidata is queried for named properties only, never whole entities: its P141 ("IUCN conservation status") is a Red List category.
+- **Browser runs:** the spike's playwright 1.58.2 (`channel: "chromium"`, headless) through `scripts/browser.ts` (route guard: only `127.0.0.1:3102`); desktop and 4× CPU (`CPUQuota=25%`), 3 runs each, median and max; never while `pnpm e2e` runs; heavy runs one at a time.
+- **Run output:** `$SP/out/<run>/summary.md`, `env.txt`, `bytes.json`; browser runs add `<profile>/results.json` (`blocked`: array, `failures`: number), screenshots and `caddy-access.log`.
+- **003 conventions** (Verification greps them):
+  - title, then `## 1. Growing the data` … `## 8. For the owner` as T1, then `## Disagreements with 002`;
+  - §1 entries `### D<n> · <dataset>` in rank order, each with `**Enables:**`, `**License:** <name> · <URL> · retrieved <UTC> · evidence/licenses/<dir>/`, the verbatim quote as `> ` lines, `**Hostable:** yes | no | learner download only`, `**Size:**`, `**Joins on:**`, `**Ingest work:**`; the reptile source's heading ends `(Testudines)`;
+  - grown-data lessons continue 002's path from 17: `### Lesson <n> · <slug>`, ids `l<nn>`, `l<nn>-<word>`, `l<nn>-ex`, `l<nn>-check`, each with `**Data:** runs today` or `**Data:** spike stand-in; waits for mission C` (or D);
+  - spatial lessons `### Spatial lesson <n> · <slug>` (ids `s<nn>…`), IUCN lessons in §6 `### IUCN lesson <n> · <slug>` (ids `i<nn>…`), each with `**Runs in:** browser (DuckDB spatial) | browser (geotiff.js) | your own PostGIS` and `**Evidence:**` naming its `out/<run>/`;
+  - every lesson has `**Shown as:**`, `**Check:**` and one `<stem>-ex` block; a PostGIS twin of a DuckDB block takes the same id plus `-pg`;
+  - other ids: `setup` and `setup-counts` (002's), `setup-grown`, `setup-grown-counts`, `pg-session`, `pg-setup`, `pg-setup-counts`, `d<nn>` (§1 join checks), `r<nn>` (§5);
+  - ages 16+; no counts in prose; no Wikipedia prose; records, not native range; raster areas labelled **estimated**; at most one live COG read per `###` section (T3, enforced by RP13).
+- **Decisions:** every pin, every species, point and polygon pick, every fallback taken (T11), E3b's verdict and the ranking, each with its reason.
+- **Contingencies:** Failure modes say what each experiment does when it fails: record it and carry on. A step that outgrows its session is split per the mission rules.
+
+- [ ] S1 · Spike scaffold, and proof the copy reproduces A1 (T2, T12 u1; F10).
+  - Copy from `$A1` with `cp`; each file's A1 path and sha256 (source and copy) go in README's provenance table:
+    - `scripts/`: paths.ts (`BASELINE_V1` → `$SP/baseline/live/v1`, `DRAFT_V1` → `$SP/data/v1`), serve.ts, browser.ts (keeps the CPUQuota launcher), env.ts, build-site.ts, plan-queries.ts, runner-client.ts, erd.ts, erd-model.ts; the VmHWM probe cut from measure.ts into `scripts/vmhwm.ts`;
+    - `scripts/run-queries.ts` → `$SP/run-queries.ts` (imports `./scripts/…`, `./src/…`);
+    - `src/`: engine.ts, sql.ts, format.ts, cards.ts (its `sources.ts` import repointed to `$W/scripts/build/sources.ts`), assets.ts (trimmed to DuckDB: no PGlite, sql.js or shell; build-site.ts likewise), runner-page.ts, runner-api.ts, runner.html, setup.sql, the `*.d.ts` files, both tsconfig.json;
+    - `test/`: sql, cards, run-queries (script path updated), erd and erd-drift tests with `test/fixtures/{run-queries,erd}/`;
+    - `Caddyfile` (only root, log and port differ from `$W/e2e/Caddyfile`'s live block: diff them);
+    - `$A1/draft/v1/countries.{parquet,json}` → `data/v1/`; `$A1/downloads/duckdb-ext-v1.5.6/` (parquet and spatial, wasm_eh and wasm_mvp) and `naturalearth-v5.1.2/` → `downloads/`, each sha256 checked against `$A1/downloads/SOURCES.md`.
+  - `package.json` with T2's exact pins (`postgres` 3.4.9, the repo's lock) and scripts `typecheck`, `test`; `pnpm-workspace.yaml` (`allowBuilds: esbuild` only; A1's release-age excludes); `pnpm install`. Any "ignored builds" line (geotiff's deps) → Decisions.
+  - `build-site.ts`: `spatial` (wasm_eh) joins the extension mirror; `data/v1/*` → `site/v1/`; `clips/*` → `site/learn/spike-data/`.
+  - `data/spike-tables.json` (T3 registry) with its first entry, `countries` (A1's draft).
+  - Create `$P`: title; one paragraph (built on 002; designs, builds nothing public); the eight section headings and `## Disagreements with 002`; in §2, 002's `setup` and `setup-counts` blocks with `setup-counts`' result block, byte for byte.
+  - Checks:
+    - Guard; spike green (SQ, CR, RQ, RQE, ER pass with no edits beyond paths);
+    - copy proof: `node $SP/run-queries.ts $W/plans/002-learn.md --check --erd $W/plans/002-learn-erd.mmd --log $SP/out/a1-recheck/queries.log --out $SP/out/a1-recheck` exits 0;
+    - `node $SP/run-queries.ts $W/$P --check` exits 0 without `--update` (002's recorded result) and writes `$M/queries.log`;
+    - under `serve.ts`, `/learn/assets/duckdb-ext/v1.5.6/wasm_eh/spatial.duckdb_extension.wasm` answers 200, `application/wasm`, 23,626,951 bytes.
+
+- [ ] S2 · COG header reader and tile index (F2; T4 "common").
+  - Tests first, red: CG1–CG10 in `test/cog.test.ts`. Fixtures: the COG's first 262,144 bytes (`test/fixtures/cog/head.bin`, one Range read) and truncated or altered copies of it.
+  - `scripts/cog.ts`: the one S3 fetch (Range + `If-Match`, counting; `200`/`412` abort); TIFF/BigTIFF IFDs, GeoKeys, GDAL metadata, ghost area; pixel ↔ EPSG:3857 ↔ lon/lat; tiles a window touches at a level.
+  - `scripts/tile-bytes.ts`: the TileByteCounts of all 11 IFDs by Range (≈ 3.1 MB) into `downloads/cog-index/`; `lowerBound(window, level)`.
+  - → `out/cog/summary.md` (F2 re-derived), `out/tile-bytes/summary.md` (bytes per level).
+  - Checks: Guard; spike green; the script asserts every F2 number (size, tiling, DEFLATE, EPSG:3857, origin, pixel, 10 overviews, ghost area, `OVR_RESAMPLING_ALG=NEAREST`, the bytes-per-level table) and exits 0; (−60, −3) → col 129665, row 197741, tile 293,613 of 43,789 B; S3 bytes for the step < 15 MB.
+
+- [ ] S3 · Jung's version and level; zip members by Range (T7, F3).
+  - Tests first, red: ZP1–ZP6 (`test/zip-range.test.ts`, fixture zips made with `python3 -I` `zipfile`: stored, deflated, ZIP64 forced) and JG1–JG5 (`test/jung.test.ts`).
+  - `scripts/zip-range.ts`: end-of-directory and ZIP64 from the last 64 KB; local header check; member by Range; inflate; CRC-32 and size checks.
+  - `scripts/jung.ts` → `out/jung/`:
+    - level: class histograms of the ÷256 (9 tiles) and ÷1024 levels, read with geotiff.js 3.0.5 in Node (counting `fetch`, `If-Match`);
+    - every version's record (001, 001_full, 002, 002_v2, 003, 004) via the Zenodo API; code zips (`downloads/jung-code-<ver>/`, md5 against the API): code lists, v004's legend → `out/jung/legend-v004.csv`, the fraction-value scale (or "not found", FS3);
+    - each composite zip: its directory (last 64 KB) and its tif's first 64 KB inflated → size, pixel, CRS, nodata, data type, metadata;
+    - v004 `lvl2_frac_1km_ver004.zip`'s directory → `out/jung/frac-members.json` (name, code, offsets, sizes, CRC; S7 reads it);
+    - `out/jung/exclusion.md` (per version: excluded and why, or "not excluded") and `out/jung/gate.md` (T7 step 4: provenance unconfirmed; whether 001 and 002, CC BY-NC, are excluded; §5 and §8 inputs).
+  - Checks: Guard; spike green; the ÷1024 histogram equals F3's (56 values; 1102: 51,850, 803: 32,470, 900: 19,989); no response body larger than its Range; Zenodo plus S3 bytes < 25 MB; no `.zip` left under `downloads/`.
+
+- [ ] S4 · PostGIS session, `learn_spatial`, E2 (F1, F6; T4 E2).
+  - Tests first, red: PG1–PG9 (`test/pg.test.ts`, live on `critwire_dev` via `SPIKE_PG_URL`) and VC1–VC6 (`test/compare.test.ts`).
+  - `scripts/pg.ts`: connect (PG1, PG2); F1's capability check (`postgis_raster_lib_version()`, the two `SET`s, both `SHOW`s asserted); `search_path = learn_spatial, public`, `statement_timeout = '60s'`; `outdbWindow(bbox, level)` (grid-aligned empty raster + `ST_AddBand` on `/vsicurl/$COG`); byte counters (`sudo ss -tinpH` by `pg_backend_pid()`, `/proc/<pid>/io` `rchar`).
+  - `scripts/compare.ts`: point, histogram and grid-cell comparison (VC).
+  - `CREATE SCHEMA learn_spatial` through pg.ts; nothing in it refers to `public` objects.
+  - `scripts/e2-point.ts` → `out/e2-point/`: 10 points: (−60, −3) near Manaus, plus 9 picked to cover ≥ 5 level-1 classes, one at ≥ 60° N, one marine (9xx) and one nodata cell (coordinates in README and Decisions; E1's sample doesn't exist yet, S11 adds its points). Three readers: PostGIS out-db 1×1, geotiff.js in Node over S3, TiTiler `/cog/point`. Cold (fresh backend or process) and warm, 5 runs; bytes against the tile lower bound; time.
+  - Checks: Guard; spike green; the three readers agree on all 10 points (nodata as nodata, VC4); (−60, −3) = 1405; every cold PostGIS read's bytes ≥ its lower bound.
+
+- [ ] S5 · E3: zonal statistics and Mercator area (T4 E3).
+  - `scripts/e3-zonal.ts` → `out/e3-zonal/`: Trinidad and Tobago (`TT`) and one Natural Earth 10m polygon near 60° N under about 5 M full-resolution cells (pick in Decisions). Out-db window over the bbox; `ST_ValueCount(ST_Clip(rast, ST_Transform(geom, 3857)))`; area four ways (T4 E3, 3.1–3.4); bytes and time; TiTiler `/cog/statistics?categorical=true` for the same polygon, with the resolution TiTiler read.
+  - Checks: Guard; spike green; the summary states each polygon's nominal-Mercator ÷ geodesic ratio against sec² φ at its centroid; a gap over 2 % between per-row-cos φ cell area and `ST_Area(geom::geography)` is explained before checking off; TiTiler's differences explained.
+
+- [ ] S6 · E3b: overview reads in PostGIS, judged by values (T4 E3b).
+  - `e3-zonal.ts --overviews` → `out/e3b-overviews/`: attempt 1 (empty raster at k × 103.02 m + out-db band) and attempt 2 (`GTIFF_DIR:<n>:/vsicurl/…`, pixel coordinates), each at ÷8 and ÷1024 over S5's bboxes. Reference: geotiff.js `getImage(n)` + `readRasters({ window })` of the same window; ÷1024 also against F3's histogram. `compare.ts`: histograms and 100 grid cells.
+  - The verdict, `PostGIS reads overviews: yes (attempt <n>) | no`, in the summary and under Decisions; bytes and time either way.
+  - Checks: Guard; spike green; the verdict follows VC6 (any mismatch, error or refusal = no); geotiff.js at ÷1024 = F3.
+
+- [ ] S7 · E3c: three area methods per class (T4 E3c).
+  - Tests first, red: FS1–FS5 in `test/e3c.test.ts`.
+  - `scripts/e3c-methods.ts` → `out/e3c-methods/`, for S5's two polygons:
+    - method 1: full resolution × (103.02 · cos φ_row)² (S5's counts);
+    - method 2: ÷8 and ÷16 counts × k² × (103.02 · cos φ_row)², read by S6's verdict (PostGIS if yes, else geotiff.js windows loaded with `ST_SetValues`);
+    - method 3: v004 1 km fractions. Only the members whose class is in method 1's histogram, one at a time, by `zip-range.ts` from `out/jung/frac-members.json`; inflate; CRC; geotiff.js windows; `ST_SetValues` into a temp raster; Σ fraction × geodesic cell area, centre-in-polygon; each member deleted after use, sha256 recorded.
+  - Per class: absolute and relative difference of methods 2 and 3 from 1; classes under 1 % flagged; border-cell share; bytes; time per member and per cell (D's ingest estimate).
+  - Checks: Guard; spike green; the fraction self-check passes on every land cell (else T11's path, recorded); `results.json` holds 3 methods × 2 polygons; `find $SP/downloads -name '*frac*'` lists only the directory record.
+
+- [ ] S8 · E4, part 1: the clip cut by PostGIS and validated; option (a)'s price (T4 E4).
+  - Tests first, red: CV1–CV6 in `test/clip.test.ts`.
+  - `scripts/e4-clip.ts` (cut) → `clips/cr.cog.tif`, `out/e4-clip/`: Costa Rica (`CR`) out-db window; `ST_AsGDALRaster(ST_Clip(rast, geom), 'COG', ARRAY['COMPRESS=DEFLATE', 'BLOCKSIZE=256', 'RESAMPLING=NEAREST'])`; validated by `cog.ts` (ghost area, tiles, overviews, EPSG:3857, nodata 0, `OVR_RESAMPLING_ALG=NEAREST`, codes ⊂ the full-file histogram) and 100 grid cells against PostGIS `ST_Value`; cut time, S3 bytes, clip size. Fallback `'GTiff'` with `TILED=YES`, `COMPRESS=DEFLATE` (T11), recorded.
+  - `e4-clip.ts --s3-price` → `out/e4-s3/`: geotiff.js in Node against S3 (counting `fetch`), the same 256 × 256 window at full resolution and one overview, cold; whether it loads IFD 0's 6.9 MB tile index whole; per-learner bytes for option (a).
+  - Checks: Guard; spike green; validation passes.
+
+- [ ] S9 · E4, part 2: the browser reads the clip (T4 E4).
+  - `src/raster-page.ts` + `raster.html` (geotiff.js bundled by build-site's esbuild): `fromUrl('/learn/spike-data/cr.cog.tif')`, `getImageCount`, `getImage(0)` and one overview, `readRasters({ window })` for 256 × 256; a class histogram table and a canvas preview.
+  - `e4-clip.ts --browser [--smoke]` → `out/e4-browser/`: desktop and 4×, 3 runs each; per-request bytes and `Range` from Caddy's log; time; VmHWM; screenshots at 1280 and 375 px. `--smoke`: desktop, one run → `out/smoke/e4-browser/`.
+  - Checks: Guard; spike green; Range requests get 206 with `Content-Range` and no `Content-Encoding` (otherwise a control-room item, T4); the browser's histogram = Node geotiff.js's for the same window (`compare.ts`); `blocked` empty, `failures` 0.
+
+- [ ] S10 · E1, part 1: country shapes and the GBIF sample as Parquet (T4 E1; F9).
+  - Tests first, red: GB1–GB5 in `test/gbif-sample.test.ts`. Copy A1's `scripts/countries-draft.ts` (the matching rule, 002 §6) with its CD tests and fixtures, sha256 in README.
+  - Node DuckDB `spatial` (`linux_arm64`, v1.5.6, F5) into `$SP/duckdb-ext-node/` via `SET extension_directory`; the file in `downloads/duckdb-ext-node/` with its sha256.
+  - `scripts/e1-data.ts` → `data/v1/country_shapes.parquet` (10m) and `country_shapes_50m.parquet` (`country_code`, WKB `geom`), one shape per code by A1's rule.
+  - `scripts/gbif-sample.ts` → `data/v1/occurrences.parquet`: 3 species fixed by `species.id` (one per class, `range.status` ok; ids and `ids.gbif` in README and Decisions), ≤ 300 records each, the repo's `OCCURRENCE_FILTERS` copied (GB1) plus `checklistKey` and `taxonKey`, ≤ 2 req/s. Every URL and response in `downloads/gbif-sample/` and SOURCES.md. Rows keep `gbifID`, `datasetKey`, `license`, lon/lat, `countryCode`, `year`. Research only: never published.
+  - Registry entries: `country_shapes`, `occurrences`.
+  - → `out/e1-data/summary.md`: sizes, row counts, codes without a shape at each scale, GB4's report against `contributions.json`.
+  - Checks: Guard; spike green; every species code has a 10m shape (50m gaps listed); every sampled license is CC0 1.0 or CC BY 4.0.
+
+- [ ] S11 · E1, part 2: point-in-polygon in the browser, cross-checked in PostGIS (T4 E1; F5).
+  - `src/pip-page.ts` + `pip.html`: `LOAD spatial` from the mirror (autoinstall and autoload off, signatures on); both Parquet files; `ST_Contains(c.geom, ST_Point(o.longitude, o.latitude))` counts per country against GBIF's `countryCode` (agree, disagree, no polygon).
+  - `scripts/e1-pip.ts [--smoke]` → `out/e1-pip/`: 10m and 50m × desktop and 4×, 3 runs each; extension bytes and `LOAD` time, file bytes, query time, VmHWM against A1's 700 MB budget; screenshots. `--smoke`: 10m, desktop, one run → `out/smoke/e1-pip/`. Fallbacks per T11 (GeoJSON text; 50m or simplified), recorded.
+  - `src/pg-setup.sql`, first version: `learn_spatial.country_shapes` and `.occurrences` from the same Parquet bytes (F12). The same query in PostGIS gives the same counts.
+  - F5 checks: one point exactly on a polygon boundary through `ST_Contains` in both engines, and `ST_Covers` in PostGIS; the habitat value at each sampled species' first point, PostGIS out-db = geotiff.js.
+  - Checks: Guard; spike green; counts equal across engines; `blocked` empty, `failures` 0.
+
+- [ ] S12 · run-queries, part 1: statuses, registry, `LOAD spatial`, `setup-grown` (T3).
+  - Tests first, red: RS1–RS9; A1's `draft-table` fixtures (RQ6–RQ9) are removed as RS2–RS5 replace them.
+  - `plan-queries.ts` and `run-queries.ts`: `Status = "ran" | "spike-table" | "untested"`; labels by the registry's whole-word test plus `getTableNames`; `-- engine:` parsed (postgis blocks refused "engine not available" until S13); boot: `LOAD spatial` from the mirror, `setup.sql`, then `setup-grown.sql` when the plan has a `setup-grown` block (byte-equal).
+  - 003: `setup-counts` relabelled `spike-table` (it reads `countries`).
+  - Checks: Guard; spike green; 003 `--check` exits 0; regression: `sed 's/^-- status: draft-table$/-- status: spike-table/' $W/plans/002-learn.md > $SP/scratch/002.md`, then `node $SP/run-queries.ts $SP/scratch/002.md --check --erd $W/plans/002-learn-erd.mmd --log $SP/out/a1-recheck-s12/queries.log --out $SP/out/a1-recheck-s12` exits 0.
+
+- [ ] S13 · run-queries, part 2: the PostGIS engine (T3; F1, F12).
+  - Tests first, red: RP1–RP13 (fixture plans with `-- engine: postgis` blocks).
+  - One pg.ts connection per run (capability check, search_path, timeout). `src/pg-setup.sql` (= the `pg-setup` block) on connect: rebuilds only `learn_spatial`, idempotent; Parquet and `clips/*.cog.tif` bytes passed as parameters (`ST_FromGDALRaster` into `learn_spatial.habitat_clips`, F12). Every block in `BEGIN … ROLLBACK`, statement by statement; A1's `Result` mapping; `geometry`, `raster` or `bytea` columns fail. The COG's ETag by `HEAD` before any block that reads `/vsicurl/`.
+  - Log header, after A1's `engine:` line: `postgis: <postgis_full_version()>` and `cog: <url> · etag "<etag>"`.
+  - Registry: every `learn_spatial` table.
+  - 003 §4: the `pg-session` block (`ran`; ends with a `SELECT` of both `SHOW` values), `pg-setup` and `pg-setup-counts`.
+  - Checks: Guard; spike green; `--update` diff read, `--check` exits 0; `grep -E '^(engine|postgis|cog): ' $M/queries.log` shows the three lines; a second run gives the same `pg-setup-counts`.
+
+- [ ] S14 · Licenses, part 1 (T1 §1; F8).
+  - Tests first, red: LS1–LS6 in `test/licenses.test.ts`.
+  - `scripts/licenses.ts`: fetch (desktop UA) → `evidence/licenses/<dir>/<UTC>-<name>.{html,pdf,txt}`; `evidence/licenses/SOURCES.md` (URL, UTC, status, sha256); Wayback only by explicit snapshot id; one `quote.md` per dataset (verbatim text and where it sits); `--verify [<plan>]` (LS3, LS4).
+  - Natural Earth (admin-0, admin-1, physical), RESOLVE 2017, Jung v004 (record page and API), AnAge, AmphiBIO, EltonTraits, PanTHERIA, COMBINE (search), and a trait source that covers Testudines (search; all 11 reptiles are turtles and tortoises, F9). JS-rendered pages: the download's README or metadata, or the DOI landing page.
+  - → `out/licenses/summary.md`, one section per dataset: license, hostable, size (Content-Length or API), join keys, ingest work, what it enables.
+  - Checks: Guard; spike green; `licenses.ts --verify` exits 0; every dataset has a saved page and a `quote.md`.
+
+- [ ] S15 · Licenses, part 2, and the ranking (T1 §1; F8, F9).
+  - Wikidata (CC0; names in other languages via `ids.wikidata`, labels only, never P141), Open Tree of Life (synthesis release and license), GBIF terms (Wayback; records CC0 or CC BY only), WorldClim, CHELSA, WDPA (blocks hosting: learner download only), the same way as S14.
+  - `out/licenses/summary.md` gains those sections and `## Ranking`: every dataset ranked, the top three and why, blocking licenses flagged, the tables each feeds (T5), and whether mission C or D ingests it.
+  - Checks: Guard; `licenses.ts --verify` exits 0; the ranking covers every dataset the brief lists.
+
+- [ ] S16 · IUCN: terms, the four cases, the draft request (T8; 003 §6 without the lessons).
+  - Check `$M/iucn-terms-of-use-*` again; then the live page; then Wayback `20261015190206` (terms) and the newest spatial-data snapshot. Saved by `licenses.ts` to `evidence/licenses/iucn/`.
+  - 003 §6: quotes of §1, §4, §5, §15 and §16 with their verification label; `### Hosting the files`, `### Serving derived products`, `### Classroom use`, `### A learner's own download`, each answered from the clauses; `### Draft permission request`; the Jung map kept apart (CC BY 4.0, not Red List data). If nothing is readable: quotes marked unverified, and a handoff item (`Blocks: nothing`).
+  - Checks: Guard; `licenses.ts --verify $W/$P` exits 0; `evidence/licenses/iucn/` holds only saved pages, their text and `quote.md`.
+
+- [ ] S17 · Grown schema: stand-in data and `setup-grown` (T5; 003 §2, first half).
+  - Tests first, red: GD1–GD3 in `test/grown-data.test.ts`.
+  - `scripts/grown-data.ts` → `data/v1/<table>.parquet` for each table T5 and S15's ranking keep (C's top datasets; D's `country_shapes`, `occurrences`, `habitat_classes`, `country_habitats`). Real open rows where the license allows and the data is small (e.g. AnAge and AmphiBIO rows for the 76 species, v004's legend, E3c's polygons); otherwise synthetic. Each registry entry says which.
+  - `src/setup-grown.sql`: after 002's tables, each table after those it points at, FKs in `CREATE TABLE`, no `DROP`, new `sources` rows before the tables citing them; `traits` and `species_traits` in 002's shapes (F4).
+  - 003 §2: each table's columns, keys, cardinality, feed and credit (T5's table); the `setup-grown` block and `setup-grown-counts`.
+  - Checks: Guard; spike green; `--update` diff read, `--check` exits 0; F4 shown: a scratch plan `$SP/scratch/f4.md` (003's `setup` and `setup-grown` blocks, then 002's `l16` with `-- expect: error already exists`) passes.
+
+- [ ] S18 · The grown schema's ERD (T5 ERD, T3 `--erd`; 003 §2, second half; Disagreements).
+  - Tests first, red: RE1–RE6.
+  - `erd-model.ts`: 002's ERD must appear unchanged inside 003's; `||--o|` only where the child's FK is its PK or UNIQUE. `erd.ts --name <base>` (default `schema`).
+  - `plans/003-learn-erd.mmd` (A1's subset) → `$SP/erd/grown.svg`, `grown.png`.
+  - 003 §2: the ```` ```mermaid ```` block (= the `.mmd`); PostGIS-only learner objects listed outside it (T5). `## Disagreements with 002`: F4 (lesson 16's exercise → `my_traits`, `my_species_traits`, with `l16-check`'s rows); 002 §2 "Room to grow" against T5 (`habitat_classes` and `country_habitats` instead of `habitats` and `species_habitats`; no species–habitat table, because it would be IUCN data); anything S1–S17 found.
+  - Checks: Guard; spike green; `--check --erd $W/$ERD` exits 0 (every later 003 check adds `--erd`); `erd.ts` exits 0, no `<foreignObject>`; look at the PNG (Read tool).
+
+- [ ] S19 · 003 §1, Growing the data (T1).
+  - From `out/licenses/summary.md`: the ranked table, then one `### D<n>` entry per dataset in the convention's format; the top three and why; blocking licenses flagged. `d<nn>` blocks where a join is worth showing (e.g. trait rows joined to `species`), `spike-table`.
+  - Checks: Guard; `licenses.ts --verify $W/$P` exits 0; Verification V8 passes; `--check --erd` exits 0.
+
+- [ ] S20 · 003 §3, lessons for the grown data (4–8).
+  - From Lesson 17, in 002's format, each with `**Data:**`. Topics: traits and their units (`CAST`, unit per trait); comparing classes (`GROUP BY` class over traits); a self-join on the phylogeny (`tree_nodes` if kept, else `taxa`); many-to-many with habitats or ecoregions; the learner's lesson-16 design against critwire's real tables (F4); a country's share of a class from `est_area_km2` with a window function ("estimated", never stored).
+  - Checks: Guard; `--update` diff read, `--check --erd` exits 0; each lesson has its `-ex` block and the `**Data:**`, `**Shown as:**` and `**Check:**` lines.
+
+- [ ] S21 · 003 §4 spatial lessons, first half (T6; E1; F5).
+  - §4 intro: who it's for; T6's "where it runs" table, each row naming its evidence run; how paired blocks read (PostGIS first, DuckDB beside it where spellings differ, F5); the learner's one-time setup (`CREATE EXTENSION postgis_raster`; `GRANT SET ON PARAMETER … TO <role>` first, else a superuser session or `ALTER DATABASE … SET`, and why the settings are guarded) as an `untested:` block, because the spike never grants.
+  - Lessons: points, polygons and coordinate systems; `ST_Contains` and `ST_Intersects` (with the boundary rule, F5); distance and area (geography against the spheroid functions' lat/lon order); spatial joins (occurrences to country shapes: agree, disagree, no polygon; records, not range).
+  - Checks: Guard; `--update` diff read, `--check --erd` exits 0; each lesson has its `-ex` block and the `**Runs in:**`, `**Evidence:**`, `**Shown as:**` and `**Check:**` lines.
+
+- [ ] S22 · 003 §4 spatial lessons, second half: projection and raster (T6; E2–E4, E3b, E3c).
+  - Lessons: why projection matters (vector areas in 3857, 6933 and on the spheroid; F3's Antarctic 803 overcount); the habitat value at a point; zonal statistics (the resolution read, an overview as a sample, areas "estimated", E3c); the browser companion reading the clip with geotiff.js (JS in a ```` ```js ```` fence, not counted).
+  - Each raster lesson: exactly one live COG `ran` block; the rest read `learn_spatial.habitat_clips` (`spike-table`). More clips (TT, the high-latitude polygon) by S8's cut and validation if a lesson needs them; `pg-setup` updated.
+  - The learner's raster sources per T6: critwire's clip, their own v004 download, or the owner's COG only after the gate (§8).
+  - Checks: as S21; RP13 holds.
+
+- [ ] S23 · 003 §6 IUCN lessons, on a synthetic stand-in (T8).
+  - `learn_spatial.example_ranges`: two hand-drawn rectangles, `label = 'synthetic'`, lesson-defined column names, built by `pg-setup`; registry entry.
+  - 2–3 `### IUCN lesson <n>`: join the learner's ranges to `species.iucn_id`; records against range (open-record countries outside it); habitat composition inside a range from the Jung raster. Imports as ```` ```sh ```` fences (`shp2pgsql`, `ogr2ogr`); an IUCN column name only from IUCN's public documentation, quoted with its URL; results stay on the learner's machine (§4 of the terms).
+  - Checks: as S21; Verification V9 passes.
+
+- [ ] S24 · 003 §5, the habitat raster (T5, T7, T10).
+  - Version and level (S3's exclusion table) and the provenance gate (T7); the credit; options (a)–(d) with disk, bandwidth per learner (measured bytes), work and Chromebook fit (4× runs, VmHWM); the three summary methods with resolution, rule and measured error (E3c); `pnpm ingest habitat` (T5: input, output, derive's refusal, cost from E3c's timings, the tool); why summaries are ingest output, not build work; the recommendation. `r<nn>` blocks only where a query shows a number.
+  - Checks: Guard; `--check --erd` exits 0; every number cites its `out/<run>/`.
+
+- [ ] S25 · Briefs for missions C and D, and 003 §7 (T9).
+  - `plans/briefs/critwire-learn-c.md` and `plans/briefs/critwire-learn-d.md` in the ops brief format (`## Goal`, `## Why`, `## Scope`, `## Definition of done`, `## Decision rules`, `## Notes`), each opening with B1's style of comment: copy and start commands, start only after B2 is merged and live, the estimate (30–40 sessions).
+  - Each states what it assumes B delivered (T9's list; "where B's plans record deviations from 002, B's code wins"). C: T9's C list, the T5 attribution entries, F4's lesson 16 change. D: T9's D list, including the provenance gate, `ingest habitat` and the PostGIS lesson script with the capability check.
+  - Each Definition of done: typecheck, test, build, the existing `/v1` files' bytes unchanged against that mission's own Baseline, the named E2E specs and their artifacts.
+  - 003 §7: the paths, what each assumes, and the order (C before D).
+  - Checks: Guard; each brief has the six headings and an estimate under 60 sessions.
+
+- [ ] S26 · 003 §8, completeness pass, Summary inputs (T10).
+  - §8: every T10 item plus any the spike added, each with a recommendation and its cost.
+  - Run Verification V5–V11 (all but E2E and the release); fix any gap; every `untested:` block has a real reason.
+  - Log line: the Summary's inputs (top three datasets with licenses; where each spatial lesson runs; the raster recommendation; IUCN's four answers and whether the quotes are verified; the brief paths; the §8 choices).
+  - Checks: Guard; V5–V11 pass.
+
 ## Verification
+
+Run from the worktree as one bash session; it writes its own transcript. No lint script exists (Baseline), so `pnpm typecheck` is the static check. Nothing public changes, so the repo's E2E suite proves no regression; the spike's browser runs are this mission's own E2E evidence.
+
+```bash
+set -euo pipefail
+W=/srv/critter-ai/worktrees/critwire-learn-spatial-design; cd "$W"
+M=/srv/critter-ai/agent-state/missions/critwire-learn-spatial-design; SP=$M/spike; V=$M/verify; E=$M/e2e
+P=plans/003-learn-data-spatial.md; ERD=plans/003-learn-erd.mmd
+COG=https://habitat-cog.s3.us-east-2.amazonaws.com/habitat_cog.tif; ETAG='"975827817c839f73a5ee49d2791393a4-212"'
+mkdir -p "$V"; exec > >(tee "$V/verify-$(date -u +%Y%m%dT%H%MZ).log") 2>&1
+fail() { echo "FAIL: $*"; exit 1; }
+hashes() { (cd "$1" && find . -type f | sort | xargs sha256sum); }
+ports_free() { ! ss -ltn | grep -qE '127\.0\.0\.1:310[012] '; }
+q() { psql -d critwire_dev -v ON_ERROR_STOP=1 -Atc "$1"; }
+
+# V0 preflight: clean and pushed; scratch db; ports free; S3 reachable and the COG unchanged
+test -z "$(git status --porcelain)"
+git fetch -q origin; test "$(git rev-parse HEAD)" = "$(git rev-parse origin/agent/critwire-learn-spatial-design)"
+node -e 'process.loadEnvFile(); process.exit(new URL(process.env.DATABASE_URL).pathname === "/critwire_dev" ? 0 : 1)' || fail "DATABASE_URL is not critwire_dev"
+test "$(q "SELECT extversion FROM pg_extension WHERE extname = 'postgis_raster'")" = 3.4.2 || fail "postgis_raster"
+ports_free || fail "port 3100-3102 busy"
+curl -sfI "$COG" | tr -d '\r' | grep -qixF "etag: $ETAG" || fail "COG unreachable or changed (S3 dependency)"
+
+# V1 scope: only plans/ changed, exactly these five files; 002 untouched
+git diff --name-only origin/main...HEAD | grep -v '^plans/' && fail "files outside plans/ changed"
+diff <(git diff --name-only origin/main...HEAD | sort) <(printf '%s\n' plans/003-learn-data-spatial.md plans/003-learn-erd.mmd \
+  plans/2026-10-22-critwire-learn-spatial-design.md plans/briefs/critwire-learn-c.md plans/briefs/critwire-learn-d.md | sort) || fail "changed files"
+git diff --quiet origin/main...HEAD -- plans/002-learn.md plans/002-learn-erd.mmd || fail "002 changed"
+
+# V2 repo checks
+pnpm install --frozen-lockfile
+pnpm typecheck
+pnpm test
+
+# V3 dist unchanged: a fresh build hashes exactly as Baseline's build of origin/main (157 files)
+rm -rf dist; pnpm -s build > "$V/build.txt"
+diff <(LC_ALL=C sort -k2 "$SP/baseline/dist.sha256") <(hashes dist | LC_ALL=C sort -k2) || fail "dist differs from main"
+
+# V4 E2E: the repo suite (Playwright 1.58.2, headless Chromium, local Caddy 3100/3101), the same 20 as Baseline
+rm -rf "$E"; E2E_ARTIFACTS="$E" pnpm e2e
+jq -e '.stats.expected == 20 and .stats.unexpected == 0 and .stats.flaky == 0 and .stats.skipped == 0' "$E/results.json"
+test -s "$E/playwright-report/index.html"; test -s "$E/docs-375.png"
+pgrep -f 'caddy run --config e2e/Caddyfile' && fail "E2E Caddy still running"
+ports_free || fail "port left busy after E2E"
+
+# V5 spike: frozen reinstall, typecheck, every failure-mode test; under 2 GB
+pnpm -C "$SP" install --frozen-lockfile
+pnpm -C "$SP" typecheck
+pnpm -C "$SP" test
+test "$(du -sb "$SP" | cut -f1)" -lt 2000000000 || fail "spike over 2 GB"
+
+# V6 every SQL block in 003 accounted for
+awk '/^```sql$/{n++; getline a; getline b; if (a !~ /^-- q: [a-z0-9-]+$/ || b !~ /^-- status: (ran|spike-table|untested: .+)$/) {print "line " NR ": " a " / " b; bad++}}
+     END{print n " sql blocks"; exit bad > 0}' "$P" || fail "sql block headers"
+node "$SP/scripts/build-site.ts"
+# DuckDB-WASM (headless Chromium, spike Caddy on 3102) + PostGIS (critwire_dev, critter-ai socket); rewrites $M/queries.log
+node "$SP/run-queries.ts" "$W/$P" --check --erd "$W/$ERD"
+grep -qE '^engine: .*DuckDB v1\.5\.6' "$M/queries.log" || fail "log: engine"
+grep -qE '^postgis: .*3\.4\.2' "$M/queries.log" || fail "log: postgis"
+grep -qxF "cog: $COG · etag $ETAG" "$M/queries.log" || fail "log: cog etag"
+diff <(grep '^-- result: ' "$P" | sort) <(grep '^-- result: ' "$M/queries.log" | sort) || fail "recorded results differ from queries.log"
+R=$(awk '/^```sql$/{getline a; getline b; if (b ~ /^-- status: (ran|spike-table)$/ && a !~ /^-- q: (setup|setup-grown|pg-setup)$/) n++} END{print n+0}' "$P")
+test "$(grep -c '^-- result: ' "$P")" = "$R" || fail "a runnable block without exactly one result"
+grep -n '^-- status: untested: ' "$P" || true
+ports_free || fail "spike server left running"
+
+# V7 003 and the briefs are complete
+for n in 1 2 3 4 5 6 7 8; do grep -qE "^## $n\. " "$P" || fail "003 §$n missing"; done
+grep -qx '## Disagreements with 002' "$P" || fail "no Disagreements section"
+G=$(grep -cE '^### Lesson [0-9]+ · ' "$P"); test "$G" -ge 4 -a "$G" -le 8 || fail "grown lessons: $G"
+S=$(grep -cE '^### Spatial lesson [0-9]+ · ' "$P"); test "$S" -ge 6 -a "$S" -le 10 || fail "spatial lessons: $S"
+I=$(grep -cE '^### IUCN lesson [0-9]+ · ' "$P"); test "$I" -ge 1 || fail "no IUCN lessons"
+test "$(grep -c '^\*\*Data:\*\* ' "$P")" = "$G" || fail "Data lines"
+test "$(grep -c '^\*\*Runs in:\*\* ' "$P")" = "$((S + I))" || fail "Runs in lines"
+grep '^\*\*Runs in:\*\* ' "$P" | grep -vE '^\*\*Runs in:\*\* (browser \(DuckDB spatial\)|browser \(geotiff\.js\)|your own PostGIS)' && fail "unknown Runs in"
+test "$(grep -c '^\*\*Evidence:\*\* ' "$P")" = "$((S + I))" || fail "Evidence lines"
+for k in 'Shown as' 'Check'; do test "$(grep -c "^\*\*$k:\*\* " "$P")" = "$((G + S + I))" || fail "$k lines"; done
+for s in $(grep -oE '^### (Lesson|Spatial lesson|IUCN lesson) [0-9]+' "$P" | awk '{p = ($2 == "Lesson") ? "l" : ($2 == "Spatial") ? "s" : "i"; printf "%s%02d\n", p, $NF}'); do
+  grep -qx -- "-- q: $s-ex" "$P" || fail "$s has no exercise"; done
+for t in 'Hosting the files' 'Serving derived products' 'Classroom use' "A learner's own download" 'Draft permission request'; do grep -qx "### $t" "$P" || fail "§6: $t"; done
+for b in c d; do f=plans/briefs/critwire-learn-$b.md; grep -qF "$f" "$P" || fail "§7 lacks $f"
+  for h in Goal Why Scope 'Definition of done' 'Decision rules' Notes; do grep -qx "## $h" "$f" || fail "$f: no $h"; done; done
+
+# V8 every §1 dataset: license quoted verbatim from its saved source page, with the URL
+awk '/^## 1\. /{s=1; next} /^## 2\. /{s=0} s' "$P" > "$V/s1.md"
+awk '/^### D[0-9]+ · /{if (h && !(l && x && o)) {print "incomplete: " h; bad++}; h=$0; l=x=o=0; next}
+     /^\*\*License:\*\* .*https?:\/\/.*evidence\/licenses\//{l=1} /^> ./{x=1} /^\*\*Hostable:\*\* /{o=1}
+     END{if (h && !(l && x && o)) {print "incomplete: " h; bad++}; exit bad > 0}' "$V/s1.md" || fail "§1 entry lacks license URL, quote or Hostable"
+for n in 'Natural Earth' RESOLVE Jung AnAge AmphiBIO EltonTraits PanTHERIA COMBINE Wikidata 'Open Tree' GBIF WorldClim CHELSA WDPA '(Testudines)'; do
+  grep -E '^### D[0-9]+ · ' "$V/s1.md" | grep -qF "$n" || fail "§1 lacks $n"; done
+node "$SP/scripts/licenses.ts" --verify "$W/$P"     # every §1 and §6 quote is verbatim in its saved page (LS3, LS4)
+
+# V9 no IUCN data anywhere (repo, spike, database); critwire_dev left without grants or role/db settings
+IUCN_HOST='://([a-z0-9.-]+\.)?(iucnredlist|iucn|iucnrle)\.org'     # hosts, not the word: Jung's own Zenodo files are named iucn_habitatclassification_*
+grep -iE "$IUCN_HOST" "$SP/downloads/SOURCES.md" && fail "a download from an IUCN host"
+grep -iE "$IUCN_HOST" "$SP/evidence/licenses/SOURCES.md" | grep -vE 'iucnredlist\.org/(terms|resources/spatial-data-download)|iucnrle\.org/terms-of-use' && fail "an IUCN page that isn't terms"
+find "$SP" -path "$SP/node_modules" -prune -o -type f \( -iname '*.shp' -o -iname '*.dbf' -o -iname '*.gpkg' -o -iname '*.gdb' -o -iname '*.fgb' \) -print \
+  | grep -vE "^$SP/downloads/(resolve-ecoregions-2017|naturalearth-[^/]+)/" | grep . && fail "unexpected vector data file in the spike"
+grep -rlaE 'YRCOMPILED|\bBINOMIAL\b|\bSEASONAL\b|"P141"|Critically Endangered|Near Threatened|Least Concern' "$SP/data" "$SP/clips" "$SP/downloads" "$SP/out" && fail "IUCN range attributes or categories in spike data"
+{ awk '/^```/{f = !f; next} f' "$P"; cat "$ERD"; } | grep -nE 'Critically Endangered|Endangered|Vulnerable|Near Threatened|Least Concern|Data Deficient|Extinct in the Wild' && fail "Red List category in 003's SQL, results or ERD"
+q "SELECT table_schema || '.' || table_name || '.' || column_name FROM information_schema.columns WHERE table_schema NOT IN ('pg_catalog', 'information_schema')
+   AND column_name ~* '^(id_no|binomial|sci_name|presence|seasonal|compiler|yrcompiled|redlist.*|red_list.*|category|assessment.*)$'" | grep . && fail "IUCN-shaped column in critwire_dev"
+test "$(q "SELECT count(*) FROM learn_spatial.example_ranges WHERE label IS DISTINCT FROM 'synthetic'")" = 0 || fail "example_ranges not synthetic"
+test "$(q "SELECT count(*) FROM pg_parameter_acl")" = 0 || fail "GRANT SET ON PARAMETER left"
+test "$(q "SELECT count(*) FROM pg_db_role_setting WHERE array_to_string(setconfig, ',') ~ 'postgis\.'")" = 0 || fail "postgis role/db setting left"
+
+# V10 the grown ERD renders offline to SVG in the spike folder, from the committed source
+node "$SP/scripts/erd.ts" "$W/$ERD" --name grown
+test -s "$SP/erd/grown.svg"; test -s "$SP/erd/grown.png"
+grep -qF "data-source-sha256=\"$(sha256sum "$ERD" | cut -d' ' -f1)\"" "$SP/erd/grown.svg" || fail "SVG not from this .mmd"
+grep -q '<foreignObject' "$SP/erd/grown.svg" && fail "foreignObject in SVG"
+
+# V11 spike evidence present, no off-origin request, and the browser runs reproduce (smoke)
+for r in a1-recheck a1-recheck-s12 cog tile-bytes jung e2-point e3-zonal e3b-overviews e3c-methods e4-clip e4-s3 e4-browser e1-data e1-pip licenses; do
+  test -s "$SP/out/$r/summary.md" || fail "no $r summary"; done
+for j in "$SP"/out/e1-pip/*/results.json "$SP"/out/e4-browser/*/results.json; do jq -e '(.blocked | length) == 0 and .failures == 0' "$j" > /dev/null || fail "$j"; done
+find "$SP/out/e1-pip" "$SP/out/e4-browser" -name '*.png' | grep -q . || fail "no screenshots"
+test -s "$SP/README.md"; test -s "$SP/downloads/SOURCES.md"; test -s "$SP/evidence/licenses/SOURCES.md"
+node "$SP/scripts/e1-pip.ts" --smoke
+node "$SP/scripts/e4-clip.ts" --browser --smoke
+for j in "$SP/out/smoke/e1-pip/results.json" "$SP/out/smoke/e4-browser/results.json"; do jq -e '(.blocked | length) == 0 and .failures == 0' "$j" > /dev/null || fail "$j"; done
+ports_free || fail "spike server left running"
+
+# V12 delivery
+test -z "$(git status --porcelain)"
+```
+
+What must hold: every command exits 0. V3's diff is empty (157 files). V4 is 20/20 with nothing skipped. V6: every block has both headers, `--check` finds no result difference and no ERD drift, the log's three header lines are present, and the plan's result lines equal the log's. V7–V9 as written. V10's SVG carries the `.mmd`'s sha256. V11: every run folder has its summary, and no browser run made an off-origin request.
+
+**S3 dependency:** the only network V needs (beyond the pnpm store) is the owner's bucket: the live COG `ran` blocks in V6, one per raster lesson (T3), a few hundred KB of Range reads billed to the owner's AWS. V0 checks it first: S3 down or a changed ETag fails the run before anything is judged. Never skip or relabel those blocks to get past it; a changed file means S2's header checks re-run and a re-pin under Decisions. Zenodo, GBIF and TiTiler are needed only by the experiments, not by V.
+
+**Artifacts:**
+- Repo E2E, `$M/e2e/`: `playwright-report/` (`pnpm exec playwright show-report $M/e2e/playwright-report`), `test-results/` with a `trace.zip` per test (`pnpm exec playwright show-trace <trace.zip>`), `results.json`, `docs-375.png`, `caddy-access.log`.
+- Spike browser runs (this mission's E2E evidence): `$SP/out/e1-pip/`, `$SP/out/e4-browser/`, `$SP/out/smoke/` (`results.json`, screenshots, `caddy-access.log`).
+- `$M/queries.log`: every 003 block's result from DuckDB-WASM and PostGIS, with engine versions and the COG's ETag.
+- `$SP/erd/grown.{svg,png}`; `$SP/evidence/licenses/`; `$SP/out/<run>/`; `$SP/README.md` with every command in order.
+- `$M/verify/verify-<UTC>.log`: this run's transcript.
+
+**Reproduce:** this script. Pieces alone: `node $SP/scripts/build-site.ts && node $SP/run-queries.ts $W/plans/003-learn-data-spatial.md --check --erd $W/plans/003-learn-erd.mmd`; `node $SP/scripts/e1-pip.ts --smoke`; `node $SP/scripts/e4-clip.ts --browser --smoke`; `rm -rf dist && pnpm build && E2E_ARTIFACTS=<dir> pnpm e2e`.
+
+**Release smoke** (the Release unit, not a step): after `deploy critwire`, fetch every path in Baseline's live list and compare. Any difference fails the release.
+
+```bash
+M=/srv/critter-ai/agent-state/missions/critwire-learn-spatial-design; SP=$M/spike; L=$SP/baseline/live.sha256; R=$M/release/live-after
+rm -rf "$R"; mkdir -p "$R"
+awk '{print $2}' "$L" | while read -r f; do mkdir -p "$R/$(dirname "$f")"; curl -sfL -o "$R/$f" "https://critwire.com/${f#./}" || echo "FETCH FAILED $f"; done
+(cd "$R" && awk '{print $2}' "$L" | xargs sha256sum) | diff - "$L" && echo RELEASE_SMOKE_OK
+```
+
+## Failure modes
+
+Only the spike tools that the Definition of done and the experiments' verdicts rest on are tested in isolation. Each mode below is a test or fixture, written and seen failing before its code (step in brackets). "Fails" means a non-zero exit or a thrown error whose message names the cause. A1's suites come with the code they cover and must pass unchanged: SQ1–SQ7, CR1–CR12, RQ1–RQ26, RQE1–RQE5, ER1–ER4 [S1], CD1–CD11 [S10]. RS2–RS5 replace RQ6–RQ9 [S12].
+
+**CG · COG reader (`scripts/cog.ts`), `test/cog.test.ts` [S2]**
+- CG1 Bad magic, or a TIFF version other than 42 or 43, fails; classic TIFF and BigTIFF both parse.
+- CG2 A Range answered `200` aborts after the first chunk (the 3.64 GB file is never downloaded); a `206` whose `Content-Range` differs from the request fails.
+- CG3 Every request carries `If-Match: $ETAG`; a `412`, or a response ETag different from the pin, fails, naming both.
+- CG4 An IFD, tag array or GeoKey directory beyond the fetched bytes is fetched by a further Range, or fails; a truncated header never yields values.
+- CG5 Grid maths: (−60, −3) → col 129665, row 197741; origin and pixel size equal F2's; a latitude beyond ±85.0511° or a longitude beyond ±180 fails.
+- CG6 Tiles: the 1×1 window at (−60, −3) touches tile 293,613 only; a window across a tile edge touches 2 (4 at a corner); level k uses its own IFD's grid; a window outside the raster fails.
+- CG7 IFD k is ⌈388,996 / 2^k⌉ px per side (F2); any other size fails.
+- CG8 The ghost area (`LAYOUT=IFDS_BEFORE_DATA`, `BLOCK_ORDER=ROW_MAJOR`, `BLOCK_LEADER=SIZE_AS_UINT4`) is parsed; a file without one is "not a GDAL COG", never assumed one.
+- CG9 `OVR_RESAMPLING_ALG` is read when present; absent is reported as absent, never as NEAREST.
+- CG10 A window's lower bound is the sum of its tiles' TileByteCounts at that level; a 0-byte (sparse) tile counts 0 and is listed.
+
+**ZP · zip members by Range (`scripts/zip-range.ts`), `test/zip-range.test.ts` [S3]**
+- ZP1 No end-of-central-directory record in the fetched tail fails; ZIP64 records are used when present.
+- ZP2 A local header whose name or sizes differ from the directory's fails.
+- ZP3 A CRC-32 different from the directory's fails, and the member file is deleted.
+- ZP4 An inflated length different from the directory's uncompressed size fails.
+- ZP5 A compression method other than stored (0) or DEFLATE (8) fails, naming it.
+- ZP6 A `200` instead of `206` aborts; a whole-zip download happens only through T11's explicit fallback.
+
+**JG · Jung version exclusion (`scripts/jung.ts`), `test/jung.test.ts` [S3]**
+- JG1 A version whose code list lacks a code seen in the COG is excluded, listing the codes.
+- JG2 A version whose header contradicts the COG's (data type, nodata) is excluded, naming the field.
+- JG3 A version that isn't excluded is "not excluded"; the output never says confirmed or identified (F3), and the gate reads "unconfirmed" unless an owner's statement is recorded under Decisions.
+- JG4 A code list or legend that can't be parsed, or is empty, fails, naming the file.
+- JG5 A code zip whose md5 differs from the Zenodo API's fails.
+
+**PG · PostGIS session (`scripts/pg.ts`), `test/pg.test.ts`, live on `critwire_dev` [S4]**
+- PG1 `SPIKE_PG_URL` unset, naming a TCP host or a password, or a database other than `critwire_dev` fails before connecting; `critwire` is refused by name; `DATABASE_URL` is never read.
+- PG2 A role that isn't superuser fails, saying to use the critter-ai socket and never ALTER or GRANT.
+- PG3 `postgis_raster` not installed, or `postgis_raster_lib_version()` returning nothing, fails before any `SET`.
+- PG4 `SHOW postgis.enable_outdb_rasters` other than `on` after the `SET`s fails, printing both `SHOW` values.
+- PG5 `SHOW postgis.gdal_enabled_drivers` without the word `COG` fails.
+- PG6 A misspelt name in the `SET` step (accepted silently, F1) fails at the `SHOW` of the real names: the check reads the real names, never the ones it set.
+- PG7 `search_path` other than `learn_spatial, public`, or `statement_timeout` other than `60s`, fails.
+- PG8 No :443 socket for the backend's pid after a cold out-db read, or an unreadable `/proc/<pid>/io`, fails the measurement; bytes are never recorded as 0.
+- PG9 A static scan of `$SP/scripts`, `$SP/src` and `$SP/run-queries.ts` fails on any `ALTER ROLE|DATABASE|SYSTEM`, `GRANT` or `REVOKE`.
+
+**VC · value comparison (`scripts/compare.ts`), `test/compare.test.ts` [S4]**
+- VC1 Histograms differing in one class count fail, listing each class and both counts.
+- VC2 A class present in one reader only fails.
+- VC3 The 100 sample cells are a fixed grid over the window, never random; one differing cell fails with its column, row and both values; windows under 10 × 10 compare every cell.
+- VC4 Nodata compares as nodata: PostGIS `NULL`, geotiff.js `0` and TiTiler's mask are one value; a reader that drops nodata from its histogram while another counts it fails.
+- VC5 Windows of different shapes fail before comparing.
+- VC6 A reader's error, timeout or refusal gives "can't read", never "pass" (E3b).
+
+**FS · E3c method 3 (`scripts/e3c-methods.ts`), `test/e3c.test.ts` [S7]**
+- FS1 A land cell whose fetched fractions sum below the full scale fails, naming the classes not fetched.
+- FS2 A sum above the full scale (beyond the scale's rounding) fails: the scale is wrong.
+- FS3 An unknown scale switches the run to relative differences only, labelled so; no absolute area is written.
+- FS4 A 0.0099157° cell's geodesic area at 0°, 30° and 60° equals PostGIS `ST_Area(geography)` of the same cell within 0.1 %.
+- FS5 A cell whose centre lies outside the polygon is excluded even if it overlaps; two adjacent polygons never both count a cell.
+
+**CV · clip validation (`scripts/e4-clip.ts`), `test/clip.test.ts` [S8]**
+- CV1 No ghost area, or `LAYOUT` other than `IFDS_BEFORE_DATA`, fails as "not a COG".
+- CV2 Untiled, or without overviews, fails.
+- CV3 A CRS other than EPSG:3857, or nodata other than 0, fails.
+- CV4 `OVR_RESAMPLING_ALG` absent or not `NEAREST` fails; a code missing from the full-file histogram (an averaged overview) fails.
+- CV5 Any of the 100 grid cells different from PostGIS `ST_Value` fails (VC).
+- CV6 A clip written outside `$SP/clips/`, or over 50 MB, fails.
+
+**GB · GBIF sample (`scripts/gbif-sample.ts`), `test/gbif-sample.test.ts` [S10]**
+- GB1 Copied filters that differ from `OCCURRENCE_FILTERS` and `BASIS_OF_RECORD` in `$W/scripts/ingest/gbif.ts` (read as text) fail.
+- GB2 A record whose license isn't CC0 1.0 or CC BY 4.0 fails.
+- GB3 The throttle can't issue more than 2 requests a second; a `429` or `5xx` stops the run, with no retry loop.
+- GB4 A sampled `datasetKey` missing from the species' `contributions.json` counts is reported per species, not fixed: expected for a sample drawn outside `ingest gbif`, and the reason D draws it inside (F9).
+- GB5 A species id whose `ids.gbif` is null, or whose `range.status` isn't `ok`, fails.
+
+**RS · run-queries statuses, registry and boot; fixture plans in `test/fixtures/run-queries/` [S12]**
+- RS1 `-- status: draft-table` fails as unknown, listing `ran`, `spike-table`, `untested: <reason>`.
+- RS2 A `ran` block naming a registry table (whole word) fails as mislabelled, naming the table.
+- RS3 A `ran` block that reads a registry table only through a view it creates fails (the word test on the CREATE, `getTableNames` on the SELECT).
+- RS4 A `spike-table` block that reads no registry table fails as mislabelled.
+- RS5 Passes: a registry name inside a longer identifier, a string literal or a comment of a `ran` block.
+- RS6 A registry that's missing or not JSON, an entry without engine, file, source URL, license or built-by, a duplicate name, or a missing file fails before any engine starts.
+- RS7 `LOAD spatial` failing at boot (mirror file missing, or its sha256 differs from `assets.ts`) fails within the boot timeout, naming spatial; nothing is fetched off-origin (`blocked` empty).
+- RS8 A `setup-grown` block one byte off `src/setup-grown.sql` fails; a statement error in `setup-grown` fails the boot, naming the statement.
+- RS9 `-- engine:` with an unknown value, or twice in one block, fails.
+
+**RP · run-queries PostGIS engine [S13]**
+- RP1 PG1–PG7 surface through run-queries: it stops before any block, printing the reason and both `SHOW` values.
+- RP2 A result with a `geometry`, `raster` or `bytea` column fails, naming the column and the fix (`ST_AsText`, `round`).
+- RP3 `SELECT 1::int8, 1.50::numeric, 0.1::float8, NULL::int` renders `1 | 1.50 | 0.1 | NULL` by A1's rules; equal values hash equal in both engines.
+- RP4 Isolation: block A deletes from a `learn_spatial` table and creates `learn_spatial.t`; block B sees the original counts and can create `t` again.
+- RP5 Transaction control, `ALTER ROLE|DATABASE|SYSTEM`, `GRANT`, `REVOKE`, or `SET`/`RESET` outside `pg-session` fails statically.
+- RP6 A statement error without `-- expect: error` fails, naming the id and the statement number; the next block still runs on a clean connection.
+- RP7 A block over the timeout is cancelled and fails, naming the id (`SPIKE_BLOCK_TIMEOUT_MS` lowers it for the test).
+- RP8 The COG's ETag different from the pin, or S3 unreachable (the URL overridden to `127.0.0.1:9` for the test), fails before any block reads `/vsicurl/`; the log header records what was seen.
+- RP9 A `pg-setup` block one byte off `src/pg-setup.sql` fails; `pg-setup` creating anything outside `learn_spatial`, or a `learn_spatial` FK or view on a `public` table (F11), fails.
+- RP10 `pg-setup` run twice gives the same `pg-setup-counts`.
+- RP11 The label rule (RS2–RS5) holds for postgis blocks.
+- RP12 The determinism lint covers PostGIS spellings: `random()`, `now()`, `clock_timestamp()`, `gen_random_uuid()`, `TABLESAMPLE`; a multi-row last statement without `ORDER BY` fails.
+- RP13 A block reading `/vsicurl/` that isn't `ran` with `-- engine: postgis`, or a `###` section with two such blocks, fails (T3, "few live COG reads").
+
+**LS · license evidence (`scripts/licenses.ts`), `test/licenses.test.ts` [S14]**
+- LS1 A non-200 (403, 404, 5xx) is recorded with its status and never saved as evidence.
+- LS2 Each saved page's URL, UTC time, status and sha256 go in `evidence/licenses/SOURCES.md`; a re-fetch writes a new dated file, never overwrites.
+- LS3 `--verify`: a quote in a `quote.md`, or a `> ` quote under a §1 `### D` entry or in §6, that isn't verbatim in the saved page's text (HTML stripped, entities decoded, whitespace collapsed) fails, naming the quote and the file.
+- LS4 `--verify`: a §1 entry whose `**License:**` line lacks a URL, a UTC date or an existing evidence dir fails.
+- LS5 Wayback only by an explicit snapshot id; the saved file records the snapshot URL, never the live URL.
+- LS6 A URL on an IUCN data path (anything on iucnredlist.org or iucn.org other than the terms and spatial-data pages; any API host) is refused before fetching.
+
+**GD · grown stand-ins (`scripts/grown-data.ts`), `test/grown-data.test.ts` [S17]**
+- GD1 A stand-in file without a registry entry, or an entry without its file, fails.
+- GD2 A row whose `species_id` isn't a species, or whose `country_code` isn't a country code, fails, naming the row.
+- GD3 An entry that says neither `real` (with source URL and license) nor `synthetic` fails; a synthetic entry never cites IUCN.
+
+**RE · ERD rules (`erd-model.ts`, `erd.ts`) [S18]**
+- RE1 A 002 entity missing from 003's `.mmd`, or with an attribute added, dropped, retyped or re-marked, fails, naming it.
+- RE2 A 002 relationship line missing or changed fails.
+- RE3 `||--o|` passes only where the child's FK columns are its PK or UNIQUE (`country_shapes`); elsewhere it fails.
+- RE4 Lines outside the subset (`}o--o{`, `||--||`) still fail (RQE4).
+- RE5 003's `mermaid` block different from the `.mmd` fails (RQE5 on the new file).
+- RE6 `erd.ts --name grown` writes only `grown.svg` and `grown.png`; without `--name` it writes `schema.*` as before.
+
+### Experiment outcomes (T11): how each is caught, what follows
+
+| Risk | Caught by | Then | Step |
+|---|---|---|---|
+| `LOAD spatial` or WKB geometry fails in WASM v1.5.6 | the E1 page's error | GeoJSON text + `ST_GeomFromGeoJSON`; if spatial itself fails, those lessons move to the learner's PostGIS and §4 says so | S11 |
+| 10m shapes over 700 MB at 4× | VmHWM | 50m or prep-time simplified shapes; size and memory of each recorded | S11 |
+| A raster `SET` refused or ineffective | PG3–PG6, RP1 | the run refuses with the `SHOW` values; fix the connection, never `ALTER` | S4, S13 |
+| PostGIS can't read overviews | VC6, E3b's verdict | overview reads through geotiff.js; §4's PostGIS lessons read full resolution on small polygons | S6 |
+| Fractions don't sum to the scale | FS1–FS3 | fetch the members FS1 names; unknown scale → relative differences only | S7 |
+| Zenodo refuses `Range`, or a CRC mismatch | ZP3, ZP6 | record it; one whole download of the 695 MB zip into `downloads/`, md5 checked, deleted after | S3, S7 |
+| The COG's provenance stays unconfirmed | JG3 | default: v004 by URL for everything published; §8 item | S3, S24 |
+| PostGIS can't open a local file (F12) | design | bytes by parameter (`ST_FromGDALRaster`, `ST_SetValues`); never `chmod` | S7, S13 |
+| `ST_AsGDALRaster(…, 'COG')` fails or isn't a COG | CV1–CV3 | `'GTiff'` with `TILED=YES`, `COMPRESS=DEFLATE`; recorded | S8 |
+| Clip overviews not nearest | CV4 | `RESAMPLING=NEAREST`; the codes-subset check | S8 |
+| geotiff.js loads the 6.9 MB tile index whole | `out/e4-s3/` bytes | priced into option (a); critwire-hosted clips don't pay it | S8 |
+| S3 unreachable, or the ETag changed | CG2, CG3, RP8, V0 | stop and record; re-pin only after S2's header checks re-run, under Decisions | all |
+| IUCN archive unreadable | LS1 | quotes marked unverified; handoff item (`Blocks: nothing`) | S16 |
+| Jung version not determinable | JG3 | §8 item (no handoff: D defaults to v004); the COG's hostability by the decision rule | S3, S24 |
+| A license unclear | LS3/LS4 can't be met | not hostable, said so in §1 | S14, S15 |
+| TiTiler disagrees or is down | E2/E3 comparison | recorded; TiTiler is a cross-check, no verdict rests on it | S4, S5 |
+| Spike over 2 GB | Guard's `du` | delete extracted members and zips; clips only | all |
+| `pnpm build` changes, or `critwire_dev` broken by spike objects | build guard, RP9 | find and drop the offending `learn_spatial` object; nothing in `public` | all |
+| Caddy on 3102 while `pnpm e2e` runs | `serve.ts` | it refuses (A1) | all |
+
+### Risks / open questions
+
+- **Session size:** S1, S7 and S13 are the largest. Split per the mission rules if one runs over; the copy proof (S1), the fraction self-check (S7) and RP1–RP13 (S13) are the parts that must not be cut.
+- **Owner's egress:** the spike's S3 reads total well under 100 MB (header and index ≈ 13 MB, E2–E4 a few MB each, V6 a few hundred KB per run): cents. TiTiler calls (E2, E3) are a few dozen on the owner's Lambda.
+- **Zenodo traffic:** E3c fetches only the members its two polygons need, at most 60.2 MB each, one at a time.
+- **Open until the spike runs (S):** geotiff.js's build scripts; the fraction scale; whether `GTIFF_DIR:` works over `/vsicurl/`; Caddy's Range handling under `encode`; the 4× memory of 10m shapes.
 
 ## Code review (Astra)
 
 ## Release
 
 ## Decisions
+
+- Steps (planner, 2026-10-22): 26 steps S1–S26 from T12's 16 units; units 2–6, 10, 11, 13 split; S12–S13 added (run-queries extension, after E1 since `pg-setup` loads E1's Parquet + E4's clip).
+- S1 copy proof re-runs all of 002 with `--check --erd` (`out/a1-recheck/`), not one block; S12 repeats it after `draft-table` → `spike-table`.
+- E2 points: near Manaus + 9 picked in S4 (E1's GBIF sample doesn't exist yet); S11 adds a check on each sampled species' first point.
+- 003 conventions fixed (ids `l17…`, `s<nn>`, `i<nn>`, `-pg` twins; §1 `### D<n> ·` with fixed License/Hostable lines; lesson `**Data:**`/`**Runs in:**`/`**Evidence:**`); Verification greps them.
+- dist hash guard runs at end of every step, not only PostGIS ones.
+- Every S3 Range GET sends `If-Match: <ETag>`; 200 or 412 aborts.
+- A1 tests copied with each reused module; S10 copies A1's countries matcher + tests.
+- Learner one-time setup (`CREATE EXTENSION`, `GRANT SET ON PARAMETER`) is an `untested:` block (spike never grants).
+- One live COG read per `###` section enforced in run-queries (RP13).
+- `licenses.ts --verify` checks every §1/§6 quote word for word vs saved page.
+- GBIF sample `datasetKey` missing from `contributions.json`: reported, not failed (spike sample not drawn in `ingest gbif`; mission D must).
+- `example_ranges.label = 'synthetic'`; `erd.ts --name`; S17 proves F4 clash via scratch plan (002 l16 fails "already exists" vs grown setup).
+- Wikidata: named properties only, never whole entities (P141 = Red List category); V9 scans for `"P141"`.
+- IUCN scan matches IUCN host names, not "iucn" (Jung's files are `iucn_habitatclassification_*`).
 
 ## Log
 
@@ -755,5 +1270,6 @@ Declined: none.
 - 2026-10-22 16:20 UTC: Fable review (architecture-reviewer): APPROVE WITH CHANGES, 3 MUST-FIX (offline build: habitat summaries as committed ingest; E3b validate overview reads by values; load raster lib before SET + assert SHOW). Plan-only.
 - 2026-10-22 16:21 UTC: Astra review: APPROVE_WITH_CHANGES, 4 MUST-FIX (offline build: COG summaries committed in data/; E3b pixel agreement w/ independent reader; overview counts not "true area", define resolution/aggregation; gate publication on confirmed Jung provenance). Plan-only.
 - 2026-10-22 16:35 UTC: Revision (architect): all 5 MUST-FIX resolved (habitat summaries = committed `ingest habitat`, v004 1 km default; E3b value-checked vs geotiff.js; raster fn→SET→assert SHOW; est_area_km2 + E3c error per method; publication gated on Jung provenance), all SHOULD-CONSIDER adopted, new F12 (postgres can't read /srv/critter-ai). Plan-only; no grants left (pg_parameter_acl empty).
+- 2026-10-22 16:55 UTC: Steps (planner): 26 steps S1–S26, Verification V0–V12 + release smoke, Failure modes (13 test groups, T11 map). Plan-only; typecheck pass; header check + result diff dry-run vs 002/A1 log: 77/77 match.
 
 ## Summary
