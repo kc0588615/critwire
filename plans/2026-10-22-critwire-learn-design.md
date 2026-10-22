@@ -922,7 +922,7 @@ Planner, 2026-10-22. Conventions:
   - `summary.md`: median and max per cell, §5's budgets met or missed per bundle, the better bundle, the throttled screenshots, and what the peak `VmHWM` means for a 4 GB Chromebook.
   - Checks: Guard; 5 runs in every cell; `blocked` empty in every `results.json`. A reliability failure is a result: keep its error and count it, never re-run it away.
 
-- [ ] S8 · PGlite and sql.js measured (§1 PGlite, sql.js).
+- [x] S8 · PGlite and sql.js measured (§1 PGlite, sql.js). Deviations (Decisions, S8): main-thread blocking by a 10 ms interval probe (longtask observer reported 0); MS3 checks the `.wasm`'s concurrent download batch; parity also checks columns.
   - `src/setup-pglite.sql` builds the same tables from `/v1/species.json` and the draft `/v1/countries.json` with `jsonb_array_elements`. `src/pglite-page.ts` + `pglite.html`: the same marks, the Brazil join, no cards, main thread, total long-task time via `PerformanceObserver`.
   - In the page, before measuring: the table counts equal S4's, and the Brazil join returns the same ids as DuckDB's.
   - pglite × 3 profiles × cold, warm × 5 → `out/pglite-live/`.
@@ -1297,6 +1297,22 @@ Only the spike tools that the Definition of done rests on are tested in isolatio
 - **S7: Reset costs a warm boot** (14–21 s throttled). → S14/S20: make restarts rare (e.g. run learner statements in a transaction rolled back by default; restart only for Stop or after a malloc error).
 - **S7: runaway query on a Chromebook.** 15/15 clean malloc error (3.7 / 17.7 / 27.0 s), worker usable after, but renderer RSS peaks at 2.55–2.65 GB and the worker keeps 2.19 GB of linear memory until restart. Normal tab ~0.5 GB fits a 4 GB Chromebook as one heavy tab (may be discarded in the background → warm boot on return); 2.6 GB likely crashes the tab there instead of the clean error. → S14: cap results before they materialize and restart the worker after a malloc error; §10's real-device check.
 
+- **S8: PGlite parity first** (`$SP/out/pglite-check/`): `src/setup-pglite.sql` (Postgres JSON functions over a temp `v1_files` table the page fills from `/v1/species.json` + `countries.json`) builds the same 7 tables/view, same 37 columns (names, order), same counts and the same 12 Brazil rows as DuckDB eh; `blocked` []. PGlite 0.5.10 = PostgreSQL 18.6, self-hosted (`compileStreaming` of `pglite.wasm` + `initdb.wasm`, `pglite.data` as `fsBundle`), main thread. esbuild needs `external: ["node:*"]` for PGlite's Node-only branch.
+- **S8: main-thread blocking = 10 ms interval probe** in `wasm-hook.js` (sum and longest gap > 50 ms), replacing the longtask PerformanceObserver, which reported 0 while PGlite froze the page ~3 s (checked: it does count a plain busy loop). **MS3 checks the `.wasm`'s download batch** (all same-origin downloads overlapping it): PGlite fetches 5 files at once, so its `.wasm` alone took 1.6× bytes ÷ throughput and the first throttled cells stopped; batch ratios 1.00–1.02, DuckDB unchanged (batch = its `.wasm`, 1.04; smoke re-run green).
+- **S8: PGlite under the live config (`$SP/out/pglite-live/`, medians of 5),** 0 failures in 30 loads, `blocked` empty. Beside DuckDB eh (S7):
+
+  | | DuckDB eh | PGlite |
+  |---|---|---|
+  | desktop cold / warm | 2.9 / 2.5 s | 4.0 / 2.4 s |
+  | school-wifi (4×) cold / warm | 27.1 / 15.1 s | 35.7 / 14.0 s |
+  | slow-4g (6×) cold / warm | 64.2 / 22.0 s | 70.3 / 21.6 s |
+  | cold wire | 9.02 MB | 6.44 MB |
+  | peak VmHWM cold desktop | 0.50 GB | 1.07 GB |
+  | longest main-thread freeze, cold desktop / 4× | 0 / 0.29 s | 2.8 / 20.3 s |
+
+  **§5 for PGlite:** reliability and cold school-wifi met; warm slow-4g missed (21.6 s, 1.02× DuckDB's, not 1.5×); memory missed (1.07 GB). So §5's switch rule isn't met; S9 records the verdict. PGlite's real cost is the frozen page (Postgres on the main thread; a worker variant exists but changes neither boot time nor memory). DuckDB's 4× figure is from one run (`$SP/out/pglite-live-duckdb-probe/`); S7's cells predate the probe.
+- **S8: sql.js not recommended** (`$SP/out/sqljs/summary.md`): 0.37 MB zstd (SQLite 3.54.0), ~24× smaller than DuckDB's first load, but no Parquet/HTTP reader, loose typing, FKs off by default, no `information_schema`, no spatial path. Not run in the browser (brief: paragraph + size).
+
 ## Log
 
 - 2026-10-22 UTC · Baseline: install, typecheck, unit 66/66, build, E2E 20/20 green; dist + live /v1 hashes saved (identical, 157 files).
@@ -1312,5 +1328,6 @@ Only the spike tools that the Definition of done rests on are tested in isolatio
 - 2026-10-22 07:45 UTC · S5: `cards.ts`, `check.ts`, `format.ts`, card page (lesson 9) + `card-check.ts` (CR1–12, CK1–11: 23 red → green; spike 40/40). `out/card-page`: 20 checks, 0 failures: keyboard run (1 Tab, Ctrl+Enter, Tab out), Brazil 12 cards = data, credits/deeds/pages match, photos 12/12, 375 px no overflow, no-photo 19+47, table fallbacks + reason, exercise pass/col-hint/row-hint, pristine ref after delete, Reset 76/472, Stop, Schema dialog, blocked []. Guard clean, repo typecheck + 66/66, no Caddy left.
 - 2026-10-22 08:00 UTC · S6: `measure.ts` (MS1–MS9 asserts first; matrix CLI, `--validate`, `--smoke`), `browser.ts` `launchMeasured` (CDP-launched Chromium, profile dir, host-resolver block, CPUQuota scope + cpu.max check), `wasm-hook.js` + `measure-worker.js`, card page `?measure`. `--validate` exit 0: CDP CPU 1.01× on the worker → CPUQuota (4.01×), network ratio 1.00/1.00. `--smoke` exit 0: 12/12 cards cold+warm, failures 0, blocked [], eh.wasm 7 976 059 B zstd = S1 exactly, warm 0 B. school-wifi 1-run check exit 0 (cards 27.1 s cold). card-check 0 failures; spike 40/40; guard clean, repo typecheck + 66/66, no Caddy/Chromium left.
 - 2026-10-22 09:24 UTC · S7: `measure.ts --extras` (rebuild + reload, Reset, runaway) + §5 budgets/notes in summary; MS2 fix (Chromium left the CPUQuota scope via D-Bus → no session bus, per-load check) and throttled cells re-run. `out/duckdb-live`: 6 cells × 5, 0 failures, blocked [] everywhere; eh better bundle; §5: warm slow-4g missed (22.0 s vs 8 s), rest met; ETag stable 15/15; runaway errors cleanly 15/15 (2.6 GB peak). Guard clean, repo typecheck + 66/66, spike typecheck + 40/40, no Caddy/Chromium left.
+- 2026-10-22 11:13 UTC · S8: `pglite.html` + `setup-pglite.sql` + `pglite-check.ts` (parity: tables, 37 columns, counts, 12 Brazil rows = DuckDB; blocked []); harness: main-thread freeze probe, MS3 on the concurrent batch. `out/pglite-live`: 3 cells × 5, 0 failures, blocked []; §5 for PGlite: warm slow-4g 21.6 s and memory 1.07 GB missed → switch rule not met. `out/sqljs/summary.md`. DuckDB smoke re-run green. Guard clean, repo typecheck + 66/66, spike typecheck + 40/40, no Caddy/Chromium left.
 
 ## Summary
