@@ -1042,6 +1042,22 @@ Planner, 2026-10-22. Conventions:
   - Run Verification V6–V8 and fix any gap. The Log line lists the Summary's inputs: engine and key numbers next to PGlite's, shell vs editor, extensions, lessons, cookbook count, demo, countries source, brief paths, owner choices.
   - Checks: Guard; V6–V8 pass.
 
+- [ ] S23 · Code review fix 1: `l16-ex` is the answer alone (Astra MUST-FIX 1).
+  - Today `l16-ex` repeats `CREATE TABLE traits`, which `l16` already made, so a learner (or the B1 page, which ships `site/learn/sql/l16-ex.sql` from this block) hits "Table with name 'traits' already exists!".
+  - Spike first: a runner header `-- after: <q-id>[, …]` that runs the named blocks' SQL before the block inside the same `BEGIN … ROLLBACK` (static check: named blocks exist and come earlier; no cycles). Failure-mode tests first, seen red: unknown id, later id, after-block fails, result is still the block's own last statement.
+  - 002: `l16-ex` = `-- after: l16` + the `species_traits` DDL only; the verify query becomes its own block `l16-check` (`-- after: l16, l16-ex`), and lesson 16's **Check** names it. §1 (exercise checks, pristine references), §8 (`answers.ts`, file layout) and the B1 brief say how `-- after:` maps to the page: prerequisites are the lesson's own earlier blocks, run by the learner; the schema check runs `l16-check` on the learner's tables.
+  - Checks: Guard; spike typecheck + tests; `run-queries --update` diff read (l16-ex, l16-check only), then `--check --erd` exit 0; V7.
+- [ ] S24 · Code review fix 2: c02's button order independent of the decoy pick (Astra MUST-FIX 2).
+  - The decoys are the three lowest of key `(id * 619 + seed * 211) % 1009`, and the buttons sort by the same key, so the answer lands last most rounds (Astra: 9 of 10 on 2026-10-22).
+  - 002 c02: buttons ordered by a second key with other constants (one documented "order key", e.g. `(id * 211 + seed * 619) % 1009`), stated in §5's intro next to the shuffle key; §7 wording checked.
+  - Evidence: a scratch query over every photo-deck answer (c09) × seeds 1–10 counting the answer's position 1–4 (each 15–35 %), run in DuckDB-WASM (`try-sql.ts` or a `d`-block), counts in the Log; same count for the old order to show the bias.
+  - Checks: Guard; `run-queries --update` diff read (c02 only), `--check --erd` exit 0.
+- [ ] S25 · Code review fix 3: every statement's result read capped, not only the last (Astra MUST-FIX 3).
+  - "Statements before the last run as usual" lets `<runaway join>; SELECT 1` build the whole join again (2.6 GB, malloc failure).
+  - Spike: `runScript` (and the page runner) streams every statement with `conn.send(sql, true)`; earlier statements' batches are read and dropped up to the cap, then `cancelSent()`; only the last keeps rows. `cap-check.ts` adds the multi-statement case first (seen red with today's code): `<RUNAWAY>; SELECT count(*) FROM species` ends with 76, renderer peak ≤ 600 MB like the single case, and a following `INSERT …; SELECT …` script still applies the insert.
+  - 002 §1 "Huge results" rewritten to say every statement is streamed and capped, with the new numbers (`spike/out/cap/`); B1 brief's engine notes match.
+  - Checks: Guard; spike typecheck + tests; `cap-check.ts` 0 failures, blocked []; boot-check and card-check 0 failures; `--check --erd` exit 0 (no result changes).
+
 ## Verification
 
 Run from the worktree as one bash session; it writes its own transcript. No lint script exists (Baseline), so `pnpm typecheck` is the static check. Nothing public changes, so the repo's E2E suite proves no regression, and the spike's browser runs are this mission's E2E evidence.
@@ -1241,6 +1257,16 @@ Only the spike tools that the Definition of done rests on are tested in isolatio
 
 ## Code review (Astra)
 
+VERDICT: APPROVE_WITH_CHANGES
+
+MUST-FIX:
+1. `plans/002-learn.md:1657`: `l16-ex` recreates `traits`, although learners must first run `l16`, which creates it. Reproduced: “Table with name 'traits' already exists!” Separate prerequisite SQL, displayed answer, and verification; test the actual lesson→exercise sequence.
+2. `plans/002-learn.md:1802`: c02 orders choices by the same key used to select the three lowest-ranked decoys. This puts the correct answer last overwhelmingly often—9/10 rounds on 2026-10-22. Use an independent deterministic ordering for buttons and verify answer-position distribution.
+3. `plans/002-learn.md:152`: Only the last statement gets streamed and capped. Appending `; SELECT 1` to the documented runaway join makes that join materialize fully again, restoring the measured 2.6 GB memory failure. Bound result consumption for every statement; test multi-statement submissions.
+
+SHOULD-CONSIDER:
+1. `plans/002-learn.md:541` and `:1535`: Exercises explicitly request sorted output, but their checks accept any row order. Require ordered comparison so missing `ORDER BY` fails.
+
 ## Release
 
 ## Decisions
@@ -1380,6 +1406,7 @@ Only the spike tools that the Definition of done rests on are tested in isolatio
 - **S20: site build.** Soft navigation inside `/learn/` + `/play/` (fetch page, swap `<main>`, `pushState`, focus `<h1>`), the engine kept: §1's one start per visit. SQL once in `site/learn/sql/<q-id>.sql` (002 block minus plan-only lines), filled into `<textarea>`s via `{{sql:<q-id>}}` slots of `fillTemplate` (moved to `scripts/build/template.ts`); `answers.ts` imports the 16 exercise answers by name (explicit, not an esbuild glob), and `writeLearn` refuses a mismatch with `lessons.json`, an unused `.sql` or a missing one. All of `dist/learn/assets/` gets the fixed mtime (app files too). Parquet extension committed under `site/learn/duckdb-ext/` with a sha256 check, pending §10. E2E plan: photo hosts answered by `page.route` with a fixture after asserting the URL is a `photo.url`; worker count via `page.on("worker")` proves one start; `page.clock` fixes the game date; `Last-Modified` 2000-01-01 on assets in `serving.spec.ts`. Header changes (precompression, `immutable`, `/v1` no-cache) as one control-room change if approved.
 - **S21: mission B briefs** `plans/briefs/critwire-learn-b1.md` (about 32–38 sessions) and `-b2.md` (about 18–24), split as Architecture §4 sized it. Calls: (1) each mission's "`/v1` unchanged" check uses its own Baseline hashes of a fresh `origin/main` build, since data may move between missions; B1 allows `attribution.json` to differ by the one Natural Earth entry and `index.html` to change. (2) B1 re-runs 002's `draft-table` blocks against the built countries file with the spike's `run-queries.ts` (read only) and relabels them `ran`. (3) The parquet extension's default is committed in `site/learn/` with its sha256 checked (002 §8), unless the owner picks a pinned download in §10. (4) The real-device check is a B2 handoff item that doesn't block B2's release unless the owner says so. (5) Owner's §10 answers override either brief; without one, 002's recommendation holds.
 - **S22: 002 §10, 11 owner items** (B1: start time, `1.33.1-dev65.0` pin, committed parquet binary, countries file, Brazil = lesson 9; B2: system light/dark, Caddy headers (recommend all three), photos linked, no shell link, real-device check incl. Firefox; A2: further extensions) + the B1/B2 split; no answer → recommendation (briefs already say so). Added beyond §4's list: the start-time acceptance (S9), the dev pin (npm `latest` is itself dev57.0), the shell link (S11), Firefox (S10). Photo-hosting cost from `HEAD` of the 74 `photo.url`s: 5 725 607 bytes (2026-10-22). 001 pointer appended to the existing "Phase 2 viewer" line (one line).
+- **Astra code review (2026-10-22): APPROVE_WITH_CHANGES.** All 3 MUST-FIX real, checked against 002: (1) `l16-ex` re-creates `traits`, and B1 ships the block as the page's answer file; (2) c02 sorts buttons by the decoy key, so the answer sorts last unless it beats a decoy; (3) §1 caps only the last statement. Fixes = S23–S25. SHOULD-CONSIDER (ordered checks where the exercise asks for sorted output, l06/l15-style) → Summary for the owner; not adopted here (B1 can flip `any row order` per lesson).
 
 ## Log
 
@@ -1411,5 +1438,6 @@ Only the spike tools that the Definition of done rests on are tested in isolatio
 - 2026-10-22 14:38 UTC · S20: 002 §7 (3 ideas, pick Name that animal: rules, `d01` + `c02`, state functions, name hiding, phone layout 375 px, before-load) + §8 (URLs, one engine start per visit via soft nav, file layout, `fillTemplate`/`writeLearn` steps, pins, typecheck, serving, editor, a11y, before-load, playground = Phase 2 viewer, E2E B1/B2 specs + artifacts). `--update` diff read (d01 only); `--check --erd` exit 0 (76 blocks, ERD 6/1/6); every §7/§8 cookbook id exists. Spike tc + 100/100; Guard ok (only plans/, typecheck, 66/66); ports free.
 - 2026-10-22 14:41 UTC · S21: briefs `plans/briefs/critwire-learn-b1.md` (countries file, engine, schema, ERD, 16 lessons, their E2E; ~32–38 sessions) + `-b2.md` (cookbook, playground + CSV, game, their E2E, Caddy headers if approved; ~18–24), six ops headings each; 002 §9 (paths, why split, order). Guard ok (only plans/, typecheck, test 0 fail); `run-queries --check --erd`: 76 blocks, 0 failures, 0 differences, ERD matches.
 - 2026-10-22 14:44 UTC · S22: 002 §10 (11 owner items + split, each recommendation + cost) and the 001 "Phase 2 viewer" pointer. Guard: only plans/ changed, typecheck ok, test 66/66. V6 `--check --erd`: 76 blocks, 0 failures, 0 differences, 0 untested, ERD 6/1/6; V7: 10 sections, 16 lessons with exercises, 26 cookbook, both briefs complete, 001 pointer; V8: schema.svg/png, no foreignObject. Summary inputs: DuckDB-WASM eh 1.33.1-dev65.0 (9.02 MB wire, first result 2.9/27.1/64.2 s first visit, 2.5/15.1/22.0 s returning, 518 MB peak) vs PGlite 0.5.10 (6.44 MB, 4.0/35.7/70.3, 2.4/14.0/21.6, 1 440 MB, main-thread freeze 20.3 s at 4×); own `<textarea>` editor, shell not built; self-hosted extensions work, signatures on (parquet, inet, spatial); 16 lessons; 26 cookbook; demo Name that animal; countries Natural Earth v5.1.2; briefs `plans/briefs/critwire-learn-b{1,2}.md`; owner choices 002 §10.
+- 2026-10-22 14:47 UTC · Code review (Astra, `--code origin/main`): exit 0, APPROVE_WITH_CHANGES, 3 MUST-FIX accepted → S23–S25 added; 1 SHOULD-CONSIDER → Summary. Plan only; nothing to run.
 
 ## Summary
