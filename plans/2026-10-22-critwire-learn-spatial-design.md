@@ -905,7 +905,7 @@ Planner, 2026-10-22. T12's 16 units in order, split where one session can't hold
   - From `out/licenses/summary.md`: the ranked table, then one `### D<n>` entry per dataset in the convention's format; the top three and why; blocking licenses flagged. `d<nn>` blocks where a join is worth showing (e.g. trait rows joined to `species`), `spike-table`.
   - Checks: Guard; `licenses.ts --verify $W/$P` exits 0; Verification V8 passes; `--check --erd` exits 0.
 
-- [ ] S20 · 003 §3, lessons for the grown data (4–8).
+- [x] S20 · 003 §3, lessons for the grown data (4–8). Deviations (Decisions, S20): seven lessons 17–23 (a languages lesson added: `species_names` + `LEFT JOIN … ON` filter); `l21` (lesson 16's check on the real table) `ran`, as it reads only the catalog; DECIMAL cells rendered by `decimalText` (DC1–DC5); lessons 22–23 wait for mission D.
   - From Lesson 17, in 002's format, each with `**Data:**`. Topics: traits and their units (`CAST`, unit per trait); comparing classes (`GROUP BY` class over traits); a self-join on the phylogeny (`tree_nodes` if kept, else `taxa`); many-to-many with habitats or ecoregions; the learner's lesson-16 design against critwire's real tables (F4); a country's share of a class from `est_area_km2` with a window function ("estimated", never stored).
   - Checks: Guard; `--update` diff read, `--check --erd` exits 0; each lesson has its `-ex` block and the `**Data:**`, `**Shown as:**` and `**Check:**` lines.
 
@@ -1213,6 +1213,13 @@ Only the spike tools that the Definition of done and the experiments' verdicts r
 - RE5 003's `mermaid` block different from the `.mmd` fails (RQE5 on the new file).
 - RE6 `erd.ts --name grown` writes only `grown.svg` and `grown.png`; without `--name` it writes `schema.*` as before.
 
+**DC · DECIMAL cells (`src/format.ts` `decimalText`, used by `src/engine.ts`), `test/format.test.ts` [S20]**
+- DC1 A positive DECIMAL(12, 2) prints both decimals (`2464.91`, `3.10`).
+- DC2 Below one keeps its leading zero (`0.01`); zero prints with its scale (`0.00`).
+- DC3 A negative value (two's complement words) prints with its sign (`-0.01`, `-2464.91`).
+- DC4 Every word counts (`[0, 1, 0, 0]` → `4294967296`); scale 0 prints a whole number.
+- DC5 No words, an odd number of words, a non-`Uint32Array`, or a negative scale fails, naming DECIMAL or the scale.
+
 ### Experiment outcomes (T11): how each is caught, what follows
 
 | Risk | Caught by | Then | Step |
@@ -1349,6 +1356,13 @@ Only the spike tools that the Definition of done and the experiments' verdicts r
 - S19: §1 follows S15's ranking exactly (D1–D17); Natural Earth has two entries because admin-0 (top three, `country_shapes`) and admin-1 + physical (optional, no table yet) rank apart. Both turtle sources (Amniote db D7, ReptTraits D13) end `(Testudines)`.
 - S19: each entry's License line cites the page that carries the license words (for the ESA-archived datasets, ESA's archive-wide copyright page; the figshare CC0 record is quoted beside it); quotes copied from `quote.md`, so `--verify` checks them against the same saved pages.
 - S19: §1's prose gives no data counts (coverage, label and record counts live in the d01–d04 results); file sizes stay, as fixed facts of the source files. AnAge's thin classes are shown by d01, not asserted.
+- S20: seven grown lessons, 17–23: units, compare-classes, languages, relatives, two-sources, habitats, shares. The step's six topics plus `languages` (`species_names` is a grown table no other lesson used; it teaches the composite key and the `LEFT JOIN … ON` filter that lesson 18 introduces). 17–21 ship with mission C, 22–23 with D (`country_habitats` is `ingest habitat` output); numbering is shared so D appends.
+- S20: lesson 20 (relatives) runs on 002's tables only, so `ran` and **Data:** runs today; Open Tree's `tree_nodes` stays designed, not built (S17), and the lesson says the four ranks are a coarse tree.
+- S20: `l21` runs 002's `l16-check` query on critwire's real `species_traits`: its hash equals 002's `l16-check` (`cec372f2d16e`), the proof that the grown table is lesson 16's design. It reads only the catalog, so the runner's label test (reads no spike table) needs `ran`, as 002's own `l16-check`; the lesson's **Data:** line still says it waits for mission C.
+- S20: trait precedence (lesson 21): one value per (animal, trait), datasets in a fixed order, a later one only fills gaps (`ON CONFLICT DO NOTHING` in the lesson). Mission C sets the order in derive (AnAge, then the Amniote db, then AmphiBIO for its own trait); the alternative (source in the key) is taught, not chosen, because every trait query would have to pick a source.
+- S20: lesson 21's made-up rows (`Example dataset`, a softshell mass, a tiger `wingspan`) are labelled made-up in the prose and run inside the block's rollback, as 002's `l12-limit` test cat.
+- S20: DuckDB-WASM returns DECIMAL as raw 32-bit words, so `est_area_km2` first printed `[246491, 0, 0, 0]`. Runner fix, tests first (DC1–DC5 red: suite failed to load): `decimalText` in `src/format.ts`, applied in `engine.ts` by Arrow type id 7 with the field's scale, so cells read as DuckDB prints them (`2464.91`). Mission C's page engine needs the same conversion (C brief, S25), since `country_habitats` is the first DECIMAL column learners see. 002 replays unchanged (77 ok).
+- S20: `median` avoided: lessons use `percentile_cont(0.5) WITHIN GROUP (ORDER BY …)`, standard SQL that PostgreSQL and DuckDB both run, so a learner's PostGIS (§4) takes the same text.
 
 ## Log
 
@@ -1377,5 +1391,6 @@ Only the spike tools that the Definition of done and the experiments' verdicts r
 - 2026-10-22 22:32 UTC: S17. `scripts/grown-data.ts` (--fetch once: AnAge, AmphiBIO md5-checked, Wikidata labels; offline build; --check); GD1–GD3 red first (suite failed to load, 8/8), then green; RS10 red then green. Stand-ins: traits 5, species_traits 179, species_names 5,274, habitat_classes 75, country_habitats 35 (all real). `src/setup-grown.sql` + engine `grownFiles`; 003 §2 grown tables, `setup-grown`, `setup-grown-counts`; `--update` diff read (new counts; setup-counts sources 5 → 7, meant), `--check` exit 0 (4 blocks). F4 scratch ok (3 blocks). A1 regression (002, `--erd`) 77 ok after RS10. Spike typecheck pass, tests 195/195. Guard: plans-only, 002 untouched, typecheck pass, test 66/66, dist = baseline (157), spike 870 MB, no Caddy, 3100–3102 free.
 - 2026-10-22 22:50 UTC: S18. erd-model `baseOf`/`baseDrift`, `||--o|`, DECIMAL(p,s); run-queries base check (setup-grown needs `%% extends:`); `erd.ts --name`. Tests first: RE1–RE6 red (suite failed to load, 1/1), then 13/13 green (2 test bugs fixed: line no., regex order). `plans/003-learn-erd.mmd` (13 tables, 17 lines); 003 §2 "The grown ERD" + outside-the-ERD list; Disagreements with 002. `--check --erd` 003: ERD matches (13 tables, 1 view, 17 lines), 4 blocks ok; `erd.ts --name grown` ok, no foreignObject, sha256 on root, PNG looked at; F4 scratch 5 ok; A1 regression (002, `--erd`) 77 ok. Spike typecheck pass, tests 208/208. Guard: plans-only, 002 untouched, typecheck pass, test 66/66, dist = baseline (157), spike 871 MB, no Caddy, 3100–3102 free.
 - 2026-10-22 22:54 UTC: S19. 003 §1: ranked table D1–D17, top three (AnAge, NE admin-0, GBIF sample) + why, blocking (WorldClim, WDPA) and conditional licenses, 17 entries each with Enables/License (URL, UTC, evidence dir)/verbatim quote/Hostable/Size/Joins on/Ingest work; d01–d04 spike-table join checks. `licenses.ts --verify` 003 ok (35 pages); `--update` diff read (only d01–d04 results added), `--check --erd` ok (8 blocks, ERD 13 tables/17 lines); V8 pass; V6 headers ok (11 sql blocks). Guard: plans-only, 002 untouched, typecheck pass, test 66/66, dist = baseline (157), spike 871 MB, no Caddy, 3100–3102 free.
+- 2026-10-22 23:11 UTC: S20. 003 §3: lessons 17–23 (units, compare-classes, languages, relatives, two-sources, habitats, shares), each with Shown as/Your turn/`-ex`/Check/Data; 22 blocks. DECIMAL rendering fix: DC1–DC5 red first (suite failed to load), then 5/5. `--update` diff read (only §3 results added; outside §3 unchanged), `--check --erd` ok (30 blocks, ERD 13 tables/17 lines); A1 regression (002, `--erd`) 77 ok; F4 scratch 5 ok; V6 headers ok (33 sql blocks, results = log, 30 runnable = 30 results); V7 lesson lines (7 Data/Shown as/Check, every `-ex`). Spike typecheck pass, tests 213/213. Guard: plans-only, 002 untouched, typecheck pass, test 66/66, dist = baseline (157), spike 871 MB, no Caddy, 3100–3102 free.
 
 ## Summary

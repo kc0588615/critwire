@@ -852,6 +852,594 @@ erDiagram
 
 ## 3. Lessons for the grown data
 
+**Where they go.** After 002's lesson 16, numbered on from 17, in 002 §4's format: concept and question, a plain explanation, the SQL with the result it gave, **Shown as**, "Your turn" with its answer, **Check** (the same kinds as 002: `result, any row order`, `result, in order`, `error`). A page runs `setup` and then `setup-grown` (§2), so every table below is there from the start, and "Reset database" rebuilds both.
+
+**What they run on.** Each lesson's **Data** line says so. A lesson that waits for a build mission ran here against the spike's stand-ins (§2, "What the spike loads"): real rows from the real datasets, but not all of them, so its results change when the mission publishes the full files. Lessons 17–21 ship with mission C (traits, names); lessons 22–23 with mission D, which computes `country_habitats` for every country. The rules of 002 hold: a trait value is what one dataset recorded, a habitat area is an estimate from a map, and an occurrence is a record, not a range.
+
+### Lesson 17 · units
+
+**Concept:** numbers stored as text; `CAST`; a unit that belongs to the trait. **Question:** Which animals are heaviest?
+
+`species_traits.value` is text, because one column holds every trait (lesson 16). Text sorts character by character, so `'950'` sorts after `'92500'`: both start with `9`, and `5` comes after `2`. Sorting heaviest first on the text puts a small turtle near the top:
+
+```sql
+-- q: l17-text
+-- status: spike-table
+SELECT s.id, s.common_name, st.value
+FROM species_traits AS st
+JOIN species AS s ON s.id = st.species_id
+WHERE st.trait_name = 'adult_mass'
+ORDER BY st.value DESC, s.id
+LIMIT 5;
+```
+
+```text
+-- result: l17-text · 5 rows · sha256 d0be670212d7
+id | common_name | value
+12 | Spiny Hill Turtle | 950
+50 | Addax | 92500
+51 | Jaguar | 81150
+43 | Goodfellow's Tree-kangaroo | 7400
+69 | Dama Gazelle | 73000
+```
+
+A number without its unit isn't an answer either: is `92500` grams or kilograms? The unit is a fact about the trait, not about the animal, so it's stored once, in `traits` (lesson 14):
+
+```sql
+-- q: l17-units
+-- status: spike-table
+SELECT name, unit, description FROM traits ORDER BY name;
+```
+
+```text
+-- result: l17-units · 5 rows · sha256 20ccf3ea7528
+name | unit | description
+adult_mass | g | typical body mass of a grown animal
+body_length | mm | largest adult body length recorded
+clutch_size | young | young born, or eggs laid, at one time
+female_maturity | days | age at which females can first breed
+max_longevity | years | longest lifespan recorded for one animal
+```
+
+`adult_mass` is in grams. `CAST(st.value AS DOUBLE)` turns the text into a number, so it sorts as one, and dividing by 1000 gives kilograms. If a value weren't a number, `CAST` would stop the query with an error, which is what you want: a wrong answer without an error is worse.
+
+```sql
+-- q: l17
+-- status: spike-table
+-- show: cards
+SELECT s.id, s.common_name, CAST(st.value AS DOUBLE) / 1000 AS adult_mass_kg
+FROM species_traits AS st
+JOIN species AS s ON s.id = st.species_id
+WHERE st.trait_name = 'adult_mass'
+ORDER BY adult_mass_kg DESC, s.id
+LIMIT 5;
+```
+
+```text
+-- result: l17 · 5 rows · sha256 07078e835f1c
+id | common_name | adult_mass_kg
+64 | African Savanna Elephant | 4800
+28 | Asian Elephant | 3178
+44 | Javan Rhinoceros | 1750
+66 | Black Rhinoceros | 1100
+39 | Grévy's Zebra | 384
+```
+
+**Shown as:** cards for the heaviest, with `adult_mass_kg` on each; the other results as tables.
+
+**Your turn:** Which animals have the longest recorded lifespans? Show `id`, `common_name`, the value as a number named `max_longevity`, and the trait's `unit` from `traits` (join it, don't type it), longest first, ties by `id`, the top five.
+
+```sql
+-- q: l17-ex
+-- status: spike-table
+SELECT s.id, s.common_name, CAST(st.value AS DOUBLE) AS max_longevity, t.unit
+FROM species_traits AS st
+JOIN species AS s ON s.id = st.species_id
+JOIN traits AS t ON t.name = st.trait_name
+WHERE st.trait_name = 'max_longevity'
+ORDER BY max_longevity DESC, s.id
+LIMIT 5;
+```
+
+```text
+-- result: l17-ex · 5 rows · sha256 a1f442d7a82c
+id | common_name | max_longevity | unit
+28 | Asian Elephant | 79.6 | years
+1 | Blanding's Turtle | 77 | years
+56 | Chimpanzee | 68 | years
+64 | African Savanna Elephant | 65 | years
+66 | Black Rhinoceros | 57 | years
+```
+
+**Check:** `result, in order` (the order is the question).
+
+**Data:** spike stand-in; waits for mission C
+
+### Lesson 18 · compare-classes
+
+**Concept:** comparing groups fairly; the median; a `LEFT JOIN` whose condition belongs in `ON`. **Question:** Do reptiles live longer than mammals?
+
+`species_taxonomy` (002's view) gives each animal's class, so the traits can be grouped by it. `max_longevity` is the longest any single animal is known to have lived, often in a zoo, not a typical lifespan. The median (the middle value) is less pulled by one record-breaker than the average. `percentile_cont(0.5) WITHIN GROUP (ORDER BY …)` is the standard way to write it, and works in PostgreSQL and DuckDB alike:
+
+```sql
+-- q: l18
+-- status: spike-table
+SELECT t.class,
+       count(*) AS with_value,
+       percentile_cont(0.5) WITHIN GROUP (ORDER BY CAST(st.value AS DOUBLE)) AS median_years,
+       max(CAST(st.value AS DOUBLE)) AS max_years
+FROM species_traits AS st
+JOIN species_taxonomy AS t ON t.species_id = st.species_id
+WHERE st.trait_name = 'max_longevity'
+GROUP BY t.class
+ORDER BY t.class;
+```
+
+```text
+-- result: l18 · 3 rows · sha256 da6175a4078c
+class | with_value | median_years | max_years
+Amphibia | 5 | 14 | 29
+Mammalia | 32 | 27.15 | 79.6
+Reptilia | 8 | 29.9 | 77
+```
+
+Before trusting the comparison, ask how many animals each median stands for. A dataset doesn't cover every animal, and the gaps are uneven: AnAge, the source of `max_longevity`, lists far more mammals than amphibians. To count the animals *without* a value, the class list must keep every animal, so it goes on the left of a `LEFT JOIN` (lesson 11). The trait's name goes in the `ON` condition: in `WHERE`, it would throw away the rows the left join kept for animals without a value, and the query would quietly become a plain join again.
+
+```sql
+-- q: l18-cover
+-- status: spike-table
+SELECT t.class, count(*) AS animals, count(st.value) AS with_value
+FROM species_taxonomy AS t
+LEFT JOIN species_traits AS st
+  ON st.species_id = t.species_id AND st.trait_name = 'max_longevity'
+GROUP BY t.class
+ORDER BY t.class;
+```
+
+```text
+-- result: l18-cover · 3 rows · sha256 a7aef34e880c
+class | animals | with_value
+Amphibia | 15 | 5
+Mammalia | 50 | 32
+Reptilia | 11 | 8
+```
+
+A median over a few animals of a class is a small sample, not a fact about the class. Say how many animals stand behind any number you compare.
+
+**Shown as:** a table.
+
+**Your turn:** At what age do females first breed, by class? For `female_maturity` (in days), show `class`, the number of animals with a value as `with_value`, and the median in years (days ÷ 365.25) rounded to one decimal as `median_years`.
+
+```sql
+-- q: l18-ex
+-- status: spike-table
+SELECT t.class,
+       count(*) AS with_value,
+       round(percentile_cont(0.5) WITHIN GROUP (ORDER BY CAST(st.value AS DOUBLE)) / 365.25, 1) AS median_years
+FROM species_traits AS st
+JOIN species_taxonomy AS t ON t.species_id = st.species_id
+WHERE st.trait_name = 'female_maturity'
+GROUP BY t.class
+ORDER BY t.class;
+```
+
+```text
+-- result: l18-ex · 3 rows · sha256 2f7317209c31
+class | with_value | median_years
+Amphibia | 2 | 3.2
+Mammalia | 33 | 2.1
+Reptilia | 2 | 13.4
+```
+
+**Check:** `result, any row order`.
+
+**Data:** spike stand-in; waits for mission C
+
+### Lesson 19 · languages
+
+**Concept:** a key of two columns; one row per animal and language. **Question:** What is the axolotl called in other languages, and which animals have no Swahili name yet?
+
+`species_names` holds an animal's name in other languages, from Wikidata's labels (CC0). Its primary key is (`species_id`, `language`): an animal has at most one label per language, and many languages per animal. The language is a code: `de` German, `es` Spanish, `fr` French, `ja` Japanese, `sw` Swahili, `zh` Chinese.
+
+```sql
+-- q: l19
+-- status: spike-table
+SELECT language, name
+FROM species_names
+WHERE species_id = 74 AND language IN ('de', 'es', 'fr', 'ja', 'sw', 'zh')
+ORDER BY language;
+```
+
+```text
+-- result: l19 · 6 rows · sha256 99c5508c7c67
+language | name
+de | Axolotl
+es | Ambystoma mexicanum
+fr | Axolotl
+ja | メキシコサンショウウオ
+sw | Axolotl
+… 1 more row
+```
+
+A label is what Wikidata's volunteers have entered so far, so some languages have names for few of critwire's animals, and some labels are just the scientific name, copied because nobody has added a common name yet:
+
+```sql
+-- q: l19-sci
+-- status: spike-table
+SELECT n.language, count(*) AS labels, count(*) FILTER (WHERE n.name = s.scientific_name) AS scientific_name_only
+FROM species_names AS n
+JOIN species AS s ON s.id = n.species_id
+WHERE n.language IN ('de', 'en', 'es', 'fr', 'ja', 'sw', 'zh')
+GROUP BY n.language
+ORDER BY n.language;
+```
+
+```text
+-- result: l19-sci · 7 rows · sha256 c2a4bc2275ea
+language | labels | scientific_name_only
+de | 76 | 7
+en | 76 | 16
+es | 76 | 66
+fr | 76 | 31
+ja | 71 | 0
+… 2 more rows
+```
+
+`count(*) FILTER (WHERE …)` counts only the rows the condition keeps, inside the same group.
+
+**Shown as:** a table.
+
+**Your turn:** Which animals have no Swahili (`sw`) label? Show `id` and `common_name`. (Every animal on the left; the language goes in `ON`, as in lesson 18.)
+
+```sql
+-- q: l19-ex
+-- status: spike-table
+-- show: cards
+SELECT s.id, s.common_name
+FROM species AS s
+LEFT JOIN species_names AS n ON n.species_id = s.id AND n.language = 'sw'
+WHERE n.species_id IS NULL
+ORDER BY s.id;
+```
+
+```text
+-- result: l19-ex · 65 rows · sha256 5ee581b27f39
+id | common_name
+1 | Blanding's Turtle
+2 | Spiny Softshell Turtle
+3 | Darwin Frog
+4 | Big-headed Turtle
+5 | Wallace's Flying Frog
+… 60 more rows
+```
+
+**Check:** `result, any row order`.
+
+**Data:** spike stand-in; waits for mission C
+
+### Lesson 20 · relatives
+
+**Concept:** a self-join that makes pairs; `<` so each pair appears once; how close two animals are on the tree. **Question:** Which of critwire's animals are close relatives?
+
+Joining `species_taxonomy` to itself on `family` pairs every animal with every animal of its family. `b.species_id > a.species_id` keeps each pair once, and never pairs an animal with itself; with `<>` instead, every pair would appear twice, once each way round.
+
+```sql
+-- q: l20
+-- status: ran
+SELECT a.family, sa.common_name AS animal, sb.common_name AS relative
+FROM species_taxonomy AS a
+JOIN species_taxonomy AS b ON b.family = a.family AND b.species_id > a.species_id
+JOIN species AS sa ON sa.id = a.species_id
+JOIN species AS sb ON sb.id = b.species_id
+ORDER BY a.family, a.species_id, b.species_id;
+```
+
+```text
+-- result: l20 · 41 rows · sha256 169ce8174849
+family | animal | relative
+Bovidae | Saola | Addax
+Bovidae | Saola | Hirola
+Bovidae | Saola | Dama Gazelle
+Bovidae | Addax | Hirola
+Bovidae | Addax | Dama Gazelle
+… 36 more rows
+```
+
+How close are two animals? Climb the tree from both until the ranks meet: the same genus is one step up, the same family two, the same order three. A `CASE` reads the closest match first. The tiger's relatives in its order, Carnivora, closest first:
+
+```sql
+-- q: l20-steps
+-- status: ran
+-- show: cards
+SELECT s.id, s.common_name,
+       CASE WHEN b.genus = a.genus THEN 1
+            WHEN b.family = a.family THEN 2
+            ELSE 3 END AS steps_up
+FROM species_taxonomy AS a
+JOIN species_taxonomy AS b ON b.order_name = a.order_name AND b.species_id <> a.species_id
+JOIN species AS s ON s.id = b.species_id
+WHERE a.species_id = 25
+ORDER BY steps_up, s.id;
+```
+
+```text
+-- result: l20-steps · 10 rows · sha256 61e8af71f0f7
+id | common_name | steps_up
+51 | Jaguar | 1
+58 | Cheetah | 2
+26 | Black-footed Ferret | 3
+33 | Ethiopian Wolf | 3
+35 | Red Panda | 3
+… 5 more rows
+```
+
+Four ranks make a coarse tree: every animal in a family is equally close here, though some split from each other far longer ago than others. A real phylogeny such as the Open Tree of Life (§1) has a branch for each split, and would be `tree_nodes`, a table that points at itself as `taxa` does (§2); until mission C loads it, `taxa` is the tree.
+
+**Shown as:** a table for the pairs; cards for the tiger's relatives, with `steps_up` on each.
+
+**Your turn:** How close is every other amphibian to the Chinese giant salamander (id 62)? Show `id`, `common_name` and `steps_up` (genus 1, family 2, order 3, class 4), closest first, ties by `id`.
+
+```sql
+-- q: l20-ex
+-- status: ran
+SELECT s.id, s.common_name,
+       CASE WHEN b.genus = a.genus THEN 1
+            WHEN b.family = a.family THEN 2
+            WHEN b.order_name = a.order_name THEN 3
+            ELSE 4 END AS steps_up
+FROM species_taxonomy AS a
+JOIN species_taxonomy AS b ON b.class = a.class AND b.species_id <> a.species_id
+JOIN species AS s ON s.id = b.species_id
+WHERE a.species_id = 62
+ORDER BY steps_up, s.id;
+```
+
+```text
+-- result: l20-ex · 14 rows · sha256 a570f0810d43
+id | common_name | steps_up
+75 | Hellbender | 2
+74 | Axolotl | 3
+3 | Darwin Frog | 4
+5 | Wallace's Flying Frog | 4
+6 | Red-eyed Tree Frog | 4
+… 9 more rows
+```
+
+**Check:** `result, in order`.
+
+**Data:** runs today
+
+### Lesson 21 · two-sources
+
+**Concept:** lesson 16's design meets real data; what a primary key decides when two datasets give a value; `ON CONFLICT`. **Question:** Are critwire's trait tables the ones you designed, and what happens when a second dataset offers a value?
+
+Lesson 16 asked you to design `my_traits` and `my_species_traits`. critwire's own tables, `traits` and `species_traits`, have exactly that design. Lesson 16's check, run on critwire's table, gives the same rows its expected answer has, apart from the names:
+
+```sql
+-- q: l21
+-- status: ran
+SELECT 'column' AS kind,
+       column_name || ' ' || data_type || CASE WHEN is_nullable = 'NO' THEN ' NOT NULL' ELSE '' END AS detail
+FROM information_schema.columns
+WHERE table_name = 'species_traits'
+UNION ALL
+SELECT 'key', constraint_text
+FROM duckdb_constraints()
+WHERE table_name = 'species_traits' AND constraint_type IN ('PRIMARY KEY', 'FOREIGN KEY', 'UNIQUE')
+ORDER BY kind, detail;
+```
+
+```text
+-- result: l21 · 8 rows · sha256 cec372f2d16e
+kind | detail
+column | source_name VARCHAR NOT NULL
+column | species_id INTEGER NOT NULL
+column | trait_name VARCHAR NOT NULL
+column | value VARCHAR NOT NULL
+key | FOREIGN KEY (source_name) REFERENCES sources("name")
+… 3 more rows
+```
+
+The primary key (`species_id`, `trait_name`) allows one value per animal and trait. Real datasets overlap: AnAge and the Amniote database both give adult masses for turtles, and the two needn't agree. Here a second dataset offers a mass for the spiny softshell turtle (id 2), which already has one from AnAge. The dataset and its value are made up for the lesson; on the page, Reset removes them:
+
+```sql
+-- q: l21-second
+-- status: spike-table
+-- expect: error violates primary key constraint
+INSERT INTO sources VALUES ('Example dataset', 'CC0 1.0', NULL);
+INSERT INTO species_traits VALUES (2, 'adult_mass', '5000', 'Example dataset');
+```
+
+```text
+-- result: l21-second · error: statement 2 of 2: Constraint Error: Duplicate key "species_id: 2, trait_name: adult_mass" violates primary key constraint.
+```
+
+The database refuses it, so a design with this key has to decide in advance which dataset wins. critwire's rule: datasets are taken in a fixed order, and a later one only fills gaps. In SQL, `ON CONFLICT DO NOTHING` says exactly that: a row whose key is already taken is skipped instead of failing the statement. The turtle keeps AnAge's mass and gains the clutch size AnAge didn't have:
+
+```sql
+-- q: l21-fill
+-- status: spike-table
+INSERT INTO sources VALUES ('Example dataset', 'CC0 1.0', NULL);
+INSERT INTO species_traits VALUES
+  (2, 'adult_mass', '5000', 'Example dataset'),
+  (2, 'clutch_size', '20', 'Example dataset')
+ON CONFLICT DO NOTHING;
+SELECT trait_name, value, source_name FROM species_traits WHERE species_id = 2 ORDER BY trait_name;
+```
+
+```text
+-- result: l21-fill · 4 rows · sha256 c2d6172a4544
+trait_name | value | source_name
+adult_mass | 4765 | AnAge Build 15
+clutch_size | 20 | Example dataset
+female_maturity | 3285 | AnAge Build 15
+max_longevity | 25.2 | AnAge Build 15
+```
+
+The other design puts `source_name` in the key, (`species_id`, `trait_name`, `source_name`), and keeps every dataset's value. Nothing is lost, but every query on a trait then has to say which source it wants, or it counts an animal twice. Both are honest, as long as each value says where it came from.
+
+**Shown as:** a table; the refused `INSERT` as the database's error, which Learn shows as the expected outcome.
+
+**Your turn:** Try to give the tiger (id 25) a `wingspan` of `0`, from `AnAge Build 15`. Which constraint stops it?
+
+```sql
+-- q: l21-ex
+-- status: spike-table
+-- expect: error Violates foreign key constraint
+INSERT INTO species_traits VALUES (25, 'wingspan', '0', 'AnAge Build 15');
+```
+
+```text
+-- result: l21-ex · error: statement 1 of 1: Constraint Error: Violates foreign key constraint because key "name: wingspan" does not exist in the referenced table
+```
+
+**Check:** `error` (the foreign key on `trait_name`: `wingspan` isn't a `name` in `traits`).
+
+**Data:** spike stand-in; waits for mission C
+
+### Lesson 22 · habitats
+
+**Concept:** a many-to-many table that holds a fact about the pair; a class tree in one table; `COALESCE`. **Question:** Which habitats cover the most of Trinidad and Tobago, by the habitat map's estimate?
+
+`country_habitats` links `countries` and `habitat_classes` the way `species_countries` links animals and countries (lesson 9), with one difference: each row also holds a number about the pair, `est_area_km2`, the area of that class inside the country's outline. It's an **estimate**, added up from a map of cells about 1 km across, each with the share of every class the map's authors found in it (Jung et al. 2020, §5). A map can be wrong about a cell, and the outline is Natural Earth's, so the numbers are good for comparing, not for quoting as measured.
+
+```sql
+-- q: l22
+-- status: spike-table
+SELECT h.code, h.name, ch.est_area_km2
+FROM country_habitats AS ch
+JOIN habitat_classes AS h ON h.code = ch.habitat_code
+WHERE ch.country_code = 'TT'
+ORDER BY ch.est_area_km2 DESC, h.code
+LIMIT 6;
+```
+
+```text
+-- result: l22 · 6 rows · sha256 6176e679b1ec
+code | name | est_area_km2
+106 | Forest – Subtropical/tropical moist lowland | 2464.91
+306 | Shrubland – Subtropical/tropical moist | 998.51
+1402 | Pastureland | 481.41
+1405 | Urban Areas | 378.61
+109 | Forest – Subtropical/tropical moist montane | 323.49
+… 1 more row
+```
+
+The classes form a two-level tree in one table, as `taxa` does (lesson 12): `level1_code` points at the broad class, so 106 ("Forest – Subtropical/tropical moist lowland") points at 100 ("Forest"). Some rows of `country_habitats` are broad classes themselves, where the map said "forest" but not which kind; their `level1_code` is `NULL`. `COALESCE(h.level1_code, h.code)` returns the first value that isn't `NULL`: the broad class for a level-2 row, the code itself for a level-1 row. Joining `habitat_classes` once more on it totals each country by broad class:
+
+```sql
+-- q: l22-level1
+-- status: spike-table
+SELECT l1.name AS level1, sum(ch.est_area_km2) AS est_area_km2
+FROM country_habitats AS ch
+JOIN habitat_classes AS h ON h.code = ch.habitat_code
+JOIN habitat_classes AS l1 ON l1.code = COALESCE(h.level1_code, h.code)
+WHERE ch.country_code = 'TT'
+GROUP BY l1.name
+ORDER BY est_area_km2 DESC, level1;
+```
+
+```text
+-- result: l22-level1 · 8 rows · sha256 ad2de4f391a9
+level1 | est_area_km2
+Forest | 2865.12
+Shrubland | 1029.64
+Artificial - Terrestrial | 1011.35
+Marine Neritic | 121.55
+Wetlands (inland) | 58.85
+… 3 more rows
+```
+
+**Shown as:** a table.
+
+**Your turn:** For each country with habitat estimates, show its `code`, its `name` (from `countries`) and its estimated forest area as `forest_km2`: every class under Forest (100), and 100 itself.
+
+```sql
+-- q: l22-ex
+-- status: spike-table
+SELECT c.code, c.name, sum(ch.est_area_km2) AS forest_km2
+FROM country_habitats AS ch
+JOIN countries AS c ON c.code = ch.country_code
+JOIN habitat_classes AS h ON h.code = ch.habitat_code
+WHERE COALESCE(h.level1_code, h.code) = 100
+GROUP BY c.code, c.name
+ORDER BY c.code;
+```
+
+```text
+-- result: l22-ex · 2 rows · sha256 95b6f877382c
+code | name | forest_km2
+AX | Åland | 233.33
+TT | Trinidad and Tobago | 2865.12
+```
+
+**Check:** `result, any row order`.
+
+**Data:** spike stand-in; waits for mission D
+
+### Lesson 23 · shares
+
+**Concept:** window functions: a group's total beside each row (`OVER (PARTITION BY …)`), and a rank within the group. **Question:** What share of each country's mapped area is each habitat class?
+
+A share needs each row's area and its country's total in the same row. `GROUP BY` would give the total but fold the classes into one row. A **window function** computes over a group of rows (the "window") and writes the answer beside every row of it, folding nothing: `sum(ch.est_area_km2) OVER (PARTITION BY ch.country_code)` is the country's total, on each of its rows.
+
+```sql
+-- q: l23
+-- status: spike-table
+SELECT ch.country_code, h.name, ch.est_area_km2,
+       round(100 * ch.est_area_km2 / sum(ch.est_area_km2) OVER (PARTITION BY ch.country_code), 1) AS pct_of_mapped
+FROM country_habitats AS ch
+JOIN habitat_classes AS h ON h.code = ch.habitat_code
+ORDER BY ch.country_code, ch.est_area_km2 DESC, h.code;
+```
+
+```text
+-- result: l23 · 35 rows · sha256 e6dbe6234774
+country_code | name | est_area_km2 | pct_of_mapped
+AX | Plantations | 406.59 | 43
+AX | Forest – Temperate | 230.41 | 24.4
+AX | Shrubland –Temperate | 83.33 | 8.8
+AX | Arable Land | 76.12 | 8.1
+AX | Seagrass (Submerged) | 60.08 | 6.4
+… 30 more rows
+```
+
+The total is the area the map classifies inside the outline, not the country's official area, so the column says `pct_of_mapped`. critwire computes shares in SQL like this and never stores them (§2): a stored share would go stale the moment one estimate changed.
+
+**Shown as:** a table.
+
+**Your turn:** Each country's three largest classes by estimated area. Show `country_code`, `name`, `est_area_km2` and `place` (1 for the largest), using `rank() OVER (PARTITION BY … ORDER BY …)`. A window function can't go in `WHERE`, because `WHERE` runs before it, so rank in a `WITH` first and keep `place <= 3` after.
+
+```sql
+-- q: l23-ex
+-- status: spike-table
+WITH ranked AS (
+  SELECT ch.country_code, h.name, ch.est_area_km2,
+         rank() OVER (PARTITION BY ch.country_code ORDER BY ch.est_area_km2 DESC) AS place
+  FROM country_habitats AS ch
+  JOIN habitat_classes AS h ON h.code = ch.habitat_code
+)
+SELECT country_code, name, est_area_km2, place
+FROM ranked
+WHERE place <= 3
+ORDER BY country_code, place;
+```
+
+```text
+-- result: l23-ex · 6 rows · sha256 9426a444f95a
+country_code | name | est_area_km2 | place
+AX | Plantations | 406.59 | 1
+AX | Forest – Temperate | 230.41 | 2
+AX | Shrubland –Temperate | 83.33 | 3
+TT | Forest – Subtropical/tropical moist lowland | 2464.91 | 1
+TT | Shrubland – Subtropical/tropical moist | 998.51 | 2
+… 1 more row
+```
+
+**Check:** `result, any row order`.
+
+**Data:** spike stand-in; waits for mission D
+
 ## 4. The advanced spatial track
 
 The spatial lessons run in one of two places, and each lesson says which: in the browser (DuckDB's `spatial` extension, self-hosted as in 002, or geotiff.js reading a COG by HTTP ranges), or in your own PostgreSQL with PostGIS, where critwire supplies the data files and the setup below. SQL is written PostGIS-style (`ST_` functions); where DuckDB spells something differently, the lesson shows both.
