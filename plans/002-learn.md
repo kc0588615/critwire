@@ -2778,11 +2778,228 @@ codes_used | with_a_row | unmatched
 
 ## 7. Demo
 
-Written in step S20.
+One small game, built only on critwire's tables and the cookbook's queries, drawn with the lesson cards. It runs in the same engine as the lessons, so a learner who plays it after a lesson pays no second start (§8), and its "How this game works" panel shows the SQL it runs.
+
+### Three ideas
+
+| Game | How a round goes | Queries | For | Against |
+|---|---|---|---|---|
+| **Name that animal** | a photo card with the name hidden, and four names as buttons; the three wrong names are animals of the same class | `d01` (the day's ten), `c02` (the four names) | one tap per round, works one-handed; the decoys teach the classes (a mammal among mammals); uses only names and photos, so nothing in it can be misread | needs a photo, so it plays only the animals that have one |
+| Higher or lower | two cards; guess which animal was recorded in more countries; the winner stays | `c14`, plus a deck of `range_status = 'ok'` animals | uses the junction table, so it teaches what lessons 9–11 teach | a country count measures how much an animal was recorded in open data, not how widespread it is; a game that rewards guessing it invites exactly the misreading lessons 9 and 15 warn against |
+| Family pairs | eight face-down photo cards; find the four pairs from the same family | `c16` | teaches families | the most interface: flipping, board state, eight photos that must all load before the board is fair; a 2 × 4 grid at 375 px makes each photo small |
+
+**Pick: Name that animal.** It is the simplest to build and to play (one query per round, buttons that are just the card component's buttons), it works on a phone without any layout tricks, and every fact it shows is one the data states plainly. Higher or lower and Family pairs stay in the cookbook (`c14`, `c16`) for anyone who wants to build them.
+
+### Rules
+
+- **Ten rounds a day, the same ten for everyone.** The game passes the player's date in UTC, so every player on the same UTC day gets the same animals in the same order and can compare scores. Tomorrow brings another ten.
+- **A round:** the photo card, with "?" for its name; four names as buttons, one right. One tap answers. The card then shows the animal's name, scientific name, class and family, the right button is marked "Right", a wrong pick is marked "Your pick", and Next appears.
+- **Score:** one point per right answer, shown as "Round 3 of 10 · 2 right".
+- **The end:** the score, and the ten animals as full cards (names, scientific names, credits), so the game ends with what the player learned. "Play again" replays the same ten; the day's set doesn't change until the next UTC day.
+- **Which animals play:** only animals with a photo (a placeholder can't be recognised), and only from classes with at least four animals, so every round has four names. Both rules are in `d01`, so they keep holding as the data grows: a new class with three animals simply waits until it has a fourth.
+
+### The queries
+
+**The day's ten (`d01`).** The playable animals are shuffled with the cookbook's shuffle key (§5), seeded by the day number, and the first ten are the day's rounds. It also returns each answer's class and family, which the card shows once the round is answered, so a round needs no other query for its reveal.
+
+```sql
+-- q: d01
+-- status: ran
+-- params: ["2026-10-22"]
+WITH p AS (SELECT CAST(? AS DATE) - DATE '2000-01-01' AS seed),
+playable AS (
+  SELECT t.species_id, t.class, t.family
+  FROM species_taxonomy AS t
+  JOIN species AS s ON s.id = t.species_id
+  WHERE s.photo_url IS NOT NULL
+    AND t.class IN (SELECT class FROM species_taxonomy GROUP BY class HAVING count(*) >= 4)
+)
+SELECT row_number() OVER (ORDER BY (pl.species_id * 619 + p.seed * 211) % 1009, pl.species_id) AS round,
+       pl.species_id, pl.class, pl.family
+FROM playable AS pl
+CROSS JOIN p
+ORDER BY round
+LIMIT 10;
+```
+
+```text
+-- result: d01 · 10 rows · sha256 4dac8344ecd2
+round | species_id | class | family
+1 | 40 | Mammalia | Hominidae
+2 | 71 | Mammalia | Ursidae
+3 | 27 | Mammalia | Tachyglossidae
+4 | 58 | Mammalia | Felidae
+5 | 14 | Amphibia | Brevicipitidae
+… 5 more rows
+```
+
+**A round's four names (`c02`),** with the round's answer and the round number (1–10) as its parameters: the answer plus three animals of the same class, shuffled, each with `is_answer`. The game draws the buttons in the order the rows come.
+
+The seed rotates one fixed shuffle (§5), so the day's ten are a different stretch of the same deck each day. Each day moves the start 211 steps on a key range of 1009, more than ten animals span, so on today's data no two consecutive days share an animal (checked for every day from 2026-10-22 to 2027-10-22); more animals only narrow the stretch.
+
+### How it works in the page
+
+- **State is plain data.** Pure functions turn rows into game state and move it on: `newGame(d01Rows)`, `startRound(game, c02Rows)`, `answer(game, speciesId)`, `next(game)`. The page only draws the state. E2E and the state functions use species ids, never button positions.
+- **Photos are fetched one round ahead** (`new Image()` with `crossorigin="anonymous"`, as on cards), so a slow network doesn't hold up the next round.
+- **Hiding the name.** While a round is open, the card's title is "?", its `alt` is "Photo of the mystery animal", and its "column: value" lines are empty. The photo credit stays visible in every state, because the license requires it; its link goes to the Commons file page, whose name usually gives the answer away to anyone who opens it. That's the cost of crediting properly, and the game accepts it.
+- **"How this game works":** a closed `<details>` panel under the game with the two queries as read-only SQL (the same `d01.sql` and `c02.sql` files) and a link to the cookbook, so a player can see that the game is two queries on the tables the lessons teach.
+- **Before the database loads:** the rules and today's date are plain HTML; Start is disabled and shows "Loading database: x of y MB", like Run (§8). If the engine can't start, the page says why.
+- **No storage.** Scores aren't saved: no cookies, no `localStorage`, nothing sent anywhere. A shared score is something the player types.
+
+### On a phone (375 px)
+
+- One column: the round line, the card (photo at full width, at most 40 % of the screen's height, then the credit), then the four names as buttons stacked at full width, each at least 48 px tall, then Next.
+- The buttons are real `<button>`s, so touch, mouse and keyboard all work the same way. On a keyboard, Tab reaches them in order, and the keys 1–4 answer too; after an answer, focus moves to Next, and Enter or Space goes on.
+- Right and wrong are said in words ("Right", "Your pick") and not only by colour, and each answer is announced in the page's `aria-live` region ("Right: Jaguar." or "Not quite: it was the Jaguar.").
+- Nothing scrolls sideways at 375 px; E2E screenshots a round before and after answering at that width (§8).
 
 ## 8. Site
 
-Written in step S20.
+Learn is more static pages in the same `dist/`, built by the same `pnpm build`, served by the same Caddy block. There's still no server process, and no web framework: every page is complete HTML, and one bundled script adds the engine, the editor's Run, cards, checks and the game.
+
+### URLs
+
+| URL | Page | Built in |
+|---|---|---|
+| `/learn/` | the lesson path: the 16 lessons in order, with one line each, and links to the schema, cookbook, playground and game | B1 |
+| `/learn/<slug>/` | a lesson (`/learn/tables/` … `/learn/design/`, the slugs in §4), with Previous and Next | B1 |
+| `/learn/schema/` | the ERD and the data dictionary (§3) | B1 |
+| `/learn/schema.svg` | the ERD alone, for zooming | B1 |
+| `/learn/cookbook/` | every cookbook entry (§5) on one page, each with an anchor (`#c01`), its game use, its SQL in an editor, its example parameters as inputs, and Run | B2 |
+| `/learn/playground/` | free SQL on every table, as cards or a table, with "Download CSV" | B2 |
+| `/play/name-that-animal/` | the demo (§7) | B2 |
+| `/learn/assets/` | the engine (`duckdb-1.33.1-dev65.0/`), the extension mirror (`duckdb-ext/v1.5.6/wasm_eh/`), the hashed app files (`app-<hash>.js`, `app-<hash>.css`) | B1 |
+
+- **Slugs, not numbers,** so a lesson inserted later breaks no link. Lesson numbers appear only in the page ("Lesson 9 of 16").
+- **The docs page** (`/`) gets a "Learn" link; `/learn/` links back to the docs and to `/v1`.
+- **`/play/`** sits outside `/learn/` because the game is for anyone, not only learners, but it is built and behaves the same way.
+
+### One engine start per visit
+
+Starting the engine is the slow part (§1: 15–22 s on a slow laptop even when cached), so a visit starts it once.
+- Every page under `/learn/` and `/play/` loads the same `app-<hash>.js`. It starts the engine once and keeps it for the whole visit.
+- With JavaScript on, the app handles clicks on links to other `/learn/` and `/play/` pages itself: it fetches the page, swaps the content of `<main>` and the title, updates the address bar (`history.pushState`; Back and Forward do the same through `popstate`), moves focus to the new page's `<h1>` and announces its title in the live region. The running database stays.
+- It leaves alone: links with a modifier key or `target`, `download` links, `/learn/schema.svg`, anything outside those two paths. If the fetch fails, it falls back to a normal page load.
+- Each page's `<main>` says what it is (`data-page="lesson"`, `"schema"`, `"cookbook"`, `"playground"`, `"play"`), and the app attaches that page's behaviour to the new content. The old page's elements go with the old content, so nothing has to be undone, except the game's preloaded photo, which is dropped.
+- A result that arrives after the learner has moved on is dropped, the same way a late result after a restart is (§1).
+- An editor opens with its page's SQL every time; edits aren't kept across pages or visits (no storage, as in §7).
+- Without JavaScript, every link is an ordinary link to a complete page.
+
+### How the pages are built
+
+`pnpm build` stays offline and gains one step, `writeLearn`, after the docs page.
+
+**Files in the repo:**
+
+```text
+site/style.css                 shared colours, fonts and spacing (moved from site/index.html), linked by the docs page and Learn
+site/learn/
+  layout.html                  the page shell: header, <main data-page>, footer, {{title}} {{main}} {{css}} {{js}} slots
+  lessons.json                 the path: [{ "slug", "title", "check" }] in lesson order
+  lessons/<slug>.html          each lesson's text, with {{sql:<q-id>}} slots where its editors go
+  sql/<q-id>.sql               every lesson, cookbook and demo query (l09.sql, l09-pairs.sql, l09-ex.sql, c02.sql, d01.sql, …)
+  cookbook.json                [{ "id", "title", "gameUse", "params" }] in cookbook order
+  pages/                       index, schema, cookbook, playground and play page fragments
+  schema.mmd, schema.svg       the ERD source and its committed rendering (§3)
+  duckdb-ext/v1.5.6/wasm_eh/parquet.duckdb_extension.wasm   the one extension v1 needs (§10)
+  src/                         app.ts, engine.ts, sql.ts, cards.ts, check.ts, format.ts, nav.ts, game.ts, csv.ts,
+                               answers.ts, pages/*.ts, setup.sql
+  tsconfig.json                DOM lib, for src/
+```
+
+- **The SQL lives once, in `sql/`.** Each file is the 002 block without its plan-only lines (`-- q:`, `-- status:`, `-- params:`), keeping `-- show: cards`. The lesson pages, the cookbook page, the game and E2E all read those files; after B1 they are the source, and this document is the design they started from.
+- **`fillTemplate`** moves out of `scripts/build/docs.ts` (its slot replacement and the "unknown slot" and "lacks the slots" checks) into `scripts/build/template.ts`, taking the template's name for its messages. The docs page and every Learn page use it, so every page has the same "a slot is missing or unfilled" guarantee.
+- **`scripts/build/learn.ts` (`writeLearn`)**, in order:
+  1. **Vendors the engine.** Copies `duckdb-eh.wasm` and `duckdb-browser-eh.worker.js` from `node_modules/@duckdb/duckdb-wasm/dist/` to `dist/learn/assets/duckdb-<version>/`, after checking that the installed version equals the pin (the spike's `assets.ts` rule). Copies the parquet extension to its mirror path after checking its sha256. No `mvp`, no `coi` (§1).
+  2. **Bundles the app** with esbuild's JS API: entry points `src/app.ts` and `learn.css`, `bundle`, `format: "esm"`, `minify`, file names `[name]-[hash]`, `.sql` loaded as text, a metafile from which it fills the `{{js}}` and `{{css}}` slots. esbuild's output is the same for the same inputs and version, so an unchanged app keeps its file name.
+  3. **Sets every file under `dist/learn/assets/` to one fixed modification time** (2000-01-01 UTC), so Caddy's ETags stay the same across deploys and returning learners download nothing again (§1, Q2).
+  4. **Writes the pages:** each lesson from `layout.html` and its fragment, in `lessons.json`'s order, with Previous and Next; each `{{sql:<q-id>}}` becomes a labelled `<textarea>` holding that file's text (HTML-escaped), and an exercise's answer goes into a hidden `data-answer` for "Show answer". Then the path index, the schema page (with the data dictionary from the `.mmd`, §3), the cookbook, the playground and the game.
+  5. **Refuses:** a `{{sql:…}}` slot with no file; a file in `sql/` that no page, `answers.ts` or the game uses; `answers.ts` importing a different set of exercise answers than `lessons.json` lists; a stale `schema.svg` (§3); a cookbook entry without its file.
+- **`answers.ts`** imports each lesson's exercise answer by name (16 imports), so the bundle can compute every reference answer at setup (§1, "Pristine references") whichever page the visit starts on.
+- **Lesson SQL in data attributes,** as the docs page's curl and DuckDB examples already do (`site/index.html`, read by `e2e/duckdb.spec.ts`): `data-sql="lesson"` on a lesson editor, `data-answer` and `data-check` on an exercise. The page code and E2E read the same attributes.
+- **Licence links on cards** come from `LICENSE_URLS` in `scripts/build/sources.ts`, which the bundle imports (§1). The build already fails on a photo license missing from it (`licenseUrl`, through `attribution.json`), so every license a card meets has its deed.
+- **New direct dependencies (B1), exact pins:** `esbuild` 0.28.2 (already in the store through `tsx`, already in `allowBuilds`) and `@duckdb/duckdb-wasm` 1.33.1-dev65.0 in `dependencies`, because `pnpm build`, and so `deploy`, needs them; `mermaid` 12.2.0 in `devDependencies`, for `pnpm erd` only. None has an install script, so `allowBuilds` stays as it is (the spike installed all three with it). pnpm doesn't hoist, so each must be a direct dependency to be importable. The page code imports nothing from `apache-arrow` directly.
+- **Typecheck:** `pnpm typecheck` runs `tsc --noEmit` on the root config (Node) and on `site/learn/tsconfig.json` (DOM).
+- **Light and dark** follow the system setting, as the docs page already does, from the shared tokens in `site/style.css`; the mockup's dark card is the dark theme (§10).
+
+### Serving
+
+- **Caddy needs no change for Learn to work** (§1, Q3): `.wasm` is already `application/wasm`, everything is same-origin, and the fixed modification time keeps ETags stable. No page needs `Cross-Origin-Embedder-Policy` (no `coi`).
+- **If the owner approves the proposed headers (§10),** the control room changes the live block and B2 copies it into `e2e/Caddyfile` (whose drift `serving.spec.ts` catches), in one change: `file_server { precompressed br zstd gzip }` with the `.br` and `.zst` files `writeLearn` then writes next to each engine file; `Cache-Control: public, max-age=31536000, immutable` on `/learn/assets/*`; and `Cache-Control: no-cache` on `/v1/*`, so learners never read yesterday's data from a heuristically fresh cache.
+
+### The editor
+
+A plain `<textarea>`, not a code editor library:
+- a visible label ("Lesson SQL", "Your answer"), monospace, at least 16 px (smaller text makes iPhones zoom on focus);
+- `spellcheck="false"`, `autocapitalize="off"`, `autocomplete="off"`, `autocorrect="off"`, so phone keyboards don't "fix" SQL;
+- `rows` set at build time to the SQL's line count, and it grows as the learner types;
+- Run, and Ctrl+Enter (Cmd+Enter on a Mac);
+- Tab moves to the next control, as in any form, so keyboard focus is never trapped. Learners indent with spaces.
+
+No syntax highlighting in v1: a textarea is fully accessible, works with every phone keyboard and dictation (the shell's failure, §1 Q4), and adds nothing to download. CodeMirror is the upgrade if learners ask for it.
+
+Under every editor: Run (disabled while the database loads), Stop (enabled only while a query runs), and "Reset database". The result area has a Cards tab when the SQL starts with `-- show: cards` and always a Table tab (§1, "Results to cards").
+
+### Accessibility and keyboard
+
+- One `<h1>` per page, headings in order, landmarks (`<header>`, `<nav>`, `<main>`, `<footer>`), `lang="en"`, and a "Skip to content" link.
+- One `aria-live="polite"` region per page carries the status ("Loading database: 4.1 of 9.0 MB", "Running…", "12 rows", "Error in statement 2 of 3: …", a check's verdict, a new page's title); the result area is `aria-busy` while a query runs.
+- Cards are a list of `<article>`s, each with a heading (the common name), the scientific name in `<i lang="la">`, `alt="Photo of {common name}"`, and the credit as visible text with links. The no-photo box is `role="img"` with a label.
+- Tables are real `<table>`s with `<th scope="col">` and a caption ("Result: 12 rows").
+- The Schema `<dialog>` closes with Escape and returns focus to its button; the data dictionary on `/learn/schema/` is the picture's text equivalent (§3).
+- Visible focus outlines; WCAG AA contrast in both themes; nothing conveyed by colour alone (checks say "Correct" or name the difference, the game says "Right" and "Your pick").
+- Every page works at 375 px wide without sideways scrolling; wide result tables scroll inside their own box.
+- `prefers-reduced-motion` turns off the few transitions (dialog, card reveal).
+- Everything works by keyboard alone: run, stop, reset, check, show answer, open the schema, move between lessons, play the game (§7).
+
+### Before the database loads
+
+- **The page is readable at once:** lesson text, the SQL already editable, and the exercise, all plain HTML. Nothing waits for the engine except Run, Check, Start and the cookbook's Run.
+- **Progress, not a spinner:** Run is disabled and reads "Loading database: x of y MB" from DuckDB's instantiate progress, then "Building tables…" while `setup.sql` runs.
+- **Failures say why,** never an endless wait: the engine first sends a `HEAD` for its `.wasm` (a missing `.wasm` makes duckdb-wasm hang silently) and races the worker's `error` event (§1). The page shows "The database couldn't start: <reason>" and a "Try again" button.
+- **Too-old browsers:** a browser without WebAssembly exception handling (Chrome < 95, Firefox < 100, Safari < 15.2) gets "Your browser is too old to run Learn's database; the lessons still read fine." instead of a failed start.
+- **No JavaScript:** a `<noscript>` line says running SQL needs JavaScript; the pages and links still work.
+- **No pre-rendered results.** They would go stale as the data grows, and the result panel is the one place counts appear.
+
+### The playground: the Phase 2 viewer
+
+`plans/001-mvp.md`'s "Phase 2 viewer" (a DuckDB-WASM table in the browser; novices tick animals, filter, download their own copy) becomes `/learn/playground/`:
+- one editor, opening with `-- show: cards` and `SELECT * FROM species ORDER BY id;`;
+- the list of tables and the view, each linked to its entry in the data dictionary;
+- results as cards or a table, as in lessons;
+- **"Download CSV":** the current result as a CSV file, made in the page (RFC 4180 quoting, UTF-8, the columns as named). It holds the rows the page kept, at most 10 000 (§1), and says so; the whole dataset is already `/v1/species.csv`.
+- Filtering is SQL itself (`WHERE`), which is the point of Learn. Ticking animals into a personal list is left out of v1: it needs storage and a design of its own. The cookbook's `c22` (collection book) is the query such a feature would run.
+
+### E2E
+
+The existing harness, unchanged in kind: `pnpm build` writes `dist/`, Playwright 1.58.2 runs headless Chromium against the local Caddy copy of the live block on 3100 (`e2e/Caddyfile`), and every expectation is computed from `data/` as `e2e/docs.spec.ts` does, never typed in.
+
+**Rules for every Learn spec:**
+- Requests to any origin other than 3100 fail the test, except the two Wikimedia photo hosts, which `page.route` answers with a fixture image after asserting that each requested URL is some animal's `photo.url`. So no test touches the network, and a CDN request can't slip in.
+- One engine start per test file where the test allows it (`test.describe.configure({ mode: "serial" })` and a shared page), since each start costs seconds.
+
+**B1:**
+- `learn.spec.ts`:
+  - `/learn/` lists the lessons in `lessons.json`'s order, and Previous and Next link them in that order.
+  - Every lesson SQL file runs without an error, in its page; it renders cards exactly when it starts with `-- show: cards`, one card per row.
+  - Every exercise accepts its answer (`l<nn>-ex.sql`) and rejects a wrong one (a fixed wrong answer per check kind: a missing row, a wrong order for `in order`, a statement that succeeds for `error`, a missing constraint for `schema`).
+  - The Brazil lesson's cards are the animals whose `range.countriesWithOpenRecords` contains `BR` in `data/species.json`; the no-photo lesson's are those with `photo: null`; every card's credit line matches its record.
+  - Reset: after a learner's `CREATE TABLE … REFERENCES species (id)` and a `DELETE FROM species_countries`, Reset brings back the setup's row counts and no learner table. Stop: a runaway query can be stopped and the next query runs.
+  - One engine start per visit: moving through three lessons by their links starts the worker once (counted by `page.on("worker")`), and Back restores the previous lesson's page.
+  - A lesson can be read, run, checked and left by keyboard alone; the Schema dialog opens, closes with Escape and returns focus.
+  - Before the database loads: with the engine's `.wasm` held back by `page.route`, the lesson text and SQL are there and Run is disabled with its progress text; with the `.wasm` answering 404, the page says the database couldn't start.
+  - Screenshots at 1280 and 375 px, light and dark: a lesson's cards (lesson 9), the no-photo state (lesson 4), a check's verdict.
+- `schema.spec.ts`: the ERD drift check (run-queries' `--erd` rule) against the database the browser builds from the deployed files; the dialog and `/learn/schema/` screenshots.
+- `countries.spec.ts`: the three `/v1/countries.*` files, their shape, and `k01` with 0 unmatched (§6).
+- `serving.spec.ts` gains: the engine `.wasm` and the extension served as `application/wasm`, and every file under `/learn/assets/` carries `Last-Modified: Sat, 01 Jan 2000 00:00:00 GMT` (the fixed time that keeps ETags stable).
+- `docs.spec.ts` and `duckdb.spec.ts` gain the countries file and the Learn link, as §6 says.
+
+**B2:**
+- `cookbook.spec.ts`: every cookbook file runs on the cookbook page with its example parameters and returns as many rows as the data predicts where the entry's rule is simple enough to recompute in the test (c03, c07, c09, c26); every entry with `-- show: cards` draws cards.
+- `play.spec.ts`: with the clock fixed (`page.clock.setFixedTime("2026-10-22T12:00:00Z")`), the ten rounds are the ten animals the test computes from `data/species.json` with the shuffle key; answering every round right scores 10 of 10, one wrong answer scores 9 and marks the right button; the keys 1–4 and Enter play a whole game; screenshots of a round before and after answering at 375 px, and of the end screen.
+- `playground.spec.ts`: a query's "Download CSV" (`page.waitForEvent("download")`) has the result's header and rows.
+
+**Artifacts,** as today in `E2E_ARTIFACTS`: the Playwright HTML report, a trace per test, `results.json`, and the named screenshots above, reproducible with `pnpm build && E2E_ARTIFACTS=<dir> pnpm e2e`.
 
 ## 9. Mission B
 
