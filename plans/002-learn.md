@@ -3003,7 +3003,16 @@ The existing harness, unchanged in kind: `pnpm build` writes `dist/`, Playwright
 
 ## 9. Mission B
 
-Written in step S21.
+The build is two missions, each with a ready-to-start brief in the ops format (Goal, Why, Scope, Definition of done, Decision rules, Notes):
+
+| Mission | Brief | What it builds | Estimate |
+|---|---|---|---|
+| B1 | `plans/briefs/critwire-learn-b1.md` | the countries file end to end (§6); the engine, vendored and self-hosted, and the app core (§1); the learners' schema (§2); the ERD pipeline and `/learn/schema/` (§3); the 16 lessons with their checks (§4); their E2E (§8) | about 32–38 sessions |
+| B2 | `plans/briefs/critwire-learn-b2.md` | the cookbook page (§5); the playground with "Download CSV" (§8); the game (§7); their E2E (§8); the Caddy headers, if the owner approves them (§10) | about 18–24 sessions |
+
+**Why two.** As one mission the build is about 45–50 sessions (six pipeline stages, about 35 steps, the code review, verification and the release), too close to the 60-session limit for a mission that can't ask questions at night. The split falls where the work does: B1 builds every shared part (engine, schema, cards, checks, page shell, the countries file the setup needs) and ships the lessons; B2 only adds pages on top of it. Learners get the lessons as soon as B1 is live, and a problem B1 finds in production is fixed before B2 builds on it.
+
+**Order.** B1 starts after the owner has reviewed this document and answered §10. B2 starts only after B1 is merged and live. Each brief's first comment says how to start it: copy it to `/srv/critter-ai/agent-state/missions/briefs/<date>-critwire-learn-b<n>.md`, then `mission start critwire <that file>`. The briefs live under `plans/briefs/` so a mission's own plan (`plans/<date>-<slug>.md`) can't collide with them.
 
 ## 10. For the owner
 
