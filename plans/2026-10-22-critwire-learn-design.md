@@ -250,7 +250,7 @@ Out:
 - [x] Baseline: install, migrate, run typecheck, lint, unit and E2E tests; record the results under Baseline
 - [x] Architecture: `architect` writes findings and the target design
 - [x] Fable review: `architecture-reviewer`
-- [ ] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
+- [x] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
 - [ ] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
 - [ ] Steps: `planner` writes Steps and Verification
 
@@ -712,6 +712,19 @@ SHOULD-CONSIDER:
 
 ## Architecture review (Astra)
 
+VERDICT: APPROVE_WITH_CHANGES
+
+MUST-FIX:
+1. **Setup dependency conflict (§1–2).** Identical setup cannot create `species_countries → countries` in both databases when DB 1 lacks `countries`. Define one consistent schema initialization sequence; distinguish draft data from published data without changing required table availability.
+2. **Reset lacks database isolation (§4).** Re-running setup cannot reliably restore tables after learner DDL, including new foreign-key dependencies. Reset must discard the database and initialize a fresh instance. Exercise reference queries also need pristine state so learner mutations cannot change the expected answer.
+3. **Card detection can misrepresent results (§4).** A unique `id` containing valid species numbers does not establish species identity: `SELECT COUNT(*) AS id FROM species` could display an unrelated animal. Require explicit species-result metadata or an intentional `species_id` convention; default arbitrary results to tables.
+
+SHOULD-CONSIDER:
+1. Define query cancellation, execution limits and worker recovery; limiting displayed rows does not bound query memory or execution.
+2. Taxon names being unique today does not establish a durable natural key. Define collision handling before expanding taxonomy.
+3. Specify how countries attribution joins the existing species-based attribution pipeline, including what its `records` count means.
+4. Separate viewport checks from actual mobile browser compatibility; Chromium alone cannot validate Safari/WASM behavior.
+
 ## Revision notes
 
 ## Steps
@@ -729,5 +742,6 @@ SHOULD-CONSIDER:
 - 2026-10-22 UTC · Baseline: install, typecheck, unit 66/66, build, E2E 20/20 green; dist + live /v1 hashes saved (identical, 157 files).
 - 2026-10-22 06:24 UTC · Architecture: architect wrote findings F1–F10 + target design (spike harness, learners schema v1, Mermaid ERD w/ committed SVG, 16-lesson path, B1/B2 split, PGlite thresholds). No code; nothing to verify beyond review.
 - 2026-10-22 06:29 UTC · Fable review: APPROVE_WITH_CHANGES, 3 MUST-FIX (species_countries FK order, reset = fresh db not DROP, esbuild/duckdb-wasm/mermaid direct deps). Design only; nothing to run.
+- 2026-10-22 06:30 UTC · Astra review: APPROVE_WITH_CHANGES, 3 MUST-FIX (one schema init sequence for both dbs, reset = fresh db + pristine refs, card detection needs explicit species metadata). Design only; nothing to run.
 
 ## Summary
