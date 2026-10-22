@@ -207,7 +207,7 @@ Out:
 
 - [x] Baseline: install, migrate, run typecheck, lint, unit and E2E tests; record the results under Baseline
 - [x] Architecture: `architect` writes findings and the target design
-- [ ] Fable review: `architecture-reviewer`
+- [x] Fable review: `architecture-reviewer`
 - [ ] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
 - [ ] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
 - [ ] Steps: `planner` writes Steps and Verification
@@ -605,6 +605,28 @@ Common to all:
 
 ## Architecture review (Fable)
 
+Fable, 2026-10-22. Checked against the brief, `AGENTS.md`, `plans/002-learn.md` (§2 "Room to grow" :369–378, l16/l16-ex :1629–1680, ERD), `plans/002-learn-erd.mmd`, A1's spike (`scripts/plan-queries.ts:14,218`, `run-queries.ts:21,100`, `src/engine.ts:29`, `src/assets.ts:55`, `package.json`), `db/schema.sql:2`, `scripts/db.ts:38-46`, and live: `pg_available_extensions` (postgis_raster 3.4.2 installed in `critwire_dev`), `pg_settings` (postgis.enable_outdb_rasters / gdal_enabled_drivers context `superuser`, `gdal_vsi_options` `user`), `df -h` (24 GB free), `nproc` 2, COG `HEAD` (3,640,482,547 B, ETag `975827817c839f73a5ee49d2791393a4-212`), `ST_AsGDALRaster(…, 'COG')` with only `'GTiff COG'` enabled (works, 1260 B). F1–F11 hold; F4 and F11 are real and correctly fixed. No IUCN data enters the repo, spike or db; Natural Earth / Jung / AnAge / AmphiBIO / WDPA / IUCN flags match the sources cited.
+
+Verdict: APPROVE WITH CHANGES
+
+### MUST-FIX
+
+1. **"Build-time summary from the COG" breaks the offline build rule.** T5 (`country_habitats`), T6 and T10 (option c) say the per-country habitat summaries are computed at build time. `AGENTS.md`: `pnpm build` is offline and only loads committed snapshots; ingest scripts fetch and commit. Fix: make the summaries an ingest step (`pnpm ingest habitat`-style) whose output is committed under `data/` with the Jung version, COG ETag and method recorded; the build loads it. Say so in T5, T10 and mission D's brief, and price the one-off ingest honestly: full resolution worldwide is 388,996² cells (151 G), so it runs on an overview level or Jung's 1 km fractional layers, which E3b decides.
+2. **E3b can pass on wrong data.** A PostGIS out-db band reads `width × height` file pixels from the computed offset at the file's own resolution; it doesn't resample. An empty raster with k × 103.02 m pixels may silently return the top-left full-resolution block, not the ÷k overview, with no error and with "small" bytes. Fix: E3b must compare values (the window's class histogram against a geotiff.js read of the same overview window, and the ÷1024 histogram from F3), not bytes alone; any mismatch means "PostGIS can't read overviews" and the fallback applies.
+3. **The per-session `SET` fails silently in a fresh session.** Verified as role `critwire`: `SET postgis.enable_outdb_rasters = on` before any raster function succeeds as a placeholder, then is dropped once `rtpostgis` loads (`SHOW` → `off`); `SET` after a raster call gives `permission denied`. As superuser the placeholder path also hides typos. Fix (fail fast): `pg.ts` and every lesson/PostGIS setup block call a raster function first (e.g. `SELECT postgis_raster_lib_version()`), then `SET`, then assert `SHOW postgis.enable_outdb_rasters = 'on'` and `gdal_enabled_drivers` contains `COG`; the runner refuses the run otherwise, and the learner-side text explains it.
+
+### MISSED
+
+Covered by MUST-FIX 1 and 3; nothing else important.
+
+### SHOULD-CONSIDER
+
+- Learner-side PostGIS: PG 15+ has `GRANT SET ON PARAMETER postgis.enable_outdb_rasters, postgis.gdal_enabled_drivers TO <role>`; offer it beside "superuser or `ALTER DATABASE … SET`" so learners don't run lessons as superuser.
+- T3's `EXPLAIN (FORMAT JSON)` relation scan for labels is more than a research doc needs; the whole-word test over the registry names (A1's method, generalised) suffices (KISS).
+- `ST_AsGDALRaster(…, 'COG')` works with `'GTiff COG'` alone (checked); drop VRT/MEM and that (S).
+- `ran` blocks that read the COG make Verification depend on S3; keep them few (one per raster lesson) and name that dependency in Verification, with the ETag check as designed.
+- E1's GBIF sample: pick the 3 species by fixed `species.id`, save request URLs in `downloads/SOURCES.md`, so the sample is reproducible and mission D can regenerate it.
+
 ## Architecture review (Astra)
 
 ## Revision notes
@@ -623,5 +645,6 @@ Common to all:
 
 - 2026-10-22 15:57 UTC: Baseline. typecheck pass, test 66/66, build 157 files, E2E 20/20; dist hashes = live = A1 baseline.
 - 2026-10-22 16:17 UTC: Architecture (architect): 12 targets, findings checked live (COG header, PostGIS /vsicurl read = TiTiler value, TiTiler CORS ok, S3 none, IUCN terms via Wayback). `postgis_raster` now installed in `critwire_dev` (Baseline note superseded). Plan-only change; no code touched.
+- 2026-10-22 16:20 UTC: Fable review (architecture-reviewer): APPROVE WITH CHANGES, 3 MUST-FIX (offline build: habitat summaries as committed ingest; E3b validate overview reads by values; load raster lib before SET + assert SHOW). Plan-only.
 
 ## Summary
