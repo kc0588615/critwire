@@ -841,7 +841,7 @@ Planner, 2026-10-22. Conventions:
     - `serve.ts` exits non-zero naming the port when something listens on 3102, and when something listens on 3100 (`node -e "require('net').createServer().listen(3100,'127.0.0.1')" &`, killed after);
     - no spike Caddy left running (`pgrep -f "$SP/Caddyfile"` is empty).
 
-- [ ] S2 · Engine boot, both bundles, self-hosted (§1 Page code; Q1, first half).
+- [x] S2 · Engine boot, both bundles, self-hosted (§1 Page code; Q1, first half). Deviations (Decisions, S2): parquet loads from our own extension mirror (not linked); `species.parquet` is read whole (no 206); json not loaded.
   - Tests first, red: SQ1–SQ7 in `test/sql.test.ts`.
   - `src/sql.ts`: `splitStatements`, pure.
   - `src/engine.ts`:
@@ -1253,6 +1253,11 @@ Only the spike tools that the Definition of done rests on are tested in isolatio
 - **Precompression cost:** `build-site.ts --precompress` (brotli 11, zstd 19, gzip 9 on 9 vendored files) takes 4 m 47 s on this box; eh.wasm on the wire: live on-the-fly zstd 7.98 MB vs precompressed br 5.47 MB / zstd 5.79 MB. Weighs into §10 (S9 adds classroom-load CPU).
 - **Fixed mtime works:** `duckdb-eh.wasm` ETag `"76xfr58qsqo0-lfjfa"` identical across a full `site/` rebuild (Last-Modified 2000-01-01). Spike `src/assets.ts` holds vendored files + versioned dirs; build fails if installed version ≠ pin.
 - `pglite.data` is served with no Content-Type (no `/etc/mime.types` entry); harmless for `fetch`, noted for S8.
+- **S2: duckdb-wasm links only `core_functions`.** `parquet` and `json` are extensions in 1.32.0 and 1.33.1-dev65.0 alike (`scripts/probe-static.cjs`), so F6/§1's "parquet and json statically linked" was wrong and v1 needs an extension. Engine: autoload/autoinstall stay off, `custom_extension_repository` = `<origin>/learn/assets/duckdb-ext`, explicit `LOAD parquet` at boot; signature checks on, passes. Mirror layout `duckdb-ext/v1.5.6/wasm_{eh,mvp}/parquet.duckdb_extension.wasm` (versioned path + fixed mtime, F3). Bytes: eh 3.22 MB raw / 0.74 MB zstd live, mvp 3.02 / 0.71. json not loaded (setup needs only parquet; saves 0.82 MB). `LOAD spatial` → one same-origin 404, error, nothing off-origin. → S14 (002 §1) states it; S21: B1 needs the extension binary at an offline build and it isn't an npm package (commit it with a sha256 check, or a pinned download step): a §10 owner choice.
+- **S2: mvp loses every SQL error message** (`_setThrew is not defined` instead of DuckDB's text; the database survives). Same in 1.32.0. Learners need the error text, so 002 §1 should recommend eh only (wasm exception handling: Chrome 95, Firefox 100, Safari 15.2) with a plain "browser too old" notice instead of mvp; S7 still measures mvp for the record.
+- **S2: HTTP files are read whole.** Default config: one `GET` (200, whole file, no `Range`) per boot for a registered file; `HEAD` + whole `GET` for a URL (checked with a 73 MB file). With `reliableHeadRequests`/`allowFullHTTPReads: false`, duckdb-wasm's `HEAD` + `Range: bytes=0-` probe reaches Caddy without `Range`, gets 200, and the open fails. v1 is fine (setup reads all of a 32 KB file in one request); range reads for large files are an A2 question. Same without Playwright interception, so not a harness artefact. The S2 "206" check became "one 200 GET per boot".
+- **S2: `registerFileURL` is lazy:** `countries.parquet` (absent until S3) doesn't break boot.
+- Interception note: under `context.route`, Chromium adds `Cache-Control: no-cache`/`Pragma: no-cache` to every request, so revalidation/caching measurements (S6 MS6, "warm after rebuild") must not rely on the route guard's context alone; S6 decides.
 
 ## Log
 
@@ -1263,5 +1268,6 @@ Only the spike tools that the Definition of done rests on are tested in isolatio
 - 2026-10-22 06:41 UTC · Revision: architect resolved all 6 MUST-FIX (one setup.sql w/ countries before species_countries; reset = engine.restart() fresh db, refs pristine via rollback; esbuild/duckdb-wasm/mermaid pinned direct deps; cards only on `-- show: cards`) + adopted review SC/MISSED items. DuckDB facts rechecked in node DuckDB 1.5.6.
 - 2026-10-22 06:52 UTC · Steps: planner wrote S1–S22, Verification (V0–V10 script), Failure modes (94 cases). Plan only; nothing to run.
 - 2026-10-22 07:02 UTC · S1: spike scaffold in `$SP` (pins, frozen install, Caddyfile + proposed, serve/browser/build-site/bytes). Checks: guard clean, repo typecheck + 66/66, spike typecheck; `.wasm` = application/wasm; ETag stable across rebuild; `out/bytes/summary.md` (eh: 36.00 MB file, 7.98 zstd / 8.53 gzip live); serve exits 1 naming 3102/3100/3101; no Caddy left.
+- 2026-10-22 07:10 UTC · S2: `sql.ts` splitStatements (SQ1–7: 7 red → 7 green), `engine.ts` (manual eh/mvp, self-hosted parquet ext mirror, settings, registerFileURL, runScript w/ statement numbers), runner page, `boot-check.ts`. `out/boot`: 0 failures, eh+mvp count 76, v1.5.6 069cc9f9b5, blocked []; mvp error text = known defect. Guard clean, repo typecheck + 66/66, spike typecheck + 7/7, no Caddy left.
 
 ## Summary
