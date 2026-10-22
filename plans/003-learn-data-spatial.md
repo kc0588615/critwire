@@ -1442,16 +1442,53 @@ TT | Shrubland – Subtropical/tropical moist | 998.51 | 2
 
 ## 4. The advanced spatial track
 
-The spatial lessons run in one of two places, and each lesson says which: in the browser (DuckDB's `spatial` extension, self-hosted as in 002, or geotiff.js reading a COG by HTTP ranges), or in your own PostgreSQL with PostGIS, where critwire supplies the data files and the setup below. SQL is written PostGIS-style (`ST_` functions); where DuckDB spells something differently, the lesson shows both.
+**Who it's for.** Learners of 16 and up who have finished 002's core path (lessons 1–16: joins, `GROUP BY`, `LEFT JOIN`, `WITH`). The grown-data lessons (§3) help but aren't needed. The track starts with points and outlines in the browser and ends with the habitat map in the learner's own PostGIS. The data stays honest throughout: an occurrence is a record of where someone saw or collected an animal, not its native range, and a country outline is a line a mapmaker drew at one scale.
+
+**Where each lesson runs** (T6). Each lesson names the spike run that backs it under **Evidence**; the runs are in the spike folder's `out/`.
+
+| Lessons | Topic | Runs in | Evidence |
+|---|---|---|---|
+| 1 | points, outlines, coordinate systems | browser (DuckDB spatial); the PostGIS spelling beside it | `out/e1-data/`, `out/e1-pip/` |
+| 2 | `ST_Contains`, `ST_Covers`, `ST_Intersects` and the boundary | browser (DuckDB spatial) | `out/e1-pip/` |
+| 3 | distance and area on the ellipsoid | browser (DuckDB spatial) | `out/run-queries/`, `queries.log` |
+| 4 | spatial joins: records against outlines | browser (DuckDB spatial) | `out/e1-pip/` |
+| 5 | why projection matters | browser (vector areas) and your own PostGIS (raster cells) | `out/e3-zonal/` |
+| 6–7 | the habitat value at a point; zonal statistics | your own PostGIS | `out/e2-point/`, `out/e3-zonal/`, `out/e3b-overviews/`, `out/e3c-methods/` |
+| 8 | reading a habitat clip in the browser | browser (geotiff.js) | `out/e4-clip/`, `out/e4-browser/` |
+| §6 | IUCN ranges against records | your own PostGIS, with your own download | §6 |
+
+**In the browser** the page loads DuckDB's `spatial` extension from critwire's own mirror, as 002 §1 does for `parquet` (self-hosted, signatures checked), and only on spatial lesson pages: the extension, not the outlines, is most of the page's download and memory (`out/e1-pip/`). There is no raster in DuckDB, so the habitat map is read in PostGIS or, in the browser, by geotiff.js.
+
+**What the lessons ran on.** The spike's stand-ins (§2): critwire's draft country outlines at 1:10m, and every open record of three animals, the African Spurred Tortoise (`20`), the Sunda Pangolin (`24`) and the Axolotl (`74`). Mission D publishes the outlines at 1:50m, which stayed within the browser's memory budget where 1:10m didn't (`out/e1-pip/`), and a capped sample of records for every animal (§2, `occurrences`). So the results change when D ships: a coarser coastline leaves a few more coastal records outside every outline.
+
+**How the paired blocks read.** The SQL is PostGIS's (`ST_` functions). Where DuckDB spells something differently (F5), the lesson shows the PostGIS block first, its id ending `-pg`, and the DuckDB block the browser runs after it. A lesson shows each difference once; its later blocks are DuckDB's, and the text says what to change for PostGIS. The differences the track meets:
+
+| | PostGIS 3.4 | DuckDB `spatial` 1.5 |
+|---|---|---|
+| coordinate system | every geometry carries an SRID: `ST_SetSRID(ST_Point(lon, lat), 4326)`; mixing SRIDs is an error | a `GEOMETRY` here carries none: `ST_Point(lon, lat)`, and you keep track |
+| Well-Known Text | `POINT(-99.14 19.27)`; `ST_AsEWKT` adds `SRID=4326;` | `POINT (-99.14 19.27)` |
+| geometry type | `ST_MultiPolygon` (text) | `MULTIPOLYGON`, an `ENUM`: `CAST(… AS VARCHAR)` to show it |
+| distance and area in metres | cast to `geography`, longitude first: `ST_Distance(a::geography, b::geography)`, `ST_Area(g::geography)` | `ST_Distance_Spheroid`, `ST_Area_Spheroid`, which take **latitude first**: `ST_FlipCoordinates` before them |
+| rounding | `round(x::numeric, 1)`: only `numeric` rounds to decimal places | `round(x, 1)` |
+| a point on the boundary | `ST_Contains` false, `ST_Covers` true | the same in the spike (lesson 2), though DuckDB's documentation says otherwise |
+| raster | `postgis_raster` (lessons 5–7) | none |
 
 ### Your own PostGIS: the session and the tables
 
-Raster lessons read the habitat map with PostGIS's out-db rasters: the database keeps only the raster's grid and a path, and GDAL fetches the pixels it needs from the file when a query asks for them. That is powerful, so PostgreSQL guards the two settings that allow it. `postgis.enable_outdb_rasters` lets GDAL open files outside the database, and `postgis.gdal_enabled_drivers` says which file formats it may read; with both on, a query can make the server read its own files or fetch any URL. Only a superuser may change them, unless a superuser allows your role once (PostgreSQL 15 or later):
+Raster lessons read the habitat map with PostGIS's out-db rasters: the database keeps only the raster's grid and a path, and GDAL fetches the pixels it needs from the file when a query asks for them. That is powerful, so PostgreSQL guards the two settings that allow it. `postgis.enable_outdb_rasters` lets GDAL open files outside the database, and `postgis.gdal_enabled_drivers` says which file formats it may read; with both on, a query can make the server read its own files or fetch any URL. Only a superuser may change them, unless a superuser allows your role once (PostgreSQL 15 or later). Ask whoever runs your server to run this in your database, as a superuser, with your role's name for `my_role`:
 
-```sh
-# Once, as your server's superuser. Narrower than making your role a superuser, or ALTER DATABASE … SET for everyone.
-psql -d <your database> -c "GRANT SET ON PARAMETER postgis.enable_outdb_rasters, postgis.gdal_enabled_drivers TO <your role>"
-psql -d <your database> -c "CREATE EXTENSION IF NOT EXISTS postgis_raster" -c "CREATE SCHEMA IF NOT EXISTS learn_spatial"
+```sql
+-- q: pg-once
+-- status: untested: needs your server's superuser and grants a privilege; the spike never grants (F1)
+-- engine: postgis
+CREATE EXTENSION IF NOT EXISTS postgis_raster CASCADE;
+CREATE SCHEMA IF NOT EXISTS learn_spatial AUTHORIZATION my_role;
+-- Lets my_role switch the two raster settings on in its own sessions, and nothing more.
+GRANT SET ON PARAMETER postgis.enable_outdb_rasters, postgis.gdal_enabled_drivers TO my_role;
+-- Before PostgreSQL 15, or if no one can grant: work in a superuser session, or switch the settings on for every role
+-- in this one database (wider: each of them may then make the server read files and URLs):
+-- ALTER DATABASE my_db SET postgis.enable_outdb_rasters = on;
+-- ALTER DATABASE my_db SET postgis.gdal_enabled_drivers = 'GTiff COG';
 ```
 
 Then start every session like this. The first line loads the raster library: a setting changed before it loads is quietly forgotten. The last line shows both settings, because a refused or misspelt `SET` can also fail without an error. If you don't see `on` and a list with `COG`, the raster lessons won't work in this session.
@@ -1550,6 +1587,541 @@ SELECT (SELECT count(*) FROM country_shapes)              AS country_shapes,
 country_shapes | shape_vertices | occurrences | habitat_clips | cr_clip
 250 | 551273 | 528 | 1 | 4923 × 6223 cells, SRID 3857
 ```
+
+### Spatial lesson 1 · points-and-shapes
+
+**Concept:** points and outlines as values; longitude first; Well-Known Text; a coordinate system (WGS 84, EPSG:4326). **Question:** What does the database see in a record's position and in a country's outline?
+
+Every occurrence record has a `longitude` and a `latitude`: degrees east of Greenwich (west is negative) and north of the equator (south is negative), on WGS 84, the model of the Earth that GPS uses. Mapmakers number their coordinate systems, and this one is **EPSG:4326**. `ST_Point(x, y)` turns two numbers into a point, and **x comes first: x is longitude**, the east–west position, as on a graph. `ST_AsText` writes a geometry as Well-Known Text (WKT), the plain-text form every spatial database reads and writes.
+
+In PostGIS a geometry also carries its coordinate system, as a number called the SRID. The outlines are stored with SRID 4326, so a point built from a record is given it too (`ST_SetSRID`), and `ST_AsEWKT`, "extended" WKT, prints it:
+
+```sql
+-- q: s01-point-pg
+-- status: spike-table
+-- engine: postgis
+SELECT o.id, ST_AsEWKT(ST_SetSRID(ST_Point(o.longitude, o.latitude), 4326)) AS point
+FROM occurrences AS o
+WHERE o.species_id = 74
+ORDER BY o.id
+LIMIT 3;
+```
+
+```text
+-- result: s01-point-pg · 3 rows · sha256 7e96511853bc
+id | point
+543678766 | SRID=4326;POINT(-99.1401032 19.2706253)
+543710270 | SRID=4326;POINT(-99.138611 19.434167)
+543710271 | SRID=4326;POINT(-99.138611 19.434167)
+```
+
+The browser's DuckDB keeps no coordinate system on a geometry, so its point is plain `ST_Point`, and its WKT has a space after `POINT`. The same three Axolotl records:
+
+```sql
+-- q: s01-point
+-- status: spike-table
+SELECT o.id, ST_AsText(ST_Point(o.longitude, o.latitude)) AS point
+FROM occurrences AS o
+WHERE o.species_id = 74
+ORDER BY o.id
+LIMIT 3;
+```
+
+```text
+-- result: s01-point · 3 rows · sha256 7853fb9ca2d5
+id | point
+543678766 | POINT (-99.1401032 19.2706253)
+543710270 | POINT (-99.138611 19.434167)
+543710271 | POINT (-99.138611 19.434167)
+```
+
+Forgetting the SRID in PostGIS isn't a silent mistake: comparing a point that has none with an outline in 4326 stops with an error. DuckDB compares them without asking, so in the browser keeping track is your job.
+
+```sql
+-- q: s01-srid-pg
+-- status: spike-table
+-- engine: postgis
+-- expect: error mixed SRID geometries
+SELECT count(*) AS records
+FROM occurrences AS o
+JOIN country_shapes AS c ON ST_Contains(c.geom, ST_Point(o.longitude, o.latitude))
+WHERE c.country_code = 'MX';
+```
+
+```text
+-- result: s01-srid-pg · error: statement 1 of 1: contains: Operation on mixed SRID geometries (MultiPolygon, 4326) != (Point, 0)
+```
+
+An outline is a **polygon**: a ring of vertices, the corners of the line the mapmaker drew, ending where it started. A country with islands is a **multipolygon**, several polygons in one value. `ST_NumGeometries` counts the parts, `ST_NPoints` the vertices, and `ST_XMin`, `ST_XMax`, `ST_YMin` and `ST_YMax` give the bounding box, the smallest rectangle around the shape, in degrees:
+
+```sql
+-- q: s01-pg
+-- status: spike-table
+-- engine: postgis
+SELECT country_code, ST_GeometryType(geom) AS shape_type, ST_NumGeometries(geom) AS parts, ST_NPoints(geom) AS vertices,
+       round(ST_XMin(geom)::numeric, 2) AS west, round(ST_XMax(geom)::numeric, 2) AS east,
+       round(ST_YMin(geom)::numeric, 2) AS south, round(ST_YMax(geom)::numeric, 2) AS north
+FROM country_shapes
+WHERE country_code IN ('BJ', 'MQ', 'MX')
+ORDER BY country_code;
+```
+
+```text
+-- result: s01-pg · 3 rows · sha256 34186ac28f1b
+country_code | shape_type | parts | vertices | west | east | south | north
+BJ | ST_Polygon | 1 | 616 | 0.76 | 3.84 | 6.21 | 12.40
+MQ | ST_Polygon | 1 | 133 | -61.23 | -60.81 | 14.41 | 14.88
+MX | ST_MultiPolygon | 51 | 7419 | -118.37 | -86.70 | 14.55 | 32.71
+```
+
+```sql
+-- q: s01
+-- status: spike-table
+SELECT country_code, CAST(ST_GeometryType(geom) AS VARCHAR) AS shape_type, ST_NumGeometries(geom) AS parts, ST_NPoints(geom) AS vertices,
+       round(ST_XMin(geom), 2) AS west, round(ST_XMax(geom), 2) AS east,
+       round(ST_YMin(geom), 2) AS south, round(ST_YMax(geom), 2) AS north
+FROM country_shapes
+WHERE country_code IN ('BJ', 'MQ', 'MX')
+ORDER BY country_code;
+```
+
+```text
+-- result: s01 · 3 rows · sha256 4b3326117057
+country_code | shape_type | parts | vertices | west | east | south | north
+BJ | POLYGON | 1 | 616 | 0.76 | 3.84 | 6.21 | 12.4
+MQ | POLYGON | 1 | 133 | -61.23 | -60.81 | 14.41 | 14.88
+MX | MULTIPOLYGON | 51 | 7419 | -118.37 | -86.7 | 14.55 | 32.71
+```
+
+DuckDB returns the type as an `ENUM`, a column type that can hold only names from a fixed list; Learn's result reader shows it only as text, hence the `CAST`. Benin is one polygon; Mexico's islands make it a multipolygon. More vertices means a more detailed line, and a bigger file: that is the whole difference between the 1:10m and 1:50m outlines.
+
+**Shown as:** tables.
+
+**Your turn:** Which five outlines have the most parts? Show `country_code`, the country's `name` from `countries`, and `parts`, most first, ties by `country_code`.
+
+```sql
+-- q: s01-ex
+-- status: spike-table
+SELECT c.country_code, k.name, ST_NumGeometries(c.geom) AS parts
+FROM country_shapes AS c
+JOIN countries AS k ON k.code = c.country_code
+ORDER BY parts DESC, c.country_code
+LIMIT 5;
+```
+
+```text
+-- result: s01-ex · 5 rows · sha256 d0c2e3622aaf
+country_code | name | parts
+CA | Canada | 412
+US | United States of America | 344
+ID | Indonesia | 264
+RU | Russia | 214
+AQ | Antarctica | 179
+```
+
+**Check:** `result, in order`.
+
+**Runs in:** browser (DuckDB spatial); the `-pg` blocks in your own PostGIS
+
+**Evidence:** `out/e1-data/` (the outlines and records, at both scales), `out/e1-pip/` (the same tables in DuckDB-WASM, Node DuckDB and PostGIS)
+
+### Spatial lesson 2 · contains
+
+**Concept:** `ST_Contains`, `ST_Covers` and `ST_Intersects`; which argument goes first; a point on the line; swapped coordinates. **Question:** Which countries' outlines hold the African Spurred Tortoise's records?
+
+`ST_Contains(a, b)` is true when `b` lies inside `a`: the outline first, then what's inside it. Joining on it pairs each record with every outline around its point, and `GROUP BY` counts them. In PostGIS the point gets its SRID, as in lesson 1:
+
+```sql
+-- q: s02-pg
+-- status: spike-table
+-- engine: postgis
+SELECT c.country_code, count(*) AS records
+FROM occurrences AS o
+JOIN country_shapes AS c ON ST_Contains(c.geom, ST_SetSRID(ST_Point(o.longitude, o.latitude), 4326))
+WHERE o.species_id = 20
+GROUP BY c.country_code
+ORDER BY records DESC, c.country_code;
+```
+
+```text
+-- result: s02-pg · 17 rows · sha256 72503940077c
+country_code | records
+BJ | 41
+NE | 4
+TD | 4
+US | 4
+FR | 3
+… 12 more rows
+```
+
+```sql
+-- q: s02
+-- status: spike-table
+SELECT c.country_code, count(*) AS records
+FROM occurrences AS o
+JOIN country_shapes AS c ON ST_Contains(c.geom, ST_Point(o.longitude, o.latitude))
+WHERE o.species_id = 20
+GROUP BY c.country_code
+ORDER BY records DESC, c.country_code;
+```
+
+```text
+-- result: s02 · 17 rows · sha256 72503940077c
+country_code | records
+BJ | 41
+NE | 4
+TD | 4
+US | 4
+FR | 3
+… 12 more rows
+```
+
+The tortoise lives wild along the southern edge of the Sahara, yet some records sit in outlines on other continents. It is a popular pet, and someone recorded a kept or escaped animal: these are records, not its range. Martinique's records are counted twice, under `MQ` and under `FR`, because critwire's outline for France includes its overseas regions (002 §6), so a point there is inside both.
+
+**A point on the line.** `ST_Contains` needs the point strictly inside; a point exactly on the outline's line isn't contained. `ST_Covers` accepts the line as well, and `ST_Intersects` is true whenever the two touch at all. The point below is the first corner of Luxembourg's outline:
+
+```sql
+-- q: s02-boundary-pg
+-- status: spike-table
+-- engine: postgis
+SELECT country_code,
+       ST_Contains(geom, ST_SetSRID(ST_Point(6.117487, 50.120456), 4326)) AS contains,
+       ST_Covers(geom, ST_SetSRID(ST_Point(6.117487, 50.120456), 4326)) AS covers,
+       ST_Intersects(geom, ST_SetSRID(ST_Point(6.117487, 50.120456), 4326)) AS intersects
+FROM country_shapes
+WHERE country_code = 'LU';
+```
+
+```text
+-- result: s02-boundary-pg · 1 row · sha256 deecc4fea9d2
+country_code | contains | covers | intersects
+LU | false | true | true
+```
+
+```sql
+-- q: s02-boundary
+-- status: spike-table
+SELECT country_code,
+       ST_Contains(geom, ST_Point(6.117487, 50.120456)) AS contains,
+       ST_Covers(geom, ST_Point(6.117487, 50.120456)) AS covers,
+       ST_Intersects(geom, ST_Point(6.117487, 50.120456)) AS intersects
+FROM country_shapes
+WHERE country_code = 'LU';
+```
+
+```text
+-- result: s02-boundary · 1 row · sha256 deecc4fea9d2
+country_code | contains | covers | intersects
+LU | false | true | true
+```
+
+DuckDB's documentation says its `ST_Contains` counts the boundary too, but DuckDB 1.5.6 answered as PostGIS does, in the browser and in Node alike. When a manual and an engine disagree, a small test like this one settles it. A GPS point rarely lands exactly on a line, so for records it seldom matters; for two neighbouring outlines it does: they intersect along their border, but neither contains the other.
+
+**Swapped coordinates.** The classic mistake is `ST_Point(latitude, longitude)`. Nothing stops it: a swapped point is still a point, and many land inside some outline, just the wrong one.
+
+```sql
+-- q: s02-swap
+-- status: spike-table
+SELECT o.species_id, c.country_code, count(*) AS records
+FROM occurrences AS o
+JOIN country_shapes AS c ON ST_Contains(c.geom, ST_Point(o.latitude, o.longitude))
+GROUP BY o.species_id, c.country_code
+ORDER BY o.species_id, c.country_code;
+```
+
+```text
+-- result: s02-swap · 12 rows · sha256 036b9e8a4ef8
+species_id | country_code | records
+20 | AO | 3
+20 | AQ | 2
+20 | CG | 1
+20 | CM | 3
+20 | GQ | 3
+… 7 more rows
+```
+
+Tortoises in Antarctica give it away. An Axolotl in Iran is less obviously wrong, which is why it pays to look at a few points on a map before trusting a join.
+
+**Shown as:** tables.
+
+**Your turn:** In one row: how many Axolotl records (species `74`) lie inside Mexico's outline (`in_outline`), and how many has GBIF labelled `MX` (`gbif_says_mx`)? `count(*) FILTER (WHERE …)` counts only the rows its condition keeps.
+
+```sql
+-- q: s02-ex
+-- status: spike-table
+SELECT count(*) FILTER (WHERE ST_Contains(c.geom, ST_Point(o.longitude, o.latitude))) AS in_outline,
+       count(*) FILTER (WHERE o.country_code = 'MX') AS gbif_says_mx
+FROM occurrences AS o, country_shapes AS c
+WHERE o.species_id = 74 AND c.country_code = 'MX';
+```
+
+```text
+-- result: s02-ex · 1 row · sha256 223d98092899
+in_outline | gbif_says_mx
+222 | 222
+```
+
+**Check:** `result, any row order`.
+
+**Runs in:** browser (DuckDB spatial); the `-pg` blocks in your own PostGIS
+
+**Evidence:** `out/e1-pip/` (the boundary point and the per-country counts: DuckDB-WASM, Node DuckDB and PostGIS give the same answers)
+
+### Spatial lesson 3 · distance-and-area
+
+**Concept:** degrees aren't lengths; distance and area on the curved Earth (the ellipsoid); DuckDB's latitude-first spheroid functions. **Question:** How far from its home lakes was the Axolotl recorded, and how big is a country?
+
+`ST_Distance` on longitudes and latitudes measures straight across the flat grid of numbers, so its answer is in degrees, which isn't a length: a degree of longitude is about 111 km at the equator and shrinks to nothing at the poles. A distance in metres is measured along the Earth's curved surface, on the WGS 84 ellipsoid. PostGIS does that when both points are cast to `geography`; DuckDB's `ST_Distance_Spheroid` does it too but wants **latitude first**, so `ST_FlipCoordinates` swaps x and y just before. The fixed point is Xochimilco, the lakes at the edge of Mexico City where the Axolotl lives wild:
+
+```sql
+-- q: s03-pg
+-- status: spike-table
+-- engine: postgis
+SELECT o.id, o.country_code,
+       round(ST_Distance(ST_SetSRID(ST_Point(-99.10, 19.26), 4326),
+                         ST_SetSRID(ST_Point(o.longitude, o.latitude), 4326))::numeric, 1) AS degrees,
+       round((ST_Distance(ST_SetSRID(ST_Point(-99.10, 19.26), 4326)::geography,
+                          ST_SetSRID(ST_Point(o.longitude, o.latitude), 4326)::geography) / 1000)::numeric) AS km
+FROM occurrences AS o
+WHERE o.species_id = 74
+ORDER BY km DESC, o.id
+LIMIT 5;
+```
+
+```text
+-- result: s03-pg · 5 rows · sha256 cfd1234b3c29
+id | country_code | degrees | km
+1268744697 | NZ | 279.4 | 11190
+1268746426 | NZ | 279.4 | 11190
+4913773496 | UA | 133.6 | 11025
+5019486819 | DE | 117.2 | 9759
+5014867447 | DE | 111.8 | 9605
+```
+
+```sql
+-- q: s03
+-- status: spike-table
+SELECT o.id, o.country_code,
+       round(ST_Distance(ST_Point(-99.10, 19.26), ST_Point(o.longitude, o.latitude)), 1) AS degrees,
+       round(ST_Distance_Spheroid(ST_FlipCoordinates(ST_Point(-99.10, 19.26)),
+                                  ST_FlipCoordinates(ST_Point(o.longitude, o.latitude))) / 1000) AS km
+FROM occurrences AS o
+WHERE o.species_id = 74
+ORDER BY km DESC, o.id
+LIMIT 5;
+```
+
+```text
+-- result: s03 · 5 rows · sha256 cfd1234b3c29
+id | country_code | degrees | km
+1268744697 | NZ | 279.4 | 11190
+1268746426 | NZ | 279.4 | 11190
+4913773496 | UA | 133.6 | 11025
+5019486819 | DE | 117.2 | 9759
+5014867447 | DE | 111.8 | 9605
+```
+
+Both engines give the same kilometres. The degrees are another story: New Zealand is about as far from Mexico City as Ukraine, yet twice as many degrees away, because the flat grid ends at 180° east and the straight line across it goes the long way round, while the real shortest path crosses the Pacific. The farthest records are kept animals: the Axolotl is a favourite of aquariums and laboratories worldwide, and only the Xochimilco records are its wild range.
+
+`ST_Area` has the same problem: on these outlines it gives square degrees, and a square degree near the poles covers far less ground than one at the equator. The area on the ellipsoid is `ST_Area(geom::geography)` in PostGIS and `ST_Area_Spheroid` (latitude first again) in DuckDB, in square metres:
+
+```sql
+-- q: s03-area-pg
+-- status: spike-table
+-- engine: postgis
+SELECT country_code,
+       round(ST_Area(geom)::numeric, 1) AS square_degrees,
+       round((ST_Area(geom::geography) / 1e6)::numeric) AS km2
+FROM country_shapes
+WHERE country_code IN ('BJ', 'CA', 'GL', 'MX', 'NE')
+ORDER BY km2 DESC, country_code;
+```
+
+```text
+-- result: s03-area-pg · 5 rows · sha256 3e1c8df84508
+country_code | square_degrees | km2
+CA | 1691.9 | 9945629
+GL | 659.9 | 2154381
+MX | 174.2 | 1957847
+NE | 100.6 | 1181301
+BJ | 9.6 | 116113
+```
+
+```sql
+-- q: s03-area
+-- status: spike-table
+SELECT country_code,
+       round(ST_Area(geom), 1) AS square_degrees,
+       round(ST_Area_Spheroid(ST_FlipCoordinates(geom)) / 1e6) AS km2
+FROM country_shapes
+WHERE country_code IN ('BJ', 'CA', 'GL', 'MX', 'NE')
+ORDER BY km2 DESC, country_code;
+```
+
+```text
+-- result: s03-area · 5 rows · sha256 3e1c8df84508
+country_code | square_degrees | km2
+CA | 1691.9 | 9945629
+GL | 659.9 | 2154381
+MX | 174.2 | 1957847
+NE | 100.6 | 1181301
+BJ | 9.6 | 116113
+```
+
+In square degrees, Canada and Greenland look far bigger next to Mexico than they are, and the farther north, the bigger the flattery. Lesson 5 meets the same effect in a projected map, where it is built into every cell.
+
+**Shown as:** tables.
+
+**Your turn:** The area in km² of each outline whose code GBIF gave to an African Spurred Tortoise record (species `20`): `country_code` and `km2`, largest first, ties by `country_code`.
+
+```sql
+-- q: s03-ex
+-- status: spike-table
+SELECT c.country_code, round(ST_Area_Spheroid(ST_FlipCoordinates(c.geom)) / 1e6) AS km2
+FROM country_shapes AS c
+WHERE c.country_code IN (SELECT country_code FROM occurrences WHERE species_id = 20)
+ORDER BY km2 DESC, c.country_code;
+```
+
+```text
+-- result: s03-ex · 17 rows · sha256 12947d7d2106
+country_code | km2
+US | 9464228
+MX | 1957847
+SD | 1855614
+TD | 1266282
+ML | 1252724
+… 12 more rows
+```
+
+**Check:** `result, in order`.
+
+**Runs in:** browser (DuckDB spatial); the `-pg` blocks in your own PostGIS
+
+**Evidence:** `out/run-queries/` and `queries.log` (this lesson's blocks in DuckDB-WASM and PostGIS: the same kilometres and km²)
+
+### Spatial lesson 4 · spatial-join
+
+**Concept:** a join on a spatial test; `LEFT JOIN` to keep what matches nothing; checking one source against another. **Question:** Does the outline around each record agree with the country GBIF gave it?
+
+Every GBIF record carries a country code, from its publisher or worked out by GBIF from the coordinates. Joining the records to the outlines checks one against the other. The `LEFT JOIN` keeps a record whose point is in no outline, with `NULL` for the outline, and `count(shape_code)` counts only real matches. Each record then **agrees** (one of its outlines is GBIF's country), **disagrees** or has **no polygon**:
+
+```sql
+-- q: s04-pg
+-- status: spike-table
+-- engine: postgis
+WITH hits AS (
+  SELECT o.id, o.country_code AS gbif_code, c.country_code AS shape_code
+  FROM occurrences AS o
+  LEFT JOIN country_shapes AS c ON ST_Contains(c.geom, ST_SetSRID(ST_Point(o.longitude, o.latitude), 4326))
+), per_record AS (
+  SELECT id, count(shape_code) AS shapes, bool_or(shape_code = gbif_code) AS agrees
+  FROM hits
+  GROUP BY id
+)
+SELECT CASE WHEN shapes = 0 THEN 'no polygon' WHEN agrees THEN 'agree' ELSE 'disagree' END AS outcome,
+       count(*) AS records,
+       count(*) FILTER (WHERE shapes > 1) AS in_two_outlines
+FROM per_record
+GROUP BY 1
+ORDER BY 1;
+```
+
+```text
+-- result: s04-pg · 3 rows · sha256 42a80558287d
+outcome | records | in_two_outlines
+agree | 506 | 3
+disagree | 1 | 0
+no polygon | 21 | 0
+```
+
+```sql
+-- q: s04
+-- status: spike-table
+WITH hits AS (
+  SELECT o.id, o.country_code AS gbif_code, c.country_code AS shape_code
+  FROM occurrences AS o
+  LEFT JOIN country_shapes AS c ON ST_Contains(c.geom, ST_Point(o.longitude, o.latitude))
+), per_record AS (
+  SELECT id, count(shape_code) AS shapes, bool_or(shape_code = gbif_code) AS agrees
+  FROM hits
+  GROUP BY id
+)
+SELECT CASE WHEN shapes = 0 THEN 'no polygon' WHEN agrees THEN 'agree' ELSE 'disagree' END AS outcome,
+       count(*) AS records,
+       count(*) FILTER (WHERE shapes > 1) AS in_two_outlines
+FROM per_record
+GROUP BY 1
+ORDER BY 1;
+```
+
+```text
+-- result: s04 · 3 rows · sha256 42a80558287d
+outcome | records | in_two_outlines
+agree | 506 | 3
+disagree | 1 | 0
+no polygon | 21 | 0
+```
+
+Most records agree. The ones that don't are worth a look:
+
+```sql
+-- q: s04-misses
+-- status: spike-table
+WITH hits AS (
+  SELECT o.id, o.species_id, o.country_code AS gbif_code, c.country_code AS shape_code, o.longitude, o.latitude
+  FROM occurrences AS o
+  LEFT JOIN country_shapes AS c ON ST_Contains(c.geom, ST_Point(o.longitude, o.latitude))
+)
+SELECT id, species_id, gbif_code, shape_code, round(longitude, 3) AS longitude, round(latitude, 3) AS latitude
+FROM hits
+WHERE id NOT IN (SELECT id FROM hits WHERE shape_code = gbif_code)
+ORDER BY id;
+```
+
+```text
+-- result: s04-misses · 22 rows · sha256 eca7db517e0e
+id | species_id | gbif_code | shape_code | longitude | latitude
+665802841 | 24 | MY | NULL | 118.233 | 5.833
+665831156 | 24 | MY | NULL | 118.117 | 5.833
+665831157 | 24 | MY | NULL | 118.117 | 5.833
+1319221115 | 24 | ID | NULL | 103.941 | 0.919
+1571143542 | 20 | SN | NULL | -17.414 | 14.794
+… 17 more rows
+```
+
+Nearly all are on coasts: a record on a beach, a mangrove shore or a small island, just outside an outline whose coastline the mapmaker simplified. One sits on the wrong side of a border. Neither the record nor the outline is simply wrong; they disagree at the precision of the map, and a coarser map (1:50m) leaves more records outside. A country assigned from an outline is an estimate, like every other number derived from a map.
+
+**Shown as:** tables.
+
+**Your turn:** For the Axolotl (species `74`), how many records fall in each outline? Keep the records in no outline (their `country_code` is `NULL`). Show `country_code` and `records`, most first, ties by `country_code` with `NULL` last.
+
+```sql
+-- q: s04-ex
+-- status: spike-table
+SELECT c.country_code, count(*) AS records
+FROM occurrences AS o
+LEFT JOIN country_shapes AS c ON ST_Contains(c.geom, ST_Point(o.longitude, o.latitude))
+WHERE o.species_id = 74
+GROUP BY c.country_code
+ORDER BY records DESC, c.country_code NULLS LAST;
+```
+
+```text
+-- result: s04-ex · 5 rows · sha256 651b56289c7c
+country_code | records
+MX | 222
+CA | 2
+DE | 2
+NZ | 2
+UA | 1
+```
+
+**Check:** `result, in order`.
+
+**Runs in:** browser (DuckDB spatial); the `-pg` block in your own PostGIS
+
+**Evidence:** `out/e1-pip/` (outcome, per-country and mismatches: DuckDB-WASM, Node DuckDB and PostGIS agree at 1:10m, and DuckDB at 1:50m too)
 
 ## 5. The habitat raster
 
