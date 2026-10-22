@@ -4,6 +4,451 @@ This extends [`002-learn.md`](002-learn.md) (engine, learners' schema, ERD and c
 
 ## 1. Growing the data
 
+Every dataset the brief names, plus a trait source for the turtles and tortoises, ranked by what the lessons gain for the ingest work, with license risk first: a dataset whose terms block hosting can't rank above one that doesn't. Each license is quoted word for word from a page the spike saved (`evidence/licenses/<dir>/` in the spike folder, with its URL, time and sha256 in `evidence/licenses/SOURCES.md`); `licenses.ts --verify` checks every quote below against that page. Mission C ingests the non-spatial data, mission D the spatial (§7). Tables are §2's.
+
+| # | Dataset | License | Hostable | Feeds (§2) | Mission |
+|---|---|---|---|---|---|
+| D1 | AnAge | CC BY 3.0 | yes | `traits`, `species_traits` | C |
+| D2 | Natural Earth admin-0 (v5.1.2) | public domain | yes | `country_shapes` | D |
+| D3 | GBIF occurrence sample | per record; CC0 1.0 and CC BY 4.0 only | yes, open records only | `occurrences` | D |
+| D4 | Jung et al. 2020 habitat map, v004 | CC BY 4.0 | yes, v004 only | `habitat_classes`, `country_habitats`, `occurrences.habitat_code` | D |
+| D5 | Wikidata labels | CC0 | yes | `species_names` | C |
+| D6 | AmphiBIO v1 | CC BY 4.0 | yes | `species_traits` | C |
+| D7 | Amniote life-history database | CC BY 4.0 (ESA) / CC0 (Wiley's copy) | yes | `species_traits` | C |
+| D8 | Open Tree of Life 16.1 | CC0 | yes | `tree_nodes` | C |
+| D9 | RESOLVE Ecoregions 2017 | CC BY 4.0 | yes | `ecoregions`, `biomes` | D |
+| D10 | Natural Earth admin-1 and physical layers | public domain | yes | none yet (a later `region_shapes`) | D, optional |
+| D11 | EltonTraits 1.0 | CC BY 4.0 (ESA) / CC0 (Wiley's copy) | yes | `species_traits` | C, optional |
+| D12 | COMBINE | CC BY 4.0 | yes, minus its IUCN-sourced columns | `species_traits` | C, optional |
+| D13 | ReptTraits | CC BY 4.0 | yes, minus its IUCN columns | `species_traits` | not yet |
+| D14 | PanTHERIA | CC BY 4.0 (ESA) / CC0 (Wiley's copy) | yes | `species_traits` | not yet |
+| D15 | CHELSA 2.1 | CC0 | yes | none yet (a later `country_climate`) | after D |
+| D16 | WorldClim 2.1 | non-commercial, no redistribution | **no: blocks hosting** | none | never |
+| D17 | WDPA | no redistribution, no commercial use | **learner download only** | none | D, one learner-own lesson at most |
+
+**Add first: AnAge, Natural Earth admin-0 and the GBIF occurrence sample.**
+- **AnAge** gives mission C its whole first lesson set (a traits table, units, comparing classes) from one small file that covers mammals, reptiles and amphibians.
+- **Natural Earth admin-0** and **the GBIF sample** are what every spatial lesson stands on: E1's point-in-polygon ran on exactly these two (§4), and the habitat track (D4) joins through both.
+- All three are open (CC BY 3.0, public domain, CC0 or CC BY per record), small, and fit pipelines critwire already has (A1's country matcher, `ingest gbif` and its license filter). Where AnAge leaves a class thin (`d01` below), AmphiBIO (D6) and the Amniote database (D7) fill the same `species_traits` table, so the top three don't change.
+
+**Licenses that block hosting:** WorldClim (D16: no redistribution, non-commercial) and WDPA (D17: no redistribution, no commercial use). A learner may download either for their own use; critwire serves neither, nor anything computed from them. **Conditional:** COMBINE (D12) and ReptTraits (D13) only without the columns they took from IUCN's Red List (critwire never stores IUCN data, §6); Jung only version 004 (versions 001 and 002 were CC BY-NC); GBIF only CC0 1.0 and CC BY 4.0 records. IUCN's own range files are §6.
+
+### D1 · AnAge
+
+**Enables:** the traits table and its units (§3), comparing classes on the same trait, NULLs where a species has no value; a "who lives longest" card game.
+
+**License:** CC BY 3.0 Unported · https://genomics.senescence.info/legal.html · retrieved 2026-10-22T21:18:46Z · evidence/licenses/anage/
+
+> This work is licensed under a Creative Commons Attribution 3.0 Unported License. In brief, HAGR is free for all purposes, including commercial, educational, and research purposes, provided you mention the use of HAGR in subsequent presentations, publications, etc.
+
+The same page says the observations themselves are copyrighted, so the license is what lets critwire publish them:
+
+> the data sheets in its databases, including the observations in AnAge and descriptions in GenAge, and the HAGR interface are copyrighted.
+
+**Hostable:** yes, credited (HAGR and the AnAge paper; CC BY 3.0's URL added to `LICENSE_URLS`).
+
+**Size:** `species/dataset.zip`, 169,150 bytes (HEAD, Last-Modified 2023-07-03): one tab-separated file.
+
+**Joins on:** genus and species name → `species.scientific_name`; names that differ are matched through Catalogue of Life synonyms and listed in `mismatches.json`, never guessed.
+
+**Ingest work:** small. A new `ingest anage`: pick named columns (adult body mass, maximum longevity, female maturity, clutch size), each with its unit, into `traits` and `species_traits`.
+
+How far exact names reach today (the spike's stand-in rows, AnAge plus AmphiBIO's body length; mission C's synonym match adds to it):
+
+```sql
+-- q: d01
+-- status: spike-table
+SELECT t.class,
+       count(DISTINCT t.species_id)  AS species,
+       count(DISTINCT st.species_id) AS with_traits
+FROM species_taxonomy AS t
+LEFT JOIN species_traits AS st ON st.species_id = t.species_id
+GROUP BY t.class
+ORDER BY t.class;
+```
+
+```text
+-- result: d01 · 3 rows · sha256 7df873d2ab7f
+class | species | with_traits
+Amphibia | 15 | 15
+Mammalia | 50 | 35
+Reptilia | 11 | 8
+```
+
+### D2 · Natural Earth admin-0 (country outlines)
+
+**Enables:** `country_shapes`: every point-in-polygon and spatial-join lesson (§4), the habitat area per country (D4); a "which country is this point in" map game.
+
+**License:** public domain · https://www.naturalearthdata.com/about/terms-of-use/ · retrieved 2026-10-22T21:18:40Z · evidence/licenses/naturalearth/
+
+> All versions of Natural Earth raster + vector map data found on this website are in the public domain. You may use the maps in any manner, including modifying the content and design, electronic dissemination, and offset printing.
+
+The repository's LICENSE.md at the pinned commit (v5.1.2) says the same:
+
+> # Everything here is public domain.
+
+> No permission is needed to use Natural Earth. Crediting the authors is unnecessary.
+
+**Hostable:** yes. critwire credits it anyway, with the version.
+
+**Size:** admin-0 as GeoParquet (the spike's files): 1:10m 7.35 MB, 1:50m 1.21 MB.
+
+**Joins on:** `countries.code` (ISO alpha-2) by A1's matcher (`scripts/countries-draft.ts`), one outline per code.
+
+**Ingest work:** small. Pin the commit; GeoJSON → GeoParquet with WKB geometry, as the spike's `e1-data.ts` does; 1:50m for the browser, 1:10m for PostGIS.
+
+Countries that critwire lists for some species and that have an outline to test points against:
+
+```sql
+-- q: d02
+-- status: spike-table
+SELECT count(DISTINCT sc.country_code) AS listed_countries,
+       count(DISTINCT cs.country_code) AS with_outline
+FROM species_countries AS sc
+LEFT JOIN country_shapes AS cs ON cs.country_code = sc.country_code;
+```
+
+```text
+-- result: d02 · 1 row · sha256 08e89e7c46e4
+listed_countries | with_outline
+107 | 107
+```
+
+### D3 · GBIF occurrence sample
+
+**Enables:** `occurrences`: points for spatial joins, distance, the habitat value at a point (§4), and the honest lesson that records are not a native range; a "where was it seen" map game.
+
+**License:** per record: CC0, CC BY or CC BY-NC; critwire takes CC0 1.0 and CC BY 4.0 only · https://web.archive.org/web/20260831053310id_/https://www.gbif.org/terms · retrieved 2026-10-22T21:34:17Z · evidence/licenses/gbif/
+
+> the GBIF Governing Board established a general policy to "ensure that all species occurrence datasets within the network are associated with digital licenses equivalent to one of…three choices supplied by Creative Commons":
+
+> CC0, under which data are made available for any use without restriction or particular requirements on the part of users
+
+> CC BY, under which data are made available for any use provided that attribution is appropriately given for the sources of data used, in the manner specified by the owner
+
+> CC BY-NC, under which data are made available for any use provided that attribution is appropriately given and provided the use is not for commercial purposes
+
+The data user agreement (Wayback 20260724235545):
+
+> Users must comply with the terms and conditions included in the licence selected by each Data Publisher, and the licensing information included with each data download.
+
+**Hostable:** yes, CC0 1.0 and CC BY 4.0 records only (the filter critwire's countries already use, `assertOpenLicenses`); never CC BY-NC. Each row keeps its `license` and `dataset_key`, and the derived-dataset DOI credits the datasets.
+
+**Size:** a capped sample per species (the spike's: one page of up to 300 records per species, 12 KB of Parquet for three species), not every open record.
+
+**Joins on:** `species.gbif_id` (GBIF's taxonKey) → `occurrences.species_id`; the record's country → `countries.code`; `habitat_code` → `habitat_classes.code` (D4).
+
+**Ingest work:** medium. The sample is drawn inside `ingest gbif`, with the same filters and in the same run, so the dataset counts and the DOI don't change; derive checks every sampled record's dataset is counted.
+
+The spike's sample by license, and how many of its records fall in a country critwire already lists for that species:
+
+```sql
+-- q: d03
+-- status: spike-table
+SELECT o.license,
+       count(*)                                         AS records,
+       count(DISTINCT o.species_id)                     AS species,
+       count(*) FILTER (WHERE sc.species_id IS NOT NULL) AS in_listed_country
+FROM occurrences AS o
+LEFT JOIN species_countries AS sc
+  ON sc.species_id = o.species_id AND sc.country_code = o.country_code
+GROUP BY o.license
+ORDER BY o.license;
+```
+
+```text
+-- result: d03 · 2 rows · sha256 092d7f7b2773
+license | records | species | in_listed_country
+CC BY 4.0 | 377 | 3 | 373
+CC0 1.0 | 151 | 3 | 150
+```
+
+### D4 · Jung et al. 2020 habitat map, v004
+
+**Enables:** the raster lessons (§4), habitat composition per country (`country_habitats`, a many-to-many lesson in §3), the habitat class at open-record points; a "guess the habitat" game from a map tile.
+
+**License:** CC BY 4.0 · https://zenodo.org/records/4058819 · retrieved 2026-10-22T21:18:43Z · evidence/licenses/jung/
+
+> Rights License Creative Commons Attribution 4.0 International
+
+> Please cite the published paper and state the used version of the habitat map
+
+The API record names the version:
+
+> "license": {"id": "cc-by-4.0"}
+
+> "version": "004"
+
+**Hostable:** yes for version 004, and anything computed from it, credited with the paper and the version. Versions 001 and 002 were CC BY-NC 4.0; the owner's COG names no version, so its provenance is §5's gate.
+
+**Size** (Zenodo API): level-2 fractions at 1 km, `lvl2_frac_1km_ver004.zip`, 695,484,415 bytes (79 layers); level-2 composite at 100 m, 2,454,999,319 bytes; the legend's code zip, 2,149,859 bytes.
+
+**Joins on:** class `code` → `habitat_classes` (from the legend); `country_habitats (country_code, habitat_code)` and `occurrences.habitat_code` are computed by `ingest habitat` (§2, §5).
+
+**Ingest work:** large (mission D): `pnpm ingest habitat`, measured in the spike as 695 MB from Zenodo in 223 s and about 37 minutes of single-threaded decoding for all 79 layers (§5).
+
+### D5 · Wikidata labels
+
+**Enables:** `species_names`: a one-to-many lesson (names per language), `GROUP BY language`, a `LEFT JOIN` for names that are missing; a name-matching game in the learner's own language.
+
+**License:** CC0 · https://www.wikidata.org/wiki/Wikidata:Licensing · retrieved 2026-10-22T21:34:14Z · evidence/licenses/wikidata/
+
+> All structured data (i.e. the main, Property, Lexeme, and EntitySchema namespaces) is released into the public domain under Creative Commons Zero.
+
+> All data in Wikidata has a CC0 license.
+
+**Hostable:** yes. Wikidata is already a cited source; labels are structured data. Text in other namespaces (CC BY-SA) is never used.
+
+**Size:** a few hundred KB as JSON (the spike's `species_names.parquet`: 70 KB).
+
+**Joins on:** `species.wikidata_id` → `species_names (species_id, language)`.
+
+**Ingest work:** small. `ingest wikidata` already fetches named properties; it adds `rdfs:label` per language. Never whole entities, and never property P141, which is a Red List category.
+
+Languages per species in the stand-in:
+
+```sql
+-- q: d04
+-- status: spike-table
+SELECT count(*)    AS species,
+       min(n)      AS fewest_languages,
+       median(n)   AS median_languages,
+       max(n)      AS most_languages
+FROM (SELECT species_id, count(*) AS n FROM species_names GROUP BY species_id);
+```
+
+```text
+-- result: d04 · 1 row · sha256 2c42f01843c0
+species | fewest_languages | median_languages | most_languages
+76 | 32 | 58.5 | 224
+```
+
+### D6 · AmphiBIO v1
+
+**Enables:** the amphibians' traits in more depth than AnAge (body size, age at maturity, clutch size, habitat flags), so comparing classes isn't mammals against nothing.
+
+**License:** CC BY 4.0 · https://api.figshare.com/v2/articles/4644424 · retrieved 2026-10-22T21:18:47Z · evidence/licenses/amphibio/
+
+> "license": {"value": 1, "name": "CC BY 4.0", "url": "https://creativecommons.org/licenses/by/4.0/"}
+
+> "doi": "10.6084/m9.figshare.4644424.v5"
+
+**Hostable:** yes, credited.
+
+**Size:** `AmphiBIO_v1.zip`, 1,437,220 bytes (API).
+
+**Joins on:** species name → `species.scientific_name`, the amphibians only.
+
+**Ingest work:** small: one CSV in a zip; named columns, each with its unit.
+
+### D7 · Amniote life-history database (Testudines)
+
+**Enables:** one set of columns and units (body mass, longevity, clutch size, maturity) across mammals and reptiles, the turtles and tortoises included: the cleanest "comparing classes" lesson, and the reptile rows AnAge lacks.
+
+**License:** CC BY 4.0 archive-wide at ESA; CC0 on the publisher's figshare copy · https://esapubs.org/archive/copyright.htm · retrieved 2026-10-22T21:19:11Z · evidence/licenses/amniote/
+
+> Except where otherwise noted, Ecological Archives are covered under the Creative Commons Attribution (CC BY 4.0) license.
+
+> Copyright restrictions: None.
+
+Wiley's figshare copy (record 3563457):
+
+> "license": {"value": 2, "name": "CC0", "url": "https://creativecommons.org/publicdomain/zero/1.0/"}
+
+> "title": "An amniote life-history database to perform comparative analyses with birds, mammals, and reptiles"
+
+**Hostable:** yes, credited as CC BY 4.0 (the stricter of the publisher's two open statements).
+
+**Size:** `ECOL_96_269.zip`, 6,539,535 bytes (API).
+
+**Joins on:** genus and species → `species.scientific_name`.
+
+**Ingest work:** small: one CSV in a zip; `-999` means missing and becomes NULL. Simpler than ReptTraits (D13): smaller, CC0 at the source, and no IUCN columns.
+
+### D8 · Open Tree of Life 16.1
+
+**Enables:** `tree_nodes`: the self-join lesson (parent and child), a recursive CTE ("all the ancestors of …"), "closest relative" questions; a tree-building game.
+
+**License:** CC0 · https://tree.opentreeoflife.org/about/licenses · retrieved 2026-10-22T21:34:15Z · evidence/licenses/opentree/
+
+> Where not limited by pre-existing terms of use, all data are published with a CC0 public domain dedication (copyright waiver).
+
+> Open Tree of Life version 16.1
+
+**Hostable:** yes, credited with the synthesis release and the Open Tree paper. The tree is Open Tree's own output; the source studies stay in Open Tree's phylesystem, which critwire never copies.
+
+**Size:** the whole release is a 38 MB archive; the induced subtree of critwire's species, from the API, is a few KB of Newick.
+
+**Joins on:** Open Tree's taxon id, matched from `species.ncbi_id` or `species.gbif_id` through Open Tree's taxonomy sources, else by name; unmatched species listed, never guessed → `tree_nodes.species_id`.
+
+**Ingest work:** small to medium: a new `ingest opentree` (match names, one `induced_subtree` call), Newick parsed into `tree_nodes` with a `depth` column so DuckDB can load the self-reference level by level (§2).
+
+### D9 · RESOLVE Ecoregions 2017
+
+**Enables:** `ecoregions` and `biomes`: a many-to-many through records (species ↔ ecoregions where they were recorded, never a native range), biomes as a `GROUP BY`, "which biome is this point in".
+
+**License:** CC BY 4.0 · https://ecoregions.appspot.com/ · retrieved 2026-10-22T21:18:42Z · evidence/licenses/resolve/
+
+> Download data: • Shapefile (150mb zip) Licensed under CC-BY 4.0
+
+**Hostable:** yes, credited.
+
+**Size:** `Ecoregions2017.zip`, 149,248,653 bytes (HEAD, Last-Modified 2019-05-07): one shapefile.
+
+**Joins on:** no species keys: its own ecoregion and biome ids, then spatial joins (occurrence points → ecoregion; ecoregion ∩ `country_shapes`).
+
+**Ingest work:** medium. Read the shapefile with DuckDB `spatial`'s `ST_Read` in Node (the VPS has no GDAL command-line tools), split biomes out, simplify for the browser, commit GeoParquet.
+
+### D10 · Natural Earth admin-1 and physical layers
+
+**Enables:** "which state or province" questions, deserts, mountain ranges, rivers and lakes for map games.
+
+**License:** public domain · https://www.naturalearthdata.com/about/terms-of-use/ · retrieved 2026-10-22T21:18:40Z · evidence/licenses/naturalearth/
+
+> All versions of Natural Earth raster + vector map data found on this website are in the public domain.
+
+**Hostable:** yes.
+
+**Size** (GeoJSON at the pinned commit, HEAD): admin-1 1:10m 40,726,851 bytes, 1:50m 2,325,694; geography regions 1:50m 4,305,815; rivers 1:50m 827,318; lakes 1:50m 876,018.
+
+**Joins on:** admin-1 by its ISO 3166-2 code and its country's alpha-2 (A1's matcher); physical layers have no keys, spatial joins only.
+
+**Ingest work:** small, as D2. Admin-1 at 1:10m is too big for a browser page: 1:50m only there, or a PostGIS lesson.
+
+### D11 · EltonTraits 1.0
+
+**Enables:** a diet lesson: ten diet categories per mammal, in percent, that should sum to 100 (a `GROUP BY … HAVING sum(…) <> 100` check).
+
+**License:** CC BY 4.0 archive-wide at ESA; CC0 on the publisher's figshare copy · https://esapubs.org/archive/copyright.htm · retrieved 2026-10-22T21:18:53Z · evidence/licenses/eltontraits/
+
+> Except where otherwise noted, Ecological Archives are covered under the Creative Commons Attribution (CC BY 4.0) license.
+
+> Copyright restrictions: None.
+
+> Ecological Archives are also hosted on FigShare.
+
+> "license": {"value": 2, "name": "CC0", "url": "https://creativecommons.org/publicdomain/zero/1.0/"}
+
+**Hostable:** yes, credited as CC BY 4.0. The ESA data-paper page shows only "Copyright Authors", a holder rather than a license; the archive's own page and the publisher's copy are the two open statements, and critwire follows the stricter.
+
+**Size:** `MamFuncDat.txt`, 579,107 bytes (API).
+
+**Joins on:** scientific name (an older mammal taxonomy, MSW3), through Catalogue of Life synonyms; mismatches listed.
+
+**Ingest work:** small: one tab-separated file. Its metadata asks that the body-mass sources be cited too, so mission C cites them or leaves body mass to AnAge.
+
+### D12 · COMBINE
+
+**Enables:** the widest mammal trait set, and a lesson on reported against imputed values (two files: what was measured, and what was estimated to fill gaps).
+
+**License:** CC BY 4.0 · https://api.figshare.com/v2/articles/13028255 · retrieved 2026-10-22T21:19:04Z · evidence/licenses/combine/
+
+> "license": {"value": 1, "name": "CC BY 4.0", "url": "https://creativecommons.org/licenses/by/4.0/"}
+
+> COMBINE contains information on 54 traits for 6,234 extant and recently extinct mammal species
+
+**Hostable:** yes, credited, **without the columns it sourced from IUCN** (its own source list names the Red List for the elevation limits, generation length and life-habit method). Each ingest names its columns; any other is refused.
+
+**Size:** `trait_data_reported.csv` 1,612,538 bytes, `trait_data_imputed.csv` 1,891,897 bytes (API).
+
+**Joins on:** binomial (the Red List 2020-2 and PHYLACINE 1.2 taxonomy, names only) → `species.scientific_name`, the mammals.
+
+**Ingest work:** small to medium: one CSV, an explicit column allow-list, reported values first and imputed ones labelled.
+
+### D13 · ReptTraits (Testudines)
+
+**Enables:** reptile traits beyond the Amniote database (D7): more columns for the turtles and tortoises.
+
+**License:** CC BY 4.0 · https://api.figshare.com/v2/articles/24572683 · retrieved 2026-10-22T21:19:05Z · evidence/licenses/repttraits/
+
+> "license": {"value": 1, "name": "CC BY 4.0", "url": "https://creativecommons.org/licenses/by/4.0/"}
+
+> 40 traits from 12060 species of reptile (Amphisbaenia, Crocodylia, Rhynchocephalia, Sauria, Serpentes and Testudines)
+
+> along with availability of genetic data, IUCN red list assessments, and population trends.
+
+**Hostable:** yes, credited, **without its IUCN columns** (the Red List assessments the description names).
+
+**Size:** `ReptTraits dataset v1-2.xlsx`, 18,545,434 bytes (API).
+
+**Joins on:** species name (Reptile Database taxonomy) → `species.scientific_name`.
+
+**Ingest work:** medium: an xlsx (read as the spike reads v004's legend) and a column allow-list. Only if D7 leaves gaps.
+
+### D14 · PanTHERIA
+
+**Enables:** the same mammal trait lessons, and a NULL lesson: its missing values are coded `-999`.
+
+**License:** CC BY 4.0 archive-wide at ESA; CC0 on the publisher's figshare copy · https://esapubs.org/archive/copyright.htm · retrieved 2026-10-22T21:19:00Z · evidence/licenses/pantheria/
+
+> Except where otherwise noted, Ecological Archives are covered under the Creative Commons Attribution (CC BY 4.0) license.
+
+> Copyright restrictions: None.
+
+> "license": {"value": 2, "name": "CC0", "url": "https://creativecommons.org/publicdomain/zero/1.0/"}
+
+**Hostable:** yes, credited as CC BY 4.0, as EltonTraits.
+
+**Size:** `ECOL_90_184.zip`, 2,950,934 bytes (API).
+
+**Joins on:** binomial (MSW05 taxonomy), as EltonTraits; mammals only.
+
+**Ingest work:** small, but COMBINE (D12) already includes it: not yet.
+
+### D15 · CHELSA 2.1 climatologies
+
+**Enables:** climate at open-record points (mean temperature, rainfall), comparing species' records by climate, and a raster lesson with continuous values (`AVG`, not class counts).
+
+**License:** CC0 1.0 · https://www.envidat.ch/api/action/package_show?id=chelsa-climatologies · retrieved 2026-10-22T21:34:22Z · evidence/licenses/chelsa/
+
+> "license_id": "CC0-1.0", "license_title": "Creative Commons Zero - No Rights Reserved (CC0 1.0)"
+
+> "version": "2.1"
+
+**Hostable:** yes. EnviDat holds the dataset of record (chelsa-climate.org renders its pages in JavaScript, with no license text in the HTML). critwire cites Karger et al. 2017 anyway.
+
+**Size:** one variable at 30 arc-seconds, worldwide: `CHELSA_bio1_1981-2010_V.2.1.tif`, 115,490,323 bytes (HEAD); the 19 bioclimatic variables about 2 GB.
+
+**Joins on:** no keys: raster values inside `country_shapes` or at `occurrences` points, as the habitat raster.
+
+**Ingest work:** medium to large: an `ingest climate` modelled on `ingest habitat` (one or two variables, per-country summaries and point values, with the method and version). After mission D.
+
+### D16 · WorldClim 2.1
+
+**Enables:** nothing critwire hosts. CHELSA (D15) covers the same need under CC0.
+
+**License:** non-commercial, no redistribution without permission · https://www.worldclim.org/about.html · retrieved 2026-10-22T21:34:21Z · evidence/licenses/worldclim/
+
+> The data are freely available for academic use and other non-commercial use. Redistribution or commercial use is not allowed without prior permission.
+
+**Hostable:** no: blocks hosting. Values computed from it are treated as not hostable too: the terms don't say they're allowed, and unclear terms mean no (decision rules). A learner may download it for their own use.
+
+**Size:** `wc2.1_10m_bio.zip` 49,869,449 bytes; `wc2.1_30s_bio.zip` 10,401,038,857 bytes (HEAD).
+
+**Joins on:** as CHELSA.
+
+**Ingest work:** none.
+
+### D17 · WDPA (Protected Planet)
+
+**Enables:** at most one "your own PostGIS, your own download" lesson (records inside protected areas), like the IUCN lessons in §6: critwire supplies the SQL and setup steps, never the data.
+
+**License:** UNEP-WCMC terms: no commercial use, no redistribution · https://www.protectedplanet.net/en/legal · retrieved 2026-10-22T21:34:22Z · evidence/licenses/wdpa/
+
+> may be put to Commercial Use without the prior written permission of UNEP-WCMC.
+
+> You may not redistribute the WDPCA and GD-PAME Data contained in the WDPCA and GD-PAME in whole or in part by any means including (but not limited to) electronic formats such as web downloads, through web services, through interactive web maps (including mobile applications) that grant users download access, KML Files or through file transfer protocols.
+
+> You may publish the WDPCA and GD-PAME Materials in whole or in part, including on-line, providing (a) the WDPCA and GD-PAME Data are not downloadable and (b) the proper attribution is clearly visible
+
+**Hostable:** learner download only. critwire is static files, and every file it serves can be downloaded.
+
+**Size:** not measured: the download sits behind the terms, and critwire never downloads it.
+
+**Joins on:** none on critwire's side; in a learner's own PostGIS, spatial joins to `country_shapes` and `occurrences`.
+
+**Ingest work:** none.
+
 ## 2. The grown schema and its ERD
 
 The grown schema adds tables to 002's first version without renaming or changing any of it. Its setup runs after 002's `setup`, copied here byte for byte. Every block in this file runs on the database both setups build, so the row counts below already include the grown setup's new `sources` rows:
