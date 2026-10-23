@@ -356,7 +356,182 @@ pointpats: 2.6.0
 
 ### 5.4 Spatial statistics
 
-(S25)
+#### s4 · moran
+
+(S25 writes the outline around this key code; §A.2 is the spike that tests it.)
+
+**Key code:**
+
+Points can't be the units for Moran's I: a record has no value to compare with its neighbours', and many records share one spot. So the records are counted into equal-area hexagons over Tasmania's main island (EPSG:3577, Australian Albers), at two cell sizes, and each cell's value is `y = ln(1 + n)`. Its centroid is kept as two plain numbers, `cx` and `cy`, so SQL and PySAL measure distances from the same coordinates. The neighbour rule is a view: two cells of one grid are neighbours when their centroids are within twice the edge length. This block runs when a PostGIS run starts, and its tables stay until the lab data is loaded again.
+
+```sql
+-- q: s4-cells
+-- status: ran
+-- engine: postgis
+-- boot
+CREATE TABLE s4_cells AS
+WITH island AS (
+  SELECT (part).geom
+  FROM (SELECT ST_Dump(ST_Transform(geom, 3577)) AS part
+        FROM admin1_shapes WHERE country_code = 'AU' AND name = 'Tasmania') AS parts
+  ORDER BY ST_Area((part).geom) DESC
+  LIMIT 1
+), devils AS (
+  SELECT ST_Transform(o.geom, 3577) AS geom
+  FROM occurrences AS o JOIN species AS s ON s.id = o.species_id
+  WHERE s.scientific_name = 'Sarcophilus harrisii'
+), grid AS (
+  SELECT e.edge_m, h.i, h.j, h.geom
+  FROM island, (VALUES (5000), (10000)) AS e (edge_m), ST_HexagonGrid(e.edge_m, island.geom) AS h
+  WHERE ST_Intersects(h.geom, island.geom)
+)
+SELECT row_number() OVER (ORDER BY g.edge_m, g.i, g.j)::integer AS id,
+       g.edge_m, g.geom,
+       ST_X(ST_Centroid(g.geom)) AS cx,
+       ST_Y(ST_Centroid(g.geom)) AS cy,
+       count(d.geom)::integer AS n,
+       ln(1 + count(d.geom)::float8) AS y
+FROM grid AS g LEFT JOIN devils AS d ON ST_Contains(g.geom, d.geom)
+GROUP BY g.edge_m, g.i, g.j, g.geom;
+ALTER TABLE s4_cells ADD PRIMARY KEY (id);
+CREATE VIEW s4_neighbours AS
+SELECT a.edge_m, a.id AS i, b.id AS j
+FROM s4_cells AS a
+JOIN s4_cells AS b
+  ON b.edge_m = a.edge_m AND b.id <> a.id
+ AND ST_DWithin(ST_Point(a.cx, a.cy, 3577), ST_Point(b.cx, b.cy, 3577), 2 * a.edge_m);
+SELECT c.edge_m, count(*) AS cells, sum(c.n) AS records_in_cells,
+       (SELECT count(*) FROM occurrences AS o JOIN species AS s ON s.id = o.species_id
+        WHERE s.scientific_name = 'Sarcophilus harrisii') - sum(c.n) AS records_in_no_cell,
+       max(c.n) AS max_n
+FROM s4_cells AS c
+GROUP BY c.edge_m
+ORDER BY c.edge_m;
+```
+
+```text
+-- result: s4-cells · 2 rows · sha256 29efe20842eb
+edge_m | cells | records_in_cells | records_in_no_cell | max_n
+5000 | 1094 | 1972 | 28 | 256
+10000 | 296 | 1990 | 10 | 475
+```
+
+Before building weights from a distance band, look at the distances. In a hexagon grid with edge `e`, centroids are √3·e apart (the touching cells), then 3·e (the next ring). A threshold of 2·e sits between the two, with no pair near it, so every cell gets exactly its touching cells and a rounding error can't move a pair across. The block also counts duplicate centroids and cells with no neighbour (an "island"), which would break the statistic.
+
+```sql
+-- q: s4-geometry
+-- status: ran
+-- engine: postgis
+WITH pairs AS (
+  SELECT a.edge_m, ST_Distance(ST_Point(a.cx, a.cy, 3577), ST_Point(b.cx, b.cy, 3577)) AS d_m
+  FROM s4_cells AS a
+  JOIN s4_cells AS b
+    ON b.edge_m = a.edge_m AND b.id > a.id
+   AND ST_DWithin(ST_Point(a.cx, a.cy, 3577), ST_Point(b.cx, b.cy, 3577), 4 * a.edge_m)
+), classes AS (
+  SELECT edge_m, round(d_m::numeric, 2) AS d_m,
+         dense_rank() OVER (PARTITION BY edge_m ORDER BY round(d_m::numeric, 2)) AS class
+  FROM pairs
+)
+SELECT c.edge_m,
+       2 * c.edge_m AS threshold_m,
+       (SELECT min(d_m) FROM classes WHERE edge_m = c.edge_m AND class = 1) AS class_1_m,
+       (SELECT min(d_m) FROM classes WHERE edge_m = c.edge_m AND class = 2) AS class_2_m,
+       count(*) - count(DISTINCT (c.cx, c.cy)) AS duplicate_centroids,
+       count(*) FILTER (WHERE NOT EXISTS (SELECT 1 FROM s4_neighbours AS nb WHERE nb.i = c.id)) AS islands,
+       (SELECT count(*) FROM pairs AS p WHERE p.edge_m = c.edge_m AND abs(p.d_m - 2 * p.edge_m) <= 1) AS pairs_near_threshold
+FROM s4_cells AS c
+GROUP BY c.edge_m
+ORDER BY c.edge_m;
+```
+
+```text
+-- result: s4-geometry · 2 rows · sha256 099b07470829
+edge_m | threshold_m | class_1_m | class_2_m | duplicate_centroids | islands | pairs_near_threshold
+5000 | 10000 | 8660.25 | 15000.00 | 0 | 0 | 0
+10000 | 20000 | 17320.51 | 30000.00 | 0 | 0 | 0
+```
+
+Global Moran's I in plain SQL, with row-standardized weights (`w_ij = 1/k_i`, where `k_i` is cell i's number of neighbours) and its expected value, variance and z-score under the normality assumption. These are the formulas PySAL's `esda.Moran` uses (`EI`, `VI_norm`, `z_norm`).
+
+```sql
+-- q: s4-moran-sql
+-- status: ran
+-- engine: postgis
+WITH z AS (
+  SELECT id, edge_m, y - avg(y) OVER (PARTITION BY edge_m) AS z FROM s4_cells
+), w AS (
+  SELECT edge_m, i, j, 1 / count(*) OVER (PARTITION BY i)::float8 AS w FROM s4_neighbours
+), pairs AS (
+  SELECT w.edge_m, w.i, w.j, w.w AS w_ij, t.w AS w_ji
+  FROM w JOIN w AS t ON t.i = w.j AND t.j = w.i
+), sums AS (
+  SELECT p.edge_m,
+         sum(p.w_ij * zi.z * zj.z) AS wzz,
+         sum(p.w_ij) AS s0,
+         sum((p.w_ij + p.w_ji) ^ 2) / 2 AS s1
+  FROM pairs AS p JOIN z AS zi ON zi.id = p.i JOIN z AS zj ON zj.id = p.j
+  GROUP BY p.edge_m
+), s2 AS (
+  SELECT edge_m, sum(ws ^ 2) AS s2
+  FROM (SELECT edge_m, i, sum(w_ij) + sum(w_ji) AS ws FROM pairs GROUP BY edge_m, i) AS cell
+  GROUP BY edge_m
+), cells AS (
+  SELECT edge_m, count(*)::float8 AS n, sum(z * z) AS zz FROM z GROUP BY edge_m
+), moran AS (
+  SELECT c.edge_m, c.n,
+         c.n / s.s0 * s.wzz / c.zz AS i,
+         -1 / (c.n - 1) AS ei,
+         (c.n ^ 2 * s.s1 - c.n * s2.s2 + 3 * s.s0 ^ 2) / ((c.n - 1) * (c.n + 1) * s.s0 ^ 2) - (1 / (c.n - 1)) ^ 2 AS var_norm
+  FROM cells AS c JOIN sums AS s USING (edge_m) JOIN s2 USING (edge_m)
+)
+SELECT edge_m, n::integer AS n, i, ei, var_norm, (i - ei) / sqrt(var_norm) AS z
+FROM moran
+ORDER BY edge_m;
+```
+
+```text
+-- result: s4-moran-sql · 2 rows · sha256 7cd3a5f317d7
+edge_m | n | i | ei | var_norm | z
+5000 | 1094 | 0.27329612511604184 | -0.0009149130832570906 | 0.000326399057870225 | 15.177857980449323
+10000 | 296 | 0.2035877773186644 | -0.003389830508474576 | 0.0012597916525627741 | 5.831415676740585
+```
+
+The same statistic in PySAL, from the same cells. `DistanceBand` builds the binary weights; `transformation="r"` row-standardizes them. `z_rand` is the z-score under the randomization assumption, which ArcGIS reports.
+
+```python
+# q: s4-moran-pysal
+# status: ran
+# after: py-connect
+import esda
+import numpy as np
+from libpysal.weights import DistanceBand
+
+results = {}
+with connect() as conn:
+    edges = [e for (e,) in conn.execute("SELECT DISTINCT edge_m FROM s4_cells ORDER BY edge_m")]
+    for edge_m in edges:
+        rows = conn.execute(
+            "SELECT id, y, cx, cy FROM s4_cells WHERE edge_m = %s ORDER BY id", (edge_m,)
+        ).fetchall()
+        ids = [r[0] for r in rows]
+        y = np.array([r[1] for r in rows])
+        xy = np.array([(r[2], r[3]) for r in rows])
+        w = DistanceBand(xy, threshold=2 * edge_m, binary=True, ids=ids)
+        assert w.islands == [], f"cells with no neighbour: {w.islands}"
+        results[edge_m] = esda.Moran(y, w, transformation="r", permutations=0)
+
+print("edge_m | n | I | E[I] | Var_norm | z_norm | z_rand")
+for edge_m, mi in results.items():
+    print(f"{edge_m} | {mi.n} | {mi.I:.6f} | {mi.EI:.6f} | {mi.VI_norm:.6e} | {mi.z_norm:.6f} | {mi.z_rand:.6f}")
+```
+
+```text
+-- result: s4-moran-pysal · python · sha256 30d9b36db807
+edge_m | n | I | E[I] | Var_norm | z_norm | z_rand
+5000 | 1094 | 0.273296 | -0.000915 | 3.263991e-04 | 15.177858 | 15.246590
+10000 | 296 | 0.203588 | -0.003390 | 1.259792e-03 | 5.831416 | 5.847466
+```
 
 ### 5.5 ETL
 
@@ -434,7 +609,29 @@ Every open record, uncapped, would be 4.8 MB as Parquet and 44.6 MB as CSV; it i
 
 **Evidence:** `SP/out/etl-postgis/` (`summary.md`, `sample.json`, `sample-contributions.json`, the two `verify-load-*.json`) and `SP/out/boot-time/`.
 
-(S10–S11: A.2 and A.3.)
+### A.2 Spatial statistics: global Moran's I, SQL = PySAL (S10)
+
+**Question.** Does Moran's I written in plain SQL give exactly what PySAL gives, so s4 can teach both and trust either?
+
+**Inputs.** The lab sample's 2,000 Tasmanian devil records; `admin1_shapes`' Tasmania (its largest part, the main island); s4's four blocks (§5.4), which the spike extracts from this file by id (`SP/scripts/block.ts`), so the lesson and the test are the same code.
+
+**Commands.** `SP/moran/run.sh`: loads the lab data, runs `s4-cells`, gates `s4-geometry`'s distances, runs `s4-moran-sql` and `s4-moran-pysal` (with `py-connect`), then `SP/moran/compare.py` compares neighbour sets pair by pair, then the statistics.
+
+| Grid (edge) | Cells | Records in a cell | Neighbour pairs | I | z (normality) | z (randomization) |
+|---|---|---|---|---|---|---|
+| 5 km (compared) | 1,094 | 1,972 of 2,000 | 6,246, equal in both | 0.273296 | 15.177858 | 15.246590 |
+| 10 km (MAUP, recorded) | 296 | 1,990 of 2,000 | equal in both | 0.203588 | 5.831416 | 5.847466 |
+
+**What the spike found:**
+- **SQL = PySAL.** On the 5 km grid, I, E[I], Var_norm and z agree to 6 decimals; the largest difference is 1.1e-12 (in z; the gate is 5e-7). The SQL is esda's `__moments` formulas with row-standardized weights.
+- **The distance band is safe only in a gap.** The two smallest centroid distances are 8,660.25 and 15,000.00 m (17,320.51 and 30,000.00 m at 10 km), with no duplicate centroid, no cell without a neighbour and no pair within 1 m of the threshold (2 × edge). s4 checks this before any weight is built.
+- **Coincident points.** Two records at one spot are neighbours for `ST_DWithin` but not for libpysal's `DistanceBand`, which drops zero distances (a 3-point test). That is one more reason the units are cells, not points (s4).
+- **Scale changes the answer (MAUP).** The same records give I = 0.273 on 5 km cells and 0.204 on 10 km cells; both are strongly clustered. The clustering largely measures where people record devils (roads, atlases), not where devils live: s4 says so.
+- 28 records fall in no 5 km cell, and the block reports them: 12 on Maria Island (a population moved there for conservation), 10 off the north coast or at sea, 4 on the Australian mainland and 2 in New Mexico, USA (near Albuquerque). Units drawn over the main island leave them out by design; s1 uses such records to teach that a record is where someone saw the animal.
+
+**Evidence:** `SP/out/moran/` (`summary.md`, `compare.json` at full precision, `raw/`).
+
+(S11: A.3.)
 
 ## B. Disagreements with 002 and 003
 
