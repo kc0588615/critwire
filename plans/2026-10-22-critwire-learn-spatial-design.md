@@ -1277,6 +1277,13 @@ SHOULD-CONSIDER:
 
 ## Release
 
+- 2026-10-23 01:56 UTC. Rebase: no-op (`origin/main` still `d6eeffb`, the branch's base). Full Verification V0–V12 re-run: all exit 0 (`/srv/critter-ai/agent-state/missions/critwire-learn-spatial-design/verify/verify-20261023T0147Z.log`; E2E 20/20, `/srv/critter-ai/agent-state/missions/critwire-learn-spatial-design/e2e/`).
+- PR: https://github.com/kc0588615/critwire/pull/8, merged with `gh pr merge 8 --merge`; merge commit `c305f87ea1dc55d0d7c70f8c0458204981c62874`.
+- `deploy critwire`, last line: `deploy critwire: live at https://critwire.com` (`d6eeffb -> c305f87`); log `/srv/critter-ai/agent-state/missions/critwire-learn-spatial-design/release/deploy.log`.
+- Release smoke (Verification's block): all 157 Baseline live paths fetched from https://critwire.com, sha256 identical to `baseline/live.sha256`: `RELEASE_SMOKE_OK` (`/srv/critter-ai/agent-state/missions/critwire-learn-spatial-design/release/live-after/`). The mission changed only `plans/`, so no served file changed.
+
+Result: done
+
 ## Decisions
 
 - Steps (planner, 2026-10-22): 26 steps S1–S26 from T12's 16 units; units 2–6, 10, 11, 13 split; S12–S13 added (run-queries extension, after E1 since `pg-setup` loads E1's Parquet + E4's clip).
@@ -1460,6 +1467,8 @@ SHOULD-CONSIDER:
 - 2026-10-23 02:20 UTC: S28. `s07-ex`, `i03-ex` filter `COALESCE(h.level1_code, h.code) = 100`; `s07-ex` 23,415 → 23,445 km² (2,919 code-100 cells ≈ 30 km²), `i03-ex` unchanged at 1 dp (CR 45.485 → 45.544 %, range 52.2); Your-turn prose says class 100 included; no other `level1_code =` filter in 003 or briefs. `--update` diff read (only those 2 blocks), `--check --erd` ok 70 blocks, 0 diffs, results = log. Spike typecheck pass, tests 219/219. Guard: plans-only, 002 untouched, typecheck pass, test 66/66, dist = baseline (157), spike 868 MB, no Caddy, 3100–3102 free.
 - 2026-10-23 01:46 UTC: Final Verification V0–V12 (`$M/verify/verify-20261023T0137Z.log`): all exit 0; typecheck pass, test 66/66, dist = baseline (157), E2E 20/20 (`$M/e2e/`), spike tests 219/219, `--check --erd` 70 blocks 0 diffs, ERD 13 tables/17 lines, quotes verbatim (35 pages), V9 clean, smokes e1-pip 11/11 + e4-browser 8/8. Summary written; status done.
 
+- 2026-10-23 02:00 UTC: Release. Verification V0–V12 re-run pass; PR #8 merged (`c305f87`); `deploy critwire` ok; release smoke 157/157 identical (`RELEASE_SMOKE_OK`).
+
 ## Summary
 
 Mission A2 delivered `plans/003-learn-data-spatial.md` (§1–§8 + Disagreements with 002), `plans/003-learn-erd.mmd`, and the briefs for missions C and D. Only `plans/` changed; `dist/` is byte-identical to main (157 files).
@@ -1473,3 +1482,4 @@ Mission A2 delivered `plans/003-learn-data-spatial.md` (§1–§8 + Disagreement
 - **Reviews:** architecture Fable APPROVE WITH CHANGES, Astra APPROVE_WITH_CHANGES (all MUST-FIX resolved in Revision); code review Astra APPROVE_WITH_CHANGES, 2 MUST-FIX fixed (S27, S28).
 - **Astra SHOULD-CONSIDER (for D, not done here):** state explicitly that every PostGIS raster lesson adapts to v004's EPSG:4326 clips (several queries still hardcode EPSG:3857 and 103.02 m cells); split spatial setup from the grown-data setup, so `spatial` loads only on spatial pages.
 - **Verification:** V0–V12 all pass (`/srv/critter-ai/agent-state/missions/critwire-learn-spatial-design/verify/verify-20261023T0137Z.log`). E2E artifact: `/srv/critter-ai/agent-state/missions/critwire-learn-spatial-design/e2e/` (20/20, `playwright-report/`, traces); spike browser evidence in `spike/out/{e1-pip,e4-browser,smoke}/`; every 003 query result in `queries.log`.
+- **Release:** PR #8 merged (`c305f87`), `deploy critwire` ok, release smoke: 157 live files identical to Baseline.
