@@ -1511,15 +1511,18 @@ enable_outdb_rasters | gdal_enabled_drivers
 on | GTiff COG
 ```
 
-The lessons' tables live in their own schema, `learn_spatial`, built from the same files the browser lessons read: country shapes (Natural Earth, public domain), a sample of GBIF occurrence records (CC0 and CC BY only; records, not native range) the habitat map's classes and a clip of the map around Costa Rica (Jung et al. 2020, CC BY 4.0), stored in the database so the lessons that use it don't touch the full file. The block below is how critwire builds them; in your own PostGIS, the lesson pages give import commands for the same files instead.
+The lessons' tables live in their own schema, `learn_spatial`, built from the same files the browser lessons read: country shapes (Natural Earth, public domain), a sample of GBIF occurrence records (CC0 and CC BY only; records, not native range) the habitat map's classes and a clip of the map around Costa Rica (Jung et al. 2020, CC BY 4.0), stored in the database so the lessons that use it don't touch the full file; and, for the IUCN lessons (§6), critwire's animals with their countries with open records, from its published species file, and two made-up ranges labelled `synthetic`. The block below is how critwire builds them; in your own PostGIS, the lesson pages give import commands for the same files instead.
 
 ```sql
 -- q: pg-setup
 -- status: spike-table
 -- engine: postgis
 -- learn_spatial: the spatial lessons' tables, rebuilt from critwire's files. Each `-- rows:` or `-- bytes:` line names
--- the file passed as $1: a Parquet file's rows as JSON (geometry as WKB hex), or a file's bytes. Only learn_spatial is
+-- the file passed as $1: a Parquet file's rows as JSON (geometry as WKB hex, nested fields as JSON), or a file's bytes. Only learn_spatial is
 -- touched, nothing in it refers to another schema's tables, and running it again gives the same tables.
+DROP TABLE IF EXISTS learn_spatial.example_ranges;
+DROP TABLE IF EXISTS learn_spatial.species_countries;
+DROP TABLE IF EXISTS learn_spatial.species;
 DROP TABLE IF EXISTS learn_spatial.habitat_clips;
 DROP TABLE IF EXISTS learn_spatial.habitat_classes;
 DROP TABLE IF EXISTS learn_spatial.occurrences;
@@ -1577,10 +1580,57 @@ CREATE TABLE learn_spatial.habitat_clips (
 INSERT INTO learn_spatial.habitat_clips (clip, rast)
 VALUES ('cr', ST_FromGDALRaster($1));
 
+-- critwire's animals, from its published species file: the keys the IUCN lessons (§6) join on, and the countries with
+-- open records (records, not native range).
+CREATE TABLE learn_spatial.species (
+  id integer PRIMARY KEY,
+  slug text NOT NULL UNIQUE,
+  scientific_name text NOT NULL UNIQUE,
+  common_name text NOT NULL,
+  class text NOT NULL,
+  iucn_id integer UNIQUE
+);
+
+-- rows: species.parquet
+INSERT INTO learn_spatial.species (id, slug, scientific_name, common_name, class, iucn_id)
+SELECT r.id, r.slug, r."scientificName", r."commonName", r.taxonomy ->> 'class', (r.ids ->> 'iucn')::integer
+FROM jsonb_to_recordset($1::jsonb) AS r(id integer, slug text, "scientificName" text, "commonName" text, taxonomy jsonb, ids jsonb);
+
+CREATE TABLE learn_spatial.species_countries (
+  species_id integer NOT NULL REFERENCES learn_spatial.species (id),
+  country_code text NOT NULL,
+  PRIMARY KEY (species_id, country_code)
+);
+
+-- rows: species.parquet
+INSERT INTO learn_spatial.species_countries (species_id, country_code)
+SELECT r.id, c.code
+FROM jsonb_to_recordset($1::jsonb) AS r(id integer, "range" jsonb)
+CROSS JOIN LATERAL jsonb_array_elements_text(
+  CASE WHEN jsonb_typeof(r."range" -> 'countriesWithOpenRecords') = 'array' THEN r."range" -> 'countriesWithOpenRecords' ELSE '[]' END
+) AS c(code);
+
+-- Two made-up ranges for the IUCN lessons (§6): rectangles drawn by hand, labelled synthetic. critwire never holds IUCN's
+-- ranges; a learner runs the same lessons on their own download, loaded with these columns.
+CREATE TABLE learn_spatial.example_ranges (
+  range_id integer PRIMARY KEY,
+  iucn_id integer NOT NULL,
+  name_in_file text NOT NULL,
+  label text NOT NULL CHECK (label = 'synthetic'),
+  geom geometry(MultiPolygon, 4326) NOT NULL
+);
+
+INSERT INTO learn_spatial.example_ranges (range_id, iucn_id, name_in_file, label, geom)
+VALUES (1, 55290, 'Agalychnis callidryas', 'synthetic', ST_Multi(ST_MakeEnvelope(-84.0, 9.7, -82.8, 10.9, 4326))),
+       (2, 1095, 'Ambystoma mexicanum', 'synthetic', ST_Multi(ST_MakeEnvelope(-99.15, 19.22, -98.95, 19.32, 4326)));
+
 ANALYZE learn_spatial.country_shapes;
 ANALYZE learn_spatial.occurrences;
 ANALYZE learn_spatial.habitat_classes;
 ANALYZE learn_spatial.habitat_clips;
+ANALYZE learn_spatial.species;
+ANALYZE learn_spatial.species_countries;
+ANALYZE learn_spatial.example_ranges;
 ```
 
 What the setup built, today:
@@ -1594,14 +1644,17 @@ SELECT (SELECT count(*) FROM country_shapes)              AS country_shapes,
        (SELECT count(*) FROM occurrences)                 AS occurrences,
        (SELECT count(*) FROM habitat_classes)             AS habitat_classes,
        (SELECT count(*) FROM habitat_clips)               AS habitat_clips,
+       (SELECT count(*) FROM species)                     AS species,
+       (SELECT count(*) FROM species_countries)           AS species_countries,
+       (SELECT count(*) FROM example_ranges)              AS example_ranges,
        (SELECT ST_Width(rast) || ' × ' || ST_Height(rast) || ' cells, SRID ' || ST_SRID(rast)
           FROM habitat_clips WHERE clip = 'cr')           AS cr_clip;
 ```
 
 ```text
--- result: pg-setup-counts · 1 row · sha256 75b84d57e467
-country_shapes | shape_vertices | occurrences | habitat_classes | habitat_clips | cr_clip
-250 | 551273 | 528 | 75 | 1 | 4923 × 6223 cells, SRID 3857
+-- result: pg-setup-counts · 1 row · sha256 41087fe24683
+country_shapes | shape_vertices | occurrences | habitat_classes | habitat_clips | species | species_countries | example_ranges | cr_clip
+250 | 551273 | 528 | 75 | 1 | 76 | 472 | 2 | 4923 × 6223 cells, SRID 3857
 ```
 
 ### Spatial lesson 1 · points-and-shapes
@@ -2709,6 +2762,252 @@ critwire still doesn't store categories. The rule is the owner's (the brief: "Th
 - anything the learner publishes from the data goes to IUCN as a copy (§5), and needs a waiver if it is a derivative (§4).
 
 That is the only way critwire's IUCN lessons run: critwire's lesson text, SQL and import commands, the learner's own download, the learner's own PostGIS. critwire's side of the join is `species.iucn_id`, the SIS taxon id it already publishes.
+
+### Lessons on your own download
+
+These lessons run only in your own PostGIS, on IUCN range polygons you downloaded yourself with your own free account (§5 above). critwire never holds the files: the lessons give the text, the SQL and the import commands, and you bring the data. Everything you make from it stays on your machine (§4): don't share the file, upload it, or post a map or table made from it.
+
+The lessons need the spatial track's tables (§4: `country_shapes`, `occurrences`, `habitat_classes`, `habitat_clips`) and critwire's animals with their countries with open records (`species`, `species_countries`), all in schema `learn_spatial`. Then load your download. IUCN's ranges come as Esri shapefiles; check the `.prj` file next to the `.shp` first. If it says `GCS_WGS_1984`, PostGIS's own `shp2pgsql` loads it as it is; otherwise `ogr2ogr` (GDAL) reads the `.prj` and reprojects to longitude and latitude on the way in:
+
+```sh
+# Your own download, into your own database. Never upload it or share it (IUCN terms, §1 and §4).
+SHP=path/to/your/download.shp
+shp2pgsql -s 4326 -I "$SHP" learn_spatial.iucn_download | psql -d my_db
+# or, if the .prj isn't WGS 84 longitude-latitude:
+ogr2ogr -f PostgreSQL PG:dbname=my_db "$SHP" -nln learn_spatial.iucn_download -lco GEOMETRY_NAME=geom -nlt PROMOTE_TO_MULTI -t_srs EPSG:4326
+```
+
+The file's column names are IUCN's, and they change. The spatial-data page (capture `20260516165500`, https://www.iucnredlist.org/resources/spatial-data-download) says:
+
+> As of the 2023-1 update, the 'binomial' attribute has been renamed as 'sci_name'
+
+> Any processes that refer to the 'binomial' attribute will need to be amended to 'sci_name'.
+
+So the lessons never name IUCN's columns. One table, `my_ranges`, puts your file into the lessons' own columns: `iucn_id`, the SIS taxon id that critwire publishes as `species.iucn_id`; `name_in_file`, the name as your file spells it; and `geom`, one multipolygon per animal, since a species' range can come as several polygons, one for each part with a different distribution status. Your download's metadata document names the column that holds the taxon id; put it where the block says `taxon_id_column`, and use `binomial` for `sci_name` if your file is older than 2023-1. The join on `species` keeps only critwire's animals. If `ST_Union` stops at an invalid polygon, wrap `f.geom` in `ST_MakeValid`.
+
+```sql
+-- q: i01-import
+-- status: untested: reads your own IUCN download, which critwire never holds
+-- engine: postgis
+DROP TABLE IF EXISTS learn_spatial.my_ranges;
+CREATE TABLE learn_spatial.my_ranges AS
+SELECT row_number() OVER (ORDER BY f.taxon_id_column)::integer AS range_id,
+       f.taxon_id_column::integer AS iucn_id,
+       min(f.sci_name) AS name_in_file,
+       ST_Multi(ST_Union(f.geom))::geometry(MultiPolygon, 4326) AS geom
+FROM learn_spatial.iucn_download AS f
+JOIN learn_spatial.species AS s ON s.iucn_id = f.taxon_id_column::integer
+GROUP BY f.taxon_id_column;
+```
+
+The blocks below were run on a stand-in, `example_ranges`, with the same columns: two rectangles critwire drew by hand, one over Costa Rica's Caribbean lowlands for the Red-eyed Tree Frog and one over the lakes south of Mexico City for the Axolotl, each labelled `synthetic`. They are made up, so their answers say nothing about the animals; on your own download, write `my_ranges` where the blocks say `example_ranges`.
+
+### IUCN lesson 1 · ranges-join
+
+**Concept:** joining someone else's file to critwire's by a shared id; why the key is the SIS taxon id, not a name or a column that can be renamed; an area on the ellipsoid, **estimated**. **Question:** Which of critwire's animals does your file have a range for, and how big is each range?
+
+`species.iucn_id` holds each animal's SIS taxon id, the same number IUCN's files carry. Names make a weak key: a species can be renamed or moved to another genus, and the file's own name column was renamed in 2023-1. The id stays.
+
+```sql
+-- q: i01
+-- status: spike-table
+-- engine: postgis
+SELECT s.id, s.common_name, s.scientific_name, r.name_in_file,
+       round((ST_Area(r.geom::geography) / 1e6)::numeric) AS est_km2
+FROM example_ranges AS r
+JOIN species AS s ON s.iucn_id = r.iucn_id
+ORDER BY s.id;
+```
+
+```text
+-- result: i01 · 2 rows · sha256 d05ab4e25036
+id | common_name | scientific_name | name_in_file | est_km2
+6 | Red-eyed Tree Frog | Agalychnis callidryas | Agalychnis callidryas | 17447
+74 | Axolotl | Ambystoma mexicanum | Ambystoma mexicanum | 233
+```
+
+A range is a polygon drawn by experts around where they judge the species lives; IUCN's page says "sometimes the range is incomplete". Its area is the area inside the line, not the area the animal uses: a frog's range includes the farmland and towns between its forests.
+
+**Shown as:** tables.
+
+**Your turn:** For each class, how many of critwire's animals are there, and how many of them have a range in the table? Columns `class`, `animals` and `with_range`, in class order.
+
+```sql
+-- q: i01-ex
+-- status: spike-table
+-- engine: postgis
+SELECT s.class, count(*) AS animals, count(r.range_id) AS with_range
+FROM species AS s
+LEFT JOIN example_ranges AS r ON r.iucn_id = s.iucn_id
+GROUP BY s.class
+ORDER BY s.class;
+```
+
+```text
+-- result: i01-ex · 3 rows · sha256 9885c20d1799
+class | animals | with_range
+Amphibia | 15 | 2
+Mammalia | 50 | 0
+Reptilia | 11 | 0
+```
+
+**Check:** `result, in order`.
+
+**Runs in:** your own PostGIS
+
+**Evidence:** `out/run-queries/` and `queries.log` (this lesson's blocks in PostGIS, on the synthetic stand-in)
+
+### IUCN lesson 2 · records-against-range
+
+**Concept:** comparing two kinds of evidence: records (where someone saw an animal) against a range (where experts judge it lives); a country outline that touches a range (`ST_Intersects`); a record outside a range (`ST_Covers`). **Question:** Which countries with open records lie outside the range, and which records?
+
+critwire's `species_countries` lists the countries with open records of each animal: places where a record was made, after critwire's filters, not the native range. Comparing them with a range finds where the two disagree:
+
+```sql
+-- q: i02
+-- status: spike-table
+-- engine: postgis
+SELECT s.common_name, sc.country_code,
+       EXISTS (SELECT 1 FROM country_shapes AS c
+               WHERE c.country_code = sc.country_code AND ST_Intersects(c.geom, r.geom)) AS touches_range
+FROM example_ranges AS r
+JOIN species AS s ON s.iucn_id = r.iucn_id
+JOIN species_countries AS sc ON sc.species_id = s.id
+ORDER BY s.common_name, touches_range DESC, sc.country_code;
+```
+
+```text
+-- result: i02 · 12 rows · sha256 1d4741daf28b
+common_name | country_code | touches_range
+Axolotl | MX | true
+Axolotl | CA | false
+Axolotl | DE | false
+Axolotl | NZ | false
+Red-eyed Tree Frog | CR | true
+… 7 more rows
+```
+
+A country outside the range isn't a mistake in either source by itself. The record may be of a captive or escaped animal, the animal may have been misidentified, or the range may be incomplete. Here most of the disagreement is the stand-in's doing: a rectangle drawn round part of Costa Rica leaves out most of the countries the frog lives in. On a real range, the Axolotl's records in Europe and Oceania are worth a look: it is kept as a pet far beyond the lakes it comes from.
+
+**Shown as:** tables.
+
+**Your turn:** Down to the records: for the Axolotl (`slug = 'axolotl'`), count its open records whose point lies outside its range, by the country the record names (`(none)` where it names none). Columns `country_code` and `records_outside`, most first, then by country.
+
+```sql
+-- q: i02-ex
+-- status: spike-table
+-- engine: postgis
+SELECT coalesce(o.country_code, '(none)') AS country_code, count(*) AS records_outside
+FROM occurrences AS o
+JOIN species AS s ON s.id = o.species_id
+JOIN example_ranges AS r ON r.iucn_id = s.iucn_id
+WHERE s.slug = 'axolotl'
+  AND NOT ST_Covers(r.geom, ST_SetSRID(ST_Point(o.longitude, o.latitude), 4326))
+GROUP BY o.country_code
+ORDER BY records_outside DESC, country_code;
+```
+
+```text
+-- result: i02-ex · 5 rows · sha256 6e5e6b74210a
+country_code | records_outside
+MX | 53
+CA | 2
+DE | 2
+NZ | 2
+UA | 1
+```
+
+The records come from the spatial track's sample (§4), which holds every open record of three animals; mission D's sample covers every animal. A country here that `species_countries` doesn't list was left out by critwire's country rules, which hold back a single record far outside an animal's main region as a likely captive (`AGENTS.md`, Countries); the point is still a record.
+
+**Check:** `result, in order`.
+
+**Runs in:** your own PostGIS
+
+**Evidence:** `out/run-queries/` and `queries.log` (this lesson's blocks in PostGIS, on the synthetic stand-in), `out/e1-pip/` (the same records against country outlines)
+
+### IUCN lesson 3 · habitat-in-range
+
+**Concept:** zonal statistics with a range as the zone (spatial lesson 7's method); a raster that covers only part of the zone; shares and **estimated** areas; comparing a zone with its surroundings. **Question:** What covers the land inside a range, by the habitat map?
+
+The habitat map (Jung et al. 2020, CC BY 4.0) isn't Red List data, so critwire's clip of it may sit beside your range. The query is spatial lesson 7's, with the range in place of the country outline. The clip covers Costa Rica only, so the parts of the rectangle in Nicaragua and at sea count no cells; on your own download of Jung's map, the whole range would count.
+
+```sql
+-- q: i03
+-- status: spike-table
+-- engine: postgis
+WITH zone AS (
+  SELECT ST_Transform(r.geom, 3857) AS geom, radians(ST_Y(ST_Centroid(r.geom))) AS lat
+  FROM example_ranges AS r
+  JOIN species AS s ON s.iucn_id = r.iucn_id
+  WHERE s.slug = 'red-eyed-tree-frog'
+), counts AS (
+  SELECT vc.value::integer AS habitat_code, vc.count AS cells, zone.lat
+  FROM habitat_clips AS c
+  CROSS JOIN zone
+  CROSS JOIN LATERAL ST_ValueCount(ST_Clip(c.rast, zone.geom)) AS vc
+  WHERE c.clip = 'cr'
+)
+SELECT k.habitat_code, h.name, k.cells,
+       round((k.cells * (103.02166779498629 * cos(k.lat)) ^ 2 / 1e6)::numeric) AS est_km2,
+       round((100.0 * k.cells / sum(k.cells) OVER ())::numeric, 1) AS share_pct
+FROM counts AS k
+JOIN habitat_classes AS h ON h.code = k.habitat_code
+ORDER BY k.cells DESC, k.habitat_code
+LIMIT 6;
+```
+
+```text
+-- result: i03 · 6 rows · sha256 4d97be867e2b
+habitat_code | name | cells | est_km2 | share_pct
+1401 | Arable Land | 288797 | 2967 | 30.1
+109 | Forest – Subtropical/tropical moist montane | 273186 | 2807 | 28.5
+106 | Forest – Subtropical/tropical moist lowland | 191248 | 1965 | 20.0
+306 | Shrubland – Subtropical/tropical moist | 49618 | 510 | 5.2
+1403 | Plantations | 43520 | 447 | 4.5
+… 1 more row
+```
+
+A share of the range is not a share of where the animal lives: the map says what covers each cell, and the range says where the species is judged to occur, so the mix inside a range includes land the animal doesn't use. The numbers are a result made from the range, so they stay on your machine (§4).
+
+**Shown as:** tables.
+
+**Your turn:** Is the range more forested than the country around it? For two zones, the range (`'range'`) and Costa Rica's outline (`'Costa Rica'`), give the share of cells, in percent to one decimal, whose class's first-level class is `100` ("Forest"): columns `zone` and `forest_pct`, in zone order.
+
+```sql
+-- q: i03-ex
+-- status: spike-table
+-- engine: postgis
+WITH zones (zone, geom) AS (
+  SELECT 'range', ST_Transform(r.geom, 3857)
+  FROM example_ranges AS r
+  JOIN species AS s ON s.iucn_id = r.iucn_id
+  WHERE s.slug = 'red-eyed-tree-frog'
+  UNION ALL
+  SELECT 'Costa Rica', ST_Transform(geom, 3857) FROM country_shapes WHERE country_code = 'CR'
+)
+SELECT z.zone,
+       round((100.0 * sum(vc.count) FILTER (WHERE h.level1_code = 100) / sum(vc.count))::numeric, 1) AS forest_pct
+FROM zones AS z
+CROSS JOIN habitat_clips AS c
+CROSS JOIN LATERAL ST_ValueCount(ST_Clip(c.rast, z.geom)) AS vc
+LEFT JOIN habitat_classes AS h ON h.code = vc.value::integer
+WHERE c.clip = 'cr'
+GROUP BY z.zone
+ORDER BY z.zone;
+```
+
+```text
+-- result: i03-ex · 2 rows · sha256 d2ecfb4e37c6
+zone | forest_pct
+Costa Rica | 45.5
+range | 52.2
+```
+
+**Check:** `result, in order`.
+
+**Runs in:** your own PostGIS
+
+**Evidence:** `out/run-queries/` and `queries.log` (this lesson's blocks in PostGIS, on the synthetic stand-in), `out/e4-clip/` (the clip equals the full map cell for cell inside the outline), `out/e3c-methods/` (the errors of counting cells)
 
 ### Draft permission request
 
