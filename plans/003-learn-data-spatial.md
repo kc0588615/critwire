@@ -1,5 +1,7 @@
 # 003: critwire Learn, growing the data and the spatial track
 
+> **Superseded 2026-10-23** by plans/004-learn-curriculum.md (practitioner curriculum). Kept as a record; 004 §1 lists what is reused.
+
 This extends [`002-learn.md`](002-learn.md) (engine, learners' schema, ERD and core lessons, all kept as they are) with what data critwire could add next and an advanced spatial track on PostGIS and the worldwide habitat map. It designs and measures; it builds nothing public. Every SQL block here was run by the spike or says why not (`-- status:`), and the build missions C and D start from the briefs in §7.
 
 ## 1. Growing the data

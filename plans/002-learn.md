@@ -1,5 +1,7 @@
 # 002: critwire Learn
 
+> **Superseded 2026-10-23** by plans/004-learn-curriculum.md (practitioner curriculum). Kept as a record; 004 §1 lists what is reused.
+
 critwire Learn is a set of pages on critwire.com where people aged 16 and up who are new to SQL learn relational databases and SQL by asking questions about critwire's animals. The SQL runs in the learner's browser (DuckDB-WASM), on tables the page builds from the public `/v1` files, and the answers come back as animal cards. This document is the design that mission B builds from: the engine, the learners' tables, the ERD, the lessons, a query cookbook, the new countries file, one small demo game, the site, the mission B briefs and the owner's choices. Research and measurements: `plans/2026-10-22-critwire-learn-design.md` (mission A1) and its spike.
 
 Every ```` ```sql ```` block in this file was run in DuckDB-WASM by the spike's `run-queries.ts`, and the ```` ```text ```` block after it is the result it gave (row count, a hash of the whole result, the first rows). Each block's `-- status:` says what it ran against: `ran` (today's data) or `draft-table` (needs the countries file mission B publishes; it ran against the spike's draft of it). A block with `-- after: <id>, …` ran after those earlier blocks' SQL, in the same transaction, as a lesson's exercise runs on the page after the learner has run the lesson's own blocks (§1, "Exercise checks"); its result is its own last statement.
