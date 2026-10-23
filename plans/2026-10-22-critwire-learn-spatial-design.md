@@ -2,7 +2,7 @@
 mission: critwire-learn-spatial-design
 project: critwire
 branch: agent/critwire-learn-spatial-design
-status: active
+status: done
 started: 2026-10-22 15:55 UTC
 ---
 
@@ -1458,5 +1458,18 @@ SHOULD-CONSIDER:
 - 2026-10-23 00:59 UTC: Code review (Astra, `--code origin/main`): APPROVE_WITH_CHANGES, 2 MUST-FIX accepted (lesson 21 sequence duplicate key; forest totals miss code 100) → S27, S28; 2 SHOULD-CONSIDER for the Summary. Plan-only.
 - 2026-10-23 01:40 UTC: S27. Both `'Example dataset'` `sources` inserts (`l21-second`, `l21-fill`) `ON CONFLICT DO NOTHING`; `l21-second` still fails on `species_traits`' PK. `scratch/l21-seq.ts` red first (l21-fill duplicate key on `sources`, 1 of 4), then ok in order and in a repeated reverse order. `--update` diff read (SQL + 1 prose line, no result changed), `--check --erd` ok 70 blocks, ERD 13 tables/17 lines. Spike typecheck pass, tests 219/219. Guard: plans-only, 002 untouched, typecheck pass, test 66/66, dist = baseline (157), spike 868 MB, no Caddy, 3100–3102 free.
 - 2026-10-23 02:20 UTC: S28. `s07-ex`, `i03-ex` filter `COALESCE(h.level1_code, h.code) = 100`; `s07-ex` 23,415 → 23,445 km² (2,919 code-100 cells ≈ 30 km²), `i03-ex` unchanged at 1 dp (CR 45.485 → 45.544 %, range 52.2); Your-turn prose says class 100 included; no other `level1_code =` filter in 003 or briefs. `--update` diff read (only those 2 blocks), `--check --erd` ok 70 blocks, 0 diffs, results = log. Spike typecheck pass, tests 219/219. Guard: plans-only, 002 untouched, typecheck pass, test 66/66, dist = baseline (157), spike 868 MB, no Caddy, 3100–3102 free.
+- 2026-10-23 01:46 UTC: Final Verification V0–V12 (`$M/verify/verify-20261023T0137Z.log`): all exit 0; typecheck pass, test 66/66, dist = baseline (157), E2E 20/20 (`$M/e2e/`), spike tests 219/219, `--check --erd` 70 blocks 0 diffs, ERD 13 tables/17 lines, quotes verbatim (35 pages), V9 clean, smokes e1-pip 11/11 + e4-browser 8/8. Summary written; status done.
 
 ## Summary
+
+Mission A2 delivered `plans/003-learn-data-spatial.md` (§1–§8 + Disagreements with 002), `plans/003-learn-erd.mmd`, and the briefs for missions C and D. Only `plans/` changed; `dist/` is byte-identical to main (157 files).
+
+- **Top three datasets to add:** AnAge (CC BY 3.0), Natural Earth admin-0 (public domain), the GBIF occurrence sample (CC0 1.0 / CC BY 4.0 records only). WorldClim and WDPA forbid redistribution: never hosted. CHELSA (CC0) after D.
+- **Where each spatial lesson runs:** 1–4 browser (DuckDB spatial) + `-pg` twins in your own PostGIS; 5 browser outlines + own PostGIS raster cells; 6–7 own PostGIS; 8 browser (geotiff.js) + PostGIS check. IUCN lessons 1–3: own PostGIS only, on the learner's own download.
+- **Raster recommendation:** (c) precomputed habitat summaries + (b) a few regional clips (~1.4 MB each), both from Jung v004 by URL via a committed `ingest habitat`. No bucket CORS, no TiTiler, nothing on the owner's AWS bill.
+- **IUCN terms:** hosting no; serving derived products no (would need a waiver; draft request in 003 §6, recommendation: don't send now); classroom use yes, but each learner's own copy; a learner's own download yes (non-commercial, local, cited). Quotes verified verbatim against Wayback capture 20261015190206 (terms v3.1); the live page returns 403.
+- **Briefs:** `plans/briefs/critwire-learn-c.md` (traits, names, lessons 17–21), `plans/briefs/critwire-learn-d.md` (outlines, sample, `ingest habitat`, spatial + IUCN lessons). Order: C, then D.
+- **Owner's choices (003 §8):** 1 datasets first: AnAge, NE admin-0, GBIF sample · 2 raster: (c)+(b) from v004 · 3 COG provenance: answer if known, nothing waits · 4 learners' PostGIS reading your bucket: no · 5 commit the `spatial` extension: yes (23.6 MB per version) · 6 publish a capped open-records sample: yes (may need a GBIF DOI refresh in D) · 7 raster rights for `ingest habitat`: no grant (VPS superuser socket) · 8 IUCN request: not now · 9 WDPA/WorldClim never hosted, CHELSA after D. Without an answer, C and D build the recommendations.
+- **Reviews:** architecture Fable APPROVE WITH CHANGES, Astra APPROVE_WITH_CHANGES (all MUST-FIX resolved in Revision); code review Astra APPROVE_WITH_CHANGES, 2 MUST-FIX fixed (S27, S28).
+- **Astra SHOULD-CONSIDER (for D, not done here):** state explicitly that every PostGIS raster lesson adapts to v004's EPSG:4326 clips (several queries still hardcode EPSG:3857 and 103.02 m cells); split spatial setup from the grown-data setup, so `spatial` loads only on spatial pages.
+- **Verification:** V0–V12 all pass (`/srv/critter-ai/agent-state/missions/critwire-learn-spatial-design/verify/verify-20261023T0137Z.log`). E2E artifact: `/srv/critter-ai/agent-state/missions/critwire-learn-spatial-design/e2e/` (20/20, `playwright-report/`, traces); spike browser evidence in `spike/out/{e1-pip,e4-browser,smoke}/`; every 003 query result in `queries.log`.
