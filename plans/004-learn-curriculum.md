@@ -400,11 +400,391 @@ pointpats: 2.6.0
 
 ## 2. The curriculum map
 
-(S14)
+Seven tracks, 33 modules, about 68 hours. Foundations come first and go fast; then the five areas; then a capstone that uses all of them. Each module answers real questions with the lab data (§4) on one or two tools: **B** the browser (DuckDB-WASM, nothing to install), **PG** your own PostgreSQL with PostGIS, **Py** Python in the `uv` environment, **PBI** Power BI Desktop (§3). Hours include the lab and the exercise. A module's id names its blocks (`d3-plan`) and its page (§7).
+
+The table is in prerequisite order: every module's prerequisites come above it, so working down the table never meets a module that needs a later one. After f3 the tracks branch: GIS in SQL needs only f3 (and d3 for g5), ETL starts from f2, and Power BI waits for d6. **Depth** is what this document holds: `full` modules are written out in §5 (concept, worked example, lab, result, exercise, answer, check, dialects); `outline` modules give the goal, data, key code and expected result, and the build missions (§9) write them in full.
+
+| id | Track | Module | Skill | Questions it answers | Tool | h | Prereqs | Depth |
+|---|---|---|---|---|---|---|---|---|
+| f1 | Foundations | select | `SELECT`, `WHERE`, `ORDER BY`, `NULL` | Which animals have no photo? Which mammals does critwire list, by common name? Why doesn't `= NULL` find a missing value? | B | 1.0 | — | full |
+| f2 | Foundations | aggregate | `GROUP BY`, `HAVING`, `CASE`, `COUNT(DISTINCT …)` | How many records does the sample hold per year, and by basis of record? Which species have more than 500 records? How many datasets contributed? | B | 1.5 | f1 | full |
+| f3 | Foundations | join | Inner, left and anti joins; many-to-many; reading an ERD; light spatial in plain SQL (bounding boxes, 10° bins) | Which animals were recorded in Brazil? Which have no records at all? How many records fall in each 10° box? | B | 2.0 | f2 | full |
+| f4 | Foundations | window | CTEs, subqueries, window functions | Which dataset contributed most of each species' records, and what share is that? How does each year rank against the others? | B | 1.5 | f3 | full |
+| d1 | Database architecture | keys | Entities; natural and surrogate keys; `PRIMARY KEY`, `FOREIGN KEY`, `UNIQUE`, `CHECK`; generated columns | What does a foreign key check, and what doesn't it? Natural or surrogate key for a species? What does a `CHECK` refuse? | B (+ PG) | 2.0 | f3 | full |
+| d2 | Database architecture | normalize | 1NF to 3NF from nested JSON; functional dependencies; when to denormalize | Is a license a fact about a record or about a dataset? What goes wrong when a dataset's title is stored on every record? | B | 2.0 | d1 | full |
+| d3 | Database architecture | indexes | B-tree, GiST and BRIN indexes; `EXPLAIN` and `EXPLAIN ANALYZE`; planner statistics | Why is this a sequential scan? When does an index help a filter, a join or a spatial test? What does the planner believe about a table? | PG | 2.0 | d1 | full |
+| d4 | Database architecture | transactions | ACID, MVCC, isolation levels, locks, savepoints, `ON CONFLICT` | How do I re-run a failed load safely? What does another session see while a load runs? | PG | 2.0 | d3 | full |
+| d5 | Database architecture | roles | Schemas, roles, `GRANT` and `REVOKE`, default privileges, least privilege, a taste of row-level security | How do I give a reporting tool read-only access to one schema and nothing else? What do default privileges change? | PG | 1.5 | d4 | full |
+| d6 | Database architecture | star | Grain, facts, dimensions, conformed dimensions, unknown members, slowly changing dimensions (types 1 and 2); star vs snowflake; export | What is one record fact's grain? Which dimensions does it share with habitat area per country? Where does a record with no country go? | PG (+ DuckDB) | 2.5 | d2, d4 | full |
+| g1 | GIS in SQL | crs | SRIDs, `ST_Transform`, geometry vs geography, Web Mercator's area error | How big is Tasmania in EPSG:3857, in EPSG:3577 and as geography? Why does Web Mercator overstate it? | PG | 1.5 | f3 | outline |
+| g2 | GIS in SQL | load-validate | The loader, WKT and WKB, `ST_IsValid`, `ST_MakeValid` | Which shapes are invalid, and why? What does `ST_MakeValid` change? | PG | 1.5 | g1 | outline |
+| g3 | GIS in SQL | spatial-join | `ST_Contains`, `ST_Covers`, `ST_Intersects`; point in polygon; records on boundaries | Do GBIF's country codes agree with the country outlines? Which records fall on a coast or in no country? | PG | 2.0 | g2 | outline |
+| g4 | GIS in SQL | measure-overlay | Distances on the ellipsoid, `ST_DWithin`, buffers, `ST_Intersection` | How much of each country does each ecoregion cover? Which records lie within 10 km of a border? | PG | 2.0 | g3 | outline |
+| g5 | GIS in SQL | spatial-index | GiST, the `&&` operator, nearest neighbours with `<->`, reading spatial plans | Which record is nearest to a point, found fast? When doesn't a spatial index help? | PG | 1.5 | g3, d3 | outline |
+| g6 | GIS in SQL | grids | `ST_HexagonGrid` in an equal-area SRID; the modifiable areal unit problem (MAUP) | How many Tasmanian devil records fall in each 5 km hexagon, and in each 10 km one? How does the picture change with the grid? | PG | 1.5 | g4 | outline |
+| g7 | GIS in SQL | raster | Value at a point; `ST_Clip`, `ST_ValueCount`; estimated areas and their error | Which habitat classes hold Costa Rica's records? How much of each class does a clip hold, and how good is that estimate? | PG | 2.5 | g6 | outline |
+| s1 | Spatial statistics | bias | Datasets, basis of record, telemetry, recording effort; framing results honestly | How much of the jaguar sample is GPS-collar data? Which datasets and years dominate a species' records? What can records say about where an animal lives, and what can't they? | PG + B | 1.5 | g3 | outline |
+| s2 | Spatial statistics | point-patterns | Quadrats, the nearest-neighbour index, kernel density, DBSCAN | Are devil records more clustered than chance? Where is record density highest? | PG + Py | 2.5 | s1, g6 | outline |
+| s3 | Spatial statistics | weights | Distance-band, k-nearest and contiguity weights; row standardization; islands; ties | Who are a cell's neighbours? What does row standardization do, and what happens to a cell with none? | PG + Py | 2.0 | s2 | outline |
+| s4 | Spatial statistics | moran | Global Moran's I, its expectation, variance and z-score in SQL, matched by PySAL; permutation tests | Does record density cluster across Tasmania? Do SQL and PySAL agree? How does the answer change at 10 km? | PG + Py | 2.0 | s3 | outline |
+| s5 | Spatial statistics | local | Local Moran's I (LISA) and Getis-Ord Gi*; false discovery rate | Where are the hot and cold spots of recording effort? Which survive a false discovery rate correction? | PG + Py | 2.5 | s4 | outline |
+| s6 | Spatial statistics | zonal | Zonal statistics on polygons and rasters; ratios normalized for effort | Do records over-represent some habitats or ecoregions, once effort is accounted for? | PG + Py | 2.0 | s5, g7 | outline |
+| e1 | ETL | extract | Search API vs download API (asynchronous, with a DOI); paging, rate limits, retries; files with checksums | How do I get every open Tasmanian devil record, with a DOI to cite? | Py | 2.0 | f2 | outline |
+| e2 | ETL | transform-load | Staging tables, types, `COPY`, upserts, geometry; GeoPandas to and from PostGIS | How do I load the download in one transaction, typed and checked, with each record matched to its species? | Py + PG | 2.5 | e1, d4 | outline |
+| e3 | ETL | idempotent | Run ids, deterministic outputs, checksums; critwire's own ingest → derive → build as the case study | Can I re-run the pipeline without doubling rows or changing its output? | Py + PG | 2.0 | e2 | outline |
+| e4 | ETL | quality-provenance | Data quality checks written as SQL; license filters; provenance tables; citations; derived datasets | Which datasets must I credit, and under which license? Which checks stop a bad load? | Py + PG | 2.0 | e3 | outline |
+| e5 | ETL | schedule | cron, systemd timers, Windows Task Scheduler; logs, alerts, incremental loads | How do I refresh weekly, and know when a run broke? | Py | 1.5 | e4 | outline |
+| p1 | Power BI | power-query | Power Query: `Web.Contents` on critwire's CSV files; types with an explicit culture; refresh | How do I load the star from critwire.com so that it refreshes, on any locale? | PBI | 1.5 | d6 | outline |
+| p2 | Power BI | model | Relationships, cardinality, filter direction, conformed dimensions, factless facts | How do I filter records and habitat areas by the same country? | PBI | 2.0 | p1 | outline |
+| p3 | Power BI | dax | Measures: `COUNTROWS`, `DISTINCTCOUNT`, `CALCULATE`, ratios | How many records per 1,000 km² of forest, by country? | PBI | 2.0 | p2 | outline |
+| p4 | Power BI | maps-report | Map visuals, honest labels, publishing and scheduled refresh | How do I build a report that maps records and never calls them a range? | PBI | 1.5 | p3 | outline |
+| c1 | Capstone | game-feed | ETL into PostGIS → Gi* on hexagons → a Power BI report → a static JSON feed a game reads (encounter weights per hexagon, labelled as records) | What could a player meet here, honestly? | all | 8.0 | s5, e4, p4 | outline |
+
+| Track | Modules | Hours | Depth |
+|---|---|---|---|
+| Foundations | f1–f4 | 6.0 | full |
+| Database architecture | d1–d6 | 12.0 | full |
+| GIS in SQL | g1–g7 | 12.5 | outline |
+| Spatial statistics | s1–s6 | 12.5 | outline |
+| ETL | e1–e5 | 10.0 | outline |
+| Power BI | p1–p4 | 7.0 | outline |
+| Capstone | c1 | 8.0 | outline |
+| **Total** | **33** | **68.0** | 10 full, 23 outline |
+
+**Going fast.** Each foundations module opens with an "Already know this?" exercise; solving it marks the module done, so someone who already writes joins and window functions spends minutes, not six hours, on the first track. The dialect notes in each full module (PostgreSQL, DuckDB, SQL Server) let a SQL Server user map what they know. After foundations, the order within the prerequisites is yours: a GIS specialist might take d1, d3 and d4, then GIS in SQL and spatial statistics, and come back for d5 and d6 before ETL and Power BI.
 
 ## 3. Lab environments and setup
 
-(S14)
+Four tools, each set up once. Every lab names the tool it runs on (§2). The file URLs below are where the build missions publish them (§7, §9); they don't exist yet.
+
+| Tool | Modules | Runs on | Tested here | Not tested here |
+|---|---|---|---|---|
+| **B** browser | f1–f4, d1, d2, s1 | The course page: DuckDB-WASM in your browser | Every block, in headless Chromium, as the page runs it | — |
+| **PG** PostGIS | d1, d3–d6, g1–g7, s1–s6, e2–e4, c1 | Your PostgreSQL 16 with PostGIS 3.4 | The loader (twice, with the command below) and every block, in PostgreSQL 16.x with PostGIS 3.4.2 on critwire's server | The Docker and installer commands (Windows) |
+| **Py** Python | s2–s6, e1–e5, c1 | The `uv` environment on your computer | Every block, isolated, on the pins below (CPython 3.12.3, Linux aarch64) | The install commands; Windows itself (the pins' Windows wheels were resolved, below) |
+| **PBI** Power BI | p1–p4, c1 | Power BI Desktop (Windows) | The files each query reads: header, keys, rows, sha256 (§0) | Power Query, DAX, visuals and refresh (§10 asks for one check on Windows) |
+| arcpy (optional) | s4, s5 | ArcGIS Pro's own Python | — | Everything (needs ArcGIS Pro, Windows, licensed) |
+
+### 3.1 Browser
+
+Nothing to install: a current desktop browser opens a module page and its SQL runs there. The engine is 002 §1's, unchanged: DuckDB-WASM's `eh` bundle in a worker, served by critwire itself with its `parquet` extension, results capped at 10 000 rows, Reset and Stop by restarting the worker. The page builds its database from four files, `/v1/species.parquet`, `/v1/countries.parquet`, `/learn/data/datasets.csv` and `/learn/data/occurrences.parquet` (§0's `setup`; about 3.2 s on a desktop, §A.1), so every learner starts from the same tables and a reload starts fresh.
+
+**Light spatial in plain SQL.** The browser has no `ST_` functions: DuckDB's `spatial` extension isn't served (23.6 MB per DuckDB version; §10 item 3). The foundations still use coordinates as numbers: a bounding box is `longitude BETWEEN … AND latitude BETWEEN …`, `floor(longitude / 10)` and `floor(latitude / 10)` bin records into 10° boxes, and the haversine formula gives a great-circle distance. Anything with shapes (outlines, projections, spatial joins and indexes) is PostGIS's.
+
+### 3.2 PostGIS on your own computer
+
+The labs are tested on PostgreSQL 16 with PostGIS 3.4. On Windows, the simplest match is Docker.
+
+**Docker Desktop (recommended).** Install Docker Desktop with its WSL 2 backend (docs.docker.com/desktop/setup/install/windows-install/), then in PowerShell:
+
+```powershell
+# PostgreSQL 16 with PostGIS 3.4, the versions the labs are tested on, reachable only from this computer.
+docker run -d --name learn-pg -e POSTGRES_PASSWORD=choose-a-password -p 127.0.0.1:5432:5432 -v learn-pg:/var/lib/postgresql/data postgis/postgis:16-3.4
+docker exec learn-pg psql -U postgres -c "CREATE DATABASE learn"
+docker exec learn-pg psql -U postgres -d learn -c "CREATE EXTENSION postgis" -c "CREATE EXTENSION postgis_raster"
+# The lab file: every lab table, in one transaction (about 30 MB).
+curl.exe -fLo learn_curriculum.sql https://critwire.com/learn/data/postgis/learn_curriculum.sql
+docker cp learn_curriculum.sql learn-pg:/tmp/
+docker exec learn-pg psql -X -U postgres -d learn -v ON_ERROR_STOP=1 -f /tmp/learn_curriculum.sql
+```
+
+The image tag `16-3.4` is the tested pair; it was last rebuilt in October 2024 (Docker Hub, checked 2026-10-23), so its PostgreSQL 16 minor release is old. That is fine for a lab reachable only from your own computer (the `127.0.0.1:` in `-p`), not for anything else. `16-3.5` and `16-3.6` run the labs too (none uses a function newer than 3.4), but a newer GEOS can change the last digits of some measurements, so a result may differ slightly from the one printed. PowerShell has no `<` redirection, which is why the file is copied in and read with `-f`. On Linux or macOS, the same `docker` commands work in a terminal, with `curl` for `curl.exe`. The image is built for x86-64 only.
+
+**Native install (no Docker).** The EDB installer for PostgreSQL 16 (www.enterprisedb.com/downloads/postgres-postgresql-downloads), then Stack Builder → Spatial Extensions → the PostGIS 3.4 or 3.5 bundle for PostgreSQL 16. If port 5432 is taken (by another PostgreSQL, or an ArcGIS install), pick 5433 in the installer and add `-p 5433` below.
+
+```powershell
+$psql = "C:\Program Files\PostgreSQL\16\bin\psql.exe"
+& $psql -U postgres -c "CREATE DATABASE learn"
+& $psql -U postgres -d learn -c "CREATE EXTENSION postgis" -c "CREATE EXTENSION postgis_raster"
+curl.exe -fLo learn_curriculum.sql https://critwire.com/learn/data/postgis/learn_curriculum.sql
+& $psql -X -U postgres -d learn -v ON_ERROR_STOP=1 -f learn_curriculum.sql
+```
+
+psql on Windows talks to the server in the console's code page unless told otherwise; the lab file sets `client_encoding` to UTF-8 itself, so names like "Côte d'Ivoire" arrive intact either way (tested by loading it under `WIN1252`).
+
+**Loading, and loading again.** The lab file builds schema `learn_curriculum` in one transaction: it drops the schema, recreates it, loads every table, adds the keys and indexes, and checks every table's row count before `COMMIT`. A failed load changes nothing; a second load replaces the schema, including any table you made there, so keep your own work in another schema. Then connect with your SQL client (psql, pgAdmin, DBeaver, VS Code) to database `learn` and run §0's `pg-session` and `pg-smoke` blocks: the 14 row counts there mean your lab matches the tested one.
+
+**Connection settings.** The Python labs, and any lab file you run with psql, find the database through libpq's standard environment variables, so the same file runs on your computer and on the test server. In PowerShell, for one session:
+
+```powershell
+$env:PGHOST = "localhost"; $env:PGPORT = "5432"; $env:PGUSER = "postgres"; $env:PGDATABASE = "learn"
+# The password goes in %APPDATA%\postgresql\pgpass.conf, one line: localhost:5432:learn:postgres:choose-a-password
+```
+
+**Privileges.** The `postgres` user is a superuser and can do everything the labs do. As another user you need:
+- `CREATE` on the database, to (re)create `learn_curriculum`, and ownership of that schema once it exists;
+- `CREATEROLE`, for the labs that create roles (d1, d5, §0's `pg-role-smoke`): `ALTER ROLE <you> CREATEROLE;` as the superuser, once;
+- for the raster labs (g7, s6), the two raster settings their session sets: a superuser session, or, on PostgreSQL 15 and later, 003 §4's `pg-once` grants (`GRANT SET ON PARAMETER`); g7 gives the block.
+
+Every role or schema a lab creates is named `learn_…` and removed by the same block (§0), so the labs never leave anything in your database besides `learn_curriculum`.
+
+### 3.3 Python
+
+The Python labs (s2–s6, e1–e5, c1) run in a virtual environment built by `uv`, which uses the same commands on Windows, Linux and macOS, installs Python itself, and installs exactly the versions below. `--no-build` makes it fail loudly rather than compile a package that has no prebuilt wheel. Windows (PowerShell):
+
+```powershell
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/0.13.5/install.ps1 | iex"
+mkdir $HOME\learn; cd $HOME\learn
+curl.exe -fLo requirements.txt https://critwire.com/learn/labs/requirements.txt
+uv python install 3.12
+uv venv --python 3.12
+uv pip sync --no-build requirements.txt
+.venv\Scripts\python -c "import geopandas, esda; print(geopandas.__version__, esda.__version__)"
+```
+
+Linux and macOS:
+
+```sh
+curl -LsSf https://astral.sh/uv/0.13.5/install.sh | sh
+mkdir -p ~/learn && cd ~/learn
+curl -fLo requirements.txt https://critwire.com/learn/labs/requirements.txt
+uv python install 3.12
+uv venv --python 3.12
+uv pip sync --no-build requirements.txt
+.venv/bin/python -c "import geopandas, esda; print(geopandas.__version__, esda.__version__)"
+```
+
+A lab is a `.py` file with `# %%` cells: run it whole (`.venv\Scripts\python s4-moran.py`), or cell by cell in VS Code or Jupyter, which ask to add `ipykernel` to the environment the first time; the site also offers each lab as a notebook (`.ipynb`, the same cells; §7).
+
+**The environment.** `requirements.in` names what the labs import, with the lowest versions they need (`geopandas>=1.0`, `shapely>=2.0`, `libpysal>=4.10`, `esda>=2.6`); `requirements.txt` pins every package to one version, compiled for every platform at once with `uv pip compile --universal --python-version 3.12 -o requirements.txt requirements.in`. The 44 pins have prebuilt wheels for Windows x86-64, Linux x86-64 and aarch64, and macOS 14 or later on Apple silicon: resolved with `--no-build` for each platform (`uv pip install --dry-run --python-platform …`). Intel Macs aren't covered (no `pyproj` 3.8.0 wheel). This is the file, verbatim:
+
+```text
+# This file was autogenerated by uv via the following command:
+#    uv pip compile --universal --python-version 3.12 -o requirements.txt requirements.in
+beautifulsoup4==4.15.0
+    # via libpysal
+certifi==2026.10.19
+    # via
+    #   pyogrio
+    #   pyproj
+    #   requests
+charset-normalizer==3.5.2
+    # via requests
+cloudpickle==3.1.2
+    # via joblib
+contourpy==1.4.0
+    # via matplotlib
+cycler==0.12.1
+    # via matplotlib
+esda==2.10.0
+    # via -r requirements.in
+fonttools==4.67.0
+    # via matplotlib
+geoalchemy2==0.20.0
+    # via -r requirements.in
+geopandas==1.2.0
+    # via
+    #   -r requirements.in
+    #   esda
+    #   libpysal
+    #   pointpats
+idna==3.20
+    # via requests
+jinja2==3.1.6
+    # via libpysal
+joblib==1.6.0
+    # via scikit-learn
+kiwisolver==1.5.1
+    # via matplotlib
+libpysal==4.15.1
+    # via
+    #   -r requirements.in
+    #   esda
+    #   pointpats
+mapclassify==2.11.0
+    # via -r requirements.in
+markupsafe==3.0.4
+    # via jinja2
+matplotlib==3.11.2
+    # via
+    #   -r requirements.in
+    #   pointpats
+narwhals==2.27.1
+    # via scikit-learn
+networkx==3.7
+    # via mapclassify
+numpy==2.5.4
+    # via
+    #   -r requirements.in
+    #   contourpy
+    #   esda
+    #   geopandas
+    #   libpysal
+    #   mapclassify
+    #   matplotlib
+    #   pandas
+    #   pointpats
+    #   pyogrio
+    #   scikit-learn
+    #   scipy
+    #   shapely
+packaging==26.3
+    # via
+    #   geoalchemy2
+    #   geopandas
+    #   libpysal
+    #   matplotlib
+    #   pyogrio
+pandas==3.1.0
+    # via
+    #   -r requirements.in
+    #   esda
+    #   geopandas
+    #   libpysal
+    #   mapclassify
+    #   pointpats
+pillow==13.0.0
+    # via matplotlib
+platformdirs==4.13.5
+    # via libpysal
+pointpats==2.6.0
+    # via -r requirements.in
+psycopg==3.3.6
+    # via -r requirements.in
+psycopg-binary==3.3.6 ; implementation_name != 'pypy'
+    # via psycopg
+pyarrow==26.0.0
+    # via -r requirements.in
+pyogrio==0.13.0
+    # via
+    #   -r requirements.in
+    #   geopandas
+pyparsing==3.3.3
+    # via matplotlib
+pyproj==3.8.0
+    # via
+    #   -r requirements.in
+    #   geopandas
+python-dateutil==3.0.0
+    # via
+    #   matplotlib
+    #   pandas
+requests==2.34.2
+    # via
+    #   -r requirements.in
+    #   libpysal
+scikit-learn==1.9.1
+    # via
+    #   esda
+    #   libpysal
+    #   mapclassify
+scipy==1.18.1
+    # via
+    #   -r requirements.in
+    #   esda
+    #   libpysal
+    #   mapclassify
+    #   pointpats
+    #   scikit-learn
+shapely==2.2.0
+    # via
+    #   -r requirements.in
+    #   esda
+    #   geopandas
+    #   libpysal
+    #   pointpats
+six==1.17.0
+    # via python-dateutil
+soupsieve==3.0.4
+    # via beautifulsoup4
+sqlalchemy==2.1.6
+    # via
+    #   -r requirements.in
+    #   geoalchemy2
+threadpoolctl==3.7.0
+    # via scikit-learn
+typing-extensions==4.16.0
+    # via
+    #   beautifulsoup4
+    #   psycopg
+    #   sqlalchemy
+tzdata==2026.5
+    # via
+    #   pandas
+    #   psycopg
+    #   python-dateutil
+urllib3==2.8.0
+    # via requests
+```
+
+Every Python lab starts with §0's `py-connect` helper, which connects through the `PG*` settings above and puts `learn_curriculum` first on the search path. To move data to another GIS, write a GeoPackage: one file, read by ArcGIS Pro, QGIS and GDAL alike. This block writes the 5 km hexagons s4 builds (§5.4) to `s4_cells.gpkg` and reads the file back.
+
+```python
+# q: gpkg-export
+# status: ran
+# after: py-connect
+import geopandas as gpd
+import pyogrio
+from sqlalchemy import create_engine
+
+engine = create_engine("postgresql+psycopg://", creator=connect)
+cells = gpd.read_postgis("SELECT id, n, y, geom FROM s4_cells WHERE edge_m = 5000 ORDER BY id", engine, geom_col="geom")
+cells.to_file("s4_cells.gpkg", layer="s4_cells", driver="GPKG")
+
+info = pyogrio.read_info("s4_cells.gpkg", layer="s4_cells")
+back = gpd.read_file("s4_cells.gpkg", layer="s4_cells")
+print("layer: s4_cells")
+print("crs:", back.crs.to_string())
+print("geometry:", info["geometry_type"])
+print("fields:", ", ".join(info["fields"]))
+print("rows:", len(back), "records:", int(back["n"].sum()))
+```
+
+```text
+-- result: gpkg-export · python · sha256 d91667382d4a
+layer: s4_cells
+crs: EPSG:3577
+geometry: Polygon
+fields: id, n, y
+rows: 1094 records: 1972
+```
+
+### 3.4 arcpy notes (ArcGIS Pro)
+
+For anyone with ArcGIS Pro (Basic is enough); optional, and never needed by a lab.
+- arcpy lives in Pro's own conda environment, `arcgispro-py3`. Don't pip-install into it; if a lab package is needed there, clone the environment in Pro (Settings → Package Manager → Environment Manager) and add it to the clone.
+- Keep the `uv` environment for the labs, and pass data between the two as a GeoPackage (the block above). Pro shows a GeoPackage's layers as `main.<name>`.
+- Pro Basic's Spatial Statistics toolbox covers s4 and s5: Spatial Autocorrelation (Global Moran's I) and Hot Spot Analysis (Getis-Ord Gi*). Pro reports Moran's z-score under the randomization assumption, so compare it with esda's `z_rand`, not `z_norm` (s4 prints both).
+
+```python
+# q: arcpy-moran
+# status: untested: ArcGIS Pro (Windows, licensed)
+# s4's global Moran's I on the 5 km hexagons, in ArcGIS Pro's Python window. Fixed distance band of 10,000 m
+# (twice the edge, as s4), distances between polygon centroids, row-standardized weights.
+import arcpy
+
+cells = r"C:\Users\you\learn\s4_cells.gpkg\main.s4_cells"
+result = arcpy.stats.SpatialAutocorrelation(
+    cells, "y", "NO_REPORT", "FIXED_DISTANCE_BAND", "EUCLIDEAN_DISTANCE", "ROW", "10000 Meters"
+)
+moran_i, z_score, p_value = (float(result.getOutput(k)) for k in range(3))
+print(f"I = {moran_i:.6f}  z = {z_score:.6f}  p = {p_value:.3g}")
+# Expected, from s4: I = 0.273296 and z close to esda's z_rand, 15.246590.
+```
+
+### 3.5 Power BI Desktop
+
+Power BI Desktop is free and Windows-only (Microsoft Store, or www.microsoft.com/power-platform/products/power-bi/desktop). It reads the star d6 builds, as CSV files under `https://critwire.com/learn/data/star/` (§4): no gateway, no account, no database connection. To check the setup, make a blank query (Home → Get data → Blank query → Advanced editor) and paste this. Power BI asks how to connect to critwire.com the first time: choose **Anonymous**, privacy level **Public**.
+
+```m
+// q: pbi-smoke
+// status: untested: Power BI is Windows-only
+// input: star/dim_country.csv
+let
+    Source = Web.Contents("https://critwire.com", [RelativePath = "learn/data/star/dim_country.csv"]),
+    Rows = Csv.Document(Source, [Delimiter = ",", Encoding = 65001, QuoteStyle = QuoteStyle.Csv]),
+    Promoted = Table.PromoteHeaders(Rows, [PromoteAllScalars = true]),
+    Typed = Table.TransformColumnTypes(Promoted, {{"country_code", type text}, {"name", type text}, {"continent", type text}, {"region", type text}, {"subregion", type text}}, "en-US")
+in
+    Typed
+```
+
+It should show 251 rows: 250 countries and `ZZ`, d6's unknown member for records in no country; Namibia's code `NA` stays text. Three choices make it refresh anywhere:
+- **A fixed base URL**, with the file in `RelativePath`: the Power BI Service can then refresh the published report on a schedule, with anonymous access. A whole URL assembled from text (`"https://critwire.com/learn/data/star/" & file`) is a dynamic data source, which the Service won't refresh.
+- **`Encoding = 65001`** (UTF-8) and `QuoteStyle.Csv`: names with accents and commas inside quotes are read as written.
+- **The culture `"en-US"`** on the type change: critwire's files write `12.5`, and a computer set to a comma-decimal locale would otherwise misread it.
+
+p1 (§5.6) turns this into one function for all eight tables. **Tested here:** every file a Power BI block names, against the star's manifest (header, unique and filled keys, foreign keys, row count, sha256), in each run (§0). **Not tested:** whether Power BI evaluates the M, the DAX results, the visuals and the refresh: Power BI has no Linux version. §10 asks the owner for one check on Windows.
 
 ## 4. Lab data
 
@@ -1483,7 +1863,7 @@ Each spike ran on the VPS in the mission's spike folder, `/srv/critter-ai/agent-
 | `occurrences.parquet` | 40,395 | 622,971 |
 | `occurrences.csv` | 40,395 | 4,591,948 |
 | `datasets.csv` | 400 | 72,797 |
-| `postgis/learn_curriculum.sql` (all lab tables, with these two) | | 29,597,960 |
+| `postgis/learn_curriculum.sql` (all lab tables, with these two) | | 29,598,105 |
 
 Every open record, uncapped, would be 4.8 MB as Parquet and 44.6 MB as CSV; it is never published (§4).
 
