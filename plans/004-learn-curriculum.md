@@ -348,7 +348,236 @@ pointpats: 2.6.0
 
 ### 5.2 Database architecture
 
-(S18–S23)
+(S18–S22)
+
+#### d6 · star
+
+(S23 writes the module around this key code; §A.3 is the spike that tests it.)
+
+**Key code:**
+
+A star schema answers report questions with one join per question: a fact table holds one row per event at a stated grain, and each dimension describes one way to slice it. These blocks are `star.sql`, the one definition of the star: standard SQL with no schema names, so the same text runs in PostGIS (this lab, in `learn_curriculum`) and in DuckDB (critwire's build, which writes the CSV files Power BI reads). Each block creates one table, fills it from the lab tables and reports what it holds. Keys are declared in each `CREATE TABLE`, because DuckDB accepts foreign keys only there.
+
+`dim_species` flattens the taxonomy into columns: a report filters by class or family without walking `taxa` (a star, not a snowflake).
+
+```sql
+-- q: d6-star-dim-species
+-- status: ran
+-- engine: postgis
+CREATE TABLE dim_species (
+  species_id      INTEGER PRIMARY KEY,
+  scientific_name VARCHAR NOT NULL,
+  common_name     VARCHAR NOT NULL,
+  class           VARCHAR NOT NULL,
+  order_name      VARCHAR NOT NULL,
+  family          VARCHAR NOT NULL,
+  genus           VARCHAR NOT NULL
+);
+INSERT INTO dim_species
+SELECT s.id, s.scientific_name, s.common_name, t.class, t.order_name, t.family, t.genus
+FROM species AS s
+JOIN species_taxonomy AS t ON t.species_id = s.id;
+SELECT count(*) AS species, count(DISTINCT class) AS classes, count(DISTINCT family) AS families
+FROM dim_species;
+```
+
+```text
+-- result: d6-star-dim-species · 1 row · sha256 f55e25393aeb
+species | classes | families
+76 | 3 | 50
+```
+
+`dim_country` is every country plus one **unknown member**, `ZZ`. A record with no country gets `ZZ` in the fact table, so every foreign key is filled and a report's totals still add up; the browser schema's nullable `country_code` becomes this one row.
+
+```sql
+-- q: d6-star-dim-country
+-- status: ran
+-- engine: postgis
+CREATE TABLE dim_country (
+  country_code VARCHAR PRIMARY KEY,
+  name         VARCHAR NOT NULL,
+  continent    VARCHAR NOT NULL,
+  region       VARCHAR NOT NULL,
+  subregion    VARCHAR NOT NULL
+);
+INSERT INTO dim_country
+SELECT code, name, continent, region, subregion FROM countries
+UNION ALL
+SELECT 'ZZ', 'Unknown or outside any country', 'Unknown', 'Unknown', 'Unknown';
+SELECT count(*) AS countries, count(*) FILTER (WHERE country_code = 'ZZ') AS unknown_members
+FROM dim_country;
+```
+
+```text
+-- result: d6-star-dim-country · 1 row · sha256 c47786e15c16
+countries | unknown_members
+251 | 1
+```
+
+`dim_dataset` carries each dataset's credit (title, publisher, DOI, license), so the credits travel with the star into any report built on it.
+
+```sql
+-- q: d6-star-dim-dataset
+-- status: ran
+-- engine: postgis
+CREATE TABLE dim_dataset (
+  dataset_key VARCHAR PRIMARY KEY,
+  title       VARCHAR NOT NULL,
+  publisher   VARCHAR NOT NULL,
+  doi         VARCHAR,
+  license     VARCHAR NOT NULL
+);
+INSERT INTO dim_dataset
+SELECT CAST(dataset_key AS VARCHAR), title, publisher, doi, license
+FROM datasets;
+SELECT count(*) AS datasets, count(doi) AS with_doi, count(DISTINCT publisher) AS publishers
+FROM dim_dataset;
+```
+
+```text
+-- result: d6-star-dim-dataset · 1 row · sha256 3e8e7544bbbe
+datasets | with_doi | publishers
+400 | 400 | 217
+```
+
+`dim_year` has the years that occur, plus `-1` for a record with no year: the same unknown-member rule.
+
+```sql
+-- q: d6-star-dim-year
+-- status: ran
+-- engine: postgis
+CREATE TABLE dim_year (
+  year   INTEGER PRIMARY KEY,
+  decade INTEGER,
+  label  VARCHAR NOT NULL
+);
+INSERT INTO dim_year
+SELECT DISTINCT year, year - year % 10, CAST(year AS VARCHAR)
+FROM occurrences
+WHERE year IS NOT NULL
+UNION ALL
+SELECT -1, NULL, 'Unknown';
+SELECT count(*) AS years, min(year) FILTER (WHERE year > 0) AS first_year, max(year) AS last_year
+FROM dim_year;
+```
+
+```text
+-- result: d6-star-dim-year · 1 row · sha256 fcdad55612e8
+years | first_year | last_year
+177 | 1599 | 2026
+```
+
+`fact_records`: the grain is **one sample record**. `coalesce` is the one place a missing country or year becomes its unknown member. `basis_of_record` and `license` stay on the fact as plain columns (degenerate dimensions): they have no attributes of their own to describe.
+
+```sql
+-- q: d6-star-fact-records
+-- status: ran
+-- engine: postgis
+-- after: d6-star-dim-species, d6-star-dim-country, d6-star-dim-dataset, d6-star-dim-year
+CREATE TABLE fact_records (
+  record_id                BIGINT PRIMARY KEY,
+  species_id               INTEGER NOT NULL REFERENCES dim_species (species_id),
+  country_code             VARCHAR NOT NULL REFERENCES dim_country (country_code),
+  dataset_key              VARCHAR NOT NULL REFERENCES dim_dataset (dataset_key),
+  year                     INTEGER NOT NULL REFERENCES dim_year (year),
+  month                    INTEGER,
+  basis_of_record          VARCHAR NOT NULL,
+  license                  VARCHAR NOT NULL,
+  longitude                DOUBLE PRECISION NOT NULL,
+  latitude                 DOUBLE PRECISION NOT NULL,
+  coordinate_uncertainty_m DOUBLE PRECISION
+);
+INSERT INTO fact_records
+SELECT id, species_id, coalesce(country_code, 'ZZ'), CAST(dataset_key AS VARCHAR), coalesce(year, -1), month,
+       basis_of_record, license, longitude, latitude, coordinate_uncertainty_m
+FROM occurrences;
+SELECT count(*) AS records,
+       count(*) FILTER (WHERE country_code = 'ZZ') AS unknown_country,
+       count(*) FILTER (WHERE year = -1) AS unknown_year,
+       count(coordinate_uncertainty_m) AS with_uncertainty
+FROM fact_records;
+```
+
+```text
+-- result: d6-star-fact-records · 1 row · sha256 808a805569b8
+records | unknown_country | unknown_year | with_uncertainty
+40395 | 0 | 2289 | 16393
+```
+
+`fact_species_country` is a **factless fact**: it has no measure, only the pairs critwire publishes (a country where a species has open records). It shares `dim_species` and `dim_country` with `fact_records`, so one country slicer filters both (conformed dimensions).
+
+```sql
+-- q: d6-star-fact-species-country
+-- status: ran
+-- engine: postgis
+-- after: d6-star-dim-species, d6-star-dim-country
+CREATE TABLE fact_species_country (
+  species_id   INTEGER NOT NULL REFERENCES dim_species (species_id),
+  country_code VARCHAR NOT NULL REFERENCES dim_country (country_code),
+  PRIMARY KEY (species_id, country_code)
+);
+INSERT INTO fact_species_country
+SELECT species_id, country_code FROM species_countries;
+SELECT count(*) AS pairs, count(DISTINCT species_id) AS species, count(DISTINCT country_code) AS countries
+FROM fact_species_country;
+```
+
+```text
+-- result: d6-star-fact-species-country · 1 row · sha256 e67b39a44d4e
+pairs | species | countries
+472 | 72 | 107
+```
+
+The habitat classes have two levels; `dim_habitat_class` flattens them, and a level-1 class is its own parent, so a report can group by `level1_name` with no gaps. The habitat data are stand-ins until L3 loads the habitat summaries.
+
+```sql
+-- q: d6-star-dim-habitat-class
+-- status: ran
+-- engine: postgis
+CREATE TABLE dim_habitat_class (
+  habitat_code INTEGER PRIMARY KEY,
+  name         VARCHAR NOT NULL,
+  level1_code  INTEGER NOT NULL,
+  level1_name  VARCHAR NOT NULL
+);
+INSERT INTO dim_habitat_class
+SELECT h.code, h.name, coalesce(h.level1_code, h.code), coalesce(p.name, h.name)
+FROM habitat_classes AS h
+LEFT JOIN habitat_classes AS p ON p.code = h.level1_code;
+SELECT count(*) AS classes, count(DISTINCT level1_code) AS level1_classes
+FROM dim_habitat_class;
+```
+
+```text
+-- result: d6-star-dim-habitat-class · 1 row · sha256 37ad5647623e
+classes | level1_classes
+75 | 13
+```
+
+`fact_country_habitat`: the grain is **one country and one habitat class**, with a measure that adds up across classes, `est_area_km2`.
+
+```sql
+-- q: d6-star-fact-country-habitat
+-- status: ran
+-- engine: postgis
+-- after: d6-star-dim-country, d6-star-dim-habitat-class
+CREATE TABLE fact_country_habitat (
+  country_code VARCHAR NOT NULL REFERENCES dim_country (country_code),
+  habitat_code INTEGER NOT NULL REFERENCES dim_habitat_class (habitat_code),
+  est_area_km2 DECIMAL(12, 2) NOT NULL,
+  PRIMARY KEY (country_code, habitat_code)
+);
+INSERT INTO fact_country_habitat
+SELECT country_code, habitat_code, est_area_km2 FROM country_habitats;
+SELECT count(*) AS country_classes, count(DISTINCT country_code) AS countries, sum(est_area_km2) AS total_km2
+FROM fact_country_habitat;
+```
+
+```text
+-- result: d6-star-fact-country-habitat · 1 row · sha256 a745d03c7c43
+country_classes | countries | total_km2
+35 | 2 | 6062.26
+```
 
 ### 5.3 GIS in SQL
 
@@ -539,7 +768,27 @@ edge_m | n | I | E[I] | Var_norm | z_norm | z_rand
 
 ### 5.6 Power BI
 
-(S26)
+(S26 writes p2–p4 and the outline around p1's key code; §A.3 checks the files it reads.)
+
+#### p1 · power-query
+
+**Key code:**
+
+Power BI reads the star d6 builds, as CSV files critwire publishes under `/learn/data/star/`. `LoadStar` is one function for all eight tables: create it as a blank query (Home → Get data → Blank query → Advanced editor), then add one query per table that calls it, for example `dim_country = LoadStar("dim_country", {{"country_code", type text}, {"name", type text}, {"continent", type text}, {"region", type text}, {"subregion", type text}})`. The base URL is fixed and the file name goes in `RelativePath`, so the Power BI Service can refresh it with anonymous access. The culture `"en-US"` is explicit, so a computer set to a comma-decimal locale still reads `12.5` as twelve and a half. Type `country_code` as text: Namibia's code is `NA`, which some tools read as "not available".
+
+```m
+// q: p1-load
+// status: untested: Power BI is Windows-only
+// input: star/dim_species.csv, star/dim_country.csv, star/dim_dataset.csv, star/dim_year.csv, star/fact_records.csv, star/fact_species_country.csv, star/dim_habitat_class.csv, star/fact_country_habitat.csv
+(file as text, types as list) as table =>
+let
+    Source = Web.Contents("https://critwire.com", [RelativePath = "learn/data/star/" & file & ".csv"]),
+    Rows = Csv.Document(Source, [Delimiter = ",", Encoding = 65001, QuoteStyle = QuoteStyle.Csv]),
+    Promoted = Table.PromoteHeaders(Rows, [PromoteAllScalars = true]),
+    Typed = Table.TransformColumnTypes(Promoted, types, "en-US")
+in
+    Typed
+```
 
 ### 5.7 Capstone
 
@@ -631,7 +880,35 @@ Every open record, uncapped, would be 4.8 MB as Parquet and 44.6 MB as CSV; it i
 
 **Evidence:** `SP/out/moran/` (`summary.md`, `compare.json` at full precision, `raw/`).
 
-(S11: A.3.)
+### A.3 A star export Power BI reads (S11)
+
+**Question.** Can one `star.sql` build the Power BI star in both PostGIS (d6's lab) and DuckDB (critwire's build), and can the files Power BI reads be checked here, where Power BI can't run?
+
+**Inputs.** The lab tables (the browser schema v2 plus the habitat stand-ins); d6's eight `d6-star-*` blocks (§5.2), which the spike reads from this file by id; p1's `p1-load` (§5.6), whose `// input:` line names the eight files.
+
+**Commands.** `SP/star-export/run.sh`: loads the lab data, then `SP/star-export/export.ts`: runs the blocks in Node DuckDB over the published files and writes each table as CSV ordered by its primary key (the canonical files, with `manifest.json`); runs the same blocks in PostGIS in a transaction it rolls back, `\copy`-ing each table; compares the two by value; checks every file as the Power BI input check does. The runner (`run-queries.ts`) checks `p1-load`'s inputs against the manifest on every run and logs one `-- input:` line per file.
+
+| File | Grain or key | Rows | Bytes |
+|---|---|---|---|
+| `dim_species.csv` | species | 76 | 6,186 |
+| `dim_country.csv` | country, plus `ZZ` | 251 | 11,227 |
+| `dim_dataset.csv` | dataset (its credit) | 400 | 72,797 |
+| `dim_year.csv` | year, plus `-1` | 177 | 2,670 |
+| `fact_records.csv` | one sample record | 40,395 | 4,475,330 |
+| `fact_species_country.csv` | species × country (factless) | 472 | 2,818 |
+| `dim_habitat_class.csv` | habitat class (stand-in) | 75 | 4,525 |
+| `fact_country_habitat.csv` | country × class (stand-in) | 35 | 500 |
+
+`manifest.json` lists, per file: columns and types, primary key and foreign keys (read from DuckDB's catalog, so `star.sql` is their one definition), rows, bytes, sha256, and `sources` (name, license, license URL, citation, DOI). `fact_records`' source is the GBIF download's citation, with `"datasets": "datasets.csv"` for each dataset's credit, which `dim_dataset` also carries.
+
+**What the spike found:**
+- **One `star.sql` runs in both engines.** Standard types (`INTEGER`, `VARCHAR`, `DOUBLE PRECISION`, `DECIMAL`), keys declared in `CREATE TABLE` (DuckDB accepts foreign keys only there), `count(*) FILTER (…)` and `%` work in both; the lab's `uuid` dataset key is cast to text so the key has one type.
+- **The two exports agree by value.** Seven of the eight files are byte-identical. `fact_records` differs only in how numbers are written: DuckDB writes a whole double as `805.0`, PostgreSQL as `805` (15,421 cells, every one equal in value). DuckDB's file is the published one, so the manifest's sha256 is unambiguous.
+- **Unknown members keep every foreign key filled.** 2,289 records have no year and map to `-1`; no record in this sample lacks a country (the download's geospatial filter removed them), but the `ZZ` member stays for refreshes. The earliest year is 1599: a reminder that dates are data to check too (s1, e3).
+- **`NA` stays Namibia.** Read as text by DuckDB's `read_csv(all_varchar)` and Python's `csv`, the code survives. p1 types `country_code` as text for the same reason.
+- **What can't be tested here:** M evaluation, DAX, visuals and refresh (§10 asks the owner for one check on Windows). What is tested is every byte Power BI would read.
+
+**Evidence:** `SP/out/star-export/` (`summary.md`, `manifest.json`, the eight CSV files, `postgis/`, `check.json`) and the `-- input:` lines in the mission's `queries.log`.
 
 ## B. Disagreements with 002 and 003
 
