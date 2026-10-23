@@ -788,7 +788,163 @@ p1 (§5.6) turns this into one function for all eight tables. **Tested here:** e
 
 ## 4. Lab data
 
-(S15)
+Every lab reads the same handful of files. critwire's build writes them from snapshots committed in `data/`, as it writes the species files, and publishes them under **`/learn/data/`**, not `/v1`. `/v1` promises "only additions": a file there never loses a column or changes meaning. Lab files will be redrawn and resized as the course changes, so they live outside that promise. The one `/v1` addition is 002's `countries` file (§1). The numbers below were measured in the spike (§A; `SP/out/lab-data/`, `SP/out/etl-postgis/`, `SP/out/loader/`); the build missions (§9) rebuild the files and re-measure.
+
+### 4.1 The datasets
+
+| Dataset | License (quoted in) | Files under `/learn/data/` | Rows | Bytes | Modules | Built by |
+|---|---|---|---|---|---|---|
+| GBIF open-records sample | per record CC0 1.0 or CC BY 4.0, after the effective-license rule (4.2) (003 D3); the download's DOI, and a derived-dataset DOI of its own | `occurrences.parquet`, `occurrences.csv`, `datasets.csv` | 40,395 records; 400 datasets | 622,971; 4,591,948; 72,797 | f2–f4, d2–d6, g3–g6, s1–s6, e1–e5, p1–p4, c1 | L1 |
+| Natural Earth admin-0, 1:50m, v5.1.2 | public domain (003 D2, 002 §6) | `country_shapes.parquet` (GeoParquet) | 247 | 1,206,307 | g1–g7, s1, s6 | L1 |
+| Natural Earth admin-1, 1:50m | public domain (003 D10) | `admin1_shapes.parquet` (GeoParquet) | 294, in 9 countries | 870,947 | g4, g6, s2–s5 | L1 |
+| RESOLVE Ecoregions 2017, simplified to 0.05° | CC BY 4.0 (003 D9) | `ecoregions.parquet` (GeoParquet), `biomes.csv` | 847; 14 | 6,686,262; 518 | g4, s6 | L1 |
+| Countries (Natural Earth attributes) | public domain (002 §6) | `/v1/countries.{parquet,csv,json}` | 250 | a few KB | every module | L1 |
+| Jung et al. 2020 habitat map, v004: classes and country summaries | CC BY 4.0 (003 D4, §5) | `habitat_classes.parquet`, `country_habitats.parquet`; L3 adds `occurrence_habitats.parquet` | 75; 35 (A2's stand-ins until L3) | 2,488; 850 | g7, s6, p2–p3 | L3 |
+| Jung v004 clips, Costa Rica and Tasmania | CC BY 4.0 (003 D4) | `clips/{cr,tas}.tif` (cloud-optimized GeoTIFF) | 2 rasters | ≈ 3 MB (estimate; A2 measured the Costa Rica clip at 1.42 MB) | g7, s6 | L3 |
+| The PostGIS loader | inherits the above | `postgis/learn_curriculum.sql` | 14 tables | 21,330,577 | every PostGIS module | build (L1; grown in L3) |
+| The star export | inherits the above; credits in its own manifest | `star/*.csv` (8 files), `star/manifest.json` | §A.3 | 4,576,053; 10,995 | d6, p1–p4 | build (L2: the records fact; L5: the habitat fact) |
+| The manifest | | `manifest.json` (4.5) | | 12,006 | every module | build (L1) |
+
+Notes on the shapes (`SP/out/lab-data/summary.md`):
+- **GeoParquet 1.0.0**: WKB geometry in a `geom` column, its bounding box, longitude-latitude (CRS84), zstd compression, rows sorted by key. The same inputs write byte-identical files.
+- **Admin-1 covers 9 countries only** (AU 9, BR 27, CA 13, CN 31, ID 33, IN 36, RU 85, US 51, ZA 9 rows), as Natural Earth's 1:50m layer does. Tasmania is one row, `AUS-2660`. The key is `adm1_code`; Natural Earth's `iso_3166_2` is dropped, because one value (Jervis Bay's `AU-X02~`) isn't a real code.
+- **RESOLVE is simplified feature by feature**, keeping topology, at 0.05° (about 5 km, close to the detail of the 1:50m outlines beside it). The source has 15,164,376 vertices; 0.05° keeps 545,976. The finest tolerance that fits 8 MB was 0.05°: 0.02° gives 9,880,579 bytes. Because each ecoregion is simplified on its own, neighbours no longer share an exact border, and small gaps and overlaps appear between them (g2 and g4 use this).
+- **"Rock and Ice"** (`ECO_ID` 0) has no biome or realm in RESOLVE (`N/A`), so its `biome_id` and `realm` are NULL, a nullable foreign key like `occurrences.country_code`. Any other `N/A` fails the build.
+- **Invalid shapes are kept on purpose**, for g2: one ring self-intersection in admin-1; 3 nested shells and 7 ring self-intersections in the simplified ecoregions (the source shapefile has 69 self-intersections). The admin-0 shapes are all valid. Every country code in the shapes has a `countries` row.
+
+**How each is built.** One command per step, in the order critwire's ingests already use (ingest → derive → build; `AGENTS.md`):
+- **GBIF sample** (L1): `pnpm ingest gbif-sample` submits the download (or reuses the one in `download.json`), waits, fetches the zip to a temporary folder, applies the species rule, the effective license, the country-key contract and the cap (4.2), reads each dataset's and publisher's metadata, and commits `data/raw/gbif-sample/`. `pnpm derive` writes the sample's per-dataset counts. `pnpm gbif:register --target learn-sample` mints its derived-dataset DOI. `pnpm build` writes the three files, the loader's two tables and the manifest.
+- **Natural Earth and RESOLVE** (L1): an ingest downloads the pinned sources (Natural Earth's commit `f1890d9f…`; RESOLVE's `Ecoregions2017.zip`, read in place, never extracted), writes the GeoParquet files above and commits them under `data/`. The build copies them and puts the same shapes in the loader.
+- **Habitat summaries and clips** (L3): `pnpm ingest habitat` (003 §5) computes the summaries and the class at each sample record from v004, and cuts the two clips; the build publishes them and adds their tables to the loader.
+- **Loader, star and manifest**: written by `pnpm build` from the files above; nothing new is committed for them.
+
+### 4.2 The GBIF sample
+
+**Where it comes from: the occurrence download API.** 003 D3 drew a few hundred records per species inside `ingest gbif`, through GBIF's search API: pages of 300, a subset of what the countries DOI (`10.15468/dd.ky9cyt`) counts, and no DOI of its own. The labs need tens of thousands of records, and a source learners can cite and fetch again. GBIF's download API gives both: it runs the query as a job, archives the result under a DOI and has no paging limit. The sample is refreshed on its own; `ingest gbif`, `contributions.json` and the countries DOI stay as they are. The spike's download: key `0041824-260928105237408`, DOI `10.15468/dl.fbpk9w`, ready 16 min 41 s after it was submitted, a 34,725,756-byte zip holding 394,532 records from 454 datasets (§A.1).
+
+**The predicate is critwire's countries rule**, so the sample and the countries field count the same kind of record (`SP/downloads/gbif-request/request.json`):
+- `TAXON_KEY in` the 73 `ids.gbif` in `data/species.json`;
+- `LICENSE in [CC0_1_0, CC_BY_4_0]`, `HAS_COORDINATE = true`, `HAS_GEOSPATIAL_ISSUE = false`, `OCCURRENCE_STATUS = PRESENT`;
+- `BASIS_OF_RECORD in` the 7 values the countries rule keeps (no living or fossil specimens);
+- format `SIMPLE_CSV`.
+
+**`checklistKey` is pinned** to the legacy GBIF Backbone (`d7dddbf4-2cf0-4f39-9b2a-bb099caae36c`), at the top of the request and on `TAXON_KEY`. critwire's `ids.gbif` are keys in that backbone. GBIF documents it as the download API's default today, but also calls it obsolete, and the search API's default has already moved to the Catalogue of Life checklist. A pipeline shouldn't depend on a default its provider has said will change, so the request names its taxonomy. GBIF accepted both keys and echoes them in the stored request; `fetch` checks the echo (e1).
+
+**From download to sample** (`SP/out/etl-postgis/summary.md`):
+
+| Stage | Records |
+|---|---|
+| the download (`totalRecords`; equal to the search count at submission) | 394,532 |
+| loaded and typed, every check passed | 394,532 |
+| effective license CC0 1.0 or CC BY 4.0 | 381,065 |
+| at most 2,000 per species, by ascending `md5` of the `gbifID` text | **40,395** (28,187 CC BY 4.0, 12,208 CC0 1.0) |
+
+- **Species.** A record belongs to the species whose `ids.gbif` is its `speciesKey`, else its `taxonKey`; a record that names no species, or two, fails the run. Four of critwire's keys are synonyms in the backbone (Blanding's turtle, Baird's tapir, Temminck's and giant pangolins): GBIF files their 2,385 records under the accepted name's `speciesKey` and keeps critwire's key in `taxonKey` (e2).
+- **Effective license.** A record's license is the more restrictive of its own and its dataset's (CC0 < CC BY < CC BY-NC). 11 datasets declare CC BY-NC 4.0 while GBIF labels their 13,467 records CC0 or CC BY; those records are left out. A record that is CC0 in a CC BY dataset is published as CC BY and credited. §10 asks the owner whether to keep this rule.
+- **The cap.** At most 2,000 records per species, chosen by ascending `md5(gbifID)`. Any engine computes the same hash, so DuckDB, PostgreSQL and Python pick the same records, and a refresh changes only what GBIF changed. 71 species have records: 13 reach the cap, 33 have fewer than 100, and the median is 111. The Ili pika has no open record; the Yangtze giant softshell turtle's only record sits in a CC BY-NC dataset. Uncapped, the open records would be 4,791,485 bytes as Parquet and 44,556,230 as CSV; they are never published.
+- **Columns** (`occurrences`, the same in every file and both databases): `id` (GBIF's `gbifID`), `species_id`, `dataset_key`, `license` (effective, `CC0 1.0` or `CC BY 4.0`), `basis_of_record`, `longitude`, `latitude`, `coordinate_uncertainty_m`, `country_code_gbif`, `country_code`, `year`, `month`. The PostGIS lab adds `geom`, a stored point generated from the coordinates (SRID 4326, GiST-indexed).
+
+**The country-key contract**, one rule applied once, where the sample is written; no lab re-derives it:
+- `country_code_gbif` is GBIF's `countryCode` as delivered, NULL when empty. g3 compares it with the outlines.
+- `country_code` is that code when `countries` has it, else NULL: a nullable foreign key to `countries`, in the browser and in PostGIS alike.
+- Two values are known not to be countries: `ZZ` (unknown or invalid) and `XZ` (international waters). They give a NULL `country_code`. Any other code with no `countries` row fails the run and names the code, because it means the countries file has a gap (fixed by 002 §6's matching rule).
+- The star maps a NULL to one unknown member, `dim_country` `ZZ` "Unknown or outside any country", so its foreign keys are never NULL (d6).
+- In the spike's download all 112 codes were `countries` rows, and no `ZZ`, `XZ` or empty code came through (the geospatial-issue filter removes them), so `country_code` is never NULL in this sample. The contract stays for later refreshes.
+
+**Dataset metadata.** For each dataset in the download, `GET https://api.gbif.org/v1/dataset/<key>` gives its title, DOI and license, and once per publisher `GET https://api.gbif.org/v1/organization/<key>` gives the publisher's name: 454 datasets and 233 publishers, read at 2 requests a second or fewer in 5 min 55 s. Every dataset had a title, a publisher and a DOI; none was deleted. A dataset GBIF deletes later keeps its title and records the deletion date; an unknown license fails the ingest. Licenses: CC BY 4.0 311, CC0 1.0 132, CC BY-NC 4.0 11. The 400 datasets left in the sample go into `datasets` (`dataset_key`, `title`, `publisher`, `doi`, `license`: the dataset's declared license). Record counts aren't stored: they are a query (d2), and one dataset (iNaturalist research-grade) holds records under two licenses, which is why `license` belongs on `occurrences`.
+
+**Registration.** The sample is a reduced subset of the download, so GBIF's rules for citing it are those of a derived dataset: L1 registers it as its own, with its per-dataset counts and `originalDownloadDOI` set to the download's DOI. `pnpm gbif:register` gains `--target learn-sample`; its deposit tags are `gbif-learn-<hex12>`. The countries target and its `gbif-dd-*` tags don't change. A plain build refuses a missing or stale sample DOI, as it does for the countries DOI, and the refresh follows `AGENTS.md`'s DOI steps with the new target. GBIF deletes an uncited download after six months (the spike's on 2027-04-23), so L1 makes its own download and registers that one.
+
+**What's committed**, under `data/raw/gbif-sample/`:
+- `download.json`: the key, DOI, request, `totalRecords`, the zip's sha256 and every dataset's count in the full download (the spike's: 25,403 bytes);
+- `datasets.json`: the metadata above, keys sorted, one `retrieved` time (241,891 bytes);
+- `sample.csv`: the capped rows, sorted by `id` (about the size of `occurrences.csv`, 4.6 MB).
+
+The ingest applies the cap, so `data/` is the whole snapshot and `pnpm derive` never needs the zip. The full download and the zip are never committed: GBIF archives the download under its DOI, which is how anyone reproduces the sample.
+
+### 4.3 The loader
+
+`postgis/learn_curriculum.sql` builds the PostGIS lab with nothing but `psql` and PostGIS (§0, §3.2): `psql -X -v ON_ERROR_STOP=1 -d <your database> -f learn_curriculum.sql`. It is one transaction, so a failed load leaves the previous schema as it was:
+- `\set ON_ERROR_STOP on`, `BEGIN`, `SET client_encoding = 'UTF8'` (psql on Windows talks in the console's code page and would garble names), then `DROP SCHEMA IF EXISTS learn_curriculum CASCADE`, `CREATE SCHEMA learn_curriculum` and `SET LOCAL search_path = learn_curriculum, public`.
+- The tables, then each table's rows as `COPY … FROM stdin (FORMAT csv)`. csv format reads a backslash as plain text; the text format would silently change rows (F10, e2).
+- Shapes arrive as base64 text and become geometry afterwards: `ST_Multi(ST_GeomFromWKB(decode(geom, 'base64'), 4326))`, one type per column (MultiPolygon, SRID 4326). Base64 takes a third less room than `bytea`'s hex form: the loader is 21,330,577 bytes instead of 29,598,105, with identical geometries.
+- Then primary, unique and foreign keys, GiST indexes and `ANALYZE` on every table.
+- Then a check that raises on failure: each table's row count equals the build's, and every geometry has SRID 4326. Shapes may be invalid (g2), so validity isn't checked.
+- `COMMIT`. The file references no table outside `learn_curriculum`; only PostGIS's functions come from `public`. Loading it again replaces the schema, tables you made there included, and its first lines say so.
+
+In the spike it loads in 1.6 s, twice in a row, with the same rows each time: `admin1_shapes` 294, `biomes` 14, `countries` 250, `country_habitats` 35, `country_shapes` 247, `datasets` 400, `ecoregions` 847, `habitat_classes` 75, `occurrences` 40,395, `sources` 5, `species` 76, `species_countries` 472, `species_sources` 591, `taxa` 143 (`pg-smoke`, §0). The browser holds the same rows in its eight tables:
+
+```sql
+-- q: lab-sizes
+-- status: ran
+SELECT 'taxa' AS table_name, count(*) AS n_rows FROM taxa
+UNION ALL SELECT 'species', count(*) FROM species
+UNION ALL SELECT 'sources', count(*) FROM sources
+UNION ALL SELECT 'species_sources', count(*) FROM species_sources
+UNION ALL SELECT 'countries', count(*) FROM countries
+UNION ALL SELECT 'species_countries', count(*) FROM species_countries
+UNION ALL SELECT 'datasets', count(*) FROM datasets
+UNION ALL SELECT 'occurrences', count(*) FROM occurrences
+ORDER BY table_name;
+```
+
+```text
+-- result: lab-sizes · 8 rows · sha256 792e5293a528
+table_name | n_rows
+countries | 250
+datasets | 400
+occurrences | 40395
+sources | 5
+species | 76
+… 3 more rows
+```
+
+### 4.4 The cap: 50 MB
+
+The build refuses when `dist/learn/data/` exceeds 50,000,000 bytes, or when the committed lab data (`data/raw/gbif-sample/` and the other lab snapshots) does. The browser engine's `parquet` extension (3.22 MB) is counted apart, under 002 §10 item 3.
+
+| `/learn/data/` | Bytes |
+|---|---|
+| now (the spike, after L1's files): 10 files and the manifest | 35,397,671 |
+| + L2's star (8 CSV files and its manifest) | 39,984,719 |
+| + L3's habitat files and clips, about 3.2 MB, and their loader tables, about 0.7 MB for `occurrence_habitats` plus the clips as rasters (estimates) | ≈ 44–48 MB |
+
+The committed lab data in the spike (`SP/data/learn/`: the shapes, the stand-in habitat summaries and the sample files) is 14,055,088 bytes; L1's `data/raw/gbif-sample/` adds about 4.9 MB in place of the sample files.
+
+With hex geometry the loader was 29,598,105 bytes, and the same projection came to about 52–58 MB, over the cap once L3 landed. Base64 brought it back under, with no change to any table. If L3's measured total is still over, the cuts go in this order, and each keeps the browser and PostGIS on the same data: RESOLVE is simplified further, in the file and the loader alike, using the same tolerance probe; then the CSV copy of the sample goes, since every reader also takes Parquet; then the Tasmania clip leaves the loader, and g7 keeps Costa Rica's. The loader and the sample's Parquet are cut last: every PostGIS module needs the one, and every browser module the other.
+
+### 4.5 Credits
+
+`/v1/attribution.json` stays about the species files, plus 002 §6's Natural Earth entry. The lab files are credited in **`/learn/data/manifest.json`**: for each file its columns, rows, bytes, sha256 and `sources[]` (`name`, `license`, `licenseUrl` from `scripts/build/sources.ts` `licenseUrl()`, `citation`, `doi` where there is one, `url`). In the spike's manifest:
+- the sample's three files: GBIF's citation of the download, "GBIF.org (23 October 2026) GBIF Occurrence Download https://doi.org/10.15468/dl.fbpk9w", plus `"datasets": "datasets.csv"` for each dataset's credit; from L1 also the sample's derived-dataset DOI;
+- the Natural Earth shapes: public domain, credited anyway ("Made with Natural Earth");
+- RESOLVE: CC BY 4.0, Dinerstein et al. 2017, BioScience 67(6), doi 10.1093/biosci/bix014;
+- the habitat files: CC BY 4.0, Jung et al. 2020 and the map's version (003 §5), doi 10.5281/zenodo.4058819;
+- the loader: every source of the tables it holds, critwire's own data included.
+
+One `credits(file)` function writes these entries and the star's (`star/manifest.json`, §A.3); `dim_dataset` carries the `datasets` columns. The build refuses a lab file with no `sources`, a license missing from `LICENSE_URLS`, a CC BY source with no citation, and a dataset in the sample with no title or publisher. The `/learn/data/` index page lists the files, their sources and the dataset table (title, publisher, DOI link, license, records in the sample).
+
+The same check, as a query any lab can run: datasets in the sample that couldn't be credited properly. There are none.
+
+```sql
+-- q: lab-credits
+-- status: ran
+SELECT d.dataset_key, d.title, d.publisher, count(*) AS records
+FROM occurrences AS o
+JOIN datasets AS d ON d.dataset_key = o.dataset_key
+WHERE coalesce(trim(d.title), '') = '' OR coalesce(trim(d.publisher), '') = ''
+GROUP BY d.dataset_key, d.title, d.publisher
+ORDER BY d.dataset_key;
+```
+
+```text
+-- result: lab-credits · 0 rows · sha256 3c8b3286886e
+dataset_key | title | publisher | records
+```
+
+### 4.6 Who can read the files (CORS)
+
+critwire's web server sends `Access-Control-Allow-Origin: *` on `/v1/*` only (F7), and no lab reader needs more: DuckDB-WASM on critwire's own pages reads `/learn/data/` from the same origin, and PostgreSQL, Python and Power BI aren't browsers, so the rule doesn't apply to them. Only a page on another site, reading the lab files in its visitors' browsers, would need CORS on `/learn/data/`. §10 leaves that to the owner: it is one Caddy rule, made from the control room.
 
 ## 5. Modules
 
@@ -1863,7 +2019,7 @@ Each spike ran on the VPS in the mission's spike folder, `/srv/critter-ai/agent-
 | `occurrences.parquet` | 40,395 | 622,971 |
 | `occurrences.csv` | 40,395 | 4,591,948 |
 | `datasets.csv` | 400 | 72,797 |
-| `postgis/learn_curriculum.sql` (all lab tables, with these two) | | 29,598,105 |
+| `postgis/learn_curriculum.sql` (all lab tables, with these two) | | 21,330,577 |
 
 Every open record, uncapped, would be 4.8 MB as Parquet and 44.6 MB as CSV; it is never published (§4).
 
@@ -1941,7 +2097,7 @@ Where 004 and the earlier designs differ, the build missions follow 004. One par
 
 **A country code with no country** (F11). 003's `occurrences.country_code` was a plain foreign key to `countries`, but GBIF's codes include `ZZ` (unknown) and `XZ` (international waters), and some records have none: the key would reject them at load. 004 keeps GBIF's code as delivered in `country_code_gbif` and puts a nullable foreign key beside it, `country_code`, set only when the code is a `countries` row. `ZZ` and `XZ` are named non-country values; any other unknown code fails the build. The star maps a missing country to one unknown member, `ZZ` (d6). The spike's download had no such code, so the contract guards later refreshes.
 
-**Loading PostGIS needs only psql** (F5). 003 §4 and §6 gave learners `shp2pgsql` and `ogr2ogr` commands, uncounted and untested; this server has no GDAL command-line tools, and not every learner's install will. 004 gives one file, `learn_curriculum.sql`, that `psql` loads in one transaction: tables by `COPY … (FORMAT csv)`, shapes as hex WKB turned into geometry by `ST_GeomFromWKB`, then keys, indexes and a check that raises on failure. The tests load it with the exact command a learner types, twice (§0, §4). Text-format `COPY` is never used on data we didn't write: it silently altered hex WKB and backslashes in the spike (F10, e2).
+**Loading PostGIS needs only psql** (F5). 003 §4 and §6 gave learners `shp2pgsql` and `ogr2ogr` commands, uncounted and untested; this server has no GDAL command-line tools, and not every learner's install will. 004 gives one file, `learn_curriculum.sql`, that `psql` loads in one transaction: tables by `COPY … (FORMAT csv)`, shapes as base64 WKB turned into geometry by `ST_GeomFromWKB`, then keys, indexes and a check that raises on failure. The tests load it with the exact command a learner types, twice (§0, §4). Text-format `COPY` is never used on data we didn't write: it silently altered hex WKB and backslashes in the spike (F10, e2).
 
 **Sizes fit a 50 MB cap** (F6). 003 measured its files for `/v1` with no total in mind: admin-0 at 1:10m (7.35 MB), admin-1 as GeoJSON (40.7 MB), the RESOLVE zip (149 MB), the `spatial` extension (23.6 MB per DuckDB version). Lab data is copied on every deploy and stays in git history, so 004 caps it at 50 MB: Natural Earth at 1:50m, RESOLVE simplified at 0.05° (6.69 MB), the capped sample, no `spatial`. The spike's lab files under `/learn/data/` come to about 43.7 MB; §4 gives the budget.
 
