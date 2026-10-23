@@ -225,7 +225,7 @@ Out:
 - [x] Baseline: install, migrate, run typecheck, lint, unit and E2E tests; record the results under Baseline
 - [x] Architecture: `architect` writes findings and the target design
 - [x] Fable review: `architecture-reviewer`
-- [ ] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
+- [x] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
 - [ ] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
 - [ ] Steps: `planner` writes Steps and Verification
 
@@ -719,6 +719,22 @@ SHOULD-CONSIDER:
 
 ## Architecture review (Astra)
 
+VERDICT: APPROVE_WITH_CHANGES
+
+MUST-FIX:
+
+1. **Lab isolation (T6):** explicitly replace the copied harness’s `learn_spatial` connection/search-path behavior with `learn_curriculum`. Otherwise unqualified lab SQL targets the protected schema; a row-count canary cannot detect all damage.
+2. **Country-key contract (T5/T8):** define normalization for unknown/unmatched GBIF country codes before enforcing foreign keys. Preserve raw codes separately; use nullable references or explicit unknown members consistently across browser, PostGIS and star exports.
+3. **Atomic reload (T5):** require schema replacement, loading and validation in one transaction. The specified destructive loader otherwise leaves existing lab data deleted or partially rebuilt after failure.
+4. **Attribution ownership (T5/T7c):** define committed dataset citation metadata and its propagation into lab/star manifests. Dataset keys and licenses alone do not fulfill the promised attribution; existing attribution generation covers species sources, not arbitrary lab files.
+5. **Standalone cleanup (T6):** require downloadable role/schema labs to clean up within their own blocks. Runner rollback alone can conceal artifacts that persist when learners execute the downloads.
+
+SHOULD-CONSIDER:
+
+1. Include loader, checker and environment versions in `checked.json` freshness checks.
+2. Choose one canonical star export; use the other engine for semantic comparison.
+3. Commit only the capped sample plus provenance unless full projected records serve a concrete reproducibility need.
+
 ## Revision notes
 
 ## Steps
@@ -736,5 +752,6 @@ SHOULD-CONSIDER:
 - 2026-10-23 04:36 UTC: Baseline. typecheck pass, test 66/66, build 157 files (hashes = A2 baseline = live), e2e 20/20; learn_spatial readable only as critter-ai; no ensurepip/uv.
 - 2026-10-23 05:20 UTC: Architecture. architect wrote F1–F9 + T1–T13: 33 modules (~68 h; f1–f4, d1–d6 in full), lab data at `/learn/data/` (GBIF download sample ≤ 2,000/species ≈ 46k rows, own DOI; NE 1:50m; simplified RESOLVE), psql-only loader, uv venv, Moran on 5 km hexes (Tasmanian devil), chain L1–L5 (~144–174 sessions). Read-only GBIF probes only; no code/data changed.
 - 2026-10-23 05:05 UTC: Fable review. APPROVE_WITH_CHANGES; 3 MUST-FIX (T7a COPY csv/tab/QUOTE, T6 pg.ts changes, F3 GBIF default checklist wording), 3 missed, 5 should-consider. Plan only; no code.
+- 2026-10-23 05:06 UTC: Astra review. APPROVE_WITH_CHANGES; 5 MUST-FIX (learn_curriculum search_path, country-key normalization, atomic reload, dataset citation propagation, standalone lab cleanup), 3 should-consider. Plan only.
 
 ## Summary
