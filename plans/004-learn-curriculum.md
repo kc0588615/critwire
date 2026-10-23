@@ -950,7 +950,418 @@ critwire's web server sends `Access-Control-Allow-Origin: *` on `/v1/*` only (F7
 
 ### 5.1 Foundations
 
-(S16, S17)
+Four modules, six hours, all in the browser: enough SQL to read every later module. They go fast and assume you can already use a spreadsheet. Each opens with **Already know this?**: an exercise that uses the whole module; solve it and the module is marked done. The tables are §0's browser setup (schema v2, §6.1); the Schema button shows the ERD on every page.
+
+#### f1 · select
+
+**Tool:** B (browser) · **Time:** 1.0 h · **Prereqs:** none
+
+**Already know this?** Show the `id`, `common_name` and `photo_license` of every animal whose photo isn't under a Creative Commons license (the license doesn't start with `CC`), animals with no photo included, by common name.
+
+```sql
+-- q: f1-skip
+-- status: ran
+SELECT id, common_name, photo_license
+FROM species
+WHERE photo_license NOT LIKE 'CC%' OR photo_license IS NULL
+ORDER BY common_name;
+```
+
+```text
+-- result: f1-skip · 10 rows · sha256 614eaf6db760
+id | common_name | photo_license
+26 | Black-footed Ferret | Public domain
+54 | Brown-throated Sloth | Public domain
+19 | Floreana Giant Tortoise | NULL
+37 | Greater Bilby | Public domain
+47 | Ili Pika | NULL
+… 5 more rows
+```
+
+**Concept:** A query reads tables and returns a new table; it never changes the data. Its clauses run in a fixed order, whatever order you write them in: `FROM` picks the table, `WHERE` keeps the rows whose condition is true, `SELECT` picks and names the columns, `ORDER BY` sorts, and `LIMIT` keeps the first rows. A table has no order of its own, so a result without `ORDER BY` can come back in any order, and "the first five" means nothing without it; sort on something unique (add `id` last) so that ties always fall the same way.
+
+`NULL` is a missing value: not zero, not empty text, but "unknown". Any comparison with an unknown value is itself unknown, neither true nor false, and `WHERE` keeps only rows where the condition is true. So `= NULL` never matches, and `NOT LIKE 'CC%'` silently drops the rows whose license is `NULL`, because "is an unknown license not CC?" is unknown too. Test for a missing value with `IS NULL` or `IS NOT NULL`; `coalesce(x, 'default')` replaces one.
+
+**Worked example:** Which animals have no photo? `photo_url` is `NULL` where critwire has none:
+
+```sql
+-- q: f1-no-photo
+-- status: ran
+-- show: cards
+SELECT id, common_name, photo_url
+FROM species
+WHERE photo_url IS NULL
+ORDER BY id;
+```
+
+```text
+-- result: f1-no-photo · 2 rows · sha256 cb073c536764
+id | common_name | photo_url
+19 | Floreana Giant Tortoise | NULL
+47 | Ili Pika | NULL
+```
+
+The same question asked with `=` finds nothing, whatever the data:
+
+```sql
+-- q: f1-equals-null
+-- status: ran
+SELECT count(*) AS animals
+FROM species
+WHERE photo_url = NULL;
+```
+
+```text
+-- result: f1-equals-null · 1 row · sha256 5b42c9c5b42a
+animals
+0
+```
+
+Why: each comparison below involves an unknown, so its answer is unknown (shown as `NULL`), except `IS NULL`, which asks exactly that question, and `coalesce`, which picks the first known value.
+
+```sql
+-- q: f1-unknown
+-- status: ran
+SELECT NULL = NULL AS equal,
+       NULL <> 'CC BY 4.0' AS not_equal,
+       NULL IS NULL AS is_null,
+       coalesce(NULL, 'no photo') AS replaced;
+```
+
+```text
+-- result: f1-unknown · 1 row · sha256 8fe6606addf8
+equal | not_equal | is_null | replaced
+NULL | NULL | true | no photo
+```
+
+**Lab:** Which mammals does critwire list, by common name?
+1. `species` has no class column; the view `species_taxonomy` has one row per species with its class, order, family and genus. Look at its first rows:
+
+```sql
+-- q: f1-taxonomy
+-- status: ran
+SELECT * FROM species_taxonomy ORDER BY species_id LIMIT 5;
+```
+
+```text
+-- result: f1-taxonomy · 5 rows · sha256 f5df850ee9a4
+species_id | class | order_name | family | genus
+1 | Reptilia | Testudines | Emydidae | Emydoidea
+2 | Reptilia | Testudines | Trionychidae | Apalone
+3 | Amphibia | Anura | Rhinodermatidae | Rhinoderma
+4 | Reptilia | Testudines | Platysternidae | Platysternon
+5 | Amphibia | Anura | Rhacophoridae | Rhacophorus
+```
+
+2. Keep the species whose id is among the mammals' ids. `IN (…)` is true when a value is in a list, and the list can be another query's result; f3 shows the usual way to do this, a join.
+
+```sql
+-- q: f1-mammals
+-- status: ran
+-- show: cards
+SELECT id, common_name, scientific_name
+FROM species
+WHERE id IN (SELECT species_id FROM species_taxonomy WHERE class = 'Mammalia')
+ORDER BY common_name, id;
+```
+
+```text
+-- result: f1-mammals · 50 rows · sha256 8f1036b368d6
+id | common_name | scientific_name
+57 | Aardvark | Orycteropus afer
+50 | Addax | Addax nasomaculatus
+41 | African Forest Elephant | Loxodonta cyclotis
+64 | African Savanna Elephant | Loxodonta africana
+65 | African Wild Dog | Lycaon pictus
+… 45 more rows
+```
+
+3. A page shows a few rows at a time: `LIMIT` takes a page and `OFFSET` skips the pages before it. The second page of five:
+
+```sql
+-- q: f1-page
+-- status: ran
+-- show: cards
+SELECT id, common_name, scientific_name
+FROM species
+WHERE id IN (SELECT species_id FROM species_taxonomy WHERE class = 'Mammalia')
+ORDER BY common_name, id
+LIMIT 5 OFFSET 5;
+```
+
+```text
+-- result: f1-page · 5 rows · sha256 770d407d9b02
+id | common_name | scientific_name
+71 | Andean Bear | Tremarctos ornatus
+28 | Asian Elephant | Elephas maximus
+23 | Aye-aye | Daubentonia madagascariensis
+70 | Baird's Tapir | Tapirus bairdii
+66 | Black Rhinoceros | Diceros bicornis
+```
+
+**Result:** Two animals have no photo, and `= NULL` counts zero of them. The mammals come back A to Z; the second page is rows 6 to 10 of that same order, which is only stable because the sort ends on a unique column. In the skip exercise, dropping `OR photo_license IS NULL` loses exactly the two animals with no photo, a mistake that looks like a correct result.
+
+**Exercise:** critwire links each animal to other catalogues through outside ids (`gbif_id`, `ncbi_id`, `inaturalist_id`, `wikidata_id`). Which animals are missing at least one of them? Show `id`, `common_name` and the four ids, by `id`.
+
+**Answer:**
+
+```sql
+-- q: f1-ex
+-- status: ran
+SELECT id, common_name, gbif_id, ncbi_id, inaturalist_id, wikidata_id
+FROM species
+WHERE gbif_id IS NULL OR ncbi_id IS NULL OR inaturalist_id IS NULL OR wikidata_id IS NULL
+ORDER BY id;
+```
+
+```text
+-- result: f1-ex · 6 rows · sha256 4bd9d867b18a
+id | common_name | gbif_id | ncbi_id | inaturalist_id | wikidata_id
+1 | Blanding's Turtle | 2442885 | NULL | 39885 | Q185526
+9 | Dyeing Poison Dart Frog | NULL | 92724 | 21141 | Q1478869
+19 | Floreana Giant Tortoise | NULL | 66189 | 57386 | Q486672
+27 | Western Long-beaked Echidna | NULL | 33543 | 75237 | Q635949
+35 | Red Panda | 5219446 | 9649 | NULL | Q41960
+… 1 more row
+```
+
+The three animals with no GBIF id are the ones whose identity in GBIF critwire hasn't settled (their `range_status` says so), so they have no records in the lab sample either: f3 finds them again with an anti join.
+
+**Check:** `result, any row order`: your rows must equal the answer's, column by column (002 §4's check). The skip exercise is checked the same way.
+
+**Dialects:**
+- **PostgreSQL:** as here. Ascending sorts put `NULL` last (`NULLS FIRST` changes that); `LIKE` is case-sensitive and `ILIKE` isn't; `LIMIT … OFFSET …`, or the standard `OFFSET … FETCH FIRST n ROWS ONLY`.
+- **DuckDB:** as PostgreSQL for everything in this module: `NULL` sorts last, `LIKE` and `ILIKE`, `LIMIT` and `OFFSET`. It adds conveniences such as `SELECT * EXCLUDE (photo_url)`.
+- **SQL Server:** `SELECT TOP (5) …`, or `ORDER BY … OFFSET 5 ROWS FETCH NEXT 5 ROWS ONLY`; `NULL` sorts first in ascending order and there is no `NULLS LAST`; `LIKE` follows the column's collation, usually case-insensitive; `= NULL` never matches, as here, under the default `ANSI_NULLS ON`.
+
+#### f2 · aggregate
+
+**Tool:** B (browser) · **Time:** 1.5 h · **Prereqs:** f1
+
+**Already know this?** For each species with records from more than 25 datasets, show `species_id`, its records, its datasets, its preserved specimens (`basis_of_record` `PRESERVED_SPECIMEN`) and its records with no year, most records first.
+
+```sql
+-- q: f2-skip
+-- status: ran
+SELECT species_id,
+       count(*) AS records,
+       count(DISTINCT dataset_key) AS datasets,
+       sum(CASE WHEN basis_of_record = 'PRESERVED_SPECIMEN' THEN 1 ELSE 0 END) AS specimens,
+       count(*) - count(year) AS no_year
+FROM occurrences
+GROUP BY species_id
+HAVING count(DISTINCT dataset_key) > 25
+ORDER BY records DESC, species_id;
+```
+
+```text
+-- result: f2-skip · 16 rows · sha256 b6cf06e04b0c
+species_id | records | datasets | specimens | no_year
+2 | 2000 | 53 | 1844 | 362
+8 | 2000 | 31 | 1997 | 109
+25 | 2000 | 38 | 102 | 129
+52 | 2000 | 67 | 73 | 45
+53 | 2000 | 48 | 35 | 14
+… 11 more rows
+```
+
+**Concept:** An aggregate function turns many rows into one value: `count(*)` counts rows, `count(year)` counts the rows where `year` isn't `NULL`, `count(DISTINCT dataset_key)` counts different values, and `sum`, `min`, `max` and `avg` do what they say; all but `count(*)` skip `NULL`s. `GROUP BY` splits the rows into groups, one per distinct value of its columns (`NULL` makes a group of its own), and the aggregates then run once per group, so every column you select must be grouped or aggregated. The clauses now run in this order: `FROM`, `WHERE` (filters rows), `GROUP BY`, `HAVING` (filters groups, so it can use aggregates), `SELECT`, `ORDER BY`. `CASE WHEN … THEN … ELSE … END` computes a value row by row: use it to put rows into buckets, or inside `sum` to count only some rows, which turns one grouped query into a small cross-tab.
+
+The table is `occurrences`, the lab sample of open GBIF records (§4): one row per record of an animal at a place and, usually, a date. `basis_of_record` says what kind of evidence it is: a person's observation, a camera trap or GPS collar (`MACHINE_OBSERVATION`), a museum specimen, a tissue sample.
+
+**Worked example:** How many records does the sample hold per year, and by basis of record? First the whole table in one row:
+
+```sql
+-- q: f2-count
+-- status: ran
+SELECT count(*) AS records,
+       count(year) AS with_year,
+       count(DISTINCT species_id) AS species,
+       min(year) AS first_year,
+       max(year) AS last_year
+FROM occurrences;
+```
+
+```text
+-- result: f2-count · 1 row · sha256 272a447603cd
+records | with_year | species | first_year | last_year
+40395 | 38106 | 71 | 1599 | 2026
+```
+
+Records per year, for the last ten years and this one. `WHERE` keeps the rows before they are grouped:
+
+```sql
+-- q: f2-years
+-- status: ran
+SELECT year, count(*) AS records
+FROM occurrences
+WHERE year >= 2016
+GROUP BY year
+ORDER BY year;
+```
+
+```text
+-- result: f2-years · 11 rows · sha256 33cda711b580
+year | records
+2016 | 1526
+2017 | 2643
+2018 | 1458
+2019 | 1336
+2020 | 1663
+… 6 more rows
+```
+
+Records by basis of record:
+
+```sql
+-- q: f2-basis
+-- status: ran
+SELECT basis_of_record, count(*) AS records
+FROM occurrences
+GROUP BY basis_of_record
+ORDER BY records DESC, basis_of_record;
+```
+
+```text
+-- result: f2-basis · 7 rows · sha256 23bce085dee0
+basis_of_record | records
+HUMAN_OBSERVATION | 17587
+PRESERVED_SPECIMEN | 10568
+MACHINE_OBSERVATION | 8418
+MATERIAL_SAMPLE | 1805
+OBSERVATION | 1384
+… 2 more rows
+```
+
+Both at once: one row per basis of record, one column per period, each a `sum` of a `CASE` that is 1 for the rows in that period. A record with no year falls in no period, so it gets a column of its own.
+
+```sql
+-- q: f2-periods
+-- status: ran
+SELECT basis_of_record,
+       sum(CASE WHEN year < 1900 THEN 1 ELSE 0 END) AS before_1900,
+       sum(CASE WHEN year BETWEEN 1900 AND 1999 THEN 1 ELSE 0 END) AS from_1900,
+       sum(CASE WHEN year >= 2000 THEN 1 ELSE 0 END) AS from_2000,
+       count(*) - count(year) AS no_year
+FROM occurrences
+GROUP BY basis_of_record
+ORDER BY basis_of_record;
+```
+
+```text
+-- result: f2-periods · 7 rows · sha256 bc32d04f36eb
+basis_of_record | before_1900 | from_1900 | from_2000 | no_year
+HUMAN_OBSERVATION | 18 | 463 | 16931 | 175
+MACHINE_OBSERVATION | 0 | 1327 | 7039 | 52
+MATERIAL_CITATION | 1 | 38 | 159 | 243
+MATERIAL_SAMPLE | 0 | 165 | 1301 | 339
+OBSERVATION | 10 | 85 | 1288 | 1
+… 2 more rows
+```
+
+**Lab:**
+1. Which species have more than 500 records? `HAVING` keeps the groups whose count passes; `WHERE` couldn't, because it runs before there are counts.
+
+```sql
+-- q: f2-over-500
+-- status: ran
+SELECT species_id, count(*) AS records
+FROM occurrences
+GROUP BY species_id
+HAVING count(*) > 500
+ORDER BY records DESC, species_id;
+```
+
+```text
+-- result: f2-over-500 · 22 rows · sha256 e0016d3f3ed8
+species_id | records
+2 | 2000
+8 | 2000
+25 | 2000
+28 | 2000
+37 | 2000
+… 17 more rows
+```
+
+2. The same question for records from 2000 on: `WHERE` removes the older rows first, then `HAVING` judges what is left.
+
+```sql
+-- q: f2-recent-over-500
+-- status: ran
+SELECT species_id, count(*) AS records
+FROM occurrences
+WHERE year >= 2000
+GROUP BY species_id
+HAVING count(*) > 500
+ORDER BY records DESC, species_id;
+```
+
+```text
+-- result: f2-recent-over-500 · 17 rows · sha256 e0519b6b04dd
+species_id | records
+51 | 1990
+37 | 1974
+58 | 1968
+71 | 1962
+53 | 1941
+… 12 more rows
+```
+
+3. How many datasets contributed, under how many licenses, and from how many countries? `count(DISTINCT …)` counts each value once and skips `NULL`, so records with no country (`country_code` is `NULL`, §4) don't count as a country.
+
+```sql
+-- q: f2-distinct
+-- status: ran
+SELECT count(DISTINCT dataset_key) AS datasets,
+       count(DISTINCT license) AS licenses,
+       count(DISTINCT country_code) AS countries
+FROM occurrences;
+```
+
+```text
+-- result: f2-distinct · 1 row · sha256 3ed55a695cef
+datasets | licenses | countries
+400 | 2 | 106
+```
+
+**Result:** The oldest record is from 1599, and some records have no year at all: ask `min` and `count(year)` before trusting a date column. Human observations dominate, and almost all of them are recent; most records before 1900 are museum specimens. Many species stop at exactly 2,000 records: that is the sample's cap per species (§4), not a fact about the animals, and step 1's top rows are a tie for that reason. Every dataset in `datasets` contributed at least one record, and only two licenses remain after the sample's license filter (CC0 1.0 and CC BY 4.0, §4).
+
+**Exercise:** For each basis of record with at least 1,000 records, show `basis_of_record`, its records, how many species and how many datasets they come from, and how many have no year, largest first.
+
+**Answer:**
+
+```sql
+-- q: f2-ex
+-- status: ran
+SELECT basis_of_record,
+       count(*) AS records,
+       count(DISTINCT species_id) AS species,
+       count(DISTINCT dataset_key) AS datasets,
+       count(*) - count(year) AS no_year
+FROM occurrences
+GROUP BY basis_of_record
+HAVING count(*) >= 1000
+ORDER BY records DESC, basis_of_record;
+```
+
+```text
+-- result: f2-ex · 5 rows · sha256 dea2e0636744
+basis_of_record | records | species | datasets | no_year
+HUMAN_OBSERVATION | 17587 | 55 | 182 | 175
+PRESERVED_SPECIMEN | 10568 | 67 | 166 | 1469
+MACHINE_OBSERVATION | 8418 | 22 | 39 | 52
+MATERIAL_SAMPLE | 1805 | 47 | 22 | 339
+OBSERVATION | 1384 | 5 | 3 | 1
+```
+
+**Check:** `result, any row order`. The skip exercise is checked the same way.
+
+**Dialects:**
+- **PostgreSQL:** `count(*) FILTER (WHERE year < 1900)` is the short form of the `sum(CASE …)` columns; `GROUP BY` may name an output column or its position, `HAVING` may not; `/` between integers drops the fraction (`7 / 2` is 3).
+- **DuckDB:** also has `FILTER`, plus `GROUP BY ALL` (group by every column that isn't aggregated) and aliases in `WHERE`, `GROUP BY` and `HAVING`; `/` between integers gives a fraction (`7 / 2` is 3.5) and `//` drops it.
+- **SQL Server:** no `FILTER`: write `sum(CASE …)` as here; `GROUP BY` takes neither aliases nor positions; `count` returns `int` (`count_big` for more rows); `/` between integers drops the fraction.
+
+(S17 writes f3 and f4.)
 
 ### 5.2 Database architecture
 
