@@ -186,6 +186,49 @@ country_shapes | 247
 … 7 more rows
 ```
 
+Labs that create roles or schemas (d1, d5) clean up in the same block, so running a block twice, or stopping halfway through a module, leaves nothing behind. Their names start with `learn_`, and creating roles needs the CREATEROLE privilege (a superuser has it; on your own install, `ALTER ROLE <you> CREATEROLE` as the superuser, once). This check creates a read-only role, reads a table as that role, and removes it again: `DROP OWNED BY` takes away what the role was granted, and only then can `DROP ROLE` remove it.
+
+```sql
+-- q: pg-role-smoke
+-- status: ran
+-- engine: postgis
+CREATE ROLE learn_smoke NOLOGIN;
+GRANT USAGE ON SCHEMA learn_curriculum TO learn_smoke;
+GRANT SELECT ON species TO learn_smoke;
+SET ROLE learn_smoke;
+SELECT current_user AS role, count(*) AS species FROM species;
+RESET ROLE;
+DROP OWNED BY learn_smoke;
+DROP ROLE learn_smoke;
+SELECT count(*) AS learn_smoke_left FROM pg_roles WHERE rolname = 'learn_smoke';
+```
+
+```text
+-- result: pg-role-smoke · 1 row · sha256 fcfe7fd06dfa
+learn_smoke_left
+0
+```
+
+Most labs run in a transaction the tests roll back. The transaction labs (d4) manage their own, with `BEGIN` and `COMMIT` or `ROLLBACK`, exactly as you type them in `psql`; the tests then check that each one ended its transaction and left the lab tables as they were.
+
+```sql
+-- q: pg-tx-smoke
+-- status: ran
+-- engine: postgis
+-- tx: own
+BEGIN;
+CREATE TABLE tx_smoke (id integer PRIMARY KEY);
+INSERT INTO tx_smoke VALUES (1), (2);
+ROLLBACK;
+SELECT to_regclass('tx_smoke') IS NULL AS rolled_back;
+```
+
+```text
+-- result: pg-tx-smoke · 1 row · sha256 a90c4cf411fd
+rolled_back
+true
+```
+
 ### The Python setup
 
 Python labs run in the `uv` environment (§3) and read the lab database through libpq's `PG*` environment variables, so the same file runs on your machine and on the test server. Every Python lab starts with this helper. It sets the search path when it connects, so plain table names find the lab tables in `learn_curriculum` and PostGIS's functions in `public`. It prints nothing.
