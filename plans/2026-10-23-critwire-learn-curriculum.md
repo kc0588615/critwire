@@ -910,7 +910,7 @@ Planner, 2026-10-23. T14's 27 units → 30 steps; all ten modules stay in full. 
     - `.venv/bin/python -I -c 'import geopandas, libpysal, esda, pointpats, psycopg, pyogrio, sqlalchemy, geoalchemy2'` exits 0;
     - `gbif_download.py status` prints the key and PREPARING, RUNNING or SUCCEEDED.
 
-- [ ] S3. Python engine in the runner (T6 "Python", T14 u2).
+- [x] S3. Python engine in the runner (T6 "Python", T14 u2).
   - Tests first, red: PY1–PY10.
   - `plan-queries.ts` and `run-queries.ts`:
     - ```` ```python ```` blocks with `# q:`, `# status:`, `# after:` and `# timeout:`;
@@ -1443,6 +1443,8 @@ Only the spike harness is tested in isolation, because every "ran" claim rests o
 - S1: runner's `?defer`/`bootRunner` path removed: it only carried `LOAD spatial` and setup-grown. Fixture `rq27-enum` lost its two `ST_GeometryType` cases (needed `spatial`); its ENUM checks stay. erd-grown's "setup-grown ERD must name a base" test dropped; `--erd` checks the base whenever `%% extends:` is present. All listed in `$SP/README.md`.
 - S2: `uv` 0.13.5 (released 2026-10-22, newest) pinned; venv on system CPython 3.12.3 (no managed Python). 44 pins, all wheels (R9, R10 not hit).
 - S2: GBIF accepted the explicit legacy `checklistKey` (top level + `TAXON_KEY`) and echoes both: R2 not hit, `ids.gbif` stay the filter. Submit-time search count 394,532 (architect's 396,629 was an earlier read); S8's 0.1 % check uses 394,532. `request.json` omits `creator` (account name); credentials stay in memory.
+- S3: a startup `-c search_path=learn_curriculum,public` (T4's helper) is shown as given: `SHOW search_path` = `learn_curriculum,public`, not PY4's `learn_curriculum, public` (that spelling is `SET`'s). Kept T4's helper; PY4 asserts the real value. `py-connect` defines the helper and prints nothing (empty-stdout result), so `# after: py-connect` adds no output to later blocks.
+- S3: PY tests split by cost: PY1/PY5/PY6/PY7-8/PY9 as fixture plans (`test/fixtures/python/`), PY2/PY3/PY4/PY7/PY8 on `runPython` directly, one update-then-check round trip. The fixture loop moved from `run-queries.test.ts` to `test/harness.ts` (shared, DRY). Block HOME = its own empty temp dir; stderr quote = last 5 lines.
 
 ## Log
 
@@ -1454,5 +1456,6 @@ Only the spike harness is tested in isolation, because every "ran" claim rests o
 - 2026-10-23 05:35 UTC: Steps. planner wrote S1–S30 (T14 u1–u27; big units split, §6/§7/§8 merged in), Verification V0–V11 + release smoke, Failure modes (test list + R1–R28). Plan only; verify scripts `bash -n` clean.
 - 2026-10-23 05:58 UTC: S1. Spike scaffold from A2 (70 files, provenance.tsv; 21 edited, registry.ts deleted); spike typecheck + 97/97 tests; 004 skeleton, setup-counts sha256 a46604343811 (= 002); verify.sh ok; copy proof 002: 77 blocks, 0 failures, ERD match; parquet wasm 200 application/wasm, no spatial; canary + learn_spatial dump saved. Guard clean (66 tests, dist = baseline, canary same, no leaks, 585 MB).
 - 2026-10-23 06:06 UTC: S2. uv 0.13.5 (sha256 ok) → venv CPython 3.12.3, 44 pins, `sync --no-build` + `pip check` clean, imports ok (`out/python-env/summary.md`); GBIF download 0041824-260928105237408 submitted with pinned legacy checklistKey (echoed), PREPARING, search count 394,532. Guard clean (66 tests, dist = baseline, canary same, no leaks/cred, 1.41 GB); spike 97/97.
+- 2026-10-23 06:20 UTC: S3. Python engine: `scripts/py-engine.ts` (isolated `-I`, empty cwd, 6-var env, process-group kill), python blocks in plan-queries/run-queries (`# after:` plan order, `--update` twice, log `python: 3.12.3 · uv 0.13.5 · requirements sha256 d5bbe28024cc`); PY1–PY10 13 tests red 13/13 then green; spike 110/110; 004 §0 `py-connect` + `py-smoke` ran (`--update` then `--check` ok, log has `-- result: py-smoke · python · sha256 f75ba856b9f7`). Guard clean (66 tests, dist = baseline, canary same, no leaks/cred, 1.41 GB).
 
 ## Summary

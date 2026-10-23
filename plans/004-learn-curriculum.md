@@ -136,6 +136,57 @@ taxa | species | sources | species_sources | countries | species_countries | spe
 143 | 76 | 5 | 591 | 250 | 472 | 76
 ```
 
+### The Python setup
+
+Python labs run in the `uv` environment (§3) and read the lab database through libpq's `PG*` environment variables, so the same file runs on your machine and on the test server. Every Python lab starts with this helper. It sets the search path when it connects, so plain table names find the lab tables in `learn_curriculum` and PostGIS's functions in `public`. It prints nothing.
+
+```python
+# q: py-connect
+# status: ran
+import psycopg
+
+
+def connect():
+    """A connection to the lab database: plain table names find learn_curriculum's tables, then PostGIS in public."""
+    return psycopg.connect(options="-c search_path=learn_curriculum,public")
+```
+
+```text
+-- result: py-connect · python · sha256 e3b0c44298fc
+```
+
+A quick check that the environment works: the search path through the helper, then the versions the labs were tested with.
+
+```python
+# q: py-smoke
+# status: ran
+# after: py-connect
+import platform
+from importlib.metadata import version
+
+with connect() as conn:
+    print("search_path:", conn.execute("SHOW search_path").fetchone()[0])
+print("python:", platform.python_version())
+for package in ["psycopg", "pandas", "pyarrow", "shapely", "pyproj", "pyogrio", "geopandas", "libpysal", "esda", "pointpats"]:
+    print(f"{package}: {version(package)}")
+```
+
+```text
+-- result: py-smoke · python · sha256 f75ba856b9f7
+search_path: learn_curriculum,public
+python: 3.12.3
+psycopg: 3.3.6
+pandas: 3.1.0
+pyarrow: 26.0.0
+shapely: 2.2.0
+pyproj: 3.8.0
+pyogrio: 0.13.0
+geopandas: 1.2.0
+libpysal: 4.15.1
+esda: 2.10.0
+pointpats: 2.6.0
+```
+
 ## 1. What carries over
 
 (S13)
