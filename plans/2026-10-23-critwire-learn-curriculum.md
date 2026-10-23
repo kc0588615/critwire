@@ -872,7 +872,7 @@ Planner, 2026-10-23. T14's 27 units → 30 steps; all ten modules stay in full. 
   - SQL a module teaches that a spike also runs (s4's Moran, d6's `star.sql`) is written once into 004 at its module. The spike scripts extract it by id (`scripts/block.ts`), so 004 is the one source (DRY).
   - The ERD marker `%% planned:` is added for L3's tables (S12).
 
-- [ ] S1. Spike scaffold; copy proof (T6, T14 u1; F4).
+- [x] S1. Spike scaffold; copy proof (T6, T14 u1; F4).
   - Copy from `$A2` with `cp`, per T6's list: `run-queries.ts`; `scripts/{browser,build-site,env,erd,erd-model,paths,pg,pg-engine,plan-queries,registry,runner-client,serve}.ts`; `src/{engine,sql,format,cards,assets,runner-page,runner-api}.ts`, `runner.html`, `*.d.ts`, `setup.sql`; both tsconfigs; the tests and fixtures of those files; `Caddyfile`; `data/v1/countries.{parquet,json}` (A1's draft); `downloads/duckdb-ext-v1.5.6/` `parquet` wasm_eh only (sha256 checked against A2's `SOURCES.md`).
   - Edit the copies:
     - paths → `$SP`;
@@ -1439,6 +1439,9 @@ Only the spike harness is tested in isolation, because every "ran" claim rests o
 
 ## Decisions
 
+- S1: A2's `pg.ts` out-db window and socket-byte helpers removed (with `cog.ts`, not copied): no live COG reads in this design. Its `SCHEMA`/session stay A2's until S6; `-- engine: postgis` is refused meanwhile, so nothing reaches `learn_spatial`.
+- S1: runner's `?defer`/`bootRunner` path removed: it only carried `LOAD spatial` and setup-grown. Fixture `rq27-enum` lost its two `ST_GeometryType` cases (needed `spatial`); its ENUM checks stay. erd-grown's "setup-grown ERD must name a base" test dropped; `--erd` checks the base whenever `%% extends:` is present. All listed in `$SP/README.md`.
+
 ## Log
 
 - 2026-10-23 04:36 UTC: Baseline. typecheck pass, test 66/66, build 157 files (hashes = A2 baseline = live), e2e 20/20; learn_spatial readable only as critter-ai; no ensurepip/uv.
@@ -1447,5 +1450,6 @@ Only the spike harness is tested in isolation, because every "ran" claim rests o
 - 2026-10-23 05:06 UTC: Astra review. APPROVE_WITH_CHANGES; 5 MUST-FIX (learn_curriculum search_path, country-key normalization, atomic reload, dataset citation propagation, standalone lab cleanup), 3 should-consider. Plan only.
 - 2026-10-23 05:45 UTC: Revision. architect resolved all 8 MUST-FIX + 3 missed (F10–F13 new; F3 reworded; T5 atomic csv-format loader, country-key contract, dataset credits; T6 pg.ts learn_curriculum, cleanup lint, in-tx leak check); all SHOULD-CONSIDER adopted. Plan only; scratch TEMP tables rolled back.
 - 2026-10-23 05:35 UTC: Steps. planner wrote S1–S30 (T14 u1–u27; big units split, §6/§7/§8 merged in), Verification V0–V11 + release smoke, Failure modes (test list + R1–R28). Plan only; verify scripts `bash -n` clean.
+- 2026-10-23 05:58 UTC: S1. Spike scaffold from A2 (70 files, provenance.tsv; 21 edited, registry.ts deleted); spike typecheck + 97/97 tests; 004 skeleton, setup-counts sha256 a46604343811 (= 002); verify.sh ok; copy proof 002: 77 blocks, 0 failures, ERD match; parquet wasm 200 application/wasm, no spatial; canary + learn_spatial dump saved. Guard clean (66 tests, dist = baseline, canary same, no leaks, 585 MB).
 
 ## Summary
