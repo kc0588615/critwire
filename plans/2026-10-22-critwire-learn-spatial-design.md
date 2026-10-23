@@ -942,6 +942,16 @@ Planner, 2026-10-22. T12's 16 units in order, split where one session can't hold
   - Log line: the Summary's inputs (top three datasets with licenses; where each spatial lesson runs; the raster recommendation; IUCN's four answers and whether the quotes are verified; the brief paths; the §8 choices).
   - Checks: Guard; V5–V11 pass.
 
+- [ ] S27 · Code review fix 1: lesson 21 runs in order (Astra MUST-FIX 1).
+  - `l21-second` commits its `sources` insert before the trait insert fails, so `l21-fill` hits a duplicate key on `sources`. Make both `sources` inserts conflict-safe (`ON CONFLICT DO NOTHING`), keep `l21-second`'s expected PK error on `species_traits`.
+  - Prove the whole lesson sequence (l21, l21-second, l21-fill, l21-ex) in one session, in order, plus each block alone (`--check`).
+  - Checks: Guard; `--update` diff read (only l21-* change, if any), `--check --erd` ok; spike typecheck + tests.
+
+- [ ] S28 · Code review fix 2: forest totals include code 100 (Astra MUST-FIX 2).
+  - `s07-ex` and `i03-ex` filter `h.level1_code = 100`, which drops class 100 itself (`level1_code` NULL; 2,919 cells in the CR clip). Use `COALESCE(h.level1_code, h.code) = 100`, as lesson 22 does; grep 003 for any other `level1_code =` filter.
+  - Regenerate the results, update prose that quotes them (and the Summary inputs if any).
+  - Checks: Guard; `--update` diff read (only those blocks), `--check --erd` ok, results = log; spike typecheck + tests.
+
 ## Verification
 
 Run from the worktree as one bash session; it writes its own transcript. No lint script exists (Baseline), so `pnpm typecheck` is the static check. Nothing public changes, so the repo's E2E suite proves no regression; the spike's browser runs are this mission's own E2E evidence.
@@ -1253,6 +1263,18 @@ Only the spike tools that the Definition of done and the experiments' verdicts r
 
 ## Code review (Astra)
 
+VERDICT: APPROVE_WITH_CHANGES
+
+MUST-FIX:
+
+1. `plans/003-learn-data-spatial.md:1262`: Running lesson 21’s blocks sequentially fails. `l21-second` commits the source insert before its trait insert fails; `l21-fill` then inserts that source again. Reproduced the duplicate-key error. Make the source insert conflict-safe and verify the complete lesson sequence.
+2. `plans/003-learn-data-spatial.md:2585` and `:3091`: Forest totals exclude code `100` itself because its `level1_code` is NULL. The clip contains 2,919 such cells, so the reported areas and percentages undercount forest. Use `COALESCE(h.level1_code, h.code) = 100`, as lesson 22 does, and regenerate results.
+
+SHOULD-CONSIDER:
+
+- Explicitly require adapting all PostGIS raster lessons to the default EPSG:4326 clips; several queries hardcode EPSG:3857 and 103.02 m cells.
+- Split spatial setup from ordinary grown-data setup: the current shared setup requires `spatial`, contrary to loading it only on spatial pages.
+
 ## Release
 
 ## Decisions
@@ -1395,6 +1417,7 @@ Only the spike tools that the Definition of done and the experiments' verdicts r
 - S26: 003 §8 = 9 items, table + one entry each (recommendation, cost, the alternative): datasets first (AnAge, NE admin-0, GBIF sample); raster (c) + (b) from v004; COG provenance (answer if known, nothing waits); learners' PostGIS not on the owner's bucket; commit `spatial`; publish the occurrence sample; `ingest habitat` raster rights: no `GRANT SET ON PARAMETER`, VPS superuser socket or a Node-only path (spike-added, F1); IUCN request: not now (lessons need nothing from IUCN; a waiver means non-open files beside CC0/CC BY and an AGENTS.md exception); WDPA/WorldClim never hosted, CHELSA after D. Matches D's and C's brief defaults (S25). No handoff item: nothing blocks the mission (decision rules).
 - S26: V11 `e1-pip.ts --smoke` failed 10/11: its check "learn_spatial holds exactly the 2 E1 tables" predates S13/S22/S23, which grew pg-setup to 7 tables. Check now counts `CREATE TABLE learn_spatial.` in pg-setup.sql (7) and keeps the E1 row counts; spike typecheck pass; smoke 11/11. S11's recorded `out/e1-pip/` stays as run (2 tables then).
 
+- Code review (Astra, 2026-10-23): APPROVE_WITH_CHANGES. Both MUST-FIX checked against 003 and accepted: `l21-fill` re-inserts `'Example dataset'` unguarded after `l21-second` committed it; `s07-ex`/`i03-ex` use `h.level1_code = 100`, unlike lesson 22's `COALESCE`. → S27, S28. SHOULD-CONSIDER (EPSG:4326 clips vs hardcoded 3857/103.02 m; split spatial setup from grown setup) go to the Summary for the owner / missions C and D.
 ## Log
 
 - 2026-10-22 15:57 UTC: Baseline. typecheck pass, test 66/66, build 157 files, E2E 20/20; dist hashes = live = A1 baseline.
@@ -1429,5 +1452,6 @@ Only the spike tools that the Definition of done and the experiments' verdicts r
 - 2026-10-23 00:38 UTC: S24. 003 §5 (version/level + gate + credit; options (a)–(d) with disk, bytes per learner, work, Chromebook fit; three summary methods with resolution, rule, measured error; `ingest habitat`; why ingest not build; recommendation (c)+(b) from v004). 1 new block `r01` (spike-table); `--update` diff read (only r01), `--check --erd` ok 70 blocks. Spike typecheck pass. Guard: plans-only, 002 untouched, typecheck pass, test 66/66, dist = baseline (157), spike 868 MB, no Caddy, 3100–3102 free.
 - 2026-10-23 00:43 UTC: S25. Briefs C (traits, names, lessons 17–21; 30–36 sessions) and D (outlines, sample, ingest habitat, gate, spatial, lessons 22–23 + spatial 1–8 + IUCN 1–3, PostGIS check; 34–40) in `plans/briefs/`, six headings each; 003 §7 (table, what B delivered, order C then D); Disagreements `||--o|` → D. No SQL changed. Guard: plans-only, 002 untouched, typecheck pass, test 66/66, dist = baseline (157), spike 868 MB, no Caddy, 3100–3102 free.
 - 2026-10-23 00:57 UTC: S26. 003 §8 (9 owner choices, each with recommendation and cost). V5 spike install/typecheck/tests 219/219, 868 MB; V6 75 sql blocks headed, `--check --erd` 70 run, 0 diffs, results = log, header lines ok, 2 untested (pg-once grant, i01-import) with reasons; V7 ok (7 grown, 8 spatial, 3 IUCN lessons; §6 headings; briefs' six headings); V8 ok, quotes verbatim (35 pages); V9 ok; V10 grown.svg from .mmd sha256 02d10b99a2f5; V11 smoke e1-pip 11/11 (after the stale-check fix, Decisions S26), e4-browser 8/8. Guard: plans-only, 002 untouched, typecheck pass, test 66/66, dist = baseline (157), spike 868 MB, no Caddy, 3100–3102 free. Summary inputs: top three AnAge (CC BY 3.0), Natural Earth admin-0 (public domain), GBIF sample (CC0 1.0 / CC BY 4.0 records only); spatial lessons 1–4 browser (DuckDB spatial) + `-pg` twins in own PostGIS, 5 browser outlines + own PostGIS raster cells, 6–7 own PostGIS, 8 browser (geotiff.js) + PostGIS check, IUCN 1–3 own PostGIS only; raster (c) summaries + (b) a few clips, both from v004 by URL, no bucket CORS, no TiTiler; IUCN: hosting no, derived products no (waiver needed), classroom yes but each learner's own copy, learner's own download yes (non-commercial, local, cited), quotes verified against Wayback 20261015190206 (terms v3.1), live page 403; briefs plans/briefs/critwire-learn-c.md, plans/briefs/critwire-learn-d.md; §8 choices 1–9 as Decisions S26.
+- 2026-10-23 00:59 UTC: Code review (Astra, `--code origin/main`): APPROVE_WITH_CHANGES, 2 MUST-FIX accepted (lesson 21 sequence duplicate key; forest totals miss code 100) → S27, S28; 2 SHOULD-CONSIDER for the Summary. Plan-only.
 
 ## Summary
