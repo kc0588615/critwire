@@ -1452,7 +1452,7 @@ TT | Shrubland – Subtropical/tropical moist | 998.51 | 2
 | 2 | `ST_Contains`, `ST_Covers`, `ST_Intersects` and the boundary | browser (DuckDB spatial) | `out/e1-pip/` |
 | 3 | distance and area on the ellipsoid | browser (DuckDB spatial) | `out/run-queries/`, `queries.log` |
 | 4 | spatial joins: records against outlines | browser (DuckDB spatial) | `out/e1-pip/` |
-| 5 | why projection matters | browser (vector areas) and your own PostGIS (raster cells) | `out/e3-zonal/` |
+| 5 | why projection matters | browser (vector areas) and your own PostGIS (raster cells) | `out/e3-zonal/`, `out/e3b-overviews/` |
 | 6–7 | the habitat value at a point; zonal statistics | your own PostGIS | `out/e2-point/`, `out/e3-zonal/`, `out/e3b-overviews/`, `out/e3c-methods/` |
 | 8 | reading a habitat clip in the browser | browser (geotiff.js) | `out/e4-clip/`, `out/e4-browser/` |
 | §6 | IUCN ranges against records | your own PostGIS, with your own download | §6 |
@@ -1511,7 +1511,7 @@ enable_outdb_rasters | gdal_enabled_drivers
 on | GTiff COG
 ```
 
-The lessons' tables live in their own schema, `learn_spatial`, built from the same files the browser lessons read: country shapes (Natural Earth, public domain), a sample of GBIF occurrence records (CC0 and CC BY only; records, not native range) and a clip of the habitat map around Costa Rica (Jung et al. 2020, CC BY 4.0), stored in the database so the lessons that use it don't touch the full file. The block below is how critwire builds them; in your own PostGIS, the lesson pages give import commands for the same files instead.
+The lessons' tables live in their own schema, `learn_spatial`, built from the same files the browser lessons read: country shapes (Natural Earth, public domain), a sample of GBIF occurrence records (CC0 and CC BY only; records, not native range) the habitat map's classes and a clip of the map around Costa Rica (Jung et al. 2020, CC BY 4.0), stored in the database so the lessons that use it don't touch the full file. The block below is how critwire builds them; in your own PostGIS, the lesson pages give import commands for the same files instead.
 
 ```sql
 -- q: pg-setup
@@ -1521,6 +1521,7 @@ The lessons' tables live in their own schema, `learn_spatial`, built from the sa
 -- the file passed as $1: a Parquet file's rows as JSON (geometry as WKB hex), or a file's bytes. Only learn_spatial is
 -- touched, nothing in it refers to another schema's tables, and running it again gives the same tables.
 DROP TABLE IF EXISTS learn_spatial.habitat_clips;
+DROP TABLE IF EXISTS learn_spatial.habitat_classes;
 DROP TABLE IF EXISTS learn_spatial.occurrences;
 DROP TABLE IF EXISTS learn_spatial.country_shapes;
 
@@ -1553,6 +1554,19 @@ SELECT r.id, r.species_id, r.dataset_key, r.license, r.longitude, r.latitude, r.
 FROM jsonb_to_recordset($1::jsonb) AS r(id bigint, species_id integer, dataset_key text, license text,
                                         longitude double precision, latitude double precision, country_code text, year integer);
 
+-- The habitat map's classes (Jung et al. 2020, v004 legend): level-2 classes point at their level-1 class.
+CREATE TABLE learn_spatial.habitat_classes (
+  code integer PRIMARY KEY,
+  level1_code integer REFERENCES learn_spatial.habitat_classes (code),
+  name text NOT NULL,
+  CHECK ((code % 100 = 0) = (level1_code IS NULL))
+);
+
+-- rows: habitat_classes.parquet
+INSERT INTO learn_spatial.habitat_classes (code, level1_code, name)
+SELECT r.code, r.level1_code, r.name
+FROM jsonb_to_recordset($1::jsonb) AS r(code integer, level1_code integer, name text);
+
 -- The habitat map cut to Costa Rica, stored in the database: lessons that read it don't touch the full file.
 CREATE TABLE learn_spatial.habitat_clips (
   clip text PRIMARY KEY,
@@ -1565,6 +1579,7 @@ VALUES ('cr', ST_FromGDALRaster($1));
 
 ANALYZE learn_spatial.country_shapes;
 ANALYZE learn_spatial.occurrences;
+ANALYZE learn_spatial.habitat_classes;
 ANALYZE learn_spatial.habitat_clips;
 ```
 
@@ -1577,15 +1592,16 @@ What the setup built, today:
 SELECT (SELECT count(*) FROM country_shapes)              AS country_shapes,
        (SELECT sum(ST_NPoints(geom)) FROM country_shapes) AS shape_vertices,
        (SELECT count(*) FROM occurrences)                 AS occurrences,
+       (SELECT count(*) FROM habitat_classes)             AS habitat_classes,
        (SELECT count(*) FROM habitat_clips)               AS habitat_clips,
        (SELECT ST_Width(rast) || ' × ' || ST_Height(rast) || ' cells, SRID ' || ST_SRID(rast)
           FROM habitat_clips WHERE clip = 'cr')           AS cr_clip;
 ```
 
 ```text
--- result: pg-setup-counts · 1 row · sha256 ce70d0ac6e97
-country_shapes | shape_vertices | occurrences | habitat_clips | cr_clip
-250 | 551273 | 528 | 1 | 4923 × 6223 cells, SRID 3857
+-- result: pg-setup-counts · 1 row · sha256 75b84d57e467
+country_shapes | shape_vertices | occurrences | habitat_classes | habitat_clips | cr_clip
+250 | 551273 | 528 | 75 | 1 | 4923 × 6223 cells, SRID 3857
 ```
 
 ### Spatial lesson 1 · points-and-shapes
@@ -2122,6 +2138,485 @@ UA | 1
 **Runs in:** browser (DuckDB spatial); the `-pg` block in your own PostGIS
 
 **Evidence:** `out/e1-pip/` (outcome, per-country and mismatches: DuckDB-WASM, Node DuckDB and PostGIS agree at 1:10m, and DuckDB at 1:50m too)
+
+### Spatial lesson 5 · projection
+
+**Concept:** a projection flattens the Earth onto a map; Web Mercator (EPSG:3857) keeps shapes and stretches areas; an equal-area projection (EPSG:6933) keeps areas; a raster on a Mercator grid stretches every cell. **Question:** How much bigger do countries and habitats look on a Web Mercator map than they are?
+
+A flat map needs a projection, a rule that turns longitude and latitude into x and y in metres. Most web maps use **Web Mercator** (EPSG:3857). It keeps shapes right in any small area, which is why street maps use it, but at latitude φ it stretches every length by 1 ÷ cos φ, so every area by 1 ÷ cos² φ: a few percent near the equator, four times at 60° north, and without limit towards the poles, which it cuts off at about 85°. An **equal-area** projection such as EASE-Grid 2.0 (EPSG:6933) does the opposite: shapes bend, but every area is true.
+
+`ST_Transform` reprojects a geometry. PostGIS knows the outline's SRID, so it needs only the target. DuckDB needs both systems, as text, and `always_xy := true`, because EPSG's own definition of 4326 puts latitude first. Lesson 3's five outlines, measured on the ellipsoid, on a Web Mercator map and in the equal-area projection:
+
+```sql
+-- q: s05-pg
+-- status: spike-table
+-- engine: postgis
+SELECT country_code,
+       round((ST_Area(geom::geography) / 1e6)::numeric) AS km2,
+       round((ST_Area(ST_Transform(geom, 3857)) / 1e6)::numeric) AS mercator_km2,
+       round((ST_Area(ST_Transform(geom, 6933)) / 1e6)::numeric) AS equal_area_km2,
+       round((ST_Area(ST_Transform(geom, 3857)) / ST_Area(geom::geography))::numeric, 2) AS stretch
+FROM country_shapes
+WHERE country_code IN ('BJ', 'CA', 'GL', 'MX', 'NE')
+ORDER BY km2 DESC, country_code;
+```
+
+```text
+-- result: s05-pg · 5 rows · sha256 e3a60347a0b3
+country_code | km2 | mercator_km2 | equal_area_km2 | stretch
+CA | 9945629 | 51086659 | 9945628 | 5.14
+GL | 2154381 | 35187509 | 2154380 | 16.33
+MX | 1957847 | 2372542 | 1957845 | 1.21
+NE | 1181301 | 1307983 | 1181303 | 1.11
+BJ | 116113 | 120313 | 116113 | 1.04
+```
+
+```sql
+-- q: s05
+-- status: spike-table
+SELECT country_code,
+       round(ST_Area_Spheroid(ST_FlipCoordinates(geom)) / 1e6) AS km2,
+       round(ST_Area(ST_Transform(geom, 'EPSG:4326', 'EPSG:3857', always_xy := true)) / 1e6) AS mercator_km2,
+       round(ST_Area(ST_Transform(geom, 'EPSG:4326', 'EPSG:6933', always_xy := true)) / 1e6) AS equal_area_km2,
+       round(ST_Area(ST_Transform(geom, 'EPSG:4326', 'EPSG:3857', always_xy := true)) / ST_Area_Spheroid(ST_FlipCoordinates(geom)), 2) AS stretch
+FROM country_shapes
+WHERE country_code IN ('BJ', 'CA', 'GL', 'MX', 'NE')
+ORDER BY km2 DESC, country_code;
+```
+
+```text
+-- result: s05 · 5 rows · sha256 e3a60347a0b3
+country_code | km2 | mercator_km2 | equal_area_km2 | stretch
+CA | 9945629 | 51086659 | 9945628 | 5.14
+GL | 2154381 | 35187509 | 2154380 | 16.33
+MX | 1957847 | 2372542 | 1957845 | 1.21
+NE | 1181301 | 1307983 | 1181303 | 1.11
+BJ | 116113 | 120313 | 116113 | 1.04
+```
+
+The equal-area column agrees with the ellipsoid to within rounding; the Web Mercator column doesn't. Benin and Niger, in the tropics, grow a little; Canada and Greenland, far north, swell several times over. That is why Greenland looks the size of Africa on a web map.
+
+The habitat map has the same problem built into every cell. It is a grid in Web Mercator: each cell is 103.02 m on a side **on the map**, so on the ground it is 103.02 × cos φ m on a side, about 101 m in Costa Rica and half that at 60° north. A count of cells is therefore not an area. Each cell's area is (103.02 · cos φ)² m², with φ the latitude of its row, which comes back from a Web Mercator y as φ = 2 · atan(e^(y ÷ R)) − π ÷ 2, R = 6,378,137 m.
+
+The map file also holds smaller copies of itself, its **overviews**, each half the width of the one before. The smallest, at ÷1024, covers the whole world in a single tile of 380 × 380 cells, each 105 km on the map. It keeps one full-resolution cell in about a million, so its areas are rough, but it is small enough to read whole. `GTIFF_DIR:11:` opens the file's 11th image, that overview, on its own; GDAL gives an overview no coordinates, so the raster below is in cell numbers (row 1 at the top), and the latitude comes from the row. Two shortcuts fail, and the first fails silently: an empty raster with the overview's cell size on the whole file reads full-resolution cells anyway, and `GTIFF_DIR:` on a Web Mercator grid draws a warning that the band is "not aligned" and reads the wrong cells (`out/e3b-overviews/`). The block reads it straight from the 3.64 GB file, with a few range requests:
+
+```sql
+-- q: s05-cells
+-- status: ran
+-- engine: postgis
+WITH level AS (
+  SELECT ST_AddBand(ST_MakeEmptyRaster(380, 380, 0, 0, 1, 1, 0, 0, 0),
+                    'GTIFF_DIR:11:/vsicurl/https://habitat-cog.s3.us-east-2.amazonaws.com/habitat_cog.tif',
+                    ARRAY[1], 1, 0) AS rast
+), cells AS (
+  -- one row per cell with a habitat class (nodata skipped), and the latitude of its row's centre
+  SELECT p.val AS habitat_code,
+         2 * atan(exp((20037508.342789248 - (p.y - 0.5) * 40075016.685578496 / 380) / 6378137)) - pi() / 2 AS lat
+  FROM level CROSS JOIN LATERAL ST_PixelAsPoints(level.rast, 1) AS p
+)
+SELECT habitat_code,
+       count(*) AS cells,
+       round(count(*) * (40075016.685578496 / 380 / 1000) ^ 2) AS map_km2,
+       round(sum((40075016.685578496 / 380 / 1000 * cos(lat)) ^ 2)) AS est_km2
+FROM cells
+GROUP BY habitat_code
+ORDER BY map_km2 DESC, habitat_code
+LIMIT 5;
+```
+
+```text
+-- result: s05-cells · 5 rows · sha256 018e01c0c7b4
+habitat_code | cells | map_km2 | est_km2
+1102 | 51850 | 576672168 | 247460749
+803 | 32470 | 361129128 | 16840141
+900 | 19989 | 222316296 | 32479093
+1103 | 8142 | 90554769 | 42370329
+1101 | 4920 | 54719905 | 17512835
+```
+
+Class 11.2 (`1102`, the abyssal plain of the deep ocean) is the largest either way. Class 8.3 (`803`, cold desert) is second on the map and shrinks to a fraction once each cell is corrected: most of it is Antarctica, whose rows sit closest to Mercator's edge. Any count of cells from this map, by a country or a species' records, has to be corrected the same way before it is called an area, and even then it is an **estimate**. Lesson 7 does it at full resolution.
+
+**Shown as:** tables.
+
+**Your turn:** For each outline whose code GBIF gave to an African Spurred Tortoise record (species `20`), how many times bigger it is on a Web Mercator map than on the ellipsoid: `country_code` and `stretch` (2 decimal places), most stretched first, ties by `country_code`.
+
+```sql
+-- q: s05-ex
+-- status: spike-table
+SELECT c.country_code,
+       round(ST_Area(ST_Transform(c.geom, 'EPSG:4326', 'EPSG:3857', always_xy := true)) / ST_Area_Spheroid(ST_FlipCoordinates(c.geom)), 2) AS stretch
+FROM country_shapes AS c
+WHERE c.country_code IN (SELECT country_code FROM occurrences WHERE species_id = 20)
+ORDER BY stretch DESC, c.country_code;
+```
+
+```text
+-- result: s05-ex · 17 rows · sha256 3fd0b75d776b
+country_code | stretch
+NL | 2.65
+DE | 2.54
+US | 2.3
+ES | 1.72
+EG | 1.26
+… 12 more rows
+```
+
+**Check:** `result, in order`.
+
+**Runs in:** browser (DuckDB spatial) for the outlines; your own PostGIS for the raster cells (`s05-pg`, `s05-cells`)
+
+**Evidence:** `out/e3-zonal/` (Mercator ÷ true area, row by row, against 1 ÷ cos² φ: TT and AX), `out/e3b-overviews/` (PostGIS reads the ÷1024 overview through `GTIFF_DIR:11:` cell for cell as geotiff.js does, and its histogram equals F3's), `queries.log` (this lesson's blocks in both engines)
+
+### Spatial lesson 6 · point-value
+
+**Concept:** a raster is a grid of cells, each holding one value; the grid's origin and cell size; reading the cell under a point (`ST_Value`); an out-db raster reads only the cells a query needs; nodata as `NULL`. **Question:** Which habitat class does the map give at a place?
+
+The habitat map (Jung et al. 2020, CC BY 4.0) gives each cell of about 100 m one class of IUCN's habitat classification scheme, at its second level, written as a number without the dot: `106` is class 1.6, "Forest – Subtropical/tropical moist lowland", and `1405` is 14.5, "Urban Areas". A class whose code ends in `00` is a first-level class, used where the map couldn't tell the second level. `0` means no data. The map is one file of 3.64 GB, far too big to load, so PostGIS reads it **out-db**: the database holds only an empty grid and the file's address, and GDAL fetches the few kilobytes a query needs, by HTTP range requests.
+
+Reading a point takes three steps:
+1. Put the point on the map's grid: `ST_Transform` to Web Mercator (3857).
+2. Find its cell. The grid starts at the map's top-left corner, x₀ = −20,037,508.34 m and y₀ = +20,037,508.34 m, and its cells are 103.02 m: column = ⌊(x − x₀) ÷ 103.02⌋, row = ⌊(y₀ − y) ÷ 103.02⌋.
+3. Make an empty one-cell raster at that cell's corner, add the file's band 1 to it (`ST_AddBand` with the file's path, band `ARRAY[1]`, nodata `0`), and ask `ST_Value` for the value under the point.
+
+```sql
+-- q: s06
+-- status: ran
+-- engine: postgis
+WITH grid (x0, y0, size) AS (
+  VALUES (-20037508.342789244::float8, 20037508.342789248::float8, 103.02166779498629::float8)
+), places (place, lon, lat) AS (
+  VALUES ('Xochimilco', -99.10, 19.26), ('Near Manaus', -60.0, -3.0), ('Amazon forest', -62.0, -3.0)
+), points AS (
+  SELECT place, ST_Transform(ST_SetSRID(ST_Point(lon, lat), 4326), 3857) AS pt
+  FROM places
+), cells AS (
+  SELECT place, pt, floor((ST_X(pt) - x0) / size) AS col, floor((y0 - ST_Y(pt)) / size) AS row, x0, y0, size
+  FROM points CROSS JOIN grid
+), windows AS (
+  SELECT place, pt, col, row,
+         ST_AddBand(ST_MakeEmptyRaster(1, 1, x0 + col * size, y0 - row * size, size, -size, 0, 0, 3857),
+                    '/vsicurl/https://habitat-cog.s3.us-east-2.amazonaws.com/habitat_cog.tif', ARRAY[1], 1, 0) AS rast
+  FROM cells
+)
+SELECT place, col, row, ST_Value(rast, 1, pt) AS habitat_code
+FROM windows
+ORDER BY place;
+```
+
+```text
+-- result: s06 · 3 rows · sha256 8eb56049ee3c
+place | col | row | habitat_code
+Amazon forest | 127504 | 197741 | 106
+Near Manaus | 129665 | 197741 | 1405
+Xochimilco | 87416 | 173283 | 1405
+```
+
+The spike timed this: a fresh session reads a few tens of kilobytes per point in under half a second, and the same cell again costs nothing (`out/e2-point/`). The Axolotl's lakes come out as Urban Areas: Xochimilco's canals run between the houses at the edge of Mexico City, and a canal narrower than a cell disappears into the class that covers most of it. A class at a point is the map's answer for the whole cell, not what an animal there was using.
+
+**Which file.** The spike read the owner's copy of the map (`habitat_cog.tif`). Whether learners may read it too waits on the owner (§5, §8): its version is unconfirmed, and its downloads are billed to the owner. The same SQL works on any copy that PostGIS can reach, with that copy's path in `ST_AddBand`: critwire's clip of Costa Rica, if critwire hosts it (§5), or your own download of Jung's version 004 from Zenodo (CC BY 4.0), which is on a longitude–latitude grid (EPSG:4326): skip the `ST_Transform` and use that file's origin and cell size, which `ST_MetaData` shows.
+
+critwire's lesson database already holds that clip (`habitat_clips`, from `pg-setup`), stored in the database. A stored raster knows its own grid, so `ST_Value` needs only the point, in the raster's coordinate system. Cells outside Costa Rica's outline are nodata, so a point at sea gives `NULL`:
+
+```sql
+-- q: s06-clip
+-- status: spike-table
+-- engine: postgis
+WITH places (place, lon, lat) AS (
+  VALUES ('San José', -84.08, 9.93), ('Tortuguero', -83.52, 10.54), ('Monteverde', -84.82, 10.30),
+         ('Irazú summit', -83.85, 9.98), ('Pacific, off Nicoya', -85.80, 9.50)
+)
+SELECT p.place, v.habitat_code, h.name
+FROM places AS p
+CROSS JOIN habitat_clips AS c
+CROSS JOIN LATERAL (SELECT ST_Value(c.rast, 1, ST_Transform(ST_SetSRID(ST_Point(p.lon, p.lat), 4326), 3857))::integer AS habitat_code) AS v
+LEFT JOIN habitat_classes AS h ON h.code = v.habitat_code
+WHERE c.clip = 'cr'
+ORDER BY p.place;
+```
+
+```text
+-- result: s06-clip · 5 rows · sha256 2d31564e64da
+place | habitat_code | name
+Irazú summit | 307 | Shrubland – Subtropical/tropical high altitude
+Monteverde | 109 | Forest – Subtropical/tropical moist montane
+Pacific, off Nicoya | NULL | NULL
+San José | 1405 | Urban Areas
+Tortuguero | 106 | Forest – Subtropical/tropical moist lowland
+```
+
+Mission D gives every published occurrence record a class this way (`occurrences.habitat_code`, lesson 22), from Jung's 1 km layers rather than a 100 m cell, since a record's position is rarely that precise.
+
+**Shown as:** tables.
+
+**Your turn:** For the same five places, add the first-level class each class belongs to: `place`, `habitat_code`, `name` and `level1_name` (the name of the class `level1_code` points at), in place order. A place at sea keeps its row.
+
+```sql
+-- q: s06-ex
+-- status: spike-table
+-- engine: postgis
+WITH places (place, lon, lat) AS (
+  VALUES ('San José', -84.08, 9.93), ('Tortuguero', -83.52, 10.54), ('Monteverde', -84.82, 10.30),
+         ('Irazú summit', -83.85, 9.98), ('Pacific, off Nicoya', -85.80, 9.50)
+)
+SELECT p.place, v.habitat_code, h.name, l1.name AS level1_name
+FROM places AS p
+CROSS JOIN habitat_clips AS c
+CROSS JOIN LATERAL (SELECT ST_Value(c.rast, 1, ST_Transform(ST_SetSRID(ST_Point(p.lon, p.lat), 4326), 3857))::integer AS habitat_code) AS v
+LEFT JOIN habitat_classes AS h ON h.code = v.habitat_code
+LEFT JOIN habitat_classes AS l1 ON l1.code = h.level1_code
+WHERE c.clip = 'cr'
+ORDER BY p.place;
+```
+
+```text
+-- result: s06-ex · 5 rows · sha256 c8576c83d96c
+place | habitat_code | name | level1_name
+Irazú summit | 307 | Shrubland – Subtropical/tropical high altitude | Shrubland
+Monteverde | 109 | Forest – Subtropical/tropical moist montane | Forest
+Pacific, off Nicoya | NULL | NULL | NULL
+San José | 1405 | Urban Areas | Artificial - Terrestrial
+Tortuguero | 106 | Forest – Subtropical/tropical moist lowland | Forest
+```
+
+**Check:** `result, in order`.
+
+**Runs in:** your own PostGIS
+
+**Evidence:** `out/e2-point/` (PostGIS out-db, geotiff.js and TiTiler agree on 10 points over 5 runs; bytes and times per read), `out/e4-clip/` (the clip equals the full map cell for cell inside the outline), `queries.log`
+
+### Spatial lesson 7 · zonal
+
+**Concept:** zonal statistics: counting a raster's cells by value inside a polygon (`ST_Clip`, `ST_ValueCount`); which cells count (the centre rule); from cells to an estimated area; an overview is a sample. **Question:** What covers the land inside an outline, and how much of each?
+
+`ST_Clip(rast, polygon)` keeps the cells whose **centre** lies inside the polygon and makes the rest nodata; `ST_ValueCount` then counts the cells of each value, nodata left out. Both run on the out-db grid of lesson 6, now one window over the polygon's bounding box instead of one cell. The zone is a circle of 3 km around the point near Manaus, drawn on the ellipsoid (a `geography` buffer) and then put on the map's grid. Its cells are near the equator, so one cos φ at the point serves for all of them:
+
+```sql
+-- q: s07
+-- status: ran
+-- engine: postgis
+WITH grid (x0, y0, size) AS (
+  VALUES (-20037508.342789244::float8, 20037508.342789248::float8, 103.02166779498629::float8)
+), zone AS (
+  SELECT ST_Transform(ST_Buffer(ST_SetSRID(ST_Point(-60.0, -3.0), 4326)::geography, 3000)::geometry, 3857) AS geom
+), box AS (
+  SELECT geom, x0, y0, size,
+         floor((ST_XMin(geom) - x0) / size) AS col0, ceil((ST_XMax(geom) - x0) / size) AS col1,
+         floor((y0 - ST_YMax(geom)) / size) AS row0, ceil((y0 - ST_YMin(geom)) / size) AS row1
+  FROM zone CROSS JOIN grid
+), window_ AS (
+  SELECT geom,
+         ST_AddBand(ST_MakeEmptyRaster((col1 - col0)::integer, (row1 - row0)::integer, x0 + col0 * size, y0 - row0 * size,
+                                       size, -size, 0, 0, 3857),
+                    '/vsicurl/https://habitat-cog.s3.us-east-2.amazonaws.com/habitat_cog.tif', ARRAY[1], 1, 0) AS rast
+  FROM box
+)
+SELECT vc.value AS habitat_code, vc.count AS cells,
+       round((vc.count * (103.02166779498629 * cos(radians(-3.0))) ^ 2 / 1e6)::numeric, 2) AS est_km2
+FROM window_ CROSS JOIN LATERAL ST_ValueCount(ST_Clip(rast, geom)) AS vc
+ORDER BY cells DESC, habitat_code;
+```
+
+```text
+-- result: s07 · 6 rows · sha256 89f0e1658427
+habitat_code | cells | est_km2
+1405 | 1913 | 20.25
+406 | 378 | 4.00
+306 | 222 | 2.35
+106 | 140 | 1.48
+1401 | 7 | 0.07
+… 1 more row
+```
+
+The estimates add up to nearly the circle's own area, π × 3² ≈ 28.3 km²; the difference is the edge, where a cell counts whole or not at all.
+
+A country is the same query with its outline as the zone. critwire's clip of Costa Rica is stored, so this reads no file. Costa Rica spans a few degrees of latitude, so one cos φ, at the outline's middle, is within a fraction of a percent of correcting row by row (`out/e3-zonal/`). The classes with the most land, with their names:
+
+```sql
+-- q: s07-clip
+-- status: spike-table
+-- engine: postgis
+WITH zone AS (
+  SELECT ST_Transform(geom, 3857) AS geom, radians(ST_Y(ST_Centroid(geom))) AS lat
+  FROM country_shapes
+  WHERE country_code = 'CR'
+), counts AS (
+  SELECT vc.value::integer AS habitat_code, vc.count AS cells, zone.lat
+  FROM habitat_clips AS c
+  CROSS JOIN zone
+  CROSS JOIN LATERAL ST_ValueCount(ST_Clip(c.rast, zone.geom)) AS vc
+  WHERE c.clip = 'cr'
+)
+SELECT k.habitat_code, h.name, k.cells,
+       round((k.cells * (103.02166779498629 * cos(k.lat)) ^ 2 / 1e6)::numeric) AS est_km2,
+       round((100.0 * k.cells / sum(k.cells) OVER ())::numeric, 1) AS share_pct
+FROM counts AS k
+JOIN habitat_classes AS h ON h.code = k.habitat_code
+ORDER BY k.cells DESC, k.habitat_code
+LIMIT 6;
+```
+
+```text
+-- result: s07-clip · 6 rows · sha256 57c95610d8de
+habitat_code | name | cells | est_km2 | share_pct
+1401 | Arable Land | 1583248 | 16300 | 31.7
+109 | Forest – Subtropical/tropical moist montane | 1278346 | 13161 | 25.6
+106 | Forest – Subtropical/tropical moist lowland | 699066 | 7197 | 14.0
+201 | Savanna - Dry | 352517 | 3629 | 7.1
+105 | Forest – Subtropical/tropical dry | 223842 | 2304 | 4.5
+… 1 more row
+```
+
+Counting every cell is exact for the map but slow for a large country at full resolution (a whole country can be hundreds of millions of cells). An overview is quicker, but it is a **sample**: the map's ÷8 overview keeps one full-resolution cell from each 8 × 8 block (nearest-neighbour), so each of its cells stands for 64 that weren't looked at. `ST_Rescale` with `'NearestNeighbor'` makes the same kind of sample from the clip. The largest classes keep their shares closely; the smaller a class, the further its sampled share wanders, in either direction:
+
+```sql
+-- q: s07-sample
+-- status: spike-table
+-- engine: postgis
+WITH zone AS (
+  SELECT ST_Transform(geom, 3857) AS geom FROM country_shapes WHERE country_code = 'CR'
+), clip AS (
+  SELECT rast FROM habitat_clips WHERE clip = 'cr'
+), full_res AS (
+  SELECT vc.value::integer AS habitat_code, vc.count AS cells
+  FROM clip CROSS JOIN zone CROSS JOIN LATERAL ST_ValueCount(ST_Clip(clip.rast, zone.geom)) AS vc
+), sampled AS (
+  SELECT vc.value::integer AS habitat_code, vc.count AS cells
+  FROM clip CROSS JOIN zone
+  CROSS JOIN LATERAL ST_ValueCount(ST_Clip(ST_Rescale(clip.rast, 8 * ST_PixelWidth(clip.rast), -8 * ST_PixelWidth(clip.rast), 'NearestNeighbor'), zone.geom)) AS vc
+), shares AS (
+  SELECT f.habitat_code,
+         100.0 * f.cells / sum(f.cells) OVER () AS full_pct,
+         100.0 * coalesce(s.cells, 0) / sum(s.cells) OVER () AS sample_pct
+  FROM full_res AS f
+  LEFT JOIN sampled AS s USING (habitat_code)
+)
+SELECT habitat_code,
+       round(full_pct::numeric, 2) AS full_pct,
+       round(sample_pct::numeric, 2) AS sample_pct,
+       round((100 * (sample_pct - full_pct) / full_pct)::numeric) AS change_pct
+FROM shares
+ORDER BY full_pct DESC, habitat_code;
+```
+
+```text
+-- result: s07-sample · 35 rows · sha256 e2b2d413056b
+habitat_code | full_pct | sample_pct | change_pct
+1401 | 31.66 | 31.74 | 0
+109 | 25.57 | 25.53 | 0
+106 | 13.98 | 13.96 | 0
+201 | 7.05 | 6.99 | -1
+105 | 4.48 | 4.49 | 0
+… 30 more rows
+```
+
+That is why critwire's published habitat areas (`country_habitats.est_area_km2`, lessons 22–23) come from Jung's 1 km layers, which record the share of each class inside every cell rather than one class per cell, and why they are labelled estimated: each method has a measured error, largest for small classes (§5, `out/e3c-methods/`).
+
+**Shown as:** tables.
+
+**Your turn:** How much of Costa Rica's land does the map give to forest of any kind? Add up the estimated km² of every class whose first-level class is `100` ("Forest"), using the outline's middle latitude as `s07-clip` does: one column, `forest_km2`, rounded to a whole km².
+
+```sql
+-- q: s07-ex
+-- status: spike-table
+-- engine: postgis
+WITH zone AS (
+  SELECT ST_Transform(geom, 3857) AS geom, radians(ST_Y(ST_Centroid(geom))) AS lat
+  FROM country_shapes
+  WHERE country_code = 'CR'
+)
+SELECT round((sum(vc.count) * (103.02166779498629 * cos(zone.lat)) ^ 2 / 1e6)::numeric) AS forest_km2
+FROM habitat_clips AS c
+CROSS JOIN zone
+CROSS JOIN LATERAL ST_ValueCount(ST_Clip(c.rast, zone.geom)) AS vc
+JOIN habitat_classes AS h ON h.code = vc.value::integer
+WHERE c.clip = 'cr' AND h.level1_code = 100
+GROUP BY zone.lat;
+```
+
+```text
+-- result: s07-ex · 1 row · sha256 2685979557cb
+forest_km2
+23415
+```
+
+**Check:** `result`.
+
+**Runs in:** your own PostGIS
+
+**Evidence:** `out/e3-zonal/` (the out-db zonal read for TT and AX: identical counts cold and warm, bytes against the tile lower bound, areas four ways), `out/e3b-overviews/` (overview reads), `out/e3c-methods/` (full resolution, ÷8 and ÷16 samples and Jung's 1 km fractions per class, with their errors), `queries.log`
+
+### Spatial lesson 8 · browser-clip
+
+**Concept:** a Cloud-Optimized GeoTIFF (COG): tiles and overviews that a reader fetches by HTTP range requests; reading a window of a raster in the browser with geotiff.js; from longitude and latitude to a cell. **Question:** Can a browser read the habitat map without downloading it?
+
+DuckDB has no raster type, so the browser reads the habitat map with a JavaScript library, **geotiff.js**. A COG keeps its cells in square tiles of 256 × 256 and starts with an index of where each tile is, followed by the same for each overview. `fromUrl` reads the header and that index; `getImage(i)` picks the full resolution (`0`) or an overview (`1` to `5`); `readRasters({ window })` fetches only the tiles under the window, each by one range request. The clip of Costa Rica is 1.4 MB, and a window of 256 × 256 cells costs a few tens of kilobytes (`out/e4-browser/`).
+
+This is JavaScript for the lesson page, not SQL (the clip's address is the spike's; mission D publishes its own, §5):
+
+```js
+import { fromUrl } from "geotiff";
+
+const tiff = await fromUrl("/learn/spike-data/cr.cog.tif", { allowFullFile: false }); // never the whole file
+const image = await tiff.getImage(0); // full resolution; 1–5 are the overviews
+
+// Longitude and latitude → Web Mercator metres → the clip's column and row.
+const [lon, lat] = [-84.2, 10.1];
+const x = (lon * 20037508.342789244) / 180;
+const y = 6378137 * Math.log(Math.tan(Math.PI / 4 + (lat * Math.PI) / 360));
+const [x0, y0] = image.getOrigin(); // the clip's top-left corner
+const [dx, dy] = image.getResolution(); // 103.02 m, and −103.02 m (rows run south)
+const col = Math.floor((x - x0) / dx) - 128;
+const row = Math.floor((y - y0) / dy) - 128;
+
+// The 256 × 256 cells around the point, and how many of each class.
+const [band] = await image.readRasters({ window: [col, row, col + 256, row + 256], samples: [0] });
+const counts = new Map();
+for (const code of band) counts.set(code, (counts.get(code) ?? 0) + 1);
+console.log(col, row, [...counts].sort((a, b) => b[1] - a[1]));
+```
+
+The spike ran this page in headless Chromium, on a desktop profile and at a quarter of the CPU (a Chromebook's stand-in): every request was a range request, the page never fetched the whole clip, and its counts equalled those of geotiff.js in Node and of PostGIS for the same cells (`out/e4-browser/`). The window starts at column 3025, row 1092 of the clip.
+
+The clip has to be served by critwire, or by any host that answers range requests and allows the page's origin (CORS). The owner's full map can't be read this way today, because its bucket sends no CORS headers; that choice is the owner's (§5, §8).
+
+**Shown as:** a picture of the window (one colour per class) and a table of classes with their cells and shares.
+
+**Your turn:** Check the page against the database: count the classes of the same window in PostGIS. The window's corners are the clip's cells (column 3026, row 1093) and (3282, 1349) in PostGIS's numbering, which starts at 1; `ST_RasterToWorldCoord` gives a cell's top-left corner. Show `habitat_code` and `cells`, most first, ties by `habitat_code`; nodata counts as `0`.
+
+```sql
+-- q: s08-ex
+-- status: spike-table
+-- engine: postgis
+WITH clip AS (
+  SELECT rast FROM habitat_clips WHERE clip = 'cr'
+), box AS (
+  SELECT rast,
+         ST_MakeEnvelope((ST_RasterToWorldCoord(rast, 3026, 1093)).longitude, (ST_RasterToWorldCoord(rast, 3282, 1349)).latitude,
+                         (ST_RasterToWorldCoord(rast, 3282, 1349)).longitude, (ST_RasterToWorldCoord(rast, 3026, 1093)).latitude,
+                         3857) AS geom
+  FROM clip
+)
+SELECT vc.value::integer AS habitat_code, vc.count AS cells
+FROM box CROSS JOIN LATERAL ST_ValueCount(ST_Clip(rast, geom), 1, false) AS vc
+ORDER BY cells DESC, habitat_code;
+```
+
+```text
+-- result: s08-ex · 11 rows · sha256 cade1a7f5771
+habitat_code | cells
+109 | 22928
+1401 | 19448
+1405 | 9938
+307 | 8072
+1403 | 3786
+… 6 more rows
+```
+
+**Check:** `result, in order` (the page's table has the same classes and cells, nodata as `0`).
+
+**Runs in:** browser (geotiff.js); the check in your own PostGIS
+
+**Evidence:** `out/e4-clip/` (the clip cut by PostGIS and validated as a COG), `out/e4-browser/` (desktop and 4× CPU runs: range requests only, bytes, times, memory, screenshots), `queries.log` (`s08-ex`)
 
 ## 5. The habitat raster
 
