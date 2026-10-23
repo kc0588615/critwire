@@ -921,7 +921,7 @@ Planner, 2026-10-23. T14's 27 units → 30 steps; all ten modules stay in full. 
   - 004 §0: `py-connect` (T4's helper) and `py-smoke` (`SHOW search_path` through the helper; package versions), both `ran`.
   - Check: Guard; spike green; `$RQ --update`, then `--check` exits 0; `$M/queries.log` has `-- result: py-smoke · python · `.
 
-- [ ] S4. Lab stand-in shapes; RESOLVE size probe (T5, T14 u3; F6).
+- [x] S4. Lab stand-in shapes; RESOLVE size probe (T5, T14 u3; F6).
   - `$SP/etl/shapes.py` (venv) → `$SP/data/learn/`:
     - `country_shapes.parquet`: A2's `data/v1/country_shapes_50m.parquet`, copied, sha256 recorded.
     - `admin1_shapes.parquet` (`adm1_code`, `country_code`, `name`, WKB `geom`): from Natural Earth `ne_50m_admin_1_states_provinces.geojson` at A2's pinned commit `f1890d9f…`.
@@ -1445,6 +1445,9 @@ Only the spike harness is tested in isolation, because every "ran" claim rests o
 - S2: GBIF accepted the explicit legacy `checklistKey` (top level + `TAXON_KEY`) and echoes both: R2 not hit, `ids.gbif` stay the filter. Submit-time search count 394,532 (architect's 396,629 was an earlier read); S8's 0.1 % check uses 394,532. `request.json` omits `creator` (account name); credentials stay in memory.
 - S3: a startup `-c search_path=learn_curriculum,public` (T4's helper) is shown as given: `SHOW search_path` = `learn_curriculum,public`, not PY4's `learn_curriculum, public` (that spelling is `SET`'s). Kept T4's helper; PY4 asserts the real value. `py-connect` defines the helper and prints nothing (empty-stdout result), so `# after: py-connect` adds no output to later blocks.
 - S3: PY tests split by cost: PY1/PY5/PY6/PY7-8/PY9 as fixture plans (`test/fixtures/python/`), PY2/PY3/PY4/PY7/PY8 on `runPython` directly, one update-then-check round trip. The fixture loop moved from `run-queries.test.ts` to `test/harness.ts` (shared, DRY). Block HOME = its own empty temp dir; stderr quote = last 5 lines.
+- S4: RESOLVE kept whole-world at tolerance 0.05° (≈ 5 km, about the detail of the 1:50m shapes beside it): 6,686,262 B ≤ 8 MB. 0–0.02° were all over (0.02° = 9.9 MB; `preserve_topology` keeps every small island ring). Not R14's cut to "lab regions": the sample is global (73 species), and a cut would leave most records with no ecoregion. 004 §4 (S15) states the tolerance and the gaps/overlaps that per-feature simplification leaves.
+- S4: RESOLVE `ECO_ID` 0 "Rock and Ice" has biome and realm `N/A` (its `BIOME_NUM` 11 is Tundra's id): `biome_id` and `realm` NULL (nullable FK, like `occurrences.country_code`); any other `N/A` row fails. `biomes.csv` has 14 rows (1–14).
+- S4: lab files in GeoParquet 1.0.0 like A2's (WKB `geom`, bbox, CRS84), zstd, sorted by key; a re-run is byte-identical. RESOLVE read in place via `/vsizip/`, so nothing is extracted. Admin-1 drops `iso_3166_2` (Jervis Bay's `AU-X02~` isn't a real code); `adm1_code` is the key.
 
 ## Log
 
@@ -1457,5 +1460,6 @@ Only the spike harness is tested in isolation, because every "ran" claim rests o
 - 2026-10-23 05:58 UTC: S1. Spike scaffold from A2 (70 files, provenance.tsv; 21 edited, registry.ts deleted); spike typecheck + 97/97 tests; 004 skeleton, setup-counts sha256 a46604343811 (= 002); verify.sh ok; copy proof 002: 77 blocks, 0 failures, ERD match; parquet wasm 200 application/wasm, no spatial; canary + learn_spatial dump saved. Guard clean (66 tests, dist = baseline, canary same, no leaks, 585 MB).
 - 2026-10-23 06:06 UTC: S2. uv 0.13.5 (sha256 ok) → venv CPython 3.12.3, 44 pins, `sync --no-build` + `pip check` clean, imports ok (`out/python-env/summary.md`); GBIF download 0041824-260928105237408 submitted with pinned legacy checklistKey (echoed), PREPARING, search count 394,532. Guard clean (66 tests, dist = baseline, canary same, no leaks/cred, 1.41 GB); spike 97/97.
 - 2026-10-23 06:20 UTC: S3. Python engine: `scripts/py-engine.ts` (isolated `-I`, empty cwd, 6-var env, process-group kill), python blocks in plan-queries/run-queries (`# after:` plan order, `--update` twice, log `python: 3.12.3 · uv 0.13.5 · requirements sha256 d5bbe28024cc`); PY1–PY10 13 tests red 13/13 then green; spike 110/110; 004 §0 `py-connect` + `py-smoke` ran (`--update` then `--check` ok, log has `-- result: py-smoke · python · sha256 f75ba856b9f7`). Guard clean (66 tests, dist = baseline, canary same, no leaks/cred, 1.41 GB).
+- 2026-10-23 07:15 UTC: S4. `etl/shapes.py` → `data/learn/` (8.77 MB, 6 files; `out/lab-data/summary.md`): A2's country_shapes 50m + 2 habitat stand-ins copied (sha256 equal); NE admin-1 1:50m 294 rows, 9 countries, Tasmania one row (R24 not hit); RESOLVE 847 rows at 0.05° = 6.69 MB (0–0.02° over 8 MB; no R14 cut), Rock and Ice → NULL biome/realm; invalid kept (admin-1 1, eco 10); no code without a `countries` row; re-run byte-identical; nothing extracted; verify.sh step 4. Guard clean (66 tests, dist = baseline, canary same, no leaks/cred, 1.57 GB); spike 110/110.
 
 ## Summary
