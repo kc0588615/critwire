@@ -227,7 +227,7 @@ Out:
 - [x] Fable review: `architecture-reviewer`
 - [x] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
 - [x] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
-- [ ] Steps: `planner` writes Steps and Verification
+- [x] Steps: `planner` writes Steps and Verification
 
 ## Baseline
 
@@ -839,7 +839,599 @@ Architect, 2026-10-23 05:10–05:40 UTC. Every MUST-FIX and MISSED item resolved
 
 ## Steps
 
+Planner, 2026-10-23. T14's 27 units → 30 steps; all ten modules stay in full. Conventions:
+- `W=/srv/critter-ai/worktrees/critwire-learn-curriculum`, `M=/srv/critter-ai/agent-state/missions/critwire-learn-curriculum`, `SP=$M/spike`, `A2=/srv/critter-ai/agent-state/missions/critwire-learn-spatial-design/spike` (read only), `P=plans/004-learn-curriculum.md`, `RQ="node $SP/run-queries.ts $W/$P"`, `ERDS="--erd $W/plans/004-learn-erd.mmd --lab-erd $W/plans/004-lab-erd.mmd --star-erd $W/plans/004-star-erd.mmd"` (from S12). Spike only in `$SP`, never committed. Every command, in order, goes in `$SP/README.md`; copied files in `$SP/provenance.tsv` (A2 path, copy path, both sha256).
+- One step per session: commit the plan and changed `plans/` files with the check-off and one Log line; push. Deviations: on the step's line and under Decisions.
+- **Guard** (end of every step):
+  - `git diff --name-only origin/main...HEAD | grep -v '^plans/'` empty. `git diff --numstat origin/main...HEAD` shows 0 deletions for 002, 003 and `plans/briefs/critwire-learn-{b1,b2,c,d}.md`, and nothing for `plans/00{2,3}-learn-erd.mmd`.
+  - `pnpm typecheck && pnpm test` (66 pass; no lint script, so typecheck is the static check).
+  - `rm -rf dist && pnpm -s build && (cd dist && find . -type f | sort | xargs sha256sum) | diff - $SP/baseline/dist.sha256` empty.
+  - `psql -X -At -d critwire_dev -f $SP/scripts/canary.sql | diff - $SP/baseline/learn_spatial.canary` empty. Leak query empty: `SELECT rolname FROM pg_roles WHERE rolname LIKE 'learn\_%' UNION ALL SELECT nspname FROM pg_namespace WHERE nspname LIKE 'learn\_%' AND nspname NOT IN ('learn_spatial', 'learn_curriculum')`.
+  - `du -sb $SP` < 3,000,000,000 (logged); ports 3100–3102 free; `pgrep -af "$SP/Caddyfile"` empty.
+  - No credential in the spike: a quiet `grep -rqF` of `GBIF_PASSWORD`'s value (read with `node -e 'process.loadEnvFile(…)'`) over `$SP` (excluding `node_modules`, `.venv`, `.uv-cache`, `.uv-python`) and `$M/queries.log` exits 1. Never echo the value.
+- **Spike green:** `pnpm -C $SP typecheck && pnpm -C $SP test`. From S9 on, also `$SP/.venv/bin/python -I -m unittest discover -s $SP/tests_py`. Isolation tests (Failure modes) are written first and seen red; the red count goes in the Log.
+- **004 blocks:** `node $SP/scripts/build-site.ts && $RQ --update`, read the diff (results change only where the step meant them to), then `$RQ --check [$ERDS]` exits 0 and rewrites `$M/queries.log`. Result blocks are written only by `--update`. Statuses are `ran | untested: <reason>` only. Never relabel a failing block `untested` to pass: fix it, or record why it can't run here.
+- **PostGIS:** only `SPIKE_PG_URL=postgresql:///critwire_dev` (critter-ai, socket) through `scripts/pg.ts` (or the loader's `psql` command). Only schema `learn_curriculum`, plus `learn_t_*` test fixtures that their tests drop. `learn_spatial` is read only by the canary. Never `DATABASE_URL`, the `critwire` db, `ALTER SYSTEM|DATABASE`, `GRANT SET ON PARAMETER`.
+- **Network:** GBIF ≤ 2 req/s, retries with backoff. Each download in a new `$SP/downloads/<name>/`, listed in `downloads/SOURCES.md` (URL, UTC, sha256). Extracted members are deleted once hashed; the GBIF zip is kept (verify reloads from it). Python only as `$SP/.venv/bin/python -I` (system `python3 -I` before S2), scripts outside download dirs. No apt. `uv`'s cache and Pythons stay in `$SP` (`UV_CACHE_DIR=$SP/.uv-cache`, `UV_PYTHON_INSTALL_DIR=$SP/.uv-python`).
+- **Data rules:** no IUCN data; no Wikipedia prose; records, never range. Vault: titles only (S29), nothing copied.
+- **004 conventions** (Verification greps them):
+  - Headings: `## 0. Conventions` … `## 10. For the owner: choices`, `## A. The three spikes`, `## B. Disagreements with 002 and 003` (T1). `## 5. Modules` has `### 5.1 Foundations`, `### 5.2 Database architecture`, `### 5.3 GIS in SQL`, `### 5.4 Spatial statistics`, `### 5.5 ETL`, `### 5.6 Power BI`, `### 5.7 Capstone`.
+  - Each module: `#### <id> · <slug>`, then `**Tool:** … · **Time:** <h> h · **Prereqs:** …`.
+  - Full (f1–f4, d1–d6): `**Concept:**`, `**Worked example:**`, `**Lab:**`, `**Result:**`, `**Exercise:**`, `**Answer:**`, `**Check:**`, `**Dialects:**` (PostgreSQL, DuckDB, SQL Server: one line each). Each has a `<id>-ex` block. Foundations also have `**Already know this?**` with a `<id>-skip` block.
+  - Outline (the other 23): `**Goal:**`, `**Data:**`, `**Key code:**`, `**Expected:**`.
+  - Block ids are `<module>-<word>`. Engine blocks live in §0 (`setup`, `setup-counts`, `pg-session`, `py-connect`, the smoke blocks). A Python result block is ```` ```text ```` starting `-- result: <id> · python · sha256 <12>`, then stdout.
+  - Copy is for adults new to the topic, in our own words; open references are linked, not rewritten; SQL Server appears only in dialect notes and §8.
+- **[sample]** marks steps that need the GBIF download. If one comes up and `etl/gbif_download.py status` isn't SUCCEEDED, do the first unchecked step not so marked and note the reorder in the Log (R1).
+- **`$SP/verify.sh`** (T6) is created in S1. Each step that adds a re-runnable piece appends it; S30 runs the whole script.
+- **Deviations from T14:**
+  - u2 → S2 (venv and submit) + S3 (Python engine).
+  - u3 → S4 (shapes) + S5 (loader) + S6 (PostGIS session, canary, boot) + S7 (privileges, cleanup lint, leak check). `--lab-erd` moves to S12, because it needs the loaded occurrences.
+  - u4 → S8 (fetch, load, datasets) + S9 (sample, verify, schema v2).
+  - u23 is split: §6 joins the ERDs (S12), §7 joins outline C (S27).
+  - u24 (§8) joins u26 (S29).
+  - SQL a module teaches that a spike also runs (s4's Moran, d6's `star.sql`) is written once into 004 at its module. The spike scripts extract it by id (`scripts/block.ts`), so 004 is the one source (DRY).
+  - The ERD marker `%% planned:` is added for L3's tables (S12).
+
+- [ ] S1. Spike scaffold; copy proof (T6, T14 u1; F4).
+  - Copy from `$A2` with `cp`, per T6's list: `run-queries.ts`; `scripts/{browser,build-site,env,erd,erd-model,paths,pg,pg-engine,plan-queries,registry,runner-client,serve}.ts`; `src/{engine,sql,format,cards,assets,runner-page,runner-api}.ts`, `runner.html`, `*.d.ts`, `setup.sql`; both tsconfigs; the tests and fixtures of those files; `Caddyfile`; `data/v1/countries.{parquet,json}` (A1's draft); `downloads/duckdb-ext-v1.5.6/` `parquet` wasm_eh only (sha256 checked against A2's `SOURCES.md`).
+  - Edit the copies:
+    - paths → `$SP`;
+    - boot `LOAD parquet` only: no `spatial` mirror, no `setup-grown`;
+    - statuses `ran | untested` only: the `spike-table` label and the registry's use go; `registry.ts` is deleted unless the runner still imports a helper from it;
+    - `pg-setup` and `runPgSetup` deleted; `-- engine: postgis` refused ("PostGIS engine not ready") until S6.
+  - Dropped test ids (registry, `spike-table`, `pg-setup`, `spatial`, `setup-grown`) are listed in README with the reason.
+  - `package.json`: A2's exact pins minus `geotiff` (g7 is PostGIS, T6), scripts `typecheck` and `test`. A2's `pnpm-workspace.yaml`. Then `pnpm install`.
+  - `test/pg.test.ts` waits for S6, because its live tests connect through A2's unchanged `pg.ts`.
+  - `scripts/canary.sql`: per `learn_spatial` table, name, `count(*)` and `md5(string_agg(t::text, '' ORDER BY t::text))`, plus its `pg_class` table list. Its output → `$SP/baseline/learn_spatial.canary`.
+  - Recovery copy for R17: `pg_dump -Fc -n learn_spatial -d critwire_dev -f $SP/baseline/learn_spatial.dump` (read only).
+  - `verify.sh` v1: refuse busy ports, build-site, `$RQ --check`.
+  - `$W/$P` skeleton: title, a purpose paragraph, every T1 heading; §0 holds 002's `setup` block byte for byte and `setup-counts` with its result block.
+  - Check:
+    - Guard; spike green (copied suites pass with path edits only).
+    - Copy proof exits 0: `sed 's/^-- status: draft-table$/-- status: ran/' $W/plans/002-learn.md > $SP/scratch/002.md && node $SP/run-queries.ts $SP/scratch/002.md --check --erd $W/plans/002-learn-erd.mmd --log $SP/out/a1-recheck/queries.log --out $SP/out/a1-recheck`.
+    - `$RQ --check` exits 0.
+    - Under `serve.ts`, `/learn/assets/duckdb-ext/v1.5.6/wasm_eh/parquet.duckdb_extension.wasm` answers 200 `application/wasm`; no `spatial` file under `$SP/site`.
+
+- [ ] S2. Python environment (`uv`) and the GBIF download request (T4, T7a step 1, T14 u2; F3, F9).
+  - `uv`: the pinned aarch64 release tarball, sha256 checked against its `.sha256` → `$SP/bin/uv` (`downloads/uv-<ver>/`, SOURCES.md).
+  - Environment:
+    - `$SP/requirements.in` (T4's list and lower bounds);
+    - `uv pip compile --universal --python-version 3.12 -o $SP/requirements.txt`;
+    - `uv venv $SP/.venv --python 3.12`;
+    - `uv pip sync --no-build $SP/requirements.txt`.
+    - → `out/python-env/summary.md` (uv, Python, every pin). No wheel: R9.
+  - `$SP/etl/gbif_download.py request|status`, stdlib `urllib`. Credentials come from `$W/.env` and are never printed or written.
+    - The T5 predicate over the 73 `ids.gbif` from `$W/data/species.json`; `checklistKey` = the legacy backbone at the top level and on `TAXON_KEY`; `SIMPLE_CSV` → `downloads/gbif-request/request.json`.
+    - POST it. The key, the submit UTC and the `occurrence/search` count for the same filters → `downloads/gbif-request/submitted.json`.
+    - A 4xx on the explicit key: R2.
+  - Check:
+    - Guard;
+    - `uv pip sync --no-build` exits 0 and `uv pip check` is clean;
+    - `.venv/bin/python -I -c 'import geopandas, libpysal, esda, pointpats, psycopg, pyogrio, sqlalchemy, geoalchemy2'` exits 0;
+    - `gbif_download.py status` prints the key and PREPARING, RUNNING or SUCCEEDED.
+
+- [ ] S3. Python engine in the runner (T6 "Python", T14 u2).
+  - Tests first, red: PY1–PY10.
+  - `plan-queries.ts` and `run-queries.ts`:
+    - ```` ```python ```` blocks with `# q:`, `# status:`, `# after:` and `# timeout:`;
+    - run as T6 says, `PGOPTIONS='-c search_path=pg_catalog'` included;
+    - stdout is compared with the result block (format above);
+    - `--update` runs each block twice;
+    - log header: `python: <version> · uv <ver> · requirements sha256 <12>`.
+  - 004 §0: `py-connect` (T4's helper) and `py-smoke` (`SHOW search_path` through the helper; package versions), both `ran`.
+  - Check: Guard; spike green; `$RQ --update`, then `--check` exits 0; `$M/queries.log` has `-- result: py-smoke · python · `.
+
+- [ ] S4. Lab stand-in shapes; RESOLVE size probe (T5, T14 u3; F6).
+  - `$SP/etl/shapes.py` (venv) → `$SP/data/learn/`:
+    - `country_shapes.parquet`: A2's `data/v1/country_shapes_50m.parquet`, copied, sha256 recorded.
+    - `admin1_shapes.parquet` (`adm1_code`, `country_code`, `name`, WKB `geom`): from Natural Earth `ne_50m_admin_1_states_provinces.geojson` at A2's pinned commit `f1890d9f…`.
+    - `ecoregions.parquet` (`eco_id`, `biome_id`, `name`, `realm`, WKB) and `biomes.csv`: from the RESOLVE 2017 zip (URL in 003 D9, ≈ 149 MB), simplified with `shapely` `simplify(preserve_topology=True)`. Log each tolerance tried. Keep it ≤ 8 MB, or cut to the lab regions (R14); over one session: R15.
+    - A2's habitat stand-ins `habitat_classes.parquet` and `country_habitats.parquet`, copied, sha256 recorded (for the star, g7 and s6).
+  - → `out/lab-data/summary.md`: per file rows, bytes, sha256; invalid geometries (kept: g2 teaches them); codes with no `countries` row; which countries 1:50m admin-1 covers.
+  - Check: Guard; admin-1 holds Tasmania (AU) as one row, which S10 needs (else R24); ecoregions ≤ 8 MB or R14's cut recorded; no extracted `.shp`/`.dbf` left under `downloads/`; `du -cb $SP/data/learn` logged.
+
+- [ ] S5. The loader (T5 "The loader"; F5, F10; Astra MF3).
+  - Tests first, red: LD1–LD11. Live tests use a `learn_t_loader` schema that they drop.
+  - `$SP/scripts/lab-ddl.sql`: T8's lab tables in PostgreSQL types: 002's six and the view, `country_shapes`, `admin1_shapes`, `biomes`, `ecoregions`, `habitat_classes`, `country_habitats`. `datasets` and `occurrences` come in S9.
+  - `$SP/scripts/loader.ts`, called by `build-site.ts`:
+    - Node DuckDB runs `src/setup.sql`, with `/v1/` and `/learn/data/` mapped to `$SP/site/` by one function (reused in S11).
+    - Output: `$SP/site/learn/data/postgis/learn_curriculum.sql`, exactly T5's order: `\set ON_ERROR_STOP on`, `BEGIN`; drop and create the schema; `SET LOCAL search_path`; the DDL; `COPY … FROM stdin (FORMAT csv)` per table; `ST_GeomFromWKB(…, 4326)`; keys, GiST, `ANALYZE`; a raising `DO` validation; `COMMIT`.
+  - Run it twice, as a learner would: `psql -X -v ON_ERROR_STOP=1 -d critwire_dev -f $SP/site/learn/data/postgis/learn_curriculum.sql`. → `out/loader/summary.md` (bytes, seconds, rows per table).
+  - Check: Guard; spike green; both runs exit 0 with equal row counts; `pg_depend` shows no `learn_curriculum` object depending on a `public` relation.
+
+- [ ] S6. PostGIS engine, part 1: session, canary, loader at connect, boot blocks (T6 "pg.ts", "PostGIS connect", `-- boot`; F4; Fable MF2, Astra MF1).
+  - Tests first, red: PC1–PC8 and CN1–CN5. A2's PG1–PG9 are adapted where T6 changes them.
+  - `pg.ts`:
+    - `SCHEMA`, `SEARCH_PATH` and `PG_SESSION` as T6 says; connect creates no schema;
+    - `capabilityCheck` only with `-- needs: raster`; the CREATEROLE pre-check;
+    - `scripts/canary.ts` runs `canary.sql`;
+    - connect in T6's order 1–4; `-- boot`; `-- engine: postgis` enabled;
+    - log header `postgis: <postgis_full_version()>`, plus `data: <file> sha256 <12>` for each lab file and the loader.
+  - 004 §0: `pg-session` (`ran`, ends with `SHOW search_path`) and `pg-smoke` (rows per `learn_curriculum` table).
+  - Check: Guard; spike green; `$RQ --update`, then `--check` exits 0; the log shows the canary equal before and after.
+
+- [ ] S7. PostGIS engine, part 2: privileges, cleanup lint, leak check, `-- tx: own` (T6 "Allowed", "Standalone cleanup"; F13; Astra MF5).
+  - Tests first, red: PV1–PV8, CL1–CL8, LK1–LK5, TX1–TX3.
+  - `scripts/privilege.ts`: the one rule module; PG9 skips only this file.
+  - In `plan-queries.ts` and `run-queries.ts`: the allowances, the pairing lint, the in-transaction leak check after every block (and after a `-- tx: own` block's own `COMMIT`), and `-- tx: own` execution.
+  - 004 §0, both `ran`:
+    - `pg-role-smoke`: create `learn_smoke`, grant usage and select on `learn_curriculum`, `SET ROLE`, one `SELECT`, `RESET ROLE`, `DROP OWNED BY`, `DROP ROLE`;
+    - `pg-tx-smoke`: `-- tx: own`, `BEGIN … ROLLBACK`.
+  - Check: Guard (leak query empty); spike green; `$RQ --update`, then `--check` exits 0.
+
+- [ ] S8. **[sample]** ETL spike, part 1: fetch, load, checks, dataset metadata (T7a steps 2–5; F3, F10, F11, F12).
+  - `gbif_download.py wait|fetch|load|datasets`:
+    - `fetch`: the zip → `downloads/gbif-<key>/`, with sha256 and bytes. `download.json` gets the key, DOI, `totalRecords`, request, zip sha256 and per-dataset counts. `GET /v1/occurrence/download/<key>` must echo both `checklistKey`s, else R2.
+    - `load`: one transaction. Staging by F10's `COPY` form (psycopg `cursor.copy`, streamed from the zip), then the typed `learn_curriculum.occurrences_all`. Runs T7a's checks and records the raw country values with row counts (an unknown code: R3).
+    - `datasets`: T5's metadata reads at ≤ 2 req/s → `downloads/gbif-<key>/datasets.json`. Every dataset has a title and a publisher. Whether each dataset has one license decides where `license` lives (T8): record it under Decisions.
+  - → `out/etl-postgis/summary.md`: latency, size, load seconds, rows per stage, rejects by reason, the raw country values.
+  - Check: Guard; `occurrences_all` rows = `totalRecords`; every check passes, or its R-response is recorded; the zip's sha256 = `download.json`'s.
+
+- [ ] S9. **[sample]** ETL spike, part 2: the sample, verify, schema v2 (T7a steps 6–7, T5, T6 "DuckDB boot"; F2, F11).
+  - Tests first, red: CK1–CK5 and SC1–SC5 (`$SP/tests_py/test_sample_rules.py`; the rules live in `$SP/etl/sample_rules.py`).
+  - `sample` (runs `load` first if `occurrences_all` is gone, since every loader run drops lab-made tables):
+    - → `$SP/data/learn/{occurrences.parquet,occurrences.csv,datasets.csv}` with T5's columns;
+    - → `sample-contributions.json` (never posted);
+    - records the projected full-download Parquet size.
+  - `verify`: `load` twice gives the same counts and the same `md5(string_agg(… ORDER BY id))`; the outputs' sha256 match the summary. `$SP/etl/run.sh verify` runs offline from the zip; append it to verify.sh.
+  - Schema v2:
+    - the loader gains `datasets` and `occurrences` (generated `geom`, GiST);
+    - 004 §0's `setup` = 002's plus `datasets` and `occurrences`, and equals `src/setup.sql`;
+    - build-site serves both files;
+    - boot time is measured against A1's (R16).
+  - 004 §A.1: the ETL spike's inputs, commands and results.
+  - Check:
+    - Guard; spike green; `etl/run.sh verify` exits 0;
+    - `$RQ --update` changes only the `setup*` and `pg-smoke` results; `--check` exits 0;
+    - `du -sb $SP/site/learn/data` and `du -sb $SP/data/learn` each < 50,000,000 (logged).
+
+- [ ] S10. **[sample]** Moran spike (T7b; F8; Fable SC5).
+  - Tests first, red: MC1–MC6 (`$SP/tests_py/test_moran.py`). MC7's 3-point case is run and recorded.
+  - 004 §5.4, `#### s4 · moran`, key code only, all `ran`: `s4-cells` (`-- boot`), `s4-geometry` (distance classes, duplicates, islands, the threshold gap), `s4-moran-sql`, `s4-moran-pysal` (`# after: py-connect`).
+  - `$SP/scripts/block.ts <plan> <id>` prints one block's code, through plan-queries.
+  - `$SP/moran/run.sh` extracts the s4 blocks and runs them; `compare.py` → `out/moran/summary.md` and `compare.json` (`neighbours_equal`, `equal_6dp`, `max_abs_delta`, full precision; plus the 10 km MAUP run and `z_rand`). Append it to verify.sh.
+  - 004 §A.2.
+  - Check: Guard; spike green; `moran/run.sh` exits 0: neighbour sets equal; I, E[I], Var_norm and z equal to 6 decimals; |Δ| ≤ 5e-7. `$RQ --check` exits 0.
+
+- [ ] S11. **[sample]** Star-export spike and the Power BI input check (T7c, T6 "Power BI", T5 "Credit"; F12).
+  - Tests first, red: PB1–PB7 and ST1–ST5.
+  - 004 §5.2, `#### d6 · star`, key code only: `star.sql` as blocks `d6-star-<table>` (standard SQL, no schema names), `ran` in PostGIS.
+  - `$SP/scripts/credits.ts` (`credits(file)`, T5) → `$SP/site/learn/data/manifest.json`, and the star manifest.
+  - `$SP/star-export/run.sh`:
+    - extracts `d6-star-*` with `block.ts`;
+    - Node DuckDB over the site's inputs (S5's path map, plus the habitat stand-ins) → `out/star-export/*.csv` (canonical) and `manifest.json`;
+    - PostGIS cross-check: the same SQL, `\copy … ORDER BY <pk>`, compared semantically;
+    - T7c's checks → `out/star-export/summary.md`;
+    - when a manifest exists, the fresh export must hash the same.
+    - Append it to verify.sh.
+  - Runner: ```` ```m ```` and ```` ```dax ```` blocks, inputs checked against `out/star-export/manifest.json` (T6), logged as `-- input: …`.
+  - 004 §5.6, `#### p1 · power-query`, key code only: `p1-load` (```` ```m ````, `// input:` every star file).
+  - 004 §A.3.
+  - Check: Guard; spike green; `star-export/run.sh` exits 0; `$RQ --check` exits 0, with one `-- input:` line per input of `p1-load`.
+
+- [ ] S12. ERDs, their checks and renders; 004 §6 (T8, T6 "ERDs").
+  - Tests first, red: EG1–EG5.
+  - The three sources:
+    - `plans/004-learn-erd.mmd`: v2, 002's six tables unchanged plus `datasets` and `occurrences`;
+    - `plans/004-lab-erd.mmd`: the lab. Lab-made tables go beside the diagram as `%% lab-made:`; L3's `occurrence_habitats` and `habitat_clips` as `%% planned:`;
+    - `plans/004-star-erd.mmd`: T7c's star, unknown members included.
+  - run-queries: `--erd` (A2's drift check plus EG1), `--lab-erd`, `--star-erd`.
+  - Renders: `node $SP/scripts/erd.ts $W/plans/004-<learn|lab|star>-erd.mmd --name <schema|lab|star>` → `$SP/erd/`. Append them to verify.sh.
+  - 004 §6: each ERD as a ```` ```mermaid ```` fence equal to its file, plus the data dictionaries (column, type, key, meaning, source).
+  - Check: Guard; spike green; `$RQ --check $ERDS` exits 0 (every later `--check` takes `$ERDS`); three SVGs and three PNGs; each SVG carries its `.mmd`'s sha256; no `<foreignObject>`.
+
+- [ ] S13. 004 §0 (final), §1 and §B; "Superseded" notes on 002 and 003 (T1, T2; brief item 1).
+  - §0 covers:
+    - block headers, engines and statuses;
+    - `-- needs:`, `-- boot`, `-- tx: own`;
+    - the `learn_` and cleanup rules;
+    - the uncounted `sh` and `powershell` fences;
+    - how to re-run (`$RQ --check $ERDS`, `verify.sh`) and where results live.
+  - §1: T2 expanded by section of 002 and 003 (kept, changed, dropped), each with its section reference. D3's change to the download API is recorded.
+  - §B: every disagreement with 002 and 003, one paragraph each: F1, F3, F5, F6, D3, the dropped `spatial` and `setup-grown`, T11 item 3.
+  - At the top of `plans/002-learn.md` and `plans/003-learn-data-spatial.md`, one note: `> **Superseded 2026-10-23** by plans/004-learn-curriculum.md (practitioner curriculum). Kept as a record; 004 §1 lists what is reused.` Nothing else changes.
+  - Check: Guard (002 and 003 gain only the note's lines); every numbered `## ` section of 002 and 003 is referenced in §1 as `002 §<n>` or `003 §<n>` (grep loop).
+
+- [ ] S14. 004 §2 (the curriculum map) and §3 (lab environments) (T3, T4).
+  - §2: T3's table with the questions in full; module id in the first column; hours per track and in total; prerequisite order; full vs outline.
+  - §3:
+    - Browser: 002 §1, light spatial in plain SQL.
+    - PostGIS on Windows: Docker Desktop and EDB as `powershell` fences (Windows-only, untested); privileges; the `pg-session` and loader commands.
+    - Python: `uv` steps for Windows and Linux; `requirements.txt` verbatim in one ```` ```text ```` fence; the connect helper (`py-connect`).
+    - arcpy notes: blocks `untested: ArcGIS Pro (Windows, licensed)`.
+    - Power BI: `Web.Contents`, `Csv.Document` and the explicit culture, as an ```` ```m ```` block with `// input:`; what's tested and what isn't.
+  - Check:
+    - Guard; `$RQ --check $ERDS` exits 0;
+    - §2's per-track and total hours equal their stated sums (awk over the table);
+    - every prerequisite id exists and comes earlier;
+    - §3's requirements fence = `$SP/requirements.txt` (`diff`).
+
+- [ ] S15. 004 §4 (lab data) (T5; F2, F6, F7, F11, F12).
+  - Per dataset: license (with its 003 quote reference), measured size (S4, S9), files and home, modules, the mission that builds it, and the ingest and build steps.
+  - The GBIF sample:
+    - download API vs 003 D3; the predicate;
+    - the documented `checklistKey` default, and why the pipeline pins it;
+    - the cap, the columns, the country-key contract, the dataset metadata;
+    - registration (`--target learn-sample`, `gbif-learn-*` tags); what's committed.
+  - Then the loader, the cap with measured numbers, credits, CORS (F7).
+  - Blocks, both `ran`: `lab-sizes` (rows per lab table) and `lab-credits` (datasets lacking a title or publisher: 0 rows).
+  - Check: Guard; `$RQ --update`, then `--check $ERDS` exits 0; every number in §4 equals the one in its `out/{lab-data,etl-postgis,loader}/summary.md`.
+
+- [ ] S16. f1 select and f2 aggregate, in full (T1, T3).
+  - Browser blocks; f2 runs on `occurrences` (records per year and basis of record).
+  - Check: Guard; `$RQ --update`, then `--check $ERDS` exits 0; both modules have every full-module label, `<id>-skip` and `<id>-ex`.
+
+- [ ] S17. f3 join and f4 window, in full.
+  - f3: light spatial in plain SQL (bounding box, 10° bins); the anti join "species with no records".
+  - 002's l07, l09, l11, l14 and l15 are re-run inside d1, f3 and d2 (T2): decide which goes where by topic and record the mapping under Decisions.
+  - Check: as S16.
+
+- [ ] S18. d1 keys, in full (B + PG): PK, FK, UNIQUE, CHECK, generated columns; what an FK doesn't check (`-- expect: error` blocks). Check: as S16, and its PostGIS blocks `ran`.
+
+- [ ] S19. d2 normalize, in full (B): nested JSON → 3NF; functional dependencies; the license-placement finding from S8. Check: as S16.
+
+- [ ] S20. d3 indexes, in full (PG): B-tree, GiST, BRIN, statistics; `EXPLAIN (ANALYZE, COSTS OFF, TIMING OFF, SUMMARY OFF)`, recording plan shape only (R12). Check: as S16; two consecutive `--check` runs agree.
+
+- [ ] S21. d4 transactions, in full (PG): `-- tx: own` blocks; savepoints; `ON CONFLICT`; re-running a failed load (the loader's atomicity); MVCC through `xmin`. A demo that needs two sessions is a block `untested: needs two sessions`, with the commands shown. Check: as S16.
+
+- [ ] S22. d5 roles, in full (PG): a read-only reporting role, schemas, default privileges, a taste of RLS. Every role is `learn_…` and dropped in its own block (`DROP OWNED BY` + `DROP ROLE`). The page states the CREATEROLE need. Check: as S16; Guard's leak query empty.
+
+- [ ] S23. d6 star, in full (PG + DuckDB): the module is written around S11's `d6-star-*` blocks; grain, conformed dimensions, unknown members, SCD 1 and 2, star vs snowflake, export. Check: as S16; `star-export/run.sh` still exits 0.
+
+- [ ] S24. Outlines for G, g1–g7 (T3; 003's PostGIS lessons 5–7, E1's code finding, the IUCN appendix as optional and untested).
+  - g3 (GBIF codes vs the outlines) and g6 (hexagons, MAUP) are `ran`.
+  - The others are `ran` where the lab data allows, else `untested: <reason>`. g7's blocks are `-- needs: raster` and `untested: L3 builds the clips`.
+  - Check: Guard; `--check $ERDS` exits 0; seven outlines with all four labels.
+
+- [ ] S25. Outlines for S, s1–s6.
+  - s1's bias queries are `ran` (datasets, basis of record, the telemetry share of the jaguar).
+  - s4 is completed around S10's blocks.
+  - s2, s3, s5 and s6: key code `ran` where cheap, else `untested: <reason>`.
+  - Honest-data framing throughout.
+  - Check: as S24 (six outlines).
+
+- [ ] S26. Outlines for E (e1–e5, from T7a) and P (p1–p4, from T7c).
+  - e2's key block equals the F10 `COPY` in `gbif_download.py` (`grep -F`). e1 states the documented `checklistKey` default correctly.
+  - P: ```` ```m ```` and ```` ```dax ```` blocks, `untested`, with their inputs checked. p1 is completed around `p1-load`.
+  - Check: as S24 (nine outlines); one `-- input:` log line per P input.
+
+- [ ] S27. Outline C (c1) and 004 §7 (the site) (T3, T9).
+  - c1: pipeline → Gi* on hexagons → report → the game feed and its JSON schema, labelled as records, never range. `c1-feed` (per-hexagon weights from `s4-cells`) is `ran`.
+  - §7: T9's URLs, pages, downloads, progress, build refusals, `checked.json`, `learn:check` and the E2E specs.
+  - Check: Guard; `--check $ERDS` exits 0.
+
+- [ ] S28. 004 §9 and build briefs L1–L5; superseded notes on the old briefs (T10; brief item 9).
+  - `plans/briefs/critwire-learn-l1-data.md`, `-l2-site.md`, `-l3-gis.md`, `-l4-stats-etl.md` and `-l5-powerbi-capstone.md`, in the ops format (`/srv/critter-ai/ops/templates/mission-brief.md`):
+    - a start comment: how to start it, base, place in the chain, session estimate;
+    - Goal, Why, Scope (In and Out), Definition of done, Decision rules, Notes;
+    - what it needs from the previous mission;
+    - that 004 is its design ("where code proves 004 wrong, fix it and update 004 in the same commit");
+    - L1 also applies T11 item 6's `AGENTS.md` line.
+  - `critwire-learn-{b1,b2,c,d}.md`: a dated "Superseded by …" line at the top, nothing else.
+  - §9: the chain table, the session estimates and how they're queued.
+  - Check: Guard (old briefs: additions only); every new brief has the six `## ` headings; §9 names the five files in order; the estimates sum to §10's chain total.
+
+- [ ] S29. 004 §8 (vault overlap), §10 (the owner's choices), completeness pass (T11, T12).
+  - §8: T12's table, every title confirmed read-only (`git -C /srv/critter-ai/vault ls-tree -r --name-only main -- research/sql-server-spatial wiki`; `git -C /srv/critter-ai/vault ls-tree -r --name-only agent/pro-python-arcpy -- research/arcgis-pro-study-guide`). Names only; marked for the owner.
+  - §10: T11's nine items, each with its recommendation and cost, numbers updated from the spikes.
+  - Completeness pass: every block header, every module's labels, every `untested` reason; §A holds the three spikes; §B is complete; no "(S)" left unresolved.
+  - Check: Guard; `--check $ERDS` exits 0; Verification V4's header checks and V7–V8 pass.
+
+- [ ] S30. Full verification and the Summary draft.
+  - Run `## Verification` as written; fix every failure (a fix that changes 004 re-runs it whole).
+  - Draft the Summary under the `###` headings V10 names: the curriculum map, lab datasets, reused and dropped, vault overlap, the briefs with session estimates, the owner's choices, plus verification results and artifact paths.
+  - Check: every V section passes; transcript in `$M/verify/verify-<UTC>.log`.
+
 ## Verification
+
+Run from the worktree as one bash session; it writes its own transcript. No lint script exists (Baseline), so `pnpm typecheck` is the static check.
+- E2E evidence comes in two parts:
+  - the repo's Playwright suite proves nothing public regressed;
+  - the spike runner executes every browser block in headless Chromium (DuckDB-WASM), plus every PostGIS block in `critwire_dev` and every Python block in the pinned venv. That run is this mission's E2E.
+
+```bash
+set -euo pipefail
+W=/srv/critter-ai/worktrees/critwire-learn-curriculum; cd "$W"
+M=/srv/critter-ai/agent-state/missions/critwire-learn-curriculum; SP=$M/spike; V=$M/verify; E=$M/e2e
+P=plans/004-learn-curriculum.md; PLAN=plans/2026-10-23-critwire-learn-curriculum.md
+FULL="f1 f2 f3 f4 d1 d2 d3 d4 d5 d6"    # minus any module demoted under Decisions (R25)
+export SPIKE_PG_URL=postgresql:///critwire_dev   # critter-ai over the socket
+mkdir -p "$V"; exec > >(tee "$V/verify-$(date -u +%Y%m%dT%H%MZ).log") 2>&1
+fail() { echo "FAIL: $*"; exit 1; }
+hashes() { (cd "$1" && find . -type f | sort | xargs sha256sum); }
+ports_free() { ! ss -ltn | grep -qE '127\.0\.0\.1:310[012] '; }
+q() { psql -X -d critwire_dev -v ON_ERROR_STOP=1 -Atc "$1"; }
+
+# V0 preflight: clean and pushed; scratch db; PostGIS 3.4.2; ports free
+test -z "$(git status --porcelain)" || fail "dirty tree"
+git fetch -q origin; test "$(git rev-parse HEAD)" = "$(git rev-parse origin/agent/critwire-learn-curriculum)" || fail "not pushed"
+node -e 'process.loadEnvFile(); process.exit(new URL(process.env.DATABASE_URL).pathname === "/critwire_dev" ? 0 : 1)' || fail "DATABASE_URL is not critwire_dev"
+test "$(q "SELECT extversion FROM pg_extension WHERE extname = 'postgis'")" = 3.4.2 || fail postgis
+ports_free || fail "port 3100-3102 busy"
+
+# V1 scope: only plans/; 002, 003 and the old briefs gain lines only; their ERDs untouched
+git diff --name-only origin/main...HEAD | grep -v '^plans/' && fail "files outside plans/"
+git diff --numstat origin/main...HEAD -- plans/002-learn.md plans/003-learn-data-spatial.md plans/briefs/critwire-learn-{b1,b2,c,d}.md \
+  | awk '$2 != 0 {print; b = 1} END {exit b}' || fail "lines removed from a superseded file"
+git diff --quiet origin/main...HEAD -- plans/002-learn-erd.mmd plans/003-learn-erd.mmd || fail "002/003 ERD changed"
+
+# V2 repo: typecheck, unit tests, dist = Baseline (157 files), E2E 20/20
+pnpm install --frozen-lockfile; pnpm typecheck; pnpm test
+rm -rf dist; pnpm -s build > "$V/build.txt"
+hashes dist | diff - "$SP/baseline/dist.sha256" || fail "dist differs from Baseline"
+rm -rf "$E"; E2E_ARTIFACTS="$E" pnpm e2e
+jq -e '.stats.expected == 20 and .stats.unexpected == 0 and .stats.flaky == 0 and .stats.skipped == 0' "$E/results.json" > /dev/null || fail e2e
+test -s "$E/playwright-report/index.html"; ports_free || fail "port left busy after E2E"
+
+# V3 spike: frozen install, typecheck, isolation tests (TS and Python); venv = pins; < 3 GB
+pnpm -C "$SP" install --frozen-lockfile; pnpm -C "$SP" typecheck; pnpm -C "$SP" test
+export UV_CACHE_DIR=$SP/.uv-cache UV_PYTHON_INSTALL_DIR=$SP/.uv-python
+"$SP/bin/uv" pip sync --python "$SP/.venv/bin/python" --no-build "$SP/requirements.txt"
+"$SP/bin/uv" pip check --python "$SP/.venv/bin/python"
+"$SP/.venv/bin/python" -I -m unittest discover -s "$SP/tests_py"
+test "$(du -sb "$SP" | cut -f1)" -lt 3000000000 || fail "spike over 3 GB"
+
+# V4 every block has its headers; then the whole spike re-runs (T6 verify.sh: ports, build-site, run-queries --check with
+#    the three ERD checks, etl verify from the saved zip, Moran, star export, ERD renders, canary and leak check)
+awk '/^```sql$/ {getline a; getline b; if (a !~ /^-- q: [a-z0-9-]+$/ || b !~ /^-- status: (ran|untested: .+)$/) {print NR ": " a " / " b; x++}} END {exit x > 0}' "$P" || fail "sql headers"
+awk '/^```python$/ {getline a; getline b; if (a !~ /^# q: [a-z0-9-]+$/ || b !~ /^# status: (ran|untested: .+)$/) {print NR ": " a " / " b; x++}} END {exit x > 0}' "$P" || fail "python headers"
+awk '/^```(m|dax)$/ {getline a; getline b; getline c; if (a !~ /^\/\/ q: [a-z0-9-]+$/ || b != "// status: untested: Power BI is Windows-only" || c !~ /^\/\/ input: star\/[a-z_]+\.csv/) {print NR ": " a; x++}} END {exit x > 0}' "$P" || fail "power bi headers"
+"$SP/verify.sh"
+grep -qE '^engine: .*DuckDB v1\.5\.6' "$M/queries.log" || fail "log: engine"
+grep -qE '^postgis: .*3\.4\.2' "$M/queries.log" || fail "log: postgis"
+grep -qE '^python: 3\.12\.' "$M/queries.log" || fail "log: python"
+grep -qE '^data: .*learn_curriculum\.sql sha256 [0-9a-f]{12}' "$M/queries.log" || fail "log: data hashes"
+diff <(grep '^-- result: ' "$P" | sort) <(grep '^-- result: ' "$M/queries.log" | sort) || fail "recorded results differ from queries.log"
+for id in $(awk '/^```(m|dax)$/ {getline a; sub(/^\/\/ q: /, "", a); print a}' "$P"); do grep -q "^-- input: $id · .* keys=ok$" "$M/queries.log" || fail "inputs of $id unchecked"; done
+grep -nE '^(-- |# )status: untested: ' "$P" || true     # listed for the Summary
+
+# V5 spike evidence
+for r in python-env lab-data loader etl-postgis moran star-export; do test -s "$SP/out/$r/summary.md" || fail "no $r summary"; done
+jq -e '(.doi | test("^10\\.15468/dl\\.")) and .totalRecords > 0' "$SP"/downloads/gbif-[0-9]*/download.json > /dev/null || fail "download DOI"
+jq -e '.neighbours_equal and .equal_6dp and .max_abs_delta <= 5e-7' "$SP/out/moran/compare.json" > /dev/null || fail "Moran"
+test -s "$SP/out/star-export/manifest.json"; test -s "$SP/site/learn/data/manifest.json"; test -s "$SP/README.md"; test -s "$SP/provenance.tsv"
+for d in "$SP/data/learn" "$SP/site/learn/data"; do test "$(du -sb "$d" | cut -f1)" -lt 50000000 || fail "$d over 50 MB"; done
+
+# V6 the three ERDs render offline from their committed sources
+for n in schema:learn lab:lab star:star; do b=${n%%:*}; m=plans/004-${n#*:}-erd.mmd
+  test -s "$SP/erd/$b.svg" && test -s "$SP/erd/$b.png" || fail "no $b render"
+  grep -qF "data-source-sha256=\"$(sha256sum "$m" | cut -d' ' -f1)\"" "$SP/erd/$b.svg" || fail "$b.svg not from $m"
+  grep -q '<foreignObject' "$SP/erd/$b.svg" && fail "foreignObject in $b.svg"; done
+
+# V7 004 complete
+for n in 0 1 2 3 4 5 6 7 8 9 10 A B; do grep -qE "^## $n\. " "$P" || fail "004 §$n missing"; done
+test "$(grep -cE '^#### [fdgsepc][0-9] · ' "$P")" = 33 || fail "not 33 modules"
+test "$(awk '/^## 2\. /{s=1; next} /^## 3\. /{s=0} s && /^\| [fdgsepc][0-9] \|/' "$P" | wc -l)" = 33 || fail "map rows"
+awk -v full="$FULL" '
+  function fin() { if (id == "") return
+    n = split(id in F ? "Concept|Worked example|Lab|Result|Exercise|Answer|Check|Dialects" : "Goal|Data|Key code|Expected", L, "|")
+    for (i = 1; i <= n; i++) if (!(L[i] in seen)) { print id ": no **" L[i] ":**"; bad++ }
+    if (id ~ /^f/ && !("Already know this?" in seen)) { print id ": no skip check"; bad++ }
+    delete seen; id = "" }
+  BEGIN { split(full, a, " "); for (i in a) F[a[i]] = 1 }
+  /^#### [fdgsepc][0-9] · / { fin(); id = $2; next }
+  /^#{1,4} / { fin(); next }
+  id != "" && match($0, /^\*\*[^*]+\*\*/) { k = substr($0, 3, RLENGTH - 4); sub(/:$/, "", k); seen[k] = 1 }
+  END { fin(); exit bad > 0 }' "$P" || fail "module parts"
+for m in $FULL; do grep -qx -- "-- q: $m-ex" "$P" || fail "$m: no exercise block"; done
+for m in f1 f2 f3 f4; do grep -qx -- "-- q: $m-skip" "$P" || fail "$m: no skip block"; done
+awk '/^```text$/ {getline l; if (l ~ /^# This file was autogenerated by uv/) {f = 1; print l; next}} f && /^```$/ {exit} f' "$P" | diff - "$SP/requirements.txt" || fail "§3 requirements differ"
+for f in plans/briefs/critwire-learn-l{1-data,2-site,3-gis,4-stats-etl,5-powerbi-capstone}.md; do
+  test -s "$f" || fail "no $f"; grep -qF "$f" "$P" || fail "§9 lacks $f"
+  for h in Goal Why Scope 'Definition of done' 'Decision rules' Notes; do grep -qx "## $h" "$f" || fail "$f: no $h"; done; done
+for f in plans/briefs/critwire-learn-{b1,b2,c,d}.md plans/002-learn.md plans/003-learn-data-spatial.md; do head -8 "$f" | grep -q 'Superseded' || fail "$f not marked superseded"; done
+
+# V8 data rules: no Red List categories in code, results or ERDs; no IUCN download; no credential; no vault text
+{ awk '/^```/ {f = !f; next} f' "$P"; cat plans/004-*-erd.mmd; } | grep -nE 'Critically Endangered|Endangered|Vulnerable|Near Threatened|Least Concern|Data Deficient|Extinct in the Wild' && fail "Red List category"
+grep -iE '://([a-z0-9.-]+\.)?(iucnredlist|iucn)\.org' "$SP/downloads/SOURCES.md" && fail "IUCN download"
+pw=$(node -e 'process.loadEnvFile(); process.stdout.write(process.env.GBIF_PASSWORD ?? "")'); test -n "$pw" || fail "no GBIF_PASSWORD to scan for"
+grep -rqF --exclude-dir=node_modules --exclude-dir=.venv --exclude-dir=.uv-cache --exclude-dir=.uv-python -- "$pw" "$SP" "$M/queries.log" plans && fail "credential in spike, log or plans"; unset pw
+awk '/^```/ {f = !f; next} !f && length >= 80' "$P" | sort -u > "$V/prose.txt"
+git -C /srv/critter-ai/vault grep -lF -f "$V/prose.txt" main agent/pro-python-arcpy && fail "vault text copied into 004"
+
+# V9 critwire_dev left clean: learn_spatial = Baseline; no learn_ leak; no parameter grants or postgis role/db settings
+psql -X -At -d critwire_dev -f "$SP/scripts/canary.sql" | diff - "$SP/baseline/learn_spatial.canary" || fail "learn_spatial changed"
+test -z "$(q "SELECT rolname FROM pg_roles WHERE rolname LIKE 'learn\_%' UNION ALL SELECT nspname FROM pg_namespace WHERE nspname LIKE 'learn\_%' AND nspname NOT IN ('learn_spatial', 'learn_curriculum')")" || fail "learn_ leak"
+test "$(q "SELECT count(*) FROM pg_parameter_acl")" = 0 || fail "GRANT SET ON PARAMETER left"
+test "$(q "SELECT count(*) FROM pg_db_role_setting WHERE array_to_string(setconfig, ',') ~ 'postgis\.'")" = 0 || fail "postgis setting left"
+
+# V10 Summary has what the Definition of done asks
+S=$(awk '/^## Summary$/ {s = 1; next} /^## / {s = 0} s' "$PLAN")
+for h in 'Curriculum map' 'Lab datasets' 'Reused and dropped' 'Vault overlap' 'Build briefs' "Owner's choices" 'Verification'; do grep -qx "### $h" <<< "$S" || fail "Summary: no $h"; done
+
+# V11 delivery
+test -z "$(git status --porcelain)"; ports_free || fail "server left running"
+echo VERIFY_OK
+```
+
+**What must hold:** every command exits 0 and the transcript ends `VERIFY_OK`. In detail:
+- V2: the dist diff is empty (157 files, the hashes in `$SP/baseline/dist.sha256`, = `live.sha256`), and E2E is 20/20.
+- V4: `--check` finds no result difference and no ERD drift. The plan's result lines equal the log's, and every Power BI input is `keys=ok`.
+- V5: all six summaries are present; the download has its DOI; Moran agrees.
+- V6: each SVG carries its source's sha256.
+
+**Artifacts:**
+- `$M/e2e/playwright-report/` (`pnpm exec playwright show-report $M/e2e/playwright-report`), plus `test-results/` traces, `results.json`, `docs-375.png` and `caddy-access.log`.
+- `$M/queries.log`: every 004 block's result, from DuckDB-WASM (headless Chromium), PostGIS and Python, with engine versions and data hashes. Also `$SP/out/run-queries/` (the runner's browser output).
+- `$SP/out/{python-env,lab-data,loader,etl-postgis,moran,star-export}/`, `$SP/erd/{schema,lab,star}.{svg,png}`, and `$SP/README.md` (every command, in order).
+- `$M/verify/verify-<UTC>.log`: this run's transcript.
+
+**Reproduce:**
+- This script.
+- Pieces alone: `node $SP/scripts/build-site.ts && node $SP/run-queries.ts $W/plans/004-learn-curriculum.md --check $ERDS`; `$SP/etl/run.sh verify`; `$SP/moran/run.sh`; `$SP/star-export/run.sh`; `rm -rf dist && pnpm build && E2E_ARTIFACTS=<dir> pnpm e2e`.
+
+**Release smoke** (the Release unit, not a step). After `deploy critwire`, the live site must be byte-identical to Baseline. Pass = `LIVE_UNCHANGED` and no other output.
+
+```bash
+M=/srv/critter-ai/agent-state/missions/critwire-learn-curriculum; SP=$M/spike; L=$SP/baseline/live.sha256; R=$M/release/live-after
+rm -rf "$R"; mkdir -p "$R"
+awk '{print $2}' "$L" | while read -r f; do mkdir -p "$R/$(dirname "$f")"; curl -sfL -o "$R/$f" "https://critwire.com/${f#./}" || echo "FETCH FAILED $f"; done
+(cd "$R" && awk '{print $2}' "$L" | xargs sha256sum) | diff - "$L" && echo LIVE_UNCHANGED
+for u in / /v1/species.json /v1/species.parquet /v1/species.csv /v1/attribution.json /v1/species/48.json /v1/species/tasmanian-devil.json; do
+  c=$(curl -s -o /dev/null -w '%{http_code}' "https://critwire.com$u"); test "$c" = 200 || echo "HTTP $c $u"; done
+c=$(curl -s -o /dev/null -w '%{http_code}' https://critwire.com/learn/); test "$c" = 404 || echo "/learn/ answers $c: something new is live"
+curl -sI https://critwire.com/v1/species.json | tr -d '\r' | grep -qix 'access-control-allow-origin: \*' || echo "CORS missing on /v1"
+```
+
+## Failure modes
+
+Only the spike harness is tested in isolation, because every "ran" claim rests on it. Each mode below is a test, written and seen failing before its code (step in brackets). "Fails" means a non-zero exit or a thrown error whose message names the cause.
+- TS tests live in `$SP/test/` (`pnpm -C $SP test`); Python tests in `$SP/tests_py/` (`unittest`).
+- Live tests touch only `learn_t_*` fixture schemas, which they drop.
+- A2's suites for the copied files must pass with path edits only [S1]: SQ, CR, DC, RQ, RQE, ER, RE. A2's PG1–PG9 come in S6, adapted where T6 changes `pg.ts`. Dropped (registry, `spike-table`, `pg-setup`, `spatial`, `setup-grown`) and listed in README: RS, PS, and the RQ/RP fixtures for those features.
+
+**PY · Python engine (`run-queries.ts`, `plan-queries.ts`), `test/python-engine.test.ts` [S3]**
+- PY1 A ```` ```python ```` block with no `# q:` or `# status:`, or an unknown header, fails the plan, naming the line.
+- PY2 A block runs as `.venv/bin/python -I <tmp>/block.py` from an empty temp dir; a `json.py` planted next to the plan or in the cwd isn't imported.
+- PY3 Its environment is exactly PATH, HOME, `PGHOST`, `PGDATABASE`, `LEARN_BASE`, `PGOPTIONS`; no `.env` value (`GBIF_*`, `DATABASE_URL`) reaches it.
+- PY4 A connection made without the helper fails on its first table name (`search_path=pg_catalog`); through the helper, `SHOW search_path` = `learn_curriculum, public`.
+- PY5 `# after:` prepends the named earlier blocks, in plan order, in one process; an unknown, later or self id fails.
+- PY6 Stdout ≠ the result block's body fails with a diff; a missing result block fails.
+- PY7 A non-zero exit fails, quoting stderr's last lines.
+- PY8 `# timeout:` (default 60 s) kills the process group and fails.
+- PY9 `--update` runs each block twice; different stdout fails ("not deterministic").
+- PY10 The log line is `-- result: <id> · python · sha256 <12>` of stdout; the plan's line must equal it.
+
+**LD · Loader generator (`scripts/loader.ts`), `test/loader.test.ts` [S5]**
+- LD1 Every `COPY` is `FORMAT csv`; asking for text format throws.
+- LD2 WKB hex `\x0101000000…` loads as `POINT(1 2)`, SRID 4326 (F10's garbage-bytes case).
+- LD3 Text with `\`, `"`, `,`, tab, newline, `\N` and non-ASCII round-trips byte for byte; `''` and NULL stay distinct.
+- LD4 The first line is `\set ON_ERROR_STOP on`, then `BEGIN;`; the last is `COMMIT;`; there's no other transaction control.
+- LD5 A wrong expected row count raises in the `DO` block, and the previous schema stays intact (its rows and md5 unchanged).
+- LD6 LD5 with the `\set` line removed (a learner's own `psql`): still atomic.
+- LD7 An FK violation (an unknown `species_id`) fails, naming the constraint; the previous schema stays intact.
+- LD8 A geometry with SRID ≠ 4326 fails validation.
+- LD9 The loader references no `public` table (text scan, and `pg_depend` after the load).
+- LD10 The same inputs give byte-identical output (rows ordered by key, fixed number formatting).
+- LD11 A missing input file or an unexpected column fails, naming it.
+
+**PC · PostGIS session (`scripts/pg.ts`), `test/pg.test.ts` [S6]**
+- PC1 `SEARCH_PATH` = `learn_curriculum, public`, set at connect. If the `pg-session` block's text differs from `PG_SESSION`, the plan fails.
+- PC2 Connect issues no `CREATE`/`DROP SCHEMA` and no statement naming `learn_spatial` (checked on a recorded statement log).
+- PC3 `capabilityCheck` runs if and only if the run holds a `-- needs: raster` block. A raster function in a block without it fails.
+- PC4 A run holding `CREATE ROLE` checks `rolcreaterole OR rolsuper` before any block. Without it, the run fails naming CREATEROLE (pure function on role attributes, plus a live pass as critter-ai).
+- PC5 `parseSpikeUrl` refuses database `critwire`, a host or a password (A2's PG1–PG2).
+- PC6 The loader runs through `psql -X -v ON_ERROR_STOP=1 -d critwire_dev -f …`; a non-zero exit fails the run, with psql's stderr.
+- PC7 `-- boot` blocks run once at connect, in plan order, and are committed. A failing boot block fails the run.
+- PC8 PG9 scans the runner's code for privilege-changing text, skipping only `scripts/privilege.ts`; a `GRANT` string in any other file fails.
+
+**CN · Canary (`scripts/canary.sql`, `canary.ts`), `test/canary.test.ts` [S6]** (fixture schema `learn_t_canary`)
+- CN1 An unchanged schema compares equal.
+- CN2 Same row count, one value updated: differs (md5), naming the table.
+- CN3 A table added or dropped: differs, naming it.
+- CN4 A run whose after-canary differs from its before-canary fails, even if every block passed.
+- CN5 The live `learn_spatial` canary equals `$SP/baseline/learn_spatial.canary` (read only).
+
+**PV · Privilege rules (`scripts/privilege.ts`, pure), `test/privilege.test.ts` [S7]**
+- PV1 Role and schema statements (`CREATE`/`ALTER`/`DROP ROLE`, `GRANT`/`REVOKE`, `ALTER DEFAULT PRIVILEGES`, `DROP OWNED BY`, `SET ROLE`, `CREATE`/`DROP SCHEMA`) pass only in PostGIS blocks, and only when every name starts with `learn_`. Unquoted names fold to lower case; quoted names are compared as written.
+- PV2 Any other name (`reporter`, `"Learn_x"`, schema `public`) is refused, naming it. `PUBLIC` is allowed only as a grantee on `learn_` objects.
+- PV3 `ALTER SYSTEM`, `ALTER DATABASE` and `GRANT SET ON PARAMETER` are refused in every block.
+- PV4 Any mention of `learn_spatial`, in any engine, case or position (strings and comments included), is refused.
+- PV5 `SET` and `SET LOCAL` pass in PostGIS blocks and are refused in DuckDB blocks.
+- PV6 `random()` is refused unless `setseed()` comes before it, in the block or its `-- after:` chain.
+- PV7 `BEGIN`, `COMMIT` and `ROLLBACK` are refused unless `-- tx: own`. `SAVEPOINT`, `RELEASE` and `ROLLBACK TO` pass inside wrapped blocks.
+- PV8 Role keywords inside comments or string literals don't trigger PV1–PV2 (`withoutComments`).
+
+**CL · Cleanup pairing lint (`plan-queries.ts`), `test/cleanup-lint.test.ts` [S7]**
+- CL1 `CREATE ROLE learn_a` with no later `DROP ROLE learn_a` in the same block fails, naming it.
+- CL2 `CREATE SCHEMA learn_x` with no later `DROP SCHEMA learn_x` fails.
+- CL3 A role that was granted anything, or owns anything, needs `DROP OWNED BY` before its `DROP ROLE`; otherwise the block fails.
+- CL4 A `SET ROLE` with no later `RESET ROLE` fails.
+- CL5 A `DROP` that comes before its `CREATE` doesn't count.
+- CL6 `-- tx: own` blocks are linted the same way.
+- CL7 A drop in an `-- after:` block doesn't count: each block cleans up after itself.
+- CL8 A correct block passes.
+
+**LK · In-transaction leak check (live), `test/leak.test.ts` [S7]** (leaks made by dynamic SQL in a `DO` block, which the lint can't see)
+- LK1 A block that leaves role `learn_a` fails before the runner's `ROLLBACK`, naming it, even though the rollback would have removed it.
+- LK2 The same for schema `learn_b`.
+- LK3 A `DROP ROLE` while privileges remain errors in PostgreSQL, and the block fails.
+- LK4 A `-- tx: own` block that commits a leak fails, naming the leak and the cleanup to run as critter-ai.
+- LK5 `learn_spatial` and `learn_curriculum` are never reported.
+
+**TX · `-- tx: own` (`run-queries.ts`), `test/tx-own.test.ts` [S7]**
+- TX1 The runner doesn't wrap the block. A block that leaves a transaction open fails, and the runner rolls it back.
+- TX2 `-- tx: own` on a DuckDB or Python block fails the plan.
+- TX3 The leak check and the canary run after the block's own `COMMIT`.
+
+**CK · Country-key contract (`etl/sample_rules.py`), `tests_py/test_sample_rules.py` [S9]**
+- CK1 A code that has a `countries` row: `country_code_gbif` = `country_code` = the code.
+- CK2 `ZZ` or `XZ`: the raw code is kept and `country_code` is NULL.
+- CK3 An empty code: both NULL.
+- CK4 Any other code with no `countries` row (`QQ`, lower-case `zz`) fails, naming the code and its row count.
+- CK5 The non-country constant is exactly {`ZZ`, `XZ`}, each with GBIF's meaning.
+
+**SC · Sample cap (`etl/sample_rules.py`), `tests_py/test_sample_rules.py` [S9]**
+- SC1 At most 2,000 rows per species; a species with fewer keeps all of its rows.
+- SC2 The order key is md5 of the decimal `gbifID` text, ascending; a duplicate `gbifID` fails.
+- SC3 Python's choice equals DuckDB's `md5(CAST(id AS VARCHAR))` choice on the same input.
+- SC4 Output is sorted by `id`; the same input gives the same bytes.
+- SC5 A `speciesKey` that maps to no critwire species, or to two, fails.
+
+**MC · Moran (`moran/compare.py`, the `s4-*` blocks), `tests_py/test_moran.py` [S10]**
+- MC1 The two smallest centroid distance classes must be 8,660.25 and 15,000.00 m (± 0.01 m); anything else fails.
+- MC2 Duplicate centroids fail.
+- MC3 A cell with no neighbour fails, in SQL and in PySAL (`w.islands`).
+- MC4 A pair within 1 m of the threshold fails.
+- MC5 Different neighbour sets in the two engines fail before any statistic, naming the first differing pair.
+- MC6 I, E[I], Var_norm or z: a difference > 5e-7, or a different 6-decimal string, fails. `compare.json` keeps full precision.
+- MC7 (F8, recorded, not a gate): two points at the same coordinates are neighbours for `ST_DWithin` and not for `DistanceBand`.
+
+**PB · Power BI input check (`run-queries.ts`), `test/powerbi-input.test.ts` [S11]**
+- PB1 A ```` ```m ```` or ```` ```dax ```` block missing `// q:`, `// status: untested: Power BI is Windows-only` or `// input:` fails the plan.
+- PB2 An input file that's missing, or absent from the manifest, fails.
+- PB3 A header that differs from the manifest's columns (order included) fails.
+- PB4 A duplicate or NULL primary key fails.
+- PB5 A foreign-key value missing from its dimension fails, naming the file, column and value.
+- PB6 Rows or sha256 different from the manifest fail.
+- PB7 Each input is logged as `-- input: <id> · <file> rows=<n> sha256=<12> keys=ok`.
+
+**ST · Star export (`star-export/`, `scripts/credits.ts`), `test/star-export.test.ts` [S11]**
+- ST1 DuckDB's bytes are the manifest's. The PostGIS cross-check compares meaning: keys equal, text equal, numbers within 1e-9 relative. Byte-only differences are recorded; a semantic difference fails, naming the file, row and column.
+- ST2 `NA` (Namibia) stays text under DuckDB `read_csv(all_varchar)` and Python `csv`.
+- ST3 No fact foreign key is NULL: NULL countries map to `ZZ` and unknown years to `-1`, and both dimensions have those rows.
+- ST4 `credits()` throws for a file with no `sources`, a license missing from `LICENSE_URLS`, a CC BY source with no citation, or a dataset with no title or publisher.
+- ST5 A schema-qualified name in `star.sql` (`learn_curriculum.`, `public.`, `main.`) fails.
+
+**EG · ERD checks (`run-queries.ts`), `test/erd-checks.test.ts` [S12]**
+- EG1 A change to any of 002's six entities or their lines in `004-learn-erd.mmd` fails.
+- EG2 `--lab-erd`: an entity, column, PK or FK in the `.mmd` that isn't in `learn_curriculum`'s catalog fails, and the reverse too (`%% lab-made:` and `%% planned:` entities excepted).
+- EG3 `--star-erd`: an entity, key or relationship that differs from `manifest.json` fails, either way.
+- EG4 A `%% planned:` entity that exists in the catalog fails (stale marker).
+- EG5 Renders: the SVG carries the `.mmd`'s sha256 and has no `<foreignObject>` (A2's ER tests).
+
+**Runtime risks** (T13, plus R22–R28), each with how it shows and what to do:
+
+| # | Risk | Detection | Response |
+|---|---|---|---|
+| R1 | GBIF download slow, queued, FAILED or KILLED | `gbif_download.py status` at each [sample] step | Resubmit once on FAILED or KILLED. Do steps without [sample] meanwhile. After 24 h from submit, the spike uses `occurrence/search` pages capped at 2,000 per species, labelled "spike fallback, no DOI" (Decisions); L1 must still use the download |
+| R2 | Explicit legacy `checklistKey` refused, not echoed, or count off by > 0.1 % | HTTP 4xx at S2; echo check in `fetch`; `totalRecords` vs the submit-time count | Record it. Retry with the COL XR keys (`ids.col`) and COL's checklist, set explicitly. Never the default; never weaker license or coordinate filters |
+| R3 | Raw country code outside `countries` ∪ {`ZZ`, `XZ`} | `load` or `sample` fails, naming it (CK4) | A GBIF-documented non-country value joins the constant with its meaning (Decisions). A real code is a countries-file gap (002 §6's narrowest rule), recorded for L1 |
+| R4 | Dataset metadata read fails, or no title or publisher | `datasets` exits non-zero | Re-run (all or nothing). A deleted dataset keeps its title and `deleted` date. Never publish a CC BY record without its dataset's credit |
+| R5 | Loader fails part way | psql exit; LD5–LD7 | The previous `learn_curriculum` stays intact; the error names the table; fix the generator |
+| R6 | A `learn_` role or schema leaks | Lint (plan), leak check (block), Guard's leak query (step) | Fix the block. Drop the leak as critter-ai (`DROP OWNED BY …; DROP ROLE …` / `DROP SCHEMA … CASCADE`), logged |
+| R7 | A Python block bypasses the connect helper | It fails on its first table name (PY4) | Use `py-connect` |
+| R8 | The two star exports differ in bytes | ST1 | Expected (`1.0` vs `1`), DuckDB is canonical. A semantic difference means fixing `star.sql` |
+| R9 | No aarch64 cp312 wheel | `uv pip sync --no-build` fails | Pin the newest version that has one (Decisions). Fallback: venv plus get-pip. A handoff item only if both fail |
+| R10 | `uv` can't be fetched, or its sha256 differs | S2's download check | `python3 -m venv --without-pip` plus get-pip.py (sha256 recorded) |
+| R11 | Moran's I disagrees by > 5e-7 | MC5, MC6 | Diff the neighbour pairs, then k, S0/S1/S2 and the mean. Fix the SQL, never the threshold |
+| R12 | `EXPLAIN` plans flip between runs (d3, g5) | Two `--check` runs differ | `COSTS OFF`, `TIMING OFF`, `SUMMARY OFF`, `ANALYZE` the table first, very selective predicates, plan shape only |
+| R13 | Python output varies | PY9 | Explicit formatting, seeds, no DataFrame repr. Still varies: `untested` with the reason |
+| R14 | Lab data over 50 MB | `du` in S9, S15, V5 | T5's priority order; RESOLVE cut to the lab regions |
+| R15 | RESOLVE costs more than one session | S4 overruns | Record A2's size; g4's and s6's RESOLVE blocks become `untested: L1 publishes it` |
+| R16 | Browser setup with `occurrences` takes > 1.5× A1's boot | Boot time measured in S9 | Load `occurrences` only on the modules that use it (setup split, Decisions) |
+| R17 | `learn_spatial` changed | Canary (run, Guard, V9) | Stop and find the cause. Restore from S1's copy (`pg_restore --clean --if-exists -n learn_spatial -d critwire_dev $SP/baseline/learn_spatial.dump`); the canary must then equal Baseline; record it |
+| R18 | Connecting to the `critwire` database | `parseSpikeUrl`; V0 | Never; a refusal is the expected behaviour |
+| R19 | `dist/` changes | Guard; V2 | Revert the cause: only `plans/` may change |
+| R20 | Spike over 3 GB | `du` in Guard | Delete extracted members and `uv cache prune`; keep the GBIF zip |
+| R21 | Ports 3100–3102 busy, or E2E running | `serve.ts` refuses; Guard | Wait for the other run; never kill another mission's server |
+| R22 | GBIF credential lands in a spike file, a log or a plan | Guard's quiet grep; V8 | Delete the file or line without printing the value; add a handoff item for the owner to rotate the GBIF password |
+| R23 | GBIF zip lost or corrupt before Verification | `etl/run.sh verify` checks the sha256 | Re-fetch the same download key (GBIF archives it); never a new request |
+| R24 | 1:50m admin-1 lacks Tasmania, or splits it oddly | S4's check | 1:10m admin-1 cut to AU for the spike (size recorded); 004 §4 says so |
+| R25 | A step outgrows its session | The session can't finish it | Split it (mission rules). If splits take the list past 30 steps, demote d6, then d5, then d4 to outlines until it's back to 30 (brief item 5; T3). Their spike blocks stay as key code. Update `FULL` in Verification |
+| R26 | Vault text copied into 004 | V8's verbatim check | Rewrite as module names only |
+| R27 | SQL results change between `--update` and `--check` | `--check` diff | `ORDER BY` with a unique tie-break; never relabel `untested` |
+| R28 | GBIF 429 or 5xx during the metadata reads | Retries exhausted | Back off; re-run the whole `datasets` step (all or nothing) |
 
 ## Code review (Astra)
 
@@ -854,5 +1446,6 @@ Architect, 2026-10-23 05:10–05:40 UTC. Every MUST-FIX and MISSED item resolved
 - 2026-10-23 05:05 UTC: Fable review. APPROVE_WITH_CHANGES; 3 MUST-FIX (T7a COPY csv/tab/QUOTE, T6 pg.ts changes, F3 GBIF default checklist wording), 3 missed, 5 should-consider. Plan only; no code.
 - 2026-10-23 05:06 UTC: Astra review. APPROVE_WITH_CHANGES; 5 MUST-FIX (learn_curriculum search_path, country-key normalization, atomic reload, dataset citation propagation, standalone lab cleanup), 3 should-consider. Plan only.
 - 2026-10-23 05:45 UTC: Revision. architect resolved all 8 MUST-FIX + 3 missed (F10–F13 new; F3 reworded; T5 atomic csv-format loader, country-key contract, dataset credits; T6 pg.ts learn_curriculum, cleanup lint, in-tx leak check); all SHOULD-CONSIDER adopted. Plan only; scratch TEMP tables rolled back.
+- 2026-10-23 05:35 UTC: Steps. planner wrote S1–S30 (T14 u1–u27; big units split, §6/§7/§8 merged in), Verification V0–V11 + release smoke, Failure modes (test list + R1–R28). Plan only; verify scripts `bash -n` clean.
 
 ## Summary
