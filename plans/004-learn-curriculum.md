@@ -1361,7 +1361,571 @@ OBSERVATION | 1384 | 5 | 3 | 1
 - **DuckDB:** also has `FILTER`, plus `GROUP BY ALL` (group by every column that isn't aggregated) and aliases in `WHERE`, `GROUP BY` and `HAVING`; `/` between integers gives a fraction (`7 / 2` is 3.5) and `//` drops it.
 - **SQL Server:** no `FILTER`: write `sum(CASE …)` as here; `GROUP BY` takes neither aliases nor positions; `count` returns `int` (`count_big` for more rows); `/` between integers drops the fraction.
 
-(S17 writes f3 and f4.)
+#### f3 · join
+
+**Tool:** B (browser) · **Time:** 2.0 h · **Prereqs:** f2
+
+**Already know this?** For every country in South America, show `code`, `name`, how many species have records there in the sample and how many records, countries with none included (as 0), by name.
+
+```sql
+-- q: f3-skip
+-- status: ran
+SELECT c.code, c.name,
+       count(DISTINCT o.species_id) AS species,
+       count(o.id) AS records
+FROM countries AS c
+LEFT JOIN occurrences AS o ON o.country_code = c.code
+WHERE c.continent = 'South America'
+GROUP BY c.code, c.name
+ORDER BY c.name;
+```
+
+```text
+-- result: f3-skip · 14 rows · sha256 cd259b211bbe
+code | name | species | records
+AR | Argentina | 7 | 1127
+BO | Bolivia | 7 | 33
+BR | Brazil | 14 | 5033
+CL | Chile | 1 | 58
+CO | Colombia | 10 | 2289
+… 9 more rows
+```
+
+**Concept:** Normalized tables (d2) keep each fact once, so most questions need several tables at once. A **join** pairs the rows of two tables wherever a condition, written after `ON`, is true; aliases (`species AS s`) keep the column names short and unambiguous. The ERD (Schema button, §6.1) says which columns to join on and what to expect: the line `species ||--o{ occurrences` reads "one species, zero or more records", so joining a species to its records turns one row into many, and `countries |o--o{ occurrences` says a record has at most one country, possibly none.
+- An **inner join** (`JOIN`) keeps only the pairs that match: a species with no records disappears from the result without a word.
+- A **left join** (`LEFT JOIN`) keeps every row of the left table; where nothing matches, the right table's columns are `NULL`. Count a column of the right table (`count(o.id)`), not `count(*)`, to get 0 for those rows. A condition on the right table belongs in `ON`: in `WHERE` it throws away the rows the left join kept, because their `NULL`s fail it.
+- An **anti join** keeps the left rows that have no match: `LEFT JOIN … WHERE <right key> IS NULL`, or `WHERE NOT EXISTS (SELECT 1 FROM … WHERE <match>)`. Avoid `NOT IN (subquery)` for this: if the subquery returns one `NULL`, `NOT IN` is never true and the answer is empty.
+- A **many-to-many** relationship (an animal is recorded in many countries, a country holds many animals) needs a junction table of pairs, here `species_countries`; you join through it.
+- A join **multiplies rows**: joining one species to its 20 countries and its 2,000 records gives 40,000 rows, and every count over them is wrong. Join one "many" table at a time, or aggregate before joining (f4).
+
+**Worked example:** Which animals were recorded in Brazil? critwire answers it in two places. `species_countries` is critwire's published list (the junction between `species` and `countries`, 002's lesson 9), built from every open record in GBIF after critwire's country rule:
+
+```sql
+-- q: f3-brazil-list
+-- status: ran
+-- show: cards
+SELECT s.id, s.common_name, s.scientific_name
+FROM species AS s
+JOIN species_countries AS sc ON sc.species_id = s.id
+WHERE sc.country_code = 'BR'
+ORDER BY s.common_name;
+```
+
+```text
+-- result: f3-brazil-list · 12 rows · sha256 6eaf98efd284
+id | common_name | scientific_name
+65 | African Wild Dog | Lycaon pictus
+54 | Brown-throated Sloth | Bradypus variegatus
+56 | Chimpanzee | Pan troglodytes
+52 | Giant Anteater | Myrmecophaga tridactyla
+36 | Giant Armadillo | Priodontes maximus
+… 7 more rows
+```
+
+The lab sample holds the records themselves, so it can also say how many:
+
+```sql
+-- q: f3-brazil-records
+-- status: ran
+SELECT s.id, s.common_name, count(*) AS records
+FROM species AS s
+JOIN occurrences AS o ON o.species_id = s.id
+WHERE o.country_code = 'BR'
+GROUP BY s.id, s.common_name
+ORDER BY records DESC, s.id;
+```
+
+```text
+-- result: f3-brazil-records · 14 rows · sha256 714279e6b8e1
+id | common_name | records
+52 | Giant Anteater | 1476
+51 | Jaguar | 1370
+72 | Maned Wolf | 870
+53 | Lowland Tapir | 504
+54 | Brown-throated Sloth | 283
+… 9 more rows
+```
+
+The two lists differ. `EXCEPT` returns the rows of the first query that the second doesn't have:
+
+```sql
+-- q: f3-brazil-diff
+-- status: ran
+SELECT s.id, s.common_name
+FROM species AS s
+JOIN occurrences AS o ON o.species_id = s.id
+WHERE o.country_code = 'BR'
+EXCEPT
+SELECT s.id, s.common_name
+FROM species AS s
+JOIN species_countries AS sc ON sc.species_id = s.id
+WHERE sc.country_code = 'BR'
+ORDER BY id;
+```
+
+```text
+-- result: f3-brazil-diff · 2 rows · sha256 f0384a3aee89
+id | common_name
+4 | Big-headed Turtle
+50 | Addax
+```
+
+Each has a single Brazilian record in the sample (the query above), far from the rest of its records. critwire's country rule leaves out a country with only one record outside the region where most of an animal's countries lie, as a likely captive animal or a mistake; the sample keeps every record. Neither list is where the animal lives: both are where someone recorded it (and the Tiger, the Chimpanzee and the African Wild Dog are on both).
+
+**Lab:**
+1. Which animals have no records in the sample at all? An anti join: keep the species whose left join found nothing.
+
+```sql
+-- q: f3-no-records
+-- status: ran
+SELECT s.id, s.common_name, s.range_status, s.gbif_id
+FROM species AS s
+LEFT JOIN occurrences AS o ON o.species_id = s.id
+WHERE o.id IS NULL
+ORDER BY s.id;
+```
+
+```text
+-- result: f3-no-records · 5 rows · sha256 5658cf0e3423
+id | common_name | range_status | gbif_id
+9 | Dyeing Poison Dart Frog | identity-unsettled | NULL
+18 | Yangtze Giant Softshell Turtle | ok | 2442647
+19 | Floreana Giant Tortoise | identity-unsettled | NULL
+27 | Western Long-beaked Echidna | identity-unsettled | NULL
+47 | Ili Pika | no-open-records | 2436969
+```
+
+   The three without a GBIF id are f1's: critwire hasn't settled which GBIF taxon they are, so nothing was downloaded for them. The Ili Pika has no open record anywhere. The Yangtze Giant Softshell Turtle is different: critwire lists countries for it, but its only open record comes from a dataset whose own license is CC BY-NC, and the sample keeps a record only when both licenses are open (§4). The same anti join on `species_countries` (002's lesson 11) finds the other four, but not the turtle:
+
+```sql
+-- q: f3-no-countries
+-- status: ran
+SELECT s.id, s.common_name, s.range_status
+FROM species AS s
+LEFT JOIN species_countries AS sc ON sc.species_id = s.id
+WHERE sc.species_id IS NULL
+ORDER BY s.id;
+```
+
+```text
+-- result: f3-no-countries · 4 rows · sha256 f5fd7b6feb3f
+id | common_name | range_status
+9 | Dyeing Poison Dart Frog | identity-unsettled
+19 | Floreana Giant Tortoise | identity-unsettled
+27 | Western Long-beaked Echidna | identity-unsettled
+47 | Ili Pika | no-open-records
+```
+
+2. Where the condition goes. Records since 2020 in each South American country, zeros kept: the year test is part of the match, so it goes in `ON`.
+
+```sql
+-- q: f3-on
+-- status: ran
+SELECT c.code, c.name, count(o.id) AS records_since_2020
+FROM countries AS c
+LEFT JOIN occurrences AS o ON o.country_code = c.code AND o.year >= 2020
+WHERE c.continent = 'South America'
+GROUP BY c.code, c.name
+ORDER BY c.name;
+```
+
+```text
+-- result: f3-on · 14 rows · sha256 bd29d0ba9d27
+code | name | records_since_2020
+AR | Argentina | 2
+BO | Bolivia | 1
+BR | Brazil | 653
+CL | Chile | 1
+CO | Colombia | 503
+… 9 more rows
+```
+
+   Move `o.year >= 2020` to `WHERE` and the countries with no recent record vanish: their `o.year` is `NULL`, the test is unknown, and `WHERE` drops them. The left join has quietly become an inner join.
+
+```sql
+-- q: f3-where
+-- status: ran
+SELECT c.code, c.name, count(o.id) AS records_since_2020
+FROM countries AS c
+LEFT JOIN occurrences AS o ON o.country_code = c.code
+WHERE c.continent = 'South America' AND o.year >= 2020
+GROUP BY c.code, c.name
+ORDER BY c.name;
+```
+
+```text
+-- result: f3-where · 9 rows · sha256 73ba2465db73
+code | name | records_since_2020
+AR | Argentina | 2
+BO | Bolivia | 1
+BR | Brazil | 653
+CL | Chile | 1
+CO | Colombia | 503
+… 4 more rows
+```
+
+3. The row multiplier. The Jaguar has 2,000 records and 20 countries in `species_countries`; joining both to the species pairs every record with every country:
+
+```sql
+-- q: f3-fan-out
+-- status: ran
+SELECT s.common_name, count(*) AS joined_rows, count(DISTINCT o.id) AS records,
+       count(DISTINCT sc.country_code) AS countries
+FROM species AS s
+JOIN species_countries AS sc ON sc.species_id = s.id
+JOIN occurrences AS o ON o.species_id = s.id
+WHERE s.id = 51
+GROUP BY s.common_name;
+```
+
+```text
+-- result: f3-fan-out · 1 row · sha256 473ef5a32e0b
+common_name | joined_rows | records | countries
+Jaguar | 40000 | 2000 | 20
+```
+
+4. Light spatial in plain SQL. Every record has a `longitude` and `latitude` in degrees (WGS 84), so `min` and `max` give a species' **bounding box**, the smallest rectangle around its records:
+
+```sql
+-- q: f3-bbox
+-- status: ran
+SELECT s.id, s.common_name, count(*) AS records,
+       min(o.longitude) AS west, max(o.longitude) AS east,
+       min(o.latitude) AS south, max(o.latitude) AS north
+FROM species AS s
+JOIN occurrences AS o ON o.species_id = s.id
+WHERE s.id IN (25, 48, 51)
+GROUP BY s.id, s.common_name
+ORDER BY s.id;
+```
+
+```text
+-- result: f3-bbox · 3 rows · sha256 a26cad9f9f8d
+id | common_name | records | west | east | south | north
+25 | Tiger | 2000 | -157.821478 | 134.0985 | -28.55362 | 60
+48 | Tasmanian Devil | 2000 | -106.663485 | 150.254131 | -43.577984 | 35.078382
+51 | Jaguar | 2000 | -109.45264 | -39.7565988 | -25.790838 | 35.078382
+```
+
+   The Tasmanian Devil's box runs from New Mexico to Tasmania: a few zoo specimens in Albuquerque stretch it across the Pacific (the Jaguar's northern edge is the same zoo). One outlier ruins a box, so look at where the records actually are. A rectangle as a filter (`BETWEEN` on both axes) finds the records in and around Tasmania:
+
+```sql
+-- q: f3-box-filter
+-- status: ran
+SELECT s.id, s.common_name, count(*) AS records
+FROM occurrences AS o
+JOIN species AS s ON s.id = o.species_id
+WHERE o.longitude BETWEEN 143.5 AND 149.0
+  AND o.latitude BETWEEN -44.0 AND -39.5
+GROUP BY s.id, s.common_name
+ORDER BY records DESC, s.id;
+```
+
+```text
+-- result: f3-box-filter · 1 row · sha256 22dbc8fe0d1c
+id | common_name | records
+48 | Tasmanian Devil | 1993
+```
+
+5. Count records in a grid of 10° boxes: `floor(longitude / 10) * 10` is the west edge of a record's box, `floor(latitude / 10) * 10` its south edge. `floor` rounds down, also below zero, so latitude -41.2 falls in the box from -50 to -40.
+
+```sql
+-- q: f3-bins
+-- status: ran
+SELECT floor(longitude / 10) * 10 AS west, floor(latitude / 10) * 10 AS south,
+       count(*) AS records, count(DISTINCT species_id) AS species
+FROM occurrences
+GROUP BY west, south
+ORDER BY records DESC, west, south
+LIMIT 10;
+```
+
+```text
+-- result: f3-bins · 10 rows · sha256 dc2b2d6996ed
+west | south | records | species
+-80 | 0 | 2409 | 12
+30 | -10 | 2247 | 14
+-60 | -30 | 2171 | 7
+40 | -20 | 2078 | 5
+140 | -50 | 1993 | 1
+… 5 more rows
+```
+
+**Result:** Brazil has 12 animals in critwire's list and 14 in the sample; the two extra ones each rest on one stray record that critwire's rule leaves out. Five animals have no record in the sample, four of them for reasons `range_status` gives and one because of a dataset's license. A condition on the right table in `WHERE` turns a left join into an inner one (14 countries become 9), and joining two "many" tables at once turned 2,000 records into 40,000 rows. A degree box is cheap and works anywhere, but it is not an area (a 10° box near the poles is much smaller than one at the equator) and one outlier stretches it: GIS in SQL (g1, g3) does this properly with geometries.
+
+**Exercise:** Which countries in Africa have no record in the sample? Show `code` and `name`, by name. Write it with `NOT EXISTS`.
+
+**Answer:**
+
+```sql
+-- q: f3-ex
+-- status: ran
+SELECT c.code, c.name
+FROM countries AS c
+WHERE c.continent = 'Africa'
+  AND NOT EXISTS (SELECT 1 FROM occurrences AS o WHERE o.country_code = c.code)
+ORDER BY c.name;
+```
+
+```text
+-- result: f3-ex · 11 rows · sha256 eaef5e28524f
+code | name
+BI | Burundi
+CV | Cape Verde
+DJ | Djibouti
+ER | Eritrea
+GW | Guinea-Bissau
+… 6 more rows
+```
+
+The `LEFT JOIN … WHERE o.id IS NULL` form passes the check too. The `NOT IN` trap, in one line: whether `'BR'` is in a list holding `NULL` can't be ruled out, so `NOT IN` gives unknown, while a match still makes `IN` true.
+
+```sql
+-- q: f3-not-in
+-- status: ran
+SELECT 'BR' NOT IN ('AR', NULL) AS not_in, 'BR' IN ('BR', NULL) AS is_in;
+```
+
+```text
+-- result: f3-not-in · 1 row · sha256 19723778fbc4
+not_in | is_in
+NULL | true
+```
+
+**Check:** `result, any row order`. The skip exercise is checked the same way.
+
+**Dialects:**
+- **PostgreSQL:** as here; also `JOIN … USING (col)`, `FULL JOIN`, and `LATERAL` (a subquery that reads the row beside it). There is no `ANTI JOIN` keyword: write `NOT EXISTS`, which the planner runs as an anti join.
+- **DuckDB:** as PostgreSQL, plus `SEMI JOIN` and `ANTI JOIN` keywords, `ASOF JOIN` (nearest earlier match, for times) and `POSITIONAL JOIN`.
+- **SQL Server:** no `USING` or `NATURAL`; `CROSS APPLY` and `OUTER APPLY` do what `LATERAL` does; `EXCEPT` and `NOT EXISTS` as here; `GROUP BY` repeats the expressions, not their aliases; `floor` as here.
+
+#### f4 · window
+
+**Tool:** B (browser) · **Time:** 1.5 h · **Prereqs:** f3
+
+**Already know this?** For each species with at least 1,000 records that have a year, show its best year (most records; on a tie, the later year), that year's records, the species' dated records and the best year's share of them in percent to one decimal, largest share first.
+
+```sql
+-- q: f4-skip
+-- status: ran
+WITH per_year AS (
+  SELECT species_id, year, count(*) AS records
+  FROM occurrences
+  WHERE year IS NOT NULL
+  GROUP BY species_id, year
+),
+ranked AS (
+  SELECT species_id, year, records,
+         sum(records) OVER (PARTITION BY species_id) AS dated,
+         row_number() OVER (PARTITION BY species_id ORDER BY records DESC, year DESC) AS place
+  FROM per_year
+)
+SELECT species_id, year, records, dated, round(100.0 * records / dated, 1) AS share_pct
+FROM ranked
+WHERE place = 1 AND dated >= 1000
+ORDER BY share_pct DESC, species_id;
+```
+
+```text
+-- result: f4-skip · 16 rows · sha256 3807b8cb95c4
+species_id | year | records | dated | share_pct
+25 | 2021 | 1202 | 1871 | 64.2
+46 | 2021 | 763 | 1610 | 47.4
+58 | 2007 | 919 | 1992 | 46.1
+71 | 2017 | 789 | 1985 | 39.7
+61 | 2017 | 649 | 1871 | 34.7
+… 11 more rows
+```
+
+**Concept:** A query can use another query's result as a table.
+- A **subquery** is a query in brackets: in `FROM` it is a table (give it an alias); in `WHERE` or `SELECT` it can return one value (a scalar subquery) or a list for `IN`. A **correlated** subquery refers to the outer row (`WHERE o.country_code = c.code` in f3's exercise) and runs, in effect, once per row.
+- A **common table expression** (CTE), `WITH name AS (…)`, names a subquery before the main query. Several CTEs, separated by commas, read top to bottom like the steps of a recipe, and each may use the ones above it.
+- A **window function** computes a value for each row from a set of related rows, its window, without collapsing them as `GROUP BY` does. `OVER (PARTITION BY species_id ORDER BY records DESC)` says which rows form the window (the same species) and in which order. `row_number()` numbers the rows 1, 2, 3; `rank()` gives ties the same number and skips after them (1, 1, 3); `dense_rank()` doesn't skip (1, 1, 2). An aggregate with `OVER` (`sum(records) OVER (PARTITION BY species_id)`) puts the group's total on every row, so a share is one division. With `ORDER BY` in the window, `sum` becomes a running total, and `lag(x)` reads the previous row's value.
+- Window functions run after `WHERE`, `GROUP BY` and `HAVING`, so they can't be filtered in `WHERE`: compute them in a CTE and filter outside, as in the skip exercise. They can rank aggregates (`rank() OVER (ORDER BY count(*) DESC)`) in the same query that groups.
+
+**Worked example:** Which dataset contributed most of each species' records, and what share is that? Three steps, one CTE each: count records per species and dataset; put each species' total and a place on every row; keep place 1 and join the dataset's title.
+
+```sql
+-- q: f4-top-dataset
+-- status: ran
+WITH per_dataset AS (
+  SELECT species_id, dataset_key, count(*) AS records
+  FROM occurrences
+  GROUP BY species_id, dataset_key
+),
+ranked AS (
+  SELECT species_id, dataset_key, records,
+         sum(records) OVER (PARTITION BY species_id) AS species_records,
+         row_number() OVER (PARTITION BY species_id ORDER BY records DESC, dataset_key) AS place
+  FROM per_dataset
+)
+SELECT r.species_id, d.title, r.records, r.species_records,
+       round(100.0 * r.records / r.species_records, 1) AS share_pct
+FROM ranked AS r
+JOIN datasets AS d ON d.dataset_key = r.dataset_key
+WHERE r.place = 1
+ORDER BY share_pct DESC, r.species_id;
+```
+
+```text
+-- result: f4-top-dataset · 71 rows · sha256 84b6a30c3e95
+species_id | title | records | species_records | share_pct
+30 | NABU\|naturgucker | 2 | 2 | 100
+32 | NMNH Extant Specimen Records (USNM, US) | 1 | 1 | 100
+45 | INSDC Sequences | 109 | 109 | 100
+46 | Dakatcha Woodland Biodiversity Assessment | 1583 | 1613 | 98.1
+51 | Jaguar Movement Database: a GPS-based movement dataset of th… | 1948 | 2000 | 97.4
+… 66 more rows
+```
+
+The top rows are species with a handful of records, or with one source only, so 100 % says little there; read on down. The Jaguar's sample is 97 % one GPS-collar dataset: most of its 2,000 points are positions of collared animals, not 2,000 separate sightings. s1 comes back to this. `row_number` breaks ties by `dataset_key` so that place 1 is always one row; with `rank`, a tie would keep both.
+
+**Lab:**
+1. Which species have more records than the average species? A subquery in `FROM` counts per species; a scalar subquery in `HAVING` gives the average of those counts.
+
+```sql
+-- q: f4-above-average
+-- status: ran
+SELECT species_id, count(*) AS records
+FROM occurrences
+GROUP BY species_id
+HAVING count(*) > (SELECT avg(n) FROM (SELECT count(*) AS n FROM occurrences GROUP BY species_id) AS per_species)
+ORDER BY records DESC, species_id;
+```
+
+```text
+-- result: f4-above-average · 21 rows · sha256 6c474db5d8ed
+species_id | records
+2 | 2000
+8 | 2000
+25 | 2000
+28 | 2000
+37 | 2000
+… 16 more rows
+```
+
+2. `row_number`, `rank` and `dense_rank` side by side, on records per species. Thirteen species sit at the sample's cap of 2,000 (§4), a tie:
+
+```sql
+-- q: f4-ranks
+-- status: ran
+SELECT species_id, count(*) AS records,
+       row_number() OVER (ORDER BY count(*) DESC, species_id) AS by_row,
+       rank() OVER (ORDER BY count(*) DESC) AS by_rank,
+       dense_rank() OVER (ORDER BY count(*) DESC) AS by_dense_rank
+FROM occurrences
+GROUP BY species_id
+ORDER BY by_row
+LIMIT 16;
+```
+
+```text
+-- result: f4-ranks · 16 rows · sha256 3010c6a34f6e
+species_id | records | by_row | by_rank | by_dense_rank
+2 | 2000 | 1 | 1 | 1
+8 | 2000 | 2 | 1 | 1
+25 | 2000 | 3 | 1 | 1
+28 | 2000 | 4 | 1 | 1
+37 | 2000 | 5 | 1 | 1
+… 11 more rows
+```
+
+3. How does each year since 2000 rank against the others, and what share of those years' records does it hold? `sum(count(*)) OVER ()`, a window over every row, is the total.
+
+```sql
+-- q: f4-years
+-- status: ran
+SELECT year, count(*) AS records,
+       rank() OVER (ORDER BY count(*) DESC) AS place,
+       round(100.0 * count(*) / sum(count(*)) OVER (), 1) AS share_pct
+FROM occurrences
+WHERE year >= 2000
+GROUP BY year
+ORDER BY place, year;
+```
+
+```text
+-- result: f4-years · 27 rows · sha256 36304934ba6e
+year | records | place | share_pct
+2021 | 2859 | 1 | 9.8
+2017 | 2643 | 2 | 9
+2015 | 2039 | 3 | 7
+2007 | 1874 | 4 | 6.4
+2008 | 1698 | 5 | 5.8
+… 22 more rows
+```
+
+4. The Tasmanian Devil (id 48) year by year since 2010: the change from the year before with `lag`, and a running total. `ROWS UNBOUNDED PRECEDING` makes the frame "every row up to this one"; it matters only when the order has ties, but saying it is clearer.
+
+```sql
+-- q: f4-running
+-- status: ran
+SELECT year, count(*) AS records,
+       count(*) - lag(count(*)) OVER (ORDER BY year) AS change,
+       sum(count(*)) OVER (ORDER BY year ROWS UNBOUNDED PRECEDING) AS running_total
+FROM occurrences
+WHERE species_id = 48 AND year >= 2010
+GROUP BY year
+ORDER BY year;
+```
+
+```text
+-- result: f4-running · 14 rows · sha256 fbd2f429964c
+year | records | change | running_total
+2010 | 182 | NULL | 182
+2011 | 80 | -102 | 262
+2012 | 48 | -32 | 310
+2013 | 16 | -32 | 326
+2014 | 29 | 13 | 355
+… 9 more rows
+```
+
+   A year with no records would have no row, and `lag` would compare with the last year that has one, not the calendar year before. A calendar of years, left-joined (f3), fills such gaps.
+
+**Result:** Most species' samples lean on one or two datasets, and for the Jaguar one GPS-collar study is almost everything. Ranks show the cap at work: 13 species share rank 1, so `rank` jumps to 14 and `dense_rank` to 2; which you want depends on whether "third place" means "two ahead of you" or "the third distinct value". 2021 is the sample's biggest recent year, and the Devil's records fall sharply after 2010.
+
+**Exercise:** For each class (`species_taxonomy.class`), show its three species with the most records (ties broken by the lower `species_id`): `class`, `species_id`, `records`, the place (1–3) and the species' share of its class's records in percent to one decimal, by class and place.
+
+**Answer:**
+
+```sql
+-- q: f4-ex
+-- status: ran
+WITH per_species AS (
+  SELECT t.class, o.species_id, count(*) AS records
+  FROM occurrences AS o
+  JOIN species_taxonomy AS t ON t.species_id = o.species_id
+  GROUP BY t.class, o.species_id
+),
+ranked AS (
+  SELECT class, species_id, records,
+         row_number() OVER (PARTITION BY class ORDER BY records DESC, species_id) AS place,
+         round(100.0 * records / sum(records) OVER (PARTITION BY class), 1) AS share_pct
+  FROM per_species
+)
+SELECT class, species_id, records, place, share_pct
+FROM ranked
+WHERE place <= 3
+ORDER BY class, place;
+```
+
+```text
+-- result: f4-ex · 9 rows · sha256 f730ac9edba7
+class | species_id | records | place | share_pct
+Amphibia | 8 | 2000 | 1 | 41.9
+Amphibia | 6 | 938 | 2 | 19.6
+Amphibia | 75 | 552 | 3 | 11.6
+Mammalia | 25 | 2000 | 1 | 6.3
+Mammalia | 28 | 2000 | 2 | 6.3
+… 4 more rows
+```
+
+**Check:** `result, in order`: the order is part of the answer here. The skip exercise is checked the same way.
+
+**Dialects:**
+- **PostgreSQL:** as here; also `FILTER` on window aggregates and named windows (`WINDOW w AS (…)`); a CTE can be `MATERIALIZED` or `NOT MATERIALIZED`; `WITH RECURSIVE` walks trees such as `taxa`. No `QUALIFY`.
+- **DuckDB:** as PostgreSQL, plus `QUALIFY place = 1`, which filters on a window function without a CTE, and `arg_max(dataset_key, records)` for "the value with the largest count" in one aggregate.
+- **SQL Server:** CTEs and window functions as here (the statement before a `WITH` must end in `;`); no `QUALIFY`; `TOP (1) WITH TIES … ORDER BY row_number() OVER (…)` or `CROSS APPLY (SELECT TOP (3) …)` for top-n per group; `count` is `int`, so cast before dividing for a share.
 
 ### 5.2 Database architecture
 
