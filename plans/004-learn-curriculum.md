@@ -136,6 +136,56 @@ taxa | species | sources | species_sources | countries | species_countries | spe
 143 | 76 | 5 | 591 | 250 | 472 | 76
 ```
 
+### The PostGIS setup
+
+The PostGIS labs run in schema `learn_curriculum`, which one file builds: `learn_curriculum.sql` (§4). Load it with `psql -X -v ON_ERROR_STOP=1 -d <your database> -f learn_curriculum.sql`; it runs in one transaction, so a failed load leaves the previous schema as it was, and loading again replaces it. Every PostGIS lab starts with this session block. It puts `learn_curriculum` first on the search path, so plain table names find the lab tables, and PostGIS's functions still resolve from `public`. The tests run the same statement when they connect.
+
+```sql
+-- q: pg-session
+-- status: ran
+-- engine: postgis
+SET search_path = learn_curriculum, public;
+SHOW search_path;
+```
+
+```text
+-- result: pg-session · 1 row · sha256 791623fd72db
+search_path
+learn_curriculum, public
+```
+
+A quick check that the load worked: the rows in every lab table.
+
+```sql
+-- q: pg-smoke
+-- status: ran
+-- engine: postgis
+SELECT 'taxa' AS table_name, count(*) AS n_rows FROM taxa
+UNION ALL SELECT 'species', count(*) FROM species
+UNION ALL SELECT 'sources', count(*) FROM sources
+UNION ALL SELECT 'species_sources', count(*) FROM species_sources
+UNION ALL SELECT 'countries', count(*) FROM countries
+UNION ALL SELECT 'species_countries', count(*) FROM species_countries
+UNION ALL SELECT 'country_shapes', count(*) FROM country_shapes
+UNION ALL SELECT 'admin1_shapes', count(*) FROM admin1_shapes
+UNION ALL SELECT 'biomes', count(*) FROM biomes
+UNION ALL SELECT 'ecoregions', count(*) FROM ecoregions
+UNION ALL SELECT 'habitat_classes', count(*) FROM habitat_classes
+UNION ALL SELECT 'country_habitats', count(*) FROM country_habitats
+ORDER BY table_name;
+```
+
+```text
+-- result: pg-smoke · 12 rows · sha256 7d3c1fc95318
+table_name | n_rows
+admin1_shapes | 294
+biomes | 14
+countries | 250
+country_habitats | 35
+country_shapes | 247
+… 7 more rows
+```
+
 ### The Python setup
 
 Python labs run in the `uv` environment (§3) and read the lab database through libpq's `PG*` environment variables, so the same file runs on your machine and on the test server. Every Python lab starts with this helper. It sets the search path when it connects, so plain table names find the lab tables in `learn_curriculum` and PostGIS's functions in `public`. It prints nothing.
