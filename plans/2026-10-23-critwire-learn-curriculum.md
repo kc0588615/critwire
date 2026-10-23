@@ -224,7 +224,7 @@ Out:
 
 - [x] Baseline: install, migrate, run typecheck, lint, unit and E2E tests; record the results under Baseline
 - [x] Architecture: `architect` writes findings and the target design
-- [ ] Fable review: `architecture-reviewer`
+- [x] Fable review: `architecture-reviewer`
 - [ ] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
 - [ ] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
 - [ ] Steps: `planner` writes Steps and Verification
@@ -696,6 +696,27 @@ Each brief opens with how to start it, and with "superseded by" notes on `critwi
 
 ## Architecture review (Fable)
 
+Fable, 2026-10-23. Checked against the code: `scripts/ingest/gbif.ts` (legacy `BACKBONE_KEY`, 7 `BASIS_OF_RECORD` values, filters), `scripts/gbif-register.ts:31`, `e2e/Caddyfile` (CORS on `/v1/*` only), `site/` (`index.html` only), `plans/002-learn-erd.mmd` (6 tables), `003 §7:3162` ("what both assume B delivered"), A2's `scripts/pg-engine.ts` (`runPgSetup` on every connect), `scripts/pg.ts`, `scripts/plan-queries.ts:102-145`, `src/engine.ts` (`load`, `setupGrown`), `critwire_dev` (528 rows; `critwire` role has no CREATEROLE), and GBIF's download docs (techdocs, fetched today). F1, F2, F4–F9 are real and correctly read. F3's premise is wrong (below). The design fits the brief: nothing public changes, labs run unchanged in `critwire_dev`, roles/schemas prefixed `learn_`, `learn_spatial` untouched, ≤ 10 modules in full, three spikes, Power BI untested with inputs verified. Moran formulas match esda's `__moments` (row-standardized S0/S1/S2, `VI_norm`, `z_norm`); the 5 km hex / 10 km band gap (8 660 m vs 15 000 m) is right.
+
+VERDICT: APPROVE_WITH_CHANGES
+
+MUST-FIX:
+1. **T7a `load`: `COPY` format for the GBIF TSV.** "tab, no quoting" implies `FORMAT text`, where `\` is an escape: `\N` becomes NULL, `\t`/`\n`/`\x..` in `locality`/`recordedBy` shift or alter columns, so the load fails or silently changes values. Specify `COPY … FROM STDIN (FORMAT csv, DELIMITER E'\t', QUOTE E'\b', NULL '')` (the standard GBIF-download trick) in T7a and in e2's key query. Why: the ETL spike is the model for e2; a wrong load pattern is taught to learners.
+2. **T6 omits the `pg.ts` changes the copy needs.** A2's `connect()` hard-codes `SCHEMA = "learn_spatial"`, `search_path = learn_spatial, public`, runs `CREATE SCHEMA IF NOT EXISTS learn_spatial` and the raster `capabilityCheck` on every connect, and PG9's `scanForPrivilegeChanges` fails the spike on any `GRANT`/`REVOKE`/`ALTER ROLE` text in its code. T6 lists `pg.ts` among the copies and only says "pg-setup is deleted". Add: search_path `learn_curriculum` (T7c's `star.sql` relies on it), no `CREATE SCHEMA learn_spatial`, capability check gated on `-- needs: raster`, PG9 narrowed to the `learn_` allowance. Why: as copied, unqualified lab SQL runs against `learn_spatial` (breach of the brief) and the runner refuses d5's blocks.
+3. **F3 misreads the docs.** techdocs `api-downloads` says: "If no `checklistKey` is supplied the obsolete GBIF Backbone Taxonomy will be used." So an omitted key would not misread `ids.gbif`; the risk is the opposite (the default changing later, and the output taxonomy). Keep the fix (set `checklistKey` at top level and on `TAXON_KEY`; S whether the legacy key is accepted), but reword F3, 004 §4 and the e1 outline so the course doesn't state a false default. Why: it becomes public course copy.
+
+MISSED:
+1. **`occurrences.country_code FK → countries` (T8, both ERDs).** GBIF codes include `ZZ` and codes absent from a 250-row ISO file (e.g. `XK`); the FK rejects rows at load. Decide (ZZ → NULL, or unknown members as in the star) and add "every `country_code` ∈ countries ∪ {ZZ}" to T7a's checks.
+2. **Brief: "each lab drops what it creates in the same block."** T6 relies on the runner's `BEGIN … ROLLBACK` plus the leak check, so a d5 block that forgets its `DROP ROLE` passes here and leaks on a learner's install. Add a lint: every `CREATE ROLE|SCHEMA learn_…` in a block has a matching `DROP` in the same block (`-- tx: own` included).
+3. **Dataset credits.** `datasets.csv` holds `dataset_key, license` only. CC BY 4.0 records need attribution, and e4 ("Which datasets must I credit?") and the `/learn/data/` index need titles and publishers. Fetch `GET /v1/dataset/<key>` (title, publishingOrganization) at ingest with the existing `getJson` rate-limited pattern; the loader and star `dim_dataset` carry them.
+
+SHOULD-CONSIDER:
+1. Commit only the capped sample plus download metadata (key, DOI, request, totals, per-dataset counts), not the ≤ 15 MB full projection: ~30 MB per refresh in git history for no module need (KISS; the sample is the snapshot, the rule is recorded).
+2. Make the DuckDB export the canonical star (it is what `writeStar` publishes); the PostGIS `\copy` is the cross-check. Say so, or float formatting differences (`1.0` vs `1`) make the Power BI input manifest ambiguous.
+3. `pnpm learn:check` should read its connection from `PG*`/`LEARN_PG_URL` (refusing database `critwire`), not hard-code the `critter-ai` socket, so the owner can run it in WSL (AGENTS.md: two machines).
+4. L1/L2 briefs: move the spike runner into the repo as `learn:check`, don't keep two harnesses alive (DRY).
+5. T7b: assert `ST_HexagonGrid(5000)` cell geometry once (`ST_Distance` of adjacent centroids = 8 660.25 m) before trusting the threshold gap; one query, saves a mystery if `size` semantics differ.
+
 ## Architecture review (Astra)
 
 ## Revision notes
@@ -714,5 +735,7 @@ Each brief opens with how to start it, and with "superseded by" notes on `critwi
 
 - 2026-10-23 04:36 UTC: Baseline. typecheck pass, test 66/66, build 157 files (hashes = A2 baseline = live), e2e 20/20; learn_spatial readable only as critter-ai; no ensurepip/uv.
 - 2026-10-23 05:20 UTC: Architecture. architect wrote F1–F9 + T1–T13: 33 modules (~68 h; f1–f4, d1–d6 in full), lab data at `/learn/data/` (GBIF download sample ≤ 2,000/species ≈ 46k rows, own DOI; NE 1:50m; simplified RESOLVE), psql-only loader, uv venv, Moran on 5 km hexes (Tasmanian devil), chain L1–L5 (~144–174 sessions). Read-only GBIF probes only; no code/data changed.
+
+- 2026-10-23 05:05 UTC: Fable review. APPROVE_WITH_CHANGES; 3 MUST-FIX (T7a COPY csv/tab/QUOTE, T6 pg.ts changes, F3 GBIF default checklist wording), 3 missed, 5 should-consider. Plan only; no code.
 
 ## Summary
