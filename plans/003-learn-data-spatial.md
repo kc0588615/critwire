@@ -2566,7 +2566,7 @@ That is why critwire's published habitat areas (`country_habitats.est_area_km2`,
 
 **Shown as:** tables.
 
-**Your turn:** How much of Costa Rica's land does the map give to forest of any kind? Add up the estimated km² of every class whose first-level class is `100` ("Forest"), using the outline's middle latitude as `s07-clip` does: one column, `forest_km2`, rounded to a whole km².
+**Your turn:** How much of Costa Rica's land does the map give to forest of any kind? Add up the estimated km² of `100` ("Forest") and every class under it (`COALESCE`, lesson 22), using the outline's middle latitude as `s07-clip` does: one column, `forest_km2`, rounded to a whole km².
 
 ```sql
 -- q: s07-ex
@@ -2582,14 +2582,14 @@ FROM habitat_clips AS c
 CROSS JOIN zone
 CROSS JOIN LATERAL ST_ValueCount(ST_Clip(c.rast, zone.geom)) AS vc
 JOIN habitat_classes AS h ON h.code = vc.value::integer
-WHERE c.clip = 'cr' AND h.level1_code = 100
+WHERE c.clip = 'cr' AND COALESCE(h.level1_code, h.code) = 100
 GROUP BY zone.lat;
 ```
 
 ```text
--- result: s07-ex · 1 row · sha256 2685979557cb
+-- result: s07-ex · 1 row · sha256 99cd689799fd
 forest_km2
-23415
+23445
 ```
 
 **Check:** `result`.
@@ -3072,7 +3072,7 @@ A share of the range is not a share of where the animal lives: the map says what
 
 **Shown as:** tables.
 
-**Your turn:** Is the range more forested than the country around it? For two zones, the range (`'range'`) and Costa Rica's outline (`'Costa Rica'`), give the share of cells, in percent to one decimal, whose class's first-level class is `100` ("Forest"): columns `zone` and `forest_pct`, in zone order.
+**Your turn:** Is the range more forested than the country around it? For two zones, the range (`'range'`) and Costa Rica's outline (`'Costa Rica'`), give the share of cells, in percent to one decimal, whose class is `100` ("Forest") or under it (`COALESCE`, lesson 22): columns `zone` and `forest_pct`, in zone order.
 
 ```sql
 -- q: i03-ex
@@ -3087,7 +3087,7 @@ WITH zones (zone, geom) AS (
   SELECT 'Costa Rica', ST_Transform(geom, 3857) FROM country_shapes WHERE country_code = 'CR'
 )
 SELECT z.zone,
-       round((100.0 * sum(vc.count) FILTER (WHERE h.level1_code = 100) / sum(vc.count))::numeric, 1) AS forest_pct
+       round((100.0 * sum(vc.count) FILTER (WHERE COALESCE(h.level1_code, h.code) = 100) / sum(vc.count))::numeric, 1) AS forest_pct
 FROM zones AS z
 CROSS JOIN habitat_clips AS c
 CROSS JOIN LATERAL ST_ValueCount(ST_Clip(c.rast, z.geom)) AS vc
