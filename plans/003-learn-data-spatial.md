@@ -2673,6 +2673,107 @@ habitat_code | cells
 
 ## 5. The habitat raster
 
+The owner's COG (`https://habitat-cog.s3.us-east-2.amazonaws.com/habitat_cog.tif`) is one worldwide band of habitat class codes in Web Mercator, 388,996 cells a side at 103.02 m, with ten nearest-neighbour overviews (÷2 to ÷1024), 3.64 GB (`out/cog/`, `out/tile-bytes/`). This section says which map it is and what that allows, how browsers and learners could reach it, what each way of summarizing it gets wrong, and how mission D turns it into committed data. Every figure below names the spike run it comes from; every area is **estimated**.
+
+### Which map it is: Jung et al. 2020, level 2, version unconfirmed
+
+**Level 2.** The overviews hold level-2 codes (106 "Forest – Subtropical/tropical moist lowland", 1403 "Plantations") beside level-1 codes where Jung's tree stops at level 1 (100, 500, 900, 1200), so it is the level-2 map (`out/jung/`, ÷256 and ÷1024 overviews). Marine classes (9xx, 12xx) are in it too. The Costa Rica clip shows the same split, read in PostGIS from the clip and joined to v004's legend (`habitat_classes`, §2):
+
+```sql
+-- q: r01
+-- status: spike-table
+-- engine: postgis
+SELECT CASE WHEN h.code IS NULL THEN 'not in v004''s legend'
+            WHEN h.level1_code IS NULL THEN 'level 1 only'
+            ELSE 'level 2' END AS level,
+       count(*) AS classes,
+       sum(vc.count) AS cells
+FROM habitat_clips AS c
+CROSS JOIN LATERAL ST_ValueCount(c.rast, 1, true) AS vc
+LEFT JOIN habitat_classes AS h ON h.code = vc.value::integer
+WHERE c.clip = 'cr'
+GROUP BY 1
+ORDER BY 1;
+```
+
+```text
+-- result: r01 · 2 rows · sha256 477d100c7c2a
+level | classes | cells
+level 1 only | 5 | 65520
+level 2 | 30 | 4934695
+```
+
+**Version: only 004 is left, and that isn't proof.** Jung's Zenodo concept has six versions. The spike read each one's level-2 code list (`styles/level2.clr`) and its level-2 composite's header, inflated from the zip by range requests, never the 2.3–2.5 GB bodies (`out/jung/`, 9.3 MB from Zenodo and S3 together):
+
+| version | license | against the COG | why |
+|---|---|---|---|
+| 001, 001_full | CC BY-NC 4.0 | excluded | its code list lacks 11 codes the COG holds (900, 908, 909, 1101–1106, 1200, 1206); `int16`, the COG `uint16` |
+| 002 | CC BY-NC 4.0 | excluded | lacks the same 11 codes |
+| 002_v2, 003 | CC BY 4.0 | excluded | lack the same 11 codes |
+| 004 | CC BY 4.0 | **not excluded** | codes, data type and nodata agree |
+
+A class code that a version never assigns can't appear in a file made from it, so the exclusions are firm, and every non-commercial version is among them. "Not excluded" is weaker: it says nothing about which file the COG was made from, or how it was reprojected to Web Mercator and resampled. The COG's own metadata names no version, and Critter Connect's repository records none (plan F3). So the COG's provenance is **unconfirmed** (`out/jung/gate.md`).
+
+**The gate (what mission D may publish).**
+- **Confirmed** means the owner states which Zenodo version and file the COG was made from, and how it was reprojected and resampled, and that version isn't excluded above. Only then may D publish anything cut or computed from the COG, or send learners to the bucket, credited "Jung et al. 2020, version 00X, reprojected to EPSG:3857 by <who>".
+- **Until then** everything critwire publishes from the habitat map comes from **version 004 by URL**: Zenodo record 4058819, CC BY 4.0, each file's md5 checked against the record. That is D's default, so D never waits on the answer (§8).
+- The spike read the COG for research only; its clip stays in the spike folder.
+
+**The credit** (Zenodo: "Please cite the published paper and state the used version of the habitat map"; `out/jung/gate.md`): Jung, M., Dahal, P.R., Butchart, S.H.M., Donald, P.F., De Lamo, X., Lesiv, M., Kapos, V., Rondinini, C., Visconti, P. (2020). A global map of terrestrial habitat types. *Scientific Data* 7, 256. https://doi.org/10.1038/s41597-020-00599-8. Version 004, https://doi.org/10.5281/zenodo.4058819 (CC BY 4.0). It goes in `scripts/build/sources.ts` with the fields it covers (`habitat_classes.name`, `country_habitats.est_area_km2`, `occurrences.habitat_code`, any clip), with critwire's method note beside the computed fields (§2, "Every new table and derived field names its credit"). Class names come from v004's legend (`IUCN_mapping_legend.xlsx` in its code zip), never from iucnredlist.org. Jung's map assigns IUCN's habitat *classes* to places; it is not Red List data (§6).
+
+### How browsers and learners reach it: four options
+
+Browsers can't read the owner's bucket today: S3 answers range requests (206) but sends no CORS headers, and a preflight from `https://critwire.com` gets 403 (plan F7). A learner's own PostGIS needs no CORS: it reads over `/vsicurl/` from the server side. Bytes per learner are measured for one full-resolution and one ÷8 window of 256 × 256 cells around a point in Costa Rica, cold, the reads lesson 8's page makes.
+
+| | (a) bucket CORS | (b) critwire hosts clips | (c) summaries only | (d) the owner's TiTiler |
+|---|---|---|---|---|
+| **what** | the owner adds a CORS rule to the bucket; pages read the full COG with geotiff.js | small regional COG clips, served by critwire's Caddy; pages read them with geotiff.js | `country_habitats` and `occurrences.habitat_code`, plain tables in the core engine | pages call TiTiler's `/cog/point` and `/cog/statistics` on the owner's AWS |
+| **disk on critwire** | none | a few MB: the Costa Rica clip is 1.42 MB for 30.6 M cells (`out/e4-clip/`); clips are committed, so each refresh adds to the repository's history | KB: one row per country and class | none |
+| **bytes per learner** | 195,447 B from S3, billed to the owner (`out/e4-s3/`); geotiff.js reads only the tile-index entries it needs (264 B of IFD 0's 6.9 MB index at full resolution) | 84,240 B of the clip in 27 range requests; 188,670 B with the page and its geotiff.js bundle (`out/e4-browser/`) | the table rows, inside the page's normal data | 74–76 B of JSON per point (`out/e2-point/`); TiTiler's own S3 reads are on the owner's AWS, unseen |
+| **work** | the owner: one rule (`AllowedOrigins https://critwire.com`, `AllowedMethods GET HEAD`, `AllowedHeaders Range`, `ExposeHeaders Content-Range Content-Length ETag Accept-Ranges`); D: lesson 8's page pointed at S3. Only after the gate | D: clips as `ingest habitat` output (below), validated as E4's was; lesson 8's page | D: `pnpm ingest habitat` (below) | the owner keeps a server running; D: a client for it |
+| **Chromebook (4× CPU)** | the same reader as (b), plus S3's latency | **measured**: done 2.1 s after navigation, peak renderer memory 154–162 MB of A1's 700 MB budget; school Wi-Fi 3.2 s, slow 4G 5.3 s computed from bytes (`out/e4-browser/`) | the core engine's page, without the spatial extension (002 §1) | light for the browser; a point answered in 84 ms median, 172 ms at most (`out/e2-point/`), `/cog/info` 4.08 s on a cold start (plan F7) |
+| **against it** | egress on the owner's bill for every learner; blocked by the gate until provenance is confirmed | clips must be cut and committed; lessons cover only the clipped places | no map to look at, only numbers | a server outside critwire; zonal statistics only from overviews: full resolution returned HTTP 500, `max_size=1024` resampled to about 150–170 m (`out/e3-zonal/`) |
+
+**(b), where the clips come from.** If the owner confirms the COG's provenance, D cuts clips from it the way E4 did: `ST_AsGDALRaster(ST_Clip(…), 'COG', …)` over an out-db window, 2.33 MB of S3 and 3.9 s for Costa Rica, byte-identical over repeated cuts, validated as a COG with nearest-neighbour overviews (`out/e4-clip/`). Otherwise D cuts them from v004's 100 m composite, a one-off 2.45 GB download outside the repository (one DEFLATE member in the zip, so no range access; plan F3). Those clips are on v004's longitude–latitude grid (EPSG:4326, 0.000898°), so lesson 8's page drops its Web Mercator arithmetic for a plain longitude and latitude step. A full copy of the COG on critwire (3.64 GB) isn't a clip: `dist/` is copied on every build, and a route outside it is a control-room change, so it isn't offered.
+
+**Learners' own PostGIS** (§4 lessons 5–7) reads one of three sources over `/vsicurl/`: critwire's clip (at most the clip's size, served with range support: every request in `out/e4-browser/` was a 206 without `Content-Encoding` under the live block's `encode zstd gzip`); their own v004 download from Zenodo; or the owner's COG, only after the gate and only if the owner accepts the egress (§8). From the COG a cold point read costs 58–91 KB and a small country's zonal statistics 292–358 KB (`out/e2-point/`, `out/e3-zonal/`).
+
+### Summaries: three methods and what each gets wrong
+
+A per-country summary is "how much of each class lies inside the outline". E3c computed it three ways for Trinidad and Tobago (TT, 10.6° N) and Åland (AX, 60.2° N), whose outlines are Natural Earth's 1:10m, against the outline's own area on the ellipsoid (`ST_Area(geom::geography)`) (`out/e3c-methods/`):
+
+| method | resolution | rule | whole outline | classes ≥ 1 % of the outline | classes under 1 % |
+|---|---|---|---|---|---|
+| 1. COG, full resolution | 103.02 m, EPSG:3857 | cells whose centre is inside × (103.02 m · cos φ of the cell's row)² | sphere +0.6 % / −0.3 %; on the ellipsoid within 0.01 % | the reference for 2 and 3 | the reference |
+| 2. COG overview ÷8 / ÷16 | 824 m / 1,648 m | the same over the overview's cells, × k²: a nearest overview keeps one 100 m cell per k × k block, a 1-in-64 or 1-in-256 **sample** | within 0.2 % of method 1 | ÷8 −21.2 % to +13.8 %; ÷16 −28.2 % to +66.6 % | lost or doubled: TT's 1206 and 1207 vanish (−100 %), TT's 505 at ÷16 +276 % |
+| 3. v004 1 km fractions | 0.0099157° (about 1.1 km), EPSG:4326 | cells whose centre is inside: Σ fraction ÷ 1000 × the cell's area on the ellipsoid | TT −0.1 %, AX +0.3 % of method 1 | within ±2.2 %, except TT's 900 "Marine – Neritic" +12.5 % and AX's 909 "Marine – Seagrass" +13.9 %, each with three quarters of its area in border cells | within ±10 % but two: TT's 908 "Coral Reefs" −19.6 %, TT's 909 0.07 → 1.30 km² (all in border cells) |
+
+What the table says:
+- **Method 1** is the best this COG allows, and still not "true area": it inherits the COG's unrecorded reprojection, and worldwide it would mean 2.24 GB of the owner's egress and 151 G cells on two CPUs per refresh (`out/tile-bytes/`). Its nominal Mercator version, cells × 103.02², overstates TT by 3.4 % and AX four times over (`out/e3-zonal/`, lesson 5).
+- **Method 2** gets the totals right and the classes wrong: a sample can't see small, thin or patchy classes (rivers, reefs, mangroves, towns), and it misses or doubles them by chance. It is never published as an area; lesson 7 shows it only as a sample.
+- **Method 3** keeps the 100 m map's proportions inside each 1 km cell, so its error sits in the border cells, where a whole 1 km cell is counted in or out by its centre: 6.6 % of TT's area, 29.3 % of AX's (a small island country, so more border). Coastal and marine classes, which line the border, carry the largest errors. The fractional layers also hold an **overlay** of open-water classes (901, 1000–1004) laid over the seafloor classes; summed with the rest they'd add 7 % to TT and 30 % to AX, so the summary counts the partition only (plan Decisions, S7; `out/e3c-methods/`).
+
+**The pick: method 3.** It comes from the identified, licensed release, needs none of the owner's egress, and its error is small and explainable where the numbers matter. Published areas are `est_area_km2`, labelled **estimated**, with the resolution and rule in the source entry; lessons compare classes and countries with them (§3, lessons 22–23), never quote them as measured.
+
+### `pnpm ingest habitat` (mission D)
+
+- **Input:** v004's `lvl2_frac_1km_ver004.zip` by its Zenodo URL (695,484,415 B, md5 `bd8508db8118f14d8da7bfa7950523d4`), downloaded whole into a temporary directory outside the repository, md5 checked against the record, deleted after. The outlines: the committed Natural Earth file, by sha256. Never the owner's COG, unless the gate is passed and D's plan says so.
+- **Work:** for each of the 79 layers, decode in full-width bands of 256 rows (memory stays bounded; a whole layer is 659 M cells), keep the partition (drop the overlay classes 901, 1000–1004), and add fraction × the cell's area on the ellipsoid to every country whose outline holds the cell's centre. The same layers give each sampled occurrence its `habitat_code`: the partition class with the largest share of the record's 1 km cell (§2, `occurrences`).
+- **Output, committed:** `data/raw/habitat/snapshot.json`, keys sorted, one UTC `retrieved`, with `source` (Zenodo record 4058819, version `004`, the file name, md5, `CC BY 4.0`), `method` (the resolution, EPSG:4326, Σ fraction × area on the ellipsoid, centre-in-outline, partition only, the rounding, the outlines' sha256, the GBIF snapshot's `retrieved`) and the values. Clips, if the owner picks (b), go in `data/raw/habitat/clips/<cc>.cog.tif` with their sha256 and the same provenance in the snapshot.
+- **Derive** checks it and refuses it as stale (`run pnpm ingest habitat`) when the outlines' sha256 or the GBIF snapshot's `retrieved` differ, or a code isn't in `habitat_classes`. **Build** only loads the derived rows and copies the clips.
+- **Cost per refresh, on this VPS:** 695,469,068 B from Zenodo in 223 s, one member at a time; decoding at 43 ms per million cells, about 28 s a layer, so about 37 minutes for all 79 on one thread, less where layers are empty: eleven are all-zero, 49–50 KB each (`out/e3c-methods/`). The outline test over every land cell isn't measured yet; D's architecture times it.
+- **Tool:** the spike's path is geotiff.js in Node for the decode and PostGIS for the centre-in-outline sum (`ST_SetValues` into an in-db raster, then `ST_Clip`, checked against the centre mask on each polygon's largest class; `out/e3c-methods/`), because the Postgres server can't read files in the checkout (plan F12). An ingest through PostGIS runs F1's capability check and needs a superuser session or `GRANT SET ON PARAMETER` for its role, a control-room change. A Node-only path (DuckDB spatial for the outline test) avoids that but wasn't validated here; D's architecture picks from these timings.
+
+**Why ingest, not build.** `pnpm build` is offline and loads only `data/` (`AGENTS.md`), and `deploy` runs it every time: a raster read in the build would tie every deploy to Zenodo or S3 and add the better part of an hour. Ingest fetches once, commits what it computed with its provenance, and derive's staleness check keeps the two in step, as for GBIF today.
+
+### Recommendation
+
+**(c) summaries, plus (b) a few clips on critwire, both from v004 by URL; no CORS on the bucket and no TiTiler.**
+- (c) carries the lessons that need numbers (§3 lessons 22–23, the occurrence classes) with no server, nothing on the owner's bill, and the error measured above stated beside it.
+- (b) gives the browser a real map (lesson 8) at under 200 KB per learner and well inside a Chromebook's memory, and gives learners' own PostGIS a source to read over `/vsicurl/` without the owner's bucket.
+- (a) and (d) put every learner on the owner's AWS bill; (a) also waits on the gate, and (d) is a server outside critwire whose zonal statistics come from overviews.
+- If the owner confirms the COG's provenance, D may cut the clips from the COG instead (2.33 MB of S3 per clip, on the grid lesson 8 already uses); nothing else changes. These are the owner's choices (§8).
+
 ## 6. IUCN
 
 The owner has IUCN's range polygons and asked whether critwire could host some for teaching. It can't, and critwire's rule stays as `AGENTS.md` and `001-mvp.md` set it: critwire never stores, caches, proxies or serves IUCN data (ranges, categories, assessments), and keeps only each species' SIS taxon id, `ids.iucn`. This section quotes IUCN's terms, answers four cases from them, and drafts a request for a waiver that the owner may send. The lessons that use IUCN ranges run only in the learner's own PostGIS, on the learner's own download; critwire supplies the text, the SQL and the import commands, never the data.
