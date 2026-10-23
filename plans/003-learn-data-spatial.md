@@ -3152,6 +3152,17 @@ Jung et al. 2020 (Zenodo 4058819, version 004) maps the classes of IUCN's Habita
 
 ## 7. The build missions
 
+Two missions build this design, each with a ready-to-start brief in the ops format (Goal, Why, Scope, Definition of done, Decision rules, Notes):
+
+| Mission | Brief | What it builds | Estimate |
+|---|---|---|---|
+| C | `plans/briefs/critwire-learn-c.md` | the non-spatial datasets §1 ranks top: AnAge, the Amniote database and AmphiBIO into `traits` and `species_traits`, Wikidata labels into `species_names`, Open Tree into `tree_nodes` if its id match works; their ingest, snapshots, derive rules and `/v1` files with attribution; the tables in `setup.sql`, the ERD, lessons 17–21 (§3), lesson 16's move to `my_traits` (Disagreements with 002); E2E | about 30–36 sessions |
+| D | `plans/briefs/critwire-learn-d.md` | the spatial track: Natural Earth outlines as `country_shapes`, the occurrence sample drawn in `ingest gbif`, `pnpm ingest habitat` from v004 (`habitat_classes`, `country_habitats`, `occurrences.habitat_code`) with the provenance gate (§5), clips per the owner's raster choice, the self-hosted `spatial` extension, lessons 22–23, spatial lessons 1–8 (§4), IUCN lessons 1–3 as own-download pages (§6), the PostGIS lesson check with F1's capability check; E2E | about 34–40 sessions |
+
+**What both assume B delivered** (B1 and B2, merged and live): `/v1/countries.*` (250 rows); the self-hosted engine and the `/learn/assets/duckdb-ext/v1.5.6/wasm_eh/` mirror; `setup.sql` (6 tables and the view); `site/learn/schema.mmd` with `pnpm erd` and the build's stale check; the 16 lessons (`lessons.json`, `site/learn/sql/`); the E2E harness; B2's cookbook, playground and game, and the Caddy headers if the owner approved them. Where B's plans record deviations from 002, B's code wins. D also assumes C's tables, lessons and the page engine's DECIMAL decoding.
+
+**Order: C, then D.** C starts from `main` after B2 is merged and live; D starts after C is. C is small, open, non-spatial data on B's machinery and ships lessons soon; D adds the heavier parts (a second extension, geometry, a raster ingest, a GBIF refresh and possibly a new DOI) and uses C's tables only where lessons 22–23 do. Each brief's first comment says how to start it: copy it to `/srv/critter-ai/agent-state/missions/briefs/<date>-critwire-learn-<c|d>.md`, then `mission start critwire <that file>`. Both release themselves at the end (merge and `deploy critwire`), and both read §8's answers first: without one, they build its recommendation.
+
 ## 8. For the owner
 
 ## Disagreements with 002
@@ -3162,4 +3173,4 @@ Jung et al. 2020 (Zenodo 4058819, version 004) maps the classes of IUCN's Habita
 - **Habitats: map classes, not species preferences.** 002 §2 "Room to grow" lists `habitats` + `species_habitats`. 003 has `habitat_classes` and `country_habitats` instead, and no species–habitat table: which habitats a species uses comes from IUCN's assessments, which are Red List data critwire never stores (§6). The honest version is `occurrences.habitat_code`, the habitat class at an open record's location.
 - **Regions wait.** 002's `regions` + `country_regions` aren't in the grown schema. The candidates are ranked in §1 (Natural Earth's admin-1 regions, RESOLVE's ecoregions); `ecoregions` and `biomes` are designed in §2 but not built, and come after the habitat track.
 - **The grown tables have their own setup for now.** 002 puts every new table in the same `setup.sql`. 003 keeps them in `setup-grown`, run after 002's `setup`, so 002's setup stays byte for byte as A1 left it while the grown tables are stand-ins; mission C merges `setup-grown` into `setup.sql` when it publishes the files.
-- **One more kind of ERD line.** 002 §3's check ("What the check holds") accepts one-to-many lines only. The grown diagram adds `||--o|` for `country_shapes`, whose foreign key is also its primary key, and the check accepts it only on such a key and refuses a "many" line there (§2). Mission C's port of the check needs the same rule, and the rule that 002's entities and lines stay unchanged.
+- **One more kind of ERD line.** 002 §3's check ("What the check holds") accepts one-to-many lines only. The grown diagram adds `||--o|` for `country_shapes`, whose foreign key is also its primary key, and the check accepts it only on such a key and refuses a "many" line there (§2). Mission D, which adds `country_shapes`, ports that rule; mission C, the first to grow the diagram, ports the rule that 002's entities and lines stay unchanged.
