@@ -1246,7 +1246,7 @@ The primary key (`species_id`, `trait_name`) allows one value per animal and tra
 -- q: l21-second
 -- status: spike-table
 -- expect: error violates primary key constraint
-INSERT INTO sources VALUES ('Example dataset', 'CC0 1.0', NULL);
+INSERT INTO sources VALUES ('Example dataset', 'CC0 1.0', NULL) ON CONFLICT DO NOTHING;
 INSERT INTO species_traits VALUES (2, 'adult_mass', '5000', 'Example dataset');
 ```
 
@@ -1254,12 +1254,12 @@ INSERT INTO species_traits VALUES (2, 'adult_mass', '5000', 'Example dataset');
 -- result: l21-second · error: statement 2 of 2: Constraint Error: Duplicate key "species_id: 2, trait_name: adult_mass" violates primary key constraint.
 ```
 
-The database refuses it, so a design with this key has to decide in advance which dataset wins. critwire's rule: datasets are taken in a fixed order, and a later one only fills gaps. In SQL, `ON CONFLICT DO NOTHING` says exactly that: a row whose key is already taken is skipped instead of failing the statement. The turtle keeps AnAge's mass and gains the clutch size AnAge didn't have:
+The database refuses it, so a design with this key has to decide in advance which dataset wins. (The `sources` row did go in: each statement is saved on its own. That is why both blocks add it with `ON CONFLICT DO NOTHING`, explained next, so they run in any order.) critwire's rule: datasets are taken in a fixed order, and a later one only fills gaps. In SQL, `ON CONFLICT DO NOTHING` says exactly that: a row whose key is already taken is skipped instead of failing the statement. The turtle keeps AnAge's mass and gains the clutch size AnAge didn't have:
 
 ```sql
 -- q: l21-fill
 -- status: spike-table
-INSERT INTO sources VALUES ('Example dataset', 'CC0 1.0', NULL);
+INSERT INTO sources VALUES ('Example dataset', 'CC0 1.0', NULL) ON CONFLICT DO NOTHING;
 INSERT INTO species_traits VALUES
   (2, 'adult_mass', '5000', 'Example dataset'),
   (2, 'clutch_size', '20', 'Example dataset')
