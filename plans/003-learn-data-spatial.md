@@ -3165,6 +3165,61 @@ Two missions build this design, each with a ready-to-start brief in the ops form
 
 ## 8. For the owner
 
+Choices only the owner can make, each with a recommendation and its cost. Missions C and D read this section first; an answer overrides their brief, and without one they build the recommendation (§7). To answer, edit the brief before starting it, or tell the lead.
+
+| # | Choice | Recommendation | Mission |
+|---|---|---|---|
+| 1 | Which datasets to add first | AnAge, Natural Earth admin-0, the GBIF sample | C, D |
+| 2 | How browsers reach the raster | (c) summaries + (b) a few clips, from v004 | D |
+| 3 | The COG's provenance | answer it if you know it; nothing waits on it | D |
+| 4 | Learners' PostGIS reading your bucket | no: critwire's clip or their own v004 download | D |
+| 5 | Committing the `spatial` extension | commit it, as B1 committed `parquet` | D |
+| 6 | Publishing occurrence records | yes: a capped sample of open records | D |
+| 7 | How `ingest habitat` gets raster rights in PostGIS | no grant: the VPS superuser socket, or a Node-only path | D |
+| 8 | Sending the IUCN request | not now | none |
+| 9 | WDPA, WorldClim and CHELSA | WDPA and WorldClim never hosted; CHELSA after D | after D |
+
+**1. Datasets to add first: AnAge, Natural Earth admin-0 and the GBIF occurrence sample (§1).**
+- **Why:** AnAge alone gives C its first trait lessons for all three classes; the outlines and the sample are what every spatial lesson stands on, and the habitat track joins through both. All three are open and fit pipelines critwire already has.
+- **Cost:** AnAge is a 169 KB download and a small new ingest; the outlines are 1.21 MB (1:50m) and 7.35 MB (1:10m) of GeoParquet in the repository; the sample is drawn inside `ingest gbif` (item 6). C adds AmphiBIO, the Amniote database, Wikidata labels and, if its names match, Open Tree; D adds Jung v004. EltonTraits, COMBINE, ReptTraits and PanTHERIA wait unless a lesson lacks data.
+- **Instead:** any reorder within the hostable rows of §1's table; the blocked rows (D16, D17) can't move up.
+
+**2. How browsers reach the raster: (c) precomputed summaries plus (b) a few regional clips on critwire, both from v004 by URL (§5).**
+- **Why:** no server, nothing on your AWS bill, and it works without the provenance answer (item 3). Lesson 8's map loads 84 KB of a clip (189 KB with its page and reader) and peaked at 162 MB of renderer memory at 4× CPU slowdown (`out/e4-browser/`).
+- **Cost:** about 37 minutes of decoding and 695 MB from Zenodo per `ingest habitat` refresh, on the VPS, nothing in `deploy`; KB of summary rows; about 1.4 MB per clip, committed, so each refresh adds to the repository's history; a one-off 2.45 GB download, outside the repository, to cut clips from v004's composite. Summaries are estimates; §5 gives each method's measured error.
+- **Instead:** (a) a CORS rule on your bucket: one rule for you, then 195 KB of S3 egress per learner per map view on your bill, and only after item 3 is answered. (d) your TiTiler: a server outside critwire, cold starts of about 4 s, Lambda costs, and zonal statistics only from overviews.
+
+**3. The COG's provenance: answer it if you know it.**
+- **What:** which Zenodo version and file of Jung et al. 2020 `habitat_cog.tif` was made from, and how it was reprojected to Web Mercator and resampled. The spike excluded every version but 004 (§5), which is not proof.
+- **Why:** a confirmed v004 lets D cut clips from the COG (2.33 MB of S3 egress per clip) instead of downloading the 2.45 GB composite, and puts them on the grid lesson 8 already uses. A version other than 004 would mean nothing from the COG is ever published.
+- **Cost:** none to answer. Without an answer D uses v004 by URL and loses nothing but that download.
+
+**4. Learners' own PostGIS reading your bucket: no.**
+- **Why:** spatial lessons 5–7 read over `/vsicurl/` from critwire's clip or the learner's own v004 download, which costs you nothing and needs no gate.
+- **Cost of yes:** 58–91 KB of S3 egress per cold point read and 292–358 KB per small country's zonal statistics, per learner, on your bill (`out/e2-point/`, `out/e3-zonal/`), and only after item 3 is answered. It would let a lesson reach any place on Earth at 100 m, not only the clipped ones.
+
+**5. The `spatial` extension: commit it to the repository, as B1 commits `parquet`.**
+- **Why:** the build stays offline and the file is checked by its pin, with no new download step in `deploy`.
+- **Cost:** 23.6 MB in git history per DuckDB version, and again at each upgrade (002 §10 item 11). The alternative, a pinned, sha256-checked fetch at install, keeps the history small but ties every fresh checkout to one more download.
+
+**6. Publishing occurrence records: yes, a capped sample per animal of open records (CC0 1.0 and CC BY 4.0 only).**
+- **Why:** the spatial joins (§4 lessons 1–4) and the habitat at a record (`occurrences.habitat_code`) need points. Each row keeps its license and dataset key, and every sampled record is one the derived-dataset DOI already counts.
+- **Cost:** a new public file of a few hundred KB; a fresh `ingest gbif` in D, which may change the dataset counts and so need the usual DOI refresh (a new DOI, `AGENTS.md`), and may add `country-*` review items for you in `country-overrides.json`. Records are where an animal was seen or collected, not its range; every page says so.
+- **Instead:** no points published; spatial lessons 1–4 then run only on learners' own GBIF downloads, and `occurrences.habitat_code` (the habitat at a record) goes.
+
+**7. Raster rights for `ingest habitat` in PostGIS: no grant.**
+- **What:** the spike's validated path counts habitat inside outlines in PostGIS, whose raster settings only a superuser may set (§4). An ordinary role needs `GRANT SET ON PARAMETER`, a control-room change.
+- **Recommendation:** no grant. `ingest habitat` runs on the VPS as `critter-ai` over the socket, as the spike did, and never in `deploy`; or D's architecture takes the Node-only path if it validates it.
+- **Cost:** the ingest runs only on the VPS (as `gbif:register` does). A grant would let it run elsewhere, at the cost of a standing permission on the scratch database's role.
+
+**8. The IUCN request (§6): not now.**
+- **Why:** the IUCN lessons need nothing from IUCN: they run on each learner's own download, which IUCN's terms allow. A waiver would make critwire serve non-open files under IUCN's terms beside its CC0 and CC BY ones, replaced at each Red List update, and would need an exception to critwire's no-IUCN rule (`AGENTS.md`).
+- **Cost of sending:** one e-mail, the draft above, checked before sending. Nothing changes until IUCN answers in writing; if it grants a waiver, a later mission designs the files and their updates.
+
+**9. WDPA, WorldClim and CHELSA.**
+- **WDPA and WorldClim** stay learner-download only: their terms forbid redistribution (§1, D16, D17). Whether D adds one "your own download" lesson on protected areas: not in D; a later lesson can follow the IUCN lessons' pattern.
+- **CHELSA** is CC0 and hostable: a `country_climate` table after D, when the spatial machinery exists. Cost: a later mission's ingest of a worldwide raster, like `ingest habitat`.
+
 ## Disagreements with 002
 
 003 changes nothing in `002-learn.md`; where its design and 002's differ, the build missions follow this section.
