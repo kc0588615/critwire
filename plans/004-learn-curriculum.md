@@ -1929,7 +1929,412 @@ Mammalia | 28 | 2000 | 2 | 6.3
 
 ### 5.2 Database architecture
 
-(S18–S22)
+Six modules, twelve hours: how to design the tables the foundations queried, and how to run them. d1 and d2 are about design and work in the browser (d1's last part in PostgreSQL); d3 to d5 need your own PostgreSQL (§3.2), because indexes, transactions and roles are what a server adds; d6 builds a star for reporting, in PostgreSQL and DuckDB. The lab tables are §4's; the PostGIS labs run in `learn_curriculum` after `pg-session` (§0), each in a transaction the tests roll back, so a lab that adds, changes or deletes rows changes nothing for the next one.
+
+#### d1 · keys
+
+**Tool:** B (browser) + PG · **Time:** 2.0 h · **Prereqs:** f3
+
+**Concept:** An **entity** is a kind of thing a database keeps facts about, each one with its own identity: an animal, a country, a dataset, a record. Each entity becomes a table, and each table needs a **key**: a column, or a set of columns, whose value picks out exactly one row.
+- A table can have several **candidate keys**. `species` has `id`, `slug`, `scientific_name` and six ids from other websites. The one picked as the main key is the **primary key**: never `NULL`, never repeated. The others are **alternate keys**, declared `UNIQUE`.
+- A **natural key** is one the world already uses: a scientific name, a country's ISO code, GBIF's dataset key. A **surrogate key** is a number the database makes up and that means nothing else: critwire's `species.id`. Natural keys change (a species moves to another genus, a name turns out to be a synonym), and every row that points at one has to change with it; a surrogate never has to. critwire uses both: `id` (an integer, never reused) is the primary key, and the natural keys are `UNIQUE`. A natural key makes a good primary key when an authority keeps it stable and it is never missing: `countries.code` (ISO 3166-1) and `datasets.dataset_key` (GBIF's identifier) are primary keys here.
+- `UNIQUE` allows any number of `NULL`s, because one unknown value isn't equal to another: animals with no NCBI id don't collide. That is why an outside id can be an alternate key but not the primary key.
+- A **foreign key** says a column's value must be a key of another table: `occurrences.species_id REFERENCES species (id)`. It checks two things. A value that is inserted or changed must exist in the other table, or be `NULL`. And a row that other rows still point at can't be deleted or given another key, unless the foreign key says what to do instead (`ON DELETE CASCADE` deletes the children too, `ON DELETE SET NULL` empties their column). That is all it checks: not that the value is the right one, not rules that span rows, and with a key of two columns, a row with one of them `NULL` isn't checked at all (`MATCH SIMPLE`, the default). PostgreSQL also doesn't index the referencing column for you (d3).
+- A **`CHECK`** is a condition every row must meet, such as `month BETWEEN 1 AND 12`. It refuses a row only when the condition is false. When it is `NULL` (unknown, f1) the row passes, so a `CHECK` doesn't replace `NOT NULL`. A `CHECK` can compare columns of the same row: `taxa`'s says a class has no parent and every other rank has one.
+- A **generated column** is computed from other columns of its row and can't be written directly. The lab's `occurrences.geom` is the point made from `longitude` and `latitude`, so the point and the two numbers can never disagree.
+- Foreign keys set the order of a load: a parent row goes in before its children (the browser setup inserts `taxa` one rank at a time, top down), and out after them.
+
+**Worked example:** Can two animals share an id? (002's lesson 7, re-run.) The standard view `information_schema.table_constraints` lists a table's constraints. DuckDB also lists each `NOT NULL` rule, as a `CHECK`; this query leaves those out:
+
+```sql
+-- q: d1-constraints
+-- status: ran
+SELECT constraint_name, constraint_type
+FROM information_schema.table_constraints
+WHERE table_name = 'species'
+  AND constraint_type IN ('PRIMARY KEY', 'UNIQUE', 'FOREIGN KEY')
+ORDER BY constraint_type, constraint_name;
+```
+
+```text
+-- result: d1-constraints · 10 rows · sha256 e6eae9d8d6bb
+constraint_name | constraint_type
+species_genus_name_fkey | FOREIGN KEY
+species_id_pkey | PRIMARY KEY
+species_col_id_key | UNIQUE
+species_gbif_id_key | UNIQUE
+species_inaturalist_id_key | UNIQUE
+… 5 more rows
+```
+
+Try to add a second animal with the tiger's id, 25. `INSERT INTO` adds a row: the columns in brackets, then their values in the same order. The database refuses, and nothing is added:
+
+```sql
+-- q: d1-same-id
+-- status: ran
+-- expect: error violates primary key constraint
+INSERT INTO species (id, slug, scientific_name, common_name, genus, range_status)
+VALUES (25, 'siberian-tiger', 'Panthera tigris altaica', 'Siberian Tiger', 'Panthera', 'ok');
+```
+
+```text
+-- result: d1-same-id · error: statement 1 of 1: Constraint Error: Duplicate key "id: 25" violates primary key constraint.
+```
+
+A new id doesn't get a row past the alternate keys either. A Bengal tiger with its own id but given the tiger's GBIF id is refused by `UNIQUE (gbif_id)`: in critwire, one GBIF id names one animal.
+
+```sql
+-- q: d1-same-gbif
+-- status: ran
+-- expect: error violates unique constraint
+INSERT INTO species (id, slug, scientific_name, common_name, genus, range_status, gbif_id)
+VALUES (1000, 'bengal-tiger', 'Panthera tigris tigris', 'Bengal Tiger', 'Panthera', 'ok',
+        (SELECT gbif_id FROM species WHERE id = 25));
+```
+
+```text
+-- result: d1-same-gbif · error: statement 1 of 1: Constraint Error: Duplicate key "gbif_id: 5219416" violates unique constraint.
+```
+
+Why not use an outside id as the primary key? Some are missing, and `UNIQUE` lets the `NULL`s sit side by side:
+
+```sql
+-- q: d1-missing-ids
+-- status: ran
+SELECT count(*) AS species,
+       count(*) - count(gbif_id) AS no_gbif_id,
+       count(*) - count(col_id) AS no_col_id,
+       count(*) - count(wikidata_id) AS no_wikidata_id,
+       count(*) - count(inaturalist_id) AS no_inaturalist_id,
+       count(*) - count(ncbi_id) AS no_ncbi_id
+FROM species;
+```
+
+```text
+-- result: d1-missing-ids · 1 row · sha256 760e1edef926
+species | no_gbif_id | no_col_id | no_wikidata_id | no_inaturalist_id | no_ncbi_id
+76 | 3 | 7 | 0 | 2 | 1
+```
+
+And the scientific name? Names change. These four animals' GBIF ids are synonyms in GBIF's backbone: GBIF files their records under another, accepted name (§4.2).
+
+```sql
+-- q: d1-synonyms
+-- status: ran
+SELECT id, slug, scientific_name, gbif_id
+FROM species
+WHERE gbif_id IN (2442885, 2440897, 5786560, 5786559)
+ORDER BY id;
+```
+
+```text
+-- result: d1-synonyms · 4 rows · sha256 0c8afd374c8f
+id | slug | scientific_name | gbif_id
+1 | blandings-turtle | Emydoidea blandingii | 2442885
+55 | giant-pangolin | Smutsia gigantea | 5786559
+63 | temmincks-pangolin | Smutsia temminckii | 5786560
+70 | bairds-tapir | Tapirus bairdii | 2440897
+```
+
+Had `scientific_name` been the primary key, following such a change would mean rewriting it in `species`, `species_sources`, `species_countries` and every record. With `id` as the key it is one `UPDATE` of one row, and every foreign key still points at the right animal.
+
+**Lab:**
+1. What does a `CHECK` refuse? A record with month 13 (a copy of the first devil record, with a new id and the month changed):
+
+```sql
+-- q: d1-check-month
+-- status: ran
+-- expect: error CHECK constraint failed
+INSERT INTO occurrences (id, species_id, dataset_key, license, basis_of_record, longitude, latitude, year, month)
+SELECT 1, species_id, dataset_key, license, basis_of_record, longitude, latitude, year, 13
+FROM occurrences
+WHERE species_id = 48
+ORDER BY id
+LIMIT 1;
+```
+
+```text
+-- result: d1-check-month · error: statement 1 of 1: Constraint Error: CHECK constraint failed on table occurrences with expression CHECK(("month" BETWEEN 1 AND 12))
+```
+
+2. The same record with no month and no country goes in. `month BETWEEN 1 AND 12` is unknown for `NULL`, and a `CHECK` passes unknown; a foreign key passes `NULL` too. Most of the time that is what you want (many records really have no month), but if a value must be there, the column needs `NOT NULL` as well.
+
+```sql
+-- q: d1-check-null
+-- status: ran
+INSERT INTO occurrences (id, species_id, dataset_key, license, basis_of_record, longitude, latitude, country_code, year, month)
+SELECT 1, species_id, dataset_key, license, basis_of_record, longitude, latitude, NULL, year, NULL
+FROM occurrences
+WHERE species_id = 48
+ORDER BY id
+LIMIT 1;
+SELECT id, species_id, country_code, month
+FROM occurrences
+WHERE id = 1;
+```
+
+```text
+-- result: d1-check-null · 1 row · sha256 8ae30f0c14b6
+id | species_id | country_code | month
+1 | 48 | NULL | NULL
+```
+
+3. A `CHECK` across two columns: a genus must have a parent.
+
+```sql
+-- q: d1-check-taxa
+-- status: ran
+-- expect: error CHECK constraint failed
+INSERT INTO taxa (name, taxon_rank, parent_name)
+VALUES ('Dracula', 'genus', NULL);
+```
+
+```text
+-- result: d1-check-taxa · error: statement 1 of 1: Constraint Error: CHECK constraint failed on table taxa with expression CHECK(((taxon_rank = 'class') = (parent_name IS NULL)))
+```
+
+4. What does a foreign key refuse? An animal in a genus critwire doesn't have (002's lesson 7 exercise): `species.genus` must be a `name` in `taxa`.
+
+```sql
+-- q: d1-fk-genus
+-- status: ran
+-- expect: error Violates foreign key constraint
+INSERT INTO species (id, slug, scientific_name, common_name, genus, range_status)
+VALUES (1000, 'dracula-ant', 'Dracula ant', 'Dracula Ant', 'Dracula', 'ok');
+```
+
+```text
+-- result: d1-fk-genus · error: statement 1 of 1: Constraint Error: Violates foreign key constraint because key "name: Dracula" does not exist in the referenced table
+```
+
+   The rest of the lab runs in PostgreSQL (§3.2), on the same tables.
+
+5. A foreign key also protects the parent. Deleting the dataset with the most records in the sample would leave its records pointing at nothing, so PostgreSQL refuses:
+
+```sql
+-- q: d1-fk-delete
+-- status: ran
+-- engine: postgis
+-- expect: error violates foreign key constraint
+DELETE FROM datasets
+WHERE dataset_key = (SELECT dataset_key FROM occurrences
+                     GROUP BY dataset_key
+                     ORDER BY count(*) DESC, dataset_key
+                     LIMIT 1);
+```
+
+```text
+-- result: d1-fk-delete · error: statement 1 of 1: update or delete on table "datasets" violates foreign key constraint "occurrences_dataset_key_fkey" on table "occurrences"
+```
+
+6. What doesn't a foreign key check? Whether the value is the right one. This copy of a devil record says Australia (`AU` is a `countries` row, so the foreign key is satisfied) but sits at Brasília. The point is the generated column, made from the longitude and latitude just inserted, so a spatial test can catch what the key can't (g3 does this for every record):
+
+```sql
+-- q: d1-fk-wrong
+-- status: ran
+-- engine: postgis
+INSERT INTO occurrences (id, species_id, dataset_key, license, basis_of_record, longitude, latitude,
+                         country_code_gbif, country_code, year, month)
+SELECT 1, species_id, dataset_key, license, basis_of_record, -47.9, -15.8, 'AU', 'AU', year, month
+FROM occurrences
+WHERE species_id = 48
+ORDER BY id
+LIMIT 1;
+SELECT o.id, o.country_code, ST_AsText(o.geom) AS point,
+       ST_Covers(cs.geom, o.geom) AS in_its_country,
+       (SELECT s.country_code FROM country_shapes AS s WHERE ST_Covers(s.geom, o.geom)) AS point_is_in
+FROM occurrences AS o
+JOIN country_shapes AS cs ON cs.country_code = o.country_code
+WHERE o.id = 1;
+```
+
+```text
+-- result: d1-fk-wrong · 1 row · sha256 18d790a2949e
+id | country_code | point | in_its_country | point_is_in
+1 | AU | POINT(-47.9 -15.8) | false | BR
+```
+
+7. PostgreSQL builds an index for every primary key and `UNIQUE` constraint, because it needs one to check them. It doesn't for a foreign key: checking a new record needs only the parent's key, which is indexed already. But deleting a parent, or joining from it, has to find the children, and with no index on `occurrences.species_id` that means reading the whole table (d3). Which of `occurrences`' keys have an index that starts with their column?
+
+```sql
+-- q: d1-fk-index
+-- status: ran
+-- engine: postgis
+SELECT c.conname AS constraint_name,
+       CASE c.contype WHEN 'p' THEN 'PRIMARY KEY' ELSE 'FOREIGN KEY' END AS constraint_type,
+       a.attname AS column_name,
+       EXISTS (SELECT 1 FROM pg_index AS i
+               WHERE i.indrelid = c.conrelid AND i.indkey[0] = c.conkey[1]) AS indexed
+FROM pg_constraint AS c
+JOIN pg_attribute AS a ON a.attrelid = c.conrelid AND a.attnum = c.conkey[1]
+WHERE c.conrelid = 'occurrences'::regclass
+  AND c.contype IN ('p', 'f')
+ORDER BY c.contype DESC, c.conname;
+```
+
+```text
+-- result: d1-fk-index · 4 rows · sha256 bbc2c2e237f8
+constraint_name | constraint_type | column_name | indexed
+occurrences_pkey | PRIMARY KEY | id | true
+occurrences_country_code_fkey | FOREIGN KEY | country_code | false
+occurrences_dataset_key_fkey | FOREIGN KEY | dataset_key | false
+occurrences_species_id_fkey | FOREIGN KEY | species_id | false
+```
+
+8. The generated column, as the catalog describes it; then an attempt to write it, refused:
+
+```sql
+-- q: d1-generated
+-- status: ran
+-- engine: postgis
+SELECT column_name, is_generated, generation_expression
+FROM information_schema.columns
+WHERE table_schema = current_schema()
+  AND table_name = 'occurrences'
+  AND is_generated = 'ALWAYS';
+```
+
+```text
+-- result: d1-generated · 1 row · sha256 5927c3d4ced9
+column_name | is_generated | generation_expression
+geom | ALWAYS | st_setsrid(st_makepoint(longitude, latitude), 4326)
+```
+
+```sql
+-- q: d1-generated-write
+-- status: ran
+-- engine: postgis
+-- expect: error can only be updated to DEFAULT
+UPDATE occurrences
+SET geom = ST_SetSRID(ST_MakePoint(0, 0), 4326)
+WHERE id = (SELECT min(id) FROM occurrences);
+```
+
+```text
+-- result: d1-generated-write · error: statement 1 of 1: column "geom" can only be updated to DEFAULT
+```
+
+9. A surrogate key made by the database. `GENERATED ALWAYS AS IDENTITY` numbers the rows as they go in. A surrogate key alone would accept the same note twice under two numbers, so the natural key, (animal, observer, day), is declared `UNIQUE` beside it:
+
+```sql
+-- q: d1-identity
+-- status: ran
+-- engine: postgis
+CREATE TABLE field_notes (
+  note_id    integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  species_id integer NOT NULL REFERENCES species (id),
+  observer   text NOT NULL CHECK (observer <> ''),
+  seen_on    date NOT NULL,
+  UNIQUE (species_id, observer, seen_on)
+);
+INSERT INTO field_notes (species_id, observer, seen_on)
+VALUES (48, 'Ana', DATE '2026-03-14'), (48, 'Ana', DATE '2026-03-15'), (25, 'Ben', DATE '2026-03-14');
+SELECT note_id, species_id, observer, seen_on
+FROM field_notes
+ORDER BY note_id;
+```
+
+```text
+-- result: d1-identity · 3 rows · sha256 f171f9ff7119
+note_id | species_id | observer | seen_on
+1 | 48 | Ana | 2026-03-14
+2 | 48 | Ana | 2026-03-15
+3 | 25 | Ben | 2026-03-14
+```
+
+```sql
+-- q: d1-identity-twice
+-- status: ran
+-- engine: postgis
+-- after: d1-identity
+-- expect: error duplicate key value violates unique constraint
+INSERT INTO field_notes (species_id, observer, seen_on)
+VALUES (48, 'Ana', DATE '2026-03-14');
+```
+
+```text
+-- result: d1-identity-twice · error: statement 1 of 1: duplicate key value violates unique constraint "field_notes_species_id_observer_seen_on_key"
+```
+
+**Result:** Every key refused what it should: a second animal with id 25 or with the tiger's GBIF id, a month of 13, a genus with no parent, an animal in a genus that doesn't exist, the deletion of a dataset its records still point at, a write to a generated column and the same field note twice. What got through is as instructive: a record with no month and no country (a `CHECK` and a foreign key both pass `NULL`), and a record that says Australia while its point is in Brazil (a foreign key checks that a value exists, not that it is true). `occurrences`' primary key is indexed and its three foreign keys aren't. critwire's design follows from this: a surrogate primary key, the natural keys `UNIQUE` (some outside ids are missing, and four names already changed in GBIF's eyes), and natural primary keys only where an authority keeps them stable (`countries`, `datasets`).
+
+**Exercise:** critwire keeps one photo per animal, in `species`. Design a table `species_photos` that can hold several: a surrogate `photo_id`; the animal (`species_id`, an animal critwire has); a `url` no other photo has; a `license` that is a Creative Commons license (it starts with `CC`) or `Public domain`; and a `credit` that is filled in and not empty. Create it in the browser, copy in every animal's current photo (`photo_url`, `photo_license`, `photo_credit`, numbered by species id), and count the photos, the animals and the licenses.
+
+**Answer:**
+
+```sql
+-- q: d1-ex
+-- status: ran
+CREATE TABLE species_photos (
+  photo_id   INTEGER PRIMARY KEY,
+  species_id INTEGER NOT NULL REFERENCES species (id),
+  url        VARCHAR NOT NULL UNIQUE,
+  license    VARCHAR NOT NULL CHECK (license LIKE 'CC%' OR license = 'Public domain'),
+  credit     VARCHAR NOT NULL CHECK (trim(credit) <> '')
+);
+INSERT INTO species_photos
+SELECT row_number() OVER (ORDER BY id), id, photo_url, photo_license, photo_credit
+FROM species
+WHERE photo_url IS NOT NULL;
+SELECT count(*) AS photos, count(DISTINCT species_id) AS species, count(DISTINCT license) AS licenses
+FROM species_photos;
+```
+
+```text
+-- result: d1-ex · 1 row · sha256 8f006cc37be7
+photos | species | licenses
+74 | 74 | 10
+```
+
+Then each of these must be refused by your table: the axolotl's photo again, a photo of an animal critwire doesn't have, and a photo with no license to reuse.
+
+```sql
+-- q: d1-ex-same-url
+-- status: ran
+-- after: d1-ex
+-- expect: error PRIMARY KEY or UNIQUE constraint violation
+INSERT INTO species_photos
+SELECT 1000, id, photo_url, photo_license, photo_credit FROM species WHERE id = 74;
+```
+
+```text
+-- result: d1-ex-same-url · error: statement 1 of 1: Constraint Error: PRIMARY KEY or UNIQUE constraint violation: duplicate key "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/00/Axolotl_ganz.jpg/500px-Axolotl_ganz.jpg"
+```
+
+```sql
+-- q: d1-ex-no-species
+-- status: ran
+-- after: d1-ex
+-- expect: error Violates foreign key constraint
+INSERT INTO species_photos
+VALUES (1000, 1000, 'https://example.org/dracula-ant.jpg', 'CC BY 4.0', 'A. Photographer');
+```
+
+```text
+-- result: d1-ex-no-species · error: statement 1 of 1: Constraint Error: Violates foreign key constraint because key "id: 1000" does not exist in the referenced table
+```
+
+```sql
+-- q: d1-ex-license
+-- status: ran
+-- after: d1-ex
+-- expect: error CHECK constraint failed
+INSERT INTO species_photos
+VALUES (1000, 74, 'https://example.org/axolotl-2.jpg', 'All rights reserved', 'A. Photographer');
+```
+
+```text
+-- result: d1-ex-license · error: statement 1 of 1: Constraint Error: CHECK constraint failed on table species_photos with expression CHECK(((license ~~ 'CC%') OR (license = 'Public domain')))
+```
+
+**Check:** `result, any row order` for the counts; then the page runs the three inserts above after your answer, and each must fail with the error named (unique, foreign key, `CHECK`), whatever you named your constraints.
+
+**Dialects:**
+- **PostgreSQL:** as here, with surrogate keys from `GENERATED ALWAYS AS IDENTITY` (or the older `serial`); generated columns are `STORED` only (virtual ones come in PostgreSQL 18); foreign keys take `ON DELETE CASCADE | SET NULL | RESTRICT`, can be `DEFERRABLE` (checked at commit), and can be added `NOT VALID` and checked later with `VALIDATE CONSTRAINT`; `UNIQUE NULLS NOT DISTINCT` makes `NULL`s collide; no automatic index on a foreign key.
+- **DuckDB:** keys as here, but foreign keys only in `CREATE TABLE`, with no `CASCADE` or `SET NULL` actions; no identity columns (a `CREATE SEQUENCE` and `DEFAULT nextval('…')` do it); generated columns are virtual only; primary keys and `UNIQUE` build an index, which also makes bulk loads into keyed tables slower.
+- **SQL Server:** `IDENTITY(1, 1)` for surrogates; computed columns (`AS (…)`, `PERSISTED` to store them); a `UNIQUE` constraint allows only one `NULL` (a filtered unique index, `WHERE col IS NOT NULL`, allows many); foreign keys take `ON DELETE CASCADE | SET NULL`, and `NOCHECK` turns one off, which leaves it untrusted until it is re-checked; `CHECK` passes unknown, as here.
+
+(S19–S22 write d2–d5 here.)
 
 #### d6 · star
 
@@ -2564,14 +2969,14 @@ Data dictionary, schema v2:
 
 `plans/004-lab-erd.mmd`, schema `learn_curriculum`. The same keyed tables as schema v2 in PostgreSQL types (`text`, `float8`; GBIF's dataset key is a `uuid`), plus the shapes the GIS modules join to: country outlines, admin-1 areas for nine countries, RESOLVE's biomes and ecoregions, and the habitat map's classes. Every shape is `geometry` in WGS 84 (SRID 4326) with a GiST index; a record's point is a generated column, so it can never disagree with its longitude and latitude. Two lists sit beside the diagram, as comments in the source:
 
-- **Lab-made:** tables the lessons create in the lab (s4's hexagon grids, the smoke check's table, the ETL's staging tables, d6's star). They aren't part of the loaded lab, so they aren't drawn; the check excuses them when a lesson's setup has made them.
+- **Lab-made:** tables the lessons create in the lab (s4's hexagon grids, the smoke check's table, d1's field notes, the ETL's staging tables, d6's star). They aren't part of the loaded lab, so they aren't drawn; the check excuses them when a lesson's setup has made them.
 - **Planned:** `occurrence_habitats` (the habitat class at each record) and `habitat_clips` (small clips of the habitat map, as rasters), which build mission L3 adds. They are drawn so the design is whole; the check excuses them while they don't exist, and fails once they do, so the marker can't go stale.
 
 ```mermaid
 %% critwire Learn: the lab database, PostGIS schema learn_curriculum (plans/004-learn-curriculum.md §3, §4, §6), in PostgreSQL types.
 %% Tables only; the view species_taxonomy is listed beside it. Shapes are geometry in WGS 84 (SRID 4326), each with a GiST index.
 %% Tables the lessons make in the lab (s4's grids, the smoke check's, the ETL's staging, d6's star): beside the diagram, not in it.
-%% lab-made: s4_cells, tx_smoke, gbif_staging, occurrences_all, dim_species, dim_country, dim_dataset, dim_year, dim_habitat_class, fact_records, fact_species_country, fact_country_habitat
+%% lab-made: s4_cells, tx_smoke, field_notes, gbif_staging, occurrences_all, dim_species, dim_country, dim_dataset, dim_year, dim_habitat_class, fact_records, fact_species_country, fact_country_habitat
 %% Drawn, but built by build mission L3 (the habitat map), so not in the lab yet:
 %% planned: occurrence_habitats, habitat_clips
 %% Keys: PK primary key, FK foreign key, UK unique. Lines: || exactly one, |o or o| zero or one, |{ one or more, o{ zero or more.
