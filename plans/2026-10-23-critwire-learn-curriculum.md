@@ -222,7 +222,7 @@ Out:
 
 ## Stages
 
-- [ ] Baseline: install, migrate, run typecheck, lint, unit and E2E tests; record the results under Baseline
+- [x] Baseline: install, migrate, run typecheck, lint, unit and E2E tests; record the results under Baseline
 - [ ] Architecture: `architect` writes findings and the target design
 - [ ] Fable review: `architecture-reviewer`
 - [ ] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
@@ -230,6 +230,17 @@ Out:
 - [ ] Steps: `planner` writes Steps and Verification
 
 ## Baseline
+
+2026-10-23, worktree HEAD `a2f5dc7` (= `origin/main` `c305f87` + this plan; `git diff --stat origin/main HEAD` touches only this plan, so its build is `main`'s build). `<m>` = `/srv/critter-ai/agent-state/missions/critwire-learn-curriculum/`, `<spike>` = `<m>/spike/`.
+- `pnpm install --frozen-lockfile`: up to date. No lint script and no migrations: `pnpm build` rebuilds the schema in `critwire_dev` each run.
+- `pnpm typecheck`: pass. `pnpm test`: 66/66 pass.
+- `pnpm build` (after `rm -rf dist`): pass, 157 files in `dist/`.
+- `E2E_ARTIFACTS=<m>/baseline-e2e pnpm e2e`: 20/20 pass (report `<m>/baseline-e2e/playwright-report/`); ports 3100–3102 free afterwards.
+- **dist hashes** (Definition of done): `<spike>/baseline/dist.sha256` (157 files, `sha256sum` from inside `dist/`), identical to A2's baseline list. Live files fetched from https://critwire.com into `<spike>/baseline/live/`, hashed in `<spike>/baseline/live.sha256`: identical to `dist.sha256`.
+- Reproduce: `rm -rf dist && pnpm build && (cd dist && find . -type f | sort | xargs sha256sum) | diff - <spike>/baseline/dist.sha256`.
+- `critwire_dev`: `postgis` and `postgis_raster` 3.4.2 installed. Schema `learn_spatial` (A2) owned by `critter-ai`: 528 `occurrences`, 1 `habitat_clips` row, plus `country_shapes`, `example_ranges`, `habitat_classes`, `species`, `species_countries`. The `.env` role `critwire` gets `permission denied` on it (no CREATEROLE, not superuser); `critter-ai` over the socket (`psql -d critwire_dev`) is superuser. Labs touching `learn_spatial`/roles run as `critter-ai`.
+- Python 3.12.3, no `ensurepip`, no `uv`: venv needs `--without-pip` + get-pip.py, or a standalone `uv` (brief Notes).
+- Disk: 24 GB free.
 
 ## Architecture
 
@@ -250,5 +261,7 @@ Out:
 ## Decisions
 
 ## Log
+
+- 2026-10-23 04:36 UTC: Baseline. typecheck pass, test 66/66, build 157 files (hashes = A2 baseline = live), e2e 20/20; learn_spatial readable only as critter-ai; no ensurepip/uv.
 
 ## Summary
