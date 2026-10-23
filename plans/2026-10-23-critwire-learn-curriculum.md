@@ -226,7 +226,7 @@ Out:
 - [x] Architecture: `architect` writes findings and the target design
 - [x] Fable review: `architecture-reviewer`
 - [x] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
-- [ ] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
+- [x] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
 - [ ] Steps: `planner` writes Steps and Verification
 
 ## Baseline
@@ -244,7 +244,7 @@ Out:
 
 ## Architecture
 
-Architect, 2026-10-23, 04:40–05:15 UTC. Nothing public changes; the "code in scope" is 002/003 and their ERDs, A1's and A2's spikes (read only; `<a1>` = `…/missions/critwire-learn-design/spike/`, `<a2>` = `…/missions/critwire-learn-spatial-design/spike/`), the repo's build (`scripts/`, `site/`, `e2e/`, `db/`), `critwire_dev`, GBIF and the vault's titles. Scratch went to `/tmp/a3arch/` only; no GBIF download was submitted. `<spike>` = `/srv/critter-ai/agent-state/missions/critwire-learn-curriculum/spike/`, `<m>` = its parent. **(S)** marks a fact the spike must confirm.
+Architect, 2026-10-23, 04:40–05:15 UTC. Nothing public changes; the "code in scope" is 002/003 and their ERDs, A1's and A2's spikes (read only; `<a1>` = `…/missions/critwire-learn-design/spike/`, `<a2>` = `…/missions/critwire-learn-spatial-design/spike/`), the repo's build (`scripts/`, `site/`, `e2e/`, `db/`), `critwire_dev`, GBIF and the vault's titles. Scratch went to `/tmp/a3arch/` only; no GBIF download was submitted. `<spike>` = `/srv/critter-ai/agent-state/missions/critwire-learn-curriculum/spike/`, `<m>` = its parent. **(S)** marks a fact the spike must confirm. **Revised** 2026-10-23 05:10–05:40 UTC for both reviews (Revision notes); F10–F13 are new, the rest edited in place.
 
 ### Findings (ranked by impact)
 
@@ -260,21 +260,23 @@ Architect, 2026-10-23, 04:40–05:15 UTC. Nothing public changes; the "code in s
 - Raw point counts therefore measure recording effort (collars, state atlases, roads), not where animals live.
 - **Fix:** a deterministic capped sample (T5), areal units for statistics (T7b), and the bias module (s1) before any statistic (T3).
 
-**F3. A download without `checklistKey` would misread critwire's taxon keys** (bug: wrong records).
-- `ids.gbif` are keys of the legacy backbone (`d7dddbf4-2cf0-4f39-9b2a-bb099caae36c`, `scripts/ingest/gbif.ts:14`). GBIF has resolved `TAXON_KEY` against COL XR by default since 2026-06 (`AGENTS.md`).
-- GBIF's download documentation (techdocs `…/data-use/api-downloads`, fetched today) accepts `checklistKey` at the request's top level (the taxonomy of the output) and on each `TAXON_KEY` predicate.
-- **Fix:** set both to the legacy key (T7a). If GBIF refuses the legacy key for downloads, fall back to the `ids.col` keys with COL's checklist and record the change (T13).
+**F3. The download's taxonomy rests on a default GBIF calls obsolete** (latent bug: the filter and output taxonomy could switch silently; and a wording trap for the course).
+- `ids.gbif` are keys of the legacy backbone (`d7dddbf4-2cf0-4f39-9b2a-bb099caae36c`, `scripts/ingest/gbif.ts:14`).
+- GBIF's download docs (techdocs `…/data-use/api-downloads`, re-read 2026-10-23): "If no `checklistKey` is supplied the obsolete GBIF Backbone Taxonomy will be used", and it "should be specified for the whole request (for the taxonomy used for output) as well as in taxonomic filters". So today an omitted key *does* match `ids.gbif`.
+- The risk is the default moving: `occurrence/search`'s already did (COL XR since 2026-06, `AGENTS.md`), and the docs call the backbone obsolete. A moved default would re-read our 73 keys against another taxonomy and change `speciesKey` in the output, with no error.
+- **Fix:** set `checklistKey` to the legacy key at the top level and on `TAXON_KEY` (T7a), and check GBIF's stored request echoes both. (S) whether GBIF accepts the legacy key explicitly; if not, the `ids.col` keys with COL's checklist (T13). 004 §4 and e1 state the documented default correctly and teach pinning it rather than trusting it.
 
 **F4. A2's query runner, copied as it is, would rebuild `learn_spatial` and refuse the database-architecture labs** (bug, and a breach of the brief).
 - `<a2>/scripts/pg-engine.ts` `openPgEngine` runs `runPgSetup` on every connect, and that is 003's `pg-setup`: `DROP TABLE IF EXISTS learn_spatial.*`, then a rebuild.
 - `<a2>/scripts/plan-queries.ts:102-145` refuses transaction control, `GRANT`/`REVOKE`/`ALTER ROLE`, every `SET`, and `random(`. d4 (transactions) and d5 (roles) need exactly these.
 - Its DuckDB boot `LOAD`s `spatial` and runs `setup-grown` (`<a2>/src/engine.ts:73-75, 196-219`); neither is part of this design.
-- **Fix:** T6 lists the changes: its own loader, a `learn_spatial` canary, narrow allowances, and Python and Power BI engines.
+- `<a2>/scripts/pg.ts:14-18, 102-110` (Fable, verified): `SCHEMA = "learn_spatial"`, `search_path = learn_spatial, public` and `CREATE SCHEMA IF NOT EXISTS learn_spatial` on every connect, after the raster `capabilityCheck`; its PG9 (`scanForPrivilegeChanges`, `:258-274`) fails the run on any `GRANT`/`REVOKE`/`ALTER ROLE` text in the spike's code. As copied, every unqualified lab statement would hit `learn_spatial`.
+- **Fix:** T6 lists the changes: `pg.ts` re-pointed to `learn_curriculum`, its own loader, a content canary on `learn_spatial`, narrow allowances, and Python and Power BI engines.
 
 **F5. Loading a learner's own PostGIS was never tested, and can't be as 003 wrote it** (breaks "every lab tested").
 - 003 §4 and §6 give learners `sh` fences (`shp2pgsql`, `ogr2ogr`), which A2 left uncounted (A2 plan, T3 "Not run here"). The VPS has no GDAL command-line tools, and the `postgis/postgis` Docker image doesn't ship them either (S).
 - The brief says labs "run unchanged in critwire_dev".
-- **Fix:** one loader that needs only `psql` (`COPY … FROM stdin`, geometry as WKB hex). The runner executes it with the exact command a learner types (T5, T6).
+- **Fix:** one loader that needs only `psql` (`COPY … FROM stdin (FORMAT csv)`, geometry as WKB hex: F10). The runner executes it with the exact command a learner types (T5, T6).
 
 **F6. The 50 MB cap rules out A2's file sizes as they are.**
 - Sizes A2 measured: admin-0 1:10m GeoParquet 7.35 MB (1:50m: 1.21 MB); admin-1 1:10m GeoJSON 40.7 MB (1:50m: 2.3 MB); RESOLVE zip 149 MB; DuckDB's `spatial` extension 23.6 MB per DuckDB version; Costa Rica clip 1.42 MB; Jung composite 2.45 GB.
@@ -292,6 +294,27 @@ Architect, 2026-10-23, 04:40–05:15 UTC. Nothing public changes; the "code in s
 - **Fix:** Moran's I on areal units with distinct centroids, a distance band whose threshold sits in a gap between distance classes, and KNN taught on irregular centroids only (T7b).
 
 **F9. The VPS Python has no `ensurepip` and no `uv`** (Baseline). **Fix:** a pinned, spike-local `uv` (T4).
+
+F10–F13 come from the reviews, each verified; by impact they sit after F5.
+
+**F10. `COPY`'s default text format silently alters backslashes** (bug: wrong data, no error; Fable MF1).
+- GBIF's `SIMPLE_CSV` is tab-separated with no quoting. Read as `FORMAT text`, `\N` becomes NULL and `\t`, `\n`, `\x..` in free text (`locality`, `recordedBy`) shift or change values.
+- The same trap hits the loader (T5): in text format `\x0101…` is a byte escape. Checked in `critwire_dev` (TEMP table, rolled back): a 21-byte point's `\x` hex WKB loaded as 41 bytes of garbage with no error; `FORMAT csv` gave `POINT(1 2)`.
+- Checked too: `COPY … (FORMAT csv, DELIMITER E'\t', QUOTE E'\b', NULL '', HEADER true)` keeps `C:\new "quoted" \N place` byte for byte and reads an empty field as NULL.
+- **Fix:** that form for the GBIF file (T7a, e2's key query); `FORMAT csv` for every loader table (T5). One rule, taught once in e2: never text-format `COPY` on data you didn't write.
+
+**F11. GBIF's country codes don't all have a row in `countries`** (bug: the FK rejects rows at load; Fable missed 1, Astra MF2).
+- `occurrences.country_code FK → countries` (T8). 002 §6's file has GBIF's 250 enumerated codes (`XK` included); `data/raw/gbif/snapshot.json` has no `ZZ` (unknown) or `XZ` (international waters), yet records carry `ZZ` (derive drops it: `scripts/derive/countries.ts:27`), may carry `XZ` (S: T7a lists the raw values), or have no code at all.
+- **Fix:** the country-key contract (T5): raw code kept, a normalized nullable FK beside it, one unknown member in the star.
+
+**F12. Lab files have no credit path** (breaks "every third-party field records its source"; Fable missed 3, Astra MF4).
+- `buildAttribution` (`scripts/build/attribution.ts:24-60`) builds `/v1/attribution.json` from species records' `sources[]` only; T5's "the existing build checks enforce" was wrong for lab files.
+- `datasets.csv` held `dataset_key, license` only: CC BY 4.0 records need their dataset credited, and e4 asks "which datasets must I credit?".
+- **Fix:** committed dataset metadata (title, publisher, DOI) fetched at ingest, carried into `datasets`, `dim_dataset` and both manifests; lab credits live in `/learn/data/manifest.json`, not `/v1` (T5).
+
+**F13. The runner's rollback hides a lab that doesn't clean up** (breaks the brief's "each lab drops what it creates in the same block"; Fable missed 2, Astra MF5).
+- Every block runs inside `BEGIN … ROLLBACK` (`<a2>/run-queries.ts:10, 204`), so a d5 block that forgets `DROP ROLE` passes here and leaks on the learner's install; the leak check after the rollback sees nothing.
+- **Fix:** a pairing lint and a leak check inside the block's transaction (T6).
 
 **Already fine (checked today):**
 - `critwire_dev` has `postgis` and `postgis_raster` 3.4.2, `ST_HexagonGrid`, `ST_SquareGrid`, `ST_ClusterDBSCAN`, `ST_ClusterKMeans`, `ST_ClusterWithinWin` and `ST_VoronoiPolygons`, and the SRIDs 3577, 6933, 8857, 3857 and 4326.
@@ -388,7 +411,7 @@ Tools: **B** browser (DuckDB-WASM), **PG** PostGIS, **Py** Python, **PBI** Power
 
 #### T4. Lab environments (004 §3)
 
-**Browser.** 002 §1 unchanged. The setup reads `/v1/species.parquet`, `/v1/countries.parquet` and `/learn/data/occurrences.parquet`. "Light spatial" is plain SQL (bounding boxes, `floor(lon / 10)` bins, a haversine formula); there is no `spatial` extension (T11 item 3).
+**Browser.** 002 §1 unchanged. The setup reads `/v1/species.parquet`, `/v1/countries.parquet`, `/learn/data/datasets.csv` and `/learn/data/occurrences.parquet`. "Light spatial" is plain SQL (bounding boxes, `floor(lon / 10)` bins, a haversine formula); there is no `spatial` extension (T11 item 3).
 
 **PostGIS, the learner's own install (Windows).**
 - **Recommended: Docker Desktop (WSL 2).** `docker run -d --name learn-pg -e POSTGRES_PASSWORD=… -p 5432:5432 -v learn-pg:/var/lib/postgresql/data postgis/postgis:16-3.4`: PostgreSQL 16 and PostGIS 3.4, the versions the labs are tested on.
@@ -399,6 +422,8 @@ Tools: **B** browser (DuckDB-WASM), **PG** PostGIS, **Py** Python, **PBI** Power
 - **Tested here:** the loader and every PostGIS block, in `critwire_dev` as `critter-ai` over the socket, in schema `learn_curriculum`. Never `learn_spatial`, never `public`.
 - **Not tested:** the Docker and EDB commands (`powershell` fences, marked Windows-only).
 - **Conventions:** labs name only `learn_curriculum` (no database name), and read connections from libpq's `PG*` environment variables, so the same files run in both places.
+  - Every PostGIS download starts with 004's `pg-session` block (003's pattern): `SET search_path = learn_curriculum, public;`, plus 003's raster `SET`s on g7 and s6. The runner runs the same text (one constant, T6), so a download never depends on a setting only the runner made.
+  - Python labs connect through one helper in their first cell: `psycopg.connect(options="-c search_path=learn_curriculum,public")`.
 
 **Python: `uv`, not venv plus get-pip.**
 - One tool with the same commands on Windows and the VPS: `uv python install 3.12`, `uv venv`, `uv pip sync`. It resolves fast, its cross-platform lock is exact, and `--no-build` fails loudly instead of compiling a missing wheel. get-pip is a workaround for this VPS only.
@@ -424,7 +449,7 @@ Tools: **B** browser (DuckDB-WASM), **PG** PostGIS, **Py** Python, **PBI** Power
 
 | Dataset | License (quote reused from) | Files under `/learn/data/` | Size (S) | Modules | Built by |
 |---|---|---|---|---|---|
-| GBIF open-records sample | per record CC0 1.0 or CC BY 4.0 (003 D3); its own derived-dataset DOI | `occurrences.{parquet,csv}`, `datasets.csv` | ≈ 1.5 + 5 MB | f2–f4, d2–d6, g3–g6, s*, e*, p*, c1 | L1 |
+| GBIF open-records sample | per record CC0 1.0 or CC BY 4.0 (003 D3); its own derived-dataset DOI; each dataset credited in `datasets.csv` | `occurrences.{parquet,csv}`, `datasets.csv` | ≈ 1.5 + 5 MB, + ≈ 80 KB | f2–f4, d2–d6, g3–g6, s*, e*, p*, c1 | L1 |
 | Natural Earth admin-0, 1:50m, v5.1.2 | public domain (002 §6) | `country_shapes.parquet` (GeoParquet, WKB) | 1.21 MB | g*, s1, s6 | L1 |
 | Natural Earth admin-1, 1:50m | public domain (003 D10) | `admin1_shapes.parquet` | ≈ 1.5 MB | g4, g6, s2–s5 | L1 |
 | RESOLVE Ecoregions 2017, simplified | CC BY 4.0 (003 D9) | `ecoregions.parquet`, `biomes.csv` | ≤ 8 MB, else lab regions only | g4, s6 | L1 |
@@ -437,48 +462,72 @@ Tools: **B** browser (DuckDB-WASM), **PG** PostGIS, **Py** Python, **PBI** Power
 **The GBIF sample (a change from 003 D3, recorded in 004 §4 and §B).**
 - 003 drew a capped sample inside `ingest gbif` through `occurrence/search`: pages of 300, no DOI of its own, a subset of what `10.15468/dd.ky9cyt` counts.
 - Now it comes from **the occurrence download API**: an asynchronous job with its own download DOI and no paging cap, archived by GBIF, and refreshed apart from the countries pipeline. `ingest gbif`, `contributions.json` and `10.15468/dd.ky9cyt` stay untouched.
-- **The predicate** is the countries rule, so the honest-data story stays consistent: `TAXON_KEY in` the 73 keys (with `checklistKey`, F3), `LICENSE in [CC0_1_0, CC_BY_4_0]`, `HAS_COORDINATE`, `HAS_GEOSPATIAL_ISSUE = false`, `OCCURRENCE_STATUS = PRESENT`, and `BASIS_OF_RECORD in` the 7 allowed values. Format `SIMPLE_CSV`.
+- **The predicate** is the countries rule, so the honest-data story stays consistent: `TAXON_KEY in` the 73 keys, `LICENSE in [CC0_1_0, CC_BY_4_0]`, `HAS_COORDINATE`, `HAS_GEOSPATIAL_ISSUE = false`, `OCCURRENCE_STATUS = PRESENT`, and `BASIS_OF_RECORD in` the 7 allowed values. Format `SIMPLE_CSV`.
+  - `checklistKey` = the legacy backbone, top level and on `TAXON_KEY` (F3). 004 §4 and e1 say why: GBIF's documented download default *is* that backbone, but it calls it obsolete and search's default already moved, so a pipeline pins its taxonomy rather than trusting a default.
 - **Published subset:** at most 2,000 records per species, chosen by ascending `md5(gbifID)` (engine-neutral, deterministic): about 46k rows.
-  - Columns: `id` (gbifID), `species_id`, `dataset_key`, `license`, `basis_of_record`, `longitude`, `latitude`, `coordinate_uncertainty_m`, `country_code` (GBIF's), `year`, `month`.
+  - Columns: `id` (gbifID), `species_id`, `dataset_key`, `license`, `basis_of_record`, `longitude`, `latitude`, `coordinate_uncertainty_m`, `country_code_gbif`, `country_code`, `year`, `month`.
   - Records map to species by `speciesKey` (S).
+- **Country-key contract** (F11), one rule applied once, where the published files are written (spike: T7a `sample`; L1: `writeLearn`); no engine re-derives it:
+  - `country_code_gbif`: GBIF's `countryCode` as delivered, NULL when empty. Kept for g3 (GBIF's code vs the outlines).
+  - `country_code`: `country_code_gbif` when it is a `countries.code`, else NULL. Nullable FK → `countries`, the same in the browser schema and the PostGIS lab.
+  - Known non-country values: `ZZ` (unknown) and `XZ` (international waters), a named constant with GBIF's meaning. Any other code with no `countries` row fails the run and names the code (fail fast; a real code is a countries-file gap, fixed by 002 §6's narrowest-rule clause).
+  - The star maps NULL to its one unknown member, `dim_country` `ZZ` "Unknown or outside any country", in `star.sql` only (T7c), so its FK is never NULL. d6 teaches the step from nullable FK to unknown member.
+- **Dataset metadata** (F12): for each dataset in the sample, `GET /v1/dataset/<key>` (`title`, `doi`, `license`, `publishingOrganizationKey`) and, once per publisher, `GET /v1/organization/<key>` (`title`). About 450 + 150 reads, ≈ 5 min at ≤ 2 req/s. L1 uses `scripts/http.ts` `getJson` (paced, retried; a 404 fails the ingest); the spike's Python mirrors its pacing and retries. A deleted dataset keeps its title and records GBIF's `deleted` date. (Checked: `GET /v1/dataset/0645ccdb…` returns `title` "NSW BioNet Atlas", `doi` `10.15468/14jd9g`, `license` as a legalcode URL, `publishingOrganizationKey`.)
+  - License URLs map to short names through `scripts/derive/gbif.ts`'s `LICENSES` (gains CC0 1.0's URL); records' enum values go through `raw.ts`'s `OPEN_GBIF_LICENSES`. An unknown value fails.
+  - `datasets` (browser, lab) and `datasets.csv`: `dataset_key` PK, `title`, `publisher`, `doi` (nullable), `license`. Record counts stay a query (d2's point).
 - **Registration:** a reduced subset, so L1 registers it as its own GBIF derived dataset. The body is its per-dataset counts, with `originalDownloadDOI` set to the download's DOI (S: field name), and the deposit tag is `gbif-learn-<hex12>`.
   - `pnpm gbif:register` gains a target (`--target learn-sample`); the countries target and its `gbif-dd-*` tags are unchanged.
   - A plain build refuses a missing or stale sample DOI, as it does for the countries DOI.
-- **What's committed:** download metadata (key, DOI, request, `totalRecords`, zip sha256, every dataset's count) plus the projected records, if they're ≤ 15 MB as Parquet; otherwise only the capped sample and its rule (S, measured in T7a). The ~30 MB zip itself is never committed.
+- **What's committed** (both reviews' SHOULD-CONSIDER, adopted): `data/raw/gbif-sample/` with `download.json` (key, DOI, request, `totalRecords`, zip sha256, every dataset's count in the full download), `datasets.json` (the metadata above, keys sorted, one `retrieved`) and `sample.csv` (the capped rows, sorted by `id`, ≈ 5 MB). The cap is applied by the ingest, so `data/` is the snapshot and derive needs no zip. The full projection and the ~30 MB zip are never committed; GBIF archives the download under its DOI, which is the reproducibility path. T7a still measures the projection's size, for 004 §4 only.
 
-**The loader** (written by the build; nothing new in git).
-- `DROP SCHEMA IF EXISTS learn_curriculum CASCADE; CREATE SCHEMA learn_curriculum;`.
-- Then the DDL (the T8 lab ERD), and each table's `COPY … FROM stdin`. Geometry arrives as `\x`-hex WKB in a `bytea` column, which DuckDB writes without `spatial`; the post-load step runs `ST_GeomFromWKB(…, 4326)`.
-- Then keys, GiST indexes and `ANALYZE`.
-- It references nothing in `public`. Re-running it resets the lab schema, and the page warns about that.
+**The loader** (written by the build; nothing new in git). **One transaction** (Astra MF3), so a failed load leaves the previous lab schema as it was:
+- `\set ON_ERROR_STOP on`, then `BEGIN;`. Without `ON_ERROR_STOP` (a learner's own command) PostgreSQL still turns the final `COMMIT` of a failed transaction into a rollback, so the reload stays atomic either way.
+- `DROP SCHEMA IF EXISTS learn_curriculum CASCADE; CREATE SCHEMA learn_curriculum; SET LOCAL search_path = learn_curriculum, public;`.
+- Then the DDL (the T8 lab ERD), and each table's `COPY … FROM stdin (FORMAT csv)` (F10). Geometry arrives as `\x`-hex WKB in a `bytea` column, which DuckDB writes without `spatial`; the post-load step runs `ST_GeomFromWKB(…, 4326)`.
+- Then keys, GiST indexes and `ANALYZE` (allowed in a transaction block).
+- Then validation, a `DO` block that raises on failure: each table's row count equals the build's (written into the loader), every geometry's SRID is 4326, and the foreign keys hold (they're constraints). Shapes may be invalid on purpose (g2), so validity isn't checked.
+- `COMMIT;`. It references no table in `public` (only PostGIS's functions). Re-running it resets the lab schema, and the page warns about that.
 
 **Cap.**
-- The build refuses when committed lab data (`data/learn/`) or `dist/learn/data/` exceeds 50 MB. If it's tight, the priority order is: loader, Parquet, CSV, then the GeoParquet shapes.
+- The build refuses when committed lab data (`data/raw/gbif-sample/` plus the other lab snapshots) or `dist/learn/data/` exceeds 50 MB. If it's tight, the priority order is: loader, Parquet, CSV, then the GeoParquet shapes.
 - Engine assets (`parquet`: 3.22 MB) are counted separately: 002 §10 item 3.
 
-**Credit.** Every file gets an `attribution` entry the existing build checks enforce. The sample's entry carries its derived-dataset DOI, and each row keeps its `license` and `dataset_key`.
+**Credit** (F12; Astra MF4). `/v1/attribution.json` stays species-only, plus 002 §6's Natural Earth entry. Lab credits are `writeLearn`'s:
+- `/learn/data/manifest.json`, per file: columns, rows, bytes, sha256 and `sources[]` (`name`, `license`, `licenseUrl` from `scripts/build/sources.ts` `licenseUrl()`, `citation`, `doi?`, `url`). The sample's sources are GBIF's download citation (its DOI) and its derived-dataset DOI, plus `"datasets": "datasets.csv"` for the per-dataset credits.
+- One `credits(file)` function feeds this manifest and `star/manifest.json` (T7c); `dim_dataset` carries `datasets`' columns.
+- The build refuses: a lab file with no `sources`; a license missing from `LICENSE_URLS`; a CC BY source with no citation; a sample dataset with no title or publisher.
+- The `/learn/data/` index page renders the files, their sources and the dataset table (title, publisher, DOI link, license, records in the sample). Each row keeps its `license` and `dataset_key`.
 
 #### T6. Testing harness (004 §0)
 
 **Copy, don't import, A2's spike** (with a sha256 provenance list): `run-queries.ts`, `scripts/{browser,build-site,env,erd,erd-model,paths,pg,pg-engine,plan-queries,registry,runner-client,serve}.ts` and `src/{engine,sql,format,cards,assets,runner-page}.ts` with `runner.html`. Its pins stay (duckdb-wasm 1.33.1-dev65.0, node-api 1.5.6-r.2, playwright 1.58.2, esbuild 0.28.2, mermaid 12.2.0, postgres 3.4.9); `geotiff` only if g7's browser read stays. Changes:
-- **DuckDB boot:** `LOAD parquet` only. Then `src/setup.sql`, which must equal 004's `setup` block, which must start with 002's `setup` byte for byte and add `datasets` and `occurrences`. The registered files gain `/learn/data/occurrences.parquet`.
+- **DuckDB boot:** `LOAD parquet` only. Then `src/setup.sql`, which must equal 004's `setup` block, which must start with 002's `setup` byte for byte and add `datasets` and `occurrences`. The registered files gain `/learn/data/datasets.csv` and `/learn/data/occurrences.parquet`.
+- **`pg.ts`, changed in the copy** (Fable MF2, Astra MF1; each change gets its PG test):
+  - `SCHEMA = "learn_curriculum"`; `SEARCH_PATH = "learn_curriculum, public"`, set at connect from the same constant as the `pg-session` block's text (T4), and asserted by PG7. `star.sql` and every unqualified lab statement rely on it.
+  - `connect()` creates no schema: no `CREATE SCHEMA learn_spatial`; the loader creates `learn_curriculum` in its transaction.
+  - `capabilityCheck` (superuser, raster library, the two `SET`s, read-back) runs only when the run holds a `-- needs: raster` block. A run holding a `CREATE ROLE` block checks `rolcreaterole OR rolsuper` first and names the missing privilege.
+  - PG9 narrowed: the refusal patterns live in one module, `scripts/privilege.ts`, which both PG9 and `plan-queries` use and which PG9 skips. Any other code line that alters a role, the database or the system, or grants or revokes, still fails: the runner itself never changes privileges; lab SQL lives in 004 and is checked by the allowance below.
+  - `parseSpikeUrl` unchanged (`critwire_dev` over the socket; refuses `critwire`).
 - **PostGIS connect:**
-  1. `SPIKE_PG_URL=postgresql:///critwire_dev` (A2's URL guard refuses `critwire`).
-  2. Canary: `learn_spatial.occurrences` must have 528 rows, before and after the run.
+  1. `SPIKE_PG_URL=postgresql:///critwire_dev`.
+  2. Canary, before and after the run: per table of `learn_spatial`, `count(*)` and `md5(string_agg(t::text, '' ORDER BY t::text))`, plus its table list from `pg_class`. Any difference fails the run (a row count alone misses updates).
   3. `psql -X -v ON_ERROR_STOP=1 -d critwire_dev -f <spike>/site/learn/data/postgis/learn_curriculum.sql`.
   4. The `-- boot` blocks, in order.
-  - A2's `pg-setup` is deleted. A2's raster capability check runs only for blocks marked `-- needs: raster`.
+  - A2's `pg-setup` and `runPgSetup` are deleted.
 - **Block headers (SQL):**
   - `-- q:` and `-- status: ran | untested: <reason>`, plus `-- engine: duckdb | postgis` and `-- after:`.
   - New: `-- boot` (run once at connect, results kept for the run: fixtures such as `s4-cells`) and `-- tx: own` (PostGIS only: the runner doesn't wrap the block, which must end clean; d4).
 - **Allowed in PostGIS blocks only:**
-  - `CREATE`/`DROP ROLE`, `GRANT`/`REVOKE`, `SET ROLE` and `CREATE`/`DROP SCHEMA`, when every name they create or grant to starts with `learn_`.
+  - `CREATE`/`ALTER`/`DROP ROLE`, `GRANT`/`REVOKE`, `ALTER DEFAULT PRIVILEGES`, `DROP OWNED BY`, `SET ROLE` and `CREATE`/`DROP SCHEMA`, when every role and schema they name starts with `learn_` (`PUBLIC` allowed as grantee on `learn_` objects).
   - `SET` and `SET LOCAL`, which PostgreSQL rolls back.
   - `random()` after `setseed()`.
-  - Still refused: `ALTER SYSTEM`, `ALTER DATABASE`, `ALTER ROLE` on other roles, and `GRANT SET ON PARAMETER`.
-  - **Leak check:** after every block, `pg_roles` and `pg_namespace` hold no `learn_%` name except `learn_spatial` and `learn_curriculum`.
+  - Still refused: `ALTER SYSTEM`, `ALTER DATABASE`, any role or schema not named `learn_…`, `GRANT SET ON PARAMETER`, and any mention of `learn_spatial` (all engines).
+- **Standalone cleanup** (F13; Fable missed 2, Astra MF5), so each block cleans up as a learner runs it, not because the runner rolls back:
+  - **Pairing lint:** every `CREATE ROLE learn_x` or `CREATE SCHEMA learn_x` in a block has a later `DROP ROLE learn_x` or `DROP SCHEMA learn_x` in the same block (`-- tx: own` blocks included); a role that was granted anything also needs `DROP OWNED BY learn_x` before its drop; a `SET ROLE` needs a later `RESET ROLE`.
+  - **In-transaction leak check:** after a block's last statement and before the runner's `ROLLBACK`, `pg_roles` and `pg_namespace` hold no `learn_%` name except `learn_spatial` and `learn_curriculum`. The same query runs after every block (and after a `-- tx: own` block's own `COMMIT`). PostgreSQL refuses `DROP ROLE` while privileges remain, so a missing `DROP OWNED` fails the block.
 - **Python:** ```` ```python ```` blocks with `# q:`, `# status:`, `# after:` (earlier blocks' code prepended in the same process) and `# timeout:` (default 60 s).
   - Each runs as `<spike>/.venv/bin/python -I <tmp>/block.py` from an empty temporary directory, with `PGHOST=/var/run/postgresql`, `PGDATABASE=critwire_dev` and `LEARN_BASE=http://127.0.0.1:3102`.
+  - And `PGOPTIONS='-c search_path=pg_catalog'`: the lab's connect helper (T4) overrides it, so a block that bypasses the helper fails on its first table name instead of reading `public` (checked with `psql`: the conninfo `options` wins over `PGOPTIONS`; without it, `species` is not found).
   - Its stdout is compared with the ```` ```text ```` block after it and logged as `-- result: <id> · python · sha256 <12>`.
   - Output must be deterministic: explicit formatting and no DataFrame repr, seeds for anything random, no clock.
 - **Power BI:** ```` ```m ```` and ```` ```dax ```` blocks with `// q:`, `// status: untested: Power BI is Windows-only` and `// input: star/<file>.csv, …`.
@@ -502,14 +551,16 @@ Tools: **B** browser (DuckDB-WASM), **PG** PostGIS, **Py** Python, **PBI** Power
 **a. ETL into PostGIS (`out/etl-postgis/`).** `<spike>/etl/gbif_download.py`, run in the spike venv: stdlib `urllib` and `psycopg`. Credentials are read from the worktree's `.env` and never printed.
 1. **`request`:** writes `request.json` with the predicate from T5 and `checklistKey` set at the top level and on `TAXON_KEY`, then `POST /v1/occurrence/download/request`. It saves the key and the `occurrence/search` count at submit time (396,629 today).
 2. **`wait`:** checks the status at most once a minute and can be resumed across sessions. `KILLED` or `FAILED` → resubmit once.
-3. **`fetch`:** the zip goes to `downloads/gbif-<key>/`, with its sha256 and size; the DOI and `totalRecords` go in `download.json`.
+3. **`fetch`:** the zip goes to `downloads/gbif-<key>/`, with its sha256 and size; the DOI and `totalRecords` go in `download.json`. `GET /v1/occurrence/download/<key>` must echo both `checklistKey`s (F3).
 4. **`load`, in one transaction:**
-   - `COPY` the TSV, streamed from the zip (tab, no quoting), into `learn_curriculum.gbif_staging`, every column `text`;
+   - `COPY learn_curriculum.gbif_staging FROM STDIN (FORMAT csv, DELIMITER E'\t', QUOTE E'\b', NULL '', HEADER true)` (F10), streamed from the zip with psycopg's `cursor.copy`, every column `text`. e2's key query is this statement.
    - insert the typed rows into `occurrences_all`;
-   - checks: rows = `totalRecords`; licenses ⊆ the two allowed; every `speciesKey` maps to one critwire species; coordinates in range; basis ∈ the 7 values; `PRESENT`; counts per taxon close to the search counts; one license per dataset (this decides whether `license` lives in `datasets`).
-5. **`sample`:** the cap from T5 → `<spike>/data/learn/{occurrences.parquet, occurrences.csv, datasets.csv}`, plus `sample-contributions.json` (the registration body, never posted).
-6. **`verify`:** `load` run twice gives the same row counts and the same `md5(string_agg(… ORDER BY id))`; the outputs' sha256 match `summary.md`.
-- **Records:** download latency, size, load times, rows at each stage with rejects by reason, and the projected Parquet size (it decides what's committed).
+   - checks: rows = `totalRecords` (a stray newline in a field fails here, loudly); licenses ⊆ the two allowed; every `speciesKey` maps to one critwire species; coordinates in range; basis ∈ the 7 values; `PRESENT`; counts per taxon close to the search counts; one license per dataset (this decides whether `license` lives in `datasets`);
+   - and every non-null `countryCode` ∈ `countries.code` ∪ {`ZZ`, `XZ`} (F11), with the rows per non-country value recorded.
+5. **`datasets`:** the metadata reads from T5 for every dataset in the sample → `datasets.json`; every dataset has a title and a publisher, and its license agrees with its records'.
+6. **`sample`:** the cap from T5 and the country-key contract → `<spike>/data/learn/{occurrences.parquet, occurrences.csv, datasets.csv}`, plus `sample-contributions.json` (the registration body, never posted).
+7. **`verify`:** `load` run twice gives the same row counts and the same `md5(string_agg(… ORDER BY id))`; the outputs' sha256 match `summary.md`.
+- **Records:** download latency, size, load times, rows at each stage with rejects by reason, the raw country values, and the projected full-download Parquet size (for 004 §4; never committed, T5).
 
 **b. Global Moran's I, SQL = PySAL (`out/moran/`).**
 - **Units:** equal-area hexagons over Tasmania's main island, for the Tasmanian devil (id 48), from the published sample.
@@ -521,8 +572,8 @@ Tools: **B** browser (DuckDB-WASM), **PG** PostGIS, **Py** Python, **PBI** Power
   - `n` = sample records of species 48 within the cell (`ST_Contains`; points left in no cell are reported).
   - `y = ln(1 + n)`; `id`; `cx`, `cy` = the centroid as `float8`.
 - **Weights:** binary distance band, threshold 10,000 m, with `a.id <> b.id` and `ST_DWithin(ST_Point(a.cx, a.cy, 3577), ST_Point(b.cx, b.cy, 3577), 10000)`.
-  - Neighbouring centroids are √3 · 5 km ≈ 8,660 m apart and the next class 15,000 m, so the threshold sits in a 1,340 m gap.
-  - Asserted: no duplicate centroids; every cell has ≥ 1 neighbour; no pair within 1 m of the threshold.
+  - Neighbouring centroids are √3 · 5 km ≈ 8,660 m apart and the next class 15,000 m, so the threshold sits in a 1,340 m gap. (Checked in `critwire_dev`: a 100 km `ST_HexagonGrid(5000)` patch in 3577 gives the classes 8,660.25, 15,000.00 and 17,320.51 m.)
+  - Asserted, before any weight is built: the two smallest centroid distance classes are 8,660.25 and 15,000.00 m (to 0.01 m: Fable SC5, adopted); no duplicate centroids; every cell has ≥ 1 neighbour; no pair within 1 m of the threshold.
 - **SQL, plain** (`s4-moran-sql`), row-standardized `w_ij = 1/k_i`, `z_i = y_i − ȳ`:
   - `I = (n / S0) · Σ w_ij z_i z_j / Σ z_i²`; `E[I] = −1/(n−1)`;
   - `S0 = Σ w_ij`; `S1 = ½ Σ (w_ij + w_ji)²`; `S2 = Σ_i (Σ_j w_ij + Σ_j w_ji)²`;
@@ -539,22 +590,23 @@ Tools: **B** browser (DuckDB-WASM), **PG** PostGIS, **Py** Python, **PBI** Power
 **c. A star export Power BI reads (`out/star-export/`).**
 - **`star.sql`:** standard SQL, no schema names (it relies on `search_path`), so the same file runs in PostGIS (d6's lab) and in DuckDB (L2's `writeStar`).
   - `dim_species`: the taxonomy flattened (a star, not a snowflake).
-  - `dim_country`: plus the unknown member `ZZ`, GBIF's own code for "unknown".
-  - `dim_dataset` (`dataset_key`, `license`).
+  - `dim_country`: every `countries` row plus the unknown member `ZZ` "Unknown or outside any country"; `fact_*.country_code = coalesce(o.country_code, 'ZZ')`, the one place NULL becomes the unknown member (T5's contract).
+  - `dim_dataset` (`dataset_key`, `title`, `publisher`, `doi`, `license`): the credits travel with the star.
   - `dim_year`: plus `-1` for unknown.
   - `fact_records`: grain = one sample record.
   - `fact_species_country`: factless; critwire's countries rule.
   - With A2's habitat stand-ins loaded: `dim_habitat_class` and `fact_country_habitat` (grain = country × class, `est_area_km2`).
-- **Export:** `\copy (SELECT … ORDER BY <pk>) TO … CSV HEADER` from PostGIS, and DuckDB's `COPY … (HEADER)` over the Parquet inputs. The two outputs are compared, bytes first, then parsed rows, with differences recorded.
-- **`manifest.json`:** per file: columns and types, primary key, foreign keys, rows, bytes, sha256, source credits.
+- **Export, one canonical** (both reviews' SHOULD-CONSIDER, adopted): DuckDB's `COPY … (HEADER)` over the Parquet inputs is the published star (it is what `writeStar` writes); its bytes are what the manifest hashes and Power BI reads.
+  - PostGIS (d6's lab) runs the same `star.sql` and `\copy (SELECT … ORDER BY <pk>) TO … CSV HEADER`. It is a semantic cross-check: rows parsed, keys equal, text equal, numbers equal within 1e-9 relative. Byte differences (`1.0` vs `1`) are recorded, not failures.
+- **`manifest.json`:** per file: columns and types, primary key, foreign keys, rows, bytes, sha256, and `sources[]` from the shared `credits(file)` (T5).
 - **Checks:** keys unique; foreign keys covered (unknown members included); UTF-8; `NA` (Namibia) stays text when read by DuckDB `read_csv(all_varchar)` and by Python's `csv`.
 
 #### T8. ERDs (004 §6; Mermaid under `plans/`, rendered by the copied `erd.ts --name` to `<spike>/erd/{schema,lab,star}.{svg,png}`)
 
 - **`plans/004-learn-erd.mmd`, the first schema v2 (browser):**
   - `%% extends: 002-learn-erd.mmd`; 002's six tables unchanged.
-  - New: `datasets (dataset_key PK, license)`.
-  - New: `occurrences (id BIGINT PK, species_id FK, dataset_key FK, country_code FK nullable, longitude, latitude, coordinate_uncertainty_m, year, month, basis_of_record CHECK)`.
+  - New: `datasets (dataset_key PK, title, publisher, doi nullable, license)`.
+  - New: `occurrences (id BIGINT PK, species_id FK, dataset_key FK, country_code_gbif nullable, country_code FK nullable, longitude, latitude, coordinate_uncertainty_m, year, month, basis_of_record CHECK)`: T5's country-key contract.
   - If T7a finds a dataset with two licenses, `license` stays on `occurrences` and d2 teaches why.
 - **`plans/004-lab-erd.mmd`, the lab database (PostGIS `learn_curriculum`):**
   - The same keyed tables as v2, in PostgreSQL types; `occurrences.geom geometry(Point, 4326)` is a generated column (`ST_SetSRID(ST_MakePoint(…))`) and is GiST-indexed.
@@ -564,7 +616,7 @@ Tools: **B** browser (DuckDB-WASM), **PG** PostGIS, **Py** Python, **PBI** Power
   - `habitat_classes` (self-FK) → `country_habitats`, `occurrence_habitats`, `habitat_clips (raster)` (L3).
   - Lab-made tables (`devil_hex`, the ETL staging tables) are listed beside the diagram, not in it.
 - **`plans/004-star-erd.mmd`, the Power BI star:** T7c's facts and dimensions.
-  - Lines run from dimensions to facts: `||--o{` with unknown members, so every foreign key is non-null.
+  - Lines run from dimensions to facts: `||--o{` with unknown members (`dim_country` `ZZ`, `dim_year` `-1`), so every foreign key is non-null.
   - The factless fact and the second fact share `dim_country` (conformed).
 
 #### T9. The site (004 §7; reuses 002 §8)
@@ -584,16 +636,18 @@ Tools: **B** browser (DuckDB-WASM), **PG** PostGIS, **Py** Python, **PBI** Power
 - **Progress:** `localStorage["critwire.learn.done.v1"]` = `{ "<module id>": "<YYYY-MM-DD>" }`, set by a "Mark done" button or by passing an "Already know this?" check. The map shows ticks, and "Clear progress" is on `/learn/`. Nothing else is stored, so editor text isn't kept (002).
 - **Build (`writeLearn`, 002 §8, generalized):**
   - Sources: `site/learn/curriculum.json` (tracks; modules with `id`, `slug`, `title`, `tool`, `hours`, `prereqs`, `state: built | planned`), module fragments, and `site/learn/labs/` (sources, recorded outputs, `checked.json`).
-  - It refuses: unknown or cyclic prerequisites; a stale ERD SVG; a lab whose source or data-manifest sha256 differs from `checked.json` ("run pnpm learn:check"); a cap breach; any missing file.
+  - It refuses: unknown or cyclic prerequisites; a stale ERD SVG; a lab whose freshness key differs from `checked.json` ("run pnpm learn:check"); a cap breach; a lab file with no credits (T5); any missing file.
+  - **`checked.json` freshness** (Astra SC1, adopted): per lab, the sha256 of its source, the data manifest, the loader, the checker's own source files and `requirements.txt`, all computable offline, so the build compares them. PostgreSQL, PostGIS, Python and package versions are recorded beside them and shown on the lab page, not compared (the build may run on a machine with other versions; `deploy` must not depend on the checker's).
 - **`pnpm learn:check` (dev only, never in `build` or `deploy`; a repo port of T6's PostGIS and Python engines):**
-  - It runs the loader and every lab block in `critwire_dev` as `critter-ai`, plus the Python labs in `.venv-learn`.
-  - It writes the outputs and `checked.json`, and refuses the `critwire` database.
-  - L1 creates it with the loader stage; L2 adds the blocks; L4 adds Python.
+  - It runs the loader and every lab block, plus the Python labs in `.venv-learn`, on the connection libpq's `PG*` variables (or `LEARN_PG_URL`) name, never `DATABASE_URL` (its role `critwire` can't create roles). On the VPS that is `critwire_dev` as `critter-ai` over the socket; on the owner's WSL, his own PostGIS (Fable SC3, adopted: `AGENTS.md`'s two machines).
+  - It refuses database `critwire` twice: by name before connecting, and by `current_database()` after (a service file or `PGDATABASE` can't slip past). It needs CREATEROLE and says so. The `learn_spatial` canary runs only where that schema exists.
+  - It writes the outputs and `checked.json`.
+  - L1 creates it with the loader stage; L2 adds the blocks; L4 adds Python. It is a port of T6's runner, not a second harness: once L2 lands, the spike is frozen as this mission's evidence and never extended (Fable SC4, adopted).
 - **E2E (Playwright, the rules from 002 §8):**
   - `learn-map`: order, hours, prerequisites; a tick survives a reload.
   - `learn-browser`: every B block runs in its page; every exercise accepts its answer and rejects a wrong one; Reset and Stop; one engine start per visit.
   - `learn-labs`: each page's code equals its download; the shown result equals the recorded output; `.ipynb` cells equal the `.py`.
-  - `learn-data`: files and manifest sha256, row counts, CSV headers, the star's key coverage, the 50 MB cap, attribution entries.
+  - `learn-data`: files and manifest sha256, row counts, CSV headers, the star's key coverage, the 50 MB cap, every file's `sources`, and the `/learn/data/` index listing every dataset of the sample with title, publisher and license.
   - `schema`: ERD drift.
   - `serving`: `.wasm` types and fixed mtimes.
 
@@ -601,8 +655,8 @@ Tools: **B** browser (DuckDB-WASM), **PG** PostGIS, **Py** Python, **PBI** Power
 
 | # | Mission | Scope | Needs from the previous | Sessions |
 |---|---|---|---|---|
-| L1 | `critwire-learn-data` | `/v1/countries.*` (002 §6). `/learn/data/`: the GBIF sample (`ingest gbif-sample` request/wait/fetch, derive the cap, `gbif:register --target learn-sample`), the Natural Earth 1:50m shapes, RESOLVE simplified, the loader, the manifest, attribution, the cap. `pnpm learn:check` (loader stage). The `AGENTS.md` line (T11 item 6). E2E `learn-data` | `main` | 30–36 |
-| L2 | `critwire-learn-site` | Engine and app core (002 §1, §8); `pnpm erd` and three ERD pages; the map, track and module templates; progress; downloads; `/learn/setup/`; the playground; f1–f4 and d1–d6 from 004; `star.sql`, `writeStar` (one fact); `learn:check` blocks; E2E | L1's data, loader and `learn:check` | 34–40 |
+| L1 | `critwire-learn-data` | `/v1/countries.*` (002 §6). `/learn/data/`: the GBIF sample (`ingest gbif-sample` request/wait/fetch/cap plus dataset metadata, `gbif:register --target learn-sample`), the country-key contract, the Natural Earth 1:50m shapes, RESOLVE simplified, the atomic loader, the manifest and its credits, the `/learn/data/` index, the cap. `pnpm learn:check` (loader stage; `PG*`/`LEARN_PG_URL`). The `AGENTS.md` line (T11 item 6). E2E `learn-data` | `main` | 32–38 |
+| L2 | `critwire-learn-site` | Engine and app core (002 §1, §8); `pnpm erd` and three ERD pages; the map, track and module templates; progress; downloads; `/learn/setup/`; the playground; f1–f4 and d1–d6 from 004; `star.sql`, `writeStar` (one fact, DuckDB canonical); `learn:check` blocks (the cleanup lint and in-transaction leak check); the spike frozen; E2E | L1's data, loader and `learn:check` | 34–40 |
 | L3 | `critwire-learn-gis` | `ingest habitat` (003 §5, v004): summaries, `occurrence_habitats`, the CR and TAS clips; the loader grows; g1–g7 written in full; the IUCN appendix | L2's pages and `learn:check` | 28–34 |
 | L4 | `critwire-learn-stats-etl` | `requirements.txt` and `uv`; the Python stage of `learn:check`, `.ipynb` output; s1–s6 and e1–e5 in full, including Gi* and LISA tested against esda | L3's habitat data, the g6 grids | 30–36 |
 | L5 | `critwire-learn-powerbi-capstone` | `fact_country_habitat` in `writeStar`; p1–p4; c1 with its JSON feed and schema; a curriculum pass; a handoff item for the owner's Power BI check | L4's s5 and e4 | 22–28 |
@@ -612,12 +666,12 @@ Each brief opens with how to start it, and with "superseded by" notes on `critwi
 #### T11. For the owner (004 §10; each item has a recommendation and its cost)
 
 1. **Lab data at `/learn/data/`, without CORS.** Cost: other people's web pages can't read the lab files. Alternatives: `/v1/learn/` (CORS, but bound by "only additions"), or a Caddy CORS rule on `/learn/data/` (a control-room change).
-2. **The GBIF sample: download API, at most 2,000 per species, its own derived-dataset DOI.** Cost: one more registration and its refresh (the same steps as `AGENTS.md`'s DOI refresh, separate tags); about 7 MB public.
+2. **The GBIF sample: download API, at most 2,000 per species, its own derived-dataset DOI; only the capped sample and its provenance in git.** Cost: one more registration and its refresh (the same steps as `AGENTS.md`'s DOI refresh, separate tags); about 7 MB public, ≈ 5 MB in git per refresh; a different cap needs a re-fetch of the archived download (no new request).
 3. **No `spatial` extension in the browser:** light spatial in plain SQL; GIS in PostGIS. It saves 23.6 MB per DuckDB version. Cost: no `ST_` functions in the browser.
 4. **002's open items carried over:** commit the `parquet` extension (3.22 MB); the Caddy headers (002 §10 item 7); photos linked from Wikimedia.
 5. **The habitat raster, as 003 §8 items 2–4:** v004 summaries plus the CR and TAS clips. The COG's provenance is still unanswered. Cost: ingest time (about 37 min, 695 MB from Zenodo), plus a one-off 2.45 GB download for the clips.
 6. **`AGENTS.md`'s copy line, applied by L1.** Replace "No Wikipedia prose (share-alike); write copy fresh for grades 6–12." with: "No Wikipedia prose (share-alike). Write all copy fresh, in our own words, for adults new to the topic: plain, precise English a working professional reads fast; define each term once; link to open references instead of rewriting them." Cost: none.
-7. **The chain: five missions, about 144–174 sessions.** Cost: five reviews and releases. Alternative: stop after L2 (foundations and database architecture live), then decide.
+7. **The chain: five missions, about 146–176 sessions.** Cost: five reviews and releases. Alternative: stop after L2 (foundations and database architecture live), then decide.
 8. **A 30-minute Windows check after L2 (Docker PostGIS plus the loader) and after L5 (Power BI against the star).** Cost: your time; it is the only test of the parts this VPS can't run.
 9. **Traits datasets (003's mission C):** deferred; no module needs them. Cost: none now.
 
@@ -645,7 +699,13 @@ Each brief opens with how to start it, and with "superseded by" notes on `critwi
 | Risk | Handling |
 |---|---|
 | GBIF download slow, queued or failed | Submit in the first data step; `wait` resumes across sessions while other steps proceed; resubmit once on FAILED or KILLED. After 24 h, the spike uses `occurrence/search` pages capped at 2,000 per species, labelled "spike fallback, no DOI"; L1 must still use the download |
-| `checklistKey` refused, or the count is off by > 0.1 % | Record it; try the COL XR keys (`ids.col`) with COL's checklist; never weaken the license or coordinate filters |
+| The legacy `checklistKey` refused when given explicitly, GBIF's stored request doesn't echo it, or the count is off by > 0.1 % | Record it; try the COL XR keys (`ids.col`) with COL's checklist, set explicitly; never rely on the default and never weaken the license or coordinate filters |
+| A raw country code outside `countries` ∪ {`ZZ`, `XZ`} | The load fails and names it. A GBIF-documented non-country value joins the constant with its meaning; a real code is a countries-file gap (002 §6's narrowest rule) |
+| Dataset metadata read fails (404, or no title or publisher) | The ingest fails (all or nothing); a deleted dataset keeps its title and `deleted` date. Never publish a CC BY record without its dataset's credit |
+| The loader fails part way (learner or runner) | One transaction: the previous `learn_curriculum` stays intact; the error names the table |
+| A lab creates a `learn_` role or schema and doesn't drop it | The pairing lint fails the plan; the in-transaction leak check fails the block |
+| A Python block bypasses the connect helper | `PGOPTIONS=-c search_path=pg_catalog` makes it fail on its first table name |
+| The two star exports differ in bytes | Expected (`1.0` vs `1`): DuckDB's is canonical; a semantic difference (keys, text, numbers beyond 1e-9) fails |
 | No aarch64 cp312 wheel (`uv --no-build` fails) | Pin the newest version that has one and record it; fallback: venv plus get-pip (brief); handoff only if both fail |
 | `uv` can't be fetched | venv `--without-pip` plus get-pip.py |
 | Moran's I disagrees by > 5e-7 | Diff the neighbour pairs, then k, S0/S1/S2 and the mean; fix the SQL, never the threshold |
@@ -654,8 +714,8 @@ Each brief opens with how to start it, and with "superseded by" notes on `critwi
 | Cap exceeded | The priority order in T5; RESOLVE cut to the lab regions |
 | RESOLVE costs > 1 session | Record the size from A2; g4 and s6's RESOLVE blocks become `untested: L1 publishes it` |
 | The browser setup with `occurrences` takes > 1.5× A1's time | Load `occurrences` only on the modules that use it (S: measured by the runner's boot) |
-| `learn_spatial` touched, or a `learn_%` role or schema leaks | The canary and leak check fail the run; drop the leak by hand, as `critter-ai` |
-| The `critwire` database | A2's URL guard; `learn:check` refuses it too |
+| `learn_spatial` touched, or a `learn_%` role or schema leaks | It's off the `search_path` and the lint refuses its name; the content canary (row counts and md5 per table) and the leak check fail the run; drop a leak by hand, as `critter-ai` |
+| The `critwire` database | A2's URL guard; `learn:check` refuses it by name and by `current_database()` |
 | `dist/` changes | Only `plans/` changes; the Verification hash comparison |
 | Spike over 3 GB | Delete extracted zips once their sha256 is recorded; `du` after each step |
 | Ports 3100–3102 busy, or E2E running | `serve.ts` refuses (A1) |
@@ -663,10 +723,10 @@ Each brief opens with how to start it, and with "superseded by" notes on `critwi
 #### T14. Work units, in order (the planner turns these into ≤ 30 Steps)
 
 1. Scaffold the spike (copies, provenance, pins, install, Caddy); a skeleton 004 whose `setup` block and one 002 block reproduce 002's results.
-2. **GBIF:** submit (T7a 1); `uv` and the venv, the Python engine, a smoke block.
-3. **Lab stand-ins:** draft countries (A2), 1:50m admin-0 and admin-1, the RESOLVE size probe; the loader generator; the PostGIS engine changes (T6); `--lab-erd`.
-4. **ETL spike**, steps 2–6 (once the download is ready).
-5. Moran spike. 6. Star-export spike and the Power BI input check.
+2. **GBIF:** submit (T7a 1, both `checklistKey`s); `uv` and the venv, the Python engine (with `PGOPTIONS`), a smoke block.
+3. **Lab stand-ins:** draft countries (A2), 1:50m admin-0 and admin-1, the RESOLVE size probe; the loader generator (one transaction, `FORMAT csv`, validation); the PostGIS engine changes (T6: `pg.ts` re-pointed, `privilege.ts`, content canary, allowance, cleanup lint, in-transaction leak check); `--lab-erd`.
+4. **ETL spike**, steps 2–7 (once the download is ready): dataset metadata and the country-key contract included.
+5. Moran spike (the hexagon-geometry assertion first). 6. Star-export spike (DuckDB canonical, PostGIS cross-check, credits) and the Power BI input check.
 7. Three ERDs and their renders. 8. 004 §0–§1, plus the "Superseded" notes in 002 and 003.
 9. 004 §2–§3. 10. 004 §4.
 11–12. f1–f4. 13–18. d1–d6.
@@ -693,6 +753,13 @@ Each brief opens with how to start it, and with "superseded by" notes on `critwi
 - **Building the traits datasets (003 mission C):** no module in the five areas needs them.
 - **One build mission, or two:** about 150 sessions doesn't fit in 60; fewer than five would put a mission near the limit (002 §9's reasoning).
 - **A server for labs (PGlite, a hosted PostGIS):** critwire stays static (decision rules).
+- **The raw GBIF code as the FK, or `ZZ` rows in `countries`:** rejects rows at load, or puts a non-country in critwire's country contract (F11).
+- **Lab credits in `/v1/attribution.json`:** it's the `/v1` contract, built from species records; lab files change and have their own manifest (F12).
+- **Credits from the download's dataset listing alone:** it has titles and DOIs but no publisher; the dataset and organization reads give all three.
+- **Committing the full projected download (≤ 15 MB):** ~15–30 MB of git history per refresh that no module reads; GBIF archives it under its DOI.
+- **PostGIS's `\copy` as the canonical star:** `writeStar` is DuckDB; two canonicals would make the manifest's sha256 ambiguous.
+- **The runner's rollback as the only cleanup:** it hides labs that leak on a learner's install (F13).
+- **Text-format `COPY` (GBIF's TSV or the loader):** silently alters backslashes and `\x` hex (F10).
 
 ## Architecture review (Fable)
 
@@ -737,6 +804,39 @@ SHOULD-CONSIDER:
 
 ## Revision notes
 
+Architect, 2026-10-23 05:10–05:40 UTC. Every MUST-FIX and MISSED item resolved by changing the design; every SHOULD-CONSIDER adopted; none rejected. Checked read-only: A2's `pg.ts`/`pg-engine.ts`/`run-queries.ts`, `scripts/http.ts`, `scripts/build/{attribution,sources}.ts`, `scripts/derive/gbif.ts:19`, the GBIF snapshot's 250 codes (no `ZZ`/`XZ`), techdocs `api-downloads`, one `GET /v1/dataset/<key>`; scratch in `critwire_dev` was TEMP tables in rolled-back transactions only.
+
+**Fable MUST-FIX**
+1. COPY format → F10 (new); T7a step 4 uses `FORMAT csv, DELIMITER E'\t', QUOTE E'\b', NULL '', HEADER true`, the same as e2's key query; tested on a `C:\new "quoted" \N` field. The same trap was in the loader: text-format `COPY` turned `\x` hex WKB into 41 garbage bytes with no error, so T5's loader is `FORMAT csv` too.
+2. `pg.ts` changes → F4, T6's new `pg.ts` list: `learn_curriculum` search_path from the `pg-session` constant (PG7); no `CREATE SCHEMA learn_spatial`; raster `capabilityCheck` only with `-- needs: raster`; PG9 narrowed through a shared `privilege.ts`. T4: every download starts with `pg-session`.
+3. F3 wording → F3 rewritten: an omitted `checklistKey` means the obsolete Backbone (techdocs quoted); the risk is the default moving. Fix kept (both keys explicit, plus an echo check in T7a `fetch`); T5 says what 004 §4 and e1 must state; T13 row reworded.
+
+**Fable MISSED**
+1. Country FK → F11; T5's country-key contract (`country_code_gbif` raw, `country_code` nullable FK, `ZZ`/`XZ` as named non-country values, anything else fails); T7a check "every non-null code ∈ countries ∪ {ZZ, XZ}"; T7c and T8: `ZZ` is the star's one unknown member, set only in `star.sql`.
+2. Standalone cleanup → F13; T6: a CREATE/DROP pairing lint (`-- tx: own` included, `DROP OWNED BY` for granted roles) and a leak check *inside* the block's transaction.
+3. Dataset credits → F12; T5: dataset and organization reads through `getJson`, `datasets.json` committed; `datasets` and `dim_dataset` get title, publisher and DOI; `/learn/data/manifest.json` and `star/manifest.json` share `credits(file)`; build refusals; the index page; E2E `learn-data`.
+
+**Fable SHOULD-CONSIDER** (all adopted)
+1. Commit only the capped sample plus provenance → T5 "What's committed" (cap applied at ingest), T11 item 2, Rejected alternatives.
+2. DuckDB star canonical → T7c Export; PostGIS is a semantic cross-check; T13 row.
+3. `learn:check` on `PG*`/`LEARN_PG_URL` → T9; refuses `critwire` by name and by `current_database()`; never `DATABASE_URL`.
+4. One harness → T9 and T10 L2: `learn:check` is the port; the spike is frozen after L2.
+5. Hexagon geometry assertion → T7b; the distance classes were measured (8,660.25 / 15,000.00 / 17,320.51 m).
+
+**Astra MUST-FIX**
+1. Lab isolation → as Fable MF2, plus a content canary (row count and md5 per `learn_spatial` table), a lint refusing the name `learn_spatial`, and `PGOPTIONS=-c search_path=pg_catalog` for Python blocks (checked: the helper's `options` wins).
+2. Country-key contract → as Fable missed 1 (T5, T7a, T7c, T8).
+3. Atomic reload → T5 loader: `\set ON_ERROR_STOP on`, `BEGIN` … `COMMIT` around the drop, DDL, `COPY`, indexes, `ANALYZE` and a raising `DO` validation; atomic even without `ON_ERROR_STOP`. T13 row.
+4. Attribution ownership → as Fable missed 3; `/v1/attribution.json` stays species-only (Rejected alternatives).
+5. Standalone cleanup → as Fable missed 2 (T6).
+
+**Astra SHOULD-CONSIDER** (all adopted)
+1. Versions in `checked.json` → T9: the sha256 of loader, checker and `requirements.txt` are compared; server and package versions are recorded and shown.
+2. One canonical star → as Fable SC2.
+3. Capped sample plus provenance → as Fable SC1.
+
+**Knock-on:** T10 L1 32–38 sessions (was 30–36), so the chain is 146–176 (T11 item 7). T13 has 7 new rows. T14 units 2–6 name the new work and still number 27. Seven Rejected alternatives added.
+
 ## Steps
 
 ## Verification
@@ -753,5 +853,6 @@ SHOULD-CONSIDER:
 - 2026-10-23 05:20 UTC: Architecture. architect wrote F1–F9 + T1–T13: 33 modules (~68 h; f1–f4, d1–d6 in full), lab data at `/learn/data/` (GBIF download sample ≤ 2,000/species ≈ 46k rows, own DOI; NE 1:50m; simplified RESOLVE), psql-only loader, uv venv, Moran on 5 km hexes (Tasmanian devil), chain L1–L5 (~144–174 sessions). Read-only GBIF probes only; no code/data changed.
 - 2026-10-23 05:05 UTC: Fable review. APPROVE_WITH_CHANGES; 3 MUST-FIX (T7a COPY csv/tab/QUOTE, T6 pg.ts changes, F3 GBIF default checklist wording), 3 missed, 5 should-consider. Plan only; no code.
 - 2026-10-23 05:06 UTC: Astra review. APPROVE_WITH_CHANGES; 5 MUST-FIX (learn_curriculum search_path, country-key normalization, atomic reload, dataset citation propagation, standalone lab cleanup), 3 should-consider. Plan only.
+- 2026-10-23 05:45 UTC: Revision. architect resolved all 8 MUST-FIX + 3 missed (F10–F13 new; F3 reworded; T5 atomic csv-format loader, country-key contract, dataset credits; T6 pg.ts learn_curriculum, cleanup lint, in-tx leak check); all SHOULD-CONSIDER adopted. Plan only; scratch TEMP tables rolled back.
 
 ## Summary
