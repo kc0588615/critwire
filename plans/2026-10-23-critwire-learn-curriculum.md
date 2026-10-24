@@ -1118,7 +1118,7 @@ Planner, 2026-10-23. T14's 27 units → 30 steps; all ten modules stay in full. 
   - Completeness pass: every block header, every module's labels, every `untested` reason; §A holds the three spikes; §B is complete; no "(S)" left unresolved.
   - Check: Guard; `--check $ERDS` exits 0; Verification V4's header checks and V7–V8 pass.
 
-- [ ] S30. Full verification and the Summary draft.
+- [x] S30. Full verification and the Summary draft.
   - Run `## Verification` as written; fix every failure (a fix that changes 004 re-runs it whole).
   - Draft the Summary under the `###` headings V10 names: the curriculum map, lab datasets, reused and dropped, vault overlap, the briefs with session estimates, the owner's choices, plus verification results and artifact paths.
   - Check: every V section passes; transcript in `$M/verify/verify-<UTC>.log`.
@@ -1548,6 +1548,7 @@ Only the spike harness is tested in isolation, because every "ran" claim rests o
 - 2026-10-24 20:35 UTC: S27. 004 §5.7 Capstone (intro + c1 outline: ETL → s1 look → g6/s5 hexagons + Gi* FDR → report → static JSON feed with JSON Schema; `c1-feed` ran: 307 cells, 1,972 records, weights sum 0.999954, 37 recording hot spots, 7 datasets to credit, 34,848 bytes, fullest cell 917 = 256 records) + §7 The site (7.1 URLs, 7.2 pages per tool, 7.3 downloads, 7.4 progress, 7.5 build + `checked.json`, 7.6 `learn:check`, 7.7 E2E). `s5-gistar` now a temp view + same SELECT (hash unchanged). `--update` added only c1-feed's result; `--check $ERDS` 200 blocks, 0 failures; V7 module-parts awk fixed (skips fences), 33 modules ok; Red List + vault greps ok. Guard: scope plans/ only, typecheck + 66 tests, dist = baseline, canary same, no leak, spike 1.66 GB, ports free, no credential. Spike green: typecheck, 205/205, py 33 OK.
 - 2026-10-24 20:46 UTC: S28. 5 briefs `plans/briefs/critwire-learn-l{1-data,2-site,3-gis,4-stats-etl,5-powerbi-capstone}.md` (ops format: start comment with base/precondition/chain/estimate, 6 headings, needs from previous, 004 as design + fix-in-same-commit rule, L1 applies the AGENTS.md copy line); 004 §9 (chain table, order, same-data rule, queueing like queue-learn.sh, Windows checks, superseded list), §4.2 download reuse; dated Superseded line atop b1/b2/c/d (+2 lines each, 0 deleted). Checks: 6 headings × 5 briefs, §9 names the 5 in order, estimates 146–176 (= T11 item 7); `--check $ERDS` 200 blocks, 0 failures. Guard: scope plans/ only, typecheck + 66 tests, dist = baseline, canary same, no leak, spike 1.66 GB, ports free, no credential.
 - 2026-10-24 20:52 UTC: S29. 004 §8 vault overlap (15 rows, titles only, fast path), §10 owner's choices (10 items, table + recommendation/cost each); completeness pass. Check: V4 headers, V7, V8 pass; `--check $ERDS` 200 blocks 0 failures, 3 ERDs match; Guard ok (scope, additions-only, typecheck, 66 tests, dist = Baseline, canary, no leak, 1.66 GB, ports free, no credential).
+- 2026-10-24 21:12 UTC: S30. Summary drafted (7 V10 headings); full Verification at 1f76c9d: VERIFY_OK (typecheck, 66 tests, dist = Baseline, E2E 20/20, 200 blocks 0 failures, 3 ERDs, spikes ETL/Moran/star ok, spike 205 + py 33, V7–V9 ok); transcript `$M/verify/verify-20261024T2053Z.log`. No fixes needed.
 
 ## Summary
 
@@ -1605,4 +1606,8 @@ Old briefs b1/b2/c/d marked superseded.
 
 ### Verification
 
-Pending (S30 run).
+Full `## Verification` run 2026-10-24 20:53–21:10 UTC at `1f76c9d`: every V0–V11 check passed, transcript ends `VERIFY_OK` (`$M/verify/verify-20261024T2053Z.log`; script extracted to `$M/verify/verification.sh`).
+- Repo: typecheck pass, 66/66 unit tests, `dist/` = Baseline (157 files, = live), E2E 20/20 (`$M/e2e/playwright-report/`, `results.json`, traces).
+- 004 blocks (this mission's E2E: DuckDB-WASM in headless Chromium, PostGIS 3.4.2 in `critwire_dev`, Python 3.12.3 venv): 200 run, 0 failures, 0 differences (`$M/queries.log`); 3 ERDs match catalogs/manifest. 10 SQL/Python blocks `untested` with reasons (2 need two sessions, 4 wait for L3's habitat data, 1 changes db privileges, 1 IUCN appendix, 1 real GBIF download, 1 ArcGIS Pro); 6 Power BI blocks untested, inputs `keys=ok`.
+- Spikes: ETL (download DOI `10.15468/dl.fbpk9w`, 394,532 rows loaded twice, md5 same; sample files reproduce), Moran (SQL = PySAL: I 0.273296, z 15.177858, max |Δ| 1.06e-12), star export (8 files, PostGIS = DuckDB by value). Spike 205/205 TS + 33 Python tests. ERD renders `$SP/erd/{schema,lab,star}.{svg,png}`. Evidence: `$SP/out/{python-env,lab-data,loader,etl-postgis,moran,star-export}/`, commands in `$SP/README.md`.
+- Data rules: no Red List categories, no IUCN download, no credential, no vault text; `critwire_dev` clean (learn_spatial = Baseline, no `learn_` leak).
