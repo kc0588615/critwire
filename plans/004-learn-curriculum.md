@@ -5937,12 +5937,13 @@ pseudo p: 0.0010  z_sim: 15.07
 
 **Data:** `s4_cells`, `s4_neighbours` (the 5 km cells, `y = ln(1 + n)`).
 
-**Key code:** Gi\* in plain SQL with binary weights and the cell itself included, then two-sided p-values from the normal distribution (`erfc`, PostgreSQL 16) and the Benjamini-Hochberg cut:
+**Key code:** Gi\* in plain SQL with binary weights and the cell itself included, then two-sided p-values from the normal distribution (`erfc`, PostgreSQL 16) and the Benjamini-Hochberg cut, kept as a temporary view, `s5_gistar` (one row per cell: `id`, `z`, `p`, and `fdr`, true where the cell survives the correction), so c1 reads the same result instead of repeating the query:
 
 ```sql
 -- q: s5-gistar
 -- status: ran
 -- engine: postgis
+CREATE OR REPLACE TEMP VIEW s5_gistar AS
 WITH c AS (
   SELECT id, y FROM s4_cells WHERE edge_m = 5000
 ), stats AS (
@@ -5966,15 +5967,16 @@ WITH c AS (
 ), cut AS (
   SELECT coalesce(max(rank) FILTER (WHERE p <= rank * 0.05 / m), 0) AS k FROM p
 )
+SELECT p.i AS id, p.z, p.p, p.rank <= cut.k AS fdr
+FROM p, cut;
 SELECT count(*) AS cells,
        count(*) FILTER (WHERE z > 0 AND p <= 0.05) AS hot_05,
        count(*) FILTER (WHERE z < 0 AND p <= 0.05) AS cold_05,
-       count(*) FILTER (WHERE z > 0 AND rank <= cut.k) AS hot_fdr,
-       count(*) FILTER (WHERE z < 0 AND rank <= cut.k) AS cold_fdr,
+       count(*) FILTER (WHERE z > 0 AND fdr) AS hot_fdr,
+       count(*) FILTER (WHERE z < 0 AND fdr) AS cold_fdr,
        round(max(z)::numeric, 6) AS max_z,
        round(min(z)::numeric, 6) AS min_z
-FROM p, cut
-GROUP BY cut.k;
+FROM s5_gistar;
 ```
 
 ```text
@@ -7280,7 +7282,130 @@ Tasmanian Devil: 2,000 open GBIF records (where people recor… | 2000 | 9 | 7
 
 ### 5.7 Capstone
 
-(S27)
+One module, eight hours, on every tool. It is an outline, in §5.3's form; build mission L5 (§9) writes it in full. It asks a game designer's question, "what could a player meet here?", and answers it with a pipeline built from the earlier modules, ending in a file a game can read. Records can only say where people recorded an animal, so the file says that too, in its own fields.
+
+#### c1 · game-feed
+
+**Tool:** PG + Py + PBI · **Time:** 8.0 h · **Prereqs:** s5, e4, p4
+
+**Goal:** one pipeline from GBIF to a game, each stage a module already done, with the honesty rules kept at every stage.
+- **Extract and load** (e1–e4): a GBIF download for the species and region the game needs (your own predicate, or the lab sample), loaded into PostGIS in one transaction, re-runnable, checked, and with its credits.
+- **Look before counting** (s1): which datasets, which basis of record, any GPS collars? A species whose records are mostly one telemetry study gives a feed about that study, and the feed's numbers would say so only if you looked.
+- **Grid and hot spots** (g6, s5): equal-area hexagons, records per cell, Gi\* with the false discovery rate. The feed flags the surviving cells as **recording hot spots**: places people recorded the animal most, not places it is most common.
+- **Report** (p1–p4): the cell table goes beside the star (exported as CSV, as d6 exports the star, and loaded with p1's pattern); the report maps cells by their centre, sizes them by records, colours them by hot spot, and takes its title from p4's measure.
+- **The feed:** one static JSON file per species and region, written by one SQL statement, valid against the JSON Schema below, versioned. Each cell has an encounter **weight**, its share of the records; the game draws a cell with probability weight ÷ Σ weight (a cumulative sum and one random number), so rounding never matters. A cell missing from the feed means "no record", never "no animal". The feed carries the download's citation and every dataset with CC BY 4.0 records in it (e4), because the attribution travels with anything derived from them; the game shows both on its credits screen.
+- **Shipping and refresh:** the game ships the file with its own static files, so it is read from the game's own origin and needs no CORS (§4.6). e5's schedule rebuilds it; a change to its fields bumps `version` and the schema. A game with its own PostGIS, such as Critter Connect's, can run the same statement there instead.
+
+**Data:** `s4_cells` (s4's 5 km hexagons over Tasmania's main island, with the devil's record counts), `s5_gistar` (s5's Gi\* per cell), `occurrences`, `datasets`, `species`. The worked example is the Tasmanian devil; in L5's lab the learner repeats it for a species and region of their own.
+
+**Key code:** the feed, built in PostGIS from s4's cells and s5's Gi\*; the query returns the feed's summary and its fullest cell (`SELECT doc FROM feed` returns the file itself):
+
+```sql
+-- q: c1-feed
+-- status: ran
+-- engine: postgis
+-- after: s5-gistar
+WITH sp AS (
+  SELECT id, scientific_name, common_name FROM species WHERE scientific_name = 'Sarcophilus harrisii'
+), cells AS (
+  SELECT c.id, c.n, c.geom, ST_Transform(ST_Point(c.cx, c.cy, 3577), 4326) AS centre,
+         round(c.n::numeric / sum(c.n) OVER (), 6) AS weight,
+         g.z > 0 AND g.fdr AS hot_spot
+  FROM s4_cells AS c JOIN s5_gistar AS g ON g.id = c.id
+  WHERE c.edge_m = 5000 AND c.n > 0
+), credit AS (
+  SELECT DISTINCT d.title, d.publisher
+  FROM occurrences AS o
+  JOIN sp ON sp.id = o.species_id
+  JOIN cells AS c ON ST_Contains(c.geom, ST_Transform(o.geom, 3577))
+  JOIN datasets AS d ON d.dataset_key = o.dataset_key
+  WHERE o.license = 'CC BY 4.0'
+), feed AS (
+  SELECT jsonb_build_object(
+    'version', 1,
+    'species', (SELECT jsonb_build_object('scientific_name', scientific_name, 'common_name', common_name) FROM sp),
+    'cell', '5 km hexagon, EPSG:3577',
+    'meaning', 'share of the open GBIF records in each cell: where people recorded the animal, not its range',
+    'source', 'GBIF.org (23 October 2026) GBIF Occurrence Download https://doi.org/10.15468/dl.fbpk9w',
+    'credit', coalesce((SELECT jsonb_agg(to_jsonb(credit) ORDER BY title, publisher) FROM credit), '[]'),
+    'cells', jsonb_agg(jsonb_build_object(
+      'id', id, 'lon', round(ST_X(centre)::numeric, 4), 'lat', round(ST_Y(centre)::numeric, 4),
+      'records', n, 'weight', weight, 'recording_hot_spot', hot_spot) ORDER BY id)
+  ) AS doc
+  FROM cells
+)
+SELECT jsonb_array_length(doc -> 'cells') AS cells,
+       (SELECT sum((c ->> 'records')::int) FROM jsonb_array_elements(doc -> 'cells') AS c) AS records,
+       (SELECT sum((c ->> 'weight')::numeric) FROM jsonb_array_elements(doc -> 'cells') AS c) AS weight_sum,
+       (SELECT count(*) FROM jsonb_array_elements(doc -> 'cells') AS c
+        WHERE (c ->> 'recording_hot_spot')::boolean) AS hot_spots,
+       jsonb_array_length(doc -> 'credit') AS datasets_to_credit,
+       octet_length(doc::text) AS bytes,
+       (SELECT c::text FROM jsonb_array_elements(doc -> 'cells') AS c
+        ORDER BY (c ->> 'records')::int DESC, (c ->> 'id')::int LIMIT 1) AS fullest
+FROM feed;
+```
+
+```text
+-- result: c1-feed · 1 row · sha256 0ed7d7c256c4
+cells | records | weight_sum | hot_spots | datasets_to_credit | bytes | fullest
+307 | 1972 | 0.999954 | 37 | 7 | 34848 | {"id": 917, "lat": -42.8981, "lon": 147.8865, "weight": 0.12…
+```
+
+The feed's JSON Schema (draft 2020-12), which L5 publishes beside its worked feed and checks the feed against:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://critwire.com/learn/labs/c1-feed.schema.json",
+  "title": "Encounter weights from open GBIF records",
+  "description": "Where people recorded a species, per equal-area cell. Records, not a range: a missing cell means no record, not no animal.",
+  "type": "object",
+  "required": ["version", "species", "cell", "meaning", "source", "credit", "cells"],
+  "additionalProperties": false,
+  "properties": {
+    "version": { "const": 1 },
+    "species": {
+      "type": "object",
+      "required": ["scientific_name", "common_name"],
+      "additionalProperties": false,
+      "properties": { "scientific_name": { "type": "string" }, "common_name": { "type": "string" } }
+    },
+    "cell": { "type": "string", "description": "The cells' shape, size and projection" },
+    "meaning": { "type": "string", "description": "What a weight is, in words a player-facing screen can quote" },
+    "source": { "type": "string", "description": "GBIF's citation of the download, with its DOI" },
+    "credit": {
+      "type": "array",
+      "description": "Every dataset with CC BY 4.0 records in the feed",
+      "items": {
+        "type": "object",
+        "required": ["title", "publisher"],
+        "additionalProperties": false,
+        "properties": { "title": { "type": "string" }, "publisher": { "type": "string" } }
+      }
+    },
+    "cells": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "lon", "lat", "records", "weight", "recording_hot_spot"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "integer" },
+          "lon": { "type": "number", "minimum": -180, "maximum": 180 },
+          "lat": { "type": "number", "minimum": -90, "maximum": 90 },
+          "records": { "type": "integer", "minimum": 1 },
+          "weight": { "type": "number", "minimum": 0, "maximum": 1 },
+          "recording_hot_spot": { "type": "boolean" }
+        }
+      }
+    }
+  }
+}
+```
+
+**Expected:** 307 of the 1,094 cells hold a record, so the feed has 307 cells and 1,972 records (the devil's 2,000, less the 28 off the main island's cells, as in g6). The weights, rounded to six places, sum to 0.999954, which is why the game divides by their sum. 37 cells are recording hot spots: s5's 39, less 2 cells with no record of their own, flagged by Gi\* because their neighbours are full (Gi\* counts a cell's neighbours too), and absent from a feed of recorded cells. The fullest cell (id 917) holds 256 records, 13.0 % of the weight, and is a hot spot. 7 datasets must be credited. The file is 34,848 bytes, small enough to ship with any game. L5 adds the report (`untested: Power BI is Windows-only`, its cell CSV checked as p1–p4's inputs are) and publishes the worked feed and schema under `/learn/labs/` (§7).
 
 ## 6. ERDs
 
@@ -7851,7 +7976,87 @@ Data dictionary, the star:
 
 ## 7. The site
 
-(S27)
+Learn stays what 002 §8 designed: static pages in the same `dist/`, written by the same offline `pnpm build`, served by the same Caddy block, with no server process and no web framework. Every page is complete HTML; one bundled script adds the browser engine, the editors, cards and checks. 002 §8's editor, accessibility rules, light and dark themes, "before the database loads" behaviour, one engine start per visit, serving rules and playground are kept as written (§1). What changes is the shape of the course: tracks and modules instead of a 16-lesson path, pages for labs that run on the learner's own tools, downloadable lab files, and a lab-data index.
+
+### 7.1 URLs
+
+| URL | Page | Built in |
+|---|---|---|
+| `/learn/` | The curriculum map (§2): the seven tracks in order, each module with its tool badges, hours, prerequisites and a done tick; "Clear progress"; links to setup, the schemas, the data and the playground. Modules not yet built are listed, unlinked, as "in preparation" | L2 |
+| `/learn/<track>/` | A track's index: its modules in order, with their questions (§2). Tracks: `foundations`, `database-architecture`, `gis-in-sql`, `spatial-statistics`, `etl`, `power-bi`, `capstone` | L2 |
+| `/learn/<track>/<module>/` | A module (`/learn/foundations/select/` … `/learn/capstone/game-feed/`), with Previous and Next within its track and its prerequisites linked | L2 (f, d), L3 (g), L4 (s, e), L5 (p, c) |
+| `/learn/setup/` | §3, every environment: the browser, PostGIS (Windows: Docker or the installer; then the loader), Python with `uv`, the arcpy notes, Power BI Desktop | L2; L4 adds Python |
+| `/learn/schema/`, `/learn/schema/lab/`, `/learn/schema/star/` | The three ERDs and their data dictionaries (§6), each with its SVG alone for zooming (`schema.svg`, `lab.svg`, `star.svg`) | L2 |
+| `/learn/playground/` | 002's playground on schema v2 | L2 |
+| `/learn/labs/<module>.sql`, `<module>.py`, `<module>.ipynb`; `/learn/labs/requirements.txt`; `/learn/labs/c1-feed.json`, `c1-feed.schema.json` | Downloadable lab files (7.3) | L2 (SQL), L4 (Python), L5 (the feed) |
+| `/learn/data/` | The lab data (§4): an index page (files, sizes, sources and licenses, DOIs, the sample's dataset table), the files, `manifest.json`, `postgis/learn_curriculum.sql`, `star/` | L1; L2 the star; L3 habitat |
+| `/learn/assets/` | The engine, the `parquet` extension mirror and the hashed app files (002 §8) | L2 |
+
+- **Slugs, not numbers,** as in 002: a module inserted later breaks no link. The module id (`d3`) appears in the page beside its title, because block ids (`d3-plan`) and downloads use it.
+- The docs page (`/`) gets a "Learn" link; `/learn/` links back to the docs and to `/v1`.
+- `/v1` is untouched apart from 002's `countries` files (§4); everything the course alone needs lives under `/learn/`.
+
+### 7.2 Pages
+
+Every module page has the same frame: the title and id, `**Tool:** · **Time:** · **Prereqs:**` as badges, the sections of §5 in §5's order (full modules: Concept, Worked example, Lab, Result, Exercise, Answer, Check, Dialects; foundations add "Already know this?" first), a "Mark done" button, and Previous and Next. What a code block looks like depends on where it runs:
+- **Browser (B) blocks** are 002's: an editor holding the block's SQL, Run, Stop, Reset database, results as a table or cards (`-- show: cards`), the Schema dialog on schema v2. An exercise has "Your answer", Check and Show answer; checking runs the reference answer on the pristine database, as 002 §1 does. Nothing is pre-rendered (002 §8).
+- **PostGIS and Python blocks** can't run in the page. Each shows its code (read-only, with a Copy button), the result `learn:check` recorded, with the date and the versions it ran on (PostgreSQL, PostGIS, Python and the `requirements.txt` hash, from `checked.json`), and a link to the module's download. A "Lab schema" button opens the lab ERD as the Schema button opens schema v2's. A block marked `untested` shows its reason in place of a result, in the same words as here.
+- **Power BI blocks** (```` ```m ````, ```` ```dax ````) show their code and, instead of a result, the files they read with their rows and sha256 (the `-- input:` checks), the PostGIS twin's table where there is one (`p2-check`…), and the line "Not run by critwire: Power BI Desktop is Windows-only."
+- **Results are numbers from the published files.** A result shown under a PostGIS or Python block was produced by `learn:check` on the same `/learn/data/` files the page links to; the build refuses it otherwise (7.4).
+
+The playground and the browser blocks use one engine start per visit (002 §8): moving between module pages keeps the running database.
+
+### 7.3 Downloads
+
+The lab files are written by the build from the same blocks the pages show, so the page and the download can't disagree (E2E checks it, 7.6):
+- **`<module>.sql`**: the module's PostGIS blocks in page order, each exactly as `learn:check` runs it: its `-- after:` blocks first, the whole wrapped in `BEGIN; … ROLLBACK;`, except `-- boot` blocks (committed, as s4's cells must persist) and `-- tx: own` blocks (as written). Headers stay as comments, so every block keeps its id. It starts with §0's `pg-session` (`SET search_path`) and runs with `psql -X -d <your database> -f <module>.sql` after the loader (§4.3). No `ON_ERROR_STOP`, because some blocks show an error on purpose (`-- expect: error`, `-- fails:`), and the file says so at the top.
+- **`<module>.py`** and **`<module>.ipynb`**: the module's Python blocks, `py-connect` first, then each block once, in page order, with its `# q:` line as a comment (the notebook: one cell per block, and a Markdown cell with the block's heading). They read the lab data from `LEARN_BASE` (default `https://critwire.com`) and connect with libpq's `PG*` variables, as in §3.3.
+- **`requirements.txt`**: §3.3's pins; the setup page gives the `uv` commands.
+- **Power BI** has no download of its own: a `.pbix` can't be built or tested here (§3.5). Its data files are the star's CSVs under `/learn/data/star/`, which p1 loads by URL.
+- **The capstone's worked feed** (`c1-feed.json`, written by `c1-feed`'s query) and its schema (`c1-feed.schema.json`, §5.7).
+
+### 7.4 Progress, without accounts
+
+One `localStorage` key, `critwire.learn.done.v1`, holds `{ "<module id>": "<YYYY-MM-DD>" }`. "Mark done" on a module page sets it, and so does solving a foundations module's "Already know this?" exercise. The map and the track pages show a tick for each done module; "Clear progress" on `/learn/` removes the key. Nothing else is stored: no editor text (002), no answers, no cookie, nothing sent anywhere. A browser that refuses storage still runs every module; the ticks just don't persist.
+
+### 7.5 How the build writes it
+
+`writeLearn` (002 §8), generalized, still offline and still one step of `pnpm build`.
+
+**Sources in the repository:**
+- `site/learn/curriculum.json`: the tracks in order, and each module's `id`, `slug`, `title`, `track`, `tool`, `hours`, `prereqs` and `state` (`built` or `planned`). §2's table is its first content.
+- `site/learn/modules/<id>.html`: each built module's text, with `{{block:<q-id>}}` slots where its blocks go.
+- `site/learn/sql/<q-id>.sql` and `site/learn/labs/<q-id>.py`: every block, without its plan-only header lines, as 002 §8 keeps lesson SQL; Power BI blocks the same, as `.m` and `.dax`.
+- `site/learn/labs/checked/`: what `learn:check` recorded, one file per block (its result) and `checked.json` (below).
+
+**It refuses** (each a build failure naming the file):
+- a module whose prerequisite is unknown, or prerequisites that form a cycle; a module slot with no block file, or a block file no page uses;
+- a stale ERD SVG (002 §3);
+- a PostGIS or Python block whose freshness key differs from `checked.json`: "lab <id> is stale: run pnpm learn:check";
+- a breach of the 50 MB cap (§4.4); a lab file without `sources`, or another credit failure (§4.5);
+- any missing file.
+
+**`checked.json` freshness.** For each lab block, the sha256 of: its source, the data manifest, the loader, the checker's own source files, and `requirements.txt`. All are files in the repository or in `dist/`, so the build recomputes them offline and compares. The versions of PostgreSQL, PostGIS, Python and the packages are recorded beside them and shown on the page, but not compared: the build may run on a machine with other versions, and `deploy` must not depend on the checker's machine.
+
+### 7.6 `pnpm learn:check`
+
+A development command, never part of `build` or `deploy`. It is the repository's port of §0's runner, PostGIS and Python engines, not a second harness: once L2 lands it, the spike is frozen as this mission's evidence and never extended.
+- It runs the loader and every PostGIS block, and (from L4) every Python block in `.venv-learn`, and writes their results and `checked.json`.
+- It connects with libpq's `PG*` variables, or `LEARN_PG_URL`, never `DATABASE_URL` (whose role, `critwire`, can't create roles). On critwire's server that is `critwire_dev` as `critter-ai` over the socket; on the owner's WSL, the owner's own PostGIS (`AGENTS.md`'s two machines).
+- It refuses the database `critwire` twice: by name before connecting, and by `current_database()` after, so a service file or `PGDATABASE` can't slip past. It checks for CREATEROLE first and says it's needed. The `learn_spatial` canary (§0) runs only where that schema exists.
+- L1 creates it with the loader stage; L2 adds the blocks, the cleanup lint and the in-transaction leak check (§0); L4 adds Python.
+
+### 7.7 E2E
+
+The repository's harness, unchanged in kind (002 §8): `pnpm build`, then Playwright headless Chromium against the local Caddy copy of the live block on 3100; expectations computed from `data/` and the manifests, never typed in; no request leaves 3100. New specs:
+- **`learn-map`**: the map lists `curriculum.json`'s tracks and modules in order, with hours and prerequisites; planned modules aren't links; a done tick survives a reload, and "Clear progress" removes it.
+- **`learn-browser`**: every browser block runs in its page without an error; every exercise accepts its answer and rejects a fixed wrong one; every "Already know this?" check marks its module done; Reset and Stop work; moving across three module pages starts the engine once.
+- **`learn-labs`**: each PostGIS, Python and Power BI block's code on its page equals its download; the result shown equals the recorded one; every `.ipynb` cell equals its block in the `.py`; the capstone's feed validates against its schema.
+- **`learn-data`**: every file's sha256 and size against `manifest.json`, row counts, CSV headers, the star's key coverage, the 50 MB cap, every file's `sources`, and the `/learn/data/` index listing every dataset of the sample with title, publisher and license.
+- **`schema`**: the three ERDs' drift against the databases they describe (§6), and the SVG pages.
+- **`serving`**: `.wasm` content types and the fixed modification times of `/learn/assets/` (002 §8).
+
+**Artifacts**, as today in `E2E_ARTIFACTS`: the Playwright HTML report, a trace per test, `results.json` and screenshots of the map, one module page per tool and the data index at 1280 and 375 px, reproducible with `pnpm build && E2E_ARTIFACTS=<dir> pnpm e2e`.
 
 ## 8. For the owner only: the vault overlap
 
