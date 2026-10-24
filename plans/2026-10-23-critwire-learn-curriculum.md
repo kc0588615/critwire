@@ -1456,6 +1456,13 @@ SHOULD-CONSIDER:
 
 ## Release
 
+2026-10-24, `Release: deploy`. origin/main still `c305f87` (no rebase needed); full Verification re-run: `VERIFY_OK` (`$M/verify/verify-20261024T2143Z.log`).
+- PR #9 merged (`gh pr merge 9 --merge`): merge commit `5ac58df`.
+- `deploy critwire`, last line: `deploy critwire: live at https://critwire.com` (log `$M/verify/deploy-20261024.log`); `/srv/apps/critwire` at `5ac58df`.
+- Smoke: all 157 Baseline paths return 200 from https://critwire.com; their sha256 = `$SP/baseline/dist.sha256`, and `.live/` = Baseline too (plans only, nothing live changed). Evidence `$M/verify/release-smoke/` (`live.sha256`, empty `diff.txt`).
+
+Result: done
+
 ## Decisions
 
 - S1: A2's `pg.ts` out-db window and socket-byte helpers removed (with `cog.ts`, not copied): no live COG reads in this design. Its `SCHEMA`/session stay A2's until S6; `-- engine: postgis` is refused meanwhile, so nothing reaches `learn_spatial`.
@@ -1572,6 +1579,7 @@ SHOULD-CONSIDER:
 - 2026-10-24 21:23 UTC: S32. 004 §0/§7.3/§7.6/§7.7 + L2/L3/L4 briefs: untested blocks commented out under their reason in `.sql`/`.py`, Markdown cell in `.ipynb`; assembled `.py` run without `GBIF_*`. Every untested block in 004 covered (d4×2, d5-database, g3-iucn, g7×3, s6-habitat, e1-submit; arcpy-moran + Power BI: no download). No fenced code changed. Guard ok (typecheck, 66 tests, dist = Baseline, canary, no leak, 1.66 GB, ports, cred); V7–V8 ok
 - 2026-10-24 21:25 UTC: S33 (Astra MF3). 004 §7.5: freshness key per block hashes its `after` chain (transitive), all `-- boot` blocks, `pg-session`/`py-connect`, manifest, loader, checker, `requirements.txt`, ids sorted; plus each download's assembled sha256. L2/L4 briefs. Guard (66 pass, dist = Baseline, canary, no leak), V7–V8 ok.
 - 2026-10-24 21:42 UTC: Final full Verification at ccea56d: VERIFY_OK (typecheck, 66 tests, dist = Baseline, E2E 20/20, 200 blocks 0 failures 0 differences, 3 ERDs, spike 205 + py 33, V5–V10 ok); transcript `$M/verify/verify-20261024T2125Z.log`. Summary finalized, `status: done`.
+- 2026-10-24 21:50 UTC: Release. Verification VERIFY_OK (`verify-20261024T2143Z.log`); PR #9 merged (`5ac58df`); `deploy critwire` ok; smoke: 157 live files 200 + sha256 = Baseline.
 
 ## Summary
 
@@ -1638,3 +1646,7 @@ Final full `## Verification` run 2026-10-24 21:25 UTC at `ccea56d` (after S31–
 ### Code review (Astra)
 
 APPROVE_WITH_CHANGES (2026-10-24). 3 MUST-FIX on 004 §7.3/§7.5 (downloads miss the shared `s4-cells` boot block; `e1.py` would run untested `e1-submit`; freshness keys omit dependency blocks), taken as S31–S33. SHOULD-CONSIDER (test assembled downloads from a clean database) folded into S31. All done: downloads carry boot blocks and are checked as assembled on a fresh load (S31), untested blocks are commented out / Markdown in downloads (S32), freshness keys hash every executed dependency (S33); 004 and the L2–L4 briefs updated.
+
+### Release
+
+PR #9 merged (`5ac58df`) and deployed 2026-10-24; live site = Baseline (157 files, 200, same hashes), as expected for a plans-only change.
