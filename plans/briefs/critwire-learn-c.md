@@ -1,5 +1,7 @@
 # Mission brief: critwire Learn, the grown data: traits, names and lessons 17–21 (mission C)
 
+> **Superseded 2026-10-24** by `plans/004-learn-curriculum.md` §9, with no successor: traits and names are deferred (§1, §10). Kept as a record; don't start it.
+
 <!-- Copy to /srv/critter-ai/agent-state/missions/briefs/<YYYY-MM-DD>-critwire-learn-c.md, then run:
      mission start critwire <that file>        (base: main after mission B2 is merged and live)
      Start only after B2 is live on critwire.com (its Release: Result: done) and the owner has answered

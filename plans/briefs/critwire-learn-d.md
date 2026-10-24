@@ -1,5 +1,7 @@
 # Mission brief: critwire Learn, the spatial track: outlines, records, the habitat map (mission D)
 
+> **Superseded 2026-10-24** by `plans/briefs/critwire-learn-l1-data.md` (the GBIF sample, the outlines) and `plans/briefs/critwire-learn-l3-gis.md` (the habitat map, GIS in PostGIS), designed in `plans/004-learn-curriculum.md` §9. Kept as a record; don't start it.
+
 <!-- Copy to /srv/critter-ai/agent-state/missions/briefs/<YYYY-MM-DD>-critwire-learn-d.md, then run:
      mission start critwire <that file>        (base: main after mission C is merged and live)
      Start only after B2 and C are live on critwire.com (each Release: Result: done) and the owner has answered

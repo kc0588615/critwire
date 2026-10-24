@@ -1,0 +1,80 @@
+%% critwire Learn: the learners' schema v2 in the browser (plans/004-learn-curriculum.md §4, §6): 002's schema v1, unchanged, plus the lab sample.
+%% extends: 002-learn-erd.mmd
+%% Tables only; the view species_taxonomy is listed beside it.
+%% Keys: PK primary key, FK foreign key, UK unique. Lines: || exactly one, |o or o| zero or one, |{ one or more, o{ zero or more.
+erDiagram
+    taxa {
+        VARCHAR name PK "Agalychnis, Phyllomedusidae, Anura, Amphibia"
+        VARCHAR taxon_rank "class, order, family or genus"
+        VARCHAR parent_name FK "the taxon one rank up; NULL for a class"
+    }
+    species {
+        INTEGER id PK "critwire's own id, never reused"
+        VARCHAR slug UK "red-eyed-tree-frog"
+        VARCHAR scientific_name UK "Agalychnis callidryas"
+        VARCHAR common_name "Red-eyed Tree Frog"
+        VARCHAR genus FK "a taxa row of rank genus"
+        VARCHAR range_status "ok, no-open-records or identity-unsettled"
+        VARCHAR photo_url "NULL when there is no photo"
+        VARCHAR photo_credit "who took the photo"
+        VARCHAR photo_license "CC BY-SA 4.0, CC BY 2.0, CC0, Public domain"
+        VARCHAR photo_page "the photo's Wikimedia Commons page"
+        INTEGER iucn_id UK "IUCN Red List taxon id"
+        BIGINT gbif_id UK "GBIF backbone taxon key"
+        VARCHAR col_id UK "Catalogue of Life id"
+        VARCHAR wikidata_id UK "Wikidata item"
+        INTEGER inaturalist_id UK "iNaturalist taxon id"
+        INTEGER ncbi_id UK "NCBI Taxonomy id"
+    }
+    countries {
+        VARCHAR code PK "ISO 3166-1 alpha-2, plus XK"
+        VARCHAR name UK "Brazil"
+        VARCHAR continent "South America"
+        VARCHAR region "Americas"
+        VARCHAR subregion "South America"
+    }
+    species_countries {
+        INTEGER species_id PK, FK "the animal"
+        VARCHAR country_code PK, FK "recorded there in open records"
+    }
+    sources {
+        VARCHAR name PK "Wikidata, Catalogue of Life, critwire base"
+        VARCHAR license "the license of what critwire took"
+        DATE retrieved "when critwire took it; NULL for critwire base"
+    }
+    species_sources {
+        INTEGER species_id PK, FK "the animal"
+        VARCHAR field PK "a path in the record, such as ids.col"
+        VARCHAR source_name FK "who supplied that field"
+    }
+    datasets {
+        VARCHAR dataset_key PK "GBIF's dataset id"
+        VARCHAR title "the dataset's own title"
+        VARCHAR publisher "the organization that published it"
+        VARCHAR doi "the dataset's DOI; NULL when it has none"
+        VARCHAR license "the license the dataset declares"
+    }
+    occurrences {
+        BIGINT id PK "GBIF's record id"
+        INTEGER species_id FK "the animal recorded"
+        VARCHAR dataset_key FK "the dataset to credit"
+        VARCHAR license "CC0 1.0 or CC BY 4.0, the stricter of record and dataset"
+        VARCHAR basis_of_record "HUMAN_OBSERVATION, PRESERVED_SPECIMEN, ..."
+        DOUBLE longitude "degrees east, WGS 84"
+        DOUBLE latitude "degrees north, WGS 84"
+        DOUBLE coordinate_uncertainty_m "metres; NULL when not given"
+        VARCHAR country_code_gbif "GBIF's code as delivered; ZZ unknown, XZ high seas"
+        VARCHAR country_code FK "that code when it is a countries row, else NULL"
+        INTEGER year "NULL when the record has none"
+        INTEGER month "1 to 12; NULL when the record has none"
+    }
+
+    taxa |o--o{ taxa : "parent of"
+    taxa ||--o{ species : "genus of"
+    species ||--o{ species_countries : "recorded in"
+    countries ||--o{ species_countries : "has records of"
+    species ||--o{ species_sources : "fields from"
+    sources ||--|{ species_sources : "supplies"
+    species ||--o{ occurrences : "recorded as"
+    datasets ||--o{ occurrences : "publishes"
+    countries |o--o{ occurrences : "contains"
