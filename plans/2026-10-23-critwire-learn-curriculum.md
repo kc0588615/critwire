@@ -2,7 +2,7 @@
 mission: critwire-learn-curriculum
 project: critwire
 branch: agent/critwire-learn-curriculum
-status: active
+status: done
 started: 2026-10-23 04:35 UTC
 ---
 
@@ -1571,6 +1571,7 @@ SHOULD-CONSIDER:
 - 2026-10-24 21:20 UTC: S31. 004 §7.1/7.3/7.6/7.7 + L2/L4 briefs: downloads carry boot setup (s2–s5, c1 `.sql`; s2–s5, setup `.py`), assembled downloads run on fresh load in learn:check; `s4-cells` idempotent. Runner --update/--check: 200 blocks, 0 failures, 0 result changes; Guard ok (typecheck, 66 tests, dist = Baseline, canary, no leak, cred); V7–V8 ok
 - 2026-10-24 21:23 UTC: S32. 004 §0/§7.3/§7.6/§7.7 + L2/L3/L4 briefs: untested blocks commented out under their reason in `.sql`/`.py`, Markdown cell in `.ipynb`; assembled `.py` run without `GBIF_*`. Every untested block in 004 covered (d4×2, d5-database, g3-iucn, g7×3, s6-habitat, e1-submit; arcpy-moran + Power BI: no download). No fenced code changed. Guard ok (typecheck, 66 tests, dist = Baseline, canary, no leak, 1.66 GB, ports, cred); V7–V8 ok
 - 2026-10-24 21:25 UTC: S33 (Astra MF3). 004 §7.5: freshness key per block hashes its `after` chain (transitive), all `-- boot` blocks, `pg-session`/`py-connect`, manifest, loader, checker, `requirements.txt`, ids sorted; plus each download's assembled sha256. L2/L4 briefs. Guard (66 pass, dist = Baseline, canary, no leak), V7–V8 ok.
+- 2026-10-24 21:42 UTC: Final full Verification at ccea56d: VERIFY_OK (typecheck, 66 tests, dist = Baseline, E2E 20/20, 200 blocks 0 failures 0 differences, 3 ERDs, spike 205 + py 33, V5–V10 ok); transcript `$M/verify/verify-20261024T2125Z.log`. Summary finalized, `status: done`.
 
 ## Summary
 
@@ -1628,7 +1629,7 @@ Old briefs b1/b2/c/d marked superseded.
 
 ### Verification
 
-Full `## Verification` run 2026-10-24 20:53–21:10 UTC at `1f76c9d`: every V0–V11 check passed, transcript ends `VERIFY_OK` (`$M/verify/verify-20261024T2053Z.log`; script extracted to `$M/verify/verification.sh`).
+Final full `## Verification` run 2026-10-24 21:25 UTC at `ccea56d` (after S31–S33): every V0–V11 check passed, transcript ends `VERIFY_OK` (`$M/verify/verify-20261024T2125Z.log`; script extracted to `$M/verify/verification.sh`). Earlier run at `1f76c9d` (S30): also `VERIFY_OK` (`verify-20261024T2053Z.log`).
 - Repo: typecheck pass, 66/66 unit tests, `dist/` = Baseline (157 files, = live), E2E 20/20 (`$M/e2e/playwright-report/`, `results.json`, traces).
 - 004 blocks (this mission's E2E: DuckDB-WASM in headless Chromium, PostGIS 3.4.2 in `critwire_dev`, Python 3.12.3 venv): 200 run, 0 failures, 0 differences (`$M/queries.log`); 3 ERDs match catalogs/manifest. 10 SQL/Python blocks `untested` with reasons (2 need two sessions, 4 wait for L3's habitat data, 1 changes db privileges, 1 IUCN appendix, 1 real GBIF download, 1 ArcGIS Pro); 6 Power BI blocks untested, inputs `keys=ok`.
 - Spikes: ETL (download DOI `10.15468/dl.fbpk9w`, 394,532 rows loaded twice, md5 same; sample files reproduce), Moran (SQL = PySAL: I 0.273296, z 15.177858, max |Δ| 1.06e-12), star export (8 files, PostGIS = DuckDB by value). Spike 205/205 TS + 33 Python tests. ERD renders `$SP/erd/{schema,lab,star}.{svg,png}`. Evidence: `$SP/out/{python-env,lab-data,loader,etl-postgis,moran,star-export}/`, commands in `$SP/README.md`.
@@ -1636,4 +1637,4 @@ Full `## Verification` run 2026-10-24 20:53–21:10 UTC at `1f76c9d`: every V0�
 
 ### Code review (Astra)
 
-APPROVE_WITH_CHANGES (2026-10-24). 3 MUST-FIX on 004 §7.3/§7.5 (downloads miss the shared `s4-cells` boot block; `e1.py` would run untested `e1-submit`; freshness keys omit dependency blocks), taken as S31–S33. SHOULD-CONSIDER (test assembled downloads from a clean database) folded into S31.
+APPROVE_WITH_CHANGES (2026-10-24). 3 MUST-FIX on 004 §7.3/§7.5 (downloads miss the shared `s4-cells` boot block; `e1.py` would run untested `e1-submit`; freshness keys omit dependency blocks), taken as S31–S33. SHOULD-CONSIDER (test assembled downloads from a clean database) folded into S31. All done: downloads carry boot blocks and are checked as assembled on a fresh load (S31), untested blocks are commented out / Markdown in downloads (S32), freshness keys hash every executed dependency (S33); 004 and the L2–L4 briefs updated.
