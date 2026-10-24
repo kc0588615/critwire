@@ -1550,3 +1550,59 @@ Only the spike harness is tested in isolation, because every "ran" claim rests o
 - 2026-10-24 20:52 UTC: S29. 004 §8 vault overlap (15 rows, titles only, fast path), §10 owner's choices (10 items, table + recommendation/cost each); completeness pass. Check: V4 headers, V7, V8 pass; `--check $ERDS` 200 blocks 0 failures, 3 ERDs match; Guard ok (scope, additions-only, typecheck, 66 tests, dist = Baseline, canary, no leak, 1.66 GB, ports free, no credential).
 
 ## Summary
+
+Design: `plans/004-learn-curriculum.md` (§0–§10, §A spikes, §B disagreements), ERDs `plans/004-{learn,lab,star}-erd.mmd`, briefs `plans/briefs/critwire-learn-l1…l5`. Nothing public changes (`dist/` = Baseline). `M` = `/srv/critter-ai/agent-state/missions/critwire-learn-curriculum`, `SP` = `$M/spike`.
+
+### Curriculum map
+
+33 modules, 7 tracks, ~68 h (004 §2). Tools: B browser (DuckDB-WASM), PG own PostGIS, Py `uv` env, PBI Power BI Desktop.
+
+| Track | Modules (tool) | h | Depth |
+|---|---|---|---|
+| Foundations | f1 select, f2 aggregate, f3 join, f4 window (B; each has an "Already know this?" skip check) | 6.0 | full |
+| Database architecture | d1 keys (B+PG), d2 normalize (B), d3 indexes, d4 transactions, d5 roles (PG), d6 star (PG+DuckDB) | 12.0 | full |
+| GIS in SQL | g1 crs, g2 load-validate, g3 spatial-join, g4 measure-overlay, g5 spatial-index, g6 grids, g7 raster (PG) | 12.5 | outline |
+| Spatial statistics | s1 bias (PG+B), s2 point-patterns, s3 weights, s4 moran, s5 local (LISA, Gi\*, FDR), s6 zonal (PG+Py) | 12.5 | outline |
+| ETL | e1 extract (Py), e2 transform-load, e3 idempotent, e4 quality-provenance (Py+PG), e5 schedule (Py) | 10.0 | outline |
+| Power BI | p1 power-query, p2 model, p3 dax, p4 maps-report (PBI) | 7.0 | outline |
+| Capstone | c1 game-feed: ETL → Gi\* hexagons → report → static JSON feed (all) | 8.0 | outline |
+
+### Lab datasets
+
+Published under `/learn/data/` (outside `/v1`'s additions-only promise; no CORS needed: §10 item 1); `/v1/countries.*` the one `/v1` addition. ~35.4 MB now, ≈ 44–48 MB after L3, build-enforced 50 MB cap (004 §4.4).
+- GBIF open-records sample: download API (DOI `10.15468/dl.fbpk9w`), 394,532 → 381,065 effective-open → 40,395 records (≤ 2,000/species, 71 species, 400 datasets); per-record CC0 1.0 / CC BY 4.0 after the effective-license rule; L1 registers its own derived-dataset DOI (`10.15468/dd.ky9cyt` untouched). Parquet 0.62 MB, CSV 4.59 MB, `datasets.csv`.
+- Natural Earth admin-0 + admin-1 1:50m (public domain); `/v1/countries` (public domain).
+- RESOLVE Ecoregions 2017, simplified 0.05° (CC BY 4.0), 847 rows, 6.69 MB.
+- Jung et al. 2020 habitat v004 summaries + Costa Rica/Tasmania clips (CC BY 4.0), L3; A2's two-country stand-ins until then.
+- Derived: psql-only PostGIS loader `postgis/learn_curriculum.sql` (14 tables, 21.3 MB), star export `star/*.csv` (8 files, 4.58 MB), `manifest.json` with credits.
+- Never hosted: IUCN data, WorldClim, WDPA.
+
+### Reused and dropped
+
+004 §1 maps 002 §1–§10 and 003 §1–§8 by kept / changed / dropped.
+- Reused: DuckDB-WASM engine and measurements (eh bundle, self-hosted, 10 000-row cap), schema v1 byte for byte (v2 adds `datasets`, `occurrences`), Mermaid ERDs + offline render + drift check, `/v1/countries`, A2's dataset licenses and sizes, raster recommendation (v004), IUCN conclusions, page design (cards, editor, Schema button), lessons 7/9/11/14/15's SQL inside f3/d1/d2.
+- Changed: GBIF sample from `occurrence/search` (003 D3) to the download API with its own DOI; spatial work moves to the learner's PostGIS (no browser `spatial` extension); loader psql-only.
+- Dropped: ages-16 16-lesson path, cookbook, "Name that animal"/`/play/`, 003 lessons 17–23, traits/names/tree tables (deferred). 002 and 003 carry a dated Superseded line (additions only).
+
+### Vault overlap
+
+For the owner only (004 §8; titles only, nothing copied). Covered by the vault (skim or take the skip check): f1–f3 (module 04), d1–d5 (SQL Server versions; PostgreSQL specifics new), g1–g4 (modules 08–12), g5 partly, arcpy notes, e-track's Python basics. New, the core gap: f4, d6, g6, g7, s1–s6, e1–e5's API/DOI/PostGIS/scheduling, p1–p4, c1. Fast path ≈ 45 of 68 h.
+
+### Build briefs
+
+Chained in order; each merges and deploys before the next starts (004 §9). Total 146–176 sessions.
+1. L1 `critwire-learn-l1-data` (32–38): `/v1/countries`, `/learn/data/` (sample + its DOI, shapes, stand-ins, loader, manifest, cap), `learn:check` loader stage, `AGENTS.md` copy line.
+2. L2 `critwire-learn-l2-site` (34–40): engine + site, f1–f4 and d1–d6 in full, ERD pages, star (records fact), `learn:check` for PostGIS.
+3. L3 `critwire-learn-l3-gis` (28–34): `ingest habitat` (v004), clips, g1–g7 in full.
+4. L4 `critwire-learn-l4-stats-etl` (30–36): `uv` env, Python stage, s1–s6 and e1–e5 in full.
+5. L5 `critwire-learn-l5-powerbi-capstone` (22–28): habitat fact, p1–p4 and c1 in full, curriculum pass.
+Old briefs b1/b2/c/d marked superseded.
+
+### Owner's choices
+
+004 §10; without an answer the briefs build the recommendation.
+1. Lab data at `/learn/data/`, no CORS. 2. GBIF sample via download API, ≤ 2,000/species, own derived-dataset DOI; register before 2027-04-23. 3. No browser `spatial` extension. 4. 002's open items as recommended (yes needed: commit `parquet` ext 3.22 MB, Caddy headers, Wikimedia photos linked). 5. Habitat v004 summaries + 2 clips. 6. Replace `AGENTS.md`'s "grades 6–12" copy line (text in §10 item 6; L1 applies). 7. Queue all five (alt: stop after L2, ~66–78 sessions). 8. Two ~30 min Windows checks (PostGIS after L2, Power BI after L5). 9. Traits/names/CHELSA later; WDPA, WorldClim, IUCN never hosted. 10. Keep the effective-license rule (costs 13,467 records pre-cap; Yangtze giant softshell gets none).
+
+### Verification
+
+Pending (S30 run).
