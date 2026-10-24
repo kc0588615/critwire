@@ -4073,11 +4073,24 @@ records | species_with_records | species_rows
 
 #### d6 · star
 
-(S23 writes the module around this key code; §A.3 is the spike that tests it.)
+**Tool:** PG + B (browser) · **Time:** 2.5 h · **Prereqs:** d2, d4
 
-**Key code:**
+**Concept:** Reports ask "how many, by what": records by class and continent, habitat area by country, records per decade. A **dimensional model** answers them with a shape built for reading:
+- **Facts and dimensions.** A **fact table** holds the events you count or measure, one row each. A **dimension table** holds one way to slice them: the species, the country, the dataset, the year. Each fact row carries a foreign key to every dimension it can be sliced by. Drawn, the fact sits in the middle with its dimensions around it: a **star**.
+- **The grain comes first.** The grain is what one fact row is, said in words before any column is chosen: "one sample record", "one country and one habitat class". Every column must be true at that grain; a table that mixes two grains (records and yearly totals in one table) counts things twice. Keep the finest grain you have: a coarser summary can always be built from it, never the reverse.
+- **Measures** are the fact's numbers. **Additive** ones add up across every dimension (records, area in km²). **Semi-additive** ones add up across some (a yearly population count adds across countries, not across years). **Non-additive** ones never add up (ratios, averages, distinct counts): store their parts and compute them in the report. A record fact's measure is the row itself: each row counts one, `count(*)`.
+- **Dimensions are wide and flat**: everything you'd filter or group by, as readable text, with a hierarchy's levels as columns side by side (class, order, family, genus). That repeats values on purpose, the denormalizing d2 named: safe here because the star is rebuilt from the normalized tables on every build and never edited.
+- **Star or snowflake.** A **snowflake** normalizes the dimensions back into chains (species → genus → family → order → class, as `taxa` does). It stores each name once, but every report walks the chain and every reporting tool has to be taught it. A star needs one join per dimension. Snowflake a dimension only when it is huge or one level is shared by several dimensions.
+- **Keys.** A dimension has a primary key; the fact's foreign keys point at it; the fact's own primary key is its grain (`record_id`; `species_id, country_code`). Warehouses usually give dimensions **surrogate keys**, integers the load makes up (d1), so that one species can have several versions (type 2, below) and a source system's codes can change underneath. This star uses critwire's ids, already surrogates, and natural keys an authority keeps stable (ISO country codes, GBIF dataset keys).
+- **Unknown members.** A fact's foreign key is never NULL: an inner join drops the row, and a report tool shows a blank that no filter catches. Instead the dimension gets one row that means "unknown" (`ZZ`, year `-1`), and the load maps a missing value to it in exactly one place. Then the totals agree whichever dimension you slice by. When "unknown" and "doesn't apply" both occur, give each its own member.
+- **Degenerate dimensions** are codes that stay on the fact as plain columns (basis of record, license) because there is nothing more to say about them. A **factless fact** has no measure at all; its rows are the facts (a species has open records in a country).
+- **Conformed dimensions** are one dimension table shared by several facts, with the same keys and values. They let a report **drill across**: summarize each fact to the shared dimension's level, then join the summaries. Joining two facts row to row instead pairs every row of one with every matching row of the other (f3's fan-out), and every total is wrong.
+- **Slowly changing dimensions.** A dimension's attributes change: a common name is corrected, a species moves to another genus. **Type 1** overwrites the value: history is restated, every past fact now reports under the new value; right for corrections. **Type 2** keeps history: the change adds a new row, a version with its own surrogate key, the years it is valid and a current flag, and each fact points at the version in force at its date. A report can then group "as it was" (by the fact's version) or "as it is" (by the current version). Type 0 never changes a value; type 3 keeps one "previous value" column. The choice is made per attribute.
+- **Export.** A star travels well as files: one CSV per table plus a manifest (columns, keys, rows, sha256, credits), rows in primary-key order so the same data always gives the same bytes. That is what critwire publishes for Power BI (§4, p1), checked file by file (§A.3).
 
-A star schema answers report questions with one join per question: a fact table holds one row per event at a stated grain, and each dimension describes one way to slice it. These blocks are `star.sql`, the one definition of the star: standard SQL with no schema names, so the same text runs in PostGIS (this lab, in `learn_curriculum`) and in DuckDB (critwire's build, which writes the CSV files Power BI reads). Each block creates one table, fills it from the lab tables and reports what it holds. Keys are declared in each `CREATE TABLE`, because DuckDB accepts foreign keys only there.
+**Worked example:** What is one record fact's grain? The reports to support are records by species, place, source and time, so the grain is **one sample record**, one row of `occurrences`, and the dimensions are what a record can be sliced by: its species, country, dataset and year. The habitat stand-ins add a second fact at another grain, one country and one habitat class, that shares `dim_country`.
+
+These blocks are `star.sql`, the one definition of the star: standard SQL with no schema names, so the same text runs in PostGIS (this lab, in `learn_curriculum`) and in DuckDB (critwire's build, which writes the CSV files Power BI reads). Each block creates one table, fills it from the lab tables and reports what it holds. Keys are declared in each `CREATE TABLE`, because DuckDB accepts foreign keys only there. The tests run each block in its own transaction, after the blocks its `-- after:` names, and roll it back; in psql, type `BEGIN;`, run them in order, and `ROLLBACK;` when you are done (or keep them until the next reload replaces `learn_curriculum`).
 
 `dim_species` flattens the taxonomy into columns: a report filters by class or family without walking `taxa` (a star, not a snowflake).
 
@@ -4299,6 +4312,303 @@ FROM fact_country_habitat;
 country_classes | countries | total_km2
 35 | 2 | 6062.26
 ```
+
+Now a report is one join per dimension it slices by. Records since 2000 by class and continent:
+
+```sql
+-- q: d6-report
+-- status: ran
+-- engine: postgis
+-- after: d6-star-dim-species, d6-star-dim-country, d6-star-dim-dataset, d6-star-dim-year, d6-star-fact-records
+SELECT sp.class, c.continent, count(*) AS records
+FROM fact_records AS f
+JOIN dim_species AS sp ON sp.species_id = f.species_id
+JOIN dim_country AS c ON c.country_code = f.country_code
+JOIN dim_year AS y ON y.year = f.year
+WHERE y.decade >= 2000
+GROUP BY sp.class, c.continent
+ORDER BY sp.class, c.continent;
+```
+
+```text
+-- result: d6-report · 18 rows · sha256 1b76ca3b5cff
+class | continent | records
+Amphibia | Africa | 103
+Amphibia | Asia | 16
+Amphibia | Europe | 2
+Amphibia | North America | 343
+Amphibia | South America | 411
+… 13 more rows
+```
+
+The query never mentions genus, family or `taxa`: the dimension already holds the class. Every join is from the fact to one dimension by its key, which is the shape reporting tools expect (Power BI draws each as a one-to-many relationship, p2). `Seven seas (open ocean)` is Natural Earth's continent for island countries far from any continent, such as Mauritius and Réunion. Records with no year fall out here only because the `WHERE` asks for a decade; they still join, to year `-1`.
+
+**Lab:**
+1. Star or snowflake. The same count by class, once from the star and once by walking the normalized tables, `species` → genus → family → order → class in `taxa`:
+
+```sql
+-- q: d6-snowflake
+-- status: ran
+-- engine: postgis
+-- after: d6-star-dim-species, d6-star-dim-country, d6-star-dim-dataset, d6-star-dim-year, d6-star-fact-records
+SELECT star.class, star.records AS star_records, snowflake.records AS snowflake_records
+FROM (
+  SELECT sp.class, count(*) AS records
+  FROM fact_records AS f
+  JOIN dim_species AS sp ON sp.species_id = f.species_id
+  GROUP BY sp.class
+) AS star
+JOIN (
+  SELECT c.name AS class, count(*) AS records
+  FROM occurrences AS o
+  JOIN species AS s ON s.id = o.species_id
+  JOIN taxa AS g ON g.name = s.genus
+  JOIN taxa AS fam ON fam.name = g.parent_name
+  JOIN taxa AS ord ON ord.name = fam.parent_name
+  JOIN taxa AS c ON c.name = ord.parent_name
+  GROUP BY c.name
+) AS snowflake ON snowflake.class = star.class
+ORDER BY star.class;
+```
+
+```text
+-- result: d6-snowflake · 3 rows · sha256 3ba889abc98e
+class | star_records | snowflake_records
+Amphibia | 4776 | 4776
+Mammalia | 31905 | 31905
+Reptilia | 3714 | 3714
+```
+
+Same answer, one join against five. The snowflake stores each family's name once; the star repeats it on each of its species' rows, 76 rows in all, which costs nothing. The snowflake's real cost is that every report, and every person writing one, has to know the chain.
+
+2. Conformed dimensions. Which dimensions does the record fact share with habitat area per country? Only `dim_country`: `fact_country_habitat` has a country and a habitat class, `fact_records` a species, country, dataset and year. So a report that shows both goes through the country. The habitat stand-ins cover two countries, Åland (`AX`) and Trinidad and Tobago (`TT`). First the wrong way, joining the facts to each other, then the right one:
+
+```sql
+-- q: d6-drill-across
+-- status: ran
+-- engine: postgis
+-- after: d6-star-dim-species, d6-star-dim-country, d6-star-dim-dataset, d6-star-dim-year, d6-star-fact-records, d6-star-dim-habitat-class, d6-star-fact-country-habitat
+SELECT 'facts joined to each other' AS way, f.country_code, count(*) AS records, sum(h.est_area_km2) AS habitat_km2
+FROM fact_records AS f
+JOIN fact_country_habitat AS h ON h.country_code = f.country_code
+GROUP BY f.country_code
+UNION ALL
+SELECT 'each fact summed, then joined', c.country_code, coalesce(r.records, 0), h.habitat_km2
+FROM dim_country AS c
+JOIN (SELECT country_code, sum(est_area_km2) AS habitat_km2
+      FROM fact_country_habitat GROUP BY country_code) AS h ON h.country_code = c.country_code
+LEFT JOIN (SELECT country_code, count(*) AS records
+           FROM fact_records GROUP BY country_code) AS r ON r.country_code = c.country_code
+ORDER BY way, country_code;
+```
+
+```text
+-- result: d6-drill-across · 3 rows · sha256 f094fefd46c9
+way | country_code | records | habitat_km2
+each fact summed, then joined | AX | 0 | 945.03
+each fact summed, then joined | TT | 2 | 5117.23
+facts joined to each other | TT | 44 | 10234.46
+```
+
+Trinidad and Tobago has 2 records and 22 habitat classes, so joining the facts gives 44 "records" and twice the habitat area, and Åland, with no records, vanishes. Summing each fact to the country first gives each number once. Reporting tools do this for you when both facts relate to the same dimension table and you never relate the facts to each other.
+
+3. Where does a record with no country go? The sample has none (GBIF's geospatial filter removed them, §4), but a refresh can bring one: a record at sea has GBIF code `XZ` and no `country_code`. Add a made-up one, in Bass Strait between Victoria and Tasmania, with no year either:
+
+```sql
+-- q: d6-at-sea
+-- status: ran
+-- engine: postgis
+INSERT INTO occurrences (id, species_id, dataset_key, license, basis_of_record, longitude, latitude,
+                         coordinate_uncertainty_m, country_code_gbif, country_code, year, month)
+SELECT 1, species_id, dataset_key, license, basis_of_record, 146.5, -39.5, NULL, 'XZ', NULL, NULL, NULL
+FROM occurrences
+WHERE species_id = 48
+ORDER BY id
+LIMIT 1;
+SELECT id, species_id, country_code_gbif, country_code, year FROM occurrences WHERE id = 1;
+```
+
+```text
+-- result: d6-at-sea · 1 row · sha256 63fdf4312748
+id | species_id | country_code_gbif | country_code | year
+1 | 48 | XZ | NULL | NULL
+```
+
+Then build the star after it and count the records each way:
+
+```sql
+-- q: d6-unknown
+-- status: ran
+-- engine: postgis
+-- after: d6-at-sea, d6-star-dim-species, d6-star-dim-country, d6-star-dim-dataset, d6-star-dim-year, d6-star-fact-records
+SELECT 1 AS step, 'occurrences' AS counted, count(*) AS records FROM occurrences
+UNION ALL
+SELECT 2, 'occurrences joined to countries', count(*)
+FROM occurrences AS o JOIN countries AS c ON c.code = o.country_code
+UNION ALL
+SELECT 3, 'fact_records joined to dim_country', count(*)
+FROM fact_records AS f JOIN dim_country AS c ON c.country_code = f.country_code
+UNION ALL
+SELECT 4, 'of them in ZZ', count(*) FROM fact_records WHERE country_code = 'ZZ'
+UNION ALL
+SELECT 5, 'of them in year -1', count(*) FROM fact_records WHERE year = -1
+ORDER BY step;
+```
+
+```text
+-- result: d6-unknown · 5 rows · sha256 bda14c66315b
+step | counted | records
+1 | occurrences | 40396
+2 | occurrences joined to countries | 40395
+3 | fact_records joined to dim_country | 40396
+4 | of them in ZZ | 1
+5 | of them in year -1 | 2290
+```
+
+The normalized tables lose the record as soon as a report joins countries; the star keeps it, under "Unknown or outside any country", and under year `-1` with the 2,289 records that have no year. The `coalesce` in `d6-star-fact-records` is the one place this happens, so no report has to remember a `LEFT JOIN`.
+
+4. Type 1: overwrite. "Temminck's ground pangolin" is the name more lists use now. Correct it in the dimension and look at the records:
+
+```sql
+-- q: d6-scd1
+-- status: ran
+-- engine: postgis
+-- after: d6-star-dim-species, d6-star-dim-country, d6-star-dim-dataset, d6-star-dim-year, d6-star-fact-records
+UPDATE dim_species SET common_name = 'Temminck''s Ground Pangolin' WHERE species_id = 63;
+SELECT sp.common_name, count(*) AS records, min(f.year) FILTER (WHERE f.year > 0) AS first_year
+FROM fact_records AS f
+JOIN dim_species AS sp ON sp.species_id = f.species_id
+WHERE f.species_id = 63
+GROUP BY sp.common_name;
+```
+
+```text
+-- result: d6-scd1 · 1 row · sha256 bf8b1f306b36
+common_name | records | first_year
+Temminck's Ground Pangolin | 9 | 1930
+```
+
+All 9 records, back to 1930, now report under the new name, and nothing remembers the old one. For a correction that is what you want. In critwire's build the dimension is rebuilt from `species` each time, so the correction belongs in the source, and the star picks it up.
+
+5. Type 2: keep history. Older lists, such as Mammal Species of the World (2005), put all eight pangolins in genus *Manis*; the African ground pangolins have been *Smutsia* in general use since a 2018 study of the pangolins' family tree (Gaubert et al., Journal of Heredity), and critwire uses *Smutsia*. To report records under the name in use when each was made, the dimension keeps both versions. In this lab, version 1 is valid to 2017 and version 2 from 2018 (by year, since a record's date here is its year); a record with no year gets the current version:
+
+```sql
+-- q: d6-scd2
+-- status: ran
+-- engine: postgis
+-- after: d6-star-dim-species, d6-star-dim-country, d6-star-dim-dataset, d6-star-dim-year, d6-star-fact-records
+CREATE TABLE dim_species_history (
+  species_key     INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  species_id      INTEGER NOT NULL,
+  scientific_name VARCHAR NOT NULL,
+  genus           VARCHAR NOT NULL,
+  valid_from      INTEGER NOT NULL,
+  valid_to        INTEGER NOT NULL,
+  is_current      BOOLEAN NOT NULL,
+  UNIQUE (species_id, valid_from)
+);
+INSERT INTO dim_species_history (species_id, scientific_name, genus, valid_from, valid_to, is_current)
+SELECT species_id, scientific_name, genus, 0, 9999, true FROM dim_species;
+UPDATE dim_species_history SET valid_from = 2018 WHERE species_id IN (55, 63);
+INSERT INTO dim_species_history (species_id, scientific_name, genus, valid_from, valid_to, is_current)
+VALUES (55, 'Manis gigantea', 'Manis', 0, 2017, false),
+       (63, 'Manis temminckii', 'Manis', 0, 2017, false);
+ALTER TABLE fact_records ADD COLUMN species_key INTEGER REFERENCES dim_species_history (species_key);
+UPDATE fact_records AS f SET species_key = h.species_key
+FROM dim_species_history AS h
+WHERE h.species_id = f.species_id
+  AND CASE WHEN f.year = -1 THEN h.is_current ELSE f.year BETWEEN h.valid_from AND h.valid_to END;
+SELECT f.species_id, version.scientific_name AS filed_then, current_version.scientific_name AS name_now,
+       count(*) AS records
+FROM fact_records AS f
+JOIN dim_species_history AS version ON version.species_key = f.species_key
+JOIN dim_species_history AS current_version
+  ON current_version.species_id = f.species_id AND current_version.is_current
+WHERE f.species_id IN (55, 63)
+GROUP BY f.species_id, version.scientific_name, current_version.scientific_name
+ORDER BY f.species_id, filed_then;
+```
+
+```text
+-- result: d6-scd2 · 4 rows · sha256 ffa4867a086c
+species_id | filed_then | name_now | records
+55 | Manis gigantea | Smutsia gigantea | 6
+55 | Smutsia gigantea | Smutsia gigantea | 4
+63 | Manis temminckii | Smutsia temminckii | 7
+63 | Smutsia temminckii | Smutsia temminckii | 2
+```
+
+Grouped by the fact's `species_key`, 13 of the 19 pangolin records report as *Manis*, "as it was"; grouped through the current version, all 19 are *Smutsia*, "as it is". The fact holds the version key, set once when the record is loaded, so the lookup by date runs at load time, never in a report. Every version of a species keeps its `species_id`, so a report can still ask about the animal across versions. `ALTER TABLE … ADD COLUMN` and the `UPDATE` stand in for that load here; a real build sets `species_key` in the `INSERT`. Before you trust a type 2 dimension, check that versions don't overlap and leave no gaps, and that each species has exactly one current row; a partial unique index, `CREATE UNIQUE INDEX ON dim_species_history (species_id) WHERE is_current`, enforces the last.
+
+6. Export. In DuckDB a table becomes a file with one `COPY`; it runs here in the browser, which has the same `countries` table:
+
+```sql
+-- q: d6-export
+-- status: ran
+COPY (
+  SELECT code AS country_code, name, continent, region, subregion FROM countries ORDER BY code
+) TO 'dim_country.csv' (FORMAT csv, HEADER);
+SELECT count(*) AS rows, min(country_code) AS first_code, max(country_code) AS last_code
+FROM read_csv('dim_country.csv', header = true, all_varchar = true);
+```
+
+```text
+-- result: d6-export · 1 row · sha256 11b705c8d161
+rows | first_code | last_code
+250 | AD | ZW
+```
+
+critwire's build exports every star table this way, `COPY (SELECT * FROM <table> ORDER BY <primary key>) TO '<table>.csv' (FORMAT csv, HEADER)`, and writes `manifest.json` beside the files (§A.3). In PostgreSQL, psql's `\copy` does the same from your own computer, `\copy (SELECT * FROM dim_country ORDER BY country_code) TO 'dim_country.csv' WITH (FORMAT csv, HEADER)`; plain `COPY … TO 'file'` writes on the server and needs a server-file privilege. Read the files back with `all_varchar` (or explicit types) so a code like Namibia's `NA` stays text.
+
+**Result:** The record fact's grain is one sample record: 40,395 rows, one per row of `occurrences`, sliced by species, country, dataset and year, each one join away. The star and the snowflake give the same counts by class (Amphibia 4,776, Mammalia 31,905, Reptilia 3,714); only the joins differ. The two facts share `dim_country`, so habitat area and records meet by country: joined to each other, Trinidad and Tobago's 2 records became 44. A record with no country goes to `ZZ` and one with no year to `-1`, so every total still adds up. Type 1 restated all 9 of Temminck's pangolin's records under the corrected name; type 2 kept 13 of the 19 pangolin records under *Manis* "as it was", while "as it is" shows all 19 under *Smutsia*.
+
+**Exercise:** Big facts make slow dashboards, so warehouses add **aggregate facts**: a coarser grain, built from the fine one. In the browser (DuckDB), build `fact_species_decade` at the grain one species and one decade, with a measure `records`, and a dimension `dim_decade` (the decades that occur, labelled like `1990s`, plus an unknown member). Use `species` as the species dimension. Then prove it reconciles: its records must add up to the records in `occurrences`, and say how many are in the unknown decade.
+
+**Answer:** The decade dimension follows `dim_year`'s rule, with `-1` for "no year"; the fact's primary key is its grain, and its foreign keys are never NULL.
+
+```sql
+-- q: d6-ex
+-- status: ran
+CREATE TABLE dim_decade (
+  decade INTEGER PRIMARY KEY,
+  label  VARCHAR NOT NULL
+);
+INSERT INTO dim_decade
+SELECT DISTINCT year - year % 10, CAST(year - year % 10 AS VARCHAR) || 's'
+FROM occurrences
+WHERE year IS NOT NULL
+UNION ALL
+SELECT -1, 'Unknown';
+CREATE TABLE fact_species_decade (
+  species_id INTEGER NOT NULL REFERENCES species (id),
+  decade     INTEGER NOT NULL REFERENCES dim_decade (decade),
+  records    INTEGER NOT NULL,
+  PRIMARY KEY (species_id, decade)
+);
+INSERT INTO fact_species_decade
+SELECT species_id, coalesce(year - year % 10, -1), count(*)
+FROM occurrences
+GROUP BY species_id, coalesce(year - year % 10, -1);
+SELECT count(*) AS fact_rows, sum(records) AS records,
+       sum(records) = (SELECT count(*) FROM occurrences) AS reconciles,
+       sum(records) FILTER (WHERE decade = -1) AS unknown_decade
+FROM fact_species_decade;
+```
+
+```text
+-- result: d6-ex · 1 row · sha256 cf25e6ca69ad
+fact_rows | records | reconciles | unknown_decade
+645 | 40395 | true | 2289
+```
+
+645 rows replace 40,395, and the measure is additive, so any report by species, decade or class (through `species`) gives the same totals from either table. What the aggregate can't answer is anything below its grain: a month, a country, a dataset, a basis of record. Keep the fine fact and build summaries from it.
+
+**Check:** `fact_species_decade` has 645 rows, its records add up to 40,395 (`reconciles` is `true`), and 2,289 are in the unknown decade. If the total is short, a NULL year was grouped away or dropped by a join; if the `INSERT` fails on the primary key, two rows share a species and decade, so the `GROUP BY` and the key disagree about the grain.
+
+**Dialects:**
+- **PostgreSQL:** nothing star-specific: plain tables, foreign keys (which some warehouses drop on facts for load speed and check in the load instead), identity columns for surrogate keys, `MERGE` (15+) for type 2 loads, a partial unique index for "one current version", `\copy` for files on your computer.
+- **DuckDB:** foreign keys only in `CREATE TABLE`, no identity columns (a `SEQUENCE` with `DEFAULT nextval(…)` instead), and `COPY … TO` writes CSV or Parquet directly; column storage makes wide dimensions and large facts quick to scan, which is why critwire's build runs the star there.
+- **SQL Server:** `IDENTITY` surrogate keys, clustered columnstore indexes for large facts, `MERGE` for type 2 loads, and temporal tables (2016+) that keep a row's history automatically, by when it was changed rather than when it was true.
 
 ### 5.3 GIS in SQL
 
@@ -4704,14 +5014,14 @@ Data dictionary, schema v2:
 
 `plans/004-lab-erd.mmd`, schema `learn_curriculum`. The same keyed tables as schema v2 in PostgreSQL types (`text`, `float8`; GBIF's dataset key is a `uuid`), plus the shapes the GIS modules join to: country outlines, admin-1 areas for nine countries, RESOLVE's biomes and ecoregions, and the habitat map's classes. Every shape is `geometry` in WGS 84 (SRID 4326) with a GiST index; a record's point is a generated column, so it can never disagree with its longitude and latitude. Two lists sit beside the diagram, as comments in the source:
 
-- **Lab-made:** tables the lessons create in the lab (s4's hexagon grids, the smoke check's table, d1's field notes, d3's copy in year order, d4's sightings feed and its run log, the ETL's staging tables, d6's star). They aren't part of the loaded lab, so they aren't drawn; the check excuses them when a lesson's setup has made them.
+- **Lab-made:** tables the lessons create in the lab (s4's hexagon grids, the smoke check's table, d1's field notes, d3's copy in year order, d4's sightings feed and its run log, the ETL's staging tables, d6's star and its species history). They aren't part of the loaded lab, so they aren't drawn; the check excuses them when a lesson's setup has made them.
 - **Planned:** `occurrence_habitats` (the habitat class at each record) and `habitat_clips` (small clips of the habitat map, as rasters), which build mission L3 adds. They are drawn so the design is whole; the check excuses them while they don't exist, and fails once they do, so the marker can't go stale.
 
 ```mermaid
 %% critwire Learn: the lab database, PostGIS schema learn_curriculum (plans/004-learn-curriculum.md §3, §4, §6), in PostgreSQL types.
 %% Tables only; the view species_taxonomy is listed beside it. Shapes are geometry in WGS 84 (SRID 4326), each with a GiST index.
 %% Tables the lessons make in the lab (s4's grids, the smoke check's, the ETL's staging, d6's star): beside the diagram, not in it.
-%% lab-made: s4_cells, tx_smoke, field_notes, occurrences_by_year, sightings, sightings_runs, gbif_staging, occurrences_all, dim_species, dim_country, dim_dataset, dim_year, dim_habitat_class, fact_records, fact_species_country, fact_country_habitat
+%% lab-made: s4_cells, tx_smoke, field_notes, occurrences_by_year, sightings, sightings_runs, gbif_staging, occurrences_all, dim_species, dim_country, dim_dataset, dim_year, dim_habitat_class, fact_records, fact_species_country, fact_country_habitat, dim_species_history
 %% Drawn, but built by build mission L3 (the habitat map), so not in the lab yet:
 %% planned: occurrence_habitats, habitat_clips
 %% Keys: PK primary key, FK foreign key, UK unique. Lines: || exactly one, |o or o| zero or one, |{ one or more, o{ zero or more.
