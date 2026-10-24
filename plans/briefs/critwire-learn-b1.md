@@ -1,5 +1,7 @@
 # Mission brief: critwire Learn, build part 1: countries file, engine, ERD and the 16 lessons (mission B1)
 
+> **Superseded 2026-10-24** by `plans/briefs/critwire-learn-l1-data.md` (the countries file) and `plans/briefs/critwire-learn-l2-site.md` (engine, ERD, site), designed in `plans/004-learn-curriculum.md` §9. Kept as a record; don't start it.
+
 <!-- Copy to /srv/critter-ai/agent-state/missions/briefs/<YYYY-MM-DD>-critwire-learn-b1.md, then run:
      mission start critwire <that file>        (base: main with plans/002-learn.md merged)
      Start only after the owner has reviewed plans/002-learn.md and answered its §10 choices.

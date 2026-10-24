@@ -1,5 +1,7 @@
 # Mission brief: critwire Learn, build part 2: cookbook, playground and the game (mission B2)
 
+> **Superseded 2026-10-24** by `plans/briefs/critwire-learn-l2-site.md` (the playground); the cookbook and the game are dropped (`plans/004-learn-curriculum.md` §1, §9). Kept as a record; don't start it.
+
 <!-- Copy to /srv/critter-ai/agent-state/missions/briefs/<YYYY-MM-DD>-critwire-learn-b2.md, then run:
      mission start critwire <that file>        (base: main after mission B1 is merged and live)
      Start only after B1 is live on critwire.com (its Release: Result: done).
