@@ -5244,9 +5244,485 @@ ORDER BY cells DESC, c.habitat_code;
 
 ### 5.4 Spatial statistics
 
+Six modules, twelve and a half hours, in your own PostGIS (§3.2) and the Python environment (§3.3), on the lab tables of §4. These are outlines, in §5.3's form; build mission L4 (§9) writes them in full. The track asks one question several ways: are the Tasmanian devil's records clustered, and where? The answer is always about **records**, not animals. A record is where someone looked, found the animal and published what they found, so every pattern below mixes where the animal is with where people recorded: roads, towns, research projects, GPS collars. s1 measures that mix first, and every later module says which part its numbers can speak to. The units for s2–s5 are the equal-area hexagons over Tasmania's main island that g6 drew; `s4-cells` builds them once when a PostGIS run starts (table `s4_cells`, view `s4_neighbours`), so every module reads the same cells. The weights, Moran's I, Gi\* and the zonal counts are computed twice, in SQL and in Python (PySAL, GeoPandas), and agree. Each method has an ArcGIS Pro tool (§3.4): Average Nearest Neighbor, Density-based Clustering, Kernel Density, Generate Spatial Weights Matrix, Spatial Autocorrelation, Hot Spot Analysis, Cluster and Outlier Analysis, Zonal Statistics as Table.
+
+#### s1 · bias
+
+**Tool:** PG + B · **Time:** 1.5 h · **Prereqs:** g3
+
+**Goal:** before any statistic, know what the records are. GBIF records come from datasets of very different kinds: a museum's specimens, a national atlas, a citizen-science app, camera traps, one research team's GPS collars. Each kind records a different thing: a collar logs one animal every few hours wherever it walks; an atlas logs where people looked. `basis_of_record` says what kind of evidence a record is, the dataset says who collected it, and together they tell how much a map of records shows the animal and how much it shows the people. The honest wording follows from that: "records of jaguars", "where devils were recorded", never "where jaguars live" or "the devil's range" (critwire's countries field says the same, `AGENTS.md`).
+
+**Data:** `occurrences`, `datasets`, `species`; the browser blocks run on the same sample in DuckDB (§3.1).
+
+**Key code:** the sample by basis of record, in the browser:
+
+```sql
+-- q: s1-basis
+-- status: ran
+SELECT basis_of_record,
+       count(*) AS records,
+       round(100.0 * count(*) / sum(count(*)) OVER (), 1) AS pct,
+       count(DISTINCT species_id) AS species
+FROM occurrences
+GROUP BY basis_of_record
+ORDER BY records DESC, basis_of_record;
+```
+
+```text
+-- result: s1-basis · 7 rows · sha256 f870388664cc
+basis_of_record | records | pct | species
+HUMAN_OBSERVATION | 17587 | 43.5 | 55
+PRESERVED_SPECIMEN | 10568 | 26.2 | 67
+MACHINE_OBSERVATION | 8418 | 20.8 | 22
+MATERIAL_SAMPLE | 1805 | 4.5 | 47
+OBSERVATION | 1384 | 3.4 | 5
+… 2 more rows
+```
+
+How much of each species' records one dataset holds, for the species with at least 100 records, in the browser:
+
+```sql
+-- q: s1-dominance
+-- status: ran
+WITH per_dataset AS (
+  SELECT species_id, dataset_key, count(*) AS n
+  FROM occurrences
+  GROUP BY species_id, dataset_key
+)
+SELECT s.common_name,
+       sum(p.n) AS records,
+       count(*) AS datasets,
+       max(p.n) AS top_dataset,
+       round(100.0 * max(p.n) / sum(p.n), 1) AS top_pct
+FROM per_dataset AS p
+JOIN species AS s ON s.id = p.species_id
+GROUP BY s.id, s.common_name
+HAVING sum(p.n) >= 100
+ORDER BY top_pct DESC, records DESC, s.id;
+```
+
+```text
+-- result: s1-dominance · 38 rows · sha256 f0a5d35580a8
+common_name | records | datasets | top_dataset | top_pct
+Livingstone's Flying Fox | 109 | 1 | 109 | 100
+Golden-rumped Sengi | 1613 | 11 | 1583 | 98.1
+Jaguar | 2000 | 25 | 1948 | 97.4
+Dama Gazelle | 403 | 9 | 390 | 96.8
+Golden Poison Frog | 299 | 5 | 287 | 96
+… 33 more rows
+```
+
+The jaguar's records: GPS collars against everything else, with the places and years each covers:
+
+```sql
+-- q: s1-jaguar
+-- status: ran
+-- engine: postgis
+SELECT CASE WHEN o.basis_of_record = 'MACHINE_OBSERVATION' AND d.title ILIKE '%GPS%'
+            THEN 'GPS collars' ELSE 'everything else' END AS source,
+       count(DISTINCT o.dataset_key) AS datasets,
+       count(*) AS records,
+       round(100.0 * count(*) / sum(count(*)) OVER (), 1) AS pct,
+       count(DISTINCT o.country_code) AS countries,
+       count(DISTINCT (o.longitude, o.latitude)) AS locations,
+       min(o.year) AS first_year,
+       max(o.year) AS last_year
+FROM occurrences AS o
+JOIN species AS s ON s.id = o.species_id
+JOIN datasets AS d ON d.dataset_key = o.dataset_key
+WHERE s.scientific_name = 'Panthera onca'
+GROUP BY 1
+ORDER BY records DESC;
+```
+
+```text
+-- result: s1-jaguar · 2 rows · sha256 c6055b9de80b
+source | datasets | records | pct | countries | locations | first_year | last_year
+GPS collars | 1 | 1948 | 97.4 | 5 | 1948 | 2001 | 2016
+everything else | 24 | 52 | 2.6 | 8 | 47 | 1949 | 2025
+```
+
+The devil's records, which s2–s5 analyse, by dataset and basis of record:
+
+```sql
+-- q: s1-devil
+-- status: ran
+-- engine: postgis
+SELECT d.title, o.basis_of_record,
+       count(*) AS records,
+       round(100.0 * count(*) / sum(count(*)) OVER (), 1) AS pct,
+       min(o.year) AS first_year,
+       max(o.year) AS last_year
+FROM occurrences AS o
+JOIN species AS s ON s.id = o.species_id
+JOIN datasets AS d ON d.dataset_key = o.dataset_key
+WHERE s.scientific_name = 'Sarcophilus harrisii'
+GROUP BY d.title, o.basis_of_record
+ORDER BY records DESC, d.title, o.basis_of_record;
+```
+
+```text
+-- result: s1-devil · 12 rows · sha256 889e2a2404f5
+title | basis_of_record | records | pct | first_year | last_year
+Tasmanian Natural Values Atlas | OBSERVATION | 1367 | 68.4 | 1599 | 2012
+Tasmanian Museum and Art Gallery provider for OZCAM | MATERIAL_SAMPLE | 558 | 27.9 | 2000 | 2023
+Tasmanian Natural Values Atlas | OCCURRENCE | 46 | 2.3 | 2005 | 2010
+Tasmanian Museum and Art Gallery provider for OZCAM | PRESERVED_SPECIMEN | 10 | 0.5 | NULL | NULL
+Museums Victoria provider for OZCAM | PRESERVED_SPECIMEN | 5 | 0.3 | NULL | NULL
+… 7 more rows
+```
+
+**Expected:** human observations are 43.5 % of the 40,395 records, preserved specimens 26.2 % and machine observations (camera traps, collars, sound recorders) 20.8 %, from only 22 species. Of the 38 species with at least 100 records, 17 have more than half from one dataset and 6 have 90 % or more: Livingstone's flying fox's 109 come from a single dataset, the golden-rumped sengi's 98.1 % from one biodiversity survey, the jaguar's 97.4 %. That jaguar dataset is GPS collars: 1,948 records at 1,948 different points in 5 countries between 2001 and 2016, against 52 records from 24 other datasets (8 countries, 1949 to 2025). Any map of the jaguar's records is mostly a map of a few collared animals' paths. The devil's 2,000 records are 70.7 % the Tasmanian Natural Values Atlas (1,367 `OBSERVATION` and 46 `OCCURRENCE`) and 27.9 % material samples (such as tissue) at the Tasmanian Museum and Art Gallery (558 `MATERIAL_SAMPLE`, 2000 to 2023); the other 9 rows are museum specimens and one observation. The atlas's first year, 1599, predates the first European sighting of Tasmania (1642): a date to check before trusting a time series (e4). So s2–s5 measure where the atlas and the museum's field teams recorded devils, and say so.
+
+#### s2 · point-patterns
+
+**Tool:** PG + Py · **Time:** 2.5 h · **Prereqs:** s1, g6
+
+**Goal:** measure whether points are more clustered than chance, four ways, and see what each assumes. "Chance" is complete spatial randomness: every point falls anywhere in the study area with equal probability, independently of the others, so counts in equal cells follow a Poisson distribution, whose variance equals its mean. **Quadrats** compare the two: a variance-to-mean ratio (VMR) well above 1 means clustered. The **nearest-neighbour index** (Clark and Evans) compares the mean distance from each point to its nearest other point with what randomness gives in the same area, 0.5 ÷ √(n ÷ A): a ratio R below 1 means clustered, and its z-score uses the standard error 0.26136 ÷ √(n² ÷ A). Both depend on the area chosen (ArcGIS Pro's Average Nearest Neighbor uses the points' bounding rectangle unless given one); here it is the main island. **Kernel density** spreads each point over a smooth bump of chosen width, the bandwidth, and sums the bumps into a surface of records per km². **DBSCAN** finds clusters as places where at least `minpoints` points lie within `eps` of each other, and labels the rest noise. Duplicate coordinates matter to all four: many records share one spot (an atlas grid point, a museum's locality), and every method counts them as separate points.
+
+**Data:** `occurrences` (the devil's records), `admin1_shapes` (Tasmania's main island), `s4_cells` (the 5 km and 10 km hexagons).
+
+**Key code:** quadrats: the variance-to-mean ratio of records per hexagon, at both sizes:
+
+```sql
+-- q: s2-quadrats
+-- status: ran
+-- engine: postgis
+SELECT edge_m, count(*) AS cells, sum(n) AS records,
+       round(avg(n), 3) AS mean,
+       round(var_samp(n), 2) AS variance,
+       round(var_samp(n) / avg(n), 1) AS vmr
+FROM s4_cells
+GROUP BY edge_m
+ORDER BY edge_m;
+```
+
+```text
+-- result: s2-quadrats · 2 rows · sha256 0cefd3b143f3
+edge_m | cells | records | mean | variance | vmr
+5000 | 1094 | 1972 | 1.803 | 115.68 | 64.2
+10000 | 296 | 1990 | 6.723 | 934.23 | 139.0
+```
+
+The nearest-neighbour index for the records inside the main island, counting every record and then each distinct location once. `<->` with `LIMIT 1` finds each point's nearest other point (g5):
+
+```sql
+-- q: s2-nni
+-- status: ran
+-- engine: postgis
+WITH island AS (
+  SELECT (part).geom
+  FROM (SELECT ST_Dump(ST_Transform(geom, 3577)) AS part
+        FROM admin1_shapes WHERE country_code = 'AU' AND name = 'Tasmania') AS parts
+  ORDER BY ST_Area((part).geom) DESC
+  LIMIT 1
+), devils AS (
+  SELECT o.id, ST_Transform(o.geom, 3577) AS geom
+  FROM occurrences AS o JOIN species AS s ON s.id = o.species_id, island
+  WHERE s.scientific_name = 'Sarcophilus harrisii'
+    AND ST_Contains(island.geom, ST_Transform(o.geom, 3577))
+), sets AS (
+  SELECT 'every record' AS points, id, geom FROM devils
+  UNION ALL
+  (SELECT DISTINCT ON (ST_X(geom), ST_Y(geom)) 'distinct locations', id, geom
+   FROM devils ORDER BY ST_X(geom), ST_Y(geom), id)
+), nearest AS (
+  SELECT a.points,
+         (SELECT ST_Distance(a.geom, b.geom) FROM sets AS b
+          WHERE b.points = a.points AND b.id <> a.id
+          ORDER BY a.geom <-> b.geom LIMIT 1) AS d_m
+  FROM sets AS a
+), stats AS (
+  SELECT nr.points, count(*) AS n, count(*) FILTER (WHERE nr.d_m = 0) AS zero_m,
+         avg(nr.d_m) AS observed_m, ST_Area(island.geom) AS area_m2
+  FROM nearest AS nr, island
+  GROUP BY nr.points, island.geom
+)
+SELECT points, n, zero_m,
+       round(observed_m::numeric, 1) AS observed_m,
+       round((0.5 / sqrt(n / area_m2))::numeric, 1) AS expected_m,
+       round((observed_m / (0.5 / sqrt(n / area_m2)))::numeric, 3) AS r,
+       round(((observed_m - 0.5 / sqrt(n / area_m2)) / (0.26136 / sqrt(n ^ 2 / area_m2)))::numeric, 1) AS z
+FROM stats
+ORDER BY n DESC;
+```
+
+```text
+-- result: s2-nni · 2 rows · sha256 0c88009e49e6
+points | n | zero_m | observed_m | expected_m | r | z
+every record | 1784 | 1109 | 985.8 | 3000.5 | 0.329 | -54.3
+distinct locations | 913 | 0 | 2298.4 | 4194.3 | 0.548 | -26.1
+```
+
+DBSCAN with `eps` 2 km and `minpoints` 20 (ArcGIS Pro's Density-based Clustering, DBSCAN method). `ST_ClusterDBSCAN` is a window function: it gives each point its cluster's number, or `NULL` for noise:
+
+```sql
+-- q: s2-dbscan
+-- status: ran
+-- engine: postgis
+WITH island AS (
+  SELECT (part).geom
+  FROM (SELECT ST_Dump(ST_Transform(geom, 3577)) AS part
+        FROM admin1_shapes WHERE country_code = 'AU' AND name = 'Tasmania') AS parts
+  ORDER BY ST_Area((part).geom) DESC
+  LIMIT 1
+), devils AS (
+  SELECT o.id, ST_Transform(o.geom, 3577) AS geom
+  FROM occurrences AS o JOIN species AS s ON s.id = o.species_id, island
+  WHERE s.scientific_name = 'Sarcophilus harrisii'
+    AND ST_Contains(island.geom, ST_Transform(o.geom, 3577))
+), labelled AS (
+  SELECT id, geom, ST_ClusterDBSCAN(geom, eps := 2000, minpoints := 20) OVER () AS cluster
+  FROM devils
+), clusters AS (
+  SELECT cluster, count(*) AS points, count(DISTINCT (ST_X(geom), ST_Y(geom))) AS locations
+  FROM labelled
+  GROUP BY cluster
+)
+SELECT count(*) FILTER (WHERE cluster IS NOT NULL) AS clusters,
+       sum(points) FILTER (WHERE cluster IS NOT NULL) AS clustered,
+       sum(points) FILTER (WHERE cluster IS NULL) AS noise,
+       max(points) FILTER (WHERE cluster IS NOT NULL) AS largest,
+       count(*) FILTER (WHERE cluster IS NOT NULL AND locations = 1) AS one_location_clusters
+FROM clusters;
+```
+
+```text
+-- result: s2-dbscan · 1 row · sha256 34fd8cce6ca6
+clusters | clustered | noise | largest | one_location_clusters
+10 | 871 | 913 | 357 | 1
+```
+
+Kernel density in Python (scikit-learn), a Gaussian kernel with a 5 km bandwidth, read at the 5 km hexagons' centroids. The density comes out per m² and sums to 1, so it is scaled to records per km²; summed over the cells it should give back roughly the records in them:
+
+```python
+# q: s2-kde
+# status: ran
+# after: py-connect
+import numpy as np
+from sklearn.neighbors import KernelDensity
+
+with connect() as conn:
+    points = np.array(conn.execute(
+        """SELECT ST_X(g), ST_Y(g)
+           FROM (SELECT ST_Transform(o.geom, 3577) AS g
+                 FROM occurrences AS o JOIN species AS s ON s.id = o.species_id
+                 WHERE s.scientific_name = 'Sarcophilus harrisii') AS devils
+           ORDER BY 1, 2"""
+    ).fetchall())
+    cells = conn.execute(
+        "SELECT id, n, cx, cy, ST_Area(geom) FROM s4_cells WHERE edge_m = 5000 ORDER BY id"
+    ).fetchall()
+
+kde = KernelDensity(bandwidth=5000, kernel="gaussian").fit(points)
+centroids = np.array([(c[2], c[3]) for c in cells])
+per_km2 = np.exp(kde.score_samples(centroids)) * len(points) * 1e6
+cell_km2 = cells[0][4] / 1e6
+
+print(f"records: {len(points)}  cells: {len(cells)}  cell area: {cell_km2:.2f} km2")
+print(f"density x area, summed over the cells: {(per_km2 * cell_km2).sum():.0f} records")
+print("densest cells: id | records in cell | records per km2")
+for k in np.argsort(-per_km2, kind="stable")[:5]:
+    print(f"{cells[k][0]} | {cells[k][1]} | {per_km2[k]:.3f}")
+```
+
+```text
+-- result: s2-kde · python · sha256 130460cdd472
+records: 2000  cells: 1094  cell area: 64.95 km2
+density x area, summed over the cells: 1895 records
+densest cells: id | records in cell | records per km2
+917 | 256 | 2.123
+947 | 42 | 0.989
+948 | 49 | 0.880
+888 | 111 | 0.809
+916 | 45 | 0.787
+```
+
+**Expected:** every test says clustered, and duplicates inflate every one. The quadrats' variance is 64.2 times the mean at 5 km and 139.0 times at 10 km (1 for random). Inside the main island, 1,109 of the 1,784 records sit on exactly the same spot as another record, so their nearest-neighbour distance is 0: R = 0.329 (z −54.3) counting every record, R = 0.548 (z −26.1) counting the 913 distinct locations once; both far below 1. DBSCAN finds 10 clusters holding 871 records and calls 913 noise; the largest holds 357 records, and one "cluster" is a single location repeated 20 times or more. The kernel surface peaks at 2.12 records per km² over cell 917, the cell with 256 records (s4's `max_n`); summed over the 1,094 cells of 64.95 km² it gives back 1,895 of the 2,000 records (the rest spill into the sea or lie off the main island). Clustered means the records bunch together; s1 says why: they were recorded by a few teams, at places they returned to.
+
+#### s3 · weights
+
+**Tool:** PG + Py · **Time:** 2.0 h · **Prereqs:** s2
+
+**Goal:** build the neighbour list every spatial statistic needs, and see where it breaks. A **spatial weights matrix** W says, for each pair of units i and j, how much j counts as i's neighbour (`w_ij`; `w_ii` = 0). Three common rules: a **distance band** (neighbours within a threshold), **k-nearest** (each unit's k closest), and **contiguity** (units sharing an edge, "rook", or an edge or a corner, "queen"). **Row standardization** divides each row by its sum, so a unit's neighbours' weights add to 1 and the weighted sum becomes the neighbours' mean (`w_ij = 1/k_i`); a unit with one neighbour gives it all the weight. A unit with no neighbour, an **island**, has a row of zeros that can't be standardized, and the statistics are undefined for it. k-nearest weights are not symmetric (j can be among i's nearest without i being among j's), and when several units sit at the same distance the k-th neighbour is a tie that the software breaks its own way.
+
+**Data:** `s4_cells`, `s4_neighbours` (s4's distance band: centroids within twice the edge), `country_shapes`, `occurrences`.
+
+**Key code:** how many neighbours the distance band gives each cell:
+
+```sql
+-- q: s3-contiguity
+-- status: ran
+-- engine: postgis
+SELECT c.edge_m, k.k AS neighbours, count(*) AS cells
+FROM s4_cells AS c
+CROSS JOIN LATERAL (SELECT count(*) AS k FROM s4_neighbours AS nb WHERE nb.i = c.id) AS k
+GROUP BY c.edge_m, k.k
+ORDER BY c.edge_m, k.k;
+```
+
+```text
+-- result: s3-contiguity · 11 rows · sha256 13c0a4f1ea54
+edge_m | neighbours | cells
+5000 | 1 | 1
+5000 | 2 | 7
+5000 | 3 | 36
+5000 | 4 | 66
+5000 | 5 | 45
+… 6 more rows
+```
+
+k-nearest neighbours on the 5 km cells, ranked by distance rounded to the centimetre and then by id, so ties are broken the same way every run. For k = 4 and k = 6: the links, the links whose reverse is missing, and the cells whose k-th and (k + 1)-th neighbours are tied:
+
+```sql
+-- q: s3-knn
+-- status: ran
+-- engine: postgis
+WITH near AS (
+  SELECT a.id AS i, b.id AS j, b.d_m
+  FROM s4_cells AS a
+  CROSS JOIN LATERAL (
+    SELECT c.id, round(ST_Distance(ST_Point(a.cx, a.cy), ST_Point(c.cx, c.cy))::numeric, 2) AS d_m
+    FROM s4_cells AS c
+    WHERE c.edge_m = a.edge_m AND c.id <> a.id
+    ORDER BY d_m, c.id
+    LIMIT 7
+  ) AS b
+  WHERE a.edge_m = 5000
+), ranked AS (
+  SELECT i, j, d_m, row_number() OVER (PARTITION BY i ORDER BY d_m, j) AS rank FROM near
+)
+SELECT k.k,
+       count(*) FILTER (WHERE r.rank <= k.k) AS links,
+       count(*) FILTER (WHERE r.rank <= k.k AND NOT EXISTS (
+         SELECT 1 FROM ranked AS back WHERE back.i = r.j AND back.j = r.i AND back.rank <= k.k)) AS one_way,
+       count(*) FILTER (WHERE r.rank = k.k AND r.d_m = (
+         SELECT nx.d_m FROM ranked AS nx WHERE nx.i = r.i AND nx.rank = k.k + 1)) AS tied_cells
+FROM ranked AS r, (VALUES (4), (6)) AS k (k)
+GROUP BY k.k
+ORDER BY k.k;
+```
+
+```text
+-- result: s3-knn · 2 rows · sha256 160008ed6781
+k | links | one_way | tied_cells
+4 | 4376 | 1968 | 1025
+6 | 6564 | 254 | 129
+```
+
+Contiguity between countries, where the units are real outlines: countries with no neighbour that touches (`ST_Touches`: boundaries meet, interiors don't) or intersects (`ST_Intersects`) them, and the countries whose outlines overlap a neighbour's, which `ST_Touches` misses:
+
+```sql
+-- q: s3-countries
+-- status: ran
+-- engine: postgis
+WITH pairs AS (
+  SELECT a.country_code, b.country_code AS other, ST_Touches(a.geom, b.geom) AS touches
+  FROM country_shapes AS a
+  LEFT JOIN country_shapes AS b ON b.country_code <> a.country_code AND ST_Intersects(a.geom, b.geom)
+), per_country AS (
+  SELECT country_code, count(other) AS intersecting, count(other) FILTER (WHERE touches) AS touching
+  FROM pairs
+  GROUP BY country_code
+)
+SELECT count(*) AS countries,
+       count(*) FILTER (WHERE intersecting = 0) AS islands,
+       count(*) FILTER (WHERE touching = 0) AS islands_by_touches,
+       count(*) FILTER (WHERE intersecting > touching) AS overlapping,
+       max(intersecting) AS most_neighbours
+FROM per_country;
+```
+
+```text
+-- result: s3-countries · 1 row · sha256 5c0dcf803a58
+countries | islands | islands_by_touches | overlapping | most_neighbours
+247 | 76 | 84 | 12 | 16
+```
+
+The islands that hold records:
+
+```sql
+-- q: s3-islands
+-- status: ran
+-- engine: postgis
+SELECT a.country_code, c.name, count(o.id) AS records
+FROM country_shapes AS a
+JOIN countries AS c ON c.code = a.country_code
+JOIN occurrences AS o ON o.country_code = a.country_code
+WHERE NOT EXISTS (SELECT 1 FROM country_shapes AS b
+                  WHERE b.country_code <> a.country_code AND ST_Intersects(a.geom, b.geom))
+GROUP BY a.country_code, c.name
+ORDER BY records DESC, a.country_code;
+```
+
+```text
+-- result: s3-islands · 10 rows · sha256 0039efb8454f
+country_code | name | records
+AU | Australia | 4636
+MG | Madagascar | 2012
+KM | Comoros | 109
+LK | Sri Lanka | 26
+PH | Philippines | 12
+… 5 more rows
+```
+
+The same weights in PySAL: queen contiguity from the hexagons' shapes against the distance band from their centroids, row standardization, and k = 4 nearest neighbours, whose ties PySAL breaks its own way:
+
+```python
+# q: s3-pysal
+# status: ran
+# after: py-connect
+import geopandas as gpd
+import numpy as np
+import shapely
+from libpysal.weights import KNN, DistanceBand, Queen
+from scipy.spatial import cKDTree
+
+with connect() as conn:
+    rows = conn.execute(
+        "SELECT id, cx, cy, ST_AsBinary(geom) FROM s4_cells WHERE edge_m = 5000 ORDER BY id"
+    ).fetchall()
+ids = [r[0] for r in rows]
+xy = np.array([(r[1], r[2]) for r in rows])
+cells = gpd.GeoDataFrame({"id": ids}, geometry=shapely.from_wkb([bytes(r[3]) for r in rows]), crs=3577)
+
+queen = Queen.from_dataframe(cells, ids="id")
+band = DistanceBand(xy, threshold=10000, binary=True, ids=ids)
+same = all(set(queen.neighbors[i]) == set(band.neighbors[i]) for i in ids)
+print(f"queen = distance band: {same}  links: {queen.s0:.0f}  islands: {queen.islands}")
+print("neighbours: cells | " + "  ".join(f"{k}: {c}" for k, c in queen.histogram))
+
+queen.transform = "r"
+rows_sum_to_one = np.allclose(np.asarray(queen.sparse.sum(axis=1)).ravel(), 1)
+lone = next(i for i in ids if queen.cardinalities[i] == 1)
+inner = next(i for i in ids if queen.cardinalities[i] == 6)
+print(f"rows sum to 1: {rows_sum_to_one}  cell {lone} (1 neighbour): {queen.weights[lone]}  "
+      f"cell {inner} (6): {[round(v, 4) for v in queen.weights[inner]]}")
+
+knn = KNN(xy, k=4, ids=ids, silence_warnings=True)
+one_way = sum(1 for i in ids for j in knn.neighbors[i] if i not in knn.neighbors[j])
+d, _ = cKDTree(xy).query(xy, k=6)
+tied = int(np.sum(np.round(d[:, 4], 2) == np.round(d[:, 5], 2)))
+print(f"k = 4: links: {knn.s0:.0f}  one-way: {one_way}  cells with the 4th and 5th tied: {tied}")
+```
+
+```text
+-- result: s3-pysal · python · sha256 b8f324551172
+queen = distance band: True  links: 6246  islands: []
+neighbours: cells | 1: 1  2: 7  3: 36  4: 66  5: 45  6: 939
+rows sum to 1: True  cell 1051 (1 neighbour): [1.0]  cell 8 (6): [0.1667, 0.1667, 0.1667, 0.1667, 0.1667, 0.1667]
+k = 4: links: 4376  one-way: 600  cells with the 4th and 5th tied: 1025
+```
+
+**Expected:** on the 5 km grid, 939 of 1,094 cells have all 6 neighbours and the coast leaves the rest with fewer, down to one cell with a single neighbour (cell 1051); on the 10 km grid 221 of 296 have 6 and the fewest is 2. No cell has none. PySAL's queen contiguity from the hexagons' shapes gives exactly the distance band's 6,246 links, the same histogram and no islands. After row standardization every row sums to 1: cell 1051's one neighbour has weight 1.0, an interior cell's six have 0.1667 each. k-nearest is lopsided: with k = 4, 1,025 cells have their 4th and 5th neighbours at the same distance, so the choice is a tie-break; SQL's rule (lowest id) leaves 1,968 of 4,376 links one-way, PySAL's leaves 600, with the same distances. With k = 6 only 129 cells are tied and 254 links one-way. Between countries, 76 of the 247 outlines intersect no other: they are islands, and 10 of them hold records (Australia 4,636, Madagascar 2,012, Comoros 109, …), so contiguity weights over countries would give Australia and Madagascar no neighbour at all. `ST_Touches` alone finds 84 islands, because 12 countries' simplified outlines overlap a neighbour's instead of meeting it; contiguity on real outlines needs `ST_Intersects` (or a snapping tolerance), and the most neighbours any country has is 16.
+
 #### s4 · moran
 
-(S25 writes the outline around this key code; §A.2 is the spike that tests it.)
+**Tool:** PG + Py · **Time:** 2.0 h · **Prereqs:** s3
+
+**Goal:** one number for "do similar values sit together?", and its test. **Global Moran's I** compares each cell's deviation from the mean, `z_i = y_i − ȳ`, with its neighbours': `I = (n / S0) · Σ_i Σ_j w_ij z_i z_j / Σ_i z_i²`, where `S0` is the sum of all weights. With no pattern, I is close to its expectation `E[I] = −1/(n−1)`; above it, similar values cluster; below, they alternate. Whether I is far enough from `E[I]` is judged by a z-score, from a variance that has a closed form under two assumptions (normality: `z_norm`; randomization: `z_rand`, which ArcGIS Pro reports), or by a **permutation test**: shuffle the values over the cells many times, recompute I each time, and count how often a shuffle beats the real I; with 999 shuffles the smallest possible pseudo p-value is 1/1000. Here the plain SQL and PySAL compute the same statistic from the same cells and agree to 10⁻⁷ (§A.2). Then the honest question: what clusters? The cells count records, so I measures how recording effort clusters as much as how devils do.
+
+**Data:** `occurrences` (the devil's records), `admin1_shapes` (Tasmania's main island); the cells it builds, `s4_cells` and `s4_neighbours`, are the ones s2, s3 and s5 read.
 
 **Key code:**
 
@@ -5420,6 +5896,290 @@ edge_m | n | I | E[I] | Var_norm | z_norm | z_rand
 5000 | 1094 | 0.273296 | -0.000915 | 3.263991e-04 | 15.177858 | 15.246590
 10000 | 296 | 0.203588 | -0.003390 | 1.259792e-03 | 5.831416 | 5.847466
 ```
+
+The permutation test on the 5 km cells. esda's global `Moran` takes no seed, so NumPy's is set first; 999 shuffles:
+
+```python
+# q: s4-permutations
+# status: ran
+# after: py-connect
+import esda
+import numpy as np
+from libpysal.weights import DistanceBand
+
+with connect() as conn:
+    rows = conn.execute("SELECT id, y, cx, cy FROM s4_cells WHERE edge_m = 5000 ORDER BY id").fetchall()
+ids = [r[0] for r in rows]
+y = np.array([r[1] for r in rows])
+w = DistanceBand(np.array([(r[2], r[3]) for r in rows]), threshold=10000, binary=True, ids=ids)
+
+np.random.seed(2026)
+mi = esda.Moran(y, w, transformation="r", permutations=999)
+print(f"I: {mi.I:.6f}  shuffles: {mi.permutations}")
+print(f"shuffled I: mean {mi.EI_sim:.6f}  sd {mi.seI_sim:.6f}  max {mi.sim.max():.6f}")
+print(f"pseudo p: {mi.p_sim:.4f}  z_sim: {mi.z_sim:.2f}")
+```
+
+```text
+-- result: s4-permutations · python · sha256 e4f919f6c5a8
+I: 0.273296  shuffles: 999
+shuffled I: mean -0.000776  sd 0.018192  max 0.065027
+pseudo p: 0.0010  z_sim: 15.07
+```
+
+**Expected:** the grid checks pass at both sizes (the nearest centroids 8,660.25 m and 17,320.51 m apart, the next class 15,000 and 30,000 m, no duplicate centroid, no island, no pair near the threshold). Moran's I is 0.2733 on the 1,094 cells of 5 km (E[I] −0.0009, z 15.18) and 0.2036 on the 296 cells of 10 km (z 5.83): SQL and PySAL agree to every printed digit (§A.2 compares them to 5 × 10⁻⁷ and pair by pair). ArcGIS Pro's z would be `z_rand`, 15.25. In 999 shuffles no I came near the real one (the largest 0.0650), so the pseudo p-value is the smallest possible, 0.001, and the shuffles' spread gives z 15.07, close to the formulas'. Larger cells give a smaller I and a much smaller z: the modifiable areal unit problem (g6) reaches the statistic. And since s1 showed the records are mostly one atlas and one museum's samples, the honest sentence is "devil records cluster strongly at both scales", not "devils cluster".
+
+#### s5 · local
+
+**Tool:** PG + Py · **Time:** 2.5 h · **Prereqs:** s4
+
+**Goal:** say **where** values cluster, and how many of those places a careful test keeps. **Getis-Ord Gi\*** compares the sum of a cell's values and its neighbours' (the star: the cell counts as its own neighbour) with what the sum would be if the values were spread at random; its z-score, `Gi* = (Σ_j w_ij x_j − x̄ Σ_j w_ij) / (S √((n Σ_j w_ij² − (Σ_j w_ij)²) / (n − 1)))` with `S` the values' standard deviation, is high in a **hot spot** and low in a **cold spot** (ArcGIS Pro's Hot Spot Analysis). **Local Moran's I** (LISA) gives each cell its own share of global Moran's I and sorts the significant ones into high-high and low-low clusters and high-low and low-high outliers (Cluster and Outlier Analysis); its p-values come from permutations. Either way a test runs once per cell, here 1,094 times, so at p ≤ 0.05 about 55 cells would pass by chance alone. The **false discovery rate** (Benjamini and Hochberg) corrects that: sort the m p-values, find the largest rank k with `p_(k) ≤ k · 0.05 / m`, and keep the k smallest. On cells that count records, a hot spot is a hot spot of recording.
+
+**Data:** `s4_cells`, `s4_neighbours` (the 5 km cells, `y = ln(1 + n)`).
+
+**Key code:** Gi\* in plain SQL with binary weights and the cell itself included, then two-sided p-values from the normal distribution (`erfc`, PostgreSQL 16) and the Benjamini-Hochberg cut:
+
+```sql
+-- q: s5-gistar
+-- status: ran
+-- engine: postgis
+WITH c AS (
+  SELECT id, y FROM s4_cells WHERE edge_m = 5000
+), stats AS (
+  SELECT count(*)::float8 AS n, avg(y) AS ybar, sqrt(avg(y * y) - avg(y) ^ 2) AS s FROM c
+), w AS (
+  SELECT i, j FROM s4_neighbours WHERE edge_m = 5000
+  UNION ALL
+  SELECT id, id FROM c
+), sums AS (
+  SELECT w.i, sum(c.y) AS wy, count(*)::float8 AS wsum
+  FROM w JOIN c ON c.id = w.j
+  GROUP BY w.i
+), z AS (
+  SELECT u.i, (u.wy - st.ybar * u.wsum) / (st.s * sqrt((st.n * u.wsum - u.wsum ^ 2) / (st.n - 1))) AS z
+  FROM sums AS u, stats AS st
+), p AS (
+  SELECT i, z, erfc(abs(z) / sqrt(2)) AS p,
+         row_number() OVER (ORDER BY erfc(abs(z) / sqrt(2)), i) AS rank,
+         count(*) OVER () AS m
+  FROM z
+), cut AS (
+  SELECT coalesce(max(rank) FILTER (WHERE p <= rank * 0.05 / m), 0) AS k FROM p
+)
+SELECT count(*) AS cells,
+       count(*) FILTER (WHERE z > 0 AND p <= 0.05) AS hot_05,
+       count(*) FILTER (WHERE z < 0 AND p <= 0.05) AS cold_05,
+       count(*) FILTER (WHERE z > 0 AND rank <= cut.k) AS hot_fdr,
+       count(*) FILTER (WHERE z < 0 AND rank <= cut.k) AS cold_fdr,
+       round(max(z)::numeric, 6) AS max_z,
+       round(min(z)::numeric, 6) AS min_z
+FROM p, cut
+GROUP BY cut.k;
+```
+
+```text
+-- result: s5-gistar · 1 row · sha256 84ede64c9841
+cells | hot_05 | cold_05 | hot_fdr | cold_fdr | max_z | min_z
+1094 | 99 | 0 | 39 | 0 | 10.632449 | -1.289294
+```
+
+The same in PySAL: `G_Local` with `star=True` and binary weights, and esda's `fdr`, which returns the p-value cut:
+
+```python
+# q: s5-gistar-pysal
+# status: ran
+# after: py-connect
+import esda
+import numpy as np
+from libpysal.weights import DistanceBand
+from scipy.stats import norm
+
+with connect() as conn:
+    rows = conn.execute("SELECT id, y, cx, cy FROM s4_cells WHERE edge_m = 5000 ORDER BY id").fetchall()
+ids = [r[0] for r in rows]
+y = np.array([r[1] for r in rows])
+w = DistanceBand(np.array([(r[2], r[3]) for r in rows]), threshold=10000, binary=True, ids=ids)
+
+g = esda.G_Local(y, w, transform="B", star=True, permutations=0)
+p = 2 * norm.sf(np.abs(g.Zs))
+cut = esda.fdr(p, 0.05)
+print("cells | hot_05 | cold_05 | hot_fdr | cold_fdr | max_z | min_z")
+print(f"{len(y)} | {np.sum((g.Zs > 0) & (p <= 0.05))} | {np.sum((g.Zs < 0) & (p <= 0.05))} | "
+      f"{np.sum((g.Zs > 0) & (p <= cut))} | {np.sum((g.Zs < 0) & (p <= cut))} | {g.Zs.max():.6f} | {g.Zs.min():.6f}")
+```
+
+```text
+-- result: s5-gistar-pysal · python · sha256 42a8f2bf8f68
+cells | hot_05 | cold_05 | hot_fdr | cold_fdr | max_z | min_z
+1094 | 99 | 0 | 39 | 0 | 10.632449 | -1.289294
+```
+
+Local Moran's I with 999 permutations (seeded), by quadrant: all cells, significant at p ≤ 0.05, and after the false discovery rate:
+
+```python
+# q: s5-lisa
+# status: ran
+# after: py-connect
+import esda
+import numpy as np
+from libpysal.weights import DistanceBand
+
+with connect() as conn:
+    rows = conn.execute("SELECT id, y, cx, cy FROM s4_cells WHERE edge_m = 5000 ORDER BY id").fetchall()
+ids = [r[0] for r in rows]
+y = np.array([r[1] for r in rows])
+w = DistanceBand(np.array([(r[2], r[3]) for r in rows]), threshold=10000, binary=True, ids=ids)
+
+lisa = esda.Moran_Local(y, w, transformation="r", permutations=999, seed=2026)
+cut = esda.fdr(lisa.p_sim, 0.05)
+print(f"false discovery rate cut: p <= {cut:.4f}")
+print("quadrant | cells | p <= 0.05 | after FDR")
+for q, name in [(1, "high-high"), (2, "low-high"), (3, "low-low"), (4, "high-low")]:
+    in_q = lisa.q == q
+    print(f"{name} | {in_q.sum()} | {np.sum(in_q & (lisa.p_sim <= 0.05))} | {np.sum(in_q & (lisa.p_sim <= cut))}")
+```
+
+```text
+-- result: s5-lisa · python · sha256 ff0ae1985d8b
+false discovery rate cut: p <= 0.0021
+quadrant | cells | p <= 0.05 | after FDR
+high-high | 185 | 68 | 16
+low-high | 230 | 34 | 2
+low-low | 557 | 0 | 0
+high-low | 122 | 29 | 29
+```
+
+**Expected:** SQL's Gi\* and PySAL's `G_Local` give the same line: 99 hot cells at p ≤ 0.05, 39 after the false discovery rate, the highest z 10.632449, and no cold spot at all, because 787 of the cells are empty and the lowest z is −1.29: where most cells hold nothing, "cold" can't stand out from the mean. Local Moran's I finds 68 high-high cells at p ≤ 0.05 and 16 after the correction (its cut is p ≤ 0.0021, so only cells with p_sim 0.001 or 0.002 survive, the floor 999 permutations allow); 29 high-low outliers survive too, single cells of many records among empty ones, the shape of an atlas grid point or a sampling site; no low-low cell is significant. The FDR removes more than half of Gi\*'s hot spots and removes three in four of LISA's high-high cells. What is left are the places the atlas and the museum's teams recorded devils most: hot spots of effort, which a report labels as such.
+
+#### s6 · zonal
+
+**Tool:** PG + Py · **Time:** 2.0 h · **Prereqs:** s5, g7
+
+**Goal:** summarise points (or raster cells) by zones, and compare like with like. **Zonal statistics** take a layer of zones, here ecoregions cut to a country's outline, and summarise what falls in each: records, area, records per 1,000 km² (ArcGIS Pro's Zonal Statistics as Table does the same for a raster inside polygons; g7's `ST_ValueCount` is its SQL form). A zone's **ratio** of its share of records to its share of area is 1 when records are spread by area alone; above 1 the zone has more records than its size. That still mixes the animals with the effort, so the second ratio **normalizes for effort**: a species' share of the records in a zone against its share of all records in the country, the "target group" idea, which uses every species' records as a measure of where people recorded at all. A chi-square test then asks whether records follow area; with hundreds of records it almost always says no, which is a statement about the records, not about which habitat an animal prefers.
+
+**Data:** `country_shapes` (Costa Rica), `ecoregions` (RESOLVE, simplified, §4.1), `occurrences`; L3 adds `occurrence_habitats` and the habitat summaries (§4.1).
+
+**Key code:** Costa Rica's ecoregions as zones: area, records (those GBIF codes `CR` that lie inside the outline, g3), records per 1,000 km², the record-to-area ratio, and the jaguar's share relative to all records:
+
+```sql
+-- q: s6-zones
+-- status: ran
+-- engine: postgis
+WITH country AS (
+  SELECT geom FROM country_shapes WHERE country_code = 'CR'
+), zones AS (
+  SELECT e.eco_id, e.name, ST_Intersection(e.geom, country.geom) AS geom
+  FROM ecoregions AS e, country
+  WHERE ST_Intersects(e.geom, country.geom)
+), records AS (
+  SELECT o.id, o.species_id, o.geom
+  FROM occurrences AS o, country
+  WHERE o.country_code = 'CR' AND ST_Contains(country.geom, o.geom)
+), per_zone AS (
+  SELECT z.eco_id, z.name, ST_Area(z.geom::geography) / 1e6 AS km2,
+         count(r.id) AS records,
+         count(r.id) FILTER (WHERE r.species_id = (SELECT id FROM species WHERE scientific_name = 'Panthera onca')) AS jaguar
+  FROM zones AS z
+  LEFT JOIN records AS r ON ST_Contains(z.geom, r.geom)
+  GROUP BY z.eco_id, z.name, z.geom
+)
+SELECT eco_id, name, round(km2::numeric) AS km2, records, jaguar,
+       round((1000 * records / km2)::numeric, 1) AS per_1000_km2,
+       round(((records / sum(records) OVER ()) / (km2 / sum(km2) OVER ()))::numeric, 2) AS record_ratio,
+       round(((jaguar::numeric / nullif(records, 0)) / (sum(jaguar) OVER () / sum(records) OVER ()))::numeric, 2) AS jaguar_ratio
+FROM per_zone
+ORDER BY km2 DESC, eco_id;
+```
+
+```text
+-- result: s6-zones · 7 rows · sha256 72c259664d1d
+eco_id | name | km2 | records | jaguar | per_1000_km2 | record_ratio | jaguar_ratio
+470 | Isthmian-Atlantic moist forests | 17288 | 215 | 0 | 12.4 | 1.23 | 0.00
+471 | Isthmian-Pacific moist forests | 9012 | 96 | 0 | 10.7 | 1.05 | 0.00
+458 | Costa Rican seasonal moist forests | 8400 | 107 | 0 | 12.7 | 1.26 | 0.00
+506 | Talamancan montane forests | 8311 | 13 | 0 | 1.6 | 0.15 | 0.00
+527 | Central American dry forests | 6062 | 62 | 61 | 10.2 | 1.01 | 7.29
+… 2 more rows
+```
+
+The same zones in GeoPandas (an overlay, then a spatial join), with areas in an equal-area projection (EPSG:6933), and a chi-square test of records against area:
+
+```python
+# q: s6-geopandas
+# status: ran
+# after: py-connect
+import geopandas as gpd
+import shapely
+from scipy.stats import chisquare
+
+with connect() as conn:
+    outline = conn.execute("SELECT ST_AsBinary(geom) FROM country_shapes WHERE country_code = 'CR'").fetchone()[0]
+    eco = conn.execute(
+        """SELECT e.eco_id, e.name, ST_AsBinary(e.geom)
+           FROM ecoregions AS e JOIN country_shapes AS c ON c.country_code = 'CR' AND ST_Intersects(e.geom, c.geom)
+           ORDER BY e.eco_id"""
+    ).fetchall()
+    recs = conn.execute("SELECT id, longitude, latitude FROM occurrences WHERE country_code = 'CR' ORDER BY id").fetchall()
+
+country = gpd.GeoDataFrame(geometry=[shapely.from_wkb(bytes(outline))], crs=4326)
+zones = gpd.GeoDataFrame({"eco_id": [e[0] for e in eco], "name": [e[1] for e in eco]},
+                         geometry=shapely.from_wkb([bytes(e[2]) for e in eco]), crs=4326)
+pieces = gpd.overlay(zones, country, how="intersection", keep_geom_type=True)
+points = gpd.GeoDataFrame({"id": [r[0] for r in recs]},
+                          geometry=gpd.points_from_xy([r[1] for r in recs], [r[2] for r in recs]), crs=4326)
+inside = points[points.within(country.geometry.iloc[0])]
+counts = gpd.sjoin(inside, pieces, predicate="within").groupby("eco_id").size()
+
+pieces["km2"] = pieces.to_crs(6933).area / 1e6
+pieces["records"] = pieces["eco_id"].map(counts).fillna(0).astype(int)
+pieces = pieces.sort_values(["km2", "eco_id"], ascending=[False, True])
+print(f"records coded CR: {len(points)}  inside the outline: {len(inside)}  in a zone: {pieces['records'].sum()}")
+print("eco_id | km2 | records")
+for z in pieces.itertuples():
+    print(f"{z.eco_id} | {z.km2:.0f} | {z.records}")
+expected = pieces["records"].sum() * pieces["km2"] / pieces["km2"].sum()
+test = chisquare(pieces["records"], expected)
+print(f"chi-square: {test.statistic:.1f}  df: {len(pieces) - 1}  p: {test.pvalue:.2g}")
+```
+
+```text
+-- result: s6-geopandas · python · sha256 1c182b76d465
+records coded CR: 619  inside the outline: 591  in a zone: 504
+eco_id | km2 | records
+470 | 17288 | 215
+471 | 9012 | 96
+458 | 8400 | 107
+506 | 8311 | 13
+527 | 6061 | 62
+617 | 636 | 7
+613 | 198 | 4
+chi-square: 77.4  df: 6  p: 1.2e-14
+```
+
+Records by habitat class against the classes' estimated areas, once L3 has placed every record in a class of the habitat map (g7):
+
+```sql
+-- q: s6-habitat
+-- status: untested: L3 builds occurrence_habitats
+-- engine: postgis
+WITH records AS (
+  SELECT oh.habitat_code, count(*) AS records
+  FROM occurrences AS o
+  JOIN occurrence_habitats AS oh ON oh.occurrence_id = o.id
+  WHERE o.country_code = 'CR'
+  GROUP BY oh.habitat_code
+)
+SELECT ch.habitat_code, hc.name, ch.est_area_km2, coalesce(r.records, 0) AS records,
+       round((coalesce(r.records, 0) / sum(coalesce(r.records, 0)) OVER ())
+             / (ch.est_area_km2 / sum(ch.est_area_km2) OVER ()), 2) AS record_ratio
+FROM country_habitats AS ch
+LEFT JOIN records AS r ON r.habitat_code = ch.habitat_code
+LEFT JOIN habitat_classes AS hc ON hc.code = ch.habitat_code
+WHERE ch.country_code = 'CR'
+ORDER BY ch.est_area_km2 DESC, ch.habitat_code;
+```
+
+**Expected:** 591 of Costa Rica's 619 records lie inside its outline (g3 found the rest), and 504 of those inside an ecoregion piece; the other 87 fall in the gaps the simplified ecoregions leave inside the outline (g4). PostGIS and GeoPandas count the same records in every zone, and their areas agree to 1 km² (geography against EPSG:6933). By area alone the records are uneven: the Talamancan montane forests, 8,311 km² of mountains, hold 13 records (ratio 0.15), the lowland moist forests 1.05 to 1.26, and the chi-square test rejects "records follow area" (77.4 on 6 degrees of freedom, p 1.2 × 10⁻¹⁴). Normalized for effort, the jaguar looks different again: 61 of the 62 records in the Central American dry forests and all 7 in the Pacific mangroves are jaguars, 7.29 and 7.41 times its share of all records, and it has none in the other zones; those are s1's GPS collars, worn by jaguars tracked in the dry northwest. The records say where people recorded, and where one collar study worked, not which forest a jaguar prefers. `s6-habitat` repeats the comparison by habitat class once L3 has placed every record in the habitat map; g7's `ST_ValueCount` is the raster side of the same zonal statistic.
 
 ### 5.5 ETL
 
