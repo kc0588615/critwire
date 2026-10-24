@@ -388,7 +388,7 @@ pointpats: 2.6.0
 | 003 §1 Growing the data | Every license quote, retrieval date and size A2 measured, cited in §4 by D number | D3, the GBIF sample, comes from the occurrence download API, not `occurrence/search` (below; §B). D2 (admin-0) and D10 (admin-1) at 1:50m; D9 (RESOLVE) simplified to fit the 50 MB cap (§4) | Deferred: D1, D5–D8 and D11–D14 (traits, names, the tree of life: no module needs them); D15 (CHELSA) comes later. D16 (WorldClim) and D17 (WDPA) are never hosted |
 | 003 §2 The grown schema and its ERD | `occurrences`, `country_shapes` (with its `\|\|--o\|` line), `habitat_classes` and `country_habitats`, and the designed but unbuilt `ecoregions` and `biomes`, all now in the lab database (§6.2) | `occurrences` gains the country-key contract (raw code beside a nullable foreign key) and a `datasets` table with credits; it is in the browser's schema v2 too. `admin1_shapes` is new | `traits`, `species_traits`, `species_names`, `tree_nodes`, and `setup-grown` (§B) |
 | 003 §3 Lessons for the grown data | — | Lessons 22–23's habitat questions return on PostGIS in g7 and s6 | Lessons 17–23 (they teach the deferred tables) |
-| 003 §4 The advanced spatial track | "Your own PostGIS": the session block (`pg-session`, now on `learn_curriculum`) and `pg-once` (the raster settings) for g7; spatial lessons 5 (projection), 6 (point value) and 7 (zonal) go into g1 and g7; lesson 4's finding (E1) that GBIF's country codes and the outlines disagree on coasts goes into g3 | Learners load their PostGIS with one psql-only file, not `shp2pgsql` or `ogr2ogr` (§B) | Spatial lessons 1–4 and 8 in the browser: they need DuckDB's `spatial` extension (§B) |
+| 003 §4 The advanced spatial track | "Your own PostGIS": the session block (`pg-session`, now on `learn_curriculum`); spatial lessons 5 (projection), 6 (point value) and 7 (zonal) go into g1 and g7; lesson 4's finding (E1) that GBIF's country codes and the outlines disagree on coasts goes into g3 | Learners load their PostGIS with one psql-only file, not `shp2pgsql` or `ogr2ogr` (§B) | Spatial lessons 1–4 and 8 in the browser: they need DuckDB's `spatial` extension (§B). `pg-once` (the raster settings): g7's clips are in the database and need none |
 | 003 §5 The habitat raster | The whole recommendation: Jung et al. 2020 v004 by URL, country summaries plus two clips, the provenance gate, the three summary methods and their measured errors | Clips for Costa Rica and Tasmania; L3 builds them | — |
 | 003 §6 IUCN | Every conclusion: critwire never stores, caches, proxies or serves IUCN data | The "your own download" lessons become an optional, untested appendix to g3 | — (the draft permission request stays a record, unsent) |
 | 003 §7 The build missions | The chain: each brief says what it needs from the one before; each mission releases itself | Five missions, L1–L5 (§9) | Briefs C and D, marked superseded; "what both assume B delivered" never happened (§B) |
@@ -514,7 +514,7 @@ $env:PGHOST = "localhost"; $env:PGPORT = "5432"; $env:PGUSER = "postgres"; $env:
 **Privileges.** The `postgres` user is a superuser and can do everything the labs do. As another user you need:
 - `CREATE` on the database, to (re)create `learn_curriculum`, and ownership of that schema once it exists;
 - `CREATEROLE`, for the labs that create roles (d5, §0's `pg-role-smoke`): `ALTER ROLE <you> CREATEROLE;` as the superuser, once; on PostgreSQL 16 and later also `ALTER ROLE <you> SET createrole_self_grant = 'set, inherit';`, so you can act as the roles you create (`SET ROLE`) and drop what they hold (d5 explains);
-- for the raster labs (g7, s6), the two raster settings their session sets: a superuser session, or, on PostgreSQL 15 and later, 003 §4's `pg-once` grants (`GRANT SET ON PARAMETER`); g7 gives the block.
+- nothing more for the raster labs (g7, s6): their clips are stored in the database, so neither of PostGIS's raster settings (`postgis.enable_outdb_rasters`, `postgis.gdal_enabled_drivers`) is needed, and 003 §4's `pg-once` grants aren't either.
 
 Every role or schema a lab creates is named `learn_…` and removed by the same block (§0), so the labs never leave anything in your database besides `learn_curriculum`.
 
@@ -4612,7 +4612,635 @@ fact_rows | records | reconciles | unknown_decade
 
 ### 5.3 GIS in SQL
 
-(S24)
+Seven modules, twelve and a half hours, all in your own PostGIS (§3.2), on the lab tables of §4. These are outlines: each gives the goal, the data, the key code with its tested result, and what a learner should find. Build mission L3 (§9) writes them in full, in §5.2's form, and adds g7's habitat clips. Every block runs in `learn_curriculum` after `pg-session` (§0), in a transaction the tests roll back. Shapes are stored in longitude and latitude (SRID 4326); the modules measure in metres, which is g1's subject. The skills are the ones ArcGIS Pro's geoprocessing tools hide behind a dialog (Project, Repair Geometry, Spatial Join, Near, Generate Tessellation, Extract by Mask); here they are SQL, so they run inside a pipeline (§5.5) and their steps can be read.
+
+#### g1 · crs
+
+**Tool:** PG · **Time:** 1.5 h · **Prereqs:** f3
+
+**Goal:** know what an SRID says and which one to measure in. A geometry's coordinates mean nothing without its spatial reference system: SRID 4326 is longitude and latitude in degrees on the WGS 84 ellipsoid; 3857 (Web Mercator) is the flat map most web maps draw; 3577 (Australian Albers) is an equal-area projection for Australia. `ST_Transform` moves a geometry from one to another; `geography` measures on the ellipsoid itself, in metres, with no projection. Web Mercator keeps shapes in a small area but stretches every length by 1 ÷ cos(latitude), so every area by 1 ÷ cos²(latitude) (003 §4, spatial lesson 5).
+
+**Data:** `admin1_shapes` (Australia's states and territories, Natural Earth 1:50m); two points typed in.
+
+**Key code:** each Australian state's area three ways, beside the stretch Web Mercator gives it and the 1 ÷ cos² of its centroid's latitude:
+
+```sql
+-- q: g1-area
+-- status: ran
+-- engine: postgis
+SELECT name,
+       round(ST_Y(ST_Centroid(geom))::numeric, 1) AS lat,
+       round((ST_Area(geom::geography) / 1e6)::numeric) AS geography_km2,
+       round((ST_Area(ST_Transform(geom, 3577)) / 1e6)::numeric) AS albers_km2,
+       round((ST_Area(ST_Transform(geom, 3857)) / 1e6)::numeric) AS mercator_km2,
+       round((ST_Area(ST_Transform(geom, 3857)) / ST_Area(geom::geography))::numeric, 2) AS stretch,
+       round((1 / cos(radians(ST_Y(ST_Centroid(geom)))) ^ 2)::numeric, 2) AS one_over_cos2
+FROM admin1_shapes
+WHERE country_code = 'AU'
+ORDER BY ST_Y(ST_Centroid(geom)), name;
+```
+
+```text
+-- result: g1-area · 9 rows · sha256 0d3150fc692e
+name | lat | geography_km2 | albers_km2 | mercator_km2 | stretch | one_over_cos2
+Tasmania | -41.9 | 67697 | 67696 | 122485 | 1.81 | 1.81
+Victoria | -36.9 | 227926 | 227940 | 356935 | 1.57 | 1.56
+Australian Capital Territory | -35.5 | 2308 | 2308 | 3491 | 1.51 | 1.51
+Jervis Bay Territory | -35.2 | 38 | 38 | 57 | 1.50 | 1.50
+New South Wales | -32.2 | 798508 | 798822 | 1124405 | 1.41 | 1.40
+… 4 more rows
+```
+
+A distance in each system: Hobart to Launceston. In SRID 4326, `ST_Distance` returns degrees, which are not a length (a degree of longitude shrinks towards the poles).
+
+```sql
+-- q: g1-distance
+-- status: ran
+-- engine: postgis
+WITH hobart AS (SELECT ST_SetSRID(ST_Point(147.33, -42.88), 4326) AS geom),
+launceston AS (SELECT ST_SetSRID(ST_Point(147.14, -41.44), 4326) AS geom)
+SELECT round(ST_Distance(h.geom, l.geom)::numeric, 4) AS degrees,
+       round((ST_Distance(h.geom::geography, l.geom::geography) / 1000)::numeric, 2) AS geography_km,
+       round((ST_Distance(ST_Transform(h.geom, 3577), ST_Transform(l.geom, 3577)) / 1000)::numeric, 2) AS albers_km,
+       round((ST_Distance(ST_Transform(h.geom, 3857), ST_Transform(l.geom, 3857)) / 1000)::numeric, 2) AS mercator_km
+FROM hobart AS h, launceston AS l;
+```
+
+```text
+-- result: g1-distance · 1 row · sha256 49e8f70e0b8d
+degrees | geography_km | albers_km | mercator_km
+1.4525 | 160.72 | 156.57 | 217.30
+```
+
+**Expected:** the geography and Albers areas agree to within 0.1 % for every state (Tasmania 67,697 and 67,696 km²); Web Mercator overstates each by 1.13 (Northern Territory) to 1.81 times, the stretch growing southward and matching 1 ÷ cos² of the centroid's latitude to 0.01 (Tasmania 1.81). Hobart to Launceston is 1.4525 "degrees", 160.72 km on the ellipsoid, 156.57 km in Albers (a projection keeps areas, not distances) and 217.30 km in Web Mercator.
+
+#### g2 · load-validate
+
+**Tool:** PG · **Time:** 1.5 h · **Prereqs:** g1
+
+**Goal:** know how shapes travel and when they are broken. WKT is the readable text form (`POINT(1 2)`), WKB the binary one that files and databases exchange; the lab file carries every shape as WKB, and the loader turns it into `geometry` (§4.3). A polygon is valid when its rings don't cross themselves or each other, holes lie inside their shell, and shells don't nest. An invalid polygon still loads, and most functions return an answer for it, but the answer can be wrong: a bow-tie's two halves cancel, so its area is 0. `ST_IsValidDetail` says why a shape is invalid and where; `ST_MakeValid` repairs it, sometimes into a different type. The loader keeps invalid shapes on purpose (§4.3), so this module finds them.
+
+**Data:** a bow-tie typed in; `country_shapes`, `admin1_shapes` and `ecoregions` (RESOLVE, simplified to 0.05°, §4.1).
+
+**Key code:** one point in WKT, in WKB as hex, and in EWKT, PostGIS's WKT with the SRID in front:
+
+```sql
+-- q: g2-wkb
+-- status: ran
+-- engine: postgis
+SELECT ST_AsText(p) AS wkt, encode(ST_AsBinary(p), 'hex') AS wkb_hex, ST_AsEWKT(p) AS ewkt,
+       ST_Equals(ST_GeomFromWKB(ST_AsBinary(p), 4326), p) AS round_trip
+FROM (SELECT ST_SetSRID(ST_Point(147.33, -42.88), 4326) AS p) AS one;
+```
+
+```text
+-- result: g2-wkb · 1 row · sha256 ed472fca4e6e
+wkt | wkb_hex | ewkt | round_trip
+POINT(147.33 -42.88) | 0101000000c3f5285c8f6a6240713d0ad7a37045c0 | SRID=4326;POINT(147.33 -42.88) | true
+```
+
+A bow-tie: one ring that crosses itself. Its area is 0, and `ST_MakeValid` returns its two triangles:
+
+```sql
+-- q: g2-bowtie
+-- status: ran
+-- engine: postgis
+SELECT (ST_IsValidDetail(geom)).valid, (ST_IsValidDetail(geom)).reason,
+       ST_AsText((ST_IsValidDetail(geom)).location) AS at,
+       ST_Area(geom) AS area,
+       ST_AsText(ST_MakeValid(geom)) AS made_valid,
+       ST_Area(ST_MakeValid(geom)) AS valid_area
+FROM (SELECT ST_GeomFromText('POLYGON((0 0, 2 2, 2 0, 0 2, 0 0))') AS geom) AS shape;
+```
+
+```text
+-- result: g2-bowtie · 1 row · sha256 b08f9bdf9a6d
+valid | reason | at | area | made_valid | valid_area
+false | Self-intersection | POINT(1 1) | 0 | MULTIPOLYGON(((0 2,1 1,0 0,0 2)),((2 0,1 1,2 2,2 0))) | 2
+```
+
+The lab's invalid shapes, why, and what `ST_MakeValid` changes:
+
+```sql
+-- q: g2-invalid
+-- status: ran
+-- engine: postgis
+WITH shapes AS (
+  SELECT 'country_shapes' AS table_name, country_code AS key, geom FROM country_shapes
+  UNION ALL SELECT 'admin1_shapes', adm1_code, geom FROM admin1_shapes
+  UNION ALL SELECT 'ecoregions', eco_id::text, geom FROM ecoregions
+), checked AS (
+  SELECT table_name, key, geom, ST_IsValidDetail(geom) AS d FROM shapes
+)
+SELECT table_name, key, (d).reason,
+       ST_NumGeometries(geom) AS parts, ST_NumGeometries(ST_MakeValid(geom)) AS parts_after,
+       GeometryType(ST_MakeValid(geom)) AS type_after,
+       round(((ST_Area(ST_MakeValid(geom)::geography) - ST_Area(geom::geography)) / 1e6)::numeric, 1) AS km2_change
+FROM checked
+WHERE NOT (d).valid
+ORDER BY table_name, key;
+```
+
+```text
+-- result: g2-invalid · 11 rows · sha256 5b7784549a38
+table_name | key | reason | parts | parts_after | type_after | km2_change
+admin1_shapes | BRA-1294 | Ring Self-intersection | 1 | 1 | MULTIPOLYGON | 0.0
+ecoregions | 112 | Nested shells | 1846 | 1845 | MULTIPOLYGON | 0.0
+ecoregions | 114 | Nested shells | 13 | 12 | MULTIPOLYGON | -0.4
+ecoregions | 309 | Ring Self-intersection | 27 | 27 | MULTIPOLYGON | 0.0
+ecoregions | 320 | Nested shells | 2968 | 2966 | MULTIPOLYGON | 0.0
+… 6 more rows
+```
+
+**Expected:** the point's WKB is 21 bytes: byte order, type 1 (point), then two 8-byte numbers; EWKT adds `SRID=4326;`, and the round trip is equal. The bow-tie is invalid ("Self-intersection" at `POINT(1 1)`), its area is 0, and `ST_MakeValid` returns two triangles of area 2. In the lab, all 247 country outlines are valid; 11 shapes aren't: one admin-1 area (Goiás, `BRA-1294`, a ring crossing itself) and 10 RESOLVE ecoregions, 7 with a ring crossing itself and 3 with nested shells, which simplification left behind. `ST_MakeValid` keeps every one a MultiPolygon, merges a few parts (ecoregion 811 goes from 481 to 477), and changes no area by more than 0.4 km². A learner's next step is ArcGIS Pro's Check and Repair Geometry, compared.
+
+#### g3 · spatial-join
+
+**Tool:** PG · **Time:** 2.0 h · **Prereqs:** g2
+
+**Goal:** join tables by where things are, and check one source against another. `ST_Contains(a, b)` is true when b is inside a and not only on its edge; `ST_Covers(a, b)` also counts the edge; `ST_Intersects` is true when they share any point. A join on one of them is a spatial join (ArcGIS Pro's Spatial Join tool). Every GBIF record carries a country code, from its publisher or worked out by GBIF; joining the records to the outlines checks one against the other (003 §4, spatial lesson 4, run here on the whole sample at 1:50m). Neither side is the truth: the outline is a simplified map, the code a claim.
+
+**Data:** `occurrences` (`geom`, `country_code_gbif`), `country_shapes`.
+
+**Key code:** the three predicates on a point inside, on the edge of and outside a square:
+
+```sql
+-- q: g3-boundary
+-- status: ran
+-- engine: postgis
+WITH square AS (SELECT ST_GeomFromText('POLYGON((0 0, 1 0, 1 1, 0 1, 0 0))', 4326) AS geom),
+points (place, geom) AS (
+  VALUES ('inside', ST_SetSRID(ST_Point(0.5, 0.5), 4326)),
+         ('on the edge', ST_SetSRID(ST_Point(1, 0.5), 4326)),
+         ('outside', ST_SetSRID(ST_Point(2, 0.5), 4326))
+)
+SELECT p.place, ST_Contains(s.geom, p.geom) AS contains, ST_Covers(s.geom, p.geom) AS covers,
+       ST_Intersects(s.geom, p.geom) AS intersects
+FROM square AS s, points AS p
+ORDER BY p.place;
+```
+
+```text
+-- result: g3-boundary · 3 rows · sha256 d10ead98357a
+place | contains | covers | intersects
+inside | true | true | true
+on the edge | false | true | true
+outside | false | false | false
+```
+
+Each record agrees (an outline it falls in is GBIF's country), disagrees, or falls in no outline. The join starts from the outlines, so PostGIS prepares each outline once and tests the records its index finds; started from the records (`occurrences LEFT JOIN country_shapes`), it tests each record against an outline prepared afresh, about 25 times slower on this sample (7 s against 0.3 s on the test server; compare the two with `EXPLAIN ANALYZE`, as in d3). The `LEFT JOIN` comes after, on the per-record summary:
+
+```sql
+-- q: g3-agree
+-- status: ran
+-- engine: postgis
+WITH hits AS (
+  SELECT o.id, count(*) AS outlines, bool_or(c.country_code = o.country_code_gbif) AS agrees
+  FROM country_shapes AS c
+  JOIN occurrences AS o ON ST_Covers(c.geom, o.geom)
+  GROUP BY o.id
+)
+SELECT CASE WHEN h.id IS NULL THEN 'no outline' WHEN h.agrees THEN 'agree' ELSE 'disagree' END AS outcome,
+       count(*) AS records,
+       count(*) FILTER (WHERE h.outlines > 1) AS in_two_outlines
+FROM occurrences AS o
+LEFT JOIN hits AS h ON h.id = o.id
+GROUP BY 1
+ORDER BY 1;
+```
+
+```text
+-- result: g3-agree · 3 rows · sha256 a48ca6bc5bd6
+outcome | records | in_two_outlines
+agree | 39190 | 932
+disagree | 206 | 1
+no outline | 999 | 0
+```
+
+Where they disagree, GBIF's code against the outline's:
+
+```sql
+-- q: g3-disagree
+-- status: ran
+-- engine: postgis
+WITH hits AS (
+  SELECT o.id, o.country_code_gbif AS gbif_code,
+         string_agg(c.country_code, '+' ORDER BY c.country_code) AS outline_code,
+         bool_or(c.country_code = o.country_code_gbif) AS agrees
+  FROM country_shapes AS c
+  JOIN occurrences AS o ON ST_Covers(c.geom, o.geom)
+  GROUP BY o.id, o.country_code_gbif
+)
+SELECT gbif_code, outline_code, count(*) AS records
+FROM hits
+WHERE NOT agrees
+GROUP BY gbif_code, outline_code
+ORDER BY records DESC, gbif_code, outline_code
+LIMIT 10;
+```
+
+```text
+-- result: g3-disagree · 10 rows · sha256 ba081d2e5cbb
+gbif_code | outline_code | records
+US | MX | 78
+BJ | BF | 28
+GF | BR | 18
+EC | PE | 15
+GF | SR | 12
+… 5 more rows
+```
+
+And the records inside two outlines at once:
+
+```sql
+-- q: g3-two-outlines
+-- status: ran
+-- engine: postgis
+WITH hits AS (
+  SELECT o.id, o.country_code_gbif AS gbif_code, string_agg(c.country_code, '+' ORDER BY c.country_code) AS outlines
+  FROM country_shapes AS c
+  JOIN occurrences AS o ON ST_Covers(c.geom, o.geom)
+  GROUP BY o.id, o.country_code_gbif
+  HAVING count(*) > 1
+)
+SELECT outlines, gbif_code, count(*) AS records
+FROM hits
+GROUP BY outlines, gbif_code
+ORDER BY records DESC, outlines, gbif_code;
+```
+
+```text
+-- result: g3-two-outlines · 4 rows · sha256 f16f1fc4d7c9
+outlines | gbif_code | records
+FR+GF | GF | 923
+FR+RE | RE | 6
+FR+MQ | MQ | 3
+FR+GF | SR | 1
+```
+
+**Optional appendix: records against a range you downloaded yourself** (003 §6). IUCN's range maps may be downloaded with a free account for your own non-commercial use, and nothing made from them may be shared; critwire never holds them (003 §6), so this block is never run here. Load your shapefile into a schema of your own, which the lab loader never touches (`CREATE SCHEMA my_iucn`, then QGIS, `ogr2ogr` or `shp2pgsql` into `my_iucn.ranges`, one multipolygon per taxon, the SIS taxon id in `iucn_id`). The key is that id, which critwire publishes as `species.iucn_id`, never a name: IUCN renamed its name column in 2023 (003 §6). Records outside a range aren't errors by themselves: captive animals, misidentifications and incomplete ranges all put them there.
+
+```sql
+-- q: g3-iucn
+-- status: untested: reads your own IUCN download, which critwire never holds
+-- engine: postgis
+SELECT s.common_name, count(*) AS records,
+       count(*) FILTER (WHERE ST_Covers(r.geom, o.geom)) AS inside_range
+FROM my_iucn.ranges AS r
+JOIN species AS s ON s.iucn_id = r.iucn_id
+JOIN occurrences AS o ON o.species_id = s.id
+GROUP BY s.common_name
+ORDER BY s.common_name;
+```
+
+**Expected:** on the square, only `ST_Covers` and `ST_Intersects` count the point on the edge. Of the sample's 40,395 records, 39,190 agree, 206 disagree and 999 are in no outline; no record lacks a GBIF code. The disagreements are border pairs (78 records coded US inside Mexico's outline, 28 coded Benin inside Burkina Faso's, 18 coded French Guiana inside Brazil's, 15 Ecuador in Peru's, 12 French Guiana in Suriname's): a record a few kilometres over a border, or a publisher's country that isn't where the point is. 933 records sit in two outlines at once (932 that agree, 1 that doesn't), every one inside France's and an overseas region's (French Guiana 924, Réunion 6, Martinique 3): Natural Earth's France includes its overseas regions, which also have outlines of their own, so a spatial join can count a record twice unless the outlines are a partition. g5 finds where the 999 are.
+
+#### g4 · measure-overlay
+
+**Tool:** PG · **Time:** 2.0 h · **Prereqs:** g3
+
+**Goal:** measure lengths, areas and distances in metres, and cut one layer by another. `ST_Intersection` keeps the part two shapes share (ArcGIS Pro's Intersect), and the area of that part, on the ellipsoid, is an overlay's answer. `ST_DWithin(a, b, d)` asks "within d?" and, unlike `ST_Distance(a, b) < d`, can use an index (d3); on `geography`, d is in metres. Two maps drawn separately never fit exactly: their pieces add up to a little less or more than the whole, and an overlay should say by how much.
+
+**Data:** `country_shapes`, `ecoregions` and `biomes` (RESOLVE 2017, CC BY 4.0), `occurrences`; Costa Rica.
+
+**Key code:** how much of Costa Rica each ecoregion covers:
+
+```sql
+-- q: g4-ecoregions
+-- status: ran
+-- engine: postgis
+WITH cr AS (SELECT geom, ST_Area(geom::geography) AS m2 FROM country_shapes WHERE country_code = 'CR')
+SELECT e.eco_id, e.name, b.name AS biome,
+       round((ST_Area(ST_Intersection(e.geom, cr.geom)::geography) / 1e6)::numeric) AS km2,
+       round((100 * ST_Area(ST_Intersection(e.geom, cr.geom)::geography) / cr.m2)::numeric, 1) AS pct
+FROM ecoregions AS e
+JOIN cr ON ST_Intersects(e.geom, cr.geom)
+LEFT JOIN biomes AS b ON b.biome_id = e.biome_id
+ORDER BY km2 DESC, e.eco_id;
+```
+
+```text
+-- result: g4-ecoregions · 7 rows · sha256 ed3884acd3d8
+eco_id | name | biome | km2 | pct
+470 | Isthmian-Atlantic moist forests | Tropical & Subtropical Moist Broadleaf Forests | 17288 | 33.7
+471 | Isthmian-Pacific moist forests | Tropical & Subtropical Moist Broadleaf Forests | 9012 | 17.6
+458 | Costa Rican seasonal moist forests | Tropical & Subtropical Moist Broadleaf Forests | 8400 | 16.4
+506 | Talamancan montane forests | Tropical & Subtropical Moist Broadleaf Forests | 8311 | 16.2
+527 | Central American dry forests | Tropical & Subtropical Dry Broadleaf Forests | 6062 | 11.8
+… 2 more rows
+```
+
+Do the pieces add up to the country?
+
+```sql
+-- q: g4-gap
+-- status: ran
+-- engine: postgis
+WITH cr AS (SELECT geom FROM country_shapes WHERE country_code = 'CR')
+SELECT round((ST_Area(cr.geom::geography) / 1e6)::numeric) AS country_km2,
+       round((sum(ST_Area(ST_Intersection(e.geom, cr.geom)::geography)) / 1e6)::numeric) AS ecoregion_pieces_km2,
+       round((ST_Area(ST_Difference(cr.geom, ST_Union(e.geom))::geography) / 1e6)::numeric) AS in_no_ecoregion_km2
+FROM cr
+JOIN ecoregions AS e ON ST_Intersects(e.geom, cr.geom)
+GROUP BY cr.geom;
+```
+
+```text
+-- result: g4-gap · 1 row · sha256 5811a1ff6de4
+country_km2 | ecoregion_pieces_km2 | in_no_ecoregion_km2
+51303 | 49908 | 2070
+```
+
+Costa Rica's land borders, their length, and the records within 10 km of each, by the code GBIF gave them:
+
+```sql
+-- q: g4-border
+-- status: ran
+-- engine: postgis
+WITH cr AS (SELECT geom FROM country_shapes WHERE country_code = 'CR'),
+border AS (
+  SELECT n.country_code AS neighbour,
+         ST_LineMerge(ST_CollectionExtract(ST_Intersection(ST_Boundary(cr.geom), ST_Boundary(n.geom)), 2)) AS geom
+  FROM cr
+  JOIN country_shapes AS n ON n.country_code <> 'CR' AND ST_Touches(n.geom, cr.geom)
+)
+SELECT b.neighbour,
+       round((ST_Length(b.geom::geography) / 1000)::numeric) AS border_km,
+       count(o.id) AS records_within_10km,
+       count(o.id) FILTER (WHERE o.country_code_gbif = 'CR') AS coded_cr,
+       count(o.id) FILTER (WHERE o.country_code_gbif = b.neighbour) AS coded_neighbour
+FROM border AS b
+LEFT JOIN occurrences AS o
+  ON o.country_code_gbif IN ('CR', b.neighbour) AND ST_DWithin(o.geom::geography, b.geom::geography, 10000)
+GROUP BY b.neighbour, b.geom
+ORDER BY b.neighbour;
+```
+
+```text
+-- result: g4-border · 2 rows · sha256 539a1bf4a653
+neighbour | border_km | records_within_10km | coded_cr | coded_neighbour
+NI | 267 | 5 | 1 | 4
+PA | 250 | 9 | 6 | 3
+```
+
+**Expected:** seven ecoregions cover Costa Rica, led by the Isthmian-Atlantic moist forests (17,288 km², 33.7 %); five are moist or dry broadleaf forest and two are mangroves. The pieces add to 49,908 km² of the outline's 51,303, though 2,070 km² lie in no ecoregion: the two layers, simplified separately, leave gaps along the coast and overlap by about 675 km² (49,908 + 2,070 − 51,303), which is the size of the error any area from this overlay carries. The land borders are 267 km (Nicaragua) and 250 km (Panama); within 10 km of them, on either side, lie 5 and 9 records, 7 of them coded for the neighbour. So close to a line, the code and the outline can each be right or wrong: a 1:50m border is generalized and can be kilometres off, and g3's disagreements are mostly records like these.
+
+#### g5 · spatial-index
+
+**Tool:** PG · **Time:** 1.5 h · **Prereqs:** g3, d3
+
+**Goal:** know when the GiST index does the work and when it can't. d3 showed the index finding boxes (`&&`, `@`, `ST_DWithin`); this module adds nearest-neighbour search, where `ORDER BY geom <-> point LIMIT k` walks the index outward from the point and stops after k rows (ArcGIS Pro's Near, without a search radius). Two traps: on SRID 4326 `<->` orders by degrees, not metres, so near the poles it can rank wrongly (re-rank a few more candidates by `geography`); and a cast in the condition (`geom::geography`) hides the column from a `geometry` index, so the scan reads every row unless the index is built on the same expression.
+
+**Data:** `occurrences`, `country_shapes`; a point in Hobart.
+
+**Key code:** the five records nearest Hobart, with their true distance:
+
+```sql
+-- q: g5-nearest
+-- status: ran
+-- engine: postgis
+WITH hobart AS (SELECT ST_SetSRID(ST_Point(147.33, -42.88), 4326) AS geom)
+SELECT o.id, s.common_name,
+       round((ST_Distance(o.geom::geography, h.geom::geography) / 1000)::numeric, 2) AS km
+FROM occurrences AS o
+JOIN species AS s ON s.id = o.species_id
+CROSS JOIN hobart AS h
+ORDER BY o.geom <-> h.geom, o.id
+LIMIT 5;
+```
+
+```text
+-- result: g5-nearest · 5 rows · sha256 80d98a44e701
+id | common_name | km
+6004135246 | Tasmanian Devil | 2.44
+6004145372 | Tasmanian Devil | 4.40
+1647204917 | Tasmanian Devil | 5.57
+1647151244 | Tasmanian Devil | 7.08
+1647151259 | Tasmanian Devil | 7.08
+```
+
+Its plan: an index scan ordered by distance, stopped by the `LIMIT`:
+
+```sql
+-- q: g5-knn-plan
+-- status: ran
+-- engine: postgis
+-- after: d3-analyze
+EXPLAIN (ANALYZE, COSTS OFF, TIMING OFF, SUMMARY OFF)
+SELECT o.id
+FROM occurrences AS o
+ORDER BY o.geom <-> ST_SetSRID(ST_Point(147.33, -42.88), 4326)
+LIMIT 5;
+```
+
+```text
+-- result: g5-knn-plan · 3 rows · sha256 c1ec5c12ff81
+QUERY PLAN
+Limit (actual rows=5 loops=1)
+  ->  Index Scan using occurrences_geom_idx on occurrences o…
+        Order By: (geom <-> '0101000020E6100000C3F5285C8F6A6…
+```
+
+The records within 20 km of Hobart, measured on the ellipsoid. The cast hides `geom` from its index, so every row is read:
+
+```sql
+-- q: g5-cast-plan
+-- status: ran
+-- engine: postgis
+-- after: d3-analyze
+EXPLAIN (ANALYZE, COSTS OFF, TIMING OFF, SUMMARY OFF)
+SELECT o.id
+FROM occurrences AS o
+WHERE ST_DWithin(o.geom::geography, ST_SetSRID(ST_Point(147.33, -42.88), 4326)::geography, 20000);
+```
+
+```text
+-- result: g5-cast-plan · 3 rows · sha256 05bf25e03416
+QUERY PLAN
+Seq Scan on occurrences o (actual rows=55 loops=1)
+  Filter: st_dwithin((geom)::geography, '0101000020E6100000C…
+  Rows Removed by Filter: 40340
+```
+
+An index on the expression itself fixes it (the transaction is rolled back, so the index goes too):
+
+```sql
+-- q: g5-geography-index
+-- status: ran
+-- engine: postgis
+-- after: d3-analyze
+CREATE INDEX occurrences_geography_idx ON occurrences USING gist ((geom::geography));
+EXPLAIN (ANALYZE, COSTS OFF, TIMING OFF, SUMMARY OFF)
+SELECT o.id
+FROM occurrences AS o
+WHERE ST_DWithin(o.geom::geography, ST_SetSRID(ST_Point(147.33, -42.88), 4326)::geography, 20000);
+```
+
+```text
+-- result: g5-geography-index · 6 rows · sha256 681f15e00739
+QUERY PLAN
+Bitmap Heap Scan on occurrences o (actual rows=55 loops=1)
+  Filter: st_dwithin((geom)::geography, '0101000020E6100000C…
+  Rows Removed by Filter: 11
+  Heap Blocks: exact=18
+  ->  Bitmap Index Scan on occurrences_geography_idx (actual…
+… 1 more row
+```
+
+g3's records in no outline: how far is each from the nearest one? Nearest-neighbour search works on polygons too:
+
+```sql
+-- q: g5-coast
+-- status: ran
+-- engine: postgis
+WITH inside AS (
+  SELECT DISTINCT o.id FROM country_shapes AS c JOIN occurrences AS o ON ST_Covers(c.geom, o.geom)
+), nearest AS (
+  SELECT o.id, o.country_code_gbif, n.country_code,
+         ST_Distance(o.geom::geography, n.geom::geography) / 1000 AS km
+  FROM occurrences AS o
+  CROSS JOIN LATERAL (SELECT c.country_code, c.geom FROM country_shapes AS c ORDER BY c.geom <-> o.geom LIMIT 1) AS n
+  WHERE o.id NOT IN (SELECT id FROM inside)
+)
+SELECT CASE WHEN km < 1 THEN 'under 1 km' WHEN km < 5 THEN '1 to 5 km' WHEN km < 25 THEN '5 to 25 km' ELSE '25 km or more' END AS distance,
+       count(*) AS records,
+       count(*) FILTER (WHERE country_code = country_code_gbif) AS nearest_is_gbif_country,
+       round(max(km)::numeric, 1) AS max_km
+FROM nearest
+GROUP BY 1
+ORDER BY min(km);
+```
+
+```text
+-- result: g5-coast · 4 rows · sha256 ef446e9ae320
+distance | records | nearest_is_gbif_country | max_km
+under 1 km | 236 | 226 | 1.0
+1 to 5 km | 200 | 193 | 4.5
+5 to 25 km | 529 | 529 | 24.8
+25 km or more | 34 | 31 | 343.9
+```
+
+**Expected:** the nearest records to Hobart are Tasmanian devils, 2.44 to 7.08 km away (two at the same spot, so the tie goes to `o.id`). The nearest-neighbour plan is an `Index Scan … Order By` under `Limit`, reading 5 rows; the geography condition is a `Seq Scan` that removes 40,340 rows to keep 55; with the expression index, a `Bitmap Index Scan` finds 66 candidates and the exact test keeps the same 55. Of g3's 999 records in no outline, 436 lie within 5 km of one (beaches, mangroves, simplified coastlines), and in nearly all of them the nearest outline is GBIF's country; 529 lie 5 to 25 km out, mostly on islands too small for 1:50m (346 bilby records on one island off South Australia, 133 pig-nosed turtle records on the Gulf of Papua's delta); 34 are 25 km or more away (up to 343.9 km), worth reading one by one.
+
+#### g6 · grids
+
+**Tool:** PG · **Time:** 1.5 h · **Prereqs:** g4
+
+**Goal:** count points into areal units, and see how much the units decide. `ST_HexagonGrid(edge, bounds)` returns the hexagons of edge `edge` that cover `bounds`, in the bounds' units, so it is used in an equal-area projection (here 3577, metres) and every cell has the same area (ArcGIS Pro's Generate Tessellation). Hexagons are the usual choice: every neighbour shares an edge and sits at the same distance. The **modifiable areal unit problem** (MAUP) is that counts, and every statistic built on them, change with the cells' size (scale) and with where the grid starts (zoning). s4 uses exactly these grids (`s4-cells`), so the numbers here are the ones its Moran's I runs on.
+
+**Data:** `occurrences` (the Tasmanian devil, *Sarcophilus harrisii*), `admin1_shapes` (Tasmania's main island).
+
+**Key code:** the devil's records in 5 km and 10 km hexagons, and in the 10 km grid moved half an edge east and north. `ST_HexagonGrid` always starts its grid at the projection's origin, so the moved grid is drawn over the island moved back, then moved forward:
+
+```sql
+-- q: g6-maup
+-- status: ran
+-- engine: postgis
+WITH island AS (
+  SELECT (part).geom
+  FROM (SELECT ST_Dump(ST_Transform(geom, 3577)) AS part
+        FROM admin1_shapes WHERE country_code = 'AU' AND name = 'Tasmania') AS parts
+  ORDER BY ST_Area((part).geom) DESC
+  LIMIT 1
+), devils AS (
+  SELECT ST_Transform(o.geom, 3577) AS geom
+  FROM occurrences AS o JOIN species AS s ON s.id = o.species_id
+  WHERE s.scientific_name = 'Sarcophilus harrisii'
+), grids (edge_m, shift_m) AS (
+  VALUES (5000, 0), (10000, 0), (10000, 5000)
+), cells AS (
+  SELECT g.edge_m, g.shift_m, h.i, h.j, ST_Translate(h.geom, g.shift_m, g.shift_m) AS geom
+  FROM island, grids AS g, ST_HexagonGrid(g.edge_m, ST_Translate(island.geom, -g.shift_m, -g.shift_m)) AS h
+  WHERE ST_Intersects(ST_Translate(h.geom, g.shift_m, g.shift_m), island.geom)
+), counts AS (
+  SELECT c.edge_m, c.shift_m, c.i, c.j, count(d.geom) AS n
+  FROM cells AS c LEFT JOIN devils AS d ON ST_Contains(c.geom, d.geom)
+  GROUP BY c.edge_m, c.shift_m, c.i, c.j
+)
+SELECT edge_m, shift_m, count(*) AS cells, count(*) FILTER (WHERE n > 0) AS occupied,
+       sum(n) AS records, max(n) AS max_n,
+       round(100.0 * count(*) FILTER (WHERE n > 0) / count(*), 1) AS pct_occupied,
+       round(100.0 * max(n) / sum(n), 1) AS top_cell_pct
+FROM counts
+GROUP BY edge_m, shift_m
+ORDER BY edge_m, shift_m;
+```
+
+```text
+-- result: g6-maup · 3 rows · sha256 4d11b1459ccb
+edge_m | shift_m | cells | occupied | records | max_n | pct_occupied | top_cell_pct
+5000 | 0 | 1094 | 307 | 1972 | 256 | 28.1 | 13.0
+10000 | 0 | 296 | 178 | 1990 | 475 | 60.1 | 23.9
+10000 | 5000 | 300 | 182 | 1976 | 310 | 60.7 | 15.7
+```
+
+**Expected:** the same 1,972 to 1,990 devil records give three pictures. At 5 km, 307 of 1,094 cells (28.1 %) hold a record and the fullest holds 256 (13.0 % of all records); at 10 km, 178 of 296 (60.1 %) and the fullest 475 (23.9 %); moving the 10 km grid by half an edge keeps the occupancy (60.7 %) but drops the fullest cell to 310 (15.7 %), because one cluster of records is now split across cells. The records in no cell (10 to 28) lie off the main island or near its coast. The 5 km and 10 km rows equal `s4-cells`.
+
+#### g7 · raster
+
+**Tool:** PG · **Time:** 2.5 h · **Prereqs:** g6
+
+**Goal:** read a raster: the value under a point (`ST_Value`), the cells inside a polygon (`ST_Clip`, which keeps a cell when its centre is inside), and their counts by value (`ST_ValueCount`); then turn counts of cells into an **estimated** area. The habitat map (Jung et al. 2020, v004, CC BY 4.0; 003 §5) gives each cell of about 100 m a class of the IUCN habitat classification scheme, written as a number (`106` is class 1.6, "Forest – Subtropical/tropical moist lowland"). Its grid is Web Mercator, so a cell 103.02 m wide on the map is 103.02 × cos(latitude) m on the ground (g1): a count of cells is not an area until each cell is corrected (003 §4, spatial lessons 5–7). The result is still an estimate from a classified map, never a measurement.
+
+**Data:** `habitat_clips` (clips of the map for Costa Rica, `cr`, and Tasmania, `tas`, stored in the database), `habitat_classes`, `country_shapes`, `occurrences`. L3 adds the clips (§4.1, §9), so until then these blocks can't run. The clips are stored in the database, not read from a file, so no raster setting is needed: 003's `pg-once` grants were for reading the whole map out-db, which the labs don't do.
+
+**Key code:** the class under each of Costa Rica's records:
+
+```sql
+-- q: g7-records
+-- status: untested: L3 builds the clips
+-- engine: postgis
+-- needs: raster
+SELECT v.habitat_code, c.name, count(*) AS records
+FROM occurrences AS o
+JOIN habitat_clips AS h ON h.clip = 'cr'
+CROSS JOIN LATERAL (SELECT ST_Value(h.rast, 1, ST_Transform(o.geom, ST_SRID(h.rast))) AS habitat_code) AS v
+LEFT JOIN habitat_classes AS c ON c.code = v.habitat_code
+WHERE o.country_code = 'CR'
+GROUP BY v.habitat_code, c.name
+ORDER BY records DESC, v.habitat_code NULLS LAST;
+```
+
+The cells inside Costa Rica's outline, by class, as `ST_ValueCount` gives them:
+
+```sql
+-- q: g7-valuecount
+-- status: untested: L3 builds the clips
+-- engine: postgis
+-- needs: raster
+SELECT vc.value AS habitat_code, vc.count AS cells
+FROM habitat_clips AS h
+JOIN country_shapes AS cs ON cs.country_code = 'CR'
+CROSS JOIN LATERAL ST_ValueCount(ST_Clip(h.rast, ST_Transform(cs.geom, ST_SRID(h.rast))), 1) AS vc
+WHERE h.clip = 'cr'
+ORDER BY cells DESC, habitat_code;
+```
+
+The same cells as areas: on the map, and corrected cell by cell for the latitude of its row (a Web Mercator y gives latitude 2·atan(e^(y ÷ R)) − π ÷ 2, R = 6,378,137 m), beside L3's published country summary:
+
+```sql
+-- q: g7-estimate
+-- status: untested: L3 builds the clips
+-- engine: postgis
+-- needs: raster
+WITH cells AS (
+  SELECT p.val AS habitat_code, 2 * atan(exp(ST_Y(p.geom) / 6378137)) - pi() / 2 AS lat
+  FROM habitat_clips AS h
+  JOIN country_shapes AS cs ON cs.country_code = 'CR'
+  CROSS JOIN LATERAL ST_PixelAsCentroids(ST_Clip(h.rast, ST_Transform(cs.geom, ST_SRID(h.rast))), 1) AS p
+  WHERE h.clip = 'cr'
+)
+SELECT c.habitat_code, count(*) AS cells,
+       round((count(*) * 103.02166779498629 ^ 2 / 1e6)::numeric, 1) AS map_km2,
+       round((sum((103.02166779498629 * cos(c.lat)) ^ 2) / 1e6)::numeric, 1) AS est_km2,
+       ch.est_area_km2 AS published_km2
+FROM cells AS c
+LEFT JOIN country_habitats AS ch ON ch.country_code = 'CR' AND ch.habitat_code = c.habitat_code
+GROUP BY c.habitat_code, ch.est_area_km2
+ORDER BY cells DESC, c.habitat_code;
+```
+
+**Expected:** a class (or `NULL`, off the clip or on a nodata cell) for each of Costa Rica's 619 records; `ST_ValueCount`'s cells and `g7-estimate`'s cells agree class by class (both count the cells whose centres fall inside the outline); at about 10° N each corrected area is about 3 % smaller than its map area (cos² 10° ≈ 0.97); and the corrected areas agree with L3's published summary within the error 003 §5 measured for its method. L3 records the real numbers when it builds the clips and writes g7 in full; s6 then compares the records' classes with the classes' areas.
 
 ### 5.4 Spatial statistics
 
