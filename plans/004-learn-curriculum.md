@@ -6183,13 +6183,854 @@ ORDER BY ch.est_area_km2 DESC, ch.habitat_code;
 
 ### 5.5 ETL
 
-(S26)
+Five modules, ten hours, in Python (§3.3) and your own PostGIS (§3.2). These are outlines, in §5.3's form; build mission L4 (§9) writes them in full. The track builds one pipeline, the one that made this course's sample (§4.2, §A.1): ask GBIF for a download (e1), load it typed and checked in one transaction (e2), make re-running it safe (e3), check it and credit its sources (e4), and run it on a schedule (e5). The code is the spike's (`SP/etl/`), cut down to what each lesson needs. Every block that can run without a GBIF account runs here, on the lab tables and the published lab files; the blocks write only TEMP tables or roll back, so `learn_curriculum` stays as the loader left it.
+
+#### e1 · extract
+
+**Tool:** Py · **Time:** 2.0 h · **Prereqs:** f2
+
+**Goal:** get every open record of a species from GBIF, as a file you can cite. GBIF has two ways in:
+- **The search API** (`/v1/occurrence/search`) answers at once, in pages of at most 300 records, and stops at an offset of 100,000. It suits a count or a quick look. A result assembled from pages has no DOI, and the data under it changes daily, so nobody can fetch exactly your records again.
+- **The download API** is **asynchronous**: you POST a query (a *predicate*) with your GBIF account, GBIF runs it as a job, and you ask for its status until it is ready. The result is one zip of every matching record, with a **DOI** that cites exactly that file; GBIF keeps a download that has been cited and deletes an uncited one after six months.
+
+The client is where most of the care goes. Pace the requests (critwire's rule: at most 2 a second), retry what can fail for a moment (429 "too many requests", 5xx, a dropped connection) with growing waits, and never retry a POST blindly, because a second POST is a second download. Stream large files to disk and hash them as they arrive; a file gets its real name only after its size and checksum match what the publisher says.
+
+**Pin the taxonomy.** A query names taxa by key, and a key means something only in one checklist. GBIF's download documentation says: "If no `checklistKey` is supplied the obsolete GBIF Backbone Taxonomy will be used." Today that default is the checklist critwire's `ids.gbif` come from, but GBIF calls it obsolete, and the search API's default has already moved to the Catalogue of Life. A pipeline that leans on a default its provider has said will change can start matching other taxa with no error, so the request names `checklistKey` at the top level and on `TAXON_KEY`, and the client checks that GBIF's stored request echoes both (§4.2).
+
+**Data:** `species.gbif_id` (73 keys) in the lab database; GBIF's API, with your own account (free, gbif.org); the lab files under `/learn/data/` and their `manifest.json` (§4.5).
+
+**Key code:** the request, built from the lab's keys. For the Tasmanian devil alone, `TAXON_KEY` would hold one key, `2435451`.
+
+```python
+# q: e1-request
+# status: ran
+# after: py-connect
+import json
+
+BACKBONE = "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c"  # the GBIF Backbone Taxonomy, which critwire's ids.gbif come from
+BASIS = ["HUMAN_OBSERVATION", "OBSERVATION", "MACHINE_OBSERVATION", "PRESERVED_SPECIMEN",
+         "MATERIAL_SAMPLE", "MATERIAL_CITATION", "OCCURRENCE"]
+
+
+def build_request(taxon_keys, user):
+    """The download request: open records with coordinates, no geospatial issue, present, no living or fossil specimens."""
+    return {
+        "creator": user,
+        "sendNotification": False,
+        "format": "SIMPLE_CSV",
+        "checklistKey": BACKBONE,
+        "predicate": {
+            "type": "and",
+            "predicates": [
+                {"type": "in", "key": "TAXON_KEY", "values": [str(k) for k in taxon_keys], "checklistKey": BACKBONE},
+                {"type": "in", "key": "LICENSE", "values": ["CC0_1_0", "CC_BY_4_0"]},
+                {"type": "equals", "key": "HAS_COORDINATE", "value": "true"},
+                {"type": "equals", "key": "HAS_GEOSPATIAL_ISSUE", "value": "false"},
+                {"type": "equals", "key": "OCCURRENCE_STATUS", "value": "PRESENT"},
+                {"type": "in", "key": "BASIS_OF_RECORD", "values": BASIS},
+            ],
+        },
+    }
+
+
+with connect() as conn:
+    keys = [k for (k,) in conn.execute("SELECT gbif_id FROM species WHERE gbif_id IS NOT NULL ORDER BY gbif_id")]
+request = build_request(keys, "your-gbif-username")
+taxa = request["predicate"]["predicates"][0]
+print(f"taxon keys: {len(taxa['values'])}, first {taxa['values'][0]}, last {taxa['values'][-1]}")
+print(f"checklistKey: request {request['checklistKey']}, TAXON_KEY {taxa['checklistKey']}")
+for p in request["predicate"]["predicates"][1:]:
+    print(p["key"], p["type"], p.get("values", p.get("value")))
+print("bytes:", len(json.dumps(request)))
+```
+
+```text
+-- result: e1-request · python · sha256 5cc14736466a
+taxon keys: 73, first 2421431, last 7451150
+checklistKey: request d7dddbf4-2cf0-4f39-9b2a-bb099caae36c, TAXON_KEY d7dddbf4-2cf0-4f39-9b2a-bb099caae36c
+LICENSE in ['CC0_1_0', 'CC_BY_4_0']
+HAS_COORDINATE equals true
+HAS_GEOSPATIAL_ISSUE equals false
+OCCURRENCE_STATUS equals PRESENT
+BASIS_OF_RECORD in ['HUMAN_OBSERVATION', 'OBSERVATION', 'MACHINE_OBSERVATION', 'PRESERVED_SPECIMEN', 'MATERIAL_SAMPLE', 'MATERIAL_CITATION', 'OCCURRENCE']
+bytes: 1551
+```
+
+Submitting, waiting and fetching. This needs your account in `GBIF_USERNAME` and `GBIF_PASSWORD`, and makes a real download each time it runs, so the tests don't run it; the spike ran the same steps (`SP/etl/gbif_download.py`, §A.1).
+
+```python
+# q: e1-submit
+# status: untested: makes a real GBIF download with your account (the spike ran the same steps, §A.1)
+# after: py-connect, e1-request
+import base64
+import hashlib
+import os
+import time
+import urllib.error
+import urllib.request
+
+API = "https://api.gbif.org/v1"
+USER, PASSWORD = os.environ["GBIF_USERNAME"], os.environ["GBIF_PASSWORD"]  # from the environment, never in the code
+AUTH = "Basic " + base64.b64encode(f"{USER}:{PASSWORD}".encode()).decode()
+_last = 0.0
+
+
+def call(method, url, body=None, auth=False, retries=4):
+    """One request, at most 2 a second. GETs retry 429, 5xx and network errors with backoff; a POST never retries,
+    because a second POST is a second download."""
+    global _last
+    headers = {"Accept": "application/json, text/plain"}
+    data = None
+    if body is not None:
+        data = json.dumps(body).encode()
+        headers["Content-Type"] = "application/json"
+    if auth:
+        headers["Authorization"] = AUTH
+    for attempt in range(retries + 1):
+        time.sleep(max(0.0, _last + 0.5 - time.monotonic()))
+        _last = time.monotonic()
+        try:
+            with urllib.request.urlopen(urllib.request.Request(url, data, headers, method=method), timeout=60) as r:
+                return r.read()
+        except urllib.error.HTTPError as e:
+            if method != "GET" or (e.code != 429 and e.code < 500) or attempt == retries:
+                raise
+        except urllib.error.URLError:
+            if method != "GET" or attempt == retries:
+                raise
+        time.sleep(2 ** attempt)
+
+
+key = call("POST", f"{API}/occurrence/download/request", build_request(keys, USER), auth=True).decode()
+print("download key:", key)
+while True:  # a job, not a response: ask at most once a minute
+    meta = json.loads(call("GET", f"{API}/occurrence/download/{key}"))
+    if meta["status"] == "SUCCEEDED":
+        break
+    if meta["status"] in ("KILLED", "FAILED", "CANCELLED"):
+        raise SystemExit(f"download {key} ended {meta['status']}")
+    time.sleep(60)
+stored = meta["request"]
+if stored["checklistKey"] != BACKBONE or stored["predicate"]["predicates"][0]["checklistKey"] != BACKBONE:
+    raise SystemExit("GBIF didn't keep the pinned taxonomy")  # the echo check: what ran is what was asked
+print("DOI:", meta["doi"], "records:", meta["totalRecords"], "bytes:", meta["size"])
+
+sha, size = hashlib.sha256(), 0
+with urllib.request.urlopen(meta["downloadLink"], timeout=600) as r, open(f"{key}.zip.part", "wb") as f:
+    for chunk in iter(lambda: r.read(1 << 20), b""):
+        sha.update(chunk)
+        size += len(chunk)
+        f.write(chunk)
+if size != meta["size"]:
+    raise SystemExit(f"zip is {size} bytes; GBIF says {meta['size']}")
+os.replace(f"{key}.zip.part", f"{key}.zip")
+print("zip sha256:", sha.hexdigest())  # keep it with the DOI: it is how a later run knows it has the same file
+```
+
+Files with checksums, on the published lab files: stream each one to disk, hash it on the way, and keep it only if its size and sha256 equal the manifest's.
+
+```python
+# q: e1-checksum
+# status: ran
+import hashlib
+import json
+import os
+import time
+import urllib.error
+import urllib.request
+
+BASE = os.environ.get("LEARN_BASE", "https://critwire.com")
+
+
+def get(url, retries=4):
+    """A GET that retries rate limits (429), server errors and dropped connections, waiting 1, 2, 4, 8 s."""
+    for attempt in range(retries + 1):
+        try:
+            return urllib.request.urlopen(url, timeout=60)
+        except urllib.error.HTTPError as e:
+            if (e.code != 429 and e.code < 500) or attempt == retries:
+                raise
+        except urllib.error.URLError:
+            if attempt == retries:
+                raise
+        time.sleep(2 ** attempt)
+
+
+def fetch(name, manifest):
+    """Stream a lab file to disk, hashing as it arrives; refuse it unless its size and sha256 match the manifest."""
+    expected = manifest["files"][name]
+    sha, size = hashlib.sha256(), 0
+    with get(f"{BASE}/learn/data/{name}") as r, open(name + ".part", "wb") as f:
+        for chunk in iter(lambda: r.read(1 << 20), b""):
+            sha.update(chunk)
+            size += len(chunk)
+            f.write(chunk)
+    if size != expected["bytes"] or sha.hexdigest() != expected["sha256"]:
+        os.remove(name + ".part")
+        raise SystemExit(f"{name}: {size} bytes, sha256 {sha.hexdigest()[:12]}; the manifest says "
+                         f"{expected['bytes']}, {expected['sha256'][:12]}")
+    os.replace(name + ".part", name)  # only a checked file gets its real name
+    return size, sha.hexdigest()
+
+
+with get(f"{BASE}/learn/data/manifest.json") as r:
+    manifest = json.load(r)
+for name in ["occurrences.parquet", "datasets.csv"]:
+    size, digest = fetch(name, manifest)
+    print(f"{name}: {size} bytes, sha256 {digest[:12]} = manifest, {manifest['files'][name]['rows']} rows")
+```
+
+```text
+-- result: e1-checksum · python · sha256 429afc1d5bca
+occurrences.parquet: 622971 bytes, sha256 53086c9a1fb8 = manifest, 40395 rows
+datasets.csv: 72797 bytes, sha256 3bd8c1726239 = manifest, 400 rows
+```
+
+**Expected:** the request holds critwire's 73 GBIF keys and the six filters of §4.2, with the legacy checklist pinned twice; apart from `creator` and `sendNotification`, it equals, as JSON, the request GBIF stored for the spike's download. Submitted, that download was ready after 16 min 41 s: a 34,725,756-byte zip of 394,532 records from 454 datasets, DOI `10.15468/dl.fbpk9w`, and GBIF's stored request echoed both checklist keys (§A.1). Both lab files match the manifest; a file that doesn't is deleted and the block stops, naming both checksums.
+
+#### e2 · transform-load
+
+**Tool:** Py + PG · **Time:** 2.5 h · **Prereqs:** e1, d4
+
+**Goal:** load a delivered file into typed, checked tables, all or nothing. The pattern has three parts:
+- **Staging:** a table with one `text` column per column of the file, loaded exactly as delivered. Nothing can fail on a type here, and every later error is a SQL query that names its rows.
+- **`COPY`**, not row-by-row `INSERT`: PostgreSQL reads the file as one stream. The spike staged GBIF's 394,532 rows in 6.7 s and finished the whole load, types and checks included, in 14.2 s. psycopg's `cursor.copy` streams from Python, so a zip member goes in without being extracted.
+- **Typed tables, filled from staging with SQL:** casts, constraints, the geometry (a generated column, so it can't disagree with the coordinates), and the species rule. Then the checks. All of it runs in one transaction, so a failed check leaves the tables as they were before the run (d4).
+
+**`COPY`'s default format is wrong for files you didn't write.** GBIF's `SIMPLE_CSV` is tab-separated and never quotes a field. Read with `FORMAT text`, `COPY`'s default, a backslash starts an escape: `\n` becomes a line break, other backslashes vanish, `\N` becomes NULL, and an empty field stays an empty string. Nothing raises an error. CSV mode with a tab delimiter and a quote character that never occurs (`\b`, backspace) reads every byte as data and an empty field as NULL. On the real download, text format silently changed 9 rows, while this form kept all 97 rows holding a `\` or a `"` byte for byte (§A.1). The same rule applies to the lab loader (§4.3): never use text format on data you didn't write.
+
+**Synonyms.** Four of critwire's GBIF keys are synonyms in GBIF's checklist (Blanding's turtle, Baird's tapir, Temminck's and giant pangolins). GBIF files their records under the accepted species' `speciesKey` and keeps the key you asked for in `taxonKey`, so joining on `speciesKey` alone loses them: 2,385 records in the spike. The rule is the species whose key is the record's `speciesKey`, else its `taxonKey`; a record that matches no species, or two different ones, fails the load (§4.2).
+
+**Data:** three made-up records in GBIF's format (a few of its 50 columns), which the first block holds; `species` (the GBIF keys); `occurrences` for the GeoPandas round trip.
+
+**Key code:** the file and the staging step. The `COPY` statement is the spike's, character for character (`SP/etl/gbif_load.py`). The block prints nothing; the next two run it first.
+
+```python
+# q: e2-file
+# status: ran
+HEADER = ["gbifID", "datasetKey", "species", "countryCode", "locality", "decimalLatitude", "decimalLongitude",
+          "coordinateUncertaintyInMeters", "year", "month", "taxonKey", "speciesKey", "basisOfRecord", "license",
+          "recordedBy"]
+ROWS = [
+    ["1000000001", "00000000-0000-0000-0000-000000000001", "Sarcophilus harrisii", "AU",
+     r"Cradle Mountain\Dove Lake track", "-41.6512", "145.9601", "30", "2019", "3", "2435451", "2435451",
+     "HUMAN_OBSERVATION", "CC_BY_4_0", 'A. "Sam" Lee'],
+    ["1000000002", "00000000-0000-0000-0000-000000000001", "Smutsia temminckii", "ZA",
+     r"Pafuri\north bank", "-22.4310", "31.2120", "", "2021", "", "5786560", "5219630",
+     "HUMAN_OBSERVATION", "CC0_1_0", ""],
+    ["1000000003", "00000000-0000-0000-0000-000000000002", "Tapirus bairdii", "CR",
+     "Sirena station", "8.4800", "-83.5900", "250", "", "", "2440897", "8395500",
+     "MACHINE_OBSERVATION", "CC_BY_4_0", r"\N"],
+]
+# Three made-up records in GBIF's SIMPLE_CSV form: tab-separated, no quoting, an empty field for "no value".
+GBIF_FILE = ("\n".join("\t".join(row) for row in [HEADER, *ROWS]) + "\n").encode()
+
+# Every column text: the file is read exactly as delivered, and typed in SQL afterwards.
+CREATE_STAGING = "CREATE TEMP TABLE gbif_staging (" + ", ".join(f'"{h}" text' for h in HEADER) + ")"
+# CSV mode with a quote character that never occurs, so backslashes and double quotes stay data; '' is NULL.
+COPY_STAGING = ("COPY gbif_staging FROM STDIN "
+                "(FORMAT csv, DELIMITER E'\\t', QUOTE E'\\b', NULL '', HEADER true)")
+
+
+def stage(cur, data, copy_sql=COPY_STAGING):
+    """Load the file's bytes into gbif_staging, streamed: COPY reads what it is sent, in pieces of any size."""
+    cur.execute(CREATE_STAGING)
+    with cur.copy(copy_sql) as copy:
+        for start in range(0, len(data), 1 << 20):
+            copy.write(data[start:start + (1 << 20)])
+```
+
+```text
+-- result: e2-file · python · sha256 e3b0c44298fc
+```
+
+The same bytes through both `COPY` forms:
+
+```python
+# q: e2-copy
+# status: ran
+# after: py-connect, e2-file
+TEXT_FORMAT = "COPY gbif_staging FROM STDIN (FORMAT text, HEADER true)"  # the default format: wrong for this file
+
+
+def show(value):
+    """NULL, '' and a line break made visible."""
+    return "NULL" if value is None else "''" if value == "" else value.replace("\n", "↵")
+
+
+with connect() as conn, conn.cursor() as cur:
+    read = {}
+    for name, sql in [("csv form", COPY_STAGING), ("text format", TEXT_FORMAT)]:
+        stage(cur, GBIF_FILE, sql)
+        read[name] = cur.execute('SELECT "gbifID", locality, "recordedBy" FROM gbif_staging ORDER BY "gbifID"').fetchall()
+        cur.execute("DROP TABLE gbif_staging")
+    conn.rollback()
+
+sent = {row[0]: (row[4], row[14] or None) for row in ROWS}
+print("COPY | gbifID | locality | recordedBy | read")
+for name, rows in read.items():
+    for gbif_id, locality, recorded_by in rows:
+        same = (locality, recorded_by) == sent[gbif_id]
+        print(f"{name} | {gbif_id} | {show(locality)} | {show(recorded_by)} | {'as sent' if same else 'CHANGED'}")
+```
+
+```text
+-- result: e2-copy · python · sha256 23d586f7e1b2
+COPY | gbifID | locality | recordedBy | read
+csv form | 1000000001 | Cradle Mountain\Dove Lake track | A. "Sam" Lee | as sent
+csv form | 1000000002 | Pafuri\north bank | NULL | as sent
+csv form | 1000000003 | Sirena station | \N | as sent
+text format | 1000000001 | Cradle MountainDove Lake track | A. "Sam" Lee | CHANGED
+text format | 1000000002 | Pafuri↵orth bank | '' | CHANGED
+text format | 1000000003 | Sirena station | NULL | CHANGED
+```
+
+Typed, matched to species and checked, in one transaction. A `TEMP` table can't have a foreign key to a lasting table, so here the species rule's `NOT NULL` does that job; in your own schema, declare the key.
+
+```python
+# q: e2-typed
+# status: ran
+# after: py-connect, e2-file
+TYPED = """
+CREATE TEMP TABLE occurrences_new (
+  id                       bigint PRIMARY KEY,
+  species_id               integer NOT NULL,
+  dataset_key              uuid NOT NULL,
+  license                  text NOT NULL,
+  basis_of_record          text NOT NULL,
+  longitude                double precision NOT NULL CHECK (longitude BETWEEN -180 AND 180),
+  latitude                 double precision NOT NULL CHECK (latitude BETWEEN -90 AND 90),
+  coordinate_uncertainty_m double precision,
+  country_code_gbif        text,
+  year                     integer,
+  month                    integer CHECK (month BETWEEN 1 AND 12),
+  geom                     geometry(Point, 4326) GENERATED ALWAYS AS (ST_Point(longitude, latitude, 4326)) STORED
+)"""
+
+# The species whose GBIF key is the record's speciesKey, else its taxonKey (a synonym keeps our key in taxonKey).
+INSERT_TYPED = """
+INSERT INTO occurrences_new
+SELECT g."gbifID"::bigint, coalesce(by_species.id, by_taxon.id), g."datasetKey"::uuid,
+       replace(replace(g.license, 'CC_BY_4_0', 'CC BY 4.0'), 'CC0_1_0', 'CC0 1.0'), g."basisOfRecord",
+       g."decimalLongitude"::float8, g."decimalLatitude"::float8, g."coordinateUncertaintyInMeters"::float8,
+       g."countryCode", g.year::integer, g.month::integer
+FROM gbif_staging AS g
+LEFT JOIN species AS by_species ON by_species.gbif_id = g."speciesKey"::bigint
+LEFT JOIN species AS by_taxon ON by_taxon.gbif_id = g."taxonKey"::bigint
+"""
+
+# One row per check, with the rows that break it. Any non-zero count rolls the whole load back.
+CHECKS = """
+SELECT 'rows typed = rows staged', (SELECT count(*) FROM gbif_staging) - (SELECT count(*) FROM occurrences_new)
+UNION ALL SELECT 'speciesKey and taxonKey name two species', count(*) FROM gbif_staging AS g
+  JOIN species AS a ON a.gbif_id = g."speciesKey"::bigint
+  JOIN species AS b ON b.gbif_id = g."taxonKey"::bigint
+  WHERE a.id <> b.id
+UNION ALL SELECT 'license not CC0 1.0 or CC BY 4.0', count(*) FROM occurrences_new
+  WHERE license NOT IN ('CC0 1.0', 'CC BY 4.0')
+"""
+
+with connect() as conn, conn.cursor() as cur:
+    with conn.transaction():  # all or nothing: an exception inside rolls every statement back
+        stage(cur, GBIF_FILE)
+        cur.execute(TYPED)
+        cur.execute(INSERT_TYPED)  # a record that maps to no species fails NOT NULL here, and so the load
+        failed = [(name, n) for name, n in cur.execute(CHECKS).fetchall() if n]
+        if failed:
+            raise SystemExit(f"load refused, nothing kept: {failed}")
+        by_species_only = cur.execute(
+            'SELECT count(*) FROM gbif_staging AS g JOIN species AS s ON s.gbif_id = g."speciesKey"::bigint').fetchone()[0]
+        rows = cur.execute("""
+            SELECT o.id, s.scientific_name, o.license, o.coordinate_uncertainty_m, o.year, ST_AsText(o.geom)
+            FROM occurrences_new AS o JOIN species AS s ON s.id = o.species_id ORDER BY o.id""").fetchall()
+
+print(f"joined on speciesKey alone: {by_species_only} of {len(rows)} records")
+print("id | species | license | uncertainty_m | year | geom")
+for row in rows:
+    print(" | ".join("NULL" if v is None else str(v) for v in row))
+```
+
+```text
+-- result: e2-typed · python · sha256 dcec9a549c6f
+joined on speciesKey alone: 1 of 3 records
+id | species | license | uncertainty_m | year | geom
+1000000001 | Sarcophilus harrisii | CC BY 4.0 | 30.0 | 2019 | POINT(145.9601 -41.6512)
+1000000002 | Smutsia temminckii | CC0 1.0 | NULL | 2021 | POINT(31.212 -22.431)
+1000000003 | Tapirus bairdii | CC BY 4.0 | 250.0 | NULL | POINT(-83.59 8.48)
+```
+
+GeoPandas to and from PostGIS, for work that is easier in Python. `read_postgis` turns a query into a GeoDataFrame, `to_postgis` writes one back as a table (it needs SQLAlchemy and GeoAlchemy2, both in §3.3's environment). The write stays in the connection's transaction, which the block rolls back.
+
+```python
+# q: e2-geopandas
+# status: ran
+import geopandas as gpd
+from sqlalchemy import create_engine, text
+
+# The same lab connection for SQLAlchemy: libpq's PG* variables pick the database, the options set the search path.
+engine = create_engine("postgresql+psycopg://", connect_args={"options": "-c search_path=learn_curriculum,public"})
+
+with engine.connect() as conn:
+    devils = gpd.read_postgis(
+        text("SELECT o.id, o.year, o.geom FROM occurrences AS o JOIN species AS s ON s.id = o.species_id "
+             "WHERE s.scientific_name = 'Sarcophilus harrisii' ORDER BY o.id"),
+        conn, geom_col="geom")
+    print(f"read: {len(devils)} rows, CRS {devils.crs.to_string()}, geometry {devils.geom_type.iloc[0]}")
+
+    metres = devils.to_crs(3577)  # GDA94 / Australian Albers, an equal-area projection in metres
+    metres["geom"] = metres.buffer(1000)  # a 1 km circle around each record
+    metres.to_postgis("devil_buffers", conn, if_exists="fail", index=False)  # in this transaction
+    n, srid, kind, km2 = conn.execute(text(
+        "SELECT count(*), min(ST_SRID(geom)), min(GeometryType(geom)), round(sum(ST_Area(geom))::numeric / 1e6, 1) "
+        "FROM devil_buffers")).one()
+    print(f"written: {n} rows, SRID {srid}, {kind}, {km2} km² in all")
+    conn.rollback()  # the lab leaves learn_curriculum as it found it
+```
+
+```text
+-- result: e2-geopandas · python · sha256 2cde0f113ff8
+read: 2000 rows, CRS EPSG:4326, geometry Point
+written: 2000 rows, SRID 3577, POLYGON, 6273.1 km² in all
+```
+
+**Expected:** CSV mode keeps all three records as sent. Text format changes all three, silently: the backslash in `Cradle Mountain\Dove Lake track` disappears, `Pafuri\north bank` gains a line break, the empty `recordedBy` becomes an empty string instead of NULL, and the recorder `\N` becomes NULL. Typed, the three records map to the devil, Temminck's pangolin and Baird's tapir, but a join on `speciesKey` alone finds only the devil: the other two are synonyms. Missing values arrive as NULL, and each record has a point in SRID 4326. GeoPandas reads the devil's 2,000 records as points in EPSG:4326 and writes 2,000 one-kilometre buffers in EPSG:3577 (Australian Albers, in metres), 6,273.1 km² together.
+
+#### e3 · idempotent
+
+**Tool:** Py + PG · **Time:** 2.0 h · **Prereqs:** e2
+
+**Goal:** a pipeline you can re-run without fear. An operation is **idempotent** when doing it twice leaves the same result as doing it once. Schedules retry, people re-run a failed job, and two runs overlap, so a load that appends rows doubles them. The tools:
+- **Keys and upserts** (d4): rows carry their source's key (GBIF's `gbifID`) and are inserted with `ON CONFLICT`, so a second copy updates instead of adding.
+- **Replace in one transaction:** the lab loader drops and rebuilds its schema inside one transaction (§4.3), so a run either replaces everything or changes nothing.
+- **Run ids from content:** a run's id is the checksum of its input. The same input is recognized and skipped; a changed one loads under a new id. A clock-based id would load the same input twice.
+- **Deterministic choices:** "any 2,000 records" must be the same 2,000 every time. `LIMIT` without `ORDER BY`, or `random()` without a seed, is not. The lab sample orders each species' records by the `md5` of their id (§4.2), which every engine computes the same way.
+- **Deterministic outputs:** rows in key order and stable formats, so the same input gives byte-identical files and a sha256 proves that nothing changed.
+
+**Data:** `occurrences`; the browser's copy of the same sample.
+
+**Key code:** the sample's selection rule, 100 records per species by `md5`, in the browser:
+
+```sql
+-- q: e3-pick
+-- status: ran
+WITH ranked AS (
+  SELECT id, species_id,
+         row_number() OVER (PARTITION BY species_id ORDER BY md5(CAST(id AS VARCHAR))) AS pick
+  FROM occurrences
+)
+SELECT count(*) AS records,
+       count(DISTINCT species_id) AS species,
+       md5(string_agg(CAST(id AS VARCHAR), ',' ORDER BY id)) AS ids_md5
+FROM ranked
+WHERE pick <= 100;
+```
+
+```text
+-- result: e3-pick · 1 row · sha256 3db586ec53fe
+records | species | ids_md5
+4766 | 71 | 6e68cc753c01b6150c7308b6de8e85b6
+```
+
+The same SQL in PostgreSQL. Its result block has the same hash as the browser's: the same rows, in two engines.
+
+```sql
+-- q: e3-pick-pg
+-- status: ran
+-- engine: postgis
+WITH ranked AS (
+  SELECT id, species_id,
+         row_number() OVER (PARTITION BY species_id ORDER BY md5(CAST(id AS VARCHAR))) AS pick
+  FROM occurrences
+)
+SELECT count(*) AS records,
+       count(DISTINCT species_id) AS species,
+       md5(string_agg(CAST(id AS VARCHAR), ',' ORDER BY id)) AS ids_md5
+FROM ranked
+WHERE pick <= 100;
+```
+
+```text
+-- result: e3-pick-pg · 1 row · sha256 3db586ec53fe
+records | species | ids_md5
+4766 | 71 | 6e68cc753c01b6150c7308b6de8e85b6
+```
+
+A plain append against an idempotent load, run twice each, then once more with a corrected input:
+
+```python
+# q: e3-rerun
+# status: ran
+# after: py-connect
+import hashlib
+
+SETUP = """
+CREATE TEMP TABLE devil_records (id bigint PRIMARY KEY, year integer, longitude float8, latitude float8);
+CREATE TEMP TABLE devil_records_naive (id bigint, year integer, longitude float8, latitude float8);
+CREATE TEMP TABLE load_runs (run_id text PRIMARY KEY, input_rows integer NOT NULL)
+"""
+
+
+def checksum(cur, table):
+    """md5 of every row in key order: two loads that leave the same rows give the same value."""
+    return cur.execute(f"SELECT count(*), md5(coalesce(string_agg(t::text, E'\\n' ORDER BY t::text), '')) "
+                       f"FROM {table} AS t").fetchone()
+
+
+def load(cur, batch):
+    """Idempotent: the run id is the input's sha256, so the same input is loaded once; rows upsert by key."""
+    run_id = hashlib.sha256("\n".join(",".join(map(str, r)) for r in batch).encode()).hexdigest()
+    if cur.execute("INSERT INTO load_runs VALUES (%s, %s) ON CONFLICT DO NOTHING RETURNING run_id",
+                   (run_id, len(batch))).fetchone() is None:
+        return run_id, "already loaded: skipped"
+    cur.executemany("INSERT INTO devil_records VALUES (%s, %s, %s, %s) ON CONFLICT (id) DO UPDATE "
+                    "SET year = EXCLUDED.year, longitude = EXCLUDED.longitude, latitude = EXCLUDED.latitude", batch)
+    return run_id, f"loaded {len(batch)} rows"
+
+
+with connect() as conn, conn.cursor() as cur:
+    cur.execute(SETUP)
+    batch = cur.execute("""SELECT o.id, o.year, o.longitude, o.latitude FROM occurrences AS o
+                           JOIN species AS s ON s.id = o.species_id
+                           WHERE s.scientific_name = 'Sarcophilus harrisii' ORDER BY o.id""").fetchall()
+    for run in (1, 2):
+        cur.executemany("INSERT INTO devil_records_naive VALUES (%s, %s, %s, %s)", batch)
+        rows, md5 = checksum(cur, "devil_records_naive")
+        print(f"append, run {run}: {rows} rows, md5 {md5[:12]}")
+    for run in (1, 2):
+        run_id, what = load(cur, batch)
+        rows, md5 = checksum(cur, "devil_records")
+        print(f"idempotent, run {run}: run {run_id[:12]}, {what}; {rows} rows, md5 {md5[:12]}")
+    corrected = [(batch[0][0], 1999, *batch[0][2:]), *batch[1:]]  # next week the publisher adds one missing year
+    run_id, what = load(cur, corrected)
+    rows, md5 = checksum(cur, "devil_records")
+    print(f"idempotent, run 3 (one year added): run {run_id[:12]}, {what}; {rows} rows, md5 {md5[:12]}")
+    conn.rollback()
+```
+
+```text
+-- result: e3-rerun · python · sha256 584e78cd936d
+append, run 1: 2000 rows, md5 7eda803a3b13
+append, run 2: 4000 rows, md5 78fe836dfda5
+idempotent, run 1: run a6672cf0d579, loaded 2000 rows; 2000 rows, md5 7eda803a3b13
+idempotent, run 2: run a6672cf0d579, already loaded: skipped; 2000 rows, md5 7eda803a3b13
+idempotent, run 3 (one year added): run 35146b2ce8b7, loaded 2000 rows; 2000 rows, md5 6294a8e1f695
+```
+
+**The case study: critwire itself** (`AGENTS.md`). Each step has one writer and refuses to run on stale input:
+
+```sh
+pnpm ingest gbif   # the only step that uses the network: normalized responses, keys sorted, one `retrieved` time per file
+pnpm derive        # pure: no network, no clock; refuses raw snapshots older than the data they describe
+pnpm build         # rebuilds the database from data/ each time; refuses derived files that differ from a fresh derive
+```
+
+- Snapshots are committed to git, so any past build can be repeated from its commit.
+- `derive` reads only files, so its outputs are a function of its inputs, and the build checks that by deriving again.
+- The deploy swaps in the new `dist/` only if the whole build passed.
+- A GBIF derived-dataset DOI is minted only for a pushed commit, tagged, so the deposit it points at never moves; an interrupted registration is re-run and reconciles with GBIF's listing before it posts again (`pnpm gbif:register`).
+
+**Expected:** both engines pick 4,766 records of 71 species (100 each, or all of a species' records when it has fewer), with the same md5 over their ids, `6e68cc753c01b6150c7308b6de8e85b6`. The append holds 2,000 rows after one run and 4,000 after two. The idempotent load holds 2,000 rows after both runs with the same md5, because the second run's input has the same checksum and is skipped. The corrected input gets a new run id and loads: still 2,000 rows, one changed, and a new md5.
+
+#### e4 · quality-provenance
+
+**Tool:** Py + PG · **Time:** 2.0 h · **Prereqs:** e3
+
+**Goal:** know what you loaded, and who to thank for it.
+- **Checks written as SQL:** each check is a query that counts the rows breaking one rule, so 0 means it passed, and the same query finds the rows when it didn't. A **reject** check stops the load (e2 runs those inside its transaction); a **flag** check is reported, and the rows stay with a note, because a strange value isn't always a wrong one.
+- **License filters:** keep only what you may publish. critwire keeps CC0 1.0 and CC BY 4.0, using each record's *effective* license, the more restrictive of its own and its dataset's (§4.2).
+- **Provenance:** every row can be traced to its source. Here that is the download's DOI, each record's `dataset_key` and the `datasets` table of titles, publishers and DOIs (§4.5).
+- **Citations:** GBIF's terms ask you to cite the download's DOI. CC BY 4.0 records also require credit to their dataset. When you publish a subset, cite a **derived dataset**: you register the subset's per-dataset record counts with GBIF and receive a DOI that credits every dataset in it. critwire does this for its countries field (`pnpm gbif:register`) and, from L1, for the lab sample (§4.2).
+
+**Data:** `occurrences`, `datasets`, `species`.
+
+**Key code:** the checks, run on the lab sample:
+
+```sql
+-- q: e4-checks
+-- status: ran
+-- engine: postgis
+SELECT 'coordinates out of range' AS check_name, 'reject' AS action, count(*) AS records
+FROM occurrences WHERE longitude NOT BETWEEN -180 AND 180 OR latitude NOT BETWEEN -90 AND 90
+UNION ALL
+SELECT 'coordinates exactly 0, 0', 'reject', count(*)
+FROM occurrences WHERE longitude = 0 AND latitude = 0
+UNION ALL
+SELECT 'license not CC0 1.0 or CC BY 4.0', 'reject', count(*)
+FROM occurrences WHERE license NOT IN ('CC0 1.0', 'CC BY 4.0')
+UNION ALL
+SELECT 'dataset with no title or publisher', 'reject', count(*)
+FROM occurrences AS o JOIN datasets AS d ON d.dataset_key = o.dataset_key
+WHERE coalesce(trim(d.title), '') = '' OR coalesce(trim(d.publisher), '') = ''
+UNION ALL
+SELECT 'GBIF country code with no countries row', 'reject', count(*)
+FROM occurrences WHERE country_code_gbif IS NOT NULL AND country_code IS NULL AND country_code_gbif NOT IN ('ZZ', 'XZ')
+UNION ALL
+SELECT 'year after the download (2026)', 'reject', count(*)
+FROM occurrences WHERE year > 2026
+UNION ALL
+SELECT 'year before 1700', 'flag', count(*)
+FROM occurrences WHERE year < 1700
+UNION ALL
+SELECT 'coordinate uncertainty over 100 km', 'flag', count(*)
+FROM occurrences WHERE coordinate_uncertainty_m > 100000
+UNION ALL
+SELECT 'no coordinate uncertainty', 'flag', count(*)
+FROM occurrences WHERE coordinate_uncertainty_m IS NULL
+UNION ALL
+SELECT 'repeats a record: same species, dataset, place, year and month', 'flag', count(*) - count(DISTINCT (species_id, dataset_key, longitude, latitude, year, month))
+FROM occurrences
+ORDER BY records DESC, check_name;
+```
+
+```text
+-- result: e4-checks · 10 rows · sha256 2ac7773edbfd
+check_name | action | records
+no coordinate uncertainty | flag | 24002
+repeats a record: same species, dataset, place, year and mon… | flag | 15643
+coordinate uncertainty over 100 km | flag | 297
+year before 1700 | flag | 10
+GBIF country code with no countries row | reject | 0
+… 5 more rows
+```
+
+Which datasets the Tasmanian devil's and the jaguar's records come from, and under which license:
+
+```sql
+-- q: e4-credits
+-- status: ran
+-- engine: postgis
+SELECT d.title, d.publisher, d.doi, o.license, count(*) AS records
+FROM occurrences AS o
+JOIN species AS s ON s.id = o.species_id
+JOIN datasets AS d ON d.dataset_key = o.dataset_key
+WHERE s.scientific_name IN ('Sarcophilus harrisii', 'Panthera onca')
+GROUP BY d.title, d.publisher, d.doi, o.license
+ORDER BY records DESC, d.doi, o.license;
+```
+
+```text
+-- result: e4-credits · 33 rows · sha256 80800d03f9ae
+title | publisher | doi | license | records
+Jaguar Movement Database: a GPS-based movement dataset of th… | Instituto Chico Mendes de Conservação da Biodiversidade - IC… | 10.71819/lr0yrg | CC BY 4.0 | 1948
+Tasmanian Natural Values Atlas | Department of Natural Resources and Environment Tasmania | 10.15468/rtnb4m | CC BY 4.0 | 1413
+Tasmanian Museum and Art Gallery provider for OZCAM | Tasmanian Museum and Art Gallery | 10.15468/ijp8p9 | CC BY 4.0 | 569
+Feline and other mammals monitoring 2025 in Tres Mesas wind … | ENGIE | 10.15468/ze7rdr | CC BY 4.0 | 8
+ICMBio \| Dados de ocorrência de espécies do Sistema de Autor… | Instituto Chico Mendes de Conservação da Biodiversidade - IC… | 10.71819/wrldzz | CC BY 4.0 | 8
+… 28 more rows
+```
+
+The derived-dataset registration for that subset: the request body, built but never posted.
+
+```python
+# q: e4-derived
+# status: ran
+# after: py-connect
+import json
+
+DOWNLOAD_DOI = "10.15468/dl.fbpk9w"  # the GBIF download the records came from (§4.2)
+
+with connect() as conn:
+    counts = dict(conn.execute("""
+        SELECT CAST(o.dataset_key AS text), count(*)
+        FROM occurrences AS o JOIN species AS s ON s.id = o.species_id
+        WHERE s.scientific_name IN ('Sarcophilus harrisii', 'Panthera onca')
+        GROUP BY o.dataset_key ORDER BY o.dataset_key""").fetchall())
+
+# The body of POST https://api.gbif.org/v1/derivedDataset: what GBIF needs to mint a DOI that credits each dataset.
+body = {
+    "title": "Tasmanian devil and jaguar records used in my analysis",
+    "description": "A subset of GBIF download 10.15468/dl.fbpk9w: open records of two species.",
+    "originalDownloadDOI": DOWNLOAD_DOI,
+    "sourceUrl": "https://example.org/where-my-subset-is-published",
+    "relatedDatasets": counts,
+}
+print(f"relatedDatasets: {len(counts)} datasets, {sum(counts.values())} records")
+for key, n in sorted(counts.items(), key=lambda kv: (-kv[1], kv[0]))[:3]:
+    print(f"  {key}: {n}")
+print(f"body: {len(json.dumps(body))} bytes, ready to POST with your GBIF account")
+```
+
+```text
+-- result: e4-derived · python · sha256 da576d8cb1de
+relatedDatasets: 33 datasets, 4000 records
+  06e98c3e-2801-4d29-8e81-943a13bb3785: 1948
+  2985efd1-45b1-46de-b6db-0465d2834a5a: 1413
+  4ffe66a0-6c8b-11de-8226-b8a03c50a862: 569
+body: 1718 bytes, ready to POST with your GBIF account
+```
+
+**Expected:** every reject check is 0: the sample was loaded with them (§A.1), and they guard each refresh. The flags are what a reviewer reads:
+- 24,002 records (59.4 %) give no coordinate uncertainty, so their precision is unknown;
+- 15,643 repeat another record's species, dataset, place, year and month. That can be several animals, several visits, or one record published twice: inspect them, don't delete them;
+- 297 records are uncertain by more than 100 km, too coarse for the 5 km cells of s2–s5;
+- 10 Tasmanian devil records are dated 1599, before Europeans first sighted Tasmania (1642). The year is a placeholder or an error, and s1 already met it.
+
+The devil and the jaguar have 4,000 records from 33 datasets. 29 datasets supply CC BY 4.0 records (3,992) and must be credited, led by the Jaguar Movement Database (1,948 GPS-collar records), the Tasmanian Natural Values Atlas (1,413) and the Tasmanian Museum and Art Gallery (569). The 4 CC0 datasets (8 records) ask for no credit, and are credited anyway. The registration body lists the same 33 datasets and 4,000 records, with `originalDownloadDOI` set to the download's DOI.
+
+#### e5 · schedule
+
+**Tool:** Py · **Time:** 1.5 h · **Prereqs:** e4
+
+**Goal:** a pipeline that runs without you, and tells you when it breaks.
+- **A job is one command** with an exit code: 0 for success, anything else for failure. The scheduler only sees that code, so a job catches nothing silently, logs the traceback and exits 1.
+- **Logs:** one line per step, with a timestamp, to a file or the journal.
+- **Alerts:** on Linux, systemd's `OnFailure=` starts another unit when a job fails, and cron mails a job's output to `MAILTO`. Windows' Task Scheduler records the last result, and can be set to restart a failed task.
+- **Incremental loads** move only what changed. A file with a published checksum tells you whether anything changed at all. Records that changed or were deleted upstream are the hard part: an append-only increment never sees them. For a sample this size, the honest increment is a whole reload, in one transaction, when the input's checksum changes. A weekly GBIF refresh is a new download with a new DOI, so it is a new run of e1–e4.
+
+**Data:** `/learn/data/manifest.json` and `datasets.csv`; the lab's `datasets` table, for the shape of its copy.
+
+**Key code:** a weekly refresh job: it compares the published checksum with the one it loaded last, reloads in one transaction when they differ, checks the row count, and exits 1 with the traceback on any failure.
+
+```python
+# q: e5-job
+# status: ran
+# after: py-connect
+import hashlib
+import json
+import logging
+import os
+import sys
+import urllib.request
+
+BASE = os.environ.get("LEARN_BASE", "https://critwire.com")
+FILE = "datasets.csv"
+# A scheduled job writes a timestamp on every line (add %(asctime)s); this lab leaves it out so its output can be checked.
+logging.basicConfig(stream=sys.stdout, level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
+log = logging.getLogger("refresh")
+
+
+def read(url):
+    with urllib.request.urlopen(url, timeout=60) as r:
+        return r.read()
+
+
+def refresh(conn):
+    """One scheduled run: nothing to do if the published file is unchanged; else reload it in one transaction, checked."""
+    entry = json.loads(read(f"{BASE}/learn/data/manifest.json"))["files"][FILE]
+    last = conn.execute("SELECT sha256 FROM refresh_state WHERE file = %s", (FILE,)).fetchone()
+    if last is not None and last[0] == entry["sha256"]:
+        log.info("%s unchanged (sha256 %s): nothing to do", FILE, entry["sha256"][:12])
+        return
+    data = read(f"{BASE}/learn/data/{FILE}")
+    if hashlib.sha256(data).hexdigest() != entry["sha256"]:
+        raise RuntimeError(f"{FILE} doesn't match its manifest")
+    with conn.transaction():  # a failed check below leaves the previous copy and state as they were
+        conn.execute("TRUNCATE my_datasets")
+        with conn.cursor().copy("COPY my_datasets FROM STDIN (FORMAT csv, HEADER true)") as copy:
+            copy.write(data)
+        rows = conn.execute("SELECT count(*) FROM my_datasets").fetchone()[0]
+        if rows != entry["rows"]:
+            raise RuntimeError(f"loaded {rows} rows of {FILE}; the manifest says {entry['rows']}")
+        conn.execute("INSERT INTO refresh_state VALUES (%s, %s) ON CONFLICT (file) DO UPDATE SET sha256 = EXCLUDED.sha256",
+                     (FILE, entry["sha256"]))
+    log.info("%s loaded: %d rows, sha256 %s", FILE, rows, entry["sha256"][:12])
+
+
+def main():
+    """Exit 0 on success, 1 on any failure, with the traceback in the log: cron mails it, systemd marks the unit failed."""
+    try:
+        with connect() as conn:
+            # The lab's tables are TEMP, so it leaves learn_curriculum as it was; a real job's live in its own schema.
+            conn.execute("CREATE TEMP TABLE my_datasets (LIKE datasets)")
+            conn.execute("CREATE TEMP TABLE refresh_state (file text PRIMARY KEY, sha256 text NOT NULL)")
+            for run in (1, 2):  # this week's run, then next week's with nothing new
+                log.info("run %d", run)
+                refresh(conn)
+    except Exception:
+        log.exception("refresh failed")
+        return 1
+    return 0
+
+
+raise SystemExit(main())
+```
+
+```text
+-- result: e5-job · python · sha256 886a4128154e
+INFO refresh: run 1
+INFO refresh: datasets.csv loaded: 400 rows, sha256 3bd8c1726239
+INFO refresh: run 2
+INFO refresh: datasets.csv unchanged (sha256 3bd8c1726239): nothing to do
+```
+
+Scheduling it. On Linux with cron, every Monday at 04:17:
+
+```sh
+crontab -e
+# then add this line:
+17 4 * * 1 cd "$HOME/etl" && .venv/bin/python -I refresh.py >> refresh.log 2>&1
+```
+
+Or a systemd user timer, which catches up on a run missed while the machine was off (`Persistent=true`) and logs to the journal:
+
+```sh
+mkdir -p ~/.config/systemd/user
+cat > ~/.config/systemd/user/refresh.service <<'EOF'
+[Unit]
+Description=Weekly lab data refresh
+OnFailure=refresh-failed.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=%h/etl
+ExecStart=%h/etl/.venv/bin/python -I refresh.py
+EOF
+cat > ~/.config/systemd/user/refresh-failed.service <<'EOF'
+[Unit]
+Description=Tell someone the refresh failed
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/logger -p user.err "refresh failed: journalctl --user -u refresh.service"
+EOF
+cat > ~/.config/systemd/user/refresh.timer <<'EOF'
+[Unit]
+Description=Run the refresh every Monday
+
+[Timer]
+OnCalendar=Mon *-*-* 04:17:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+EOF
+systemctl --user daemon-reload
+systemctl --user enable --now refresh.timer
+loginctl enable-linger "$USER"     # run it even when you aren't logged in
+journalctl --user -u refresh.service   # the log
+```
+
+`refresh-failed.service` only writes to the system log here. To be told on your phone or by email, replace its `ExecStart` with your mail or push command.
+
+On Windows, with Task Scheduler, from PowerShell:
+
+```powershell
+$action = New-ScheduledTaskAction -Execute "$HOME\etl\.venv\Scripts\python.exe" -Argument "-I refresh.py" -WorkingDirectory "$HOME\etl"
+$trigger = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Monday -At 4:17am
+$settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -RestartCount 2 -RestartInterval (New-TimeSpan -Minutes 30)
+Register-ScheduledTask -TaskName "Lab data refresh" -Action $action -Trigger $trigger -Settings $settings
+Get-ScheduledTaskInfo -TaskName "Lab data refresh"   # LastTaskResult 0 means success
+```
+
+**Expected:** the first run loads `datasets.csv`, 400 rows, and records its sha256 (`3bd8c1726239…`); the second finds the same checksum and does nothing. Both runs log one line per step and the job exits 0. Break it, for example by pointing `LEARN_BASE` at a server that isn't running, and the job logs the traceback and exits 1: cron mails the output, systemd marks the unit failed and starts `refresh-failed.service`, and Task Scheduler shows a non-zero last result.
 
 ### 5.6 Power BI
 
-(S26 writes p2–p4 and the outline around p1's key code; §A.3 checks the files it reads.)
+Four modules, seven hours, in Power BI Desktop (§3.5), on the star d6 builds: eight CSV files under `https://critwire.com/learn/data/star/` (§A.3). These are outlines, in §5.3's form; build mission L5 (§9) writes them in full. Power BI runs only on Windows, so its blocks are `untested` here, and the tests check what they can instead (§0): every file a block names, against the star's manifest. Each DAX block is a query for Power BI's DAX query view (Home → DAX query view): its `DEFINE MEASURE` lines can be added to the model from there, and its `EVALUATE` returns a small table. A PostGIS block beside it computes the same table from the same star with `star.sql` (d6), so its result is the table Power BI should show. §10 asks the owner for one check on Windows.
 
 #### p1 · power-query
+
+**Tool:** PBI · **Time:** 1.5 h · **Prereqs:** d6
+
+**Goal:** get the star into Power BI with Power Query, so it loads the same way on any computer and refreshes in the Power BI Service. Power Query records each step as a line of M, its formula language, so a load is code you can read, copy and review:
+- `Web.Contents` fetches the file. A fixed base URL, with the file name in `RelativePath`, is a source the Service can refresh on a schedule with anonymous access; a URL built by joining text is a dynamic source, which it won't refresh (§3.5).
+- `Csv.Document` parses it, with UTF-8 and CSV quoting stated, then `Table.PromoteHeaders` takes the first row as column names.
+- `Table.TransformColumnTypes` sets each column's type **with an explicit culture**. Without one, Power Query parses numbers and dates in the computer's locale, so `12.5` means something else on a computer set to a comma decimal.
+- Codes are text. `country_code` holds `NA` (Namibia), which other tools read as "not available", and keys like `dataset_key` are identifiers, never numbers to add.
+
+One function serves all eight tables, so the rules above are written once (DRY, in M).
+
+**Data:** the eight star files and `star/manifest.json`, whose columns and types the queries follow (§6.3).
 
 **Key code:**
 
@@ -6208,6 +7049,234 @@ let
 in
     Typed
 ```
+
+The largest table's query. Name the query `fact_records`; whole numbers are `Int64.Type`, decimals `type number`, and an empty cell (a record with no month, or no stated uncertainty) becomes null:
+
+```m
+// q: p1-fact-records
+// status: untested: Power BI is Windows-only
+// input: star/fact_records.csv
+LoadStar("fact_records", {
+    {"record_id", Int64.Type}, {"species_id", Int64.Type}, {"country_code", type text},
+    {"dataset_key", type text}, {"year", Int64.Type}, {"month", Int64.Type},
+    {"basis_of_record", type text}, {"license", type text}, {"longitude", type number},
+    {"latitude", type number}, {"coordinate_uncertainty_m", type number}
+})
+```
+
+**Expected:** eight tables, with the manifest's rows: `dim_species` 76, `dim_country` 251, `dim_dataset` 400, `dim_year` 177, `fact_records` 40,395, `fact_species_country` 472, `dim_habitat_class` 75 and `fact_country_habitat` 35. In `fact_records`, 2,289 records have year `-1` (unknown) and none has country `ZZ`; `month` and `coordinate_uncertainty_m` hold nulls; `NA` stays Namibia. Refresh repeats the load from critwire.com and gives the same tables until the files change.
+
+#### p2 · model
+
+**Tool:** PBI · **Time:** 2.0 h · **Prereqs:** p1
+
+**Goal:** turn eight tables into one model that filters correctly. In Model view, each fact gets a relationship to each of its dimensions:
+- **Cardinality many-to-one** (`*:1`): many fact rows point at one dimension row, by the key d6 declared.
+- **Filter direction single:** a filter flows from the dimension to the fact. Choosing a country in a slicer filters `fact_records` and `fact_country_habitat`, never the other way round. Both directions invite ambiguous paths and slow, surprising totals; keep them for the rare case that needs them.
+- **Conformed dimensions:** `dim_country` and `dim_species` are shared by the facts, so one slicer filters all of them at once (d6).
+- **Facts are never related to each other.** Joining two facts directly multiplies their rows (d6's drill across). Each fact is summed under the shared dimension instead, which is what a model with only fact-to-dimension relationships does.
+- **The factless fact:** `fact_species_country` has no measure column; its measure is a count of its rows (species listed in a country). It answers "where does critwire list the species?", while `fact_records` answers "what was recorded where?", and the two need not agree.
+
+Power BI may create relationships on its own, from matching column names. Check each one against the table below.
+
+| From (many) | To (one) | Key |
+|---|---|---|
+| `fact_records` | `dim_species`, `dim_country`, `dim_dataset`, `dim_year` | `species_id`, `country_code`, `dataset_key`, `year` |
+| `fact_species_country` | `dim_species`, `dim_country` | `species_id`, `country_code` |
+| `fact_country_habitat` | `dim_country`, `dim_habitat_class` | `country_code`, `habitat_code` |
+
+**Data:** the eight tables from p1.
+
+**Key code:** three measures, and a query that slices both facts by continent through `dim_country`:
+
+```dax
+// q: p2-measures
+// status: untested: Power BI is Windows-only
+// input: star/fact_records.csv, star/fact_species_country.csv, star/dim_country.csv
+DEFINE
+    MEASURE fact_records[Records] = COUNTROWS ( fact_records )
+    MEASURE fact_records[Species recorded] = DISTINCTCOUNT ( fact_records[species_id] )
+    MEASURE fact_species_country[Species listed] = DISTINCTCOUNT ( fact_species_country[species_id] )
+EVALUATE
+SUMMARIZECOLUMNS (
+    dim_country[continent],
+    "Records", [Records],
+    "Species recorded", [Species recorded],
+    "Species listed", [Species listed]
+)
+ORDER BY [Records] DESC, dim_country[continent]
+```
+
+The table it should return, from the same star in PostGIS:
+
+```sql
+-- q: p2-check
+-- status: ran
+-- engine: postgis
+-- after: d6-star-dim-species, d6-star-dim-country, d6-star-dim-dataset, d6-star-dim-year, d6-star-fact-records, d6-star-fact-species-country
+SELECT c.continent,
+       r.records,
+       r.species AS species_recorded,
+       l.species AS species_listed
+FROM (SELECT DISTINCT continent FROM dim_country) AS c
+LEFT JOIN (SELECT d.continent, count(*) AS records, count(DISTINCT f.species_id) AS species
+           FROM fact_records AS f JOIN dim_country AS d ON d.country_code = f.country_code
+           GROUP BY d.continent) AS r ON r.continent = c.continent
+LEFT JOIN (SELECT d.continent, count(DISTINCT f.species_id) AS species
+           FROM fact_species_country AS f JOIN dim_country AS d ON d.country_code = f.country_code
+           GROUP BY d.continent) AS l ON l.continent = c.continent
+WHERE r.records IS NOT NULL OR l.species IS NOT NULL
+ORDER BY r.records DESC NULLS LAST, c.continent;
+```
+
+```text
+-- result: p2-check · 7 rows · sha256 022cceeadc7e
+continent | records | species_recorded | species_listed
+South America | 11308 | 18 | 17
+Africa | 10791 | 29 | 28
+North America | 9688 | 39 | 36
+Oceania | 5147 | 8 | 9
+Asia | 2985 | 21 | 20
+… 2 more rows
+```
+
+**Expected:** seven continents, the same rows as `p2-check`: South America 11,308 records, Africa 10,791, North America 9,688, Oceania 5,147, Asia 2,985, Europe 469, and 7 at sea ("Seven seas"). Antarctica and the unknown member `Unknown` (`ZZ`) have neither records nor listings, so the query leaves them out. The two facts disagree, and should: Europe has records of 19 species but critwire lists only 11 there, because critwire's countries rule withholds a country outside a species' core region that has a single record there, such as an okapi in Germany: often a captive animal or a museum specimen (`AGENTS.md`). The sample keeps those records, and `fact_records` shows them. Oceania lists 9 species but the sample has records of 8, because the listings count every open record while the sample holds at most 2,000 per species (§4.2).
+
+#### p3 · dax
+
+**Tool:** PBI · **Time:** 2.0 h · **Prereqs:** p2
+
+**Goal:** measures that stay right under any filter. A **measure** is a formula evaluated in the current filter context: the slicers, the visual's rows and columns. It is not stored per row, which is what a calculated column does.
+- `COUNTROWS` counts a table's visible rows, `DISTINCTCOUNT` a column's distinct values.
+- `CALCULATE` evaluates an expression under changed filters: here, the habitat area with the class filter set to forest.
+- `DIVIDE` returns blank instead of an error when the denominator is 0 or blank.
+- A ratio of two facts at different grains (records per record, area per country and class) works because both are filtered by the same `dim_country`. Its meaning is the honest part: records per 1,000 km² of forest measures how much recording happened per area of forest, not how many animals live there.
+
+**Data:** `fact_records`, `fact_country_habitat`, `dim_habitat_class`, `dim_country`. The habitat facts are A2's stand-ins (two countries, §4.1) until L3 loads the real summaries for every country.
+
+**Key code:**
+
+```dax
+// q: p3-measures
+// status: untested: Power BI is Windows-only
+// input: star/fact_records.csv, star/fact_country_habitat.csv, star/dim_habitat_class.csv, star/dim_country.csv
+DEFINE
+    MEASURE fact_records[Records] = COUNTROWS ( fact_records )
+    MEASURE fact_country_habitat[Forest km2] =
+        CALCULATE ( SUM ( fact_country_habitat[est_area_km2] ), dim_habitat_class[level1_name] = "Forest" )
+    MEASURE fact_records[Records per 1,000 km2 of forest] =
+        VAR forest = [Forest km2]
+        RETURN IF ( NOT ISBLANK ( forest ), 1000 * DIVIDE ( COALESCE ( [Records], 0 ), forest ) )
+EVALUATE
+FILTER (
+    ADDCOLUMNS (
+        VALUES ( dim_country[country_code] ),
+        "Records", COALESCE ( [Records], 0 ),
+        "Forest km2", [Forest km2],
+        "Records per 1,000 km2 of forest", [Records per 1,000 km2 of forest]
+    ),
+    NOT ISBLANK ( [Forest km2] )
+)
+ORDER BY dim_country[country_code]
+```
+
+The same numbers in PostGIS:
+
+```sql
+-- q: p3-check
+-- status: ran
+-- engine: postgis
+-- after: d6-star-dim-species, d6-star-dim-country, d6-star-dim-dataset, d6-star-dim-year, d6-star-fact-records, d6-star-dim-habitat-class, d6-star-fact-country-habitat
+SELECT h.country_code,
+       coalesce(r.records, 0) AS records,
+       h.forest_km2,
+       round(1000 * coalesce(r.records, 0) / h.forest_km2, 3) AS records_per_1000_km2_forest
+FROM (SELECT f.country_code, sum(f.est_area_km2) AS forest_km2
+      FROM fact_country_habitat AS f
+      JOIN dim_habitat_class AS c ON c.habitat_code = f.habitat_code
+      WHERE c.level1_name = 'Forest'
+      GROUP BY f.country_code) AS h
+LEFT JOIN (SELECT country_code, count(*) AS records FROM fact_records GROUP BY country_code) AS r
+  ON r.country_code = h.country_code
+ORDER BY h.country_code;
+```
+
+```text
+-- result: p3-check · 2 rows · sha256 66ff688f234f
+country_code | records | forest_km2 | records_per_1000_km2_forest
+AX | 0 | 233.33 | 0.000
+TT | 2 | 2865.12 | 0.698
+```
+
+**Expected:** two rows, as `p3-check`. Trinidad and Tobago has 2 records and 2,865.12 km² of forest, so 0.698 records per 1,000 km²; Åland has 233.33 km² of forest and no records, so 0. A slicer on one species changes the records but not the forest area, because `dim_species` filters `fact_records` only.
+
+#### p4 · maps-report
+
+**Tool:** PBI · **Time:** 1.5 h · **Prereqs:** p3
+
+**Goal:** a report that maps records honestly, credits its sources and refreshes by itself.
+- **Map visuals:** the Azure Maps visual places each record by `fact_records[latitude]` and `[longitude]` (set their data category to Latitude and Longitude); Microsoft recommends it over the older Bing-based Map and Filled map visuals, and your organization's admin may have to enable it. Colour by `basis_of_record` or by dataset, and the GPS collars and atlas grids of s1 become visible. To shade countries, use `dim_country[name]` with the data category Country, not the two-letter code, which a map can misread (`NA`).
+- **Honest labels:** a map of records shows where people recorded the animal. Its title says "records", gives the count and the source, and never says "range", "distribution" or "where it lives" (`AGENTS.md`). A measure writes the title, so it stays true when a slicer changes the species.
+- **Credits:** the report cites the GBIF download's DOI and the datasets with CC BY 4.0 records among those shown (e4), counted by a measure and listed in a table visual from `dim_dataset`.
+- **Publishing and refresh:** Home → Publish sends the report to the Power BI Service. Under the semantic model's settings, set the critwire.com source to Anonymous with privacy level Public, then schedule a refresh. The Service refreshes the CSV sources directly, with no gateway, because the base URL is fixed (p1).
+
+**Data:** the model from p2 and its measures.
+
+**Key code:** the title and credit measures, evaluated for the Tasmanian devil:
+
+```dax
+// q: p4-labels
+// status: untested: Power BI is Windows-only
+// input: star/fact_records.csv, star/dim_species.csv, star/dim_dataset.csv
+DEFINE
+    MEASURE fact_records[Records] = COUNTROWS ( fact_records )
+    MEASURE fact_records[Map title] =
+        SELECTEDVALUE ( dim_species[common_name], "Selected species" ) & ": "
+            & FORMAT ( [Records], "#,0" ) & " open GBIF records (where people recorded it, not its range)"
+    MEASURE fact_records[Datasets to credit] =
+        COUNTROWS (
+            CALCULATETABLE (
+                VALUES ( dim_dataset[dataset_key] ),
+                FILTER ( fact_records, fact_records[license] = "CC BY 4.0" )
+            )
+        )
+EVALUATE
+CALCULATETABLE (
+    ROW (
+        "Map title", [Map title],
+        "Records", [Records],
+        "Datasets", DISTINCTCOUNT ( fact_records[dataset_key] ),
+        "Datasets to credit", [Datasets to credit]
+    ),
+    dim_species[scientific_name] = "Sarcophilus harrisii"
+)
+```
+
+What they should return, from the same star in PostGIS:
+
+```sql
+-- q: p4-check
+-- status: ran
+-- engine: postgis
+-- after: d6-star-dim-species, d6-star-dim-country, d6-star-dim-dataset, d6-star-dim-year, d6-star-fact-records
+SELECT s.common_name || ': ' || to_char(count(*), 'FM999,999')
+         || ' open GBIF records (where people recorded it, not its range)' AS map_title,
+       count(*) AS records,
+       count(DISTINCT f.dataset_key) AS datasets,
+       count(DISTINCT f.dataset_key) FILTER (WHERE f.license = 'CC BY 4.0') AS datasets_to_credit
+FROM fact_records AS f
+JOIN dim_species AS s ON s.species_id = f.species_id
+WHERE s.scientific_name = 'Sarcophilus harrisii'
+GROUP BY s.common_name;
+```
+
+```text
+-- result: p4-check · 1 row · sha256 26cbac454e1c
+map_title | records | datasets | datasets_to_credit
+Tasmanian Devil: 2,000 open GBIF records (where people recor… | 2000 | 9 | 7
+```
+
+**Expected:** the title reads "Tasmanian Devil: 2,000 open GBIF records (where people recorded it, not its range)"; the devil's records come from 9 datasets, 7 of which supply CC BY 4.0 records and must be credited. Select another species and the title, count and credits change with it.
 
 ### 5.7 Capstone
 
