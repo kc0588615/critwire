@@ -2334,7 +2334,346 @@ VALUES (1000, 74, 'https://example.org/axolotl-2.jpg', 'All rights reserved', 'A
 - **DuckDB:** keys as here, but foreign keys only in `CREATE TABLE`, with no `CASCADE` or `SET NULL` actions; no identity columns (a `CREATE SEQUENCE` and `DEFAULT nextval('…')` do it); generated columns are virtual only; primary keys and `UNIQUE` build an index, which also makes bulk loads into keyed tables slower.
 - **SQL Server:** `IDENTITY(1, 1)` for surrogates; computed columns (`AS (…)`, `PERSISTED` to store them); a `UNIQUE` constraint allows only one `NULL` (a filtered unique index, `WHERE col IS NOT NULL`, allows many); foreign keys take `ON DELETE CASCADE | SET NULL`, and `NOCHECK` turns one off, which leaves it untrusted until it is re-checked; `CHECK` passes unknown, as here.
 
-(S19–S22 write d2–d5 here.)
+#### d2 · normalize
+
+**Tool:** B (browser) · **Time:** 2.0 h · **Prereqs:** d1
+
+**Concept:** Normalization decides which table each fact belongs in, so that every fact is stored once and the tables can't contradict themselves.
+- A **functional dependency**, written `X → Y`, says that a value of `X` fixes the value of `Y`: two rows with the same `X` always have the same `Y`. `dataset_key → title`: a dataset has one title. `genus → family`: every *Panthera* is a cat. The direction matters: two datasets can share a title, so `title → dataset_key` doesn't hold. A key is a set of columns every other column depends on.
+- A dependency is a rule about the world, which the designer states; it isn't read off the data. Rows can refute one (two rows, same `X`, different `Y`), never prove it: a rule that holds in today's rows may break with tomorrow's load. Once a table's key enforces the rule, the database refuses the row that would break it (d1).
+- A table that stores a fact in more than one place invites three **anomalies**. **Update:** a fact changed in some of its copies leaves the table saying two things. **Delete:** deleting the last row that held a fact deletes the fact (a record removed as a misidentification takes its dataset's only copy of the title with it). **Insert:** a fact can't be stored until something else exists (a dataset can't be listed before it has a record).
+- The **normal forms** remove them one kind at a time:
+  - **First normal form (1NF):** one value per cell, no lists or repeated groups of columns. A list in a cell can't be joined, counted or checked by a foreign key.
+  - **Second (2NF):** in a table whose key has several columns, no other column depends on only part of it.
+  - **Third (3NF):** no other column depends on a column that isn't a key. The short version of all three: every column depends on the key, the whole key, and nothing but the key. (**Boyce–Codd normal form** tightens 3NF for tables with several overlapping keys; critwire's tables don't have that case.)
+- Normalizing splits a table along its dependencies. The split is **lossless** when joining the parts gives back exactly the rows you started with; splitting along a real dependency always is.
+- A nested file (JSON, or Parquet with structs and lists) groups facts by how they are read: one animal with everything about it. Tables group them by what they depend on. critwire keeps both: its build loads `data/` into tables, then writes `/v1/species.{json,parquet}` nested, because a reader wants one record per animal.
+- **Denormalizing** is repeating facts on purpose, for reading: the published files, d6's star, a summary table. It is safe when the copy is rebuilt from the normalized tables every time and never edited by hand; a value that is only a count of other rows (records per dataset) stays a query.
+
+**Worked example:** How does critwire's nested record become tables? (002's lesson 14, re-run.) These queries read the published file itself, `species.parquet`, with DuckDB's own SQL: `read_parquet` opens a file, `"range".countriesWithOpenRecords` reaches into the record, and `unnest` turns a list into rows. The browser setup (§0) builds the tables with exactly these. Here is the jaguar's record, its countries one list in one cell:
+
+```sql
+-- q: d2-list
+-- status: ran
+-- DuckDB only: reads the published file, not a learners' table
+SELECT id, slug, "range".countriesWithOpenRecords AS country_codes
+FROM read_parquet('species.parquet')
+WHERE slug = 'jaguar';
+```
+
+```text
+-- result: d2-list · 1 row · sha256 2aac6d391e87
+id | slug | country_codes
+51 | jaguar | [AR, BO, BR, BZ, CO, CR, EC, GF, GT, GY, HN, MX, NI, PA, PE,…
+```
+
+1NF gives each item its own row, which is how `species_countries` is filled:
+
+```sql
+-- q: d2-unnest
+-- status: ran
+-- DuckDB only: unnest turns a list into rows
+SELECT id, unnest("range".countriesWithOpenRecords) AS country_code
+FROM read_parquet('species.parquet')
+WHERE slug = 'jaguar'
+ORDER BY country_code;
+```
+
+```text
+-- result: d2-unnest · 20 rows · sha256 b463f81200a2
+id | country_code
+51 | AR
+51 | BO
+51 | BR
+51 | BZ
+51 | CO
+… 15 more rows
+```
+
+2NF: the key of `species_countries` is (`species_id`, `country_code`). A country's name depends on `country_code` alone, so a `country_name` column there would repeat each name once per animal recorded in that country, and a rename would have to find every copy:
+
+```sql
+-- q: d2-country-copies
+-- status: ran
+SELECT c.name AS country, count(*) AS copies
+FROM species_countries AS sc
+JOIN countries AS c ON c.code = sc.country_code
+GROUP BY c.name
+ORDER BY copies DESC, country
+LIMIT 5;
+```
+
+```text
+-- result: d2-country-copies · 5 rows · sha256 10e8f33346b3
+country | copies
+United States of America | 30
+Kenya | 15
+Brazil | 12
+Colombia | 10
+Mexico | 10
+```
+
+3NF: an animal's family depends on its genus, not on the animal. So `species` stores only the genus, and the family is in the genus's `taxa` row. A flat table with a `family` column would repeat these families, and one mistyped copy would put an animal in two families:
+
+```sql
+-- q: d2-repeat
+-- status: ran
+SELECT g.parent_name AS family, count(*) AS animals
+FROM species AS s
+JOIN taxa AS g ON g.name = s.genus
+GROUP BY g.parent_name
+HAVING count(*) > 1
+ORDER BY animals DESC, family;
+```
+
+```text
+-- result: d2-repeat · 16 rows · sha256 edbe3098db04
+family | animals
+Testudinidae | 5
+Bovidae | 4
+Manidae | 4
+Canidae | 3
+Elephantidae | 3
+… 11 more rows
+```
+
+The record's `sources` is a list of structs: each item names a source, its license, when critwire retrieved it, and the fields it supplied. Does a source's license depend on the source? In the file, each source has one license, written once per animal it supplied:
+
+```sql
+-- q: d2-sources
+-- status: ran
+-- DuckDB only: sources is a list of structs in the published file
+SELECT s.source, count(DISTINCT s.license) AS licenses, min(s.license) AS license, count(*) AS copies_in_file
+FROM (SELECT unnest(sources) AS s FROM read_parquet('species.parquet'))
+GROUP BY s.source
+ORDER BY s.source;
+```
+
+```text
+-- result: d2-sources · 5 rows · sha256 02711a98b356
+source | licenses | license | copies_in_file
+Catalogue of Life | 1 | CC BY 4.0 | 69
+GBIF Backbone Taxonomy | 1 | CC BY 4.0 | 73
+GBIF.org occurrence search | 1 | CC BY 4.0 | 72
+Wikidata | 1 | CC0 1.0 | 76
+critwire base | 1 | CC BY 4.0 | 76
+```
+
+So `source → license` goes into its own table, `sources`, one row per source, and the setup's `SELECT DISTINCT` gives exactly one row each. Its primary key now holds the rule: had two animals' entries named two licenses for one source, the load would have failed instead of storing both. The file repeats each license 69 to 76 times, and that is fine, because critwire's build writes the file from its tables every time. Which source gave which field is a fact about the animal and the field together, so it goes in `species_sources`, keyed (`species_id`, `field`). Joined back, they tell where each of the jaguar's facts came from (002's lesson 15):
+
+```sql
+-- q: d2-provenance
+-- status: ran
+SELECT ss.field, ss.source_name, so.license, so.retrieved
+FROM species_sources AS ss
+JOIN sources AS so ON so.name = ss.source_name
+WHERE ss.species_id = 51
+ORDER BY ss.field;
+```
+
+```text
+-- result: d2-provenance · 8 rows · sha256 bc64a29cc0b4
+field | source_name | license | retrieved
+ids.col | Catalogue of Life | CC BY 4.0 | 2026-10-20
+ids.gbif | GBIF Backbone Taxonomy | CC BY 4.0 | 2026-10-21
+ids.inaturalist | Wikidata | CC0 1.0 | 2026-10-20
+ids.iucn | critwire base | CC BY 4.0 | NULL
+ids.ncbi | Wikidata | CC0 1.0 | 2026-10-20
+… 3 more rows
+```
+
+The taxonomy is from the Catalogue of Life, the outside ids from Wikidata and GBIF, the country list from GBIF's occurrence search. `ids.iucn` is critwire's own: critwire stores only the animal's IUCN id, never the Red List's data, whose terms don't allow republishing it.
+
+**Lab:** Is a license a fact about a record or about its dataset? GBIF gives both: every dataset declares a license, and every record carries one. If `dataset_key → license` held, the license would belong in `datasets` (3NF), stored 400 times instead of 40,395.
+1. Test the rule on the records: does any dataset have records under two licenses?
+
+```sql
+-- q: d2-fd-license
+-- status: ran
+SELECT dataset_key, count(DISTINCT license) AS licenses
+FROM occurrences
+GROUP BY dataset_key
+HAVING count(DISTINCT license) > 1
+ORDER BY dataset_key;
+```
+
+```text
+-- result: d2-fd-license · 0 rows · sha256 e80a19641b1a
+dataset_key | licenses
+```
+
+   None, in this sample. That doesn't prove the rule (Concept). The full download the sample comes from (§4.2) refutes it: the iNaturalist research-grade dataset holds 9,581 CC BY records and 3,152 CC0 records. The sample just doesn't show it, because iNaturalist declares CC BY-NC for the dataset, so none of its records passed the sample's license rule.
+2. Is the record's license the dataset's declared one?
+
+```sql
+-- q: d2-license-differs
+-- status: ran
+SELECT d.title, d.license AS dataset_license, o.license AS record_license, count(*) AS records
+FROM occurrences AS o
+JOIN datasets AS d ON d.dataset_key = o.dataset_key
+WHERE o.license <> d.license
+GROUP BY d.title, d.license, o.license
+ORDER BY records DESC, d.title;
+```
+
+```text
+-- result: d2-license-differs · 1 row · sha256 fea1b5f1953c
+title | dataset_license | record_license | records
+Natuurmuseum Brabant, Tilburg - Vertebrates | CC0 1.0 | CC BY 4.0 | 4
+```
+
+   Not always: this museum declares CC0 for its dataset and CC BY for these records. So there are two facts here, under one word. The record's license depends on the record and stays on `occurrences`; the dataset's declared license depends on the dataset and stays on `datasets`. Moving the first into `datasets` would publish these four records as CC0 and lose the credit their license asks for. (The sample's `license` is the stricter of the two, §4.2.)
+3. Now the anomalies, on a flat table: each record with its animal's name and its dataset's title and publisher, the shape a spreadsheet export has. Every record carries its dataset's title, 400 datasets' titles stored 40,395 times. And there are fewer titles than datasets: two titles are shared, so a title can't stand in for a dataset key.
+
+```sql
+-- q: d2-flat
+-- status: ran
+CREATE TABLE records_flat AS
+SELECT o.id, o.species_id, s.common_name, o.dataset_key, d.title, d.publisher, o.license
+FROM occurrences AS o
+JOIN species AS s ON s.id = o.species_id
+JOIN datasets AS d ON d.dataset_key = o.dataset_key;
+SELECT count(*) AS rows, count(DISTINCT dataset_key) AS datasets, count(DISTINCT title) AS titles,
+       count(DISTINCT publisher) AS publishers
+FROM records_flat;
+```
+
+```text
+-- result: d2-flat · 1 row · sha256 33a734ea4e5d
+rows | datasets | titles | publishers
+40395 | 400 | 398 | 217
+```
+
+```sql
+-- q: d2-shared-titles
+-- status: ran
+-- after: d2-flat
+SELECT title, count(DISTINCT dataset_key) AS datasets
+FROM records_flat
+GROUP BY title
+HAVING count(DISTINCT dataset_key) > 1
+ORDER BY title;
+```
+
+```text
+-- result: d2-shared-titles · 2 rows · sha256 c9adf8875927
+title | datasets
+Anfibios y reptiles de las regiones 30 (Parque Natural Sierr… | 2
+Order Primates | 2
+```
+
+4. An update anomaly: the museum renames its dataset, and the fix reaches one of its records. The table now gives one dataset two titles, which the same kind of query catches:
+
+```sql
+-- q: d2-update-anomaly
+-- status: ran
+-- after: d2-flat
+UPDATE records_flat
+SET title = 'Natuurmuseum Brabant - Vertebrates'
+WHERE id = (SELECT min(id) FROM records_flat WHERE title = 'Natuurmuseum Brabant, Tilburg - Vertebrates');
+SELECT dataset_key, title, count(*) AS records
+FROM records_flat
+WHERE dataset_key IN (SELECT dataset_key FROM records_flat GROUP BY dataset_key HAVING count(DISTINCT title) > 1)
+GROUP BY dataset_key, title
+ORDER BY records DESC, title;
+```
+
+```text
+-- result: d2-update-anomaly · 2 rows · sha256 845bb6fc6bac
+dataset_key | title | records
+3c2eb73a-82c8-4373-956f-1cb9473f76ba | Natuurmuseum Brabant, Tilburg - Vertebrates | 3
+3c2eb73a-82c8-4373-956f-1cb9473f76ba | Natuurmuseum Brabant - Vertebrates | 1
+```
+
+5. A delete anomaly: 84 datasets have one record in the sample. Delete those records (say they all turned out to be misidentified) and their datasets vanish from the flat table, titles, publishers and all; `datasets` still lists them:
+
+```sql
+-- q: d2-delete-anomaly
+-- status: ran
+-- after: d2-flat
+DELETE FROM records_flat
+WHERE dataset_key IN (SELECT dataset_key FROM records_flat GROUP BY dataset_key HAVING count(*) = 1);
+SELECT (SELECT count(DISTINCT dataset_key) FROM records_flat) AS datasets_in_flat,
+       (SELECT count(*) FROM datasets) AS datasets_in_table;
+```
+
+```text
+-- result: d2-delete-anomaly · 1 row · sha256 4af153eb1129
+datasets_in_flat | datasets_in_table
+316 | 400
+```
+
+**Result:** The nested record became tables along its dependencies: the country list into rows (1NF), the country's name into `countries` (2NF), the family into `taxa` and the source's license into `sources` (3NF), with the published file repeating them for readers, rebuilt each time. The license question has a two-part answer. In the sample, no dataset has records under two licenses, but the full download has one (iNaturalist), and one museum's records carry a stricter license than its dataset declares. So the record's license is a fact about the record and stays on `occurrences`; `datasets.license` is the dataset's own declaration, a different fact. The flat table showed what normalizing prevents: 40,395 copies of 400 titles, one dataset with two titles after a partial fix, and 84 datasets lost with their last records (316 left of 400). And a record count per dataset is a query, not a column: stored, it would be wrong after the next load.
+
+**Exercise:** Normalize `records_flat` (lab step 3, before the anomalies) into 3NF: `r_species (species_id, common_name)`, `r_datasets (dataset_key, title, publisher)` and `r_records (id, species_id, dataset_key, license)`, each with its primary key, and `r_records`' foreign keys to the other two. Fill them from `records_flat`, then show the split is lossless: count each table's rows, and the rows that joining the three back loses or adds compared with `records_flat` (both should be 0).
+
+**Answer:**
+
+```sql
+-- q: d2-ex
+-- status: ran
+-- after: d2-flat
+CREATE TABLE r_species (
+  species_id  INTEGER PRIMARY KEY,
+  common_name VARCHAR NOT NULL
+);
+CREATE TABLE r_datasets (
+  dataset_key VARCHAR PRIMARY KEY,
+  title       VARCHAR NOT NULL,
+  publisher   VARCHAR NOT NULL
+);
+CREATE TABLE r_records (
+  id          BIGINT PRIMARY KEY,
+  species_id  INTEGER NOT NULL REFERENCES r_species (species_id),
+  dataset_key VARCHAR NOT NULL REFERENCES r_datasets (dataset_key),
+  license     VARCHAR NOT NULL
+);
+INSERT INTO r_species SELECT DISTINCT species_id, common_name FROM records_flat;
+INSERT INTO r_datasets SELECT DISTINCT dataset_key, title, publisher FROM records_flat;
+INSERT INTO r_records SELECT id, species_id, dataset_key, license FROM records_flat;
+CREATE VIEW r_joined AS
+SELECT r.id, r.species_id, s.common_name, r.dataset_key, d.title, d.publisher, r.license
+FROM r_records AS r
+JOIN r_species AS s ON s.species_id = r.species_id
+JOIN r_datasets AS d ON d.dataset_key = r.dataset_key;
+SELECT (SELECT count(*) FROM r_species) AS species,
+       (SELECT count(*) FROM r_datasets) AS datasets,
+       (SELECT count(*) FROM r_records) AS records,
+       (SELECT count(*) FROM (SELECT * FROM records_flat EXCEPT SELECT * FROM r_joined)) AS lost,
+       (SELECT count(*) FROM (SELECT * FROM r_joined EXCEPT SELECT * FROM records_flat)) AS added;
+```
+
+```text
+-- result: d2-ex · 1 row · sha256 cd378802acf7
+species | datasets | records | lost | added
+71 | 400 | 40395 | 0 | 0
+```
+
+The `INSERT … SELECT DISTINCT` into `r_datasets` works only because `dataset_key → title, publisher` holds in `records_flat`; run after lab step 4's partial rename, it fails on the key. Your table must now refuse the rename that caused it, a second title for the museum's dataset:
+
+```sql
+-- q: d2-ex-two-titles
+-- status: ran
+-- after: d2-flat, d2-ex
+-- expect: error PRIMARY KEY or UNIQUE constraint violation
+INSERT INTO r_datasets
+SELECT dataset_key, 'Natuurmuseum Brabant - Vertebrates', publisher
+FROM r_datasets
+WHERE title = 'Natuurmuseum Brabant, Tilburg - Vertebrates';
+```
+
+```text
+-- result: d2-ex-two-titles · error: statement 1 of 1: Constraint Error: PRIMARY KEY or UNIQUE constraint violation: duplicate key "3c2eb73a-82c8-4373-956f-1cb9473f76ba"
+```
+
+**Check:** `result, any row order` for the counts; then the page runs the insert above after your answer, and it must fail on `r_datasets`' key.
+
+**Dialects:**
+- **PostgreSQL:** nested data is `jsonb` (or arrays and composite types); `jsonb_array_elements`, `jsonb_to_recordset` and `unnest(array)` turn it into rows, `->` and `->>` reach into it, and `jsonb_agg`/`jsonb_build_object` build it back for a published file.
+- **DuckDB:** `STRUCT`, `LIST` and `MAP` columns, read from Parquet or JSON (`read_json`); `unnest` and dot access as here, `to_json` and `list(…)` to nest again.
+- **SQL Server:** no list or struct types: JSON is text (SQL Server 2025 adds a `json` type), shredded with `OPENJSON(...) WITH (...)` under `CROSS APPLY` and built with `FOR JSON PATH`; `STRING_SPLIT` splits a delimited cell.
+
+(S20–S22 write d3–d5 here.)
 
 #### d6 · star
 
