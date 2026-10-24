@@ -5726,13 +5726,15 @@ k = 4: links: 4376  one-way: 600  cells with the 4th and 5th tied: 1025
 
 **Key code:**
 
-Points can't be the units for Moran's I: a record has no value to compare with its neighbours', and many records share one spot. So the records are counted into equal-area hexagons over Tasmania's main island (EPSG:3577, Australian Albers), at two cell sizes, and each cell's value is `y = ln(1 + n)`. Its centroid is kept as two plain numbers, `cx` and `cy`, so SQL and PySAL measure distances from the same coordinates. The neighbour rule is a view: two cells of one grid are neighbours when their centroids are within twice the edge length. This block runs when a PostGIS run starts, and its tables stay until the lab data is loaded again.
+Points can't be the units for Moran's I: a record has no value to compare with its neighbours', and many records share one spot. So the records are counted into equal-area hexagons over Tasmania's main island (EPSG:3577, Australian Albers), at two cell sizes, and each cell's value is `y = ln(1 + n)`. Its centroid is kept as two plain numbers, `cx` and `cy`, so SQL and PySAL measure distances from the same coordinates. The neighbour rule is a view: two cells of one grid are neighbours when their centroids are within twice the edge length. This block runs when a PostGIS run starts, and its tables stay until the lab data is loaded again. It drops them first, so running it again rebuilds them, and every download that reads them starts with it (§7.3).
 
 ```sql
 -- q: s4-cells
 -- status: ran
 -- engine: postgis
 -- boot
+DROP VIEW IF EXISTS s4_neighbours;
+DROP TABLE IF EXISTS s4_cells;
 CREATE TABLE s4_cells AS
 WITH island AS (
   SELECT (part).geom
@@ -7988,7 +7990,7 @@ Learn stays what 002 §8 designed: static pages in the same `dist/`, written by 
 | `/learn/setup/` | §3, every environment: the browser, PostGIS (Windows: Docker or the installer; then the loader), Python with `uv`, the arcpy notes, Power BI Desktop | L2; L4 adds Python |
 | `/learn/schema/`, `/learn/schema/lab/`, `/learn/schema/star/` | The three ERDs and their data dictionaries (§6), each with its SVG alone for zooming (`schema.svg`, `lab.svg`, `star.svg`) | L2 |
 | `/learn/playground/` | 002's playground on schema v2 | L2 |
-| `/learn/labs/<module>.sql`, `<module>.py`, `<module>.ipynb`; `/learn/labs/requirements.txt`; `/learn/labs/c1-feed.json`, `c1-feed.schema.json` | Downloadable lab files (7.3) | L2 (SQL), L4 (Python), L5 (the feed) |
+| `/learn/labs/<module>.sql`, `<module>.py`, `<module>.ipynb`; `/learn/labs/setup.py`, `setup.ipynb`; `/learn/labs/requirements.txt`; `/learn/labs/c1-feed.json`, `c1-feed.schema.json` | Downloadable lab files (7.3) | L2 (SQL), L4 (Python), L5 (the feed) |
 | `/learn/data/` | The lab data (§4): an index page (files, sizes, sources and licenses, DOIs, the sample's dataset table), the files, `manifest.json`, `postgis/learn_curriculum.sql`, `star/` | L1; L2 the star; L3 habitat |
 | `/learn/assets/` | The engine, the `parquet` extension mirror and the hashed app files (002 §8) | L2 |
 
@@ -8009,8 +8011,9 @@ The playground and the browser blocks use one engine start per visit (002 §8): 
 ### 7.3 Downloads
 
 The lab files are written by the build from the same blocks the pages show, so the page and the download can't disagree (E2E checks it, 7.6):
-- **`<module>.sql`**: the module's PostGIS blocks in page order, each exactly as `learn:check` runs it: its `-- after:` blocks first, the whole wrapped in `BEGIN; … ROLLBACK;`, except `-- boot` blocks (committed, as s4's cells must persist) and `-- tx: own` blocks (as written). Headers stay as comments, so every block keeps its id. It starts with §0's `pg-session` (`SET search_path`) and runs with `psql -X -d <your database> -f <module>.sql` after the loader (§4.3). No `ON_ERROR_STOP`, because some blocks show an error on purpose (`-- expect: error`, `-- fails:`), and the file says so at the top.
-- **`<module>.py`** and **`<module>.ipynb`**: the module's Python blocks, `py-connect` first, then each block once, in page order, with its `# q:` line as a comment (the notebook: one cell per block, and a Markdown cell with the block's heading). They read the lab data from `LEARN_BASE` (default `https://critwire.com`) and connect with libpq's `PG*` variables, as in §3.3.
+- **`<module>.sql`**: the module's PostGIS blocks in page order, each exactly as `learn:check` runs it: its `-- after:` blocks first, the whole wrapped in `BEGIN; … ROLLBACK;`, except `-- tx: own` blocks (as written). Headers stay as comments, so every block keeps its id. It starts with §0's `pg-session` (`SET search_path`), then the boot setup (below), and runs with `psql -X -d <your database> -f <module>.sql` after the loader (§4.3). No `ON_ERROR_STOP`, because some blocks show an error on purpose (`-- expect: error`, `-- fails:`), and the file says so at the top.
+- **The boot setup.** A download includes every `-- boot` block it needs, once, right after `pg-session` (or `py-connect`), committed, and not again at its page position. It needs one when any block in it, or an `-- after:` block they bring, names a table or view the boot block creates (the names in its `CREATE TABLE` and `CREATE VIEW` statements, matched as whole words). Today that is `s4-cells`, in `s2`, `s3`, `s4`, `s5` and `c1` (`.sql`; c1 through `s5-gistar`) and in `s2`, `s3`, `s4`, `s5` and `setup` (`.py`; `setup` for §3.3's `gpkg-export`). A boot block drops what it builds before building it, so a file runs on a freshly loaded database, and again: a learner can open any module's file first, in any order. In a `.py` the boot block runs through the helper, `with connect() as conn: conn.execute("""<its SQL>""")` (psycopg sends a statement list without parameters as one simple query, and the `with` commits it), and in a notebook it is its own cell. A miss is caught by the assembled run (7.6), which starts each file from a fresh load.
+- **`<module>.py`** and **`<module>.ipynb`**: the module's Python blocks, `py-connect` first, then the boot setup, then each block once, in page order, with its `# q:` line as a comment (the notebook: one cell per block, and a Markdown cell with the block's heading). They read the lab data from `LEARN_BASE` (default `https://critwire.com`) and connect with libpq's `PG*` variables, as in §3.3. §3.3's Python blocks (`py-smoke`, `gpkg-export`) download as `setup.py` and `setup.ipynb`.
 - **`requirements.txt`**: §3.3's pins; the setup page gives the `uv` commands.
 - **Power BI** has no download of its own: a `.pbix` can't be built or tested here (§3.5). Its data files are the star's CSVs under `/learn/data/star/`, which p1 loads by URL.
 - **The capstone's worked feed** (`c1-feed.json`, written by `c1-feed`'s query) and its schema (`c1-feed.schema.json`, §5.7).
@@ -8042,6 +8045,7 @@ One `localStorage` key, `critwire.learn.done.v1`, holds `{ "<module id>": "<YYYY
 
 A development command, never part of `build` or `deploy`. It is the repository's port of §0's runner, PostGIS and Python engines, not a second harness: once L2 lands it, the spike is frozen as this mission's evidence and never extended.
 - It runs the loader and every PostGIS block, and (from L4) every Python block in `.venv-learn`, and writes their results and `checked.json`.
+- **Then it runs every download as assembled**, as a learner would: the files the build's own assembly function writes (7.3), each on a freshly loaded database (the loader, then the file), so no file leans on another's tables. A `.sql` runs with `psql -X -f`; its `ERROR:` lines must be exactly those its `-- expect: error` and `-- fails:` statements announce, in order, each containing the announced text. A `.py` runs in `.venv-learn` from an empty folder and must exit 0. The `.ipynb` isn't run again: E2E proves its cells equal the `.py` (7.7). The leak check (§0) runs after each file. A failure names the file and its first unexpected error, and nothing is written to `checked.json`.
 - It connects with libpq's `PG*` variables, or `LEARN_PG_URL`, never `DATABASE_URL` (whose role, `critwire`, can't create roles). On critwire's server that is `critwire_dev` as `critter-ai` over the socket; on the owner's WSL, the owner's own PostGIS (`AGENTS.md`'s two machines).
 - It refuses the database `critwire` twice: by name before connecting, and by `current_database()` after, so a service file or `PGDATABASE` can't slip past. It checks for CREATEROLE first and says it's needed. The `learn_spatial` canary (§0) runs only where that schema exists.
 - L1 creates it with the loader stage; L2 adds the blocks, the cleanup lint and the in-transaction leak check (§0); L4 adds Python.
@@ -8051,7 +8055,7 @@ A development command, never part of `build` or `deploy`. It is the repository's
 The repository's harness, unchanged in kind (002 §8): `pnpm build`, then Playwright headless Chromium against the local Caddy copy of the live block on 3100; expectations computed from `data/` and the manifests, never typed in; no request leaves 3100. New specs:
 - **`learn-map`**: the map lists `curriculum.json`'s tracks and modules in order, with hours and prerequisites; planned modules aren't links; a done tick survives a reload, and "Clear progress" removes it.
 - **`learn-browser`**: every browser block runs in its page without an error; every exercise accepts its answer and rejects a fixed wrong one; every "Already know this?" check marks its module done; Reset and Stop work; moving across three module pages starts the engine once.
-- **`learn-labs`**: each PostGIS, Python and Power BI block's code on its page equals its download; the result shown equals the recorded one; every `.ipynb` cell equals its block in the `.py`; the capstone's feed validates against its schema.
+- **`learn-labs`**: each PostGIS, Python and Power BI block's code on its page equals its download; each download that names a boot block's table holds that boot block right after `pg-session` or `py-connect`; the result shown equals the recorded one; every `.ipynb` cell equals its block in the `.py`; the capstone's feed validates against its schema.
 - **`learn-data`**: every file's sha256 and size against `manifest.json`, row counts, CSV headers, the star's key coverage, the 50 MB cap, every file's `sources`, and the `/learn/data/` index listing every dataset of the sample with title, publisher and license.
 - **`schema`**: the three ERDs' drift against the databases they describe (§6), and the SVG pages.
 - **`serving`**: `.wasm` content types and the fixed modification times of `/learn/assets/` (002 §8).
