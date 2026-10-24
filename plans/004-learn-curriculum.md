@@ -34,7 +34,7 @@ Every example in this document is tested. A block is a fenced code block whose f
 
 The PostGIS labs share a database with other work, on the test server and perhaps on yours, so they follow rules the runner checks before anything runs:
 - Lab tables live in schema `learn_curriculum`, which the loader replaces as a whole (§4). Labs never name a database, and every PostGIS lab starts with `pg-session`.
-- A role or schema a lab creates is named `learn_…`, and the same block removes it: each `CREATE ROLE learn_x` or `CREATE SCHEMA learn_x` has a later `DROP` in the block, a role that was granted anything gets `DROP OWNED BY` before its `DROP ROLE`, and a `SET ROLE` has a later `RESET ROLE`. Running a block twice, or stopping a module halfway, leaves nothing behind.
+- A role or schema a lab creates is named `learn_…`, and the same block removes it: each `CREATE ROLE learn_x` or `CREATE SCHEMA learn_x` has a later `DROP` in the block, a role that was granted anything gets `DROP OWNED BY` before its `DROP ROLE`, and a `SET ROLE` has a later `RESET ROLE`; a statement marked `-- fails:` doesn't count, since it doesn't happen. Running a block twice, or stopping a module halfway, leaves nothing behind.
 - After a block's last statement, before the rollback, the runner looks for `learn_` roles and schemas that weren't there when it connected. Finding one fails the block, because your psql would have kept it.
 - Allowed only in PostGIS blocks: roles, `GRANT` and `REVOKE`, default privileges, `SET ROLE` and `CREATE`/`DROP SCHEMA`, all within `learn_` names; `SET` and `SET LOCAL`, which the rollback undoes. Refused everywhere: `ALTER SYSTEM`, `ALTER DATABASE`, `GRANT SET ON PARAMETER`, any role or schema not named `learn_…`, and the name `learn_spatial` (003's spike schema in the test database; the runner also compares its content before and after every run).
 - Creating roles needs the CREATEROLE privilege ("The PostGIS setup" below; d5).
@@ -268,7 +268,7 @@ country_shapes | 247
 … 9 more rows
 ```
 
-Labs that create roles or schemas (d1, d5) clean up in the same block, so running a block twice, or stopping halfway through a module, leaves nothing behind. Their names start with `learn_`, and creating roles needs the CREATEROLE privilege (a superuser has it; on your own install, `ALTER ROLE <you> CREATEROLE` as the superuser, once). This check creates a read-only role, reads a table as that role, and removes it again: `DROP OWNED BY` takes away what the role was granted, and only then can `DROP ROLE` remove it.
+Labs that create roles or schemas (d5) clean up in the same block, so running a block twice, or stopping halfway through a module, leaves nothing behind. Their names start with `learn_`, and creating roles needs the CREATEROLE privilege (a superuser has it; on your own install, see §3.2). This check creates a read-only role, reads a table as that role, and removes it again: `DROP OWNED BY` takes away what the role was granted, and only then can `DROP ROLE` remove it.
 
 ```sql
 -- q: pg-role-smoke
@@ -513,7 +513,7 @@ $env:PGHOST = "localhost"; $env:PGPORT = "5432"; $env:PGUSER = "postgres"; $env:
 
 **Privileges.** The `postgres` user is a superuser and can do everything the labs do. As another user you need:
 - `CREATE` on the database, to (re)create `learn_curriculum`, and ownership of that schema once it exists;
-- `CREATEROLE`, for the labs that create roles (d1, d5, §0's `pg-role-smoke`): `ALTER ROLE <you> CREATEROLE;` as the superuser, once;
+- `CREATEROLE`, for the labs that create roles (d5, §0's `pg-role-smoke`): `ALTER ROLE <you> CREATEROLE;` as the superuser, once; on PostgreSQL 16 and later also `ALTER ROLE <you> SET createrole_self_grant = 'set, inherit';`, so you can act as the roles you create (`SET ROLE`) and drop what they hold (d5 explains);
 - for the raster labs (g7, s6), the two raster settings their session sets: a superuser session, or, on PostgreSQL 15 and later, 003 §4's `pg-once` grants (`GRANT SET ON PARAMETER`); g7 gives the block.
 
 Every role or schema a lab creates is named `learn_…` and removed by the same block (§0), so the labs never leave anything in your database besides `learn_curriculum`.
@@ -3779,7 +3779,297 @@ run | inserted | updated | sightings_after
 - **DuckDB:** transactions with MVCC too, but optimistic: two transactions that change the same row don't wait; the second gets a conflict error and is rolled back. One process at a time can open a database file for writing. DDL is transactional; `INSERT … ON CONFLICT DO NOTHING | DO UPDATE` and `INSERT OR REPLACE` need a primary key or unique constraint.
 - **SQL Server:** autocommit unless `BEGIN TRANSACTION`; many errors end only the statement, not the transaction, unless `SET XACT_ABORT ON` (use it in load scripts); savepoints are `SAVE TRANSACTION name` and `ROLLBACK TRANSACTION name`. Read committed uses locks, so readers wait for writers, unless the database has `READ_COMMITTED_SNAPSHOT` on (the default in Azure SQL Database), which keeps row versions in tempdb; `SNAPSHOT` isolation is its repeatable read by versions. No `ON CONFLICT`: `MERGE … WITH (HOLDLOCK)`, or `UPDATE` then `INSERT … WHERE NOT EXISTS` in one transaction.
 
-(S22 writes d5 here.)
+#### d5 · roles
+
+**Tool:** PG · **Time:** 1.5 h · **Prereqs:** d4
+
+**Concept:** A database server decides who may do what with **roles** and **privileges**:
+- **Roles.** PostgreSQL has one kind of account, the role. A role with the `LOGIN` attribute is what other systems call a user; one without it is a group. Roles belong to the whole server (the cluster), not to one database: a role made while you work in `learn` exists in every database there, and outlives `learn_curriculum`. Other attributes say what a role may do beyond the objects it's granted: `SUPERUSER` (everything, every check skipped), `CREATEDB`, `CREATEROLE`, `BYPASSRLS`.
+- **Membership.** `GRANT learn_reporting TO learn_powerbi` makes one role a member of another. A member uses the group's privileges directly (`INHERIT`, the default) and may switch to it with `SET ROLE`. So privileges go to a group, and each person or program gets a login that is a member: adding a dashboard is one `GRANT`, and removing it touches nothing else.
+- **Owners.** Every table, schema and function has an owner, the role that made it (or that `ALTER … OWNER TO` names). The owner can do anything to it, including drop it and grant on it; everyone else gets only what is granted. You own the lab: you loaded `learn_curriculum`.
+- **Privileges** are granted per object, and a reader needs one at every level: `CONNECT` on the database, `USAGE` on the schema (to look up names in it), then `SELECT` on each table. Writing is `INSERT`, `UPDATE`, `DELETE` and `TRUNCATE`; making tables is `CREATE` on the schema. `GRANT SELECT (id, slug) ON species` grants columns only. `REVOKE` takes a privilege back.
+- **PUBLIC** is every role, present and future. By default PUBLIC may connect to a database and make temporary tables in it, use (but since PostgreSQL 15 not create in) schema `public`, and run every function. So a new role can already connect and call PostGIS; to keep it out of a database, revoke `CONNECT` from PUBLIC on that database and grant it to the roles that need it.
+- **Schemas** are folders of tables, views and functions inside one database. They group objects by purpose and by who may touch them: the lab in `learn_curriculum`, your own work in a schema of yours (a reload replaces `learn_curriculum`, §3.2), reports in a third. The `search_path` (§0) is the list of schemas a plain table name is looked up in. Anyone who can create objects in a schema on your `search_path` can put a table or function there that shadows one you meant; that is why PostgreSQL 15 stopped letting PUBLIC create in `public`.
+- **Default privileges.** `GRANT SELECT ON ALL TABLES IN SCHEMA s` grants on the tables that exist now; a table made tomorrow is covered by nothing. `ALTER DEFAULT PRIVILEGES FOR ROLE maker IN SCHEMA s GRANT SELECT ON TABLES TO reader` records a grant that PostgreSQL adds to every table `maker` creates in `s` from then on. Only tables made by that role: the defaults belong to the creator, not to the schema.
+- **Least privilege:** each role gets exactly what its job needs. A reporting tool reads; it doesn't write, make tables, or see schemas outside its job. If its password leaks, that is all the leak gives away.
+- **Removing a role.** `DROP ROLE` refuses while anything depends on the role: objects it owns, privileges granted to it, default privileges, policies. `DROP OWNED BY r` drops what `r` owns in the current database and revokes everything granted to it there; `REASSIGN OWNED BY r TO other` hands its objects over instead. Both work on one database at a time, so on a server where the role has privileges in several, run it in each.
+- **Row-level security** (RLS) filters rows per role. `ALTER TABLE t ENABLE ROW LEVEL SECURITY`, then a **policy**, `CREATE POLICY name ON t FOR SELECT TO role USING (condition)`, adds the condition to every query that role runs on `t`, so it sees only matching rows, with no view or application code to forget. Once RLS is on, a role with no policy for a command sees no rows at all (default deny). `USING` filters the rows a command reads or changes; `WITH CHECK` tests new rows (`INSERT`, `UPDATE`). Policies for the same command are combined with `OR`, unless created `AS RESTRICTIVE` (`AND`). The table's owner, superusers and `BYPASSRLS` roles skip the policies; `FORCE ROW LEVEL SECURITY` applies them to the owner too.
+
+How to look: in psql, `\du` lists roles and memberships, `\dn+` schemas with their privileges, `\dp` tables' privileges and policies, `\ddp` default privileges. In SQL, `has_table_privilege(role, table, privilege)` and its siblings (`has_schema_privilege`, `has_database_privilege`, `has_function_privilege`) answer for any role, and `information_schema.role_table_grants` lists table grants.
+
+These labs create roles, so they need the CREATEROLE privilege. The `postgres` superuser has it. On your own install, as another user, run once as the superuser: `ALTER ROLE <you> CREATEROLE;` and, on PostgreSQL 16 and later, `ALTER ROLE <you> SET createrole_self_grant = 'set, inherit';`, then reconnect. Since PostgreSQL 16, a non-superuser who creates a role may administer it but not act as it: without the second setting, the labs' `SET ROLE`, `ALTER DEFAULT PRIVILEGES FOR ROLE` and `DROP OWNED BY` are refused. (Tested on PostgreSQL 16 as a login with only those two settings.)
+
+Every lab below is one transaction, typed exactly as shown in psql, `BEGIN` to `ROLLBACK`, with `ON_ERROR_STOP` off as in d4: a statement marked `-- fails:` fails on purpose, and the savepoint before it lets the transaction go on. Each lab drops its roles before the `ROLLBACK` anyway: that is the cleanup a script you `COMMIT` on a real server needs, and roles, being the server's, are the thing most easily left behind.
+
+**Worked example:** How do I give a reporting tool read-only access to one schema and nothing else? Make a group role that holds the privileges, `learn_reporting`, and a login for the tool, `learn_powerbi`, that is a member of it. The group gets `USAGE` on `learn_curriculum` and `SELECT` on its tables; nothing else. Then act as the tool: reading works, writing and making tables don't.
+
+```sql
+-- q: d5-reporting
+-- status: ran
+-- engine: postgis
+-- tx: own
+BEGIN;
+CREATE ROLE learn_reporting NOLOGIN;
+GRANT USAGE ON SCHEMA learn_curriculum TO learn_reporting;
+GRANT SELECT ON ALL TABLES IN SCHEMA learn_curriculum TO learn_reporting;
+CREATE ROLE learn_powerbi LOGIN IN ROLE learn_reporting;
+SET ROLE learn_powerbi;
+SAVEPOINT try;
+-- fails: permission denied for table species
+UPDATE species SET common_name = 'Devil' WHERE id = 48;
+ROLLBACK TO SAVEPOINT try;
+-- fails: permission denied for schema learn_curriculum
+CREATE TABLE my_report (id integer);
+ROLLBACK TO SAVEPOINT try;
+SELECT current_user AS reading_as, count(*) AS records, count(DISTINCT species_id) AS species
+FROM occurrences;
+RESET ROLE;
+DROP OWNED BY learn_powerbi, learn_reporting;
+DROP ROLE learn_powerbi, learn_reporting;
+ROLLBACK;
+```
+
+```text
+-- result: d5-reporting · 1 row · sha256 df4ba6a052e1
+reading_as | records | species
+learn_powerbi | 40395 | 71
+```
+
+`learn_powerbi` holds no privilege of its own: it reads through its membership in `learn_reporting`. `SET ROLE` is how you test a role without its password; a superuser may switch to any role, and you, with `createrole_self_grant`, to those you made. For the real tool, give the login a password with psql's `\password learn_powerbi` (it isn't echoed or logged), and put the server's address, the database and that login in the tool's connection settings (p1).
+
+**Lab:**
+1. What the reporting role may do, as the server sees it. `has_…_privilege` answers for any role, so you needn't switch to it:
+
+```sql
+-- q: d5-privileges
+-- status: ran
+-- engine: postgis
+-- tx: own
+BEGIN;
+CREATE ROLE learn_reporting NOLOGIN;
+GRANT USAGE ON SCHEMA learn_curriculum TO learn_reporting;
+GRANT SELECT ON ALL TABLES IN SCHEMA learn_curriculum TO learn_reporting;
+SELECT object, privilege, allowed
+FROM (
+  SELECT 1 AS level, 'this database' AS object, p AS privilege,
+         has_database_privilege('learn_reporting', current_database(), p) AS allowed
+  FROM unnest(ARRAY['CONNECT', 'TEMPORARY', 'CREATE']) AS p
+  UNION ALL
+  SELECT 2, 'schema ' || s, p, has_schema_privilege('learn_reporting', s, p)
+  FROM unnest(ARRAY['learn_curriculum', 'public']) AS s, unnest(ARRAY['USAGE', 'CREATE']) AS p
+  UNION ALL
+  SELECT 3, 'table species', p, has_table_privilege('learn_reporting', 'species', p)
+  FROM unnest(ARRAY['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE']) AS p
+  UNION ALL
+  SELECT 4, 'function ST_Area(geometry)', 'EXECUTE',
+         has_function_privilege('learn_reporting', 'ST_Area(geometry)', 'EXECUTE')
+) AS checked
+ORDER BY level, object, privilege;
+DROP OWNED BY learn_reporting;
+DROP ROLE learn_reporting;
+ROLLBACK;
+```
+
+```text
+-- result: d5-privileges · 13 rows · sha256 4550419dc70c
+object | privilege | allowed
+this database | CONNECT | true
+this database | CREATE | false
+this database | TEMPORARY | true
+schema learn_curriculum | CREATE | false
+schema learn_curriculum | USAGE | true
+… 8 more rows
+```
+
+The two grants show as `SELECT` on the table and `USAGE` on `learn_curriculum`. Everything else that is true comes from PUBLIC: connecting, temporary tables, `USAGE` on `public` and every function. That is harmless for reading, but "nothing else" also means other databases on the server: there, revoke `CONNECT` from PUBLIC. As the database's owner, on a server you run (the tests never change a database's privileges, so this block isn't run here; `learn` is your lab database):
+
+```sql
+-- q: d5-database
+-- status: untested: changes the database's own privileges, which the tests never do
+-- engine: postgis
+REVOKE CONNECT, TEMPORARY ON DATABASE learn FROM PUBLIC;
+GRANT CONNECT ON DATABASE learn TO learn_reporting;
+ALTER ROLE learn_powerbi SET default_transaction_read_only = on;
+```
+
+The last line is a guard against mistakes, not a lock: every session of that login starts read-only, so a privilege granted by mistake doesn't turn into a write, but the session itself may switch it off. Settings like this belong to the login; members don't inherit them from a group.
+
+2. Default privileges. The loading job, `learn_etl`, owns a schema of report tables, `learn_reports`, and the reporting role reads them. Grant on all tables, make another, then set default privileges and make a third:
+
+```sql
+-- q: d5-defaults
+-- status: ran
+-- engine: postgis
+-- tx: own
+BEGIN;
+CREATE ROLE learn_etl NOLOGIN;
+CREATE ROLE learn_reporting NOLOGIN;
+GRANT USAGE ON SCHEMA learn_curriculum TO learn_etl;
+GRANT SELECT ON occurrences TO learn_etl;
+CREATE SCHEMA learn_reports AUTHORIZATION learn_etl;
+GRANT USAGE ON SCHEMA learn_reports TO learn_reporting;
+SET ROLE learn_etl;
+CREATE TABLE learn_reports.report_1_by_year AS
+SELECT year, count(*) AS records FROM occurrences WHERE year IS NOT NULL GROUP BY year;
+GRANT SELECT ON ALL TABLES IN SCHEMA learn_reports TO learn_reporting;
+CREATE TABLE learn_reports.report_2_by_species AS
+SELECT species_id, count(*) AS records FROM occurrences GROUP BY species_id;
+RESET ROLE;
+ALTER DEFAULT PRIVILEGES FOR ROLE learn_etl IN SCHEMA learn_reports
+  GRANT SELECT ON TABLES TO learn_reporting;
+SET ROLE learn_etl;
+CREATE TABLE learn_reports.report_3_by_country AS
+SELECT country_code, count(*) AS records FROM occurrences GROUP BY country_code;
+RESET ROLE;
+SELECT tablename AS table_name, tableowner AS owner,
+       has_table_privilege('learn_reporting', format('%I.%I', schemaname, tablename), 'SELECT') AS reporting_can_read
+FROM pg_tables
+WHERE schemaname = 'learn_reports'
+ORDER BY tablename;
+DROP SCHEMA learn_reports CASCADE;
+DROP OWNED BY learn_etl, learn_reporting;
+DROP ROLE learn_etl, learn_reporting;
+ROLLBACK;
+```
+
+```text
+-- result: d5-defaults · 3 rows · sha256 637b64b91525
+table_name | owner | reporting_can_read
+report_1_by_year | learn_etl | true
+report_2_by_species | learn_etl | false
+report_3_by_country | learn_etl | true
+```
+
+The grant on all tables covered the one table that existed; the second was made after it and nobody can read it, the usual "the dashboard broke after last night's load". The third was covered by the default privileges, because `learn_etl` made it. Had you made it yourself, they wouldn't apply: name the role that really creates the tables in `FOR ROLE`. `\ddp` lists the defaults; the fix for tables already missed is one more `GRANT … ON ALL TABLES`. `DROP SCHEMA … CASCADE` removes the reports; `DROP OWNED BY learn_etl` would have removed them too, since it owns them.
+
+3. Why `DROP ROLE` alone fails. A role that was granted anything can't be dropped:
+
+```sql
+-- q: d5-drop-role
+-- status: ran
+-- engine: postgis
+-- tx: own
+BEGIN;
+CREATE ROLE learn_reporting NOLOGIN;
+GRANT USAGE ON SCHEMA learn_curriculum TO learn_reporting;
+GRANT SELECT ON species, occurrences TO learn_reporting;
+SAVEPOINT before_drop;
+-- fails: role "learn_reporting" cannot be dropped because some objects depend on it
+DROP ROLE learn_reporting;
+ROLLBACK TO SAVEPOINT before_drop;
+SELECT table_name, privilege_type
+FROM information_schema.role_table_grants
+WHERE grantee = 'learn_reporting'
+ORDER BY table_name;
+DROP OWNED BY learn_reporting;
+DROP ROLE learn_reporting;
+ROLLBACK;
+```
+
+```text
+-- result: d5-drop-role · 2 rows · sha256 6be36802af13
+table_name | privilege_type
+occurrences | SELECT
+species | SELECT
+```
+
+The error's detail lists what holds the role: `privileges for schema learn_curriculum`, then each table. `DROP OWNED BY` revokes them all at once; listing them by hand and revoking each works too, but misses what you didn't list.
+
+4. A taste of row-level security. Two partners, one in Australia and one in Brazil, may each read only the records from their country; a third role has `SELECT` but no policy. Each role writes what it sees into a temporary table (granted `INSERT` for this), so one query can compare them:
+
+```sql
+-- q: d5-rls
+-- status: ran
+-- engine: postgis
+-- tx: own
+BEGIN;
+CREATE ROLE learn_partner_au NOLOGIN;
+CREATE ROLE learn_partner_br NOLOGIN;
+CREATE ROLE learn_no_policy NOLOGIN;
+GRANT USAGE ON SCHEMA learn_curriculum TO learn_partner_au, learn_partner_br, learn_no_policy;
+GRANT SELECT ON occurrences TO learn_partner_au, learn_partner_br, learn_no_policy;
+ALTER TABLE occurrences ENABLE ROW LEVEL SECURITY;
+CREATE POLICY partner_au ON occurrences FOR SELECT TO learn_partner_au USING (country_code = 'AU');
+CREATE POLICY partner_br ON occurrences FOR SELECT TO learn_partner_br USING (country_code = 'BR');
+CREATE TEMPORARY TABLE seen (reader text PRIMARY KEY, records bigint, species bigint, countries bigint);
+GRANT INSERT ON seen TO learn_partner_au, learn_partner_br, learn_no_policy;
+INSERT INTO seen
+SELECT '(you, the owner)', count(*), count(DISTINCT species_id), count(DISTINCT country_code) FROM occurrences;
+SET ROLE learn_partner_au;
+INSERT INTO seen
+SELECT current_user, count(*), count(DISTINCT species_id), count(DISTINCT country_code) FROM occurrences;
+SET ROLE learn_partner_br;
+INSERT INTO seen
+SELECT current_user, count(*), count(DISTINCT species_id), count(DISTINCT country_code) FROM occurrences;
+SET ROLE learn_no_policy;
+INSERT INTO seen
+SELECT current_user, count(*), count(DISTINCT species_id), count(DISTINCT country_code) FROM occurrences;
+RESET ROLE;
+SELECT reader, records, species, countries FROM seen ORDER BY records DESC, reader;
+DROP OWNED BY learn_partner_au, learn_partner_br, learn_no_policy;
+ALTER TABLE occurrences DISABLE ROW LEVEL SECURITY;
+DROP ROLE learn_partner_au, learn_partner_br, learn_no_policy;
+ROLLBACK;
+```
+
+```text
+-- result: d5-rls · 4 rows · sha256 391fc1e17327
+reader | records | species | countries
+(you, the owner) | 40395 | 71 | 106
+learn_partner_br | 5033 | 14 | 1
+learn_partner_au | 4636 | 5 | 1
+learn_no_policy | 0 | 0 | 0
+```
+
+The same query, `count(*) FROM occurrences`, gives each role a different answer, and none of them asked for a country. You, the owner, skip the policies and see every record. The role with `SELECT` and no policy sees nothing: with RLS on, no policy means no rows. `DROP OWNED BY` dropped both policies, since each named only its role. A policy can also read a table, `USING (country_code IN (SELECT country_code FROM partner_countries WHERE role_name = current_user))`, so one policy serves every partner; index the columns it filters on, because it runs inside every query.
+
+**Result:** A group role with `USAGE` on one schema and `SELECT` on its tables, and a login that is its member, reads the 40,395 records and is refused writing and making tables. Its other abilities come from PUBLIC (connect, temporary tables, `public`, functions), which a server you run can revoke per database. `GRANT … ON ALL TABLES` covers only tables that exist; default privileges cover the tables a named role makes later. `DROP ROLE` fails while the role holds privileges, and `DROP OWNED BY` clears them. With row-level security, the Australian partner saw 4,636 records, the Brazilian 5,033, a role without a policy none, and the owner all of them.
+
+**Exercise:** The Tasmanian devil project's dashboard needs a role, `learn_devil_dashboard`, that reads the species list and the devil's records (species 48), and nothing else: no other species' records, no other lab table, no writing. Create it, prove that reading `datasets` and updating a record are refused, and show what it sees in `occurrences` and `species`. Clean up as the labs do.
+
+**Answer:** `USAGE` on the schema and `SELECT` on the two tables; a policy limits `occurrences` to species 48. `species` has no policy and no RLS, so all its rows are readable.
+
+```sql
+-- q: d5-ex
+-- status: ran
+-- engine: postgis
+-- tx: own
+BEGIN;
+CREATE ROLE learn_devil_dashboard NOLOGIN;
+GRANT USAGE ON SCHEMA learn_curriculum TO learn_devil_dashboard;
+GRANT SELECT ON species, occurrences TO learn_devil_dashboard;
+ALTER TABLE occurrences ENABLE ROW LEVEL SECURITY;
+CREATE POLICY devil_only ON occurrences FOR SELECT TO learn_devil_dashboard USING (species_id = 48);
+SET ROLE learn_devil_dashboard;
+SAVEPOINT try;
+-- fails: permission denied for table datasets
+SELECT count(*) FROM datasets;
+ROLLBACK TO SAVEPOINT try;
+-- fails: permission denied for table occurrences
+UPDATE occurrences SET month = 7 WHERE id = 6004132305;
+ROLLBACK TO SAVEPOINT try;
+SELECT count(*) AS records, count(DISTINCT species_id) AS species_with_records,
+       (SELECT count(*) FROM species) AS species_rows
+FROM occurrences;
+RESET ROLE;
+DROP OWNED BY learn_devil_dashboard;
+ALTER TABLE occurrences DISABLE ROW LEVEL SECURITY;
+DROP ROLE learn_devil_dashboard;
+ROLLBACK;
+```
+
+```text
+-- result: d5-ex · 1 row · sha256 bae58d1ab786
+records | species_with_records | species_rows
+2000 | 1 | 76
+```
+
+**Check:** As your role, `occurrences` shows 2,000 records of 1 species and `species` all 76 rows; reading `datasets` and the `UPDATE` both fail with `permission denied`; after your block, `SELECT count(*) FROM pg_roles WHERE rolname LIKE 'learn\_%'` is 0 and `\dp occurrences` shows no policy. If `datasets` was readable, you granted `ON ALL TABLES`; if the role saw 40,395 records, RLS isn't on (or you checked as yourself, the owner, instead of after `SET ROLE`).
+
+**Dialects:**
+- **PostgreSQL:** roles are server-wide, users and groups alike; schema `public` is no longer writable by PUBLIC since 15; `ALTER DEFAULT PRIVILEGES` per creating role; predefined roles such as `pg_read_all_data` (14+) read every table in every database, too broad for "one schema"; a non-superuser's `CREATEROLE` gives only `ADMIN` on the roles it makes since 16 (`createrole_self_grant`); RLS since 9.5; views check their owner's privileges unless `security_invoker` (15+).
+- **DuckDB:** no users, roles or `GRANT`: whoever can open the database file can read it. Access is the file's permissions, or opening it read only (`ATTACH 'lab.duckdb' (READ_ONLY)`, `duckdb -readonly`); schemas exist and group tables, without privileges.
+- **SQL Server:** a login belongs to the server and a user to one database; fixed database roles such as `db_datareader`; `GRANT SELECT ON SCHEMA::reports TO reporting` covers tables created in the schema later, so there is nothing like default privileges to set; `DENY` overrides any grant; row-level security is a security policy with a predicate function (2016+).
 
 #### d6 · star
 
