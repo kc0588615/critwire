@@ -1123,6 +1123,10 @@ Planner, 2026-10-23. T14's 27 units → 30 steps; all ten modules stay in full. 
   - Draft the Summary under the `###` headings V10 names: the curriculum map, lab datasets, reused and dropped, vault overlap, the briefs with session estimates, the owner's choices, plus verification results and artifact paths.
   - Check: every V section passes; transcript in `$M/verify/verify-<UTC>.log`.
 
+- [ ] S31. Astra code MF1 + SC1: downloads carry the shared boot setup, and are tested as assembled. 004 §7.3: every `<module>.sql` that reads a `-- boot` block's table (s2, s3, s5, c1; §3.3's `gpkg-export` and every Python download reading `s4_cells` likewise) includes that boot block after `pg-session`, idempotent (`DROP … IF EXISTS` first, or `CREATE … IF NOT EXISTS`), so a learner can open any module's file first. §7.6/§7.7 + L2 and L4 briefs: `learn:check` (or E2E) also runs each assembled download on a freshly loaded database and refuses unexpected errors. Check: grep 004 for every module whose blocks read `s4_cells`/`s4_neighbours`/`s5_gistar` and confirm the rule covers it; Guard; V7–V8.
+- [ ] S32. Astra code MF2: untested blocks never run from a download. 004 §7.3: a block with `status: untested` is written into `.sql`/`.py` commented out, with its reason, and into `.ipynb` as a Markdown cell holding the code (so `e1-submit` can't submit a GBIF download or stop on missing credentials); the learner runs it by hand. Applies to d4's two-session demos and g7's IUCN appendix too. L2/L4 briefs say so. Check: list every `untested` block in 004 and confirm each is covered; Guard; V7–V8.
+- [ ] S33. Astra code MF3: freshness covers what a block executes. 004 §7.5: a block's key hashes its own source plus every block it runs with: its `-- after:` chain (transitively), the `-- boot` blocks, `pg-session`/`py-connect`; plus manifest, loader, checker sources, `requirements.txt`. L2/L4 briefs' freshness lines updated. Check: Guard; V7–V8.
+
 ## Verification
 
 Run from the worktree as one bash session; it writes its own transcript. No lint script exists (Baseline), so `pnpm typecheck` is the static check.
@@ -1438,6 +1442,18 @@ Only the spike harness is tested in isolation, because every "ran" claim rests o
 
 ## Code review (Astra)
 
+Run 2026-10-24 (`astra-review --code origin/main`, base c305f87), exit 0. All 3 MUST-FIX confirmed against 004 and taken as S31–S33; the SHOULD-CONSIDER is folded into S31.
+
+VERDICT: APPROVE_WITH_CHANGES
+
+MUST-FIX:
+1. `plans/004-learn-curriculum.md:8012` — Downloads omit shared boot setup. `s2.sql` and `s2.py` read `s4_cells`, but the loader excludes it and g6 only uses CTEs. The runner creates it automatically; learners following module order get “relation does not exist.” Include shared setup in the download workflow and test from a freshly loaded database.
+2. `plans/004-learn-curriculum.md:8013` — Concatenating every Python block makes `e1.py` execute `e1-submit` unconditionally. Without GBIF credentials it stops before the checksum exercise; with credentials, each run submits another real download. Keep this explicitly untested, externally mutating example behind an opt-in entry point.
+3. `plans/004-learn-curriculum.md:8039` — Freshness hashes exclude dependency blocks. Changing an `-- after:` dependency, `py-connect`, or `s4-cells` leaves dependent results marked current despite changing their execution. Hash every executed dependency and boot block, or hash the complete block collection.
+
+SHOULD-CONSIDER:
+1. Test generated SQL/Python downloads themselves from clean state. Page/download text equality and isolated block checks cannot establish that assembled downloads work.
+
 ## Release
 
 ## Decisions
@@ -1549,6 +1565,7 @@ Only the spike harness is tested in isolation, because every "ran" claim rests o
 - 2026-10-24 20:46 UTC: S28. 5 briefs `plans/briefs/critwire-learn-l{1-data,2-site,3-gis,4-stats-etl,5-powerbi-capstone}.md` (ops format: start comment with base/precondition/chain/estimate, 6 headings, needs from previous, 004 as design + fix-in-same-commit rule, L1 applies the AGENTS.md copy line); 004 §9 (chain table, order, same-data rule, queueing like queue-learn.sh, Windows checks, superseded list), §4.2 download reuse; dated Superseded line atop b1/b2/c/d (+2 lines each, 0 deleted). Checks: 6 headings × 5 briefs, §9 names the 5 in order, estimates 146–176 (= T11 item 7); `--check $ERDS` 200 blocks, 0 failures. Guard: scope plans/ only, typecheck + 66 tests, dist = baseline, canary same, no leak, spike 1.66 GB, ports free, no credential.
 - 2026-10-24 20:52 UTC: S29. 004 §8 vault overlap (15 rows, titles only, fast path), §10 owner's choices (10 items, table + recommendation/cost each); completeness pass. Check: V4 headers, V7, V8 pass; `--check $ERDS` 200 blocks 0 failures, 3 ERDs match; Guard ok (scope, additions-only, typecheck, 66 tests, dist = Baseline, canary, no leak, 1.66 GB, ports free, no credential).
 - 2026-10-24 21:12 UTC: S30. Summary drafted (7 V10 headings); full Verification at 1f76c9d: VERIFY_OK (typecheck, 66 tests, dist = Baseline, E2E 20/20, 200 blocks 0 failures, 3 ERDs, spikes ETL/Moran/star ok, spike 205 + py 33, V7–V9 ok); transcript `$M/verify/verify-20261024T2053Z.log`. No fixes needed.
+- 2026-10-24 21:40 UTC: Astra code review (`--code origin/main`), exit 0: APPROVE_WITH_CHANGES, 3 MUST-FIX confirmed against 004 (§7.3 downloads/boot, untested `e1-submit` in `e1.py`, §7.5 freshness omits deps) → S31–S33; SC1 folded into S31. Plan only, no code change.
 
 ## Summary
 
@@ -1611,3 +1628,7 @@ Full `## Verification` run 2026-10-24 20:53–21:10 UTC at `1f76c9d`: every V0�
 - 004 blocks (this mission's E2E: DuckDB-WASM in headless Chromium, PostGIS 3.4.2 in `critwire_dev`, Python 3.12.3 venv): 200 run, 0 failures, 0 differences (`$M/queries.log`); 3 ERDs match catalogs/manifest. 10 SQL/Python blocks `untested` with reasons (2 need two sessions, 4 wait for L3's habitat data, 1 changes db privileges, 1 IUCN appendix, 1 real GBIF download, 1 ArcGIS Pro); 6 Power BI blocks untested, inputs `keys=ok`.
 - Spikes: ETL (download DOI `10.15468/dl.fbpk9w`, 394,532 rows loaded twice, md5 same; sample files reproduce), Moran (SQL = PySAL: I 0.273296, z 15.177858, max |Δ| 1.06e-12), star export (8 files, PostGIS = DuckDB by value). Spike 205/205 TS + 33 Python tests. ERD renders `$SP/erd/{schema,lab,star}.{svg,png}`. Evidence: `$SP/out/{python-env,lab-data,loader,etl-postgis,moran,star-export}/`, commands in `$SP/README.md`.
 - Data rules: no Red List categories, no IUCN download, no credential, no vault text; `critwire_dev` clean (learn_spatial = Baseline, no `learn_` leak).
+
+### Code review (Astra)
+
+APPROVE_WITH_CHANGES (2026-10-24). 3 MUST-FIX on 004 §7.3/§7.5 (downloads miss the shared `s4-cells` boot block; `e1.py` would run untested `e1-submit`; freshness keys omit dependency blocks), taken as S31–S33. SHOULD-CONSIDER (test assembled downloads from a clean database) folded into S31.
