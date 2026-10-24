@@ -23,7 +23,7 @@ Every example in this document is tested. A block is a fenced code block whose f
   - `-- params: [<value>, …]` (DuckDB only): JSON values for the last statement's `?` placeholders, as a page binds a learner's input.
   - `-- needs: raster` (PostGIS): the block uses PostGIS raster, so the run first checks the raster library and its settings (g7, s6). Raster functions anywhere else are refused.
   - `-- boot` (PostGIS): runs once when the runner connects, before every other block, and is committed. It builds fixtures later blocks read (s4's hexagon grids); its tables are listed `lab-made` on the lab ERD (§6.2).
-  - `-- tx: own` (PostGIS): the runner doesn't wrap the block. It runs its own `BEGIN` … `COMMIT` or `ROLLBACK`, as typed in psql (d4). Afterwards the runner checks that the block ended its transaction, left the session as it found it, and left `learn_curriculum` unchanged.
+  - `-- tx: own` (PostGIS): the runner doesn't wrap the block. It runs its own `BEGIN` … `COMMIT` or `ROLLBACK`, as typed in psql (d4). Afterwards the runner checks that the block ended its transaction, left the session as it found it, and left `learn_curriculum` unchanged. Inside one, a statement whose comment line says `-- fails: <text>` must fail with an error containing `<text>`, and the block goes on, as psql does when you type without `ON_ERROR_STOP`; any other error fails the block. Its result is the last statement that returned rows, so a block can show what it built and then roll it back or drop it.
   - `# timeout: <seconds>` (Python): when the block is stopped; 60 by default.
   - `-- show: cards` is not a test header: it stays in the SQL learners see, and the page shows the result as animal cards (002 §8).
 - **Every other SQL block runs in a transaction the runner rolls back,** so each starts from the same database and the order of modules doesn't matter. Results must be deterministic: rows ordered by a unique key, `random()` only after `setseed()`, no clock; Python prints with explicit formats, never a DataFrame's repr.
@@ -3276,7 +3276,510 @@ Limit (actual rows=20 loops=1)
 - **DuckDB:** stores tables by column and keeps a min-max summary (a zonemap) of every column in every row group automatically, BRIN's idea built in, so it scans and skips rather than seeks. `CREATE INDEX` builds an ART index, used for primary keys, `UNIQUE` and very selective equality lookups only; the spatial extension adds an R-tree (`USING RTREE`); `EXPLAIN ANALYZE` prints the plan with timings.
 - **SQL Server:** a clustered index *is* the table, stored in key order (one per table); nonclustered indexes point to it (the plan's Key Lookup is PostgreSQL's fetch from the table), with `INCLUDE` columns and filtered indexes (`WHERE …`); columnstore indexes skip row groups by their min-max, as BRIN does; spatial indexes are grids, not trees; statistics are created and updated automatically, and `SET STATISTICS IO ON` with the actual execution plan shows the pages read.
 
-(S21–S22 write d4–d5 here.)
+#### d4 · transactions
+
+**Tool:** PG · **Time:** 2.0 h · **Prereqs:** d3
+
+**Concept:** A **transaction** is a group of statements the database treats as one change: either all of it happens or none of it does. Its four promises are called **ACID**:
+- **Atomicity:** all or nothing. If anything fails before `COMMIT`, or you type `ROLLBACK`, every change the transaction made is undone. PostgreSQL also undoes `CREATE TABLE`, `DROP TABLE` and `DROP SCHEMA` (DDL is transactional), which several databases don't.
+- **Consistency:** each transaction moves the database from one state where every constraint holds (d1) to another. A statement that would break a constraint fails, and so does its transaction.
+- **Isolation:** transactions that run at the same time don't see each other's unfinished work. How much they see of each other's *finished* work is the isolation level (below).
+- **Durability:** once `COMMIT` returns, the change survives a crash: PostgreSQL wrote it to its write-ahead log first.
+
+How you work with them:
+- **Autocommit.** psql, like most clients, commits every statement on its own unless you type `BEGIN`. A script of ten statements is ten transactions: if the seventh fails, the first six stay. One statement is always atomic, though: an `INSERT … SELECT` that fails on its last row inserts nothing.
+- **An error aborts the transaction.** Inside `BEGIN`, after a failed statement PostgreSQL refuses everything (`current transaction is aborted, commands ignored until end of transaction block`) until you type `ROLLBACK`. `COMMIT` of an aborted transaction rolls back too. In a script, `\set ON_ERROR_STOP on` makes psql stop at the first error, as critwire's lab file does (§4.3).
+- **Savepoints** mark a point inside a transaction: `SAVEPOINT name`, then `ROLLBACK TO SAVEPOINT name` undoes only what came after it and clears the error, so the transaction can go on. psql's `\set ON_ERROR_ROLLBACK interactive` puts a savepoint before every statement you type by hand.
+- **MVCC** (multi-version concurrency control) is how PostgreSQL isolates transactions without making readers wait. A row is stored as **versions**; each records the transaction that created it (the hidden column `xmin`) and the one that deleted it (`xmax`). An `UPDATE` writes a new version and marks the old one deleted; it doesn't overwrite. Each statement reads through a **snapshot**, a list of which transactions had committed when it started, and sees only the versions those made. So a reader sees the old version while a writer works on the new one, and neither waits. Old versions no one can see any more are removed later by `VACUUM` (autovacuum runs it for you).
+- **Isolation levels.** **Read committed**, PostgreSQL's default, takes a new snapshot for every statement: two `SELECT`s in one transaction can see different data if someone committed in between. **Repeatable read** takes one snapshot for the whole transaction, and refuses to update a row that someone else changed since (`could not serialize access`, SQLSTATE `40001`): the application retries the transaction. **Serializable** goes further and refuses any outcome that no one-after-the-other order of the transactions could give; retry the same way.
+- **Locks.** MVCC doesn't make writers wait for readers, but a writer waits for another writer of the same row, until that one commits or rolls back. Statements also lock whole tables, in modes that mostly don't conflict: a `SELECT` takes `AccessShareLock`, an `UPDATE` `RowExclusiveLock`. `ALTER TABLE`, `DROP` and `TRUNCATE` take `AccessExclusiveLock`, which conflicts with everything, even a `SELECT`, until the transaction ends. Two transactions that each wait for a lock the other holds are a **deadlock**: PostgreSQL notices within a second (`deadlock_timeout`) and aborts one of them. `SET LOCAL lock_timeout = '5s'` makes a statement give up instead of waiting.
+- **A load you can re-run** (idempotent): running it twice leaves the same result as running it once, so after a failure you fix the cause and simply run it again. Three common ways:
+  - **Replace in one transaction:** `BEGIN`, drop or empty the target, load it all, `COMMIT`. A failure changes nothing; readers see the old data until the commit, then the new. critwire's lab file does exactly this with the whole `learn_curriculum` schema (§4.3); its `DROP SCHEMA` takes `AccessExclusiveLock` on every table, so the labs wait for the few seconds it runs instead of reading half a load.
+  - **Upsert by key:** `INSERT … ON CONFLICT (key) DO NOTHING` skips rows that are already there; `DO UPDATE SET col = EXCLUDED.col` updates them from the incoming row (`EXCLUDED`). It needs a primary key or unique constraint on exactly those columns, and it's safe when two loads run at once. Good for adding to a large table a batch at a time.
+  - **Stage, then merge:** load into a staging table, check it (e1, e3), then upsert from it into the target in one transaction. The ETL spike loads GBIF's download this way (§A.1).
+
+Every lab below runs in `psql`. Most start from the loaded tables in a transaction the tests roll back: type `BEGIN;` before one and `ROLLBACK;` after it. The worked example's and the first lab's blocks are typed exactly as shown, `BEGIN` and all, and end by removing what they made; a statement marked `-- fails:` fails on purpose, with that message. Leave `ON_ERROR_STOP` off for them (psql's default when you type), so psql goes on after the error as it does here.
+
+**Worked example:** How do I re-run a failed load safely? A game wants a table of Tasmanian devil sightings (species 48) with the year of each, so `year` is `NOT NULL`. The load runs in two batches: the records since 2000, then the older ones. 41 of the devil's 2,000 records have no year, so the second batch fails. Run as a plain script, in autocommit:
+
+```sql
+-- q: d4-autocommit
+-- status: ran
+-- engine: postgis
+-- tx: own
+CREATE TABLE sightings (
+  occurrence_id bigint PRIMARY KEY,
+  species_id integer NOT NULL REFERENCES species (id),
+  year integer NOT NULL,
+  month integer,
+  country_code text REFERENCES countries (code)
+);
+INSERT INTO sightings
+SELECT id, species_id, year, month, country_code
+FROM occurrences
+WHERE species_id = 48 AND year >= 2000;
+-- fails: null value in column "year"
+INSERT INTO sightings
+SELECT id, species_id, year, month, country_code
+FROM occurrences
+WHERE species_id = 48 AND (year < 2000 OR year IS NULL);
+-- the script, run again after the failure:
+-- fails: duplicate key value violates unique constraint "sightings_pkey"
+INSERT INTO sightings
+SELECT id, species_id, year, month, country_code
+FROM occurrences
+WHERE species_id = 48 AND year >= 2000;
+SELECT count(*) AS rows_left_behind FROM sightings;
+DROP TABLE sightings;
+```
+
+```text
+-- result: d4-autocommit · 1 row · sha256 89b4148cdca5
+rows_left_behind
+1858
+```
+
+The first batch committed the moment it finished, so the failed load left half its rows behind, and running the script again fails on them (its `CREATE TABLE` would fail first: the table already exists). The second batch itself inserted nothing: one statement is atomic. The same load inside one transaction:
+
+```sql
+-- q: d4-one-transaction
+-- status: ran
+-- engine: postgis
+-- tx: own
+BEGIN;
+CREATE TABLE sightings (
+  occurrence_id bigint PRIMARY KEY,
+  species_id integer NOT NULL REFERENCES species (id),
+  year integer NOT NULL,
+  month integer,
+  country_code text REFERENCES countries (code)
+);
+INSERT INTO sightings
+SELECT id, species_id, year, month, country_code
+FROM occurrences
+WHERE species_id = 48 AND year >= 2000;
+-- fails: null value in column "year"
+INSERT INTO sightings
+SELECT id, species_id, year, month, country_code
+FROM occurrences
+WHERE species_id = 48 AND (year < 2000 OR year IS NULL);
+-- fails: current transaction is aborted
+SELECT count(*) FROM sightings;
+ROLLBACK;
+SELECT to_regclass('sightings') IS NULL AS nothing_left;
+```
+
+```text
+-- result: d4-one-transaction · 1 row · sha256 c7809e52559a
+nothing_left
+true
+```
+
+After the error even a `SELECT` is refused; `ROLLBACK` undoes the first batch and the `CREATE TABLE` with it. Nothing is left to clean up, so after fixing the cause you run the same file again. The fix here is a decision, not a trick: the game needs a year, so records without one stay out. Written as "replace in one transaction" and run twice, as a scheduled job would:
+
+```sql
+-- q: d4-replace
+-- status: ran
+-- engine: postgis
+-- tx: own
+BEGIN;
+DROP TABLE IF EXISTS sightings;
+CREATE TABLE sightings (
+  occurrence_id bigint PRIMARY KEY,
+  species_id integer NOT NULL REFERENCES species (id),
+  year integer NOT NULL,
+  month integer,
+  country_code text REFERENCES countries (code)
+);
+INSERT INTO sightings
+SELECT id, species_id, year, month, country_code
+FROM occurrences
+WHERE species_id = 48 AND year IS NOT NULL;
+COMMIT;
+-- the same file, run again:
+BEGIN;
+DROP TABLE IF EXISTS sightings;
+CREATE TABLE sightings (
+  occurrence_id bigint PRIMARY KEY,
+  species_id integer NOT NULL REFERENCES species (id),
+  year integer NOT NULL,
+  month integer,
+  country_code text REFERENCES countries (code)
+);
+INSERT INTO sightings
+SELECT id, species_id, year, month, country_code
+FROM occurrences
+WHERE species_id = 48 AND year IS NOT NULL;
+COMMIT;
+SELECT count(*) AS sightings, count(DISTINCT xmin::text) AS written_by_transactions FROM sightings;
+DROP TABLE sightings;
+```
+
+```text
+-- result: d4-replace · 1 row · sha256 de77387b65ec
+sightings | written_by_transactions
+1959 | 1
+```
+
+Run once or twice, the table holds the same rows, all written by one transaction (`xmin`, below). The last line removes the table, so the lab leaves your database as it found it.
+
+**Lab:**
+1. A savepoint keeps the good part of a transaction. Mark the point before the second batch, roll back to it when the batch fails, and load the older records that do have a year:
+
+```sql
+-- q: d4-savepoint
+-- status: ran
+-- engine: postgis
+-- tx: own
+BEGIN;
+CREATE TABLE sightings (
+  occurrence_id bigint PRIMARY KEY,
+  species_id integer NOT NULL REFERENCES species (id),
+  year integer NOT NULL,
+  month integer,
+  country_code text REFERENCES countries (code)
+);
+INSERT INTO sightings
+SELECT id, species_id, year, month, country_code
+FROM occurrences
+WHERE species_id = 48 AND year >= 2000;
+SAVEPOINT before_batch_2;
+-- fails: null value in column "year"
+INSERT INTO sightings
+SELECT id, species_id, year, month, country_code
+FROM occurrences
+WHERE species_id = 48 AND (year < 2000 OR year IS NULL);
+ROLLBACK TO SAVEPOINT before_batch_2;
+INSERT INTO sightings
+SELECT id, species_id, year, month, country_code
+FROM occurrences
+WHERE species_id = 48 AND year < 2000;
+SELECT count(*) FILTER (WHERE year >= 2000) AS since_2000,
+       count(*) FILTER (WHERE year < 2000) AS before_2000
+FROM sightings;
+ROLLBACK;
+```
+
+```text
+-- result: d4-savepoint · 1 row · sha256 5bc17d8ef8b5
+since_2000 | before_2000
+1858 | 101
+```
+
+2. Row versions. Every row the lab file loaded carries the id of the transaction that wrote it, in `xmin`. Across the fourteen tables there is one:
+
+```sql
+-- q: d4-xmin-load
+-- status: ran
+-- engine: postgis
+SELECT count(DISTINCT xmin::text) AS transactions, count(*) AS row_versions
+FROM (
+  SELECT xmin FROM taxa
+  UNION ALL SELECT xmin FROM species
+  UNION ALL SELECT xmin FROM sources
+  UNION ALL SELECT xmin FROM species_sources
+  UNION ALL SELECT xmin FROM countries
+  UNION ALL SELECT xmin FROM species_countries
+  UNION ALL SELECT xmin FROM datasets
+  UNION ALL SELECT xmin FROM occurrences
+  UNION ALL SELECT xmin FROM country_shapes
+  UNION ALL SELECT xmin FROM admin1_shapes
+  UNION ALL SELECT xmin FROM biomes
+  UNION ALL SELECT xmin FROM ecoregions
+  UNION ALL SELECT xmin FROM habitat_classes
+  UNION ALL SELECT xmin FROM country_habitats
+) AS loaded;
+```
+
+```text
+-- result: d4-xmin-load · 1 row · sha256 e8f1ca79813b
+transactions | row_versions
+1 | 43844
+```
+
+That is the loader's atomicity in the data itself: the lab arrived in one transaction, so no reader could ever see part of it. The number itself differs on every machine and every load, which is why the lab compares it rather than printing it.
+
+3. An `UPDATE` writes a new version. Give one of the devil's records from 2005 a month, then compare it with its neighbour:
+
+```sql
+-- q: d4-xmin-update
+-- status: ran
+-- engine: postgis
+UPDATE occurrences SET month = 7 WHERE id = 6004132305;
+SELECT id, month, xmin::text = pg_current_xact_id()::xid::text AS written_by_this_transaction
+FROM occurrences
+WHERE id IN (6004132305, 6004132353)
+ORDER BY id;
+```
+
+```text
+-- result: d4-xmin-update · 2 rows · sha256 12ad209f5ad8
+id | month | written_by_this_transaction
+6004132305 | 7 | true
+6004132353 | NULL | false
+```
+
+The updated row is a new version, written by your open transaction; the old version is still in the table, marked deleted, and every other session goes on reading it until you commit. `ROLLBACK` makes the new version the dead one instead. Either way `VACUUM` removes the dead version later.
+
+4. The locks a transaction holds, from `pg_locks`. Update a row of `occurrences`, then add a column to `species`:
+
+```sql
+-- q: d4-locks
+-- status: ran
+-- engine: postgis
+UPDATE occurrences SET month = 7 WHERE id = 6004132305;
+ALTER TABLE species ADD COLUMN note text;
+SELECT relation::regclass::text AS table_name, mode
+FROM pg_locks
+WHERE pid = pg_backend_pid()
+  AND locktype = 'relation'
+  AND relation IN ('occurrences'::regclass, 'species'::regclass)
+ORDER BY table_name, mode;
+```
+
+```text
+-- result: d4-locks · 2 rows · sha256 527e596492f7
+table_name | mode
+occurrences | RowExclusiveLock
+species | AccessExclusiveLock
+```
+
+`RowExclusiveLock` lets everyone else read `occurrences` and write its other rows. `AccessExclusiveLock` stops every session from even reading `species` until this transaction ends: keep transactions that change a table's structure short.
+
+5. Readers don't wait; writers of the same row do. This needs two psql windows, A and B, each after `pg-session`; type the lines in the order shown. (The tests run every block in one session, so this one was run by hand on the test server, with the results in the comments.)
+
+```sql
+-- q: d4-wait
+-- status: untested: needs two sessions
+-- engine: postgis
+-- window A
+BEGIN;
+UPDATE occurrences SET month = 7 WHERE id = 6004132305;
+-- window B
+BEGIN;
+SELECT month FROM occurrences WHERE id = 6004132305;     -- NULL, at once: B reads the old version
+UPDATE occurrences SET month = 8 WHERE id = 6004132305;  -- waits for A's row lock
+-- window A
+ROLLBACK;                                                -- now B's UPDATE finishes: UPDATE 1
+-- window B
+SELECT month FROM occurrences WHERE id = 6004132305;     -- 8
+ROLLBACK;
+```
+
+6. Isolation levels, with the same two windows. B changes the row and commits (autocommit) while A's transaction is open:
+
+```sql
+-- q: d4-isolation
+-- status: untested: needs two sessions
+-- engine: postgis
+-- window A
+BEGIN ISOLATION LEVEL REPEATABLE READ;
+SELECT month FROM occurrences WHERE id = 6004132305;     -- NULL
+-- window B
+UPDATE occurrences SET month = 1 WHERE id = 6004132305;  -- committed at once
+-- window A
+SELECT month FROM occurrences WHERE id = 6004132305;     -- still NULL: one snapshot for the whole transaction
+UPDATE occurrences SET month = 2 WHERE id = 6004132305;
+-- ERROR:  could not serialize access due to concurrent update
+ROLLBACK;
+-- window B: undo the change
+UPDATE occurrences SET month = NULL WHERE id = 6004132305;
+```
+
+Begin A with plain `BEGIN;` (read committed) instead and A's second `SELECT` shows B's 1, and its `UPDATE` succeeds. Which is right depends on the job: a report that reads several tables wants one snapshot (repeatable read, read only); a job that decides from what it read and then writes wants to hear that the data changed under it (repeatable read or serializable, with a retry).
+
+7. Upserts. The game's feed, version 1: the devil's records from 2000 to 2019, without months. Labs 8 to 11 and the exercise start from it:
+
+```sql
+-- q: d4-feed
+-- status: ran
+-- engine: postgis
+CREATE TABLE sightings (
+  occurrence_id bigint PRIMARY KEY,
+  species_id integer NOT NULL REFERENCES species (id),
+  year integer NOT NULL,
+  month integer,
+  country_code text REFERENCES countries (code)
+);
+INSERT INTO sightings (occurrence_id, species_id, year, country_code)
+SELECT id, species_id, year, country_code
+FROM occurrences
+WHERE species_id = 48 AND year BETWEEN 2000 AND 2019;
+SELECT count(*) AS sightings, count(month) AS with_month FROM sightings;
+```
+
+```text
+-- result: d4-feed · 1 row · sha256 2eded79bd687
+sightings | with_month
+1816 | 0
+```
+
+8. A plain `INSERT` can't be run twice:
+
+```sql
+-- q: d4-rerun
+-- status: ran
+-- engine: postgis
+-- after: d4-feed
+-- expect: error duplicate key value violates unique constraint "sightings_pkey"
+INSERT INTO sightings (occurrence_id, species_id, year, country_code)
+SELECT id, species_id, year, country_code
+FROM occurrences
+WHERE species_id = 48 AND year BETWEEN 2000 AND 2019;
+```
+
+```text
+-- result: d4-rerun · error: statement 1 of 1: duplicate key value violates unique constraint "sightings_pkey"
+```
+
+9. `ON CONFLICT … DO NOTHING` adds what's missing and skips the rest. Widen the batch to every year since 2000; `RETURNING` hands back the rows actually inserted, which a `WITH` query can count:
+
+```sql
+-- q: d4-do-nothing
+-- status: ran
+-- engine: postgis
+-- after: d4-feed
+WITH added AS (
+  INSERT INTO sightings (occurrence_id, species_id, year, country_code)
+  SELECT id, species_id, year, country_code
+  FROM occurrences
+  WHERE species_id = 48 AND year >= 2000
+  ON CONFLICT (occurrence_id) DO NOTHING
+  RETURNING year
+)
+SELECT count(*) AS added, min(year) AS first_year FROM added;
+```
+
+```text
+-- result: d4-do-nothing · 1 row · sha256 9cb3872ad5bc
+added | first_year
+42 | 2020
+```
+
+10. Version 2 of the feed carries the month. `DO UPDATE` brings existing rows up to date from `EXCLUDED`, the row that was refused; its `WHERE` skips rows that wouldn't change, so they aren't rewritten (a new version each, for nothing). Whether `RETURNING` hands back an inserted or an updated row shows in `xmax`, which is 0 on a freshly inserted version: a PostgreSQL detail, but a well-known one.
+
+```sql
+-- q: d4-do-update
+-- status: ran
+-- engine: postgis
+-- after: d4-feed
+WITH upserted AS (
+  INSERT INTO sightings AS s (occurrence_id, species_id, year, month, country_code)
+  SELECT id, species_id, year, month, country_code
+  FROM occurrences
+  WHERE species_id = 48 AND year >= 2000
+  ON CONFLICT (occurrence_id) DO UPDATE
+    SET month = EXCLUDED.month, country_code = EXCLUDED.country_code
+    WHERE (s.month, s.country_code) IS DISTINCT FROM (EXCLUDED.month, EXCLUDED.country_code)
+  RETURNING xmax = 0 AS inserted
+)
+SELECT count(*) FILTER (WHERE inserted) AS inserted,
+       count(*) FILTER (WHERE NOT inserted) AS updated
+FROM upserted;
+```
+
+```text
+-- result: d4-do-update · 1 row · sha256 418ed4da479b
+inserted | updated
+42 | 1320
+```
+
+The other 496 rows of version 1 have no month in version 2 either, so they were left alone.
+
+11. Two ways an upsert fails. `ON CONFLICT` names the columns of a unique constraint or index; there is none on `(species_id, year)`:
+
+```sql
+-- q: d4-no-arbiter
+-- status: ran
+-- engine: postgis
+-- after: d4-feed
+-- expect: error there is no unique or exclusion constraint matching the ON CONFLICT specification
+INSERT INTO sightings (occurrence_id, species_id, year)
+SELECT id, species_id, year
+FROM occurrences
+WHERE species_id = 48 AND year >= 2020
+ON CONFLICT (species_id, year) DO NOTHING;
+```
+
+```text
+-- result: d4-no-arbiter · error: statement 1 of 1: there is no unique or exclusion constraint matching the ON CONFLICT specification
+```
+
+And a batch that holds the same key twice can't decide which row wins, so `DO UPDATE` refuses it: remove duplicates in the batch first (`DISTINCT ON`, or a check in staging).
+
+```sql
+-- q: d4-twice
+-- status: ran
+-- engine: postgis
+-- after: d4-feed
+-- expect: error cannot affect row a second time
+INSERT INTO sightings AS s (occurrence_id, species_id, year, month)
+SELECT id, species_id, year, month FROM occurrences WHERE species_id = 48 AND year >= 2020
+UNION ALL
+SELECT id, species_id, year, month FROM occurrences WHERE species_id = 48 AND year >= 2020
+ON CONFLICT (occurrence_id) DO UPDATE SET month = EXCLUDED.month;
+```
+
+```text
+-- result: d4-twice · error: statement 1 of 1: ON CONFLICT DO UPDATE command cannot affect row a second time
+```
+
+**Result:** In autocommit, a load that fails on its second batch keeps the first (1,858 rows), and running it again fails on them; in one transaction the error aborts everything, even a `SELECT`, and `ROLLBACK` leaves nothing behind, so the fixed file can simply be run again, once or twice, for the same 1,959 rows. A savepoint keeps the first batch and lets the transaction go on. MVCC is visible in `xmin`: the whole lab was written by one transaction, and an `UPDATE` writes a new version under your own transaction's id. An `UPDATE` holds `RowExclusiveLock`, an `ALTER TABLE` `AccessExclusiveLock`; by hand, a reader didn't wait for a writer, a second writer did, and repeatable read refused to update a row changed since its snapshot. `ON CONFLICT` made the feed re-runnable: `DO NOTHING` added the 42 missing records, and `DO UPDATE … WHERE … IS DISTINCT FROM` inserted those 42 and updated the 1,320 that gained a month, leaving 496 alone.
+
+**Exercise:** The feed grows to a second animal, the jaguar (species 51). Starting from `d4-feed`'s table, write one statement that brings `sightings` up to date with every record of the devil and the jaguar that has a year: new records inserted, month and country updated where they changed, other rows left alone. Log what it did in a table `sightings_runs (run, inserted, updated)`, run it twice, and show the log. The second run must change nothing.
+
+**Answer:** The upsert of lab 10 over both animals, with its counts written to the log by a second `INSERT` that reads the `WITH` query; the same statement again for run 2.
+
+```sql
+-- q: d4-ex
+-- status: ran
+-- engine: postgis
+-- after: d4-feed
+CREATE TABLE sightings_runs (run integer PRIMARY KEY, inserted bigint NOT NULL, updated bigint NOT NULL);
+WITH upserted AS (
+  INSERT INTO sightings AS s (occurrence_id, species_id, year, month, country_code)
+  SELECT id, species_id, year, month, country_code
+  FROM occurrences
+  WHERE species_id IN (48, 51) AND year IS NOT NULL
+  ON CONFLICT (occurrence_id) DO UPDATE
+    SET month = EXCLUDED.month, country_code = EXCLUDED.country_code
+    WHERE (s.month, s.country_code) IS DISTINCT FROM (EXCLUDED.month, EXCLUDED.country_code)
+  RETURNING xmax = 0 AS inserted
+)
+INSERT INTO sightings_runs
+SELECT 1, count(*) FILTER (WHERE inserted), count(*) FILTER (WHERE NOT inserted) FROM upserted;
+WITH upserted AS (
+  INSERT INTO sightings AS s (occurrence_id, species_id, year, month, country_code)
+  SELECT id, species_id, year, month, country_code
+  FROM occurrences
+  WHERE species_id IN (48, 51) AND year IS NOT NULL
+  ON CONFLICT (occurrence_id) DO UPDATE
+    SET month = EXCLUDED.month, country_code = EXCLUDED.country_code
+    WHERE (s.month, s.country_code) IS DISTINCT FROM (EXCLUDED.month, EXCLUDED.country_code)
+  RETURNING xmax = 0 AS inserted
+)
+INSERT INTO sightings_runs
+SELECT 2, count(*) FILTER (WHERE inserted), count(*) FILTER (WHERE NOT inserted) FROM upserted;
+SELECT run, inserted, updated, (SELECT count(*) FROM sightings) AS sightings_after
+FROM sightings_runs
+ORDER BY run;
+```
+
+```text
+-- result: d4-ex · 2 rows · sha256 cff78f0f35bc
+run | inserted | updated | sightings_after
+1 | 2137 | 1320 | 3953
+2 | 0 | 0 | 3953
+```
+
+**Check:** Your two runs must match the answer's rows: run 1 inserts 2,137 (the devil's 143 records outside 2000–2019 and the jaguar's 1,994) and updates 1,320; run 2 inserts and updates nothing; `sightings` ends with 3,953 rows. Without the `WHERE … IS DISTINCT FROM`, run 2 "updates" every existing row that matches (a new version each) and the check fails; without `ON CONFLICT`, run 1 fails on the first duplicate.
+
+**Dialects:**
+- **PostgreSQL:** psql autocommits; `psql -1` (`--single-transaction`) wraps a whole file in one transaction, with `-v ON_ERROR_STOP=1`; DDL is transactional; read committed by default, repeatable read and serializable (serializable snapshot isolation) raise SQLSTATE `40001` for the application to retry; `INSERT … ON CONFLICT` since 9.5, `MERGE` since 15 (with `RETURNING` since 17), and `RETURNING old.*, new.*` since 18, which says inserted or updated without the `xmax` trick.
+- **DuckDB:** transactions with MVCC too, but optimistic: two transactions that change the same row don't wait; the second gets a conflict error and is rolled back. One process at a time can open a database file for writing. DDL is transactional; `INSERT … ON CONFLICT DO NOTHING | DO UPDATE` and `INSERT OR REPLACE` need a primary key or unique constraint.
+- **SQL Server:** autocommit unless `BEGIN TRANSACTION`; many errors end only the statement, not the transaction, unless `SET XACT_ABORT ON` (use it in load scripts); savepoints are `SAVE TRANSACTION name` and `ROLLBACK TRANSACTION name`. Read committed uses locks, so readers wait for writers, unless the database has `READ_COMMITTED_SNAPSHOT` on (the default in Azure SQL Database), which keeps row versions in tempdb; `SNAPSHOT` isolation is its repeatable read by versions. No `ON CONFLICT`: `MERGE … WITH (HOLDLOCK)`, or `UPDATE` then `INSERT … WHERE NOT EXISTS` in one transaction.
+
+(S22 writes d5 here.)
 
 #### d6 · star
 
@@ -3911,14 +4414,14 @@ Data dictionary, schema v2:
 
 `plans/004-lab-erd.mmd`, schema `learn_curriculum`. The same keyed tables as schema v2 in PostgreSQL types (`text`, `float8`; GBIF's dataset key is a `uuid`), plus the shapes the GIS modules join to: country outlines, admin-1 areas for nine countries, RESOLVE's biomes and ecoregions, and the habitat map's classes. Every shape is `geometry` in WGS 84 (SRID 4326) with a GiST index; a record's point is a generated column, so it can never disagree with its longitude and latitude. Two lists sit beside the diagram, as comments in the source:
 
-- **Lab-made:** tables the lessons create in the lab (s4's hexagon grids, the smoke check's table, d1's field notes, d3's copy in year order, the ETL's staging tables, d6's star). They aren't part of the loaded lab, so they aren't drawn; the check excuses them when a lesson's setup has made them.
+- **Lab-made:** tables the lessons create in the lab (s4's hexagon grids, the smoke check's table, d1's field notes, d3's copy in year order, d4's sightings feed and its run log, the ETL's staging tables, d6's star). They aren't part of the loaded lab, so they aren't drawn; the check excuses them when a lesson's setup has made them.
 - **Planned:** `occurrence_habitats` (the habitat class at each record) and `habitat_clips` (small clips of the habitat map, as rasters), which build mission L3 adds. They are drawn so the design is whole; the check excuses them while they don't exist, and fails once they do, so the marker can't go stale.
 
 ```mermaid
 %% critwire Learn: the lab database, PostGIS schema learn_curriculum (plans/004-learn-curriculum.md §3, §4, §6), in PostgreSQL types.
 %% Tables only; the view species_taxonomy is listed beside it. Shapes are geometry in WGS 84 (SRID 4326), each with a GiST index.
 %% Tables the lessons make in the lab (s4's grids, the smoke check's, the ETL's staging, d6's star): beside the diagram, not in it.
-%% lab-made: s4_cells, tx_smoke, field_notes, occurrences_by_year, gbif_staging, occurrences_all, dim_species, dim_country, dim_dataset, dim_year, dim_habitat_class, fact_records, fact_species_country, fact_country_habitat
+%% lab-made: s4_cells, tx_smoke, field_notes, occurrences_by_year, sightings, sightings_runs, gbif_staging, occurrences_all, dim_species, dim_country, dim_dataset, dim_year, dim_habitat_class, fact_records, fact_species_country, fact_country_habitat
 %% Drawn, but built by build mission L3 (the habitat map), so not in the lab yet:
 %% planned: occurrence_habitats, habitat_clips
 %% Keys: PK primary key, FK foreign key, UK unique. Lines: || exactly one, |o or o| zero or one, |{ one or more, o{ zero or more.
