@@ -8060,7 +8060,27 @@ The repository's harness, unchanged in kind (002 §8): `pnpm build`, then Playwr
 
 ## 8. For the owner only: the vault overlap
 
-(S29)
+**For the owner only.** Which critwire modules your private vault study guides already cover, so you can skip or skim them. Read-only: titles and topics only, confirmed on 2026-10-24 with `git -C /srv/critter-ai/vault ls-tree -r --name-only main -- research/sql-server-spatial wiki` and `git -C /srv/critter-ai/vault ls-tree -r --name-only agent/pro-python-arcpy -- research/arcgis-pro-study-guide`. Nothing from the vault is copied here. "Module NN" is `research/sql-server-spatial/module-NN-…` on `main`; "wiki" pages are `wiki/<name>.md` on `main`; "pro-python-arcpy" is `research/arcgis-pro-study-guide/` on branch `agent/pro-python-arcpy` only.
+
+| critwire | Vault guide | Verdict |
+|---|---|---|
+| f1–f3 | module 04 (SELECT, JOIN and GROUP BY) | covered: take the "Already know this?" checks and move on |
+| f4 | no title covers CTEs or window functions | take its skip check; do the module if it fails |
+| d1 | modules 01, 02, 05; wiki relational-model-and-keys, database-constraints, database-views | covered; generated columns and what an FK doesn't check are new |
+| d2 | module 03; wiki normalization | mostly covered; nested JSON → 3NF and the license-placement finding are new |
+| d3 | module 07; wiki indexes-and-execution-plans | concepts covered; PostgreSQL's `EXPLAIN`, GiST, BRIN and planner statistics are new |
+| d4 | module 06; wiki transactions-and-acid | covered; MVCC (`xmin`), savepoints and `ON CONFLICT` are new |
+| d5 | modules 16, 17; wiki logins-users-and-roles, database-schemas-and-ownership | SQL Server's model covered; PostgreSQL's roles, default privileges and RLS are new |
+| g1 | module 08; wiki spatial-reference-identifiers, sql-server-geometry-vs-geography | covered; skim the PostGIS spellings |
+| g2 | modules 09, 10; wiki well-known-text-and-binary, ogc-simple-features | covered; the psql-only loader is new |
+| g3, g4 | modules 11, 12 | covered; skim (g3's coast disagreement is new) |
+| g5 | module 13; wiki sql-server-spatial-indexes | SQL Server's grid indexes covered; GiST and KNN `<->` are new: take it |
+| d6, g6, g7, s1–s6, p1–p4, c1 | none | new: the core gap |
+| e1–e5 | pro-python-arcpy: Part 1 (Python basics), Projects 1–2 | Python covered; APIs, downloads with DOIs, PostGIS loads and scheduling are new |
+| §3.4 arcpy notes | pro-python-arcpy: Parts 2, 3 and 3 continued | covered |
+| vault only | modules 00, 14, 15, 18, 19; wiki backup-and-recovery-models, enterprise-geodatabase, query-layers, arcgis-database-connections, arcgis-pro-license-levels | critwire doesn't teach these |
+
+**A fast path for you**, from the table: the f-module skip checks (minutes), then d6, g5–g7, s1–s6, e1–e5 (the parts marked new), p1–p4 and c1 in full; d1–d5 and g1–g4 skimmed for their PostgreSQL differences. That is about 45 of the 68 hours, plus the skims.
 
 ## 9. Build missions
 
@@ -8087,7 +8107,62 @@ Five missions build the course, one after another, each from a ready-to-start br
 
 ## 10. For the owner: choices
 
-(S29)
+Choices that change cost, licensing, what goes public, or how much gets built. Each has a recommendation and its cost; the numbers are the spikes' (§A). Answer in the PR or to the lead before L1 starts. Without an answer, the build missions build the recommendation: each brief says so (§9), and an answer overrides its brief.
+
+| # | Choice | Recommendation | Mission |
+|---|---|---|---|
+| 1 | Where lab data lives, and who can read it | `/learn/data/`, no CORS | L1 |
+| 2 | The GBIF sample | download API, ≤ 2,000 per species, its own derived-dataset DOI | L1 |
+| 3 | DuckDB's `spatial` extension in the browser | no | L2 |
+| 4 | 002's open items | as 002 recommended | L2 |
+| 5 | The habitat raster | v004 summaries plus the Costa Rica and Tasmania clips | L3 |
+| 6 | `AGENTS.md`'s copy line | the replacement below | L1 |
+| 7 | The chain | all five missions | all |
+| 8 | Two Windows checks | yes, after L2 and after L5 | L2, L5 |
+| 9 | Deferred data | traits, names and CHELSA later; WDPA, WorldClim and IUCN never hosted | none |
+| 10 | The effective-license rule | keep it | L1 |
+
+1. **Lab data at `/learn/data/`, without CORS (§4, §4.6).**
+   **Recommendation:** publish the lab files under `/learn/data/`, outside `/v1`'s "only additions" promise, and add no CORS rule. Every reader the course has is same-origin (the course's own pages) or not a browser (psql, Python, Power BI).
+   **Cost:** a page on another website can't read the lab files in its visitors' browsers; downloading them, or reading them from Python or Power BI, still works. Alternatives: `/v1/learn/` (CORS today, but every lab file then has to keep its columns and meaning for good), or one Caddy rule adding CORS on `/learn/data/` (a control-room change, nothing else).
+
+2. **The GBIF sample: the occurrence download API, at most 2,000 records per species, registered as its own derived dataset (§4.2, §A.1).**
+   **Recommendation:** as the spike did. L1 reuses the spike's download (`10.15468/dl.fbpk9w`) and registers the sample before GBIF's deletion date for an uncited download, 2027-04-23, so the published sample is the 40,395 records every result here was recorded on. Only the capped sample and its provenance are committed; the 34.7 MB zip and the 394,532-record download stay at GBIF under its DOI.
+   **Cost:** one more GBIF registration (`gbif:register --target learn-sample`, tags `gbif-learn-*`), with its own refresh, the same steps as `AGENTS.md`'s DOI refresh; about 5.3 MB of public files (`occurrences.parquet` 0.62 MB, `occurrences.csv` 4.59 MB, `datasets.csv` 0.07 MB) plus the same rows in the loader and the star; about 4.9 MB in git per refresh (`data/raw/gbif-sample/`). A different cap reuses the archived download (no new request) as long as it exists; the registration keeps it for good. Uncapped, the open records would be 44.6 MB as CSV: over the 50 MB cap with the rest, so they are never published.
+
+3. **No `spatial` extension in the browser (§3.1, §B).**
+   **Recommendation:** none. The browser does light spatial work in plain SQL (bounding boxes, 10° bins, haversine distance); GIS is taught in PostGIS, where practitioners use it.
+   **Cost:** no `ST_` functions in the browser, so every GIS module needs the learner's own PostGIS (§3.2). Committing `spatial` would cost 23.6 MB in git history per DuckDB version (003 §8 item 5).
+
+4. **002's open items, carried over (002 §10).**
+   **Recommendation:** as 002 recommended. Items 1, 2, 4, 6 and 9 stand as written there (the start time, the engine pin `1.33.1-dev65.0`, `/v1/countries.*`, light and dark themes, no DuckDB shell). Three still need your yes:
+   - **Commit the `parquet` extension** (002 §10 item 3): 3.22 MB in the public repo's history, and as much again at each DuckDB upgrade; the build stays offline. L2 commits it.
+   - **Caddy headers** (002 §10 item 7): precompression, `immutable` on `/learn/assets/*`, `no-cache` on `/v1/*`. They cut the first engine load from 9.02 to 6.25 MB. One control-room change to the live Caddy block; Learn works without it, and L2 builds without it unless you approve.
+   - **Photos stay linked from Wikimedia** (002 §10 item 8): a network that blocks `wikimedia.org` shows cards without photos; hosting copies would cost 5.7 MB and CC BY-SA redistribution.
+
+5. **The habitat raster, as 003 §8 items 2–4 and 7 (§4.1, §5.3 g7).**
+   **Recommendation:** Jung et al. 2020 v004 by URL: country summaries, the habitat class at each sample record, and two clips (Costa Rica, Tasmania); no reading from your S3 bucket; `ingest habitat` runs on the VPS as `critter-ai` over the socket, with no `GRANT SET ON PARAMETER`. The COG's provenance (003 §8 item 3) is still unanswered; nothing waits on it.
+   **Cost:** about 37 min and 695 MB from Zenodo per `ingest habitat`, plus a one-off 2.45 GB download to cut the clips; about 3 MB of clips (estimated; A2's Costa Rica clip was 1.42 MB) in git per refresh. It brings `/learn/data/` to an estimated 44–48 MB of the 50 MB cap (§4.4 gives the cuts if L3 measures more). Summaries are estimates; 003 §5 gives each method's measured error.
+
+6. **`AGENTS.md`'s copy line, replaced by L1.**
+   **Recommendation:** replace "No Wikipedia prose (share-alike); write copy fresh for grades 6–12." with: "No Wikipedia prose (share-alike). Write all copy fresh, in our own words, for adults new to the topic: plain, precise English a working professional reads fast; define each term once; link to open references instead of rewriting them."
+   **Cost:** none: the line governs copy written from now on.
+
+7. **The chain: five missions, about 146–176 sessions (§9).**
+   **Recommendation:** queue all five, L1 to L5.
+   **Cost:** five design reviews, five code reviews and five releases, each needing nothing from you unless a mission adds a handoff item. Alternative: stop after L2 (about 66–78 sessions): foundations and database architecture are then live, with the lab data, and you decide on L3–L5 after using them.
+
+8. **Two Windows checks, about 30 minutes each (§3.2, §3.5).**
+   **Recommendation:** do both. After L2: install Docker PostGIS (or native) on your PC as §3.2 says, run the loader and one d-module download. After L5: open Power BI Desktop, run p1's query against the live star and p2–p4's DAX queries, and compare each table with its PostGIS twin (`p2-check`, `p3-check`, `p4-check`). Each is a handoff item from that mission; neither blocks the chain.
+   **Cost:** your time. They are the only tests of what this server can't run: Windows, Docker, Power Query M, DAX and the visuals. Every byte Power BI reads is tested here already (§A.3).
+
+9. **Deferred data (003 §8 items 1, 8 and 9).**
+   **Recommendation:** no traits, names or tree-of-life tables (003's mission C: no module needs them); CHELSA climate (CC0) after L3, if a module asks for it; WDPA and WorldClim never hosted (their terms forbid it); the IUCN request not sent (g3's appendix reads the learner's own download, untested).
+   **Cost:** none now. Each later dataset is its own ingest and a later mission.
+
+10. **The effective-license rule (§4.2, §B).**
+    **Recommendation:** keep it. A record's license is the more restrictive of its own and its dataset's, and only effective CC0 1.0 and CC BY 4.0 are published. "If unclear, don't publish": 11 datasets declare CC BY-NC 4.0 while GBIF labels their records CC0 or CC BY.
+    **Cost:** 13,467 of the download's 394,532 records are left out before the cap (12,733 of them iNaturalist's research-grade observations), and the Yangtze giant softshell turtle has no record in the sample. Alternative: trust each record's license, as GBIF's filter does; the sample then gains those records up to the cap, and critwire republishes records whose dataset says non-commercial.
 
 ## A. The three spikes
 
