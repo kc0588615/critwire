@@ -7,12 +7,13 @@
 // --update writes it). Throws naming every error. Writes nothing.
 // assertLabsFresh (plan D6), once the data manifest is written: checked.json against the freshness the build recomputes
 // (learn/freshness.ts); a plain build refuses a stale lab, --draft only warns.
-// writeLearn (plan D8.6), last: the Learn site under dist/learn/ (today its assets; the pages from S11).
+// writeLearn (plan D8.6), last: the Learn site under dist/learn/: its assets, then the pages (pages.ts).
 import type { CoursePage, Curriculum } from "../../learn/course.ts";
 import { readCourse } from "../../learn/course-files.ts";
 import { readFreshness, readStamp, staleness } from "../../learn/freshness.ts";
 import { DUCKDB_EXT, DUCKDB_WASM } from "../../../site/learn/src/assets.ts";
 import { assetErrors, writeAssets } from "./assets.ts";
+import { PAGES, writePages } from "./pages.ts";
 import { readErds, type ErdTexts } from "./erd.ts";
 import { starBlocks, starInputErrors, type StarBlock } from "./star.ts";
 
@@ -44,8 +45,10 @@ export function assertLabsFresh(dist: string, pages: readonly CoursePage[], { dr
   else if (errors.length) throw new Error(`site/learn/labs: ${errors.length} error(s):\n${errors.join("\n")}`);
 }
 
-/** Writes the Learn site under `out` (dist/): the assets. */
+/** Writes the Learn site under `out` (dist/): the assets, then the pages. */
 export async function writeLearn(out: URL): Promise<void> {
-  const { js, css } = await writeAssets(out);
-  console.log(`learn assets: engine ${DUCKDB_WASM.version}, extensions ${DUCKDB_EXT.names.join(", ")}, bundle ${js} ${css}`);
+  const bundle = await writeAssets(out);
+  console.log(`learn assets: engine ${DUCKDB_WASM.version}, extensions ${DUCKDB_EXT.names.join(", ")}, bundle ${bundle.js} ${bundle.css}`);
+  await writePages(out, bundle);
+  console.log(`learn html: ${PAGES.map((p) => `/learn/${p.dir}`).join(", ")}`);
 }

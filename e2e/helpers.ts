@@ -1,5 +1,6 @@
-// Shared E2E helpers (plan §9): paths and origins, the committed records, the dist/ check, DuckDB and the
-// local Caddy's access log.
+// Shared E2E helpers (plan §9): paths and origins, the committed records, the dist/ check, DuckDB, the local Caddy's
+// access log, and Learn's browser pages (learnContext, waitReady).
+import { expect, type Browser, type BrowserContext, type Page } from "@playwright/test";
 import { DuckDBInstance } from "@duckdb/node-api";
 import { createHash, randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
@@ -94,4 +95,29 @@ export interface Access {
 export async function accessLog(): Promise<Access[]> {
   const text = await readFile(`${ARTIFACTS}/caddy-access.log`, "utf8").catch(() => "");
   return text.split("\n").filter(Boolean).map((line) => JSON.parse(line) as Access);
+}
+
+// Learn's browser pages (plan D13). learnContext: a new context where every request off ORIGIN is aborted and recorded
+// in `offOrigin`, so a page that reaches for another host fails its test. Routes a test adds later run first
+// (Playwright's order). Routing disables the cache, so learn-timing uses a plain context instead.
+export async function learnContext(browser: Browser): Promise<{ context: BrowserContext; offOrigin: string[] }> {
+  const context = await browser.newContext();
+  const offOrigin: string[] = [];
+  await context.route("**/*", (route) => {
+    const url = route.request().url();
+    if (new URL(url).origin === ORIGIN) return route.continue();
+    offOrigin.push(url);
+    return route.abort("blockedbyclient");
+  });
+  return { context, offOrigin };
+}
+
+// The engine's state on a Learn page (site/learn/src/app.ts sets body[data-engine]).
+export const engineState = (page: Page) => page.locator("body");
+
+// Waits until the page's engine has run setup.sql (data-engine="ready"); fails fast on "failed".
+export async function waitReady(page: Page, timeout = 30_000): Promise<void> {
+  await expect(engineState(page)).toHaveAttribute("data-engine", /^(ready|failed)$/, { timeout });
+  const state = await engineState(page).getAttribute("data-engine");
+  if (state !== "ready") throw new Error(`engine failed: ${await page.locator("#engine-status").textContent()}`);
 }

@@ -1,4 +1,25 @@
-/* Learn's one stylesheet (plan D11), bundled as learn-<hash>.css. The layout and its parts land with the pages. */
-:root {
-  color-scheme: light dark;
+/* Learn's one stylesheet (plan D11), bundled as learn-<hash>.css, on top of site/style.css (the layout's {{style}}). */
+main { max-width: 52rem; }
+header.site { max-width: 52rem; margin: 0 auto; padding: .75rem 1rem 0; color: var(--muted); }
+#engine-status { color: var(--muted); font-size: .95rem; }
+#engine-status:empty { display: none; }
+body[data-engine="failed"] #engine-status { color: inherit; font-weight: 600; }
+.notice { border-left: 4px solid var(--link); padding-left: .75rem; }
+.editor label { display: block; font-weight: 600; margin-bottom: .25rem; }
+.editor textarea {
+  width: 100%; font: .95rem/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  color: inherit; background: var(--code); border: 1px solid var(--line); border-radius: 6px; padding: .6rem;
 }
+.buttons { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; margin: .5rem 0 1rem; }
+.buttons button {
+  font: inherit; font-size: .95rem; padding: .3rem .9rem; border-radius: 6px; cursor: pointer;
+  border: 1px solid var(--link); background: var(--bg); color: var(--link);
+}
+.buttons button:first-child { background: var(--link); color: var(--bg); }
+.buttons button:disabled { opacity: .45; cursor: not-allowed; }
+.result[aria-busy="true"] { opacity: .6; }
+.result-summary { color: var(--muted); font-size: .95rem; }
+.result-error { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .9rem; white-space: pre-wrap; border-left: 4px solid #b3412e; padding-left: .75rem; }
+.table-wrap { overflow-x: auto; margin: 0 0 1rem; }
+.result table { border-collapse: collapse; font-size: .9rem; font-variant-numeric: tabular-nums; }
+.result th, .result td { text-align: left; vertical-align: top; padding: .25rem .5rem; border-bottom: 1px solid var(--line); white-space: nowrap; }

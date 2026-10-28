@@ -10,6 +10,6 @@
     "allowImportingTsExtensions": true,
     "types": []
   },
-  // licenses.ts and sql.ts: build modules the bundle imports, checked here without node types (plan F5).
-  "include": ["src", "../../scripts/build/licenses.ts", "../../scripts/build/learn/sql.ts"]
+  // licenses.ts, sql.ts and cell.ts: build modules the bundle imports, checked here without node types (plan F5).
+  "include": ["src", "../../scripts/build/licenses.ts", "../../scripts/build/learn/sql.ts", "../../scripts/learn/cell.ts"]
 }
