@@ -8,10 +8,19 @@
 //      written.
 // DL15: the species come from derive's in-memory core, never species.json: a stale species.json still builds the request.
 // Plus: not SUCCEEDED, another request (points to --new), a zip that isn't exactly <key>.csv, a record of no species.
-import { test } from "node:test";
+// The --new path (S13), through runGbifSample with the stand-in also serving the search count, the POST and the user's
+// download listing, in a temp XDG_STATE_HOME. Failure modes:
+// DL8: the POST is sent before the intent is on disk, so a crash mid-POST leaves no trace → the stand-in reads the
+//      intent (key null, request, search count) when the POST arrives; the POST carries creator and Basic auth.
+// DL13: a rejected POST keeps its intent (every later run refuses), or an ambiguous one drops it (the next --new POSTs
+//      twice) → rejected deletes, ambiguous keeps; the next run lists, adopts the match and finishes, one POST in all.
+// DL14: KILLED or FAILED keeps polling or keeps the intent → deletes it and stops naming key and status; with an
+//      intent present, --download <other key> makes no request; totalRecords off the search count by more than 0.1 %
+//      or a download still running at the poll limit writes nothing and keeps the intent.
+import { after, before, test } from "node:test";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
@@ -22,7 +31,7 @@ import { assertDerivedFiles, deriveAll, readDeriveInputs } from "../derive/pipel
 import { downloadRequest, sameRequest } from "../learn/download.ts";
 import { SAMPLE_RULES } from "../learn/sample-rules.ts";
 import { SIMPLE_CSV_HEADER } from "../learn/simple-csv.ts";
-import { ingestGbifSample, sampleSpecies, SAMPLE_FILES } from "./gbif-sample.ts";
+import { downloadState, ingestGbifSample, runGbifSample, sampleSpecies, SAMPLE_FILES } from "./gbif-sample.ts";
 
 const KEY = "0000001-260928105237408";
 const D1 = "11111111-1111-1111-1111-111111111111";
@@ -83,6 +92,11 @@ interface Gbif {
   zip: Buffer;
   datasets: Record<string, Record<string, unknown>>;
   orgs: Record<string, Record<string, unknown>>;
+  statuses: string[]; // the download's status per GET, the last one repeated (meta.status once empty)
+  searchCount: number;
+  userDownloads: Record<string, unknown>[]; // GET /occurrence/download/user/<user>
+  post: (body: Record<string, unknown>, authorization: string | undefined) => { status: number; body: string };
+  log: string[]; // "<METHOD> <path>" of every request
 }
 
 function gbif(change: (g: Gbif) => void = () => {}): Gbif {
@@ -101,6 +115,11 @@ function gbif(change: (g: Gbif) => void = () => {}): Gbif {
       [D3]: { key: D3, title: "Dataset three", doi: "10.1/d3", license: CC0, publishingOrganizationKey: O2, deleted: "2026-10-01T00:00:00.000+00:00" },
     },
     orgs: { [O1]: { key: O1, title: "Publisher one" }, [O2]: { key: O2, title: "Publisher two" } },
+    statuses: [],
+    searchCount: 4,
+    userDownloads: [],
+    post: () => ({ status: 201, body: KEY }),
+    log: [],
   };
   change(g);
   return g;
@@ -109,16 +128,33 @@ function gbif(change: (g: Gbif) => void = () => {}): Gbif {
 async function withGbif(g: Gbif, fn: (api: string) => Promise<void>): Promise<void> {
   let base = "";
   const json = (res: import("node:http").ServerResponse, v: unknown) => res.writeHead(200, { "content-type": "application/json" }).end(JSON.stringify(v));
-  const server = createServer((req, res) => {
+  const page = (res: import("node:http").ServerResponse, url: URL, all: unknown[]) => {
+    const offset = Number(url.searchParams.get("offset") ?? 0);
+    const limit = Number(url.searchParams.get("limit") ?? 20);
+    const results = all.slice(offset, offset + limit);
+    return json(res, { offset, limit, endOfRecords: offset + results.length >= all.length, count: all.length, results });
+  };
+  const server = createServer(async (req, res) => {
     const url = new URL(req.url ?? "/", base);
     const path = url.pathname;
-    if (path === `/v1/occurrence/download/${KEY}`) return json(res, { ...g.meta, downloadLink: `${base}/zip/${KEY}.zip` });
+    g.log.push(`${req.method} ${path}`);
+    if (req.method === "POST" && path === "/v1/occurrence/download/request") {
+      let body = "";
+      for await (const chunk of req) body += chunk;
+      const answer = g.post(JSON.parse(body), req.headers.authorization);
+      return res.writeHead(answer.status, { "content-type": "text/plain" }).end(answer.body);
+    }
+    if (path === "/v1/occurrence/search") return json(res, { count: g.searchCount, results: [], query: url.search });
+    if (path === "/v1/occurrence/download/user/tester") {
+      if (req.headers.authorization !== AUTH) return res.writeHead(401).end("unauthorized");
+      return page(res, url, g.userDownloads);
+    }
+    if (path === `/v1/occurrence/download/${KEY}`) {
+      const status = (g.statuses.length > 1 ? g.statuses.shift() : g.statuses[0]) ?? g.meta.status;
+      return json(res, { ...g.meta, status, downloadLink: `${base}/zip/${KEY}.zip` });
+    }
     if (path === `/v1/occurrence/download/${KEY}/datasets`) {
-      const all = Object.entries(g.listing).map(([datasetKey, numberRecords]) => ({ downloadKey: KEY, datasetKey, numberRecords }));
-      const offset = Number(url.searchParams.get("offset") ?? 0);
-      const limit = Number(url.searchParams.get("limit") ?? 20);
-      const results = all.slice(offset, offset + limit);
-      return json(res, { offset, limit, endOfRecords: offset + results.length >= all.length, count: all.length, results });
+      return page(res, url, Object.entries(g.listing).map(([datasetKey, numberRecords]) => ({ downloadKey: KEY, datasetKey, numberRecords })));
     }
     if (path === `/zip/${KEY}.zip`) return res.writeHead(200, { "content-type": "application/octet-stream" }).end(g.zip);
     const m = /^\/v1\/(dataset|organization)\/([0-9a-f-]+)$/.exec(path);
@@ -252,4 +288,129 @@ test("DL15 the species come from derive's in-memory core: with species.json stal
   const echo = JSON.parse(readFileSync(new URL("../fixtures/gbif-sample-request.json", import.meta.url), "utf8"));
   assert.equal(species.length, 73);
   assert.equal(sameRequest(echo, downloadRequest(species.map((s) => s.gbif))), true);
+});
+
+// The --new path (S13): runGbifSample with the stand-in, a temp state folder and test credentials.
+const AUTH = `Basic ${Buffer.from("tester:secret").toString("base64")}`;
+let stateHome: string;
+before(() => {
+  stateHome = mkdtempSync(join(tmpdir(), "critwire-state-"));
+  process.env.XDG_STATE_HOME = stateHome;
+});
+after(() => rmSync(stateHome, { recursive: true, force: true }));
+
+const intentPath = () => downloadState.intentFile();
+const readIntentFile = () => JSON.parse(readFileSync(intentPath(), "utf8"));
+const posts = (g: Gbif) => g.log.filter((l) => l.startsWith("POST ")).length;
+
+// Runs runGbifSample(args) for each args list, in order, against one stand-in and one folder; returns each run's error
+// (null when it passed) and the folder's files after the last run.
+async function runs(g: Gbif, argsList: string[][]): Promise<{ errors: (Error | null)[]; out: Record<string, string> }> {
+  const dir = tmp();
+  try {
+    const errors: (Error | null)[] = [];
+    await withGbif(g, async (api) => {
+      for (const args of argsList) {
+        errors.push(await runGbifSample(args, {
+          api, dest: destOf(dir), species: SPECIES, credentials: () => ({ user: "tester", password: "secret" }), pollMs: 1, pollLimitMs: 2_000,
+        }).then(() => null, (e: Error) => e));
+      }
+    });
+    return { errors, out: files(dir) };
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
+
+test("DL8 --new writes the intent before the POST, polls to SUCCEEDED, writes the files, then deletes the intent", async () => {
+  await downloadState.deleteIntent();
+  let seen: { intent: unknown; body: Record<string, unknown>; authorization: string | undefined } | undefined;
+  const g = gbif((g) => {
+    g.statuses = ["PREPARING", "RUNNING", "SUCCEEDED"];
+    g.post = (body, authorization) => {
+      seen = { intent: readIntentFile(), body, authorization };
+      return { status: 201, body: KEY };
+    };
+  });
+  const { errors, out } = await runs(g, [["--new"]]);
+  assert.deepEqual(errors, [null]);
+  const { startedAt, ...intent } = seen!.intent as Record<string, unknown>;
+  assert.deepEqual(intent, { request: downloadRequest([100, 200]), searchCount: 4, key: null });
+  assert.ok(Date.now() - Date.parse(startedAt as string) < 60_000);
+  assert.deepEqual(seen!.body, { ...downloadRequest([100, 200]), creator: "tester" });
+  assert.equal(seen!.authorization, AUTH);
+  assert.equal(JSON.parse(out["download.json"]).key, KEY);
+  assert.ok(!existsSync(intentPath()), "the intent is gone once download.json holds the key");
+  assert.equal(posts(g), 1);
+  assert.ok(g.log.indexOf("GET /v1/occurrence/search") < g.log.indexOf("POST /v1/occurrence/download/request"));
+});
+
+test("DL13 a rejected POST deletes the intent and writes nothing", async () => {
+  await downloadState.deleteIntent();
+  const g = gbif((g) => { g.post = () => ({ status: 400, body: "Invalid predicate" }); });
+  const { errors, out } = await runs(g, [["--new"]]);
+  assert.match(errors[0]!.message, /rejected.*HTTP 400: Invalid predicate/);
+  assert.ok(!existsSync(intentPath()));
+  assert.deepEqual(out, {});
+  assert.deepEqual(g.log, ["GET /v1/occurrence/search", "POST /v1/occurrence/download/request"]);
+});
+
+test("DL13 an ambiguous POST keeps the intent; later runs list (none yet: refuse; one: adopt and finish), one POST in all", async () => {
+  await downloadState.deleteIntent();
+  const g = gbif((g) => { g.post = () => ({ status: 503, body: "" }); });
+  const first = await runs(g, [["--new"], ["--new"]]);
+  assert.match(first.errors[0]!.message, new RegExp(`outcome is unknown.*${intentPath()} stays.*re-run to reconcile`));
+  assert.match(first.errors[1]!.message, /may have created a download.*re-run later/);
+  assert.deepEqual(first.out, {});
+  assert.equal(readIntentFile().key, null);
+  const startedAt = readIntentFile().startedAt;
+  g.userDownloads = [
+    { key: "0000009-260928105237408", created: "2026-01-01T00:00:00.000+00:00", request: g.meta.request, status: "SUCCEEDED" },
+    { key: KEY, created: new Date(Date.parse(startedAt) + 1000).toISOString(), request: g.meta.request, status: "SUCCEEDED" },
+  ];
+  const second = await runs(g, [[]]);
+  assert.deepEqual(second.errors, [null]);
+  assert.equal(JSON.parse(second.out["download.json"]).key, KEY);
+  assert.ok(!existsSync(intentPath()));
+  assert.equal(posts(g), 1);
+});
+
+test("DL14 KILLED, FAILED or CANCELLED deletes the intent and stops naming key and status; nothing written", async () => {
+  for (const status of ["KILLED", "FAILED", "CANCELLED"]) {
+    await downloadState.deleteIntent();
+    await downloadState.createIntent({ request: downloadRequest([100, 200]), startedAt: new Date().toISOString(), searchCount: 4, key: KEY });
+    const g = gbif((g) => { g.statuses = ["RUNNING", status]; });
+    const { errors, out } = await runs(g, [["--new"]]);
+    assert.match(errors[0]!.message, new RegExp(`download ${KEY} is ${status}`), status);
+    assert.ok(!existsSync(intentPath()), status);
+    assert.deepEqual(out, {});
+    assert.equal(posts(g), 0);
+  }
+});
+
+test("DL14 with an intent present, --download <other key> refuses before any request", async () => {
+  await downloadState.deleteIntent();
+  await downloadState.createIntent({ request: downloadRequest([100, 200]), startedAt: new Date().toISOString(), searchCount: 4, key: KEY });
+  const g = gbif();
+  const { errors } = await runs(g, [["--download", "0041824-260928105237408"]]);
+  assert.match(errors[0]!.message, /--download 0041824-260928105237408/);
+  assert.deepEqual(g.log, []);
+  assert.equal(readIntentFile().key, KEY);
+  await downloadState.deleteIntent();
+});
+
+test("DL14 totalRecords off the search count by more than 0.1 %, or still running at the poll limit: nothing written, intent kept", async () => {
+  await downloadState.deleteIntent();
+  await downloadState.createIntent({ request: downloadRequest([100, 200]), startedAt: new Date().toISOString(), searchCount: 4000, key: KEY });
+  const off = await runs(gbif(), [[]]);
+  assert.match(off.errors[0]!.message, new RegExp(`download ${KEY}: totalRecords 4 vs the search count at submission 4000.*0\\.1 %`));
+  assert.deepEqual(off.out, {});
+  assert.equal(readIntentFile().key, KEY);
+  await downloadState.deleteIntent();
+  await downloadState.createIntent({ request: downloadRequest([100, 200]), startedAt: new Date().toISOString(), searchCount: 4, key: KEY });
+  const slow = await runs(gbif((g) => { g.statuses = ["RUNNING"]; }), [[]]);
+  assert.match(slow.errors[0]!.message, new RegExp(`download ${KEY} is still RUNNING.*re-run to resume`));
+  assert.deepEqual(slow.out, {});
+  assert.equal(readIntentFile().key, KEY);
+  await downloadState.deleteIntent();
 });

@@ -1,5 +1,5 @@
 // The network entry point for reads (ingest, gbif:register). Sequential, paced (≤ 2 req/s), retried with backoff, one
-// stderr line per attempt. gbif:register's single POST uses fetch itself (never retried) with USER_AGENT and logRequest.
+// stderr line per attempt. GBIF's single POSTs (gbif/post.ts) use fetch themselves (never retried) with USER_AGENT and logRequest.
 import { createHash } from "node:crypto";
 import { createReadStream, createWriteStream } from "node:fs";
 import { rm } from "node:fs/promises";

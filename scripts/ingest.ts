@@ -2,7 +2,7 @@
 // succeeded (the old files stay on failure). Request log goes to stderr.
 // Snapshot sources write data/raw/<source>/snapshot.json; wikidata, col and gbif read base.json for the species.
 // shapes writes data/learn/'s shape files and shapes.json (scripts/ingest/shapes.ts; needs pnpm learn:venv).
-// gbif-sample [--download <key>] writes data/raw/gbif-sample/ (scripts/ingest/gbif-sample.ts); the only source with args.
+// gbif-sample [--download <key> | --new] writes data/raw/gbif-sample/ (scripts/ingest/gbif-sample.ts); the only source with args.
 import { fetchCol } from "./ingest/col.ts";
 import { fetchGbif } from "./ingest/gbif.ts";
 import { runGbifSample } from "./ingest/gbif-sample.ts";

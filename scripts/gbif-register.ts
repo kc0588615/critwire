@@ -4,20 +4,20 @@
 // Run it on the Oracle VPS only. Usage: pnpm gbif:register
 import { execFileSync } from "node:child_process";
 import { loadEnv } from "./env.ts";
-import { fetchFailure, getJson, logRequest, USER_AGENT, type GetJsonInit } from "./http.ts";
+import { getJson, type GetJsonInit } from "./http.ts";
 import { formatJson, writeJson } from "./json.ts";
 import { assertDerivedFiles, deriveAll, readDeriveInputs } from "./derive/pipeline.ts";
 import { contributionsSha256, depositTag, registrationFile, type Contributions, type Registration } from "./gbif/derived-dataset.ts";
 import {
   classifyPost, decide, readBackErrors, requestBody, toRegistration, type DatasetUsage, type DerivedDatasetRecord,
-  type DerivedDatasetRequest, type PostOutcome,
+  type DerivedDatasetRequest,
 } from "./gbif/register.ts";
+import { basicAuth, postOnce } from "./gbif/post.ts";
 import { allPages } from "./gbif/pages.ts";
 import { createIntent, deleteIntent, intentFile, readIntent, withLock } from "./gbif/state.ts";
 
 const API = "https://api.gbif.org/v1";
 const REPO = "kc0588615/critwire";
-const POST_TIMEOUT_MS = 60_000;
 // The deposit: the repo's data/ tree at one commit (A7).
 const SOURCE_URL = /^https:\/\/github\.com\/kc0588615\/critwire\/tree\/([0-9a-f]{40})\/data$/;
 const sourceUrlAt = (commit: string) => `https://github.com/${REPO}/tree/${commit}/data`;
@@ -40,7 +40,8 @@ await assertDerivedFiles(derived);
 const { contributions } = derived;
 if (Object.keys(contributions.datasets).length === 0) throw new Error("contributions.json lists no datasets: nothing to register");
 const sha256 = contributionsSha256(formatJson(contributions, { canonical: true }));
-const auth: GetJsonInit = { headers: { Authorization: `Basic ${Buffer.from(`${user}:${password}`).toString("base64")}` } };
+const authorization = basicAuth(user, password);
+const auth: GetJsonInit = { headers: { Authorization: authorization } };
 
 await withLock(async () => {
   const state = {
@@ -71,7 +72,7 @@ await withLock(async () => {
       const request = requestBody(contributions, sha256, sourceUrlAt(git("rev-parse", "HEAD").trim()));
       await checkDeposit(request.sourceUrl, sha256);
       await createIntent({ contributionsSha256: sha256, request, startedAt: new Date().toISOString() });
-      const result = classifyPost(await postOnce(`${API}/derivedDataset`, request));
+      const result = classifyPost(await postOnce(`${API}/derivedDataset`, request, { authorization }));
       if (result.kind !== "created") {
         if (result.kind === "ambiguous") {
           throw new Error(`the POST's outcome is unknown (${result.reason}); ${intentFile()} stays; re-run to reconcile`);
@@ -124,23 +125,4 @@ async function checkDeposit(sourceUrl: string, sha256: string): Promise<void> {
   if (contributionsSha256(formatJson(await getJson(raw), { canonical: true })) !== sha256) {
     throw new Error(`${raw} doesn't hash to contributions-sha256 ${sha256}`);
   }
-}
-
-// The single POST: its own fetch, never retried (getJson retries), one log line like getJson's.
-async function postOnce(url: string, request: DerivedDatasetRequest): Promise<PostOutcome> {
-  const start = Date.now();
-  let outcome: PostOutcome;
-  try {
-    const res = await fetch(url, {
-      method: "POST",
-      headers: { ...auth.headers as Record<string, string>, "User-Agent": USER_AGENT, Accept: "application/json", "Content-Type": "application/json" },
-      body: JSON.stringify(request),
-      signal: AbortSignal.timeout(POST_TIMEOUT_MS),
-    });
-    outcome = { status: res.status, body: await res.text() };
-  } catch (error) {
-    outcome = { error: fetchFailure(error) };
-  }
-  logRequest(start, "error" in outcome ? outcome.error : outcome.status, 1, "POST", url);
-  return outcome;
 }

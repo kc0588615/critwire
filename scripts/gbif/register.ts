@@ -89,29 +89,34 @@ export function decide({ registration, contributionsSha256, datasets, intent, li
 
 // How the single POST ended: an HTTP response, or a fetch error ("timeout", "network <message>").
 export type PostOutcome = { status: number; body: string } | { error: string };
-export type PostClass = { kind: "created"; doi: string } | { kind: "rejected" | "ambiguous"; reason: string };
+// Created carries what the parser read from the body ({ doi } by default).
+export type PostClass<T extends object = { doi: string }> =
+  | ({ kind: "created" } & T) | { kind: "rejected"; reason: string } | { kind: "ambiguous"; reason: string };
 
 const DOI = /^10\.\d{4,9}\/\S+$/;
 
-function parseDoi(body: string): string | null {
+function parseDoi(body: string): { doi: string } | null {
   try {
     const doi = (JSON.parse(body) as { doi?: unknown } | null)?.doi;
-    return typeof doi === "string" && DOI.test(doi) ? doi : null;
+    return typeof doi === "string" && DOI.test(doi) ? { doi } : null;
   } catch {
     return null;
   }
 }
 
-// Created only on 200/201 with a DOI. GBIF validates before it creates, so a 4xx other than 408/429 created nothing
-// (rejected: drop the intent); anything else may have created a DOI (ambiguous: keep the intent, list on the next run).
-export function classifyPost(outcome: PostOutcome): PostClass {
+// Created only on 200/201 with a body `parse` accepts (default: a DOI). GBIF validates before it creates, so a 4xx
+// other than 408/429 created nothing (rejected: drop the intent); anything else may have created something (ambiguous:
+// keep the intent, list on the next run).
+export function classifyPost(outcome: PostOutcome): PostClass;
+export function classifyPost<T extends object>(outcome: PostOutcome, parse: (body: string) => T | null): PostClass<T>;
+export function classifyPost(outcome: PostOutcome, parse: (body: string) => object | null = parseDoi): PostClass<object> {
   if ("error" in outcome) return { kind: "ambiguous", reason: outcome.error };
   const { status, body } = outcome;
-  const doi = status === 200 || status === 201 ? parseDoi(body) : null;
-  if (doi !== null) return { kind: "created", doi };
+  const created = status === 200 || status === 201 ? parse(body) : null;
+  if (created !== null) return { kind: "created", ...created };
   const reason = `HTTP ${status}: ${body.slice(0, 300)}`;
   const rejected = status >= 400 && status < 500 && status !== 408 && status !== 429;
-  return { kind: rejected ? "rejected" : "ambiguous", reason };
+  return rejected ? { kind: "rejected", reason } : { kind: "ambiguous", reason };
 }
 
 // datasetKey → numberRecords of a read-back, and the keys GBIF listed more than once.

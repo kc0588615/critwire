@@ -1,5 +1,6 @@
-// The lab sample's GBIF ingest (plan D6, 004 §4.2): pnpm ingest gbif-sample [--download <key>]. Reuses a finished
-// GBIF download (the key given, else download.json's): GBIF's status must be SUCCEEDED and its stored request must
+// The lab sample's GBIF ingest (plan D6, 004 §4.2): pnpm ingest gbif-sample [--download <key> | --new]. --new submits
+// a download (intent before the one POST, then polling; decideDownload says which download a run uses), otherwise it
+// reuses a finished GBIF download (the key given, else download.json's): GBIF's status must be SUCCEEDED and its stored request must
 // equal today's (downloadRequest over the species' ids.gbif, computed by derive in memory: never species.json, D7);
 // on a re-run of the same key the zip's sha256 must equal download.json's. It streams the zip into a temp folder,
 // parses its one SIMPLE_CSV member, applies the species rule, checks rows against GBIF's totalRecords and per-dataset
@@ -16,19 +17,33 @@ import { promisify } from "node:util";
 import { deriveAll, readDeriveInputs, type DeriveInputs } from "../derive/pipeline.ts";
 import { allPages } from "../gbif/pages.ts";
 import { namedState } from "../gbif/state.ts";
+import { loadEnv } from "../env.ts";
+import { basicAuth, postOnce } from "../gbif/post.ts";
+import { classifyPost } from "../gbif/register.ts";
 import { downloadFile, getJson, sha256File } from "../http.ts";
 import { formatJson, readOptionalText } from "../json.ts";
-import { downloadRequest, sameRequest, type DownloadRequest } from "../learn/download.ts";
+import {
+  decideDownload, DOWNLOAD_KEY, downloadRequest, parseDownloadKey, sameRequest, type DownloadArgs, type DownloadIntent,
+  type ListedDownload,
+} from "../learn/download.ts";
 import { capSample, effectiveLicense, OPEN_LICENSES, SAMPLE_RULES, speciesFor, type SampleLicense } from "../learn/sample-rules.ts";
 import { readSimpleCsv, type ParseContext, type SampleRecord } from "../learn/simple-csv.ts";
 import { utcDate } from "../raw.ts";
+import { occurrenceSearchQuery } from "./gbif.ts";
 
 const API = "https://api.gbif.org/v1";
 export const sampleDir = new URL("../../data/raw/gbif-sample/", import.meta.url);
 export const SAMPLE_FILES = ["download.json", "datasets.json", "sample.csv"] as const;
-const DOWNLOAD_KEY = /^\d{7}-\d{15}$/;
 // The zip is ~35 MB.
 const ZIP_TIMEOUT_MS = 10 * 60_000;
+// GBIF prepared the spike's download in 17 min; a run polls once a minute for up to an hour, then a re-run resumes.
+const POLL_MS = 60_000;
+const POLL_LIMIT_MS = 60 * 60_000;
+// Statuses after which a download never succeeds.
+const FINAL_FAILURES = new Set(["KILLED", "FAILED", "CANCELLED", "FILE_ERASED"]);
+// totalRecords may differ from the search count at submission by this fraction (records indexed in between).
+const SEARCH_COUNT_TOLERANCE = 0.001;
+const USAGE = "usage: pnpm ingest gbif-sample [--download <key> | --new]";
 
 // GBIF dataset license URLs → the sample's license names. Another URL fails the ingest.
 export const DATASET_LICENSES: Readonly<Record<string, SampleLicense>> = {
@@ -74,8 +89,7 @@ export interface SampleDataset {
 }
 export interface SampleDatasets { retrieved: string; downloadKey: string; datasets: SampleDataset[] }
 
-// The intent a new download (--new, plan D6) writes before its POST.
-export interface DownloadIntent { request: DownloadRequest; startedAt: string; searchCount: number; key: string | null }
+// The lock around every run, and the intent a new download (--new, plan D6) writes before its POST.
 export const downloadState = namedState<DownloadIntent>("gbif-sample-download", "ingest gbif-sample");
 
 export interface SampleSpecies { id: number; gbif: number }
@@ -210,8 +224,7 @@ function sampleCsv(rows: SampleRow[]): string {
 // file, then renamed). Nothing is written unless every check passed.
 export async function ingestGbifSample({ api = API, dest = sampleDir, key, species }: { api?: string; dest?: URL; key: string; species: SampleSpecies[] }): Promise<void> {
   const built = downloadRequest(species.map((s) => s.gbif));
-  const storedText = await readOptionalText(new URL("download.json", dest));
-  const stored = storedText === null ? null : JSON.parse(storedText) as SampleDownload;
+  const stored = await readDownload(dest);
   const meta = await getJson(`${api}/occurrence/download/${key}`) as GbifDownload;
   if (meta.key !== key) throw new Error(`GBIF returned download ${meta.key} for ${key}`);
   if (meta.status !== "SUCCEEDED") throw new Error(`download ${key} is ${meta.status}, not SUCCEEDED; it can't be reused`);
@@ -255,16 +268,130 @@ export async function ingestGbifSample({ api = API, dest = sampleDir, key, speci
     `(≤ ${SAMPLE_RULES.cap} per species); ${datasets.length} datasets, ${publishers} publishers`);
 }
 
-// pnpm ingest gbif-sample [--download <key>]: under the download lock; the key given, else download.json's.
-export async function runGbifSample(args: string[]): Promise<void> {
-  const usage = "usage: pnpm ingest gbif-sample [--download <key>]";
-  if (!(args.length === 0 || (args.length === 2 && args[0] === "--download" && DOWNLOAD_KEY.test(args[1])))) throw new Error(usage);
-  const species = sampleSpecies(await readDeriveInputs());
-  await downloadState.withLock(async () => {
-    const storedText = await readOptionalText(new URL("download.json", sampleDir));
-    const key = args[1] ?? (storedText === null ? null : (JSON.parse(storedText) as SampleDownload).key);
-    if (key === null) throw new Error(`no data/raw/gbif-sample/download.json yet: ${usage}`);
-    await ingestGbifSample({ key, species });
+// download.json in `dest`, or null before the first ingest.
+async function readDownload(dest: URL): Promise<SampleDownload | null> {
+  const text = await readOptionalText(new URL("download.json", dest));
+  return text === null ? null : JSON.parse(text) as SampleDownload;
+}
+
+export interface RunOptions {
+  api?: string;
+  dest?: URL;
+  species?: SampleSpecies[]; // default: derive's in-memory core
+  credentials?: () => { user: string; password: string }; // for the POST and the listing only
+  pollMs?: number;
+  pollLimitMs?: number;
+}
+
+function envCredentials(): { user: string; password: string } {
+  loadEnv();
+  const { GBIF_USERNAME: user, GBIF_PASSWORD: password } = process.env;
+  if (!user || !password) throw new Error("GBIF_USERNAME and GBIF_PASSWORD must be set (in .env): see handoff item H1 (GBIF password)");
+  return { user, password };
+}
+
+function parseArgs(args: string[]): DownloadArgs {
+  if (args.length === 0) return { mode: "reuse", key: null };
+  if (args.length === 1 && args[0] === "--new") return { mode: "new" };
+  if (args.length === 2 && args[0] === "--download" && DOWNLOAD_KEY.test(args[1])) return { mode: "reuse", key: args[1] };
+  throw new Error(USAGE);
+}
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// pnpm ingest gbif-sample [--download <key> | --new], under the download lock. decideDownload picks the row: reuse a
+// finished download; POST a new one (intent first); adopt one the user's listing shows for a key-less intent; or
+// resume an intent's key. A new download is polled until GBIF finishes it, checked against the search count at
+// submission, ingested, and only then is its intent deleted (download.json holds the key first).
+export async function runGbifSample(args: string[], {
+  api = API, dest = sampleDir, species, credentials = envCredentials, pollMs = POLL_MS, pollLimitMs = POLL_LIMIT_MS,
+}: RunOptions = {}): Promise<void> {
+  const parsed = parseArgs(args);
+  const sp = species ?? sampleSpecies(await readDeriveInputs());
+  const built = downloadRequest(sp.map((s) => s.gbif));
+  const state = downloadState;
+  const intentFile = state.intentFile();
+  await state.withLock(async () => {
+    let intent = await state.readIntent();
+    const input = { args: parsed, intent, built, listing: null, intentFile };
+    let decision = decideDownload(input);
+    if (decision.action === "list") {
+      const { user, password } = credentials();
+      const listing = await allPages<ListedDownload>(`${api}/occurrence/download/user/${user}`, { headers: { Authorization: basicAuth(user, password) } });
+      decision = decideDownload({ ...input, listing });
+    }
+    switch (decision.action) {
+      case "refuse":
+        throw new Error(decision.reason);
+      case "list":
+        throw new Error("decideDownload asked to list twice");
+      case "reuse": {
+        const key = decision.key ?? (await readDownload(dest))?.key ?? null;
+        if (key === null) throw new Error(`no download.json yet: ${USAGE}`);
+        await ingestGbifSample({ api, dest, key, species: sp });
+        return;
+      }
+      case "post":
+        intent = await postDownload();
+        break;
+      case "adopt":
+        intent = { ...intent!, key: decision.key };
+        await state.replaceIntent(intent);
+        console.error(`ingest gbif-sample: adopted download ${decision.key} for the POST at ${intent.startedAt}`);
+        break;
+      case "resume":
+        break;
+    }
+    await finishDownload(intent!);
   });
-  console.log("ingest gbif-sample: wrote data/raw/gbif-sample/{download.json,datasets.json,sample.csv}");
+  console.log("ingest gbif-sample: wrote download.json, datasets.json and sample.csv");
+
+  // Records the search count, writes the intent, then the one POST. Returns the intent with GBIF's key.
+  async function postDownload(): Promise<DownloadIntent> {
+    const { user, password } = credentials();
+    const keys = sp.map((s) => s.gbif).sort((a, b) => a - b);
+    const { count } = await getJson(`${api}/occurrence/search?${occurrenceSearchQuery(keys)}`) as { count?: unknown };
+    if (!Number.isSafeInteger(count) || (count as number) < 0) throw new Error(`occurrence search count is ${JSON.stringify(count)}`);
+    const intent: DownloadIntent = { request: built, startedAt: new Date().toISOString(), searchCount: count as number, key: null };
+    await state.createIntent(intent);
+    const outcome = await postOnce(`${api}/occurrence/download/request`, { ...built, creator: user },
+      { authorization: basicAuth(user, password), accept: "application/json, text/plain" });
+    const result = classifyPost(outcome, parseDownloadKey);
+    if (result.kind === "ambiguous") throw new Error(`the download POST's outcome is unknown (${result.reason}); ${intentFile} stays; re-run to reconcile`);
+    if (result.kind === "rejected") {
+      await state.deleteIntent();
+      throw new Error(`GBIF rejected the download request, so nothing was created: ${result.reason}`);
+    }
+    const created = { ...intent, key: result.key };
+    await state.replaceIntent(created);
+    console.error(`ingest gbif-sample: submitted download ${result.key} (search count ${intent.searchCount})`);
+    return created;
+  }
+
+  // Polls the intent's download until GBIF finishes it, checks its totalRecords, ingests it, then deletes the intent.
+  async function finishDownload(intent: DownloadIntent): Promise<void> {
+    const key = intent.key!;
+    const start = Date.now();
+    let meta: GbifDownload;
+    for (;;) {
+      meta = await getJson(`${api}/occurrence/download/${key}`) as GbifDownload;
+      if (meta.status === "SUCCEEDED") break;
+      if (FINAL_FAILURES.has(meta.status)) {
+        await state.deleteIntent();
+        throw new Error(`download ${key} is ${meta.status}, final on GBIF's side; ${intentFile} deleted; run pnpm ingest gbif-sample --new to submit again`);
+      }
+      if (Date.now() - start >= pollLimitMs) {
+        throw new Error(`download ${key} is still ${meta.status} after ${Math.round((Date.now() - start) / 60_000)} min; ` +
+          `re-run to resume (${intentFile} keeps the key)`);
+      }
+      console.error(`ingest gbif-sample: download ${key} is ${meta.status}`);
+      await sleep(pollMs);
+    }
+    if (Math.abs(meta.totalRecords - intent.searchCount) > intent.searchCount * SEARCH_COUNT_TOLERANCE) {
+      throw new Error(`download ${key}: totalRecords ${meta.totalRecords} vs the search count at submission ${intent.searchCount}: ` +
+        `off by more than 0.1 %; ${intentFile} stays; delete it and run --new only after checking GBIF's download`);
+    }
+    await ingestGbifSample({ api, dest, key, species: sp });
+    await state.deleteIntent();
+  }
 }

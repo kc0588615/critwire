@@ -30,10 +30,11 @@ const OCCURRENCE_FILTERS = [
 ];
 const UUID = /^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/;
 
-// Parameters in a fixed order, so the stored URL (sources[].url) is stable.
-const occurrenceSearchUrl = (taxonKey: number, facets: string[]) =>
-  `${API}/v1/occurrence/search?` +
-  [`checklistKey=${BACKBONE_KEY}`, `taxonKey=${taxonKey}`, ...facets, "limit=0", ...OCCURRENCE_FILTERS].join("&");
+// An occurrence search's query, parameters in a fixed order, so the stored URL (sources[].url) is stable. Also the lab
+// sample's search count at submission (ingest gbif-sample --new), over all its taxa.
+export const occurrenceSearchQuery = (taxonKeys: readonly number[], facets: string[] = []) =>
+  [`checklistKey=${BACKBONE_KEY}`, ...taxonKeys.map((k) => `taxonKey=${k}`), ...facets, "limit=0", ...OCCURRENCE_FILTERS].join("&");
+const occurrenceSearchUrl = (taxonKey: number, facets: string[]) => `${API}/v1/occurrence/search?${occurrenceSearchQuery([taxonKey], facets)}`;
 
 export const gbifOccurrenceUrl = (taxonKey: number) =>
   occurrenceSearchUrl(taxonKey, ["facet=country", "facet=license", `facetLimit=${FACET_LIMIT}`]);
