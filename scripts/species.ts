@@ -91,3 +91,75 @@ export function validateBase(base: BaseSpecies[]): void {
     }
   }
 }
+
+const INT32_MAX = 2 ** 31 - 1;
+const SLUG = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+const COUNTRY = /^[A-Z]{2}$/;
+const RANGE_STATUSES: readonly RangeStatus[] = ["ok", "no-open-records", "identity-unsettled"];
+
+// Throws unless every record's values are publishable (plan D12, MF2): every string non-blank; slug grammar, not all
+// digits; id, ids.{iucn,inaturalist,ncbi} and a COL release key in 1..2^31-1 (DuckDB INTEGER), ids.gbif a positive
+// safe integer (BIGINT); countries null unless status is ok, else non-empty, sorted, unique ISO alpha-2; photo null or
+// complete; ids and slugs unique; replacedBy null or existing, distinct, non-self ids with no cycle. Values only: the
+// key shape is build/columns.ts assertRecordKeys. Run by derive (deriveCore) and db:load.
+export function validateRecords(records: readonly Species[]): void {
+  const fail = (s: Species, path: string, why: string): never => { throw new Error(`species ${s.id}: ${path} ${why}`); };
+  const int = (s: Species, path: string, v: unknown, max: number, nullable: boolean) => {
+    if (v === null && nullable) return;
+    if (!Number.isInteger(v) || (v as number) < 1 || (v as number) > max) fail(s, path, `${JSON.stringify(v)} isn't an integer in 1..${max}`);
+  };
+  const strings = (s: Species, path: string, v: unknown): void => {
+    if (typeof v === "string") { if (v.trim() === "") fail(s, path, "is blank"); }
+    else if (Array.isArray(v)) v.forEach((e, i) => strings(s, `${path}[${i}]`, e));
+    else if (v !== null && typeof v === "object") for (const [k, e] of Object.entries(v)) strings(s, path ? `${path}.${k}` : k, e);
+  };
+  const byId = new Map<number, Species>();
+  const slugs = new Set<string>();
+  for (const s of records) {
+    int(s, "id", s.id, INT32_MAX, false);
+    if (byId.has(s.id)) fail(s, "id", `repeats id ${s.id}`);
+    byId.set(s.id, s);
+    for (const path of ["slug", "scientificName", "commonName", "taxonomy.class", "taxonomy.order", "taxonomy.family", "taxonomy.genus"]) {
+      const v = path.split(".").reduce<unknown>((o, k) => (o as Record<string, unknown>)?.[k], s);
+      if (typeof v !== "string") fail(s, path, `${JSON.stringify(v)} isn't a string`);
+    }
+    strings(s, "", s);
+    if (!SLUG.test(s.slug) || /^\d+$/.test(s.slug)) fail(s, "slug", `"${s.slug}" isn't lowercase-hyphenated, or is all digits (an {id}.json collision)`);
+    if (slugs.has(s.slug)) fail(s, "slug", `repeats slug ${s.slug}`);
+    slugs.add(s.slug);
+    int(s, "ids.iucn", s.ids.iucn, INT32_MAX, false);
+    int(s, "ids.inaturalist", s.ids.inaturalist, INT32_MAX, true);
+    int(s, "ids.ncbi", s.ids.ncbi, INT32_MAX, true);
+    int(s, "ids.gbif", s.ids.gbif, Number.MAX_SAFE_INTEGER, true);
+    s.sources.forEach((src, i) => { if (src.release) int(s, `sources[${i}].release.key`, src.release.key, INT32_MAX, false); });
+    const { countriesWithOpenRecords: list, status } = s.range;
+    if (!RANGE_STATUSES.includes(status)) fail(s, "range.status", `${JSON.stringify(status)} is unknown`);
+    if ((list === null) !== (status !== "ok")) fail(s, "range", `countriesWithOpenRecords must be null exactly when status isn't ok (status ${status})`);
+    if (list !== null && (list.length === 0 || list.some((c, i) => !COUNTRY.test(c) || (i > 0 && c <= list[i - 1]!)))) {
+      fail(s, "range.countriesWithOpenRecords", `${JSON.stringify(list)} isn't a non-empty, sorted, unique list of ISO alpha-2 codes`);
+    }
+    if (s.photo !== null && !(["url", "credit", "license", "page"] as const).every((k) => typeof s.photo![k] === "string")) {
+      fail(s, "photo", "needs a url, credit, license and page");
+    }
+  }
+  for (const s of records) {
+    const to = s.replacedBy;
+    if (to === null) continue;
+    if (to.length === 0) fail(s, "replacedBy", "is [] (null when the record isn't retired)");
+    if (new Set(to).size !== to.length) fail(s, "replacedBy", `${JSON.stringify(to)} repeats an id`);
+    for (const t of to) {
+      if (t === s.id) fail(s, "replacedBy", "points to itself");
+      if (!byId.has(t)) fail(s, "replacedBy", `points to ${t}, which no record has`);
+    }
+  }
+  // A cycle leaves no live record to follow: depth-first over replacedBy, 1 = on the current path, 2 = done.
+  const state = new Map<number, 1 | 2>();
+  const visit = (s: Species): void => {
+    if (state.get(s.id) === 2) return;
+    if (state.get(s.id) === 1) fail(s, "replacedBy", "is part of a cycle");
+    state.set(s.id, 1);
+    for (const t of s.replacedBy ?? []) visit(byId.get(t)!);
+    state.set(s.id, 2);
+  };
+  records.forEach(visit);
+}

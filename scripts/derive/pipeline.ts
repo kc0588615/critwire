@@ -6,7 +6,7 @@ import { relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { formatJson, readJson, readOptionalText } from "../json.ts";
 import { readSnapshot, type ColSnapshot, type GbifSnapshot, type NaturalEarthSnapshot, type WikidataSnapshot } from "../raw.ts";
-import { baseFile, mismatchesFile, overridesFile, speciesFile, validateBase, type BaseSpecies, type Mismatch, type Species } from "../species.ts";
+import { baseFile, mismatchesFile, overridesFile, speciesFile, validateBase, validateRecords, type BaseSpecies, type Mismatch, type Species } from "../species.ts";
 import {
   contributionsFile, currentDoi, registrationFile, sampleContributionsFile, type Contributions, type Registration,
 } from "../gbif/derived-dataset.ts";
@@ -75,7 +75,7 @@ export function deriveAll(inputs: DeriveInputs): DeriveResult {
   return { ...core, learn: deriveSample(core, inputs.learn) };
 }
 
-// Validates every core input and derives the records (sorted by id), the review entries, the GBIF contributions, the
+// Validates every core input and derives the records (sorted by id, values checked by validateRecords), the review entries, the GBIF contributions, the
 // DOI the countries entries cite and the countries rows. Pure.
 export function deriveCore({ base: unsorted, wikidata, col, gbif, naturalearth, overrides: rawOverrides, registration }: CoreInputs): CoreResult {
   validateBase(unsorted);
@@ -112,6 +112,7 @@ export function deriveCore({ base: unsorted, wikidata, col, gbif, naturalearth, 
     col: { retrieved: col.retrieved, release: col.release, url: col.matches[s.scientificName].url, id: c.id, taxonomy: c.taxonomy, taxonomySource: c.taxonomySource },
     gbif: { retrieved: gbif.retrieved, checklist: gbif.checklist, url: gbif.species[s.scientificName].match.url, id: g.id, occurrencesUrl: occurrences?.url ?? null, countries: k.value, rangeStatus: k.status, doi },
   }));
+  validateRecords(records);
   entries.sort((a, b) => a.speciesId - b.speciesId || byText(a.field, b.field) || byText(a.kind, b.kind) || byText(a.country ?? "", b.country ?? ""));
   const { rows, report: countriesReport } = matchCountries(naturalearth.layers, {
     speciesCodes: records.flatMap((r) => r.range.countriesWithOpenRecords ?? []),

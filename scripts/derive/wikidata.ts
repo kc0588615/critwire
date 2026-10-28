@@ -20,7 +20,8 @@ export interface WikidataResult {
 }
 
 const ENTITY = /^http:\/\/www\.wikidata\.org\/entity\/(Q[1-9]\d*)$/;
-const INTEGER_PROPS = new Set(["P3151", "P685", "P846"]);
+// Integer properties and their largest value: the /v1 column's range (iNaturalist and NCBI INTEGER, GBIF BIGINT).
+const INTEGER_PROPS = new Map([["P3151", 2 ** 31 - 1], ["P685", 2 ** 31 - 1], ["P846", Number.MAX_SAFE_INTEGER]]);
 
 const byText = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
 const byNumber = (a: number, b: number) => a - b;
@@ -58,7 +59,10 @@ export function deriveWikidata(species: BaseSpecies, bindings: readonly SparqlBi
       if (b.prop) {
         const prop = b.prop.value, value = b.value?.value;
         if (value === undefined) throw new Error(`wikidata: ${prop} without a value (${N})`);
-        if (INTEGER_PROPS.has(prop) && !/^[1-9]\d*$/.test(value)) throw new Error(`wikidata: ${prop} value ${JSON.stringify(value)} is not a positive integer (${N})`);
+        const max = INTEGER_PROPS.get(prop);
+        if (max !== undefined && !(/^[1-9]\d*$/.test(value) && Number(value) <= max)) {
+          throw new Error(`wikidata: ${prop} value ${JSON.stringify(value)} is not an integer in 1..${max} (${N})`);
+        }
         props.set(prop, (props.get(prop) ?? new Set()).add(value));
       }
     }

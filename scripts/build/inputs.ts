@@ -60,13 +60,8 @@ export async function readBuildInputs({ draft }: { draft: boolean }): Promise<Bu
   await assertDerivedFiles(result);
   const species = result.records;
 
+  // Values were checked by derive (validateRecords); the key shape here, next to the DuckDB columns.
   assertRecordKeys(species);
-  for (const s of species) {
-    if (/^\d+$/.test(s.slug)) throw new Error(`species ${s.id}: slug "${s.slug}" is all digits (it would collide with an {id}.json file)`);
-    if (s.photo && !(s.photo.url && s.photo.credit && s.photo.license && s.photo.page)) {
-      throw new Error(`species ${s.id}: photo needs a url, credit, license and page`);
-    }
-  }
 
   assertLearnProjection(species);
 
