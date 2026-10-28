@@ -1070,6 +1070,6 @@ Each step's isolated cases are its **First** list. What a session does when the 
 - 2026-10-28 12:35 UTC · Fable review: APPROVE_WITH_CHANGES, 2 MUST-FIX (D11 Check vs changed playground; D5 lock_timeout vs detection window), 2 MISSED, 5 SHOULD-CONSIDER; plan-only, no checks needed.
 - 2026-10-28 12:36 UTC · Astra review: APPROVE_WITH_CHANGES, 3 MUST-FIX (D11 Check on modified data; D3 cleanup after lock release; D5 lock_timeout = detection deadline), 3 SHOULD-CONSIDER; plan-only, no checks needed.
 - 2026-10-28 12:43 UTC · Revision: architect resolved 5 MUST-FIX (D11 Check refuses on changed generation until Reset; D3 sweep under lock, lab-role objects only; D5 lock_timeout 30s vs 5s detection); adopted MISSED 1–2 and all SC except Caddy fallback; Revision notes table; plan-only, no checks needed.
-- 2026-10-28 12:58 UTC · Steps: planner wrote S1–S28 (~39 sessions est.), Verification (DoD map, E2E artifact in $M/e2e/, release smoke), Failure modes; ordering deviations under Decisions; plan-only, no checks needed.
+- 2026-10-28 12:55 UTC · Steps: planner wrote S1–S28 (~39 sessions est.), Verification (DoD map, E2E artifact in $M/e2e/, release smoke), Failure modes; ordering deviations under Decisions; plan-only, no checks needed.
 
 ## Summary
