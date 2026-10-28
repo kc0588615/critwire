@@ -2379,6 +2379,28 @@ VALUES (1000, 74, 'https://example.org/axolotl-2.jpg', 'All rights reserved', 'A
 
 **Check:** `result, any row order` for the counts; then the page runs the three inserts above after your answer, and each must fail with the error named (unique, foreign key, `CHECK`), whatever you named your constraints.
 
+**Second exercise, on your own computer (the page doesn't check it):** read the lab's ERD back out of the database. Reverse engineering a design means recovering it from what was built: [tbls](https://github.com/k1LoW/tbls) (MIT license, a single program file) reads PostgreSQL's catalog (every table, column and foreign key) and writes a Mermaid ERD. Get version 1.96.1 from [its release page](https://github.com/k1LoW/tbls/releases/tag/v1.96.1), check the file's SHA-256 against the one printed here (the release lists the other systems'), and point it at your lab database. It finds the password in the `pgpass.conf` the setup made. In PowerShell:
+
+```powershell
+curl.exe -fLO https://github.com/k1LoW/tbls/releases/download/v1.96.1/tbls_v1.96.1_windows_amd64.zip
+(Get-FileHash tbls_v1.96.1_windows_amd64.zip -Algorithm SHA256).Hash -eq "ecd641e0d1ffde95350b1336cb03603c7f7fd8c7fc20a996323ea80d8594a5c6"   # must print True
+Expand-Archive tbls_v1.96.1_windows_amd64.zip -DestinationPath tbls
+.\tbls\tbls.exe out -t mermaid --include "learn_curriculum.*" -o lab-tbls.mmd "postgres://postgres@localhost:5432/learn?sslmode=disable"
+```
+
+On Linux (x86-64), with the password in `~/.pgpass`:
+
+```sh
+curl -fLO https://github.com/k1LoW/tbls/releases/download/v1.96.1/tbls_v1.96.1_linux_amd64.tar.gz
+echo "18285eef0ba7d917214e8bd7dd6a22afe5fea021eed52e7149100a3d10a2af95  tbls_v1.96.1_linux_amd64.tar.gz" | sha256sum -c   # must print OK
+tar xzf tbls_v1.96.1_linux_amd64.tar.gz tbls
+./tbls out -t mermaid --include 'learn_curriculum.*' -o lab-tbls.mmd "postgres://postgres@localhost:5432/learn?sslmode=disable"
+```
+
+Open `lab-tbls.mmd` beside [the lab schema's diagram](/learn/schema/lab/). What do the two agree on, and what does each have that the other doesn't?
+
+**What you should find:** the 14 tables, their 69 columns and types, and the 15 lines agree, cardinality included. tbls reads "zero or one" from a foreign key that may be `NULL` (`occurrences.country_code`) and "at most one per country" from a foreign key that is also its table's primary key (`country_shapes`), as the course's diagram draws them. It spells a type's punctuation as underscores (`double_precision`, `geometry_Point_4326_`). It draws the view `species_taxonomy` as a box like a table, without lines, because a view has no keys. It leaves out what the database doesn't hold: the two planned tables, every column's note (they live in the diagram's source, not in the database), and, in Mermaid, the primary and unique keys. A diagram read back from the catalog shows exactly what the database enforces, so it is a good check on a drawn one; critwire's tests compare the lab diagram with a freshly loaded lab the same way. What a column means and what is planned still has to be written down by a person.
+
 **Dialects:**
 - **PostgreSQL:** as here, with surrogate keys from `GENERATED ALWAYS AS IDENTITY` (or the older `serial`); generated columns are `STORED` only (virtual ones come in PostgreSQL 18); foreign keys take `ON DELETE CASCADE | SET NULL | RESTRICT`, can be `DEFERRABLE` (checked at commit), and can be added `NOT VALID` and checked later with `VALIDATE CONSTRAINT`; `UNIQUE NULLS NOT DISTINCT` makes `NULL`s collide; no automatic index on a foreign key.
 - **DuckDB:** keys as here, but foreign keys only in `CREATE TABLE`, with no `CASCADE` or `SET NULL` actions; no identity columns (a `CREATE SEQUENCE` and `DEFAULT nextval('…')` do it); generated columns are virtual only; primary keys and `UNIQUE` build an index, which also makes bulk loads into keyed tables slower.
