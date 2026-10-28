@@ -2,7 +2,7 @@
 mission: critwire-learn-l2-site
 project: critwire
 branch: agent/critwire-learn-l2-site
-status: active
+status: done
 started: 2026-10-28 11:53 UTC
 ---
 
@@ -1116,6 +1116,7 @@ All three checked against the code and agreed real; fixes are S29–S31.
 - 2026-10-28 · S28, item 7 (tbls): done (S28). Condition held (36 sessions at S28, cap 48). tbls 1.96.1 in `~/.local/bin` from the release's linux_arm64 tarball, sha256 `f5da6e28…850a` checked against `checksums-linux.txt` (no apt; binary sha256 `9adf146a…d4c2`). d1 gets an ungraded "Second exercise, on your own computer" (004 d1 after **Check:**, page `<h2>` after Check): PowerShell + Linux fences (not counted), pinned 1.96.1 with the Windows/Linux x86-64 sha256s from the release, DSN without password (pgpass; proven here with PGPASSFILE), answer in `<details>`. One comparison through `erd-model` `parseErd` (tbls names unquoted, types de-underscored): 14 tables, 69 columns, types, FK markers and 15 relationships incl. cardinality agree; tbls adds the view `species_taxonomy`, lacks the 2 planned tables, PK/UK markers (26) and notes (69). Record `$M/tbls-compare.txt` (+ `$M/tbls/{compare.ts,lab-tbls.mmd}`). No repo script: a one-off record, and learn:check already proves lab.mmd = catalog on every run.
 - 2026-10-28 · S27: for the Summary: L1's Astra SHOULD-CONSIDER, `scripts/env.ts:27` duplicate detection ignores `export KEY=` / `KEY = v` dotenv forms, not adopted (outside L2's Scope).
 - 2026-10-28 · S27: 004 final pass: §0 (runners = `learn:check` + E2E; "Re-running the tests" now the repository's commands; spike frozen as evidence, still the only run of unbuilt modules' blocks), §7.5 (curriculum keys `tools`/`skill`/`questions`; slots; block files keep their headers; star-block refusal; `--draft` warns; freshness adds canary SQL + `labErd`), §7.6 (static stage, `--update`, `--module`; L2's parts), §7.7 (`schema` checks only schema.mmd, lab/star elsewhere per §6; `learn-screens`, `learn-timing`; actual screenshot set; release smoke). §6 and §9 already agreed (S7, S24). Handoff H4 (owner's Windows check) added; blocks nothing.
+- 2026-10-28 · Verification: first `pnpm test:db` failed LC5 once (`TypeError` reading `ARGV`): the runner reads both watched schemas with concurrent psql calls (`runner.ts` `readWatched`), and the test's psql wrapper appended every call to one file, so two calls' lines interleaved. Test harness only: the wrapper now writes one file per call (bfb0c09). Product unchanged, so the build and E2E run before it stand; test:db re-run 110/110.
 
 ## Log
 
@@ -1157,5 +1158,37 @@ All three checked against the code and agreed real; fixes are S29–S31.
 - 2026-10-28 21:31 UTC · S29: `check.ts` `numEq`: a nonfinite side compares by `Object.is` (Infinity only the same Infinity, NaN only NaN) before the tolerance; CK10 in `exercise.test.ts` (Inf vs 42n/42/max double, -Inf vs Inf, NaN vs 0/Inf, Inf/-Inf/NaN self), red 1 → green 1. T: typecheck ok, test 549/549; B ok; E: 78/78, 0 unexpected/skipped/flaky.
 - 2026-10-28 21:42 UTC · S30: `module.ts`: the page's `.mark-done` captured at init and passed to `markModuleDone`; a check settling after `signal` aborted is dropped (no hook, verdict or done). E2E "a skip check left running when the learner moves to the next module marks neither module done" (f1: slow query holds the queue, f1-skip queued, next → f2, f2-count settles after), red 1 (f2 marked done) → green 1. T: typecheck ok, test 549/549; B ok; E 79/79, 0 unexpected/skipped/flaky (`$M/e2e-s30`); H 169 equal.
 - 2026-10-28 21:55 UTC · S31: `engine.ts` keeps each unsettled run's reject; `restart` rejects every running and queued run with `Superseded` (terminate() leaves them pending); a lost transaction's restart waits for its own run to settle, so that run keeps its error; `editor.ts`: a run another editor's Stop/Reset overtook re-enables, clears its hook result and says "restarted before this run finished". E2E "Reset from one editor settles the others' running and queued runs" (f1: runaway in f1-unknown, f1-taxonomy queued, Reset from f1-no-photo), red 1 (f1-unknown stayed busy) → green 1. T: typecheck ok, test 549/549; B ok; E 80/80, 0 unexpected/skipped/flaky (`$M/e2e-s31`); H 169 equal.
+- 2026-10-28 22:25 UTC · Verification (1–9) on bfb0c09: install up to date, pins 1.33.1-dev65.0 / 0.28.2 / 12.2.0; B ok (dist/learn/data 40,041,618 B, committed lab data 13,677,679 B); E 80/80, 0 unexpected/skipped/flaky, 80 traces, artifact `$M/e2e/`, setup median 3,388 ms (limit 4,350); typecheck ok, test 549/549, test:db 110/110 (after LC5 harness fix, Decisions), leak query empty; learn:check twice exit 0 (PG 16.15 / PostGIS 3.4.2 / GEOS 3.12.1 = checked.json, 76 PostGIS blocks ok, 6 downloads with announced ERRORs only), tree clean, canary diff empty, leak empty; P 11 pages, 288 files equal 004; erd up to date; H 169 equal, manifest diff empty; determinism 224 files equal across two builds. Summary written, status done.
 
 ## Summary
+
+**Shipped** (branch `agent/critwire-learn-l2-site`, 45 commits, 443 files): Learn's site at `/learn/`, built offline by `pnpm build`.
+- Map (`/learn/`, progress ticks + Clear progress), 7 track pages, `curriculum.json` (33 modules: f1–f4, d1–d6 `built`; g1–c1 `planned`, unlinked "in preparation"), `/learn/setup/` (§3 minus Python), `/learn/playground/`, schema pages for schema v2, lab and star (SVG ERDs + relationships in words + dictionaries), 4 diagrams (light/dark).
+- 10 module pages f1–f4, d1–d6: browser blocks run in DuckDB-Wasm (pinned 1.33.1-dev65.0, eh only, parquet extension mirrored + sha256-pinned), cards/table results, exercises + skip checks, Reset/Stop, one engine across in-page navigation; PostGIS blocks shown with their recorded results, versions and a per-module download (`/learn/labs/<page>.sql`).
+- Checker: `learn:check` runs every PostGIS block of setup + d1–d6 as `critwire_lab` (plain, `tx: own`, boot, two-session `-- sessions:` blocks), `-- plan:` assertions for EXPLAIN, leak + canary checks, cleanup under the lab lock, each download on a fresh load, `checked.json` freshness the build enforces. `learn:port` keeps 004 and the site equal (`--check all`). `pnpm erd` draws the ERDs (Mermaid 12.2.0, offline, deterministic); the build refuses stale SVGs.
+- d6's star published under `/learn/data/star/` (7 CSVs + manifest), cross-engine checked against DuckDB; `star.mmd` marks the 2 habitat tables `planned`.
+
+**Verification** (on bfb0c09, details in Log): E2E 80/80 (0 unexpected, skipped, flaky); artifact `/srv/critter-ai/agent-state/missions/critwire-learn-l2-site/e2e/` (Playwright HTML report, 80 traces, `results.json`, `setup-timing.json`, `caddy-access.log`, 20 + 3 screenshots). Reproduce: `pnpm build && E2E_ARTIFACTS=<dir> pnpm e2e`. Setup timing (T13): median 3,388 ms over 5 visits, limit 4,350 ms (A1's first visit 2,900 ms). typecheck ok; test 549/549; test:db 110/110; learn:check twice clean; 004 parity 288 files; L1's 169 files and manifest unchanged; dist reproducible (224 files).
+
+**Reviews:** architecture: Fable and Astra both APPROVE_WITH_CHANGES, MUST-FIX resolved in Revision. Code review (Astra): APPROVE_WITH_CHANGES, 3 MUST-FIX, all fixed (S29–S31), no SHOULD-CONSIDER. L1's Astra SHOULD-CONSIDER (`scripts/env.ts:27` ignores `export KEY=` / `KEY = v` dotenv forms) not adopted: outside L2's scope.
+
+**Deviations from 004** (each landed in 004 and the page together; `P` proves them equal):
+- d1: candidate key = NOT NULL + UNIQUE; the six outside ids are "optional unique ids"; GBIF-id uniqueness scoped to critwire's animals; Lab step 7 teaches rank by composite FK (`d1-rank-fk`, `d1-rank-wrong`, new); ungraded tbls "second exercise" (tbls 1.96.1).
+- d2: 1NF/3NF/BCNF and lossless-split wording corrected (S19).
+- d3: 17 EXPLAIN blocks carry `-- plan:` assertions; EXPLAIN results are examples from the named versions, checked by their assertions, not hashes (§0).
+- d4: MVCC "neither waits" scoped to plain reads (locking reads and DDL wait); upsert scope; `xmin` a diagnostic. `d4-wait`/`d4-isolation` now run and are recorded (two sessions).
+- d5: INHERIT/SET as per-grant options, PUBLIC defaults ≠ proof, `\drg`; `d5-privileges` result moved (CONNECT/TEMPORARY false: `critwire_dev` revokes PUBLIC); 004 and page say why.
+- d6: `d6-scd2` split (`d6-scd2-versions` check `0 | 0`, then `d6-scd2`), column `filed_then` → `name_then`; §6.3 sharing (`dim_species` shared by the two species facts).
+- §0, §7.5–7.7 aligned with the code (runners, headers, freshness, screenshots, release smoke). Module titles written fresh (004 had slugs only).
+
+**Release:** see `## Release` (next unit).
+
+**For L3** (critwire-learn-l3-gis):
+- New modules: port with `pnpm learn:port <id>`, write `modules/<id>.html`, set `built` in `curriculum.json`, then `pnpm build --draft && pnpm learn:check --update && pnpm build && pnpm e2e`; a result that differs from 004 is a bug first. 004 §0's spike is still the only run of g1–g7's blocks.
+- Copy in built pages names g1/g3 unlinked "in preparation"; link them when their pages land (`learn-map` checks links resolve).
+- `star.mmd`'s `%% planned:` habitat tables and the stand-in `data/learn/habitat*` stay until the habitat fact lands (L5 per the brief; AGENTS.md says L3's `ingest habitat` replaces the stand-ins).
+- `dist/learn/data/` is 40.0 MB of the 50 MB cap: GIS additions must fit (004 §4.4's cuts otherwise, owner's call).
+- Owner's Windows check (handoff H4) is due between L2 and L3; H3 (GBIF download retention) before 2027-04-23.
+- Retiring a species id still fails the build (no replacement junction in Learn's projection).
+- `pnpm test:db` LC5 wrapper race fixed this session (Decisions); concurrent psql calls are by design.
+
