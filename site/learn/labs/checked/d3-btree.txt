@@ -1,0 +1,7 @@
+-- result: d3-btree · 5 rows · sha256 d6791edbc017
+QUERY PLAN
+Bitmap Heap Scan on occurrences (actual rows=9 loops=1)
+  Recheck Cond: (species_id = 63)
+  Heap Blocks: exact=6
+  ->  Bitmap Index Scan on occurrences_species_id_idx (actua…
+        Index Cond: (species_id = 63)

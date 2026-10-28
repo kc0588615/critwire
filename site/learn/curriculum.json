@@ -159,7 +159,7 @@
       "prereqs": [
         "d1"
       ],
-      "state": "planned",
+      "state": "built",
       "skill": "B-tree, GiST and BRIN indexes; `EXPLAIN` and `EXPLAIN ANALYZE`; planner statistics",
       "questions": [
         "Why is this a sequential scan?",

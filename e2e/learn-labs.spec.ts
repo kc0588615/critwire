@@ -1,9 +1,10 @@
 // Learn's lab blocks on their pages and in their downloads (plan D13 learn-labs, S13; 004 §7.2–7.3): each page's
 // /learn/labs/ file is served as the build assembled it (assemble.ts, what learn:check ran); each PostGIS block's
 // page code appears verbatim in it, or, for an untested or two-session block, commented out under its reason; the
-// result a page shows is checked/<id>.txt, and its versions line is checked.json's; a Power BI block lists the star
-// files it reads with the manifest's rows and sha256, which the served files match and star-check passes. The setup
-// page links the checks' download (pg-checks.sql) and the loader.
+// result a page shows is checked/<id>.txt, and its versions line is checked.json's; an EXPLAIN block lists its
+// `-- plan:` lines and labels its plan an example (D4); a Power BI block lists the star files it reads with the
+// manifest's rows and sha256, which the served files match and star-check passes. The setup page links the checks'
+// download (pg-checks.sql) and the loader.
 import { expect, test } from "@playwright/test";
 import { readFile } from "node:fs/promises";
 import { moduleUrl } from "../scripts/build/learn/module-html.ts";
@@ -67,6 +68,11 @@ test("a PostGIS block shows checked/<id>.txt (or its untested reason); the page'
       if (b.status === "untested") await expect(page.locator(`#q-${b.id} .untested`)).toHaveText(`Not run here: ${b.reason}.`);
       else expect(await page.locator(`#q-${b.id} pre.recorded`).textContent(), b.id)
         .toBe(trimEnd(await readFile(repoPath(`${CHECKED_DIR}/${b.id}.txt`), "utf8")));
+      // An EXPLAIN block (plan D4): what its plan must show, one item per `-- plan:` line, its recorded plan an example.
+      const checks = page.locator(`#q-${b.id} .plan-checks li`);
+      await expect(checks, b.id).toHaveCount(b.plan.length);
+      for (const [i, a] of b.plan.entries()) await expect(checks.nth(i), b.id).toContainText(a.kind === "rows" ? `actual rows=${a.rows}` : a.text);
+      await expect(page.locator(`#q-${b.id} .plan-example`), b.id).toHaveCount(b.plan.length ? 1 : 0);
     }
   }
   expect(offOrigin).toEqual([]);

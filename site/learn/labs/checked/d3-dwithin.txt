@@ -1,0 +1,8 @@
+-- result: d3-dwithin · 10 rows · sha256 d06922cb9525
+QUERY PLAN
+Nested Loop (actual rows=186 loops=1)
+  ->  Seq Scan on admin1_shapes a (actual rows=1 loops=1)
+        Filter: (name = 'Tasmania'::text)
+        Rows Removed by Filter: 293
+  ->  Bitmap Heap Scan on occurrences o (actual rows=186 loo…
+… 5 more rows

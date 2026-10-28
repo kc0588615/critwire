@@ -21,13 +21,17 @@ const AFTER = block("site/learn/sql/x1-more.sql", "-- q: x1-more\n-- status: ran
 const EX = block("site/learn/sql/x1-ex.sql", "-- q: x1-ex\n-- status: ran\nCREATE TABLE t (a INTEGER PRIMARY KEY);\nSELECT 1 AS one;\n");
 const PROBE = block("site/learn/sql/x1-probe.sql", "-- q: x1-probe\n-- status: ran\n-- after: x1-ex\n-- expect: error Duplicate key\nINSERT INTO t VALUES (1), (1);\n");
 const PG = block("site/learn/sql/x1-pg.sql", "-- q: x1-pg\n-- status: ran\n-- engine: postgis\nSELECT '</pre>' AS tag;\n");
+const PLAN = block("site/learn/sql/x1-plan.sql", "-- q: x1-plan\n-- status: ran\n-- engine: postgis\n-- plan: rows 9\n-- plan: Index Cond: (a < 3)\n-- plan: no Seq Scan\nEXPLAIN (ANALYZE, COSTS OFF, TIMING OFF, SUMMARY OFF)\nSELECT a FROM t WHERE a < 3;\n");
 const PG2 = block("site/learn/sql/x1-pg2.sql", "-- q: x1-pg2\n-- status: untested: it needs two psql windows\n-- engine: postgis\nSELECT 2 AS two;\n");
 const PBI = block("site/learn/sql/x1-pbi.m", '// q: x1-pbi\n// status: untested: Power BI is Windows-only\n// input: star/dim_country.csv\nlet T = Table.TransformColumnTypes(S, {{"a", type text}}) in T\n');
 
 const ctx = (over: Partial<PageContext> = {}): PageContext => ({
   file: "site/learn/modules/x1.html",
-  blocks: new Map([LESSON, AFTER, EX, PROBE, PG, PG2, PBI].map((b) => [b.id, b])),
-  recorded: new Map([["x1-pg", "-- result: x1-pg · 1 row · sha256 000000000000\ntag\n</pre>"]]),
+  blocks: new Map([LESSON, AFTER, EX, PROBE, PG, PLAN, PG2, PBI].map((b) => [b.id, b])),
+  recorded: new Map([
+    ["x1-pg", "-- result: x1-pg · 1 row · sha256 000000000000\ntag\n</pre>"],
+    ["x1-plan", "-- result: x1-plan · 2 rows · sha256 111111111111\nQUERY PLAN\nIndex Scan using t_a_idx on t (actual rows=9 loops=1)\n  Index Cond: (a < 3)"],
+  ]),
   stamp: { checked: "2026-10-28", versions: { postgresql: "16.15", postgis: "3.4.2", geos: "3.12.1" } },
   download: "x1.sql",
   star: { "dim_country.csv": { rows: 250, sha256: "ab".repeat(32) } },
@@ -81,6 +85,15 @@ test("MH5 a PostGIS block: code, its recorded result, the download; the versions
   assert.equal(count(html, '<a href="/learn/labs/x1.sql">x1.sql</a>'), 2);
   assert.equal(count(html, 'data-dialog="lab"'), 2);
   assert.equal(count(html, '<dialog id="dialog-lab"'), 1);
+});
+
+test("MH5b an EXPLAIN block lists what its plan must show, from its `-- plan:` lines, and labels the recorded plan an example", () => {
+  const html = render("{{block:x1-plan}}");
+  assert.ok(html.includes('<ul class="plan-checks"><li>the top node returns 9 rows (<code>actual rows=9</code>)</li><li>a line with <code>Index Cond: (a &lt; 3)</code></li><li>no line with <code>Seq Scan</code></li></ul>'));
+  assert.ok(html.indexOf('class="plan-checks"') < html.indexOf('<pre class="recorded">'));
+  assert.match(html, /<p class="plan-example">An example plan, from the versions above; yours passes if it shows the lines listed, whatever else differs\.<\/p>\n<pre class="recorded">/);
+  assert.ok(!render("{{block:x1-pg}}").includes("plan-checks"));
+  assert.ok(!render("{{block:x1-pg}}").includes("plan-example"));
 });
 
 test("MH6 a ran PostGIS block without its recorded result: refused, unless --draft; no checked.json: refused", () => {

@@ -1,0 +1,8 @@
+-- result: d3-join-seq · 8 rows · sha256 5f5262a5b6e9
+QUERY PLAN
+Hash Join (actual rows=9 loops=1)
+  Hash Cond: (o.species_id = s.id)
+  ->  Seq Scan on occurrences o (actual rows=40395 loops=1)
+  ->  Hash (actual rows=1 loops=1)
+        Buckets: 1024  Batches: 1  Memory Usage: 9kB
+… 3 more rows

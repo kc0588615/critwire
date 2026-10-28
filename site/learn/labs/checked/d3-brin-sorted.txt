@@ -1,0 +1,8 @@
+-- result: d3-brin-sorted · 6 rows · sha256 7f856cb65d9e
+QUERY PLAN
+Bitmap Heap Scan on occurrences_by_year (actual rows=26 loop…
+  Recheck Cond: ((year >= 1850) AND (year <= 1859))
+  Rows Removed by Index Recheck: 6488
+  Heap Blocks: lossy=128
+  ->  Bitmap Index Scan on occurrences_by_year_brin (actual …
+… 1 more row

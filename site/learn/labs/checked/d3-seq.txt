@@ -1,0 +1,5 @@
+-- result: d3-seq · 3 rows · sha256 2b6ae5eab0fd
+QUERY PLAN
+Seq Scan on occurrences (actual rows=9 loops=1)
+  Filter: (species_id = 63)
+  Rows Removed by Filter: 40386

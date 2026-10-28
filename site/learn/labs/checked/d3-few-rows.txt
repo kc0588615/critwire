@@ -1,0 +1,4 @@
+-- result: d3-few-rows · 2 rows · sha256 38ac5a7e9de0
+QUERY PLAN
+Index Scan using occurrences_year_idx on occurrences (actual…
+  Index Cond: (year >= 2026)

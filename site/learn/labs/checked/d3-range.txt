@@ -1,0 +1,4 @@
+-- result: d3-range · 2 rows · sha256 d4f341dad05f
+QUERY PLAN
+Index Scan using occurrences_year_idx on occurrences (actual…
+  Index Cond: ((year >= 1850) AND (year <= 1859))

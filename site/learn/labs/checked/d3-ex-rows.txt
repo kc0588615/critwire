@@ -1,0 +1,8 @@
+-- result: d3-ex-rows · 20 rows · sha256 2be4fa3d7b63
+id | year | month
+6004147577 | 2009 | NULL
+6004147576 | 2009 | NULL
+6004147534 | 2009 | NULL
+6004147500 | 2009 | NULL
+6004147435 | 2009 | NULL
+… 15 more rows

@@ -7,11 +7,13 @@
 //   a probe), Run, Stop, Reset database, Schema, a result region (cards.ts tabs). The page's script runs it isolated
 //   after its `-- after:` blocks' code as written (site/learn/src/pages/module.ts).
 // - postgis: the code, read-only, with Copy; the result learn:check recorded (checked/<id>.txt) or the untested reason;
-//   the page's download; Lab schema. Before the page's first one: "Checked <date> on PostgreSQL…", from checked.json.
+//   an EXPLAIN block's `-- plan:` lines in words above its recorded plan, an example; the page's download; Lab schema.
+//   Before the page's first one: "Checked <date> on PostgreSQL…", from checked.json.
 // - powerbi (m, dax): the code; the star files it reads with the manifest's rows and sha256; "Not run by critwire".
 // - exercise and skip (duckdb): Your answer, Check, a verdict, the reference behind Show answer; a skip check marks the
 //   module done. A PostGIS exercise: Show answer around its code and recorded result.
 import type { Block } from "../../learn/blocks.ts";
+import type { PlanAssertion } from "../../learn/plan.ts";
 import { pageSlots, type Curriculum, type Module, type Slot, type TOOLS } from "../../learn/course.ts";
 import type { Stamp } from "../../learn/freshness.ts";
 import type { StarManifest } from "../../learn/star-check.ts";
@@ -108,10 +110,21 @@ const codeHead = (b: Block, engine: string, extra = "") =>
   `<p class="block-head"><span class="block-id">${b.id}</span> · ${engine} <button type="button" class="copy" data-copy="code-${b.id}">Copy</button>${extra}</p>\n` +
   `<pre class="code" id="code-${b.id}"><code>${esc(trimEnd(b.code))}</code></pre>`;
 
+/** An EXPLAIN block's `-- plan:` lines in words, and the recorded plan labelled an example (plan D4); "" for other blocks. */
+function planChecks(b: Block): string {
+  if (!b.plan.length) return "";
+  const item = (a: PlanAssertion) =>
+    a.kind === "rows" ? `the top node returns ${a.rows} rows (<code>actual rows=${a.rows}</code>)` : `${a.kind === "no" ? "no line" : "a line"} with <code>${esc(a.text)}</code>`;
+  return (
+    `<p>What the plan must show:</p>\n<ul class="plan-checks">${b.plan.map((a) => `<li>${item(a)}</li>`).join("")}</ul>\n` +
+    `<p class="plan-example">An example plan, from the versions above; yours passes if it shows the lines listed, whatever else differs.</p>\n`
+  );
+}
+
 function labResult(b: Block, ctx: PageContext): string {
   if (b.status === "untested") return `<p class="untested">Not run here: ${esc(b.reason)}.</p>`;
   const recorded = ctx.recorded.get(b.id);
-  if (recorded !== undefined) return `<pre class="recorded">\n${esc(trimEnd(recorded))}</pre>`;
+  if (recorded !== undefined) return planChecks(b) + `<pre class="recorded">\n${esc(trimEnd(recorded))}</pre>`;
   if (ctx.draft) return `<p class="untested">No result recorded yet (draft build): run pnpm learn:check --update.</p>`;
   throw new Error(`${ctx.file}: q ${b.id}: no recorded result (site/learn/labs/checked/${b.id}.txt)`);
 }

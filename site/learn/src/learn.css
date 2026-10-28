@@ -50,6 +50,8 @@ pre.code, pre.recorded { overflow-x: auto; background: var(--code); border: 1px 
 pre.recorded { background: transparent; border-style: dashed; }
 .checked, .download, .runs-after, .prereqs { color: var(--muted); font-size: .95rem; }
 .untested { font-size: .95rem; border-left: 4px solid var(--line); padding-left: .75rem; }
+.plan-checks { margin: .25rem 0 .5rem; }
+.plan-example { font-size: .95rem; color: var(--muted); margin: 0 0 .25rem; }
 .badges { display: flex; flex-wrap: wrap; gap: .4rem; list-style: none; padding: 0; margin: .25rem 0 1rem; }
 .badges li { font-size: .85rem; border: 1px solid var(--line); border-radius: 999px; padding: .1rem .6rem; }
 .verdict:empty { display: none; }

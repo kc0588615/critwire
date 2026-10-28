@@ -1,0 +1,86 @@
+<p class="lead">Find out why a query reads the whole table, and what makes it read only the rows it needs: B-tree, GiST and BRIN indexes, plans from <code>EXPLAIN ANALYZE</code>, and the statistics the planner chooses by. Everything runs in your own PostgreSQL, on the lab tables (<a href="/learn/setup/">the setup page</a>).</p>
+
+<h2>Concept</h2>
+<p>PostgreSQL stores a table as 8 kB pages, about fifty records to a page in <code>occurrences</code>. A query that has nothing better reads every page, in order, and tests every row: a <strong>sequential scan</strong>. An <strong>index</strong> is a second structure, kept in step with the table, that leads from a value to the rows holding it. Before running a query, the <strong>planner</strong> writes several plans and picks the one it expects to read the fewest pages for the least work. That expectation comes from the <strong>statistics</strong> <code>ANALYZE</code> collects. So "why is this a sequential scan?" has four usual answers: there is no index that fits; the query hides the column inside an expression; the filter keeps so many rows that reading the whole table is cheaper; or the statistics are wrong.</p>
+<ul>
+<li>A <strong>B-tree</strong> (the default, <code>CREATE INDEX … ON t (col)</code>) keeps the values sorted. It finds one value, a range (<code>BETWEEN</code>, <code>&gt;=</code>) or rows in sorted order (<code>ORDER BY … LIMIT</code>). An index on <code>(a, b)</code> is sorted by <code>a</code>, then by <code>b</code> inside each <code>a</code>: it jumps straight to <code>a = 48 AND b = 2010</code> or to <code>a = 48</code>, but a condition on <code>b</code> alone has nothing to jump to.</li>
+<li>How the rows are fetched shows in the plan. An <strong>Index Scan</strong> walks the index and fetches each row as it goes, in index order. A <strong>Bitmap Index Scan</strong> first collects every matching row's location, then the <strong>Bitmap Heap Scan</strong> reads each page that holds one, once, in page order (<code>Heap Blocks: exact=6</code> is six pages). Which the planner picks depends on how many rows match and how scattered they are: rows stored in roughly the index's order (a high correlation, below) favour the Index Scan. An <strong>Index Only Scan</strong> answers from the index alone, when every column the query needs is in the index and <code>VACUUM</code> has marked the pages all-visible. Because that depends on when autovacuum last ran, the labs below always ask for a column outside the index. That removes one source of variation, not all: a plan can still change with the PostgreSQL version or the statistics, so each lab says what its plan must show, not what its text must be.</li>
+<li><strong>Statistics</strong> live in <code>pg_statistic</code>, readable through the view <code>pg_stats</code>: per column, the share of <code>NULL</code>s, the number of distinct values, the most common values with their frequencies, a histogram of the rest, and the <strong>correlation</strong> between the values' order and the rows' physical order (1: stored in value order; 0: scattered). <code>ANALYZE</code> reads a sample of 300 × <code>default_statistics_target</code> rows (100, so 30,000), and autovacuum runs it again after enough of a table changes. After a bulk load, run it yourself: the lab file ends with <code>ANALYZE</code> on every table. The planner treats columns as <strong>independent</strong>, which goes wrong when one column predicts another; <code>CREATE STATISTICS</code> teaches it how they go together.</li>
+<li>A <strong>GiST</strong> index on a geometry column stores each shape's bounding box in a tree of boxes. A spatial test like <code>ST_Intersects</code>, <code>ST_Covers</code> or <code>ST_DWithin</code> adds a box comparison the index can answer (<code>&amp;&amp;</code>, boxes overlap; <code>@</code>, box inside box), then runs the exact test only on the rows whose boxes passed. A test the index can't turn into a box, such as <code>ST_Distance(…) &lt; d</code>, computes on every row. The lab file builds one on every geometry column (<code>occurrences_geom_idx</code>). Spatial indexes (g5, in preparation) goes further: nearest neighbours with <code>&lt;-&gt;</code> and geography.</li>
+<li>A <strong>BRIN</strong> index keeps one summary, the smallest and largest value, per range of pages (128 by default). It is tiny, and it can only rule out ranges, so it helps as far as the values follow the physical order: most when they do (an id that grows as rows are appended, the time of a log line), partly when they roughly do (lab step 16 skips three ranges of seven), not at all when they are scattered. The column's correlation, from 1 or −1 down to 0, tells you how far.</li>
+<li><strong><code>EXPLAIN</code></strong> prints the chosen plan; <strong><code>EXPLAIN ANALYZE</code></strong> also runs the query and adds what really happened at each step (<code>actual rows</code>, <code>Rows Removed by Filter</code>). Read a plan from the innermost, most indented line outwards. On your own, use <code>EXPLAIN (ANALYZE, BUFFERS)</code>, which adds the planner's estimated cost and rows, the time and the pages read. The labs print <code>EXPLAIN (ANALYZE, COSTS OFF, TIMING OFF, SUMMARY OFF)</code>, the plan's shape and its row counts only, because costs and times vary from machine to machine. Each lab lists what its plan must show: a text some line contains (<code>Index Cond: (species_id = 63)</code>), a text no line contains (no <code>Seq Scan</code>), and how many rows the top node returns. The plan printed under it is an example, from the versions named above the first block; yours may differ in its details and still be right. <code>EXPLAIN ANALYZE</code> on an <code>INSERT</code>, <code>UPDATE</code> or <code>DELETE</code> really changes the rows, so wrap it in <code>BEGIN</code> … <code>ROLLBACK</code>.</li>
+<li>Indexes aren't free. Every index makes every write slower and takes disk space, and a primary key or <code>UNIQUE</code> constraint already brings one (<a href="/learn/database-architecture/keys/">Keys and constraints, d1</a>). A foreign key doesn't: index its column when you join or delete through it. And a bulk load is faster when the indexes are built after the rows are in, which is why the lab file adds its keys and indexes after loading the data.</li>
+</ul>
+<p>Each lab below starts from the loaded tables: critwire's tests run every block in a transaction and roll it back. To do the same in <code>psql</code>, type <code>BEGIN;</code> before a lab and <code>ROLLBACK;</code> after it, so the indexes you make in one lab don't change the plans of the next. The download runs the blocks in order, each after the blocks it needs.</p>
+
+<h2>Worked example</h2>
+<p>Why is this a sequential scan? First, statistics everyone can reproduce. <code>ANALYZE</code> reads a random sample, so its numbers could differ slightly from one run to the next; with the target set to 1,000 it reads 300,000 rows, more than <code>occurrences</code> holds, so it reads them all and gets the same statistics every time. <code>SET LOCAL</code> lasts until the transaction ends. Every block of this module runs after this one:</p>
+{{block:d3-analyze}}
+<p>Temminck's pangolin (species 63) has nine records in the lab. With no index on <code>species_id</code>, PostgreSQL reads all 40,395 rows to find them:</p>
+{{block:d3-seq}}
+<p><code>Rows Removed by Filter</code> is the waste: every row tested and thrown away. An index on the foreign key d1 left unindexed:</p>
+{{block:d3-btree}}
+<p>The index finds the nine rows, and the table is read only where they are: six pages instead of all of them.</p>
+
+<h2>Lab</h2>
+<ol class="steps">
+<li><p>An index the planner doesn't use. With an index on <code>year</code>, ask for every record since 2000:</p>
+{{block:d3-many-rows}}</li>
+<li><p>Seven records in ten are from 2000 or later. Through the index, PostgreSQL would read much of the index and still nearly every page of the table, so reading the table straight through is cheaper. Ask for this year's records, 74 of them, and the same index is used:</p>
+{{block:d3-few-rows}}</li>
+<li><p>A column inside an expression. The records of the 1850s, written as "the decade is 185":</p>
+{{block:d3-function}}</li>
+<li><p>The index holds <code>year</code>, not <code>year / 10</code>, so it can't help. The same question as a range on the bare column can use it:</p>
+{{block:d3-range}}
+<p>The other way out is an index on the expression itself, <code>CREATE INDEX ON occurrences ((year / 10))</code>, which the planner uses for exactly that expression (run <code>ANALYZE</code> afterwards, so it has statistics for it too). The same goes for <code>lower(name) = …</code> and an index on <code>lower(name)</code>.</p></li>
+<li><p>A join through the foreign key, as an app asks for one animal's records by its slug. Without an index on <code>occurrences.species_id</code>, PostgreSQL builds a hash table of the matching animal and runs every record past it:</p>
+{{block:d3-join-seq}}</li>
+<li><p>With the index from the worked example, it finds the animal first, then looks up its records (a nested loop: for each row outside, an index lookup inside). <code>species</code> is read in full both times: 76 rows fit in a few pages, and no index beats that.</p>
+{{block:d3-join-index}}</li>
+<li><p>An index on two columns. The devil's records of 2010, found through both columns at once:</p>
+{{block:d3-two-columns}}</li>
+<li><p>The same index, asked about <code>year</code> alone (1850 to 1899). It is still used, which surprises people taught that a second column is useless on its own. But the years are sorted only inside each animal, so there is no place to jump to: PostgreSQL 16 reads every entry of the index and checks the year on each, which here is still cheaper than reading the table. On a large table that is a scan of the whole index; give such a query its own index on <code>year</code>. (PostgreSQL 18's skip scan jumps animal by animal instead.)</p>
+{{block:d3-second-column}}</li>
+<li><p>What the planner believes about <code>occurrences</code>. A negative <code>n_distinct</code> is a share of the rows: −1 means every value is different. <code>id</code> has a correlation of 1 because the loader writes the rows in id order; <code>year</code> is partly ordered (0.62), the rest close to 0.</p>
+{{block:d3-stats}}</li>
+<li><p>The most common values, and the estimate each gives: the frequency times the rows the planner expects. Because <code>d3-analyze</code> read every row, the estimates are exact; with the default sample they would be close.</p>
+{{block:d3-mcv}}</li>
+<li><p>Two conditions together: the devil's records in Australia. The planner multiplies the two frequencies, as if an animal's country were chance:</p>
+{{block:d3-independent}}</li>
+<li><p>A guess nearly nine times too low is how a planner picks a nested loop where a hash join was needed. Extended statistics on the pair record the combinations that actually occur (<code>mcv</code>), and the planner uses them for both conditions at once:</p>
+{{block:d3-extended}}</li>
+<li><p>A spatial join through GiST: the records inside Nepal. The index finds the records whose point is inside Nepal's bounding box (<code>@</code>); <code>ST_Covers</code> then tests each one against the outline, and the box's corners outside Nepal are what it removes:</p>
+{{block:d3-gist-join}}</li>
+<li><p>Records within half a degree of a point in Tasmania. (Degrees, because the lab's points are longitude and latitude; later GIS modules measure in metres.) <code>ST_DWithin</code> widens the point into a box half a degree each way, the index finds the records in the box, and the exact distance runs on those only:</p>
+{{block:d3-dwithin}}</li>
+<li><p>The same question written with <code>ST_Distance</code>. Same rows, but there is no box to give the index, so every record's distance is computed:</p>
+{{block:d3-distance}}</li>
+<li><p>A BRIN index on <code>year</code>, as the table is stored. A BRIN index returns page ranges, not rows; PostgreSQL counts ten rows per page in its <code>actual rows</code>. The table's 40,395 rows fill seven ranges of 128 pages, and four of them hold some record from the 1850s, so 512 pages are read and rechecked row by row. <code>year</code>'s correlation of 0.62 is enough to skip three ranges, not more:</p>
+{{block:d3-brin}}</li>
+<li><p>The same index on a copy stored in year order (<code>occurrences_by_year</code>; <code>CLUSTER</code> reorders a table in place, but it locks the table while it does). Now the 1850s sit in the first range only:</p>
+{{block:d3-brin-sorted}}</li>
+<li><p>What each costs on disk: the BRIN index is three pages, a B-tree on the same column about a twentieth of the table.</p>
+{{block:d3-sizes}}</li>
+</ol>
+
+<h2>Result</h2>
+<p>A filter on an unindexed column reads the whole table (40,386 of the pangolin's 40,395 rows thrown away); a B-tree turns it into six pages, and turns the slug join from a hash join over every record into a nested loop over nine. The planner skips an index when the filter keeps most of the table (72 % of records are from 2000 on), and can't use it when the column is inside an expression (<code>year / 10</code>); rewriting the filter as a range fixes that. A two-column index jumps on its first column; on its second alone, PostgreSQL 16 reads all of it. The planner's beliefs are in <code>pg_stats</code>: exact for one column after a full <code>ANALYZE</code>, but its independence assumption put the devil's Australian records at 230 when there are 1,998, until extended statistics recorded the pair. GiST answers <code>ST_Covers</code> and <code>ST_DWithin</code> through bounding boxes and leaves <code>ST_Distance</code> to a full scan. BRIN is three pages and helps as far as the rows are stored in the column's order: 512 pages read for the 1850s as loaded (partly ordered), 128 on the sorted copy.</p>
+
+<h2>Exercise</h2>
+<p>A game shows an animal's records for a decade, newest first, twenty at a time. For the devil in the 2000s:</p>
+{{block:d3-ex-rows}}
+<p>As loaded, PostgreSQL reads every record, keeps the devil's 1,390 from the decade and sorts them to return twenty:</p>
+{{block:d3-ex-before}}
+<p>Create the one index that lets it read just those twenty rows, with no sort and no sequential scan, and show the plan.</p>
+{{exercise:d3-ex}}
+
+<h2>Check</h2>
+<p>The answer: an index on the filter's equality column first, then the sort's columns in the sort's order. PostgreSQL reads a B-tree in either direction, so <code>(species_id, year, id)</code> serves <code>year DESC, id DESC</code> backwards; <code>(species_id, year DESC, id DESC)</code> is the same index read forwards.</p>
+<p>Compare your plan with the answer's: a <code>Limit</code> over an <code>Index Scan</code> or <code>Index Scan Backward</code> on your index, the top node returning 20 rows, its <code>Index Cond</code> holding both the animal and the years, and no <code>Sort</code> or <code>Seq Scan</code> anywhere. Then run the query itself: its twenty rows equal <code>d3-ex-rows</code>'. An index on <code>(species_id)</code> alone, or on <code>(year, species_id)</code>, still needs the <code>Sort</code>.</p>
+
+<h2>Dialects</h2>
+<ul>
+<li><strong>PostgreSQL:</strong> B-tree, hash, GiST, SP-GiST, GIN and BRIN; partial indexes (<code>… WHERE basis_of_record = 'PRESERVED_SPECIMEN'</code>), expression indexes and <code>INCLUDE</code> columns for index-only scans; <code>CREATE INDEX CONCURRENTLY</code> builds without blocking writes (not inside a transaction); <code>EXPLAIN (ANALYZE, BUFFERS)</code>, which PostgreSQL 18 prints by default; <code>CREATE STATISTICS</code> for columns that go together; skip scan from 18.</li>
+<li><strong>DuckDB</strong> (the browser engine of other modules): stores tables by column and keeps a min-max summary (a zonemap) of every column in every row group automatically, BRIN's idea built in, so it scans and skips rather than seeks. <code>CREATE INDEX</code> builds an ART index, used for primary keys, <code>UNIQUE</code> and very selective equality lookups only; the spatial extension adds an R-tree (<code>USING RTREE</code>); <code>EXPLAIN ANALYZE</code> prints the plan with timings.</li>
+<li><strong>SQL Server:</strong> a clustered index <em>is</em> the table, stored in key order (one per table); nonclustered indexes point to it (the plan's Key Lookup is PostgreSQL's fetch from the table), with <code>INCLUDE</code> columns and filtered indexes (<code>WHERE …</code>); columnstore indexes skip row groups by their min-max, as BRIN does; spatial indexes are grids, not trees; statistics are created and updated automatically, and <code>SET STATISTICS IO ON</code> with the actual execution plan shows the pages read.</li>
+</ul>

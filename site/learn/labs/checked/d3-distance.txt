@@ -1,0 +1,8 @@
+-- result: d3-distance · 7 rows · sha256 b000623aa7a8
+QUERY PLAN
+Nested Loop (actual rows=186 loops=1)
+  Join Filter: (st_distance(o.geom, st_pointonsurface(a.geom…
+  Rows Removed by Join Filter: 40209
+  ->  Seq Scan on admin1_shapes a (actual rows=1 loops=1)
+        Filter: (name = 'Tasmania'::text)
+… 2 more rows

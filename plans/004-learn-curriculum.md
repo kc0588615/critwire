@@ -20,6 +20,7 @@ Every example in this document is tested. A block is a fenced code block whose f
 - **More headers:**
   - `-- after: <id>, …`: those earlier blocks of the same engine run first, in the same transaction, in the order named; the result is still this block's last statement. An exercise runs after its lesson this way. Python's `# after:` puts the named blocks' code first, in document order, in one process.
   - `-- expect: error <text>`: the last statement must fail with an error containing `<text>` (d1's constraint violations); the block fails if it doesn't.
+  - `-- plan: <text>`, `-- plan: no <text>`, `-- plan: rows <n>` (PostGIS, on a block whose last statement is `EXPLAIN (ANALYZE …)`): what the plan must show, by meaning: some plan line contains `<text>` (a node, an index, an `Index Cond`); no line contains it; the top node's `actual rows=<n>`. Every such block has one `rows` line and at least one about its nodes (d3).
   - `-- params: [<value>, …]` (DuckDB only): JSON values for the last statement's `?` placeholders, as a page binds a learner's input.
   - `-- needs: raster` (PostGIS): the block uses PostGIS raster, so the run first checks the raster library and its settings (g7, s6). Raster functions anywhere else are refused.
   - `-- boot` (PostGIS): runs once when the runner connects, before every other block, and is committed. It builds fixtures later blocks read (s4's hexagon grids); its tables are listed `lab-made` on the lab ERD (§6.2).
@@ -27,7 +28,7 @@ Every example in this document is tested. A block is a fenced code block whose f
   - `# timeout: <seconds>` (Python): when the block is stopped; 60 by default.
   - `-- show: cards` is not a test header: it stays in the SQL learners see, and the page shows the result as animal cards (002 §8).
 - **Every other SQL block runs in a transaction the runner rolls back,** so each starts from the same database and the order of modules doesn't matter. Results must be deterministic: rows ordered by a unique key, `random()` only after `setseed()`, no clock; Python prints with explicit formats, never a DataFrame's repr.
-- **Result blocks.** The ```` ```text ```` block under a `ran` block starts `-- result: <id> · <n> rows · sha256 <12 hex>`, then the column names, the first 5 rows (cells cut at 60 characters) and how many more. The hash covers the column names and every row, uncut, so the 5 rows shown don't limit what is checked. A Python result starts `-- result: <id> · python · sha256 <12 hex>`, then the block's whole output. Only the runner writes result blocks (`--update`).
+- **Result blocks.** The ```` ```text ```` block under a `ran` block starts `-- result: <id> · <n> rows · sha256 <12 hex>`, then the column names, the first 5 rows (cells cut at 60 characters) and how many more. The hash covers the column names and every row, uncut, so the 5 rows shown don't limit what is checked. A Python result starts `-- result: <id> · python · sha256 <12 hex>`, then the block's whole output. Only the runner writes result blocks (`--update`). An `EXPLAIN` block is the exception: its result block is an example of the plan, from the PostgreSQL, PostGIS and GEOS versions the page names, and the run checks its `-- plan:` lines instead of its hash, because plan text moves with versions and statistics. Data results keep their hashes.
 - **Not counted:** ```` ```sh ```` and ```` ```powershell ```` fences are commands for the learner's own machine (installing PostgreSQL, Docker or `uv`; loading the lab file). They carry no headers and don't run here; §3 says which were checked another way. ```` ```mermaid ```` fences are the ERDs, checked against their files and the live catalogs (§6).
 
 ### Lab objects: the `learn_` rules
@@ -2727,11 +2728,11 @@ WHERE title = 'Natuurmuseum Brabant, Tilburg - Vertebrates';
 
 **Concept:** PostgreSQL stores a table as 8 kB pages, about fifty records to a page in `occurrences`. A query that has nothing better reads every page, in order, and tests every row: a **sequential scan**. An **index** is a second structure, kept in step with the table, that leads from a value to the rows holding it. Before running a query, the **planner** writes several plans and picks the one it expects to read the fewest pages for the least work. That expectation comes from the **statistics** `ANALYZE` collects. So "why is this a sequential scan?" has four usual answers: there is no index that fits; the query hides the column inside an expression; the filter keeps so many rows that reading the whole table is cheaper; or the statistics are wrong.
 - A **B-tree** (the default, `CREATE INDEX … ON t (col)`) keeps the values sorted. It finds one value, a range (`BETWEEN`, `>=`) or rows in sorted order (`ORDER BY … LIMIT`). An index on `(a, b)` is sorted by `a`, then by `b` inside each `a`: it jumps straight to `a = 48 AND b = 2010` or to `a = 48`, but a condition on `b` alone has nothing to jump to.
-- How the rows are fetched shows in the plan. An **Index Scan** walks the index and fetches each row as it goes, in index order. A **Bitmap Index Scan** first collects every matching row's location, then the **Bitmap Heap Scan** reads each page that holds one, once, in page order (`Heap Blocks: exact=6` is six pages). Which the planner picks depends on how many rows match and how scattered they are: rows stored in roughly the index's order (a high correlation, below) favour the Index Scan. An **Index Only Scan** answers from the index alone, when every column the query needs is in the index and `VACUUM` has marked the pages all-visible. Because that depends on when autovacuum last ran, the labs below always ask for a column outside the index, so their plans don't change from run to run.
+- How the rows are fetched shows in the plan. An **Index Scan** walks the index and fetches each row as it goes, in index order. A **Bitmap Index Scan** first collects every matching row's location, then the **Bitmap Heap Scan** reads each page that holds one, once, in page order (`Heap Blocks: exact=6` is six pages). Which the planner picks depends on how many rows match and how scattered they are: rows stored in roughly the index's order (a high correlation, below) favour the Index Scan. An **Index Only Scan** answers from the index alone, when every column the query needs is in the index and `VACUUM` has marked the pages all-visible. Because that depends on when autovacuum last ran, the labs below always ask for a column outside the index. That removes one source of variation, not all: a plan can still change with the PostgreSQL version or the statistics, so the tests check what each plan must show (its `-- plan:` lines), not its text.
 - **Statistics** live in `pg_statistic`, readable through the view `pg_stats`: per column, the share of `NULL`s, the number of distinct values, the most common values with their frequencies, a histogram of the rest, and the **correlation** between the values' order and the rows' physical order (1: stored in value order; 0: scattered). `ANALYZE` reads a sample of 300 × `default_statistics_target` rows (100, so 30,000), and autovacuum runs it again after enough of a table changes. After a bulk load, run it yourself: critwire's loader ends with `ANALYZE` on every table (§4.3). The planner treats columns as **independent**, which goes wrong when one column predicts another; `CREATE STATISTICS` teaches it how they go together.
 - A **GiST** index on a geometry column stores each shape's bounding box in a tree of boxes. A spatial test like `ST_Intersects`, `ST_Covers` or `ST_DWithin` adds a box comparison the index can answer (`&&`, boxes overlap; `@`, box inside box), then runs the exact test only on the rows whose boxes passed. A test the index can't turn into a box, such as `ST_Distance(…) < d`, computes on every row. The loader builds one on every geometry column (`occurrences_geom_idx`). g5 goes further: nearest neighbours with `<->` and geography.
-- A **BRIN** index keeps one summary, the smallest and largest value, per range of pages (128 by default). It is tiny, and it can only rule out ranges, so it helps exactly when the values follow the physical order: an id that grows as rows are appended, the time of a log line. The column's correlation tells you whether it will.
-- **`EXPLAIN`** prints the chosen plan; **`EXPLAIN ANALYZE`** also runs the query and adds what really happened at each step (`actual rows`, `Rows Removed by Filter`). Read a plan from the innermost, most indented line outwards. On your own, use `EXPLAIN (ANALYZE, BUFFERS)`, which adds the planner's estimated cost and rows, the time and the pages read. The labs print `EXPLAIN (ANALYZE, COSTS OFF, TIMING OFF, SUMMARY OFF)`, the plan's shape and its row counts only, because costs and times vary from machine to machine and the tests compare every line. `EXPLAIN ANALYZE` on an `INSERT`, `UPDATE` or `DELETE` really changes the rows, so wrap it in `BEGIN` … `ROLLBACK`.
+- A **BRIN** index keeps one summary, the smallest and largest value, per range of pages (128 by default). It is tiny, and it can only rule out ranges, so it helps as far as the values follow the physical order: most when they do (an id that grows as rows are appended, the time of a log line), partly when they roughly do (lab step 16 skips three ranges of seven), not at all when they are scattered. The column's correlation, from 1 or −1 down to 0, tells you how far.
+- **`EXPLAIN`** prints the chosen plan; **`EXPLAIN ANALYZE`** also runs the query and adds what really happened at each step (`actual rows`, `Rows Removed by Filter`). Read a plan from the innermost, most indented line outwards. On your own, use `EXPLAIN (ANALYZE, BUFFERS)`, which adds the planner's estimated cost and rows, the time and the pages read. The labs print `EXPLAIN (ANALYZE, COSTS OFF, TIMING OFF, SUMMARY OFF)`, the plan's shape and its row counts only, because costs and times vary from machine to machine. Each lab block says what its plan must show in `-- plan:` lines: a text some line contains (`-- plan: Index Cond: (species_id = 63)`), a text no line contains (`-- plan: no Seq Scan`), and the top node's `actual rows` (`-- plan: rows 9`). The plan printed under it is an example, from the versions the page names; yours may differ in its details and still pass. `EXPLAIN ANALYZE` on an `INSERT`, `UPDATE` or `DELETE` really changes the rows, so wrap it in `BEGIN` … `ROLLBACK`.
 - Indexes aren't free. Every index makes every write slower and takes disk space, and a primary key or `UNIQUE` constraint already brings one (d1). A foreign key doesn't: index its column when you join or delete through it. And a bulk load is faster when the indexes are built after the rows are in, which is why the lab file adds its keys and indexes after loading the data (§4.3).
 
 Each lab below starts from the loaded tables: the tests run every block in a transaction and roll it back. To do the same in `psql`, type `BEGIN;` before a lab and `ROLLBACK;` after it, so the indexes you make in one lab don't change the plans of the next.
@@ -2762,6 +2763,9 @@ Temminck's pangolin (species 63) has nine records in the lab. With no index on `
 -- status: ran
 -- engine: postgis
 -- after: d3-analyze
+-- plan: rows 9
+-- plan: Seq Scan on occurrences
+-- plan: Rows Removed by Filter: 40386
 EXPLAIN (ANALYZE, COSTS OFF, TIMING OFF, SUMMARY OFF)
 SELECT id, year, month
 FROM occurrences
@@ -2783,6 +2787,11 @@ Seq Scan on occurrences (actual rows=9 loops=1)
 -- status: ran
 -- engine: postgis
 -- after: d3-analyze
+-- plan: rows 9
+-- plan: Bitmap Index Scan on occurrences_species_id_idx
+-- plan: Index Cond: (species_id = 63)
+-- plan: Heap Blocks: exact=6
+-- plan: no Seq Scan
 CREATE INDEX occurrences_species_id_idx ON occurrences (species_id);
 EXPLAIN (ANALYZE, COSTS OFF, TIMING OFF, SUMMARY OFF)
 SELECT id, year, month
@@ -2810,6 +2819,9 @@ The index finds the nine rows, and the table is read only where they are: six pa
 -- status: ran
 -- engine: postgis
 -- after: d3-analyze
+-- plan: rows 29261
+-- plan: Seq Scan on occurrences
+-- plan: no occurrences_year_idx
 CREATE INDEX occurrences_year_idx ON occurrences (year);
 EXPLAIN (ANALYZE, COSTS OFF, TIMING OFF, SUMMARY OFF)
 SELECT id, species_id
@@ -2832,6 +2844,10 @@ Seq Scan on occurrences (actual rows=29261 loops=1)
 -- status: ran
 -- engine: postgis
 -- after: d3-analyze, d3-many-rows
+-- plan: rows 74
+-- plan: occurrences_year_idx
+-- plan: Index Cond: (year >= 2026)
+-- plan: no Seq Scan
 EXPLAIN (ANALYZE, COSTS OFF, TIMING OFF, SUMMARY OFF)
 SELECT id, species_id
 FROM occurrences
@@ -2852,6 +2868,10 @@ Index Scan using occurrences_year_idx on occurrences (actual…
 -- status: ran
 -- engine: postgis
 -- after: d3-analyze, d3-many-rows
+-- plan: rows 26
+-- plan: Seq Scan on occurrences
+-- plan: Filter: ((year / 10) = 185)
+-- plan: no occurrences_year_idx
 EXPLAIN (ANALYZE, COSTS OFF, TIMING OFF, SUMMARY OFF)
 SELECT id, species_id
 FROM occurrences
@@ -2873,6 +2893,10 @@ Seq Scan on occurrences (actual rows=26 loops=1)
 -- status: ran
 -- engine: postgis
 -- after: d3-analyze, d3-many-rows
+-- plan: rows 26
+-- plan: occurrences_year_idx
+-- plan: Index Cond: ((year >= 1850) AND (year <= 1859))
+-- plan: no Seq Scan
 EXPLAIN (ANALYZE, COSTS OFF, TIMING OFF, SUMMARY OFF)
 SELECT id, species_id
 FROM occurrences
@@ -2895,6 +2919,9 @@ The other way out is an index on the expression itself, `CREATE INDEX ON occurre
 -- status: ran
 -- engine: postgis
 -- after: d3-analyze
+-- plan: rows 9
+-- plan: Hash Join
+-- plan: Seq Scan on occurrences o (actual rows=40395
 EXPLAIN (ANALYZE, COSTS OFF, TIMING OFF, SUMMARY OFF)
 SELECT o.id, o.year
 FROM species AS s
@@ -2920,6 +2947,10 @@ Hash Join (actual rows=9 loops=1)
 -- status: ran
 -- engine: postgis
 -- after: d3-analyze, d3-btree
+-- plan: rows 9
+-- plan: Nested Loop
+-- plan: Index Cond: (species_id = s.id)
+-- plan: no Seq Scan on occurrences
 EXPLAIN (ANALYZE, COSTS OFF, TIMING OFF, SUMMARY OFF)
 SELECT o.id, o.year
 FROM species AS s
@@ -2945,6 +2976,10 @@ Nested Loop (actual rows=9 loops=1)
 -- status: ran
 -- engine: postgis
 -- after: d3-analyze
+-- plan: rows 182
+-- plan: occurrences_species_year_idx
+-- plan: Index Cond: ((species_id = 48) AND (year = 2010))
+-- plan: no Seq Scan
 CREATE INDEX occurrences_species_year_idx ON occurrences (species_id, year);
 EXPLAIN (ANALYZE, COSTS OFF, TIMING OFF, SUMMARY OFF)
 SELECT id, month
@@ -2969,6 +3004,10 @@ Bitmap Heap Scan on occurrences (actual rows=182 loops=1)
 -- status: ran
 -- engine: postgis
 -- after: d3-analyze, d3-two-columns
+-- plan: rows 107
+-- plan: occurrences_species_year_idx
+-- plan: Index Cond: ((year >= 1850) AND (year <= 1899))
+-- plan: no Seq Scan
 EXPLAIN (ANALYZE, COSTS OFF, TIMING OFF, SUMMARY OFF)
 SELECT id, month
 FROM occurrences
@@ -3099,6 +3138,11 @@ species_id | country_code | planner_estimate
 -- status: ran
 -- engine: postgis
 -- after: d3-analyze
+-- plan: rows 184
+-- plan: Index Scan using country_shapes_pkey
+-- plan: Index Cond: (geom @ cs.geom)
+-- plan: Filter: st_covers(cs.geom, geom)
+-- plan: no Seq Scan on occurrences
 EXPLAIN (ANALYZE, COSTS OFF, TIMING OFF, SUMMARY OFF)
 SELECT o.id, o.year
 FROM country_shapes AS cs
@@ -3124,6 +3168,10 @@ Nested Loop (actual rows=184 loops=1)
 -- status: ran
 -- engine: postgis
 -- after: d3-analyze
+-- plan: rows 186
+-- plan: Bitmap Index Scan on occurrences_geom_idx
+-- plan: Index Cond: (geom && st_expand(
+-- plan: no Seq Scan on occurrences
 EXPLAIN (ANALYZE, COSTS OFF, TIMING OFF, SUMMARY OFF)
 SELECT o.id, o.year
 FROM admin1_shapes AS a
@@ -3149,6 +3197,10 @@ Nested Loop (actual rows=186 loops=1)
 -- status: ran
 -- engine: postgis
 -- after: d3-analyze
+-- plan: rows 186
+-- plan: Join Filter: (st_distance(
+-- plan: Seq Scan on occurrences o
+-- plan: no occurrences_geom_idx
 EXPLAIN (ANALYZE, COSTS OFF, TIMING OFF, SUMMARY OFF)
 SELECT o.id, o.year
 FROM admin1_shapes AS a
@@ -3174,6 +3226,9 @@ Nested Loop (actual rows=186 loops=1)
 -- status: ran
 -- engine: postgis
 -- after: d3-analyze
+-- plan: rows 26
+-- plan: Bitmap Index Scan on occurrences_year_brin
+-- plan: Heap Blocks: lossy=512
 CREATE INDEX occurrences_year_brin ON occurrences USING brin (year);
 EXPLAIN (ANALYZE, COSTS OFF, TIMING OFF, SUMMARY OFF)
 SELECT id, species_id
@@ -3198,6 +3253,9 @@ Bitmap Heap Scan on occurrences (actual rows=26 loops=1)
 -- q: d3-brin-sorted
 -- status: ran
 -- engine: postgis
+-- plan: rows 26
+-- plan: Bitmap Index Scan on occurrences_by_year_brin
+-- plan: Heap Blocks: lossy=128
 CREATE TABLE occurrences_by_year AS
 SELECT * FROM occurrences ORDER BY year, id;
 CREATE INDEX occurrences_by_year_brin ON occurrences_by_year USING brin (year);
@@ -3239,7 +3297,7 @@ table_size | btree_size | brin_size
 6656 kB | 304 kB | 24 kB
 ```
 
-**Result:** A filter on an unindexed column reads the whole table (40,386 of the pangolin's 40,395 rows thrown away); a B-tree turns it into six pages, and turns the slug join from a hash join over every record into a nested loop over nine. The planner skips an index when the filter keeps most of the table (72 % of records are from 2000 on), and can't use it when the column is inside an expression (`year / 10`); rewriting the filter as a range fixes that. A two-column index jumps on its first column; on its second alone, PostgreSQL 16 reads all of it. The planner's beliefs are in `pg_stats`: exact for one column after a full `ANALYZE`, but its independence assumption put the devil's Australian records at 230 when there are 1,998, until extended statistics recorded the pair. GiST answers `ST_Covers` and `ST_DWithin` through bounding boxes and leaves `ST_Distance` to a full scan. BRIN is three pages and helps only when the rows are stored in the column's order: 512 pages read for the 1850s as loaded, 128 on the sorted copy.
+**Result:** A filter on an unindexed column reads the whole table (40,386 of the pangolin's 40,395 rows thrown away); a B-tree turns it into six pages, and turns the slug join from a hash join over every record into a nested loop over nine. The planner skips an index when the filter keeps most of the table (72 % of records are from 2000 on), and can't use it when the column is inside an expression (`year / 10`); rewriting the filter as a range fixes that. A two-column index jumps on its first column; on its second alone, PostgreSQL 16 reads all of it. The planner's beliefs are in `pg_stats`: exact for one column after a full `ANALYZE`, but its independence assumption put the devil's Australian records at 230 when there are 1,998, until extended statistics recorded the pair. GiST answers `ST_Covers` and `ST_DWithin` through bounding boxes and leaves `ST_Distance` to a full scan. BRIN is three pages and helps as far as the rows are stored in the column's order: 512 pages read for the 1850s as loaded (partly ordered), 128 on the sorted copy.
 
 **Exercise:** A game shows an animal's records for a decade, newest first, twenty at a time. For the devil in the 2000s:
 
@@ -3272,6 +3330,9 @@ As loaded, PostgreSQL reads every record, keeps the devil's 1,390 from the decad
 -- status: ran
 -- engine: postgis
 -- after: d3-analyze
+-- plan: rows 20
+-- plan: Sort Key: year DESC, id DESC
+-- plan: Seq Scan on occurrences (actual rows=1390
 EXPLAIN (ANALYZE, COSTS OFF, TIMING OFF, SUMMARY OFF)
 SELECT id, year, month
 FROM occurrences
@@ -3300,6 +3361,11 @@ Create the one index that lets it read just those twenty rows, with no sort and 
 -- status: ran
 -- engine: postgis
 -- after: d3-analyze
+-- plan: rows 20
+-- plan: occurrences_species_year_id_idx
+-- plan: Index Cond: ((species_id = 48) AND (year >= 2000) AND (year <= 2009))
+-- plan: no Sort
+-- plan: no Seq Scan
 CREATE INDEX occurrences_species_year_id_idx ON occurrences (species_id, year, id);
 EXPLAIN (ANALYZE, COSTS OFF, TIMING OFF, SUMMARY OFF)
 SELECT id, year, month
