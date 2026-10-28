@@ -26,6 +26,8 @@ Simplest approach that works. Ask before adding complexity.
 - `critwire`: the live build. Agents never use it.
 - `critwire_dev`: agents' scratch db.
 - Always `DATABASE_URL` from env; never hardcode connection strings.
+- `CRITWIRE_DB_TARGET` (`.env`: `critwire_dev` here, `critwire` in the live copy): `pnpm build` and `pnpm db:load` refuse before any DDL unless `current_database()` equals it. Only those two read it.
+- CLIs load `.env` under the environment (environment wins) and log each conflicting variable's name and winner, never a value.
 
 ## Two machines (WSL + Oracle VPS)
 GitHub `origin` is the hub; only pushed work exists on the other machine.
@@ -36,7 +38,7 @@ GitHub `origin` is the hub; only pushed work exists on the other machine.
 - VPS setup (Postgres, Caddy, CORS) is done from the Oracle control room, not from here.
 
 ## Commands
-- `pnpm install`, `pnpm typecheck`, `pnpm test`.
+- `pnpm install`, `pnpm typecheck`, `pnpm test` (`scripts/**/*.test.ts`: pure, offline), `pnpm test:db` (`scripts/**/*.dbtest.ts`: `critwire_dev` only, refuses any other db).
 - `pnpm build [--draft]`: offline. Re-runs derive in-process and refuses derived files that differ (`data/<file> is stale: run pnpm derive`); loads `DATABASE_URL` (advisory lock); writes `dist/` (`index.html`, `v1/species.{json,parquet,csv}`, `v1/species/{id,slug}.json`, `v1/attribution.json`). Plain build refuses a missing/stale GBIF DOI; `--draft` builds without it (preview only, never deploy).
 - `pnpm e2e` (after `pnpm build`): Playwright suite; artifacts in `E2E_ARTIFACTS` (default `e2e-artifacts/`).
 - `pnpm gbif:register`: the one network write (GBIF derived dataset). See GBIF DOI refresh.

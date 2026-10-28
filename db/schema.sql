@@ -1,7 +1,7 @@
 -- critwire tables. Rebuilt from data/ on every load (scripts/db.ts).
-drop table if exists species;
+drop table if exists public.species;
 
-create table species (
+create table public.species (
   id int primary key,
   slug text unique not null,
   scientific_name text not null,

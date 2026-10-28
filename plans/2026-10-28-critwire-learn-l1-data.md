@@ -763,7 +763,7 @@ Every step:
 - 004 fixes go in the commit of the code that proves them (D16); each step names its own.
 - Estimate: 31 steps; with the 6 sessions so far, code review, about 2 fix steps, Verification and Release, about 42 sessions.
 
-- [ ] S1 · MF1: destination guard, names-only env log, test runners (D11, D15)
+- [x] S1 · MF1: destination guard, names-only env log, test runners (D11, D15)
   - Files: `scripts/env.ts`, `scripts/db.ts` (`assertTarget`, `loading into <current_database()>`), `db/schema.sql` + insert (`public.species`), `package.json` (`test` = `tsx --test 'scripts/**/*.test.ts'`; new `test:db` = `'scripts/**/*.dbtest.ts'`, refusing any database but `critwire_dev`), `scripts/db.test.ts`, `scripts/db.dbtest.ts`, `AGENTS.md` (Databases: `CRITWIRE_DB_TARGET`, build and `db:load` only).
   - First: G1 (pure: missing names the variable; mismatch names both), G2 (wrong or missing target refuses before DDL; `species` oid unchanged), G3 (matching target loads), G4 (sentinel redaction).
   - Verify: `T`, `D`, `E`; full `(cd dist && sha256sum -c --quiet $M/baseline/dist.sha256)` (157/157). Decisions: MF1 done.
@@ -984,6 +984,7 @@ What can go wrong across steps, and what the session does. `MISSION_BLOCKED` onl
 - A19 (architect, revision): `learn:check --setup` sets `critwire_lab`'s password only on creation or with `--reset-password`. It writes `LEARN_PG_URL` into each `--env` file, keeping the other lines and the mode. L1 writes the worktree's and `/srv/critter-ai/critwire/.env`, so later missions inherit it (D10).
 - A20 (architect, revision): the habitat stand-ins get `data/learn/habitat.json` (provenance and sha256, `standIn: true`), checked by the build and read by `credits()`. L3's `ingest habitat` takes it over (D3, D5, D9.7).
 - A21 (planner): step order. MF1's guard (S1) is split from its SC3 mirror cases (S2). The live reuse ingest (S12) comes before the `--new` path (S13), so the network read happens early. The live registration (S16) comes right after parity (S14) and the targets (S15). `--setup` (S19) comes before the loader (S20–S21), so the loader's `test:db` cases are written before its code. MF2, MF3 for GBIF/COL and the SC3 leftovers come last (S27–S30) and are the first to go to L3 past 48 sessions. Review-item lines say "done (S<n>)"; S31 adds the shas.
+- MF1: done (S1). Guard in `loadDatabase` (`assertTarget` on `current_database()` before the lock and DDL); `public.species`; `loadEnv` via `parseEnv`, names-only conflict log. G4 lives in `scripts/env.test.ts` (it tests `env.ts`) plus G4's `loadDatabase` half in `db.dbtest.ts`; `test:db` runs files with `--test-concurrency=1` (one shared `critwire_dev`) and refuses other dbs through `scripts/test-db.ts`.
 - A22 (planner): Release smoke loads the live loader with `psql -X -v ON_ERROR_STOP=1 -d "$LEARN_PG_URL" -f` (still `critwire_dev`, as `critwire_lab`), not the brief's `-d critwire_dev` as superuser: a superuser load would leave `learn_curriculum` owned by `critter-ai`, so `critwire_lab` (and L2's `learn:check`) could no longer replace it.
 
 ## Log
@@ -994,5 +995,6 @@ What can go wrong across steps, and what the session does. `MISSION_BLOCKED` onl
 - 2026-10-28 07:23 UTC Astra review: APPROVE_WITH_CHANGES, 4 MUST-FIX (sample/derive refresh cycle; download intent before POST; transitive pg_depend; redact all env values), 3 SHOULD-CONSIDER. Plan-only; no checks needed.
 - 2026-10-28 07:35 UTC Revision: architect resolved all 6 MUST-FIX (deterministic forced failure; names-only env logs; in-memory core for sample ingest, no cycle; intent before POST + listing reconcile; CASCADE snapshot/diff guard, PG16-probed), 4 MISSED, 9/10 SC adopted (Astra SC1 junction rejected → L2); A14–A20. Plan-only; no checks needed.
 - 2026-10-28 07:48 UTC Steps: planner wrote S1–S31 (MF1 first; countries; shapes; sample + live reuse ingest; live registration S16 right after parity; loader, learn:check, E2E; review items S27–S30 last), Verification, Failure modes; A21–A22. Plan-only; no checks needed.
+- 2026-10-28 08:05 UTC S1: MF1 guard, names-only env log, `test`/`test:db` runners. Red 7 (G1×3, G4, G2×2, G3) → green: test 70/70, test:db 3/3 (and refuses db `postgres`); typecheck ok; build ok; e2e 20/20; dist 157/157 = Baseline.
 
 ## Summary

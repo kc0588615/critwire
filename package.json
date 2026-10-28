@@ -16,7 +16,8 @@
     "derive": "tsx scripts/derive.ts",
     "gbif:register": "tsx scripts/gbif-register.ts",
     "e2e": "playwright test",
-    "test": "tsx --test scripts/derive/*.test.ts scripts/gbif/*.test.ts"
+    "test": "tsx --test 'scripts/**/*.test.ts'",
+    "test:db": "tsx --test --test-concurrency=1 'scripts/**/*.dbtest.ts'"
   },
   "devDependencies": {
     "@playwright/test": "1.58.2",

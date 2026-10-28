@@ -1,5 +1,6 @@
 // Postgres load shared by pnpm db:load and pnpm build: drops and re-creates the db/schema.sql tables, then inserts
 // every species, in one transaction under an advisory lock (critwire_dev is shared, so two loads must not interleave).
+// It refuses before any DDL unless the database it reached is CRITWIRE_DB_TARGET (MF1).
 import { readFile } from "node:fs/promises";
 import postgres from "postgres";
 import type { Species } from "./species.ts";
@@ -34,14 +35,23 @@ export function speciesRows(species: readonly Species[]) {
   }));
 }
 
+// Throws unless current (the server's current_database()) is the target the environment names.
+export function assertTarget(current: string, target: string | undefined): void {
+  if (!target) throw new Error("CRITWIRE_DB_TARGET not set: name the database this load may rebuild (.env or environment)");
+  if (current !== target) throw new Error(`refusing to rebuild ${current}: CRITWIRE_DB_TARGET is ${target}`);
+}
+
 export async function loadDatabase(url: string, species: readonly Species[]): Promise<void> {
   const schema = await readFile(schemaFile, "utf8");
   const sql = postgres(url, { onnotice: () => {} });
   try {
     await sql.begin(async (tx) => {
+      const [{ name }] = await tx<{ name: string }[]>`select current_database() as name`;
+      assertTarget(name, process.env.CRITWIRE_DB_TARGET);
+      console.log(`loading into ${name}`);
       await tx`select pg_advisory_xact_lock(hashtext('critwire.load'))`;
       await tx.unsafe(schema);
-      await tx`insert into species ${tx(speciesRows(species))}`;
+      await tx`insert into public.species ${tx(speciesRows(species))}`;
     });
   } finally {
     await sql.end();
