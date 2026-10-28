@@ -1,9 +1,10 @@
-// Learn's browser engine (plan D11, D13 learn-browser; S11): boot, the origin fence, SC2's hash check, the row cap,
-// Reset and Stop, on the playground. The worker's .wasm fetch must reach context.route first, because the fence and
-// the boot cases rely on routing.
+// Learn's browser engine (plan D11, D13 learn-browser; S11, S12): boot, the origin fence, SC2's hash check, the row cap,
+// Reset and Stop, on the playground; then the playground's refusals, the changed generation, the test hook, cards and
+// "N rows changed". The worker's .wasm fetch must reach context.route first, because the fence and the boot cases rely
+// on routing.
 import { expect, test, type Page } from "@playwright/test";
 import { DUCKDB_DIR, ASSETS } from "../site/learn/src/assets.ts";
-import { engineState, learnContext, learnManifest, ORIGIN, waitReady } from "./helpers.ts";
+import { engineState, hookResult, learnContext, learnManifest, ORIGIN, records, waitReady } from "./helpers.ts";
 
 const PLAYGROUND = "/learn/playground/";
 const WASM = `${ORIGIN}${ASSETS}/${DUCKDB_DIR}/duckdb-eh.wasm`;
@@ -119,5 +120,96 @@ test("Reset restores the tables; Stop ends a runaway query; the next query runs"
   await run(page, "SELECT 1 AS one");
   expect(await cells(page)).toEqual([["1"]]);
   expect(offOrigin).toEqual([]);
+  await context.close();
+});
+
+test("transaction control is refused in the playground before anything runs", async ({ browser }) => {
+  const { context, offOrigin } = await learnContext(browser);
+  const page = await context.newPage();
+  await page.goto(PLAYGROUND);
+  await waitReady(page);
+  await run(page, "CREATE TABLE mine AS SELECT 1 AS x; COMMIT");
+  await expect(result(page).locator(".result-error")).toHaveText(
+    "statement 2 of 2: COMMIT isn't run in the playground: an open transaction would break the lesson editors, which roll back their own; transactions are practised in psql");
+  expect(await hookResult(page, "playground")).toEqual({ error: expect.stringMatching(/^statement 2 of 2: COMMIT isn't run/) });
+  await expect(engineState(page)).not.toHaveAttribute("data-changed", "true");
+  await run(page, "SELECT * FROM mine");
+  await expect(result(page).locator(".result-error")).toContainText("mine");
+  expect(offOrigin).toEqual([]);
+  await context.close();
+});
+
+test("a playground SELECT leaves the generation unchanged; a DELETE marks it changed; Reset clears it", async ({ browser }) => {
+  const { context, offOrigin } = await learnContext(browser);
+  const page = await context.newPage();
+  await page.goto(PLAYGROUND);
+  await waitReady(page);
+  await run(page, "SELECT count(*) AS n FROM species; FROM countries LIMIT 1");
+  await expect(engineState(page)).not.toHaveAttribute("data-changed", "true");
+  await expect(status(page)).toHaveText("The database is ready.");
+  await run(page, "DELETE FROM occurrences WHERE species_id = 25");
+  await expect(engineState(page)).toHaveAttribute("data-changed", "true");
+  await expect(status(page)).toHaveText("The database is ready. You changed its tables: Reset database restores them, and lesson checks wait until then.");
+  await page.getByRole("button", { name: "Reset database" }).click();
+  await waitReady(page);
+  await expect(engineState(page)).not.toHaveAttribute("data-changed", "true");
+  await expect(status(page)).toHaveText("The database is ready.");
+  expect(offOrigin).toEqual([]);
+  await context.close();
+});
+
+test("the test hook reads the last result as cell text, with truncated", async ({ browser }) => {
+  const { context } = await learnContext(browser);
+  const page = await context.newPage();
+  await page.goto(PLAYGROUND);
+  await waitReady(page);
+  expect(await hookResult(page, "playground")).toBeUndefined();
+  await run(page, "SELECT 1::BIGINT AS n, NULL AS v, [1, 2] AS l, 2.50::DECIMAL(4, 2) AS d, DATE '2026-10-20' AS day");
+  expect(await hookResult(page, "playground")).toEqual({ columns: ["n", "v", "l", "d", "day"], rows: [["1", "NULL", "[1, 2]", "2.50", "2026-10-20"]], truncated: false });
+  await run(page, "SELECT range AS n FROM range(10001)");
+  const cut = await hookResult(page, "playground");
+  expect(cut && "rows" in cut && [cut.rows.length, cut.truncated]).toEqual([10_000, true]);
+  await run(page, "SELECT * FROM nope");
+  expect(await hookResult(page, "playground")).toEqual({ error: expect.stringMatching(/^statement 1 of 1: Catalog Error: .*nope/) });
+  await context.close();
+});
+
+test("-- show: cards draws a card per animal with its photo; the Table tab has the rows; a broken card rule says why", async ({ browser }) => {
+  const species = (await records()).filter((r) => r.photo).slice(0, 3);
+  const { context, offOrigin, photos } = await learnContext(browser);
+  const page = await context.newPage();
+  await page.goto(PLAYGROUND);
+  await waitReady(page);
+  await run(page, `-- show: cards\nSELECT id, scientific_name AS latin FROM species WHERE id IN (${species.map((s) => s.id).join(", ")}) ORDER BY id`);
+  const cards = result(page).locator("article.card");
+  await expect(cards).toHaveCount(3);
+  await expect(cards.first().locator("h3")).toHaveText(species[0]!.commonName);
+  await expect(cards.first()).toContainText(`latin: ${species[0]!.scientificName}`);
+  await expect(cards.first().locator("img")).toHaveJSProperty("naturalWidth", 1);
+  await expect(cards.first().locator(".credit")).toContainText(species[0]!.photo!.credit);
+  await expect(result(page).getByRole("tab", { name: "Cards" })).toHaveAttribute("aria-selected", "true");
+  await result(page).getByRole("tab", { name: "Table" }).click();
+  await expect(result(page).getByRole("tab", { name: "Table" })).toHaveAttribute("aria-selected", "true");
+  await expect(cards.first()).toBeHidden();
+  expect(await cells(page)).toEqual(species.map((s) => [String(s.id), s.scientificName]));
+  expect(photos.sort()).toEqual(species.map((s) => s.photo!.url).sort());
+
+  await run(page, "-- show: cards\nSELECT 1 AS id UNION ALL SELECT 1");
+  await expect(result(page).locator(".result-reason")).toHaveText("Cards need one row per animal, with its id in `id` or `species_id` (`id` 1 appears twice).");
+  await expect(result(page).locator("article.card")).toHaveCount(0);
+  expect(await cells(page)).toEqual([["1"], ["1"]]);
+  expect(offOrigin).toEqual([]);
+  await context.close();
+});
+
+test("a statement that writes rows says N rows changed", async ({ browser }) => {
+  const { context } = await learnContext(browser);
+  const page = await context.newPage();
+  await page.goto(PLAYGROUND);
+  await waitReady(page);
+  await run(page, "CREATE TABLE mine (a INT); INSERT INTO mine VALUES (1), (2), (3)");
+  await expect(result(page).locator(".result-summary")).toHaveText("3 rows changed.");
+  await run(page, "DELETE FROM mine WHERE a = 1");
+  await expect(result(page).locator(".result-summary")).toHaveText("1 row changed.");
   await context.close();
 });

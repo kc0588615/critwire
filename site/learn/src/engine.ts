@@ -4,14 +4,19 @@
 //   3–5. fetch manifest.json and the four files setup.sql reads (cache: no-cache), check each sha256 against the
 //      manifest (SC2), and register the checked bytes as buffers, kept for restarts;
 //   6. settings: no extension is installed or loaded implicitly; parquet loads from our own mirror;
-//   7. setup.sql, then the `setup` performance mark (learn-timing reads it).
-// Every statement is streamed and cut at ROW_CAP rows; one script runs at a time. Reset and Stop restart the engine
-// (a fresh database, a new generation); a result from an older generation is dropped (Superseded).
+//   7. setup.sql, then the `setup` performance mark (learn-timing reads it), then the species lookup for cards.
+// Every statement is streamed and cut at ROW_CAP rows; one script runs at a time. Lesson editors run isolated, the
+// playground persistent (isolation.ts); a playground statement that isn't readsOnly marks the generation changed. Reset
+// and Stop restart the engine (a fresh database, a new generation, unchanged); a result from an older generation is
+// dropped (Superseded).
 import * as duckdb from "@duckdb/duckdb-wasm";
 import { scriptStatements, statementError } from "../../../scripts/build/learn/sql.ts";
 import SETUP from "../sql/setup.sql";
 import { ASSETS, DUCKDB_DIR, DUCKDB_EXT } from "./assets.ts";
+import { SPECIES_LOOKUP, speciesMap, type SpeciesInfo } from "./cards.ts";
 import { decimalText } from "./format.ts";
+import { assertPersistable, changesTables, runIsolated, TransactionLost, type Script } from "./isolation.ts";
+import { ROW_CAP, type Result } from "./query-result.ts";
 
 const ENGINE_DIR = `${ASSETS}/${DUCKDB_DIR}`;
 const MANIFEST = "/learn/data/manifest.json";
@@ -30,15 +35,6 @@ interface DataManifest {
   files: Record<string, { sha256: string } | undefined>;
 }
 
-/** Rows a statement keeps; the rest of its result is never read. */
-export const ROW_CAP = 10_000;
-
-export interface Result {
-  columns: string[];
-  rows: unknown[][];
-  /** Set when the last statement had more than ROW_CAP rows; `rows` holds the first ROW_CAP. */
-  truncated?: true;
-}
 
 export type EngineState =
   | { state: "loading"; text: string }
@@ -57,10 +53,19 @@ export interface Engine {
   readonly state: EngineState;
   /** Counts boots; Reset and Stop start a new one. */
   readonly generation: number;
-  /** Calls `listener` now and on every state change. */
+  /** A playground statement that isn't readsOnly ran on this generation; Reset clears it. */
+  readonly changed: boolean;
+  /** Each animal's card fields, by species id (boot step 7); empty until ready. */
+  readonly species: ReadonlyMap<number, SpeciesInfo>;
+  /** Calls `listener` now and on every change of state or of `changed`. */
   onChange(listener: (state: EngineState) => void): void;
-  /** Runs a script on the current database; rejects with Superseded if a restart comes first. */
-  run(sql: string): Promise<Result>;
+  /**
+   * A lesson editor's run: BEGIN, `after`, `sql`, ROLLBACK (isolation.ts). Rejects with Superseded if a restart comes
+   * first; if BEGIN or ROLLBACK fails, the engine restarts and the run rejects saying so.
+   */
+  isolated(after: readonly Script[], sql: string): Promise<Result>;
+  /** The playground's run: kept until Reset; transaction control refused; marks the generation changed unless readsOnly. */
+  persistent(sql: string): Promise<Result>;
   /** A fresh database (Reset, Stop): ends any running query and drops the queue. */
   restart(): Promise<void>;
 }
@@ -189,6 +194,8 @@ export function startEngine(): Engine {
     for (const l of listeners) l(state);
   };
   let generation = 0;
+  let changed = false;
+  let species: ReadonlyMap<number, SpeciesInfo> = new Map();
   let live: Live | undefined;
   let data: Promise<Map<string, Uint8Array>> | undefined;
   // One script at a time: a second `send` on the connection cancels the first's stream. A restart drops the queue.
@@ -232,6 +239,8 @@ export function startEngine(): Engine {
       await runOn(conn, SETUP);
       if (!current()) return;
       performance.mark("setup");
+      species = speciesMap(await runOn(conn, SPECIES_LOOKUP));
+      if (!current()) return;
       live = { db, conn };
       db = undefined;
       set({ state: "ready" });
@@ -245,6 +254,7 @@ export function startEngine(): Engine {
 
   const restart = async () => {
     generation++;
+    changed = false;
     queue = Promise.resolve();
     const old = live;
     live = undefined;
@@ -252,6 +262,21 @@ export function startEngine(): Engine {
     await old?.db.terminate();
     await booted;
   };
+
+  /** Runs `job` on the current database after the queued ones; rejects with Superseded if a restart comes first. */
+  function enqueue(job: (exec: (sql: string) => Promise<Result>) => Promise<Result>): Promise<Result> {
+    const gen = generation;
+    const next = queue.then(async () => {
+      if (gen !== generation) throw new Superseded();
+      if (!live) throw new Error("the database isn't ready");
+      const { conn } = live;
+      const result = await job((sql) => runOn(conn, sql));
+      if (gen !== generation) throw new Superseded();
+      return result;
+    });
+    queue = next.catch(() => {});
+    return next;
+  }
 
   void boot(++generation);
   return {
@@ -261,21 +286,36 @@ export function startEngine(): Engine {
     get generation() {
       return generation;
     },
+    get changed() {
+      return changed;
+    },
+    get species() {
+      return species;
+    },
     onChange(listener) {
       listeners.push(listener);
       listener(state);
     },
-    run(sql) {
-      const gen = generation;
-      const next = queue.then(async () => {
-        if (gen !== generation) throw new Superseded();
-        if (!live) throw new Error("the database isn't ready");
-        const result = await runOn(live.conn, sql);
-        if (gen !== generation) throw new Superseded();
-        return result;
+    isolated(after, sql) {
+      return enqueue(async (exec) => {
+        try {
+          return await runIsolated(exec, after, sql);
+        } catch (e) {
+          if (!(e instanceof TransactionLost)) throw e;
+          void restart();
+          throw new Error(`${e.message}, so the database was restarted`, { cause: e });
+        }
       });
-      queue = next.catch(() => {});
-      return next;
+    },
+    async persistent(sql) {
+      assertPersistable(sql);
+      return enqueue((exec) => {
+        if (changesTables(sql) && !changed) {
+          changed = true;
+          set(state);
+        }
+        return exec(sql);
+      });
     },
     restart,
   };

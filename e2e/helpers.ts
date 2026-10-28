@@ -98,21 +98,34 @@ export async function accessLog(): Promise<Access[]> {
 }
 
 // Learn's browser pages (plan D13). learnContext: a new context where every request off ORIGIN is aborted and recorded
-// in `offOrigin`, so a page that reaches for another host fails its test. Routes a test adds later run first
-// (Playwright's order). Routing disables the cache, so learn-timing uses a plain context instead.
-export async function learnContext(browser: Browser): Promise<{ context: BrowserContext; offOrigin: string[] }> {
+// in `offOrigin`, so a page that reaches for another host fails its test, except a card's photo: a request to a
+// Wikimedia photo host for a record's photo.url is answered with PHOTO and recorded in `photos`. Routes a test adds
+// later run first (Playwright's order). Routing disables the cache, so learn-timing uses a plain context instead.
+const PHOTO_HOSTS = new Set(["https://thumb.wikimedia.org", "https://upload.wikimedia.org"]);
+// A 1×1 PNG, the fixture every photo request gets.
+const PHOTO = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==", "base64");
+
+export async function learnContext(browser: Browser): Promise<{ context: BrowserContext; offOrigin: string[]; photos: string[] }> {
+  const photoUrls = new Set((await records()).flatMap((r) => (r.photo?.url ? [r.photo.url] : [])));
   const context = await browser.newContext();
   const offOrigin: string[] = [];
+  const photos: string[] = [];
   await context.route("**/*", (route) => {
     const url = route.request().url();
-    if (new URL(url).origin === ORIGIN) return route.continue();
+    const { origin } = new URL(url);
+    if (origin === ORIGIN) return route.continue();
+    if (PHOTO_HOSTS.has(origin) && photoUrls.has(url)) {
+      photos.push(url);
+      return route.fulfill({ status: 200, contentType: "image/png", headers: { "Access-Control-Allow-Origin": "*" }, body: PHOTO });
+    }
     offOrigin.push(url);
     return route.abort("blockedbyclient");
   });
-  return { context, offOrigin };
+  return { context, offOrigin, photos };
 }
 
-// The engine's state on a Learn page (site/learn/src/app.ts sets body[data-engine]).
+// The engine's state on a Learn page (site/learn/src/app.ts sets body[data-engine], and body[data-changed] once the
+// playground changed the tables).
 export const engineState = (page: Page) => page.locator("body");
 
 // Waits until the page's engine has run setup.sql (data-engine="ready"); fails fast on "failed".
@@ -121,3 +134,8 @@ export async function waitReady(page: Page, timeout = 30_000): Promise<void> {
   const state = await engineState(page).getAttribute("data-engine");
   if (state !== "ready") throw new Error(`engine failed: ${await page.locator("#engine-status").textContent()}`);
 }
+
+// A block's last result through the page's read-only test hook (plan D11): cells as cellText, or the error.
+export type HookResult = { columns: string[]; rows: string[][]; truncated: boolean } | { error: string };
+export const hookResult = (page: Page, blockId: string) =>
+  page.evaluate((id) => (window as unknown as { critwireLearn: { result(id: string): unknown } }).critwireLearn.result(id), blockId) as Promise<HookResult | undefined>;

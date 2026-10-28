@@ -4,7 +4,7 @@
 // which statement failed; a transaction or session statement in a lesson editor outlives its ROLLBACK.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { codeOnly, isolatedRefusal, scriptStatements, splitStatements, statementError } from "./sql.ts";
+import { codeOnly, isolatedRefusal, playgroundRefusal, readsOnly, scriptStatements, splitStatements, statementError } from "./sql.ts";
 
 const texts = (sql: string) => splitStatements(sql).map((s) => s.text);
 
@@ -69,4 +69,42 @@ test("IR2 a keyword elsewhere (in a string, a comment, a CTE or a name) isn't re
 
 test("IR3 a statement with no code has no keyword to refuse", () => {
   assert.equal(isolatedRefusal("-- nothing"), undefined);
+});
+
+test("PR1 the playground refuses transaction control by its first keyword, and nothing else", () => {
+  for (const kw of ["BEGIN", "START", "COMMIT", "END", "ROLLBACK", "ABORT"])
+    assert.equal(playgroundRefusal(`-- a note\n${kw.toLowerCase()} transaction`), `${kw} isn't run in the playground: an open transaction would break the lesson editors, which roll back their own; transactions are practised in psql`);
+  for (const s of ["SET threads = 1", "USE memory", "PRAGMA version", "SELECT 'BEGIN'", "DELETE FROM t", "-- COMMIT"]) assert.equal(playgroundRefusal(s), undefined, s);
+});
+
+test("RO1 a read is readsOnly: SELECT, FROM, WITH, VALUES, DESCRIBE, SHOW, SUMMARIZE, EXPLAIN, any case, after comments", () => {
+  for (const s of ["SELECT 1", "FROM species", "WITH x AS (SELECT 1) SELECT * FROM x", "VALUES (1)", "DESCRIBE species", "SHOW TABLES", "SUMMARIZE species", "EXPLAIN SELECT 1", "-- note\n/* and */ select 1"])
+    assert.equal(readsOnly(s), true, s);
+});
+
+test("RO2 a write or a setting isn't: INSERT, UPDATE, DELETE, CREATE, DROP, ALTER, COPY, SET, PRAGMA, CALL, ANALYZE", () => {
+  for (const s of ["INSERT INTO t VALUES (1)", "UPDATE t SET a = 1", "DELETE FROM t", "CREATE TABLE t (a INT)", "DROP TABLE t", "ALTER TABLE t ADD b INT", "COPY t TO 'x.csv'", "SET threads = 1", "PRAGMA version", "CALL pragma_version()", "ANALYZE"])
+    assert.equal(readsOnly(s), false, s);
+});
+
+test("RO3 a CTE that deletes isn't readsOnly", () => {
+  assert.equal(readsOnly("WITH d AS (DELETE FROM t RETURNING *) SELECT * FROM d"), false);
+});
+
+test("RO4 EXPLAIN ANALYZE isn't readsOnly (it runs the statement)", () => {
+  assert.equal(readsOnly("EXPLAIN ANALYZE SELECT 1"), false);
+});
+
+test("RO5 a keyword inside a string or a comment doesn't count", () => {
+  for (const s of ["SELECT 'DELETE FROM t'", "SELECT 1 -- then DROP it", "SELECT /* INSERT */ 1", "SELECT $$CREATE$$"]) assert.equal(readsOnly(s), true, s);
+});
+
+test("RO6 nextval and setval change a sequence: not readsOnly", () => {
+  assert.equal(readsOnly("SELECT nextval('s')"), false);
+  assert.equal(readsOnly("SELECT setval('s', 1)"), false);
+});
+
+test("RO7 SELECT … INTO isn't readsOnly; a word that only contains a keyword is", () => {
+  assert.equal(readsOnly("SELECT * INTO t2 FROM t"), false);
+  assert.equal(readsOnly("SELECT created, updated_at, intonation, dropped FROM t"), true);
 });

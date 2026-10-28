@@ -117,12 +117,36 @@ export class ScriptError extends Error {
 
 export const statementError = (s: Statement, total: number, message: string) => new ScriptError(s.n, total, message);
 
-// First words a lesson editor's isolated run refuses (plan D11): transaction control, and session state that would
-// outlive its ROLLBACK. The block lint refuses them in browser blocks too.
-const ISOLATED_REFUSED = new Set(["BEGIN", "START", "COMMIT", "END", "ROLLBACK", "ABORT", "SET", "RESET", "USE", "PRAGMA", "ATTACH", "DETACH", "INSTALL", "LOAD"]);
+// A statement's first word, upper-cased, outside comments; undefined if it has none.
+export const firstWord = (statement: string) => /^\s*([A-Za-z_]+)/.exec(codeOnly(statement))?.[1]?.toUpperCase();
+
+// Transaction control: refused in every browser editor (plan D11), since an open transaction would outlive the run.
+const TRANSACTION_CONTROL = ["BEGIN", "START", "COMMIT", "END", "ROLLBACK", "ABORT"];
+// First words a lesson editor's isolated run refuses: transaction control, and session state that would outlive its
+// ROLLBACK. The block lint refuses them in browser blocks too.
+const ISOLATED_REFUSED = new Set([...TRANSACTION_CONTROL, "SET", "RESET", "USE", "PRAGMA", "ATTACH", "DETACH", "INSTALL", "LOAD"]);
+const PLAYGROUND_REFUSED = new Set(TRANSACTION_CONTROL);
 
 // Why an isolated run refuses the statement, or undefined if it doesn't.
 export function isolatedRefusal(statement: string): string | undefined {
-  const word = /^\s*([A-Za-z_]+)/.exec(codeOnly(statement))?.[1]?.toUpperCase();
+  const word = firstWord(statement);
   return word && ISOLATED_REFUSED.has(word) ? `${word} isn't run here: this editor's changes are rolled back; use the playground` : undefined;
+}
+
+// Why the playground refuses the statement, or undefined if it doesn't.
+export function playgroundRefusal(statement: string): string | undefined {
+  const word = firstWord(statement);
+  return word && PLAYGROUND_REFUSED.has(word)
+    ? `${word} isn't run in the playground: an open transaction would break the lesson editors, which roll back their own; transactions are practised in psql`
+    : undefined;
+}
+
+const READ_FIRST = new Set(["SELECT", "FROM", "WITH", "VALUES", "DESCRIBE", "SHOW", "SUMMARIZE", "EXPLAIN"]);
+const WRITE_WORDS = /\b(INSERT|UPDATE|DELETE|INTO|CREATE|DROP|ALTER|COPY|ANALYZE|nextval|setval)\b/i;
+
+// Whether the statement surely leaves the tables as they were (plan D11). Errs toward "no": a false alarm costs a
+// Reset, a miss a wrong verdict.
+export function readsOnly(statement: string): boolean {
+  const word = firstWord(statement);
+  return word !== undefined && READ_FIRST.has(word) && !WRITE_WORDS.test(codeOnly(statement));
 }

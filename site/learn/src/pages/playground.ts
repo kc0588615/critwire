@@ -1,7 +1,11 @@
-// /learn/playground/ (plan D11, D12): one editor whose changes stay until Reset database. Run (Ctrl/Cmd+Enter),
-// Stop and Reset restart nothing but the engine. Transaction control and the changed flag land in S12.
+// /learn/playground/ (plan D11, D12): one editor whose changes stay until Reset database (the engine's persistent run:
+// transaction control refused, the changed flag). Run (Ctrl/Cmd+Enter); Stop and Reset restart the engine. Its last
+// result is the test hook's "playground".
 import { Superseded, type Engine } from "../engine.ts";
+import { setHookResult } from "../hook.ts";
 import { setBusy, showError, showNote, showResult } from "../results.ts";
+
+const BLOCK = "playground";
 
 const byId = <T extends HTMLElement>(id: string) => {
   const e = document.getElementById(id);
@@ -29,10 +33,14 @@ export function playground(engine: Engine): void {
     running = true;
     setBusy(region, true);
     sync();
+    const sql = editor.value;
     try {
-      showResult(region, await engine.run(editor.value));
+      const result = await engine.persistent(sql);
+      setHookResult(BLOCK, result);
+      showResult(region, sql, result, engine.species);
     } catch (e) {
       if (e instanceof Superseded) return; // Stop or Reset already says what happened
+      setHookResult(BLOCK, e as Error);
       showError(region, e as Error);
     } finally {
       if (me === runs) {
@@ -47,6 +55,7 @@ export function playground(engine: Engine): void {
     runs++;
     running = false;
     setBusy(region, false);
+    setHookResult(BLOCK, undefined);
     showNote(region, "Restarting the database…");
     await engine.restart();
     showNote(region, engine.state.state === "ready" ? note : "The database couldn't restart.");
