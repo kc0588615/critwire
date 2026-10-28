@@ -199,7 +199,7 @@ The review's numbering: MF = MUST-FIX, SC = SHOULD-CHANGE.
 - [x] Baseline: install, migrate, run typecheck, lint, unit and E2E tests; record the results under Baseline
 - [x] Architecture: `architect` writes findings and the target design
 - [x] Fable review: `architecture-reviewer`
-- [ ] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
+- [x] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
 - [ ] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
 - [ ] Steps: `planner` writes Steps and Verification
 
@@ -610,6 +610,21 @@ SHOULD-CONSIDER:
 
 ## Architecture review (Astra)
 
+VERDICT: APPROVE_WITH_CHANGES
+
+MUST-FIX:
+
+1. **D6–D7: refresh dependency cycle.** Sample ingest refuses stale core outputs, while deriving those outputs requires a fresh sample. After species changes, neither command can proceed. Let sample ingest consume freshly computed core results without requiring committed derived files to match.
+2. **D6: download intent is persisted too late.** Saving the returned key after POST leaves interrupted or ambiguous requests untracked, allowing duplicate downloads. Persist request intent before POST; define reconciliation before any subsequent submission.
+3. **D9.6: dependency protection needs full dependency traversal.** Direct `pg_depend` edges filtered by object schema do not cover dependencies represented through internal objects, including view rules. Resolve owning objects and dependencies transitively before allowing `CASCADE`; otherwise outside objects can still disappear.
+4. **D11: specify a universal secret-redaction boundary.** Environment-conflict logging must contain variable names and winning sources only. Protect every value, including `GBIF_PASSWORD` and `LEARN_PG_URL`, rather than special-casing `DATABASE_URL`.
+
+SHOULD-CONSIDER:
+
+1. D9.5 blocks all publication when a species retires. Support replacement relationships before retirement is needed; document this temporary limitation.
+2. D10’s rollback check should inject a guaranteed constraint violation; truncating COPY can produce a successful exit.
+3. Record habitat stand-ins’ provenance and hashes in machine-readable metadata, validated alongside shapes.
+
 ## Revision notes
 
 ## Steps
@@ -641,5 +656,6 @@ SHOULD-CONSIDER:
 - 2026-10-28 06:49 UTC Baseline: typecheck ok, test 66/66, build ok (dist = live), e2e 20/20; baseline hashes + live species.json saved.
 - 2026-10-28 07:16 UTC Architecture: architect wrote F1–F13, D1–D19, review-item map, risks; decisions A1–A13 (uv as root, TS sample ingest, data/issued-ids.json, critwire_lab via --setup, no L1 diagrams). Plan-only, no code; no checks needed.
 - 2026-10-28 07:22 UTC Fable review: APPROVE_WITH_CHANGES, 2 MUST-FIX (deterministic learn:check forced failure; loadEnv logs names only), 4 missed, 5 SHOULD-CONSIDER. Plan-only; no checks needed.
+- 2026-10-28 07:23 UTC Astra review: APPROVE_WITH_CHANGES, 4 MUST-FIX (sample/derive refresh cycle; download intent before POST; transitive pg_depend; redact all env values), 3 SHOULD-CONSIDER. Plan-only; no checks needed.
 
 ## Summary
