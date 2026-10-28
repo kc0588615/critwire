@@ -134,7 +134,7 @@ Estimate with these items: about 34–40 sessions.
 
 ## Stages
 
-- [ ] Baseline: install, migrate, run typecheck, lint, unit and E2E tests; record the results under Baseline
+- [x] Baseline: install, migrate, run typecheck, lint, unit and E2E tests; record the results under Baseline
 - [ ] Architecture: `architect` writes findings and the target design
 - [ ] Fable review: `architecture-reviewer`
 - [ ] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
@@ -142,6 +142,17 @@ Estimate with these items: about 34–40 sessions.
 - [ ] Steps: `planner` writes Steps and Verification
 
 ## Baseline
+
+On `97a66ea` (= `origin/main` `6093a23` + mission start), 2026-10-28, db `critwire_dev` (`CRITWIRE_DB_TARGET=critwire_dev`, `LEARN_PG_URL` as `critwire_lab`). Logs: `/srv/critter-ai/agent-state/missions/critwire-learn-l3-gis/baseline-*.log`.
+- `pnpm install --frozen-lockfile`: ok. No migrations (build rebuilds tables). No lint script in the repo; typecheck is the static check.
+- `pnpm typecheck`: ok (2 s). `pnpm test`: 549/549 (2 min).
+- `pnpm build` (plain): ok, 5.6 s; `dist/learn/data/` 40,041,618 B, committed lab data 13,677,679 B (cap 50,000,000 each); `dist/` 224 files.
+- `pnpm test:db`: 110/110 (5 min 20 s) after the build. Before any build it fails (LD9/LD10/LD18, LC5–LC8 read `dist/learn/data/`): order is build, then test:db.
+- `pnpm learn:check`: ok (1 min 57 s); canary `learn_spatial` unchanged, leak check empty, `checked.json` unchanged.
+- `pnpm e2e`: 80/80 passed (5.4 min); artifacts `.../critwire-learn-l3-gis/baseline-e2e/`.
+- sha256 lists for Definition of done: `.../critwire-learn-l3-gis/baseline-sha256-repo.txt` (604 tracked files) and `baseline-sha256-dist.txt` (224 `dist/` files).
+- Roles: `critwire_live` and `critwire_lab` exist. Handoff: no `done` items; H3 (L1, GBIF retention) and H4 (L2, Windows check) wait on the owner and block nothing (brief item 6: nothing L1 handed over blocks L3).
+- Read: L2's Summary ("For L3") and the Codex db/backend review (`/srv/critter-ai/agent-state/reviews/2026-10-28-critwire-db-backend-codex.md`) for the architect.
 
 ## Architecture
 
@@ -162,5 +173,7 @@ Estimate with these items: about 34–40 sessions.
 ## Decisions
 
 ## Log
+
+- 2026-10-28 22:59 UTC · Baseline: install, typecheck, test 549/549, build, test:db 110/110, learn:check ok, e2e 80/80; sha256 lists recorded.
 
 ## Summary
