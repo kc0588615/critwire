@@ -10,6 +10,8 @@ export const LIVE_DATABASE = "critwire";
 export const LAB_ROLE = "critwire_lab";
 /** The schema the loader replaces; --setup hands it to LAB_ROLE. */
 export const LAB_SCHEMA = "learn_curriculum";
+/** A2's schema: only the canary reads it; the leak query skips it. */
+export const CANARY_SCHEMA = "learn_spatial";
 /** learn:check and the test:db lab harness hold this advisory lock for their whole run. */
 export const LAB_LOCK = "critwire.learn";
 /** libpq's compiled-in socket directory on Debian and Ubuntu. */

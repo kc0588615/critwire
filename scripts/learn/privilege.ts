@@ -7,7 +7,7 @@
 //   SET, RESET and transaction control are refused once, by the isolated run's rule (sql.ts isolatedRefusal, D11).
 // - cleanupErrors (CL1–CL9): a block drops the roles and schemas it creates, DROP OWNED BY before DROP ROLE for a role
 //   that was granted or owns anything, RESET ROLE after SET ROLE: each block cleans up as a learner runs it.
-// The leak check after each block is the runner's (check.ts learnObjects, S3). blocks.ts's lintPage calls both rules.
+// The leak check after each block is the runner's (runner.ts learnObjects). blocks.ts's lintPage calls both rules.
 // Tests: privilege.test.ts.
 import { codeOnly, type Statement } from "../build/learn/sql.ts";
 
