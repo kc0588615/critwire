@@ -772,7 +772,7 @@ Every step:
   - First: G5 (advisory lock held by a test session: short timeout refuses, naming it), G6 (insert failing after DROP: previous table and rows intact), G7 (two concurrent loads serialize, both succeed).
   - G5 proves `lock_timeout` doesn't bound advisory waits (Open risk 7): switch to `pg_try_advisory_xact_lock` + deadline; record.
   - Verify: `T`, `D`, `B`, `H`.
-- [ ] S3 · `ingest naturalearth` + ingest dispatcher (D3, D4) · light network (2 pinned files)
+- [x] S3 · `ingest naturalearth` + ingest dispatcher (D3, D4) · light network (2 pinned files)
   - Files: `scripts/http.ts` (`getBytes`), `scripts/ingest.ts` (`<source> → run()`; wikidata, col, gbif wrapped, unchanged), `scripts/ingest/naturalearth.ts` + `.test.ts`, `data/raw/naturalearth/snapshot.json`.
   - First: CD11 (sha256 mismatch refuses, writes nothing); NE1 (snapshot = 002 §6's ten fields per unit + `release`, `commit`, `fields`, `retrieved`; keys sorted; no geometry).
   - Run: `pnpm ingest naturalearth 2>> $M/ingest-naturalearth.log`.
@@ -987,6 +987,7 @@ What can go wrong across steps, and what the session does. `MISSION_BLOCKED` onl
 - MF1: done (S1). Guard in `loadDatabase` (`assertTarget` on `current_database()` before the lock and DDL); `public.species`; `loadEnv` via `parseEnv`, names-only conflict log. G4 lives in `scripts/env.test.ts` (it tests `env.ts`) plus G4's `loadDatabase` half in `db.dbtest.ts`; `test:db` runs files with `--test-concurrency=1` (one shared `critwire_dev`) and refuses other dbs through `scripts/test-db.ts`.
 - S2: Open risk 7 closed. `lock_timeout` (set with `set_config(…, true)`, = `SET LOCAL`) bounds `pg_advisory_xact_lock` waits on PG16: G5 refused at ~0.3 s. No switch to `pg_try_advisory_xact_lock`. The 55P03 error is rethrown naming `critwire.load` and the wait. G6/G7 were green before the change (the existing transaction + advisory lock already gave them); kept as SC3 regression cases.
 - A22 (planner): Release smoke loads the live loader with `psql -X -v ON_ERROR_STOP=1 -d "$LEARN_PG_URL" -f` (still `critwire_dev`, as `critwire_lab`), not the brief's `-d critwire_dev` as superuser: a superuser load would leave `learn_curriculum` owned by `critter-ai`, so `critwire_lab` (and L2's `learn:check`) could no longer replace it.
+- S3: NE snapshot `fields` is per layer, 10 each, sorted (countries: ADMIN; map_units: GEOUNIT in its place; both keep ADM0_A3, ISO_A3_EH, TYPE, ISO_A2(_EH), NAME_EN, CONTINENT, REGION_UN, SUBREGION). Snapshot also keeps `files` (pinned URL + sha256) as provenance. `getBytes` requires a sha256 pin; `getJson` and it share one paced retry loop (`getOk`). A1's two NE fixtures copied to `scripts/fixtures/` (S4 reuses them).
 
 ## Log
 
@@ -998,5 +999,6 @@ What can go wrong across steps, and what the session does. `MISSION_BLOCKED` onl
 - 2026-10-28 07:48 UTC Steps: planner wrote S1–S31 (MF1 first; countries; shapes; sample + live reuse ingest; live registration S16 right after parity; loader, learn:check, E2E; review items S27–S30 last), Verification, Failure modes; A21–A22. Plan-only; no checks needed.
 - 2026-10-28 07:50 UTC S1: MF1 guard, names-only env log, `test`/`test:db` runners. Red 7 (G1×3, G4, G2×2, G3) → green: test 70/70, test:db 3/3 (and refuses db `postgres`); typecheck ok; build ok; e2e 20/20; dist 157/157 = Baseline.
 - 2026-10-28 07:55 UTC S2: `loadDatabase` lock_timeout 30 s / statement_timeout 120 s (test overrides), named lock-timeout error. Red 1 (G5; G6, G7 green already) → green: test:db 6/6, test 70/70, typecheck ok, build ok, H 155/155.
+- 2026-10-28 08:01 UTC S3: `getBytes` (pinned sha256), ingest dispatcher (`<source> → run()`), `ingest naturalearth` (258 countries + 298 map units, 182 KB). Red 4 (CD11×2, NE1×2) → green: test 74/74, typecheck ok; usage lists 4 sources; derive no diff, DOI current; build ok; H 155/155.
 
 ## Summary

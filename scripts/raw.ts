@@ -53,7 +53,19 @@ export interface GbifSnapshot {
   species: Record<string, { match: Fetched<GbifMatchResponse>; occurrences: Fetched<GbifOccurrenceResponse> | null; datasets: GbifDatasets | null }>;
 }
 
-export interface Snapshots { wikidata: WikidataSnapshot; col: ColSnapshot; gbif: GbifSnapshot }
+// Natural Earth admin-0 attributes (002 §6): each layer's units in file order, cut to `fields[layer]`; no geometry.
+// release, commit and fields are the extraction fingerprint derive checks; files are the pinned URLs and sha256s.
+export type NeLayer = "countries" | "map_units";
+export interface NaturalEarthSnapshot {
+  retrieved: string;
+  release: { version: string; issued: string };
+  commit: string;
+  fields: Record<NeLayer, string[]>;
+  files: Record<NeLayer, { url: string; sha256: string }>;
+  layers: Record<NeLayer, Record<string, string>[]>;
+}
+
+export interface Snapshots { wikidata: WikidataSnapshot; col: ColSnapshot; gbif: GbifSnapshot; naturalearth: NaturalEarthSnapshot }
 export type Source = keyof Snapshots;
 
 const snapshotFile = (source: Source) => new URL(`../data/raw/${source}/snapshot.json`, import.meta.url);
