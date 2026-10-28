@@ -975,6 +975,15 @@ SHOULD-CONSIDER:
 
 ## Release
 
+- Pre-merge: base unchanged (`origin/main` = `5ac58df`, already in branch; no rebase needed). Full Verification re-run on `fead978`, all 8 green: build ok (35,452,055 / 13,677,679 B); e2e 38/38, 0 unexpected/skipped/flaky, 38 traces (`/srv/critter-ai/agent-state/missions/critwire-learn-l1-data/e2e-release/`); typecheck ok, test 285/285, test:db 78/78, no `learn_t_%`; both DOIs current, tree clean; H 155/155, attribution diff empty + 1 NE, issued-ids diff empty; parity EXCEPT ALL 0/0 (40,395 rows, 12 cols), checklistKey ok, 0 untitled; learn:check ×2 ok, canary diff empty, lab-credits 0, owner critwire_lab; caps ok. Logs `/srv/critter-ai/agent-state/missions/critwire-learn-l1-data/release/`.
+- PR #10 merged: merge commit `85d5ca367e2e1ded9a08d2233b906c2765b607f6`.
+- `deploy critwire` last line: `deploy critwire: live at https://critwire.com` (`/srv/critter-ai/agent-state/missions/critwire-learn-l1-data/release/deploy.log`).
+- Smoke (https://critwire.com): `/v1/countries.{json,csv,parquet}` 200, bytes = dist, 250 rows / 251 lines / 250 rows; `/learn/data/` + `manifest.json` 200; 10/10 manifest files 200 with sha256 + bytes = manifest; live `/v1/species*` 155/155 = Baseline; live attribution diff empty + 1 Natural Earth; live loader downloaded, loaded as `critwire_lab` into `critwire_dev` (exit 0, `/srv/critter-ai/agent-state/missions/critwire-learn-l1-data/release/live-loader.log`), pg-smoke 14 counts = manifest `tables`, owner `critwire_lab`.
+- GBIF download `0041824-260928105237408`: `eraseAfter` still `2027-04-23T05:57:06.443+00:00` → handoff H3 (confirm citation keeps it; blocks nothing).
+- Log: `/srv/critter-ai/agent-state/missions/critwire-learn-l1-data.log`.
+
+Result: done
+
 ## Decisions
 
 - A1 (architect): Python via `uv` 0.13.5, installed as root to `/usr/local/bin` from the spike-verified tarball and recorded in ops `vps.md`; `.venv-learn` on system CPython 3.12.3 with 004 §3.3's pins. Plain `python3 -m venv` is broken here (no `ensurepip`) and the pins are compiled with `uv` anyway. L4 reuses the venv (D2).
@@ -1098,6 +1107,8 @@ SHOULD-CONSIDER:
 - 2026-10-28 11:40 UTC S32: code review MF1: sample freshness checks each species' `{id, gbif}` pair (`download.json` `species`). Red 2 (F9 derive; ingest clean run) → green; DL15 red on real data until the live reuse ingest (35 MB zip, `$M/../ingest-gbif-sample.log`) wrote `species`: sample.csv + contributions sha256 unchanged, download.json +73 pairs only. derive: both DOIs current; T typecheck ok, test 285/285; plain B ok (dist/learn/data 35,452,055 B, lab data 13,677,679 B); E 38 expected, 0 unexpected/skipped/flaky (`$M/e2e-s32/`); H 155 ok. AGENTS.md + 004 §4.2 updated.
 - 2026-10-28 11:55 UTC Verification (final, `9e6b5df` + plan): 1 plain build ok (dist/learn/data 35,452,055 B, lab data 13,677,679 B); 2 e2e 38 expected, 0 unexpected/skipped/flaky, 7 specs, 38 traces, artifact `$M/e2e/`; 3 typecheck ok, test 285/285, test:db 78/78, no `learn_t_%` schema/role; 4 `DOI current 10.15468/dd.ky9cyt`, `learn-sample DOI current 10.15468/dd.5sthtk`, tree clean; 5 H 155/155, attribution diff empty + 1 Natural Earth entry, issued-ids diff empty; 6 parity green, occurrences EXCEPT ALL 0/0 (12 cols VARCHAR, 40,395 rows each), checklistKey `[d7dddbf4-…]`, 0 untitled datasets; 7 learn:check ×2 exit 0, canary diff empty, 14 counts = 004 §4.3, lab-credits 0 rows, owner critwire_lab; 8 caps < 50,000,000.
 
+- 2026-10-28 11:52 UTC Release: Verification re-run all green; PR #10 merged `85d5ca3`; `deploy critwire` ok; live smoke green (countries, 10 learn files, 155 species, attribution, live loader + pg-smoke); GBIF eraseAfter unchanged → H3.
+
 ## Summary
 
 **Shipped** (branch `agent/critwire-learn-l1-data`, 55 commits ahead of `main` incl. this one):
@@ -1123,7 +1134,7 @@ SHOULD-CONSIDER:
 - §3.2, §4.3 and §6.2: the guard runs drop then diff, and CHECKs are added (`2d8591a`).
 - §4.1, §4.4 and §4.5: credits, cap and manifest (`ac90291`). §7.6: `learn:check` loader stage, canary identity and cleanup (`ef6cc6c`). §7.7: the L1/L2 E2E split (`96b0814`). §0 and d2 notes (`812ef79`).
 
-**Release:** see `## Release` (next unit: PR, merge, `deploy critwire`, smoke).
+**Release:** PR #10 merged (`85d5ca3`), `deploy critwire` live, smoke green (see `## Release`). Handoff H3: GBIF `eraseAfter` for the sample download unchanged; confirm with GBIF before 2027-04-23.
 
 **For L2:**
 - The docs page links to `/learn/data/`. Point it at `/learn/` once that page exists (A11).
