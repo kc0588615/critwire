@@ -80,7 +80,7 @@
       "prereqs": [
         "f2"
       ],
-      "state": "planned",
+      "state": "built",
       "skill": "Inner, left and anti joins; many-to-many; reading an ERD; light spatial in plain SQL (bounding boxes, 10° bins)",
       "questions": [
         "Which animals were recorded in Brazil?",
@@ -100,7 +100,7 @@
       "prereqs": [
         "f3"
       ],
-      "state": "planned",
+      "state": "built",
       "skill": "CTEs, subqueries, window functions",
       "questions": [
         "Which dataset contributed most of each species' records, and what share is that?",

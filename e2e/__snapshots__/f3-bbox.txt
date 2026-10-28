@@ -1,0 +1,5 @@
+-- result: f3-bbox · 3 rows · sha256 a26cad9f9f8d
+id | common_name | records | west | east | south | north
+25 | Tiger | 2000 | -157.821478 | 134.0985 | -28.55362 | 60
+48 | Tasmanian Devil | 2000 | -106.663485 | 150.254131 | -43.577984 | 35.078382
+51 | Jaguar | 2000 | -109.45264 | -39.7565988 | -25.790838 | 35.078382

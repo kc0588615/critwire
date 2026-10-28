@@ -1,0 +1,8 @@
+-- result: f4-above-average · 21 rows · sha256 6c474db5d8ed
+species_id | records
+2 | 2000
+8 | 2000
+25 | 2000
+28 | 2000
+37 | 2000
+… 16 more rows

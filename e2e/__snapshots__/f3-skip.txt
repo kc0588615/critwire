@@ -1,0 +1,8 @@
+-- result: f3-skip · 14 rows · sha256 cd259b211bbe
+code | name | species | records
+AR | Argentina | 7 | 1127
+BO | Bolivia | 7 | 33
+BR | Brazil | 14 | 5033
+CL | Chile | 1 | 58
+CO | Colombia | 10 | 2289
+… 9 more rows

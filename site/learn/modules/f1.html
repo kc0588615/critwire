@@ -21,7 +21,7 @@
 <ol class="steps">
 <li><p><code>species</code> has no class column; the view <code>species_taxonomy</code> has one row per species with its class, order, family and genus. Look at its first rows:</p>
 {{block:f1-taxonomy}}</li>
-<li><p>Keep the species whose id is among the mammals' ids. <code>IN (…)</code> is true when a value is in a list, and the list can be another query's result. Joins (f3, in preparation) are the usual way to do this.</p>
+<li><p>Keep the species whose id is among the mammals' ids. <code>IN (…)</code> is true when a value is in a list, and the list can be another query's result. <a href="/learn/foundations/join/">Joins (f3)</a> are the usual way to do this.</p>
 {{block:f1-mammals}}</li>
 <li><p>A page shows a few rows at a time: <code>LIMIT</code> takes a page and <code>OFFSET</code> skips the pages before it. The second page of five:</p>
 {{block:f1-page}}</li>
@@ -34,7 +34,7 @@
 <p>critwire links each animal to other catalogues through outside ids (<code>gbif_id</code>, <code>ncbi_id</code>, <code>inaturalist_id</code>, <code>wikidata_id</code>). Which animals are missing at least one of them? Show <code>id</code>, <code>common_name</code> and the four ids, by <code>id</code>.</p>
 {{exercise:f1-ex}}
 <details><summary>About the answer</summary>
-<p>The three animals with no GBIF id are the ones whose identity in GBIF critwire hasn't settled (their <code>range_status</code> says so), so they have no records in the lab sample either. Joins (f3) find them again with an anti join.</p>
+<p>The three animals with no GBIF id are the ones whose identity in GBIF critwire hasn't settled (their <code>range_status</code> says so), so they have no records in the lab sample either. <a href="/learn/foundations/join/">Joins (f3)</a> find them again with an anti join.</p>
 </details>
 
 <h2>Check</h2>

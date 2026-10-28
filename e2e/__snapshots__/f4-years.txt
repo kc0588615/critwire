@@ -1,0 +1,8 @@
+-- result: f4-years · 27 rows · sha256 36304934ba6e
+year | records | place | share_pct
+2021 | 2859 | 1 | 9.8
+2017 | 2643 | 2 | 9
+2015 | 2039 | 3 | 7
+2007 | 1874 | 4 | 6.4
+2008 | 1698 | 5 | 5.8
+… 22 more rows

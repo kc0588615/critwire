@@ -1,0 +1,3 @@
+-- result: f3-fan-out · 1 row · sha256 473ef5a32e0b
+common_name | joined_rows | records | countries
+Jaguar | 40000 | 2000 | 20

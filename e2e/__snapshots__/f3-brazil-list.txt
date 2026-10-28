@@ -1,0 +1,8 @@
+-- result: f3-brazil-list · 12 rows · sha256 6eaf98efd284
+id | common_name | scientific_name
+65 | African Wild Dog | Lycaon pictus
+54 | Brown-throated Sloth | Bradypus variegatus
+56 | Chimpanzee | Pan troglodytes
+52 | Giant Anteater | Myrmecophaga tridactyla
+36 | Giant Armadillo | Priodontes maximus
+… 7 more rows

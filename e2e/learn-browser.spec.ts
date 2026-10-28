@@ -240,6 +240,9 @@ test("a statement that writes rows says N rows changed", async ({ browser }) => 
   await context.close();
 });
 
+// A walk over the course pages loads each one (an engine boot) and runs its blocks: about 5 s a page, so 15 s each.
+const PAGE_BUDGET_MS = 15_000;
+
 // The course pages (setup, then the built modules) with their URLs.
 async function coursePages(): Promise<{ page: CoursePage; url: string }[]> {
   const c = await readCourse();
@@ -263,7 +266,9 @@ test("every browser block of the course pages equals its snapshot, and cards fol
   const { context, offOrigin } = await learnContext(browser);
   const page = await context.newPage();
   const seen: string[] = [];
-  for (const { page: p, url } of await coursePages()) {
+  const pages = await coursePages();
+  test.setTimeout(PAGE_BUDGET_MS * pages.length);
+  for (const { page: p, url } of pages) {
     const editors = p.slots.filter((s) => s.kind === "block").map((s) => p.blocks.find((b) => b.id === s.name)!).filter((b) => b.engine === "duckdb");
     if (!editors.length) continue;
     await page.goto(url);
@@ -279,7 +284,10 @@ test("every browser block of the course pages equals its snapshot, and cards fol
       seen.push(b.id);
     }
   }
-  expect(seen).toEqual(expect.arrayContaining(["setup-counts", "f1-no-photo", "f1-page", "f2-count", "f2-distinct", "d6-export"]));
+  // f3-brazil-list is the release smoke's block (cards, as its `-- show: cards` says).
+  expect(seen).toEqual(
+    expect.arrayContaining(["setup-counts", "f1-no-photo", "f1-page", "f2-count", "f2-distinct", "f3-brazil-list", "f3-not-in", "f4-top-dataset", "f4-running", "d6-export"]),
+  );
   expect(offOrigin).toEqual([]);
   await context.close();
 });
@@ -310,6 +318,37 @@ FROM occurrences GROUP BY species_id HAVING count(DISTINCT dataset_key) > 25 ORD
 FROM occurrences GROUP BY basis_of_record HAVING count(*) >= 1000 ORDER BY records DESC, basis_of_record`,
     hint: "Some rows differ from the answer.",
   },
+  // An inner join: the Falkland Islands, with no records, drop out instead of showing 0.
+  "f3-skip": {
+    sql: `SELECT c.code, c.name, count(DISTINCT o.species_id) AS species, count(o.id) AS records
+FROM countries AS c JOIN occurrences AS o ON o.country_code = c.code
+WHERE c.continent = 'South America' GROUP BY c.code, c.name ORDER BY c.name`,
+    hint: "Your result has 13 rows; the answer has 14.",
+  },
+  // An anti join written with an inner join finds nothing: every pair it keeps has a record.
+  "f3-ex": {
+    sql: `SELECT c.code, c.name FROM countries AS c JOIN occurrences AS o ON o.country_code = c.code
+WHERE c.continent = 'Africa' AND o.id IS NULL ORDER BY c.name`,
+    hint: "Your result has 0 rows; the answer has 11.",
+  },
+  // The right rows by species_id: the order is part of the answer.
+  "f4-skip": {
+    sql: `WITH per_year AS (SELECT species_id, year, count(*) AS records FROM occurrences WHERE year IS NOT NULL GROUP BY species_id, year),
+ranked AS (SELECT species_id, year, records, sum(records) OVER (PARTITION BY species_id) AS dated,
+  row_number() OVER (PARTITION BY species_id ORDER BY records DESC, year DESC) AS place FROM per_year)
+SELECT species_id, year, records, dated, round(100.0 * records / dated, 1) AS share_pct FROM ranked
+WHERE place = 1 AND dated >= 1000 ORDER BY species_id`,
+    hint: "The right rows, but in another row order: check your ORDER BY.",
+  },
+  // rank instead of row_number: the 11 mammals tied at 2,000 records all take place 1.
+  "f4-ex": {
+    sql: `WITH per_species AS (SELECT t.class, o.species_id, count(*) AS records FROM occurrences AS o
+  JOIN species_taxonomy AS t ON t.species_id = o.species_id GROUP BY t.class, o.species_id),
+ranked AS (SELECT class, species_id, records, rank() OVER (PARTITION BY class ORDER BY records DESC) AS place,
+  round(100.0 * records / sum(records) OVER (PARTITION BY class), 1) AS share_pct FROM per_species)
+SELECT class, species_id, records, place, share_pct FROM ranked WHERE place <= 3 ORDER BY class, place, species_id`,
+    hint: "Your result has 17 rows; the answer has 9.",
+  },
   // No Unknown member: the records without a year fall out of the fact, so it no longer reconciles.
   "d6-ex": {
     sql: `CREATE TABLE dim_decade (decade INTEGER PRIMARY KEY, label VARCHAR NOT NULL);
@@ -326,7 +365,9 @@ test("every exercise and skip check rejects a fixed wrong answer and accepts its
   const { context, offOrigin } = await learnContext(browser);
   const page = await context.newPage();
   const seen: string[] = [];
-  for (const { page: p, url } of await coursePages()) {
+  const pages = await coursePages();
+  test.setTimeout(PAGE_BUDGET_MS * pages.length);
+  for (const { page: p, url } of pages) {
     const exercises = p.slots.filter((s) => (s.kind === "exercise" || s.kind === "skip") && p.blocks.find((b) => b.id === s.name)!.engine === "duckdb");
     if (!exercises.length) continue;
     await page.goto(url);
@@ -358,7 +399,7 @@ test("every exercise and skip check rejects a fixed wrong answer and accepts its
       seen.push(b.id);
     }
   }
-  expect(seen).toEqual(expect.arrayContaining(["f1-skip", "f1-ex", "f2-skip", "f2-ex", "d6-ex"]));
+  expect(seen).toEqual(expect.arrayContaining(["f1-skip", "f1-ex", "f2-skip", "f2-ex", "f3-skip", "f3-ex", "f4-skip", "f4-ex", "d6-ex"]));
   expect(offOrigin).toEqual([]);
   await context.close();
 });
