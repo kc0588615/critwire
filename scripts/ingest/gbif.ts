@@ -13,7 +13,8 @@ const API = "https://api.gbif.org";
 export const BACKBONE_KEY = "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c";
 const FACET_LIMIT = 300;
 // Zoos/gardens (LIVING_SPECIMEN) and FOSSIL_SPECIMEN are left out by listing the allowed values (negation is a 400).
-const BASIS_OF_RECORD = [
+// Shared with the lab sample's download request (scripts/learn/download.ts): one definition of the countries rule.
+export const BASIS_OF_RECORD = [
   "HUMAN_OBSERVATION", "OBSERVATION", "MACHINE_OBSERVATION", "PRESERVED_SPECIMEN", "MATERIAL_SAMPLE", "MATERIAL_CITATION", "OCCURRENCE",
 ];
 // Timing diagnostics, IUCN status, and nested-set indexes that move on every backbone rebuild.
