@@ -219,7 +219,7 @@
         "d2",
         "d4"
       ],
-      "state": "planned",
+      "state": "built",
       "skill": "Grain, facts, dimensions, conformed dimensions, unknown members, slowly changing dimensions (types 1 and 2); star vs snowflake; export",
       "questions": [
         "What is one record fact's grain?",

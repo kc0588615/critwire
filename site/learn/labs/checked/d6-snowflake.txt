@@ -1,0 +1,5 @@
+-- result: d6-snowflake · 3 rows · sha256 3ba889abc98e
+class | star_records | snowflake_records
+Amphibia | 4776 | 4776
+Mammalia | 31905 | 31905
+Reptilia | 3714 | 3714

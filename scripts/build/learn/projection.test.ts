@@ -6,20 +6,11 @@
 // the published files.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { pathToFileURL } from "node:url";
-import { deriveAll, readDeriveInputs } from "../../derive/pipeline.ts";
-import { labDataDir, readLabFiles } from "../../learn/lab-files.ts";
-import { speciesFile, type Species } from "../../species.ts";
-import { writeCountries } from "../countries.ts";
-import { writeTables } from "../tables.ts";
-import { writeLearnData } from "./data.ts";
+import type { Species } from "../../species.ts";
+import { derived, withDist } from "./dist-fixture.ts";
 import { assertLearnProjection, LAB_TABLES, projectLearn } from "./projection.ts";
 import { LAB_CHECKS } from "./checks.ts";
 
-const derived = deriveAll(await readDeriveInputs());
 const records = () => structuredClone(derived.records) as Species[];
 const ID_KEYS = ["iucn", "gbif", "col", "wikidata", "inaturalist", "ncbi"] as const;
 
@@ -65,20 +56,6 @@ test("PJ3 a record with replacedBy is refused (retired records are never counted
   rs[2]!.replacedBy = [rs[3]!.id];
   assert.throws(() => assertLearnProjection(rs), new RegExp(`species ${rs[2]!.id}.*replacedBy.*replacement`));
 });
-
-async function withDist(fn: (out: URL) => Promise<void>, occurrences = derived.learn.occurrences) {
-  const dir = mkdtempSync(join(tmpdir(), "critwire-learn-projection-"));
-  try {
-    const out = pathToFileURL(`${dir}/`);
-    mkdirSync(join(dir, "v1"));
-    await writeTables(speciesFile, new URL("v1/", out));
-    await writeCountries(derived.countries.rows, new URL("v1/", out));
-    await writeLearnData(new URL("learn/data/", out), { learn: { ...derived.learn, occurrences }, files: await readLabFiles(labDataDir) });
-    await fn(out);
-  } finally {
-    rmSync(dir, { recursive: true, force: true });
-  }
-}
 
 test("PJ4 projectLearn over the published files: 14 tables, the sample's rows, every LAB_CHECKS 0", () => withDist(async (out) => {
   const { tables, checks } = await projectLearn(out);

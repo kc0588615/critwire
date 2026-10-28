@@ -1,0 +1,3 @@
+-- result: d6-star-fact-records · 1 row · sha256 808a805569b8
+records | unknown_country | unknown_year | with_uncertainty
+40395 | 0 | 2289 | 16393

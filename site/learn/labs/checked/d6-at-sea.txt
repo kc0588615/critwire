@@ -1,0 +1,3 @@
+-- result: d6-at-sea · 1 row · sha256 63fdf4312748
+id | species_id | country_code_gbif | country_code | year
+1 | 48 | XZ | NULL | NULL

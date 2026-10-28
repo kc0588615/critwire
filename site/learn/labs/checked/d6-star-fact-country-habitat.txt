@@ -1,0 +1,3 @@
+-- result: d6-star-fact-country-habitat · 1 row · sha256 a745d03c7c43
+country_classes | countries | total_km2
+35 | 2 | 6062.26

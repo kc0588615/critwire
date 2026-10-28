@@ -6,24 +6,85 @@
   },
   "checked": "2026-10-28",
   "blocks": {
+    "d6-at-sea": {
+      "key": "9fbe7520e8bfcfc625061362f1ca67dcf94e59a83f6cdf1f2071954780f9c1e4",
+      "result": "37022d815ae3e895f7f738cbb2fb368c7d29c41ac7cc2c2d05d7a7dd54f2fa48"
+    },
+    "d6-drill-across": {
+      "key": "89f9e46968c966eed4e9fd70cfd184f98d57179d8407218b4fb5e2aa9fcccb36",
+      "result": "6ba90f9d017d0e93769821b09d3c55298c72ab64924fdf499817fd236af9d50f"
+    },
+    "d6-report": {
+      "key": "eec9bbe2d4dd03894cd505e131da6ee6a914c2a173048a1abfd100824c66f93a",
+      "result": "3fcf7725651879f5c3de2fe740afa937600ed82122dee8ffa8994fad7f14629a"
+    },
+    "d6-scd1": {
+      "key": "6cf5d86391cd38c3bcfe69d3a49a2c56142b522ed3c011a61109c29bc9bd6f81",
+      "result": "b319504d2d1ebb6ec781469ccdef3eb6d4806462a57346ad9da85431d47ffc0c"
+    },
+    "d6-scd2": {
+      "key": "6b2f6afe099982852ddcfaaac14bf5752f14bf49ea75d2694bc3249404d8a419",
+      "result": "f1e648523549dd0b8dcbd2e003ef924c7176a9f5bad224f8c79874915a3e6cc3"
+    },
+    "d6-snowflake": {
+      "key": "ba173c601e0daef7532d3871d65b2c4cfe6fa47c8adc63b2e3934da657e79608",
+      "result": "114bf42bbe65a243a066325adfcb61d31555f3de382c70d2d89a58e5d6720c8b"
+    },
+    "d6-star-dim-country": {
+      "key": "4d9b6082bf6fcfd02869b73a1d16b3096d46fd56f63a355faf9b7f0c938700e8",
+      "result": "31d23d8e6a5ab90117f80468cae838719bf0c58d51de11ee6b0973ae762aadbe"
+    },
+    "d6-star-dim-dataset": {
+      "key": "be164b839060cc0d791b8d673ce149aa44a9626af2b032c0e5649e44aa1583d7",
+      "result": "99c1437e5f980ff8f8cb2f68b8c64b9ce99eca9bcb93c1d0ec266ce033f3309e"
+    },
+    "d6-star-dim-habitat-class": {
+      "key": "76a4a3617f23e5ce5c0129e402f2c1b1bd4c7a7d35010fc490dd92524a686025",
+      "result": "e5566084f53f9c6d62b2f5039965a9a70b4c7f15f820fcdf260ec03993543cc9"
+    },
+    "d6-star-dim-species": {
+      "key": "2c1c69a5daf16710d82e98c6a87eebc37e7f86c2f5ab3dc8eab62333b16fb6d6",
+      "result": "90ba3d8c2ccd5b1bfd563bf9346c9e80c9fc0eaf3346bea76092403cee65bb32"
+    },
+    "d6-star-dim-year": {
+      "key": "c7a0936771ad2f31e4a4e0de73f265107900fb1335a93eb5d4c4571a9714f022",
+      "result": "a591c5a1dfed8ef087c6fb59d90eb16a7651e079dc3310c5ff75b65b1d42a34b"
+    },
+    "d6-star-fact-country-habitat": {
+      "key": "5b6a4a416f3aa3f55a26a845beaffaa7d01b95c3374f04319b56a328261f3fd5",
+      "result": "de60f5b206e2fea4a2c2b062ef3c18e84818536c8c8346953844884e9b45f2c5"
+    },
+    "d6-star-fact-records": {
+      "key": "035cda9986fd87d5fd6734a5041f7624a10c43ffa617240ab2686a55b6d92a08",
+      "result": "8a2db0f69f38692f2ff204dc27522166567516c5911c8617747f872461c857a9"
+    },
+    "d6-star-fact-species-country": {
+      "key": "6a68e4aa3fcfc0d129c01298fb625692b1b795a426428bdb90cb0d4ed2bb4ed0",
+      "result": "4b2daa7a231234dcfc8bc66a3b3717d16fc475b8944bd4ba945d67e7e2cfc2d2"
+    },
+    "d6-unknown": {
+      "key": "100ae669ccb2e4277ef7c2bfff0ad57ade0bbc849d718a8c172430bfeca2f0e1",
+      "result": "93466dec67e713383f4013fcff36e572e580f0f19e96880ded2d60bf52521ab4"
+    },
     "pg-role-smoke": {
-      "key": "17f8e86c6b254b0ef90b561c582c99d572410dfa12a42e5468048b3f6254c990",
+      "key": "5f445619e74d35e9f0db34e700237b516219e2ce690e273380abe81beb8fbf5e",
       "result": "d721ea358edd040973fd9309b3e45b68943b9bad01b9efecd1da082d374c7f30"
     },
     "pg-session": {
-      "key": "448a29db9e26c82a825df0205d99020a6a942c1f43babc0c283710dd34a504e0",
+      "key": "e1d82d0a54d77167439eb668f82aa0c1de993e0db423644b0d7273ad4b0f8168",
       "result": "50d5025879122dc884be370279e1641efc466c9e634913b0eadb0ee31afdf123"
     },
     "pg-smoke": {
-      "key": "a243973d84ffdd3cfab7686792aab29de78a588dc0adc80752c9ab560e909670",
+      "key": "8b1cf382ac284b549bdfdd9fe7483377b16a6853af3d14f56766a710f62527a1",
       "result": "af0da737a03947ed918331e407c451ad198432157dda1f9bedec5a3c7d81138b"
     },
     "pg-tx-smoke": {
-      "key": "3d82bd1f79c135d57aac542df7803e815cd2984cf5f6864d5a3187d5a49a675b",
+      "key": "ff218e02b23011a4ed142b14a813311538c96d215f3c91cc2c73b61940f5cf99",
       "result": "eb5022d9315c90f5cc48bf18dac53418b13ddd980d2d8b638e9c8a8ebd5b9b93"
     }
   },
   "downloads": {
+    "d6.sql": "948f39e6e43983a7b9d9a04a073920a7f5cedc17cb7773bdee8295db88ff49f9",
     "pg-checks.sql": "8a92562f17a79a5ae9d8656e99e0e556ed647455359a487e1ae94eab9983226c"
   },
   "labErd": "3f235472aaf0ad0576db75ed4165b8d36701e3d4210e3f3b4d809c16225d216b"

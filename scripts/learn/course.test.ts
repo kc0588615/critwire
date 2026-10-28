@@ -6,7 +6,7 @@
 // the committed curriculum drifts from 004 §2.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { parseBlock, type Block } from "./blocks.ts";
 import { assembleCourse, pageOrder, pageSlots, parseCurriculum, recordedResults, type Curriculum, type Page } from "./course.ts";
 
@@ -70,7 +70,7 @@ test("CU5 the shape: exact keys and types, ids and slugs as in URLs, known tools
 
 test("CU6 the committed curriculum is 004 §2: 7 tracks, 33 modules, 68 hours, all planned until their page lands", () => {
   const file = new URL("../../site/learn/curriculum.json", import.meta.url);
-  const pages = new Set<string>(); // S2: no module page yet
+  const pages = new Set(readdirSync(new URL("../../site/learn/modules/", import.meta.url)).map((n) => n.replace(/\.html$/, "")));
   const { curriculum, errors } = parseCurriculum("site/learn/curriculum.json", readFileSync(file, "utf8"), pages);
   assert.deepEqual(errors, []);
   const c = curriculum!;
@@ -82,6 +82,7 @@ test("CU6 the committed curriculum is 004 §2: 7 tracks, 33 modules, 68 hours, a
   const by = new Map(c.modules.map((m) => [m.id, m]));
   assert.deepEqual([by.get("d6")!.slug, by.get("d6")!.prereqs, by.get("d6")!.tools], ["star", ["d2", "d4"], ["PG", "B"]]);
   assert.deepEqual([by.get("c1")!.slug, by.get("c1")!.prereqs, by.get("c1")!.tools], ["game-feed", ["s5", "e4", "p4"], ["PG", "Py", "PBI"]]);
+  assert.deepEqual(c.modules.filter((m) => m.state === "built").map((m) => m.id), c.modules.map((m) => m.id).filter((id) => pages.has(id)));
   assert.deepEqual(by.get("f3")!.questions, ["Which animals were recorded in Brazil?", "Which have no records at all?", "How many records fall in each 10° box?"]);
 });
 

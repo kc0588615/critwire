@@ -1,14 +1,21 @@
 // /learn/data/ (plan D15, 004 §7.7, L1's part): every file against manifest.json (sha256, size, rows, columns), the
 // occurrences and datasets against data/, the loader's tables against counts from data/, the 50 MB cap, sources and
 // both DOIs, the /v1 inputs, and the index page, with screenshots at 1280 and 375 px. Expectations come from data/ and
-// the manifest, never typed in. The star's key coverage is L2's.
+// the manifest, never typed in. The star (/learn/data/star/, plan D9): every served file through the Power BI input
+// check (star-check: header, rows, sha256, keys unique and filled, foreign keys found), its unknown members, `NA` read as
+// text, and every Power BI block's inputs.
 import { expect, test, type Page, type TestInfo } from "@playwright/test";
 import { existsSync } from "node:fs";
-import { readFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import type { LabManifest } from "../scripts/build/learn/data.ts";
 import { fileSizes, totalBytes } from "../scripts/build/learn/cap.ts";
+import { STAR_FILES } from "../scripts/build/learn/star.ts";
+import { readCourse } from "../scripts/learn/course-files.ts";
 import { SAMPLE_COLUMNS } from "../scripts/learn/sample-files.ts";
+import { checkInput, readCsv, readManifest, unknownMemberErrors, type CsvTable } from "../scripts/learn/star-check.ts";
 import { ARTIFACTS, csvRows, distPath, learnManifest, openDuckDB, ORIGIN, records, repoPath, sha256, sqlText, type DuckDB } from "./helpers.ts";
 
 const CAP = 50_000_000; // the owner's 50 MB rule (004 §4.4)
@@ -137,6 +144,37 @@ test("inputs: the served /v1 files' sha256 and the committed sample's", async ({
     file: "data/raw/gbif-sample/sample.csv", sha256: sha256(await readFile(SAMPLE_CSV)), rows: contributions.records,
   });
   expect(manifest.inputs.sample.sha256).toBe(contributions.sample.sha256);
+});
+
+test("the star: the manifest lists star/; each served file passes the input check; unknown members; NA is text", async ({ request }) => {
+  expect(Object.keys(manifest.files).filter((f) => f.startsWith("star/")).sort()).toEqual([...STAR_FILES, "star/manifest.json"].sort());
+  const dir = await mkdtemp(join(tmpdir(), "critwire-e2e-star-"));
+  try {
+    const fetchTo = async (name: string) => {
+      const res = await request.get(`/learn/data/star/${name}`);
+      expect(res.status(), name).toBe(200);
+      await writeFile(join(dir, name), await res.body());
+    };
+    await fetchTo("manifest.json");
+    const star = readManifest(dir);
+    expect(Object.keys(star.files).map((f) => `star/${f}`).sort()).toEqual([...STAR_FILES].sort());
+    for (const f of Object.keys(star.files)) await fetchTo(f);
+    const tables = new Map<string, CsvTable>();
+    for (const f of Object.keys(star.files)) {
+      const r = await checkInput(dir, `star/${f}`);
+      expect(r.errors, f).toEqual([]);
+      console.log(r.line!("learn-data"));
+      tables.set(f, await readCsv(join(dir, f)));
+    }
+    expect(unknownMemberErrors(tables)).toEqual([]);
+    expect(tables.get("dim_country.csv")!.rows.find((r) => r[0] === "NA")?.[1]).toBe("Namibia");
+    // Every Power BI block's inputs (p1's later), against the served files.
+    const inputs = (await readCourse()).pages.flatMap((p) => p.blocks).filter((b) => b.engine === "powerbi").flatMap((b) => b.inputs);
+    expect(inputs.length).toBeGreaterThan(0);
+    for (const input of inputs) expect((await checkInput(dir, input)).errors, input).toEqual([]);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
 });
 
 const cellTexts = (page: Page, rows: string) =>

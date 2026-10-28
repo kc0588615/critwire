@@ -1,9 +1,9 @@
 // pnpm build [--draft] (plan §3, D9.1): checks data/ and site/learn/ offline, rebuilds DATABASE_URL from it, then writes the static
 // site to dist/: /v1, the docs page, then /learn/data/, whose lab tables it rebuilds from those bytes and checks, its
-// loader, manifest and index page; both 50 MB caps are enforced; a lab learn:check didn't prove as it is now
-// (site/learn/labs/checked/checked.json) fails a plain build. A
-// plain build refuses without a current GBIF derived-dataset DOI for every target; --draft builds without them
-// (previews, E2E).
+// loader, the Power BI star (d6's star.sql in DuckDB, each result checked against PostGIS's), manifest and index page;
+// both 50 MB caps are enforced; a lab learn:check didn't prove as it is now (site/learn/labs/checked/checked.json)
+// fails a plain build. A plain build refuses without a current GBIF derived-dataset DOI for every target; --draft
+// builds without them (previews, E2E).
 import { copyFile, mkdir, readdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -21,6 +21,8 @@ import { fileSizes, LEARN_CAP, totalBytes } from "./build/learn/cap.ts";
 import { writeLabIndex, writeLabLoader, writeLearnData } from "./build/learn/data.ts";
 import { projectLearn } from "./build/learn/projection.ts";
 import { assertLabsFresh, readLearnInputs } from "./build/learn/site.ts";
+import { writeStar } from "./build/learn/star.ts";
+import { readRecorded } from "./learn/freshness.ts";
 import { childFile } from "./build/paths.ts";
 import { writeTables } from "./build/tables.ts";
 
@@ -33,7 +35,7 @@ loadEnv();
 const url = requireEnv("DATABASE_URL");
 const draft = args.includes("--draft");
 const { species, registration, countries, learn, labFiles, labCredits, labBytes } = await readBuildInputs({ draft });
-const { curriculum, pages } = await readLearnInputs({ draft });
+const { curriculum, pages, erds, star } = await readLearnInputs({ draft });
 console.log(`learn curriculum: ${curriculum.tracks.length} tracks, ${curriculum.modules.length} modules (${curriculum.modules.filter((m) => m.state === "built").length} built)`);
 console.log(`learn pages: ${pages.length} (${pages.reduce((n, p) => n + p.blocks.length, 0)} blocks)`);
 const attribution = buildAttribution(species, registration, countries);
@@ -60,6 +62,8 @@ const projection = await projectLearn(out);
 assertLabChecks(projection.checks, "learn projection (dist/)");
 console.log(`learn projection: ${Object.keys(projection.tables).length} tables, ${Object.keys(projection.checks).length} LAB_CHECKS all 0`);
 await writeLabLoader(out);
+await writeStar(out, { blocks: star, recorded: readRecorded(pages), starErd: erds.star, ctx: labCredits, draft });
+console.log(`learn star: ${star.length} tables, each block's result equal to PostGIS's`);
 await writeLabIndex(out, { ctx: labCredits, learn, tables: projection.tables });
 // checked.json against what this build publishes (plan D6): learn:check ran every lab block and download as they are now.
 assertLabsFresh(fileURLToPath(out), pages, { draft });

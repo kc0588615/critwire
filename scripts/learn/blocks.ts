@@ -65,7 +65,8 @@ const SESSION = /^[A-Z][A-Za-z0-9]*$/;
 const HEADER = /^-- (q|status|params|expect|after|engine|needs|boot|tx|plan|sessions):(?: (.*))?$|^-- (boot)$/;
 const PBI_HEADER = /^\/\/ ([a-z]+):(?: (.*))?$/;
 const PBI_HEADERS = ["q", "status", "input"];
-const STAR_INPUT = /^star\/[a-z_]+\.csv$/;
+/** A Power BI `// input:`: a file of the star, under /learn/data/star/. */
+export const STAR_INPUT = /^star\/[a-z_]+\.csv$/;
 const ENGINES = ["duckdb", "postgis"];
 /** A statement's leading comment lines: `-- fails: <text>`, `-- waits: <why>`, `-- window <name>[: note]`. */
 const FAILS = /^-- fails:(.*)$/;

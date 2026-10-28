@@ -161,8 +161,8 @@ function checkerFiles(): Record<string, string> {
   return Object.fromEntries(paths.map((p) => [p, sha256(readRepo(p))]));
 }
 
-/** checked/<id>.txt for each lab block that has one. */
-function recorded(pages: readonly CoursePage[]): Map<string, string> {
+/** checked/<id>.txt for each lab block that has one (the build's star reads its blocks' too). */
+export function readRecorded(pages: readonly CoursePage[]): Map<string, string> {
   const out = new Map<string, string>();
   for (const b of pages.flatMap((p) => p.blocks).filter(isLab)) {
     const file = new URL(`${CHECKED_DIR}/${b.id}.txt`, root);
@@ -174,7 +174,7 @@ function recorded(pages: readonly CoursePage[]): Map<string, string> {
 /** The inputs, from the repository and `dist` (the built site's data manifest), and the freshness they give. */
 export function readFreshness(dist: string, pages: readonly CoursePage[]): Fresh {
   const manifest = (JSON.parse(readFileSync(join(dist, MANIFEST), "utf8")) as { files: KeyFiles["manifest"] }).files;
-  return freshness(pages, { manifest, checker: checkerFiles(), labErd: readRepo(LAB_ERD).toString("utf8") }, recorded(pages));
+  return freshness(pages, { manifest, checker: checkerFiles(), labErd: readRepo(LAB_ERD).toString("utf8") }, readRecorded(pages));
 }
 
 /** checked.json as committed, or undefined if there is none. */

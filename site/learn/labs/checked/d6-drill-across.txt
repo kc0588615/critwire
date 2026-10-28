@@ -1,0 +1,5 @@
+-- result: d6-drill-across · 3 rows · sha256 f094fefd46c9
+way | country_code | records | habitat_km2
+each fact summed, then joined | AX | 0 | 945.03
+each fact summed, then joined | TT | 2 | 5117.23
+facts joined to each other | TT | 44 | 10234.46
