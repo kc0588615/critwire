@@ -997,6 +997,6 @@ What can go wrong across steps, and what the session does. `MISSION_BLOCKED` onl
 - 2026-10-28 07:35 UTC Revision: architect resolved all 6 MUST-FIX (deterministic forced failure; names-only env logs; in-memory core for sample ingest, no cycle; intent before POST + listing reconcile; CASCADE snapshot/diff guard, PG16-probed), 4 MISSED, 9/10 SC adopted (Astra SC1 junction rejected → L2); A14–A20. Plan-only; no checks needed.
 - 2026-10-28 07:48 UTC Steps: planner wrote S1–S31 (MF1 first; countries; shapes; sample + live reuse ingest; live registration S16 right after parity; loader, learn:check, E2E; review items S27–S30 last), Verification, Failure modes; A21–A22. Plan-only; no checks needed.
 - 2026-10-28 07:50 UTC S1: MF1 guard, names-only env log, `test`/`test:db` runners. Red 7 (G1×3, G4, G2×2, G3) → green: test 70/70, test:db 3/3 (and refuses db `postgres`); typecheck ok; build ok; e2e 20/20; dist 157/157 = Baseline.
-- 2026-10-28 08:05 UTC S2: `loadDatabase` lock_timeout 30 s / statement_timeout 120 s (test overrides), named lock-timeout error. Red 1 (G5; G6, G7 green already) → green: test:db 6/6, test 70/70, typecheck ok, build ok, H 155/155.
+- 2026-10-28 07:55 UTC S2: `loadDatabase` lock_timeout 30 s / statement_timeout 120 s (test overrides), named lock-timeout error. Red 1 (G5; G6, G7 green already) → green: test:db 6/6, test 70/70, typecheck ok, build ok, H 155/155.
 
 ## Summary
