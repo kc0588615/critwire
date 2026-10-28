@@ -139,3 +139,10 @@ export async function waitReady(page: Page, timeout = 30_000): Promise<void> {
 export type HookResult = { columns: string[]; rows: string[][]; truncated: boolean } | { error: string };
 export const hookResult = (page: Page, blockId: string) =>
   page.evaluate((id) => (window as unknown as { critwireLearn: { result(id: string): unknown } }).critwireLearn.result(id), blockId) as Promise<HookResult | undefined>;
+
+// Runs `sql` in the playground (/learn/playground/) and waits for its result (the region is aria-busy while it runs).
+export async function runPlayground(page: Page, sql: string): Promise<void> {
+  await page.locator("#playground-sql").fill(sql);
+  await page.locator("#playground [data-run]").click();
+  await expect(page.locator("#playground-result")).not.toHaveAttribute("aria-busy", "true", { timeout: 30_000 });
+}

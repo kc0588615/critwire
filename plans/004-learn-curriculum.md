@@ -483,7 +483,7 @@ The labs are tested on PostgreSQL 16 with PostGIS 3.4. On Windows, the simplest 
 docker run -d --name learn-pg -e POSTGRES_PASSWORD=choose-a-password -p 127.0.0.1:5432:5432 -v learn-pg:/var/lib/postgresql/data postgis/postgis:16-3.4
 docker exec learn-pg psql -U postgres -c "CREATE DATABASE learn"
 docker exec learn-pg psql -U postgres -d learn -c "CREATE EXTENSION postgis" -c "CREATE EXTENSION postgis_raster"
-# The lab file: every lab table, in one transaction (about 30 MB).
+# The lab file: every lab table, in one transaction (about 21 MB).
 curl.exe -fLo learn_curriculum.sql https://critwire.com/learn/data/postgis/learn_curriculum.sql
 docker cp learn_curriculum.sql learn-pg:/tmp/
 docker exec learn-pg psql -X -U postgres -d learn -v ON_ERROR_STOP=1 -f /tmp/learn_curriculum.sql
@@ -503,7 +503,7 @@ curl.exe -fLo learn_curriculum.sql https://critwire.com/learn/data/postgis/learn
 
 psql on Windows talks to the server in the console's code page unless told otherwise; the lab file sets `client_encoding` to UTF-8 itself, so names like "Côte d'Ivoire" arrive intact either way (tested by loading it under `WIN1252`).
 
-**Loading, and loading again.** The lab file builds schema `learn_curriculum` in one transaction: it drops the schema, recreates it, loads every table, adds the keys and indexes, and checks every table's row count before `COMMIT`. A failed load changes nothing; a second load replaces the schema, including any table you made there, so keep your own work in another schema. Another schema keeps your tables, not your dependencies: a view, a foreign key, a trigger or a policy of yours that reads `learn_curriculum` would go with it (`DROP SCHEMA … CASCADE`). The lab file refuses that reload instead, naming each such object, and changes nothing; move or drop them and load again. Then connect with your SQL client (psql, pgAdmin, DBeaver, VS Code) to database `learn` and run §0's `pg-session` and `pg-smoke` blocks: the 14 row counts there mean your lab matches the tested one.
+**Loading, and loading again.** The lab file builds schema `learn_curriculum` in one transaction: it drops the schema, recreates it, loads every table, adds the keys and indexes, and checks every table's row count before `COMMIT`. A failed load changes nothing; a second load replaces the schema, including any table you made there, so keep your own work in another schema. Another schema keeps your tables, not your dependencies: a view, a foreign key, a trigger or a policy of yours that reads `learn_curriculum` would go with it (`DROP SCHEMA … CASCADE`). The lab file refuses that reload instead, naming each such object, and changes nothing; move or drop them and load again. Then connect with your SQL client (psql, pgAdmin, DBeaver, VS Code) to database `learn` and run §0's `pg-session` and `pg-smoke` blocks: the 14 row counts there mean your lab matches the tested one. The setup page shows §0's four PostGIS checks (`pg-session`, `pg-smoke`, `pg-role-smoke`, `pg-tx-smoke`) with their recorded results, and they download as one file, `/learn/labs/pg-checks.sql` (§7.3), run with `psql -X -d learn -f pg-checks.sql`.
 
 **Connection settings.** The Python labs, and any lab file you run with psql, find the database through libpq's standard environment variables, so the same file runs on your computer and on the test server. In PowerShell, for one session:
 
@@ -7441,7 +7441,7 @@ The pictures are drawn offline by Mermaid in a headless browser, as SVG only (pl
 
 ### 6.3 The Power BI star
 
-`site/learn/erd/star.mmd`: the eight CSV files `star.sql` writes (d6, §A.3), checked against the star's `manifest.json`. `fact_records` holds one row per sample record; `fact_species_country` has no measure (a factless fact: a row says a species has open records in a country); `fact_country_habitat` is the habitat stand-in. `dim_species` and `dim_country` are shared by the facts (conformed dimensions), so one slicer filters them all. Every fact foreign key is filled: a record with no year points at `dim_year`'s `-1` member, one with no country at `dim_country`'s `ZZ`, so every line is "exactly one" on the dimension's side.
+`site/learn/erd/star.mmd`: the eight CSV files `star.sql` writes (d6, §A.3), checked against the star's `manifest.json`. `fact_records` holds one row per sample record; `fact_species_country` has no measure (a factless fact: a row says a species has open records in a country); `fact_country_habitat` is the habitat stand-in. `dim_species` is shared by the two species facts (`fact_records`, `fact_species_country`), not by the habitat fact, which has no species; `dim_country` by all three. A shared dimension is conformed: one slicer on it filters every fact that uses it. Every fact foreign key is filled: a record with no year points at `dim_year`'s `-1` member, one with no country at `dim_country`'s `ZZ`, so every line is "exactly one" on the dimension's side.
 
 Two of the eight are **planned**: `dim_habitat_class` and `fact_country_habitat` wait for the habitat map, so the star published with L2 has six files. The source lists them on a `%% planned:` line, with the lab's rule: they are drawn, so the design is whole; the check excuses them while the manifest lacks them, and fails once it has them, so the marker can't go stale. The star page teaches the word: drawn, not yet published.
 

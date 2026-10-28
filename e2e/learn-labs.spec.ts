@@ -2,7 +2,8 @@
 // /learn/labs/ file is served as the build assembled it (assemble.ts, what learn:check ran); each PostGIS block's
 // page code appears verbatim in it, or, for an untested or two-session block, commented out under its reason; the
 // result a page shows is checked/<id>.txt, and its versions line is checked.json's; a Power BI block lists the star
-// files it reads with the manifest's rows and sha256, which the served files match.
+// files it reads with the manifest's rows and sha256, which the served files match and star-check passes. The setup
+// page links the checks' download (pg-checks.sql) and the loader.
 import { expect, test } from "@playwright/test";
 import { readFile } from "node:fs/promises";
 import { moduleUrl } from "../scripts/build/learn/module-html.ts";
@@ -11,8 +12,8 @@ import { CHECKED_DIR, type Block } from "../scripts/learn/blocks.ts";
 import { SETUP_PAGE, type CoursePage } from "../scripts/learn/course.ts";
 import { readCourse } from "../scripts/learn/course-files.ts";
 import { readStamp } from "../scripts/learn/freshness.ts";
-import type { StarManifest } from "../scripts/learn/star-check.ts";
-import { learnContext, repoPath, sha256 } from "./helpers.ts";
+import { checkInput, type StarManifest } from "../scripts/learn/star-check.ts";
+import { distPath, learnContext, repoPath, sha256 } from "./helpers.ts";
 
 const trimEnd = (s: string) => s.replace(/\n+$/, "");
 const runnable = (b: Block) => b.status === "ran" && !b.sessions.length;
@@ -89,6 +90,16 @@ test("a Power BI block lists its star inputs with the manifest's rows and sha256
     });
     expect(rows, b.id).toEqual(want);
     for (const [input, , hash] of want) expect(sha256(await (await request.get(`/learn/data/${input}`)).body()), input).toBe(hash);
+    // What the M reads passes the star's checks: header, rows, sha256, keys (star-check).
+    for (const input of b.inputs) expect((await checkInput(distPath("learn/data/star"), input)).errors, `${b.id} ${input}`).toEqual([]);
   }
   await context.close();
+});
+
+test("the setup page covers the browser, PostGIS and Power BI, and links pg-checks.sql and the loader", async ({ page }) => {
+  expect((await page.goto("/learn/setup/"))?.status()).toBe(200);
+  await expect(page.getByRole("heading", { level: 2 })).toHaveText(["The browser", "PostgreSQL with PostGIS, on your computer", "Python", "Power BI Desktop"]);
+  for (const href of ["/learn/labs/pg-checks.sql", "/learn/data/postgis/learn_curriculum.sql", "/learn/schema/lab/"])
+    await expect(page.locator(`main a[href="${href}"]`).first()).toBeVisible();
+  for (const id of ["setup-counts", "pg-session", "pg-smoke", "pg-role-smoke", "pg-tx-smoke", "pbi-smoke"]) await expect(page.locator(`#q-${id}`)).toHaveCount(1);
 });

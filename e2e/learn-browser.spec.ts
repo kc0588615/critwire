@@ -1,27 +1,26 @@
-// Learn's browser engine (plan D11, D13 learn-browser; S11, S12, S13): boot, the origin fence, SC2's hash check, the
-// row cap, Reset and Stop, on the playground; then the playground's refusals, the changed generation, the test hook,
-// cards and "N rows changed"; then every browser block of the course pages against its snapshot, and every exercise
-// against its answer and a fixed wrong one. The worker's .wasm fetch must reach context.route first, because the fence
+// Learn's browser engine (plan D11, D13 learn-browser; S11–S13, S15): boot, the origin fence, SC2's hash check, the
+// row cap, Reset and Stop, on the playground; then the playground's refusals, the changed generation, its table list
+// and Download CSV, the test hook, cards and "N rows changed"; then every browser block of the course pages against its
+// snapshot, every exercise against its answer and a fixed wrong one; the changed generation across pages (one engine),
+// and a lesson editor's refusal of transaction control. The worker's .wasm fetch must reach context.route first, because the fence
 // and the boot cases rely on routing.
 import { expect, test, type Locator, type Page } from "@playwright/test";
+import { readFile } from "node:fs/promises";
+import { dictionaries } from "../scripts/build/learn/erd.ts";
 import { moduleUrl } from "../scripts/build/learn/module-html.ts";
 import { SETUP_PAGE, type CoursePage } from "../scripts/learn/course.ts";
 import { readCourse } from "../scripts/learn/course-files.ts";
 import { renderError, renderResult } from "../scripts/learn/result.ts";
+import { ERD_DIR } from "../scripts/learn/erd-model.ts";
 import { DUCKDB_DIR, ASSETS } from "../site/learn/src/assets.ts";
-import { engineState, hookResult, learnContext, learnManifest, ORIGIN, records, waitReady } from "./helpers.ts";
+import { engineState, hookResult, learnContext, learnManifest, ORIGIN, records, repoPath, runPlayground, waitReady } from "./helpers.ts";
 
 const PLAYGROUND = "/learn/playground/";
 const WASM = `${ORIGIN}${ASSETS}/${DUCKDB_DIR}/duckdb-eh.wasm`;
 const status = (page: Page) => page.locator("#engine-status");
 const result = (page: Page) => page.locator("#playground-result");
 
-// Runs `sql` in the playground and waits for its result (the region is aria-busy while it runs).
-async function run(page: Page, sql: string): Promise<void> {
-  await page.locator("#playground-sql").fill(sql);
-  await page.getByRole("button", { name: "Run" }).click();
-  await expect(result(page)).not.toHaveAttribute("aria-busy", "true", { timeout: 30_000 });
-}
+const run = runPlayground;
 
 // The result table's body as rows of cell text.
 const cells = (page: Page) => result(page).locator("tbody tr").evaluateAll((trs) =>
@@ -159,6 +158,27 @@ test("a playground SELECT leaves the generation unchanged; a DELETE marks it cha
   await waitReady(page);
   await expect(engineState(page)).not.toHaveAttribute("data-changed", "true");
   await expect(status(page)).toHaveText("The database is ready.");
+  expect(offOrigin).toEqual([]);
+  await context.close();
+});
+
+test("the playground lists schema v2's tables linked to the dictionary, and Download CSV saves the last result", async ({ browser }) => {
+  const tables = dictionaries(await readFile(repoPath(`${ERD_DIR}/schema.mmd`), "utf8")).map((d) => d.table);
+  const { context, offOrigin } = await learnContext(browser);
+  const page = await context.newPage();
+  await page.goto(PLAYGROUND);
+  for (const t of tables) await expect(page.locator(`#playground-tables a[href="/learn/schema/#t-${t}"]`)).toHaveText(t);
+  await expect(page.locator(`#playground-tables a[href="/learn/schema/#species_taxonomy"]`)).toHaveText("species_taxonomy");
+  const csv = page.getByRole("button", { name: "Download CSV" });
+  await expect(csv).toBeDisabled();
+  await waitReady(page);
+  await run(page, "SELECT 1 AS n, 'a, \"b\"' AS s, NULL AS v, '' AS e UNION ALL SELECT 2, 'plain', 'x', 'y' ORDER BY n");
+  await expect(csv).toBeEnabled();
+  const [download] = await Promise.all([page.waitForEvent("download"), csv.click()]);
+  expect(download.suggestedFilename()).toBe("result.csv");
+  expect(await readFile(await download.path(), "utf8")).toBe('n,s,v,e\n1,"a, ""b""",,""\n2,plain,x,y\n');
+  await run(page, "SELECT * FROM nope");
+  await expect(csv).toBeDisabled();
   expect(offOrigin).toEqual([]);
   await context.close();
 });
@@ -308,6 +328,68 @@ test("every exercise accepts its answer (its result = its snapshot) and rejects 
     }
   }
   expect(seen).toEqual(expect.arrayContaining(["d6-ex"]));
+  expect(offOrigin).toEqual([]);
+  await context.close();
+});
+
+test("across pages, one engine: a playground SELECT leaves d6-ex's Check working; a DELETE makes it refuse until Reset", async ({ browser }) => {
+  const c = await readCourse();
+  const d6 = c.curriculum!.modules.find((m) => m.id === "d6")!;
+  const ex = c.pages.find((p) => p.page.id === "d6")!.blocks.find((b) => b.id === "d6-ex")!;
+  const { context, offOrigin } = await learnContext(browser);
+  const page = await context.newPage();
+  await page.goto(PLAYGROUND);
+  await waitReady(page);
+  await run(page, "SELECT count(*) AS n FROM occurrences");
+  // To d6 through the map, by nav.ts's swaps: the database keeps running.
+  await page.locator("header.site a[href=\"/learn/\"]").click();
+  await page.locator(`li[data-module="d6"] .module-title a`).click();
+  await expect(page).toHaveURL(`${ORIGIN}${moduleUrl(d6)}`);
+  const block = page.locator("#q-d6-ex");
+  const verdict = block.locator(".verdict");
+  await block.locator("textarea").fill(ex.code);
+  await runBlock(block);
+  await expect(verdict).toHaveText("Correct.");
+
+  await page.goBack(); // the map
+  await page.goBack(); // the playground
+  await expect(page).toHaveURL(`${ORIGIN}${PLAYGROUND}`);
+  await run(page, "DELETE FROM occurrences WHERE year IS NULL");
+  await expect(engineState(page)).toHaveAttribute("data-changed", "true");
+  await page.goForward();
+  await page.goForward();
+  await expect(page).toHaveURL(`${ORIGIN}${moduleUrl(d6)}`);
+  await block.locator("textarea").fill(ex.code);
+  await runBlock(block);
+  await expect(verdict).toHaveText("Changed the tables? Reset database brings them back.");
+  await expect(verdict).toHaveAttribute("data-ok", "false");
+
+  await block.locator("[data-reset]").click();
+  await waitReady(page);
+  await expect(engineState(page)).not.toHaveAttribute("data-changed", "true");
+  await runBlock(block);
+  await expect(verdict).toHaveText("Correct.");
+  expect(offOrigin).toEqual([]);
+  await context.close();
+});
+
+test("a COMMIT typed in a lesson editor is refused before anything runs, and the next run's result is unchanged", async ({ browser }) => {
+  const c = await readCourse();
+  const d6 = c.curriculum!.modules.find((m) => m.id === "d6")!;
+  const lesson = c.pages.find((p) => p.page.id === "d6")!.blocks.find((b) => b.id === "d6-export")!;
+  const { context, offOrigin } = await learnContext(browser);
+  const page = await context.newPage();
+  await page.goto(moduleUrl(d6));
+  await waitReady(page);
+  const block = page.locator(`#q-${lesson.id}`);
+  await block.locator("textarea").fill("DELETE FROM countries;\nCOMMIT;");
+  await runBlock(block);
+  await expect(block.locator(".result-error")).toHaveText(
+    "statement 2 of 2: COMMIT isn't run here: this editor's changes are rolled back; use the playground");
+  await expect(engineState(page)).not.toHaveAttribute("data-changed", "true");
+  await block.locator("textarea").fill(lesson.code);
+  await runBlock(block);
+  expect(await rendered(page, lesson.id)).toMatchSnapshot(`${lesson.id}.txt`);
   expect(offOrigin).toEqual([]);
   await context.close();
 });

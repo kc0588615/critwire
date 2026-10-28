@@ -9,7 +9,7 @@
 // (learn/freshness.ts); a plain build refuses a stale lab, --draft only warns.
 // writeLearn (plan D8.6, D12), last: the Learn site under dist/learn/: its assets; the lab downloads (labs/<page>.sql,
 // assemble.ts, the files learn:check ran and checked.json stamps); the drawn ERDs (schema/<name>.svg); then the pages
-// (pages.ts), which read checked.json and the star manifest writeStar wrote.
+// (pages.ts: the schema pages from the ERD sources), which read checked.json and the star manifest writeStar wrote.
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { assembleDownloads } from "../../learn/assemble.ts";
 import type { CoursePage, Curriculum } from "../../learn/course.ts";
@@ -74,6 +74,7 @@ export async function writeLearn(out: URL, { curriculum, pages, erds, svgs }: Le
     pages,
     downloads: new Map(downloads.map((d) => [d.page, d.name])),
     templates: await readTemplates(),
+    erds,
     context: {
       recorded: readRecorded(pages),
       stamp: readStamp(),

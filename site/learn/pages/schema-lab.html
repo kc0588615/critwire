@@ -1,0 +1,21 @@
+<p class="crumbs"><a href="/learn/">Learn</a> · Schemas: <a href="/learn/schema/">browser</a> · <strong>lab</strong> · <a href="/learn/schema/star/">star</a></p>
+<h1>Lab schema: the PostGIS tables</h1>
+<p class="lead">The tables the PostgreSQL labs run on: schema <code>learn_curriculum</code> in a database on your own computer, built by one file, <a href="/learn/data/postgis/learn_curriculum.sql"><code>learn_curriculum.sql</code></a>. <a href="/learn/setup/">Set up your tools</a> shows how to load it.</p>
+<p>It holds the same keyed tables as <a href="/learn/schema/">the browser's schema</a>, in PostgreSQL's types (<code>text</code> for <code>VARCHAR</code>, <code>float8</code> for <code>DOUBLE</code>; a dataset's key is a <code>uuid</code>), plus the shapes the GIS modules join records to: country outlines, admin-1 areas (states and provinces) for nine countries, biomes and ecoregions, and the habitat map's classes. Every shape is a <code>geometry</code> in WGS 84 (SRID 4326) with a GiST index. A record's point is a generated column, computed from its longitude and latitude, so it can never disagree with them.</p>
+<h2>The diagram</h2>
+<p>Read it as the browser's diagram: PK primary key, FK foreign key, UK unique key; <code>||</code> exactly one, <code>|o</code> zero or one, <code>o{</code> zero or more, <code>|{</code> one or more, with the crow's foot on the table that holds the foreign key.</p>
+{{diagram}}
+<h2>The relationships, in words</h2>
+{{relationships}}
+<h2 id="species_taxonomy">The view <code>species_taxonomy</code></h2>
+<p>As in the browser: one row per species with its genus, family, order and class, walked up <code>taxa</code>. A view stores no rows, so it isn't drawn.</p>
+<h2>Planned tables</h2>
+<p>Two tables are drawn, so the design is whole, but aren't in the lab yet: they come with the habitat map. The check that compares this diagram with a loaded lab excuses them while they're missing, and fails once they exist, so the label can't outlive the truth.</p>
+{{planned}}
+<h2>Tables the lessons make</h2>
+<p>Some lessons create tables of their own in the lab: a grid, a staging table, a star. They aren't part of the loaded lab, so they aren't drawn, and the check excuses exactly these names:</p>
+{{labMade}}
+<h2>The data dictionary</h2>
+<p>The tables that differ from the browser's: new ones, and ones with other columns. The others have the browser's columns, in PostgreSQL types; their entries are on the browser's page:</p>
+{{shared}}
+{{dictionary}}

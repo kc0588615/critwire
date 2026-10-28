@@ -1,7 +1,8 @@
 // Learn's map, track pages, progress and navigation (plan D11 nav, D12, D13 learn-map; 004 §7.1, §7.4). Expectations
 // come from site/learn/curriculum.json, not from the page code: the map and each track list its modules in order, with
 // tools, hours and prerequisites, built modules linked and planned ones unlinked "in preparation"; a done tick survives
-// a reload and Clear progress removes it; every /learn/ page returns 200 with one <h1> and no broken internal link;
+// a reload and Clear progress removes it; every /learn/ page returns 200 with one <h1>, no broken internal link and an
+// alt on every SVG picture (whose SVG has a <title>); the map links setup, the schemas, the data and the playground;
 // nav.ts swaps <main> without a full load, and falls back to one when the swap fails.
 import { expect, test, type Page } from "@playwright/test";
 import { readFile } from "node:fs/promises";
@@ -10,6 +11,7 @@ import { CURRICULUM_FILE, type Curriculum, type Module } from "../scripts/learn/
 import { learnContext, ORIGIN, repoPath } from "./helpers.ts";
 
 const MAP = "/learn/";
+const SCHEMA_PAGES = ["/learn/schema/", "/learn/schema/lab/", "/learn/schema/star/"];
 const KEY = "critwire.learn.done.v1";
 const curriculum = async (): Promise<Curriculum> => JSON.parse(await readFile(repoPath(CURRICULUM_FILE), "utf8"));
 // Curriculum text as the page shows it: `code` spans lose their backticks.
@@ -49,7 +51,8 @@ test("the map follows curriculum.json: tracks and modules in order, hours, tools
     await expect(section.locator(".track-hours")).toHaveText(`${modules.length} ${modules.length === 1 ? "module" : "modules"}, ${hoursText(modules.reduce((s, m) => s + m.hours, 0))}`);
   }
   for (const m of c.modules) await expectModule(page, m, m.prereqs.map((id) => byId.get(id)!));
-  for (const href of ["/", "/#files", "/learn/data/", "/learn/playground/"]) await expect(page.locator(`main a[href="${href}"]`).first()).toBeVisible();
+  for (const href of ["/", "/#files", "/learn/data/", "/learn/playground/", "/learn/setup/", ...SCHEMA_PAGES])
+    await expect(page.locator(`main a[href="${href}"]`).first()).toBeVisible();
 });
 
 test("each track page lists its modules in order with their skills and questions", async ({ page }) => {
@@ -104,6 +107,11 @@ test("every /learn/ page returns 200, has one <h1> and no broken internal link",
     const path = pages[i]!;
     expect((await page.goto(path))?.status(), path).toBe(200);
     expect(await page.locator("h1").count(), path).toBe(1);
+    // Every SVG picture has an alt, and the SVG a <title>.
+    for (const img of await page.locator("img[src$='.svg']").evaluateAll((is) => is.map((i) => ({ src: (i as HTMLImageElement).src, alt: i.getAttribute("alt") })))) {
+      expect(img.alt, `${path}: ${img.src} alt`).toBeTruthy();
+      expect(await (await request.get(img.src)).text(), `${path}: ${img.src}`).toMatch(/<title[ >]/);
+    }
     const hrefs = await page.locator("a[href]").evaluateAll((as) => as.map((a) => (a as HTMLAnchorElement).href));
     for (const href of new Set(hrefs)) {
       const url = new URL(href);
@@ -118,7 +126,7 @@ test("every /learn/ page returns 200, has one <h1> and no broken internal link",
     }
   }
   const c = await curriculum();
-  const want = [MAP, "/learn/playground/", "/learn/data/", ...c.tracks.map((t) => `/learn/${t.id}/`), ...c.modules.filter((m) => m.state === "built").map(moduleUrl)];
+  const want = [MAP, "/learn/playground/", "/learn/data/", "/learn/setup/", ...SCHEMA_PAGES, ...c.tracks.map((t) => `/learn/${t.id}/`), ...c.modules.filter((m) => m.state === "built").map(moduleUrl)];
   expect(want.filter((p) => !seen.has(p))).toEqual([]);
 });
 

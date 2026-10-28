@@ -1,13 +1,15 @@
 // Learn's HTML pages (plan D12): each page's main inside site/learn/layout.html, with site/style.css inlined and the
-// bundle's two URLs (assets.ts writeAssets): the map and the track pages (map-html.ts), the playground, the setup page
-// and each built module (its fragment's block slots filled by module-html.ts, a module inside its frame); the schema
-// pages follow.
+// bundle's two URLs (assets.ts writeAssets): the map and the track pages (map-html.ts), the playground (with schema
+// v2's tables listed), the three schema pages (schema-html.ts), the setup page and each built module (its fragment's
+// block slots filled by module-html.ts, a module inside its frame).
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { SETUP_PAGE, type CoursePage, type Curriculum } from "../../learn/course.ts";
 import { esc, fillSlots, styleSheet } from "../html.ts";
 import type { BundleUrls } from "./assets.ts";
+import { DRAWN_ERDS, type ErdTexts } from "./erd.ts";
 import { mapMain, trackMain } from "./map-html.ts";
 import { moduleFrame, moduleUrl, renderFragment, type PageContext } from "./module-html.ts";
+import { SCHEMA_URLS, schemaMain, tablesList } from "./schema-html.ts";
 
 const learnDir = new URL("../../../site/learn/", import.meta.url);
 
@@ -30,17 +32,22 @@ export interface PagesInput {
   pages: readonly CoursePage[];
   /** Each page's download name under /learn/labs/, by page id (assemble.ts). */
   downloads: ReadonlyMap<string, string>;
-  /** site/learn/pages/{map,track,playground}.html. */
+  /** site/learn/pages/*.html. */
   templates: Templates;
+  /** site/learn/erd/'s sources (erd.ts). */
+  erds: ErdTexts;
   context: CourseContext;
 }
 
 /** Every Learn page this build writes. Pure. */
-export function learnPages({ curriculum, pages, downloads, templates, context }: PagesInput): LearnPage[] {
+export function learnPages({ curriculum, pages, downloads, templates, erds, context }: PagesInput): LearnPage[] {
   const out: LearnPage[] = [
     { dir: "", page: "map", title: "Course map", main: mapMain(curriculum, templates.map) },
     ...curriculum.tracks.map((t): LearnPage => ({ dir: `${t.id}/`, page: "track", title: t.title, main: trackMain(curriculum, t, templates.track) })),
-    { dir: "playground/", page: "playground", title: "Playground", main: templates.playground },
+    { dir: "playground/", page: "playground", title: "Playground", main: fillSlots(templates.playground, { tables: tablesList(erds) }, "site/learn/pages/playground.html") },
+    ...DRAWN_ERDS.map((n): LearnPage => ({
+      dir: SCHEMA_URLS[n].slice("/learn/".length), page: "schema", title: SCHEMA_TITLES[n], main: schemaMain(n, erds, templates[`schema-${n}`]),
+    })),
   ];
   for (const { page, blocks } of pages) {
     const main = renderFragment(page.html, { ...context, file: page.file, blocks: new Map(blocks.map((b) => [b.id, b])), download: downloads.get(page.id) });
@@ -66,7 +73,9 @@ export function renderPage(layout: string, style: string, bundle: BundleUrls, pa
   }, "site/learn/layout.html");
 }
 
-const TEMPLATES = ["map", "track", "playground"] as const;
+const SCHEMA_TITLES = { schema: "Schema: the browser's tables", lab: "Lab schema: the PostGIS tables", star: "Star schema: what Power BI reads" };
+
+const TEMPLATES = ["map", "track", "playground", "schema-schema", "schema-lab", "schema-star"] as const;
 export type Templates = Record<(typeof TEMPLATES)[number], string>;
 
 export async function readTemplates(): Promise<Templates> {

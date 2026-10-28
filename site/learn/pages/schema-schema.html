@@ -1,0 +1,15 @@
+<p class="crumbs"><a href="/learn/">Learn</a> · Schemas: <strong>browser</strong> · <a href="/learn/schema/lab/">lab</a> · <a href="/learn/schema/star/">star</a></p>
+<h1>Schema: the browser's tables</h1>
+<p class="lead">The tables every browser lab and the <a href="/learn/playground/">playground</a> run on. The page builds them in your browser from four published files, so every learner starts from the same rows, and a reload starts fresh.</p>
+<p>Six tables describe the animals: <code>taxa</code>, <code>species</code>, <code>countries</code>, <code>species_countries</code>, <code>sources</code> and <code>species_sources</code>, read from <a href="/#files"><code>/v1/species.parquet</code> and <code>/v1/countries.parquet</code></a>. Two more hold the lab's sample of open GBIF records: <code>datasets</code> and <code>occurrences</code>, read from <a href="/learn/data/">the lab data</a>. A record is one observation of an animal at a place and time; the course counts records, and never presents them as where an animal lives.</p>
+<h2>The diagram</h2>
+<p>An entity–relationship diagram (ERD) draws each table as a box with its columns, and each foreign key as a line to the table it points at. PK marks the primary key, FK a foreign key, UK a unique key. The ends of a line say how many rows meet there: <code>||</code> exactly one, <code>|o</code> zero or one, <code>o{</code> zero or more, <code>|{</code> one or more. The end with the crow's foot is the table that holds the foreign key.</p>
+{{diagram}}
+<h2>The relationships, in words</h2>
+{{relationships}}
+<p>A record's country is optional. <code>country_code_gbif</code> keeps GBIF's code as delivered, and <code>country_code</code> holds it only when it is a row of <code>countries</code>, so GBIF's <code>ZZ</code> (unknown) and <code>XZ</code> (high seas) never break the foreign key.</p>
+<h2 id="species_taxonomy">The view <code>species_taxonomy</code></h2>
+<p><code>species_taxonomy (species_id, class, order_name, family, genus)</code> gives each species its genus, family, order and class in one row, by walking <code>taxa</code> from the genus up through each <code>parent_name</code>. A view is a stored query, not a table: it holds no rows of its own, and reading it runs the query. That is why it isn't drawn.</p>
+<h2>The data dictionary</h2>
+<p>Every column: its type, its keys, what it means, and where its values come from.</p>
+{{dictionary}}

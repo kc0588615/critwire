@@ -64,7 +64,6 @@ table.inputs caption { text-align: left; color: var(--muted); }
 table.inputs th, table.inputs td { text-align: left; padding: .2rem .5rem; border-bottom: 1px solid var(--line); }
 table.inputs code { font-size: .8rem; overflow-wrap: anywhere; }
 dialog { max-width: min(95vw, 70rem); border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: inherit; }
-dialog img { max-width: 100%; height: auto; display: block; margin: .5rem 0; }
 dialog::backdrop { background: rgb(0 0 0 / .5); }
 header.site #engine-status { margin: .25rem 0 0; }
 .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
@@ -84,3 +83,12 @@ ol.modules > li { border-top: 1px solid var(--line); padding: .75rem 0 .25rem; }
 .skill { margin-bottom: .4rem; }
 .questions { padding-left: 1.25rem; }
 main h1[tabindex="-1"]:focus { outline: none; }
+figure.erd { margin: 1rem 0; }
+figure.erd img, dialog img { max-width: 100%; height: auto; display: block; margin: .5rem 0; background: #fff; border-radius: 6px; padding: .5rem; }
+figure.erd figcaption { color: var(--muted); font-size: .95rem; margin-top: .4rem; }
+section.dictionary h3 { font-size: 1.05rem; margin: 1.5rem 0 .35rem; }
+section.dictionary h3 a { font-size: .85rem; font-weight: 400; margin-left: .5rem; }
+section.dictionary table, table.tools-table { border-collapse: collapse; font-size: .9rem; }
+section.dictionary th, section.dictionary td, table.tools-table th, table.tools-table td { text-align: left; vertical-align: top; padding: .25rem .5rem; border-bottom: 1px solid var(--line); }
+.relationships li, .table-list li { margin-bottom: .25rem; }
+.table-list { columns: 2 12rem; }

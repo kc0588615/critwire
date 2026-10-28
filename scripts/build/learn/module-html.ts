@@ -37,9 +37,9 @@ export interface PageContext {
 }
 
 type Dialog = "schema" | "lab";
-const DIALOGS: Record<Dialog, { heading: string; svg: string }> = {
-  schema: { heading: "Schema: the browser's tables", svg: "/learn/schema/schema.svg" },
-  lab: { heading: "Lab schema: the PostGIS tables", svg: "/learn/schema/lab.svg" },
+const DIALOGS: Record<Dialog, { heading: string; svg: string; page: string }> = {
+  schema: { heading: "Schema: the browser's tables", svg: "/learn/schema/schema.svg", page: "/learn/schema/" },
+  lab: { heading: "Lab schema: the PostGIS tables", svg: "/learn/schema/lab.svg", page: "/learn/schema/lab/" },
 };
 
 export const TOOL_NAMES: Record<(typeof TOOLS)[number], string> = {
@@ -65,11 +65,12 @@ export function fillBlockSlots(file: string, html: string, render: (slot: Slot) 
 const dialogButton = (d: Dialog) => `<button type="button" data-dialog="${d}">${d === "lab" ? "Lab schema" : "Schema"}</button>`;
 
 function dialogHtml(d: Dialog, title: string): string {
-  const { heading, svg } = DIALOGS[d];
+  const { heading, svg, page } = DIALOGS[d];
   return [
     `<dialog id="dialog-${d}" aria-labelledby="dialog-${d}-title">`,
     `<h2 id="dialog-${d}-title">${esc(heading)}</h2>`,
     `<img src="${svg}" alt="${esc(title)}">`,
+    `<p><a href="${page}">Every column, in words</a> · <a href="${svg}">The diagram alone</a></p>`,
     `<form method="dialog"><button>Close</button></form>`,
     `</dialog>`,
   ].join("\n");
