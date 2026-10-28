@@ -153,7 +153,7 @@ The review's numbering: MF = MUST-FIX, SC = SHOULD-CHANGE.
 
 - [x] Baseline: install, migrate, run typecheck, lint, unit and E2E tests; record the results under Baseline
 - [x] Architecture: `architect` writes findings and the target design
-- [ ] Fable review: `architecture-reviewer`
+- [x] Fable review: `architecture-reviewer`
 - [ ] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
 - [ ] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
 - [ ] Steps: `planner` writes Steps and Verification
@@ -563,6 +563,25 @@ None. Every correction above lands with the code that proves it (brief), in the 
 
 ## Architecture review (Fable)
 
+Reviewed 2026-10-28 against `dc43ace`: every cited line opened (`check.ts`, `html.ts`, `sources.ts`, `projection.ts`, `page.ts`, `build.ts`, the three `.mmd`, the spike's `engine.ts`, `pg.ts`, `plan-queries.ts`, `run-queries.ts` (root, not `scripts/`), 004's d3/d4/d6 blocks, L1's A7). Findings F1–F10 are real; F3 confirmed: the spike's `runBlock` wraps browser blocks too (`duckdbExec` → `control("BEGIN")`). Every brief deliverable and review item 1–7 has a design and a step. d2 has no PostGIS block, so the download list (setup, d1, d3–d6) is right. The SC2 inputs total ~565 kB, so hashing them can't touch T13.
+
+VERDICT: APPROVE_WITH_CHANGES
+
+MUST-FIX:
+1. **D11 exercise references vs the playground.** 004:8015 and 002 §1: the reference runs "on the pristine database". D11 computes it lazily at the first Check of a generation, but `persistent()` lets the playground change data in that same generation; a reference computed (or a learner answer checked) after a playground `DELETE` is wrong and the verdict is silently wrong either way. Define it: once the generation is marked changed, Check refuses with 002's message ("Changed the tables? Reset database brings them back.") until Reset; references are computed only on an unchanged generation. One flag, one `if`; E2E case: playground DELETE → lesson Check → refusal → Reset → pass.
+2. **D5 deadlines are equal, so the sessions runner is flaky by construction.** Both windows get `lock_timeout = '5s'` and the runner also polls `pg_blocking_pids` for up to 5 s before it "moves on" to the other window's statement that releases the lock. Under any load (a build running one job at a time on 2 ARM cores) B's waiting UPDATE hits `lock_timeout` before A's ROLLBACK is sent, and the block fails spuriously. Make `lock_timeout` clearly larger than the detection deadline (e.g. detect within 5 s, `lock_timeout = '30s'`), and keep `statement_timeout` as the hard stop. Also note `-- waits:` must be the statement's leading comment; 004's blocks carry the wait as a trailing comment, so W18 rewrites them (004 and page together).
+
+MISSED:
+1. **The star is run in two engines with no guard once ST1 is dropped.** `STAR_BLOCKS` are `engine: postgis` on d6's page (learn:check records them) and `writeStar` runs the same text in Node DuckDB. Each block ends in a SELECT (`76 | 3 | 50`); `writeStar` should render that last result with `result.ts` and compare it to `checked/<id>.txt`. Nearly free, reuses one renderer, and catches a divergence when L5 edits the blocks. Add to W8 (treat as a must if the planner has room).
+2. **D6 `checked.json` "left untouched when its content didn't change"** can't hold as written: `checked` (the run's date) changes every `--update`. Compare without the date, or write the date only when a block, download or `labErd` key changed.
+
+SHOULD-CONSIDER:
+1. Name collision: the setup page's download `/learn/labs/setup.sql` (PostGIS checks) vs `site/learn/sql/setup.sql` (the DuckDB schema the bundle imports). Call the download `pg-checks.sql` or similar.
+2. D6's "relative-import closure of `scripts/learn-check.ts`" decides how often every lab goes stale. Keep the checker off `scripts/build/` except `learn/sql.ts` (no `credits.ts` → `sources.ts` → `species.ts` chain), and add a pure test that prints and pins the closure so a stray import is noticed.
+3. D13 relies on `context.route` seeing the worker's fetch of the `.wasm` (held-back and 404 cases). Verify in W10's first E2E case; if Chromium's worker requests bypass the route, serve those cases from a Caddy fixture path instead.
+4. D3 `--update` runs every block twice, `tx: own` blocks included; state the rule that a `tx: own` block must be idempotent (TX rules) so the second run is meaningful, and that `-- boot` blocks run once.
+5. D7's boot rule matches table names "as a whole word" in block text; say it matches `codeOnly` text (comments and strings stripped, lexer already there) so a table named in prose comments doesn't pull a boot block into a download.
+
 ## Architecture review (Astra)
 
 ## Revision notes
@@ -581,5 +600,6 @@ None. Every correction above lands with the code that proves it (brief), in the 
 
 - 2026-10-28 12:10 UTC · Baseline: typecheck ok, test 285/285, test:db 78/78 (after build), build ok, learn:check ok, e2e 38/38; dist hashes saved.
 - 2026-10-28 12:29 UTC · Architecture: architect wrote findings F1–F10, design D1–D16, review items 1–7 mapped, 25 work groups (~39–40 sessions est.); no 004 edits; plan-only change, no checks needed.
+- 2026-10-28 12:35 UTC · Fable review: APPROVE_WITH_CHANGES, 2 MUST-FIX (D11 Check vs changed playground; D5 lock_timeout vs detection window), 2 MISSED, 5 SHOULD-CONSIDER; plan-only, no checks needed.
 
 ## Summary
