@@ -902,6 +902,11 @@ Every step:
   - Every row of "Review items assigned to L1" and addendum items 1–11 has a Decisions line: `done (S<n>, <sha>)` (`git log --oneline --grep '^S<n>:'`) or `handed to L3 (H<n>)`. None dropped.
   - Every D16 bullet is in 004 and every D17 bullet in `AGENTS.md` (grep; listed in Log).
   - Dry run: `T`, `D`, `E`, `H`, `pnpm learn:check`. A gap → a new step before Verification.
+- [ ] S32 · Astra code review MUST-FIX 1: sample freshness checks each species' GBIF key, not only the key set
+  - Files: `scripts/learn/sample-files.ts` (`SampleDownload.species: {id, gbif}[]`, sorted by `gbif`), `scripts/ingest/gbif-sample.ts` (writes the `species` list `sampleRows` mapped with, the `byGbif` source), `scripts/derive/sample.ts` (`assertSampleFresh` refuses unless `download.species` equals the core's `{id, gbif}` pairs; the reason names a moved or missing pair).
+  - First: two species' `ids.gbif` swapped, sample unchanged → derive refuses (stale, names the species); `download.json` without `species` → refuses (re-run the ingest); clean → passes.
+  - Then: live `pnpm ingest gbif-sample --download 0041824-260928105237408` (reuse, ~6 min, 35 MB zip) writes `species` into `download.json`. `sample.csv` must be byte-identical and `contributions.json` unchanged, so the learn-sample DOI stays current. If either differs: don't commit the data (`git checkout data/`), no second registration; handoff item, record under Decisions.
+  - Verify: `T`; `pnpm derive`: only `download.json` gains `species`, `learn-sample DOI current`; `B`, `E`, `H`.
 
 ## Verification
 
@@ -959,6 +964,14 @@ What can go wrong across steps, and what the session does. `MISSION_BLOCKED` onl
 - **Session budget:** at each session start, `grep -c '^=== .* session ' /srv/critter-ai/agent-state/missions/critwire-learn-l1-data.log`. Past 48: start no review step (S27–S30). For each unfinished one, add a handoff item for L3 (what's left, its D-section), check the step off as `handed to L3 (H<n>)`, record it under Decisions, and go on to S31, the code review, Verification and Release. S1–S26 hold Goal work and are never deferred.
 
 ## Code review (Astra)
+
+VERDICT: APPROVE_WITH_CHANGES
+
+MUST-FIX:
+1. `scripts/derive/sample.ts:66`: Freshness compares only the sorted GBIF keys, losing their species assignments. Reproduced: swapping species 1 and 2’s GBIF IDs accepts all 40,395 sample rows unchanged, silently associating occurrences with the wrong species. Persist the ingest’s `{speciesId, gbifKey}` mapping, validate it during derive, and add a regression test.
+
+SHOULD-CONSIDER:
+1. `scripts/env.ts:27`: Recognize dotenv’s `export` and whitespace assignment forms when detecting duplicates. An exported duplicate can override the newly written URL while setup reports success.
 
 ## Release
 
@@ -1038,6 +1051,7 @@ What can go wrong across steps, and what the session does. `MISSION_BLOCKED` onl
   9. SC5 (L1 part): done (S18 32bcd64 build half; S21 2d8591a CHECKs + load checks).
   10. SC7 (L1 part): done (S19 75c582a role/`--setup`; S24 ef6cc6c lock, forced failure, cleanup).
   11. 004 corrections: done (D16; S26 812ef79, earlier bullets in their code's commits, located in Log).
+- Astra code review: MUST-FIX 1 accepted (real: `assertSampleFresh` compares the sorted key set, so swapped `ids.gbif` keep stale `species_id`s) → S32. SHOULD-CONSIDER 1 (`env.ts` duplicate detection ignores `export KEY=` / `KEY = v`) not adopted here: goes to the Summary for the owner.
 
 ## Log
 
@@ -1079,5 +1093,6 @@ What can go wrong across steps, and what the session does. `MISSION_BLOCKED` onl
 - 2026-10-28 11:08 UTC S29: MF3 GBIF/COL: `assertGbifFresh`/`assertColFresh` replay the request builders (match, occurrences, datasets URLs; pinned checklist; occurrences ⇔ SPECIES; COL URL per release), replacing the name-set and `taxonKey` checks in `deriveCore`. Red 2 files (F1–F6, exports missing) → green 6; mutation (no occurrences-URL check) fails F2; test 276/276, typecheck ok; derive no diff (both DOIs current); plain build ok; H 155/155.
 - 2026-10-28 11:15 UTC S30: SC3 leftovers: `http.ts` Retry-After > 60 s stops (no cap-and-retry), `readJson` names the file, `toDatasetPage` exported. Red 3 (H1 >60 s, H2, H3 import) → green 8; H1 ≤60 s honoured and H4 (per derived file) passed first, existing behaviour. test 284/284, typecheck ok; derive no diff (both DOIs current); plain build ok; e2e 38/38, 0 skipped (`$M/e2e-s30/`); H 155/155.
 - 2026-10-28 11:25 UTC S31: review-items audit: 11/11 addendum items + table rows have a Decisions line with shas; none handed on. D16 in 004: §0 41/272, d2 2361, §3.2 516/872, §4.1 811–812, §4.2 843/847 (md5 then gbifID, displacement)/859/866, §4.3 871/877, §4.4 909, §4.5 925, §6.2 7762–7765, §7.6 8061–8063, §7.7 8074, §B 8309. D17 in AGENTS.md: every bullet grep 1+ (copy line new 1, old 0). Dry run: T typecheck ok, test 284/284; D 78/78, no `learn_t_%` left; plain B ok (dist/learn/data 35,452,055 B, lab data 13,673,945 B); E 38 expected, 0 unexpected/skipped/flaky; H 155 ok; learn:check ok. No gap.
+- 2026-10-28 11:25 UTC Code review (Astra): APPROVE_WITH_CHANGES, 1 MUST-FIX (sample freshness ignores species↔GBIF key pairs; accepted → S32), 1 SHOULD-CONSIDER (env.ts dotenv `export` forms; → Summary). Plan-only; no checks needed.
 
 ## Summary
