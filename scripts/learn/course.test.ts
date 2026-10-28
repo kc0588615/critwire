@@ -8,7 +8,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { parseBlock, type Block } from "./blocks.ts";
-import { assembleCourse, pageOrder, pageSlots, parseCurriculum, type Curriculum, type Page } from "./course.ts";
+import { assembleCourse, pageOrder, pageSlots, parseCurriculum, recordedResults, type Curriculum, type Page } from "./course.ts";
 
 const tracks = [
   { id: "foundations", title: "Foundations" },
@@ -138,4 +138,20 @@ test("SL4 `-- after:` across pages fails: each page's blocks are linted together
 test("SL5 the page lint includes the privilege and cleanup rules", () => {
   const all = blocks(blockFile("d5-a", "-- status: ran", "-- engine: postgis", "CREATE ROLE reporter;", "SELECT 1 AS a"));
   has(assembleCourse([pageOf("d5", "{{block:d5-a}}")], all, new Set()).errors, "site/learn/sql/d5-a.sql: q d5-a: statement 1 names role reporter");
+});
+
+test("SL6 recorded results: a ran PostGIS block without checked/<id>.txt, and a .txt no ran PostGIS block owns", () => {
+  const all = blocks(
+    ran("d1-a", "-- engine: postgis"), ran("d1-b", "-- engine: postgis"), ran("d1-c"),
+    blockFile("d1-d", "-- status: untested: needs two sessions", "-- engine: postgis", "SELECT 1 AS a"),
+  );
+  const { pages } = assembleCourse([pageOf("d1", "{{block:d1-a}} {{block:d1-b}} {{block:d1-c}} {{block:d1-d}}")], all, new Set());
+  const { missing, orphans } = recordedResults(pages, new Set(["d1-a", "d1-c", "d1-d", "gone"]));
+  assert.deepEqual(missing, ["site/learn/labs/checked/d1-b.txt: no recorded result for q d1-b: run pnpm learn:check --update"]);
+  assert.deepEqual(orphans, [
+    "site/learn/labs/checked/d1-c.txt: no ran PostGIS block d1-c on a page",
+    "site/learn/labs/checked/d1-d.txt: no ran PostGIS block d1-d on a page",
+    "site/learn/labs/checked/gone.txt: no ran PostGIS block gone on a page",
+  ]);
+  assert.deepEqual(recordedResults(pages, new Set(["d1-a", "d1-b"])), { missing: [], orphans: [] });
 });

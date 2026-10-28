@@ -1,0 +1,3 @@
+-- result: pg-session · 1 row · sha256 791623fd72db
+search_path
+learn_curriculum, public

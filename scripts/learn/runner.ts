@@ -358,6 +358,8 @@ export interface BlocksOptions extends RunOptions {
   update: boolean;
   /** Where the recorded results live (default site/learn/labs/checked). */
   checkedDir?: string;
+  /** Print each block's rendered result (learn:check --module). */
+  show?: boolean;
   log?: (line: string) => void;
 }
 
@@ -375,7 +377,7 @@ async function readRecorded(file: string): Promise<string | undefined> {
  * then the rest in order; with `update`, each of the rest run twice and, once every block passed, each result written
  * where it changed. Throws naming every failure.
  */
-export async function runBlocks(s: LabSession, blocks: readonly Block[], { update, checkedDir = CHECKED_DIR, log = console.log, ...run }: BlocksOptions): Promise<void> {
+export async function runBlocks(s: LabSession, blocks: readonly Block[], { update, checkedDir = CHECKED_DIR, show = false, log = console.log, ...run }: BlocksOptions): Promise<void> {
   const page = new Map(blocks.map((b) => [b.id, b]));
   const failures: string[] = [];
   const writes: [file: string, text: string][] = [];
@@ -386,6 +388,7 @@ export async function runBlocks(s: LabSession, blocks: readonly Block[], { updat
     if (b.boot && first.failures.length) throw new Error(`boot block ${b.id}: ${first.failures.join("; ")}`);
     failures.push(...first.failures);
     if (first.rendered === undefined) continue;
+    if (show) log(`learn:check: ${q}:\n  ${first.rendered.split("\n").join("\n  ")}`);
     const recorded = await readRecorded(file);
     if (update) {
       const second = b.boot ? first : await runBlock(s, b, page, run);
@@ -401,7 +404,7 @@ export async function runBlocks(s: LabSession, blocks: readonly Block[], { updat
       const diff = lineDiff(recorded, first.rendered).join("\n  ");
       if (b.plan.length) log(`learn:check: ${q}: the plan's text differs from ${file} (its assertions hold):\n  ${diff}`);
       else failures.push(`${q}: result differs from ${file}:\n  ${diff}`);
-    }
+    } else if (!first.failures.length) log(`learn:check: ${q}: ok`);
   }
   if (failures.length) throw new Error(`blocks: ${failures.length} failure(s):\n${failures.join("\n")}`);
   if (writes.length) await mkdir(checkedDir, { recursive: true });

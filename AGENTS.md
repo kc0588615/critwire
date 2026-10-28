@@ -45,7 +45,7 @@ GitHub `origin` is the hub; only pushed work exists on the other machine.
 - `pnpm e2e` (after `pnpm build`): Playwright suite; artifacts in `E2E_ARTIFACTS` (default `e2e-artifacts/`).
 - `pnpm gbif:register [--target countries|learn-sample]` (default countries): the one network write (GBIF derived dataset). See GBIF DOI refresh.
 - `pnpm learn:venv`: (re)creates `.venv-learn` (system Python 3.12, no downloads, wheels only).
-- `pnpm learn:check [--setup [--env <file>]… [--reset-password]]` (after `pnpm build`): as `critwire_lab`, loads `dist/learn/data/postgis/learn_curriculum.sql` twice (counts = manifest `tables`), a forced failure (must roll back), `pg-role-smoke`, canary + `learn_%` leak check. Never `critwire`.
+- `pnpm learn:check [--update | --module <page>] [--setup [--env <file>]… [--reset-password]]` (after `pnpm build`): as `critwire_lab`, loads `dist/learn/data/postgis/learn_curriculum.sql` twice (counts = manifest `tables`), a forced failure (must roll back), then every PostGIS block of `site/learn/` in page order against `site/learn/labs/checked/<id>.txt` (`--update` writes them; `--module <page>` runs one page, prints, writes nothing), canary + `learn_%` leak check. Never `critwire`.
 
 ## Data
 Files and owners (never hand-edit derived files):

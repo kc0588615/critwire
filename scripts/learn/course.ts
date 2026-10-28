@@ -2,7 +2,7 @@
 // built or planned), the pages' block slots, and the page order learn:check, the build and E2E share: the setup page,
 // then the built modules in curriculum order. Each page's blocks are linted together (blocks.ts lintPage), so an
 // `-- after:` block must be on the same page. Pure. Tests: course.test.ts.
-import { lintPage, SETUP_ID, BLOCK_DIR, type Block } from "./blocks.ts";
+import { lintPage, SETUP_ID, BLOCK_DIR, CHECKED_DIR, type Block } from "./blocks.ts";
 
 export const CURRICULUM_FILE = "site/learn/curriculum.json";
 export const MODULE_DIR = "site/learn/modules";
@@ -248,4 +248,16 @@ export function assembleCourse(pages: readonly Page[], blocks: ReadonlyMap<strin
   });
   for (const b of blocks.values()) if (b.id !== SETUP_ID && !usedOn.has(b.id)) errors.push(`${b.file}: no page uses block ${b.id}`);
   return { pages: out, errors };
+}
+
+/**
+ * The recorded PostGIS results against the course: `missing`, each ran PostGIS block on a page without
+ * checked/<id>.txt; `orphans`, each recorded id (`recorded`: the .txt names) no ran PostGIS block on a page owns.
+ */
+export function recordedResults(pages: readonly CoursePage[], recorded: ReadonlySet<string>): { missing: string[]; orphans: string[] } {
+  const ran = new Set(pages.flatMap((p) => p.blocks).filter((b) => b.engine === "postgis" && b.status === "ran").map((b) => b.id));
+  return {
+    missing: [...ran].filter((id) => !recorded.has(id)).map((id) => `${CHECKED_DIR}/${id}.txt: no recorded result for q ${id}: run pnpm learn:check --update`),
+    orphans: [...recorded].filter((id) => !ran.has(id)).sort().map((id) => `${CHECKED_DIR}/${id}.txt: no ran PostGIS block ${id} on a page`),
+  };
 }

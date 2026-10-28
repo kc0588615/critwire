@@ -14,7 +14,7 @@
 //      somewhere other than the duplicate key, or the injection site moved → refused naming the changed table, the
 //      failure, or "loader layout changed" (before any load); a clean run reports psql's exit at the duplicate id.
 // LC7: the load changes learn_spatial (A2's schema) → the canary before ≠ after, refused naming the table.
-// LC8: the run leaves a learn_ role or schema behind → refused, naming each.
+// LC8: the run leaves a learn_ role or schema behind → refused, naming each (a loader's leak named as the loader's, before any block).
 // LC9: SIGINT mid-load leaves the lock held, psql's statement running, the half-made schema, its temp file or a role
 //      → the run stops naming the signal; afterwards the lock is free, no critwire_lab backend, the old schema's counts,
 //      no temp file and no new learn_ object. A check failing after the lock releases it and removes its temp file too.
@@ -29,10 +29,14 @@
 // CU4: a recorded session that can't be stopped is ignored → the cleanup fails naming its pid; the lock is still freed.
 // CU5: the cleanup connection is lost (the lock went with it) and the sweep runs anyway → nothing dropped; every new
 //      object is named with its cleanup command.
+// Blocks stage live (plan S5): L1's special pg-role-smoke step stays beside the blocks stage, so the block runs twice
+// and its two definitions drift → a clean run names pg-role-smoke from the blocks stage only.
+// LM1: --module runs another page too, or writes a recorded result → setup's blocks printed, the files untouched.
+// LM2: --module --update writes a partial run, or an unknown page silently checks nothing → both refused.
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { createHash, randomBytes } from "node:crypto";
-import { chmodSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { after, test } from "node:test";
@@ -223,7 +227,7 @@ test("LC8 a run that leaves a learn_ role or schema behind is refused, naming ea
   });
   const r = await cli(["--dist", out]);
   assert.equal(r.code, 1);
-  assert.match(r.stderr, new RegExp(`left behind.*role ${leak}`, "s"));
+  assert.match(r.stderr, new RegExp(`the loader left behind.*role ${leak}`, "s"));
   assert.match(r.stderr, new RegExp(`schema ${leak}`));
 });
 
@@ -308,9 +312,13 @@ test("LC5 + LC10 a clean run loads twice to the manifest's counts, and no child 
   assert.match(r.stdout, /load 1: 14 tables = manifest/);
   assert.match(r.stdout, /load 2: 14 tables = manifest/);
   assert.match(r.stdout, /forced failure: psql exit 3 at the duplicate key id=\d+, 14 tables unchanged/);
-  assert.match(r.stdout, /pg-role-smoke: 0 left/);
+  assert.doesNotMatch(r.stdout, /pg-role-smoke: 0 left/, "no special pg-role-smoke step");
+  assert.match(r.stdout, /learn:check: static: \d+ page\(s\), \d+ block\(s\) parsed and linted/);
+  assert.match(r.stdout, /learn:check: q pg-role-smoke: ok/);
+  assert.match(r.stdout, /learn:check: q pg-tx-smoke: ok/);
   assert.match(r.stdout, /canary: learn_spatial unchanged/);
-  assert.match(r.stdout, /leak check: nothing left/);
+  assert.match(r.stdout, /leak check \(the loader\): nothing left/);
+  assert.match(r.stdout, /leak check \(the run\): nothing left/);
   assert.deepEqual(await labCounts(), Object.fromEntries(Object.entries(tables).sort(([a], [b]) => a.localeCompare(b))));
   const calls = readFileSync(dump, "utf8").split("=== call\n").filter(Boolean);
   assert.ok(calls.length >= 4, `${calls.length} psql calls`);
@@ -325,6 +333,31 @@ test("LC5 + LC10 a clean run loads twice to the manifest's counts, and no child 
 });
 
 const labTarget = () => urlTarget(labUrl, "LEARN_PG_URL");
+
+// Every recorded result with its text and mtime, to prove a run wrote nothing.
+const recorded = (d: string) => readdirSync(d).sort().map((f) => [f, readFileSync(join(d, f), "utf8"), statSync(join(d, f)).mtimeMs]);
+
+test("LM1 --module setup runs the static checks, the loader and the setup page's blocks, prints them and writes nothing", async () => {
+  const checked = join(repo, "site/learn/labs/checked");
+  const before = recorded(checked);
+  const r = await cli(["--module", "setup"]);
+  assert.equal(r.code, 0, r.stderr);
+  assert.match(r.stdout, /load 2: 14 tables = manifest/);
+  assert.match(r.stdout, /learn:check: q pg-role-smoke:\n  -- result: pg-role-smoke · 1 row · sha256 fcfe7fd06dfa\n  learn_smoke_left\n  0\n/);
+  assert.match(r.stdout, /learn:check: q pg-session:\n  -- result: pg-session · 1 row · sha256 791623fd72db\n  search_path\n  learn_curriculum, public\n/);
+  assert.match(r.stdout, /learn:check: q pg-role-smoke: ok/);
+  assert.doesNotMatch(r.stdout, /wrote/);
+  assert.deepEqual(recorded(checked), before);
+});
+
+test("LM2 --module with --update, or an unknown page, is refused before connecting", async () => {
+  const up = await cli(["--module", "setup", "--update"]);
+  assert.equal(up.code, 1);
+  assert.match(up.stderr, /--module never writes: drop --update/);
+  const unknown = await cli(["--module", "zz"]);
+  assert.equal(unknown.code, 1);
+  assert.match(unknown.stderr, /--module zz: no such page \(setup(, [a-z0-9]+)*\)/);
+});
 
 test("CU1 SIGINT mid-block: no run backend, the block's committed role swept, the lock free", async () => {
   const role = fresh("cu1");
