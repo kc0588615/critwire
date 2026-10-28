@@ -120,7 +120,7 @@
       "prereqs": [
         "f3"
       ],
-      "state": "planned",
+      "state": "built",
       "skill": "Entities; natural and surrogate keys; `PRIMARY KEY`, `FOREIGN KEY`, `UNIQUE`, `CHECK`; generated columns",
       "questions": [
         "What does a foreign key check, and what doesn't it?",

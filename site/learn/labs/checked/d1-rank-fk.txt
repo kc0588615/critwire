@@ -1,0 +1,3 @@
+-- result: d1-rank-fk · 1 row · sha256 d6883c437319
+genus_rank | species
+genus | 76

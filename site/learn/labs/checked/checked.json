@@ -6,6 +6,42 @@
   },
   "checked": "2026-10-28",
   "blocks": {
+    "d1-fk-delete": {
+      "key": "4a82d26fca4bf4002b009980d53c3186b2d3f32ceb8a19f988b34ba4c781d9dd",
+      "result": "1800c7d20a3b95c6db5edba92d2c894692df3633a443cacbc6b2a59a7283dbb7"
+    },
+    "d1-fk-index": {
+      "key": "9fb71f4499b206b918ef43e22e780f809279a352ed018d23037d277aa9d8295b",
+      "result": "ad334efd04007557cdae53bb46e2070c4947dd49e93e9081e9e766b9405d5ccd"
+    },
+    "d1-fk-wrong": {
+      "key": "b9e1e8f02446167dc2c407d325d5e017e3540c2803fd047bba611a4a5ad346a3",
+      "result": "adad4628f4324f2e15923ec01bbce5df43db16d4a9da3b646a259920dcc857aa"
+    },
+    "d1-generated": {
+      "key": "496f0930f95328f28300b566bf8c9f843d535aee76d902774387cf627e927ed6",
+      "result": "2373d0eff2874edf338dca0b5b5e0206d91f908f22888d6fbad20d11f0f3e1e6"
+    },
+    "d1-generated-write": {
+      "key": "0bb47a29abac74b898e00bf89b0eb90dd964347235cabbebc0c01aaad647df68",
+      "result": "8a147712de5e1029f90715dc3b99811db3480000161d1dfb03593eec06f33961"
+    },
+    "d1-identity": {
+      "key": "d141217c7f1ebfb6502e13e8293afceff50a2d071c48246712104dd5f5d9598e",
+      "result": "41ead819377541f87b6577360b8f253dc7c3935489ff358b13716ca5d9a284ec"
+    },
+    "d1-identity-twice": {
+      "key": "3b68b9526a289c41867bbd99762cef3cc6a23d4d9a6a12fa1d2c0e207f810dad",
+      "result": "a566de24ae66faf2a39041696c1654868d0d1e9ec5501a1a8b7bd71b0fd1a2aa"
+    },
+    "d1-rank-fk": {
+      "key": "60ef2e7b0ce1d498d96261af00be06128a5fd1fd9c7362aa2e55781d22b2aeeb",
+      "result": "83b219e8a5532e73280e09568ff227b238aa86f277a84d5e6413907bce97237e"
+    },
+    "d1-rank-wrong": {
+      "key": "0e6809bbb637b911aca9f87c926536eb9a999d7d7a51e246ebce5e3220262e3d",
+      "result": "1d662786354848958474a67009fd719dd5346cd6fff9cd50a84a9e3ff47f1ff1"
+    },
     "d6-at-sea": {
       "key": "bea9074f4cce12859b153667d432e5da41930bb9f765e328a03200960db2a34b",
       "result": "37022d815ae3e895f7f738cbb2fb368c7d29c41ac7cc2c2d05d7a7dd54f2fa48"
@@ -84,6 +120,7 @@
     }
   },
   "downloads": {
+    "d1.sql": "ad0f35b5d9a5c1f2a1e6b37f3bb0f6498f33a9f998aab703962965a7392e3b26",
     "d6.sql": "948f39e6e43983a7b9d9a04a073920a7f5cedc17cb7773bdee8295db88ff49f9",
     "pg-checks.sql": "8a92562f17a79a5ae9d8656e99e0e556ed647455359a487e1ae94eab9983226c"
   },

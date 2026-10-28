@@ -286,11 +286,27 @@ test("every browser block of the course pages equals its snapshot, and cards fol
   }
   // f3-brazil-list is the release smoke's block (cards, as its `-- show: cards` says).
   expect(seen).toEqual(
-    expect.arrayContaining(["setup-counts", "f1-no-photo", "f1-page", "f2-count", "f2-distinct", "f3-brazil-list", "f3-not-in", "f4-top-dataset", "f4-running", "d6-export"]),
+    expect.arrayContaining(["setup-counts", "f1-no-photo", "f1-page", "f2-count", "f2-distinct", "f3-brazil-list", "f3-not-in", "f4-top-dataset", "f4-running", "d1-constraints", "d1-check-null", "d1-ex-same-url", "d6-export"]),
   );
   expect(offOrigin).toEqual([]);
   await context.close();
 });
+
+// d1-ex's answer in two parts, so a wrong answer can drop one constraint.
+const D1_TABLE = `CREATE TABLE species_photos (
+  photo_id   INTEGER PRIMARY KEY,
+  species_id INTEGER NOT NULL REFERENCES species (id),
+  url        VARCHAR NOT NULL UNIQUE,
+  license    VARCHAR NOT NULL CHECK (license LIKE 'CC%' OR license = 'Public domain'),
+  credit     VARCHAR NOT NULL CHECK (trim(credit) <> '')
+);
+`;
+const D1_FILL = `INSERT INTO species_photos
+SELECT row_number() OVER (ORDER BY id), id, photo_url, photo_license, photo_credit
+FROM species
+WHERE photo_url IS NOT NULL;
+SELECT count(*) AS photos, count(DISTINCT species_id) AS species, count(DISTINCT license) AS licenses
+FROM species_photos;`;
 
 // A fixed wrong answer for each exercise and skip check, and the hint it gets.
 const WRONG: Record<string, { sql: string; hint: string }> = {
@@ -349,6 +365,11 @@ ranked AS (SELECT class, species_id, records, rank() OVER (PARTITION BY class OR
 SELECT class, species_id, records, place, share_pct FROM ranked WHERE place <= 3 ORDER BY class, place, species_id`,
     hint: "Your result has 17 rows; the answer has 9.",
   },
+  // No UNIQUE on url: the counts are right, but the axolotl's photo goes in twice.
+  "d1-ex": {
+    sql: D1_TABLE.replace("url        VARCHAR NOT NULL UNIQUE", "url        VARCHAR NOT NULL") + D1_FILL,
+    hint: `d1-ex-same-url should fail after your answer with "PRIMARY KEY or UNIQUE constraint violation", but it ran without an error.`,
+  },
   // No Unknown member: the records without a year fall out of the fact, so it no longer reconciles.
   "d6-ex": {
     sql: `CREATE TABLE dim_decade (decade INTEGER PRIMARY KEY, label VARCHAR NOT NULL);
@@ -399,7 +420,46 @@ test("every exercise and skip check rejects a fixed wrong answer and accepts its
       seen.push(b.id);
     }
   }
-  expect(seen).toEqual(expect.arrayContaining(["f1-skip", "f1-ex", "f2-skip", "f2-ex", "f3-skip", "f3-ex", "f4-skip", "f4-ex", "d6-ex"]));
+  expect(seen).toEqual(expect.arrayContaining(["f1-skip", "f1-ex", "f2-skip", "f2-ex", "f3-skip", "f3-ex", "f4-skip", "f4-ex", "d1-ex", "d6-ex"]));
+  expect(offOrigin).toEqual([]);
+  await context.close();
+});
+
+// d1-ex's probes: a table missing one constraint gets the right counts, and the probe for that constraint fails it.
+const D1_MISSING: { drop: [string, string]; hint: string }[] = [
+  {
+    drop: ["url        VARCHAR NOT NULL UNIQUE", "url        VARCHAR NOT NULL"],
+    hint: `d1-ex-same-url should fail after your answer with "PRIMARY KEY or UNIQUE constraint violation", but it ran without an error.`,
+  },
+  {
+    drop: ["species_id INTEGER NOT NULL REFERENCES species (id)", "species_id INTEGER NOT NULL"],
+    hint: `d1-ex-no-species should fail after your answer with "Violates foreign key constraint", but it ran without an error.`,
+  },
+  {
+    drop: ["license    VARCHAR NOT NULL CHECK (license LIKE 'CC%' OR license = 'Public domain')", "license    VARCHAR NOT NULL"],
+    hint: `d1-ex-license should fail after your answer with "CHECK constraint failed", but it ran without an error.`,
+  },
+];
+
+test("d1-ex: a table missing a unique, foreign key or CHECK constraint is rejected by that constraint's probe", async ({ browser }) => {
+  const c = await readCourse();
+  const d1 = c.curriculum!.modules.find((m) => m.id === "d1")!;
+  const { context, offOrigin } = await learnContext(browser);
+  const page = await context.newPage();
+  await page.goto(moduleUrl(d1));
+  await waitReady(page);
+  const block = page.locator("#q-d1-ex");
+  const verdict = block.locator(".verdict");
+  for (const { drop: [from, to], hint } of D1_MISSING) {
+    expect(D1_TABLE).toContain(from);
+    await block.locator("textarea").fill(D1_TABLE.replace(from, to) + D1_FILL);
+    await runBlock(block);
+    await expect(verdict).toHaveText(hint);
+    await expect(verdict).toHaveAttribute("data-ok", "false");
+  }
+  await block.locator("textarea").fill(D1_TABLE + D1_FILL);
+  await runBlock(block);
+  await expect(verdict).toHaveText("Correct.");
   expect(offOrigin).toEqual([]);
   await context.close();
 });

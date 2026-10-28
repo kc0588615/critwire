@@ -1947,9 +1947,9 @@ Six modules, twelve hours: how to design the tables the foundations queried, and
 **Tool:** B (browser) + PG · **Time:** 2.0 h · **Prereqs:** f3
 
 **Concept:** An **entity** is a kind of thing a database keeps facts about, each one with its own identity: an animal, a country, a dataset, a record. Each entity becomes a table, and each table needs a **key**: a column, or a set of columns, whose value picks out exactly one row.
-- A table can have several **candidate keys**. `species` has `id`, `slug`, `scientific_name` and six ids from other websites. The one picked as the main key is the **primary key**: never `NULL`, never repeated. The others are **alternate keys**, declared `UNIQUE`.
+- A table can have several **candidate keys**: columns, or sets of columns, that are never `NULL` and never repeated, so each one picks out every row. `species` has three: `id`, `slug` and `scientific_name`. The one picked as the main key is the **primary key**. The others are **alternate keys**, declared `NOT NULL` and `UNIQUE`. `species` also has six ids from other websites, declared `UNIQUE` too. Some animals have none of a given kind, so these are **optional unique ids**, not candidate keys: an id that is missing can't pick out its row.
 - A **natural key** is one the world already uses: a scientific name, a country's ISO code, GBIF's dataset key. A **surrogate key** is a number the database makes up and that means nothing else: critwire's `species.id`. Natural keys change (a species moves to another genus, a name turns out to be a synonym), and every row that points at one has to change with it; a surrogate never has to. critwire uses both: `id` (an integer, never reused) is the primary key, and the natural keys are `UNIQUE`. A natural key makes a good primary key when an authority keeps it stable and it is never missing: `countries.code` (ISO 3166-1) and `datasets.dataset_key` (GBIF's identifier) are primary keys here.
-- `UNIQUE` allows any number of `NULL`s, because one unknown value isn't equal to another: animals with no NCBI id don't collide. That is why an outside id can be an alternate key but not the primary key.
+- `UNIQUE` allows any number of `NULL`s, because one unknown value isn't equal to another: animals with no NCBI id don't collide. That is why an outside id can be an optional unique id, but not a candidate key, let alone the primary key.
 - A **foreign key** says a column's value must be a key of another table: `occurrences.species_id REFERENCES species (id)`. It checks two things. A value that is inserted or changed must exist in the other table, or be `NULL`. And a row that other rows still point at can't be deleted or given another key, unless the foreign key says what to do instead (`ON DELETE CASCADE` deletes the children too, `ON DELETE SET NULL` empties their column). That is all it checks: not that the value is the right one, not rules that span rows, and with a key of two columns, a row with one of them `NULL` isn't checked at all (`MATCH SIMPLE`, the default). PostgreSQL also doesn't index the referencing column for you (d3).
 - A **`CHECK`** is a condition every row must meet, such as `month BETWEEN 1 AND 12`. It refuses a row only when the condition is false. When it is `NULL` (unknown, f1) the row passes, so a `CHECK` doesn't replace `NOT NULL`. A `CHECK` can compare columns of the same row: `taxa`'s says a class has no parent and every other rank has one.
 - A **generated column** is computed from other columns of its row and can't be written directly. The lab's `occurrences.geom` is the point made from `longitude` and `latitude`, so the point and the two numbers can never disagree.
@@ -1992,7 +1992,7 @@ VALUES (25, 'siberian-tiger', 'Panthera tigris altaica', 'Siberian Tiger', 'Pant
 -- result: d1-same-id · error: statement 1 of 1: Constraint Error: Duplicate key "id: 25" violates primary key constraint.
 ```
 
-A new id doesn't get a row past the alternate keys either. A Bengal tiger with its own id but given the tiger's GBIF id is refused by `UNIQUE (gbif_id)`: in critwire, one GBIF id names one animal.
+A new id doesn't get a row past the other unique columns either. A Bengal tiger with its own id but given the tiger's GBIF id is refused by `UNIQUE (gbif_id)`. That one GBIF id names one animal is true of critwire's animals, and critwire's build checks it (two animals sharing an outside id fail it); it isn't a rule of GBIF's. A project that lists subspecies could have two animals under one GBIF taxon, and then the column couldn't be `UNIQUE`.
 
 ```sql
 -- q: d1-same-gbif
@@ -2104,7 +2104,7 @@ VALUES ('Dracula', 'genus', NULL);
 -- result: d1-check-taxa · error: statement 1 of 1: Constraint Error: CHECK constraint failed on table taxa with expression CHECK(((taxon_rank = 'class') = (parent_name IS NULL)))
 ```
 
-4. What does a foreign key refuse? An animal in a genus critwire doesn't have (002's lesson 7 exercise): `species.genus` must be a `name` in `taxa`.
+4. What does a foreign key refuse? An animal in a genus critwire doesn't have (002's lesson 7 exercise): `species.genus` must be a `name` in `taxa`. Only a name: the foreign key would take a family's name as well (step 7).
 
 ```sql
 -- q: d1-fk-genus
@@ -2165,7 +2165,44 @@ id | country_code | point | in_its_country | point_is_in
 1 | AU | POINT(-47.9 -15.8) | false | BR
 ```
 
-7. PostgreSQL builds an index for every primary key and `UNIQUE` constraint, because it needs one to check them. It doesn't for a foreign key: checking a new record needs only the parent's key, which is indexed already. But deleting a parent, or joining from it, has to find the children, and with no index on `occurrences.species_id` that means reading the whole table (d3). Which of `occurrences`' keys have an index that starts with their column?
+7. Nor does `species.genus REFERENCES taxa (name)` check that the name is a genus: `Felidae`, a family, would pass. A `CHECK` can't help, because it sees only its own row. A foreign key over two columns can. Give `taxa` a `UNIQUE (name, taxon_rank)` to point at, give `species` a rank column that can only say `genus`, and point the pair at the pair. Both columns are `NOT NULL`, so the key checks every row (`MATCH SIMPLE` skips a pair with a `NULL` in it). Adding the key checks the rows already there, and all 76 animals pass:
+
+```sql
+-- q: d1-rank-fk
+-- status: ran
+-- engine: postgis
+ALTER TABLE taxa ADD CONSTRAINT taxa_name_rank_key UNIQUE (name, taxon_rank);
+ALTER TABLE species
+  ADD COLUMN genus_rank text NOT NULL DEFAULT 'genus' CHECK (genus_rank = 'genus'),
+  ADD CONSTRAINT species_genus_rank_fkey FOREIGN KEY (genus, genus_rank) REFERENCES taxa (name, taxon_rank);
+SELECT genus_rank, count(*) AS species
+FROM species
+GROUP BY genus_rank;
+```
+
+```text
+-- result: d1-rank-fk · 1 row · sha256 d6883c437319
+genus_rank | species
+genus | 76
+```
+
+   Then moving the tiger into the family Felidae is refused:
+
+```sql
+-- q: d1-rank-wrong
+-- status: ran
+-- engine: postgis
+-- after: d1-rank-fk
+-- expect: error violates foreign key constraint "species_genus_rank_fkey"
+UPDATE species SET genus = 'Felidae' WHERE id = 25;
+```
+
+```text
+-- result: d1-rank-wrong · error: statement 1 of 1: insert or update on table "species" violates foreign key constraint "species_genus_rank_fkey"
+```
+
+   `taxa`'s own `parent_name` can be held to the rank one up the same way: a `parent_rank` column whose `CHECK` ties it to the row's rank, and a foreign key from `(parent_name, parent_rank)`. No trigger is needed. The lab tables don't carry these keys; the lab's load checks every rank and parent instead (§4.3).
+8. PostgreSQL builds an index for every primary key and `UNIQUE` constraint, because it needs one to check them. It doesn't for a foreign key: checking a new record needs only the parent's key, which is indexed already. But deleting a parent, or joining from it, has to find the children, and with no index on `occurrences.species_id` that means reading the whole table (d3). Which of `occurrences`' keys have an index that starts with their column?
 
 ```sql
 -- q: d1-fk-index
@@ -2192,7 +2229,7 @@ occurrences_dataset_key_fkey | FOREIGN KEY | dataset_key | false
 occurrences_species_id_fkey | FOREIGN KEY | species_id | false
 ```
 
-8. The generated column, as the catalog describes it; then an attempt to write it, refused:
+9. The generated column, as the catalog describes it; then an attempt to write it, refused:
 
 ```sql
 -- q: d1-generated
@@ -2225,7 +2262,7 @@ WHERE id = (SELECT min(id) FROM occurrences);
 -- result: d1-generated-write · error: statement 1 of 1: column "geom" can only be updated to DEFAULT
 ```
 
-9. A surrogate key made by the database. `GENERATED ALWAYS AS IDENTITY` numbers the rows as they go in. A surrogate key alone would accept the same note twice under two numbers, so the natural key, (animal, observer, day), is declared `UNIQUE` beside it:
+10. A surrogate key made by the database. `GENERATED ALWAYS AS IDENTITY` numbers the rows as they go in. A surrogate key alone would accept the same note twice under two numbers, so the natural key, (animal, observer, day), is declared `UNIQUE` beside it:
 
 ```sql
 -- q: d1-identity
@@ -2267,7 +2304,7 @@ VALUES (48, 'Ana', DATE '2026-03-14');
 -- result: d1-identity-twice · error: statement 1 of 1: duplicate key value violates unique constraint "field_notes_species_id_observer_seen_on_key"
 ```
 
-**Result:** Every key refused what it should: a second animal with id 25 or with the tiger's GBIF id, a month of 13, a genus with no parent, an animal in a genus that doesn't exist, the deletion of a dataset its records still point at, a write to a generated column and the same field note twice. What got through is as instructive: a record with no month and no country (a `CHECK` and a foreign key both pass `NULL`), and a record that says Australia while its point is in Brazil (a foreign key checks that a value exists, not that it is true). `occurrences`' primary key is indexed and its three foreign keys aren't. critwire's design follows from this: a surrogate primary key, the natural keys `UNIQUE` (some outside ids are missing, and four names already changed in GBIF's eyes), and natural primary keys only where an authority keeps them stable (`countries`, `datasets`).
+**Result:** Every key refused what it should: a second animal with id 25 or with the tiger's GBIF id, a month of 13, a genus with no parent, an animal in a genus that doesn't exist, a genus that is a family once a two-column foreign key checked the rank, the deletion of a dataset its records still point at, a write to a generated column and the same field note twice. What got through is as instructive: a record with no month and no country (a `CHECK` and a foreign key both pass `NULL`), and a record that says Australia while its point is in Brazil (a foreign key checks that a value exists, not that it is true). `occurrences`' primary key is indexed and its three foreign keys aren't. critwire's design follows from this: a surrogate primary key, the natural keys `NOT NULL` and `UNIQUE`, the outside ids `UNIQUE` but optional (some are missing, and four names already changed in GBIF's eyes), and natural primary keys only where an authority keeps them stable (`countries`, `datasets`).
 
 **Exercise:** critwire keeps one photo per animal, in `species`. Design a table `species_photos` that can hold several: a surrogate `photo_id`; the animal (`species_id`, an animal critwire has); a `url` no other photo has; a `license` that is a Creative Commons license (it starts with `CC`) or `Public domain`; and a `credit` that is filled in and not empty. Create it in the browser, copy in every animal's current photo (`photo_url`, `photo_license`, `photo_credit`, numbered by species id), and count the photos, the animals and the licenses.
 

@@ -1,0 +1,1 @@
+-- result: d1-ex-license · error: statement 1 of 1: Constraint Error: CHECK constraint failed on table species_photos with expression CHECK(((license ~~ 'CC%') OR (license = 'Public domain')))

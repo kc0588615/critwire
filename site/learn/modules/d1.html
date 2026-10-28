@@ -1,0 +1,77 @@
+<p class="lead">Decide what makes a row the row it is, and let the database refuse what breaks the rules: primary, alternate and foreign keys, <code>UNIQUE</code>, <code>CHECK</code> and generated columns. The first part runs in this browser, on the tables <a href="/learn/schema/">the Schema page</a> describes; the last part runs in your own PostgreSQL (<a href="/learn/setup/">the setup page</a>).</p>
+
+<h2>Concept</h2>
+<p>An <strong>entity</strong> is a kind of thing a database keeps facts about, each one with its own identity: an animal, a country, a dataset, a record. Each entity becomes a table, and each table needs a <strong>key</strong>: a column, or a set of columns, whose value picks out exactly one row.</p>
+<ul>
+<li>A table can have several <strong>candidate keys</strong>: columns, or sets of columns, that are never <code>NULL</code> and never repeated, so each one picks out every row. <code>species</code> has three: <code>id</code>, <code>slug</code> and <code>scientific_name</code>. The one picked as the main key is the <strong>primary key</strong>. The others are <strong>alternate keys</strong>, declared <code>NOT NULL</code> and <code>UNIQUE</code>. <code>species</code> also has six ids from other websites, declared <code>UNIQUE</code> too. Some animals have none of a given kind, so these are <strong>optional unique ids</strong>, not candidate keys: an id that is missing can't pick out its row.</li>
+<li>A <strong>natural key</strong> is one the world already uses: a scientific name, a country's ISO code, GBIF's dataset key. A <strong>surrogate key</strong> is a number the database makes up and that means nothing else: critwire's <code>species.id</code>. Natural keys change (a species moves to another genus, a name turns out to be a synonym), and every row that points at one has to change with it; a surrogate never has to. critwire uses both: <code>id</code> (an integer, never reused) is the primary key, and the natural keys are <code>UNIQUE</code>. A natural key makes a good primary key when an authority keeps it stable and it is never missing: <code>countries.code</code> (ISO 3166-1) and <code>datasets.dataset_key</code> (GBIF's identifier) are primary keys here.</li>
+<li><code>UNIQUE</code> allows any number of <code>NULL</code>s, because one unknown value isn't equal to another: animals with no NCBI id don't collide. That is why an outside id can be an optional unique id, but not a candidate key, let alone the primary key.</li>
+<li>A <strong>foreign key</strong> says a column's value must be a key of another table: <code>occurrences.species_id REFERENCES species (id)</code>. It checks two things. A value that is inserted or changed must exist in the other table, or be <code>NULL</code>. And a row that other rows still point at can't be deleted or given another key, unless the foreign key says what to do instead (<code>ON DELETE CASCADE</code> deletes the children too, <code>ON DELETE SET NULL</code> empties their column). That is all it checks: not that the value is the right one, not rules that span rows, and with a key of two columns, a row with one of them <code>NULL</code> isn't checked at all (<code>MATCH SIMPLE</code>, the default). PostgreSQL also doesn't index the referencing column for you (Indexes and query plans, d3, in preparation).</li>
+<li>A <strong><code>CHECK</code></strong> is a condition every row must meet, such as <code>month BETWEEN 1 AND 12</code>. It refuses a row only when the condition is false. When it is <code>NULL</code> (unknown, <a href="/learn/foundations/select/">Select and filter, f1</a>) the row passes, so a <code>CHECK</code> doesn't replace <code>NOT NULL</code>. A <code>CHECK</code> can compare columns of the same row: <code>taxa</code>'s says a class has no parent and every other rank has one.</li>
+<li>A <strong>generated column</strong> is computed from other columns of its row and can't be written directly. The lab's <code>occurrences.geom</code> is the point made from <code>longitude</code> and <code>latitude</code>, so the point and the two numbers can never disagree.</li>
+<li>Foreign keys set the order of a load: a parent row goes in before its children (the browser setup inserts <code>taxa</code> one rank at a time, top down), and out after them.</li>
+</ul>
+
+<h2>Worked example</h2>
+<p>Can two animals share an id? The standard view <code>information_schema.table_constraints</code> lists a table's constraints. DuckDB also lists each <code>NOT NULL</code> rule, as a <code>CHECK</code>; this query leaves those out:</p>
+{{block:d1-constraints}}
+<p>Try to add a second animal with the tiger's id, 25. <code>INSERT INTO</code> adds a row: the columns in brackets, then their values in the same order. The database refuses, and nothing is added:</p>
+{{block:d1-same-id}}
+<p>A new id doesn't get a row past the other unique columns either. A Bengal tiger with its own id but given the tiger's GBIF id is refused by <code>UNIQUE (gbif_id)</code>. That one GBIF id names one animal is true of critwire's animals, and critwire's build checks it (two animals sharing an outside id fail it); it isn't a rule of GBIF's. A project that lists subspecies could have two animals under one GBIF taxon, and then the column couldn't be <code>UNIQUE</code>.</p>
+{{block:d1-same-gbif}}
+<p>Why not use an outside id as the primary key? Some are missing, and <code>UNIQUE</code> lets the <code>NULL</code>s sit side by side:</p>
+{{block:d1-missing-ids}}
+<p>And the scientific name? Names change. These four animals' GBIF ids are synonyms in GBIF's backbone: GBIF files their records under another, accepted name (<a href="/learn/data/">the lab data page</a>).</p>
+{{block:d1-synonyms}}
+<p>Had <code>scientific_name</code> been the primary key, following such a change would mean rewriting it in <code>species</code>, <code>species_sources</code>, <code>species_countries</code> and every record. With <code>id</code> as the key it is one <code>UPDATE</code> of one row, and every foreign key still points at the right animal.</p>
+
+<h2>Lab</h2>
+<ol class="steps">
+<li><p>What does a <code>CHECK</code> refuse? A record with month 13 (a copy of the first devil record, with a new id and the month changed):</p>
+{{block:d1-check-month}}</li>
+<li><p>The same record with no month and no country goes in. <code>month BETWEEN 1 AND 12</code> is unknown for <code>NULL</code>, and a <code>CHECK</code> passes unknown; a foreign key passes <code>NULL</code> too. Most of the time that is what you want (many records really have no month), but if a value must be there, the column needs <code>NOT NULL</code> as well.</p>
+{{block:d1-check-null}}</li>
+<li><p>A <code>CHECK</code> across two columns: a genus must have a parent.</p>
+{{block:d1-check-taxa}}</li>
+<li><p>What does a foreign key refuse? An animal in a genus critwire doesn't have: <code>species.genus</code> must be a <code>name</code> in <code>taxa</code>. Only a name: the foreign key would take a family's name as well (step 7).</p>
+{{block:d1-fk-genus}}
+<p>The rest of the lab runs in PostgreSQL (<a href="/learn/setup/">the setup page</a>), on the same tables.</p></li>
+<li><p>A foreign key also protects the parent. Deleting the dataset with the most records in the sample would leave its records pointing at nothing, so PostgreSQL refuses:</p>
+{{block:d1-fk-delete}}</li>
+<li><p>What doesn't a foreign key check? Whether the value is the right one. This copy of a devil record says Australia (<code>AU</code> is a <code>countries</code> row, so the foreign key is satisfied) but sits at Brasília. The point is the generated column, made from the longitude and latitude just inserted, so a spatial test can catch what the key can't (Spatial joins, g3, in preparation, does this for every record):</p>
+{{block:d1-fk-wrong}}</li>
+<li><p>Nor does <code>species.genus REFERENCES taxa (name)</code> check that the name is a genus: <code>Felidae</code>, a family, would pass. A <code>CHECK</code> can't help, because it sees only its own row. A foreign key over two columns can. Give <code>taxa</code> a <code>UNIQUE (name, taxon_rank)</code> to point at, give <code>species</code> a rank column that can only say <code>genus</code>, and point the pair at the pair. Both columns are <code>NOT NULL</code>, so the key checks every row (<code>MATCH SIMPLE</code> skips a pair with a <code>NULL</code> in it). Adding the key checks the rows already there, and all 76 animals pass:</p>
+{{block:d1-rank-fk}}
+<p>Then moving the tiger into the family Felidae is refused:</p>
+{{block:d1-rank-wrong}}
+<p><code>taxa</code>'s own <code>parent_name</code> can be held to the rank one up the same way: a <code>parent_rank</code> column whose <code>CHECK</code> ties it to the row's rank, and a foreign key from <code>(parent_name, parent_rank)</code>. No trigger is needed. The lab tables don't carry these keys; the lab file checks every rank and parent as it loads (<a href="/learn/setup/">the setup page</a>).</p></li>
+<li><p>PostgreSQL builds an index for every primary key and <code>UNIQUE</code> constraint, because it needs one to check them. It doesn't for a foreign key: checking a new record needs only the parent's key, which is indexed already. But deleting a parent, or joining from it, has to find the children, and with no index on <code>occurrences.species_id</code> that means reading the whole table (d3). Which of <code>occurrences</code>' keys have an index that starts with their column?</p>
+{{block:d1-fk-index}}</li>
+<li><p>The generated column, as the catalog describes it; then an attempt to write it, refused:</p>
+{{block:d1-generated}}
+{{block:d1-generated-write}}</li>
+<li><p>A surrogate key made by the database. <code>GENERATED ALWAYS AS IDENTITY</code> numbers the rows as they go in. A surrogate key alone would accept the same note twice under two numbers, so the natural key, (animal, observer, day), is declared <code>UNIQUE</code> beside it:</p>
+{{block:d1-identity}}
+{{block:d1-identity-twice}}</li>
+</ol>
+
+<h2>Result</h2>
+<p>Every key refused what it should: a second animal with id 25 or with the tiger's GBIF id, a month of 13, a genus with no parent, an animal in a genus that doesn't exist, a genus that is a family once a two-column foreign key checked the rank, the deletion of a dataset its records still point at, a write to a generated column and the same field note twice. What got through is as instructive: a record with no month and no country (a <code>CHECK</code> and a foreign key both pass <code>NULL</code>), and a record that says Australia while its point is in Brazil (a foreign key checks that a value exists, not that it is true). <code>occurrences</code>' primary key is indexed and its three foreign keys aren't. critwire's design follows from this: a surrogate primary key, the natural keys <code>NOT NULL</code> and <code>UNIQUE</code>, the outside ids <code>UNIQUE</code> but optional (some are missing, and four names already changed in GBIF's eyes), and natural primary keys only where an authority keeps them stable (<code>countries</code>, <code>datasets</code>).</p>
+
+<h2>Exercise</h2>
+<p>critwire keeps one photo per animal, in <code>species</code>. Design a table <code>species_photos</code> that can hold several: a surrogate <code>photo_id</code>; the animal (<code>species_id</code>, an animal critwire has); a <code>url</code> no other photo has; a <code>license</code> that is a Creative Commons license (it starts with <code>CC</code>) or <code>Public domain</code>; and a <code>credit</code> that is filled in and not empty. Create it in the browser, copy in every animal's current photo (<code>photo_url</code>, <code>photo_license</code>, <code>photo_credit</code>, numbered by species id), and count the photos, the animals and the licenses.</p>
+{{exercise:d1-ex}}
+<p>Then each of these must be refused by your table: the axolotl's photo again, a photo of an animal critwire doesn't have, and a photo with no license to reuse.</p>
+{{block:d1-ex-same-url}}
+{{block:d1-ex-no-species}}
+{{block:d1-ex-license}}
+
+<h2>Check</h2>
+<p>Your counts must equal the answer's, in any row order. Then the page runs the three inserts above after your answer, and each must fail with the error named (unique, foreign key, <code>CHECK</code>), whatever you named your constraints. Check runs on the tables as loaded, so if you changed them in the playground, Reset database first.</p>
+
+<h2>Dialects</h2>
+<ul>
+<li><strong>PostgreSQL:</strong> as here, with surrogate keys from <code>GENERATED ALWAYS AS IDENTITY</code> (or the older <code>serial</code>); generated columns are <code>STORED</code> only (virtual ones come in PostgreSQL 18); foreign keys take <code>ON DELETE CASCADE | SET NULL | RESTRICT</code>, can be <code>DEFERRABLE</code> (checked at commit), and can be added <code>NOT VALID</code> and checked later with <code>VALIDATE CONSTRAINT</code>; <code>UNIQUE NULLS NOT DISTINCT</code> makes <code>NULL</code>s collide; no automatic index on a foreign key.</li>
+<li><strong>DuckDB</strong> (this page's browser engine): keys as here, but foreign keys only in <code>CREATE TABLE</code>, with no <code>CASCADE</code> or <code>SET NULL</code> actions; no identity columns (a <code>CREATE SEQUENCE</code> and <code>DEFAULT nextval('…')</code> do it); generated columns are virtual only; primary keys and <code>UNIQUE</code> build an index, which also makes bulk loads into keyed tables slower.</li>
+<li><strong>SQL Server:</strong> <code>IDENTITY(1, 1)</code> for surrogates; computed columns (<code>AS (…)</code>, <code>PERSISTED</code> to store them); a <code>UNIQUE</code> constraint allows only one <code>NULL</code> (a filtered unique index, <code>WHERE col IS NOT NULL</code>, allows many); foreign keys take <code>ON DELETE CASCADE | SET NULL</code>, and <code>NOCHECK</code> turns one off, which leaves it untrusted until it is re-checked; <code>CHECK</code> passes unknown, as here.</li>
+</ul>
