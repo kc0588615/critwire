@@ -1,6 +1,10 @@
 // The network entry point for reads (ingest, gbif:register). Sequential, paced (≤ 2 req/s), retried with backoff, one
 // stderr line per attempt. gbif:register's single POST uses fetch itself (never retried) with USER_AGENT and logRequest.
 import { createHash } from "node:crypto";
+import { createWriteStream } from "node:fs";
+import { rm } from "node:fs/promises";
+import { Readable, Transform } from "node:stream";
+import { pipeline } from "node:stream/promises";
 
 export const USER_AGENT = "critwire-ingest/1.0 (+https://critwire.com; https://github.com/kc0588615/critwire)";
 const MIN_GAP_MS = 500;
@@ -30,9 +34,10 @@ export const fetchFailure = (error: unknown) =>
 
 export interface GetJsonInit extends RequestInit { timeoutMs?: number }
 
-// One paced, retried request; returns the 200 body. Retries network errors, timeouts, 429 and 5xx (5 attempts, backoff
-// 1, 2, 4, 8 s); any other status throws at once.
-async function getOk(url: string, accept: string, { timeoutMs = DEFAULT_TIMEOUT_MS, ...init }: GetJsonInit): Promise<Uint8Array> {
+// One paced, retried request; returns `read` of the 200 response (default: the body). Retries network errors (also
+// while `read` streams the body), timeouts, 429 and 5xx (5 attempts, backoff 1, 2, 4, 8 s); any other status throws at once.
+async function getOk<T = Uint8Array>(url: string, accept: string, { timeoutMs = DEFAULT_TIMEOUT_MS, ...init }: GetJsonInit,
+  read: (res: Response) => Promise<T> = async (res) => new Uint8Array(await res.arrayBuffer()) as T): Promise<T> {
   const method = init.method ?? "GET";
   const headers = { "User-Agent": USER_AGENT, Accept: accept, ...(init.headers as Record<string, string>) };
   const text = (body: Uint8Array) => new TextDecoder().decode(body).slice(0, 300);
@@ -42,11 +47,13 @@ async function getOk(url: string, accept: string, { timeoutMs = DEFAULT_TIMEOUT_
     let status: number | string;
     let retryAfter: number | null = null;
     let body = new Uint8Array();
+    let result: { value: T } | undefined;
     try {
       const res = await fetch(url, { ...init, method, headers, signal: AbortSignal.timeout(timeoutMs) });
       status = res.status;
-      body = new Uint8Array(await res.arrayBuffer());
       retryAfter = retryAfterMs(res.headers.get("retry-after"));
+      if (status === 200) result = { value: await read(res) };
+      else body = new Uint8Array(await res.arrayBuffer());
     } catch (error) {
       status = fetchFailure(error);
     }
@@ -57,8 +64,8 @@ async function getOk(url: string, accept: string, { timeoutMs = DEFAULT_TIMEOUT_
       await sleep(retryAfter ?? 1000 * 2 ** (attempt - 1));
       continue;
     }
-    if (status !== 200) throw new Error(`${method} ${url}: HTTP ${status}: ${text(body)}`);
-    return body;
+    if (!result) throw new Error(`${method} ${url}: HTTP ${status}: ${text(body)}`);
+    return result.value;
   }
 }
 
@@ -80,4 +87,27 @@ export async function getBytes(url: string, { sha256, ...init }: GetBytesInit): 
   const got = createHash("sha256").update(body).digest("hex");
   if (got !== sha256) throw new Error(`${init.method ?? "GET"} ${url}: sha256 ${got} ≠ pinned ${sha256}`);
   return body;
+}
+
+export interface DownloadInit extends GetJsonInit { sha256: string; bytes: number }
+
+// Streams a pinned file to `path` (getOk's retries), hashing as it writes. Throws unless the file's sha256 and size
+// equal the pins; on any failure no file is left at `path`.
+export async function downloadFile(url: string, path: string, { sha256, bytes, ...init }: DownloadInit): Promise<void> {
+  try {
+    const got = await getOk(url, "*/*", init, async (res) => {
+      if (!res.body) throw new Error("no body");
+      const hash = createHash("sha256");
+      let size = 0;
+      const tap = new Transform({ transform(chunk: Buffer, _enc, done) { hash.update(chunk); size += chunk.length; done(null, chunk); } });
+      await pipeline(Readable.fromWeb(res.body as import("node:stream/web").ReadableStream), tap, createWriteStream(path));
+      return { sha256: hash.digest("hex"), bytes: size };
+    });
+    const method = init.method ?? "GET";
+    if (got.bytes !== bytes) throw new Error(`${method} ${url}: ${got.bytes} bytes ≠ pinned ${bytes}`);
+    if (got.sha256 !== sha256) throw new Error(`${method} ${url}: sha256 ${got.sha256} ≠ pinned ${sha256}`);
+  } catch (error) {
+    await rm(path, { force: true });
+    throw error;
+  }
 }

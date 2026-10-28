@@ -1,9 +1,11 @@
 // Usage: pnpm ingest <source>. Each source fetches everything first and writes only after every request succeeded
 // (the old files stay on failure). Request log goes to stderr.
 // Snapshot sources write data/raw/<source>/snapshot.json; wikidata, col and gbif read base.json for the species.
+// shapes writes data/learn/'s shape files and shapes.json (scripts/ingest/shapes.ts; needs pnpm learn:venv).
 import { fetchCol } from "./ingest/col.ts";
 import { fetchGbif } from "./ingest/gbif.ts";
 import { fetchNaturalEarth } from "./ingest/naturalearth.ts";
+import { ingestShapes } from "./ingest/shapes.ts";
 import { fetchWikidata } from "./ingest/wikidata.ts";
 import { readJson } from "./json.ts";
 import { utcDate, writeSnapshot, type Snapshots, type Source } from "./raw.ts";
@@ -32,6 +34,7 @@ const sources: Record<string, () => Promise<void>> = {
   col: snapshot("col", withBase(fetchCol)),
   gbif: snapshot("gbif", withBase(fetchGbif)),
   naturalearth: snapshot("naturalearth", fetchNaturalEarth),
+  shapes: ingestShapes,
 };
 
 const source = process.argv[2];
