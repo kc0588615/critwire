@@ -1078,6 +1078,13 @@ All three checked against the code and agreed real; fixes are S29–S31.
 
 ## Release
 
+- Rebase: none needed (branch already contained `origin/main`). Full Verification 1–9 re-run on 39bf5be: B ok (40,041,618 / 13,677,679 B), E 80/80 (0 unexpected/skipped/flaky, 80 traces, `$M/e2e/`), typecheck ok, test 549/549, test:db 110/110, learn:check ×2 exit 0 (75 PostGIS blocks, tree clean, canary same, leak empty), parity 288 files, erd clean, H 169 ok + manifest same, dist reproducible (224). Logs `$M/release-verify/`.
+- PR #11 (https://github.com/kc0588615/critwire/pull/11) merged: `6093a23932361d6b12cacf82d7cd94b49aca7d5d`.
+- `deploy critwire` last line: `deploy critwire: live at https://critwire.com` (log `$M/release-deploy.log`). Live `dist/` = `.live/` = this build's 224 hashes.
+- Smoke (`L` = https://critwire.com): `$L/` links `/learn/`; `playwright.release.config.ts` 3/3 (every dist file served with dist's bytes, pages at folder URLs, incl. `/learn/` pages, assets, labs, SVGs, manifest, `star/`, `/v1`, L1 data; `.wasm` = `application/wasm`; f3's first block = recorded result), artifact `$M/release-smoke/`, log `$M/release-smoke.log`; live `learn_curriculum.sql` loaded with ON_ERROR_STOP (ends `COMMIT`), live `d3.sql` 0 `ERROR:` lines (announced: none), leak query empty (`$M/release-load.log`, `$M/release-d3.log`).
+
+Result: done
+
 ## Decisions
 
 - 2026-10-28 · Steps stage: planner reordered W1–W25 into S1–S28 (content unchanged): `curriculum.json` + checks W11→S2 (page order needs them); runner finished on fixtures (S3, S4) before §0's blocks run live (S5; L1's `pg-role-smoke.sql` would refuse them earlier); setup (S5) and d6 (S9) pages start as slot-only skeletons, prose in S15/S24, modules `planned` until their page lands; layout moves to S11 (first playground needs it); module template S13 before map S14 (map never links a missing page); "three pages, one engine start" E2E moves to S16. No lint script in package.json: typecheck is the static check. Drop order: S28 (tbls), then S22 (sessions runner).
@@ -1159,6 +1166,7 @@ All three checked against the code and agreed real; fixes are S29–S31.
 - 2026-10-28 21:42 UTC · S30: `module.ts`: the page's `.mark-done` captured at init and passed to `markModuleDone`; a check settling after `signal` aborted is dropped (no hook, verdict or done). E2E "a skip check left running when the learner moves to the next module marks neither module done" (f1: slow query holds the queue, f1-skip queued, next → f2, f2-count settles after), red 1 (f2 marked done) → green 1. T: typecheck ok, test 549/549; B ok; E 79/79, 0 unexpected/skipped/flaky (`$M/e2e-s30`); H 169 equal.
 - 2026-10-28 21:55 UTC · S31: `engine.ts` keeps each unsettled run's reject; `restart` rejects every running and queued run with `Superseded` (terminate() leaves them pending); a lost transaction's restart waits for its own run to settle, so that run keeps its error; `editor.ts`: a run another editor's Stop/Reset overtook re-enables, clears its hook result and says "restarted before this run finished". E2E "Reset from one editor settles the others' running and queued runs" (f1: runaway in f1-unknown, f1-taxonomy queued, Reset from f1-no-photo), red 1 (f1-unknown stayed busy) → green 1. T: typecheck ok, test 549/549; B ok; E 80/80, 0 unexpected/skipped/flaky (`$M/e2e-s31`); H 169 equal.
 - 2026-10-28 22:25 UTC · Verification (1–9) on bfb0c09: install up to date, pins 1.33.1-dev65.0 / 0.28.2 / 12.2.0; B ok (dist/learn/data 40,041,618 B, committed lab data 13,677,679 B); E 80/80, 0 unexpected/skipped/flaky, 80 traces, artifact `$M/e2e/`, setup median 3,388 ms (limit 4,350); typecheck ok, test 549/549, test:db 110/110 (after LC5 harness fix, Decisions), leak query empty; learn:check twice exit 0 (PG 16.15 / PostGIS 3.4.2 / GEOS 3.12.1 = checked.json, 76 PostGIS blocks ok, 6 downloads with announced ERRORs only), tree clean, canary diff empty, leak empty; P 11 pages, 288 files equal 004; erd up to date; H 169 equal, manifest diff empty; determinism 224 files equal across two builds. Summary written, status done.
+- 2026-10-28 22:45 UTC · Release: Verification 1–9 re-run green on 39bf5be (E 80/80, test 549/549, test:db 110/110, learn:check ×2 ok); PR #11 merged (6093a23); `deploy critwire` ok; live smoke 3/3 + live loader/d3.sql clean, leak empty. Result: done.
 
 ## Summary
 
@@ -1181,7 +1189,7 @@ All three checked against the code and agreed real; fixes are S29–S31.
 - d6: `d6-scd2` split (`d6-scd2-versions` check `0 | 0`, then `d6-scd2`), column `filed_then` → `name_then`; §6.3 sharing (`dim_species` shared by the two species facts).
 - §0, §7.5–7.7 aligned with the code (runners, headers, freshness, screenshots, release smoke). Module titles written fresh (004 had slugs only).
 
-**Release:** see `## Release` (next unit).
+**Release:** PR #11 merged (6093a23), deployed, live smoke all green (`## Release`).
 
 **For L3** (critwire-learn-l3-gis):
 - New modules: port with `pnpm learn:port <id>`, write `modules/<id>.html`, set `built` in `curriculum.json`, then `pnpm build --draft && pnpm learn:check --update && pnpm build && pnpm e2e`; a result that differs from 004 is a bug first. 004 §0's spike is still the only run of g1–g7's blocks.
