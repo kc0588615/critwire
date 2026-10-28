@@ -1,0 +1,3 @@
+-- result: d4-xmin-load · 1 row · sha256 e8f1ca79813b
+transactions | row_versions
+1 | 43844

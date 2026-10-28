@@ -1,0 +1,1 @@
+-- result: d4-no-arbiter · error: statement 1 of 1: there is no unique or exclusion constraint matching the ON CONFLICT specification

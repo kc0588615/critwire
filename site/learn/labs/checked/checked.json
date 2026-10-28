@@ -138,6 +138,62 @@
       "key": "17eabf9ae816f3cc35a6ef320b7026067ad4e4843b7fe86efc61d9174b0393fc",
       "result": "0fb91750f60654b86f91f5cbc634f0c86271b7e4d34869b879215701a94d2930"
     },
+    "d4-autocommit": {
+      "key": "b509ee95a10b4688f6f576bf7d14108169d6b0a75826bd7f9c6b15fa2c595593",
+      "result": "bdc394b25ed627505b31a3a60449d59219052102ac2bbb0cb32e8f6bc339612a"
+    },
+    "d4-do-nothing": {
+      "key": "66f540da8b65de44c9817af917851d234380cef2e32f8c7a9e73edde9606909a",
+      "result": "726fd6abffe6687889a8880403e255545cbd3be67a829abcb71ad749307c007e"
+    },
+    "d4-do-update": {
+      "key": "d8be607cc95cdea58acc957d0f9d06b38ab3c2694fe69a4d59f71c712a4cc5f7",
+      "result": "108c31acb01757b3a738d14a29c42d12c6b2ce13385da06c4dc5f109fe27ec16"
+    },
+    "d4-ex": {
+      "key": "333070f00ad75ef955e4cad23d0f59353f3057a07653e2d34e5f9f09c2f5657d",
+      "result": "f582c43a6dcf2af906879a6b28744fe1c0197e6a0d0707351109a18eedd97404"
+    },
+    "d4-feed": {
+      "key": "3eccd34cd102050b39829887e7e6baa1a06f6922857df918f1d71510a117d97a",
+      "result": "b9ba87bd089a35c032d103407cad2b1bec8b6808db8f74b4208b6d3a8442a6bd"
+    },
+    "d4-locks": {
+      "key": "e0a2c2376369cd75809362887814cfe3009a0ae41afe010531c45f14e9af9274",
+      "result": "be5ddb8c8630af088883e4621d1839b874947c59ae58d01a804ecd9652280a0a"
+    },
+    "d4-no-arbiter": {
+      "key": "3ea6d5a0c80de210acf80b30849b7bf5e08dd6d8d3a8f28cd40ca76699e8116b",
+      "result": "db840f750d5a37fc04c5e1ff15512f979445a48c8f41b3317852dc490f5748d4"
+    },
+    "d4-one-transaction": {
+      "key": "4524464f30a8a0415cc95465b10bae436a882edd4ad9aa869f2110ad68f8f71c",
+      "result": "0dc3881ca0c1967c1d3144157ed6dce0ef1a3c7578b48a6228a013f4effadd63"
+    },
+    "d4-replace": {
+      "key": "c8a60825032972b411c292d19163c0b2b309db5ed542280d0497435df7f1835f",
+      "result": "aa6e4bf206ed4967c12f275fd556bf513321f94832e4587719a00d18adcf7bc9"
+    },
+    "d4-rerun": {
+      "key": "ec19ef97ef9a30a3a1bc13aac7db5c575097addfc8001f8ae2d568f363825076",
+      "result": "3ece526226150118a151886c8f579a56594f5a3005eab2100fc671aea01881a9"
+    },
+    "d4-savepoint": {
+      "key": "6af4e42eb1bcdf2b4e6b63b12210ab19eb936ebdf3b7292bb6082a7a2d83ed0e",
+      "result": "f2676ce3faac6020a967859ecbd06a8e5de4d9f2b1099793623e6f33bf5b3d56"
+    },
+    "d4-twice": {
+      "key": "23bbbfe4725d3c721947d22d96574ac22e28ec8bcb98a5b3f96bc757677d3b77",
+      "result": "b5f88d7ff6dccb6f12f8e10e79abeb3744cf2e9c2ea997f6fecbf8952e369034"
+    },
+    "d4-xmin-load": {
+      "key": "f8dec81f0a1d55c9610d22b35ad1d477bcf6843f50dd35fc8657cd65b1a55d53",
+      "result": "d98f742891d91e137b3219b15b612365bea65a5ce43ba32892a9b7e6140feb08"
+    },
+    "d4-xmin-update": {
+      "key": "c557fe1b5d51259da274cdf48a428d2b80675ac65bca9d11b384b23a8f619dca",
+      "result": "a4f4275b0d0a77ee58c2bb2def7b00142b8ab661165ca46546532b187ba83c73"
+    },
     "d6-at-sea": {
       "key": "bea9074f4cce12859b153667d432e5da41930bb9f765e328a03200960db2a34b",
       "result": "37022d815ae3e895f7f738cbb2fb368c7d29c41ac7cc2c2d05d7a7dd54f2fa48"
@@ -218,6 +274,7 @@
   "downloads": {
     "d1.sql": "ad0f35b5d9a5c1f2a1e6b37f3bb0f6498f33a9f998aab703962965a7392e3b26",
     "d3.sql": "76f1a6863b298725cfe135502a592646b2ea055272d64b3dc7ebd6abed8de379",
+    "d4.sql": "22b6cb9512ffdfe58754c090db53d50462ee12bd0bd93ce42324e2729d47a501",
     "d6.sql": "948f39e6e43983a7b9d9a04a073920a7f5cedc17cb7773bdee8295db88ff49f9",
     "pg-checks.sql": "8a92562f17a79a5ae9d8656e99e0e556ed647455359a487e1ae94eab9983226c"
   },

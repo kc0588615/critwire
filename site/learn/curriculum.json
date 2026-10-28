@@ -179,7 +179,7 @@
       "prereqs": [
         "d3"
       ],
-      "state": "planned",
+      "state": "built",
       "skill": "ACID, MVCC, isolation levels, locks, savepoints, `ON CONFLICT`",
       "questions": [
         "How do I re-run a failed load safely?",

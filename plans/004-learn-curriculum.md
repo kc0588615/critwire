@@ -3404,12 +3404,12 @@ How you work with them:
 - **Autocommit.** psql, like most clients, commits every statement on its own unless you type `BEGIN`. A script of ten statements is ten transactions: if the seventh fails, the first six stay. One statement is always atomic, though: an `INSERT … SELECT` that fails on its last row inserts nothing.
 - **An error aborts the transaction.** Inside `BEGIN`, after a failed statement PostgreSQL refuses everything (`current transaction is aborted, commands ignored until end of transaction block`) until you type `ROLLBACK`. `COMMIT` of an aborted transaction rolls back too. In a script, `\set ON_ERROR_STOP on` makes psql stop at the first error, as critwire's lab file does (§4.3).
 - **Savepoints** mark a point inside a transaction: `SAVEPOINT name`, then `ROLLBACK TO SAVEPOINT name` undoes only what came after it and clears the error, so the transaction can go on. psql's `\set ON_ERROR_ROLLBACK interactive` puts a savepoint before every statement you type by hand.
-- **MVCC** (multi-version concurrency control) is how PostgreSQL isolates transactions without making readers wait. A row is stored as **versions**; each records the transaction that created it (the hidden column `xmin`) and the one that deleted it (`xmax`). An `UPDATE` writes a new version and marks the old one deleted; it doesn't overwrite. Each statement reads through a **snapshot**, a list of which transactions had committed when it started, and sees only the versions those made. So a reader sees the old version while a writer works on the new one, and neither waits. Old versions no one can see any more are removed later by `VACUUM` (autovacuum runs it for you).
+- **MVCC** (multi-version concurrency control) is how PostgreSQL isolates transactions without making readers wait. A row is stored as **versions**; each records the transaction that created it (the hidden column `xmin`) and the one that deleted it (`xmax`). An `UPDATE` writes a new version and marks the old one deleted; it doesn't overwrite. Each statement reads through a **snapshot**, a list of which transactions had committed when it started, and sees only the versions those made. So a reader sees the old version while a writer works on the new one, and neither waits. That holds for plain reads against row writes: a **locking read** (`SELECT … FOR UPDATE` or `FOR SHARE`) locks the rows it reads and waits for their writer, and a change to a table's structure locks out even plain reads (Locks, below). Old versions no one can see any more are removed later by `VACUUM` (autovacuum runs it for you). `xmin` is for looking, not for keeping: transaction ids wrap around and `VACUUM` freezes old ones, so a table that must record which load wrote a row needs a column of its own (a load id, a timestamp).
 - **Isolation levels.** **Read committed**, PostgreSQL's default, takes a new snapshot for every statement: two `SELECT`s in one transaction can see different data if someone committed in between. **Repeatable read** takes one snapshot for the whole transaction, and refuses to update a row that someone else changed since (`could not serialize access`, SQLSTATE `40001`): the application retries the transaction. **Serializable** goes further and refuses any outcome that no one-after-the-other order of the transactions could give; retry the same way.
 - **Locks.** MVCC doesn't make writers wait for readers, but a writer waits for another writer of the same row, until that one commits or rolls back. Statements also lock whole tables, in modes that mostly don't conflict: a `SELECT` takes `AccessShareLock`, an `UPDATE` `RowExclusiveLock`. `ALTER TABLE`, `DROP` and `TRUNCATE` take `AccessExclusiveLock`, which conflicts with everything, even a `SELECT`, until the transaction ends. Two transactions that each wait for a lock the other holds are a **deadlock**: PostgreSQL notices within a second (`deadlock_timeout`) and aborts one of them. `SET LOCAL lock_timeout = '5s'` makes a statement give up instead of waiting.
 - **A load you can re-run** (idempotent): running it twice leaves the same result as running it once, so after a failure you fix the cause and simply run it again. Three common ways:
   - **Replace in one transaction:** `BEGIN`, drop or empty the target, load it all, `COMMIT`. A failure changes nothing; readers see the old data until the commit, then the new. critwire's lab file does exactly this with the whole `learn_curriculum` schema (§4.3); its `DROP SCHEMA` takes `AccessExclusiveLock` on every table, so the labs wait for the few seconds it runs instead of reading half a load.
-  - **Upsert by key:** `INSERT … ON CONFLICT (key) DO NOTHING` skips rows that are already there; `DO UPDATE SET col = EXCLUDED.col` updates them from the incoming row (`EXCLUDED`). It needs a primary key or unique constraint on exactly those columns, and it's safe when two loads run at once. Good for adding to a large table a batch at a time.
+  - **Upsert by key:** `INSERT … ON CONFLICT (key) DO NOTHING` skips rows that are already there; `DO UPDATE SET col = EXCLUDED.col` updates them from the incoming row (`EXCLUDED`). It needs a primary key or unique constraint on exactly those columns, and it's safe when two loads run at once. Good for adding to a large table a batch at a time. It only adds and updates: a row the source has since deleted stays in the target, and so does the old row of one whose key changed upstream (the new key arrives as a new row). Keeping up with deletions takes a second step, such as deleting the target's rows that are missing from a complete batch, or the replace above.
   - **Stage, then merge:** load into a staging table, check it (e1, e3), then upsert from it into the target in one transaction. The ETL spike loads GBIF's download this way (§A.1).
 
 Every lab below runs in `psql`. Most start from the loaded tables in a transaction the tests roll back: type `BEGIN;` before one and `ROLLBACK;` after it. The worked example's and the first lab's blocks are typed exactly as shown, `BEGIN` and all, and end by removing what they made; a statement marked `-- fails:` fails on purpose, with that message. Leave `ON_ERROR_STOP` off for them (psql's default when you type), so psql goes on after the error as it does here.
@@ -3660,7 +3660,7 @@ species | AccessExclusiveLock
 
 `RowExclusiveLock` lets everyone else read `occurrences` and write its other rows. `AccessExclusiveLock` stops every session from even reading `species` until this transaction ends: keep transactions that change a table's structure short.
 
-5. Readers don't wait; writers of the same row do. This needs two psql windows, A and B, each after `pg-session`; type the lines in the order shown. (The tests run every block in one session, so this one was run by hand on the test server, with the results in the comments.)
+5. Plain readers don't wait; writers of the same row do. This needs two psql windows, A and B, each after `pg-session`; type the lines in the order shown. `-- waits:` marks the statement that waits, and `-- fails:` (lab 6) the one that fails on purpose. (The tests run every block in one session, so this one was run by hand on the test server, with the results in the comments.)
 
 ```sql
 -- q: d4-wait
@@ -3672,7 +3672,8 @@ UPDATE occurrences SET month = 7 WHERE id = 6004132305;
 -- window B
 BEGIN;
 SELECT month FROM occurrences WHERE id = 6004132305;     -- NULL, at once: B reads the old version
-UPDATE occurrences SET month = 8 WHERE id = 6004132305;  -- waits for A's row lock
+-- waits: A holds the row's lock
+UPDATE occurrences SET month = 8 WHERE id = 6004132305;
 -- window A
 ROLLBACK;                                                -- now B's UPDATE finishes: UPDATE 1
 -- window B
@@ -3693,14 +3694,14 @@ SELECT month FROM occurrences WHERE id = 6004132305;     -- NULL
 UPDATE occurrences SET month = 1 WHERE id = 6004132305;  -- committed at once
 -- window A
 SELECT month FROM occurrences WHERE id = 6004132305;     -- still NULL: one snapshot for the whole transaction
+-- fails: could not serialize access due to concurrent update
 UPDATE occurrences SET month = 2 WHERE id = 6004132305;
--- ERROR:  could not serialize access due to concurrent update
 ROLLBACK;
 -- window B: undo the change
 UPDATE occurrences SET month = NULL WHERE id = 6004132305;
 ```
 
-Begin A with plain `BEGIN;` (read committed) instead and A's second `SELECT` shows B's 1, and its `UPDATE` succeeds. Which is right depends on the job: a report that reads several tables wants one snapshot (repeatable read, read only); a job that decides from what it read and then writes wants to hear that the data changed under it (repeatable read or serializable, with a retry).
+Had B read with `SELECT month … FOR UPDATE` in lab 5, it would have waited for A just as its `UPDATE` did; had A run lab 4's `ALTER TABLE species …`, even B's plain `SELECT` on `species` would have waited. Begin A with plain `BEGIN;` (read committed) instead and A's second `SELECT` shows B's 1, and its `UPDATE` succeeds. Which is right depends on the job: a report that reads several tables wants one snapshot (repeatable read, read only); a job that decides from what it read and then writes wants to hear that the data changed under it (repeatable read or serializable, with a retry).
 
 7. Upserts. The game's feed, version 1: the devil's records from 2000 to 2019, without months. Labs 8 to 11 and the exercise start from it:
 
@@ -3798,7 +3799,7 @@ inserted | updated
 42 | 1320
 ```
 
-The other 496 rows of version 1 have no month in version 2 either, so they were left alone.
+The other 496 rows of version 1 have no month in version 2 either, so they were left alone. The feed's upsert brings month and country up to date and nothing else: a record whose animal or year changed upstream keeps its old values here, and one GBIF removed stays in `sightings`. A full refresh would update those columns too and delete the rows missing from a complete batch.
 
 11. Two ways an upsert fails. `ON CONFLICT` names the columns of a unique constraint or index; there is none on `(species_id, year)`:
 
@@ -3838,7 +3839,7 @@ ON CONFLICT (occurrence_id) DO UPDATE SET month = EXCLUDED.month;
 -- result: d4-twice · error: statement 1 of 1: ON CONFLICT DO UPDATE command cannot affect row a second time
 ```
 
-**Result:** In autocommit, a load that fails on its second batch keeps the first (1,858 rows), and running it again fails on them; in one transaction the error aborts everything, even a `SELECT`, and `ROLLBACK` leaves nothing behind, so the fixed file can simply be run again, once or twice, for the same 1,959 rows. A savepoint keeps the first batch and lets the transaction go on. MVCC is visible in `xmin`: the whole lab was written by one transaction, and an `UPDATE` writes a new version under your own transaction's id. An `UPDATE` holds `RowExclusiveLock`, an `ALTER TABLE` `AccessExclusiveLock`; by hand, a reader didn't wait for a writer, a second writer did, and repeatable read refused to update a row changed since its snapshot. `ON CONFLICT` made the feed re-runnable: `DO NOTHING` added the 42 missing records, and `DO UPDATE … WHERE … IS DISTINCT FROM` inserted those 42 and updated the 1,320 that gained a month, leaving 496 alone.
+**Result:** In autocommit, a load that fails on its second batch keeps the first (1,858 rows), and running it again fails on them; in one transaction the error aborts everything, even a `SELECT`, and `ROLLBACK` leaves nothing behind, so the fixed file can simply be run again, once or twice, for the same 1,959 rows. A savepoint keeps the first batch and lets the transaction go on. MVCC is visible in `xmin`: the whole lab was written by one transaction, and an `UPDATE` writes a new version under your own transaction's id. An `UPDATE` holds `RowExclusiveLock`, an `ALTER TABLE` `AccessExclusiveLock`; by hand, a plain reader didn't wait for a writer, a second writer did, and repeatable read refused to update a row changed since its snapshot. `ON CONFLICT` made the feed re-runnable: `DO NOTHING` added the 42 missing records, and `DO UPDATE … WHERE … IS DISTINCT FROM` inserted those 42 and updated the 1,320 that gained a month, leaving 496 alone.
 
 **Exercise:** The feed grows to a second animal, the jaguar (species 51). Starting from `d4-feed`'s table, write one statement that brings `sightings` up to date with every record of the devil and the jaguar that has a year: new records inserted, month and country updated where they changed, other rows left alone. Log what it did in a table `sightings_runs (run, inserted, updated)`, run it twice, and show the log. The second run must change nothing.
 

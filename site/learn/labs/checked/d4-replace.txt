@@ -1,0 +1,3 @@
+-- result: d4-replace · 1 row · sha256 de77387b65ec
+sightings | written_by_transactions
+1959 | 1

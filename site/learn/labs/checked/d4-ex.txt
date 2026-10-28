@@ -1,0 +1,4 @@
+-- result: d4-ex · 2 rows · sha256 cff78f0f35bc
+run | inserted | updated | sightings_after
+1 | 2137 | 1320 | 3953
+2 | 0 | 0 | 3953

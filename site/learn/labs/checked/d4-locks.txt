@@ -1,0 +1,4 @@
+-- result: d4-locks · 2 rows · sha256 527e596492f7
+table_name | mode
+occurrences | RowExclusiveLock
+species | AccessExclusiveLock
