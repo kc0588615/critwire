@@ -2,10 +2,12 @@
 %% Tables only; the view species_taxonomy is listed beside it. Shapes are geometry in WGS 84 (SRID 4326), each with a GiST index.
 %% Tables the lessons make in the lab (s4's grids, the smoke check's, the ETL's staging, d6's star): beside the diagram, not in it.
 %% lab-made: s4_cells, tx_smoke, field_notes, occurrences_by_year, sightings, sightings_runs, gbif_staging, occurrences_all, dim_species, dim_country, dim_dataset, dim_year, dim_habitat_class, fact_records, fact_species_country, fact_country_habitat, dim_species_history
-%% Drawn, but built by build mission L3 (the habitat map), so not in the lab yet:
+%% Drawn, but built with the habitat map later, so not in the lab yet:
 %% planned: occurrence_habitats, habitat_clips
 %% Keys: PK primary key, FK foreign key, UK unique. Lines: || exactly one, |o or o| zero or one, |{ one or more, o{ zero or more.
 erDiagram
+    accTitle: critwire Learn lab database, PostGIS schema learn_curriculum
+    accDescr: The schema v2 tables in PostgreSQL types, plus the shapes: country outlines, admin-1 areas, biomes, ecoregions and the habitat classes. occurrence_habitats and habitat_clips are planned: drawn, not in the lab yet.
     taxa {
         text name PK "Agalychnis, Phyllomedusidae, Anura, Amphibia"
         text taxon_rank "class, order, family or genus"
@@ -65,10 +67,10 @@ erDiagram
         text basis_of_record "HUMAN_OBSERVATION, PRESERVED_SPECIMEN, ..."
         float8 longitude "degrees east, WGS 84"
         float8 latitude "degrees north, WGS 84"
-        float8 coordinate_uncertainty_m "metres; NULL when not given"
+        float8 coordinate_uncertainty_m "metres, at least 0 and finite; NULL when not given"
         text country_code_gbif "GBIF's code as delivered; ZZ unknown, XZ high seas"
         text country_code FK "that code when it is a countries row, else NULL"
-        integer year "NULL when the record has none"
+        integer year "above 0; NULL when the record has none"
         integer month "1 to 12; NULL when the record has none"
         geometry geom "Point, generated from longitude and latitude"
     }
@@ -101,7 +103,7 @@ erDiagram
     country_habitats {
         text country_code PK, FK "the country"
         integer habitat_code PK, FK "the habitat class"
-        numeric est_area_km2 "estimated from the map, never measured"
+        numeric est_area_km2 "estimated from the map, never measured; at least 0"
     }
     occurrence_habitats {
         bigint occurrence_id PK, FK "the record"

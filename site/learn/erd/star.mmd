@@ -1,8 +1,12 @@
 %% critwire Learn: the Power BI star (plans/004-learn-curriculum.md §5.2 d6, §5.6, §6): the CSV files star.sql writes, in DuckDB types.
 %% Every fact foreign key is filled: a record with no year points at dim_year -1, one with no country at dim_country ZZ.
 %% fact_records and fact_species_country share dim_species and dim_country (conformed dimensions); fact_species_country has no measure (factless).
+%% Drawn, but not published yet (the habitat fact waits for the habitat map):
+%% planned: dim_habitat_class, fact_country_habitat
 %% Keys: PK primary key, FK foreign key, UK unique. Lines: || exactly one, |o or o| zero or one, |{ one or more, o{ zero or more.
 erDiagram
+    accTitle: critwire Learn Power BI star
+    accDescr: Two facts, fact_records (one row per sample record) and fact_species_country (no measure), share the dimensions dim_species and dim_country; fact_records also points at dim_dataset and dim_year. dim_habitat_class and fact_country_habitat are planned: drawn, not published yet.
     dim_species {
         INTEGER species_id PK "critwire's species id"
         VARCHAR scientific_name "Sarcophilus harrisii"

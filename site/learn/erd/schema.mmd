@@ -1,8 +1,10 @@
 %% critwire Learn: the learners' schema v2 in the browser (plans/004-learn-curriculum.md §4, §6): 002's schema v1, unchanged, plus the lab sample.
-%% extends: 002-learn-erd.mmd
+%% extends: v1.mmd
 %% Tables only; the view species_taxonomy is listed beside it.
 %% Keys: PK primary key, FK foreign key, UK unique. Lines: || exactly one, |o or o| zero or one, |{ one or more, o{ zero or more.
 erDiagram
+    accTitle: critwire Learn schema v2, the tables in the browser
+    accDescr: Eight tables: taxa, species, countries, species_countries, sources and species_sources from schema v1, plus datasets and occurrences, the sample of GBIF records. Each line joins a foreign key to the table it points at.
     taxa {
         VARCHAR name PK "Agalychnis, Phyllomedusidae, Anura, Amphibia"
         VARCHAR taxon_rank "class, order, family or genus"
