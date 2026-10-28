@@ -1,0 +1,677 @@
+{
+  "tracks": [
+    {
+      "id": "foundations",
+      "title": "Foundations"
+    },
+    {
+      "id": "database-architecture",
+      "title": "Database architecture"
+    },
+    {
+      "id": "gis-in-sql",
+      "title": "GIS in SQL"
+    },
+    {
+      "id": "spatial-statistics",
+      "title": "Spatial statistics"
+    },
+    {
+      "id": "etl",
+      "title": "ETL"
+    },
+    {
+      "id": "power-bi",
+      "title": "Power BI"
+    },
+    {
+      "id": "capstone",
+      "title": "Capstone"
+    }
+  ],
+  "modules": [
+    {
+      "id": "f1",
+      "slug": "select",
+      "title": "Select and filter",
+      "track": "foundations",
+      "tools": [
+        "B"
+      ],
+      "hours": 1,
+      "prereqs": [],
+      "state": "planned",
+      "skill": "`SELECT`, `WHERE`, `ORDER BY`, `NULL`",
+      "questions": [
+        "Which animals have no photo?",
+        "Which mammals does critwire list, by common name?",
+        "Why doesn't `= NULL` find a missing value?"
+      ]
+    },
+    {
+      "id": "f2",
+      "slug": "aggregate",
+      "title": "Group and aggregate",
+      "track": "foundations",
+      "tools": [
+        "B"
+      ],
+      "hours": 1.5,
+      "prereqs": [
+        "f1"
+      ],
+      "state": "planned",
+      "skill": "`GROUP BY`, `HAVING`, `CASE`, `COUNT(DISTINCT …)`",
+      "questions": [
+        "How many records does the sample hold per year, and by basis of record?",
+        "Which species have more than 500 records?",
+        "How many datasets contributed?"
+      ]
+    },
+    {
+      "id": "f3",
+      "slug": "join",
+      "title": "Joins",
+      "track": "foundations",
+      "tools": [
+        "B"
+      ],
+      "hours": 2,
+      "prereqs": [
+        "f2"
+      ],
+      "state": "planned",
+      "skill": "Inner, left and anti joins; many-to-many; reading an ERD; light spatial in plain SQL (bounding boxes, 10° bins)",
+      "questions": [
+        "Which animals were recorded in Brazil?",
+        "Which have no records at all?",
+        "How many records fall in each 10° box?"
+      ]
+    },
+    {
+      "id": "f4",
+      "slug": "window",
+      "title": "Window functions",
+      "track": "foundations",
+      "tools": [
+        "B"
+      ],
+      "hours": 1.5,
+      "prereqs": [
+        "f3"
+      ],
+      "state": "planned",
+      "skill": "CTEs, subqueries, window functions",
+      "questions": [
+        "Which dataset contributed most of each species' records, and what share is that?",
+        "How does each year rank against the others?"
+      ]
+    },
+    {
+      "id": "d1",
+      "slug": "keys",
+      "title": "Keys and constraints",
+      "track": "database-architecture",
+      "tools": [
+        "B",
+        "PG"
+      ],
+      "hours": 2,
+      "prereqs": [
+        "f3"
+      ],
+      "state": "planned",
+      "skill": "Entities; natural and surrogate keys; `PRIMARY KEY`, `FOREIGN KEY`, `UNIQUE`, `CHECK`; generated columns",
+      "questions": [
+        "What does a foreign key check, and what doesn't it?",
+        "Natural or surrogate key for a species?",
+        "What does a `CHECK` refuse?"
+      ]
+    },
+    {
+      "id": "d2",
+      "slug": "normalize",
+      "title": "Normalization",
+      "track": "database-architecture",
+      "tools": [
+        "B"
+      ],
+      "hours": 2,
+      "prereqs": [
+        "d1"
+      ],
+      "state": "planned",
+      "skill": "1NF to 3NF from nested JSON; functional dependencies; when to denormalize",
+      "questions": [
+        "Is a license a fact about a record or about a dataset?",
+        "What goes wrong when a dataset's title is stored on every record?"
+      ]
+    },
+    {
+      "id": "d3",
+      "slug": "indexes",
+      "title": "Indexes and query plans",
+      "track": "database-architecture",
+      "tools": [
+        "PG"
+      ],
+      "hours": 2,
+      "prereqs": [
+        "d1"
+      ],
+      "state": "planned",
+      "skill": "B-tree, GiST and BRIN indexes; `EXPLAIN` and `EXPLAIN ANALYZE`; planner statistics",
+      "questions": [
+        "Why is this a sequential scan?",
+        "When does an index help a filter, a join or a spatial test?",
+        "What does the planner believe about a table?"
+      ]
+    },
+    {
+      "id": "d4",
+      "slug": "transactions",
+      "title": "Transactions",
+      "track": "database-architecture",
+      "tools": [
+        "PG"
+      ],
+      "hours": 2,
+      "prereqs": [
+        "d3"
+      ],
+      "state": "planned",
+      "skill": "ACID, MVCC, isolation levels, locks, savepoints, `ON CONFLICT`",
+      "questions": [
+        "How do I re-run a failed load safely?",
+        "What does another session see while a load runs?"
+      ]
+    },
+    {
+      "id": "d5",
+      "slug": "roles",
+      "title": "Roles and privileges",
+      "track": "database-architecture",
+      "tools": [
+        "PG"
+      ],
+      "hours": 1.5,
+      "prereqs": [
+        "d4"
+      ],
+      "state": "planned",
+      "skill": "Schemas, roles, `GRANT` and `REVOKE`, default privileges, least privilege, a taste of row-level security",
+      "questions": [
+        "How do I give a reporting tool read-only access to one schema and nothing else?",
+        "What do default privileges change?"
+      ]
+    },
+    {
+      "id": "d6",
+      "slug": "star",
+      "title": "Star schemas",
+      "track": "database-architecture",
+      "tools": [
+        "PG",
+        "B"
+      ],
+      "hours": 2.5,
+      "prereqs": [
+        "d2",
+        "d4"
+      ],
+      "state": "planned",
+      "skill": "Grain, facts, dimensions, conformed dimensions, unknown members, slowly changing dimensions (types 1 and 2); star vs snowflake; export",
+      "questions": [
+        "What is one record fact's grain?",
+        "Which dimensions does it share with habitat area per country?",
+        "Where does a record with no country go?"
+      ]
+    },
+    {
+      "id": "g1",
+      "slug": "crs",
+      "title": "Coordinate reference systems",
+      "track": "gis-in-sql",
+      "tools": [
+        "PG"
+      ],
+      "hours": 1.5,
+      "prereqs": [
+        "f3"
+      ],
+      "state": "planned",
+      "skill": "SRIDs, `ST_Transform`, geometry vs geography, Web Mercator's area error",
+      "questions": [
+        "How big is Tasmania in EPSG:3857, in EPSG:3577 and as geography?",
+        "Why does Web Mercator overstate it?"
+      ]
+    },
+    {
+      "id": "g2",
+      "slug": "load-validate",
+      "title": "Loading and validating shapes",
+      "track": "gis-in-sql",
+      "tools": [
+        "PG"
+      ],
+      "hours": 1.5,
+      "prereqs": [
+        "g1"
+      ],
+      "state": "planned",
+      "skill": "The loader, WKT and WKB, `ST_IsValid`, `ST_MakeValid`",
+      "questions": [
+        "Which shapes are invalid, and why?",
+        "What does `ST_MakeValid` change?"
+      ]
+    },
+    {
+      "id": "g3",
+      "slug": "spatial-join",
+      "title": "Spatial joins",
+      "track": "gis-in-sql",
+      "tools": [
+        "PG"
+      ],
+      "hours": 2,
+      "prereqs": [
+        "g2"
+      ],
+      "state": "planned",
+      "skill": "`ST_Contains`, `ST_Covers`, `ST_Intersects`; point in polygon; records on boundaries",
+      "questions": [
+        "Do GBIF's country codes agree with the country outlines?",
+        "Which records fall on a coast or in no country?"
+      ]
+    },
+    {
+      "id": "g4",
+      "slug": "measure-overlay",
+      "title": "Distance and overlay",
+      "track": "gis-in-sql",
+      "tools": [
+        "PG"
+      ],
+      "hours": 2,
+      "prereqs": [
+        "g3"
+      ],
+      "state": "planned",
+      "skill": "Distances on the ellipsoid, `ST_DWithin`, buffers, `ST_Intersection`",
+      "questions": [
+        "How much of each country does each ecoregion cover?",
+        "Which records lie within 10 km of a border?"
+      ]
+    },
+    {
+      "id": "g5",
+      "slug": "spatial-index",
+      "title": "Spatial indexes",
+      "track": "gis-in-sql",
+      "tools": [
+        "PG"
+      ],
+      "hours": 1.5,
+      "prereqs": [
+        "g3",
+        "d3"
+      ],
+      "state": "planned",
+      "skill": "GiST, the `&&` operator, nearest neighbours with `<->`, reading spatial plans",
+      "questions": [
+        "Which record is nearest to a point, found fast?",
+        "When doesn't a spatial index help?"
+      ]
+    },
+    {
+      "id": "g6",
+      "slug": "grids",
+      "title": "Grids",
+      "track": "gis-in-sql",
+      "tools": [
+        "PG"
+      ],
+      "hours": 1.5,
+      "prereqs": [
+        "g4"
+      ],
+      "state": "planned",
+      "skill": "`ST_HexagonGrid` in an equal-area SRID; the modifiable areal unit problem (MAUP)",
+      "questions": [
+        "How many Tasmanian devil records fall in each 5 km hexagon, and in each 10 km one?",
+        "How does the picture change with the grid?"
+      ]
+    },
+    {
+      "id": "g7",
+      "slug": "raster",
+      "title": "Rasters",
+      "track": "gis-in-sql",
+      "tools": [
+        "PG"
+      ],
+      "hours": 2.5,
+      "prereqs": [
+        "g6"
+      ],
+      "state": "planned",
+      "skill": "Value at a point; `ST_Clip`, `ST_ValueCount`; estimated areas and their error",
+      "questions": [
+        "Which habitat classes hold Costa Rica's records?",
+        "How much of each class does a clip hold, and how good is that estimate?"
+      ]
+    },
+    {
+      "id": "s1",
+      "slug": "bias",
+      "title": "Bias in records",
+      "track": "spatial-statistics",
+      "tools": [
+        "PG",
+        "B"
+      ],
+      "hours": 1.5,
+      "prereqs": [
+        "g3"
+      ],
+      "state": "planned",
+      "skill": "Datasets, basis of record, telemetry, recording effort; framing results honestly",
+      "questions": [
+        "How much of the jaguar sample is GPS-collar data?",
+        "Which datasets and years dominate a species' records?",
+        "What can records say about where an animal lives, and what can't they?"
+      ]
+    },
+    {
+      "id": "s2",
+      "slug": "point-patterns",
+      "title": "Point patterns",
+      "track": "spatial-statistics",
+      "tools": [
+        "PG",
+        "Py"
+      ],
+      "hours": 2.5,
+      "prereqs": [
+        "s1",
+        "g6"
+      ],
+      "state": "planned",
+      "skill": "Quadrats, the nearest-neighbour index, kernel density, DBSCAN",
+      "questions": [
+        "Are devil records more clustered than chance?",
+        "Where is record density highest?"
+      ]
+    },
+    {
+      "id": "s3",
+      "slug": "weights",
+      "title": "Spatial weights",
+      "track": "spatial-statistics",
+      "tools": [
+        "PG",
+        "Py"
+      ],
+      "hours": 2,
+      "prereqs": [
+        "s2"
+      ],
+      "state": "planned",
+      "skill": "Distance-band, k-nearest and contiguity weights; row standardization; islands; ties",
+      "questions": [
+        "Who are a cell's neighbours?",
+        "What does row standardization do, and what happens to a cell with none?"
+      ]
+    },
+    {
+      "id": "s4",
+      "slug": "moran",
+      "title": "Global Moran's I",
+      "track": "spatial-statistics",
+      "tools": [
+        "PG",
+        "Py"
+      ],
+      "hours": 2,
+      "prereqs": [
+        "s3"
+      ],
+      "state": "planned",
+      "skill": "Global Moran's I, its expectation, variance and z-score in SQL, matched by PySAL; permutation tests",
+      "questions": [
+        "Does record density cluster across Tasmania?",
+        "Do SQL and PySAL agree?",
+        "How does the answer change at 10 km?"
+      ]
+    },
+    {
+      "id": "s5",
+      "slug": "local",
+      "title": "Hot and cold spots",
+      "track": "spatial-statistics",
+      "tools": [
+        "PG",
+        "Py"
+      ],
+      "hours": 2.5,
+      "prereqs": [
+        "s4"
+      ],
+      "state": "planned",
+      "skill": "Local Moran's I (LISA) and Getis-Ord Gi*; false discovery rate",
+      "questions": [
+        "Where are the hot and cold spots of recording effort?",
+        "Which survive a false discovery rate correction?"
+      ]
+    },
+    {
+      "id": "s6",
+      "slug": "zonal",
+      "title": "Zonal statistics",
+      "track": "spatial-statistics",
+      "tools": [
+        "PG",
+        "Py"
+      ],
+      "hours": 2,
+      "prereqs": [
+        "s5",
+        "g7"
+      ],
+      "state": "planned",
+      "skill": "Zonal statistics on polygons and rasters; ratios normalized for effort",
+      "questions": [
+        "Do records over-represent some habitats or ecoregions, once effort is accounted for?"
+      ]
+    },
+    {
+      "id": "e1",
+      "slug": "extract",
+      "title": "Extract",
+      "track": "etl",
+      "tools": [
+        "Py"
+      ],
+      "hours": 2,
+      "prereqs": [
+        "f2"
+      ],
+      "state": "planned",
+      "skill": "Search API vs download API (asynchronous, with a DOI); paging, rate limits, retries; files with checksums",
+      "questions": [
+        "How do I get every open Tasmanian devil record, with a DOI to cite?"
+      ]
+    },
+    {
+      "id": "e2",
+      "slug": "transform-load",
+      "title": "Transform and load",
+      "track": "etl",
+      "tools": [
+        "Py",
+        "PG"
+      ],
+      "hours": 2.5,
+      "prereqs": [
+        "e1",
+        "d4"
+      ],
+      "state": "planned",
+      "skill": "Staging tables, types, `COPY`, upserts, geometry; GeoPandas to and from PostGIS",
+      "questions": [
+        "How do I load the download in one transaction, typed and checked, with each record matched to its species?"
+      ]
+    },
+    {
+      "id": "e3",
+      "slug": "idempotent",
+      "title": "Pipelines you can re-run",
+      "track": "etl",
+      "tools": [
+        "Py",
+        "PG"
+      ],
+      "hours": 2,
+      "prereqs": [
+        "e2"
+      ],
+      "state": "planned",
+      "skill": "Run ids, deterministic outputs, checksums; critwire's own ingest → derive → build as the case study",
+      "questions": [
+        "Can I re-run the pipeline without doubling rows or changing its output?"
+      ]
+    },
+    {
+      "id": "e4",
+      "slug": "quality-provenance",
+      "title": "Quality and provenance",
+      "track": "etl",
+      "tools": [
+        "Py",
+        "PG"
+      ],
+      "hours": 2,
+      "prereqs": [
+        "e3"
+      ],
+      "state": "planned",
+      "skill": "Data quality checks written as SQL; license filters; provenance tables; citations; derived datasets",
+      "questions": [
+        "Which datasets must I credit, and under which license?",
+        "Which checks stop a bad load?"
+      ]
+    },
+    {
+      "id": "e5",
+      "slug": "schedule",
+      "title": "Scheduling",
+      "track": "etl",
+      "tools": [
+        "Py"
+      ],
+      "hours": 1.5,
+      "prereqs": [
+        "e4"
+      ],
+      "state": "planned",
+      "skill": "cron, systemd timers, Windows Task Scheduler; logs, alerts, incremental loads",
+      "questions": [
+        "How do I refresh weekly, and know when a run broke?"
+      ]
+    },
+    {
+      "id": "p1",
+      "slug": "power-query",
+      "title": "Power Query",
+      "track": "power-bi",
+      "tools": [
+        "PBI"
+      ],
+      "hours": 1.5,
+      "prereqs": [
+        "d6"
+      ],
+      "state": "planned",
+      "skill": "Power Query: `Web.Contents` on critwire's CSV files; types with an explicit culture; refresh",
+      "questions": [
+        "How do I load the star from critwire.com so that it refreshes, on any locale?"
+      ]
+    },
+    {
+      "id": "p2",
+      "slug": "model",
+      "title": "The data model",
+      "track": "power-bi",
+      "tools": [
+        "PBI"
+      ],
+      "hours": 2,
+      "prereqs": [
+        "p1"
+      ],
+      "state": "planned",
+      "skill": "Relationships, cardinality, filter direction, conformed dimensions, factless facts",
+      "questions": [
+        "How do I filter records and habitat areas by the same country?"
+      ]
+    },
+    {
+      "id": "p3",
+      "slug": "dax",
+      "title": "DAX measures",
+      "track": "power-bi",
+      "tools": [
+        "PBI"
+      ],
+      "hours": 2,
+      "prereqs": [
+        "p2"
+      ],
+      "state": "planned",
+      "skill": "Measures: `COUNTROWS`, `DISTINCTCOUNT`, `CALCULATE`, ratios",
+      "questions": [
+        "How many records per 1,000 km² of forest, by country?"
+      ]
+    },
+    {
+      "id": "p4",
+      "slug": "maps-report",
+      "title": "Maps and reports",
+      "track": "power-bi",
+      "tools": [
+        "PBI"
+      ],
+      "hours": 1.5,
+      "prereqs": [
+        "p3"
+      ],
+      "state": "planned",
+      "skill": "Map visuals, honest labels, publishing and scheduled refresh",
+      "questions": [
+        "How do I build a report that maps records and never calls them a range?"
+      ]
+    },
+    {
+      "id": "c1",
+      "slug": "game-feed",
+      "title": "A feed for a game",
+      "track": "capstone",
+      "tools": [
+        "PG",
+        "Py",
+        "PBI"
+      ],
+      "hours": 8,
+      "prereqs": [
+        "s5",
+        "e4",
+        "p4"
+      ],
+      "state": "planned",
+      "skill": "ETL into PostGIS → Gi* on hexagons → a Power BI report → a static JSON feed a game reads (encounter weights per hexagon, labelled as records)",
+      "questions": [
+        "What could a player meet here, honestly?"
+      ]
+    }
+  ]
+}

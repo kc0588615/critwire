@@ -1,12 +1,14 @@
 // The block model (plan D2; spike plan-queries.ts, ported from 004's fences to files). A block file is 004's fence body,
 // headers included, named by its id: site/learn/sql/<id>.sql (`-- ` headers) or <id>.m / <id>.dax (Power BI, `// `).
 // parseBlock reads one file and lints what one file can show; lintPage lints a page's blocks together (ids, `-- after:`).
-// What a statement may do to roles, schemas and settings, and the determinism rules, are privilege.ts's (S2).
+// What a statement may do to roles, schemas and settings, the determinism rules and the cleanup pairing are
+// privilege.ts's; lintPage applies them with each block's `-- after:` chain.
 // Pure. Tests: blocks.test.ts.
 import { basename, extname } from "node:path";
 import { codeOnly, isolatedRefusal, splitStatements, type Statement } from "../build/learn/sql.ts";
 import { LAB_SCHEMA } from "./pg.ts";
 import { parsePlanAssertion, type PlanAssertion } from "./plan.ts";
+import { blockRuleErrors, cleanupErrors } from "./privilege.ts";
 
 /** The DuckDB schema block: header-less in site/learn/sql/setup.sql, run at boot (004 §0). */
 export const SETUP_ID = "setup";
@@ -264,8 +266,10 @@ function statementErrors(b: Block, q: string): string[] {
 }
 
 /**
- * A page's blocks, in page order, linted together: unique ids, and each `-- after:` block on the page, earlier, ran,
- * expecting no error, wrapped, single-session and in the same engine. `bootIds`: ids that run at boot without a file.
+ * A page's blocks, in page order, linted together: unique ids; each `-- after:` block on the page, earlier, ran,
+ * expecting no error, wrapped, single-session and in the same engine; then each block's privilege rules with its
+ * `-- after:` chain (PV1–PV8) and a ran PostGIS block's cleanup (CL1–CL9; a `-- fails:` statement doesn't happen).
+ * `bootIds`: ids that run at boot without a file.
  */
 export function lintPage(blocks: readonly Block[], bootIds: ReadonlySet<string> = new Set([SETUP_ID])): string[] {
   const errors: string[] = [];
@@ -289,6 +293,10 @@ export function lintPage(blocks: readonly Block[], bootIds: ReadonlySet<string> 
       else if (named.sessions.length) errors.push(`${q}: "${a}" runs in sessions ${named.sessions.join(", ")}`);
       else if (named.engine !== b.engine) errors.push(`${q}: "${a}" runs in ${named.engine}, not ${b.engine}`);
     }
+    const chain = b.after.flatMap((a) => first.get(a)?.statements ?? []);
+    const rules = blockRuleErrors(b, chain);
+    if (b.engine === "postgis" && b.status === "ran") rules.push(...cleanupErrors(b.id, b.statements.filter((_, i) => b.fails[i] === undefined)));
+    errors.push(...rules.map((e) => `${b.file}: ${e}`));
   });
   return errors;
 }

@@ -1,4 +1,4 @@
-// pnpm build [--draft] (plan §3, D9.1): checks data/ offline, rebuilds DATABASE_URL from it, then writes the static
+// pnpm build [--draft] (plan §3, D9.1): checks data/ and site/learn/ offline, rebuilds DATABASE_URL from it, then writes the static
 // site to dist/: /v1, the docs page, then /learn/data/, whose lab tables it rebuilds from those bytes and checks, its
 // loader, manifest and index page; both 50 MB caps are enforced. A
 // plain build refuses without a current GBIF derived-dataset DOI for every target; --draft builds without them
@@ -19,6 +19,7 @@ import { assertLabChecks } from "./build/learn/checks.ts";
 import { fileSizes, LEARN_CAP, totalBytes } from "./build/learn/cap.ts";
 import { writeLabIndex, writeLabLoader, writeLearnData } from "./build/learn/data.ts";
 import { projectLearn } from "./build/learn/projection.ts";
+import { readLearnInputs } from "./build/learn/site.ts";
 import { childFile } from "./build/paths.ts";
 import { writeTables } from "./build/tables.ts";
 
@@ -30,6 +31,8 @@ for (const arg of args) if (arg !== "--draft") throw new Error(`unknown argument
 loadEnv();
 const url = requireEnv("DATABASE_URL");
 const { species, registration, countries, learn, labFiles, labCredits, labBytes } = await readBuildInputs({ draft: args.includes("--draft") });
+const { curriculum } = await readLearnInputs();
+console.log(`learn curriculum: ${curriculum.tracks.length} tracks, ${curriculum.modules.length} modules (${curriculum.modules.filter((m) => m.state === "built").length} built)`);
 const attribution = buildAttribution(species, registration, countries);
 const docs = renderDocs(await readFile(docsTemplate, "utf8"), await readFile(styleSheet, "utf8"), attribution, species);
 await loadDatabase(url, species);
