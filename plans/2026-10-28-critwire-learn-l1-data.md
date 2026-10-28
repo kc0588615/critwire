@@ -196,7 +196,7 @@ The review's numbering: MF = MUST-FIX, SC = SHOULD-CHANGE.
 
 ## Stages
 
-- [ ] Baseline: install, migrate, run typecheck, lint, unit and E2E tests; record the results under Baseline
+- [x] Baseline: install, migrate, run typecheck, lint, unit and E2E tests; record the results under Baseline
 - [ ] Architecture: `architect` writes findings and the target design
 - [ ] Fable review: `architecture-reviewer`
 - [ ] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
@@ -204,6 +204,20 @@ The review's numbering: MF = MUST-FIX, SC = SHOULD-CHANGE.
 - [ ] Steps: `planner` writes Steps and Verification
 
 ## Baseline
+
+2026-10-28, HEAD `5c6c04e` (= `origin/main` `5ac58df` + this plan only). Saved in `/srv/critter-ai/agent-state/missions/critwire-learn-l1-data/baseline/`.
+- `pnpm install --frozen-lockfile`: up to date. No migrations (build rebuilds `db/schema.sql` tables). No lint script in `package.json`; `pnpm typecheck` is the static check.
+- `pnpm typecheck`: pass. `pnpm test`: 66/66 pass.
+- `pnpm derive`: no diff in `data/`; `DOI current 10.15468/dd.ky9cyt` (taxa 73, datasets 454, records 396627).
+- Plain `pnpm build`: pass, 157 files in `dist/`. `dist.sha256` = sha256 of each; identical to live `/srv/apps/critwire/.live` (`live.sha256`).
+- `pnpm e2e`: 20/20 pass (artifacts `baseline/e2e/`).
+- Registry baseline (MF2): live `https://critwire.com/v1/species.json` saved as `baseline/live-species.json` (sha256 `f58d0ae8…6028c`, = build).
+- MF1: `grep -c '^CRITWIRE_DB_TARGET='` = 1 in `/srv/apps/critwire/.env` and in worktree `.env` (`critwire_dev`). No handoff item needed; build the strict guard.
+- Roles: `critwire_live` exists and owns db `critwire`; `critwire_dev` owned by `critwire`. `critwire_lab` doesn't exist yet (SC7: `learn:check --setup`).
+- `critwire_dev`: PostGIS 3.4.2 + `postgis_raster` 3.4.2. Schemas `learn_spatial` (A2's, never touch) and `learn_curriculum` (spike leftover, 42 relations) exist.
+- Spike download: `0041824-260928105237408` zip sha256 `729e9e28…806b` matches its `download.json`; GBIF API: `SUCCEEDED`, DOI `10.15468/dl.fbpk9w`, 394,532 records, `eraseAfter 2027-04-23` → reuse it.
+- Tooling: `python3` 3.12.3; **`uv` is not installed** (spike used `spike/.venv`). The architect decides: install `uv` (record in `ops/docs/vps.md`) or a plain `python3 -m venv` with pinned `requirements.txt`.
+- Codex DB/backend review (`/srv/critter-ai/agent-state/reviews/2026-10-28-critwire-db-backend-codex.md`, 175 lines, SOUND_WITH_CHANGES) read; its L1 items are in the brief's addendum for the architect.
 
 ## Architecture
 
@@ -224,5 +238,7 @@ The review's numbering: MF = MUST-FIX, SC = SHOULD-CHANGE.
 ## Decisions
 
 ## Log
+
+- 2026-10-28 06:49 UTC Baseline: typecheck ok, test 66/66, build ok (dist = live), e2e 20/20; baseline hashes + live species.json saved.
 
 ## Summary
