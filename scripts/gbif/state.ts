@@ -87,4 +87,5 @@ export function namedState<T>(name: string, label: string) {
 }
 
 // gbif:register's countries target: gbif-register.lock and gbif-register-intent.json.
-export const { lockFile, intentFile, withLock, readIntent, createIntent, deleteIntent } = namedState<Intent>("gbif-register", "gbif:register");
+export const registerState = namedState<Intent>("gbif-register", "gbif:register");
+export const { lockFile, intentFile, withLock, readIntent, createIntent, deleteIntent } = registerState;

@@ -6,6 +6,7 @@ import { mkdir } from "node:fs/promises";
 import { formatJson, writeJson } from "./json.ts";
 import { deriveAll, derivedFiles, readDeriveInputs } from "./derive/pipeline.ts";
 import { contributionsSha256, depositTag } from "./gbif/derived-dataset.ts";
+import { TARGETS } from "./gbif/targets.ts";
 
 const byText = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
 
@@ -42,7 +43,7 @@ console.log(`gbif contributions: taxa ${contributions.taxa.length}, datasets ${O
 if (doi !== null) {
   console.log(`DOI current ${doi}`);
 } else {
-  const tag = depositTag("gbif-dd", contributionsSha256(formatJson(contributions, { canonical: true })));
+  const tag = depositTag(TARGETS.countries.tagPrefix, contributionsSha256(formatJson(contributions, { canonical: true })));
   console.log(`DOI ${inputs.registration === null ? "missing" : "stale"}: commit, push, push tag ${tag}, then pnpm gbif:register`);
 }
 const lc = learn.contributions;
@@ -51,7 +52,7 @@ console.log(`learn-sample: download ${lc.downloadKey} (${lc.originalDownloadDoi}
 if (learn.doi !== null) {
   console.log(`learn-sample DOI current ${learn.doi}`);
 } else {
-  const tag = depositTag("gbif-learn", contributionsSha256(formatJson(lc, { canonical: true })));
+  const tag = depositTag(TARGETS["learn-sample"].tagPrefix, contributionsSha256(formatJson(lc, { canonical: true })));
   console.log(`learn-sample DOI ${inputs.learn.registration === null ? "missing" : "stale"}: commit, push, push tag ${tag}, ` +
     "then pnpm gbif:register --target learn-sample");
 }

@@ -2,12 +2,15 @@
 // read-back matches. The CLI (scripts/gbif-register.ts) does the io; state.ts holds the lock and the intent.
 import { sameCounts, type Contributions, type Registration } from "./derived-dataset.ts";
 
-// The body POSTed to /v1/derivedDataset.
-export interface DerivedDatasetRequest { title: string; description: string; sourceUrl: string; relatedDatasets: Record<string, number> }
+// The body POSTed to /v1/derivedDataset; originalDownloadDOI only for a target derived from one GBIF download.
+export interface DerivedDatasetRequest {
+  title: string; description: string; sourceUrl: string; relatedDatasets: Record<string, number>; originalDownloadDOI?: string;
+}
 
 // A derived dataset as GBIF returns it (GET /derivedDataset/{doi}, and each row of the user's listing); the fields read.
 export interface DerivedDatasetRecord {
   doi: string; title: string; description?: string | null; sourceUrl: string; citation: string; createdBy: string;
+  originalDownloadDOI?: string | null; // GBIF omits it when the derived dataset has none
 }
 
 // One row of GET /derivedDataset/{doi}/datasets.
@@ -138,12 +141,13 @@ export interface ReadBack {
   datasets: Record<string, number>; // contributions.datasets
   createdBy: string; // GBIF_USERNAME
   hash: string; // contributionsSha256; registration.contributionsSha256 on verify
+  expectedDownloadDoi: string | null; // the target's downloadDoi(contributions); null: GBIF must hold none
 }
 
-// Hard errors: GBIF holds other counts, another user's dataset, another deposit or no hash line. Warnings: GBIF's title
+// Hard errors: GBIF holds other counts, another user's dataset, another deposit or download, or no hash line. Warnings: GBIF's title
 // or description differs from what was sent (registration.json keeps GBIF's, so a minted DOI is never stuck).
 // checkDeposit(record.sourceUrl) is the caller's network check.
-export function readBackErrors({ expected, record, usages, datasets, createdBy, hash }: ReadBack): { hard: string[]; warnings: string[] } {
+export function readBackErrors({ expected, record, usages, datasets, createdBy, hash, expectedDownloadDoi }: ReadBack): { hard: string[]; warnings: string[] } {
   const hard: string[] = [];
   const warnings: string[] = [];
   const { counts, duplicates } = usageCounts(usages);
@@ -154,6 +158,10 @@ export function readBackErrors({ expected, record, usages, datasets, createdBy, 
   }
   if (record.createdBy !== createdBy) hard.push(`createdBy is ${record.createdBy}, not ${createdBy}`);
   if (!carriesHash(record.description, hash)) hard.push(`the description lacks the line "${hashLine(hash)}"`);
+  const downloadDoi = record.originalDownloadDOI ?? null;
+  if (downloadDoi !== expectedDownloadDoi) {
+    hard.push(`originalDownloadDOI is ${downloadDoi ?? "none"}, not ${expectedDownloadDoi ?? "none"}`);
+  }
   if (expected !== null) {
     if (record.sourceUrl !== expected.sourceUrl) hard.push(`sourceUrl is ${record.sourceUrl}, not ${expected.sourceUrl}`);
     if (record.title !== expected.title) warnings.push(`GBIF's title differs from the one sent: ${JSON.stringify(record.title)}`);
@@ -162,12 +170,14 @@ export function readBackErrors({ expected, record, usages, datasets, createdBy, 
   return { hard, warnings };
 }
 
-// registration.json from a read-back that passed readBackErrors: GBIF's values, no timestamps.
-export function toRegistration(record: DerivedDatasetRecord, usages: DatasetUsage[], hash: string): Registration {
+// registration.json from a read-back that passed readBackErrors: GBIF's values, no timestamps. originalDownloadDOI
+// only for a target with a download (downloadDoi), so countries' file keeps its keys.
+export function toRegistration(record: DerivedDatasetRecord, usages: DatasetUsage[], hash: string, downloadDoi: string | null): Registration {
   const { counts } = usageCounts(usages);
   return {
     doi: record.doi, citation: record.citation, title: record.title, description: record.description ?? "",
     sourceUrl: record.sourceUrl, createdBy: record.createdBy, contributionsSha256: hash,
     records: Object.values(counts).reduce((a, n) => a + n, 0), relatedDatasets: counts,
+    ...(downloadDoi === null ? {} : { originalDownloadDOI: downloadDoi }),
   };
 }
