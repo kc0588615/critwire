@@ -9,6 +9,8 @@ mkdirSync(ARTIFACTS, { recursive: true });
 
 export default defineConfig({
   testDir: "e2e",
+  // e2e/release/ is the release smoke, run against the live site by playwright.release.config.ts.
+  testIgnore: "release/**",
   workers: 1,
   forbidOnly: true,
   // Browser block renderings (plan D13): e2e/__snapshots__/<id>.txt, seeded by learn:port; never rewritten by a run.

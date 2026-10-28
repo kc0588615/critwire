@@ -956,7 +956,7 @@ Every step:
     - [T] The build refuses a missing variant, an SVG without `<title>`, a remote reference, and an unused file.
     - [E] Every referenced SVG returns 200 and has its `<img alt>` and `<title>`.
   - Verify: `T`, `E`, `H`.
-- [ ] S26 · W23: E2E completion and the release helper (D13 artifacts)
+- [x] S26 · W23: E2E completion and the release helper (D13 artifacts)
   - Screenshots `<page>-<width>-<scheme>.png` for the map, f3, d3, `schema-lab` and setup, at 1280 and 375 px, light and dark: 20 files. Every DoD E2E item has a test; list them in the Log.
   - `playwright.release.config.ts` + `e2e/release/live.spec.ts`, which the default config ignores. They run against `RELEASE_ORIGIN`:
     - every built `/learn/` page returns 200;
@@ -992,7 +992,7 @@ Run once, on the final commit (after any code-review fixes), on a clean tree, in
 1. **Install:** `pnpm install --frozen-lockfile` is up to date. `jq -r '.dependencies["@duckdb/duckdb-wasm"], .dependencies.esbuild, .devDependencies.mermaid' package.json` gives `1.33.1-dev65.0`, `0.28.2`, `12.2.0`.
 2. **Build:** plain `pnpm build` passes (fresh labs, current DOIs, no stale SVG). `find dist/learn/data -type f -printf '%s\n' | awk '{s+=$1} END{print s}'` is under 50,000,000 (about 40.0 MB), and so is the same sum over `data/raw/gbif-sample data/learn data/gbif-learn-sample`.
 3. **E2E (primary):** `rm -rf $M/e2e && E2E_ARTIFACTS=$M/e2e pnpm e2e`.
-   - Specs: `attribution`, `countries`, `docs`, `duckdb`, `files`, `learn-data`, `serving`, `learn-map`, `learn-browser`, `learn-labs`, `learn-timing`, `schema`.
+   - Specs: `attribution`, `countries`, `docs`, `duckdb`, `files`, `learn-data`, `serving`, `learn-map`, `learn-browser`, `learn-labs`, `learn-screens`, `learn-timing`, `schema`.
    - `jq .stats $M/e2e/results.json`: unexpected 0, skipped 0, flaky 0.
    - Artifact `$M/e2e/` holds:
      - `playwright-report/index.html`;
@@ -1032,7 +1032,7 @@ Run once, on the final commit (after any code-review fixes), on a clean tree, in
 - `$L/learn/assets/*.wasm` returns 200 with `content-type: application/wasm`. Every `/learn/assets/`, `/learn/labs/*.sql`, `/learn/schema/*.svg` and `/learn/diagrams/*.svg` file returns 200 with a sha256 equal to dist's.
 - `$L/learn/data/manifest.json` equals dist's. Every `star/` file returns 200, with the sha256 and bytes the manifest gives.
 - Every Baseline `/v1` and L1 `/learn/data/` file (the `H` list) fetched from `$L` hashes as in `$M/baseline-dist.sha256`.
-- `RELEASE_ORIGIN=$L pnpm exec playwright test -c playwright.release.config.ts`, with artifacts in `$M/release-smoke/`: f3's first block on `/learn/foundations/join/` shows its recorded result.
+- `RELEASE_ORIGIN=$L pnpm exec playwright test -c playwright.release.config.ts`, with artifacts in `$M/release-smoke/`: f3's first block on `/learn/foundations/join/` shows its recorded result. The helper (S26) also fetches every `dist/` file (each page at its folder URL) and compares its sha256 with dist's, and checks the `.wasm` content type, so it covers the page, asset, manifest, `star/` and `/v1` hash bullets above in one run.
 - `$L/learn/data/postgis/learn_curriculum.sql` and `$L/learn/labs/d3.sql`, saved to a temp folder:
   - `psql -X -v ON_ERROR_STOP=1 -d "$LEARN_PG_URL" -f learn_curriculum.sql`;
   - then `psql -X -d "$LEARN_PG_URL" -f d3.sql`: its `ERROR:` lines are exactly d3's announced ones (none);
@@ -1128,5 +1128,6 @@ Each step's isolated cases are its **First** list. What a session does when the 
 - 2026-10-28 20:06 UTC · S23: 004 d5 copy (INHERIT/SET grant options, PUBLIC defaults ≠ proof, `\drg`); `learn:port d5` (7 blocks, 6 recorded), `modules/d5.html`, d5 `built`; `d5-privileges` recorded as `critwire_lab` on `critwire_dev` (CONNECT/TEMPORARY false: db ACL revokes PUBLIC), 004 + page say why. T: typecheck ok, test 542/542; L twice: ok both (75 blocks ok, d5.sql 5 ERROR lines as announced, nothing left); P 11 pages, 286 files equal 004; E 72/72 (0 unexpected/skipped/flaky); H 169 equal; leak query empty.
 - 2026-10-28 20:29 UTC · S24: `modules/d6.html` prose (Concept, Worked example, Lab 1–6, Result, Exercise, Check, Dialects); d6-scd2 → `d6-scd2-versions` (check 0 | 0) + `d6-scd2` (SET NOT NULL, `name_then`), recorded by `learn:check --update`, copied to 004; 004 copy fixes (scd2, 4214, p2). T: typecheck ok, test 542/542; L twice: ok both (76 blocks ok, d6.sql 0 ERROR lines, nothing left), star files' sha256 equal both runs (no `STAR_BLOCKS` block changed); P 11 pages, 288 files equal 004; E 72/72 (0 unexpected/skipped/flaky); H 169 equal.
 - 2026-10-28 20:44 UTC · S25: diagram-design gate (profile `critwire`, `.diagram-design`); `site/learn/diagrams/` 4 diagrams × (html, dark html, svg, dark svg), all `self_check.py --offline` OK; `scripts/build/learn/diagrams.ts` (`checkDiagrams`, `readDiagrams`, `diagramHtml`) in readLearnInputs, `writeLearn` → `dist/learn/diagrams/`, `{{diagram:…}}` renders `<picture>` (module-html); slots on setup, d3, d4, d6; `figure.diagram` CSS; 004 §7.5 sources + refusal. Red: DG1–6 (file failing to load) + MH8 → green; [E] new schema test 1/1 failing on old dist → green. T: typecheck ok, test 548/548; B ok; H 169 files equal; E 73/73 (0 skipped, 0 flaky).
+- 2026-10-28 20:56 UTC · S26: `e2e/learn-screens.spec.ts` (5 tests: map, f3 with its first block run = snapshot, d3, schema-lab, setup × 1280/375 × light/dark → 20 `<page>-<width>-<scheme>.png`, each fits its width, origin fence); `coursePages`/`runBlock`/`rendered` moved to `e2e/helpers.ts` (+ `firstBrowserBlock`); release helper `playwright.release.config.ts` + `e2e/release/live.spec.ts` (every dist/ file served with dist's sha256, page at folder URL; `.wasm` = application/wasm; f3-brazil-list = snapshot), ignored by the default config. DoD E2E → test: every browser block = learn-browser "every browser block…"; exercises right/wrong + skip checks mark done = learn-browser "every exercise and skip check…" + "d1-ex…"; Reset/Stop = "Reset restores…"; one engine across three pages = "f1, f2 and the playground…"; lab code = download = learn-labs "each download is served as assembled…"; origin fence = `offOrigin` in every learnContext test; SC2 = "a tampered /v1/species.parquet…" + learn-data "inputs"; star = learn-data "the star…"; cap = learn-data "the folder is at most 50,000,000 bytes"; timing = learn-timing; diagrams = schema "each teaching diagram…"; screenshots = learn-screens. T: typecheck ok, test 548/548; B ok (learn/data 40,041,618 B); E 78/78 (0 unexpected/skipped/flaky, `$M/e2e-s26`, 20 screenshots); helper dry run vs local Caddy 3/3 (`$M/release-dryrun`; first run red: `//` URL from readdir's top-level parentPath → `path.relative`); H 169 equal.
 
 ## Summary

@@ -5,16 +5,14 @@
 // marks its module done); one engine (one worker) across three pages; the changed generation across pages, and a
 // lesson editor's refusal of transaction control. The worker's .wasm fetch must reach context.route first, because the fence
 // and the boot cases rely on routing.
-import { expect, test, type Locator, type Page } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { readFile } from "node:fs/promises";
 import { dictionaries } from "../scripts/build/learn/erd.ts";
 import { moduleUrl } from "../scripts/build/learn/module-html.ts";
-import { SETUP_PAGE, type CoursePage } from "../scripts/learn/course.ts";
 import { readCourse } from "../scripts/learn/course-files.ts";
-import { renderError, renderResult } from "../scripts/learn/result.ts";
 import { ERD_DIR } from "../scripts/learn/erd-model.ts";
 import { DUCKDB_DIR, ASSETS } from "../site/learn/src/assets.ts";
-import { engineState, hookResult, learnContext, learnManifest, ORIGIN, records, repoPath, runPlayground, waitReady } from "./helpers.ts";
+import { coursePages, engineState, hookResult, learnContext, learnManifest, ORIGIN, records, rendered, repoPath, runBlock, runPlayground, waitReady } from "./helpers.ts";
 
 const PLAYGROUND = "/learn/playground/";
 const WASM = `${ORIGIN}${ASSETS}/${DUCKDB_DIR}/duckdb-eh.wasm`;
@@ -242,25 +240,6 @@ test("a statement that writes rows says N rows changed", async ({ browser }) => 
 
 // A walk over the course pages loads each one (an engine boot) and runs its blocks: about 5 s a page, so 15 s each.
 const PAGE_BUDGET_MS = 15_000;
-
-// The course pages (setup, then the built modules) with their URLs.
-async function coursePages(): Promise<{ page: CoursePage; url: string }[]> {
-  const c = await readCourse();
-  return c.pages.map((p) => ({ page: p, url: p.page.id === SETUP_PAGE ? "/learn/setup/" : moduleUrl(c.curriculum!.modules.find((m) => m.id === p.page.id)!) }));
-}
-
-// Clicks the block's Run (or Check) and waits for its region.
-async function runBlock(block: Locator): Promise<void> {
-  await block.locator("[data-run]").click();
-  await expect(block.locator(".result")).not.toHaveAttribute("aria-busy", "true", { timeout: 30_000 });
-}
-
-// A block's last outcome as the recorded text (scripts/learn/result.ts), the form its snapshot holds.
-async function rendered(page: Page, id: string): Promise<string> {
-  const r = await hookResult(page, id);
-  if (!r) throw new Error(`${id}: no result`);
-  return "error" in r ? renderError(id, r.error) : renderResult(id, r);
-}
 
 test("every browser block of the course pages equals its snapshot, and cards follow the card rule", async ({ browser }) => {
   const { context, offOrigin } = await learnContext(browser);

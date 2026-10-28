@@ -1,12 +1,16 @@
 // Shared E2E helpers (plan §9): paths and origins, the committed records, the dist/ check, DuckDB, the local Caddy's
-// access log, and Learn's browser pages (learnContext, waitReady).
-import { expect, type Browser, type BrowserContext, type Page } from "@playwright/test";
+// access log, and Learn's browser pages (learnContext, waitReady, the course pages and running their blocks).
+import { expect, type Browser, type BrowserContext, type Locator, type Page } from "@playwright/test";
 import { DuckDBInstance } from "@duckdb/node-api";
 import { createHash, randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { LabManifest } from "../scripts/build/learn/data.ts";
+import { moduleUrl } from "../scripts/build/learn/module-html.ts";
+import { SETUP_PAGE, type CoursePage } from "../scripts/learn/course.ts";
+import { readCourse } from "../scripts/learn/course-files.ts";
+import { renderError, renderResult } from "../scripts/learn/result.ts";
 import { readLabFiles } from "../scripts/learn/lab-files.ts";
 import { speciesFile, type Species } from "../scripts/species.ts";
 
@@ -145,4 +149,34 @@ export async function runPlayground(page: Page, sql: string): Promise<void> {
   await page.locator("#playground-sql").fill(sql);
   await page.locator("#playground [data-run]").click();
   await expect(page.locator("#playground-result")).not.toHaveAttribute("aria-busy", "true", { timeout: 30_000 });
+}
+
+// The course pages (setup, then the built modules) with their URLs.
+export async function coursePages(): Promise<{ page: CoursePage; url: string }[]> {
+  const c = await readCourse();
+  return c.pages.map((p) => ({ page: p, url: p.page.id === SETUP_PAGE ? "/learn/setup/" : moduleUrl(c.curriculum!.modules.find((m) => m.id === p.page.id)!) }));
+}
+
+// Clicks the block's Run (or Check) and waits for its region.
+export async function runBlock(block: Locator): Promise<void> {
+  await block.locator("[data-run]").click();
+  await expect(block.locator(".result")).not.toHaveAttribute("aria-busy", "true", { timeout: 30_000 });
+}
+
+// A block's last outcome as the recorded text (scripts/learn/result.ts), the form its snapshot holds.
+export async function rendered(page: Page, id: string): Promise<string> {
+  const r = await hookResult(page, id);
+  if (!r) throw new Error(`${id}: no result`);
+  return "error" in r ? renderError(id, r.error) : renderResult(id, r);
+}
+
+// A module's first browser (DuckDB) block in page order, and the module's URL: the block the screenshots and the
+// release smoke run.
+export async function firstBrowserBlock(moduleId: string): Promise<{ id: string; url: string }> {
+  const found = (await coursePages()).find((c) => c.page.page.id === moduleId);
+  if (!found) throw new Error(`${moduleId}: no built page`);
+  const { slots, blocks } = found.page;
+  const id = slots.find((s) => s.kind === "block" && blocks.find((b) => b.id === s.name)?.engine === "duckdb")?.name;
+  if (!id) throw new Error(`${moduleId}: no browser block`);
+  return { id, url: found.url };
 }
