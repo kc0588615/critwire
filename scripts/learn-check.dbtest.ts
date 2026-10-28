@@ -38,6 +38,9 @@
 //      pass (psql exits 0 either way) → each refused, naming the file and the first unexpected error.
 // DL2: a clean run skips the downloads, or leaves checked.json unwritten or rewritten with nothing changed → the
 //      setup page's pg-checks.sql runs after a fresh load with a leak check, and checked.json stays byte for byte.
+// Lab ERD (plan D10, S8): site/learn/erd/lab.mmd against learn_curriculum after the boot blocks.
+// LE1: the lab gains a column the ERD lacks (a boot block's ALTER), or the ERD a column the lab lacks, and the run
+//      passes → refused before any other block runs, naming the column; a clean run reports the match.
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { createHash, randomBytes } from "node:crypto";
@@ -326,6 +329,7 @@ test("LC5 + LC10 + DL2 a clean run loads twice to the manifest's counts, runs pg
   assert.match(r.stdout, /leak check \(the run\): nothing left/);
   assert.match(r.stdout, /learn:check: download pg-checks\.sql: fresh load, then the file: 0 ERROR line\(s\), as announced/);
   assert.match(r.stdout, /leak check \(download pg-checks\.sql\): nothing left/);
+  assert.match(r.stdout, /learn:check: lab ERD: site\/learn\/erd\/lab\.mmd = learn_curriculum \(\d+ tables\)/);
   assert.match(r.stdout, /learn:check: (wrote|unchanged:) site\/learn\/labs\/checked\/checked\.json/);
   assert.deepEqual(await labCounts(), Object.fromEntries(Object.entries(tables).sort(([a], [b]) => a.localeCompare(b))));
   const calls = readFileSync(dump, "utf8").split("=== call\n").filter(Boolean);
@@ -481,4 +485,28 @@ test("DL1 an unannounced error, a missing announced one, or errors in the wrong 
     /download missing\.sql: q-a's announced error "division by zero" didn't happen \(0 ERROR lines\)/);
   await assert.rejects(runFile("order.sql", "SELECT 'x'::int;\nSELECT 1/0;\n", [{ block: "q-a", text: "division by zero" }, { block: "q-b", text: "invalid input syntax" }]),
     /download order\.sql: ERROR line 1 isn't q-a's announced "division by zero": .*invalid input syntax/);
+});
+
+test("LE1 a lab column the ERD lacks, or an ERD column the lab lacks, fails the lab ERD check before any other block, named", async () => {
+  const lab = readFileSync(join(repo, "site/learn/erd/lab.mmd"), "utf8");
+  const scratch = "scratch_le1";
+  const { block: boot } = parseBlock("le1-boot.sql", ["-- q: le1-boot", "-- status: ran", "-- engine: postgis", "-- boot",
+    `ALTER TABLE occurrences ADD COLUMN ${scratch} integer;`, `SELECT count(*) AS n FROM occurrences WHERE ${scratch} IS NULL`].join("\n"));
+  const { block: later } = parseBlock("le1-later.sql", ["-- q: le1-later", "-- status: ran", "-- engine: postgis", "SELECT pg_sleep(30) IS NULL AS slept"].join("\n"));
+  const started = Date.now();
+  try {
+    await assert.rejects(checkLab(labTarget(), { dist, canarySchema: CANARY_SCHEMA, blocks: [later!, boot!], labErd: lab }),
+      (e: Error) => {
+        assert.match(e.message, /lab ERD: site\/learn\/erd\/lab\.mmd differs from learn_curriculum:\n {2}ERD: occurrences\.scratch_le1 is in the database \(integer\) but not in the ERD/);
+        return true;
+      });
+    assert.ok(Date.now() - started < 30_000, "refused before le1-later ran");
+  } finally {
+    await admin.unsafe(`ALTER TABLE learn_curriculum.occurrences DROP COLUMN IF EXISTS ${scratch}`);
+  }
+  const fewer = lab.replace(/^ *float8 longitude .*\n/m, "");
+  assert.notEqual(fewer, lab);
+  await assert.rejects(checkLab(labTarget(), { dist, canarySchema: CANARY_SCHEMA, labErd: fewer }),
+    /lab ERD: site\/learn\/erd\/lab\.mmd differs from learn_curriculum:\n {2}ERD: occurrences\.longitude is in the database \(double precision\) but not in the ERD/);
+  await assertLockFree();
 });

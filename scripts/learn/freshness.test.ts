@@ -7,7 +7,9 @@
 // - a recorded result edited after learn:check keeps its stamp → refused, naming the file;
 // - a block without a key, a key without a block, a download changed, missing or extra → refused, naming it;
 // - a rerun with nothing changed rewrites checked.json (a date-only diff in every PR) → byte for byte;
-// - the checker imports the build's species chain, so every data edit makes every lab stale → its closure is pinned.
+// - the checker imports the build's species chain, so every data edit makes every lab stale → its closure is pinned;
+// - lab.mmd, the loader or a boot block changes after learn:check checked the lab ERD against them → labErd moves and
+//   the build refuses it; a plain block or another data file leaves it alone.
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
@@ -43,6 +45,7 @@ const files: KeyFiles = {
     "star/fact_records.csv": { sha256: "c".repeat(64), bytes: 30 },
   },
   checker: { "scripts/learn/runner.ts": "d".repeat(64), "db/learn/canary.sql": "e".repeat(64), "site/learn/labs/requirements.txt": "f".repeat(64) },
+  labErd: "erDiagram\n  taxa {\n    INTEGER id PK\n  }\n",
 };
 const results = (pages: CoursePage[]) => new Map(pages.flatMap((p) => p.blocks).map((x) => [x.id, `-- result: ${x.id}`]));
 const fresh = (pages = course(), f: KeyFiles = files) => freshness(pages, f, results(pages));
@@ -141,6 +144,7 @@ test("FR7 the checker's closure: learn-check.ts's relative imports, nothing from
     "scripts/learn/cleanup.ts",
     "scripts/learn/course-files.ts",
     "scripts/learn/course.ts",
+    "scripts/learn/erd-model.ts",
     "scripts/learn/freshness.ts",
     "scripts/learn/leaks.ts",
     "scripts/learn/pg.ts",
@@ -150,6 +154,28 @@ test("FR7 the checker's closure: learn-check.ts's relative imports, nothing from
     "scripts/learn/runner.ts",
     "scripts/learn/setup.ts",
   ]);
+});
+
+test("FR8 labErd moves with lab.mmd, the loader and a boot block; not with a plain block, another data file or the checker", () => {
+  const base = fresh().labErd;
+  assert.match(base, /^[0-9a-f]{64}$/);
+  const m = files.manifest;
+  const with_ = (over: Partial<KeyFiles>, pages = course()) => fresh(pages, { ...files, ...over }).labErd;
+  assert.notEqual(with_({ labErd: files.labErd + "%% a comment\n" }), base, "lab.mmd");
+  assert.notEqual(with_({ manifest: { ...m, "postgis/learn_curriculum.sql": { sha256: "1".repeat(64), bytes: 20 } } }), base, "the loader");
+  assert.notEqual(fresh(course({ boot: edit(boot, "-- a comment") })).labErd, base, "a boot block");
+  assert.equal(fresh(course({ c: edit(c, "-- a comment") })).labErd, base, "a plain block");
+  assert.equal(with_({ manifest: { ...m, "occurrences.csv": { sha256: "1".repeat(64), bytes: 10 } } }), base, "another data file");
+  assert.equal(with_({ checker: { ...files.checker, "scripts/learn/runner.ts": "1".repeat(64) } }), base, "the checker");
+  const { "postgis/learn_curriculum.sql": _, ...noLoader } = m;
+  assert.throws(() => with_({ manifest: noLoader }), /manifest has no postgis\/learn_curriculum\.sql/);
+  const now = fresh();
+  assert.deepEqual(staleness(stamp({ ...now, labErd: "0".repeat(64) }), now),
+    ["the lab ERD is stale (site/learn/erd/lab.mmd, the loader or a boot block changed): run pnpm learn:check"]);
+  const { labErd: __, ...unstamped } = now;
+  assert.deepEqual(staleness({ ...stamp(now), ...unstamped, labErd: undefined as unknown as string }, now),
+    ["the lab ERD is stale (site/learn/erd/lab.mmd, the loader or a boot block changed): run pnpm learn:check"]);
+  assert.equal(JSON.parse(nextStamp(null, now, stamp(now).versions, "2026-10-28")!).labErd, now.labErd);
 });
 
 test("FR7 importClosure follows `from` and side-effect imports, relative only, and refuses a missing file", () => {

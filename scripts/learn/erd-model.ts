@@ -6,7 +6,22 @@
 // `%% lab-made:` tables aren't drawn and may exist; `%% planned:` entities are drawn and must not exist yet.
 // Anything outside the subset fails with its line, so no check skips a line it doesn't understand.
 // Tests: erd-model.test.ts (RQE1–5, RE1–5, EG1–4).
+import { createHash } from "node:crypto";
 import type { Result } from "./result.ts";
+
+/** Where the ERD sources and their SVGs live; lab.mmd is learn:check's (its drift check and checked.json's labErd). */
+export const ERD_DIR = "site/learn/erd";
+export const LAB_ERD = `${ERD_DIR}/lab.mmd`;
+
+const SOURCE_SHA = /^<svg [^>]*\bdata-source-sha256="([0-9a-f]{64})"/;
+
+/**
+ * Whether `svg` (undefined: no file) isn't the drawing of `source`: missing, unstamped, or stamped for other text.
+ * pnpm erd stamps each SVG's root with its source's sha256 (erd-render.ts); the build refuses a stale one.
+ */
+export function svgStale(source: string, svg: string | undefined): boolean {
+  return svg === undefined || SOURCE_SHA.exec(svg)?.[1] !== createHash("sha256").update(source).digest("hex");
+}
 
 export type Key = "PK" | "FK" | "UK";
 

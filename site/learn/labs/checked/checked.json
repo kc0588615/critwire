@@ -7,23 +7,24 @@
   "checked": "2026-10-28",
   "blocks": {
     "pg-role-smoke": {
-      "key": "016a926a4cc4ef07799bc5afcf2a6b01dc850bcc1f297c7a2887954ec243e210",
+      "key": "17f8e86c6b254b0ef90b561c582c99d572410dfa12a42e5468048b3f6254c990",
       "result": "d721ea358edd040973fd9309b3e45b68943b9bad01b9efecd1da082d374c7f30"
     },
     "pg-session": {
-      "key": "5923273b7b0b1a7bf27a082adef39b28dfcf063efaafa9d25422d9c5e81b6cfa",
+      "key": "448a29db9e26c82a825df0205d99020a6a942c1f43babc0c283710dd34a504e0",
       "result": "50d5025879122dc884be370279e1641efc466c9e634913b0eadb0ee31afdf123"
     },
     "pg-smoke": {
-      "key": "af8cebfe5766c914031194396cfcef436b88b6c0417e91b81a2f808d4f452c86",
+      "key": "a243973d84ffdd3cfab7686792aab29de78a588dc0adc80752c9ab560e909670",
       "result": "af0da737a03947ed918331e407c451ad198432157dda1f9bedec5a3c7d81138b"
     },
     "pg-tx-smoke": {
-      "key": "722ee40b39a767c3577535f4e753c14df99d1ca1f33584eb68d9cf6a0cd8f79f",
+      "key": "3d82bd1f79c135d57aac542df7803e815cd2984cf5f6864d5a3187d5a49a675b",
       "result": "eb5022d9315c90f5cc48bf18dac53418b13ddd980d2d8b638e9c8a8ebd5b9b93"
     }
   },
   "downloads": {
     "pg-checks.sql": "8a92562f17a79a5ae9d8656e99e0e556ed647455359a487e1ae94eab9983226c"
-  }
+  },
+  "labErd": "3f235472aaf0ad0576db75ed4165b8d36701e3d4210e3f3b4d809c16225d216b"
 }

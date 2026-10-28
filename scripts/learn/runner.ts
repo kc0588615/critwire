@@ -361,6 +361,8 @@ export interface BlocksOptions extends RunOptions {
   /** Print each block's rendered result (learn:check --module). */
   show?: boolean;
   log?: (line: string) => void;
+  /** Runs once the boot blocks committed, before any other block (learn:check's lab ERD check); a throw stops the run. */
+  afterBoot?: () => Promise<void>;
 }
 
 async function readRecorded(file: string): Promise<string | undefined> {
@@ -374,29 +376,29 @@ async function readRecorded(file: string): Promise<string | undefined> {
 
 /**
  * The page's blocks against their recorded results: the `-- boot` blocks first, once (a failing one throws at once),
- * then the rest in order; with `update`, each of the rest run twice and, once every block passed, each result written
- * where it changed. Throws naming every failure.
+ * then `afterBoot`, then the rest in order; with `update`, each of the rest run twice and, once every block passed,
+ * each result written where it changed. Throws naming every failure.
  */
-export async function runBlocks(s: LabSession, blocks: readonly Block[], { update, checkedDir = CHECKED_DIR, show = false, log = console.log, ...run }: BlocksOptions): Promise<void> {
+export async function runBlocks(s: LabSession, blocks: readonly Block[], { update, checkedDir = CHECKED_DIR, show = false, log = console.log, afterBoot, ...run }: BlocksOptions): Promise<void> {
   const page = new Map(blocks.map((b) => [b.id, b]));
   const failures: string[] = [];
   const writes: [file: string, text: string][] = [];
-  for (const b of [...blocks.filter((x) => x.boot), ...blocks.filter((x) => !x.boot)]) {
+  const one = async (b: Block): Promise<void> => {
     const q = `q ${b.id}`;
     const file = join(checkedDir, `${b.id}.txt`);
     const first = await runBlock(s, b, page, run);
     if (b.boot && first.failures.length) throw new Error(`boot block ${b.id}: ${first.failures.join("; ")}`);
     failures.push(...first.failures);
-    if (first.rendered === undefined) continue;
+    if (first.rendered === undefined) return;
     if (show) log(`learn:check: ${q}:\n  ${first.rendered.split("\n").join("\n  ")}`);
     const recorded = await readRecorded(file);
     if (update) {
       const second = b.boot ? first : await runBlock(s, b, page, run);
       failures.push(...(b.boot ? [] : second.failures));
-      if (second.rendered === undefined) continue;
+      if (second.rendered === undefined) return;
       if (!b.plan.length && second.rendered !== first.rendered) {
         failures.push(`${q}: two runs differ, so its result isn't reproducible:\n  ${lineDiff(first.rendered, second.rendered).join("\n  ")}`);
-        continue;
+        return;
       }
       if (recorded !== first.rendered) writes.push([file, first.rendered]);
     } else if (recorded === undefined) failures.push(`${q}: no recorded result: run pnpm learn:check --update`);
@@ -405,7 +407,10 @@ export async function runBlocks(s: LabSession, blocks: readonly Block[], { updat
       if (b.plan.length) log(`learn:check: ${q}: the plan's text differs from ${file} (its assertions hold):\n  ${diff}`);
       else failures.push(`${q}: result differs from ${file}:\n  ${diff}`);
     } else if (!first.failures.length) log(`learn:check: ${q}: ok`);
-  }
+  };
+  for (const b of blocks.filter((x) => x.boot)) await one(b);
+  await afterBoot?.();
+  for (const b of blocks.filter((x) => !x.boot)) await one(b);
   if (failures.length) throw new Error(`blocks: ${failures.length} failure(s):\n${failures.join("\n")}`);
   if (writes.length) await mkdir(checkedDir, { recursive: true });
   for (const [file, text] of writes) {

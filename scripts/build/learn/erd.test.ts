@@ -1,9 +1,11 @@
 // The build's ERD inputs (erd.ts; plan D10, S7): the four .mmd under site/learn/erd/, each parsed; schema.mmd extends
 // v1.mmd unchanged; the drawn three carry accTitle/accDescr; markers name drawn entities only; every dictionary entity
-// has a source. Written before the code.
+// has a source; each drawn SVG (pnpm erd) carries its source's sha256, so a stale or missing one is refused (S8).
+// Written before the code.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { ERD_NAMES, dictionaries, erdErrors, readErds, type ErdTexts } from "./erd.ts";
+import { createHash } from "node:crypto";
+import { ERD_NAMES, dictionaries, erdErrors, readErds, svgErrors, type ErdTexts } from "./erd.ts";
 
 const real = async (): Promise<ErdTexts> => (await readErds()).texts;
 const errorsWith = (texts: ErdTexts, change: Partial<ErdTexts>) => erdErrors({ ...texts, ...change });
@@ -70,4 +72,16 @@ test("dictionary sources are plain copy: no mission names, no plan section numbe
   for (const name of ["schema", "lab", "star"] as const)
     for (const d of dictionaries(t[name]))
       for (const r of d.rows) assert.doesNotMatch(r.source, /\bmission\b|\b[A-Z]\d\b|§/, `${d.table}.${r.column}: ${r.source}`);
+});
+
+const sha = (s: string) => createHash("sha256").update(s).digest("hex");
+const svgFor = (text: string) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10" data-source-sha256="${sha(text)}"><title>t</title></svg>`;
+
+test("svgErrors: each drawn ERD's SVG must carry its .mmd's sha256; a stale, unstamped or missing one is refused", async () => {
+  const t = await real();
+  const fresh = { schema: svgFor(t.schema), lab: svgFor(t.lab), star: svgFor(t.star) };
+  assert.deepEqual(svgErrors(t, fresh), []);
+  assert.deepEqual(svgErrors(t, { ...fresh, lab: svgFor(t.lab + "%% edited\n") }), ["site/learn/erd/lab.svg is stale: run pnpm erd"]);
+  assert.deepEqual(svgErrors(t, { ...fresh, star: '<svg viewBox="0 0 10 10"></svg>' }), ["site/learn/erd/star.svg is stale: run pnpm erd"]);
+  assert.deepEqual(svgErrors(t, { schema: fresh.schema, lab: fresh.lab }), ["site/learn/erd/star.svg: missing: run pnpm erd"]);
 });

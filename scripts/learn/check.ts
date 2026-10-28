@@ -8,7 +8,8 @@
 //   load is one transaction); then the leak check, so a leaking loader is named before any block runs;
 // - blocks: the given PostGIS blocks (pg-role-smoke among them), in page order, in one runner session (runner.ts), each
 //   in the runner's transaction, checked against their recorded results or, with `update`, written; `-- tx: own`
-//   blocks must leave the canary and learn_curriculum unchanged;
+//   blocks must leave the canary and learn_curriculum unchanged. Once the boot blocks committed, the lab ERD
+//   (site/learn/erd/lab.mmd, with its lab-made and planned lists) must match learn_curriculum's catalog both ways;
 // - downloads: each assembled lab file (assemble.ts) on a fresh load, as a learner runs it (the loader, then psql -X -f,
 //   no ON_ERROR_STOP): psql's ERROR lines must be exactly the file's announced errors, in order; then the leak check;
 // - end: the canary unchanged and no learn_ role or schema left behind;
@@ -30,13 +31,13 @@ import type { Block } from "./blocks.ts";
 import { takeLabLock, type LabLock } from "./cleanup.ts";
 import type { CoursePage } from "./course.ts";
 import { readCourse } from "./course-files.ts";
-import { CHECKED_JSON, nextStamp, readFreshness, STAMP_FILE, type Versions } from "./freshness.ts";
+import { dbMeta, LAB_ERD, markerDrift, markers, parseErd, PG_META_SQL } from "./erd-model.ts";
+import { CHECKED_JSON, LOADER, nextStamp, readFreshness, STAMP_FILE, type Versions } from "./freshness.ts";
 import { learnObjects } from "./leaks.ts";
 import { CANARY_SCHEMA, childEnv, LAB_SCHEMA, libpqTarget, LIVE_DATABASE, pgConnect, psqlArgs, type PgTarget } from "./pg.ts";
-import { openSession, runBlocks, serverVersions, tablesDiff } from "./runner.ts";
+import { openSession, runBlocks, serverVersions, tablesDiff, type LabSession } from "./runner.ts";
 
 export { CANARY_SCHEMA };
-const LOADER = "postgis/learn_curriculum.sql";
 const CANARY_SQL = new URL("../../db/learn/canary.sql", import.meta.url);
 const SETUP = "run pnpm learn:check --setup as the superuser";
 
@@ -57,6 +58,8 @@ export interface CheckOptions {
   downloads?: readonly Download[];
   /** The whole course: once every stage passed, checked.json is written for it. */
   stamp?: readonly CoursePage[];
+  /** lab.mmd's text, checked against learn_curriculum after the boot blocks (the CLI passes the committed one). */
+  labErd?: string;
 }
 
 /** Throws when the connection reached the live database, whatever name it asked for (LC2). */
@@ -164,6 +167,8 @@ export interface StaticCourse {
   blocks: Block[];
   /** The downloads to run: every page's, or one module's. */
   downloads: Download[];
+  /** lab.mmd's text, parsed. */
+  labErd: string;
 }
 
 /**
@@ -177,8 +182,15 @@ export async function staticStage(module?: string): Promise<StaticCourse> {
   const run = module === undefined ? pages : pages.filter((p) => p.page.id === module);
   if (module !== undefined && !run.length) throw new Error(`--module ${module}: no such page (${pages.map((p) => p.page.id).join(", ")})`);
   const downloads = assembleDownloads(pages).filter((d) => module === undefined || d.page === module);
+  const labErd = await readFile(new URL(`../../${LAB_ERD}`, import.meta.url), "utf8");
+  try {
+    parseErd(labErd);
+    markers(labErd);
+  } catch (e) {
+    throw new Error(`static: ${LAB_ERD}: ${(e as Error).message}`);
+  }
   console.log(`learn:check: static: ${pages.length} page(s), ${pages.reduce((n, p) => n + p.blocks.length, 0)} block(s) parsed and linted, ${downloads.length} download(s) assembled`);
-  return { pages, blocks: run.flatMap((p) => p.blocks), downloads };
+  return { pages, blocks: run.flatMap((p) => p.blocks), downloads, labErd };
 }
 
 /** What the stages share: the lab connection, the lock, the admin target (the canary's reader), the canary at connect. */
@@ -245,16 +257,27 @@ async function loaderStage(lab: PgTarget, run: Run, { file, text, entry }: Loade
   await assertNoLeaks(run, "the loader");
 }
 
+// lab.mmd against the session schema's catalog (learn_curriculum, pg-session's search_path), both ways; throws
+// naming every difference.
+async function assertLabErd(s: LabSession, text: string): Promise<void> {
+  const meta = dbMeta(await Promise.all(PG_META_SQL.map(async (q) => ({ columns: [], rows: await s.sql.unsafe(q).values() }))));
+  const drift = markerDrift(parseErd(text), meta, markers(text));
+  if (drift.length) throw new Error(`lab ERD: ${LAB_ERD} differs from ${LAB_SCHEMA}:\n  ${drift.join("\n  ")}`);
+  console.log(`learn:check: lab ERD: ${LAB_ERD} = ${LAB_SCHEMA} (${meta.tables.length} tables)`);
+}
+
 // The ran PostGIS blocks, in page order, in one runner session (recorded with the lock); checked against
 // checked/<id>.txt, or written. `-- tx: own` blocks are watched against the canary (where it exists) and learn_curriculum.
-async function blocksStage(lab: PgTarget, run: Run, blocks: readonly Block[], update: boolean, show: boolean): Promise<void> {
+// `labErd`: checked once the boot blocks committed.
+async function blocksStage(lab: PgTarget, run: Run, blocks: readonly Block[], update: boolean, show: boolean, labErd?: string): Promise<void> {
   const { admin, canarySchema, canaryBefore, lock, signal } = run;
   const pg = blocks.filter((b) => b.engine === "postgis" && b.status === "ran");
   const watch = { schemas: [...(canaryBefore ? [canarySchema] : []), LAB_SCHEMA], read: (schema: string) => readTables(admin, schema, signal) };
   const session = await openSession(lab, signal);
   lock.record(session.pid);
   try {
-    await runBlocks(session, pg, { update, show, known: new Set(lock.known), watch });
+    const afterBoot = labErd === undefined ? undefined : () => assertLabErd(session, labErd);
+    await runBlocks(session, pg, { update, show, known: new Set(lock.known), watch, afterBoot });
   } finally {
     await session.end();
   }
@@ -343,7 +366,7 @@ async function endStage(run: Run): Promise<void> {
  * Runs learn:check's stages against `lab` (labTarget, already refused by name); throws at the first failed check, with
  * any cleanup failure added.
  */
-export async function checkLab(lab: PgTarget, { dist, canarySchema, signal, blocks = [], update = false, show = false, downloads = [], stamp }: CheckOptions): Promise<void> {
+export async function checkLab(lab: PgTarget, { dist, canarySchema, signal, blocks = [], update = false, show = false, downloads = [], stamp, labErd }: CheckOptions): Promise<void> {
   assertCanarySchema(canarySchema);
   const sql = pgConnect(lab);
   let lock: LabLock | undefined;
@@ -356,7 +379,7 @@ export async function checkLab(lab: PgTarget, { dist, canarySchema, signal, bloc
     tmp = await mkdtemp(join(tmpdir(), "critwire-learn-check-"));
     const loader = await readLoader(dist);
     await loaderStage(lab, run, loader, tmp);
-    await blocksStage(lab, run, blocks, update, show);
+    await blocksStage(lab, run, blocks, update, show, labErd);
     await downloadsStage(lab, run, loader, downloads, tmp);
     await endStage(run);
     if (stamp) await writeStamp(dist, stamp, run.versions);

@@ -6,6 +6,8 @@
 //   `name\0sha256`, so none can blur into another.
 // - Each block's result: the sha256 of site/learn/labs/checked/<id>.txt, so a result edited later loses its stamp.
 // - Each download's sha256 as assembled (assemble.ts).
+// - labErd: a sha256 over what decides the lab ERD check (learn:check compares lab.mmd with learn_curriculum after the
+//   boot blocks): lab.mmd, the loader's sha256 and the boot blocks' texts.
 // - The versions it ran on, and the date: recorded, never compared. The date moves only with something else.
 // learn:check writes it (nextStamp) once every stage passed; the build compares (staleness). readFreshness reads the
 // inputs; the rest is pure. Tests: freshness.test.ts.
@@ -16,12 +18,15 @@ import { formatJson } from "../json.ts";
 import { assembleDownloads } from "./assemble.ts";
 import { CHECKED_DIR, PG_SESSION_ID, type Block } from "./blocks.ts";
 import type { CoursePage } from "./course.ts";
+import { LAB_ERD } from "./erd-model.ts";
 
 export const CHECKED_JSON = `${CHECKED_DIR}/checked.json`;
 /** The checker whose source closure enters every key, and the files it reads besides its sources. */
 export const CHECKER_ENTRY = "scripts/learn-check.ts";
 export const CHECKER_FILES = ["db/learn/canary.sql", "site/learn/labs/requirements.txt"];
 const MANIFEST = "learn/data/manifest.json";
+/** The loader, as the data manifest's `files` names it. */
+export const LOADER = "postgis/learn_curriculum.sql";
 
 export interface Versions {
   postgresql: string;
@@ -33,6 +38,8 @@ export interface Versions {
 export interface Fresh {
   blocks: Record<string, { key: string; result: string }>;
   downloads: Record<string, string>;
+  /** The lab ERD check's inputs, hashed. */
+  labErd: string;
 }
 
 export interface Stamp extends Fresh {
@@ -47,6 +54,8 @@ export interface KeyFiles {
   manifest: Readonly<Record<string, { sha256: string } & Record<string, unknown>>>;
   /** Each checker file's sha256, by repository path. */
   checker: Readonly<Record<string, string>>;
+  /** lab.mmd's text (labErd only). */
+  labErd: string;
 }
 
 const sha256 = (text: string | Buffer) => createHash("sha256").update(text).digest("hex");
@@ -87,7 +96,11 @@ export function freshness(pages: readonly CoursePage[], files: KeyFiles, results
     }
   }
   const downloads = Object.fromEntries(assembleDownloads(pages).map((d) => [d.name, sha256(d.text)]));
-  return { blocks: sorted(blocks), downloads: sorted(downloads) };
+  const loader = files.manifest[LOADER];
+  if (!loader) throw new Error(`the data manifest has no ${LOADER}: run pnpm build`);
+  const boots = [...all.values()].filter((x) => isLab(x) && x.boot).map((x) => `block ${x.id}\0${sha256(x.text)}`).sort();
+  const labErd = sha256([`${LAB_ERD}\0${sha256(files.labErd)}`, `learn/data/${LOADER}\0${loader.sha256}`, ...boots].join("\n"));
+  return { blocks: sorted(blocks), downloads: sorted(downloads), labErd };
 }
 
 /** Lists ids: all of them up to five, else the first five and a count. */
@@ -109,12 +122,13 @@ export function staleness(stamp: Stamp | undefined, now: Fresh): string[] {
   for (const id of Object.keys(stamp.blocks)) if (!(id in now.blocks)) errors.push(`${CHECKED_JSON}: block ${id} has a key but no ran PostGIS block: ${again}`);
   for (const [name, sha] of Object.entries(now.downloads)) if (stamp.downloads[name] !== sha) errors.push(`download ${name} is stale: ${again}`);
   for (const name of Object.keys(stamp.downloads)) if (!(name in now.downloads)) errors.push(`${CHECKED_JSON}: download ${name} has a sha256 but no page: ${again}`);
+  if (stamp.labErd !== now.labErd) errors.push(`the lab ERD is stale (${LAB_ERD}, the loader or a boot block changed): ${again}`);
   return errors;
 }
 
 /** checked.json's new text, dated `today`; undefined when only the date would change (`old`: its text, null if none). */
 export function nextStamp(old: string | null, now: Fresh, versions: Versions, today: string): string | undefined {
-  const text = (checked: string) => formatJson({ versions, checked, blocks: now.blocks, downloads: now.downloads } satisfies Stamp);
+  const text = (checked: string) => formatJson({ versions, checked, blocks: now.blocks, downloads: now.downloads, labErd: now.labErd } satisfies Stamp);
   if (old !== null) {
     const was = (JSON.parse(old) as Partial<Stamp>).checked;
     if (typeof was === "string" && text(was) === old) return undefined;
@@ -160,7 +174,7 @@ function recorded(pages: readonly CoursePage[]): Map<string, string> {
 /** The inputs, from the repository and `dist` (the built site's data manifest), and the freshness they give. */
 export function readFreshness(dist: string, pages: readonly CoursePage[]): Fresh {
   const manifest = (JSON.parse(readFileSync(join(dist, MANIFEST), "utf8")) as { files: KeyFiles["manifest"] }).files;
-  return freshness(pages, { manifest, checker: checkerFiles() }, recorded(pages));
+  return freshness(pages, { manifest, checker: checkerFiles(), labErd: readRepo(LAB_ERD).toString("utf8") }, recorded(pages));
 }
 
 /** checked.json as committed, or undefined if there is none. */

@@ -2,17 +2,23 @@
 // v1.mmd is schema v1, which schema.mmd extends unchanged; the other three are drawn (pnpm erd, S8) and get pages with
 // data dictionaries (S15). erdErrors checks them without a database: each parses, schema.mmd keeps v1, the drawn three
 // carry accTitle/accDescr (the SVG's <title> and <desc>), markers name drawn entities only, every entity has a source.
+// svgErrors refuses a drawn ERD whose committed SVG is missing or stale: pnpm erd stamps each SVG with its source's
+// sha256 (`data-source-sha256` on the root <svg>), and only a source that changed is drawn again.
 // The catalog checks run elsewhere: lab in learn:check, star in the build's writeStar (S9), schema in E2E.
 // Tests: erd.test.ts.
 import { readFile } from "node:fs/promises";
-import { baseDrift, baseOf, markerErrors, markers, parseErd, type Erd } from "../../learn/erd-model.ts";
+import { readOptionalText } from "../../json.ts";
+import { baseDrift, baseOf, ERD_DIR, markerErrors, markers, parseErd, svgStale, type Erd } from "../../learn/erd-model.ts";
 
-export const ERD_DIR = "site/learn/erd";
+export { ERD_DIR };
 export const ERD_NAMES = ["v1", "schema", "lab", "star"] as const;
 export type ErdName = (typeof ERD_NAMES)[number];
 /** The ERDs drawn as SVG and shown on a page. */
 export const DRAWN_ERDS = ["schema", "lab", "star"] as const satisfies readonly ErdName[];
+export type DrawnErd = (typeof DRAWN_ERDS)[number];
 export type ErdTexts = Record<ErdName, string>;
+/** The committed SVGs, by drawn ERD; absent when the file is. */
+export type ErdSvgs = Partial<Record<DrawnErd, string>>;
 
 const V1 = "critwire `/v1/species.parquet`";
 const SAMPLE = "GBIF occurrence download, sampled (cited in the credits)";
@@ -110,10 +116,24 @@ export function erdErrors(texts: ErdTexts): string[] {
   return errors;
 }
 
-/** The four sources, read from the repository, and erdErrors over them. */
-export async function readErds(): Promise<{ texts: ErdTexts; errors: string[] }> {
-  const root = new URL("../../../", import.meta.url);
-  const entries = await Promise.all(ERD_NAMES.map(async (n) => [n, await readFile(new URL(`${ERD_DIR}/${n}.mmd`, root), "utf8")] as const));
+/** Each drawn ERD whose SVG is missing or stale, as an error naming the file; [] when all are current. */
+export function svgErrors(texts: ErdTexts, svgs: ErdSvgs): string[] {
+  return DRAWN_ERDS.flatMap((n) => {
+    const file = `${ERD_DIR}/${n}.svg`;
+    if (svgs[n] === undefined) return [`${file}: missing: run pnpm erd`];
+    return svgStale(texts[n], svgs[n]) ? [`${file} is stale: run pnpm erd`] : [];
+  });
+}
+
+/** The four sources and the drawn three's SVGs, read from the repository, with erdErrors and svgErrors over them. */
+export async function readErds(): Promise<{ texts: ErdTexts; svgs: ErdSvgs; errors: string[] }> {
+  const root = new URL(`../../../${ERD_DIR}/`, import.meta.url);
+  const entries = await Promise.all(ERD_NAMES.map(async (n) => [n, await readFile(new URL(`${n}.mmd`, root), "utf8")] as const));
   const texts = Object.fromEntries(entries) as ErdTexts;
-  return { texts, errors: erdErrors(texts) };
+  const svgs: ErdSvgs = {};
+  for (const n of DRAWN_ERDS) {
+    const svg = await readOptionalText(new URL(`${n}.svg`, root));
+    if (svg !== null) svgs[n] = svg;
+  }
+  return { texts, svgs, errors: [...erdErrors(texts), ...svgErrors(texts, svgs)] };
 }
