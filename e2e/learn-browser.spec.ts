@@ -420,6 +420,35 @@ test("every exercise and skip check rejects a fixed wrong answer and accepts its
   await context.close();
 });
 
+// A query that holds the engine's queue a few seconds, so a check queued behind it settles after the next page is in.
+const SLOW = "SELECT sum(a.range * b.range) AS s FROM range(20000) a, range(20000) b";
+
+test("a skip check left running when the learner moves to the next module marks neither module done", async ({ browser }) => {
+  const c = await readCourse();
+  const [f1, f2] = ["f1", "f2"].map((id) => c.curriculum!.modules.find((m) => m.id === id)!);
+  const answer = c.pages.find((p) => p.page.id === "f1")!.blocks.find((b) => b.id === "f1-skip")!.code;
+  const { context, offOrigin } = await learnContext(browser);
+  const page = await context.newPage();
+  await page.goto(moduleUrl(f1!));
+  await waitReady(page);
+  await page.locator("#q-f1-unknown textarea").fill(SLOW);
+  await page.locator("#q-f1-unknown [data-run]").click();
+  const skip = page.locator("#q-f1-skip");
+  await skip.locator("textarea").fill(answer);
+  await skip.locator("[data-run]").click();
+  await expect(skip.locator(".result")).toHaveAttribute("aria-busy", "true");
+  await page.locator(`a[rel="next"][href="${moduleUrl(f2!)}"]`).click();
+  await expect(page).toHaveURL(`${ORIGIN}${moduleUrl(f2!)}`);
+  await expect(page.locator(".mark-done")).toHaveAttribute("data-module", "f2");
+  // f2-count queues behind the slow query and the check, so once it's shown, the check has settled.
+  await runBlock(page.locator("#q-f2-count"));
+  await expect(page.locator("#q-f2-count .result-error")).toHaveCount(0);
+  await expect(page.locator(".mark-done")).toHaveAttribute("aria-pressed", "false");
+  expect(await page.evaluate(() => Object.keys(JSON.parse(localStorage.getItem("critwire.learn.done.v1") ?? "{}")))).toEqual([]);
+  expect(offOrigin).toEqual([]);
+  await context.close();
+});
+
 // d1-ex's probes: a table missing one constraint gets the right counts, and the probe for that constraint fails it.
 const D1_MISSING: { drop: [string, string]; hint: string }[] = [
   {

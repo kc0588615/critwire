@@ -3,7 +3,8 @@
 //   text, an exercise's reference answer), so no lesson changes the tables another reads.
 // - An exercise (.block.exercise) checks the learner's answer with check.ts's Checker: the reference, `data-ordered`,
 //   and its probes (each editor with `data-expect` whose `data-after` names it); its verdict goes to .verdict, the
-//   learner's result to the region and the test hook. A passed skip check (`data-skip`) marks the module done.
+//   learner's result to the region and the test hook. A passed skip check (`data-skip`) marks its own module done; a
+//   check that settles after its page was left is dropped.
 // - Copy, the Schema and Lab schema dialogs, and Mark done work without the engine; the engine starts only on a page
 //   with an editor or exercise.
 import { Checker, type Exercise } from "../check.ts";
@@ -68,9 +69,7 @@ function wireMarkDone(button: HTMLButtonElement): void {
   });
 }
 
-function markModuleDone(): void {
-  const button = document.querySelector<HTMLButtonElement>(".mark-done");
-  if (!button) return; // the setup page is no module
+function markModuleDone(button: HTMLButtonElement): void {
   setDone(button.dataset.module!, true);
   showDone(button, true);
 }
@@ -84,6 +83,7 @@ export function module(start: () => Engine, signal: AbortSignal): void {
   const exercises = [...document.querySelectorAll<HTMLElement>(".block.exercise")];
   if (!lessons.length && !exercises.length) return;
   const engine = start();
+  const done = document.querySelector<HTMLButtonElement>(".mark-done"); // none on the setup page, which is no module
   const checker = new Checker(engine);
 
   for (const root of lessons) {
@@ -104,11 +104,12 @@ export function module(start: () => Engine, signal: AbortSignal): void {
       delete verdict.dataset.ok;
       region.replaceChildren();
       const v = await checker.check(ex, sql);
+      if (signal.aborted) return; // the learner left this page
       setHookResult(ex.id, v.result ?? new Error(v.hint));
       if (v.result) showResult(region, sql, v.result, engine.species);
       verdict.textContent = v.hint;
       verdict.dataset.ok = String(v.ok);
-      if (v.ok && "skip" in root.dataset) markModuleDone();
+      if (v.ok && "skip" in root.dataset && done) markModuleDone(done);
     }, signal);
   }
 }
