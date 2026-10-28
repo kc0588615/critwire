@@ -14,7 +14,7 @@ import { writeCountries } from "./build/countries.ts";
 import { docsTemplate, renderDocs } from "./build/docs.ts";
 import { readBuildInputs } from "./build/inputs.ts";
 import { assertLabChecks } from "./build/learn/checks.ts";
-import { writeLearnData } from "./build/learn/data.ts";
+import { writeLabLoader, writeLearnData } from "./build/learn/data.ts";
 import { projectLearn } from "./build/learn/projection.ts";
 import { childFile } from "./build/paths.ts";
 import { writeTables } from "./build/tables.ts";
@@ -50,6 +50,7 @@ await writeLearnData(new URL("learn/data/", out), { learn, files: labFiles });
 const projection = await projectLearn(out);
 assertLabChecks(projection.checks, "learn projection (dist/)");
 console.log(`learn projection: ${Object.keys(projection.tables).length} tables, ${Object.keys(projection.checks).length} LAB_CHECKS all 0`);
+await writeLabLoader(out);
 
 // Every file with its size in bytes, sorted by path (for the PR body).
 const dist = fileURLToPath(out);

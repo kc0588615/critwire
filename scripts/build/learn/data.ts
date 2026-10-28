@@ -1,12 +1,14 @@
 // /learn/data/ (plan D9.3, 004 §4): the lab files. So far: occurrences.{parquet,csv} and datasets.csv, written by
 // DuckDB from derive's rows through one typed table each (the types 004 §4.2 publishes), sorted by key, with fixed
-// writer options; and byte copies of data/learn/'s files, checked against their provenance by readBuildInputs.
-import { copyFile, mkdir } from "node:fs/promises";
+// writer options; byte copies of data/learn/'s files, checked against their provenance by readBuildInputs; and the
+// PostGIS loader postgis/learn_curriculum.sql, generated from those published files (004 §4.3).
+import { copyFile, mkdir, writeFile } from "node:fs/promises";
 import type { DuckDBConnection } from "@duckdb/node-api";
 import { OCCURRENCE_COLUMNS, type LearnResult, type OccurrenceRow, type SampleDatasetRow } from "../../derive/sample.ts";
 import { labDataDir, type LabFile } from "../../learn/lab-files.ts";
 import { sqlPath, withOfflineDuckDb } from "../duckdb.ts";
 import { childFile } from "../paths.ts";
+import { labLoader } from "./loader.ts";
 
 type ColumnType = "BIGINT" | "INTEGER" | "VARCHAR" | "DOUBLE";
 const OCCURRENCE_TYPES: Record<(typeof OCCURRENCE_COLUMNS)[number], ColumnType> = {
@@ -61,4 +63,12 @@ export async function writeLearnData(outDir: URL, { learn, files }: { learn: Lea
   await writeOccurrences(learn.occurrences, outDir);
   await writeDatasets(learn.datasets, outDir);
   for (const f of files) await copyFile(childFile(labDataDir, f.name), childFile(outDir, f.name));
+}
+
+// Writes <out>/learn/data/postgis/learn_curriculum.sql from <out>'s published files (after writeLearnData).
+export async function writeLabLoader(out: URL): Promise<void> {
+  const text = await labLoader(out);
+  const dir = new URL("learn/data/postgis/", out);
+  await mkdir(dir, { recursive: true });
+  await writeFile(childFile(dir, "learn_curriculum.sql"), text);
 }
