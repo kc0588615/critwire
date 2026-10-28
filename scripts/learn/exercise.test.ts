@@ -156,10 +156,10 @@ test("EX3 the learner's SQL runs after the same blocks; its error is the verdict
   assert.deepEqual(runs.find((r) => r.sql === "MINE")?.after, ["d1-setup=CREATE TABLE t (a INT)"]);
 });
 
-test("EX4 a wrong result is the verdict, and no probe runs", async () => {
+test("EX4 a wrong result is the verdict, with the learner's result (the page shows it), and no probe runs", async () => {
   const { engine, runs } = fakeEngine({ REFERENCE: COUNTS, MINE: res(["n"], [[73]]) });
   const v = await new Checker(engine).check(EX, "MINE");
-  assert.deepEqual(v, { ok: false, hint: "Some rows differ from the answer." });
+  assert.deepEqual(v, { ok: false, hint: "Some rows differ from the answer.", result: res(["n"], [[73]]) });
   assert.ok(!runs.some((r) => r.sql.startsWith("PROBE")));
 });
 
@@ -174,7 +174,7 @@ test("EX5 the probes run in order after the learner's SQL (in the exercise's pla
 
 test("EX6 every probe refused: Correct; an engine error that isn't the learner's SQL failing is thrown, not a verdict", async () => {
   const ok = fakeEngine({ REFERENCE: COUNTS, MINE: COUNTS, PROBE1: refused("violates unique"), PROBE2: refused("CHECK constraint failed") });
-  assert.deepEqual(await new Checker(ok.engine).check(EX, "MINE"), { ok: true, hint: "Correct." });
+  assert.deepEqual(await new Checker(ok.engine).check(EX, "MINE"), { ok: true, hint: "Correct.", result: COUNTS });
   assert.deepEqual(ok.runs.find((r) => r.sql === "PROBE2")?.after, ["d1-ex=MINE"]);
 
   const after = fakeEngine({ REFERENCE: COUNTS, MINE: new AfterError("d1-setup", new Error("boom")) });

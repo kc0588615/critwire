@@ -14,6 +14,8 @@ import type { Script } from "./isolation.ts";
 export interface Verdict {
   ok: boolean;
   hint: string;
+  /** Checker.check: the learner's result, when their SQL ran (the page shows it beside the verdict). */
+  result?: Result;
 }
 
 /** 002's message when Check meets a changed generation. */
@@ -149,13 +151,14 @@ export class Checker {
     const reference = await this.#reference(ex);
     const mine = await outcome(this.#engine, ex.after, sql);
     if (mine.error) return { ok: false, hint: `Your SQL failed: ${mine.error.message}` };
-    const verdict = checkResult(mine.result!, reference, ex.ordered);
-    if (!verdict.ok) return verdict;
+    const result = mine.result!;
+    const verdict = checkResult(result, reference, ex.ordered);
+    if (!verdict.ok) return { ...verdict, result };
     for (const probe of ex.probes) {
       const after = probe.after.map((a) => (a.id === ex.id ? { id: ex.id, sql } : a));
       const v = checkProbe(probe, await outcome(this.#engine, after, probe.sql));
-      if (!v.ok) return v;
+      if (!v.ok) return { ...v, result };
     }
-    return verdict;
+    return { ...verdict, result };
   }
 }

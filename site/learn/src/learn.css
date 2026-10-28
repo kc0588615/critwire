@@ -38,3 +38,31 @@ body[data-engine="failed"] #engine-status { color: inherit; font-weight: 600; }
 .card .credit { margin: .35rem 0 0; font-size: .75rem; color: var(--muted); overflow-wrap: anywhere; }
 .card .credit a { color: inherit; }
 .result .empty, .result .more { color: var(--muted); font-size: .95rem; }
+.block { margin: 1.5rem 0; }
+.block-id, .module-id { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .85em; color: var(--muted); }
+.block-head { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; margin: 0 0 .35rem; color: var(--muted); font-size: .95rem; }
+.block-head button, .module-end button, dialog button {
+  font: inherit; font-size: .9rem; padding: .15rem .7rem; border-radius: 6px; cursor: pointer;
+  border: 1px solid var(--link); background: var(--bg); color: var(--link);
+}
+.buttons [data-dialog] { margin-left: auto; }
+pre.code, pre.recorded { overflow-x: auto; background: var(--code); border: 1px solid var(--line); border-radius: 6px; padding: .6rem; font-size: .9rem; line-height: 1.45; margin: 0 0 .5rem; }
+pre.recorded { background: transparent; border-style: dashed; }
+.checked, .download, .runs-after, .prereqs { color: var(--muted); font-size: .95rem; }
+.untested { font-size: .95rem; border-left: 4px solid var(--line); padding-left: .75rem; }
+.badges { display: flex; flex-wrap: wrap; gap: .4rem; list-style: none; padding: 0; margin: .25rem 0 1rem; }
+.badges li { font-size: .85rem; border: 1px solid var(--line); border-radius: 999px; padding: .1rem .6rem; }
+.verdict:empty { display: none; }
+.verdict { font-weight: 600; border-left: 4px solid var(--link); padding-left: .75rem; }
+.verdict[data-ok="false"] { border-left-color: #b3412e; }
+.exercise details { margin-top: .5rem; }
+.module-end button[aria-pressed="true"] { background: var(--link); color: var(--bg); }
+.prev-next { display: flex; justify-content: space-between; gap: 1rem; margin: 2rem 0 1rem; }
+.prev-next [rel="next"] { margin-left: auto; }
+table.inputs { border-collapse: collapse; font-size: .9rem; margin: .25rem 0 .5rem; }
+table.inputs caption { text-align: left; color: var(--muted); }
+table.inputs th, table.inputs td { text-align: left; padding: .2rem .5rem; border-bottom: 1px solid var(--line); }
+table.inputs code { font-size: .8rem; overflow-wrap: anywhere; }
+dialog { max-width: min(95vw, 70rem); border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: inherit; }
+dialog img { max-width: 100%; height: auto; display: block; margin: .5rem 0; }
+dialog::backdrop { background: rgb(0 0 0 / .5); }

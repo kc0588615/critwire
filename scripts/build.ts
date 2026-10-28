@@ -36,7 +36,8 @@ loadEnv();
 const url = requireEnv("DATABASE_URL");
 const draft = args.includes("--draft");
 const { species, registration, countries, learn, labFiles, labCredits, labBytes } = await readBuildInputs({ draft });
-const { curriculum, pages, erds, star } = await readLearnInputs({ draft });
+const learnInputs = await readLearnInputs({ draft });
+const { curriculum, pages, erds, star } = learnInputs;
 console.log(`learn curriculum: ${curriculum.tracks.length} tracks, ${curriculum.modules.length} modules (${curriculum.modules.filter((m) => m.state === "built").length} built)`);
 console.log(`learn pages: ${pages.length} (${pages.reduce((n, p) => n + p.blocks.length, 0)} blocks)`);
 const attribution = buildAttribution(species, registration, countries);
@@ -68,7 +69,7 @@ console.log(`learn star: ${star.length} tables, each block's result equal to Pos
 await writeLabIndex(out, { ctx: labCredits, learn, tables: projection.tables });
 // checked.json against what this build publishes (plan D6): learn:check ran every lab block and download as they are now.
 assertLabsFresh(fileURLToPath(out), pages, { draft });
-await writeLearn(out);
+await writeLearn(out, learnInputs, { draft });
 
 // Every file with its size in bytes, sorted by path (for the PR body).
 const dist = fileURLToPath(out);

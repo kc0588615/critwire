@@ -7,14 +7,20 @@
 // --update writes it). Throws naming every error. Writes nothing.
 // assertLabsFresh (plan D6), once the data manifest is written: checked.json against the freshness the build recomputes
 // (learn/freshness.ts); a plain build refuses a stale lab, --draft only warns.
-// writeLearn (plan D8.6), last: the Learn site under dist/learn/: its assets, then the pages (pages.ts).
+// writeLearn (plan D8.6, D12), last: the Learn site under dist/learn/: its assets; the lab downloads (labs/<page>.sql,
+// assemble.ts, the files learn:check ran and checked.json stamps); the drawn ERDs (schema/<name>.svg); then the pages
+// (pages.ts), which read checked.json and the star manifest writeStar wrote.
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { assembleDownloads } from "../../learn/assemble.ts";
 import type { CoursePage, Curriculum } from "../../learn/course.ts";
 import { readCourse } from "../../learn/course-files.ts";
-import { readFreshness, readStamp, staleness } from "../../learn/freshness.ts";
+import { parseErd } from "../../learn/erd-model.ts";
+import { readFreshness, readRecorded, readStamp, staleness } from "../../learn/freshness.ts";
+import type { StarManifest } from "../../learn/star-check.ts";
 import { DUCKDB_EXT, DUCKDB_WASM } from "../../../site/learn/src/assets.ts";
 import { assetErrors, writeAssets } from "./assets.ts";
-import { PAGES, writePages } from "./pages.ts";
-import { readErds, type ErdTexts } from "./erd.ts";
+import { learnPages, readPlayground, writePages } from "./pages.ts";
+import { DRAWN_ERDS, readErds, type ErdSvgs, type ErdTexts } from "./erd.ts";
 import { starBlocks, starInputErrors, type StarBlock } from "./star.ts";
 
 export interface LearnInputs {
@@ -23,6 +29,8 @@ export interface LearnInputs {
   pages: CoursePage[];
   /** site/learn/erd/'s sources, checked. */
   erds: ErdTexts;
+  /** Their committed SVGs, each current. */
+  svgs: ErdSvgs;
   /** The blocks writeStar runs, in order. */
   star: StarBlock[];
 }
@@ -35,7 +43,7 @@ export async function readLearnInputs({ draft }: { draft: boolean }): Promise<Le
   if (draft) for (const m of missing) console.warn(`build --draft: ${m}`);
   const all = [...errors, ...erds.errors, ...star.errors, ...starInputErrors(pages), ...assetErrors(), ...(draft ? [] : missing)];
   if (all.length) throw new Error(`site/learn: ${all.length} error(s):\n${all.join("\n")}`);
-  return { curriculum: curriculum!, pages, erds: erds.texts, star: star.blocks };
+  return { curriculum: curriculum!, pages, erds: erds.texts, svgs: erds.svgs, star: star.blocks };
 }
 
 /** Throws (warns with `draft`) naming every way checked.json fails to prove the labs `pages` publish; `dist`: the built site. */
@@ -45,10 +53,35 @@ export function assertLabsFresh(dist: string, pages: readonly CoursePage[], { dr
   else if (errors.length) throw new Error(`site/learn/labs: ${errors.length} error(s):\n${errors.join("\n")}`);
 }
 
-/** Writes the Learn site under `out` (dist/): the assets, then the pages. */
-export async function writeLearn(out: URL): Promise<void> {
+/** Writes the Learn site under `out` (dist/): the assets, the downloads, the ERD SVGs, then the pages. */
+export async function writeLearn(out: URL, { curriculum, pages, erds, svgs }: LearnInputs, { draft }: { draft: boolean }): Promise<void> {
   const bundle = await writeAssets(out);
   console.log(`learn assets: engine ${DUCKDB_WASM.version}, extensions ${DUCKDB_EXT.names.join(", ")}, bundle ${bundle.js} ${bundle.css}`);
-  await writePages(out, bundle);
-  console.log(`learn html: ${PAGES.map((p) => `/learn/${p.dir}`).join(", ")}`);
+
+  const downloads = assembleDownloads(pages);
+  const labs = new URL("learn/labs/", out);
+  await mkdir(labs, { recursive: true });
+  for (const d of downloads) await writeFile(new URL(d.name, labs), d.text);
+  console.log(`learn labs: ${downloads.map((d) => d.name).join(", ")}`);
+
+  const schema = new URL("learn/schema/", out);
+  await mkdir(schema, { recursive: true });
+  for (const n of DRAWN_ERDS) await writeFile(new URL(`${n}.svg`, schema), svgs[n]!);
+
+  const star = (JSON.parse(await readFile(new URL("learn/data/star/manifest.json", out), "utf8")) as StarManifest).files;
+  const html = learnPages({
+    curriculum,
+    pages,
+    downloads: new Map(downloads.map((d) => [d.page, d.name])),
+    playground: await readPlayground(),
+    context: {
+      recorded: readRecorded(pages),
+      stamp: readStamp(),
+      star,
+      draft,
+      erdTitles: { schema: parseErd(erds.schema).title!, lab: parseErd(erds.lab).title! },
+    },
+  });
+  await writePages(out, bundle, html);
+  console.log(`learn html: ${html.map((p) => `/learn/${p.dir}`).join(", ")}`);
 }

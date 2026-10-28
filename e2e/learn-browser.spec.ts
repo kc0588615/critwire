@@ -1,8 +1,13 @@
-// Learn's browser engine (plan D11, D13 learn-browser; S11, S12): boot, the origin fence, SC2's hash check, the row cap,
-// Reset and Stop, on the playground; then the playground's refusals, the changed generation, the test hook, cards and
-// "N rows changed". The worker's .wasm fetch must reach context.route first, because the fence and the boot cases rely
-// on routing.
-import { expect, test, type Page } from "@playwright/test";
+// Learn's browser engine (plan D11, D13 learn-browser; S11, S12, S13): boot, the origin fence, SC2's hash check, the
+// row cap, Reset and Stop, on the playground; then the playground's refusals, the changed generation, the test hook,
+// cards and "N rows changed"; then every browser block of the course pages against its snapshot, and every exercise
+// against its answer and a fixed wrong one. The worker's .wasm fetch must reach context.route first, because the fence
+// and the boot cases rely on routing.
+import { expect, test, type Locator, type Page } from "@playwright/test";
+import { moduleUrl } from "../scripts/build/learn/module-html.ts";
+import { SETUP_PAGE, type CoursePage } from "../scripts/learn/course.ts";
+import { readCourse } from "../scripts/learn/course-files.ts";
+import { renderError, renderResult } from "../scripts/learn/result.ts";
 import { DUCKDB_DIR, ASSETS } from "../site/learn/src/assets.ts";
 import { engineState, hookResult, learnContext, learnManifest, ORIGIN, records, waitReady } from "./helpers.ts";
 
@@ -211,5 +216,98 @@ test("a statement that writes rows says N rows changed", async ({ browser }) => 
   await expect(result(page).locator(".result-summary")).toHaveText("3 rows changed.");
   await run(page, "DELETE FROM mine WHERE a = 1");
   await expect(result(page).locator(".result-summary")).toHaveText("1 row changed.");
+  await context.close();
+});
+
+// The course pages (setup, then the built modules) with their URLs.
+async function coursePages(): Promise<{ page: CoursePage; url: string }[]> {
+  const c = await readCourse();
+  return c.pages.map((p) => ({ page: p, url: p.page.id === SETUP_PAGE ? "/learn/setup/" : moduleUrl(c.curriculum!.modules.find((m) => m.id === p.page.id)!) }));
+}
+
+// Clicks the block's Run (or Check) and waits for its region.
+async function runBlock(block: Locator): Promise<void> {
+  await block.locator("[data-run]").click();
+  await expect(block.locator(".result")).not.toHaveAttribute("aria-busy", "true", { timeout: 30_000 });
+}
+
+// A block's last outcome as the recorded text (scripts/learn/result.ts), the form its snapshot holds.
+async function rendered(page: Page, id: string): Promise<string> {
+  const r = await hookResult(page, id);
+  if (!r) throw new Error(`${id}: no result`);
+  return "error" in r ? renderError(id, r.error) : renderResult(id, r);
+}
+
+test("every browser block of the course pages equals its snapshot, and cards follow the card rule", async ({ browser }) => {
+  const { context, offOrigin } = await learnContext(browser);
+  const page = await context.newPage();
+  const seen: string[] = [];
+  for (const { page: p, url } of await coursePages()) {
+    const editors = p.slots.filter((s) => s.kind === "block").map((s) => p.blocks.find((b) => b.id === s.name)!).filter((b) => b.engine === "duckdb");
+    if (!editors.length) continue;
+    await page.goto(url);
+    await waitReady(page);
+    for (const b of editors) {
+      const block = page.locator(`#q-${b.id}`);
+      await expect(block.locator("textarea")).toHaveValue(b.code.replace(/\n+$/, ""));
+      await runBlock(block);
+      expect(await rendered(page, b.id), b.id).toMatchSnapshot(`${b.id}.txt`);
+      const r = await hookResult(page, b.id);
+      const cards = /^-- show: cards$/m.test(b.code) && r && "rows" in r ? r.rows.length : 0;
+      await expect(block.locator("article.card"), b.id).toHaveCount(cards);
+      seen.push(b.id);
+    }
+  }
+  expect(seen).toEqual(expect.arrayContaining(["setup-counts", "d6-export"]));
+  expect(offOrigin).toEqual([]);
+  await context.close();
+});
+
+// A fixed wrong answer for each exercise, and the hint it gets.
+const WRONG: Record<string, { sql: string; hint: string }> = {
+  // No Unknown member: the records without a year fall out of the fact, so it no longer reconciles.
+  "d6-ex": {
+    sql: `CREATE TABLE dim_decade (decade INTEGER PRIMARY KEY, label VARCHAR NOT NULL);
+INSERT INTO dim_decade SELECT DISTINCT year - year % 10, CAST(year - year % 10 AS VARCHAR) || 's' FROM occurrences WHERE year IS NOT NULL;
+CREATE TABLE fact_species_decade (species_id INTEGER NOT NULL REFERENCES species (id), decade INTEGER NOT NULL REFERENCES dim_decade (decade), records INTEGER NOT NULL, PRIMARY KEY (species_id, decade));
+INSERT INTO fact_species_decade SELECT species_id, year - year % 10, count(*) FROM occurrences WHERE year IS NOT NULL GROUP BY species_id, year - year % 10;
+SELECT count(*) AS fact_rows, sum(records) AS records, sum(records) = (SELECT count(*) FROM occurrences) AS reconciles,
+       sum(records) FILTER (WHERE decade = -1) AS unknown_decade FROM fact_species_decade;`,
+    hint: "Some rows differ from the answer.",
+  },
+};
+
+test("every exercise accepts its answer (its result = its snapshot) and rejects a fixed wrong one", async ({ browser }) => {
+  const { context, offOrigin } = await learnContext(browser);
+  const page = await context.newPage();
+  const seen: string[] = [];
+  for (const { page: p, url } of await coursePages()) {
+    const exercises = p.slots.filter((s) => s.kind === "exercise" && p.blocks.find((b) => b.id === s.name)!.engine === "duckdb");
+    if (!exercises.length) continue;
+    await page.goto(url);
+    await waitReady(page);
+    for (const s of exercises) {
+      const b = p.blocks.find((x) => x.id === s.name)!;
+      const block = page.locator(`#q-${b.id}`);
+      const verdict = block.locator(".verdict");
+      await expect(block.locator("textarea")).toHaveValue("");
+      await block.locator("details summary").click();
+      await expect(block.locator("details code")).toHaveText(b.code.replace(/\n+$/, ""));
+      await block.locator("textarea").fill(b.code);
+      await runBlock(block);
+      await expect(verdict).toHaveText("Correct.");
+      await expect(verdict).toHaveAttribute("data-ok", "true");
+      expect(await rendered(page, b.id), b.id).toMatchSnapshot(`${b.id}.txt`);
+      const wrong = WRONG[b.id];
+      if (!wrong) throw new Error(`${b.id}: no fixed wrong answer in WRONG`);
+      await block.locator("textarea").fill(wrong.sql);
+      await runBlock(block);
+      await expect(verdict).toHaveText(wrong.hint);
+      await expect(verdict).toHaveAttribute("data-ok", "false");
+      seen.push(b.id);
+    }
+  }
+  expect(seen).toEqual(expect.arrayContaining(["d6-ex"]));
+  expect(offOrigin).toEqual([]);
   await context.close();
 });
