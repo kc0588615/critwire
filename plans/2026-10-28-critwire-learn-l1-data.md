@@ -898,7 +898,7 @@ Every step:
   - Files: `scripts/http.ts` (Retry-After above 60 s stops), `scripts/json.ts` (`readJson` names the file), `scripts/ingest/gbif.ts` (export `toDatasetPage`), `scripts/derive/pipeline.ts` (`assertDerivedFiles` names the file).
   - First: H1 (local server, port 0), H2, H3, H4.
   - Verify: `T`; `pnpm derive`: no diff; `E`, `H`. Decisions: SC3 done (G5–G7, G6/LD5/LD7/LC6, F1–F8, H1–H5).
-- [ ] S31 · Review-items audit
+- [x] S31 · Review-items audit
   - Every row of "Review items assigned to L1" and addendum items 1–11 has a Decisions line: `done (S<n>, <sha>)` (`git log --oneline --grep '^S<n>:'`) or `handed to L3 (H<n>)`. None dropped.
   - Every D16 bullet is in 004 and every D17 bullet in `AGENTS.md` (grep; listed in Log).
   - Dry run: `T`, `D`, `E`, `H`, `pnpm learn:check`. A gap → a new step before Verification.
@@ -1026,6 +1026,18 @@ What can go wrong across steps, and what the session does. `MISSION_BLOCKED` onl
 - MF2: done (S27, S28).
 - S28: derive writes the records' `{id, slug}` pairs as the union: `validateRecords(records, issuedIds)` first proves every issued pair is a record's, so nothing else can be in the union. A missing `data/issued-ids.json` is the first write (V16), so deleting it would reset the history; the deletion shows in the PR diff, and the file is append-only otherwise. `db:load` reads the committed file (`readJson`, missing = error).
 - SC3: done (S2, S29, S30). Every D14 case has its test: G5–G7 (S2), LD5/LD7 (S20), LC6 (S24), F1–F6 (S29), F7–F8 (S14), H1–H4 (S30), H5 (S14). S30: a Retry-After above 60 s (seconds or HTTP date) throws "asked to wait N s, more than 60 s: re-run later" before any retry; `readJson` prefixes parse errors with the path; `toDatasetPage` exported. `assertDerivedFiles` already named the first differing file (S28), so H4 only proves it per file; no code change there.
+- S31 audit: every review item done, none handed to L3 (37 sessions at S31, under 48), none rejected. Addendum item → commit(s):
+  1. MF1: done (S1 cb35d36; S2 2be89e2 lock + statement timeouts).
+  2. MF2: done (S27 e3f593d validator; S28 36a37e7 issued ids).
+  3. MF3: done (sample S14 13a9140; GBIF/COL S29 4cdc805).
+  4. MF4: done (S21 2d8591a).
+  5. SC1: done (S18 32bcd64).
+  6. SC2 (L1 part): done (S22 ac90291, manifest `inputs`).
+  7. SC3: done (S2 2be89e2, S14 13a9140, S20 a55107c, S24 ef6cc6c, S29 4cdc805, S30 e2b0e8a).
+  8. SC4: done (S15 4ff0c29).
+  9. SC5 (L1 part): done (S18 32bcd64 build half; S21 2d8591a CHECKs + load checks).
+  10. SC7 (L1 part): done (S19 75c582a role/`--setup`; S24 ef6cc6c lock, forced failure, cleanup).
+  11. 004 corrections: done (D16; S26 812ef79, earlier bullets in their code's commits, located in Log).
 
 ## Log
 
@@ -1066,5 +1078,6 @@ What can go wrong across steps, and what the session does. `MISSION_BLOCKED` onl
 - 2026-10-28 11:02 UTC S28: `IssuedId`/`issuedIdsFile`, issued checks in `validateRecords` (renamed, slug reused, gone), `CoreInputs.issuedIds` (null = first write), `CoreResult.issuedIds` in `derivedFiles`, `db:load` reads it, AGENTS.md derived list. Red 6 (V0, V11–V13, V15, V16; V14 pass-only) → green: test 270/270, typecheck ok; mutation (no gone check) fails V11, V15; derive writes 76 pairs, re-derive no diff, diff vs `baseline/live-species.json` empty; db:load 76; test:db 78/78; plain build ok; e2e 38/38, 0 skipped (`$M/e2e-s28/`); H 155/155; no `learn_t_%` left.
 - 2026-10-28 11:08 UTC S29: MF3 GBIF/COL: `assertGbifFresh`/`assertColFresh` replay the request builders (match, occurrences, datasets URLs; pinned checklist; occurrences ⇔ SPECIES; COL URL per release), replacing the name-set and `taxonKey` checks in `deriveCore`. Red 2 files (F1–F6, exports missing) → green 6; mutation (no occurrences-URL check) fails F2; test 276/276, typecheck ok; derive no diff (both DOIs current); plain build ok; H 155/155.
 - 2026-10-28 11:15 UTC S30: SC3 leftovers: `http.ts` Retry-After > 60 s stops (no cap-and-retry), `readJson` names the file, `toDatasetPage` exported. Red 3 (H1 >60 s, H2, H3 import) → green 8; H1 ≤60 s honoured and H4 (per derived file) passed first, existing behaviour. test 284/284, typecheck ok; derive no diff (both DOIs current); plain build ok; e2e 38/38, 0 skipped (`$M/e2e-s30/`); H 155/155.
+- 2026-10-28 11:25 UTC S31: review-items audit: 11/11 addendum items + table rows have a Decisions line with shas; none handed on. D16 in 004: §0 41/272, d2 2361, §3.2 516/872, §4.1 811–812, §4.2 843/847 (md5 then gbifID, displacement)/859/866, §4.3 871/877, §4.4 909, §4.5 925, §6.2 7762–7765, §7.6 8061–8063, §7.7 8074, §B 8309. D17 in AGENTS.md: every bullet grep 1+ (copy line new 1, old 0). Dry run: T typecheck ok, test 284/284; D 78/78, no `learn_t_%` left; plain B ok (dist/learn/data 35,452,055 B, lab data 13,673,945 B); E 38 expected, 0 unexpected/skipped/flaky; H 155 ok; learn:check ok. No gap.
 
 ## Summary
