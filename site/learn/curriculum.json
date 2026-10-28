@@ -198,7 +198,7 @@
       "prereqs": [
         "d4"
       ],
-      "state": "planned",
+      "state": "built",
       "skill": "Schemas, roles, `GRANT` and `REVOKE`, default privileges, least privilege, a taste of row-level security",
       "questions": [
         "How do I give a reporting tool read-only access to one schema and nothing else?",

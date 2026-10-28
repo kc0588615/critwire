@@ -202,6 +202,30 @@
       "key": "37a2eb333865704ba8cc07d0a14d993612b68bc76f79814f0cff5f8507c4eecf",
       "result": "a4f4275b0d0a77ee58c2bb2def7b00142b8ab661165ca46546532b187ba83c73"
     },
+    "d5-defaults": {
+      "key": "d60dbc637183a5440034f1b93d118ddaaaecf756636b9bcb7676b891065d9987",
+      "result": "8a0b06fb1e34c2c98c775cee08c5d7ebcbaf50e66f8072dfadc719b4fc94377b"
+    },
+    "d5-drop-role": {
+      "key": "8696cceb3c9cd2d407b749c3b3533165b83d976749c86f31af04078df469625b",
+      "result": "e3ba6359ac25882cd08160c6ad5256d3771d931f65c6b1ecda3949aa9f076d17"
+    },
+    "d5-ex": {
+      "key": "db71f24b0d37e57eee4e4a9cb5246b46a7acc3fa3e4d61d3d8508292ef3cb949",
+      "result": "4f1526efe3b1f2723f1ef17120050449032bbc58c83bd3dd78da8931faa469c4"
+    },
+    "d5-privileges": {
+      "key": "627f3632e48ce6563e8e3f30141540c5a85d9bb8ad21220504630dfe9fa8d2fd",
+      "result": "6955ea144beec83284e254b2ab73d5c492b804dbb1a067309360d9958b56973d"
+    },
+    "d5-reporting": {
+      "key": "ca373dc2aef5037d7dfa6a421163daca6d18867687198ea2e3b1822ce4065a5d",
+      "result": "d7aa4e19a88e6920c5f98f7b18392e31b407ccfe33ae9349523448d49973980e"
+    },
+    "d5-rls": {
+      "key": "76d972e0621a56fd2b94bb572a93f9a6b795519ec82abe291afc0c115d9fe4f7",
+      "result": "9b56f52e66319c1adadf93dc379a1f85916922bfd8dfa52df18126109c066276"
+    },
     "d6-at-sea": {
       "key": "fd1dd850f0c7b03a235304f815ddd6dcf7159894ae4f20e6cb6c3f889f50a679",
       "result": "37022d815ae3e895f7f738cbb2fb368c7d29c41ac7cc2c2d05d7a7dd54f2fa48"
@@ -283,6 +307,7 @@
     "d1.sql": "ad0f35b5d9a5c1f2a1e6b37f3bb0f6498f33a9f998aab703962965a7392e3b26",
     "d3.sql": "76f1a6863b298725cfe135502a592646b2ea055272d64b3dc7ebd6abed8de379",
     "d4.sql": "5e3b882edf12845b1dd509443089a12122cf424b861bfcdc574f5be03e36bb67",
+    "d5.sql": "e8eb4ec666fc0442cafee630dd97875ab5d825532c1f597ff7e628efb692c7a6",
     "d6.sql": "948f39e6e43983a7b9d9a04a073920a7f5cedc17cb7773bdee8295db88ff49f9",
     "pg-checks.sql": "8a92562f17a79a5ae9d8656e99e0e556ed647455359a487e1ae94eab9983226c"
   },
