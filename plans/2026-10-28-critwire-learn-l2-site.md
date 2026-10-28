@@ -154,7 +154,7 @@ The review's numbering: MF = MUST-FIX, SC = SHOULD-CHANGE.
 - [x] Baseline: install, migrate, run typecheck, lint, unit and E2E tests; record the results under Baseline
 - [x] Architecture: `architect` writes findings and the target design
 - [x] Fable review: `architecture-reviewer`
-- [ ] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
+- [x] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
 - [ ] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
 - [ ] Steps: `planner` writes Steps and Verification
 
@@ -584,6 +584,18 @@ SHOULD-CONSIDER:
 
 ## Architecture review (Astra)
 
+VERDICT: APPROVE_WITH_CHANGES
+
+MUST-FIX:
+1. **D11: exercise checks can use modified data.** Playground changes survive into lessons, while references are computed lazily. Refuse Check after persistent changes until Reset, or provide a separate pristine database for checking.
+2. **D3: cleanup releases the lock before destructive sweeping.** Another checker can start and create objects that the first runner then drops. Complete cleanup while holding the lock, retain a cleanup connection, and restrict deletion to objects owned by this run.
+3. **D5: lock timeout equals the detection deadline.** A legitimate waiting statement can time out before the runner detects it and releases the blocker. Give lock acquisition substantially more time than detection; retain a bounded overall timeout.
+
+SHOULD-CONSIDER:
+1. Restore cross-engine star validation: compare Node DuckDB results with the checked PostGIS results before publishing.
+2. D6 freshness should cover recorded result files, so altered displayed results cannot retain a valid check stamp.
+3. Define failure recovery for browser isolation: rollback after SQL errors; restart if transaction state cannot be restored.
+
 ## Revision notes
 
 ## Steps
@@ -601,5 +613,6 @@ SHOULD-CONSIDER:
 - 2026-10-28 12:10 UTC · Baseline: typecheck ok, test 285/285, test:db 78/78 (after build), build ok, learn:check ok, e2e 38/38; dist hashes saved.
 - 2026-10-28 12:29 UTC · Architecture: architect wrote findings F1–F10, design D1–D16, review items 1–7 mapped, 25 work groups (~39–40 sessions est.); no 004 edits; plan-only change, no checks needed.
 - 2026-10-28 12:35 UTC · Fable review: APPROVE_WITH_CHANGES, 2 MUST-FIX (D11 Check vs changed playground; D5 lock_timeout vs detection window), 2 MISSED, 5 SHOULD-CONSIDER; plan-only, no checks needed.
+- 2026-10-28 12:36 UTC · Astra review: APPROVE_WITH_CHANGES, 3 MUST-FIX (D11 Check on modified data; D3 cleanup after lock release; D5 lock_timeout = detection deadline), 3 SHOULD-CONSIDER; plan-only, no checks needed.
 
 ## Summary
