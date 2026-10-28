@@ -38,6 +38,7 @@ The PostGIS labs share a database with other work, on the test server and perhap
 - After a block's last statement, before the rollback, the runner looks for `learn_` roles and schemas that weren't there when it connected. Finding one fails the block, because your psql would have kept it.
 - Allowed only in PostGIS blocks: roles, `GRANT` and `REVOKE`, default privileges, `SET ROLE` and `CREATE`/`DROP SCHEMA`, all within `learn_` names; `SET` and `SET LOCAL`, which the rollback undoes. Refused everywhere: `ALTER SYSTEM`, `ALTER DATABASE`, `GRANT SET ON PARAMETER`, any role or schema not named `learn_…`, and the name `learn_spatial` (003's spike schema in the test database; the runner also compares its content before and after every run).
 - Creating roles needs the CREATEROLE privilege ("The PostGIS setup" below; d5).
+- On the test server the labs run as one role, `critwire_lab`, which `pnpm learn:check --setup` creates once as the superuser: LOGIN and CREATEROLE with `createrole_self_grant = 'set, inherit'`, CONNECT, CREATE and TEMPORARY on `critwire_dev`, the owner of `learn_curriculum`, and no CREATE on `public`. The runner connects as it through `LEARN_PG_URL`, never through `SET ROLE` from the superuser, because a block's `RESET ROLE` would return to the superuser. The leak check ignores it.
 
 ### Re-running the tests, and where results live
 
@@ -512,11 +513,13 @@ $env:PGHOST = "localhost"; $env:PGPORT = "5432"; $env:PGUSER = "postgres"; $env:
 ```
 
 **Privileges.** The `postgres` user is a superuser and can do everything the labs do. As another user you need:
-- `CREATE` on the database, to (re)create `learn_curriculum`, and ownership of that schema once it exists;
+- `CONNECT`, `CREATE` and `TEMPORARY` on the database (its owner has them; else `GRANT CONNECT, CREATE, TEMPORARY ON DATABASE learn TO <you>;` as the superuser), to connect, to (re)create `learn_curriculum` and for temporary tables, and ownership of that schema once it exists;
 - `CREATEROLE`, for the labs that create roles (d5, §0's `pg-role-smoke`): `ALTER ROLE <you> CREATEROLE;` as the superuser, once; on PostgreSQL 16 and later also `ALTER ROLE <you> SET createrole_self_grant = 'set, inherit';`, so you can act as the roles you create (`SET ROLE`) and drop what they hold (d5 explains);
 - nothing more for the raster labs (g7, s6): their clips are stored in the database, so neither of PostGIS's raster settings (`postgis.enable_outdb_rasters`, `postgis.gdal_enabled_drivers`) is needed, and 003 §4's `pg-once` grants aren't either.
 
 Every role or schema a lab creates is named `learn_…` and removed by the same block (§0), so the labs never leave anything in your database besides `learn_curriculum`.
+
+Give the labs a database of their own (`learn` above), one you could drop and create again, and keep other work out of it. CREATEROLE is server-wide, not per database, so give it to a role you use only for the labs.
 
 ### 3.3 Python
 
@@ -8047,7 +8050,7 @@ One `localStorage` key, `critwire.learn.done.v1`, holds `{ "<module id>": "<YYYY
 A development command, never part of `build` or `deploy`. It is the repository's port of §0's runner, PostGIS and Python engines, not a second harness: once L2 lands it, the spike is frozen as this mission's evidence and never extended.
 - It runs the loader and every PostGIS block, and (from L4) every Python block in `.venv-learn`, and writes their results and `checked.json`.
 - **Then it runs every download as assembled**, as a learner would: the files the build's own assembly function writes (7.3), each on a freshly loaded database (the loader, then the file), so no file leans on another's tables. A `.sql` runs with `psql -X -f`; its `ERROR:` lines must be exactly those its `-- expect: error` and `-- fails:` statements announce, in order, each containing the announced text. A `.py` runs in `.venv-learn` from an empty folder, with no `GBIF_*` variable in its environment, and must exit 0, so an `e1-submit` left live fails here. The `.ipynb` isn't run again: E2E proves its cells equal the `.py` (7.7). The leak check (§0) runs after each file. A failure names the file and its first unexpected error, and nothing is written to `checked.json`.
-- It connects with libpq's `PG*` variables, or `LEARN_PG_URL`, never `DATABASE_URL` (whose role, `critwire`, can't create roles). On critwire's server that is `critwire_dev` as `critter-ai` over the socket; on the owner's WSL, the owner's own PostGIS (`AGENTS.md`'s two machines).
+- It connects with libpq's `PG*` variables, or `LEARN_PG_URL`, never `DATABASE_URL` (whose role, `critwire`, can't create roles). On critwire's server that is `critwire_dev` as `critwire_lab` through `LEARN_PG_URL` (§0; `learn:check --setup` creates the role and writes the URL); on the owner's WSL, the owner's own PostGIS (`AGENTS.md`'s two machines).
 - It refuses the database `critwire` twice: by name before connecting, and by `current_database()` after, so a service file or `PGDATABASE` can't slip past. It checks for CREATEROLE first and says it's needed. The `learn_spatial` canary (§0) runs only where that schema exists.
 - L1 creates it with the loader stage; L2 adds the blocks, the cleanup lint and the in-transaction leak check (§0); L4 adds Python.
 
