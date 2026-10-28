@@ -5,10 +5,12 @@
 //   counts against the manifest, then once with a duplicate occurrences id, which must fail and change nothing (the
 //   load is one transaction); then pg-role-smoke;
 // - blocks: the given PostGIS blocks, in page order, in one runner session (runner.ts), checked against their recorded
-//   results or, with `update`, written;
+//   results or, with `update`, written; `-- tx: own` blocks must leave the canary and learn_curriculum unchanged;
 // - end: the canary unchanged and no learn_ role or schema left behind.
-// An abort (the CLI's SIGINT/SIGTERM) cancels the running psql; every exit releases the lock, ends the connections and
-// removes the temp loader. Tests: learn/check.test.ts (LC6 pure), learn-check.dbtest.ts (LC1–LC10), runner.dbtest.ts.
+// The lock is held by the cleanup connection (cleanup.ts), which runs no block. An abort (the CLI's SIGINT/SIGTERM)
+// cancels the running psql or block statement. Every exit then removes the temp loader and releases the lock in
+// cleanup.ts's order: stop the run's sessions, sweep the lab role's new objects, free the lock; a cleanup failure is
+// added to the run's. Tests: learn/check.test.ts (LC6 pure), learn-check.dbtest.ts (LC1–LC10, CU1–CU5), runner.dbtest.ts.
 import { spawn } from "node:child_process";
 import { createHash } from "node:crypto";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
@@ -16,8 +18,10 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type postgres from "postgres";
 import type { Block } from "./blocks.ts";
-import { CANARY_SCHEMA, childEnv, LAB_LOCK, LAB_SCHEMA, libpqTarget, LIVE_DATABASE, pgConnect, psqlArgs, type PgTarget } from "./pg.ts";
-import { learnObjects, openSession, runBlocks, serverVersions } from "./runner.ts";
+import { takeLabLock, type LabLock } from "./cleanup.ts";
+import { learnObjects } from "./leaks.ts";
+import { CANARY_SCHEMA, childEnv, LAB_SCHEMA, libpqTarget, LIVE_DATABASE, pgConnect, psqlArgs, type PgTarget } from "./pg.ts";
+import { openSession, runBlocks, serverVersions, tablesDiff } from "./runner.ts";
 
 export { CANARY_SCHEMA };
 const LOADER = "postgis/learn_curriculum.sql";
@@ -96,22 +100,10 @@ async function psqlOk(target: PgTarget, args: string[], what: string, signal?: A
   return r.stdout;
 }
 
-// db/learn/canary.sql's reading of `schema`: table name → `rows|md5`, plus `tables:` (the table list).
-async function readTables(admin: PgTarget, schema: string, signal?: AbortSignal): Promise<Map<string, string>> {
+/** db/learn/canary.sql's reading of `schema` as `admin`: table name → `rows|md5`, plus `tables:` (the table list). */
+export async function readTables(admin: PgTarget, schema: string, signal?: AbortSignal): Promise<Map<string, string>> {
   const out = await psqlOk(admin, ["-q", "-At", "-v", `schema=${schema}`, ...psqlArgs(CANARY_SQL.pathname)], `reading ${schema}`, signal);
   return new Map(out.trimEnd().split("\n").map((l) => (l.startsWith("tables: ") ? ["tables:", l.slice(8)] : [l.slice(0, l.indexOf("|")), l.slice(l.indexOf("|") + 1)])));
-}
-
-function tablesDiff(schema: string, before: Map<string, string>, after: Map<string, string>): string[] {
-  const names = [...new Set([...before.keys(), ...after.keys()])].sort();
-  return names.flatMap((t) => {
-    const [b, a] = [before.get(t), after.get(t)];
-    if (b === a) return [];
-    if (t === "tables:") return [`${schema}: table list changed (${b} → ${a})`];
-    if (a === undefined) return [`${schema}.${t}: dropped`];
-    if (b === undefined) return [`${schema}.${t}: added`];
-    return [`${schema}.${t}: rows or values changed (${b} → ${a})`];
-  });
 }
 
 // Every table in the lab schema with its row count, by name.
@@ -147,13 +139,13 @@ async function readLoader(dist: string): Promise<{ file: string; text: string; e
   return { file, text: bytes.toString("utf8"), entry: entry as LoaderEntry };
 }
 
-/** What the stages share: the lab connection, the admin target (the canary's reader), the readings at connect. */
+/** What the stages share: the lab connection, the lock, the admin target (the canary's reader), the canary at connect. */
 interface Run {
   sql: postgres.Sql;
+  lock: LabLock;
   admin: PgTarget;
   canarySchema: string;
   canaryBefore?: Map<string, string>;
-  objectsBefore: string[];
   signal?: AbortSignal;
 }
 
@@ -173,21 +165,15 @@ async function assertLabRole(sql: postgres.Sql): Promise<Who> {
   return { db: who.db, user: who.user };
 }
 
-// The lab lock on `lock`, a connection that runs nothing else; throws if another run holds it.
-async function takeLock(lock: postgres.Sql, db: string): Promise<void> {
-  const [{ locked }] = await lock<{ locked: boolean }[]>`select pg_try_advisory_lock(hashtext(${LAB_LOCK})) as locked`;
-  if (!locked) throw new Error(`the lab lock (${LAB_LOCK}) is held by another learn:check or pnpm test:db on ${db}: wait for it`);
-}
-
-// The versions (SC6), and the readings at connect: the canary and the learn_ objects already there.
-async function connectStage(lab: PgTarget, sql: postgres.Sql, { db, user }: Who, canarySchema: string, signal?: AbortSignal): Promise<Run> {
+// The versions (SC6), and the canary's reading at connect (the lock read the learn_ objects already there).
+async function connectStage(lab: PgTarget, sql: postgres.Sql, lock: LabLock, { db, user }: Who, canarySchema: string, signal?: AbortSignal): Promise<Run> {
   console.log(`learn:check: ${user} on ${db}, lab lock taken`);
   const v = await serverVersions(sql);
   console.log(`learn:check: PostgreSQL ${v.postgresql}, PostGIS ${v.postgis}, GEOS ${v.geos}`);
   const admin = libpqTarget({ PGDATABASE: db, PGPORT: String(lab.port) });
   const [{ has }] = await sql<{ has: boolean }[]>`select to_regnamespace(${canarySchema}) is not null as has`;
   const canaryBefore = has ? await readTables(admin, canarySchema, signal) : undefined;
-  return { sql, admin, canarySchema, canaryBefore, objectsBefore: await learnObjects(sql), signal };
+  return { sql, lock, admin, canarySchema, canaryBefore, signal };
 }
 
 // The loader twice to the manifest's counts, the forced failure, then pg-role-smoke. `tmp`: a folder for the forced loader.
@@ -220,54 +206,66 @@ async function loaderStage(lab: PgTarget, run: Run, dist: string, tmp: string): 
   console.log("learn:check: pg-role-smoke: 0 left");
 }
 
-// The ran PostGIS blocks, in page order, in one runner session; checked against checked/<id>.txt, or written.
+// The ran PostGIS blocks, in page order, in one runner session (recorded with the lock); checked against
+// checked/<id>.txt, or written. `-- tx: own` blocks are watched against the canary (where it exists) and learn_curriculum.
 async function blocksStage(lab: PgTarget, run: Run, blocks: readonly Block[], update: boolean): Promise<void> {
+  const { admin, canarySchema, canaryBefore, lock, signal } = run;
   const pg = blocks.filter((b) => b.engine === "postgis" && b.status === "ran");
-  const session = await openSession(lab);
+  const watch = { schemas: [...(canaryBefore ? [canarySchema] : []), LAB_SCHEMA], read: (schema: string) => readTables(admin, schema, signal) };
+  const session = await openSession(lab, signal);
+  lock.record(session.pid);
   try {
-    await runBlocks(session, pg, { update, known: new Set(run.objectsBefore) });
+    await runBlocks(session, pg, { update, known: new Set(lock.known), watch });
   } finally {
     await session.end();
   }
-  run.signal?.throwIfAborted();
+  signal?.throwIfAborted();
   console.log(`learn:check: blocks: ${pg.length} PostGIS block(s) ${update ? "run twice, results written" : "equal their recorded results"}`);
 }
 
 // The canary as at connect, and no learn_ object the run made.
 async function endStage(run: Run): Promise<void> {
-  const { sql, admin, canarySchema, canaryBefore, signal } = run;
+  const { sql, lock, admin, canarySchema, canaryBefore, signal } = run;
   if (canaryBefore) {
     const diff = tablesDiff(canarySchema, canaryBefore, await readTables(admin, canarySchema, signal));
     if (diff.length) throw new Error(`canary: the run changed ${canarySchema}:\n  ${diff.join("\n  ")}`);
     console.log(`learn:check: canary: ${canarySchema} unchanged`);
   } else console.log(`learn:check: canary: no schema ${canarySchema} here, skipped`);
 
-  const before = new Set(run.objectsBefore);
-  const left = (await learnObjects(sql)).filter((o) => !before.has(o));
+  const left = (await learnObjects(sql)).filter((o) => !lock.known.has(o));
   if (left.length) throw new Error(`the run left behind:\n  ${left.join("\n  ")}`);
   console.log("learn:check: leak check: nothing left");
   signal?.throwIfAborted();
 }
 
-/** Runs learn:check's stages against `lab` (labTarget, already refused by name); throws at the first failed check. */
+/**
+ * Runs learn:check's stages against `lab` (labTarget, already refused by name); throws at the first failed check, with
+ * any cleanup failure added.
+ */
 export async function checkLab(lab: PgTarget, { dist, canarySchema, signal, blocks = [], update = false }: CheckOptions): Promise<void> {
   assertCanarySchema(canarySchema);
   const sql = pgConnect(lab);
-  const lock = pgConnect(lab);
-  let locked = false;
+  let lock: LabLock | undefined;
   let tmp: string | undefined;
+  let failure: Error | undefined;
   try {
     const who = await assertLabRole(sql);
-    await takeLock(lock, who.db);
-    locked = true;
-    const run = await connectStage(lab, sql, who, canarySchema, signal);
+    lock = await takeLabLock(lab, who.db);
+    const run = await connectStage(lab, sql, lock, who, canarySchema, signal);
     tmp = await mkdtemp(join(tmpdir(), "critwire-learn-check-"));
     await loaderStage(lab, run, dist, tmp);
     await blocksStage(lab, run, blocks, update);
     await endStage(run);
-  } finally {
-    if (tmp) await rm(tmp, { recursive: true, force: true });
-    if (locked) await lock`select pg_advisory_unlock(hashtext(${LAB_LOCK}))`;
-    await Promise.all([sql.end(), lock.end()]);
+  } catch (e) {
+    failure = e as Error;
   }
+  try {
+    if (tmp) await rm(tmp, { recursive: true, force: true });
+    await lock?.release();
+  } catch (e) {
+    failure = failure ? new Error(`${failure.message}\n${(e as Error).message}`) : (e as Error);
+  } finally {
+    await sql.end();
+  }
+  if (failure) throw failure;
 }

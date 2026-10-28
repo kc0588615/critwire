@@ -6,7 +6,8 @@
 // --setup: creates the lab role critwire_lab as libpq's default role (a superuser; PGDATABASE names the lab database)
 // and stores LEARN_PG_URL in each --env file (default ./.env). --reset-password sets a new password and breaks every
 // checkout's copy not listed.
-// SIGINT/SIGTERM during the check cancels the running psql and cleans up (lock, connections, temp loader); exit 1.
+// SIGINT/SIGTERM during the check cancels the running psql or block statement and cleans up (temp loader; the run's
+// sessions stopped, the lab role's new objects swept, then the lock freed: learn/cleanup.ts); exit 1.
 // Errors print their message only (a driver error carries its statement).
 // Usage: pnpm learn:check [--update] [--dist <dir>]
 //        PGDATABASE=critwire_dev pnpm learn:check --setup [--env <file>]… [--reset-password]

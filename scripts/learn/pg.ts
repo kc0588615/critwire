@@ -79,10 +79,10 @@ export function labTarget(env: Env): PgTarget {
   return env.LEARN_PG_URL ? urlTarget(env.LEARN_PG_URL, "LEARN_PG_URL") : libpqTarget(env);
 }
 
-/** One connection to the target, notices dropped. */
-export function pgConnect(target: PgTarget): postgres.Sql {
+/** One connection to the target, notices dropped; `options` adds to or replaces postgres.js's (onclose, connection). */
+export function pgConnect(target: PgTarget, options: postgres.Options<{}> = {}): postgres.Sql {
   const { host, port, user, password, database } = target;
-  return postgres({ host, port, user, pass: password, database, max: 1, connect_timeout: 10, onnotice: () => {} });
+  return postgres({ host, port, user, pass: password, database, max: 1, connect_timeout: 10, onnotice: () => {}, ...options });
 }
 
 /** A child psql's whole environment: PATH, HOME, the target's PG* values and, if given, PGOPTIONS. */

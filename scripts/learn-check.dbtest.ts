@@ -20,6 +20,15 @@
 //      no temp file and no new learn_ object. A check failing after the lock releases it and removes its temp file too.
 // LC10: a child psql gets DATABASE_URL, GBIF_* or LEARN_PG_URL, or the password in argv → a psql wrapper on PATH
 //       records every child's environment and argv: none of them.
+// Cleanup (plan D3, S4; SC7 error paths, R13), on every exit in order: stop the run's sessions, sweep, then unlock.
+// CU1: SIGINT mid-block leaves the block's backend running, its committed role, or the lock → none of them after.
+// CU2: the lock is freed before the sweep, so a second run starts and the sweep drops its objects → a second learn:check
+//      while the sweep runs is refused; the lab role's new schema is gone afterwards and the lock free.
+// CU3: the sweep drops what another role made → a superuser-made learn_t_ role is named with its cleanup command and
+//      kept; the lab role's new role is dropped; what was there at the start is never touched.
+// CU4: a recorded session that can't be stopped is ignored → the cleanup fails naming its pid; the lock is still freed.
+// CU5: the cleanup connection is lost (the lock went with it) and the sweep runs anyway → nothing dropped; every new
+//      object is named with its cleanup command.
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { createHash, randomBytes } from "node:crypto";
@@ -29,8 +38,11 @@ import { join } from "node:path";
 import { after, test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { loadEnv, requireEnv } from "./env.ts";
+import { parseBlock } from "./learn/blocks.ts";
 import { assertConnectedNotLive, CANARY_SCHEMA, checkLab } from "./learn/check.ts";
+import { takeLabLock } from "./learn/cleanup.ts";
 import { LAB_LOCK, libpqTarget, pgConnect, urlTarget } from "./learn/pg.ts";
+import { RUNNER_APP } from "./learn/runner.ts";
 import { testDatabase } from "./test-db.ts";
 
 const repo = fileURLToPath(new URL("..", import.meta.url));
@@ -69,9 +81,9 @@ function start(args: string[], env: Record<string, string> = {}) {
 }
 const cli = (args: string[], env: Record<string, string> = {}) => start(args, env).done;
 
-// Polls `ok` every 100 ms; throws naming `what` after 10 s.
-async function waitFor(what: string, ok: () => Promise<boolean>) {
-  for (const until = Date.now() + 10_000; !(await ok()); await new Promise((r) => setTimeout(r, 100))) {
+// Polls `ok` every 100 ms; throws naming `what` after `ms` (default 10 s).
+async function waitFor(what: string, ok: () => Promise<boolean>, ms = 10_000) {
+  for (const until = Date.now() + ms; !(await ok()); await new Promise((r) => setTimeout(r, 100))) {
     if (Date.now() > until) throw new Error(`timed out waiting for ${what}`);
   }
 }
@@ -95,6 +107,16 @@ function tamperedDist(name: string, { loader: change, edit = (m: Manifest) => m 
 interface Manifest { files: Record<string, { sha256: string; bytes: number; tables?: Record<string, number> }> }
 const manifestTables = () =>
   (JSON.parse(readFileSync(join(dist, "learn/data/manifest.json"), "utf8")) as Manifest).files[LOADER]!.tables!;
+
+// Throws unless the lab lock is free (taken and given back at once).
+async function assertLockFree() {
+  const [{ locked }] = await admin<{ locked: boolean }[]>`select pg_try_advisory_lock(hashtext(${LAB_LOCK})) as locked`;
+  if (locked) await admin`select pg_advisory_unlock(hashtext(${LAB_LOCK}))`;
+  assert.equal(locked, true, "the lab lock is free");
+}
+
+const labBackends = async () => (await admin<{ n: number }[]>`select count(*)::int as n
+  from pg_stat_activity where usename = 'critwire_lab' and datname = ${testDatabase}`)[0]!.n;
 
 // Every learn_ role and schema, as learn:check's leak check lists them.
 async function learnObjects(): Promise<string[]> {
@@ -252,11 +274,8 @@ test("LC9 SIGINT mid-load stops the run; lock, backend, schema, temp file and ro
   }
   assert.equal(r.code, 1);
   assert.match(r.stderr, /interrupted by SIGINT/);
-  await waitFor("no critwire_lab backend", async () => (await admin<{ n: number }[]>`select count(*)::int as n
-    from pg_stat_activity where usename = 'critwire_lab' and datname = ${testDatabase}`)[0]!.n === 0);
-  const [{ locked }] = await admin<{ locked: boolean }[]>`select pg_try_advisory_lock(hashtext(${LAB_LOCK})) as locked`;
-  if (locked) await admin`select pg_advisory_unlock(hashtext(${LAB_LOCK}))`;
-  assert.equal(locked, true);
+  await waitFor("no critwire_lab backend", async () => (await labBackends()) === 0);
+  await assertLockFree();
   assert.deepEqual(await labCounts(), counts);
   assert.deepEqual(await learnObjects(), objects);
   assert.deepEqual(readdirSync(tmp).filter((n) => !n.startsWith("tsx-")), []); // tsx keeps its cache in TMPDIR
@@ -274,9 +293,7 @@ test("LC9 a check failing after the lock releases it and removes its temp file",
     else process.env.TMPDIR = saved;
   }
   assert.deepEqual(readdirSync(tmp), []);
-  const [{ locked }] = await admin<{ locked: boolean }[]>`select pg_try_advisory_lock(hashtext(${LAB_LOCK})) as locked`;
-  if (locked) await admin`select pg_advisory_unlock(hashtext(${LAB_LOCK}))`;
-  assert.equal(locked, true);
+  await assertLockFree();
 });
 
 test("LC5 + LC10 a clean run loads twice to the manifest's counts, and no child psql sees a secret", async () => {
@@ -305,4 +322,105 @@ test("LC5 + LC10 a clean run loads twice to the manifest's counts, and no child 
   }
   const [{ n }] = await admin`select count(*)::int as n from pg_roles where rolname = 'learn_smoke'`;
   assert.equal(n, 0);
+});
+
+const labTarget = () => urlTarget(labUrl, "LEARN_PG_URL");
+
+test("CU1 SIGINT mid-block: no run backend, the block's committed role swept, the lock free", async () => {
+  const role = fresh("cu1");
+  made.roles.push(role);
+  const { block } = parseBlock("cu1.sql", ["-- q: cu1", "-- status: ran", "-- engine: postgis", "-- tx: own", `CREATE ROLE ${role};`, "SELECT pg_sleep(60) IS NULL AS slept"].join("\n"));
+  const objects = await learnObjects();
+  const stop = new AbortController();
+  const run = checkLab(labTarget(), { dist, canarySchema: CANARY_SCHEMA, blocks: [block!], signal: stop.signal });
+  try {
+    // After the loader stage's three loads.
+    await waitFor("the block to sleep", async () => (await admin<{ n: number }[]>`select count(*)::int as n from pg_stat_activity
+      where usename = 'critwire_lab' and application_name = ${RUNNER_APP} and wait_event = 'PgSleep'`)[0]!.n > 0, 120_000);
+  } finally {
+    stop.abort(new Error("interrupted by SIGINT; nothing kept"));
+  }
+  await assert.rejects(run, /interrupted by SIGINT/);
+  assert.equal(await labBackends(), 0);
+  assert.deepEqual(await learnObjects(), objects);
+  await assertLockFree();
+});
+
+test("CU2 a second learn:check while the sweep runs is refused; the sweep drops the lab role's schema, then frees the lock", async () => {
+  const lock = await takeLabLock(labTarget(), testDatabase);
+  const schema = fresh("cu2");
+  made.schemas.push(schema);
+  const lab = pgConnect(labTarget());
+  await lab.unsafe(`CREATE SCHEMA ${schema}; CREATE TABLE ${schema}.t (x int)`);
+  await lab.end();
+  const blocker = pgConnect(libpqTarget({ PGDATABASE: testDatabase }));
+  let releasing: Promise<void> | undefined;
+  let second;
+  try {
+    second = await blocker.begin(async (tx) => {
+      await tx.unsafe(`LOCK TABLE ${schema}.t IN ACCESS SHARE MODE`);
+      releasing = lock.release();
+      await waitFor("the sweep to wait on the table", async () => (await admin<{ n: number }[]>`select count(*)::int as n
+        from pg_stat_activity where usename = 'critwire_lab' and wait_event_type = 'Lock'`)[0]!.n > 0);
+      return cli([]);
+    });
+  } finally {
+    await blocker.end();
+  }
+  await releasing;
+  assert.equal(second.code, 1);
+  assert.match(second.stderr, /lab lock .*held/);
+  assert.ok(!(await learnObjects()).includes(`schema ${schema}`));
+  await assertLockFree();
+});
+
+test("CU3 the sweep drops the lab role's new role; a superuser's is named with its cleanup command and kept", async () => {
+  const before = fresh("cu3old");
+  made.roles.push(before);
+  await admin.unsafe(`CREATE ROLE ${before}`);
+  const lock = await takeLabLock(labTarget(), testDatabase);
+  const [ours, theirs] = [fresh("cu3lab"), fresh("cu3su")];
+  made.roles.push(ours, theirs);
+  const lab = pgConnect(labTarget());
+  await lab.unsafe(`CREATE ROLE ${ours}`);
+  await lab.end();
+  await admin.unsafe(`CREATE ROLE ${theirs}`);
+  await assert.rejects(lock.release(), (e: Error) => {
+    assert.equal(e.message, `cleanup: role ${theirs} is new but the lab role didn't make it, so as the superuser run: psql -d ${testDatabase} -c 'DROP OWNED BY ${theirs}; DROP ROLE ${theirs}'`);
+    return true;
+  });
+  const now = await learnObjects();
+  assert.ok(!now.includes(`role ${ours}`), "the lab role's role was dropped");
+  assert.ok(now.includes(`role ${theirs}`) && now.includes(`role ${before}`), "the others were kept");
+  await assertLockFree();
+});
+
+test("CU4 a recorded session that can't be stopped fails the cleanup, named; the lock is still freed", async () => {
+  const other = pgConnect(libpqTarget({ PGDATABASE: testDatabase }), { connection: { application_name: RUNNER_APP } });
+  try {
+    const [{ pid }] = await other<{ pid: number }[]>`select pg_backend_pid() as pid`;
+    const lock = await takeLabLock(labTarget(), testDatabase);
+    lock.record(pid);
+    await assert.rejects(lock.release(), new RegExp(`^Error: cleanup: session ${pid} still runs: permission denied`));
+    await assertLockFree();
+  } finally {
+    await other.end();
+  }
+});
+
+test("CU5 a lost cleanup connection drops nothing and names every new object", async () => {
+  const lock = await takeLabLock(labTarget(), testDatabase);
+  const ours = fresh("cu5");
+  made.roles.push(ours);
+  const lab = pgConnect(labTarget());
+  await lab.unsafe(`CREATE ROLE ${ours}`);
+  await lab.end();
+  await admin`select pg_terminate_backend(${lock.pid}, 10000)`;
+  await assert.rejects(lock.release(), (e: Error) => {
+    assert.match(e.message, /^cleanup: the cleanup connection was lost, and the lab lock with it, so nothing was dropped; as the superuser run:\n/);
+    assert.match(e.message, new RegExp(`psql -d ${testDatabase} -c 'DROP OWNED BY ${ours}; DROP ROLE ${ours}'`));
+    return true;
+  });
+  assert.ok((await learnObjects()).includes(`role ${ours}`), "kept");
+  await assertLockFree();
 });

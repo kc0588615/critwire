@@ -21,6 +21,15 @@
 // RQ23: recorded results: --update runs each block twice and writes checked/<id>.txt only when both agree and every
 //       block passed; check mode then passes; a second --update changes nothing; a missing file and a differing one
 //       fail (the latter with a line diff); a plan whose text moved passes on its assertions, with a note.
+// TX1: a `-- tx: own` block (S4) leaves its transaction open or failed, or changes the session → fails, and the runner
+//      rolls it back or restores the session, so the next block sees what it expects.
+// TX3: it commits a change to a watched schema (the canary, learn_curriculum) → fails, naming the table.
+// TX4–TX5: a `-- fails:` statement fails as marked and the block goes on; one that succeeds or fails otherwise fails.
+// TX6: the result is the last statement that returned rows; a block with none fails; one over its time is cancelled.
+// LK4: it commits a learn_ role or schema → fails naming it; the runner drops what the lab role made (it holds the lab
+//      lock) and names anything else with the superuser's cleanup command, once.
+// PC7: `-- boot` blocks run first, once (--update too), committed: later blocks see them; a failing one stops the run
+//      before any other block.
 import assert from "node:assert/strict";
 import { mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -28,10 +37,12 @@ import { join } from "node:path";
 import { after, before, test } from "node:test";
 import type postgres from "postgres";
 import { loadEnv, requireEnv } from "../env.ts";
-import { withLabSchema } from "../test-db.ts";
 import { parseBlock, type Block } from "./blocks.ts";
-import { LAB_ROLE, urlTarget } from "./pg.ts";
-import { assertSession, learnObjects, openSession, runBlock, runBlocks, type LabSession } from "./runner.ts";
+import { testDatabase, withLabSchema } from "../test-db.ts";
+import { readTables } from "./check.ts";
+import { LAB_ROLE, libpqTarget, pgConnect, urlTarget } from "./pg.ts";
+import { learnObjects } from "./leaks.ts";
+import { assertSession, openSession, runBlock, runBlocks, type LabSession, type Watch } from "./runner.ts";
 
 loadEnv();
 const target = urlTarget(requireEnv("LEARN_PG_URL"), "LEARN_PG_URL");
@@ -41,6 +52,7 @@ const dir = mkdtempSync(join(tmpdir(), "critwire-runner-"));
 let session: LabSession;
 let schema: string;
 let known: Set<string>;
+let watch: Watch;
 let release: () => void;
 let done: Promise<void>;
 before(async () => {
@@ -49,6 +61,8 @@ before(async () => {
       schema = s;
       session = await openSession(target);
       known = new Set(await learnObjects(session.sql));
+      const admin = libpqTarget({ PGDATABASE: testDatabase });
+      watch = { schemas: [schema], read: (s) => readTables(admin, s) };
       ready();
       await new Promise<void>((r) => (release = r));
       await session.end();
@@ -66,7 +80,11 @@ function block(id: string, body: string, headers: string[] = []): Block {
   assert.deepEqual(errors, [], `fixture ${id}`);
   return block!;
 }
-const run = (b: Block, page: Block[] = [b], timeoutMs?: number) => runBlock(session, b, new Map(page.map((x) => [x.id, x])), { known, timeoutMs });
+const own = (id: string, body: string) => block(id, body, ["-- tx: own"]);
+const run = (b: Block, page: Block[] = [b], timeoutMs?: number) => runBlock(session, b, new Map(page.map((x) => [x.id, x])), { known, watch, timeoutMs });
+/** A rendered result without its header line, rows joined by `|`. */
+const shown = (o: { rendered?: string }) => o.rendered?.split("\n").slice(1).join("|");
+const newObjects = async () => (await learnObjects(session.sql)).filter((o) => !known.has(o));
 
 test("PC1 the session is pg-session's, as the lab role; the pg-session block shows its search_path with 004's hash", async () => {
   const [shown] = await session.sql.unsafe("SELECT current_setting('search_path') AS search_path, current_setting('statement_timeout') AS statement_timeout, current_user::text AS role, current_user = session_user AS own_role");
@@ -231,4 +249,90 @@ test("RQ23 --update writes agreed results; check mode passes; a missing, edited 
   notes.length = 0;
   await runBlocks(session, [plan], opts(false));
   assert.match(notes.join("\n"), /q u6: the plan's text differs from \S*checked\/u6\.txt \(its assertions hold\)/);
+});
+
+test("TX1 an own block that leaves its transaction open or failed, or changes the session, fails; the runner puts it back", async () => {
+  const tx1 = await run(own("tx1", `BEGIN;\nCREATE TABLE ${schema}.tx1_t (id int);\nSELECT 1 AS a`));
+  assert.deepEqual(tx1.failures, ["q tx1: left its transaction open; the runner rolled it back"]);
+  const gone = await run(block("tx1-after", `SELECT to_regclass('${schema}.tx1_t') IS NULL AS gone`));
+  assert.equal(shown(gone), "gone|true");
+  const tx1b = await run(own("tx1b", "BEGIN;\nSELECT 1 / 0 AS a"));
+  assert.deepEqual(tx1b.failures, ["q tx1b: statement 2 of 2: division by zero", "q tx1b: left its transaction open; the runner rolled it back"]);
+  const tx1c = await run(own("tx1c", "DO $$ BEGIN EXECUTE 'SET search_path = public'; END $$;\nSELECT 1 AS a"));
+  assert.deepEqual(tx1c.failures, ["q tx1c: changed the session: search_path = public, expected learn_curriculum, public; the runner restored it"]);
+  const sp = await run(block("tx1c-after", "SELECT current_setting('search_path') AS sp"));
+  assert.equal(shown(sp), "sp|learn_curriculum, public");
+});
+
+test("TX3 an own block that commits a change to a watched schema fails, naming the table", async () => {
+  await session.sql.unsafe(`CREATE TABLE ${schema}.tx3 (v int); INSERT INTO ${schema}.tx3 VALUES (1)`);
+  const a = await run(own("tx3", `BEGIN;\nUPDATE ${schema}.tx3 SET v = 2;\nCOMMIT;\nSELECT 1 AS a`));
+  assert.match(a.failures.join("\n"), new RegExp(`^q tx3: committed a change: ${schema}\\.tx3: rows or values changed \\(1\\|`));
+  const b = await run(own("tx3b", `BEGIN;\nCREATE TABLE ${schema}.tx3b (id int);\nCOMMIT;\nSELECT 1 AS a`));
+  assert.match(b.failures.join("\n"), new RegExp(`q tx3b: committed a change: ${schema}\\.tx3b: added`));
+  const clean = await run(own("tx3c", `BEGIN;\nUPDATE ${schema}.tx3 SET v = 3;\nROLLBACK;\nSELECT 1 AS a`));
+  assert.deepEqual(clean.failures, []);
+});
+
+test("TX4–TX6 `-- fails:` statements fail as marked and the block goes on; the result is the last that returned rows", async () => {
+  const tx4 = await run(own("tx4", "BEGIN;\n-- fails: division by zero\nSELECT 1 / 0 AS a;\n-- fails: current transaction is aborted\nSELECT 2 AS b;\nROLLBACK;\nSELECT 3 AS c"));
+  assert.deepEqual(tx4.failures, []);
+  assert.equal(shown(tx4), "c|3");
+  const tx5a = await run(own("tx5a", "-- fails: division by zero\nSELECT 1 AS a;\nSELECT 2 AS b"));
+  assert.deepEqual(tx5a.failures, ['q tx5a: statement 1 of 2 should fail with "division by zero" but succeeded']);
+  const tx5b = await run(own("tx5b", "-- fails: does not exist\nSELECT 1 / 0 AS a;\nSELECT 2 AS b"));
+  assert.deepEqual(tx5b.failures, ['q tx5b: statement 1 of 2 should fail with "does not exist" but failed with: division by zero']);
+  const tx6 = await run(own("tx6", "BEGIN;\nCREATE TEMP TABLE tx6_t (id int) ON COMMIT DROP;\nINSERT INTO tx6_t VALUES (1), (2);\nSELECT count(*) AS n FROM tx6_t;\nROLLBACK"));
+  assert.deepEqual(tx6.failures, []);
+  assert.equal(shown(tx6), "n|2");
+  const ok = await run(own("tx-ok", "BEGIN;\nCREATE TEMP TABLE tx_ok (id int) ON COMMIT DROP;\nINSERT INTO tx_ok VALUES (1), (2);\nROLLBACK;\nSELECT to_regclass('tx_ok') IS NULL AS rolled_back"));
+  assert.deepEqual(ok.failures, []);
+  assert.equal(shown(ok), "rolled_back|true");
+  const none = await run(own("tx-none", "BEGIN;\nROLLBACK"));
+  assert.deepEqual(none.failures, ["q tx-none: no statement returned rows to show"]);
+  const slow = await run(own("tx-slow", "SELECT pg_sleep(30) IS NULL AS slept"), undefined, 1000);
+  assert.deepEqual(slow.failures, ["q tx-slow: timed out after 1 s (cancelled)"]);
+  assert.deepEqual((await run(block("tx-next", "SELECT 2 AS b"))).failures, []);
+});
+
+test("LK4 an own block's committed learn_ role or schema fails, named; the lab role's are dropped, others named once", async () => {
+  const o = await run(own("lk4", "DO $$ BEGIN EXECUTE 'CREATE ROLE learn_t_lk4'; EXECUTE 'CREATE SCHEMA learn_t_lk4s'; END $$;\nSELECT 1 AS a"));
+  assert.deepEqual(o.failures, [
+    "q lk4: committed role learn_t_lk4; the runner dropped it",
+    "q lk4: committed schema learn_t_lk4s; the runner dropped it",
+  ]);
+  assert.deepEqual(await newObjects(), []);
+  const admin = pgConnect(libpqTarget({ PGDATABASE: testDatabase }));
+  try {
+    await admin.unsafe("CREATE ROLE learn_t_lk4su");
+    const su = await run(own("lk4su", "SELECT 1 AS a"));
+    assert.deepEqual(su.failures, [`q lk4su: committed role learn_t_lk4su; the lab role didn't make it, so as the superuser run: psql -d ${testDatabase} -c 'DROP OWNED BY learn_t_lk4su; DROP ROLE learn_t_lk4su'`]);
+    assert.deepEqual((await run(block("lk4-next", "SELECT 1 AS a"))).failures, [], "named once, then known");
+  } finally {
+    await admin.unsafe("DROP ROLE IF EXISTS learn_t_lk4su");
+    await admin.end();
+  }
+});
+
+test("PC7 boot blocks run first and once, committed; later blocks see them; a failing one stops the run first", async () => {
+  const checked = join(dir, "boot");
+  const opts = (update: boolean) => ({ update, checkedDir: checked, known, watch, log: () => {} });
+  const read = block("pc7-read", `SELECT count(*) AS cells FROM ${schema}.pc7_cells`);
+  const page = [
+    read,
+    block("pc7-cells", `CREATE TABLE ${schema}.pc7_cells AS SELECT g AS id FROM generate_series(1, 3) AS g;\nSELECT count(*) AS cells FROM ${schema}.pc7_cells`, ["-- boot"]),
+    block("pc7-more", `INSERT INTO ${schema}.pc7_cells VALUES (4);\nSELECT count(*) AS cells FROM ${schema}.pc7_cells`, ["-- boot"]),
+  ];
+  const cells = (id: string) => readFileSync(join(checked, `${id}.txt`), "utf8").split("\n").slice(1).join("|");
+  await runBlocks(session, page, opts(true));
+  assert.deepEqual([cells("pc7-cells"), cells("pc7-more"), cells("pc7-read")], ["cells|3", "cells|4", "cells|4"]);
+  await session.sql.unsafe(`DROP TABLE ${schema}.pc7_cells`);
+  await runBlocks(session, page, opts(false));
+  await session.sql.unsafe(`DROP TABLE ${schema}.pc7_cells`);
+
+  const failing = [block("pc7g", "SELECT 2 AS b"), block("pc7f", "SELECT 1 / 0 AS x", ["-- boot"])];
+  await assert.rejects(runBlocks(session, failing, opts(false)), (e: Error) => {
+    assert.match(e.message, /^boot block pc7f: q pc7f: statement 1 of 1: division by zero$/);
+    return true;
+  });
 });
