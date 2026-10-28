@@ -6,6 +6,7 @@ import type { Registration } from "../gbif/derived-dataset.ts";
 import { readLabFiles, type LabFile } from "../learn/lab-files.ts";
 import type { Species } from "../species.ts";
 import { assertRecordKeys } from "./columns.ts";
+import { assertLearnProjection } from "./learn/projection.ts";
 
 // registration: the GBIF derived dataset whose DOI the records cite (current); null only in a --draft build.
 // countries: data/countries.json. learn: the lab sample (derive/sample.ts), its DOI null only in a --draft build.
@@ -48,6 +49,8 @@ export async function readBuildInputs({ draft }: { draft: boolean }): Promise<Bu
       throw new Error(`species ${s.id}: photo needs a url, credit, license and page`);
     }
   }
+
+  assertLearnProjection(species);
 
   const labFiles = await readLabFiles();
   assertDois({ countries: result.doi, "learn-sample": result.learn.doi }, { draft });

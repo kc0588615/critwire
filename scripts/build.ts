@@ -1,6 +1,7 @@
 // pnpm build [--draft] (plan §3, D9.1): checks data/ offline, rebuilds DATABASE_URL from it, then writes the static
-// site to dist/: /v1, the docs page, then /learn/data/. A plain build refuses without a current GBIF derived-dataset
-// DOI for every target; --draft builds without them (previews, E2E).
+// site to dist/: /v1, the docs page, then /learn/data/, whose lab tables it rebuilds from those bytes and checks. A
+// plain build refuses without a current GBIF derived-dataset DOI for every target; --draft builds without them
+// (previews, E2E).
 import { copyFile, mkdir, readdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -12,7 +13,9 @@ import { buildAttribution } from "./build/attribution.ts";
 import { writeCountries } from "./build/countries.ts";
 import { docsTemplate, renderDocs } from "./build/docs.ts";
 import { readBuildInputs } from "./build/inputs.ts";
+import { assertLabChecks } from "./build/learn/checks.ts";
 import { writeLearnData } from "./build/learn/data.ts";
+import { projectLearn } from "./build/learn/projection.ts";
 import { childFile } from "./build/paths.ts";
 import { writeTables } from "./build/tables.ts";
 
@@ -43,6 +46,10 @@ await writeCountries(countries.rows, v1);
 await writeFile(new URL("attribution.json", v1), formatJson(attribution));
 await writeFile(new URL("index.html", out), docs);
 await writeLearnData(new URL("learn/data/", out), { learn, files: labFiles });
+// The lab tables from the published bytes, as a learner builds them; a violation fails before deploy publishes.
+const projection = await projectLearn(out);
+assertLabChecks(projection.checks, "learn projection (dist/)");
+console.log(`learn projection: ${Object.keys(projection.tables).length} tables, ${Object.keys(projection.checks).length} LAB_CHECKS all 0`);
 
 // Every file with its size in bytes, sorted by path (for the PR body).
 const dist = fileURLToPath(out);
