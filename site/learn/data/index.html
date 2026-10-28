@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>critwire Learn: lab data</title>
+<meta name="description" content="The open data files every critwire Learn lab reads: a GBIF occurrence sample, map shapes, habitat summaries and a PostGIS loader, with their sources and licenses.">
+<style>
+{{style}}</style>
+<style>
+.scroll { overflow-x: auto; margin: 0 0 1rem; }
+table { border-collapse: collapse; width: 100%; font-size: .95rem; }
+th, td { text-align: left; vertical-align: top; padding: .35rem .5rem; border-bottom: 1px solid var(--line); }
+th { font-weight: 600; }
+.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+td .note { display: block; }
+</style>
+</head>
+<body>
+<main>
+<header>
+<p class="note"><a href="/">critwire</a> / Learn</p>
+<h1>Lab data</h1>
+<p class="lead">The files every critwire Learn lab reads: a sample of open GBIF occurrence records, country and ecoregion outlines, habitat summaries, and one SQL file that builds all of them in PostGIS.</p>
+<nav aria-label="Sections">
+<ul>
+<li><a href="#files">Files</a></li>
+<li><a href="#postgis">PostGIS</a></li>
+<li><a href="#sample">The GBIF sample</a></li>
+<li><a href="#sources">Sources and licenses</a></li>
+<li><a href="#datasets">Datasets</a></li>
+</ul>
+</nav>
+</header>
+
+<section id="files">
+<h2>Files</h2>
+<p>Each file is a plain download; Parquet files can also be queried in place, for example from DuckDB. The labs also read critwire's species and countries files under <a href="/#files"><code>/v1/</code></a>. The lab files sit outside <code>/v1/</code> because they change as the course does: check <a href="/learn/data/manifest.json"><code>manifest.json</code></a>, which lists every file's columns, rows, size, sha256 and sources, and the <code>/v1/</code> files' sha256 the labs were tested with.</p>
+<div class="scroll">
+<table>
+<thead><tr><th>File</th><th class="num">Rows</th><th class="num">Size</th><th>Sources</th></tr></thead>
+<tbody>
+{{files}}
+</tbody>
+</table>
+</div>
+<p class="note">Total: {{totalBytes}}. Shapes are GeoParquet 1.0.0: the outline is in a <code>geom</code> column as WKB, in longitude and latitude (WGS 84). Some outlines are invalid on purpose, for the lab on fixing geometry.</p>
+<p class="note"><strong>Reading the CSV files:</strong> Namibia's country code is <code>NA</code>, which some tools read as a missing value. An empty cell is the missing value. In pandas, pass <code>keep_default_na=False, na_values=[""]</code> to <code>read_csv</code>; in R, pass <code>na.strings = ""</code> to <code>read.csv</code>. DuckDB and the Parquet files keep it as the text <code>NA</code>.</p>
+</section>
+
+<section id="postgis">
+<h2>PostGIS</h2>
+<p><a href="/learn/data/postgis/learn_curriculum.sql"><code>learn_curriculum.sql</code></a> builds every lab table in the schema <code>learn_curriculum</code> with nothing but <code>psql</code> and the PostGIS extension:</p>
+<pre><code>psql -X -v ON_ERROR_STOP=1 -d your_database -f learn_curriculum.sql</code></pre>
+<p>It runs as one transaction and checks its own row counts before it commits. Loading it again replaces the whole schema, including any tables you added to it; a failed load leaves the previous schema as it was. It refuses to run if anything outside the schema depends on it, such as one of your views. A database used only for the labs avoids both problems.</p>
+</section>
+
+<section id="sample">
+<h2>The GBIF sample</h2>
+<p>The occurrence files hold {{records}} records of critwire's species from {{datasetCount}} datasets shared through <a href="https://www.gbif.org/">GBIF</a>. They come from one GBIF download, so anyone can fetch the same records again: {{downloadDoi}}.</p>
+<p>Each record is open: its license, or its dataset's when that is stricter, is CC0 1.0 or CC BY 4.0, and the <code>license</code> column says which. Each species has at most 2,000 records, chosen by the lowest <code>md5</code> of the GBIF id, so any database picks the same ones. These are records of where people saw or collected an animal, not maps of where it lives.</p>
+{{sampleDoi}}
+</section>
+
+<section id="sources">
+<h2>Sources and licenses</h2>
+<p>Credit each source you use. Each file's sources are listed above and, ready for code, in <a href="/learn/data/manifest.json"><code>manifest.json</code></a>.</p>
+<dl>
+{{sources}}
+</dl>
+</section>
+
+<section id="datasets">
+<h2>Datasets</h2>
+<p>The {{datasetCount}} datasets in the sample, with the publisher that shared each, its DOI, its declared license and how many of its records the sample holds. The same list is in <a href="/learn/data/datasets.csv"><code>datasets.csv</code></a>.</p>
+<div class="scroll">
+<table>
+<thead><tr><th>Dataset</th><th>Publisher</th><th>DOI</th><th>License</th><th class="num">Records</th></tr></thead>
+<tbody>
+{{datasets}}
+</tbody>
+</table>
+</div>
+</section>
+</main>
+</body>
+</html>

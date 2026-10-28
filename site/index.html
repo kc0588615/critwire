@@ -6,35 +6,7 @@
 <title>critwire: open species data</title>
 <meta name="description" content="Free, open data about {{species}} animals: names, taxonomy, matching ids and countries with open records, as JSON, CSV and Parquet files.">
 <style>
-:root { color-scheme: light dark; --fg: #1d2420; --muted: #56605a; --bg: #fbfcfa; --line: #d5dcd6; --code: #eef2ee; --link: #1f6b45; }
-@media (prefers-color-scheme: dark) {
-  :root { --fg: #e4e9e5; --muted: #a3ada6; --bg: #141816; --line: #323a35; --code: #1f2522; --link: #7fd1a3; }
-}
-* { box-sizing: border-box; }
-html { -webkit-text-size-adjust: 100%; }
-body { margin: 0; background: var(--bg); color: var(--fg); font: 1.0625rem/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
-main { max-width: 42rem; margin: 0 auto; padding: 1.5rem 1rem 4rem; }
-h1 { font-size: 2rem; line-height: 1.2; margin: 0 0 .25rem; }
-h2 { font-size: 1.4rem; margin: 2.5rem 0 .75rem; padding-top: 1rem; border-top: 1px solid var(--line); }
-h3 { font-size: 1.1rem; margin: 1.75rem 0 .5rem; }
-p, ul, dl, pre { margin: 0 0 1rem; }
-a { color: var(--link); overflow-wrap: anywhere; }
-code { font: .9em/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; overflow-wrap: anywhere; }
-pre { background: var(--code); border: 1px solid var(--line); border-radius: 6px; padding: .75rem; overflow-x: auto; }
-pre code { overflow-wrap: normal; white-space: pre; }
-pre.wrap code { white-space: pre-wrap; overflow-wrap: anywhere; }
-:not(pre) > code { background: var(--code); border-radius: 4px; padding: .05em .3em; }
-dt { font-weight: 600; margin-top: .75rem; }
-dd { margin: .15rem 0 0 1rem; overflow-wrap: anywhere; }
-dt.group { margin-top: 1.5rem; }
-.lead { font-size: 1.15rem; color: var(--muted); margin-bottom: 1.5rem; }
-nav ul { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: .25rem 1rem; }
-.note { color: var(--muted); font-size: .95rem; }
-details { border: 1px solid var(--line); border-radius: 6px; padding: .5rem .75rem; }
-summary { cursor: pointer; font-weight: 600; }
-details ul { margin-top: .75rem; padding-left: 1.25rem; }
-details li { margin-bottom: .4rem; overflow-wrap: anywhere; }
-</style>
+{{style}}</style>
 </head>
 <body>
 <main>
@@ -82,6 +54,7 @@ details li { margin-bottom: .4rem; overflow-wrap: anywhere; }
 <dd>One row per country code, with the country's name, continent and region, so you can put a name to the codes in <code>range.countriesWithOpenRecords</code>. See <a href="#countries">Countries</a>.</dd>
 </dl>
 <p class="note">Files are served with open CORS and byte ranges, so a web page on any site can fetch them.</p>
+<p>The data the critwire Learn labs read, an open GBIF occurrence sample, map shapes and a PostGIS loader, is at <a href="/learn/data/"><code>/learn/data/</code></a>. It sits outside <code>/v1/</code> because it changes as the course does.</p>
 
 <h3>Download with curl</h3>
 <pre><code data-example="shell">curl -fsSO https://critwire.com/v1/species.json

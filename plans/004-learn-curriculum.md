@@ -797,7 +797,7 @@ Every lab reads the same handful of files. critwire's build writes them from sna
 
 | Dataset | License (quoted in) | Files under `/learn/data/` | Rows | Bytes | Modules | Built by |
 |---|---|---|---|---|---|---|
-| GBIF open-records sample | per record CC0 1.0 or CC BY 4.0, after the effective-license rule (4.2) (003 D3); the download's DOI, and a derived-dataset DOI of its own | `occurrences.parquet`, `occurrences.csv`, `datasets.csv` | 40,395 records; 400 datasets | 622,971; 4,591,948; 72,797 | f2–f4, d2–d6, g3–g6, s1–s6, e1–e5, p1–p4, c1 | L1 |
+| GBIF open-records sample | per record CC0 1.0 or CC BY 4.0, after the effective-license rule (4.2) (003 D3); the download's DOI, and a derived-dataset DOI of its own | `occurrences.parquet`, `occurrences.csv`, `datasets.csv` | 40,395 records; 400 datasets | 454,202 (L1's zstd writer; the spike's 622,971); 4,591,948; 72,797 | f2–f4, d2–d6, g3–g6, s1–s6, e1–e5, p1–p4, c1 | L1 |
 | Natural Earth admin-0, 1:50m, v5.1.2 | public domain (003 D2, 002 §6) | `country_shapes.parquet` (GeoParquet) | 247 | 1,304,205 | g1–g7, s1, s6 | L1 |
 | Natural Earth admin-1, 1:50m | public domain (003 D10) | `admin1_shapes.parquet` (GeoParquet) | 294, in 9 countries | 870,947 | g4, g6, s2–s5 | L1 |
 | RESOLVE Ecoregions 2017, simplified to 0.05° | CC BY 4.0 (003 D9) | `ecoregions.parquet` (GeoParquet), `biomes.csv` | 847; 14 | 6,686,262; 518 | g4, s6 | L1 |
@@ -806,7 +806,7 @@ Every lab reads the same handful of files. critwire's build writes them from sna
 | Jung v004 clips, Costa Rica and Tasmania | CC BY 4.0 (003 D4) | `clips/{cr,tas}.tif` (cloud-optimized GeoTIFF) | 2 rasters | ≈ 3 MB (estimate; A2 measured the Costa Rica clip at 1.42 MB) | g7, s6 | L3 |
 | The PostGIS loader | inherits the above | `postgis/learn_curriculum.sql` | 14 tables | 21,330,577 | every PostGIS module | build (L1; grown in L3) |
 | The star export | inherits the above; credits in its own manifest | `star/*.csv` (8 files), `star/manifest.json` | §A.3 | 4,576,053; 10,995 | d6, p1–p4 | build (L2: the records fact; L5: the habitat fact) |
-| The manifest | | `manifest.json` (4.5) | | 12,006 | every module | build (L1) |
+| The manifest and the index page | | `manifest.json` (4.5), `index.html` | | 14,257; 114,820 (L1's build) | every module | build (L1) |
 
 Notes on the shapes (`SP/out/lab-data/summary.md`; sizes re-measured by L1's `pnpm ingest shapes`, `data/learn/shapes.json`):
 - **GeoParquet 1.0.0**: WKB geometry in a `geom` column, its bounding box, longitude-latitude (CRS84), zstd compression, rows sorted by key. The same inputs write byte-identical files. The ingest rebuilds all three (and `biomes.csv`): admin-1, ecoregions and `biomes.csv` are byte-identical to the spike's; `country_shapes` has the spike's WKB for all 247 codes, but the spike wrote it with DuckDB's snappy (1,206,307 bytes), so zstd makes it 1,304,205.
@@ -906,11 +906,11 @@ species | 76
 
 ### 4.4 The cap: 50 MB
 
-The build refuses when `dist/learn/data/` exceeds 50,000,000 bytes, or when the committed lab data (`data/raw/gbif-sample/` and the other lab snapshots) does. The browser engine's `parquet` extension (3.22 MB) is counted apart, under 002 §10 item 3.
+The build refuses when `dist/learn/data/` exceeds 50,000,000 bytes, or when the committed lab data does: `data/raw/gbif-sample/`, `data/learn/` and `data/gbif-learn-sample/` together (L1's build: 35,452,055 and 13,673,945 bytes). Both refusals name the total and the largest files (`scripts/build/learn/cap.ts`). The browser engine's `parquet` extension (3.22 MB) is counted apart, under 002 §10 item 3.
 
 | `/learn/data/` | Bytes |
 |---|---|
-| now (the spike, after L1's files): 10 files and the manifest | 35,397,671 |
+| now (the spike, after L1's files): 10 files and the manifest | 35,397,671 (L1's build, with its index page: 35,452,055) |
 | + L2's star (8 CSV files and its manifest) | 39,984,719 |
 | + L3's habitat files and clips, about 3.2 MB, and their loader tables, about 0.7 MB for `occurrence_habitats` plus the clips as rasters (estimates) | ≈ 44–48 MB |
 
@@ -920,11 +920,17 @@ With hex geometry the loader was 29,598,105 bytes, and the same projection came 
 
 ### 4.5 Credits
 
-`/v1/attribution.json` stays about the species files, plus 002 §6's Natural Earth entry. The lab files are credited in **`/learn/data/manifest.json`**: for each file its columns, rows, bytes, sha256 and `sources[]` (`name`, `license`, `licenseUrl` from `scripts/build/sources.ts` `licenseUrl()`, `citation`, `doi` where there is one, `url`). In the spike's manifest:
-- the sample's three files: GBIF's citation of the download, "GBIF.org (23 October 2026) GBIF Occurrence Download https://doi.org/10.15468/dl.fbpk9w", plus `"datasets": "datasets.csv"` for each dataset's credit; from L1 also the sample's derived-dataset DOI;
+`/v1/attribution.json` stays about the species files, plus 002 §6's Natural Earth entry. The lab files are credited in **`/learn/data/manifest.json`**, keys in this order and no clock, so the same files give the same bytes (L1, `scripts/build/learn/data.ts`):
+- `cap` (50,000,000) and `bytes`, the files' total;
+- `inputs`: `v1`, the bytes and sha256 of `/v1/species.parquet` and `/v1/countries.parquet`, the two `/v1` files the lab tables are built from (a lab that finds other hashes is reading newer `/v1` files than these were tested with); `sample`, `sample.csv`'s path, sha256 and rows, the file the sample's derived-dataset deposit holds (= `contributions.json`);
+- `dois`: `download` (the GBIF download's) and `sample` (the sample's derived dataset; null in a draft build);
+- `files`: per file (all but `manifest.json` and `index.html`), its `columns` and `rows` (Parquet and CSV), `tables` for the loader (each lab table's rows, the counts its final check enforces), `bytes`, `sha256` and `sources[]` (`name`, `license`, `licenseUrl` from `scripts/build/sources.ts` `licenseUrl()`, `citation`, `url`, `doi` where there is one; the sample's source adds `datasets` and `derivedDataset` {`doi`, `citation`, `url`}).
+
+In the spike's manifest:
+- the sample's three files: GBIF's citation of the download, "GBIF.org (23 October 2026) GBIF Occurrence Download https://doi.org/10.15468/dl.fbpk9w", plus `"datasets": "datasets.csv"` for each dataset's credit; from L1 also the sample's derived dataset, `10.15468/dd.5sthtk`, with GBIF's citation of it;
 - the Natural Earth shapes: public domain, credited anyway ("Made with Natural Earth");
 - RESOLVE: CC BY 4.0, Dinerstein et al. 2017, BioScience 67(6), doi 10.1093/biosci/bix014;
-- the habitat files: CC BY 4.0, Jung et al. 2020 and the map's version (003 §5), doi 10.5281/zenodo.4058819;
+- the habitat files: CC BY 4.0, Jung et al. 2020 and the map's version (003 §5), doi 10.5281/zenodo.4058819; until L3, named "(stand-in summaries)";
 - the loader: every source of the tables it holds, critwire's own data included.
 
 One `credits(file)` function writes these entries and the star's (`star/manifest.json`, §A.3); `dim_dataset` carries the `datasets` columns. The build refuses a lab file with no `sources`, a license missing from `LICENSE_URLS`, a CC BY source with no citation, and a dataset in the sample with no title or publisher. The `/learn/data/` index page lists the files, their sources and the dataset table (title, publisher, DOI link, license, records in the sample).
