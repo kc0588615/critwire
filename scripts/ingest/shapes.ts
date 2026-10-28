@@ -13,6 +13,7 @@ import { fileURLToPath } from "node:url";
 import { countriesFile, matchCountries, type CountriesFile, type CountriesResult, type NeProps } from "../derive/naturalearth.ts";
 import { downloadFile } from "../http.ts";
 import { readJson, writeJson } from "../json.ts";
+import { labDataDir } from "../learn/lab-files.ts";
 import type { NeLayer } from "../raw.ts";
 import { NE_COMMIT } from "./naturalearth.ts";
 
@@ -33,7 +34,6 @@ const CHECK_FIELD: Record<NeLayer, string> = { countries: "ADM0_A3", map_units: 
 // countries.json codes with no 1:50m feature (Bouvet Island, Gibraltar, US Minor Outlying Islands).
 export const SHAPE_GAPS = ["BV", "GI", "UM"] as const;
 export const SHAPE_OUTPUTS = ["admin1_shapes.parquet", "biomes.csv", "country_shapes.parquet", "ecoregions.parquet"] as const;
-export const shapesDir = new URL("../../data/learn/", import.meta.url);
 const PYTHON = [fileURLToPath(new URL("../../.venv-learn/bin/python", import.meta.url)), "-I", fileURLToPath(new URL("shapes.py", import.meta.url))];
 // Ecoregions2017.zip is ~149 MB.
 const TIMEOUT_MS = 30 * 60_000;
@@ -141,7 +141,7 @@ export async function ingestShapes(): Promise<void> {
     for (const [name, { url, sha256, bytes }] of Object.entries(SHAPE_INPUTS)) {
       await downloadFile(url, join(inDir, name), { sha256, bytes, timeoutMs: TIMEOUT_MS });
     }
-    await buildShapes({ inDir, dest: shapesDir, countryCodes: rows.map((r) => r.code) });
+    await buildShapes({ inDir, dest: labDataDir, countryCodes: rows.map((r) => r.code) });
   } finally {
     await rm(inDir, { recursive: true, force: true });
   }

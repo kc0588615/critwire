@@ -3,12 +3,20 @@ import type { CountriesFile } from "../derive/naturalearth.ts";
 import { assertDerivedFiles, deriveAll, readDeriveInputs } from "../derive/pipeline.ts";
 import type { LearnResult } from "../derive/sample.ts";
 import type { Registration } from "../gbif/derived-dataset.ts";
+import { readLabFiles, type LabFile } from "../learn/lab-files.ts";
 import type { Species } from "../species.ts";
 import { assertRecordKeys } from "./columns.ts";
 
 // registration: the GBIF derived dataset whose DOI the records cite (current); null only in a --draft build.
 // countries: data/countries.json. learn: the lab sample (derive/sample.ts), its DOI null only in a --draft build.
-export interface BuildInputs { species: Species[]; registration: Registration | null; countries: CountriesFile; learn: LearnResult }
+// labFiles: data/learn/'s data files, each equal to its provenance file's record (learn/lab-files.ts).
+export interface BuildInputs {
+  species: Species[];
+  registration: Registration | null;
+  countries: CountriesFile;
+  learn: LearnResult;
+  labFiles: LabFile[];
+}
 
 // The GBIF derived-dataset targets and how each DOI is refreshed (AGENTS.md, GBIF DOI refresh).
 const DOI_REFRESH = {
@@ -41,6 +49,7 @@ export async function readBuildInputs({ draft }: { draft: boolean }): Promise<Bu
     }
   }
 
+  const labFiles = await readLabFiles();
   assertDois({ countries: result.doi, "learn-sample": result.learn.doi }, { draft });
-  return { species, registration: result.doi === null ? null : inputs.registration, countries: result.countries, learn: result.learn };
+  return { species, registration: result.doi === null ? null : inputs.registration, countries: result.countries, learn: result.learn, labFiles };
 }
