@@ -201,7 +201,7 @@ The review's numbering: MF = MUST-FIX, SC = SHOULD-CHANGE.
 - [x] Fable review: `architecture-reviewer`
 - [x] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
 - [x] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
-- [ ] Steps: `planner` writes Steps and Verification
+- [x] Steps: `planner` writes Steps and Verification
 
 ## Baseline
 
@@ -754,7 +754,208 @@ Architect, 2026-10-28, on `281ef43`. The single revision round. I verified again
 
 ## Steps
 
+Every step:
+- `M` = `/srv/critter-ai/agent-state/missions/critwire-learn-l1-data`; `SP` = `/srv/critter-ai/agent-state/missions/critwire-learn-curriculum/spike`; A1's spike = `/srv/critter-ai/agent-state/missions/critwire-learn-design/spike`.
+- **First** = failure cases written and run red before the code (Log: `red n → green n`). No test is written after its code.
+- Checks: `T` = `pnpm typecheck && pnpm test`. `D` = `pnpm test:db` (from S1). `B` = plain `pnpm build`; from S14 until S16 is done, `pnpm build --draft` (no learn-sample DOI yet). `E` = `B` then `pnpm e2e`, all pass, 0 skipped. `H` = `(cd dist && grep ' \./v1/species' $M/baseline/dist.sha256 | sha256sum -c --quiet)`: 155 species files = Baseline.
+- Commit `S<n>: …` (code + plan), push. A step that finishes a review item adds `<item>: done (S<n>)` under Decisions; S31 adds the shas.
+- Network stderr: `2>> $M/<name>.log`. Never print `.env` values (source it with `set -a; . ./.env; set +a`).
+- 004 fixes go in the commit of the code that proves them (D16); each step names its own.
+- Estimate: 31 steps; with the 6 sessions so far, code review, about 2 fix steps, Verification and Release, about 42 sessions.
+
+- [ ] S1 · MF1: destination guard, names-only env log, test runners (D11, D15)
+  - Files: `scripts/env.ts`, `scripts/db.ts` (`assertTarget`, `loading into <current_database()>`), `db/schema.sql` + insert (`public.species`), `package.json` (`test` = `tsx --test 'scripts/**/*.test.ts'`; new `test:db` = `'scripts/**/*.dbtest.ts'`, refusing any database but `critwire_dev`), `scripts/db.test.ts`, `scripts/db.dbtest.ts`, `AGENTS.md` (Databases: `CRITWIRE_DB_TARGET`, build and `db:load` only).
+  - First: G1 (pure: missing names the variable; mismatch names both), G2 (wrong or missing target refuses before DDL; `species` oid unchanged), G3 (matching target loads), G4 (sentinel redaction).
+  - Verify: `T`, `D`, `E`; full `(cd dist && sha256sum -c --quiet $M/baseline/dist.sha256)` (157/157). Decisions: MF1 done.
+- [ ] S2 · SC3 mirror cases: lock and statement timeouts (D11, D14)
+  - Files: `scripts/db.ts` (`SET LOCAL lock_timeout` 30 s, `statement_timeout` 120 s, test overrides as parameters), `scripts/db.dbtest.ts`.
+  - First: G5 (advisory lock held by a test session: short timeout refuses, naming it), G6 (insert failing after DROP: previous table and rows intact), G7 (two concurrent loads serialize, both succeed).
+  - G5 proves `lock_timeout` doesn't bound advisory waits (Open risk 7): switch to `pg_try_advisory_xact_lock` + deadline; record.
+  - Verify: `T`, `D`, `B`, `H`.
+- [ ] S3 · `ingest naturalearth` + ingest dispatcher (D3, D4) · light network (2 pinned files)
+  - Files: `scripts/http.ts` (`getBytes`), `scripts/ingest.ts` (`<source> → run()`; wikidata, col, gbif wrapped, unchanged), `scripts/ingest/naturalearth.ts` + `.test.ts`, `data/raw/naturalearth/snapshot.json`.
+  - First: CD11 (sha256 mismatch refuses, writes nothing); NE1 (snapshot = 002 §6's ten fields per unit + `release`, `commit`, `fields`, `retrieved`; keys sorted; no geometry).
+  - Run: `pnpm ingest naturalearth 2>> $M/ingest-naturalearth.log`.
+  - Verify: `T`; `pnpm ingest` usage lists 4 sources; `pnpm derive`: no diff; `B`, `H`.
+- [ ] S4 · Countries matcher + derive (D4, D7)
+  - Files: `scripts/derive/naturalearth.ts` + `.test.ts` (fixtures from A1's spike `test/fixtures/`), `scripts/derive/pipeline.ts` (`deriveCore` gains countries; `derivedFiles` + `data/countries.json`), `scripts/derive.ts`, `data/countries.json`.
+  - First: CD1–CD10 (port of A1's `test/countries-draft.test.ts`); NE2 (`release`, `commit` or `fields` ≠ constants → "data/raw/naturalearth is stale: run pnpm ingest naturalearth").
+  - Verify: `T`; `pnpm derive` writes 250 rows, equal to `SP/data/v1/countries.json`'s (`jq`); `B`, `H`.
+- [ ] S5 · `/v1/countries.*`, attribution, docs, E2E (D4, D9.2 DuckDB helper, D15)
+  - Files: `scripts/build/duckdb.ts` (`openOfflineDuckDb`; `tables.ts` uses it), `scripts/build/countries.ts`, `scripts/build/attribution.ts` (Natural Earth entry; `release` typed on the attribution entry only), `scripts/build/sources.ts`, `scripts/build/inputs.ts`, `scripts/build/docs.ts`, `site/index.html` (three files, field table, `NA` note, "Used for 250 countries", reworded "same N records" line), `scripts/build.ts`; `e2e/countries.spec.ts` (new), `e2e/{docs,duckdb,attribution}.spec.ts`; 004 §1/§B (Natural Earth `release` object).
+  - First: the E2E cases (D15: countries.spec incl. k01 = 0 unmatched; the attribution entry; the docs lines), red on the old build.
+  - Save `/srv/apps/critwire/.live/v1/attribution.json` as `$M/baseline/attribution.json` after checking its sha256 = `dist.sha256`'s `./v1/attribution.json` line.
+  - Verify: `T`, `E`, `H`; `diff <(jq -S '.sources |= map(select(.source != "Natural Earth"))' dist/v1/attribution.json) <(jq -S . $M/baseline/attribution.json)` empty; two builds give identical `dist/v1/countries.*`.
+- [ ] S6 · `uv`, `.venv-learn`, habitat stand-ins (D2, D3; A1, A20)
+  - Root: `uv` 0.13.5 to `/usr/local/bin/{uv,uvx}` from `SP/downloads/uv-0.13.5/` (sha256 `4bb69cf9…c403` checked first); record in `/srv/critter-ai/ops/docs/vps.md`.
+  - Files: `site/learn/labs/requirements.{in,txt}` (= `SP/requirements.*`), `package.json` (`learn:venv`), `.gitignore` (`.venv-learn/`), `data/learn/{habitat_classes,country_habitats}.parquet` (byte copies of `SP/data/learn/`), `data/learn/habitat.json`.
+  - First: none (no logic).
+  - Verify: `uv --version` = 0.13.5; `pnpm learn:venv` twice (second a no-op); `.venv-learn/bin/python -I -c 'import shapely, pyogrio, pyarrow, numpy'` prints versions; habitat sha256 = `habitat.json` = SP's; `T`.
+- [ ] S7 · Shapes ingest code: TS orchestrator + `shapes.py` (D5)
+  - Files: `scripts/http.ts` (`downloadFile`: streamed, hashed, size-checked), `scripts/derive/naturalearth.ts` (gaps-allowed option), `scripts/ingest/shapes.ts` + `.test.ts`, `scripts/ingest/shapes.py`, `scripts/ingest.ts` (`shapes`).
+  - First: SH1 (`downloadFile` refuses a sha256 or size mismatch, leaves no file; local `http.createServer` on port 0); SH2 (1:50m selection allows exactly BV, GI, UM as gaps; any other gap fails); SH3 (non-zero Python exit, a missing output, or a report whose rows or cross-check counts disagree: nothing written to `data/learn/`).
+  - `shapes.py` fails fast: cross-check property ≠ selection; `N/A` biome or realm on `ECO_ID` ≠ 0; missing `adm1_code`. No network, no country rule, fixed writer options.
+  - Verify: `T`; `.venv-learn/bin/python -I scripts/ingest/shapes.py --help`.
+- [ ] S8 · LIVE shapes run + port check (D5) · RISKY: ~149 MB download, ~5 min simplification
+  - Run twice: `pnpm ingest shapes 2>> $M/ingest-shapes.log`; `sha256sum data/learn/*` identical across runs.
+  - Port check: `country_shapes` WKB equal per code to SP's (247 rows); `admin1_shapes`, `ecoregions`, `biomes.csv` sha256 = `SP/data/learn/`'s, or the difference explained under Decisions.
+  - Files: `data/learn/{country_shapes,admin1_shapes,ecoregions}.parquet`, `biomes.csv`, `shapes.json`; 004 §4.1 (`data/learn/`, all three rebuilt by the ingest, zstd, re-measured sizes).
+  - Stop: a pin's sha256 differs → never unpin; handoff item; continue at S9.
+  - Verify: `T`, `B`, `H`; `du -sb data/learn`.
+- [ ] S9 · Sample rules (D6)
+  - Files: `scripts/learn/sample-rules.ts` + `.test.ts` (port of `SP/etl/sample_rules.py`, `SP/tests_py/test_sample_rules.py`); 004 §4.2 (cap order md5 then gbifID; a newly eligible low-hash record can displace one).
+  - First: CK1–CK5; spike SC1–SC5 + the gbifID tie-break; species rule (speciesKey first; synonym via taxonKey; none fails; two fail); effective license (stricter wins; unknown fails); `countryKey` (known → code; null, ZZ, XZ → NULL; unknown fails).
+  - Verify: `T`.
+- [ ] S10 · Download request + SIMPLE_CSV parser (D6)
+  - Files: `scripts/ingest/gbif.ts` (export `BACKBONE_KEY`, `BASIS_OF_RECORD`), `scripts/learn/download.ts` (`downloadRequest`; `sameRequest` with the comment on the omitted echo fields), `scripts/learn/simple-csv.ts` (tab split, exactly 50 fields, typed columns), tests; fixture = `request` from `SP/downloads/gbif-0041824-260928105237408/download.json`.
+  - First: DL1 (builder = the spike's predicate for the 73 keys; `sameRequest` accepts GBIF's full echo), DL2 (echo missing a `checklistKey` refuses), DL3 (stored ≠ built refuses reuse); P1–P8.
+  - Verify: `T`; `pnpm derive`: no diff.
+- [ ] S11 · `ingest gbif-sample`, reuse path (D6; D8 state helpers)
+  - Files: `scripts/gbif/state.ts` (named lock and intent: `readIntent<T>`, `createIntent`, `replaceIntent`, `deleteIntent`, `withLock(name, …)`; countries names unchanged), `scripts/ingest/gbif-sample.ts` (`--download <key>` or `download.json`'s key: status, `downloadFile`, `unzip -Z1`/`-p`, parse, species rule, counts, `/dataset` and `/organization` at ≤ 2 req/s, temp + rename of the three files), `scripts/ingest.ts`, tests (local HTTP server on port 0, fixture zip).
+  - First: DL4 (zip sha256), DL5 (`totalRecords`), DL6 (per-dataset counts ≠ GBIF's listing), DL7 (unknown license, no title or no publisher: nothing written), DL15 (species from the in-memory core while `species.json` is stale); `state.test.ts` passes unchanged.
+  - Verify: `T`.
+- [ ] S12 · LIVE `pnpm ingest gbif-sample --download 0041824-260928105237408` (D6) · RISKY: 35 MB zip + ~6 min metadata
+  - Pre: `date -u` before 2027-04-23.
+  - Run: `pnpm ingest gbif-sample --download 0041824-260928105237408 2>> $M/ingest-gbif-sample.log`.
+  - Must show: zip sha256 `729e9e28…806b`; stages 394,532 → 381,065 → 40,395; 400 datasets, each with title and publisher; every `checklistKey` in the echo = `d7dddbf4-2cf0-4f39-9b2a-bb099caae36c`.
+  - Files: `data/raw/gbif-sample/{download.json,datasets.json,sample.csv}`. Decisions: dataset titles that differ from `SP/downloads/gbif-0041824-260928105237408/datasets.json` (A6, for L2).
+  - Stop: reuse refused → Failure modes "reuse impossible". GBIF down → leave unchecked, do S13 this session.
+  - Verify: `T`; `du -sb data/raw/gbif-sample` (~4.9 MB).
+- [ ] S13 · `--new` path: intent before POST, reconcile (D6, D8; A16)
+  - Files: `scripts/learn/download.ts` (`decideDownload`), `scripts/ingest/gbif-sample.ts` (`--new`, polling, `totalRecords` within 0.1 % of `searchCount`), `scripts/gbif/post.ts` (`postOnce` moved from `scripts/gbif-register.ts`), `scripts/gbif/register.ts` (`classifyPost(outcome, parse = parseDoi)`), tests; 004 §4.2 (intent before POST; listing reconcile).
+  - First: DL8–DL14; register tests pass unchanged.
+  - Not run live unless S12 proved reuse impossible.
+  - Verify: `T`.
+- [ ] S14 · Sample derive, DOI gate, parity (D6 Parity, D7, D9.1; MF3 sample, SC3 H5)
+  - Files: `scripts/derive/sample.ts` + `.test.ts`, `scripts/derive/pipeline.ts` (`deriveAll` = `deriveCore` + `deriveLearn`; `derivedFiles` + the learn contributions), `scripts/derive.ts` (learn-sample DOI line), `scripts/build/inputs.ts` (both DOI gates; `--draft` lifts only the DOIs), `scripts/build/learn/data.ts` (occurrences writer only), `scripts/learn/sample-parity.test.ts` (`SPIKE_SAMPLE` from `SP/site/learn/data/occurrences.parquet`, query in the commit message), `data/gbif-learn-sample/contributions.json`; 004 §4.2 (contract in derive; `sampleRules`).
+  - First: SD1–SD4 (malformed row; duplicate id; unknown dataset key; unknown country code not ZZ/XZ), SD5 (`pnpm derive` writes nothing while the sample is stale), F7 (request ≠ `downloadRequest`), F8 (`sampleRules` or `downloadKey` differ), H5 (plain build refuses a missing or stale DOI per target, naming it; `--draft` passes), parity (40,395 rows; md5 = `SPIKE_SAMPLE`).
+  - Parity red = a port bug: fix it here. Never change `SPIKE_SAMPLE` on reuse.
+  - Verify: `T`; `pnpm derive` prints `DOI current 10.15468/dd.ky9cyt` and learn-sample missing; plain `pnpm build` refuses naming learn-sample; `pnpm build --draft && pnpm e2e`; `H`. Decisions: MF3 (sample) done.
+- [ ] S15 · Two registration targets (D8; SC4)
+  - Files: `scripts/gbif/targets.ts`, `scripts/gbif/{register,derived-dataset,state}.ts` (`depositTag(prefix, sha)`; `readBackErrors` + `expectedDownloadDoi`; optional `originalDownloadDOI`; per-target `isCurrent` with its doc comment: counts for citation, not record identity), `scripts/gbif-register.ts` (`--target countries|learn-sample`, countries default; `deriveAll`), tests; 004 §4.2 (read-back checks the download DOI; `isCurrent` is a citation check).
+  - First: RT1–RT7.
+  - Then read GBIF's derived-dataset API docs on `originalDownloadDOI` + `relatedDatasets` (are our counts kept?) and record the answer under Decisions. Unclear → handoff item; S16 waits; continue at S17.
+  - Verify: `T`; `pnpm derive` still `DOI current 10.15468/dd.ky9cyt`; `git diff --exit-code data/gbif-derived-dataset/`. Decisions: SC4 done.
+- [ ] S16 · LIVE registration `--target learn-sample` · RISKY: the mission's one network write
+  - Pre: S14 parity green; S15's docs answer recorded; `date -u` before 2027-04-23; clean tree.
+  - Run: `pnpm derive` (prints `gbif-learn-<hex12>`); commit and push if anything changed; `git tag gbif-learn-<hex12> && git push origin gbif-learn-<hex12>` (tag = pushed HEAD); `pnpm gbif:register --target learn-sample 2>> $M/gbif-register-learn-sample.log`; `pnpm derive` → `learn-sample DOI current <doi>`; commit `data/gbif-learn-sample/registration.json`, push.
+  - Never re-POST by hand, move or delete a tag, or delete a lock or intent except as its message says. Ambiguous POST → re-run next session (it reconciles).
+  - Verify: plain `pnpm build` passes again; `pnpm e2e`; `H`. Decisions: the DOI, and the download's `eraseAfter` from `GET /occurrence/download/0041824-260928105237408` after registering.
+- [ ] S17 · `writeLearnData` core, `childFile`, `data/learn/` provenance check (D5, D9.1–9.3)
+  - Files: `scripts/build/learn/data.ts` (`datasets.csv`; byte copies of the six `data/learn/` files), `childFile` (D9.2) on every computed output path, `scripts/build/inputs.ts` (each `data/learn/` file's sha256 against `shapes.json`/`habitat.json`), `scripts/build.ts` (D9.1 flow), tests.
+  - First: LP1 (a hand-edited `data/learn/` file is refused), LP2 (a file neither provenance file lists), LP3 (a listed file missing); CF1 (`childFile` refuses `..`, `/`, an absolute path, empty).
+  - Verify: `T`, `E`, `H`; `ls dist/learn/data`.
+- [ ] S18 · Projection + `LAB_CHECKS` in DuckDB (D9.4, D9.5; SC1, SC5 build half)
+  - Files: `site/learn/sql/setup.sql` (`cmp` = `SP/src/setup.sql`), `scripts/build/learn/projection.ts` (`setup.sql` over `dist/v1` + `dist/learn/data`; the six lab tables from the copies; `assertLearnProjection`), `scripts/build/learn/checks.ts` (`LAB_CHECKS`, `LAB_CHECK_FIXTURES`), `checks.test.ts`, `projection.test.ts`, `scripts/build/inputs.ts`.
+  - First: PJ1–PJ3 (shared external id: names column, value, ids and the fix; a taxon name with two ranks or parents; `replacedBy` refused); LX, DuckDB half (every check 0 on clean, 1 on violating, incl. `'Infinity'`, NaN, negative uncertainty, month 13).
+  - Verify: `T`, `E` (the build's `LAB_CHECKS` all 0), `H`. Decisions: SC1 done.
+- [ ] S19 · `critwire_lab` + `learn:check --setup` (D10 connection and setup; SC7)
+  - Files: `scripts/learn/pg.ts`, `scripts/learn-check.ts` (`--setup [--env <file>]… [--reset-password]` only), `package.json` (`learn:check`), the `test:db` lab harness (`critwire_lab` via `LEARN_PG_URL`, `learn_t_*` schemas, lab lock), `scripts/learn/setup.dbtest.ts`, `scripts/learn/pg.test.ts`; 004 §0 and §3.2 (the role, CONNECT and TEMPORARY, a disposable lab database recommended).
+  - First: LS1–LS5 (on a `learn_t_` role and temp `.env` files; never resets `critwire_lab`); LC1 and LC10 at the `pg.ts` level (name refusal from the URL, `PGDATABASE` or the default user; the child env has no `DATABASE_URL`, `GBIF_*` or password in argv).
+  - Run as `critter-ai`: `pnpm learn:check --setup --env .env --env /srv/critter-ai/critwire/.env`, then again (idempotent, no reset).
+  - Verify: `T`, `D`; `grep -c '^LEARN_PG_URL=' .env /srv/critter-ai/critwire/.env` = 1 each; both modes unchanged (`stat -c %a`); `learn_curriculum`'s owner = `critwire_lab`.
+- [ ] S20 · Loader core (D9.6 steps 1 and 3–9, without the guard and CHECKs)
+  - Files: `scripts/build/learn/loader.ts` (port of `SP/scripts/loader.ts`, schema parameter, `lock_timeout`), `db/learn/{lab-ddl,lab-keys}.sql` (from SP), `scripts/build/learn/data.ts` (writes `postgis/learn_curriculum.sql`), `loader.test.ts`, `loader.dbtest.ts`.
+  - First: LD1–LD4, LD10, LD11 (`test`); LD5–LD9, LD12 (`test:db`).
+  - Verify: `T`, `D`, `E`, `H`; `psql -X -v ON_ERROR_STOP=1 -d "$LEARN_PG_URL" -f dist/learn/data/postgis/learn_curriculum.sql` twice: the 14 counts = 004 §4.3's.
+- [ ] S21 · MF4 dependency guard, SC5 CHECKs, `LAB_CHECKS` at load (D9.6 steps 2, 4, 8; A14)
+  - Files: `scripts/build/learn/loader.ts`, `db/learn/lab-ddl.sql`, `scripts/build/learn/checks.dbtest.ts`, `loader.dbtest.ts`; 004 §3.2 (schema separation isn't dependency isolation; the loader refuses), §4.3 (guard, CHECKs, `LAB_CHECKS`, `lock_timeout`, Open risk 9's gap), §6.2 (year and uncertainty bounds; NULL = unknown).
+  - First: LD13–LD18; LX, Postgres half.
+  - Verify: `T`, `D`, `E`, `H`; S20's manual load twice. Decisions: MF4 done; SC5 done.
+- [ ] S22 · Credits, manifest, index page, cap (D9.2, D9.7–9.9; SC2)
+  - Files: `scripts/build/learn/credits.ts`, `scripts/build/learn/page.ts`, `site/learn/data/index.html`, `scripts/build/html.ts` (`esc`, `link`, `fillSlots` moved from `docs.ts`), `site/style.css` + `{{style}}` slot (`dist/index.html` CSS bytes unchanged), `scripts/build/learn/data.ts` (manifest, page, dist cap), `scripts/build/inputs.ts` (committed-data cap), `site/index.html` (link to `/learn/data/`); 004 §4.4 (the committed directories), §4.5 (manifest: `inputs`, `dois`, `tables`).
+  - First: ST4 (no sources; unknown source; license not in `LICENSE_URLS`; CC BY without citation; dataset without title or publisher); CAP1–CAP3.
+  - Verify: `T`, `E`, `H`; two builds give identical `dist/learn/data/` sha256s; both totals printed, each < 50,000,000. Decisions: SC2 done.
+- [ ] S23 · `learn:check` loader stage (D10 checks 1–8, 10, 11)
+  - Files: `scripts/learn-check.ts`, `db/learn/canary.sql`, `site/learn/sql/pg-role-smoke.sql` (own BEGIN/ROLLBACK), `scripts/learn-check.dbtest.ts`.
+  - First: LC1–LC5, LC7, LC8, LC10 (spawning the CLI).
+  - Run: `pnpm build && pnpm learn:check`: two loads, counts = manifest `tables`, canary equal, no leak (`critwire_lab` ignored).
+  - Verify: `T`, `D`.
+- [ ] S24 · `learn:check` forced failure + cleanup (D10 check 9 and Cleanup; A18)
+  - Files: `scripts/learn-check.ts`, `scripts/learn-check.dbtest.ts`; 004 §7.6 (the role, `--setup`, the canary's identity, the forced failure).
+  - First: LC6 (injected duplicate row: exit ≠ 0, stderr names the key, 14 counts and per-table md5 unchanged; no injection site → "loader layout changed"); LC9 (SIGINT mid-run: lock free, no temp file or role left); a failing check releases the lock too.
+  - Verify: `T`, `D`; `pnpm learn:check` twice, exit 0. Decisions: SC7 done.
+- [ ] S25 · E2E `learn-data` + `assertBuilt` (D15 E2E; 004 §7.7)
+  - Files: `e2e/learn-data.spec.ts` (every D15 learn-data bullet; screenshots `learn-data-1280.png`, `learn-data-375.png` in `E2E_ARTIFACTS`), `e2e/helpers.ts` (`assertBuilt` per D15); 004 §7.7 (the L1/L2 split of learn-data).
+  - First: run red against a tampered `dist/` (one byte changed in `dist/learn/data/datasets.csv`; a stale `inputs` sha in `manifest.json`): the sha256 case and `assertBuilt` fail; then rebuild.
+  - Verify: `T`, `E` (0 skipped), `H`.
+- [ ] S26 · `AGENTS.md` + remaining 004 fixes (D16, D17)
+  - Files: `AGENTS.md` (the copy line verbatim from Notes; commands; data list; refresh order and its cost; the `replacedBy` note; databases; stack; DOI refresh per target), `plans/004-learn-curriculum.md` (d2: exports written from JSON, the mirror is a check; any D16 bullet not yet in).
+  - Verify: `grep -cF` the new copy line = 1, the old = 0; each D16 bullet located in 004 (listed in Log); `T`. Decisions: 004 corrections done.
+- [ ] S27 · MF2 record validator (D12) · review item: to L3 if past 48 sessions
+  - Files: `scripts/species.ts` (`validateRecords`), `scripts/derive/pipeline.ts`, `scripts/load.ts` (+ `assertRecordKeys`), `scripts/build/inputs.ts` (value checks moved out), `scripts/derive/wikidata.ts` (P3151, P685 int32; P846 safe integer), `scripts/build.ts` (`childFile` on species paths), tests.
+  - First: V1–V10 (one per D12 value rule, plus the Wikidata ranges).
+  - Verify: `T`, `D`, `E`, `H`.
+- [ ] S28 · MF2 issued ids (D12) · review item
+  - Files: `scripts/species.ts`, `scripts/derive/pipeline.ts` (`derivedFiles` + `data/issued-ids.json`), `data/issued-ids.json`.
+  - First: V11–V16 (pair gone; slug changed; an issued slug under another id; retired record kept; union sorted and append-only; first write).
+  - Verify: `T`; `diff <(jq -c 'map({id,slug}) | sort_by(.id)' $M/baseline/live-species.json) <(jq -c 'sort_by(.id)' data/issued-ids.json)` empty; `E`, `H`. Decisions: MF2 done.
+- [ ] S29 · MF3 for GBIF and COL (D13) · review item
+  - Files: `scripts/derive/pipeline.ts` (`assertGbifFresh`, `assertColFresh` replace the name-set and `taxonKey` checks), `scripts/ingest/{gbif,col}.ts` (export the URL builders), tests.
+  - First: F1–F6 (match URL; occurrences URL; datasets URL; checklist key; occurrences ⇔ SPECIES; COL URL).
+  - Verify: `T`; `pnpm derive`: no diff; `B`, `H`. Decisions: MF3 done.
+- [ ] S30 · SC3 leftovers (D14) · review item
+  - Files: `scripts/http.ts` (Retry-After above 60 s stops), `scripts/json.ts` (`readJson` names the file), `scripts/ingest/gbif.ts` (export `toDatasetPage`), `scripts/derive/pipeline.ts` (`assertDerivedFiles` names the file).
+  - First: H1 (local server, port 0), H2, H3, H4.
+  - Verify: `T`; `pnpm derive`: no diff; `E`, `H`. Decisions: SC3 done (G5–G7, G6/LD5/LD7/LC6, F1–F8, H1–H5).
+- [ ] S31 · Review-items audit
+  - Every row of "Review items assigned to L1" and addendum items 1–11 has a Decisions line: `done (S<n>, <sha>)` (`git log --oneline --grep '^S<n>:'`) or `handed to L3 (H<n>)`. None dropped.
+  - Every D16 bullet is in 004 and every D17 bullet in `AGENTS.md` (grep; listed in Log).
+  - Dry run: `T`, `D`, `E`, `H`, `pnpm learn:check`. A gap → a new step before Verification.
+
 ## Verification
+
+Once, on the final commit (after any code-review fixes), clean tree, in this order. `M`, `SP` as in Steps. Log each result; the numbers go to the Summary.
+
+1. **Build:** plain `pnpm build` passes; its size listing shows `dist/learn/data/` and the committed lab data each under 50,000,000 bytes.
+2. **E2E (primary):** `E2E_ARTIFACTS=$M/e2e pnpm e2e`.
+   - Specs: `attribution`, `docs`, `duckdb`, `files`, `serving`, `countries`, `learn-data`.
+   - `jq .stats $M/e2e/results.json`: `unexpected` 0, `skipped` 0, `flaky` 0.
+   - Artifact in `$M/e2e/`: `playwright-report/index.html`; one `trace.zip` per test (`find $M/e2e/test-results -name trace.zip | wc -l` = `.stats.expected`); `results.json`; `learn-data-1280.png`, `learn-data-375.png`; `caddy-access.log`.
+   - Reproduce: `pnpm build && E2E_ARTIFACTS=<dir> pnpm e2e`.
+3. **Static and isolated tests:** `pnpm typecheck`; `pnpm test` (CD, CK, spike SC, P, DL, SD, RT, LD pure, LX DuckDB, PJ, LP, CF, CAP, ST4, V, F, H, G1, G4, parity); `pnpm test:db` (G2, G3, G5–G7, LD5–LD18, LX Postgres, LS, LC). Afterwards no `learn_t_%` schema or role in `critwire_dev` (`psql -d critwire_dev -Atc`).
+4. **DOIs:** `pnpm derive` prints `DOI current 10.15468/dd.ky9cyt` and `learn-sample DOI current <doi>`; `git status --porcelain` empty.
+5. **Existing files unchanged** (Baseline in `$M/baseline/`):
+   - `(cd dist && grep ' \./v1/species' $M/baseline/dist.sha256 | sha256sum -c --quiet)`: 155 files, exit 0.
+   - `diff <(jq -S '.sources |= map(select(.source != "Natural Earth"))' dist/v1/attribution.json) <(jq -S . $M/baseline/attribution.json)` empty, and `jq '[.sources[] | select(.source == "Natural Earth")] | length' dist/v1/attribution.json` = 1. `index.html` may differ.
+   - Issued ids = the live registry: S28's `diff` empty.
+6. **The sample is the spike's:**
+   - `sample-parity.test.ts` green (step 3).
+   - One-off DuckDB (`@duckdb/node-api`): the 12 columns as VARCHAR; `dist/learn/data/occurrences.parquet` `EXCEPT ALL` `SP/site/learn/data/occurrences.parquet` = 0 rows, and the reverse = 0; both 40,395 rows.
+   - `jq '[.. | objects | .checklistKey? // empty] | unique' data/raw/gbif-sample/download.json` = `["d7dddbf4-2cf0-4f39-9b2a-bb099caae36c"]`; every dataset in `datasets.json` has a non-empty title and publisher.
+7. **The loader:**
+   - `psql -d critwire_dev -XAtf db/learn/canary.sql > $M/canary-before.txt`.
+   - `pnpm learn:check` twice, each exit 0: two loads with equal 14 counts = manifest `tables`; the forced failure exits non-zero with counts and md5 unchanged; `pg-role-smoke` 0; no leak.
+   - Canary again: `diff` with `$M/canary-before.txt` empty.
+   - The 14 counts = 004 §4.3's (`occurrences` 40,395, `datasets` 400, …), or each difference recorded with its 004 commit; 004's `lab-credits` on `learn_curriculum`: 0 rows.
+8. **Caps:** `find dist/learn/data -type f -printf '%s\n' | awk '{s+=$1} END {print s}'`, and the same over `data/raw/gbif-sample data/learn data/gbif-learn-sample`: each < 50,000,000. CAP1–CAP3 (step 3) prove the refusal.
+
+**Release smoke** (the Release unit, after `gh pr merge` and `deploy critwire`; `L` = `https://critwire.com`):
+- `$L/v1/countries.{json,csv,parquet}`: 200; JSON 250 rows, CSV 251 lines, Parquet 250 rows; bytes = `dist/v1/countries.*`.
+- `$L/learn/data/` and `$L/learn/data/manifest.json`: 200. Every manifest file: 200, sha256 and bytes as the manifest says.
+- Every Baseline `/v1/species*` file hashes as `$M/baseline/dist.sha256` (155); `$L/v1/attribution.json` passes step 5's `jq` diff.
+- `$L/learn/data/postgis/learn_curriculum.sql` downloaded to a temp folder, sha256 = manifest; `psql -X -v ON_ERROR_STOP=1 -d "$LEARN_PG_URL" -f <file>` (database `critwire_dev`, as `critwire_lab`, so `learn_curriculum` keeps its owner); `pg-smoke`'s 14 counts = manifest `tables`.
+- `## Release` records the merge commit, `deploy`'s last line, these results and the log path.
+
+## Failure modes
+
+What can go wrong across steps, and what the session does. `MISSION_BLOCKED` only when no other step can proceed.
+- **GBIF, GitHub or PyPI unreachable** (S3, S6, S8, S12, S16): leave the step unchecked, Log it, do the next step that doesn't need its output (S12 → S13; S16 → S17 on; S8 → S9); retry next session.
+- **Spike download not reusable** (S12: erased, status ≠ SUCCEEDED, zip sha256 ≠ `729e9e28…806b`, `totalRecords` ≠ 394,532, `sameRequest` false), **or 2027-04-23 has passed:** record under Decisions; add a step after S13 for `pnpm ingest gbif-sample --new` (≈17 min wait); re-measure 004 §4.2's numbers and update 004 and `SPIKE_SAMPLE` in that commit (004 §9); add a handoff item (it re-runs 004's results and adds sessions here and in L2; blocks nothing).
+- **Ambiguous download POST** (only if `--new` runs): keep the intent; the next session reconciles through the listing; never a second POST. Still no match → handoff item; don't delete the intent.
+- **Parity red** (S14): a port bug (parse, typing, cap tie-break). Fix before S16.
+- **GBIF docs unclear on `originalDownloadDOI` + `relatedDatasets`** (S15): handoff item; S16 waits; S17–S31 build with `--draft`. Still unanswered at Verification → `MISSION_BLOCKED: learn-sample DOI`.
+- **Registration interrupted or ambiguous** (S16): re-run `pnpm gbif:register --target learn-sample` next session (it reconciles before any POST). Delete a lock or intent only as its error says; never move or delete a `gbif-learn-*` or `gbif-dd-*` tag.
+- **Read-back mismatch after a DOI is minted** (Open risk 1): stop S16; handoff item with the DOI and the mismatching fields; continue at S17.
+- **A pinned file's sha256 differs** (S3, S8): never unpin; handoff item (upstream changed); continue with independent steps.
+- **Shapes not byte-identical on a re-run, or the port check differs** (S8): fix the writer options; an explained difference (tool versions) goes under Decisions with 004 §4.1's numbers.
+- **A missing aarch64 wheel** (S6): handoff item; S9–S16 need no Python.
+- **Cap breach** (S22 on): stop; 004 §4.4's cut order is a design change (Decisions + 004); anything that changes what's published goes to the owner.
+- **The MF4 guard refuses the first real load** (the spike's leftover has outside dependents): list them; never drop them by hand; handoff item if they aren't this mission's.
+- **`critwire_lab` setup refused** (S19: CREATE on `public`, `postgis` missing): fix as superuser in `critwire_dev` only; never touch `critwire` or `learn_spatial`; record.
+- **`CRITWIRE_DB_TARGET` missing from `/srv/apps/critwire/.env` at release:** `deploy` fails; don't edit `deploy`; handoff item for the control room; `Result: failed`, `MISSION_BLOCKED`.
+- **Plain build red from S14 until S16:** expected (no learn-sample DOI); use `--draft` there only.
+- **Session budget:** at each session start, `grep -c '^=== .* session ' /srv/critter-ai/agent-state/missions/critwire-learn-l1-data.log`. Past 48: start no review step (S27–S30). For each unfinished one, add a handoff item for L3 (what's left, its D-section), check the step off as `handed to L3 (H<n>)`, record it under Decisions, and go on to S31, the code review, Verification and Release. S1–S26 hold Goal work and are never deferred.
 
 ## Code review (Astra)
 
@@ -782,6 +983,8 @@ Architect, 2026-10-28, on `281ef43`. The single revision round. I verified again
 - A18 (architect, revision): `learn:check`'s forced failure injects a duplicate `occurrences` row, which fails at the primary key after every COPY. It asserts a non-zero exit, unchanged counts and unchanged md5 (D10).
 - A19 (architect, revision): `learn:check --setup` sets `critwire_lab`'s password only on creation or with `--reset-password`. It writes `LEARN_PG_URL` into each `--env` file, keeping the other lines and the mode. L1 writes the worktree's and `/srv/critter-ai/critwire/.env`, so later missions inherit it (D10).
 - A20 (architect, revision): the habitat stand-ins get `data/learn/habitat.json` (provenance and sha256, `standIn: true`), checked by the build and read by `credits()`. L3's `ingest habitat` takes it over (D3, D5, D9.7).
+- A21 (planner): step order. MF1's guard (S1) is split from its SC3 mirror cases (S2). The live reuse ingest (S12) comes before the `--new` path (S13), so the network read happens early. The live registration (S16) comes right after parity (S14) and the targets (S15). `--setup` (S19) comes before the loader (S20–S21), so the loader's `test:db` cases are written before its code. MF2, MF3 for GBIF/COL and the SC3 leftovers come last (S27–S30) and are the first to go to L3 past 48 sessions. Review-item lines say "done (S<n>)"; S31 adds the shas.
+- A22 (planner): Release smoke loads the live loader with `psql -X -v ON_ERROR_STOP=1 -d "$LEARN_PG_URL" -f` (still `critwire_dev`, as `critwire_lab`), not the brief's `-d critwire_dev` as superuser: a superuser load would leave `learn_curriculum` owned by `critter-ai`, so `critwire_lab` (and L2's `learn:check`) could no longer replace it.
 
 ## Log
 
@@ -790,5 +993,6 @@ Architect, 2026-10-28, on `281ef43`. The single revision round. I verified again
 - 2026-10-28 07:22 UTC Fable review: APPROVE_WITH_CHANGES, 2 MUST-FIX (deterministic learn:check forced failure; loadEnv logs names only), 4 missed, 5 SHOULD-CONSIDER. Plan-only; no checks needed.
 - 2026-10-28 07:23 UTC Astra review: APPROVE_WITH_CHANGES, 4 MUST-FIX (sample/derive refresh cycle; download intent before POST; transitive pg_depend; redact all env values), 3 SHOULD-CONSIDER. Plan-only; no checks needed.
 - 2026-10-28 07:35 UTC Revision: architect resolved all 6 MUST-FIX (deterministic forced failure; names-only env logs; in-memory core for sample ingest, no cycle; intent before POST + listing reconcile; CASCADE snapshot/diff guard, PG16-probed), 4 MISSED, 9/10 SC adopted (Astra SC1 junction rejected → L2); A14–A20. Plan-only; no checks needed.
+- 2026-10-28 07:48 UTC Steps: planner wrote S1–S31 (MF1 first; countries; shapes; sample + live reuse ingest; live registration S16 right after parity; loader, learn:check, E2E; review items S27–S30 last), Verification, Failure modes; A21–A22. Plan-only; no checks needed.
 
 ## Summary
