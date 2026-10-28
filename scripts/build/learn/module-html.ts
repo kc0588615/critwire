@@ -10,6 +10,7 @@
 //   an EXPLAIN block's `-- plan:` lines in words above its recorded plan, an example; the page's download; Lab schema.
 //   Before the page's first one: "Checked <date> on PostgreSQL…", from checked.json.
 // - powerbi (m, dax): the code; the star files it reads with the manifest's rows and sha256; "Not run by critwire".
+// - diagram: a <picture>, light and dark, with its alt (diagrams.ts).
 // - exercise and skip (duckdb): Your answer, Check, a verdict, the reference behind Show answer; a skip check marks the
 //   module done. A PostGIS exercise: Show answer around its code and recorded result.
 import type { Block } from "../../learn/blocks.ts";
@@ -18,6 +19,7 @@ import { pageSlots, type Curriculum, type Module, type Slot, type TOOLS } from "
 import type { Stamp } from "../../learn/freshness.ts";
 import type { StarManifest } from "../../learn/star-check.ts";
 import { esc, link } from "../html.ts";
+import { diagramHtml, type Diagram } from "./diagrams.ts";
 
 export interface PageContext {
   /** The fragment's path, for errors. */
@@ -36,6 +38,8 @@ export interface PageContext {
   draft: boolean;
   /** The Schema and Lab schema dialogs' SVG titles (their .mmd accTitle). */
   erdTitles: Record<Dialog, string>;
+  /** site/learn/diagrams/'s diagrams, checked (diagrams.ts). */
+  diagrams: ReadonlyMap<string, Diagram>;
 }
 
 type Dialog = "schema" | "lab";
@@ -172,7 +176,11 @@ export function renderFragment(html: string, ctx: PageContext): string {
   };
   const body = fillBlockSlots(ctx.file, html, (slot) => {
     const at = `${ctx.file}: ${slot.text}`;
-    if (slot.kind === "diagram") throw new Error(`${at}: diagrams aren't rendered yet (plan D14)`);
+    if (slot.kind === "diagram") {
+      const d = ctx.diagrams.get(slot.name);
+      if (!d) throw new Error(`${at}: no diagram ${slot.name}`);
+      return diagramHtml(slot.name, d);
+    }
     const b = ctx.blocks.get(slot.name);
     if (!b) throw new Error(`${at}: no block ${slot.name} on the page`);
     if (slot.kind === "skip" && b.engine !== "duckdb") throw new Error(`${at}: a skip check runs in the browser, and ${b.id} is ${b.engine}`);

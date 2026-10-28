@@ -37,6 +37,7 @@ const ctx = (over: Partial<PageContext> = {}): PageContext => ({
   star: { "dim_country.csv": { rows: 250, sha256: "ab".repeat(32) } },
   draft: false,
   erdTitles: { schema: "Schema v2", lab: "The lab database" },
+  diagrams: new Map([["flow", { title: "Data flows one way", width: 800, height: 360 }]]),
   ...over,
 });
 const render = (html: string, over: Partial<PageContext> = {}) => renderFragment(html, ctx(over));
@@ -110,9 +111,10 @@ test("MH7 a Power BI block lists its inputs with the star manifest's rows and sh
   assert.throws(() => render("{{block:x1-pbi}}", { star: {} }), /x1-pbi: input star\/dim_country\.csv isn't in the star manifest/);
 });
 
-test("MH8 refused slots: a skip check on a non-browser block, a diagram (S25), a block the page lacks", () => {
+test("MH8 refused slots: a skip check on a non-browser block, a diagram not in site/learn/diagrams/, a block the page lacks; a diagram renders", () => {
   assert.throws(() => render("{{skip:x1-pg}}"), /\{\{skip:x1-pg\}\}: a skip check runs in the browser/);
-  assert.throws(() => render("{{diagram:flow}}"), /\{\{diagram:flow\}\}: diagrams aren't rendered yet/);
+  assert.throws(() => render("{{diagram:none}}"), /\{\{diagram:none\}\}: no diagram none/);
+  assert.match(render("{{diagram:flow}}"), /<img src="\/learn\/diagrams\/flow\.svg" alt="Data flows one way"/);
   assert.throws(() => render("{{block:x1-none}}"), /\{\{block:x1-none\}\}: no block x1-none on the page/);
   assert.match(render("{{skip:x1-ex}}"), /data-exercise="x1-ex" data-skip/);
 });

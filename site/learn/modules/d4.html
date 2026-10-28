@@ -23,6 +23,8 @@
 <li><strong>Stage, then merge:</strong> load into a staging table, check it, then upsert from it into the target in one transaction. The ETL track (in preparation) loads GBIF's download this way.</li>
 </ul></li>
 </ul>
+<p>Row versions, for one record that session A updates while session B reads it:</p>
+{{diagram:d4-mvcc}}
 <p>Every lab below runs in <code>psql</code>. Most start from the loaded tables in a transaction the tests roll back: type <code>BEGIN;</code> before one and <code>ROLLBACK;</code> after it. The worked example's and the first lab's blocks are typed exactly as shown, <code>BEGIN</code> and all, and end by removing what they made; a statement marked <code>-- fails:</code> fails on purpose, with that message. Leave <code>ON_ERROR_STOP</code> off for them (psql's default when you type), so psql goes on after the error as it does here.</p>
 
 <h2>Worked example</h2>

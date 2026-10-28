@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 800 368" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="d4-mvcc-title d4-mvcc-desc" id="d4-mvcc-root">
+        <title id="d4-mvcc-title">An UPDATE writes a new row version; each session reads the version its snapshot can see</title>
+        <desc id="d4-mvcc-desc">Session A's open transaction 812 updates a record: version 1, written by transaction 700, gets xmax 812, and version 2 has xmin 812; A sees version 2, while session B reads version 1 until A commits and version 2 after.</desc>
+<defs>
+      <style>#d4-mvcc-root { --paper: #f5f5f5; --paper-2: #ececec; --ink: #2d3142; --muted: #4f5d75; --soft: #5a6580;
+      --rule: rgba(45,49,66,0.12); --rule-solid: #bfc0c0; --accent: #bf4520; --accent-tint: rgba(191,69,32,0.08);
+      --read: rgba(45,49,66,0.14);
+      --font-sans: 'Geist', system-ui, sans-serif;
+      --font-serif: 'Instrument Serif', 'Noto Serif', serif;
+      --font-mono: 'Geist Mono', ui-monospace, monospace; }
+      #d4-mvcc-root { font-family: var(--font-sans); color: var(--ink); }
+      #d4-mvcc-root .diagram-container { width: 100%; overflow-x: auto; }
+      @media print {
+#d4-mvcc-root .diagram-container { overflow-x: visible; }
+}
+      #d4-mvcc-root .bg { fill: var(--paper); }
+      #d4-mvcc-root .zone { fill: var(--paper-2); stroke: var(--rule); stroke-width: 1; }
+      #d4-mvcc-root .mask { fill: var(--paper); }
+      #d4-mvcc-root .zmask { fill: var(--paper-2); }
+      #d4-mvcc-root .node { fill: var(--paper); stroke: var(--ink); stroke-width: 1; }
+      #d4-mvcc-root .store { fill: var(--paper-2); stroke: var(--muted); stroke-width: 1; }
+      #d4-mvcc-root .focal { fill: var(--accent-tint); stroke: var(--accent); stroke-width: 1.2; }
+      #d4-mvcc-root .tag-box { fill: none; stroke: var(--soft); stroke-width: 0.8; }
+      #d4-mvcc-root .tag { fill: var(--soft); font-family: var(--font-mono); font-size: 7px; font-weight: 500; letter-spacing: 0.08em; }
+      #d4-mvcc-root .name { fill: var(--ink); font-family: var(--font-sans); font-size: 13px; font-weight: 600; }
+      #d4-mvcc-root .ident { fill: var(--ink); font-family: var(--font-mono); font-size: 11px; font-weight: 600; }
+      #d4-mvcc-root .sub { fill: var(--muted); font-family: var(--font-mono); font-size: 10px; }
+      #d4-mvcc-root .eyebrow-text { fill: var(--soft); font-family: var(--font-mono); font-size: 9px; font-weight: 500; letter-spacing: 0.14em; }
+      #d4-mvcc-root .label { fill: var(--soft); font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.06em; }
+      #d4-mvcc-root .note { fill: var(--muted); font-family: var(--font-serif); font-size: 14px; font-style: italic; }
+      #d4-mvcc-root .arrow { fill: none; stroke: var(--muted); stroke-width: 1.2; }
+      #d4-mvcc-root .arrow-accent { fill: none; stroke: var(--accent); stroke-width: 1.4; }
+      #d4-mvcc-root .dashed { stroke-dasharray: 5 4; }
+      #d4-mvcc-root .head { fill: var(--muted); }
+      #d4-mvcc-root .head-accent { fill: var(--accent); }
+      #d4-mvcc-root .rule-line { stroke: var(--rule-solid); stroke-width: 0.8; }
+      #d4-mvcc-root .page { fill: var(--paper); stroke: var(--rule-solid); stroke-width: 1; }
+      #d4-mvcc-root .page-read { fill: var(--read); stroke: var(--muted); stroke-width: 1; }
+      #d4-mvcc-root .dot { fill: var(--ink); }
+      #d4-mvcc-root .order { fill: var(--ink); font-family: var(--font-mono); font-size: 10px; font-weight: 500; }</style>
+<marker id="d4-mvcc-arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon class="head" points="0 0, 8 3, 0 6"/></marker>
+<marker id="d4-mvcc-arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon class="head-accent" points="0 0, 8 3, 0 6"/></marker>
+</defs>
+<rect class="bg" width="100%" height="100%"/>
+<rect class="zone" x="256" y="40" width="288" height="224" rx="6"/>
+<text class="eyebrow-text" x="272" y="60">TABLE OCCURRENCES · ONE RECORD</text>
+<path class="arrow-accent" d="M184 212 H272" marker-end="url(#d4-mvcc-arrow-accent)"/>
+<path class="arrow dashed" d="M104 180 V116 Q104 108 112 108 H272" marker-end="url(#d4-mvcc-arrow)"/>
+<path class="arrow" d="M616 108 H528" marker-end="url(#d4-mvcc-arrow)"/>
+<path class="arrow" d="M616 212 H528" marker-end="url(#d4-mvcc-arrow)"/>
+<rect class="mask" x="190.5" y="194" width="75.0" height="12" rx="2"/>
+<text class="label" x="228" y="203" text-anchor="middle">WRITES, SEES</text>
+<rect class="mask" x="158.9" y="90" width="58.2" height="12" rx="2"/>
+<text class="label" x="188" y="99" text-anchor="middle">SETS XMAX</text>
+<rect class="mask" x="554.0" y="90" width="35.9" height="12" rx="2"/>
+<text class="label" x="572" y="99" text-anchor="middle">READS</text>
+<rect class="mask" x="554.0" y="194" width="35.9" height="12" rx="2"/>
+<text class="label" x="572" y="203" text-anchor="middle">READS</text>
+<rect class="mask" x="272" y="80" width="256" height="56" rx="6"/>
+<rect class="store" x="272" y="80" width="256" height="56" rx="6"/>
+<text class="name" x="400" y="105" text-anchor="middle">Version 1 · month empty</text>
+<text class="sub" x="400" y="121" text-anchor="middle">xmin 700 · xmax 812</text>
+<rect class="mask" x="272" y="184" width="256" height="56" rx="6"/>
+<rect class="focal" x="272" y="184" width="256" height="56" rx="6"/>
+<text class="name" x="400" y="209" text-anchor="middle">Version 2 · month 6</text>
+<text class="sub" x="400" y="225" text-anchor="middle">xmin 812 · xmax 0</text>
+<rect class="mask" x="24" y="180" width="160" height="64" rx="6"/>
+<rect class="node" x="24" y="180" width="160" height="64" rx="6"/>
+<rect class="tag-box" x="32" y="188" width="70.5" height="12" rx="2"/>
+<text class="tag" x="67.2" y="197" text-anchor="middle">TX 812, OPEN</text>
+<text class="name" x="104" y="213" text-anchor="middle">Session A</text>
+<text class="sub" x="104" y="229" text-anchor="middle">UPDATE … month = 6</text>
+<rect class="mask" x="616" y="76" width="160" height="64" rx="6"/>
+<rect class="node" x="616" y="76" width="160" height="64" rx="6"/>
+<rect class="tag-box" x="624" y="84" width="30.2" height="12" rx="2"/>
+<text class="tag" x="639.1" y="93" text-anchor="middle">READ</text>
+<text class="name" x="696" y="109" text-anchor="middle">Session B, now</text>
+<text class="sub" x="696" y="125" text-anchor="middle">SELECT month …</text>
+<rect class="mask" x="616" y="180" width="160" height="64" rx="6"/>
+<rect class="node" x="616" y="180" width="160" height="64" rx="6"/>
+<rect class="tag-box" x="624" y="188" width="30.2" height="12" rx="2"/>
+<text class="tag" x="639.1" y="197" text-anchor="middle">READ</text>
+<text class="name" x="696" y="213" text-anchor="middle">B, after A commits</text>
+<text class="sub" x="696" y="229" text-anchor="middle">SELECT month …</text>
+<text class="note" x="24" y="300">A sees its own new version; B reads the old one until A commits, without waiting.</text>
+<text class="note" x="24" y="322">VACUUM removes version 1 once no snapshot can see it.</text>
+<line class="rule-line" x1="24" y1="338" x2="776" y2="338"/>
+<text class="label" x="24" y="356">XMIN: THE TRANSACTION THAT WROTE A VERSION · XMAX: THE ONE THAT DELETED IT (0: NONE) · IDS ILLUSTRATIVE</text>
+      </svg>

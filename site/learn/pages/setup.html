@@ -9,6 +9,8 @@
 <tr><td>Power BI Desktop</td><td>Windows</td><td>The files each query reads: header, keys, rows and sha256. Not Power BI itself, which has no Linux version.</td></tr>
 </tbody>
 </table></div>
+<p>Every file these tools read comes from one place. critwire commits its data as snapshots in its repository; one offline build turns them into the published files, and each tool reads its own:</p>
+{{diagram:critwire-pipeline}}
 
 <h2>The browser</h2>
 <p>Nothing to install. A current desktop browser opens a module page, and its SQL runs there in DuckDB, which critwire serves itself: no request leaves critwire.com except for the animals' photos. Each visit builds the database once, from four published files: <code>/v1/species.parquet</code>, <code>/v1/countries.parquet</code>, <code>/learn/data/datasets.csv</code> and <code>/learn/data/occurrences.parquet</code>. Every learner starts from the same tables, and a reload starts fresh. A result keeps at most 10,000 rows. Stop ends a long query, and Reset database rebuilds the tables, both by restarting the database. <a href="/learn/schema/">The browser's tables</a> lists every column.</p>

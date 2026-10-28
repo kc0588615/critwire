@@ -2,7 +2,8 @@
 // through the playground (META_SQL); /learn/schema/, /learn/schema/lab/ and /learn/schema/star/, each with its SVG
 // (alt = the SVG's <title>, also linked alone), its relationships in words, its data dictionary (dictionaries(), from
 // the .mmd and the build's source map), planned tables marked and the lab-made list; and the Schema and Lab schema
-// dialogs, by keyboard alone. Expectations come from site/learn/erd/*.mmd, not from the page code.
+// dialogs, by keyboard alone. Expectations come from site/learn/erd/*.mmd, not from the page code. The teaching
+// diagrams (D14, S25): each on its page, light and dark, its <img alt> the SVG's <title>.
 import { expect, test, type Page } from "@playwright/test";
 import { readFile } from "node:fs/promises";
 import { dictionaries, type DrawnErd } from "../scripts/build/learn/erd.ts";
@@ -120,5 +121,37 @@ test("the Schema and Lab schema dialogs open and close by keyboard alone and ret
     await page.keyboard.press("Enter");
     await expect(page.locator(dialog)).toBeHidden();
     await expect(button).toBeFocused();
+  }
+});
+
+// The teaching diagrams (plan D14) and the pages that show them; the alt text is read from the served SVG.
+const DIAGRAMS = [
+  { name: "critwire-pipeline", url: "/learn/setup/" },
+  { name: "d3-scans", url: "/learn/database-architecture/indexes/" },
+  { name: "d4-mvcc", url: "/learn/database-architecture/transactions/" },
+  { name: "d6-drill-across", url: "/learn/database-architecture/star/" },
+];
+const svgTitle = (svg: string) => /<svg\b[^>]*>\s*<title\b[^>]*>([^<]+)<\/title>/.exec(svg)?.[1]?.trim();
+
+test("each teaching diagram: light and dark SVGs served with a <title>, the page's <img alt> equal to it, dark in dark mode", async ({ page, request }) => {
+  for (const { name, url } of DIAGRAMS) {
+    const titles: string[] = [];
+    for (const file of [`${name}.svg`, `${name}-dark.svg`]) {
+      const res = await request.get(`/learn/diagrams/${file}`);
+      expect(res.status(), file).toBe(200);
+      expect(res.headers()["content-type"], file).toContain("image/svg+xml");
+      const title = svgTitle(await res.text());
+      expect(title, `${file} <title>`).toBeTruthy();
+      titles.push(title!);
+    }
+    expect((await page.goto(url))?.status(), url).toBe(200);
+    const img = page.locator(`figure#diagram-${name} img`);
+    await expect(img).toHaveAttribute("src", `/learn/diagrams/${name}.svg`);
+    await expect(img).toHaveAttribute("alt", titles[0]!);
+    await expect(page.locator(`figure#diagram-${name} source[media="(prefers-color-scheme: dark)"]`)).toHaveAttribute("srcset", `/learn/diagrams/${name}-dark.svg`);
+    await expect.poll(() => img.evaluate((i: HTMLImageElement) => i.complete && i.naturalWidth > 0)).toBe(true);
+    await page.emulateMedia({ colorScheme: "dark" });
+    await expect.poll(() => img.evaluate((i: HTMLImageElement) => i.currentSrc)).toMatch(new RegExp(`/learn/diagrams/${name}-dark\\.svg$`));
+    await page.emulateMedia({ colorScheme: "light" });
   }
 });

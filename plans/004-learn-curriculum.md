@@ -7657,10 +7657,12 @@ One `localStorage` key, `critwire.learn.done.v1`, holds `{ "<module id>": "<YYYY
 - `site/learn/modules/<id>.html`: each built module's text, with `{{block:<q-id>}}` slots where its blocks go.
 - `site/learn/sql/<q-id>.sql` and `site/learn/labs/<q-id>.py`: every block, without its plan-only header lines, as 002 §8 keeps lesson SQL; Power BI blocks the same, as `.m` and `.dax`.
 - `site/learn/labs/checked/`: what `learn:check` recorded, one file per block (its result) and `checked.json` (below).
+- `site/learn/diagrams/<name>.html` and `<name>-dark.html`: the teaching diagrams other than the ERDs, drawn with the diagram-design plugin (profile `critwire`: default tokens, system fonts), exported to `<name>.svg` and `<name>-dark.svg` with `export_svg.py --system-fonts`. A page shows one with `{{diagram:<name>}}`: a `<picture>` whose dark source follows the reader's colour scheme, its `alt` the SVG's `<title>`.
 
 **It refuses** (each a build failure naming the file):
 - a module whose prerequisite is unknown, or prerequisites that form a cycle; a module slot with no block file, or a block file no page uses;
 - a stale ERD SVG (002 §3);
+- a teaching diagram missing one of its four files, an SVG without a `<title>` or with any reference outside itself, a diagram no page shows, or a file in `site/learn/diagrams/` that isn't one;
 - a PostGIS or Python block whose freshness key differs from `checked.json`: "lab <id> is stale: run pnpm learn:check";
 - a breach of the 50 MB cap (§4.4); a lab file without `sources`, or another credit failure (§4.5);
 - any missing file.
