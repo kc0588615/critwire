@@ -1,4 +1,4 @@
-// pnpm learn:check, the loader stage (plan D10 checks 1–8, 10, 11), on critwire_dev. Written before the code, seen
+// pnpm learn:check, the loader stage (plan D10 checks 1–11 and Cleanup), on critwire_dev. Written before the code, seen
 // failing first. Each case spawns the CLI as a learner's checkout runs it (cwd = the repo, so .env's DATABASE_URL and
 // GBIF_* are loaded into it). The full runs load dist/'s loader into learn_curriculum as critwire_lab (run pnpm build
 // first). Failure modes:
@@ -10,21 +10,27 @@
 // LC4: two runs overlap (each drops the other's schema) → the second is refused while the lock is held, and loads nothing.
 // LC5: a load that gives other row counts than the manifest's tables, or a loader whose sha256 isn't the manifest's,
 //      passes → refused, naming the table and both counts, or the file; a clean run loads twice and exits 0.
+// LC6: the loader isn't one transaction, so a failure late in the load keeps part of it, or the forced failure fails
+//      somewhere other than the duplicate key, or the injection site moved → refused naming the changed table, the
+//      failure, or "loader layout changed" (before any load); a clean run reports psql's exit at the duplicate id.
 // LC7: the load changes learn_spatial (A2's schema) → the canary before ≠ after, refused naming the table.
 // LC8: the run leaves a learn_ role or schema behind → refused, naming each.
+// LC9: SIGINT mid-load leaves the lock held, psql's statement running, the half-made schema, its temp file or a role
+//      → the run stops naming the signal; afterwards the lock is free, no critwire_lab backend, the old schema's counts,
+//      no temp file and no new learn_ object. A check failing after the lock releases it and removes its temp file too.
 // LC10: a child psql gets DATABASE_URL, GBIF_* or LEARN_PG_URL, or the password in argv → a psql wrapper on PATH
 //       records every child's environment and argv: none of them.
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { createHash, randomBytes } from "node:crypto";
-import { chmodSync, cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { after, test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { loadEnv, requireEnv } from "./env.ts";
-import { assertConnectedNotLive } from "./learn/check.ts";
-import { LAB_LOCK, libpqTarget, pgConnect } from "./learn/pg.ts";
+import { assertConnectedNotLive, CANARY_SCHEMA, checkLab } from "./learn/check.ts";
+import { LAB_LOCK, libpqTarget, pgConnect, urlTarget } from "./learn/pg.ts";
 import { testDatabase } from "./test-db.ts";
 
 const repo = fileURLToPath(new URL("..", import.meta.url));
@@ -47,11 +53,11 @@ after(async () => {
 
 const fresh = (prefix: string) => `learn_t_${prefix}_${randomBytes(4).toString("hex")}`;
 
-// Runs the CLI with the test's environment over process.env; resolves with its exit code and output.
-function cli(args: string[], env: Record<string, string> = {}) {
-  return new Promise<{ code: number | null; stdout: string; stderr: string }>((resolve, reject) => {
-    const child = spawn(process.execPath, ["--import", "tsx", join(repo, "scripts/learn-check.ts"), ...args],
-      { cwd: repo, env: { ...process.env, ...env }, stdio: ["ignore", "pipe", "pipe"] });
+// Starts the CLI with the test's environment over process.env; `done` resolves with its exit code and output.
+function start(args: string[], env: Record<string, string> = {}) {
+  const child = spawn(process.execPath, ["--import", "tsx", join(repo, "scripts/learn-check.ts"), ...args],
+    { cwd: repo, env: { ...process.env, ...env }, stdio: ["ignore", "pipe", "pipe"] });
+  const done = new Promise<{ code: number | null; stdout: string; stderr: string }>((resolve, reject) => {
     let stdout = "";
     let stderr = "";
     child.stdout.on("data", (d) => (stdout += d));
@@ -59,14 +65,26 @@ function cli(args: string[], env: Record<string, string> = {}) {
     child.on("error", reject);
     child.on("close", (code) => resolve({ code, stdout, stderr }));
   });
+  return { child, done };
+}
+const cli = (args: string[], env: Record<string, string> = {}) => start(args, env).done;
+
+// Polls `ok` every 100 ms; throws naming `what` after 10 s.
+async function waitFor(what: string, ok: () => Promise<boolean>) {
+  for (const until = Date.now() + 10_000; !(await ok()); await new Promise((r) => setTimeout(r, 100))) {
+    if (Date.now() > until) throw new Error(`timed out waiting for ${what}`);
+  }
 }
 
-// A dist/ holding the manifest and the loader only (all learn:check reads), the loader with `append` after its COMMIT,
-// and the manifest edited by `edit`; the loader's sha256 and bytes in the manifest follow the new loader.
-function tamperedDist(name: string, { append = "", edit = (m: Manifest) => m }: { append?: string; edit?: (m: Manifest) => Manifest } = {}) {
+// A dist/ holding the manifest and the loader only (all learn:check reads), the loader changed by `loader` (it must
+// change), and the manifest edited by `edit`; the loader's sha256 and bytes in the manifest follow the new loader.
+function tamperedDist(name: string, { loader: change, edit = (m: Manifest) => m }:
+  { loader?: (s: string) => string; edit?: (m: Manifest) => Manifest } = {}) {
   const out = join(dir, name);
   mkdirSync(join(out, "learn/data/postgis"), { recursive: true });
-  const loader = readFileSync(join(dist, "learn/data", LOADER), "utf8") + append;
+  const original = readFileSync(join(dist, "learn/data", LOADER), "utf8");
+  const loader = change ? change(original) : original;
+  if (change && loader === original) throw new Error(`tamperedDist ${name}: the loader edit changed nothing`);
   writeFileSync(join(out, "learn/data", LOADER), loader);
   const manifest = JSON.parse(readFileSync(join(dist, "learn/data/manifest.json"), "utf8")) as Manifest;
   manifest.files[LOADER]!.sha256 = createHash("sha256").update(loader).digest("hex");
@@ -77,6 +95,13 @@ function tamperedDist(name: string, { append = "", edit = (m: Manifest) => m }: 
 interface Manifest { files: Record<string, { sha256: string; bytes: number; tables?: Record<string, number> }> }
 const manifestTables = () =>
   (JSON.parse(readFileSync(join(dist, "learn/data/manifest.json"), "utf8")) as Manifest).files[LOADER]!.tables!;
+
+// Every learn_ role and schema, as learn:check's leak check lists them.
+async function learnObjects(): Promise<string[]> {
+  const rows = await admin<{ name: string }[]>`select 'role ' || rolname as name from pg_roles where rolname like 'learn\_%'
+    union all select 'schema ' || nspname from pg_namespace where nspname like 'learn\_%' order by 1`;
+  return rows.map((r) => r.name);
+}
 
 async function labCounts(): Promise<Record<string, number>> {
   const tables = await admin<{ relname: string }[]>`select c.relname from pg_class c join pg_namespace n on n.oid = c.relnamespace
@@ -155,7 +180,7 @@ test("LC7 a load that changes the canary schema is refused, naming the table", a
   made.schemas.push(canary);
   await admin.unsafe(`CREATE SCHEMA ${canary} AUTHORIZATION critwire_lab; CREATE TABLE ${canary}.t (x integer);
     INSERT INTO ${canary}.t VALUES (1); ALTER TABLE ${canary}.t OWNER TO critwire_lab`);
-  const out = tamperedDist("canary", { append: `INSERT INTO ${canary}.t VALUES (2);\n` });
+  const out = tamperedDist("canary", { loader: (s) => s + `INSERT INTO ${canary}.t VALUES (2);\n` });
   const r = await cli(["--dist", out, "--canary-schema", canary]);
   assert.equal(r.code, 1);
   assert.match(r.stderr, new RegExp(`${canary}\\.t: rows or values changed`));
@@ -172,12 +197,86 @@ test("LC8 a run that leaves a learn_ role or schema behind is refused, naming ea
   made.roles.push(leak);
   made.schemas.push(leak);
   const out = tamperedDist("leak", {
-    append: `SELECT 'CREATE ROLE ${leak}' WHERE NOT EXISTS (SELECT FROM pg_roles WHERE rolname = '${leak}') \\gexec\nCREATE SCHEMA IF NOT EXISTS ${leak};\n`,
+    loader: (s) => s + `SELECT 'CREATE ROLE ${leak}' WHERE NOT EXISTS (SELECT FROM pg_roles WHERE rolname = '${leak}') \\gexec\nCREATE SCHEMA IF NOT EXISTS ${leak};\n`,
   });
   const r = await cli(["--dist", out]);
   assert.equal(r.code, 1);
   assert.match(r.stderr, new RegExp(`left behind.*role ${leak}`, "s"));
   assert.match(r.stderr, new RegExp(`schema ${leak}`));
+});
+
+const PK = "ALTER TABLE occurrences ADD PRIMARY KEY (id);\n";
+
+test("LC6 a loader without its occurrences injection site is refused as layout changed, before any load", async () => {
+  const out = tamperedDist("layout", { loader: (s) => s.replace("COPY occurrences (", "COPY learn_curriculum.occurrences (") });
+  const r = await cli(["--dist", out]);
+  assert.equal(r.code, 1);
+  assert.match(r.stderr, /loader layout changed/);
+  assert.doesNotMatch(r.stdout, /load 1/);
+});
+
+test("LC6 a loader whose failure keeps part of the load is refused, naming the changed table", async () => {
+  // COMMIT mid-load (SET LOCAL's search_path ends with it): the rows copied so far, the duplicate included, are kept.
+  const out = tamperedDist("partial", { loader: (s) => s.replace(PK, `COMMIT;\nBEGIN;\nSET LOCAL search_path = learn_curriculum, public;\n${PK}`) });
+  const r = await cli(["--dist", out]);
+  assert.equal(r.code, 1);
+  assert.match(r.stdout, /load 2: 14 tables = manifest/);
+  assert.match(r.stderr, /forced failure: .*changed learn_curriculum.*learn_curriculum\.occurrences: rows or values changed/s);
+});
+
+test("LC6 a forced failure that fails elsewhere than the duplicate key is refused", async () => {
+  const out = tamperedDist("elsewhere", { loader: (s) => s.replace(PK, "") });
+  const r = await cli(["--dist", out]);
+  assert.equal(r.code, 1);
+  assert.match(r.stdout, /load 2: 14 tables = manifest/);
+  assert.match(r.stderr, /forced failure: psql exit 3, not at the duplicate key id=\d+/);
+});
+
+test("LC9 SIGINT mid-load stops the run; lock, backend, schema, temp file and roles are as before", async () => {
+  const tmp = mkdtempSync(join(dir, "tmp-"));
+  const [counts, objects] = [await labCounts(), await learnObjects()];
+  const blocker = pgConnect(libpqTarget({ PGDATABASE: testDatabase }));
+  let r;
+  try {
+    // The loader's DROP waits on this lock, so the signal lands mid-load whatever the machine's speed.
+    r = await blocker.begin(async (tx) => {
+      await tx`LOCK TABLE learn_curriculum.species IN ACCESS SHARE MODE`;
+      const run = start([], { TMPDIR: tmp });
+      await waitFor("the loader to wait on the lock", async () => (await admin<{ n: number }[]>`select count(*)::int as n
+        from pg_stat_activity where usename = 'critwire_lab' and datname = ${testDatabase} and wait_event_type = 'Lock'`)[0]!.n > 0);
+      run.child.kill("SIGINT");
+      return run.done;
+    });
+  } finally {
+    await blocker.end();
+  }
+  assert.equal(r.code, 1);
+  assert.match(r.stderr, /interrupted by SIGINT/);
+  await waitFor("no critwire_lab backend", async () => (await admin<{ n: number }[]>`select count(*)::int as n
+    from pg_stat_activity where usename = 'critwire_lab' and datname = ${testDatabase}`)[0]!.n === 0);
+  const [{ locked }] = await admin<{ locked: boolean }[]>`select pg_try_advisory_lock(hashtext(${LAB_LOCK})) as locked`;
+  if (locked) await admin`select pg_advisory_unlock(hashtext(${LAB_LOCK}))`;
+  assert.equal(locked, true);
+  assert.deepEqual(await labCounts(), counts);
+  assert.deepEqual(await learnObjects(), objects);
+  assert.deepEqual(readdirSync(tmp).filter((n) => !n.startsWith("tsx-")), []); // tsx keeps its cache in TMPDIR
+});
+
+test("LC9 a check failing after the lock releases it and removes its temp file", async () => {
+  const out = tamperedDist("fails", { edit: (m) => { m.files[LOADER]!.tables!.biomes! += 1; return m; } });
+  const tmp = mkdtempSync(join(dir, "tmp-"));
+  const saved = process.env.TMPDIR;
+  process.env.TMPDIR = tmp;
+  try {
+    await assert.rejects(checkLab(urlTarget(labUrl, "LEARN_PG_URL"), { dist: out, canarySchema: CANARY_SCHEMA }), /row counts differ/);
+  } finally {
+    if (saved === undefined) delete process.env.TMPDIR;
+    else process.env.TMPDIR = saved;
+  }
+  assert.deepEqual(readdirSync(tmp), []);
+  const [{ locked }] = await admin<{ locked: boolean }[]>`select pg_try_advisory_lock(hashtext(${LAB_LOCK})) as locked`;
+  if (locked) await admin`select pg_advisory_unlock(hashtext(${LAB_LOCK}))`;
+  assert.equal(locked, true);
 });
 
 test("LC5 + LC10 a clean run loads twice to the manifest's counts, and no child psql sees a secret", async () => {
@@ -191,6 +290,7 @@ test("LC5 + LC10 a clean run loads twice to the manifest's counts, and no child 
   const tables = manifestTables();
   assert.match(r.stdout, /load 1: 14 tables = manifest/);
   assert.match(r.stdout, /load 2: 14 tables = manifest/);
+  assert.match(r.stdout, /forced failure: psql exit 3 at the duplicate key id=\d+, 14 tables unchanged/);
   assert.match(r.stdout, /pg-role-smoke: 0 left/);
   assert.match(r.stdout, /canary: learn_spatial unchanged/);
   assert.match(r.stdout, /leak check: nothing left/);
