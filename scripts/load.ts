@@ -4,12 +4,12 @@ import { assertRecordKeys } from "./build/columns.ts";
 import { loadDatabase } from "./db.ts";
 import { loadEnv, requireEnv } from "./env.ts";
 import { readJson } from "./json.ts";
-import { speciesFile, validateRecords, type Species } from "./species.ts";
+import { issuedIdsFile, speciesFile, validateRecords, type IssuedId, type Species } from "./species.ts";
 
 loadEnv();
 const url = requireEnv("DATABASE_URL");
 const species = await readJson<Species[]>(speciesFile);
 assertRecordKeys(species);
-validateRecords(species);
+validateRecords(species, await readJson<IssuedId[]>(issuedIdsFile));
 await loadDatabase(url, species);
 console.log(`loaded ${species.length} species`);

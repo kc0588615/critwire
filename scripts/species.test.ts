@@ -13,11 +13,19 @@
 // V8: replacedBy forming a cycle → no record is the live one.
 // V9: two records with the same id or slug → one file overwrites the other.
 // V10: Wikidata's P3151/P685 above int32 or P846 above a safe integer → Number() accepts it and DuckDB fails late.
+// Issued ids (data/issued-ids.json: every {id, slug} ever derived):
+// V11: an issued id no record has (removed instead of retired) → its /v1/species/{id}.json and slug URL vanish.
+// V12: an issued id under another slug → the old slug URL vanishes or points elsewhere.
+// V13: a record taking an issued slug under another id → the slug URL silently changes species.
+// V14: a retired record (replacedBy) keeps its pair → must pass, not count as gone.
+// V15: derive's issued ids drop a pair, or come out unsorted → history lost or a byte diff every run.
+// V16: no data/issued-ids.json yet → the first derive must write today's pairs, not refuse.
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
+import { deriveCore, readCoreInputs } from "./derive/pipeline.ts";
 import { deriveWikidata } from "./derive/wikidata.ts";
-import { speciesFile, validateRecords, type BaseSpecies, type Species } from "./species.ts";
+import { issuedIdsFile, speciesFile, validateRecords, type BaseSpecies, type IssuedId, type Species } from "./species.ts";
 import type { SparqlBinding } from "./raw.ts";
 
 function rec(id: number, slug = `species-${id}`): Species {
@@ -32,24 +40,26 @@ function rec(id: number, slug = `species-${id}`): Species {
     replacedBy: null,
   };
 }
-// Three valid records, the second changed by edit; asserts validateRecords throws matching re.
-function refuses(edit: (r: Species, all: Species[]) => void, re: RegExp, label?: string): void {
+// Three valid records, the second changed by edit; asserts validateRecords (given issued) throws matching re.
+function refuses(edit: (r: Species, all: Species[]) => void, re: RegExp, label?: string, issued: IssuedId[] = []): void {
   const all = [rec(1), rec(2), rec(3)];
   edit(all[1]!, all);
-  assert.throws(() => validateRecords(all), re, label);
+  assert.throws(() => validateRecords(all, issued), re, label);
 }
-const passes = (edit: (r: Species, all: Species[]) => void) => {
+const passes = (edit: (r: Species, all: Species[]) => void, issued: IssuedId[] = []) => {
   const all = [rec(1), rec(2), rec(3)];
   edit(all[1]!, all);
-  assert.doesNotThrow(() => validateRecords(all));
+  assert.doesNotThrow(() => validateRecords(all, issued));
 };
+const pairs = (...ids: number[]): IssuedId[] => ids.map((id) => ({ id, slug: `species-${id}` }));
+const readJsonSync = <T>(file: URL): T => JSON.parse(readFileSync(file, "utf8")) as T;
 
 test("V0 valid records and the committed data/species.json pass", () => {
   passes(() => {});
   passes((r) => { r.ids = { ...r.ids, gbif: null, col: null, wikidata: null, inaturalist: null, ncbi: null }; r.photo = null; });
   passes((r) => { r.range = { countriesWithOpenRecords: null, status: "no-open-records" }; });
   passes((r) => { r.range = { countriesWithOpenRecords: null, status: "identity-unsettled" }; });
-  assert.doesNotThrow(() => validateRecords(JSON.parse(readFileSync(speciesFile, "utf8")) as Species[]));
+  assert.doesNotThrow(() => validateRecords(readJsonSync<Species[]>(speciesFile), readJsonSync<IssuedId[]>(issuedIdsFile)));
 });
 
 test("V1 an empty or blank string anywhere refuses, naming the species and path", () => {
@@ -136,4 +146,41 @@ test("V10 Wikidata P3151/P685 above int32 and P846 above a safe integer throw", 
   }
   assert.throws(() => deriveWikidata(base, rows("P846", "9007199254740992")), /P846.*9007199254740992/);
   assert.doesNotThrow(() => deriveWikidata(base, rows("P846", "2147483648")));
+});
+
+test("V11 an issued id no record has refuses, naming it and its slug", () => {
+  refuses(() => {}, /issued id 9 \(species-9\) is gone/, undefined, pairs(1, 2, 3, 9));
+  refuses((_, all) => { all.splice(1, 1); }, /issued id 2 \(species-2\) is gone/, undefined, pairs(1, 2, 3));
+});
+
+test("V12 an issued id under another slug refuses", () => {
+  refuses((r) => { r.slug = "renamed"; }, /species 2: slug renamed, but id 2 was issued as species-2/, undefined, pairs(1, 2, 3));
+});
+
+test("V13 a record taking an issued slug under another id refuses", () => {
+  refuses((r) => { r.slug = "old-name"; }, /species 2: slug old-name was issued to id 7/, undefined, [...pairs(1), { id: 7, slug: "old-name" }]);
+});
+
+test("V14 a retired record keeps its pair and passes; issued ids are a subset of the records", () => {
+  passes((r) => { r.replacedBy = [3]; }, pairs(1, 2, 3));
+  passes(() => {}, pairs(2));
+  passes(() => {}, []);
+});
+
+test("V15 derive's issued ids are the union, sorted by id, and drop no pair", async () => {
+  const real = await readCoreInputs();
+  const all = deriveCore(real).records.map(({ id, slug }) => ({ id, slug }));
+  assert.ok(all.length >= 76);
+  const older = all.filter((_, i) => i % 3 === 0).reverse();
+  assert.deepEqual(deriveCore({ ...real, issuedIds: older }).issuedIds, all);
+  assert.throws(() => deriveCore({ ...real, issuedIds: [...all, { id: 999_999, slug: "gone-species" }] }), /issued id 999999 \(gone-species\) is gone/);
+  const removed = all[5]!;
+  assert.throws(() => deriveCore({ ...real, base: real.base.filter((s) => s.id !== removed.id), issuedIds: all }), /is stale|is gone/);
+});
+
+test("V16 with no data/issued-ids.json the first derive writes every record's pair", async () => {
+  const real = await readCoreInputs();
+  const { records, issuedIds } = deriveCore({ ...real, issuedIds: null });
+  assert.deepEqual(issuedIds, records.map(({ id, slug }) => ({ id, slug })));
+  assert.deepEqual(Object.keys(issuedIds[0]!), ["id", "slug"]);
 });

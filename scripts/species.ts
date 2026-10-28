@@ -68,6 +68,9 @@ export interface Mismatch {
   reason: string;
 }
 
+// One element of data/issued-ids.json: an id and the slug it was published with (plan D12, MF2).
+export interface IssuedId { id: number; slug: string }
+
 // One element of data/review/country-overrides.json (owner-owned, plan §5.5).
 export interface CountryOverride { speciesId: number; country: string; action: "keep" | "remove"; reason: string }
 
@@ -75,6 +78,7 @@ export const baseFile = new URL("../data/base.json", import.meta.url);
 export const speciesFile = new URL("../data/species.json", import.meta.url);
 export const mismatchesFile = new URL("../data/review/mismatches.json", import.meta.url);
 export const overridesFile = new URL("../data/review/country-overrides.json", import.meta.url);
+export const issuedIdsFile = new URL("../data/issued-ids.json", import.meta.url);
 
 // Throws unless ids, slugs, scientific names and IUCN ids are unique and ids and IUCN ids are positive integers.
 // Step 2 keys all raw data by scientificName, so a duplicate name would silently merge two species.
@@ -100,9 +104,10 @@ const RANGE_STATUSES: readonly RangeStatus[] = ["ok", "no-open-records", "identi
 // Throws unless every record's values are publishable (plan D12, MF2): every string non-blank; slug grammar, not all
 // digits; id, ids.{iucn,inaturalist,ncbi} and a COL release key in 1..2^31-1 (DuckDB INTEGER), ids.gbif a positive
 // safe integer (BIGINT); countries null unless status is ok, else non-empty, sorted, unique ISO alpha-2; photo null or
-// complete; ids and slugs unique; replacedBy null or existing, distinct, non-self ids with no cycle. Values only: the
-// key shape is build/columns.ts assertRecordKeys. Run by derive (deriveCore) and db:load.
-export function validateRecords(records: readonly Species[]): void {
+// complete; ids and slugs unique; replacedBy null or existing, distinct, non-self ids with no cycle; every issued
+// {id, slug} still present with that slug (retired records included), and no record on a slug issued to another id.
+// Values only: the key shape is build/columns.ts assertRecordKeys. Run by derive (deriveCore) and db:load.
+export function validateRecords(records: readonly Species[], issuedIds: readonly IssuedId[]): void {
   const fail = (s: Species, path: string, why: string): never => { throw new Error(`species ${s.id}: ${path} ${why}`); };
   const int = (s: Species, path: string, v: unknown, max: number, nullable: boolean) => {
     if (v === null && nullable) return;
@@ -162,4 +167,16 @@ export function validateRecords(records: readonly Species[]): void {
     state.set(s.id, 2);
   };
   records.forEach(visit);
+  // Published URLs never change meaning: an issued id keeps its slug, a slug its id, and no issued id is removed.
+  const slugOf = new Map(issuedIds.map((p) => [p.id, p.slug]));
+  const idOf = new Map(issuedIds.map((p) => [p.slug, p.id]));
+  for (const s of records) {
+    const slug = slugOf.get(s.id);
+    if (slug !== undefined && slug !== s.slug) fail(s, "slug", `${s.slug}, but id ${s.id} was issued as ${slug}`);
+    const id = idOf.get(s.slug);
+    if (id !== undefined && id !== s.id) fail(s, "slug", `${s.slug} was issued to id ${id}`);
+  }
+  for (const p of issuedIds) {
+    if (!byId.has(p.id)) throw new Error(`issued id ${p.id} (${p.slug}) is gone: ids are never removed or reused; retire it with replacedBy`);
+  }
 }
