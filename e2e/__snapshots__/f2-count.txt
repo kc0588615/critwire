@@ -1,0 +1,3 @@
+-- result: f2-count · 1 row · sha256 272a447603cd
+records | with_year | species | first_year | last_year
+40395 | 38106 | 71 | 1599 | 2026

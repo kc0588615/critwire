@@ -1,0 +1,8 @@
+-- result: f2-years · 11 rows · sha256 33cda711b580
+year | records
+2016 | 1526
+2017 | 2643
+2018 | 1458
+2019 | 1336
+2020 | 1663
+… 6 more rows

@@ -1,0 +1,8 @@
+-- result: f2-basis · 7 rows · sha256 23bce085dee0
+basis_of_record | records
+HUMAN_OBSERVATION | 17587
+PRESERVED_SPECIMEN | 10568
+MACHINE_OBSERVATION | 8418
+MATERIAL_SAMPLE | 1805
+OBSERVATION | 1384
+… 2 more rows

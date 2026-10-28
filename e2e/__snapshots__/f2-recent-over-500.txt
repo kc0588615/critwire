@@ -1,0 +1,8 @@
+-- result: f2-recent-over-500 · 17 rows · sha256 e0519b6b04dd
+species_id | records
+51 | 1990
+37 | 1974
+58 | 1968
+71 | 1962
+53 | 1941
+… 12 more rows

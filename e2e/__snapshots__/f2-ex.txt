@@ -1,0 +1,7 @@
+-- result: f2-ex · 5 rows · sha256 dea2e0636744
+basis_of_record | records | species | datasets | no_year
+HUMAN_OBSERVATION | 17587 | 55 | 182 | 175
+PRESERVED_SPECIMEN | 10568 | 67 | 166 | 1469
+MACHINE_OBSERVATION | 8418 | 22 | 39 | 52
+MATERIAL_SAMPLE | 1805 | 47 | 22 | 339
+OBSERVATION | 1384 | 5 | 3 | 1

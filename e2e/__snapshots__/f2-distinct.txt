@@ -1,0 +1,3 @@
+-- result: f2-distinct · 1 row · sha256 3ed55a695cef
+datasets | licenses | countries
+400 | 2 | 106

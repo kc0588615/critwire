@@ -1,8 +1,9 @@
 // Learn's browser engine (plan D11, D13 learn-browser; S11–S13, S15): boot, the origin fence, SC2's hash check, the
 // row cap, Reset and Stop, on the playground; then the playground's refusals, the changed generation, its table list
 // and Download CSV, the test hook, cards and "N rows changed"; then every browser block of the course pages against its
-// snapshot, every exercise against its answer and a fixed wrong one; the changed generation across pages (one engine),
-// and a lesson editor's refusal of transaction control. The worker's .wasm fetch must reach context.route first, because the fence
+// snapshot, every exercise and "Already know this?" check against its answer and a fixed wrong one (a passed skip check
+// marks its module done); one engine (one worker) across three pages; the changed generation across pages, and a
+// lesson editor's refusal of transaction control. The worker's .wasm fetch must reach context.route first, because the fence
 // and the boot cases rely on routing.
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { readFile } from "node:fs/promises";
@@ -278,13 +279,37 @@ test("every browser block of the course pages equals its snapshot, and cards fol
       seen.push(b.id);
     }
   }
-  expect(seen).toEqual(expect.arrayContaining(["setup-counts", "d6-export"]));
+  expect(seen).toEqual(expect.arrayContaining(["setup-counts", "f1-no-photo", "f1-page", "f2-count", "f2-distinct", "d6-export"]));
   expect(offOrigin).toEqual([]);
   await context.close();
 });
 
-// A fixed wrong answer for each exercise, and the hint it gets.
+// A fixed wrong answer for each exercise and skip check, and the hint it gets.
 const WRONG: Record<string, { sql: string; hint: string }> = {
+  // The NOT LIKE alone: a NULL license is neither CC nor not, so the two animals with no photo drop out.
+  "f1-skip": {
+    sql: "SELECT id, common_name, photo_license FROM species WHERE photo_license NOT LIKE 'CC%' ORDER BY common_name",
+    hint: "Your result has 8 rows; the answer has 10.",
+  },
+  // One id forgotten: Blanding's Turtle, missing only its NCBI id, drops out.
+  "f1-ex": {
+    sql: "SELECT id, common_name, gbif_id, ncbi_id, inaturalist_id, wikidata_id FROM species WHERE gbif_id IS NULL OR inaturalist_id IS NULL OR wikidata_id IS NULL ORDER BY id",
+    hint: "Your result has 5 rows; the answer has 6.",
+  },
+  // count(dataset_key) counts a dataset once per record, not once.
+  "f2-skip": {
+    sql: `SELECT species_id, count(*) AS records, count(dataset_key) AS datasets,
+       sum(CASE WHEN basis_of_record = 'PRESERVED_SPECIMEN' THEN 1 ELSE 0 END) AS specimens, count(*) - count(year) AS no_year
+FROM occurrences GROUP BY species_id HAVING count(DISTINCT dataset_key) > 25 ORDER BY records DESC, species_id`,
+    hint: "Some rows differ from the answer.",
+  },
+  // count(year) counts the records with a year, not those without.
+  "f2-ex": {
+    sql: `SELECT basis_of_record, count(*) AS records, count(DISTINCT species_id) AS species, count(DISTINCT dataset_key) AS datasets,
+       count(year) AS no_year
+FROM occurrences GROUP BY basis_of_record HAVING count(*) >= 1000 ORDER BY records DESC, basis_of_record`,
+    hint: "Some rows differ from the answer.",
+  },
   // No Unknown member: the records without a year fall out of the fact, so it no longer reconciles.
   "d6-ex": {
     sql: `CREATE TABLE dim_decade (decade INTEGER PRIMARY KEY, label VARCHAR NOT NULL);
@@ -297,15 +322,16 @@ SELECT count(*) AS fact_rows, sum(records) AS records, sum(records) = (SELECT co
   },
 };
 
-test("every exercise accepts its answer (its result = its snapshot) and rejects a fixed wrong one", async ({ browser }) => {
+test("every exercise and skip check rejects a fixed wrong answer and accepts its own (result = snapshot); a skip check marks its module done", async ({ browser }) => {
   const { context, offOrigin } = await learnContext(browser);
   const page = await context.newPage();
   const seen: string[] = [];
   for (const { page: p, url } of await coursePages()) {
-    const exercises = p.slots.filter((s) => s.kind === "exercise" && p.blocks.find((b) => b.id === s.name)!.engine === "duckdb");
+    const exercises = p.slots.filter((s) => (s.kind === "exercise" || s.kind === "skip") && p.blocks.find((b) => b.id === s.name)!.engine === "duckdb");
     if (!exercises.length) continue;
     await page.goto(url);
     await waitReady(page);
+    const markDone = page.locator(".mark-done");
     for (const s of exercises) {
       const b = p.blocks.find((x) => x.id === s.name)!;
       const block = page.locator(`#q-${b.id}`);
@@ -313,21 +339,53 @@ test("every exercise accepts its answer (its result = its snapshot) and rejects 
       await expect(block.locator("textarea")).toHaveValue("");
       await block.locator("details summary").click();
       await expect(block.locator("details code")).toHaveText(b.code.replace(/\n+$/, ""));
-      await block.locator("textarea").fill(b.code);
-      await runBlock(block);
-      await expect(verdict).toHaveText("Correct.");
-      await expect(verdict).toHaveAttribute("data-ok", "true");
-      expect(await rendered(page, b.id), b.id).toMatchSnapshot(`${b.id}.txt`);
       const wrong = WRONG[b.id];
       if (!wrong) throw new Error(`${b.id}: no fixed wrong answer in WRONG`);
       await block.locator("textarea").fill(wrong.sql);
       await runBlock(block);
-      await expect(verdict).toHaveText(wrong.hint);
+      await expect(verdict, b.id).toHaveText(wrong.hint);
       await expect(verdict).toHaveAttribute("data-ok", "false");
+      if (s.kind === "skip") await expect(markDone).toHaveAttribute("aria-pressed", "false");
+      await block.locator("textarea").fill(b.code);
+      await runBlock(block);
+      await expect(verdict, b.id).toHaveText("Correct.");
+      await expect(verdict).toHaveAttribute("data-ok", "true");
+      expect(await rendered(page, b.id), b.id).toMatchSnapshot(`${b.id}.txt`);
+      if (s.kind === "skip") {
+        await expect(markDone).toHaveAttribute("aria-pressed", "true");
+        expect(await page.evaluate(() => Object.keys(JSON.parse(localStorage.getItem("critwire.learn.done.v1") ?? "{}")))).toContain(p.page.id);
+      }
       seen.push(b.id);
     }
   }
-  expect(seen).toEqual(expect.arrayContaining(["d6-ex"]));
+  expect(seen).toEqual(expect.arrayContaining(["f1-skip", "f1-ex", "f2-skip", "f2-ex", "d6-ex"]));
+  expect(offOrigin).toEqual([]);
+  await context.close();
+});
+
+test("f1, f2 and the playground, moved between by links, start one engine (one worker)", async ({ browser }) => {
+  const c = await readCourse();
+  const [f1, f2] = ["f1", "f2"].map((id) => c.curriculum!.modules.find((m) => m.id === id)!);
+  const { context, offOrigin } = await learnContext(browser);
+  const page = await context.newPage();
+  const workers: string[] = [];
+  page.on("worker", (w) => workers.push(w.url()));
+  await page.goto(moduleUrl(f1!));
+  await waitReady(page);
+  await runBlock(page.locator("#q-f1-unknown"));
+  await expect(page.locator("#q-f1-unknown .result-error")).toHaveCount(0);
+  await page.locator(`a[rel="next"][href="${moduleUrl(f2!)}"]`).click();
+  await expect(page).toHaveURL(`${ORIGIN}${moduleUrl(f2!)}`);
+  await waitReady(page);
+  await runBlock(page.locator("#q-f2-count"));
+  await expect(page.locator("#q-f2-count .result-error")).toHaveCount(0);
+  await page.locator("header.site a[href=\"/learn/\"]").click();
+  await page.locator(`main a[href="${PLAYGROUND}"]`).first().click();
+  await expect(page).toHaveURL(`${ORIGIN}${PLAYGROUND}`);
+  await waitReady(page);
+  await run(page, "SELECT 1 AS one");
+  expect(await cells(page)).toEqual([["1"]]);
+  expect(workers).toEqual([`${ORIGIN}${ASSETS}/${DUCKDB_DIR}/duckdb-browser-eh.worker.js`]);
   expect(offOrigin).toEqual([]);
   await context.close();
 });

@@ -1,0 +1,3 @@
+-- result: f1-equals-null · 1 row · sha256 5b42c9c5b42a
+animals
+0

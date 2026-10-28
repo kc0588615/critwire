@@ -1,0 +1,8 @@
+-- result: f1-skip · 10 rows · sha256 614eaf6db760
+id | common_name | photo_license
+26 | Black-footed Ferret | Public domain
+54 | Brown-throated Sloth | Public domain
+19 | Floreana Giant Tortoise | NULL
+37 | Greater Bilby | Public domain
+47 | Ili Pika | NULL
+… 5 more rows

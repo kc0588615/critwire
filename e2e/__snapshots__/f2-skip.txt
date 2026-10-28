@@ -1,0 +1,8 @@
+-- result: f2-skip · 16 rows · sha256 b6cf06e04b0c
+species_id | records | datasets | specimens | no_year
+2 | 2000 | 53 | 1844 | 362
+8 | 2000 | 31 | 1997 | 109
+25 | 2000 | 38 | 102 | 129
+52 | 2000 | 67 | 73 | 45
+53 | 2000 | 48 | 35 | 14
+… 11 more rows

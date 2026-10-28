@@ -40,7 +40,7 @@
       ],
       "hours": 1,
       "prereqs": [],
-      "state": "planned",
+      "state": "built",
       "skill": "`SELECT`, `WHERE`, `ORDER BY`, `NULL`",
       "questions": [
         "Which animals have no photo?",
@@ -60,7 +60,7 @@
       "prereqs": [
         "f1"
       ],
-      "state": "planned",
+      "state": "built",
       "skill": "`GROUP BY`, `HAVING`, `CASE`, `COUNT(DISTINCT …)`",
       "questions": [
         "How many records does the sample hold per year, and by basis of record?",

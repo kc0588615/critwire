@@ -1,0 +1,48 @@
+<p class="lead">Read a table: pick its rows and columns, sort them, take a page of them, and handle missing values. Everything runs in this browser, on the tables <a href="/learn/schema/">the Schema page</a> describes.</p>
+
+<h2>Already know this?</h2>
+<p>Show the <code>id</code>, <code>common_name</code> and <code>photo_license</code> of every animal whose photo isn't under a Creative Commons license (the license doesn't start with <code>CC</code>), animals with no photo included, by common name. Solve it and the module is marked done.</p>
+{{skip:f1-skip}}
+
+<h2>Concept</h2>
+<p>A query reads tables and returns a new table; it never changes the data. Its clauses run in a fixed order, whatever order you write them in: <code>FROM</code> picks the table, <code>WHERE</code> keeps the rows whose condition is true, <code>SELECT</code> picks and names the columns, <code>ORDER BY</code> sorts, and <code>LIMIT</code> keeps the first rows. A table has no order of its own, so a result without <code>ORDER BY</code> can come back in any order, and "the first five" means nothing without it. Sort on something unique (add <code>id</code> last), so that ties always fall the same way.</p>
+<p><code>NULL</code> is a missing value: not zero, not empty text, but "unknown". Any comparison with an unknown value is itself unknown, neither true nor false, and <code>WHERE</code> keeps only the rows where the condition is true. So <code>= NULL</code> never matches, and <code>NOT LIKE 'CC%'</code> silently drops the rows whose license is <code>NULL</code>, because "is an unknown license not CC?" is unknown too. Test for a missing value with <code>IS NULL</code> or <code>IS NOT NULL</code>; <code>coalesce(x, 'default')</code> replaces one.</p>
+
+<h2>Worked example</h2>
+<p>Which animals have no photo? <code>photo_url</code> is <code>NULL</code> where critwire has none:</p>
+{{block:f1-no-photo}}
+<p>The same question asked with <code>=</code> finds nothing, whatever the data:</p>
+{{block:f1-equals-null}}
+<p>Why: each comparison below involves an unknown, so its answer is unknown (shown as <code>NULL</code>), except <code>IS NULL</code>, which asks exactly that question, and <code>coalesce</code>, which picks the first known value.</p>
+{{block:f1-unknown}}
+
+<h2>Lab</h2>
+<p>Which mammals does critwire list, by common name?</p>
+<ol class="steps">
+<li><p><code>species</code> has no class column; the view <code>species_taxonomy</code> has one row per species with its class, order, family and genus. Look at its first rows:</p>
+{{block:f1-taxonomy}}</li>
+<li><p>Keep the species whose id is among the mammals' ids. <code>IN (…)</code> is true when a value is in a list, and the list can be another query's result. Joins (f3, in preparation) are the usual way to do this.</p>
+{{block:f1-mammals}}</li>
+<li><p>A page shows a few rows at a time: <code>LIMIT</code> takes a page and <code>OFFSET</code> skips the pages before it. The second page of five:</p>
+{{block:f1-page}}</li>
+</ol>
+
+<h2>Result</h2>
+<p>Two animals have no photo, and <code>= NULL</code> counts zero of them. The mammals come back A to Z; the second page is rows 6 to 10 of that same order, which is only stable because the sort ends on a unique column. In "Already know this?", dropping <code>OR photo_license IS NULL</code> loses exactly the two animals with no photo: a mistake that looks like a correct result.</p>
+
+<h2>Exercise</h2>
+<p>critwire links each animal to other catalogues through outside ids (<code>gbif_id</code>, <code>ncbi_id</code>, <code>inaturalist_id</code>, <code>wikidata_id</code>). Which animals are missing at least one of them? Show <code>id</code>, <code>common_name</code> and the four ids, by <code>id</code>.</p>
+{{exercise:f1-ex}}
+<details><summary>About the answer</summary>
+<p>The three animals with no GBIF id are the ones whose identity in GBIF critwire hasn't settled (their <code>range_status</code> says so), so they have no records in the lab sample either. Joins (f3) find them again with an anti join.</p>
+</details>
+
+<h2>Check</h2>
+<p>Your rows must equal the answer's, column by column, in any row order. "Already know this?" is checked the same way. Check runs the answer on the tables as loaded, so if you changed them in the playground, Reset database first.</p>
+
+<h2>Dialects</h2>
+<ul>
+<li><strong>PostgreSQL:</strong> as here. Ascending sorts put <code>NULL</code> last (<code>NULLS FIRST</code> changes that); <code>LIKE</code> is case-sensitive and <code>ILIKE</code> isn't; <code>LIMIT … OFFSET …</code>, or the standard <code>OFFSET … FETCH FIRST n ROWS ONLY</code>.</li>
+<li><strong>DuckDB</strong> (this page's engine): as PostgreSQL for everything in this module: <code>NULL</code> sorts last, <code>LIKE</code> and <code>ILIKE</code>, <code>LIMIT</code> and <code>OFFSET</code>. It adds conveniences such as <code>SELECT * EXCLUDE (photo_url)</code>.</li>
+<li><strong>SQL Server:</strong> <code>SELECT TOP (5) …</code>, or <code>ORDER BY … OFFSET 5 ROWS FETCH NEXT 5 ROWS ONLY</code>; <code>NULL</code> sorts first in ascending order and there is no <code>NULLS LAST</code>; <code>LIKE</code> follows the column's collation, usually case-insensitive; <code>= NULL</code> never matches, as here, under the default <code>ANSI_NULLS ON</code>.</li>
+</ul>

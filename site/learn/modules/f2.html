@@ -1,0 +1,47 @@
+<p class="lead">Turn many rows into a few numbers: count, sum and compare groups of records, and filter the groups. Everything runs in this browser, on the tables <a href="/learn/schema/">the Schema page</a> describes.</p>
+
+<h2>Already know this?</h2>
+<p>For each species with records from more than 25 datasets, show <code>species_id</code>, its records, its datasets, its preserved specimens (<code>basis_of_record</code> is <code>PRESERVED_SPECIMEN</code>) and its records with no year, most records first. Solve it and the module is marked done.</p>
+{{skip:f2-skip}}
+
+<h2>Concept</h2>
+<p>An aggregate function turns many rows into one value: <code>count(*)</code> counts rows, <code>count(year)</code> counts the rows where <code>year</code> isn't <code>NULL</code>, <code>count(DISTINCT dataset_key)</code> counts different values, and <code>sum</code>, <code>min</code>, <code>max</code> and <code>avg</code> do what they say; all but <code>count(*)</code> skip <code>NULL</code>s. <code>GROUP BY</code> splits the rows into groups, one per distinct value of its columns (<code>NULL</code> makes a group of its own), and the aggregates then run once per group, so every column you select must be grouped or aggregated.</p>
+<p>The clauses now run in this order: <code>FROM</code>, <code>WHERE</code> (filters rows), <code>GROUP BY</code>, <code>HAVING</code> (filters groups, so it can use aggregates), <code>SELECT</code>, <code>ORDER BY</code>. <code>CASE WHEN … THEN … ELSE … END</code> computes a value row by row: use it to put rows into buckets, or inside <code>sum</code> to count only some rows, which turns one grouped query into a small cross-tab.</p>
+<p>The table is <code>occurrences</code>, the lab sample of open GBIF records (<a href="/learn/data/">the lab data page</a> says how it was drawn): one row per record of an animal at a place and, usually, a date. <code>basis_of_record</code> says what kind of evidence it is: a person's observation, a camera trap or GPS collar (<code>MACHINE_OBSERVATION</code>), a museum specimen, a tissue sample.</p>
+
+<h2>Worked example</h2>
+<p>How many records does the sample hold per year, and by basis of record? First the whole table in one row:</p>
+{{block:f2-count}}
+<p>Records per year, from 2016 on. <code>WHERE</code> keeps the rows before they are grouped:</p>
+{{block:f2-years}}
+<p>Records by basis of record:</p>
+{{block:f2-basis}}
+<p>Both at once: one row per basis of record, one column per period, each a <code>sum</code> of a <code>CASE</code> that is 1 for the rows in that period. A record with no year falls in no period, so it gets a column of its own.</p>
+{{block:f2-periods}}
+
+<h2>Lab</h2>
+<ol class="steps">
+<li><p>Which species have more than 500 records? <code>HAVING</code> keeps the groups whose count passes; <code>WHERE</code> couldn't, because it runs before there are counts.</p>
+{{block:f2-over-500}}</li>
+<li><p>The same question for records from 2000 on: <code>WHERE</code> removes the older rows first, then <code>HAVING</code> judges what is left.</p>
+{{block:f2-recent-over-500}}</li>
+<li><p>How many datasets contributed, under how many licenses, and from how many countries? <code>count(DISTINCT …)</code> counts each value once and skips <code>NULL</code>, so records with no country (<code>country_code</code> is <code>NULL</code>) don't count as a country.</p>
+{{block:f2-distinct}}</li>
+</ol>
+
+<h2>Result</h2>
+<p>The oldest record is from 1599, and some records have no year at all: ask <code>min</code> and <code>count(year)</code> before trusting a date column. Human observations dominate, and almost all of them are recent; most records before 1900 are museum specimens. Many species stop at exactly 2,000 records: that is the sample's cap per species, not a fact about the animals, and step 1's top rows are a tie for that reason. Every dataset in <code>datasets</code> contributed at least one record, and only two licenses remain, because the sample keeps only CC0 1.0 and CC BY 4.0 records.</p>
+
+<h2>Exercise</h2>
+<p>For each basis of record with at least 1,000 records, show <code>basis_of_record</code>, its records, how many species and how many datasets they come from, and how many have no year, largest first.</p>
+{{exercise:f2-ex}}
+
+<h2>Check</h2>
+<p>Your rows must equal the answer's, column by column, in any row order. "Already know this?" is checked the same way. Check runs the answer on the tables as loaded, so if you changed them in the playground, Reset database first.</p>
+
+<h2>Dialects</h2>
+<ul>
+<li><strong>PostgreSQL:</strong> <code>count(*) FILTER (WHERE year &lt; 1900)</code> is the short form of the <code>sum(CASE …)</code> columns; <code>GROUP BY</code> may name an output column or its position, <code>HAVING</code> may not; <code>/</code> between integers drops the fraction (<code>7 / 2</code> is 3).</li>
+<li><strong>DuckDB</strong> (this page's engine): also has <code>FILTER</code>, plus <code>GROUP BY ALL</code> (group by every column that isn't aggregated) and aliases in <code>WHERE</code>, <code>GROUP BY</code> and <code>HAVING</code>; <code>/</code> between integers gives a fraction (<code>7 / 2</code> is 3.5) and <code>//</code> drops it.</li>
+<li><strong>SQL Server:</strong> no <code>FILTER</code>: write <code>sum(CASE …)</code> as here; <code>GROUP BY</code> takes neither aliases nor positions; <code>count</code> returns <code>int</code> (<code>count_big</code> for more rows); <code>/</code> between integers drops the fraction.</li>
+</ul>
