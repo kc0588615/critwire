@@ -7,8 +7,8 @@
 //   7. setup.sql, then the `setup` performance mark (learn-timing reads it), then the species lookup for cards.
 // Every statement is streamed and cut at ROW_CAP rows; one script runs at a time. Lesson editors run isolated, the
 // playground persistent (isolation.ts); a playground statement that isn't readsOnly marks the generation changed. Reset
-// and Stop restart the engine (a fresh database, a new generation, unchanged); a result from an older generation is
-// dropped (Superseded).
+// and Stop restart the engine (a fresh database, a new generation, unchanged); every run still running or queued then
+// rejects with Superseded, and a result from an older generation is dropped.
 import * as duckdb from "@duckdb/duckdb-wasm";
 import { scriptStatements, statementError } from "../../../scripts/build/learn/sql.ts";
 import SETUP from "../sql/setup.sql";
@@ -66,7 +66,7 @@ export interface Engine {
   isolated(after: readonly Script[], sql: string): Promise<Result>;
   /** The playground's run: kept until Reset; transaction control refused; marks the generation changed unless readsOnly. */
   persistent(sql: string): Promise<Result>;
-  /** A fresh database (Reset, Stop): ends any running query and drops the queue. */
+  /** A fresh database (Reset, Stop): ends any running query, and every run still running or queued rejects with Superseded. */
   restart(): Promise<void>;
 }
 
@@ -200,6 +200,8 @@ export function startEngine(): Engine {
   let data: Promise<Map<string, Uint8Array>> | undefined;
   // One script at a time: a second `send` on the connection cancels the first's stream. A restart drops the queue.
   let queue: Promise<unknown> = Promise.resolve();
+  // Each unsettled run's reject: terminate() leaves a running query's promise pending, so a restart settles them itself.
+  const outstanding = new Set<(e: Superseded) => void>();
 
   /** Boots generation `gen`; a boot a restart overtook terminates its own database. */
   async function boot(gen: number): Promise<void> {
@@ -256,6 +258,8 @@ export function startEngine(): Engine {
     generation++;
     changed = false;
     queue = Promise.resolve();
+    for (const reject of outstanding) reject(new Superseded());
+    outstanding.clear();
     const old = live;
     live = undefined;
     const booted = boot(generation); // sets "loading" before its first await, so callers see it at once
@@ -275,7 +279,10 @@ export function startEngine(): Engine {
       return result;
     });
     queue = next.catch(() => {});
-    return next;
+    return new Promise<Result>((resolve, reject) => {
+      outstanding.add(reject);
+      next.then(resolve, reject).finally(() => outstanding.delete(reject));
+    });
   }
 
   void boot(++generation);
@@ -299,15 +306,19 @@ export function startEngine(): Engine {
       listener(state);
     },
     isolated(after, sql) {
-      return enqueue(async (exec) => {
+      // The restart waits for this run to settle, so it rejects with its own error, not Superseded.
+      const run = enqueue(async (exec) => {
         try {
           return await runIsolated(exec, after, sql);
         } catch (e) {
           if (!(e instanceof TransactionLost)) throw e;
-          void restart();
           throw new Error(`${e.message}, so the database was restarted`, { cause: e });
         }
       });
+      run.catch((e: Error) => {
+        if (e.cause instanceof TransactionLost) void restart();
+      });
+      return run;
     },
     async persistent(sql) {
       assertPersistable(sql);

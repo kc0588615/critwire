@@ -126,6 +126,35 @@ test("Reset restores the tables; Stop ends a runaway query; the next query runs"
   await context.close();
 });
 
+test("Reset from one editor settles the others' running and queued runs: each re-enables and says its run was dropped", async ({ browser }) => {
+  const c = await readCourse();
+  const f1 = c.curriculum!.modules.find((m) => m.id === "f1")!;
+  const { context, offOrigin } = await learnContext(browser);
+  const page = await context.newPage();
+  await page.goto(moduleUrl(f1));
+  await waitReady(page);
+  const [running, queued, resetter] = ["#q-f1-unknown", "#q-f1-taxonomy", "#q-f1-no-photo"].map((s) => page.locator(s));
+  await running.locator("textarea").fill("SELECT sum(a.range * b.range) FROM range(100000000) a, range(100000000) b");
+  await running.locator("[data-run]").click();
+  await queued.locator("[data-run]").click();
+  for (const b of [running, queued]) await expect(b.locator(".result")).toHaveAttribute("aria-busy", "true");
+  await resetter.locator("[data-reset]").click();
+  await waitReady(page);
+  await expect(resetter.locator(".result-summary")).toHaveText("The database was reset: every table is as it was built.");
+  for (const b of [running, queued]) {
+    await expect(b.locator(".result")).not.toHaveAttribute("aria-busy", "true");
+    await expect(b.locator("[data-run]")).toBeEnabled();
+    await expect(b.locator("[data-stop]")).toBeDisabled();
+    await expect(b.locator(".result-summary")).toHaveText("The database was restarted before this run finished. Run it again.");
+  }
+  expect(await hookResult(page, "f1-taxonomy")).toBeUndefined();
+  await running.locator("textarea").fill("SELECT 1 AS one");
+  await runBlock(running);
+  expect(await hookResult(page, "f1-unknown")).toEqual({ columns: ["one"], rows: [["1"]], truncated: false });
+  expect(offOrigin).toEqual([]);
+  await context.close();
+});
+
 test("transaction control is refused in the playground before anything runs", async ({ browser }) => {
   const { context, offOrigin } = await learnContext(browser);
   const page = await context.newPage();
