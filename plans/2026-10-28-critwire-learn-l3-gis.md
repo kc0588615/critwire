@@ -137,7 +137,7 @@ Estimate with these items: about 34–40 sessions.
 - [x] Baseline: install, migrate, run typecheck, lint, unit and E2E tests; record the results under Baseline
 - [x] Architecture: `architect` writes findings and the target design
 - [x] Fable review: `architecture-reviewer`
-- [ ] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
+- [x] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
 - [ ] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
 - [ ] Steps: `planner` writes Steps and Verification
 
@@ -520,6 +520,19 @@ SHOULD-CONSIDER:
 
 ## Architecture review (Astra)
 
+Astra (GPT-6-Astra, medium), 2026-10-28, on `cc46b58`.
+
+VERDICT: APPROVE_WITH_CHANGES
+
+MUST-FIX:
+1. **Clip scope change needs an owner handoff.** Whole-country clips become small study windows. The size justification is sound, but “nothing needs a handoff” contradicts the brief’s public-scope rule. Record bounds, reduced coverage and rationale in the project handoff; independent work can continue.
+2. **The `/v1` contract cannot enforce its promised semantic compatibility.** §7.1 checks names, types and observed nulls; changed units, identifier namespaces or field meanings still pass. Record semantic definitions and require explicit compatibility review for changes. Distinguish declared nullability from whether today’s snapshot contains nulls.
+
+SHOULD-CONSIDER:
+1. Fingerprint the canonical habitat inputs—published occurrence IDs and coordinates—alongside source hashes, so freshness remains tied to what ingestion actually consumed.
+2. Apply finite, nonnegative area constraints consistently to the habitat star fact; `>= 0` alone is weaker than the existing lab-table constraint.
+3. Compute geodesic pixel area once per raster row in g7, preserving the intended calculation while avoiding hundreds of thousands of repeated area calculations.
+
 ## Revision notes
 
 ## Steps
@@ -540,5 +553,6 @@ SHOULD-CONSIDER:
 - 2026-10-28 22:59 UTC · Baseline: install, typecheck, test 549/549, build, test:db 110/110, learn:check ok, e2e 80/80; sha256 lists recorded.
 - 2026-10-28 23:25 UTC · Architecture: architect wrote findings + target design (clips → 0.75° windows at 100 m; Node pins/tests + Python rasterio decode; `contracts/v1.json`; `docs/recovery.md`; 1,000-row db:load batches; `g2-coverage`). Plan-only; no code checks needed.
 - 2026-10-28 23:28 UTC · Fable review: APPROVE_WITH_CHANGES, 1 MUST-FIX (handoff item for 0.75° windows), 3 missed, 5 should-consider. Plan-only; no code checks needed.
+- 2026-10-28 23:29 UTC · Astra review: APPROVE_WITH_CHANGES, 2 MUST-FIX (window-clip handoff, same as Fable; `/v1` contract semantics + declared nullability), 3 should-consider. Plan-only; no code checks needed.
 
 ## Summary
