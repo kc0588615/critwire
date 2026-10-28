@@ -1,6 +1,7 @@
 // The /v1 record shape as DuckDB types (plan §4): one nested spec, in record key order, from which the read_json
 // columns, the record key check and the CSV select list are all generated.
 import type { Species } from "../species.ts";
+import { sqlText as text } from "./duckdb.ts";
 
 // A DuckDB type, a struct (object) or a list of structs ([struct]).
 export type Column = string | Columns | readonly [Columns];
@@ -30,7 +31,6 @@ export const RECORD_COLUMNS = {
 
 // Identifiers are always double-quoted, so SQL keywords (order, range, key, …) need no list.
 const ident = (key: string) => `"${key.replaceAll('"', '""')}"`;
-const text = (value: string) => `'${value.replaceAll("'", "''")}'`;
 
 function duckType(column: Column): string {
   if (typeof column === "string") return column;

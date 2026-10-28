@@ -46,6 +46,7 @@ details li { margin-bottom: .4rem; overflow-wrap: anywhere; }
 <li><a href="#about">About</a></li>
 <li><a href="#files">Files</a></li>
 <li><a href="#fields">Fields</a></li>
+<li><a href="#countries">Countries</a></li>
 <li><a href="#licenses">Licenses</a></li>
 <li><a href="#credits">Credits</a></li>
 <li><a href="#cite">Cite</a></li>
@@ -65,7 +66,7 @@ details li { margin-bottom: .4rem; overflow-wrap: anywhere; }
 
 <section id="files">
 <h2>Files</h2>
-<p>Every file holds the same {{species}} records. Pick the format that suits your tool.</p>
+<p>The species files all hold the same {{species}} records, and the countries files the same country rows. Pick the format that suits your tool.</p>
 <dl>
 <dt><a href="/v1/species.json"><code>/v1/species.json</code></a></dt>
 <dd>All records as one JSON array. Best for web pages and apps.</dd>
@@ -77,6 +78,8 @@ details li { margin-bottom: .4rem; overflow-wrap: anywhere; }
 <dd>One record per file, by its number or by its name in the address. Both files hold the same record.</dd>
 <dt><a href="/v1/attribution.json"><code>/v1/attribution.json</code></a></dt>
 <dd>Every source, license and photo credit, plus the datasets behind the country lists. The <a href="#credits">Credits</a> below are made from it.</dd>
+<dt><a href="/v1/countries.json"><code>/v1/countries.json</code></a>, <a href="/v1/countries.csv"><code>/v1/countries.csv</code></a> and <a href="/v1/countries.parquet"><code>/v1/countries.parquet</code></a></dt>
+<dd>One row per country code, with the country's name, continent and region, so you can put a name to the codes in <code>range.countriesWithOpenRecords</code>. See <a href="#countries">Countries</a>.</dd>
 </dl>
 <p class="note">Files are served with open CORS and byte ranges, so a web page on any site can fetch them.</p>
 
@@ -85,6 +88,9 @@ details li { margin-bottom: .4rem; overflow-wrap: anywhere; }
 curl -fsSO https://critwire.com/v1/species.csv
 curl -fsSO https://critwire.com/v1/species.parquet
 curl -fsSO https://critwire.com/v1/attribution.json
+curl -fsSO https://critwire.com/v1/countries.json
+curl -fsSO https://critwire.com/v1/countries.csv
+curl -fsSO https://critwire.com/v1/countries.parquet
 curl -fsS https://critwire.com/v1/species/51.json
 curl -fsS https://critwire.com/v1/species/jaguar.json</code></pre>
 
@@ -98,6 +104,16 @@ ORDER BY commonName;</code></pre>
 <pre><code data-example="sql">SELECT taxonomy_class, count(*) AS animals
 FROM 'https://critwire.com/v1/species.csv'
 GROUP BY taxonomy_class
+ORDER BY animals DESC;</code></pre>
+<p>How many animals have open records on each continent, joining the countries file:</p>
+<pre><code data-example="sql">WITH recorded AS (
+  SELECT id, unnest("range".countriesWithOpenRecords) AS code
+  FROM 'https://critwire.com/v1/species.parquet'
+)
+SELECT c.continent, count(DISTINCT r.id) AS animals
+FROM recorded AS r
+JOIN 'https://critwire.com/v1/countries.parquet' AS c USING (code)
+GROUP BY c.continent
 ORDER BY animals DESC;</code></pre>
 <p>One animal from the JSON, with the ids other databases use:</p>
 <pre><code data-example="sql">SELECT commonName, ids.gbif, ids.col, ids.wikidata
@@ -207,12 +223,33 @@ WHERE slug = 'jaguar';</code></pre>
 <p>The CSV flattens each record: a column is the field's path in snake_case, with dots turned into underscores. So <code>taxonomy.class</code> becomes <code>taxonomy_class</code> and <code>range.countriesWithOpenRecords</code> becomes <code>range_countries_with_open_records</code>. Lists (countries and <code>replaced_by</code>) are joined with <code>;</code>, and <code>null</code> is an empty cell. The file is UTF-8.</p>
 </section>
 
+<section id="countries">
+<h2>Countries</h2>
+<p>The countries files turn a two-letter code into a place: one row per code, sorted by <code>code</code>. They cover every code the species files use, and every code GBIF uses, so a code that shows up later still has a row. They hold names only, no maps or borders.</p>
+<p>Every column is text and never empty, in this order:</p>
+<dl>
+<dt><code>code</code></dt>
+<dd>The two-letter country code (ISO 3166-1), like <code>BR</code>. The same codes as <code>range.countriesWithOpenRecords</code>, plus <code>XK</code> for Kosovo, the code GBIF uses. Each code has one row.</dd>
+<dt><code>name</code></dt>
+<dd>The everyday English name, like <code>Brazil</code>. Each name has one row.</dd>
+<dt><code>continent</code></dt>
+<dd>The continent, like <code>South America</code>. Islands far from any continent, such as Mauritius, have <code>Seven seas (open ocean)</code>.</dd>
+<dt><code>region</code></dt>
+<dd>The United Nations region: <code>Africa</code>, <code>Americas</code>, <code>Asia</code>, <code>Europe</code>, <code>Oceania</code> or <code>Antarctica</code>.</dd>
+<dt><code>subregion</code></dt>
+<dd>The United Nations subregion, like <code>Caribbean</code> or <code>Middle Africa</code>.</dd>
+</dl>
+<p>The names follow <a href="https://www.naturalearthdata.com/">Natural Earth</a>, a free public-domain world map, exactly as it has them, and so do the continents and regions. Some read differently from other lists: <code>CN</code> is "People's Republic of China" and <code>TW</code> is "Taiwan".</p>
+<p class="note"><strong>Reading the CSV:</strong> Namibia's code is <code>NA</code>, which some tools read as a missing value. In pandas, pass <code>keep_default_na=False</code> to <code>read_csv</code>; in R, pass <code>na.strings = character(0)</code> to <code>read.csv</code>. DuckDB, the Parquet file and the JSON file keep it as the text <code>NA</code>.</p>
+</section>
+
 <section id="licenses">
 <h2>Licenses</h2>
 <p>You may use critwire's data for anything, including school work and apps you sell, as long as you give credit (see <a href="#cite">Cite</a>).</p>
 <ul>
 <li><strong>critwire's own data</strong> (records, ids, the country lists we work out) is <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>: use it freely and credit "critwire". The full terms are in <a href="https://github.com/kc0588615/critwire/blob/main/DATA-LICENSE.md">DATA-LICENSE.md</a>.</li>
 <li><strong>Values from other sources</strong> keep their own license, recorded in each record's <code>sources</code>. All of them are open: CC0 or CC BY 4.0.</li>
+<li><strong>The countries files</strong> come from <a href="https://www.naturalearthdata.com/">Natural Earth</a>, which is in the public domain: no license and no credit needed, though critwire credits it anyway.</li>
 <li><strong>Photos</strong> keep their own license, in <code>photo.license</code>. Some need the same license on anything you make with them (the "SA" in CC BY-SA), so check before you reuse one.</li>
 <li><strong>Country lists</strong> are counted only from CC0 and CC BY 4.0 records on GBIF. The records themselves belong to the groups that shared them; they are listed under <a href="#credits">Credits</a>.</li>
 <li><strong>IUCN:</strong> critwire stores only the Red List species id (<code>ids.iucn</code>) so you can match records. It holds no IUCN data. To use Red List data, get it from IUCN under their terms.</li>

@@ -5,13 +5,13 @@ import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { ARTIFACTS, ORIGIN, records, repoPath } from "./helpers.ts";
 
-const SECTIONS = ["about", "files", "fields", "licenses", "credits", "cite"];
+const SECTIONS = ["about", "files", "fields", "countries", "licenses", "credits", "cite"];
 const REGISTRATION = repoPath("data/gbif-derived-dataset/registration.json");
 // External links are checked against this list, not fetched (gbif.org returns 403 to bots).
 const HOSTS = new Set([
   "github.com", "doi.org", "creativecommons.org", "commons.wikimedia.org", "www.catalogueoflife.org", "www.gbif.org",
   "www.wikidata.org", "www.iucnredlist.org", "www.inaturalist.org", "www.ncbi.nlm.nih.gov", "duckdb.org",
-  "play.critterconnect.org",
+  "play.critterconnect.org", "www.naturalearthdata.com",
 ]);
 
 // Every key path in the records, e.g. "taxonomy.class" or "sources[].doi".
@@ -35,6 +35,22 @@ test("every section renders, and every field is described", async ({ page }) => 
   const paths = [...new Set((await records()).flatMap((r) => keyPaths(r)))].sort();
   expect(paths.filter((p) => !described.has(p))).toEqual([]);
   for (const status of ["ok", "no-open-records", "identity-unsettled"]) await expect(page.locator("#fields")).toContainText(status);
+});
+
+test("the countries files: listed, every column described, the NA note, credited to Natural Earth", async ({ page }) => {
+  const { rows } = JSON.parse(await readFile(repoPath("data/countries.json"), "utf8"));
+  for (const file of ["countries.json", "countries.csv", "countries.parquet"]) {
+    await expect(page.locator(`#files a[href="/v1/${file}"]`)).toBeVisible();
+  }
+  await expect(page.locator("#files")).not.toContainText("Every file holds the same");
+  const countries = page.locator("#countries");
+  expect(await countries.locator("dt code").allTextContents()).toEqual(Object.keys(rows[0]));
+  await expect(countries).toContainText("names follow Natural Earth");
+  await expect(countries).toContainText("keep_default_na=False");
+  await expect(countries).toContainText("na.strings = character(0)");
+  const credit = page.locator("#credits dt", { hasText: "Natural Earth" }).locator("xpath=following-sibling::dd[1]");
+  await expect(credit).toContainText(`Used for ${rows.length} countries`);
+  await expect(credit).toContainText("Made with Natural Earth");
 });
 
 test("the credits cite the GBIF derived-dataset DOI", async ({ page }) => {

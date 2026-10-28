@@ -3,6 +3,7 @@
 // throws.
 import type { RangeStatus, Species } from "../species.ts";
 import type { Attribution } from "./attribution.ts";
+import { NATURAL_EARTH } from "./sources.ts";
 
 export const docsTemplate = new URL("../../site/index.html", import.meta.url);
 
@@ -23,7 +24,7 @@ export function renderDocs(template: string, attribution: Attribution, species: 
     sources: attribution.sources.map((s) => [
       `<dt>${link(s.url, s.source)}</dt>`,
       `<dd>${esc(s.citation)}<br>License: ${licenseLink(s.license, s.licenseUrl)}`
-        + `${s.retrieved ? `, retrieved ${esc(s.retrieved)}` : ""}. Used for ${esc(s.records)} records: `
+        + `${s.retrieved ? `, retrieved ${esc(s.retrieved)}` : ""}. Used for ${esc(s.records)} ${s.source === NATURAL_EARTH ? "countries" : "records"}: `
         + `${s.fields.map((f) => `<code>${esc(f)}</code>`).join(", ")}.</dd>`,
     ].join("\n")).join("\n"),
     gbifDerivedDataset: derivedDataset(attribution.gbifDerivedDataset),

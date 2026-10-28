@@ -8,6 +8,7 @@ import { loadEnv, requireEnv } from "./env.ts";
 import { formatJson } from "./json.ts";
 import { speciesFile } from "./species.ts";
 import { buildAttribution } from "./build/attribution.ts";
+import { writeCountries } from "./build/countries.ts";
 import { docsTemplate, renderDocs } from "./build/docs.ts";
 import { readBuildInputs } from "./build/inputs.ts";
 import { writeTables } from "./build/tables.ts";
@@ -19,8 +20,8 @@ const args = process.argv.slice(2);
 for (const arg of args) if (arg !== "--draft") throw new Error(`unknown argument: ${arg}`);
 loadEnv();
 const url = requireEnv("DATABASE_URL");
-const { species, registration } = await readBuildInputs({ draft: args.includes("--draft") });
-const attribution = buildAttribution(species, registration);
+const { species, registration, countries } = await readBuildInputs({ draft: args.includes("--draft") });
+const attribution = buildAttribution(species, registration, countries);
 const docs = renderDocs(await readFile(docsTemplate, "utf8"), attribution, species);
 await loadDatabase(url, species);
 console.log(`loaded ${species.length} species`);
@@ -34,6 +35,7 @@ for (const s of species) {
   await writeFile(new URL(`species/${s.slug}.json`, v1), json);
 }
 await writeTables(speciesFile, v1);
+await writeCountries(countries.rows, v1);
 await writeFile(new URL("attribution.json", v1), formatJson(attribution));
 await writeFile(new URL("index.html", out), docs);
 

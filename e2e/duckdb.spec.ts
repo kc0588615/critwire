@@ -26,6 +26,7 @@ test("every docs example runs, and the curl examples cover every /v1 file", asyn
     cs.map((c) => ({ kind: c.getAttribute("data-example"), text: c.textContent! })));
   const local = (text: string) => text.replaceAll("https://critwire.com", ORIGIN);
   expect(examples.map((e) => e.kind).sort()).toEqual(expect.arrayContaining(["shell", "sql"]));
+  expect(examples.some((e) => e.kind === "sql" && e.text.includes("/v1/countries.")), "a SQL example reads a countries file").toBe(true);
 
   const fetched = new Set<string>();
   for (const { kind, text } of examples) {
@@ -55,5 +56,6 @@ test("every docs example runs, and the curl examples cover every /v1 file", asyn
     return /^\d+$/.test(m[1]) ? "species/{id}.json" : "species/{slug}.json";
   }));
   expect([...kinds].sort()).toEqual(
-    ["attribution.json", "species.csv", "species.json", "species.parquet", "species/{id}.json", "species/{slug}.json"]);
+    ["attribution.json", "countries.csv", "countries.json", "countries.parquet", "species.csv", "species.json", "species.parquet",
+      "species/{id}.json", "species/{slug}.json"]);
 });
