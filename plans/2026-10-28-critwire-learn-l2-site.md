@@ -667,7 +667,7 @@ Every step:
   6. E2E's "three pages, one worker" moves to S16, the first step with module pages.
 - **Drop order** if the session cap comes close: S28 (W25, tbls), then S22 (W19, sessions runner). See Failure modes.
 
-- [ ] S1 · W1: lexer, block grammar and lints, results, plan assertions, `learn:port` (D2, D4, D16; F5's lexer half)
+- [x] S1 · W1: lexer, block grammar and lints, results, plan assertions, `learn:port` (D2, D4, D16; F5's lexer half)
   - Files:
     - `scripts/build/learn/sql.ts`: gains `scriptStatements`, `ScriptError` and `codeOnly` with dollar quotes. It stays the one import-free lexer.
     - `scripts/learn/{blocks,result,plan}.ts` and their `.test.ts`. `blocks.ts` parses the grammar for `--`, and `//` for `.m`/`.dax`, including the `plan`, `sessions`, `window` and `waits` lines. The sessions runner comes in S22.
@@ -688,6 +688,7 @@ Every step:
     - `scripts/build/learn/site.ts`: `readLearnInputs` with the curriculum refusals, called from `scripts/build.ts`.
   - First [T]:
     - PV1–8, CL1–9.
+    - Moved from S1 (Decisions): RQ15 (PostGIS blocks), RQ18 (determinism functions), RP5's privilege cases, RP12, RP14.
     - Curriculum refusals: unknown prerequisite, cycle, prerequisite listed after its module, unknown track, duplicate slug, `built` without a page, `planned` with one.
     - Slots: unknown kind, a slot without a file, a block file no page uses, `after` across pages.
   - Verify: `T`, `B`, `H`.
@@ -1062,6 +1063,9 @@ Each step's isolated cases are its **First** list. What a session does when the 
 ## Decisions
 
 - 2026-10-28 · Steps stage: planner reordered W1–W25 into S1–S28 (content unchanged): `curriculum.json` + checks W11→S2 (page order needs them); runner finished on fixtures (S3, S4) before §0's blocks run live (S5; L1's `pg-role-smoke.sql` would refuse them earlier); setup (S5) and d6 (S9) pages start as slot-only skeletons, prose in S15/S24, modules `planned` until their page lands; layout moves to S11 (first playground needs it); module template S13 before map S14 (map never links a missing page); "three pages, one engine start" E2E moves to S16. No lint script in package.json: typecheck is the static check. Drop order: S28 (tbls), then S22 (sessions runner).
+- 2026-10-28 · S1: RQ15's PostGIS half, RQ18's determinism half, RP5's privilege cases, RP12 and RP14 move to S2: the spike implements them in `privilege.ts`'s `blockRuleErrors`, so porting them in S1 would write PV code before PV1–8's tests. S1 covers RQ15 for browser blocks (D11's isolated-refusal lint, which also refuses DuckDB `SET`, RP5 p5i), RP5 p5j/p5k (params refused; `after` across engines) and RQ18's ORDER BY half as the pure `rowsOrdered` (enforced at run time, S3). RQ11 is `learn:port`'s (a ran fence without its result, a result for another id, an orphan).
+- 2026-10-28 · S1: `-- params` is refused on every block (D2: page blocks take none, and every block is a page block). `cellText` lives in import-free `scripts/learn/cell.ts`, so `result.ts` (Node, sha256) and S12's browser `format.ts` share one cell form. Block paths (`BLOCK_DIR`, `CHECKED_DIR`, `SNAPSHOT_DIR`), `PG_SESSION` and `PBI_STATUS` live in `scripts/learn/blocks.ts`. Statement-level lints (browser refusals, `-- fails:`/`-- waits:`/`-- window`, raster, `-- plan:`) apply to `ran` blocks only, so d4's untested window blocks pass until S22.
+- 2026-10-28 · S1: `P`'s form is `pnpm learn:port --check all`; `all` = every 004 page with any block file in `site/learn/sql/`. It fails until S5 because L1's wrapped `pg-role-smoke.sql` makes `setup` count as ported and differs from 004 (F4), as the plan expected. Writing refuses `all`; it ports named pages only.
 
 ## Log
 
@@ -1071,5 +1075,6 @@ Each step's isolated cases are its **First** list. What a session does when the 
 - 2026-10-28 12:36 UTC · Astra review: APPROVE_WITH_CHANGES, 3 MUST-FIX (D11 Check on modified data; D3 cleanup after lock release; D5 lock_timeout = detection deadline), 3 SHOULD-CONSIDER; plan-only, no checks needed.
 - 2026-10-28 12:43 UTC · Revision: architect resolved 5 MUST-FIX (D11 Check refuses on changed generation until Reset; D3 sweep under lock, lab-role objects only; D5 lock_timeout 30s vs 5s detection); adopted MISSED 1–2 and all SC except Caddy fallback; Revision notes table; plan-only, no checks needed.
 - 2026-10-28 12:55 UTC · Steps: planner wrote S1–S28 (~39 sessions est.), Verification (DoD map, E2E artifact in $M/e2e/, release smoke), Failure modes; ordering deviations under Decisions; plan-only, no checks needed.
+- 2026-10-28 13:10 UTC · S1: lexer (`scriptStatements`, `ScriptError`, `isolatedRefusal`), `blocks.ts` (grammar incl. plan/sessions/window/waits; file and page lints), `plan.ts`, `result.ts` + `cell.ts`, `learn:port` (`port.ts`, CLI, fixture). Red: 5 new test files failing to load (55 cases) → green 55. T: typecheck ok, test 340/340; B ok; H 169 files equal. Real 004 pages parse clean except d3's EXPLAIN blocks (plan lint, S20's job).
 
 ## Summary

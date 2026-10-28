@@ -1,5 +1,6 @@
 // SQL text by statement (port of the spike's src/sql.ts): splits at top-level `;`, outside strings (dollar-quoted too),
-// quoted identifiers and comments. Pure. The loader uses it to check its hand-written parts (loader.ts).
+// quoted identifiers and comments. Pure and import-free: the loader (loader.ts), the block lint (scripts/learn/blocks.ts)
+// and the browser bundle (plan D11) share it. Tests: sql.test.ts.
 
 export interface Statement {
   /** 1-based among the non-empty statements. */
@@ -91,4 +92,37 @@ export function codeOnly(sql: string): string {
       return kind === "code" || kind === "ident" ? text : text.replace(/[^\n]/g, " ");
     })
     .join("");
+}
+
+// The statements a script runs; text with no statement is an error, not a no-op.
+export function scriptStatements(sql: string): Statement[] {
+  const statements = splitStatements(sql);
+  if (!statements.length) throw new Error("no SQL to run");
+  return statements;
+}
+
+// A failed statement of a script: which one, of how many, and the engine's own message.
+export class ScriptError extends Error {
+  readonly statement: number;
+  readonly total: number;
+  readonly detail: string;
+  constructor(statement: number, total: number, detail: string) {
+    super(`statement ${statement} of ${total}: ${detail}`);
+    this.name = "ScriptError";
+    this.statement = statement;
+    this.total = total;
+    this.detail = detail;
+  }
+}
+
+export const statementError = (s: Statement, total: number, message: string) => new ScriptError(s.n, total, message);
+
+// First words a lesson editor's isolated run refuses (plan D11): transaction control, and session state that would
+// outlive its ROLLBACK. The block lint refuses them in browser blocks too.
+const ISOLATED_REFUSED = new Set(["BEGIN", "START", "COMMIT", "END", "ROLLBACK", "ABORT", "SET", "RESET", "USE", "PRAGMA", "ATTACH", "DETACH", "INSTALL", "LOAD"]);
+
+// Why an isolated run refuses the statement, or undefined if it doesn't.
+export function isolatedRefusal(statement: string): string | undefined {
+  const word = /^\s*([A-Za-z_]+)/.exec(codeOnly(statement))?.[1]?.toUpperCase();
+  return word && ISOLATED_REFUSED.has(word) ? `${word} isn't run here: this editor's changes are rolled back; use the playground` : undefined;
 }
