@@ -895,7 +895,7 @@ Every step:
     - SC1: the external-id UNIQUEs stay, as L1's A7 decided; the copy says a shared id fails the build.
   - First [E]: snapshots; every exercise, including the `-- expect: error` probes (a missing constraint is rejected). learn:check runs against the seeded results.
   - Verify: `T`, `L`, `P`, `E`, `H`; `d1.sql` is listed in `checked.json`.
-- [ ] S19 · W16: d2 (item 5 d2)
+- [x] S19 · W16: d2 (item 5 d2)
   - `pnpm learn:port d2`; `modules/d2.html`; d2 `built`. No PostGIS block.
   - 004:2357, 2360 and page: lists can be unnested, joined and counted, but element-level foreign keys are lost; the 3NF mnemonic is introductory; a lossless split needs the shared attributes to determine a component.
   - First [E]: snapshots, exercises.
@@ -1112,5 +1112,6 @@ Each step's isolated cases are its **First** list. What a session does when the 
 - 2026-10-28 18:10 UTC · S16: `learn:port f1 f2` (17 blocks + 17 snapshots), `modules/{f1,f2}.html` (skip check, Concept, Worked example, Lab, Result, Exercise, Check, Dialects), f1/f2 `built`; learn-browser: WRONG for f1-skip/f1-ex/f2-skip/f2-ex, exercise case covers skip checks (marks done), new "f1, f2, playground: one worker". Red: 3/3 failing on the old dist → green. T: typecheck ok, test 541/541; B ok; P 4 pages, 79 files equal 004; E 71/71 (0 unexpected/skipped/flaky); H 169 equal.
 - 2026-10-28 18:27 UTC · S17: `learn:port f3 f4` (21 blocks + 21 snapshots), `modules/{f3,f4}.html` (f4 checks in order), f3/f4 `built`, f1 links f3; learn-browser: WRONG for f3-skip/f3-ex/f4-skip/f4-ex, seen lists + f3-brazil-list (cards) etc., per-page timeout on the course walks. Red: 4/5 failing on the old dist → green. T: typecheck ok, test 541/541; P 6 pages, 121 files equal 004; B ok; E 71/71 (0 unexpected/skipped/flaky); H 169 equal.
 - 2026-10-28 18:45 UTC · S18: `learn:port d1` (21 blocks: 13 snapshots, 7 + 2 new checked), `modules/d1.html`, d1 `built`; 004 d1: candidate vs optional unique id, GBIF-id scope + build check, Lab step 7 composite-FK rank (`d1-rank-fk`, `d1-rank-wrong`, learn:check-recorded); E2E: WRONG d1-ex (no UNIQUE url), new test: each missing constraint (UNIQUE, FK, CHECK) failed by its probe. Red: 3/3 failing on the old dist → green. T: typecheck ok, test 541/541; L: draft build, learn:check ok (28 PostGIS blocks, d1.sql 4 ERROR lines as announced, checked.json lists d1.sql), plain build ok; P 7 pages, 165 files equal 004; E 72/72 (0 unexpected/skipped/flaky); H 169 equal.
+- 2026-10-28 18:53 UTC · S19: `learn:port d2` (14 blocks + 14 snapshots), `modules/d2.html`, d2 `built`, f3 links d2; 004 d2: 1NF lists can be unnested/joined/counted, lost = per-item FK/UNIQUE; 3NF mnemonic a first approximation + exact rule (X superkey or Y prime), BCNF; lossless two-part split needs shared columns = key of one part (title split adds rows). E2E: WRONG d2-ex (no key on r_datasets → d2-ex-two-titles runs), d2 ids in seen lists. Red: 2/2 failing on the old dist → green. T: typecheck ok, test 541/541; P 8 pages, 193 files equal 004; B ok; E 72/72 (0 unexpected/skipped/flaky, `$M/e2e-s19`); H 169 equal.
 
 ## Summary

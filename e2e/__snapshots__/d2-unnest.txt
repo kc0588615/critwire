@@ -1,0 +1,8 @@
+-- result: d2-unnest · 20 rows · sha256 b463f81200a2
+id | country_code
+51 | AR
+51 | BO
+51 | BR
+51 | BZ
+51 | CO
+… 15 more rows

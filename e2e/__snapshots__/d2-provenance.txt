@@ -1,0 +1,8 @@
+-- result: d2-provenance · 8 rows · sha256 bc64a29cc0b4
+field | source_name | license | retrieved
+ids.col | Catalogue of Life | CC BY 4.0 | 2026-10-20
+ids.gbif | GBIF Backbone Taxonomy | CC BY 4.0 | 2026-10-21
+ids.inaturalist | Wikidata | CC0 1.0 | 2026-10-20
+ids.iucn | critwire base | CC BY 4.0 | NULL
+ids.ncbi | Wikidata | CC0 1.0 | 2026-10-20
+… 3 more rows

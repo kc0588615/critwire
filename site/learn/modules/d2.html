@@ -1,0 +1,70 @@
+<p class="lead">Decide which table each fact belongs in, so that every fact is stored once and the tables can't contradict themselves: functional dependencies, the normal forms from first to third, nested records turned into tables, and when repeating a fact on purpose is safe. Everything runs in this browser, on the tables <a href="/learn/schema/">the Schema page</a> describes and on critwire's published file.</p>
+
+<h2>Concept</h2>
+<ul>
+<li>A <strong>functional dependency</strong>, written <code>X → Y</code>, says that a value of <code>X</code> fixes the value of <code>Y</code>: two rows with the same <code>X</code> always have the same <code>Y</code>. <code>dataset_key → title</code>: a dataset has one title. <code>genus → family</code>: every <em>Panthera</em> is a cat. The direction matters: two datasets can share a title, so <code>title → dataset_key</code> doesn't hold. A key is a set of columns every other column depends on.</li>
+<li>A dependency is a rule about the world, which the designer states; it isn't read off the data. Rows can refute one (two rows, same <code>X</code>, different <code>Y</code>), never prove it: a rule that holds in today's rows may break with tomorrow's load. Once a table's key enforces the rule, the database refuses the row that would break it (<a href="/learn/database-architecture/keys/">Keys and constraints, d1</a>).</li>
+<li>A table that stores a fact in more than one place invites three <strong>anomalies</strong>. <strong>Update:</strong> a fact changed in some of its copies leaves the table saying two things. <strong>Delete:</strong> deleting the last row that held a fact deletes the fact (a record removed as a misidentification takes its dataset's only copy of the title with it). <strong>Insert:</strong> a fact can't be stored until something else exists (a dataset can't be listed before it has a record).</li>
+<li>The <strong>normal forms</strong> remove them one kind at a time.
+<ul>
+<li><strong>First normal form (1NF):</strong> one value per cell, no lists or repeated groups of columns. A list in a cell can still be queried: <code>unnest</code> turns it into rows, which can then be joined and counted (the worked example does). What the list loses is the database's checks on each item: no foreign key can say every country code in it is a <code>countries</code> row, no <code>UNIQUE</code> can stop a code appearing twice, and every query has to unnest it first.</li>
+<li><strong>Second (2NF):</strong> in a table whose key has several columns, no other column depends on only part of it.</li>
+<li><strong>Third (3NF):</strong> no column outside the keys depends on another column outside them. The short version of all three, "every column depends on the key, the whole key, and nothing but the key", is a first approximation. The exact rule: for every dependency <code>X → Y</code> in the table (with <code>Y</code> not part of <code>X</code>), either <code>X</code> contains a key, or <code>Y</code> is part of some candidate key. <strong>Boyce–Codd normal form</strong> drops the second escape: <code>X</code> must always contain a key. It differs from 3NF only in tables with several overlapping keys; critwire's tables don't have that case.</li>
+</ul></li>
+<li>Normalizing splits a table along its dependencies. The split is <strong>lossless</strong> when joining the parts gives back exactly the rows you started with. A split into two parts is lossless when the columns they share determine all of one part, that is, they are a key of it: the flat table of lab step 3, split on <code>dataset_key</code> (the key of the datasets part), is lossless. Split on <code>title</code> instead, two datasets that share a title would each join to the other's records, and the join would add rows that were never there.</li>
+<li>A nested file (JSON, or Parquet with structs and lists) groups facts by how they are read: one animal with everything about it. Tables group them by what they depend on. critwire keeps both: its build writes <a href="/v1/species.json"><code>/v1/species.json</code></a> and <code>species.parquet</code> nested, one record per animal, because that is how a reader wants them, and loads the same records into PostgreSQL tables whose keys and <code>CHECK</code>s refuse a record that breaks them, a check before anything is published.</li>
+<li><strong>Denormalizing</strong> is repeating facts on purpose, for reading: the published files, a star schema (<a href="/learn/database-architecture/star/">Star schemas, d6</a>), a summary table. It is safe when every copy is rebuilt from one source every time and never edited by hand. A value that is only a count of other rows (records per dataset) stays a query.</li>
+</ul>
+
+<h2>Worked example</h2>
+<p>How does critwire's nested record become tables? These queries read the published file itself, <code>species.parquet</code>, with DuckDB's own SQL: <code>read_parquet</code> opens a file, <code>"range".countriesWithOpenRecords</code> reaches into the record, and <code>unnest</code> turns a list into rows. This page's tables were built from the file with exactly these. Here is the jaguar's record, its countries one list in one cell:</p>
+{{block:d2-list}}
+<p>1NF gives each item its own row, which is how <code>species_countries</code> is filled:</p>
+{{block:d2-unnest}}
+<p>2NF: the key of <code>species_countries</code> is (<code>species_id</code>, <code>country_code</code>). A country's name depends on <code>country_code</code> alone, so a <code>country_name</code> column there would repeat each name once per animal recorded in that country, and a rename would have to find every copy:</p>
+{{block:d2-country-copies}}
+<p>3NF: an animal's family depends on its genus, not on the animal. So <code>species</code> stores only the genus, and the family is in the genus's <code>taxa</code> row. A flat table with a <code>family</code> column would repeat these families, and one mistyped copy would put an animal in two families:</p>
+{{block:d2-repeat}}
+<p>The record's <code>sources</code> is a list of structs: each item names a source, its license, when critwire retrieved it, and the fields it supplied. Does a source's license depend on the source? In the file, each source has one license, written once per animal it supplied:</p>
+{{block:d2-sources}}
+<p>So <code>source → license</code> goes into its own table, <code>sources</code>, one row per source, and <code>SELECT DISTINCT</code> over the file gives exactly one row each. Its primary key now holds the rule: had two animals' entries named two licenses for one source, the load would have failed instead of storing both. The file repeats each license 69 to 76 times, and that is fine, because critwire's build writes the file from one source every time, and gives every animal's entry for a source that source's one license. Which source gave which field is a fact about the animal and the field together, so it goes in <code>species_sources</code>, keyed (<code>species_id</code>, <code>field</code>). Joined back, they tell where each of the jaguar's facts came from:</p>
+{{block:d2-provenance}}
+<p>The taxonomy is from the Catalogue of Life, the outside ids from Wikidata and GBIF, the country list from GBIF's occurrence search. <code>ids.iucn</code> is critwire's own: critwire stores only the animal's IUCN id, never the Red List's data, whose terms don't allow republishing it.</p>
+
+<h2>Lab</h2>
+<p>Is a license a fact about a record or about its dataset? GBIF gives both: every dataset declares a license, and every record carries one. If <code>dataset_key → license</code> held, the license would belong in <code>datasets</code> (3NF), stored 400 times instead of 40,395.</p>
+<ol class="steps">
+<li><p>Test the rule on the records: does any dataset have records under two licenses?</p>
+{{block:d2-fd-license}}
+<p>None, in this sample. That doesn't prove the rule (Concept). The full GBIF download the sample comes from refutes it: the iNaturalist research-grade dataset holds 9,581 CC BY records and 3,152 CC0 records. The sample just doesn't show it, because iNaturalist declares CC BY-NC for the dataset, so none of its records passed the sample's license rule (<a href="/learn/data/">the lab data page</a>).</p></li>
+<li><p>Is the record's license the dataset's declared one?</p>
+{{block:d2-license-differs}}
+<p>Not always: this museum declares CC0 for its dataset and CC BY for these records. So there are two facts here, under one word. The record's license depends on the record and stays on <code>occurrences</code>; the dataset's declared license depends on the dataset and stays on <code>datasets</code>. Moving the first into <code>datasets</code> would publish these four records as CC0 and lose the credit their license asks for. (The sample's <code>license</code> is the stricter of the two.)</p></li>
+<li><p>Now the anomalies, on a flat table: each record with its animal's name and its dataset's title and publisher, the shape a spreadsheet export has. Every record carries its dataset's title, 400 datasets' titles stored 40,395 times. And there are fewer titles than datasets: two titles are shared, so a title can't stand in for a dataset key.</p>
+{{block:d2-flat}}
+{{block:d2-shared-titles}}</li>
+<li><p>An update anomaly: the museum renames its dataset, and the fix reaches one of its records. The table now gives one dataset two titles, which the same kind of query catches:</p>
+{{block:d2-update-anomaly}}</li>
+<li><p>A delete anomaly: 84 datasets have one record in the sample. Delete those records (say they all turned out to be misidentified) and their datasets vanish from the flat table, titles, publishers and all; <code>datasets</code> still lists them:</p>
+{{block:d2-delete-anomaly}}</li>
+</ol>
+<p>Each block runs on the tables as loaded, after the blocks it names, so step 5 starts from the flat table of step 3, not from step 4's rename.</p>
+
+<h2>Result</h2>
+<p>The nested record became tables along its dependencies: the country list into rows (1NF), the country's name into <code>countries</code> (2NF), the family into <code>taxa</code> and the source's license into <code>sources</code> (3NF), with the published file repeating them for readers, rebuilt each time. The license question has a two-part answer. In the sample, no dataset has records under two licenses, but the full download has one (iNaturalist), and one museum's records carry a stricter license than its dataset declares. So the record's license is a fact about the record and stays on <code>occurrences</code>; <code>datasets.license</code> is the dataset's own declaration, a different fact. The flat table showed what normalizing prevents: 40,395 copies of 400 titles, one dataset with two titles after a partial fix, and 84 datasets lost with their last records (316 left of 400). And a record count per dataset is a query, not a column: stored, it would be wrong after the next load.</p>
+
+<h2>Exercise</h2>
+<p>Normalize <code>records_flat</code> (lab step 3, before the anomalies; your answer runs after it) into 3NF: <code>r_species (species_id, common_name)</code>, <code>r_datasets (dataset_key, title, publisher)</code> and <code>r_records (id, species_id, dataset_key, license)</code>, each with its primary key, and <code>r_records</code>' foreign keys to the other two. Fill them from <code>records_flat</code>, then show the split is lossless: count each table's rows, and the rows that joining the three back loses or adds compared with <code>records_flat</code> (both should be 0).</p>
+{{exercise:d2-ex}}
+<p>The <code>INSERT … SELECT DISTINCT</code> into <code>r_datasets</code> works only because <code>dataset_key → title, publisher</code> holds in <code>records_flat</code>; run after lab step 4's partial rename, it fails on the key. Your table must now refuse the rename that caused it, a second title for the museum's dataset:</p>
+{{block:d2-ex-two-titles}}
+
+<h2>Check</h2>
+<p>Your counts must equal the answer's, in any row order. Then the page runs the insert above after your answer, and it must fail on <code>r_datasets</code>' key.</p>
+
+<h2>Dialects</h2>
+<ul>
+<li><strong>PostgreSQL:</strong> nested data is <code>jsonb</code> (or arrays and composite types); <code>jsonb_array_elements</code>, <code>jsonb_to_recordset</code> and <code>unnest(array)</code> turn it into rows, <code>-&gt;</code> and <code>-&gt;&gt;</code> reach into it, and <code>jsonb_agg</code> and <code>jsonb_build_object</code> build it back for a published file.</li>
+<li><strong>DuckDB</strong> (this page's browser engine): <code>STRUCT</code>, <code>LIST</code> and <code>MAP</code> columns, read from Parquet or JSON (<code>read_json</code>); <code>unnest</code> and dot access as here, <code>to_json</code> and <code>list(…)</code> to nest again.</li>
+<li><strong>SQL Server:</strong> no list or struct types: JSON is text (SQL Server 2025 adds a <code>json</code> type), shredded with <code>OPENJSON(…) WITH (…)</code> under <code>CROSS APPLY</code> and built with <code>FOR JSON PATH</code>; <code>STRING_SPLIT</code> splits a delimited cell.</li>
+</ul>

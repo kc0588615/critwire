@@ -1,0 +1,7 @@
+-- result: d2-sources · 5 rows · sha256 02711a98b356
+source | licenses | license | copies_in_file
+Catalogue of Life | 1 | CC BY 4.0 | 69
+GBIF Backbone Taxonomy | 1 | CC BY 4.0 | 73
+GBIF.org occurrence search | 1 | CC BY 4.0 | 72
+Wikidata | 1 | CC0 1.0 | 76
+critwire base | 1 | CC BY 4.0 | 76

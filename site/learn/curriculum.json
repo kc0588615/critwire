@@ -140,7 +140,7 @@
       "prereqs": [
         "d1"
       ],
-      "state": "planned",
+      "state": "built",
       "skill": "1NF to 3NF from nested JSON; functional dependencies; when to denormalize",
       "questions": [
         "Is a license a fact about a record or about a dataset?",

@@ -286,7 +286,7 @@ test("every browser block of the course pages equals its snapshot, and cards fol
   }
   // f3-brazil-list is the release smoke's block (cards, as its `-- show: cards` says).
   expect(seen).toEqual(
-    expect.arrayContaining(["setup-counts", "f1-no-photo", "f1-page", "f2-count", "f2-distinct", "f3-brazil-list", "f3-not-in", "f4-top-dataset", "f4-running", "d1-constraints", "d1-check-null", "d1-ex-same-url", "d6-export"]),
+    expect.arrayContaining(["setup-counts", "f1-no-photo", "f1-page", "f2-count", "f2-distinct", "f3-brazil-list", "f3-not-in", "f4-top-dataset", "f4-running", "d1-constraints", "d1-check-null", "d1-ex-same-url", "d2-list", "d2-sources", "d2-update-anomaly", "d2-delete-anomaly", "d2-ex-two-titles", "d6-export"]),
   );
   expect(offOrigin).toEqual([]);
   await context.close();
@@ -370,6 +370,22 @@ SELECT class, species_id, records, place, share_pct FROM ranked WHERE place <= 3
     sql: D1_TABLE.replace("url        VARCHAR NOT NULL UNIQUE", "url        VARCHAR NOT NULL") + D1_FILL,
     hint: `d1-ex-same-url should fail after your answer with "PRIMARY KEY or UNIQUE constraint violation", but it ran without an error.`,
   },
+  // No key on r_datasets: the counts and the join are right, but a second title for a dataset goes in.
+  "d2-ex": {
+    sql: `CREATE TABLE r_species (species_id INTEGER PRIMARY KEY, common_name VARCHAR NOT NULL);
+CREATE TABLE r_datasets (dataset_key VARCHAR NOT NULL, title VARCHAR NOT NULL, publisher VARCHAR NOT NULL);
+CREATE TABLE r_records (id BIGINT PRIMARY KEY, species_id INTEGER NOT NULL REFERENCES r_species (species_id), dataset_key VARCHAR NOT NULL, license VARCHAR NOT NULL);
+INSERT INTO r_species SELECT DISTINCT species_id, common_name FROM records_flat;
+INSERT INTO r_datasets SELECT DISTINCT dataset_key, title, publisher FROM records_flat;
+INSERT INTO r_records SELECT id, species_id, dataset_key, license FROM records_flat;
+CREATE VIEW r_joined AS
+SELECT r.id, r.species_id, s.common_name, r.dataset_key, d.title, d.publisher, r.license
+FROM r_records AS r JOIN r_species AS s ON s.species_id = r.species_id JOIN r_datasets AS d ON d.dataset_key = r.dataset_key;
+SELECT (SELECT count(*) FROM r_species) AS species, (SELECT count(*) FROM r_datasets) AS datasets, (SELECT count(*) FROM r_records) AS records,
+       (SELECT count(*) FROM (SELECT * FROM records_flat EXCEPT SELECT * FROM r_joined)) AS lost,
+       (SELECT count(*) FROM (SELECT * FROM r_joined EXCEPT SELECT * FROM records_flat)) AS added;`,
+    hint: `d2-ex-two-titles should fail after your answer with "PRIMARY KEY or UNIQUE constraint violation", but it ran without an error.`,
+  },
   // No Unknown member: the records without a year fall out of the fact, so it no longer reconciles.
   "d6-ex": {
     sql: `CREATE TABLE dim_decade (decade INTEGER PRIMARY KEY, label VARCHAR NOT NULL);
@@ -420,7 +436,7 @@ test("every exercise and skip check rejects a fixed wrong answer and accepts its
       seen.push(b.id);
     }
   }
-  expect(seen).toEqual(expect.arrayContaining(["f1-skip", "f1-ex", "f2-skip", "f2-ex", "f3-skip", "f3-ex", "f4-skip", "f4-ex", "d1-ex", "d6-ex"]));
+  expect(seen).toEqual(expect.arrayContaining(["f1-skip", "f1-ex", "f2-skip", "f2-ex", "f3-skip", "f3-ex", "f4-skip", "f4-ex", "d1-ex", "d2-ex", "d6-ex"]));
   expect(offOrigin).toEqual([]);
   await context.close();
 });
