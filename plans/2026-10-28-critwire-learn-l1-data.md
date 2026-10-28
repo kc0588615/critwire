@@ -777,7 +777,7 @@ Every step:
   - First: CD11 (sha256 mismatch refuses, writes nothing); NE1 (snapshot = 002 §6's ten fields per unit + `release`, `commit`, `fields`, `retrieved`; keys sorted; no geometry).
   - Run: `pnpm ingest naturalearth 2>> $M/ingest-naturalearth.log`.
   - Verify: `T`; `pnpm ingest` usage lists 4 sources; `pnpm derive`: no diff; `B`, `H`.
-- [ ] S4 · Countries matcher + derive (D4, D7)
+- [x] S4 · Countries matcher + derive (D4, D7)
   - Files: `scripts/derive/naturalearth.ts` + `.test.ts` (fixtures from A1's spike `test/fixtures/`), `scripts/derive/pipeline.ts` (`deriveCore` gains countries; `derivedFiles` + `data/countries.json`), `scripts/derive.ts`, `data/countries.json`.
   - First: CD1–CD10 (port of A1's `test/countries-draft.test.ts`); NE2 (`release`, `commit` or `fields` ≠ constants → "data/raw/naturalearth is stale: run pnpm ingest naturalearth").
   - Verify: `T`; `pnpm derive` writes 250 rows, equal to `SP/data/v1/countries.json`'s (`jq`); `B`, `H`.
@@ -988,6 +988,7 @@ What can go wrong across steps, and what the session does. `MISSION_BLOCKED` onl
 - S2: Open risk 7 closed. `lock_timeout` (set with `set_config(…, true)`, = `SET LOCAL`) bounds `pg_advisory_xact_lock` waits on PG16: G5 refused at ~0.3 s. No switch to `pg_try_advisory_xact_lock`. The 55P03 error is rethrown naming `critwire.load` and the wait. G6/G7 were green before the change (the existing transaction + advisory lock already gave them); kept as SC3 regression cases.
 - A22 (planner): Release smoke loads the live loader with `psql -X -v ON_ERROR_STOP=1 -d "$LEARN_PG_URL" -f` (still `critwire_dev`, as `critwire_lab`), not the brief's `-d critwire_dev` as superuser: a superuser load would leave `learn_curriculum` owned by `critter-ai`, so `critwire_lab` (and L2's `learn:check`) could no longer replace it.
 - S3: NE snapshot `fields` is per layer, 10 each, sorted (countries: ADMIN; map_units: GEOUNIT in its place; both keep ADM0_A3, ISO_A3_EH, TYPE, ISO_A2(_EH), NAME_EN, CONTINENT, REGION_UN, SUBREGION). Snapshot also keeps `files` (pinned URL + sha256) as provenance. `getBytes` requires a sha256 pin; `getJson` and it share one paced retry loop (`getOk`). A1's two NE fixtures copied to `scripts/fixtures/` (S4 reuses them).
+- S4: countries added to `deriveAll` as is; the `deriveCore`/`deriveLearn` split waits for S14 (no learn half yet). `matchCountries(layers, {speciesCodes, gbifCodes})`: GBIF enumeration codes (`gbif.countries` keys) kept as CD10's cross-check (`notInGbif`, `gbifNotInRows`), printed by derive, never fatal. `data/countries.json` = `{source: {release, commit, retrieved}, rows}`, rows in column order (not canonical). CD8/CD9's Parquet half → S5. Spike's `gbif-country.json` fixture inlined (9 codes).
 
 ## Log
 
@@ -1000,5 +1001,7 @@ What can go wrong across steps, and what the session does. `MISSION_BLOCKED` onl
 - 2026-10-28 07:50 UTC S1: MF1 guard, names-only env log, `test`/`test:db` runners. Red 7 (G1×3, G4, G2×2, G3) → green: test 70/70, test:db 3/3 (and refuses db `postgres`); typecheck ok; build ok; e2e 20/20; dist 157/157 = Baseline.
 - 2026-10-28 07:55 UTC S2: `loadDatabase` lock_timeout 30 s / statement_timeout 120 s (test overrides), named lock-timeout error. Red 1 (G5; G6, G7 green already) → green: test:db 6/6, test 70/70, typecheck ok, build ok, H 155/155.
 - 2026-10-28 07:59 UTC S3: `getBytes` (pinned sha256), ingest dispatcher (`<source> → run()`), `ingest naturalearth` (258 countries + 298 map units, 182 KB). Red 4 (CD11×2, NE1×2) → green: test 74/74, typecheck ok; usage lists 4 sources; derive no diff, DOI current; build ok; H 155/155.
+
+- 2026-10-28 08:03 UTC S4: `derive/naturalearth.ts` matcher + NE2 freshness; derive writes `data/countries.json`. Red 10 (CD1–CD10, NE2) → green: test 84/84, typecheck ok; derive 250 rows = spike `countries.json` (jq diff empty), 11 map_units, 4 folds, GBIF 250 both ways, DOI current; build ok; H 155/155.
 
 ## Summary

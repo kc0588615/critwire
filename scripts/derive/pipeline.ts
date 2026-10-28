@@ -4,13 +4,14 @@ import { readFile } from "node:fs/promises";
 import { relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { formatJson, readJson } from "../json.ts";
-import { readSnapshot, type ColSnapshot, type GbifSnapshot, type WikidataSnapshot } from "../raw.ts";
+import { readSnapshot, type ColSnapshot, type GbifSnapshot, type NaturalEarthSnapshot, type WikidataSnapshot } from "../raw.ts";
 import { baseFile, mismatchesFile, overridesFile, speciesFile, validateBase, type BaseSpecies, type Mismatch, type Species } from "../species.ts";
 import { contributionsFile, currentDoi, registrationFile, type Contributions, type Registration } from "../gbif/derived-dataset.ts";
 import { deriveCol } from "./col.ts";
 import { gbifContributions } from "./contributions.ts";
 import { deriveCountries, parseOverrides } from "./countries.ts";
 import { deriveGbif } from "./gbif.ts";
+import { assertNaturalEarthFresh, countriesFile, matchCountries, type CountriesFile, type CountriesResult } from "./naturalearth.ts";
 import { buildRecord } from "./record.ts";
 import { assertWikidataFresh, bindingsByName, deriveWikidata } from "./wikidata.ts";
 
@@ -19,13 +20,22 @@ export interface DeriveInputs {
   wikidata: WikidataSnapshot;
   col: ColSnapshot;
   gbif: GbifSnapshot;
+  naturalearth: NaturalEarthSnapshot;
   overrides: unknown;
   // data/gbif-derived-dataset/registration.json, null until pnpm gbif:register writes it.
   registration: Registration | null;
 }
 
 // doi: the registration's DOI when it matches the contributions, else null (gbif/derived-dataset.ts currentDoi).
-export interface DeriveResult { records: Species[]; entries: Mismatch[]; contributions: Contributions; doi: string | null }
+// countries: data/countries.json; countriesReport: how each code matched (derive prints it).
+export interface DeriveResult {
+  records: Species[];
+  entries: Mismatch[];
+  contributions: Contributions;
+  doi: string | null;
+  countries: CountriesFile;
+  countriesReport: CountriesResult["report"];
+}
 
 const byText = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
 const root = fileURLToPath(new URL("../../", import.meta.url));
@@ -36,6 +46,7 @@ export async function readDeriveInputs(): Promise<DeriveInputs> {
     wikidata: await readSnapshot("wikidata"),
     col: await readSnapshot("col"),
     gbif: await readSnapshot("gbif"),
+    naturalearth: await readSnapshot("naturalearth"),
     overrides: await readJson<unknown>(overridesFile),
     registration: await readOptionalText(registrationFile).then((text) => (text === null ? null : JSON.parse(text) as Registration)),
   };
@@ -47,12 +58,13 @@ function assertNames(source: string, keys: string[], base: BaseSpecies[]): void 
   if ([...keys].sort(byText).join("\n") !== want) throw new Error(`data/raw/${source} is stale: run pnpm ingest ${source}`);
 }
 
-// Validates every input and derives the records (sorted by id), the review entries, the GBIF contributions and the
-// DOI the countries entries cite. Pure.
-export function deriveAll({ base: unsorted, wikidata, col, gbif, overrides: rawOverrides, registration }: DeriveInputs): DeriveResult {
+// Validates every input and derives the records (sorted by id), the review entries, the GBIF contributions, the
+// DOI the countries entries cite and the countries rows. Pure.
+export function deriveAll({ base: unsorted, wikidata, col, gbif, naturalearth, overrides: rawOverrides, registration }: DeriveInputs): DeriveResult {
   validateBase(unsorted);
   const base = [...unsorted].sort((a, b) => a.id - b.id);
   assertWikidataFresh(wikidata, base);
+  assertNaturalEarthFresh(naturalearth);
   assertNames("col", Object.keys(col.matches), base);
   assertNames("gbif", Object.keys(gbif.species), base);
   const overrides = parseOverrides(rawOverrides, new Set(base.map((s) => s.id)));
@@ -84,15 +96,21 @@ export function deriveAll({ base: unsorted, wikidata, col, gbif, overrides: rawO
     gbif: { retrieved: gbif.retrieved, checklist: gbif.checklist, url: gbif.species[s.scientificName].match.url, id: g.id, occurrencesUrl: occurrences?.url ?? null, countries: k.value, rangeStatus: k.status, doi },
   }));
   entries.sort((a, b) => a.speciesId - b.speciesId || byText(a.field, b.field) || byText(a.kind, b.kind) || byText(a.country ?? "", b.country ?? ""));
-  return { records, entries, contributions, doi };
+  const { rows, report: countriesReport } = matchCountries(naturalearth.layers, {
+    speciesCodes: records.flatMap((r) => r.range.countriesWithOpenRecords ?? []),
+    gbifCodes: Object.keys(gbif.countries),
+  });
+  const { release, commit, retrieved } = naturalearth;
+  return { records, entries, contributions, doi, countries: { source: { release, commit, retrieved }, rows }, countriesReport };
 }
 
 // Every file pnpm derive writes, with its content and format (canonical: keys sorted, json.ts formatJson).
-export function derivedFiles({ records, entries, contributions }: DeriveResult): { file: URL; value: unknown; canonical: boolean }[] {
+export function derivedFiles({ records, entries, contributions, countries }: DeriveResult): { file: URL; value: unknown; canonical: boolean }[] {
   return [
     { file: speciesFile, value: records, canonical: false },
     { file: mismatchesFile, value: entries, canonical: false },
     { file: contributionsFile, value: contributions, canonical: true },
+    { file: countriesFile, value: countries, canonical: false },
   ];
 }
 
