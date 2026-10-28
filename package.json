@@ -9,7 +9,7 @@
   },
   "scripts": {
     "build": "tsx scripts/build.ts",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p site/learn/tsconfig.json",
     "seed:cc": "tsx scripts/seed-cc.ts",
     "db:load": "tsx scripts/load.ts",
     "ingest": "tsx scripts/ingest.ts",
@@ -31,7 +31,9 @@
     "typescript": "^7.0.2"
   },
   "dependencies": {
+    "@duckdb/duckdb-wasm": "1.33.1-dev65.0",
     "@duckdb/node-api": "1.5.6-r.2",
+    "esbuild": "0.28.2",
     "postgres": "^3.4.9"
   }
 }

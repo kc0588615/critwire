@@ -1,0 +1,4 @@
+/* Learn's one stylesheet (plan D11), bundled as learn-<hash>.css. The layout and its parts land with the pages. */
+:root {
+  color-scheme: light dark;
+}

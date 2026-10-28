@@ -1,7 +1,9 @@
 // Serving (plan §9 serving): Range, CORS preflight and cross-origin fetches against the local copy of the live
-// Caddy block, and a drift check of that copy against the ops Caddyfile.
+// Caddy block, and a drift check of that copy against the ops Caddyfile. Learn's assets (plan D13 serving, S10): the
+// .wasm files as application/wasm, and every /learn/assets/ file with the build's fixed mtime as Last-Modified.
 import { expect, test } from "@playwright/test";
-import { readFile } from "node:fs/promises";
+import { readdir, readFile } from "node:fs/promises";
+import { join, relative } from "node:path";
 import { accessLog, distPath, repoPath, SECOND_ORIGIN, tag } from "./helpers.ts";
 
 const OPS_CADDYFILE = "/srv/critter-ai/ops/config/etc/caddy/Caddyfile";
@@ -85,4 +87,17 @@ test("cross-origin fetch without a preflight: species.json parses", async ({ pag
   const length = await page.evaluate(async () => (await (await fetch("http://127.0.0.1:3100/v1/species.json")).json()).length);
   const data = JSON.parse(await readFile(distPath("v1/species.json"), "utf8"));
   expect(length).toBe(data.length);
+});
+
+test("Learn assets: .wasm as application/wasm, Last-Modified 2000-01-01 on every file", async ({ request }) => {
+  const dir = distPath("learn/assets");
+  const files = (await readdir(dir, { recursive: true, withFileTypes: true }))
+    .filter((e) => e.isFile()).map((e) => relative(dir, join(e.parentPath, e.name))).sort();
+  expect(files.filter((f) => f.endsWith(".wasm")).length).toBe(2);
+  for (const f of files) {
+    const res = await request.head(`/learn/assets/${f}`);
+    expect(res.status(), f).toBe(200);
+    expect(res.headers()["last-modified"], f).toBe("Sat, 01 Jan 2000 00:00:00 GMT");
+    if (f.endsWith(".wasm")) expect(res.headers()["content-type"], f).toBe("application/wasm");
+  }
 });

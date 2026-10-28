@@ -11,6 +11,7 @@ Open curated species data at critwire.com, dogfooded by Critter Connect (repo `k
 - Postgres 16 + PostGIS 3.4.2 on the Oracle VPS. No PostGIS 3.5-only functions.
 - `@duckdb/node-api` (pinned) writes Parquet and CSV from `data/species.json`; no DuckDB extensions at build time (build is offline).
 - Python via `uv` (`/usr/local/bin/uv`) in `.venv-learn/` (gitignored; `pnpm learn:venv`), pins in `site/learn/labs/requirements.txt`; for `ingest shapes` only. Build stays Node.
+- Learn's browser app: `@duckdb/duckdb-wasm` (pin in `site/learn/src/assets.ts`; build refuses another installed version) + parquet extension mirror committed in `site/learn/duckdb-ext/` (sha256 pinned in `scripts/build/learn/assets.ts`); bundled by `esbuild` (pinned) from `site/learn/src/`. `dist/learn/assets/`: mtime fixed 2000-01-01, so every path there must be versioned or content-hashed (build refuses others).
 - E2E: `@playwright/test` (pinned), headless Chromium, local Caddy copy of the live block (`e2e/Caddyfile`, `admin off`, ports 3100/3101).
 
 ## Prefer simplicity
@@ -40,7 +41,7 @@ GitHub `origin` is the hub; only pushed work exists on the other machine.
 - VPS setup (Postgres, Caddy, CORS) is done from the Oracle control room, not from here.
 
 ## Commands
-- `pnpm install`, `pnpm typecheck`, `pnpm test` (`scripts/**/*.test.ts`: pure, offline), `pnpm test:db` (`scripts/**/*.dbtest.ts`: `critwire_dev` only, refuses any other db).
+- `pnpm install`, `pnpm typecheck` (root + `site/learn/tsconfig.json`, DOM, no node types), `pnpm test` (`scripts/**/*.test.ts`: pure, offline), `pnpm test:db` (`scripts/**/*.dbtest.ts`: `critwire_dev` only, refuses any other db).
 - `pnpm build [--draft]`: offline. Re-runs derive in-process and refuses derived files that differ (`data/<file> is stale: run pnpm derive`); loads `DATABASE_URL` (advisory lock); writes `dist/` (`index.html`, `v1/species.{json,parquet,csv}`, `v1/species/{id,slug}.json`, `v1/countries.{json,parquet,csv}`, `v1/attribution.json`, `learn/data/`: index, `manifest.json`, lab files, `postgis/learn_curriculum.sql`, `star/`: d6's `d6-star-*` blocks run in DuckDB, one CSV per table + `manifest.json`). Plain build refuses a star block whose DuckDB result differs from its `checked/<id>.txt` (`--draft` warns). Refuses `dist/learn/data/` or the committed lab data (`data/raw/gbif-sample/`, `data/learn/`, `data/gbif-learn-sample/`) over 50,000,000 bytes. Plain build refuses a missing/stale DOI (countries or learn-sample); `--draft` builds without them (preview only, never deploy), never with a stale sample. Plain build refuses a lab `learn:check` didn't prove as committed (`site/learn/labs/checked/checked.json`: "lab <id> is stale: run pnpm learn:check"); `--draft` warns. Loop: `pnpm build --draft && pnpm learn:check && pnpm build`.
 - `pnpm e2e` (after `pnpm build`): Playwright suite; artifacts in `E2E_ARTIFACTS` (default `e2e-artifacts/`).
 - `pnpm erd [--force]`: draws `site/learn/erd/{schema,lab,star}.svg` from their `.mmd`, offline (mermaid in Playwright's Chromium, every request refused); only stale ones unless `--force`. Commit them: build refuses a missing or stale SVG ("site/learn/erd/lab.svg is stale: run pnpm erd").

@@ -71,22 +71,5 @@ export const SOURCES: Record<string, RegisteredSource> = {
   "critwire base": { url: "https://github.com/kc0588615/critwire/blob/main/data/base.json", citation: CRITWIRE_CREDIT },
 };
 
-// Deed URL per license string in the data (sources and photos); null where there is no license (public domain).
-export const LICENSE_URLS: Record<string, string | null> = {
-  "Public domain": null,
-  "CC0": "https://creativecommons.org/publicdomain/zero/1.0/",
-  "CC0 1.0": "https://creativecommons.org/publicdomain/zero/1.0/",
-  "CC BY 2.0": "https://creativecommons.org/licenses/by/2.0/",
-  "CC BY 2.5": "https://creativecommons.org/licenses/by/2.5/",
-  "CC BY 4.0": "https://creativecommons.org/licenses/by/4.0/",
-  "CC BY-SA 2.0": "https://creativecommons.org/licenses/by-sa/2.0/",
-  "CC BY-SA 2.0 de": "https://creativecommons.org/licenses/by-sa/2.0/de/",
-  "CC BY-SA 2.5": "https://creativecommons.org/licenses/by-sa/2.5/",
-  "CC BY-SA 3.0": "https://creativecommons.org/licenses/by-sa/3.0/",
-  "CC BY-SA 4.0": "https://creativecommons.org/licenses/by-sa/4.0/",
-};
-
-export function licenseUrl(license: string): string | null {
-  if (!Object.hasOwn(LICENSE_URLS, license)) throw new Error(`unknown license "${license}": add it to LICENSE_URLS in scripts/build/sources.ts`);
-  return LICENSE_URLS[license];
-}
+// The deed links live in licenses.ts (import-free, so the browser bundle shares them; plan F5).
+export { LICENSE_URLS, licenseUrl } from "./licenses.ts";
