@@ -1,0 +1,18 @@
+# Lab Python stack (plan T4). Lower bounds from T4; exact pins in requirements.txt (uv pip compile --universal).
+numpy
+pandas
+pyarrow
+scipy
+shapely>=2.0
+pyproj
+pyogrio
+geopandas>=1.0
+libpysal>=4.10
+esda>=2.6
+pointpats
+mapclassify
+matplotlib
+psycopg[binary]
+SQLAlchemy
+GeoAlchemy2
+requests

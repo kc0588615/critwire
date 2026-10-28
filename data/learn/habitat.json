@@ -1,0 +1,33 @@
+{
+  "files": {
+    "country_habitats.parquet": {
+      "built": "/srv/critter-ai/agent-state/missions/critwire-learn-spatial-design/spike/scripts/grown-data.ts: TT and AX only; method 3 of E3c (v004 1 km level-2 fractions × geodesic cell area, https://zenodo.org/api/records/4058819/files/lvl2_frac_1km_ver004.zip/content) over Natural Earth v5.1.2 shapes; km² rounded to 0.01, estimated",
+      "bytes": 850,
+      "copiedFrom": {
+        "path": "/srv/critter-ai/agent-state/missions/critwire-learn-curriculum/spike/data/learn/country_habitats.parquet",
+        "sha256": "e597fe9011bb605615357aa85b2b8432eae23129f1ebed7b19a07e8bcdb88f1d"
+      },
+      "rows": 35,
+      "sha256": "e597fe9011bb605615357aa85b2b8432eae23129f1ebed7b19a07e8bcdb88f1d"
+    },
+    "habitat_classes.parquet": {
+      "built": "/srv/critter-ai/agent-state/missions/critwire-learn-spatial-design/spike/scripts/grown-data.ts: v004 legend (member Habitatmapping-004/IUCN_mapping_legend.xlsx of https://zenodo.org/api/records/4058819/files/iucn_habitatclassification_code_ver004.zip/content), mapped classes only, names without their class number",
+      "bytes": 2488,
+      "copiedFrom": {
+        "path": "/srv/critter-ai/agent-state/missions/critwire-learn-curriculum/spike/data/learn/habitat_classes.parquet",
+        "sha256": "2539cb826ee2ed5a14068bccb37f9c3ee5e1940e4c2e179fb6f105b75bd210f4"
+      },
+      "rows": 75,
+      "sha256": "2539cb826ee2ed5a14068bccb37f9c3ee5e1940e4c2e179fb6f105b75bd210f4"
+    }
+  },
+  "note": "Stand-ins until L3's pnpm ingest habitat rebuilds these files and takes over this file. Byte copies of the critwire-learn-curriculum spike's data/learn/, which copied them from the critwire-learn-spatial-design spike's data/v1/ (its scripts/grown-data.ts).",
+  "source": {
+    "citation": "Jung, M., Dahal, P.R., Butchart, S.H.M., Donald, P.F., De Lamo, X., Lesiv, M., Kapos, V., Rondinini, C., Visconti, P. (2020). A global map of terrestrial habitat types. Scientific Data 7, 256. https://doi.org/10.1038/s41597-020-00599-8. Version 004, https://doi.org/10.5281/zenodo.4058819 (CC BY 4.0).",
+    "doi": "10.5281/zenodo.4058819",
+    "license": "CC BY 4.0",
+    "name": "Jung et al. 2020, habitat map v004",
+    "url": "https://doi.org/10.5281/zenodo.4058819"
+  },
+  "standIn": true
+}

@@ -786,7 +786,7 @@ Every step:
   - First: the E2E cases (D15: countries.spec incl. k01 = 0 unmatched; the attribution entry; the docs lines), red on the old build.
   - Save `/srv/apps/critwire/.live/v1/attribution.json` as `$M/baseline/attribution.json` after checking its sha256 = `dist.sha256`'s `./v1/attribution.json` line.
   - Verify: `T`, `E`, `H`; `diff <(jq -S '.sources |= map(select(.source != "Natural Earth"))' dist/v1/attribution.json) <(jq -S . $M/baseline/attribution.json)` empty; two builds give identical `dist/v1/countries.*`.
-- [ ] S6 · `uv`, `.venv-learn`, habitat stand-ins (D2, D3; A1, A20)
+- [x] S6 · `uv`, `.venv-learn`, habitat stand-ins (D2, D3; A1, A20)
   - Root: `uv` 0.13.5 to `/usr/local/bin/{uv,uvx}` from `SP/downloads/uv-0.13.5/` (sha256 `4bb69cf9…c403` checked first); record in `/srv/critter-ai/ops/docs/vps.md`.
   - Files: `site/learn/labs/requirements.{in,txt}` (= `SP/requirements.*`), `package.json` (`learn:venv`), `.gitignore` (`.venv-learn/`), `data/learn/{habitat_classes,country_habitats}.parquet` (byte copies of `SP/data/learn/`), `data/learn/habitat.json`.
   - First: none (no logic).
@@ -990,6 +990,7 @@ What can go wrong across steps, and what the session does. `MISSION_BLOCKED` onl
 - S3: NE snapshot `fields` is per layer, 10 each, sorted (countries: ADMIN; map_units: GEOUNIT in its place; both keep ADM0_A3, ISO_A3_EH, TYPE, ISO_A2(_EH), NAME_EN, CONTINENT, REGION_UN, SUBREGION). Snapshot also keeps `files` (pinned URL + sha256) as provenance. `getBytes` requires a sha256 pin; `getJson` and it share one paced retry loop (`getOk`). A1's two NE fixtures copied to `scripts/fixtures/` (S4 reuses them).
 - S4: countries added to `deriveAll` as is; the `deriveCore`/`deriveLearn` split waits for S14 (no learn half yet). `matchCountries(layers, {speciesCodes, gbifCodes})`: GBIF enumeration codes (`gbif.countries` keys) kept as CD10's cross-check (`notInGbif`, `gbifNotInRows`), printed by derive, never fatal. `data/countries.json` = `{source: {release, commit, retrieved}, rows}`, rows in column order (not canonical). CD8/CD9's Parquet half → S5. Spike's `gbif-country.json` fixture inlined (9 codes).
 - S5: D9.2's helper is `withOfflineDuckDb(fn)` (opens, runs, always closes) plus `sqlText`/`sqlPath`, not `openOfflineDuckDb`; `searchPath` is added when S18 needs it. `enable_geoparquet_conversion` is parquet's setting, unknown at `DuckDBInstance.create`, so it is `SET` on the connection. `RegisteredSource.citation` is fixed text or a function (Natural Earth has no record `Source` to pass); Wikidata and critwire base became text, bytes unchanged. The docs page gets its own `#countries` section (field list, Natural Earth note, `NA` note) plus a species × countries SQL example; the `/learn/data/` link waits for S22 (the page doesn't exist yet; S22 lists `site/index.html`). Baseline `attribution.json` saved (sha256 = `dist.sha256`'s).
+- S6: `uv` 0.13.5 installed as root (tarball sha256 checked), recorded in ops `docs/vps.md` (ops commit `ac510e9`, local repo, no remote). `learn:venv` = `uv venv --allow-existing` (uv refuses an existing venv otherwise) + `uv pip sync --no-build`, `UV_PYTHON_DOWNLOADS=never`. Venv: Python 3.12.3, shapely 2.2.0 (GEOS 3.14.1), pyogrio 0.13.0 (GDAL 3.12.4), pyarrow 26.0.0, numpy 2.5.4. `habitat.json` (canonical keys): `source` {name, citation (003 §5's Jung credit), doi, url, license `CC BY 4.0`}, `standIn: true`, `note`, and per file `bytes`, `rows` (75; 35), `sha256`, `built` (A2's method), `copiedFrom {path, sha256}`. No `columns` (canonical sort would scramble their order; the build reads them from the Parquet).
 
 ## Log
 
@@ -1005,5 +1006,6 @@ What can go wrong across steps, and what the session does. `MISSION_BLOCKED` onl
 
 - 2026-10-28 08:02 UTC S4: `derive/naturalearth.ts` matcher + NE2 freshness; derive writes `data/countries.json`. Red 10 (CD1–CD10, NE2) → green: test 84/84, typecheck ok; derive 250 rows = spike `countries.json` (jq diff empty), 11 map_units, 4 folds, GBIF 250 both ways, DOI current; build ok; H 155/155.
 - 2026-10-28 08:08 UTC S5: `/v1/countries.{json,csv,parquet}` (DuckDB, all VARCHAR), Natural Earth attribution entry, docs `#countries` + files + example, 004 §B fix. Red 9 (countries ×5, attribution ×2, docs ×2 incl. sections, duckdb ×1) → green: e2e 27/27 (0 skipped, k01 107 used / 0 unmatched), test 84/84, test:db 6/6, typecheck ok, build ok; H 155/155; attribution jq diff empty; two builds identical countries sha256s; CSV 251 lines.
+- 2026-10-28 08:10 UTC S6: uv 0.13.5 in /usr/local/bin (+ ops vps.md), `pnpm learn:venv` (44 pins; 2nd run no-op), requirements.{in,txt} = SP, habitat stand-ins + `habitat.json`. No logic, no new tests: imports ok, habitat sha256 = habitat.json = SP, typecheck ok, test 84/84.
 
 ## Summary
