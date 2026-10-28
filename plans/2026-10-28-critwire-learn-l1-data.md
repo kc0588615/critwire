@@ -198,7 +198,7 @@ The review's numbering: MF = MUST-FIX, SC = SHOULD-CHANGE.
 
 - [x] Baseline: install, migrate, run typecheck, lint, unit and E2E tests; record the results under Baseline
 - [x] Architecture: `architect` writes findings and the target design
-- [ ] Fable review: `architecture-reviewer`
+- [x] Fable review: `architecture-reviewer`
 - [ ] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
 - [ ] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
 - [ ] Steps: `planner` writes Steps and Verification
@@ -587,6 +587,27 @@ None is rejected.
 
 ## Architecture review (Fable)
 
+Fable 5.1, 2026-10-28, on `4bfb653`. Checked F1–F13 against the cited lines (`scripts/db.ts`, `env.ts`, `db/schema.sql`, `derive/pipeline.ts`, `ingest/gbif.ts`, `http.ts`, `json.ts`, `build.ts`, `build/inputs.ts`, `build/attribution.ts`, `species.ts`, `derive/wikidata.ts`, `gbif/*.ts`, `gbif-register.ts`, `package.json`), the spike (`loader.ts:191,238–250`, `pg.ts:12–14`, `sample_rules.py:59–72`, `shapes.py` tolerance loop, `downloads/SOURCES.md` pins), 004 lines 505/844/2350–2351/8050/274–286, `e2e/Caddyfile` (`file_server` on the whole root, so `/learn/data/` needs no Caddy change), live `critwire_dev` (ACL `{critwire=CTc/critwire}`, both `learn_*` schemas owned by `critter-ai`), `ensurepip` missing, `uv` absent. Every finding is real and every line reference is right; the 1:50m pins are GeoJSON (TS can read the attributes), 0.05° is the tolerance the spike kept, `data/species.json` has 0 `replacedBy` records today.
+
+VERDICT: APPROVE_WITH_CHANGES
+
+MUST-FIX:
+1. **D10 step 9 / D15 LD5, the forced failure is non-deterministic as written.** "A copy cut inside the `occurrences` COPY" fails only if the cut lands mid-row. On a row boundary psql ends the COPY at EOF, never reaches `COMMIT`, exits 0, and the open transaction is rolled back by the disconnect: the schema stays intact but "psql must fail" is false and the test flakes. Define the forced failure as an injected invalid row (one that trips a NOT NULL, FK or SC5 CHECK) or a cut inside a row, and assert both the non-zero exit and the unchanged counts/md5.
+2. **D11 `loadEnv` logging must be names-only, stated explicitly.** "Logs each variable that both sources set and which source won. For `DATABASE_URL` it logs only the database name" reads as if other values may be printed; `.env` also holds `GBIF_PASSWORD` and, after `--setup`, `LEARN_PG_URL`. Spell out: the log line carries the variable name and the winning source, never a value; `DATABASE_URL`/`LEARN_PG_URL` at most the database name. Add it to G4's redaction case.
+
+MISSED:
+- **Adding or renaming a species now blocks `deploy`.** D7's freshness rule (`download.request` = `downloadRequest(ids.gbif)`) means any `base.json` change that touches `ids.gbif` makes the sample stale: plain `pnpm build` (so `deploy`) refuses until a new GBIF download (~17 min), `ingest gbif-sample`, derive and a new `learn-sample` DOI. Right per MF3 and 004, but nowhere stated; AGENTS.md (D17) and the Summary must say that a species change costs a download and a DOI, and that `--draft` doesn't lift it.
+- **D9.5's `replacedBy` refusal couples `/v1` to Learn.** The first retired species fails the whole build, `/v1` included, until L2's junction exists. Acceptable today (0 retired) but AGENTS.md must say so next to `replacedBy`, so a retirement isn't attempted before the junction.
+- **`e2e/helpers.ts` `assertBuilt` only compares `dist/v1/species.json` to `data/`.** A stale `dist/learn/data/` after a sample, shape or stand-in change passes global setup. Extend it to the manifest's `inputs` and the sample's sha256 (one more read; no new mechanism).
+- **D4 touches `Source.release`'s type.** `release: { key, alias, version, issued }` is what `colCitation` reads (`sources.ts:26–31`). Natural Earth is never a record `Source`, only an attribution entry; type the subset on the attribution entry, not on `Source`, or `colCitation` needs a new guard for a case that can't occur.
+
+SHOULD-CONSIDER:
+1. D9.4 `LAB_CHECKS` run in two engines: add one violating fixture per check and prove each query counts it in both DuckDB and Postgres (`'Infinity'`, NaN ordering and integer division differ enough to pass in one and not the other). Build-time DuckDB passing while Postgres raises is loud but late.
+2. D10 `--setup` rewriting `./.env`: preserve every other line and the mode byte for byte (parse, replace one key, atomic rename); a password reset invalidates `/srv/critter-ai/critwire/.env`'s copy, so say so in AGENTS.md.
+3. The two habitat stand-ins (D3) have no provenance file: give them a `data/learn/habitat.json` like `shapes.json` (source, license, sha256) so the build's sha256 check and `credits()` cover all six `data/learn/` files from data, not from a Decisions line.
+4. D12 "absorbs `assertRecordKeys`": that function lives in `build/columns.ts` with the DuckDB column list; pulling it into `species.ts` imports build code into derive. Keep the key list shared and the check in one place without crossing the layer.
+5. D6 reuse of `download.json`: `sameRequest` compares `{format, checklistKey, predicate}`; GBIF's echo (`sendNotification`, `interpretedExtensions`, `type`) is dropped on purpose. State that in the code comment so a later reader doesn't "fix" it to a full equality that breaks DL1.
+
 ## Architecture review (Astra)
 
 ## Revision notes
@@ -619,5 +640,6 @@ None is rejected.
 
 - 2026-10-28 06:49 UTC Baseline: typecheck ok, test 66/66, build ok (dist = live), e2e 20/20; baseline hashes + live species.json saved.
 - 2026-10-28 07:16 UTC Architecture: architect wrote F1–F13, D1–D19, review-item map, risks; decisions A1–A13 (uv as root, TS sample ingest, data/issued-ids.json, critwire_lab via --setup, no L1 diagrams). Plan-only, no code; no checks needed.
+- 2026-10-28 07:22 UTC Fable review: APPROVE_WITH_CHANGES, 2 MUST-FIX (deterministic learn:check forced failure; loadEnv logs names only), 4 missed, 5 SHOULD-CONSIDER. Plan-only; no checks needed.
 
 ## Summary
