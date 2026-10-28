@@ -151,7 +151,7 @@ The review's numbering: MF = MUST-FIX, SC = SHOULD-CHANGE.
 
 ## Stages
 
-- [ ] Baseline: install, migrate, run typecheck, lint, unit and E2E tests; record the results under Baseline
+- [x] Baseline: install, migrate, run typecheck, lint, unit and E2E tests; record the results under Baseline
 - [ ] Architecture: `architect` writes findings and the target design
 - [ ] Fable review: `architecture-reviewer`
 - [ ] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
@@ -159,6 +159,20 @@ The review's numbering: MF = MUST-FIX, SC = SHOULD-CHANGE.
 - [ ] Steps: `planner` writes Steps and Verification
 
 ## Baseline
+
+Run 2026-10-28 ~12:05 UTC on `1c19b55` (= `origin/main` `85d5ca3` + this plan), Node 24.21.0, pnpm 11.10.0. Session 1 of the mission.
+- **Precondition:** L1 is live: its plan says `status: done`, its branch's `## Release` says `Result: done`; `/srv/apps/critwire` is at `85d5ca3`; live `https://critwire.com/learn/data/manifest.json` returns 200 and hashes equal to this build's.
+- **Roles/dbs:** `critwire_live` exists and owns `critwire`; `critwire` owns `critwire_dev`; `critwire_lab` exists. `.env`: `DATABASE_URL` and `LEARN_PG_URL` → `critwire_dev`, `CRITWIRE_DB_TARGET=critwire_dev`. The mission has no db of its own (`DB=''`): it uses `critwire_dev`.
+- **Versions** (for SC6's report): PostgreSQL 16.15 (aarch64), PostGIS 3.4.2, GEOS 3.12.1.
+- `pnpm install --frozen-lockfile`: up to date. No migrations (build rebuilds the db). No lint script exists (typecheck is the static check).
+- `pnpm typecheck`: exit 0.
+- `pnpm test`: 285/285 pass, 0 skipped.
+- `pnpm test:db`: before any build 65/78 (13 fail: `dist/ has no Learn files: run pnpm build first`; they read `dist/`); after `pnpm build` 78/78. Run order matters: build first.
+- `pnpm build` (plain): exit 0, 3.9 s; `dist/learn/data/` 35,452,055 B, committed lab data 13,677,679 B (cap 50,000,000).
+- **Baseline hashes:** `sha256sum` of all 172 files in `dist/` → `/srv/critter-ai/agent-state/missions/critwire-learn-l2-site/baseline-dist.sha256` (`index.html` `0986f22d…`, `learn/data/manifest.json` `c756dbcb…`). The DoD's "existing files unchanged" compares against it.
+- `pnpm learn:check`: ok (two loads = manifest's 14 tables, forced failure rolled back, pg-role-smoke 0 left, canary unchanged, leak check empty).
+- `pnpm e2e`: 38/38 pass, 0 skipped/flaky, 25.6 s. Artifacts: `/srv/critter-ai/agent-state/missions/critwire-learn-l2-site/baseline-e2e/`.
+- **Inputs read:** Codex review `/srv/critter-ai/agent-state/reviews/2026-10-28-critwire-db-backend-codex.md` (175 lines; L2's items listed in the brief's addendum); L1's Summary ("For L2": docs link → `/learn/`, d6 "star rebuilt from normalized tables" at 004:4093, `replacedBy` junction, diagram-design setup still to do, Astra SHOULD-CONSIDER `scripts/env.ts:27` `export X=` duplicate detection). Spike at `/srv/critter-ai/agent-state/missions/critwire-learn-curriculum/spike/` present (`src/engine.ts`, `cards.ts`, `format.ts`, `setup.sql`, `run-queries.ts`, …). Current `site/`: `index.html`, `style.css`, `learn/{data,labs,sql}`.
 
 ## Architecture
 
@@ -179,5 +193,7 @@ The review's numbering: MF = MUST-FIX, SC = SHOULD-CHANGE.
 ## Decisions
 
 ## Log
+
+- 2026-10-28 12:10 UTC · Baseline: typecheck ok, test 285/285, test:db 78/78 (after build), build ok, learn:check ok, e2e 38/38; dist hashes saved.
 
 ## Summary
