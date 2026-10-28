@@ -136,7 +136,7 @@ Estimate with these items: about 34–40 sessions.
 
 - [x] Baseline: install, migrate, run typecheck, lint, unit and E2E tests; record the results under Baseline
 - [x] Architecture: `architect` writes findings and the target design
-- [ ] Fable review: `architecture-reviewer`
+- [x] Fable review: `architecture-reviewer`
 - [ ] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
 - [ ] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
 - [ ] Steps: `planner` writes Steps and Verification
@@ -499,6 +499,25 @@ Then Verification, code review, release.
 
 ## Architecture review (Fable)
 
+Fable 5.1, 2026-10-28, on `de50d8b`. Every cited line checked in the worktree; 003 §5 and 004 §4.3, §4.4, g7 read.
+
+VERDICT: APPROVE_WITH_CHANGES
+
+MUST-FIX:
+1. **Window clips need a handoff item (non-blocking).** Finding 1 is right (12.9 M cells × 2.67 B base64 = 34.5 MB for CR alone; §4.4's cuts can't free that), and the 0.75° windows are the simplest fix. But the brief's deliverable is "clips, Costa Rica and Tasmania" and its rule is "anything that changes … what goes public beyond this brief goes to the owner as a handoff item". What goes public changes: `cr` is the Osa window (68 records, 3 species), not Costa Rica (619 records as g7's Expected says). Fix: add one handoff item (`Blocks: nothing yet`) stating the window bounds, the size arithmetic and that g7 now reads 68 CR records; keep building. The Decision entry stays.
+
+MISSED:
+- `assertHabitatFresh` pins `sample.csv` and `country_shapes.parquet`, but the published record set also depends on `download.json`'s `sampleRules` and `deriveSample`. A rule change leaves both hashes intact and fails later as an FK / `occurrence_habitats_complete` LAB_CHECK, with no "run pnpm ingest habitat" hint. Cheap fix: in `readBuildInputs`, compare `occurrence_habitats.parquet`'s id set with `deriveSample`'s ids (both in memory) and fail with the ingest message.
+- `Provenance.files[].rows` is required (`lab-files.ts:10`); the `.tif` entries make it optional. Name that type change in the step so `shapes.json` readers and `lab-files.test.ts` move together.
+- `readLabFiles` recursive: today the "listed by neither" check sees top-level names only; once recursive it must refuse a stray folder (e.g. an empty `clips/`) the same way it refuses a non-file, or `fileSizes` (recursive) and `readLabFiles` disagree on the cap input.
+
+SHOULD-CONSIDER:
+1. `g7-estimate`: a lon/lat cell's area depends only on its row, so `sum` over `ST_PixelAsCentroids` grouped by row (or `ST_Y` bucket) with one `geography` area per row is ~800 area calls instead of ~700k, and teaches the cos φ point more directly than per-pixel polygons.
+2. Pick the CR window by data, not scenery: the 0.75° square holding the most CR records with ≥ N partition classes; 68 records / 3 species is thin for `g7-records` and `g7-scale`. Record the chosen bounds either way.
+3. `habitat.py` per-layer whole reads (79 × 1.3 GB) plus per-country fancy indexing is fine, but store each country's cell indices once as `(row, col)` arrays sorted by row, so the memory fallback (row bands) is the same code path, not a rewrite.
+4. The loader's per-BLOB SRID message says "geometries"; make it "geometries or rasters" once `habitat_clips.rast` goes through it, so a learner's failure text matches.
+5. `g7-countries` sums 247 outlines' `geography` areas on every `learn:check`; it's the DoD's measurement, so also write the per-country table into `habitat.json`'s `measured` at ingest time (the ingest already has `outline_km2.csv`) and let g7 only read it, keeping the check fast and the numbers in one place.
+
 ## Architecture review (Astra)
 
 ## Revision notes
@@ -520,5 +539,6 @@ Then Verification, code review, release.
 
 - 2026-10-28 22:59 UTC · Baseline: install, typecheck, test 549/549, build, test:db 110/110, learn:check ok, e2e 80/80; sha256 lists recorded.
 - 2026-10-28 23:25 UTC · Architecture: architect wrote findings + target design (clips → 0.75° windows at 100 m; Node pins/tests + Python rasterio decode; `contracts/v1.json`; `docs/recovery.md`; 1,000-row db:load batches; `g2-coverage`). Plan-only; no code checks needed.
+- 2026-10-28 23:28 UTC · Fable review: APPROVE_WITH_CHANGES, 1 MUST-FIX (handoff item for 0.75° windows), 3 missed, 5 should-consider. Plan-only; no code checks needed.
 
 ## Summary
