@@ -1004,6 +1004,6 @@ What can go wrong across steps, and what the session does. `MISSION_BLOCKED` onl
 - 2026-10-28 07:59 UTC S3: `getBytes` (pinned sha256), ingest dispatcher (`<source> → run()`), `ingest naturalearth` (258 countries + 298 map units, 182 KB). Red 4 (CD11×2, NE1×2) → green: test 74/74, typecheck ok; usage lists 4 sources; derive no diff, DOI current; build ok; H 155/155.
 
 - 2026-10-28 08:02 UTC S4: `derive/naturalearth.ts` matcher + NE2 freshness; derive writes `data/countries.json`. Red 10 (CD1–CD10, NE2) → green: test 84/84, typecheck ok; derive 250 rows = spike `countries.json` (jq diff empty), 11 map_units, 4 folds, GBIF 250 both ways, DOI current; build ok; H 155/155.
-- 2026-10-28 08:09 UTC S5: `/v1/countries.{json,csv,parquet}` (DuckDB, all VARCHAR), Natural Earth attribution entry, docs `#countries` + files + example, 004 §B fix. Red 9 (countries ×5, attribution ×2, docs ×2 incl. sections, duckdb ×1) → green: e2e 27/27 (0 skipped, k01 107 used / 0 unmatched), test 84/84, test:db 6/6, typecheck ok, build ok; H 155/155; attribution jq diff empty; two builds identical countries sha256s; CSV 251 lines.
+- 2026-10-28 08:08 UTC S5: `/v1/countries.{json,csv,parquet}` (DuckDB, all VARCHAR), Natural Earth attribution entry, docs `#countries` + files + example, 004 §B fix. Red 9 (countries ×5, attribution ×2, docs ×2 incl. sections, duckdb ×1) → green: e2e 27/27 (0 skipped, k01 107 used / 0 unmatched), test 84/84, test:db 6/6, typecheck ok, build ok; H 155/155; attribution jq diff empty; two builds identical countries sha256s; CSV 251 lines.
 
 ## Summary
