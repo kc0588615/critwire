@@ -902,7 +902,7 @@ Every step:
   - Every row of "Review items assigned to L1" and addendum items 1–11 has a Decisions line: `done (S<n>, <sha>)` (`git log --oneline --grep '^S<n>:'`) or `handed to L3 (H<n>)`. None dropped.
   - Every D16 bullet is in 004 and every D17 bullet in `AGENTS.md` (grep; listed in Log).
   - Dry run: `T`, `D`, `E`, `H`, `pnpm learn:check`. A gap → a new step before Verification.
-- [ ] S32 · Astra code review MUST-FIX 1: sample freshness checks each species' GBIF key, not only the key set
+- [x] S32 · Astra code review MUST-FIX 1: sample freshness checks each species' GBIF key, not only the key set
   - Files: `scripts/learn/sample-files.ts` (`SampleDownload.species: {id, gbif}[]`, sorted by `gbif`), `scripts/ingest/gbif-sample.ts` (writes the `species` list `sampleRows` mapped with, the `byGbif` source), `scripts/derive/sample.ts` (`assertSampleFresh` refuses unless `download.species` equals the core's `{id, gbif}` pairs; the reason names a moved or missing pair).
   - First: two species' `ids.gbif` swapped, sample unchanged → derive refuses (stale, names the species); `download.json` without `species` → refuses (re-run the ingest); clean → passes.
   - Then: live `pnpm ingest gbif-sample --download 0041824-260928105237408` (reuse, ~6 min, 35 MB zip) writes `species` into `download.json`. `sample.csv` must be byte-identical and `contributions.json` unchanged, so the learn-sample DOI stays current. If either differs: don't commit the data (`git checkout data/`), no second registration; handoff item, record under Decisions.
@@ -1052,6 +1052,7 @@ SHOULD-CONSIDER:
   10. SC7 (L1 part): done (S19 75c582a role/`--setup`; S24 ef6cc6c lock, forced failure, cleanup).
   11. 004 corrections: done (D16; S26 812ef79, earlier bullets in their code's commits, located in Log).
 - Astra code review: MUST-FIX 1 accepted (real: `assertSampleFresh` compares the sorted key set, so swapped `ids.gbif` keep stale `species_id`s) → S32. SHOULD-CONSIDER 1 (`env.ts` duplicate detection ignores `export KEY=` / `KEY = v`) not adopted here: goes to the Summary for the owner.
+- Code review MF1: done (S32). `download.json` gains `species` (`{id, gbif}`, sorted by gbif; `sampleSpeciesOf` in `sample-files.ts`, shared by ingest and derive). `assertSampleFresh` checks it after the request (so an `ids.gbif` change still says `--new`) and names every moved, missing or extra pair by species id. A missing list is stale too (re-run the reuse ingest). Live reuse ingest of `0041824-260928105237408`: `sample.csv`, `datasets.json`, `contributions.json` byte-identical; `download.json` only gains 73 pairs, so the learn-sample DOI stays current (no new registration). `targets.ts`' registered description left as is (it still holds; changing it needs no new DOI but would churn the next deposit's text for nothing).
 
 ## Log
 
@@ -1094,5 +1095,6 @@ SHOULD-CONSIDER:
 - 2026-10-28 11:15 UTC S30: SC3 leftovers: `http.ts` Retry-After > 60 s stops (no cap-and-retry), `readJson` names the file, `toDatasetPage` exported. Red 3 (H1 >60 s, H2, H3 import) → green 8; H1 ≤60 s honoured and H4 (per derived file) passed first, existing behaviour. test 284/284, typecheck ok; derive no diff (both DOIs current); plain build ok; e2e 38/38, 0 skipped (`$M/e2e-s30/`); H 155/155.
 - 2026-10-28 11:25 UTC S31: review-items audit: 11/11 addendum items + table rows have a Decisions line with shas; none handed on. D16 in 004: §0 41/272, d2 2361, §3.2 516/872, §4.1 811–812, §4.2 843/847 (md5 then gbifID, displacement)/859/866, §4.3 871/877, §4.4 909, §4.5 925, §6.2 7762–7765, §7.6 8061–8063, §7.7 8074, §B 8309. D17 in AGENTS.md: every bullet grep 1+ (copy line new 1, old 0). Dry run: T typecheck ok, test 284/284; D 78/78, no `learn_t_%` left; plain B ok (dist/learn/data 35,452,055 B, lab data 13,673,945 B); E 38 expected, 0 unexpected/skipped/flaky; H 155 ok; learn:check ok. No gap.
 - 2026-10-28 11:25 UTC Code review (Astra): APPROVE_WITH_CHANGES, 1 MUST-FIX (sample freshness ignores species↔GBIF key pairs; accepted → S32), 1 SHOULD-CONSIDER (env.ts dotenv `export` forms; → Summary). Plan-only; no checks needed.
+- 2026-10-28 11:40 UTC S32: code review MF1: sample freshness checks each species' `{id, gbif}` pair (`download.json` `species`). Red 2 (F9 derive; ingest clean run) → green; DL15 red on real data until the live reuse ingest (35 MB zip, `$M/../ingest-gbif-sample.log`) wrote `species`: sample.csv + contributions sha256 unchanged, download.json +73 pairs only. derive: both DOIs current; T typecheck ok, test 285/285; plain B ok (dist/learn/data 35,452,055 B, lab data 13,677,679 B); E 38 expected, 0 unexpected/skipped/flaky (`$M/e2e-s32/`); H 155 ok. AGENTS.md + 004 §4.2 updated.
 
 ## Summary

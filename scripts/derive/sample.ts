@@ -6,7 +6,7 @@ import { isDeepStrictEqual } from "node:util";
 import { readJson, readOptionalText } from "../json.ts";
 import { currentSampleDoi, sampleRegistrationFile, type Registration, type SampleContributions } from "../gbif/derived-dataset.ts";
 import { downloadRequest, sameRequest } from "../learn/download.ts";
-import { SAMPLE_COLUMNS, sampleDir, type SampleDatasets, type SampleDownload } from "../learn/sample-files.ts";
+import { SAMPLE_COLUMNS, sampleDir, sampleSpeciesOf, type SampleDatasets, type SampleDownload, type SampleSpecies } from "../learn/sample-files.ts";
 import { countryKeys, OPEN_LICENSES, SAMPLE_RULES, type SampleLicense } from "../learn/sample-rules.ts";
 import type { Species } from "../species.ts";
 import type { CountriesFile } from "./naturalearth.ts";
@@ -61,14 +61,30 @@ export async function readLearnInputs(): Promise<LearnInputs> {
 }
 
 // Throws unless data/raw/gbif-sample was ingested for today's species and rules: the request GBIF stored equals
-// downloadRequest over the core's ids.gbif, the rules equal SAMPLE_RULES, and datasets.json is the same download's.
+// downloadRequest over the core's ids.gbif, each species keeps the ids.gbif it was sampled under (the request is a key
+// set: two species swapping keys would send rows to the wrong species), the rules equal SAMPLE_RULES, and datasets.json
+// is the same download's.
 function assertSampleFresh(records: Species[], { download, datasets }: LearnInputs): void {
-  const why = !sameRequest(download.request, downloadRequest(records.flatMap((r) => (r.ids.gbif === null ? [] : [r.ids.gbif]))))
+  const species = sampleSpeciesOf(records);
+  const why = !sameRequest(download.request, downloadRequest(species.map((s) => s.gbif)))
     ? "its request isn't today's downloadRequest: ids.gbif or the filters changed, so run it with --new"
-    : !isDeepStrictEqual(download.sampleRules, SAMPLE_RULES) ? "sampleRules differ from scripts/learn/sample-rules.ts"
+    : !Array.isArray(download.species) ? "download.json has no species list"
+    : movedSpecies(species, download.species)
+    ?? (!isDeepStrictEqual(download.sampleRules, SAMPLE_RULES) ? "sampleRules differ from scripts/learn/sample-rules.ts"
     : datasets.downloadKey !== download.key ? `datasets.json is for download ${datasets.downloadKey}, download.json for ${download.key}`
-    : null;
+    : null);
   if (why !== null) throw new Error(`data/raw/gbif-sample is stale (${why}): run pnpm ingest gbif-sample`);
+}
+
+// Each species whose ids.gbif today differs from the sample's (or that the sample lacks, or has and today's core
+// doesn't), by id; null when every pair matches.
+function movedSpecies(today: SampleSpecies[], sampled: SampleSpecies[]): string | null {
+  const was = new Map(sampled.map((s) => [s.id, s.gbif]));
+  const now = new Map(today.map((s) => [s.id, s.gbif]));
+  const moved = [...new Set([...now.keys(), ...was.keys()])].sort((a, b) => a - b)
+    .filter((id) => now.get(id) !== was.get(id))
+    .map((id) => `species ${id} is GBIF ${now.get(id) ?? "none"}, the sample's ${was.get(id) ?? "none"}`);
+  return moved.length ? moved.join("; ") : null;
 }
 
 // sample.csv's rows, typed: no quoting (the ingest refuses a value that would need it), empty = NULL, sorted by id.

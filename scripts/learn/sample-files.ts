@@ -11,7 +11,16 @@ export const SAMPLE_COLUMNS = [
 ] as const;
 export type SampleRow = Record<(typeof SAMPLE_COLUMNS)[number], string | number | null> & { id: number; species_id: number };
 
-// download.json: the download, GBIF's stored request (creator removed), the zip and the rules.
+// A species of the sample: its id and ids.gbif.
+export interface SampleSpecies { id: number; gbif: number }
+// The species with an ids.gbif, sorted by gbif: download.json's species, which derive compares pair by pair (the
+// request alone is a key set, blind to two species swapping keys).
+export const sampleSpeciesOf = (records: readonly { id: number; ids: { gbif: number | null } }[]): SampleSpecies[] =>
+  sortByGbif(records.flatMap((r) => (r.ids.gbif === null ? [] : [{ id: r.id, gbif: r.ids.gbif }])));
+export const sortByGbif = (species: readonly SampleSpecies[]): SampleSpecies[] => [...species].sort((a, b) => a.gbif - b.gbif);
+
+// download.json: the download, GBIF's stored request (creator removed), the species it was sampled for, the zip and
+// the rules.
 export interface SampleDownload {
   key: string;
   doi: string;
@@ -25,6 +34,7 @@ export interface SampleDownload {
   zip: { bytes: number; sha256: string };
   datasetCounts: Record<string, number>;
   sampleRules: typeof SAMPLE_RULES;
+  species: SampleSpecies[];
 }
 
 // datasets.json: every dataset of the download.

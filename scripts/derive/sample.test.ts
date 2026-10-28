@@ -7,6 +7,8 @@
 // SD5: pnpm derive writes species.json while the sample is stale → deriveAll throws (derive.ts writes only after it).
 // F7: the stored request isn't today's downloadRequest (ids.gbif or filters changed) → stale, names the ingest.
 // F8: download.json's sampleRules or datasets.json's downloadKey differ → stale, names the ingest.
+// F9: two species swap ids.gbif, so the request (a key set) is unchanged but rows would go to the wrong species → stale,
+//     names each moved species; a download.json from before its species list → stale, names the ingest.
 // Plus: a species_id that isn't a species, a license that isn't open, and the DOI only for the same counts and download.
 import { test } from "node:test";
 import assert from "node:assert/strict";
@@ -45,6 +47,7 @@ function inputs(patch: (i: LearnInputs) => void = () => {}): LearnInputs {
   const i: LearnInputs = {
     download: {
       key: KEY, doi: DOI, request: { ...downloadRequest([100, 200]), type: "OCCURRENCE", verbatimExtensions: [] }, sampleRules: structuredClone(SAMPLE_RULES),
+      species: [{ id: 1, gbif: 100 }, { id: 2, gbif: 200 }],
     } as unknown as SampleDownload,
     datasets: { retrieved: "2026-10-28", downloadKey: KEY, datasets: [dataset(D2, "CC BY 4.0"), dataset(D1, "CC0 1.0"), dataset(D3, "CC BY-NC 4.0")] } as SampleDatasets,
     sampleCsv: csv(),
@@ -117,6 +120,20 @@ test("F7 a stored request that isn't today's downloadRequest is stale", () => {
 test("F8 other sampleRules, or datasets.json from another download, is stale", () => {
   assert.throws(() => deriveSample(core, inputs((i) => { (i.download.sampleRules as { cap: number }).cap = 1000; })), /stale \(sampleRules differ/);
   assert.throws(() => deriveSample(core, inputs((i) => { i.datasets.downloadKey = "0000002-260928105237408"; })), /stale \(datasets\.json is for download 0000002-/);
+});
+
+test("F9 species that swapped ids.gbif, or a download.json without its species list, is stale", () => {
+  const swapped = { ...core, records: [{ id: 1, ids: { gbif: 200 } }, { id: 2, ids: { gbif: 100 } }, { id: 3, ids: { gbif: null } }] as unknown as Species[] };
+  assert.throws(() => deriveSample(swapped, inputs()), (e: Error) => {
+    assert.match(e.message, stale);
+    assert.match(e.message, /species 1 is GBIF 200, the sample's 100; species 2 is GBIF 100, the sample's 200/);
+    return true;
+  });
+  const gained = { ...core, records: [...core.records.slice(0, 2), { id: 3, ids: { gbif: 300 } }] as unknown as Species[] };
+  assert.throws(() => deriveSample(gained, inputs((i) => { i.download.request = downloadRequest([100, 200, 300]) as unknown as SampleDownload["request"]; })),
+    /species 3 is GBIF 300, the sample's none/);
+  assert.throws(() => deriveSample(core, inputs((i) => { delete (i.download as Partial<SampleDownload>).species; })),
+    /stale \(download\.json has no species list\): run pnpm ingest gbif-sample/);
 });
 
 test("the learn-sample DOI is current only for the same counts and the same download DOI", () => {

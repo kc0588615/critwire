@@ -51,7 +51,7 @@ GitHub `origin` is the hub; only pushed work exists on the other machine.
 Files and owners (never hand-edit derived files):
 - `data/base.json`: registry (id, slug, names, step-1 taxonomy, `ids.iucn`, photo, `replacedBy`), sorted by `id`. Writer: `pnpm seed:cc`.
 - `data/raw/{wikidata,col,gbif,naturalearth}/snapshot.json`: normalized API responses, keys sorted, one UTC `retrieved` per file. Writer: `pnpm ingest <source>`.
-- `data/raw/gbif-sample/{download.json,datasets.json,sample.csv}`: Learn's GBIF sample (download key/DOI/request/`sampleRules`, dataset + publisher metadata, capped rows). Writer: `pnpm ingest gbif-sample`.
+- `data/raw/gbif-sample/{download.json,datasets.json,sample.csv}`: Learn's GBIF sample (download key/DOI/request/`sampleRules`/`species` `{id, gbif}` pairs, dataset + publisher metadata, capped rows). Writer: `pnpm ingest gbif-sample`.
 - `data/learn/{country_shapes,admin1_shapes,ecoregions}.parquet`, `biomes.csv`, `shapes.json` (provenance: pins, tool versions, sha256s). Writer: `pnpm ingest shapes`. Build refuses a file whose sha256 differs from its provenance file, or one no provenance file lists.
 - `data/learn/{habitat_classes,country_habitats}.parquet` + `habitat.json`: stand-ins (`standIn: true`), copied once from A2's spike; L3's `ingest habitat` replaces them. Never edit.
 - `data/review/country-overrides.json`: owner only (see Countries).

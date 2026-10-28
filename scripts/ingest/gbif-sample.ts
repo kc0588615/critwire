@@ -30,6 +30,7 @@ import { capSample, effectiveLicense, OPEN_LICENSES, SAMPLE_RULES, speciesFor, t
 import { readSimpleCsv, type ParseContext, type SampleRecord } from "../learn/simple-csv.ts";
 import {
   SAMPLE_COLUMNS, SAMPLE_FILES, sampleDir, type SampleDataset, type SampleDatasets, type SampleDownload, type SampleRow,
+  sampleSpeciesOf, sortByGbif, type SampleSpecies,
 } from "../learn/sample-files.ts";
 import { utcDate } from "../raw.ts";
 import { occurrenceSearchQuery } from "./gbif.ts";
@@ -56,8 +57,6 @@ export const DATASET_LICENSES: Readonly<Record<string, SampleLicense>> = {
 // The lock around every run, and the intent a new download (--new, plan D6) writes before its POST.
 export const downloadState = namedState<DownloadIntent>("gbif-sample-download", "ingest gbif-sample");
 
-export interface SampleSpecies { id: number; gbif: number }
-
 interface GbifDownload {
   key: string;
   status: string;
@@ -75,7 +74,7 @@ interface GbifDownload {
 // The species with an ids.gbif, from derive's in-memory core: species.json is never read, so a stale derived file
 // never blocks the sample's re-ingest (D7).
 export function sampleSpecies(inputs: CoreInputs): SampleSpecies[] {
-  return deriveCore(inputs).records.flatMap((r) => (r.ids.gbif === null ? [] : [{ id: r.id, gbif: r.ids.gbif }]));
+  return sampleSpeciesOf(deriveCore(inputs).records);
 }
 
 // GBIF's per-dataset record counts for the download, sorted by key.
@@ -217,6 +216,7 @@ export async function ingestGbifSample({ api = API, dest = sampleDir, key, speci
   const download: SampleDownload = {
     key, doi: meta.doi, license: meta.license, created: meta.created, eraseAfter: meta.eraseAfter, totalRecords: meta.totalRecords,
     numberDatasets: meta.numberDatasets, request, downloadLink: meta.downloadLink, zip, datasetCounts: listing, sampleRules: SAMPLE_RULES,
+    species: sortByGbif(species),
   };
   const texts: Record<(typeof SAMPLE_FILES)[number], string> = {
     "download.json": formatJson(download, { canonical: true }),

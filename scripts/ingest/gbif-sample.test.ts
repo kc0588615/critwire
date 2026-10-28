@@ -43,7 +43,7 @@ const O2 = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb";
 const CC0 = "http://creativecommons.org/publicdomain/zero/1.0/legalcode";
 const BY = "http://creativecommons.org/licenses/by/4.0/legalcode";
 const BY_NC = "http://creativecommons.org/licenses/by-nc/4.0/legalcode";
-const SPECIES = [{ id: 1, gbif: 100 }, { id: 2, gbif: 200 }];
+const SPECIES = [{ id: 2, gbif: 200 }, { id: 1, gbif: 100 }]; // unsorted: download.json sorts them by gbif
 
 const BASE: Record<string, string> = {
   occurrenceStatus: "PRESENT", decimalLatitude: "-3.1", decimalLongitude: "35.5", coordinateUncertaintyInMeters: "1.0",
@@ -222,7 +222,8 @@ test("a clean run writes exactly the three files: effective-open, capped sample 
   ].join("\n") + "\n");
   const download = JSON.parse(out["download.json"]);
   assert.deepEqual(Object.keys(download).sort(), ["created", "datasetCounts", "doi", "downloadLink", "eraseAfter", "key", "license",
-    "numberDatasets", "request", "sampleRules", "totalRecords", "zip"]);
+    "numberDatasets", "request", "sampleRules", "species", "totalRecords", "zip"]);
+  assert.deepEqual(download.species, [{ id: 1, gbif: 100 }, { id: 2, gbif: 200 }]);
   assert.equal(download.key, KEY);
   assert.equal(download.totalRecords, 4);
   assert.deepEqual(download.zip, { bytes: g.zip.length, sha256: sha(g.zip) });
