@@ -985,7 +985,7 @@ Every step:
   - Either way, item 7 gets its Decisions line.
   - Verify: `T`, `P`, `E`, `H`.
 
-- [ ] S29 · Astra code MUST-FIX 3: `check.ts` `numEq` handles nonfinite numbers before the tolerance (Infinity equals only the same Infinity, NaN only NaN, never a finite value). Failure cases first (Inf vs 42n, -Inf vs Inf, NaN vs 0, Inf vs Inf), as `check` unit tests, then the fix. Verify: `T`, `E`.
+- [x] S29 · Astra code MUST-FIX 3: `check.ts` `numEq` handles nonfinite numbers before the tolerance (Infinity equals only the same Infinity, NaN only NaN, never a finite value). Failure cases first (Inf vs 42n, -Inf vs Inf, NaN vs 0, Inf vs Inf), as `check` unit tests, then the fix. Verify: `T`, `E`.
 - [ ] S30 · Astra code MUST-FIX 2: `module.ts` exercise completion bound to its page: after `checker.check` resolves, drop the result if `signal.aborted`, and `markModuleDone` takes the originating module id instead of reading the current page's button. E2E: start a skip check, navigate away before it settles, the other module stays not done. Verify: `T`, `E`.
 - [ ] S31 · Astra code MUST-FIX 1: engine `restart` rejects every outstanding run (running and queued) with `Superseded` instead of leaving them pending on `terminate()`. E2E: two editors, one running a slow query, Reset from the other; both editors re-enable and the first shows superseded. Verify: `T`, `E`.
 
@@ -1154,5 +1154,6 @@ All three checked against the code and agreed real; fixes are S29–S31.
 - 2026-10-28 21:10 UTC · S27: AGENTS.md (learn:port, release smoke, Learn section: site/learn files, tsconfig, rules, dev loop; build outputs; `replacedBy` reworded per F8), 004 §0/§7.5–7.7 aligned with code, handoff H4, review-item audit (Decisions). Docs only. T: typecheck ok, test 548/548; P 11 pages, 288 files equal 004; L: draft ok, learn:check ok (checked.json unchanged, leak check empty), build ok; E 78/78 (0 unexpected/skipped/flaky, `$M/e2e-s27`); H 169 equal.
 - 2026-10-28 21:22 UTC · S28: tbls 1.96.1 installed (sha256 checked); 004 d1 + `modules/d1.html` second exercise (tbls, ungraded); compare record `$M/tbls-compare.txt` (tables/columns/types/FKs/lines agree; diffs = view, planned, PK/UK, notes). T: typecheck ok, test 548/548; P: 11 pages, 288 files equal 004; B ok (dist/learn/data 40,041,618 B); E: 78/78, 0 unexpected/skipped/flaky; H: 169 equal.
 - 2026-10-28 21:22 UTC · Code review (Astra): APPROVE_WITH_CHANGES, 3 MUST-FIX (engine restart leaves runs pending; skip check marks the wrong module after navigation; Infinity passes numeric tolerance), no SHOULD-CONSIDER; all agreed, added S29–S31. Plan-only, no checks needed.
+- 2026-10-28 21:31 UTC · S29: `check.ts` `numEq`: a nonfinite side compares by `Object.is` (Infinity only the same Infinity, NaN only NaN) before the tolerance; CK10 in `exercise.test.ts` (Inf vs 42n/42/max double, -Inf vs Inf, NaN vs 0/Inf, Inf/-Inf/NaN self), red 1 → green 1. T: typecheck ok, test 549/549; B ok; E: 78/78, 0 unexpected/skipped/flaky.
 
 ## Summary

@@ -1,8 +1,8 @@
 // Exercise checks (site/learn/src/check.ts; plan D11, S12). CK1–CK9: A1's result compare (check.test.ts), ported as
-// written. PB1–PB4: a probe (an `-- expect: error` block whose `-- after:` names the exercise) must fail on its last
-// statement with its text. EX1–EX6: Checker against a fake engine: pristine data only (Fable MF1, Astra MF1), the
-// reference cached per generation, the learner's SQL and the probes run isolated. Written before the code, seen
-// failing first.
+// written; CK10 (S29): nonfinite numbers equal only themselves. PB1–PB4: a probe (an `-- expect: error` block whose
+// `-- after:` names the exercise) must fail on its last statement with its text. EX1–EX6: Checker against a fake
+// engine: pristine data only (Fable MF1, Astra MF1), the reference cached per generation, the learner's SQL and the
+// probes run isolated. Written before the code, seen failing first.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { CHANGED_TABLES, Checker, checkProbe, checkResult, type CheckEngine, type Exercise } from "../../site/learn/src/check.ts";
@@ -71,6 +71,20 @@ test("CK9 floats match within a relative 1e-9", () => {
   assert.equal(checkResult(res(["x"], [[0.1 + 0.2]]), res(["x"], [[0.3]]), false).ok, true);
   assert.equal(checkResult(res(["x"], [[1e6 * (1 + 1e-12)]]), res(["x"], [[1e6]]), false).ok, true);
   assert.equal(checkResult(res(["x"], [[1.001]]), res(["x"], [[1]]), false).ok, false);
+});
+
+test("CK10 nonfinite numbers equal only themselves: Infinity only the same Infinity, NaN only NaN (Astra code MF3)", () => {
+  const eq = (a: unknown, b: unknown) => checkResult(res(["x"], [[a]]), res(["x"], [[b]]), false).ok;
+  assert.equal(eq(Infinity, 42n), false);
+  assert.equal(eq(42n, Infinity), false);
+  assert.equal(eq(Infinity, 42), false);
+  assert.equal(eq(-Infinity, Infinity), false);
+  assert.equal(eq(Infinity, 1.7976931348623157e308), false);
+  assert.equal(eq(NaN, 0), false);
+  assert.equal(eq(NaN, Infinity), false);
+  assert.equal(eq(Infinity, Infinity), true);
+  assert.equal(eq(-Infinity, -Infinity), true);
+  assert.equal(eq(NaN, NaN), true);
 });
 
 const PROBE = { id: "d1-ex-same-url", expect: "PRIMARY KEY or UNIQUE constraint violation" };

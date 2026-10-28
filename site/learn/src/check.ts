@@ -59,6 +59,8 @@ function numEq(a: number | bigint, b: number | bigint): boolean {
   }
   const x = Number(a);
   const y = Number(b);
+  // Infinity equals only the same Infinity and NaN only NaN; the tolerance below would take Infinity as any number.
+  if (!Number.isFinite(x) || !Number.isFinite(y)) return Object.is(x, y);
   return x === y || Math.abs(x - y) <= REL * Math.max(Math.abs(x), Math.abs(y));
 }
 
