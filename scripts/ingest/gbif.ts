@@ -88,7 +88,7 @@ function toOccurrences(url: string, r: unknown): GbifOccurrenceResponse {
 }
 
 // One datasetKey facet page: same `count` as the countries query, UUID keys not seen on earlier pages, positive counts.
-function toDatasetPage(url: string, r: unknown, count: number, seen: Record<string, number>): GbifFacet["counts"] {
+export function toDatasetPage(url: string, r: unknown, count: number, seen: Record<string, number>): GbifFacet["counts"] {
   const o = r as GbifOccurrenceResponse & { results?: unknown[] };
   if (o?.count !== count) throw new Error(`gbif: ${url}: count ${String(o?.count)} ≠ countries query count ${count} (index moved; re-run)`);
   if (o.results?.length) throw new Error(`gbif: ${url}: limit=0 returned ${o.results.length} results`);

@@ -16,11 +16,11 @@ let lastStart = 0;
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-// Retry-After is seconds or an HTTP date; capped at 60 s. null when absent or unparseable.
+// Retry-After is seconds or an HTTP date. null when absent or unparseable.
 function retryAfterMs(header: string | null): number | null {
   if (!header) return null;
   const ms = /^\d+$/.test(header.trim()) ? Number(header) * 1000 : Date.parse(header) - Date.now();
-  return Number.isFinite(ms) ? Math.min(Math.max(ms, 0), RETRY_AFTER_CAP_MS) : null;
+  return Number.isFinite(ms) ? Math.max(ms, 0) : null;
 }
 
 // The request log line on stderr: start time, status, duration, attempt, method, url (never headers or bodies).
@@ -35,7 +35,8 @@ export const fetchFailure = (error: unknown) =>
 export interface GetJsonInit extends RequestInit { timeoutMs?: number }
 
 // One paced, retried request; returns `read` of the 200 response (default: the body). Retries network errors (also
-// while `read` streams the body), timeouts, 429 and 5xx (5 attempts, backoff 1, 2, 4, 8 s); any other status throws at once.
+// while `read` streams the body), timeouts, 429 and 5xx (5 attempts, backoff 1, 2, 4, 8 s, or the Retry-After up to 60 s;
+// a longer Retry-After throws at once); any other status throws at once.
 async function getOk<T = Uint8Array>(url: string, accept: string, { timeoutMs = DEFAULT_TIMEOUT_MS, ...init }: GetJsonInit,
   read: (res: Response) => Promise<T> = async (res) => new Uint8Array(await res.arrayBuffer()) as T): Promise<T> {
   const method = init.method ?? "GET";
@@ -60,6 +61,9 @@ async function getOk<T = Uint8Array>(url: string, accept: string, { timeoutMs = 
     logRequest(lastStart, status, attempt, method, url);
     const retryable = typeof status === "string" || status === 429 || status >= 500;
     if (retryable) {
+      if (retryAfter !== null && retryAfter > RETRY_AFTER_CAP_MS) {
+        throw new Error(`${method} ${url}: ${status}: asked to wait ${Math.ceil(retryAfter / 1000)} s, more than ${RETRY_AFTER_CAP_MS / 1000} s: re-run later`);
+      }
       if (attempt >= MAX_ATTEMPTS) throw new Error(`${method} ${url}: ${status} after ${attempt} attempts: ${text(body)}`);
       await sleep(retryAfter ?? 1000 * 2 ** (attempt - 1));
       continue;

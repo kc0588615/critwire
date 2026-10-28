@@ -894,7 +894,7 @@ Every step:
   - Files: `scripts/derive/pipeline.ts` (`assertGbifFresh`, `assertColFresh` replace the name-set and `taxonKey` checks), `scripts/ingest/{gbif,col}.ts` (export the URL builders), tests.
   - First: F1–F6 (match URL; occurrences URL; datasets URL; checklist key; occurrences ⇔ SPECIES; COL URL).
   - Verify: `T`; `pnpm derive`: no diff; `B`, `H`. Decisions: MF3 done.
-- [ ] S30 · SC3 leftovers (D14) · review item
+- [x] S30 · SC3 leftovers (D14) · review item
   - Files: `scripts/http.ts` (Retry-After above 60 s stops), `scripts/json.ts` (`readJson` names the file), `scripts/ingest/gbif.ts` (export `toDatasetPage`), `scripts/derive/pipeline.ts` (`assertDerivedFiles` names the file).
   - First: H1 (local server, port 0), H2, H3, H4.
   - Verify: `T`; `pnpm derive`: no diff; `E`, `H`. Decisions: SC3 done (G5–G7, G6/LD5/LD7/LC6, F1–F8, H1–H5).
@@ -1025,6 +1025,7 @@ What can go wrong across steps, and what the session does. `MISSION_BLOCKED` onl
 - S27: `validateRecords(records)` in `species.ts` (values only; `assertRecordKeys` stays in `build/columns.ts`, Fable SC4). Beyond D12's list, it also checks the COL `sources[].release.key` (DuckDB INTEGER, same "each export's range" rule), unique ids and slugs (db:load reads `species.json` without `validateBase`), `range.status` among the three values, and every string field's type. Wikidata out-of-range integers throw like W6's non-integers (the run stops; no silent null). `childFile` on species paths was already in `build.ts` (S17). `issuedIds` joins the signature in S28.
 - MF2: done (S27, S28).
 - S28: derive writes the records' `{id, slug}` pairs as the union: `validateRecords(records, issuedIds)` first proves every issued pair is a record's, so nothing else can be in the union. A missing `data/issued-ids.json` is the first write (V16), so deleting it would reset the history; the deletion shows in the PR diff, and the file is append-only otherwise. `db:load` reads the committed file (`readJson`, missing = error).
+- SC3: done (S2, S29, S30). Every D14 case has its test: G5–G7 (S2), LD5/LD7 (S20), LC6 (S24), F1–F6 (S29), F7–F8 (S14), H1–H4 (S30), H5 (S14). S30: a Retry-After above 60 s (seconds or HTTP date) throws "asked to wait N s, more than 60 s: re-run later" before any retry; `readJson` prefixes parse errors with the path; `toDatasetPage` exported. `assertDerivedFiles` already named the first differing file (S28), so H4 only proves it per file; no code change there.
 
 ## Log
 
@@ -1064,5 +1065,6 @@ What can go wrong across steps, and what the session does. `MISSION_BLOCKED` onl
 - 2026-10-28 10:58 UTC S27: `validateRecords` (species.ts) in `deriveCore` + `db:load` (+ `assertRecordKeys`); `inputs.ts` value loop moved out; Wikidata P3151/P685 ≤ 2³¹−1, P846 ≤ 2⁵³−1. Red 10 (V1–V10; V0 passes) → green 11; test 264/264, test:db 78/78, typecheck ok; derive no diff (both DOIs current); db:load 76; plain build ok; e2e 38/38, 0 skipped; H 155/155; no `learn_t_%` left.
 - 2026-10-28 11:02 UTC S28: `IssuedId`/`issuedIdsFile`, issued checks in `validateRecords` (renamed, slug reused, gone), `CoreInputs.issuedIds` (null = first write), `CoreResult.issuedIds` in `derivedFiles`, `db:load` reads it, AGENTS.md derived list. Red 6 (V0, V11–V13, V15, V16; V14 pass-only) → green: test 270/270, typecheck ok; mutation (no gone check) fails V11, V15; derive writes 76 pairs, re-derive no diff, diff vs `baseline/live-species.json` empty; db:load 76; test:db 78/78; plain build ok; e2e 38/38, 0 skipped (`$M/e2e-s28/`); H 155/155; no `learn_t_%` left.
 - 2026-10-28 11:08 UTC S29: MF3 GBIF/COL: `assertGbifFresh`/`assertColFresh` replay the request builders (match, occurrences, datasets URLs; pinned checklist; occurrences ⇔ SPECIES; COL URL per release), replacing the name-set and `taxonKey` checks in `deriveCore`. Red 2 files (F1–F6, exports missing) → green 6; mutation (no occurrences-URL check) fails F2; test 276/276, typecheck ok; derive no diff (both DOIs current); plain build ok; H 155/155.
+- 2026-10-28 11:15 UTC S30: SC3 leftovers: `http.ts` Retry-After > 60 s stops (no cap-and-retry), `readJson` names the file, `toDatasetPage` exported. Red 3 (H1 >60 s, H2, H3 import) → green 8; H1 ≤60 s honoured and H4 (per derived file) passed first, existing behaviour. test 284/284, typecheck ok; derive no diff (both DOIs current); plain build ok; e2e 38/38, 0 skipped (`$M/e2e-s30/`); H 155/155.
 
 ## Summary
