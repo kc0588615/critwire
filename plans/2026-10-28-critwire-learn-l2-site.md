@@ -580,6 +580,6 @@ None. Every correction above lands with the code that proves it (brief), in the 
 ## Log
 
 - 2026-10-28 12:10 UTC · Baseline: typecheck ok, test 285/285, test:db 78/78 (after build), build ok, learn:check ok, e2e 38/38; dist hashes saved.
-- 2026-10-28 12:45 UTC · Architecture: architect wrote findings F1–F10, design D1–D16, review items 1–7 mapped, 25 work groups (~39–40 sessions est.); no 004 edits; plan-only change, no checks needed.
+- 2026-10-28 12:29 UTC · Architecture: architect wrote findings F1–F10, design D1–D16, review items 1–7 mapped, 25 work groups (~39–40 sessions est.); no 004 edits; plan-only change, no checks needed.
 
 ## Summary
