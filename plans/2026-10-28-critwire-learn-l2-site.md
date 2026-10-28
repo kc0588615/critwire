@@ -985,6 +985,10 @@ Every step:
   - Either way, item 7 gets its Decisions line.
   - Verify: `T`, `P`, `E`, `H`.
 
+- [ ] S29 · Astra code MUST-FIX 3: `check.ts` `numEq` handles nonfinite numbers before the tolerance (Infinity equals only the same Infinity, NaN only NaN, never a finite value). Failure cases first (Inf vs 42n, -Inf vs Inf, NaN vs 0, Inf vs Inf), as `check` unit tests, then the fix. Verify: `T`, `E`.
+- [ ] S30 · Astra code MUST-FIX 2: `module.ts` exercise completion bound to its page: after `checker.check` resolves, drop the result if `signal.aborted`, and `markModuleDone` takes the originating module id instead of reading the current page's button. E2E: start a skip check, navigate away before it settles, the other module stays not done. Verify: `T`, `E`.
+- [ ] S31 · Astra code MUST-FIX 1: engine `restart` rejects every outstanding run (running and queued) with `Superseded` instead of leaving them pending on `terminate()`. E2E: two editors, one running a slow query, Reset from the other; both editors re-enable and the first shows superseded. Verify: `T`, `E`.
+
 ## Verification
 
 Run once, on the final commit (after any code-review fixes), on a clean tree, in this order. `M`, `H` and `P` are as in Steps. Log each result; the numbers go to the Summary. Leak query: `psql -d critwire_dev -XAtc "select rolname from pg_roles where rolname like 'learn\_%' union all select nspname from pg_namespace where nspname like 'learn\_%' and nspname not in ('learn_spatial','learn_curriculum')"` must be empty.
@@ -1057,6 +1061,20 @@ Each step's isolated cases are its **First** list. What a session does when the 
   - S1–S21 and S23–S27 hold Goal work and are never deferred.
 
 ## Code review (Astra)
+
+VERDICT: APPROVE_WITH_CHANGES
+
+MUST-FIX:
+
+1. `site/learn/src/engine.ts:273`: Restart never settles pending runs. Confirmed the pinned DuckDB’s `terminate()` leaves query promises pending, so the generation check is never reached. Reset from another editor leaves running/queued editors disabled. Reject outstanding runs with `Superseded` on restart; add a multi-editor E2E regression.
+
+2. `site/learn/src/pages/module.ts:111`: A skip check finishing after navigation calls `markModuleDone()`, which selects the **new page’s** button. This can mark an uncompleted module done. Capture the originating module or discard completion after the page’s signal aborts; test navigation during Check.
+
+3. `site/learn/src/check.ts:62`: Numeric tolerance accepts infinity as equal to finite values: both sides become infinity. Confirmed `checkResult([[Infinity]], [[42n]])` returns “Correct.” Handle nonfinite numbers before applying tolerance; cover division-by-zero answers.
+
+SHOULD-CONSIDER: none
+
+All three checked against the code and agreed real; fixes are S29–S31.
 
 ## Release
 
@@ -1135,5 +1153,6 @@ Each step's isolated cases are its **First** list. What a session does when the 
 - 2026-10-28 20:56 UTC · S26: `e2e/learn-screens.spec.ts` (5 tests: map, f3 with its first block run = snapshot, d3, schema-lab, setup × 1280/375 × light/dark → 20 `<page>-<width>-<scheme>.png`, each fits its width, origin fence); `coursePages`/`runBlock`/`rendered` moved to `e2e/helpers.ts` (+ `firstBrowserBlock`); release helper `playwright.release.config.ts` + `e2e/release/live.spec.ts` (every dist/ file served with dist's sha256, page at folder URL; `.wasm` = application/wasm; f3-brazil-list = snapshot), ignored by the default config. DoD E2E → test: every browser block = learn-browser "every browser block…"; exercises right/wrong + skip checks mark done = learn-browser "every exercise and skip check…" + "d1-ex…"; Reset/Stop = "Reset restores…"; one engine across three pages = "f1, f2 and the playground…"; lab code = download = learn-labs "each download is served as assembled…"; origin fence = `offOrigin` in every learnContext test; SC2 = "a tampered /v1/species.parquet…" + learn-data "inputs"; star = learn-data "the star…"; cap = learn-data "the folder is at most 50,000,000 bytes"; timing = learn-timing; diagrams = schema "each teaching diagram…"; screenshots = learn-screens. T: typecheck ok, test 548/548; B ok (learn/data 40,041,618 B); E 78/78 (0 unexpected/skipped/flaky, `$M/e2e-s26`, 20 screenshots); helper dry run vs local Caddy 3/3 (`$M/release-dryrun`; first run red: `//` URL from readdir's top-level parentPath → `path.relative`); H 169 equal.
 - 2026-10-28 21:10 UTC · S27: AGENTS.md (learn:port, release smoke, Learn section: site/learn files, tsconfig, rules, dev loop; build outputs; `replacedBy` reworded per F8), 004 §0/§7.5–7.7 aligned with code, handoff H4, review-item audit (Decisions). Docs only. T: typecheck ok, test 548/548; P 11 pages, 288 files equal 004; L: draft ok, learn:check ok (checked.json unchanged, leak check empty), build ok; E 78/78 (0 unexpected/skipped/flaky, `$M/e2e-s27`); H 169 equal.
 - 2026-10-28 21:22 UTC · S28: tbls 1.96.1 installed (sha256 checked); 004 d1 + `modules/d1.html` second exercise (tbls, ungraded); compare record `$M/tbls-compare.txt` (tables/columns/types/FKs/lines agree; diffs = view, planned, PK/UK, notes). T: typecheck ok, test 548/548; P: 11 pages, 288 files equal 004; B ok (dist/learn/data 40,041,618 B); E: 78/78, 0 unexpected/skipped/flaky; H: 169 equal.
+- 2026-10-28 21:22 UTC · Code review (Astra): APPROVE_WITH_CHANGES, 3 MUST-FIX (engine restart leaves runs pending; skip check marks the wrong module after navigation; Infinity passes numeric tolerance), no SHOULD-CONSIDER; all agreed, added S29–S31. Plan-only, no checks needed.
 
 ## Summary
