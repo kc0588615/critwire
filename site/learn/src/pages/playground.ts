@@ -7,7 +7,7 @@ import { showResult } from "../results.ts";
 
 const BLOCK = "playground";
 
-export function playground(start: () => Engine): void {
+export function playground(start: () => Engine, signal: AbortSignal): void {
   const root = document.getElementById("playground");
   if (!root) throw new Error("the page has no #playground");
   const engine = start();
@@ -15,5 +15,5 @@ export function playground(start: () => Engine): void {
     const result = await engine.persistent(sql);
     setHookResult(BLOCK, result);
     showResult(region, sql, result, engine.species);
-  });
+  }, signal);
 }

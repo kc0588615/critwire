@@ -57,8 +57,8 @@ export interface Engine {
   readonly changed: boolean;
   /** Each animal's card fields, by species id (boot step 7); empty until ready. */
   readonly species: ReadonlyMap<number, SpeciesInfo>;
-  /** Calls `listener` now and on every change of state or of `changed`. */
-  onChange(listener: (state: EngineState) => void): void;
+  /** Calls `listener` now and on every change of state or of `changed`, until `signal` aborts (nav.ts left its page). */
+  onChange(listener: (state: EngineState) => void, signal?: AbortSignal): void;
   /**
    * A lesson editor's run: BEGIN, `after`, `sql`, ROLLBACK (isolation.ts). Rejects with Superseded if a restart comes
    * first; if BEGIN or ROLLBACK fails, the engine restarts and the run rejects saying so.
@@ -187,7 +187,7 @@ interface Live {
 
 /** Starts the engine (boot steps 1–7) and returns it at once; its state says when it is ready. */
 export function startEngine(): Engine {
-  const listeners: ((state: EngineState) => void)[] = [];
+  const listeners = new Set<(state: EngineState) => void>();
   let state: EngineState = { state: "loading", text: "Starting the database…" };
   const set = (next: EngineState) => {
     state = next;
@@ -292,8 +292,10 @@ export function startEngine(): Engine {
     get species() {
       return species;
     },
-    onChange(listener) {
-      listeners.push(listener);
+    onChange(listener, signal) {
+      if (signal?.aborted) return;
+      listeners.add(listener);
+      signal?.addEventListener("abort", () => listeners.delete(listener), { once: true });
       listener(state);
     },
     isolated(after, sql) {

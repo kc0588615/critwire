@@ -49,6 +49,8 @@ export const TOOL_NAMES: Record<(typeof TOOLS)[number], string> = {
 const trimEnd = (s: string) => s.replace(/\n+$/, "");
 const rows = (code: string) => Math.min(20, Math.max(3, trimEnd(code).split("\n").length));
 const n = (x: number) => x.toLocaleString("en-US");
+/** "1 hour", "1.5 hours": a module's or a track's time. */
+export const hoursText = (h: number) => `${Number(h.toFixed(1))} ${h === 1 ? "hour" : "hours"}`;
 
 /** `html` with each block slot replaced by `render(slot)`; throws on a bad slot or a leftover `{{`, naming `file`. */
 export function fillBlockSlots(file: string, html: string, render: (slot: Slot) => string): string {
@@ -177,21 +179,30 @@ export const moduleUrl = (m: Pick<Module, "track" | "slug">) => `/learn/${m.trac
 const moduleLink = (m: Module, rel: "prev" | "next") =>
   `<a rel="${rel}" href="${moduleUrl(m)}">${rel === "prev" ? "Previous" : "Next"}: ${esc(m.title)} (${m.id})</a>`;
 
-/** A module page's main: title and id, badges, prerequisites, `body`, Mark done, Previous and Next among built modules of its track. */
-export function moduleFrame(m: Module, curriculum: Curriculum, body: string): string {
+/** A module's tool and hours badges. */
+export const badges = (m: Module) => `<ul class="badges">${m.tools.map((t) => `<li>${TOOL_NAMES[t]}</li>`).join("")}<li>${hoursText(m.hours)}</li></ul>`;
+
+/** "Prerequisites: <title> (<id>), …", built ones linked, planned ones "in preparation"; "" without any. */
+export function prerequisites(m: Module, curriculum: Curriculum): string {
+  if (!m.prereqs.length) return "";
   const byId = new Map(curriculum.modules.map((x) => [x.id, x]));
-  const prereqs = m.prereqs.map((id) => {
+  const list = m.prereqs.map((id) => {
     const p = byId.get(id)!;
     return p.state === "built" ? `${link(moduleUrl(p), p.title)} (${p.id})` : `${esc(p.title)} (${p.id}, in preparation)`;
   });
+  return `<p class="prereqs">Prerequisites: ${list.join(", ")}</p>`;
+}
+
+/** A module page's main: title and id, badges, prerequisites, `body`, Mark done, Previous and Next among built modules of its track. */
+export function moduleFrame(m: Module, curriculum: Curriculum, body: string): string {
   const track = curriculum.modules.filter((x) => x.track === m.track && x.state === "built");
   const i = track.indexOf(m);
   const near = [i > 0 ? moduleLink(track[i - 1]!, "prev") : "", i >= 0 && i < track.length - 1 ? moduleLink(track[i + 1]!, "next") : ""].filter(Boolean);
   const trackTitle = curriculum.tracks.find((t) => t.id === m.track)!.title;
   return [
     `<h1>${esc(m.title)} <span class="module-id">${m.id}</span></h1>`,
-    `<ul class="badges">${m.tools.map((t) => `<li>${TOOL_NAMES[t]}</li>`).join("")}<li>${m.hours} ${m.hours === 1 ? "hour" : "hours"}</li></ul>`,
-    ...(prereqs.length ? [`<p class="prereqs">Prerequisites: ${prereqs.join(", ")}</p>`] : []),
+    badges(m),
+    prerequisites(m, curriculum),
     body,
     `<p class="module-end"><button type="button" class="mark-done" data-module="${m.id}" aria-pressed="false">Mark done</button></p>`,
     ...(near.length ? [`<nav class="prev-next" aria-label="${esc(trackTitle)}">${near.join(" ")}</nav>`] : []),

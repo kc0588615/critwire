@@ -1,5 +1,6 @@
 // Progress without accounts (004 §7.4): one localStorage key, critwire.learn.done.v1, `{ "<module id>": "<YYYY-MM-DD>" }`.
-// Mark done and a passed skip check set it; the map shows the ticks and clears the key (S14). A browser that refuses
+// Mark done and a passed skip check set it; the map and track pages show the ticks, and the map's Clear progress
+// removes the key. A browser that refuses
 // storage still runs every module: the ticks just don't persist, so a refusal reads as "nothing done".
 const KEY = "critwire.learn.done.v1";
 
@@ -22,5 +23,14 @@ export function setDone(id: string, done: boolean): void {
     localStorage.setItem(KEY, JSON.stringify(all));
   } catch {
     // storage refused: the tick lasts for this page only
+  }
+}
+
+/** Removes the key: nothing done. */
+export function clearProgress(): void {
+  try {
+    localStorage.removeItem(KEY);
+  } catch {
+    // storage refused: nothing was kept
   }
 }

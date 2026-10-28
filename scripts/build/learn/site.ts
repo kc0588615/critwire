@@ -19,7 +19,7 @@ import { readFreshness, readRecorded, readStamp, staleness } from "../../learn/f
 import type { StarManifest } from "../../learn/star-check.ts";
 import { DUCKDB_EXT, DUCKDB_WASM } from "../../../site/learn/src/assets.ts";
 import { assetErrors, writeAssets } from "./assets.ts";
-import { learnPages, readPlayground, writePages } from "./pages.ts";
+import { learnPages, readTemplates, writePages } from "./pages.ts";
 import { DRAWN_ERDS, readErds, type ErdSvgs, type ErdTexts } from "./erd.ts";
 import { starBlocks, starInputErrors, type StarBlock } from "./star.ts";
 
@@ -73,7 +73,7 @@ export async function writeLearn(out: URL, { curriculum, pages, erds, svgs }: Le
     curriculum,
     pages,
     downloads: new Map(downloads.map((d) => [d.page, d.name])),
-    playground: await readPlayground(),
+    templates: await readTemplates(),
     context: {
       recorded: readRecorded(pages),
       stamp: readStamp(),

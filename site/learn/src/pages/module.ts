@@ -75,7 +75,7 @@ function markModuleDone(): void {
   showDone(button, true);
 }
 
-export function module(start: () => Engine): void {
+export function module(start: () => Engine, signal: AbortSignal): void {
   document.querySelectorAll<HTMLButtonElement>("button[data-copy]").forEach(wireCopy);
   document.querySelectorAll<HTMLButtonElement>("button[data-dialog]").forEach(wireDialog);
   document.querySelectorAll<HTMLButtonElement>(".mark-done").forEach(wireMarkDone);
@@ -93,7 +93,7 @@ export function module(start: () => Engine): void {
       const result = await engine.isolated(after, sql);
       setHookResult(id, result);
       showResult(region, sql, result, engine.species);
-    });
+    }, signal);
   }
 
   for (const root of exercises) {
@@ -109,6 +109,6 @@ export function module(start: () => Engine): void {
       verdict.textContent = v.hint;
       verdict.dataset.ok = String(v.ok);
       if (v.ok && "skip" in root.dataset) markModuleDone();
-    });
+    }, signal);
   }
 }

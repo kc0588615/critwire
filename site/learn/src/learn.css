@@ -66,3 +66,21 @@ table.inputs code { font-size: .8rem; overflow-wrap: anywhere; }
 dialog { max-width: min(95vw, 70rem); border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: inherit; }
 dialog img { max-width: 100%; height: auto; display: block; margin: .5rem 0; }
 dialog::backdrop { background: rgb(0 0 0 / .5); }
+header.site #engine-status { margin: .25rem 0 0; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.tools li, .questions li { margin-bottom: .3rem; }
+.progress-note { color: var(--muted); font-size: .95rem; }
+#clear-progress {
+  font: inherit; font-size: .9rem; padding: .15rem .7rem; border-radius: 6px; cursor: pointer;
+  border: 1px solid var(--link); background: var(--bg); color: var(--link); margin-left: .25rem;
+}
+ol.modules { list-style: none; padding: 0; }
+ol.modules > li { border-top: 1px solid var(--line); padding: .75rem 0 .25rem; }
+.track-hours, .crumbs { color: var(--muted); font-size: .95rem; }
+.module-title { font-size: 1.1rem; margin: 0 0 .25rem; padding: 0; border: 0; }
+.planned { color: var(--muted); font-size: .85rem; font-weight: 400; font-style: italic; }
+.done { color: var(--link); font-size: .85rem; font-weight: 600; white-space: nowrap; }
+.done[hidden] { display: none; }
+.skill { margin-bottom: .4rem; }
+.questions { padding-left: 1.25rem; }
+main h1[tabindex="-1"]:focus { outline: none; }

@@ -16,8 +16,8 @@ function part<T extends Element>(root: Element, selector: string): T {
   return e;
 }
 
-/** Wires the editor in `root`, whose results the test hook keeps as `blockId`. */
-export function wireEditor(engine: Engine, root: HTMLElement, blockId: string, act: Act): void {
+/** Wires the editor in `root`, whose results the test hook keeps as `blockId`, until `signal` aborts (its page left). */
+export function wireEditor(engine: Engine, root: HTMLElement, blockId: string, act: Act, signal: AbortSignal): void {
   const editor = part<HTMLTextAreaElement>(root, "textarea");
   const region = part<HTMLElement>(root, ".result");
   const run = part<HTMLButtonElement>(root, "[data-run]");
@@ -30,7 +30,7 @@ export function wireEditor(engine: Engine, root: HTMLElement, blockId: string, a
     if (stop) stop.disabled = !running;
     if (reset) reset.disabled = engine.state.state === "loading";
   };
-  engine.onChange(sync);
+  engine.onChange(sync, signal);
 
   async function runEditor(): Promise<void> {
     if (run.disabled) return;

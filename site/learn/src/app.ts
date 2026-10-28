@@ -1,14 +1,17 @@
 // The Learn bundle's entry (plan D11): one bundle for every Learn page, built by scripts/build/learn/assets.ts as
 // app-<hash>.js beside learn-<hash>.css. A page names itself in <body data-page>; its init starts the engine only if
 // it has an editor, and the engine's state goes to <body data-engine> (and data-changed once the playground changed
-// the tables) and the layout's #engine-status line.
+// the tables) and the layout's #engine-status line. nav.ts swaps the next Learn page's <main> in and runs its init,
+// so the engine starts once per visit; the previous page's listeners end with its AbortController.
 import { startEngine, type Engine } from "./engine.ts";
 import { installHook } from "./hook.ts";
+import { installNav } from "./nav.ts";
+import { map } from "./pages/map.ts";
 import { module } from "./pages/module.ts";
 import { playground } from "./pages/playground.ts";
 
-/** Each page's init, by its data-page; `start` starts the engine (once). */
-const PAGES: Record<string, (start: () => Engine) => void> = { playground, module };
+/** Each page's init, by its data-page; `start` starts the engine (once); `signal` aborts when the page is left. */
+const PAGES: Record<string, (start: () => Engine, signal: AbortSignal) => void> = { playground, module, map, track: map };
 
 const CHANGED = "You changed its tables: Reset database restores them, and lesson checks wait until then.";
 
@@ -30,5 +33,12 @@ function start(): Engine {
   return engine;
 }
 
-const init = PAGES[document.body.dataset.page ?? ""];
-if (init) init(start);
+let page: AbortController | undefined;
+function initPage(): void {
+  page?.abort();
+  page = new AbortController();
+  PAGES[document.body.dataset.page ?? ""]?.(start, page.signal);
+}
+
+installNav(initPage);
+initPage();
