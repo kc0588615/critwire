@@ -789,6 +789,6 @@ Architect, 2026-10-28, on `281ef43`. The single revision round. I verified again
 - 2026-10-28 07:16 UTC Architecture: architect wrote F1–F13, D1–D19, review-item map, risks; decisions A1–A13 (uv as root, TS sample ingest, data/issued-ids.json, critwire_lab via --setup, no L1 diagrams). Plan-only, no code; no checks needed.
 - 2026-10-28 07:22 UTC Fable review: APPROVE_WITH_CHANGES, 2 MUST-FIX (deterministic learn:check forced failure; loadEnv logs names only), 4 missed, 5 SHOULD-CONSIDER. Plan-only; no checks needed.
 - 2026-10-28 07:23 UTC Astra review: APPROVE_WITH_CHANGES, 4 MUST-FIX (sample/derive refresh cycle; download intent before POST; transitive pg_depend; redact all env values), 3 SHOULD-CONSIDER. Plan-only; no checks needed.
-- 2026-10-28 07:37 UTC Revision: architect resolved all 6 MUST-FIX (deterministic forced failure; names-only env logs; in-memory core for sample ingest, no cycle; intent before POST + listing reconcile; CASCADE snapshot/diff guard, PG16-probed), 4 MISSED, 9/10 SC adopted (Astra SC1 junction rejected → L2); A14–A20. Plan-only; no checks needed.
+- 2026-10-28 07:35 UTC Revision: architect resolved all 6 MUST-FIX (deterministic forced failure; names-only env logs; in-memory core for sample ingest, no cycle; intent before POST + listing reconcile; CASCADE snapshot/diff guard, PG16-probed), 4 MISSED, 9/10 SC adopted (Astra SC1 junction rejected → L2); A14–A20. Plan-only; no checks needed.
 
 ## Summary
