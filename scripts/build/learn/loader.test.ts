@@ -6,6 +6,8 @@
 // LD3: '' and NULL merge, or `\.` inside a value ends psql's COPY early → '' quoted, NULL empty; a `\.` line throws.
 // LD4: a second transaction (a COMMIT in the DDL, a SAVEPOINT in the keys) breaks "a failed load changes nothing" →
 //      the file is \set, BEGIN … COMMIT with no other transaction control; hand-written parts with any throw.
+//      The schema is dropped only inside the MF4 guard's DO block, after lock_timeout and before CREATE SCHEMA; a check
+//      whose SQL could end its DO block early ($) or whose name isn't plain throws.
 // LD10: the same inputs give different bytes → rows ordered by key, the text generated twice is equal.
 // LD11: a missing input, a missing or unexpected column, a table without input or input without table → each named.
 // The real loader's LD9 and LD10 need dist/: loader.dbtest.ts.
@@ -49,27 +51,34 @@ test("LD4 \\set ON_ERROR_STOP on, BEGIN, encoding, lock_timeout first; COMMIT la
   assert.deepEqual(lines.slice(0, 2), ["\\set ON_ERROR_STOP on", "BEGIN;"]);
   assert.ok(lines.includes("SET client_encoding = 'UTF8';"));
   assert.ok(lines.includes("SET LOCAL lock_timeout = '60s';"));
-  assert.ok(lines.indexOf("SET LOCAL lock_timeout = '60s';") < lines.indexOf(`DROP SCHEMA IF EXISTS ${SCHEMA} CASCADE;`));
+  const guard = lines.indexOf("DO $guard$");
+  assert.ok(lines.indexOf("SET LOCAL lock_timeout = '60s';") < guard);
+  assert.ok(guard < lines.indexOf(`CREATE SCHEMA ${SCHEMA};`));
+  assert.deepEqual(lines.filter((l) => /DROP SCHEMA/i.test(l)).map((l) => l.trim()), [`DROP SCHEMA ${SCHEMA} CASCADE;`]);
+  assert.ok(lines.findIndex((l) => /DROP SCHEMA/i.test(l)) > guard);
   assert.ok(text.endsWith("COMMIT;\n"));
-  // Outside COPY data and the DO block's PL/pgSQL (whose BEGIN … END is a block, not a transaction).
+  // Outside COPY data and the DO blocks' PL/pgSQL (whose BEGIN … END is a block, not a transaction).
   let inData = false;
-  let inDo = false;
+  let doEnd = "";
   const sqlLines = lines.filter((l) => {
     if (inData) return (inData = l !== "\\.") && false;
-    if (inDo) return (inDo = l !== "$$;") && false;
+    if (doEnd) return (doEnd = l === doEnd ? "" : doEnd) && false;
     if (/^COPY /.test(l)) inData = true;
-    if (l === "DO $$") inDo = true;
+    const tag = /^DO (\$\w*\$)$/.exec(l)?.[1];
+    if (tag) doEnd = `${tag};`;
     return true;
   });
   const control = sqlLines.filter((l) => /^\s*(BEGIN|COMMIT|ROLLBACK|END|ABORT|START\s+TRANSACTION|SAVEPOINT|RELEASE|PREPARE\s+TRANSACTION)\b/i.test(l));
   assert.deepEqual(control, ["BEGIN;", "COMMIT;"]);
-  assert.equal(lines.filter((l) => l === "DO $$").length, 1);
+  assert.deepEqual(lines.filter((l) => /^DO\b/.test(l)), ["DO $guard$", "DO $$"]);
   assert.deepEqual(sqlLines.filter((l) => l.startsWith("\\")), ["\\set ON_ERROR_STOP on"]);
   await assert.rejects(generateLoader(con, fixtureSpec(SCHEMA, { ddl: FIXTURE_DDL + "COMMIT;\n" })), /transaction control/);
   await assert.rejects(generateLoader(con, fixtureSpec(SCHEMA, { keys: FIXTURE_KEYS + "SAVEPOINT a;\n" })), /transaction control/);
   // A comment or string that says COMMIT is not transaction control.
   await assert.doesNotReject(generateLoader(con, fixtureSpec(SCHEMA, { keys: FIXTURE_KEYS + "-- COMMIT;\nCOMMENT ON TABLE parent IS 'COMMIT;';\n" })));
   await assert.rejects(generateLoader(con, fixtureSpec("Bad-Name")), /schema Bad-Name/);
+  await assert.rejects(generateLoader(con, fixtureSpec(SCHEMA, { checks: [{ name: "x", sql: "SELECT 0 $$; COMMIT; DO $$" }] })), /check x: \$/);
+  await assert.rejects(generateLoader(con, fixtureSpec(SCHEMA, { checks: [{ name: "Bad name", sql: "SELECT 0" }] })), /check Bad name/);
 }));
 
 test("LD10 the same inputs give byte-identical output, rows ordered by key", () => withFixture(async (con) => {

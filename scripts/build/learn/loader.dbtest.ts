@@ -10,11 +10,23 @@
 //      load nothing in the schema depends on another schema's table.
 // LD10: the real loader's bytes change between two generations over the same dist/.
 // LD12: a psql in WIN1252 (Windows' console code page) garbles non-ASCII → byte for byte.
+// LD13: a learner's view in another schema over the lab schema vanishes on a reload (DROP … CASCADE) → refused, naming
+//       it; both schemas intact.
+// LD14: an outside foreign key into the lab schema, the same.
+// LD15: the guard misses a kind of dependent the cascade drops (materialized view, column of an inside type, default
+//       calling an inside function, function over an inside type, trigger running an inside function, policy reading an
+//       inside table) → each, alone, refused and named.
+// LD16: the guard refuses a clean reload (false positive) over inside views, identity columns, indexes, TOAST, inside
+//       FKs, or an unrelated outside table → reloads, the inside extras replaced, the outside table kept.
+// LD17: a negative, infinite or NaN uncertainty, a year ≤ 0, or a negative or NaN area loads (SC5) → CHECK violation;
+//       NULL (unknown) loads.
+// LD18: a LAB_CHECKS violation commits → raises in the DO block, naming the check and its count; previous schema
+//       intact; the real loader runs every LAB_CHECKS query.
 // LD2/LD3 round-trips: the point loads as POINT(1 2) SRID 4326, every TEXTS value byte for byte.
 // The real-loader cases read dist/ (run pnpm build first).
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { after, test } from "node:test";
@@ -23,6 +35,7 @@ import type postgres from "postgres";
 import { loadEnv, requireEnv } from "../../env.ts";
 import { childEnv, psqlArgs, urlTarget } from "../../learn/pg.ts";
 import { withLabSchema } from "../../test-db.ts";
+import { LAB_CHECKS } from "./checks.ts";
 import { generateLoader, labLoader } from "./loader.ts";
 import { FIXTURE_KEYS, TEXTS, fixtureSpec, withFixture } from "./loader-fixture.ts";
 
@@ -168,4 +181,125 @@ test("LD9 the real loader references no public table: text scan, and pg_depend a
 
 test("LD10 the real loader: two generations over the same dist/ are byte-identical", async () => {
   assert.equal(await realLoader("learn_t_ld10"), await realLoader("learn_t_ld10"));
+});
+
+// fn with a second schema, <schema>_o, for a learner's own objects outside the lab schema; dropped afterwards.
+async function withOutside(sql: postgres.Sql, schema: string, fn: (out: string) => Promise<void>): Promise<void> {
+  const out = `${schema}_o`;
+  await sql.unsafe(`CREATE SCHEMA ${out}`);
+  try {
+    await fn(out);
+  } finally {
+    await sql.unsafe(`DROP SCHEMA ${out} CASCADE`);
+  }
+}
+
+// Loads the fixture, runs setup (inside and outside objects), reloads: the reload must fail naming every `named`
+// identity, with the lab schema's rows and both schemas' objects unchanged.
+async function refusedReload(sql: postgres.Sql, schema: string, setup: (out: string) => string, named: (out: string) => string[]) {
+  await loadGood(schema);
+  await withOutside(sql, schema, async (out) => {
+    await sql.unsafe(setup(out).replaceAll("{s}", schema));
+    const objects = async () => [...await sql<{ o: string }[]>`
+      select pg_describe_object(classid, objid, objsubid) as o from pg_depend
+       where classid <> 0 and pg_describe_object(classid, objid, objsubid) like ${"%" + schema + "%"} order by 1`].map((r) => r.o);
+    const before = [await fingerprint(sql, schema), await objects()];
+    const r = psqlFile(await fixtureLoader(schema));
+    assert.notEqual(r.status, 0, "reload must be refused");
+    assert.match(r.stderr, new RegExp(`${schema}: the reload would drop`));
+    for (const n of named(out).map((x) => x.replaceAll("{s}", schema))) assert.ok(r.stderr.includes(n), `stderr names ${n}:\n${r.stderr}`);
+    assert.deepEqual([await fingerprint(sql, schema), await objects()], before);
+  });
+}
+
+test("LD13 an outside view over the lab schema: reload refused, naming it; both schemas intact", () => withLabSchema((sql, schema) =>
+  refusedReload(sql, schema, (out) => `CREATE VIEW ${out}.v AS SELECT * FROM {s}.parent`, (out) => [`view ${out}.v`])));
+
+test("LD14 an outside foreign key into the lab schema: reload refused, naming it; both schemas intact", () => withLabSchema((sql, schema) =>
+  refusedReload(sql, schema, (out) => `CREATE TABLE ${out}.notes (parent_id integer REFERENCES {s}.parent (id))`,
+    (out) => [`table constraint notes_parent_id_fkey on ${out}.notes`])));
+
+const INSIDE = `
+CREATE TYPE {s}.mood AS ENUM ('calm');
+CREATE FUNCTION {s}.one() RETURNS integer LANGUAGE sql AS 'SELECT 1';
+CREATE FUNCTION {s}.stamp() RETURNS trigger LANGUAGE plpgsql AS 'BEGIN RETURN NEW; END';`;
+const LD15: [string, (out: string) => string, (out: string) => string][] = [
+  ["materialized view", (o) => `CREATE MATERIALIZED VIEW ${o}.mv AS SELECT id FROM {s}.parent`, (o) => `materialized view ${o}.mv`],
+  ["column of an inside type", (o) => `CREATE TABLE ${o}.t (id integer, m {s}.mood)`, (o) => `table column ${o}.t.m`],
+  ["default calling an inside function", (o) => `CREATE TABLE ${o}.t (x integer DEFAULT {s}.one())`, (o) => `default value for ${o}.t.x`],
+  ["function over an inside type", (o) => `CREATE FUNCTION ${o}.f(m {s}.mood) RETURNS integer LANGUAGE sql AS 'SELECT 1'`, (o) => `function ${o}.f({s}.mood)`],
+  ["trigger running an inside function", (o) => `CREATE TABLE ${o}.t (x integer); CREATE TRIGGER tr BEFORE INSERT ON ${o}.t FOR EACH ROW EXECUTE FUNCTION {s}.stamp()`, (o) => `trigger tr on ${o}.t`],
+  ["policy reading an inside table", (o) => `CREATE TABLE ${o}.t (x integer); CREATE POLICY p ON ${o}.t USING (EXISTS (SELECT 1 FROM {s}.parent))`, (o) => `policy p on ${o}.t`],
+];
+for (const [kind, setup, named] of LD15) {
+  test(`LD15 an outside ${kind}: reload refused, naming it; both schemas intact`, () => withLabSchema((sql, schema) =>
+    refusedReload(sql, schema, (out) => INSIDE + ";\n" + setup(out), (out) => [named(out)])));
+}
+
+test("LD16 inside views, identity columns, indexes, TOAST and FKs, and an unrelated outside table: the reload succeeds", () => withLabSchema(async (sql, schema) => {
+  await loadGood(schema);
+  const fresh = await fingerprint(sql, schema);
+  await withOutside(sql, schema, async (out) => {
+    await sql.unsafe(`
+      CREATE VIEW ${schema}.parent_names AS SELECT name FROM ${schema}.parent;
+      CREATE MATERIALIZED VIEW ${schema}.child_counts AS SELECT parent_id, count(*) FROM ${schema}.child GROUP BY parent_id;
+      CREATE TABLE ${schema}.notes (id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+        parent_id integer REFERENCES ${schema}.parent (id), body text);
+      ALTER TABLE ${schema}.notes ALTER COLUMN body SET STORAGE EXTERNAL;
+      CREATE INDEX ON ${schema}.notes (parent_id);
+      INSERT INTO ${schema}.notes (parent_id, body) VALUES (1, repeat('x', 100000));
+      CREATE TABLE ${out}.mine (id integer PRIMARY KEY);
+      INSERT INTO ${out}.mine VALUES (1);`);
+    const r = psqlFile(await fixtureLoader(schema));
+    assert.equal(r.status, 0, r.stderr);
+    assert.equal(await fingerprint(sql, schema), fresh);
+    const [{ n }] = await sql.unsafe(`SELECT count(*)::int AS n FROM pg_class WHERE relnamespace = '${schema}'::regnamespace AND relname IN ('parent_names', 'child_counts', 'notes')`);
+    assert.equal(n, 0);
+    const [{ m }] = await sql.unsafe(`SELECT count(*)::int AS m FROM ${out}.mine`);
+    assert.equal(m, 1);
+  });
+}));
+
+const labDdl = readFileSync(new URL("../../../db/learn/lab-ddl.sql", import.meta.url), "utf8");
+const OCCURRENCE = (uncertainty: string, year: string) =>
+  `INSERT INTO occurrences (id, species_id, dataset_key, license, basis_of_record, longitude, latitude, coordinate_uncertainty_m, year) ` +
+  `VALUES (1, 1, '00000000-0000-0000-0000-000000000000', 'CC0 1.0', 'OCCURRENCE', 0, 0, ${uncertainty}, ${year})`;
+const AREA = (area: string) => `INSERT INTO country_habitats VALUES ('IN', 100, ${area})`;
+
+test("LD17 SC5's CHECKs: negative, ±Infinity or NaN uncertainty, year ≤ 0, negative or NaN area refused; NULL and bounds load", () => withLabSchema(async (sql, schema) => {
+  await sql.unsafe(`SET search_path = ${schema}; ${labDdl}`);
+  const run = async (stmt: string) => {
+    try {
+      await sql.unsafe(`SET search_path = ${schema}; ${stmt}`);
+      return "ok";
+    } catch (e) {
+      return (e as { code?: string }).code ?? String(e);
+    }
+  };
+  for (const ok of [OCCURRENCE("NULL", "NULL"), OCCURRENCE("0", "1"), OCCURRENCE("1e7", "2026"), AREA("0"), AREA("12.5")]) {
+    assert.equal(await run(`${ok}; TRUNCATE occurrences, country_habitats`), "ok", ok);
+  }
+  for (const bad of [OCCURRENCE("-1", "NULL"), OCCURRENCE("'Infinity'", "NULL"), OCCURRENCE("'-Infinity'", "NULL"), OCCURRENCE("'NaN'", "NULL"),
+    OCCURRENCE("NULL", "0"), OCCURRENCE("NULL", "-5"), AREA("-0.01"), AREA("'NaN'")]) {
+    assert.equal(await run(bad), "23514", bad);
+  }
+}));
+
+test("LD18 a LAB_CHECKS violation raises in the DO block, naming the check and its count; previous schema intact", () => withLabSchema(async (sql, schema) => {
+  await loadGood(schema);
+  const before = await fingerprint(sql, schema);
+  const checks = [{ name: "child_of_two", sql: "SELECT count(*) FROM child WHERE parent_id = 2" }];
+  const r = psqlFile(await fixtureLoader(schema, { checks }));
+  assert.notEqual(r.status, 0);
+  assert.match(r.stderr, new RegExp(`${schema}: LAB_CHECKS child_of_two: 2 rows break it`));
+  assert.equal(await fingerprint(sql, schema), before);
+}));
+
+test("LD18 the real loader's DO block runs every LAB_CHECKS query", async () => {
+  const text = await realLoader("learn_t_ld18");
+  const block = text.slice(text.lastIndexOf("DO $$"));
+  for (const c of LAB_CHECKS) {
+    assert.ok(block.includes(c.sql), c.name);
+    assert.ok(block.includes(`LAB_CHECKS ${c.name}:`), c.name);
+  }
 });

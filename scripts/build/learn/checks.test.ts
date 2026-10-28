@@ -1,5 +1,5 @@
 // LX, DuckDB half (plan D9.4, D15; review SC1, SC5): every LAB_CHECKS query on LAB_CHECK_FIXTURES, in DuckDB as the
-// build runs them. checks.dbtest.ts (S21) runs the same fixtures in Postgres. Written before the code, seen failing
+// build runs them. checks.dbtest.ts runs the same fixtures in Postgres. Written before the code, seen failing
 // first. Failure modes: a check counts a clean row (the build refuses good data); a check misses its violation (a
 // loader that won't load gets published, or a bad row loads); NaN, ±Infinity, a negative uncertainty or month 13 slip
 // past because the engine compares them differently; a check has no violating fixture, so nothing proves it fires.

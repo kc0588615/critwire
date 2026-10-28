@@ -1,5 +1,5 @@
 -- critwire Learn, the lab database (PostGIS, schema learn_curriculum): its tables, before their rows.
--- Columns, NOT NULL and CHECK only; keys, foreign keys and indexes come after the load (lab-keys.sql), the usual order
+-- Columns, NOT NULL and CHECK only (NULL means unknown, so a CHECK lets it through); keys, foreign keys and indexes come after the load (lab-keys.sql), the usual order
 -- for a bulk load. Shapes arrive as base64 WKB (text) and become geometry in lab-keys.sql.
 -- 002's six tables and its view are the browser's schema (site/learn/sql/setup.sql) in PostgreSQL types.
 
@@ -78,10 +78,11 @@ CREATE TABLE occurrences (
                              'MATERIAL_CITATION', 'OCCURRENCE')),
   longitude                double precision NOT NULL CHECK (longitude BETWEEN -180 AND 180),
   latitude                 double precision NOT NULL CHECK (latitude BETWEEN -90 AND 90),
-  coordinate_uncertainty_m double precision,
+  -- Finite and not negative: NaN sorts above 'Infinity', so the upper bound refuses it too.
+  coordinate_uncertainty_m double precision CHECK (coordinate_uncertainty_m >= 0 AND coordinate_uncertainty_m < 'Infinity'),
   country_code_gbif        text,
   country_code             text,
-  year                     integer,
+  year                     integer CHECK (year > 0),
   month                    integer CHECK (month BETWEEN 1 AND 12)
 );
 
@@ -126,7 +127,7 @@ CREATE TABLE habitat_classes (
 CREATE TABLE country_habitats (
   country_code text NOT NULL,
   habitat_code integer NOT NULL,
-  est_area_km2 numeric(12, 2) NOT NULL
+  est_area_km2 numeric(12, 2) NOT NULL CHECK (est_area_km2 >= 0 AND est_area_km2 < 'Infinity')
 );
 
 CREATE VIEW species_taxonomy AS

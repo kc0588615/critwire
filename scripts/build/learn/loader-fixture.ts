@@ -33,6 +33,7 @@ export const fixtureSpec = (schema: string, over: Partial<LoaderSpec> = {}): Loa
     { name: "texts", key: ["id"] },
     { name: "shapes", key: ["id"] },
   ],
+  checks: [],
   ...over,
 });
 
