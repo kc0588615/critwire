@@ -269,7 +269,7 @@ country_shapes | 247
 … 9 more rows
 ```
 
-Labs that create roles or schemas (d5) clean up in the same block, so running a block twice, or stopping halfway through a module, leaves nothing behind. Their names start with `learn_`, and creating roles needs the CREATEROLE privilege (a superuser has it; on your own install, see §3.2). This check creates a read-only role, reads a table as that role, and removes it again: `DROP OWNED BY` takes away what the role was granted, and only then can `DROP ROLE` remove it.
+Labs that create roles or schemas (d5) clean up in the same block, so running a block twice, or stopping halfway through a module, leaves nothing behind. Their names start with `learn_`, and creating roles needs the CREATEROLE privilege (a superuser has it; on your own install, see §3.2). This check creates a read-only role, reads a table as that role, and removes it again: `DROP OWNED BY` takes away what the role was granted, and only then can `DROP ROLE` remove it. `pnpm learn:check` runs the same block after the loader from `site/learn/sql/pg-role-smoke.sql`, inside its own `BEGIN` … `ROLLBACK` (the runner's rolled-back transaction, made explicit for psql), so a failed line leaves nothing; the result is the same (L1).
 
 ```sql
 -- q: pg-role-smoke
@@ -2358,8 +2358,8 @@ VALUES (1000, 74, 'https://example.org/axolotl-2.jpg', 'All rights reserved', 'A
   - **Second (2NF):** in a table whose key has several columns, no other column depends on only part of it.
   - **Third (3NF):** no other column depends on a column that isn't a key. The short version of all three: every column depends on the key, the whole key, and nothing but the key. (**Boyce–Codd normal form** tightens 3NF for tables with several overlapping keys; critwire's tables don't have that case.)
 - Normalizing splits a table along its dependencies. The split is **lossless** when joining the parts gives back exactly the rows you started with; splitting along a real dependency always is.
-- A nested file (JSON, or Parquet with structs and lists) groups facts by how they are read: one animal with everything about it. Tables group them by what they depend on. critwire keeps both: its build loads `data/` into tables, then writes `/v1/species.{json,parquet}` nested, because a reader wants one record per animal.
-- **Denormalizing** is repeating facts on purpose, for reading: the published files, d6's star, a summary table. It is safe when the copy is rebuilt from the normalized tables every time and never edited by hand; a value that is only a count of other rows (records per dataset) stays a query.
+- A nested file (JSON, or Parquet with structs and lists) groups facts by how they are read: one animal with everything about it. Tables group them by what they depend on. critwire keeps both: its build writes `/v1/species.{json,parquet}` nested, from the derived records in `data/species.json`, because a reader wants one record per animal, and loads the same records into a table whose keys and `CHECK`s refuse a record that breaks them, a check before anything is published.
+- **Denormalizing** is repeating facts on purpose, for reading: the published files, d6's star, a summary table. It is safe when every copy is rebuilt from one source every time and never edited by hand; a value that is only a count of other rows (records per dataset) stays a query.
 
 **Worked example:** How does critwire's nested record become tables? (002's lesson 14, re-run.) These queries read the published file itself, `species.parquet`, with DuckDB's own SQL: `read_parquet` opens a file, `"range".countriesWithOpenRecords` reaches into the record, and `unnest` turns a list into rows. The browser setup (§0) builds the tables with exactly these. Here is the jaguar's record, its countries one list in one cell:
 
@@ -2470,7 +2470,7 @@ Wikidata | 1 | CC0 1.0 | 76
 critwire base | 1 | CC BY 4.0 | 76
 ```
 
-So `source → license` goes into its own table, `sources`, one row per source, and the setup's `SELECT DISTINCT` gives exactly one row each. Its primary key now holds the rule: had two animals' entries named two licenses for one source, the load would have failed instead of storing both. The file repeats each license 69 to 76 times, and that is fine, because critwire's build writes the file from its tables every time. Which source gave which field is a fact about the animal and the field together, so it goes in `species_sources`, keyed (`species_id`, `field`). Joined back, they tell where each of the jaguar's facts came from (002's lesson 15):
+So `source → license` goes into its own table, `sources`, one row per source, and the setup's `SELECT DISTINCT` gives exactly one row each. Its primary key now holds the rule: had two animals' entries named two licenses for one source, the load would have failed instead of storing both. The file repeats each license 69 to 76 times, and that is fine, because critwire's build writes the file from one source, `data/species.json`, every time, and `pnpm derive` gives every animal's entry for a source that source's one license (`scripts/derive/record.ts`). Which source gave which field is a fact about the animal and the field together, so it goes in `species_sources`, keyed (`species_id`, `field`). Joined back, they tell where each of the jaguar's facts came from (002's lesson 15):
 
 ```sql
 -- q: d2-provenance

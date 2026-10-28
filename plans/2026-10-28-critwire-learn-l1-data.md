@@ -879,7 +879,7 @@ Every step:
   - Files: `e2e/learn-data.spec.ts` (every D15 learn-data bullet; screenshots `learn-data-1280.png`, `learn-data-375.png` in `E2E_ARTIFACTS`), `e2e/helpers.ts` (`assertBuilt` per D15); 004 §7.7 (the L1/L2 split of learn-data).
   - First: run red against a tampered `dist/` (one byte changed in `dist/learn/data/datasets.csv`; a stale `inputs` sha in `manifest.json`): the sha256 case and `assertBuilt` fail; then rebuild.
   - Verify: `T`, `E` (0 skipped), `H`.
-- [ ] S26 · `AGENTS.md` + remaining 004 fixes (D16, D17)
+- [x] S26 · `AGENTS.md` + remaining 004 fixes (D16, D17)
   - Files: `AGENTS.md` (the copy line verbatim from Notes; commands; data list; refresh order and its cost; the `replacedBy` note; databases; stack; DOI refresh per target), `plans/004-learn-curriculum.md` (d2: exports written from JSON, the mirror is a check; any D16 bullet not yet in).
   - Verify: `grep -cF` the new copy line = 1, the old = 0; each D16 bullet located in 004 (listed in Log); `T`. Decisions: 004 corrections done.
 - [ ] S27 · MF2 record validator (D12) · review item: to L3 if past 48 sessions
@@ -887,7 +887,7 @@ Every step:
   - First: V1–V10 (one per D12 value rule, plus the Wikidata ranges).
   - Verify: `T`, `D`, `E`, `H`.
 - [ ] S28 · MF2 issued ids (D12) · review item
-  - Files: `scripts/species.ts`, `scripts/derive/pipeline.ts` (`derivedFiles` + `data/issued-ids.json`), `data/issued-ids.json`.
+  - Files: `scripts/species.ts`, `scripts/derive/pipeline.ts` (`derivedFiles` + `data/issued-ids.json`), `data/issued-ids.json`, `AGENTS.md` (`data/issued-ids.json` in the derived list: D17's data list, deferred from S26 because the file doesn't exist yet).
   - First: V11–V16 (pair gone; slug changed; an issued slug under another id; retired record kept; union sorted and append-only; first write).
   - Verify: `T`; `diff <(jq -c 'map({id,slug}) | sort_by(.id)' $M/baseline/live-species.json) <(jq -c 'sort_by(.id)' data/issued-ids.json)` empty; `E`, `H`. Decisions: MF2 done.
 - [ ] S29 · MF3 for GBIF and COL (D13) · review item
@@ -1020,6 +1020,7 @@ What can go wrong across steps, and what the session does. `MISSION_BLOCKED` onl
 - SC7: done (S24).
 - S25: `learn-data.spec.ts` reads the manifest's column types with `enable_geoparquet_conversion = false` (the build's reader; the E2E DuckDB autoloads and would report `geom` as `GEOMETRY('OGC:CRS84')`), reset after. Occurrences are checked against `sample.csv`'s 11 columns (`SAMPLE_COLUMNS`) with `EXCEPT ALL` both ways for both formats; `country_code` stays derive's. Loader counts come from `species.json` (taxa = distinct class/order/family/genus names, sources, species_sources = fields, species_countries), `countries.json`, the sample's contributions and `shapes.json`/`habitat.json` rows. `assertBuilt` uses `readLabFiles` for the copies; `sha256`, `sqlText` and `learnManifest` exported from `e2e/helpers.ts`.
 - Fable MISSED 3: done (S25).
+- S26: 004 corrections done (D16): every bullet located (Log). New in S26: §0's pg-role-smoke note (learn:check's own BEGIN/ROLLBACK) and d2's three lines (the build writes the files from `data/species.json`; the table load is a check; the license repeat is safe because derive gives a source one license). 004 §5.2 d6's "the star is rebuilt from the normalized tables" (004:4093) left for L2, whose star it is. AGENTS.md (D17): copy line verbatim, commands, data list, refresh order + species-change cost, `replacedBy` note, `critwire_lab`/`LEARN_PG_URL` + `--reset-password` warning, `uv` stack line, DOI refresh as one table per target; also fixed the Data rules line that said build loads `data/` then writes `dist/`. `data/issued-ids.json` goes in with S28 (added to its Files).
 
 ## Log
 
@@ -1055,5 +1056,6 @@ What can go wrong across steps, and what the session does. `MISSION_BLOCKED` onl
 - 2026-10-28 10:22 UTC S23: `learn/check.ts` (`checkLab`: refusals 1–3, lab lock, canary, leak snapshot, loader sha256, two loads = manifest `tables`, pg-role-smoke, canary/leak after), CLI loader stage (`--dist`, `--canary-schema`), `db/learn/canary.sql` (= baseline reading), `site/learn/sql/pg-role-smoke.sql`. Red 1 file (module missing; 10 cases: LC1, LC2, LC3, LC4, LC5×3 incl. sha, LC7×2, LC8, LC10 via psql wrapper on PATH) → green: test:db 73/73, test 251/251, typecheck ok; mutations (counts check off → LC5; leak check off → LC8) fail; `pnpm build && pnpm learn:check` exit 0 (2 loads = manifest, smoke 0, learn_spatial unchanged, no leak); canary = spike baseline; no `learn_t_%` left.
 - 2026-10-28 10:39 UTC S24: forced failure (`forcedFailureLoader`, duplicate occurrences id, counts+md5 = load 2 via canary.sql), abort signal + SIGINT/SIGTERM in the CLI, temp loader removed in `finally`; 004 §7.6 (loader stage, canary identity, cleanup). Red 2 pure (module export missing) + 5 db (LC6 layout, partial, elsewhere; LC9 SIGINT; clean run's forced-failure line) → green: test 253/253, test:db 78/78, typecheck ok; mutations (no temp rm → both LC9; diff check off → LC6 partial) fail; `pnpm learn:check` ×2 exit 0 (`psql exit 3 at the duplicate key id=2241579, 14 tables unchanged`); no `learn_t_%` left. The in-process LC9 case (failing check frees lock + temp) passed red too: no temp file existed before S24.
 - 2026-10-28 10:46 UTC S25: `e2e/learn-data.spec.ts` (11 tests: every D15 learn-data bullet, screenshots 1280/375), `assertBuilt` + `dist/learn/data/` (inputs v1, sample sha256, data/learn copies), 004 §7.7 L1/L2 split. Red 5: tampered `datasets.csv` byte → sha256 case + datasets case fail; manifest `inputs.v1` sha, `inputs.sample` sha, a copy's sha → `assertBuilt` refuses each, naming it. Rebuild → green: typecheck ok, test 253/253, plain build ok, e2e 38/38 (0 skipped, 0 flaky, 38 traces), H 155/155. Artifact `$M/e2e-s25/`.
+- 2026-10-28 10:50 UTC S26: AGENTS.md (D17) + 004 §0 pg-role-smoke note, d2 ×3 (004:2361, 2362, 2474). Copy line new 1, old 0. D16 located in 004: §0 41, 272; §3.2 506, 516, 522; §4.1 811–812; §4.2 847 (cap order, displacement), 850 (contract in derive), 859 (read-back, citation check, intent), 866 (sampleRules); §4.3 871, 877; §4.4 909; §4.5 925–927; §6.2 7765; §7.6 8061–8063; §7.7 8074; §B 8309; d2 2361. T: typecheck ok, test 253/253.
 
 ## Summary
