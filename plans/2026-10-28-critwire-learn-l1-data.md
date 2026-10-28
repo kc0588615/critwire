@@ -200,7 +200,7 @@ The review's numbering: MF = MUST-FIX, SC = SHOULD-CHANGE.
 - [x] Architecture: `architect` writes findings and the target design
 - [x] Fable review: `architecture-reviewer`
 - [x] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
-- [ ] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
+- [x] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
 - [ ] Steps: `planner` writes Steps and Verification
 
 ## Baseline
@@ -229,7 +229,7 @@ Architect, 2026-10-28, on `5c6c04e` (= `5ac58df` + this plan). Read: the brief a
 
 **F1. Nothing checks the destination before the destructive mirror load (MF1).** `scripts/db.ts:37–45` runs `db/schema.sql` (`drop table if exists species`, unqualified: `db/schema.sql:2,4`) on whatever `DATABASE_URL` resolves to; `scripts/env.ts:5–6` lets an inherited variable beat `.env` silently. Breaks fail fast. A stray URL drops another database's table, and the log never says which database was used. Fix: D11.
 
-**F2. The spike's loader isn't safe to publish as is (MF4, SC5).** It drops with `CASCADE` (`SP/scripts/loader.ts:191`) and checks only *outbound* dependencies (`:238–250`), so a learner's view or foreign key in another schema over `learn_curriculum` vanishes on a successful reload, which contradicts 004 §3.2's advice to "keep your own work in another schema" (004:505). The lab DDL has no domain checks (`SP/scripts/lab-ddl.sql:81,84,129`: uncertainty, year, `est_area_km2`). Fix: D9.6.
+**F2. The spike's loader isn't safe to publish as is (MF4, SC5).** It drops with `CASCADE` (`SP/scripts/loader.ts:191`) and checks only *outbound* dependencies (`:238–250`), so a learner's view or foreign key in another schema over `learn_curriculum` vanishes on a successful reload, which contradicts 004 §3.2's advice to "keep your own work in another schema" (004:505). A direct-edge inbound query wouldn't close it either: a view depends through its `_RETURN` rule, a default through `pg_attrdef`, a trigger and a policy through their own catalogs, and `pg_identify_object` gives all four a NULL schema (checked on PG16, revision). The lab DDL has no domain checks (`SP/scripts/lab-ddl.sql:81,84,129`: uncertainty, year, `est_area_km2`). Fix: D9.6.
 
 **F3. The lab runs as superuser, and the live catalog doesn't allow anything else yet (SC7).** The spike connects as `critter-ai` over the socket (`SP/scripts/pg.ts:12–14`), which masked Codex MF5's privilege bug. Live: `critwire_dev`'s ACL is `{critwire=CTc/critwire}` (PUBLIC has no CONNECT), and `learn_curriculum` (the spike's leftover, 42 relations) and `learn_spatial` are owned by `critter-ai`. A new role can't connect, can't drop the old schema, and can't read A2's canary. 004:8050 still says `learn:check` uses the superuser. Fix: D10.
 
@@ -278,7 +278,8 @@ Architect, 2026-10-28, on `5c6c04e` (= `5ac58df` + this plan). Read: the brief a
 | `data/gbif-learn-sample/contributions.json` | `pnpm derive` | `downloadKey`, `originalDownloadDoi`, `records`, `datasets {key: n}`, `sample {file, sha256}` |
 | `data/gbif-learn-sample/registration.json` | `pnpm gbif:register --target learn-sample` | GBIF's read-back, with `originalDownloadDOI` |
 | `data/learn/{country_shapes,admin1_shapes,ecoregions}.parquet`, `biomes.csv`, `shapes.json` | `pnpm ingest shapes` | GeoParquet 1.0.0 (WKB `geom`, bbox, CRS84, zstd, sorted by key); `shapes.json`: source URLs, bytes and sha256, tolerance, tool versions (Python, shapely, GEOS, pyogrio, GDAL, pyarrow), per output rows, bytes, sha256 and invalid-geometry counts, the 1:50m matcher report |
-| `data/learn/{habitat_classes,country_habitats}.parquet` | copied once from `SP/data/learn/` (= A2's `grown-data.ts` output) | stand-ins until L3's `pnpm ingest habitat` replaces them; sha256 recorded under Decisions |
+| `data/learn/{habitat_classes,country_habitats}.parquet` | copied once from `SP/data/learn/` (= A2's `grown-data.ts` output) | stand-ins until L3's `pnpm ingest habitat` replaces them |
+| `data/learn/habitat.json` | written once with the copy (L3's `ingest habitat` takes it over) | like `shapes.json`: per file bytes, sha256, rows; source (Jung et al. habitat map v004, cited as A2's `grown-data.ts` cites it), license, `standIn: true`, copied-from path and sha256 |
 
 `dist/learn/data/`: `index.html`, `manifest.json`, `occurrences.parquet`, `occurrences.csv`, `datasets.csv`, the four shape files, the two habitat files, `postgis/learn_curriculum.sql`. Committed lab data, for the cap: `data/raw/gbif-sample/`, `data/learn/`, `data/gbif-learn-sample/`.
 
@@ -288,19 +289,33 @@ New code: `scripts/ingest/{naturalearth,shapes,gbif-sample}.ts`, `scripts/ingest
 - **Ingest** `naturalearth`: the two pinned 1:10m files (sha256 `239eec57…f255`, `57da82be…8862`) via a new `getBytes` in `http.ts` (same pacing and retries; refuses a sha256 mismatch: CD11). Attributes only.
 - **Derive** `scripts/derive/naturalearth.ts`: the pure matcher, ported from `countries-draft.ts` with CD1–CD10 first. Signature `matchCountries(layers, {speciesCodes})` → rows plus a report (per code: layer, field, feature index; folded, from map units, gaps). Refuses a species code with no row, a stale snapshot (release, commit or `fields` differ from the constants), and every matching-rule failure.
 - **Build** `scripts/build/countries.ts`: `/v1/countries.json` = `formatJson(rows)`; Parquet and CSV through DuckDB from that file, every column VARCHAR (`NA` stays text), sorted by `code`, fixed writer options.
-- **Attribution:** `"Natural Earth"` is registered once in `scripts/build/sources.ts` (url, the long citation). Lab credits reuse that entry. `buildAttribution(species, registration, countries)` merges one entry: fields `countries.{name,continent,region,subregion}`, records 250, license `Public domain`, licenseUrl null, `retrieved`, `release: {version: "v5.1.2", issued: "2022-05-13"}` (a subset of the keys COL's `release` has, so one key keeps one type; this refines 002 §6), notes. The "registered but uncited" check counts `countries.json` as citing it.
+- **Attribution:** `"Natural Earth"` is registered once in `scripts/build/sources.ts` (url, the long citation; its `citation` ignores the `Source` argument, as Wikidata's does). Lab credits reuse that entry. `buildAttribution(species, registration, countries)` merges one entry: fields `countries.{name,continent,region,subregion}`, records 250, license `Public domain`, licenseUrl null, `retrieved`, `release: {version: "v5.1.2", issued: "2022-05-13"}` (a subset of the keys COL's `release` has, so one JSON key keeps one shape; this refines 002 §6), notes. The "registered but uncited" check counts `countries.json` as citing it.
+- **Typing (revision):** Natural Earth is never a record `Source`, so `Source.release` and `colCitation` don't change. The subset is typed on the attribution entry only: `Attribution["sources"][n].release` becomes `{ version: string; issued: string; key?: number; alias?: string }`, to which COL's release is assignable.
 - **Docs:** the three files, the field table, the `NA` note and "names follow Natural Earth"; "Used for 250 countries"; the "every file holds the same N records" line reworded; a link to `/learn/data/` (L2 changes it to `/learn/`).
 
 #### D5. Shapes (004 §4.1)
 - `pnpm ingest shapes` (TypeScript) fetches the pinned 1:50m admin-0 `countries` and `map_units` (`3e458fc0…fdeb`, `b8d421ac…4db0`), 1:50m admin-1 (`69a0e06e…26b9`) and `Ecoregions2017.zip` (`be36d620…2a60`) into a fresh temp folder (`downloadFile`, streamed and hashed). It runs `matchCountries` on the 1:50m attributes with gaps allowed (BV, GI, UM expected) and writes `select.json`: per code, the layer and feature index, plus that feature's `ADM0_A3`/`GU_A3` as a cross-check.
 - It then runs `.venv-learn/bin/python -I scripts/ingest/shapes.py --in <tmp> --select <file> --out <tmp-out>`. The Python script has no network and applies no country rule. It writes `country_shapes` (selected features, checked against the cross-check property), `admin1_shapes` (`adm1_code` key, `iso_a2` → `country_code`, `name`; `iso_3166_2` dropped), and `ecoregions` + `biomes.csv` (read in place via `/vsizip/`; `ECO_ID` 0 → NULL biome and realm, any other `N/A` fails; `simplify(preserve_topology=True)` per feature at a fixed 0.05°, no probe loop). All are GeoParquet via pyarrow with fixed options, so a re-run is byte-identical. It prints a JSON report.
-- TypeScript renames the outputs into `data/learn/` and writes `shapes.json`. The build refuses a `data/learn` shape whose sha256 differs from `shapes.json` (it catches hand edits and a half-finished rename).
+- TypeScript renames the outputs into `data/learn/` and writes `shapes.json`. The build refuses any of the six `data/learn/` data files whose sha256 differs from its provenance file, `shapes.json` or `habitat.json` (it catches hand edits and a half-finished rename), and a file that neither lists.
 - **Port check:** `country_shapes` equals the spike's/A2's per code (WKB equal, 247 rows); `admin1_shapes` and `ecoregions` equal the spike's files by sha256 (same pins, same code), or the difference is explained under Decisions.
 
 #### D6. The GBIF sample ingest, in TypeScript (decision 2)
-- **Pure modules.** `scripts/learn/download.ts`: `downloadRequest(gbifKeys)`, which builds 004 §4.2's predicate from constants exported by `scripts/ingest/gbif.ts` (`BACKBONE_KEY`, `BASIS_OF_RECORD`: one definition of the countries rule), plus `sameRequest(stored, built)` over `{format, checklistKey, predicate}`, the echo check included. `scripts/learn/sample-rules.ts`, ported from `sample_rules.py`: `speciesFor`, `effectiveLicense` (CC0 1.0 < CC BY 4.0 < CC BY-NC 4.0), `capSample(rows, 2000)` by ascending md5 of the decimal gbifID **then gbifID**, `countryKey(code, countryCodes)` (used by derive, D7), and `SAMPLE_RULES`, the fingerprint written into `download.json`.
-- **Which download.** `pnpm ingest gbif-sample [--download <key> | --new]`. The species come from `deriveCore`, which refuses stale derived files. The first run is `--download 0041824-260928105237408`; later runs reuse `download.json`'s key. Reuse requires GBIF status SUCCEEDED, `sameRequest`, and an unchanged zip sha256 when `download.json` exists. Otherwise it refuses and points to `--new`.
-- **`--new`.** One POST (never retried); the key goes into a local intent before anything else (D8's state helper, name `gbif-sample-download`). It polls once a minute and can resume: a re-run with an intent never posts again. KILLED, FAILED or CANCELLED stops and names the key. At the end, `totalRecords` must be within 0.1 % of the search count recorded at submit. One lock covers the whole run.
+- **Pure modules.** `scripts/learn/download.ts`: `downloadRequest(gbifKeys)`, which builds 004 §4.2's predicate from constants exported by `scripts/ingest/gbif.ts` (`BACKBONE_KEY`, `BASIS_OF_RECORD`: one definition of the countries rule), plus `sameRequest(stored, built)` over `{format, checklistKey, predicate}`, the echo check included. Its doc comment says the rest of GBIF's echo (`sendNotification`, `type`, `interpretedExtensions`, `verbatimExtensions`) is left out on purpose: full equality would refuse the spike's own download (DL1). `scripts/learn/sample-rules.ts`, ported from `sample_rules.py`: `speciesFor`, `effectiveLicense` (CC0 1.0 < CC BY 4.0 < CC BY-NC 4.0), `capSample(rows, 2000)` by ascending md5 of the decimal gbifID **then gbifID**, `countryKey(code, countryCodes)` (used by derive, D7), and `SAMPLE_RULES`, the fingerprint written into `download.json`.
+- **Which download.** `pnpm ingest gbif-sample [--download <key> | --new]`. The species (and their `ids.gbif`) come from `deriveCore(await readDeriveInputs())`, computed **in memory**. The ingest never calls `assertDerivedFiles` and never reads `species.json`: `deriveCore` refuses only stale *raw* inputs (the wikidata, col, gbif and naturalearth snapshots), whose ingests read no derived file. So the refresh order is a line with no cycle (D7). The first run is `--download 0041824-260928105237408`; later runs reuse `download.json`'s key. Reuse requires GBIF status SUCCEEDED, `sameRequest`, and an unchanged zip sha256 when `download.json` exists. Otherwise it refuses and points to `--new`.
+- **State.** One lock (`gbif-sample-download.lock`) covers the whole run. The intent `gbif-sample-download-intent.json` holds `{request, startedAt, searchCount, key}`. Both use D8's named state helpers. While an intent exists, any run only resumes or reconciles it (rows 1–2 below), and a `--download` of another key is refused.
+- **`--new`, decided by a pure `decideDownload` (first matching row wins):**
+  1. An intent with a `key`: resume polling that key. No POST.
+  2. An intent with `key: null` (the POST's outcome is unknown): list the user's downloads, `GET /occurrence/download/user/<GBIF_USERNAME>` (authenticated, every page). Keep those `created` at or after `startedAt` minus 5 min whose `request` passes `sameRequest` against the intent's request.
+     - One match: adopt it (write its key into the intent) and resume.
+     - Several: refuse, naming the keys.
+     - None: refuse with "a POST at <t> may have created a download and GBIF lists none yet; re-run later; delete <intent> only when sure nothing was created". This is `decide`'s rule in `gbif:register`: never a second POST while one may exist.
+  3. No intent and `--new`:
+     - Write the intent with `key: null` **before** the POST (`wx`), recording the search count at submit.
+     - Then the one POST (never retried; `postOnce`, D8), classified by `classifyPost` with the download-key parser (`^\d{7}-\d{15}$` on the text body).
+     - Created: rewrite the intent with the key (temp file + rename).
+     - Rejected (4xx other than 408/429): delete the intent and stop.
+     - Ambiguous: keep the intent and stop ("re-run to reconcile").
+- **Polling.** Once a minute. At the end, `totalRecords` must be within 0.1 % of the intent's `searchCount`. KILLED, FAILED or CANCELLED is final on GBIF's side: the run deletes the intent and stops, naming the key and the status. After a successful write (below), the intent is deleted **after** `download.json` holds the key, so a key is never lost (`finish`'s order in `gbif:register`).
 - **Fetch.** `downloadFile` streams the zip into a fresh temp folder; its size must equal GBIF's `size`. `unzip -Z1` must list exactly `<key>.csv` (the zip is one 229 MB deflate member with a data descriptor), and `unzip -p` streams it, CRC-checked.
 - **Parse.** A line reader splits on tab only (SIMPLE_CSV has no quoting, F10) and requires exactly the header's 50 fields. Each column is typed with a refusal (P1–P8, D15), and the species rule is applied. It counts rows per dataset and per record license, then checks: rows = `totalRecords`; per-dataset rows = GBIF's paged `/occurrence/download/<key>/datasets` listing. These are the spike's load checks, without PostGIS.
 - **Metadata.** `/dataset/<key>` and `/organization/<key>` (once per publisher) through `getJson` at ≤ 2 req/s. An unknown license URL, a missing title or a missing publisher fails and writes nothing.
@@ -308,22 +323,34 @@ New code: `scripts/ingest/{naturalearth,shapes,gbif-sample}.ts`, `scripts/ingest
 - **Parity (DoD).** `scripts/learn/sample-parity.test.ts` writes occurrences through the build's own writer into a temp folder. It compares the row count and a canonical DuckDB md5 (the 12 columns as text, ordered by id) with `SPIKE_SAMPLE`, a constant computed once from `SP/site/learn/data/occurrences.parquet` by the same query (command in the commit). Verification also runs a one-off `EXCEPT` both ways against the spike file. Only a new download may change the constant (004 §9).
 
 #### D7. Derive
-- `deriveAll` = `deriveCore` (species, mismatches, contributions, countries, issued ids) + `deriveLearn(core, learnInputs)` (sample, learn contributions, learn DOI). `pnpm derive`, `build` and `gbif:register` call `deriveAll`. `ingest gbif-sample` calls `deriveCore`, so a stale sample never blocks its own re-ingest. `derivedFiles` lists the three new files.
+- `deriveAll` = `deriveCore` (species, mismatches, contributions, countries, issued ids) + `deriveLearn(core, learnInputs)` (sample, learn contributions, learn DOI). `pnpm derive`, `build` and `gbif:register` call `deriveAll`. `ingest gbif-sample` calls only `deriveCore`, in memory, and asserts no committed derived file (D6), so a stale sample never blocks its own re-ingest. `derivedFiles` lists the three new files.
+- **Refresh order after a species change (revision, Astra MF1).** The steps run in one line:
+  1. `seed:cc`;
+  2. `ingest wikidata|col|gbif` as needed (they read `base.json` only);
+  3. `ingest gbif-sample --new` (reads raw snapshots, computes the core in memory);
+  4. `pnpm derive`, which writes everything at once;
+  5. the DOI refreshes (learn-sample always; countries when its counts moved);
+  6. `build`.
+
+  `pnpm derive` refuses a stale sample and writes nothing before step 3, so `species.json` is never committed out of step with the sample. Nothing reads a derived file to produce a raw one.
+- **Cost, stated (Fable MISSED 1).** Adding or removing a species, or changing an `ids.gbif`, changes `downloadRequest`, so the sample is stale. Plain `pnpm build`, and so `deploy`, refuses until all of this is done: a new GBIF download (about 17 min of waiting), `ingest gbif-sample --new`, derive, a new `learn-sample` DOI (tag and register), and the countries DOI refresh whenever its counts moved. `--draft` lifts only the two DOI checks, never freshness: a stale sample fails every build. D17 puts this in `AGENTS.md`, and the Summary repeats it for L2.
 - `scripts/derive/sample.ts` (pure): parses `sample.csv` (refuses malformed rows, duplicate ids, unknown dataset keys). **Freshness (MF3, sample):** `download.request` must equal `downloadRequest(core's ids.gbif)`, `download.sampleRules` must equal `SAMPLE_RULES`, and `datasets.json.downloadKey` must equal the download's key. Otherwise: "data/raw/gbif-sample is stale: run pnpm ingest gbif-sample".
-- It applies `countryKey` against `countries.json` (an unknown code that isn't ZZ or XZ fails, naming it). It returns the 12-column occurrence rows, the sample's dataset rows (declared license) and the contributions. The contract runs here, not in the ingest, so `sample.csv` doesn't depend on `countries.json`: a countries fix (002 §6's narrowest new rule) needs no GBIF re-ingest. One function either way.
+- It applies `countryKey` against the core's in-memory countries rows (= `countries.json` once derived; an unknown code that isn't ZZ or XZ fails, naming it). It returns the 12-column occurrence rows, the sample's dataset rows (declared license) and the contributions. The contract runs here, not in the ingest, so `sample.csv` doesn't depend on `countries.json`: a countries fix (002 §6's narrowest new rule) needs no GBIF re-ingest. One function either way.
 - It prints `learn-sample DOI current <doi>`, or `missing/stale: commit, push, push tag gbif-learn-<hex12>, then pnpm gbif:register --target learn-sample`.
 
 #### D8. Two registration targets (SC4)
 - `scripts/gbif/targets.ts`: `TARGETS.countries` and `TARGETS["learn-sample"]`, each with `{contributionsFile, registrationFile, depositPath, tagPrefix, stateName, requestBody(c, sha, sourceUrl), downloadDoi(c), isCurrent(c, reg)}`. `countries` keeps every current value (files, `gbif-dd-`, `gbif-register.lock`, `gbif-register-intent.json`, title and description), so its behaviour and `registration.json` bytes don't change.
 - `learn-sample`: `data/gbif-learn-sample/`, tags `gbif-learn-`, state name `gbif-register-learn-sample`. Its body adds `originalDownloadDOI` and describes the sample (download DOI, rules, files at sourceUrl) above the hash line. `isCurrent` requires the same counts **and** the same `originalDownloadDOI`.
-- `state.ts`: the lock and intent take a name. `depositTag(prefix, sha)`. `readBackErrors` gains `expectedDownloadDoi`: a mismatch is a hard error, on post, adopt and verify alike. `DerivedDatasetRecord` and `Registration` gain an optional `originalDownloadDOI`, written only for a target that has one (so countries' canonical JSON is unchanged). `decide` and `classifyPost` don't change.
+- `state.ts`: the lock and intent take a name, and the intent's type is a parameter (`readIntent<T>(name)`, `createIntent(name, value)`, new `replaceIntent(name, value)` by temp file + rename, `deleteIntent(name)`, `withLock(name, label, fn)`). The countries names stay `gbif-register.lock` and `gbif-register-intent.json`. The sample download (D6) uses the same helpers.
+- `depositTag(prefix, sha)`. `readBackErrors` gains `expectedDownloadDoi`: a mismatch is a hard error, on post, adopt and verify alike. `DerivedDatasetRecord` and `Registration` gain an optional `originalDownloadDOI`, written only for a target that has one (so countries' canonical JSON is unchanged).
+- `decide` doesn't change. `classifyPost(outcome, parse = parseDoi)` gains an optional parser, so the download POST reuses its 2xx / 4xx / ambiguous rule; register's call is unchanged. `postOnce` moves from `gbif-register.ts` to `scripts/gbif/post.ts` (body and auth as parameters), the one never-retried POST for both.
 - `pnpm gbif:register [--target countries|learn-sample]`, countries by default so AGENTS.md's steps keep working; `checkDeposit` uses the target's path and prefix.
 - A doc comment on `isCurrent`: it checks counts for citation (plus the download for learn-sample), never record identity. Identity is the contributions' `sample.sha256` under the hash line, and the manifest's sha256s.
 - Before the one POST: read GBIF's derived-dataset API docs on `originalDownloadDOI` + `relatedDatasets` (does GBIF keep our subset counts when both are given?) and record the answer under Decisions. If it's unclear, add a handoff item and do other steps meanwhile.
 
 #### D9. Build
 **9.1 Flow.** `build.ts` orchestrates:
-1. `readBuildInputs` runs `deriveAll` + `assertDerivedFiles`, `validateRecords` (D12), `assertLearnProjection` (9.5), the shapes' sha256 check and the committed-data cap. A plain build refuses either DOI if it isn't current, naming the target and the refresh steps; `--draft` builds without both.
+1. `readBuildInputs` runs `deriveAll` + `assertDerivedFiles`, `validateRecords` and `assertRecordKeys` (D12), `assertLearnProjection` (9.5), the `data/learn/` sha256 check (D5) and the committed-data cap. A plain build refuses either DOI if it isn't current, naming the target and the refresh steps. `--draft` builds without both DOIs, and lifts nothing else (D7).
 2. Attribution, docs.
 3. `loadDatabase` (D11).
 4. `rm dist`, then `/v1` species files (unchanged code path), `/v1/countries.*`, attribution, `index.html`.
@@ -360,8 +387,21 @@ New code: `scripts/ingest/{naturalearth,shapes,gbif-sample}.ts`, `scripts/ingest
 
 **9.6 The loader** (`build/learn/loader.ts`, a port of `SP/scripts/loader.ts` with its schema parameter):
 1. `\set ON_ERROR_STOP on`, `BEGIN`, `SET client_encoding = 'UTF8'`, `SET LOCAL lock_timeout = '60s'`.
-2. **The MF4 guard** (DO block): when the schema exists, list objects outside it that depend on objects inside it (`pg_depend` × `pg_identify_object` on both ends, deptype n/a). If any exist, raise with their identities and the explanation: the reload would drop them; move or drop them, or use a database just for the labs.
-3. `DROP SCHEMA … CASCADE`, `CREATE SCHEMA`, `SET LOCAL search_path`.
+2. **The MF4 guard and the drop, one DO block (revision, Astra MF3).** Postgres computes the cascade itself, so the guard doesn't re-implement its dependency rules (internal-owner promotion, rules, partitions, extensions). The guard only classifies what the cascade removed:
+   - a. **Snapshot:** every distinct dependent `(classid, objid, objsubid)` in `pg_depend` whose owning schema isn't the lab schema, keyed to `pg_identify_object(…).type || ' ' || identity`.
+     - The owning schema is `pg_identify_object(…).schema`, except for rules, triggers, defaults and policies, whose schema is NULL there. Those four take their relation's: `pg_rewrite.ev_class`, `pg_trigger.tgrelid`, `pg_attrdef.adrelid`, `pg_policy.polrelid`.
+     - `pg_toast` is excluded: a TOAST table and its index belong to their table, which has its own entry.
+     - A NULL schema after that (casts, event triggers) counts as outside.
+   - b. `DROP SCHEMA IF EXISTS <schema> CASCADE`.
+   - c. **Diff:** a snapshot entry that is no longer a dependent in `pg_depend` was removed by the cascade. If there is any, `RAISE` with every identity and the explanation: these are yours, outside `<schema>`, and the reload would drop them; move or drop them, or use a database just for the labs. The raise aborts the loader's one transaction, so nothing changes.
+   - Proven on PG16 in `critwire_dev`, in rolled-back probes (revision):
+     - It caught an outside view and materialized view (with their `_RETURN` rules and row types), an FK with its RI triggers, a column of an inside enum, two defaults (an inside function and an inside sequence), a function taking an inside type, a trigger running an inside function, and a policy reading an inside table.
+     - No inside object was reported (TOAST, identity, index, inside view).
+     - A non-superuser schema owner's cascade drops another role's outside view: the guard is what stops it.
+     - It took about 0.85 s with 3,170 outside dependents (PostGIS and postgis_raster installed).
+     - Today nothing outside depends on the spike's leftover `learn_curriculum` (a read-only edge count, 0), so the first real load isn't refused.
+   - The generator emits the block per schema parameter (`learn_curriculum`, or `learn_t_*` in tests).
+3. `CREATE SCHEMA`, `SET LOCAL search_path`.
 4. `db/learn/lab-ddl.sql`: the spike's, plus SC5's CHECKs: `coordinate_uncertainty_m >= 0 AND coordinate_uncertainty_m < 'Infinity'`, which also rejects NaN; `year > 0`; `est_area_km2 >= 0`. Unknown values stay NULL. The ingest already bounds the year at the download's year.
 5. `COPY … FROM stdin (FORMAT csv)` per table, ordered by key; WKB as base64.
 6. `db/learn/lab-keys.sql`.
@@ -372,10 +412,10 @@ New code: `scripts/ingest/{naturalearth,shapes,gbif-sample}.ts`, `scripts/ingest
 The browser's `setup.sql` stays 004's byte for byte; CHECKs aren't drawn on the ERDs.
 
 **9.7 Credits and manifest** (`build/learn/credits.ts`).
-- `LAB_SOURCES` (critwire, Natural Earth from `sources.ts`, the GBIF download with `datasets: "datasets.csv"` and the sample's derived-dataset DOI, RESOLVE, Jung marked "stand-in until L3") and `LAB_FILES` (file → source ids). `credits(file)` refuses: no sources, an unknown source, a license missing from `LICENSE_URLS`, CC BY without a citation, a sample dataset without title or publisher.
+- `LAB_SOURCES` (critwire, Natural Earth from `sources.ts`, the GBIF download with `datasets: "datasets.csv"` and the sample's derived-dataset DOI, RESOLVE, and Jung, read from `habitat.json` and marked "stand-in until L3") and `LAB_FILES` (file → source ids). `credits(file)` refuses: no sources, an unknown source, a license missing from `LICENSE_URLS`, CC BY without a citation, a sample dataset without title or publisher.
 - `manifest.json` (keys in fixed order, no clock):
   - `cap`, `bytes`;
-  - `inputs` (SC2): bytes and sha256 of `/v1/species.parquet` and `/v1/countries.parquet`, the two files the projection read;
+  - `inputs` (SC2): bytes and sha256 of `/v1/species.parquet` and `/v1/countries.parquet`, the two files the projection read; plus `sample.csv`'s sha256 (= `contributions.json`'s `sample.sha256`, the DOI deposit's file) and rows (= its `records`), so a learner and `assertBuilt` (D15) can tie the published sample to the deposit;
   - `dois {download, sample}` (sample null in a draft);
   - `files`, per data file: `columns`, `rows` (Parquet and CSV), `bytes`, `sha256`, `sources`. The loader entry adds `tables` (14 row counts), which `learn:check` and E2E compare against.
 - The manifest excludes itself and `index.html`, both written after it.
@@ -395,26 +435,40 @@ The browser's `setup.sql` stays 004's byte for byte; CHECKs aren't drawn on the 
   6. Snapshot `learn_%` roles and schemas.
   7. Check the loader's sha256 against the manifest.
   8. `psql -X -v ON_ERROR_STOP=1 -f` the loader twice; after each run, the 14 row counts must equal the manifest's `tables`.
-  9. **Forced failure:** a copy cut inside the `occurrences` COPY must make psql fail, leaving counts and per-table md5 unchanged.
+  9. **Forced failure (revision, Fable MF1, Astra SC2): an injected constraint-violating row, never a cut.**
+     - The check writes a temp copy of the loader with one extra line before the `\.` that ends the `occurrences` COPY: a copy of that COPY's first data row, so its `id` is a duplicate.
+     - Every COPY then succeeds, and the load fails at `ALTER TABLE occurrences ADD PRIMARY KEY` in `lab-keys.sql`. That is the latest point after the DROP, so the run proves the whole load is one transaction.
+     - The injection site must be found exactly once (the `COPY <schema>.occurrences … FROM stdin (FORMAT csv);` line and its `\.`), else learn:check fails with "loader layout changed".
+     - It asserts all three: psql exits non-zero, stderr names the duplicate key, and the 14 counts and per-table md5 equal those after step 8's second load.
+     - A cut COPY isn't used: on a row boundary psql ends the COPY at EOF, exits 0 and the disconnect rolls back, so it's non-deterministic.
   10. Run `site/learn/sql/pg-role-smoke.sql` (in its own BEGIN/ROLLBACK, so its last SELECT gives 0, the same result as 004's block); this proves CREATEROLE.
   11. Canary after = before; leak check = snapshot.
 - **Cleanup:** a `finally` releases the lock, ends the connections and removes temp files. A SIGINT/SIGTERM handler kills the running psql and then runs the same cleanup.
-- **`--setup`** connects as libpq's default role, which must be a superuser, and refuses `critwire`. Idempotent:
+- **`--setup [--env <file>]… [--reset-password]`** connects as libpq's default role, which must be a superuser, and refuses `critwire`. Idempotent:
   1. `CREATE ROLE critwire_lab LOGIN CREATEROLE PASSWORD <random>` if missing, and `ALTER ROLE critwire_lab SET createrole_self_grant = 'set, inherit'`.
   2. `GRANT CONNECT, CREATE, TEMPORARY ON DATABASE <db>`.
   3. If it exists, `ALTER SCHEMA learn_curriculum OWNER TO critwire_lab` (needed for the spike's leftover).
   4. Refuse if `critwire_lab` has CREATE on `public` or if `postgis` is missing (the superuser creates extensions).
-  5. Write or replace `LEARN_PG_URL=postgres://critwire_lab:…@127.0.0.1:5432/<db>` in `./.env` (mode kept, value never printed), and reset the password only when the URL is missing or fails to connect. Each later mission's worktree runs `--setup` once.
+  5. **`LEARN_PG_URL` (revision, Fable SC2).** A password is set only when the role is created or with `--reset-password`; a missing or failing URL never resets it silently, because a reset breaks every other checkout's copy.
+     - With a new password, it writes `LEARN_PG_URL=postgres://critwire_lab:…@127.0.0.1:5432/<db>` into each `--env` file (default `./.env`).
+     - Without one, each listed file must already hold a URL that connects as `critwire_lab`. Otherwise it refuses, naming the file and the fix: copy the line from a checkout where it works, or `--reset-password` with every checkout's file listed.
+     - The write replaces only the `LEARN_PG_URL=` line (or appends it). Every other line stays byte for byte, and so does the file mode: a temp file in the same folder, chmod to the original mode, then rename. No value is ever printed.
+     - L1's setup step runs it with `--env .env --env /srv/critter-ai/critwire/.env`. The project `.env` is the one the mission runner copies into new worktrees (`~/AGENTS.md`), so L2–L5 inherit a working URL and never reset.
 - **Update 004 §0, §3.2 and §7.6 in the same commit:** `critwire_lab` via `LEARN_PG_URL`; `pg-role-smoke` wrapped in its own transaction; a disposable lab database recommended; the loader's dependency refusal; the canary read as the admin role.
 
 #### D11. MF1
 - `loadDatabase` first runs `select current_database()` and calls the pure `assertTarget(current, process.env.CRITWIRE_DB_TARGET)`. A missing variable throws naming it; a mismatch throws naming both database names. Only then does it take the advisory lock, under `SET LOCAL lock_timeout` (30 s) and `statement_timeout` (120 s), with the test-only overrides as parameters.
 - `db/schema.sql` and the insert use `public.species`.
-- `loadEnv` parses `.env` with `node:util` `parseEnv` and logs each variable that both sources set and which source won. For `DATABASE_URL` it logs only the database name, never the URL.
+- **`loadEnv` (revision, Fable MF2, Astra MF4): one rule for every variable, no special case.**
+  - It parses `.env` with `node:util` `parseEnv` and sets only the variables the environment lacks.
+  - For each variable that both set to different values, it logs one line: `env: <NAME> from the environment (overrides .env)`. The line holds the name and the winning source, never a value or any part of one (no URL host, user or database). This covers `DATABASE_URL`, `LEARN_PG_URL` and `GBIF_PASSWORD` alike. Values are compared in memory only.
+  - The database name the brief asks for comes from the server: `loadDatabase` logs `loading into <current_database()>` after the guard. No code parses a URL in order to log it.
+  - `requireEnv` and every refusal name the variable, never its value.
 - `learn:check`, E2E and L4 never read `CRITWIRE_DB_TARGET`. `deploy` is unchanged (both `.env` files carry the variable: Baseline).
 
 #### D12. MF2
-- **`validateRecords(records, issuedIds)`** in `scripts/species.ts`, next to `validateBase`, is the one record validator. It runs inside `deriveCore` (so in derive, build, register and ingest) and in `pnpm db:load`. It absorbs `assertRecordKeys` and the `inputs.ts` checks.
+- **`validateRecords(records, issuedIds)`** in `scripts/species.ts`, next to `validateBase`, is the one record *value* validator. It runs inside `deriveCore` (so in derive, build, register and ingest) and in `pnpm db:load`. It absorbs the `inputs.ts` value checks (all-digit slug, photo completeness).
+- **The key-shape check stays where it is (revision, Fable SC4).** `assertRecordKeys` stays in `build/columns.ts` with `RECORD_COLUMNS`, the list it checks against, so derive never imports build code. `readBuildInputs` and `load.ts` each call both checks; `load.ts` already sits on the build side, next to `db.ts`. One definition each, no layer crossing.
 - **What it checks:**
   - non-empty strings;
   - slug grammar `^[a-z0-9]+(-[a-z0-9]+)*$`, not all digits;
@@ -452,14 +506,27 @@ These replace the name-set and `taxonKey` checks. URLs stay stored as provenance
 - **Ports:** CD1–CD10 (matcher); CK1–CK5, spike-SC1–SC5 (cap, plus the gbifID tie-break), species rule (speciesKey first, synonym via taxonKey, none fails, two fail), effective license (stricter wins, unknown fails); LD1–LD4, LD10, LD11 in `test`, LD5–LD9 and LD12 in `test:db`; the spike's credit refusals (ST4).
 - **New:**
   - **P1–P8 parser:** field count, non-numeric or out-of-range coordinates, negative/NaN/infinite uncertainty, year < 1 or after the download's year, month outside 1–12, unknown basis, license or status, duplicate gbifID, unknown dataset key.
-  - **DL1–DL10 download:** the builder equals the spike's stored predicate for the 73 keys; an echo missing a checklistKey; stored ≠ built refuses reuse; zip sha256; totalRecords; per-dataset counts; unknown license or no title or publisher writes nothing; an existing intent resumes without a POST; KILLED/FAILED stops; an ambiguous POST keeps the intent.
+  - **DL1–DL15 download:** the builder equals the spike's stored predicate for the 73 keys (and `sameRequest` accepts GBIF's full echo); an echo missing a checklistKey; stored ≠ built refuses reuse; zip sha256; totalRecords; per-dataset counts; unknown license or no title or publisher writes nothing. Then `decideDownload` and the POST path (revision):
+    - DL8: the intent is on disk before the POST is sent;
+    - DL9: an intent with a key resumes without a POST;
+    - DL10–DL12: an intent without a key lists, and one match adopts, two refuse naming both, none refuses (no POST in any of them);
+    - DL13: a rejected POST deletes the intent; an ambiguous one keeps it;
+    - DL14: KILLED or FAILED deletes the intent and stops; with an intent present, a run only resumes or reconciles, and `--download <other key>` is refused.
+    - DL15: `ingest gbif-sample`'s species come from the in-memory core: with `species.json` deliberately stale and a raw snapshot fresh, it still builds the request (no `assertDerivedFiles`; Astra MF1).
   - **RT1–RT7 register:** targets don't share lock, intent, tag or deposit path; one target's intent doesn't block the other; the learn body carries `originalDownloadDOI`; a wrong read-back DOI is a hard error; an ambiguous successful POST is adopted on the next run, DOI checked; countries' `registration.json` bytes unchanged; `isCurrent` is false on the same counts with another download.
-  - **LD13–LD16 loader:** an outside view, then an outside foreign key, each refused with both schemas intact; SC5 CHECK violations; `LAB_CHECKS` raising in the DO block.
+  - **LD13–LD18 loader (`test:db`):**
+    - LD13: an outside view is refused, naming it, with both schemas intact.
+    - LD14: an outside foreign key, the same.
+    - LD15: the other kinds the guard must catch (a materialized view, a column of an inside type, a default calling an inside function, a function over an inside type, a trigger, a policy), each refused alone.
+    - LD16: no false positive: inside views, identity columns, indexes and a TOAST-backed column reload cleanly.
+    - LD17: SC5 CHECK violations.
+    - LD18: `LAB_CHECKS` raising in the DO block.
+  - **LX, one case per `LAB_CHECKS` entry, in both engines (revision, Fable SC1):** `LAB_CHECK_FIXTURES` gives, per check, one clean row set and one violating row. `checks.test.ts` (DuckDB in memory) and `checks.dbtest.ts` (Postgres, a `learn_t_*` schema) run every query on both, and require 0 on the clean set and exactly 1 on the violating one. The fixtures include `'Infinity'`, NaN, a negative uncertainty and month 13, where the engines differ.
   - **PJ1–PJ3 projection; CAP1–CAP3 cap.**
-  - **G1–G7 MF1:** G1–G2 pure plus database (wrong or missing target refuses before any DDL: the table's oid is unchanged); G3 matching target loads; G4 log redaction.
+  - **G1–G7 MF1:** G1–G2 pure plus database (wrong or missing target refuses before any DDL: the table's oid is unchanged); G3 matching target loads; **G4 redaction (revision):** sentinel values for `DATABASE_URL`, `LEARN_PG_URL` and `GBIF_PASSWORD`, set differently in the environment and in a temp `.env`, with stdout and stderr of `loadEnv` and `loadDatabase` captured. The captured output names each overridden variable and its source and the `current_database()`, and contains no sentinel or any part of one (password, host, user, or a database name taken from the URL).
   - **V1–V16 MF2:** each validator rule and each issued-ids rule.
   - **F1–F8 MF3:** each URL, the checklist, occurrences presence, the sample's request, `sampleRules`.
-  - **LC1–LC10 `learn:check`** (`test:db`, spawning the CLI): name refusal, `current_database()` refusal, no CREATEROLE, lock held, counts, forced failure, canary diff, leaked role, SIGINT mid-run (lock free, nothing left), and no `DATABASE_URL` in the child environment. **LS1–LS3 `--setup`:** privileges, idempotent, refuses a non-superuser.
+  - **LC1–LC10 `learn:check`** (`test:db`, spawning the CLI): name refusal, `current_database()` refusal, no CREATEROLE, lock held, counts, forced failure (the injected duplicate row: exit non-zero, counts and md5 unchanged, and a loader without the injection site fails "layout changed"), canary diff, leaked role, SIGINT mid-run (lock free, nothing left), and no `DATABASE_URL` in the child environment. **LS1–LS5 `--setup`:** privileges; idempotent; refuses a non-superuser; LS4 the `.env` rewrite keeps every other line and the mode byte for byte, and no value reaches the output; LS5 an existing role with no working URL in a listed file is refused unless `--reset-password` is given.
 - **E2E** (expectations from `data/` and the manifests, never typed in).
   - New `countries.spec.ts`: the three files return 200; exactly five VARCHAR columns, non-empty, sorted, unique code and name; 250 rows equal `countries.json`; the same rows in all three formats; `NA` is text; k01 gives 0 unmatched.
   - `docs.spec.ts`, `duckdb.spec.ts` and `attribution.spec.ts` gain the countries files, the `/learn/data/` link and the Natural Earth entry.
@@ -472,6 +539,7 @@ These replace the name-set and `taxonKey` checks. URLs stay stored as provenance
     - `inputs` sha256 = the served `/v1` files';
     - the index lists every sample dataset with title, publisher, license and records, every file, and both DOIs;
     - screenshots of `/learn/data/` at 1280 and 375 px.
+  - **`assertBuilt` (global setup; revision, Fable MISSED 3)** also refuses a stale `dist/learn/data/`, with one read of `manifest.json` and no new mechanism: `inputs`' sha256 must equal `dist/v1/{species,countries}.parquet`, `inputs`' sample sha256 must equal `contributions.json`'s, and each copied `data/learn/` file's manifest sha256 must equal `shapes.json`/`habitat.json`.
   - The star's key coverage is L2's case. The registration conditions skip only while `registration.json` is missing, as `attribution.spec.ts` does, so the final run skips nothing.
 - **Unchanged `/v1` bytes** (Verification, not E2E): the species files' sha256 against `baseline/dist.sha256`; `attribution.json` differs only by the Natural Earth entry (`jq`).
 
@@ -486,8 +554,9 @@ These replace the name-set and `taxonKey` checks. URLs stay stored as provenance
   - the contract runs in derive;
   - `download.json` gains `sampleRules`;
   - the read-back checks `originalDownloadDOI`;
-  - `isCurrent` is a citation check.
-- **§4.3:** the dependency guard, the CHECKs and `LAB_CHECKS`, `lock_timeout`.
+  - `isCurrent` is a citation check;
+  - a new download writes its intent before the POST and reconciles through the user's download listing (revision).
+- **§4.3:** the dependency guard (drop, then diff, inside the transaction), the CHECKs and `LAB_CHECKS`, `lock_timeout`.
 - **§4.4:** the committed directories.
 - **§4.5:** the manifest schema (`inputs`, `dois`, `tables`).
 - **§6.2 dictionary:** year and uncertainty bounds; NULL = unknown.
@@ -498,8 +567,13 @@ These replace the name-set and `taxonKey` checks. URLs stay stored as provenance
 #### D17. AGENTS.md
 - The copy line, replaced verbatim (Notes).
 - **Commands:** `ingest naturalearth|shapes|gbif-sample`, `learn:venv`, `learn:check [--setup]`, `test:db`, `gbif:register --target`.
-- **Data list:** D3's files and who writes each; the stand-ins.
-- **Databases:** `CRITWIRE_DB_TARGET` (the build and `db:load` only), `critwire_lab`/`LEARN_PG_URL`.
+- **Data list:** D3's files and who writes each; the stand-ins and `habitat.json`.
+- **Refresh order and its cost (revision, Fable MISSED 1):** D7's line of steps, and the warning:
+  - adding or removing a species, or changing an `ids.gbif`, makes the GBIF sample stale;
+  - `deploy` then fails until a new GBIF download (about 17 min), `ingest gbif-sample --new`, derive and a new `learn-sample` DOI;
+  - `--draft` doesn't lift it.
+- **Next to "Retired ids get `replacedBy`" (revision, Fable MISSED 2):** until Learn's projection has a replacement junction (L2's to add), a record with `replacedBy` fails `pnpm build`, `/v1` included, so don't retire an id before then.
+- **Databases:** `CRITWIRE_DB_TARGET` (the build and `db:load` only), `critwire_lab`/`LEARN_PG_URL`. `learn:check --setup --reset-password` breaks every other checkout's `LEARN_PG_URL`: list each checkout's `.env` with `--env`, or copy the line instead. CLIs log environment variable names, never values.
 - **Stack:** Python via `uv` in `.venv-learn`, for `ingest shapes` only.
 - **GBIF DOI refresh:** the same steps per target, with the target's file, tag prefix and `--target`; never move a `gbif-dd-*` or `gbif-learn-*` tag.
 
@@ -533,7 +607,7 @@ About 30 steps, each one session:
 | MF3 (GBIF/COL) | 1 |
 | SC3 leftovers | 1 |
 
-With the 4 remaining stages, the code review, about 2 fix steps, verification and the release, that's about 42 sessions.
+With the 4 remaining stages, the code review, about 2 fix steps, verification and the release, that's about 42 sessions. The revision adds about one step's work (the download reconciliation, the guard's cases, the two-engine check fixtures, `--setup`'s `.env` handling): about 31 steps, about 43 sessions.
 
 Risky units:
 - **The live registration:** the one network write. Do it right after the sample derive (around session 20), months before 2027-04-23.
@@ -557,6 +631,17 @@ Risky units:
 - Checking ids against the live `species.json` at build time: the build is offline.
 - Committing the GBIF zip, or a new download: 35 MB that GBIF archives under its DOI; reuse works (Baseline).
 - CORS or Caddy header changes: the owner's answer is no.
+- (Revision) A recursive `pg_depend` walk that resolves owners in SQL: it re-implements Postgres's cascade rules (internal-owner promotion, rules, partitions, extension members), and a missed rule silently drops a learner's object. Drop-then-diff lets Postgres compute the closure.
+- (Revision) A probe DROP in a subtransaction, then the real DROP: two drops and a gap between them. The one real DROP, checked before COMMIT, is atomic.
+- (Revision) Locking every schema relation before the snapshot: `LOCK … ACCESS EXCLUSIVE` needs privileges the lab role lacks on the spike's leftover (owned by `critter-ai`), and it only narrows a sub-second gap that concurrent DDL alone could hit (Open risks 9).
+- (Revision) The sample ingest checking the committed derived files: that creates Astra MF1's cycle. Raw inputs are checked for staleness; derived ones are recomputed.
+- (Revision) `pnpm derive` writing the core files while the sample is stale: it would commit `species.json` out of step with the sample. Fail and write nothing.
+- (Revision) Saving the download key only after the POST: a crash or timeout leaves a possible download untracked, and the next run duplicates it.
+- (Revision) Re-POSTing when the listing shows no match: a lagging listing would duplicate the download. Refuse, as `gbif:register` does.
+- (Revision) A cut COPY as the forced failure: exit 0 on a row boundary (Fable MF1).
+- (Revision) Logging the database name parsed from `DATABASE_URL` in `loadEnv`: it special-cases one variable and parses a secret to print it; `current_database()` is the truth, and it's safe.
+- (Revision) `--setup` silently resetting the password when a URL fails: it breaks the other checkouts' copies and ping-pongs between them.
+- (Revision, Astra SC1) Building the replacement junction in L1: `setup.sql` stays 004's byte for byte and the junction changes the browser projection and both ERDs, which is L2's scope. It's documented instead (D17), with 0 retired records today.
 
 ### Review items assigned to L1
 | Item | Built in | Disposition |
@@ -564,7 +649,7 @@ Risky units:
 | MF1 | D11, first step | build |
 | MF2 | D12, after the Goal | build |
 | MF3 | D7 (sample, with it); D13 (GBIF/COL, after the Goal) | build |
-| MF4 | D9.6, with the loader | build |
+| MF4 | D9.6, with the loader (drop, then diff, before COMMIT) | build |
 | SC1 | D9.5 | build. Shared ids fail loudly with a documented fix rather than dropping UNIQUE (evidence in 9.5); retired records are refused |
 | SC2 | D9.7 `inputs` | build |
 | SC3 | D14 | build, every case mapped |
@@ -584,6 +669,8 @@ None is rejected.
 6. **`critwire_lab` holds CREATEROLE cluster-wide** (labs need it). `learn_` naming, the leak check and L2's cleanup lint limit it.
 7. **`lock_timeout` on advisory-lock waits** is assumed to work; G5 proves it, or the guard switches to `pg_try_advisory_xact_lock` with a retry deadline.
 8. **The session budget** depends on the live steps not looping. Past 48, MF2, MF3 (GBIF/COL) and the SC3 leftovers go to L3 as handoff items.
+9. **The MF4 guard's gap.** A dependent created by *another* session between the guard's snapshot and its DROP (under a second) isn't in the snapshot, so it isn't caught. A lab database is single-user, and `learn:check` holds its lock. Accepted and documented in 004 §4.3.
+10. **The download listing's fields.** Reconciliation relies on `/occurrence/download/user/<user>` returning `created` and `request` as the per-key endpoint does (the endpoint exists: 401 without auth, checked in revision). If it doesn't, reconciliation refuses at its first live use (an unknown POST is refused, never repeated) and the field mapping is fixed then. The path runs only after an ambiguous `--new` POST.
 
 ## Architecture review (Fable)
 
@@ -627,6 +714,44 @@ SHOULD-CONSIDER:
 
 ## Revision notes
 
+Architect, 2026-10-28, on `281ef43`. The single revision round. I verified against `scripts/derive/pipeline.ts`, `scripts/derive.ts`, `scripts/gbif-register.ts`, `scripts/gbif/{register,state}.ts`, `scripts/env.ts`, `scripts/db.ts`, `scripts/load.ts`, `scripts/build/{inputs,columns,attribution,sources}.ts`, `scripts/species.ts`, `e2e/helpers.ts`, and the spike's `loader.ts` and `lab-keys.sql`. I also ran two rolled-back probes on `critwire_dev` (schemas `learn_t_in` and `learn_t_out`; none left behind) and made one unauthenticated GBIF call (the user-download listing returns 401, so it exists; the download's `request` echo has `checklistKey`, `format` and `predicate`).
+
+**Fable MUST-FIX**
+- MF1 (non-deterministic forced failure): fixed in D10 step 9. An injected duplicate `occurrences` row fails at the primary key after every COPY. The check asserts a non-zero exit, stderr, and unchanged counts and md5; a missing injection site fails. D15 LC covers it, and LD5/LD7 already fail deterministically. A18.
+- MF2 (names-only logging): fixed in D11. One rule: name and winning source, never a value. The database name comes from `current_database()` in `loadDatabase`. G4 is now a sentinel test over `DATABASE_URL`, `LEARN_PG_URL` and `GBIF_PASSWORD`. A17.
+
+**Fable MISSED**
+- A species change costs a download and a DOI, and `--draft` doesn't lift it: stated in D7 ("Cost, stated"), in D17's `AGENTS.md` list, and in the Summary for L2. A15.
+- The `replacedBy` refusal couples `/v1` to Learn: D17 adds the note next to "Retired ids get `replacedBy`", and the Summary passes it to L2. The refusal itself stays (A7).
+- `assertBuilt` was blind to `dist/learn/data/`: D15 extends it to the manifest's `inputs` (the `/v1` parquet hashes and the sample sha256, D9.7) and the copied `data/learn/` hashes.
+- `Source.release` typing: D4 types the subset on the attribution entry only. `Source` and `colCitation` are unchanged.
+
+**Fable SHOULD-CONSIDER**
+- SC1 (`LAB_CHECKS` fixtures in both engines): adopted. D15 LX: one clean and one violating fixture per check, in DuckDB (`test`) and Postgres (`test:db`).
+- SC2 (`.env` rewrite): adopted, and extended to stop a silent password reset. The rewrite replaces one line and keeps the mode; a password is set only on creation or with `--reset-password`; `--env` takes several files; L1 also writes `/srv/critter-ai/critwire/.env` (D10 step 5, LS4–LS5, D17). A19.
+- SC3 (habitat provenance): adopted. `data/learn/habitat.json` (D3); the build's sha256 check and `credits()` read it (D5, D9.7). A20.
+- SC4 (`assertRecordKeys` crossing layers): adopted. It stays in `build/columns.ts`; `validateRecords` checks values only (D12).
+- SC5 (`sameRequest` comment): adopted in D6, and DL1 also asserts it accepts the full echo.
+
+**Astra MUST-FIX**
+- MF1 (refresh cycle): confirmed. The old D6 had the ingest use `deriveCore` "which refuses stale derived files", while `deriveAll` refuses a stale sample, so after a species change neither could run.
+  - Fixed: the ingest uses `deriveCore(readDeriveInputs())` in memory and never calls `assertDerivedFiles`. `deriveCore` refuses only stale raw snapshots, whose ingests read no derived file.
+  - D7 states the order: seed, core ingests, sample ingest, derive, DOIs, build. `pnpm derive` still writes nothing while the sample is stale. DL15. A15.
+- MF2 (intent too late): fixed in D6 (State, `--new`).
+  - The intent `{request, startedAt, searchCount, key: null}` is written (`wx`) before the POST. It's rewritten with the key on success, kept on an ambiguous outcome, and deleted on a rejection or a final GBIF failure.
+  - A key-less intent reconciles through `GET /occurrence/download/user/<user>`, matching `sameRequest` and `created` ≥ `startedAt` − 5 min: one match adopts it, and none or several refuse, as `gbif:register`'s `decide` does.
+  - This reuses `state.ts`, made generic (D8), `classifyPost` with a parser argument, and a shared `postOnce`. DL8–DL14. A16.
+- MF3 (transitive dependencies): fixed in D9.6 step 2. No hand-written traversal: snapshot the outside dependents, run the one `DROP … CASCADE`, diff, and raise before COMMIT.
+  - The probe proved it on PG16: views and materialized views (through `_RETURN` rules), an FK with RI triggers, a column of an inside type, defaults, a function, a trigger and a policy were all caught. No false positive, TOAST included.
+  - It also showed the risk is real: a non-superuser schema owner's cascade drops another role's view.
+  - LD13–LD16. F2 notes why direct edges miss rules (NULL schema). A14.
+- MF4 (universal redaction): fixed together with Fable MF2 (D11, G4). A17.
+
+**Astra SHOULD-CONSIDER**
+- SC1 (support replacement before retiring): documentation adopted (D17, Summary). Building the junction in L1 is rejected because `setup.sql` stays 004's byte for byte, and the junction is L2's projection and ERD change (Rejected alternatives).
+- SC2 (guaranteed constraint violation): adopted, the same as Fable MF1 (D10 step 9).
+- SC3 (habitat provenance): adopted, the same as Fable SC3 (D3, `habitat.json`).
+
 ## Steps
 
 ## Verification
@@ -650,6 +775,13 @@ SHOULD-CONSIDER:
 - A11 (architect): no teaching diagram in L1. The docs page links to `/learn/data/`; L2 points it at `/learn/`.
 - A12 (architect): `pnpm test` stays pure and offline; database cases go in a new `pnpm test:db` (`*.dbtest.ts`), on `critwire_dev` only, using `learn_t_*` schemas (D15).
 - A13 (architect): Retry-After above 60 s stops with a clear error instead of being silently shortened (D14).
+- A14 (architect, revision): the MF4 guard runs *drop, then diff* inside the loader's transaction. It snapshots the outside dependents in `pg_depend`, with rules, triggers, defaults and policies resolved to their relation's schema and `pg_toast` excluded. It runs `DROP SCHEMA … CASCADE` and raises before COMMIT if any snapshot entry vanished. Postgres computes the cascade itself. Proven on PG16 by rolled-back probes in `critwire_dev` (about 0.85 s). The sub-second gap for concurrent DDL is accepted (Open risks 9) (D9.6).
+- A15 (architect, revision): the refresh order is one line, with no cycle. `ingest gbif-sample` computes the core in memory and never asserts committed derived files. `pnpm derive` refuses a stale sample and writes nothing. A species or `ids.gbif` change costs a new download and DOI, `--draft` doesn't lift it, and it goes in `AGENTS.md` (D6, D7, D17).
+- A16 (architect, revision): a new GBIF download writes its intent before the POST. A key-less intent reconciles through the user's download listing, and no match or several matches refuse rather than re-POST. `state.ts` and `classifyPost` are shared with `gbif:register`, and `postOnce` moves to `scripts/gbif/post.ts` (D6, D8).
+- A17 (architect, revision): environment-conflict logging is names and the winning source only, for every variable. The database name logged is `current_database()`, from `loadDatabase` (D11).
+- A18 (architect, revision): `learn:check`'s forced failure injects a duplicate `occurrences` row, which fails at the primary key after every COPY. It asserts a non-zero exit, unchanged counts and unchanged md5 (D10).
+- A19 (architect, revision): `learn:check --setup` sets `critwire_lab`'s password only on creation or with `--reset-password`. It writes `LEARN_PG_URL` into each `--env` file, keeping the other lines and the mode. L1 writes the worktree's and `/srv/critter-ai/critwire/.env`, so later missions inherit it (D10).
+- A20 (architect, revision): the habitat stand-ins get `data/learn/habitat.json` (provenance and sha256, `standIn: true`), checked by the build and read by `credits()`. L3's `ingest habitat` takes it over (D3, D5, D9.7).
 
 ## Log
 
@@ -657,5 +789,6 @@ SHOULD-CONSIDER:
 - 2026-10-28 07:16 UTC Architecture: architect wrote F1–F13, D1–D19, review-item map, risks; decisions A1–A13 (uv as root, TS sample ingest, data/issued-ids.json, critwire_lab via --setup, no L1 diagrams). Plan-only, no code; no checks needed.
 - 2026-10-28 07:22 UTC Fable review: APPROVE_WITH_CHANGES, 2 MUST-FIX (deterministic learn:check forced failure; loadEnv logs names only), 4 missed, 5 SHOULD-CONSIDER. Plan-only; no checks needed.
 - 2026-10-28 07:23 UTC Astra review: APPROVE_WITH_CHANGES, 4 MUST-FIX (sample/derive refresh cycle; download intent before POST; transitive pg_depend; redact all env values), 3 SHOULD-CONSIDER. Plan-only; no checks needed.
+- 2026-10-28 07:37 UTC Revision: architect resolved all 6 MUST-FIX (deterministic forced failure; names-only env logs; in-memory core for sample ingest, no cycle; intent before POST + listing reconcile; CASCADE snapshot/diff guard, PG16-probed), 4 MISSED, 9/10 SC adopted (Astra SC1 junction rejected → L2); A14–A20. Plan-only; no checks needed.
 
 ## Summary
