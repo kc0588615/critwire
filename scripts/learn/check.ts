@@ -9,20 +9,28 @@
 // - blocks: the given PostGIS blocks (pg-role-smoke among them), in page order, in one runner session (runner.ts), each
 //   in the runner's transaction, checked against their recorded results or, with `update`, written; `-- tx: own`
 //   blocks must leave the canary and learn_curriculum unchanged;
-// - end: the canary unchanged and no learn_ role or schema left behind.
+// - downloads: each assembled lab file (assemble.ts) on a fresh load, as a learner runs it (the loader, then psql -X -f,
+//   no ON_ERROR_STOP): psql's ERROR lines must be exactly the file's announced errors, in order; then the leak check;
+// - end: the canary unchanged and no learn_ role or schema left behind;
+// - stamp (a whole-course run only): checked.json (freshness.ts) written through a temp file and a rename, once every
+//   stage passed, and left alone when only its date would change.
 // The lock is held by the cleanup connection (cleanup.ts), which runs no block. An abort (the CLI's SIGINT/SIGTERM)
 // cancels the running psql or block statement. Every exit then removes the temp loader and releases the lock in
 // cleanup.ts's order: stop the run's sessions, sweep the lab role's new objects, free the lock; a cleanup failure is
 // added to the run's. Tests: learn/check.test.ts (LC6 pure), learn-check.dbtest.ts (LC1–LC10, CU1–CU5), runner.dbtest.ts.
 import { spawn } from "node:child_process";
 import { createHash } from "node:crypto";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import type postgres from "postgres";
+import { assembleDownloads, type Announced, type Download } from "./assemble.ts";
 import type { Block } from "./blocks.ts";
 import { takeLabLock, type LabLock } from "./cleanup.ts";
+import type { CoursePage } from "./course.ts";
 import { readCourse } from "./course-files.ts";
+import { CHECKED_JSON, nextStamp, readFreshness, STAMP_FILE, type Versions } from "./freshness.ts";
 import { learnObjects } from "./leaks.ts";
 import { CANARY_SCHEMA, childEnv, LAB_SCHEMA, libpqTarget, LIVE_DATABASE, pgConnect, psqlArgs, type PgTarget } from "./pg.ts";
 import { openSession, runBlocks, serverVersions, tablesDiff } from "./runner.ts";
@@ -45,6 +53,10 @@ export interface CheckOptions {
   update?: boolean;
   /** Print each block's rendered result (--module). */
   show?: boolean;
+  /** The lab files to run on a fresh load each (assemble.ts). */
+  downloads?: readonly Download[];
+  /** The whole course: once every stage passed, checked.json is written for it. */
+  stamp?: readonly CoursePage[];
 }
 
 /** Throws when the connection reached the live database, whatever name it asked for (LC2). */
@@ -131,8 +143,9 @@ function assertCounts(load: string, got: Record<string, number>, want: Record<st
 }
 
 interface LoaderEntry { sha256: string; tables: Record<string, number> }
+interface Loader { file: string; text: string; entry: LoaderEntry }
 
-async function readLoader(dist: string): Promise<{ file: string; text: string; entry: LoaderEntry }> {
+async function readLoader(dist: string): Promise<Loader> {
   const base = join(dist, "learn/data");
   const manifest = JSON.parse(await readFile(join(base, "manifest.json"), "utf8")) as { files: Record<string, Partial<LoaderEntry>> };
   const entry = manifest.files[LOADER];
@@ -144,24 +157,34 @@ async function readLoader(dist: string): Promise<{ file: string; text: string; e
   return { file, text: bytes.toString("utf8"), entry: entry as LoaderEntry };
 }
 
+export interface StaticCourse {
+  /** Every page, in page order. */
+  pages: CoursePage[];
+  /** The blocks to run, in page order: every page's, or one module's. */
+  blocks: Block[];
+  /** The downloads to run: every page's, or one module's. */
+  downloads: Download[];
+}
+
 /**
- * The static stage: the committed course, every block parsed and linted; throws naming every error, so nothing loads.
- * Returns the blocks in page order: every page's, or `module`'s only. A missing recorded result isn't static: the
- * blocks stage names it, and --update writes it.
+ * The static stage: the committed course, every block parsed and linted and every download assembled; throws naming
+ * every error, so nothing loads. A missing recorded result isn't static: the blocks stage names it, and --update
+ * writes it.
  */
-export async function staticStage(module?: string): Promise<Block[]> {
+export async function staticStage(module?: string): Promise<StaticCourse> {
   const { pages, errors } = await readCourse();
   if (errors.length) throw new Error(`static: ${errors.length} error(s):\n${errors.join("\n")}`);
   const run = module === undefined ? pages : pages.filter((p) => p.page.id === module);
   if (module !== undefined && !run.length) throw new Error(`--module ${module}: no such page (${pages.map((p) => p.page.id).join(", ")})`);
-  const blocks = run.flatMap((p) => p.blocks);
-  console.log(`learn:check: static: ${pages.length} page(s), ${pages.reduce((n, p) => n + p.blocks.length, 0)} block(s) parsed and linted`);
-  return blocks;
+  const downloads = assembleDownloads(pages).filter((d) => module === undefined || d.page === module);
+  console.log(`learn:check: static: ${pages.length} page(s), ${pages.reduce((n, p) => n + p.blocks.length, 0)} block(s) parsed and linted, ${downloads.length} download(s) assembled`);
+  return { pages, blocks: run.flatMap((p) => p.blocks), downloads };
 }
 
 /** What the stages share: the lab connection, the lock, the admin target (the canary's reader), the canary at connect. */
 interface Run {
   sql: postgres.Sql;
+  versions: Versions;
   lock: LabLock;
   admin: PgTarget;
   canarySchema: string;
@@ -188,18 +211,17 @@ async function assertLabRole(sql: postgres.Sql): Promise<Who> {
 // The versions (SC6), and the canary's reading at connect (the lock read the learn_ objects already there).
 async function connectStage(lab: PgTarget, sql: postgres.Sql, lock: LabLock, { db, user }: Who, canarySchema: string, signal?: AbortSignal): Promise<Run> {
   console.log(`learn:check: ${user} on ${db}, lab lock taken`);
-  const v = await serverVersions(sql);
-  console.log(`learn:check: PostgreSQL ${v.postgresql}, PostGIS ${v.postgis}, GEOS ${v.geos}`);
+  const versions = await serverVersions(sql);
+  console.log(`learn:check: PostgreSQL ${versions.postgresql}, PostGIS ${versions.postgis}, GEOS ${versions.geos}`);
   const admin = libpqTarget({ PGDATABASE: db, PGPORT: String(lab.port) });
   const [{ has }] = await sql<{ has: boolean }[]>`select to_regnamespace(${canarySchema}) is not null as has`;
   const canaryBefore = has ? await readTables(admin, canarySchema, signal) : undefined;
-  return { sql, lock, admin, canarySchema, canaryBefore, signal };
+  return { sql, versions, lock, admin, canarySchema, canaryBefore, signal };
 }
 
 // The loader twice to the manifest's counts, then the forced failure. `tmp`: a folder for the forced loader.
-async function loaderStage(lab: PgTarget, run: Run, dist: string, tmp: string): Promise<void> {
+async function loaderStage(lab: PgTarget, run: Run, { file, text, entry }: Loader, tmp: string): Promise<void> {
   const { sql, admin, signal } = run;
-  const { file, text, entry } = await readLoader(dist);
   const forced = forcedFailureLoader(text);
   const forcedFile = join(tmp, "forced-failure.sql");
   await writeFile(forcedFile, forced.loader);
@@ -240,6 +262,63 @@ async function blocksStage(lab: PgTarget, run: Run, blocks: readonly Block[], up
   console.log(`learn:check: blocks: ${pg.length} PostGIS block(s) ${update ? "run twice, results written" : "equal their recorded results"}`);
 }
 
+const ERROR_LINE = /^psql:.*?:\d+: ERROR: /;
+
+/**
+ * Why psql's stderr breaks the ERROR-line rule for download `name` (004 §7.6): its ERROR lines must be exactly the
+ * `announced` errors, in order, each containing its text. The first difference, or undefined.
+ */
+export function errorLinesFailure(name: string, stderr: string, announced: readonly Announced[]): string | undefined {
+  const lines = stderr.split("\n").filter((l) => ERROR_LINE.test(l));
+  for (let i = 0; i < Math.max(lines.length, announced.length); i++) {
+    const [line, want] = [lines[i], announced[i]];
+    if (want === undefined) return `download ${name}: ERROR line ${i + 1} isn't announced: ${line}`;
+    if (line === undefined) return `download ${name}: ${want.block}'s announced error "${want.text}" didn't happen (${lines.length} ERROR lines)`;
+    if (!line.includes(want.text)) return `download ${name}: ERROR line ${i + 1} isn't ${want.block}'s announced "${want.text}": ${line}`;
+  }
+  return undefined;
+}
+
+/** Runs `file` as a learner runs download `name` (psql -X -f, no ON_ERROR_STOP); throws when psql fails or its ERROR lines break the rule. */
+export async function assertDownloadRun(target: PgTarget, file: string, { name, announced }: Pick<Download, "name" | "announced">, signal?: AbortSignal): Promise<void> {
+  const r = await psql(target, ["-X", "-q", "-f", file], signal);
+  if (r.code !== 0) throw new Error(`download ${name}: psql exit ${r.code}: ${r.stderr.trim()}`);
+  const failure = errorLinesFailure(name, r.stderr, announced);
+  if (failure) throw new Error(failure);
+}
+
+// Each download on a fresh load (the loader, then the file), then the leak check. `tmp`: a folder for the files.
+async function downloadsStage(lab: PgTarget, run: Run, loader: Loader, downloads: readonly Download[], tmp: string): Promise<void> {
+  for (const d of downloads) {
+    await psqlOk(lab, ["-q", ...psqlArgs(loader.file)], `download ${d.name}: the fresh load`, run.signal);
+    const file = join(tmp, d.name);
+    await writeFile(file, d.text);
+    await assertDownloadRun(lab, file, d, run.signal);
+    console.log(`learn:check: download ${d.name}: fresh load, then the file: ${d.announced.length} ERROR line(s), as announced`);
+    await assertNoLeaks(run, `download ${d.name}`);
+  }
+}
+
+// checked.json for `pages`, through a temp file and a rename; untouched when only its date would change.
+async function writeStamp(dist: string, pages: readonly CoursePage[], versions: Versions): Promise<void> {
+  const file = fileURLToPath(STAMP_FILE);
+  let old: string | null = null;
+  try {
+    old = await readFile(file, "utf8");
+  } catch (e) {
+    if ((e as NodeJS.ErrnoException).code !== "ENOENT") throw e;
+  }
+  const text = nextStamp(old, readFreshness(dist, pages), versions, new Date().toISOString().slice(0, 10));
+  if (text === undefined) {
+    console.log(`learn:check: unchanged: ${CHECKED_JSON}`);
+    return;
+  }
+  const tmp = `${file}.tmp-${process.pid}`;
+  await writeFile(tmp, text);
+  await rename(tmp, file);
+  console.log(`learn:check: wrote ${CHECKED_JSON}`);
+}
+
 // Throws naming each learn_ object `who` made: any not there at connect.
 async function assertNoLeaks({ sql, lock }: Run, who: string): Promise<void> {
   const left = (await learnObjects(sql)).filter((o) => !lock.known.has(o));
@@ -264,7 +343,7 @@ async function endStage(run: Run): Promise<void> {
  * Runs learn:check's stages against `lab` (labTarget, already refused by name); throws at the first failed check, with
  * any cleanup failure added.
  */
-export async function checkLab(lab: PgTarget, { dist, canarySchema, signal, blocks = [], update = false, show = false }: CheckOptions): Promise<void> {
+export async function checkLab(lab: PgTarget, { dist, canarySchema, signal, blocks = [], update = false, show = false, downloads = [], stamp }: CheckOptions): Promise<void> {
   assertCanarySchema(canarySchema);
   const sql = pgConnect(lab);
   let lock: LabLock | undefined;
@@ -275,9 +354,12 @@ export async function checkLab(lab: PgTarget, { dist, canarySchema, signal, bloc
     lock = await takeLabLock(lab, who.db);
     const run = await connectStage(lab, sql, lock, who, canarySchema, signal);
     tmp = await mkdtemp(join(tmpdir(), "critwire-learn-check-"));
-    await loaderStage(lab, run, dist, tmp);
+    const loader = await readLoader(dist);
+    await loaderStage(lab, run, loader, tmp);
     await blocksStage(lab, run, blocks, update, show);
+    await downloadsStage(lab, run, loader, downloads, tmp);
     await endStage(run);
+    if (stamp) await writeStamp(dist, stamp, run.versions);
   } catch (e) {
     failure = e as Error;
   }

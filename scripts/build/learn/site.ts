@@ -3,8 +3,11 @@
 // readCourse: the curriculum, the pages' slots, every block file's lint, recorded results without a block). A ran
 // PostGIS block without its recorded result fails a plain build and only warns with --draft (D16's loop: learn:check
 // --update writes it). Throws naming every error. Writes nothing.
+// assertLabsFresh (plan D6), once the data manifest is written: checked.json against the freshness the build recomputes
+// (learn/freshness.ts); a plain build refuses a stale lab, --draft only warns.
 import type { CoursePage, Curriculum } from "../../learn/course.ts";
 import { readCourse } from "../../learn/course-files.ts";
+import { readFreshness, readStamp, staleness } from "../../learn/freshness.ts";
 
 export interface LearnInputs {
   curriculum: Curriculum;
@@ -19,4 +22,11 @@ export async function readLearnInputs({ draft }: { draft: boolean }): Promise<Le
   const all = [...errors, ...(draft ? [] : missing)];
   if (all.length) throw new Error(`site/learn: ${all.length} error(s):\n${all.join("\n")}`);
   return { curriculum: curriculum!, pages };
+}
+
+/** Throws (warns with `draft`) naming every way checked.json fails to prove the labs `pages` publish; `dist`: the built site. */
+export function assertLabsFresh(dist: string, pages: readonly CoursePage[], { draft }: { draft: boolean }): void {
+  const errors = staleness(readStamp(), readFreshness(dist, pages));
+  if (draft) for (const e of errors) console.warn(`build --draft: ${e}`);
+  else if (errors.length) throw new Error(`site/learn/labs: ${errors.length} error(s):\n${errors.join("\n")}`);
 }

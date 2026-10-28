@@ -33,6 +33,11 @@
 // and its two definitions drift → a clean run names pg-role-smoke from the blocks stage only.
 // LM1: --module runs another page too, or writes a recorded result → setup's blocks printed, the files untouched.
 // LM2: --module --update writes a partial run, or an unknown page silently checks nothing → both refused.
+// Downloads (plan D7, S6; 004 §7.6): each assembled file runs as a learner runs it, psql -X -f, no ON_ERROR_STOP.
+// DL1: an error the file doesn't announce, an announced one that doesn't happen, or the right errors in the wrong order
+//      pass (psql exits 0 either way) → each refused, naming the file and the first unexpected error.
+// DL2: a clean run skips the downloads, or leaves checked.json unwritten or rewritten with nothing changed → the
+//      setup page's pg-checks.sql runs after a fresh load with a leak check, and checked.json stays byte for byte.
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { createHash, randomBytes } from "node:crypto";
@@ -43,7 +48,7 @@ import { after, test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { loadEnv, requireEnv } from "./env.ts";
 import { parseBlock } from "./learn/blocks.ts";
-import { assertConnectedNotLive, CANARY_SCHEMA, checkLab } from "./learn/check.ts";
+import { assertConnectedNotLive, assertDownloadRun, CANARY_SCHEMA, checkLab } from "./learn/check.ts";
 import { takeLabLock } from "./learn/cleanup.ts";
 import { LAB_LOCK, libpqTarget, pgConnect, urlTarget } from "./learn/pg.ts";
 import { RUNNER_APP } from "./learn/runner.ts";
@@ -300,7 +305,7 @@ test("LC9 a check failing after the lock releases it and removes its temp file",
   await assertLockFree();
 });
 
-test("LC5 + LC10 a clean run loads twice to the manifest's counts, and no child psql sees a secret", async () => {
+test("LC5 + LC10 + DL2 a clean run loads twice to the manifest's counts, runs pg-checks.sql, stamps checked.json, and no child psql sees a secret", async () => {
   const bin = join(dir, "bin");
   mkdirSync(bin);
   const dump = join(dir, "psql-calls.txt");
@@ -319,6 +324,9 @@ test("LC5 + LC10 a clean run loads twice to the manifest's counts, and no child 
   assert.match(r.stdout, /canary: learn_spatial unchanged/);
   assert.match(r.stdout, /leak check \(the loader\): nothing left/);
   assert.match(r.stdout, /leak check \(the run\): nothing left/);
+  assert.match(r.stdout, /learn:check: download pg-checks\.sql: fresh load, then the file: 0 ERROR line\(s\), as announced/);
+  assert.match(r.stdout, /leak check \(download pg-checks\.sql\): nothing left/);
+  assert.match(r.stdout, /learn:check: (wrote|unchanged:) site\/learn\/labs\/checked\/checked\.json/);
   assert.deepEqual(await labCounts(), Object.fromEntries(Object.entries(tables).sort(([a], [b]) => a.localeCompare(b))));
   const calls = readFileSync(dump, "utf8").split("=== call\n").filter(Boolean);
   assert.ok(calls.length >= 4, `${calls.length} psql calls`);
@@ -346,7 +354,8 @@ test("LM1 --module setup runs the static checks, the loader and the setup page's
   assert.match(r.stdout, /learn:check: q pg-role-smoke:\n  -- result: pg-role-smoke · 1 row · sha256 fcfe7fd06dfa\n  learn_smoke_left\n  0\n/);
   assert.match(r.stdout, /learn:check: q pg-session:\n  -- result: pg-session · 1 row · sha256 791623fd72db\n  search_path\n  learn_curriculum, public\n/);
   assert.match(r.stdout, /learn:check: q pg-role-smoke: ok/);
-  assert.doesNotMatch(r.stdout, /wrote/);
+  assert.match(r.stdout, /learn:check: download pg-checks\.sql: fresh load, then the file: 0 ERROR line\(s\), as announced/);
+  assert.doesNotMatch(r.stdout, /wrote|checked\.json/);
   assert.deepEqual(recorded(checked), before);
 });
 
@@ -456,4 +465,20 @@ test("CU5 a lost cleanup connection drops nothing and names every new object", a
   });
   assert.ok((await learnObjects()).includes(`role ${ours}`), "kept");
   await assertLockFree();
+});
+
+// A file of `sql` in the test folder, run by assertDownloadRun as the lab role with `announced`.
+async function runFile(name: string, sql: string, announced: { block: string; text: string }[]) {
+  const file = join(dir, name);
+  writeFileSync(file, sql);
+  await assertDownloadRun(labTarget(), file, { name, announced });
+}
+
+test("DL1 an unannounced error, a missing announced one, or errors in the wrong order fail, naming the file", async () => {
+  await runFile("ok.sql", "SELECT 1;\nSELECT 1/0;\nSELECT 'x'::int;\n", [{ block: "q-a", text: "division by zero" }, { block: "q-b", text: "invalid input syntax" }]);
+  await assert.rejects(runFile("extra.sql", "SELECT 1/0;\n", []), /download extra\.sql: ERROR line 1 isn't announced: .*division by zero/);
+  await assert.rejects(runFile("missing.sql", "SELECT 1;\n", [{ block: "q-a", text: "division by zero" }]),
+    /download missing\.sql: q-a's announced error "division by zero" didn't happen \(0 ERROR lines\)/);
+  await assert.rejects(runFile("order.sql", "SELECT 'x'::int;\nSELECT 1/0;\n", [{ block: "q-a", text: "division by zero" }, { block: "q-b", text: "invalid input syntax" }]),
+    /download order\.sql: ERROR line 1 isn't q-a's announced "division by zero": .*invalid input syntax/);
 });

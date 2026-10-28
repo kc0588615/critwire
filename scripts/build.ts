@@ -1,6 +1,7 @@
 // pnpm build [--draft] (plan §3, D9.1): checks data/ and site/learn/ offline, rebuilds DATABASE_URL from it, then writes the static
 // site to dist/: /v1, the docs page, then /learn/data/, whose lab tables it rebuilds from those bytes and checks, its
-// loader, manifest and index page; both 50 MB caps are enforced. A
+// loader, manifest and index page; both 50 MB caps are enforced; a lab learn:check didn't prove as it is now
+// (site/learn/labs/checked/checked.json) fails a plain build. A
 // plain build refuses without a current GBIF derived-dataset DOI for every target; --draft builds without them
 // (previews, E2E).
 import { copyFile, mkdir, readdir, readFile, rm, stat, writeFile } from "node:fs/promises";
@@ -19,7 +20,7 @@ import { assertLabChecks } from "./build/learn/checks.ts";
 import { fileSizes, LEARN_CAP, totalBytes } from "./build/learn/cap.ts";
 import { writeLabIndex, writeLabLoader, writeLearnData } from "./build/learn/data.ts";
 import { projectLearn } from "./build/learn/projection.ts";
-import { readLearnInputs } from "./build/learn/site.ts";
+import { assertLabsFresh, readLearnInputs } from "./build/learn/site.ts";
 import { childFile } from "./build/paths.ts";
 import { writeTables } from "./build/tables.ts";
 
@@ -60,6 +61,8 @@ assertLabChecks(projection.checks, "learn projection (dist/)");
 console.log(`learn projection: ${Object.keys(projection.tables).length} tables, ${Object.keys(projection.checks).length} LAB_CHECKS all 0`);
 await writeLabLoader(out);
 await writeLabIndex(out, { ctx: labCredits, learn, tables: projection.tables });
+// checked.json against what this build publishes (plan D6): learn:check ran every lab block and download as they are now.
+assertLabsFresh(fileURLToPath(out), pages, { draft });
 
 // Every file with its size in bytes, sorted by path (for the PR body).
 const dist = fileURLToPath(out);
