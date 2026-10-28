@@ -155,7 +155,7 @@ The review's numbering: MF = MUST-FIX, SC = SHOULD-CHANGE.
 - [x] Architecture: `architect` writes findings and the target design
 - [x] Fable review: `architecture-reviewer`
 - [x] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
-- [ ] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
+- [x] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
 - [ ] Steps: `planner` writes Steps and Verification
 
 ## Baseline
@@ -176,7 +176,7 @@ Run 2026-10-28 ~12:05 UTC on `1c19b55` (= `origin/main` `85d5ca3` + this plan), 
 
 ## Architecture
 
-Written by the architect, session 2. Read: the brief and Addendum; `AGENTS.md`; 004 §0–§3, §4.3–4.5, §5.1–5.2, §6, §7, §9, §10, §A.3, §B; 002 §1, §3, §8, §10; the Codex review; L1's plan and code; the spike (`$SP` = `/srv/critter-ai/agent-state/missions/critwire-learn-curriculum/spike`) and A1's `src/check.ts`. Line numbers are this branch's (`dc43ace`).
+Written by the architect, session 2. Read: the brief and Addendum; `AGENTS.md`; 004 §0–§3, §4.3–4.5, §5.1–5.2, §6, §7, §9, §10, §A.3, §B; 002 §1, §3, §8, §10; the Codex review; L1's plan and code; the spike (`$SP` = `/srv/critter-ai/agent-state/missions/critwire-learn-curriculum/spike`) and A1's `src/check.ts`. Line numbers are this branch's (`dc43ace`). Revised once for both reviews: D3, D5, D6, D7, D9, D11, D13, W4–W19, R8–R13; see Revision notes.
 
 ### Findings (ranked by impact)
 
@@ -254,12 +254,12 @@ e2e/  helpers.ts (+ Learn), learn-map, learn-browser, learn-labs, learn-timing, 
 - **Lints** (pure, in `pnpm test`):
   - the spike's static rules RQ1–RQ5, RQ13, RQ15, RQ17, RQ18 (ORDER BY; EXPLAIN exempt), RQ26, RP5, RP12, PC1 (pg-session = the runner's session), PC7 and RP14;
   - the privilege rules PV1–PV8 and the cleanup rules CL1–CL9 (`privilege.ts`, ported);
-  - new: file name = `q`; every `-- after:` block is on the same page; `params` refused on page blocks (none in f–d); `-- plan:` rules (D4).
+  - new: file name = `q`; every `-- after:` block is on the same page; `params` refused on page blocks (none in f–d); `-- plan:` rules (D4); no browser block statement starts with a keyword `isolated()` refuses (D11).
 - **Page order** comes from each page's slots: the setup page first, then the modules in curriculum order. Every block file must be used by a page (`setup.sql` excepted), and a slot without a file fails.
 
 #### D3. `pnpm learn:check` (004 §7.6), in order, under L1's lock
 
-1. **Connect (L1).** Refusals, role checks, the lock, the canary before, the leak snapshot. It prints the versions: `server_version`, `postgis_lib_version()`, `postgis_geos_version()` (SC6).
+1. **Connect (L1).** Refusals, role checks, the lock, the canary before, the leak snapshot. It prints the versions: `server_version`, `postgis_lib_version()`, `postgis_geos_version()` (SC6). The lock is held by the **cleanup connection** (L1's `lock`, `check.ts:153`), which runs no block; it is also D5's monitor. Every other session the run opens records its `pg_backend_pid()`.
 2. **Static.** Every block parsed and linted; any error stops the run before a load.
 3. **Loader stage (L1).** The loader's sha256, two loads, the forced failure.
 4. **Blocks.** One session through `pgConnect`, with the session's statements (pg-session's `SET` and `statement_timeout = 60s`), checked by `assertSession`. Results come back DuckDB-shaped: int8 as BigInt, date as text, per the spike's TYPES. Boot blocks run first and are committed; then the lab ERD drift (D10); then every `ran` PostGIS block in page order:
@@ -267,14 +267,17 @@ e2e/  helpers.ts (+ Learn), learn-map, learn-browser, learn-labs, learn-timing, 
    - **`-- tx: own` blocks:** run unwrapped. Each `-- fails:` statement must fail with its text, and the block goes on. Then: a `BEGIN` probe (left open or aborted), the session restored (`assertSession`; restore and fail if it changed), the leak check (a committed leak is reported and dropped), and the canary and `learn_curriculum` read with L1's `readTables`, equal to the reading before (TX1–TX6, LK4).
    - **`-- sessions:` blocks:** D5.
    - **Check mode (the default):** `renderResult` must equal `checked/<id>.txt`; otherwise the block fails with a `lineDiff`. EXPLAIN blocks need only their assertions to hold (D4); a difference in the plan's text prints as a note. A missing file fails: "no recorded result: run pnpm learn:check --update".
-   - **`--update`:** runs each block twice; the two renderings must match (for a plan, the assertions must hold both times). Then it writes `checked/<id>.txt`.
+   - **`--update`:** runs each block twice; the two renderings must match (for a plan, the assertions must hold both times). Then it writes `checked/<id>.txt`. Boot blocks run once, at connect. A `tx: own` or sessions block's second run means something because its end checks (TX1–TX6, D5) require it to leave the session, `learn_curriculum` and the canary as it found them.
 5. **Downloads (D7).** Each assembled file runs on a freshly loaded database (the loader, then `psql -X -f`, through `childEnv`). Its `ERROR:` lines must be exactly the announced errors, in order. The leak check runs after each file, and the file's sha256 is recorded.
 6. **Canary and leak check after the run (L1).**
-7. **`checked.json`** (D6) is written only after every stage passed, through a temp file and a rename, and left untouched when its content didn't change.
+7. **`checked.json`** (D6) is written only after every stage passed, through a temp file and a rename, and left untouched when nothing but its date would change.
 
-- **Cleanup.** On every exit, failures and SIGINT/SIGTERM included:
-  - L1's cleanup: cancel the running psql, free the lock, end the connections, remove temp files;
-  - then a sweep: every `learn_%` role or schema not in the start snapshot is dropped as `critwire_lab` (`DROP OWNED BY` + `DROP ROLE`; `DROP SCHEMA … CASCADE`) and named in the error. This is SC7's error-path cleanup.
+- **Cleanup.** On every exit, failures and SIGINT/SIGTERM included, in this order, all before the lock is freed (L1's `finally` frees it first, `check.ts:213-217`; the F9 split reorders it):
+  1. **Stop the run's work:** cancel the running psql and await its exit (L1); then, from the cleanup connection, `pg_terminate_backend(pid, 10000)` for each recorded session (blocks, sessions windows), so their transactions roll back and their locks go. A backend still alive after 10 s fails the run, named.
+  2. **Sweep, on the cleanup connection:** the leak query's objects that weren't in the start snapshot and that the lab role made: roles on which `critwire_lab` holds ADMIN OPTION (PostgreSQL 16 grants it to the creating role), schemas it owns. Roles first (`DROP OWNED BY` + `DROP ROLE`), then schemas (`DROP SCHEMA … CASCADE`), each named in the error. This is SC7's error-path cleanup.
+  3. **Then** free the lock, end the cleanup connection, remove temp files.
+  - **Why that scope is this run's:** the lab lock serializes every lab-role writer (learn:check; test:db's `withLabSchema`, `test-db.ts:33-34`), and the sweep holds it. Any other new `learn_%` object (a superuser's test fixture, `learn-check.dbtest.ts:42-51`) is named with its superuser cleanup command (the spike's `committedLeak`), never dropped.
+  - **Cleanup connection lost:** the server frees the lock with it, so the run drops nothing and fails naming every new object with its cleanup command.
 - **`--module <id>`:** the static checks, the loader, then that page's blocks and its download, printed; it never writes. No other partial runs.
 - **Never `DATABASE_URL`** (L1).
 
@@ -293,9 +296,12 @@ e2e/  helpers.ts (+ Learn), learn-map, learn-browser, learn-labs, learn-timing, 
 
 - **`-- sessions: A, B`**: PostGIS only; it excludes `after`, `boot`, `expect` and `tx`.
 - **`-- window <name>`** comment lines switch the session for the statements that follow.
-- **`-- waits: <why>`**, a statement's leading comment: the statement must block on the other window's lock. The runner sees it in `pg_blocking_pids(pid)` within 5 s, moves on, and collects the result the next time that window runs or at the end.
+- **`-- waits: <why>`**, a comment line directly before the statement: the statement must block on the other window's lock. 004's d4 blocks put the wait and the error in trailing comments (`-- waits for A's row lock`, `-- ERROR:  could not serialize …`); W18 rewrites them as leading `-- waits:` and `-- fails:` lines, in 004 and on the page together.
 - **`-- fails: <text>`** works as in `tx: own`.
-- **Both connections** get pg-session and `lock_timeout = '5s'`, so an unexpected wait fails fast.
+- **Watching for waits:** while a window's statement runs, the cleanup connection (D3) polls `pg_blocking_pids(pid)` every 50 ms.
+  - A `waits` statement must show as blocked by the other window's backend within **5 s** (the detection deadline), else the block fails ("didn't wait"). The runner then moves on and collects its result the next time that window runs or at the end.
+  - Any other statement seen blocked fails the block at once and is cancelled (`pg_cancel_backend`). So an unexpected wait fails fast without relying on a timeout.
+- **Timeouts:** both connections get pg-session (its `statement_timeout = 60s` is the hard stop) and `lock_timeout = '30s'`, six times the detection deadline: a server-side stop if the runner stalls, never reached by a legitimate wait. A statement still pending 30 s after its blocker's window moved on is cancelled and fails the block.
 - **Afterwards:** both sessions ended clean (the probe), `learn_curriculum` and the canary unchanged, no leak.
 - **Result:** the rows of every statement that returns rows, as `window | statement | <columns>`; those statements must share their columns.
 - **Downloads:** the block stays commented out ("needs two psql windows: run it by hand, window by window, as its page says").
@@ -304,18 +310,21 @@ e2e/  helpers.ts (+ Learn), learn-map, learn-browser, learn-labs, learn-timing, 
 #### D6. `checked.json` and freshness (004 §7.5)
 
 ```json
-{ "versions": {"postgresql": "16.15", "postgis": "3.4.2", "geos": "3.12.1"}, "checked": "<UTC date of the writing run>",
-  "blocks": {"<id>": "<sha256>"}, "downloads": {"d3.sql": "<sha256>"}, "labErd": "<sha256>" }
+{ "versions": {"postgresql": "16.15", "postgis": "3.4.2", "geos": "3.12.1"}, "checked": "<UTC date of the last run that changed anything else>",
+  "blocks": {"<id>": {"key": "<sha256>", "result": "<sha256 of checked/<id>.txt>"}},
+  "downloads": {"pg-checks.sql": "<sha256>", "d3.sql": "<sha256>"}, "labErd": "<sha256>" }
 ```
 
 - **Block key:** a sha256 over, in this order:
   - `id\0text` of the block, its `-- after:` blocks taken transitively (sorted), every `-- boot` block (sorted) and pg-session;
   - then `path\0sha256` for each manifest `files` entry outside `star/` (sorted);
-  - the checker's sources: the relative-import closure of `scripts/learn-check.ts` (sorted), plus `db/learn/canary.sql` and `site/learn/labs/requirements.txt`.
+  - the checker's sources: the relative-import closure of `scripts/learn-check.ts` (sorted), plus `db/learn/canary.sql` and `site/learn/labs/requirements.txt`. The closure stays off `scripts/build/` except the lexer `build/learn/sql.ts` (no `credits.ts` → `sources.ts` → `species.ts` chain). A pure test pins its file list, so a new import is a visible change: every lab goes stale on a checker edit.
+- **`result`:** the sha256 of `checked/<id>.txt` as learn:check verified or wrote it. A recorded result edited afterwards (by hand, or a bad merge) loses its stamp.
 - **`labErd`:** a sha256 over `lab.mmd`, the loader's sha256 and the boot blocks.
-- **Recorded, not compared:** versions and date. The page shows them.
+- **Recorded, not compared:** versions and date. The page shows them. The date moves only when a key, result, download, `labErd` or a version changes; otherwise `checked.json` stays byte for byte.
 - **The build** (`assertLabsFresh`, after the manifest is written) recomputes everything and refuses each of these:
   - "lab <id> is stale: run pnpm learn:check" (the first 5 plus a count);
+  - "site/learn/labs/checked/<id>.txt changed after learn:check: run pnpm learn:check" (`result` differs);
   - a missing or orphan key;
   - a download whose sha256 differs;
   - a changed `labErd`.
@@ -323,11 +332,11 @@ e2e/  helpers.ts (+ Learn), learn-map, learn-browser, learn-labs, learn-timing, 
 
 #### D7. Downloads: one assembly function, shared by build and learn:check
 
-- **Which pages:** every page with PostGIS blocks gets `/learn/labs/<page>.sql`: setup (§0's checks: an addition, recorded) and d1, d3, d4, d5, d6.
+- **Which pages:** every page with PostGIS blocks gets `/learn/labs/<page>.sql`: d1, d3, d4, d5, d6, and the setup page's `/learn/labs/pg-checks.sql` (§0's checks: an addition, recorded; not `setup.sql`, which is the browser's schema). One function maps page to file name.
 - **`assembleSql(page, blocks)`, in this order:**
   1. a head comment: run after the loader with `psql -X -d <db> -f <file>`; no `ON_ERROR_STOP`, because some statements fail on purpose;
   2. pg-session as written, not wrapped;
-  3. the boot blocks the file needs: those whose `CREATE TABLE`/`VIEW` names any block or `-- after:` block in the file uses as a whole word. Each appears once, committed;
+  3. the boot blocks the file needs: those whose `CREATE TABLE`/`VIEW` names any block or `-- after:` block in the file uses as a whole word in its code (the lexer's `codeOnly`: comments and strings stripped, so a name in prose pulls nothing in). Each appears once, committed;
   4. each block in page order:
      - **ran:** `BEGIN;`, then each `-- after:` block as `-- runs first: <id>` plus its body, then the block's file text verbatim, then `ROLLBACK;`;
      - **`tx: own`:** the file text verbatim;
@@ -363,7 +372,8 @@ Renderers are queries; the `write*` functions are commands (CQS).
   - runs `withLabTables(out)`, then each block's statements: no schema name (ST5), and its first statement is `CREATE TABLE <table>`;
   - writes `COPY … ORDER BY <pk> TO 'star/<table>.csv' (FORMAT csv, HEADER)`;
   - writes `star/manifest.json` with `files.<file>` = `{table, columns, primaryKey, foreignKeys, rows, bytes, sha256, sources}`. Keys come from `duckdb_constraints()` and sources from `credits("star/<file>")`;
-  - refuses star.mmd drift (planned excused) and a missing unknown member (`ZZ`, `-1`).
+  - refuses star.mmd drift (planned excused) and a missing unknown member (`ZZ`, `-1`);
+  - **cross-engine guard** (replaces the spike's ST1): renders each block's last result with `result.ts` and compares it with `checked/<id>.txt`, the result PostGIS gave learn:check. Plain build refuses a difference ("star block <id>: Node DuckDB gives …, PostGIS recorded …", `lineDiff`); `--draft` warns, as for staleness (D16's loop).
 - **`LAB_FILES`** gains the 6 CSVs and `star/manifest.json`; `page.ts` gains their 7 descriptions. 004:4093 then holds: the star is rebuilt by every build from the lab's normalized tables (W21 rewords it).
 - **Size:** the spike's 8 files came to 4,576,053 B; L2's 6 drop 5,025 B; plus the manifest, so `/learn/data/` ≈ 40.0 MB.
 
@@ -396,16 +406,20 @@ Renderers are queries; the `write*` functions are commands (CQS).
   6. settings: autoinstall and autoload off, `memory_limit = '512MB'`, the custom extension repository, `LOAD parquet`;
   7. `setup.sql`, then the species lookup for cards.
 - **Running SQL.** Statements split by the lexer, each streamed and cut after 10 000 rows (`cancelSent`). One call at a time; a restart drops the queue. DATE, TIMESTAMP and DECIMAL arrive as DuckDB's text; ENUM is refused; errors read "statement n of m: …".
-  - `isolated(after[], sql)` = `BEGIN`; the after blocks as written; `sql`; `ROLLBACK`. Used by lessons, exercises, probes and references.
-  - `persistent(sql)`: the playground only. It marks the database changed, and lesson pages then say "Reset database restores the tables".
-- **Reset and Stop** restart the engine. A generation counter drops late results.
+  - `isolated(after[], sql)` = `BEGIN`; the after blocks as written; `sql`; `ROLLBACK`, after an error too. Used by lessons, exercises, probes and references.
+    - Refused before anything runs, by a statement's first keyword: transaction control (`BEGIN`, `START`, `COMMIT`, `END`, `ROLLBACK`, `ABORT`) and session state (`SET`, `RESET`, `USE`, `PRAGMA`, `ATTACH`, `DETACH`, `INSTALL`, `LOAD`), which would outlive the ROLLBACK: "<keyword> isn't run here: this editor's changes are rolled back; use the playground". No 004 browser block starts that way (checked); the D2 lint keeps it so.
+    - If `BEGIN` or `ROLLBACK` itself fails, the transaction state can't be trusted: the engine restarts (as Reset) and says why.
+  - `persistent(sql)`: the playground only. Transaction control is refused there too: an open transaction would break every isolated run (transactions are practised in psql, d4). A statement that isn't `readsOnly` marks the generation **changed**; lesson pages then say "Reset database restores the tables".
+  - `readsOnly(statement)` (pure, in the lexer module): first keyword `SELECT`, `FROM`, `WITH`, `VALUES`, `DESCRIBE`, `SHOW`, `SUMMARIZE` or `EXPLAIN`, and none of the words `INSERT`, `UPDATE`, `DELETE`, `INTO`, `CREATE`, `DROP`, `ALTER`, `COPY`, `ANALYZE`, `nextval`, `setval` in its `codeOnly` text. It errs toward "changed": a false alarm costs a Reset, a miss a wrong verdict.
+- **Reset and Stop** restart the engine: a new generation, unchanged. A generation counter drops late results.
 - **Older browsers:** without WebAssembly exception handling, a notice; without JavaScript, a `<noscript>` line.
 - **One start per visit.** The first page with a browser editor starts the engine. `nav.ts` swaps `<main>` for same-origin Learn pages (not `/learn/data/`, `/learn/labs/`, `*.svg` or `/learn/assets/`), uses pushState and popstate, focuses the `<h1>` and announces the page; a failure falls back to a full load.
 - **Cards and results** (spike `cards.ts`): the card rule; 10 000 rows kept, 200 drawn; "N rows changed".
 - **Checks** (A1 `check.ts` port):
   - `result`: as a multiset or in order, with hints;
   - probes: every `-- expect: error` block whose `-- after:` names the exercise runs isolated after the learner's SQL and must fail with its text;
-  - the reference is computed at the first Check of each engine generation and cached. No `answers.ts` registry: the page's data attributes carry the SQL.
+  - **pristine data only** (004:8015, 002 §1): on a changed generation, Check and skip checks refuse with 002's message, "Changed the tables? Reset database brings them back.", and run nothing. The reference is computed at the first Check of an unchanged generation and cached for it, and the learner's answer runs on the same unchanged tables, so no verdict reads changed data. One flag, one `if`.
+  - No `answers.ts` registry: the page's data attributes carry the SQL.
 - **Progress:** `localStorage` `critwire.learn.done.v1` (§7.4); passing a skip check marks its module done.
 - **Test hook:** `window.critwireLearn.result(blockId)` → `{columns, rows: string[][] (cellText), truncated}` or `{error}`. It is read-only.
 
@@ -441,8 +455,9 @@ Renderers are queries; the `write*` functions are commands (CQS).
   - every exercise accepts its answer and rejects a fixed wrong one (a missing row; the wrong order for "in order"; a missing constraint for probes);
   - every skip check marks its module done;
   - Reset (playground: a learner table plus a DELETE), and Stop (a runaway query), and the next query runs;
+  - the changed generation: a playground SELECT leaves a lesson's Check working; a playground DELETE → that Check refuses with 002's message → Reset → the same Check passes; a `COMMIT` typed in a lesson editor is refused and the next run's result is unchanged;
   - the 10 000-row cap; three pages, one worker (`page.on("worker")`);
-  - the `.wasm` held back (text readable, Run disabled with progress), the `.wasm` answering 404 (it says why), a tampered `/v1/species.parquet` (SC2 refusal);
+  - the `.wasm` held back (text readable, Run disabled with progress), the `.wasm` answering 404 (it says why), a tampered `/v1/species.parquet` (SC2 refusal). The first two act on boot step 1's `HEAD`, a main-thread fetch, so they don't depend on routing worker requests. W10's first case asserts that the worker's own `.wasm` fetch does reach `context.route`, because the origin fence relies on it;
   - keyboard only; the dialogs close with Escape and return focus.
 - **`learn-labs`:**
   - each PostGIS and Power BI block's page code appears verbatim in its download;
@@ -488,7 +503,7 @@ Renderers are queries; the `write*` functions are commands (CQS).
 |---|---|---|---|
 | 1 | SC6 | D4. Versions printed and shown (D3, D6). The DoD's hash rule qualified: data results keep their hashes; EXPLAIN text is an example, asserted by meaning | W1, W17 |
 | 2 | SC9 | star `planned` marker and its teaching (F7, D9, D10). **d6-scd2:** before the UPDATE, a query of the facts matching ≠ 1 version must return 0 (overlap or gap); after it, `ALTER TABLE fact_records ALTER COLUMN species_key SET NOT NULL`; the partial unique index taught as "at most one current", with a query proving exactly one; the 2018 boundary called a teaching convention; observation time vs identification time. §6.3 and 004:7091 corrected | W6, W8, W21 |
-| 3 | SC7 | `critwire_lab` via `LEARN_PG_URL` (F2), the cleanup sweep and leak checks on error and abort paths (D3). **d5's copy:** a fresh-database default (PostgreSQL 15+ `public`) isn't proof, so inspect the ACLs (`\dn+`, `has_schema_privilege`); membership `INHERIT` and `SET` are options (`GRANT … WITH INHERIT FALSE, SET FALSE`) | W4, W20 |
+| 3 | SC7 | `critwire_lab` via `LEARN_PG_URL` (F2), the cleanup sweep (under the lock, this run's objects only) and leak checks on error and abort paths (D3). **d5's copy:** a fresh-database default (PostgreSQL 15+ `public`) isn't proof, so inspect the ACLs (`\dn+`, `has_schema_privilege`); membership `INHERIT` and `SET` are options (`GRANT … WITH INHERIT FALSE, SET FALSE`) | W4, W20 |
 | 4 | d4 two sessions | D5: fits in two steps, so built. Copy: the upsert labs don't cover upstream deletions or changed keys; "readers don't wait" holds for ordinary MVCC reads, not locking reads or DDL (`d4-locks` shows the exception; 004:3304, 3560) | W18, W19 |
 | 5 | d1–d3 teaching | **d1** (004:1950–1952, 1995 and the rank-needs-a-trigger claim): a nullable UNIQUE is an optional unique id, not a candidate key; a composite FK to `taxa (name, taxon_rank)` enforces rank declaratively. **d2** (004:2357, 2360): lists can be unnested, joined and counted; what's lost is element-level foreign keys; the 3NF mnemonic is introductory; a lossless split needs the shared attributes to determine a component. **d3** (004:2693, 2696): avoiding index-only scans removes one source of variation, not all; BRIN helps with partial correlation | W15, W16, W17 |
 | 6 | SC1, SC2 | **SC1:** the UNIQUEs stay as L1's A7 decided; `assertLearnProjection` refuses a shared id; d1's copy per item 5. **SC2:** D11's hash check and E2E's tampered-file case; L1's `learn-data` already checks the manifest's `inputs` against the served files | W10, W15 |
@@ -505,18 +520,18 @@ Every step writes its failure cases first: [T] `pnpm test`, [D] `pnpm test:db`, 
 | 1 | `blocks.ts` (grammar incl. `plan`/`sessions`), `result.ts`, `plan.ts`, `course.ts` (slots), `learn:port` for `setup` | [T] RQ1–5, 11, 13, 15, 17, 18, 26, RP5, RP12, PC1, PC7, RP14; plan cases | 1 |
 | 2 | `privilege.ts` wired into the lint | [T] PV1–8, CL1–9 | 1 |
 | 3 | runner core + blocks stage: plain blocks, results compare and `--update`, `checked/`, block keys, versions; §0's blocks ported; F4; F9 split | [D] RP1–7, RP12, RQ12–14, 21, 23, LK1–3, LK5, PC1 | 2 |
-| 4 | `tx: own`, boot, the cleanup sweep on error and abort (SC7) | [D] TX1–6, LK4, PC7, sweep cases | 1 |
-| 5 | `assemble.ts`, `freshness.ts`, the downloads stage, `assertLabsFresh` and the `--draft` warning | [T] assembly incl. a fixture boot block, key sensitivity; [D] the ERROR-line rule | 1 |
+| 4 | `tx: own`, boot, the cleanup order (terminate, sweep, unlock) and scope (SC7, D3) | [D] TX1–6, LK4, PC7; SIGINT mid-block (no run backend, no new object, lock freed last); a second learn:check during cleanup refused; a superuser-made `learn_t_` role named, not dropped | 1 |
+| 5 | `assemble.ts` (`pg-checks.sql`), `freshness.ts` (result sha256s, date moves only with a change, the pinned checker closure), the downloads stage, `assertLabsFresh` and the `--draft` warning | [T] assembly incl. a fixture boot block and a table named only in a comment, key sensitivity, an edited `checked/<id>.txt` refused, a rerun with nothing changed leaves `checked.json` byte for byte, the closure list; [D] the ERROR-line rule | 1 |
 | 6 | `erd-model.ts`, sources moved (`git mv`), the star `planned` marker, `accTitle`, dictionaries, base and star drift | [T] RQE1–5, RE1–6, EG1–4 | 1 |
 | 7 | `pnpm erd` (mermaid pin), the SVGs, the build's stale refusal, lab drift in learn:check | [T] ER1–4, stale | 1 |
-| 8 | `writeStar`, the 8 star blocks ported, `LAB_FILES` and descriptions, `learn-data` for the star | [T] ST3, ST5; [E] PB2–7 via `star-check` | 1 |
+| 8 | `writeStar` with the cross-engine guard, the 8 star blocks ported, `LAB_FILES` and descriptions, `learn-data` for the star | [T] ST3, ST5, a star block whose Node result differs from its recorded one refused; [E] PB2–7 via `star-check` | 1 |
 | 9 | pins (duckdb-wasm, esbuild), the extension committed, `licenses.ts`, assets and bundle, mtimes, site tsconfig | [T] build refusals; [E] serving | 1 |
-| 10 | engine, `format`, `cards`, `check`; a minimal playground; `learn-timing` (the T13 decision) | [T] spike and A1 cases; [E] engine cases (D13) | 2 |
+| 10 | engine, `format`, `cards`, `check`; `isolated()`'s refusals and recovery, `readsOnly`, the changed flag; a minimal playground; `learn-timing` (the T13 decision) | [T] spike and A1 cases, `readsOnly` cases (a CTE DELETE, `EXPLAIN ANALYZE`, a keyword inside a string); [E] engine cases (D13), first the worker route check | 2 |
 | 11 | `curriculum.json`, layout, map, track pages, progress, nav, docs link | [T] curriculum refusals; [E] `learn-map` | 1 |
-| 12 | module template and slots, every block kind, exercises, setup page, schema pages and dialogs, playground, downloads in `dist/` | [E] `learn-labs`, `schema` | 2 |
+| 12 | module template and slots, every block kind, exercises, setup page, schema pages and dialogs, playground, downloads in `dist/` | [E] `learn-labs`, `schema`, the changed-generation case | 2 |
 | 13–14 | f1 + f2; f3 + f4 | [E] seeded snapshots | 2 |
-| 15–18 | d1, d2, d3 (SC6 assertions), d4 | [E] / learn:check against seeded results | 4 |
-| 19 | the `-- sessions:` runner; d4-wait and d4-isolation `ran` | [D] | 1 |
+| 15–18 | d1, d2, d3 (SC6 assertions), d4 (`-- waits:`/`-- fails:` as leading lines, 004 and page together) | [E] / learn:check against seeded results | 4 |
+| 19 | the `-- sessions:` runner (poller, 5 s detection, 30 s lock_timeout); d4-wait and d4-isolation `ran` | [D] a `waits` statement that doesn't wait; an unmarked one that does (fails at once, cancelled); a release after 10 s still passes | 1 |
 | 20–21 | d5 (as `critwire_lab`); d6 (SC9) | learn:check, [E] | 2 |
 | 22 | diagrams | [E] alt and `<title>` | 1 |
 | 23 | E2E completion: screenshots, artifacts, a full run, the release smoke helper | [E] | 1 |
@@ -533,14 +548,16 @@ Every step writes its failure cases first: [T] `pnpm test`, [D] `pnpm test:db`, 
 | R1 | Engine traps (brief's Notes) | each has a fix in D11 and a case in W10: autoinstall and autoload off with `LOAD parquet` from the mirror; `HEAD` before instantiate; `eh` only; the lexer split (dollar quotes); every statement streamed and cut; epoch-ms dates as text; Reset by restart; fixed mtimes; no routes where the cache matters |
 | R2 | T13 setup timing | the spike measured 3.22 s against a 4.35 s bound; the hashing and buffers add an estimated 0.1 s; measured in W10 before pages depend on it; fallback per D15 |
 | R3 | 50 MB cap | ≈ 40.0 MB with the star; L3 projects 44–48 MB. `assertCap` names the largest files. `fact_records` (4.48 MB) repeats `occurrences.csv`'s rows; L3 weighs it with 004 §4.4's cuts |
-| R4 | Hash determinism | browser runs isolated as the spike ran them (F3); PostGIS blocks run in page order right after a fresh load, so d3's plans and correlations and `d4-xmin-load`'s single transaction come before any committing `tx: own` or sessions block; `d3-analyze` reads the full sample; plan text isn't asserted (D4); the star is `ORDER BY` pk with fixed writer options; esbuild is deterministic; SVGs re-render only on a source change; `checked.json` is written only on a change |
+| R4 | Hash determinism | browser runs isolated as the spike ran them (F3); PostGIS blocks run in page order right after a fresh load, so d3's plans and correlations and `d4-xmin-load`'s single transaction come before any committing `tx: own` or sessions block; `d3-analyze` reads the full sample; plan text isn't asserted (D4); the star is `ORDER BY` pk with fixed writer options; esbuild is deterministic; SVGs re-render only on a source change; `checked.json` is written only when a key, result, download or version changes (D6) |
 | R5 | Mermaid offline | the spike's proven path (`mermaid.min.js` in Playwright's Chromium, requests blocked); a missing bundle file or any request fails loudly |
 | R6 | d5 as `critwire_lab` | the spike ran it as superuser, so results may move. `critwire_lab` owns `learn_curriculum` (L1), so owner semantics hold; each difference goes to 004 and Decisions with its reason |
 | R7 | Fixed mtimes vs deploy's `rsync -a` quick check | only versioned or content-hashed paths under `/learn/assets/`, refused otherwise (D8) |
-| R8 | Lock-wait detection (D5) | `pg_blocking_pids` polled with a deadline, and `lock_timeout = '5s'`; on failure the blocks stay untested (brief) |
+| R8 | Lock-wait detection (D5) | `pg_blocking_pids` polled every 50 ms: expected waits seen within 5 s, unexpected ones fail at once; `lock_timeout = '30s'` and `statement_timeout = 60s` only as backstops, so load can't race them; on failure the blocks stay untested (brief) |
 | R9 | Build and learn:check need each other | `--draft` warns instead of refusing; the loop is in AGENTS.md (D16) |
 | R10 | New pins vs pnpm's minimum release age | exact pins; if refused, `minimumReleaseAgeExclude`, as L1 did for node-api |
 | R11 | Isolated lessons change 002's UX | learners keep their work in the playground; each module page says so in one line |
+| R12 | Check refused after playground changes (D11) | only non-`readsOnly` statements mark the generation; the refusal names Reset; learners lose playground work on Reset, as in 002 |
+| R13 | The sweep drops something not this run's (D3) | it runs under the lab lock, before unlock, and only on lab-role-made objects new since the start snapshot; anything else is named, never dropped; [D] cases in W4 |
 
 ### Rejected alternatives
 
@@ -549,7 +566,12 @@ Every step writes its failure cases first: [T] `pnpm test`, [D] `pnpm test:db`, 
 - **Exercise references computed at build time in Node DuckDB:** value forms differ from WASM, and 002/004 say nothing is pre-rendered.
 - **Lesson blocks writing to the live database (002):** results then depend on history (F3).
 - **002's `answers.ts`/`lessons.json` registry:** the page's data attributes carry the same SQL, from one source.
-- **Cross-engine star CSV diff in learn:check (spike ST1):** proven once in the spike; the block results and E2E's key checks suffice.
+- **Cross-engine star CSV diff in learn:check (spike ST1):** proven once in the spike; D9's per-block result comparison in the build guards later edits at no cost.
+- **A second, pristine DuckDB database for Check:** doubles memory and setup time (T13).
+- **Every reference computed eagerly after each start (002 §1):** adds to every start, and the learner's answer would still run on changed tables.
+- **Any playground run marks the generation changed:** a SELECT would force a Reset; `readsOnly` is one pure function.
+- **Sweeping every new `learn_%` object, or after unlock:** drops another process's objects (Astra MF2).
+- **A Caddy fixture path for the `.wasm` cases:** Caddy changes are the owner's NO; the cases act on the main-thread `HEAD`.
 - **Lab ERD drift in E2E:** E2E has no PostgreSQL; learn:check has the session.
 - **PNG renders:** nothing uses them.
 - **`-- plan:` in a side JSON file:** it would split a lesson's teaching from its block; headers are the existing grammar.
@@ -598,6 +620,23 @@ SHOULD-CONSIDER:
 
 ## Revision notes
 
+One round, 2026-10-28. Every MUST-FIX resolved by a design change; every MISSED and SHOULD-CONSIDER item adopted (one variant declined).
+
+| Item | Resolution |
+|---|---|
+| Fable MF1 · Astra MF1 (Check on changed data) | D11: a non-`readsOnly` playground statement marks the generation changed; Check and skip checks then refuse with 002's message until Reset; references and the learner's answer run only on an unchanged generation. E2E: playground SELECT → Check works; DELETE → refusal → Reset → pass (D13, W12). `readsOnly` pure cases (W10). R12 |
+| Fable MF2 · Astra MF3 (D5 deadlines) | D5: 50 ms `pg_blocking_pids` poller on the cleanup connection; `waits` seen within 5 s; an unmarked wait fails at once; `lock_timeout = '30s'` (6×) and pg-session's `statement_timeout = 60s` as backstops. `-- waits:`/`-- fails:` are leading lines; W18 rewrites 004's d4 blocks and the page together. W19 cases incl. a 10 s release. R8 |
+| Astra MF2 (sweep after unlock) | Verified: `check.ts:213-217` frees the lock first; `withLabSchema` (`test-db.ts:33-34`) is the other lab-role writer, under the lock; `learn-check.dbtest.ts:42-51` makes superuser fixtures outside it. D3 Cleanup: terminate the run's recorded backends, sweep on the lock-holding cleanup connection, then unlock; sweep only lab-role-made objects (ADMIN OPTION roles, owned schemas) new since the snapshot; others named, never dropped; connection lost → drop nothing, fail naming all. W4 cases, R13 |
+| Fable MISSED1 · Astra SC1 (star cross-engine) | Adopted: D9 compares each star block's Node DuckDB result with `checked/<id>.txt` (plain build refuses, `--draft` warns). W8 |
+| Fable MISSED2 (date churn) | Adopted: D6, D3 step 7: the date moves only with a key, result, download, `labErd` or version change. W5 |
+| Fable SC1 (setup.sql name clash) | Adopted: the setup page's download is `/learn/labs/pg-checks.sql` (D7, D6) |
+| Fable SC2 (checker closure) | Adopted: D6, the closure stays off `scripts/build/` except the lexer; a pure test pins it. W5 |
+| Fable SC3 (route vs worker fetch) | Adopted: the held-back and 404 cases act on the main-thread `HEAD`; W10's first case asserts worker routing (D13). Declined the Caddy fixture fallback: Caddy changes are the owner's NO |
+| Fable SC4 (`--update` twice) | Adopted: D3, boot runs once; `tx: own`/sessions end checks make the second run meaningful |
+| Fable SC5 (boot rule on prose) | Adopted: D7 matches `codeOnly` text. W5 case |
+| Astra SC2 (result files in freshness) | Adopted: D6 `blocks.<id>.result` = sha256 of `checked/<id>.txt`; the build refuses an edited result. W5 |
+| Astra SC3 (browser isolation recovery) | Adopted: D11 ROLLBACK after errors; transaction control and session statements refused in isolated runs (tx control in the playground too); restart if `BEGIN`/`ROLLBACK` fails. D2 lint. W10 |
+
 ## Steps
 
 ## Verification
@@ -614,5 +653,6 @@ SHOULD-CONSIDER:
 - 2026-10-28 12:29 UTC · Architecture: architect wrote findings F1–F10, design D1–D16, review items 1–7 mapped, 25 work groups (~39–40 sessions est.); no 004 edits; plan-only change, no checks needed.
 - 2026-10-28 12:35 UTC · Fable review: APPROVE_WITH_CHANGES, 2 MUST-FIX (D11 Check vs changed playground; D5 lock_timeout vs detection window), 2 MISSED, 5 SHOULD-CONSIDER; plan-only, no checks needed.
 - 2026-10-28 12:36 UTC · Astra review: APPROVE_WITH_CHANGES, 3 MUST-FIX (D11 Check on modified data; D3 cleanup after lock release; D5 lock_timeout = detection deadline), 3 SHOULD-CONSIDER; plan-only, no checks needed.
+- 2026-10-28 12:43 UTC · Revision: architect resolved 5 MUST-FIX (D11 Check refuses on changed generation until Reset; D3 sweep under lock, lab-role objects only; D5 lock_timeout 30s vs 5s detection); adopted MISSED 1–2 and all SC except Caddy fallback; Revision notes table; plan-only, no checks needed.
 
 ## Summary
