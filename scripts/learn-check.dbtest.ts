@@ -311,8 +311,10 @@ test("LC9 a check failing after the lock releases it and removes its temp file",
 test("LC5 + LC10 + DL2 a clean run loads twice to the manifest's counts, runs pg-checks.sql, stamps checked.json, and no child psql sees a secret", async () => {
   const bin = join(dir, "bin");
   mkdirSync(bin);
-  const dump = join(dir, "psql-calls.txt");
-  writeFileSync(join(bin, "psql"), `#!/bin/sh\n{ echo '=== call'; env; printf 'ARGV %s\\n' "$*"; } >> '${dump}'\nexec /usr/bin/psql "$@"\n`);
+  // One file per call: the runner reads watched schemas with concurrent psql calls, whose appends to one file interleave.
+  const dump = join(dir, "psql-calls");
+  mkdirSync(dump);
+  writeFileSync(join(bin, "psql"), `#!/bin/sh\n{ env; printf 'ARGV %s\\n' "$*"; } > "$(mktemp '${dump}/call-XXXXXX')"\nexec /usr/bin/psql "$@"\n`);
   chmodSync(join(bin, "psql"), 0o755);
   const r = await cli([], { PATH: `${bin}:${process.env.PATH}`, GBIF_USERNAME: "senuser", GBIF_PASSWORD: "senpass", DATABASE_URL: "postgres://sen" });
   assert.equal(r.code, 0, r.stderr);
@@ -332,7 +334,7 @@ test("LC5 + LC10 + DL2 a clean run loads twice to the manifest's counts, runs pg
   assert.match(r.stdout, /learn:check: lab ERD: site\/learn\/erd\/lab\.mmd = learn_curriculum \(\d+ tables\)/);
   assert.match(r.stdout, /learn:check: (wrote|unchanged:) site\/learn\/labs\/checked\/checked\.json/);
   assert.deepEqual(await labCounts(), Object.fromEntries(Object.entries(tables).sort(([a], [b]) => a.localeCompare(b))));
-  const calls = readFileSync(dump, "utf8").split("=== call\n").filter(Boolean);
+  const calls = readdirSync(dump).map((f) => readFileSync(join(dump, f), "utf8"));
   assert.ok(calls.length >= 4, `${calls.length} psql calls`);
   const password = decodeURIComponent(new URL(labUrl).password);
   for (const call of calls) {
