@@ -1,6 +1,7 @@
 -- q: d4-isolation
--- status: untested: needs two sessions
+-- status: ran
 -- engine: postgis
+-- sessions: A, B
 -- window A
 BEGIN ISOLATION LEVEL REPEATABLE READ;
 SELECT month FROM occurrences WHERE id = 6004132305;     -- NULL

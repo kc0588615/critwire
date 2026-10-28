@@ -30,6 +30,15 @@
 //      lock) and names anything else with the superuser's cleanup command, once.
 // PC7: `-- boot` blocks run first, once (--update too), committed: later blocks see them; a failing one stops the run
 //      before any other block.
+// SS1: a `-- sessions:` block (S22, D5) runs each window's statements in its own session, in order; a `-- waits:`
+//      statement blocked by the other window is left running and collected when its window runs next; the result is
+//      every statement that returned rows, as window | statement | columns; both backends are gone afterwards.
+// SS2: a `-- waits:` statement that doesn't wait → fails "didn't wait".
+// SS3: an unmarked statement that waits → fails at once (well under the 5 s deadline) and is cancelled; nothing stays.
+// SS4: a blocker that releases after 10 s → passes (the 5 s deadline is for being seen blocked, not for the wait).
+// SS5: row statements with different columns, a committed change to a watched schema, a window left in a
+//      transaction → each fails, named.
+// SS6: an abort mid-wait → the run rejects with its reason, and both window backends are gone.
 import assert from "node:assert/strict";
 import { mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -85,6 +94,26 @@ const run = (b: Block, page: Block[] = [b], timeoutMs?: number) => runBlock(sess
 /** A rendered result without its header line, rows joined by `|`. */
 const shown = (o: { rendered?: string }) => o.rendered?.split("\n").slice(1).join("|");
 const newObjects = async () => (await learnObjects(session.sql)).filter((o) => !known.has(o));
+/** A `-- sessions: A, B` block, its windows opened (and their pids kept) by `open`. */
+const sessions = (id: string, body: string) => block(id, body, ["-- sessions: A, B"]);
+let windowPids: number[] = [];
+const runSessions = (b: Block, signal?: AbortSignal) => {
+  windowPids = [];
+  const open = async () => {
+    const w = await openSession(target, signal);
+    windowPids.push(w.pid);
+    return w;
+  };
+  return runBlock(session, b, new Map([[b.id, b]]), { known, watch, open });
+};
+/** Waits up to 5 s for the window backends to end; returns those still there. */
+async function windowsLeft(): Promise<number[]> {
+  for (let i = 0; ; i++) {
+    const left = (await session.sql<{ pid: number }[]>`select pid from pg_stat_activity where pid in ${session.sql(windowPids)}`).map((r) => r.pid);
+    if (!left.length || i === 50) return left;
+    await new Promise((r) => setTimeout(r, 100));
+  }
+}
 
 test("PC1 the session is pg-session's, as the lab role; the pg-session block shows its search_path with 004's hash", async () => {
   const [shown] = await session.sql.unsafe("SELECT current_setting('search_path') AS search_path, current_setting('statement_timeout') AS statement_timeout, current_user::text AS role, current_user = session_user AS own_role");
@@ -335,4 +364,78 @@ test("PC7 boot blocks run first and once, committed; later blocks see them; a fa
     assert.match(e.message, /^boot block pc7f: q pc7f: statement 1 of 1: division by zero$/);
     return true;
   });
+});
+
+test("SS1 a sessions block runs window by window; a marked wait is collected later; rows are window | statement | columns", async () => {
+  await session.sql.unsafe(`CREATE TABLE ${schema}.ss (id int PRIMARY KEY, v int); INSERT INTO ${schema}.ss VALUES (1, NULL)`);
+  const o = await runSessions(sessions("ss1", [
+    "-- window A", "BEGIN;", `UPDATE ${schema}.ss SET v = 7 WHERE id = 1;`,
+    "-- window B", "BEGIN;", `SELECT v FROM ${schema}.ss WHERE id = 1;`, "-- waits: A holds the row", `UPDATE ${schema}.ss SET v = 8 WHERE id = 1;`,
+    "-- window A", "ROLLBACK;",
+    "-- window B", `SELECT v FROM ${schema}.ss WHERE id = 1;`, "ROLLBACK;",
+  ].join("\n")));
+  assert.deepEqual(o.failures, []);
+  assert.equal(shown(o), "window | statement | v|B | 4 | NULL|B | 7 | 8");
+  assert.equal(windowPids.length, 2);
+  assert.deepEqual(await windowsLeft(), []);
+});
+
+test("SS2 a `-- waits:` statement that doesn't wait fails: didn't wait", async () => {
+  const o = await runSessions(sessions("ss2", "-- window A\nSELECT 1 AS a;\n-- window B\n-- waits: nothing holds it\nSELECT 2 AS a"));
+  assert.match(o.failures.join("\n"), /^q ss2: statement 2 \(window B\): didn't wait \(nothing holds it\)/);
+  assert.deepEqual(await windowsLeft(), []);
+});
+
+test("SS3 an unmarked statement that waits fails at once and is cancelled", async () => {
+  const started = Date.now();
+  const o = await runSessions(sessions("ss3", [
+    "-- window A", "BEGIN;", `UPDATE ${schema}.ss SET v = 7 WHERE id = 1;`,
+    "-- window B", `UPDATE ${schema}.ss SET v = 8 WHERE id = 1;`,
+    "-- window A", "ROLLBACK;",
+    "-- window B", `SELECT v FROM ${schema}.ss WHERE id = 1`,
+  ].join("\n")));
+  assert.deepEqual(o.failures, ["q ss3: statement 3 (window B): waited for a lock held by window A without `-- waits:`; cancelled"]);
+  assert.ok(Date.now() - started < 5_000, "failed at once, not at the detection deadline");
+  assert.deepEqual(await windowsLeft(), []);
+  assert.equal(shown(await run(block("ss3-after", `SELECT v FROM ${schema}.ss WHERE id = 1`))), "v|NULL");
+});
+
+test("SS4 a blocker that releases after 10 s passes", async () => {
+  const started = Date.now();
+  const o = await runSessions(sessions("ss4", [
+    "-- window A", "BEGIN;", `UPDATE ${schema}.ss SET v = 7 WHERE id = 1;`,
+    "-- window B", "BEGIN;", "-- waits: A holds the row", `UPDATE ${schema}.ss SET v = 8 WHERE id = 1;`,
+    "-- window A", `SELECT v FROM ${schema}.ss, pg_sleep(10) WHERE id = 1;`, "ROLLBACK;",
+    "-- window B", `SELECT v FROM ${schema}.ss WHERE id = 1;`, "ROLLBACK;",
+  ].join("\n")));
+  assert.deepEqual(o.failures, []);
+  assert.ok(Date.now() - started >= 10_000);
+  assert.equal(shown(o), "window | statement | v|A | 5 | 7|B | 7 | 8");
+  assert.deepEqual(await windowsLeft(), []);
+});
+
+test("SS5 mixed columns, a committed change and a window left in a transaction each fail, named", async () => {
+  const cols = await runSessions(sessions("ss5a", "-- window A\nSELECT 1 AS a;\n-- window B\nSELECT 2 AS b"));
+  assert.deepEqual(cols.failures, ["q ss5a: the statements that return rows must share their columns: statement 1 (a), statement 2 (b)"]);
+  const commit = await runSessions(sessions("ss5b", `-- window A\nUPDATE ${schema}.ss SET v = 1 WHERE id = 1;\n-- window B\nSELECT v FROM ${schema}.ss WHERE id = 1`));
+  assert.match(commit.failures.join("\n"), new RegExp(`^q ss5b: committed a change: ${schema}\\.ss: rows or values changed`));
+  await session.sql.unsafe(`UPDATE ${schema}.ss SET v = NULL WHERE id = 1`);
+  const open = await runSessions(sessions("ss5c", "-- window A\nBEGIN;\nSELECT 1 AS a;\n-- window B\nSELECT 2 AS a"));
+  assert.deepEqual(open.failures, ["q ss5c: window A left its transaction open; the runner rolled it back"]);
+  assert.deepEqual(await windowsLeft(), []);
+});
+
+test("SS6 an abort mid-wait rejects with its reason; both window backends are gone", async () => {
+  const abort = new AbortController();
+  const b = sessions("ss6", [
+    "-- window A", "BEGIN;", `UPDATE ${schema}.ss SET v = 7 WHERE id = 1;`,
+    "-- window B", "-- waits: A holds the row", `UPDATE ${schema}.ss SET v = 8 WHERE id = 1;`,
+    "-- window A", `SELECT v FROM ${schema}.ss, pg_sleep(30) WHERE id = 1;`, "ROLLBACK;",
+    "-- window B", `SELECT v FROM ${schema}.ss WHERE id = 1`,
+  ].join("\n"));
+  setTimeout(() => abort.abort(new Error("stopped by the test")), 2000);
+  await assert.rejects(runSessions(b, abort.signal), /stopped by the test/);
+  assert.equal(windowPids.length, 2);
+  assert.deepEqual(await windowsLeft(), []);
+  assert.equal(shown(await run(block("ss6-after", `SELECT v FROM ${schema}.ss WHERE id = 1`))), "v|NULL");
 });

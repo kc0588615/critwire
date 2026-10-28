@@ -267,7 +267,8 @@ async function assertLabErd(s: LabSession, text: string): Promise<void> {
 }
 
 // The ran PostGIS blocks, in page order, in one runner session (recorded with the lock); checked against
-// checked/<id>.txt, or written. `-- tx: own` blocks are watched against the canary (where it exists) and learn_curriculum.
+// checked/<id>.txt, or written. `-- tx: own` and `-- sessions:` blocks are watched against the canary (where it exists)
+// and learn_curriculum; a sessions block's windows are sessions of their own, recorded with the lock too.
 // `labErd`: checked once the boot blocks committed.
 async function blocksStage(lab: PgTarget, run: Run, blocks: readonly Block[], update: boolean, show: boolean, labErd?: string): Promise<void> {
   const { admin, canarySchema, canaryBefore, lock, signal } = run;
@@ -275,9 +276,14 @@ async function blocksStage(lab: PgTarget, run: Run, blocks: readonly Block[], up
   const watch = { schemas: [...(canaryBefore ? [canarySchema] : []), LAB_SCHEMA], read: (schema: string) => readTables(admin, schema, signal) };
   const session = await openSession(lab, signal);
   lock.record(session.pid);
+  const open = async () => {
+    const window = await openSession(lab, signal);
+    lock.record(window.pid);
+    return window;
+  };
   try {
     const afterBoot = labErd === undefined ? undefined : () => assertLabErd(session, labErd);
-    await runBlocks(session, pg, { update, show, known: new Set(lock.known), watch, afterBoot });
+    await runBlocks(session, pg, { update, show, known: new Set(lock.known), watch, afterBoot, open });
   } finally {
     await session.end();
   }

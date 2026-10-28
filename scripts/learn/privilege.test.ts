@@ -11,7 +11,7 @@ import { splitStatements } from "../build/learn/sql.ts";
 import { lintPage, parseBlock, type Block } from "./blocks.ts";
 import { blockRuleErrors, roleStatement, type RuleBlock } from "./privilege.ts";
 
-const rule = (sql: string, over: Partial<RuleBlock> = {}): RuleBlock => ({ id: "b", engine: "postgis", status: "ran", txOwn: false, code: sql, statements: splitStatements(sql), ...over });
+const rule = (sql: string, over: Partial<RuleBlock> = {}): RuleBlock => ({ id: "b", engine: "postgis", status: "ran", txOwn: false, sessions: [], code: sql, statements: splitStatements(sql), ...over });
 const errs = (sql: string, over: Partial<RuleBlock> = {}, chain: string[] = []) => blockRuleErrors(rule(sql, over), chain.flatMap((c) => splitStatements(c)));
 const ok = (sql: string, over: Partial<RuleBlock> = {}, chain: string[] = []) => assert.deepEqual(errs(sql, over, chain), [], sql);
 const bad = (sql: string, re: RegExp, over: Partial<RuleBlock> = {}, chain: string[] = []) => {
@@ -251,6 +251,11 @@ test("RQ15 (PostGIS) transaction control in a wrapped PostGIS block is refused b
     "q r15c: statement 2 is transaction control (ROLLBACK)",
     "q r15d: statement 1 is transaction control (START)",
   ]);
+  // S22: a `-- sessions:` block runs unwrapped, as `tx: own` does: its windows' BEGIN … ROLLBACK pass, a plain SET doesn't
+  const windows = { sessions: ["A", "B"] };
+  ok("BEGIN; UPDATE occurrences SET month = 7 WHERE id = 1; ROLLBACK", windows);
+  ok("BEGIN; SET LOCAL lock_timeout = '1s'; ROLLBACK", windows);
+  bad("SET lock_timeout = '1s'", /changes a setting \(SET\) that outlives the block's COMMIT/, windows);
 });
 
 test("RQ18, RP12 the determinism lint: functions, in either engine; names inside strings and comments don't count", () => {

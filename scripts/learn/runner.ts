@@ -11,6 +11,12 @@
 // it must have ended clean (TX1–TX6, LK4): no open or failed transaction (a BEGIN probe; rolled back), the session as
 // it was (restored), no committed learn_ object (the lab role's are dropped, others named once) and the watched schemas
 // (the canary, learn_curriculum) unchanged. Its result is the last statement that returned rows.
+// A `-- sessions:` block (D5) runs each window's statements in a session of its own (RunOptions.open), in block order,
+// while the runner's session polls pg_blocking_pids: a `-- waits:` statement must be seen blocked by another window
+// within 5 s, and is collected when its window runs next (or at the end); any other statement seen blocked fails the
+// block at once and is cancelled. `-- fails:` as in `tx: own`; lock_timeout 30 s is the server's stop for a stalled
+// wait. Then each window must have ended clean, with the `tx: own` checks for leaks and watched schemas, and both
+// sessions end. Its result is every statement that returned rows, as `window | statement | <columns>`.
 // runBlocks runs the boot blocks first, once, then the rest, against their recorded results
 // (site/learn/labs/checked/<id>.txt), or with `update` runs each twice and writes the results once both runs agree and
 // every block passed. An abort cancels the running statement and throws its reason. Tests: runner.dbtest.ts.
@@ -31,6 +37,11 @@ export const STATEMENT_TIMEOUT = "1min";
 export const BLOCK_TIMEOUT_MS = 60_000;
 /** What the runner's session runs at connect: pg-session's SET, then the timeout. */
 export const SESSION_STATEMENTS: readonly string[] = [...PG_SESSION, `SET statement_timeout = '${STATEMENT_TIMEOUT}'`];
+/** A `-- sessions:` block (D5): a `-- waits:` statement is seen blocked within this; the windows' lock_timeout, six
+ * times it, is the server's stop if the runner stalls, never reached by a legitimate wait. */
+export const WAIT_SEEN_MS = 5_000;
+const WINDOW_LOCK_TIMEOUT = "30s";
+const POLL_MS = 50;
 const SEARCH_PATH = `${LAB_SCHEMA}, public`;
 const SESSION_SQL = `SELECT current_setting('search_path') AS search_path, current_setting('statement_timeout') AS statement_timeout,
   current_user::text AS role, current_user = session_user AS own_role`;
@@ -173,6 +184,8 @@ export interface RunOptions {
   watch?: Watch;
   /** The block's time (default 60 s); the session's statement timeout stays the server's stop. */
   timeoutMs?: number;
+  /** Opens a session for one window of a `-- sessions:` block (learn:check records it with the lock); required for those. */
+  open?: () => Promise<LabSession>;
 }
 
 /** The SAVEPOINT before an expected error's statement, so the leak check runs in the learner's state. */
@@ -209,7 +222,7 @@ function resultErrors(b: Block, q: string, ran: Exclude<Ran, { error: string }>,
  */
 export async function runBlock(s: LabSession, b: Block, page: ReadonlyMap<string, Block>, options: RunOptions): Promise<Outcome> {
   if (b.engine !== "postgis" || b.status !== "ran") throw new Error(`q ${b.id}: the runner runs ran PostGIS blocks only`);
-  if (b.sessions.length) throw new Error(`q ${b.id}: the runner doesn't run \`-- sessions:\` blocks yet`);
+  if (b.sessions.length) return runSessionsBlock(s, b, options);
   if (b.txOwn) return runOwnBlock(s, b, options);
   const { known, timeoutMs = BLOCK_TIMEOUT_MS } = options;
   const q = `q ${b.id}`;
@@ -279,7 +292,7 @@ async function runOwnBlock(s: LabSession, b: Block, { known, watch, timeoutMs = 
   const q = `q ${b.id}`;
   if (!watch) throw new Error(`${q}: a \`-- tx: own\` block needs the schemas it must leave unchanged (watch)`);
   const o: Outcome = { id: b.id, failures: [] };
-  const before = await Promise.all(watch.schemas.map((schema) => watch.read(schema)));
+  const before = await readWatched(watch);
   const deadline = Date.now() + timeoutMs;
   const noticed = s.notices.length;
   const total = b.statements.length;
@@ -293,9 +306,9 @@ async function runOwnBlock(s: LabSession, b: Block, { known, watch, timeoutMs = 
       break;
     }
     if (fails !== undefined) {
-      if (!("error" in ran)) o.failures.push(`${at} should fail with "${fails}" but succeeded`);
-      else if (!ran.error.includes(fails)) o.failures.push(`${at} should fail with "${fails}" but failed with: ${ran.error}`);
-      else continue;
+      const failure = failsAsMarked(at, fails, ran);
+      if (!failure) continue;
+      o.failures.push(failure);
       break;
     }
     if ("error" in ran) {
@@ -306,21 +319,169 @@ async function runOwnBlock(s: LabSession, b: Block, { known, watch, timeoutMs = 
   }
   o.failures.push(...warnings(s, noticed, q));
 
-  const probed = s.notices.length;
-  const probe = await s.run("BEGIN", Date.now() + BLOCK_TIMEOUT_MS);
-  if ("error" in probe || s.notices.slice(probed).some((n) => OPEN_TRANSACTION.test(n))) o.failures.push(`${q}: left its transaction open; the runner rolled it back`);
-  await control(s, q)("ROLLBACK");
+  if (await leftOpen(s, q)) o.failures.push(`${q}: left its transaction open; the runner rolled it back`);
   o.failures.push(...(await restoreSession(s, q)));
   o.failures.push(...(await committedLeaks(s, q, known)));
-  for (const [i, schema] of watch.schemas.entries()) {
-    for (const d of tablesDiff(schema, before[i]!, await watch.read(schema))) o.failures.push(`${q}: committed a change: ${d}`);
-  }
+  o.failures.push(...(await committedChanges(watch, before, q)));
 
   if (!o.failures.length && !shown) o.failures.push(`${q}: no statement returned rows to show`);
   if (o.failures.length || !shown) return o;
   o.failures.push(...resultErrors(b, q, shown.ran, shown.text));
   if (!o.failures.length) o.rendered = renderResult(b.id, shown.ran.result);
   return o;
+}
+
+/** A `-- fails: <text>` statement's failure: undefined when it failed with the text. */
+function failsAsMarked(at: string, fails: string, ran: Ran): string | undefined {
+  if (!("error" in ran)) return `${at} should fail with "${fails}" but succeeded`;
+  if (!ran.error.includes(fails)) return `${at} should fail with "${fails}" but failed with: ${ran.error}`;
+  return undefined;
+}
+
+/** The BEGIN probe (TX1): whether `s` was left in a transaction (an error, or PostgreSQL's warning); rolled back either way. */
+async function leftOpen(s: LabSession, q: string): Promise<boolean> {
+  const probed = s.notices.length;
+  const probe = await s.run("BEGIN", Date.now() + BLOCK_TIMEOUT_MS);
+  const open = "error" in probe || s.notices.slice(probed).some((n) => OPEN_TRANSACTION.test(n));
+  await control(s, q)("ROLLBACK");
+  return open;
+}
+
+const readWatched = (watch: Watch) => Promise.all(watch.schemas.map((schema) => watch.read(schema)));
+
+/** The watched schemas' changes since `before` (TX3), one failure per table. */
+async function committedChanges(watch: Watch, before: Map<string, string>[], q: string): Promise<string[]> {
+  const after = await readWatched(watch);
+  return watch.schemas.flatMap((schema, i) => tablesDiff(schema, before[i]!, after[i]!).map((d) => `${q}: committed a change: ${d}`));
+}
+
+/** A window of a `-- sessions:` block: its session, and the `-- waits:` statement it left running, if any. */
+interface Window {
+  name: string;
+  s: LabSession;
+  pending?: { i: number; running: Promise<Ran> };
+}
+
+/** What polling a running statement saw: it finished, or pg_blocking_pids named its blockers, or `seenMs` passed. */
+type Seen = { ran: Ran } | { blockers: number[] } | { late: true };
+
+/** Polls `pid`'s blockers on `poll` (every 50 ms) until `running` settles, something blocks it, or `seenMs` passes. */
+async function watchStatement(poll: postgres.Sql, pid: number, running: Promise<Ran>, seenMs?: number): Promise<Seen> {
+  let settled = false;
+  running.then(() => (settled = true), () => (settled = true));
+  const start = Date.now();
+  for (;;) {
+    await Promise.race([running.catch(() => {}), new Promise((r) => setTimeout(r, POLL_MS))]);
+    if (settled) return { ran: await running };
+    const [{ blockers }] = await poll<{ blockers: number[] }[]>`select pg_blocking_pids(${pid}) as blockers`;
+    if (settled) return { ran: await running };
+    if (blockers.length) return { blockers };
+    if (seenMs !== undefined && Date.now() - start > seenMs) return { late: true };
+  }
+}
+
+/**
+ * One `-- sessions:` block (D5): a session per window, opened with `open` and given lock_timeout; the statements in
+ * block order, each in its window's session, watched from `s`. A window's earlier `-- waits:` statement is collected
+ * before its next one runs. On the first failure the block stops; then (failure or not) the pending statements are
+ * cancelled and the windows' sessions ended, and the `tx: own` checks run.
+ */
+async function runSessionsBlock(s: LabSession, b: Block, { known, watch, open, timeoutMs = BLOCK_TIMEOUT_MS }: RunOptions): Promise<Outcome> {
+  const q = `q ${b.id}`;
+  if (!watch || !open) throw new Error(`${q}: a \`-- sessions:\` block needs the schemas it must leave unchanged (watch) and a way to open its windows (open)`);
+  const o: Outcome = { id: b.id, failures: [] };
+  const before = await readWatched(watch);
+  const total = b.statements.length;
+  const at = (i: number) => `${q}: statement ${b.statements[i]!.n} (window ${b.windows[i]})`;
+  const shown: { window: string; n: number; ran: Exclude<Ran, { error: string }>; text: string }[] = [];
+  /** A statement's outcome; false when it fails the block. */
+  const settle = (i: number, ran: Ran): boolean => {
+    const st = b.statements[i]!;
+    const fails = b.fails[i];
+    let failure: string | undefined;
+    if ("timedOut" in ran) failure = timedOut(q, timeoutMs);
+    else if (fails !== undefined) failure = failsAsMarked(at(i), fails, ran);
+    else if ("error" in ran) failure = `${q}: ${statementError(st, total, ran.error).message} (window ${b.windows[i]})`;
+    else if (ran.result.columns.length) shown.push({ window: b.windows[i]!, n: st.n, ran, text: st.text });
+    if (failure) o.failures.push(failure);
+    return !failure;
+  };
+  const collect = async (w: Window): Promise<boolean> => {
+    if (!w.pending) return true;
+    const { i, running } = w.pending;
+    w.pending = undefined;
+    return settle(i, await running);
+  };
+
+  const windows: Window[] = [];
+  try {
+    for (const name of b.sessions) {
+      windows.push({ name, s: await open() });
+      await control(windows.at(-1)!.s, q)(`SET lock_timeout = '${WINDOW_LOCK_TIMEOUT}'`);
+    }
+    const byName = new Map(windows.map((w) => [w.name, w]));
+    const named = (pids: number[]) => pids.map((p) => windows.find((w) => w.s.pid === p)).map((w, k) => (w ? `window ${w.name}` : `pid ${pids[k]}`)).join(", ");
+    const deadline = Date.now() + timeoutMs;
+    let ok = true;
+    for (const [i, st] of b.statements.entries()) {
+      const w = byName.get(b.windows[i]!)!;
+      if (!(ok = await collect(w))) break;
+      const running = w.s.run(st.text, deadline);
+      const waits = b.waits[i];
+      const seen = await watchStatement(s.sql, w.s.pid, running, waits === undefined ? undefined : WAIT_SEEN_MS);
+      if ("ran" in seen) {
+        if (waits === undefined) ok = settle(i, seen.ran);
+        else {
+          o.failures.push(`${at(i)}: didn't wait (${waits}): it ran to the end`);
+          ok = false;
+        }
+      } else {
+        w.pending = { i, running };
+        const others = windows.filter((x) => x !== w).map((x) => x.s.pid);
+        if (waits === undefined && "blockers" in seen) o.failures.push(`${at(i)}: waited for a lock held by ${named(seen.blockers)} without \`-- waits:\`; cancelled`);
+        else if ("late" in seen) o.failures.push(`${at(i)}: didn't wait (${waits}): not blocked by another window within ${WAIT_SEEN_MS / 1000} s`);
+        else if (!seen.blockers.some((p) => others.includes(p))) o.failures.push(`${at(i)}: waits (${waits}), but on ${named(seen.blockers)}, not another window`);
+        else continue;
+        ok = false;
+      }
+      if (!ok) break;
+    }
+    for (const w of windows) if (ok) ok = await collect(w);
+    if (ok) {
+      for (const w of windows) {
+        o.failures.push(...warnings(w.s, 0, `${q} (window ${w.name})`));
+        if (await leftOpen(w.s, q)) o.failures.push(`${q}: window ${w.name} left its transaction open; the runner rolled it back`);
+      }
+    }
+  } finally {
+    await endWindows(s, windows);
+  }
+  o.failures.push(...(await committedLeaks(s, q, known)));
+  o.failures.push(...(await committedChanges(watch, before, q)));
+
+  if (!o.failures.length && !shown.length) o.failures.push(`${q}: no statement returned rows to show`);
+  if (o.failures.length) return o;
+  const columns = shown[0]!.ran.result.columns;
+  if (shown.some((x) => x.ran.result.columns.join("\0") !== columns.join("\0"))) {
+    o.failures.push(`${q}: the statements that return rows must share their columns: ${shown.map((x) => `statement ${x.n} (${x.ran.result.columns.join(", ")})`).join(", ")}`);
+    return o;
+  }
+  for (const x of shown) o.failures.push(...resultErrors(b, q, x.ran, x.text));
+  if (o.failures.length) return o;
+  const rows = shown.flatMap((x) => x.ran.result.rows.map((r) => [x.window, x.n, ...r]));
+  o.rendered = renderResult(b.id, { columns: ["window", "statement", ...columns], rows });
+  return o;
+}
+
+/** Cancels each window's pending statement (pg_cancel_backend, from `s`), waits for it, and ends the window's session. */
+async function endWindows(s: LabSession, windows: readonly Window[]): Promise<void> {
+  for (const w of windows) {
+    if (!w.pending) continue;
+    await s.sql`select pg_cancel_backend(${w.s.pid})`;
+    await w.pending.running.catch(() => undefined);
+    w.pending = undefined;
+  }
+  await Promise.all(windows.map((w) => w.s.end()));
 }
 
 /** The session as openSession left it (TX1): if a block changed it, a failure, and the session's statements run again. */

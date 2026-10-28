@@ -1,9 +1,9 @@
 // The one module of rules on what a block may run (plan D2; spike scripts/privilege.ts, ported). Pure.
 // - blockRuleErrors (PV1–PV8): role and schema statements only in PostGIS blocks, every role and schema they name
 //   `learn_…`, PUBLIC only as a grantee on objects in a named learn_ schema; never ALTER SYSTEM, ALTER DATABASE or
-//   GRANT ON PARAMETER; never learn_spatial (any engine, any status); SET only in PostGIS (and not past a `-- tx: own`
-//   COMMIT); random() only after setseed(); transaction control only under `-- tx: own`. An untested block never runs:
-//   only the learn_spatial rule applies to it (a learner's one-time setup may show anything, RP14). A DuckDB block's
+//   GRANT ON PARAMETER; never learn_spatial (any engine, any status); SET only in PostGIS (and not past an unwrapped
+//   block's COMMIT); random() only after setseed(); transaction control only in unwrapped blocks (`-- tx: own`,
+//   `-- sessions:`). An untested block never runs: only the learn_spatial rule applies to it (a learner's one-time setup may show anything, RP14). A DuckDB block's
 //   SET, RESET and transaction control are refused once, by the isolated run's rule (sql.ts isolatedRefusal, D11).
 // - cleanupErrors (CL1–CL9): a block drops the roles and schemas it creates, DROP OWNED BY before DROP ROLE for a role
 //   that was granted or owns anything, RESET ROLE after SET ROLE: each block cleans up as a learner runs it.
@@ -22,6 +22,8 @@ export interface RuleBlock {
   engine: "duckdb" | "postgis" | "powerbi";
   status: "ran" | "untested";
   txOwn: boolean;
+  /** `-- sessions:`: like `tx: own`, the block runs unwrapped. */
+  sessions: readonly string[];
   /** The block's code as learners see it. */
   code: string;
   statements: Statement[];
@@ -311,6 +313,7 @@ export function blockRuleErrors(b: RuleBlock, chain: readonly Statement[] = []):
   if (b.code.toLowerCase().includes(A2_SCHEMA)) errors.push(`${q}: names ${A2_SCHEMA} (A2's schema, which only the canary reads); never`);
   if (b.status === "untested" || b.engine === "powerbi") return errors;
   const pg = b.engine === "postgis";
+  const unwrapped = b.txOwn || b.sessions.length > 0;
   let seeded = pg && chain.some((s) => SETSEED.test(codeOnly(s.text)));
   for (const s of b.statements) {
     const at = `${q}: statement ${s.n}`;
@@ -318,7 +321,7 @@ export function blockRuleErrors(b: RuleBlock, chain: readonly Statement[] = []):
     const t = tokens(s.text);
     const tx = transactionControl(t);
     if (tx?.twoPhase) errors.push(`${at} is two-phase commit (${tx.word}); never`);
-    else if (tx && pg && !b.txOwn) errors.push(`${at} is transaction control (${tx.word}); every block already runs inside BEGIN … ROLLBACK (else \`-- tx: own\`)`);
+    else if (tx && pg && !unwrapped) errors.push(`${at} is transaction control (${tx.word}); every block already runs inside BEGIN … ROLLBACK (else \`-- tx: own\`)`);
     if (t[0]?.word === "alter" && (t[1]?.word === "system" || t[1]?.word === "database"))
       errors.push(`${at} changes the server or the database (ALTER ${t[1].word.toUpperCase()}); never`);
     const r = roleStatement(s.text);
@@ -334,7 +337,7 @@ export function blockRuleErrors(b: RuleBlock, chain: readonly Statement[] = []):
       const what = SET_CONFIG.test(code) && t[0]?.word !== "set" && t[0]?.word !== "reset" ? "set_config" : t[0]!.word!.toUpperCase();
       const local = t[0]?.word === "set" && t[1]?.word === "local";
       if (!pg) errors.push(`${at} changes a setting (${what}); DuckDB keeps it past the block's ROLLBACK`);
-      else if (b.txOwn && !local) errors.push(`${at} changes a setting (${what}) that outlives the block's COMMIT; use SET LOCAL inside its transaction`);
+      else if (unwrapped && !local) errors.push(`${at} changes a setting (${what}) that outlives the block's COMMIT; use SET LOCAL inside its transaction`);
     }
     for (const [re, name] of NONDETERMINISTIC) if (re.test(code)) errors.push(`${q}: not deterministic: ${name}`);
     if (RANDOM.test(code) && !seeded) errors.push(`${q}: not deterministic: random(${pg ? " without an earlier setseed(…) in the block or its `-- after:` blocks" : ""}`);

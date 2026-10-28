@@ -1,6 +1,7 @@
 -- q: d4-wait
--- status: untested: needs two sessions
+-- status: ran
 -- engine: postgis
+-- sessions: A, B
 -- window A
 BEGIN;
 UPDATE occurrences SET month = 7 WHERE id = 6004132305;

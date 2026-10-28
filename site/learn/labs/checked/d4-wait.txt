@@ -1,0 +1,4 @@
+-- result: d4-wait · 2 rows · sha256 ddbfcdb9a1de
+window | statement | month
+B | 4 | NULL
+B | 7 | 8

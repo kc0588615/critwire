@@ -11,7 +11,7 @@ Every example in this document is tested. A block is a fenced code block whose f
 ### Blocks, engines and statuses
 
 - **Every block has an id and a status.** SQL: `-- q: <id>`, then `-- status: ran` or `-- status: untested: <reason>`. Python writes `#` for `--`; Power BI's M and DAX write `//`. Module blocks are named `<module>-<word>` (`d3-plan`); engine and setup blocks have plain ids (`setup`, `pg-session`). Ids are unique in the document.
-- **`ran`** means the block ran on the data named in the log header (below) and gave the result printed under it; Verification runs it again and fails on any difference. **`untested: <reason>`** blocks never run: they need something this server doesn't have (Windows, ArcGIS Pro, a second session). Nor do they run from a download: there they are commented out (§7.3). A failing block is fixed, never relabelled `untested`.
+- **`ran`** means the block ran on the data named in the log header (below) and gave the result printed under it; Verification runs it again and fails on any difference. **`untested: <reason>`** blocks never run: they need something this server doesn't have (Windows, ArcGIS Pro, a learner's own download). Nor do they run from a download: there they are commented out (§7.3). A failing block is fixed, never relabelled `untested`.
 - **Engines:**
   - SQL with no `-- engine:` line (or `-- engine: duckdb`) runs in DuckDB-WASM in headless Chromium, on the browser database the `setup` block builds (below), as a page runs it.
   - `-- engine: postgis` runs in PostgreSQL 16 with PostGIS 3.4.2, in schema `learn_curriculum`, after the loader and `pg-session` (below).
@@ -25,6 +25,7 @@ Every example in this document is tested. A block is a fenced code block whose f
   - `-- needs: raster` (PostGIS): the block uses PostGIS raster, so the run first checks the raster library and its settings (g7, s6). Raster functions anywhere else are refused.
   - `-- boot` (PostGIS): runs once when the runner connects, before every other block, and is committed. It builds fixtures later blocks read (s4's hexagon grids); its tables are listed `lab-made` on the lab ERD (§6.2).
   - `-- tx: own` (PostGIS): the runner doesn't wrap the block. It runs its own `BEGIN` … `COMMIT` or `ROLLBACK`, as typed in psql (d4). Afterwards the runner checks that the block ended its transaction, left the session as it found it, committed no `learn_` role or schema, and left `learn_curriculum` (and the canary) unchanged; it puts back what it can (rolls back, restores the session, drops the lab role's committed objects) and fails the block either way. Inside one, a statement whose comment line says `-- fails: <text>` must fail with an error containing `<text>`, and the block goes on, as psql does when you type without `ON_ERROR_STOP`; any other error fails the block. Its result is the last statement that returned rows, so a block can show what it built and then roll it back or drop it.
+  - `-- sessions: A, B` (PostGIS): the block is typed in two psql windows (d4). A `-- window A` comment line sends the statements after it to that window's session; the runner opens one session per window, after `pg-session`, and runs the statements in the order written, unwrapped, as `tx: own` does. A statement after a `-- waits: <why>` comment line must wait for another window's lock: the runner must see it blocked within 5 seconds, leaves it waiting, and collects its result when its window comes up again. Any other statement that waits fails the block at once and is cancelled. `-- fails:` works as in `tx: own`. Afterwards each window must have ended its transaction, with `tx: own`'s checks on `learn_` objects and on `learn_curriculum`; both sessions end. Its result is every statement that returned rows, as `window | statement | <columns>` (`statement` is its number in the block), so those statements must have the same columns. It can't take `after`, `boot`, `expect` or `tx`. In a download it is commented out, since one psql file is one session (§7.3).
   - `# timeout: <seconds>` (Python): when the block is stopped; 60 by default.
   - `-- show: cards` is not a test header: it stays in the SQL learners see, and the page shows the result as animal cards (002 §8).
 - **Every other SQL block runs in a transaction the runner rolls back,** so each starts from the same database and the order of modules doesn't matter. Results must be deterministic: rows ordered by a unique key, `random()` only after `setseed()`, no clock; Python prints with explicit formats, never a DataFrame's repr.
@@ -3660,12 +3661,13 @@ species | AccessExclusiveLock
 
 `RowExclusiveLock` lets everyone else read `occurrences` and write its other rows. `AccessExclusiveLock` stops every session from even reading `species` until this transaction ends: keep transactions that change a table's structure short.
 
-5. Plain readers don't wait; writers of the same row do. This needs two psql windows, A and B, each after `pg-session`; type the lines in the order shown. `-- waits:` marks the statement that waits, and `-- fails:` (lab 6) the one that fails on purpose. (The tests run every block in one session, so this one was run by hand on the test server, with the results in the comments.)
+5. Plain readers don't wait; writers of the same row do. This needs two psql windows, A and B, each after `pg-session`; type the lines in the order shown. `-- waits:` marks the statement that waits, and `-- fails:` (lab 6) the one that fails on purpose. The comments give each statement's outcome; the result below lists what each `SELECT` returned, by window and statement number. The tests run it the same way, in two sessions, and check that the marked statement waits and no other does.
 
 ```sql
 -- q: d4-wait
--- status: untested: needs two sessions
+-- status: ran
 -- engine: postgis
+-- sessions: A, B
 -- window A
 BEGIN;
 UPDATE occurrences SET month = 7 WHERE id = 6004132305;
@@ -3681,12 +3683,20 @@ SELECT month FROM occurrences WHERE id = 6004132305;     -- 8
 ROLLBACK;
 ```
 
+```text
+-- result: d4-wait · 2 rows · sha256 ddbfcdb9a1de
+window | statement | month
+B | 4 | NULL
+B | 7 | 8
+```
+
 6. Isolation levels, with the same two windows. B changes the row and commits (autocommit) while A's transaction is open:
 
 ```sql
 -- q: d4-isolation
--- status: untested: needs two sessions
+-- status: ran
 -- engine: postgis
+-- sessions: A, B
 -- window A
 BEGIN ISOLATION LEVEL REPEATABLE READ;
 SELECT month FROM occurrences WHERE id = 6004132305;     -- NULL
@@ -3699,6 +3709,13 @@ UPDATE occurrences SET month = 2 WHERE id = 6004132305;
 ROLLBACK;
 -- window B: undo the change
 UPDATE occurrences SET month = NULL WHERE id = 6004132305;
+```
+
+```text
+-- result: d4-isolation · 2 rows · sha256 ba58c317969a
+window | statement | month
+A | 2 | NULL
+A | 4 | NULL
 ```
 
 Had B read with `SELECT month … FOR UPDATE` in lab 5, it would have waited for A just as its `UPDATE` did; had A run lab 4's `ALTER TABLE species …`, even B's plain `SELECT` on `species` would have waited. Begin A with plain `BEGIN;` (read committed) instead and A's second `SELECT` shows B's 1, and its `UPDATE` succeeds. Which is right depends on the job: a report that reads several tables wants one snapshot (repeatable read, read only); a job that decides from what it read and then writes wants to hear that the data changed under it (repeatable read or serializable, with a retry).
@@ -3839,7 +3856,7 @@ ON CONFLICT (occurrence_id) DO UPDATE SET month = EXCLUDED.month;
 -- result: d4-twice · error: statement 1 of 1: ON CONFLICT DO UPDATE command cannot affect row a second time
 ```
 
-**Result:** In autocommit, a load that fails on its second batch keeps the first (1,858 rows), and running it again fails on them; in one transaction the error aborts everything, even a `SELECT`, and `ROLLBACK` leaves nothing behind, so the fixed file can simply be run again, once or twice, for the same 1,959 rows. A savepoint keeps the first batch and lets the transaction go on. MVCC is visible in `xmin`: the whole lab was written by one transaction, and an `UPDATE` writes a new version under your own transaction's id. An `UPDATE` holds `RowExclusiveLock`, an `ALTER TABLE` `AccessExclusiveLock`; by hand, a plain reader didn't wait for a writer, a second writer did, and repeatable read refused to update a row changed since its snapshot. `ON CONFLICT` made the feed re-runnable: `DO NOTHING` added the 42 missing records, and `DO UPDATE … WHERE … IS DISTINCT FROM` inserted those 42 and updated the 1,320 that gained a month, leaving 496 alone.
+**Result:** In autocommit, a load that fails on its second batch keeps the first (1,858 rows), and running it again fails on them; in one transaction the error aborts everything, even a `SELECT`, and `ROLLBACK` leaves nothing behind, so the fixed file can simply be run again, once or twice, for the same 1,959 rows. A savepoint keeps the first batch and lets the transaction go on. MVCC is visible in `xmin`: the whole lab was written by one transaction, and an `UPDATE` writes a new version under your own transaction's id. An `UPDATE` holds `RowExclusiveLock`, an `ALTER TABLE` `AccessExclusiveLock`; in two sessions, a plain reader didn't wait for a writer, a second writer did, and repeatable read refused to update a row changed since its snapshot. `ON CONFLICT` made the feed re-runnable: `DO NOTHING` added the 42 missing records, and `DO UPDATE … WHERE … IS DISTINCT FROM` inserted those 42 and updated the 1,320 that gained a month, leaving 496 alone.
 
 **Exercise:** The feed grows to a second animal, the jaguar (species 51). Starting from `d4-feed`'s table, write one statement that brings `sightings` up to date with every record of the devil and the jaguar that has a year: new records inserted, month and country updated where they changed, other rows left alone. Log what it did in a table `sightings_runs (run, inserted, updated)`, run it twice, and show the log. The second run must change nothing.
 
@@ -7586,7 +7603,7 @@ The playground and the browser blocks use one engine start per visit (002 §8): 
 The lab files are written by the build from the same blocks the pages show, so the page and the download can't disagree (E2E checks it, 7.6):
 - **`<module>.sql`**: the module's PostGIS blocks in page order, each exactly as `learn:check` runs it: its `-- after:` blocks first, the whole wrapped in `BEGIN; … ROLLBACK;`, except `-- tx: own` blocks (as written). Headers stay as comments, so every block keeps its id. It starts with §0's `pg-session` (`SET search_path`), then the boot setup (below), and runs with `psql -X -d <your database> -f <module>.sql` after the loader (§4.3). No `ON_ERROR_STOP`, because some blocks show an error on purpose (`-- expect: error`, `-- fails:`), and the file says so at the top. The setup page's PostGIS checks (§0) download as `pg-checks.sql`, since `setup.sql` is the browser's schema. A block that runs in two sessions (`-- sessions:`) is commented out like an untested one (below): it needs one psql window per session.
 - **The boot setup.** A download includes every `-- boot` block it needs, once, right after `pg-session` (or `py-connect`), committed, and not again at its page position. It needs one when any block in it, or an `-- after:` block they bring, names a table or view the boot block creates (the names in its `CREATE TABLE` and `CREATE VIEW` statements, matched as whole words). Today that is `s4-cells`, in `s2`, `s3`, `s4`, `s5` and `c1` (`.sql`; c1 through `s5-gistar`) and in `s2`, `s3`, `s4`, `s5` and `setup` (`.py`; `setup` for §3.3's `gpkg-export`). A boot block drops what it builds before building it, so a file runs on a freshly loaded database, and again: a learner can open any module's file first, in any order. In a `.py` the boot block runs through the helper, `with connect() as conn: conn.execute("""<its SQL>""")` (psycopg sends a statement list without parameters as one simple query, and the `with` commits it), and in a notebook it is its own cell. A miss is caught by the assembled run (7.6), which starts each file from a fresh load.
-- **Untested blocks** are in their download, so the learner has them, but never run from it: running `e1.py` mustn't submit a GBIF download or stop on missing credentials, and `d4.sql` mustn't run a window's lines in one session. In a `.sql` or `.py`, such a block at its page position is one line `-- not run from this file: <its reason>. Run it by hand, as its page says.` (`#` in Python), its headers as written, then every other line of its code behind `-- ` (`# `): no `BEGIN; … ROLLBACK;`, no `-- after:` blocks brought for it, and it doesn't count towards the boot setup. In a notebook it is a Markdown cell, the same line and then the code as a fenced block, never a code cell. Which blocks follows their status in the build's own run, so a block a later mission makes `ran` is live in its file from then on. Today: `d4-wait`, `d4-isolation`, `d5-database` (L2), `g3-iucn` (L3; g7's three blocks until L3 makes them `ran`) and `e1-submit` (L4; `s6-habitat` until L4 makes it `ran`). §3.4's `arcpy-moran` runs in Pro's Python window and is in no download; nor is Power BI's M and DAX (below).
+- **Untested blocks** are in their download, so the learner has them, but never run from it: running `e1.py` mustn't submit a GBIF download or stop on missing credentials, and `d5.sql` mustn't change the learner's database. In a `.sql` or `.py`, such a block at its page position is one line `-- not run from this file: <its reason>. Run it by hand, as its page says.` (`#` in Python), its headers as written, then every other line of its code behind `-- ` (`# `): no `BEGIN; … ROLLBACK;`, no `-- after:` blocks brought for it, and it doesn't count towards the boot setup. In a notebook it is a Markdown cell, the same line and then the code as a fenced block, never a code cell. Which blocks follows their status in the build's own run, so a block a later mission makes `ran` is live in its file from then on. Today: `d5-database` (L2), `g3-iucn` (L3; g7's three blocks until L3 makes them `ran`) and `e1-submit` (L4; `s6-habitat` until L4 makes it `ran`). §3.4's `arcpy-moran` runs in Pro's Python window and is in no download; nor is Power BI's M and DAX (below).
 - **`<module>.py`** and **`<module>.ipynb`**: the module's Python blocks, `py-connect` first, then the boot setup, then each block once, in page order, with its `# q:` line as a comment (the notebook: one cell per block, and a Markdown cell with the block's heading). They read the lab data from `LEARN_BASE` (default `https://critwire.com`) and connect with libpq's `PG*` variables, as in §3.3. §3.3's Python blocks (`py-smoke`, `gpkg-export`) download as `setup.py` and `setup.ipynb`.
 - **`requirements.txt`**: §3.3's pins; the setup page gives the `uv` commands.
 - **Power BI** has no download of its own: a `.pbix` can't be built or tested here (§3.5). Its data files are the star's CSVs under `/learn/data/star/`, which p1 loads by URL.
