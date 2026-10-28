@@ -1,0 +1,3 @@
+-- result: d4-one-transaction · 1 row · sha256 c7809e52559a
+nothing_left
+true

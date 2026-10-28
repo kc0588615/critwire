@@ -1,0 +1,8 @@
+-- result: f4-ex · 9 rows · sha256 f730ac9edba7
+class | species_id | records | place | share_pct
+Amphibia | 8 | 2000 | 1 | 41.9
+Amphibia | 6 | 938 | 2 | 19.6
+Amphibia | 75 | 552 | 3 | 11.6
+Mammalia | 25 | 2000 | 1 | 6.3
+Mammalia | 28 | 2000 | 2 | 6.3
+… 4 more rows

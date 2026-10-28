@@ -1,0 +1,8 @@
+-- result: d5-privileges · 13 rows · sha256 18b775de531d
+object | privilege | allowed
+this database | CONNECT | false
+this database | CREATE | false
+this database | TEMPORARY | false
+schema learn_curriculum | CREATE | false
+schema learn_curriculum | USAGE | true
+… 8 more rows

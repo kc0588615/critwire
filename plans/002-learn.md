@@ -381,7 +381,7 @@ Each new table is created after the tables it points at, in the same `setup.sql`
 
 ## 3. Entity relationship diagram
 
-The ERD is the map of the learners' tables: every table is a box, every column a row in it, and every foreign key a line between two boxes. Lesson 6 teaches learners to read it, and every lesson can open it. Its source is plain text in the repo, `plans/002-learn-erd.mmd` (mission B moves it to `site/learn/schema.mmd`); the block below is the same text, and the spike's `run-queries --erd` fails if they differ.
+The ERD is the map of the learners' tables: every table is a box, every column a row in it, and every foreign key a line between two boxes. Lesson 6 teaches learners to read it, and every lesson can open it. Its source is plain text in the repo, `site/learn/erd/v1.mmd` (first `plans/002-learn-erd.mmd`; L2 moved it, and the site draws schema v2, `site/learn/erd/schema.mmd`, which extends it unchanged); the block below is the same text, and `pnpm test` fails if they differ.
 
 ```mermaid
 %% critwire Learn: the learners' schema v1 (plans/002-learn.md §2, §3). Tables only; the view species_taxonomy is listed beside it.

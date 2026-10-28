@@ -1,0 +1,8 @@
+-- result: d6-report · 18 rows · sha256 1b76ca3b5cff
+class | continent | records
+Amphibia | Africa | 103
+Amphibia | Asia | 16
+Amphibia | Europe | 2
+Amphibia | North America | 343
+Amphibia | South America | 411
+… 13 more rows

@@ -10,6 +10,8 @@ export const LIVE_DATABASE = "critwire";
 export const LAB_ROLE = "critwire_lab";
 /** The schema the loader replaces; --setup hands it to LAB_ROLE. */
 export const LAB_SCHEMA = "learn_curriculum";
+/** A2's schema: only the canary reads it; the leak query skips it. */
+export const CANARY_SCHEMA = "learn_spatial";
 /** learn:check and the test:db lab harness hold this advisory lock for their whole run. */
 export const LAB_LOCK = "critwire.learn";
 /** libpq's compiled-in socket directory on Debian and Ubuntu. */
@@ -77,10 +79,10 @@ export function labTarget(env: Env): PgTarget {
   return env.LEARN_PG_URL ? urlTarget(env.LEARN_PG_URL, "LEARN_PG_URL") : libpqTarget(env);
 }
 
-/** One connection to the target, notices dropped. */
-export function pgConnect(target: PgTarget): postgres.Sql {
+/** One connection to the target, notices dropped; `options` adds to or replaces postgres.js's (onclose, connection). */
+export function pgConnect(target: PgTarget, options: postgres.Options<{}> = {}): postgres.Sql {
   const { host, port, user, password, database } = target;
-  return postgres({ host, port, user, pass: password, database, max: 1, connect_timeout: 10, onnotice: () => {} });
+  return postgres({ host, port, user, pass: password, database, max: 1, connect_timeout: 10, onnotice: () => {}, ...options });
 }
 
 /** A child psql's whole environment: PATH, HOME, the target's PG* values and, if given, PGOPTIONS. */

@@ -1,0 +1,4 @@
+-- result: d5-drop-role · 2 rows · sha256 6be36802af13
+table_name | privilege_type
+occurrences | SELECT
+species | SELECT

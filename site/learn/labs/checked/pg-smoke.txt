@@ -1,0 +1,8 @@
+-- result: pg-smoke · 14 rows · sha256 444c9131da27
+table_name | n_rows
+admin1_shapes | 294
+biomes | 14
+countries | 250
+country_habitats | 35
+country_shapes | 247
+… 9 more rows

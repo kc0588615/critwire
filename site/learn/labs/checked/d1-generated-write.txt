@@ -1,0 +1,1 @@
+-- result: d1-generated-write · error: statement 1 of 1: column "geom" can only be updated to DEFAULT

@@ -1,0 +1,8 @@
+-- result: d3-gist-join · 9 rows · sha256 831e30c01c92
+QUERY PLAN
+Nested Loop (actual rows=184 loops=1)
+  ->  Index Scan using country_shapes_pkey on country_shapes…
+        Index Cond: (country_code = 'NP'::text)
+  ->  Bitmap Heap Scan on occurrences o (actual rows=184 loo…
+        Filter: st_covers(cs.geom, geom)
+… 4 more rows

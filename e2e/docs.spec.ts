@@ -83,3 +83,7 @@ test("same-origin links return 200, anchors exist, external links are https on t
     }
   }
 });
+
+test("links to Learn", async ({ page }) => {
+  await expect(page.locator('a[href="/learn/"]').first()).toBeVisible();
+});

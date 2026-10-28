@@ -1,0 +1,49 @@
+<p class="lead">Build a query in steps and compare each row with its neighbours: subqueries, common table expressions and window functions for ranks, shares and running totals. Everything runs in this browser, on the tables <a href="/learn/schema/">the Schema page</a> describes.</p>
+
+<h2>Already know this?</h2>
+<p>For each species with at least 1,000 records that have a year, show its best year (most records; on a tie, the later year), that year's records, the species' dated records and the best year's share of them in percent to one decimal, largest share first. Solve it and the module is marked done.</p>
+{{skip:f4-skip in order}}
+
+<h2>Concept</h2>
+<p>A query can use another query's result as a table.</p>
+<ul>
+<li>A <strong>subquery</strong> is a query in brackets: in <code>FROM</code> it is a table (give it an alias); in <code>WHERE</code> or <code>SELECT</code> it can return one value (a scalar subquery) or a list for <code>IN</code>. A <strong>correlated</strong> subquery refers to the outer row (<code>WHERE o.country_code = c.code</code> in the exercise of <a href="/learn/foundations/join/">Joins (f3)</a>) and runs, in effect, once per row.</li>
+<li>A <strong>common table expression</strong> (CTE), <code>WITH name AS (…)</code>, names a subquery before the main query. Several CTEs, separated by commas, read top to bottom like the steps of a recipe, and each may use the ones above it.</li>
+<li>A <strong>window function</strong> computes a value for each row from a set of related rows, its window, without collapsing them as <code>GROUP BY</code> does. <code>OVER (PARTITION BY species_id ORDER BY records DESC)</code> says which rows form the window (the same species) and in which order. <code>row_number()</code> numbers the rows 1, 2, 3; <code>rank()</code> gives ties the same number and skips after them (1, 1, 3); <code>dense_rank()</code> doesn't skip (1, 1, 2). An aggregate with <code>OVER</code> (<code>sum(records) OVER (PARTITION BY species_id)</code>) puts the group's total on every row, so a share is one division. With <code>ORDER BY</code> in the window, <code>sum</code> becomes a running total, and <code>lag(x)</code> reads the previous row's value.</li>
+<li>Window functions run after <code>WHERE</code>, <code>GROUP BY</code> and <code>HAVING</code>, so they can't be filtered in <code>WHERE</code>: compute them in a CTE and filter outside, as in "Already know this?". They can rank aggregates (<code>rank() OVER (ORDER BY count(*) DESC)</code>) in the same query that groups.</li>
+</ul>
+
+<h2>Worked example</h2>
+<p>Which dataset contributed most of each species' records, and what share is that? Three steps, one CTE each: count records per species and dataset; put each species' total and a place on every row; keep place 1 and join the dataset's title.</p>
+{{block:f4-top-dataset}}
+<p>The top rows are species with a handful of records, or with one source only, so 100 % says little there; read on down. The Jaguar's sample is 97 % one GPS-collar dataset: most of its 2,000 points are positions of collared animals, not 2,000 separate sightings. Bias in records (s1, in preparation) comes back to this. <code>row_number</code> breaks ties by <code>dataset_key</code> so that place 1 is always one row; with <code>rank</code>, a tie would keep both.</p>
+
+<h2>Lab</h2>
+<ol class="steps">
+<li><p>Which species have more records than the average species? A subquery in <code>FROM</code> counts per species; a scalar subquery in <code>HAVING</code> gives the average of those counts.</p>
+{{block:f4-above-average}}</li>
+<li><p><code>row_number</code>, <code>rank</code> and <code>dense_rank</code> side by side, on records per species. Thirteen species sit at the sample's cap of 2,000 records per species (<a href="/learn/data/">the lab data page</a>), a tie:</p>
+{{block:f4-ranks}}</li>
+<li><p>How does each year since 2000 rank against the others, and what share of those years' records does it hold? <code>sum(count(*)) OVER ()</code>, a window over every row, is the total.</p>
+{{block:f4-years}}</li>
+<li><p>The Tasmanian Devil (id 48) year by year since 2010: the change from the year before with <code>lag</code>, and a running total. <code>ROWS UNBOUNDED PRECEDING</code> makes the frame "every row up to this one"; it matters only when the order has ties, but saying it is clearer.</p>
+{{block:f4-running}}
+<p>A year with no records would have no row, and <code>lag</code> would compare with the last year that has one, not the calendar year before. A calendar of years, left-joined (<a href="/learn/foundations/join/">f3</a>), fills such gaps.</p></li>
+</ol>
+
+<h2>Result</h2>
+<p>Most species' samples lean on one or two datasets, and for the Jaguar one GPS-collar study is almost everything. Ranks show the cap at work: 13 species share rank 1, so <code>rank</code> jumps to 14 and <code>dense_rank</code> to 2; which you want depends on whether "third place" means "two ahead of you" or "the third distinct value". 2021 is the sample's biggest recent year, and the Devil's records fall sharply after 2010.</p>
+
+<h2>Exercise</h2>
+<p>For each class (<code>species_taxonomy.class</code>), show its three species with the most records (ties broken by the lower <code>species_id</code>): <code>class</code>, <code>species_id</code>, <code>records</code>, the place (1–3) and the species' share of its class's records in percent to one decimal, by class and place.</p>
+{{exercise:f4-ex in order}}
+
+<h2>Check</h2>
+<p>Your rows must equal the answer's, column by column and in the same row order: the order is part of the answer here. "Already know this?" is checked the same way. Check runs the answer on the tables as loaded, so if you changed them in the playground, Reset database first.</p>
+
+<h2>Dialects</h2>
+<ul>
+<li><strong>PostgreSQL:</strong> as here; also <code>FILTER</code> on window aggregates and named windows (<code>WINDOW w AS (…)</code>); a CTE can be <code>MATERIALIZED</code> or <code>NOT MATERIALIZED</code>; <code>WITH RECURSIVE</code> walks trees such as <code>taxa</code>. No <code>QUALIFY</code>.</li>
+<li><strong>DuckDB</strong> (this page's engine): as PostgreSQL, plus <code>QUALIFY place = 1</code>, which filters on a window function without a CTE, and <code>arg_max(dataset_key, records)</code> for "the value with the largest count" in one aggregate.</li>
+<li><strong>SQL Server:</strong> CTEs and window functions as here (the statement before a <code>WITH</code> must end in <code>;</code>); no <code>QUALIFY</code>; <code>TOP (1) WITH TIES … ORDER BY row_number() OVER (…)</code> or <code>CROSS APPLY (SELECT TOP (3) …)</code> for top-n per group; <code>count</code> is <code>int</code>, so cast before dividing for a share.</li>
+</ul>

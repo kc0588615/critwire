@@ -1,0 +1,7 @@
+-- result: d2-country-copies · 5 rows · sha256 10e8f33346b3
+country | copies
+United States of America | 30
+Kenya | 15
+Brazil | 12
+Colombia | 10
+Mexico | 10

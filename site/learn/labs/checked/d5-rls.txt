@@ -1,0 +1,6 @@
+-- result: d5-rls · 4 rows · sha256 391fc1e17327
+reader | records | species | countries
+(you, the owner) | 40395 | 71 | 106
+learn_partner_br | 5033 | 14 | 1
+learn_partner_au | 4636 | 5 | 1
+learn_no_policy | 0 | 0 | 0

@@ -1,0 +1,4 @@
+-- result: f1-no-photo · 2 rows · sha256 cb073c536764
+id | common_name | photo_url
+19 | Floreana Giant Tortoise | NULL
+47 | Ili Pika | NULL

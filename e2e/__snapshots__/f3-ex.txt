@@ -1,0 +1,8 @@
+-- result: f3-ex · 11 rows · sha256 eaef5e28524f
+code | name
+BI | Burundi
+CV | Cape Verde
+DJ | Djibouti
+ER | Eritrea
+GW | Guinea-Bissau
+… 6 more rows

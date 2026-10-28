@@ -1,0 +1,3 @@
+-- result: pg-role-smoke · 1 row · sha256 fcfe7fd06dfa
+learn_smoke_left
+0

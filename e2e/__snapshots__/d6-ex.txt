@@ -1,0 +1,3 @@
+-- result: d6-ex · 1 row · sha256 cf25e6ca69ad
+fact_rows | records | reconciles | unknown_decade
+645 | 40395 | true | 2289

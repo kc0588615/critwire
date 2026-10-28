@@ -1,0 +1,8 @@
+-- result: d2-repeat · 16 rows · sha256 edbe3098db04
+family | animals
+Testudinidae | 5
+Bovidae | 4
+Manidae | 4
+Canidae | 3
+Elephantidae | 3
+… 11 more rows

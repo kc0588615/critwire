@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "target": "es2023",
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "lib": ["es2023", "dom", "dom.iterable"],
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "allowImportingTsExtensions": true,
+    "types": []
+  },
+  // licenses.ts, sql.ts and cell.ts: build modules the bundle imports, checked here without node types (plan F5).
+  "include": ["src", "../../scripts/build/licenses.ts", "../../scripts/build/learn/sql.ts", "../../scripts/learn/cell.ts"]
+}

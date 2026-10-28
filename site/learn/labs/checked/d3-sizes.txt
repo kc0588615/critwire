@@ -1,0 +1,3 @@
+-- result: d3-sizes · 1 row · sha256 abcc435e8f56
+table_size | btree_size | brin_size
+6656 kB | 304 kB | 24 kB

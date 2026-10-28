@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Drill across through the shared dimension</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --paper: #2d3142; --paper-2: #393e53; --ink: #f5f5f5; --muted: #bfc0c0; --soft: #949eb2;
+      --rule: rgba(245,245,245,0.12); --rule-solid: rgba(191,192,192,0.25); --accent: #f08a59; --accent-tint: rgba(240,138,89,0.10);
+      --read: rgba(245,245,245,0.16);
+      --font-sans: 'Geist', system-ui, sans-serif;
+      --font-serif: 'Instrument Serif', 'Noto Serif', serif;
+      --font-mono: 'Geist Mono', ui-monospace, monospace;
+    }
+    body { font-family: var(--font-sans); background: var(--paper); color: var(--ink); padding: 3rem 2rem; }
+    .frame { max-width: 1200px; margin: 0 auto; }
+    .diagram-container { width: 100%; overflow-x: auto; }
+    .eyebrow { font-family: var(--font-mono); font-size: 0.66rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.5rem; }
+    h1 { font-family: var(--font-serif); font-size: 1.75rem; font-weight: 400; margin-bottom: 1.5rem; }
+    svg { width: 100%; min-width: 800px; display: block; }
+    @media print { .diagram-container { overflow-x: visible; } svg { min-width: 0; } }
+    .bg { fill: var(--paper); }
+    .zone { fill: var(--paper-2); stroke: var(--rule); stroke-width: 1; }
+    .mask { fill: var(--paper); }
+    .zmask { fill: var(--paper-2); }
+    .node { fill: var(--paper); stroke: var(--ink); stroke-width: 1; }
+    .store { fill: var(--paper-2); stroke: var(--muted); stroke-width: 1; }
+    .focal { fill: var(--accent-tint); stroke: var(--accent); stroke-width: 1.2; }
+    .tag-box { fill: none; stroke: var(--soft); stroke-width: 0.8; }
+    .tag { fill: var(--soft); font-family: var(--font-mono); font-size: 7px; font-weight: 500; letter-spacing: 0.08em; }
+    .name { fill: var(--ink); font-family: var(--font-sans); font-size: 13px; font-weight: 600; }
+    .ident { fill: var(--ink); font-family: var(--font-mono); font-size: 11px; font-weight: 600; }
+    .sub { fill: var(--muted); font-family: var(--font-mono); font-size: 10px; }
+    .eyebrow-text { fill: var(--soft); font-family: var(--font-mono); font-size: 9px; font-weight: 500; letter-spacing: 0.14em; }
+    .label { fill: var(--soft); font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.06em; }
+    .note { fill: var(--muted); font-family: var(--font-serif); font-size: 14px; font-style: italic; }
+    .arrow { fill: none; stroke: var(--muted); stroke-width: 1.2; }
+    .arrow-accent { fill: none; stroke: var(--accent); stroke-width: 1.4; }
+    .dashed { stroke-dasharray: 5 4; }
+    .head { fill: var(--muted); }
+    .head-accent { fill: var(--accent); }
+    .rule-line { stroke: var(--rule-solid); stroke-width: 0.8; }
+    .page { fill: var(--paper); stroke: var(--rule-solid); stroke-width: 1; }
+    .page-read { fill: var(--read); stroke: var(--muted); stroke-width: 1; }
+    .dot { fill: var(--ink); }
+    .order { fill: var(--ink); font-family: var(--font-mono); font-size: 10px; font-weight: 500; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Conformed dimensions · d6</p>
+    <h1>Drill across through the shared dimension</h1>
+    <div class="diagram-container">
+      <svg viewBox="0 0 800 352" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="d6-drill-across-dark-title d6-drill-across-dark-desc">
+        <title id="d6-drill-across-dark-title">Sum each fact to the shared dimension, then join: joining two facts row to row multiplies their rows</title>
+        <desc id="d6-drill-across-dark-desc">Joining fact_records (2 rows for Trinidad and Tobago) to fact_country_habitat (22 rows) gives 44 rows, doubles the habitat area and drops Åland; summing each fact by country first and joining on dim_country gives each number once.</desc>
+<defs>
+<marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon class="head" points="0 0, 8 3, 0 6"/></marker>
+<marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon class="head-accent" points="0 0, 8 3, 0 6"/></marker>
+</defs>
+<rect class="bg" width="100%" height="100%"/>
+<rect class="zone" x="16" y="16" width="376" height="320" rx="6"/>
+<rect class="zone" x="408" y="16" width="376" height="320" rx="6"/>
+<text class="eyebrow-text" x="32" y="40">WRONG: FACTS JOINED ROW TO ROW</text>
+<text class="eyebrow-text" x="424" y="40">RIGHT: SUM EACH, THEN JOIN</text>
+<path class="arrow" d="M112 128 V240" marker-end="url(#arrow)"/>
+<path class="arrow" d="M296 128 V240" marker-end="url(#arrow)"/>
+<rect class="zmask" x="172.1" y="178" width="63.8" height="12" rx="2"/>
+<text class="label" x="204" y="187" text-anchor="middle">EVERY PAIR</text>
+<path class="arrow" d="M504 128 V160" marker-end="url(#arrow)"/>
+<path class="arrow" d="M504 208 V240" marker-end="url(#arrow)"/>
+<path class="arrow" d="M680 128 V160" marker-end="url(#arrow)"/>
+<path class="arrow" d="M680 208 V240" marker-end="url(#arrow)"/>
+<rect class="zmask" x="560.1" y="218" width="63.8" height="12" rx="2"/>
+<text class="label" x="592" y="227" text-anchor="middle">BY COUNTRY</text>
+<rect class="mask" x="32" y="64" width="160" height="64" rx="6"/>
+<rect class="node" x="32" y="64" width="160" height="64" rx="6"/>
+<rect class="tag-box" x="40" y="72" width="30.2" height="12" rx="2"/>
+<text class="tag" x="55.1" y="81" text-anchor="middle">FACT</text>
+<text class="ident" x="112" y="97" text-anchor="middle">fact_records</text>
+<text class="sub" x="112" y="113" text-anchor="middle">TT: 2 rows</text>
+<rect class="mask" x="216" y="64" width="160" height="64" rx="6"/>
+<rect class="node" x="216" y="64" width="160" height="64" rx="6"/>
+<rect class="tag-box" x="224" y="72" width="30.2" height="12" rx="2"/>
+<text class="tag" x="239.1" y="81" text-anchor="middle">FACT</text>
+<text class="ident" x="296" y="97" text-anchor="middle">fact_country_habitat</text>
+<text class="sub" x="296" y="113" text-anchor="middle">TT: 22 rows</text>
+<rect class="mask" x="32" y="240" width="344" height="80" rx="6"/>
+<rect class="focal" x="32" y="240" width="344" height="80" rx="6"/>
+<text class="name" x="204" y="270" text-anchor="middle">TT: 44 rows</text>
+<text class="sub" x="204" y="286" text-anchor="middle">records 44 · habitat 10,234.46 km²</text>
+<text class="sub" x="204" y="300" text-anchor="middle">AX has no records: it vanishes</text>
+<rect class="mask" x="424" y="64" width="160" height="64" rx="6"/>
+<rect class="node" x="424" y="64" width="160" height="64" rx="6"/>
+<rect class="tag-box" x="432" y="72" width="30.2" height="12" rx="2"/>
+<text class="tag" x="447.1" y="81" text-anchor="middle">FACT</text>
+<text class="ident" x="504" y="97" text-anchor="middle">fact_records</text>
+<text class="sub" x="504" y="113" text-anchor="middle">TT: 2 rows</text>
+<rect class="mask" x="600" y="64" width="160" height="64" rx="6"/>
+<rect class="node" x="600" y="64" width="160" height="64" rx="6"/>
+<rect class="tag-box" x="608" y="72" width="30.2" height="12" rx="2"/>
+<text class="tag" x="623.1" y="81" text-anchor="middle">FACT</text>
+<text class="ident" x="680" y="97" text-anchor="middle">fact_country_habitat</text>
+<text class="sub" x="680" y="113" text-anchor="middle">AX 13, TT 22 rows</text>
+<rect class="mask" x="424" y="160" width="160" height="48" rx="6"/>
+<rect class="node" x="424" y="160" width="160" height="48" rx="6"/>
+<text class="name" x="504" y="181" text-anchor="middle">count by country</text>
+<text class="sub" x="504" y="197" text-anchor="middle">TT 2</text>
+<rect class="mask" x="600" y="160" width="160" height="48" rx="6"/>
+<rect class="node" x="600" y="160" width="160" height="48" rx="6"/>
+<text class="name" x="680" y="181" text-anchor="middle">sum by country</text>
+<text class="sub" x="680" y="197" text-anchor="middle">AX 945.03, TT 5,117.23</text>
+<rect class="mask" x="424" y="240" width="336" height="80" rx="6"/>
+<rect class="focal" x="424" y="240" width="336" height="80" rx="6"/>
+<rect class="tag-box" x="432" y="248" width="25.1" height="12" rx="2"/>
+<text class="tag" x="444.6" y="257" text-anchor="middle">DIM</text>
+<text class="name" x="592" y="274" text-anchor="middle">dim_country: one row each</text>
+<text class="sub" x="592" y="290" text-anchor="middle">AX: 0 records · 945.03 km²</text>
+<text class="sub" x="592" y="304" text-anchor="middle">TT: 2 records · 5,117.23 km²</text>
+      </svg>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,16 @@
+<h1>Playground</h1>
+<p class="lead">Run any SQL against the learners' tables, in your browser. Your changes stay until you press Reset database or reload the page.</p>
+<p>The tables, each linked to its columns in <a href="/learn/schema/">the schema</a>:</p>
+{{tables}}
+<div class="editor" id="playground">
+<label for="playground-sql">Your SQL</label>
+<textarea id="playground-sql" rows="8" spellcheck="false" autocapitalize="off">SELECT common_name, scientific_name FROM species ORDER BY common_name LIMIT 10;</textarea>
+<div class="buttons">
+<button type="button" data-run disabled>Run</button>
+<button type="button" data-stop disabled>Stop</button>
+<button type="button" data-reset disabled>Reset database</button>
+<button type="button" id="download-csv" disabled>Download CSV</button>
+<span class="note">Ctrl+Enter or ⌘+Enter runs it too.</span>
+</div>
+<div id="playground-result" class="result" aria-live="polite"></div>
+</div>

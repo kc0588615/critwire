@@ -1,0 +1,79 @@
+<h1>Set up your tools</h1>
+<p class="lead">The course runs on up to four tools. Each is set up once, and every module names the ones it uses. Foundations needs only this browser.</p>
+<div class="table-wrap"><table class="tools-table">
+<thead><tr><th scope="col">Tool</th><th scope="col">Where it runs</th><th scope="col">What critwire tests</th></tr></thead>
+<tbody>
+<tr><td>Browser</td><td>The module page: DuckDB, a database engine, running in your browser</td><td>Every block, in headless Chromium, as the page runs it</td></tr>
+<tr><td>PostgreSQL with PostGIS</td><td>PostgreSQL 16 with PostGIS 3.4, on your own computer</td><td>The lab file (loaded twice) and every block, on PostgreSQL 16 with PostGIS 3.4 on critwire's server. Not the Docker and installer steps on Windows.</td></tr>
+<tr><td>Python</td><td>A <code>uv</code> environment on your computer</td><td>In preparation, with the Python modules</td></tr>
+<tr><td>Power BI Desktop</td><td>Windows</td><td>The files each query reads: header, keys, rows and sha256. Not Power BI itself, which has no Linux version.</td></tr>
+</tbody>
+</table></div>
+<p>Every file these tools read comes from one place. critwire commits its data as snapshots in its repository; one offline build turns them into the published files, and each tool reads its own:</p>
+{{diagram:critwire-pipeline}}
+
+<h2>The browser</h2>
+<p>Nothing to install. A current desktop browser opens a module page, and its SQL runs there in DuckDB, which critwire serves itself: no request leaves critwire.com except for the animals' photos. Each visit builds the database once, from four published files: <code>/v1/species.parquet</code>, <code>/v1/countries.parquet</code>, <code>/learn/data/datasets.csv</code> and <code>/learn/data/occurrences.parquet</code>. Every learner starts from the same tables, and a reload starts fresh. A result keeps at most 10,000 rows. Stop ends a long query, and Reset database rebuilds the tables, both by restarting the database. <a href="/learn/schema/">The browser's tables</a> lists every column.</p>
+<p>This query counts the rows of every table, and of the view <code>species_taxonomy</code>. Run it: the same numbers mean your browser built the same database as everyone else's.</p>
+{{block:setup-counts}}
+<p><strong>Coordinates as numbers.</strong> The browser has no spatial functions (the <code>ST_</code> family): DuckDB's spatial extension is large, so critwire doesn't serve it. The foundations still use longitude and latitude as plain numbers: a bounding box is <code>longitude BETWEEN … AND latitude BETWEEN …</code>, <code>floor(longitude / 10)</code> and <code>floor(latitude / 10)</code> put records into 10° boxes, and the haversine formula gives the distance along the Earth's surface. Anything with shapes (outlines, projections, spatial joins and indexes) runs in PostGIS.</p>
+
+<h2>PostgreSQL with PostGIS, on your computer</h2>
+<p>The database architecture and GIS modules run in PostgreSQL, a database server, with PostGIS, its spatial extension, on your own computer. The labs are tested on PostgreSQL 16 with PostGIS 3.4. On Windows, the simplest way to get exactly that pair is Docker.</p>
+<h3>With Docker Desktop (recommended)</h3>
+<p>Install <a href="https://docs.docker.com/desktop/setup/install/windows-install/">Docker Desktop</a> with its WSL 2 backend. Then, in PowerShell:</p>
+<pre class="code"><code># PostgreSQL 16 with PostGIS 3.4, the tested pair, reachable only from this computer.
+docker run -d --name learn-pg -e POSTGRES_PASSWORD=choose-a-password -p 127.0.0.1:5432:5432 -v learn-pg:/var/lib/postgresql/data postgis/postgis:16-3.4
+docker exec learn-pg psql -U postgres -c "CREATE DATABASE learn"
+docker exec learn-pg psql -U postgres -d learn -c "CREATE EXTENSION postgis" -c "CREATE EXTENSION postgis_raster"
+# The lab file: every lab table, in one transaction.
+curl.exe -fLo learn_curriculum.sql https://critwire.com/learn/data/postgis/learn_curriculum.sql
+docker cp learn_curriculum.sql learn-pg:/tmp/
+docker exec learn-pg psql -X -U postgres -d learn -v ON_ERROR_STOP=1 -f /tmp/learn_curriculum.sql</code></pre>
+<p>The image <code>postgis/postgis:16-3.4</code> is the tested pair, but it hasn't been rebuilt since October 2024, so its PostgreSQL minor release is old. That is fine for a lab only your own computer can reach (the <code>127.0.0.1:</code> in <code>-p</code>), and for nothing else. The tags <code>16-3.5</code> and <code>16-3.6</code> run the labs too, but their newer GEOS (the geometry library under PostGIS) can change the last digits of some measurements, so a result may differ slightly from the one printed. PowerShell has no <code>&lt;</code> redirection, so the file is copied into the container and read with <code>-f</code>. On Linux or macOS the same commands work in a terminal, with <code>curl</code> for <code>curl.exe</code>. The image is built for x86-64 only.</p>
+<h3>Without Docker</h3>
+<p>Install PostgreSQL 16 with the <a href="https://www.enterprisedb.com/downloads/postgres-postgresql-downloads">EDB installer</a>, then run Stack Builder → Spatial Extensions → the PostGIS 3.4 or 3.5 bundle for PostgreSQL 16. If port 5432 is taken (by another PostgreSQL, or by ArcGIS), choose 5433 in the installer and add <code>-p 5433</code> to each <code>psql</code> line below.</p>
+<pre class="code"><code>$psql = "C:\Program Files\PostgreSQL\16\bin\psql.exe"
+&amp; $psql -U postgres -c "CREATE DATABASE learn"
+&amp; $psql -U postgres -d learn -c "CREATE EXTENSION postgis" -c "CREATE EXTENSION postgis_raster"
+curl.exe -fLo learn_curriculum.sql https://critwire.com/learn/data/postgis/learn_curriculum.sql
+&amp; $psql -X -U postgres -d learn -v ON_ERROR_STOP=1 -f learn_curriculum.sql</code></pre>
+<p>psql on Windows talks to the server in the console's code page unless told otherwise. The lab file sets its own encoding to UTF-8, so names like "Côte d'Ivoire" arrive intact either way.</p>
+<h3>Loading, and loading again</h3>
+<p><a href="/learn/data/postgis/learn_curriculum.sql"><code>learn_curriculum.sql</code></a> (its size is on <a href="/learn/data/">the lab data page</a>) builds the schema <code>learn_curriculum</code> in one transaction: it drops the schema, creates it again, loads every table, adds the keys and indexes, and checks every table's row count before it commits. A failed load changes nothing. A second load replaces the schema, including any table you made in it, so keep your own work in another schema. Another schema keeps your tables, but not what depends on the lab: a view, foreign key, trigger or policy of yours that reads <code>learn_curriculum</code> would be dropped with it. The lab file refuses that reload instead, naming each such object, and changes nothing; move or drop them, then load again. <a href="/learn/schema/lab/">The lab schema</a> lists every table and column.</p>
+<h3>Connection settings</h3>
+<p>Any lab file you run with psql finds the database through libpq's standard environment variables, so the same file runs on your computer and on critwire's test server. In PowerShell, for one session:</p>
+<pre class="code"><code>$env:PGHOST = "localhost"; $env:PGPORT = "5432"; $env:PGUSER = "postgres"; $env:PGDATABASE = "learn"
+# The password goes in %APPDATA%\postgresql\pgpass.conf, one line: localhost:5432:learn:postgres:choose-a-password</code></pre>
+<h3>Privileges</h3>
+<p>The <code>postgres</code> user is a superuser and can do everything the labs do. As another user, you need:</p>
+<ul>
+<li><code>CONNECT</code>, <code>CREATE</code> and <code>TEMPORARY</code> on the database, to connect, to load the lab and to make temporary tables (the database's owner has them; otherwise, as the superuser: <code>GRANT CONNECT, CREATE, TEMPORARY ON DATABASE learn TO <var>you</var>;</code>), and ownership of <code>learn_curriculum</code> once it exists;</li>
+<li><code>CREATEROLE</code>, for the labs that create roles: as the superuser, once, <code>ALTER ROLE <var>you</var> CREATEROLE;</code>, and on PostgreSQL 16 and later also <code>ALTER ROLE <var>you</var> SET createrole_self_grant = 'set, inherit';</code>, so you can act as the roles you create (<code>SET ROLE</code>) and drop what they hold (the roles module explains);</li>
+<li>nothing more for the raster labs: their raster clips are stored in the database itself.</li>
+</ul>
+<p>Give the labs a database of their own, one you could drop and create again, and keep other work out of it. <code>CREATEROLE</code> applies to the whole server, not one database, so give it to a user you keep for the labs. Every role or schema a lab creates is named <code>learn_…</code> and removed by the same block, so the labs leave nothing in your database besides <code>learn_curriculum</code>.</p>
+<h3>Check your lab</h3>
+<p>Connect your SQL client (psql, pgAdmin, DBeaver or VS Code) to the database <code>learn</code> and run these four checks in order. They are also one file, <a href="/learn/labs/pg-checks.sql"><code>pg-checks.sql</code></a>: <code>psql -X -d learn -f pg-checks.sql</code>. Each result below is what critwire's own run of the block printed.</p>
+<p>Every PostgreSQL lab starts with this session block. It puts <code>learn_curriculum</code> first on the search path, so plain table names find the lab's tables, while PostGIS's functions still come from <code>public</code>.</p>
+{{block:pg-session}}
+<p>The rows in every lab table. The same 14 counts mean your lab matches the tested one.</p>
+{{block:pg-smoke}}
+<p>Labs that create roles or schemas clean up in the same block, so running a block twice, or stopping halfway through a module, leaves nothing behind. This check creates a read-only role, reads a table as that role, and removes it: <code>DROP OWNED BY</code> takes away what the role was granted, and only then can <code>DROP ROLE</code> remove it. If it fails with "permission denied to create role", see Privileges above.</p>
+{{block:pg-role-smoke}}
+<p>Most lab blocks are run inside a transaction that critwire's tests roll back. The transaction labs manage their own, with <code>BEGIN</code> and <code>COMMIT</code> or <code>ROLLBACK</code>, exactly as you type them in psql. This check rolls its table back, so it is gone afterwards.</p>
+{{block:pg-tx-smoke}}
+
+<h2>Python</h2>
+<p>The spatial statistics and ETL modules run Python scripts and notebooks that read the same lab data. Their setup, with pinned packages and the <code>uv</code> commands, is in preparation and will appear here with those modules.</p>
+
+<h2>Power BI Desktop</h2>
+<p><a href="https://www.microsoft.com/power-platform/products/power-bi/desktop">Power BI Desktop</a> is free and runs on Windows only. It reads <a href="/learn/schema/star/">the star schema</a> as CSV files under <code>https://critwire.com/learn/data/star/</code>: no gateway, no account, no database connection. To check your setup, make a blank query (Home → Get data → Blank query → Advanced editor) and paste this in. The first time, Power BI asks how to connect to critwire.com: choose <strong>Anonymous</strong>, and privacy level <strong>Public</strong>.</p>
+{{block:pbi-smoke}}
+<p>It should show 251 rows: 250 countries, plus <code>ZZ</code>, the star's "unknown" member for records in no country. Namibia's code <code>NA</code> stays text. Three choices let it refresh anywhere:</p>
+<ul>
+<li><strong>A fixed base URL</strong>, with the file in <code>RelativePath</code>. The Power BI Service can then refresh the published report on a schedule, with anonymous access. A whole URL assembled from text (<code>"https://critwire.com/learn/data/star/" &amp; file</code>) is a dynamic data source, which the Service won't refresh.</li>
+<li><strong><code>Encoding = 65001</code></strong> (UTF-8) and <code>QuoteStyle.Csv</code>: names with accents, and commas inside quotes, are read as written.</li>
+<li><strong>The culture <code>"en-US"</code></strong> on the type change: critwire's files write <code>12.5</code>, which a computer set to a comma-decimal locale would otherwise misread.</li>
+</ul>
+<p>critwire checks every file a Power BI query names against the star's manifest (header, keys, rows and sha256) on every build. It can't run Power BI itself, which has no Linux version, so the queries, measures and visuals aren't run by critwire.</p>

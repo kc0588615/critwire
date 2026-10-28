@@ -1,0 +1,8 @@
+-- result: d1-constraints · 10 rows · sha256 e6eae9d8d6bb
+constraint_name | constraint_type
+species_genus_name_fkey | FOREIGN KEY
+species_id_pkey | PRIMARY KEY
+species_col_id_key | UNIQUE
+species_gbif_id_key | UNIQUE
+species_inaturalist_id_key | UNIQUE
+… 5 more rows

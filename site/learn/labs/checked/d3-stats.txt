@@ -1,0 +1,8 @@
+-- result: d3-stats · 6 rows · sha256 0058f437405b
+column_name | null_frac | n_distinct | correlation
+basis_of_record | 0 | 7 | 0.05776447
+country_code | 0 | 106 | -0.164075
+id | 0 | -1 | 1
+license | 0 | 2 | 0.39390513
+species_id | 0 | 71 | 0.023194969
+… 1 more row

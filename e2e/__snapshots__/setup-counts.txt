@@ -1,0 +1,3 @@
+-- result: setup-counts · 1 row · sha256 e3323c4c9cd8
+taxa | species | sources | species_sources | countries | species_countries | datasets | occurrences | species_taxonomy
+143 | 76 | 5 | 591 | 250 | 472 | 400 | 40395 | 76

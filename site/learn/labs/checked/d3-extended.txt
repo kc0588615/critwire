@@ -1,0 +1,4 @@
+-- result: d3-extended · 2 rows · sha256 ea5f3d4586b1
+species_id | country_code | planner_estimate
+48 | AU | 1998
+48 | US | 2

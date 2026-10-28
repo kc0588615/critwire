@@ -1,0 +1,7 @@
+-- result: f1-taxonomy · 5 rows · sha256 f5df850ee9a4
+species_id | class | order_name | family | genus
+1 | Reptilia | Testudines | Emydidae | Emydoidea
+2 | Reptilia | Testudines | Trionychidae | Apalone
+3 | Amphibia | Anura | Rhinodermatidae | Rhinoderma
+4 | Reptilia | Testudines | Platysternidae | Platysternon
+5 | Amphibia | Anura | Rhacophoridae | Rhacophorus

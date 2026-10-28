@@ -1,0 +1,8 @@
+-- result: f3-where · 9 rows · sha256 73ba2465db73
+code | name | records_since_2020
+AR | Argentina | 2
+BO | Bolivia | 1
+BR | Brazil | 653
+CL | Chile | 1
+CO | Colombia | 503
+… 4 more rows

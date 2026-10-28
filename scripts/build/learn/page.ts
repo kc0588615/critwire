@@ -19,6 +19,13 @@ const DESCRIPTIONS: Record<string, string> = {
   "habitat_classes.parquet": "The habitat map's classes (a stand-in, to be replaced by the full habitat data).",
   "country_habitats.parquet": "Estimated area of each habitat class in two countries (a stand-in, to be replaced by the full habitat data).",
   "postgis/learn_curriculum.sql": "Builds every lab table in PostGIS (see PostGIS below).",
+  "star/dim_country.csv": "Star dimension: every country, plus ZZ for a record with no country.",
+  "star/dim_dataset.csv": "Star dimension: each dataset in the sample, with what it takes to credit it.",
+  "star/dim_species.csv": "Star dimension: each species with its class, order, family and genus side by side.",
+  "star/dim_year.csv": "Star dimension: each year with records, its decade, plus -1 for a record with no year.",
+  "star/fact_records.csv": "Star fact: one row per sample record, with a key to each dimension.",
+  "star/fact_species_country.csv": "Star fact with no measure: each species and country with open records of it.",
+  "star/manifest.json": "The star's files: columns, keys, rows, sha256 and sources, for Power BI's input check.",
 };
 
 const n = (value: number) => value.toLocaleString("en-US");

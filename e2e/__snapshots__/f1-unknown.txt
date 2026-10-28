@@ -1,0 +1,3 @@
+-- result: f1-unknown · 1 row · sha256 8fe6606addf8
+equal | not_equal | is_null | replaced
+NULL | NULL | true | no photo

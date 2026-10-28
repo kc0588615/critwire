@@ -1,0 +1,8 @@
+-- result: d3-mcv · 7 rows · sha256 16d206284038
+basis_of_record | planner_estimate | actual
+HUMAN_OBSERVATION | 17587 | 17587
+MACHINE_OBSERVATION | 8418 | 8418
+MATERIAL_CITATION | 441 | 441
+MATERIAL_SAMPLE | 1805 | 1805
+OBSERVATION | 1384 | 1384
+… 2 more rows

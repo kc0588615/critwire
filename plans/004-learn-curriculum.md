@@ -6,12 +6,12 @@ Written by mission `critwire-learn-curriculum` (plan `plans/2026-10-23-critwire-
 
 ## 0. Conventions
 
-Every example in this document is tested. A block is a fenced code block whose first lines are headers. The test runner (the mission's spike, §A) reads the headers, runs the block on the engine they name, and compares what it gets with the result block printed under it. A block that can't run here says why.
+Every example in this document is tested. A block is a fenced code block whose first lines are headers. The test runners read the headers, run the block on the engine they name, and compare what they get with the result block printed under it: `pnpm learn:check` for PostGIS (§7.6), E2E for the browser (§7.7) and, from L4, `learn:check`'s Python stage. A block that can't run here says why.
 
 ### Blocks, engines and statuses
 
 - **Every block has an id and a status.** SQL: `-- q: <id>`, then `-- status: ran` or `-- status: untested: <reason>`. Python writes `#` for `--`; Power BI's M and DAX write `//`. Module blocks are named `<module>-<word>` (`d3-plan`); engine and setup blocks have plain ids (`setup`, `pg-session`). Ids are unique in the document.
-- **`ran`** means the block ran on the data named in the log header (below) and gave the result printed under it; Verification runs it again and fails on any difference. **`untested: <reason>`** blocks never run: they need something this server doesn't have (Windows, ArcGIS Pro, a second session). Nor do they run from a download: there they are commented out (§7.3). A failing block is fixed, never relabelled `untested`.
+- **`ran`** means the block ran on the data named in the log header (below) and gave the result printed under it; Verification runs it again and fails on any difference. **`untested: <reason>`** blocks never run: they need something this server doesn't have (Windows, ArcGIS Pro, a learner's own download). Nor do they run from a download: there they are commented out (§7.3). A failing block is fixed, never relabelled `untested`.
 - **Engines:**
   - SQL with no `-- engine:` line (or `-- engine: duckdb`) runs in DuckDB-WASM in headless Chromium, on the browser database the `setup` block builds (below), as a page runs it.
   - `-- engine: postgis` runs in PostgreSQL 16 with PostGIS 3.4.2, in schema `learn_curriculum`, after the loader and `pg-session` (below).
@@ -20,14 +20,16 @@ Every example in this document is tested. A block is a fenced code block whose f
 - **More headers:**
   - `-- after: <id>, …`: those earlier blocks of the same engine run first, in the same transaction, in the order named; the result is still this block's last statement. An exercise runs after its lesson this way. Python's `# after:` puts the named blocks' code first, in document order, in one process.
   - `-- expect: error <text>`: the last statement must fail with an error containing `<text>` (d1's constraint violations); the block fails if it doesn't.
+  - `-- plan: <text>`, `-- plan: no <text>`, `-- plan: rows <n>` (PostGIS, on a block whose last statement is `EXPLAIN (ANALYZE …)`): what the plan must show, by meaning: some plan line contains `<text>` (a node, an index, an `Index Cond`); no line contains it; the top node's `actual rows=<n>`. Every such block has one `rows` line and at least one about its nodes (d3).
   - `-- params: [<value>, …]` (DuckDB only): JSON values for the last statement's `?` placeholders, as a page binds a learner's input.
   - `-- needs: raster` (PostGIS): the block uses PostGIS raster, so the run first checks the raster library and its settings (g7, s6). Raster functions anywhere else are refused.
   - `-- boot` (PostGIS): runs once when the runner connects, before every other block, and is committed. It builds fixtures later blocks read (s4's hexagon grids); its tables are listed `lab-made` on the lab ERD (§6.2).
-  - `-- tx: own` (PostGIS): the runner doesn't wrap the block. It runs its own `BEGIN` … `COMMIT` or `ROLLBACK`, as typed in psql (d4). Afterwards the runner checks that the block ended its transaction, left the session as it found it, and left `learn_curriculum` unchanged. Inside one, a statement whose comment line says `-- fails: <text>` must fail with an error containing `<text>`, and the block goes on, as psql does when you type without `ON_ERROR_STOP`; any other error fails the block. Its result is the last statement that returned rows, so a block can show what it built and then roll it back or drop it.
+  - `-- tx: own` (PostGIS): the runner doesn't wrap the block. It runs its own `BEGIN` … `COMMIT` or `ROLLBACK`, as typed in psql (d4). Afterwards the runner checks that the block ended its transaction, left the session as it found it, committed no `learn_` role or schema, and left `learn_curriculum` (and the canary) unchanged; it puts back what it can (rolls back, restores the session, drops the lab role's committed objects) and fails the block either way. Inside one, a statement whose comment line says `-- fails: <text>` must fail with an error containing `<text>`, and the block goes on, as psql does when you type without `ON_ERROR_STOP`; any other error fails the block. Its result is the last statement that returned rows, so a block can show what it built and then roll it back or drop it.
+  - `-- sessions: A, B` (PostGIS): the block is typed in two psql windows (d4). A `-- window A` comment line sends the statements after it to that window's session; the runner opens one session per window, after `pg-session`, and runs the statements in the order written, unwrapped, as `tx: own` does. A statement after a `-- waits: <why>` comment line must wait for another window's lock: the runner must see it blocked within 5 seconds, leaves it waiting, and collects its result when its window comes up again. Any other statement that waits fails the block at once and is cancelled. `-- fails:` works as in `tx: own`. Afterwards each window must have ended its transaction, with `tx: own`'s checks on `learn_` objects and on `learn_curriculum`; both sessions end. Its result is every statement that returned rows, as `window | statement | <columns>` (`statement` is its number in the block), so those statements must have the same columns. It can't take `after`, `boot`, `expect` or `tx`. In a download it is commented out, since one psql file is one session (§7.3).
   - `# timeout: <seconds>` (Python): when the block is stopped; 60 by default.
   - `-- show: cards` is not a test header: it stays in the SQL learners see, and the page shows the result as animal cards (002 §8).
 - **Every other SQL block runs in a transaction the runner rolls back,** so each starts from the same database and the order of modules doesn't matter. Results must be deterministic: rows ordered by a unique key, `random()` only after `setseed()`, no clock; Python prints with explicit formats, never a DataFrame's repr.
-- **Result blocks.** The ```` ```text ```` block under a `ran` block starts `-- result: <id> · <n> rows · sha256 <12 hex>`, then the column names, the first 5 rows (cells cut at 60 characters) and how many more. The hash covers the column names and every row, uncut, so the 5 rows shown don't limit what is checked. A Python result starts `-- result: <id> · python · sha256 <12 hex>`, then the block's whole output. Only the runner writes result blocks (`--update`).
+- **Result blocks.** The ```` ```text ```` block under a `ran` block starts `-- result: <id> · <n> rows · sha256 <12 hex>`, then the column names, the first 5 rows (cells cut at 60 characters) and how many more. The hash covers the column names and every row, uncut, so the 5 rows shown don't limit what is checked. A Python result starts `-- result: <id> · python · sha256 <12 hex>`, then the block's whole output. Only a run writes results (`pnpm learn:check --update` for PostGIS); a changed result is a bug to explain, and lands here and in its recorded file together. An `EXPLAIN` block is the exception: its result block is an example of the plan, from the PostgreSQL, PostGIS and GEOS versions the page names, and the run checks its `-- plan:` lines instead of its hash, because plan text moves with versions and statistics. Data results keep their hashes.
 - **Not counted:** ```` ```sh ```` and ```` ```powershell ```` fences are commands for the learner's own machine (installing PostgreSQL, Docker or `uv`; loading the lab file). They carry no headers and don't run here; §3 says which were checked another way. ```` ```mermaid ```` fences are the ERDs, checked against their files and the live catalogs (§6).
 
 ### Lab objects: the `learn_` rules
@@ -42,10 +44,10 @@ The PostGIS labs share a database with other work, on the test server and perhap
 
 ### Re-running the tests, and where results live
 
-The tests run on critwire's server from the mission's spike folder, `SP=/srv/critter-ai/agent-state/missions/critwire-learn-curriculum/spike`, which isn't committed; L2 moves it into the repository as `pnpm learn:check` (§9). From the worktree:
-- `node $SP/scripts/build-site.ts` writes the spike's web root (the lab files and the loader). Then `node $SP/run-queries.ts plans/004-learn-curriculum.md --check --erd plans/004-learn-erd.mmd --lab-erd plans/004-lab-erd.mmd --star-erd plans/004-star-erd.mmd` runs every block, checks every Power BI input and the three ERDs, and fails on any difference. `--update` instead rewrites the result blocks.
-- `$SP/verify.sh` re-runs everything: ports free; build-site; the command above; the lab shapes from their downloads; the loader, twice, as a learner runs it; the `learn_spatial` canary; the ETL spike, offline from the saved GBIF zip; the Moran spike; the star export; the three ERD renders. It ends `verify: ok`.
-- **Results** are in this document, under each block, and in the run log, `/srv/critter-ai/agent-state/missions/critwire-learn-curriculum/queries.log`. The log's header records the engine versions (DuckDB-WASM, PostGIS, Python and the `requirements.txt` hash), the canary, and the sha256 of every lab data file, so "ran" names exactly the data it ran on; then come every result, every skipped block and every Power BI input check. The spikes' evidence is in `$SP/out/<spike>/summary.md` (§A), the ERD renders in `$SP/erd/`.
+The tests are the repository's. From a checkout whose `.env` has `LEARN_PG_URL` (§7.6): `pnpm build --draft && pnpm learn:check && pnpm build`, then `pnpm e2e`.
+- `pnpm learn:check` runs the loader, every PostGIS block of the built pages in page order against its recorded result (`site/learn/labs/checked/<id>.txt`), the lab ERD against `learn_curriculum`, and every SQL download on a fresh load (§7.6). `--update` rewrites the recorded results; `--module <page>` runs one page and writes nothing. E2E runs every browser block against its recorded result (`e2e/__snapshots__/<id>.txt`) and checks the Power BI inputs and schema v2's ERD (§7.7).
+- `pnpm learn:port --check all` proves that every block file and recorded result in the repository equals its fence and result block here, so a change lands in this document and on its page in the same commit.
+- **Results** are in this document, under each block, and in those recorded files; `checked.json` records the PostgreSQL, PostGIS and GEOS versions they ran on (§7.5). The design spike, `SP=/srv/critter-ai/agent-state/missions/critwire-learn-curriculum/spike` (not committed), is frozen as the design's evidence and never extended: its run log (`/srv/critter-ai/agent-state/missions/critwire-learn-curriculum/queries.log`: engine versions, the canary, every lab file's sha256), `$SP/out/<spike>/summary.md` (§A) and the first ERD renders in `$SP/erd/`. Its log is still the only run of the blocks of modules not yet built (g, s, e, p, c, and §3.3's Python), until the mission that builds each module ports and checks them.
 
 ### The browser setup
 
@@ -269,7 +271,7 @@ country_shapes | 247
 … 9 more rows
 ```
 
-Labs that create roles or schemas (d5) clean up in the same block, so running a block twice, or stopping halfway through a module, leaves nothing behind. Their names start with `learn_`, and creating roles needs the CREATEROLE privilege (a superuser has it; on your own install, see §3.2). This check creates a read-only role, reads a table as that role, and removes it again: `DROP OWNED BY` takes away what the role was granted, and only then can `DROP ROLE` remove it. `pnpm learn:check` runs the same block after the loader from `site/learn/sql/pg-role-smoke.sql`, inside its own `BEGIN` … `ROLLBACK` (the runner's rolled-back transaction, made explicit for psql), so a failed line leaves nothing; the result is the same (L1).
+Labs that create roles or schemas (d5) clean up in the same block, so running a block twice, or stopping halfway through a module, leaves nothing behind. Their names start with `learn_`, and creating roles needs the CREATEROLE privilege (a superuser has it; on your own install, see §3.2). This check creates a read-only role, reads a table as that role, and removes it again: `DROP OWNED BY` takes away what the role was granted, and only then can `DROP ROLE` remove it. `pnpm learn:check` runs it from `site/learn/sql/pg-role-smoke.sql` as it runs every block: inside the runner's transaction, which it rolls back, so a failed line leaves nothing.
 
 ```sql
 -- q: pg-role-smoke
@@ -483,7 +485,7 @@ The labs are tested on PostgreSQL 16 with PostGIS 3.4. On Windows, the simplest 
 docker run -d --name learn-pg -e POSTGRES_PASSWORD=choose-a-password -p 127.0.0.1:5432:5432 -v learn-pg:/var/lib/postgresql/data postgis/postgis:16-3.4
 docker exec learn-pg psql -U postgres -c "CREATE DATABASE learn"
 docker exec learn-pg psql -U postgres -d learn -c "CREATE EXTENSION postgis" -c "CREATE EXTENSION postgis_raster"
-# The lab file: every lab table, in one transaction (about 30 MB).
+# The lab file: every lab table, in one transaction (about 21 MB).
 curl.exe -fLo learn_curriculum.sql https://critwire.com/learn/data/postgis/learn_curriculum.sql
 docker cp learn_curriculum.sql learn-pg:/tmp/
 docker exec learn-pg psql -X -U postgres -d learn -v ON_ERROR_STOP=1 -f /tmp/learn_curriculum.sql
@@ -503,7 +505,7 @@ curl.exe -fLo learn_curriculum.sql https://critwire.com/learn/data/postgis/learn
 
 psql on Windows talks to the server in the console's code page unless told otherwise; the lab file sets `client_encoding` to UTF-8 itself, so names like "Côte d'Ivoire" arrive intact either way (tested by loading it under `WIN1252`).
 
-**Loading, and loading again.** The lab file builds schema `learn_curriculum` in one transaction: it drops the schema, recreates it, loads every table, adds the keys and indexes, and checks every table's row count before `COMMIT`. A failed load changes nothing; a second load replaces the schema, including any table you made there, so keep your own work in another schema. Another schema keeps your tables, not your dependencies: a view, a foreign key, a trigger or a policy of yours that reads `learn_curriculum` would go with it (`DROP SCHEMA … CASCADE`). The lab file refuses that reload instead, naming each such object, and changes nothing; move or drop them and load again. Then connect with your SQL client (psql, pgAdmin, DBeaver, VS Code) to database `learn` and run §0's `pg-session` and `pg-smoke` blocks: the 14 row counts there mean your lab matches the tested one.
+**Loading, and loading again.** The lab file builds schema `learn_curriculum` in one transaction: it drops the schema, recreates it, loads every table, adds the keys and indexes, and checks every table's row count before `COMMIT`. A failed load changes nothing; a second load replaces the schema, including any table you made there, so keep your own work in another schema. Another schema keeps your tables, not your dependencies: a view, a foreign key, a trigger or a policy of yours that reads `learn_curriculum` would go with it (`DROP SCHEMA … CASCADE`). The lab file refuses that reload instead, naming each such object, and changes nothing; move or drop them and load again. Then connect with your SQL client (psql, pgAdmin, DBeaver, VS Code) to database `learn` and run §0's `pg-session` and `pg-smoke` blocks: the 14 row counts there mean your lab matches the tested one. The setup page shows §0's four PostGIS checks (`pg-session`, `pg-smoke`, `pg-role-smoke`, `pg-tx-smoke`) with their recorded results, and they download as one file, `/learn/labs/pg-checks.sql` (§7.3), run with `psql -X -d learn -f pg-checks.sql`.
 
 **Connection settings.** The Python labs, and any lab file you run with psql, find the database through libpq's standard environment variables, so the same file runs on your computer and on the test server. In PowerShell, for one session:
 
@@ -1947,9 +1949,9 @@ Six modules, twelve hours: how to design the tables the foundations queried, and
 **Tool:** B (browser) + PG · **Time:** 2.0 h · **Prereqs:** f3
 
 **Concept:** An **entity** is a kind of thing a database keeps facts about, each one with its own identity: an animal, a country, a dataset, a record. Each entity becomes a table, and each table needs a **key**: a column, or a set of columns, whose value picks out exactly one row.
-- A table can have several **candidate keys**. `species` has `id`, `slug`, `scientific_name` and six ids from other websites. The one picked as the main key is the **primary key**: never `NULL`, never repeated. The others are **alternate keys**, declared `UNIQUE`.
+- A table can have several **candidate keys**: columns, or sets of columns, that are never `NULL` and never repeated, so each one picks out every row. `species` has three: `id`, `slug` and `scientific_name`. The one picked as the main key is the **primary key**. The others are **alternate keys**, declared `NOT NULL` and `UNIQUE`. `species` also has six ids from other websites, declared `UNIQUE` too. Some animals have none of a given kind, so these are **optional unique ids**, not candidate keys: an id that is missing can't pick out its row.
 - A **natural key** is one the world already uses: a scientific name, a country's ISO code, GBIF's dataset key. A **surrogate key** is a number the database makes up and that means nothing else: critwire's `species.id`. Natural keys change (a species moves to another genus, a name turns out to be a synonym), and every row that points at one has to change with it; a surrogate never has to. critwire uses both: `id` (an integer, never reused) is the primary key, and the natural keys are `UNIQUE`. A natural key makes a good primary key when an authority keeps it stable and it is never missing: `countries.code` (ISO 3166-1) and `datasets.dataset_key` (GBIF's identifier) are primary keys here.
-- `UNIQUE` allows any number of `NULL`s, because one unknown value isn't equal to another: animals with no NCBI id don't collide. That is why an outside id can be an alternate key but not the primary key.
+- `UNIQUE` allows any number of `NULL`s, because one unknown value isn't equal to another: animals with no NCBI id don't collide. That is why an outside id can be an optional unique id, but not a candidate key, let alone the primary key.
 - A **foreign key** says a column's value must be a key of another table: `occurrences.species_id REFERENCES species (id)`. It checks two things. A value that is inserted or changed must exist in the other table, or be `NULL`. And a row that other rows still point at can't be deleted or given another key, unless the foreign key says what to do instead (`ON DELETE CASCADE` deletes the children too, `ON DELETE SET NULL` empties their column). That is all it checks: not that the value is the right one, not rules that span rows, and with a key of two columns, a row with one of them `NULL` isn't checked at all (`MATCH SIMPLE`, the default). PostgreSQL also doesn't index the referencing column for you (d3).
 - A **`CHECK`** is a condition every row must meet, such as `month BETWEEN 1 AND 12`. It refuses a row only when the condition is false. When it is `NULL` (unknown, f1) the row passes, so a `CHECK` doesn't replace `NOT NULL`. A `CHECK` can compare columns of the same row: `taxa`'s says a class has no parent and every other rank has one.
 - A **generated column** is computed from other columns of its row and can't be written directly. The lab's `occurrences.geom` is the point made from `longitude` and `latitude`, so the point and the two numbers can never disagree.
@@ -1992,7 +1994,7 @@ VALUES (25, 'siberian-tiger', 'Panthera tigris altaica', 'Siberian Tiger', 'Pant
 -- result: d1-same-id · error: statement 1 of 1: Constraint Error: Duplicate key "id: 25" violates primary key constraint.
 ```
 
-A new id doesn't get a row past the alternate keys either. A Bengal tiger with its own id but given the tiger's GBIF id is refused by `UNIQUE (gbif_id)`: in critwire, one GBIF id names one animal.
+A new id doesn't get a row past the other unique columns either. A Bengal tiger with its own id but given the tiger's GBIF id is refused by `UNIQUE (gbif_id)`. That one GBIF id names one animal is true of critwire's animals, and critwire's build checks it (two animals sharing an outside id fail it); it isn't a rule of GBIF's. A project that lists subspecies could have two animals under one GBIF taxon, and then the column couldn't be `UNIQUE`.
 
 ```sql
 -- q: d1-same-gbif
@@ -2104,7 +2106,7 @@ VALUES ('Dracula', 'genus', NULL);
 -- result: d1-check-taxa · error: statement 1 of 1: Constraint Error: CHECK constraint failed on table taxa with expression CHECK(((taxon_rank = 'class') = (parent_name IS NULL)))
 ```
 
-4. What does a foreign key refuse? An animal in a genus critwire doesn't have (002's lesson 7 exercise): `species.genus` must be a `name` in `taxa`.
+4. What does a foreign key refuse? An animal in a genus critwire doesn't have (002's lesson 7 exercise): `species.genus` must be a `name` in `taxa`. Only a name: the foreign key would take a family's name as well (step 7).
 
 ```sql
 -- q: d1-fk-genus
@@ -2165,7 +2167,44 @@ id | country_code | point | in_its_country | point_is_in
 1 | AU | POINT(-47.9 -15.8) | false | BR
 ```
 
-7. PostgreSQL builds an index for every primary key and `UNIQUE` constraint, because it needs one to check them. It doesn't for a foreign key: checking a new record needs only the parent's key, which is indexed already. But deleting a parent, or joining from it, has to find the children, and with no index on `occurrences.species_id` that means reading the whole table (d3). Which of `occurrences`' keys have an index that starts with their column?
+7. Nor does `species.genus REFERENCES taxa (name)` check that the name is a genus: `Felidae`, a family, would pass. A `CHECK` can't help, because it sees only its own row. A foreign key over two columns can. Give `taxa` a `UNIQUE (name, taxon_rank)` to point at, give `species` a rank column that can only say `genus`, and point the pair at the pair. Both columns are `NOT NULL`, so the key checks every row (`MATCH SIMPLE` skips a pair with a `NULL` in it). Adding the key checks the rows already there, and all 76 animals pass:
+
+```sql
+-- q: d1-rank-fk
+-- status: ran
+-- engine: postgis
+ALTER TABLE taxa ADD CONSTRAINT taxa_name_rank_key UNIQUE (name, taxon_rank);
+ALTER TABLE species
+  ADD COLUMN genus_rank text NOT NULL DEFAULT 'genus' CHECK (genus_rank = 'genus'),
+  ADD CONSTRAINT species_genus_rank_fkey FOREIGN KEY (genus, genus_rank) REFERENCES taxa (name, taxon_rank);
+SELECT genus_rank, count(*) AS species
+FROM species
+GROUP BY genus_rank;
+```
+
+```text
+-- result: d1-rank-fk · 1 row · sha256 d6883c437319
+genus_rank | species
+genus | 76
+```
+
+   Then moving the tiger into the family Felidae is refused:
+
+```sql
+-- q: d1-rank-wrong
+-- status: ran
+-- engine: postgis
+-- after: d1-rank-fk
+-- expect: error violates foreign key constraint "species_genus_rank_fkey"
+UPDATE species SET genus = 'Felidae' WHERE id = 25;
+```
+
+```text
+-- result: d1-rank-wrong · error: statement 1 of 1: insert or update on table "species" violates foreign key constraint "species_genus_rank_fkey"
+```
+
+   `taxa`'s own `parent_name` can be held to the rank one up the same way: a `parent_rank` column whose `CHECK` ties it to the row's rank, and a foreign key from `(parent_name, parent_rank)`. No trigger is needed. The lab tables don't carry these keys; the lab's load checks every rank and parent instead (§4.3).
+8. PostgreSQL builds an index for every primary key and `UNIQUE` constraint, because it needs one to check them. It doesn't for a foreign key: checking a new record needs only the parent's key, which is indexed already. But deleting a parent, or joining from it, has to find the children, and with no index on `occurrences.species_id` that means reading the whole table (d3). Which of `occurrences`' keys have an index that starts with their column?
 
 ```sql
 -- q: d1-fk-index
@@ -2192,7 +2231,7 @@ occurrences_dataset_key_fkey | FOREIGN KEY | dataset_key | false
 occurrences_species_id_fkey | FOREIGN KEY | species_id | false
 ```
 
-8. The generated column, as the catalog describes it; then an attempt to write it, refused:
+9. The generated column, as the catalog describes it; then an attempt to write it, refused:
 
 ```sql
 -- q: d1-generated
@@ -2225,7 +2264,7 @@ WHERE id = (SELECT min(id) FROM occurrences);
 -- result: d1-generated-write · error: statement 1 of 1: column "geom" can only be updated to DEFAULT
 ```
 
-9. A surrogate key made by the database. `GENERATED ALWAYS AS IDENTITY` numbers the rows as they go in. A surrogate key alone would accept the same note twice under two numbers, so the natural key, (animal, observer, day), is declared `UNIQUE` beside it:
+10. A surrogate key made by the database. `GENERATED ALWAYS AS IDENTITY` numbers the rows as they go in. A surrogate key alone would accept the same note twice under two numbers, so the natural key, (animal, observer, day), is declared `UNIQUE` beside it:
 
 ```sql
 -- q: d1-identity
@@ -2267,7 +2306,7 @@ VALUES (48, 'Ana', DATE '2026-03-14');
 -- result: d1-identity-twice · error: statement 1 of 1: duplicate key value violates unique constraint "field_notes_species_id_observer_seen_on_key"
 ```
 
-**Result:** Every key refused what it should: a second animal with id 25 or with the tiger's GBIF id, a month of 13, a genus with no parent, an animal in a genus that doesn't exist, the deletion of a dataset its records still point at, a write to a generated column and the same field note twice. What got through is as instructive: a record with no month and no country (a `CHECK` and a foreign key both pass `NULL`), and a record that says Australia while its point is in Brazil (a foreign key checks that a value exists, not that it is true). `occurrences`' primary key is indexed and its three foreign keys aren't. critwire's design follows from this: a surrogate primary key, the natural keys `UNIQUE` (some outside ids are missing, and four names already changed in GBIF's eyes), and natural primary keys only where an authority keeps them stable (`countries`, `datasets`).
+**Result:** Every key refused what it should: a second animal with id 25 or with the tiger's GBIF id, a month of 13, a genus with no parent, an animal in a genus that doesn't exist, a genus that is a family once a two-column foreign key checked the rank, the deletion of a dataset its records still point at, a write to a generated column and the same field note twice. What got through is as instructive: a record with no month and no country (a `CHECK` and a foreign key both pass `NULL`), and a record that says Australia while its point is in Brazil (a foreign key checks that a value exists, not that it is true). `occurrences`' primary key is indexed and its three foreign keys aren't. critwire's design follows from this: a surrogate primary key, the natural keys `NOT NULL` and `UNIQUE`, the outside ids `UNIQUE` but optional (some are missing, and four names already changed in GBIF's eyes), and natural primary keys only where an authority keeps them stable (`countries`, `datasets`).
 
 **Exercise:** critwire keeps one photo per animal, in `species`. Design a table `species_photos` that can hold several: a surrogate `photo_id`; the animal (`species_id`, an animal critwire has); a `url` no other photo has; a `license` that is a Creative Commons license (it starts with `CC`) or `Public domain`; and a `credit` that is filled in and not empty. Create it in the browser, copy in every animal's current photo (`photo_url`, `photo_license`, `photo_credit`, numbered by species id), and count the photos, the animals and the licenses.
 
@@ -2340,6 +2379,28 @@ VALUES (1000, 74, 'https://example.org/axolotl-2.jpg', 'All rights reserved', 'A
 
 **Check:** `result, any row order` for the counts; then the page runs the three inserts above after your answer, and each must fail with the error named (unique, foreign key, `CHECK`), whatever you named your constraints.
 
+**Second exercise, on your own computer (the page doesn't check it):** read the lab's ERD back out of the database. Reverse engineering a design means recovering it from what was built: [tbls](https://github.com/k1LoW/tbls) (MIT license, a single program file) reads PostgreSQL's catalog (every table, column and foreign key) and writes a Mermaid ERD. Get version 1.96.1 from [its release page](https://github.com/k1LoW/tbls/releases/tag/v1.96.1), check the file's SHA-256 against the one printed here (the release lists the other systems'), and point it at your lab database. It finds the password in the `pgpass.conf` the setup made. In PowerShell:
+
+```powershell
+curl.exe -fLO https://github.com/k1LoW/tbls/releases/download/v1.96.1/tbls_v1.96.1_windows_amd64.zip
+(Get-FileHash tbls_v1.96.1_windows_amd64.zip -Algorithm SHA256).Hash -eq "ecd641e0d1ffde95350b1336cb03603c7f7fd8c7fc20a996323ea80d8594a5c6"   # must print True
+Expand-Archive tbls_v1.96.1_windows_amd64.zip -DestinationPath tbls
+.\tbls\tbls.exe out -t mermaid --include "learn_curriculum.*" -o lab-tbls.mmd "postgres://postgres@localhost:5432/learn?sslmode=disable"
+```
+
+On Linux (x86-64), with the password in `~/.pgpass`:
+
+```sh
+curl -fLO https://github.com/k1LoW/tbls/releases/download/v1.96.1/tbls_v1.96.1_linux_amd64.tar.gz
+echo "18285eef0ba7d917214e8bd7dd6a22afe5fea021eed52e7149100a3d10a2af95  tbls_v1.96.1_linux_amd64.tar.gz" | sha256sum -c   # must print OK
+tar xzf tbls_v1.96.1_linux_amd64.tar.gz tbls
+./tbls out -t mermaid --include 'learn_curriculum.*' -o lab-tbls.mmd "postgres://postgres@localhost:5432/learn?sslmode=disable"
+```
+
+Open `lab-tbls.mmd` beside [the lab schema's diagram](/learn/schema/lab/). What do the two agree on, and what does each have that the other doesn't?
+
+**What you should find:** the 14 tables, their 69 columns and types, and the 15 lines agree, cardinality included. tbls reads "zero or one" from a foreign key that may be `NULL` (`occurrences.country_code`) and "at most one per country" from a foreign key that is also its table's primary key (`country_shapes`), as the course's diagram draws them. It spells a type's punctuation as underscores (`double_precision`, `geometry_Point_4326_`). It draws the view `species_taxonomy` as a box like a table, without lines, because a view has no keys. It leaves out what the database doesn't hold: the two planned tables, every column's note (they live in the diagram's source, not in the database), and, in Mermaid, the primary and unique keys. A diagram read back from the catalog shows exactly what the database enforces, so it is a good check on a drawn one; critwire's tests compare the lab diagram with a freshly loaded lab the same way. What a column means and what is planned still has to be written down by a person.
+
 **Dialects:**
 - **PostgreSQL:** as here, with surrogate keys from `GENERATED ALWAYS AS IDENTITY` (or the older `serial`); generated columns are `STORED` only (virtual ones come in PostgreSQL 18); foreign keys take `ON DELETE CASCADE | SET NULL | RESTRICT`, can be `DEFERRABLE` (checked at commit), and can be added `NOT VALID` and checked later with `VALIDATE CONSTRAINT`; `UNIQUE NULLS NOT DISTINCT` makes `NULL`s collide; no automatic index on a foreign key.
 - **DuckDB:** keys as here, but foreign keys only in `CREATE TABLE`, with no `CASCADE` or `SET NULL` actions; no identity columns (a `CREATE SEQUENCE` and `DEFAULT nextval('…')` do it); generated columns are virtual only; primary keys and `UNIQUE` build an index, which also makes bulk loads into keyed tables slower.
@@ -2354,10 +2415,10 @@ VALUES (1000, 74, 'https://example.org/axolotl-2.jpg', 'All rights reserved', 'A
 - A dependency is a rule about the world, which the designer states; it isn't read off the data. Rows can refute one (two rows, same `X`, different `Y`), never prove it: a rule that holds in today's rows may break with tomorrow's load. Once a table's key enforces the rule, the database refuses the row that would break it (d1).
 - A table that stores a fact in more than one place invites three **anomalies**. **Update:** a fact changed in some of its copies leaves the table saying two things. **Delete:** deleting the last row that held a fact deletes the fact (a record removed as a misidentification takes its dataset's only copy of the title with it). **Insert:** a fact can't be stored until something else exists (a dataset can't be listed before it has a record).
 - The **normal forms** remove them one kind at a time:
-  - **First normal form (1NF):** one value per cell, no lists or repeated groups of columns. A list in a cell can't be joined, counted or checked by a foreign key.
+  - **First normal form (1NF):** one value per cell, no lists or repeated groups of columns. A list in a cell can still be queried: `unnest` turns it into rows, which can then be joined and counted (the worked example does). What the list loses is the database's checks on each item: no foreign key can say every country code in it is a `countries` row, no `UNIQUE` can stop a code appearing twice, and every query has to unnest it first.
   - **Second (2NF):** in a table whose key has several columns, no other column depends on only part of it.
-  - **Third (3NF):** no other column depends on a column that isn't a key. The short version of all three: every column depends on the key, the whole key, and nothing but the key. (**Boyce–Codd normal form** tightens 3NF for tables with several overlapping keys; critwire's tables don't have that case.)
-- Normalizing splits a table along its dependencies. The split is **lossless** when joining the parts gives back exactly the rows you started with; splitting along a real dependency always is.
+  - **Third (3NF):** no column outside the keys depends on another column outside them. The short version of all three, "every column depends on the key, the whole key, and nothing but the key", is a first approximation. The exact rule: for every dependency `X → Y` in the table (with `Y` not part of `X`), either `X` contains a key, or `Y` is part of some candidate key. (**Boyce–Codd normal form** drops the second escape: `X` must always contain a key. It differs from 3NF only in tables with several overlapping keys; critwire's tables don't have that case.)
+- Normalizing splits a table along its dependencies. The split is **lossless** when joining the parts gives back exactly the rows you started with. A split into two parts is lossless when the columns they share determine all of one part, that is, they are a key of it: `records_flat` split on `dataset_key` (the key of the datasets part) is lossless. Split on `title` instead, two datasets that share a title (lab step 3) would each join to the other's records, and the join would add rows that were never there.
 - A nested file (JSON, or Parquet with structs and lists) groups facts by how they are read: one animal with everything about it. Tables group them by what they depend on. critwire keeps both: its build writes `/v1/species.{json,parquet}` nested, from the derived records in `data/species.json`, because a reader wants one record per animal, and loads the same records into a table whose keys and `CHECK`s refuse a record that breaks them, a check before anything is published.
 - **Denormalizing** is repeating facts on purpose, for reading: the published files, d6's star, a summary table. It is safe when every copy is rebuilt from one source every time and never edited by hand; a value that is only a count of other rows (records per dataset) stays a query.
 
@@ -2690,11 +2751,11 @@ WHERE title = 'Natuurmuseum Brabant, Tilburg - Vertebrates';
 
 **Concept:** PostgreSQL stores a table as 8 kB pages, about fifty records to a page in `occurrences`. A query that has nothing better reads every page, in order, and tests every row: a **sequential scan**. An **index** is a second structure, kept in step with the table, that leads from a value to the rows holding it. Before running a query, the **planner** writes several plans and picks the one it expects to read the fewest pages for the least work. That expectation comes from the **statistics** `ANALYZE` collects. So "why is this a sequential scan?" has four usual answers: there is no index that fits; the query hides the column inside an expression; the filter keeps so many rows that reading the whole table is cheaper; or the statistics are wrong.
 - A **B-tree** (the default, `CREATE INDEX … ON t (col)`) keeps the values sorted. It finds one value, a range (`BETWEEN`, `>=`) or rows in sorted order (`ORDER BY … LIMIT`). An index on `(a, b)` is sorted by `a`, then by `b` inside each `a`: it jumps straight to `a = 48 AND b = 2010` or to `a = 48`, but a condition on `b` alone has nothing to jump to.
-- How the rows are fetched shows in the plan. An **Index Scan** walks the index and fetches each row as it goes, in index order. A **Bitmap Index Scan** first collects every matching row's location, then the **Bitmap Heap Scan** reads each page that holds one, once, in page order (`Heap Blocks: exact=6` is six pages). Which the planner picks depends on how many rows match and how scattered they are: rows stored in roughly the index's order (a high correlation, below) favour the Index Scan. An **Index Only Scan** answers from the index alone, when every column the query needs is in the index and `VACUUM` has marked the pages all-visible. Because that depends on when autovacuum last ran, the labs below always ask for a column outside the index, so their plans don't change from run to run.
+- How the rows are fetched shows in the plan. An **Index Scan** walks the index and fetches each row as it goes, in index order. A **Bitmap Index Scan** first collects every matching row's location, then the **Bitmap Heap Scan** reads each page that holds one, once, in page order (`Heap Blocks: exact=6` is six pages). Which the planner picks depends on how many rows match and how scattered they are: rows stored in roughly the index's order (a high correlation, below) favour the Index Scan. An **Index Only Scan** answers from the index alone, when every column the query needs is in the index and `VACUUM` has marked the pages all-visible. Because that depends on when autovacuum last ran, the labs below always ask for a column outside the index. That removes one source of variation, not all: a plan can still change with the PostgreSQL version or the statistics, so the tests check what each plan must show (its `-- plan:` lines), not its text.
 - **Statistics** live in `pg_statistic`, readable through the view `pg_stats`: per column, the share of `NULL`s, the number of distinct values, the most common values with their frequencies, a histogram of the rest, and the **correlation** between the values' order and the rows' physical order (1: stored in value order; 0: scattered). `ANALYZE` reads a sample of 300 × `default_statistics_target` rows (100, so 30,000), and autovacuum runs it again after enough of a table changes. After a bulk load, run it yourself: critwire's loader ends with `ANALYZE` on every table (§4.3). The planner treats columns as **independent**, which goes wrong when one column predicts another; `CREATE STATISTICS` teaches it how they go together.
 - A **GiST** index on a geometry column stores each shape's bounding box in a tree of boxes. A spatial test like `ST_Intersects`, `ST_Covers` or `ST_DWithin` adds a box comparison the index can answer (`&&`, boxes overlap; `@`, box inside box), then runs the exact test only on the rows whose boxes passed. A test the index can't turn into a box, such as `ST_Distance(…) < d`, computes on every row. The loader builds one on every geometry column (`occurrences_geom_idx`). g5 goes further: nearest neighbours with `<->` and geography.
-- A **BRIN** index keeps one summary, the smallest and largest value, per range of pages (128 by default). It is tiny, and it can only rule out ranges, so it helps exactly when the values follow the physical order: an id that grows as rows are appended, the time of a log line. The column's correlation tells you whether it will.
-- **`EXPLAIN`** prints the chosen plan; **`EXPLAIN ANALYZE`** also runs the query and adds what really happened at each step (`actual rows`, `Rows Removed by Filter`). Read a plan from the innermost, most indented line outwards. On your own, use `EXPLAIN (ANALYZE, BUFFERS)`, which adds the planner's estimated cost and rows, the time and the pages read. The labs print `EXPLAIN (ANALYZE, COSTS OFF, TIMING OFF, SUMMARY OFF)`, the plan's shape and its row counts only, because costs and times vary from machine to machine and the tests compare every line. `EXPLAIN ANALYZE` on an `INSERT`, `UPDATE` or `DELETE` really changes the rows, so wrap it in `BEGIN` … `ROLLBACK`.
+- A **BRIN** index keeps one summary, the smallest and largest value, per range of pages (128 by default). It is tiny, and it can only rule out ranges, so it helps as far as the values follow the physical order: most when they do (an id that grows as rows are appended, the time of a log line), partly when they roughly do (lab step 16 skips three ranges of seven), not at all when they are scattered. The column's correlation, from 1 or −1 down to 0, tells you how far.
+- **`EXPLAIN`** prints the chosen plan; **`EXPLAIN ANALYZE`** also runs the query and adds what really happened at each step (`actual rows`, `Rows Removed by Filter`). Read a plan from the innermost, most indented line outwards. On your own, use `EXPLAIN (ANALYZE, BUFFERS)`, which adds the planner's estimated cost and rows, the time and the pages read. The labs print `EXPLAIN (ANALYZE, COSTS OFF, TIMING OFF, SUMMARY OFF)`, the plan's shape and its row counts only, because costs and times vary from machine to machine. Each lab block says what its plan must show in `-- plan:` lines: a text some line contains (`-- plan: Index Cond: (species_id = 63)`), a text no line contains (`-- plan: no Seq Scan`), and the top node's `actual rows` (`-- plan: rows 9`). The plan printed under it is an example, from the versions the page names; yours may differ in its details and still pass. `EXPLAIN ANALYZE` on an `INSERT`, `UPDATE` or `DELETE` really changes the rows, so wrap it in `BEGIN` … `ROLLBACK`.
 - Indexes aren't free. Every index makes every write slower and takes disk space, and a primary key or `UNIQUE` constraint already brings one (d1). A foreign key doesn't: index its column when you join or delete through it. And a bulk load is faster when the indexes are built after the rows are in, which is why the lab file adds its keys and indexes after loading the data (§4.3).
 
 Each lab below starts from the loaded tables: the tests run every block in a transaction and roll it back. To do the same in `psql`, type `BEGIN;` before a lab and `ROLLBACK;` after it, so the indexes you make in one lab don't change the plans of the next.
@@ -2725,6 +2786,9 @@ Temminck's pangolin (species 63) has nine records in the lab. With no index on `
 -- status: ran
 -- engine: postgis
 -- after: d3-analyze
+-- plan: rows 9
+-- plan: Seq Scan on occurrences
+-- plan: Rows Removed by Filter: 40386
 EXPLAIN (ANALYZE, COSTS OFF, TIMING OFF, SUMMARY OFF)
 SELECT id, year, month
 FROM occurrences
@@ -2746,6 +2810,11 @@ Seq Scan on occurrences (actual rows=9 loops=1)
 -- status: ran
 -- engine: postgis
 -- after: d3-analyze
+-- plan: rows 9
+-- plan: Bitmap Index Scan on occurrences_species_id_idx
+-- plan: Index Cond: (species_id = 63)
+-- plan: Heap Blocks: exact=6
+-- plan: no Seq Scan
 CREATE INDEX occurrences_species_id_idx ON occurrences (species_id);
 EXPLAIN (ANALYZE, COSTS OFF, TIMING OFF, SUMMARY OFF)
 SELECT id, year, month
@@ -2773,6 +2842,9 @@ The index finds the nine rows, and the table is read only where they are: six pa
 -- status: ran
 -- engine: postgis
 -- after: d3-analyze
+-- plan: rows 29261
+-- plan: Seq Scan on occurrences
+-- plan: no occurrences_year_idx
 CREATE INDEX occurrences_year_idx ON occurrences (year);
 EXPLAIN (ANALYZE, COSTS OFF, TIMING OFF, SUMMARY OFF)
 SELECT id, species_id
@@ -2795,6 +2867,10 @@ Seq Scan on occurrences (actual rows=29261 loops=1)
 -- status: ran
 -- engine: postgis
 -- after: d3-analyze, d3-many-rows
+-- plan: rows 74
+-- plan: occurrences_year_idx
+-- plan: Index Cond: (year >= 2026)
+-- plan: no Seq Scan
 EXPLAIN (ANALYZE, COSTS OFF, TIMING OFF, SUMMARY OFF)
 SELECT id, species_id
 FROM occurrences
@@ -2815,6 +2891,10 @@ Index Scan using occurrences_year_idx on occurrences (actual…
 -- status: ran
 -- engine: postgis
 -- after: d3-analyze, d3-many-rows
+-- plan: rows 26
+-- plan: Seq Scan on occurrences
+-- plan: Filter: ((year / 10) = 185)
+-- plan: no occurrences_year_idx
 EXPLAIN (ANALYZE, COSTS OFF, TIMING OFF, SUMMARY OFF)
 SELECT id, species_id
 FROM occurrences
@@ -2836,6 +2916,10 @@ Seq Scan on occurrences (actual rows=26 loops=1)
 -- status: ran
 -- engine: postgis
 -- after: d3-analyze, d3-many-rows
+-- plan: rows 26
+-- plan: occurrences_year_idx
+-- plan: Index Cond: ((year >= 1850) AND (year <= 1859))
+-- plan: no Seq Scan
 EXPLAIN (ANALYZE, COSTS OFF, TIMING OFF, SUMMARY OFF)
 SELECT id, species_id
 FROM occurrences
@@ -2858,6 +2942,9 @@ The other way out is an index on the expression itself, `CREATE INDEX ON occurre
 -- status: ran
 -- engine: postgis
 -- after: d3-analyze
+-- plan: rows 9
+-- plan: Hash Join
+-- plan: Seq Scan on occurrences o (actual rows=40395
 EXPLAIN (ANALYZE, COSTS OFF, TIMING OFF, SUMMARY OFF)
 SELECT o.id, o.year
 FROM species AS s
@@ -2883,6 +2970,10 @@ Hash Join (actual rows=9 loops=1)
 -- status: ran
 -- engine: postgis
 -- after: d3-analyze, d3-btree
+-- plan: rows 9
+-- plan: Nested Loop
+-- plan: Index Cond: (species_id = s.id)
+-- plan: no Seq Scan on occurrences
 EXPLAIN (ANALYZE, COSTS OFF, TIMING OFF, SUMMARY OFF)
 SELECT o.id, o.year
 FROM species AS s
@@ -2908,6 +2999,10 @@ Nested Loop (actual rows=9 loops=1)
 -- status: ran
 -- engine: postgis
 -- after: d3-analyze
+-- plan: rows 182
+-- plan: occurrences_species_year_idx
+-- plan: Index Cond: ((species_id = 48) AND (year = 2010))
+-- plan: no Seq Scan
 CREATE INDEX occurrences_species_year_idx ON occurrences (species_id, year);
 EXPLAIN (ANALYZE, COSTS OFF, TIMING OFF, SUMMARY OFF)
 SELECT id, month
@@ -2932,6 +3027,10 @@ Bitmap Heap Scan on occurrences (actual rows=182 loops=1)
 -- status: ran
 -- engine: postgis
 -- after: d3-analyze, d3-two-columns
+-- plan: rows 107
+-- plan: occurrences_species_year_idx
+-- plan: Index Cond: ((year >= 1850) AND (year <= 1899))
+-- plan: no Seq Scan
 EXPLAIN (ANALYZE, COSTS OFF, TIMING OFF, SUMMARY OFF)
 SELECT id, month
 FROM occurrences
@@ -3062,6 +3161,11 @@ species_id | country_code | planner_estimate
 -- status: ran
 -- engine: postgis
 -- after: d3-analyze
+-- plan: rows 184
+-- plan: Index Scan using country_shapes_pkey
+-- plan: Index Cond: (geom @ cs.geom)
+-- plan: Filter: st_covers(cs.geom, geom)
+-- plan: no Seq Scan on occurrences
 EXPLAIN (ANALYZE, COSTS OFF, TIMING OFF, SUMMARY OFF)
 SELECT o.id, o.year
 FROM country_shapes AS cs
@@ -3087,6 +3191,10 @@ Nested Loop (actual rows=184 loops=1)
 -- status: ran
 -- engine: postgis
 -- after: d3-analyze
+-- plan: rows 186
+-- plan: Bitmap Index Scan on occurrences_geom_idx
+-- plan: Index Cond: (geom && st_expand(
+-- plan: no Seq Scan on occurrences
 EXPLAIN (ANALYZE, COSTS OFF, TIMING OFF, SUMMARY OFF)
 SELECT o.id, o.year
 FROM admin1_shapes AS a
@@ -3112,6 +3220,10 @@ Nested Loop (actual rows=186 loops=1)
 -- status: ran
 -- engine: postgis
 -- after: d3-analyze
+-- plan: rows 186
+-- plan: Join Filter: (st_distance(
+-- plan: Seq Scan on occurrences o
+-- plan: no occurrences_geom_idx
 EXPLAIN (ANALYZE, COSTS OFF, TIMING OFF, SUMMARY OFF)
 SELECT o.id, o.year
 FROM admin1_shapes AS a
@@ -3137,6 +3249,9 @@ Nested Loop (actual rows=186 loops=1)
 -- status: ran
 -- engine: postgis
 -- after: d3-analyze
+-- plan: rows 26
+-- plan: Bitmap Index Scan on occurrences_year_brin
+-- plan: Heap Blocks: lossy=512
 CREATE INDEX occurrences_year_brin ON occurrences USING brin (year);
 EXPLAIN (ANALYZE, COSTS OFF, TIMING OFF, SUMMARY OFF)
 SELECT id, species_id
@@ -3161,6 +3276,9 @@ Bitmap Heap Scan on occurrences (actual rows=26 loops=1)
 -- q: d3-brin-sorted
 -- status: ran
 -- engine: postgis
+-- plan: rows 26
+-- plan: Bitmap Index Scan on occurrences_by_year_brin
+-- plan: Heap Blocks: lossy=128
 CREATE TABLE occurrences_by_year AS
 SELECT * FROM occurrences ORDER BY year, id;
 CREATE INDEX occurrences_by_year_brin ON occurrences_by_year USING brin (year);
@@ -3202,7 +3320,7 @@ table_size | btree_size | brin_size
 6656 kB | 304 kB | 24 kB
 ```
 
-**Result:** A filter on an unindexed column reads the whole table (40,386 of the pangolin's 40,395 rows thrown away); a B-tree turns it into six pages, and turns the slug join from a hash join over every record into a nested loop over nine. The planner skips an index when the filter keeps most of the table (72 % of records are from 2000 on), and can't use it when the column is inside an expression (`year / 10`); rewriting the filter as a range fixes that. A two-column index jumps on its first column; on its second alone, PostgreSQL 16 reads all of it. The planner's beliefs are in `pg_stats`: exact for one column after a full `ANALYZE`, but its independence assumption put the devil's Australian records at 230 when there are 1,998, until extended statistics recorded the pair. GiST answers `ST_Covers` and `ST_DWithin` through bounding boxes and leaves `ST_Distance` to a full scan. BRIN is three pages and helps only when the rows are stored in the column's order: 512 pages read for the 1850s as loaded, 128 on the sorted copy.
+**Result:** A filter on an unindexed column reads the whole table (40,386 of the pangolin's 40,395 rows thrown away); a B-tree turns it into six pages, and turns the slug join from a hash join over every record into a nested loop over nine. The planner skips an index when the filter keeps most of the table (72 % of records are from 2000 on), and can't use it when the column is inside an expression (`year / 10`); rewriting the filter as a range fixes that. A two-column index jumps on its first column; on its second alone, PostgreSQL 16 reads all of it. The planner's beliefs are in `pg_stats`: exact for one column after a full `ANALYZE`, but its independence assumption put the devil's Australian records at 230 when there are 1,998, until extended statistics recorded the pair. GiST answers `ST_Covers` and `ST_DWithin` through bounding boxes and leaves `ST_Distance` to a full scan. BRIN is three pages and helps as far as the rows are stored in the column's order: 512 pages read for the 1850s as loaded (partly ordered), 128 on the sorted copy.
 
 **Exercise:** A game shows an animal's records for a decade, newest first, twenty at a time. For the devil in the 2000s:
 
@@ -3235,6 +3353,9 @@ As loaded, PostgreSQL reads every record, keeps the devil's 1,390 from the decad
 -- status: ran
 -- engine: postgis
 -- after: d3-analyze
+-- plan: rows 20
+-- plan: Sort Key: year DESC, id DESC
+-- plan: Seq Scan on occurrences (actual rows=1390
 EXPLAIN (ANALYZE, COSTS OFF, TIMING OFF, SUMMARY OFF)
 SELECT id, year, month
 FROM occurrences
@@ -3263,6 +3384,11 @@ Create the one index that lets it read just those twenty rows, with no sort and 
 -- status: ran
 -- engine: postgis
 -- after: d3-analyze
+-- plan: rows 20
+-- plan: occurrences_species_year_id_idx
+-- plan: Index Cond: ((species_id = 48) AND (year >= 2000) AND (year <= 2009))
+-- plan: no Sort
+-- plan: no Seq Scan
 CREATE INDEX occurrences_species_year_id_idx ON occurrences (species_id, year, id);
 EXPLAIN (ANALYZE, COSTS OFF, TIMING OFF, SUMMARY OFF)
 SELECT id, year, month
@@ -3301,12 +3427,12 @@ How you work with them:
 - **Autocommit.** psql, like most clients, commits every statement on its own unless you type `BEGIN`. A script of ten statements is ten transactions: if the seventh fails, the first six stay. One statement is always atomic, though: an `INSERT … SELECT` that fails on its last row inserts nothing.
 - **An error aborts the transaction.** Inside `BEGIN`, after a failed statement PostgreSQL refuses everything (`current transaction is aborted, commands ignored until end of transaction block`) until you type `ROLLBACK`. `COMMIT` of an aborted transaction rolls back too. In a script, `\set ON_ERROR_STOP on` makes psql stop at the first error, as critwire's lab file does (§4.3).
 - **Savepoints** mark a point inside a transaction: `SAVEPOINT name`, then `ROLLBACK TO SAVEPOINT name` undoes only what came after it and clears the error, so the transaction can go on. psql's `\set ON_ERROR_ROLLBACK interactive` puts a savepoint before every statement you type by hand.
-- **MVCC** (multi-version concurrency control) is how PostgreSQL isolates transactions without making readers wait. A row is stored as **versions**; each records the transaction that created it (the hidden column `xmin`) and the one that deleted it (`xmax`). An `UPDATE` writes a new version and marks the old one deleted; it doesn't overwrite. Each statement reads through a **snapshot**, a list of which transactions had committed when it started, and sees only the versions those made. So a reader sees the old version while a writer works on the new one, and neither waits. Old versions no one can see any more are removed later by `VACUUM` (autovacuum runs it for you).
+- **MVCC** (multi-version concurrency control) is how PostgreSQL isolates transactions without making readers wait. A row is stored as **versions**; each records the transaction that created it (the hidden column `xmin`) and the one that deleted it (`xmax`). An `UPDATE` writes a new version and marks the old one deleted; it doesn't overwrite. Each statement reads through a **snapshot**, a list of which transactions had committed when it started, and sees only the versions those made. So a reader sees the old version while a writer works on the new one, and neither waits. That holds for plain reads against row writes: a **locking read** (`SELECT … FOR UPDATE` or `FOR SHARE`) locks the rows it reads and waits for their writer, and a change to a table's structure locks out even plain reads (Locks, below). Old versions no one can see any more are removed later by `VACUUM` (autovacuum runs it for you). `xmin` is for looking, not for keeping: transaction ids wrap around and `VACUUM` freezes old ones, so a table that must record which load wrote a row needs a column of its own (a load id, a timestamp).
 - **Isolation levels.** **Read committed**, PostgreSQL's default, takes a new snapshot for every statement: two `SELECT`s in one transaction can see different data if someone committed in between. **Repeatable read** takes one snapshot for the whole transaction, and refuses to update a row that someone else changed since (`could not serialize access`, SQLSTATE `40001`): the application retries the transaction. **Serializable** goes further and refuses any outcome that no one-after-the-other order of the transactions could give; retry the same way.
 - **Locks.** MVCC doesn't make writers wait for readers, but a writer waits for another writer of the same row, until that one commits or rolls back. Statements also lock whole tables, in modes that mostly don't conflict: a `SELECT` takes `AccessShareLock`, an `UPDATE` `RowExclusiveLock`. `ALTER TABLE`, `DROP` and `TRUNCATE` take `AccessExclusiveLock`, which conflicts with everything, even a `SELECT`, until the transaction ends. Two transactions that each wait for a lock the other holds are a **deadlock**: PostgreSQL notices within a second (`deadlock_timeout`) and aborts one of them. `SET LOCAL lock_timeout = '5s'` makes a statement give up instead of waiting.
 - **A load you can re-run** (idempotent): running it twice leaves the same result as running it once, so after a failure you fix the cause and simply run it again. Three common ways:
   - **Replace in one transaction:** `BEGIN`, drop or empty the target, load it all, `COMMIT`. A failure changes nothing; readers see the old data until the commit, then the new. critwire's lab file does exactly this with the whole `learn_curriculum` schema (§4.3); its `DROP SCHEMA` takes `AccessExclusiveLock` on every table, so the labs wait for the few seconds it runs instead of reading half a load.
-  - **Upsert by key:** `INSERT … ON CONFLICT (key) DO NOTHING` skips rows that are already there; `DO UPDATE SET col = EXCLUDED.col` updates them from the incoming row (`EXCLUDED`). It needs a primary key or unique constraint on exactly those columns, and it's safe when two loads run at once. Good for adding to a large table a batch at a time.
+  - **Upsert by key:** `INSERT … ON CONFLICT (key) DO NOTHING` skips rows that are already there; `DO UPDATE SET col = EXCLUDED.col` updates them from the incoming row (`EXCLUDED`). It needs a primary key or unique constraint on exactly those columns, and it's safe when two loads run at once. Good for adding to a large table a batch at a time. It only adds and updates: a row the source has since deleted stays in the target, and so does the old row of one whose key changed upstream (the new key arrives as a new row). Keeping up with deletions takes a second step, such as deleting the target's rows that are missing from a complete batch, or the replace above.
   - **Stage, then merge:** load into a staging table, check it (e1, e3), then upsert from it into the target in one transaction. The ETL spike loads GBIF's download this way (§A.1).
 
 Every lab below runs in `psql`. Most start from the loaded tables in a transaction the tests roll back: type `BEGIN;` before one and `ROLLBACK;` after it. The worked example's and the first lab's blocks are typed exactly as shown, `BEGIN` and all, and end by removing what they made; a statement marked `-- fails:` fails on purpose, with that message. Leave `ON_ERROR_STOP` off for them (psql's default when you type), so psql goes on after the error as it does here.
@@ -3557,19 +3683,21 @@ species | AccessExclusiveLock
 
 `RowExclusiveLock` lets everyone else read `occurrences` and write its other rows. `AccessExclusiveLock` stops every session from even reading `species` until this transaction ends: keep transactions that change a table's structure short.
 
-5. Readers don't wait; writers of the same row do. This needs two psql windows, A and B, each after `pg-session`; type the lines in the order shown. (The tests run every block in one session, so this one was run by hand on the test server, with the results in the comments.)
+5. Plain readers don't wait; writers of the same row do. This needs two psql windows, A and B, each after `pg-session`; type the lines in the order shown. `-- waits:` marks the statement that waits, and `-- fails:` (lab 6) the one that fails on purpose. The comments give each statement's outcome; the result below lists what each `SELECT` returned, by window and statement number. The tests run it the same way, in two sessions, and check that the marked statement waits and no other does.
 
 ```sql
 -- q: d4-wait
--- status: untested: needs two sessions
+-- status: ran
 -- engine: postgis
+-- sessions: A, B
 -- window A
 BEGIN;
 UPDATE occurrences SET month = 7 WHERE id = 6004132305;
 -- window B
 BEGIN;
 SELECT month FROM occurrences WHERE id = 6004132305;     -- NULL, at once: B reads the old version
-UPDATE occurrences SET month = 8 WHERE id = 6004132305;  -- waits for A's row lock
+-- waits: A holds the row's lock
+UPDATE occurrences SET month = 8 WHERE id = 6004132305;
 -- window A
 ROLLBACK;                                                -- now B's UPDATE finishes: UPDATE 1
 -- window B
@@ -3577,12 +3705,20 @@ SELECT month FROM occurrences WHERE id = 6004132305;     -- 8
 ROLLBACK;
 ```
 
+```text
+-- result: d4-wait · 2 rows · sha256 ddbfcdb9a1de
+window | statement | month
+B | 4 | NULL
+B | 7 | 8
+```
+
 6. Isolation levels, with the same two windows. B changes the row and commits (autocommit) while A's transaction is open:
 
 ```sql
 -- q: d4-isolation
--- status: untested: needs two sessions
+-- status: ran
 -- engine: postgis
+-- sessions: A, B
 -- window A
 BEGIN ISOLATION LEVEL REPEATABLE READ;
 SELECT month FROM occurrences WHERE id = 6004132305;     -- NULL
@@ -3590,14 +3726,21 @@ SELECT month FROM occurrences WHERE id = 6004132305;     -- NULL
 UPDATE occurrences SET month = 1 WHERE id = 6004132305;  -- committed at once
 -- window A
 SELECT month FROM occurrences WHERE id = 6004132305;     -- still NULL: one snapshot for the whole transaction
+-- fails: could not serialize access due to concurrent update
 UPDATE occurrences SET month = 2 WHERE id = 6004132305;
--- ERROR:  could not serialize access due to concurrent update
 ROLLBACK;
 -- window B: undo the change
 UPDATE occurrences SET month = NULL WHERE id = 6004132305;
 ```
 
-Begin A with plain `BEGIN;` (read committed) instead and A's second `SELECT` shows B's 1, and its `UPDATE` succeeds. Which is right depends on the job: a report that reads several tables wants one snapshot (repeatable read, read only); a job that decides from what it read and then writes wants to hear that the data changed under it (repeatable read or serializable, with a retry).
+```text
+-- result: d4-isolation · 2 rows · sha256 ba58c317969a
+window | statement | month
+A | 2 | NULL
+A | 4 | NULL
+```
+
+Had B read with `SELECT month … FOR UPDATE` in lab 5, it would have waited for A just as its `UPDATE` did; had A run lab 4's `ALTER TABLE species …`, even B's plain `SELECT` on `species` would have waited. Begin A with plain `BEGIN;` (read committed) instead and A's second `SELECT` shows B's 1, and its `UPDATE` succeeds. Which is right depends on the job: a report that reads several tables wants one snapshot (repeatable read, read only); a job that decides from what it read and then writes wants to hear that the data changed under it (repeatable read or serializable, with a retry).
 
 7. Upserts. The game's feed, version 1: the devil's records from 2000 to 2019, without months. Labs 8 to 11 and the exercise start from it:
 
@@ -3695,7 +3838,7 @@ inserted | updated
 42 | 1320
 ```
 
-The other 496 rows of version 1 have no month in version 2 either, so they were left alone.
+The other 496 rows of version 1 have no month in version 2 either, so they were left alone. The feed's upsert brings month and country up to date and nothing else: a record whose animal or year changed upstream keeps its old values here, and one GBIF removed stays in `sightings`. A full refresh would update those columns too and delete the rows missing from a complete batch.
 
 11. Two ways an upsert fails. `ON CONFLICT` names the columns of a unique constraint or index; there is none on `(species_id, year)`:
 
@@ -3735,7 +3878,7 @@ ON CONFLICT (occurrence_id) DO UPDATE SET month = EXCLUDED.month;
 -- result: d4-twice · error: statement 1 of 1: ON CONFLICT DO UPDATE command cannot affect row a second time
 ```
 
-**Result:** In autocommit, a load that fails on its second batch keeps the first (1,858 rows), and running it again fails on them; in one transaction the error aborts everything, even a `SELECT`, and `ROLLBACK` leaves nothing behind, so the fixed file can simply be run again, once or twice, for the same 1,959 rows. A savepoint keeps the first batch and lets the transaction go on. MVCC is visible in `xmin`: the whole lab was written by one transaction, and an `UPDATE` writes a new version under your own transaction's id. An `UPDATE` holds `RowExclusiveLock`, an `ALTER TABLE` `AccessExclusiveLock`; by hand, a reader didn't wait for a writer, a second writer did, and repeatable read refused to update a row changed since its snapshot. `ON CONFLICT` made the feed re-runnable: `DO NOTHING` added the 42 missing records, and `DO UPDATE … WHERE … IS DISTINCT FROM` inserted those 42 and updated the 1,320 that gained a month, leaving 496 alone.
+**Result:** In autocommit, a load that fails on its second batch keeps the first (1,858 rows), and running it again fails on them; in one transaction the error aborts everything, even a `SELECT`, and `ROLLBACK` leaves nothing behind, so the fixed file can simply be run again, once or twice, for the same 1,959 rows. A savepoint keeps the first batch and lets the transaction go on. MVCC is visible in `xmin`: the whole lab was written by one transaction, and an `UPDATE` writes a new version under your own transaction's id. An `UPDATE` holds `RowExclusiveLock`, an `ALTER TABLE` `AccessExclusiveLock`; in two sessions, a plain reader didn't wait for a writer, a second writer did, and repeatable read refused to update a row changed since its snapshot. `ON CONFLICT` made the feed re-runnable: `DO NOTHING` added the 42 missing records, and `DO UPDATE … WHERE … IS DISTINCT FROM` inserted those 42 and updated the 1,320 that gained a month, leaving 496 alone.
 
 **Exercise:** The feed grows to a second animal, the jaguar (species 51). Starting from `d4-feed`'s table, write one statement that brings `sightings` up to date with every record of the devil and the jaguar that has a year: new records inserted, month and country updated where they changed, other rows left alone. Log what it did in a table `sightings_runs (run, inserted, updated)`, run it twice, and show the log. The second run must change nothing.
 
@@ -3796,17 +3939,17 @@ run | inserted | updated | sightings_after
 
 **Concept:** A database server decides who may do what with **roles** and **privileges**:
 - **Roles.** PostgreSQL has one kind of account, the role. A role with the `LOGIN` attribute is what other systems call a user; one without it is a group. Roles belong to the whole server (the cluster), not to one database: a role made while you work in `learn` exists in every database there, and outlives `learn_curriculum`. Other attributes say what a role may do beyond the objects it's granted: `SUPERUSER` (everything, every check skipped), `CREATEDB`, `CREATEROLE`, `BYPASSRLS`.
-- **Membership.** `GRANT learn_reporting TO learn_powerbi` makes one role a member of another. A member uses the group's privileges directly (`INHERIT`, the default) and may switch to it with `SET ROLE`. So privileges go to a group, and each person or program gets a login that is a member: adding a dashboard is one `GRANT`, and removing it touches nothing else.
+- **Membership.** `GRANT learn_reporting TO learn_powerbi` makes one role a member of another. A member uses the group's privileges directly (`INHERIT`) and may switch to it with `SET ROLE` (`SET`). Both are on by default, and since PostgreSQL 16 both are options of each grant: `GRANT learn_reporting TO learn_powerbi WITH INHERIT FALSE` makes a member that has the group's privileges only after `SET ROLE`, and `WITH SET FALSE` one that uses them but can never act as the group. So privileges go to a group, and each person or program gets a login that is a member: adding a dashboard is one `GRANT`, and removing it touches nothing else.
 - **Owners.** Every table, schema and function has an owner, the role that made it (or that `ALTER … OWNER TO` names). The owner can do anything to it, including drop it and grant on it; everyone else gets only what is granted. You own the lab: you loaded `learn_curriculum`.
 - **Privileges** are granted per object, and a reader needs one at every level: `CONNECT` on the database, `USAGE` on the schema (to look up names in it), then `SELECT` on each table. Writing is `INSERT`, `UPDATE`, `DELETE` and `TRUNCATE`; making tables is `CREATE` on the schema. `GRANT SELECT (id, slug) ON species` grants columns only. `REVOKE` takes a privilege back.
-- **PUBLIC** is every role, present and future. By default PUBLIC may connect to a database and make temporary tables in it, use (but since PostgreSQL 15 not create in) schema `public`, and run every function. So a new role can already connect and call PostGIS; to keep it out of a database, revoke `CONNECT` from PUBLIC on that database and grant it to the roles that need it.
+- **PUBLIC** is every role, present and future. By default PUBLIC may connect to a database and make temporary tables in it, use (but since PostgreSQL 15 not create in) schema `public`, and run every function. So a new role can already connect and call PostGIS; to keep it out of a database, revoke `CONNECT` from PUBLIC on that database and grant it to the roles that need it. These are the defaults of a new database, not facts about yours: a database upgraded from PostgreSQL 14 or older keeps PUBLIC's `CREATE` on `public`, and an administrator may have changed any of them. Read the actual privileges (`\dn+`, `\l`, or `has_schema_privilege('public', 'public', 'CREATE')`) instead of inferring them from the version.
 - **Schemas** are folders of tables, views and functions inside one database. They group objects by purpose and by who may touch them: the lab in `learn_curriculum`, your own work in a schema of yours (a reload replaces `learn_curriculum`, §3.2), reports in a third. The `search_path` (§0) is the list of schemas a plain table name is looked up in. Anyone who can create objects in a schema on your `search_path` can put a table or function there that shadows one you meant; that is why PostgreSQL 15 stopped letting PUBLIC create in `public`.
 - **Default privileges.** `GRANT SELECT ON ALL TABLES IN SCHEMA s` grants on the tables that exist now; a table made tomorrow is covered by nothing. `ALTER DEFAULT PRIVILEGES FOR ROLE maker IN SCHEMA s GRANT SELECT ON TABLES TO reader` records a grant that PostgreSQL adds to every table `maker` creates in `s` from then on. Only tables made by that role: the defaults belong to the creator, not to the schema.
 - **Least privilege:** each role gets exactly what its job needs. A reporting tool reads; it doesn't write, make tables, or see schemas outside its job. If its password leaks, that is all the leak gives away.
 - **Removing a role.** `DROP ROLE` refuses while anything depends on the role: objects it owns, privileges granted to it, default privileges, policies. `DROP OWNED BY r` drops what `r` owns in the current database and revokes everything granted to it there; `REASSIGN OWNED BY r TO other` hands its objects over instead. Both work on one database at a time, so on a server where the role has privileges in several, run it in each.
 - **Row-level security** (RLS) filters rows per role. `ALTER TABLE t ENABLE ROW LEVEL SECURITY`, then a **policy**, `CREATE POLICY name ON t FOR SELECT TO role USING (condition)`, adds the condition to every query that role runs on `t`, so it sees only matching rows, with no view or application code to forget. Once RLS is on, a role with no policy for a command sees no rows at all (default deny). `USING` filters the rows a command reads or changes; `WITH CHECK` tests new rows (`INSERT`, `UPDATE`). Policies for the same command are combined with `OR`, unless created `AS RESTRICTIVE` (`AND`). The table's owner, superusers and `BYPASSRLS` roles skip the policies; `FORCE ROW LEVEL SECURITY` applies them to the owner too.
 
-How to look: in psql, `\du` lists roles and memberships, `\dn+` schemas with their privileges, `\dp` tables' privileges and policies, `\ddp` default privileges. In SQL, `has_table_privilege(role, table, privilege)` and its siblings (`has_schema_privilege`, `has_database_privilege`, `has_function_privilege`) answer for any role, and `information_schema.role_table_grants` lists table grants.
+How to look: in psql, `\du` lists roles and their attributes, `\drg` (psql 16+) memberships with their options, `\dn+` schemas with their privileges, `\dp` tables' privileges and policies, `\ddp` default privileges. In SQL, `has_table_privilege(role, table, privilege)` and its siblings (`has_schema_privilege`, `has_database_privilege`, `has_function_privilege`) answer for any role, and `information_schema.role_table_grants` lists table grants.
 
 These labs create roles, so they need the CREATEROLE privilege. The `postgres` superuser has it. On your own install, as another user, run once as the superuser: `ALTER ROLE <you> CREATEROLE;` and, on PostgreSQL 16 and later, `ALTER ROLE <you> SET createrole_self_grant = 'set, inherit';`, then reconnect. Since PostgreSQL 16, a non-superuser who creates a role may administer it but not act as it: without the second setting, the labs' `SET ROLE`, `ALTER DEFAULT PRIVILEGES FOR ROLE` and `DROP OWNED BY` are refused. (Tested on PostgreSQL 16 as a login with only those two settings.)
 
@@ -3882,17 +4025,17 @@ ROLLBACK;
 ```
 
 ```text
--- result: d5-privileges · 13 rows · sha256 4550419dc70c
+-- result: d5-privileges · 13 rows · sha256 18b775de531d
 object | privilege | allowed
-this database | CONNECT | true
+this database | CONNECT | false
 this database | CREATE | false
-this database | TEMPORARY | true
+this database | TEMPORARY | false
 schema learn_curriculum | CREATE | false
 schema learn_curriculum | USAGE | true
 … 8 more rows
 ```
 
-The two grants show as `SELECT` on the table and `USAGE` on `learn_curriculum`. Everything else that is true comes from PUBLIC: connecting, temporary tables, `USAGE` on `public` and every function. That is harmless for reading, but "nothing else" also means other databases on the server: there, revoke `CONNECT` from PUBLIC. As the database's owner, on a server you run (the tests never change a database's privileges, so this block isn't run here; `learn` is your lab database):
+The two grants show as `SELECT` on the table and `USAGE` on `learn_curriculum`. The other `true`s come from PUBLIC: `USAGE` on `public` and every function. The database rows are this server's answer, read from its ACLs: critwire's test database grants `CONNECT` and `TEMPORARY` only to named roles, so the role has neither. In a new database of yours PUBLIC has both, and the same block shows `true` for them; likewise the `false` for `CREATE` on `public` holds only where PUBLIC's `CREATE` is gone (a new database since PostgreSQL 15, or revoked by hand). So run the block on the server that matters instead of reasoning from the defaults. PUBLIC's privileges are harmless for reading, but "nothing else" also means other databases on the server: there, revoke `CONNECT` from PUBLIC, as critwire's test database does. As the database's owner, on a server you run (the tests never change a database's privileges, so this block isn't run here; `learn` is your lab database):
 
 ```sql
 -- q: d5-database
@@ -4034,7 +4177,7 @@ learn_no_policy | 0 | 0 | 0
 
 The same query, `count(*) FROM occurrences`, gives each role a different answer, and none of them asked for a country. You, the owner, skip the policies and see every record. The role with `SELECT` and no policy sees nothing: with RLS on, no policy means no rows. `DROP OWNED BY` dropped both policies, since each named only its role. A policy can also read a table, `USING (country_code IN (SELECT country_code FROM partner_countries WHERE role_name = current_user))`, so one policy serves every partner; index the columns it filters on, because it runs inside every query.
 
-**Result:** A group role with `USAGE` on one schema and `SELECT` on its tables, and a login that is its member, reads the 40,395 records and is refused writing and making tables. Its other abilities come from PUBLIC (connect, temporary tables, `public`, functions), which a server you run can revoke per database. `GRANT … ON ALL TABLES` covers only tables that exist; default privileges cover the tables a named role makes later. `DROP ROLE` fails while the role holds privileges, and `DROP OWNED BY` clears them. With row-level security, the Australian partner saw 4,636 records, the Brazilian 5,033, a role without a policy none, and the owner all of them.
+**Result:** A group role with `USAGE` on one schema and `SELECT` on its tables, and a login that is its member, reads the 40,395 records and is refused writing and making tables. Its other abilities come from PUBLIC (`public` and functions, plus connecting and temporary tables where the database hasn't revoked them, as critwire's test database has), so read the actual ACLs; a server you run can revoke them per database. `GRANT … ON ALL TABLES` covers only tables that exist; default privileges cover the tables a named role makes later. `DROP ROLE` fails while the role holds privileges, and `DROP OWNED BY` clears them. With row-level security, the Australian partner saw 4,636 records, the Brazilian 5,033, a role without a policy none, and the owner all of them.
 
 **Exercise:** The Tasmanian devil project's dashboard needs a role, `learn_devil_dashboard`, that reads the species list and the devil's records (species 48), and nothing else: no other species' records, no other lab table, no writing. Create it, prove that reading `datasets` and updating a record are refused, and show what it sees in `occurrences` and `species`. Clean up as the labs do.
 
@@ -4090,7 +4233,7 @@ records | species_with_records | species_rows
 - **Facts and dimensions.** A **fact table** holds the events you count or measure, one row each. A **dimension table** holds one way to slice them: the species, the country, the dataset, the year. Each fact row carries a foreign key to every dimension it can be sliced by. Drawn, the fact sits in the middle with its dimensions around it: a **star**.
 - **The grain comes first.** The grain is what one fact row is, said in words before any column is chosen: "one sample record", "one country and one habitat class". Every column must be true at that grain; a table that mixes two grains (records and yearly totals in one table) counts things twice. Keep the finest grain you have: a coarser summary can always be built from it, never the reverse.
 - **Measures** are the fact's numbers. **Additive** ones add up across every dimension (records, area in km²). **Semi-additive** ones add up across some (a yearly population count adds across countries, not across years). **Non-additive** ones never add up (ratios, averages, distinct counts): store their parts and compute them in the report. A record fact's measure is the row itself: each row counts one, `count(*)`.
-- **Dimensions are wide and flat**: everything you'd filter or group by, as readable text, with a hierarchy's levels as columns side by side (class, order, family, genus). That repeats values on purpose, the denormalizing d2 named: safe here because the star is rebuilt from the normalized tables on every build and never edited.
+- **Dimensions are wide and flat**: everything you'd filter or group by, as readable text, with a hierarchy's levels as columns side by side (class, order, family, genus). That repeats values on purpose, the denormalizing d2 named: safe here because every critwire build rebuilds the star from the lab's normalized tables and nobody edits it.
 - **Star or snowflake.** A **snowflake** normalizes the dimensions back into chains (species → genus → family → order → class, as `taxa` does). It stores each name once, but every report walks the chain and every reporting tool has to be taught it. A star needs one join per dimension. Snowflake a dimension only when it is huge or one level is shared by several dimensions.
 - **Keys.** A dimension has a primary key; the fact's foreign keys point at it; the fact's own primary key is its grain (`record_id`; `species_id, country_code`). Warehouses usually give dimensions **surrogate keys**, integers the load makes up (d1), so that one species can have several versions (type 2, below) and a source system's codes can change underneath. This star uses critwire's ids, already surrogates, and natural keys an authority keeps stable (ISO country codes, GBIF dataset keys).
 - **Unknown members.** A fact's foreign key is never NULL: an inner join drops the row, and a report tool shows a blank that no filter catches. Instead the dimension gets one row that means "unknown" (`ZZ`, year `-1`), and the load maps a missing value to it in exactly one place. Then the totals agree whichever dimension you slice by. When "unknown" and "doesn't apply" both occur, give each its own member.
@@ -4299,7 +4442,7 @@ classes | level1_classes
 75 | 13
 ```
 
-`fact_country_habitat`: the grain is **one country and one habitat class**, with a measure that adds up across classes, `est_area_km2`.
+`fact_country_habitat`: the grain is **one country and one habitat class**, with a measure that adds up across classes, `est_area_km2`. It shares only `dim_country` with the other facts; it has no species.
 
 ```sql
 -- q: d6-star-fact-country-habitat
@@ -4501,10 +4644,10 @@ Temminck's Ground Pangolin | 9 | 1930
 
 All 9 records, back to 1930, now report under the new name, and nothing remembers the old one. For a correction that is what you want. In critwire's build the dimension is rebuilt from `species` each time, so the correction belongs in the source, and the star picks it up.
 
-5. Type 2: keep history. Older lists, such as Mammal Species of the World (2005), put all eight pangolins in genus *Manis*; the African ground pangolins have been *Smutsia* in general use since a 2018 study of the pangolins' family tree (Gaubert et al., Journal of Heredity), and critwire uses *Smutsia*. To report records under the name in use when each was made, the dimension keeps both versions. In this lab, version 1 is valid to 2017 and version 2 from 2018 (by year, since a record's date here is its year); a record with no year gets the current version:
+5. Type 2: keep history. Older lists, such as Mammal Species of the World (2005), put all eight pangolins in genus *Manis*; the African ground pangolins have been *Smutsia* in general use since a 2018 study of the pangolins' family tree (Gaubert et al., Journal of Heredity), and critwire uses *Smutsia*. To report records under the name in use when each was made, the dimension keeps both versions, each valid for a range of years, both ends included (`0` and `9999` stand for "always" and "until further notice"). In this lab, version 1 is valid to 2017 and version 2 from 2018 (by year, since a record's date here is its year); a record with no year gets the current version. The 2018 boundary is a teaching convention, not the day the name changed: a study is published, then each checklist, museum and portal adopts it when it chooses, so a real dimension takes its dates from the list it follows. First the versions, and a check before anything is loaded:
 
 ```sql
--- q: d6-scd2
+-- q: d6-scd2-versions
 -- status: ran
 -- engine: postgis
 -- after: d6-star-dim-species, d6-star-dim-country, d6-star-dim-dataset, d6-star-dim-year, d6-star-fact-records
@@ -4518,18 +4661,51 @@ CREATE TABLE dim_species_history (
   is_current      BOOLEAN NOT NULL,
   UNIQUE (species_id, valid_from)
 );
+CREATE UNIQUE INDEX ON dim_species_history (species_id) WHERE is_current;
 INSERT INTO dim_species_history (species_id, scientific_name, genus, valid_from, valid_to, is_current)
 SELECT species_id, scientific_name, genus, 0, 9999, true FROM dim_species;
 UPDATE dim_species_history SET valid_from = 2018 WHERE species_id IN (55, 63);
 INSERT INTO dim_species_history (species_id, scientific_name, genus, valid_from, valid_to, is_current)
 VALUES (55, 'Manis gigantea', 'Manis', 0, 2017, false),
        (63, 'Manis temminckii', 'Manis', 0, 2017, false);
+SELECT
+  (SELECT count(*)
+   FROM (SELECT f.record_id
+         FROM fact_records AS f
+         LEFT JOIN dim_species_history AS h
+           ON h.species_id = f.species_id
+          AND CASE WHEN f.year = -1 THEN h.is_current ELSE f.year BETWEEN h.valid_from AND h.valid_to END
+         GROUP BY f.record_id
+         HAVING count(h.species_key) <> 1) AS wrong) AS records_without_one_version,
+  (SELECT count(*)
+   FROM (SELECT species_id
+         FROM dim_species_history
+         GROUP BY species_id
+         HAVING count(*) FILTER (WHERE is_current) <> 1) AS wrong) AS species_without_one_current;
+```
+
+```text
+-- result: d6-scd2-versions · 1 row · sha256 acb944054e01
+records_without_one_version | species_without_one_current
+0 | 0
+```
+
+Both counts must be 0 before the load. The first applies the load's own rule (the `CASE` below) to every record and counts those that match no version, a gap between one version's `valid_to` and the next one's `valid_from`, or more than one, an overlap: a gap drops the record from a report by version, an overlap counts it twice. `UNIQUE (species_id, valid_from)` stops two versions starting in the same year, not an overlap. The partial unique index allows **at most one** current row per species; it can't require one, since a species whose versions were all closed has none. The second count catches that, so together they prove **exactly one**.
+
+Then the load: each record gets the key of the version in force in its year, and once every record has one, `species_key` becomes `NOT NULL`, so no record can later be left without a version:
+
+```sql
+-- q: d6-scd2
+-- status: ran
+-- engine: postgis
+-- after: d6-star-dim-species, d6-star-dim-country, d6-star-dim-dataset, d6-star-dim-year, d6-star-fact-records, d6-scd2-versions
 ALTER TABLE fact_records ADD COLUMN species_key INTEGER REFERENCES dim_species_history (species_key);
 UPDATE fact_records AS f SET species_key = h.species_key
 FROM dim_species_history AS h
 WHERE h.species_id = f.species_id
   AND CASE WHEN f.year = -1 THEN h.is_current ELSE f.year BETWEEN h.valid_from AND h.valid_to END;
-SELECT f.species_id, version.scientific_name AS filed_then, current_version.scientific_name AS name_now,
+ALTER TABLE fact_records ALTER COLUMN species_key SET NOT NULL;
+SELECT f.species_id, version.scientific_name AS name_then, current_version.scientific_name AS name_now,
        count(*) AS records
 FROM fact_records AS f
 JOIN dim_species_history AS version ON version.species_key = f.species_key
@@ -4537,19 +4713,21 @@ JOIN dim_species_history AS current_version
   ON current_version.species_id = f.species_id AND current_version.is_current
 WHERE f.species_id IN (55, 63)
 GROUP BY f.species_id, version.scientific_name, current_version.scientific_name
-ORDER BY f.species_id, filed_then;
+ORDER BY f.species_id, name_then;
 ```
 
 ```text
--- result: d6-scd2 · 4 rows · sha256 ffa4867a086c
-species_id | filed_then | name_now | records
+-- result: d6-scd2 · 4 rows · sha256 68ebdb65533e
+species_id | name_then | name_now | records
 55 | Manis gigantea | Smutsia gigantea | 6
 55 | Smutsia gigantea | Smutsia gigantea | 4
 63 | Manis temminckii | Smutsia temminckii | 7
 63 | Smutsia temminckii | Smutsia temminckii | 2
 ```
 
-Grouped by the fact's `species_key`, 13 of the 19 pangolin records report as *Manis*, "as it was"; grouped through the current version, all 19 are *Smutsia*, "as it is". The fact holds the version key, set once when the record is loaded, so the lookup by date runs at load time, never in a report. Every version of a species keeps its `species_id`, so a report can still ask about the animal across versions. `ALTER TABLE … ADD COLUMN` and the `UPDATE` stand in for that load here; a real build sets `species_key` in the `INSERT`. Before you trust a type 2 dimension, check that versions don't overlap and leave no gaps, and that each species has exactly one current row; a partial unique index, `CREATE UNIQUE INDEX ON dim_species_history (species_id) WHERE is_current`, enforces the last.
+Grouped by the fact's `species_key`, 13 of the 19 pangolin records report as *Manis*, "as it was"; grouped through the current version, all 19 are *Smutsia*, "as it is". The fact holds the version key, set once when the record is loaded, so the lookup by date runs at load time, never in a report. Every version of a species keeps its `species_id`, so a report can still ask about the animal across versions. `ALTER TABLE … ADD COLUMN` and the `UPDATE` stand in for that load here; a real build sets `species_key` in the `INSERT` and declares it `NOT NULL` from the start.
+
+Which date picks the version? Here, the year the animal was seen, so "as it was" means the name in use when it was seen. That is not the name the record was filed under: an animal seen in 2010 and identified, or re-identified, in 2020 is *Smutsia* in its source. Occurrence data keep the two times apart (Darwin Core's `eventDate` and `dateIdentified`); the sample has only the first, so this lab keys versions by observation year. Decide which question a report answers, the name when the animal was seen or the name the record was given, and key the versions by that date.
 
 6. Export. In DuckDB a table becomes a file with one `COPY`; it runs here in the browser, which has the same `countries` table:
 
@@ -4571,7 +4749,7 @@ rows | first_code | last_code
 
 critwire's build exports every star table this way, `COPY (SELECT * FROM <table> ORDER BY <primary key>) TO '<table>.csv' (FORMAT csv, HEADER)`, and writes `manifest.json` beside the files (§A.3). In PostgreSQL, psql's `\copy` does the same from your own computer, `\copy (SELECT * FROM dim_country ORDER BY country_code) TO 'dim_country.csv' WITH (FORMAT csv, HEADER)`; plain `COPY … TO 'file'` writes on the server and needs a server-file privilege. Read the files back with `all_varchar` (or explicit types) so a code like Namibia's `NA` stays text.
 
-**Result:** The record fact's grain is one sample record: 40,395 rows, one per row of `occurrences`, sliced by species, country, dataset and year, each one join away. The star and the snowflake give the same counts by class (Amphibia 4,776, Mammalia 31,905, Reptilia 3,714); only the joins differ. The two facts share `dim_country`, so habitat area and records meet by country: joined to each other, Trinidad and Tobago's 2 records became 44. A record with no country goes to `ZZ` and one with no year to `-1`, so every total still adds up. Type 1 restated all 9 of Temminck's pangolin's records under the corrected name; type 2 kept 13 of the 19 pangolin records under *Manis* "as it was", while "as it is" shows all 19 under *Smutsia*.
+**Result:** The record fact's grain is one sample record: 40,395 rows, one per row of `occurrences`, sliced by species, country, dataset and year, each one join away. The star and the snowflake give the same counts by class (Amphibia 4,776, Mammalia 31,905, Reptilia 3,714); only the joins differ. The two facts share `dim_country`, so habitat area and records meet by country: joined to each other, Trinidad and Tobago's 2 records became 44. A record with no country goes to `ZZ` and one with no year to `-1`, so every total still adds up. Type 1 restated all 9 of Temminck's pangolin's records under the corrected name; type 2, after checking that every record matched exactly one version and every species had exactly one current row, kept 13 of the 19 pangolin records under *Manis* "as it was", while "as it is" shows all 19 under *Smutsia*.
 
 **Exercise:** Big facts make slow dashboards, so warehouses add **aggregate facts**: a coarser grain, built from the fine one. In the browser (DuckDB), build `fact_species_decade` at the grain one species and one decade, with a measure `records`, and a dimension `dim_decade` (the decades that occur, labelled like `1990s`, plus an unknown member). Use `species` as the species dimension. Then prove it reconciles: its records must add up to the records in `occurrences`, and say how many are in the unknown decade.
 
@@ -4617,7 +4795,7 @@ fact_rows | records | reconciles | unknown_decade
 **Check:** `fact_species_decade` has 645 rows, its records add up to 40,395 (`reconciles` is `true`), and 2,289 are in the unknown decade. If the total is short, a NULL year was grouped away or dropped by a join; if the `INSERT` fails on the primary key, two rows share a species and decade, so the `GROUP BY` and the key disagree about the grain.
 
 **Dialects:**
-- **PostgreSQL:** nothing star-specific: plain tables, foreign keys (which some warehouses drop on facts for load speed and check in the load instead), identity columns for surrogate keys, `MERGE` (15+) for type 2 loads, a partial unique index for "one current version", `\copy` for files on your computer.
+- **PostgreSQL:** nothing star-specific: plain tables, foreign keys (which some warehouses drop on facts for load speed and check in the load instead), identity columns for surrogate keys, `MERGE` (15+) for type 2 loads, a partial unique index for "at most one current version", an exclusion constraint for "no overlapping versions" (`EXCLUDE USING gist (species_id WITH =, int4range(valid_from, valid_to, '[]') WITH &&)`, with the `btree_gist` extension), `\copy` for files on your computer.
 - **DuckDB:** foreign keys only in `CREATE TABLE`, no identity columns (a `SEQUENCE` with `DEFAULT nextval(…)` instead), and `COPY … TO` writes CSV or Parquet directly; column storage makes wide dimensions and large facts quick to scan, which is why critwire's build runs the star there.
 - **SQL Server:** `IDENTITY` surrogate keys, clustered columnstore indexes for large facts, `MERGE` for type 2 loads, and temporal tables (2016+) that keep a row's history automatically, by when it was changed rather than when it was true.
 
@@ -7088,7 +7266,7 @@ LoadStar("fact_records", {
 **Goal:** turn eight tables into one model that filters correctly. In Model view, each fact gets a relationship to each of its dimensions:
 - **Cardinality many-to-one** (`*:1`): many fact rows point at one dimension row, by the key d6 declared.
 - **Filter direction single:** a filter flows from the dimension to the fact. Choosing a country in a slicer filters `fact_records` and `fact_country_habitat`, never the other way round. Both directions invite ambiguous paths and slow, surprising totals; keep them for the rare case that needs them.
-- **Conformed dimensions:** `dim_country` and `dim_species` are shared by the facts, so one slicer filters all of them at once (d6).
+- **Conformed dimensions:** `dim_country` is shared by all three facts and `dim_species` by the two species facts (`fact_records`, `fact_species_country`), so a country slicer filters all three at once and a species slicer the two that have a species (d6). The habitat fact has no species.
 - **Facts are never related to each other.** Joining two facts directly multiplies their rows (d6's drill across). Each fact is summed under the shared dimension instead, which is what a model with only fact-to-dimension relationships does.
 - **The factless fact:** `fact_species_country` has no measure column; its measure is a count of its rows (species listed in a country). It answers "where does critwire list the species?", while `fact_records` answers "what was recorded where?", and the two need not agree.
 
@@ -7422,570 +7600,28 @@ The feed's JSON Schema (draft 2020-12), which L5 publishes beside its worked fee
 
 ## 6. ERDs
 
-Three diagrams, one per database a learner meets: the browser's tables (schema v2), the PostGIS lab, and the star that Power BI reads. Each is a Mermaid source under `plans/`, shown here as it is in that file, and each is checked against the database it describes on every run of the tests (§0): a column, key or line in the picture that the database lacks fails, and so does the reverse. The data dictionary under each diagram says the same in words, with where each column comes from; its column, type, key and meaning are the diagram's own, and a test holds them to it.
+Three diagrams, one per database a learner meets: the browser's tables (schema v2), the PostGIS lab, and the star that Power BI reads. Each is a Mermaid source under `site/learn/erd/`, the only copy, and each is checked against the database it describes in one place: `schema.mmd` against the browser's catalog in E2E, `lab.mmd` against `learn_curriculum` in `pnpm learn:check`, `star.mmd` against the star's manifest in `pnpm build`. A column, key or line in the picture that the database lacks fails, and so does the reverse. Each has a page (`/learn/schema/`, `/learn/schema/lab/`, `/learn/schema/star/`, §7) with its data dictionary: column, type, key and meaning come from the `.mmd` itself, and each column's source from the build's source map (`scripts/build/learn/erd.ts`); a table with no source fails the build.
 
 How to read the lines: `||` exactly one, `|o` zero or one, `o{` zero or more, `|{` one or more. The side with the crow's foot holds the foreign key. PK is the primary key, FK a foreign key, UK a unique key.
 
-The pictures are drawn offline by Mermaid in a headless browser, as SVG (plain text labels, so it shows inside an `<img>`) and PNG. Each SVG records the sha256 of the source it was drawn from, so a build can refuse a picture older than its source (002 §3): `node scripts/erd.ts plans/004-learn-erd.mmd --name schema`, then `--name lab` and `--name star` for the other two.
+The pictures are drawn offline by Mermaid in a headless browser, as SVG only (plain text labels, so it shows inside an `<img>`), by `pnpm erd`. Each source carries `accTitle:` and `accDescr:`, which become the SVG's `<title>` and `<desc>`. Each SVG records the sha256 of the source it was drawn from, so the build refuses a picture older than its source (002 §3): `site/learn/erd/lab.svg is stale: run pnpm erd`.
 
 ### 6.1 Schema v2: the browser's tables
 
-`plans/004-learn-erd.mmd`. 002's six tables and their lines are unchanged (the check compares them with `plans/002-learn-erd.mmd` and allows no new line between them); v2 adds the lab sample. A record belongs to one species and one dataset. Its country is optional: `country_code_gbif` keeps GBIF's code as delivered, and `country_code` holds it only when it is a row of `countries`, so GBIF's `ZZ` (unknown) and `XZ` (high seas) never break the foreign key. The view `species_taxonomy (species_id, class, order_name, family, genus)` stores nothing and isn't drawn.
+`site/learn/erd/schema.mmd`. 002's six tables and their lines are unchanged: it names `v1.mmd` (002's schema v1, first `plans/002-learn-erd.mmd`) on its `%% extends:` line, and the build compares them and allows no new line between them; v2 adds the lab sample. A record belongs to one species and one dataset. Its country is optional: `country_code_gbif` keeps GBIF's code as delivered, and `country_code` holds it only when it is a row of `countries`, so GBIF's `ZZ` (unknown) and `XZ` (high seas) never break the foreign key. The view `species_taxonomy (species_id, class, order_name, family, genus)` stores nothing and isn't drawn.
 
-```mermaid
-%% critwire Learn: the learners' schema v2 in the browser (plans/004-learn-curriculum.md §4, §6): 002's schema v1, unchanged, plus the lab sample.
-%% extends: 002-learn-erd.mmd
-%% Tables only; the view species_taxonomy is listed beside it.
-%% Keys: PK primary key, FK foreign key, UK unique. Lines: || exactly one, |o or o| zero or one, |{ one or more, o{ zero or more.
-erDiagram
-    taxa {
-        VARCHAR name PK "Agalychnis, Phyllomedusidae, Anura, Amphibia"
-        VARCHAR taxon_rank "class, order, family or genus"
-        VARCHAR parent_name FK "the taxon one rank up; NULL for a class"
-    }
-    species {
-        INTEGER id PK "critwire's own id, never reused"
-        VARCHAR slug UK "red-eyed-tree-frog"
-        VARCHAR scientific_name UK "Agalychnis callidryas"
-        VARCHAR common_name "Red-eyed Tree Frog"
-        VARCHAR genus FK "a taxa row of rank genus"
-        VARCHAR range_status "ok, no-open-records or identity-unsettled"
-        VARCHAR photo_url "NULL when there is no photo"
-        VARCHAR photo_credit "who took the photo"
-        VARCHAR photo_license "CC BY-SA 4.0, CC BY 2.0, CC0, Public domain"
-        VARCHAR photo_page "the photo's Wikimedia Commons page"
-        INTEGER iucn_id UK "IUCN Red List taxon id"
-        BIGINT gbif_id UK "GBIF backbone taxon key"
-        VARCHAR col_id UK "Catalogue of Life id"
-        VARCHAR wikidata_id UK "Wikidata item"
-        INTEGER inaturalist_id UK "iNaturalist taxon id"
-        INTEGER ncbi_id UK "NCBI Taxonomy id"
-    }
-    countries {
-        VARCHAR code PK "ISO 3166-1 alpha-2, plus XK"
-        VARCHAR name UK "Brazil"
-        VARCHAR continent "South America"
-        VARCHAR region "Americas"
-        VARCHAR subregion "South America"
-    }
-    species_countries {
-        INTEGER species_id PK, FK "the animal"
-        VARCHAR country_code PK, FK "recorded there in open records"
-    }
-    sources {
-        VARCHAR name PK "Wikidata, Catalogue of Life, critwire base"
-        VARCHAR license "the license of what critwire took"
-        DATE retrieved "when critwire took it; NULL for critwire base"
-    }
-    species_sources {
-        INTEGER species_id PK, FK "the animal"
-        VARCHAR field PK "a path in the record, such as ids.col"
-        VARCHAR source_name FK "who supplied that field"
-    }
-    datasets {
-        VARCHAR dataset_key PK "GBIF's dataset id"
-        VARCHAR title "the dataset's own title"
-        VARCHAR publisher "the organization that published it"
-        VARCHAR doi "the dataset's DOI; NULL when it has none"
-        VARCHAR license "the license the dataset declares"
-    }
-    occurrences {
-        BIGINT id PK "GBIF's record id"
-        INTEGER species_id FK "the animal recorded"
-        VARCHAR dataset_key FK "the dataset to credit"
-        VARCHAR license "CC0 1.0 or CC BY 4.0, the stricter of record and dataset"
-        VARCHAR basis_of_record "HUMAN_OBSERVATION, PRESERVED_SPECIMEN, ..."
-        DOUBLE longitude "degrees east, WGS 84"
-        DOUBLE latitude "degrees north, WGS 84"
-        DOUBLE coordinate_uncertainty_m "metres; NULL when not given"
-        VARCHAR country_code_gbif "GBIF's code as delivered; ZZ unknown, XZ high seas"
-        VARCHAR country_code FK "that code when it is a countries row, else NULL"
-        INTEGER year "NULL when the record has none"
-        INTEGER month "1 to 12; NULL when the record has none"
-    }
-
-    taxa |o--o{ taxa : "parent of"
-    taxa ||--o{ species : "genus of"
-    species ||--o{ species_countries : "recorded in"
-    countries ||--o{ species_countries : "has records of"
-    species ||--o{ species_sources : "fields from"
-    sources ||--|{ species_sources : "supplies"
-    species ||--o{ occurrences : "recorded as"
-    datasets ||--o{ occurrences : "publishes"
-    countries |o--o{ occurrences : "contains"
-```
-
-Data dictionary, schema v2:
-
-**taxa**
-
-| Column | Type | Key | Meaning | Source |
-|---|---|---|---|---|
-| `name` | VARCHAR | PK | Agalychnis, Phyllomedusidae, Anura, Amphibia | critwire `/v1/species.parquet`: taxonomy from Catalogue of Life, else critwire base |
-| `taxon_rank` | VARCHAR |  | class, order, family or genus | critwire `/v1/species.parquet`: taxonomy from Catalogue of Life, else critwire base |
-| `parent_name` | VARCHAR | FK | the taxon one rank up; NULL for a class | critwire `/v1/species.parquet`: taxonomy from Catalogue of Life, else critwire base |
-
-**species**
-
-| Column | Type | Key | Meaning | Source |
-|---|---|---|---|---|
-| `id` | INTEGER | PK | critwire's own id, never reused | critwire `/v1/species.parquet`; each field's source is in `species_sources` |
-| `slug` | VARCHAR | UK | red-eyed-tree-frog | critwire `/v1/species.parquet`; each field's source is in `species_sources` |
-| `scientific_name` | VARCHAR | UK | Agalychnis callidryas | critwire `/v1/species.parquet`; each field's source is in `species_sources` |
-| `common_name` | VARCHAR |  | Red-eyed Tree Frog | critwire `/v1/species.parquet`; each field's source is in `species_sources` |
-| `genus` | VARCHAR | FK | a taxa row of rank genus | critwire `/v1/species.parquet`; each field's source is in `species_sources` |
-| `range_status` | VARCHAR |  | ok, no-open-records or identity-unsettled | critwire `/v1/species.parquet`; each field's source is in `species_sources` |
-| `photo_url` | VARCHAR |  | NULL when there is no photo | critwire `/v1/species.parquet`; each field's source is in `species_sources` |
-| `photo_credit` | VARCHAR |  | who took the photo | critwire `/v1/species.parquet`; each field's source is in `species_sources` |
-| `photo_license` | VARCHAR |  | CC BY-SA 4.0, CC BY 2.0, CC0, Public domain | critwire `/v1/species.parquet`; each field's source is in `species_sources` |
-| `photo_page` | VARCHAR |  | the photo's Wikimedia Commons page | critwire `/v1/species.parquet`; each field's source is in `species_sources` |
-| `iucn_id` | INTEGER | UK | IUCN Red List taxon id | critwire `/v1/species.parquet`; each field's source is in `species_sources` |
-| `gbif_id` | BIGINT | UK | GBIF backbone taxon key | critwire `/v1/species.parquet`; each field's source is in `species_sources` |
-| `col_id` | VARCHAR | UK | Catalogue of Life id | critwire `/v1/species.parquet`; each field's source is in `species_sources` |
-| `wikidata_id` | VARCHAR | UK | Wikidata item | critwire `/v1/species.parquet`; each field's source is in `species_sources` |
-| `inaturalist_id` | INTEGER | UK | iNaturalist taxon id | critwire `/v1/species.parquet`; each field's source is in `species_sources` |
-| `ncbi_id` | INTEGER | UK | NCBI Taxonomy id | critwire `/v1/species.parquet`; each field's source is in `species_sources` |
-
-**countries**
-
-| Column | Type | Key | Meaning | Source |
-|---|---|---|---|---|
-| `code` | VARCHAR | PK | ISO 3166-1 alpha-2, plus XK | critwire `/v1/countries.parquet` (002 §6) |
-| `name` | VARCHAR | UK | Brazil | critwire `/v1/countries.parquet` (002 §6) |
-| `continent` | VARCHAR |  | South America | critwire `/v1/countries.parquet` (002 §6) |
-| `region` | VARCHAR |  | Americas | critwire `/v1/countries.parquet` (002 §6) |
-| `subregion` | VARCHAR |  | South America | critwire `/v1/countries.parquet` (002 §6) |
-
-**species_countries**
-
-| Column | Type | Key | Meaning | Source |
-|---|---|---|---|---|
-| `species_id` | INTEGER | PK, FK | the animal | critwire `/v1/species.parquet`, `range.countriesWithOpenRecords` (GBIF, CC0 and CC BY records) |
-| `country_code` | VARCHAR | PK, FK | recorded there in open records | critwire `/v1/species.parquet`, `range.countriesWithOpenRecords` (GBIF, CC0 and CC BY records) |
-
-**sources**
-
-| Column | Type | Key | Meaning | Source |
-|---|---|---|---|---|
-| `name` | VARCHAR | PK | Wikidata, Catalogue of Life, critwire base | critwire `/v1/species.parquet`, `sources[]` |
-| `license` | VARCHAR |  | the license of what critwire took | critwire `/v1/species.parquet`, `sources[]` |
-| `retrieved` | DATE |  | when critwire took it; NULL for critwire base | critwire `/v1/species.parquet`, `sources[]` |
-
-**species_sources**
-
-| Column | Type | Key | Meaning | Source |
-|---|---|---|---|---|
-| `species_id` | INTEGER | PK, FK | the animal | critwire `/v1/species.parquet`, `sources[]` |
-| `field` | VARCHAR | PK | a path in the record, such as ids.col | critwire `/v1/species.parquet`, `sources[]` |
-| `source_name` | VARCHAR | FK | who supplied that field | critwire `/v1/species.parquet`, `sources[]` |
-
-**datasets**
-
-| Column | Type | Key | Meaning | Source |
-|---|---|---|---|---|
-| `dataset_key` | VARCHAR | PK | GBIF's dataset id | GBIF registry, the download's datasets (`datasets.csv`) |
-| `title` | VARCHAR |  | the dataset's own title | GBIF registry, the download's datasets (`datasets.csv`) |
-| `publisher` | VARCHAR |  | the organization that published it | GBIF registry, the download's datasets (`datasets.csv`) |
-| `doi` | VARCHAR |  | the dataset's DOI; NULL when it has none | GBIF registry, the download's datasets (`datasets.csv`) |
-| `license` | VARCHAR |  | the license the dataset declares | GBIF registry, the download's datasets (`datasets.csv`) |
-
-**occurrences**
-
-| Column | Type | Key | Meaning | Source |
-|---|---|---|---|---|
-| `id` | BIGINT | PK | GBIF's record id | GBIF download 10.15468/dl.fbpk9w, sampled (§4) |
-| `species_id` | INTEGER | FK | the animal recorded | GBIF download 10.15468/dl.fbpk9w, sampled (§4) |
-| `dataset_key` | VARCHAR | FK | the dataset to credit | GBIF download 10.15468/dl.fbpk9w, sampled (§4) |
-| `license` | VARCHAR |  | CC0 1.0 or CC BY 4.0, the stricter of record and dataset | GBIF record and dataset licenses (§4) |
-| `basis_of_record` | VARCHAR |  | HUMAN_OBSERVATION, PRESERVED_SPECIMEN, ... | GBIF download 10.15468/dl.fbpk9w, sampled (§4) |
-| `longitude` | DOUBLE |  | degrees east, WGS 84 | GBIF download 10.15468/dl.fbpk9w, sampled (§4) |
-| `latitude` | DOUBLE |  | degrees north, WGS 84 | GBIF download 10.15468/dl.fbpk9w, sampled (§4) |
-| `coordinate_uncertainty_m` | DOUBLE |  | metres; NULL when not given | GBIF download 10.15468/dl.fbpk9w, sampled (§4) |
-| `country_code_gbif` | VARCHAR |  | GBIF's code as delivered; ZZ unknown, XZ high seas | GBIF download 10.15468/dl.fbpk9w, sampled (§4) |
-| `country_code` | VARCHAR | FK | that code when it is a countries row, else NULL | `country_code_gbif`, when a `countries` row |
-| `year` | INTEGER |  | NULL when the record has none | GBIF download 10.15468/dl.fbpk9w, sampled (§4) |
-| `month` | INTEGER |  | 1 to 12; NULL when the record has none | GBIF download 10.15468/dl.fbpk9w, sampled (§4) |
 ### 6.2 The lab database (PostGIS)
 
-`plans/004-lab-erd.mmd`, schema `learn_curriculum`. The same keyed tables as schema v2 in PostgreSQL types (`text`, `float8`; GBIF's dataset key is a `uuid`), plus the shapes the GIS modules join to: country outlines, admin-1 areas for nine countries, RESOLVE's biomes and ecoregions, and the habitat map's classes. Every shape is `geometry` in WGS 84 (SRID 4326) with a GiST index; a record's point is a generated column, so it can never disagree with its longitude and latitude. Two lists sit beside the diagram, as comments in the source:
+`site/learn/erd/lab.mmd`, schema `learn_curriculum`. The same keyed tables as schema v2 in PostgreSQL types (`text`, `float8`; GBIF's dataset key is a `uuid`), plus the shapes the GIS modules join to: country outlines, admin-1 areas for nine countries, RESOLVE's biomes and ecoregions, and the habitat map's classes. Every shape is `geometry` in WGS 84 (SRID 4326) with a GiST index; a record's point is a generated column, so it can never disagree with its longitude and latitude. Two lists sit beside the diagram, as comments in the source:
 
 - **Lab-made:** tables the lessons create in the lab (s4's hexagon grids, the smoke check's table, d1's field notes, d3's copy in year order, d4's sightings feed and its run log, the ETL's staging tables, d6's star and its species history). They aren't part of the loaded lab, so they aren't drawn; the check excuses them when a lesson's setup has made them.
 - **Planned:** `occurrence_habitats` (the habitat class at each record) and `habitat_clips` (small clips of the habitat map, as rasters), which build mission L3 adds. They are drawn so the design is whole; the check excuses them while they don't exist, and fails once they do, so the marker can't go stale.
 
-```mermaid
-%% critwire Learn: the lab database, PostGIS schema learn_curriculum (plans/004-learn-curriculum.md §3, §4, §6), in PostgreSQL types.
-%% Tables only; the view species_taxonomy is listed beside it. Shapes are geometry in WGS 84 (SRID 4326), each with a GiST index.
-%% Tables the lessons make in the lab (s4's grids, the smoke check's, the ETL's staging, d6's star): beside the diagram, not in it.
-%% lab-made: s4_cells, tx_smoke, field_notes, occurrences_by_year, sightings, sightings_runs, gbif_staging, occurrences_all, dim_species, dim_country, dim_dataset, dim_year, dim_habitat_class, fact_records, fact_species_country, fact_country_habitat, dim_species_history
-%% Drawn, but built by build mission L3 (the habitat map), so not in the lab yet:
-%% planned: occurrence_habitats, habitat_clips
-%% Keys: PK primary key, FK foreign key, UK unique. Lines: || exactly one, |o or o| zero or one, |{ one or more, o{ zero or more.
-erDiagram
-    taxa {
-        text name PK "Agalychnis, Phyllomedusidae, Anura, Amphibia"
-        text taxon_rank "class, order, family or genus"
-        text parent_name FK "the taxon one rank up; NULL for a class"
-    }
-    species {
-        integer id PK "critwire's own id, never reused"
-        text slug UK "red-eyed-tree-frog"
-        text scientific_name UK "Agalychnis callidryas"
-        text common_name "Red-eyed Tree Frog"
-        text genus FK "a taxa row of rank genus"
-        text range_status "ok, no-open-records or identity-unsettled"
-        text photo_url "NULL when there is no photo"
-        text photo_credit "who took the photo"
-        text photo_license "CC BY-SA 4.0, CC BY 2.0, CC0, Public domain"
-        text photo_page "the photo's Wikimedia Commons page"
-        integer iucn_id UK "IUCN Red List taxon id"
-        bigint gbif_id UK "GBIF backbone taxon key"
-        text col_id UK "Catalogue of Life id"
-        text wikidata_id UK "Wikidata item"
-        integer inaturalist_id UK "iNaturalist taxon id"
-        integer ncbi_id UK "NCBI Taxonomy id"
-    }
-    countries {
-        text code PK "ISO 3166-1 alpha-2, plus XK"
-        text name UK "Brazil"
-        text continent "South America"
-        text region "Americas"
-        text subregion "South America"
-    }
-    species_countries {
-        integer species_id PK, FK "the animal"
-        text country_code PK, FK "recorded there in open records"
-    }
-    sources {
-        text name PK "Wikidata, Catalogue of Life, critwire base"
-        text license "the license of what critwire took"
-        date retrieved "when critwire took it; NULL for critwire base"
-    }
-    species_sources {
-        integer species_id PK, FK "the animal"
-        text field PK "a path in the record, such as ids.col"
-        text source_name FK "who supplied that field"
-    }
-    datasets {
-        uuid dataset_key PK "GBIF's dataset id"
-        text title "the dataset's own title"
-        text publisher "the organization that published it"
-        text doi "the dataset's DOI; NULL when it has none"
-        text license "the license the dataset declares"
-    }
-    occurrences {
-        bigint id PK "GBIF's record id"
-        integer species_id FK "the animal recorded"
-        uuid dataset_key FK "the dataset to credit"
-        text license "CC0 1.0 or CC BY 4.0, the stricter of record and dataset"
-        text basis_of_record "HUMAN_OBSERVATION, PRESERVED_SPECIMEN, ..."
-        float8 longitude "degrees east, WGS 84"
-        float8 latitude "degrees north, WGS 84"
-        float8 coordinate_uncertainty_m "metres; NULL when not given"
-        text country_code_gbif "GBIF's code as delivered; ZZ unknown, XZ high seas"
-        text country_code FK "that code when it is a countries row, else NULL"
-        integer year "NULL when the record has none"
-        integer month "1 to 12; NULL when the record has none"
-        geometry geom "Point, generated from longitude and latitude"
-    }
-    country_shapes {
-        text country_code PK, FK "the country"
-        geometry geom "MultiPolygon, Natural Earth admin-0 1:50m"
-    }
-    admin1_shapes {
-        text adm1_code PK "Natural Earth's code, such as AUS-2660"
-        text country_code FK "the country it is part of"
-        text name "Tasmania"
-        geometry geom "MultiPolygon, Natural Earth admin-1 1:50m"
-    }
-    biomes {
-        integer biome_id PK "RESOLVE biome number, 1 to 14"
-        text name "Tropical & Subtropical Moist Broadleaf Forests"
-    }
-    ecoregions {
-        integer eco_id PK "RESOLVE ecoregion id"
-        integer biome_id FK "its biome; NULL for Rock and Ice"
-        text name "Tasmanian temperate forests"
-        text realm "Australasia; NULL for Rock and Ice"
-        geometry geom "MultiPolygon, simplified to 0.05 degrees"
-    }
-    habitat_classes {
-        integer code PK "Jung v004 class, such as 105"
-        integer level1_code FK "its level-1 class, such as 100; NULL for level 1"
-        text name "Forest – Subtropical/tropical dry"
-    }
-    country_habitats {
-        text country_code PK, FK "the country"
-        integer habitat_code PK, FK "the habitat class"
-        numeric est_area_km2 "estimated from the map, never measured"
-    }
-    occurrence_habitats {
-        bigint occurrence_id PK, FK "the record"
-        integer habitat_code FK "class of its 1 km cell; NULL if none"
-    }
-    habitat_clips {
-        text clip PK "cr or tas"
-        raster rast "a clip of the habitat map, stored in the database"
-    }
-
-    taxa |o--o{ taxa : "parent of"
-    taxa ||--o{ species : "genus of"
-    species ||--o{ species_countries : "recorded in"
-    countries ||--o{ species_countries : "has records of"
-    species ||--o{ species_sources : "fields from"
-    sources ||--|{ species_sources : "supplies"
-    species ||--o{ occurrences : "recorded as"
-    datasets ||--o{ occurrences : "publishes"
-    countries |o--o{ occurrences : "contains"
-    countries ||--o| country_shapes : "outlined by"
-    countries ||--o{ admin1_shapes : "divided into"
-    biomes |o--o{ ecoregions : "groups"
-    habitat_classes |o--o{ habitat_classes : "level 1 of"
-    countries ||--o{ country_habitats : "estimated to hold"
-    habitat_classes ||--o{ country_habitats : "estimated in"
-    occurrences ||--o| occurrence_habitats : "habitat at"
-    habitat_classes |o--o{ occurrence_habitats : "class at"
-```
-
-Data dictionary, the lab: the tables schema v2 lacks, and `occurrences` for its point. The other seven are as in §6.1, in PostgreSQL types.
-
-**occurrences**
-
-| Column | Type | Key | Meaning | Source |
-|---|---|---|---|---|
-| `id` | bigint | PK | GBIF's record id | GBIF download 10.15468/dl.fbpk9w, sampled (§4) |
-| `species_id` | integer | FK | the animal recorded | GBIF download 10.15468/dl.fbpk9w, sampled (§4) |
-| `dataset_key` | uuid | FK | the dataset to credit | GBIF download 10.15468/dl.fbpk9w, sampled (§4) |
-| `license` | text |  | CC0 1.0 or CC BY 4.0, the stricter of record and dataset | GBIF record and dataset licenses (§4) |
-| `basis_of_record` | text |  | HUMAN_OBSERVATION, PRESERVED_SPECIMEN, ... | GBIF download 10.15468/dl.fbpk9w, sampled (§4) |
-| `longitude` | float8 |  | degrees east, WGS 84 | GBIF download 10.15468/dl.fbpk9w, sampled (§4) |
-| `latitude` | float8 |  | degrees north, WGS 84 | GBIF download 10.15468/dl.fbpk9w, sampled (§4) |
-| `coordinate_uncertainty_m` | float8 |  | metres, at least 0 and finite; NULL when not given | GBIF download 10.15468/dl.fbpk9w, sampled (§4) |
-| `country_code_gbif` | text |  | GBIF's code as delivered; ZZ unknown, XZ high seas | GBIF download 10.15468/dl.fbpk9w, sampled (§4) |
-| `country_code` | text | FK | that code when it is a countries row, else NULL | `country_code_gbif`, when a `countries` row |
-| `year` | integer |  | above 0; NULL when the record has none | GBIF download 10.15468/dl.fbpk9w, sampled (§4) |
-| `month` | integer |  | 1 to 12; NULL when the record has none | GBIF download 10.15468/dl.fbpk9w, sampled (§4) |
-| `geom` | geometry |  | Point, generated from longitude and latitude | generated from `longitude`, `latitude` |
-
-**country_shapes**
-
-| Column | Type | Key | Meaning | Source |
-|---|---|---|---|---|
-| `country_code` | text | PK, FK | the country | Natural Earth admin-0 1:50m (public domain) |
-| `geom` | geometry |  | MultiPolygon, Natural Earth admin-0 1:50m | Natural Earth admin-0 1:50m (public domain) |
-
-**admin1_shapes**
-
-| Column | Type | Key | Meaning | Source |
-|---|---|---|---|---|
-| `adm1_code` | text | PK | Natural Earth's code, such as AUS-2660 | Natural Earth admin-1 1:50m (public domain) |
-| `country_code` | text | FK | the country it is part of | Natural Earth admin-1 1:50m (public domain) |
-| `name` | text |  | Tasmania | Natural Earth admin-1 1:50m (public domain) |
-| `geom` | geometry |  | MultiPolygon, Natural Earth admin-1 1:50m | Natural Earth admin-1 1:50m (public domain) |
-
-**biomes**
-
-| Column | Type | Key | Meaning | Source |
-|---|---|---|---|---|
-| `biome_id` | integer | PK | RESOLVE biome number, 1 to 14 | RESOLVE Ecoregions 2017 (CC BY 4.0) |
-| `name` | text |  | Tropical & Subtropical Moist Broadleaf Forests | RESOLVE Ecoregions 2017 (CC BY 4.0) |
-
-**ecoregions**
-
-| Column | Type | Key | Meaning | Source |
-|---|---|---|---|---|
-| `eco_id` | integer | PK | RESOLVE ecoregion id | RESOLVE Ecoregions 2017 (CC BY 4.0) |
-| `biome_id` | integer | FK | its biome; NULL for Rock and Ice | RESOLVE Ecoregions 2017 (CC BY 4.0) |
-| `name` | text |  | Tasmanian temperate forests | RESOLVE Ecoregions 2017 (CC BY 4.0) |
-| `realm` | text |  | Australasia; NULL for Rock and Ice | RESOLVE Ecoregions 2017 (CC BY 4.0) |
-| `geom` | geometry |  | MultiPolygon, simplified to 0.05 degrees | RESOLVE Ecoregions 2017 (CC BY 4.0) |
-
-**habitat_classes**
-
-| Column | Type | Key | Meaning | Source |
-|---|---|---|---|---|
-| `code` | integer | PK | Jung v004 class, such as 105 | Jung et al. 2020, v004 legend (CC BY 4.0) |
-| `level1_code` | integer | FK | its level-1 class, such as 100; NULL for level 1 | Jung et al. 2020, v004 legend (CC BY 4.0) |
-| `name` | text |  | Forest – Subtropical/tropical dry | Jung et al. 2020, v004 legend (CC BY 4.0) |
-
-**country_habitats**
-
-| Column | Type | Key | Meaning | Source |
-|---|---|---|---|---|
-| `country_code` | text | PK, FK | the country | stand-in from Jung et al. 2020 (CC BY 4.0) until L3 |
-| `habitat_code` | integer | PK, FK | the habitat class | stand-in from Jung et al. 2020 (CC BY 4.0) until L3 |
-| `est_area_km2` | numeric |  | estimated from the map, never measured; at least 0 | stand-in from Jung et al. 2020 (CC BY 4.0) until L3 |
-
-**occurrence_habitats**
-
-| Column | Type | Key | Meaning | Source |
-|---|---|---|---|---|
-| `occurrence_id` | bigint | PK, FK | the record | L3: Jung et al. 2020, v004 (CC BY 4.0) |
-| `habitat_code` | integer | FK | class of its 1 km cell; NULL if none | L3: Jung et al. 2020, v004 (CC BY 4.0) |
-
-**habitat_clips**
-
-| Column | Type | Key | Meaning | Source |
-|---|---|---|---|---|
-| `clip` | text | PK | cr or tas | L3: Jung et al. 2020, v004 (CC BY 4.0) |
-| `rast` | raster |  | a clip of the habitat map, stored in the database | L3: Jung et al. 2020, v004 (CC BY 4.0) |
 ### 6.3 The Power BI star
 
-`plans/004-star-erd.mmd`: the eight CSV files `star.sql` writes (d6, §A.3), checked against the star's `manifest.json`. `fact_records` holds one row per sample record; `fact_species_country` has no measure (a factless fact: a row says a species has open records in a country); `fact_country_habitat` is the habitat stand-in. `dim_species` and `dim_country` are shared by the facts (conformed dimensions), so one slicer filters them all. Every fact foreign key is filled: a record with no year points at `dim_year`'s `-1` member, one with no country at `dim_country`'s `ZZ`, so every line is "exactly one" on the dimension's side.
+`site/learn/erd/star.mmd`: the eight CSV files `star.sql` writes (d6, §A.3), checked against the star's `manifest.json`. `fact_records` holds one row per sample record; `fact_species_country` has no measure (a factless fact: a row says a species has open records in a country); `fact_country_habitat` is the habitat stand-in. `dim_species` is shared by the two species facts (`fact_records`, `fact_species_country`), not by the habitat fact, which has no species; `dim_country` by all three. A shared dimension is conformed: one slicer on it filters every fact that uses it. Every fact foreign key is filled: a record with no year points at `dim_year`'s `-1` member, one with no country at `dim_country`'s `ZZ`, so every line is "exactly one" on the dimension's side.
 
-```mermaid
-%% critwire Learn: the Power BI star (plans/004-learn-curriculum.md §5.2 d6, §5.6, §6): the CSV files star.sql writes, in DuckDB types.
-%% Every fact foreign key is filled: a record with no year points at dim_year -1, one with no country at dim_country ZZ.
-%% fact_records and fact_species_country share dim_species and dim_country (conformed dimensions); fact_species_country has no measure (factless).
-%% Keys: PK primary key, FK foreign key, UK unique. Lines: || exactly one, |o or o| zero or one, |{ one or more, o{ zero or more.
-erDiagram
-    dim_species {
-        INTEGER species_id PK "critwire's species id"
-        VARCHAR scientific_name "Sarcophilus harrisii"
-        VARCHAR common_name "Tasmanian Devil"
-        VARCHAR class "Mammalia"
-        VARCHAR order_name "Dasyuromorphia"
-        VARCHAR family "Dasyuridae"
-        VARCHAR genus "Sarcophilus"
-    }
-    dim_country {
-        VARCHAR country_code PK "ISO alpha-2; ZZ the unknown member"
-        VARCHAR name "Australia; Unknown or outside any country for ZZ"
-        VARCHAR continent "Oceania"
-        VARCHAR region "Oceania"
-        VARCHAR subregion "Australia and New Zealand"
-    }
-    dim_dataset {
-        VARCHAR dataset_key PK "GBIF's dataset id"
-        VARCHAR title "the dataset's title, to credit"
-        VARCHAR publisher "who published it"
-        VARCHAR doi "its DOI; empty when it has none"
-        VARCHAR license "the license the dataset declares"
-    }
-    dim_year {
-        INTEGER year PK "a year with records; -1 the unknown member"
-        INTEGER decade "2010; empty for -1"
-        VARCHAR label "2016; Unknown for -1"
-    }
-    fact_records {
-        BIGINT record_id PK "GBIF's record id; grain: one record"
-        INTEGER species_id FK "the animal"
-        VARCHAR country_code FK "where; ZZ when unknown"
-        VARCHAR dataset_key FK "whose record"
-        INTEGER year FK "when; -1 when unknown"
-        INTEGER month "1 to 12, or empty"
-        VARCHAR basis_of_record "degenerate dimension"
-        VARCHAR license "degenerate dimension: CC0 1.0 or CC BY 4.0"
-        DOUBLE longitude "for map visuals"
-        DOUBLE latitude "for map visuals"
-        DOUBLE coordinate_uncertainty_m "metres, or empty"
-    }
-    fact_species_country {
-        INTEGER species_id PK, FK "the animal"
-        VARCHAR country_code PK, FK "a country with open records of it"
-    }
-    dim_habitat_class {
-        INTEGER habitat_code PK "Jung v004 class"
-        VARCHAR name "the class"
-        INTEGER level1_code "its level-1 class; a level-1 class is its own"
-        VARCHAR level1_name "the level-1 class's name"
-    }
-    fact_country_habitat {
-        VARCHAR country_code PK, FK "the country"
-        INTEGER habitat_code PK, FK "the habitat class"
-        DECIMAL est_area_km2 "estimated area, km2"
-    }
-
-    dim_species ||--o{ fact_records : "recorded as"
-    dim_country ||--o{ fact_records : "where"
-    dim_dataset ||--o{ fact_records : "published"
-    dim_year ||--o{ fact_records : "when"
-    dim_species ||--o{ fact_species_country : "recorded in"
-    dim_country ||--o{ fact_species_country : "has records of"
-    dim_country ||--o{ fact_country_habitat : "estimated to hold"
-    dim_habitat_class ||--o{ fact_country_habitat : "estimated in"
-```
-
-Data dictionary, the star:
-
-**dim_species**
-
-| Column | Type | Key | Meaning | Source |
-|---|---|---|---|---|
-| `species_id` | INTEGER | PK | critwire's species id | `species` and `species_taxonomy` |
-| `scientific_name` | VARCHAR |  | Sarcophilus harrisii | `species` and `species_taxonomy` |
-| `common_name` | VARCHAR |  | Tasmanian Devil | `species` and `species_taxonomy` |
-| `class` | VARCHAR |  | Mammalia | `species` and `species_taxonomy` |
-| `order_name` | VARCHAR |  | Dasyuromorphia | `species` and `species_taxonomy` |
-| `family` | VARCHAR |  | Dasyuridae | `species` and `species_taxonomy` |
-| `genus` | VARCHAR |  | Sarcophilus | `species` and `species_taxonomy` |
-
-**dim_country**
-
-| Column | Type | Key | Meaning | Source |
-|---|---|---|---|---|
-| `country_code` | VARCHAR | PK | ISO alpha-2; ZZ the unknown member | `countries`, plus the `ZZ` member |
-| `name` | VARCHAR |  | Australia; Unknown or outside any country for ZZ | `countries`, plus the `ZZ` member |
-| `continent` | VARCHAR |  | Oceania | `countries`, plus the `ZZ` member |
-| `region` | VARCHAR |  | Oceania | `countries`, plus the `ZZ` member |
-| `subregion` | VARCHAR |  | Australia and New Zealand | `countries`, plus the `ZZ` member |
-
-**dim_dataset**
-
-| Column | Type | Key | Meaning | Source |
-|---|---|---|---|---|
-| `dataset_key` | VARCHAR | PK | GBIF's dataset id | `datasets` |
-| `title` | VARCHAR |  | the dataset's title, to credit | `datasets` |
-| `publisher` | VARCHAR |  | who published it | `datasets` |
-| `doi` | VARCHAR |  | its DOI; empty when it has none | `datasets` |
-| `license` | VARCHAR |  | the license the dataset declares | `datasets` |
-
-**dim_year**
-
-| Column | Type | Key | Meaning | Source |
-|---|---|---|---|---|
-| `year` | INTEGER | PK | a year with records; -1 the unknown member | `occurrences.year`, plus the `-1` member |
-| `decade` | INTEGER |  | 2010; empty for -1 | computed from `year` |
-| `label` | VARCHAR |  | 2016; Unknown for -1 | computed from `year` |
-
-**fact_records**
-
-| Column | Type | Key | Meaning | Source |
-|---|---|---|---|---|
-| `record_id` | BIGINT | PK | GBIF's record id; grain: one record | `occurrences` |
-| `species_id` | INTEGER | FK | the animal | `occurrences` |
-| `country_code` | VARCHAR | FK | where; ZZ when unknown | `occurrences` |
-| `dataset_key` | VARCHAR | FK | whose record | `occurrences` |
-| `year` | INTEGER | FK | when; -1 when unknown | `occurrences` |
-| `month` | INTEGER |  | 1 to 12, or empty | `occurrences` |
-| `basis_of_record` | VARCHAR |  | degenerate dimension | `occurrences` |
-| `license` | VARCHAR |  | degenerate dimension: CC0 1.0 or CC BY 4.0 | `occurrences` |
-| `longitude` | DOUBLE |  | for map visuals | `occurrences` |
-| `latitude` | DOUBLE |  | for map visuals | `occurrences` |
-| `coordinate_uncertainty_m` | DOUBLE |  | metres, or empty | `occurrences` |
-
-**fact_species_country**
-
-| Column | Type | Key | Meaning | Source |
-|---|---|---|---|---|
-| `species_id` | INTEGER | PK, FK | the animal | `species_countries` |
-| `country_code` | VARCHAR | PK, FK | a country with open records of it | `species_countries` |
-
-**dim_habitat_class**
-
-| Column | Type | Key | Meaning | Source |
-|---|---|---|---|---|
-| `habitat_code` | INTEGER | PK | Jung v004 class | `habitat_classes` |
-| `name` | VARCHAR |  | the class | `habitat_classes` |
-| `level1_code` | INTEGER |  | its level-1 class; a level-1 class is its own | `habitat_classes` |
-| `level1_name` | VARCHAR |  | the level-1 class's name | `habitat_classes`, its level-1 row |
-
-**fact_country_habitat**
-
-| Column | Type | Key | Meaning | Source |
-|---|---|---|---|---|
-| `country_code` | VARCHAR | PK, FK | the country | `country_habitats` |
-| `habitat_code` | INTEGER | PK, FK | the habitat class | `country_habitats` |
-| `est_area_km2` | DECIMAL |  | estimated area, km2 | `country_habitats` |
+Two of the eight are **planned**: `dim_habitat_class` and `fact_country_habitat` wait for the habitat map, so the star published with L2 has six files. The source lists them on a `%% planned:` line, with the lab's rule: they are drawn, so the design is whole; the check excuses them while the manifest lacks them, and fails once it has them, so the marker can't go stale. The star page teaches the word: drawn, not yet published.
 
 ## 7. The site
 
@@ -8022,9 +7658,9 @@ The playground and the browser blocks use one engine start per visit (002 §8): 
 ### 7.3 Downloads
 
 The lab files are written by the build from the same blocks the pages show, so the page and the download can't disagree (E2E checks it, 7.6):
-- **`<module>.sql`**: the module's PostGIS blocks in page order, each exactly as `learn:check` runs it: its `-- after:` blocks first, the whole wrapped in `BEGIN; … ROLLBACK;`, except `-- tx: own` blocks (as written). Headers stay as comments, so every block keeps its id. It starts with §0's `pg-session` (`SET search_path`), then the boot setup (below), and runs with `psql -X -d <your database> -f <module>.sql` after the loader (§4.3). No `ON_ERROR_STOP`, because some blocks show an error on purpose (`-- expect: error`, `-- fails:`), and the file says so at the top.
+- **`<module>.sql`**: the module's PostGIS blocks in page order, each exactly as `learn:check` runs it: its `-- after:` blocks first, the whole wrapped in `BEGIN; … ROLLBACK;`, except `-- tx: own` blocks (as written). Headers stay as comments, so every block keeps its id. It starts with §0's `pg-session` (`SET search_path`), then the boot setup (below), and runs with `psql -X -d <your database> -f <module>.sql` after the loader (§4.3). No `ON_ERROR_STOP`, because some blocks show an error on purpose (`-- expect: error`, `-- fails:`), and the file says so at the top. The setup page's PostGIS checks (§0) download as `pg-checks.sql`, since `setup.sql` is the browser's schema. A block that runs in two sessions (`-- sessions:`) is commented out like an untested one (below): it needs one psql window per session.
 - **The boot setup.** A download includes every `-- boot` block it needs, once, right after `pg-session` (or `py-connect`), committed, and not again at its page position. It needs one when any block in it, or an `-- after:` block they bring, names a table or view the boot block creates (the names in its `CREATE TABLE` and `CREATE VIEW` statements, matched as whole words). Today that is `s4-cells`, in `s2`, `s3`, `s4`, `s5` and `c1` (`.sql`; c1 through `s5-gistar`) and in `s2`, `s3`, `s4`, `s5` and `setup` (`.py`; `setup` for §3.3's `gpkg-export`). A boot block drops what it builds before building it, so a file runs on a freshly loaded database, and again: a learner can open any module's file first, in any order. In a `.py` the boot block runs through the helper, `with connect() as conn: conn.execute("""<its SQL>""")` (psycopg sends a statement list without parameters as one simple query, and the `with` commits it), and in a notebook it is its own cell. A miss is caught by the assembled run (7.6), which starts each file from a fresh load.
-- **Untested blocks** are in their download, so the learner has them, but never run from it: running `e1.py` mustn't submit a GBIF download or stop on missing credentials, and `d4.sql` mustn't run a window's lines in one session. In a `.sql` or `.py`, such a block at its page position is one line `-- not run from this file: <its reason>. Run it by hand, as its page says.` (`#` in Python), its headers as written, then every other line of its code behind `-- ` (`# `): no `BEGIN; … ROLLBACK;`, no `-- after:` blocks brought for it, and it doesn't count towards the boot setup. In a notebook it is a Markdown cell, the same line and then the code as a fenced block, never a code cell. Which blocks follows their status in the build's own run, so a block a later mission makes `ran` is live in its file from then on. Today: `d4-wait`, `d4-isolation`, `d5-database` (L2), `g3-iucn` (L3; g7's three blocks until L3 makes them `ran`) and `e1-submit` (L4; `s6-habitat` until L4 makes it `ran`). §3.4's `arcpy-moran` runs in Pro's Python window and is in no download; nor is Power BI's M and DAX (below).
+- **Untested blocks** are in their download, so the learner has them, but never run from it: running `e1.py` mustn't submit a GBIF download or stop on missing credentials, and `d5.sql` mustn't change the learner's database. In a `.sql` or `.py`, such a block at its page position is one line `-- not run from this file: <its reason>. Run it by hand, as its page says.` (`#` in Python), its headers as written, then every other line of its code behind `-- ` (`# `): no `BEGIN; … ROLLBACK;`, no `-- after:` blocks brought for it, and it doesn't count towards the boot setup. In a notebook it is a Markdown cell, the same line and then the code as a fenced block, never a code cell. Which blocks follows their status in the build's own run, so a block a later mission makes `ran` is live in its file from then on. Today: `d5-database` (L2), `g3-iucn` (L3; g7's three blocks until L3 makes them `ran`) and `e1-submit` (L4; `s6-habitat` until L4 makes it `ran`). §3.4's `arcpy-moran` runs in Pro's Python window and is in no download; nor is Power BI's M and DAX (below).
 - **`<module>.py`** and **`<module>.ipynb`**: the module's Python blocks, `py-connect` first, then the boot setup, then each block once, in page order, with its `# q:` line as a comment (the notebook: one cell per block, and a Markdown cell with the block's heading). They read the lab data from `LEARN_BASE` (default `https://critwire.com`) and connect with libpq's `PG*` variables, as in §3.3. §3.3's Python blocks (`py-smoke`, `gpkg-export`) download as `setup.py` and `setup.ipynb`.
 - **`requirements.txt`**: §3.3's pins; the setup page gives the `uv` commands.
 - **Power BI** has no download of its own: a `.pbix` can't be built or tested here (§3.5). Its data files are the star's CSVs under `/learn/data/star/`, which p1 loads by URL.
@@ -8039,19 +7675,24 @@ One `localStorage` key, `critwire.learn.done.v1`, holds `{ "<module id>": "<YYYY
 `writeLearn` (002 §8), generalized, still offline and still one step of `pnpm build`.
 
 **Sources in the repository:**
-- `site/learn/curriculum.json`: the tracks in order, and each module's `id`, `slug`, `title`, `track`, `tool`, `hours`, `prereqs` and `state` (`built` or `planned`). §2's table is its first content.
-- `site/learn/modules/<id>.html`: each built module's text, with `{{block:<q-id>}}` slots where its blocks go.
-- `site/learn/sql/<q-id>.sql` and `site/learn/labs/<q-id>.py`: every block, without its plan-only header lines, as 002 §8 keeps lesson SQL; Power BI blocks the same, as `.m` and `.dax`.
+- `site/learn/curriculum.json`: the tracks in order, and each module's `id`, `slug`, `title`, `track`, `tools` (`B`, `PG`, `Py`, `PBI`), `hours`, `prereqs`, `state` (`built` or `planned`; the commit that adds a module's page sets it `built`), and the `skill` and `questions` the track pages show. §2's table is its first content.
+- `site/learn/modules/<id>.html`: each built module's text, with `{{block:<q-id>}}` slots where its blocks go, `{{exercise:<q-id>}}` and `{{skip:<q-id>}}` for an exercise and an "Already know this?" check, and `{{diagram:<name>}}` (below).
+- `site/learn/sql/<q-id>.sql` and `site/learn/labs/<q-id>.py`: every block, its fence body exactly as here, headers included (`pnpm learn:port` writes it; the page shows it without its test headers, `-- show: cards` kept); L1's `setup.sql` is the one header-less file. Power BI blocks the same, as `.m` and `.dax`.
 - `site/learn/labs/checked/`: what `learn:check` recorded, one file per block (its result) and `checked.json` (below).
+- `site/learn/diagrams/<name>.html` and `<name>-dark.html`: the teaching diagrams other than the ERDs, drawn with the diagram-design plugin (profile `critwire`: default tokens, system fonts), exported to `<name>.svg` and `<name>-dark.svg` with `export_svg.py --system-fonts`. A page shows one with `{{diagram:<name>}}`: a `<picture>` whose dark source follows the reader's colour scheme, its `alt` the SVG's `<title>`.
 
 **It refuses** (each a build failure naming the file):
 - a module whose prerequisite is unknown, or prerequisites that form a cycle; a module slot with no block file, or a block file no page uses;
 - a stale ERD SVG (002 §3);
+- a teaching diagram missing one of its four files, an SVG without a `<title>` or with any reference outside itself, a diagram no page shows, or a file in `site/learn/diagrams/` that isn't one;
 - a PostGIS or Python block whose freshness key differs from `checked.json`: "lab <id> is stale: run pnpm learn:check";
+- a star block (d6) whose result in the build's DuckDB differs from what `learn:check` recorded on PostGIS;
 - a breach of the 50 MB cap (§4.4); a lab file without `sources`, or another credit failure (§4.5);
 - any missing file.
 
-**`checked.json` freshness.** For each lab block, one sha256 over everything that decides its result: its own source; the source of every block it runs with, which is its `-- after:` (`# after:`) blocks, transitively, every `-- boot` block (committed before every PostGIS and Python block, so `gpkg-export`, which reads `s4_cells`, depends on `s4-cells`), and `pg-session` or `py-connect`; the data manifest; the loader; the checker's own source files; and `requirements.txt`. Each input enters with its id or path, in a fixed order (block ids sorted, then the files), so editing `s4-cells`, `py-connect` or an exercise's lesson makes every block that runs it stale, not just the block edited. Beside the block keys, each download's sha256 as assembled (7.3), so a download that changes, through its blocks or the assembly itself, is stale until 7.6 runs it again. All are files in the repository or in `dist/`, so the build recomputes them offline and compares. The versions of PostgreSQL, PostGIS, Python and the packages are recorded beside them and shown on the page, but not compared: the build may run on a machine with other versions, and `deploy` must not depend on the checker's machine.
+The two staleness refusals (lab and star) only warn in `pnpm build --draft`, a preview that is never deployed, so `learn:check` can run on a draft of the change it is about to prove.
+
+**`checked.json` freshness.** For each lab block, one sha256 over everything that decides its result: its own source; the source of every block it runs with, which is its `-- after:` (`# after:`) blocks, transitively, every `-- boot` block (committed before every PostGIS and Python block, so `gpkg-export`, which reads `s4_cells`, depends on `s4-cells`), and `pg-session` or `py-connect`; the data files' sha256s from the manifest's `files`, the loader's among them, outside `star/` (not its `dois`, which a `--draft` build leaves out, nor sizes or the star, which can't move a lab result); the checker's own source files and the canary's SQL; and `requirements.txt`. Each input enters with its id or path, in a fixed order (block ids sorted, then the files), so editing `s4-cells`, `py-connect` or an exercise's lesson makes every block that runs it stale, not just the block edited. Beside each key, the sha256 of the block's recorded result, so a result edited after the run loses its stamp; and each download's sha256 as assembled (7.3), so a download that changes, through its blocks or the assembly itself, is stale until 7.6 runs it again; and one sha256 over what decides the lab ERD check (`lab.mmd`, the loader and the boot blocks). All are files in the repository or in `dist/`, so the build recomputes them offline and compares. The versions of PostgreSQL, PostGIS, Python and the packages are recorded beside them and shown on the page, but not compared: the build may run on a machine with other versions, and `deploy` must not depend on the checker's machine. The file's date moves only when something else in it changes, so a rerun with nothing changed leaves it byte for byte.
 
 ### 7.6 `pnpm learn:check`
 
@@ -8060,9 +7701,10 @@ A development command, never part of `build` or `deploy`. It is the repository's
 - **Then it runs every download as assembled**, as a learner would: the files the build's own assembly function writes (7.3), each on a freshly loaded database (the loader, then the file), so no file leans on another's tables. A `.sql` runs with `psql -X -f`; its `ERROR:` lines must be exactly those its `-- expect: error` and `-- fails:` statements announce, in order, each containing the announced text. A `.py` runs in `.venv-learn` from an empty folder, with no `GBIF_*` variable in its environment, and must exit 0, so an `e1-submit` left live fails here. The `.ipynb` isn't run again: E2E proves its cells equal the `.py` (7.7). The leak check (§0) runs after each file. A failure names the file and its first unexpected error, and nothing is written to `checked.json`.
 - It connects with libpq's `PG*` variables, or `LEARN_PG_URL`, never `DATABASE_URL` (whose role, `critwire`, can't create roles). On critwire's server that is `critwire_dev` as `critwire_lab` through `LEARN_PG_URL` (§0; `learn:check --setup` creates the role and writes the URL); on the owner's WSL, the owner's own PostGIS (`AGENTS.md`'s two machines).
 - It refuses the database `critwire` twice: by name before connecting, and by `current_database()` after, so a service file or `PGDATABASE` can't slip past. It checks for CREATEROLE first and says it's needed. The `learn_spatial` canary (§0) runs only where that schema exists, read as libpq's default role (the schema's owner), so `critwire_lab` needs no grant on A2's schema.
-- **The loader stage (L1)**, under one advisory lock (`critwire.learn`) for the whole run: the loader's sha256 against the manifest; two loads, each giving the manifest's `tables` counts; then the **forced failure**: a temp copy of the loader with the first `occurrences` row repeated before that COPY's `\.`. Every COPY succeeds and psql must exit non-zero at `ALTER TABLE occurrences ADD PRIMARY KEY`, naming the duplicate id, with every table's count and md5 equal to the second load's: the whole load is one transaction. A cut COPY isn't used (on a row boundary psql exits 0 and the disconnect rolls back), and a loader without exactly one `COPY occurrences (id, …)` with rows fails "loader layout changed" before any load. Then `pg-role-smoke` (its own BEGIN/ROLLBACK, last SELECT 0), the canary and the leak check.
-- **Cleanup:** every exit, a failed check or SIGINT/SIGTERM included, cancels the running psql (SIGINT, so the server rolls back), releases the lock, ends the connections and removes the temp loader.
-- L1 creates it with the loader stage; L2 adds the blocks, the cleanup lint and the in-transaction leak check (§0); L4 adds Python.
+- **The loader stage (L1)**, under one advisory lock (`critwire.learn`) for the whole run: the loader's sha256 against the manifest; two loads, each giving the manifest's `tables` counts; then the **forced failure**: a temp copy of the loader with the first `occurrences` row repeated before that COPY's `\.`. Every COPY succeeds and psql must exit non-zero at `ALTER TABLE occurrences ADD PRIMARY KEY`, naming the duplicate id, with every table's count and md5 equal to the second load's: the whole load is one transaction. A cut COPY isn't used (on a row boundary psql exits 0 and the disconnect rolls back), and a loader without exactly one `COPY occurrences (id, …)` with rows fails "loader layout changed" before any load. Then the leak check, so a loader that leaves a `learn_` object is named before any block runs. **The blocks stage** then runs every PostGIS block of the pages in page order (`pg-role-smoke` among them), each inside the runner's transaction (§0), against its recorded result; then the canary and the leak check.
+- **Cleanup:** the lock is held by a cleanup connection that runs no block. Every exit, a failed check or SIGINT/SIGTERM included, cancels the running psql (SIGINT, so the server rolls back) or block statement and removes the temp loader, then, in this order: **terminate** every session the run opened that still runs (`pg_terminate_backend`, 10 s each; one still alive fails the run, named); **sweep**, still under the lock, the new `learn_%` objects the lab role made (roles it holds ADMIN OPTION on, then schemas it owns), naming any other new one with the superuser's cleanup command, never dropping it; **unlock** and end the connections. If the cleanup connection was lost, the lock went with it: nothing is dropped and every new object is named.
+- **Modes:** before connecting, a static stage reads and lints the whole course, so a lint error needs no database. `--update` runs each block twice and writes its result once both runs agree and every block passed; `--module <page>` runs one page's blocks and its download and prints their results, writing nothing. `checked.json` is written only by a whole run.
+- L1 creates it with the loader stage; L2 adds the static stage, the blocks, the lab ERD check, the downloads, two-session blocks, the cleanup lint and the in-transaction leak check (§0); L4 adds Python.
 
 ### 7.7 E2E
 
@@ -8073,10 +7715,14 @@ The repository's harness, unchanged in kind (002 §8): `pnpm build`, then Playwr
 - **`learn-data`**: every file's sha256 and size against `manifest.json`, row counts, CSV headers, the star's key coverage, the 50 MB cap, every file's `sources`, and the `/learn/data/` index listing every dataset of the sample with title, publisher and license.
   - **L1** (`e2e/learn-data.spec.ts`): the manifest lists exactly the folder's files; each file's sha256 and size; Parquet and CSV rows and columns (types as the build's reader sees them: GeoParquet's `geom` as WKB) and CSV headers; the occurrences equal `data/raw/gbif-sample/sample.csv` and `datasets.csv` its `datasets.json` entries; the loader's `tables` equal counts from `data/`; the cap; sources and citations; both DOIs equal the sample's `registration.json`; `inputs` equal the served `/v1` files and the committed sample; the index lists every file, every dataset (title, publisher, DOI, license, records) and both DOIs; screenshots at 1280 and 375 px. Global setup's `assertBuilt` also refuses a `dist/learn/data/` whose `inputs` or copied `data/learn/` files are stale.
   - **L2**: the star's key coverage (the star files are L2's).
-- **`schema`**: the three ERDs' drift against the databases they describe (§6), and the SVG pages.
+- **`schema`**: `schema.mmd` against the browser's catalog (`lab.mmd` and `star.mmd` are checked by `learn:check` and `pnpm build`, §6); the three ERD pages with their SVGs, relationships and dictionaries; the Schema and Lab schema dialogs by keyboard; the teaching diagrams, light and dark.
+- **`learn-screens`**: the screenshots (below), each page fitting its width.
+- **`learn-timing`**: five first visits to the playground, each in a fresh context; the median time to the end of `setup.sql` must be at most 1.5 × A1's 2.9 s first visit (002 §1; the sample's boot, §A.1).
 - **`serving`**: `.wasm` content types and the fixed modification times of `/learn/assets/` (002 §8).
 
-**Artifacts**, as today in `E2E_ARTIFACTS`: the Playwright HTML report, a trace per test, `results.json` and screenshots of the map, one module page per tool and the data index at 1280 and 375 px, reproducible with `pnpm build && E2E_ARTIFACTS=<dir> pnpm e2e`.
+**Artifacts**, as today in `E2E_ARTIFACTS`: the Playwright HTML report, a trace per test, `results.json` and screenshots at 1280 and 375 px of the map, f3 (browser), d3 (PostGIS), the lab schema and the setup page, each light and dark, and of the data index, reproducible with `pnpm build && E2E_ARTIFACTS=<dir> pnpm e2e`.
+
+**Release smoke** (`e2e/release/`, never in the default run): after a deploy, with `dist/` the released build, `RELEASE_ORIGIN=https://critwire.com E2E_ARTIFACTS=<dir> pnpm exec playwright test -c playwright.release.config.ts` checks every `dist/` file is served with its bytes, the `.wasm` files' content type, and f3's first browser block's result.
 
 ## 8. For the owner only: the vault overlap
 

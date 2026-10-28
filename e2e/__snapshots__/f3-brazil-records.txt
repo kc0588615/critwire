@@ -1,0 +1,8 @@
+-- result: f3-brazil-records · 14 rows · sha256 714279e6b8e1
+id | common_name | records
+52 | Giant Anteater | 1476
+51 | Jaguar | 1370
+72 | Maned Wolf | 870
+53 | Lowland Tapir | 504
+54 | Brown-throated Sloth | 283
+… 9 more rows

@@ -1,0 +1,3 @@
+-- result: pg-tx-smoke · 1 row · sha256 a90c4cf411fd
+rolled_back
+true

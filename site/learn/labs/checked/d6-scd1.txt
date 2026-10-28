@@ -1,0 +1,3 @@
+-- result: d6-scd1 · 1 row · sha256 bf8b1f306b36
+common_name | records | first_year
+Temminck's Ground Pangolin | 9 | 1930

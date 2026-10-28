@@ -1,0 +1,1 @@
+-- result: d1-same-gbif · error: statement 1 of 1: Constraint Error: Duplicate key "gbif_id: 5219416" violates unique constraint.

@@ -1,0 +1,259 @@
+{
+  "files": {
+    "dim_species.csv": {
+      "table": "dim_species",
+      "columns": [
+        {
+          "name": "species_id",
+          "type": "INTEGER"
+        },
+        {
+          "name": "scientific_name",
+          "type": "VARCHAR"
+        },
+        {
+          "name": "common_name",
+          "type": "VARCHAR"
+        },
+        {
+          "name": "class",
+          "type": "VARCHAR"
+        },
+        {
+          "name": "order_name",
+          "type": "VARCHAR"
+        },
+        {
+          "name": "family",
+          "type": "VARCHAR"
+        },
+        {
+          "name": "genus",
+          "type": "VARCHAR"
+        }
+      ],
+      "primaryKey": [
+        "species_id"
+      ],
+      "foreignKeys": []
+    },
+    "dim_country.csv": {
+      "table": "dim_country",
+      "columns": [
+        {
+          "name": "country_code",
+          "type": "VARCHAR"
+        },
+        {
+          "name": "name",
+          "type": "VARCHAR"
+        },
+        {
+          "name": "continent",
+          "type": "VARCHAR"
+        },
+        {
+          "name": "region",
+          "type": "VARCHAR"
+        },
+        {
+          "name": "subregion",
+          "type": "VARCHAR"
+        }
+      ],
+      "primaryKey": [
+        "country_code"
+      ],
+      "foreignKeys": []
+    },
+    "dim_dataset.csv": {
+      "table": "dim_dataset",
+      "columns": [
+        {
+          "name": "dataset_key",
+          "type": "VARCHAR"
+        },
+        {
+          "name": "title",
+          "type": "VARCHAR"
+        },
+        {
+          "name": "publisher",
+          "type": "VARCHAR"
+        },
+        {
+          "name": "doi",
+          "type": "VARCHAR"
+        },
+        {
+          "name": "license",
+          "type": "VARCHAR"
+        }
+      ],
+      "primaryKey": [
+        "dataset_key"
+      ],
+      "foreignKeys": []
+    },
+    "dim_year.csv": {
+      "table": "dim_year",
+      "columns": [
+        {
+          "name": "year",
+          "type": "INTEGER"
+        },
+        {
+          "name": "decade",
+          "type": "INTEGER"
+        },
+        {
+          "name": "label",
+          "type": "VARCHAR"
+        }
+      ],
+      "primaryKey": [
+        "year"
+      ],
+      "foreignKeys": []
+    },
+    "fact_records.csv": {
+      "table": "fact_records",
+      "columns": [
+        {
+          "name": "record_id",
+          "type": "BIGINT"
+        },
+        {
+          "name": "species_id",
+          "type": "INTEGER"
+        },
+        {
+          "name": "country_code",
+          "type": "VARCHAR"
+        },
+        {
+          "name": "dataset_key",
+          "type": "VARCHAR"
+        },
+        {
+          "name": "year",
+          "type": "INTEGER"
+        },
+        {
+          "name": "month",
+          "type": "INTEGER"
+        },
+        {
+          "name": "basis_of_record",
+          "type": "VARCHAR"
+        },
+        {
+          "name": "license",
+          "type": "VARCHAR"
+        },
+        {
+          "name": "longitude",
+          "type": "DOUBLE"
+        },
+        {
+          "name": "latitude",
+          "type": "DOUBLE"
+        },
+        {
+          "name": "coordinate_uncertainty_m",
+          "type": "DOUBLE"
+        }
+      ],
+      "primaryKey": [
+        "record_id"
+      ],
+      "foreignKeys": [
+        {
+          "columns": [
+            "species_id"
+          ],
+          "references": {
+            "file": "dim_species.csv",
+            "columns": [
+              "species_id"
+            ]
+          }
+        },
+        {
+          "columns": [
+            "country_code"
+          ],
+          "references": {
+            "file": "dim_country.csv",
+            "columns": [
+              "country_code"
+            ]
+          }
+        },
+        {
+          "columns": [
+            "dataset_key"
+          ],
+          "references": {
+            "file": "dim_dataset.csv",
+            "columns": [
+              "dataset_key"
+            ]
+          }
+        },
+        {
+          "columns": [
+            "year"
+          ],
+          "references": {
+            "file": "dim_year.csv",
+            "columns": [
+              "year"
+            ]
+          }
+        }
+      ]
+    },
+    "fact_species_country.csv": {
+      "table": "fact_species_country",
+      "columns": [
+        {
+          "name": "species_id",
+          "type": "INTEGER"
+        },
+        {
+          "name": "country_code",
+          "type": "VARCHAR"
+        }
+      ],
+      "primaryKey": [
+        "species_id",
+        "country_code"
+      ],
+      "foreignKeys": [
+        {
+          "columns": [
+            "species_id"
+          ],
+          "references": {
+            "file": "dim_species.csv",
+            "columns": [
+              "species_id"
+            ]
+          }
+        },
+        {
+          "columns": [
+            "country_code"
+          ],
+          "references": {
+            "file": "dim_country.csv",
+            "columns": [
+              "country_code"
+            ]
+          }
+        }
+      ]
+    }
+  }
+}

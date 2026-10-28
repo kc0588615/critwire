@@ -1,0 +1,6 @@
+-- result: d1-fk-index · 4 rows · sha256 bbc2c2e237f8
+constraint_name | constraint_type | column_name | indexed
+occurrences_pkey | PRIMARY KEY | id | true
+occurrences_country_code_fkey | FOREIGN KEY | country_code | false
+occurrences_dataset_key_fkey | FOREIGN KEY | dataset_key | false
+occurrences_species_id_fkey | FOREIGN KEY | species_id | false

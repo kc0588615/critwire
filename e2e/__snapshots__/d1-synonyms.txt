@@ -1,0 +1,6 @@
+-- result: d1-synonyms · 4 rows · sha256 0c8afd374c8f
+id | slug | scientific_name | gbif_id
+1 | blandings-turtle | Emydoidea blandingii | 2442885
+55 | giant-pangolin | Smutsia gigantea | 5786559
+63 | temmincks-pangolin | Smutsia temminckii | 5786560
+70 | bairds-tapir | Tapirus bairdii | 2440897

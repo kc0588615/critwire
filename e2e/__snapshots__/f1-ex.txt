@@ -1,0 +1,8 @@
+-- result: f1-ex · 6 rows · sha256 4bd9d867b18a
+id | common_name | gbif_id | ncbi_id | inaturalist_id | wikidata_id
+1 | Blanding's Turtle | 2442885 | NULL | 39885 | Q185526
+9 | Dyeing Poison Dart Frog | NULL | 92724 | 21141 | Q1478869
+19 | Floreana Giant Tortoise | NULL | 66189 | 57386 | Q486672
+27 | Western Long-beaked Echidna | NULL | 33543 | 75237 | Q635949
+35 | Red Panda | 5219446 | 9649 | NULL | Q41960
+… 1 more row

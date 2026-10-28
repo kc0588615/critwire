@@ -1,0 +1,7 @@
+-- result: d6-unknown · 5 rows · sha256 bda14c66315b
+step | counted | records
+1 | occurrences | 40396
+2 | occurrences joined to countries | 40395
+3 | fact_records joined to dim_country | 40396
+4 | of them in ZZ | 1
+5 | of them in year -1 | 2290

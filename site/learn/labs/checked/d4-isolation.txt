@@ -1,0 +1,4 @@
+-- result: d4-isolation · 2 rows · sha256 ba58c317969a
+window | statement | month
+A | 2 | NULL
+A | 4 | NULL

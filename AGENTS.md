@@ -11,6 +11,7 @@ Open curated species data at critwire.com, dogfooded by Critter Connect (repo `k
 - Postgres 16 + PostGIS 3.4.2 on the Oracle VPS. No PostGIS 3.5-only functions.
 - `@duckdb/node-api` (pinned) writes Parquet and CSV from `data/species.json`; no DuckDB extensions at build time (build is offline).
 - Python via `uv` (`/usr/local/bin/uv`) in `.venv-learn/` (gitignored; `pnpm learn:venv`), pins in `site/learn/labs/requirements.txt`; for `ingest shapes` only. Build stays Node.
+- Learn's browser app: `@duckdb/duckdb-wasm` (pin in `site/learn/src/assets.ts`; build refuses another installed version) + parquet extension mirror committed in `site/learn/duckdb-ext/` (sha256 pinned in `scripts/build/learn/assets.ts`); bundled by `esbuild` (pinned) from `site/learn/src/`. `dist/learn/assets/`: mtime fixed 2000-01-01, so every path there must be versioned or content-hashed (build refuses others).
 - E2E: `@playwright/test` (pinned), headless Chromium, local Caddy copy of the live block (`e2e/Caddyfile`, `admin off`, ports 3100/3101).
 
 ## Prefer simplicity
@@ -21,7 +22,7 @@ Simplest approach that works. Ask before adding complexity.
 - IUCN: store only the SIS taxon id (`ids.iucn`). Never store, cache, proxy or serve IUCN data (categories, assessments, ranges).
 - No Wikipedia prose (share-alike). Write all copy fresh, in our own words, for adults new to the topic: plain, precise English a working professional reads fast; define each term once; link to open references instead of rewriting them. Bare trait values may come from any cited source in our own words; bulk imports only from open datasets.
 - Every third-party field and photo records its source and license.
-- Our ids: integer, never reused, plus slug. Outside ids live in `ids`. Retired ids get `replacedBy`. Until Learn's projection has a replacement junction (L2's to add), a record with `replacedBy` fails `pnpm build`, `/v1` included: don't retire an id before then.
+- Our ids: integer, never reused, plus slug. Outside ids live in `ids`. Retired ids get `replacedBy`. Retirement isn't supported yet: Learn's projection has no replacement junction (adding one changes `/learn/data/`'s loader and setup), so a record with `replacedBy` fails `pnpm build`, `/v1` included (`scripts/build/learn/projection.ts`). Don't retire an id until a change adds the junction.
 
 ## Databases
 - `critwire`: the live build. Agents never use it.
@@ -40,12 +41,27 @@ GitHub `origin` is the hub; only pushed work exists on the other machine.
 - VPS setup (Postgres, Caddy, CORS) is done from the Oracle control room, not from here.
 
 ## Commands
-- `pnpm install`, `pnpm typecheck`, `pnpm test` (`scripts/**/*.test.ts`: pure, offline), `pnpm test:db` (`scripts/**/*.dbtest.ts`: `critwire_dev` only, refuses any other db).
-- `pnpm build [--draft]`: offline. Re-runs derive in-process and refuses derived files that differ (`data/<file> is stale: run pnpm derive`); loads `DATABASE_URL` (advisory lock); writes `dist/` (`index.html`, `v1/species.{json,parquet,csv}`, `v1/species/{id,slug}.json`, `v1/countries.{json,parquet,csv}`, `v1/attribution.json`, `learn/data/`: index, `manifest.json`, lab files, `postgis/learn_curriculum.sql`). Refuses `dist/learn/data/` or the committed lab data (`data/raw/gbif-sample/`, `data/learn/`, `data/gbif-learn-sample/`) over 50,000,000 bytes. Plain build refuses a missing/stale DOI (countries or learn-sample); `--draft` builds without them (preview only, never deploy), never with a stale sample.
-- `pnpm e2e` (after `pnpm build`): Playwright suite; artifacts in `E2E_ARTIFACTS` (default `e2e-artifacts/`).
+- `pnpm install`, `pnpm typecheck` (root + `site/learn/tsconfig.json`, DOM, no node types), `pnpm test` (`scripts/**/*.test.ts`: pure, offline), `pnpm test:db` (`scripts/**/*.dbtest.ts`: `critwire_dev` only, refuses any other db).
+- `pnpm build [--draft]`: offline. Re-runs derive in-process and refuses derived files that differ (`data/<file> is stale: run pnpm derive`); loads `DATABASE_URL` (advisory lock); writes `dist/` (`index.html`, `v1/species.{json,parquet,csv}`, `v1/species/{id,slug}.json`, `v1/countries.{json,parquet,csv}`, `v1/attribution.json`, `learn/data/`: index, `manifest.json`, lab files, `postgis/learn_curriculum.sql`, `star/`: d6's `d6-star-*` blocks run in DuckDB, one CSV per table + `manifest.json`; Learn's pages (map, tracks, modules, setup, schema, playground), `learn/assets/` (engine, extension, hashed app), `learn/labs/<page>.sql` (`assemble.ts`), `learn/diagrams/`). Plain build refuses a star block whose DuckDB result differs from its `checked/<id>.txt` (`--draft` warns). Refuses `dist/learn/data/` or the committed lab data (`data/raw/gbif-sample/`, `data/learn/`, `data/gbif-learn-sample/`) over 50,000,000 bytes. Plain build refuses a missing/stale DOI (countries or learn-sample); `--draft` builds without them (preview only, never deploy), never with a stale sample. Plain build refuses a lab `learn:check` didn't prove as committed (`site/learn/labs/checked/checked.json`: "lab <id> is stale: run pnpm learn:check"); `--draft` warns. Loop: `pnpm build --draft && pnpm learn:check && pnpm build`.
+- `pnpm e2e` (after `pnpm build`): Playwright suite; artifacts in `E2E_ARTIFACTS` (default `e2e-artifacts/`). Browser block results are `e2e/__snapshots__/<id>.txt` (seeded by `learn:port`, never rewritten by a run). Release smoke (after deploy, `dist/` = the released build): `RELEASE_ORIGIN=https://critwire.com E2E_ARTIFACTS=<dir> pnpm exec playwright test -c playwright.release.config.ts`.
+- `pnpm learn:port <page>…` (page = `setup` or a module id): writes the page's block files (`site/learn/sql/`) and seeds their recorded results (`checked/<id>.txt` PostGIS, `e2e/__snapshots__/<id>.txt` browser) from `plans/004-learn-curriculum.md`; refuses, writing nothing, a file that differs. `--check <page>…|all`: every ported file and result equals 004 (`all` = every page with a block file).
+- `pnpm erd [--force]`: draws `site/learn/erd/{schema,lab,star}.svg` from their `.mmd`, offline (mermaid in Playwright's Chromium, every request refused); only stale ones unless `--force`. Commit them: build refuses a missing or stale SVG ("site/learn/erd/lab.svg is stale: run pnpm erd").
 - `pnpm gbif:register [--target countries|learn-sample]` (default countries): the one network write (GBIF derived dataset). See GBIF DOI refresh.
 - `pnpm learn:venv`: (re)creates `.venv-learn` (system Python 3.12, no downloads, wheels only).
-- `pnpm learn:check [--setup [--env <file>]… [--reset-password]]` (after `pnpm build`): as `critwire_lab`, loads `dist/learn/data/postgis/learn_curriculum.sql` twice (counts = manifest `tables`), a forced failure (must roll back), `pg-role-smoke`, canary + `learn_%` leak check. Never `critwire`.
+- `pnpm learn:check [--update | --module <page>] [--setup [--env <file>]… [--reset-password]]` (after `pnpm build`): as `critwire_lab`, loads `dist/learn/data/postgis/learn_curriculum.sql` twice (counts = manifest `tables`), a forced failure (must roll back), then `lab.mmd` against `learn_curriculum` (after boot blocks), then every PostGIS block of `site/learn/` in page order against `site/learn/labs/checked/<id>.txt` (`--update` writes them; `--module <page>` runs one page, prints, writes nothing), canary + `learn_%` leak check, then each page's download (`assemble.ts`) on a fresh load (ERROR lines = announced), then writes `checked.json` (whole runs only). Never `critwire`.
+
+## Learn (`/learn/`, design `plans/004-learn-curriculum.md`)
+Files under `site/learn/` (004 §7.5):
+- `curriculum.json`: tracks + modules (`id`, `slug`, `title`, `track`, `tools[]`, `hours`, `prereqs[]`, `state` `built|planned`, `skill`, `questions[]`). A page sets its module `built`.
+- `layout.html`, `pages/*.html` (map, track, setup, playground, `schema-{schema,lab,star}`), `modules/<id>.html` (prose + `{{block:}}` `{{exercise:}}` `{{skip:}}` `{{diagram:}}` slots).
+- `sql/<id>.sql|.m`: each block = 004's fence body, headers included (`setup.sql`: header-less, L1's). `labs/checked/<id>.txt` + `checked.json`: written only by `learn:check`. `labs/requirements.{in,txt}`.
+- `erd/{v1,schema,lab,star}.mmd` (only copies) + `{schema,lab,star}.svg` (`pnpm erd`). `diagrams/<name>{,-dark}.{html,svg}` (diagram-design, profile `critwire` in `.diagram-design`; edit both sources, re-export both).
+- `src/`: the browser app (esbuild), checked by `site/learn/tsconfig.json` (DOM, no node types; also includes `scripts/build/licenses.ts`, `scripts/build/learn/sql.ts`, `scripts/learn/cell.ts`). `duckdb-ext/`: the extension mirror.
+
+Rules:
+- 004 and the site change together: a block or result edit lands in 004 and its file in one commit; `pnpm learn:port --check all` proves it. A result that differs from 004 is a bug to find, not a number to update.
+- Dev loop after editing a block, a page or a checker file: `pnpm build --draft && pnpm learn:check [--update] && pnpm build`, then `pnpm e2e`. `pnpm learn:check --module <page>` while iterating. Commit `checked/` and `checked.json` from a whole run.
+- Copy: records, never range; no mission names on public pages; link only pages that exist (planned modules unlinked).
 
 ## Data
 Files and owners (never hand-edit derived files):

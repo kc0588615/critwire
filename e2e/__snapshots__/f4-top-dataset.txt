@@ -1,0 +1,8 @@
+-- result: f4-top-dataset · 71 rows · sha256 84b6a30c3e95
+species_id | title | records | species_records | share_pct
+30 | NABU\|naturgucker | 2 | 2 | 100
+32 | NMNH Extant Specimen Records (USNM, US) | 1 | 1 | 100
+45 | INSDC Sequences | 109 | 109 | 100
+46 | Dakatcha Woodland Biodiversity Assessment | 1583 | 1613 | 98.1
+51 | Jaguar Movement Database: a GPS-based movement dataset of th… | 1948 | 2000 | 97.4
+… 66 more rows

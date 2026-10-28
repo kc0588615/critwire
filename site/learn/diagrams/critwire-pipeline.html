@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>From committed snapshots to the files every tool reads</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --paper: #f5f5f5; --paper-2: #ececec; --ink: #2d3142; --muted: #4f5d75; --soft: #5a6580;
+      --rule: rgba(45,49,66,0.12); --rule-solid: #bfc0c0; --accent: #bf4520; --accent-tint: rgba(191,69,32,0.08);
+      --read: rgba(45,49,66,0.14);
+      --font-sans: 'Geist', system-ui, sans-serif;
+      --font-serif: 'Instrument Serif', 'Noto Serif', serif;
+      --font-mono: 'Geist Mono', ui-monospace, monospace;
+    }
+    body { font-family: var(--font-sans); background: var(--paper); color: var(--ink); padding: 3rem 2rem; }
+    .frame { max-width: 1200px; margin: 0 auto; }
+    .diagram-container { width: 100%; overflow-x: auto; }
+    .eyebrow { font-family: var(--font-mono); font-size: 0.66rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.5rem; }
+    h1 { font-family: var(--font-serif); font-size: 1.75rem; font-weight: 400; margin-bottom: 1.5rem; }
+    svg { width: 100%; min-width: 800px; display: block; }
+    @media print { .diagram-container { overflow-x: visible; } svg { min-width: 0; } }
+    .bg { fill: var(--paper); }
+    .zone { fill: var(--paper-2); stroke: var(--rule); stroke-width: 1; }
+    .mask { fill: var(--paper); }
+    .zmask { fill: var(--paper-2); }
+    .node { fill: var(--paper); stroke: var(--ink); stroke-width: 1; }
+    .store { fill: var(--paper-2); stroke: var(--muted); stroke-width: 1; }
+    .focal { fill: var(--accent-tint); stroke: var(--accent); stroke-width: 1.2; }
+    .tag-box { fill: none; stroke: var(--soft); stroke-width: 0.8; }
+    .tag { fill: var(--soft); font-family: var(--font-mono); font-size: 7px; font-weight: 500; letter-spacing: 0.08em; }
+    .name { fill: var(--ink); font-family: var(--font-sans); font-size: 13px; font-weight: 600; }
+    .ident { fill: var(--ink); font-family: var(--font-mono); font-size: 11px; font-weight: 600; }
+    .sub { fill: var(--muted); font-family: var(--font-mono); font-size: 10px; }
+    .eyebrow-text { fill: var(--soft); font-family: var(--font-mono); font-size: 9px; font-weight: 500; letter-spacing: 0.14em; }
+    .label { fill: var(--soft); font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.06em; }
+    .note { fill: var(--muted); font-family: var(--font-serif); font-size: 14px; font-style: italic; }
+    .arrow { fill: none; stroke: var(--muted); stroke-width: 1.2; }
+    .arrow-accent { fill: none; stroke: var(--accent); stroke-width: 1.4; }
+    .dashed { stroke-dasharray: 5 4; }
+    .head { fill: var(--muted); }
+    .head-accent { fill: var(--accent); }
+    .rule-line { stroke: var(--rule-solid); stroke-width: 0.8; }
+    .page { fill: var(--paper); stroke: var(--rule-solid); stroke-width: 1; }
+    .page-read { fill: var(--read); stroke: var(--muted); stroke-width: 1; }
+    .dot { fill: var(--ink); }
+    .order { fill: var(--ink); font-family: var(--font-mono); font-size: 10px; font-weight: 500; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Data flow · critwire</p>
+    <h1>From committed snapshots to the files every tool reads</h1>
+    <div class="diagram-container">
+      <svg viewBox="0 0 800 392" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="critwire-pipeline-title critwire-pipeline-desc">
+        <title id="critwire-pipeline-title">One offline build turns the committed data/ snapshots into every file the course's tools read</title>
+        <desc id="critwire-pipeline-desc">Ingest commits snapshots to data/; pnpm derive writes the derived files; pnpm build writes /v1/, /learn/data/ with its Parquet files, the PostGIS loader learn_curriculum.sql, and the star's CSV files, which the browser, PostgreSQL with PostGIS, and Power BI Desktop read.</desc>
+<defs>
+<marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon class="head" points="0 0, 8 3, 0 6"/></marker>
+<marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon class="head-accent" points="0 0, 8 3, 0 6"/></marker>
+</defs>
+<rect class="bg" width="100%" height="100%"/>
+<path class="arrow" d="M200 72 H312" marker-end="url(#arrow)"/>
+<path class="arrow" d="M488 72 H600" marker-end="url(#arrow)"/>
+<path class="arrow" d="M112 136 H688"/>
+<path class="arrow" d="M688 104 V168" marker-end="url(#arrow)"/>
+<path class="arrow" d="M112 136 V168" marker-end="url(#arrow)"/>
+<path class="arrow" d="M304 136 V168" marker-end="url(#arrow)"/>
+<path class="arrow" d="M496 136 V168" marker-end="url(#arrow)"/>
+<path class="arrow" d="M112 232 V296" marker-end="url(#arrow)"/>
+<path class="arrow" d="M304 232 V296" marker-end="url(#arrow)"/>
+<path class="arrow" d="M496 232 V296" marker-end="url(#arrow)"/>
+<path class="arrow" d="M688 232 V296" marker-end="url(#arrow)"/>
+<rect class="mask" x="215.7" y="54" width="80.5" height="12" rx="2"/>
+<text class="label" x="256" y="63" text-anchor="middle">RAW SNAPSHOTS</text>
+<rect class="mask" x="503.7" y="54" width="80.5" height="12" rx="2"/>
+<text class="label" x="544" y="63" text-anchor="middle">DERIVED FILES</text>
+<rect class="mask" x="362.5" y="118" width="75.0" height="12" rx="2"/>
+<text class="label" x="400" y="127" text-anchor="middle">WRITES DIST/</text>
+<rect class="mask" x="24" y="40" width="176" height="64" rx="6"/>
+<rect class="store" x="24" y="40" width="176" height="64" rx="6"/>
+<rect class="tag-box" x="32" y="48" width="30.2" height="12" rx="2"/>
+<text class="tag" x="47.1" y="57" text-anchor="middle">REPO</text>
+<text class="name" x="112" y="73" text-anchor="middle">data/</text>
+<text class="sub" x="112" y="89" text-anchor="middle">ingest writes, git keeps</text>
+<rect class="mask" x="312" y="40" width="176" height="64" rx="6"/>
+<rect class="node" x="312" y="40" width="176" height="64" rx="6"/>
+<rect class="tag-box" x="320" y="48" width="25.1" height="12" rx="2"/>
+<text class="tag" x="332.6" y="57" text-anchor="middle">CMD</text>
+<text class="name" x="400" y="73" text-anchor="middle">pnpm derive</text>
+<text class="sub" x="400" y="89" text-anchor="middle">offline, pure</text>
+<rect class="mask" x="600" y="40" width="176" height="64" rx="6"/>
+<rect class="focal" x="600" y="40" width="176" height="64" rx="6"/>
+<rect class="tag-box" x="608" y="48" width="25.1" height="12" rx="2"/>
+<text class="tag" x="620.6" y="57" text-anchor="middle">CMD</text>
+<text class="name" x="688" y="73" text-anchor="middle">pnpm build</text>
+<text class="sub" x="688" y="89" text-anchor="middle">offline, checked</text>
+<rect class="mask" x="24" y="168" width="176" height="64" rx="6"/>
+<rect class="store" x="24" y="168" width="176" height="64" rx="6"/>
+<rect class="tag-box" x="32" y="176" width="35.2" height="12" rx="2"/>
+<text class="tag" x="49.6" y="185" text-anchor="middle">FILES</text>
+<text class="name" x="112" y="201" text-anchor="middle">/v1/</text>
+<text class="sub" x="112" y="217" text-anchor="middle">species, countries</text>
+<rect class="mask" x="216" y="168" width="176" height="64" rx="6"/>
+<rect class="store" x="216" y="168" width="176" height="64" rx="6"/>
+<rect class="tag-box" x="224" y="176" width="35.2" height="12" rx="2"/>
+<text class="tag" x="241.6" y="185" text-anchor="middle">FILES</text>
+<text class="name" x="304" y="201" text-anchor="middle">/learn/data/</text>
+<text class="sub" x="304" y="217" text-anchor="middle">sample, shapes: Parquet</text>
+<rect class="mask" x="408" y="168" width="176" height="64" rx="6"/>
+<rect class="store" x="408" y="168" width="176" height="64" rx="6"/>
+<rect class="tag-box" x="416" y="176" width="35.2" height="12" rx="2"/>
+<text class="tag" x="433.6" y="185" text-anchor="middle">FILES</text>
+<text class="name" x="496" y="201" text-anchor="middle">learn_curriculum.sql</text>
+<text class="sub" x="496" y="217" text-anchor="middle">the PostGIS loader</text>
+<rect class="mask" x="600" y="168" width="176" height="64" rx="6"/>
+<rect class="store" x="600" y="168" width="176" height="64" rx="6"/>
+<rect class="tag-box" x="608" y="176" width="35.2" height="12" rx="2"/>
+<text class="tag" x="625.6" y="185" text-anchor="middle">FILES</text>
+<text class="name" x="688" y="201" text-anchor="middle">/learn/data/star/</text>
+<text class="sub" x="688" y="217" text-anchor="middle">the star: CSV</text>
+<rect class="mask" x="24" y="296" width="368" height="64" rx="6"/>
+<rect class="node" x="24" y="296" width="368" height="64" rx="6"/>
+<rect class="tag-box" x="32" y="304" width="30.2" height="12" rx="2"/>
+<text class="tag" x="47.1" y="313" text-anchor="middle">TOOL</text>
+<text class="name" x="208" y="329" text-anchor="middle">Your browser</text>
+<text class="sub" x="208" y="345" text-anchor="middle">DuckDB: the f and d modules' editors</text>
+<rect class="mask" x="408" y="296" width="176" height="64" rx="6"/>
+<rect class="node" x="408" y="296" width="176" height="64" rx="6"/>
+<rect class="tag-box" x="416" y="304" width="30.2" height="12" rx="2"/>
+<text class="tag" x="431.1" y="313" text-anchor="middle">TOOL</text>
+<text class="name" x="496" y="329" text-anchor="middle">PostgreSQL + PostGIS</text>
+<text class="sub" x="496" y="345" text-anchor="middle">your computer: the labs</text>
+<rect class="mask" x="600" y="296" width="176" height="64" rx="6"/>
+<rect class="node" x="600" y="296" width="176" height="64" rx="6"/>
+<rect class="tag-box" x="608" y="304" width="30.2" height="12" rx="2"/>
+<text class="tag" x="623.1" y="313" text-anchor="middle">TOOL</text>
+<text class="name" x="688" y="329" text-anchor="middle">Power BI Desktop</text>
+<text class="sub" x="688" y="345" text-anchor="middle">Windows: the star</text>
+      </svg>
+    </div>
+  </div>
+</body>
+</html>

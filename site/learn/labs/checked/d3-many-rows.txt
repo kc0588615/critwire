@@ -1,0 +1,5 @@
+-- result: d3-many-rows · 3 rows · sha256 e99d8d0080da
+QUERY PLAN
+Seq Scan on occurrences (actual rows=29261 loops=1)
+  Filter: (year >= 2000)
+  Rows Removed by Filter: 11134

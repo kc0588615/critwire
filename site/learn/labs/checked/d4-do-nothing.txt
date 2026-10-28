@@ -1,0 +1,3 @@
+-- result: d4-do-nothing · 1 row · sha256 9cb3872ad5bc
+added | first_year
+42 | 2020

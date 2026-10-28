@@ -1,0 +1,8 @@
+-- result: f2-periods · 7 rows · sha256 bc32d04f36eb
+basis_of_record | before_1900 | from_1900 | from_2000 | no_year
+HUMAN_OBSERVATION | 18 | 463 | 16931 | 175
+MACHINE_OBSERVATION | 0 | 1327 | 7039 | 52
+MATERIAL_CITATION | 1 | 38 | 159 | 243
+MATERIAL_SAMPLE | 0 | 165 | 1301 | 339
+OBSERVATION | 10 | 85 | 1288 | 1
+… 2 more rows

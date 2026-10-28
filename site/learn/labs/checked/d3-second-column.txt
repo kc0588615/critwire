@@ -1,0 +1,7 @@
+-- result: d3-second-column · 5 rows · sha256 71cb12c0a8a4
+QUERY PLAN
+Bitmap Heap Scan on occurrences (actual rows=107 loops=1)
+  Recheck Cond: ((year >= 1850) AND (year <= 1899))
+  Heap Blocks: exact=44
+  ->  Bitmap Index Scan on occurrences_species_year_idx (act…
+        Index Cond: ((year >= 1850) AND (year <= 1899))

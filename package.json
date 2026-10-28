@@ -9,13 +9,15 @@
   },
   "scripts": {
     "build": "tsx scripts/build.ts",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p site/learn/tsconfig.json",
     "seed:cc": "tsx scripts/seed-cc.ts",
     "db:load": "tsx scripts/load.ts",
     "ingest": "tsx scripts/ingest.ts",
     "derive": "tsx scripts/derive.ts",
     "gbif:register": "tsx scripts/gbif-register.ts",
     "learn:check": "tsx scripts/learn-check.ts",
+    "learn:port": "tsx scripts/learn-port.ts",
+    "erd": "tsx scripts/erd.ts",
     "learn:venv": "UV_PYTHON_DOWNLOADS=never uv venv --allow-existing --python /usr/bin/python3.12 .venv-learn && uv pip sync --no-build --python .venv-learn site/learn/labs/requirements.txt",
     "e2e": "playwright test",
     "test": "tsx --test 'scripts/**/*.test.ts'",
@@ -24,11 +26,14 @@
   "devDependencies": {
     "@playwright/test": "1.58.2",
     "@types/node": "^26.6.5",
+    "mermaid": "12.2.0",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2"
   },
   "dependencies": {
+    "@duckdb/duckdb-wasm": "1.33.1-dev65.0",
     "@duckdb/node-api": "1.5.6-r.2",
+    "esbuild": "0.28.2",
     "postgres": "^3.4.9"
   }
 }

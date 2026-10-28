@@ -40,6 +40,14 @@ export const LAB_FILES: Record<string, readonly string[]> = {
   "habitat_classes.parquet": ["jung-habitat"],
   "country_habitats.parquet": ["jung-habitat"],
   "postgis/learn_curriculum.sql": ["critwire", "natural-earth", "gbif-sample", "resolve", "jung-habitat"],
+  // The star (build/learn/star.ts STAR_FILES): each table from the lab tables it is built from.
+  "star/dim_country.csv": ["natural-earth"],
+  "star/dim_dataset.csv": ["gbif-sample"],
+  "star/dim_species.csv": ["critwire"],
+  "star/dim_year.csv": ["gbif-sample"],
+  "star/fact_records.csv": ["gbif-sample"],
+  "star/fact_species_country.csv": ["critwire"],
+  "star/manifest.json": ["critwire"],
 };
 
 const blank = (s: string | null | undefined) => !s?.trim();

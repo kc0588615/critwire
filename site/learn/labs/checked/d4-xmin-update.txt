@@ -1,0 +1,4 @@
+-- result: d4-xmin-update · 2 rows · sha256 12ad209f5ad8
+id | month | written_by_this_transaction
+6004132305 | 7 | true
+6004132353 | NULL | false

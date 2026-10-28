@@ -1,0 +1,8 @@
+-- result: f3-on · 14 rows · sha256 bd29d0ba9d27
+code | name | records_since_2020
+AR | Argentina | 2
+BO | Bolivia | 1
+BR | Brazil | 653
+CL | Chile | 1
+CO | Colombia | 503
+… 9 more rows

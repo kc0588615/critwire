@@ -1,0 +1,3 @@
+-- result: d1-check-null · 1 row · sha256 8ae30f0c14b6
+id | species_id | country_code | month
+1 | 48 | NULL | NULL

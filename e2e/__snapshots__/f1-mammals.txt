@@ -1,0 +1,8 @@
+-- result: f1-mammals · 50 rows · sha256 8f1036b368d6
+id | common_name | scientific_name
+57 | Aardvark | Orycteropus afer
+50 | Addax | Addax nasomaculatus
+41 | African Forest Elephant | Loxodonta cyclotis
+64 | African Savanna Elephant | Loxodonta africana
+65 | African Wild Dog | Lycaon pictus
+… 45 more rows

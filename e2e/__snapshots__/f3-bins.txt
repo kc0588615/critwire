@@ -1,0 +1,8 @@
+-- result: f3-bins · 10 rows · sha256 dc2b2d6996ed
+west | south | records | species
+-80 | 0 | 2409 | 12
+30 | -10 | 2247 | 14
+-60 | -30 | 2171 | 7
+40 | -20 | 2078 | 5
+140 | -50 | 1993 | 1
+… 5 more rows

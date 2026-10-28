@@ -1,0 +1,8 @@
+-- result: d3-join-index · 9 rows · sha256 65566407e202
+QUERY PLAN
+Nested Loop (actual rows=9 loops=1)
+  ->  Seq Scan on species s (actual rows=1 loops=1)
+        Filter: (slug = 'temmincks-pangolin'::text)
+        Rows Removed by Filter: 75
+  ->  Bitmap Heap Scan on occurrences o (actual rows=9 loops…
+… 4 more rows

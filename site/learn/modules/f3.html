@@ -1,0 +1,66 @@
+<p class="lead">Answer questions that need several tables at once: inner, left and anti joins, many-to-many through a junction table, and a first look at coordinates in plain SQL. Everything runs in this browser, on the tables <a href="/learn/schema/">the Schema page</a> describes.</p>
+
+<h2>Already know this?</h2>
+<p>For every country in South America, show <code>code</code>, <code>name</code>, how many species have records there in the sample and how many records, countries with none included (as 0), by name. Solve it and the module is marked done.</p>
+{{skip:f3-skip}}
+
+<h2>Concept</h2>
+<p>Normalized tables (<a href="/learn/database-architecture/normalize/">Normalization, d2</a>) keep each fact once, so most questions need several tables at once. A <strong>join</strong> pairs the rows of two tables wherever a condition, written after <code>ON</code>, is true; aliases (<code>species AS s</code>) keep the column names short and unambiguous. The ERD on <a href="/learn/schema/">the Schema page</a> says which columns to join on and what to expect: the line <code>species ||--o{ occurrences</code> reads "one species, zero or more records", so joining a species to its records turns one row into many, and <code>countries |o--o{ occurrences</code> says a record has at most one country, possibly none.</p>
+<ul>
+<li>An <strong>inner join</strong> (<code>JOIN</code>) keeps only the pairs that match: a species with no records disappears from the result without a word.</li>
+<li>A <strong>left join</strong> (<code>LEFT JOIN</code>) keeps every row of the left table; where nothing matches, the right table's columns are <code>NULL</code>. Count a column of the right table (<code>count(o.id)</code>), not <code>count(*)</code>, to get 0 for those rows. A condition on the right table belongs in <code>ON</code>: in <code>WHERE</code> it throws away the rows the left join kept, because their <code>NULL</code>s fail it.</li>
+<li>An <strong>anti join</strong> keeps the left rows that have no match: <code>LEFT JOIN … WHERE &lt;right key&gt; IS NULL</code>, or <code>WHERE NOT EXISTS (SELECT 1 FROM … WHERE &lt;match&gt;)</code>. Avoid <code>NOT IN (subquery)</code> for this: if the subquery returns one <code>NULL</code>, <code>NOT IN</code> is never true and the answer is empty.</li>
+<li>A <strong>many-to-many</strong> relationship (an animal is recorded in many countries, a country holds many animals) needs a junction table of pairs, here <code>species_countries</code>; you join through it.</li>
+<li>A join <strong>multiplies rows</strong>: joining one species to its 20 countries and its 2,000 records gives 40,000 rows, and every count over them is wrong. Join one "many" table at a time, or aggregate before joining (<a href="/learn/foundations/window/">Window functions, f4</a>).</li>
+</ul>
+
+<h2>Worked example</h2>
+<p>Which animals were recorded in Brazil? critwire answers it in two places. <code>species_countries</code> is critwire's published list, the junction between <code>species</code> and <code>countries</code>, built from every open record in GBIF after critwire's country rule:</p>
+{{block:f3-brazil-list}}
+<p>The lab sample holds the records themselves, so it can also say how many:</p>
+{{block:f3-brazil-records}}
+<p>The two lists differ. <code>EXCEPT</code> returns the rows of the first query that the second doesn't have:</p>
+{{block:f3-brazil-diff}}
+<p>Each has a single Brazilian record in the sample (the query above), far from the rest of its records. critwire's country rule leaves out a country with only one record outside the region where most of an animal's countries lie, as a likely captive animal or a mistake; the sample keeps every record. Neither list is where the animal lives: both are where someone recorded it (and the Tiger, the Chimpanzee and the African Wild Dog are on both).</p>
+
+<h2>Lab</h2>
+<ol class="steps">
+<li><p>Which animals have no records in the sample at all? An anti join: keep the species whose left join found nothing.</p>
+{{block:f3-no-records}}
+<p>The three without a GBIF id are the ones <a href="/learn/foundations/select/">Select and filter (f1)</a> found: critwire hasn't settled which GBIF taxon they are, so nothing was downloaded for them. The Ili Pika has no open record anywhere. The Yangtze Giant Softshell Turtle is different: critwire lists countries for it, but its only open record comes from a dataset whose own license is CC BY-NC, and the sample keeps a record only when both the record's and its dataset's licenses are open (<a href="/learn/data/">the lab data page</a>). The same anti join on <code>species_countries</code> finds the other four, but not the turtle:</p>
+{{block:f3-no-countries}}</li>
+<li><p>Where the condition goes. Records since 2020 in each South American country, zeros kept: the year test is part of the match, so it goes in <code>ON</code>.</p>
+{{block:f3-on}}
+<p>Move <code>o.year &gt;= 2020</code> to <code>WHERE</code> and the countries with no recent record vanish: their <code>o.year</code> is <code>NULL</code>, the test is unknown, and <code>WHERE</code> drops them. The left join has quietly become an inner join.</p>
+{{block:f3-where}}</li>
+<li><p>The row multiplier. The Jaguar has 2,000 records and 20 countries in <code>species_countries</code>; joining both to the species pairs every record with every country:</p>
+{{block:f3-fan-out}}</li>
+<li><p>Light spatial in plain SQL. Every record has a <code>longitude</code> and <code>latitude</code> in degrees (WGS 84), so <code>min</code> and <code>max</code> give a species' <strong>bounding box</strong>, the smallest rectangle around its records:</p>
+{{block:f3-bbox}}
+<p>The Tasmanian Devil's box runs from New Mexico to Tasmania: a few zoo specimens in Albuquerque stretch it across the Pacific (the Jaguar's northern edge is the same zoo). One outlier ruins a box, so look at where the records actually are. A rectangle as a filter (<code>BETWEEN</code> on both axes) finds the records in and around Tasmania:</p>
+{{block:f3-box-filter}}</li>
+<li><p>Count records in a grid of 10° boxes: <code>floor(longitude / 10) * 10</code> is the west edge of a record's box, <code>floor(latitude / 10) * 10</code> its south edge. <code>floor</code> rounds down, also below zero, so latitude -41.2 falls in the box from -50 to -40.</p>
+{{block:f3-bins}}</li>
+</ol>
+
+<h2>Result</h2>
+<p>Brazil has 12 animals in critwire's list and 14 in the sample; the two extra ones each rest on one stray record that critwire's rule leaves out. Five animals have no record in the sample, four of them for reasons <code>range_status</code> gives and one because of a dataset's license. A condition on the right table in <code>WHERE</code> turns a left join into an inner one (14 countries become 9), and joining two "many" tables at once turned 2,000 records into 40,000 rows. A degree box is cheap and works anywhere, but it is not an area (a 10° box near the poles is much smaller than one at the equator) and one outlier stretches it: the GIS in SQL modules (Coordinate reference systems, g1, and Spatial joins, g3, both in preparation) do this properly with geometries.</p>
+
+<h2>Exercise</h2>
+<p>Which countries in Africa have no record in the sample? Show <code>code</code> and <code>name</code>, by name. Write it with <code>NOT EXISTS</code>.</p>
+{{exercise:f3-ex}}
+<details><summary>About the answer</summary>
+<p>The <code>LEFT JOIN … WHERE o.id IS NULL</code> form passes the check too.</p>
+</details>
+<p>The <code>NOT IN</code> trap, in one line: whether <code>'BR'</code> is in a list holding <code>NULL</code> can't be ruled out, so <code>NOT IN</code> gives unknown, while a match still makes <code>IN</code> true.</p>
+{{block:f3-not-in}}
+
+<h2>Check</h2>
+<p>Your rows must equal the answer's, column by column, in any row order. "Already know this?" is checked the same way. Check runs the answer on the tables as loaded, so if you changed them in the playground, Reset database first.</p>
+
+<h2>Dialects</h2>
+<ul>
+<li><strong>PostgreSQL:</strong> as here; also <code>JOIN … USING (col)</code>, <code>FULL JOIN</code>, and <code>LATERAL</code> (a subquery that reads the row beside it). There is no <code>ANTI JOIN</code> keyword: write <code>NOT EXISTS</code>, which the planner runs as an anti join.</li>
+<li><strong>DuckDB</strong> (this page's engine): as PostgreSQL, plus <code>SEMI JOIN</code> and <code>ANTI JOIN</code> keywords, <code>ASOF JOIN</code> (nearest earlier match, for times) and <code>POSITIONAL JOIN</code>.</li>
+<li><strong>SQL Server:</strong> no <code>USING</code> or <code>NATURAL</code>; <code>CROSS APPLY</code> and <code>OUTER APPLY</code> do what <code>LATERAL</code> does; <code>EXCEPT</code> and <code>NOT EXISTS</code> as here; <code>GROUP BY</code> repeats the expressions, not their aliases; <code>floor</code> as here.</li>
+</ul>

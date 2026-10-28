@@ -1,0 +1,8 @@
+-- result: f4-ranks · 16 rows · sha256 3010c6a34f6e
+species_id | records | by_row | by_rank | by_dense_rank
+2 | 2000 | 1 | 1 | 1
+8 | 2000 | 2 | 1 | 1
+25 | 2000 | 3 | 1 | 1
+28 | 2000 | 4 | 1 | 1
+37 | 2000 | 5 | 1 | 1
+… 11 more rows

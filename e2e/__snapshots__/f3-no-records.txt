@@ -1,0 +1,7 @@
+-- result: f3-no-records · 5 rows · sha256 5658cf0e3423
+id | common_name | range_status | gbif_id
+9 | Dyeing Poison Dart Frog | identity-unsettled | NULL
+18 | Yangtze Giant Softshell Turtle | ok | 2442647
+19 | Floreana Giant Tortoise | identity-unsettled | NULL
+27 | Western Long-beaked Echidna | identity-unsettled | NULL
+47 | Ili Pika | no-open-records | 2436969

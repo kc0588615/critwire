@@ -1,0 +1,3 @@
+-- result: d6-star-dim-year · 1 row · sha256 fcdad55612e8
+years | first_year | last_year
+177 | 1599 | 2026

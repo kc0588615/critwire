@@ -1,0 +1,5 @@
+-- result: d5-defaults · 3 rows · sha256 637b64b91525
+table_name | owner | reporting_can_read
+report_1_by_year | learn_etl | true
+report_2_by_species | learn_etl | false
+report_3_by_country | learn_etl | true
