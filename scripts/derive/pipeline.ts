@@ -1,20 +1,25 @@
-// The derive pipeline (plan §5), shared by pnpm derive, pnpm build and pnpm gbif:register: read the inputs, derive
+// The derive pipeline (plan §5, D7), shared by pnpm derive, pnpm build and pnpm gbif:register: read the inputs, derive
 // every output in memory (pure: no network, clock or species.json read), and prove the committed derived files equal it.
+// deriveAll = deriveCore (species, review entries, countries contributions, countries) + the lab sample's half
+// (derive/sample.ts). pnpm ingest gbif-sample runs deriveCore alone, so a stale sample never blocks its re-ingest.
 import { relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { formatJson, readJson, readOptionalText } from "../json.ts";
 import { readSnapshot, type ColSnapshot, type GbifSnapshot, type NaturalEarthSnapshot, type WikidataSnapshot } from "../raw.ts";
 import { baseFile, mismatchesFile, overridesFile, speciesFile, validateBase, type BaseSpecies, type Mismatch, type Species } from "../species.ts";
-import { contributionsFile, currentDoi, registrationFile, type Contributions, type Registration } from "../gbif/derived-dataset.ts";
+import {
+  contributionsFile, currentDoi, registrationFile, sampleContributionsFile, type Contributions, type Registration,
+} from "../gbif/derived-dataset.ts";
 import { deriveCol } from "./col.ts";
 import { gbifContributions } from "./contributions.ts";
 import { deriveCountries, parseOverrides } from "./countries.ts";
 import { deriveGbif } from "./gbif.ts";
 import { assertNaturalEarthFresh, countriesFile, matchCountries, type CountriesFile, type CountriesResult } from "./naturalearth.ts";
 import { buildRecord } from "./record.ts";
+import { deriveSample, readLearnInputs, type LearnInputs, type LearnResult } from "./sample.ts";
 import { assertWikidataFresh, bindingsByName, deriveWikidata } from "./wikidata.ts";
 
-export interface DeriveInputs {
+export interface CoreInputs {
   base: BaseSpecies[];
   wikidata: WikidataSnapshot;
   col: ColSnapshot;
@@ -27,7 +32,7 @@ export interface DeriveInputs {
 
 // doi: the registration's DOI when it matches the contributions, else null (gbif/derived-dataset.ts currentDoi).
 // countries: data/countries.json; countriesReport: how each code matched (derive prints it).
-export interface DeriveResult {
+export interface CoreResult {
   records: Species[];
   entries: Mismatch[];
   contributions: Contributions;
@@ -36,10 +41,17 @@ export interface DeriveResult {
   countriesReport: CountriesResult["report"];
 }
 
+export interface DeriveInputs extends CoreInputs { learn: LearnInputs }
+export interface DeriveResult extends CoreResult { learn: LearnResult }
+
 const byText = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
 const root = fileURLToPath(new URL("../../", import.meta.url));
 
 export async function readDeriveInputs(): Promise<DeriveInputs> {
+  return { ...await readCoreInputs(), learn: await readLearnInputs() };
+}
+
+export async function readCoreInputs(): Promise<CoreInputs> {
   return {
     base: await readJson<BaseSpecies[]>(baseFile),
     wikidata: await readSnapshot("wikidata"),
@@ -57,9 +69,15 @@ function assertNames(source: string, keys: string[], base: BaseSpecies[]): void 
   if ([...keys].sort(byText).join("\n") !== want) throw new Error(`data/raw/${source} is stale: run pnpm ingest ${source}`);
 }
 
-// Validates every input and derives the records (sorted by id), the review entries, the GBIF contributions, the
+// Everything derive writes or checks: the core, then the lab sample from it. Pure; throws on a stale sample.
+export function deriveAll(inputs: DeriveInputs): DeriveResult {
+  const core = deriveCore(inputs);
+  return { ...core, learn: deriveSample(core, inputs.learn) };
+}
+
+// Validates every core input and derives the records (sorted by id), the review entries, the GBIF contributions, the
 // DOI the countries entries cite and the countries rows. Pure.
-export function deriveAll({ base: unsorted, wikidata, col, gbif, naturalearth, overrides: rawOverrides, registration }: DeriveInputs): DeriveResult {
+export function deriveCore({ base: unsorted, wikidata, col, gbif, naturalearth, overrides: rawOverrides, registration }: CoreInputs): CoreResult {
   validateBase(unsorted);
   const base = [...unsorted].sort((a, b) => a.id - b.id);
   assertWikidataFresh(wikidata, base);
@@ -104,12 +122,13 @@ export function deriveAll({ base: unsorted, wikidata, col, gbif, naturalearth, o
 }
 
 // Every file pnpm derive writes, with its content and format (canonical: keys sorted, json.ts formatJson).
-export function derivedFiles({ records, entries, contributions, countries }: DeriveResult): { file: URL; value: unknown; canonical: boolean }[] {
+export function derivedFiles({ records, entries, contributions, countries, learn }: DeriveResult): { file: URL; value: unknown; canonical: boolean }[] {
   return [
     { file: speciesFile, value: records, canonical: false },
     { file: mismatchesFile, value: entries, canonical: false },
     { file: contributionsFile, value: contributions, canonical: true },
     { file: countriesFile, value: countries, canonical: false },
+    { file: sampleContributionsFile, value: learn.contributions, canonical: true },
   ];
 }
 

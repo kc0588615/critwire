@@ -31,7 +31,8 @@ import { assertDerivedFiles, deriveAll, readDeriveInputs } from "../derive/pipel
 import { downloadRequest, sameRequest } from "../learn/download.ts";
 import { SAMPLE_RULES } from "../learn/sample-rules.ts";
 import { SIMPLE_CSV_HEADER } from "../learn/simple-csv.ts";
-import { downloadState, ingestGbifSample, runGbifSample, sampleSpecies, SAMPLE_FILES } from "./gbif-sample.ts";
+import { SAMPLE_FILES } from "../learn/sample-files.ts";
+import { downloadState, ingestGbifSample, runGbifSample, sampleSpecies } from "./gbif-sample.ts";
 
 const KEY = "0000001-260928105237408";
 const D1 = "11111111-1111-1111-1111-111111111111";

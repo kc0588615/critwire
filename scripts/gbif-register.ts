@@ -113,7 +113,7 @@ async function readBack(doi: string, expected: Pick<DerivedDatasetRequest, "titl
 async function checkDeposit(sourceUrl: string, sha256: string): Promise<void> {
   const commit = SOURCE_URL.exec(sourceUrl)?.[1];
   if (commit === undefined) throw new Error(`sourceUrl ${sourceUrl} isn't https://github.com/${REPO}/tree/<commit>/data`);
-  const tag = depositTag(sha256);
+  const tag = depositTag("gbif-dd", sha256);
   const refs = new Map(git("ls-remote", "origin", `refs/tags/${tag}`, `refs/tags/${tag}^{}`).trim().split("\n")
     .filter(Boolean).map((line) => line.split("\t").reverse() as [string, string]));
   const tagged = refs.get(`refs/tags/${tag}^{}`) ?? refs.get(`refs/tags/${tag}`);

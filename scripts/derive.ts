@@ -1,7 +1,6 @@
-// Derives data/species.json, data/review/mismatches.json, data/gbif-derived-dataset/contributions.json and
-// data/countries.json from
-// data/base.json, data/raw/, data/review/country-overrides.json and data/gbif-derived-dataset/registration.json
-// (plan §5; derive/pipeline.ts). Validates every input and computes everything before writing any file.
+// Derives data/species.json, data/review/mismatches.json, data/gbif-derived-dataset/contributions.json,
+// data/countries.json and data/gbif-learn-sample/contributions.json from data/base.json, data/raw/ (gbif-sample
+// included), data/review/country-overrides.json and both targets' registration.json (plan §5, D7; derive/pipeline.ts). Validates every input and computes everything before writing any file.
 // Usage: pnpm derive
 import { mkdir } from "node:fs/promises";
 import { formatJson, writeJson } from "./json.ts";
@@ -16,7 +15,7 @@ for (const { file, value, canonical } of derivedFiles(result)) {
   await mkdir(new URL(".", file), { recursive: true });
   await writeJson(file, value, { canonical });
 }
-const { records, entries, contributions, doi, countries: { rows: countryRows }, countriesReport: cr } = result;
+const { records, entries, contributions, doi, countries: { rows: countryRows }, countriesReport: cr, learn } = result;
 
 // Summary for the PR body.
 const n = records.length;
@@ -43,6 +42,16 @@ console.log(`gbif contributions: taxa ${contributions.taxa.length}, datasets ${O
 if (doi !== null) {
   console.log(`DOI current ${doi}`);
 } else {
-  const tag = depositTag(contributionsSha256(formatJson(contributions, { canonical: true })));
+  const tag = depositTag("gbif-dd", contributionsSha256(formatJson(contributions, { canonical: true })));
   console.log(`DOI ${inputs.registration === null ? "missing" : "stale"}: commit, push, push tag ${tag}, then pnpm gbif:register`);
+}
+const lc = learn.contributions;
+console.log(`learn-sample: download ${lc.downloadKey} (${lc.originalDownloadDoi}), records ${lc.records}, datasets ${learn.datasets.length}, ` +
+  `country_code NULL ${learn.occurrences.filter((o) => o.country_code === null).length}`);
+if (learn.doi !== null) {
+  console.log(`learn-sample DOI current ${learn.doi}`);
+} else {
+  const tag = depositTag("gbif-learn", contributionsSha256(formatJson(lc, { canonical: true })));
+  console.log(`learn-sample DOI ${inputs.learn.registration === null ? "missing" : "stale"}: commit, push, push tag ${tag}, ` +
+    "then pnpm gbif:register --target learn-sample");
 }

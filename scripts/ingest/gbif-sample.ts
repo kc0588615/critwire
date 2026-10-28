@@ -14,7 +14,7 @@ import { join } from "node:path";
 import { createInterface } from "node:readline";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
-import { deriveAll, readDeriveInputs, type DeriveInputs } from "../derive/pipeline.ts";
+import { deriveCore, readCoreInputs, type CoreInputs } from "../derive/pipeline.ts";
 import { allPages } from "../gbif/pages.ts";
 import { namedState } from "../gbif/state.ts";
 import { loadEnv } from "../env.ts";
@@ -28,12 +28,13 @@ import {
 } from "../learn/download.ts";
 import { capSample, effectiveLicense, OPEN_LICENSES, SAMPLE_RULES, speciesFor, type SampleLicense } from "../learn/sample-rules.ts";
 import { readSimpleCsv, type ParseContext, type SampleRecord } from "../learn/simple-csv.ts";
+import {
+  SAMPLE_COLUMNS, SAMPLE_FILES, sampleDir, type SampleDataset, type SampleDatasets, type SampleDownload, type SampleRow,
+} from "../learn/sample-files.ts";
 import { utcDate } from "../raw.ts";
 import { occurrenceSearchQuery } from "./gbif.ts";
 
 const API = "https://api.gbif.org/v1";
-export const sampleDir = new URL("../../data/raw/gbif-sample/", import.meta.url);
-export const SAMPLE_FILES = ["download.json", "datasets.json", "sample.csv"] as const;
 // The zip is ~35 MB.
 const ZIP_TIMEOUT_MS = 10 * 60_000;
 // GBIF prepared the spike's download in 17 min; a run polls once a minute for up to an hour, then a re-run resumes.
@@ -51,43 +52,6 @@ export const DATASET_LICENSES: Readonly<Record<string, SampleLicense>> = {
   "http://creativecommons.org/licenses/by/4.0/legalcode": "CC BY 4.0",
   "http://creativecommons.org/licenses/by-nc/4.0/legalcode": "CC BY-NC 4.0",
 };
-
-export const SAMPLE_COLUMNS = [
-  "id", "species_id", "dataset_key", "license", "basis_of_record", "longitude", "latitude", "coordinate_uncertainty_m",
-  "country_code_gbif", "year", "month",
-] as const;
-export type SampleRow = Record<(typeof SAMPLE_COLUMNS)[number], string | number | null> & { id: number; species_id: number };
-
-// data/raw/gbif-sample/download.json: the download, GBIF's stored request (creator removed), the zip and the rules.
-export interface SampleDownload {
-  key: string;
-  doi: string;
-  license: string;
-  created: string;
-  eraseAfter: string;
-  totalRecords: number;
-  numberDatasets: number;
-  request: Record<string, unknown>;
-  downloadLink: string;
-  zip: { bytes: number; sha256: string };
-  datasetCounts: Record<string, number>;
-  sampleRules: typeof SAMPLE_RULES;
-}
-
-// data/raw/gbif-sample/datasets.json: every dataset of the download.
-export interface SampleDataset {
-  key: string;
-  title: string;
-  publisher: string;
-  publishingOrganizationKey: string;
-  doi: string | null;
-  license: SampleLicense;
-  licenseUrl: string;
-  records: number;
-  recordLicenses: Record<string, number>;
-  deleted?: string;
-}
-export interface SampleDatasets { retrieved: string; downloadKey: string; datasets: SampleDataset[] }
 
 // The lock around every run, and the intent a new download (--new, plan D6) writes before its POST.
 export const downloadState = namedState<DownloadIntent>("gbif-sample-download", "ingest gbif-sample");
@@ -110,8 +74,8 @@ interface GbifDownload {
 
 // The species with an ids.gbif, from derive's in-memory core: species.json is never read, so a stale derived file
 // never blocks the sample's re-ingest (D7).
-export function sampleSpecies(inputs: DeriveInputs): SampleSpecies[] {
-  return deriveAll(inputs).records.flatMap((r) => (r.ids.gbif === null ? [] : [{ id: r.id, gbif: r.ids.gbif }]));
+export function sampleSpecies(inputs: CoreInputs): SampleSpecies[] {
+  return deriveCore(inputs).records.flatMap((r) => (r.ids.gbif === null ? [] : [{ id: r.id, gbif: r.ids.gbif }]));
 }
 
 // GBIF's per-dataset record counts for the download, sorted by key.
@@ -307,7 +271,7 @@ export async function runGbifSample(args: string[], {
   api = API, dest = sampleDir, species, credentials = envCredentials, pollMs = POLL_MS, pollLimitMs = POLL_LIMIT_MS,
 }: RunOptions = {}): Promise<void> {
   const parsed = parseArgs(args);
-  const sp = species ?? sampleSpecies(await readDeriveInputs());
+  const sp = species ?? sampleSpecies(await readCoreInputs());
   const built = downloadRequest(sp.map((s) => s.gbif));
   const state = downloadState;
   const intentFile = state.intentFile();
