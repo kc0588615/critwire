@@ -12,12 +12,12 @@ import {
   classifyPost, decide, readBackErrors, requestBody, toRegistration, type DatasetUsage, type DerivedDatasetRecord,
   type DerivedDatasetRequest, type PostOutcome,
 } from "./gbif/register.ts";
+import { allPages } from "./gbif/pages.ts";
 import { createIntent, deleteIntent, intentFile, readIntent, withLock } from "./gbif/state.ts";
 
 const API = "https://api.gbif.org/v1";
 const REPO = "kc0588615/critwire";
 const POST_TIMEOUT_MS = 60_000;
-const PAGE_LIMIT = 1000; // GBIF's maximum page size
 // The deposit: the repo's data/ tree at one commit (A7).
 const SOURCE_URL = /^https:\/\/github\.com\/kc0588615\/critwire\/tree\/([0-9a-f]{40})\/data$/;
 const sourceUrlAt = (commit: string) => `https://github.com/${REPO}/tree/${commit}/data`;
@@ -123,21 +123,6 @@ async function checkDeposit(sourceUrl: string, sha256: string): Promise<void> {
   const raw = `https://raw.githubusercontent.com/${REPO}/${commit}/data/gbif-derived-dataset/contributions.json`;
   if (contributionsSha256(formatJson(await getJson(raw), { canonical: true })) !== sha256) {
     throw new Error(`${raw} doesn't hash to contributions-sha256 ${sha256}`);
-  }
-}
-
-// Every row of a GBIF paged listing (offset/limit, until endOfRecords).
-async function allPages<T>(url: string, init: GetJsonInit = {}): Promise<T[]> {
-  const rows: T[] = [];
-  for (;;) {
-    const page = await getJson(`${url}?offset=${rows.length}&limit=${PAGE_LIMIT}`, init) as
-      { endOfRecords: boolean; count?: number; results: T[] };
-    rows.push(...page.results);
-    if (page.endOfRecords) {
-      if (page.count !== undefined && page.count !== rows.length) throw new Error(`${url}: ${rows.length} rows, count ${page.count}`);
-      return rows;
-    }
-    if (page.results.length === 0) throw new Error(`${url}: an empty page at offset ${rows.length} before endOfRecords`);
   }
 }
 

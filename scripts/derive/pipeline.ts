@@ -1,9 +1,8 @@
 // The derive pipeline (plan §5), shared by pnpm derive, pnpm build and pnpm gbif:register: read the inputs, derive
 // every output in memory (pure: no network, clock or species.json read), and prove the committed derived files equal it.
-import { readFile } from "node:fs/promises";
 import { relative } from "node:path";
 import { fileURLToPath } from "node:url";
-import { formatJson, readJson } from "../json.ts";
+import { formatJson, readJson, readOptionalText } from "../json.ts";
 import { readSnapshot, type ColSnapshot, type GbifSnapshot, type NaturalEarthSnapshot, type WikidataSnapshot } from "../raw.ts";
 import { baseFile, mismatchesFile, overridesFile, speciesFile, validateBase, type BaseSpecies, type Mismatch, type Species } from "../species.ts";
 import { contributionsFile, currentDoi, registrationFile, type Contributions, type Registration } from "../gbif/derived-dataset.ts";
@@ -120,15 +119,5 @@ export async function assertDerivedFiles(result: DeriveResult): Promise<void> {
     if (await readOptionalText(file) !== formatJson(value, { canonical })) {
       throw new Error(`${relative(root, fileURLToPath(file))} is stale: run pnpm derive`);
     }
-  }
-}
-
-// A file's text, or null when it doesn't exist.
-async function readOptionalText(url: URL): Promise<string | null> {
-  try {
-    return await readFile(url, "utf8");
-  } catch (e) {
-    if ((e as NodeJS.ErrnoException).code === "ENOENT") return null;
-    throw e;
   }
 }

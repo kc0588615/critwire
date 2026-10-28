@@ -1,7 +1,7 @@
 // The network entry point for reads (ingest, gbif:register). Sequential, paced (≤ 2 req/s), retried with backoff, one
 // stderr line per attempt. gbif:register's single POST uses fetch itself (never retried) with USER_AGENT and logRequest.
 import { createHash } from "node:crypto";
-import { createWriteStream } from "node:fs";
+import { createReadStream, createWriteStream } from "node:fs";
 import { rm } from "node:fs/promises";
 import { Readable, Transform } from "node:stream";
 import { pipeline } from "node:stream/promises";
@@ -89,7 +89,8 @@ export async function getBytes(url: string, { sha256, ...init }: GetBytesInit): 
   return body;
 }
 
-export interface DownloadInit extends GetJsonInit { sha256: string; bytes: number }
+// sha256 null: only the size is pinned (a file seen for the first time; the caller hashes it, sha256File).
+export interface DownloadInit extends GetJsonInit { sha256: string | null; bytes: number }
 
 // Streams a pinned file to `path` (getOk's retries), hashing as it writes. Throws unless the file's sha256 and size
 // equal the pins; on any failure no file is left at `path`.
@@ -105,9 +106,16 @@ export async function downloadFile(url: string, path: string, { sha256, bytes, .
     });
     const method = init.method ?? "GET";
     if (got.bytes !== bytes) throw new Error(`${method} ${url}: ${got.bytes} bytes ≠ pinned ${bytes}`);
-    if (got.sha256 !== sha256) throw new Error(`${method} ${url}: sha256 ${got.sha256} ≠ pinned ${sha256}`);
+    if (sha256 !== null && got.sha256 !== sha256) throw new Error(`${method} ${url}: sha256 ${got.sha256} ≠ pinned ${sha256}`);
   } catch (error) {
     await rm(path, { force: true });
     throw error;
   }
+}
+
+// A file's sha256, streamed.
+export async function sha256File(path: string): Promise<string> {
+  const hash = createHash("sha256");
+  for await (const chunk of createReadStream(path)) hash.update(chunk as Buffer);
+  return hash.digest("hex");
 }

@@ -6,6 +6,16 @@ export async function readJson<T>(url: URL): Promise<T> {
   return JSON.parse(await readFile(url, "utf8")) as T;
 }
 
+// A file's text, or null when it doesn't exist.
+export async function readOptionalText(url: URL): Promise<string | null> {
+  try {
+    return await readFile(url, "utf8");
+  } catch (e) {
+    if ((e as NodeJS.ErrnoException).code === "ENOENT") return null;
+    throw e;
+  }
+}
+
 // Recursively sorts object keys (code-unit order); arrays keep their order.
 function sortKeys(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(sortKeys);
