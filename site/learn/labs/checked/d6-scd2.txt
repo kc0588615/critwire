@@ -1,5 +1,5 @@
--- result: d6-scd2 · 4 rows · sha256 ffa4867a086c
-species_id | filed_then | name_now | records
+-- result: d6-scd2 · 4 rows · sha256 68ebdb65533e
+species_id | name_then | name_now | records
 55 | Manis gigantea | Smutsia gigantea | 6
 55 | Smutsia gigantea | Smutsia gigantea | 4
 63 | Manis temminckii | Smutsia temminckii | 7

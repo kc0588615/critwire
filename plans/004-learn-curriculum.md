@@ -4211,7 +4211,7 @@ records | species_with_records | species_rows
 - **Facts and dimensions.** A **fact table** holds the events you count or measure, one row each. A **dimension table** holds one way to slice them: the species, the country, the dataset, the year. Each fact row carries a foreign key to every dimension it can be sliced by. Drawn, the fact sits in the middle with its dimensions around it: a **star**.
 - **The grain comes first.** The grain is what one fact row is, said in words before any column is chosen: "one sample record", "one country and one habitat class". Every column must be true at that grain; a table that mixes two grains (records and yearly totals in one table) counts things twice. Keep the finest grain you have: a coarser summary can always be built from it, never the reverse.
 - **Measures** are the fact's numbers. **Additive** ones add up across every dimension (records, area in km²). **Semi-additive** ones add up across some (a yearly population count adds across countries, not across years). **Non-additive** ones never add up (ratios, averages, distinct counts): store their parts and compute them in the report. A record fact's measure is the row itself: each row counts one, `count(*)`.
-- **Dimensions are wide and flat**: everything you'd filter or group by, as readable text, with a hierarchy's levels as columns side by side (class, order, family, genus). That repeats values on purpose, the denormalizing d2 named: safe here because the star is rebuilt from the normalized tables on every build and never edited.
+- **Dimensions are wide and flat**: everything you'd filter or group by, as readable text, with a hierarchy's levels as columns side by side (class, order, family, genus). That repeats values on purpose, the denormalizing d2 named: safe here because every critwire build rebuilds the star from the lab's normalized tables and nobody edits it.
 - **Star or snowflake.** A **snowflake** normalizes the dimensions back into chains (species → genus → family → order → class, as `taxa` does). It stores each name once, but every report walks the chain and every reporting tool has to be taught it. A star needs one join per dimension. Snowflake a dimension only when it is huge or one level is shared by several dimensions.
 - **Keys.** A dimension has a primary key; the fact's foreign keys point at it; the fact's own primary key is its grain (`record_id`; `species_id, country_code`). Warehouses usually give dimensions **surrogate keys**, integers the load makes up (d1), so that one species can have several versions (type 2, below) and a source system's codes can change underneath. This star uses critwire's ids, already surrogates, and natural keys an authority keeps stable (ISO country codes, GBIF dataset keys).
 - **Unknown members.** A fact's foreign key is never NULL: an inner join drops the row, and a report tool shows a blank that no filter catches. Instead the dimension gets one row that means "unknown" (`ZZ`, year `-1`), and the load maps a missing value to it in exactly one place. Then the totals agree whichever dimension you slice by. When "unknown" and "doesn't apply" both occur, give each its own member.
@@ -4420,7 +4420,7 @@ classes | level1_classes
 75 | 13
 ```
 
-`fact_country_habitat`: the grain is **one country and one habitat class**, with a measure that adds up across classes, `est_area_km2`.
+`fact_country_habitat`: the grain is **one country and one habitat class**, with a measure that adds up across classes, `est_area_km2`. It shares only `dim_country` with the other facts; it has no species.
 
 ```sql
 -- q: d6-star-fact-country-habitat
@@ -4622,10 +4622,10 @@ Temminck's Ground Pangolin | 9 | 1930
 
 All 9 records, back to 1930, now report under the new name, and nothing remembers the old one. For a correction that is what you want. In critwire's build the dimension is rebuilt from `species` each time, so the correction belongs in the source, and the star picks it up.
 
-5. Type 2: keep history. Older lists, such as Mammal Species of the World (2005), put all eight pangolins in genus *Manis*; the African ground pangolins have been *Smutsia* in general use since a 2018 study of the pangolins' family tree (Gaubert et al., Journal of Heredity), and critwire uses *Smutsia*. To report records under the name in use when each was made, the dimension keeps both versions. In this lab, version 1 is valid to 2017 and version 2 from 2018 (by year, since a record's date here is its year); a record with no year gets the current version:
+5. Type 2: keep history. Older lists, such as Mammal Species of the World (2005), put all eight pangolins in genus *Manis*; the African ground pangolins have been *Smutsia* in general use since a 2018 study of the pangolins' family tree (Gaubert et al., Journal of Heredity), and critwire uses *Smutsia*. To report records under the name in use when each was made, the dimension keeps both versions, each valid for a range of years, both ends included (`0` and `9999` stand for "always" and "until further notice"). In this lab, version 1 is valid to 2017 and version 2 from 2018 (by year, since a record's date here is its year); a record with no year gets the current version. The 2018 boundary is a teaching convention, not the day the name changed: a study is published, then each checklist, museum and portal adopts it when it chooses, so a real dimension takes its dates from the list it follows. First the versions, and a check before anything is loaded:
 
 ```sql
--- q: d6-scd2
+-- q: d6-scd2-versions
 -- status: ran
 -- engine: postgis
 -- after: d6-star-dim-species, d6-star-dim-country, d6-star-dim-dataset, d6-star-dim-year, d6-star-fact-records
@@ -4639,18 +4639,51 @@ CREATE TABLE dim_species_history (
   is_current      BOOLEAN NOT NULL,
   UNIQUE (species_id, valid_from)
 );
+CREATE UNIQUE INDEX ON dim_species_history (species_id) WHERE is_current;
 INSERT INTO dim_species_history (species_id, scientific_name, genus, valid_from, valid_to, is_current)
 SELECT species_id, scientific_name, genus, 0, 9999, true FROM dim_species;
 UPDATE dim_species_history SET valid_from = 2018 WHERE species_id IN (55, 63);
 INSERT INTO dim_species_history (species_id, scientific_name, genus, valid_from, valid_to, is_current)
 VALUES (55, 'Manis gigantea', 'Manis', 0, 2017, false),
        (63, 'Manis temminckii', 'Manis', 0, 2017, false);
+SELECT
+  (SELECT count(*)
+   FROM (SELECT f.record_id
+         FROM fact_records AS f
+         LEFT JOIN dim_species_history AS h
+           ON h.species_id = f.species_id
+          AND CASE WHEN f.year = -1 THEN h.is_current ELSE f.year BETWEEN h.valid_from AND h.valid_to END
+         GROUP BY f.record_id
+         HAVING count(h.species_key) <> 1) AS wrong) AS records_without_one_version,
+  (SELECT count(*)
+   FROM (SELECT species_id
+         FROM dim_species_history
+         GROUP BY species_id
+         HAVING count(*) FILTER (WHERE is_current) <> 1) AS wrong) AS species_without_one_current;
+```
+
+```text
+-- result: d6-scd2-versions · 1 row · sha256 acb944054e01
+records_without_one_version | species_without_one_current
+0 | 0
+```
+
+Both counts must be 0 before the load. The first applies the load's own rule (the `CASE` below) to every record and counts those that match no version, a gap between one version's `valid_to` and the next one's `valid_from`, or more than one, an overlap: a gap drops the record from a report by version, an overlap counts it twice. `UNIQUE (species_id, valid_from)` stops two versions starting in the same year, not an overlap. The partial unique index allows **at most one** current row per species; it can't require one, since a species whose versions were all closed has none. The second count catches that, so together they prove **exactly one**.
+
+Then the load: each record gets the key of the version in force in its year, and once every record has one, `species_key` becomes `NOT NULL`, so no record can later be left without a version:
+
+```sql
+-- q: d6-scd2
+-- status: ran
+-- engine: postgis
+-- after: d6-star-dim-species, d6-star-dim-country, d6-star-dim-dataset, d6-star-dim-year, d6-star-fact-records, d6-scd2-versions
 ALTER TABLE fact_records ADD COLUMN species_key INTEGER REFERENCES dim_species_history (species_key);
 UPDATE fact_records AS f SET species_key = h.species_key
 FROM dim_species_history AS h
 WHERE h.species_id = f.species_id
   AND CASE WHEN f.year = -1 THEN h.is_current ELSE f.year BETWEEN h.valid_from AND h.valid_to END;
-SELECT f.species_id, version.scientific_name AS filed_then, current_version.scientific_name AS name_now,
+ALTER TABLE fact_records ALTER COLUMN species_key SET NOT NULL;
+SELECT f.species_id, version.scientific_name AS name_then, current_version.scientific_name AS name_now,
        count(*) AS records
 FROM fact_records AS f
 JOIN dim_species_history AS version ON version.species_key = f.species_key
@@ -4658,19 +4691,21 @@ JOIN dim_species_history AS current_version
   ON current_version.species_id = f.species_id AND current_version.is_current
 WHERE f.species_id IN (55, 63)
 GROUP BY f.species_id, version.scientific_name, current_version.scientific_name
-ORDER BY f.species_id, filed_then;
+ORDER BY f.species_id, name_then;
 ```
 
 ```text
--- result: d6-scd2 · 4 rows · sha256 ffa4867a086c
-species_id | filed_then | name_now | records
+-- result: d6-scd2 · 4 rows · sha256 68ebdb65533e
+species_id | name_then | name_now | records
 55 | Manis gigantea | Smutsia gigantea | 6
 55 | Smutsia gigantea | Smutsia gigantea | 4
 63 | Manis temminckii | Smutsia temminckii | 7
 63 | Smutsia temminckii | Smutsia temminckii | 2
 ```
 
-Grouped by the fact's `species_key`, 13 of the 19 pangolin records report as *Manis*, "as it was"; grouped through the current version, all 19 are *Smutsia*, "as it is". The fact holds the version key, set once when the record is loaded, so the lookup by date runs at load time, never in a report. Every version of a species keeps its `species_id`, so a report can still ask about the animal across versions. `ALTER TABLE … ADD COLUMN` and the `UPDATE` stand in for that load here; a real build sets `species_key` in the `INSERT`. Before you trust a type 2 dimension, check that versions don't overlap and leave no gaps, and that each species has exactly one current row; a partial unique index, `CREATE UNIQUE INDEX ON dim_species_history (species_id) WHERE is_current`, enforces the last.
+Grouped by the fact's `species_key`, 13 of the 19 pangolin records report as *Manis*, "as it was"; grouped through the current version, all 19 are *Smutsia*, "as it is". The fact holds the version key, set once when the record is loaded, so the lookup by date runs at load time, never in a report. Every version of a species keeps its `species_id`, so a report can still ask about the animal across versions. `ALTER TABLE … ADD COLUMN` and the `UPDATE` stand in for that load here; a real build sets `species_key` in the `INSERT` and declares it `NOT NULL` from the start.
+
+Which date picks the version? Here, the year the animal was seen, so "as it was" means the name in use when it was seen. That is not the name the record was filed under: an animal seen in 2010 and identified, or re-identified, in 2020 is *Smutsia* in its source. Occurrence data keep the two times apart (Darwin Core's `eventDate` and `dateIdentified`); the sample has only the first, so this lab keys versions by observation year. Decide which question a report answers, the name when the animal was seen or the name the record was given, and key the versions by that date.
 
 6. Export. In DuckDB a table becomes a file with one `COPY`; it runs here in the browser, which has the same `countries` table:
 
@@ -4692,7 +4727,7 @@ rows | first_code | last_code
 
 critwire's build exports every star table this way, `COPY (SELECT * FROM <table> ORDER BY <primary key>) TO '<table>.csv' (FORMAT csv, HEADER)`, and writes `manifest.json` beside the files (§A.3). In PostgreSQL, psql's `\copy` does the same from your own computer, `\copy (SELECT * FROM dim_country ORDER BY country_code) TO 'dim_country.csv' WITH (FORMAT csv, HEADER)`; plain `COPY … TO 'file'` writes on the server and needs a server-file privilege. Read the files back with `all_varchar` (or explicit types) so a code like Namibia's `NA` stays text.
 
-**Result:** The record fact's grain is one sample record: 40,395 rows, one per row of `occurrences`, sliced by species, country, dataset and year, each one join away. The star and the snowflake give the same counts by class (Amphibia 4,776, Mammalia 31,905, Reptilia 3,714); only the joins differ. The two facts share `dim_country`, so habitat area and records meet by country: joined to each other, Trinidad and Tobago's 2 records became 44. A record with no country goes to `ZZ` and one with no year to `-1`, so every total still adds up. Type 1 restated all 9 of Temminck's pangolin's records under the corrected name; type 2 kept 13 of the 19 pangolin records under *Manis* "as it was", while "as it is" shows all 19 under *Smutsia*.
+**Result:** The record fact's grain is one sample record: 40,395 rows, one per row of `occurrences`, sliced by species, country, dataset and year, each one join away. The star and the snowflake give the same counts by class (Amphibia 4,776, Mammalia 31,905, Reptilia 3,714); only the joins differ. The two facts share `dim_country`, so habitat area and records meet by country: joined to each other, Trinidad and Tobago's 2 records became 44. A record with no country goes to `ZZ` and one with no year to `-1`, so every total still adds up. Type 1 restated all 9 of Temminck's pangolin's records under the corrected name; type 2, after checking that every record matched exactly one version and every species had exactly one current row, kept 13 of the 19 pangolin records under *Manis* "as it was", while "as it is" shows all 19 under *Smutsia*.
 
 **Exercise:** Big facts make slow dashboards, so warehouses add **aggregate facts**: a coarser grain, built from the fine one. In the browser (DuckDB), build `fact_species_decade` at the grain one species and one decade, with a measure `records`, and a dimension `dim_decade` (the decades that occur, labelled like `1990s`, plus an unknown member). Use `species` as the species dimension. Then prove it reconciles: its records must add up to the records in `occurrences`, and say how many are in the unknown decade.
 
@@ -4738,7 +4773,7 @@ fact_rows | records | reconciles | unknown_decade
 **Check:** `fact_species_decade` has 645 rows, its records add up to 40,395 (`reconciles` is `true`), and 2,289 are in the unknown decade. If the total is short, a NULL year was grouped away or dropped by a join; if the `INSERT` fails on the primary key, two rows share a species and decade, so the `GROUP BY` and the key disagree about the grain.
 
 **Dialects:**
-- **PostgreSQL:** nothing star-specific: plain tables, foreign keys (which some warehouses drop on facts for load speed and check in the load instead), identity columns for surrogate keys, `MERGE` (15+) for type 2 loads, a partial unique index for "one current version", `\copy` for files on your computer.
+- **PostgreSQL:** nothing star-specific: plain tables, foreign keys (which some warehouses drop on facts for load speed and check in the load instead), identity columns for surrogate keys, `MERGE` (15+) for type 2 loads, a partial unique index for "at most one current version", an exclusion constraint for "no overlapping versions" (`EXCLUDE USING gist (species_id WITH =, int4range(valid_from, valid_to, '[]') WITH &&)`, with the `btree_gist` extension), `\copy` for files on your computer.
 - **DuckDB:** foreign keys only in `CREATE TABLE`, no identity columns (a `SEQUENCE` with `DEFAULT nextval(…)` instead), and `COPY … TO` writes CSV or Parquet directly; column storage makes wide dimensions and large facts quick to scan, which is why critwire's build runs the star there.
 - **SQL Server:** `IDENTITY` surrogate keys, clustered columnstore indexes for large facts, `MERGE` for type 2 loads, and temporal tables (2016+) that keep a row's history automatically, by when it was changed rather than when it was true.
 
@@ -7209,7 +7244,7 @@ LoadStar("fact_records", {
 **Goal:** turn eight tables into one model that filters correctly. In Model view, each fact gets a relationship to each of its dimensions:
 - **Cardinality many-to-one** (`*:1`): many fact rows point at one dimension row, by the key d6 declared.
 - **Filter direction single:** a filter flows from the dimension to the fact. Choosing a country in a slicer filters `fact_records` and `fact_country_habitat`, never the other way round. Both directions invite ambiguous paths and slow, surprising totals; keep them for the rare case that needs them.
-- **Conformed dimensions:** `dim_country` and `dim_species` are shared by the facts, so one slicer filters all of them at once (d6).
+- **Conformed dimensions:** `dim_country` is shared by all three facts and `dim_species` by the two species facts (`fact_records`, `fact_species_country`), so a country slicer filters all three at once and a species slicer the two that have a species (d6). The habitat fact has no species.
 - **Facts are never related to each other.** Joining two facts directly multiplies their rows (d6's drill across). Each fact is summed under the shared dimension instead, which is what a model with only fact-to-dimension relationships does.
 - **The factless fact:** `fact_species_country` has no measure column; its measure is a count of its rows (species listed in a country). It answers "where does critwire list the species?", while `fact_records` answers "what was recorded where?", and the two need not agree.
 

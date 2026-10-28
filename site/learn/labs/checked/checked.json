@@ -243,8 +243,12 @@
       "result": "b319504d2d1ebb6ec781469ccdef3eb6d4806462a57346ad9da85431d47ffc0c"
     },
     "d6-scd2": {
-      "key": "9cd5aa85f30cc8fa3a5931242a10ccd624ef2cbf5bda7bc2aeda85ba1839d3e5",
-      "result": "f1e648523549dd0b8dcbd2e003ef924c7176a9f5bad224f8c79874915a3e6cc3"
+      "key": "66b493864ddf6c9b892d0db22150407d5df76ed9e836801c871a1743ed4176f7",
+      "result": "6c8c07b204cfb8850ba0cdefdb0996bc0646889b6cdce6079a7e59ee4ba36564"
+    },
+    "d6-scd2-versions": {
+      "key": "64e3147ec54374d9fac45f3049eb6f511e0cbd2cee4c837d0a13e70b29d83859",
+      "result": "e0600e8b28ddd4ec897770feefc5cc824ec8e7194e248c6d4ae38316d9cb0d1e"
     },
     "d6-snowflake": {
       "key": "9d136d3ca354db2c08f8772235b1e805b73478a9efc4bcb63faf297b684e5fad",
@@ -308,7 +312,7 @@
     "d3.sql": "76f1a6863b298725cfe135502a592646b2ea055272d64b3dc7ebd6abed8de379",
     "d4.sql": "5e3b882edf12845b1dd509443089a12122cf424b861bfcdc574f5be03e36bb67",
     "d5.sql": "e8eb4ec666fc0442cafee630dd97875ab5d825532c1f597ff7e628efb692c7a6",
-    "d6.sql": "948f39e6e43983a7b9d9a04a073920a7f5cedc17cb7773bdee8295db88ff49f9",
+    "d6.sql": "2d3398af676eddbc714d041961a2404bc82bd474b8ad11fdaa442a4e6a9211a8",
     "pg-checks.sql": "8a92562f17a79a5ae9d8656e99e0e556ed647455359a487e1ae94eab9983226c"
   },
   "labErd": "3f235472aaf0ad0576db75ed4165b8d36701e3d4210e3f3b4d809c16225d216b"
