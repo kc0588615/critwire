@@ -2,7 +2,7 @@
 mission: critwire-learn-l1-data
 project: critwire
 branch: agent/critwire-learn-l1-data
-status: active
+status: done
 started: 2026-10-28 06:48 UTC
 ---
 
@@ -1096,5 +1096,42 @@ SHOULD-CONSIDER:
 - 2026-10-28 11:25 UTC S31: review-items audit: 11/11 addendum items + table rows have a Decisions line with shas; none handed on. D16 in 004: §0 41/272, d2 2361, §3.2 516/872, §4.1 811–812, §4.2 843/847 (md5 then gbifID, displacement)/859/866, §4.3 871/877, §4.4 909, §4.5 925, §6.2 7762–7765, §7.6 8061–8063, §7.7 8074, §B 8309. D17 in AGENTS.md: every bullet grep 1+ (copy line new 1, old 0). Dry run: T typecheck ok, test 284/284; D 78/78, no `learn_t_%` left; plain B ok (dist/learn/data 35,452,055 B, lab data 13,673,945 B); E 38 expected, 0 unexpected/skipped/flaky; H 155 ok; learn:check ok. No gap.
 - 2026-10-28 11:25 UTC Code review (Astra): APPROVE_WITH_CHANGES, 1 MUST-FIX (sample freshness ignores species↔GBIF key pairs; accepted → S32), 1 SHOULD-CONSIDER (env.ts dotenv `export` forms; → Summary). Plan-only; no checks needed.
 - 2026-10-28 11:40 UTC S32: code review MF1: sample freshness checks each species' `{id, gbif}` pair (`download.json` `species`). Red 2 (F9 derive; ingest clean run) → green; DL15 red on real data until the live reuse ingest (35 MB zip, `$M/../ingest-gbif-sample.log`) wrote `species`: sample.csv + contributions sha256 unchanged, download.json +73 pairs only. derive: both DOIs current; T typecheck ok, test 285/285; plain B ok (dist/learn/data 35,452,055 B, lab data 13,677,679 B); E 38 expected, 0 unexpected/skipped/flaky (`$M/e2e-s32/`); H 155 ok. AGENTS.md + 004 §4.2 updated.
+- 2026-10-28 11:55 UTC Verification (final, `9e6b5df` + plan): 1 plain build ok (dist/learn/data 35,452,055 B, lab data 13,677,679 B); 2 e2e 38 expected, 0 unexpected/skipped/flaky, 7 specs, 38 traces, artifact `$M/e2e/`; 3 typecheck ok, test 285/285, test:db 78/78, no `learn_t_%` schema/role; 4 `DOI current 10.15468/dd.ky9cyt`, `learn-sample DOI current 10.15468/dd.5sthtk`, tree clean; 5 H 155/155, attribution diff empty + 1 Natural Earth entry, issued-ids diff empty; 6 parity green, occurrences EXCEPT ALL 0/0 (12 cols VARCHAR, 40,395 rows each), checklistKey `[d7dddbf4-…]`, 0 untitled datasets; 7 learn:check ×2 exit 0, canary diff empty, 14 counts = 004 §4.3, lab-credits 0 rows, owner critwire_lab; 8 caps < 50,000,000.
 
 ## Summary
+
+**Shipped** (branch `agent/critwire-learn-l1-data`, 55 commits ahead of `main` incl. this one):
+- `/v1/countries.{json,csv,parquet}`: 250 rows from Natural Earth 1:10m (pinned files), with a Natural Earth entry in `attribution.json`; docs `#countries` section. Every existing `/v1/species*` file is byte-identical to Baseline (155/155).
+- `/learn/data/`: index page, `manifest.json` and 10 lab files: `occurrences.{parquet,csv}`, `datasets.csv`, `country_shapes`, `admin1_shapes`, `ecoregions`, `country_habitats`, `habitat_classes` (Parquet), `biomes.csv`, and `postgis/learn_curriculum.sql` (one-transaction PostGIS loader with the MF4 dependency guard, CHECKs and `LAB_CHECKS`). The docs page links to it.
+- Ingests: `naturalearth`, `shapes` (TS + Python geometry in `.venv-learn`, via `uv`), `gbif-sample` (reuse or `--new`, with intent before POST and reconciliation through the listing). Derive: countries, sample (freshness by `{id, gbif}` pairs), `issued-ids.json`, record value validation, GBIF/COL freshness by replaying the request builders.
+- `gbif:register --target countries|learn-sample`; `learn:check [--setup]` (role `critwire_lab`, two loads, forced failure, pg-role-smoke, canary, leak check); `pnpm test:db`; the `CRITWIRE_DB_TARGET` guard.
+- All 11 items from the Codex DB review are done (Decisions has the commits). None was handed to L3 and none was rejected.
+
+**DOIs:** countries `10.15468/dd.ky9cyt` (untouched). Learn sample `10.15468/dd.5sthtk` (40,395 records, 400 datasets, `originalDownloadDOI` `10.15468/dl.fbpk9w`, deposit tag `gbif-learn-4d2c8e34b5f9`).
+
+**Measured** (final Verification, Log 11:55):
+- **Sample:** the spike's download `0041824-260928105237408` was reused (zip sha256 equals the spike's). Records went 394,532 → 381,065 → 40,395 (28,187 CC BY 4.0, 12,208 CC0 1.0, 71 species). They come from 400 datasets out of the download's 454 (233 publishers), all titled. Its values are identical to the spike's (`EXCEPT ALL` returns 0 rows both ways).
+- **Sizes:** `dist/learn/data/` is 35,452,055 B and the committed lab data 13,677,679 B (cap 50,000,000 each). The loader is 21,338,761 B and loads in about 1.9 s.
+- **Loader counts** (equal to 004 §4.3): admin1_shapes 294, biomes 14, countries 250, country_habitats 35, country_shapes 247, datasets 400, ecoregions 847, habitat_classes 75, occurrences 40,395, sources 5, species 76, species_countries 472, species_sources 591, taxa 143.
+- **Tests:** `pnpm test` 285/285, `pnpm test:db` 78/78. E2E 38/38 across 7 specs, 0 skipped or flaky.
+- **E2E artifact:** `/srv/critter-ai/agent-state/missions/critwire-learn-l1-data/e2e/` (HTML report, 38 traces, `results.json`, `learn-data-{1280,375}.png`, `caddy-access.log`). Reproduce with `pnpm build && E2E_ARTIFACTS=<dir> pnpm e2e`.
+
+**Deviations from 004**, each recorded in 004 in the commit named:
+- `country_shapes.parquet` uses zstd (1,304,205 B, vs the spike's snappy 1,206,307 B). Its WKB is identical. §4.1 bytes and §4.4 note (`8be2555`).
+- Cap order is md5 of the decimal gbifID, then gbifID. The country-key contract is applied in derive, not the ingest (§4.2: `463ce37`, `13a9140`).
+- §4.2: the new-download intent and reconciliation (`deb386d`), read-back and citation check (`4ff0c29`), and `species` `{id, gbif}` pairs in `download.json` (`9e6b5df`).
+- §3.2, §4.3 and §6.2: the guard runs drop then diff, and CHECKs are added (`2d8591a`).
+- §4.1, §4.4 and §4.5: credits, cap and manifest (`ac90291`). §7.6: `learn:check` loader stage, canary identity and cleanup (`ef6cc6c`). §7.7: the L1/L2 E2E split (`96b0814`). §0 and d2 notes (`812ef79`).
+
+**Release:** see `## Release` (next unit: PR, merge, `deploy critwire`, smoke).
+
+**For L2:**
+- The docs page links to `/learn/data/`. Point it at `/learn/` once that page exists (A11).
+- Dataset titles, publishers and licenses all equal the spike's, so no title moved (A6).
+- 004 §5.2 d6's "star rebuilt from the normalized tables" (004:4093) is L2's to fix.
+- A record with `replacedBy` fails the build until L2 adds the replacement junction. Don't retire an id before then.
+- `LEARN_PG_URL` is set in `/srv/critter-ai/critwire/.env`. `learn:check` replaces `learn_curriculum` as `critwire_lab`, so never load it as superuser.
+- No diagrams were drawn in L1, so the `diagram-design` first-run setup (profile `critwire`) is still to do.
+- Adding a species or changing an `ids.gbif` costs a new GBIF download plus a new DOI (AGENTS.md).
+
+**Astra SHOULD-CONSIDER (not done):** `scripts/env.ts:27`: duplicate detection misses dotenv's `export X=` and whitespace forms. An exported duplicate could override the URL that `learn:check --setup` writes. Small fix, worth doing in L2.
