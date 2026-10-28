@@ -1,0 +1,142 @@
+{
+ "type": "FeatureCollection",
+ "name": "fixture_admin_0_countries",
+ "features": [
+  {
+   "type": "Feature",
+   "properties": {
+    "ADMIN": "France",
+    "TYPE": "Country",
+    "ADM0_A3": "FRA",
+    "ISO_A2": "-99",
+    "ISO_A2_EH": "FR",
+    "ISO_A3_EH": "FRA",
+    "NAME_EN": "France",
+    "NAME_LONG": "France (long)",
+    "CONTINENT": "Europe",
+    "REGION_UN": "Europe",
+    "SUBREGION": "Western Europe"
+   },
+   "geometry": null
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "ADMIN": "Norway",
+    "TYPE": "Sovereign country",
+    "ADM0_A3": "NOR",
+    "ISO_A2": "-99",
+    "ISO_A2_EH": "NO",
+    "ISO_A3_EH": "NOR",
+    "NAME_EN": "Norway",
+    "NAME_LONG": "Norway (long)",
+    "CONTINENT": "Europe",
+    "REGION_UN": "Europe",
+    "SUBREGION": "Northern Europe"
+   },
+   "geometry": null
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "ADMIN": "Kosovo",
+    "TYPE": "Disputed",
+    "ADM0_A3": "KOS",
+    "ISO_A2": "-99",
+    "ISO_A2_EH": "XK",
+    "ISO_A3_EH": "-99",
+    "NAME_EN": "Kosovo",
+    "NAME_LONG": "Kosovo (long)",
+    "CONTINENT": "Europe",
+    "REGION_UN": "Europe",
+    "SUBREGION": "Southern Europe"
+   },
+   "geometry": null
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "ADMIN": "Namibia",
+    "TYPE": "Sovereign country",
+    "ADM0_A3": "NAM",
+    "ISO_A2": "NA",
+    "ISO_A2_EH": "NA",
+    "ISO_A3_EH": "NAM",
+    "NAME_EN": "Namibia",
+    "NAME_LONG": "Namibia (long)",
+    "CONTINENT": "Africa",
+    "REGION_UN": "Africa",
+    "SUBREGION": "Southern Africa"
+   },
+   "geometry": null
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "ADMIN": "Brazil",
+    "TYPE": "Sovereign country",
+    "ADM0_A3": "BRA",
+    "ISO_A2": "BR",
+    "ISO_A2_EH": "BR",
+    "ISO_A3_EH": "BRA",
+    "NAME_EN": "Brazil",
+    "NAME_LONG": "Brazil (long)",
+    "CONTINENT": "South America",
+    "REGION_UN": "Americas",
+    "SUBREGION": "South America"
+   },
+   "geometry": null
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "ADMIN": "Brazilian Island",
+    "TYPE": "Indeterminate",
+    "ADM0_A3": "BRI",
+    "ISO_A2": "-99",
+    "ISO_A2_EH": "BR",
+    "ISO_A3_EH": "BRA",
+    "NAME_EN": "Brazilian Island",
+    "NAME_LONG": "Brazilian Island (long)",
+    "CONTINENT": "South America",
+    "REGION_UN": "Americas",
+    "SUBREGION": "South America"
+   },
+   "geometry": null
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "ADMIN": "Somaliland",
+    "TYPE": "Indeterminate",
+    "ADM0_A3": "SOL",
+    "ISO_A2": "-99",
+    "ISO_A2_EH": "-99",
+    "ISO_A3_EH": "-99",
+    "NAME_EN": "Somaliland",
+    "NAME_LONG": "Somaliland (long)",
+    "CONTINENT": "Africa",
+    "REGION_UN": "Africa",
+    "SUBREGION": "Eastern Africa"
+   },
+   "geometry": null
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "ADMIN": "Taiwan",
+    "TYPE": "Sovereign country",
+    "ADM0_A3": "TWN",
+    "ISO_A2": "CN-TW",
+    "ISO_A2_EH": "TW",
+    "ISO_A3_EH": "TWN",
+    "NAME_EN": "Taiwan",
+    "NAME_LONG": "Taiwan (long)",
+    "CONTINENT": "Asia",
+    "REGION_UN": "Asia",
+    "SUBREGION": "Eastern Asia"
+   },
+   "geometry": null
+  }
+ ]
+}

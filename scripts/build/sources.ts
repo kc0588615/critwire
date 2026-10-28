@@ -5,10 +5,14 @@ import type { Source } from "../species.ts";
 
 export interface RegisteredSource {
   url: string;
-  // registration: the current GBIF derived dataset; null only in a --draft build.
-  citation: (source: Source, registration: Registration | null) => string;
+  // Fixed text, or built from the record's source entry. registration: the current GBIF derived dataset; null only in
+  // a --draft build.
+  citation: string | ((source: Source, registration: Registration | null) => string);
   notes?: string;
 }
+
+// Credited for data/countries.json (/v1/countries.*), not by any record's sources[] (002 §6).
+export const NATURAL_EARTH = "Natural Earth";
 
 // DATA-LICENSE.md's requested credit for critwire's own data.
 export const CRITWIRE_CREDIT = "critwire (https://critwire.com), CC BY 4.0";
@@ -53,12 +57,18 @@ export const SOURCES: Record<string, RegisteredSource> = {
     citation: occurrenceCitation,
     notes: "Country lists are critwire-derived (CC BY 4.0), counted only from CC0 1.0 and CC BY 4.0 records; each record's query URL is in its sources[]. The contributing datasets are listed under gbifDerivedDataset.",
   },
+  [NATURAL_EARTH]: {
+    url: "https://www.naturalearthdata.com/",
+    // The long text Natural Earth's LICENSE.md suggests (commit f1890d9f…).
+    citation: "Made with Natural Earth. Free vector and raster map data @ naturalearthdata.com.",
+    notes: "Public domain: no credit required; credited as a courtesy. Used for /v1/countries.{json,csv,parquet}: its fields are those files' columns and its records the number of country rows.",
+  },
   "Wikidata": {
     url: "https://www.wikidata.org/",
-    citation: () => "Wikidata, https://www.wikidata.org/ (CC0 1.0)",
+    citation: "Wikidata, https://www.wikidata.org/ (CC0 1.0)",
     notes: "CC0: no attribution required; credited as a courtesy.",
   },
-  "critwire base": { url: "https://github.com/kc0588615/critwire/blob/main/data/base.json", citation: () => CRITWIRE_CREDIT },
+  "critwire base": { url: "https://github.com/kc0588615/critwire/blob/main/data/base.json", citation: CRITWIRE_CREDIT },
 };
 
 // Deed URL per license string in the data (sources and photos); null where there is no license (public domain).

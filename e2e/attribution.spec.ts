@@ -9,10 +9,12 @@ import { records, repoPath } from "./helpers.ts";
 const REGISTRATION = repoPath("data/gbif-derived-dataset/registration.json");
 const CONTRIBUTIONS = repoPath("data/gbif-derived-dataset/contributions.json");
 const COUNTRIES_SOURCE = "GBIF.org occurrence search";
+const NATURAL_EARTH = "Natural Earth";
 
 interface Attribution {
   critwire: { license: string; licenseUrl: string; credit: string; terms: string; code: { license: string; url: string } };
-  sources: { source: string; url: string; fields: string[]; records: number; license: string; licenseUrl: string | null; citation: string; doi?: string }[];
+  sources: { source: string; url: string; fields: string[]; records: number; license: string; licenseUrl: string | null; citation: string;
+    doi?: string; retrieved?: string; release?: object; notes?: string }[];
   gbifDerivedDataset: { doi: string; url: string; citation: string; sourceUrl: string; records: number; datasets: { datasetKey: string; records: number }[] } | null;
   photos: { speciesId: number; slug: string; credit: string; license: string; licenseUrl: string | null; page: string; citation: string }[];
 }
@@ -27,9 +29,9 @@ test.beforeAll(async ({ request }) => {
 });
 
 test("every source in sources[] is credited once, with its license, citation and record count", () => {
-  const names = [...new Set(species.flatMap((s) => s.sources.map((x) => x.source)))].sort();
+  const names = [...new Set([...species.flatMap((s) => s.sources.map((x) => x.source)), NATURAL_EARTH])].sort();
   expect(attribution.sources.map((s) => s.source)).toEqual(names);
-  for (const s of attribution.sources) {
+  for (const s of attribution.sources.filter((x) => x.source !== NATURAL_EARTH)) {
     const citing = species.filter((r) => r.sources.some((x) => x.source === s.source));
     expect(s.records, s.source).toBe(citing.length);
     expect(new Set(s.fields), s.source).toEqual(new Set(citing.flatMap((r) => r.sources.find((x) => x.source === s.source)!.fields)));
@@ -40,6 +42,20 @@ test("every source in sources[] is credited once, with its license, citation and
   }
   expect(attribution.critwire.license).toBe("CC BY 4.0");
   expect(attribution.critwire.credit).toContain("critwire");
+});
+
+test("Natural Earth is credited once for data/countries.json, its release an object of COL's release keys", async () => {
+  const { source, rows } = JSON.parse(await readFile(repoPath("data/countries.json"), "utf8"));
+  const entry = attribution.sources.find((s) => s.source === NATURAL_EARTH)!;
+  expect(entry).toEqual({
+    source: NATURAL_EARTH, url: "https://www.naturalearthdata.com/",
+    fields: ["countries.name", "countries.continent", "countries.region", "countries.subregion"],
+    records: rows.length, license: "Public domain", licenseUrl: null, retrieved: source.retrieved, release: source.release,
+    citation: "Made with Natural Earth. Free vector and raster map data @ naturalearthdata.com.", notes: entry.notes,
+  });
+  expect(entry.notes).toContain("countries");
+  const col = attribution.sources.find((s) => s.source === "Catalogue of Life")?.release;
+  if (col) for (const key of Object.keys(source.release)) expect(Object.keys(col), key).toContain(key);
 });
 
 test("photos credit every record that has a photo", () => {

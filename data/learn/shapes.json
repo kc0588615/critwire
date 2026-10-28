@@ -1,0 +1,1584 @@
+{
+  "files": {
+    "admin1_shapes.parquet": {
+      "bytes": 870947,
+      "invalid": {
+        "Ring Self-intersection": 1
+      },
+      "rows": 294,
+      "sha256": "2ab3611f49b6a2b55a94fcd61e36cbee4b92c456e73162bbc444885dd461e0af"
+    },
+    "biomes.csv": {
+      "bytes": 518,
+      "rows": 14,
+      "sha256": "6280c58ee5003a3bb1e3424c960cec1900d7757471c82c6b64165a3377b924bc"
+    },
+    "country_shapes.parquet": {
+      "bytes": 1304205,
+      "invalid": {},
+      "rows": 247,
+      "sha256": "fc3151a035a8846ec848e83b7af7bd87a959ccc58289d34dca27cfd74e18beb9"
+    },
+    "ecoregions.parquet": {
+      "bytes": 6686262,
+      "invalid": {
+        "Nested shells": 3,
+        "Ring Self-intersection": 7
+      },
+      "rows": 847,
+      "sha256": "e607abd88c66cbba4f6cdf76357ba8309c2e244bbd9451362d762ccb43f9aea6"
+    }
+  },
+  "inputs": {
+    "Ecoregions2017.zip": {
+      "bytes": 149248653,
+      "sha256": "be36d6209e443038d02e309f0447c6e7f2a62f5fe60c605ffe90d064952f2a60",
+      "url": "https://storage.googleapis.com/teow2016/Ecoregions2017.zip"
+    },
+    "ne_50m_admin_0_countries.geojson": {
+      "bytes": 3083490,
+      "sha256": "3e458fc036ad0a66411f2c1e6cac49c5d7bfb81cb1123bc513b22511a2b7fdeb",
+      "url": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/f1890d9f152c896d250a77557a5751a93d494776/geojson/ne_50m_admin_0_countries.geojson"
+    },
+    "ne_50m_admin_0_map_units.geojson": {
+      "bytes": 3179420,
+      "sha256": "b8d421aca6e9e08e8cdf09cc26af111cc3e0deba4fe915611d58ade71e8a4db0",
+      "url": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/f1890d9f152c896d250a77557a5751a93d494776/geojson/ne_50m_admin_0_map_units.geojson"
+    },
+    "ne_50m_admin_1_states_provinces.geojson": {
+      "bytes": 2325694,
+      "sha256": "69a0e06e640b2d505858ae1cb63034e4677f3000b35a98e16312932b98c426b9",
+      "url": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/f1890d9f152c896d250a77557a5751a93d494776/geojson/ne_50m_admin_1_states_provinces.geojson"
+    }
+  },
+  "matcher": {
+    "folded": [
+      {
+        "code": "AU",
+        "dropped": [
+          "Indian Ocean Territories",
+          "Ashmore and Cartier Islands"
+        ],
+        "kept": "Australia"
+      }
+    ],
+    "fromMapUnits": [
+      "BQ",
+      "CC",
+      "CX",
+      "GF",
+      "GP",
+      "MQ",
+      "RE",
+      "SJ",
+      "TK",
+      "YT"
+    ],
+    "gaps": [
+      "BV",
+      "GI",
+      "UM"
+    ],
+    "matches": {
+      "AD": {
+        "field": "ISO_A2",
+        "index": 234,
+        "layer": "countries",
+        "unit": "Andorra"
+      },
+      "AE": {
+        "field": "ISO_A2",
+        "index": 32,
+        "layer": "countries",
+        "unit": "United Arab Emirates"
+      },
+      "AF": {
+        "field": "ISO_A2",
+        "index": 237,
+        "layer": "countries",
+        "unit": "Afghanistan"
+      },
+      "AG": {
+        "field": "ISO_A2",
+        "index": 232,
+        "layer": "countries",
+        "unit": "Antigua and Barbuda"
+      },
+      "AI": {
+        "field": "ISO_A2",
+        "index": 21,
+        "layer": "countries",
+        "unit": "Anguilla"
+      },
+      "AL": {
+        "field": "ISO_A2",
+        "index": 236,
+        "layer": "countries",
+        "unit": "Albania"
+      },
+      "AM": {
+        "field": "ISO_A2",
+        "index": 230,
+        "layer": "countries",
+        "unit": "Armenia"
+      },
+      "AO": {
+        "field": "ISO_A2",
+        "index": 233,
+        "layer": "countries",
+        "unit": "Angola"
+      },
+      "AQ": {
+        "field": "ISO_A2",
+        "index": 239,
+        "layer": "countries",
+        "unit": "Antarctica"
+      },
+      "AR": {
+        "field": "ISO_A2",
+        "index": 231,
+        "layer": "countries",
+        "unit": "Argentina"
+      },
+      "AS": {
+        "field": "ISO_A2",
+        "index": 14,
+        "layer": "countries",
+        "unit": "American Samoa"
+      },
+      "AT": {
+        "field": "ISO_A2",
+        "index": 224,
+        "layer": "countries",
+        "unit": "Austria"
+      },
+      "AU": {
+        "field": "ISO_A2",
+        "index": 225,
+        "layer": "countries",
+        "unit": "Australia"
+      },
+      "AW": {
+        "field": "ISO_A2",
+        "index": 97,
+        "layer": "countries",
+        "unit": "Aruba"
+      },
+      "AX": {
+        "field": "ISO_A2",
+        "index": 168,
+        "layer": "countries",
+        "unit": "Aland"
+      },
+      "AZ": {
+        "field": "ISO_A2",
+        "index": 223,
+        "layer": "countries",
+        "unit": "Azerbaijan"
+      },
+      "BA": {
+        "field": "ISO_A2",
+        "index": 212,
+        "layer": "countries",
+        "unit": "Bosnia and Herzegovina"
+      },
+      "BB": {
+        "field": "ISO_A2",
+        "index": 219,
+        "layer": "countries",
+        "unit": "Barbados"
+      },
+      "BD": {
+        "field": "ISO_A2",
+        "index": 220,
+        "layer": "countries",
+        "unit": "Bangladesh"
+      },
+      "BE": {
+        "field": "ISO_A2",
+        "index": 217,
+        "layer": "countries",
+        "unit": "Belgium"
+      },
+      "BF": {
+        "field": "ISO_A2",
+        "index": 207,
+        "layer": "countries",
+        "unit": "Burkina Faso"
+      },
+      "BG": {
+        "field": "ISO_A2",
+        "index": 208,
+        "layer": "countries",
+        "unit": "Bulgaria"
+      },
+      "BH": {
+        "field": "ISO_A2",
+        "index": 221,
+        "layer": "countries",
+        "unit": "Bahrain"
+      },
+      "BI": {
+        "field": "ISO_A2",
+        "index": 206,
+        "layer": "countries",
+        "unit": "Burundi"
+      },
+      "BJ": {
+        "field": "ISO_A2",
+        "index": 215,
+        "layer": "countries",
+        "unit": "Benin"
+      },
+      "BL": {
+        "field": "ISO_A2",
+        "index": 164,
+        "layer": "countries",
+        "unit": "Saint Barthelemy"
+      },
+      "BM": {
+        "field": "ISO_A2",
+        "index": 24,
+        "layer": "countries",
+        "unit": "Bermuda"
+      },
+      "BN": {
+        "field": "ISO_A2",
+        "index": 209,
+        "layer": "countries",
+        "unit": "Brunei"
+      },
+      "BO": {
+        "field": "ISO_A2",
+        "index": 213,
+        "layer": "countries",
+        "unit": "Bolivia"
+      },
+      "BQ": {
+        "field": "ISO_A2",
+        "index": 109,
+        "layer": "map_units",
+        "unit": "Caribbean Netherlands"
+      },
+      "BR": {
+        "field": "ISO_A2",
+        "index": 210,
+        "layer": "countries",
+        "unit": "Brazil"
+      },
+      "BS": {
+        "field": "ISO_A2",
+        "index": 222,
+        "layer": "countries",
+        "unit": "The Bahamas"
+      },
+      "BT": {
+        "field": "ISO_A2",
+        "index": 214,
+        "layer": "countries",
+        "unit": "Bhutan"
+      },
+      "BW": {
+        "field": "ISO_A2",
+        "index": 211,
+        "layer": "countries",
+        "unit": "Botswana"
+      },
+      "BY": {
+        "field": "ISO_A2",
+        "index": 218,
+        "layer": "countries",
+        "unit": "Belarus"
+      },
+      "BZ": {
+        "field": "ISO_A2",
+        "index": 216,
+        "layer": "countries",
+        "unit": "Belize"
+      },
+      "CA": {
+        "field": "ISO_A2",
+        "index": 202,
+        "layer": "countries",
+        "unit": "Canada"
+      },
+      "CC": {
+        "field": "ISO_A2",
+        "index": 248,
+        "layer": "map_units",
+        "unit": "Cocos (Keeling) Islands"
+      },
+      "CD": {
+        "field": "ISO_A2",
+        "index": 191,
+        "layer": "countries",
+        "unit": "Democratic Republic of the Congo"
+      },
+      "CF": {
+        "field": "ISO_A2",
+        "index": 200,
+        "layer": "countries",
+        "unit": "Central African Republic"
+      },
+      "CG": {
+        "field": "ISO_A2",
+        "index": 192,
+        "layer": "countries",
+        "unit": "Republic of the Congo"
+      },
+      "CH": {
+        "field": "ISO_A2",
+        "index": 47,
+        "layer": "countries",
+        "unit": "Switzerland"
+      },
+      "CI": {
+        "field": "ISO_A2",
+        "index": 189,
+        "layer": "countries",
+        "unit": "Ivory Coast"
+      },
+      "CK": {
+        "field": "ISO_A2",
+        "index": 95,
+        "layer": "countries",
+        "unit": "Cook Islands"
+      },
+      "CL": {
+        "field": "ISO_A2",
+        "index": 198,
+        "layer": "countries",
+        "unit": "Chile"
+      },
+      "CM": {
+        "field": "ISO_A2",
+        "index": 203,
+        "layer": "countries",
+        "unit": "Cameroon"
+      },
+      "CN": {
+        "field": "ISO_A2",
+        "index": 195,
+        "layer": "countries",
+        "unit": "China"
+      },
+      "CO": {
+        "field": "ISO_A2",
+        "index": 194,
+        "layer": "countries",
+        "unit": "Colombia"
+      },
+      "CR": {
+        "field": "ISO_A2",
+        "index": 190,
+        "layer": "countries",
+        "unit": "Costa Rica"
+      },
+      "CU": {
+        "field": "ISO_A2",
+        "index": 187,
+        "layer": "countries",
+        "unit": "Cuba"
+      },
+      "CV": {
+        "field": "ISO_A2",
+        "index": 201,
+        "layer": "countries",
+        "unit": "Cabo Verde"
+      },
+      "CW": {
+        "field": "ISO_A2",
+        "index": 98,
+        "layer": "countries",
+        "unit": "Curaçao"
+      },
+      "CX": {
+        "field": "ISO_A2",
+        "index": 247,
+        "layer": "map_units",
+        "unit": "Christmas Island"
+      },
+      "CY": {
+        "field": "ISO_A2",
+        "index": 186,
+        "layer": "countries",
+        "unit": "Cyprus"
+      },
+      "CZ": {
+        "field": "ISO_A2",
+        "index": 184,
+        "layer": "countries",
+        "unit": "Czechia"
+      },
+      "DE": {
+        "field": "ISO_A2",
+        "index": 156,
+        "layer": "countries",
+        "unit": "Germany"
+      },
+      "DJ": {
+        "field": "ISO_A2",
+        "index": 180,
+        "layer": "countries",
+        "unit": "Djibouti"
+      },
+      "DK": {
+        "field": "ISO_A2",
+        "index": 183,
+        "layer": "countries",
+        "unit": "Denmark"
+      },
+      "DM": {
+        "field": "ISO_A2",
+        "index": 179,
+        "layer": "countries",
+        "unit": "Dominica"
+      },
+      "DO": {
+        "field": "ISO_A2",
+        "index": 178,
+        "layer": "countries",
+        "unit": "Dominican Republic"
+      },
+      "DZ": {
+        "field": "ISO_A2",
+        "index": 235,
+        "layer": "countries",
+        "unit": "Algeria"
+      },
+      "EC": {
+        "field": "ISO_A2",
+        "index": 177,
+        "layer": "countries",
+        "unit": "Ecuador"
+      },
+      "EE": {
+        "field": "ISO_A2",
+        "index": 172,
+        "layer": "countries",
+        "unit": "Estonia"
+      },
+      "EG": {
+        "field": "ISO_A2",
+        "index": 176,
+        "layer": "countries",
+        "unit": "Egypt"
+      },
+      "EH": {
+        "field": "ISO_A2",
+        "index": 104,
+        "layer": "countries",
+        "unit": "Western Sahara"
+      },
+      "ER": {
+        "field": "ISO_A2",
+        "index": 173,
+        "layer": "countries",
+        "unit": "Eritrea"
+      },
+      "ES": {
+        "field": "ISO_A2",
+        "index": 54,
+        "layer": "countries",
+        "unit": "Spain"
+      },
+      "ET": {
+        "field": "ISO_A2",
+        "index": 171,
+        "layer": "countries",
+        "unit": "Ethiopia"
+      },
+      "FI": {
+        "field": "ISO_A2",
+        "index": 169,
+        "layer": "countries",
+        "unit": "Finland"
+      },
+      "FJ": {
+        "field": "ISO_A2",
+        "index": 170,
+        "layer": "countries",
+        "unit": "Fiji"
+      },
+      "FK": {
+        "field": "ISO_A2",
+        "index": 22,
+        "layer": "countries",
+        "unit": "Falkland Islands"
+      },
+      "FM": {
+        "field": "ISO_A2",
+        "index": 9,
+        "layer": "countries",
+        "unit": "Federated States of Micronesia"
+      },
+      "FO": {
+        "field": "ISO_A2",
+        "index": 182,
+        "layer": "countries",
+        "unit": "Faroe Islands"
+      },
+      "FR": {
+        "field": "ISO_A2_EH",
+        "index": 160,
+        "layer": "countries",
+        "unit": "France"
+      },
+      "GA": {
+        "field": "ISO_A2",
+        "index": 159,
+        "layer": "countries",
+        "unit": "Gabon"
+      },
+      "GB": {
+        "field": "ISO_A2",
+        "index": 31,
+        "layer": "countries",
+        "unit": "United Kingdom"
+      },
+      "GD": {
+        "field": "ISO_A2",
+        "index": 153,
+        "layer": "countries",
+        "unit": "Grenada"
+      },
+      "GE": {
+        "field": "ISO_A2",
+        "index": 157,
+        "layer": "countries",
+        "unit": "Georgia"
+      },
+      "GF": {
+        "field": "ISO_A2_EH",
+        "index": 178,
+        "layer": "map_units",
+        "unit": "French Guiana"
+      },
+      "GG": {
+        "field": "ISO_A2",
+        "index": 29,
+        "layer": "countries",
+        "unit": "Guernsey"
+      },
+      "GH": {
+        "field": "ISO_A2",
+        "index": 155,
+        "layer": "countries",
+        "unit": "Ghana"
+      },
+      "GL": {
+        "field": "ISO_A2",
+        "index": 181,
+        "layer": "countries",
+        "unit": "Greenland"
+      },
+      "GM": {
+        "field": "ISO_A2",
+        "index": 158,
+        "layer": "countries",
+        "unit": "Gambia"
+      },
+      "GN": {
+        "field": "ISO_A2",
+        "index": 151,
+        "layer": "countries",
+        "unit": "Guinea"
+      },
+      "GP": {
+        "field": "ISO_A2_EH",
+        "index": 177,
+        "layer": "map_units",
+        "unit": "Guadeloupe"
+      },
+      "GQ": {
+        "field": "ISO_A2",
+        "index": 174,
+        "layer": "countries",
+        "unit": "Equatorial Guinea"
+      },
+      "GR": {
+        "field": "ISO_A2",
+        "index": 154,
+        "layer": "countries",
+        "unit": "Greece"
+      },
+      "GS": {
+        "field": "ISO_A2",
+        "index": 17,
+        "layer": "countries",
+        "unit": "South Georgia and the Islands"
+      },
+      "GT": {
+        "field": "ISO_A2",
+        "index": 152,
+        "layer": "countries",
+        "unit": "Guatemala"
+      },
+      "GU": {
+        "field": "ISO_A2",
+        "index": 13,
+        "layer": "countries",
+        "unit": "Guam"
+      },
+      "GW": {
+        "field": "ISO_A2",
+        "index": 150,
+        "layer": "countries",
+        "unit": "Guinea-Bissau"
+      },
+      "GY": {
+        "field": "ISO_A2",
+        "index": 149,
+        "layer": "countries",
+        "unit": "Guyana"
+      },
+      "HK": {
+        "field": "ISO_A2",
+        "index": 197,
+        "layer": "countries",
+        "unit": "Hong Kong S.A.R."
+      },
+      "HM": {
+        "field": "ISO_A2",
+        "index": 227,
+        "layer": "countries",
+        "unit": "Heard Island and McDonald Islands"
+      },
+      "HN": {
+        "field": "ISO_A2",
+        "index": 147,
+        "layer": "countries",
+        "unit": "Honduras"
+      },
+      "HR": {
+        "field": "ISO_A2",
+        "index": 188,
+        "layer": "countries",
+        "unit": "Croatia"
+      },
+      "HT": {
+        "field": "ISO_A2",
+        "index": 148,
+        "layer": "countries",
+        "unit": "Haiti"
+      },
+      "HU": {
+        "field": "ISO_A2",
+        "index": 146,
+        "layer": "countries",
+        "unit": "Hungary"
+      },
+      "ID": {
+        "field": "ISO_A2",
+        "index": 143,
+        "layer": "countries",
+        "unit": "Indonesia"
+      },
+      "IE": {
+        "field": "ISO_A2",
+        "index": 140,
+        "layer": "countries",
+        "unit": "Ireland"
+      },
+      "IL": {
+        "field": "ISO_A2",
+        "index": 138,
+        "layer": "countries",
+        "unit": "Israel"
+      },
+      "IM": {
+        "field": "ISO_A2",
+        "index": 30,
+        "layer": "countries",
+        "unit": "Isle of Man"
+      },
+      "IN": {
+        "field": "ISO_A2",
+        "index": 144,
+        "layer": "countries",
+        "unit": "India"
+      },
+      "IO": {
+        "field": "ISO_A2",
+        "index": 18,
+        "layer": "countries",
+        "unit": "British Indian Ocean Territory"
+      },
+      "IQ": {
+        "field": "ISO_A2",
+        "index": 141,
+        "layer": "countries",
+        "unit": "Iraq"
+      },
+      "IR": {
+        "field": "ISO_A2",
+        "index": 142,
+        "layer": "countries",
+        "unit": "Iran"
+      },
+      "IS": {
+        "field": "ISO_A2",
+        "index": 145,
+        "layer": "countries",
+        "unit": "Iceland"
+      },
+      "IT": {
+        "field": "ISO_A2",
+        "index": 137,
+        "layer": "countries",
+        "unit": "Italy"
+      },
+      "JE": {
+        "field": "ISO_A2",
+        "index": 28,
+        "layer": "countries",
+        "unit": "Jersey"
+      },
+      "JM": {
+        "field": "ISO_A2",
+        "index": 136,
+        "layer": "countries",
+        "unit": "Jamaica"
+      },
+      "JO": {
+        "field": "ISO_A2",
+        "index": 134,
+        "layer": "countries",
+        "unit": "Jordan"
+      },
+      "JP": {
+        "field": "ISO_A2",
+        "index": 135,
+        "layer": "countries",
+        "unit": "Japan"
+      },
+      "KE": {
+        "field": "ISO_A2",
+        "index": 132,
+        "layer": "countries",
+        "unit": "Kenya"
+      },
+      "KG": {
+        "field": "ISO_A2",
+        "index": 128,
+        "layer": "countries",
+        "unit": "Kyrgyzstan"
+      },
+      "KH": {
+        "field": "ISO_A2",
+        "index": 204,
+        "layer": "countries",
+        "unit": "Cambodia"
+      },
+      "KI": {
+        "field": "ISO_A2",
+        "index": 131,
+        "layer": "countries",
+        "unit": "Kiribati"
+      },
+      "KM": {
+        "field": "ISO_A2",
+        "index": 193,
+        "layer": "countries",
+        "unit": "Comoros"
+      },
+      "KN": {
+        "field": "ISO_A2",
+        "index": 73,
+        "layer": "countries",
+        "unit": "Saint Kitts and Nevis"
+      },
+      "KP": {
+        "field": "ISO_A2",
+        "index": 89,
+        "layer": "countries",
+        "unit": "North Korea"
+      },
+      "KR": {
+        "field": "ISO_A2",
+        "index": 55,
+        "layer": "countries",
+        "unit": "South Korea"
+      },
+      "KW": {
+        "field": "ISO_A2",
+        "index": 129,
+        "layer": "countries",
+        "unit": "Kuwait"
+      },
+      "KY": {
+        "field": "ISO_A2",
+        "index": 23,
+        "layer": "countries",
+        "unit": "Cayman Islands"
+      },
+      "KZ": {
+        "field": "ISO_A2",
+        "index": 133,
+        "layer": "countries",
+        "unit": "Kazakhstan"
+      },
+      "LA": {
+        "field": "ISO_A2",
+        "index": 127,
+        "layer": "countries",
+        "unit": "Laos"
+      },
+      "LB": {
+        "field": "ISO_A2",
+        "index": 125,
+        "layer": "countries",
+        "unit": "Lebanon"
+      },
+      "LC": {
+        "field": "ISO_A2",
+        "index": 72,
+        "layer": "countries",
+        "unit": "Saint Lucia"
+      },
+      "LI": {
+        "field": "ISO_A2",
+        "index": 121,
+        "layer": "countries",
+        "unit": "Liechtenstein"
+      },
+      "LK": {
+        "field": "ISO_A2",
+        "index": 53,
+        "layer": "countries",
+        "unit": "Sri Lanka"
+      },
+      "LR": {
+        "field": "ISO_A2",
+        "index": 123,
+        "layer": "countries",
+        "unit": "Liberia"
+      },
+      "LS": {
+        "field": "ISO_A2",
+        "index": 124,
+        "layer": "countries",
+        "unit": "Lesotho"
+      },
+      "LT": {
+        "field": "ISO_A2",
+        "index": 120,
+        "layer": "countries",
+        "unit": "Lithuania"
+      },
+      "LU": {
+        "field": "ISO_A2",
+        "index": 119,
+        "layer": "countries",
+        "unit": "Luxembourg"
+      },
+      "LV": {
+        "field": "ISO_A2",
+        "index": 126,
+        "layer": "countries",
+        "unit": "Latvia"
+      },
+      "LY": {
+        "field": "ISO_A2",
+        "index": 122,
+        "layer": "countries",
+        "unit": "Libya"
+      },
+      "MA": {
+        "field": "ISO_A2",
+        "index": 103,
+        "layer": "countries",
+        "unit": "Morocco"
+      },
+      "MC": {
+        "field": "ISO_A2",
+        "index": 108,
+        "layer": "countries",
+        "unit": "Monaco"
+      },
+      "MD": {
+        "field": "ISO_A2",
+        "index": 107,
+        "layer": "countries",
+        "unit": "Moldova"
+      },
+      "ME": {
+        "field": "ISO_A2",
+        "index": 105,
+        "layer": "countries",
+        "unit": "Montenegro"
+      },
+      "MF": {
+        "field": "ISO_A2",
+        "index": 163,
+        "layer": "countries",
+        "unit": "Saint Martin"
+      },
+      "MG": {
+        "field": "ISO_A2",
+        "index": 117,
+        "layer": "countries",
+        "unit": "Madagascar"
+      },
+      "MH": {
+        "field": "ISO_A2",
+        "index": 10,
+        "layer": "countries",
+        "unit": "Marshall Islands"
+      },
+      "MK": {
+        "field": "ISO_A2",
+        "index": 118,
+        "layer": "countries",
+        "unit": "North Macedonia"
+      },
+      "ML": {
+        "field": "ISO_A2",
+        "index": 113,
+        "layer": "countries",
+        "unit": "Mali"
+      },
+      "MM": {
+        "field": "ISO_A2",
+        "index": 205,
+        "layer": "countries",
+        "unit": "Myanmar"
+      },
+      "MN": {
+        "field": "ISO_A2",
+        "index": 106,
+        "layer": "countries",
+        "unit": "Mongolia"
+      },
+      "MO": {
+        "field": "ISO_A2",
+        "index": 196,
+        "layer": "countries",
+        "unit": "Macao S.A.R"
+      },
+      "MP": {
+        "field": "ISO_A2",
+        "index": 11,
+        "layer": "countries",
+        "unit": "Northern Mariana Islands"
+      },
+      "MQ": {
+        "field": "ISO_A2_EH",
+        "index": 176,
+        "layer": "map_units",
+        "unit": "Martinique"
+      },
+      "MR": {
+        "field": "ISO_A2",
+        "index": 111,
+        "layer": "countries",
+        "unit": "Mauritania"
+      },
+      "MS": {
+        "field": "ISO_A2",
+        "index": 27,
+        "layer": "countries",
+        "unit": "Montserrat"
+      },
+      "MT": {
+        "field": "ISO_A2",
+        "index": 112,
+        "layer": "countries",
+        "unit": "Malta"
+      },
+      "MU": {
+        "field": "ISO_A2",
+        "index": 110,
+        "layer": "countries",
+        "unit": "Mauritius"
+      },
+      "MV": {
+        "field": "ISO_A2",
+        "index": 114,
+        "layer": "countries",
+        "unit": "Maldives"
+      },
+      "MW": {
+        "field": "ISO_A2",
+        "index": 116,
+        "layer": "countries",
+        "unit": "Malawi"
+      },
+      "MX": {
+        "field": "ISO_A2",
+        "index": 109,
+        "layer": "countries",
+        "unit": "Mexico"
+      },
+      "MY": {
+        "field": "ISO_A2",
+        "index": 115,
+        "layer": "countries",
+        "unit": "Malaysia"
+      },
+      "MZ": {
+        "field": "ISO_A2",
+        "index": 102,
+        "layer": "countries",
+        "unit": "Mozambique"
+      },
+      "NA": {
+        "field": "ISO_A2",
+        "index": 101,
+        "layer": "countries",
+        "unit": "Namibia"
+      },
+      "NC": {
+        "field": "ISO_A2",
+        "index": 166,
+        "layer": "countries",
+        "unit": "New Caledonia"
+      },
+      "NE": {
+        "field": "ISO_A2",
+        "index": 91,
+        "layer": "countries",
+        "unit": "Niger"
+      },
+      "NF": {
+        "field": "ISO_A2",
+        "index": 228,
+        "layer": "countries",
+        "unit": "Norfolk Island"
+      },
+      "NG": {
+        "field": "ISO_A2",
+        "index": 90,
+        "layer": "countries",
+        "unit": "Nigeria"
+      },
+      "NI": {
+        "field": "ISO_A2",
+        "index": 92,
+        "layer": "countries",
+        "unit": "Nicaragua"
+      },
+      "NL": {
+        "field": "ISO_A2",
+        "index": 96,
+        "layer": "countries",
+        "unit": "Netherlands"
+      },
+      "NO": {
+        "field": "ISO_A2_EH",
+        "index": 88,
+        "layer": "countries",
+        "unit": "Norway"
+      },
+      "NP": {
+        "field": "ISO_A2",
+        "index": 99,
+        "layer": "countries",
+        "unit": "Nepal"
+      },
+      "NR": {
+        "field": "ISO_A2",
+        "index": 100,
+        "layer": "countries",
+        "unit": "Nauru"
+      },
+      "NU": {
+        "field": "ISO_A2",
+        "index": 94,
+        "layer": "countries",
+        "unit": "Niue"
+      },
+      "NZ": {
+        "field": "ISO_A2",
+        "index": 93,
+        "layer": "countries",
+        "unit": "New Zealand"
+      },
+      "OM": {
+        "field": "ISO_A2",
+        "index": 87,
+        "layer": "countries",
+        "unit": "Oman"
+      },
+      "PA": {
+        "field": "ISO_A2",
+        "index": 84,
+        "layer": "countries",
+        "unit": "Panama"
+      },
+      "PE": {
+        "field": "ISO_A2",
+        "index": 81,
+        "layer": "countries",
+        "unit": "Peru"
+      },
+      "PF": {
+        "field": "ISO_A2",
+        "index": 165,
+        "layer": "countries",
+        "unit": "French Polynesia"
+      },
+      "PG": {
+        "field": "ISO_A2",
+        "index": 83,
+        "layer": "countries",
+        "unit": "Papua New Guinea"
+      },
+      "PH": {
+        "field": "ISO_A2",
+        "index": 80,
+        "layer": "countries",
+        "unit": "Philippines"
+      },
+      "PK": {
+        "field": "ISO_A2",
+        "index": 86,
+        "layer": "countries",
+        "unit": "Pakistan"
+      },
+      "PL": {
+        "field": "ISO_A2",
+        "index": 79,
+        "layer": "countries",
+        "unit": "Poland"
+      },
+      "PM": {
+        "field": "ISO_A2",
+        "index": 161,
+        "layer": "countries",
+        "unit": "Saint Pierre and Miquelon"
+      },
+      "PN": {
+        "field": "ISO_A2",
+        "index": 20,
+        "layer": "countries",
+        "unit": "Pitcairn Islands"
+      },
+      "PR": {
+        "field": "ISO_A2",
+        "index": 15,
+        "layer": "countries",
+        "unit": "Puerto Rico"
+      },
+      "PS": {
+        "field": "ISO_A2",
+        "index": 139,
+        "layer": "countries",
+        "unit": "Palestine"
+      },
+      "PT": {
+        "field": "ISO_A2",
+        "index": 78,
+        "layer": "countries",
+        "unit": "Portugal"
+      },
+      "PW": {
+        "field": "ISO_A2",
+        "index": 85,
+        "layer": "countries",
+        "unit": "Palau"
+      },
+      "PY": {
+        "field": "ISO_A2",
+        "index": 82,
+        "layer": "countries",
+        "unit": "Paraguay"
+      },
+      "QA": {
+        "field": "ISO_A2",
+        "index": 77,
+        "layer": "countries",
+        "unit": "Qatar"
+      },
+      "RE": {
+        "field": "ISO_A2_EH",
+        "index": 175,
+        "layer": "map_units",
+        "unit": "Reunion"
+      },
+      "RO": {
+        "field": "ISO_A2",
+        "index": 76,
+        "layer": "countries",
+        "unit": "Romania"
+      },
+      "RS": {
+        "field": "ISO_A2",
+        "index": 65,
+        "layer": "countries",
+        "unit": "Republic of Serbia"
+      },
+      "RU": {
+        "field": "ISO_A2",
+        "index": 75,
+        "layer": "countries",
+        "unit": "Russia"
+      },
+      "RW": {
+        "field": "ISO_A2",
+        "index": 74,
+        "layer": "countries",
+        "unit": "Rwanda"
+      },
+      "SA": {
+        "field": "ISO_A2",
+        "index": 67,
+        "layer": "countries",
+        "unit": "Saudi Arabia"
+      },
+      "SB": {
+        "field": "ISO_A2",
+        "index": 59,
+        "layer": "countries",
+        "unit": "Solomon Islands"
+      },
+      "SC": {
+        "field": "ISO_A2",
+        "index": 64,
+        "layer": "countries",
+        "unit": "Seychelles"
+      },
+      "SD": {
+        "field": "ISO_A2",
+        "index": 52,
+        "layer": "countries",
+        "unit": "Sudan"
+      },
+      "SE": {
+        "field": "ISO_A2",
+        "index": 48,
+        "layer": "countries",
+        "unit": "Sweden"
+      },
+      "SG": {
+        "field": "ISO_A2",
+        "index": 62,
+        "layer": "countries",
+        "unit": "Singapore"
+      },
+      "SH": {
+        "field": "ISO_A2",
+        "index": 19,
+        "layer": "countries",
+        "unit": "Saint Helena"
+      },
+      "SI": {
+        "field": "ISO_A2",
+        "index": 61,
+        "layer": "countries",
+        "unit": "Slovenia"
+      },
+      "SJ": {
+        "field": "ISO_A2",
+        "index": 98,
+        "layer": "map_units",
+        "unit": "Svalbard"
+      },
+      "SK": {
+        "field": "ISO_A2",
+        "index": 60,
+        "layer": "countries",
+        "unit": "Slovakia"
+      },
+      "SL": {
+        "field": "ISO_A2",
+        "index": 63,
+        "layer": "countries",
+        "unit": "Sierra Leone"
+      },
+      "SM": {
+        "field": "ISO_A2",
+        "index": 69,
+        "layer": "countries",
+        "unit": "San Marino"
+      },
+      "SN": {
+        "field": "ISO_A2",
+        "index": 66,
+        "layer": "countries",
+        "unit": "Senegal"
+      },
+      "SO": {
+        "field": "ISO_A2",
+        "index": 57,
+        "layer": "countries",
+        "unit": "Somalia"
+      },
+      "SR": {
+        "field": "ISO_A2",
+        "index": 50,
+        "layer": "countries",
+        "unit": "Suriname"
+      },
+      "SS": {
+        "field": "ISO_A2",
+        "index": 51,
+        "layer": "countries",
+        "unit": "South Sudan"
+      },
+      "ST": {
+        "field": "ISO_A2",
+        "index": 68,
+        "layer": "countries",
+        "unit": "São Tomé and Principe"
+      },
+      "SV": {
+        "field": "ISO_A2",
+        "index": 175,
+        "layer": "countries",
+        "unit": "El Salvador"
+      },
+      "SX": {
+        "field": "ISO_A2",
+        "index": 240,
+        "layer": "countries",
+        "unit": "Sint Maarten"
+      },
+      "SY": {
+        "field": "ISO_A2",
+        "index": 46,
+        "layer": "countries",
+        "unit": "Syria"
+      },
+      "SZ": {
+        "field": "ISO_A2",
+        "index": 49,
+        "layer": "countries",
+        "unit": "eSwatini"
+      },
+      "TC": {
+        "field": "ISO_A2",
+        "index": 26,
+        "layer": "countries",
+        "unit": "Turks and Caicos Islands"
+      },
+      "TD": {
+        "field": "ISO_A2",
+        "index": 199,
+        "layer": "countries",
+        "unit": "Chad"
+      },
+      "TF": {
+        "field": "ISO_A2",
+        "index": 167,
+        "layer": "countries",
+        "unit": "French Southern and Antarctic Lands"
+      },
+      "TG": {
+        "field": "ISO_A2",
+        "index": 40,
+        "layer": "countries",
+        "unit": "Togo"
+      },
+      "TH": {
+        "field": "ISO_A2",
+        "index": 42,
+        "layer": "countries",
+        "unit": "Thailand"
+      },
+      "TJ": {
+        "field": "ISO_A2",
+        "index": 44,
+        "layer": "countries",
+        "unit": "Tajikistan"
+      },
+      "TK": {
+        "field": "ISO_A2",
+        "index": 105,
+        "layer": "map_units",
+        "unit": "Tokelau"
+      },
+      "TL": {
+        "field": "ISO_A2",
+        "index": 41,
+        "layer": "countries",
+        "unit": "East Timor"
+      },
+      "TM": {
+        "field": "ISO_A2",
+        "index": 35,
+        "layer": "countries",
+        "unit": "Turkmenistan"
+      },
+      "TN": {
+        "field": "ISO_A2",
+        "index": 37,
+        "layer": "countries",
+        "unit": "Tunisia"
+      },
+      "TO": {
+        "field": "ISO_A2",
+        "index": 39,
+        "layer": "countries",
+        "unit": "Tonga"
+      },
+      "TR": {
+        "field": "ISO_A2",
+        "index": 36,
+        "layer": "countries",
+        "unit": "Turkey"
+      },
+      "TT": {
+        "field": "ISO_A2",
+        "index": 38,
+        "layer": "countries",
+        "unit": "Trinidad and Tobago"
+      },
+      "TV": {
+        "field": "ISO_A2",
+        "index": 241,
+        "layer": "countries",
+        "unit": "Tuvalu"
+      },
+      "TW": {
+        "field": "ISO_A2_EH",
+        "index": 45,
+        "layer": "countries",
+        "unit": "Taiwan"
+      },
+      "TZ": {
+        "field": "ISO_A2",
+        "index": 43,
+        "layer": "countries",
+        "unit": "United Republic of Tanzania"
+      },
+      "UA": {
+        "field": "ISO_A2",
+        "index": 33,
+        "layer": "countries",
+        "unit": "Ukraine"
+      },
+      "UG": {
+        "field": "ISO_A2",
+        "index": 34,
+        "layer": "countries",
+        "unit": "Uganda"
+      },
+      "US": {
+        "field": "ISO_A2",
+        "index": 16,
+        "layer": "countries",
+        "unit": "United States of America"
+      },
+      "UY": {
+        "field": "ISO_A2",
+        "index": 8,
+        "layer": "countries",
+        "unit": "Uruguay"
+      },
+      "UZ": {
+        "field": "ISO_A2",
+        "index": 7,
+        "layer": "countries",
+        "unit": "Uzbekistan"
+      },
+      "VA": {
+        "field": "ISO_A2",
+        "index": 5,
+        "layer": "countries",
+        "unit": "Vatican"
+      },
+      "VC": {
+        "field": "ISO_A2",
+        "index": 71,
+        "layer": "countries",
+        "unit": "Saint Vincent and the Grenadines"
+      },
+      "VE": {
+        "field": "ISO_A2",
+        "index": 4,
+        "layer": "countries",
+        "unit": "Venezuela"
+      },
+      "VG": {
+        "field": "ISO_A2",
+        "index": 25,
+        "layer": "countries",
+        "unit": "British Virgin Islands"
+      },
+      "VI": {
+        "field": "ISO_A2",
+        "index": 12,
+        "layer": "countries",
+        "unit": "United States Virgin Islands"
+      },
+      "VN": {
+        "field": "ISO_A2",
+        "index": 3,
+        "layer": "countries",
+        "unit": "Vietnam"
+      },
+      "VU": {
+        "field": "ISO_A2",
+        "index": 6,
+        "layer": "countries",
+        "unit": "Vanuatu"
+      },
+      "WF": {
+        "field": "ISO_A2",
+        "index": 162,
+        "layer": "countries",
+        "unit": "Wallis and Futuna"
+      },
+      "WS": {
+        "field": "ISO_A2",
+        "index": 70,
+        "layer": "countries",
+        "unit": "Samoa"
+      },
+      "XK": {
+        "field": "ISO_A2_EH",
+        "index": 130,
+        "layer": "countries",
+        "unit": "Kosovo"
+      },
+      "YE": {
+        "field": "ISO_A2",
+        "index": 2,
+        "layer": "countries",
+        "unit": "Yemen"
+      },
+      "YT": {
+        "field": "ISO_A2_EH",
+        "index": 174,
+        "layer": "map_units",
+        "unit": "Mayotte"
+      },
+      "ZA": {
+        "field": "ISO_A2",
+        "index": 56,
+        "layer": "countries",
+        "unit": "South Africa"
+      },
+      "ZM": {
+        "field": "ISO_A2",
+        "index": 1,
+        "layer": "countries",
+        "unit": "Zambia"
+      },
+      "ZW": {
+        "field": "ISO_A2",
+        "index": 0,
+        "layer": "countries",
+        "unit": "Zimbabwe"
+      }
+    },
+    "noCode": [
+      "Somaliland",
+      "Northern Cyprus",
+      "Siachen Glacier"
+    ],
+    "overlays": [],
+    "scale": "1:50m"
+  },
+  "tolerance": 0.05,
+  "tools": {
+    "gdal": "3.12.4",
+    "geos": "3.14.1",
+    "numpy": "2.5.4",
+    "pyarrow": "26.0.0",
+    "pyogrio": "0.13.0",
+    "python": "3.12.3",
+    "shapely": "2.2.0"
+  }
+}

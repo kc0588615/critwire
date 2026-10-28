@@ -38,6 +38,7 @@ The PostGIS labs share a database with other work, on the test server and perhap
 - After a block's last statement, before the rollback, the runner looks for `learn_` roles and schemas that weren't there when it connected. Finding one fails the block, because your psql would have kept it.
 - Allowed only in PostGIS blocks: roles, `GRANT` and `REVOKE`, default privileges, `SET ROLE` and `CREATE`/`DROP SCHEMA`, all within `learn_` names; `SET` and `SET LOCAL`, which the rollback undoes. Refused everywhere: `ALTER SYSTEM`, `ALTER DATABASE`, `GRANT SET ON PARAMETER`, any role or schema not named `learn_…`, and the name `learn_spatial` (003's spike schema in the test database; the runner also compares its content before and after every run).
 - Creating roles needs the CREATEROLE privilege ("The PostGIS setup" below; d5).
+- On the test server the labs run as one role, `critwire_lab`, which `pnpm learn:check --setup` creates once as the superuser: LOGIN and CREATEROLE with `createrole_self_grant = 'set, inherit'`, CONNECT, CREATE and TEMPORARY on `critwire_dev`, the owner of `learn_curriculum`, and no CREATE on `public`. The runner connects as it through `LEARN_PG_URL`, never through `SET ROLE` from the superuser, because a block's `RESET ROLE` would return to the superuser. The leak check ignores it.
 
 ### Re-running the tests, and where results live
 
@@ -268,7 +269,7 @@ country_shapes | 247
 … 9 more rows
 ```
 
-Labs that create roles or schemas (d5) clean up in the same block, so running a block twice, or stopping halfway through a module, leaves nothing behind. Their names start with `learn_`, and creating roles needs the CREATEROLE privilege (a superuser has it; on your own install, see §3.2). This check creates a read-only role, reads a table as that role, and removes it again: `DROP OWNED BY` takes away what the role was granted, and only then can `DROP ROLE` remove it.
+Labs that create roles or schemas (d5) clean up in the same block, so running a block twice, or stopping halfway through a module, leaves nothing behind. Their names start with `learn_`, and creating roles needs the CREATEROLE privilege (a superuser has it; on your own install, see §3.2). This check creates a read-only role, reads a table as that role, and removes it again: `DROP OWNED BY` takes away what the role was granted, and only then can `DROP ROLE` remove it. `pnpm learn:check` runs the same block after the loader from `site/learn/sql/pg-role-smoke.sql`, inside its own `BEGIN` … `ROLLBACK` (the runner's rolled-back transaction, made explicit for psql), so a failed line leaves nothing; the result is the same (L1).
 
 ```sql
 -- q: pg-role-smoke
@@ -502,7 +503,7 @@ curl.exe -fLo learn_curriculum.sql https://critwire.com/learn/data/postgis/learn
 
 psql on Windows talks to the server in the console's code page unless told otherwise; the lab file sets `client_encoding` to UTF-8 itself, so names like "Côte d'Ivoire" arrive intact either way (tested by loading it under `WIN1252`).
 
-**Loading, and loading again.** The lab file builds schema `learn_curriculum` in one transaction: it drops the schema, recreates it, loads every table, adds the keys and indexes, and checks every table's row count before `COMMIT`. A failed load changes nothing; a second load replaces the schema, including any table you made there, so keep your own work in another schema. Then connect with your SQL client (psql, pgAdmin, DBeaver, VS Code) to database `learn` and run §0's `pg-session` and `pg-smoke` blocks: the 14 row counts there mean your lab matches the tested one.
+**Loading, and loading again.** The lab file builds schema `learn_curriculum` in one transaction: it drops the schema, recreates it, loads every table, adds the keys and indexes, and checks every table's row count before `COMMIT`. A failed load changes nothing; a second load replaces the schema, including any table you made there, so keep your own work in another schema. Another schema keeps your tables, not your dependencies: a view, a foreign key, a trigger or a policy of yours that reads `learn_curriculum` would go with it (`DROP SCHEMA … CASCADE`). The lab file refuses that reload instead, naming each such object, and changes nothing; move or drop them and load again. Then connect with your SQL client (psql, pgAdmin, DBeaver, VS Code) to database `learn` and run §0's `pg-session` and `pg-smoke` blocks: the 14 row counts there mean your lab matches the tested one.
 
 **Connection settings.** The Python labs, and any lab file you run with psql, find the database through libpq's standard environment variables, so the same file runs on your computer and on the test server. In PowerShell, for one session:
 
@@ -512,11 +513,13 @@ $env:PGHOST = "localhost"; $env:PGPORT = "5432"; $env:PGUSER = "postgres"; $env:
 ```
 
 **Privileges.** The `postgres` user is a superuser and can do everything the labs do. As another user you need:
-- `CREATE` on the database, to (re)create `learn_curriculum`, and ownership of that schema once it exists;
+- `CONNECT`, `CREATE` and `TEMPORARY` on the database (its owner has them; else `GRANT CONNECT, CREATE, TEMPORARY ON DATABASE learn TO <you>;` as the superuser), to connect, to (re)create `learn_curriculum` and for temporary tables, and ownership of that schema once it exists;
 - `CREATEROLE`, for the labs that create roles (d5, §0's `pg-role-smoke`): `ALTER ROLE <you> CREATEROLE;` as the superuser, once; on PostgreSQL 16 and later also `ALTER ROLE <you> SET createrole_self_grant = 'set, inherit';`, so you can act as the roles you create (`SET ROLE`) and drop what they hold (d5 explains);
 - nothing more for the raster labs (g7, s6): their clips are stored in the database, so neither of PostGIS's raster settings (`postgis.enable_outdb_rasters`, `postgis.gdal_enabled_drivers`) is needed, and 003 §4's `pg-once` grants aren't either.
 
 Every role or schema a lab creates is named `learn_…` and removed by the same block (§0), so the labs never leave anything in your database besides `learn_curriculum`.
+
+Give the labs a database of their own (`learn` above), one you could drop and create again, and keep other work out of it. CREATEROLE is server-wide, not per database, so give it to a role you use only for the labs.
 
 ### 3.3 Python
 
@@ -794,8 +797,8 @@ Every lab reads the same handful of files. critwire's build writes them from sna
 
 | Dataset | License (quoted in) | Files under `/learn/data/` | Rows | Bytes | Modules | Built by |
 |---|---|---|---|---|---|---|
-| GBIF open-records sample | per record CC0 1.0 or CC BY 4.0, after the effective-license rule (4.2) (003 D3); the download's DOI, and a derived-dataset DOI of its own | `occurrences.parquet`, `occurrences.csv`, `datasets.csv` | 40,395 records; 400 datasets | 622,971; 4,591,948; 72,797 | f2–f4, d2–d6, g3–g6, s1–s6, e1–e5, p1–p4, c1 | L1 |
-| Natural Earth admin-0, 1:50m, v5.1.2 | public domain (003 D2, 002 §6) | `country_shapes.parquet` (GeoParquet) | 247 | 1,206,307 | g1–g7, s1, s6 | L1 |
+| GBIF open-records sample | per record CC0 1.0 or CC BY 4.0, after the effective-license rule (4.2) (003 D3); the download's DOI, and a derived-dataset DOI of its own | `occurrences.parquet`, `occurrences.csv`, `datasets.csv` | 40,395 records; 400 datasets | 454,202 (L1's zstd writer; the spike's 622,971); 4,591,948; 72,797 | f2–f4, d2–d6, g3–g6, s1–s6, e1–e5, p1–p4, c1 | L1 |
+| Natural Earth admin-0, 1:50m, v5.1.2 | public domain (003 D2, 002 §6) | `country_shapes.parquet` (GeoParquet) | 247 | 1,304,205 | g1–g7, s1, s6 | L1 |
 | Natural Earth admin-1, 1:50m | public domain (003 D10) | `admin1_shapes.parquet` (GeoParquet) | 294, in 9 countries | 870,947 | g4, g6, s2–s5 | L1 |
 | RESOLVE Ecoregions 2017, simplified to 0.05° | CC BY 4.0 (003 D9) | `ecoregions.parquet` (GeoParquet), `biomes.csv` | 847; 14 | 6,686,262; 518 | g4, s6 | L1 |
 | Countries (Natural Earth attributes) | public domain (002 §6) | `/v1/countries.{parquet,csv,json}` | 250 | a few KB | every module | L1 |
@@ -803,10 +806,10 @@ Every lab reads the same handful of files. critwire's build writes them from sna
 | Jung v004 clips, Costa Rica and Tasmania | CC BY 4.0 (003 D4) | `clips/{cr,tas}.tif` (cloud-optimized GeoTIFF) | 2 rasters | ≈ 3 MB (estimate; A2 measured the Costa Rica clip at 1.42 MB) | g7, s6 | L3 |
 | The PostGIS loader | inherits the above | `postgis/learn_curriculum.sql` | 14 tables | 21,330,577 | every PostGIS module | build (L1; grown in L3) |
 | The star export | inherits the above; credits in its own manifest | `star/*.csv` (8 files), `star/manifest.json` | §A.3 | 4,576,053; 10,995 | d6, p1–p4 | build (L2: the records fact; L5: the habitat fact) |
-| The manifest | | `manifest.json` (4.5) | | 12,006 | every module | build (L1) |
+| The manifest and the index page | | `manifest.json` (4.5), `index.html` | | 14,257; 114,820 (L1's build) | every module | build (L1) |
 
-Notes on the shapes (`SP/out/lab-data/summary.md`):
-- **GeoParquet 1.0.0**: WKB geometry in a `geom` column, its bounding box, longitude-latitude (CRS84), zstd compression, rows sorted by key. The same inputs write byte-identical files.
+Notes on the shapes (`SP/out/lab-data/summary.md`; sizes re-measured by L1's `pnpm ingest shapes`, `data/learn/shapes.json`):
+- **GeoParquet 1.0.0**: WKB geometry in a `geom` column, its bounding box, longitude-latitude (CRS84), zstd compression, rows sorted by key. The same inputs write byte-identical files. The ingest rebuilds all three (and `biomes.csv`): admin-1, ecoregions and `biomes.csv` are byte-identical to the spike's; `country_shapes` has the spike's WKB for all 247 codes, but the spike wrote it with DuckDB's snappy (1,206,307 bytes), so zstd makes it 1,304,205.
 - **Admin-1 covers 9 countries only** (AU 9, BR 27, CA 13, CN 31, ID 33, IN 36, RU 85, US 51, ZA 9 rows), as Natural Earth's 1:50m layer does. Tasmania is one row, `AUS-2660`. The key is `adm1_code`; Natural Earth's `iso_3166_2` is dropped, because one value (Jervis Bay's `AU-X02~`) isn't a real code.
 - **RESOLVE is simplified feature by feature**, keeping topology, at 0.05° (about 5 km, close to the detail of the 1:50m outlines beside it). The source has 15,164,376 vertices; 0.05° keeps 545,976. The finest tolerance that fits 8 MB was 0.05°: 0.02° gives 9,880,579 bytes. Because each ecoregion is simplified on its own, neighbours no longer share an exact border, and small gaps and overlaps appear between them (g2 and g4 use this).
 - **"Rock and Ice"** (`ECO_ID` 0) has no biome or realm in RESOLVE (`N/A`), so its `biome_id` and `realm` are NULL, a nullable foreign key like `occurrences.country_code`. Any other `N/A` fails the build.
@@ -814,7 +817,7 @@ Notes on the shapes (`SP/out/lab-data/summary.md`):
 
 **How each is built.** One command per step, in the order critwire's ingests already use (ingest → derive → build; `AGENTS.md`):
 - **GBIF sample** (L1): `pnpm ingest gbif-sample` submits the download (or reuses the one in `download.json`), waits, fetches the zip to a temporary folder, applies the species rule, the effective license, the country-key contract and the cap (4.2), reads each dataset's and publisher's metadata, and commits `data/raw/gbif-sample/`. `pnpm derive` writes the sample's per-dataset counts. `pnpm gbif:register --target learn-sample` mints its derived-dataset DOI. `pnpm build` writes the three files, the loader's two tables and the manifest.
-- **Natural Earth and RESOLVE** (L1): an ingest downloads the pinned sources (Natural Earth's commit `f1890d9f…`; RESOLVE's `Ecoregions2017.zip`, read in place, never extracted), writes the GeoParquet files above and commits them under `data/`. The build copies them and puts the same shapes in the loader.
+- **Natural Earth and RESOLVE** (L1): an ingest downloads the pinned sources (Natural Earth's commit `f1890d9f…`; RESOLVE's `Ecoregions2017.zip`, read in place, never extracted), writes the GeoParquet files above, `biomes.csv` and `shapes.json` (inputs, tolerance, tool versions, per-file rows, bytes, sha256) and commits them under `data/learn/`. The build copies them and puts the same shapes in the loader.
 - **Habitat summaries and clips** (L3): `pnpm ingest habitat` (003 §5) computes the summaries and the class at each sample record from v004, and cuts the two clips; the build publishes them and adds their tables to the loader.
 - **Loader, star and manifest**: written by `pnpm build` from the files above; nothing new is committed for them.
 
@@ -837,14 +840,14 @@ Notes on the shapes (`SP/out/lab-data/summary.md`):
 | the download (`totalRecords`; equal to the search count at submission) | 394,532 |
 | loaded and typed, every check passed | 394,532 |
 | effective license CC0 1.0 or CC BY 4.0 | 381,065 |
-| at most 2,000 per species, by ascending `md5` of the `gbifID` text | **40,395** (28,187 CC BY 4.0, 12,208 CC0 1.0) |
+| at most 2,000 per species, by ascending `md5` of the `gbifID` text, then `gbifID` | **40,395** (28,187 CC BY 4.0, 12,208 CC0 1.0) |
 
 - **Species.** A record belongs to the species whose `ids.gbif` is its `speciesKey`, else its `taxonKey`; a record that names no species, or two, fails the run. Four of critwire's keys are synonyms in the backbone (Blanding's turtle, Baird's tapir, Temminck's and giant pangolins): GBIF files their 2,385 records under the accepted name's `speciesKey` and keeps critwire's key in `taxonKey` (e2).
 - **Effective license.** A record's license is the more restrictive of its own and its dataset's (CC0 < CC BY < CC BY-NC). 11 datasets declare CC BY-NC 4.0 while GBIF labels their 13,467 records CC0 or CC BY; those records are left out. A record that is CC0 in a CC BY dataset is published as CC BY and credited. §10 asks the owner whether to keep this rule.
-- **The cap.** At most 2,000 records per species, chosen by ascending `md5(gbifID)`. Any engine computes the same hash, so DuckDB, PostgreSQL and Python pick the same records, and a refresh changes only what GBIF changed. 71 species have records: 13 reach the cap, 33 have fewer than 100, and the median is 111. The Ili pika has no open record; the Yangtze giant softshell turtle's only record sits in a CC BY-NC dataset. Uncapped, the open records would be 4,791,485 bytes as Parquet and 44,556,230 as CSV; they are never published.
+- **The cap.** At most 2,000 records per species, chosen by ascending `md5(gbifID)`, then `gbifID` (a tie-break, so the order is total even if two hashes were equal). Any engine computes the same hash, so DuckDB, PostgreSQL and TypeScript pick the same records, and a refresh changes only what GBIF changed, plus its knock-on at the cap: a newly eligible record with a low hash takes the place of the capped species' highest-hash record. 71 species have records: 13 reach the cap, 33 have fewer than 100, and the median is 111. The Ili pika has no open record; the Yangtze giant softshell turtle's only record sits in a CC BY-NC dataset. Uncapped, the open records would be 4,791,485 bytes as Parquet and 44,556,230 as CSV; they are never published.
 - **Columns** (`occurrences`, the same in every file and both databases): `id` (GBIF's `gbifID`), `species_id`, `dataset_key`, `license` (effective, `CC0 1.0` or `CC BY 4.0`), `basis_of_record`, `longitude`, `latitude`, `coordinate_uncertainty_m`, `country_code_gbif`, `country_code`, `year`, `month`. The PostGIS lab adds `geom`, a stored point generated from the coordinates (SRID 4326, GiST-indexed).
 
-**The country-key contract**, one rule applied once, where the sample is written; no lab re-derives it:
+**The country-key contract**, one rule applied once, by `pnpm derive` when it writes the published rows (`scripts/derive/sample.ts`, over the derived `countries` rows); no lab re-derives it. `sample.csv` keeps GBIF's raw code, so a countries fix needs no new GBIF ingest (L1, A4):
 - `country_code_gbif` is GBIF's `countryCode` as delivered, NULL when empty. g3 compares it with the outlines.
 - `country_code` is that code when `countries` has it, else NULL: a nullable foreign key to `countries`, in the browser and in PostGIS alike.
 - Two values are known not to be countries: `ZZ` (unknown or invalid) and `XZ` (international waters). They give a NULL `country_code`. Any other code with no `countries` row fails the run and names the code, because it means the countries file has a gap (fixed by 002 §6's matching rule).
@@ -853,23 +856,25 @@ Notes on the shapes (`SP/out/lab-data/summary.md`):
 
 **Dataset metadata.** For each dataset in the download, `GET https://api.gbif.org/v1/dataset/<key>` gives its title, DOI and license, and once per publisher `GET https://api.gbif.org/v1/organization/<key>` gives the publisher's name: 454 datasets and 233 publishers, read at 2 requests a second or fewer in 5 min 55 s. Every dataset had a title, a publisher and a DOI; none was deleted. A dataset GBIF deletes later keeps its title and records the deletion date; an unknown license fails the ingest. Licenses: CC BY 4.0 311, CC0 1.0 132, CC BY-NC 4.0 11. The 400 datasets left in the sample go into `datasets` (`dataset_key`, `title`, `publisher`, `doi`, `license`: the dataset's declared license). Record counts aren't stored: they are a query (d2), and one dataset (iNaturalist research-grade) holds records under two licenses, which is why `license` belongs on `occurrences`.
 
-**Registration.** The sample is a reduced subset of the download, so GBIF's rules for citing it are those of a derived dataset: L1 registers it as its own, with its per-dataset counts and `originalDownloadDOI` set to the download's DOI. `pnpm gbif:register` gains `--target learn-sample`; its deposit tags are `gbif-learn-<hex12>`. The countries target and its `gbif-dd-*` tags don't change. A plain build refuses a missing or stale sample DOI, as it does for the countries DOI, and the refresh follows `AGENTS.md`'s DOI steps with the new target. GBIF deletes an uncited download after six months (the spike's on 2027-04-23), and a derived dataset that cites it keeps it. So L1 reuses the spike's download (key `0041824-260928105237408`, through `download.json`) and registers the sample before that date: the same download and the same rules give the same 40,395 records, so every result recorded in this document holds on the published files. Only if the date has passed does L1 submit a new download, and then every result here is re-run on it.
+**Registration.** The sample is a reduced subset of the download, so GBIF's rules for citing it are those of a derived dataset: L1 registers it as its own, with its per-dataset counts and `originalDownloadDOI` set to the download's DOI. `pnpm gbif:register` gains `--target learn-sample`; its deposit tags are `gbif-learn-<hex12>`. The countries target and its `gbif-dd-*` tags don't change. GBIF stores `relatedDatasets` as sent and only checks that `originalDownloadDOI` exists (registry `DerivedDatasetResource`, checked in L1), so the sample's own counts are what it records. Every read-back (after the POST, on adopting, on verifying) is a hard error unless GBIF holds that download DOI. A sample DOI is current while GBIF holds the same per-dataset counts from the same download: a citation check, not record identity, which is `sample.csv`'s sha256 in `contributions.json` (under the description's hash line) and the manifest's sha256s. A plain build refuses a missing or stale sample DOI, as it does for the countries DOI, and the refresh follows `AGENTS.md`'s DOI steps with the new target. GBIF deletes an uncited download after six months (the spike's on 2027-04-23), and a derived dataset that cites it keeps it. So L1 reuses the spike's download (key `0041824-260928105237408`, through `download.json`) and registers the sample before that date: the same download and the same rules give the same 40,395 records, so every result recorded in this document holds on the published files. Only if the date has passed does L1 submit a new download, and then every result here is re-run on it. A new download is `pnpm ingest gbif-sample --new`: it records the search count, writes its intent (the request, the time and that count) before the one POST, which is never retried, and polls once a minute until GBIF finishes; `totalRecords` must then be within 0.1 % of the search count. A run interrupted after the POST lists the account's downloads and adopts the one with the same request created since the POST; with none, or several, it refuses rather than submit twice.
 
 **What's committed**, under `data/raw/gbif-sample/`:
 - `download.json`: the key, DOI, request, `totalRecords`, the zip's sha256 and every dataset's count in the full download (the spike's: 25,403 bytes);
 - `datasets.json`: the metadata above, keys sorted, one `retrieved` time (241,891 bytes);
 - `sample.csv`: the capped rows, sorted by `id` (about the size of `occurrences.csv`, 4.6 MB).
 
-The ingest applies the cap, so `data/` is the whole snapshot and `pnpm derive` never needs the zip. The full download and the zip are never committed: GBIF archives the download under its DOI, which is how anyone reproduces the sample.
+The ingest applies the cap, so `data/` is the whole snapshot and `pnpm derive` never needs the zip. `download.json` also records `sampleRules`, the text of the species, license and cap rules. `pnpm derive` refuses the sample as stale (and writes nothing) unless GBIF's stored request equals today's request over the species' `ids.gbif`, each species keeps the `ids.gbif` it was sampled under (`download.json`'s `species` pairs: the request is a key set, blind to two species swapping keys), `sampleRules` equals the code's, and `datasets.json` names the same download; it then writes `data/gbif-learn-sample/contributions.json` (the download key and DOI, the records, the per-dataset counts and `sample.csv`'s sha256), the counts the sample's DOI registers. A species or `ids.gbif` change therefore needs a new download (`--new`) and a new sample DOI before a plain build passes; `--draft` lifts only the DOI checks. The full download and the zip are never committed: GBIF archives the download under its DOI, which is how anyone reproduces the sample.
 
 ### 4.3 The loader
 
 `postgis/learn_curriculum.sql` builds the PostGIS lab with nothing but `psql` and PostGIS (§0, §3.2): `psql -X -v ON_ERROR_STOP=1 -d <your database> -f learn_curriculum.sql`. It is one transaction, so a failed load leaves the previous schema as it was:
-- `\set ON_ERROR_STOP on`, `BEGIN`, `SET client_encoding = 'UTF8'` (psql on Windows talks in the console's code page and would garble names), then `DROP SCHEMA IF EXISTS learn_curriculum CASCADE`, `CREATE SCHEMA learn_curriculum` and `SET LOCAL search_path = learn_curriculum, public`.
-- The tables, then each table's rows as `COPY … FROM stdin (FORMAT csv)`. csv format reads a backslash as plain text; the text format would silently change rows (F10, e2).
-- Shapes arrive as base64 text and become geometry afterwards: `ST_Multi(ST_GeomFromWKB(decode(geom, 'base64'), 4326))`, one type per column (MultiPolygon, SRID 4326). Base64 takes a third less room than `bytea`'s hex form: the loader is 21,330,577 bytes instead of 29,598,105, with identical geometries.
+- `\set ON_ERROR_STOP on`, `BEGIN`, `SET client_encoding = 'UTF8'` (psql on Windows talks in the console's code page and would garble names) and `SET LOCAL lock_timeout = '60s'` (a session still reading the old schema makes the load wait a minute at most, then fail, changing nothing).
+- The guard and the drop, one `DO` block. Schema separation isn't dependency isolation (§3.2): `DROP SCHEMA learn_curriculum CASCADE` also drops whatever outside depends on it. So the block lists every object outside the schema that has a `pg_depend` entry (rules, triggers, defaults and policies take their table's schema; `pg_toast` belongs to its table), drops the schema, and raises, naming each listed object that is gone. Postgres computes the cascade; the guard only reads what it removed. It catches views and materialized views, foreign keys, columns of an inside type, defaults and functions over inside objects, triggers and policies; inside views, identity columns, indexes and TOAST reload cleanly (LD13–LD16). The one gap: an object another session creates in the second between the listing and the drop isn't listed. A lab database has one user, and `learn:check` holds its lock, so this is accepted.
+- `CREATE SCHEMA learn_curriculum` and `SET LOCAL search_path = learn_curriculum, public`.
+- The tables, with CHECKs for what a value may be: `coordinate_uncertainty_m` at least 0 and below `'Infinity'` (NaN sorts above it, so it fails too), `year` above 0, `est_area_km2` at least 0 and finite, `month` 1 to 12. NULL means unknown and passes. Then each table's rows as `COPY … FROM stdin (FORMAT csv)`. csv format reads a backslash as plain text; the text format would silently change rows (F10, e2).
+- Shapes arrive as base64 text and become geometry afterwards: `ST_Multi(ST_GeomFromWKB(decode(geom, 'base64'), 4326))`, one type per column (MultiPolygon, SRID 4326). Base64 takes a third less room than `bytea`'s hex form: the spike's loader is 21,330,577 bytes instead of 29,598,105, with identical geometries (the build's, with the guard and the checks, 21,338,761).
 - Then primary, unique and foreign keys, GiST indexes and `ANALYZE` on every table.
-- Then a check that raises on failure: each table's row count equals the build's, and every geometry has SRID 4326. Shapes may be invalid (g2), so validity isn't checked.
+- Then a check that raises on failure: each table's row count equals the build's, every geometry has SRID 4326, and every `LAB_CHECKS` rule holds. Those are the rules keys and CHECKs can't state (`range_status` is `ok` exactly when a species has countries, each taxon's parent is one rank up, the country-key contract, the lab-only tables' codes); each is one portable query counting the rows that break it, and the build runs the same queries in DuckDB over the published files, so a file that wouldn't load is never published. Shapes may be invalid (g2), so validity isn't checked.
 - `COMMIT`. The file references no table outside `learn_curriculum`; only PostGIS's functions come from `public`. Loading it again replaces the schema, tables you made there included, and its first lines say so.
 
 In the spike it loads in 1.6 s, twice in a row, with the same rows each time: `admin1_shapes` 294, `biomes` 14, `countries` 250, `country_habitats` 35, `country_shapes` 247, `datasets` 400, `ecoregions` 847, `habitat_classes` 75, `occurrences` 40,395, `sources` 5, `species` 76, `species_countries` 472, `species_sources` 591, `taxa` 143 (`pg-smoke`, §0). The browser holds the same rows in its eight tables:
@@ -901,25 +906,31 @@ species | 76
 
 ### 4.4 The cap: 50 MB
 
-The build refuses when `dist/learn/data/` exceeds 50,000,000 bytes, or when the committed lab data (`data/raw/gbif-sample/` and the other lab snapshots) does. The browser engine's `parquet` extension (3.22 MB) is counted apart, under 002 §10 item 3.
+The build refuses when `dist/learn/data/` exceeds 50,000,000 bytes, or when the committed lab data does: `data/raw/gbif-sample/`, `data/learn/` and `data/gbif-learn-sample/` together (L1's build: 35,452,055 and 13,673,945 bytes). Both refusals name the total and the largest files (`scripts/build/learn/cap.ts`). The browser engine's `parquet` extension (3.22 MB) is counted apart, under 002 §10 item 3.
 
 | `/learn/data/` | Bytes |
 |---|---|
-| now (the spike, after L1's files): 10 files and the manifest | 35,397,671 |
+| now (the spike, after L1's files): 10 files and the manifest | 35,397,671 (L1's build, with its index page: 35,452,055) |
 | + L2's star (8 CSV files and its manifest) | 39,984,719 |
 | + L3's habitat files and clips, about 3.2 MB, and their loader tables, about 0.7 MB for `occurrence_habitats` plus the clips as rasters (estimates) | ≈ 44–48 MB |
 
-The committed lab data in the spike (`SP/data/learn/`: the shapes, the stand-in habitat summaries and the sample files) is 14,055,088 bytes; L1's `data/raw/gbif-sample/` adds about 4.9 MB in place of the sample files.
+The committed lab data in the spike (`SP/data/learn/`: the shapes, the stand-in habitat summaries and the sample files) is 14,055,088 bytes; L1's `data/raw/gbif-sample/` adds about 4.9 MB in place of the sample files. L1's `country_shapes.parquet` (zstd, 4.1) is 97,898 bytes larger than the spike's, which adds that much to each total above.
 
 With hex geometry the loader was 29,598,105 bytes, and the same projection came to about 52–58 MB, over the cap once L3 landed. Base64 brought it back under, with no change to any table. If L3's measured total is still over, the cuts go in this order, and each keeps the browser and PostGIS on the same data: RESOLVE is simplified further, in the file and the loader alike, using the same tolerance probe; then the CSV copy of the sample goes, since every reader also takes Parquet; then the Tasmania clip leaves the loader, and g7 keeps Costa Rica's. The loader and the sample's Parquet are cut last: every PostGIS module needs the one, and every browser module the other.
 
 ### 4.5 Credits
 
-`/v1/attribution.json` stays about the species files, plus 002 §6's Natural Earth entry. The lab files are credited in **`/learn/data/manifest.json`**: for each file its columns, rows, bytes, sha256 and `sources[]` (`name`, `license`, `licenseUrl` from `scripts/build/sources.ts` `licenseUrl()`, `citation`, `doi` where there is one, `url`). In the spike's manifest:
-- the sample's three files: GBIF's citation of the download, "GBIF.org (23 October 2026) GBIF Occurrence Download https://doi.org/10.15468/dl.fbpk9w", plus `"datasets": "datasets.csv"` for each dataset's credit; from L1 also the sample's derived-dataset DOI;
+`/v1/attribution.json` stays about the species files, plus 002 §6's Natural Earth entry. The lab files are credited in **`/learn/data/manifest.json`**, keys in this order and no clock, so the same files give the same bytes (L1, `scripts/build/learn/data.ts`):
+- `cap` (50,000,000) and `bytes`, the files' total;
+- `inputs`: `v1`, the bytes and sha256 of `/v1/species.parquet` and `/v1/countries.parquet`, the two `/v1` files the lab tables are built from (a lab that finds other hashes is reading newer `/v1` files than these were tested with); `sample`, `sample.csv`'s path, sha256 and rows, the file the sample's derived-dataset deposit holds (= `contributions.json`);
+- `dois`: `download` (the GBIF download's) and `sample` (the sample's derived dataset; null in a draft build);
+- `files`: per file (all but `manifest.json` and `index.html`), its `columns` and `rows` (Parquet and CSV), `tables` for the loader (each lab table's rows, the counts its final check enforces), `bytes`, `sha256` and `sources[]` (`name`, `license`, `licenseUrl` from `scripts/build/sources.ts` `licenseUrl()`, `citation`, `url`, `doi` where there is one; the sample's source adds `datasets` and `derivedDataset` {`doi`, `citation`, `url`}).
+
+In the spike's manifest:
+- the sample's three files: GBIF's citation of the download, "GBIF.org (23 October 2026) GBIF Occurrence Download https://doi.org/10.15468/dl.fbpk9w", plus `"datasets": "datasets.csv"` for each dataset's credit; from L1 also the sample's derived dataset, `10.15468/dd.5sthtk`, with GBIF's citation of it;
 - the Natural Earth shapes: public domain, credited anyway ("Made with Natural Earth");
 - RESOLVE: CC BY 4.0, Dinerstein et al. 2017, BioScience 67(6), doi 10.1093/biosci/bix014;
-- the habitat files: CC BY 4.0, Jung et al. 2020 and the map's version (003 §5), doi 10.5281/zenodo.4058819;
+- the habitat files: CC BY 4.0, Jung et al. 2020 and the map's version (003 §5), doi 10.5281/zenodo.4058819; until L3, named "(stand-in summaries)";
 - the loader: every source of the tables it holds, critwire's own data included.
 
 One `credits(file)` function writes these entries and the star's (`star/manifest.json`, §A.3); `dim_dataset` carries the `datasets` columns. The build refuses a lab file with no `sources`, a license missing from `LICENSE_URLS`, a CC BY source with no citation, and a dataset in the sample with no title or publisher. The `/learn/data/` index page lists the files, their sources and the dataset table (title, publisher, DOI link, license, records in the sample).
@@ -2347,8 +2358,8 @@ VALUES (1000, 74, 'https://example.org/axolotl-2.jpg', 'All rights reserved', 'A
   - **Second (2NF):** in a table whose key has several columns, no other column depends on only part of it.
   - **Third (3NF):** no other column depends on a column that isn't a key. The short version of all three: every column depends on the key, the whole key, and nothing but the key. (**Boyce–Codd normal form** tightens 3NF for tables with several overlapping keys; critwire's tables don't have that case.)
 - Normalizing splits a table along its dependencies. The split is **lossless** when joining the parts gives back exactly the rows you started with; splitting along a real dependency always is.
-- A nested file (JSON, or Parquet with structs and lists) groups facts by how they are read: one animal with everything about it. Tables group them by what they depend on. critwire keeps both: its build loads `data/` into tables, then writes `/v1/species.{json,parquet}` nested, because a reader wants one record per animal.
-- **Denormalizing** is repeating facts on purpose, for reading: the published files, d6's star, a summary table. It is safe when the copy is rebuilt from the normalized tables every time and never edited by hand; a value that is only a count of other rows (records per dataset) stays a query.
+- A nested file (JSON, or Parquet with structs and lists) groups facts by how they are read: one animal with everything about it. Tables group them by what they depend on. critwire keeps both: its build writes `/v1/species.{json,parquet}` nested, from the derived records in `data/species.json`, because a reader wants one record per animal, and loads the same records into a table whose keys and `CHECK`s refuse a record that breaks them, a check before anything is published.
+- **Denormalizing** is repeating facts on purpose, for reading: the published files, d6's star, a summary table. It is safe when every copy is rebuilt from one source every time and never edited by hand; a value that is only a count of other rows (records per dataset) stays a query.
 
 **Worked example:** How does critwire's nested record become tables? (002's lesson 14, re-run.) These queries read the published file itself, `species.parquet`, with DuckDB's own SQL: `read_parquet` opens a file, `"range".countriesWithOpenRecords` reaches into the record, and `unnest` turns a list into rows. The browser setup (§0) builds the tables with exactly these. Here is the jaguar's record, its countries one list in one cell:
 
@@ -2459,7 +2470,7 @@ Wikidata | 1 | CC0 1.0 | 76
 critwire base | 1 | CC BY 4.0 | 76
 ```
 
-So `source → license` goes into its own table, `sources`, one row per source, and the setup's `SELECT DISTINCT` gives exactly one row each. Its primary key now holds the rule: had two animals' entries named two licenses for one source, the load would have failed instead of storing both. The file repeats each license 69 to 76 times, and that is fine, because critwire's build writes the file from its tables every time. Which source gave which field is a fact about the animal and the field together, so it goes in `species_sources`, keyed (`species_id`, `field`). Joined back, they tell where each of the jaguar's facts came from (002's lesson 15):
+So `source → license` goes into its own table, `sources`, one row per source, and the setup's `SELECT DISTINCT` gives exactly one row each. Its primary key now holds the rule: had two animals' entries named two licenses for one source, the load would have failed instead of storing both. The file repeats each license 69 to 76 times, and that is fine, because critwire's build writes the file from one source, `data/species.json`, every time, and `pnpm derive` gives every animal's entry for a source that source's one license (`scripts/derive/record.ts`). Which source gave which field is a fact about the animal and the field together, so it goes in `species_sources`, keyed (`species_id`, `field`). Joined back, they tell where each of the jaguar's facts came from (002's lesson 15):
 
 ```sql
 -- q: d2-provenance
@@ -7748,10 +7759,10 @@ Data dictionary, the lab: the tables schema v2 lacks, and `occurrences` for its 
 | `basis_of_record` | text |  | HUMAN_OBSERVATION, PRESERVED_SPECIMEN, ... | GBIF download 10.15468/dl.fbpk9w, sampled (§4) |
 | `longitude` | float8 |  | degrees east, WGS 84 | GBIF download 10.15468/dl.fbpk9w, sampled (§4) |
 | `latitude` | float8 |  | degrees north, WGS 84 | GBIF download 10.15468/dl.fbpk9w, sampled (§4) |
-| `coordinate_uncertainty_m` | float8 |  | metres; NULL when not given | GBIF download 10.15468/dl.fbpk9w, sampled (§4) |
+| `coordinate_uncertainty_m` | float8 |  | metres, at least 0 and finite; NULL when not given | GBIF download 10.15468/dl.fbpk9w, sampled (§4) |
 | `country_code_gbif` | text |  | GBIF's code as delivered; ZZ unknown, XZ high seas | GBIF download 10.15468/dl.fbpk9w, sampled (§4) |
 | `country_code` | text | FK | that code when it is a countries row, else NULL | `country_code_gbif`, when a `countries` row |
-| `year` | integer |  | NULL when the record has none | GBIF download 10.15468/dl.fbpk9w, sampled (§4) |
+| `year` | integer |  | above 0; NULL when the record has none | GBIF download 10.15468/dl.fbpk9w, sampled (§4) |
 | `month` | integer |  | 1 to 12; NULL when the record has none | GBIF download 10.15468/dl.fbpk9w, sampled (§4) |
 | `geom` | geometry |  | Point, generated from longitude and latitude | generated from `longitude`, `latitude` |
 
@@ -7802,7 +7813,7 @@ Data dictionary, the lab: the tables schema v2 lacks, and `occurrences` for its 
 |---|---|---|---|---|
 | `country_code` | text | PK, FK | the country | stand-in from Jung et al. 2020 (CC BY 4.0) until L3 |
 | `habitat_code` | integer | PK, FK | the habitat class | stand-in from Jung et al. 2020 (CC BY 4.0) until L3 |
-| `est_area_km2` | numeric |  | estimated from the map, never measured | stand-in from Jung et al. 2020 (CC BY 4.0) until L3 |
+| `est_area_km2` | numeric |  | estimated from the map, never measured; at least 0 | stand-in from Jung et al. 2020 (CC BY 4.0) until L3 |
 
 **occurrence_habitats**
 
@@ -8047,8 +8058,10 @@ One `localStorage` key, `critwire.learn.done.v1`, holds `{ "<module id>": "<YYYY
 A development command, never part of `build` or `deploy`. It is the repository's port of §0's runner, PostGIS and Python engines, not a second harness: once L2 lands it, the spike is frozen as this mission's evidence and never extended.
 - It runs the loader and every PostGIS block, and (from L4) every Python block in `.venv-learn`, and writes their results and `checked.json`.
 - **Then it runs every download as assembled**, as a learner would: the files the build's own assembly function writes (7.3), each on a freshly loaded database (the loader, then the file), so no file leans on another's tables. A `.sql` runs with `psql -X -f`; its `ERROR:` lines must be exactly those its `-- expect: error` and `-- fails:` statements announce, in order, each containing the announced text. A `.py` runs in `.venv-learn` from an empty folder, with no `GBIF_*` variable in its environment, and must exit 0, so an `e1-submit` left live fails here. The `.ipynb` isn't run again: E2E proves its cells equal the `.py` (7.7). The leak check (§0) runs after each file. A failure names the file and its first unexpected error, and nothing is written to `checked.json`.
-- It connects with libpq's `PG*` variables, or `LEARN_PG_URL`, never `DATABASE_URL` (whose role, `critwire`, can't create roles). On critwire's server that is `critwire_dev` as `critter-ai` over the socket; on the owner's WSL, the owner's own PostGIS (`AGENTS.md`'s two machines).
-- It refuses the database `critwire` twice: by name before connecting, and by `current_database()` after, so a service file or `PGDATABASE` can't slip past. It checks for CREATEROLE first and says it's needed. The `learn_spatial` canary (§0) runs only where that schema exists.
+- It connects with libpq's `PG*` variables, or `LEARN_PG_URL`, never `DATABASE_URL` (whose role, `critwire`, can't create roles). On critwire's server that is `critwire_dev` as `critwire_lab` through `LEARN_PG_URL` (§0; `learn:check --setup` creates the role and writes the URL); on the owner's WSL, the owner's own PostGIS (`AGENTS.md`'s two machines).
+- It refuses the database `critwire` twice: by name before connecting, and by `current_database()` after, so a service file or `PGDATABASE` can't slip past. It checks for CREATEROLE first and says it's needed. The `learn_spatial` canary (§0) runs only where that schema exists, read as libpq's default role (the schema's owner), so `critwire_lab` needs no grant on A2's schema.
+- **The loader stage (L1)**, under one advisory lock (`critwire.learn`) for the whole run: the loader's sha256 against the manifest; two loads, each giving the manifest's `tables` counts; then the **forced failure**: a temp copy of the loader with the first `occurrences` row repeated before that COPY's `\.`. Every COPY succeeds and psql must exit non-zero at `ALTER TABLE occurrences ADD PRIMARY KEY`, naming the duplicate id, with every table's count and md5 equal to the second load's: the whole load is one transaction. A cut COPY isn't used (on a row boundary psql exits 0 and the disconnect rolls back), and a loader without exactly one `COPY occurrences (id, …)` with rows fails "loader layout changed" before any load. Then `pg-role-smoke` (its own BEGIN/ROLLBACK, last SELECT 0), the canary and the leak check.
+- **Cleanup:** every exit, a failed check or SIGINT/SIGTERM included, cancels the running psql (SIGINT, so the server rolls back), releases the lock, ends the connections and removes the temp loader.
 - L1 creates it with the loader stage; L2 adds the blocks, the cleanup lint and the in-transaction leak check (§0); L4 adds Python.
 
 ### 7.7 E2E
@@ -8058,6 +8071,8 @@ The repository's harness, unchanged in kind (002 §8): `pnpm build`, then Playwr
 - **`learn-browser`**: every browser block runs in its page without an error; every exercise accepts its answer and rejects a fixed wrong one; every "Already know this?" check marks its module done; Reset and Stop work; moving across three module pages starts the engine once.
 - **`learn-labs`**: each PostGIS, Python and Power BI block's code on its page equals its download; each download that names a boot block's table holds that boot block right after `pg-session` or `py-connect`; each `untested` block is in its `.sql` or `.py` commented out under its reason (its code, the `-- `/`# ` taken off, equals the page's) and in its notebook as a Markdown cell, never a code cell; the result shown equals the recorded one; every `.ipynb` cell equals its block in the `.py`; the capstone's feed validates against its schema.
 - **`learn-data`**: every file's sha256 and size against `manifest.json`, row counts, CSV headers, the star's key coverage, the 50 MB cap, every file's `sources`, and the `/learn/data/` index listing every dataset of the sample with title, publisher and license.
+  - **L1** (`e2e/learn-data.spec.ts`): the manifest lists exactly the folder's files; each file's sha256 and size; Parquet and CSV rows and columns (types as the build's reader sees them: GeoParquet's `geom` as WKB) and CSV headers; the occurrences equal `data/raw/gbif-sample/sample.csv` and `datasets.csv` its `datasets.json` entries; the loader's `tables` equal counts from `data/`; the cap; sources and citations; both DOIs equal the sample's `registration.json`; `inputs` equal the served `/v1` files and the committed sample; the index lists every file, every dataset (title, publisher, DOI, license, records) and both DOIs; screenshots at 1280 and 375 px. Global setup's `assertBuilt` also refuses a `dist/learn/data/` whose `inputs` or copied `data/learn/` files are stale.
+  - **L2**: the star's key coverage (the star files are L2's).
 - **`schema`**: the three ERDs' drift against the databases they describe (§6), and the SVG pages.
 - **`serving`**: `.wasm` content types and the fixed modification times of `/learn/assets/` (002 §8).
 
@@ -8290,3 +8305,5 @@ Where 004 and the earlier designs differ, the build missions follow 004. One par
 **Lab data lives under `/learn/data/`, not `/v1`** (F7). 003's grown tables were to be read from `/v1/<table>.parquet`. `/v1` is critwire's data contract and only ever grows, while lab samples are redrawn and resized as the course changes. No lab reader needs `/v1`'s CORS: the course's own pages are same-origin, and PostGIS, Python and Power BI aren't browsers. The one `/v1` addition is 002's countries file. §10 asks whether other sites' pages should be able to read the lab files.
 
 **No `spatial` extension in the browser, and no `setup-grown`** (§10 item 3). 002 §10 item 11 left extensions beyond `parquet` to A2, and 003 §8 item 5 recommended committing `spatial` (23.6 MB per DuckDB version) for its browser spatial lessons. 004 does light spatial work in the browser in plain SQL (bounding boxes, 10° bins, a haversine distance) and teaches GIS in PostGIS, where practitioners use it. That saves 23.6 MB per DuckDB version, at the cost of no `ST_` functions in the browser. 003's second setup, `setup-grown`, kept stand-in tables apart from 002's `setup`; it goes too: schema v2's two tables are additions at the end of the one `setup` (002's part stays byte for byte), and the other spatial tables live in the lab database.
+
+**Natural Earth's `release` in `attribution.json` is an object** (002 §6 Credit; L1 S5). 002 gave the entry `"release": "v5.1.2"`, a bare string, while Catalogue of Life's `release` in the same array is an object (`key`, `alias`, `version`, `issued`). One key with two types breaks typed readers (a Parquet or pandas column, a TypeScript type). L1 publishes `"release": {"version": "v5.1.2", "issued": "2022-05-13"}`, a subset of COL's keys, so the key keeps one shape. The rest of 002 §6's entry is as designed: `fields` `countries.{name,continent,region,subregion}`, `records` 250, `license` "Public domain" with a null `licenseUrl`, the long citation, and `notes`.

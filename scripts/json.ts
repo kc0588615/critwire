@@ -2,8 +2,24 @@
 import { readFile, rename, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
+// Parses a JSON file; a parse error names the file (a truncated write is found by its path).
 export async function readJson<T>(url: URL): Promise<T> {
-  return JSON.parse(await readFile(url, "utf8")) as T;
+  const text = await readFile(url, "utf8");
+  try {
+    return JSON.parse(text) as T;
+  } catch (e) {
+    throw new Error(`${fileURLToPath(url)}: ${(e as Error).message}`);
+  }
+}
+
+// A file's text, or null when it doesn't exist.
+export async function readOptionalText(url: URL): Promise<string | null> {
+  try {
+    return await readFile(url, "utf8");
+  } catch (e) {
+    if ((e as NodeJS.ErrnoException).code === "ENOENT") return null;
+    throw e;
+  }
 }
 
 // Recursively sorts object keys (code-unit order); arrays keep their order.

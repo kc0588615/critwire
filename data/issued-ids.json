@@ -1,0 +1,306 @@
+[
+  {
+    "id": 1,
+    "slug": "blandings-turtle"
+  },
+  {
+    "id": 2,
+    "slug": "spiny-softshell-turtle"
+  },
+  {
+    "id": 3,
+    "slug": "darwin-frog"
+  },
+  {
+    "id": 4,
+    "slug": "big-headed-turtle"
+  },
+  {
+    "id": 5,
+    "slug": "wallaces-flying-frog"
+  },
+  {
+    "id": 6,
+    "slug": "red-eyed-tree-frog"
+  },
+  {
+    "id": 7,
+    "slug": "hairy-frog"
+  },
+  {
+    "id": 8,
+    "slug": "coastal-tailed-frog"
+  },
+  {
+    "id": 9,
+    "slug": "dyeing-poison-dart-frog"
+  },
+  {
+    "id": 10,
+    "slug": "suriname-toad"
+  },
+  {
+    "id": 11,
+    "slug": "goliath-frog"
+  },
+  {
+    "id": 12,
+    "slug": "spiny-hill-turtle"
+  },
+  {
+    "id": 13,
+    "slug": "madagascar-tomato-frog"
+  },
+  {
+    "id": 14,
+    "slug": "desert-rain-frog"
+  },
+  {
+    "id": 15,
+    "slug": "pancake-tortoise"
+  },
+  {
+    "id": 16,
+    "slug": "purple-frog"
+  },
+  {
+    "id": 17,
+    "slug": "pig-nosed-turtle"
+  },
+  {
+    "id": 18,
+    "slug": "yangtze-giant-softshell-turtle"
+  },
+  {
+    "id": 19,
+    "slug": "floreana-giant-tortoise"
+  },
+  {
+    "id": 20,
+    "slug": "african-spurred-tortoise"
+  },
+  {
+    "id": 21,
+    "slug": "radiated-tortoise"
+  },
+  {
+    "id": 22,
+    "slug": "pinta-island-tortoise"
+  },
+  {
+    "id": 23,
+    "slug": "aye-aye"
+  },
+  {
+    "id": 24,
+    "slug": "sunda-pangolin"
+  },
+  {
+    "id": 25,
+    "slug": "tiger"
+  },
+  {
+    "id": 26,
+    "slug": "black-footed-ferret"
+  },
+  {
+    "id": 27,
+    "slug": "western-long-beaked-echidna"
+  },
+  {
+    "id": 28,
+    "slug": "asian-elephant"
+  },
+  {
+    "id": 29,
+    "slug": "okapi"
+  },
+  {
+    "id": 30,
+    "slug": "pygmy-three-toed-sloth"
+  },
+  {
+    "id": 31,
+    "slug": "northern-hairy-nosed-wombat"
+  },
+  {
+    "id": 32,
+    "slug": "de-wintons-golden-mole"
+  },
+  {
+    "id": 33,
+    "slug": "ethiopian-wolf"
+  },
+  {
+    "id": 34,
+    "slug": "golden-snub-nosed-monkey"
+  },
+  {
+    "id": 35,
+    "slug": "red-panda"
+  },
+  {
+    "id": 36,
+    "slug": "giant-armadillo"
+  },
+  {
+    "id": 37,
+    "slug": "greater-bilby"
+  },
+  {
+    "id": 38,
+    "slug": "saola"
+  },
+  {
+    "id": 39,
+    "slug": "grevys-zebra"
+  },
+  {
+    "id": 40,
+    "slug": "sumatran-orangutan"
+  },
+  {
+    "id": 41,
+    "slug": "african-forest-elephant"
+  },
+  {
+    "id": 42,
+    "slug": "vancouver-island-marmot"
+  },
+  {
+    "id": 43,
+    "slug": "goodfellows-tree-kangaroo"
+  },
+  {
+    "id": 44,
+    "slug": "javan-rhinoceros"
+  },
+  {
+    "id": 45,
+    "slug": "livingstones-flying-fox"
+  },
+  {
+    "id": 46,
+    "slug": "golden-rumped-sengi"
+  },
+  {
+    "id": 47,
+    "slug": "ili-pika"
+  },
+  {
+    "id": 48,
+    "slug": "tasmanian-devil"
+  },
+  {
+    "id": 49,
+    "slug": "hispaniolan-solenodon"
+  },
+  {
+    "id": 50,
+    "slug": "addax"
+  },
+  {
+    "id": 51,
+    "slug": "jaguar"
+  },
+  {
+    "id": 52,
+    "slug": "giant-anteater"
+  },
+  {
+    "id": 53,
+    "slug": "lowland-tapir"
+  },
+  {
+    "id": 54,
+    "slug": "brown-throated-sloth"
+  },
+  {
+    "id": 55,
+    "slug": "giant-pangolin"
+  },
+  {
+    "id": 56,
+    "slug": "chimpanzee"
+  },
+  {
+    "id": 57,
+    "slug": "aardvark"
+  },
+  {
+    "id": 58,
+    "slug": "cheetah"
+  },
+  {
+    "id": 59,
+    "slug": "indian-pangolin"
+  },
+  {
+    "id": 60,
+    "slug": "giant-panda"
+  },
+  {
+    "id": 61,
+    "slug": "indri"
+  },
+  {
+    "id": 62,
+    "slug": "chinese-giant-salamander"
+  },
+  {
+    "id": 63,
+    "slug": "temmincks-pangolin"
+  },
+  {
+    "id": 64,
+    "slug": "african-savanna-elephant"
+  },
+  {
+    "id": 65,
+    "slug": "african-wild-dog"
+  },
+  {
+    "id": 66,
+    "slug": "black-rhinoceros"
+  },
+  {
+    "id": 67,
+    "slug": "eastern-long-beaked-echidna"
+  },
+  {
+    "id": 68,
+    "slug": "hirola"
+  },
+  {
+    "id": 69,
+    "slug": "dama-gazelle"
+  },
+  {
+    "id": 70,
+    "slug": "bairds-tapir"
+  },
+  {
+    "id": 71,
+    "slug": "andean-bear"
+  },
+  {
+    "id": 72,
+    "slug": "maned-wolf"
+  },
+  {
+    "id": 73,
+    "slug": "giant-otter"
+  },
+  {
+    "id": 74,
+    "slug": "axolotl"
+  },
+  {
+    "id": 75,
+    "slug": "hellbender"
+  },
+  {
+    "id": 76,
+    "slug": "golden-poison-frog"
+  }
+]

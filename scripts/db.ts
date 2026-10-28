@@ -1,10 +1,19 @@
 // Postgres load shared by pnpm db:load and pnpm build: drops and re-creates the db/schema.sql tables, then inserts
 // every species, in one transaction under an advisory lock (critwire_dev is shared, so two loads must not interleave).
+// It refuses before any DDL unless the database it reached is CRITWIRE_DB_TARGET (MF1). lock_timeout bounds the wait
+// for the advisory lock and the tables; statement_timeout bounds each statement (plan D11, D14).
 import { readFile } from "node:fs/promises";
 import postgres from "postgres";
 import type { Species } from "./species.ts";
 
 const schemaFile = new URL("../db/schema.sql", import.meta.url);
+const loadLock = "critwire.load";
+
+// Defaults for the builds; tests pass shorter ones.
+export interface LoadTimeouts {
+  lockTimeoutMs?: number;
+  statementTimeoutMs?: number;
+}
 
 // One species table row per record. postgres.js serializes sources by the column type (jsonb).
 export function speciesRows(species: readonly Species[]) {
@@ -34,14 +43,36 @@ export function speciesRows(species: readonly Species[]) {
   }));
 }
 
-export async function loadDatabase(url: string, species: readonly Species[]): Promise<void> {
+// Throws unless current (the server's current_database()) is the target the environment names.
+export function assertTarget(current: string, target: string | undefined): void {
+  if (!target) throw new Error("CRITWIRE_DB_TARGET not set: name the database this load may rebuild (.env or environment)");
+  if (current !== target) throw new Error(`refusing to rebuild ${current}: CRITWIRE_DB_TARGET is ${target}`);
+}
+
+export async function loadDatabase(
+  url: string,
+  species: readonly Species[],
+  { lockTimeoutMs = 30_000, statementTimeoutMs = 120_000 }: LoadTimeouts = {},
+): Promise<void> {
   const schema = await readFile(schemaFile, "utf8");
   const sql = postgres(url, { onnotice: () => {} });
   try {
     await sql.begin(async (tx) => {
-      await tx`select pg_advisory_xact_lock(hashtext('critwire.load'))`;
+      const [{ name }] = await tx<{ name: string }[]>`select current_database() as name`;
+      assertTarget(name, process.env.CRITWIRE_DB_TARGET);
+      console.log(`loading into ${name}`);
+      await tx`select set_config('lock_timeout', ${`${lockTimeoutMs}ms`}, true),
+        set_config('statement_timeout', ${`${statementTimeoutMs}ms`}, true)`;
+      try {
+        await tx`select pg_advisory_xact_lock(hashtext(${loadLock}))`;
+      } catch (error) {
+        if (error instanceof postgres.PostgresError && error.code === "55P03") {
+          throw new Error(`${loadLock} is held by another load: waited ${lockTimeoutMs} ms (lock_timeout); re-run when it finishes`);
+        }
+        throw error;
+      }
       await tx.unsafe(schema);
-      await tx`insert into species ${tx(speciesRows(species))}`;
+      await tx`insert into public.species ${tx(speciesRows(species))}`;
     });
   } finally {
     await sql.end();

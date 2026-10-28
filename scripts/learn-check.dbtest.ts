@@ -1,0 +1,308 @@
+// pnpm learn:check, the loader stage (plan D10 checks 1–11 and Cleanup), on critwire_dev. Written before the code, seen
+// failing first. Each case spawns the CLI as a learner's checkout runs it (cwd = the repo, so .env's DATABASE_URL and
+// GBIF_* are loaded into it). The full runs load dist/'s loader into learn_curriculum as critwire_lab (run pnpm build
+// first). Failure modes:
+// LC1: the live database is reached through the CLI → refused by name before connecting (an unreachable port proves it).
+// LC2: a name that isn't critwire reaches critwire (a pooler alias) → refused by current_database(); only a pooler can
+//      make the two differ, so the post-connect assertion is called directly.
+// LC3: a role without CREATEROLE, or without createrole_self_grant set and inherit, runs the loader and fails in the
+//      labs → refused before the lock, naming --setup.
+// LC4: two runs overlap (each drops the other's schema) → the second is refused while the lock is held, and loads nothing.
+// LC5: a load that gives other row counts than the manifest's tables, or a loader whose sha256 isn't the manifest's,
+//      passes → refused, naming the table and both counts, or the file; a clean run loads twice and exits 0.
+// LC6: the loader isn't one transaction, so a failure late in the load keeps part of it, or the forced failure fails
+//      somewhere other than the duplicate key, or the injection site moved → refused naming the changed table, the
+//      failure, or "loader layout changed" (before any load); a clean run reports psql's exit at the duplicate id.
+// LC7: the load changes learn_spatial (A2's schema) → the canary before ≠ after, refused naming the table.
+// LC8: the run leaves a learn_ role or schema behind → refused, naming each.
+// LC9: SIGINT mid-load leaves the lock held, psql's statement running, the half-made schema, its temp file or a role
+//      → the run stops naming the signal; afterwards the lock is free, no critwire_lab backend, the old schema's counts,
+//      no temp file and no new learn_ object. A check failing after the lock releases it and removes its temp file too.
+// LC10: a child psql gets DATABASE_URL, GBIF_* or LEARN_PG_URL, or the password in argv → a psql wrapper on PATH
+//       records every child's environment and argv: none of them.
+import assert from "node:assert/strict";
+import { spawn } from "node:child_process";
+import { createHash, randomBytes } from "node:crypto";
+import { chmodSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { after, test } from "node:test";
+import { fileURLToPath } from "node:url";
+import { loadEnv, requireEnv } from "./env.ts";
+import { assertConnectedNotLive, CANARY_SCHEMA, checkLab } from "./learn/check.ts";
+import { LAB_LOCK, libpqTarget, pgConnect, urlTarget } from "./learn/pg.ts";
+import { testDatabase } from "./test-db.ts";
+
+const repo = fileURLToPath(new URL("..", import.meta.url));
+const dist = join(repo, "dist");
+const LOADER = "postgis/learn_curriculum.sql";
+const dir = mkdtempSync(join(tmpdir(), "critwire-learn-check-"));
+loadEnv();
+const labUrl = requireEnv("LEARN_PG_URL");
+const admin = pgConnect(libpqTarget({ PGDATABASE: testDatabase }));
+const made: { roles: string[]; schemas: string[] } = { roles: [], schemas: [] };
+after(async () => {
+  for (const s of made.schemas) await admin.unsafe(`DROP SCHEMA IF EXISTS ${s} CASCADE`);
+  for (const r of made.roles) {
+    const [role] = await admin`select 1 from pg_roles where rolname = ${r}`;
+    if (role) await admin.unsafe(`DROP OWNED BY ${r}; DROP ROLE ${r}`);
+  }
+  await admin.end();
+  rmSync(dir, { recursive: true, force: true });
+});
+
+const fresh = (prefix: string) => `learn_t_${prefix}_${randomBytes(4).toString("hex")}`;
+
+// Starts the CLI with the test's environment over process.env; `done` resolves with its exit code and output.
+function start(args: string[], env: Record<string, string> = {}) {
+  const child = spawn(process.execPath, ["--import", "tsx", join(repo, "scripts/learn-check.ts"), ...args],
+    { cwd: repo, env: { ...process.env, ...env }, stdio: ["ignore", "pipe", "pipe"] });
+  const done = new Promise<{ code: number | null; stdout: string; stderr: string }>((resolve, reject) => {
+    let stdout = "";
+    let stderr = "";
+    child.stdout.on("data", (d) => (stdout += d));
+    child.stderr.on("data", (d) => (stderr += d));
+    child.on("error", reject);
+    child.on("close", (code) => resolve({ code, stdout, stderr }));
+  });
+  return { child, done };
+}
+const cli = (args: string[], env: Record<string, string> = {}) => start(args, env).done;
+
+// Polls `ok` every 100 ms; throws naming `what` after 10 s.
+async function waitFor(what: string, ok: () => Promise<boolean>) {
+  for (const until = Date.now() + 10_000; !(await ok()); await new Promise((r) => setTimeout(r, 100))) {
+    if (Date.now() > until) throw new Error(`timed out waiting for ${what}`);
+  }
+}
+
+// A dist/ holding the manifest and the loader only (all learn:check reads), the loader changed by `loader` (it must
+// change), and the manifest edited by `edit`; the loader's sha256 and bytes in the manifest follow the new loader.
+function tamperedDist(name: string, { loader: change, edit = (m: Manifest) => m }:
+  { loader?: (s: string) => string; edit?: (m: Manifest) => Manifest } = {}) {
+  const out = join(dir, name);
+  mkdirSync(join(out, "learn/data/postgis"), { recursive: true });
+  const original = readFileSync(join(dist, "learn/data", LOADER), "utf8");
+  const loader = change ? change(original) : original;
+  if (change && loader === original) throw new Error(`tamperedDist ${name}: the loader edit changed nothing`);
+  writeFileSync(join(out, "learn/data", LOADER), loader);
+  const manifest = JSON.parse(readFileSync(join(dist, "learn/data/manifest.json"), "utf8")) as Manifest;
+  manifest.files[LOADER]!.sha256 = createHash("sha256").update(loader).digest("hex");
+  manifest.files[LOADER]!.bytes = Buffer.byteLength(loader);
+  writeFileSync(join(out, "learn/data/manifest.json"), JSON.stringify(edit(manifest)));
+  return out;
+}
+interface Manifest { files: Record<string, { sha256: string; bytes: number; tables?: Record<string, number> }> }
+const manifestTables = () =>
+  (JSON.parse(readFileSync(join(dist, "learn/data/manifest.json"), "utf8")) as Manifest).files[LOADER]!.tables!;
+
+// Every learn_ role and schema, as learn:check's leak check lists them.
+async function learnObjects(): Promise<string[]> {
+  const rows = await admin<{ name: string }[]>`select 'role ' || rolname as name from pg_roles where rolname like 'learn\_%'
+    union all select 'schema ' || nspname from pg_namespace where nspname like 'learn\_%' order by 1`;
+  return rows.map((r) => r.name);
+}
+
+async function labCounts(): Promise<Record<string, number>> {
+  const tables = await admin<{ relname: string }[]>`select c.relname from pg_class c join pg_namespace n on n.oid = c.relnamespace
+    where n.nspname = 'learn_curriculum' and c.relkind = 'r' order by 1`;
+  const counts: Record<string, number> = {};
+  for (const { relname } of tables) counts[relname] = Number((await admin.unsafe(`select count(*) as n from learn_curriculum.${relname}`))[0]!.n);
+  return counts;
+}
+
+// A LOGIN role with a password, CONNECT on critwire_dev, and its URL.
+async function loginRole(prefix: string, attrs = "") {
+  const role = fresh(prefix);
+  made.roles.push(role);
+  const password = randomBytes(16).toString("hex");
+  await admin.unsafe(`CREATE ROLE ${role} LOGIN ${attrs} PASSWORD '${password}'`);
+  await admin.unsafe(`GRANT CONNECT ON DATABASE ${testDatabase} TO ${role}`);
+  return { role, url: `postgres://${role}:${password}@127.0.0.1:5432/${testDatabase}` };
+}
+
+test("LC1 critwire is refused by name before connecting", async () => {
+  const r = await cli([], { LEARN_PG_URL: "postgres://critwire_lab:senpass@127.0.0.1:1/critwire" });
+  assert.equal(r.code, 1);
+  assert.match(r.stderr, /refusing database critwire \(from LEARN_PG_URL\)/);
+  assert.ok(!r.stderr.includes("senpass") && !r.stderr.includes("ECONNREFUSED"), r.stderr);
+});
+
+test("LC2 the connected database is refused when it is critwire, whatever the name asked for", () => {
+  assert.throws(() => assertConnectedNotLive("critwire"), /refusing database critwire \(current_database\(\)\)/);
+  assert.doesNotThrow(() => assertConnectedNotLive(testDatabase));
+});
+
+test("LC3 a role without CREATEROLE, or without createrole_self_grant, is refused naming --setup", async () => {
+  const plain = await loginRole("lc3");
+  const r1 = await cli([], { LEARN_PG_URL: plain.url });
+  assert.equal(r1.code, 1);
+  assert.match(r1.stderr, new RegExp(`${plain.role}.*CREATEROLE.*--setup`));
+  await admin.unsafe(`ALTER ROLE ${plain.role} CREATEROLE`);
+  const r2 = await cli([], { LEARN_PG_URL: plain.url });
+  assert.equal(r2.code, 1);
+  assert.match(r2.stderr, /createrole_self_grant.*--setup/);
+});
+
+test("LC4 a run is refused while the lab lock is held, and loads nothing", async () => {
+  const before = await labCounts();
+  const holder = pgConnect(libpqTarget({ PGDATABASE: testDatabase }));
+  try {
+    await holder`select pg_advisory_lock(hashtext(${LAB_LOCK}))`;
+    const r = await cli([]);
+    assert.equal(r.code, 1);
+    assert.match(r.stderr, /lab lock .*held/);
+  } finally {
+    await holder.end();
+  }
+  assert.deepEqual(await labCounts(), before);
+});
+
+test("LC5 a loader whose sha256 isn't the manifest's is refused before any load", async () => {
+  const out = tamperedDist("sha");
+  writeFileSync(join(out, "learn/data", LOADER), readFileSync(join(out, "learn/data", LOADER), "utf8") + "-- edited\n");
+  const r = await cli(["--dist", out]);
+  assert.equal(r.code, 1);
+  assert.match(r.stderr, /postgis\/learn_curriculum\.sql.*sha256.*manifest/);
+  assert.doesNotMatch(r.stdout, /load 1/);
+});
+
+test("LC5 row counts other than the manifest's tables are refused, naming the table and both counts", async () => {
+  const out = tamperedDist("counts", { edit: (m) => { m.files[LOADER]!.tables!.biomes! += 1; return m; } });
+  const expected = manifestTables().biomes!;
+  const r = await cli(["--dist", out]);
+  assert.equal(r.code, 1);
+  assert.match(r.stderr, new RegExp(`biomes.*${expected}.*${expected + 1}|biomes.*${expected + 1}.*${expected}`));
+});
+
+test("LC7 a load that changes the canary schema is refused, naming the table", async () => {
+  const canary = fresh("canary");
+  made.schemas.push(canary);
+  await admin.unsafe(`CREATE SCHEMA ${canary} AUTHORIZATION critwire_lab; CREATE TABLE ${canary}.t (x integer);
+    INSERT INTO ${canary}.t VALUES (1); ALTER TABLE ${canary}.t OWNER TO critwire_lab`);
+  const out = tamperedDist("canary", { loader: (s) => s + `INSERT INTO ${canary}.t VALUES (2);\n` });
+  const r = await cli(["--dist", out, "--canary-schema", canary]);
+  assert.equal(r.code, 1);
+  assert.match(r.stderr, new RegExp(`${canary}\\.t: rows or values changed`));
+});
+
+test("LC7 a canary schema other than learn_spatial or a learn_t_ fixture is refused", async () => {
+  const r = await cli(["--canary-schema", "public"]);
+  assert.equal(r.code, 1);
+  assert.match(r.stderr, /canary schema public: learn_spatial or a learn_t_ test fixture only/);
+});
+
+test("LC8 a run that leaves a learn_ role or schema behind is refused, naming each", async () => {
+  const leak = fresh("leak");
+  made.roles.push(leak);
+  made.schemas.push(leak);
+  const out = tamperedDist("leak", {
+    loader: (s) => s + `SELECT 'CREATE ROLE ${leak}' WHERE NOT EXISTS (SELECT FROM pg_roles WHERE rolname = '${leak}') \\gexec\nCREATE SCHEMA IF NOT EXISTS ${leak};\n`,
+  });
+  const r = await cli(["--dist", out]);
+  assert.equal(r.code, 1);
+  assert.match(r.stderr, new RegExp(`left behind.*role ${leak}`, "s"));
+  assert.match(r.stderr, new RegExp(`schema ${leak}`));
+});
+
+const PK = "ALTER TABLE occurrences ADD PRIMARY KEY (id);\n";
+
+test("LC6 a loader without its occurrences injection site is refused as layout changed, before any load", async () => {
+  const out = tamperedDist("layout", { loader: (s) => s.replace("COPY occurrences (", "COPY learn_curriculum.occurrences (") });
+  const r = await cli(["--dist", out]);
+  assert.equal(r.code, 1);
+  assert.match(r.stderr, /loader layout changed/);
+  assert.doesNotMatch(r.stdout, /load 1/);
+});
+
+test("LC6 a loader whose failure keeps part of the load is refused, naming the changed table", async () => {
+  // COMMIT mid-load (SET LOCAL's search_path ends with it): the rows copied so far, the duplicate included, are kept.
+  const out = tamperedDist("partial", { loader: (s) => s.replace(PK, `COMMIT;\nBEGIN;\nSET LOCAL search_path = learn_curriculum, public;\n${PK}`) });
+  const r = await cli(["--dist", out]);
+  assert.equal(r.code, 1);
+  assert.match(r.stdout, /load 2: 14 tables = manifest/);
+  assert.match(r.stderr, /forced failure: .*changed learn_curriculum.*learn_curriculum\.occurrences: rows or values changed/s);
+});
+
+test("LC6 a forced failure that fails elsewhere than the duplicate key is refused", async () => {
+  const out = tamperedDist("elsewhere", { loader: (s) => s.replace(PK, "") });
+  const r = await cli(["--dist", out]);
+  assert.equal(r.code, 1);
+  assert.match(r.stdout, /load 2: 14 tables = manifest/);
+  assert.match(r.stderr, /forced failure: psql exit 3, not at the duplicate key id=\d+/);
+});
+
+test("LC9 SIGINT mid-load stops the run; lock, backend, schema, temp file and roles are as before", async () => {
+  const tmp = mkdtempSync(join(dir, "tmp-"));
+  const [counts, objects] = [await labCounts(), await learnObjects()];
+  const blocker = pgConnect(libpqTarget({ PGDATABASE: testDatabase }));
+  let r;
+  try {
+    // The loader's DROP waits on this lock, so the signal lands mid-load whatever the machine's speed.
+    r = await blocker.begin(async (tx) => {
+      await tx`LOCK TABLE learn_curriculum.species IN ACCESS SHARE MODE`;
+      const run = start([], { TMPDIR: tmp });
+      await waitFor("the loader to wait on the lock", async () => (await admin<{ n: number }[]>`select count(*)::int as n
+        from pg_stat_activity where usename = 'critwire_lab' and datname = ${testDatabase} and wait_event_type = 'Lock'`)[0]!.n > 0);
+      run.child.kill("SIGINT");
+      return run.done;
+    });
+  } finally {
+    await blocker.end();
+  }
+  assert.equal(r.code, 1);
+  assert.match(r.stderr, /interrupted by SIGINT/);
+  await waitFor("no critwire_lab backend", async () => (await admin<{ n: number }[]>`select count(*)::int as n
+    from pg_stat_activity where usename = 'critwire_lab' and datname = ${testDatabase}`)[0]!.n === 0);
+  const [{ locked }] = await admin<{ locked: boolean }[]>`select pg_try_advisory_lock(hashtext(${LAB_LOCK})) as locked`;
+  if (locked) await admin`select pg_advisory_unlock(hashtext(${LAB_LOCK}))`;
+  assert.equal(locked, true);
+  assert.deepEqual(await labCounts(), counts);
+  assert.deepEqual(await learnObjects(), objects);
+  assert.deepEqual(readdirSync(tmp).filter((n) => !n.startsWith("tsx-")), []); // tsx keeps its cache in TMPDIR
+});
+
+test("LC9 a check failing after the lock releases it and removes its temp file", async () => {
+  const out = tamperedDist("fails", { edit: (m) => { m.files[LOADER]!.tables!.biomes! += 1; return m; } });
+  const tmp = mkdtempSync(join(dir, "tmp-"));
+  const saved = process.env.TMPDIR;
+  process.env.TMPDIR = tmp;
+  try {
+    await assert.rejects(checkLab(urlTarget(labUrl, "LEARN_PG_URL"), { dist: out, canarySchema: CANARY_SCHEMA }), /row counts differ/);
+  } finally {
+    if (saved === undefined) delete process.env.TMPDIR;
+    else process.env.TMPDIR = saved;
+  }
+  assert.deepEqual(readdirSync(tmp), []);
+  const [{ locked }] = await admin<{ locked: boolean }[]>`select pg_try_advisory_lock(hashtext(${LAB_LOCK})) as locked`;
+  if (locked) await admin`select pg_advisory_unlock(hashtext(${LAB_LOCK}))`;
+  assert.equal(locked, true);
+});
+
+test("LC5 + LC10 a clean run loads twice to the manifest's counts, and no child psql sees a secret", async () => {
+  const bin = join(dir, "bin");
+  mkdirSync(bin);
+  const dump = join(dir, "psql-calls.txt");
+  writeFileSync(join(bin, "psql"), `#!/bin/sh\n{ echo '=== call'; env; printf 'ARGV %s\\n' "$*"; } >> '${dump}'\nexec /usr/bin/psql "$@"\n`);
+  chmodSync(join(bin, "psql"), 0o755);
+  const r = await cli([], { PATH: `${bin}:${process.env.PATH}`, GBIF_USERNAME: "senuser", GBIF_PASSWORD: "senpass", DATABASE_URL: "postgres://sen" });
+  assert.equal(r.code, 0, r.stderr);
+  const tables = manifestTables();
+  assert.match(r.stdout, /load 1: 14 tables = manifest/);
+  assert.match(r.stdout, /load 2: 14 tables = manifest/);
+  assert.match(r.stdout, /forced failure: psql exit 3 at the duplicate key id=\d+, 14 tables unchanged/);
+  assert.match(r.stdout, /pg-role-smoke: 0 left/);
+  assert.match(r.stdout, /canary: learn_spatial unchanged/);
+  assert.match(r.stdout, /leak check: nothing left/);
+  assert.deepEqual(await labCounts(), Object.fromEntries(Object.entries(tables).sort(([a], [b]) => a.localeCompare(b))));
+  const calls = readFileSync(dump, "utf8").split("=== call\n").filter(Boolean);
+  assert.ok(calls.length >= 4, `${calls.length} psql calls`);
+  const password = decodeURIComponent(new URL(labUrl).password);
+  for (const call of calls) {
+    assert.doesNotMatch(call, /^(DATABASE_URL|GBIF_[A-Z_]*|LEARN_PG_URL)=/m);
+    const argv = /^ARGV (.*)$/m.exec(call)![1]!;
+    assert.ok(!argv.includes(password) && !argv.includes("postgres://"), argv);
+  }
+  const [{ n }] = await admin`select count(*)::int as n from pg_roles where rolname = 'learn_smoke'`;
+  assert.equal(n, 0);
+});

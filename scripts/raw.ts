@@ -53,7 +53,19 @@ export interface GbifSnapshot {
   species: Record<string, { match: Fetched<GbifMatchResponse>; occurrences: Fetched<GbifOccurrenceResponse> | null; datasets: GbifDatasets | null }>;
 }
 
-export interface Snapshots { wikidata: WikidataSnapshot; col: ColSnapshot; gbif: GbifSnapshot }
+// Natural Earth admin-0 attributes (002 §6): each layer's units in file order, cut to `fields[layer]`; no geometry.
+// release, commit and fields are the extraction fingerprint derive checks; files are the pinned URLs and sha256s.
+export type NeLayer = "countries" | "map_units";
+export interface NaturalEarthSnapshot {
+  retrieved: string;
+  release: { version: string; issued: string };
+  commit: string;
+  fields: Record<NeLayer, string[]>;
+  files: Record<NeLayer, { url: string; sha256: string }>;
+  layers: Record<NeLayer, Record<string, string>[]>;
+}
+
+export interface Snapshots { wikidata: WikidataSnapshot; col: ColSnapshot; gbif: GbifSnapshot; naturalearth: NaturalEarthSnapshot }
 export type Source = keyof Snapshots;
 
 const snapshotFile = (source: Source) => new URL(`../data/raw/${source}/snapshot.json`, import.meta.url);
@@ -68,6 +80,15 @@ export function omitKeys(value: unknown, keys: ReadonlySet<string>): unknown {
   if (Array.isArray(value)) return value.map((v) => omitKeys(v, keys));
   if (value === null || typeof value !== "object") return value;
   return Object.fromEntries(Object.entries(value).filter(([k]) => !keys.has(k)).map(([k, v]) => [k, omitKeys(v, keys)]));
+}
+
+// A snapshot today's ingest wouldn't produce (MF3): says why and which ingest to re-run.
+export const staleSnapshot = (source: Source, why: string) => new Error(`data/raw/${source} is stale (${why}): run pnpm ingest ${source}`);
+
+// Throws unless a snapshot keyed by scientificName covers exactly the base names.
+export function assertBaseNames(source: Source, keys: string[], base: readonly { scientificName: string }[]): void {
+  const want = base.map((s) => s.scientificName).sort().join("\n");
+  if ([...keys].sort().join("\n") !== want) throw staleSnapshot(source, "names: not the base's");
 }
 
 // Data rule: never store IUCN data. Throws on any additionalStatus key, or any key or string mentioning IUCN.

@@ -1,0 +1,96 @@
+{
+ "type": "FeatureCollection",
+ "name": "fixture_admin_0_map_units",
+ "features": [
+  {
+   "type": "Feature",
+   "properties": {
+    "ADMIN": "France",
+    "GEOUNIT": "France",
+    "TYPE": "Geo unit",
+    "ADM0_A3": "FRA",
+    "GU_A3": "FXX",
+    "ISO_A2": "-99",
+    "ISO_A2_EH": "FR",
+    "ISO_A3_EH": "FRA",
+    "NAME_EN": "Metropolitan France",
+    "CONTINENT": "Europe",
+    "REGION_UN": "Europe",
+    "SUBREGION": "Western Europe"
+   },
+   "geometry": null
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "ADMIN": "France",
+    "GEOUNIT": "French Guiana",
+    "TYPE": "Geo unit",
+    "ADM0_A3": "FRA",
+    "GU_A3": "GUF",
+    "ISO_A2": "FR-973",
+    "ISO_A2_EH": "GF",
+    "ISO_A3_EH": "GUF",
+    "NAME_EN": "French Guiana",
+    "CONTINENT": "South America",
+    "REGION_UN": "Americas",
+    "SUBREGION": "South America"
+   },
+   "geometry": null
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "ADMIN": "France",
+    "GEOUNIT": "Martinique",
+    "TYPE": "Geo unit",
+    "ADM0_A3": "FRA",
+    "GU_A3": "MTQ",
+    "ISO_A2": "FR-972",
+    "ISO_A2_EH": "MQ",
+    "ISO_A3_EH": "MTQ",
+    "NAME_EN": "Martinique",
+    "CONTINENT": "North America",
+    "REGION_UN": "Americas",
+    "SUBREGION": "Caribbean"
+   },
+   "geometry": null
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "ADMIN": "France",
+    "GEOUNIT": "Reunion",
+    "TYPE": "Geo unit",
+    "ADM0_A3": "FRA",
+    "GU_A3": "REU",
+    "ISO_A2": "FR-974",
+    "ISO_A2_EH": "RE",
+    "ISO_A3_EH": "REU",
+    "NAME_EN": "Réunion",
+    "CONTINENT": "Seven seas (open ocean)",
+    "REGION_UN": "Africa",
+    "SUBREGION": "Eastern Africa"
+   },
+   "geometry": null
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "ADMIN": "Syria",
+    "GEOUNIT": "UNDOF",
+    "TYPE": "Overlay",
+    "ADM0_A3": "SYR",
+    "GU_A3": "SYU",
+    "ISO_A2": "XD",
+    "ISO_A2_EH": "XD",
+    "ISO_A3_EH": "SYR",
+    "NAME_EN": "United Nations Disengagement Observer Force",
+    "CONTINENT": "Asia",
+    "REGION_UN": "Asia",
+    "SUBREGION": "Western Asia"
+   },
+   "geometry": null
+  }
+ ]
+}

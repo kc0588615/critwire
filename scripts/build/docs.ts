@@ -1,20 +1,18 @@
-// dist/index.html (plan §8): fills site/index.html's {{slot}}s from attribution.json and the records. Pure. Values
-// are HTML-escaped and list fragments are built escaped; a slot the template lacks, or one it has that isn't filled,
-// throws.
+// dist/index.html (plan §8): fills site/index.html's {{slot}}s from attribution.json, the records and site/style.css.
+// Pure. Values are HTML-escaped and list fragments are built escaped; a slot the template lacks, or one it has that
+// isn't filled, throws.
 import type { RangeStatus, Species } from "../species.ts";
 import type { Attribution } from "./attribution.ts";
+import { esc, fillSlots, licenseLink, link } from "./html.ts";
+import { NATURAL_EARTH } from "./sources.ts";
 
 export const docsTemplate = new URL("../../site/index.html", import.meta.url);
 
-const ESCAPES: Record<string, string> = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
-const esc = (value: string | number) => String(value).replace(/[&<>"']/g, (c) => ESCAPES[c]);
-const link = (href: string, text: string) => `<a href="${esc(href)}">${esc(text)}</a>`;
-const licenseLink = (license: string, url: string | null) => (url === null ? esc(license) : link(url, license));
-
-export function renderDocs(template: string, attribution: Attribution, species: Species[]): string {
+export function renderDocs(template: string, style: string, attribution: Attribution, species: Species[]): string {
   const count = (status: RangeStatus) => species.filter((s) => s.range.status === status).length;
   const names = new Map(species.map((s) => [s.id, s.commonName]));
   const slots: Record<string, string> = {
+    style,
     species: esc(species.length),
     statusOk: esc(count("ok")),
     statusNoOpenRecords: esc(count("no-open-records")),
@@ -23,7 +21,7 @@ export function renderDocs(template: string, attribution: Attribution, species: 
     sources: attribution.sources.map((s) => [
       `<dt>${link(s.url, s.source)}</dt>`,
       `<dd>${esc(s.citation)}<br>License: ${licenseLink(s.license, s.licenseUrl)}`
-        + `${s.retrieved ? `, retrieved ${esc(s.retrieved)}` : ""}. Used for ${esc(s.records)} records: `
+        + `${s.retrieved ? `, retrieved ${esc(s.retrieved)}` : ""}. Used for ${esc(s.records)} ${s.source === NATURAL_EARTH ? "countries" : "records"}: `
         + `${s.fields.map((f) => `<code>${esc(f)}</code>`).join(", ")}.</dd>`,
     ].join("\n")).join("\n"),
     gbifDerivedDataset: derivedDataset(attribution.gbifDerivedDataset),
@@ -33,15 +31,7 @@ export function renderDocs(template: string, attribution: Attribution, species: 
     ).join("\n"),
   };
 
-  const used = new Set<string>();
-  const html = template.replace(/\{\{(\w+)\}\}/g, (_, name: string) => {
-    if (!Object.hasOwn(slots, name)) throw new Error(`site/index.html: unknown slot {{${name}}}`);
-    used.add(name);
-    return slots[name];
-  });
-  const unused = Object.keys(slots).filter((name) => !used.has(name));
-  if (unused.length > 0) throw new Error(`site/index.html lacks the slots ${unused.map((n) => `{{${n}}}`).join(", ")}`);
-  return html;
+  return fillSlots(template, slots, "site/index.html");
 }
 
 function derivedDataset(dd: Attribution["gbifDerivedDataset"]): string {

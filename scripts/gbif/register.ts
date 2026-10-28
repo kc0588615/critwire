@@ -2,12 +2,15 @@
 // read-back matches. The CLI (scripts/gbif-register.ts) does the io; state.ts holds the lock and the intent.
 import { sameCounts, type Contributions, type Registration } from "./derived-dataset.ts";
 
-// The body POSTed to /v1/derivedDataset.
-export interface DerivedDatasetRequest { title: string; description: string; sourceUrl: string; relatedDatasets: Record<string, number> }
+// The body POSTed to /v1/derivedDataset; originalDownloadDOI only for a target derived from one GBIF download.
+export interface DerivedDatasetRequest {
+  title: string; description: string; sourceUrl: string; relatedDatasets: Record<string, number>; originalDownloadDOI?: string;
+}
 
 // A derived dataset as GBIF returns it (GET /derivedDataset/{doi}, and each row of the user's listing); the fields read.
 export interface DerivedDatasetRecord {
   doi: string; title: string; description?: string | null; sourceUrl: string; citation: string; createdBy: string;
+  originalDownloadDOI?: string | null; // GBIF omits it when the derived dataset has none
 }
 
 // One row of GET /derivedDataset/{doi}/datasets.
@@ -89,29 +92,34 @@ export function decide({ registration, contributionsSha256, datasets, intent, li
 
 // How the single POST ended: an HTTP response, or a fetch error ("timeout", "network <message>").
 export type PostOutcome = { status: number; body: string } | { error: string };
-export type PostClass = { kind: "created"; doi: string } | { kind: "rejected" | "ambiguous"; reason: string };
+// Created carries what the parser read from the body ({ doi } by default).
+export type PostClass<T extends object = { doi: string }> =
+  | ({ kind: "created" } & T) | { kind: "rejected"; reason: string } | { kind: "ambiguous"; reason: string };
 
 const DOI = /^10\.\d{4,9}\/\S+$/;
 
-function parseDoi(body: string): string | null {
+function parseDoi(body: string): { doi: string } | null {
   try {
     const doi = (JSON.parse(body) as { doi?: unknown } | null)?.doi;
-    return typeof doi === "string" && DOI.test(doi) ? doi : null;
+    return typeof doi === "string" && DOI.test(doi) ? { doi } : null;
   } catch {
     return null;
   }
 }
 
-// Created only on 200/201 with a DOI. GBIF validates before it creates, so a 4xx other than 408/429 created nothing
-// (rejected: drop the intent); anything else may have created a DOI (ambiguous: keep the intent, list on the next run).
-export function classifyPost(outcome: PostOutcome): PostClass {
+// Created only on 200/201 with a body `parse` accepts (default: a DOI). GBIF validates before it creates, so a 4xx
+// other than 408/429 created nothing (rejected: drop the intent); anything else may have created something (ambiguous:
+// keep the intent, list on the next run).
+export function classifyPost(outcome: PostOutcome): PostClass;
+export function classifyPost<T extends object>(outcome: PostOutcome, parse: (body: string) => T | null): PostClass<T>;
+export function classifyPost(outcome: PostOutcome, parse: (body: string) => object | null = parseDoi): PostClass<object> {
   if ("error" in outcome) return { kind: "ambiguous", reason: outcome.error };
   const { status, body } = outcome;
-  const doi = status === 200 || status === 201 ? parseDoi(body) : null;
-  if (doi !== null) return { kind: "created", doi };
+  const created = status === 200 || status === 201 ? parse(body) : null;
+  if (created !== null) return { kind: "created", ...created };
   const reason = `HTTP ${status}: ${body.slice(0, 300)}`;
   const rejected = status >= 400 && status < 500 && status !== 408 && status !== 429;
-  return { kind: rejected ? "rejected" : "ambiguous", reason };
+  return rejected ? { kind: "rejected", reason } : { kind: "ambiguous", reason };
 }
 
 // datasetKey → numberRecords of a read-back, and the keys GBIF listed more than once.
@@ -133,12 +141,13 @@ export interface ReadBack {
   datasets: Record<string, number>; // contributions.datasets
   createdBy: string; // GBIF_USERNAME
   hash: string; // contributionsSha256; registration.contributionsSha256 on verify
+  expectedDownloadDoi: string | null; // the target's downloadDoi(contributions); null: GBIF must hold none
 }
 
-// Hard errors: GBIF holds other counts, another user's dataset, another deposit or no hash line. Warnings: GBIF's title
+// Hard errors: GBIF holds other counts, another user's dataset, another deposit or download, or no hash line. Warnings: GBIF's title
 // or description differs from what was sent (registration.json keeps GBIF's, so a minted DOI is never stuck).
 // checkDeposit(record.sourceUrl) is the caller's network check.
-export function readBackErrors({ expected, record, usages, datasets, createdBy, hash }: ReadBack): { hard: string[]; warnings: string[] } {
+export function readBackErrors({ expected, record, usages, datasets, createdBy, hash, expectedDownloadDoi }: ReadBack): { hard: string[]; warnings: string[] } {
   const hard: string[] = [];
   const warnings: string[] = [];
   const { counts, duplicates } = usageCounts(usages);
@@ -149,6 +158,10 @@ export function readBackErrors({ expected, record, usages, datasets, createdBy, 
   }
   if (record.createdBy !== createdBy) hard.push(`createdBy is ${record.createdBy}, not ${createdBy}`);
   if (!carriesHash(record.description, hash)) hard.push(`the description lacks the line "${hashLine(hash)}"`);
+  const downloadDoi = record.originalDownloadDOI ?? null;
+  if (downloadDoi !== expectedDownloadDoi) {
+    hard.push(`originalDownloadDOI is ${downloadDoi ?? "none"}, not ${expectedDownloadDoi ?? "none"}`);
+  }
   if (expected !== null) {
     if (record.sourceUrl !== expected.sourceUrl) hard.push(`sourceUrl is ${record.sourceUrl}, not ${expected.sourceUrl}`);
     if (record.title !== expected.title) warnings.push(`GBIF's title differs from the one sent: ${JSON.stringify(record.title)}`);
@@ -157,12 +170,14 @@ export function readBackErrors({ expected, record, usages, datasets, createdBy, 
   return { hard, warnings };
 }
 
-// registration.json from a read-back that passed readBackErrors: GBIF's values, no timestamps.
-export function toRegistration(record: DerivedDatasetRecord, usages: DatasetUsage[], hash: string): Registration {
+// registration.json from a read-back that passed readBackErrors: GBIF's values, no timestamps. originalDownloadDOI
+// only for a target with a download (downloadDoi), so countries' file keeps its keys.
+export function toRegistration(record: DerivedDatasetRecord, usages: DatasetUsage[], hash: string, downloadDoi: string | null): Registration {
   const { counts } = usageCounts(usages);
   return {
     doi: record.doi, citation: record.citation, title: record.title, description: record.description ?? "",
     sourceUrl: record.sourceUrl, createdBy: record.createdBy, contributionsSha256: hash,
     records: Object.values(counts).reduce((a, n) => a + n, 0), relatedDatasets: counts,
+    ...(downloadDoi === null ? {} : { originalDownloadDOI: downloadDoi }),
   };
 }

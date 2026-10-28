@@ -5,7 +5,8 @@
 // - Lump guard (heuristic): a synonym whose accepted name has another epithet keeps ids.gbif, but its countries
 //   would be another species' occurrences, so they are null with an identity entry. A matching epithet doesn't prove
 //   the accepted taxon has the same scope; the synonym-info entry points a person at those cases.
-import { gbifTaxonKey, type GbifMatchResponse } from "../raw.ts";
+import { BACKBONE_KEY, gbifDatasetsUrl, gbifMatchUrl, gbifOccurrenceUrl } from "../ingest/gbif.ts";
+import { assertBaseNames, gbifTaxonKey, staleSnapshot, type GbifMatchResponse, type GbifSnapshot } from "../raw.ts";
 import type { Mismatch } from "../species.ts";
 
 export interface GbifResult {
@@ -21,6 +22,26 @@ export function gbifBackboneLicense(license: string): string {
   const out = LICENSES[license];
   if (!out) throw new Error(`gbif: unknown backbone license ${JSON.stringify(license)}`);
   return out;
+}
+
+// MF3 (plan D13): throws unless the snapshot is what today's request builders fetch: the pinned backbone, one match per
+// base name, and occurrences + datasets exactly for SPECIES matches, by the match's taxon key. A changed filter or
+// facet changes the URL, so it demands a re-ingest; the URLs stay as provenance. Elapsed time is never staleness.
+export function assertGbifFresh(snapshot: GbifSnapshot, base: readonly { scientificName: string }[]): void {
+  const stale = (why: string) => staleSnapshot("gbif", why);
+  if (snapshot.checklist.key !== BACKBONE_KEY) throw stale("checklist: not the pinned backbone");
+  assertBaseNames("gbif", Object.keys(snapshot.species), base);
+  for (const { scientificName: N } of base) {
+    const { match, occurrences, datasets } = snapshot.species[N];
+    if (match.url !== gbifMatchUrl(N)) throw stale(`${N}: match URL`);
+    const species = match.response.usage?.rank === "SPECIES";
+    if ((occurrences !== null) !== species) throw stale(`${N}: occurrences present ≠ SPECIES match`);
+    if ((datasets !== null) !== species) throw stale(`${N}: datasets present ≠ SPECIES match`);
+    if (occurrences === null || datasets === null) continue;
+    const taxonKey = gbifTaxonKey(match.response);
+    if (occurrences.url !== gbifOccurrenceUrl(taxonKey)) throw stale(`${N}: occurrences URL`);
+    if (datasets.url !== gbifDatasetsUrl(taxonKey, 0)) throw stale(`${N}: datasets URL`);
+  }
 }
 
 function integerKey(raw: string, what: string, name: string): number {

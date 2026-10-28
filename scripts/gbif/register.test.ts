@@ -128,7 +128,7 @@ test("B1 readBackErrors: counts, createdBy, hash line and sourceUrl are hard; ti
   const record = { ...listed("10.15468/dd.one", HASH), title: expected.title, description: expected.description };
   const usages = [{ datasetKey: B, numberRecords: 4 }, { datasetKey: A, numberRecords: 3 }];
   const check = (over: Partial<Parameters<typeof readBackErrors>[0]>) =>
-    readBackErrors({ expected, record, usages, datasets: DATASETS, createdBy: "dinobytes215", hash: HASH, ...over });
+    readBackErrors({ expected, record, usages, datasets: DATASETS, createdBy: "dinobytes215", hash: HASH, expectedDownloadDoi: null, ...over });
 
   assert.deepEqual(check({}), { hard: [], warnings: [] });
   assert.deepEqual(check({ expected: null }), { hard: [], warnings: [] });

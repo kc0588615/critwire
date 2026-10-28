@@ -13,7 +13,8 @@ const API = "https://api.gbif.org";
 export const BACKBONE_KEY = "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c";
 const FACET_LIMIT = 300;
 // Zoos/gardens (LIVING_SPECIMEN) and FOSSIL_SPECIMEN are left out by listing the allowed values (negation is a 400).
-const BASIS_OF_RECORD = [
+// Shared with the lab sample's download request (scripts/learn/download.ts): one definition of the countries rule.
+export const BASIS_OF_RECORD = [
   "HUMAN_OBSERVATION", "OBSERVATION", "MACHINE_OBSERVATION", "PRESERVED_SPECIMEN", "MATERIAL_SAMPLE", "MATERIAL_CITATION", "OCCURRENCE",
 ];
 // Timing diagnostics, IUCN status, and nested-set indexes that move on every backbone rebuild.
@@ -29,10 +30,11 @@ const OCCURRENCE_FILTERS = [
 ];
 const UUID = /^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/;
 
-// Parameters in a fixed order, so the stored URL (sources[].url) is stable.
-const occurrenceSearchUrl = (taxonKey: number, facets: string[]) =>
-  `${API}/v1/occurrence/search?` +
-  [`checklistKey=${BACKBONE_KEY}`, `taxonKey=${taxonKey}`, ...facets, "limit=0", ...OCCURRENCE_FILTERS].join("&");
+// An occurrence search's query, parameters in a fixed order, so the stored URL (sources[].url) is stable. Also the lab
+// sample's search count at submission (ingest gbif-sample --new), over all its taxa.
+export const occurrenceSearchQuery = (taxonKeys: readonly number[], facets: string[] = []) =>
+  [`checklistKey=${BACKBONE_KEY}`, ...taxonKeys.map((k) => `taxonKey=${k}`), ...facets, "limit=0", ...OCCURRENCE_FILTERS].join("&");
+const occurrenceSearchUrl = (taxonKey: number, facets: string[]) => `${API}/v1/occurrence/search?${occurrenceSearchQuery([taxonKey], facets)}`;
 
 export const gbifOccurrenceUrl = (taxonKey: number) =>
   occurrenceSearchUrl(taxonKey, ["facet=country", "facet=license", `facetLimit=${FACET_LIMIT}`]);
@@ -86,7 +88,7 @@ function toOccurrences(url: string, r: unknown): GbifOccurrenceResponse {
 }
 
 // One datasetKey facet page: same `count` as the countries query, UUID keys not seen on earlier pages, positive counts.
-function toDatasetPage(url: string, r: unknown, count: number, seen: Record<string, number>): GbifFacet["counts"] {
+export function toDatasetPage(url: string, r: unknown, count: number, seen: Record<string, number>): GbifFacet["counts"] {
   const o = r as GbifOccurrenceResponse & { results?: unknown[] };
   if (o?.count !== count) throw new Error(`gbif: ${url}: count ${String(o?.count)} ≠ countries query count ${count} (index moved; re-run)`);
   if (o.results?.length) throw new Error(`gbif: ${url}: limit=0 returned ${o.results.length} results`);

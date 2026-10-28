@@ -3,7 +3,8 @@
 // - Names are compared without a subgenus: COL writes "Marmota (Petromarmota) vancouverensis" for our
 //   "Marmota vancouverensis", which is the same name. Any other difference (Zaglossus bruijni vs bruijnii) is not-found.
 // - Several Wikidata P10585 values: ids.col is null; the multi-value entry is the Wikidata rule's.
-import type { ColMatchResponse, ColTaxon } from "../raw.ts";
+import { colMatchUrl } from "../ingest/col.ts";
+import { assertBaseNames, staleSnapshot, type ColMatchResponse, type ColSnapshot, type ColTaxon } from "../raw.ts";
 import type { BaseSpecies, Mismatch, Taxonomy } from "../species.ts";
 
 export interface ColResult {
@@ -12,6 +13,14 @@ export interface ColResult {
   // Which source the published taxonomy is cited to.
   taxonomySource: "col" | "base";
   entries: Mismatch[];
+}
+
+// MF3 (plan D13): throws unless every match is today's query against the snapshot's release, one per base name.
+export function assertColFresh(snapshot: ColSnapshot, base: readonly { scientificName: string }[]): void {
+  assertBaseNames("col", Object.keys(snapshot.matches), base);
+  for (const { scientificName: N } of base) {
+    if (snapshot.matches[N].url !== colMatchUrl(snapshot.release.key, N)) throw staleSnapshot("col", `${N}: match URL`);
+  }
 }
 
 const RANKS = ["class", "order", "family", "genus"] as const;

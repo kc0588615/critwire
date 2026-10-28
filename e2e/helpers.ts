@@ -1,10 +1,12 @@
 // Shared E2E helpers (plan §9): paths and origins, the committed records, the dist/ check, DuckDB and the
 // local Caddy's access log.
 import { DuckDBInstance } from "@duckdb/node-api";
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import type { LabManifest } from "../scripts/build/learn/data.ts";
+import { readLabFiles } from "../scripts/learn/lab-files.ts";
 import { speciesFile, type Species } from "../scripts/species.ts";
 
 const repo = new URL("../", import.meta.url);
@@ -25,16 +27,33 @@ export function statusCounts(species: readonly Pick<Species, "range">[]): Record
   return counts;
 }
 
-// The first check: the specs test dist/, so it must be the build of the committed data.
+export const sha256 = (bytes: Buffer) => createHash("sha256").update(bytes).digest("hex");
+
+// /learn/data/manifest.json (scripts/build/learn/data.ts LabManifest), as the specs read it.
+export const learnManifest = async (): Promise<LabManifest> => JSON.parse(await readFile(distPath("learn/data/manifest.json"), "utf8"));
+
+// The first check: the specs test dist/, so it must be the build of the committed data: species.json, and (plan D15)
+// /learn/data/ through its manifest: the /v1 inputs it was built from, the sample's sha256 and the copied data/learn/
+// files.
 export async function assertBuilt(): Promise<void> {
   const [built, data] = await Promise.all([readFile(distPath("v1/species.json")).catch(() => null), speciesBytes()]);
   if (!built?.equals(data)) throw new Error("dist/ is missing or older than data/species.json: run pnpm build");
+  const manifest = await learnManifest().catch(() => null);
+  if (!manifest) throw new Error("dist/learn/data/manifest.json is missing: run pnpm build");
+  const stale: string[] = [];
+  for (const [file, { sha256: want }] of Object.entries(manifest.inputs.v1)) {
+    if (sha256(await readFile(distPath(`v1/${file}`))) !== want) stale.push(`inputs.v1 ${file}`);
+  }
+  const contributions = JSON.parse(await readFile(repoPath("data/gbif-learn-sample/contributions.json"), "utf8"));
+  if (manifest.inputs.sample.sha256 !== contributions.sample.sha256) stale.push("inputs.sample");
+  for (const f of await readLabFiles()) if (manifest.files[f.name]?.sha256 !== f.sha256) stale.push(f.name);
+  if (stale.length) throw new Error(`dist/learn/data/ is older than data/ (${stale.join(", ")}): run pnpm build`);
 }
 
 // A query-string tag that picks one test's requests out of the shared access log.
 export const tag = () => `t=${randomUUID()}`;
 
-const sqlText = (value: string) => `'${value.replaceAll("'", "''")}'`;
+export const sqlText = (value: string) => `'${value.replaceAll("'", "''")}'`;
 
 // DuckDB for reading the exports. httpfs autoinstalls here on first use (the E2E may use the network; the build never).
 export async function openDuckDB() {

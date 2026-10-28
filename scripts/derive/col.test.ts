@@ -14,10 +14,13 @@
 // C7: a rank differs from base and is silently replaced → COL's value + taxonomy-info (info) per differing rank.
 // C8: an unknown ChecklistBank license string is mapped to something → throws.
 // C9: provisionally accepted is rejected or passes unmarked → filled + status-info (info).
+// F6 (MF3, plan D13): a match URL that isn't colMatchUrl(release.key, N) (another release or query), or names that
+//     aren't exactly the base's, is derived as fresh → stale.
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { colLicense, deriveCol } from "./col.ts";
-import type { ColMatchResponse, ColTaxon } from "../raw.ts";
+import { assertColFresh, colLicense, deriveCol } from "./col.ts";
+import { colMatchUrl } from "../ingest/col.ts";
+import type { ColMatchResponse, ColSnapshot, ColTaxon } from "../raw.ts";
 import type { BaseSpecies, Mismatch, Taxonomy } from "../species.ts";
 
 const BASE_TAXONOMY: Taxonomy = { class: "Reptilia", order: "Testudines", family: "Emydidae", genus: "Emydoidea" };
@@ -145,4 +148,18 @@ test("C9 provisionally accepted → filled + status-info", () => {
   assert.equal(r.taxonomySource, "col");
   assert.deepEqual(kinds(r.entries), ["ids.col:status-info:info"]);
   assert.deepEqual(r.entries[0].values, { col: { status: "provisionally accepted" } });
+});
+
+test("F6 a match URL that isn't today's (release or query), or names that aren't the base's → stale", () => {
+  const N = "Emydoidea blandingii";
+  const fresh = (url = colMatchUrl(316595, N)): ColSnapshot => ({
+    retrieved: "2026-10-21",
+    release: { key: 316595, alias: "COL26.10", title: "Catalogue of Life", version: "2026-10-14", issued: "2026-10-14", doi: "10.48580/dgzh4", license: "cc by", url: "https://www.checklistbank.org/dataset/316595" },
+    matches: { [N]: { url, response: { match: false } } },
+  });
+  const stale = (what: string) => new RegExp(`^Error: data/raw/col is stale \\(${what}\\): run pnpm ingest col$`);
+  assert.doesNotThrow(() => assertColFresh(fresh(), [{ scientificName: N }]));
+  assert.throws(() => assertColFresh(fresh(colMatchUrl(314774, N)), [{ scientificName: N }]), stale(`${N}: match URL`));
+  assert.throws(() => assertColFresh(fresh(`${colMatchUrl(316595, N)}&verbose=true`), [{ scientificName: N }]), stale(`${N}: match URL`));
+  assert.throws(() => assertColFresh(fresh(), [{ scientificName: N }, { scientificName: "Emys orbicularis" }]), stale("names: not the base's"));
 });
