@@ -13,10 +13,10 @@ import {
 import {
   contributionsFile, currentDoi, registrationFile, sampleContributionsFile, type Contributions, type Registration,
 } from "../gbif/derived-dataset.ts";
-import { deriveCol } from "./col.ts";
+import { assertColFresh, deriveCol } from "./col.ts";
 import { gbifContributions } from "./contributions.ts";
 import { deriveCountries, parseOverrides } from "./countries.ts";
-import { deriveGbif } from "./gbif.ts";
+import { assertGbifFresh, deriveGbif } from "./gbif.ts";
 import { assertNaturalEarthFresh, countriesFile, matchCountries, type CountriesFile, type CountriesResult } from "./naturalearth.ts";
 import { buildRecord } from "./record.ts";
 import { deriveSample, readLearnInputs, type LearnInputs, type LearnResult } from "./sample.ts";
@@ -71,12 +71,6 @@ export async function readCoreInputs(): Promise<CoreInputs> {
   };
 }
 
-// Throws unless a snapshot keyed by scientificName covers exactly the base names.
-function assertNames(source: string, keys: string[], base: BaseSpecies[]): void {
-  const want = base.map((s) => s.scientificName).sort(byText).join("\n");
-  if ([...keys].sort(byText).join("\n") !== want) throw new Error(`data/raw/${source} is stale: run pnpm ingest ${source}`);
-}
-
 // Everything derive writes or checks: the core, then the lab sample from it. Pure; throws on a stale sample.
 export function deriveAll(inputs: DeriveInputs): DeriveResult {
   const core = deriveCore(inputs);
@@ -90,8 +84,8 @@ export function deriveCore({ base: unsorted, wikidata, col, gbif, naturalearth, 
   const base = [...unsorted].sort((a, b) => a.id - b.id);
   assertWikidataFresh(wikidata, base);
   assertNaturalEarthFresh(naturalearth);
-  assertNames("col", Object.keys(col.matches), base);
-  assertNames("gbif", Object.keys(gbif.species), base);
+  assertColFresh(col, base);
+  assertGbifFresh(gbif, base);
   const overrides = parseOverrides(rawOverrides, new Set(base.map((s) => s.id)));
 
   const bindings = bindingsByName(wikidata);
@@ -102,10 +96,8 @@ export function deriveCore({ base: unsorted, wikidata, col, gbif, naturalearth, 
     const w = deriveWikidata(s, bindings.get(N) ?? []);
     const c = deriveCol(s, col.matches[N].response, w.p10585);
     const g = deriveGbif(s, gbif.species[N].match.response, w.p846);
+    // assertGbifFresh proved a counted taxon's occurrences are its own (taxonKey non-null only for a SPECIES match).
     const occurrences = g.taxonKey === null ? null : gbif.species[N].occurrences;
-    if (g.taxonKey !== null && new URL(occurrences?.url ?? "x:").searchParams.get("taxonKey") !== String(g.taxonKey)) {
-      throw new Error(`data/raw/gbif has no occurrences for taxon ${g.taxonKey} (${N}): run pnpm ingest gbif`);
-    }
     const k = deriveCountries({ species: s, occurrences: occurrences?.response ?? null, regions: gbif.countries, overrides });
     entries.push(...w.entries, ...c.entries, ...g.entries, ...k.entries);
     return { s, w, c, g, k, occurrences };

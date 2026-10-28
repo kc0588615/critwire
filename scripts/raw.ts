@@ -82,6 +82,15 @@ export function omitKeys(value: unknown, keys: ReadonlySet<string>): unknown {
   return Object.fromEntries(Object.entries(value).filter(([k]) => !keys.has(k)).map(([k, v]) => [k, omitKeys(v, keys)]));
 }
 
+// A snapshot today's ingest wouldn't produce (MF3): says why and which ingest to re-run.
+export const staleSnapshot = (source: Source, why: string) => new Error(`data/raw/${source} is stale (${why}): run pnpm ingest ${source}`);
+
+// Throws unless a snapshot keyed by scientificName covers exactly the base names.
+export function assertBaseNames(source: Source, keys: string[], base: readonly { scientificName: string }[]): void {
+  const want = base.map((s) => s.scientificName).sort().join("\n");
+  if ([...keys].sort().join("\n") !== want) throw staleSnapshot(source, "names: not the base's");
+}
+
 // Data rule: never store IUCN data. Throws on any additionalStatus key, or any key or string mentioning IUCN.
 export function assertNoIucnData(value: unknown, path = "$"): void {
   if (typeof value === "string") {
