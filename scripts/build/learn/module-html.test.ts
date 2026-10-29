@@ -4,7 +4,10 @@
 // checked.json's, or the versions line repeats; a ran block without its recorded result reaches a deployable page; a
 // Power BI block's inputs aren't the published star files; an editor loses its `-- after:` chain or its probe's
 // expected error; a skip check on a block the browser can't run; Previous/Next or a prerequisite link to a page that
-// doesn't exist.
+// doesn't exist. Python (L4 plan §7): a Python block on a page without its .py and .ipynb, or a PostGIS block without
+// its .sql, reaches the page with a dead link; a Python block links the .sql (or the reverse); the versions line misses
+// the Python and requirements.txt it ran on, or names them on a page without Python; a Python exercise shows its answer
+// openly; an untested Python block shows a result.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { parseBlock, type Block } from "../../learn/blocks.ts";
@@ -23,6 +26,9 @@ const PROBE = block("site/learn/sql/x1-probe.sql", "-- q: x1-probe\n-- status: r
 const PG = block("site/learn/sql/x1-pg.sql", "-- q: x1-pg\n-- status: ran\n-- engine: postgis\nSELECT '</pre>' AS tag;\n");
 const PLAN = block("site/learn/sql/x1-plan.sql", "-- q: x1-plan\n-- status: ran\n-- engine: postgis\n-- plan: rows 9\n-- plan: Index Cond: (a < 3)\n-- plan: no Seq Scan\nEXPLAIN (ANALYZE, COSTS OFF, TIMING OFF, SUMMARY OFF)\nSELECT a FROM t WHERE a < 3;\n");
 const PG2 = block("site/learn/sql/x1-pg2.sql", "-- q: x1-pg2\n-- status: untested: it needs two psql windows\n-- engine: postgis\nSELECT 2 AS two;\n");
+const PY = block("site/learn/sql/x1-py.py", "# q: x1-py\n# status: ran\n# after: py-connect\nprint('<b>')\n");
+const PYEX = block("site/learn/sql/x1-pyex.py", "# q: x1-pyex\n# status: ran\nprint(2)\n");
+const PYU = block("site/learn/sql/x1-pyu.py", "# q: x1-pyu\n# status: untested: it submits a real GBIF download\nprint(3)\n");
 const PBI = block("site/learn/sql/x1-pbi.m", '// q: x1-pbi\n// status: untested: Power BI is Windows-only\n// input: star/dim_country.csv\nlet T = Table.TransformColumnTypes(S, {{"a", type text}}) in T\n');
 
 const ctx = (over: Partial<PageContext> = {}): PageContext => ({
@@ -30,16 +36,20 @@ const ctx = (over: Partial<PageContext> = {}): PageContext => ({
   blocks: new Map([LESSON, AFTER, EX, PROBE, PG, PLAN, PG2, PBI].map((b) => [b.id, b])),
   recorded: new Map([
     ["x1-pg", "-- result: x1-pg · 1 row · sha256 000000000000\ntag\n</pre>"],
+    ["x1-py", "-- result: x1-py · python · sha256 222222222222\n<b>"],
+    ["x1-pyex", "-- result: x1-pyex · python · sha256 333333333333\n2"],
     ["x1-plan", "-- result: x1-plan · 2 rows · sha256 111111111111\nQUERY PLAN\nIndex Scan using t_a_idx on t (actual rows=9 loops=1)\n  Index Cond: (a < 3)"],
   ]),
   stamp: { checked: "2026-10-28", versions: { postgresql: "16.15", postgis: "3.4.2", geos: "3.12.1", gdal: "3.8.4", python: "3.12.3", requirements: "0123456789ab" } },
-  download: "x1.sql",
+  downloads: { sql: "x1.sql", py: "x1.py", ipynb: "x1.ipynb" },
   star: { "dim_country.csv": { rows: 250, sha256: "ab".repeat(32) } },
   draft: false,
   erdTitles: { schema: "Schema v2", lab: "The lab database" },
   diagrams: new Map([["flow", { title: "Data flows one way", width: 800, height: 360 }]]),
   ...over,
 });
+/** The page's blocks with its Python ones: a page with a Python block. */
+const withPython = { blocks: new Map([LESSON, AFTER, EX, PROBE, PG, PLAN, PG2, PBI, PY, PYEX, PYU].map((b) => [b.id, b])) };
 const render = (html: string, over: Partial<PageContext> = {}) => renderFragment(html, ctx(over));
 const count = (html: string, s: string) => html.split(s).length - 1;
 
@@ -101,7 +111,7 @@ test("MH6 a ran PostGIS block without its recorded result: refused, unless --dra
   assert.throws(() => render("{{block:x1-pg}}", { recorded: new Map() }), /x1-pg: no recorded result/);
   assert.match(render("{{block:x1-pg}}", { recorded: new Map(), draft: true }), /No result recorded yet/);
   assert.throws(() => render("{{block:x1-pg}}", { stamp: undefined }), /checked\.json/);
-  assert.throws(() => render("{{block:x1-pg}}", { download: undefined }), /x1-pg: the page has no download/);
+  assert.throws(() => render("{{block:x1-pg}}", { downloads: { py: "x1.py", ipynb: "x1.ipynb" } }), /x1-pg: the page has no \.sql download/);
 });
 
 test("MH7 a Power BI block lists its inputs with the star manifest's rows and sha256; an unpublished input is refused", () => {
@@ -141,4 +151,57 @@ test("MH9 the frame: title and id, badges, prerequisites linked only when built,
   assert.ok(html.includes('<a rel="next" href="/learn/database-architecture/s-d5/">Next: Title d5 (d5)</a>'));
   const f1 = moduleFrame(CURRICULUM.modules[0]!, CURRICULUM, "");
   assert.ok(!f1.includes('rel="prev"') && !f1.includes('rel="next"') && !f1.includes("Prerequisites"));
+});
+
+/** The part of `html` from block `id`'s element to the next block's. */
+const part = (html: string, id: string) => {
+  const from = html.indexOf(`id="q-${id}"`);
+  assert.ok(from >= 0, id);
+  const next = html.indexOf('<div class="block', from);
+  return html.slice(from, next < 0 ? undefined : next);
+};
+
+test("MH10 a Python block on a page without its .py or .ipynb download is refused, naming the block", () => {
+  assert.throws(() => render("{{block:x1-py}}", { ...withPython, downloads: { sql: "x1.sql" } }), /x1-py: the page has no \.py download/);
+  assert.throws(() => render("{{block:x1-py}}", { ...withPython, downloads: { sql: "x1.sql", py: "x1.py" } }), /x1-py: the page has no \.ipynb download/);
+});
+
+test("MH11 a Python block: its code read-only with Copy and Lab schema, its recorded result, links to the .py and .ipynb; a PostGIS block beside it links the .sql", () => {
+  const html = render("{{block:x1-pg}}{{block:x1-py}}", withPython);
+  const py = part(html, "x1-py");
+  assert.ok(py.includes('<span class="block-id">x1-py</span> · Python <button type="button" class="copy" data-copy="code-x1-py">Copy</button> <button type="button" data-dialog="lab">Lab schema</button>'));
+  assert.ok(py.includes('<pre class="code" id="code-x1-py"><code>print(&#39;&lt;b&gt;&#39;)</code></pre>'));
+  assert.ok(!py.includes("# q:") && !py.includes("# after:") && !py.includes("<textarea"));
+  assert.ok(py.includes('<pre class="recorded">\n-- result: x1-py · python · sha256 222222222222\n&lt;b&gt;</pre>'));
+  assert.ok(py.includes('<p class="download">In <a href="/learn/labs/x1.py">x1.py</a> and <a href="/learn/labs/x1.ipynb">x1.ipynb</a>, with the blocks it runs after.</p>'));
+  assert.ok(!py.includes("x1.sql"));
+  const pg = part(html, "x1-pg");
+  assert.ok(pg.includes('<a href="/learn/labs/x1.sql">x1.sql</a>') && !pg.includes("x1.py"));
+  assert.equal(count(html, '<dialog id="dialog-lab"'), 1);
+});
+
+test("MH12 the versions line: once, before the first lab block of either engine; Python and requirements.txt only on a page with a Python block", () => {
+  const line = "Checked 2026-10-28 on PostgreSQL 16.15, PostGIS 3.4.2, GEOS 3.12.1, GDAL 3.8.4; Python 3.12.3 with requirements.txt sha256 0123456789ab.";
+  const html = render("{{block:x1-py}}{{block:x1-pg}}{{block:x1-pyu}}", withPython);
+  assert.equal(count(html, '<p class="checked">'), 1);
+  assert.equal(count(html, line), 1);
+  assert.ok(html.indexOf(line) < html.indexOf('id="q-x1-py"'));
+  // A page with a Python block shows the suffix before its PostGIS blocks too; a page without one never shows it.
+  assert.ok(render("{{block:x1-pg}}", withPython).includes(line));
+  const plain = render("{{block:x1-pg}}");
+  assert.ok(plain.includes("GDAL 3.8.4.</p>") && !plain.includes("Python"));
+});
+
+test("MH13 a Python exercise shows its answer as a PostGIS one does: Show answer around its code and recorded result", () => {
+  const html = render("{{exercise:x1-pyex}}", withPython);
+  assert.match(html, /<details class="exercise-answer"><summary>Show answer<\/summary>\n(<p class="checked">[^\n]*\n)?<div class="block lab" id="q-x1-pyex">/);
+  assert.ok(html.indexOf("</details>") > html.indexOf("-- result: x1-pyex · python · sha256 333333333333\n2</pre>"));
+  assert.ok(!html.includes("<textarea"));
+});
+
+test("MH14 an untested Python block shows its reason, no result", () => {
+  const html = part(render("{{block:x1-pyu}}", withPython), "x1-pyu");
+  assert.ok(html.includes('<p class="untested">Not run here: it submits a real GBIF download.</p>'));
+  assert.ok(!html.includes('class="recorded"'));
+  assert.ok(html.includes('<pre class="code" id="code-x1-pyu"><code>print(3)</code></pre>'));
 });

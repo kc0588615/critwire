@@ -14,7 +14,7 @@
 // diagrams (diagrams/<name>.svg and <name>-dark.svg); then the pages
 // (pages.ts: the schema pages from the ERD sources), which read checked.json and the star manifest writeStar wrote.
 import { copyFile, mkdir, readFile, writeFile } from "node:fs/promises";
-import { assembleDownloads } from "../../learn/assemble.ts";
+import { assembleDownloads, pageDownloads } from "../../learn/assemble.ts";
 import type { CoursePage, Curriculum } from "../../learn/course.ts";
 import { readCourse } from "../../learn/course-files.ts";
 import { parseErd } from "../../learn/erd-model.ts";
@@ -85,8 +85,7 @@ export async function writeLearn(out: URL, { curriculum, pages, erds, svgs, diag
   const html = learnPages({
     curriculum,
     pages,
-    // The .sql names until the pages show Python blocks (L4 S9: pageDownloads).
-    downloads: new Map(downloads.filter((d) => d.kind === "sql").map((d) => [d.page, d.name])),
+    downloads: pageDownloads(downloads),
     templates: await readTemplates(),
     erds,
     context: {

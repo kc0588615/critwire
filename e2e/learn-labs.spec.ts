@@ -4,11 +4,14 @@
 // result a page shows is checked/<id>.txt, and its versions line is checked.json's; an EXPLAIN block lists its
 // `-- plan:` lines and labels its plan an example (D4); a Power BI block lists the star files it reads with the
 // manifest's rows and sha256, which the served files match and star-check passes. The setup page links the checks'
-// download (pg-checks.sql) and the loader. /learn/labs/requirements.txt is the labs' pin file (L4 plan §5).
+// download (pg-checks.sql) and the loader. /learn/labs/requirements.txt is the labs' pin file (L4 plan §5). By
+// Download.kind (L4 plan §10): a .sql holds its page's PostGIS blocks, a .py its Python blocks (untested ones behind
+// `# `), each linked from its block; an .ipynb is served as assembled; the versions line names Python and
+// requirements.txt on a page with a Python block; every download link on a page returns 200.
 import { expect, test } from "@playwright/test";
 import { readFile } from "node:fs/promises";
 import { moduleUrl } from "../scripts/build/learn/module-html.ts";
-import { assembleDownloads } from "../scripts/learn/assemble.ts";
+import { assembleDownloads, pageDownloads, type Download } from "../scripts/learn/assemble.ts";
 import { CHECKED_DIR, type Block } from "../scripts/learn/blocks.ts";
 import { SETUP_PAGE, type CoursePage } from "../scripts/learn/course.ts";
 import { readCourse } from "../scripts/learn/course-files.ts";
@@ -18,6 +21,9 @@ import { distPath, learnContext, repoPath, sha256 } from "./helpers.ts";
 
 const trimEnd = (s: string) => s.replace(/\n+$/, "");
 const runnable = (b: Block) => b.status === "ran" && !b.sessions.length;
+/** The engine whose blocks a download holds, and the comment mark that hides an unrun one; an .ipynb holds the .py's. */
+const HOLDS = { sql: { engine: "postgis", mark: "--" }, py: { engine: "python", mark: "#" } } as const;
+const isLab = (b: Block) => b.engine === "postgis" || b.engine === "python";
 
 async function course() {
   const c = await readCourse();
@@ -25,54 +31,54 @@ async function course() {
   return { pages: c.pages, url };
 }
 
-test("each download is served as assembled; each PostGIS block's page code is in its .sql, verbatim or commented out under its reason", async ({ browser, request }) => {
+test("each download is served as assembled; each PostGIS (Python) block's page code is in its .sql (.py), verbatim or commented out under its reason, and links it", async ({ browser, request }) => {
   const { pages, url } = await course();
   const all = assembleDownloads(pages);
+  const names = pageDownloads(all);
   for (const d of all) {
     const res = await request.get(`/learn/labs/${d.name}`);
     expect(res.status(), d.name).toBe(200);
     expect(await res.text(), d.name).toBe(d.text);
   }
-  const downloads = all.filter((d) => d.kind === "sql");
-  expect(downloads.map((d) => d.name)).toEqual(expect.arrayContaining(["pg-checks.sql", "d6.sql", "g1.sql", "g2.sql", "g3.sql", "g4.sql", "g5.sql", "g6.sql", "g7.sql"]));
+  expect(all.filter((d) => d.kind === "sql").map((d) => d.name)).toEqual(expect.arrayContaining(["pg-checks.sql", "d6.sql", "g1.sql", "g2.sql", "g3.sql", "g4.sql", "g5.sql", "g6.sql", "g7.sql"]));
   // L3: g3-iucn reads the learner's own IUCN download, so g3.sql holds it commented out (checked below).
   expect(pages.find((p) => p.page.id === "g3")!.blocks.find((b) => b.id === "g3-iucn")?.status).toBe("untested");
   const { context, offOrigin } = await learnContext(browser);
   const page = await context.newPage();
-  for (const d of downloads) {
-    const res = await request.get(`/learn/labs/${d.name}`);
-    expect(res.status(), d.name).toBe(200);
-    const text = await res.text();
-    expect(text, d.name).toBe(d.text);
+  for (const d of all.filter((x): x is Download & { kind: keyof typeof HOLDS } => x.kind in HOLDS)) {
+    const { engine, mark } = HOLDS[d.kind];
     const course = pages.find((p) => p.page.id === d.page)!;
+    // A .sql's blocks link it alone; a .py's link it and the page's .ipynb.
+    const links = (d.kind === "sql" ? [d.name] : [d.name, names.get(d.page)!.ipynb!]).map((n) => `/learn/labs/${n}`);
     await page.goto(url(course));
-    for (const b of course.blocks.filter((x) => x.engine === "postgis")) {
+    for (const b of course.blocks.filter((x) => x.engine === engine)) {
       const code = await page.locator(`#q-${b.id} pre.code`).textContent();
       expect(code, b.id).toBe(trimEnd(b.code));
-      if (runnable(b)) expect(text.includes(code!), `${b.id} in ${d.name}`).toBe(true);
+      if (runnable(b)) expect(d.text.includes(code!), `${b.id} in ${d.name}`).toBe(true);
       else {
         const reason = b.status === "untested" ? b.reason : `it needs one psql window per session (${b.sessions.join(", ")})`;
-        const commented = code!.split("\n").map((l) => (l ? `-- ${l}` : "--")).join("\n");
-        expect(text.includes(`-- not run from this file: ${reason}. Run it by hand, as its page says.`), b.id).toBe(true);
-        expect(text.includes(commented), `${b.id} commented out in ${d.name}`).toBe(true);
+        const commented = code!.split("\n").map((l) => (l ? `${mark} ${l}` : mark)).join("\n");
+        expect(d.text.includes(`${mark} not run from this file: ${reason}. Run it by hand, as its page says.`), b.id).toBe(true);
+        expect(d.text.includes(commented), `${b.id} commented out in ${d.name}`).toBe(true);
       }
-      await expect(page.locator(`#q-${b.id} .download a`)).toHaveAttribute("href", `/learn/labs/${d.name}`);
+      expect(await page.locator(`#q-${b.id} .download a`).evaluateAll((as) => as.map((a) => a.getAttribute("href"))), b.id).toEqual(links);
     }
   }
   expect(offOrigin).toEqual([]);
   await context.close();
 });
 
-test("a PostGIS block shows checked/<id>.txt (or its untested reason); the page's versions line is checked.json's, once", async ({ browser }) => {
+test("a PostGIS or Python block shows checked/<id>.txt (or its untested reason); the page's versions line is checked.json's, once", async ({ browser }) => {
   const { pages, url } = await course();
   const stamp = readStamp()!;
   const { context, offOrigin } = await learnContext(browser);
   const page = await context.newPage();
-  for (const p of pages.filter((x) => x.blocks.some((b) => b.engine === "postgis"))) {
+  for (const p of pages.filter((x) => x.blocks.some(isLab))) {
     await page.goto(url(p));
     const v = stamp.versions;
-    await expect(page.locator(".checked")).toHaveText([`Checked ${stamp.checked} on PostgreSQL ${v.postgresql}, PostGIS ${v.postgis}, GEOS ${v.geos}, GDAL ${v.gdal}.`]);
-    for (const b of p.blocks.filter((x) => x.engine === "postgis")) {
+    const python = p.blocks.some((b) => b.engine === "python") ? `; Python ${v.python} with requirements.txt sha256 ${v.requirements}` : "";
+    await expect(page.locator(".checked")).toHaveText([`Checked ${stamp.checked} on PostgreSQL ${v.postgresql}, PostGIS ${v.postgis}, GEOS ${v.geos}, GDAL ${v.gdal}${python}.`]);
+    for (const b of p.blocks.filter(isLab)) {
       if (b.status === "untested") await expect(page.locator(`#q-${b.id} .untested`)).toHaveText(`Not run here: ${b.reason}.`);
       else expect(await page.locator(`#q-${b.id} pre.recorded`).textContent(), b.id)
         .toBe(trimEnd(await readFile(repoPath(`${CHECKED_DIR}/${b.id}.txt`), "utf8")));
@@ -85,6 +91,20 @@ test("a PostGIS block shows checked/<id>.txt (or its untested reason); the page'
   }
   expect(offOrigin).toEqual([]);
   await context.close();
+});
+
+test("every download link on a Learn page returns 200", async ({ page, request }) => {
+  const { pages, url } = await course();
+  const seen = new Set<string>();
+  for (const p of pages) {
+    await page.goto(url(p));
+    for (const href of await page.locator('main a[href^="/learn/labs/"]').evaluateAll((as) => as.map((a) => a.getAttribute("href")!))) {
+      if (seen.has(href)) continue;
+      seen.add(href);
+      expect((await request.get(href)).status(), `${href} on ${url(p)}`).toBe(200);
+    }
+  }
+  expect([...seen]).toEqual(expect.arrayContaining(["/learn/labs/pg-checks.sql", "/learn/labs/g7.sql"]));
 });
 
 test("a Power BI block lists its star inputs with the manifest's rows and sha256, and the served files match", async ({ browser, request }) => {

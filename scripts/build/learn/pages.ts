@@ -3,6 +3,7 @@
 // v2's tables listed), the three schema pages (schema-html.ts), the setup page and each built module (its fragment's
 // block slots filled by module-html.ts, a module inside its frame).
 import { mkdir, readFile, writeFile } from "node:fs/promises";
+import type { DownloadKind } from "../../learn/assemble.ts";
 import { SETUP_PAGE, type CoursePage, type Curriculum } from "../../learn/course.ts";
 import { esc, fillSlots, styleSheet } from "../html.ts";
 import type { BundleUrls } from "./assets.ts";
@@ -23,15 +24,15 @@ export interface LearnPage {
   main: string;
 }
 
-/** What every course page shares: module-html.ts's PageContext less the page's own blocks, file and download. */
-export type CourseContext = Omit<PageContext, "file" | "blocks" | "download">;
+/** What every course page shares: module-html.ts's PageContext less the page's own blocks, file and downloads. */
+export type CourseContext = Omit<PageContext, "file" | "blocks" | "downloads">;
 
 export interface PagesInput {
   curriculum: Curriculum;
   /** In page order (course.ts). */
   pages: readonly CoursePage[];
-  /** Each page's download name under /learn/labs/, by page id (assemble.ts). */
-  downloads: ReadonlyMap<string, string>;
+  /** Each page's download names under /learn/labs/ by kind, by page id (assemble.ts pageDownloads). */
+  downloads: ReadonlyMap<string, Partial<Record<DownloadKind, string>>>;
   /** site/learn/pages/*.html. */
   templates: Templates;
   /** site/learn/erd/'s sources (erd.ts). */
@@ -50,7 +51,7 @@ export function learnPages({ curriculum, pages, downloads, templates, erds, cont
     })),
   ];
   for (const { page, blocks } of pages) {
-    const main = renderFragment(page.html, { ...context, file: page.file, blocks: new Map(blocks.map((b) => [b.id, b])), download: downloads.get(page.id) });
+    const main = renderFragment(page.html, { ...context, file: page.file, blocks: new Map(blocks.map((b) => [b.id, b])), downloads: downloads.get(page.id) ?? {} });
     if (page.id === SETUP_PAGE) {
       out.push({ dir: "setup/", page: "module", title: "Set up your tools", main });
       continue;
