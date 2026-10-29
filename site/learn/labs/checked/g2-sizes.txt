@@ -1,0 +1,5 @@
+-- result: g2-sizes · 3 rows · sha256 a8e2ce07cae9
+table_name | shapes | points | wkb_bytes | base64_chars | hex_chars | wkt_chars
+ecoregions | 847 | 545976 | 9668372 | 12892348 | 19336744 | 20815887
+country_shapes | 247 | 100299 | 1628336 | 2171440 | 3256672 | 2062369
+admin1_shapes | 294 | 68408 | 1108310 | 1478096 | 2216620 | 1424373

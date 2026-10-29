@@ -10,10 +10,17 @@
 //      whose SQL could end its DO block early ($) or whose name isn't plain throws.
 // LD10: the same inputs give different bytes → rows ordered by key, the text generated twice is equal.
 // LD11: a missing input, a missing or unexpected column, a table without input or input without table → each named.
+// LD19: a loader run without PostGIS raster gets as far as the drop, or fails late with PostgreSQL's own message →
+//       the raster guard is the first statement after BEGIN; the per-BLOB SRID check (rasters too) says "values".
+// LD20 (L3 §3): the habitat tables missing from the lab, or a raster loaded as text, or one of the wrong shape → 16
+//       tables, habitat_clips.rast converted from base64 WKB in the keys step and CHECKed (SRID, one band, 16BUI).
+//       H5: one row per 256-cell tile, keyed (clip, tile), with raster2pgsql's GiST index on the tiles' hulls.
 // The real loader's LD9 and LD10 need dist/: loader.dbtest.ts.
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { assertCsvCopies, generateLoader } from "./loader.ts";
+import { readFileSync } from "node:fs";
+import { assertCsvCopies, ddlColumns, generateLoader } from "./loader.ts";
+import { LAB_TABLES } from "./projection.ts";
 import { FIXTURE_DDL, FIXTURE_KEYS, fixtureSpec, withFixture } from "./loader-fixture.ts";
 
 const SCHEMA = "learn_t_fixture";
@@ -70,7 +77,7 @@ test("LD4 \\set ON_ERROR_STOP on, BEGIN, encoding, lock_timeout first; COMMIT la
   });
   const control = sqlLines.filter((l) => /^\s*(BEGIN|COMMIT|ROLLBACK|END|ABORT|START\s+TRANSACTION|SAVEPOINT|RELEASE|PREPARE\s+TRANSACTION)\b/i.test(l));
   assert.deepEqual(control, ["BEGIN;", "COMMIT;"]);
-  assert.deepEqual(lines.filter((l) => /^DO\b/.test(l)), ["DO $guard$", "DO $$"]);
+  assert.deepEqual(lines.filter((l) => /^DO\b/.test(l)), ["DO $raster$", "DO $guard$", "DO $$"]);
   assert.deepEqual(sqlLines.filter((l) => l.startsWith("\\")), ["\\set ON_ERROR_STOP on"]);
   await assert.rejects(generateLoader(con, fixtureSpec(SCHEMA, { ddl: FIXTURE_DDL + "COMMIT;\n" })), /transaction control/);
   await assert.rejects(generateLoader(con, fixtureSpec(SCHEMA, { keys: FIXTURE_KEYS + "SAVEPOINT a;\n" })), /transaction control/);
@@ -97,3 +104,35 @@ test("LD11 a missing input file, a missing or unexpected column, a table without
   await assert.rejects(generateLoader(con, fixtureSpec(SCHEMA, { tables: fixtureSpec(SCHEMA).tables.slice(1) })), /parent: no input/);
   await assert.rejects(generateLoader(con, fixtureSpec(SCHEMA, { ddl: FIXTURE_DDL.replace(/^CREATE TABLE shapes.*$/m, "") })), /shapes: not in the DDL/);
 }));
+
+test("LD19 the raster guard is the first statement after BEGIN; the SRID check counts values, rasters included", () => withFixture(async (con) => {
+  const text = await generateLoader(con, fixtureSpec(SCHEMA));
+  const lines = text.split("\n");
+  const begin = lines.indexOf("BEGIN;");
+  const next = lines.slice(begin + 1).find((l) => l.trim() && !l.startsWith("--"));
+  assert.equal(next, "DO $raster$");
+  const guard = lines.slice(begin + 1, lines.indexOf("$raster$;") + 1).join("\n");
+  assert.match(guard, /IF to_regtype\('public\.raster'\) IS NULL THEN/);
+  assert.match(guard, /RAISE EXCEPTION 'PostGIS raster is missing: CREATE EXTENSION postgis_raster; \(see \/learn\/setup\/\)'/);
+  assert.match(text, /'learn_t_fixture\.shapes\.geom: % values with SRID other than 4326'/);
+  assert.doesNotMatch(text, /geometries with SRID/);
+}));
+
+test("LD20 16 lab tables, the habitat two after country_habitats; the raster converted and CHECKed in the keys step", () => {
+  const names = LAB_TABLES.map((t) => t.name);
+  assert.equal(names.length, 16);
+  assert.deepEqual(names.slice(-3), ["country_habitats", "occurrence_habitats", "habitat_clips"]);
+  const ddl = readFileSync(new URL("../../../db/learn/lab-ddl.sql", import.meta.url), "utf8");
+  assert.deepEqual([...ddlColumns(ddl).keys()].sort(), [...names].sort());
+  assert.deepEqual(ddlColumns(ddl).get("occurrence_habitats"), ["occurrence_id", "habitat_code"]);
+  assert.deepEqual(ddlColumns(ddl).get("habitat_clips"), ["clip", "tile", "rast"]);
+  assert.deepEqual(LAB_TABLES.find((t) => t.name === "habitat_clips")?.key, ["clip", "tile"]);
+  const keys = readFileSync(new URL("../../../db/learn/lab-keys.sql", import.meta.url), "utf8");
+  assert.match(keys, /^ALTER TABLE habitat_clips ALTER COLUMN rast TYPE raster USING ST_RastFromWKB\(decode\(rast, 'base64'\)\);$/m);
+  assert.match(keys, /^ALTER TABLE habitat_clips ADD CHECK \(ST_SRID\(rast\) = 4326 AND ST_NumBands\(rast\) = 1 AND ST_BandPixelType\(rast, 1\) = '16BUI'\);$/m);
+  assert.match(keys, /^ALTER TABLE habitat_clips ADD PRIMARY KEY \(clip, tile\);$/m);
+  assert.match(keys, /^CREATE INDEX ON habitat_clips USING gist \(ST_ConvexHull\(rast\)\);$/m);
+  assert.match(keys, /^ALTER TABLE occurrence_habitats ADD PRIMARY KEY \(occurrence_id\);$/m);
+  assert.match(keys, /^ALTER TABLE occurrence_habitats ADD FOREIGN KEY \(occurrence_id\) REFERENCES occurrences \(id\);$/m);
+  assert.match(keys, /^ALTER TABLE occurrence_habitats ADD FOREIGN KEY \(habitat_code\) REFERENCES habitat_classes \(code\);$/m);
+});

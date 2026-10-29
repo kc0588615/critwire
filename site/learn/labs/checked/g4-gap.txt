@@ -1,0 +1,3 @@
+-- result: g4-gap · 1 row · sha256 5811a1ff6de4
+country_km2 | ecoregion_pieces_km2 | in_no_ecoregion_km2
+51303 | 49908 | 2070

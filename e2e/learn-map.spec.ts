@@ -73,6 +73,17 @@ test("each track page lists its modules in order with their skills and questions
   }
 });
 
+// L3: the whole GIS in SQL track is built, so a module set back to planned fails here, not only on its own page.
+test("GIS in SQL: g1–g7 built, each linked from the map and its track page and returning 200", async ({ page, request }) => {
+  const g = (await curriculum()).modules.filter((m) => m.track === "gis-in-sql");
+  expect(g.map((m) => [m.id, m.state])).toEqual(["g1", "g2", "g3", "g4", "g5", "g6", "g7"].map((id) => [id, "built"]));
+  for (const path of [MAP, "/learn/gis-in-sql/"]) {
+    await page.goto(path);
+    for (const m of g) await expect(page.locator(`li[data-module="${m.id}"] .module-title a[href="${moduleUrl(m)}"]`), `${path} ${m.id}`).toHaveText(m.title);
+  }
+  for (const m of g) expect((await request.get(moduleUrl(m))).status(), m.id).toBe(200);
+});
+
 test("a done tick survives a reload, shows on the map and its track, and Clear progress removes it", async ({ page }) => {
   const c = await curriculum();
   const m = c.modules.find((x) => x.state === "built")!;

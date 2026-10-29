@@ -1,0 +1,4 @@
+-- result: g7-tiles · 2 rows · sha256 1514a2c9d499
+clip | box_cells | box_tiles | tiles | left_out | cells | class_cells | aligned
+cr | 3730 × 3474 | 15 × 14 | 117 | 93 | 7555072 | 7554437 | true
+tas | 4131 × 3318 | 17 × 13 | 173 | 48 | 11206656 | 11206656 | true

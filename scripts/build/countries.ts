@@ -6,10 +6,13 @@ import { formatJson } from "../json.ts";
 import { COUNTRY_COLUMNS, type CountryRow } from "../derive/naturalearth.ts";
 import { sqlPath, withOfflineDuckDb } from "./duckdb.ts";
 
+// Every column's DuckDB type, in order (the /v1 contract's countries; the CSV is every column).
+export const COUNTRY_TYPES: Readonly<Record<string, string>> = Object.fromEntries(COUNTRY_COLUMNS.map((c) => [c, "VARCHAR"]));
+
 export async function writeCountries(rows: CountryRow[], outDir: URL): Promise<void> {
   const json = new URL("countries.json", outDir);
   await writeFile(json, formatJson(rows));
-  const columns = `{${COUNTRY_COLUMNS.map((c) => `${c}: 'VARCHAR'`).join(", ")}}`;
+  const columns = `{${Object.entries(COUNTRY_TYPES).map(([c, t]) => `${c}: '${t}'`).join(", ")}}`;
   await withOfflineDuckDb(async (con) => {
     await con.run(`CREATE TEMP VIEW countries AS SELECT * FROM read_json(${sqlPath(json)}, format='array', columns=${columns})`);
     await con.run(`COPY (SELECT * FROM countries ORDER BY code) TO ${sqlPath(new URL("countries.parquet", outDir))} (FORMAT parquet, COMPRESSION snappy, ROW_GROUP_SIZE 100000)`);

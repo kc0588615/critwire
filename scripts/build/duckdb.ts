@@ -25,3 +25,25 @@ export async function withOfflineDuckDb<T>(fn: (con: DuckDBConnection) => Promis
     db.closeSync();
   }
 }
+
+export type ColumnType = "BIGINT" | "INTEGER" | "VARCHAR" | "DOUBLE" | "BLOB";
+
+// Creates table `name` with `types`' columns, in their order, and appends `rows` (null = NULL).
+export async function createTable<R>(con: DuckDBConnection, name: string, types: Record<keyof R & string, ColumnType>, rows: readonly R[]): Promise<void> {
+  const columns = Object.keys(types) as (keyof R & string)[];
+  await con.run(`CREATE TABLE ${name} (${columns.map((c) => `${c} ${types[c]}`).join(", ")})`);
+  const appender = await con.createAppender(name);
+  for (const r of rows) {
+    for (const c of columns) {
+      const v = r[c];
+      if (v === null) appender.appendNull();
+      else if (types[c] === "BIGINT") appender.appendBigInt(BigInt(v as number));
+      else if (types[c] === "INTEGER") appender.appendInteger(v as number);
+      else if (types[c] === "DOUBLE") appender.appendDouble(v as number);
+      else if (types[c] === "BLOB") appender.appendBlob(v as Uint8Array);
+      else appender.appendVarchar(v as string);
+    }
+    appender.endRow();
+  }
+  appender.closeSync();
+}

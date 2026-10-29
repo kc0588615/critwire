@@ -2,12 +2,10 @@
 %% Tables only; the view species_taxonomy is listed beside it. Shapes are geometry in WGS 84 (SRID 4326), each with a GiST index.
 %% Tables the lessons make in the lab (s4's grids, the smoke check's, the ETL's staging, d6's star): beside the diagram, not in it.
 %% lab-made: s4_cells, tx_smoke, field_notes, occurrences_by_year, sightings, sightings_runs, gbif_staging, occurrences_all, dim_species, dim_country, dim_dataset, dim_year, dim_habitat_class, fact_records, fact_species_country, fact_country_habitat, dim_species_history
-%% Drawn, but built with the habitat map later, so not in the lab yet:
-%% planned: occurrence_habitats, habitat_clips
 %% Keys: PK primary key, FK foreign key, UK unique. Lines: || exactly one, |o or o| zero or one, |{ one or more, o{ zero or more.
 erDiagram
     accTitle: critwire Learn lab database, PostGIS schema learn_curriculum
-    accDescr: The schema v2 tables in PostgreSQL types, plus the shapes: country outlines, admin-1 areas, biomes, ecoregions and the habitat classes. occurrence_habitats and habitat_clips are planned: drawn, not in the lab yet.
+    accDescr: The schema v2 tables in PostgreSQL types, plus the shapes: country outlines, admin-1 areas, biomes, ecoregions and the habitat map: its classes, each country's estimated area per class, each record's class, and two clips stored as raster tiles.
     taxa {
         text name PK "Agalychnis, Phyllomedusidae, Anura, Amphibia"
         text taxon_rank "class, order, family or genus"
@@ -111,7 +109,8 @@ erDiagram
     }
     habitat_clips {
         text clip PK "cr or tas"
-        raster rast "a clip of the habitat map, stored in the database"
+        integer tile PK "the tile's number in its clip"
+        raster rast "a 256-cell tile of the habitat map, stored in the database"
     }
 
     taxa |o--o{ taxa : "parent of"

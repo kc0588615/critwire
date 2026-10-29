@@ -1,0 +1,4 @@
+-- result: g1-setsrid · 2 rows · sha256 fdf4839cdfa2
+how | x | y | back_in_4326 | km_from_hobart
+ST_Transform | 1288694.34 | -4764150.08 | POINT(147.33 -42.88) | 0
+ST_SetSRID | 147.33 | -42.88 | POINT(132.0012 -0.0004) | 4990

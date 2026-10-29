@@ -73,8 +73,8 @@ export async function setupLab(admin: PgTarget, { envFiles, resetPassword = fals
     database = who.db;
     if (database === LIVE_DATABASE) throw new Error(`refusing database ${LIVE_DATABASE} (current_database()): it's the live build's database`);
     if (!who.rolsuper) throw new Error(`--setup needs a superuser (libpq's default role); ${who.user} isn't one`);
-    if ((await sql`select 1 from pg_extension where extname = 'postgis'`).length === 0) {
-      throw new Error(`postgis isn't installed in ${database}: CREATE EXTENSION postgis there as the superuser, then re-run`);
+    for (const extension of ["postgis", "postgis_raster"]) if ((await sql`select 1 from pg_extension where extname = ${extension}`).length === 0) {
+      throw new Error(`${extension} isn't installed in ${database}: CREATE EXTENSION ${extension} there as the superuser, then re-run`);
     }
     const exists = (await sql`select 1 from pg_roles where rolname = ${role}`).length > 0;
     if (exists && !resetPassword) for (const file of envFiles) await assertWorkingUrl(file, role, database);

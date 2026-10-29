@@ -2,7 +2,7 @@
 import { randomBytes } from "node:crypto";
 import postgres from "postgres";
 import { loadEnv, requireEnv } from "./env.ts";
-import { LAB_LOCK, LAB_ROLE, pgConnect, urlTarget } from "./learn/pg.ts";
+import { LAB_LOCK, LAB_ROLE, libpqTarget, pgConnect, urlTarget, type PgTarget } from "./learn/pg.ts";
 
 export const testDatabase = "critwire_dev";
 
@@ -41,5 +41,29 @@ export async function withLabSchema(fn: (sql: postgres.Sql, schema: string) => P
     }
   } finally {
     await sql.end();
+  }
+}
+
+// A throwaway learn_t_ database (as the libpq superuser) holding only `extensions`, for refusals critwire_dev can't
+// show (it has them all); fn gets its admin target, and the database is dropped after, even on failure.
+export async function withScratchDatabase(extensions: readonly string[], fn: (admin: PgTarget) => Promise<void>): Promise<void> {
+  const name = `learn_t_${randomBytes(6).toString("hex")}`;
+  const server = pgConnect(libpqTarget({ PGDATABASE: testDatabase }));
+  try {
+    await server.unsafe(`CREATE DATABASE ${name}`);
+    try {
+      const admin = libpqTarget({ PGDATABASE: name });
+      const sql = pgConnect(admin);
+      try {
+        for (const extension of extensions) await sql.unsafe(`CREATE EXTENSION ${extension}`);
+      } finally {
+        await sql.end();
+      }
+      await fn(admin);
+    } finally {
+      await server.unsafe(`DROP DATABASE ${name} WITH (FORCE)`);
+    }
+  } finally {
+    await server.end();
   }
 }

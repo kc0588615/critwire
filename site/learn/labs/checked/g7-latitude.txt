@@ -1,0 +1,4 @@
+-- result: g7-latitude · 2 rows · sha256 e063bd6e1c5b
+clip | lat_south | lat_north | mid_width_m | mid_height_m | map_km2 | ground_km2 | ground_over_map | cos_mid_lat
+cr | 9.85 | 10.60 | 98.4 | 99.4 | 6989.0 | 6834.8 | 0.9779 | 0.9841
+tas | -43.10 | -42.35 | 73.6 | 99.8 | 6989.0 | 5131.4 | 0.7342 | 0.7346

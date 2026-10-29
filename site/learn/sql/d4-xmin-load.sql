@@ -17,4 +17,6 @@ FROM (
   UNION ALL SELECT xmin FROM ecoregions
   UNION ALL SELECT xmin FROM habitat_classes
   UNION ALL SELECT xmin FROM country_habitats
+  UNION ALL SELECT xmin FROM occurrence_habitats
+  UNION ALL SELECT xmin FROM habitat_clips
 ) AS loaded;

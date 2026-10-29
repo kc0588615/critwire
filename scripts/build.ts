@@ -1,7 +1,7 @@
 // pnpm build [--draft] (plan §3, D9.1): checks data/ and site/learn/ offline, rebuilds DATABASE_URL from it, then writes the static
 // site to dist/: /v1, the docs page, then /learn/data/, whose lab tables it rebuilds from those bytes and checks, its
 // loader, the Power BI star (d6's star.sql in DuckDB, each result checked against PostGIS's), manifest and index page;
-// both 50 MB caps are enforced; a lab learn:check didn't prove as it is now (site/learn/labs/checked/checked.json)
+// both 120 MB caps are enforced; a lab learn:check didn't prove as it is now (site/learn/labs/checked/checked.json)
 // fails a plain build. Then Learn's assets: the vendored engine, the extension mirror and the bundle (plan D8.6).
 // A plain build refuses without a current GBIF derived-dataset DOI for every target; --draft
 // builds without them (previews, E2E).
@@ -78,6 +78,6 @@ const files = (await readdir(dist, { recursive: true, withFileTypes: true }))
   .map((e) => relative(dist, join(e.parentPath, e.name)))
   .sort();
 for (const f of files) console.log(`${(await stat(join(dist, f))).size}\t${f}`);
-// Both 50 MB caps' totals (plan D9.9; each refused above the cap before this).
+// Both 120 MB caps' totals (plan D9.9; each refused above the cap before this).
 const n = (bytes: number) => bytes.toLocaleString("en-US");
 console.log(`dist/learn/data/: ${n(totalBytes(await fileSizes(new URL("learn/data/", out))))} bytes; committed lab data: ${n(labBytes)} bytes (cap ${n(LEARN_CAP)} each)`);

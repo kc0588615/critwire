@@ -168,7 +168,9 @@ export function renderFragment(html: string, ctx: PageContext): string {
     versionsShown = true;
     if (!ctx.stamp) throw new Error(`${ctx.file}: PostGIS blocks, but no site/learn/labs/checked/checked.json: run pnpm learn:check`);
     const v = ctx.stamp.versions;
-    return `<p class="checked">Checked ${esc(ctx.stamp.checked)} on PostgreSQL ${esc(v.postgresql)}, PostGIS ${esc(v.postgis)}, GEOS ${esc(v.geos)}.</p>\n`;
+    // A stamp from before GDAL was recorded is stale (the checker changed with it), so only a --draft build shows one.
+    const gdal = v.gdal === undefined ? "" : `, GDAL ${esc(v.gdal)}`;
+    return `<p class="checked">Checked ${esc(ctx.stamp.checked)} on PostgreSQL ${esc(v.postgresql)}, PostGIS ${esc(v.postgis)}, GEOS ${esc(v.geos)}${gdal}.</p>\n`;
   };
   const lab = (b: Block) => {
     dialogs.add("lab");

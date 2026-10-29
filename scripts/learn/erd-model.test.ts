@@ -392,7 +392,7 @@ const marked = (mmd: string, db: DbMeta = MINI) => markerDrift(parseErd(mmd), db
 
 test("EG2 markers reads %% lab-made: and %% planned: lists, once each", () => {
   assert.deepEqual(markers(MINI_ERD), { labMade: ["made"], planned: ["p"] });
-  assert.deepEqual(markers(LAB).planned, ["occurrence_habitats", "habitat_clips"]);
+  assert.deepEqual(markers(LAB).planned, []);
   assert.ok(markers(LAB).labMade.includes("s4_cells"));
   assert.deepEqual(markers(STAR), { labMade: [], planned: ["dim_habitat_class", "fact_country_habitat"] });
   assert.deepEqual(markers(SCHEMA), { labMade: [], planned: [] });

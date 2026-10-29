@@ -1,0 +1,8 @@
+-- result: g2-invalid · 11 rows · sha256 5b7784549a38
+table_name | key | reason | parts | parts_after | type_after | km2_change
+admin1_shapes | BRA-1294 | Ring Self-intersection | 1 | 1 | MULTIPOLYGON | 0.0
+ecoregions | 112 | Nested shells | 1846 | 1845 | MULTIPOLYGON | 0.0
+ecoregions | 114 | Nested shells | 13 | 12 | MULTIPOLYGON | -0.4
+ecoregions | 309 | Ring Self-intersection | 27 | 27 | MULTIPOLYGON | 0.0
+ecoregions | 320 | Nested shells | 2968 | 2966 | MULTIPOLYGON | 0.0
+… 6 more rows

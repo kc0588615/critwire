@@ -1,0 +1,8 @@
+-- result: g5-geography-index · 6 rows · sha256 00b2f96fdafb
+QUERY PLAN
+Bitmap Heap Scan on occurrences o (actual rows=55 loops=1)
+  Filter: st_dwithin((geom)::geography, '0101000020E6100000C…
+  Rows Removed by Filter: 11
+  Heap Blocks: exact=19
+  ->  Bitmap Index Scan on occurrences_geography_idx (actual…
+… 1 more row

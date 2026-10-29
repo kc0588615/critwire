@@ -1,14 +1,115 @@
 {
-  "files": {
-    "country_habitats.parquet": {
-      "built": "/srv/critter-ai/agent-state/missions/critwire-learn-spatial-design/spike/scripts/grown-data.ts: TT and AX only; method 3 of E3c (v004 1 km level-2 fractions × geodesic cell area, https://zenodo.org/api/records/4058819/files/lvl2_frac_1km_ver004.zip/content) over Natural Earth v5.1.2 shapes; km² rounded to 0.01, estimated",
-      "bytes": 850,
-      "copiedFrom": {
-        "path": "/srv/critter-ai/agent-state/missions/critwire-learn-curriculum/spike/data/learn/country_habitats.parquet",
-        "sha256": "e597fe9011bb605615357aa85b2b8432eae23129f1ebed7b19a07e8bcdb88f1d"
+  "clips": {
+    "cr": {
+      "bounds": {
+        "east": -82.55966618700464,
+        "north": 11.190313494276879,
+        "south": 8.06956619724566,
+        "west": -85.91038219677046
       },
-      "rows": 35,
-      "sha256": "e597fe9011bb605615357aa85b2b8432eae23129f1ebed7b19a07e8bcdb88f1d"
+      "country": "CR",
+      "height": 3474,
+      "nodata": 0,
+      "nodataCells": 5403583,
+      "scale": 0.0008983152841195215,
+      "tileSize": 256,
+      "tiles": 117,
+      "values": {
+        "100": 5386,
+        "105": 240413,
+        "106": 926008,
+        "107": 35724,
+        "108": 57326,
+        "109": 1444464,
+        "201": 379873,
+        "300": 36,
+        "305": 1972,
+        "306": 250211,
+        "307": 216757,
+        "405": 5,
+        "406": 84,
+        "407": 460,
+        "500": 42933,
+        "501": 2056,
+        "502": 920,
+        "503": 14647,
+        "505": 86945,
+        "506": 108,
+        "507": 12835,
+        "511": 251,
+        "515": 1520,
+        "803": 1419,
+        "900": 990824,
+        "908": 8858,
+        "909": 226596,
+        "1101": 388987,
+        "1102": 4714,
+        "1103": 6963,
+        "1200": 16611,
+        "1206": 299,
+        "1207": 170,
+        "1401": 1825202,
+        "1402": 58168,
+        "1403": 237006,
+        "1404": 689,
+        "1405": 66997
+      },
+      "width": 3730
+    },
+    "tas": {
+      "bounds": {
+        "east": 148.35048096535016,
+        "north": -40.63978345356716,
+        "south": -43.62039356627574,
+        "west": 144.6395405266524
+      },
+      "country": "AU",
+      "height": 3318,
+      "nodata": 0,
+      "nodataCells": 2500002,
+      "scale": 0.0008983152841195215,
+      "tileSize": 256,
+      "tiles": 173,
+      "values": {
+        "104": 4060363,
+        "108": 111813,
+        "300": 11,
+        "302": 210220,
+        "304": 1123643,
+        "305": 1991,
+        "400": 12,
+        "403": 63108,
+        "404": 74312,
+        "500": 146497,
+        "505": 117362,
+        "506": 706,
+        "803": 2226,
+        "900": 2146526,
+        "909": 266649,
+        "1101": 13163,
+        "1200": 29578,
+        "1206": 1079,
+        "1401": 90031,
+        "1402": 2257190,
+        "1403": 454470,
+        "1405": 35706
+      },
+      "width": 4131
+    }
+  },
+  "files": {
+    "clips/cr.tif": {
+      "bytes": 1380611,
+      "sha256": "995f02136865847e13d40c284a6a2efa7cc7345cffdd3c4efec80c58e53a0767"
+    },
+    "clips/tas.tif": {
+      "bytes": 1828711,
+      "sha256": "cc513aaec0cb25bbb8f60543396b1bc433b3829021f40795ecfd96a892271d94"
+    },
+    "country_habitats.parquet": {
+      "bytes": 22407,
+      "rows": 5578,
+      "sha256": "2ae6d98b189e7fbe91ed3c83cbaa35af678df3eca7073336e0b6c92a8b5a7597"
     },
     "habitat_classes.parquet": {
       "built": "/srv/critter-ai/agent-state/missions/critwire-learn-spatial-design/spike/scripts/grown-data.ts: v004 legend (member Habitatmapping-004/IUCN_mapping_legend.xlsx of https://zenodo.org/api/records/4058819/files/iucn_habitatclassification_code_ver004.zip/content), mapped classes only, names without their class number",
@@ -19,15 +120,188 @@
       },
       "rows": 75,
       "sha256": "2539cb826ee2ed5a14068bccb37f9c3ee5e1940e4c2e179fb6f105b75bd210f4"
+    },
+    "habitat_clips.parquet": {
+      "bytes": 1826789,
+      "rows": 290,
+      "sha256": "15f132cb5fda7f54097ab6e9a5b3266cf569397ab2e7fc4ac8ff27e1b5218d00"
+    },
+    "occurrence_habitats.parquet": {
+      "bytes": 81731,
+      "rows": 40395,
+      "sha256": "4a7c514bc96fc944e6c1914a08fd7c917d2266135484508d515f4c2ab8730065"
     }
   },
-  "note": "Stand-ins until L3's pnpm ingest habitat rebuilds these files and takes over this file. Byte copies of the critwire-learn-curriculum spike's data/learn/, which copied them from the critwire-learn-spatial-design spike's data/v1/ (its scripts/grown-data.ts).",
+  "grid": {
+    "height": 18154,
+    "transform": [
+      0.009915667822884942,
+      0,
+      -180.0099155291168,
+      0,
+      -0.009915667822884942,
+      90.00297126602864
+    ],
+    "width": 36308
+  },
+  "inputs": {
+    "countryShapes": {
+      "sha256": "fc3151a035a8846ec848e83b7af7bd87a959ccc58289d34dca27cfd74e18beb9"
+    },
+    "records": {
+      "count": 40395,
+      "sha256": "5d443739fca963ed395fc3a013f85ed1e9230ce09a6300643bf0f41b4849db32"
+    },
+    "zenodo": {
+      "iucn_habitatclassification_composite_lvl2_ver004.zip": {
+        "bytes": 2454999319,
+        "md5": "d9bad21c2c9e80814f59a6e57d934fa9",
+        "sha256": "99ae12ba1d63360a8adce6277176876cb5de4fe3315c41046eb3e1438f082fd9",
+        "url": "https://zenodo.org/api/records/4058819/files/iucn_habitatclassification_composite_lvl2_ver004.zip/content"
+      },
+      "lvl2_frac_1km_ver004.zip": {
+        "bytes": 695484415,
+        "md5": "bd8508db8118f14d8da7bfa7950523d4",
+        "sha256": "ea485aeed8b36d988c5c4c271d199ba125d17387e8d2bbdb5f0c8c6c8d963fa8",
+        "url": "https://zenodo.org/api/records/4058819/files/lvl2_frac_1km_ver004.zip/content"
+      }
+    }
+  },
+  "layers": {
+    "allZero": [
+      200,
+      504,
+      509,
+      512,
+      516,
+      517,
+      518,
+      800,
+      1000,
+      1100,
+      1400
+    ],
+    "codes": [
+      100,
+      101,
+      102,
+      103,
+      104,
+      105,
+      106,
+      107,
+      108,
+      109,
+      200,
+      201,
+      202,
+      300,
+      301,
+      302,
+      303,
+      304,
+      305,
+      306,
+      307,
+      308,
+      400,
+      401,
+      402,
+      403,
+      404,
+      405,
+      406,
+      407,
+      500,
+      501,
+      502,
+      503,
+      504,
+      505,
+      506,
+      507,
+      508,
+      509,
+      510,
+      511,
+      512,
+      513,
+      514,
+      515,
+      516,
+      517,
+      518,
+      600,
+      800,
+      801,
+      802,
+      803,
+      900,
+      901,
+      908,
+      909,
+      1000,
+      1001,
+      1002,
+      1003,
+      1004,
+      1100,
+      1101,
+      1102,
+      1103,
+      1104,
+      1105,
+      1106,
+      1200,
+      1206,
+      1207,
+      1400,
+      1401,
+      1402,
+      1403,
+      1404,
+      1405
+    ],
+    "overlay": [
+      901,
+      1000,
+      1001,
+      1002,
+      1003,
+      1004
+    ]
+  },
+  "measured": {
+    "estimateOverOutline": 0.999074,
+    "nullClassRecords": 0,
+    "outlines": 247,
+    "outlinesWithNoCell": [
+      "VA"
+    ],
+    "records": 40395
+  },
+  "method": {
+    "clips": "v004's level-2 composite at 100 m (EPSG:4326), each country's box snapped outward to its grid, cells unchanged except that every cell of a 256 × 256-cell tile whose box doesn't intersect the country's Natural Earth 1:50m outline is set to nodata; cloud-optimized GeoTIFF (DEFLATE level 9, no predictor, 256 px blocks, nearest-neighbour overviews); habitat_clips.parquet holds the same cells as PostGIS raster WKB, one row per tile holding a class cell (tiles numbered row-major from the upper left)",
+    "countries": "method 3 (003 §5): v004's 1 km level-2 fractions (EPSG:4326, 0.009915667822884942° cells); per country, Σ fraction ÷ 1000 × the cell's geodesic area (WGS84) over the cells whose centre is inside its Natural Earth 1:50m outline (overlapping outlines both count a shared cell); partition classes only (open-water overlay 901, 1000, 1001, 1002, 1003, 1004 left out); km² rounded to 0.01; estimated from a map, not measured",
+    "records": "the record's 1 km cell: the partition class with the largest fraction, ties to the lowest code; NULL when the cell holds none; the map's class at that place, not the species' habitat"
+  },
   "source": {
     "citation": "Jung, M., Dahal, P.R., Butchart, S.H.M., Donald, P.F., De Lamo, X., Lesiv, M., Kapos, V., Rondinini, C., Visconti, P. (2020). A global map of terrestrial habitat types. Scientific Data 7, 256. https://doi.org/10.1038/s41597-020-00599-8. Version 004, https://doi.org/10.5281/zenodo.4058819 (CC BY 4.0).",
     "doi": "10.5281/zenodo.4058819",
     "license": "CC BY 4.0",
     "name": "Jung et al. 2020, habitat map v004",
-    "url": "https://doi.org/10.5281/zenodo.4058819"
+    "url": "https://doi.org/10.5281/zenodo.4058819",
+    "version": "004"
   },
-  "standIn": true
+  "tools": {
+    "gdal": "3.12.2",
+    "geos": "3.14.1",
+    "numpy": "2.5.4",
+    "proj": "9.8.1",
+    "pyarrow": "26.0.0",
+    "pyproj": "3.8.0",
+    "python": "3.12.3",
+    "rasterio": "1.5.2",
+    "shapely": "2.2.0"
+  }
 }

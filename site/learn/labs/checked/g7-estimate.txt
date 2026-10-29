@@ -1,0 +1,8 @@
+-- result: g7-estimate · 20 rows · sha256 9941c849a9ba
+habitat_code | name | cells | map_km2 | est_km2 | pct
+1401 | Arable Land | 253016 | 2530.16 | 2474.07 | 36.5
+109 | Forest – Subtropical/tropical moist montane | 178008 | 1780.08 | 1741.50 | 25.7
+106 | Forest – Subtropical/tropical moist lowland | 102946 | 1029.46 | 1006.14 | 14.8
+306 | Shrubland – Subtropical/tropical moist | 36961 | 369.61 | 361.29 | 5.3
+1405 | Urban Areas | 33473 | 334.73 | 327.59 | 4.8
+… 15 more rows

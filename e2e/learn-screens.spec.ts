@@ -1,11 +1,13 @@
 // Learn's screenshots (plan S26, D13 artifacts): the map, f3 (the browser tool, its first block run), d3 (PostGIS, its
-// recorded results), the lab schema and the setup page, each at 1280 and 375 px in light and dark:
+// recorded results), g3 and g7 (GIS in SQL, with their diagrams; L3 S19), the lab schema and the setup page, each at
+// 1280 and 375 px in light and dark:
 // <page>-<width>-<scheme>.png in E2E_ARTIFACTS. Each page fits its width, and nothing leaves the origin.
 import { expect, test, type Page } from "@playwright/test";
 import { ARTIFACTS, coursePages, firstBrowserBlock, learnContext, rendered, runBlock, waitReady } from "./helpers.ts";
 
 const WIDTHS = [1280, 375];
 const SCHEMES = ["light", "dark"] as const;
+const courseUrl = async (id: string) => (await coursePages()).find((c) => c.page.page.id === id)!.url;
 
 // Each page, and what it does before its screenshots.
 const PAGES: { name: string; url: () => Promise<string>; ready?: (page: Page) => Promise<void> }[] = [
@@ -15,7 +17,9 @@ const PAGES: { name: string; url: () => Promise<string>; ready?: (page: Page) =>
     await runBlock(page.locator(`#q-${id}`));
     expect(await rendered(page, id)).toMatchSnapshot(`${id}.txt`);
   } },
-  { name: "d3", url: async () => (await coursePages()).find((c) => c.page.page.id === "d3")!.url },
+  { name: "d3", url: () => courseUrl("d3") },
+  { name: "g3", url: () => courseUrl("g3") },
+  { name: "g7", url: () => courseUrl("g7") },
   { name: "schema-lab", url: async () => "/learn/schema/lab/" },
   { name: "setup", url: async () => "/learn/setup/" },
 ];

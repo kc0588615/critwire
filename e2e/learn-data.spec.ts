@@ -1,9 +1,10 @@
 // /learn/data/ (plan D15, 004 §7.7, L1's part): every file against manifest.json (sha256, size, rows, columns), the
-// occurrences and datasets against data/, the loader's tables against counts from data/, the 50 MB cap, sources and
+// occurrences and datasets against data/, the loader's tables against counts from data/, the 120 MB cap, sources and
 // both DOIs, the /v1 inputs, and the index page, with screenshots at 1280 and 375 px. Expectations come from data/ and
 // the manifest, never typed in. The star (/learn/data/star/, plan D9): every served file through the Power BI input
 // check (star-check: header, rows, sha256, keys unique and filled, foreign keys found), its unknown members, `NA` read as
-// text, and every Power BI block's inputs.
+// text, and every Power BI block's inputs. The habitat files (L3): served as habitat.json records them, keyed to the
+// sample's records and the map's classes, the clips as TIFFs served in byte ranges, credited to Jung v004.
 import { expect, test, type Page, type TestInfo } from "@playwright/test";
 import { existsSync } from "node:fs";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
@@ -18,7 +19,7 @@ import { SAMPLE_COLUMNS } from "../scripts/learn/sample-files.ts";
 import { checkInput, readCsv, readManifest, unknownMemberErrors, type CsvTable } from "../scripts/learn/star-check.ts";
 import { ARTIFACTS, csvRows, distPath, learnManifest, openDuckDB, ORIGIN, records, repoPath, sha256, sqlText, type DuckDB } from "./helpers.ts";
 
-const CAP = 50_000_000; // the owner's 50 MB rule (004 §4.4)
+const CAP = 120_000_000; // the owner's cap (004 §4.4; raised from 50 MB in L3, H5)
 const PAGES = ["manifest.json", "index.html"];
 const LOADER = "postgis/learn_curriculum.sql";
 const SAMPLE_FILES = ["occurrences.parquet", "occurrences.csv", "datasets.csv"];
@@ -105,12 +106,15 @@ test("the loader's tables equal counts from data/", async () => {
     species_countries: species.reduce((n, s) => n + (s.range.countriesWithOpenRecords?.length ?? 0), 0),
     datasets: Object.keys(contributions.datasets).length,
     occurrences: contributions.records,
-    ...Object.fromEntries(Object.entries<{ rows: number }>(provenance).map(([file, { rows }]) => [file.replace(/\.\w+$/, ""), rows])),
+    // Every provenance entry with rows is a lab table (the clips' .tif files have none: they're in habitat_clips).
+    ...Object.fromEntries(Object.entries<{ rows?: number }>(provenance).filter(([, f]) => f.rows !== undefined)
+      .map(([file, { rows }]) => [file.replace(/\.\w+$/, ""), rows])),
   };
+  expect(Object.keys(expected)).toHaveLength(16);
   expect(manifest.files[LOADER]?.tables).toEqual(expected);
 });
 
-test("the folder is at most 50,000,000 bytes; the manifest's total is its files'", async () => {
+test("the folder is at most 120,000,000 bytes; the manifest's total is its files'", async () => {
   const sizes = await builtSizes();
   expect(totalBytes(sizes)).toBeLessThanOrEqual(CAP);
   expect(manifest.cap).toBe(CAP);
@@ -177,6 +181,57 @@ test("the star: the manifest lists star/; each served file passes the input chec
   }
 });
 
+test("the habitat files: served as habitat.json records them, credited to Jung v004 with no stand-in", async ({ request }) => {
+  const habitat = await readJson("data/learn/habitat.json");
+  expect(habitat.standIn).toBeUndefined();
+  const names = ["clips/cr.tif", "clips/tas.tif", "country_habitats.parquet", "habitat_classes.parquet", "habitat_clips.parquet", "occurrence_habitats.parquet"];
+  expect(Object.keys(habitat.files).sort()).toEqual(names);
+  for (const [name, want] of Object.entries<{ bytes: number; sha256: string }>(habitat.files)) {
+    const body = await (await request.get(`/learn/data/${name}`)).body();
+    expect({ bytes: body.length, sha256: sha256(body) }, name).toEqual({ bytes: want.bytes, sha256: want.sha256 });
+    for (const s of manifest.files[name]!.sources.filter((x) => x.name.startsWith("Jung"))) {
+      expect(s.name, name).toBe("Jung et al. 2020, habitat map v004");
+      expect(s.doi, name).toBe("10.5281/zenodo.4058819");
+    }
+    expect(manifest.files[name]!.sources.some((x) => x.name.startsWith("Jung")), name).toBe(true);
+  }
+  expect(JSON.stringify(manifest)).not.toContain("stand-in");
+});
+
+test("occurrence_habitats: one row per sample record; every class code, there and in country_habitats, is a habitat_classes row", async () => {
+  const committed = `read_csv(${sqlText(SAMPLE_CSV)}, header = true, sample_size = -1)`;
+  const [r] = await db.rows(`SELECT
+    (SELECT count(*) FROM ${reader("occurrence_habitats.parquet")})::INTEGER AS n,
+    (SELECT count(DISTINCT occurrence_id) FROM ${reader("occurrence_habitats.parquet")})::INTEGER AS ids,
+    (SELECT count(*) FROM (SELECT occurrence_id FROM ${reader("occurrence_habitats.parquet")} EXCEPT SELECT id FROM ${committed}))::INTEGER AS extra,
+    (SELECT count(*) FROM (SELECT id FROM ${committed} EXCEPT SELECT occurrence_id FROM ${reader("occurrence_habitats.parquet")}))::INTEGER AS missing,
+    (SELECT count(*) FROM ${reader("occurrence_habitats.parquet")} WHERE habitat_code IS NOT NULL
+       AND habitat_code NOT IN (SELECT code FROM ${reader("habitat_classes.parquet")}))::INTEGER AS unknown_record_codes,
+    (SELECT count(*) FROM ${reader("country_habitats.parquet")}
+       WHERE habitat_code NOT IN (SELECT code FROM ${reader("habitat_classes.parquet")}))::INTEGER AS unknown_country_codes`);
+  expect(r).toEqual({ n: contributions.records, ids: contributions.records, extra: 0, missing: 0, unknown_record_codes: 0, unknown_country_codes: 0 });
+});
+
+test("habitat_clips.parquet: columns clip, tile, rast; one row per kept tile, as many as habitat.json's clips list", async () => {
+  const { clips } = await readJson("data/learn/habitat.json");
+  const tiles = Object.values<{ tiles: number }>(clips).reduce((n, c) => n + c.tiles, 0);
+  const columns = (await db.rows(`DESCRIBE SELECT * FROM ${reader("habitat_clips.parquet")}`)).map((r) => r.column_name);
+  expect(columns).toEqual(["clip", "tile", "rast"]);
+  const [r] = await db.rows(`SELECT count(*)::INTEGER AS n, count(DISTINCT (clip, tile))::INTEGER AS keys FROM ${reader("habitat_clips.parquet")}`);
+  expect(r).toEqual({ n: tiles, keys: tiles });
+  expect(tiles).toBeGreaterThan(Object.keys(clips).length);
+});
+
+test("clips/*.tif start with TIFF's magic and are served in byte ranges (206, the same bytes)", async ({ request }) => {
+  for (const name of ["clips/cr.tif", "clips/tas.tif"]) {
+    const whole = await (await request.get(`/learn/data/${name}`)).body();
+    expect([...whole.subarray(0, 4)], name).toEqual([0x49, 0x49, 0x2a, 0x00]); // "II*\0": little-endian TIFF
+    const part = await request.get(`/learn/data/${name}`, { headers: { Range: "bytes=0-1023" } });
+    expect(part.status(), name).toBe(206);
+    expect(Buffer.compare(await part.body(), whole.subarray(0, 1024)), name).toBe(0);
+  }
+});
+
 const cellTexts = (page: Page, rows: string) =>
   page.locator(rows).evaluateAll((trs) => trs.map((tr) => [...tr.querySelectorAll("td")].map((td) => td.textContent!.trim())));
 
@@ -193,6 +248,12 @@ test("the index lists every file, every sample dataset and both DOIs", async ({ 
     expect(doi).toBeTruthy();
     await expect(page.locator(`#sample a[href="https://doi.org/${doi}"]`)).toBeVisible();
   }
+
+  // The habitat summaries are estimates from a map, and say so; nothing is a stand-in any more.
+  for (const name of ["country_habitats.parquet", "occurrence_habitats.parquet"]) {
+    await expect(page.locator(`#files tbody tr:has(a[href="/learn/data/${name}"]) .note`), name).toContainText(/estimated/i);
+  }
+  await expect(page.locator("main")).not.toContainText("stand-in");
 });
 
 async function screenshot(page: Page, info: TestInfo, width: number) {

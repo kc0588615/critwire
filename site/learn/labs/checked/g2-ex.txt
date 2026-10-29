@@ -1,0 +1,5 @@
+-- result: g2-ex · 3 rows · sha256 0aa66131e1ef
+name | valid | reason | area | linework_area | structure_area
+hole outside its shell | false | Hole lies outside shell | 15 | 17 | 17
+shell inside a shell | false | Nested shells | 17 | 15 | 16
+shell with a hole | true | NULL | 15 | 15 | 15

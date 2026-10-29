@@ -46,14 +46,14 @@ const learn = await readLearnInputs();
 const habitat = { name: "Jung et al. 2020, habitat map v004", license: "CC BY 4.0", citation: "Jung (2020).", doi: "10.5281/zenodo.4058819", url: "https://doi.org/10.5281/zenodo.4058819" };
 const registration = { doi: "10.15468/dd.5sthtk", citation: "Derived dataset GBIF.org (28 October 2026) Filtered export of GBIF occurrence data https://doi.org/10.15468/dd.5sthtk" } as Registration;
 
-test("ST4 labSources: the download's citation and DOI, its derived-dataset DOI when registered, habitat marked stand-in", () => {
+test("ST4 labSources: the download's citation and DOI, its derived-dataset DOI when registered, habitat named as habitat.json says (no stand-in mark)", () => {
   const s = labSources({ download: learn.download, registration, habitat });
   assert.equal(s["gbif-sample"]!.citation, "GBIF.org (23 October 2026) GBIF Occurrence Download https://doi.org/10.15468/dl.fbpk9w");
   assert.equal(s["gbif-sample"]!.doi, "10.15468/dl.fbpk9w");
   assert.equal(s["gbif-sample"]!.license, "CC BY 4.0");
   assert.deepEqual(s["gbif-sample"]!.derivedDataset, { doi: registration.doi, citation: registration.citation, url: `https://doi.org/${registration.doi}` });
   assert.equal(labSources({ download: learn.download, registration: null, habitat })["gbif-sample"]!.derivedDataset, undefined);
-  assert.match(s["jung-habitat"]!.name, /\(stand-in summaries\)$/);
+  assert.equal(s["jung-habitat"]!.name, habitat.name);
   assert.throws(() => labSources({ download: { ...learn.download, license: "http://creativecommons.org/licenses/by-nc/4.0/legalcode" }, registration, habitat }),
     /GBIF download license .*by-nc.* isn't one critwire publishes/);
 });
@@ -62,4 +62,10 @@ test("ST4 every LAB_FILES entry credits from the real context without error", as
   const real = await labCreditContext({ download: learn.download, registration, datasets: [{ dataset_key: "k", title: "T", publisher: "P" }] });
   for (const file of Object.keys(LAB_FILES)) assert.ok(credits(file, real).length > 0, file);
   assert.equal(credits("postgis/learn_curriculum.sql", real).length, 5);
+  // L3's habitat files (plan §2 Credits): the map, plus what each was cut by or joined to.
+  const names = (file: string) => credits(file, real).map((c) => c.name);
+  const jung = habitat.name;
+  assert.deepEqual(names("country_habitats.parquet"), [jung, "Natural Earth"]);
+  assert.deepEqual(names("occurrence_habitats.parquet"), [jung, "GBIF occurrence download"]);
+  for (const f of ["habitat_clips.parquet", "clips/cr.tif", "clips/tas.tif"]) assert.deepEqual(names(f), [jung], f);
 });

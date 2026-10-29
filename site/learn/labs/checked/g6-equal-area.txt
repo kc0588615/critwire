@@ -1,0 +1,4 @@
+-- result: g6-equal-area · 2 rows · sha256 6c9d4a8a5f33
+grid | cells | min_km2 | max_km2 | max_over_min
+EPSG:3577, edge 10 km | 296 | 259.808 | 259.808 | 1.0000
+EPSG:4326, edge 0.1° | 317 | 232.889 | 244.137 | 1.0483

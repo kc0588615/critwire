@@ -1,0 +1,8 @@
+-- result: g1-area · 9 rows · sha256 0d3150fc692e
+name | lat | geography_km2 | albers_km2 | mercator_km2 | stretch | one_over_cos2
+Tasmania | -41.9 | 67697 | 67696 | 122485 | 1.81 | 1.81
+Victoria | -36.9 | 227926 | 227940 | 356935 | 1.57 | 1.56
+Australian Capital Territory | -35.5 | 2308 | 2308 | 3491 | 1.51 | 1.51
+Jervis Bay Territory | -35.2 | 38 | 38 | 57 | 1.50 | 1.50
+New South Wales | -32.2 | 798508 | 798822 | 1124405 | 1.41 | 1.40
+… 4 more rows

@@ -39,6 +39,10 @@
 // SS5: row statements with different columns, a committed change to a watched schema, a window left in a
 //      transaction → each fails, named.
 // SS6: an abort mid-wait → the run rejects with its reason, and both window backends are gone.
+// NR4: a `-- needs: raster` block needs a grant or setting the lab role lacks → a raster made in SQL runs as
+//      critwire_lab, through runBlocks (its raster check passes on critwire_dev); GDAL's version reads as a number.
+// NR5: a server without postgis_raster sends the learner to a fix that changes nothing (--setup) → the refusal names
+//      CREATE EXTENSION postgis_raster and the database.
 import assert from "node:assert/strict";
 import { mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -47,11 +51,11 @@ import { after, before, test } from "node:test";
 import type postgres from "postgres";
 import { loadEnv, requireEnv } from "../env.ts";
 import { parseBlock, type Block } from "./blocks.ts";
-import { testDatabase, withLabSchema } from "../test-db.ts";
+import { testDatabase, withLabSchema, withScratchDatabase } from "../test-db.ts";
 import { readTables } from "./check.ts";
 import { LAB_ROLE, libpqTarget, pgConnect, urlTarget } from "./pg.ts";
 import { learnObjects } from "./leaks.ts";
-import { assertSession, openSession, runBlock, runBlocks, type LabSession, type Watch } from "./runner.ts";
+import { assertSession, openSession, runBlock, runBlocks, serverVersions, type LabSession, type Watch } from "./runner.ts";
 
 loadEnv();
 const target = urlTarget(requireEnv("LEARN_PG_URL"), "LEARN_PG_URL");
@@ -438,4 +442,24 @@ test("SS6 an abort mid-wait rejects with its reason; both window backends are go
   assert.equal(windowPids.length, 2);
   assert.deepEqual(await windowsLeft(), []);
   assert.equal(shown(await run(block("ss6-after", `SELECT v FROM ${schema}.ss WHERE id = 1`))), "v|NULL");
+});
+
+test("NR4 a `-- needs: raster` block (a raster made in SQL) runs as the lab role; GDAL's version is read", async () => {
+  const checked = join(dir, "checked-raster");
+  const b = block("nr4", "SELECT current_user::text AS role, ST_Value(ST_AddBand(ST_MakeEmptyRaster(2, 2, 0, 0, 1, -1, 0, 0, 4326), '16BUI'::text, 106, 0), 1, 1) AS v", ["-- needs: raster"]);
+  await runBlocks(session, [b], { update: true, checkedDir: checked, known, log: () => {} });
+  assert.equal(readFileSync(join(checked, "nr4.txt"), "utf8").split("\n").slice(1).join("|"), `role | v|${LAB_ROLE} | 106`);
+  assert.match((await serverVersions(session.sql)).gdal, /^\d+\.\d+(\.\d+)?$/);
+});
+
+test("NR5 a server without postgis_raster is refused, naming CREATE EXTENSION postgis_raster", async () => {
+  await withScratchDatabase(["postgis"], async (scratch) => {
+    const sql = pgConnect(scratch);
+    try {
+      await assert.rejects(serverVersions(sql),
+        new RegExp(`PostGIS raster is missing in ${scratch.database} \\(the lab loader needs it\\): CREATE EXTENSION postgis_raster there as the superuser, then re-run`));
+    } finally {
+      await sql.end();
+    }
+  });
 });

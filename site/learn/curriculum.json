@@ -239,7 +239,7 @@
       "prereqs": [
         "f3"
       ],
-      "state": "planned",
+      "state": "built",
       "skill": "SRIDs, `ST_Transform`, geometry vs geography, Web Mercator's area error",
       "questions": [
         "How big is Tasmania in EPSG:3857, in EPSG:3577 and as geography?",
@@ -258,7 +258,7 @@
       "prereqs": [
         "g1"
       ],
-      "state": "planned",
+      "state": "built",
       "skill": "The loader, WKT and WKB, `ST_IsValid`, `ST_MakeValid`",
       "questions": [
         "Which shapes are invalid, and why?",
@@ -277,7 +277,7 @@
       "prereqs": [
         "g2"
       ],
-      "state": "planned",
+      "state": "built",
       "skill": "`ST_Contains`, `ST_Covers`, `ST_Intersects`; point in polygon; records on boundaries",
       "questions": [
         "Do GBIF's country codes agree with the country outlines?",
@@ -296,7 +296,7 @@
       "prereqs": [
         "g3"
       ],
-      "state": "planned",
+      "state": "built",
       "skill": "Distances on the ellipsoid, `ST_DWithin`, buffers, `ST_Intersection`",
       "questions": [
         "How much of each country does each ecoregion cover?",
@@ -316,7 +316,7 @@
         "g3",
         "d3"
       ],
-      "state": "planned",
+      "state": "built",
       "skill": "GiST, the `&&` operator, nearest neighbours with `<->`, reading spatial plans",
       "questions": [
         "Which record is nearest to a point, found fast?",
@@ -335,7 +335,7 @@
       "prereqs": [
         "g4"
       ],
-      "state": "planned",
+      "state": "built",
       "skill": "`ST_HexagonGrid` in an equal-area SRID; the modifiable areal unit problem (MAUP)",
       "questions": [
         "How many Tasmanian devil records fall in each 5 km hexagon, and in each 10 km one?",
@@ -354,7 +354,7 @@
       "prereqs": [
         "g6"
       ],
-      "state": "planned",
+      "state": "built",
       "skill": "Value at a point; `ST_Clip`, `ST_ValueCount`; estimated areas and their error",
       "questions": [
         "Which habitat classes hold Costa Rica's records?",

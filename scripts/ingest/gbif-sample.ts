@@ -8,11 +8,10 @@
 // species. Only after every check does it write data/raw/gbif-sample/{download.json,datasets.json,sample.csv}.
 // Country keys are derive's (D7), so sample.csv keeps GBIF's raw countryCode.
 import { execFile, spawn } from "node:child_process";
-import { mkdir, mkdtemp, rename, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createInterface } from "node:readline";
-import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import { deriveCore, readCoreInputs, type CoreInputs } from "../derive/pipeline.ts";
 import { allPages } from "../gbif/pages.ts";
@@ -20,7 +19,7 @@ import { namedState } from "../gbif/state.ts";
 import { loadEnv } from "../env.ts";
 import { basicAuth, postOnce } from "../gbif/post.ts";
 import { classifyPost } from "../gbif/register.ts";
-import { downloadFile, getJson, sha256File } from "../http.ts";
+import { downloadFile, getJson, hashFile } from "../http.ts";
 import { formatJson, readOptionalText } from "../json.ts";
 import {
   decideDownload, DOWNLOAD_KEY, downloadRequest, parseDownloadKey, sameRequest, type DownloadArgs, type DownloadIntent,
@@ -34,6 +33,7 @@ import {
 } from "../learn/sample-files.ts";
 import { utcDate } from "../raw.ts";
 import { occurrenceSearchQuery } from "./gbif.ts";
+import { publishFiles } from "./publish.ts";
 
 const API = "https://api.gbif.org/v1";
 // The zip is ~35 MB.
@@ -183,8 +183,8 @@ function sampleCsv(rows: SampleRow[]): string {
   return [SAMPLE_COLUMNS.join(","), ...rows.map((r) => SAMPLE_COLUMNS.map((c) => cell(r[c])).join(","))].join("\n") + "\n";
 }
 
-// Reads, checks and samples download `key` for these species, then writes the three files into `dest` (each to a temp
-// file, then renamed). Nothing is written unless every check passed.
+// Reads, checks and samples download `key` for these species, then publishes the three files into `dest`
+// (publishFiles). Nothing is written unless every check passed.
 export async function ingestGbifSample({ api = API, dest = sampleDir, key, species }: { api?: string; dest?: URL; key: string; species: SampleSpecies[] }): Promise<void> {
   const built = downloadRequest(species.map((s) => s.gbif));
   const stored = await readDownload(dest);
@@ -203,7 +203,7 @@ export async function ingestGbifSample({ api = API, dest = sampleDir, key, speci
     const zipPath = join(tmp, `${key}.zip`);
     // A re-run of the same key must read the same zip; a new key's zip is hashed here for the first time.
     await downloadFile(meta.downloadLink, zipPath, { sha256: stored?.key === key ? stored.zip.sha256 : null, bytes: meta.size, timeoutMs: ZIP_TIMEOUT_MS });
-    zip = { bytes: meta.size, sha256: await sha256File(zipPath) };
+    zip = { bytes: meta.size, sha256: await hashFile(zipPath) };
     records = await readZip(zipPath, key, { downloadYear: new Date(meta.created).getUTCFullYear(), datasetKeys: new Set(Object.keys(listing)) });
   } finally {
     await rm(tmp, { recursive: true, force: true });
@@ -223,10 +223,7 @@ export async function ingestGbifSample({ api = API, dest = sampleDir, key, speci
     "datasets.json": formatJson({ retrieved: utcDate(), downloadKey: key, datasets } satisfies SampleDatasets, { canonical: true }),
     "sample.csv": sampleCsv(rows),
   };
-  await mkdir(dest, { recursive: true });
-  const paths = SAMPLE_FILES.map((f) => fileURLToPath(new URL(f, dest)));
-  for (const [i, f] of SAMPLE_FILES.entries()) await writeFile(`${paths[i]}.tmp-${process.pid}`, texts[f]);
-  for (const path of paths) await rename(`${path}.tmp-${process.pid}`, path);
+  await publishFiles(dest, Object.fromEntries(SAMPLE_FILES.map((f) => [f, { text: texts[f] }])));
   const publishers = new Set(datasets.map((d) => d.publishingOrganizationKey)).size;
   console.log(`ingest gbif-sample: ${key}: ${records.length} records → ${open} effective-open → ${rows.length} sample ` +
     `(≤ ${SAMPLE_RULES.cap} per species); ${datasets.length} datasets, ${publishers} publishers`);

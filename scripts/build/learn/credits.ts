@@ -38,7 +38,11 @@ export const LAB_FILES: Record<string, readonly string[]> = {
   "ecoregions.parquet": ["resolve"],
   "biomes.csv": ["resolve"],
   "habitat_classes.parquet": ["jung-habitat"],
-  "country_habitats.parquet": ["jung-habitat"],
+  "country_habitats.parquet": ["jung-habitat", "natural-earth"],
+  "occurrence_habitats.parquet": ["jung-habitat", "gbif-sample"],
+  "habitat_clips.parquet": ["jung-habitat"],
+  "clips/cr.tif": ["jung-habitat"],
+  "clips/tas.tif": ["jung-habitat"],
   "postgis/learn_curriculum.sql": ["critwire", "natural-earth", "gbif-sample", "resolve", "jung-habitat"],
   // The star (build/learn/star.ts STAR_FILES): each table from the lab tables it is built from.
   "star/dim_country.csv": ["natural-earth"],
@@ -86,7 +90,7 @@ const downloadCitation = ({ doi, created }: SampleDownload) =>
   `GBIF.org (${new Date(created).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" })}) GBIF Occurrence Download https://doi.org/${doi}`;
 
 // The lab's sources. registration: the sample's current derived dataset, null in a --draft build. habitat: data/learn/
-// habitat.json's source (the stand-ins until L3).
+// habitat.json's source (pnpm ingest habitat's).
 export function labSources({ download, registration, habitat }: { download: SampleDownload; registration: Registration | null; habitat: LabSource }): Record<string, LabSource> {
   const license = GBIF_LICENSES[download.license];
   if (!license) throw new Error(`GBIF download license ${download.license} isn't one critwire publishes (${Object.keys(GBIF_LICENSES).join(", ")})`);
@@ -106,8 +110,7 @@ export function labSources({ download, registration, habitat }: { download: Samp
       url: "https://ecoregions.appspot.com/",
       doi: "10.1093/biosci/bix014",
     },
-    // Marked on every credit: these are A2's stand-in summaries until L3's pnpm ingest habitat replaces them.
-    "jung-habitat": { ...habitat, name: `${habitat.name} (stand-in summaries)` },
+    "jung-habitat": habitat,
   };
 }
 

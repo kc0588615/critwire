@@ -1,0 +1,4 @@
+-- result: g6-land · 2 rows · sha256 258e45aa5cd2
+edge_m | cell_km2 | cells | all_land | under_half_land | cells_km2 | island_km2
+5000 | 64.95 | 1094 | 884 | 107 | 71057 | 64246
+10000 | 259.81 | 296 | 199 | 47 | 76903 | 64246

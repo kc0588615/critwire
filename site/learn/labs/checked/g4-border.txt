@@ -1,0 +1,4 @@
+-- result: g4-border · 2 rows · sha256 539a1bf4a653
+neighbour | border_km | records_within_10km | coded_cr | coded_neighbour
+NI | 267 | 5 | 1 | 4
+PA | 250 | 9 | 6 | 3

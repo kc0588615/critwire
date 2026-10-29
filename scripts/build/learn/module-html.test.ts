@@ -32,7 +32,7 @@ const ctx = (over: Partial<PageContext> = {}): PageContext => ({
     ["x1-pg", "-- result: x1-pg · 1 row · sha256 000000000000\ntag\n</pre>"],
     ["x1-plan", "-- result: x1-plan · 2 rows · sha256 111111111111\nQUERY PLAN\nIndex Scan using t_a_idx on t (actual rows=9 loops=1)\n  Index Cond: (a < 3)"],
   ]),
-  stamp: { checked: "2026-10-28", versions: { postgresql: "16.15", postgis: "3.4.2", geos: "3.12.1" } },
+  stamp: { checked: "2026-10-28", versions: { postgresql: "16.15", postgis: "3.4.2", geos: "3.12.1", gdal: "3.8.4" } },
   download: "x1.sql",
   star: { "dim_country.csv": { rows: 250, sha256: "ab".repeat(32) } },
   draft: false,
@@ -79,7 +79,7 @@ test("MH4 a browser block is an editor with its id, `-- after:` chain and probe 
 
 test("MH5 a PostGIS block: code, its recorded result, the download; the versions line once per page", () => {
   const html = render("{{block:x1-pg}}{{block:x1-pg2}}");
-  assert.equal(count(html, "Checked 2026-10-28 on PostgreSQL 16.15, PostGIS 3.4.2, GEOS 3.12.1."), 1);
+  assert.equal(count(html, "Checked 2026-10-28 on PostgreSQL 16.15, PostGIS 3.4.2, GEOS 3.12.1, GDAL 3.8.4."), 1);
   assert.ok(html.indexOf("Checked 2026-10-28") < html.indexOf('id="q-x1-pg"'));
   assert.ok(html.includes('<pre class="recorded">\n-- result: x1-pg · 1 row · sha256 000000000000\ntag\n&lt;/pre&gt;</pre>'));
   assert.ok(html.includes('<p class="untested">Not run here: it needs two psql windows.</p>'));

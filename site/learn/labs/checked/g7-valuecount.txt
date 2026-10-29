@@ -1,0 +1,8 @@
+-- result: g7-valuecount · 20 rows · sha256 f1cb0c12721a
+habitat_code | cells
+1401 | 253016
+109 | 178008
+106 | 102946
+306 | 36961
+1405 | 33473
+… 15 more rows

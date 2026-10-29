@@ -3,9 +3,13 @@ import type { CountriesFile } from "../derive/naturalearth.ts";
 import { assertDerivedFiles, deriveAll, readDeriveInputs } from "../derive/pipeline.ts";
 import type { LearnResult } from "../derive/sample.ts";
 import type { Registration } from "../gbif/derived-dataset.ts";
-import { readLabFiles, type LabFile } from "../learn/lab-files.ts";
+import { assertHabitatFresh, type HabitatFreshness } from "../ingest/habitat.ts";
+import { readJson } from "../json.ts";
+import { labDataDir, readLabFiles, type LabFile } from "../learn/lab-files.ts";
 import type { Species } from "../species.ts";
-import { assertRecordKeys } from "./columns.ts";
+import { assertRecordKeys, csvColumns, RECORD_COLUMNS } from "./columns.ts";
+import { checkV1Contract, contractFile, type V1Contract } from "./contract.ts";
+import { COUNTRY_TYPES } from "./countries.ts";
 import { assertCap, fileSizes, totalBytes } from "./learn/cap.ts";
 import { credits, labCreditContext, LAB_FILES, type CreditContext } from "./learn/credits.ts";
 import { assertLearnProjection } from "./learn/projection.ts";
@@ -24,7 +28,7 @@ export interface BuildInputs {
   labBytes: number;
 }
 
-// The committed lab data (plan D3, 004 §4.4), under the 50 MB cap together.
+// The committed lab data (plan D3, 004 §4.4), under the 120 MB cap together.
 const COMMITTED_LAB_DIRS = ["raw/gbif-sample/", "learn/", "gbif-learn-sample/"] as const;
 const dataDir = new URL("../../data/", import.meta.url);
 
@@ -65,7 +69,20 @@ export async function readBuildInputs({ draft }: { draft: boolean }): Promise<Bu
 
   assertLearnProjection(species);
 
+  // The /v1 contract (L3 plan §7.1): writers and data against contracts/v1.json, before any load or write.
+  const contract = checkV1Contract(await readJson<V1Contract>(contractFile), {
+    recordColumns: RECORD_COLUMNS, csvColumns: csvColumns(), countryColumns: COUNTRY_TYPES, species, countries: result.countries.rows,
+  });
+  if (contract.problems.length) throw new Error(`contracts/v1.json:\n${contract.problems.join("\n")}`);
+  for (const a of contract.additions) console.log(a);
+
   const labFiles = await readLabFiles();
+  // The habitat files were computed from these outlines and records (L3 plan §2): in --draft too, since a stale
+  // occurrence_habitats would break the loader's foreign key.
+  const { inputs: habitatInputs } = await readJson<{ inputs: HabitatFreshness }>(new URL("habitat.json", labDataDir));
+  const shapes = labFiles.find((f) => f.name === "country_shapes.parquet");
+  if (!shapes) throw new Error("data/learn/country_shapes.parquet missing");
+  assertHabitatFresh(habitatInputs, { countryShapesSha256: shapes.sha256, occurrences: result.learn.occurrences });
   const labSizes = await committedLabSizes();
   assertCap(`committed lab data (data/{${COMMITTED_LAB_DIRS.join(",")}})`, labSizes);
   assertDois({ countries: result.doi, "learn-sample": result.learn.doi }, { draft });

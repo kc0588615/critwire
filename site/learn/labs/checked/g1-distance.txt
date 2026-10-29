@@ -1,0 +1,3 @@
+-- result: g1-distance · 1 row · sha256 49e8f70e0b8d
+degrees | geography_km | albers_km | mercator_km
+1.4525 | 160.72 | 156.57 | 217.30

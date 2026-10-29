@@ -1,0 +1,6 @@
+-- result: g1-columns · 4 rows · sha256 92869bd94553
+table_name | column_name | type | srid
+admin1_shapes | geom | MULTIPOLYGON | 4326
+country_shapes | geom | MULTIPOLYGON | 4326
+ecoregions | geom | MULTIPOLYGON | 4326
+occurrences | geom | POINT | 4326

@@ -1,14 +1,17 @@
 -- critwire Learn, the lab database: what comes after the rows are in (lab-ddl.sql has the tables).
 -- 1. Shapes: base64 WKB → geometry in WGS 84 (SRID 4326), one type per column (polygons become MultiPolygons);
---    each occurrence's point, a generated column from its longitude and latitude.
+--    each occurrence's point, a generated column from its longitude and latitude; the clips: base64 WKB → raster, one
+--    band of 16-bit class codes in SRID 4326.
 -- 2. Primary keys, unique keys and foreign keys, as in the browser's schema.
--- 3. GiST indexes on the shapes and the points.
+-- 3. GiST indexes on the shapes, the points and the clips' tiles.
 
 ALTER TABLE country_shapes ALTER COLUMN geom TYPE geometry(MultiPolygon, 4326) USING ST_Multi(ST_GeomFromWKB(decode(geom, 'base64'), 4326));
 ALTER TABLE admin1_shapes  ALTER COLUMN geom TYPE geometry(MultiPolygon, 4326) USING ST_Multi(ST_GeomFromWKB(decode(geom, 'base64'), 4326));
 ALTER TABLE ecoregions     ALTER COLUMN geom TYPE geometry(MultiPolygon, 4326) USING ST_Multi(ST_GeomFromWKB(decode(geom, 'base64'), 4326));
 ALTER TABLE occurrences ADD COLUMN geom geometry(Point, 4326)
   GENERATED ALWAYS AS (ST_SetSRID(ST_MakePoint(longitude, latitude), 4326)) STORED;
+ALTER TABLE habitat_clips ALTER COLUMN rast TYPE raster USING ST_RastFromWKB(decode(rast, 'base64'));
+ALTER TABLE habitat_clips ADD CHECK (ST_SRID(rast) = 4326 AND ST_NumBands(rast) = 1 AND ST_BandPixelType(rast, 1) = '16BUI');
 
 ALTER TABLE taxa ADD PRIMARY KEY (name);
 ALTER TABLE taxa ADD FOREIGN KEY (parent_name) REFERENCES taxa (name);
@@ -62,7 +65,15 @@ ALTER TABLE country_habitats ADD PRIMARY KEY (country_code, habitat_code);
 ALTER TABLE country_habitats ADD FOREIGN KEY (country_code) REFERENCES countries (code);
 ALTER TABLE country_habitats ADD FOREIGN KEY (habitat_code) REFERENCES habitat_classes (code);
 
+ALTER TABLE occurrence_habitats ADD PRIMARY KEY (occurrence_id);
+ALTER TABLE occurrence_habitats ADD FOREIGN KEY (occurrence_id) REFERENCES occurrences (id);
+ALTER TABLE occurrence_habitats ADD FOREIGN KEY (habitat_code) REFERENCES habitat_classes (code);
+
+ALTER TABLE habitat_clips ADD PRIMARY KEY (clip, tile);
+
 CREATE INDEX ON country_shapes USING gist (geom);
 CREATE INDEX ON admin1_shapes USING gist (geom);
 CREATE INDEX ON ecoregions USING gist (geom);
 CREATE INDEX ON occurrences USING gist (geom);
+-- Each tile's footprint, as raster2pgsql -I makes it: ST_Intersects finds the tiles a shape touches.
+CREATE INDEX ON habitat_clips USING gist (ST_ConvexHull(rast));

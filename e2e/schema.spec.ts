@@ -92,6 +92,14 @@ test("each schema page: its SVG (alt = <title>, linked alone), relationships in 
   const lab = dictionaries(await mmd("lab")).map((d) => d.table);
   const own = dictionaries(await mmd("lab"), { except: schema }).map((d) => d.table);
   for (const t of lab.filter((x) => !own.includes(x))) await expect(page.locator(`a[href="/learn/schema/#t-${t}"]`)).toBeVisible();
+  // L3: the habitat tables are in the lab, so drawn and described with no planned badge, and the page lists none planned.
+  for (const t of ["occurrence_habitats", "habitat_clips"]) {
+    await expect(page.locator(`section.dictionary[data-table="${t}"]`), t).toHaveCount(1);
+    await expect(page.locator(`section.dictionary[data-table="${t}"] .planned`), t).toHaveCount(0);
+  }
+  // H5: the clips are stored as tiles, keyed (clip, tile).
+  await expect(page.locator(`section.dictionary[data-table="habitat_clips"] tbody tr td:first-child`)).toHaveText(["clip", "tile", "rast"]);
+  await expect(page.locator("ul.planned-tables")).toHaveCount(0);
   // The star page links each published file.
   await page.goto("/learn/schema/star/");
   const { planned } = markers(await mmd("star"));
@@ -130,6 +138,8 @@ const DIAGRAMS = [
   { name: "d3-scans", url: "/learn/database-architecture/indexes/" },
   { name: "d4-mvcc", url: "/learn/database-architecture/transactions/" },
   { name: "d6-drill-across", url: "/learn/database-architecture/star/" },
+  { name: "g3-predicates", url: "/learn/gis-in-sql/spatial-join/" },
+  { name: "g7-cells", url: "/learn/gis-in-sql/raster/" },
 ];
 const svgTitle = (svg: string) => /<svg\b[^>]*>\s*<title\b[^>]*>([^<]+)<\/title>/.exec(svg)?.[1]?.trim();
 

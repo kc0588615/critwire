@@ -1,0 +1,326 @@
+{
+  "$comment": "The /v1 contract (L3 plan §7.1), checked by every build (scripts/build/contract.ts). Entries are add-only. Any edit to an entry fails the build (needs /v2) until the owner reviews it; a reviewed wording fix sets the new sha, with a Decisions line.",
+  "species": {
+    "id": {
+      "type": "INTEGER",
+      "null": false,
+      "means": "critwire's integer id for the animal; never changes and is never reused, even after the record is retired",
+      "sha": "efec33eb73ce"
+    },
+    "slug": {
+      "type": "VARCHAR",
+      "null": false,
+      "means": "short lowercase name for web addresses, letters and digits joined by single hyphens; unique; never reused",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "sha": "aebec078fce3"
+    },
+    "scientificName": {
+      "type": "VARCHAR",
+      "null": false,
+      "means": "the animal's scientific (Latin) name, genus first, as critwire's registry holds it",
+      "sha": "9a69926990da"
+    },
+    "commonName": {
+      "type": "VARCHAR",
+      "null": false,
+      "means": "the everyday English name",
+      "sha": "afcd6fbbc311"
+    },
+    "taxonomy": {
+      "type": "STRUCT",
+      "null": false,
+      "means": "the animal's class, order, family and genus; from the Catalogue of Life when its match is settled, else critwire's registry (sources[] says which)",
+      "sha": "308e518d5cdb"
+    },
+    "taxonomy.class": {
+      "type": "VARCHAR",
+      "null": false,
+      "means": "the taxonomic class, scientific name (Mammalia, Reptilia)",
+      "sha": "b0732758b690"
+    },
+    "taxonomy.order": {
+      "type": "VARCHAR",
+      "null": false,
+      "means": "the taxonomic order, scientific name (Carnivora)",
+      "sha": "3b0e4be243bb"
+    },
+    "taxonomy.family": {
+      "type": "VARCHAR",
+      "null": false,
+      "means": "the taxonomic family, scientific name (Felidae)",
+      "sha": "7f396cf152ed"
+    },
+    "taxonomy.genus": {
+      "type": "VARCHAR",
+      "null": false,
+      "means": "the genus, scientific name",
+      "sha": "caef15e3b698"
+    },
+    "ids": {
+      "type": "STRUCT",
+      "null": false,
+      "means": "the animal's ids in outside databases, for joining; each null while its match is unsettled",
+      "sha": "147a7df6199a"
+    },
+    "ids.iucn": {
+      "type": "INTEGER",
+      "null": true,
+      "means": "IUCN Red List species (SIS taxon) id; the id only, no Red List data; null while unsettled",
+      "source": "critwire base",
+      "sha": "a02fa44f2c4e"
+    },
+    "ids.gbif": {
+      "type": "BIGINT",
+      "null": true,
+      "means": "GBIF Backbone Taxonomy usage key (checklist d7dddbf4-2cf0-4f39-9b2a-bb099caae36c); null while the match is unsettled",
+      "source": "GBIF Backbone Taxonomy",
+      "checklistKey": "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c",
+      "sha": "d7beaa654f71"
+    },
+    "ids.col": {
+      "type": "VARCHAR",
+      "null": true,
+      "means": "Catalogue of Life stable taxon id; null while the match is unsettled",
+      "source": "Catalogue of Life",
+      "sha": "37885b68c3d4"
+    },
+    "ids.wikidata": {
+      "type": "VARCHAR",
+      "null": true,
+      "means": "Wikidata item id (Q followed by digits); null while unsettled",
+      "pattern": "^Q[1-9][0-9]*$",
+      "source": "Wikidata",
+      "sha": "778706b4d7c1"
+    },
+    "ids.inaturalist": {
+      "type": "INTEGER",
+      "null": true,
+      "means": "iNaturalist taxon id, as Wikidata states it; null while unsettled",
+      "source": "Wikidata",
+      "sha": "abe7fabec128"
+    },
+    "ids.ncbi": {
+      "type": "INTEGER",
+      "null": true,
+      "means": "NCBI Taxonomy id, as Wikidata states it; null while unsettled",
+      "source": "Wikidata",
+      "sha": "dfa6e6d2e8e4"
+    },
+    "range": {
+      "type": "STRUCT",
+      "null": false,
+      "means": "where the animal has open records; not its native range",
+      "sha": "fc85895a712a"
+    },
+    "range.countriesWithOpenRecords": {
+      "type": "VARCHAR[]",
+      "null": true,
+      "means": "ISO 3166-1 alpha-2 codes, sorted, of countries with CC0/CC BY GBIF records after critwire's filters (present, coordinates without geospatial issues, no zoo or fossil specimens, lone strays outside the main region withheld until reviewed); not native range; never []; null unless range.status is ok",
+      "pattern": "^[A-Z]{2}$",
+      "source": "GBIF.org occurrence search",
+      "sha": "8d48341508f6"
+    },
+    "range.status": {
+      "type": "VARCHAR",
+      "null": false,
+      "means": "why range.countriesWithOpenRecords is or isn't set: ok (at least one country), no-open-records (GBIF match settled, no country left after the filters), identity-unsettled (GBIF match unsettled, nothing counted)",
+      "values": [
+        "ok",
+        "no-open-records",
+        "identity-unsettled"
+      ],
+      "sha": "e81dacf59e73"
+    },
+    "photo": {
+      "type": "STRUCT",
+      "null": true,
+      "means": "one Wikimedia Commons photo of the animal, or null; show its credit and license with it",
+      "sha": "f734775977dd"
+    },
+    "photo.url": {
+      "type": "VARCHAR",
+      "null": false,
+      "means": "the image file's address",
+      "pattern": "^https://",
+      "sha": "17d3a0c46f45"
+    },
+    "photo.credit": {
+      "type": "VARCHAR",
+      "null": false,
+      "means": "who took or owns the photo, as Commons states it",
+      "sha": "1ed11b59b40f"
+    },
+    "photo.license": {
+      "type": "VARCHAR",
+      "null": false,
+      "means": "the photo's license name as Commons states it (CC BY 2.0)",
+      "sha": "6e9be821ba1c"
+    },
+    "photo.page": {
+      "type": "VARCHAR",
+      "null": false,
+      "means": "the photo's Wikimedia Commons file page",
+      "pattern": "^https://",
+      "sha": "f9400176a1bb"
+    },
+    "sources": {
+      "type": "STRUCT[]",
+      "null": false,
+      "means": "where each third-party value came from: one entry per source, each naming the fields it filled; JSON and Parquet only",
+      "sha": "c4d853a0e7cf"
+    },
+    "sources[].source": {
+      "type": "VARCHAR",
+      "null": false,
+      "means": "the source's name (Catalogue of Life)",
+      "sha": "475c7451408b"
+    },
+    "sources[].fields": {
+      "type": "VARCHAR[]",
+      "null": false,
+      "means": "the dotted paths of the fields this source filled (a group path covers its members)",
+      "sha": "d23a3ca008e2"
+    },
+    "sources[].license": {
+      "type": "VARCHAR",
+      "null": false,
+      "means": "the license of the values taken from this source",
+      "sha": "b03dc3cb98ab"
+    },
+    "sources[].retrieved": {
+      "type": "VARCHAR",
+      "null": true,
+      "means": "the UTC date critwire fetched it, YYYY-MM-DD; absent for critwire's own registry",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+      "sha": "d7fd5290b1a9"
+    },
+    "sources[].url": {
+      "type": "VARCHAR",
+      "null": false,
+      "means": "the exact address critwire read, so the answer can be checked",
+      "pattern": "^https://",
+      "sha": "7208fbecaeaa"
+    },
+    "sources[].doi": {
+      "type": "VARCHAR",
+      "null": true,
+      "means": "a DOI to cite the source by (bare, without https://doi.org/)",
+      "pattern": "^10\\.[0-9]{4,}/\\S+$",
+      "sha": "3e4f41739f9c"
+    },
+    "sources[].release": {
+      "type": "STRUCT",
+      "null": true,
+      "means": "for the Catalogue of Life: the release critwire used; absent otherwise",
+      "sha": "6083a4d45e05"
+    },
+    "sources[].release.key": {
+      "type": "INTEGER",
+      "null": false,
+      "means": "the release's ChecklistBank dataset key",
+      "sha": "20a881ca45a1"
+    },
+    "sources[].release.alias": {
+      "type": "VARCHAR",
+      "null": false,
+      "means": "the release's short name (COL26.10)",
+      "sha": "0cf1a3d6e29d"
+    },
+    "sources[].release.version": {
+      "type": "VARCHAR",
+      "null": false,
+      "means": "the release's version string, as ChecklistBank states it",
+      "sha": "6167d00bf9de"
+    },
+    "sources[].release.issued": {
+      "type": "VARCHAR",
+      "null": false,
+      "means": "the release's issue date, YYYY-MM-DD",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+      "sha": "7cdff5f1035e"
+    },
+    "sources[].checklistKey": {
+      "type": "VARCHAR",
+      "null": true,
+      "means": "for GBIF ids: the GBIF checklist the id belongs to; absent otherwise",
+      "sha": "5fc58b8202d3"
+    },
+    "replacedBy": {
+      "type": "INTEGER[]",
+      "null": true,
+      "means": "null unless critwire retired this record; then the critwire ids that replace it",
+      "sha": "c2a533aa82d1"
+    }
+  },
+  "countries": {
+    "code": {
+      "type": "VARCHAR",
+      "null": false,
+      "means": "ISO 3166-1 alpha-2 code, plus XK (Kosovo, as GBIF uses it); one row per code; covers every code the species files and GBIF use",
+      "pattern": "^[A-Z]{2}$",
+      "sha": "87e83b9b27e9"
+    },
+    "name": {
+      "type": "VARCHAR",
+      "null": false,
+      "means": "the everyday English name, exactly as Natural Earth has it (NAME_EN); unique",
+      "sha": "cdb8a4247e3e"
+    },
+    "continent": {
+      "type": "VARCHAR",
+      "null": false,
+      "means": "the continent, exactly as Natural Earth has it (CONTINENT); far islands are Seven seas (open ocean)",
+      "sha": "86f9de8f05a8"
+    },
+    "region": {
+      "type": "VARCHAR",
+      "null": false,
+      "means": "the United Nations region, as Natural Earth has it (REGION_UN)",
+      "values": [
+        "Africa",
+        "Americas",
+        "Antarctica",
+        "Asia",
+        "Europe",
+        "Oceania"
+      ],
+      "sha": "a89da67de98e"
+    },
+    "subregion": {
+      "type": "VARCHAR",
+      "null": false,
+      "means": "the United Nations subregion, as Natural Earth has it (SUBREGION)",
+      "sha": "2ac9ca5491f8"
+    }
+  },
+  "speciesCsv": [
+    "id",
+    "slug",
+    "scientific_name",
+    "common_name",
+    "taxonomy_class",
+    "taxonomy_order",
+    "taxonomy_family",
+    "taxonomy_genus",
+    "ids_iucn",
+    "ids_gbif",
+    "ids_col",
+    "ids_wikidata",
+    "ids_inaturalist",
+    "ids_ncbi",
+    "range_countries_with_open_records",
+    "range_status",
+    "photo_url",
+    "photo_credit",
+    "photo_license",
+    "photo_page",
+    "replaced_by"
+  ],
+  "countriesCsv": [
+    "code",
+    "name",
+    "continent",
+    "region",
+    "subregion"
+  ]
+}

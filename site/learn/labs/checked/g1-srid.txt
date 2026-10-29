@@ -1,0 +1,5 @@
+-- result: g1-srid · 3 rows · sha256 e978d01274b0
+srid | name | projection | ellipsoid | sphere_radius_m | units
+4326 | WGS 84 | longlat | WGS84 | NULL | NULL
+3857 | WGS 84 / Pseudo-Mercator | merc | NULL | 6378137 | m
+3577 | GDA94 / Australian Albers | aea | GRS80 | NULL | m
