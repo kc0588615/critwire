@@ -1,7 +1,7 @@
 """The habitat ingest's raster and geometry work (L3 plan §1.2). Run by `pnpm ingest habitat` (scripts/ingest/habitat.ts), never alone.
 
 .venv-learn/bin/python -I scripts/ingest/habitat.py --fractions <zip> --composite <zip> --shapes <country_shapes.parquet>
-    --records <csv: id,longitude,latitude> --clips <json> --out <empty dir>
+    --records <csv: id,longitude,latitude> --clips <json: {tileSize, clips: {id: {west, south, east, north, country}}}> --out <empty dir>
 
 Reads Jung et al. 2020 v004's zips in place through /vsizip/ (no network, no class rule: habitat.ts holds the rules and
 checks the report) and writes into --out:
@@ -11,7 +11,9 @@ checks the report) and writes into --out:
 - outline_km2.csv (country, km2, cells): each outline's geodesic area and its cell count;
 - record_fractions.csv (id, code, fraction): each record's 1 km cell, non-zero values only;
 - clip_<id>.bin (raw little-endian uint16, row-major from the upper left) and clip_<id>.tif (cloud-optimized GeoTIFF):
-  the 100 m composite's window for each clip, snapped outward to its grid.
+  the 100 m composite's window for each clip, snapped outward to its grid, with every cell of a tileSize × tileSize tile
+  (counted from the window's upper left) whose box doesn't intersect the clip's country outline set to nodata. The
+  report gives each clip's tile count and its masked tiles' numbers (row-major from the upper left).
 Asserts on the way: EPSG:4326 everywhere, one shape and transform for all 1 km layers, values 0–1000, each cell's
 partition sum at most 1000 plus 1 per non-zero layer, the composite uint16 with nodata 0, the COG's layout and cells.
 Prints a JSON report on stdout and progress on stderr; any failed check exits non-zero.
@@ -47,7 +49,8 @@ COMPOSITE_NODATA = 0
 # Rows of the 1 km grid read at once per layer: memory is ~7 B per cell of a band (a layer, the partition sum and its
 # count), ~0.5 GB at 2048 rows × 36,308 columns. Lower it if memory runs short; the result is the same.
 BAND_ROWS = 2048
-COG_OPTIONS = dict(driver="COG", COMPRESS="DEFLATE", PREDICTOR="2", BLOCKSIZE="256", OVERVIEW_RESAMPLING="NEAREST", NUM_THREADS="1")
+# No predictor: class codes are categories, so differences between neighbours don't shrink them (measured −26 % bytes).
+COG_OPTIONS = dict(driver="COG", COMPRESS="DEFLATE", LEVEL="9", PREDICTOR="1", BLOCKSIZE="256", OVERVIEW_RESAMPLING="NEAREST", NUM_THREADS="1")
 GEOD = pyproj.Geod(ellps="WGS84")
 
 
@@ -218,7 +221,23 @@ def fractions(args, codes: list, geoms: np.ndarray, records: dict, out: Path) ->
             "layers": layers, "outlines": len(codes), "recordsOutside": sorted(outside), "seconds": time.monotonic() - started}
 
 
-def clips(args, boxes: dict, out: Path) -> dict:
+def mask_tiles(cells: np.ndarray, ulx: float, uly: float, scale: float, size: int, outline) -> list:
+    """Sets to nodata, in place, every cell of each size × size tile (edge tiles smaller) whose box doesn't intersect
+    outline; returns those tiles' numbers (tile row × tile columns + tile column, from the upper left)."""
+    height, width = cells.shape
+    across = math.ceil(width / size)
+    shapely.prepare(outline)
+    masked = []
+    for r0 in range(0, height, size):
+        for c0 in range(0, width, size):
+            r1, c1 = min(height, r0 + size), min(width, c0 + size)
+            if not shapely.intersects(shapely.box(ulx + c0 * scale, uly - r1 * scale, ulx + c1 * scale, uly - r0 * scale), outline):
+                cells[r0:r1, c0:c1] = COMPOSITE_NODATA
+                masked.append(r0 // size * across + c0 // size)
+    return masked
+
+
+def clips(args, boxes: dict, tile: int, outlines: dict, out: Path) -> dict:
     with zipfile.ZipFile(args.composite) as z:
         tifs = [n for n in z.namelist() if n.endswith(".tif")]
     if len(tifs) != 1:
@@ -236,6 +255,10 @@ def clips(args, boxes: dict, out: Path) -> dict:
             col0, row0, col1, row1 = window_of((box["west"], box["south"], box["east"], box["north"]), t, width, height)
             cells = ds.read(1, window=Window(col0, row0, col1 - col0, row1 - row0))
             ulx, uly = t.c + col0 * t.a, t.f - row0 * t.a
+            if box["country"] not in outlines:
+                fail(f"clip {clip}: country {box['country']} isn't in country_shapes")
+            masked = mask_tiles(cells, ulx, uly, t.a, tile, outlines[box["country"]])
+            tiles = math.ceil(cells.shape[1] / tile) * math.ceil(cells.shape[0] / tile)
             (out / f"clip_{clip}.bin").write_bytes(cells.astype("<u2").tobytes())
             cog = out / f"clip_{clip}.tif"
             profile = dict(driver="GTiff", width=cells.shape[1], height=cells.shape[0], count=1, dtype="uint16", crs="EPSG:4326",
@@ -255,8 +278,9 @@ def clips(args, boxes: dict, out: Path) -> dict:
             report[clip] = {"crs": "EPSG:4326", "dtype": "uint16", "layout": layout, "width": int(cells.shape[1]), "height": int(cells.shape[0]),
                             "ulx": ulx, "uly": uly, "scale": t.a, "nodata": COMPOSITE_NODATA,
                             "values": {str(int(v)): int(n) for v, n in zip(values, counts) if v != COMPOSITE_NODATA},
-                            "nodataCells": int(counts[values == COMPOSITE_NODATA].sum()), "seconds": time.monotonic() - started}
-            log(f"clip {clip}: {cells.shape[1]} × {cells.shape[0]} cells, {len(report[clip]['values'])} classes ({report[clip]['seconds']:.0f} s)")
+                            "nodataCells": int(counts[values == COMPOSITE_NODATA].sum()), "tiles": tiles, "maskedTiles": masked,
+                            "seconds": time.monotonic() - started}
+            log(f"clip {clip}: {cells.shape[1]} × {cells.shape[0]} cells, {len(report[clip]['values'])} classes, {len(masked)} of {tiles} tiles masked ({report[clip]['seconds']:.0f} s)")
     return report
 
 
@@ -264,7 +288,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0], formatter_class=argparse.RawDescriptionHelpFormatter)
     for name, help_ in [("--fractions", "lvl2_frac_1km_ver004.zip"), ("--composite", "iucn_habitatclassification_composite_lvl2_ver004.zip"),
                         ("--shapes", "data/learn/country_shapes.parquet"), ("--records", "records.csv (id,longitude,latitude)"),
-                        ("--clips", "clips.json ({id: {west, south, east, north}})"), ("--out", "empty folder for the outputs")]:
+                        ("--clips", "clips.json ({tileSize, clips: {id: {west, south, east, north, country}}})"), ("--out", "empty folder for the outputs")]:
         parser.add_argument(name, type=Path, required=True, help=help_)
     args = parser.parse_args()
     if any(args.out.iterdir()):
@@ -278,9 +302,11 @@ def main() -> None:
     with open(args.records, newline="", encoding="utf-8") as f:
         rows = list(csv.DictReader(f))
     records = {"id": [int(r["id"]) for r in rows], "longitude": [float(r["longitude"]) for r in rows], "latitude": [float(r["latitude"]) for r in rows]}
-    boxes = json.loads(args.clips.read_text(encoding="utf-8"))
+    spec = json.loads(args.clips.read_text(encoding="utf-8"))
+    if not (isinstance(spec.get("tileSize"), int) and spec["tileSize"] > 0):
+        fail(f"clips.json: tileSize {spec.get('tileSize')!r}")
 
-    clip = clips(args, boxes, args.out)  # first: the slower read to fail on (one 2.6 GB deflate stream)
+    clip = clips(args, spec["clips"], spec["tileSize"], dict(zip(codes, geoms)), args.out)  # first: the slower read to fail on (one 2.6 GB deflate stream)
     frac = fractions(args, codes, geoms, records, args.out)
     report = {
         "tools": {"python": platform.python_version(), "numpy": np.__version__, "rasterio": rasterio.__version__, "gdal": rasterio.__gdal_version__,

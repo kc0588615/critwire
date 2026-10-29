@@ -1,5 +1,5 @@
 // /learn/data/ (plan D15, 004 §7.7, L1's part): every file against manifest.json (sha256, size, rows, columns), the
-// occurrences and datasets against data/, the loader's tables against counts from data/, the 50 MB cap, sources and
+// occurrences and datasets against data/, the loader's tables against counts from data/, the 120 MB cap, sources and
 // both DOIs, the /v1 inputs, and the index page, with screenshots at 1280 and 375 px. Expectations come from data/ and
 // the manifest, never typed in. The star (/learn/data/star/, plan D9): every served file through the Power BI input
 // check (star-check: header, rows, sha256, keys unique and filled, foreign keys found), its unknown members, `NA` read as
@@ -19,7 +19,7 @@ import { SAMPLE_COLUMNS } from "../scripts/learn/sample-files.ts";
 import { checkInput, readCsv, readManifest, unknownMemberErrors, type CsvTable } from "../scripts/learn/star-check.ts";
 import { ARTIFACTS, csvRows, distPath, learnManifest, openDuckDB, ORIGIN, records, repoPath, sha256, sqlText, type DuckDB } from "./helpers.ts";
 
-const CAP = 50_000_000; // the owner's 50 MB rule (004 §4.4)
+const CAP = 120_000_000; // the owner's cap (004 §4.4; raised from 50 MB in L3, H5)
 const PAGES = ["manifest.json", "index.html"];
 const LOADER = "postgis/learn_curriculum.sql";
 const SAMPLE_FILES = ["occurrences.parquet", "occurrences.csv", "datasets.csv"];
@@ -114,7 +114,7 @@ test("the loader's tables equal counts from data/", async () => {
   expect(manifest.files[LOADER]?.tables).toEqual(expected);
 });
 
-test("the folder is at most 50,000,000 bytes; the manifest's total is its files'", async () => {
+test("the folder is at most 120,000,000 bytes; the manifest's total is its files'", async () => {
   const sizes = await builtSizes();
   expect(totalBytes(sizes)).toBeLessThanOrEqual(CAP);
   expect(manifest.cap).toBe(CAP);

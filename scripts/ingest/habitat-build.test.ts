@@ -10,6 +10,9 @@
 // HR4: a record outside the 1 km grid passes, or Σ estimate ÷ Σ outline outside ±2 % passes.
 // HR5: a broken report (exit, not JSON, a missing or an extra output) leaves anything in data/learn/ changed.
 // HR6: --downloads inside the repository is accepted, or the work folder survives a failed run.
+// HR7 (H5 design 2): habitat_clips isn't one row per kept tile (clip, tile, rast) in (clip, tile) order, an all-nodata
+//      tile is kept, habitat.json lacks a clip's kept tiles and tile size, clips.json lacks the tile size or a clip's
+//      country, or a tile habitat.py reports masked still holds cells, or its tile count isn't the clip's tile grid.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -37,8 +40,8 @@ const [mode, codes, ...rest] = process.argv.slice(2);
 const arg = (name) => rest[rest.indexOf(name) + 1];
 const out = arg("--out");
 for (const a of ["--fractions", "--composite", "--shapes", "--records", "--clips"]) readFileSync(arg(a));
-const clips = JSON.parse(readFileSync(arg("--clips"), "utf8"));
-if (Object.keys(clips).join() !== "cr,tas") { console.error("clips.json", clips); process.exit(3); }
+const { tileSize, clips } = JSON.parse(readFileSync(arg("--clips"), "utf8"));
+if (Object.keys(clips).join() !== "cr,tas" || tileSize !== 2 || clips.cr.country !== "CR" || clips.tas.country !== "AU") { console.error("clips.json", tileSize, clips); process.exit(3); }
 if (readFileSync(arg("--records"), "utf8") !== "id,longitude,latitude\\n1,-84,10\\n2,147.3,-42.9\\n3,0.5,0.5\\n") process.exit(4);
 if (mode === "exit") { console.error("boom"); process.exit(1); }
 const write = (name, body) => { if (!(mode === "missing" && name === "clip_tas.tif")) writeFileSync(join(out, name), body); };
@@ -46,14 +49,18 @@ write("country_layer_km2.csv", "country,code,km2\\nCR,104,30000.123\\nCR,105,210
 write("outline_km2.csv", "country,km2,cells\\nCR," + (mode === "ratio" ? 55500 : 51000) + ",60000\\nTT,0.005,1\\nVA,0.44,0\\n");
 write("record_fractions.csv", "id,code,fraction\\n1,104,600\\n1,105,400\\n2,1000,900\\n2,600,100\\n");
 const u16 = (xs) => Buffer.from(new Uint16Array(xs).buffer);
-const cells = { cr: [104, 104, 105, 0, mode === "clip-class" ? 1500 : 600, 104], tas: [1405, 1405, 1401, 0] };
-const sizes = { cr: [3, 2], tas: [2, 2] };
+// cr: 3 × 2 cells, tiles 0 (2 × 2) and 1 (1 × 2); tas: 4 × 2 cells, tile 1 masked (all nodata).
+const cells = { cr: [104, 104, 105, 0, mode === "clip-class" ? 1500 : 600, 104], tas: [1405, 1405, 0, 0, 1401, 0, 0, 0] };
+const sizes = { cr: [3, 2], tas: [4, 2] };
+const tiles = { cr: mode === "tile-count" ? 3 : 2, tas: 2 };
+const masked = { cr: [], tas: mode === "masked-cells" ? [0, 1] : [1] };
 for (const id of ["cr", "tas"]) { write("clip_" + id + ".bin", u16(cells[id])); write("clip_" + id + ".tif", "II*\\0 " + id); }
 if (mode === "extra") writeFileSync(join(out, "stray.txt"), "x");
 const counts = (xs) => { const c = {}; for (const x of xs) if (x !== 0) c[x] = (c[x] ?? 0) + 1; return c; };
 const clip = (id) => ({ crs: "EPSG:4326", dtype: "uint16", layout: "COG", width: sizes[id][0], height: sizes[id][1],
   ulx: clips[id].west, uly: clips[id].north, scale: 0.25, nodata: 0,
-  values: mode === "clip-count" && id === "cr" ? { ...counts(cells[id]), 104: 2 } : counts(cells[id]), nodataCells: 1 });
+  values: mode === "clip-count" && id === "cr" ? { ...counts(cells[id]), 104: 2 } : counts(cells[id]),
+  nodataCells: cells[id].filter((x) => x === 0).length, tiles: tiles[id], maskedTiles: masked[id] });
 let layers = JSON.parse(codes).map((code) => ({ member: "lvl2_frac_1km_ver004/x__" + code + "_n__ver004.tif", code, nonZero: [104, 105, 600, 1000, 1405].includes(code) ? 9 : 0, max: 1000 }));
 if (mode === "layer-class") layers = layers.map((l) => (l.code === 509 ? { ...l, nonZero: 5 } : l));
 if (mode === "layers") layers = layers.filter((l) => l.code !== 1405);
@@ -71,7 +78,7 @@ async function run(mode: string): Promise<{ dir: string; dest: string; error?: E
   const fake = join(dir, "fake-habitat.mjs");
   writeFileSync(fake, FAKE);
   try {
-    await buildHabitat({ work, dest: pathToFileURL(dest + "/"), records: RECORDS, zenodo: zenodo(dir), python: [process.execPath, fake, mode, JSON.stringify(LAYER_CODES)] });
+    await buildHabitat({ work, dest: pathToFileURL(dest + "/"), records: RECORDS, zenodo: zenodo(dir), tileSize: 2, python: [process.execPath, fake, mode, JSON.stringify(LAYER_CODES)] });
     return { dir, dest };
   } catch (error) {
     return { dir, dest, error: error as Error };
@@ -122,11 +129,17 @@ test("HR1 a clean run writes the outputs and habitat.json (rules applied, classe
       [[["VARCHAR", "INTEGER", "DECIMAL(12,2)"]]]);
     assert.deepEqual(await rows(join(first.dest, "occurrence_habitats.parquet"), "SELECT occurrence_id::INTEGER, habitat_code FROM $f"),
       [[1, 104], [2, 600], [3, null]]);
-    const [[clip, hex]] = await rows(join(first.dest, "habitat_clips.parquet"), "SELECT clip, hex(rast) FROM $f WHERE clip = 'cr'") as [string, string][];
-    const want = rasterWkb({ width: 3, height: 2, ulx: -84.2, uly: 10.6, scale: 0.25, srid: 4326, nodata: 0,
-      pixels: new Uint8Array(new Uint16Array([104, 104, 105, 0, 600, 104]).buffer) });
-    assert.equal(clip, "cr");
-    assert.equal(hex, Buffer.from(want).toString("hex").toUpperCase());
+    const tile = (width: number, ulx: number, uly: number, xs: number[]) => Buffer.from(rasterWkb({ width, height: xs.length / width, ulx, uly,
+      scale: 0.25, srid: 4326, nodata: 0, pixels: new Uint8Array(new Uint16Array(xs).buffer) })).toString("hex").toUpperCase();
+    assert.deepEqual(await rows(join(first.dest, "habitat_clips.parquet"), "SELECT clip, tile, hex(rast) FROM $f"), [
+      ["cr", 0, tile(2, -85.91, 11.19, [104, 104, 0, 600])],
+      ["cr", 1, tile(1, -85.91 + 0.5, 11.19, [105, 104])],
+      ["tas", 0, tile(2, 144.64, -40.64, [1405, 1405, 1401, 0])],
+    ], "one row per kept tile, in (clip, tile) order; tas's masked tile 1 left out");
+    assert.deepEqual(await rows(join(first.dest, "habitat_clips.parquet"), "SELECT list(column_name || ' ' || column_type) FROM (DESCRIBE SELECT * FROM $f)"),
+      [[["clip VARCHAR", "tile INTEGER", "rast BLOB"]]]);
+    assert.equal(prov.files["habitat_clips.parquet"].rows, 3);
+    assert.deepEqual([prov.clips.cr.tiles, prov.clips.cr.tileSize, prov.clips.tas.tiles, prov.clips.tas.tileSize], [2, 2, 1, 2]);
   } finally {
     rmSync(first.dir, { recursive: true, force: true });
     rmSync(second.dir, { recursive: true, force: true });
@@ -145,6 +158,8 @@ for (const [mode, message] of [
   ["json", /habitat\.py: report is not JSON/],
   ["missing", /habitat\.py: clip_tas\.tif missing/],
   ["extra", /habitat\.py: unexpected outputs stray\.txt/],
+  ["masked-cells", /habitat\.py: clip tas: masked tile 0 holds cells/],
+  ["tile-count", /habitat\.py: clip cr: 3 tiles, expected 2 × 1/],
 ] as const) {
   test(`HR2–HR5 ${mode}: buildHabitat refuses and data/learn/ is unchanged`, async () => {
     const { dir, dest, error } = await run(mode);

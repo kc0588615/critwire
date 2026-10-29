@@ -10,6 +10,8 @@
 // HB5: assertHabitatFresh passes habitat rows made for other records (a moved coordinate, an added or dropped id, a
 //      rule change that publishes another row set) or other country outlines.
 // HB6: assertHabitatFresh flags a sample.csv edit that leaves every published (id, longitude, latitude) equal.
+// HB8: clipTiles (L3 H5 design 2) numbers tiles other than row-major from the upper left, pads an edge tile, puts a
+//      tile's corner or cells off the clip's, keeps an all-nodata tile, or drops a tile holding one class cell.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
@@ -20,19 +22,20 @@ import { SAMPLE_COLUMNS, type SampleDatasets, type SampleDownload } from "../lea
 import { SAMPLE_RULES } from "../learn/sample-rules.ts";
 import type { Species } from "../species.ts";
 import {
-  assertHabitatFresh, CLIPS, countryHabitatRows, HABITAT_INPUTS, habitatRecordsCsv, LAYER_CODES, OVERLAY_CODES, pickClass,
+  assertHabitatFresh, CLIP_TILE, CLIPS, clipTiles, countryHabitatRows, HABITAT_INPUTS, habitatRecordsCsv, LAYER_CODES, OVERLAY_CODES, pickClass,
   rasterWkb, recordsFingerprint,
 } from "./habitat.ts";
 
-test("HB0 the pins: 79 layer codes, the overlay inside them, two Zenodo files by md5, two 0.75° clips", () => {
+test("HB0 the pins: 79 layer codes, the overlay inside them, two Zenodo files by md5, two whole-country clips in 256-cell tiles", () => {
   assert.equal(LAYER_CODES.length, 79);
   assert.deepEqual([...LAYER_CODES].sort((a, b) => a - b), LAYER_CODES);
   for (const c of OVERLAY_CODES) assert.ok(LAYER_CODES.includes(c), `overlay ${c} is a layer`);
   for (const f of Object.values(HABITAT_INPUTS)) assert.match(f.md5, /^[0-9a-f]{32}$/);
-  for (const { west, south, east, north } of Object.values(CLIPS)) {
-    assert.equal(Math.round((east - west) * 100), 75);
-    assert.equal(Math.round((north - south) * 100), 75);
-  }
+  assert.deepEqual(CLIPS, {
+    cr: { west: -85.91, south: 8.07, east: -82.56, north: 11.19, country: "CR" },
+    tas: { west: 144.64, south: -43.62, east: 148.35, north: -40.64, country: "AU" },
+  });
+  assert.equal(CLIP_TILE, 256);
 });
 
 test("HB1 pickClass: largest partition fraction, ties to the lowest code, overlay never wins, nothing gives NULL", () => {
@@ -142,4 +145,28 @@ test("HB5 assertHabitatFresh: other outlines or other published records are stal
 test("HB6 assertHabitatFresh: a sample.csv edit that leaves every published id, longitude and latitude passes", () => {
   const edited = [ROWS[0].replace("2008,11", "2009,12"), ROWS[1].replace(",,CR,,", ",250.0,CR,1999,")];
   assert.doesNotThrow(() => assertHabitatFresh(recorded(), { countryShapesSha256: SHAPES, occurrences: published(edited) }));
+});
+
+test("HB8 clipTiles: row-major from the upper left, edge tiles unpadded, corners and cells the clip's, all-nodata tiles left out", () => {
+  // 5 × 3 cells, tiles of 2: 3 tile columns × 2 tile rows. Tiles 2 (top right, 1 × 2) and 4 (bottom middle) are all
+  // nodata; tile 5 (bottom right, 1 × 1) holds one class cell.
+  const cells = [
+    101, 102, 103, 104, 0,
+    106, 107, 108, 109, 0,
+    111, 0, 0, 0, 115,
+  ];
+  const raster = { width: 5, height: 3, ulx: -84, uly: 10, scale: 0.5, srid: 4326, nodata: 0, pixels: new Uint8Array(new Uint16Array(cells).buffer) };
+  const tile = (width: number, height: number, ulx: number, uly: number, xs: number[]) =>
+    rasterWkb({ width, height, ulx, uly, scale: 0.5, srid: 4326, nodata: 0, pixels: new Uint8Array(new Uint16Array(xs).buffer) });
+  const tiles = clipTiles(raster, 2);
+  assert.deepEqual(tiles.map((t) => t.tile), [0, 1, 3, 5]);
+  assert.deepEqual(tiles, [
+    { tile: 0, rast: tile(2, 2, -84, 10, [101, 102, 106, 107]) },
+    { tile: 1, rast: tile(2, 2, -83, 10, [103, 104, 108, 109]) },
+    { tile: 3, rast: tile(2, 1, -84, 9, [111, 0]) },
+    { tile: 5, rast: tile(1, 1, -82, 9, [115]) },
+  ]);
+  assert.deepEqual(clipTiles(raster, 8), [{ tile: 0, rast: tile(5, 3, -84, 10, cells) }], "one tile when the clip fits");
+  assert.deepEqual(clipTiles({ ...raster, pixels: new Uint8Array(30) }, 2), [], "an all-nodata clip has no tiles");
+  assert.throws(() => clipTiles(raster, 0), /tile size 0/);
 });

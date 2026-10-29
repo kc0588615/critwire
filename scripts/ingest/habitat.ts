@@ -39,12 +39,16 @@ export const LAYER_CODES: readonly number[] = [
 export const OVERLAY_CODES: readonly number[] = [901, 1000, 1001, 1002, 1003, 1004];
 const OVERLAY = new Set(OVERLAY_CODES);
 
-// The two 100 m clips: fixed 0.75° study windows where the sample's records are densest (plan §1.4). Degrees; the run
-// snaps them outward to the composite's grid.
+// The two 100 m clips, whole countries (owner, H5; plan "H5 design" 1): Costa Rica's 1:50m outline box and Tasmania's
+// main-island box, rounded outward to 0.01° (Tasmania's north edge to −40.64, for 9 records on the north-west flats).
+// Degrees; the run snaps them outward to the composite's grid. `country`: the outline (country_shapes) whose tiles are
+// kept.
 export const CLIPS = {
-  cr: { west: -84.2, south: 9.85, east: -83.45, north: 10.6 },
-  tas: { west: 147.25, south: -43.1, east: 148, north: -42.35 },
+  cr: { west: -85.91, south: 8.07, east: -82.56, north: 11.19, country: "CR" },
+  tas: { west: 144.64, south: -43.62, east: 148.35, north: -40.64, country: "AU" },
 } as const;
+// A clip's tile, in cells: one habitat_clips row, as raster2pgsql -t 256x256, and the COG's block.
+export const CLIP_TILE = 256;
 
 // One layer's value in a record's 1 km cell: code and fraction (0–1000).
 export interface LayerFraction { code: number; fraction: number }
@@ -117,6 +121,31 @@ export function rasterWkb({ width, height, ulx, uly, scale, srid, nodata, pixels
   return out;
 }
 
+// A clip cut into size × size tiles (edge tiles smaller, no padding), numbered row-major from the upper left
+// (tile row × tile columns + tile column), each as raster WKB; tiles holding only nodata are left out.
+export function clipTiles(raster: RasterInput, size: number): { tile: number; rast: Uint8Array }[] {
+  if (!Number.isInteger(size) || size < 1) throw new Error(`clipTiles: tile size ${size}`);
+  const { width, height, ulx, uly, scale, nodata, pixels } = raster;
+  const cells = new DataView(pixels.buffer, pixels.byteOffset, pixels.byteLength);
+  const columns = Math.ceil(width / size);
+  const tiles: { tile: number; rast: Uint8Array }[] = [];
+  for (let r0 = 0; r0 < height; r0 += size) {
+    for (let c0 = 0; c0 < width; c0 += size) {
+      const w = Math.min(size, width - c0);
+      const h = Math.min(size, height - r0);
+      const out = new Uint8Array(2 * w * h);
+      let any = false;
+      for (let r = 0; r < h; r++) {
+        const from = 2 * ((r0 + r) * width + c0);
+        out.set(pixels.subarray(from, from + 2 * w), 2 * r * w);
+        for (let c = 0; c < w && !any; c++) any = cells.getUint16(from + 2 * c, true) !== nodata;
+      }
+      if (any) tiles.push({ tile: (r0 / size) * columns + c0 / size, rast: rasterWkb({ ...raster, width: w, height: h, ulx: ulx + c0 * scale, uly: uly - r0 * scale, pixels: out }) });
+    }
+  }
+  return tiles;
+}
+
 export type HabitatRecord = Pick<OccurrenceRow, "id" | "longitude" | "latitude">;
 
 // The records the ingest consumes, as habitat.py reads them: id,longitude,latitude, sorted by id, JS number formatting.
@@ -171,7 +200,7 @@ export interface HabitatReport {
   recordsOutside: number[];
   clips: Record<keyof typeof CLIPS, {
     crs: string; dtype: string; layout: string; width: number; height: number; ulx: number; uly: number; scale: number; nodata: number;
-    values: Record<string, number>; nodataCells: number;
+    values: Record<string, number>; nodataCells: number; tiles: number; maskedTiles: number[];
   }>;
   timings: Record<string, number>;
 }
@@ -224,8 +253,9 @@ async function checkReport(stdout: string, outDir: string, classes: ReadonlySet<
   return report;
 }
 
-// A clip's cells (habitat.py's clip_<id>.bin) recounted against its report and classes; returns its raster WKB.
-async function clipRaster(id: keyof typeof CLIPS, clip: HabitatReport["clips"][keyof typeof CLIPS], outDir: string, classes: ReadonlySet<number>): Promise<Uint8Array> {
+// A clip's cells (habitat.py's clip_<id>.bin) recounted against its report and classes; returns its kept tiles. Throws
+// unless the reported tile count is the clip's tile grid and every tile habitat.py masked holds only nodata.
+async function clipTileRows(id: keyof typeof CLIPS, clip: HabitatReport["clips"][keyof typeof CLIPS], outDir: string, classes: ReadonlySet<number>, tileSize: number) {
   const bin = await readFile(join(outDir, `clip_${id}.bin`));
   if (bin.length !== 2 * clip.width * clip.height) throw new Error(`habitat.py: clip ${id}: ${bin.length} bytes ≠ 2 × ${clip.width} × ${clip.height}`);
   const counts = new Map<number, number>();
@@ -241,14 +271,21 @@ async function clipRaster(id: keyof typeof CLIPS, clip: HabitatReport["clips"][k
     throw new Error(`habitat.py: clip ${id}: value counts differ from its cells`);
   }
   for (const v of counts.keys()) if (!classes.has(v)) throw new Error(`habitat.py: unknown class ${v} (clip ${id})`);
-  return rasterWkb({ width: clip.width, height: clip.height, ulx: clip.ulx, uly: clip.uly, scale: clip.scale, srid: 4326, nodata: clip.nodata, pixels: bin });
+  const across = Math.ceil(clip.width / tileSize);
+  const down = Math.ceil(clip.height / tileSize);
+  if (clip.tiles !== across * down) throw new Error(`habitat.py: clip ${id}: ${clip.tiles} tiles, expected ${across} × ${down}`);
+  const tiles = clipTiles({ width: clip.width, height: clip.height, ulx: clip.ulx, uly: clip.uly, scale: clip.scale, srid: 4326, nodata: clip.nodata, pixels: bin }, tileSize);
+  const kept = new Set(tiles.map((t) => t.tile));
+  const full = clip.maskedTiles.find((t) => kept.has(t));
+  if (full !== undefined) throw new Error(`habitat.py: clip ${id}: masked tile ${full} holds cells`);
+  return tiles.map(({ tile, rast }) => ({ clip: id, tile, rast }));
 }
 
 // From the downloaded inputs (`zenodo`) and the records the build publishes: runs habitat.py in `work`, checks its
 // report and outputs, applies the rules, then copies the outputs into `dest` (data/learn/) and writes dest/habitat.json.
-// Nothing reaches `dest` unless every check passed. `signal` kills habitat.py.
-export async function buildHabitat({ work, dest, records, zenodo, python = PYTHON, signal }: {
-  work: string; dest: URL; records: readonly HabitatRecord[]; zenodo: Record<keyof typeof HABITAT_INPUTS, ZenodoFile>; python?: string[]; signal?: AbortSignal;
+// Nothing reaches `dest` unless every check passed. `signal` kills habitat.py; `tileSize` is CLIP_TILE but in tests.
+export async function buildHabitat({ work, dest, records, zenodo, python = PYTHON, signal, tileSize = CLIP_TILE }: {
+  work: string; dest: URL; records: readonly HabitatRecord[]; zenodo: Record<keyof typeof HABITAT_INPUTS, ZenodoFile>; python?: string[]; signal?: AbortSignal; tileSize?: number;
 }): Promise<void> {
   const previous = await readJson<{ source: Record<string, string>; files: Record<string, { sha256: string }> }>(childFile(dest, "habitat.json"));
   const classesEntry = previous.files[CLASSES];
@@ -262,7 +299,7 @@ export async function buildHabitat({ work, dest, records, zenodo, python = PYTHO
   const clipsJson = join(work, "clips.json");
   const outDir = join(work, "out");
   await writeFile(recordsCsv, habitatRecordsCsv(records));
-  await writeFile(clipsJson, JSON.stringify(CLIPS));
+  await writeFile(clipsJson, JSON.stringify({ tileSize, clips: CLIPS }));
   await mkdir(outDir);
   const stdout = await runPython("habitat.py", python, [
     "--fractions", zenodo["lvl2_frac_1km_ver004.zip"].path, "--composite", zenodo["iucn_habitatclassification_composite_lvl2_ver004.zip"].path,
@@ -296,8 +333,13 @@ export async function buildHabitat({ work, dest, records, zenodo, python = PYTHO
   }
   const occurrenceRows = [...records].sort((a, b) => a.id - b.id).map((r) => ({ occurrence_id: r.id, habitat_code: pickClass(fractions.get(r.id) ?? []) }));
 
-  const clipRows: { clip: string; rast: Uint8Array }[] = [];
-  for (const id of CLIP_IDS) clipRows.push({ clip: id, rast: await clipRaster(id, report.clips[id], outDir, classes) });
+  const clipRows: { clip: string; tile: number; rast: Uint8Array }[] = [];
+  const keptTiles: Record<string, number> = {};
+  for (const id of CLIP_IDS) {
+    const tiles = await clipTileRows(id, report.clips[id], outDir, classes, tileSize);
+    keptTiles[id] = tiles.length;
+    clipRows.push(...tiles);
+  }
 
   // Write into work/data/, then copy into dest.
   const staged = join(work, "data");
@@ -308,8 +350,8 @@ export async function buildHabitat({ work, dest, records, zenodo, python = PYTHO
     await con.run(`COPY (SELECT country_code, habitat_code, est_area_km2::DECIMAL(12,2) AS est_area_km2 FROM ch ORDER BY country_code, habitat_code) TO ${at("country_habitats.parquet")} (FORMAT parquet, COMPRESSION zstd)`);
     await createTable(con, "oh", { occurrence_id: "BIGINT", habitat_code: "INTEGER" }, occurrenceRows);
     await con.run(`COPY (SELECT * FROM oh ORDER BY occurrence_id) TO ${at("occurrence_habitats.parquet")} (FORMAT parquet, COMPRESSION zstd, ROW_GROUP_SIZE 100000)`);
-    await createTable(con, "hc", { clip: "VARCHAR", rast: "BLOB" }, clipRows);
-    await con.run(`COPY (SELECT * FROM hc ORDER BY clip) TO ${at("habitat_clips.parquet")} (FORMAT parquet, COMPRESSION zstd)`);
+    await createTable(con, "hc", { clip: "VARCHAR", tile: "INTEGER", rast: "BLOB" }, clipRows);
+    await con.run(`COPY (SELECT * FROM hc ORDER BY clip, tile) TO ${at("habitat_clips.parquet")} (FORMAT parquet, COMPRESSION zstd, COMPRESSION_LEVEL 19)`);
   });
   for (const id of CLIP_IDS) await copyFile(join(outDir, `clip_${id}.tif`), join(staged, `clips/${id}.tif`));
   const rows: Record<string, number> = { "country_habitats.parquet": countryRows.length, "occurrence_habitats.parquet": occurrenceRows.length, "habitat_clips.parquet": clipRows.length };
@@ -330,7 +372,7 @@ export async function buildHabitat({ work, dest, records, zenodo, python = PYTHO
     method: {
       countries: `method 3 (003 §5): v004's 1 km level-2 fractions (EPSG:4326, ${pixel}° cells); per country, Σ fraction ÷ 1000 × the cell's geodesic area (WGS84) over the cells whose centre is inside its Natural Earth 1:50m outline (overlapping outlines both count a shared cell); partition classes only (open-water overlay ${OVERLAY_CODES.join(", ")} left out); km² rounded to 0.01; estimated from a map, not measured`,
       records: "the record's 1 km cell: the partition class with the largest fraction, ties to the lowest code; NULL when the cell holds none; the map's class at that place, not the species' habitat",
-      clips: "v004's level-2 composite at 100 m (EPSG:4326), each window snapped outward to its grid, cells unchanged; cloud-optimized GeoTIFF (DEFLATE, PREDICTOR=2, 256 px blocks, nearest-neighbour overviews); habitat_clips.parquet holds the same cells as PostGIS raster WKB",
+      clips: `v004's level-2 composite at 100 m (EPSG:4326), each country's box snapped outward to its grid, cells unchanged except that every cell of a ${tileSize} × ${tileSize}-cell tile whose box doesn't intersect the country's Natural Earth 1:50m outline is set to nodata; cloud-optimized GeoTIFF (DEFLATE level 9, no predictor, ${tileSize} px blocks, nearest-neighbour overviews); habitat_clips.parquet holds the same cells as PostGIS raster WKB, one row per tile holding a class cell (tiles numbered row-major from the upper left)`,
     },
     grid: { width: report.grid.width, height: report.grid.height, transform: report.grid.transform },
     layers: { codes: LAYER_CODES, allZero: report.layers.filter((l) => l.nonZero === 0).map((l) => l.code).sort(byNumber), overlay: OVERLAY_CODES },
@@ -339,6 +381,7 @@ export async function buildHabitat({ work, dest, records, zenodo, python = PYTHO
       return [id, {
         bounds: { west: c.ulx, north: c.uly, east: c.ulx + c.width * c.scale, south: c.uly - c.height * c.scale },
         width: c.width, height: c.height, scale: c.scale, nodata: c.nodata, nodataCells: c.nodataCells, values: c.values,
+        country: CLIPS[id].country, tileSize, tiles: keptTiles[id],
       }];
     })),
     tools: report.tools,

@@ -28,7 +28,7 @@ export interface BuildInputs {
   labBytes: number;
 }
 
-// The committed lab data (plan D3, 004 §4.4), under the 50 MB cap together.
+// The committed lab data (plan D3, 004 §4.4), under the 120 MB cap together.
 const COMMITTED_LAB_DIRS = ["raw/gbif-sample/", "learn/", "gbif-learn-sample/"] as const;
 const dataDir = new URL("../../data/", import.meta.url);
 

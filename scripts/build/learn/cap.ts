@@ -1,9 +1,10 @@
-// The 50 MB cap (plan D9.9, 004 §4.4), on dist/learn/data/ and on the committed lab data.
+// The 120 MB cap (plan D9.9, 004 §4.4; the owner raised it from 50 MB in L3's H5), on dist/learn/data/ and on the
+// committed lab data.
 import { readdir, stat } from "node:fs/promises";
 import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 
-export const LEARN_CAP = 50_000_000;
+export const LEARN_CAP = 120_000_000;
 const n = (bytes: number) => bytes.toLocaleString("en-US");
 
 // Every file below dir (its path relative to dir, sorted) with its size in bytes. Throws for anything that isn't a

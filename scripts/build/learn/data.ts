@@ -2,7 +2,7 @@
 // DuckDB from derive's rows through one typed table each (the types 004 §4.2 publishes), sorted by key, with fixed
 // writer options; byte copies of data/learn/'s files, checked against their provenance by readBuildInputs; the
 // PostGIS loader postgis/learn_curriculum.sql, generated from those published files (004 §4.3); then manifest.json,
-// index.html and the 50 MB cap over the whole folder.
+// index.html and the 120 MB cap over the whole folder.
 import { createHash } from "node:crypto";
 import { copyFile, mkdir, readFile, writeFile } from "node:fs/promises";
 import { formatJson } from "../../json.ts";
