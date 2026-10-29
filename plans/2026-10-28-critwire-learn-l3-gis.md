@@ -647,7 +647,7 @@ Every step:
   - Code: `scripts/db.ts` `loadDatabase`: `BATCH_ROWS = 1000`, chunked `insert` in the same transaction (today one insert, `db.ts:75`).
   - Decisions: item 5 done; item 6 done (Baseline: H3 and H4 block nothing); the §8 deviations above.
   - Check: `T`, `D`, `H`, `HD`.
-- [ ] S2 · `/v1` contract (§7.1; item 3, Astra MUST-FIX 2)
+- [x] S2 · `/v1` contract (§7.1; item 3, Astra MUST-FIX 2)
   - First [T] `scripts/build/contract.test.ts`. Each fails with "<path>: <change>: needs /v2 (plan 001, Access)":
     - a contract path or column the writer lacks; a changed type; a contract CSV list that isn't a prefix of the writer's;
     - an entry whose `sha` doesn't match (a `means` edit, with the sha hint); a missing `sha` prints its value;
@@ -1007,6 +1007,8 @@ Each step's isolated cases are its **First** list. What a session does when the 
 - 2026-10-29 · item 5: done (S1). `loadDatabase` inserts in `BATCH_ROWS = 1000` chunks in the same transaction; B1 (unit: 1000 × 22 < 65,534), B2/B3 (db: 3,500 rows load; dup slug in last batch rolls all back).
 - 2026-10-29 · item 6: done (S1). Nothing L1 handed over blocks L3: H3 (GBIF retention) and H4 (Windows check) wait on owner, block nothing (Baseline).
 - 2026-10-29 · Deviations from Architecture §8 (S1): item 6 split (S7 ingest held in `$M/habitat-out/`, S8 `readLabFiles`, S10 atomic swap, S11 004 data sections); raster plumbing before swap (S9); §6 habitat E2E cases written first in S10; g5 gets `g5-analyze` (S16).
+- 2026-10-29 · item 3: done (S2). `contracts/v1.json`: 39 species paths + 5 countries columns, each `type`/declared `null`/`means`/`sha` (+ `values` on `range.status`, `countries.region`; `pattern` on slug, Q-ids, country codes, https urls, dates, DOIs; `source` on every `ids.*` + countries list, `checklistKey` on `ids.gbif`); `speciesCsv`/`countriesCsv`. `checkV1Contract` pure, in `readBuildInputs` (draft too); problems throw, additions log. `ids.iucn` declared nullable (§7.1; docs: any id null while unsettled).
+- 2026-10-29 · S2: entry `sha` = sha256 of `formatJson(entry, { canonical: true })` (2-space + newline), not compact JSON: reuses the existing canonical writer; exporting `sortKeys` from `scripts/json.ts` would edit a `learn:check` checker file and stale all 75 labs. Group paths typed `STRUCT`/`STRUCT[]` so nested additions don't retype the parent. Writers expose `csvColumns()` (`columns.ts`) and `COUNTRY_TYPES` (`build/countries.ts`, also its read_json columns).
 
 ## Log
 
@@ -1017,5 +1019,6 @@ Each step's isolated cases are its **First** list. What a session does when the 
 - 2026-10-28 23:42 UTC · Revision: architect resolved both MUST-FIX (window handoff → H5 filed; `/v1` contract `means`/`sha`/declared nullability), folded 3 missed items, decided 8 should-consider (7 adopted, Fable SC5 rejected); `cr` window moved by data (202 records). Plan-only; no code checks needed.
 - 2026-10-28 23:59 UTC · Steps: planner wrote S1–S20 + Verification (+ Failure modes). Plan-only; no code checks needed.
 - 2026-10-29 00:08 UTC · S1: `$M/baseline-manifest.json` saved (sha f180c320…9565 ok). db:load batched (1000 rows). red 2 → green 2 (B1 unit; B2/B3 db, MAX_PARAMETERS_EXCEEDED before). T: typecheck ok, test 550/550. D: build ok, test:db 111/111. H, HD (strict): nothing changed.
+- 2026-10-29 00:22 UTC · S2: `/v1` contract. red 12 → green 12 (V1–V12, `contract.test.ts`; red = no module). T: typecheck ok, test 562/562. B ok, no "freeze" notices. Proof: scratch `ids.gbif` means edit → `build --draft` and `build` exit 1 with sha hint; reverted. H strict (no exclusions), HD: nothing changed.
 
 ## Summary

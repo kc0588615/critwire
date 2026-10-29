@@ -43,17 +43,27 @@ export function readJsonColumns(columns: Columns = RECORD_COLUMNS): string {
   return `{${Object.entries(columns).map(([k, c]) => `${text(k)}: ${text(duckType(c))}`).join(", ")}}`;
 }
 
-// The CSV select list: every leaf except sources, named by its path in snake_case; lists ;-joined (NULL stays NULL).
-export function csvSelect(columns: Columns = RECORD_COLUMNS): string[] {
+// The CSV columns: every leaf except sources, named by its path in snake_case; lists ;-joined (NULL stays NULL).
+function csvLeaves(columns: Columns): { expr: string; name: string }[] {
   const snake = (key: string) => key.replace(/[A-Z]/g, (c) => `_${c.toLowerCase()}`);
-  const leaves = (cols: Columns, path: string[]): string[] => Object.entries(cols).flatMap(([k, c]) => {
+  const leaves = (cols: Columns, path: string[]): { expr: string; name: string }[] => Object.entries(cols).flatMap(([k, c]) => {
     if (Array.isArray(c)) return [];
     const p = [...path, k];
     if (typeof c !== "string") return leaves(c as Columns, p);
     const expr = p.slice(1).reduce((e, f) => `struct_extract(${e}, ${text(f)})`, ident(p[0]));
-    return [`${c.endsWith("[]") ? `array_to_string(${expr}, ';')` : expr} AS ${ident(p.map(snake).join("_"))}`];
+    return [{ expr: c.endsWith("[]") ? `array_to_string(${expr}, ';')` : expr, name: p.map(snake).join("_") }];
   });
   return leaves(columns, []);
+}
+
+// The CSV select list, in csvColumns order.
+export function csvSelect(columns: Columns = RECORD_COLUMNS): string[] {
+  return csvLeaves(columns).map(({ expr, name }) => `${expr} AS ${ident(name)}`);
+}
+
+// The CSV column names, in order (the /v1 contract's speciesCsv).
+export function csvColumns(columns: Columns = RECORD_COLUMNS): string[] {
+  return csvLeaves(columns).map(({ name }) => name);
 }
 
 // Throws unless every record's keys match the spec: structs exactly, list elements a subset (a source leaves out
