@@ -1,0 +1,58 @@
+<p class="lead">Which checks stop a bad load, and which datasets must you credit? Data quality checks written as SQL, each a count that should be 0; a quarantine report that names every refused record; the ways a number breaks a check written <code>&lt; 0</code>; and the credits and derived-dataset registration for two species' records. Everything runs in the Python environment, on the lab tables and made-up records (<a href="/learn/setup/">the setup page</a>).</p>
+
+<h2>Concept</h2>
+<p>Know what you loaded, and who to thank for it.</p>
+<ul>
+<li><strong>Checks written as SQL:</strong> each check is a query that counts the rows breaking one rule, so 0 means it passed, and the same query finds the rows when it didn't. A <strong>reject</strong> check stops the load (<a href="/learn/etl/transform-load/">e2</a> runs those inside its transaction); a <strong>flag</strong> check is reported, and the rows stay with a note, because a strange value isn't always a wrong one.</li>
+<li><strong>Rules belong to a dataset:</strong> a check states what this data may hold, not a truth about every map. 0, 0 is a real place, in the Gulf of Guinea; this sample rejects it because none of its records lies within 5° of it, so there two zeros are far more likely a missing coordinate than a sighting. A seabird or fisheries dataset would keep it. One zero alone is legal: two tiger records sit on the equator in Sumatra.</li>
+<li><strong>A number can be wrong in ways <code>&lt; 0</code> misses:</strong> a float column holds <code>NaN</code> (not a number) and <code>Infinity</code> as well as numbers, and a delivered file's text <code>NaN</code> casts without error (<a href="/learn/etl/transform-load/">e2</a>). PostgreSQL sorts <code>NaN</code> above every number, <code>Infinity</code> included, so a check written <code>uncertainty &lt; 0</code> passes both, and a flag written <code>uncertainty &gt; 100000</code> counts them as merely coarse. Test the range a value must fall in, <code>&gt;= 0 AND &lt; 'Infinity'</code>, which every bad case fails.</li>
+<li><strong>Quarantine:</strong> rows a reject check refuses go to a report with their source's key, the check and the value, so someone can fix the source or the rule; a count alone tells nobody which record to look at.</li>
+<li><strong>What the sample is:</strong> a capped sample of open records, at most 2,000 per species by md5 (<a href="/learn/etl/idempotent/">e3</a>), so its counts are neither abundance nor an even measure of effort. The cap makes a species with 200,000 records and one with 2,000 look alike, and within a species it keeps every bias of the records: more where more people look, and many GPS fixes from each collared animal (<a href="/learn/spatial-statistics/bias/">Bias in records, s1</a>).</li>
+<li><strong>License filters:</strong> keep only what you may publish. critwire keeps CC0 1.0 and CC BY 4.0, using each record's <em>effective</em> license, the more restrictive of its own and its dataset's (<a href="/learn/data/">the lab data</a>).</li>
+<li><strong>Provenance:</strong> every row can be traced to its source. Here that is the download's DOI, each record's <code>dataset_key</code> and the <code>datasets</code> table of titles, publishers and DOIs.</li>
+<li><strong>Citations:</strong> GBIF's terms ask you to cite the download's DOI. CC BY 4.0 records also require credit to their dataset. When you publish a subset, cite a <strong>derived dataset</strong>: you register the subset's per-dataset record counts with GBIF and receive a DOI that credits every dataset in it. critwire does this for its countries field (<code>pnpm gbif:register</code>) and for the lab sample.</li>
+</ul>
+<p><strong>Data:</strong> <code>occurrences</code>, <code>datasets</code>, <code>species</code>.</p>
+
+<h2>Worked example</h2>
+<p>The checks, run on the lab sample:</p>
+{{block:e4-checks}}
+<p>Every reject check is 0: the sample was loaded with them, and they guard each refresh. The flags are what a reviewer reads:</p>
+<ul>
+<li>24,002 records (59.4 %) give no coordinate uncertainty, so their precision is unknown;</li>
+<li>15,643 repeat another record's species, dataset, place, year and month. That can be several animals, several visits, or one record published twice: inspect them, don't delete them;</li>
+<li>297 records are uncertain by more than 100 km, too coarse for the 5 km cells of <a href="/learn/spatial-statistics/point-patterns/">s2</a> to <a href="/learn/spatial-statistics/local/">s5</a>;</li>
+<li>10 Tasmanian devil records are dated 1599, before Europeans first sighted Tasmania (1642). The year is a placeholder or an error, and <a href="/learn/spatial-statistics/bias/">s1</a> already met it.</li>
+</ul>
+<p>The sample's table can't hold a negative, <code>NaN</code> or infinite uncertainty: its <code>CHECK</code> refuses them (<code>learn_curriculum.sql</code>, <a href="/learn/data/">the lab data</a>), so <code>e4-checks</code> has no row for them. A staging table, all text or without that <code>CHECK</code>, can.</p>
+
+<h2>Lab</h2>
+<ol>
+<li><p>Quarantine a batch. Six made-up staged records, each check run on each record, one report row per failure:</p>
+{{block:e4-quarantine}}
+<p>Each made-up record breaks one check except the last, which breaks two and gets two report rows; record 9000000001 passes them all and would load. A test written <code>coordinate_uncertainty_m &lt; 0</code> catches 9000000002 and 9000000006's <code>-Infinity</code>, and passes 9000000003 and 9000000004: <code>NaN</code> and <code>Infinity</code> compare above 0. The report keeps the source's key and the value as delivered, so the fix can go back to the source.</p></li>
+<li><p>Who to credit. Which datasets the Tasmanian devil's and the jaguar's records come from, and under which license:</p>
+{{block:e4-credits}}</li>
+<li><p>The derived-dataset registration for that subset: the request body, built but never posted.</p>
+{{block:e4-derived}}
+<p>The devil and the jaguar have 4,000 records from 33 datasets. 29 datasets supply CC BY 4.0 records (3,992) and must be credited, led by the Jaguar Movement Database (1,948 GPS-collar records), the Tasmanian Natural Values Atlas (1,413) and the Tasmanian Museum and Art Gallery (569). The 4 CC0 datasets (8 records) ask for no credit, and are credited anyway. The registration body lists the same 33 datasets and 4,000 records, with <code>originalDownloadDOI</code> set to the download's DOI. These counts are records in a capped sample: the Jaguar Movement Database supplies 1,948 of the jaguar's 2,000 because a GPS collar records the same animal again and again, not because it saw most jaguars. They say whom to credit and for how much of the sample, and nothing about where either animal is common.</p></li>
+</ol>
+
+<h2>Result</h2>
+<p>Every reject check passes on the sample, and four flags are left for a reviewer: unknown precision, repeats, coarse places, and dates before 1642. A quarantine report names each refused record by its key, with the check and the value, and an uncertainty check written as a range catches negative, <code>NaN</code> and infinite values that <code>&lt; 0</code> lets through. The devil and the jaguar need credits to 29 datasets, and a derived dataset lists all 33 in one DOI.</p>
+
+<h2>Exercise</h2>
+<p>Turn the row-level reject checks into a gate a load calls before its <code>COMMIT</code>. For each check, count the staged rows breaking it and keep the first key; the load goes ahead only if every count is 0. Use <code>e4-checks</code>' coordinate and year checks and <code>e4-quarantine</code>'s uncertainty check. Run the gate on a <code>TEMP</code> copy of the devil's 2,000 records, then again after inserting two made-up records: one at 0, 0, and one dated 2031 with <code>NaN</code> uncertainty.</p>
+{{exercise:e4-ex}}
+
+<h2>Check</h2>
+<p>The devil's records pass every check, as the whole sample does in <code>e4-checks</code>. With the two made-up records the gate refuses, and names three checks, each with its count and first key: 9000000001 breaks the 0, 0 rule, and 9000000002 breaks both the uncertainty and the year checks. In a real load the refusal raises an error inside the transaction, so nothing commits (<a href="/learn/etl/transform-load/">e2</a>), and <code>e4-quarantine</code>'s report is what you send back to the source.</p>
+
+<h2>Dialects</h2>
+<ul>
+<li><strong>PostgreSQL:</strong> <code>'NaN'::float8 = 'NaN'::float8</code> is true, and <code>NaN</code> sorts above every number, so <code>&gt;= 0 AND &lt; 'Infinity'</code> is the whole finite, non-negative test; PostgreSQL 16 has no <code>isnan</code> for floats. A <code>CHECK</code> holds the same rule in the table (<code>learn_curriculum.sql</code>). <code>pg_input_is_valid</code> (<a href="/learn/etl/transform-load/">e2</a>) tests text before a cast, and accepts <code>NaN</code> and <code>Infinity</code> as valid floats.</li>
+<li><strong>DuckDB:</strong> <code>isfinite(x)</code>, <code>isnan(x)</code> and <code>isinf(x)</code> name the cases; like PostgreSQL, it treats <code>NaN</code> as equal to itself and greater than every other value. <code>CHECK</code> constraints work as in PostgreSQL.</li>
+<li><strong>SQL Server:</strong> <code>float</code> can't hold <code>NaN</code> or infinity, so the cast is where they're caught: <code>TRY_CAST('NaN' AS float)</code> is <code>NULL</code>, and a staged text column is checked for that before the insert. <code>CHECK</code> constraints and <code>TRY_CAST</code> give the reject and the report.</li>
+<li><strong>Python:</strong> <code>math.isfinite(x)</code> is false for <code>NaN</code> and both infinities; <code>x == x</code> is false only for <code>NaN</code>, which is why pandas' <code>isna</code> and NumPy's <code>isfinite</code> exist. <code>float("nan") &lt; 0</code> and <code>float("nan") &gt; 100000</code> are both false: in Python, unlike PostgreSQL, <code>NaN</code> slips through both a lower and an upper test.</li>
+<li><strong>ArcGIS Pro:</strong> Select Layer By Attribute (<code>arcpy.management.SelectLayerByAttribute</code>) with a check's <code>WHERE</code> clause finds the rows that break it. A Constraint attribute rule (Add Attribute Rule, <code>arcpy.management.AddAttributeRule</code>) refuses an edit whose Arcade expression returns false, Pro's form of a <code>CHECK</code>.</li>
+</ul>

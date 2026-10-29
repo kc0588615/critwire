@@ -1,0 +1,8 @@
+-- result: e4-quarantine · 6 rows · sha256 786d6242a0ea
+gbif_id | check_name | value
+9000000002 | coordinate uncertainty negative, NaN or infinite | -30
+9000000003 | coordinate uncertainty negative, NaN or infinite | NaN
+9000000004 | coordinate uncertainty negative, NaN or infinite | Infinity
+9000000005 | coordinates exactly 0, 0 | 0.0, 0.0
+9000000006 | coordinate uncertainty negative, NaN or infinite | -Infinity
+… 1 more row

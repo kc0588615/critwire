@@ -1,0 +1,8 @@
+-- result: e4-checks · 10 rows · sha256 2ac7773edbfd
+check_name | action | records
+no coordinate uncertainty | flag | 24002
+repeats a record: same species, dataset, place, year and mon… | flag | 15643
+coordinate uncertainty over 100 km | flag | 297
+year before 1700 | flag | 10
+GBIF country code with no countries row | reject | 0
+… 5 more rows

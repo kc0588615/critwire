@@ -554,7 +554,7 @@
       "prereqs": [
         "e3"
       ],
-      "state": "planned",
+      "state": "built",
       "skill": "Data quality checks written as SQL; license filters; provenance tables; citations; derived datasets",
       "questions": [
         "Which datasets must I credit, and under which license?",

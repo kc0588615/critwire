@@ -365,6 +365,26 @@
       "key": "6ab3be56f6edb2ac0955fe3ccaac9f725ebd046effea3b3fdb9c37761ad3c05e",
       "result": "3c815646949658dbc6e744567d8251de4da9b7eca4c37f9e6ea475112fecbaa2"
     },
+    "e4-checks": {
+      "key": "4753ded3ee4205b365410e6cdcd763b0b0e39a7018d883bd884db73b122bd68e",
+      "result": "01c093c4b8999eb86b8f5755a49653bd7505914c7579503335891a0538f173c3"
+    },
+    "e4-credits": {
+      "key": "b0baead269cd4940b9cc91097c196d574574000fdaa7d284505b94b74f27a60d",
+      "result": "2392190307266821aa6e19d7045362f9eaf5fe103044306ffe3fc08bb3e65895"
+    },
+    "e4-derived": {
+      "key": "a8f844c2c684d41878304f45a56f82f1090c0cba9b06f3baaadaf6533c046c6a",
+      "result": "5b81757b7c91d77c19620081b205f3c93bb3387438affedf00af89396ef4bfe4"
+    },
+    "e4-ex": {
+      "key": "108f42c2c53e880315720af2aba806be1a443f4fa45884b16f5f967dc92d5a6e",
+      "result": "f750face8077deed1c9578c303c1d4b02c010f0b3bb7103b44001bb2d643b4bf"
+    },
+    "e4-quarantine": {
+      "key": "ff06f5fbfeac7f44f3bd5d54e0a459b4dd6357dd5c2302ad98dffa081f3e65e5",
+      "result": "0c8612cddaa10e9700c9c93327571b2c06ee9301dc7e1586522a07461cc9cf76"
+    },
     "g1-area": {
       "key": "5e2ec67518f7e7ddb7d85d79fdbb6777cd2a1d41780abbf4066fd64a8165321d",
       "result": "c3123fd9c947bc27c161e6c8e935acc0a9bdae73f375974e31bb262af9d7e21c"
@@ -704,6 +724,8 @@
     "e2.py": "e114f9672d00d7eccc06e063d084890b87c017acc27c4fb2244d3f05b04e80bf",
     "e3.py": "809f55d720c35eafe6e01c4f4b185fb2c774a611e880e35dc073ecf89a3f54db",
     "e3.sql": "2dd3b625ec208dcd26aef8ea73b26bceaa3c171ce9cc1e2f87cad94bed38a4a7",
+    "e4.py": "7bd082c69659a2b845e1d8d87647332627217e1fd8cc9329300f36f15cc85433",
+    "e4.sql": "16a57477639b575a95bdac78db63bcc6b5cc91c6306f5b4914c0be2856bcf615",
     "g1.sql": "5ae054385045f92b00d5442eb90d9962024114609002aee6b82671e7a7037d32",
     "g2.sql": "a50473b3cd47838d9cf45ab114dde8c55a29078f992c424e08382318e52636eb",
     "g3.sql": "1f0b49c165ae736a470be98df194b1f7f9dc2c431870a0d02753a4d8ba46deca",

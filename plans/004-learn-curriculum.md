@@ -9275,15 +9275,19 @@ ORDER BY id: sha256 3580ece3b509 then 3580ece3b509: same file
 
 **Tool:** Py + PG · **Time:** 2.0 h · **Prereqs:** e3
 
-**Goal:** know what you loaded, and who to thank for it.
+**Concept:** know what you loaded, and who to thank for it.
 - **Checks written as SQL:** each check is a query that counts the rows breaking one rule, so 0 means it passed, and the same query finds the rows when it didn't. A **reject** check stops the load (e2 runs those inside its transaction); a **flag** check is reported, and the rows stay with a note, because a strange value isn't always a wrong one.
+- **Rules belong to a dataset:** a check states what this data may hold, not a truth about every map. 0, 0 is a real place, in the Gulf of Guinea; this sample rejects it because none of its records lies within 5° of it, so there two zeros are far more likely a missing coordinate than a sighting. A seabird or fisheries dataset would keep it. One zero alone is legal: two tiger records sit on the equator in Sumatra.
+- **A number can be wrong in ways `< 0` misses:** a float column holds `NaN` (not a number) and `Infinity` as well as numbers, and a delivered file's text `NaN` casts without error (e2). PostgreSQL sorts `NaN` above every number, `Infinity` included, so a check written `uncertainty < 0` passes both, and a flag written `uncertainty > 100000` counts them as merely coarse. Test the range a value must fall in, `>= 0 AND < 'Infinity'`, which every bad case fails.
+- **Quarantine:** rows a reject check refuses go to a report with their source's key, the check and the value, so someone can fix the source or the rule; a count alone tells nobody which record to look at.
+- **What the sample is:** a capped sample of open records, at most 2,000 per species by md5 (e3), so its counts are neither abundance nor an even measure of effort. The cap makes a species with 200,000 records and one with 2,000 look alike, and within a species it keeps every bias of the records: more where more people look, and many GPS fixes from each collared animal (`Bias in records`, s1).
 - **License filters:** keep only what you may publish. critwire keeps CC0 1.0 and CC BY 4.0, using each record's *effective* license, the more restrictive of its own and its dataset's (§4.2).
 - **Provenance:** every row can be traced to its source. Here that is the download's DOI, each record's `dataset_key` and the `datasets` table of titles, publishers and DOIs (§4.5).
 - **Citations:** GBIF's terms ask you to cite the download's DOI. CC BY 4.0 records also require credit to their dataset. When you publish a subset, cite a **derived dataset**: you register the subset's per-dataset record counts with GBIF and receive a DOI that credits every dataset in it. critwire does this for its countries field (`pnpm gbif:register`) and, from L1, for the lab sample (§4.2).
 
 **Data:** `occurrences`, `datasets`, `species`.
 
-**Key code:** the checks, run on the lab sample:
+**Worked example:** the checks, run on the lab sample:
 
 ```sql
 -- q: e4-checks
@@ -9333,7 +9337,58 @@ GBIF country code with no countries row | reject | 0
 … 5 more rows
 ```
 
-Which datasets the Tasmanian devil's and the jaguar's records come from, and under which license:
+**Expected:** every reject check is 0: the sample was loaded with them (§A.1), and they guard each refresh. The flags are what a reviewer reads:
+- 24,002 records (59.4 %) give no coordinate uncertainty, so their precision is unknown;
+- 15,643 repeat another record's species, dataset, place, year and month. That can be several animals, several visits, or one record published twice: inspect them, don't delete them;
+- 297 records are uncertain by more than 100 km, too coarse for the 5 km cells of s2–s5;
+- 10 Tasmanian devil records are dated 1599, before Europeans first sighted Tasmania (1642). The year is a placeholder or an error, and s1 already met it.
+
+The sample's table can't hold a negative, `NaN` or infinite uncertainty: its `CHECK` refuses them (`learn_curriculum.sql`, §4), so `e4-checks` has no row for them. A staging table, all text or without that `CHECK`, can.
+
+**Lab:**
+1. Quarantine a batch. Six made-up staged records, each check run on each record, one report row per failure:
+
+```sql
+-- q: e4-quarantine
+-- status: ran
+-- engine: postgis
+WITH staged (gbif_id, longitude, latitude, coordinate_uncertainty_m, year) AS (
+  VALUES (9000000001, 146.8, -41.4, CAST(30 AS double precision), 2019),
+         (9000000002, 146.8, -41.4, CAST(-30 AS double precision), 2019),
+         (9000000003, 146.8, -41.4, CAST('NaN' AS double precision), 2019),
+         (9000000004, 146.8, -41.4, CAST('Infinity' AS double precision), 2019),
+         (9000000005, 0.0, 0.0, CAST(10 AS double precision), 2019),
+         (9000000006, 146.8, -41.4, CAST('-Infinity' AS double precision), 2031)
+)
+SELECT s.gbif_id, c.check_name, c.value
+FROM staged AS s
+CROSS JOIN LATERAL (VALUES
+  -- NaN sorts above Infinity in PostgreSQL, so this range fails negative, NaN, Infinity and -Infinity; NULL is a flag, not a reject
+  ('coordinate uncertainty negative, NaN or infinite',
+   NOT (s.coordinate_uncertainty_m >= 0 AND s.coordinate_uncertainty_m < 'Infinity'),
+   CAST(s.coordinate_uncertainty_m AS text)),
+  -- this dataset's rule: none of its records lies near 0, 0, so there two zeros mean a missing coordinate
+  ('coordinates exactly 0, 0', s.longitude = 0 AND s.latitude = 0, s.longitude || ', ' || s.latitude),
+  ('year after the download (2026)', s.year > 2026, CAST(s.year AS text))
+) AS c (check_name, failed, value)
+WHERE c.failed
+ORDER BY s.gbif_id, c.check_name;
+```
+
+```text
+-- result: e4-quarantine · 6 rows · sha256 786d6242a0ea
+gbif_id | check_name | value
+9000000002 | coordinate uncertainty negative, NaN or infinite | -30
+9000000003 | coordinate uncertainty negative, NaN or infinite | NaN
+9000000004 | coordinate uncertainty negative, NaN or infinite | Infinity
+9000000005 | coordinates exactly 0, 0 | 0.0, 0.0
+9000000006 | coordinate uncertainty negative, NaN or infinite | -Infinity
+… 1 more row
+```
+
+Each made-up record breaks one check except the last, which breaks two and gets two report rows; record 9000000001 passes them all and would load. A test written `coordinate_uncertainty_m < 0` catches 9000000002 and 9000000006's `-Infinity`, and passes 9000000003 and 9000000004: `NaN` and `Infinity` compare above 0. The report keeps the source's key and the value as delivered, so the fix can go back to the source.
+
+2. Who to credit. Which datasets the Tasmanian devil's and the jaguar's records come from, and under which license:
 
 ```sql
 -- q: e4-credits
@@ -9359,7 +9414,7 @@ ICMBio \| Dados de ocorrência de espécies do Sistema de Autor… | Instituto C
 … 28 more rows
 ```
 
-The derived-dataset registration for that subset: the request body, built but never posted.
+3. The derived-dataset registration for that subset: the request body, built but never posted.
 
 ```python
 # q: e4-derived
@@ -9399,13 +9454,76 @@ relatedDatasets: 33 datasets, 4000 records
 body: 1718 bytes, ready to POST with your GBIF account
 ```
 
-**Expected:** every reject check is 0: the sample was loaded with them (§A.1), and they guard each refresh. The flags are what a reviewer reads:
-- 24,002 records (59.4 %) give no coordinate uncertainty, so their precision is unknown;
-- 15,643 repeat another record's species, dataset, place, year and month. That can be several animals, several visits, or one record published twice: inspect them, don't delete them;
-- 297 records are uncertain by more than 100 km, too coarse for the 5 km cells of s2–s5;
-- 10 Tasmanian devil records are dated 1599, before Europeans first sighted Tasmania (1642). The year is a placeholder or an error, and s1 already met it.
+The devil and the jaguar have 4,000 records from 33 datasets. 29 datasets supply CC BY 4.0 records (3,992) and must be credited, led by the Jaguar Movement Database (1,948 GPS-collar records), the Tasmanian Natural Values Atlas (1,413) and the Tasmanian Museum and Art Gallery (569). The 4 CC0 datasets (8 records) ask for no credit, and are credited anyway. The registration body lists the same 33 datasets and 4,000 records, with `originalDownloadDOI` set to the download's DOI. These counts are records in a capped sample: the Jaguar Movement Database supplies 1,948 of the jaguar's 2,000 because a GPS collar records the same animal again and again, not because it saw most jaguars. They say whom to credit and for how much of the sample, and nothing about where either animal is common.
 
-The devil and the jaguar have 4,000 records from 33 datasets. 29 datasets supply CC BY 4.0 records (3,992) and must be credited, led by the Jaguar Movement Database (1,948 GPS-collar records), the Tasmanian Natural Values Atlas (1,413) and the Tasmanian Museum and Art Gallery (569). The 4 CC0 datasets (8 records) ask for no credit, and are credited anyway. The registration body lists the same 33 datasets and 4,000 records, with `originalDownloadDOI` set to the download's DOI.
+**Result:** every reject check passes on the sample, and four flags are left for a reviewer: unknown precision, repeats, coarse places, and dates before 1642. A quarantine report names each refused record by its key, with the check and the value, and an uncertainty check written as a range catches negative, `NaN` and infinite values that `< 0` lets through. The devil and the jaguar need credits to 29 datasets, and a derived dataset lists all 33 in one DOI.
+
+**Exercise:** turn the row-level reject checks into a gate a load calls before its `COMMIT`. For each check, count the staged rows breaking it and keep the first key; the load goes ahead only if every count is 0. Use `e4-checks`' coordinate and year checks and `e4-quarantine`'s uncertainty check. Run the gate on a `TEMP` copy of the devil's 2,000 records, then again after inserting two made-up records: one at 0, 0, and one dated 2031 with `NaN` uncertainty.
+
+**Answer:**
+
+```python
+# q: e4-ex
+# status: ran
+# after: py-connect
+# The row-level reject checks: each one's name, and the condition a breaking row meets.
+REJECTS = [
+    ("coordinates out of range", "longitude NOT BETWEEN -180 AND 180 OR latitude NOT BETWEEN -90 AND 90"),
+    ("coordinates exactly 0, 0", "longitude = 0 AND latitude = 0"),
+    ("coordinate uncertainty negative, NaN or infinite",
+     "NOT (coordinate_uncertainty_m >= 0 AND coordinate_uncertainty_m < 'Infinity')"),
+    ("year after the download (2026)", "year > 2026"),
+]
+
+
+def failures(cur):
+    """Each reject check the staged rows break: its name, how many rows, the lowest key."""
+    found = []
+    for name, condition in REJECTS:
+        n, first = cur.execute(f"SELECT count(*), min(id) FROM staged WHERE {condition}").fetchone()
+        if n:
+            found.append((name, n, first))
+    return found
+
+
+def report(label, cur):
+    rows = cur.execute("SELECT count(*) FROM staged").fetchone()[0]
+    found = failures(cur)
+    print(f"{label} ({rows:,} rows): {'refused' if found else 'every reject check 0: load'}")
+    for name, n, first in found:
+        print(f"  {name}: {n} (first {first})")
+
+
+with connect() as conn, conn.cursor() as cur:
+    # CREATE TABLE AS copies no CHECK, as a staging table wouldn't have the target's
+    cur.execute("""CREATE TEMP TABLE staged AS
+                   SELECT o.id, o.longitude, o.latitude, o.coordinate_uncertainty_m, o.year
+                   FROM occurrences AS o JOIN species AS s ON s.id = o.species_id
+                   WHERE s.scientific_name = 'Sarcophilus harrisii'""")
+    report("the devil's records", cur)
+    cur.execute("""INSERT INTO staged VALUES (9000000001, 0, 0, NULL, 2019),
+                                             (9000000002, 146.8, -41.4, 'NaN', 2031)""")
+    report("with two made-up records", cur)
+    conn.rollback()
+```
+
+```text
+-- result: e4-ex · python · sha256 9fac0647c0e1
+the devil's records (2,000 rows): every reject check 0: load
+with two made-up records (2,002 rows): refused
+  coordinates exactly 0, 0: 1 (first 9000000001)
+  coordinate uncertainty negative, NaN or infinite: 1 (first 9000000002)
+  year after the download (2026): 1 (first 9000000002)
+```
+
+**Check:** the devil's records pass every check, as the whole sample does in `e4-checks`. With the two made-up records the gate refuses, and names three checks, each with its count and first key: 9000000001 breaks the 0, 0 rule, and 9000000002 breaks both the uncertainty and the year checks. In a real load the refusal raises an error inside the transaction, so nothing commits (e2), and `e4-quarantine`'s report is what you send back to the source.
+
+**Dialects:**
+- **PostgreSQL:** `'NaN'::float8 = 'NaN'::float8` is true, and `NaN` sorts above every number, so `>= 0 AND < 'Infinity'` is the whole finite, non-negative test; PostgreSQL 16 has no `isnan` for floats. A `CHECK` holds the same rule in the table (`learn_curriculum.sql`). `pg_input_is_valid` (e2) tests text before a cast, and accepts `NaN` and `Infinity` as valid floats.
+- **DuckDB:** `isfinite(x)`, `isnan(x)` and `isinf(x)` name the cases; like PostgreSQL, it treats `NaN` as equal to itself and greater than every other value. `CHECK` constraints work as in PostgreSQL.
+- **SQL Server:** `float` can't hold `NaN` or infinity, so the cast is where they're caught: `TRY_CAST('NaN' AS float)` is `NULL`, and a staged text column is checked for that before the insert. `CHECK` constraints and `TRY_CAST` give the reject and the report.
+- **Python:** `math.isfinite(x)` is false for `NaN` and both infinities; `x == x` is false only for `NaN`, which is why pandas' `isna` and NumPy's `isfinite` exist. `float("nan") < 0` and `float("nan") > 100000` are both false: in Python, unlike PostgreSQL, `NaN` slips through both a lower and an upper test.
+- **ArcGIS Pro:** Select Layer By Attribute (`arcpy.management.SelectLayerByAttribute`) with a check's `WHERE` clause finds the rows that break it. A Constraint attribute rule (Add Attribute Rule, `arcpy.management.AddAttributeRule`) refuses an edit whose Arcade expression returns false, Pro's form of a `CHECK`.
 
 #### e5 · schedule
 

@@ -1,0 +1,8 @@
+-- result: e4-credits · 33 rows · sha256 80800d03f9ae
+title | publisher | doi | license | records
+Jaguar Movement Database: a GPS-based movement dataset of th… | Instituto Chico Mendes de Conservação da Biodiversidade - IC… | 10.71819/lr0yrg | CC BY 4.0 | 1948
+Tasmanian Natural Values Atlas | Department of Natural Resources and Environment Tasmania | 10.15468/rtnb4m | CC BY 4.0 | 1413
+Tasmanian Museum and Art Gallery provider for OZCAM | Tasmanian Museum and Art Gallery | 10.15468/ijp8p9 | CC BY 4.0 | 569
+Feline and other mammals monitoring 2025 in Tres Mesas wind … | ENGIE | 10.15468/ze7rdr | CC BY 4.0 | 8
+ICMBio \| Dados de ocorrência de espécies do Sistema de Autor… | Instituto Chico Mendes de Conservação da Biodiversidade - IC… | 10.71819/wrldzz | CC BY 4.0 | 8
+… 28 more rows
