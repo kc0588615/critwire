@@ -142,7 +142,7 @@ The review's numbering: MF = MUST-FIX, SC = SHOULD-CHANGE.
 
 - [x] Baseline: install, migrate, run typecheck, lint, unit and E2E tests; record the results under Baseline
 - [x] Architecture: `architect` writes findings and the target design
-- [ ] Fable review: `architecture-reviewer`
+- [x] Fable review: `architecture-reviewer`
 - [ ] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
 - [ ] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
 - [ ] Steps: `planner` writes Steps and Verification
@@ -546,6 +546,31 @@ That is about 20–23 units, since 4 and 5 may split.
 
 ## Architecture review (Fable)
 
+Verdict: APPROVE WITH CHANGES
+
+Fable 5.1, 2026-10-29, on `32095ff`. Findings 1–10 checked against the code: every cited line holds (`blocks.ts:108`, `port.ts:99–103`, `runner.ts:258,577–617`, `freshness.ts:27,68,86`, `course.ts:257–263`, `assemble.ts`, `site.ts:67–71`, `module-html.ts:33,193–195`, `pg.ts:89–97` childEnv, `cleanup.ts:86–101`, `check.ts:182–221`, `erd-model.ts:229–231`, `lab.mmd:4`). Also checked today: `critwire_lab` is `rolsuper = f`, `has_schema_privilege(…,'public','CREATE') = f` (V2/V3 pass as is; `setup.ts:90` already refuses CREATE on public, so D7's "run --setup" message leads somewhere); the manifest's `occurrences.parquet` is 454,202 B / `35ca89f9bee3` (finding 4, D8 right); `s4-moran-sql`'s result (004:7177–7178) prints full-precision floats, so the TS Moran gate over rendered results is at the spike's precision; `readTables` on `learn_curriculum` costs 1.6 s (§4.4d's per-block reading adds about a minute, fine); `uv pip sync` takes several `<SRC_FILE>`; `/usr/bin/python3.12` exists. Finding 2's per-platform resolutions weren't re-run here (network); accepted as "checked". The review items (MF5, SC8 e3/e5, the e1/e2/e4/e5 corrections, SC7) each have a block or test that proves them; nothing is dropped. The design meets the brief's Scope and DoD, with the three deviations D8, D9 and D3 recorded.
+
+### MUST-FIX
+
+1. **The browser bundle's inputs outside `site/learn/src` must stay byte-identical, or `learn/assets/` changes and the DoD's dist sha256 audit fails.** Evidence: `site/learn/tsconfig.json:14` includes `scripts/build/learn/sql.ts`, `scripts/learn/cell.ts` and `scripts/build/licenses.ts`; `site/learn/src/{check,cards,isolation,engine,csv,results}.ts` import them, so esbuild hashes them into `learn/assets/<hash>.js`. Finding 9 ("`site/learn/src` must not change") misses them, and §5's per-engine word test and §2's parsing sit next to `codeOnly` in `sql.ts`. Required: state in §5 and §9 that those three files are untouched (the Python word test lives in `assemble.ts`; nothing new goes into `sql.ts` or `cell.ts`), and add to the DoD audit a sha256 check of `dist/learn/assets/` against the Baseline list (same as AS1 for the `.sql` files).
+2. **`venvState()` (§3) is stricter than the environment the design itself prescribes.** It refuses any installed set that isn't the union of both requirements files, but: 004 §3.3 and the setup page tell a learner (and the owner on WSL, 004 §7.6) to `uv pip sync` the labs file only, so rasterio is absent; and §1/§7 say editors add `ipykernel` on demand. Both leave `learn:check` refusing a working venv until `pnpm learn:venv` is re-run after every notebook session. Required: the check proves the labs file's pins (each present, exact version; a missing or wrong one is refused, naming it and `pnpm learn:venv`) and ignores packages outside it. V1 changes to "missing or wrong-version is refused; an extra isn't". Keep the message when rasterio is missing for `ingest habitat` where that command runs, not here.
+3. **`e2e/learn-labs.spec.ts`'s first test breaks as written once a page has more than one download.** Evidence: `learn-labs.spec.ts:36–53` loops over `assembleDownloads(pages)` and, for each download, asserts every PostGIS block's `.download a` href equals `/learn/labs/<that download>` and that its code is in that file; with `s4.py` and `s4.ipynb` in the list, the PostGIS blocks of s4 fail against the `.py`. §10 lists the new checks but not this reshaping. Required: §10 says the existing test iterates by `Download.kind` (SQL blocks against the page's `.sql`, Python blocks against its `.py`/`.ipynb`), and that `pages.ts`'s `downloads` map carries all kinds.
+
+### MISSED
+
+- **matplotlib's font cache is rebuilt per block** under §3's fresh empty HOME (several seconds for each block that imports it); finding 9 says "to measure". Give the run one `MPLCONFIGDIR` folder, outside every block's cwd, still inside the run's temp folder, and keep PY3's environment list exact (add it there).
+- **`pnpm test` is documented "pure, offline" (AGENTS.md)** and PY2/PY3/PY7/PY8 spawn `/usr/bin/python3.12`. Offline holds; "pure" doesn't. A machine without `python3.12` must fail those tests with one clear message naming it, not a spawn ENOENT per test; update AGENTS.md's wording in §11.
+- **`refresh.py` (e5) must not set `application_name`**, so its sessions keep the inherited `PGAPPNAME` and §4.6's cleanup catches them; say so in §8's e5 row.
+- **The DoD audit** should list the repository files that change on purpose (`site/learn/labs/requirements.{in,txt}`, `scripts/ingest/requirements.*`, `checked/*.txt`, `checked.json`, `e2e/learn-labs.spec.ts`, AGENTS.md, 004) against `baseline-sha256-repo.txt`, and the dist list "unchanged except pages, plus the new `learn/labs/*.py|ipynb|requirements.txt`"; and the DoD's `uv pip sync --no-build requirements.txt` / `uv pip check` line now names both files.
+
+### SHOULD-CONSIDER
+
+1. **Simpler Moran gate:** let `s4-agree` read `s4_neighbours` and `s4-moran-sql`'s statistics from the database itself, compare in Python and exit non-zero on a mismatch, printing both sides. That ports `compare.py` as "a block" (DoD allows it), runs on a learner's machine too, and removes `agree.ts`'s result parsing for that pair. AG1–AG4 become the block's own failure cases. The Gi\*, LISA and zonal gates over rendered results are fine either way.
+2. §4.7 puts `pg-session` into every Python block's key; Python never runs it. Harmless, but drop it so an edit to `pg-session` doesn't re-stale every Python result.
+3. §4.4(d) reads `learn_curriculum` after every Python block (1.6 s each, about a minute for 35). Fine as designed; if the budget tightens, read once per page instead.
+4. D5 (`arcpy-moran` commented out in `setup.py`) deviates from 004 §7.3's "in no download" for simplicity, not because code proved 004 wrong; the brief's decision rule allows it only with 004 updated in the same commit (§11 lists it): keep that.
+5. Finding 3's fix runs every boot block in `--module` mode and compares their results; say in §4.2 that a `--module` run also prints them, so an owner iterating on s2 sees `s4-cells` go by once.
+
 ## Architecture review (Astra)
 
 ## Revision notes
@@ -566,5 +591,6 @@ That is about 20–23 units, since 4 and 5 may split.
 
 - 2026-10-29 14:02 UTC: Baseline: install, venv, typecheck, test 601/601, build, test:db 121/121, learn:check, e2e 87/87 all pass; sha256 lists saved.
 - 2026-10-29 14:27 UTC: Architecture: architect wrote findings, target design (Python engine, learn:check Python stage, .py/.ipynb downloads, agree gates, MF5/SC8/SC7 realisation), PY/PYC/AS/AG failure lists, D1–D17. Doc-only; no checks needed.
+- 2026-10-29 14:37 UTC: Fable review: APPROVE WITH CHANGES, 3 MUST-FIX (bundle inputs untouched + assets sha audit; venvState checks labs pins only; learn-labs.spec iterates by Download.kind), 4 missed, 5 should-consider. Doc-only; no checks needed.
 
 ## Summary
