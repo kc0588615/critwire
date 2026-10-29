@@ -1,0 +1,8 @@
+-- result: s1-basis · 7 rows · sha256 f870388664cc
+basis_of_record | records | pct | species
+HUMAN_OBSERVATION | 17587 | 43.5 | 55
+PRESERVED_SPECIMEN | 10568 | 26.2 | 67
+MACHINE_OBSERVATION | 8418 | 20.8 | 22
+MATERIAL_SAMPLE | 1805 | 4.5 | 47
+OBSERVATION | 1384 | 3.4 | 5
+… 2 more rows

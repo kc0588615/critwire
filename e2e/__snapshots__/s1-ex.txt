@@ -1,0 +1,8 @@
+-- result: s1-ex · 38 rows · sha256 dfa578491a18
+common_name | records | top_year | top_year_records | top_pct
+Golden Poison Frog | 299 | 2017 | 251 | 83.9
+Grévy's Zebra | 321 | 2008 | 257 | 80.1
+Tiger | 2000 | 2021 | 1202 | 60.1
+Livingstone's Flying Fox | 109 | 2016 | 61 | 56
+Golden-rumped Sengi | 1613 | 2021 | 763 | 47.3
+… 33 more rows

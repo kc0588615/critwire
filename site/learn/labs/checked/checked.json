@@ -500,6 +500,14 @@
     "py-smoke": {
       "key": "c610d4e4b25d17aabedae2db139ab2eac9d2cd7f7ffea301f72914b2c4854f94",
       "result": "a0e3f5749bd87ed74488a486d1d46dbf766f09f0c765cea41798fcbc2b4709a3"
+    },
+    "s1-devil": {
+      "key": "e653d83ba0ae25c20ef0429c0272e4b8f358b9321d5666fbf0fc27b6d42a9240",
+      "result": "019aba64d2b806567e8a68a3c96497d2658ac6e1a3c6bb9963d15553c9a552b7"
+    },
+    "s1-jaguar": {
+      "key": "4505e5e9dc7bfadfb7ac19260ba0a4d9f45635b49f1859140e43540e174dc213",
+      "result": "30cc73402f30bb52427550ac76af6e42e9182f6a75489ed0fa104b8914860313"
     }
   },
   "downloads": {
@@ -516,6 +524,7 @@
     "g6.sql": "528edf22a48338fdf5e8792bfd1717196d107e4f805b1223b79d61dce9a4f3c1",
     "g7.sql": "97421e93a186f78dcaf5050ff1d6d41096fb4f1286880b5cecb43c89210089fb",
     "pg-checks.sql": "348691fbefd3b6c0400e7edfd3a3aaf4f767b186c1a6bcbe2f2ad021cb5607fd",
+    "s1.sql": "fffbbb3a0ff9128446a13ac5d3bc23929f8f58ba72e1eb26459824f0cb6f19b8",
     "setup.py": "93208bbbb1aa1f1aa5ea2ca58806cd661bee64544aa2a6cd223db3ba18df4c29"
   },
   "labErd": "55b99a7ff2b607851f2703f1889b8540e95e90a85eae01c913c9caec9a6d93ca"

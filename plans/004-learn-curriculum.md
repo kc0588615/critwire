@@ -6568,11 +6568,21 @@ Six modules, twelve and a half hours, in your own PostGIS (§3.2) and the Python
 
 **Tool:** PG + B · **Time:** 1.5 h · **Prereqs:** g3
 
-**Goal:** before any statistic, know what the records are. GBIF records come from datasets of very different kinds: a museum's specimens, a national atlas, a citizen-science app, camera traps, one research team's GPS collars. Each kind records a different thing: a collar logs one animal every few hours wherever it walks; an atlas logs where people looked. `basis_of_record` says what kind of evidence a record is, the dataset says who collected it, and together they tell how much a map of records shows the animal and how much it shows the people. The honest wording follows from that: "records of jaguars", "where devils were recorded", never "where jaguars live" or "the devil's range" (critwire's countries field says the same, `AGENTS.md`).
+**Concept:** Before any statistic, know what the records are:
+- **A record is evidence**, not a census. It says that someone found the animal at a place on a date and published what they found. Many records at a place show that the animal was there and that people looked there; no record shows nothing at all. Every map, count and ratio of records mixes the two, so the rest of this track keeps asking which part a number can speak to.
+- **Basis of record** (`basis_of_record`, a Darwin Core term) says what kind of evidence a record is:
+  - `HUMAN_OBSERVATION`: a person saw or heard the animal (surveys, atlases, citizen-science apps).
+  - `MACHINE_OBSERVATION`: a device recorded it (camera traps, GPS collars, sound recorders).
+  - `PRESERVED_SPECIMEN`: an animal kept in a museum; `MATERIAL_SAMPLE`: a part kept from one, such as tissue for DNA; `MATERIAL_CITATION`: a specimen cited in a publication.
+  - `OBSERVATION` and `OCCURRENCE`: generic values, used when the publisher didn't say which.
+  Each kind has its own bias. Specimens follow old expeditions and collectors' interests, observations follow people, roads and towns, and devices follow where a team put them.
+- **The dataset** (`dataset_key`, with its title and publisher in `datasets`) says who collected the records. One project can hold most of a species' records: a census flight, a single survey, one team's collars. The share of the largest dataset is a quick test: near 100 %, the species' records describe that project.
+- **Telemetry** is a device that reports an animal's position by itself; a GPS collar logs one animal every few hours, wherever it walks. A thousand fixes from a few collared animals aren't a thousand sightings: they trace those animals' paths, at the rate the collar was set to.
+- **Recording effort** is how much looking was done, where and when: the visits, traps, flights and hours behind the records. Records gather near roads, towns, research stations and reserves, and in the years a project ran. The records alone don't measure effort, so they can't say how common an animal is in one place against another; s6 compares records with what each zone could be expected to hold.
+- **The sample** keeps at most 2,000 open records per species, picked by a hash of the GBIF id, which works like a fixed random draw (§4). Shares within a species estimate the shares among all its open records; counts across species don't compare, since every well-recorded species shows 2,000.
+- **Honest wording** follows from all of this: "records of jaguars", "where devils were recorded", "countries with open records"; never "where jaguars live", "the devil's range" or "devils cluster". critwire's own country field is named that way (`range.countriesWithOpenRecords`).
 
-**Data:** `occurrences`, `datasets`, `species`; the browser blocks run on the same sample in DuckDB (§3.1).
-
-**Key code:** the sample by basis of record, in the browser:
+**Worked example:** the sample by basis of record, in the browser:
 
 ```sql
 -- q: s1-basis
@@ -6597,7 +6607,10 @@ OBSERVATION | 1384 | 3.4 | 5
 … 2 more rows
 ```
 
-How much of each species' records one dataset holds, for the species with at least 100 records, in the browser:
+`sum(count(*)) OVER ()` is a window over the grouped rows (f4): the total of all groups, beside each one, so each row can show its share. Human observations are 43.5 % of the 40,395 records and preserved specimens 26.2 %. Machine observations are 20.8 %, from only 22 of the sample's 71 species: a few species carry nearly all the devices. The two rows below the cut are `MATERIAL_CITATION` (441) and `OCCURRENCE` (192).
+
+**Lab:**
+1. How much of each species' records one dataset holds, for the species with at least 100 records, in the browser:
 
 ```sql
 -- q: s1-dominance
@@ -6630,7 +6643,9 @@ Golden Poison Frog | 299 | 5 | 287 | 96
 … 33 more rows
 ```
 
-The jaguar's records: GPS collars against everything else, with the places and years each covers:
+Of the 38 species with at least 100 records, 17 have more than half from one dataset and 6 have 90 % or more. Livingstone's flying fox's 109 come from a single dataset, the golden-rumped sengi's 98.1 % from one biodiversity survey, the jaguar's 97.4 % from one dataset. For these species, any pattern in the records is first a pattern in one project's work.
+
+2. The jaguar's records: GPS collars against everything else, with the places and years each covers. The title test (`ILIKE '%GPS%'`) is a shortcut that works on this sample; on other data, read each dataset's description before sorting it:
 
 ```sql
 -- q: s1-jaguar
@@ -6660,7 +6675,9 @@ GPS collars | 1 | 1948 | 97.4 | 5 | 1948 | 2001 | 2016
 everything else | 24 | 52 | 2.6 | 8 | 47 | 1949 | 2025
 ```
 
-The devil's records, which s2–s5 analyse, by dataset and basis of record:
+The collar dataset holds 1,948 records at 1,948 different points in 5 countries, between 2001 and 2016; the other 24 datasets hold 52 records (8 countries, 1949 to 2025). `count(DISTINCT (o.longitude, o.latitude))` counts distinct pairs of coordinates, written as one row value. Every collar fix is a new point, so nothing in a list of locations shows that they come from a few animals; only the dataset does. Any map of the jaguar's records is mostly a map of a few collared animals' paths.
+
+3. The devil's records, which s2–s5 analyse, by dataset and basis of record:
 
 ```sql
 -- q: s1-devil
@@ -6690,7 +6707,54 @@ Museums Victoria provider for OZCAM | PRESERVED_SPECIMEN | 5 | 0.3 | NULL | NULL
 … 7 more rows
 ```
 
-**Expected:** human observations are 43.5 % of the 40,395 records, preserved specimens 26.2 % and machine observations (camera traps, collars, sound recorders) 20.8 %, from only 22 species. Of the 38 species with at least 100 records, 17 have more than half from one dataset and 6 have 90 % or more: Livingstone's flying fox's 109 come from a single dataset, the golden-rumped sengi's 98.1 % from one biodiversity survey, the jaguar's 97.4 %. That jaguar dataset is GPS collars: 1,948 records at 1,948 different points in 5 countries between 2001 and 2016, against 52 records from 24 other datasets (8 countries, 1949 to 2025). Any map of the jaguar's records is mostly a map of a few collared animals' paths. The devil's 2,000 records are 70.7 % the Tasmanian Natural Values Atlas (1,367 `OBSERVATION` and 46 `OCCURRENCE`) and 27.9 % material samples (such as tissue) at the Tasmanian Museum and Art Gallery (558 `MATERIAL_SAMPLE`, 2000 to 2023); the other 9 rows are museum specimens and one observation. The atlas's first year, 1599, predates the first European sighting of Tasmania (1642): a date to check before trusting a time series (e4). So s2–s5 measure where the atlas and the museum's field teams recorded devils, and say so.
+The devil's 2,000 records are 70.7 % the Tasmanian Natural Values Atlas (1,367 `OBSERVATION` and 46 `OCCURRENCE`) and 27.9 % material samples, such as tissue, at the Tasmanian Museum and Art Gallery (558 `MATERIAL_SAMPLE`, 2000 to 2023); the other 9 rows are museum specimens and one observation. The atlas's first year, 1599, comes before the first European sighting of Tasmania (1642): a date to check before trusting a time series (Quality and provenance, e4). 19 of the 28 museum specimens have no year at all.
+
+**Result:** Human observations are 43.5 % of the sample's 40,395 records, preserved specimens 26.2 % and machine observations 20.8 %, from only 22 species. Of the 38 species with at least 100 records, 17 have more than half from one dataset and 6 have 90 % or more. The jaguar's 97.4 % is one GPS-collar dataset: 1,948 records at 1,948 points in 5 countries between 2001 and 2016, against 52 records from 24 other datasets. The devil's records are 70.7 % one atlas and 27.9 % one museum's material samples. So s2–s5 measure where the atlas and the museum's field teams recorded devils, and say so; the honest sentence is always about records.
+
+**Exercise:** Datasets aren't the only thing that piles up: so do years. For each species with at least 100 records, find the year with the most records (the earliest one on a tie), how many records it holds, and its share of all the species' records. Records with no year count in the total but can't be a busiest year. Run it in the browser. Which species have half or more of their records in one year, and why?
+
+**Answer:** One count over all records per species, and one count per species and year that ranks the years with `row_number()` over the grouped rows:
+
+```sql
+-- q: s1-ex
+-- status: ran
+WITH totals AS (
+  SELECT species_id, count(*) AS records
+  FROM occurrences
+  GROUP BY species_id
+  HAVING count(*) >= 100
+), per_year AS (
+  SELECT species_id, year, count(*) AS n,
+         row_number() OVER (PARTITION BY species_id ORDER BY count(*) DESC, year) AS place
+  FROM occurrences
+  WHERE year IS NOT NULL
+  GROUP BY species_id, year
+)
+SELECT s.common_name, t.records, p.year AS top_year, p.n AS top_year_records,
+       round(100.0 * p.n / t.records, 1) AS top_pct
+FROM totals AS t
+JOIN per_year AS p ON p.species_id = t.species_id AND p.place = 1
+JOIN species AS s ON s.id = t.species_id
+ORDER BY top_pct DESC, t.records DESC, s.id;
+```
+
+```text
+-- result: s1-ex · 38 rows · sha256 dfa578491a18
+common_name | records | top_year | top_year_records | top_pct
+Golden Poison Frog | 299 | 2017 | 251 | 83.9
+Grévy's Zebra | 321 | 2008 | 257 | 80.1
+Tiger | 2000 | 2021 | 1202 | 60.1
+Livingstone's Flying Fox | 109 | 2016 | 61 | 56
+Golden-rumped Sengi | 1613 | 2021 | 763 | 47.3
+… 33 more rows
+```
+
+**Check:** Four species have half or more of their records in one year: the golden poison frog (251 of 299 in 2017, 83.9 %), Grévy's zebra (257 of 321 in 2008, 80.1 %), the tiger (1,202 of 2,000 in 2021, 60.1 %) and Livingstone's flying fox (61 of 109 in 2016, 56 %). Each peak is one project: the frog's year is one population survey in Colombia, the zebra's one aerial census in Kenya, and 1,198 of the tiger's are photographs of tigers posted on Facebook in India, gathered into one dataset. The cheetah's busiest year, 2007, is 919 fixes from one tracking study. A chart of records by year shows when projects ran, not when animals were common. Without `WHERE year IS NOT NULL`, the records with no year form a group of their own, and for 11 species it outnumbers every real year (the spiny softshell turtle's 362 against 87 in 1976), so the "busiest year" comes out empty.
+
+**Dialects:**
+- **PostgreSQL:** `count(DISTINCT (a, b))` counts distinct pairs through a row value; `ILIKE` matches without regard to case; `round(x, 1)` takes a `numeric`, which `100.0 * count(*)` already is.
+- **DuckDB:** the same query runs: `ILIKE` exists, and `(a, b)` is an unnamed struct that `count(DISTINCT …)` accepts. It also has `arg_max(year, n)` for "the year with the most", which leaves ties to the engine; `row_number()` with a tie-break gives the same answer every run.
+- **SQL Server:** no `ILIKE`; `LIKE` ignores case under the usual case-insensitive collations. `COUNT(DISTINCT …)` takes one expression, so count pairs in a subquery (`SELECT COUNT(*) FROM (SELECT DISTINCT longitude, latitude FROM …) AS p`). `SUM(COUNT(*)) OVER ()` and `ROUND(x, 1)` work as here.
 
 #### s2 · point-patterns
 

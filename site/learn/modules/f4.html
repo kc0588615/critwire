@@ -16,7 +16,7 @@
 <h2>Worked example</h2>
 <p>Which dataset contributed most of each species' records, and what share is that? Three steps, one CTE each: count records per species and dataset; put each species' total and a place on every row; keep place 1 and join the dataset's title.</p>
 {{block:f4-top-dataset}}
-<p>The top rows are species with a handful of records, or with one source only, so 100 % says little there; read on down. The Jaguar's sample is 97 % one GPS-collar dataset: most of its 2,000 points are positions of collared animals, not 2,000 separate sightings. Bias in records (s1, in preparation) comes back to this. <code>row_number</code> breaks ties by <code>dataset_key</code> so that place 1 is always one row; with <code>rank</code>, a tie would keep both.</p>
+<p>The top rows are species with a handful of records, or with one source only, so 100 % says little there; read on down. The Jaguar's sample is 97 % one GPS-collar dataset: most of its 2,000 points are positions of collared animals, not 2,000 separate sightings. <a href="/learn/spatial-statistics/bias/">Bias in records, s1</a>, comes back to this. <code>row_number</code> breaks ties by <code>dataset_key</code> so that place 1 is always one row; with <code>rank</code>, a tie would keep both.</p>
 
 <h2>Lab</h2>
 <ol class="steps">

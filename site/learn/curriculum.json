@@ -374,7 +374,7 @@
       "prereqs": [
         "g3"
       ],
-      "state": "planned",
+      "state": "built",
       "skill": "Datasets, basis of record, telemetry, recording effort; framing results honestly",
       "questions": [
         "How much of the jaguar sample is GPS-collar data?",

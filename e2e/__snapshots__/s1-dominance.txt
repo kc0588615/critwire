@@ -1,0 +1,8 @@
+-- result: s1-dominance · 38 rows · sha256 f0a5d35580a8
+common_name | records | datasets | top_dataset | top_pct
+Livingstone's Flying Fox | 109 | 1 | 109 | 100
+Golden-rumped Sengi | 1613 | 11 | 1583 | 98.1
+Jaguar | 2000 | 25 | 1948 | 97.4
+Dama Gazelle | 403 | 9 | 390 | 96.8
+Golden Poison Frog | 299 | 5 | 287 | 96
+… 33 more rows
