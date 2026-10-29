@@ -1065,6 +1065,12 @@ The owner's H5 answer is under Decisions. Measured in `critwire_dev`'s `learn_cu
   - Code: `setupLab` checks `postgis_raster` beside `postgis`; `serverVersions`' message. `runner.ts` is a checker file: every lab's stamp moves (`L` re-proves; `checked/*.txt` unchanged).
   - Check: `T`, `D` (setup + runner db tests), `L`, `P`, `H`, `HD`.
 
+- [ ] S22 · Habitat publication: stage then rename (Astra code review MUST-FIX 1)
+  - Gap: `buildHabitat` (`scripts/ingest/habitat.ts`) `copyFile`s each output into `data/learn/`, then writes `habitat.json`. A failure or interruption mid-copy leaves mixed generations, and the next `ingest habitat` stops at its first `readLabFiles()` with a sha256 mismatch that doesn't say how to recover.
+  - First [T]: HR8 in `habitat-build.test.ts`: a failure during publication (injected after staging) leaves `data/learn/` byte-identical and no `*.tmp-*` file in it; red first.
+  - Code: one shared helper (e.g. `publishFiles(dest, files)` in `scripts/ingest/`): each file (outputs **and** `habitat.json`) written as `<path>.tmp-<pid>` beside its target, then all renamed; on failure, temps removed. `buildHabitat` uses it; `gbif-sample.ts`' inline tmp+rename and `buildShapes`' `copyFile` loop move to it too (DRY). `readLabFiles`' sha256 refusal for `data/learn/` adds "restore with git restore data/learn".
+  - Check: `T`, `B`, `HD` (no committed byte changes). The ingest isn't re-run (HR1 and HR8 cover the path).
+
 ## Verification
 
 Run once, on the final commit (after any code-review fixes), on a clean tree, in this order. `M`, `H`, `HD` and `P` are as in Steps. Log each result; the numbers go to the Summary.
@@ -1177,6 +1183,17 @@ Each step's isolated cases are its **First** list. What a session does when the 
 
 ## Code review (Astra)
 
+VERDICT: APPROVE_WITH_CHANGES
+
+MUST-FIX:
+
+1. `scripts/ingest/habitat.ts:398–403`: Publication overwrites snapshot files individually before updating `habitat.json`. A copy failure or interruption leaves mixed generations; cleanup deletes staged outputs, and `readLabFiles()` at line 450 rejects subsequent retries. This violates the plan’s all-or-nothing requirement. Make publication recoverable and test interruption during replacement.
+
+SHOULD-CONSIDER:
+
+1. `scripts/build/contract.ts:139`: Validate actual JSON value types, not only writer declarations. Reproduced: numeric `commonName: 123` passes both `assertRecordKeys` and the contract check.
+2. Preserve the synthetic raster smoke test as an automated integration test executing real `habitat.py`; current ingest tests substitute fake Python output, leaving raster calculations untested by that suite.
+
 ## Release
 
 ## Decisions
@@ -1230,6 +1247,7 @@ Each step's isolated cases are its **First** list. What a session does when the 
 - 2026-10-29 · S20, H5's outcome (for the Summary): `dist/learn/data/` 95,936,992 B, committed lab data 18,822,906 B (cap 120,000,000 each; = 004 §4.4); tiles kept 117 of 210 (`cr`, 3,730 × 3,474) and 173 of 221 (`tas`, 4,131 × 3,318), 290 in all; cells kept 7,555,072 + 11,206,656 = 18,761,728; `cr.tif` 1,380,611 B, `tas.tif` 1,828,711 B, `habitat_clips.parquet` 1,826,789 B; loader 72,088,315 B (16 tables, 3.9 s as `critwire_lab`); ingest 24 min 33 s (12 min 26 s Zenodo), 3.17 GB peak.
 - 2026-10-29 · S20: AGENTS.md gives `ingest habitat`'s measured 12–25 min (≈ 11 min decoding plus downloads; S7, S18d), not the plan's "≈ 1 h", which fits the whole species-change chain (GBIF download ≈ 17 min, ingest, DOI) and is written there. 004 fixes with the code: §0 versions (GDAL) and "not yet built" (g left), §7.4/§7.5 versions, §7.6 raster check + L3's part, §7.7 L3 learn-data cases and g3/g7 screenshots, §9 L3 row and "the same data throughout" (p1/p3 left to L5, as their notes say). Gap: `--setup` doesn't install `postgis_raster` though `serverVersions` points there → S21.
 - 2026-10-29 · S21: LS6 and NR5 need a database with `postgis` but no `postgis_raster`, which `critwire_dev` can't be (`learn_curriculum` has raster columns). `withScratchDatabase` (`scripts/test-db.ts`) creates a throwaway `learn_t_<hex>` database as the libpq superuser and drops it `WITH (FORCE)` after, even on failure; nothing persists, so `docs/recovery.md` is unchanged. The leak check in S21 also listed `pg_database` `learn\_%`: empty.
+- 2026-10-29 · Code review (Astra): APPROVE_WITH_CHANGES. MUST-FIX 1 (habitat publication overwrites files one by one) accepted → S22: recovery is `git restore data/learn`, but the next run's refusal doesn't say so, and gbif-sample's tmp+rename pattern exists to reuse. SHOULD-CONSIDER 1 (contract checks the writer's declared types, not each JSON value's type) and 2 (no automated test runs the real `habitat.py`) → Summary, for the owner: neither breaks a shipped file (`species.json` comes from typed `derive`; S7/S18d ran the real `habitat.py`, its numbers pinned in `habitat.json`).
 
 ## Log
 
@@ -1267,5 +1285,10 @@ Each step's isolated cases are its **First** list. What a session does when the 
 - 2026-10-29 09:20 UTC · S19: `learn-screens` + g3, g7 (8 PNGs); `schema` DIAGRAMS + `g3-predicates`, `g7-cells`; `learn-map` new test (g1–g7 built, linked on map + track, 200); `learn-labs` downloads include g1–g7.sql, `g3-iucn` untested (commented-out check is the generic one). Audit, DoD E2E item → test: e2e in full → whole run; habitat files sha256/size + Jung v004 credit, no stand-in → learn-data "the habitat files: served as habitat.json records them…"; occurrence_habitats ids/codes, country_habitats codes → learn-data "occurrence_habitats: one row per sample record…"; loader 16 tables → learn-data "the loader's tables equal counts from data/"; clips TIFF magic + Range 206 → learn-data "clips/*.tif start with TIFF's magic…"; tiles → learn-data "habitat_clips.parquet: columns clip, tile, rast…"; cap 120,000,000 (H5) → learn-data "the folder is at most 120,000,000 bytes…"; lab ERD both tables, no planned → schema "each schema page…"; new diagrams 200 + title + alt → schema "each teaching diagram…"; g3/g7 screenshots → learn-screens "g3: …", "g7: …"; g modules built/linked → learn-map "GIS in SQL: g1–g7 built…"; code = download, g3-iucn commented, shown = recorded → learn-labs "each download…", "a PostGIS block shows checked/<id>.txt…"; release smoke g pages, g*.sql, new data files → release/live "every dist/ file is served with dist's bytes…". Gaps filled here: map g1–g7, labs g downloads + g3-iucn, g diagrams, g screens. T: typecheck ok, test 600/600. B ok (95,936,992 B). E: 87/87 (`$M/e2e-s19/`), 0 skipped/flaky. H: nothing. Release dry run (local Caddy, `RELEASE_ORIGIN=http://127.0.0.1:3100`, `$M/release-dry-s19/`): 3/3; access log: 7 g pages, `/learn/gis-in-sql/`, g1–g7.sql, clips/{cr,tas}.tif all 200.
 - 2026-10-29 09:40 UTC · S20: AGENTS.md (`ingest habitat [--downloads]` + pins, Python for shapes + habitat (rasterio), species-change cost with `ingest habitat`, `contracts/v1.json` add-only + owner review, `docs/recovery.md`, raster rule, Learn state g1–g7); 004 §0, §7.4–7.7, §9 agree with code (§3.2, §4, §6.2, §7.3 already did); audit items 1–6 done with shas, deviations all under Decisions, H5 outcome recorded; gap → S21. T: typecheck ok, test 600/600. P: 18 pages, 381 files equal. L: draft, learn:check ok (checked.json unchanged, every download's ERROR lines as announced, canary unchanged, leak empty), plain build ok (95,936,992 / 18,822,906 B). E: 87/87, 0 skipped/flaky (`$M/e2e-s20/`). H, HD: nothing.
 - 2026-10-29 09:55 UTC · S21: `setupLab` refuses a database without `postgis_raster` ("postgis_raster isn't installed in <db>: CREATE EXTENSION postgis_raster there as the superuser, then re-run") before any role change; `serverVersions` names `CREATE EXTENSION postgis_raster` and the database, not `--setup`. red 2 → green 2 (LS6, NR5, on a throwaway `learn_t_` db). T: typecheck ok, test 600/600. L ok (checked.json stamps only, `checked/*.txt` unchanged; dist/learn/data 95,936,992 B). D: test:db 121/121. P: 381 files equal 004. H, HD empty; leak query (+ `learn_%` dbs) empty.
+- 2026-10-29 10:25 UTC · Code review (Astra): `astra-review --code origin/main` exit 0, APPROVE_WITH_CHANGES; MUST-FIX 1 → S22; SHOULD-CONSIDER 1–2 → Summary (see Decisions).
 
 ## Summary
+
+For the owner (Astra code review SHOULD-CONSIDER, not acted on):
+- `scripts/build/contract.ts`: the `/v1` contract compares the writer's declared types, not each JSON value's type (`commonName: 123` would pass). Low risk today (`derive` is typed); worth a value-type check before `/v1` gets another writer.
+- No automated test runs the real `habitat.py` (ingest tests use a fake Python); the real runs (S7, S18d) are pinned by `habitat.json`. A small synthetic-raster integration test would cover the raster maths.
