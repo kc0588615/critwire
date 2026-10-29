@@ -8027,17 +8027,15 @@ Five modules, ten hours, in Python (§3.3) and your own PostGIS (§3.2). These a
 
 **Tool:** Py · **Time:** 2.0 h · **Prereqs:** f2
 
-**Goal:** get every open record of a species from GBIF, as a file you can cite. GBIF has two ways in:
-- **The search API** (`/v1/occurrence/search`) answers at once, in pages of at most 300 records, and stops at an offset of 100,000. It suits a count or a quick look. A result assembled from pages has no DOI, and the data under it changes daily, so nobody can fetch exactly your records again.
-- **The download API** is **asynchronous**: you POST a query (a *predicate*) with your GBIF account, GBIF runs it as a job, and you ask for its status until it is ready. The result is one zip of every matching record, with a **DOI** that cites exactly that file; GBIF keeps a download that has been cited and deletes an uncited one after six months.
+**Concept:** get every open record of a species from GBIF as a file you can cite, with a client that survives the failures a long download meets.
+- **Two ways in.** The **search API** (`/v1/occurrence/search`) answers at once, in pages of at most 300 records, and stops at an offset of 100,000. It suits a count or a quick look. A result assembled from pages has no DOI, and the data under it changes daily, so nobody can fetch exactly your records again. The **download API** is **asynchronous**: you POST a query (a *predicate*) with your GBIF account, GBIF runs it as a job, and you ask for its status until it is ready. The result is one zip of every matching record, with a **DOI** that cites exactly that file; GBIF keeps a download that has been cited and deletes an uncited one after six months.
+- **Transient failures.** Some failures pass on their own: a **429** ("too many requests": you asked too fast), a **5xx** (the server's own error), a connection that drops. Others don't: a 404 (no such file) or a 403 (not allowed) gives the same answer on every try. A client paces its requests (critwire's rule: at most 2 a second) and retries only the transient ones, waiting longer each time (**exponential backoff**: 1, 2, 4, then 8 s here). A server can say how long to wait with a **`Retry-After`** header, a number of seconds or a date; a client honours it, up to a cap of its own, rather than its backoff. Many clients add a random part to each wait (*jitter*) so that clients that failed together don't retry together; this course's waits are fixed so that its tests repeat.
+- **Retry the whole file.** A connection can drop halfway through a file, long after the response opened with a `200`. A retry wrapped around opening the response never sees that, and Python's `urllib` hands back a cut body without an error, so the client compares the bytes it got with the `Content-Length` the server announced. Each attempt starts a fresh `.part` file from its first byte, hashed as it arrives (**sha256**, a 64-hex-digit fingerprint that changes if one byte does), and a file gets its real name only once it is complete and its size and checksum match what the publisher says.
+- **Never POST twice.** A POST that times out may still have made a download. The client saves its request (an **intent file**) before the POST and the download key GBIF returns after it. A run that finds an intent with a key resumes that download. One that finds an intent without a key doesn't POST again: it lists the account's downloads and adopts the one with the same request created since the intent was saved; if there is none yet, or several, it stops and leaves the choice to a person. Saving what you asked for and comparing it with what exists, before acting, is **reconciling**.
+- **A polling deadline.** A job can stall. The client asks at most once a minute and gives up after a deadline; a later run resumes the same download from the intent file.
+- **Pin the taxonomy.** A query names taxa by key, and a key means something only in one checklist. GBIF's download documentation says: "If no `checklistKey` is supplied the obsolete GBIF Backbone Taxonomy will be used." Today that default is the checklist critwire's `ids.gbif` come from, but GBIF calls it obsolete, and the search API's default has already moved to the Catalogue of Life. A pipeline that leans on a default its provider has said will change can start matching other taxa with no error, so the request names `checklistKey` at the top level and on `TAXON_KEY`, and the client checks that GBIF's stored request echoes both (§4.2).
 
-The client is where most of the care goes. Pace the requests (critwire's rule: at most 2 a second), retry what can fail for a moment (429 "too many requests", 5xx, a dropped connection) with growing waits, and never retry a POST blindly, because a second POST is a second download. Stream large files to disk and hash them as they arrive; a file gets its real name only after its size and checksum match what the publisher says.
-
-**Pin the taxonomy.** A query names taxa by key, and a key means something only in one checklist. GBIF's download documentation says: "If no `checklistKey` is supplied the obsolete GBIF Backbone Taxonomy will be used." Today that default is the checklist critwire's `ids.gbif` come from, but GBIF calls it obsolete, and the search API's default has already moved to the Catalogue of Life. A pipeline that leans on a default its provider has said will change can start matching other taxa with no error, so the request names `checklistKey` at the top level and on `TAXON_KEY`, and the client checks that GBIF's stored request echoes both (§4.2).
-
-**Data:** `species.gbif_id` (73 keys) in the lab database; GBIF's API, with your own account (free, gbif.org); the lab files under `/learn/data/` and their `manifest.json` (§4.5).
-
-**Key code:** the request, built from the lab's keys. For the Tasmanian devil alone, `TAXON_KEY` would hold one key, `2435451`.
+**Worked example:** the request, built from `species.gbif_id` (73 keys) in the lab database. For the Tasmanian devil alone, `TAXON_KEY` would hold one key, `2435451`.
 
 ```python
 # q: e1-request
@@ -8094,27 +8092,262 @@ BASIS_OF_RECORD in ['HUMAN_OBSERVATION', 'OBSERVATION', 'MACHINE_OBSERVATION', '
 bytes: 1551
 ```
 
-Submitting, waiting and fetching. This needs your account in `GBIF_USERNAME` and `GBIF_PASSWORD`, and makes a real download each time it runs, so the tests don't run it; the spike ran the same steps (`SP/etl/gbif_download.py`, §A.1).
+`build_request` is a pure function of the keys and the account: the same keys give the same request, byte for byte, which is what lets a later run compare its request with a saved one. The filters are §4.2's: open licences only (CC0 1.0 and CC BY 4.0), a coordinate with no geospatial issue, the record marked present, and every basis of record except living and fossil specimens. Apart from `creator` and `sendNotification`, it equals, as JSON, the request GBIF stored for the course's own download.
+
+**Lab:**
+1. The download function. `fetch_file` retries the whole file: each attempt writes a fresh `.part`, a transient failure deletes it and waits, a cut body counts as a dropped connection, and only a complete file that matches the publisher's size and sha256 is renamed. The block prints nothing; the blocks after it run it first.
 
 ```python
-# q: e1-submit
-# status: untested: makes a real GBIF download with your account (the spike ran the same steps, §A.1)
-# after: py-connect, e1-request
-import base64
+# q: e1-fetch
+# status: ran
 import hashlib
+import http.client
 import os
 import time
 import urllib.error
 import urllib.request
 
+WAITS = [1, 2, 4, 8]  # seconds before attempts 2 to 5
+RETRY_AFTER_CAP = 60  # the longest wait a server's Retry-After can ask for here
+
+
+def transient(error):
+    """Worth another try: a rate limit (429), a server error (5xx), a dropped or cut connection. A 404 or 403 is not."""
+    if isinstance(error, urllib.error.HTTPError):
+        return error.code == 429 or error.code >= 500
+    return isinstance(error, (urllib.error.URLError, ConnectionError, TimeoutError, http.client.HTTPException))
+
+
+def wait_for(error, attempt):
+    """Seconds to wait before the next attempt: the server's Retry-After, in seconds and up to the cap, else the backoff."""
+    value = error.headers.get("Retry-After", "") if isinstance(error, urllib.error.HTTPError) else ""
+    return min(int(value), RETRY_AFTER_CAP) if value.isdigit() else WAITS[attempt]
+
+
+def describe(error):
+    if isinstance(error, urllib.error.HTTPError):
+        value = error.headers.get("Retry-After")
+        return f"HTTP {error.code}" + (f", Retry-After {value}" if value else "")
+    return str(error)
+
+
+def fetch_file(url, path, size=None, sha256=None, log=lambda attempt, what: None):
+    """Download url to path, whole. Each attempt writes a fresh path.part from its first byte, hashing as it arrives; a
+    transient failure deletes the .part and starts the file again. Only a complete file whose size and sha256 equal
+    what the publisher says (when given) gets its real name. Returns (bytes, sha256 hex)."""
+    part = path + ".part"
+    for attempt in range(len(WAITS) + 1):
+        try:
+            digest, got = hashlib.sha256(), 0
+            with urllib.request.urlopen(url, timeout=60) as r, open(part, "wb") as f:
+                declared = r.headers.get("Content-Length")
+                for chunk in iter(lambda: r.read(1 << 20), b""):
+                    digest.update(chunk)
+                    got += len(chunk)
+                    f.write(chunk)
+            if declared is not None and got != int(declared):  # urllib returns a cut body without an error
+                raise ConnectionError(f"body cut at {got} of {declared} bytes")
+        except Exception as e:
+            if os.path.exists(part):
+                os.remove(part)
+            if isinstance(e, urllib.error.HTTPError):
+                e.close()
+            if not transient(e) or attempt == len(WAITS):
+                raise
+            wait = wait_for(e, attempt)
+            log(attempt + 1, f"{describe(e)}; again in {wait} s")
+            time.sleep(wait)
+            continue
+        if (size is not None and got != size) or (sha256 is not None and digest.hexdigest() != sha256):
+            os.remove(part)  # complete but not the publisher's file: retrying would fetch it again
+            raise ValueError(f"{path}: {got} bytes, sha256 {digest.hexdigest()[:12]}; the publisher says "
+                             f"{size}, {(sha256 or '?')[:12]}")
+        os.replace(part, path)
+        log(attempt + 1, f"{got} bytes")
+        return got, digest.hexdigest()
+```
+
+```text
+-- result: e1-fetch · python · sha256 e3b0c44298fc
+```
+
+2. A server that fails on purpose. A small web server on your own machine (`127.0.0.1`, a port the system picks) answers three requests from a script: the first is cut after 40,000 of its 102,400 bytes, the second is a 429 with `Retry-After: 1`, the third is the file.
+
+```python
+# q: e1-retry
+# status: ran
+# after: e1-fetch
+import http.server
+import threading
+
+BODY = bytes(range(256)) * 400  # 102,400 bytes of made-up data
+SCRIPT = ["cut", "429", "whole"]  # what the server does with each request, in order
+
+
+class Flaky(http.server.BaseHTTPRequestHandler):
+    def do_GET(self):
+        step = SCRIPT.pop(0)
+        if step == "429":
+            self.send_response(429)
+            self.send_header("Retry-After", "1")
+            self.send_header("Content-Length", "0")
+            self.end_headers()
+            return
+        self.send_response(200)
+        self.send_header("Content-Length", str(len(BODY)))
+        self.end_headers()
+        self.wfile.write(BODY if step == "whole" else BODY[:40_000])  # "cut": the connection closes 40,000 bytes in
+
+    def log_message(self, *args):
+        pass  # no request log on stderr
+
+
+server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Flaky)  # port 0: the system picks a free one
+threading.Thread(target=server.serve_forever, daemon=True).start()
+try:
+    url = f"http://127.0.0.1:{server.server_port}/flaky.bin"
+    got, digest = fetch_file(url, "flaky.bin", len(BODY), hashlib.sha256(BODY).hexdigest(),
+                             log=lambda attempt, what: print(f"attempt {attempt}: {what}"))
+finally:
+    server.shutdown()
+    server.server_close()
+print(f"flaky.bin: {got} bytes, sha256 {digest[:12]}; .part left: {os.path.exists('flaky.bin.part')}")
+```
+
+```text
+-- result: e1-retry · python · sha256 02500c87f7e2
+attempt 1: body cut at 40000 of 102400 bytes; again in 1 s
+attempt 2: HTTP 429, Retry-After 1; again in 1 s
+attempt 3: 102400 bytes
+flaky.bin: 102400 bytes, sha256 27783e87963a; .part left: False
+```
+
+The cut body is caught by its length and retried from byte 0 after the backoff's first wait; the 429 waits the second its `Retry-After` asks for, not the 2 s the backoff would; the third attempt gets the whole file, and no `.part` is left behind.
+
+3. Files with checksums, on the published lab files: the manifest first (§4.5), then each file, kept only if its size and sha256 equal the manifest's. The block reads `LEARN_BASE` (default `https://critwire.com`); the course's tests point it at their own build.
+
+```python
+# q: e1-checksum
+# status: ran
+# after: e1-fetch
+import json
+import os
+
+BASE = os.environ.get("LEARN_BASE", "https://critwire.com")
+
+fetch_file(f"{BASE}/learn/data/manifest.json", "manifest.json")
+with open("manifest.json") as f:
+    manifest = json.load(f)
+for name in ["occurrences.parquet", "datasets.csv"]:
+    expected = manifest["files"][name]
+    got, digest = fetch_file(f"{BASE}/learn/data/{name}", name, expected["bytes"], expected["sha256"])
+    print(f"{name}: {got} bytes, sha256 {digest[:12]} = manifest, {expected['rows']} rows")
+```
+
+```text
+-- result: e1-checksum · python · sha256 cc6aa287e5bb
+occurrences.parquet: 454202 bytes, sha256 35ca89f9bee3 = manifest, 40395 rows
+datasets.csv: 72797 bytes, sha256 3bd8c1726239 = manifest, 400 rows
+```
+
+A file that doesn't match is deleted and the block stops, naming both checksums. A mismatch isn't retried: the server sent a whole file, just not the one the manifest describes, and it would send it again.
+
+4. The reconcile rule, on six made-up situations. `decide` runs before any POST and returns what the run does: post, resume a saved key, list the account's downloads and decide again, adopt one, or refuse.
+
+```python
+# q: e1-decide
+# status: ran
+from datetime import datetime, timedelta
+
+SKEW = timedelta(minutes=5)  # a download listed a little before the intent may still be its POST's: clocks differ
+
+
+def same(a, b):
+    """The same download request: what GBIF runs, not who asked."""
+    return all(a.get(k) == b.get(k) for k in ("format", "checklistKey", "predicate"))
+
+
+def decide(intent, request, listing=None):
+    """Which download this run uses, before any POST. intent: what the last run saved just before its POST
+    ({"request", "started", "key"}), or None. listing: the user's downloads, once asked for. Returns ("post",),
+    ("resume", key), ("list",) (list the downloads, then decide again), ("adopt", key) or ("refuse", why)."""
+    if intent is None:
+        return ("post",)
+    if not same(intent["request"], request):
+        return ("refuse", "the intent is for another request: finish its download or delete the intent first")
+    if intent["key"] is not None:
+        return ("resume", intent["key"])
+    if listing is None:
+        return ("list",)
+    since = datetime.fromisoformat(intent["started"]) - SKEW
+    keys = [d["key"] for d in listing
+            if datetime.fromisoformat(d["created"]) >= since and same(d["request"], intent["request"])]
+    if len(keys) == 1:
+        return ("adopt", keys[0])
+    if keys:
+        return ("refuse", f"{len(keys)} downloads match the POST: a person picks one")
+    return ("refuse", "the POST may have made a download GBIF doesn't list yet: run again later")
+
+
+# Six made-up situations; "devil" stands in for e1-request's request, "other" for a changed one.
+devil = {"format": "SIMPLE_CSV", "checklistKey": "d7dddbf4", "predicate": {"type": "equals", "key": "TAXON_KEY", "value": "2435451"}}
+other = {**devil, "predicate": {"type": "equals", "key": "TAXON_KEY", "value": "2440897"}}
+unsaved = {"request": devil, "started": "2026-10-23T09:00:00+00:00", "key": None}  # POSTed; the key never saved
+cases = {
+    "first run": (None, None),
+    "key saved": ({**unsaved, "key": "0041824-260928105237408"}, None),
+    "key lost, GBIF lists one": (unsaved, [
+        {"key": "0041819-260928105237408", "created": "2026-10-23T08:40:00+00:00", "request": devil},  # older: not ours
+        {"key": "0041824-260928105237408", "created": "2026-10-23T09:00:02+00:00", "request": devil},
+        {"key": "0041830-260928105237408", "created": "2026-10-23T09:03:00+00:00", "request": other},  # another request
+    ]),
+    "key lost, GBIF lists none": (unsaved, []),
+    "key lost, GBIF lists two": (unsaved, [
+        {"key": "0041824-260928105237408", "created": "2026-10-23T09:00:02+00:00", "request": devil},
+        {"key": "0041825-260928105237408", "created": "2026-10-23T09:00:05+00:00", "request": devil},
+    ]),
+    "request changed": (unsaved, None),
+}
+for name, (intent, listing) in cases.items():
+    request = other if name == "request changed" else devil
+    step = decide(intent, request)
+    steps = [step]
+    if step == ("list",):
+        steps.append(decide(intent, request, listing))
+    print(f"{name}: " + ", then ".join(": ".join(s) for s in steps))
+```
+
+```text
+-- result: e1-decide · python · sha256 35daf375ebbe
+first run: post
+key saved: resume: 0041824-260928105237408
+key lost, GBIF lists one: list, then adopt: 0041824-260928105237408
+key lost, GBIF lists none: list, then refuse: the POST may have made a download GBIF doesn't list yet: run again later
+key lost, GBIF lists two: list, then refuse: 2 downloads match the POST: a person picks one
+request changed: refuse: the intent is for another request: finish its download or delete the intent first
+```
+
+A run posts only when no intent exists. A download made 20 minutes before the intent isn't adopted (another run's), nor is one of another request. When two downloads match, both may be this run's or one may be another client's; picking one is a person's call, so the run stops.
+
+5. The whole client: submit, wait, fetch. It needs your account in `GBIF_USERNAME` and `GBIF_PASSWORD` and makes a real download each time it posts, so the tests don't run it and `e1.py` carries it commented out. The intent file is saved before the POST and again with the key; a POST GBIF refuses (a 4xx) made nothing, so its intent is deleted; a 5xx or a dropped connection keeps it for the next run to reconcile. GETs retry as `fetch_file` does; the POST never retries.
+
+```python
+# q: e1-submit
+# status: untested: makes a real GBIF download with your account; the course's sample was made with the same steps
+# after: py-connect, e1-request, e1-fetch, e1-decide
+import base64
+from datetime import timezone
+
 API = "https://api.gbif.org/v1"
 USER, PASSWORD = os.environ["GBIF_USERNAME"], os.environ["GBIF_PASSWORD"]  # from the environment, never in the code
 AUTH = "Basic " + base64.b64encode(f"{USER}:{PASSWORD}".encode()).decode()
+INTENT = "download-intent.json"  # what this run asked for, saved before its POST
+DEADLINE_S = 6 * 3600  # stop asking after 6 hours; a run started later resumes the same download
 _last = 0.0
 
 
-def call(method, url, body=None, auth=False, retries=4):
-    """One request, at most 2 a second. GETs retry 429, 5xx and network errors with backoff; a POST never retries,
+def call(method, url, body=None, auth=False):
+    """One request, at most 2 a second. A GET retries what is transient, as fetch_file does; a POST never retries,
     because a second POST is a second download."""
     global _last
     headers = {"Accept": "application/json, text/plain"}
@@ -8124,107 +8357,136 @@ def call(method, url, body=None, auth=False, retries=4):
         headers["Content-Type"] = "application/json"
     if auth:
         headers["Authorization"] = AUTH
+    retries = len(WAITS) if method == "GET" else 0
     for attempt in range(retries + 1):
         time.sleep(max(0.0, _last + 0.5 - time.monotonic()))
         _last = time.monotonic()
         try:
             with urllib.request.urlopen(urllib.request.Request(url, data, headers, method=method), timeout=60) as r:
                 return r.read()
-        except urllib.error.HTTPError as e:
-            if method != "GET" or (e.code != 429 and e.code < 500) or attempt == retries:
+        except Exception as e:
+            if not transient(e) or attempt == retries:
                 raise
-        except urllib.error.URLError:
-            if method != "GET" or attempt == retries:
-                raise
-        time.sleep(2 ** attempt)
+            time.sleep(wait_for(e, attempt))
 
 
-key = call("POST", f"{API}/occurrence/download/request", build_request(keys, USER), auth=True).decode()
+def save(intent):
+    """Write the intent whole: a .part first, then the rename, so a killed run never leaves half a file."""
+    with open(INTENT + ".part", "w") as f:
+        json.dump(intent, f)
+    os.replace(INTENT + ".part", INTENT)
+
+
+request = build_request(keys, USER)
+intent = None
+if os.path.exists(INTENT):
+    with open(INTENT) as f:
+        intent = json.load(f)
+step = decide(intent, request)
+if step == ("list",):  # a run POSTed and stopped before saving the key: find its download, never POST again
+    listed = json.loads(call("GET", f"{API}/occurrence/download/user/{USER}?limit=50", auth=True))["results"]
+    step = decide(intent, request, [{"key": d["key"], "created": d["created"], "request": d["request"]} for d in listed])
+if step[0] == "refuse":
+    raise SystemExit(f"{INTENT}: {step[1]}")
+if step == ("post",):
+    intent = {"request": request, "started": datetime.now(timezone.utc).isoformat(), "key": None}
+    save(intent)  # before the POST: a run killed during it leaves the trace the next run reconciles
+    try:
+        key = call("POST", f"{API}/occurrence/download/request", request, auth=True).decode()
+    except urllib.error.HTTPError as e:
+        if e.code < 500:  # GBIF answered no (a bad request, a wrong password, too many downloads): nothing was made
+            os.remove(INTENT)
+        raise  # a 5xx or a dropped connection may have made one: the intent stays, and the next run lists
+    save({**intent, "key": key})
+else:
+    key = step[1]
 print("download key:", key)
-while True:  # a job, not a response: ask at most once a minute
+
+deadline = time.monotonic() + DEADLINE_S
+while True:  # a job, not a response: ask at most once a minute, and not forever
     meta = json.loads(call("GET", f"{API}/occurrence/download/{key}"))
     if meta["status"] == "SUCCEEDED":
         break
     if meta["status"] in ("KILLED", "FAILED", "CANCELLED"):
-        raise SystemExit(f"download {key} ended {meta['status']}")
+        raise SystemExit(f"download {key} ended {meta['status']}; delete {INTENT} to ask again")
+    if time.monotonic() > deadline:
+        raise SystemExit(f"download {key} is still {meta['status']} after {DEADLINE_S // 3600} h; "
+                         f"run again later: {INTENT} resumes it")
     time.sleep(60)
 stored = meta["request"]
 if stored["checklistKey"] != BACKBONE or stored["predicate"]["predicates"][0]["checklistKey"] != BACKBONE:
     raise SystemExit("GBIF didn't keep the pinned taxonomy")  # the echo check: what ran is what was asked
 print("DOI:", meta["doi"], "records:", meta["totalRecords"], "bytes:", meta["size"])
 
-sha, size = hashlib.sha256(), 0
-with urllib.request.urlopen(meta["downloadLink"], timeout=600) as r, open(f"{key}.zip.part", "wb") as f:
-    for chunk in iter(lambda: r.read(1 << 20), b""):
-        sha.update(chunk)
-        size += len(chunk)
-        f.write(chunk)
-if size != meta["size"]:
-    raise SystemExit(f"zip is {size} bytes; GBIF says {meta['size']}")
-os.replace(f"{key}.zip.part", f"{key}.zip")
-print("zip sha256:", sha.hexdigest())  # keep it with the DOI: it is how a later run knows it has the same file
+got, digest = fetch_file(meta["downloadLink"], f"{key}.zip", size=meta["size"])
+print("zip sha256:", digest)  # keep it with the DOI: it is how a later run knows it has the same file
 ```
 
-Files with checksums, on the published lab files: stream each one to disk, hash it on the way, and keep it only if its size and sha256 equal the manifest's.
+**Result:** the request holds critwire's 73 GBIF keys and the six filters of §4.2, with the legacy checklist pinned twice. Submitted, the course's download was ready after 16 min 41 s: a 34,725,756-byte zip of 394,532 records from 454 datasets, DOI `10.15468/dl.fbpk9w`, and GBIF's stored request echoed both checklist keys (§A.1). The client retries a whole file, honours `Retry-After`, keeps only files whose size and sha256 match the publisher's, and never posts while a download it may have made could exist. Both lab files match the manifest.
+
+**Exercise:** `wait_for` reads `Retry-After` only as a number of seconds, but HTTP also lets a server send a date ([RFC 9110, section 10.2.3](https://www.rfc-editor.org/rfc/rfc9110#section-10.2.3)), and a server can ask for a wait no client should accept. Write `retry_after(value, now)`: the seconds either form asks for, never below 0 or above `RETRY_AFTER_CAP`, and `None` for a value that is neither (the backoff applies then). Put it into `wait_for` and show what the client does, at 12:00:00 UTC on 29 October 2026, with a 429 and `Retry-After: 1`; a 503 with a date 30 s later; a 503 with a date an hour earlier; a 503 with `3600`; a 503 with `soon`; and a 404.
+
+**Answer:**
 
 ```python
-# q: e1-checksum
+# q: e1-ex
 # status: ran
-import hashlib
-import json
-import os
-import time
-import urllib.error
-import urllib.request
-
-BASE = os.environ.get("LEARN_BASE", "https://critwire.com")
+# after: e1-fetch
+import email.message
+from datetime import datetime, timezone
+from email.utils import parsedate_to_datetime
 
 
-def get(url, retries=4):
-    """A GET that retries rate limits (429), server errors and dropped connections, waiting 1, 2, 4, 8 s."""
-    for attempt in range(retries + 1):
+def retry_after(value, now):
+    """Seconds a Retry-After asks for, as a number of seconds or as an HTTP date, kept between 0 and the cap;
+    None when it is neither."""
+    if value.isdigit():
+        seconds = int(value)
+    else:
         try:
-            return urllib.request.urlopen(url, timeout=60)
-        except urllib.error.HTTPError as e:
-            if (e.code != 429 and e.code < 500) or attempt == retries:
-                raise
-        except urllib.error.URLError:
-            if attempt == retries:
-                raise
-        time.sleep(2 ** attempt)
+            when = parsedate_to_datetime(value)
+        except (TypeError, ValueError):
+            return None
+        seconds = (when - now).total_seconds()
+    return int(min(max(seconds, 0), RETRY_AFTER_CAP))
 
 
-def fetch(name, manifest):
-    """Stream a lab file to disk, hashing as it arrives; refuse it unless its size and sha256 match the manifest."""
-    expected = manifest["files"][name]
-    sha, size = hashlib.sha256(), 0
-    with get(f"{BASE}/learn/data/{name}") as r, open(name + ".part", "wb") as f:
-        for chunk in iter(lambda: r.read(1 << 20), b""):
-            sha.update(chunk)
-            size += len(chunk)
-            f.write(chunk)
-    if size != expected["bytes"] or sha.hexdigest() != expected["sha256"]:
-        os.remove(name + ".part")
-        raise SystemExit(f"{name}: {size} bytes, sha256 {sha.hexdigest()[:12]}; the manifest says "
-                         f"{expected['bytes']}, {expected['sha256'][:12]}")
-    os.replace(name + ".part", name)  # only a checked file gets its real name
-    return size, sha.hexdigest()
+def wait_for(error, attempt, now=None):
+    """e1-fetch's rule with both forms: the server's wait when it gives one that can be read, else the backoff."""
+    value = error.headers.get("Retry-After") if isinstance(error, urllib.error.HTTPError) else None
+    seconds = retry_after(value, now or datetime.now(timezone.utc)) if value else None
+    return WAITS[attempt] if seconds is None else seconds
 
 
-with get(f"{BASE}/learn/data/manifest.json") as r:
-    manifest = json.load(r)
-for name in ["occurrences.parquet", "datasets.csv"]:
-    size, digest = fetch(name, manifest)
-    print(f"{name}: {size} bytes, sha256 {digest[:12]} = manifest, {manifest['files'][name]['rows']} rows")
+NOW = datetime(2026, 10, 29, 12, 0, 0, tzinfo=timezone.utc)
+for code, value in [(429, "1"), (503, "Thu, 29 Oct 2026 12:00:30 GMT"), (503, "Thu, 29 Oct 2026 11:00:00 GMT"),
+                    (503, "3600"), (503, "soon"), (404, None)]:
+    headers = email.message.Message()
+    if value is not None:
+        headers["Retry-After"] = value
+    error = urllib.error.HTTPError("https://example.org/file", code, "", headers, None)
+    shown = f"HTTP {code}" + (f", Retry-After {value!r}" if value else "")
+    print(f"{shown}: " + (f"again in {wait_for(error, 0, NOW)} s" if transient(error) else "not retried"))
 ```
 
 ```text
--- result: e1-checksum · python · sha256 429afc1d5bca
-occurrences.parquet: 622971 bytes, sha256 53086c9a1fb8 = manifest, 40395 rows
-datasets.csv: 72797 bytes, sha256 3bd8c1726239 = manifest, 400 rows
+-- result: e1-ex · python · sha256 b7f9b6d2f5dd
+HTTP 429, Retry-After '1': again in 1 s
+HTTP 503, Retry-After 'Thu, 29 Oct 2026 12:00:30 GMT': again in 30 s
+HTTP 503, Retry-After 'Thu, 29 Oct 2026 11:00:00 GMT': again in 0 s
+HTTP 503, Retry-After '3600': again in 60 s
+HTTP 503, Retry-After 'soon': again in 1 s
+HTTP 404: not retried
 ```
 
-**Expected:** the request holds critwire's 73 GBIF keys and the six filters of §4.2, with the legacy checklist pinned twice; apart from `creator` and `sendNotification`, it equals, as JSON, the request GBIF stored for the spike's download. Submitted, that download was ready after 16 min 41 s: a 34,725,756-byte zip of 394,532 records from 454 datasets, DOI `10.15468/dl.fbpk9w`, and GBIF's stored request echoed both checklist keys (§A.1). Both lab files match the manifest; a file that doesn't is deleted and the block stops, naming both checksums.
+**Check:** The date 30 s ahead gives 30 s; the date in the past gives 0, not a negative wait; `3600` is cut to the 60 s cap; `soon` can't be read, so the backoff's first wait, 1 s, applies; the 404 isn't retried at all, whatever its headers say. `parsedate_to_datetime`, from the standard library's `email.utils`, reads HTTP's date form; redefining `wait_for` after `e1-fetch` is enough, because `fetch_file` looks the name up each time it calls it. Python compares its answer with `now` only because both carry a time zone: an HTTP date is always GMT, so the function returns it as UTC, and a naive `now` would raise a `TypeError`.
+
+**Dialects:**
+- **requests and urllib3:** `requests` with urllib3's `Retry` (`total`, `backoff_factor`, `status_forcelist=[429, 500, 502, 503, 504]`, `respect_retry_after_header=True`, mounted with an `HTTPAdapter`) retries the request and its opening; a body cut while you stream it with `iter_content` still raises in your own loop, so the whole-file retry and the length check stay yours. `allowed_methods` leaves POST out by default, for the reason above.
+- **pygbif:** `occ.download(…)` posts a download, `occ.download_meta(key)` reads its status, `occ.download_get(key)` fetches the zip. It saves no intent: the key it returns is yours to keep before anything else can fail.
+- **R:** rgbif's `occ_download(pred_in("taxonKey", keys), …)`, `occ_download_wait(key)` and `occ_download_get(key)`, then `occ_download_import()` to read it.
+- **curl:** `curl --fail --retry 4 -o file.part URL` retries timeouts and the transient HTTP codes (408, 429, 500, 502, 503, 504), doubling a 1 s wait and honouring `Retry-After`; `curl -C - …` resumes a partial file instead of starting it again, which is safe only when you check the finished file's checksum.
+- **ArcGIS Pro:** Pro has no tool for GBIF's download API. The download client uses only Python's standard library, so it runs as written in Pro's Python window or a Pro notebook. XY Table To Point (`arcpy.management.XYTableToPoint`, X Field `decimalLongitude`, Y Field `decimalLatitude`, Coordinate System WGS 1984) turns the download's table into points.
 
 #### e2 · transform-load
 

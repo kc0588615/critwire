@@ -1,0 +1,7 @@
+-- result: e1-decide · python · sha256 35daf375ebbe
+first run: post
+key saved: resume: 0041824-260928105237408
+key lost, GBIF lists one: list, then adopt: 0041824-260928105237408
+key lost, GBIF lists none: list, then refuse: the POST may have made a download GBIF doesn't list yet: run again later
+key lost, GBIF lists two: list, then refuse: 2 downloads match the POST: a person picks one
+request changed: refuse: the intent is for another request: finish its download or delete the intent first

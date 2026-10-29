@@ -1,0 +1,5 @@
+-- result: e1-retry · python · sha256 02500c87f7e2
+attempt 1: body cut at 40000 of 102400 bytes; again in 1 s
+attempt 2: HTTP 429, Retry-After 1; again in 1 s
+attempt 3: 102400 bytes
+flaky.bin: 102400 bytes, sha256 27783e87963a; .part left: False

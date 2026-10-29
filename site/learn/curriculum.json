@@ -496,7 +496,7 @@
       "prereqs": [
         "f2"
       ],
-      "state": "planned",
+      "state": "built",
       "skill": "Search API vs download API (asynchronous, with a DOI); paging, rate limits, retries; files with checksums",
       "questions": [
         "How do I get every open Tasmanian devil record, with a DOI to cite?"

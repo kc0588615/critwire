@@ -1,0 +1,7 @@
+-- result: e1-ex · python · sha256 b7f9b6d2f5dd
+HTTP 429, Retry-After '1': again in 1 s
+HTTP 503, Retry-After 'Thu, 29 Oct 2026 12:00:30 GMT': again in 30 s
+HTTP 503, Retry-After 'Thu, 29 Oct 2026 11:00:00 GMT': again in 0 s
+HTTP 503, Retry-After '3600': again in 60 s
+HTTP 503, Retry-After 'soon': again in 1 s
+HTTP 404: not retried
