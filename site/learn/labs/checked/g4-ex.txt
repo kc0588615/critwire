@@ -1,0 +1,4 @@
+-- result: g4-ex · 2 rows · sha256 e63983707c3d
+neighbour | strip_km2 | records | coded_neighbour | within_10km
+NI | 2673 | 2 | 1 | 2
+PA | 2289 | 7 | 1 | 7

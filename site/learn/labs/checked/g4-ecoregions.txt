@@ -1,0 +1,8 @@
+-- result: g4-ecoregions · 7 rows · sha256 ed3884acd3d8
+eco_id | name | biome | km2 | pct
+470 | Isthmian-Atlantic moist forests | Tropical & Subtropical Moist Broadleaf Forests | 17288 | 33.7
+471 | Isthmian-Pacific moist forests | Tropical & Subtropical Moist Broadleaf Forests | 9012 | 17.6
+458 | Costa Rican seasonal moist forests | Tropical & Subtropical Moist Broadleaf Forests | 8400 | 16.4
+506 | Talamancan montane forests | Tropical & Subtropical Moist Broadleaf Forests | 8311 | 16.2
+527 | Central American dry forests | Tropical & Subtropical Dry Broadleaf Forests | 6062 | 11.8
+… 2 more rows

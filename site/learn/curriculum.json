@@ -296,7 +296,7 @@
       "prereqs": [
         "g3"
       ],
-      "state": "planned",
+      "state": "built",
       "skill": "Distances on the ellipsoid, `ST_DWithin`, buffers, `ST_Intersection`",
       "questions": [
         "How much of each country does each ecoregion cover?",

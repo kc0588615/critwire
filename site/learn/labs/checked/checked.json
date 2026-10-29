@@ -367,6 +367,26 @@
       "key": "4825cfd3c51135bedfbd27c281688080791eaf81a5c05ea2c0785d31dc12fc9e",
       "result": "8debe4b55374f88825d9022476c587b9b51d0b7c65aed0a2cda3c96fc6f8f7dd"
     },
+    "g4-border": {
+      "key": "56e9e1f22e33add9372801b0738706876b03736b2ef64bdb459e1eda2fdf8e57",
+      "result": "a80f124c7fc4a23a7c6f6cff6fe0c9ce90d80114eab4dc4e71c7f10632d69a65"
+    },
+    "g4-ecoregions": {
+      "key": "4ce2e4e3074121c98be4beb3b24d9607ce719441c1fcdaf47615d67a1b28717b",
+      "result": "eb21254a42daa0a92fcbfb9f4f370cd6f955ebc3ed529b0032584664e998dda2"
+    },
+    "g4-ex": {
+      "key": "fe19e99baaeb7b4b4bbc041f581e838875d09e54fd7a39dcf940b38b7f893184",
+      "result": "fe270b16d84fd601671f05cd2ccaf4310c8d365de75712781ff1ea3dac7f807a"
+    },
+    "g4-gap": {
+      "key": "145703b6511897f94963f09bad548c8772e8498a444b65b4be4bbaeab85d5dda",
+      "result": "33d8bbc8e6fa31a7dea52a0e1d3c7e62e67cccc3b4141d2ee71335b0c8338290"
+    },
+    "g4-overlaps": {
+      "key": "b4de92c42c9bb34203035bff3f8cd078b23a2e83039eaadf8069be9db53ca04a",
+      "result": "f466a66a72ab898e959c309eebb25bc49b61cd7e34370a1be637119efbbb4588"
+    },
     "pg-role-smoke": {
       "key": "f8475dd05808347550f93843ba81f9091e58beabacefdd5d530c3b970f116efe",
       "result": "d721ea358edd040973fd9309b3e45b68943b9bad01b9efecd1da082d374c7f30"
@@ -393,6 +413,7 @@
     "g1.sql": "3817e06a7941c31137733610a8dc47308dc5a0d3c49c52ab6769f8b76280c783",
     "g2.sql": "a50473b3cd47838d9cf45ab114dde8c55a29078f992c424e08382318e52636eb",
     "g3.sql": "1f0b49c165ae736a470be98df194b1f7f9dc2c431870a0d02753a4d8ba46deca",
+    "g4.sql": "69dea62101a6c778cf0b5f62dcf63070acf2486031f1b10b5dfa06cc2a896355",
     "pg-checks.sql": "348691fbefd3b6c0400e7edfd3a3aaf4f767b186c1a6bcbe2f2ad021cb5607fd"
   },
   "labErd": "fda5ad764ce87eac9f422339254ccfbc46a6a932d8cee00a2a50df5e9502820c"

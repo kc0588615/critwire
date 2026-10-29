@@ -5432,11 +5432,15 @@ all | 40329 | 39396
 
 **Tool:** PG · **Time:** 2.0 h · **Prereqs:** g3
 
-**Goal:** measure lengths, areas and distances in metres, and cut one layer by another. `ST_Intersection` keeps the part two shapes share (ArcGIS Pro's Intersect), and the area of that part, on the ellipsoid, is an overlay's answer. `ST_DWithin(a, b, d)` asks "within d?" and, unlike `ST_Distance(a, b) < d`, can use an index (d3); on `geography`, d is in metres. Two maps drawn separately never fit exactly: their pieces add up to a little less or more than the whole, and an overlay should say by how much.
+**Concept:** How to measure lengths, areas and distances in metres, and how to cut one layer by another:
+- **Measure on `geography`** (g1). Cast first, and `ST_Length` of a line, `ST_Perimeter` and `ST_Area` of a polygon, and `ST_Distance` between two shapes answer in metres and square metres, on the ellipsoid. On SRID 4326 geometry they answer in degrees.
+- **"Within d?"** is `ST_DWithin(a, b, d)`; on `geography`, d is in metres. It gives the same answer as `ST_Distance(a, b) <= d`, but it starts with a bounding-box test that a spatial index (d3) can answer, and measures only the shapes that pass. `ST_Distance(a, b) < d` measures every pair. The index must be on the expression the query compares: casting a geometry column to `geography` in the query leaves the column's geometry index unused (Spatial indexes, g5, shows the plans).
+- **A buffer** is the area within a distance of a shape, as a polygon: `ST_Buffer(g, d)`, ArcGIS Pro's Buffer. On `geography`, PostGIS picks a flat system that suits the shape (a UTM zone, or a polar Lambert azimuthal one), buffers there in metres and turns the result back into longitude and latitude. Curves are drawn as straight segments, 8 to a quarter circle by default, so the polygon falls a little inside the true distance. To ask whether something lies within d, use `ST_DWithin`, which is exact and faster; draw a buffer when you need the area itself, to measure it, map it or cut another layer with it.
+- **Overlay** builds new shapes from two inputs' edges. `ST_Intersection(a, b)` keeps what both cover (ArcGIS Pro's Intersect, or Clip when b is one shape); `ST_Difference(a, b)` keeps the part of a outside b (Erase); `ST_Union` merges shapes into one, and as an aggregate it merges a column's rows (Dissolve). Overlays are much slower than predicates, so let a predicate the index answers pick the pairs (`JOIN … ON ST_Intersects(…)`) and overlay only those. An overlay can return lines and points where shapes only touch: `ST_CollectionExtract(g, 2)` keeps the lines, `3` the polygons. An invalid input can stop it with a `TopologyException` (g2).
+- **Two maps never fit exactly.** Layers drawn, or simplified, apart disagree along every line they share. The lab's ecoregions were simplified one at a time to 0.05°, about 5 km (§4.1), and the country outlines on their own, so neighbouring ecoregions overlap in places and pull apart in others, and the ecoregions stop short of the outline's coast. Cut by an outline, the pieces add up to a little more or less than the whole: an overlay should report by how much, since that is the error any area it gives carries.
+- **Valid isn't a coverage** (g2). Each ecoregion here is a valid shape; `ST_IsValid` checks one row at a time and can't see that two rows overlap. Only a test across pairs finds it, the one g2 ran on the country outlines.
 
-**Data:** `country_shapes`, `ecoregions` and `biomes` (RESOLVE 2017, CC BY 4.0), `occurrences`; Costa Rica.
-
-**Key code:** how much of Costa Rica each ecoregion covers:
+**Worked example:** How much of Costa Rica does each ecoregion cover? Cut each ecoregion that touches the outline by it, measure the piece on the ellipsoid, and divide by the outline's area:
 
 ```sql
 -- q: g4-ecoregions
@@ -5463,7 +5467,10 @@ eco_id | name | biome | km2 | pct
 … 2 more rows
 ```
 
-Do the pieces add up to the country?
+Seven ecoregions reach into Costa Rica, led by the Isthmian-Atlantic moist forests (17,288 km², 33.7 %). Five are moist or dry broadleaf forest; the other two are mangroves along the coasts, Southern Mesoamerican Pacific (637 km²) and Mesoamerican Gulf-Caribbean (198 km²). `ST_Intersects` in the `ON` clause picks the ecoregions, with the index; `ST_Intersection` in the `SELECT` cuts only those seven. The shares add up to 97.3 %, not 100: the Lab asks why.
+
+**Lab:**
+1. Do the pieces add up to the country? The outline's area, the pieces' sum, and the part of the outline that no ecoregion covers (the outline less the union of the ecoregions):
 
 ```sql
 -- q: g4-gap
@@ -5484,7 +5491,47 @@ country_km2 | ecoregion_pieces_km2 | in_no_ecoregion_km2
 51303 | 49908 | 2070
 ```
 
-Costa Rica's land borders, their length, and the records within 10 km of each, by the code GBIF gave them:
+The pieces add up to 49,908 km² of the outline's 51,303, and 2,070 km² lie in no ecoregion. Had the pieces been a partition, the two would add up to the outline exactly; they add up to 51,978, about 675 km² too many. So the pieces both leave gaps and overlap. About half of the gap lies within 5 km of the sea, where the ecoregions stop short of the outline's coast; the rest is slivers inland, where two neighbouring ecoregions both pulled back from their shared border.
+
+2. Where do the pieces overlap? Each pair of pieces whose interiors share an area (g2's `'2********'` test), with its DE-9IM matrix, and a total row first:
+
+```sql
+-- q: g4-overlaps
+-- status: ran
+-- engine: postgis
+WITH cr AS (SELECT geom FROM country_shapes WHERE country_code = 'CR'),
+pieces AS (
+  SELECT e.eco_id, ST_Intersection(e.geom, cr.geom) AS geom
+  FROM ecoregions AS e
+  JOIN cr ON ST_Intersects(e.geom, cr.geom)
+),
+shared AS (
+  SELECT a.eco_id || '+' || b.eco_id AS pair, ST_Relate(a.geom, b.geom) AS de9im,
+         ST_Area(ST_Intersection(a.geom, b.geom)::geography) AS m2
+  FROM pieces AS a
+  JOIN pieces AS b ON a.eco_id < b.eco_id AND ST_Relate(a.geom, b.geom, '2********')
+)
+SELECT CASE WHEN GROUPING(pair) = 1 THEN 'all' ELSE pair END AS pair, de9im,
+       round((sum(m2) / 1e6)::numeric, 1) AS overlap_km2
+FROM shared
+GROUP BY ROLLUP ((pair, de9im))
+ORDER BY GROUPING(pair) DESC, overlap_km2 DESC, pair;
+```
+
+```text
+-- result: g4-overlaps · 11 rows · sha256 b0c2c01abe86
+pair | de9im | overlap_km2
+all | NULL | 678.2
+470+506 | 212111212 | 181.7
+458+527 | 212111212 | 143.8
+458+506 | 212111212 | 76.3
+458+471 | 212101212 | 62.0
+… 6 more rows
+```
+
+Ten pairs overlap, 678.2 km² in all: the 675 km² that step 1's pieces counted twice (a few square kilometres lie in three ecoregions at once, and come into three pairs). The largest are between neighbours along long borders: the Isthmian-Atlantic moist forests and the Talamancan montane forests (181.7 km²), the seasonal moist and the dry forests (143.8). Each is a thin strip along a border that each ecoregion, simplified on its own, drew in a slightly different place. Compare the matrices with g2's `2F2F11FF2`, a territory wholly inside its country: here the third and seventh characters are `2` too, so each piece also reaches outside the other. These are partial overlaps between shapes that are each valid: the layer isn't a coverage, and nothing about one row says so. Pieces that overlap are counted twice by any sum over them, as step 1's was; a partition (each overlap given to one ecoregion, each gap to the nearest) would need rules of its own, and the honest report is the overlay's error: here about 1.3 % of the country in overlaps and 4.0 % in gaps.
+
+3. Costa Rica's land borders, their length, and the records within 10 km of each, by the code GBIF gave them:
 
 ```sql
 -- q: g4-border
@@ -5516,7 +5563,54 @@ NI | 267 | 5 | 1 | 4
 PA | 250 | 9 | 6 | 3
 ```
 
-**Expected:** seven ecoregions cover Costa Rica, led by the Isthmian-Atlantic moist forests (17,288 km², 33.7 %); five are moist or dry broadleaf forest and two are mangroves. The pieces add to 49,908 km² of the outline's 51,303, though 2,070 km² lie in no ecoregion: the two layers, simplified separately, leave gaps along the coast and overlap by about 675 km² (49,908 + 2,070 − 51,303), which is the size of the error any area from this overlay carries. The land borders are 267 km (Nicaragua) and 250 km (Panama); within 10 km of them, on either side, lie 5 and 9 records, 7 of them coded for the neighbour. So close to a line, the code and the outline can each be right or wrong: a 1:50m border is generalized and can be kilometres off, and g3's disagreements are mostly records like these.
+`ST_Touches` finds the outlines that share a border with Costa Rica's but no interior: Nicaragua and Panama. The border is where their two boundaries meet: `ST_Intersection` of the boundaries returns the shared lines (and any lone points where they only touch), `ST_CollectionExtract(…, 2)` keeps the lines and `ST_LineMerge` joins them into one. The land borders are 267 km (Nicaragua) and 250 km (Panama). Within 10 km of them, on either side, lie 5 and 9 records coded for Costa Rica or the neighbour; 7 of the 14 are coded for the neighbour. So close to a line, the code and the outline can each be right or wrong: a 1:50m border is generalized and can be kilometres off, and g3's disagreements are mostly records like these. The `ON` clause casts every record's `geom` to `geography`, so the index on `occurrences.geom` can't help, and the join reads all 40,395 records for each border (about 0.7 s); g5 shows the plan and an index that does help.
+
+**Result:** Overlaying the ecoregions on Costa Rica gives seven pieces, led by the Isthmian-Atlantic moist forests (17,288 km², 33.7 %). The pieces add up to 49,908 km² of the outline's 51,303, with 2,070 km² in no ecoregion and about 675 km² counted twice: ten pairs of valid pieces overlap, 678.2 km² in all, along borders each ecoregion drew in its own place. A valid layer isn't a coverage, and an area from this overlay carries an error of a few per cent of the country. Costa Rica's land borders are 267 km (Nicaragua) and 250 km (Panama); 14 records lie within 10 km of them, half of them coded for the neighbour.
+
+**Exercise:** How much of Costa Rica lies within 10 km of each land border, and which records are in that strip? Draw the strip with `ST_Buffer` on `geography`, cut it by Costa Rica's outline, and give its area, its records, how many of them GBIF codes for the neighbour, and, as a check on the buffer, how many of them `ST_DWithin` finds within 10 km of the border.
+
+**Answer:** g4-border's border lines, buffered by 10,000 m on `geography`, cast back to geometry and cut by the outline (`ST_Intersection`); then a spatial join of the records to each strip, as in g3.
+
+```sql
+-- q: g4-ex
+-- status: ran
+-- engine: postgis
+WITH cr AS (SELECT geom FROM country_shapes WHERE country_code = 'CR'),
+border AS (
+  SELECT n.country_code AS neighbour,
+         ST_LineMerge(ST_CollectionExtract(ST_Intersection(ST_Boundary(cr.geom), ST_Boundary(n.geom)), 2)) AS geom
+  FROM cr
+  JOIN country_shapes AS n ON n.country_code <> 'CR' AND ST_Touches(n.geom, cr.geom)
+),
+strip AS (
+  SELECT b.neighbour, b.geom AS line,
+         ST_Intersection(ST_Buffer(b.geom::geography, 10000)::geometry, cr.geom) AS geom
+  FROM border AS b, cr
+)
+SELECT s.neighbour,
+       round((ST_Area(s.geom::geography) / 1e6)::numeric) AS strip_km2,
+       count(o.id) AS records,
+       count(o.id) FILTER (WHERE o.country_code_gbif = s.neighbour) AS coded_neighbour,
+       count(o.id) FILTER (WHERE ST_DWithin(o.geom::geography, s.line::geography, 10000)) AS within_10km
+FROM strip AS s
+LEFT JOIN occurrences AS o ON ST_Covers(s.geom, o.geom)
+GROUP BY s.neighbour, s.geom
+ORDER BY s.neighbour;
+```
+
+```text
+-- result: g4-ex · 2 rows · sha256 e63983707c3d
+neighbour | strip_km2 | records | coded_neighbour | within_10km
+NI | 2673 | 2 | 1 | 2
+PA | 2289 | 7 | 1 | 7
+```
+
+**Check:** The strips are 2,673 km² along Nicaragua and 2,289 km² along Panama, 5.2 % and 4.5 % of Costa Rica. A strip is close to its border's length times 10 km (2,670 and 2,500 km²), and smaller where the sea cuts it off at the border's ends or the border winds, so the buffer on its inner bends overlaps itself. The strips hold 2 and 7 records, against g4-border's 5 and 9 on both sides of the line: the other 3 and 2 lie outside Costa Rica's outline. One record in each strip is coded for the neighbour although it lies inside Costa Rica's outline, two of g3's 206 disagreements. `within_10km` equals `records`: the buffer's straight segments lost no record here. Had the cut been left out, the strip would reach 10 km into each neighbour as well, and a record there would count for Costa Rica.
+
+**Dialects:**
+- **PostgreSQL:** `ST_Area`, `ST_Length`, `ST_Perimeter`, `ST_Distance`, `ST_DWithin` and `ST_Buffer` take `geography` and answer in metres; `ST_Buffer` also takes `'quad_segs=…'` and, on geometry, `'endcap=flat'` or `'side=left'` for a one-sided strip. `ST_Intersection`, `ST_Difference`, `ST_SymDifference` and `ST_Union` overlay, through GEOS; `ST_Union` and `ST_Collect` are aggregates too (`ST_Collect` only gathers, with no merge).
+- **DuckDB:** the `spatial` extension (not in this course's browser) has `ST_Intersection`, `ST_Difference`, `ST_Union`, `ST_Buffer` and `ST_DWithin` on `GEOMETRY`, in the units of its coordinates; for metres, `ST_Transform` to a projected system first, or use `ST_Distance_Spheroid` (latitude first, g1). Without it, the browser's lab has no shapes to overlay.
+- **SQL Server:** methods on the shape: `a.STIntersection(b)`, `a.STDifference(b)`, `a.STUnion(b)`, `g.STBuffer(d)` and `a.STDistance(b)`, in metres on `geography`; `geography::UnionAggregate(geom)` dissolves rows. There is no `STDWithin`: write `a.STDistance(b) <= d`, which a spatial index can serve when it stands alone in `WHERE` or `ON`. `BufferWithTolerance(d, tolerance, relative)` sets how closely the curves are drawn.
 
 #### g5 · spatial-index
 
