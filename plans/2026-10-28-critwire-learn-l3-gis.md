@@ -661,7 +661,7 @@ Every step:
   - Proof: a scratch `means` edit makes `B` and `pnpm build --draft` fail with the sha hint; revert.
   - Decisions: item 3 done.
   - Check: `T`, `B`, `H` (no `/v1` byte changes), `HD`.
-- [ ] S3 · `docs/recovery.md` + one rehearsal (§7.2; item 4), before any data change
+- [x] S3 · `docs/recovery.md` + one rehearsal (§7.2; item 4), before any data change
   - Write `docs/recovery.md` (§7.2 points 1–4; L4 and L5 update it if they add state).
   - Rehearse at the live commit `C=$(git -C /srv/apps/critwire rev-parse HEAD)` (L2's release):
     - `git worktree add --detach $M/recovery/wt $C`; `pnpm install --frozen-lockfile` there;
@@ -1009,6 +1009,7 @@ Each step's isolated cases are its **First** list. What a session does when the 
 - 2026-10-29 · Deviations from Architecture §8 (S1): item 6 split (S7 ingest held in `$M/habitat-out/`, S8 `readLabFiles`, S10 atomic swap, S11 004 data sections); raster plumbing before swap (S9); §6 habitat E2E cases written first in S10; g5 gets `g5-analyze` (S16).
 - 2026-10-29 · item 3: done (S2). `contracts/v1.json`: 39 species paths + 5 countries columns, each `type`/declared `null`/`means`/`sha` (+ `values` on `range.status`, `countries.region`; `pattern` on slug, Q-ids, country codes, https urls, dates, DOIs; `source` on every `ids.*` + countries list, `checklistKey` on `ids.gbif`); `speciesCsv`/`countriesCsv`. `checkV1Contract` pure, in `readBuildInputs` (draft too); problems throw, additions log. `ids.iucn` declared nullable (§7.1; docs: any id null while unsettled).
 - 2026-10-29 · S2: entry `sha` = sha256 of `formatJson(entry, { canonical: true })` (2-space + newline), not compact JSON: reuses the existing canonical writer; exporting `sortKeys` from `scripts/json.ts` would edit a `learn:check` checker file and stale all 75 labs. Group paths typed `STRUCT`/`STRUCT[]` so nested additions don't retype the parent. Writers expose `csvColumns()` (`columns.ts`) and `COUNTRY_TYPES` (`build/countries.ts`, also its read_json columns).
+- 2026-10-29 · item 4: done (S3). `docs/recovery.md` (§7.2 points 1–4 + rehearsal table). Rehearsed at live `6093a23`: restored `dist/` = `.live/` (224 files, sha256 lists equal); emergency rsync into scratch copy equal too; no differences to fix. State list adds the 3rd GBIF lock/intent pair (`gbif-sample-download`), not in §7.2.
 
 ## Log
 
@@ -1020,5 +1021,6 @@ Each step's isolated cases are its **First** list. What a session does when the 
 - 2026-10-28 23:59 UTC · Steps: planner wrote S1–S20 + Verification (+ Failure modes). Plan-only; no code checks needed.
 - 2026-10-29 00:08 UTC · S1: `$M/baseline-manifest.json` saved (sha f180c320…9565 ok). db:load batched (1000 rows). red 2 → green 2 (B1 unit; B2/B3 db, MAX_PARAMETERS_EXCEEDED before). T: typecheck ok, test 550/550. D: build ok, test:db 111/111. H, HD (strict): nothing changed.
 - 2026-10-29 00:22 UTC · S2: `/v1` contract. red 12 → green 12 (V1–V12, `contract.test.ts`; red = no module). T: typecheck ok, test 562/562. B ok, no "freeze" notices. Proof: scratch `ids.gbif` means edit → `build --draft` and `build` exit 1 with sha hint; reverted. H strict (no exclusions), HD: nothing changed.
+- 2026-10-29 00:25 UTC · S3: `docs/recovery.md` + rehearsal at `6093a23` (worktree, `critwire_restore`, plain build 5.7 s): 224 files, dist = `.live/` sha256; rsync rehearsal equal; cleaned (db dropped, worktree removed). T: typecheck ok, test 562/562. H, HD: nothing changed.
 
 ## Summary
