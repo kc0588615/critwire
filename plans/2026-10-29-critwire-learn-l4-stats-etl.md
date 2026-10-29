@@ -143,7 +143,7 @@ The review's numbering: MF = MUST-FIX, SC = SHOULD-CHANGE.
 - [x] Baseline: install, migrate, run typecheck, lint, unit and E2E tests; record the results under Baseline
 - [x] Architecture: `architect` writes findings and the target design
 - [x] Fable review: `architecture-reviewer`
-- [ ] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
+- [x] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
 - [ ] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
 - [ ] Steps: `planner` writes Steps and Verification
 
@@ -573,6 +573,20 @@ Fable 5.1, 2026-10-29, on `32095ff`. Findings 1–10 checked against the code: e
 
 ## Architecture review (Astra)
 
+VERDICT: APPROVE_WITH_CHANGES
+
+MUST-FIX:
+
+1. **Environment contract conflicts (§3).** Requiring the exact union of lab and ingest packages rejects the documented learner environment and editor-installed `ipykernel`. Validate required lab pins independently; enforce ingest dependencies only for ingestion.
+2. **Cleanup can terminate another database’s run (§4.6).** Advisory locks are database-local; `pg_stat_activity` spans databases. A shared role/application name does not establish session ownership. Scope termination to the target database and a unique run identifier, inherited by subprocesses.
+3. **Refresh identity omits configuration (§8, e3/e5).** The assigned SC8 requirement includes input, transform, configuration and schema version. Define one identity covering all four and persist it atomically with the target replacement. Otherwise configuration-only changes can incorrectly skip refresh. Verify unchanged input with changed configuration reloads.
+
+SHOULD-CONSIDER:
+
+1. Test two actual concurrent refresh invocations; holding the lock externally tests contention but not their complete interaction.
+2. Keep SQL, Python and notebook download validation explicitly separated by artifact kind.
+3. Preserve the browser bundle’s shared imports as well as `site/learn/src`; verify asset hashes against baseline.
+
 ## Revision notes
 
 ## Steps
@@ -592,5 +606,6 @@ Fable 5.1, 2026-10-29, on `32095ff`. Findings 1–10 checked against the code: e
 - 2026-10-29 14:02 UTC: Baseline: install, venv, typecheck, test 601/601, build, test:db 121/121, learn:check, e2e 87/87 all pass; sha256 lists saved.
 - 2026-10-29 14:27 UTC: Architecture: architect wrote findings, target design (Python engine, learn:check Python stage, .py/.ipynb downloads, agree gates, MF5/SC8/SC7 realisation), PY/PYC/AS/AG failure lists, D1–D17. Doc-only; no checks needed.
 - 2026-10-29 14:37 UTC: Fable review: APPROVE WITH CHANGES, 3 MUST-FIX (bundle inputs untouched + assets sha audit; venvState checks labs pins only; learn-labs.spec iterates by Download.kind), 4 missed, 5 should-consider. Doc-only; no checks needed.
+- 2026-10-29 14:58 UTC: Astra review: APPROVE_WITH_CHANGES, 3 MUST-FIX (venv pins checked per purpose; cleanup scoped to target db + unique run id; refresh identity incl. config), 3 should-consider. Doc-only; no checks needed.
 
 ## Summary
