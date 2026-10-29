@@ -1,0 +1,5 @@
+-- result: s3-pysal · python · sha256 b8f324551172
+queen = distance band: True  links: 6246  islands: []
+neighbours: cells | 1: 1  2: 7  3: 36  4: 66  5: 45  6: 939
+rows sum to 1: True  cell 1051 (1 neighbour): [1.0]  cell 8 (6): [0.1667, 0.1667, 0.1667, 0.1667, 0.1667, 0.1667]
+k = 4: links: 4376  one-way: 600  cells with the 4th and 5th tied: 1025

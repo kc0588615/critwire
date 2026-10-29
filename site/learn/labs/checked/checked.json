@@ -533,6 +533,30 @@
       "key": "39ed954a5367671ac8f2bf186b6c6fa134d3488ec480aaf04e498ac0f4ed4455",
       "result": "b8dda50434f053976b8a8d774e7d47ca9fc6004d936894c2e0a56dd4cef87825"
     },
+    "s3-contiguity": {
+      "key": "2922bdfae9d79dccc366e73a0010d1b52d4729507ecaec364c7f49afe12eed22",
+      "result": "c4ee5fa2f4e4d77daf89a4a13bad11b7e43c7aa8742d7a18dd3de16ec93c0239"
+    },
+    "s3-countries": {
+      "key": "a578558bfc0622ac992c1bf007057b11370dd5622d2f89cd0766109cacfa8bb6",
+      "result": "4082d70507ff45d14735830fc07b08c6ff9700e6ca77d457c8bffb7bcd6b7d0f"
+    },
+    "s3-ex": {
+      "key": "26c6985d7452e1c85bcc472f8990399acfae9d4c872ecbd1bebca5ec435dc992",
+      "result": "edfc1020df0029db31f8d3458943051d4cd1699ba14d1bc55592ce87407216d8"
+    },
+    "s3-islands": {
+      "key": "201f65490ef6ccbe6423f713d9157e0bd0ee4701e9956c82a9c819780d4b731a",
+      "result": "95831ebff09f1f6b4b7f086ddebd01316e0eef63d1905444b43a0b2262da2650"
+    },
+    "s3-knn": {
+      "key": "26a85cbfb97d94da73b80fa0640d0cf36ff7237e3474dd7822a6413a03313e30",
+      "result": "5c670e37ab8594aac8261c4aec3bd572d36d544d38016db4925ebec472feb354"
+    },
+    "s3-pysal": {
+      "key": "add3da3ffb73243b15b934bfc2289e8ae1fc3418eb90440e79304e889fef38c1",
+      "result": "3ef231f89c31aab0dec7e87a5d64513cdf33258d11523456f83e4df1472efac2"
+    },
     "s4-agree": {
       "key": "5d8c29dd390386f8743bc6f7afaee11e09453ae8845d4b03bc2b744774f0bde3",
       "result": "58cccb30180fee8ead205db9cc73df75d76fb58a0310bd6088009bb340607370"
@@ -579,6 +603,8 @@
     "s1.sql": "fffbbb3a0ff9128446a13ac5d3bc23929f8f58ba72e1eb26459824f0cb6f19b8",
     "s2.py": "8aedcd8347143cadd1d7c138f65cfd6c9a8abb1d6ac371d2690b2d2a5653b166",
     "s2.sql": "abc2d1bd4d136e2960a43ea6f860d05e4ebd7b478be12f009f8bda6f343b9c9f",
+    "s3.py": "06887c69f8f539f40661e27719a6d6302566d4a748bf7b743946f69e26705d38",
+    "s3.sql": "fa4dfed23083d93bc5a13c566960be7398a8f058f42613ddf3a0c7a1fab01704",
     "s4.py": "65b7fc37ddc3225f348883cb88fdb72d696ed64e4115aa096056c08d5be1b2a8",
     "s4.sql": "5b485d76d0fea6d3e9a43d0779b95c471501bd8680abf1afd27045bbd3596ed2",
     "setup.py": "b40bb61f840f9b42a029df58b8debd131fb2b8c3963d10938beefcb36d8af08b"

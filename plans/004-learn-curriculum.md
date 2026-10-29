@@ -7006,11 +7006,16 @@ main island | 64246 | 913 | 2298.4 | 4194.3 | 0.548 | -26.1
 
 **Tool:** PG + Py · **Time:** 2.0 h · **Prereqs:** s2
 
-**Goal:** build the neighbour list every spatial statistic needs, and see where it breaks. A **spatial weights matrix** W says, for each pair of units i and j, how much j counts as i's neighbour (`w_ij`; `w_ii` = 0). Three common rules: a **distance band** (neighbours within a threshold), **k-nearest** (each unit's k closest), and **contiguity** (units sharing an edge, "rook", or an edge or a corner, "queen"). **Row standardization** divides each row by its sum, so a unit's neighbours' weights add to 1 and the weighted sum becomes the neighbours' mean (`w_ij = 1/k_i`); a unit with one neighbour gives it all the weight. A unit with no neighbour, an **island**, has a row of zeros that can't be standardized, and the statistics are undefined for it. k-nearest weights are not symmetric (j can be among i's nearest without i being among j's), and when several units sit at the same distance the k-th neighbour is a tie that the software breaks its own way.
+**Concept:** Who counts as a unit's neighbour? Every spatial statistic compares each unit with its neighbours, so the answer is part of the result.
+- A **spatial weights matrix** W holds, for each pair of units i and j, a weight `w_ij` saying how much j counts as i's neighbour; `w_ii` is 0. Most weights are **binary**: 1 for a neighbour, 0 otherwise. The units here are s4's hexagons and the countries' outlines.
+- A **distance band** makes j a neighbour of i when their centroids lie within a threshold. Every unit reaches equally far, so the number of neighbours varies: a cell on the coast has fewer. s4's `s4_neighbours` is a band of twice the hexagons' edge.
+- **k-nearest** makes each unit's k closest units its neighbours. Every unit gets exactly k, so how far it reaches varies instead. The weights aren't **symmetric**: j can be among i's nearest without i being among j's.
+- **Ties:** when several units sit at the same distance, the k-th neighbour is a choice, and each program breaks the tie its own way. Grids are full of ties, so two programs can give different k-nearest weights from the same data.
+- **Contiguity** makes units neighbours when their shapes share a boundary: an edge for **rook** contiguity, an edge or a corner for **queen**. It needs the shapes, not just centroids. Hexagons that touch always share an edge, so on a hexagon grid rook, queen and s4's band give the same neighbours; on a square grid queen adds the four diagonal cells.
+- **Row standardization** divides each row of W by its sum, so the weights of a unit's neighbours add to 1: `w_ij = 1/k_i`, where `k_i` is i's number of neighbours. The weighted sum `Σ_j w_ij y_j` is then the mean of the neighbours' values, the **spatial lag**. A unit with one neighbour gives it all the weight.
+- An **island** is a unit with no neighbour. Its row is all zeros and can't be standardized (its sum is 0), and a statistic over it either drops the unit or is undefined. A distance band too short, or contiguity between real islands, makes them.
 
-**Data:** `s4_cells`, `s4_neighbours` (s4's distance band: centroids within twice the edge), `country_shapes`, `occurrences`.
-
-**Key code:** how many neighbours the distance band gives each cell:
+**Worked example:** the distance band from s4, read as weights. `s4_cells` holds the hexagons over Tasmania's main island at edges of 5 and 10 km and `s4_neighbours` their pairs, one row per ordered pair `(i, j)`; s4's first block, `s4-cells`, makes both. Every download of this module runs that block first, right after connecting, so `s3.sql` and `s3.py` work on their own; to run the blocks one at a time, run `s4-cells` once first. How many neighbours the band gives each cell:
 
 ```sql
 -- q: s3-contiguity
@@ -7034,7 +7039,10 @@ edge_m | neighbours | cells
 … 6 more rows
 ```
 
-k-nearest neighbours on the 5 km cells, ranked by distance rounded to the centimetre and then by id, so ties are broken the same way every run. For k = 4 and k = 6: the links, the links whose reverse is missing, and the cells whose k-th and (k + 1)-th neighbours are tied:
+On the 5 km grid, 939 of the 1,094 cells have all six neighbours; the coast leaves the rest with fewer, down to one cell with a single neighbour (cell 1051). On the 10 km grid, 221 of the 296 cells have six and the fewest is two (6 cells). No cell has none, so the band leaves no island. A cell with no neighbour wouldn't appear here at all: `count(*)` over its missing rows gives 0, and the result has no row with 0.
+
+**Lab:**
+1. k-nearest neighbours on the 5 km cells, ranked by distance rounded to the centimetre and then by id, so ties are broken the same way every run. For k = 4 and k = 6: the links, the links whose reverse is missing, and the cells whose k-th and (k + 1)-th neighbours are tied. `LIMIT 7` keeps one more neighbour than the largest k, to see the tie:
 
 ```sql
 -- q: s3-knn
@@ -7072,7 +7080,9 @@ k | links | one_way | tied_cells
 6 | 6564 | 254 | 129
 ```
 
-Contiguity between countries, where the units are real outlines: countries with no neighbour that touches (`ST_Touches`: boundaries meet, interiors don't) or intersects (`ST_Intersects`) them, and the countries whose outlines overlap a neighbour's, which `ST_Touches` misses:
+With k = 4, 1,025 of the 1,094 cells have their 4th and 5th neighbours at the same distance: an interior cell has six touching cells, all 8.66 km away, and must keep four of them. The rule here (lowest id first) gives the same answer every run, but it isn't neutral. `s4-cells` numbers the cells column by column from the west, so each cell keeps the cells directly above and below it and its two western neighbours; those western cells keep their own western neighbours, never it. 1,968 of the 4,376 links are one-way. With k = 6 an interior cell keeps all six touching cells, so only 129 cells, near the coast, are tied, and 254 links are one-way.
+
+2. Contiguity between countries, where the units are real outlines. Two tests can call outlines neighbours: `ST_Touches` (the boundaries meet and the interiors don't) and `ST_Intersects` (they share any point). For each country, the outlines it intersects and the ones it touches; then the countries with none (islands), those with more intersecting than touching outlines (overlapping), and the most neighbours any country has:
 
 ```sql
 -- q: s3-countries
@@ -7101,7 +7111,9 @@ countries | islands | islands_by_touches | overlapping | most_neighbours
 247 | 76 | 84 | 12 | 16
 ```
 
-The islands that hold records:
+76 of the 247 outlines intersect no other: as units, they are islands. `ST_Touches` finds 84. The 12 overlapping countries are g2's eight pairs of nested outlines: France's outline includes French Guiana, Réunion, Guadeloupe, Martinique and Mayotte, Norway's Svalbard and Jan Mayen, the Netherlands' the Caribbean Netherlands and New Zealand's Tokelau, and each of those places also has its own outline. A nested pair's interiors overlap, so `ST_Touches` says no, and eight of the twelve (New Zealand and seven of the places) have no other neighbour: 8 more islands. Neither test is right on its own: the layer isn't a coverage (shapes that tile the area without overlapping), so decide what a nested pair should be before building contiguity on it. The most neighbours any outline intersects is 16 (China).
+
+3. The islands that hold records:
 
 ```sql
 -- q: s3-islands
@@ -7128,7 +7140,9 @@ PH | Philippines | 12
 … 5 more rows
 ```
 
-The same weights in PySAL: queen contiguity from the hexagons' shapes against the distance band from their centroids, row standardization, and k = 4 nearest neighbours, whose ties PySAL breaks its own way:
+Ten islands hold records, among them Australia (4,636) and Madagascar (2,012). Contiguity weights over countries would give both no neighbour, so a statistic over countries would drop them or fail. The other five are Singapore (11), Japan (2), Trinidad and Tobago (2), Mauritius (1) and Niue (1); Singapore is here because its outline doesn't reach Malaysia's across the strait between them.
+
+4. The same weights in PySAL: queen contiguity from the hexagons' shapes against the distance band from their centroids, row standardization, and k = 4 nearest neighbours. `Queen.from_dataframe` reads the shapes from a GeoDataFrame (GeoPandas' table with a geometry column); `DistanceBand` with `binary=True` gives weights of 1 within the threshold, here 10 km, twice the edge. `queen.s0` is the sum of all weights, so the number of links while they are binary; `histogram` counts the cells by number of neighbours. `cKDTree.query(xy, k=6)` returns each cell's six nearest centroids, itself first at distance 0, so columns 4 and 5 are its 4th and 5th neighbours:
 
 ```python
 # q: s3-pysal
@@ -7176,7 +7190,57 @@ rows sum to 1: True  cell 1051 (1 neighbour): [1.0]  cell 8 (6): [0.1667, 0.1667
 k = 4: links: 4376  one-way: 600  cells with the 4th and 5th tied: 1025
 ```
 
-**Expected:** on the 5 km grid, 939 of 1,094 cells have all 6 neighbours and the coast leaves the rest with fewer, down to one cell with a single neighbour (cell 1051); on the 10 km grid 221 of 296 have 6 and the fewest is 2. No cell has none. PySAL's queen contiguity from the hexagons' shapes gives exactly the distance band's 6,246 links, the same histogram and no islands. After row standardization every row sums to 1: cell 1051's one neighbour has weight 1.0, an interior cell's six have 0.1667 each. k-nearest is lopsided: with k = 4, 1,025 cells have their 4th and 5th neighbours at the same distance, so the choice is a tie-break; SQL's rule (lowest id) leaves 1,968 of 4,376 links one-way, PySAL's leaves 600, with the same distances. With k = 6 only 129 cells are tied and 254 links one-way. Between countries, 76 of the 247 outlines intersect no other: they are islands, and 10 of them hold records (Australia 4,636, Madagascar 2,012, Comoros 109, …), so contiguity weights over countries would give Australia and Madagascar no neighbour at all. `ST_Touches` alone finds 84 islands, because 12 countries' simplified outlines overlap a neighbour's instead of meeting it; contiguity on real outlines needs `ST_Intersects` (or a snapping tolerance), and the most neighbours any country has is 16.
+Queen contiguity from the shapes gives exactly the band's 6,246 links, the same histogram as `s3-contiguity` and no island. After `queen.transform = "r"` every row sums to 1: cell 1051's one neighbour has weight 1.0, and an interior cell's six have 0.1667 each. PySAL's k = 4 has the same 4,376 links and the same 1,025 tied cells as the SQL, but leaves 600 links one-way, not 1,968: its k-d tree (a structure for finding nearest points fast) breaks the ties in its own order. Same data, same distances, different weights.
+
+**Result:** on the 5 km grid, 939 of the 1,094 cells have all six neighbours and the coast leaves the rest with fewer, down to one cell with a single neighbour (cell 1051); on the 10 km grid 221 of 296 have six and the fewest is two. No cell has none. PySAL's queen contiguity from the hexagons' shapes gives exactly the distance band's 6,246 links, the same histogram and no island. After row standardization every row sums to 1: cell 1051's one neighbour has weight 1.0, an interior cell's six have 0.1667 each. k-nearest is lopsided: with k = 4, 1,025 cells have their 4th and 5th neighbours at the same distance, so the choice is a tie-break; SQL's rule (lowest id) leaves 1,968 of 4,376 links one-way, PySAL's leaves 600, with the same distances. With k = 6 only 129 cells are tied and 254 links one-way. Between countries, 76 of the 247 outlines intersect no other: they are islands, and 10 of them hold records (Australia 4,636, Madagascar 2,012, Comoros 109, …), so contiguity weights over countries would give Australia and Madagascar no neighbour at all. `ST_Touches` alone finds 84 islands, because 12 countries belong to g2's nested pairs (France and its overseas regions, among others), whose interiors overlap; the most neighbours any outline intersects is 16.
+
+**Exercise:** k-nearest weights never leave a cell without neighbours: with k = 6, every 5 km cell gets six. How far does each cell have to reach for its 6th neighbour? Group the 5 km cells by their number of neighbours in s4's distance band (`s4_neighbours`), and show for each group the cells, their records, and the shortest and longest reach in km. What does k = 6 do to a coastal cell, and which of the two would you use for s4's Moran's I?
+
+**Answer:** the band's neighbour count per cell, then each cell's 6th-nearest centroid with the same ordering as `s3-knn` (distance, then id); `OFFSET 5 LIMIT 1` skips the first five:
+
+```sql
+-- q: s3-ex
+-- status: ran
+-- engine: postgis
+WITH band AS (
+  SELECT i, count(*) AS k FROM s4_neighbours WHERE edge_m = 5000 GROUP BY i
+), reach AS (
+  SELECT band.k, a.n,
+         (SELECT ST_Distance(ST_Point(a.cx, a.cy), ST_Point(c.cx, c.cy))
+          FROM s4_cells AS c
+          WHERE c.edge_m = a.edge_m AND c.id <> a.id
+          ORDER BY 1, c.id
+          OFFSET 5 LIMIT 1) AS d6_m
+  FROM s4_cells AS a JOIN band ON band.i = a.id
+  WHERE a.edge_m = 5000
+)
+SELECT k AS band_neighbours, count(*) AS cells, sum(n) AS records,
+       round((min(d6_m) / 1000)::numeric, 2) AS shortest_km,
+       round((max(d6_m) / 1000)::numeric, 2) AS longest_km
+FROM reach
+GROUP BY k
+ORDER BY k;
+```
+
+```text
+-- result: s3-ex · 6 rows · sha256 3f25bd602944
+band_neighbours | cells | records | shortest_km | longest_km
+1 | 1 | 0 | 22.91 | 22.91
+2 | 7 | 57 | 17.32 | 17.32
+3 | 36 | 16 | 15.00 | 17.32
+4 | 66 | 243 | 15.00 | 15.00
+5 | 45 | 133 | 15.00 | 15.00
+… 1 more row
+```
+
+**Check:** the 939 cells with six neighbours in the band reach 8.66 km (√3 times the edge), the touching cells, so for them k = 6 and the band agree. Every cell on the coast reaches farther: 15.00 km (3 times the edge, the second ring) for the cells with four or five band neighbours, 15.00 to 17.32 km for those with three, 17.32 km for the cells with two, and 22.91 km for cell 1051, more than two and a half times an interior cell's reach. Those 155 coastal cells hold 449 of the 1,972 records in cells. k = 6 keeps the number of neighbours equal and lets the distance grow; the band keeps the distance equal and lets the number shrink. For s4 the band is the better choice: the cells are equal, they cover one island with no gap, and the band leaves no island, so a coastal cell is compared with the cells it touches, not with cells two rings inland. k-nearest earns its place where units differ in size and spacing, like countries, or where a band would leave islands; then state k and the tie rule with the result.
+
+**Dialects:**
+- **PostgreSQL:** `ST_DWithin(a, b, d)` builds a band and uses a GiST index on either column; k-nearest is a `CROSS JOIN LATERAL (… ORDER BY a.geom <-> b.geom LIMIT k)`, which an index serves when `geom` is a column with one (g5), not a point built on the fly as here. `ST_Touches` is queen contiguity; rook needs the shared boundary to be a line, `ST_Relate(a.geom, b.geom, 'F***1****')` (interiors apart, boundaries sharing a line; g2's DE-9IM). PostgreSQL has no matrix type: weights live as rows `(i, j, w)`, as in `s4_neighbours`.
+- **DuckDB:** the `spatial` extension has `ST_DWithin`, `ST_Touches`, `ST_Intersects` and `ST_Distance`, but no `<->`. k-nearest ranks every pair: `QUALIFY row_number() OVER (PARTITION BY a.id ORDER BY ST_Distance(a.geom, b.geom), b.id) <= 4`, which 1,094 cells (1.2 million pairs) allow.
+- **SQL Server:** `STDistance`, `STTouches`, `STIntersects` and `STRelate(other, 'F***1****')` for rook; k-nearest is `CROSS APPLY (SELECT TOP (4) … WHERE b.geom.STDistance(a.geom) IS NOT NULL ORDER BY b.geom.STDistance(a.geom), b.id)`, which a spatial index can serve (g5).
+- **PySAL:** `libpysal.weights` has `DistanceBand`, `KNN`, `Queen` and `Rook` (`from_dataframe` for shapes); `w.transform = "r"` row-standardizes and `"b"` goes back to binary; `w.islands`, `w.cardinalities`, `w.histogram` and `w.s0` describe the weights, and building them warns about islands unless `silence_warnings=True`. `DistanceBand(…, binary=False, alpha=-1)` gives inverse-distance weights. The newer `libpysal.graph.Graph` (`build_distance_band`, `build_knn`, `build_contiguity`) builds the same rules. `KNN` has no tie rule to choose: its k-d tree decides.
+- **ArcGIS Pro:** Generate Spatial Weights Matrix (`arcpy.stats.GenerateSpatialWeightsMatrix`) writes a `.swm` file the statistics tools read. Conceptualization of Spatial Relationships: `Fixed distance` (a band, with Threshold Distance), `K nearest neighbors` (Number of Neighbors), `Contiguity edges only` (rook) or `Contiguity edges corners` (queen); Row Standardization is on by default. With `Fixed distance`, Number of Neighbors is a minimum: a unit with fewer neighbours within the threshold gets its nearest ones added, so no unit is an island, and its reach grows like k-nearest's.
 
 #### s4 · moran
 

@@ -416,7 +416,7 @@
       "prereqs": [
         "s2"
       ],
-      "state": "planned",
+      "state": "built",
       "skill": "Distance-band, k-nearest and contiguity weights; row standardization; islands; ties",
       "questions": [
         "Who are a cell's neighbours?",

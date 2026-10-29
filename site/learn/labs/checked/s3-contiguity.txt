@@ -1,0 +1,8 @@
+-- result: s3-contiguity · 11 rows · sha256 13c0a4f1ea54
+edge_m | neighbours | cells
+5000 | 1 | 1
+5000 | 2 | 7
+5000 | 3 | 36
+5000 | 4 | 66
+5000 | 5 | 45
+… 6 more rows
