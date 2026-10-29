@@ -5,7 +5,7 @@
 CREATE TABLE fact_country_habitat (
   country_code VARCHAR NOT NULL REFERENCES dim_country (country_code),
   habitat_code INTEGER NOT NULL REFERENCES dim_habitat_class (habitat_code),
-  est_area_km2 DECIMAL(12, 2) NOT NULL,
+  est_area_km2 DECIMAL(12, 2) NOT NULL CHECK (est_area_km2 >= 0 AND est_area_km2 < 'Infinity'),
   PRIMARY KEY (country_code, habitat_code)
 );
 INSERT INTO fact_country_habitat

@@ -3,8 +3,9 @@ import type { CountriesFile } from "../derive/naturalearth.ts";
 import { assertDerivedFiles, deriveAll, readDeriveInputs } from "../derive/pipeline.ts";
 import type { LearnResult } from "../derive/sample.ts";
 import type { Registration } from "../gbif/derived-dataset.ts";
+import { assertHabitatFresh, type HabitatFreshness } from "../ingest/habitat.ts";
 import { readJson } from "../json.ts";
-import { readLabFiles, type LabFile } from "../learn/lab-files.ts";
+import { labDataDir, readLabFiles, type LabFile } from "../learn/lab-files.ts";
 import type { Species } from "../species.ts";
 import { assertRecordKeys, csvColumns, RECORD_COLUMNS } from "./columns.ts";
 import { checkV1Contract, contractFile, type V1Contract } from "./contract.ts";
@@ -76,6 +77,12 @@ export async function readBuildInputs({ draft }: { draft: boolean }): Promise<Bu
   for (const a of contract.additions) console.log(a);
 
   const labFiles = await readLabFiles();
+  // The habitat files were computed from these outlines and records (L3 plan §2): in --draft too, since a stale
+  // occurrence_habitats would break the loader's foreign key.
+  const { inputs: habitatInputs } = await readJson<{ inputs: HabitatFreshness }>(new URL("habitat.json", labDataDir));
+  const shapes = labFiles.find((f) => f.name === "country_shapes.parquet");
+  if (!shapes) throw new Error("data/learn/country_shapes.parquet missing");
+  assertHabitatFresh(habitatInputs, { countryShapesSha256: shapes.sha256, occurrences: result.learn.occurrences });
   const labSizes = await committedLabSizes();
   assertCap(`committed lab data (data/{${COMMITTED_LAB_DIRS.join(",")}})`, labSizes);
   assertDois({ countries: result.doi, "learn-sample": result.learn.doi }, { draft });

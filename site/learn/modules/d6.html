@@ -17,7 +17,7 @@
 </ul>
 
 <h2>Worked example</h2>
-<p>What is one record fact's grain? The reports to support are records by species, place, source and time, so the grain is <strong>one sample record</strong>, one row of <code>occurrences</code>, and the dimensions are what a record can be sliced by: its species, country, dataset and year. The habitat stand-ins add a second fact at another grain, one country and one habitat class, that shares <code>dim_country</code>.</p>
+<p>What is one record fact's grain? The reports to support are records by species, place, source and time, so the grain is <strong>one sample record</strong>, one row of <code>occurrences</code>, and the dimensions are what a record can be sliced by: its species, country, dataset and year. The habitat estimates add a second fact at another grain, one country and one habitat class, that shares <code>dim_country</code>.</p>
 <p>These blocks are the one definition of the star: standard SQL with no schema names, so the same text runs in PostgreSQL (this lab, in <code>learn_curriculum</code>) and in DuckDB (critwire's build, which writes the CSV files Power BI reads). Each block creates one table, fills it from the lab tables and reports what it holds. Keys are declared in each <code>CREATE TABLE</code>, because DuckDB accepts foreign keys only there. The tests run each block in its own transaction, after the blocks it builds on, and roll it back; in psql, type <code>BEGIN;</code>, run them in order, and <code>ROLLBACK;</code> when you are done (or keep them until the next reload replaces <code>learn_curriculum</code>).</p>
 <p><code>dim_species</code> flattens the taxonomy into columns: a report filters by class or family without walking <code>taxa</code> (a star, not a snowflake).</p>
 {{block:d6-star-dim-species}}
@@ -31,7 +31,7 @@
 {{block:d6-star-fact-records}}
 <p><code>fact_species_country</code> is a <strong>factless fact</strong>: it has no measure, only the pairs critwire publishes (a country where a species has open records). It shares <code>dim_species</code> and <code>dim_country</code> with <code>fact_records</code>, so one country slicer filters both (conformed dimensions).</p>
 {{block:d6-star-fact-species-country}}
-<p>The habitat classes have two levels; <code>dim_habitat_class</code> flattens them, and a level-1 class is its own parent, so a report can group by <code>level1_name</code> with no gaps. The habitat data are stand-ins until the habitat map is loaded, so these two tables are drawn on the star schema but not yet published.</p>
+<p>The habitat classes have two levels; <code>dim_habitat_class</code> flattens them, and a level-1 class is its own parent, so a report can group by <code>level1_name</code> with no gaps. The habitat areas are estimates from a map; these two tables are drawn on the star schema but not yet published.</p>
 {{block:d6-star-dim-habitat-class}}
 <p><code>fact_country_habitat</code>: the grain is <strong>one country and one habitat class</strong>, with a measure that adds up across classes, <code>est_area_km2</code>. It shares only <code>dim_country</code> with the other facts; it has no species.</p>
 {{block:d6-star-fact-country-habitat}}
@@ -44,7 +44,7 @@
 <li><p>Star or snowflake. The same count by class, once from the star and once by walking the normalized tables, <code>species</code> → genus → family → order → class in <code>taxa</code>:</p>
 {{block:d6-snowflake}}
 <p>Same answer, one join against five. The snowflake stores each family's name once; the star repeats it on each of its species' rows, 76 rows in all, which costs nothing. The snowflake's real cost is that every report, and every person writing one, has to know the chain.</p></li>
-<li><p>Conformed dimensions. Which dimensions does the record fact share with habitat area per country? Only <code>dim_country</code>: <code>fact_country_habitat</code> has a country and a habitat class, <code>fact_records</code> a species, country, dataset and year. So a report that shows both goes through the country. The habitat stand-ins cover two countries, Åland (<code>AX</code>) and Trinidad and Tobago (<code>TT</code>). First the wrong way, joining the facts to each other, then the right one:</p>
+<li><p>Conformed dimensions. Which dimensions does the record fact share with habitat area per country? Only <code>dim_country</code>: <code>fact_country_habitat</code> has a country and a habitat class, <code>fact_records</code> a species, country, dataset and year. So a report that shows both goes through the country. Take two countries: Åland (<code>AX</code>), with no records in the sample, and Trinidad and Tobago (<code>TT</code>), with two. First the wrong way, joining the facts to each other, then the right one:</p>
 {{block:d6-drill-across}}
 <p>Trinidad and Tobago has 2 records and 22 habitat classes, so joining the facts gives 44 "records" and twice the habitat area, and Åland, with no records, vanishes. Summing each fact to the country first gives each number once. Reporting tools do this for you when both facts relate to the same dimension table and you never relate the facts to each other.</p>
 {{diagram:d6-drill-across}}</li>

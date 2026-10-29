@@ -5,6 +5,7 @@
 SELECT 'facts joined to each other' AS way, f.country_code, count(*) AS records, sum(h.est_area_km2) AS habitat_km2
 FROM fact_records AS f
 JOIN fact_country_habitat AS h ON h.country_code = f.country_code
+WHERE f.country_code IN ('AX', 'TT')
 GROUP BY f.country_code
 UNION ALL
 SELECT 'each fact summed, then joined', c.country_code, coalesce(r.records, 0), h.habitat_km2
@@ -13,4 +14,5 @@ JOIN (SELECT country_code, sum(est_area_km2) AS habitat_km2
       FROM fact_country_habitat GROUP BY country_code) AS h ON h.country_code = c.country_code
 LEFT JOIN (SELECT country_code, count(*) AS records
            FROM fact_records GROUP BY country_code) AS r ON r.country_code = c.country_code
+WHERE c.country_code IN ('AX', 'TT')
 ORDER BY way, country_code;

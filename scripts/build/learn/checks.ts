@@ -46,6 +46,13 @@ export const LAB_CHECKS: readonly LabCheck[] = [
   covered("admin1_shapes_country", "admin1_shapes", "country_code", "countries", "code"),
   covered("country_habitats_country", "country_habitats", "country_code", "countries", "code"),
   covered("country_habitats_habitat", "country_habitats", "habitat_code", "habitat_classes", "code"),
+  covered("occurrence_habitats_occurrence", "occurrence_habitats", "occurrence_id", "occurrences", "id"),
+  covered("occurrence_habitats_habitat", "occurrence_habitats", "habitat_code", "habitat_classes", "code"),
+  {
+    // One habitat row per record, exactly (a missing or a second one would drop or double it in a join).
+    name: "occurrence_habitats_complete",
+    sql: "SELECT count(*) FROM occurrences AS o WHERE (SELECT count(*) FROM occurrence_habitats AS h WHERE h.occurrence_id = o.id) <> 1",
+  },
   covered("ecoregions_biome", "ecoregions", "biome_id", "biomes", "biome_id"),
   {
     // A level-2 class points at a level-1 class (one with no level1_code of its own).
@@ -82,7 +89,8 @@ CREATE TABLE admin1_shapes (adm1_code text, country_code text);
 CREATE TABLE biomes (biome_id integer);
 CREATE TABLE ecoregions (eco_id integer, biome_id integer);
 CREATE TABLE habitat_classes (code integer, level1_code integer);
-CREATE TABLE country_habitats (country_code text, habitat_code integer, est_area_km2 numeric(12, 2));`,
+CREATE TABLE country_habitats (country_code text, habitat_code integer, est_area_km2 numeric(12, 2));
+CREATE TABLE occurrence_habitats (occurrence_id bigint, habitat_code integer);`,
   clean: `
 INSERT INTO taxa VALUES ('Mammalia', 'class', NULL), ('Carnivora', 'order', 'Mammalia'), ('Felidae', 'family', 'Carnivora'), ('Panthera', 'genus', 'Felidae');
 INSERT INTO species VALUES (1, 'Panthera', 'ok'), (2, 'Panthera', 'no-open-records'), (3, 'Panthera', 'identity-unsettled');
@@ -94,7 +102,8 @@ INSERT INTO admin1_shapes VALUES ('IND-2428', 'IN');
 INSERT INTO biomes VALUES (1);
 INSERT INTO ecoregions VALUES (0, NULL), (1, 1);
 INSERT INTO habitat_classes VALUES (100, NULL), (101, 100);
-INSERT INTO country_habitats VALUES ('IN', 101, 12.5), ('FR', 100, 0);`,
+INSERT INTO country_habitats VALUES ('IN', 101, 12.5), ('FR', 100, 0);
+INSERT INTO occurrence_habitats VALUES (1, 101), (2, NULL), (3, 100), (4, 101);`,
   violating: {
     range_status_ok_iff_countries: [
       "INSERT INTO species VALUES (4, 'Panthera', 'ok')",
@@ -125,6 +134,12 @@ INSERT INTO country_habitats VALUES ('IN', 101, 12.5), ('FR', 100, 0);`,
     habitat_classes_level1: [
       "INSERT INTO habitat_classes VALUES (201, 200)",
       "INSERT INTO habitat_classes VALUES (102, 101)",
+    ],
+    occurrence_habitats_occurrence: ["INSERT INTO occurrence_habitats VALUES (9, 100)"],
+    occurrence_habitats_habitat: ["UPDATE occurrence_habitats SET habitat_code = 999 WHERE occurrence_id = 1"],
+    occurrence_habitats_complete: [
+      "DELETE FROM occurrence_habitats WHERE occurrence_id = 2",
+      "INSERT INTO occurrence_habitats VALUES (3, 101)",
     ],
     country_habitats_area: ["INSERT INTO country_habitats VALUES ('IN', 100, -0.01)"],
     occurrences_uncertainty: [

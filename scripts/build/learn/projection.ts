@@ -1,7 +1,7 @@
-// The Learn projection (plan D9.4, D9.5; review SC1): the 14 lab tables a learner builds from the published files.
+// The Learn projection (plan D9.4, D9.5; review SC1): the 16 lab tables a learner builds from the published files.
 // assertLearnProjection checks the records against the projection's assumptions before anything is written;
 // projectLearn builds the tables in DuckDB from dist/'s bytes (site/learn/sql/setup.sql, 004 §0's setup block byte for
-// byte, plus the six lab-only tables from /learn/data/) and counts LAB_CHECKS on them.
+// byte, plus the eight lab-only tables from /learn/data/) and counts LAB_CHECKS on them.
 import { readFile } from "node:fs/promises";
 import type { DuckDBConnection } from "@duckdb/node-api";
 import { fileURLToPath } from "node:url";
@@ -11,7 +11,7 @@ import { countLabChecks } from "./checks.ts";
 
 export const setupSql = new URL("../../../site/learn/sql/setup.sql", import.meta.url);
 
-// The lab tables, parents first: setup.sql's eight, then the six lab-only ones with the relation each is read from
+// The lab tables, parents first: setup.sql's eight, then the eight lab-only ones with the relation each is read from
 // (bare names resolve through file_search_path, as in the browser), and the key the loader orders their rows by.
 export interface LabTable { name: string; from?: string; key: readonly string[] }
 export const LAB_TABLES: readonly LabTable[] = [
@@ -29,6 +29,8 @@ export const LAB_TABLES: readonly LabTable[] = [
   { name: "ecoregions", from: "read_parquet('ecoregions.parquet')", key: ["eco_id"] },
   { name: "habitat_classes", from: "read_parquet('habitat_classes.parquet')", key: ["code"] },
   { name: "country_habitats", from: "read_parquet('country_habitats.parquet')", key: ["country_code", "habitat_code"] },
+  { name: "occurrence_habitats", from: "read_parquet('occurrence_habitats.parquet')", key: ["occurrence_id"] },
+  { name: "habitat_clips", from: "read_parquet('habitat_clips.parquet')", key: ["clip"] },
 ];
 
 // setup.sql's external-id columns: each UNIQUE there and in the loader's lab-keys.sql.
@@ -70,7 +72,7 @@ export function assertLearnProjection(species: readonly Species[]): void {
   }
 }
 
-// Runs fn on an offline DuckDB holding the 14 lab tables, built from out/v1/ and out/learn/data/ as published (query).
+// Runs fn on an offline DuckDB holding the 16 lab tables, built from out/v1/ and out/learn/data/ as published (query).
 export async function withLabTables<T>(out: URL, fn: (con: DuckDBConnection) => Promise<T>): Promise<T> {
   const setup = await readFile(setupSql, "utf8");
   const searchPath = [new URL("v1/", out), new URL("learn/data/", out)].map((u) => fileURLToPath(u)).join(",");

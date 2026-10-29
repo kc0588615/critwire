@@ -25,6 +25,8 @@
 // LD19: a server without PostGIS raster gets past the drop, or half-loads → the guard raises "PostGIS raster is
 //       missing" before anything else; the previous schema intact. (Run against a type that doesn't exist: critwire_dev
 //       has raster, and dropping a shared extension isn't a test's to do.)
+// LD21 (L3 §3, SC5): a clip in another SRID, with two bands or another pixel type loads, or a record's habitat row
+//       names an unknown record or class, or a record gets two → CHECK, foreign key or primary key refuses it.
 // LD2/LD3 round-trips: the point loads as POINT(1 2) SRID 4326, every TEXTS value byte for byte.
 // The real-loader cases read dist/ (run pnpm build first).
 import assert from "node:assert/strict";
@@ -303,6 +305,36 @@ test("LD17 SC5's CHECKs: negative, ±Infinity or NaN uncertainty, year ≤ 0, ne
     OCCURRENCE("NULL", "0"), OCCURRENCE("NULL", "-5"), AREA("-0.01"), AREA("'NaN'")]) {
     assert.equal(await run(bad), "23514", bad);
   }
+}));
+
+const labKeys = readFileSync(new URL("../../../db/learn/lab-keys.sql", import.meta.url), "utf8");
+const UUID0 = "'00000000-0000-0000-0000-000000000000'";
+const CLIP = (key: string, srid: number, bands: string[]) =>
+  `INSERT INTO habitat_clips VALUES ('${key}', ${bands.reduce((r, type) => `ST_AddBand(${r}, '${type}'::text, 1, 0)`, `ST_MakeEmptyRaster(2, 2, 0, 0, 1, -1, 0, 0, ${srid})`)})`;
+
+test("LD21 habitat_clips' CHECK and occurrence_habitats' keys: wrong SRID, bands or type, unknown record or class, two rows refused", () => withLabSchema(async (sql, schema) => {
+  const run = async (stmt: string) => {
+    try {
+      await sql.unsafe(`SET search_path = ${schema}, public; ${stmt}`);
+      return "ok";
+    } catch (e) {
+      return (e as { code?: string }).code ?? String(e);
+    }
+  };
+  assert.equal(await run(`${labDdl}\n${labKeys}
+    INSERT INTO taxa VALUES ('A', 'class', NULL), ('B', 'order', 'A'), ('C', 'family', 'B'), ('D', 'genus', 'C');
+    INSERT INTO species (id, slug, scientific_name, common_name, genus, range_status) VALUES (1, 's', 'D s', 'c', 'D', 'no-open-records');
+    INSERT INTO datasets VALUES (${UUID0}, 't', 'p', NULL, 'CC0 1.0');
+    INSERT INTO occurrences (id, species_id, dataset_key, license, basis_of_record, longitude, latitude)
+      VALUES (1, 1, ${UUID0}, 'CC0 1.0', 'OCCURRENCE', 0, 0), (2, 1, ${UUID0}, 'CC0 1.0', 'OCCURRENCE', 0, 0);
+    INSERT INTO habitat_classes VALUES (100, NULL, 'Forest')`), "ok");
+  for (const ok of [CLIP("cr", 4326, ["16BUI"]), "INSERT INTO occurrence_habitats VALUES (1, 100), (2, NULL)"]) assert.equal(await run(ok), "ok", ok);
+  for (const bad of [CLIP("a", 3857, ["16BUI"]), CLIP("b", 4326, ["16BUI", "16BUI"]), CLIP("c", 4326, ["8BUI"]), CLIP("d", 4326, [])]) {
+    assert.equal(await run(bad), "23514", bad);
+  }
+  assert.equal(await run("INSERT INTO occurrence_habitats VALUES (3, 100)"), "23503");
+  assert.equal(await run("UPDATE occurrence_habitats SET habitat_code = 999 WHERE occurrence_id = 2"), "23503");
+  assert.equal(await run("INSERT INTO occurrence_habitats VALUES (1, NULL)"), "23505");
 }));
 
 test("LD18 a LAB_CHECKS violation raises in the DO block, naming the check and its count; previous schema intact", () => withLabSchema(async (sql, schema) => {

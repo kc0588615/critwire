@@ -254,15 +254,21 @@ test("LC6 a loader whose failure keeps part of the load is refused, naming the c
   const out = tamperedDist("partial", { loader: (s) => s.replace(PK, `COMMIT;\nBEGIN;\nSET LOCAL search_path = learn_curriculum, public;\n${PK}`) });
   const r = await cli(["--dist", out]);
   assert.equal(r.code, 1);
-  assert.match(r.stdout, /load 2: 14 tables = manifest/);
+  assert.match(r.stdout, /load 2: 16 tables = manifest/);
   assert.match(r.stderr, /forced failure: .*changed learn_curriculum.*learn_curriculum\.occurrences: rows or values changed/s);
 });
 
+// occurrence_habitats' foreign key needs occurrences' primary key, so it goes with it.
+const HABITAT_FK = "ALTER TABLE occurrence_habitats ADD FOREIGN KEY (occurrence_id) REFERENCES occurrences (id);\n";
+
 test("LC6 a forced failure that fails elsewhere than the duplicate key is refused", async () => {
-  const out = tamperedDist("elsewhere", { loader: (s) => s.replace(PK, "") });
+  const out = tamperedDist("elsewhere", { loader: (s) => {
+    assert.ok(s.includes(PK) && s.includes(HABITAT_FK));
+    return s.replace(PK, "").replace(HABITAT_FK, "");
+  } });
   const r = await cli(["--dist", out]);
   assert.equal(r.code, 1);
-  assert.match(r.stdout, /load 2: 14 tables = manifest/);
+  assert.match(r.stdout, /load 2: 16 tables = manifest/);
   assert.match(r.stderr, /forced failure: psql exit 3, not at the duplicate key id=\d+/);
 });
 
@@ -319,9 +325,9 @@ test("LC5 + LC10 + DL2 a clean run loads twice to the manifest's counts, runs pg
   const r = await cli([], { PATH: `${bin}:${process.env.PATH}`, GBIF_USERNAME: "senuser", GBIF_PASSWORD: "senpass", DATABASE_URL: "postgres://sen" });
   assert.equal(r.code, 0, r.stderr);
   const tables = manifestTables();
-  assert.match(r.stdout, /load 1: 14 tables = manifest/);
-  assert.match(r.stdout, /load 2: 14 tables = manifest/);
-  assert.match(r.stdout, /forced failure: psql exit 3 at the duplicate key id=\d+, 14 tables unchanged/);
+  assert.match(r.stdout, /load 1: 16 tables = manifest/);
+  assert.match(r.stdout, /load 2: 16 tables = manifest/);
+  assert.match(r.stdout, /forced failure: psql exit 3 at the duplicate key id=\d+, 16 tables unchanged/);
   assert.doesNotMatch(r.stdout, /pg-role-smoke: 0 left/, "no special pg-role-smoke step");
   assert.match(r.stdout, /learn:check: static: \d+ page\(s\), \d+ block\(s\) parsed and linted/);
   assert.match(r.stdout, /learn:check: q pg-role-smoke: ok/);
@@ -356,7 +362,7 @@ test("LM1 --module setup runs the static checks, the loader and the setup page's
   const before = recorded(checked);
   const r = await cli(["--module", "setup"]);
   assert.equal(r.code, 0, r.stderr);
-  assert.match(r.stdout, /load 2: 14 tables = manifest/);
+  assert.match(r.stdout, /load 2: 16 tables = manifest/);
   assert.match(r.stdout, /learn:check: q pg-role-smoke:\n  -- result: pg-role-smoke · 1 row · sha256 fcfe7fd06dfa\n  learn_smoke_left\n  0\n/);
   assert.match(r.stdout, /learn:check: q pg-session:\n  -- result: pg-session · 1 row · sha256 791623fd72db\n  search_path\n  learn_curriculum, public\n/);
   assert.match(r.stdout, /learn:check: q pg-role-smoke: ok/);

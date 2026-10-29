@@ -257,18 +257,20 @@ UNION ALL SELECT 'biomes', count(*) FROM biomes
 UNION ALL SELECT 'ecoregions', count(*) FROM ecoregions
 UNION ALL SELECT 'habitat_classes', count(*) FROM habitat_classes
 UNION ALL SELECT 'country_habitats', count(*) FROM country_habitats
+UNION ALL SELECT 'occurrence_habitats', count(*) FROM occurrence_habitats
+UNION ALL SELECT 'habitat_clips', count(*) FROM habitat_clips
 ORDER BY table_name;
 ```
 
 ```text
--- result: pg-smoke · 14 rows · sha256 444c9131da27
+-- result: pg-smoke · 16 rows · sha256 3e77cac6c4d2
 table_name | n_rows
 admin1_shapes | 294
 biomes | 14
 countries | 250
-country_habitats | 35
+country_habitats | 5578
 country_shapes | 247
-… 9 more rows
+… 11 more rows
 ```
 
 Labs that create roles or schemas (d5) clean up in the same block, so running a block twice, or stopping halfway through a module, leaves nothing behind. Their names start with `learn_`, and creating roles needs the CREATEROLE privilege (a superuser has it; on your own install, see §3.2). This check creates a read-only role, reads a table as that role, and removes it again: `DROP OWNED BY` takes away what the role was granted, and only then can `DROP ROLE` remove it. `pnpm learn:check` runs it from `site/learn/sql/pg-role-smoke.sql` as it runs every block: inside the runner's transaction, which it rolls back, so a failed line leaves nothing.
@@ -505,7 +507,7 @@ curl.exe -fLo learn_curriculum.sql https://critwire.com/learn/data/postgis/learn
 
 psql on Windows talks to the server in the console's code page unless told otherwise; the lab file sets `client_encoding` to UTF-8 itself, so names like "Côte d'Ivoire" arrive intact either way (tested by loading it under `WIN1252`).
 
-**Loading, and loading again.** The lab file builds schema `learn_curriculum` in one transaction: it drops the schema, recreates it, loads every table, adds the keys and indexes, and checks every table's row count before `COMMIT`. A failed load changes nothing; a second load replaces the schema, including any table you made there, so keep your own work in another schema. Another schema keeps your tables, not your dependencies: a view, a foreign key, a trigger or a policy of yours that reads `learn_curriculum` would go with it (`DROP SCHEMA … CASCADE`). The lab file refuses that reload instead, naming each such object, and changes nothing; move or drop them and load again. Then connect with your SQL client (psql, pgAdmin, DBeaver, VS Code) to database `learn` and run §0's `pg-session` and `pg-smoke` blocks: the 14 row counts there mean your lab matches the tested one. The setup page shows §0's four PostGIS checks (`pg-session`, `pg-smoke`, `pg-role-smoke`, `pg-tx-smoke`) with their recorded results, and they download as one file, `/learn/labs/pg-checks.sql` (§7.3), run with `psql -X -d learn -f pg-checks.sql`.
+**Loading, and loading again.** The lab file builds schema `learn_curriculum` in one transaction: it drops the schema, recreates it, loads every table, adds the keys and indexes, and checks every table's row count before `COMMIT`. A failed load changes nothing; a second load replaces the schema, including any table you made there, so keep your own work in another schema. Another schema keeps your tables, not your dependencies: a view, a foreign key, a trigger or a policy of yours that reads `learn_curriculum` would go with it (`DROP SCHEMA … CASCADE`). The lab file refuses that reload instead, naming each such object, and changes nothing; move or drop them and load again. Then connect with your SQL client (psql, pgAdmin, DBeaver, VS Code) to database `learn` and run §0's `pg-session` and `pg-smoke` blocks: the 16 row counts there mean your lab matches the tested one. The setup page shows §0's four PostGIS checks (`pg-session`, `pg-smoke`, `pg-role-smoke`, `pg-tx-smoke`) with their recorded results, and they download as one file, `/learn/labs/pg-checks.sql` (§7.3), run with `psql -X -d learn -f pg-checks.sql`.
 
 **Connection settings.** The Python labs, and any lab file you run with psql, find the database through libpq's standard environment variables, so the same file runs on your computer and on the test server. In PowerShell, for one session:
 
@@ -2399,7 +2401,7 @@ tar xzf tbls_v1.96.1_linux_amd64.tar.gz tbls
 
 Open `lab-tbls.mmd` beside [the lab schema's diagram](/learn/schema/lab/). What do the two agree on, and what does each have that the other doesn't?
 
-**What you should find:** the 14 tables, their 69 columns and types, and the 15 lines agree, cardinality included. tbls reads "zero or one" from a foreign key that may be `NULL` (`occurrences.country_code`) and "at most one per country" from a foreign key that is also its table's primary key (`country_shapes`), as the course's diagram draws them. It spells a type's punctuation as underscores (`double_precision`, `geometry_Point_4326_`). It draws the view `species_taxonomy` as a box like a table, without lines, because a view has no keys. It leaves out what the database doesn't hold: the two planned tables, every column's note (they live in the diagram's source, not in the database), and, in Mermaid, the primary and unique keys. A diagram read back from the catalog shows exactly what the database enforces, so it is a good check on a drawn one; critwire's tests compare the lab diagram with a freshly loaded lab the same way. What a column means and what is planned still has to be written down by a person.
+**What you should find:** the 16 tables, their 73 columns and types, and the 17 lines agree, cardinality included. tbls reads "zero or one" from a foreign key that may be `NULL` (`occurrences.country_code`) and "at most one per country" from a foreign key that is also its table's primary key (`country_shapes`), as the course's diagram draws them. It spells a type's punctuation as underscores (`double_precision`, `geometry_Point_4326_`). It draws the view `species_taxonomy` as a box like a table, without lines, because a view has no keys. It leaves out what the database doesn't hold: every column's note (they live in the diagram's source, not in the database), and, in Mermaid, the primary and unique keys. A diagram read back from the catalog shows exactly what the database enforces, so it is a good check on a drawn one; critwire's tests compare the lab diagram with a freshly loaded lab the same way. What a column means and what is planned still has to be written down by a person.
 
 **Dialects:**
 - **PostgreSQL:** as here, with surrogate keys from `GENERATED ALWAYS AS IDENTITY` (or the older `serial`); generated columns are `STORED` only (virtual ones come in PostgreSQL 18); foreign keys take `ON DELETE CASCADE | SET NULL | RESTRICT`, can be `DEFERRABLE` (checked at commit), and can be added `NOT VALID` and checked later with `VALIDATE CONSTRAINT`; `UNIQUE NULLS NOT DISTINCT` makes `NULL`s collide; no automatic index on a foreign key.
@@ -3603,7 +3605,7 @@ since_2000 | before_2000
 1858 | 101
 ```
 
-2. Row versions. Every row the lab file loaded carries the id of the transaction that wrote it, in `xmin`. Across the fourteen tables there is one:
+2. Row versions. Every row the lab file loaded carries the id of the transaction that wrote it, in `xmin`. Across the sixteen tables there is one:
 
 ```sql
 -- q: d4-xmin-load
@@ -3625,13 +3627,15 @@ FROM (
   UNION ALL SELECT xmin FROM ecoregions
   UNION ALL SELECT xmin FROM habitat_classes
   UNION ALL SELECT xmin FROM country_habitats
+  UNION ALL SELECT xmin FROM occurrence_habitats
+  UNION ALL SELECT xmin FROM habitat_clips
 ) AS loaded;
 ```
 
 ```text
--- result: d4-xmin-load · 1 row · sha256 e8f1ca79813b
+-- result: d4-xmin-load · 1 row · sha256 430d8c5e620e
 transactions | row_versions
-1 | 43844
+1 | 89784
 ```
 
 That is the loader's atomicity in the data itself: the lab arrived in one transaction, so no reader could ever see part of it. The number itself differs on every machine and every load, which is why the lab compares it rather than printing it.
@@ -4242,7 +4246,7 @@ records | species_with_records | species_rows
 - **Slowly changing dimensions.** A dimension's attributes change: a common name is corrected, a species moves to another genus. **Type 1** overwrites the value: history is restated, every past fact now reports under the new value; right for corrections. **Type 2** keeps history: the change adds a new row, a version with its own surrogate key, the years it is valid and a current flag, and each fact points at the version in force at its date. A report can then group "as it was" (by the fact's version) or "as it is" (by the current version). Type 0 never changes a value; type 3 keeps one "previous value" column. The choice is made per attribute.
 - **Export.** A star travels well as files: one CSV per table plus a manifest (columns, keys, rows, sha256, credits), rows in primary-key order so the same data always gives the same bytes. That is what critwire publishes for Power BI (§4, p1), checked file by file (§A.3).
 
-**Worked example:** What is one record fact's grain? The reports to support are records by species, place, source and time, so the grain is **one sample record**, one row of `occurrences`, and the dimensions are what a record can be sliced by: its species, country, dataset and year. The habitat stand-ins add a second fact at another grain, one country and one habitat class, that shares `dim_country`.
+**Worked example:** What is one record fact's grain? The reports to support are records by species, place, source and time, so the grain is **one sample record**, one row of `occurrences`, and the dimensions are what a record can be sliced by: its species, country, dataset and year. The habitat estimates add a second fact at another grain, one country and one habitat class, that shares `dim_country`.
 
 These blocks are `star.sql`, the one definition of the star: standard SQL with no schema names, so the same text runs in PostGIS (this lab, in `learn_curriculum`) and in DuckDB (critwire's build, which writes the CSV files Power BI reads). Each block creates one table, fills it from the lab tables and reports what it holds. Keys are declared in each `CREATE TABLE`, because DuckDB accepts foreign keys only there. The tests run each block in its own transaction, after the blocks its `-- after:` names, and roll it back; in psql, type `BEGIN;`, run them in order, and `ROLLBACK;` when you are done (or keep them until the next reload replaces `learn_curriculum`).
 
@@ -4416,7 +4420,7 @@ pairs | species | countries
 472 | 72 | 107
 ```
 
-The habitat classes have two levels; `dim_habitat_class` flattens them, and a level-1 class is its own parent, so a report can group by `level1_name` with no gaps. The habitat data are stand-ins until L3 loads the habitat summaries.
+The habitat classes have two levels; `dim_habitat_class` flattens them, and a level-1 class is its own parent, so a report can group by `level1_name` with no gaps. The habitat areas are estimates from a map (§4.1), and the star publishes these two tables later (L5).
 
 ```sql
 -- q: d6-star-dim-habitat-class
@@ -4452,7 +4456,7 @@ classes | level1_classes
 CREATE TABLE fact_country_habitat (
   country_code VARCHAR NOT NULL REFERENCES dim_country (country_code),
   habitat_code INTEGER NOT NULL REFERENCES dim_habitat_class (habitat_code),
-  est_area_km2 DECIMAL(12, 2) NOT NULL,
+  est_area_km2 DECIMAL(12, 2) NOT NULL CHECK (est_area_km2 >= 0 AND est_area_km2 < 'Infinity'),
   PRIMARY KEY (country_code, habitat_code)
 );
 INSERT INTO fact_country_habitat
@@ -4462,9 +4466,9 @@ FROM fact_country_habitat;
 ```
 
 ```text
--- result: d6-star-fact-country-habitat · 1 row · sha256 a745d03c7c43
+-- result: d6-star-fact-country-habitat · 1 row · sha256 80b11c41e5b3
 country_classes | countries | total_km2
-35 | 2 | 6062.26
+5578 | 246 | 146579613.97
 ```
 
 Now a report is one join per dimension it slices by. Records since 2000 by class and continent:
@@ -4535,7 +4539,7 @@ Reptilia | 3714 | 3714
 
 Same answer, one join against five. The snowflake stores each family's name once; the star repeats it on each of its species' rows, 76 rows in all, which costs nothing. The snowflake's real cost is that every report, and every person writing one, has to know the chain.
 
-2. Conformed dimensions. Which dimensions does the record fact share with habitat area per country? Only `dim_country`: `fact_country_habitat` has a country and a habitat class, `fact_records` a species, country, dataset and year. So a report that shows both goes through the country. The habitat stand-ins cover two countries, Åland (`AX`) and Trinidad and Tobago (`TT`). First the wrong way, joining the facts to each other, then the right one:
+2. Conformed dimensions. Which dimensions does the record fact share with habitat area per country? Only `dim_country`: `fact_country_habitat` has a country and a habitat class, `fact_records` a species, country, dataset and year. So a report that shows both goes through the country. Take two countries: Åland (`AX`), with no records in the sample, and Trinidad and Tobago (`TT`), with two. First the wrong way, joining the facts to each other, then the right one:
 
 ```sql
 -- q: d6-drill-across
@@ -4545,6 +4549,7 @@ Same answer, one join against five. The snowflake stores each family's name once
 SELECT 'facts joined to each other' AS way, f.country_code, count(*) AS records, sum(h.est_area_km2) AS habitat_km2
 FROM fact_records AS f
 JOIN fact_country_habitat AS h ON h.country_code = f.country_code
+WHERE f.country_code IN ('AX', 'TT')
 GROUP BY f.country_code
 UNION ALL
 SELECT 'each fact summed, then joined', c.country_code, coalesce(r.records, 0), h.habitat_km2
@@ -4553,15 +4558,16 @@ JOIN (SELECT country_code, sum(est_area_km2) AS habitat_km2
       FROM fact_country_habitat GROUP BY country_code) AS h ON h.country_code = c.country_code
 LEFT JOIN (SELECT country_code, count(*) AS records
            FROM fact_records GROUP BY country_code) AS r ON r.country_code = c.country_code
+WHERE c.country_code IN ('AX', 'TT')
 ORDER BY way, country_code;
 ```
 
 ```text
--- result: d6-drill-across · 3 rows · sha256 f094fefd46c9
+-- result: d6-drill-across · 3 rows · sha256 ad182fd5050b
 way | country_code | records | habitat_km2
-each fact summed, then joined | AX | 0 | 945.03
-each fact summed, then joined | TT | 2 | 5117.23
-facts joined to each other | TT | 44 | 10234.46
+each fact summed, then joined | AX | 0 | 761.16
+each fact summed, then joined | TT | 2 | 5067.71
+facts joined to each other | TT | 44 | 10135.42
 ```
 
 Trinidad and Tobago has 2 records and 22 habitat classes, so joining the facts gives 44 "records" and twice the habitat area, and Åland, with no records, vanishes. Summing each fact to the country first gives each number once. Reporting tools do this for you when both facts relate to the same dimension table and you never relate the facts to each other.
@@ -7243,6 +7249,8 @@ in
     Typed
 ```
 
+`p1-load`'s inputs, `star/dim_habitat_class.csv` and `star/fact_country_habitat.csv`, and their sizes in §A.3, are recorded on A2's two-country habitat stand-ins (AX and TT, 35 rows): L3 replaced them with every country's estimates (§4.1), so they are re-run by the mission that builds this module (L5).
+
 The largest table's query. Name the query `fact_records`; whole numbers are `Int64.Type`, decimals `type number`, and an empty cell (a record with no month, or no stated uncertainty) becomes null:
 
 ```m
@@ -7345,7 +7353,7 @@ Asia | 2985 | 21 | 20
 - `DIVIDE` returns blank instead of an error when the denominator is 0 or blank.
 - A ratio of two facts at different grains (records per record, area per country and class) works because both are filtered by the same `dim_country`. Its meaning is the honest part: records per 1,000 km² of forest measures how much recording happened per area of forest, not how many animals live there.
 
-**Data:** `fact_records`, `fact_country_habitat`, `dim_habitat_class`, `dim_country`. The habitat facts are A2's stand-ins (two countries, §4.1) until L3 loads the real summaries for every country.
+**Data:** `fact_records`, `fact_country_habitat`, `dim_habitat_class`, `dim_country`. The habitat facts cover every country (§4.1). `p3-measures`' expected values and `p3-check`'s result below are recorded on A2's two-country habitat stand-ins (AX and TT, 35 rows): L3 replaced them with every country's estimates (§4.1), so they are re-run by the mission that builds this module (L5).
 
 **Key code:**
 
@@ -7619,7 +7627,7 @@ The pictures are drawn offline by Mermaid in a headless browser, as SVG only (pl
 
 ### 6.3 The Power BI star
 
-`site/learn/erd/star.mmd`: the eight CSV files `star.sql` writes (d6, §A.3), checked against the star's `manifest.json`. `fact_records` holds one row per sample record; `fact_species_country` has no measure (a factless fact: a row says a species has open records in a country); `fact_country_habitat` is the habitat stand-in. `dim_species` is shared by the two species facts (`fact_records`, `fact_species_country`), not by the habitat fact, which has no species; `dim_country` by all three. A shared dimension is conformed: one slicer on it filters every fact that uses it. Every fact foreign key is filled: a record with no year points at `dim_year`'s `-1` member, one with no country at `dim_country`'s `ZZ`, so every line is "exactly one" on the dimension's side.
+`site/learn/erd/star.mmd`: the eight CSV files `star.sql` writes (d6, §A.3), checked against the star's `manifest.json`. `fact_records` holds one row per sample record; `fact_species_country` has no measure (a factless fact: a row says a species has open records in a country); `fact_country_habitat` holds the habitat estimates per country and class (§4.1). `dim_species` is shared by the two species facts (`fact_records`, `fact_species_country`), not by the habitat fact, which has no species; `dim_country` by all three. A shared dimension is conformed: one slicer on it filters every fact that uses it. Every fact foreign key is filled: a record with no year points at `dim_year`'s `-1` member, one with no country at `dim_country`'s `ZZ`, so every line is "exactly one" on the dimension's side.
 
 Two of the eight are **planned**: `dim_habitat_class` and `fact_country_habitat` wait for the habitat map, so the star published with L2 has six files. The source lists them on a `%% planned:` line, with the lab's rule: they are drawn, so the design is whole; the check excuses them while the manifest lacks them, and fails once it has them, so the marker can't go stale. The star page teaches the word: drawn, not yet published.
 
@@ -7900,7 +7908,7 @@ Every open record, uncapped, would be 4.8 MB as Parquet and 44.6 MB as CSV; it i
 
 **Question.** Can one `star.sql` build the Power BI star in both PostGIS (d6's lab) and DuckDB (critwire's build), and can the files Power BI reads be checked here, where Power BI can't run?
 
-**Inputs.** The lab tables (the browser schema v2 plus the habitat stand-ins); d6's eight `d6-star-*` blocks (§5.2), which the spike reads from this file by id; p1's `p1-load` (§5.6), whose `// input:` line names the eight files.
+**Inputs.** The lab tables (the browser schema v2 plus the habitat estimates); d6's eight `d6-star-*` blocks (§5.2), which the spike reads from this file by id; p1's `p1-load` (§5.6), whose `// input:` line names the eight files.
 
 **Commands.** `SP/star-export/run.sh`: loads the lab data, then `SP/star-export/export.ts`: runs the blocks in Node DuckDB over the published files and writes each table as CSV ordered by its primary key (the canonical files, with `manifest.json`); runs the same blocks in PostGIS in a transaction it rolls back, `\copy`-ing each table; compares the two by value; checks every file as the Power BI input check does. The runner (`run-queries.ts`) checks `p1-load`'s inputs against the manifest on every run and logs one `-- input:` line per file.
 

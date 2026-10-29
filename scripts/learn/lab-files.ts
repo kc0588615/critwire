@@ -1,5 +1,5 @@
 // data/learn/ (plan D3, D5): the committed lab data files and their provenance files. shapes.json is pnpm ingest
-// shapes'; habitat.json the habitat stand-ins' (L3's ingest habitat takes it over). Each lists its files' bytes and
+// shapes'; habitat.json pnpm ingest habitat's. Each lists its files' bytes and
 // sha256, and every other file in data/learn/ must be listed by exactly one of them. Names are paths relative to
 // data/learn/ (clips/cr.tif); rows is recorded for Parquet only.
 import { createHash } from "node:crypto";

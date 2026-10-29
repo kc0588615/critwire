@@ -1,14 +1,85 @@
 {
-  "files": {
-    "country_habitats.parquet": {
-      "built": "/srv/critter-ai/agent-state/missions/critwire-learn-spatial-design/spike/scripts/grown-data.ts: TT and AX only; method 3 of E3c (v004 1 km level-2 fractions × geodesic cell area, https://zenodo.org/api/records/4058819/files/lvl2_frac_1km_ver004.zip/content) over Natural Earth v5.1.2 shapes; km² rounded to 0.01, estimated",
-      "bytes": 850,
-      "copiedFrom": {
-        "path": "/srv/critter-ai/agent-state/missions/critwire-learn-curriculum/spike/data/learn/country_habitats.parquet",
-        "sha256": "e597fe9011bb605615357aa85b2b8432eae23129f1ebed7b19a07e8bcdb88f1d"
+  "clips": {
+    "cr": {
+      "bounds": {
+        "east": -83.44989663356708,
+        "north": 10.600120352610361,
+        "south": 9.849128775086442,
+        "west": -84.200888211091
       },
-      "rows": 35,
-      "sha256": "e597fe9011bb605615357aa85b2b8432eae23129f1ebed7b19a07e8bcdb88f1d"
+      "height": 836,
+      "nodata": 0,
+      "nodataCells": 0,
+      "scale": 0.0008983152841195215,
+      "values": {
+        "105": 15,
+        "106": 102946,
+        "108": 10318,
+        "109": 178008,
+        "201": 563,
+        "306": 36961,
+        "307": 29887,
+        "407": 85,
+        "500": 1113,
+        "503": 256,
+        "507": 653,
+        "511": 49,
+        "803": 294,
+        "900": 11332,
+        "1200": 168,
+        "1206": 13,
+        "1401": 253016,
+        "1402": 6361,
+        "1403": 33385,
+        "1405": 33473
+      },
+      "width": 836
+    },
+    "tas": {
+      "bounds": {
+        "east": 148.00013800454352,
+        "north": -42.349277439246606,
+        "south": -43.100269016770525,
+        "west": 147.24914642701958
+      },
+      "height": 836,
+      "nodata": 0,
+      "nodataCells": 0,
+      "scale": 0.0008983152841195215,
+      "values": {
+        "104": 222337,
+        "108": 55,
+        "304": 110997,
+        "305": 1436,
+        "404": 10527,
+        "500": 9775,
+        "505": 94,
+        "506": 3,
+        "900": 108396,
+        "909": 49211,
+        "1200": 2366,
+        "1206": 30,
+        "1401": 2891,
+        "1402": 154334,
+        "1403": 14748,
+        "1405": 11696
+      },
+      "width": 836
+    }
+  },
+  "files": {
+    "clips/cr.tif": {
+      "bytes": 221986,
+      "sha256": "f3e117226d09fa7e23f2cf27f3ed589b03f374e32447cfb9c4d9723edeef679e"
+    },
+    "clips/tas.tif": {
+      "bytes": 180362,
+      "sha256": "1deb4201167751c6c86b8b15c8141fc735e042c6fce190f6c9c82ac364cb72ea"
+    },
+    "country_habitats.parquet": {
+      "bytes": 22407,
+      "rows": 5578,
+      "sha256": "2ae6d98b189e7fbe91ed3c83cbaa35af678df3eca7073336e0b6c92a8b5a7597"
     },
     "habitat_classes.parquet": {
       "built": "/srv/critter-ai/agent-state/missions/critwire-learn-spatial-design/spike/scripts/grown-data.ts: v004 legend (member Habitatmapping-004/IUCN_mapping_legend.xlsx of https://zenodo.org/api/records/4058819/files/iucn_habitatclassification_code_ver004.zip/content), mapped classes only, names without their class number",
@@ -19,15 +90,188 @@
       },
       "rows": 75,
       "sha256": "2539cb826ee2ed5a14068bccb37f9c3ee5e1940e4c2e179fb6f105b75bd210f4"
+    },
+    "habitat_clips.parquet": {
+      "bytes": 256632,
+      "rows": 2,
+      "sha256": "46481464eff9a1ed29ffd8d533b2e37c497c514f159c42656d354d90db766204"
+    },
+    "occurrence_habitats.parquet": {
+      "bytes": 81731,
+      "rows": 40395,
+      "sha256": "4a7c514bc96fc944e6c1914a08fd7c917d2266135484508d515f4c2ab8730065"
     }
   },
-  "note": "Stand-ins until L3's pnpm ingest habitat rebuilds these files and takes over this file. Byte copies of the critwire-learn-curriculum spike's data/learn/, which copied them from the critwire-learn-spatial-design spike's data/v1/ (its scripts/grown-data.ts).",
+  "grid": {
+    "height": 18154,
+    "transform": [
+      0.009915667822884942,
+      0,
+      -180.0099155291168,
+      0,
+      -0.009915667822884942,
+      90.00297126602864
+    ],
+    "width": 36308
+  },
+  "inputs": {
+    "countryShapes": {
+      "sha256": "fc3151a035a8846ec848e83b7af7bd87a959ccc58289d34dca27cfd74e18beb9"
+    },
+    "records": {
+      "count": 40395,
+      "sha256": "5d443739fca963ed395fc3a013f85ed1e9230ce09a6300643bf0f41b4849db32"
+    },
+    "zenodo": {
+      "iucn_habitatclassification_composite_lvl2_ver004.zip": {
+        "bytes": 2454999319,
+        "md5": "d9bad21c2c9e80814f59a6e57d934fa9",
+        "sha256": "99ae12ba1d63360a8adce6277176876cb5de4fe3315c41046eb3e1438f082fd9",
+        "url": "https://zenodo.org/api/records/4058819/files/iucn_habitatclassification_composite_lvl2_ver004.zip/content"
+      },
+      "lvl2_frac_1km_ver004.zip": {
+        "bytes": 695484415,
+        "md5": "bd8508db8118f14d8da7bfa7950523d4",
+        "sha256": "ea485aeed8b36d988c5c4c271d199ba125d17387e8d2bbdb5f0c8c6c8d963fa8",
+        "url": "https://zenodo.org/api/records/4058819/files/lvl2_frac_1km_ver004.zip/content"
+      }
+    }
+  },
+  "layers": {
+    "allZero": [
+      200,
+      504,
+      509,
+      512,
+      516,
+      517,
+      518,
+      800,
+      1000,
+      1100,
+      1400
+    ],
+    "codes": [
+      100,
+      101,
+      102,
+      103,
+      104,
+      105,
+      106,
+      107,
+      108,
+      109,
+      200,
+      201,
+      202,
+      300,
+      301,
+      302,
+      303,
+      304,
+      305,
+      306,
+      307,
+      308,
+      400,
+      401,
+      402,
+      403,
+      404,
+      405,
+      406,
+      407,
+      500,
+      501,
+      502,
+      503,
+      504,
+      505,
+      506,
+      507,
+      508,
+      509,
+      510,
+      511,
+      512,
+      513,
+      514,
+      515,
+      516,
+      517,
+      518,
+      600,
+      800,
+      801,
+      802,
+      803,
+      900,
+      901,
+      908,
+      909,
+      1000,
+      1001,
+      1002,
+      1003,
+      1004,
+      1100,
+      1101,
+      1102,
+      1103,
+      1104,
+      1105,
+      1106,
+      1200,
+      1206,
+      1207,
+      1400,
+      1401,
+      1402,
+      1403,
+      1404,
+      1405
+    ],
+    "overlay": [
+      901,
+      1000,
+      1001,
+      1002,
+      1003,
+      1004
+    ]
+  },
+  "measured": {
+    "estimateOverOutline": 0.999074,
+    "nullClassRecords": 0,
+    "outlines": 247,
+    "outlinesWithNoCell": [
+      "VA"
+    ],
+    "records": 40395
+  },
+  "method": {
+    "clips": "v004's level-2 composite at 100 m (EPSG:4326), each window snapped outward to its grid, cells unchanged; cloud-optimized GeoTIFF (DEFLATE, PREDICTOR=2, 256 px blocks, nearest-neighbour overviews); habitat_clips.parquet holds the same cells as PostGIS raster WKB",
+    "countries": "method 3 (003 §5): v004's 1 km level-2 fractions (EPSG:4326, 0.009915667822884942° cells); per country, Σ fraction ÷ 1000 × the cell's geodesic area (WGS84) over the cells whose centre is inside its Natural Earth 1:50m outline (overlapping outlines both count a shared cell); partition classes only (open-water overlay 901, 1000, 1001, 1002, 1003, 1004 left out); km² rounded to 0.01; estimated from a map, not measured",
+    "records": "the record's 1 km cell: the partition class with the largest fraction, ties to the lowest code; NULL when the cell holds none; the map's class at that place, not the species' habitat"
+  },
   "source": {
     "citation": "Jung, M., Dahal, P.R., Butchart, S.H.M., Donald, P.F., De Lamo, X., Lesiv, M., Kapos, V., Rondinini, C., Visconti, P. (2020). A global map of terrestrial habitat types. Scientific Data 7, 256. https://doi.org/10.1038/s41597-020-00599-8. Version 004, https://doi.org/10.5281/zenodo.4058819 (CC BY 4.0).",
     "doi": "10.5281/zenodo.4058819",
     "license": "CC BY 4.0",
     "name": "Jung et al. 2020, habitat map v004",
-    "url": "https://doi.org/10.5281/zenodo.4058819"
+    "url": "https://doi.org/10.5281/zenodo.4058819",
+    "version": "004"
   },
-  "standIn": true
+  "tools": {
+    "gdal": "3.12.2",
+    "geos": "3.14.1",
+    "numpy": "2.5.4",
+    "proj": "9.8.1",
+    "pyarrow": "26.0.0",
+    "pyproj": "3.8.0",
+    "python": "3.12.3",
+    "rasterio": "1.5.2",
+    "shapely": "2.2.0"
+  }
 }

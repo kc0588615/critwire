@@ -104,9 +104,10 @@ test("LP8 a non-regular file (a symlink) is refused by name, nested too", () => 
   await assert.rejects(read(dir), (e: Error) => /clips\/tas\.tif/.test(e.message) && /isn't a regular file/.test(e.message));
 }));
 
-test("LP the committed data/learn/ passes: the four shape files and the two habitat stand-ins", async () => {
+test("LP the committed data/learn/ passes: the four shape files and pnpm ingest habitat's six, clips nested", async () => {
   const files = await readLabFiles(labDataDir);
   assert.deepEqual(files.map((f) => f.name), [
-    "admin1_shapes.parquet", "biomes.csv", "country_habitats.parquet", "country_shapes.parquet", "ecoregions.parquet", "habitat_classes.parquet",
+    "admin1_shapes.parquet", "biomes.csv", "clips/cr.tif", "clips/tas.tif", "country_habitats.parquet", "country_shapes.parquet",
+    "ecoregions.parquet", "habitat_classes.parquet", "habitat_clips.parquet", "occurrence_habitats.parquet",
   ]);
 });

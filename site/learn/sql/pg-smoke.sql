@@ -15,4 +15,6 @@ UNION ALL SELECT 'biomes', count(*) FROM biomes
 UNION ALL SELECT 'ecoregions', count(*) FROM ecoregions
 UNION ALL SELECT 'habitat_classes', count(*) FROM habitat_classes
 UNION ALL SELECT 'country_habitats', count(*) FROM country_habitats
+UNION ALL SELECT 'occurrence_habitats', count(*) FROM occurrence_habitats
+UNION ALL SELECT 'habitat_clips', count(*) FROM habitat_clips
 ORDER BY table_name;

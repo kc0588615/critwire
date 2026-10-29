@@ -57,10 +57,10 @@ test("PJ3 a record with replacedBy is refused (retired records are never counted
   assert.throws(() => assertLearnProjection(rs), new RegExp(`species ${rs[2]!.id}.*replacedBy.*replacement`));
 });
 
-test("PJ4 projectLearn over the published files: 14 tables, the sample's rows, every LAB_CHECKS 0", () => withDist(async (out) => {
+test("PJ4 projectLearn over the published files: 16 tables, the sample's rows, every LAB_CHECKS 0", () => withDist(async (out) => {
   const { tables, checks } = await projectLearn(out);
   assert.deepEqual(Object.keys(tables), LAB_TABLES.map((t) => t.name));
-  assert.equal(LAB_TABLES.length, 14);
+  assert.equal(LAB_TABLES.length, 16);
   assert.equal(tables.occurrences, derived.learn.occurrences.length);
   assert.equal(tables.species, derived.records.length);
   assert.equal(tables.countries, derived.countries.rows.length);

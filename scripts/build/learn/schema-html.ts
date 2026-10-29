@@ -62,7 +62,8 @@ export function schemaMain(name: DrawnErd, texts: ErdTexts, template: string): s
     relationships: `<ul class="relationships">${erd.relationships.map((r) => `<li>${relationshipText(r)}</li>`).join("")}</ul>`,
     dictionary: dictionaryHtml(name, texts),
   };
-  if (name !== "schema") slots.planned = list("planned-tables", planned);
+  // Only a page with planned tables has the slot, so its prose can't outlive them (fillSlots refuses either mismatch).
+  if (name !== "schema" && planned.length) slots.planned = list("planned-tables", planned);
   if (name === "lab") {
     slots.labMade = list("lab-made", labMade);
     slots.shared = sharedHtml(texts);

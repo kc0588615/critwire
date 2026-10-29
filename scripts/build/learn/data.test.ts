@@ -7,7 +7,7 @@ import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, relative } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { deriveAll, readDeriveInputs } from "../../derive/pipeline.ts";
 import type { LearnResult } from "../../derive/sample.ts";
@@ -38,6 +38,7 @@ test("DS2 datasets.csv from the committed sample = the spike's published file; w
   const files = await readLabFiles(labDataDir);
   await writeLearnData(pathToFileURL(`${dir}/`), { learn, files });
   assert.equal(sha256(join(dir, "datasets.csv")), SPIKE_DATASETS_SHA256);
-  assert.deepEqual(readdirSync(dir).sort(), ["datasets.csv", "occurrences.csv", "occurrences.parquet", ...files.map((f) => f.name)].sort());
+  const written = readdirSync(dir, { recursive: true, withFileTypes: true }).filter((e) => e.isFile()).map((e) => relative(dir, join(e.parentPath, e.name)));
+  assert.deepEqual(written.sort(), ["datasets.csv", "occurrences.csv", "occurrences.parquet", ...files.map((f) => f.name)].sort());
   for (const f of files) assert.equal(sha256(join(dir, f.name)), sha256(fileURLToPath(new URL(f.name, labDataDir))), f.name);
 }));

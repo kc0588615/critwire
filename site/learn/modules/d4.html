@@ -40,7 +40,7 @@
 <ol class="steps">
 <li><p>A savepoint keeps the good part of a transaction. Mark the point before the second batch, roll back to it when the batch fails, and load the older records that do have a year:</p>
 {{block:d4-savepoint}}</li>
-<li><p>Row versions. Every row the lab file loaded carries the id of the transaction that wrote it, in <code>xmin</code>. Across the fourteen tables there is one:</p>
+<li><p>Row versions. Every row the lab file loaded carries the id of the transaction that wrote it, in <code>xmin</code>. Across the sixteen tables there is one:</p>
 {{block:d4-xmin-load}}
 <p>That is the loader's atomicity in the data itself: the lab arrived in one transaction, so no reader could ever see part of it. The number itself differs on every machine and every load, which is why the lab compares it rather than printing it.</p></li>
 <li><p>An <code>UPDATE</code> writes a new version. Give one of the devil's records from 2005 a month, then compare it with its neighbour:</p>

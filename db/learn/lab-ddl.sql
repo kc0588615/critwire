@@ -1,6 +1,6 @@
 -- critwire Learn, the lab database (PostGIS, schema learn_curriculum): its tables, before their rows.
 -- Columns, NOT NULL and CHECK only (NULL means unknown, so a CHECK lets it through); keys, foreign keys and indexes come after the load (lab-keys.sql), the usual order
--- for a bulk load. Shapes arrive as base64 WKB (text) and become geometry in lab-keys.sql.
+-- for a bulk load. Shapes and rasters arrive as base64 WKB (text) and become geometry and raster in lab-keys.sql.
 -- 002's six tables and its view are the browser's schema (site/learn/sql/setup.sql) in PostgreSQL types.
 
 CREATE TABLE taxa (
@@ -123,11 +123,25 @@ CREATE TABLE habitat_classes (
   CHECK ((code % 100 = 0) = (level1_code IS NULL))
 );
 
--- Estimated area of each habitat class per country (stand-in until L3).
+-- Estimated area of each habitat class per country: the map's 1 km fractions summed over the cells whose centre is in
+-- the country's outline. Estimated from a map, never measured.
 CREATE TABLE country_habitats (
   country_code text NOT NULL,
   habitat_code integer NOT NULL,
   est_area_km2 numeric(12, 2) NOT NULL CHECK (est_area_km2 >= 0 AND est_area_km2 < 'Infinity')
+);
+
+-- Each sample record's habitat class: the most common class in its 1 km cell of the map (NULL if the cell holds none).
+-- The map's class at that place, not the species' habitat.
+CREATE TABLE occurrence_habitats (
+  occurrence_id bigint NOT NULL,
+  habitat_code  integer
+);
+
+-- Two clips of the map's 100 m level-2 classes, stored in the database (in-db rasters, no files outside it).
+CREATE TABLE habitat_clips (
+  clip text NOT NULL,
+  rast text NOT NULL
 );
 
 CREATE VIEW species_taxonomy AS

@@ -72,7 +72,7 @@
 <rect class="mask" x="32" y="240" width="344" height="80" rx="6"/>
 <rect class="focal" x="32" y="240" width="344" height="80" rx="6"/>
 <text class="name" x="204" y="270" text-anchor="middle">TT: 44 rows</text>
-<text class="sub" x="204" y="286" text-anchor="middle">records 44 · habitat 10,234.46 km²</text>
+<text class="sub" x="204" y="286" text-anchor="middle">records 44 · habitat 10,135.42 km²</text>
 <text class="sub" x="204" y="300" text-anchor="middle">AX has no records: it vanishes</text>
 <rect class="mask" x="424" y="64" width="160" height="64" rx="6"/>
 <rect class="node" x="424" y="64" width="160" height="64" rx="6"/>
@@ -93,12 +93,12 @@
 <rect class="mask" x="600" y="160" width="160" height="48" rx="6"/>
 <rect class="node" x="600" y="160" width="160" height="48" rx="6"/>
 <text class="name" x="680" y="181" text-anchor="middle">sum by country</text>
-<text class="sub" x="680" y="197" text-anchor="middle">AX 945.03, TT 5,117.23</text>
+<text class="sub" x="680" y="197" text-anchor="middle">AX 761.16, TT 5,067.71</text>
 <rect class="mask" x="424" y="240" width="336" height="80" rx="6"/>
 <rect class="focal" x="424" y="240" width="336" height="80" rx="6"/>
 <rect class="tag-box" x="432" y="248" width="25.1" height="12" rx="2"/>
 <text class="tag" x="444.6" y="257" text-anchor="middle">DIM</text>
 <text class="name" x="592" y="274" text-anchor="middle">dim_country: one row each</text>
-<text class="sub" x="592" y="290" text-anchor="middle">AX: 0 records · 945.03 km²</text>
-<text class="sub" x="592" y="304" text-anchor="middle">TT: 2 records · 5,117.23 km²</text>
+<text class="sub" x="592" y="290" text-anchor="middle">AX: 0 records · 761.16 km²</text>
+<text class="sub" x="592" y="304" text-anchor="middle">TT: 2 records · 5,067.71 km²</text>
       </svg>
