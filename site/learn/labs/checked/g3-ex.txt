@@ -1,0 +1,4 @@
+-- result: g3-ex · 2 rows · sha256 3d08155603d3
+country | every_outline | smallest_outline
+FR | 944 | 11
+all | 40329 | 39396

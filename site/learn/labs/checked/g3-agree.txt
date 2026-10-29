@@ -1,0 +1,5 @@
+-- result: g3-agree · 3 rows · sha256 a48ca6bc5bd6
+outcome | records | in_two_outlines
+agree | 39190 | 932
+disagree | 206 | 1
+no outline | 999 | 0

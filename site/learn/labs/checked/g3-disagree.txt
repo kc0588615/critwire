@@ -1,0 +1,8 @@
+-- result: g3-disagree · 10 rows · sha256 ba081d2e5cbb
+gbif_code | outline_code | records
+US | MX | 78
+BJ | BF | 28
+GF | BR | 18
+EC | PE | 15
+GF | SR | 12
+… 5 more rows

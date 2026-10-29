@@ -1,0 +1,64 @@
+<p class="lead">Join tables by where things are, and check one source against another: <code>ST_Contains</code>, <code>ST_Covers</code> and <code>ST_Intersects</code>, which side a spatial join starts from, the records on an edge, and the records two overlapping outlines count twice. Everything runs in your own PostgreSQL with PostGIS, on the lab tables (<a href="/learn/setup/">the setup page</a>).</p>
+
+
+<h2>Concept</h2>
+<p>How to join tables by where things are, and how to check one source against another:</p>
+<ul>
+<li><strong>A spatial predicate</strong> answers true or false about two shapes. Three cover most work:
+<ul>
+<li><code>ST_Contains(a, b)</code>: b lies inside a, and some of b is in a's interior. A point on a's edge doesn't count.</li>
+<li><code>ST_Covers(a, b)</code>: no point of b lies outside a. A point on the edge counts.</li>
+<li><code>ST_Intersects(a, b)</code>: the two share at least one point, edges included. For a point and a polygon it answers the same as <code>ST_Covers</code>.</li>
+<li><code>ST_Within(b, a)</code> is <code>ST_Contains(a, b)</code> the other way round, and <code>ST_CoveredBy(b, a)</code> is <code>ST_Covers(a, b)</code>. Each predicate is a pattern on the DE-9IM matrix (<a href="/learn/gis-in-sql/load-validate/">Loading and validating shapes, g2</a>): <code>ST_Contains</code> is <code>T*****FF*</code>, the interiors meet (<code>T</code>: a point, a line or an area) and nothing of b meets a's exterior.</li>
+</ul></li>
+<li><strong>A spatial join</strong> is a join whose <code>ON</code> is a predicate, ArcGIS Pro's Spatial Join tool written as a query: <code>country_shapes AS c JOIN occurrences AS o ON ST_Covers(c.geom, o.geom)</code> pairs each record with every outline that covers it. A record in no outline drops out of an inner join, and a record in two outlines comes back twice.</li>
+<li><strong>Which table the join starts from changes its speed.</strong> While consecutive tests use the same polygon, PostGIS keeps a prepared copy of it, with an index of its edges, so each further point costs little. Started from the outlines, each outline is prepared once and tested against the records its spatial index (<a href="/learn/database-architecture/indexes/">Indexes, d3</a>) finds inside its bounding box. Started from the records (<code>occurrences LEFT JOIN country_shapes</code>), each test meets another outline, and the join is about 25 times slower on this sample (7 s against 0.3 s on the test server; compare the two with <code>EXPLAIN ANALYZE</code>, as in d3). So join from the polygons, summarise per record, and <code>LEFT JOIN</code> the records to that summary to keep the ones that matched nothing.</li>
+<li><strong>A point on an edge</strong> belongs to both neighbours under <code>ST_Covers</code> and <code>ST_Intersects</code>, and to neither under <code>ST_Contains</code>. No predicate gives it to exactly one; when each record must count once, the query needs a rule of its own, such as the smallest outline (the Exercise).</li>
+<li><strong>Two sources, neither the truth.</strong> Every GBIF record carries a country code (<code>country_code_gbif</code>), given by its publisher or worked out by GBIF from the coordinates. The outlines are Natural Earth's, simplified to 1:50m. Joining one to the other, on the whole sample, shows where they agree, where they disagree and which records fall in no outline. A disagreement is a question about the record or the map, not an answer.</li>
+<li><strong>Overlapping outlines count twice.</strong> g2 found eight pairs of outlines where one lies inside the other (France holds French Guiana, Réunion, Guadeloupe, Martinique and Mayotte). A record inside both matches both, so a count per country adds up to more than the records.</li>
+</ul>
+{{diagram:g3-predicates}}
+
+<h2>Worked example</h2>
+<p>The three predicates on three points: inside a square, on its edge and outside it.</p>
+{{block:g3-boundary}}
+<p>Only the point on the edge tells the predicates apart: <code>ST_Contains</code> leaves it out, <code>ST_Covers</code> and <code>ST_Intersects</code> keep it. Had a second square shared that edge, <code>ST_Covers</code> would put the point in both squares and <code>ST_Contains</code> in neither.</p>
+
+<h2>Lab</h2>
+<ol>
+<li><p>Does the choice matter for the sample? Every record–outline pair that shares a point, counted under each predicate:</p>
+{{block:g3-edges}}
+<p>The three counts are equal: no record lies exactly on an outline's edge, so here the predicates give the same join. They part where points and lines share a grid, such as records rounded to 0.1° against outlines drawn along whole degrees. <code>ST_Covers</code> is the usual choice for points in polygons: it loses no point, and a point on a shared edge shows up twice, where a count can catch it. The rest of this module uses it. The 40,329 pairs are more than the 39,396 records that fall in some outline; step 4 finds the extra 933.</p></li>
+<li><p>Each record against GBIF's code: an outline it falls in is GBIF's country (agree), none of them is (disagree), or it falls in no outline. The join starts from the outlines, as the Concept says, and the <code>LEFT JOIN</code> comes after, on the per-record summary:</p>
+{{block:g3-agree}}
+<p>Of the sample's 40,395 records, 39,190 agree, 206 disagree and 999 lie in no outline; every record has a GBIF code. <code>bool_or</code> makes a record agree when any outline it falls in is its code, so the 932 records in two outlines that agree are counted once, as agreeing.</p></li>
+<li><p>Where they disagree, GBIF's code against the outline's:</p>
+{{block:g3-disagree}}
+<p>The disagreements are pairs of neighbours: 78 records coded US inside Mexico's outline, 28 coded Benin inside Burkina Faso's, 18 coded French Guiana inside Brazil's, 15 coded Ecuador inside Peru's, 12 coded French Guiana inside Suriname's. Each is a record a few kilometres over a border, a border the 1:50m outline draws a few kilometres off, or a publisher's country that isn't where the point is; the query can't say which. Distance and overlay (g4, in preparation) measures how close to a border such records lie.</p></li>
+<li><p>The records inside two outlines at once:</p>
+{{block:g3-two-outlines}}
+<p>933 records sit in two outlines (932 that agree, 1 that doesn't), every one inside France's and an overseas region's: French Guiana 924, Réunion 6, Martinique 3. Natural Earth's France includes its overseas regions, which also have outlines of their own (g2's <code>g2-coverage</code>), so a spatial join counts these records twice unless the outlines are a partition. The one coded Suriname sits inside French Guiana's outline, and is also one of the 206 disagreements.</p></li>
+</ol>
+
+<h2>Optional appendix: records against a range you downloaded yourself</h2>
+<p>IUCN's range maps may be downloaded with a free account for your own non-commercial use, and nothing made from them may be shared; critwire never holds them, so this block is never run here. Load your shapefile into a schema of your own, which the lab loader never touches (<code>CREATE SCHEMA my_iucn</code>, then QGIS, <code>ogr2ogr</code> or <code>shp2pgsql</code> into <code>my_iucn.ranges</code>, one multipolygon per taxon, the SIS taxon id in <code>iucn_id</code>). The key is that id, which critwire publishes as <code>species.iucn_id</code>, never a name: IUCN renamed its name column in 2023. Records outside a range aren't errors by themselves: captive animals, misidentifications and incomplete ranges all put them there.</p>
+{{block:g3-iucn}}
+
+<h2>Result</h2>
+<p>On the square, only <code>ST_Covers</code> and <code>ST_Intersects</code> count the point on the edge. On the sample the three predicates give the same 40,329 pairs, as no record lies on an edge. Of the 40,395 records, 39,190 agree with an outline, 206 disagree and 999 lie in no outline. The disagreements are border pairs (78 records coded US inside Mexico's outline, 28 coded Benin inside Burkina Faso's): a record a few kilometres over a border, a generalized border, or a publisher's country that isn't where the point is. 933 records sit in two outlines at once, every one inside France's and an overseas region's (French Guiana 924, Réunion 6, Martinique 3), so a per-country count adds up to 933 more than the records in outlines. Spatial indexes (g5, in preparation) finds where the 999 in no outline are.</p>
+
+<h2>Exercise</h2>
+<p>Count the records in each country's outline, the usual spatial-join report. Which countries' counts are too high because outlines overlap, and by how much does the total exceed the records the outlines hold? Then give each record one country, the smallest outline that covers it, and count again.</p>
+{{exercise:g3-ex}}
+
+
+<h2>Check</h2>
+<p>The answer: one join from the outlines; <code>row_number()</code> ranks each record's outlines by area, smallest first, and <code>ROLLUP</code> adds a total row. Only the rows whose two counts differ are kept. The outline areas are worked out once, in a <code>MATERIALIZED</code> CTE.</p>
+<p>Only France's count changes. Its outline holds 944 records, but 933 of them are also inside an overseas region's outline (step 4), so given one country each, France keeps 11: the 11 records GBIF codes <code>FR</code>. French Guiana, Réunion and Martinique keep their counts, since their outlines are the smaller ones. The total falls from 40,329 pairs to 39,396 records, 39,190 that agree and 206 that don't (step 2). The smallest outline is the right rule here because each overlap is a territory drawn inside its country (g2); for outlines that overlap along a border, no rule of area says which country a record is in. Without <code>MATERIALIZED</code>, PostgreSQL may inline the CTE and work out <code>ST_Area(geom::geography)</code> for every joined row, 40,329 times instead of 247: the same answer, two orders of magnitude slower (about 82 s against 0.45 s on the test server).</p>
+
+<h2>Dialects</h2>
+<ul>
+<li><strong>PostgreSQL:</strong> <code>ST_Contains</code>, <code>ST_Covers</code>, <code>ST_Intersects</code>, <code>ST_Within</code>, <code>ST_CoveredBy</code> and <code>ST_Relate</code> with a pattern; each uses a GiST index on either argument by itself, through its bounding box. <code>ST_ContainsProperly(a, b)</code> also refuses a b that touches a's boundary at all, and can be answered faster.</li>
+<li><strong>DuckDB:</strong> the <code>spatial</code> extension (not in this course's browser) has the same predicates by the same names, and plans a join on one of them as a spatial join of its own, with no index to create. Without it, the browser's lab can join records to a box of degrees, as in <a href="/learn/foundations/join/">Joins, f3</a>, but not to an outline.</li>
+<li><strong>SQL Server:</strong> methods on the shape: <code>a.STContains(b)</code>, <code>a.STIntersects(b)</code>, <code>b.STWithin(a)</code>, and <code>a.STRelate(b, 'T*****FF*')</code>; there is no <code>STCovers</code>, so <code>STIntersects</code> serves for points in polygons. A spatial index is used only when the method's result is compared with <code>= 1</code> in <code>WHERE</code> or <code>ON</code>, as in <code>ON c.geom.STContains(o.geom) = 1</code>.</li>
+</ul>

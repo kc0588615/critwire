@@ -277,7 +277,7 @@
       "prereqs": [
         "g2"
       ],
-      "state": "planned",
+      "state": "built",
       "skill": "`ST_Contains`, `ST_Covers`, `ST_Intersects`; point in polygon; records on boundaries",
       "questions": [
         "Do GBIF's country codes agree with the country outlines?",

@@ -1,0 +1,5 @@
+-- result: g3-boundary · 3 rows · sha256 d10ead98357a
+place | contains | covers | intersects
+inside | true | true | true
+on the edge | false | true | true
+outside | false | false | false

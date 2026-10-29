@@ -343,6 +343,30 @@
       "key": "ebbbba5654c60b336f6865e0812ac15a4712b9f6291f5e208fea5c8be56525ba",
       "result": "38927af928a3c2709cd5557a4d66ea5804a4a5a7f8ca28ebfa2168080f90b514"
     },
+    "g3-agree": {
+      "key": "293f0f96874a4c97de7848157520b927d327b46fa7672608022f54db4df07d0e",
+      "result": "f7b262421e6d62fc215c0e294b6ff6fa9ff4099eff018a44a8919c1a91ac03ed"
+    },
+    "g3-boundary": {
+      "key": "3df72b08a7db7e2f28990e40a86a13c08ef0ec1b6a126f797828aae0f9c70679",
+      "result": "29e868a19da2d6b5ad0805bc3783ff0073ec14f43bf0854260e6612e02e0c26b"
+    },
+    "g3-disagree": {
+      "key": "8919613567fd445bba0a5aba1761c0f31baab987462080693ac360b38c1d70ab",
+      "result": "794eb907000cdcee1394ee18bc52370a4d1a29041f05d4f3bfb00cee3dbb6142"
+    },
+    "g3-edges": {
+      "key": "6b5d3faa2776f7b1741defcb1e3831526fc2a459a95ce24b9f8815e63a0b0485",
+      "result": "51f76125ab52064ef4809f95b032363c1c6d66e6e71b4b25a4bbefc800352faa"
+    },
+    "g3-ex": {
+      "key": "386d0dfb28b868374001379da18d93f8bf1aa8fa3fae25eaac9abe722f31ca29",
+      "result": "0a2ba70c9c4abbffcc105f4b03fda818eb039328b56b839eec4faeedd7c52601"
+    },
+    "g3-two-outlines": {
+      "key": "4825cfd3c51135bedfbd27c281688080791eaf81a5c05ea2c0785d31dc12fc9e",
+      "result": "8debe4b55374f88825d9022476c587b9b51d0b7c65aed0a2cda3c96fc6f8f7dd"
+    },
     "pg-role-smoke": {
       "key": "f8475dd05808347550f93843ba81f9091e58beabacefdd5d530c3b970f116efe",
       "result": "d721ea358edd040973fd9309b3e45b68943b9bad01b9efecd1da082d374c7f30"
@@ -368,6 +392,7 @@
     "d6.sql": "dc7c792e8b3ec36c04beb1b3807785b621373780da783afcbc41e762d1b93225",
     "g1.sql": "3817e06a7941c31137733610a8dc47308dc5a0d3c49c52ab6769f8b76280c783",
     "g2.sql": "a50473b3cd47838d9cf45ab114dde8c55a29078f992c424e08382318e52636eb",
+    "g3.sql": "1f0b49c165ae736a470be98df194b1f7f9dc2c431870a0d02753a4d8ba46deca",
     "pg-checks.sql": "348691fbefd3b6c0400e7edfd3a3aaf4f767b186c1a6bcbe2f2ad021cb5607fd"
   },
   "labErd": "fda5ad764ce87eac9f422339254ccfbc46a6a932d8cee00a2a50df5e9502820c"

@@ -1,0 +1,6 @@
+-- result: g3-two-outlines · 4 rows · sha256 f16f1fc4d7c9
+outlines | gbif_code | records
+FR+GF | GF | 923
+FR+RE | RE | 6
+FR+MQ | MQ | 3
+FR+GF | SR | 1
