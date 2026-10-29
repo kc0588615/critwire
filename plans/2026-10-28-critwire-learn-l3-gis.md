@@ -1196,6 +1196,17 @@ SHOULD-CONSIDER:
 
 ## Release
 
+- Rebase: none needed (`origin/main` 6093a23 = merge base). Full Verification 1–9 re-run on `1f204be`, all pass (log `$M/release-verify.log`, outputs `$M/release-verify/`; E2E 87/87 into `$M/e2e/`).
+- PR #12 (https://github.com/kc0588615/critwire/pull/12), `gh pr merge --merge`: merge commit `7508fc7` (tree = `1f204be`).
+- `deploy critwire`: `6093a23 -> 7508fc7`; last line `deploy critwire: live at https://critwire.com` (log `$M/release-deploy.log`).
+- Smoke (`L=https://critwire.com`):
+  - `playwright.release.config.ts`: 3/3, 0 skipped/flaky (`$M/release-smoke/`, log `$M/release-smoke.log`): every `dist/` file served with dist's sha256 (g pages, `g1.sql`–`g7.sql`, new `/learn/data/` files), `.wasm` type, f3.
+  - Habitat files vs live manifest: `country_habitats.parquet`, `occurrence_habitats.parquet`, `habitat_clips.parquet`, `clips/cr.tif`, `clips/tas.tif`: sha256 and bytes equal.
+  - `-r 0-1023 clips/cr.tif`: 206.
+  - Live loader (72,088,315 B, = dist) as `critwire_lab` on `critwire_dev`, `ON_ERROR_STOP`: exit 0, 3.9 s; live `g7.sql` (= dist): no `ERROR:` lines, none announced; leak query empty.
+
+Result: done
+
 ## Decisions
 
 - 2026-10-28 · Architecture: clips `cr`/`tas` = fixed 0.75° study windows at 100 m (Osa Peninsula; SE Tasmania incl. Hobart), not whole countries: whole-country in-db clips ≈ 70 MB vs 50 MB cap (Architecture finding 1). 004 §4.1, §4.4, g7 fixed with the code.
@@ -1289,6 +1300,7 @@ SHOULD-CONSIDER:
 - 2026-10-29 09:58 UTC · Code review (Astra): `astra-review --code origin/main` exit 0, APPROVE_WITH_CHANGES; MUST-FIX 1 → S22; SHOULD-CONSIDER 1–2 → Summary (see Decisions).
 - 2026-10-29 10:15 UTC · S22: `publishFiles` (`scripts/ingest/publish.ts`); `buildHabitat`, `buildShapes`, `ingestGbifSample` publish through it (copy loops + inline tmp/rename gone); `readLabFiles` sha256 refusal says `git restore data/learn`, unlisted `*.tmp-<pid>` says delete. HR8 (read-only `clips/` after checks pass) red 1 → green 1. T: typecheck ok, test 601/601. B ok (95,936,992 / 18,822,906 B). HD: nothing. Ingest not re-run (HR1 + HR8 cover the path).
 - 2026-10-29 11:00 UTC · Verification 1–9 on `4d46b25`, clean tree: 1 install up to date, venv ok, both `$DL` gone, no download zips (only traces + venv); 2 plain build ok, 95,936,992 / 18,822,906 B (= 004 §4.4); 3 E2E 87/87, 13 specs, 0 skipped/unexpected/flaky, 87 traces (`$M/e2e/`); 4 typecheck ok, test 601/601, test:db 121/121, leak empty; 5 learn:check ×2 exit 0 (16 tables ×2 = manifest, forced failure rolled back, lab ERD, 121 PostGIS blocks equal, 13 downloads' ERROR lines as announced), porcelain empty, canary same, leak empty, versions = checked.json (PG 16.15, PostGIS 3.4.2, GEOS 3.12.1, GDAL 3.8.4); 6 P 381 files equal, result diff = the 4 designed + `g2-bowtie` (moved, same sha) + `g5-geography-index` (EXPLAIN text, S16), g7 windowed + `g7-countries` = S18's sha, stand-in notes + measured numbers = habitat.json; 7 erd up to date; 8 H, HD, manifest diff empty; 9 dist sha256 equal across two builds (246 files).
+- 2026-10-29 11:06 UTC · Release: Verification 1–9 re-run on `1f204be`, all pass (E2E 87/87, test 601/601, test:db 121/121, learn:check ×2, P 381 equal, dist equal 246 files); PR #12 merged `7508fc7`; `deploy critwire` ok; smoke 3/3, habitat sha/bytes = live manifest, Range 206, live loader + g7 clean, leak empty.
 
 ## Summary
 
@@ -1310,3 +1322,5 @@ SHOULD-CONSIDER:
 For the owner (Astra code review SHOULD-CONSIDER, not acted on):
 - `scripts/build/contract.ts`: the `/v1` contract compares the writer's declared types, not each JSON value's type (`commonName: 123` would pass). Low risk today (`derive` is typed); worth a value-type check before `/v1` gets another writer.
 - No automated test runs the real `habitat.py` (ingest tests use a fake Python); the real runs (S7, S18d) are pinned by `habitat.json`. A small synthetic-raster integration test would cover the raster maths.
+
+**Release:** PR #12 merged (`7508fc7`), `deploy critwire` live; Verification re-run 1–9 pass; live smoke 3/3, habitat files = manifest, Range 206, live loader + g7 clean, leak empty.
