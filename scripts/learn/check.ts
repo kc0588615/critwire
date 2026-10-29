@@ -219,7 +219,8 @@ export async function staticStage(module?: string): Promise<StaticCourse> {
   if (errors.length) throw new Error(`static: ${errors.length} error(s):\n${errors.join("\n")}`);
   const run = module === undefined ? pages : pages.filter((p) => p.page.id === module);
   if (module !== undefined && !run.length) throw new Error(`--module ${module}: no such page (${pages.map((p) => p.page.id).join(", ")})`);
-  const downloads = assembleDownloads(pages).filter((d) => module === undefined || d.page === module);
+  // The .sql files; the .py ones from L4 S8 (an .ipynb is never run).
+  const downloads = assembleDownloads(pages).filter((d) => d.kind === "sql" && (module === undefined || d.page === module));
   const labErd = await readFile(new URL(`../../${LAB_ERD}`, import.meta.url), "utf8");
   try {
     parseErd(labErd);

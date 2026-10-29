@@ -4,7 +4,7 @@
 // result a page shows is checked/<id>.txt, and its versions line is checked.json's; an EXPLAIN block lists its
 // `-- plan:` lines and labels its plan an example (D4); a Power BI block lists the star files it reads with the
 // manifest's rows and sha256, which the served files match and star-check passes. The setup page links the checks'
-// download (pg-checks.sql) and the loader.
+// download (pg-checks.sql) and the loader. /learn/labs/requirements.txt is the labs' pin file (L4 plan §5).
 import { expect, test } from "@playwright/test";
 import { readFile } from "node:fs/promises";
 import { moduleUrl } from "../scripts/build/learn/module-html.ts";
@@ -25,9 +25,15 @@ async function course() {
   return { pages: c.pages, url };
 }
 
-test("each download is served as assembled; each PostGIS block's page code is in it, verbatim or commented out under its reason", async ({ browser, request }) => {
+test("each download is served as assembled; each PostGIS block's page code is in its .sql, verbatim or commented out under its reason", async ({ browser, request }) => {
   const { pages, url } = await course();
-  const downloads = assembleDownloads(pages);
+  const all = assembleDownloads(pages);
+  for (const d of all) {
+    const res = await request.get(`/learn/labs/${d.name}`);
+    expect(res.status(), d.name).toBe(200);
+    expect(await res.text(), d.name).toBe(d.text);
+  }
+  const downloads = all.filter((d) => d.kind === "sql");
   expect(downloads.map((d) => d.name)).toEqual(expect.arrayContaining(["pg-checks.sql", "d6.sql", "g1.sql", "g2.sql", "g3.sql", "g4.sql", "g5.sql", "g6.sql", "g7.sql"]));
   // L3: g3-iucn reads the learner's own IUCN download, so g3.sql holds it commented out (checked below).
   expect(pages.find((p) => p.page.id === "g3")!.blocks.find((b) => b.id === "g3-iucn")?.status).toBe("untested");
@@ -110,4 +116,10 @@ test("the setup page covers the browser, PostGIS and Power BI, and links pg-chec
   for (const href of ["/learn/labs/pg-checks.sql", "/learn/data/postgis/learn_curriculum.sql", "/learn/schema/lab/"])
     await expect(page.locator(`main a[href="${href}"]`).first()).toBeVisible();
   for (const id of ["setup-counts", "pg-session", "pg-smoke", "pg-role-smoke", "pg-tx-smoke", "pbi-smoke"]) await expect(page.locator(`#q-${id}`)).toHaveCount(1);
+});
+
+test("/learn/labs/requirements.txt is site/learn/labs/requirements.txt", async ({ request }) => {
+  const res = await request.get("/learn/labs/requirements.txt");
+  expect(res.status()).toBe(200);
+  expect(await res.text()).toBe(await readFile(repoPath("site/learn/labs/requirements.txt"), "utf8"));
 });

@@ -107,7 +107,8 @@ export function freshness(pages: readonly CoursePage[], files: KeyFiles, results
       blocks[b.id] = { key: sha256(entries.join("\n")), result: result === undefined ? "" : sha256(result) };
     }
   }
-  const downloads = Object.fromEntries(assembleDownloads(pages).map((d) => [d.name, sha256(d.text)]));
+  // The files learn:check runs (004 §7.5): .sql and .py; an .ipynb isn't run (E2E proves its cells are the .py's).
+  const downloads = Object.fromEntries(assembleDownloads(pages).filter((d) => d.kind !== "ipynb").map((d) => [d.name, sha256(d.text)]));
   const loader = files.manifest[LOADER];
   if (!loader) throw new Error(`the data manifest has no ${LOADER}: run pnpm build`);
   const boots = [...all.values()].filter((x) => isLab(x) && x.boot).map((x) => `block ${x.id}\0${sha256(x.text)}`).sort();
