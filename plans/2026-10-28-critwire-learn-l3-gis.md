@@ -679,7 +679,7 @@ Every step:
   - `pnpm learn:venv`, then `.venv-learn/bin/python -I -c $'import rasterio\nwith rasterio.Env() as e: print(rasterio.__version__, rasterio.__gdal_version__, "COG" in e.drivers())'` prints `1.5.2 <gdal> True`.
   - `requirements.txt` is a checker file, so every lab goes stale: `L` re-proves them, and `git diff --quiet site/learn/labs/checked/*.txt` (results unchanged).
   - Check: `T`, `L`, `P`, `H`.
-- [ ] S5 · Ingest rules, tests first (§1.1, §1.3 rules; §1.7 #1, 2, 6, 7, 9, 10)
+- [x] S5 · Ingest rules, tests first (§1.1, §1.3 rules; §1.7 #1, 2, 6, 7, 9, 10)
   - First [T]:
     - `scripts/http.test.ts`: a wrong md5 throws and leaves no file; a right md5 with a wrong size, the same.
     - `scripts/ingest/habitat.test.ts`:
@@ -1010,6 +1010,7 @@ Each step's isolated cases are its **First** list. What a session does when the 
 - 2026-10-29 · item 3: done (S2). `contracts/v1.json`: 39 species paths + 5 countries columns, each `type`/declared `null`/`means`/`sha` (+ `values` on `range.status`, `countries.region`; `pattern` on slug, Q-ids, country codes, https urls, dates, DOIs; `source` on every `ids.*` + countries list, `checklistKey` on `ids.gbif`); `speciesCsv`/`countriesCsv`. `checkV1Contract` pure, in `readBuildInputs` (draft too); problems throw, additions log. `ids.iucn` declared nullable (§7.1; docs: any id null while unsettled).
 - 2026-10-29 · S2: entry `sha` = sha256 of `formatJson(entry, { canonical: true })` (2-space + newline), not compact JSON: reuses the existing canonical writer; exporting `sortKeys` from `scripts/json.ts` would edit a `learn:check` checker file and stale all 75 labs. Group paths typed `STRUCT`/`STRUCT[]` so nested additions don't retype the parent. Writers expose `csvColumns()` (`columns.ts`) and `COUNTRY_TYPES` (`build/countries.ts`, also its read_json columns).
 - 2026-10-29 · item 4: done (S3). `docs/recovery.md` (§7.2 points 1–4 + rehearsal table). Rehearsed at live `6093a23`: restored `dist/` = `.live/` (224 files, sha256 lists equal); emergency rsync into scratch copy equal too; no differences to fix. State list adds the 3rd GBIF lock/intent pair (`gbif-sample-download`), not in §7.2.
+- 2026-10-29 · S5: `LAYER_CODES` re-read from the fractions zip's central directory (range request, 80 entries = folder + 79 `.tif`): matches finding 5. `assertHabitatFresh` names its cause: "(country_shapes.parquet changed)" or "(published records changed)", same "run pnpm ingest habitat" (plan gave one message for both). Signature `assertHabitatFresh({countryShapes:{sha256}, records:{sha256,count}}, {countryShapesSha256, occurrences})`, pure; `recordsFingerprint` exported for S6's `habitat.json`. A `sampleRules` change reaches it only as another published row set (derive refuses a rules mismatch itself), tested so. `countryHabitatRows` rounds with `toFixed(2)` (half up on the exact double, not `Math.round(x*100)`) and throws on a duplicate (country, code). `downloadFile` md5 optional, checked after size and sha256.
 
 ## Log
 
@@ -1023,5 +1024,6 @@ Each step's isolated cases are its **First** list. What a session does when the 
 - 2026-10-29 00:22 UTC · S2: `/v1` contract. red 12 → green 12 (V1–V12, `contract.test.ts`; red = no module). T: typecheck ok, test 562/562. B ok, no "freeze" notices. Proof: scratch `ids.gbif` means edit → `build --draft` and `build` exit 1 with sha hint; reverted. H strict (no exclusions), HD: nothing changed.
 - 2026-10-29 00:25 UTC · S3: `docs/recovery.md` + rehearsal at `6093a23` (worktree, `critwire_restore`, plain build 5.7 s): 224 files, dist = `.live/` sha256; rsync rehearsal equal; cleaned (db dropped, worktree removed). T: typecheck ok, test 562/562. H, HD: nothing changed.
 - 2026-10-29 00:31 UTC · S4: `rasterio` in requirements.in; compile adds exactly rasterio 1.5.2, affine 3.0.1, attrs 26.1.0, click 8.5.0. venv: `1.5.2 3.12.2 True` (GDAL 3.12.2, COG). T: typecheck ok, test 562/562. L ok (75 labs re-proved, `checked/*.txt` unchanged, only `checked.json`). P: 288 files equal. H: nothing; strict: only 6 pages' "Checked" date.
+- 2026-10-29 00:40 UTC · S5: `downloadFile` md5 pin; `scripts/ingest/habitat.ts` pins (`HABITAT_INPUTS`, 79 `LAYER_CODES`, `OVERLAY_CODES`, `CLIPS`) + pure `pickClass`, `countryHabitatRows`, `rasterWkb`, `habitatRecordsCsv`, `recordsFingerprint`, `assertHabitatFresh`; not wired to build. red 9 → green 9 (HM1–2 http; HB0–HB6 unit; HB7 db: `ST_RastFromWKB` round trip, 16BUI, nodata, `ST_Value`). T: typecheck ok, test 570/570. D: build ok, test:db 112/112. H, HD (and strict manifest/loader): nothing changed.
 
 ## Summary

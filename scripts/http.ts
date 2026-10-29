@@ -93,24 +93,27 @@ export async function getBytes(url: string, { sha256, ...init }: GetBytesInit): 
   return body;
 }
 
-// sha256 null: only the size is pinned (a file seen for the first time; the caller hashes it, sha256File).
-export interface DownloadInit extends GetJsonInit { sha256: string | null; bytes: number }
+// sha256 null: only the size (and md5, if given) is pinned (a file seen for the first time, or a source that publishes
+// md5 only, such as Zenodo; the caller hashes it, sha256File).
+export interface DownloadInit extends GetJsonInit { sha256: string | null; md5?: string; bytes: number }
 
-// Streams a pinned file to `path` (getOk's retries), hashing as it writes. Throws unless the file's sha256 and size
-// equal the pins; on any failure no file is left at `path`.
-export async function downloadFile(url: string, path: string, { sha256, bytes, ...init }: DownloadInit): Promise<void> {
+// Streams a pinned file to `path` (getOk's retries), hashing as it writes. Throws unless the file's size, sha256 and
+// md5 equal the pins; on any failure no file is left at `path`.
+export async function downloadFile(url: string, path: string, { sha256, md5, bytes, ...init }: DownloadInit): Promise<void> {
   try {
     const got = await getOk(url, "*/*", init, async (res) => {
       if (!res.body) throw new Error("no body");
       const hash = createHash("sha256");
+      const md5Hash = createHash("md5");
       let size = 0;
-      const tap = new Transform({ transform(chunk: Buffer, _enc, done) { hash.update(chunk); size += chunk.length; done(null, chunk); } });
+      const tap = new Transform({ transform(chunk: Buffer, _enc, done) { hash.update(chunk); md5Hash.update(chunk); size += chunk.length; done(null, chunk); } });
       await pipeline(Readable.fromWeb(res.body as import("node:stream/web").ReadableStream), tap, createWriteStream(path));
-      return { sha256: hash.digest("hex"), bytes: size };
+      return { sha256: hash.digest("hex"), md5: md5Hash.digest("hex"), bytes: size };
     });
     const method = init.method ?? "GET";
     if (got.bytes !== bytes) throw new Error(`${method} ${url}: ${got.bytes} bytes ≠ pinned ${bytes}`);
     if (sha256 !== null && got.sha256 !== sha256) throw new Error(`${method} ${url}: sha256 ${got.sha256} ≠ pinned ${sha256}`);
+    if (md5 !== undefined && got.md5 !== md5) throw new Error(`${method} ${url}: md5 ${got.md5} ≠ pinned ${md5}`);
   } catch (error) {
     await rm(path, { force: true });
     throw error;
