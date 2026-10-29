@@ -161,6 +161,7 @@ Architect, 2026-10-28, on `9cd75d1`; revised on `eab1841` (see Revision notes). 
 ### Findings (ranked by impact)
 
 1. **Whole-country 100 m clips can't live in the loader: 004's size projection is wrong.** 004 §4.4:917 budgets "the clips as rasters" inside ≈ 44–48 MB, and the brief wants them in-db (raster cast from text). In-db raster WKB is uncompressed: 2 bytes per 16BUI cell, 4 as hex, 2.67 as base64. The CR outline's bbox is 3.344° × 3.118° (checked) = 3,723 × 3,471 = 12.9 M cells at v004's 0.000898°: 51.7 MB hex, 34.5 MB base64. Tasmania's main island (`AUS-2660` part 4, 3.697° × 2.947°) = 13.5 M cells: 36 MB base64. Today `dist/learn/data/` holds 40.04 MB of the 50 MB cap. Even 8-bit codes with empty tiles skipped come to ≈ 18 MB, and §4.4's cuts can't free that much. **Fix:** each clip is a fixed 0.75° × 0.75° study window at full 100 m (≈ 0.70 M cells, ≈ 1.86 MB base64), placed where the sample's records are densest (design §1.4). This changes what goes public, so the owner gets a non-blocking handoff item (Revision notes) and the work continues. Fix 004 §4.1, §4.4 and g7 in the same commit and record it under Decisions.
+   - **Superseded by H5** (owner, Decisions 2026-10-29): whole-country clips in the loader, cap 120 MB. Design: Steps, "H5 design"; S18c–S18g.
 2. **g7's arithmetic assumes the owner's Web Mercator COG, but v004 is longitude–latitude.** 004:5372–5432 uses 103.02 m cells, `2·atan(e^(y/R)) − π/2` and cos². 003 §5:2739 says v004's 100 m composite is EPSG:4326 at 0.000898°, so a cell's ground area shrinks with cos φ (≈ 0.985 in CR, ≈ 0.74 in Tasmania). g7's three blocks are still `untested`, so their SQL can change and keep their ids. Fix: rewrite g7-estimate for the lon/lat grid (per-cell area as `geography`, design §5), and fix 004.
 3. **The data/learn layout doesn't support a clips folder.** `readLabFiles` refuses subfolders (`scripts/learn/lab-files.ts:29` "isn't a file"), but 004 §4.1 publishes `clips/{cr,tas}.tif`. `childFile` and `fileSizes` already handle nested names. Fix: provenance names may be relative paths (`clips/cr.tif`), `readLabFiles` reads recursively, and `writeLearnData` creates parent folders. Two type and rule changes go with it: `Provenance.files[].rows` (`lab-files.ts:10`) becomes optional, since a `.tif` has no rows (only `shapes.ts:128` writes it and nothing reads it: checked); and a folder holding no listed file (a stray or empty `clips/`) is refused, as a non-file is today, so `readLabFiles` and `fileSizes` (`cap.ts:11`, already recursive) see the same files.
 4. **The raster can't reach the loader through its established path unless a published file holds it.** The loader is generated from dist's published files through DuckDB (`loader.ts:163` turns every BLOB into base64). DuckDB can't read a TIFF. Fix: the ingest also writes `habitat_clips.parquet` (`clip`, `rast` = PostGIS raster WKB). The existing BLOB→base64 path then carries it with no new mechanism, and `lab-keys.sql` converts it with `ST_RastFromWKB(decode(rast,'base64'))`. The existing per-BLOB `ST_SRID(...) <> 4326` check (`loader.ts:201`) works on raster unchanged.
@@ -249,6 +250,7 @@ The rules live in Node because they are pure functions there, tested offline wit
 5. Only after every check passes does it copy the outputs into `data/learn/` and write `habitat.json` (below). A crash mid-copy leaves sha256 mismatches that `readLabFiles` already refuses ("half-copied: re-run the ingest").
 
 **1.4 The clips: size and windows.**
+- **Superseded by H5** (Decisions 2026-10-29): the clips are whole-country boxes stored as 256-cell tiles; the windows below stay as g7's study areas, cut from them by query (Steps, "H5 design").
 - **Size.** v004's composite cell is 0.000898315°, so a 0.75° side is 834.9 cells, or 835–836 after snapping outward: ≈ 0.70 M cells.
   - In-db raster WKB is a 61 B header, a 3 B band header (pixel type and flags, 2 B nodata) and 2 B per cell: ≈ 1.39 MB, or ≈ 1.86 MB as base64 in the loader.
   - Two clips come to ≈ 3.7 MB in the loader, plus ≈ 0.3–0.6 MB of Parquet and COGs (estimate; zstd and deflate on class runs): ≈ 4.5 MB all-in.
@@ -614,7 +616,7 @@ Architect, 2026-10-28, on `eab1841`. Window counts were measured in `critwire_de
 Every step:
 - `M` = `/srv/critter-ai/agent-state/missions/critwire-learn-l3-gis`. "§n" = this plan's Target design.
 - **First** = failure cases written and run red before the code (Log: `red n → green n`). No test written after its code. E2E cases for a feature land in the step that builds it.
-- **Checks**, one heavy job at a time (none while S7's ingest runs). No lint script; `pnpm typecheck` is the static check.
+- **Checks**, one heavy job at a time (none while S7's or S18d's ingest runs). No lint script; `pnpm typecheck` is the static check.
   - `T` = `pnpm typecheck && pnpm test`.
   - `B` = plain `pnpm build`.
   - `D` = `B`, then `pnpm test:db` (reads `dist/`).
@@ -635,7 +637,8 @@ Every step:
   2. Item 7 (raster plumbing) moves before the swap (S9), so S10 fits one session.
   3. §6's habitat E2E cases are written first, in S10, not after g7.
   4. g5 gets `g5-analyze` (planner finding, S16).
-- **Estimate:** 20 steps. With the 7 sessions through Steps, the code review, ≈ 2 fix steps, Verification and Release: ≈ 32 sessions.
+  5. H5 (owner, 2026-10-29): S18c–S18g, before S18b, so the diagram, S19's screenshots and S20's audit see the final data.
+- **Estimate:** 20 steps. With the 7 sessions through Steps, the code review, ≈ 2 fix steps, Verification and Release: ≈ 32 sessions. With S18b and H5's five steps: 26 steps, ≈ 39 sessions (25 used through S18).
 
 - [x] S1 · `db:load` batching (§7.3; item 5) + item 6
   - Save first: `$M/baseline-manifest.json` = `/srv/apps/critwire/.live/learn/data/manifest.json`, after checking its sha256 is `f180c320…9565`, the Baseline list's.
@@ -867,19 +870,183 @@ Every step:
   - First: the S9 raster check runs, as `critwire_lab` with the learner defaults; each block stays under the 60 s `statement_timeout`.
   - Decisions: finding 2's 004 fix.
   - Check: `T`, `L` twice, `P`, `E`, `H`. `g7.sql` runs on a fresh load in learn:check's downloads stage.
+
+#### H5 design (planner, 2026-10-29)
+
+The owner's H5 answer is under Decisions. Measured in `critwire_dev`'s `learn_curriculum` (L1's sample) and in scratch TEMP tables and `/tmp` files; nothing committed. S18c–S18g follow this.
+1. **Extent.** Pinned in `CLIPS` (degrees); the run snaps outward as it does today.
+   - `cr`: lon −85.91…−82.56, lat 8.07…11.19. That is CR's 1:50m outline bbox (one part: −85.908…−82.564, 8.071…11.189), rounded outward to 0.01°. Isla del Coco isn't in the 1:50m outline. All 619 CR records are inside.
+   - `tas`: lon 144.64…148.35, lat −43.62…−40.64. That is Tasmania's main island (`AUS-2660` part 4 = AU part 33: 144.646…148.343, −43.620…−40.672), rounded outward to 0.01°, with the north edge at −40.64 so the 9 devil records on the north-west tidal flats (144.72, −40.67…−40.64) are on it.
+     - Inside the box: Bruny and Maria Islands. Left out: King Island, the Furneaux Group, Robbins Island (north of the box) and Macquarie Island (in AU, at 158.8° E 54.6° S).
+     - It holds 1,991 of the 1,993 devil records in and around Tasmania; the other 2 are off Cape Barren Island and at sea. AUS-2660's whole box would be 23.3 M cells (≈ +25 MB).
+   - Expected after snapping, from a grid model fitted to the windows' corners (it reproduces their 836 × 836):
+     - `cr`: 3,730 × 3,474 = 12,958,020 cells; W −85.910382, N 11.190313, E −82.559666, S 8.069566.
+     - `tas`: 4,131 × 3,318 = 13,706,658 cells; W 144.639541, N −40.639783, E 148.350481, S −43.620394.
+2. **Layout: 256 × 256-cell tiles, one row each.** This follows raster2pgsql's `-t 256x256` practice, and a tile equals a COG block (`BLOCKSIZE=256`).
+   - Key (`clip`, `tile`). `tile` = tile row × tile columns + tile column over the box's tile grid (`cr` 15 × 14, `tas` 17 × 13). Edge tiles are smaller (no padding).
+   - GiST index on `ST_ConvexHull(rast)`, as raster2pgsql `-I` makes it.
+   - Why not one row per clip: every call on a raster value detoasts all of it.
+     - Measured on a 22.4 MB scratch raster (a 4 × 4 mosaic of `cr`; pglz stores it in 1.04 MB): `ST_Value` takes 7.9 ms per call, and `ST_Clip` + `ST_ValueCount` of a 1 km cell 11.9 ms. g7-scale's ≈ 2,600 records would take ≈ 50 s, against learners' 60 s `statement_timeout`.
+     - On its 196 tiles (`ST_Tile` 256): 1.4 ms and 1.8 ms. Header-only reads take 4 µs either way.
+   - **Only tiles touching the country.** `habitat.py` sets to nodata every cell of a tile whose box doesn't intersect the clip's country outline (`country_shapes`: `CR`, `AU`). Node drops all-nodata tiles. The COG holds the same masked cells over the full box; nodata blocks cost almost nothing.
+     - Kept (PostGIS `ST_Intersects` on the expected grid): `cr` 117 of 210 tiles, 7,555,072 cells; `tas` 173 of 221 tiles, 11,206,656 cells. Total 290 tiles.
+     - Records still on kept tiles: 618 of 619 CR records (the 619th, a sloth record 14.6 km out at sea, is on a dropped tile), and all 1,991 devil records in the box. A 10 km margin keeps the same records for 1.5 M more cells, so there is no margin.
+     - Both 0.75° windows lie wholly in kept tiles (16 tiles each).
+     - Why the mask: with full boxes, the loader's clips are ≈ 71.1 MB of base64 and `/learn/data/` comes to ≈ 121–125 MB (at the windows' compression ratios), over 120 MB. Masked, the clips are ≈ 50.1 MB. The rest of each box is open sea, Nicaragua and Panama, and no lesson reads it.
+   - Table: `habitat_clips (clip, tile, rast)`, PK (`clip`, `tile`); CHECK unchanged. `habitat_clips.parquet` gains `tile INTEGER`. LAB_TABLES key and the lab ERD change with it.
+3. **Encodings** (measured on the windows' cells, scratch). Same cells, fewer published and committed bytes.
+   - COG: DEFLATE `LEVEL=9`, `PREDICTOR=1` (none). `cr.tif` 221,986 → 164,016 B, `tas.tif` 180,362 → 130,870 B (−26 %). Predictor 2 takes differences between class codes, which helps only continuous values.
+   - `habitat_clips.parquet`: zstd `COMPRESSION_LEVEL 19`, 256,632 → 171,832 B (−33 %).
+4. **g7: the windows stay as study areas, cut by a query.**
+   - Each windowed block starts with two CTEs:
+     - `win`: the window, its envelope edges to 4 decimals (`cr` −84.2009 9.8491 −83.4499 10.6001; `tas` 147.2491 −43.1003 148.0001 −42.3493), each within 0.00005° of the window's cell edges.
+     - `w AS MATERIALIZED (SELECT clip, ST_Union(ST_Clip(h.rast, win.env)) AS rast FROM habitat_clips AS h JOIN win ON win.clip = h.clip AND ST_Intersects(h.rast, win.env) GROUP BY clip)`.
+     - Checked on `ST_Tile` copies of today's clips: `w` equals each 836 × 836 clip byte for byte (`md5(ST_AsBinary)`), in 0.42 s, with `gdal_enabled_drivers = DISABLE_ALL`.
+   - **Results kept** (sha256 unchanged, which proves the whole-country clips hold the windows' cells unchanged): `g7-latitude`, `g7-records`, `g7-valuecount`, `g7-estimate`, `g7-ex`, and `g7-countries`, which reads no clip. `g7-scale` reads `w` through the swap (S18e) and keeps its result; S18g moves it to the whole clips.
+   - **Designed changes:**
+     - S18f: `pg-smoke` (`habitat_clips` 2 → 290 rows) and `d4-xmin-load` (89,784 → 90,072 row versions);
+     - S18g: `g7-scale` (every record on both clips, whole 1 km cells: ≈ 625 + 1,991 records, no window edge).
+     - New in S18g: `g7-tiles` (tiles, cells, alignment) and `g7-country` (method 1 over all of Costa Rica against `country_habitats` CR, method 3, by class: 003 §5's comparison on the published summary).
+     - Page prose: d1's tbls sentence (73 → 74 columns), setup, and g7.
+   - **Budget:** whole-clip blocks take ≤ 20 s on this server as `critwire_lab`.
+     - g7-scale ≈ 9 s, from ≈ 3.5 ms per record on tiles (scratch).
+     - g7-country ≈ 6–10 s for ≈ 5.3 M CR cells: 11.2 M `ST_PixelAsCentroids` rows grouped by row took 13 s.
+5. **Ingest: a full re-run.** `buildHabitat` runs both halves, and a clips-only path would be new code to save 13 minutes.
+   - Same inputs, so `country_habitats.parquet` and `occurrence_habitats.parquet` must come out byte-identical to the committed files. S7's re-runs were identical, so this is a check.
+   - Clip reads cover ≈ 4× S7's rows (17 s + 28 s then). The windows are 26–27 MB in memory; peak memory stays the fractions' ≈ 3.15 GB. Disk: 14.2 GB free (checked).
+6. **Sizes** (projected here; S18d measures them):
+   - loader: 25,757,224 − 3,727,616 + ≈ 50,059,000 = ≈ 72.1 MB;
+   - `habitat_clips.parquet` ≈ 2.3 MB; `clips/cr.tif` ≈ 1.8 MB; `clips/tas.tif` ≈ 2.1 MB. These scale the windows' bytes per cell by the kept cells, and sea compresses better, so they are likely high.
+   - `dist/learn/data/` ≈ 97.2 MB and committed lab data ≈ 20.0 MB, both ≤ 120,000,000, which leaves ≈ 22.8 MB for L4 and L5.
+   - Each committed file is < 5 MB (GitHub warns at 50 MB). Learners download a ≈ 72 MB loader; the owner accepted ≈ 70 MB.
+
+- [ ] S18c · H5 ingest code: whole-country tiled clips, encodings; cap 120,000,000 (H5 design 1–3)
+  - First [T]:
+    - `scripts/build/learn/cap.test.ts`: `LEARN_CAP` = 120,000,000; one byte over refuses ("120,000,002 bytes, over the 120,000,000-byte cap").
+    - `scripts/ingest/habitat.test.ts`, `clipTiles(raster, size)` (pure; a 5 × 3 raster, size 2):
+      - tiles run row-major from the upper left; `tile` = row × ⌈width ÷ size⌉ + column;
+      - edge tiles are smaller, with no padding;
+      - a tile's corner = the clip's corner + its offset × scale, and its cells = the clip's sub-array;
+      - an all-nodata tile is left out, and one class cell keeps a tile; each tile is a `rasterWkb`.
+    - `scripts/ingest/habitat-build.test.ts` (fake Python):
+      - `habitat_clips.parquet` has columns `clip, tile, rast`, one row per kept tile, ordered by (`clip`, `tile`);
+      - `habitat.json` `clips.<id>` gains `tiles` (kept) and `tileSize`;
+      - `clips.json` carries the tile size and each clip's `country`.
+  - Code:
+    - Cap: `scripts/build/learn/cap.ts` `LEARN_CAP = 120_000_000`, with its header comment; `e2e/learn-data.spec.ts` `CAP` and the test title; AGENTS.md's build line.
+    - 004's cap mentions: §4.4's heading and first sentence, §4.5's `cap`, the build-refusal list ("a breach of the 50 MB cap") and F6 ("raised to 120 MB by the owner, H5"). The measured totals are S18f's.
+    - `scripts/ingest/habitat.ts`:
+      - `CLIPS` as H5 design 1, plus `country`; `CLIP_TILE = 256`; `clipTiles`;
+      - `habitat_clips` rows `{clip, tile, rast}` (`tile INTEGER`), written with `ORDER BY clip, tile` and `COMPRESSION_LEVEL 19`;
+      - `habitat.json`: `clips.<id>` gains `tiles` and `tileSize`; `method.clips` describes the whole-country box, the tile mask and the COG options.
+    - `scripts/ingest/habitat.py` `clips()`:
+      - after the window read, every cell of a `CLIP_TILE` tile (counted from the window's upper left) whose box doesn't intersect the clip's country outline is set to nodata, before the `.bin` and the COG are written. The outline comes from `--shapes`, already loaded;
+      - `COG_OPTIONS` gains `LEVEL=9` and `PREDICTOR=1`;
+      - the report adds `tiles` and `maskedTiles`; the docstring says so.
+  - Smoke (not committed), as in S6: a synthetic composite zip on a coarse grid covering both boxes, the real `country_shapes.parquet`, and tile size 32 through `clips.json`.
+    - Masked tiles are all nodata in the `.bin` and the COG; kept tiles intersect the outline; the COG check passes; the report parses. Log it.
+  - The committed clips, the loader and the build don't change: the data stays the windows until S18f.
+  - Check: `T`, `B` (the cap line says 120,000,000, and so does the manifest's `cap`), `E` (learn-data's cap case), `H`, `HD`.
+- [ ] S18d · The H5 ingest run; outputs held aside; the cap gate (H5 design 5, 6)
+  - Before: as S7. `git status` is clean, no other heavy job runs, `df -B1 --output=avail /` ≥ 7,000,000,000, and `free -b` available ≥ 8 GB.
+  - Run: as S7. `DL=$(mktemp -d /var/tmp/critwire-habitat-XXXXXX)`, then in the background (timeout 7,200,000 ms): `/usr/bin/time -v pnpm ingest habitat --downloads "$DL" 2>> $M/ingest-habitat-h5.log`.
+  - On success:
+    - `git status --porcelain data/` shows only `data/learn/{habitat.json,habitat_clips.parquet,clips/cr.tif,clips/tas.tif}` modified.
+      - `country_habitats.parquet`, `occurrence_habitats.parquet` and `habitat_classes.parquet` are byte-identical (same inputs).
+      - `jq -S '{source,inputs,grid,layers,measured,tools}'` on `habitat.json` equals the committed file's.
+    - The clips as H5 design 1–2 expects:
+      - `cr`: 3,730 × 3,474, 117 tiles, 7,555,072 kept cells;
+      - `tas`: 4,131 × 3,318, 173 tiles, 11,206,656 kept cells.
+      - `nodataCells` = the masked cells, unless the composite has nodata of its own; then the kept counts say why.
+      - Any other difference: find why before going on.
+    - Per clip, the class counts (`clips.<id>.values`) are logged; no class is unknown.
+    - **Cap projection**, before the downloads go:
+      - `dist/learn/data/` = 45,228,556 − 3,727,616 (the windows' base64) − 256,632 − 402,348 + the new files' bytes + Σ over kept tiles 4·⌈(64 + 2·cells) ÷ 3⌉ + 10 B per tile row. It must be ≤ 119,000,000.
+      - Committed = 14,444,834 − 658,980 + the new files' bytes. It must be ≤ 120,000,000.
+      - Over: Failure modes, "Cap overflow".
+    - **Determinism, once:** re-run with the same `$DL`; every output's sha256 is equal.
+    - Hold the outputs: `cp -a --parents data/learn/{habitat.json,habitat_clips.parquet,clips} $M/habitat-h5-out/`, and `sha256sum` each file (paths from the repository root) into `$M/habitat-h5-out.sha256`.
+    - Restore the committed files: `git restore data/learn`, only after the porcelain list matched.
+    - `rm -rf "$DL"`; `test ! -e "$DL"`.
+  - Log: wall time, clip read times, peak RSS, tiles and cells kept, file sizes, both projections.
+  - Commit: the plan only.
+  - Check: `B`, `H`, `HD` (the windows are back).
+- [ ] S18e · g7 blocks read tiles, with windows cut by a query (H5 design 4); results unchanged
+  - First, in one `psql` session as `critwire_lab` (`LEARN_PG_URL`) on the loaded `learn_curriculum`:
+    - `CREATE TEMP TABLE habitat_clips AS SELECT h.clip, t.n::int AS tile, t.rast FROM learn_curriculum.habitat_clips AS h, ST_Tile(h.rast, 256, 256) WITH ORDINALITY AS t (rast, n)`. That makes 32 tiles, and `pg_temp` is searched first.
+    - Red: today's files for `g7-latitude`, `g7-records`, `g7-valuecount`, `g7-estimate`, `g7-scale` and `g7-ex`, run on the tiled copy (`psql -XA -f`), differ from their output on the real table (per-tile rows, tile-local row numbers). Save both outputs as `$M/s18e/<id>.{one,tiles}.txt`.
+  - Blocks (the 004 fences and `site/learn/sql/`, ids kept): each starts with `win` and `w` (H5 design 4) and reads `w.rast` where it read `h.rast`.
+    - `g7-ex`: its window is `w`'s `tas`; its `ST_Covers(ST_Envelope(w.rast), …)` is unchanged.
+    - `g7-scale`: the records on `w`, and the majority on `w`, so the result is identical. S18g moves it to the whole clips.
+    - Green: each new file on the tiled copy equals today's file on the real table, byte for byte (`diff`).
+  - 004 g7 and `modules/g7.html`, one sentence in Data and in Lab step 1: each block names its window (`win`) and mosaics the tiles it touches into one raster (`ST_Clip` + `ST_Union`, as ArcGIS Pro's Clip Raster and Mosaic), and `MATERIALIZED` computes it once.
+  - Check: `T`; `L` (a whole run: `git diff --quiet site/learn/labs/checked/*.txt`, every result unchanged, only `checked.json` changes); `P`; `E`; `H`. Log each block's time (no slower than in S18).
+- [ ] S18f · The H5 swap: **atomic** (whole-country tiled clips in, with the loader, the ERD, the designed results and 004's measured numbers)
+  - As in S10, data, loader, ERD and recorded results land in one commit. Plain build fails on any part alone: the loader refuses the parquet's `tile` column without its DDL, and the labs are stale without their re-recorded results.
+  - First:
+    - [T] `loader.test.ts`: `habitat_clips` has columns `clip, tile, rast`; its PK is (`clip`, `tile`); `CREATE INDEX ON habitat_clips USING gist (ST_ConvexHull(rast))`; LAB_TABLES key `clip, tile`. `lab-files.test.ts`'s list is unchanged (same names).
+    - [D] `loader.dbtest.ts`: a duplicate (`clip`, `tile`) is refused; the CHECK cases (an SRID ≠ 4326, two bands, a type other than `16BUI`) gain the `tile` column.
+    - [E] `learn-data.spec.ts`: `habitat_clips.parquet`'s rows = the sum of `habitat.json`'s `clips.<id>.tiles`, and its columns are `clip, tile, rast`. `schema.spec.ts`: the lab ERD page and dictionary show `habitat_clips.tile`.
+  - Data: `cp -a $M/habitat-h5-out/data/learn/. data/learn/`; `sha256sum -c $M/habitat-h5-out.sha256` (repository root).
+  - Code:
+    - `db/learn/lab-ddl.sql`: `habitat_clips (clip, tile integer NOT NULL, rast)`, and its comment: whole countries, 256-cell tiles, tiles holding none of the country left out.
+    - `db/learn/lab-keys.sql`: PK (`clip`, `tile`) and the GiST index (comment: raster2pgsql `-I`).
+    - `projection.ts`: the key.
+    - `page.ts` descriptions: `habitat_clips.parquet` is all of Costa Rica and Tasmania as 256-cell raster tiles, those holding none of the country left out; each `clips/*.tif` is the whole-country clip, with the cells outside kept tiles as nodata.
+    - `erd.ts`: the source map.
+    - `site/learn/erd/lab.mmd`: `integer tile PK`, and `accDescr` says "two clips stored as raster tiles". Then `pnpm erd` (a second run writes nothing).
+    - AGENTS.md's `data/learn/` habitat line: whole-country tiles.
+  - Blocks: `learn:check --update`.
+    - Only `pg-smoke` (`habitat_clips` 290) and `d4-xmin-load` (90,072 row versions) change in `checked/`.
+    - Every g7 result stays unchanged (H5 design 4). A change is a bug (Failure modes).
+  - Pages and 004 with them, saying what changed and why:
+    - 004 §3.2's "about 26 MB" → the measured size.
+    - §4.1:
+      - the clips row: whole-country boxes, tiles, bytes;
+      - "The clips" notes (H5): snapped bounds, kept cells and tiles, the records on them, class counts from `habitat.json`;
+      - the loader row.
+    - §4.3: `habitat_clips`' columns and keys, the GiST index, the load time (twice, as `critwire_lab`), the row counts (`habitat_clips` 290).
+    - §4.4:
+      - the measured totals (both) and the delta from L2's live build;
+      - the H5 reason, in place of the windows paragraph;
+      - a note in the cut order: whole countries stay, and going over the cap goes to the owner (H5).
+    - §6.2.
+    - g7's Data and Concept: whole-country clips as 256-cell tiles (`ST_Tile`, raster2pgsql), with the windows cut by a query (S18e).
+    - d1's tbls sentence (004:2402, `d1.html:85`): 74 columns. d4 and setup, wherever they cite the counts.
+  - Cap: log both totals; each ≤ 120,000,000 and equal to 004 §4.4's.
+  - Decisions: the designed changes; the H5 swap.
+  - Check: `T`; `D`; `L` (`--update`, then plain, twice equal); `P`; `E`; `H`; `HD`. Log `learn:check`'s and `test:db`'s times (the loader is ≈ 2.8× larger).
+- [ ] S18g · g7 on the whole countries: `g7-tiles`, `g7-scale` on both clips, `g7-country` (H5 design 4)
+  - Blocks: each is a 004 fence (`status: ran`), then `pnpm learn:port g7`, then `learn:check --update`, and its result is copied into 004. All `-- needs: raster`.
+    - New `g7-tiles`, in Data: per clip, the tiles, cells, the box's tile grid, the tiles left out, and `ST_SameAlignment` over its tiles (true).
+    - `g7-scale` (designed change):
+      - every record on both clips, each counted once (a point on a shared tile edge meets two tiles);
+      - the 100 m class by `ST_Value` on its tile;
+      - the 1 km cell's 100 m majority, summed over the tiles the cell covers (no window edge).
+    - New `g7-country`, in the Lab after `g7-countries`:
+      - method 1 over all of Costa Rica: the 100 m cells with their centre in CR's outline, one geodesic area per latitude row;
+      - against `country_habitats` CR (method 3), by class: km² both ways and the difference in %;
+      - the total against the outline's area.
+  - 004 g7: the Lab steps, Result and Check; §4.1's "Measured in g7" bullet; `modules/g7.html`; curriculum g7's questions if a number moved.
+  - First: each block, as `critwire_lab` on the learner defaults, takes ≤ 20 s (log the times). `g7.sql` runs on a fresh load in learn:check's downloads stage.
+  - Decisions: `g7-scale`'s change and the new blocks.
+  - Check: `T`, `L` twice, `P`, `E`, `H`.
 - [ ] S18b · g7 diagram `g7-cells` (split from S18)
-  - Diagram `site/learn/diagrams/g7-cells{,-dark}.{html,svg}` as in S14 (diagram-design, profile `critwire`, `export_svg.py --system-fonts`, `self_check.py --offline`, `<title>` + `alt` state its point): lon/lat cells narrowing with latitude (cr 98.4 m vs tas 73.6 m wide, both ≈ 99.5 m tall), centre-in-outline at a border, a 1 km cell over ≈ 11 × 11 cells of 100 m (border cell counted whole by its centre).
+  - Diagram `site/learn/diagrams/g7-cells{,-dark}.{html,svg}` as in S14 (diagram-design, profile `critwire`, `export_svg.py --system-fonts`, `self_check.py --offline`, `<title>` + `alt` state its point). It shows:
+    - lon/lat cells narrowing with latitude, using `g7-latitude`'s middle rows, which H5 doesn't change: 98.4 × 99.4 m at 10.2° N in `cr`, 73.6 × 99.8 m at 42.7° S in `tas`;
+    - centre-in-outline at a border;
+    - a 1 km cell over ≈ 11 × 11 cells of 100 m (a border cell counted whole by its centre).
   - `{{diagram:g7-cells}}` slot in `modules/g7.html` after the Concept; 004 g7 names it.
   - Check: `T`, `B`, `E`, `H`.
 - [ ] S19 · E2E completion and screenshots (§6)
   - `e2e/learn-screens.spec.ts` `PAGES` + g3 and g7: `g3-{1280,375}-{light,dark}.png` and the same for g7 (8 files).
   - `learn-map`: g1–g7 linked and built. `learn-labs` covers the g pages generically (code = download, `g3-iucn` commented, shown = recorded). `schema`: the new diagrams return 200 with `<title>` and `alt`.
-  - Audit: each DoD E2E item → its test name, listed in the Log. A gap gets its test here.
+  - Audit: each DoD E2E item → its test name, listed in the Log (the cap case at 120,000,000, H5). A gap gets its test here.
   - Release helper dry run against the local Caddy (`RELEASE_ORIGIN=http://127.0.0.1:3100`): it reaches `clips/` and the g pages.
   - Check: `T`; `E2E_ARTIFACTS=$M/e2e-s19 pnpm e2e` in full, nothing skipped; `H`.
 - [ ] S20 · AGENTS.md, 004 final pass, audit (§8 item 11)
   - AGENTS.md:
-    - `pnpm ingest …|habitat [--downloads <dir>]` and its files in `data/learn/`;
+    - `pnpm ingest …|habitat [--downloads <dir>]` and its files in `data/learn/` (whole-country clips as 256-cell tiles, H5);
     - the Python line: `ingest shapes` and `ingest habitat`, rasterio in `.venv-learn`;
     - the cost of a species change includes re-running `ingest habitat` (≈ 1 h);
     - `contracts/v1.json`: entries add-only; a definition edit needs the owner's review and a Decisions line with the new sha;
@@ -888,8 +1055,8 @@ Every step:
   - 004: §0, §3.2, §4, §6.2, §7.3, §7.6 and §9 agree with the code.
   - Audit:
     - items 1–6 each `done (S<n>, <sha>)` or `rejected` with evidence;
-    - every deviation from 004 is under Decisions: the windows, the outputs folder, g7's lon/lat, `g5-analyze`, the star CHECK, the §8 reorder;
-    - H5's state, for the Summary.
+    - every deviation from 004 is under Decisions: the windows, which H5 superseded (whole-country clips, 256-cell tiles touching the country, the COG and Parquet encodings, the windows kept as g7's study areas); the cap raised to 120 MB (owner); the outputs folder; g7's lon/lat; `g5-analyze`; the star CHECK; the §8 reorder;
+    - H5's outcome, for the Summary: the measured totals, tiles and cells kept, and the clips' sizes.
     - A gap becomes a new step before Verification.
   - Check: `T`, `P`, `L`, `E`, `H`, `HD`.
 
@@ -899,10 +1066,10 @@ Run once, on the final commit (after any code-review fixes), on a clean tree, in
 
 Leak query, which must be empty: `psql -d critwire_dev -XAtc "select rolname from pg_roles where rolname like 'learn\_%' union all select nspname from pg_namespace where nspname like 'learn\_%' and nspname not in ('learn_spatial','learn_curriculum')"`.
 
-1. **Install:** `pnpm install --frozen-lockfile` is up to date; `pnpm learn:venv`. S7's `$DL` (path in the Log) doesn't exist, and `find . -name '*.zip' -not -path './node_modules/*'` is empty.
+1. **Install:** `pnpm install --frozen-lockfile` is up to date; `pnpm learn:venv`. S7's and S18d's `$DL` (paths in the Log) don't exist, and `find . -name '*.zip' -not -path './node_modules/*'` is empty.
 2. **Build and cap:** plain `pnpm build` passes (fresh labs, current DOIs, habitat fresh, `/v1` contract, no stale SVG).
-   - `find dist/learn/data -type f -printf '%s\n' | awk '{s+=$1} END{print s}'` < 50,000,000 (≈ 45.3 MB projected).
-   - The same sum over `data/raw/gbif-sample data/learn data/gbif-learn-sample` < 50,000,000 (≈ 14.3 MB).
+   - `find dist/learn/data -type f -printf '%s\n' | awk '{s+=$1} END{print s}'` ≤ 120,000,000 (owner, H5; ≈ 97.2 MB projected in "H5 design", measured in S18f).
+   - The same sum over `data/raw/gbif-sample data/learn data/gbif-learn-sample` ≤ 120,000,000 (≈ 20.0 MB).
    - Both equal 004 §4.4's.
 3. **E2E (primary):** `rm -rf $M/e2e && pnpm build && E2E_ARTIFACTS=$M/e2e pnpm e2e`.
    - Specs: `attribution`, `countries`, `docs`, `duckdb`, `files`, `learn-data`, `serving`, `learn-map`, `learn-browser`, `learn-labs`, `learn-screens`, `learn-timing`, `schema`.
@@ -926,11 +1093,12 @@ Leak query, which must be empty: `psql -d critwire_dev -XAtc "select rolname fro
 6. **Results vs 004:**
    - `P` reports 0 differences.
    - `git diff origin/main -- plans/004-learn-curriculum.md | grep -E '^-.*-- result: '` lists only `pg-smoke`, `d4-xmin-load`, `d6-star-fact-country-habitat` and `d6-drill-across`. g7 had no result, and g5's EXPLAIN text is judged by its `-- plan:` lines.
+   - g7's windowed blocks (`g7-latitude`, `g7-records`, `g7-valuecount`, `g7-estimate`, `g7-ex`) and `g7-countries` still carry S18's sha256 (H5 design 4).
    - 004 carries the `p1-load`, `p3-check` and `p3-measures` stand-in notes, and the measured habitat numbers in §4.1 and g7 equal `habitat.json`'s `measured` and `clips`.
 7. **ERDs:** `pnpm erd` writes nothing (`git status --porcelain site/learn/erd` is empty).
 8. **Existing files unchanged:**
    - `H` and `HD` print nothing (Baseline lists: `$M/baseline-sha256-{dist,repo}.txt`).
-   - The manifest diff is empty, with N = `def n: del(.bytes) | .files |= (with_entries(select(.key | IN("country_habitats.parquet","occurrence_habitats.parquet","habitat_clips.parquet","clips/cr.tif","clips/tas.tif","postgis/learn_curriculum.sql") | not)) | map_values(.sources |= map(.name |= sub(" \\(stand-in summaries\\)$"; "")))); n`: `diff <(jq -S "$N" dist/learn/data/manifest.json) <(jq -S "$N" $M/baseline-manifest.json)`.
+   - The manifest diff is empty (`cap` excluded: 50,000,000 → 120,000,000, H5), with N = `def n: del(.bytes, .cap) | .files |= (with_entries(select(.key | IN("country_habitats.parquet","occurrence_habitats.parquet","habitat_clips.parquet","clips/cr.tif","clips/tas.tif","postgis/learn_curriculum.sql") | not)) | map_values(.sources |= map(.name |= sub(" \\(stand-in summaries\\)$"; "")))); n`: `diff <(jq -S "$N" dist/learn/data/manifest.json) <(jq -S "$N" $M/baseline-manifest.json)`.
 9. **Determinism:** `(cd dist && find . -type f -print0 | sort -z | xargs -0 sha256sum) > $M/dist-1.sha256`; plain `pnpm build`; the same into `$M/dist-2.sha256`; `diff` is empty.
 
 **Definition of done → proof:**
@@ -941,7 +1109,7 @@ Leak query, which must be empty: `psql -d critwire_dev -XAtc "select rolname fro
 | `pnpm e2e` in full, nothing skipped | step 3 |
 | Results: ran g blocks keep their sha256; g7 and new exercises `ran`; only the designed changes; learn:check twice; leak query; canary | steps 5 and 6 |
 | Habitat numbers in 004 §4.1 and g7, with 003 §5's error method | step 6; S18 |
-| 50 MB cap | step 2; `learn-data`'s cap case |
+| The cap: 120 MB (owner, H5; the brief's 50 MB) | step 2; `learn-data`'s cap case; S18d's projection, S18f's measurement |
 | Existing files unchanged (`country_habitats`, the loader, `manifest.json` and pages excepted) | step 8 |
 | Downloads deleted once hashed | step 1; S7's Log |
 | Review items 1–6 | Decisions (S20 audit, with shas) |
@@ -957,7 +1125,7 @@ Leak query, which must be empty: `psql -d critwire_dev -XAtc "select rolname fro
 - The habitat files against the live manifest: for each of `country_habitats.parquet`, `occurrence_habitats.parquet`, `habitat_clips.parquet`, `clips/cr.tif` and `clips/tas.tif`, `curl -fsS $L/learn/data/<f> | sha256sum` and its byte count equal `.files["<f>"]` in `curl -fsS $L/learn/data/manifest.json`.
 - `curl -s -o /dev/null -w '%{http_code}' -r 0-1023 $L/learn/data/clips/cr.tif` gives `206`.
 - The live loader and g7:
-  - download `$L/learn/data/postgis/learn_curriculum.sql` and `$L/learn/labs/g7.sql` into a `mktemp -d`;
+  - download `$L/learn/data/postgis/learn_curriculum.sql` (≈ 72 MB) and `$L/learn/labs/g7.sql` into a `mktemp -d`;
   - `psql -X -v ON_ERROR_STOP=1 -d "$LEARN_PG_URL" -f learn_curriculum.sql` (`critwire_dev`, as `critwire_lab`);
   - then `psql -X -d "$LEARN_PG_URL" -f g7.sql`: its `ERROR:` lines are exactly g7's announced ones;
   - then the leak query is empty.
@@ -966,22 +1134,22 @@ Leak query, which must be empty: `psql -d critwire_dev -XAtc "select rolname fro
 ## Failure modes
 
 Each step's isolated cases are its **First** list. What a session does when the plan meets reality:
-- **Download fails** (HTTP error, timeout or cut transfer; S7): the run is all or nothing. Re-run with the same `--downloads`, which keeps md5-matching zips.
-  - Zenodo down for a whole session: do S12–S17 (g1–g6 don't read habitat data), then come back.
+- **Download fails** (HTTP error, timeout or cut transfer; S7, S18d): the run is all or nothing. Re-run with the same `--downloads`, which keeps md5-matching zips.
+  - Zenodo down for a whole session: do S12–S17 (g1–g6 don't read habitat data), then come back. In S18d, do S18e first (it needs no download).
 - **md5 or size mismatch:** the file is deleted and the run throws. Re-run once.
   - A second mismatch means Zenodo's file changed. Never unpin. Add a handoff item (Blocks: S7, S10, S11, S18) and go on with g1–g6.
   - `MISSION_BLOCKED` only when nothing else can proceed.
 - **Memory** (peak over 6 GB, or an OOM kill): lower `habitat.py`'s band-height constant (same code, same result), re-run with `--downloads`, and log the band height and the peak.
 - **Composite read slow** (the `/vsizip/` window read takes more than a few minutes): `habitat.py` extracts that one member into the temp folder (2.6 GB; check `df` first). Record which.
-- **Disk** under 7 GB free before S7: remove only this mission's leftovers (`/var/tmp/critwire-habitat-*`, `$M/recovery/`). Still short: handoff item.
+- **Disk** under 7 GB free before S7 or S18d: remove only this mission's leftovers (`/var/tmp/critwire-habitat-*`, `$M/recovery/`). Still short: handoff item.
 - **Unknown class** (a non-zero layer or a clip value not in `habitat_classes`): a real finding. Extend `habitat_classes` from v004's legend, with a Decision. That changes a file the DoD expects unchanged, and `d6-star-dim-habitat-class`'s result with it, by design and recorded.
 - **Σ ratio outside ±2 %, or a record outside the grid:** a bug (units, transform, cell area, row and column maths). Fix it. Never widen the guard or drop a record.
-- **Cap overflow** (projected in S7 before the downloads go; measured in S10):
-  - shrink both windows equally (never below 0.5°) and re-run;
-  - still over: cut in 004 §4.4's order, recorded under Decisions with a non-blocking handoff item;
-  - never drop the loader or the sample's Parquet.
+- **Cap overflow** (projected in S18d before the downloads go, over 119,000,000 B; measured in S18f, over 120,000,000 B). The owner's H5 rule: whole countries stay and nothing is cut. No window, no smaller box, no cut from 004 §4.4's list.
+  - First check that the projection isn't a bug: tiles and cells kept equal H5 design 2's, the encodings are S18c's, and no tile is all nodata.
+  - Still over: add a handoff item with both measured totals and the largest files (`Blocks: S18f, Verification, Release`).
+  - Hold the outputs in `$M/habitat-h5-out/` so the tree stays green on the windows. Go on with work that doesn't need the data (S18e, S18b's sources); then `MISSION_BLOCKED`.
 - **A result differs from 004:**
-  - outside S10's four designed changes, it is a bug (port, session, data or `after` chain); `d6-star-dim-habitat-class` changing is a bug too;
+  - outside S10's four designed changes, S18f's two (`pg-smoke`, `d4-xmin-load`) and S18g's `g7-scale`, it is a bug (port, session, data or `after` chain); `d6-star-dim-habitat-class` changing is a bug too;
   - only a proven change updates 004 and the recorded file together (Decisions);
   - a PostGIS or GEOS version change shows in `checked.json`'s versions: record it with the proof.
 - **An EXPLAIN assertion fails** (g5): find why (statistics, `g5-analyze`, index names). Never weaken an assertion to match.
@@ -990,7 +1158,12 @@ Each step's isolated cases are its **First** list. What a session does when the 
 - **Leak query not empty:** drop only this mission's lab-role objects, as the sweep names them. Anything else: handoff item.
 - **No wheel for a new pin** (S4; `--no-build` refuses): no system GDAL and no source build (Rejected alternatives). Handoff item.
 - **The recovery rehearsal differs** (S3): fix an absolute path, or document the difference in `recovery.md`.
-- **H5 answered `also publish whole-country COG files`:** the planner adds one step before Verification: COG files only, not in the loader, ≈ +3 MB, with the cap re-checked.
+- **H5 (answered 2026-10-29: whole countries in the loader, the cap at 120 MB):** S18c–S18g ("H5 design").
+- **S18d's habitat summaries move** (`country_habitats.parquet` or `occurrence_habitats.parquet` bytes, or `habitat.json`'s `inputs`/`measured`, differ from the committed files): the inputs are the same, so this is a bug in the new code. Stop, compare against `$M/habitat-out/`, and fix it.
+- **The expected grid differs** (S18d: width, height, tiles or cells kept ≠ H5 design 1–2): find why, whether a snap, the mask or the composite's own nodata, before holding the outputs. Record the cause under Decisions.
+- **A windowed g7 result changes** (S18e on the tiled copy, or S18f after the swap): a bug in the window envelope, the tile maths or the mask. Compare `w` with `$M/habitat-out/`'s window rasters byte for byte; never re-record it.
+- **A g7 block takes more than 20 s** (S18e–S18g, as `critwire_lab`): restructure it (a `MATERIALIZED` mosaic, tiles filtered by `ST_Intersects` first, one area per latitude row). Never raise `statement_timeout`.
+- **test:db or learn:check is slower or times out** (the loader is ≈ 2.8× larger): a failure that is only a timeout gets the measured time and that test's own limit raised, with a Decisions line. Never skip the test.
 - **Session budget:** at each session start, `grep -c '^=== .* session ' /srv/critter-ai/agent-state/missions/critwire-learn-l3-gis.log` (6 at Steps). Past 48:
   - add no more review steps;
   - give each unfinished assigned item a Decisions line and a handoff item for L4;
@@ -1034,6 +1207,14 @@ Each step's isolated cases are its **First** list. What a session does when the 
 - 2026-10-29 · S17: g6 adds three blocks beyond the step's list, each `ran`, recorded by `learn:check --update` and copied into 004: `g6-equal-area` (worked example: 10 km hexagons in 3577 all 259.808 km² on the ellipsoid; 0.1° hexagons in 4326 232.889–244.137, 4.8 % apart over 3° of latitude), `g6-records` (devil records by place: main island 1,784 all in cells; Maria Island 12 only in 10 km cells; 198 in no outline, 188/194 in cells; 6 elsewhere in neither: explains 1,972 vs 1,990), `g6-land` (land share: 884/1,094 cells all land at 5 km, 107 under half; `ST_Covers`, not area ratio = 1, which float error puts at 540). Exercise `g6-ex`: records per land km² at 10 km: top cell (90, −274) = Maria Island's 12 on 0.51 km² of main-island land, 2nd = 17 of 18 records off the coast; count-top cell 4th. `g6-maup` keeps 004's sha256 (4d11b1459ccb); its prose corrected: top-cell % is of records in cells, not of all records. No MAUP diagram: the three tables carry it.
 - 2026-10-29 · finding 2's 004 fix landed (S18): g7 rewritten for v004's lon/lat grid (0.0008983152841195215°, cos φ; no Web Mercator arithmetic); `g7-records`/`-valuecount`/`-estimate` `ran` on the `cr` window (202 records; 693,893 cells in CR outline, 5,003 sea outside; 6,785.90 km² est.). `g7-estimate`'s per-row area CTE is `MATERIALIZED`: inlined, PostgreSQL computed `ST_PixelAsPolygon` once per (class, row), 7,399 calls, 8.4 s vs 1.6 s. `g7-latitude` builds row cells from `ST_MetaData` (each `ST_PixelAsPolygon` detoasts the 1.4 MB raster, ≈ 1 ms). `ST_Transform` dropped from the outline blocks (clips are 4326). Method 1 vs method 3 can't use v004's fractions in-db, so `g7-ex` simulates method 3 from the 100 m cells (fraction = share of 100 m centres per 1 km cell; whole 1 km cells only) on `tas` inside AU (the long coast; `cr`'s window has little): total −0.2 %, coastal classes −1.1…−2.8 %, inland within ±0.4 % (grid misfit: 11.04 cells per side, 121/132/144 centres). `g7-scale` adds the 1 km cell's 100 m majority from the 1 km grid's transform (habitat.json `grid`): 201/202 and 579/601 agree, so `occurrence_habitats` is consistent with the clips; the 23 others are ties/near ties (20 in one 48:48 cell) + 1 cell on the window edge. `g7-countries` total 0.999074 = habitat.json `measured.estimateOverOutline`. 004 §4.1 gains a "Measured in g7" bullet; §7.3's untested list drops g7. curriculum g7 question "Costa Rica's records" kept (the window's records are CR's).
 - 2026-10-29 · S18 split: diagram `g7-cells` → new step S18b (S18 already one session's blocks, 004, page and checks); g7 page ships without the diagram slot until S18b.
+- 2026-10-29 · H5 (owner): **whole-country 100 m clips**, supersedes the 0.75° windows (Architecture finding 1, §1.4, Decisions 2026-10-28 and Revision). The loader holds the whole-country `cr` and `tas` clips (≈ 70 MB base64); whole-country COGs published under `/learn/data/clips/`; both caps (`dist/learn/data/` and committed lab data) 50,000,000 → 120,000,000 B; real totals measured into 004 §4.4 and this plan; over 120 MB → keep whole countries, handoff item with the number, cut nothing. Windows may stay in g7 as a query on the whole clip (no separate file). Steps S18c+ added before S18b by the planner (Steps).
+- 2026-10-29 · H4 (owner): Windows check passed (Docker Desktop PostGIS, loader, `d1.sql`); nothing to change. Closed.
+- 2026-10-29 · H5 design (planner; Steps, "H5 design"):
+  - clips = whole-country boxes (`cr` CR's outline bbox; `tas` Tasmania's main island bbox, north edge −40.64), stored as 256-cell tiles, PK (`clip`, `tile`), GiST on `ST_ConvexHull(rast)`;
+  - tiles that don't touch the country's outline are left out (full boxes ≈ 121–125 MB, over the cap; masked ≈ 97 MB);
+  - COG DEFLATE level 9 with no predictor, and `habitat_clips.parquet` at zstd 19 (−26 %, −33 % on the windows);
+  - g7 keeps the windows as study areas cut by a query (results unchanged); `g7-scale` and the new `g7-tiles` and `g7-country` use the whole clips;
+  - a full ingest re-run. Steps S18c–S18g.
 
 ## Log
 
@@ -1061,5 +1242,6 @@ Each step's isolated cases are its **First** list. What a session does when the 
 - 2026-10-29 04:42 UTC · S16: g5 in full in 004 (Concept, Worked example, Lab 6 blocks, Result, Exercise, Check, Dialects); `learn:port g5` red 9 (3× no `rows`, 3× no node assertion, 3× `after` not on page) → green (16 files); `modules/g5.html`; curriculum g5 `built`; d3, g3, g4 link it. T: typecheck ok, test 597/597. L: `--update` wrote only `checked/g5-{degrees,ex,geography-index}.txt` + checked.json (107 PostGIS blocks; g5.sql download 0 ERROR as announced; canary unchanged; leak empty); then draft, check, check again (assertions hold both, no text diffs logged, checked.json unchanged), plain build ok (45,228,556 B). P: 16 pages, 353 files equal. E: 83/83, 0 skipped/flaky (`e2e-artifacts/`). H, HD: nothing.
 - 2026-10-29 05:10 UTC · S17: g6 in full in 004 (Concept, Worked example, Lab 3 blocks, Result, Exercise, Check, Dialects); `learn:port g6` (10 files); `modules/g6.html`; curriculum g6 `built` (map, track, g5 page, spatial-statistics prereqs link it). T: typecheck ok, test 597/597. L: `--update` wrote only the 4 new `checked/g6-*.txt` + checked.json (112 PostGIS blocks; g6.sql download 0 ERROR as announced; canary unchanged; leak empty); then draft, check (112 equal, checked.json unchanged), plain build ok (45,228,556 B). P: 17 pages, 363 files equal. E: 83/83, 0 skipped/flaky (`e2e-artifacts/`). H, HD: nothing.
 - 2026-10-29 05:40 UTC · S18: g7 in full in 004 (Concept, Data, Worked example `g7-latitude`, Lab 5 blocks, Result, Exercise `g7-ex`, Check, Dialects), all `-- needs: raster`, `ran` as `critwire_lab` on defaults (each ≤ 4.7 s); `learn:port g7` (14 files); `modules/g7.html`; curriculum g7 `built`; 004 §4.1 measured bullet. T: typecheck ok, test 597/597. L: `--update` wrote only the 7 new `checked/g7-*.txt` + checked.json (119 PostGIS blocks; g7.sql download 0 ERROR as announced; canary unchanged; leak empty); then draft, check, check again (119 equal both, checked.json unchanged), plain build ok (45,228,556 B). P: 18 pages, 377 files equal. E: 83/83, 0 skipped/flaky (`e2e-artifacts/`). H, HD: nothing. Diagram split to S18b.
+- 2026-10-29 06:40 UTC · Pickup: H4 (Windows check passed) and H5 (whole-country clips, cap 120 MB) recorded under Decisions, closed in handoff; planner added S18c–S18g + H5 design, updated Verification, Failure modes, S18b–S20. Plan-only; no code checks needed.
 
 ## Summary
