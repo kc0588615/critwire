@@ -1,7 +1,9 @@
 // pnpm learn:check (plan D3; L1's D10 checks 1–11 and Cleanup), in stages:
 // - static (staticStage, before connecting): the committed course read and linted (course-files.ts); its blocks in
-//   page order, or one page's (--module). Then, under the lab lock, as the lab role:
-// - connect: the live database refused twice, the lab role's privileges, the lock, the versions (SC6), A2's
+//   page order, or the course's boot blocks and then one page's (--module, blocksToRun). Then, under the lab lock, as
+//   the lab role:
+// - connect: the live database refused twice, the lab role's privileges (CREATEROLE, set and inherit; no superuser, no
+//   CREATE on public), the lock, the versions (SC6), A2's
 //   learn_spatial canary (read as libpq's default role, which owns it) and the learn_ objects already there;
 // - loader: the published loader run twice as a learner runs it (psql -X -v ON_ERROR_STOP=1 -f), its sha256 and row
 //   counts against the manifest, then once with a duplicate occurrences id, which must fail and change nothing (the
@@ -18,7 +20,7 @@
 // The lock is held by the cleanup connection (cleanup.ts), which runs no block. An abort (the CLI's SIGINT/SIGTERM)
 // cancels the running psql or block statement. Every exit then removes the temp loader and releases the lock in
 // cleanup.ts's order: stop the run's sessions, sweep the lab role's new objects, free the lock; a cleanup failure is
-// added to the run's. Tests: learn/check.test.ts (LC6 pure), learn-check.dbtest.ts (LC1–LC10, CU1–CU5), runner.dbtest.ts.
+// added to the run's. Tests: learn/check.test.ts (LC6, BF1 pure), learn-check.dbtest.ts (LC1–LC10, V2, V3, CU1–CU5), runner.dbtest.ts.
 import { spawn } from "node:child_process";
 import { createHash } from "node:crypto";
 import { mkdtemp, readFile, rename, rm, writeFile } from "node:fs/promises";
@@ -163,12 +165,24 @@ async function readLoader(dist: string): Promise<Loader> {
 export interface StaticCourse {
   /** Every page, in page order. */
   pages: CoursePage[];
-  /** The blocks to run, in page order: every page's, or one module's. */
+  /** The blocks to run (blocksToRun): every page's, or the boot blocks and one module's. */
   blocks: Block[];
   /** The downloads to run: every page's, or one module's. */
   downloads: Download[];
   /** lab.mmd's text, parsed. */
   labErd: string;
+}
+
+/**
+ * The blocks a run runs, in order: every page's in page order, or (`module`) the course's ran `-- boot` blocks in page
+ * order and then the page's other blocks, so a page reading another page's boot tables runs as in a whole run (004 §0).
+ */
+export function blocksToRun(pages: readonly CoursePage[], module?: string): Block[] {
+  const all = pages.flatMap((p) => p.blocks);
+  if (module === undefined) return all;
+  const own = pages.filter((p) => p.page.id === module).flatMap((p) => p.blocks);
+  const boot = all.filter((b) => b.boot && b.status === "ran");
+  return [...boot, ...own.filter((b) => !boot.includes(b))];
 }
 
 /**
@@ -190,7 +204,7 @@ export async function staticStage(module?: string): Promise<StaticCourse> {
     throw new Error(`static: ${LAB_ERD}: ${(e as Error).message}`);
   }
   console.log(`learn:check: static: ${pages.length} page(s), ${pages.reduce((n, p) => n + p.blocks.length, 0)} block(s) parsed and linted, ${downloads.length} download(s) assembled`);
-  return { pages, blocks: run.flatMap((p) => p.blocks), downloads, labErd };
+  return { pages, blocks: blocksToRun(pages, module), downloads, labErd };
 }
 
 /** What the stages share: the lab connection, the lock, the admin target (the canary's reader), the canary at connect. */
@@ -206,12 +220,17 @@ interface Run {
 
 interface Who { db: string; user: string }
 
-// The lab role's checks; returns the database and role it reached.
+// The lab role's checks; returns the database and role it reached. A superuser, or CREATE on public, would run the labs
+// with more than a learner's privileges and hide a block that needs them (plan L4 D7, MF5).
 async function assertLabRole(sql: postgres.Sql): Promise<Who> {
-  const [who] = await sql<{ db: string; user: string; createrole: boolean; selfGrant: string }[]>`select current_database() as db,
-    current_user as user, (select rolcreaterole from pg_roles where rolname = current_user) as createrole,
+  const [who] = await sql<{ db: string; user: string; superuser: boolean; createPublic: boolean; createrole: boolean; selfGrant: string }[]>`select
+    current_database() as db, current_user as user, (select rolsuper from pg_roles where rolname = current_user) as superuser,
+    has_schema_privilege('public', 'CREATE') as "createPublic", (select rolcreaterole from pg_roles where rolname = current_user) as createrole,
     current_setting('createrole_self_grant') as "selfGrant"`;
   assertConnectedNotLive(who.db);
+  const learner = `the labs run with a learner's privileges: ${SETUP}`;
+  if (who.superuser) throw new Error(`${who.user} is a superuser: ${learner}`);
+  if (who.createPublic) throw new Error(`${who.user} has CREATE on schema public: ${learner}`);
   if (!who.createrole) throw new Error(`${who.user} has no CREATEROLE (the role labs need it): ${SETUP}`);
   const grants = who.selfGrant.split(",").map((s) => s.trim());
   if (!grants.includes("set") || !grants.includes("inherit")) {

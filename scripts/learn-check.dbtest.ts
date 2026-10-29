@@ -7,6 +7,8 @@
 //      make the two differ, so the post-connect assertion is called directly.
 // LC3: a role without CREATEROLE, or without createrole_self_grant set and inherit, runs the loader and fails in the
 //      labs → refused before the lock, naming --setup.
+// V2, V3 (plan L4 D7, MF5): a superuser lab role, or one with CREATE on public, runs the labs with more than a learner's
+//      privileges and hides a block that needs them → refused before the lock, naming --setup.
 // LC4: two runs overlap (each drops the other's schema) → the second is refused while the lock is held, and loads nothing.
 // LC5: a load that gives other row counts than the manifest's tables, or a loader whose sha256 isn't the manifest's,
 //      passes → refused, naming the table and both counts, or the file; a clean run loads twice and exits 0.
@@ -176,6 +178,25 @@ test("LC3 a role without CREATEROLE, or without createrole_self_grant, is refuse
   const r2 = await cli([], { LEARN_PG_URL: plain.url });
   assert.equal(r2.code, 1);
   assert.match(r2.stderr, /createrole_self_grant.*--setup/);
+});
+
+test("V2 a superuser lab role is refused before the lock, naming --setup", async () => {
+  const su = await loginRole("v2", "SUPERUSER CREATEROLE");
+  await admin.unsafe(`ALTER ROLE ${su.role} SET createrole_self_grant = 'set, inherit'`);
+  const r = await cli([], { LEARN_PG_URL: su.url });
+  assert.equal(r.code, 1);
+  assert.match(r.stderr, new RegExp(`${su.role} is a superuser: the labs run with a learner's privileges: run pnpm learn:check --setup`));
+  assert.doesNotMatch(r.stdout, /lab lock taken/);
+});
+
+test("V3 a lab role with CREATE on public is refused before the lock, naming --setup", async () => {
+  const role = await loginRole("v3", "CREATEROLE");
+  await admin.unsafe(`ALTER ROLE ${role.role} SET createrole_self_grant = 'set, inherit'`);
+  await admin.unsafe(`GRANT CREATE ON SCHEMA public TO ${role.role}`);
+  const r = await cli([], { LEARN_PG_URL: role.url });
+  assert.equal(r.code, 1);
+  assert.match(r.stderr, new RegExp(`${role.role} has CREATE on schema public: the labs run with a learner's privileges: run pnpm learn:check --setup`));
+  assert.doesNotMatch(r.stdout, /lab lock taken/);
 });
 
 test("LC4 a run is refused while the lab lock is held, and loads nothing", async () => {

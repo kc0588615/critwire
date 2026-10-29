@@ -17,19 +17,18 @@
 // block at once and is cancelled. `-- fails:` as in `tx: own`; lock_timeout 30 s is the server's stop for a stalled
 // wait. Then each window must have ended clean, with the `tx: own` checks for leaks and watched schemas, and both
 // sessions end. Its result is every statement that returned rows, as `window | statement | <columns>`.
-// runBlocks runs the boot blocks first, once, then the rest, against their recorded results
-// (site/learn/labs/checked/<id>.txt), or with `update` runs each twice and writes the results once both runs agree and
-// every block passed. An abort cancels the running statement and throws its reason. Tests: runner.dbtest.ts.
-import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { join } from "node:path";
+// runBlocks runs the boot blocks first, once, then the rest (each twice with `update`), and hands the runs to
+// record.ts settleResults: against their recorded results (site/learn/labs/checked/<id>.txt), or written once both runs
+// agree and every block passed. An abort cancels the running statement and throws its reason. Tests: runner.dbtest.ts.
 import postgres from "postgres";
 import { statementError, type Statement } from "../build/learn/sql.ts";
-import { CHECKED_DIR, PG_SESSION, type Block } from "./blocks.ts";
+import { PG_SESSION, type Block } from "./blocks.ts";
 import type { Versions } from "./freshness.ts";
 import { dropObjects, labMade, learnObjects, superuserCleanup } from "./leaks.ts";
 import { LAB_SCHEMA, type PgTarget } from "./pg.ts";
 import { planErrors } from "./plan.ts";
-import { lineDiff, renderError, renderResult, rowsOrdered, type Result } from "./result.ts";
+import { settleResults, type Outcome, type BlockRuns, type SettleOptions } from "./record.ts";
+import { renderError, renderResult, rowsOrdered, type Result } from "./result.ts";
 
 /** The runner's sessions' application_name: what cleanup.ts stops on exit, and nothing else. */
 export const RUNNER_APP = "critwire-learn-check";
@@ -202,13 +201,6 @@ export async function openSession(target: PgTarget, signal?: AbortSignal): Promi
     await sql.end();
     throw e;
   }
-}
-
-export interface Outcome {
-  id: string;
-  failures: string[];
-  /** The result as checked/<id>.txt records it, when the block ran as it should. */
-  rendered?: string;
 }
 
 export interface RunOptions {
@@ -548,70 +540,32 @@ async function committedLeaks(s: LabSession, q: string, known: Set<string>): Pro
   });
 }
 
-export interface BlocksOptions extends RunOptions {
-  /** Write the recorded results (each block run twice) instead of checking them. */
-  update: boolean;
-  /** Where the recorded results live (default site/learn/labs/checked). */
-  checkedDir?: string;
+export interface BlocksOptions extends RunOptions, SettleOptions {
   /** Print each block's rendered result (learn:check --module). */
   show?: boolean;
-  log?: (line: string) => void;
   /** Runs once the boot blocks committed, before any other block (learn:check's lab ERD check); a throw stops the run. */
   afterBoot?: () => Promise<void>;
 }
 
-async function readRecorded(file: string): Promise<string | undefined> {
-  try {
-    return await readFile(file, "utf8");
-  } catch (e) {
-    if ((e as NodeJS.ErrnoException).code === "ENOENT") return undefined;
-    throw e;
-  }
-}
-
 /**
- * The page's blocks against their recorded results: the `-- boot` blocks first, once (a failing one throws at once),
- * then `afterBoot`, then the rest in order; with `update`, each of the rest run twice and, once every block passed,
- * each result written where it changed. Throws naming every failure.
+ * The page's blocks against their recorded results (record.ts settleResults): the `-- boot` blocks first, once (a
+ * failing one throws at once), then `afterBoot`, then the rest in order, each of them run twice with `update`. Throws
+ * naming every failure.
  */
-export async function runBlocks(s: LabSession, blocks: readonly Block[], { update, checkedDir = CHECKED_DIR, show = false, log = console.log, afterBoot, ...run }: BlocksOptions): Promise<void> {
+export async function runBlocks(s: LabSession, blocks: readonly Block[], { update, checkedDir, show = false, log = console.log, afterBoot, ...run }: BlocksOptions): Promise<void> {
   const page = new Map(blocks.map((b) => [b.id, b]));
   const raster = rasterGate((text) => s.sql.unsafe(text));
-  const failures: string[] = [];
-  const writes: [file: string, text: string][] = [];
+  const runs: BlockRuns[] = [];
   const one = async (b: Block): Promise<void> => {
-    const q = `q ${b.id}`;
-    const file = join(checkedDir, `${b.id}.txt`);
     await raster(b);
     const first = await runBlock(s, b, page, run);
     if (b.boot && first.failures.length) throw new Error(`boot block ${b.id}: ${first.failures.join("; ")}`);
-    failures.push(...first.failures);
-    if (first.rendered === undefined) return;
-    if (show) log(`learn:check: ${q}:\n  ${first.rendered.split("\n").join("\n  ")}`);
-    const recorded = await readRecorded(file);
-    if (update) {
-      const second = b.boot ? first : await runBlock(s, b, page, run);
-      failures.push(...(b.boot ? [] : second.failures));
-      if (second.rendered === undefined) return;
-      if (!b.plan.length && second.rendered !== first.rendered) {
-        failures.push(`${q}: two runs differ, so its result isn't reproducible:\n  ${lineDiff(first.rendered, second.rendered).join("\n  ")}`);
-        return;
-      }
-      if (recorded !== first.rendered) writes.push([file, first.rendered]);
-    } else if (recorded === undefined) failures.push(`${q}: no recorded result: run pnpm learn:check --update`);
-    else if (recorded !== first.rendered) {
-      const diff = lineDiff(recorded, first.rendered).join("\n  ");
-      if (b.plan.length) log(`learn:check: ${q}: the plan's text differs from ${file} (its assertions hold):\n  ${diff}`);
-      else failures.push(`${q}: result differs from ${file}:\n  ${diff}`);
-    } else if (!first.failures.length) log(`learn:check: ${q}: ok`);
+    if (first.rendered !== undefined && show) log(`learn:check: q ${b.id}:\n  ${first.rendered.split("\n").join("\n  ")}`);
+    const second = update && !b.boot && first.rendered !== undefined ? await runBlock(s, b, page, run) : undefined;
+    runs.push({ block: b, first, ...(second ? { second } : {}) });
   };
   for (const b of blocks.filter((x) => x.boot)) await one(b);
   await afterBoot?.();
   for (const b of blocks.filter((x) => !x.boot)) await one(b);
-  if (failures.length) throw new Error(`blocks: ${failures.length} failure(s):\n${failures.join("\n")}`);
-  if (writes.length) await mkdir(checkedDir, { recursive: true });
-  for (const [file, text] of writes) {
-    await writeFile(file, text);
-    log(`learn:check: wrote ${file}`);
-  }
+  await settleResults(runs, { update, checkedDir, log });
 }

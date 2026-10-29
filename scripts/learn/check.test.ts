@@ -7,7 +7,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { parseBlock } from "./blocks.ts";
-import { forcedFailureLoader } from "./check.ts";
+import { blocksToRun, forcedFailureLoader } from "./check.ts";
+import type { CoursePage } from "./course.ts";
 import { rasterGate } from "./runner.ts";
 
 const COPY = "COPY occurrences (id, species_id, license) FROM stdin (FORMAT csv);";
@@ -77,4 +78,35 @@ test("NR3 checked once per run, before the first raster block only", async () =>
   await gate(RASTER_BLOCK);
   await gate(PLAIN_BLOCK);
   assert.equal(asked.length, once);
+});
+
+// Which blocks a run runs (plan L4 §4.2, finding 3; BF1). Failure modes:
+// - `--module s2` runs s2's blocks without s4's `-- boot` block, so a block reading s4_cells fails only there → every
+//   run starts with the course's ran boot blocks (page order), then the page's;
+// - a boot block on the run's page is listed twice (run twice, its result written twice) → once, first;
+// - an untested boot block is run → only ran ones;
+// - a whole run's list changes → every page's blocks in page order, boot blocks where runBlocks expects them.
+const blockOf = (id: string, head: string) => parseBlock(`${id}.sql`, `-- q: ${id}\n${head}SELECT 1 AS a\n`).block!;
+const ran = (id: string) => blockOf(id, "-- status: ran\n-- engine: postgis\n");
+const bootOf = (id: string, status = "ran") => blockOf(id, `-- status: ${status}\n-- engine: postgis\n-- boot\n`);
+const pageOf = (id: string, ...blocks: ReturnType<typeof ran>[]) => ({ page: { id, file: `${id}.html`, html: "" }, slots: [], blocks }) as CoursePage;
+const COURSE = [
+  pageOf("setup", ran("pg-role-smoke")),
+  pageOf("s2", ran("s2-a"), ran("s2-b")),
+  pageOf("s4", bootOf("s4-cells"), ran("s4-a"), bootOf("s4-later")),
+  pageOf("s5", bootOf("s5-plan", "untested: needs a server"), ran("s5-a")),
+];
+const ids = (module?: string) => blocksToRun(COURSE, module).map((b) => b.id);
+
+test("BF1 a --module run starts with the course's ran boot blocks, in page order, then the page's", () => {
+  assert.deepEqual(ids("s2"), ["s4-cells", "s4-later", "s2-a", "s2-b"]);
+  assert.deepEqual(ids("s5"), ["s4-cells", "s4-later", "s5-plan", "s5-a"]);
+});
+
+test("BF1 a boot block on the run's page isn't listed twice", () => {
+  assert.deepEqual(ids("s4"), ["s4-cells", "s4-later", "s4-a"]);
+});
+
+test("BF1 a whole run's list is every page's blocks in page order", () => {
+  assert.deepEqual(ids(), ["pg-role-smoke", "s2-a", "s2-b", "s4-cells", "s4-a", "s4-later", "s5-plan", "s5-a"]);
 });
