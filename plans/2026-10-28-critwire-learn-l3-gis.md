@@ -2,7 +2,7 @@
 mission: critwire-learn-l3-gis
 project: critwire
 branch: agent/critwire-learn-l3-gis
-status: active
+status: done
 started: 2026-10-28 22:43 UTC
 ---
 
@@ -1288,8 +1288,24 @@ SHOULD-CONSIDER:
 - 2026-10-29 09:55 UTC · S21: `setupLab` refuses a database without `postgis_raster` ("postgis_raster isn't installed in <db>: CREATE EXTENSION postgis_raster there as the superuser, then re-run") before any role change; `serverVersions` names `CREATE EXTENSION postgis_raster` and the database, not `--setup`. red 2 → green 2 (LS6, NR5, on a throwaway `learn_t_` db). T: typecheck ok, test 600/600. L ok (checked.json stamps only, `checked/*.txt` unchanged; dist/learn/data 95,936,992 B). D: test:db 121/121. P: 381 files equal 004. H, HD empty; leak query (+ `learn_%` dbs) empty.
 - 2026-10-29 09:58 UTC · Code review (Astra): `astra-review --code origin/main` exit 0, APPROVE_WITH_CHANGES; MUST-FIX 1 → S22; SHOULD-CONSIDER 1–2 → Summary (see Decisions).
 - 2026-10-29 10:15 UTC · S22: `publishFiles` (`scripts/ingest/publish.ts`); `buildHabitat`, `buildShapes`, `ingestGbifSample` publish through it (copy loops + inline tmp/rename gone); `readLabFiles` sha256 refusal says `git restore data/learn`, unlisted `*.tmp-<pid>` says delete. HR8 (read-only `clips/` after checks pass) red 1 → green 1. T: typecheck ok, test 601/601. B ok (95,936,992 / 18,822,906 B). HD: nothing. Ingest not re-run (HR1 + HR8 cover the path).
+- 2026-10-29 11:00 UTC · Verification 1–9 on `4d46b25`, clean tree: 1 install up to date, venv ok, both `$DL` gone, no download zips (only traces + venv); 2 plain build ok, 95,936,992 / 18,822,906 B (= 004 §4.4); 3 E2E 87/87, 13 specs, 0 skipped/unexpected/flaky, 87 traces (`$M/e2e/`); 4 typecheck ok, test 601/601, test:db 121/121, leak empty; 5 learn:check ×2 exit 0 (16 tables ×2 = manifest, forced failure rolled back, lab ERD, 121 PostGIS blocks equal, 13 downloads' ERROR lines as announced), porcelain empty, canary same, leak empty, versions = checked.json (PG 16.15, PostGIS 3.4.2, GEOS 3.12.1, GDAL 3.8.4); 6 P 381 files equal, result diff = the 4 designed + `g2-bowtie` (moved, same sha) + `g5-geography-index` (EXPLAIN text, S16), g7 windowed + `g7-countries` = S18's sha, stand-in notes + measured numbers = habitat.json; 7 erd up to date; 8 H, HD, manifest diff empty; 9 dist sha256 equal across two builds (246 files).
 
 ## Summary
+
+**Shipped (mission L3, GIS in SQL):** g1–g7 built (004 in full, pages, PostGIS blocks `ran` and recorded, downloads `g1.sql`–`g7.sql`, diagrams `g3-predicates`, `g7-cells`); the habitat map from Jung v004 (`country_habitats` every country, method 3; `occurrence_habitats` one class per sample record; whole-country 100 m clips of Costa Rica and Tasmania as COGs and as 256-cell PostGIS raster tiles in the loader, owner's H5); `pnpm ingest habitat` (Node pins + `rasterio` decode, md5-pinned Zenodo inputs, all-or-nothing staged publication); the `/v1` contract (`contracts/v1.json`, add-only); `docs/recovery.md`; batched `db:load`; the raster gate for `-- needs: raster` blocks.
+
+**Numbers:**
+- Ingest (S18d): 24 min 33 s wall (12 min 26 s Zenodo downloads), peak RSS 3.17 GB; deterministic rerun equal. Σ estimate ÷ Σ outline 0.999074 (−0.09 %) over 247 outlines; no NULL-class records.
+- Clips: `cr` 3,730 × 3,474, 117 of 210 tiles; `tas` 4,131 × 3,318, 173 of 221; 18,761,728 cells kept. `cr.tif` 1,380,611 B, `tas.tif` 1,828,711 B, `habitat_clips.parquet` 1,826,789 B; loader 72,088,315 B (16 tables, ≈ 3.9 s as `critwire_lab`).
+- Cap (120,000,000 each, owner H5): `dist/learn/data/` 95,936,992 B; committed lab data 18,822,906 B.
+- Verification: E2E 87/87 (artifact `/srv/critter-ai/agent-state/missions/critwire-learn-l3-gis/e2e/`: `playwright-report/index.html`, 87 traces, `results.json`, screenshots incl. g3/g7 at 1280/375 light/dark; reproduce `pnpm build && E2E_ARTIFACTS=<dir> pnpm e2e`); test 601/601; test:db 121/121; learn:check twice, 121 PostGIS blocks equal; 381 ported files equal 004; build deterministic.
+
+**Deviations from 004 and the brief** (each under Decisions): clips are whole countries per H5 (superseding the architecture's 0.75° windows, kept as g7's study areas cut by a query); cap 50 → 120 MB (owner); habitat outputs in `data/learn/`, not `data/raw/habitat/`; g7 rewritten for v004's lon/lat grid; `g5-analyze` added so g5's EXPLAIN blocks stand on their own page; `d6-drill-across` limited to AX, TT; designed result changes `pg-smoke`, `d4-xmin-load`, `d6-star-fact-country-habitat`, `d6-drill-across`; `g5-geography-index`'s EXPLAIN text heap blocks 18 → 19 (assertions hold).
+
+**Reviews:** architecture Fable APPROVE_WITH_CHANGES, Astra APPROVE_WITH_CHANGES (MUST-FIX resolved in Revision); code review Astra APPROVE_WITH_CHANGES, MUST-FIX 1 fixed in S22.
+
+**Notes for L4:** a species change now also needs `ingest habitat` (12–25 min) after `derive`; Python blocks (`py-connect`, `py-smoke`) are skipped by `learn:port` until L4; H3 (GBIF sample retention past 2027-04-23) still waits on the owner and blocks nothing; id retirement still needs a replacement junction in Learn's projection.
+
 
 For the owner (Astra code review SHOULD-CONSIDER, not acted on):
 - `scripts/build/contract.ts`: the `/v1` contract compares the writer's declared types, not each JSON value's type (`commonName: 123` would pass). Low risk today (`derive` is typed); worth a value-type check before `/v1` gets another writer.
