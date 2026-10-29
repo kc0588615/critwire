@@ -6,7 +6,9 @@
 //   written; a run with any failed block writes the others (a partial update) → nothing written; agreeing runs of
 //   passing blocks are written once each, an unchanged result left alone;
 // - an update run hands over a block run once (an engine forgot its second run), and passes as if both agreed →
-//   refused (a boot block runs once, by design).
+//   refused (a boot block runs once, by design);
+// - AG (plan L4 §6): an agreement gate's failure is only logged, or still lets --update write → failed with the blocks'
+//   failures, nothing written.
 import assert from "node:assert/strict";
 import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -78,4 +80,12 @@ test("PY9 with update, agreeing runs are written once each; an unchanged result 
 test("PY9 with update, a non-boot block run once is refused", async () => {
   await assert.rejects(settleResults([ran("x", "r")], opts(true)), /q x: --update needs two runs, the engine gave one/);
   assert.deepEqual(files(), []);
+});
+
+test("AG a gate failure fails the run with the blocks' failures; with update nothing is written", async () => {
+  await assert.rejects(settleResults([ran("x", "r", "r")], { ...opts(true), gateFailures: ["agree moran (a vs b): n 1 vs 2"] }),
+    /^Error: blocks: 1 failure\(s\):\nagree moran \(a vs b\): n 1 vs 2$/);
+  assert.deepEqual(files(), []);
+  record("x", "r");
+  await assert.rejects(settleResults([ran("x", "r")], { ...opts(false), gateFailures: ["agree lisa (c vs d): x"] }), /agree lisa/);
 });

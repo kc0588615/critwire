@@ -1,7 +1,8 @@
 // learn:check's one result path for every engine (plan L4 §4.3): each engine hands over its blocks' runs (the first,
 // and with `update` the second; a `-- boot` block runs once), and settleResults compares each with its recorded result
 // (site/learn/labs/checked/<id>.txt) or, with `update`, requires the two runs to agree and writes the results once
-// every block passed. Tests: record.test.ts (PY6, PY9).
+// every block passed. Failures found across blocks (the agreement gates, agree.ts) fail the run the same way.
+// Tests: record.test.ts (PY6, PY9, AG).
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { CHECKED_DIR, type Block } from "./blocks.ts";
@@ -28,6 +29,8 @@ export interface SettleOptions {
   /** Where the recorded results live (default site/learn/labs/checked). */
   checkedDir?: string;
   log?: (line: string) => void;
+  /** Failures found across the runs (the agreement gates): they fail the run like a block's, so nothing is written. */
+  gateFailures?: readonly string[];
 }
 
 async function readRecorded(file: string): Promise<string | undefined> {
@@ -44,7 +47,7 @@ async function readRecorded(file: string): Promise<string | undefined> {
  * `-- plan:` assertions hold); with `update`, a block's two runs must agree, and once every block passed each result
  * is written where it changed. Throws naming every failure, writing nothing.
  */
-export async function settleResults(runs: readonly BlockRuns[], { update, checkedDir = CHECKED_DIR, log = console.log }: SettleOptions): Promise<void> {
+export async function settleResults(runs: readonly BlockRuns[], { update, checkedDir = CHECKED_DIR, log = console.log, gateFailures = [] }: SettleOptions): Promise<void> {
   const failures: string[] = [];
   const writes: [file: string, text: string][] = [];
   for (const { block: b, first, second } of runs) {
@@ -70,6 +73,7 @@ export async function settleResults(runs: readonly BlockRuns[], { update, checke
       else failures.push(`${q}: result differs from ${file}:\n  ${diff}`);
     } else if (!first.failures.length) log(`learn:check: ${q}: ok`);
   }
+  failures.push(...gateFailures);
   if (failures.length) throw new Error(`blocks: ${failures.length} failure(s):\n${failures.join("\n")}`);
   if (writes.length) await mkdir(checkedDir, { recursive: true });
   for (const [file, text] of writes) {

@@ -144,6 +144,7 @@ test("FR7 the checker's closure: learn-check.ts's relative imports, nothing from
     "scripts/env.ts",
     "scripts/json.ts",
     "scripts/learn-check.ts",
+    "scripts/learn/agree.ts",
     "scripts/learn/assemble.ts",
     "scripts/learn/blocks.ts",
     "scripts/learn/cell.ts",

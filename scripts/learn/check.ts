@@ -13,7 +13,8 @@
 //   boot blocks committed, the lab ERD (site/learn/erd/lab.mmd, with its lab-made and planned lists) must match
 //   learn_curriculum's catalog both ways. Then the ran Python blocks, in page order (py-runner.ts, plan L4 §4.4), with
 //   LEARN_BASE the built site under test. Both engines' runs are checked against their recorded results or, with
-//   `update`, written once every block passed (record.ts);
+//   `update`, written once every block passed (record.ts), and the agreement gates (agree.ts: SQL = PySAL) run over
+//   their results, a failure failing the run;
 // - downloads: each assembled lab file (assemble.ts) on a fresh load, as a learner runs it (the loader, then the file):
 //   a .sql through psql -X -f, no ON_ERROR_STOP, whose ERROR lines must be exactly the file's announced errors, in order;
 //   a .py through python.ts runPython (the blocks' environment, its blocks' time), which must exit 0 (plan L4 §4.5, D14);
@@ -24,7 +25,7 @@
 // The lock is held by the cleanup connection (cleanup.ts), which runs no block. An abort (the CLI's SIGINT/SIGTERM)
 // cancels the running psql or block statement. Every exit then removes the temp loader and releases the lock in
 // cleanup.ts's order: stop the run's sessions (recorded, or carrying the run's name here), sweep the lab role's new objects, free the lock; a cleanup failure is
-// added to the run's. Tests: learn/check.test.ts (LC6, BF1 pure), learn-check.dbtest.ts (LC1–LC10, V2, V3, CU1–CU5), runner.dbtest.ts,
+// added to the run's. Tests: learn/check.test.ts (LC6, BF1 pure), learn/agree.test.ts (AG1–AG8), learn-check.dbtest.ts (LC1–LC10, V2, V3, CU1–CU5), runner.dbtest.ts,
 // learn/py-runner.dbtest.ts (PYC1–PYC9).
 import { spawn } from "node:child_process";
 import { createHash } from "node:crypto";
@@ -33,6 +34,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import type postgres from "postgres";
+import { agreement } from "./agree.ts";
 import { assembleDownloads, type Announced, type Download } from "./assemble.ts";
 import type { Block } from "./blocks.ts";
 import { takeLabLock, type LabLock } from "./cleanup.ts";
@@ -323,7 +325,7 @@ async function assertLabErd(s: LabSession, text: string): Promise<void> {
 // blocks are watched against the canary (where it exists) and learn_curriculum; a sessions block's windows are sessions
 // of their own, recorded with the lock too. `labErd`: checked once the boot blocks committed. Then the ran Python
 // blocks (py-runner.ts) in the run's Python environment `py`. Both engines' runs are checked against checked/<id>.txt,
-// or written, together (record.ts).
+// or written, together (record.ts), with the agreement gates (agree.ts) over the first runs' results.
 async function blocksStage(lab: PgTarget, run: Run, blocks: readonly Block[], course: readonly CoursePage[], py: PythonEnvOptions, update: boolean, show: boolean, labErd?: string): Promise<void> {
   const { admin, canarySchema, canaryBefore, lock, signal } = run;
   const pg = blocks.filter((b) => b.engine === "postgis" && b.status === "ran");
@@ -347,7 +349,10 @@ async function blocksStage(lab: PgTarget, run: Run, blocks: readonly Block[], co
   const python = await runPythonBlocks(blocks, course, {
     lab, sql: run.sql, database: run.db, readLab: () => readTables(admin, LAB_SCHEMA, signal), known, ...py, update, show, signal,
   });
-  await settleResults([...runs, ...python], { update });
+  const all = [...runs, ...python];
+  const gates = agreement(new Map(all.flatMap(({ block, first }) => (first.rendered === undefined ? [] : [[block.id, first.rendered] as const]))));
+  for (const g of gates) console.log(`learn:check: agree ${g.gate}: ${g.skipped ? "skipped (a block of the pair isn't in the run)" : g.failures.length ? "failed" : "ok"}`);
+  await settleResults(all, { update, gateFailures: gates.flatMap((g) => g.failures) });
   const done = update ? "run twice, results written" : "equal their recorded results";
   console.log(`learn:check: blocks: ${pg.length} PostGIS and ${python.length} Python block(s) ${done}`);
 }
