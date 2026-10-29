@@ -9,6 +9,8 @@
 //      kept, no password or URL in anything printed.
 // LS5: an existing role and a listed file with no working URL is "fixed" by a silent reset → refused, naming the file
 //      and --reset-password, nothing changed; with --reset-password every listed file gets the new URL, the old fails.
+// LS6: a database with postgis but no postgis_raster is set up, so learn:check's raster refusal sends the learner to a
+//      --setup that changes nothing → refused, naming CREATE EXTENSION postgis_raster, before the role exists.
 // Harness: critwire_lab itself, through the repo .env's LEARN_PG_URL, creates and drops a learn_t_ schema under the lab lock.
 import assert from "node:assert/strict";
 import { randomBytes } from "node:crypto";
@@ -18,7 +20,7 @@ import { join } from "node:path";
 import { parseEnv } from "node:util";
 import { after, mock, test } from "node:test";
 import postgres from "postgres";
-import { testDatabase, withLabSchema } from "../test-db.ts";
+import { testDatabase, withLabSchema, withScratchDatabase } from "../test-db.ts";
 import { libpqTarget, pgConnect, urlTarget, type PgTarget } from "./pg.ts";
 import { setupLab } from "./setup.ts";
 
@@ -167,6 +169,16 @@ test("LS5 an existing role with no working URL is refused unless --reset-passwor
   assert.equal(urlIn(wrong), newUrl);
   assert.deepEqual({ ...(await whoAt(newUrl)) }, { user: role, db: testDatabase });
   await assert.rejects(whoAt(oldUrl), /password authentication failed/);
+});
+
+test("LS6 a database without postgis_raster is refused before any role change", async () => {
+  const { role, schema, file } = await fresh();
+  await withScratchDatabase(["postgis"], async (scratch) => {
+    await assert.rejects(run(scratch, { envFiles: [file], role, schema }),
+      new RegExp(`postgis_raster isn't installed in ${scratch.database}: CREATE EXTENSION postgis_raster there as the superuser, then re-run`));
+  });
+  assert.equal((await adminSql`select 1 from pg_roles where rolname = ${role}`).length, 0);
+  assert.equal(readFileSync(file, "utf8"), "A=1\n");
 });
 
 test("harness: critwire_lab creates and drops a learn_t_ schema under the lab lock", async () => {

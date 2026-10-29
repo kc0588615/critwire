@@ -76,8 +76,9 @@ export interface Watch {
 /** The versions a recorded result depends on (SC6): PostgreSQL, PostGIS and GEOS, as numbers; GDAL's (raster blocks),
  * recorded only. Throws when PostGIS raster is missing: the loader needs it. */
 export async function serverVersions(sql: postgres.Sql): Promise<Versions> {
-  const [{ raster }] = await sql<{ raster: boolean }[]>`select to_regprocedure('postgis_gdal_version()') is not null as raster`;
-  if (!raster) throw new Error("PostGIS raster is missing (the lab loader needs it): run pnpm learn:check --setup as the superuser");
+  const [{ raster, db }] = await sql<{ raster: boolean; db: string }[]>`select
+    to_regprocedure('postgis_gdal_version()') is not null as raster, current_database() as db`;
+  if (!raster) throw new Error(`PostGIS raster is missing in ${db} (the lab loader needs it): CREATE EXTENSION postgis_raster there as the superuser, then re-run`);
   const [v] = await sql<Record<keyof Versions, string>[]>`select current_setting('server_version') as postgresql,
     postgis_lib_version() as postgis, postgis_geos_version() as geos, postgis_gdal_version() as gdal`;
   const number = (s: string) => /[0-9]+(\.[0-9]+)*/.exec(s)?.[0] ?? s;
