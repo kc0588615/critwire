@@ -16,3 +16,4 @@ psycopg[binary]
 SQLAlchemy
 GeoAlchemy2
 requests
+rasterio

@@ -673,7 +673,7 @@ Every step:
   - Record the date, commit, file count and result in `recovery.md` and the Log. A difference: fix it (an absolute path) or document it.
   - Decisions: item 4 done.
   - Check: `T`, `H`, `HD`; `psql -d postgres -XAtc "select datname from pg_database where datname='critwire_restore'"` empty; `git worktree list` without `recovery/wt`.
-- [ ] S4 · venv: rasterio (finding 6; §8 item 4)
+- [x] S4 · venv: rasterio (finding 6; §8 item 4)
   - `site/learn/labs/requirements.in` + `rasterio`. In `site/learn/labs/`: `uv pip compile --universal --python-version 3.12 -o requirements.txt requirements.in` (keeps the pins).
   - `git diff` adds exactly `rasterio==1.5.2`, `affine==3.0.1`, `attrs==26.1.0`, `click==8.5.0` (and their `# via` lines). Any other change: revert and find why.
   - `pnpm learn:venv`, then `.venv-learn/bin/python -I -c $'import rasterio\nwith rasterio.Env() as e: print(rasterio.__version__, rasterio.__gdal_version__, "COG" in e.drivers())'` prints `1.5.2 <gdal> True`.
@@ -1022,5 +1022,6 @@ Each step's isolated cases are its **First** list. What a session does when the 
 - 2026-10-29 00:08 UTC · S1: `$M/baseline-manifest.json` saved (sha f180c320…9565 ok). db:load batched (1000 rows). red 2 → green 2 (B1 unit; B2/B3 db, MAX_PARAMETERS_EXCEEDED before). T: typecheck ok, test 550/550. D: build ok, test:db 111/111. H, HD (strict): nothing changed.
 - 2026-10-29 00:22 UTC · S2: `/v1` contract. red 12 → green 12 (V1–V12, `contract.test.ts`; red = no module). T: typecheck ok, test 562/562. B ok, no "freeze" notices. Proof: scratch `ids.gbif` means edit → `build --draft` and `build` exit 1 with sha hint; reverted. H strict (no exclusions), HD: nothing changed.
 - 2026-10-29 00:25 UTC · S3: `docs/recovery.md` + rehearsal at `6093a23` (worktree, `critwire_restore`, plain build 5.7 s): 224 files, dist = `.live/` sha256; rsync rehearsal equal; cleaned (db dropped, worktree removed). T: typecheck ok, test 562/562. H, HD: nothing changed.
+- 2026-10-29 00:31 UTC · S4: `rasterio` in requirements.in; compile adds exactly rasterio 1.5.2, affine 3.0.1, attrs 26.1.0, click 8.5.0. venv: `1.5.2 3.12.2 True` (GDAL 3.12.2, COG). T: typecheck ok, test 562/562. L ok (75 labs re-proved, `checked/*.txt` unchanged, only `checked.json`). P: 288 files equal. H: nothing; strict: only 6 pages' "Checked" date.
 
 ## Summary
