@@ -396,7 +396,7 @@
         "s1",
         "g6"
       ],
-      "state": "planned",
+      "state": "built",
       "skill": "Quadrats, the nearest-neighbour index, kernel density, DBSCAN",
       "questions": [
         "Are devil records more clustered than chance?",

@@ -6761,11 +6761,17 @@ Golden-rumped Sengi | 1613 | 2021 | 763 | 47.3
 
 **Tool:** PG + Py · **Time:** 2.5 h · **Prereqs:** s1, g6
 
-**Goal:** measure whether points are more clustered than chance, four ways, and see what each assumes. "Chance" is complete spatial randomness: every point falls anywhere in the study area with equal probability, independently of the others, so counts in equal cells follow a Poisson distribution, whose variance equals its mean. **Quadrats** compare the two: a variance-to-mean ratio (VMR) well above 1 means clustered. The **nearest-neighbour index** (Clark and Evans) compares the mean distance from each point to its nearest other point with what randomness gives in the same area, 0.5 ÷ √(n ÷ A): a ratio R below 1 means clustered, and its z-score uses the standard error 0.26136 ÷ √(n² ÷ A). Both depend on the area chosen (ArcGIS Pro's Average Nearest Neighbor uses the points' bounding rectangle unless given one); here it is the main island. **Kernel density** spreads each point over a smooth bump of chosen width, the bandwidth, and sums the bumps into a surface of records per km². **DBSCAN** finds clusters as places where at least `minpoints` points lie within `eps` of each other, and labels the rest noise. Duplicate coordinates matter to all four: many records share one spot (an atlas grid point, a museum's locality), and every method counts them as separate points.
+**Concept:** Are points more bunched together than chance would put them, and what does each way of asking assume?
+- **Complete spatial randomness** is the yardstick: every point falls anywhere in the study area with equal probability, independently of the others. A pattern is **clustered** when points sit closer together than that, and **dispersed** (spread out evenly, like trees in a plantation) when they sit farther apart.
+- **Quadrats** are equal cells laid over the area. Under randomness, the number of points per cell follows a Poisson distribution, whose variance equals its mean, so the **variance-to-mean ratio** (VMR) is close to 1. Well above 1 means clustered: many empty cells and a few full ones. Below 1 means dispersed. The answer changes with the cell size (g6's scale effect).
+- **The nearest-neighbour index** (Clark and Evans) takes each point's distance to its nearest other point and averages them. Under randomness with `n` points in an area `A`, that mean is `0.5 ÷ √(n ÷ A)`. The ratio R of observed to expected is below 1 when points are clustered and above 1 when dispersed; its z-score divides the difference by the standard error `0.26136 ÷ √(n² ÷ A)`.
+- **The study area** is part of every test that compares with randomness: points scattered over an island look clustered if the area includes the sea around it, since no point can fall there. Here it is Tasmania's main island; the exercise shows what other choices do.
+- **Kernel density** spreads each point over a smooth bump of a chosen width, the **bandwidth**, and adds the bumps into a surface of points per km². It doesn't test anything: it shows where the points are dense, and the bandwidth decides how smooth the picture is.
+- **DBSCAN** (density-based spatial clustering of applications with noise) finds clusters as places where at least `minpoints` points lie within a distance `eps` of each other. A point with that many neighbours is a core point; core points within `eps` of each other join one cluster, with the points near them. Everything else is **noise**. It finds clusters of any shape and doesn't need their number in advance, but `eps` and `minpoints` decide what counts.
+- **Duplicate coordinates** affect all four. Many records share one spot: a survey site visited many times, an atlas grid point, a museum's locality. Every method counts them as separate points, so one busy spot looks like a dense cluster.
+- **What clusters?** As s1 showed, the devil's records are mostly one atlas and one museum's samples. Every test below measures how the records bunch, which mixes where devils are with where people looked.
 
-**Data:** `occurrences` (the devil's records), `admin1_shapes` (Tasmania's main island), `s4_cells` (the 5 km and 10 km hexagons).
-
-**Key code:** quadrats: the variance-to-mean ratio of records per hexagon, at both sizes:
+**Worked example:** quadrats. The cells are the equal-area hexagons over Tasmania's main island that g6 drew, at edges of 5 and 10 km. s4 builds them as the table `s4_cells`, one row per cell with its edge (`edge_m`), its number of devil records (`n`) and its centroid (`cx`, `cy`); its first block, `s4-cells`, makes them. Every download of this module runs that block first, right after connecting, so `s2.sql` and `s2.py` work on their own; to run the blocks one at a time, run `s4-cells` once first. The variance-to-mean ratio of records per hexagon, at both sizes:
 
 ```sql
 -- q: s2-quadrats
@@ -6787,7 +6793,10 @@ edge_m | cells | records | mean | variance | vmr
 10000 | 296 | 1990 | 6.723 | 934.23 | 139.0
 ```
 
-The nearest-neighbour index for the records inside the main island, counting every record and then each distinct location once. `<->` with `LIMIT 1` finds each point's nearest other point (g5):
+At 5 km the 1,094 cells hold 1.803 records on average, with a variance of 115.68: the variance is 64.2 times the mean, where randomness gives about 1. At 10 km the ratio is 139.0. `var_samp` is the sample variance (dividing by `n − 1`); the ratio grows with the cell size because larger cells gather more of each cluster into one count, as in g6.
+
+**Lab:**
+1. The nearest-neighbour index for the records inside the main island, counting every record and then each distinct location once. `<->` with `LIMIT 1` finds each point's nearest other point (g5); `DISTINCT ON` keeps one record per pair of coordinates:
 
 ```sql
 -- q: s2-nni
@@ -6837,7 +6846,9 @@ every record | 1784 | 1109 | 985.8 | 3000.5 | 0.329 | -54.3
 distinct locations | 913 | 0 | 2298.4 | 4194.3 | 0.548 | -26.1
 ```
 
-DBSCAN with `eps` 2 km and `minpoints` 20 (ArcGIS Pro's Density-based Clustering, DBSCAN method). `ST_ClusterDBSCAN` is a window function: it gives each point its cluster's number, or `NULL` for noise:
+Counting every record, 1,109 of the 1,784 records on the main island sit on exactly the same spot as another record, so their nearest-neighbour distance is 0. The mean distance is 985.8 m where randomness gives 3,000.5 m: R = 0.329, z −54.3. Counting the 913 distinct locations once, R = 0.548 (z −26.1). Both are far below 1, so the records are clustered either way; the duplicates make it look twice as strong. A z-score below −1.96 means a mean distance this small would happen by chance less than 5 % of the time.
+
+2. DBSCAN with `eps` 2 km and `minpoints` 20 (ArcGIS Pro's Density-based Clustering, DBSCAN method). `ST_ClusterDBSCAN` is a window function: it gives each point its cluster's number, or `NULL` for noise:
 
 ```sql
 -- q: s2-dbscan
@@ -6876,7 +6887,9 @@ clusters | clustered | noise | largest | one_location_clusters
 10 | 871 | 913 | 357 | 1
 ```
 
-Kernel density in Python (scikit-learn), a Gaussian kernel with a 5 km bandwidth, read at the 5 km hexagons' centroids. The density comes out per m² and sums to 1, so it is scaled to records per km²; summed over the cells it should give back roughly the records in them:
+DBSCAN finds 10 clusters holding 871 records and calls 913 noise; the largest cluster holds 357 records. One "cluster" is a single location repeated 20 times or more: by DBSCAN's rule, 20 records at one spot are 20 points within 2 km of each other. `count(DISTINCT (ST_X(geom), ST_Y(geom)))` counts a cluster's distinct locations. Change `eps` or `minpoints` and the clusters change; neither has a right value, so report them with the result.
+
+3. Kernel density in Python (scikit-learn), a Gaussian kernel with a 5 km bandwidth, read at the 5 km hexagons' centroids. The coordinates are in metres, so the density comes out per m² and sums to 1 over the plane; multiplying by the number of records and by 10⁶ turns it into records per km². Summed over the cells it should give back roughly the records in them:
 
 ```python
 # q: s2-kde
@@ -6921,7 +6934,73 @@ densest cells: id | records in cell | records per km2
 916 | 45 | 0.787
 ```
 
-**Expected:** every test says clustered, and duplicates inflate every one. The quadrats' variance is 64.2 times the mean at 5 km and 139.0 times at 10 km (1 for random). Inside the main island, 1,109 of the 1,784 records sit on exactly the same spot as another record, so their nearest-neighbour distance is 0: R = 0.329 (z −54.3) counting every record, R = 0.548 (z −26.1) counting the 913 distinct locations once; both far below 1. DBSCAN finds 10 clusters holding 871 records and calls 913 noise; the largest holds 357 records, and one "cluster" is a single location repeated 20 times or more. The kernel surface peaks at 2.12 records per km² over cell 917, the cell with 256 records (s4's `max_n`); summed over the 1,094 cells of 64.95 km² it gives back 1,895 of the 2,000 records (the rest spill into the sea or lie off the main island). Clustered means the records bunch together; s1 says why: they were recorded by a few teams, at places they returned to.
+The surface peaks at 2.12 records per km² over cell 917, the cell with 256 records (s4's fullest). Cells 947 and 948 come next with far fewer records of their own (42 and 49): they border cell 917 and each other, so the bumps from its records spill into them. Cell 888, with 111 records, ranks only fourth: apart from cell 917, its neighbours hold 6 records between them. Summed over the 1,094 cells of 64.95 km², density times area gives back 1,895 of the 2,000 records; the rest spill into the sea or lie off the main island. `score_samples` returns the logarithm of the density, hence `np.exp`.
+
+**Result:** every test says clustered, and duplicates inflate every one. The quadrats' variance is 64.2 times the mean at 5 km and 139.0 times at 10 km (1 for random). Inside the main island, 1,109 of the 1,784 records sit on exactly the same spot as another record, so their nearest-neighbour distance is 0: R = 0.329 (z −54.3) counting every record, R = 0.548 (z −26.1) counting the 913 distinct locations once; both far below 1. DBSCAN finds 10 clusters holding 871 records and calls 913 noise; the largest holds 357 records, and one "cluster" is a single location repeated 20 times or more. The kernel surface peaks at 2.12 records per km² over cell 917, the cell with 256 records (s4's `max_n`); summed over the 1,094 cells of 64.95 km² it gives back 1,895 of the 2,000 records (the rest spill into the sea or lie off the main island). Clustered means the records bunch together; s1 says why: they were recorded by a few teams, at places they returned to.
+
+**Exercise:** The nearest-neighbour index needs an area, and `s2-nni` used the main island. For the 913 distinct locations, compute R and its z-score with four areas: the main island, the rectangle around the locations along the axes (`ST_Envelope`), the smallest rectangle around them at any angle (`ST_OrientedEnvelope`), and their convex hull (`ST_ConvexHull`, the smallest shape with no inward bends that holds them all). Show each area in km². How much does the area change R, and which area answers the question?
+
+**Answer:** `s2-nni`'s distinct locations, one observed mean distance, and four areas. `ST_Collect` gathers the locations into one geometry so each shape can be built around them; since the locations are distinct, `NOT ST_Equals` leaves out only the point itself:
+
+```sql
+-- q: s2-ex
+-- status: ran
+-- engine: postgis
+WITH island AS (
+  SELECT (part).geom
+  FROM (SELECT ST_Dump(ST_Transform(geom, 3577)) AS part
+        FROM admin1_shapes WHERE country_code = 'AU' AND name = 'Tasmania') AS parts
+  ORDER BY ST_Area((part).geom) DESC
+  LIMIT 1
+), locations AS (
+  SELECT DISTINCT ON (ST_X(g), ST_Y(g)) g AS geom
+  FROM (SELECT ST_Transform(o.geom, 3577) AS g
+        FROM occurrences AS o JOIN species AS s ON s.id = o.species_id, island
+        WHERE s.scientific_name = 'Sarcophilus harrisii'
+          AND ST_Contains(island.geom, ST_Transform(o.geom, 3577))) AS devils
+  ORDER BY ST_X(g), ST_Y(g)
+), observed AS (
+  SELECT count(*) AS n,
+         avg((SELECT ST_Distance(a.geom, b.geom) FROM locations AS b
+              WHERE NOT ST_Equals(b.geom, a.geom)
+              ORDER BY a.geom <-> b.geom LIMIT 1)) AS observed_m,
+         ST_Collect(geom) AS points
+  FROM locations AS a
+), areas AS (
+  SELECT 'main island' AS area, ST_Area(island.geom) AS area_m2 FROM island
+  UNION ALL
+  SELECT 'bounding rectangle', ST_Area(ST_Envelope(points)) FROM observed
+  UNION ALL
+  SELECT 'smallest rectangle', ST_Area(ST_OrientedEnvelope(points)) FROM observed
+  UNION ALL
+  SELECT 'convex hull', ST_Area(ST_ConvexHull(points)) FROM observed
+)
+SELECT a.area, round((a.area_m2 / 1e6)::numeric) AS km2, o.n,
+       round(o.observed_m::numeric, 1) AS observed_m,
+       round((0.5 / sqrt(o.n / a.area_m2))::numeric, 1) AS expected_m,
+       round((o.observed_m / (0.5 / sqrt(o.n / a.area_m2)))::numeric, 3) AS r,
+       round(((o.observed_m - 0.5 / sqrt(o.n / a.area_m2)) / (0.26136 / sqrt(o.n ^ 2 / a.area_m2)))::numeric, 1) AS z
+FROM areas AS a, observed AS o
+ORDER BY a.area_m2 DESC;
+```
+
+```text
+-- result: s2-ex · 4 rows · sha256 ff1aa0fff429
+area | km2 | n | observed_m | expected_m | r | z
+bounding rectangle | 100881 | 913 | 2298.4 | 5255.8 | 0.437 | -32.5
+smallest rectangle | 95274 | 913 | 2298.4 | 5107.7 | 0.450 | -31.8
+convex hull | 70537 | 913 | 2298.4 | 4394.9 | 0.523 | -27.6
+main island | 64246 | 913 | 2298.4 | 4194.3 | 0.548 | -26.1
+```
+
+**Check:** The observed mean is 2,298.4 m in every row, as in `s2-nni`; only the expected distance changes, with the square root of the area. The main island (64,246 km²) gives R 0.548 and z −26.1, the convex hull (70,537 km²) 0.523 and −27.6, the smallest rectangle (95,274 km²) 0.450 and −31.8, and the rectangle along the axes (100,881 km²) 0.437 and −32.5. Same points, four answers: every area says clustered, but the rectangles add 31,000 to 37,000 km² of sea, where no devil can be recorded, and that empty space alone makes the points look more bunched. The island is the area a record could fall in, so it answers the question best; even then it includes mountains and forest nobody visited, so R below 1 still mixes devils with recording effort. ArcGIS Pro's Average Nearest Neighbor uses a rectangle around all the points when it isn't given an area, so give it the island's.
+
+**Dialects:**
+- **PostgreSQL:** `var_samp` divides by `n − 1` and `var_pop` by `n`; `variance` is `var_samp`. `ORDER BY a.geom <-> b.geom LIMIT 1` uses a GiST index when the column has one (g5); `devils` here is a CTE with no index, so each subquery measures every other point, which 1,784 points still allow. `ST_ClusterDBSCAN(…) OVER (PARTITION BY species_id)` would cluster each species separately; `ST_ClusterKMeans` and `ST_ClusterWithin` are other window functions for grouping points.
+- **DuckDB:** `var_samp`, `var_pop` and `variance` work as here. The `spatial` extension has `ST_Envelope`, `ST_ConvexHull` and `ST_Distance`, but no `<->`: find the nearest point with `ORDER BY ST_Distance(a.geom, b.geom) LIMIT 1`, which measures every pair (g5). It has no DBSCAN; use scikit-learn on the exported points.
+- **SQL Server:** `VAR` is the sample variance and `VARP` the population one. The nearest point is `SELECT TOP (1) … WHERE b.geom.STDistance(a.geom) IS NOT NULL ORDER BY b.geom.STDistance(a.geom)`, which a spatial index can serve (g5). `STEnvelope()` and `STConvexHull()` build the areas; there is no DBSCAN or kernel density built in.
+- **scikit-learn:** `KernelDensity(bandwidth=…, kernel=…)` also offers `tophat`, `epanechnikov` and others; the bandwidth is in the coordinates' units, so project to metres first. `sklearn.cluster.DBSCAN(eps=2000, min_samples=20)` on the same projected points gives the same 10 clusters, 871 clustered records and 913 noise as `ST_ClusterDBSCAN`: both count the point itself toward the minimum. A point within `eps` of two clusters can join either, depending on the order the points are read.
+- **ArcGIS Pro:** Average Nearest Neighbor (`arcpy.stats.AverageNearestNeighbor`): Distance Method `Euclidean`, Area the island's in square metres (without it, a rectangle around all the points); it reports the observed and expected mean distances, the nearest neighbor ratio, z-score and p-value. Density-based Clustering (`arcpy.stats.DensityBasedClustering`): Clustering Method `Defined distance (DBSCAN)`, Minimum Features per Cluster `20`, Search Distance `2 Kilometers`. Kernel Density (`arcpy.sa.KernelDensity`, Spatial Analyst): Search Radius, Area Units `Square kilometers`, Output Cell Values `Densities`. Its kernel is a quartic one that reaches zero at the search radius, not a Gaussian, so its surface doesn't equal scikit-learn's even with the same width.
 
 #### s3 · weights
 

@@ -1,0 +1,6 @@
+-- result: s2-ex · 4 rows · sha256 ff1aa0fff429
+area | km2 | n | observed_m | expected_m | r | z
+bounding rectangle | 100881 | 913 | 2298.4 | 5255.8 | 0.437 | -32.5
+smallest rectangle | 95274 | 913 | 2298.4 | 5107.7 | 0.450 | -31.8
+convex hull | 70537 | 913 | 2298.4 | 4394.9 | 0.523 | -27.6
+main island | 64246 | 913 | 2298.4 | 4194.3 | 0.548 | -26.1

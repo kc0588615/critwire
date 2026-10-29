@@ -1,0 +1,9 @@
+-- result: s2-kde · python · sha256 130460cdd472
+records: 2000  cells: 1094  cell area: 64.95 km2
+density x area, summed over the cells: 1895 records
+densest cells: id | records in cell | records per km2
+917 | 256 | 2.123
+947 | 42 | 0.989
+948 | 49 | 0.880
+888 | 111 | 0.809
+916 | 45 | 0.787

@@ -513,6 +513,26 @@
       "key": "06bfbbf7affbbc8b88b0ae713d8d39f63a143dff8661ea8daf9469c7e6886f2d",
       "result": "30cc73402f30bb52427550ac76af6e42e9182f6a75489ed0fa104b8914860313"
     },
+    "s2-dbscan": {
+      "key": "7e07af85ca590f5370d1ebf49e5c586c53c51c4032e81d22dbc97f6fbfbf9888",
+      "result": "5f9698cba6e17769cc675441ec81af01c17cd7a1bfde73a08a98e14b9cb7b068"
+    },
+    "s2-ex": {
+      "key": "5d6f8cc33eee982c51b408806e1b8d7c2d3b7b7df456ce87f094ce135306d8b5",
+      "result": "1078aadfa6d604ef6a45a20543a017c7c13daaf46126f9255bed48f99b605b13"
+    },
+    "s2-kde": {
+      "key": "4a5fd1f7563ce1830613c3ec5c214f7e86d83b4440047a656f45b339334b79cb",
+      "result": "5325acd48f8959155c2ba9d93b895205e719c4a69f58fb6a742b4c2baa25319d"
+    },
+    "s2-nni": {
+      "key": "e129fc0913bb1cb019a3f077e211f1448fc3440ce786c1ec628568ccbe7090c4",
+      "result": "8bedbc687e3b9b6f67777f852d69e211b6c6e975e8e578dac4d3f677e4755906"
+    },
+    "s2-quadrats": {
+      "key": "39ed954a5367671ac8f2bf186b6c6fa134d3488ec480aaf04e498ac0f4ed4455",
+      "result": "b8dda50434f053976b8a8d774e7d47ca9fc6004d936894c2e0a56dd4cef87825"
+    },
     "s4-agree": {
       "key": "5d8c29dd390386f8743bc6f7afaee11e09453ae8845d4b03bc2b744774f0bde3",
       "result": "58cccb30180fee8ead205db9cc73df75d76fb58a0310bd6088009bb340607370"
@@ -557,6 +577,8 @@
     "g7.sql": "97421e93a186f78dcaf5050ff1d6d41096fb4f1286880b5cecb43c89210089fb",
     "pg-checks.sql": "348691fbefd3b6c0400e7edfd3a3aaf4f767b186c1a6bcbe2f2ad021cb5607fd",
     "s1.sql": "fffbbb3a0ff9128446a13ac5d3bc23929f8f58ba72e1eb26459824f0cb6f19b8",
+    "s2.py": "8aedcd8347143cadd1d7c138f65cfd6c9a8abb1d6ac371d2690b2d2a5653b166",
+    "s2.sql": "abc2d1bd4d136e2960a43ea6f860d05e4ebd7b478be12f009f8bda6f343b9c9f",
     "s4.py": "65b7fc37ddc3225f348883cb88fdb72d696ed64e4115aa096056c08d5be1b2a8",
     "s4.sql": "5b485d76d0fea6d3e9a43d0779b95c471501bd8680abf1afd27045bbd3596ed2",
     "setup.py": "b40bb61f840f9b42a029df58b8debd131fb2b8c3963d10938beefcb36d8af08b"

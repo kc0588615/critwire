@@ -1,0 +1,4 @@
+-- result: s2-nni · 2 rows · sha256 0c88009e49e6
+points | n | zero_m | observed_m | expected_m | r | z
+every record | 1784 | 1109 | 985.8 | 3000.5 | 0.329 | -54.3
+distinct locations | 913 | 0 | 2298.4 | 4194.3 | 0.548 | -26.1
