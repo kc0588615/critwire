@@ -10,504 +10,532 @@
   "checked": "2026-10-29",
   "blocks": {
     "d1-fk-delete": {
-      "key": "376a6007041ceaccef9678289fc5d6027c942ec6944662a13dce5a88f1b93276",
+      "key": "8f4b57cd0bca15396a03e6ba59ff10492a8b529f55255e47e66c6614ba6c6efa",
       "result": "1800c7d20a3b95c6db5edba92d2c894692df3633a443cacbc6b2a59a7283dbb7"
     },
     "d1-fk-index": {
-      "key": "b9a4b88da7136e4e442d851bb849f7a8338e2a95c12ac275b574fd39abbb8360",
+      "key": "debd1f9c97d714676c806d4b6362c16b1432304c178d30671435e72d37cb86a0",
       "result": "ad334efd04007557cdae53bb46e2070c4947dd49e93e9081e9e766b9405d5ccd"
     },
     "d1-fk-wrong": {
-      "key": "437b6c5c940cf654d7e0fa03c7b3700c6c1ad3df00a441b5ec55843978446e38",
+      "key": "2066cc72d185e8f896cccea19f3ce0812b30ef4cd19265565bcdcec8f018acdb",
       "result": "adad4628f4324f2e15923ec01bbce5df43db16d4a9da3b646a259920dcc857aa"
     },
     "d1-generated": {
-      "key": "84bc7f4f9e45e87f28fdceedcda5351fa3fcf6fd9f7fa962b4d78922a14443a4",
+      "key": "a0ba5921cd9502f929b7129114f47864a039072fe0ec5919d6089123528fe692",
       "result": "2373d0eff2874edf338dca0b5b5e0206d91f908f22888d6fbad20d11f0f3e1e6"
     },
     "d1-generated-write": {
-      "key": "a45914a5909eb2b767efa7aaca94772dcd1584d4b05c9f97969d7a8b9a86cd87",
+      "key": "0aeaeaebe70ffdaad2d2bb7115d4502eb9fae2818de77b16629830a0df80bb4d",
       "result": "8a147712de5e1029f90715dc3b99811db3480000161d1dfb03593eec06f33961"
     },
     "d1-identity": {
-      "key": "c024b0a20dca50b6adc86880ca59c737233f4256e9ae3aff3baad5917be5bc75",
+      "key": "a2ee773ace2fe58e1252510149d327e1d4c01c283ec81ccf3a07d30f5c876b2a",
       "result": "41ead819377541f87b6577360b8f253dc7c3935489ff358b13716ca5d9a284ec"
     },
     "d1-identity-twice": {
-      "key": "7948cc92eb4206a5c539ec0a320ce1536b8feb69fd2bdfb4aafe2e1ae6c3fdaf",
+      "key": "5723a3d2cba3845f376b097e0fde66bc943576128d31d315b6e231cdf805dc4f",
       "result": "a566de24ae66faf2a39041696c1654868d0d1e9ec5501a1a8b7bd71b0fd1a2aa"
     },
     "d1-rank-fk": {
-      "key": "7f3d21d66d407b411d822045085c17c3918a48c1f1f8608acf222c772bd0e17f",
+      "key": "4e8b20896acfa9a706e27502bda862bc673f91bf160c0d6e04e19319bcb7c2dc",
       "result": "83b219e8a5532e73280e09568ff227b238aa86f277a84d5e6413907bce97237e"
     },
     "d1-rank-wrong": {
-      "key": "85e8779685d89ea1219f143258724fddf680402fa8744eb19a963bcb4dd6f9e6",
+      "key": "a4269dc70322abb277bfbd59ab996ce155dd88c4faa013f861506e444c2c7720",
       "result": "1d662786354848958474a67009fd719dd5346cd6fff9cd50a84a9e3ff47f1ff1"
     },
     "d3-analyze": {
-      "key": "0db71049b6783b48a2442d66e0d2e1da9b14c2818580e3e8ee50f6697464b250",
+      "key": "28d5166225e0e9e4b59640fe16ffff36b16ff0b765f74c83b40a7eddb892553a",
       "result": "3ca4297f2cdbc4f767c225d5eb4132a868a8a5648e93bb2bdfd7415a1efe96c4"
     },
     "d3-brin": {
-      "key": "78ce60c851c60fe14d4bcfe99625974a055c48bd9a0aeaf8c870d0f8eb4b9d5d",
+      "key": "e853a885215c68be4b62bc75147c9fcf6d1c223990a61564c92d1bcae1973a82",
       "result": "6cf55c397414b68df6363c568f71ab4e221545759fac18a1f307d0600b26c76b"
     },
     "d3-brin-sorted": {
-      "key": "585f03d0c9a4505def8d779a6aa82af81f88fb246dbc0fb4517d07841ba7e08d",
+      "key": "742f5d6225b23fa7f6920c8fd0e3f9a353b84b17f8c817cf62fbcec9124cb17e",
       "result": "696f1791afa4d1a4a19fac94b8db5e0a66180aaa7d1185b3e6da297f6f9e817a"
     },
     "d3-btree": {
-      "key": "7ca5c9c62e6de41c703e1043f02ae74f723cb5cc0e7c30bea255dbb9c42c71a1",
+      "key": "50e9f7cfd70de397615e5bc07ca90771f8767f917b10be1870d4e44781c6f079",
       "result": "c740be26a59390d4926091ab8d9cfe2165a7f8f4b66fc3991fb2ad32290889c7"
     },
     "d3-distance": {
-      "key": "6f6d69ec622dd6c57af6bfe75da3d380ede267f686a8d1f4d4be232c465f5b93",
+      "key": "0ff11aa64d0a288d39ba7b284333e399af17d0dcf2207aa7b59b2e5fc34f6cdf",
       "result": "e24c4958624f66c8c72fd96b75de57fed2b181f02bcdaf9aa4debf92c8d6598f"
     },
     "d3-dwithin": {
-      "key": "fd734c90dc29ffe606190dc68d09a344f39f155dda8ba61b061bb28f4d0cf3fc",
+      "key": "0e8953119288caca990f4a671605034e5586ef61e0aaf53e186e0e4a093fcfd9",
       "result": "e10d953612cf1cab3298767ac9207417cfb524651c650e31764b3e743d428d1a"
     },
     "d3-ex": {
-      "key": "b639f593c4a8aeaed8672915117592a90c661c77a9cfd43192d10ea0d814a662",
+      "key": "0ac2ce1c70474ad98cfb599ec0a33b6044ba4af222c5e1bf79ee8d5d576d86a5",
       "result": "ff289bb2c4bd7f04db38f9253af884d560fb01a4bb5951d365a8e317f2da3ee6"
     },
     "d3-ex-before": {
-      "key": "3ece1f71d4d0e3fa2ec2f714f774abbb8e76c46a138aca9c0a0150c369e4a7d7",
+      "key": "9b917df3a9c4f99b65faea681659c1bc9b8a2e56f40b0ff542e62fd641a37fde",
       "result": "476199821883219b691c52af2575b9fef6a9b0e0b123f98173abfabe96627cf8"
     },
     "d3-ex-rows": {
-      "key": "4fbdccc501ad329fc9ce2e008f4d2b5ad2b632a1677ffda874c48a06c46dea6e",
+      "key": "c44c545a0cb9b414a769413e0b44a2a4cbcafe376c0c2568e6dc1c114295e2f7",
       "result": "d556ae586df987fd55816ac5dc7d7461706958045f3b4fc275df899773b5ed4b"
     },
     "d3-extended": {
-      "key": "4e3885ea9f11ff0ca2f4dc0cece9cb31ec34947bc36e37a31eadb54f4bf55144",
+      "key": "ca263315c952f2c1db61811f76d8a5b1300e52cd55ef650921760a4f57767c0b",
       "result": "b41eecc20906346dbfa7fae967b745d47e11e6fda8f6b92aa63499106e383088"
     },
     "d3-few-rows": {
-      "key": "4f1b3e59e996208e6c82326bddfa0f2a1c913002d5084918ebfda41ebede8aa9",
+      "key": "0dd889accd99d9a9aac96f0adc52f90e8d0b21c36f007efad520e33f58a32d46",
       "result": "0273eb1c84f7b4f5df1b8ac75846a179c29a07d85ae3ef37a83c9e9231b2e686"
     },
     "d3-function": {
-      "key": "c2f024daa3d03775e25ce224eae6ed3359163617ae5b2f8712f231199f460f45",
+      "key": "c208b04ee324b60e2d54672bc9d95327427cbffddb2aba04588e91c5ef96fd7e",
       "result": "21efb11c9c46760396c8b5cbdd6a5b1ca44bb1935a71a2c676280916c7f5e4ba"
     },
     "d3-gist-join": {
-      "key": "2766d70e0dee2c36d1854ad171fbc6f61a208bce84e69a6e31fbff2cce9cc08b",
+      "key": "63a760b84668a04bb6b97a11b9392e242bf3f9a04b039efa0a26b2edbdbe03b3",
       "result": "6a2379fdb08ebdd415b1f9666d34e637a2f70c2589517756463b7b1f287a5334"
     },
     "d3-independent": {
-      "key": "4b18dee5718fa6187eed7b63718840b8cc1bb47235442c4f7d075fd201b20cb8",
+      "key": "6fd8cfb7f767c54dd6f8ef2683922089835e9b08940dee6974d5716fc8c4d632",
       "result": "30045970e5282fe6edef06345c6d7d086919fb577a395ad3d0ec534903005915"
     },
     "d3-join-index": {
-      "key": "dff2b284c136e4079b46c93636b082ce153ca388f06b091c738a74fde7eaba58",
+      "key": "599b25edace40be572afbcdc69565d5c42495f66f163132039f84c32261a91c1",
       "result": "e5f7d6d9f916a8c9e521a07bda798fd4556729fa5f65d0045713e8f714e3a48a"
     },
     "d3-join-seq": {
-      "key": "beb1f2ffe81995bf2dc00757f545595be70eb21226ee7d7aa9e2a393bd7a7e83",
+      "key": "e397db51eedcb39e738b66a1c0ca04fbe620e6832b127c1fab29879992810195",
       "result": "20522b1eed56fb2622c23c4a3df4758b5de47e825c6ec8b7aea149670ae4bffc"
     },
     "d3-many-rows": {
-      "key": "530a4f0332260e4ef4833e9f26ac6429f1d7e58abfbdb6259c77990faa5f9dc2",
+      "key": "9c2227d53e315a48b2a21995ffadfb656ccce80bdadbf89efd120bd4da682764",
       "result": "2a7b35f5ab16cbc5616c885958f3a9106c023d4453945184f35769cea6bcb444"
     },
     "d3-mcv": {
-      "key": "f981f74e77ffa4782f5d493e2d8d4ed83ef6a357b82f0097da20f01210aa832a",
+      "key": "65f342e0005b2615ba80607dc5776942ad0ba6a856ddefc95ef626ebb625d977",
       "result": "f7f0361a5041f80c18de5cb466e83e9e2b31f94c993c9366393addfb810e5a8d"
     },
     "d3-range": {
-      "key": "464ab3758c2939be13cc108c11df70b00ec4642c1f597daa144e35539b0e633c",
+      "key": "8225562c338d6b5a0813aa91ae6ba85b604899ecce799cd700e80db06db2531d",
       "result": "d0bfbe9fc56c30843396c9f613f36e54f8792a497e567b7311f5481a90e125c6"
     },
     "d3-second-column": {
-      "key": "87b5d60895d51c2fd80f992f9399e2de6e579d3afe47e139b6a7be9e4cdd2c43",
+      "key": "b56be4b28486a8f83c4a6d83ca1861efddee74e27aeeb9aaf964e42a347ff740",
       "result": "2331b217080560d9527adfc0fbd9787478a704c6d77526e974a050c8d5e1b130"
     },
     "d3-seq": {
-      "key": "1efd45bff375674b62da99d9445cfdf57db231142958b702cebfa2209654f097",
+      "key": "b1e9e3a0d0c6af6741163ae1f95a201943dbab279cedd8ad82a112cf960434a6",
       "result": "645cea45010824b521673629e748bf3313dfbded835186f33bfcc7502d64215a"
     },
     "d3-sizes": {
-      "key": "ca852d0e153a5e827f29339c73d66be455a60871dbca68028e101cb6ce3e796c",
+      "key": "70674360de1479d939d53c2cb5818896865e7dbef368c6b187fd3e7d721b533b",
       "result": "1fc4eed9b60445fdc7123dca55ff02c3a069ceaf34f99ba1de82527f0615c170"
     },
     "d3-stats": {
-      "key": "1ff04b76ea6cf9de18e17f212cb07756adcc64902c6fb3ae547ad3f12cbc5429",
+      "key": "7b69d192bc22238818ea6771f553397bbf3d5c5315753af4ae8693920fa28b9d",
       "result": "6c3e6ded4908d4ac48037f477b596a11b836058435bdf89fa85d1ab124713942"
     },
     "d3-two-columns": {
-      "key": "228fb2b69e4cdf731c845172f8f360596c8451c345698c48d00156240fb57bfe",
+      "key": "b96cdfcabc419be64fca774b517fa12e4dc445fbe12985f10ad1b5bb23a0f33f",
       "result": "0fb91750f60654b86f91f5cbc634f0c86271b7e4d34869b879215701a94d2930"
     },
     "d4-autocommit": {
-      "key": "dfb24b4c574c8a98b0e00a528034d56836016826225fe6044369add99814fd65",
+      "key": "c738e7feb205471df8ff21cdb547620069a94dcb957c20ee354547c181c21017",
       "result": "bdc394b25ed627505b31a3a60449d59219052102ac2bbb0cb32e8f6bc339612a"
     },
     "d4-do-nothing": {
-      "key": "21857a943f000dae72027c17fab24a517eb5d9fbea4ce4efd464fec0aa3662d6",
+      "key": "e902ed22f4541f9e4088debe12c6cb5f8822c663ffa06be1e0082dd93b9238dd",
       "result": "726fd6abffe6687889a8880403e255545cbd3be67a829abcb71ad749307c007e"
     },
     "d4-do-update": {
-      "key": "6504ff1abf61761b1c20e0b2581deeb3bf1c157d1d9c10857dfce8b99bd27ff1",
+      "key": "b489546627f8710c58439fb4846e9a2885f76c0364ef49d9594fa1974e2b4ebc",
       "result": "108c31acb01757b3a738d14a29c42d12c6b2ce13385da06c4dc5f109fe27ec16"
     },
     "d4-ex": {
-      "key": "695607ba7bcebf7e6aadf53dc797481da7ddc419c25920b2e70255e9382a20d0",
+      "key": "266e111bbc111aeac8efdcfbc7bb10c3817b3e9a1c304ecc4b0475560658d54f",
       "result": "f582c43a6dcf2af906879a6b28744fe1c0197e6a0d0707351109a18eedd97404"
     },
     "d4-feed": {
-      "key": "cd8eb00fe6b78693b1d7efff9429fe16cfcc46b6bdf2e7fc75cdee630635e529",
+      "key": "4af2fa621eeb83696cf75fd1d3f6e6b8d2b609e5ea88c1284c025461b9cd1ab4",
       "result": "b9ba87bd089a35c032d103407cad2b1bec8b6808db8f74b4208b6d3a8442a6bd"
     },
     "d4-isolation": {
-      "key": "7ef3027a056aa80aa00ab37509f35eeec6f812cde6f1c0e483fa4381d30a97c7",
+      "key": "180a432bb02faba802d9c3f7d7b1cefd984ff1829103657ae6f5d5f3142f8cec",
       "result": "8baf348f1529b1e5c85879edca2798158aeb8bc9019681bdb8b0e43b0f7b5423"
     },
     "d4-locks": {
-      "key": "e3c753ba97a8437973ddcc178889cac79593c27ce5ae7812d3b3592088554f1e",
+      "key": "61a9c11e810b7e30ac1125267190c6118233e2e597cae6c31a9b630a8dec49a2",
       "result": "be5ddb8c8630af088883e4621d1839b874947c59ae58d01a804ecd9652280a0a"
     },
     "d4-no-arbiter": {
-      "key": "402530b85711a56ed953540865dec5981845f1e6ce2283737b180b35aa43056d",
+      "key": "b8293809a9821719ffa5df8232fdbf18ab62b885dc64b5df0ea446436661ab33",
       "result": "db840f750d5a37fc04c5e1ff15512f979445a48c8f41b3317852dc490f5748d4"
     },
     "d4-one-transaction": {
-      "key": "2bbbaa003fc3050301fbda8da3f6b47328bf421c61adef1ed523a1a0b77dbdb7",
+      "key": "487995935744508a65d3ee13ca74784fcb247dfba02bb33169c9a91675a4d215",
       "result": "0dc3881ca0c1967c1d3144157ed6dce0ef1a3c7578b48a6228a013f4effadd63"
     },
     "d4-replace": {
-      "key": "3ea224e9fca4b12dd1263c2ffdb833c9e9e859e1eb4178fbcd7da6109eab5497",
+      "key": "8cd151d55c63f55565827e9af2fd919c7c37efff5f1432b8815d4d91d1e2d92a",
       "result": "aa6e4bf206ed4967c12f275fd556bf513321f94832e4587719a00d18adcf7bc9"
     },
     "d4-rerun": {
-      "key": "1449b37efd096ca5b2ee84cb84db8012749be098f7492c228befc24cd6016639",
+      "key": "e6cb70b1c3e1ffb2a4ff228e3a6392ab8b9f24a8a3f371d7ab3e995a4ea58e3e",
       "result": "3ece526226150118a151886c8f579a56594f5a3005eab2100fc671aea01881a9"
     },
     "d4-savepoint": {
-      "key": "9ebb7c4fed63744ee0bef036e4d4d1f0cf2ed21359dbbb481e53eb47e491d98c",
+      "key": "a642940822bcd60a6f552f1525fbfaf00a2b2f6f984007f45fab8d83a8bf5d48",
       "result": "f2676ce3faac6020a967859ecbd06a8e5de4d9f2b1099793623e6f33bf5b3d56"
     },
     "d4-twice": {
-      "key": "ff6ff3275c7c8cc5667cd6ede08b630e4f9a65f967908257ddfccd5fa7078413",
+      "key": "3838eda60e6276e07b3ac018292a07b31cdab01020497a136bb5154afaf0aeb5",
       "result": "b5f88d7ff6dccb6f12f8e10e79abeb3744cf2e9c2ea997f6fecbf8952e369034"
     },
     "d4-wait": {
-      "key": "8243f0360b003c0745487ecedce25bd44d1205867587433f0498d38cbf95aba5",
+      "key": "4dec2abcb7462cbe29a8742380ecfa2a6672731402c388201392a5316ac8666d",
       "result": "e3cabc7e1a20c9bee7a603c07b38c27aade89c88a05b4c2e769dc4a97d58ae55"
     },
     "d4-xmin-load": {
-      "key": "f88699846b660965af3e6835ade643051c6e336f938e933f0c41fc65b6b0d5de",
+      "key": "a4bbc45151435a4dc4d35e375d782e5a24e74a68afefdc947679be2cc8b646ec",
       "result": "91d868e1653ddcce915b9a1220b3786e58ce4e9cdaf32ec2e54ae6793a464c4a"
     },
     "d4-xmin-update": {
-      "key": "a293b081887e36974912ffd753d51440f4791eed39f4bb6abc33d41b65ec3d87",
+      "key": "ac0b4f892f975ff49d6737d2d15e0a5d46cc9f018b1777485652f920be2388bc",
       "result": "a4f4275b0d0a77ee58c2bb2def7b00142b8ab661165ca46546532b187ba83c73"
     },
     "d5-defaults": {
-      "key": "40aacd97b590da437c1dc0f65e41c0225b2cdd50b9974776b0d486c0c589f2a7",
+      "key": "cdb781c7189d3f0d17770bdbea3975c56abbf0d62f6ccff3117ec423da86e088",
       "result": "8a0b06fb1e34c2c98c775cee08c5d7ebcbaf50e66f8072dfadc719b4fc94377b"
     },
     "d5-drop-role": {
-      "key": "6a4b55b371799763de9506a65bf792fff54a61a61530526bd8b3f50654f3a87d",
+      "key": "1ac0438ff646a31984c6b2f231cf48e5a0a431dc0e8a6c14246ffd1da95268cb",
       "result": "e3ba6359ac25882cd08160c6ad5256d3771d931f65c6b1ecda3949aa9f076d17"
     },
     "d5-ex": {
-      "key": "3800c8ff8c3ea4371fbb60095674974e03b09ade0dbb9bb210f264cccb82b180",
+      "key": "5520b708e2dd5c20e8a50a6ce22482d20eb56a81b141ec0613ef6abee1a2a9e9",
       "result": "4f1526efe3b1f2723f1ef17120050449032bbc58c83bd3dd78da8931faa469c4"
     },
     "d5-privileges": {
-      "key": "3c6ac3e470163f8bafaeab46f8eb93dbd1e39f165550128aa8f848c8ad35a8c5",
+      "key": "a154b3ea7057be6b4445687a61998ec58634dcafb3ad9f5bf8f3836590754783",
       "result": "6955ea144beec83284e254b2ab73d5c492b804dbb1a067309360d9958b56973d"
     },
     "d5-reporting": {
-      "key": "71ca982974adaffe46db15ca16c7fcb8ec5c2a90c26884d0814ffd699beff0ff",
+      "key": "c8224ea04ab8cd0e113d08d526824dd225600cdc179d97beedd7b34125cb9c11",
       "result": "d7aa4e19a88e6920c5f98f7b18392e31b407ccfe33ae9349523448d49973980e"
     },
     "d5-rls": {
-      "key": "247daebd843a0a775e4148da035377b3ecd7ee5fbee9f40236e4921983360052",
+      "key": "1a379bb91a35364e1d9fab00d53e83d62db99b15b1470980df722d80921d6ef1",
       "result": "9b56f52e66319c1adadf93dc379a1f85916922bfd8dfa52df18126109c066276"
     },
     "d6-at-sea": {
-      "key": "2ac3de69d8300a0961f6d06d12554e7ac48c89496c074099736a233091516428",
+      "key": "42051ea914458d845f93dae5905f6f878596f7829fbea6ae7aa24864c920cc3b",
       "result": "37022d815ae3e895f7f738cbb2fb368c7d29c41ac7cc2c2d05d7a7dd54f2fa48"
     },
     "d6-drill-across": {
-      "key": "4f25e2acd24c1759bfa02777629fb9abf550ce71f62592194a0836b5598b8d8e",
+      "key": "8ecf838fa3fd8a5f1fc2da4c78680d769002dcf38f0fa468246aa3081418a610",
       "result": "81843a125e715baa1c4e3efd0ffbea522b6c0362fdc916f894bb46423e0f8edb"
     },
     "d6-report": {
-      "key": "543badfeba4b47a8ece1cae665fc9ebd8762d6fe806544a10f7b5c9b633fe455",
+      "key": "a16105cb9d64597b9274ffeb8d772769193bdf91a8a0c51569f01419940af337",
       "result": "3fcf7725651879f5c3de2fe740afa937600ed82122dee8ffa8994fad7f14629a"
     },
     "d6-scd1": {
-      "key": "f1ec3f9f9354007bd969fc5b9ccbca728b1e7e3246d731baa738fc3f4e39c7b5",
+      "key": "8a48efde16fbf8dbeb0df687faf1ccd06bbc4c3b58b3f1b058f8ed84d8073229",
       "result": "b319504d2d1ebb6ec781469ccdef3eb6d4806462a57346ad9da85431d47ffc0c"
     },
     "d6-scd2": {
-      "key": "9f0f68e694ab2c5b87ae22c8117a8b2c9995c172dcbcf626c8733b3838d260aa",
+      "key": "d5835837eededf286cc36806ca234baf3f778ca75b9a9a36964b3d3c8cd87dbd",
       "result": "6c8c07b204cfb8850ba0cdefdb0996bc0646889b6cdce6079a7e59ee4ba36564"
     },
     "d6-scd2-versions": {
-      "key": "b59133cfcfd1ead120846e1671f7d6ff4f69b3e4f243e1032a3e4f781c1a6664",
+      "key": "f9dd8976c0bdff2fa9182fb38eebf9fd0d11b69cbc812ee8c4eaf10ee680147e",
       "result": "e0600e8b28ddd4ec897770feefc5cc824ec8e7194e248c6d4ae38316d9cb0d1e"
     },
     "d6-snowflake": {
-      "key": "c4792330452655e8d39c23e0ac01ba5ffff420fbec29f9b7054941a5878b3369",
+      "key": "45c9196bccfb85aaa087b7755a5826f53062dfcc1acfb813a824ded354093546",
       "result": "114bf42bbe65a243a066325adfcb61d31555f3de382c70d2d89a58e5d6720c8b"
     },
     "d6-star-dim-country": {
-      "key": "f4a3c2090e49b16866417abb39133ffefa2ae38fd4e87bcd79bce85b5df1b2d8",
+      "key": "2678efe88789443b1504780a9378093a200ea1ee10e345c97b2ae32c2af7038b",
       "result": "31d23d8e6a5ab90117f80468cae838719bf0c58d51de11ee6b0973ae762aadbe"
     },
     "d6-star-dim-dataset": {
-      "key": "b6c634970290c62ab216df102478c27b3c59e72be45e8aa15f586096384aa049",
+      "key": "4e8c1fce1c971eb93666574285b69439f4576de8d836bb767da301f65ce0dbb5",
       "result": "99c1437e5f980ff8f8cb2f68b8c64b9ce99eca9bcb93c1d0ec266ce033f3309e"
     },
     "d6-star-dim-habitat-class": {
-      "key": "5f1a25855bf182d11d517f284b2f8e2fb8ae9f6390ff8df416a4416525a3ecb7",
+      "key": "49a7a4a7b622313c565bbe528fbc80d02127daf9c4e55ec56eb1dbb4b4ad890d",
       "result": "e5566084f53f9c6d62b2f5039965a9a70b4c7f15f820fcdf260ec03993543cc9"
     },
     "d6-star-dim-species": {
-      "key": "f8563b9c0feeb779babd6d371275a2904d75202fe9becef5012482da4694d3a6",
+      "key": "401922b1ee9f961cd4684de6a9c7800127fb7e4394ff7d31f282e4ecfffd20ee",
       "result": "90ba3d8c2ccd5b1bfd563bf9346c9e80c9fc0eaf3346bea76092403cee65bb32"
     },
     "d6-star-dim-year": {
-      "key": "c1c6145a9df5941884b363e197b9e24094a80783e53e73c2d58c325764fe10dc",
+      "key": "ff4aadd421b0eeb0bbfd1d3b37205936f5b79777c5ada514dde93fee203604be",
       "result": "a591c5a1dfed8ef087c6fb59d90eb16a7651e079dc3310c5ff75b65b1d42a34b"
     },
     "d6-star-fact-country-habitat": {
-      "key": "c6ae2fa159e2971cd8928a896015a99518c093822ba1c8dee0d516c5ef75b10f",
+      "key": "582af424a3214eb2f781a3dfa81f5037e70fcad9aaf09c675c5432304fad36da",
       "result": "75e7316f9986fcb88672a06fcb25a6d3f9345a25013e31189123552289b610b8"
     },
     "d6-star-fact-records": {
-      "key": "b38e6787ac105de6936811aa6afb41e60bed0332e7a41433a12f27d875b4db74",
+      "key": "2d1fa93fe5fc902f1933502c3c0e78bc05abec6ff2a5eb17c21c09b263b1fcec",
       "result": "8a2db0f69f38692f2ff204dc27522166567516c5911c8617747f872461c857a9"
     },
     "d6-star-fact-species-country": {
-      "key": "390f5d7a702f3d9d3ea61f0808b4b530fe863f422763a7d629305f689e8c0d2b",
+      "key": "c50292779a1eff87a7c910a4c39b9f41eb5518b0d17217e7cd9f8456e64b76bc",
       "result": "4b2daa7a231234dcfc8bc66a3b3717d16fc475b8944bd4ba945d67e7e2cfc2d2"
     },
     "d6-unknown": {
-      "key": "981a18416ca66d612db455be2d79f273e152cb6a38d6a5590b621e885d2b6645",
+      "key": "f8713f628abbe3b698cedd081399d39e4c73c4cb0f0a7a4afb5ed8c15309e1b7",
       "result": "93466dec67e713383f4013fcff36e572e580f0f19e96880ded2d60bf52521ab4"
     },
     "g1-area": {
-      "key": "48875db90b22b327601ee13e7aca3b3d9f174a0d4560f3a54e3e5a374f6c04ab",
+      "key": "5e2ec67518f7e7ddb7d85d79fdbb6777cd2a1d41780abbf4066fd64a8165321d",
       "result": "c3123fd9c947bc27c161e6c8e935acc0a9bdae73f375974e31bb262af9d7e21c"
     },
     "g1-columns": {
-      "key": "b974ca449607c8af409dece5768ea86a2c0934328fc3305fdc1905c7193a17ca",
+      "key": "ddf62166d577caf8e60d03504e5f073ff9919da9da63d791a144f65c1b7dafaa",
       "result": "2540f033d9c30160535061a2a1058134bfe3a0338bcd570e8749e6326b196321"
     },
     "g1-distance": {
-      "key": "44e3339b736f78bab1bde96256eb559b79ba38763bb0c948e35091297bdfbc92",
+      "key": "cdf23fbb08802b70f5250c8bc9357e52cc256112f87420c4e85a3b855c59ba01",
       "result": "129de6e46ea4c55676477e17be333b35c24f5e9dc3a0d9ba3db81baa04744d5d"
     },
     "g1-ex": {
-      "key": "85b54c1234cd0e302366de9118a081e269f651854ba15020e059004758025cb6",
+      "key": "b8f5738ed0d6c97aacf8dbf483654a7c0e6263cc9b138dcfb5e7355af3f02c23",
       "result": "05ef317df729d728b783b2ccd9e814b75c7ad38120eae59efcf34774439561b2"
     },
     "g1-setsrid": {
-      "key": "be796c3e80008498774af053d69d3ec6a353de24a7aa607ee53f93ca11a18eca",
+      "key": "c7cee58629ce80b8ec48fa212590fcbb23090738060edec96095b0b11492097e",
       "result": "961dc2367e0b8315ae1657b77abba1dff0b65d1fe0d64c61cdb5f1f9173cb6e0"
     },
     "g1-srid": {
-      "key": "8ca2d7d2b33b993da032db5da555f9ce11ea9620a28b02420d66958f282a16a7",
+      "key": "97cd42b04441539ef3d8daa61ed9b5446ef862ffc8beea47f8b609c06db4ce4c",
       "result": "970772b5c9363d676c5c072b28af68ab1944377dbf9de9cb4b378ebaf9ecc1f8"
     },
     "g2-bowtie": {
-      "key": "8e09d490c0b35420f8bad610bd2f4d2a1c5c968648eeaf250d22e90a071fcf33",
+      "key": "977742d3aff57ade33d4f1addfe2b56c090db8daba23f6b8e4cf582d6e33d451",
       "result": "12b7140fe4c06ceb41e21be6ebb24694f85886f1a04ed9849fe4c4226e588dee"
     },
     "g2-coverage": {
-      "key": "be5cc0cecb60f8da47db77e83106f4983a01713ceffc241239f3011de0cfdd9a",
+      "key": "4211244a7aa9bf18cf1168e1fab4f34af8210d5e4cd36a55372cab153c743208",
       "result": "f4598852f810c9440e2a23db2337d7953eebc97f4212f593ae17fb9a41e80d41"
     },
     "g2-ex": {
-      "key": "e95f2e22d92ecc0665024ebaad38d0844eba1e8b76cb9ad6da804e95a3f16ff1",
+      "key": "0d3c106963af2829b80a2fbb5576b5338cff17111966e7fba9be63a2b13d1ec7",
       "result": "602c76970b66c75d87bfa578ef3a54b309957e97385b4bbc750e4d96ba81fb03"
     },
     "g2-invalid": {
-      "key": "02c3ceae0bf6dbe622a5460817efe3826eb285840222396d495f1d5127df1a34",
+      "key": "c252ca80834d24b24fe57072aa942246b83c495f8341b097cec304fe82d7b29c",
       "result": "5a8e8aae36f2ac33bfa2cea5317f802b94a3d47f420378ae39a73973a09dd19a"
     },
     "g2-overlay": {
-      "key": "92c3341d5c29e0327048803b6df69afe58499444fe5648994cad4e9e8fbd23af",
+      "key": "62e3979f8175796f1ca68464c5acb2e3ca7780a84306c765ca5f6158cfb76495",
       "result": "5d576c6822a08b0e4d7c6eafb5a59876096d5c5a1f53829e4821cc954bf2d0fe"
     },
     "g2-sizes": {
-      "key": "339fd42c5a4aa93880726d10c36dacf881807292b5e8e4071b5e44002ab25ad9",
+      "key": "84b78a1e3596dac38633c01c03b3e65a484ce119c10ab623694f240b384b1ff5",
       "result": "be368d45b17e5307fc27d783ad4870b0fb7fbefec17c5b5398f64c018149f8cc"
     },
     "g2-wkb": {
-      "key": "3fc8a7fb256b6161d30db3032dd970a197245e01a07770010fac0d61507e0416",
+      "key": "e53c273e646ecd138951193d4ce147ccc29be420d87b93957663eb1e2d91f4ec",
       "result": "38927af928a3c2709cd5557a4d66ea5804a4a5a7f8ca28ebfa2168080f90b514"
     },
     "g3-agree": {
-      "key": "df367fb46f540dea7faf75f5fd157dcbbc19e4ba6ebee6c7420c5e4fd501dd17",
+      "key": "34b171a09830908c5cbc03ca31f0dc91c77f9bae38e9907c7abef9371dfb4665",
       "result": "f7b262421e6d62fc215c0e294b6ff6fa9ff4099eff018a44a8919c1a91ac03ed"
     },
     "g3-boundary": {
-      "key": "5568d7f99fa36c4a5c0a82dc053043dc84a95c734c4485292b67946ca431ba51",
+      "key": "bce216a817a1d4a48734e127d9ee7047b940509815c9d28ae4f53c273ab5b8c6",
       "result": "29e868a19da2d6b5ad0805bc3783ff0073ec14f43bf0854260e6612e02e0c26b"
     },
     "g3-disagree": {
-      "key": "8e7053ae42bc8807287c57d159d122ea4f54dca7cc42352e0f02a4f0ea59574b",
+      "key": "d2a97d041ad7f53df63061c9ab0312dee0fb463cf400d8e97b3cd33a2ce5bd8d",
       "result": "794eb907000cdcee1394ee18bc52370a4d1a29041f05d4f3bfb00cee3dbb6142"
     },
     "g3-edges": {
-      "key": "c4caf7032937775b57ded31f1390d66fb3935def237e8a5f858c3051c980d708",
+      "key": "463562a008c3289bef0b238b3d0296b1e4409487175cd1bfb206f52a70df4c40",
       "result": "51f76125ab52064ef4809f95b032363c1c6d66e6e71b4b25a4bbefc800352faa"
     },
     "g3-ex": {
-      "key": "7df502e892a549e4a45148b3ce5e81f699decbf5aa552d2958edb9e343f0b552",
+      "key": "5c8f92a688ea07ba6139676296a216c22f98f7678fcf2daad0b3e8b044bcc3bd",
       "result": "0a2ba70c9c4abbffcc105f4b03fda818eb039328b56b839eec4faeedd7c52601"
     },
     "g3-two-outlines": {
-      "key": "8b10b295e36e2d6140c48b809e388f5526f762ead4e88f1f3686ba3055b2a1ce",
+      "key": "b92c983c8bc734426ffc5579ba7cffbb314bd415fb32fa6de93a9c639a902dce",
       "result": "8debe4b55374f88825d9022476c587b9b51d0b7c65aed0a2cda3c96fc6f8f7dd"
     },
     "g4-border": {
-      "key": "256e45dd76cbeded13818d98debeb4c10bc4acff73b23ab99c68c40612909c96",
+      "key": "6f8ab742de3306509da0feb6089a96db13855d31884d118279792c440e60eaf3",
       "result": "a80f124c7fc4a23a7c6f6cff6fe0c9ce90d80114eab4dc4e71c7f10632d69a65"
     },
     "g4-ecoregions": {
-      "key": "9f570ae31350a388bf2b7d9ddb25633c151063a084b8293bd8f5bc9013424a13",
+      "key": "ac66d1b158b26907479ed04515af6e578e851d1f2397f2c0018aaaf00c8bdde4",
       "result": "eb21254a42daa0a92fcbfb9f4f370cd6f955ebc3ed529b0032584664e998dda2"
     },
     "g4-ex": {
-      "key": "2805d45b5cc844e71b41abbc7d552b206e5abaa17518770de365331c4ba6ef19",
+      "key": "a0c22c704ae286143882e22c7cf0e38fdc7dc97a829477b45dd03ab36f6006a0",
       "result": "fe270b16d84fd601671f05cd2ccaf4310c8d365de75712781ff1ea3dac7f807a"
     },
     "g4-gap": {
-      "key": "2f2b620b185e598db82a02e076bc953882ebbc5ea4bf77c8baea059d385c6432",
+      "key": "cb8b6a76d309460d406a5aa74908c010e4ebdf7836bd3a469028f47f5e0938c0",
       "result": "33d8bbc8e6fa31a7dea52a0e1d3c7e62e67cccc3b4141d2ee71335b0c8338290"
     },
     "g4-overlaps": {
-      "key": "f8097f1854cc37546af9e00a4f0fc5264fdbbf5ed98535aa06071c0d5bff529a",
+      "key": "c68571d2a2be7e4b584f04cdbf29a67113f6bef78b57ad4a146f0a93d2aaeb37",
       "result": "f466a66a72ab898e959c309eebb25bc49b61cd7e34370a1be637119efbbb4588"
     },
     "g5-analyze": {
-      "key": "d9e7cceaa44f90ec798dee7d9ee63e5f28f1f01ce7f0e88e83a2b0a37c306760",
+      "key": "9b90bfa15e49f8026ce6c4f77a857e3bd016305ec962d1d093fc67c7c6ad85c0",
       "result": "172c9a3e3756622915f047d155da1fd448f7b926b7fb5e70c40fed3c7a708e51"
     },
     "g5-cast-plan": {
-      "key": "d8d8ae1a3b96fcf74368600087606a590baf39df3d46833c2570f0694ee5b2f4",
+      "key": "ca618602a0da82297972a3af92e9c34187ddf3a461fa5a434db7527ae230316c",
       "result": "eea6aea29360b65417f733eef95d08a1f4b55f48894ce89e18c1361b5290c627"
     },
     "g5-coast": {
-      "key": "bf9eb138b4d8e977a4bb36dda15870e193cd300ed01e904556100e3f3d8e74d6",
+      "key": "1f21f5045a600bed44c290b8548eba5bd232bdd5f6767b4081bf60559dd91776",
       "result": "2949e992e512c7d99d4b4fea0799cdca08ff0bc023f23d115eece9a8e2a262bf"
     },
     "g5-degrees": {
-      "key": "bc7eb9461eac9a0cb3dcfa27ab9c509c83fe6f65a98ca0207d1dcac65014d5f1",
+      "key": "cef4973f8b03fad2dadb4d1fea206435bf02935ca4aad2c244842a937edd6f8e",
       "result": "bafbe28068b308835581ab287535ef7d5d9f9bbea4bd3b5c916c01b3bcbc4717"
     },
     "g5-ex": {
-      "key": "67f112933a4e6ea97aade8ff6bc43921f22b0b440bc2683dc0771bcfb92d0c6d",
+      "key": "16a7ff3564d777e4d38817427aa91d07f9dbc0e53afbea7af2caca2843e0e006",
       "result": "fdd680525296b147d2b93e8a5d2ad7e28c6c0084e08ec04fab0093ec3ea99f64"
     },
     "g5-geography-index": {
-      "key": "ce417db7b6cc2d369026c3accd5121d9f0da909684fc96e6f00a11de89a10e4d",
+      "key": "a777a583809d7d677db2432431d98fd145859ee32d8042d179201318af6e98bf",
       "result": "5c0366c1d2f9a20a50813b6c9388dfcba9c0d98d6a1c5e9d19ccda116ce3b5ca"
     },
     "g5-knn-plan": {
-      "key": "e282d5581f15f4bc6430b12bbdc28dd8777e19f07f85c48b3401e188d971b4b6",
+      "key": "2a7ce899fc16fc588e1bf68389317c8ecc68fabe0d98e4d6d0340833c148d237",
       "result": "2cb7fd25f86f05de3796c5c2f540e18598c3b6661ad214f712236d30a7c0de6f"
     },
     "g5-nearest": {
-      "key": "23cc2f9dbb8196c18853be2635f6ceb3dd78c051595aff6fb8a6448dffe0d1a7",
+      "key": "96205b2a08d42bd38e261c7b61eb1f800d7d1c9de3d34369b827a0be814a00ff",
       "result": "1c37f3a4514c214d20d76f45b3966ff93a8b3fb4ebfdfe1014032c0f4a971d3b"
     },
     "g6-equal-area": {
-      "key": "c2476d8c5e8c2bb06634565de2aa6cda605e2fee8477ab88ad433ca9a968e78b",
+      "key": "3c2cdbc0ae98f01d0dc865ccb8eacd397963bb1399f47f39f8367418ee4968d2",
       "result": "7cfd0bae93817054b356a9e2d47f478e79bf7498986dd2937411cb246a6eb419"
     },
     "g6-ex": {
-      "key": "2b122f317aff8693a8d2409020365b182642d45a11ee056e4061e9e796fd6784",
+      "key": "35425e3b2fd2bc2ee65867c99e8039a85068d6d5696e6794f148484b88919a15",
       "result": "0099eec28b677466052d2e49079b36d13bea7bc92135c5aab5fd3ebda305a684"
     },
     "g6-land": {
-      "key": "13f2848a52be185d53435db204f0833a609868627bef2b76d2bcab9f7447e655",
+      "key": "d49f66634d59a8286d86ba7a290bd3c372a29bfd55ee94c20d7bcd08226f606b",
       "result": "7fb3d48221bab002f0c6e5e25041a6777dd7e8a23a7311134fa14c25c2478652"
     },
     "g6-maup": {
-      "key": "491e68155787808534a7e3174840a9531eb4f3be51e7a871b5dfc6309c543219",
+      "key": "e5e56684717590874a6466d2387c3feb1846cd6ad426945bc2cc607629213cab",
       "result": "1d3b6a97f71d5b7cdf00119d9700a08d1474bede7a69761b483106738c14d685"
     },
     "g6-records": {
-      "key": "37d0ede8e23eb66bc03adb15e2d23244f463bde1339d9ab4df344d6c8b0887a7",
+      "key": "d2d8bce6c7ceb7b9c9f7e96bddc52047e88efd6451ac46aceee5211ab468970e",
       "result": "e402eb0481afdbb86f40a2b95f08853add6f7f6d592a9d47e25425b8635c956f"
     },
     "g7-countries": {
-      "key": "4b69f2fb628240f3fb86e6ad721e4a4efa132440757fd83182ae0ad345b46477",
+      "key": "bbb1a1081f307ec70758b5729d1bb7d95f05e56fcba8af763fd81a79ef74926d",
       "result": "d79fdcc41a6c4e5b84b68823b925fc95ba8f0754ef34e0e416d9af575fb4fd73"
     },
     "g7-country": {
-      "key": "4b482ccab72f21eb01c54c2c3625a8b62f5937ecc96fb82939febec5d45de643",
+      "key": "05e7557d564e87cb89e68968a25e4e957d40b0f08481361c00498e520892c6fa",
       "result": "fe0b708ab55d5682fdd933c2f2fc3e99a62477429c8592d3f229217a6212ea06"
     },
     "g7-estimate": {
-      "key": "30c3feccefb3f305c59d96c55f3515d19bd7cae82aa6de4811b068bda82c8a7e",
+      "key": "f12586a162207abc1777b90a12b726cffe4384b7be85cd53bb7cc2e79af34c0c",
       "result": "dea5a665443080edb557523cdb9936193a25ea996ccd88a64ccc06bfd16b2686"
     },
     "g7-ex": {
-      "key": "430551f4e59df6042a01bdf37caab0ad9b8a98bf31cbfe554c6dda70dcfe3293",
+      "key": "82559c1a815aaa07ef1898bb2f5230a7138de496bce036a115f6023b3d4965a6",
       "result": "3a9f7e4cf7e59870ab6f45d97627ef951ad229cc376574bcaac2e3b5dabb4162"
     },
     "g7-latitude": {
-      "key": "5d3be63419ad3cc373f9d278c1f950a2872c6438df8a43dbce1009b10a23390b",
+      "key": "22a7a38ed3628ae9d0a7e5de678325c0a934860e2001cdc89d4aa16c26ea837d",
       "result": "ee4a06362d418beea2bb0af30495f26080252916591ae80150a19d0a8877d063"
     },
     "g7-records": {
-      "key": "a47c394f54b954c9acc536731df7629b7eb23699dab3d97f7c3388124d2c4cbf",
+      "key": "3ed7d5d6a5a392945bb0f0868d2e906175351ce9643e929b87bde1896cb11486",
       "result": "16e1c6980a027ab1a3e7dec3e9540008a3380d295b854dce14ee5f6f2859b448"
     },
     "g7-scale": {
-      "key": "0d67d7f10d4d987d338b6a38812f567d4b0620ee3649e091e99ec0317a63a349",
+      "key": "bdb54b3b31e9c4786f7dd95a00e27d444269c60cd440d64a4084c98966019136",
       "result": "6337be7e5922f88038a2fdff1984498aa1098423d926a8592c7c9dce26532af7"
     },
     "g7-tiles": {
-      "key": "d3bf1e63d8c2a0421de9def7534ef9266660f23c48494e63c9832fa84e6f22a1",
+      "key": "e0d147832e203bcf6cf213bec7d4cf9b55701d18fa4f3165f1e4744c81eaa259",
       "result": "64226caed0ccfb18bfd0310b3e2634a62056c464c9a15a1b86e6542c49fe3052"
     },
     "g7-valuecount": {
-      "key": "5530d91e42d3411181f6f6a58d274b157f4c07496e1f5d4867aaa8dc4004133d",
+      "key": "b23279da1f8ef704a58b9acdd820e40f4588201ca94d2a953f5aeb5f65ae5722",
       "result": "ef9d362d229ef63beeb31963b7bb3cfd1f47ad21a592e1f64aa7825e35e5f8f3"
     },
     "pg-role-smoke": {
-      "key": "618c0b4ce289c260b2146ee39be7855c113eb7569b03c0ecb15eff3193d48148",
+      "key": "7024bd621ec04b21c785fe21bc634df1ee4b7a1bf7d1c3a5380ccfc70d2f5091",
       "result": "d721ea358edd040973fd9309b3e45b68943b9bad01b9efecd1da082d374c7f30"
     },
     "pg-session": {
-      "key": "f1750e1ffef947421d37605e84f7f3885e3882e63df80d8ae7b08d1b668ea7cb",
+      "key": "1f1e90c834b03cac8bf31fe0eeef60f6f48dbdf61f78e4f42af8efc52df6a621",
       "result": "50d5025879122dc884be370279e1641efc466c9e634913b0eadb0ee31afdf123"
     },
     "pg-smoke": {
-      "key": "f06127acd393f579b38b0537dd16e172b2ffb5ff3fd19f24b7d652db1427a7d3",
+      "key": "ce8f2e2b02be3228f309004ecca8e376b8dada25fd0f6218f835061008790ef4",
       "result": "50b324e71d88a881a79f26ec20d313f623b61717e1401918ce11538890a77b9e"
     },
     "pg-tx-smoke": {
-      "key": "e45dffacae6597f405f1d8161a518573e9881c124817053b1c2718d60864fc42",
+      "key": "5c93dc78f015ef17d07013af1f1ae8c129a1273af051b8ae037a241acbc60d14",
       "result": "eb5022d9315c90f5cc48bf18dac53418b13ddd980d2d8b638e9c8a8ebd5b9b93"
     },
     "py-connect": {
-      "key": "69d60806a88dc1dabd80b3ab59f0cd76909287f15abf4923a80e4091fbcf18e9",
+      "key": "a3b560418d5073504bf3db172fe556fe1f8c6dd1fc7f13b876aefb7327b15e9d",
       "result": "b4e56e4af54e6565b8a146c6b93b2f709c488b5e99dbc675cf1a699a88bd624c"
     },
     "py-smoke": {
-      "key": "c610d4e4b25d17aabedae2db139ab2eac9d2cd7f7ffea301f72914b2c4854f94",
+      "key": "60454f11855383327f5e122230d827c20b477f093f84641f96d3dee5ded26ad1",
       "result": "a0e3f5749bd87ed74488a486d1d46dbf766f09f0c765cea41798fcbc2b4709a3"
     },
     "s1-devil": {
-      "key": "e653d83ba0ae25c20ef0429c0272e4b8f358b9321d5666fbf0fc27b6d42a9240",
+      "key": "4b926ff4c366e854c5f92c010c86484404c8780f9720a8821956da5181d092a9",
       "result": "019aba64d2b806567e8a68a3c96497d2658ac6e1a3c6bb9963d15553c9a552b7"
     },
     "s1-jaguar": {
-      "key": "4505e5e9dc7bfadfb7ac19260ba0a4d9f45635b49f1859140e43540e174dc213",
+      "key": "06bfbbf7affbbc8b88b0ae713d8d39f63a143dff8661ea8daf9469c7e6886f2d",
       "result": "30cc73402f30bb52427550ac76af6e42e9182f6a75489ed0fa104b8914860313"
+    },
+    "s4-agree": {
+      "key": "5d8c29dd390386f8743bc6f7afaee11e09453ae8845d4b03bc2b744774f0bde3",
+      "result": "58cccb30180fee8ead205db9cc73df75d76fb58a0310bd6088009bb340607370"
+    },
+    "s4-cells": {
+      "key": "1f1e90c834b03cac8bf31fe0eeef60f6f48dbdf61f78e4f42af8efc52df6a621",
+      "result": "0c758d6052b598d97902ead137fa1bbba72dd29d8c6744f7afb312395a0de0c3"
+    },
+    "s4-ex": {
+      "key": "32d9d492f57299a4fa1358a1ce1ff51c6c7b8e8104a9e6adb465275b711d2f8c",
+      "result": "ae0cb8bd88e788d3a2fd0b3accfdece08bbcb210ff6166343c58426e9cd594bc"
+    },
+    "s4-geometry": {
+      "key": "e409f84a39f54acee623fa8af7d739851a50790a4e466b8494dc5d55cad9e780",
+      "result": "240b8485ab87d70b92b0d931299d164a3b24cc9e1ea1e1e2793a6b396f8519d0"
+    },
+    "s4-moran-pysal": {
+      "key": "414c9b18cf945ce3e4b842be62c8b8e22424aa4811069c604eb0f44ea198737b",
+      "result": "e9d9d669577959ace318e84c51260a992a2616c1df1acf0562f0a5e5c61c4163"
+    },
+    "s4-moran-sql": {
+      "key": "eddb6c85d04b75a19ad139d12bebfb82ae54053eb55237428f55abd42afd0adf",
+      "result": "9245e1315d5fc141fdbdb618b99ddd32082c2c5d4584dc8a9dc0bb9a8d090dec"
+    },
+    "s4-permutations": {
+      "key": "cb5fad2a254beb519ec00cb2db1a880b2daf0e96213abee4b3d65ecc9b2e0df8",
+      "result": "47ce43aba810ebec23db722fbbad4e6fa8f0c2af0b13fe4ee22d715d3aa119e3"
     }
   },
   "downloads": {
@@ -516,7 +544,7 @@
     "d4.sql": "8bb9f4184361bb570af906a26de9e3717557ec5dceac36154885003c276cc25f",
     "d5.sql": "e8eb4ec666fc0442cafee630dd97875ab5d825532c1f597ff7e628efb692c7a6",
     "d6.sql": "dc7c792e8b3ec36c04beb1b3807785b621373780da783afcbc41e762d1b93225",
-    "g1.sql": "3817e06a7941c31137733610a8dc47308dc5a0d3c49c52ab6769f8b76280c783",
+    "g1.sql": "5ae054385045f92b00d5442eb90d9962024114609002aee6b82671e7a7037d32",
     "g2.sql": "a50473b3cd47838d9cf45ab114dde8c55a29078f992c424e08382318e52636eb",
     "g3.sql": "1f0b49c165ae736a470be98df194b1f7f9dc2c431870a0d02753a4d8ba46deca",
     "g4.sql": "69dea62101a6c778cf0b5f62dcf63070acf2486031f1b10b5dfa06cc2a896355",
@@ -525,7 +553,9 @@
     "g7.sql": "97421e93a186f78dcaf5050ff1d6d41096fb4f1286880b5cecb43c89210089fb",
     "pg-checks.sql": "348691fbefd3b6c0400e7edfd3a3aaf4f767b186c1a6bcbe2f2ad021cb5607fd",
     "s1.sql": "fffbbb3a0ff9128446a13ac5d3bc23929f8f58ba72e1eb26459824f0cb6f19b8",
+    "s4.py": "65b7fc37ddc3225f348883cb88fdb72d696ed64e4115aa096056c08d5be1b2a8",
+    "s4.sql": "5b485d76d0fea6d3e9a43d0779b95c471501bd8680abf1afd27045bbd3596ed2",
     "setup.py": "93208bbbb1aa1f1aa5ea2ca58806cd661bee64544aa2a6cd223db3ba18df4c29"
   },
-  "labErd": "55b99a7ff2b607851f2703f1889b8540e95e90a85eae01c913c9caec9a6d93ca"
+  "labErd": "d0727ad9d45127b6ea4c7b07495565182a2a9a35caf25cfb04891152ad77ff8b"
 }

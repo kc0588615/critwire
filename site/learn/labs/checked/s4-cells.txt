@@ -1,0 +1,4 @@
+-- result: s4-cells · 2 rows · sha256 29efe20842eb
+edge_m | cells | records_in_cells | records_in_no_cell | max_n
+5000 | 1094 | 1972 | 28 | 256
+10000 | 296 | 1990 | 10 | 475

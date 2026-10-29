@@ -4908,6 +4908,7 @@ The columns are read out of `proj4text`, PROJ's short form of each definition. 4
 SELECT f_table_name AS table_name, f_geometry_column AS column_name, type, srid
 FROM geometry_columns
 WHERE f_table_schema = current_schema()
+  AND f_table_name <> 's4_cells'
 ORDER BY table_name, column_name;
 ```
 
@@ -4920,7 +4921,7 @@ ecoregions | geom | MULTIPOLYGON | 4326
 occurrences | geom | POINT | 4326
 ```
 
-All four are in 4326, and each column is typed with its SRID (`geometry(MultiPolygon, 4326)`), so a value in another system can't be stored there. Every measurement in these modules therefore casts to `geography` or transforms first.
+All four are in 4326, and each column is typed with its SRID (`geometry(MultiPolygon, 4326)`), so a value in another system can't be stored there. The filter leaves out `s4_cells`, the hexagon grid a later module (s4) builds in the same schema, so the answer is the same whether you have run it or not. Every measurement in these modules therefore casts to `geography` or transforms first.
 
 3. Moving versus relabelling. Hobart typed as longitude and latitude, then put into Albers both ways, and read back in degrees:
 
@@ -7102,11 +7103,17 @@ k = 4: links: 4376  one-way: 600  cells with the 4th and 5th tied: 1025
 
 **Tool:** PG + Py · **Time:** 2.0 h · **Prereqs:** s3
 
-**Goal:** one number for "do similar values sit together?", and its test. **Global Moran's I** compares each cell's deviation from the mean, `z_i = y_i − ȳ`, with its neighbours': `I = (n / S0) · Σ_i Σ_j w_ij z_i z_j / Σ_i z_i²`, where `S0` is the sum of all weights. With no pattern, I is close to its expectation `E[I] = −1/(n−1)`; above it, similar values cluster; below, they alternate. Whether I is far enough from `E[I]` is judged by a z-score, from a variance that has a closed form under two assumptions (normality: `z_norm`; randomization: `z_rand`, which ArcGIS Pro reports), or by a **permutation test**: shuffle the values over the cells many times, recompute I each time, and count how often a shuffle beats the real I; with 999 shuffles the smallest possible pseudo p-value is 1/1000. Here the plain SQL and PySAL compute the same statistic from the same cells and agree to 10⁻⁷ (§A.2). Then the honest question: what clusters? The cells count records, so I measures how recording effort clusters as much as how devils do.
+**Concept:** One number for "do similar values sit together?", and how to test it:
+- **Spatial autocorrelation** is the tendency of values at nearby places to be alike (positive) or unlike (negative). A **global** statistic gives one number for the whole study area; a local one (s5) says where.
+- **Cells, not points.** A record has no value to compare with its neighbours', and many records share one spot (s2). So the records are counted into equal-area hexagons over Tasmania's main island, at two sizes (edges of 5 and 10 km), and each cell's value is `y = ln(1 + n)`, where `n` is its number of records. The logarithm keeps the few cells with hundreds of records from outweighing everything else. Records outside every cell drop out: 28 of the devil's 2,000 at 5 km (12 on Maria Island, others off the coast, on the mainland, and 2 in New Mexico), 10 at 10 km.
+- **Weights** say which cells are neighbours: `w_ij` is cell j's weight for cell i, 0 when they aren't neighbours. Here two cells are neighbours when their centroids are within a **distance band** of twice the edge. In a hexagon grid with edge `e`, the centroids of touching cells are √3·e ≈ 1.73·e apart and the next ring's 3·e, so a band of 2·e gives each cell exactly the cells it touches, and since no pair lies near 2·e, a rounding difference between two programs can't move a pair across.
+- **Row standardization** divides each of cell i's weights by `k_i`, its number of neighbours, so each cell's weights sum to 1 and `Σ_j w_ij y_j` is the mean of its neighbours' values: its **spatial lag**.
+- **Moran's I** compares each cell's deviation from the mean, `z_i = y_i − ȳ`, with its neighbours': `I = (n / S0) · Σ_i Σ_j w_ij z_i z_j / Σ_i z_i²`, where `n` is the number of cells and `S0` the sum of all weights (equal to `n` with row-standardized weights). With no pattern, I is close to its **expectation** `E[I] = −1/(n−1)`; above it, similar values cluster; below, they alternate.
+- **Is I far from E[I]?** A **z-score** divides the difference by the standard deviation I would have with no pattern. That variance has a closed form under two assumptions: **normality** (the values are a sample from a normal distribution: `z_norm`) or **randomization** (these exact values, shuffled over the cells: `z_rand`, which ArcGIS Pro reports). A **permutation test** makes no formula: shuffle the values over the cells many times, recompute I each time, and count how often a shuffle beats the real I. With 999 shuffles, the smallest possible **pseudo p-value** is 1/1000.
+- **Two engines, one statistic.** Plain SQL and PySAL (`esda`) compute the same I, E[I], variance and z from the same cells and agree to 10⁻⁷, as long as their neighbours are the same pairs. That is a real condition: two records at one spot are 0 m apart, `ST_DWithin` makes them neighbours and PySAL's `DistanceBand` doesn't. Cells with distinct centroids avoid it, and this module checks both the centroids and the pairs before it trusts a number.
+- **What clusters?** The cells count records, so I measures how recording effort clusters as much as how devils do (s1).
 
-**Data:** `occurrences` (the devil's records), `admin1_shapes` (Tasmania's main island); the cells it builds, `s4_cells` and `s4_neighbours`, are the ones s2, s3 and s5 read.
-
-**Key code:**
+**Worked example:** the cells, and a check of their geometry.
 
 Points can't be the units for Moran's I: a record has no value to compare with its neighbours', and many records share one spot. So the records are counted into equal-area hexagons over Tasmania's main island (EPSG:3577, Australian Albers), at two cell sizes, and each cell's value is `y = ln(1 + n)`. Its centroid is kept as two plain numbers, `cx` and `cy`, so SQL and PySAL measure distances from the same coordinates. The neighbour rule is a view: two cells of one grid are neighbours when their centroids are within twice the edge length. This block runs when a PostGIS run starts, and its tables stay until the lab data is loaded again. It drops them first, so running it again rebuilds them, and every download that reads them starts with it (§7.3).
 
@@ -7164,6 +7171,8 @@ edge_m | cells | records_in_cells | records_in_no_cell | max_n
 10000 | 296 | 1990 | 10 | 475
 ```
 
+The island gives 1,094 cells of 5 km and 296 of 10 km. 1,972 of the 2,000 records fall in a 5 km cell and 1,990 in a 10 km one; the fullest cell holds 256 records at 5 km and 475 at 10 km. `ST_HexagonGrid` returns the hexagons covering the island's bounding box, with their column and row (`i`, `j`), so `WHERE ST_Intersects` keeps the ones touching land. `ST_Contains` puts a record in the one cell that contains it.
+
 Before building weights from a distance band, look at the distances. In a hexagon grid with edge `e`, centroids are √3·e apart (the touching cells), then 3·e (the next ring). A threshold of 2·e sits between the two, with no pair near it, so every cell gets exactly its touching cells and a rounding error can't move a pair across. The block also counts duplicate centroids and cells with no neighbour (an "island"), which would break the statistic.
 
 ```sql
@@ -7200,7 +7209,10 @@ edge_m | threshold_m | class_1_m | class_2_m | duplicate_centroids | islands | p
 10000 | 20000 | 17320.51 | 30000.00 | 0 | 0 | 0
 ```
 
-Global Moran's I in plain SQL, with row-standardized weights (`w_ij = 1/k_i`, where `k_i` is cell i's number of neighbours) and its expected value, variance and z-score under the normality assumption. These are the formulas PySAL's `esda.Moran` uses (`EI`, `VI_norm`, `z_norm`).
+The grid passes at both sizes: the nearest centroids are 8,660.25 m and 17,320.51 m apart, the next class 15,000 and 30,000 m, with no duplicate centroid, no island and no pair within 1 m of the threshold. `dense_rank()` numbers the distinct distances in order, so class 1 is the smallest and class 2 the next; rounding to 0.01 m first keeps 8,660.254 and 8,660.2540001 in one class.
+
+**Lab:**
+1. Global Moran's I in plain SQL, with row-standardized weights (`w_ij = 1/k_i`, where `k_i` is cell i's number of neighbours) and its expected value, variance and z-score under the normality assumption. These are the formulas PySAL's `esda.Moran` uses (`EI`, `VI_norm`, `z_norm`):
 
 ```sql
 -- q: s4-moran-sql
@@ -7245,7 +7257,9 @@ edge_m | n | i | ei | var_norm | z
 10000 | 296 | 0.2035877773186644 | -0.003389830508474576 | 0.0012597916525627741 | 5.831415676740585
 ```
 
-The same statistic in PySAL, from the same cells. `DistanceBand` builds the binary weights; `transformation="r"` row-standardizes them. `z_rand` is the z-score under the randomization assumption, which ArcGIS reports.
+Read it one CTE at a time. `z` takes each grid's mean from its values. `w` gives every pair its row-standardized weight: `count(*) OVER (PARTITION BY i)` is `k_i`. `pairs` puts `w_ij` and `w_ji` on one row, since they differ when two neighbours have different numbers of neighbours. `sums` makes the numerator and `S0`, and `S1` (half the sum of `(w_ij + w_ji)²`); `s2` makes `S2` (the sum over cells of each cell's row total plus column total, squared). `moran` combines them into I, E[I] and the variance under normality. At 5 km, I is 0.2733, far above E[I] (−0.0009): z is 15.18. At 10 km, I is 0.2036 and z 5.83.
+
+2. The same statistic in PySAL, from the same cells. `DistanceBand` builds the binary weights; `transformation="r"` row-standardizes them. `z_rand` is the z-score under the randomization assumption, which ArcGIS reports:
 
 ```python
 # q: s4-moran-pysal
@@ -7281,7 +7295,58 @@ edge_m | n | I | E[I] | Var_norm | z_norm | z_rand
 10000 | 296 | 0.203588 | -0.003390 | 1.259792e-03 | 5.831416 | 5.847466
 ```
 
-The permutation test on the 5 km cells. esda's global `Moran` takes no seed, so NumPy's is set first; 999 shuffles:
+Every printed digit equals the SQL's. `z_rand` is a little larger than `z_norm` (15.25 against 15.18 at 5 km): the randomization variance uses the values' own kurtosis (how heavy their tails are) where the normality one assumes a normal distribution's.
+
+3. Equal printed digits could still hide different neighbours. This block checks the pairs themselves: per grid, it builds PySAL's distance band from the same centroids, compares its pairs with `s4_neighbours`' one by one, and stops with an error naming the grid and the first five differing pairs if one set has a pair the other lacks. Then it prints the statistics at full precision (`repr` gives every digit a float holds), which the course's own test compares with the SQL's, within 5 × 10⁻⁷, every time it runs:
+
+```python
+# q: s4-agree
+# status: ran
+# after: py-connect
+import sys
+
+import esda
+import numpy as np
+from libpysal.weights import DistanceBand
+
+with connect() as conn:
+    edges = [e for (e,) in conn.execute("SELECT DISTINCT edge_m FROM s4_cells ORDER BY edge_m")]
+    grids = {}
+    for edge_m in edges:
+        rows = conn.execute(
+            "SELECT id, y, cx, cy FROM s4_cells WHERE edge_m = %s ORDER BY id", (edge_m,)
+        ).fetchall()
+        sql_pairs = set(conn.execute("SELECT i, j FROM s4_neighbours WHERE edge_m = %s", (edge_m,)).fetchall())
+        grids[edge_m] = (rows, sql_pairs)
+
+table = []
+for edge_m, (rows, sql_pairs) in grids.items():
+    w = DistanceBand(np.array([(r[2], r[3]) for r in rows]), threshold=2 * edge_m, binary=True, ids=[r[0] for r in rows])
+    pysal_pairs = {(i, j) for i, js in w.neighbors.items() for j in js}
+    differ = sorted(sql_pairs ^ pysal_pairs)
+    if differ:
+        shown = ", ".join(f"{p} only in {'SQL' if p in sql_pairs else 'PySAL'}" for p in differ[:5])
+        sys.exit(f"{edge_m} m grid: {len(differ)} neighbour pairs differ; first: {shown}")
+    mi = esda.Moran(np.array([r[1] for r in rows]), w, transformation="r", permutations=0)
+    table.append((edge_m, mi.n, len(pysal_pairs), mi.I, mi.EI, mi.VI_norm, mi.z_norm))
+
+print("neighbour pairs equal s4_neighbours on every grid")
+print("edge_m | n | pairs | I | E[I] | Var_norm | z_norm")
+for edge_m, n, pairs, *stats in table:
+    print(" | ".join([str(edge_m), str(n), str(pairs), *(repr(float(s)) for s in stats)]))
+```
+
+```text
+-- result: s4-agree · python · sha256 44e33d16750b
+neighbour pairs equal s4_neighbours on every grid
+edge_m | n | pairs | I | E[I] | Var_norm | z_norm
+5000 | 1094 | 6246 | 0.2732961251160256 | -0.0009149130832570906 | 0.00032639905787023167 | 15.177857980448268
+10000 | 296 | 1620 | 0.2035877773186628 | -0.003389830508474576 | 0.0012597916525627275 | 5.831415676740648
+```
+
+Both grids pass: the 6,246 pairs at 5 km and the 1,620 at 10 km are the same pairs in both programs (each counted once from each side, so a pair of cells is two rows of `s4_neighbours`). The statistics differ from the SQL's only in their last digits, by 10⁻¹² at most.
+
+4. The permutation test on the 5 km cells. esda's global `Moran` takes no seed, so NumPy's is set first; 999 shuffles:
 
 ```python
 # q: s4-permutations
@@ -7311,7 +7376,72 @@ shuffled I: mean -0.000776  sd 0.018192  max 0.065027
 pseudo p: 0.0010  z_sim: 15.07
 ```
 
-**Expected:** the grid checks pass at both sizes (the nearest centroids 8,660.25 m and 17,320.51 m apart, the next class 15,000 and 30,000 m, no duplicate centroid, no island, no pair near the threshold). Moran's I is 0.2733 on the 1,094 cells of 5 km (E[I] −0.0009, z 15.18) and 0.2036 on the 296 cells of 10 km (z 5.83): SQL and PySAL agree to every printed digit (§A.2 compares them to 5 × 10⁻⁷ and pair by pair). ArcGIS Pro's z would be `z_rand`, 15.25. In 999 shuffles no I came near the real one (the largest 0.0650), so the pseudo p-value is the smallest possible, 0.001, and the shuffles' spread gives z 15.07, close to the formulas'. Larger cells give a smaller I and a much smaller z: the modifiable areal unit problem (g6) reaches the statistic. And since s1 showed the records are mostly one atlas and one museum's samples, the honest sentence is "devil records cluster strongly at both scales", not "devils cluster".
+In 999 shuffles no I came near the real one: the largest was 0.0650, against 0.2733. So the pseudo p-value is the smallest possible, 0.001, and the shuffles' spread (mean −0.0008, standard deviation 0.0182) gives a z of 15.07, close to the formulas'.
+
+**Result:** the grid checks pass at both sizes (the nearest centroids 8,660.25 m and 17,320.51 m apart, the next class 15,000 and 30,000 m, no duplicate centroid, no island, no pair near the threshold). Moran's I is 0.2733 on the 1,094 cells of 5 km (E[I] −0.0009, z 15.18) and 0.2036 on the 296 cells of 10 km (z 5.83): SQL and PySAL agree to every printed digit, on the same neighbour pairs (§A.2 compares them to 5 × 10⁻⁷). ArcGIS Pro's z would be `z_rand`, 15.25. In 999 shuffles no I came near the real one (the largest 0.0650), so the pseudo p-value is the smallest possible, 0.001, and the shuffles' spread gives z 15.07, close to the formulas'. Larger cells give a smaller I and a much smaller z: the modifiable areal unit problem (g6) reaches the statistic. And since s1 showed the records are mostly one atlas and one museum's samples, the honest sentence is "devil records cluster strongly at both scales", not "devils cluster".
+
+**Exercise:** `y = ln(1 + n)` still lets a cell with 256 records weigh more than one with 1. Ask a plainer question: do cells with any record at all sit together? Compute Moran's I, E[I] and the z-score under normality in SQL for `y = 1` when a cell has a record and `0` when it has none, on both grids, with the same row-standardized weights, and show how many cells have a record. Is the pattern weaker or stronger than for `ln(1 + n)`, and what does that say?
+
+**Answer:** `s4-moran-sql` with one change, the value in the first CTE:
+
+```sql
+-- q: s4-ex
+-- status: ran
+-- engine: postgis
+WITH v AS (
+  SELECT id, edge_m, CASE WHEN n > 0 THEN 1.0 ELSE 0.0 END::float8 AS y FROM s4_cells
+), z AS (
+  SELECT id, edge_m, y - avg(y) OVER (PARTITION BY edge_m) AS z FROM v
+), w AS (
+  SELECT edge_m, i, j, 1 / count(*) OVER (PARTITION BY i)::float8 AS w FROM s4_neighbours
+), pairs AS (
+  SELECT w.edge_m, w.i, w.j, w.w AS w_ij, t.w AS w_ji
+  FROM w JOIN w AS t ON t.i = w.j AND t.j = w.i
+), sums AS (
+  SELECT p.edge_m,
+         sum(p.w_ij * zi.z * zj.z) AS wzz,
+         sum(p.w_ij) AS s0,
+         sum((p.w_ij + p.w_ji) ^ 2) / 2 AS s1
+  FROM pairs AS p JOIN z AS zi ON zi.id = p.i JOIN z AS zj ON zj.id = p.j
+  GROUP BY p.edge_m
+), s2 AS (
+  SELECT edge_m, sum(ws ^ 2) AS s2
+  FROM (SELECT edge_m, i, sum(w_ij) + sum(w_ji) AS ws FROM pairs GROUP BY edge_m, i) AS cell
+  GROUP BY edge_m
+), cells AS (
+  SELECT z.edge_m, count(*)::float8 AS n, sum(z.z * z.z) AS zz, sum(v.y)::integer AS with_records
+  FROM z JOIN v USING (id)
+  GROUP BY z.edge_m
+), moran AS (
+  SELECT c.edge_m, c.n, c.with_records,
+         c.n / s.s0 * s.wzz / c.zz AS i,
+         -1 / (c.n - 1) AS ei,
+         (c.n ^ 2 * s.s1 - c.n * s2.s2 + 3 * s.s0 ^ 2) / ((c.n - 1) * (c.n + 1) * s.s0 ^ 2) - (1 / (c.n - 1)) ^ 2 AS var_norm
+  FROM cells AS c JOIN sums AS s USING (edge_m) JOIN s2 USING (edge_m)
+)
+SELECT edge_m, n::integer AS n, with_records,
+       round(i::numeric, 6) AS i,
+       round(ei::numeric, 6) AS ei,
+       round(((i - ei) / sqrt(var_norm))::numeric, 2) AS z
+FROM moran
+ORDER BY edge_m;
+```
+
+```text
+-- result: s4-ex · 2 rows · sha256 1840f4611e5b
+edge_m | n | with_records | i | ei | z
+5000 | 1094 | 307 | 0.208633 | -0.000915 | 11.60
+10000 | 296 | 178 | 0.229060 | -0.003390 | 6.55
+```
+
+**Check:** The answer has 307 of the 1,094 cells of 5 km with a record, and 178 of the 296 of 10 km. At 5 km, presence clusters less than the counts did (I 0.2086 against 0.2733, z 11.60 against 15.18): part of what `ln(1 + n)` measured was cells with many records next to each other, and with presence alone a cell of 256 records counts as much as a cell of 1. It still clusters strongly: cells with a record sit beside cells with a record. At 10 km it goes the other way (I 0.2291 against 0.2036, z 6.55 against 5.83): most cells there have a record, and what clusters is the contrast between areas where someone recorded a devil and areas where nobody did. Both versions answer a question about records: where people looked and published, not where devils are. The choice of value, like the choice of cell size, changes the number, so a Moran's I is reported with the value it measures, its cells and its weights.
+
+**Dialects:**
+- **PostgreSQL:** `^` raises to a power (as `power(a, b)`), and `1 / count(*) OVER (…)::float8` divides in floating point because the cast binds to the window's result; without it, `1 / 6` is integer division and gives 0. `ln`, `sqrt` and `avg(…) OVER (PARTITION BY …)` are standard.
+- **DuckDB:** the same SQL runs once `s4_cells` exists (with the spatial extension, `ST_Point(x, y)` takes no SRID and `ST_DWithin` measures in the coordinates' units, metres here). `^` and `**` are both powers. `/` always divides in floating point in DuckDB (`//` is integer division), so the cast isn't needed there.
+- **SQL Server:** `^` is bitwise exclusive or, not a power: `2 ^ 2` is 0. Write `POWER(x, 2)` or `x * x`. `/` between integers truncates, so cast: `1.0 / COUNT(*) OVER (PARTITION BY i)`. `LOG(x)` is the natural logarithm. The distance band is `a.geom.STDistance(b.geom) <= 2 * a.edge_m` on `geometry` points; a spatial index serves it only as `STDistance(…) <= …` in the `WHERE` or `ON` clause.
+- **PySAL:** `esda.Moran(y, w, transformation="r", permutations=999)`; `I`, `EI`, `VI_norm`, `z_norm`, `VI_rand`, `z_rand`, `p_norm`, `p_rand` and, with permutations, `p_sim`, `EI_sim`, `seI_sim`, `z_sim`. Set `np.random.seed` first for repeatable shuffles. `libpysal.weights.KNN` or `Queen` give other neighbour rules (s3); the statistic only means something with the weights stated beside it.
+- **ArcGIS Pro:** the Spatial Autocorrelation (Global Moran's I) tool (`arcpy.stats.SpatialAutocorrelation`), on a feature class of the cells: Input Field `y`; Conceptualization of Spatial Relationships `Fixed distance band`; Distance Method `Euclidean`; Standardization `Row`; Distance Band or Threshold Distance `10000` (metres, at 5 km). It reports Moran's Index, Expected Index, Variance, z-score and p-value; its variance and z-score are the randomization ones, so compare its z with `z_rand` (15.25), not `z_norm`. Ask for its HTML report to see where I falls among the values it would take by chance.
 
 #### s5 · local
 

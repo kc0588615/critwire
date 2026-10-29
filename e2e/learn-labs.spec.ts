@@ -13,6 +13,7 @@
 import { expect, test } from "@playwright/test";
 import { readFile } from "node:fs/promises";
 import { moduleUrl } from "../scripts/build/learn/module-html.ts";
+import { codeOnly } from "../scripts/build/learn/sql.ts";
 import { assembleDownloads, pageDownloads, type Download } from "../scripts/learn/assemble.ts";
 import { CHECKED_DIR, PG_SESSION_ID, PY_CONNECT_ID, type Block } from "../scripts/learn/blocks.ts";
 import { SETUP_PAGE, type CoursePage } from "../scripts/learn/course.ts";
@@ -141,7 +142,9 @@ test("a download naming s4_cells or s4_neighbours runs s4-cells right after pg-s
   const { pages } = await course();
   const blocks = pages.flatMap((p) => p.blocks);
   const text = (id: string) => trimEnd(blocks.find((b) => b.id === id)!.text);
-  for (const d of assembleDownloads(pages).filter((x) => x.kind !== "ipynb" && /\bs4_(cells|neighbours)\b/.test(x.text))) {
+  // A .sql names a table in its code (a string literal or comment doesn't: g1-columns filters 's4_cells' out); a .py in its SQL strings.
+  const names = (d: Download) => /\bs4_(cells|neighbours)\b/.test(d.kind === "sql" ? codeOnly(d.text) : d.text);
+  for (const d of assembleDownloads(pages).filter((x) => x.kind !== "ipynb" && names(x))) {
     const boot = d.kind === "sql"
       ? `${text(PG_SESSION_ID)}\n\nBEGIN;\n${text("s4-cells")}\nCOMMIT;\n`
       : `# %% ${PY_CONNECT_ID}\n${text(PY_CONNECT_ID)}\n\n# %% boot: s4-cells\n`;

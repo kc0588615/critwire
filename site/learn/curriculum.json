@@ -436,7 +436,7 @@
       "prereqs": [
         "s3"
       ],
-      "state": "planned",
+      "state": "built",
       "skill": "Global Moran's I, its expectation, variance and z-score in SQL, matched by PySAL; permutation tests",
       "questions": [
         "Does record density cluster across Tasmania?",
