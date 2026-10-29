@@ -8492,18 +8492,21 @@ HTTP 404: not retried
 
 **Tool:** Py + PG · **Time:** 2.5 h · **Prereqs:** e1, d4
 
-**Goal:** load a delivered file into typed, checked tables, all or nothing. The pattern has three parts:
-- **Staging:** a table with one `text` column per column of the file, loaded exactly as delivered. Nothing can fail on a type here, and every later error is a SQL query that names its rows.
-- **`COPY`**, not row-by-row `INSERT`: PostgreSQL reads the file as one stream. The spike staged GBIF's 394,532 rows in 6.7 s and finished the whole load, types and checks included, in 14.2 s. psycopg's `cursor.copy` streams from Python, so a zip member goes in without being extracted.
+**Concept:** load a delivered file into typed, checked tables, all or nothing, and when the load refuses, say which record broke it and why. The pattern has three parts:
+- **Staging:** a table with one `text` column per column of the file, loaded exactly as delivered. No value can fail a type here, so the type errors come later, from SQL queries that can name their rows. The file itself can still fail: a record with a field too many, a NUL byte (the zero byte, which a PostgreSQL text value can't hold), or bytes that aren't valid UTF-8 stop `COPY`, and its error gives the line.
+- **`COPY`**, not row-by-row `INSERT`: PostgreSQL reads the file as one stream. The spike staged GBIF's 394,532 rows in 6.7 s and finished the whole load, types and checks included, in 14.2 s. psycopg's `cursor.copy` streams from Python, so a zip member goes in without being extracted. A `COPY` keeps all its rows or none: one bad line refuses the lines before it too.
 - **Typed tables, filled from staging with SQL:** casts, constraints, the geometry (a generated column, so it can't disagree with the coordinates), and the species rule. Then the checks. All of it runs in one transaction, so a failed check leaves the tables as they were before the run (d4).
+- **Check before you cast.** A cast that fails stops the statement at its first bad value, and its message gives the value but neither the record nor the column. `pg_input_is_valid(value, type)` (PostgreSQL 16) answers whether a value would cast, without raising an error, so one query can list every bad value with its record's key and column before the typed insert runs; `pg_input_error_info` gives the message the cast would have raised.
 
 **`COPY`'s default format is wrong for files you didn't write.** GBIF's `SIMPLE_CSV` is tab-separated and never quotes a field. Read with `FORMAT text`, `COPY`'s default, a backslash starts an escape: `\n` becomes a line break, other backslashes vanish, `\N` becomes NULL, and an empty field stays an empty string. Nothing raises an error. CSV mode with a tab delimiter and a quote character that never occurs (`\b`, backspace) reads every byte as data and an empty field as NULL. On the real download, text format silently changed 9 rows, while this form kept all 97 rows holding a `\` or a `"` byte for byte (§A.1). The same rule applies to the lab loader (§4.3): never use text format on data you didn't write.
 
 **Synonyms.** Four of critwire's GBIF keys are synonyms in GBIF's checklist (Blanding's turtle, Baird's tapir, Temminck's and giant pangolins). GBIF files their records under the accepted species' `speciesKey` and keeps the key you asked for in `taxonKey`, so joining on `speciesKey` alone loses them: 2,385 records in the spike. The rule is the species whose key is the record's `speciesKey`, else its `taxonKey`; a record that matches no species, or two different ones, fails the load (§4.2).
 
+**Licences.** The typed insert below renames the two licence codes this file uses, and nothing more. That is an illustration, not the lab sample's licence rule: the sample keeps a record only if its *effective* licence, the more restrictive of the record's own and its dataset's, is CC0 1.0 or CC BY 4.0 (§4.2), which needs each dataset's licence as well (e4).
+
 **Data:** three made-up records in GBIF's format (a few of its 50 columns), which the first block holds; `species` (the GBIF keys); `occurrences` for the GeoPandas round trip.
 
-**Key code:** the file and the staging step. The `COPY` statement is the spike's, character for character (`SP/etl/gbif_load.py`). The block prints nothing; the next two run it first.
+**Worked example:** the file and the staging step. The `COPY` statement is the spike's, character for character (`SP/etl/gbif_load.py`). The block prints nothing; the blocks after it run it first.
 
 ```python
 # q: e2-file
@@ -8522,8 +8525,14 @@ ROWS = [
      "Sirena station", "8.4800", "-83.5900", "250", "", "", "2440897", "8395500",
      "MACHINE_OBSERVATION", "CC_BY_4_0", r"\N"],
 ]
-# Three made-up records in GBIF's SIMPLE_CSV form: tab-separated, no quoting, an empty field for "no value".
-GBIF_FILE = ("\n".join("\t".join(row) for row in [HEADER, *ROWS]) + "\n").encode()
+
+
+def gbif_file(rows):
+    """Records in GBIF's SIMPLE_CSV form: a header line, tab-separated, no quoting, an empty field for "no value"."""
+    return ("\n".join("\t".join(row) for row in [HEADER, *rows]) + "\n").encode()
+
+
+GBIF_FILE = gbif_file(ROWS)  # three made-up records
 
 # Every column text: the file is read exactly as delivered, and typed in SQL afterwards.
 CREATE_STAGING = "CREATE TEMP TABLE gbif_staging (" + ", ".join(f'"{h}" text' for h in HEADER) + ")"
@@ -8585,7 +8594,60 @@ text format | 1000000002 | Pafuri↵orth bank | '' | CHANGED
 text format | 1000000003 | Sirena station | NULL | CHANGED
 ```
 
-Typed, matched to species and checked, in one transaction. A `TEMP` table can't have a foreign key to a lasting table, so here the species rule's `NOT NULL` does that job; in your own schema, declare the key.
+CSV mode keeps all three records as sent. Text format changes all three, and says nothing: the backslash in `Cradle Mountain\Dove Lake track` disappears, `Pafuri\north bank` gains a line break, the empty `recordedBy` becomes an empty string instead of NULL, and the recorder `\N` becomes NULL.
+
+**Lab:**
+1. Files that break `COPY`. Staging takes any value, but not any file: each of three copies of the file has one record damaged in a way a real delivery can be, and each `COPY` runs in a savepoint (a point inside the transaction that a failure rolls back to), so the next one can try.
+
+```python
+# q: e2-copy-fails
+# status: ran
+# after: py-connect, e2-file
+import re
+
+import psycopg
+
+# Three ways a delivered file breaks COPY itself, before any type is involved: each damages one record of GBIF_FILE.
+BROKEN = [
+    ("a tab inside a field", GBIF_FILE.replace(b"Sirena station", b"Sirena\tstation")),
+    ("a NUL byte", GBIF_FILE.replace(b"Pafuri", b"Paf\x00uri")),
+    ("Latin-1, not UTF-8", GBIF_FILE.replace('A. "Sam" Lee'.encode(), 'A. "Sam" Lée'.encode("latin-1"))),
+]
+
+with connect() as conn, conn.cursor() as cur:
+    cur.execute(CREATE_STAGING)
+    print("file | SQLSTATE | line | error")
+    for name, data in BROKEN:
+        try:
+            with conn.transaction():  # a savepoint: the failed COPY is undone, the table stays
+                with cur.copy(COPY_STAGING) as copy:
+                    copy.write(data)
+        except psycopg.Error as error:
+            line = re.search(r"\bline (\d+)", error.diag.context or "")  # COPY's context names the file's line
+            print(f"{name} | {error.sqlstate} | {line[1] if line else '?'} | {error.diag.message_primary}")
+        else:
+            raise SystemExit(f"{name}: COPY accepted it")
+    failed = cur.execute("SELECT count(*) FROM gbif_staging").fetchone()[0]
+    with cur.copy(COPY_STAGING) as copy:
+        copy.write(GBIF_FILE)
+    delivered = cur.execute("SELECT count(*) FROM gbif_staging").fetchone()[0]
+    conn.rollback()
+
+print(f"rows staged: {failed} after the three failed COPYs, {delivered} from the file as delivered")
+```
+
+```text
+-- result: e2-copy-fails · python · sha256 6e24b65c626e
+file | SQLSTATE | line | error
+a tab inside a field | 22P04 | 4 | extra data after last expected column
+a NUL byte | 22021 | 3 | invalid byte sequence for encoding "UTF8": 0x00
+Latin-1, not UTF-8 | 22021 | 2 | invalid byte sequence for encoding "UTF8": 0xe9 0x65 0x0a
+rows staged: 0 after the three failed COPYs, 3 from the file as delivered
+```
+
+Each error names the problem and the line: the header is line 1, so line 4 is the tapir's record, whose locality now holds a tab and so one field too many. `22P04` is "bad copy file format"; `22021` is "character not in repertoire", a byte sequence that isn't a character in the connection's encoding (UTF-8 here). The line before each damaged one was fine, yet the staging table is empty after all three: a `COPY` is one statement, and a statement keeps all its rows or none. The fix belongs at the source, or in a step that repairs the bytes before `COPY` and records what it changed; `COPY` has no option that skips a malformed line.
+
+2. Typed, matched to species and checked, in one transaction. A `TEMP` table can't have a foreign key to a lasting table, so here the species rule's `NOT NULL` does that job; in your own schema, declare the key.
 
 ```python
 # q: e2-typed
@@ -8608,6 +8670,8 @@ CREATE TEMP TABLE occurrences_new (
 )"""
 
 # The species whose GBIF key is the record's speciesKey, else its taxonKey (a synonym keeps our key in taxonKey).
+# The license: this file's two codes renamed, for illustration only. The lab sample keeps a record only if its
+# effective license, the more restrictive of its own and its dataset's, is open; that needs the dataset's too.
 INSERT_TYPED = """
 INSERT INTO occurrences_new
 SELECT g."gbifID"::bigint, coalesce(by_species.id, by_taxon.id), g."datasetKey"::uuid,
@@ -8659,41 +8723,174 @@ id | species | license | uncertainty_m | year | geom
 1000000003 | Tapirus bairdii | CC BY 4.0 | 250.0 | NULL | POINT(-83.59 8.48)
 ```
 
-GeoPandas to and from PostGIS, for work that is easier in Python. `read_postgis` turns a query into a GeoDataFrame, `to_postgis` writes one back as a table (it needs SQLAlchemy and GeoAlchemy2, both in §3.3's environment). The write stays in the connection's transaction, which the block rolls back.
+The three records map to the devil, Temminck's pangolin and Baird's tapir, but a join on `speciesKey` alone finds only the devil: the other two are synonyms. Missing values arrive as NULL, and each record has a point in SRID 4326. The license column shows the renaming worked on these three records; it says nothing about whether their datasets allow them to be published.
+
+3. Casts that name their record. Two values a spreadsheet might write, a unit after a number and a decimal comma, staged without complaint; the typed insert's cast would stop at the first.
+
+```python
+# q: e2-casts
+# status: ran
+# after: py-connect, e2-file
+import psycopg
+
+# The type each staged column gets in e2-typed's INSERT_TYPED.
+CASTS = {"gbifID": "bigint", "datasetKey": "uuid", "decimalLatitude": "float8", "decimalLongitude": "float8",
+         "coordinateUncertaintyInMeters": "float8", "year": "integer", "month": "integer", "taxonKey": "bigint",
+         "speciesKey": "bigint"}
+# Every staged value its cast would refuse, with its record's key and its column: what a failed cast doesn't say.
+BAD_VALUES = " UNION ALL ".join(
+    f"""SELECT "gbifID", '{column}', "{column}", '{type_}' FROM gbif_staging
+        WHERE NOT pg_input_is_valid("{column}", '{type_}')""" for column, type_ in CASTS.items()) + " ORDER BY 1, 2"
+
+rows = [row.copy() for row in ROWS]
+rows[0][HEADER.index("coordinateUncertaintyInMeters")] = "30 m"
+rows[1][HEADER.index("decimalLatitude")] = "-22,4310"
+
+with connect() as conn, conn.cursor() as cur:
+    stage(cur, gbif_file(rows))  # staging takes both: every column is text
+    try:
+        with conn.transaction():
+            cur.execute('SELECT "decimalLatitude"::float8, "coordinateUncertaintyInMeters"::float8 FROM gbif_staging')
+    except psycopg.Error as error:
+        print(f"the cast alone: {error.sqlstate} {error.diag.message_primary}")
+    bad = cur.execute(BAD_VALUES).fetchall()  # run this before INSERT_TYPED; refuse the load if it returns a row
+    conn.rollback()
+
+print("gbifID | column | value | type")
+for row in bad:
+    print(" | ".join(row))
+print(f"load refused before INSERT_TYPED: {len(bad)} values in {len({row[0] for row in bad})} of {len(rows)} records")
+```
+
+```text
+-- result: e2-casts · python · sha256 f015257c3640
+the cast alone: 22P02 invalid input syntax for type double precision: "30 m"
+gbifID | column | value | type
+1000000001 | coordinateUncertaintyInMeters | 30 m | float8
+1000000002 | decimalLatitude | -22,4310 | float8
+load refused before INSERT_TYPED: 2 values in 2 of 3 records
+```
+
+The cast alone reports `"30 m"` and stops: the decimal comma two records later stays hidden until the first is fixed and the load run again, and nothing in the message says which record held `30 m`. The check lists both, keyed by `gbifID`, in one pass. `pg_input_is_valid` returns NULL for a NULL value, so an empty field is never reported as bad; a column that must have a value says so with `NOT NULL`.
+
+4. GeoPandas to and from PostGIS, for work that is easier in Python. `read_postgis` turns a query into a GeoDataFrame, `to_postgis` writes one back as a table (it needs SQLAlchemy and GeoAlchemy2, both in §3.3's environment). SQLAlchemy gets its connections from `connect()`, so it uses the same database, role and search path as every other block, and the write names its schema rather than trusting the search path to pick one. The write stays in the connection's transaction, which the block rolls back.
 
 ```python
 # q: e2-geopandas
 # status: ran
+# after: py-connect
 import geopandas as gpd
 from sqlalchemy import create_engine, text
 
-# The same lab connection for SQLAlchemy: libpq's PG* variables pick the database, the options set the search path.
-engine = create_engine("postgresql+psycopg://", connect_args={"options": "-c search_path=learn_curriculum,public"})
+# SQLAlchemy on py-connect's connection: the same database, role and search path.
+engine = create_engine("postgresql+psycopg://", creator=connect)
 
 with engine.connect() as conn:
     devils = gpd.read_postgis(
-        text("SELECT o.id, o.year, o.geom FROM occurrences AS o JOIN species AS s ON s.id = o.species_id "
+        text("SELECT o.id, o.year, o.geom FROM learn_curriculum.occurrences AS o "
+             "JOIN learn_curriculum.species AS s ON s.id = o.species_id "
              "WHERE s.scientific_name = 'Sarcophilus harrisii' ORDER BY o.id"),
         conn, geom_col="geom")
     print(f"read: {len(devils)} rows, CRS {devils.crs.to_string()}, geometry {devils.geom_type.iloc[0]}")
 
     metres = devils.to_crs(3577)  # GDA94 / Australian Albers, an equal-area projection in metres
     metres["geom"] = metres.buffer(1000)  # a 1 km circle around each record
-    metres.to_postgis("devil_buffers", conn, if_exists="fail", index=False)  # in this transaction
+    # The schema named, not left to the search path; the write stays in this connection's transaction.
+    metres.to_postgis("devil_buffers", conn, schema="learn_curriculum", if_exists="fail", index=False)
     n, srid, kind, km2 = conn.execute(text(
         "SELECT count(*), min(ST_SRID(geom)), min(GeometryType(geom)), round(sum(ST_Area(geom))::numeric / 1e6, 1) "
-        "FROM devil_buffers")).one()
+        "FROM learn_curriculum.devil_buffers")).one()
     print(f"written: {n} rows, SRID {srid}, {kind}, {km2} km² in all")
+    schema = conn.execute(text(
+        "SELECT relnamespace::regnamespace::text FROM pg_class "
+        "WHERE oid = to_regclass('learn_curriculum.devil_buffers')")).scalar_one()
+    assert schema == "learn_curriculum", f"devil_buffers was written to {schema}"
+    print(f"devil_buffers is in schema {schema}, until the rollback")
     conn.rollback()  # the lab leaves learn_curriculum as it found it
+    left = conn.execute(text("SELECT to_regclass('learn_curriculum.devil_buffers')")).scalar_one()
+    print(f"after the rollback: {left or 'no table'}")
 ```
 
 ```text
--- result: e2-geopandas · python · sha256 2cde0f113ff8
+-- result: e2-geopandas · python · sha256 3d5433163e79
 read: 2000 rows, CRS EPSG:4326, geometry Point
 written: 2000 rows, SRID 3577, POLYGON, 6273.1 km² in all
+devil_buffers is in schema learn_curriculum, until the rollback
+after the rollback: no table
 ```
 
-**Expected:** CSV mode keeps all three records as sent. Text format changes all three, silently: the backslash in `Cradle Mountain\Dove Lake track` disappears, `Pafuri\north bank` gains a line break, the empty `recordedBy` becomes an empty string instead of NULL, and the recorder `\N` becomes NULL. Typed, the three records map to the devil, Temminck's pangolin and Baird's tapir, but a join on `speciesKey` alone finds only the devil: the other two are synonyms. Missing values arrive as NULL, and each record has a point in SRID 4326. GeoPandas reads the devil's 2,000 records as points in EPSG:4326 and writes 2,000 one-kilometre buffers in EPSG:3577 (Australian Albers, in metres), 6,273.1 km² together.
+GeoPandas reads the devil's 2,000 records as points in EPSG:4326 and writes 2,000 one-kilometre buffers in EPSG:3577 (Australian Albers, in metres), 6,273.1 km² together, overlaps counted twice. The catalogue (`pg_class`, whose `relnamespace` is the table's schema) confirms where the table went while the transaction is still open; after the rollback it is gone. The lab role can create tables only in `learn_curriculum`, its own schema, not in `public`, so a write that fell back to the search path's next schema would fail rather than land somewhere unexpected.
+
+**Result:** a delivered file goes into staging exactly as sent, in CSV mode, never text format. A file with a damaged line is refused whole, and the error gives the line and its SQLSTATE. Every value that wouldn't cast is listed with its record's key and its column before the typed insert runs. The typed load matches synonyms through `taxonKey`, and any failed check rolls it all back. GeoPandas writes into the schema it names, and the lab leaves `learn_curriculum` as it found it.
+
+**Exercise:** a cast that succeeds can still break a `CHECK`: `13` is a valid integer but not a month. Write one query that reports every problem in the staging table at once: for `datasetKey` (uuid), `decimalLatitude` and `decimalLongitude` (float8, within −90 to 90 and −180 to 180), `year` and `month` (integer, month within 1 to 12), each value that won't cast, with the message the cast would raise, and each value that casts but falls outside its range. Run it on the three records with month `13` on the first, latitude `-122.4310` on the second, and on the third a `datasetKey` one digit short and year `c. 2015`.
+
+**Answer:**
+
+```python
+# q: e2-ex
+# status: ran
+# after: py-connect, e2-file
+# e2-typed's casts and CHECKs, per staged column: its type, and the range a typed value must fall in (None: any).
+RULES = [
+    ("datasetKey", "uuid", None),
+    ("decimalLatitude", "float8", (-90, 90)),
+    ("decimalLongitude", "float8", (-180, 180)),
+    ("year", "integer", None),
+    ("month", "integer", (1, 12)),
+]
+
+
+def problem(column, type_, bounds):
+    """A value's problem, or NULL: the cast's own message, else the range it breaks. CASE tests in order,
+    so a value is cast only once pg_input_is_valid has said it can be."""
+    out_of_range = (f"""WHEN NOT ("{column}"::{type_} BETWEEN {bounds[0]} AND {bounds[1]})
+                    THEN 'outside {bounds[0]} to {bounds[1]}'""" if bounds else "")
+    return f"""SELECT "gbifID", '{column}' AS column_name, "{column}" AS value,
+                      CASE WHEN NOT pg_input_is_valid("{column}", '{type_}')
+                           THEN (pg_input_error_info("{column}", '{type_}')).message
+                           {out_of_range} END AS problem
+               FROM gbif_staging"""
+
+
+PROBLEMS = ("SELECT * FROM (" + " UNION ALL ".join(problem(*rule) for rule in RULES) + ") AS p "
+            "WHERE problem IS NOT NULL ORDER BY 1, 2")
+
+rows = [row.copy() for row in ROWS]
+rows[0][HEADER.index("month")] = "13"
+rows[1][HEADER.index("decimalLatitude")] = "-122.4310"
+rows[2][HEADER.index("datasetKey")] = "00000000-0000-0000-0000-00000000002"
+rows[2][HEADER.index("year")] = "c. 2015"
+
+with connect() as conn, conn.cursor() as cur:
+    stage(cur, gbif_file(rows))
+    problems = cur.execute(PROBLEMS).fetchall()
+    conn.rollback()
+
+print("gbifID | column | value | problem")
+for row in problems:
+    print(" | ".join(row))
+print(f"load refused: {len(problems)} problems in {len({row[0] for row in problems})} of {len(rows)} records")
+```
+
+```text
+-- result: e2-ex · python · sha256 9f02311e2683
+gbifID | column | value | problem
+1000000001 | month | 13 | outside 1 to 12
+1000000002 | decimalLatitude | -122.4310 | outside -90 to 90
+1000000003 | datasetKey | 00000000-0000-0000-0000-00000000002 | invalid input syntax for type uuid: "00000000-0000-0000-0000-00000000002"
+1000000003 | year | c. 2015 | invalid input syntax for type integer: "c. 2015"
+load refused: 4 problems in 3 of 3 records
+```
+
+**Check:** All four problems appear, though the third record has two: a cast error stops a statement at its first bad value, while this query only asks. The month and the latitude cast fine and fail their ranges; the short `datasetKey` and `c. 2015` fail their casts, with the message PostgreSQL would have raised. The order inside `CASE` matters: SQL may evaluate the parts of a `WHERE … OR …` in any order, so casting in an `OR` beside `pg_input_is_valid` could still raise; a `CASE` tests its branches in order, so the cast runs only on values that can take it.
+
+**Dialects:**
+- **PostgreSQL:** psql's `\copy gbif_staging FROM 'file.csv' (FORMAT csv, DELIMITER E'\t', QUOTE E'\b', NULL '', HEADER true)` sends a file from your machine, where `COPY … FROM 'file'` reads one on the database server. `COPY` reads in the connection's client encoding: `ENCODING 'LATIN1'` reads a file you know is Latin-1, converted to UTF-8 as it loads. PostgreSQL 17 adds `ON_ERROR ignore`, which skips rows whose values don't fit the column types; a malformed line still stops the `COPY`, and into an all-text staging table no value can fail its type anyway.
+- **DuckDB:** `read_csv('file.csv', delim = '\t', quote = '', all_varchar = true)` is the staging read; `store_rejects = true` records each line it can't read in the `reject_errors` table instead of stopping. `TRY_CAST(x AS DOUBLE)` returns NULL for a value that won't cast, so `WHERE x IS NOT NULL AND TRY_CAST(x AS DOUBLE) IS NULL` is the bad-value check.
+- **SQL Server:** `BULK INSERT staging FROM 'file.csv' WITH (FIELDTERMINATOR = '\t', ROWTERMINATOR = '0x0a', CODEPAGE = '65001', FIRSTROW = 2)`, with `ERRORFILE` to keep the lines it rejects. `TRY_CAST` and `TRY_CONVERT` return NULL for a value that won't cast. There is no generated geometry column of this kind: compute `geography::Point(latitude, longitude, 4326)` in the insert.
+- **GeoPandas:** `to_postgis(name, con, schema=…, if_exists="fail" | "replace" | "append")`; `"replace"` drops the table first, with its indexes and grants. `read_postgis(sql, con, geom_col=…)` needs the geometry column's name. Both take a SQLAlchemy connection, and `create_engine(…, creator=…)` builds one from any function that returns a DBAPI connection.
+- **ArcGIS Pro:** Export Table (`arcpy.conversion.ExportTable`) reads a tab-separated text file into a geodatabase table, guessing each field's type from the file; a `schema.ini` beside the file, in the Microsoft text-driver format, fixes the delimiter and each field's type. XY Table To Point (`arcpy.management.XYTableToPoint`) builds points from the coordinates. Pro writes to PostgreSQL through a database connection file (`.sde`), and Export Features (`arcpy.conversion.ExportFeatures`) copies a layer into it.
 
 #### e3 · idempotent
 

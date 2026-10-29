@@ -1,0 +1,6 @@
+-- result: e2-typed · python · sha256 dcec9a549c6f
+joined on speciesKey alone: 1 of 3 records
+id | species | license | uncertainty_m | year | geom
+1000000001 | Sarcophilus harrisii | CC BY 4.0 | 30.0 | 2019 | POINT(145.9601 -41.6512)
+1000000002 | Smutsia temminckii | CC0 1.0 | NULL | 2021 | POINT(31.212 -22.431)
+1000000003 | Tapirus bairdii | CC BY 4.0 | 250.0 | NULL | POINT(-83.59 8.48)

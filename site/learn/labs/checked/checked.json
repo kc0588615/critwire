@@ -317,6 +317,34 @@
       "key": "d8f21ca4478bdeba94f71f5f627d56ee33bb68a0fef79a075d66e65275e42f22",
       "result": "a9dabfb33f1112d37b3158faeca1f08ce64999a6ef5b8e35dc9b25c201d97e30"
     },
+    "e2-casts": {
+      "key": "11cb5405f72b6f8f22bdd80c305cca32f4b6a09e8218ad89cfad7a9783421c83",
+      "result": "25dda4cdd7e3fc24872fa64750c428d51e1809871e655667a195234dc3293865"
+    },
+    "e2-copy": {
+      "key": "fdf145d6f295b7eab26c0e9e6e9dfee5fd6ffede287436c33ca9e4750ca455e8",
+      "result": "d19fe45aaf689502d8fc5d56706f2ab8ad3f31b93fc8e2f33cbf75521d878b85"
+    },
+    "e2-copy-fails": {
+      "key": "e4c07a83290109f71af3ff2f606fc7a7526474c26daf0800747910ca3bcff28f",
+      "result": "ee5bf7880650c007731503f2d84f04f2972846d3b5062f50d4925ccbbbb1aa8c"
+    },
+    "e2-ex": {
+      "key": "91b91dd545eab32167d9460771365dd8e0861f000591abf320e3bef95a5b4e7a",
+      "result": "ea7c21702297637e97ac4a4f0df78d2dcab63704b5155df97eb0236e743ad544"
+    },
+    "e2-file": {
+      "key": "2ff9d3399113484837fdc9ffd52daaf5d03b9d1aceac1ed832d166f4083e5c87",
+      "result": "468452ea19a4d55776179145a0b886246bc957e6a49ac8931abff3ebe167681e"
+    },
+    "e2-geopandas": {
+      "key": "80bd55335d0cbe855fceb02bf07db08729838c92d37517bef7f62d98ff23f5a9",
+      "result": "b32dfbeb1ea9c294b831e91ecf2f60e4e56d3bf4e00c65dbd184455c10cca8f2"
+    },
+    "e2-typed": {
+      "key": "07e66cdbe64e19bdd8596af6690cd139c0d62291eec2d243c4dcae5ee26fcf79",
+      "result": "841d86562453afb186b08d48b792dd5f5d633629ec4778918f7a17081bed364f"
+    },
     "g1-area": {
       "key": "5e2ec67518f7e7ddb7d85d79fdbb6777cd2a1d41780abbf4066fd64a8165321d",
       "result": "c3123fd9c947bc27c161e6c8e935acc0a9bdae73f375974e31bb262af9d7e21c"
@@ -653,6 +681,7 @@
     "d5.sql": "e8eb4ec666fc0442cafee630dd97875ab5d825532c1f597ff7e628efb692c7a6",
     "d6.sql": "dc7c792e8b3ec36c04beb1b3807785b621373780da783afcbc41e762d1b93225",
     "e1.py": "4080e801ff00b5c05b688f21f4a8aaa1a9ff64013e2e49a22e7526d31317e4a3",
+    "e2.py": "e114f9672d00d7eccc06e063d084890b87c017acc27c4fb2244d3f05b04e80bf",
     "g1.sql": "5ae054385045f92b00d5442eb90d9962024114609002aee6b82671e7a7037d32",
     "g2.sql": "a50473b3cd47838d9cf45ab114dde8c55a29078f992c424e08382318e52636eb",
     "g3.sql": "1f0b49c165ae736a470be98df194b1f7f9dc2c431870a0d02753a4d8ba46deca",

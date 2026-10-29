@@ -20,7 +20,7 @@
 <ul>
 <li><strong>Replace in one transaction:</strong> <code>BEGIN</code>, drop or empty the target, load it all, <code>COMMIT</code>. A failure changes nothing; readers see the old data until the commit, then the new. critwire's lab file does exactly this with the whole <code>learn_curriculum</code> schema; its <code>DROP SCHEMA</code> takes <code>AccessExclusiveLock</code> on every table, so the labs wait for the few seconds it runs instead of reading half a load.</li>
 <li><strong>Upsert by key:</strong> <code>INSERT … ON CONFLICT (key) DO NOTHING</code> skips rows that are already there; <code>DO UPDATE SET col = EXCLUDED.col</code> updates them from the incoming row (<code>EXCLUDED</code>). It needs a primary key or unique constraint on exactly those columns, and it's safe when two loads run at once. Good for adding to a large table a batch at a time. It only adds and updates: a row the source has since deleted stays in the target, and so does the old row of one whose key changed upstream (the new key arrives as a new row). Keeping up with deletions takes a second step, such as deleting the target's rows that are missing from a complete batch, or the replace above.</li>
-<li><strong>Stage, then merge:</strong> load into a staging table, check it, then upsert from it into the target in one transaction. The ETL track (in preparation) loads GBIF's download this way.</li>
+<li><strong>Stage, then merge:</strong> load into a staging table, check it, then upsert from it into the target in one transaction. <a href="/learn/etl/transform-load/">e2</a> loads GBIF's download this way.</li>
 </ul></li>
 </ul>
 <p>Row versions, for one record that session A updates while session B reads it:</p>

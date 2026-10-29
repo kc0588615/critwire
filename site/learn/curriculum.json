@@ -516,7 +516,7 @@
         "e1",
         "d4"
       ],
-      "state": "planned",
+      "state": "built",
       "skill": "Staging tables, types, `COPY`, upserts, geometry; GeoPandas to and from PostGIS",
       "questions": [
         "How do I load the download in one transaction, typed and checked, with each record matched to its species?"

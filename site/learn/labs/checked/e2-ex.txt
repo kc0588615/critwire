@@ -1,0 +1,7 @@
+-- result: e2-ex · python · sha256 9f02311e2683
+gbifID | column | value | problem
+1000000001 | month | 13 | outside 1 to 12
+1000000002 | decimalLatitude | -122.4310 | outside -90 to 90
+1000000003 | datasetKey | 00000000-0000-0000-0000-00000000002 | invalid input syntax for type uuid: "00000000-0000-0000-0000-00000000002"
+1000000003 | year | c. 2015 | invalid input syntax for type integer: "c. 2015"
+load refused: 4 problems in 3 of 3 records
