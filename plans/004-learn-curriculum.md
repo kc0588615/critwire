@@ -7590,11 +7590,18 @@ edge_m | n | with_records | i | ei | z
 
 **Tool:** PG + Py · **Time:** 2.5 h · **Prereqs:** s4
 
-**Goal:** say **where** values cluster, and how many of those places a careful test keeps. **Getis-Ord Gi\*** compares the sum of a cell's values and its neighbours' (the star: the cell counts as its own neighbour) with what the sum would be if the values were spread at random; its z-score, `Gi* = (Σ_j w_ij x_j − x̄ Σ_j w_ij) / (S √((n Σ_j w_ij² − (Σ_j w_ij)²) / (n − 1)))` with `S` the values' standard deviation, is high in a **hot spot** and low in a **cold spot** (ArcGIS Pro's Hot Spot Analysis). **Local Moran's I** (LISA) gives each cell its own share of global Moran's I and sorts the significant ones into high-high and low-low clusters and high-low and low-high outliers (Cluster and Outlier Analysis); its p-values come from permutations. Either way a test runs once per cell, here 1,094 times, so at p ≤ 0.05 about 55 cells would pass by chance alone. The **false discovery rate** (Benjamini and Hochberg) corrects that: sort the m p-values, find the largest rank k with `p_(k) ≤ k · 0.05 / m`, and keep the k smallest. On cells that count records, a hot spot is a hot spot of recording.
+**Concept:** s4 gave one number for the whole island; this module asks **where** values cluster, and how many of those places survive a careful test.
+- A **local** statistic gives each cell its own value, computed from the cell and its neighbours, so it can be mapped. The cells, values and weights are s4's: the 5 km hexagons over Tasmania's main island, `y = ln(1 + n)`, and the band of twice the edge.
+- **Getis-Ord Gi\*** compares the sum of the values in a cell's neighbourhood, the cell included (the star), with the sum that neighbourhood would have if the values were spread at random: `Gi* = (Σ_j w_ij y_j − ȳ Σ_j w_ij) / (S √((n Σ_j w_ij² − (Σ_j w_ij)²) / (n − 1)))`, where `S` is the values' standard deviation, `n` the number of cells and the weights binary (1 for each neighbour and for the cell itself). The result is a z-score: high in a **hot spot**, a neighbourhood of high values, and low in a **cold spot**, a neighbourhood of low ones.
+- **p-values from z.** Under the null hypothesis a z-score follows the standard normal distribution, so the **two-sided** p-value, the chance of a z at least this far from 0 in either direction, is `erfc(|z| / √2)` (`erfc` is the complementary error function). |z| ≥ 1.96 is p ≤ 0.05.
+- **Local Moran's I** (LISA, a local indicator of spatial association) gives each cell its own share of global Moran's I: `I_i = z_i · Σ_j w_ij z_j / m2`, where `z_i = y_i − ȳ`, the weights are row-standardized and `m2 = Σ_k z_k² / n`. The sign of `z_i` (above or below the mean) and of the **spatial lag** `Σ_j w_ij z_j` (the neighbours' mean, s3) put each cell in a **quadrant**: high-high and low-low cells sit among values like their own (**clusters**); high-low and low-high cells differ from their neighbours (**outliers**).
+- **Permutation p-values.** LISA has no trusted formula for its variance, so each cell's p-value comes from a **conditional permutation** test: keep the cell's own value, give its neighbours values drawn at random from the other cells, recompute `I_i`, and repeat 999 times. With 999 permutations the smallest possible pseudo p-value is 1/1000, as in s4. The draws are random, so a repeatable result needs a fixed seed.
+- **Many tests at once.** A local statistic runs one test per cell, here 1,094. At p ≤ 0.05, about 55 cells would pass by chance alone even with no pattern at all. The **false discovery rate** (FDR, Benjamini and Hochberg) controls the expected share of false positives among the cells kept: sort the m p-values, find the largest rank k with `p_(k) ≤ k · 0.05 / m`, and keep the k smallest. It's less strict than the **Bonferroni** correction (`p ≤ 0.05 / m` for every cell), which controls the chance of even one false positive.
+- **Hot spots of what?** The cells count records, and s1 showed the devil's records are mostly one atlas and one museum's samples. A hot spot here is a place where people recorded many devils, and it is reported as a hot spot of recording.
 
-**Data:** `s4_cells`, `s4_neighbours` (the 5 km cells, `y = ln(1 + n)`).
+**Worked example:** Gi\* in plain SQL. Like s2 and s3, the blocks read s4's `s4_cells` and `s4_neighbours`: every download of this module runs `s4-cells` first, right after connecting, so `s5.sql` and `s5.py` work on their own; to run the blocks one at a time, run `s4-cells` once first.
 
-**Key code:** Gi\* in plain SQL with binary weights and the cell itself included, then two-sided p-values from the normal distribution (`erfc`, PostgreSQL 16) and the Benjamini-Hochberg cut, kept as a temporary view, `s5_gistar` (one row per cell: `id`, `z`, `p`, and `fdr`, true where the cell survives the correction), so c1 reads the same result instead of repeating the query:
+The block keeps its result as a temporary view, `s5_gistar`, one row per 5 km cell: `id`, `z`, the two-sided `p`, and `fdr`, true where the cell survives the false discovery rate. The exercise below reads it, and so does the capstone (c1), instead of repeating the query. A temporary view lasts until the session ends:
 
 ```sql
 -- q: s5-gistar
@@ -7642,7 +7649,12 @@ cells | hot_05 | cold_05 | hot_fdr | cold_fdr | max_z | min_z
 1094 | 99 | 0 | 39 | 0 | 10.632449 | -1.289294
 ```
 
-The same in PySAL: `G_Local` with `star=True` and binary weights, and esda's `fdr`, which returns the p-value cut:
+Read it one CTE at a time. `stats` makes n, ȳ and `S`, the population standard deviation (`sqrt(avg(y²) − ȳ²)`, dividing by n, not n − 1, as the formula requires). `w` adds each cell to its own neighbours (the star) with `UNION ALL`, so `sums` gets `Σ_j w_ij y_j` and, with binary weights, `Σ_j w_ij = Σ_j w_ij²` = the number of cells in the neighbourhood. `z` is the Gi\* formula. `p` turns z into a two-sided p-value with `erfc` (new in PostgreSQL 16) and ranks the cells by it, `i` breaking ties. `cut` is the Benjamini-Hochberg step: the largest rank whose p-value is at most `rank · 0.05 / m` (0 when no cell passes). The last query counts the cells.
+
+99 cells are hot at p ≤ 0.05 and 39 survive the false discovery rate; the highest z is 10.63. There is no cold spot at all, and the lowest z is only −1.29: 787 of the 1,094 cells hold no record (s4's exercise), so an empty neighbourhood is the typical one and can't stand out below the mean.
+
+**Lab:**
+1. The same Gi\* in PySAL: `G_Local` with `star=True` and binary weights (`transform="B"`), from the same cells and the same band. esda's own `p_norm` is one-sided, so the block computes the two-sided p-value from `Zs`; esda's `fdr` returns the p-value cut:
 
 ```python
 # q: s5-gistar-pysal
@@ -7673,7 +7685,9 @@ cells | hot_05 | cold_05 | hot_fdr | cold_fdr | max_z | min_z
 1094 | 99 | 0 | 39 | 0 | 10.632449 | -1.289294
 ```
 
-Local Moran's I with 999 permutations (seeded), by quadrant: all cells, significant at p ≤ 0.05, and after the false discovery rate:
+The line equals the SQL's, digit for digit: the course's test compares the two every time the labs run.
+
+2. Local Moran's I with 999 permutations (seeded), by quadrant: all cells, significant at p ≤ 0.05, and after the false discovery rate. `transformation="r"` row-standardizes the weights, as in s4; `seed=2026` makes the permutations repeatable:
 
 ```python
 # q: s5-lisa
@@ -7708,7 +7722,98 @@ low-low | 557 | 0 | 0
 high-low | 122 | 29 | 29
 ```
 
-**Expected:** SQL's Gi\* and PySAL's `G_Local` give the same line: 99 hot cells at p ≤ 0.05, 39 after the false discovery rate, the highest z 10.632449, and no cold spot at all, because 787 of the cells are empty and the lowest z is −1.29: where most cells hold nothing, "cold" can't stand out from the mean. Local Moran's I finds 68 high-high cells at p ≤ 0.05 and 16 after the correction (its cut is p ≤ 0.0021, so only cells with p_sim 0.001 or 0.002 survive, the floor 999 permutations allow); 29 high-low outliers survive too, single cells of many records among empty ones, the shape of an atlas grid point or a sampling site; no low-low cell is significant. The FDR removes more than half of Gi\*'s hot spots and removes three in four of LISA's high-high cells. What is left are the places the atlas and the museum's teams recorded devils most: hot spots of effort, which a report labels as such.
+The false discovery rate's cut is p ≤ 0.0021, so only cells with a pseudo p-value of 0.001 or 0.002 survive: the floor 999 permutations allow, and the step above it. 68 high-high cells are significant at p ≤ 0.05 and 16 after the correction. 29 high-low outliers survive too: single cells of many records among empty ones, the shape of an atlas grid point or a sampling site. No low-low cell is significant.
+
+3. The quadrants need no permutations: they come from the sign of each cell's deviation from the mean and of its spatial lag, both plain SQL. This block computes them from `s4_cells` and `s4_neighbours`, with the records each quadrant holds; the course's test checks that its cells per quadrant equal esda's `cells` column:
+
+```sql
+-- q: s5-lisa-sql
+-- status: ran
+-- engine: postgis
+WITH c AS (
+  SELECT id, n, y - avg(y) OVER () AS z FROM s4_cells WHERE edge_m = 5000
+), lag AS (
+  SELECT nb.i AS id, avg(c.z) AS lag
+  FROM s4_neighbours AS nb JOIN c ON c.id = nb.j
+  WHERE nb.edge_m = 5000
+  GROUP BY nb.i
+), q AS (
+  SELECT c.id, c.n,
+         CASE WHEN c.z > 0 AND l.lag > 0 THEN 1
+              WHEN c.z <= 0 AND l.lag > 0 THEN 2
+              WHEN c.z <= 0 AND l.lag <= 0 THEN 3
+              ELSE 4 END AS q
+  FROM c JOIN lag AS l USING (id)
+)
+SELECT (ARRAY['high-high', 'low-high', 'low-low', 'high-low'])[q] AS quadrant,
+       count(*) AS cells,
+       sum(n) AS records
+FROM q
+GROUP BY q
+ORDER BY q;
+```
+
+```text
+-- result: s5-lisa-sql · 4 rows · sha256 61ccb6a48dc8
+quadrant | cells | records
+high-high | 185 | 1613
+low-high | 230 | 0
+low-low | 557 | 0
+high-low | 122 | 359
+```
+
+`avg(c.z)` over a cell's neighbours is the row-standardized lag: each of its `k_i` neighbours weighs `1/k_i`. The quadrants are numbered as esda's `q` (1 high-high, 2 low-high, 3 low-low, 4 high-low), with a value exactly at the mean counted as low, as esda does. The counts equal esda's: 185, 230, 557, 122. The records column shows what "low" means here: both low quadrants hold no record at all. The mean of `y` is below `ln 2`, the value of a cell with one record, so a single record lifts a cell above the mean, so "high" means "has a record" and "low" means "empty".
+
+**Result:** Gi\* finds 99 hot cells at p ≤ 0.05 and 39 after the false discovery rate, with the highest z 10.63, and no cold spot: SQL and PySAL give the same line. Local Moran's I puts 185 cells in high-high, 230 in low-high, 557 in low-low and 122 in high-low, in SQL as in esda; 68 high-high cells are significant at p ≤ 0.05 and 16 after the correction, with 29 high-low outliers, and no low-low cell. The correction removes more than half of Gi\*'s hot spots and three in four of LISA's high-high cells. What is left are the places the atlas and the museum's teams recorded devils most: hot spots of recording effort, which a report or a map labels as such, never as where devils are most common.
+
+**Exercise:** How much of the record do the 39 hot spots that survive the false discovery rate hold, and who recorded it? For each dataset with a devil record in a 5 km cell, count its records in those 39 cells and its records in any cell, each with its share of the column's total. Compare the shares: does one dataset weigh more in the hot spots than in the whole sample?
+
+**Answer:** each record placed in its cell as in `s4-cells`, then joined to `s5_gistar`; the block runs after `s5-gistar`, so the view exists:
+
+```sql
+-- q: s5-ex
+-- status: ran
+-- engine: postgis
+-- after: s5-gistar
+WITH devils AS (
+  SELECT o.dataset_key, ST_Transform(o.geom, 3577) AS geom
+  FROM occurrences AS o JOIN species AS s ON s.id = o.species_id
+  WHERE s.scientific_name = 'Sarcophilus harrisii'
+), placed AS (
+  SELECT d.dataset_key, g.fdr AND g.z > 0 AS hot
+  FROM devils AS d
+  JOIN s4_cells AS c ON c.edge_m = 5000 AND ST_Contains(c.geom, d.geom)
+  JOIN s5_gistar AS g ON g.id = c.id
+)
+SELECT ds.title,
+       count(*) FILTER (WHERE p.hot) AS hot_records,
+       round(100.0 * count(*) FILTER (WHERE p.hot) / sum(count(*) FILTER (WHERE p.hot)) OVER (), 1) AS hot_pct,
+       count(*) AS records_in_cells,
+       round(100.0 * count(*) / sum(count(*)) OVER (), 1) AS pct
+FROM placed AS p JOIN datasets AS ds USING (dataset_key)
+GROUP BY ds.title
+ORDER BY hot_records DESC, records_in_cells DESC, ds.title;
+```
+
+```text
+-- result: s5-ex · 8 rows · sha256 a2b623ef575f
+title | hot_records | hot_pct | records_in_cells | pct
+Tasmanian Natural Values Atlas | 870 | 78.5 | 1402 | 71.1
+Tasmanian Museum and Art Gallery provider for OZCAM | 237 | 21.4 | 555 | 28.1
+Northern Territory Museum and Art Gallery provider for OZCAM | 1 | 0.1 | 1 | 0.1
+Museums Victoria provider for OZCAM | 0 | 0.0 | 5 | 0.3
+MVZ Mammal Collection (Arctos) | 0 | 0.0 | 3 | 0.2
+… 3 more rows
+```
+
+**Check:** The 39 hot spots, 3.6 % of the 1,094 cells, hold 1,108 of the 1,972 records in cells (870 + 237 + 1), 56 %. The atlas supplies 78.5 % of them against 71.1 % of all records in cells, and the museum's material samples 21.4 % against 28.1 %: the hot spots are, even more than the sample, the atlas's. Five of the eight datasets have no record in a hot spot. So the map of hot spots is largely a map of where the atlas's observers worked; before reading it as anything about devils, a report says which datasets made it, as s1 did for the whole sample. `FILTER (WHERE p.hot)` counts one kind of row inside a group, and `sum(…) OVER ()` over the grouped counts gives the column's total for the shares.
+
+**Dialects:**
+- **PostgreSQL:** `erf` and `erfc` are new in PostgreSQL 16; on an older server, compute p-values in Python, or compare |z| with fixed cut-offs (1.96 for p ≤ 0.05) and skip the false discovery rate, which needs p-values. The Benjamini-Hochberg cut is window functions: `row_number()` and `count(*) OVER ()` for rank and m, then `max(rank) FILTER (WHERE …)`.
+- **DuckDB:** the same SQL runs once `s4_cells` and `s4_neighbours` exist, except the p-values: DuckDB 1.5 has no `erf` or `erfc` (`Scalar Function with name erfc does not exist`). `stddev_pop` gives `S` directly.
+- **SQL Server:** no error function either; `STDEVP` is the population standard deviation (`STDEV` the sample one, which would change every z slightly). Arrays don't exist: name the quadrants with `CASE` or `CHOOSE(q, 'high-high', 'low-high', 'low-low', 'high-low')`.
+- **PySAL:** `esda.G_Local(y, w, transform="B", star=True)` gives `Zs` and a one-sided `p_norm` (and `p_sim` with permutations); `esda.Moran_Local(y, w, transformation="r", permutations=999, seed=2026)` gives `Is`, `q` (1 high-high, 2 low-high, 3 low-low, 4 high-low) and `p_sim`; `esda.fdr(p, 0.05)` returns the p-value cut (and the Bonferroni bound 0.05/m if every test would pass). The `splot` package maps them; it isn't in the course's pins.
+- **ArcGIS Pro:** Hot Spot Analysis (Getis-Ord Gi\*) (`arcpy.stats.HotSpots`) on a feature class of the cells: Input Field `y`; Conceptualization of Spatial Relationships `Fixed distance band`; Distance Method `Euclidean`; Standardization `None` (binary weights, as here); Distance Band or Threshold Distance `10000`; Apply False Discovery Rate (FDR) Correction checked. Pro always counts the cell as its own neighbour, so its z-score (`GiZScore`) is Gi\*'s; its `Gi_Bin` field sorts cells into bins of 90, 95 and 99 % confidence, hot (1 to 3) or cold (−1 to −3). Cluster and Outlier Analysis (Anselin Local Moran's I) (`arcpy.stats.ClusterOutlierAnalysis`) gives each cell `COType` (`HH`, `LL`, `HL`, `LH`, or blank when not significant): Standardization `Row`, Number of Permutations 999, the same FDR option. Its permutations come from another random generator, so its pseudo p-values, and which cells pass, can differ a little from esda's; the quadrants, which take no permutation, can't. Both tools label the output as hot and cold spots; a report on records adds "of recording". §3.4's arcpy notes (the setup page) show how to run a Spatial Statistics tool from Python, on the cells exported as a GeoPackage (§3.3).
 
 #### s6 · zonal
 

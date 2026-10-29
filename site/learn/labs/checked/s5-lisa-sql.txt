@@ -1,0 +1,6 @@
+-- result: s5-lisa-sql · 4 rows · sha256 61ccb6a48dc8
+quadrant | cells | records
+high-high | 185 | 1613
+low-high | 230 | 0
+low-low | 557 | 0
+high-low | 122 | 359

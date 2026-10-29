@@ -584,6 +584,26 @@
     "s4-permutations": {
       "key": "cb5fad2a254beb519ec00cb2db1a880b2daf0e96213abee4b3d65ecc9b2e0df8",
       "result": "47ce43aba810ebec23db722fbbad4e6fa8f0c2af0b13fe4ee22d715d3aa119e3"
+    },
+    "s5-ex": {
+      "key": "40696f93be073d35fcb8eb5303dff4677b99088196a5bb83acd028d86b7c65f9",
+      "result": "f65642c09f38f8d9c94aa9f71e2991398c4e37695787e7c89b542cda2103456c"
+    },
+    "s5-gistar": {
+      "key": "4036b0fab033d24574e7a1e156d623f0f0bfdeec19f2fbfa29d8a6fda24bf80f",
+      "result": "174e3bc2ba4ae63e1b01fd3e9363e0cda8863db65631b8f8a93aa4c778e99c89"
+    },
+    "s5-gistar-pysal": {
+      "key": "3fee4e8bbe235f3f98f8ebe27c57a8bd65bdff94693615e43c9232efd4ad6256",
+      "result": "00dc06f6652230104a837f60e9bf02d2c9fe2b3f953796eb14c40825df05fbf8"
+    },
+    "s5-lisa": {
+      "key": "8a99082b9eb5bb912351737c7ada159cd6a41f0a6896a885a8654d50b85f8403",
+      "result": "193346e2c79230b160691c1e3b992e65f8b18708c07d76324f41b34a2fce9b08"
+    },
+    "s5-lisa-sql": {
+      "key": "482030462749cbd4450cd6c55379e962cff74427c0a84aa0098b52b77f69eff7",
+      "result": "9baeda7b3cc78bacfa750e2969ace829e87182086f176f69f2876555af861d2d"
     }
   },
   "downloads": {
@@ -607,6 +627,8 @@
     "s3.sql": "fa4dfed23083d93bc5a13c566960be7398a8f058f42613ddf3a0c7a1fab01704",
     "s4.py": "65b7fc37ddc3225f348883cb88fdb72d696ed64e4115aa096056c08d5be1b2a8",
     "s4.sql": "5b485d76d0fea6d3e9a43d0779b95c471501bd8680abf1afd27045bbd3596ed2",
+    "s5.py": "215f8c1667f2278356e9f8e60715b40ff1f4c8479816d49ff5c3d6a933e6a82f",
+    "s5.sql": "2ef7a1514bc2f77a77644b1895342c516576ca67ba2b22dc1a16813e6175b068",
     "setup.py": "b40bb61f840f9b42a029df58b8debd131fb2b8c3963d10938beefcb36d8af08b"
   },
   "labErd": "d0727ad9d45127b6ea4c7b07495565182a2a9a35caf25cfb04891152ad77ff8b"

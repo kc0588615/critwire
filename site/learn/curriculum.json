@@ -457,7 +457,7 @@
       "prereqs": [
         "s4"
       ],
-      "state": "planned",
+      "state": "built",
       "skill": "Local Moran's I (LISA) and Getis-Ord Gi*; false discovery rate",
       "questions": [
         "Where are the hot and cold spots of recording effort?",

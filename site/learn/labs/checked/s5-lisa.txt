@@ -1,0 +1,7 @@
+-- result: s5-lisa · python · sha256 ff0ae1985d8b
+false discovery rate cut: p <= 0.0021
+quadrant | cells | p <= 0.05 | after FDR
+high-high | 185 | 68 | 16
+low-high | 230 | 34 | 2
+low-low | 557 | 0 | 0
+high-low | 122 | 29 | 29

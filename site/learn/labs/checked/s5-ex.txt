@@ -1,0 +1,8 @@
+-- result: s5-ex · 8 rows · sha256 a2b623ef575f
+title | hot_records | hot_pct | records_in_cells | pct
+Tasmanian Natural Values Atlas | 870 | 78.5 | 1402 | 71.1
+Tasmanian Museum and Art Gallery provider for OZCAM | 237 | 21.4 | 555 | 28.1
+Northern Territory Museum and Art Gallery provider for OZCAM | 1 | 0.1 | 1 | 0.1
+Museums Victoria provider for OZCAM | 0 | 0.0 | 5 | 0.3
+MVZ Mammal Collection (Arctos) | 0 | 0.0 | 3 | 0.2
+… 3 more rows
