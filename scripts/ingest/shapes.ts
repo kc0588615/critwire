@@ -1,20 +1,20 @@
 // The lab shapes ingest (004 §4.1, plan D5): pnpm ingest shapes. Downloads the pinned Natural Earth 1:50m admin-0 and
 // admin-1 files and RESOLVE's Ecoregions2017.zip into a temp folder, picks one 1:50m feature per countries.json code
 // with the countries matcher (BV, GI and UM have none at 1:50m), then runs scripts/ingest/shapes.py (geometry only:
-// no network, no country rule) and checks its report. Only then are the four outputs copied into data/learn/, with
+// no network, no country rule) and checks its report. Only then are the four outputs published into data/learn/, with
 // shapes.json (inputs, tolerance, tool versions, per file rows, bytes, sha256 and invalid geometries, the matcher
 // report). No date in shapes.json, so a re-run is byte-identical.
 import { createHash } from "node:crypto";
-import { copyFile, mkdir, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { fileURLToPath } from "node:url";
 import { countriesFile, matchCountries, type CountriesFile, type CountriesResult, type NeProps } from "../derive/naturalearth.ts";
 import { downloadFile } from "../http.ts";
-import { readJson, writeJson } from "../json.ts";
+import { formatJson, readJson } from "../json.ts";
 import { labDataDir } from "../learn/lab-files.ts";
 import type { NeLayer } from "../raw.ts";
 import { NE_COMMIT } from "./naturalearth.ts";
+import { publishFiles } from "./publish.ts";
 import { runPython, venvPython } from "./python.ts";
 
 const NE_RAW = `https://raw.githubusercontent.com/nvkelso/natural-earth-vector/${NE_COMMIT}/geojson`;
@@ -96,7 +96,7 @@ async function checkReport(stdout: string, outDir: string, selection: ShapeSelec
   return report;
 }
 
-// From the downloaded inputs in `inDir`: selects, runs shapes.py, checks its report, then copies the outputs into `dest`
+// From the downloaded inputs in `inDir`: selects, runs shapes.py, checks its report, then publishes the outputs into `dest`
 // and writes dest/shapes.json. Nothing reaches `dest` unless every check passed.
 export async function buildShapes({ inDir, dest, countryCodes, python = PYTHON }: { inDir: string; dest: URL; countryCodes: string[]; python?: string[] }): Promise<void> {
   const layers = {} as Record<NeLayer, NeProps[]>;
@@ -116,10 +116,12 @@ export async function buildShapes({ inDir, dest, countryCodes, python = PYTHON }
     const body = await readFile(join(outDir, name));
     files[name] = { bytes: body.length, rows: report.outputs[name].rows, sha256: sha256(body), invalid: report.outputs[name].invalid };
   }
-  for (const name of SHAPE_OUTPUTS) await copyFile(join(outDir, name), fileURLToPath(new URL(name, dest)));
-  await writeJson(new URL("shapes.json", dest), {
-    inputs: SHAPE_INPUTS, tolerance: report.tolerance, tools: report.tools, files, matcher: { scale: "1:50m", ...matcher },
-  }, { canonical: true });
+  await publishFiles(dest, {
+    ...Object.fromEntries(SHAPE_OUTPUTS.map((name) => [name, { copy: join(outDir, name) }])),
+    "shapes.json": { text: formatJson({
+      inputs: SHAPE_INPUTS, tolerance: report.tolerance, tools: report.tools, files, matcher: { scale: "1:50m", ...matcher },
+    }, { canonical: true }) },
+  });
 }
 
 // pnpm ingest shapes: downloads every input into a fresh temp folder, builds into data/learn/, removes the folder.

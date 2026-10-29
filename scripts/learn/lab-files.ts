@@ -40,7 +40,10 @@ export async function readLabFiles(dir: URL = labDataDir): Promise<LabFile[]> {
     present.push(name);
   }
   const unlisted = present.filter((n) => !listed.has(n));
-  if (unlisted.length) throw new Error(`data/learn/{${unlisted.join(",")}}: listed by neither ${PROVENANCE_FILES.join(" nor ")}`);
+  if (unlisted.length) {
+    const temps = unlisted.some((n) => /\.tmp-\d+$/.test(n)) ? " (*.tmp-<pid>: an interrupted ingest's, delete them)" : "";
+    throw new Error(`data/learn/{${unlisted.join(",")}}: listed by neither ${PROVENANCE_FILES.join(" nor ")}${temps}`);
+  }
   const missing = [...listed.keys()].filter((n) => !present.includes(n));
   if (missing.length) throw new Error(`data/learn/{${missing.join(",")}} missing (listed in ${missing.map((n) => listed.get(n)!.provenance).join(", ")})`);
   const files: LabFile[] = [];
@@ -50,7 +53,7 @@ export async function readLabFiles(dir: URL = labDataDir): Promise<LabFile[]> {
     const sha256 = createHash("sha256").update(bytes).digest("hex");
     if (bytes.length !== want.bytes || sha256 !== want.sha256) {
       throw new Error(`data/learn/${name}: ${bytes.length} bytes, sha256 ${sha256}; ${want.provenance} records ${want.bytes} bytes, sha256 ${want.sha256} ` +
-        "(hand-edited or half-copied: re-run the ingest that writes it)");
+        "(hand-edited or half-published: restore with git restore data/learn, or re-run the ingest that writes it)");
     }
     files.push({ name, ...want });
   }

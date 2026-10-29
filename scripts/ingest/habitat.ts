@@ -2,21 +2,22 @@
 // (Zenodo record 4058819, CC BY 4.0): every country's estimated km² per level-2 class (003 §5's method 3), each
 // published record's class, and two 100 m clips. This file holds the pins, the pure rules and every check;
 // scripts/ingest/habitat.py does the raster and geometry work (no network, no class rule) and reports. Only after every
-// check passed are the outputs copied into data/learn/, with habitat.json (inputs, method, layers, clips, tools,
+// check passed are the outputs published into data/learn/ (publishFiles), with habitat.json (inputs, method, layers, clips, tools,
 // measured, files). No date in habitat.json, so a re-run is byte-identical.
 import { createHash } from "node:crypto";
 import { rmSync } from "node:fs";
 import { copyFile, mkdir, mkdtemp, readdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { dirname, isAbsolute, join, relative, resolve } from "node:path";
+import { isAbsolute, join, relative, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { createTable, sqlPath, withOfflineDuckDb } from "../build/duckdb.ts";
 import { childFile } from "../build/paths.ts";
 import { deriveAll, readDeriveInputs } from "../derive/pipeline.ts";
 import type { OccurrenceRow } from "../derive/sample.ts";
 import { downloadFile, hashFile } from "../http.ts";
-import { readJson, writeJson } from "../json.ts";
+import { formatJson, readJson } from "../json.ts";
 import { labDataDir, readLabFiles } from "../learn/lab-files.ts";
+import { publishFiles } from "./publish.ts";
 import { runPython, venvPython } from "./python.ts";
 
 const ZENODO = "https://zenodo.org/api/records/4058819/files";
@@ -341,7 +342,7 @@ export async function buildHabitat({ work, dest, records, zenodo, python = PYTHO
     clipRows.push(...tiles);
   }
 
-  // Write into work/data/, then copy into dest.
+  // Write into work/data/, then publish into dest.
   const staged = join(work, "data");
   await mkdir(join(staged, "clips"), { recursive: true });
   const at = (name: string) => sqlPath(pathToFileURL(join(staged, name)));
@@ -395,12 +396,10 @@ export async function buildHabitat({ work, dest, records, zenodo, python = PYTHO
     files,
   };
 
-  for (const name of HABITAT_OUTPUTS) {
-    const to = fileURLToPath(childFile(dest, name));
-    await mkdir(dirname(to), { recursive: true });
-    await copyFile(join(staged, name), to);
-  }
-  await writeJson(childFile(dest, "habitat.json"), habitat, { canonical: true });
+  await publishFiles(dest, {
+    ...Object.fromEntries(HABITAT_OUTPUTS.map((name) => [name, { copy: join(staged, name) }])),
+    "habitat.json": { text: formatJson(habitat, { canonical: true }) },
+  });
   console.error(`habitat.py: ${JSON.stringify(report.timings)} (s); Σ estimate ÷ Σ outline ${ratio}`);
 }
 

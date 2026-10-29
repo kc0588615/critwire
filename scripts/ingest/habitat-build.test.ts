@@ -13,9 +13,11 @@
 // HR7 (H5 design 2): habitat_clips isn't one row per kept tile (clip, tile, rast) in (clip, tile) order, an all-nodata
 //      tile is kept, habitat.json lacks a clip's kept tiles and tile size, clips.json lacks the tile size or a clip's
 //      country, or a tile habitat.py reports masked still holds cells, or its tile count isn't the clip's tile grid.
+// HR8 (Astra code review MUST-FIX 1): a failure while publishing (after every check passed) leaves a mix of old and new
+//      files in data/learn/, or a *.tmp-* file behind.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -69,12 +71,13 @@ const report = { tools: { python: "3.12.3", rasterio: "1.5.2" }, grid: { crs: mo
 console.log(mode === "json" ? "not json" : JSON.stringify(report));
 `;
 
-async function run(mode: string): Promise<{ dir: string; dest: string; error?: Error }> {
+async function run(mode: string, prepare: (dest: string) => void = () => {}): Promise<{ dir: string; dest: string; error?: Error }> {
   const dir = tmp("hr");
   const dest = join(dir, "data-learn");
   const work = join(dir, "work");
   for (const d of [dest, work]) mkdirSync(d);
   for (const f of COPIED) copyFileSync(new URL(f, LEARN), join(dest, f));
+  prepare(dest);
   const fake = join(dir, "fake-habitat.mjs");
   writeFileSync(fake, FAKE);
   try {
@@ -171,6 +174,24 @@ for (const [mode, message] of [
     }
   });
 }
+
+test("HR8 a failure while publishing leaves data/learn/ byte-identical, no temp file behind", async () => {
+  // clips/ read-only: the checks pass, then publication fails at clips/cr.tif, after country_habitats.parquet and the
+  // other Parquet files would have been written.
+  const { dir, dest, error } = await run("ok", (d) => {
+    mkdirSync(join(d, "clips"));
+    chmodSync(join(d, "clips"), 0o555);
+  });
+  try {
+    assert.equal((error as NodeJS.ErrnoException | undefined)?.code, "EACCES");
+    assert.deepEqual(readdirSync(dest).sort(), [...COPIED, "clips"].sort());
+    assert.deepEqual(readdirSync(join(dest, "clips")), []);
+    for (const f of COPIED) assert.deepEqual(readFileSync(join(dest, f)), readFileSync(new URL(f, LEARN)), f);
+  } finally {
+    chmodSync(join(dest, "clips"), 0o755);
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
 
 test("HR6 --downloads must be outside the repository; the work folder is removed after a failure", async () => {
   assert.deepEqual(parseHabitatArgs([], REPO), { downloads: null });
