@@ -4826,11 +4826,17 @@ Seven modules, twelve and a half hours, all in your own PostGIS (§3.2), on the 
 
 **Tool:** PG · **Time:** 1.5 h · **Prereqs:** f3
 
-**Goal:** know what an SRID says and which one to measure in. A geometry's coordinates mean nothing without its spatial reference system: SRID 4326 is longitude and latitude in degrees on the WGS 84 ellipsoid; 3857 (Web Mercator) is the flat map most web maps draw; 3577 (Australian Albers) is an equal-area projection for Australia. `ST_Transform` moves a geometry from one to another; `geography` measures on the ellipsoid itself, in metres, with no projection. Web Mercator keeps shapes in a small area but stretches every length by 1 ÷ cos(latitude), so every area by 1 ÷ cos²(latitude) (003 §4, spatial lesson 5).
+**Concept:** A shape is a list of coordinates, and coordinates mean nothing until you know the system they are in:
+- **A coordinate reference system** (CRS) says what the numbers measure: the model of the Earth's shape (an ellipsoid, and a datum that fixes it to the planet), the units, and, for a flat map, the projection that turns positions on the ellipsoid into x and y. An **SRID** is the number a database uses to name one. PostGIS's numbers are EPSG codes, from a public registry, and its table `spatial_ref_sys` holds each system's definition.
+- **Geographic** systems give longitude and latitude in degrees. SRID 4326 is WGS 84, the system of GPS and of every lab shape (§4: GBIF records, Natural Earth outlines, ecoregions). A degree isn't a length: a degree of latitude is about 111 km everywhere, but a degree of longitude is 111 km × cos(latitude), 82 km at Hobart and nothing at the poles. So `ST_Area` and `ST_Distance` on SRID 4326 geometries return square degrees and degrees, numbers with no use.
+- **Projected** systems give x and y in metres on a plane. No flat map keeps everything, so a projection chooses what to keep. SRID 3577 (Australian Albers) is **equal-area** for Australia: areas are right, while shapes and distances bend a little, more so away from its two standard parallels, 18° S and 36° S. SRID 3857 (Web Mercator, the flat map most web maps draw) is **conformal**: it keeps angles and the shapes of small areas, and stretches every length at a point by 1 ÷ cos(latitude), so every area by 1 ÷ cos²(latitude): twice at 45°, four times at 60°. It is for drawing map tiles, never for measuring. ("Pseudo-Mercator": it treats WGS 84's ellipsoid as a sphere.)
+- **`ST_Transform(geom, srid)`** moves a geometry into another system: new coordinates, same place. **`ST_SetSRID(geom, srid)`** only relabels it: same numbers, said to be in another system. Use `ST_SetSRID` (or `ST_Point(x, y, srid)`) once, on raw numbers whose system you know, and `ST_Transform` after that. PostGIS refuses to combine geometries of different SRIDs (`Operation on mixed SRID geometries`).
+- **`geography`** is PostGIS's second spatial type: longitude and latitude on the ellipsoid (SRID 4326 unless you say otherwise), measured in metres and square metres along the curved surface, with no projection to choose. `geom::geography` casts. It is right everywhere on the globe, a little slower, and has fewer functions than `geometry`. A local projected system (an Albers or UTM zone) is the other good choice, when all your data sit in its area.
+- **Axis order.** PostGIS always stores longitude first (x, then y), for every SRID, although EPSG's own definition of 4326 lists latitude first. Some tools follow EPSG (DuckDB and SQL Server, below): swapped axes are the commonest reason a point lands in the wrong ocean.
 
-**Data:** `admin1_shapes` (Australia's states and territories, Natural Earth 1:50m); two points typed in.
+How to look: `ST_SRID(geom)` gives a value's SRID; `geometry_columns` lists each table's geometry columns with their type and SRID; `spatial_ref_sys` says what an SRID means (`srtext` in WKT, `proj4text` in PROJ's short form).
 
-**Key code:** each Australian state's area three ways, beside the stretch Web Mercator gives it and the 1 ÷ cos² of its centroid's latitude:
+**Worked example:** How big is Tasmania? Each Australian state's area three ways (on the ellipsoid, in Albers, in Web Mercator), beside the stretch Web Mercator gives it and 1 ÷ cos² of its centroid's latitude:
 
 ```sql
 -- q: g1-area
@@ -4859,7 +4865,88 @@ New South Wales | -32.2 | 798508 | 798822 | 1124405 | 1.41 | 1.40
 … 4 more rows
 ```
 
-A distance in each system: Hobart to Launceston. In SRID 4326, `ST_Distance` returns degrees, which are not a length (a degree of longitude shrinks towards the poles).
+The ellipsoid and Albers agree to within 0.1 % for every state: Tasmania is 67,697 km² as geography and 67,696 km² in Albers. Web Mercator draws it 1.81 times too large, 122,485 km². The stretch grows southward, from 1.13 for the Northern Territory to Tasmania's 1.81, and matches 1 ÷ cos² of the centroid's latitude to within 0.01. (`ST_Centroid` on SRID 4326 works in degrees, close enough to pick a latitude.)
+
+**Lab:**
+1. What the three SRIDs say. `spatial_ref_sys` holds about 8,500 systems; these are the course's:
+
+```sql
+-- q: g1-srid
+-- status: ran
+-- engine: postgis
+SELECT srid, split_part(srtext, '"', 2) AS name,
+       substring(proj4text FROM 'proj=(\w+)') AS projection,
+       substring(proj4text FROM '(?:datum|ellps)=(\w+)') AS ellipsoid,
+       substring(proj4text FROM '\+a=(\d+)') AS sphere_radius_m,
+       substring(proj4text FROM 'units=(\w+)') AS units
+FROM spatial_ref_sys
+WHERE srid IN (4326, 3857, 3577)
+ORDER BY srid DESC;
+```
+
+```text
+-- result: g1-srid · 3 rows · sha256 e978d01274b0
+srid | name | projection | ellipsoid | sphere_radius_m | units
+4326 | WGS 84 | longlat | WGS84 | NULL | NULL
+3857 | WGS 84 / Pseudo-Mercator | merc | NULL | 6378137 | m
+3577 | GDA94 / Australian Albers | aea | GRS80 | NULL | m
+```
+
+The columns are read out of `proj4text`, PROJ's short form of each definition. 4326 is `longlat` on the WGS 84 datum, with no `units` because they are degrees. 3577 is `aea`, Albers equal-area, on GRS80 (GDA94's ellipsoid, within a millimetre of WGS 84's), in metres. 3857 is `merc`, Mercator, on no ellipsoid but a sphere of radius 6,378,137 m, WGS 84's equatorial radius, in metres. The whole definition, `SELECT proj4text FROM spatial_ref_sys WHERE srid = 3577`, also gives Albers' standard parallels (`+lat_1=-18 +lat_2=-36`) and its centre meridian (`+lon_0=132`), and `+towgs84=0,0,0,0,0,0,0`, which treats GDA94 and WGS 84 as one datum: they are about 1.8 m apart today, as Australia's plate moves, nothing at these scales.
+
+2. Which system each lab shape is in:
+
+```sql
+-- q: g1-columns
+-- status: ran
+-- engine: postgis
+SELECT f_table_name AS table_name, f_geometry_column AS column_name, type, srid
+FROM geometry_columns
+WHERE f_table_schema = current_schema()
+ORDER BY table_name, column_name;
+```
+
+```text
+-- result: g1-columns · 4 rows · sha256 92869bd94553
+table_name | column_name | type | srid
+admin1_shapes | geom | MULTIPOLYGON | 4326
+country_shapes | geom | MULTIPOLYGON | 4326
+ecoregions | geom | MULTIPOLYGON | 4326
+occurrences | geom | POINT | 4326
+```
+
+All four are in 4326, and each column is typed with its SRID (`geometry(MultiPolygon, 4326)`), so a value in another system can't be stored there. Every measurement in these modules therefore casts to `geography` or transforms first.
+
+3. Moving versus relabelling. Hobart typed as longitude and latitude, then put into Albers both ways, and read back in degrees:
+
+```sql
+-- q: g1-setsrid
+-- status: ran
+-- engine: postgis
+WITH hobart AS (SELECT ST_SetSRID(ST_Point(147.33, -42.88), 4326) AS geom),
+albers AS (
+  SELECT 'ST_Transform' AS how, ST_Transform(geom, 3577) AS geom FROM hobart
+  UNION ALL
+  SELECT 'ST_SetSRID', ST_SetSRID(geom, 3577) FROM hobart
+)
+SELECT a.how,
+       round(ST_X(a.geom)::numeric, 2) AS x, round(ST_Y(a.geom)::numeric, 2) AS y,
+       ST_AsText(ST_Transform(a.geom, 4326), 4) AS back_in_4326,
+       round((ST_Distance(ST_Transform(a.geom, 4326)::geography, h.geom::geography) / 1000)::numeric) AS km_from_hobart
+FROM albers AS a, hobart AS h
+ORDER BY km_from_hobart;
+```
+
+```text
+-- result: g1-setsrid · 2 rows · sha256 fdf4839cdfa2
+how | x | y | back_in_4326 | km_from_hobart
+ST_Transform | 1288694.34 | -4764150.08 | POINT(147.33 -42.88) | 0
+ST_SetSRID | 147.33 | -42.88 | POINT(132.0012 -0.0004) | 4990
+```
+
+`ST_Transform` gave new numbers, x 1.29 million and y −4.76 million metres from the projection's origin, and they lead back to Hobart. `ST_SetSRID` kept 147.33 and −42.88 and called them metres: a point 147 m east and 43 m south of the origin (0°, 132° E), in the sea just north of New Guinea, 4,990 km from Hobart. No error is raised; a wrong `ST_SetSRID` is silent.
+
+4. A distance in each system: Hobart to Launceston. In SRID 4326, `ST_Distance` returns degrees, which are not a length:
 
 ```sql
 -- q: g1-distance
@@ -4880,7 +4967,43 @@ degrees | geography_km | albers_km | mercator_km
 1.4525 | 160.72 | 156.57 | 217.30
 ```
 
-**Expected:** the geography and Albers areas agree to within 0.1 % for every state (Tasmania 67,697 and 67,696 km²); Web Mercator overstates each by 1.13 (Northern Territory) to 1.81 times, the stretch growing southward and matching 1 ÷ cos² of the centroid's latitude to 0.01 (Tasmania 1.81). Hobart to Launceston is 1.4525 "degrees", 160.72 km on the ellipsoid, 156.57 km in Albers (a projection keeps areas, not distances) and 217.30 km in Web Mercator.
+The ellipsoid gives 160.72 km. Albers is 2.6 % short: an equal-area projection keeps areas, not distances. Outside its standard parallels it stretches east–west and squeezes north–south by the same factor, and this line runs nearly north–south. Web Mercator is 35 % long, its 1 ÷ cos(42°) stretch. The "1.4525" is the straight line between two pairs of degrees, a length in no unit.
+
+**Result:** Every lab shape is stored in SRID 4326, longitude and latitude in degrees, so measuring means casting to `geography` or transforming to a projected system first. The ellipsoid and Australian Albers agree on every state's area to within 0.1 % (Tasmania 67,697 and 67,696 km²); Web Mercator overstates them by 1.13 (Northern Territory) to 1.81 times (Tasmania), as 1 ÷ cos² of each state's latitude predicts. For distance, Albers is 2.6 % short and Web Mercator 35 % long between Hobart and Launceston, 160.72 km on the ellipsoid. `ST_Transform` moves a shape; `ST_SetSRID` relabels it, and a wrong label put Hobart 4,990 km away without an error.
+
+**Exercise:** On a web map, Greenland looks far larger than the Democratic Republic of the Congo. From `country_shapes` (`GL` and `CD`), show for each its southern and northern latitudes, its area on the ellipsoid, its Web Mercator area, the stretch and 1 ÷ cos² of its centroid's latitude. Is 1 ÷ cos² of the centroid a good guess at Greenland's stretch, as it was for Tasmania?
+
+**Answer:** The worked example's columns, for two countries, plus `ST_YMin` and `ST_YMax`.
+
+```sql
+-- q: g1-ex
+-- status: ran
+-- engine: postgis
+SELECT country_code,
+       round(ST_YMin(geom)::numeric, 1) AS south,
+       round(ST_YMax(geom)::numeric, 1) AS north,
+       round((ST_Area(geom::geography) / 1e6)::numeric) AS geography_km2,
+       round((ST_Area(ST_Transform(geom, 3857)) / 1e6)::numeric) AS mercator_km2,
+       round((ST_Area(ST_Transform(geom, 3857)) / ST_Area(geom::geography))::numeric, 2) AS stretch,
+       round((1 / cos(radians(ST_Y(ST_Centroid(geom)))) ^ 2)::numeric, 2) AS one_over_cos2
+FROM country_shapes
+WHERE country_code IN ('CD', 'GL')
+ORDER BY country_code;
+```
+
+```text
+-- result: g1-ex · 2 rows · sha256 c4011417a114
+country_code | south | north | geography_km2 | mercator_km2 | stretch | one_over_cos2
+CD | -13.5 | 5.3 | 2324450 | 2359632 | 1.02 | 1.00
+GL | 59.8 | 83.6 | 2171354 | 35395741 | 16.30 | 14.38
+```
+
+**Check:** The two cover about the same ground, 2,324,450 km² (CD) and 2,171,354 km² (GL), yet Web Mercator draws Greenland 15 times larger (35,395,741 against 2,359,632 km²). The centroid's 1 ÷ cos², 14.38, falls short of Greenland's stretch, 16.30. Each point's stretch is 1 ÷ cos² of its own latitude, 3.95 at Greenland's southern tip (59.8° N) and about 81 at its northern coast (83.6° N), and it grows faster the further north, so the average over the whole shape is larger than the value at its middle. The centroid rule works for shapes short in latitude, such as Australia's states; for tall ones, measure. If your areas came out as 190 and 664, you measured `geom` in square degrees, which also rank Greenland first: cast to `geography`.
+
+**Dialects:**
+- **PostgreSQL:** PostGIS's `geometry` carries an SRID on every value and `geography` measures on the ellipsoid; `ST_Transform` uses the PROJ library and the definitions in `spatial_ref_sys` (about 8,500, and you can insert more); `ST_DistanceSphere`, or `ST_Distance(a, b, false)` on geography, measures on a sphere, faster and within about 0.5 %; on a projected geometry, `ST_Area` and `ST_Length` are in that system's units.
+- **DuckDB:** the `spatial` extension (not in this course's browser) has `GEOMETRY` and no geography type. `ST_Transform(geom, 'EPSG:4326', 'EPSG:3577', always_xy := true)` names the source and target systems in the call; without `always_xy` it follows EPSG's axis order, latitude first for 4326. `ST_Area_Spheroid` and `ST_Distance_Spheroid` measure on WGS 84's ellipsoid and also read latitude first.
+- **SQL Server:** `geometry` (flat) and `geography` (on the ellipsoid that the SRID names in `sys.spatial_reference_systems`); `geography::Point(latitude, longitude, 4326)` takes latitude first; `STArea()` and `STDistance()` on geography are in square metres and metres. There is no `ST_Transform`: reproject before loading (ArcGIS Pro's Project tool, `ogr2ogr -t_srs`). An operation between values of different SRIDs returns NULL. For `geography` polygons, ring order matters: the interior is on the left as you walk the ring, and the wrong order means the rest of the globe (`ReorientObject()` flips it).
 
 #### g2 · load-validate
 

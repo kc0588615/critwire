@@ -239,7 +239,7 @@
       "prereqs": [
         "f3"
       ],
-      "state": "planned",
+      "state": "built",
       "skill": "SRIDs, `ST_Transform`, geometry vs geography, Web Mercator's area error",
       "questions": [
         "How big is Tasmania in EPSG:3857, in EPSG:3577 and as geography?",

@@ -1,0 +1,4 @@
+-- result: g1-ex · 2 rows · sha256 c4011417a114
+country_code | south | north | geography_km2 | mercator_km2 | stretch | one_over_cos2
+CD | -13.5 | 5.3 | 2324450 | 2359632 | 1.02 | 1.00
+GL | 59.8 | 83.6 | 2171354 | 35395741 | 16.30 | 14.38

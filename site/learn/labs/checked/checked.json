@@ -291,6 +291,30 @@
       "key": "ed4f31349277693f61e4e9f424fa93970bd4b3eed3100df94b1da02912eaa02f",
       "result": "93466dec67e713383f4013fcff36e572e580f0f19e96880ded2d60bf52521ab4"
     },
+    "g1-area": {
+      "key": "a154b6426f383b49df286690e1c03fadc30bea173c4e8dfd82b6f0fe32629660",
+      "result": "c3123fd9c947bc27c161e6c8e935acc0a9bdae73f375974e31bb262af9d7e21c"
+    },
+    "g1-columns": {
+      "key": "7f31a3aaad7e4cac19dc1a234d870d612146abee344bda49d26da89048daac7a",
+      "result": "2540f033d9c30160535061a2a1058134bfe3a0338bcd570e8749e6326b196321"
+    },
+    "g1-distance": {
+      "key": "658e037f2c6cdce2c911e8f94255ecd9c184a1f6da7ceadd234839ea1a705ac6",
+      "result": "129de6e46ea4c55676477e17be333b35c24f5e9dc3a0d9ba3db81baa04744d5d"
+    },
+    "g1-ex": {
+      "key": "0d214e55e60a17789060c4bb3f18859ec08cabb57600efe06024f2fdaf9a9fb1",
+      "result": "05ef317df729d728b783b2ccd9e814b75c7ad38120eae59efcf34774439561b2"
+    },
+    "g1-setsrid": {
+      "key": "1351612421d6b589613cb98a2281a262f29456d61655f0d323c70eaacf452caf",
+      "result": "961dc2367e0b8315ae1657b77abba1dff0b65d1fe0d64c61cdb5f1f9173cb6e0"
+    },
+    "g1-srid": {
+      "key": "20a500242c3b739b466d10c08fa93a29975bbe3e96857bc8bd2af44b274b989a",
+      "result": "970772b5c9363d676c5c072b28af68ab1944377dbf9de9cb4b378ebaf9ecc1f8"
+    },
     "pg-role-smoke": {
       "key": "f8475dd05808347550f93843ba81f9091e58beabacefdd5d530c3b970f116efe",
       "result": "d721ea358edd040973fd9309b3e45b68943b9bad01b9efecd1da082d374c7f30"
@@ -314,6 +338,7 @@
     "d4.sql": "8bb9f4184361bb570af906a26de9e3717557ec5dceac36154885003c276cc25f",
     "d5.sql": "e8eb4ec666fc0442cafee630dd97875ab5d825532c1f597ff7e628efb692c7a6",
     "d6.sql": "dc7c792e8b3ec36c04beb1b3807785b621373780da783afcbc41e762d1b93225",
+    "g1.sql": "3817e06a7941c31137733610a8dc47308dc5a0d3c49c52ab6769f8b76280c783",
     "pg-checks.sql": "348691fbefd3b6c0400e7edfd3a3aaf4f767b186c1a6bcbe2f2ad021cb5607fd"
   },
   "labErd": "fda5ad764ce87eac9f422339254ccfbc46a6a932d8cee00a2a50df5e9502820c"
