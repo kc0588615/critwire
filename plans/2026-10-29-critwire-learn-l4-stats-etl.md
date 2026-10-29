@@ -144,7 +144,7 @@ The review's numbering: MF = MUST-FIX, SC = SHOULD-CHANGE.
 - [x] Architecture: `architect` writes findings and the target design
 - [x] Fable review: `architecture-reviewer`
 - [x] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
-- [ ] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
+- [x] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
 - [ ] Steps: `planner` writes Steps and Verification
 
 ## Baseline
@@ -163,7 +163,7 @@ On `358abb9` (= `origin/main` `7508fc7` + mission start), 2026-10-29, db `critwi
 
 ## Architecture
 
-Architect, 2026-10-29, on `d69b024`. "(checked)" marks facts verified on this VPS today. `SP` = the design spike, `/srv/critter-ai/agent-state/missions/critwire-learn-curriculum/spike` (not in git: `git log --all -- scripts/py-engine.ts` is empty). Its Python evidence: `SP/scripts/py-engine.ts`, `SP/test/python-engine.test.ts` + `SP/test/fixtures/python/` (PY1–PY10), `SP/moran/compare.py` + `SP/tests_py/test_moran.py` (MC1–MC7), `SP/etl/*.py`.
+Architect, 2026-10-29, on `d69b024`; revised on `0d9c7a9` after both reviews (see Revision notes). "(checked)" marks facts verified on this VPS today. `SP` = the design spike, `/srv/critter-ai/agent-state/missions/critwire-learn-curriculum/spike` (not in git: `git log --all -- scripts/py-engine.ts` is empty). Its Python evidence: `SP/scripts/py-engine.ts`, `SP/test/python-engine.test.ts` + `SP/test/fixtures/python/` (PY1–PY10), `SP/moran/compare.py` + `SP/tests_py/test_moran.py` (MC1–MC7), `SP/etl/*.py`.
 
 ### Findings (ranked by impact)
 
@@ -173,9 +173,9 @@ Architect, 2026-10-29, on `d69b024`. "(checked)" marks facts verified on this VP
    - `runBlock` throws on anything but PostGIS (`runner.ts:258`).
    - `isLab` and `recordedResults` count ran PostGIS blocks only (`freshness.ts:68`, `course.ts:257–263`).
    - `assembleDownloads` writes `.sql` only, one name per page (`assemble.ts:93`, `:145–168`). `writeLearn` writes no `.py`, `.ipynb` or `requirements.txt` (`scripts/build/learn/site.ts:67–71`).
-   - A page has one `download` (`module-html.ts:33`, `pages.ts:132`). A Python block would fall into the Power BI branch (`module-html.ts:193–195`).
+   - A page has one `download` (`module-html.ts:33`, `pages.ts:34`). `site.ts:85` maps page → name, so a second download on a page would silently replace the first. A Python block would fall into the Power BI branch (`module-html.ts:193–195`).
    - **Reusable as is:**
-     - `childEnv(target, parent, pgOptions)` (`pg.ts:144`): an explicit environment that already takes PGOPTIONS and never copies GBIF_* or DATABASE_URL;
+     - `childEnv(target, parent, pgOptions)` (`pg.ts:89`): an explicit environment that already takes PGOPTIONS and never copies GBIF_* or DATABASE_URL;
      - `committedLeaks`, `readTables`/`tablesDiff` and `Watch` (`runner.ts`);
      - `CHECKER_FILES`, which already lists `requirements.txt` (`freshness.ts:27`);
      - the generic Copy and dialog wiring (`site/learn/src/pages/module.ts:38,78–79`), so the browser bundle needs no change.
@@ -206,7 +206,9 @@ Architect, 2026-10-29, on `d69b024`. "(checked)" marks facts verified on this VP
    - **e3's case study** says `derive` "refuses raw snapshots older than the data they describe" (004:8043). Since L1 it replays the request builders: stale means the request changed, not the date.
    - **e2, e4, e5:** as the review's table says.
 
-6. **Nothing stops a Python block's database sessions on an error or an interrupt (SC7).** `stopSessions` ends only the pids the runner recorded, with `application_name = critwire-learn-check` (`cleanup.ts:86–101`). A Python block's connections are opened by libpq inside a child process, so their pids are unknown. The spike killed the process group (PY8) but never checked the server's sessions. Fix: §4.4 and §4.6.
+6. **Nothing stops a Python block's database sessions on an error or an interrupt (SC7).** `stopSessions` ends only the pids the runner recorded, with `application_name = critwire-learn-check` (`cleanup.ts:86–101`). A Python block's connections are opened by libpq inside a child process, so their pids are unknown. The spike killed the process group (PY8) but never checked the server's sessions.
+   - Ending them by role and a fixed name would be wrong: `pg_stat_activity` spans the cluster, `critwire_lab` is a cluster role, and the lab lock is an advisory lock, so it is per database (checked: `pg_locks.database` is the current database's oid). Two runs on two databases (a mission's and the owner's) hold their own locks and would end each other's sessions.
+   - Fix: §4.4 and §4.6. Each run carries its own id in `PGAPPNAME`, and cleanup matches the database, the role and that name.
 
 7. **The lab role check doesn't enforce what MF5 needs.** `assertLabRole` (`check.ts:210–221`) checks CREATEROLE and `createrole_self_grant`, but not "no superuser, no CREATE on public". So a superuser `LEARN_PG_URL` passes and hides MF5-type bugs. Fix: §4.1.
 
@@ -221,7 +223,8 @@ Architect, 2026-10-29, on `d69b024`. "(checked)" marks facts verified on this VP
    - **Timings.** A warm import of geopandas, esda, libpysal, sklearn, psycopg and sqlalchemy takes 2.8 s (checked; 10.7 s cold).
      - About 35 Python blocks come to about 2 min per pass, twice that with `--update`. The downloads stage adds about 20 fresh loads at about 4 s each.
      - Expect `learn:check` at about 10–15 min (3 min 56 s today).
-     - To measure: `s5-lisa` (999 permutations, no numba) and `s4-permutations` against the 60 s default (add `# timeout:` in 004 and the file if needed), and matplotlib's font cache under an empty HOME per block.
+     - To measure: `s5-lisa` (999 permutations, no numba) and `s4-permutations` against the 60 s default (add `# timeout:` in 004 and the file if needed).
+     - matplotlib builds its font cache under `MPLCONFIGDIR`, else under HOME. With a fresh HOME per block it would rebuild every time, so the run shares one folder (§3).
    - **Determinism.**
      - The seeds are 004's (`np.random.seed(2026)`, `seed=2026`); KDTree ties are stable for one build; PY9 runs every block twice.
      - `py-smoke` prints Python's patch version (3.12.3 today), so an apt upgrade changes that result: explain it, then re-record.
@@ -234,7 +237,9 @@ Architect, 2026-10-29, on `d69b024`. "(checked)" marks facts verified on this VP
      - the view `s4_neighbours` isn't drawn, and `erdDrift` flags only drawn views (`erd-model.ts:229–231`);
      - so `lab.mmd` and `lab.svg` stay unchanged (checked in code).
    - **Freshness.** Every PostGIS key includes every boot block (`freshness.ts:86`), and the checker's sources change. So all of `checked.json` goes stale once, and one whole run re-stamps it.
-   - **Existing `dist/` files.** The SQL assembly must stay byte-identical for `d1.sql`…`g7.sql` and `pg-checks.sql`, and `site/learn/src` must not change, so `learn/assets/` stays too (DoD sha256 list).
+   - **Existing `dist/` files.** The SQL assembly must stay byte-identical for `d1.sql`…`g7.sql` and `pg-checks.sql`. `learn/assets/` stays only if every input of the browser bundle stays (DoD sha256 list).
+     - Those inputs are `site/learn/src/`, plus four files outside it: `scripts/build/learn/sql.ts`, `scripts/learn/cell.ts` and `scripts/build/licenses.ts` (imported by `src/{check,cards,isolation,engine,csv,results,format,hook}.ts`; also in `site/learn/tsconfig.json:14`), and `site/learn/sql/setup.sql` (`engine.ts:14`).
+     - esbuild hashes their content into `app-<hash>.js`, so editing any of them changes `learn/assets/` (§12).
 
 10. **Fine as is:**
     - the loader stage, the PostGIS runner, `-- needs: raster`, the cleanup order and the lab lock;
@@ -253,11 +258,18 @@ Architect, 2026-10-29, on `d69b024`. "(checked)" marks facts verified on this VP
   - The constraint keeps every shared pin identical.
   - It is never published.
 - **One venv.** `pnpm learn:venv` runs `uv pip sync --no-build --python .venv-learn site/learn/labs/requirements.txt scripts/ingest/requirements.txt`.
-- **`scripts/venv.ts` (new):** `VENV_PYTHON` (`.venv-learn/bin/python`). `scripts/ingest/python.ts:7` uses it, so the path lives in one place.
-- **`ipykernel` stays unpinned.** The setup page says: VS Code or Jupyter offers to install it, and `uv pip sync` removes it again.
-- **Platform check (Verification):** the labs file with `--no-build`:
-  - Windows x86-64, Linux x86-64, Linux aarch64, and macOS 14 arm64 (`MACOSX_DEPLOYMENT_TARGET=14.0`) pass;
-  - Intel macOS fails, as 004 says.
+- **`scripts/venv.ts` (new): one place for the venv, one check, two callers.**
+  - `VENV_PYTHON` (`.venv-learn/bin/python`), `LABS_REQUIREMENTS`, `INGEST_REQUIREMENTS`. `scripts/ingest/python.ts:7` uses `VENV_PYTHON`.
+  - `venvState(file)` is a query: one `python -I -c` probe in the venv, which returns facts only. It reads `file`'s `name==version[ ; marker]` lines and skips a pin whose marker is false for that interpreter (`packaging.requirements`). It returns `{python, pins: [{name, pin, installed | null}]}`, with each installed version from `importlib.metadata`. Packages the file doesn't list never appear (rasterio, ipykernel). The probe was prototyped on `.venv-learn` (checked: `psycopg-binary`'s `implementation_name != 'pypy'` marker evaluates, and every pin matches).
+  - `venvProblems(state)` is pure TS and holds the rules: a pin that is missing, a pin at another version, and a Python other than 3.12.
+  - `packaging` is a labs pin (26.3). Without it the probe fails, and that is reported as "the venv check couldn't run: run pnpm learn:venv".
+  - `assertVenv(file, who)` throws `<who>: .venv-learn: <problems>: run pnpm learn:venv`.
+  - learn:check checks `LABS_REQUIREMENTS` only (§4.2). `ingest shapes` and `ingest habitat` call `assertVenv(INGEST_REQUIREMENTS)` first, before any download or spawn, so a venv missing rasterio fails in seconds, not after a 12-minute download. No uv is needed at check time.
+- **`ipykernel` stays unpinned.** The setup page says: VS Code or Jupyter offers to install it, and `uv pip sync` removes it again. The check ignores it (above), so learn:check runs after a notebook session.
+- **Checks (Verification):**
+  - The platform check: the labs file with `--no-build`. Windows x86-64, Linux x86-64, Linux aarch64 and macOS 14 arm64 (`MACOSX_DEPLOYMENT_TARGET=14.0`) pass; Intel macOS fails, as 004 says.
+  - The DoD's sync/check line covers both files: `pnpm learn:venv`, then `uv pip check --python .venv-learn`, clean.
+  - The learner's environment: the labs file alone, synced into a fresh scratch venv (`--no-build`), gives a clean `uv pip check`, and `venvProblems` on that venv's state is empty.
 
 #### 2. Python blocks: files, parsing, linting, porting
 - **Files.** Each block is `site/learn/sql/<id>.py`: 004's fence body, byte for byte.
@@ -267,16 +279,17 @@ Architect, 2026-10-29, on `d69b024`. "(checked)" marks facts verified on this VP
   - `code` (what the page shows) is the text after the headers; `text` is what runs and downloads.
 - **Linting.** Course-wide Python helpers are `{py-connect}` (`PY_CONNECT_ID`). `lintPage(blocks, bootIds, helpers)` checks each Python `# after:` id (PY5): it must be an earlier Python block of the page or a helper, ran, not itself.
   - The SQL rules are unchanged.
-  - `privilege.ts` skips Python blocks as it skips Power BI (:314), but still refuses the name `learn_spatial` anywhere in their text.
+  - `privilege.ts` skips Python blocks as it skips Power BI (:314), but still refuses the name `learn_spatial` anywhere in their text. It also refuses `application_name` in a ran Python block's text, written files included (e5's `refresh.py`). Every lab session then keeps the run's `PGAPPNAME`, which is what §4.4(b) and §4.6 rely on.
 - **Recorded results.** `recordedResults` and freshness's `isLab` count ran PostGIS **and** Python blocks. Results live in `site/learn/labs/checked/<id>.txt`.
 - **`learn:port`.** It turns `python` fences into `.py` files and their results into `CHECKED_DIR`, and adds the setup sections `### 3.3 ` and `### 3.4 `. The skip goes.
 - **Rendering.** `renderPython(id, stdout)` lives in `result.ts` beside `renderResult`: `-- result: <id> · python · sha256 <12 hex of stdout>`, then stdout without one final `\n` (PY10).
 
 #### 3. The Python engine (`scripts/learn/python.ts`, new)
-- **`pythonEnv(target, {home, learnBase})`:** `childEnv(target, process.env, "-c search_path=pg_catalog")`, with:
-  - HOME = the run's own empty folder;
+- **`pythonEnv(target, {home, learnBase, app, mplConfig})`:** `childEnv(target, process.env, "-c search_path=pg_catalog")`, with:
+  - HOME = the block's own empty folder;
   - PATH = the venv's bin, then `/usr/bin:/bin`;
-  - `PGAPPNAME=critwire-learn-check-py`;
+  - `PGAPPNAME` = `app`, the run's name: `critwire-learn-check-py-<run id>`, where the run id is 12 hex from `randomBytes(6)`, made once per learn:check run in `check.ts` (36 characters, under the 63-byte limit). libpq reads it, so every connection from the block, and from any process the block starts, carries it, unless the code sets `application_name`, which §2 refuses;
+  - `MPLCONFIGDIR` = `mplConfig`: one folder per run, `<run tmp>/mpl/`, outside every block's cwd and HOME and removed with the run's temp folder. matplotlib's font cache is built once per run, not once per block;
   - `LEARN_BASE`.
   - Nothing else reaches the block (PY3).
 - **`blockCode(b, course)`:** the texts of its `# after:` blocks in course page order (so py-connect first), then its own, separated by blank lines (004 §0). This isn't transitive at run time (as with SQL); freshness is.
@@ -287,11 +300,11 @@ Architect, 2026-10-29, on `d69b024`. "(checked)" marks facts verified on this VP
   - removes the temp folder in `finally`, on every path;
   - returns `{stdout, stderr, exit, timedOut}`. An abort rejects with its reason, after the cleanup.
 - **`pythonFailure(r, timeoutS)`:** a timeout, or a non-zero exit quoting stderr's last 5 lines (PY7, PY8).
-- **`venvState()`:** one `python -I -c` probe through `importlib.metadata`: the Python version and the installed distributions. learn:check refuses, before connecting, an installed set that isn't the union of the two requirements files' pins ("…: run pnpm learn:venv"). No uv is needed at check time.
+- The venv check is `scripts/venv.ts`'s (§1), not the engine's. `scripts/ingest/python.ts`'s `runPython` (stderr inherited, no process group, no timeout) is left as it is: the ingests stream their progress, and the lab engine isolates.
 
 #### 4. `pnpm learn:check`
 1. **Connect.** `assertLabRole` also refuses a superuser and a role with CREATE on `public`: "the labs run with a learner's privileges: run pnpm learn:check --setup" (MF5's guard).
-2. **Static.** `staticStage(module)` puts the course's ran boot blocks first, then the run's blocks (finding 3). It runs the venv check when the run has a Python block.
+2. **Static.** `staticStage(module)` puts the course's ran boot blocks first, then the run's blocks (finding 3). A `--module` run prints the boot blocks' results as it prints its own, so a run on s2 shows `s4-cells` once. When the run has a Python block or a `.py` download, `assertVenv(LABS_REQUIREMENTS, "learn:check")` (§1) runs before connecting, and its `python` goes into the stamp.
 3. **Blocks stage, in order:**
    - PostGIS boot blocks (committed), then the lab ERD check, then the other PostGIS blocks (`runner.ts`, unchanged);
    - the Python blocks, in page order (`scripts/learn/py-runner.ts`, new);
@@ -300,27 +313,38 @@ Architect, 2026-10-29, on `d69b024`. "(checked)" marks facts verified on this VP
    - **One result path for both engines.** The compare, update and write logic moves out of `runBlocks` (`runner.ts:577–617`) into `scripts/learn/record.ts` (new). Each engine returns `Outcome`s (the first run, plus the second with `--update`). `settleResults` compares them with `checked/<id>.txt` (a diff on difference, PY6), requires the two runs to agree (PY9), and returns failures and writes.
 4. **Each Python block (`runPythonBlock`).** `LEARN_BASE` is `file://<abs dist>`, the build under test, read through the same urllib code. After the run, each of these checks fails the block:
    - (a) exit 0, in time;
-   - (b) no `critwire-learn-check-py` session left after 10 s; a leftover is ended with `pg_terminate_backend` and named;
+   - (b) no session left after 10 s with `datname = current_database()`, `usename = current_user` and `application_name` = the run's name (§3). A leftover is ended with `pg_terminate_backend` and named. Sessions of other databases or other runs are never matched;
    - (c) `committedLeaks`: drops the lab role's `learn_` objects and names any other;
    - (d) `learn_curriculum` equal to the reading taken when the Python stage started (`readTables`/`tablesDiff`); a change stops the run there. The canary stays endStage's check: `critwire_lab` can't write it.
 5. **Downloads stage, per download in page order:**
    - `.sql` as today;
    - `.py` on a fresh load: the loader, then `python -I <file>` through `runPython` from an empty folder, with the same environment and a limit of its blocks' timeouts plus 60 s per boot block. It must exit 0. The leak check runs after each file.
    - `.ipynb` isn't run: E2E proves its cells equal the `.py`.
-6. **Cleanup (SC7).** The lock's `release()` also ends, in its step 1, every session with `application_name = critwire-learn-check-py` held by the lab role; the lock serializes runs, so these are this run's. An abort kills the Python process group and removes the temp folders (`runPython`); then cleanup's order runs as today.
+6. **Cleanup (SC7).** `takeLabLock(lab, db, {app})` keeps the run's name.
+   - In step 1, `release()` ends the recorded pids as today, and also every session matching (b): this database, the lab role, this run's name. The same query serves (b) and cleanup (one helper in `cleanup.ts`).
+   - Ownership comes from the run id, not from the lock: the lock is per database and serializes runs only there, and the database filter keeps another database's run (the same role, the same prefix) out of reach (finding 6).
+   - **An earlier run's straggler** (its parent was SIGKILLed, and the detached group lived on) has another run id, so it is never ended. At connect, after the lock, a lab-role session in this database whose name has the `critwire-learn-check-py-` prefix is named, with its pid and the command to end it, and the run refuses before any block. That is cleanup's rule for objects it can't prove are its own: name them, never drop them (`cleanup.ts:58`).
+   - An abort kills the Python process group and removes the temp folders (`runPython`); then cleanup's order runs as today.
 7. **Stamp:**
    - `Versions` gains `python` and `requirements` (the labs file's sha256, 12 hex): recorded, never compared.
    - A Python block's key covers:
-     - the ids: its own, its `# after:` chain transitively (on the page, then the helpers), every boot block, `pg-session` and `py-connect`;
+     - the ids: its own, its `# after:` chain transitively (on the page, then the helpers), every boot block, `pg-session` (the boot tables a Python block reads are made in pg-session's session, so it shapes them) and `py-connect`;
      - the existing file entries: the manifest, the checker's import closure (the new modules included), `canary.sql`, `requirements.txt`.
    - The result sha256 as today.
    - `downloads` gains each `.py` (004 §7.5); `.ipynb` isn't stamped.
 
 #### 5. Downloads (`assemble.ts`, plus `scripts/learn/notebook.ts`, new)
 - **`Download` gains `kind: "sql" | "py" | "ipynb"` and `timeoutMs`** (for `py`). `assembleDownloads(pages)` stays the one function the build, learn:check and E2E share. Its SQL output stays byte-identical.
+- **Every consumer splits by `kind`; none guesses from the name** (Astra SC2):
+  - the build writes all kinds;
+  - learn:check runs `sql` with psql and `py` with `runPython`, and runs no `ipynb`;
+  - freshness stamps `sql` and `py`;
+  - E2E checks each kind its own way (§10).
+- **`pageDownloads(downloads)`** (in `assemble.ts`, pure) gives each page's `{sql?, py?, ipynb?}` names. `site.ts:85` passes it to `learnPages` in place of today's page → name map, which would keep only one name per page (finding 1).
 - **The boot rule is one helper with a per-engine word test:** `bootsNeeded(boots, codes, names)`.
-  - SQL: a whole word outside SQL comments and strings (today's rule).
-  - Python: a whole word in the text minus lines starting `#`, because the SQL lives in Python strings.
+  - SQL: a whole word outside SQL comments and strings: today's rule, through `codeOnly` (`scripts/build/learn/sql.ts`, unchanged).
+  - Python: a whole word in the text minus lines starting `#`, because the SQL lives in Python strings. That test lives in `assemble.ts`.
+  - **The bundle's shared inputs are untouched:** nothing new goes into `sql.ts` or `cell.ts`, and `licenses.ts` and `setup.sql` don't change. Python parsing is `blocks.ts`'s, Python rendering `result.ts`'s, Python assembly `assemble.ts`'s and `notebook.ts`'s (finding 9; §12 audits `learn/assets/`). `learn:port setup` adds only `.py` files: port refuses to rewrite a file that differs, so `setup.sql` can't change by accident.
 - **Which pages:** a page with any Python block other than py-connect gets `<page>.py` and `<page>.ipynb`; the setup page gets `setup.py` and `setup.ipynb`.
 - **One cell list, two writers.** `pythonCells(page, course)` gives, in order:
   1. `py-connect`, as code;
@@ -338,10 +362,10 @@ Architect, 2026-10-29, on `d69b024`. "(checked)" marks facts verified on this VP
 
 #### 6. Agreement gates (`scripts/learn/agree.ts`, new, pure)
 Over the run's rendered results. A pair is checked when both of its blocks ran in the run. A failure names the pair and the value ("fix the SQL, never the threshold").
-- **Moran (MC5, MC6).** `s4-agree` (a new Python block) prints:
-  - per grid, the neighbour pairs in SQL (`s4_neighbours`) and in `DistanceBand`;
-  - esda's I, E[I], Var_norm and z_norm, as `repr(float)`.
-  - Against `s4-moran-sql`'s 5000 m row: the pairs are equal, and each statistic agrees within 5e-7 and as the same 6-decimal string.
+- **Moran (MC5, MC6).** `s4-agree` is a new Python block.
+  - **The pairs, in the block itself** (MC5): per grid, it reads `s4_neighbours` and builds `DistanceBand(threshold=2·edge, binary=True)` from the same cells, and asserts the two pair sets are equal. On a difference it exits 1, naming the grid and its first 5 differing pairs. A learner sees the same check by running the block.
+  - **Its result:** per grid, `edge_m | n | pairs | I | E[I] | Var_norm | z_norm`, the statistics from esda, printed with `repr(float)`.
+  - **The TS gate** (MC6) checks these against `s4-moran-sql`'s rows: a row for each grid, n equal, and each statistic within 5e-7 and the same as a 6-decimal string. The DoD's 5 km grid is the 5000 m row; the 10 km row is checked too.
 - **Gi\*.** `s5-gistar`'s row equals `s5-gistar-pysal`'s data line.
 - **LISA.** `s5-lisa-sql` (a new PostGIS block) counts cells per quadrant from z and the row-standardized lag. The counts equal `s5-lisa`'s `cells` column (185, 230, 557, 122).
 - **Zonal.** `s6-zones`' shown rows against `s6-geopandas`' `eco_id | km2 | records` lines: the same records, km² within 1.
@@ -351,7 +375,7 @@ Over the run's rendered results. A pair is checked when both of its blocks ran i
   - the code, read-only, with Copy and Lab schema;
   - the recorded result, or the untested reason;
   - "In `<page>.py` and `<page>.ipynb`, with the blocks it runs after."
-  - `PageContext.download` becomes `downloads: {sql?, py?, ipynb?}`, from `pages.ts`.
+  - `PageContext.download` becomes `downloads: {sql?, py?, ipynb?}`, from `pageDownloads` (§5) through `learnPages`. A PostGIS block links `sql`; a Python block links `py` and `ipynb`. A missing kind throws, naming the block, as `module-html.ts:137` does today.
   - A Python exercise shows its answer as a PostGIS one does: Show answer around the code and the result.
 - **The versions line** (once per page, before its first lab block): today's text, plus `; Python <v> with requirements.txt sha256 <12>` on pages with Python blocks.
 - **`setup.html`:**
@@ -379,9 +403,9 @@ Every 004 block keeps its id and its result, except where this table says otherw
 | s6 | `s6-habitat`: untested → ran, a new result | — |
 | e1 | **`e1-fetch`** (new, prints nothing): a whole-file retry.<br>- a fresh `.part` on each attempt;<br>- retries 429, 5xx and dropped connections, waiting 1, 2, 4, 8 s;<br>- `Retry-After` honoured, up to a cap.<br>**`e1-checksum`**: runs after `e1-fetch`; its result changes (finding 4).<br>**`e1-retry`** (new): a local `http.server` thread fails on a script: a cut body, then a 429 with `Retry-After: 1`, then the file. It prints each attempt, never a port.<br>**`e1-decide`** (new): the reconcile rule, in the repo's `decideDownload` shape.<br>- no intent → POST;<br>- a known key → resume;<br>- no key → list, then adopt the one matching download created since the intent;<br>- none or several → refuse.<br>It prints four canned cases.<br>**`e1-submit`** (stays untested), rewritten: an intent file, `e1-decide`, `Retry-After`, a polling deadline, and `e1-fetch` for the zip. | e1 |
 | e2 | **`e2-geopandas`**:<br>- `# after: py-connect`, with `create_engine(…, creator=connect)`;<br>- `to_postgis(schema="learn_curriculum")`;<br>- the check reads `learn_curriculum.devil_buffers`, and the table's namespace from `pg_class` before the rollback; it prints and asserts it;<br>- the result changes.<br>**`e2-copy-fails`** (new): an extra field, a NUL byte and bad UTF-8; each COPY fails, printing its SQLSTATE and COPY's line number.<br>**`e2-casts`** (new): `pg_input_is_valid` checks before `INSERT_TYPED`, reporting the gbifID, column and value.<br>**`e2-typed`**: a comment and the prose say the license mapping is illustrative, not §4.2's effective-license pipeline. | MF5; e2 |
-| e3 | **`e3-pick`, `e3-pick-pg`**: order by md5, then id; results unchanged.<br>**`e3-rerun`** kept, result unchanged. It is taught as a batch ledger: right for immutable batches, wrong for snapshots.<br>**`e3-snapshot`** (new):<br>- the ledger against "the target holds snapshot X" on A, B, A: the ledger leaves B, the snapshot state leaves A;<br>- the job id is the sha256 of the input, the transform version and the schema version, so a transform change reloads unchanged input.<br>**`e3-membership`** (new, PostGIS):<br>- the md5 cap is repeatable on the same input;<br>- a newly eligible low-hash id displaces a capped species' highest-hash record.<br>**The case-study text:** stale means the request changed. | SC8 e3 |
+| e3 | **`e3-pick`, `e3-pick-pg`**: order by md5, then id; results unchanged.<br>**`e3-rerun`** kept, result unchanged. It is taught as a batch ledger: right for immutable batches, wrong for snapshots.<br>**`e3-snapshot`** (new, `# after: py-connect`, a TEMP target and a TEMP state table):<br>- **the job key** is one sha256 over four parts, as canonical JSON (sorted keys, no spaces): the input's sha256, `TRANSFORM_VERSION`, the config (what shapes the rows: the cap and the license filter, never a connection setting) and `SCHEMA_VERSION`. The state row keeps the key and its parts;<br>- **each load is one transaction:** it replaces the target's rows and upserts the state row together, so the key never describes other rows;<br>- it prints one line per run (the input, which part of the key changed, loaded or skipped): A loads; A skips; B loads; A loads, so the target holds A, while the ledger rule beside it (e3-rerun's) leaves B; A with a changed config loads; A with `TRANSFORM_VERSION` bumped loads; A with `SCHEMA_VERSION` bumped loads; A again skips (RF1–RF3).<br>**The prose** separates SC8's three ideas: deterministic output (`e3-pick`), idempotent batch application (`e3-rerun`), and "the target holds snapshot X" (`e3-snapshot`).<br>**`e3-membership`** (new, PostGIS):<br>- the md5 cap is repeatable on the same input;<br>- a newly eligible low-hash id displaces a capped species' highest-hash record.<br>**The case-study text:** stale means the request changed. | SC8 e3 |
 | e4 | **`e4-quarantine`** (new, PostGIS, on made-up rows):<br>- uncertainty that is negative, NaN or Infinity;<br>- 0, 0 coordinates, rejected as this dataset's rule;<br>- a year after the download.<br>The report keeps the key, the check and the value.<br>**Prose:** the capped sample is neither abundance nor unbiased effort.<br>**`e4-checks`** unchanged. | e4 |
-| e5 | **`e5-job`** kept and labelled a simulation, in comments and prose only, so its result stays. Its docstring and Expected are fixed to match the redirect.<br>**`e5-refresh`** (new, prints nothing) writes `refresh.py`, the real job, from one string:<br>- it checks the PG* settings by name only, never logging a value;<br>- it reads `LEARN_BASE` and `REFRESH_SCHEMA` (default `etl`);<br>- in one transaction: `pg_try_advisory_xact_lock` (busy: log it, exit 0); the state row (file, sha256, job version) compared under the lock; the file fetched and verified; `TRUNCATE` + `COPY`, the row-count check and the state upsert; COMMIT;<br>- on any error: rollback, the reason on stdout, the traceback on stderr, exit 1.<br>**`e5-runs`** (new, after `py-connect` and `e5-refresh`) creates `learn_e5` with the target and state tables, then runs `python -I refresh.py` as separate processes:<br>1. A loads;<br>2. A again: skipped (the state persisted);<br>3. B, a local `file://` snapshot with one title changed: loads;<br>4. C, a manifest whose row count is off by one: exit 1, and the target and state are still B, read on the block's own connection;<br>5. with the lock held by the block: the run skips;<br>6. A again: loads;<br>7. without `PGDATABASE`: exit 1, naming the variable.<br>It prints one line per run (the exit code and the job's log line), never a path, port, pid or time. It drops `learn_e5` in `finally`.<br>**Prose:** with the redirect, cron mails nothing. `refresh-failed.service` only writes to the journal and alerts nobody until its `ExecStart` sends mail or a push. | SC8 e5; e5 |
+| e5 | **`e5-job`** kept and labelled a simulation, in comments and prose only, so its result stays. Its docstring and Expected are fixed to match the redirect.<br>**`e5-refresh`** (new, prints nothing) writes `refresh.py`, the real job, from one string:<br>- it checks the PG* settings by name only, never logging a value. It never sets `application_name`, so its sessions keep the inherited `PGAPPNAME` (§2, §4.6);<br>- it reads `LEARN_BASE`, `REFRESH_SCHEMA` (default `etl`) and `REFRESH_LICENSES` (the licenses it keeps; default `CC0 1.0,CC BY 4.0`), and qualifies every name with the schema;<br>- **the job key** has e3's four parts: the manifest's sha256 for `datasets.csv`, `TRANSFORM_VERSION`, the config (`{file, licenses}`, the licenses sorted; never a connection setting) and `SCHEMA_VERSION`;<br>- in one transaction:<br>&nbsp;&nbsp;- `pg_try_advisory_xact_lock(hashtext('refresh:' \|\| schema))`; busy: log it, exit 0;<br>&nbsp;&nbsp;- the state row's key compared under the lock; equal: log "unchanged", exit 0;<br>&nbsp;&nbsp;- the file fetched and its sha256 verified;<br>&nbsp;&nbsp;- `COPY` into a TEMP staging table, its row count checked against the manifest;<br>&nbsp;&nbsp;- `TRUNCATE` the target and insert the rows the config keeps;<br>&nbsp;&nbsp;- upsert the state row (the key and its parts);<br>&nbsp;&nbsp;- COMMIT. The replacement and the key commit together or not at all;<br>- on any error: rollback, the reason on stdout, the traceback on stderr, exit 1.<br>**`e5-runs`** (new, after `py-connect` and `e5-refresh`) creates `learn_e5` with the target and state tables. It then runs `python -I refresh.py` as separate processes, in the block's environment (so `PGAPPNAME` is inherited; case 8 drops only `PGDATABASE`):<br>1. A loads: 400 rows;<br>2. A again: skipped (the state persisted);<br>3. A with `REFRESH_LICENSES=CC0 1.0`: the input is unchanged and the config changed, so it loads 124 rows;<br>4. B, a local `file://` snapshot with one title changed: loads;<br>5. C, a new file with one row added whose manifest still gives B's row count: exit 1, and the target and state are still B, read on the block's own connection;<br>6. with the lock held by the block: the run skips, exit 0;<br>7. A, two invocations started together (`Popen` twice): both exit 0, and exactly one loads. They print as the sorted pair `loaded`, `not loaded`, because which one wins, and whether the other met the lock or the new state, varies. The target and state are A after, so A, B, A leaves A;<br>8. without `PGDATABASE`: exit 1, naming the variable.<br>It prints one line per run (the exit code and the job's log line), never a path, port, pid or time. It drops `learn_e5` in `finally` (RF1, RF2, RF4–RF7).<br>**Prose:** bump `TRANSFORM_VERSION` when the code's output changes and `SCHEMA_VERSION` when the target's DDL does. With the redirect, cron mails nothing. `refresh-failed.service` only writes to the journal and alerts nobody until its `ExecStart` sends mail or a push. | SC8 e5; e5 |
 
 The e-blocks write only TEMP tables, roll back, or use a `learn_` schema they drop (004 §5.5's intro says so). learn:check runs every lab as `critwire_lab`: the role guard (§4.1) and MF5.
 
@@ -389,19 +413,26 @@ The e-blocks write only TEMP tables, roll back, or use a `learn_` schema they dr
 `.diagram-design` exists with `profile: critwire`, so it is reused and there is no first-run gate. Three diagrams, each light and dark, in system fonts, with the `<title>` as the alt text:
 - `s4-band` (s4): a hexagon's ring distances √3·e and 3·e, and the 2·e band between them;
 - `e2-load` (e2): file → text staging → typed → checks → one COMMIT or ROLLBACK;
-- `e5-refresh` (e5): lock → state → fetch → verify → replace + state → COMMIT; a second run skips; a failure rolls back.
+- `e5-refresh` (e5): lock → compare the key (input, transform, config, schema) → fetch → verify → stage and count → replace + state → COMMIT; an unchanged key or a held lock skips; a failure rolls back.
 
 Each is exported with `export_svg.py --system-fonts` and checked with `self_check.py --offline`. The build's diagram checks apply as for L2's and L3's.
 
 #### 10. E2E
-**`learn-labs`:**
-- each Python block's page code equals its segment of the served `.py`;
-- an untested block is commented out under its reason in the `.py`, and is a Markdown cell (never a code cell) in the `.ipynb`;
-- every `.ipynb` code cell equals its `.py` segment, in order, and cell ids are unique;
-- each download that names `s4_cells` or `s4_neighbours` has `s4-cells` right after `pg-session` or `py-connect`;
-- the result shown equals `checked/<id>.txt`, and the versions line has Python and the requirements hash;
-- `/learn/labs/requirements.txt` equals the repo's labs file;
-- every download link on a page returns 200.
+**`learn-labs`.** The existing tests are reshaped first. Today the first test (`learn-labs.spec.ts:28–57`) loops over every download and checks every PostGIS block of its page against it, so it would fail once s4 also has `s4.py` and `s4.ipynb` (Fable MF3).
+- **By `Download.kind`:**
+  - `sql`: the PostGIS blocks against the page's `.sql`, their `.download a` href equal to it (today's checks, unchanged);
+  - `py`: the Python blocks against the page's `.py`, their links to its `.py` and `.ipynb`;
+  - `ipynb`: its cells against the `.py` (below).
+  - Every download is still fetched and equal to `d.text`.
+- **The versions-line test** (`:59–81`) covers pages with any lab block, and expects `; Python <v> with requirements.txt sha256 <12>` where the page has a Python block.
+- **New checks:**
+  - each Python block's page code equals its segment of the served `.py`;
+  - an untested block is commented out under its reason in the `.py`, and is a Markdown cell (never a code cell) in the `.ipynb`;
+  - every `.ipynb` code cell equals its `.py` segment, in order, and cell ids are unique;
+  - each download that names `s4_cells` or `s4_neighbours` has `s4-cells` right after `pg-session` or `py-connect`;
+  - a Python block's shown result equals `checked/<id>.txt`;
+  - `/learn/labs/requirements.txt` equals the repo's labs file;
+  - every download link on a page returns 200.
 
 **`learn-screens`:** s4, s5 and e2 at 1280 and 375 px.
 
@@ -410,24 +441,39 @@ E2E runs no Python (learn:check does). The browser blocks `s1-basis`, `s1-domina
 #### 11. 004 and AGENTS.md
 - **004**, each change landing with its code:
   - §0: Python `# after:` and the py-connect helper;
-  - §3.3: two requirements files, the macOS 14 check, `ipykernel`;
+  - §3.3: two requirements files, each checked by the command that needs it, the macOS 14 check, `ipykernel`;
   - §5.4 and §5.5 in full;
   - §7.3: `.py` and `.ipynb`; `arcpy-moran` commented out in `setup.py`;
   - §7.5: `site/learn/sql/<id>.py`, versions, freshness;
-  - §7.6: `LEARN_BASE=file://`, the Python stage, the role guard, Python cleanup;
+  - §7.6: `LEARN_BASE=file://`, the Python stage, the role guard, Python cleanup (the run id, this database only);
   - §7.7: learn-labs;
   - §9's L4 row.
 - **AGENTS.md:**
-  - Stack: the venv is used by the labs and learn:check too; the split requirements files;
+  - Stack: the venv is used by the labs and learn:check too; the split requirements files; each command checks its own file's pins (§1);
   - Learn files: `sql/<id>.py`;
-  - Commands: learn:check's Python stage and its venv and role checks;
+  - Commands: learn:check's Python stage and its venv and role checks. `pnpm test` reads "offline, no database; the Python engine's process tests need `/usr/bin/python3.12`", in place of "pure, offline";
   - State: s1–s6 and e1–e5 built.
 
+#### 12. DoD audit (Verification input)
+The audit runs on the final commit, after `pnpm build`.
+- **dist,** against `baseline-sha256-dist.txt`:
+  - byte-identical: `v1/**`, `index.html`, `learn/data/**` (no data file is added, so `manifest.json` stays), **`learn/assets/**`** (the bundle, finding 9), every baseline `learn/labs/*.sql`, every baseline `learn/diagrams/*`;
+  - changed: Learn's HTML pages only;
+  - new: the s and e module pages, `learn/labs/<page>.{sql,py,ipynb}`, `setup.{py,ipynb}`, `requirements.txt`, and the three diagrams.
+  - Anything else fails the audit, unless a Decision gives its reason.
+- **Repository,** against `baseline-sha256-repo.txt`:
+  - byte-identical: `data/**`, `contracts/**`, `db/**`, `site/learn/erd/**`, `site/learn/duckdb-ext/**`, every baseline `site/learn/sql/*`, `site/learn/modules/*.html` and `site/learn/labs/checked/*.txt`, and the bundle's inputs (`site/learn/src/**`, `scripts/build/learn/sql.ts`, `scripts/learn/cell.ts`, `scripts/build/licenses.ts`);
+  - changed on purpose: `site/learn/labs/requirements.{in,txt}`, `checked/checked.json`, `site/learn/curriculum.json`, `site/learn/pages/setup.html`, `package.json` (`learn:venv`), the scripts and tests the units touch, `e2e/learn-labs.spec.ts`, `e2e/learn-screens.spec.ts`, `AGENTS.md`, 004 and this plan;
+  - new: `scripts/ingest/requirements.{in,txt}`, the new block files, results, modules, diagrams and scripts.
+  - The audit lists every changed baseline file outside "changed on purpose", and each needs a reason under Decisions.
+- **The venv:** §1's checks, including the labs file alone in a fresh venv.
+
 ### Failure cases, written as tests before the code
-**Engine** (`scripts/learn/python.test.ts`, pure; process tests use `/usr/bin/python3.12`, so no venv is needed; PY4 and the round trip in `python.dbtest.ts`):
+**Engine** (`scripts/learn/python.test.ts`: offline and with no database. Its process tests use `/usr/bin/python3.12`, so no venv is needed. PY4, the round trip and V1's probe half and V4 are in `python.dbtest.ts`, since test:db already needs the venv):
+- **PY0** Without `/usr/bin/python3.12`, `python.test.ts` gives one failing test, "/usr/bin/python3.12 is missing: the engine's process tests need it (so does pnpm learn:venv)", and its process tests don't run. There is no spawn ENOENT per test.
 - **PY1** A `.py` block with no `# q:` or `# status:`, an unknown header, a bad `# timeout:`, no code, or an unknown status fails, naming the file and line.
 - **PY2** The block runs `-I` from an empty cwd. Its code file is outside the cwd, HOME is its own empty folder, and a planted `json.py` (in the cwd or beside the code) isn't imported.
-- **PY3** Its environment is exactly PATH, HOME, the lab target's PGHOST, PGPORT, PGUSER, PGDATABASE (and PGPASSWORD when the URL has one), `PGOPTIONS=-c search_path=pg_catalog`, PGAPPNAME and LEARN_BASE. GBIF_*, DATABASE_URL and LEARN_PG_URL never reach it.
+- **PY3** Its environment is exactly PATH, HOME, the lab target's PGHOST, PGPORT, PGUSER, PGDATABASE (and PGPASSWORD when the URL has one), `PGOPTIONS=-c search_path=pg_catalog`, PGAPPNAME (the run's `critwire-learn-check-py-<12 hex>`), MPLCONFIGDIR (outside the block's cwd and HOME) and LEARN_BASE. GBIF_*, DATABASE_URL and LEARN_PG_URL never reach it. A child process the block starts sees the same PGAPPNAME.
 - **PY4** (db) A connection without the helper fails with `relation "species" does not exist`; through the helper, `SHOW search_path` is `learn_curriculum,public`.
 - **PY5** `# after:` takes an earlier Python block of the page or py-connect. An unknown, later, self, other-engine or untested id is refused. The code runs in page order, py-connect first.
 - **PY6** Stdout that differs from the recorded result fails with a line diff; a missing result says "run --update".
@@ -435,14 +481,21 @@ E2E runs no Python (learn:check does). The browser blocks `s1-basis`, `s1-domina
 - **PY8** A block over its timeout fails; its process group is killed, with no child left (pgrep); the run goes on.
 - **PY9** `--update` runs each block twice. Different stdout fails, and nothing is written.
 - **PY10** The rendering is `-- result: <id> · python · sha256 <12 of stdout>` plus stdout less one final newline; `"a"` and `"a\n"` differ.
+- **PY11** A ran Python block whose text sets `application_name` is refused, naming the file and line.
 
 **SC7, cleanup** (`py-runner.dbtest.ts`, under the lab lock):
 - **PYC1** A block that commits a `learn_t_` schema and exits 0 fails ("committed …; the runner dropped it"), and nothing is left.
 - **PYC2** The same, then a raise: the same, plus the exit failure.
 - **PYC3** A block that commits a table into `learn_curriculum` fails, naming it, and the run stops there.
-- **PYC4** A block that starts a background process holding an open transaction, then sleeps past `# timeout: 1`: no process left, no `critwire-learn-check-py` session, no temp folder, and the next block runs.
+- **PYC4** A block that starts a background process holding an open transaction, then sleeps past `# timeout: 1`: no process left, no session with the run's name, no temp folder, and the next block runs.
 - **PYC5** An abort during a Python block rejects with its reason. The process group and temp folders are gone, cleanup ends the sessions and sweeps the lab role's `learn_` objects, and the lock is free.
 - **PYC6** A `.py` download that exits non-zero midway is named with stderr's tail; the leak check still runs and `checked.json` isn't written.
+- **PYC7** Ownership. Three idle lab-role sessions are open while a run's cleanup and check (b) run:
+  - one with this run's name in another database (`withScratchDatabase`);
+  - one with another run id in this database;
+  - one with this run's name in this database.
+  - The first two survive. The third is ended and named.
+- **PYC8** A lab-role session in this database named `critwire-learn-check-py-<another id>` when a run connects: the run refuses before any block, naming its pid and the command to end it, and the lock is free afterwards.
 
 **Assembly** (`assemble.test.ts`, `notebook.test.ts`):
 - **AS1** Every existing page's `.sql` is unchanged, compared byte for byte with the build; also a Verification sha256 check.
@@ -454,9 +507,10 @@ E2E runs no Python (learn:check does). The browser blocks `s1-basis`, `s1-domina
 - **AS4** Boot SQL holding `"""` or `\` is refused.
 - **AS5** A page whose only Python block is py-connect gets no `.py`.
 - **AS6** The names: setup gives `pg-checks.sql`, `setup.py` and `setup.ipynb`.
+- **AS7** `pageDownloads` gives s4 `{sql: s4.sql, py: s4.py, ipynb: s4.ipynb}`; no kind replaces another, and each download has exactly one kind.
 
-**Gates** (`agree.test.ts`):
-- **AG1** The neighbour pairs differ: it fails, naming the grid.
+**Gates** (`agree.test.ts`; the neighbour-pair equality is `s4-agree`'s own assert, which runs in learn:check, §6):
+- **AG1** A grid row is missing on either side: it fails, naming the grid.
 - **AG2** A statistic differs by more than 5e-7: it fails.
 - **AG3** The 6-decimal strings differ although the difference is within 5e-7: it fails.
 - **AG4** n differs: it fails.
@@ -466,18 +520,30 @@ E2E runs no Python (learn:check does). The browser blocks `s1-basis`, `s1-domina
 - **AG8** Only one block of a pair is in the run: the gate is skipped.
 
 **Environment and role:**
-- **V1** A venv with a missing, extra or wrong-version package is refused, naming it.
+- **V1** The venv check.
+  - Pure (`scripts/venv.test.ts`, `venvProblems`): a missing pin and a wrong-version pin are each refused, naming the package, its pin, what's installed and `pnpm learn:venv`; Python 3.11 or 3.13 is refused; a state with every pin matching passes.
+  - Probe (`python.dbtest.ts`, on `.venv-learn`, with fixture requirements files): a pin whose marker is false here doesn't appear; a missing and a wrong-version pin appear with `installed` null and the real version; an installed package the file doesn't list (rasterio, ipykernel) doesn't appear.
 - **V2** A superuser lab role is refused.
 - **V3** A lab role with CREATE on `public` is refused.
+- **V4** `assertVenv(INGEST_REQUIREMENTS)` refuses a fixture ingest file whose rasterio pin isn't installed, and passes on the synced venv. `ingest shapes` and `ingest habitat` call it before their first fetch (one line each, reviewed in the code review).
+
+**Refresh** (004's e3/e5 results, written into 004 before the code; learn:check proves them):
+- **RF1** A, B, A leaves the target holding A and the state holding A's key; the ledger rule leaves B (e3-snapshot, e5-runs).
+- **RF2** An unchanged input with a changed config reloads; with everything unchanged, the run skips (e3-snapshot, e5-runs 2–3).
+- **RF3** An unchanged input with `TRANSFORM_VERSION` or `SCHEMA_VERSION` bumped reloads (e3-snapshot).
+- **RF4** A failed load (row count off) exits 1, and the target and state are as before: the replacement and the state commit together (e5-runs 5).
+- **RF5** With the lock held elsewhere, the run logs busy and exits 0, changing nothing (e5-runs 6).
+- **RF6** Two invocations at once on a changed input: both exit 0, exactly one loads, and the target and state end consistent (e5-runs 7).
+- **RF7** A missing PG setting exits 1, naming the variable, never a value (e5-runs 8).
 
 ### Review items: where each is done
 | Item | Where | How it's verified |
 |---|---|---|
 | MF5 | §8 e2-geopandas; §4.1 guard | learn:check runs it as `critwire_lab` and prints and asserts the namespace inside the open transaction; V2, V3 |
-| SC8 e3 | §8 e3-snapshot, e3-membership, e3-pick | their recorded results (A, B, A → A; displacement) |
-| SC8 e5 | §8 e5-refresh, e5-runs | separate processes, changed input, failed load, overlap, all in e5-runs' recorded result |
+| SC8 e3 | §8 e3-snapshot (four-part key, one transaction per load), e3-membership, e3-pick | their recorded results: RF1–RF3, displacement |
+| SC8 e5 | §8 e5-refresh (four-part key, persisted in the replacing transaction), e5-runs | separate processes, changed input, changed config, failed load, a held lock, two concurrent invocations: RF1, RF2, RF4–RF7 in e5-runs' recorded result |
 | e1, e2, e4, e5 corrections | §8; 004 and the page in the same commit | results of e1-retry, e1-decide, e2-copy-fails, e2-casts, e4-quarantine; `learn:port --check all` |
-| SC7, Python part | §3, §4.4, §4.6 | PYC1–PYC6 |
+| SC7, Python part | §3, §4.4, §4.6 (run id, this database, stragglers named) | PYC1–PYC8, PY11 |
 
 ### Rejected alternatives
 - **Publishing the 48-pin file and moving 004 to macOS 15:** it drops macOS 14 learners for a package they never import.
@@ -490,16 +556,22 @@ E2E runs no Python (learn:check does). The browser blocks `s1-basis`, `s1-domina
 - **Running the e5 job in-process on two connections:** that doesn't show what a scheduler does, which is separate invocations.
 - **Comparing each `.py` download's stdout with its blocks' results:** an exercise's `# after:` re-prints its lesson's output, so the concatenation isn't the recorded results. 004's rule (exit 0) and the release smoke on `s4.py` suffice.
 - **A new Windows handoff item for Python:** each platform's resolution is checked with `--no-build`, and 004 §10 item 8's two checks stand.
+- **Requiring the exact union of both files' pins (the first draft of §3):** it refuses the learner's documented labs-only venv and an editor-installed `ipykernel`.
+- **A PEP 508 marker evaluator in TS, so V1 is pure:** it reimplements `packaging`, which the venv already pins.
+- **Ending Python sessions by role and a fixed `application_name`:** `pg_stat_activity` spans databases and the lab lock doesn't, so one run could end another's (Astra MF2).
+- **Pair equality in the TS gate:** `s4-agree` would have to print every pair. The block asserts them itself, where a learner sees it too.
+- **`s4-agree` re-running the Moran SQL in Python, comparing everything itself (Fable SC1 in full):** it copies `s4-moran-sql`'s 30-line query into a string. The TS gate reads both recorded results instead.
+- **A test hook in `refresh.py` to force the overlap order:** the teaching job would carry test code. RF6 prints the order-free outcome, and RF5 forces contention without one.
 
 ### Work units and budget
 **Order constraint:** `s4-cells` (the boot block) is on s4's page, and s2, s3, s5 and `gpkg-export` read its tables. So **s4 is built before s2, s3 and s5**.
 
 Rough units (the planner writes the Steps):
-1. The venv split (§1; finding 2).
-2. The block model and port (§2; PY1, PY5, PY10 first). The setup page's `py-connect` and `py-smoke` port in this step.
-3. The engine (§3; PY2, PY3, PY7, PY8, V1 first).
-4. learn:check's Python stage (§4.1–4.4, 4.6, 4.7; PY4, PY6, PY9, PYC1–PYC5, V2, V3 first; finding 3).
-5. Assembly and downloads, the build's files, Python on pages and the versions line (§5, §4.5, §7; AS1–AS6, PYC6 first).
+1. The venv split and `scripts/venv.ts`, with the ingest commands' call (§1; finding 2; V1, V4 first).
+2. The block model and port (§2; PY1, PY5, PY10, PY11 first). The setup page's `py-connect` and `py-smoke` port in this step.
+3. The engine (§3; PY0, PY2, PY3, PY7, PY8 first).
+4. learn:check's Python stage (§4.1–4.4, 4.6, 4.7; PY4, PY6, PY9, PYC1–PYC5, PYC7, PYC8, V2, V3 first; finding 3).
+5. Assembly and downloads, the build's files, Python on pages and the versions line, and `learn-labs`' reshaping by kind (§5, §4.5, §7, §10's first two items; AS1–AS7, PYC6 first).
 6. The gates (§6; AG1–AG8 first).
 7. s1.
 8. s4, with `s4-agree` and `gpkg-export`.
@@ -509,24 +581,24 @@ Rough units (the planner writes the Steps):
 12. s6.
 13. e1.
 14. e2.
-15. e3.
+15. e3 (RF1–RF3 in 004 first).
 16. e4.
-17. e5.
+17. e5 (RF1, RF2, RF4–RF7 in 004 first).
 18. The diagrams: one unit, or each with its module.
 19. E2E completion and screenshots.
-20. AGENTS.md, the 004 pass, and the DoD audit (dist sha256 against the Baseline list).
+20. AGENTS.md, the 004 pass, and the DoD audit (§12).
 
 That is about 20–23 units, since 4 and 5 may split.
 
 **Budget:**
-- 2 sessions are used (log), and 4 stages are left (Fable, Astra, Revision, Steps).
+- 5 sessions are used (log, at Revision), and 1 stage is left (Steps). The revision adds tests and block lines but no unit.
 - About 22 step units.
 - The code review plus up to 2 fix steps, Verification, Summary and Release: about 6.
 - **Total: about 34 of the 48-session cap.**
 - If the count passes 40 before the code review: one diagram (`e5-refresh`) and no zonal gate. No Goal deliverable is cut.
 
 ### Decisions (to copy under Decisions)
-- **D1 Two requirements files** (labs = 004's 44 pins, published; ingest = rasterio, constrained by the labs file), one venv. Reason: rasterio breaks macOS 14 arm64 with `--no-build` (checked), and learners don't import it.
+- **D1 Two requirements files** (labs = 004's 44 pins, published; ingest = rasterio, constrained by the labs file), one venv synced from both. Reason: rasterio breaks macOS 14 arm64 with `--no-build` (checked), and learners don't import it. The DoD's `uv pip sync --no-build requirements.txt` / `uv pip check` line is read as both files, plus the labs file alone in a fresh venv (§1).
 - **D2 `ipykernel` isn't pinned.** Reason: notebooks aren't run by learn:check, and the editors install it on demand.
 - **D3 Python blocks live in `site/learn/sql/<id>.py`,** not `labs/`. Reason: one block folder for every reader and for port.
 - **D4 `py-connect` is a course-wide helper for `# after:`.** Reason: 004's blocks name it from every page.
@@ -537,12 +609,15 @@ That is about 20–23 units, since 4 and 5 may split.
 - **D9 `e2-geopandas`' result changes.** Reason: MF5, the assigned review item, wins over "keeps its sha256".
 - **D10 `e3-rerun`, `e5-job` and `e4-checks` keep their results;** new blocks carry the SC8 and teaching fixes. Reason: DoD hashes.
 - **D11 The e5 job is written to `refresh.py` from one string and run as separate processes.** Reason: the only honest way to test what a scheduler runs.
-- **D12 The agreement gates are TS over the run's results,** with the new `s4-agree` (full precision, pairs) and `s5-lisa-sql`. Reason: MC5, MC6 and "Gi\* and LISA tested against esda" become recurring and pure.
+- **D12 The agreement gates are TS over the run's results,** with the new `s4-agree` (esda at full precision; it asserts the neighbour pairs itself) and `s5-lisa-sql`. Reason: MC5, MC6 and "Gi\* and LISA tested against esda" become recurring and pure, with no SQL copied into Python.
 - **D13 The Python stage runs after the PostGIS one,** and results are written once both pass. Reason: one result path, no cross-engine state.
 - **D14 A `.py` download's check is exit 0,** plus the release smoke on `s4.py`. Reason: 004 §7.6, and `# after:` re-prints.
 - **D15 Three diagrams** (`s4-band`, `e2-load`, `e5-refresh`). Reason: geometry and flows teach better drawn than in prose.
 - **D16 No new Windows handoff item.** Reason: per-platform resolution is checked, and 004 §10 item 8 stands.
-- **D17 Python sessions carry `PGAPPNAME=critwire-learn-check-py`,** and cleanup ends them. Reason: SC7, since their pids are unknown.
+- **D17 Python sessions carry `PGAPPNAME=critwire-learn-check-py-<run id>`** (12 hex, one per learn:check run, inherited by every process a block starts). Check (b) and cleanup end only sessions of this database, the lab role and this name. An earlier run's session in this database is named at connect and the run refuses. A ran Python block may not set `application_name`. Reason: SC7, since their pids are unknown. The lab lock is per database and `pg_stat_activity` spans the cluster, so only the run id and the database filter prove that a session is this run's (Astra MF2).
+- **D18 Each command checks its own requirements file's pins:** learn:check the labs file, `ingest shapes`/`habitat` the ingest file. Each pin present at its version, markers evaluated, extras ignored. Reason: a labs-only venv (004 §3.3, the setup page, the owner's WSL) and an editor-installed `ipykernel` are valid lab environments (Fable MF2, Astra MF1).
+- **D19 A refresh's identity is one key over input, transform version, config and schema version,** committed in the transaction that replaces the target (e3-snapshot, e5's `refresh.py`). Reason: SC8 names all four, and without config a config-only change would skip (Astra MF3).
+- **D20 The browser bundle's inputs stay byte-identical:** `site/learn/src/`, `site/learn/sql/setup.sql`, `scripts/build/learn/sql.ts`, `scripts/learn/cell.ts`, `scripts/build/licenses.ts`. The DoD audit compares `dist/learn/assets/` with the Baseline list. Reason: esbuild hashes them into `app-<hash>.js` (Fable MF1).
 
 ## Architecture review (Fable)
 
@@ -589,6 +664,33 @@ SHOULD-CONSIDER:
 
 ## Revision notes
 
+Architect, 2026-10-29, on `0d9c7a9`. Every MUST-FIX is resolved by a design change; none is disputed.
+
+**MUST-FIX**
+- **Fable MF1 / Astra SC3 (the bundle's inputs):** done in finding 9, §5, §12 and D20. Verifying it found a fourth input: `site/learn/sql/setup.sql` (`engine.ts:14`), so it is listed too. Nothing new goes into `sql.ts` or `cell.ts`, and the Python word test is in `assemble.ts`. §12 compares `dist/learn/assets/**` with the Baseline list.
+- **Fable MF2 / Astra MF1 (the venv check):** done in §1 (`scripts/venv.ts`: the `venvState(file)` probe evaluates markers through `packaging` and reports the listed pins only; the pure `venvProblems` holds the rules), §3, §4.2, V1, V4, D18, and a new rejected alternative. learn:check checks the labs file only. `ingest shapes`/`habitat` check the ingest file before their first fetch. The probe was prototyped on `.venv-learn` (clean).
+- **Fable MF3 / Astra SC2 (downloads by kind):** done in §5 (each consumer splits by `kind`; the new `pageDownloads`), §7, §10 (the first `learn-labs` test is reshaped by kind; the versions-line test expects the Python suffix), AS7 and unit 5. It also fixes finding 1's reference (`site.ts:85`, not `pages.ts:132`): today's page → name map would drop all but one download per page.
+- **Astra MF2 (cleanup ownership):** done in finding 6, §3 (the run id in `PGAPPNAME`, inherited by subprocesses), §2 and PY11 (no block sets `application_name`), §4.4(b), §4.6 (database + role + run name; one shared query; an earlier run's straggler is named at connect and the run refuses, never killed), PYC7 (another database, another run), PYC8 and D17. Verified: the lab lock is per database (`pg_locks.database`); `cleanup.ts:88` matches the pid and a fixed name today.
+- **Astra MF3 (the refresh identity):** done in §8. e3-snapshot and e5's `refresh.py` use one key over input, transform version, config and schema version, committed in the transaction that replaces the target. e5's config is `REFRESH_LICENSES` (CC0 only gives 124 of 400 rows, checked in `datasets.csv`). Also RF1–RF7 (RF2: unchanged input with a changed config reloads), §9, the review-items table and D19. Case C now changes the file, since a manifest-only change with the same sha256 would skip.
+
+**SHOULD-CONSIDER (Astra)**
+- **SC1, two concurrent invocations:** taken. e5-runs case 7 and RF6 check the outcome without depending on order. A test hook that forces the order is rejected (rejected alternatives).
+
+**MISSED (Fable)**
+- **MPLCONFIGDIR:** done in §3, PY3 and finding 9 (one folder per run, outside every cwd and HOME).
+- **`pnpm test` purity:** PY0 gives one clear failure when `/usr/bin/python3.12` is missing. §11 rewords AGENTS.md ("offline, no database; …need `/usr/bin/python3.12`"). The engine's test heading is changed to match.
+- **`refresh.py` and `application_name`:** done in the e5 row, and enforced by §2 / PY11.
+- **The DoD audit lists and both requirements files:** done in §12 (dist and repo: unchanged, changed on purpose, new) and §1's checks. D1 reads the DoD's sync/check line as both files, plus the labs file alone in a fresh venv.
+
+**SHOULD-CONSIDER (Fable)**
+- **SC1, Moran in the block:** partly taken. `s4-agree` asserts the neighbour pairs itself (exit 1 on a difference) and prints esda at full precision. The statistics stay a TS gate against `s4-moran-sql`'s result, because re-running that 30-line query from Python would copy it. Updated: §6, AG1, D12, rejected alternatives.
+- **SC2, dropping `pg-session` from Python keys:** declined. The boot tables Python reads are made in pg-session's session (`runner.ts:162`), so it shapes them (§4.7 says why).
+- **SC3, reading `learn_curriculum` once per page:** declined. It costs about 1 min per run, within budget, and a per-block read names the block that wrote.
+- **SC4, D5 with 004 updated in the same commit:** kept, as §11 already says.
+- **SC5, `--module` prints the boot results:** taken (§4.2).
+
+**Also corrected:** finding 1's `pg.ts:144` → `:89`; the budget line (5 sessions used).
+
 ## Steps
 
 ## Verification
@@ -599,7 +701,7 @@ SHOULD-CONSIDER:
 
 ## Decisions
 
-- Architecture D1–D17 (end of `## Architecture`) proposed 2026-10-29; final after Revision.
+- Architecture D1–D20 (end of `## Architecture`) final after Revision, 2026-10-29.
 
 ## Log
 
@@ -607,5 +709,6 @@ SHOULD-CONSIDER:
 - 2026-10-29 14:27 UTC: Architecture: architect wrote findings, target design (Python engine, learn:check Python stage, .py/.ipynb downloads, agree gates, MF5/SC8/SC7 realisation), PY/PYC/AS/AG failure lists, D1–D17. Doc-only; no checks needed.
 - 2026-10-29 14:37 UTC: Fable review: APPROVE WITH CHANGES, 3 MUST-FIX (bundle inputs untouched + assets sha audit; venvState checks labs pins only; learn-labs.spec iterates by Download.kind), 4 missed, 5 should-consider. Doc-only; no checks needed.
 - 2026-10-29 14:38 UTC: Astra review: APPROVE_WITH_CHANGES, 3 MUST-FIX (venv pins checked per purpose; cleanup scoped to target db + unique run id; refresh identity incl. config), 3 should-consider. Doc-only; no checks needed.
+- 2026-10-29 14:52 UTC: Revision: architect resolved all 6 MUST-FIX (bundle inputs + assets audit, D20; per-file venv pins, D18; downloads by kind; cleanup by db + run-id PGAPPNAME, D17; refresh key incl. config, D19), 4 MISSED, SC per Revision notes. Doc-only; no checks needed.
 
 ## Summary
