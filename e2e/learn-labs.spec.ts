@@ -63,7 +63,7 @@ test("a PostGIS block shows checked/<id>.txt (or its untested reason); the page'
   for (const p of pages.filter((x) => x.blocks.some((b) => b.engine === "postgis"))) {
     await page.goto(url(p));
     const v = stamp.versions;
-    await expect(page.locator(".checked")).toHaveText([`Checked ${stamp.checked} on PostgreSQL ${v.postgresql}, PostGIS ${v.postgis}, GEOS ${v.geos}.`]);
+    await expect(page.locator(".checked")).toHaveText([`Checked ${stamp.checked} on PostgreSQL ${v.postgresql}, PostGIS ${v.postgis}, GEOS ${v.geos}, GDAL ${v.gdal}.`]);
     for (const b of p.blocks.filter((x) => x.engine === "postgis")) {
       if (b.status === "untested") await expect(page.locator(`#q-${b.id} .untested`)).toHaveText(`Not run here: ${b.reason}.`);
       else expect(await page.locator(`#q-${b.id} pre.recorded`).textContent(), b.id)

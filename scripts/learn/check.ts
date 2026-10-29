@@ -224,7 +224,7 @@ async function assertLabRole(sql: postgres.Sql): Promise<Who> {
 async function connectStage(lab: PgTarget, sql: postgres.Sql, lock: LabLock, { db, user }: Who, canarySchema: string, signal?: AbortSignal): Promise<Run> {
   console.log(`learn:check: ${user} on ${db}, lab lock taken`);
   const versions = await serverVersions(sql);
-  console.log(`learn:check: PostgreSQL ${versions.postgresql}, PostGIS ${versions.postgis}, GEOS ${versions.geos}`);
+  console.log(`learn:check: PostgreSQL ${versions.postgresql}, PostGIS ${versions.postgis}, GEOS ${versions.geos}, GDAL ${versions.gdal}`);
   const admin = libpqTarget({ PGDATABASE: db, PGPORT: String(lab.port) });
   const [{ has }] = await sql<{ has: boolean }[]>`select to_regnamespace(${canarySchema}) is not null as has`;
   const canaryBefore = has ? await readTables(admin, canarySchema, signal) : undefined;

@@ -8,7 +8,8 @@
 // - Each download's sha256 as assembled (assemble.ts).
 // - labErd: a sha256 over what decides the lab ERD check (learn:check compares lab.mmd with learn_curriculum after the
 //   boot blocks): lab.mmd, the loader's sha256 and the boot blocks' texts.
-// - The versions it ran on, and the date: recorded, never compared. The date moves only with something else.
+// - The versions it ran on (PostgreSQL, PostGIS, GEOS, GDAL) and the date: recorded, never compared. The date moves
+//   only with something else.
 // learn:check writes it (nextStamp) once every stage passed; the build compares (staleness). readFreshness reads the
 // inputs; the rest is pure. Tests: freshness.test.ts.
 import { createHash } from "node:crypto";
@@ -32,6 +33,8 @@ export interface Versions {
   postgresql: string;
   postgis: string;
   geos: string;
+  /** PostGIS raster's GDAL (raster blocks). */
+  gdal: string;
 }
 
 /** What learn:check proves and the build recomputes. */

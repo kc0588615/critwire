@@ -1,6 +1,7 @@
 // The PostGIS loader (plan D9.6, 004 §4.3; port of the spike's scripts/loader.ts): one psql script,
 // /learn/data/postgis/learn_curriculum.sql, that builds the lab schema with nothing but psql, in one transaction:
-//   \set ON_ERROR_STOP on · BEGIN · client_encoding · lock_timeout · the MF4 guard's DO block, which drops the schema ·
+//   \set ON_ERROR_STOP on · BEGIN · the raster guard · client_encoding · lock_timeout · the MF4 guard's DO block, which
+//   drops the schema ·
 //   CREATE SCHEMA · SET LOCAL search_path · db/learn/lab-ddl.sql · COPY … FROM stdin (FORMAT csv) per table ·
 //   db/learn/lab-keys.sql · ANALYZE · a DO block that raises (row counts, SRID, LAB_CHECKS) · COMMIT
 // Rows come from the build's DuckDB over dist/'s published files (withLabTables). WKB is written as base64 text (a
@@ -145,6 +146,19 @@ function guardBlock(schema: string): string[] {
   ];
 }
 
+// The raster guard (L3): the first statement, so a server without PostGIS raster fails before the drop, naming the fix,
+// instead of at the first raster column with PostgreSQL's words. public: the loader's search_path is <schema>, public.
+const RASTER_GUARD = [
+  "-- The lab holds rasters, so it needs PostGIS raster: without it, this stops here and nothing changes.",
+  "DO $raster$",
+  "BEGIN",
+  "  IF to_regtype('public.raster') IS NULL THEN",
+  "    RAISE EXCEPTION 'PostGIS raster is missing: CREATE EXTENSION postgis_raster; (see /learn/setup/)';",
+  "  END IF;",
+  "END",
+  "$raster$;",
+];
+
 // One table's COPY: its rows as csv, in DDL column order, ordered by key; WKB as base64.
 async function copyTable(con: DuckDBConnection, t: LabTable, cols: string[], tmp: string): Promise<{ text: string; rows: bigint; wkb: string[] }> {
   const from = t.from ?? t.name;
@@ -199,7 +213,7 @@ export async function generateLoader(con: DuckDBConnection, spec: LoaderSpec): P
       checks.push(`  IF (SELECT count(*) FROM ${t.name}) <> ${rows} THEN RAISE EXCEPTION '${spec.schema}.${t.name}: % rows, expected ${rows}', (SELECT count(*) FROM ${t.name}); END IF;`);
       for (const c of wkb) {
         const bad = `(SELECT count(*) FROM ${t.name} WHERE ST_SRID(${c}) <> 4326)`;
-        checks.push(`  IF ${bad} > 0 THEN RAISE EXCEPTION '${spec.schema}.${t.name}.${c}: % geometries with SRID other than 4326', ${bad}; END IF;`);
+        checks.push(`  IF ${bad} > 0 THEN RAISE EXCEPTION '${spec.schema}.${t.name}.${c}: % values with SRID other than 4326', ${bad}; END IF;`);
       }
     }
     for (const c of spec.checks) {
@@ -212,6 +226,8 @@ export async function generateLoader(con: DuckDBConnection, spec: LoaderSpec): P
       `-- Run: psql -X -v ON_ERROR_STOP=1 -d <database> -f ${spec.schema}.sql   (PostgreSQL 16, PostGIS 3.4 or later)`,
       `-- It replaces the whole schema ${spec.schema}, tables you made there included, in one transaction:`,
       "-- if any step fails, nothing changes.",
+      "",
+      ...RASTER_GUARD,
       "",
       "-- The file is UTF-8, whatever your terminal's code page (psql on Windows defaults to it, and would garble names).",
       "SET client_encoding = 'UTF8';",
@@ -228,8 +244,8 @@ export async function generateLoader(con: DuckDBConnection, spec: LoaderSpec): P
       "",
       ...spec.tables.map((t) => `ANALYZE ${t.name};`),
       "",
-      "-- Validation: every table has the rows the build wrote, every shape is in SRID 4326, and every rule the keys and",
-      "-- CHECKs above can't state holds (each query counts the rows breaking it). Shapes may be invalid on purpose (g2).",
+      "-- Validation: every table has the rows the build wrote, every shape and raster is in SRID 4326, and every rule the",
+      "-- keys and CHECKs above can't state holds (each query counts the rows breaking it). Shapes may be invalid on purpose (g2).",
       "DO $$",
       "BEGIN",
       ...checks,

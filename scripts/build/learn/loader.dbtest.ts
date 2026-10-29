@@ -6,8 +6,8 @@
 // LD6: LD5 without ON_ERROR_STOP (a learner's own psql) commits the half that worked → still atomic.
 // LD7: an FK violation loads, or half-loads → fails naming the constraint; previous schema intact.
 // LD8: a geometry in another SRID loads → fails validation, naming the column; previous schema intact.
-// LD9: the real loader reaches a table outside its schema → only the search_path line mentions public, and after the
-//      load nothing in the schema depends on another schema's table.
+// LD9: the real loader reaches a table outside its schema → only the raster guard and the search_path line mention
+//      public, and after the load nothing in the schema depends on another schema's table.
 // LD10: the real loader's bytes change between two generations over the same dist/.
 // LD12: a psql in WIN1252 (Windows' console code page) garbles non-ASCII → byte for byte.
 // LD13: a learner's view in another schema over the lab schema vanishes on a reload (DROP … CASCADE) → refused, naming
@@ -22,6 +22,9 @@
 //       NULL (unknown) loads.
 // LD18: a LAB_CHECKS violation commits → raises in the DO block, naming the check and its count; previous schema
 //       intact; the real loader runs every LAB_CHECKS query.
+// LD19: a server without PostGIS raster gets past the drop, or half-loads → the guard raises "PostGIS raster is
+//       missing" before anything else; the previous schema intact. (Run against a type that doesn't exist: critwire_dev
+//       has raster, and dropping a shared extension isn't a test's to do.)
 // LD2/LD3 round-trips: the point loads as POINT(1 2) SRID 4326, every TEXTS value byte for byte.
 // The real-loader cases read dist/ (run pnpm build first).
 import assert from "node:assert/strict";
@@ -135,7 +138,23 @@ test("LD8 a geometry with SRID ≠ 4326 fails validation, naming the column; the
   assert.notEqual(keys, FIXTURE_KEYS);
   const r = psqlFile(await fixtureLoader(schema, { keys }));
   assert.notEqual(r.status, 0);
-  assert.match(r.stderr, new RegExp(`${schema}\\.shapes\\.geom: 1 geometries with SRID other than 4326`));
+  assert.match(r.stderr, new RegExp(`${schema}\\.shapes\\.geom: 1 values with SRID other than 4326`));
+  assert.equal(await fingerprint(sql, schema), before);
+}));
+
+test("LD19 without PostGIS raster the guard raises before anything else; the previous schema stays intact", () => withLabSchema(async (sql, schema) => {
+  await loadGood(schema);
+  const before = await fingerprint(sql, schema);
+  const [{ has }] = await sql<{ has: boolean }[]>`select to_regtype('public.raster') is not null as has`;
+  assert.equal(has, true, "critwire_dev has PostGIS raster, so the real guard passes");
+  const good = await fixtureLoader(schema);
+  const bad = good.replace("to_regtype('public.raster')", "to_regtype('public.raster_ld19_missing')");
+  assert.notEqual(bad, good);
+  const r = psqlFile(bad);
+  assert.notEqual(r.status, 0);
+  assert.match(r.stderr, /ERROR: {2}PostGIS raster is missing: CREATE EXTENSION postgis_raster; \(see \/learn\/setup\/\)/);
+  const at = Number(/^psql:[^:]+:(\d+): ERROR/m.exec(r.stderr)?.[1]);
+  assert.ok(at > 0 && at <= bad.split("\n").indexOf("$raster$;") + 1, `the error is the guard's, line ${at}`);
   assert.equal(await fingerprint(sql, schema), before);
 }));
 
@@ -162,7 +181,8 @@ const DEPENDS_OUTSIDE = (schema: string) => `
 
 test("LD9 the real loader references no public table: text scan, and pg_depend after the load", () => withLabSchema(async (sql, schema) => {
   const text = await realLoader(schema);
-  // Outside COPY data and comments, the only mention of public is the search_path line.
+  // Outside COPY data and comments, public is named only by the raster guard (a type lookup, PostGIS's) and the
+  // search_path line.
   let inData = false;
   const mentions: string[] = [];
   for (const l of text.split("\n")) {
@@ -173,7 +193,7 @@ test("LD9 the real loader references no public table: text scan, and pg_depend a
     if (/^COPY /.test(l)) inData = true;
     if (/\bpublic\b/i.test(l.replace(/--.*$/, ""))) mentions.push(l);
   }
-  assert.deepEqual(mentions, [`SET LOCAL search_path = ${schema}, public;`]);
+  assert.deepEqual(mentions, ["  IF to_regtype('public.raster') IS NULL THEN", `SET LOCAL search_path = ${schema}, public;`]);
   const r = psqlFile(text);
   assert.equal(r.status, 0, r.stderr);
   assert.deepEqual([...await sql.unsafe<{ dep: string }[]>(DEPENDS_OUTSIDE(schema))].map((r) => r.dep), []);

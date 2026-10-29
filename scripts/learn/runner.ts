@@ -25,6 +25,7 @@ import { join } from "node:path";
 import postgres from "postgres";
 import { statementError, type Statement } from "../build/learn/sql.ts";
 import { CHECKED_DIR, PG_SESSION, type Block } from "./blocks.ts";
+import type { Versions } from "./freshness.ts";
 import { dropObjects, labMade, learnObjects, superuserCleanup } from "./leaks.ts";
 import { LAB_SCHEMA, type PgTarget } from "./pg.ts";
 import { planErrors } from "./plan.ts";
@@ -72,12 +73,44 @@ export interface Watch {
   read(schema: string): Promise<Map<string, string>>;
 }
 
-/** The versions a recorded result depends on (SC6): PostgreSQL, PostGIS and GEOS, as numbers. */
-export async function serverVersions(sql: postgres.Sql): Promise<{ postgresql: string; postgis: string; geos: string }> {
-  const [v] = await sql<{ postgresql: string; postgis: string; geos: string }[]>`select current_setting('server_version') as postgresql,
-    postgis_lib_version() as postgis, postgis_geos_version() as geos`;
-  const number = (s: string) => /^[0-9.]+/.exec(s)?.[0] ?? s;
-  return { postgresql: number(v!.postgresql), postgis: number(v!.postgis), geos: number(v!.geos) };
+/** The versions a recorded result depends on (SC6): PostgreSQL, PostGIS and GEOS, as numbers; GDAL's (raster blocks),
+ * recorded only. Throws when PostGIS raster is missing: the loader needs it. */
+export async function serverVersions(sql: postgres.Sql): Promise<Versions> {
+  const [{ raster }] = await sql<{ raster: boolean }[]>`select to_regprocedure('postgis_gdal_version()') is not null as raster`;
+  if (!raster) throw new Error("PostGIS raster is missing (the lab loader needs it): run pnpm learn:check --setup as the superuser");
+  const [v] = await sql<Record<keyof Versions, string>[]>`select current_setting('server_version') as postgresql,
+    postgis_lib_version() as postgis, postgis_geos_version() as geos, postgis_gdal_version() as gdal`;
+  const number = (s: string) => /[0-9]+(\.[0-9]+)*/.exec(s)?.[0] ?? s;
+  return { postgresql: number(v!.postgresql), postgis: number(v!.postgis), geos: number(v!.geos), gdal: number(v!.gdal) };
+}
+
+/** The raster settings a learner's server has (004 §3.2): a `-- needs: raster` block passing on them needs neither. */
+export const RASTER_DEFAULTS = [
+  { as: "outdb", name: "postgis.enable_outdb_rasters", value: "off" },
+  { as: "drivers", name: "postgis.gdal_enabled_drivers", value: "DISABLE_ALL" },
+] as const;
+
+/** Runs one query and returns its rows (the runner's session, or a test's fake). */
+export type Query = (text: string) => Promise<readonly Record<string, unknown>[]>;
+
+/**
+ * The `-- needs: raster` check (004 §0): before the first such block it's given, once, the raster library must answer
+ * and RASTER_DEFAULTS must hold; throws naming the block and the missing library or each setting off its default.
+ */
+export function rasterGate(query: Query): (b: Block) => Promise<void> {
+  let checked = false;
+  return async (b) => {
+    if (!b.needsRaster || checked) return;
+    try {
+      await query("SELECT postgis_raster_lib_version() AS version");
+    } catch (e) {
+      throw new Error(`block ${b.id} needs PostGIS raster: CREATE EXTENSION postgis_raster`, { cause: e });
+    }
+    const [shown] = await query(`SELECT ${RASTER_DEFAULTS.map((d) => `current_setting('${d.name}') AS ${d.as}`).join(", ")}`);
+    const off = RASTER_DEFAULTS.filter((d) => shown?.[d.as] !== d.value).map((d) => `${d.name} is ${String(shown?.[d.as])}, not ${d.value}`);
+    if (off.length) throw new Error(`block ${b.id}: ${off.join("; ")}: the labs run on a learner's defaults, so a raster block needs no setting`);
+    checked = true;
+  };
 }
 
 /** PostgreSQL's own text for dates and timestamps (DuckDB's form), not a JS Date; int8 as BigInt (DuckDB's BIGINT). */
@@ -542,11 +575,13 @@ async function readRecorded(file: string): Promise<string | undefined> {
  */
 export async function runBlocks(s: LabSession, blocks: readonly Block[], { update, checkedDir = CHECKED_DIR, show = false, log = console.log, afterBoot, ...run }: BlocksOptions): Promise<void> {
   const page = new Map(blocks.map((b) => [b.id, b]));
+  const raster = rasterGate((text) => s.sql.unsafe(text));
   const failures: string[] = [];
   const writes: [file: string, text: string][] = [];
   const one = async (b: Block): Promise<void> => {
     const q = `q ${b.id}`;
     const file = join(checkedDir, `${b.id}.txt`);
+    await raster(b);
     const first = await runBlock(s, b, page, run);
     if (b.boot && first.failures.length) throw new Error(`boot block ${b.id}: ${first.failures.join("; ")}`);
     failures.push(...first.failures);

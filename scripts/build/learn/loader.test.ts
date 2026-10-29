@@ -10,6 +10,8 @@
 //      whose SQL could end its DO block early ($) or whose name isn't plain throws.
 // LD10: the same inputs give different bytes → rows ordered by key, the text generated twice is equal.
 // LD11: a missing input, a missing or unexpected column, a table without input or input without table → each named.
+// LD19: a loader run without PostGIS raster gets as far as the drop, or fails late with PostgreSQL's own message →
+//       the raster guard is the first statement after BEGIN; the per-BLOB SRID check (rasters too) says "values".
 // The real loader's LD9 and LD10 need dist/: loader.dbtest.ts.
 import assert from "node:assert/strict";
 import { test } from "node:test";
@@ -70,7 +72,7 @@ test("LD4 \\set ON_ERROR_STOP on, BEGIN, encoding, lock_timeout first; COMMIT la
   });
   const control = sqlLines.filter((l) => /^\s*(BEGIN|COMMIT|ROLLBACK|END|ABORT|START\s+TRANSACTION|SAVEPOINT|RELEASE|PREPARE\s+TRANSACTION)\b/i.test(l));
   assert.deepEqual(control, ["BEGIN;", "COMMIT;"]);
-  assert.deepEqual(lines.filter((l) => /^DO\b/.test(l)), ["DO $guard$", "DO $$"]);
+  assert.deepEqual(lines.filter((l) => /^DO\b/.test(l)), ["DO $raster$", "DO $guard$", "DO $$"]);
   assert.deepEqual(sqlLines.filter((l) => l.startsWith("\\")), ["\\set ON_ERROR_STOP on"]);
   await assert.rejects(generateLoader(con, fixtureSpec(SCHEMA, { ddl: FIXTURE_DDL + "COMMIT;\n" })), /transaction control/);
   await assert.rejects(generateLoader(con, fixtureSpec(SCHEMA, { keys: FIXTURE_KEYS + "SAVEPOINT a;\n" })), /transaction control/);
@@ -96,4 +98,17 @@ test("LD11 a missing input file, a missing or unexpected column, a table without
   await assert.rejects(generateLoader(con, swap("(SELECT id, now() AS name FROM parent)")), /parent\.name: type TIMESTAMP WITH TIME ZONE has no csv form/);
   await assert.rejects(generateLoader(con, fixtureSpec(SCHEMA, { tables: fixtureSpec(SCHEMA).tables.slice(1) })), /parent: no input/);
   await assert.rejects(generateLoader(con, fixtureSpec(SCHEMA, { ddl: FIXTURE_DDL.replace(/^CREATE TABLE shapes.*$/m, "") })), /shapes: not in the DDL/);
+}));
+
+test("LD19 the raster guard is the first statement after BEGIN; the SRID check counts values, rasters included", () => withFixture(async (con) => {
+  const text = await generateLoader(con, fixtureSpec(SCHEMA));
+  const lines = text.split("\n");
+  const begin = lines.indexOf("BEGIN;");
+  const next = lines.slice(begin + 1).find((l) => l.trim() && !l.startsWith("--"));
+  assert.equal(next, "DO $raster$");
+  const guard = lines.slice(begin + 1, lines.indexOf("$raster$;") + 1).join("\n");
+  assert.match(guard, /IF to_regtype\('public\.raster'\) IS NULL THEN/);
+  assert.match(guard, /RAISE EXCEPTION 'PostGIS raster is missing: CREATE EXTENSION postgis_raster; \(see \/learn\/setup\/\)'/);
+  assert.match(text, /'learn_t_fixture\.shapes\.geom: % values with SRID other than 4326'/);
+  assert.doesNotMatch(text, /geometries with SRID/);
 }));

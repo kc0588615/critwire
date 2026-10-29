@@ -9,7 +9,8 @@
 // - a rerun with nothing changed rewrites checked.json (a date-only diff in every PR) → byte for byte;
 // - the checker imports the build's species chain, so every data edit makes every lab stale → its closure is pinned;
 // - lab.mmd, the loader or a boot block changes after learn:check checked the lab ERD against them → labErd moves and
-//   the build refuses it; a plain block or another data file leaves it alone.
+//   the build refuses it; a plain block or another data file leaves it alone;
+// - GDAL's version (raster blocks) isn't recorded, or a newer one makes every lab stale → recorded, never compared.
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
@@ -86,7 +87,7 @@ test("FR3 the key moves with a lab data file, the checker, canary.sql and requir
   assert.equal(with_({ manifest: { ...m, "star/dim_year.csv": { sha256: "1".repeat(64), bytes: 1 } } }), base, "a new star file");
 });
 
-const stamp = (f: Fresh): Stamp => ({ versions: { postgresql: "16.15", postgis: "3.4.2", geos: "3.12.1" }, checked: "2026-10-28", ...f });
+const stamp = (f: Fresh): Stamp => ({ versions: { postgresql: "16.15", postgis: "3.4.2", geos: "3.12.1", gdal: "3.8.4" }, checked: "2026-10-28", ...f });
 
 test("FR4 a fresh stamp passes; a stale key, an edited result, a missing or orphan key, a changed or missing download are refused", () => {
   const now = fresh();
@@ -117,7 +118,7 @@ test("FR5 stale blocks are named five at a time, then counted", () => {
 
 test("FR6 nextStamp: nothing changed but the date → undefined; any change → the new stamp, dated today", () => {
   const now = fresh();
-  const versions = { postgresql: "16.15", postgis: "3.4.2", geos: "3.12.1" };
+  const versions = { postgresql: "16.15", postgis: "3.4.2", geos: "3.12.1", gdal: "3.8.4" };
   const first = nextStamp(null, now, versions, "2026-10-28")!;
   assert.deepEqual(JSON.parse(first), stamp(now));
   assert.ok(first.endsWith("}\n"));
@@ -191,4 +192,13 @@ test("FR7 importClosure follows `from` and side-effect imports, relative only, a
   };
   assert.deepEqual(importClosure("scripts/a.ts", read), ["scripts/a.ts", "scripts/b.ts", "scripts/c.ts", "scripts/learn/d.ts"]);
   assert.throws(() => importClosure("scripts/x.ts", read), /ENOENT scripts\/x\.ts/);
+});
+
+test("FR9 GDAL's version is recorded in checked.json and never compared", () => {
+  const now = fresh();
+  const versions = stamp(now).versions;
+  assert.equal(JSON.parse(nextStamp(null, now, versions, "2026-10-28")!).versions.gdal, "3.8.4");
+  assert.deepEqual(staleness({ ...stamp(now), versions: { ...versions, gdal: "3.12.2" } }, now), []);
+  const first = nextStamp(null, now, versions, "2026-10-28")!;
+  assert.equal(JSON.parse(nextStamp(first, now, { ...versions, gdal: "3.12.2" }, "2026-10-29")!).versions.gdal, "3.12.2");
 });
