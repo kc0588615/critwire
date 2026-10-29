@@ -10,7 +10,7 @@ Open curated species data at critwire.com, dogfooded by Critter Connect (repo `k
 - pnpm, TypeScript (`tsx`), postgres.js + plain SQL. No web framework.
 - Postgres 16 + PostGIS 3.4.2 on the Oracle VPS. No PostGIS 3.5-only functions.
 - `@duckdb/node-api` (pinned) writes Parquet and CSV from `data/species.json`; no DuckDB extensions at build time (build is offline).
-- Python via `uv` (`/usr/local/bin/uv`) in `.venv-learn/` (gitignored; `pnpm learn:venv`), pins in `site/learn/labs/requirements.txt`; for `ingest shapes` only. Build stays Node.
+- Python via `uv` (`/usr/local/bin/uv`) in `.venv-learn/` (gitignored; `pnpm learn:venv`), pins in `site/learn/labs/requirements.txt`; for `ingest shapes` and `ingest habitat` only (`rasterio` with its own GDAL decodes v004's GeoTIFFs; no system GDAL). Build stays Node.
 - Learn's browser app: `@duckdb/duckdb-wasm` (pin in `site/learn/src/assets.ts`; build refuses another installed version) + parquet extension mirror committed in `site/learn/duckdb-ext/` (sha256 pinned in `scripts/build/learn/assets.ts`); bundled by `esbuild` (pinned) from `site/learn/src/`. `dist/learn/assets/`: mtime fixed 2000-01-01, so every path there must be versioned or content-hashed (build refuses others).
 - E2E: `@playwright/test` (pinned), headless Chromium, local Caddy copy of the live block (`e2e/Caddyfile`, `admin off`, ports 3100/3101).
 
@@ -38,6 +38,7 @@ GitHub `origin` is the hub; only pushed work exists on the other machine.
 - Push before you stop, WIP included.
 - Paths on the VPS: agents' checkout `/srv/critter-ai/critwire`, live copy `/srv/apps/critwire`.
 - Release: `deploy critwire` on the VPS (pull main into the live copy, `pnpm install --frozen-lockfile`, `pnpm build`, swap in `dist/` only if the build passed). Owner's word only, except a mission may merge its PR and deploy at its end once every check passes (owner, 2026-10-21; `~/AGENTS.md`).
+- Recovery (restore a commit into a scratch db, roll back the live site, state Git doesn't hold): `docs/recovery.md`. Adding state outside Git (a lock, a role, a secret) updates it.
 - VPS setup (Postgres, Caddy, CORS) is done from the Oracle control room, not from here.
 
 ## Commands
@@ -62,6 +63,9 @@ Rules:
 - 004 and the site change together: a block or result edit lands in 004 and its file in one commit; `pnpm learn:port --check all` proves it. A result that differs from 004 is a bug to find, not a number to update.
 - Dev loop after editing a block, a page or a checker file: `pnpm build --draft && pnpm learn:check [--update] && pnpm build`, then `pnpm e2e`. `pnpm learn:check --module <page>` while iterating. Commit `checked/` and `checked.json` from a whole run.
 - Copy: records, never range; no mission names on public pages; link only pages that exist (planned modules unlinked).
+- Raster: a block using the raster API (`RASTER_API`, `scripts/learn/blocks.ts`) must say `-- needs: raster` (PostGIS only), else it's refused. `learn:check` checks once, before the first such block, that `postgis_raster` answers and the learner defaults hold (`postgis.enable_outdb_rasters` off, `gdal_enabled_drivers` `DISABLE_ALL`); never set either for a lab. A g7 block over 20 s as `critwire_lab` gets restructured, never a higher `statement_timeout`.
+
+State: f1–f4, d1–d6 (L1, L2), g1–g7 (L3) built; s, e, p, c planned (L4, L5).
 
 ## Data
 Files and owners (never hand-edit derived files):
@@ -69,23 +73,24 @@ Files and owners (never hand-edit derived files):
 - `data/raw/{wikidata,col,gbif,naturalearth}/snapshot.json`: normalized API responses, keys sorted, one UTC `retrieved` per file. Writer: `pnpm ingest <source>`.
 - `data/raw/gbif-sample/{download.json,datasets.json,sample.csv}`: Learn's GBIF sample (download key/DOI/request/`sampleRules`/`species` `{id, gbif}` pairs, dataset + publisher metadata, capped rows). Writer: `pnpm ingest gbif-sample`.
 - `data/learn/{country_shapes,admin1_shapes,ecoregions}.parquet`, `biomes.csv`, `shapes.json` (provenance: pins, tool versions, sha256s). Writer: `pnpm ingest shapes`. Build refuses a file whose sha256 differs from its provenance file, or one no provenance file lists.
-- `data/learn/{country_habitats,occurrence_habitats,habitat_clips}.parquet`, `clips/{cr,tas}.tif` + `habitat.json` (pins, inputs fingerprint, measured numbers): Jung v004 estimates; clips = whole CR and Tasmania, `habitat_clips` one row per 256-cell tile touching the country (H5). Writer: `pnpm ingest habitat` (`.venv-learn`, ≈ 12 min). `habitat_classes.parquet`: v004 legend, copied once from A2's spike, listed in `habitat.json`. Build refuses `habitat.json` stale (`country_shapes.parquet` or the published records changed). Never edit.
+- `data/learn/{country_habitats,occurrence_habitats,habitat_clips}.parquet`, `clips/{cr,tas}.tif` + `habitat.json` (pins, inputs fingerprint, measured numbers): Jung v004 estimates; clips = whole CR and Tasmania, `habitat_clips` one row per 256-cell tile touching the country (H5). Writer: `pnpm ingest habitat [--downloads <dir>]` (`.venv-learn`; 12–25 min: ≈ 11 min decoding plus Zenodo downloads; peak ≈ 3.2 GB RAM). Inputs: v004's two Zenodo files, pinned by URL, size and md5 (`HABITAT_INPUTS`, `scripts/ingest/habitat.ts`; a mismatch deletes the file and refuses; never unpin). `--downloads <dir>` (outside the repo) keeps the zips and reuses md5-matching ones on a rerun; delete it after. `habitat_classes.parquet`: v004 legend, copied once from A2's spike, listed in `habitat.json`. Build refuses `habitat.json` stale (`country_shapes.parquet` or the published records changed). Never edit.
 - `data/review/country-overrides.json`: owner only (see Countries).
 - `data/species.json`, `data/countries.json` (the 250 `/v1/countries` rows), `data/review/mismatches.json`, `data/issued-ids.json` (every `{id, slug}` ever derived, append-only: derive refuses an issued id removed or renamed, or its slug reused), `data/gbif-derived-dataset/contributions.json` and `data/gbif-learn-sample/contributions.json` (per-dataset counts to register): derived. Writer: `pnpm derive` only.
 - `data/gbif-derived-dataset/registration.json`: DOI + GBIF's read-back. Writer: `pnpm gbif:register` only. Derive reads it; DOI goes on the countries source entries only while its counts equal `contributions.json`.
 - `data/gbif-learn-sample/registration.json`: the sample's DOI + read-back (with `originalDownloadDOI`). Writer: `pnpm gbif:register --target learn-sample` only. Current only while GBIF holds the same counts from the same download.
+- `contracts/v1.json`: the `/v1` contract, hand-written: per species path / countries column `type`, declared `null`, `means`, optional `values`/`pattern`/`source`(+`checklistKey`), `sha` (first 12 hex of the entry's canonical JSON without `sha`); `speciesCsv`/`countriesCsv` column order. Build (`--draft` too) checks writers and data against it (`scripts/build/contract.ts`): a removal, type change, reorder, data breaking a declaration or an entry whose `sha` doesn't match fails "needs /v2"; a new field logs "add to contracts/v1.json to freeze". Entries add-only. A definition edit (`type`, `null`, `means`, `values`, `pattern`, `source`) needs the owner's review: handoff item, then the new `sha` in the commit that records the review under the plan's Decisions.
 - `scripts/build/sources.ts`: source registry (citations verbatim, `COL_CITATIONS` per release, `LICENSE_URLS`). New COL release or license string fails the build until added.
 
 Commands, in order:
 1. `pnpm seed:cc <cc-repo>/db/content/animals`: (re)writes `base.json` from Critter Connect profiles, open fields only. Keeps ids (match `ids.iucn`, then `scientificName`); new animals get max id + 1; throws on a double match. Idempotent.
-2. `pnpm ingest wikidata|col|gbif|naturalearth|shapes` (one at a time; ≤ 2 req/s): only if a name or IUCN id changed, or to refresh. Logs to stderr; mission runs `2>> <state>/ingest-<s>.log`. All or nothing. `naturalearth` and `shapes` fetch pinned files (sha256 mismatch refuses; never unpin); `shapes` needs `.venv-learn`.
+2. `pnpm ingest wikidata|col|gbif|naturalearth|shapes` (one at a time; ≤ 2 req/s): only if a name or IUCN id changed, or to refresh. Logs to stderr; mission runs `2>> <state>/ingest-<s>.log`. All or nothing. `naturalearth` and `shapes` fetch pinned files (sha256 mismatch refuses; never unpin); `shapes` needs `.venv-learn`. `pnpm ingest habitat` after `derive` (it reads the published records), whenever the build calls `habitat.json` stale.
 3. `pnpm ingest gbif-sample [--download <key> | --new]`: reuses `download.json`'s download, or `--new` submits one (intent written before the one POST; an interrupted run reconciles via GBIF's listing, never a second POST) and waits (~17 min).
 4. `pnpm derive`: offline, pure (no network, clock or `species.json` read); refuses stale raw and names the ingest to re-run. Prints coverage and mismatch counts.
 5. DOI refreshes (below): learn-sample whenever the sample changed; countries when its counts moved.
 6. `pnpm db:load` or `pnpm build`: rebuilds `db/schema.sql` tables in `DATABASE_URL` and loads `species.json`, one transaction.
 - `pnpm test`: unit tests of derive rules and gbif:register logic (`node:test`).
 
-Cost of a species change: adding or removing a species, or changing an `ids.gbif`, makes the GBIF sample stale (`derive` refuses and writes nothing). Plain `pnpm build`, so `deploy`, then fails until a new GBIF download (about 17 min), `ingest gbif-sample --new`, `derive` and a new learn-sample DOI (plus the countries DOI if its counts moved). `--draft` doesn't lift it.
+Cost of a species change: adding or removing a species, or changing an `ids.gbif`, makes the GBIF sample stale (`derive` refuses and writes nothing). Plain `pnpm build`, so `deploy`, then fails until a new GBIF download (about 17 min), `ingest gbif-sample --new`, `derive`, `ingest habitat` (the published records changed; 12–25 min) and a new learn-sample DOI (plus the countries DOI if its counts moved): ≈ 1 h. `--draft` doesn't lift either refusal.
 
 Rules (details: `plans/2026-10-20-critwire-ingest.md` §5):
 - Disagreements are never auto-fixed: id `null` (or base value kept) + entry in `mismatches.json` (severity `blocking`, `review` or `info`).
