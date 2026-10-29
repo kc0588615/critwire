@@ -28,7 +28,9 @@ async function course() {
 test("each download is served as assembled; each PostGIS block's page code is in it, verbatim or commented out under its reason", async ({ browser, request }) => {
   const { pages, url } = await course();
   const downloads = assembleDownloads(pages);
-  expect(downloads.map((d) => d.name)).toEqual(expect.arrayContaining(["pg-checks.sql", "d6.sql"]));
+  expect(downloads.map((d) => d.name)).toEqual(expect.arrayContaining(["pg-checks.sql", "d6.sql", "g1.sql", "g2.sql", "g3.sql", "g4.sql", "g5.sql", "g6.sql", "g7.sql"]));
+  // L3: g3-iucn reads the learner's own IUCN download, so g3.sql holds it commented out (checked below).
+  expect(pages.find((p) => p.page.id === "g3")!.blocks.find((b) => b.id === "g3-iucn")?.status).toBe("untested");
   const { context, offOrigin } = await learnContext(browser);
   const page = await context.newPage();
   for (const d of downloads) {

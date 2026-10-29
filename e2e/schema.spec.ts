@@ -138,6 +138,8 @@ const DIAGRAMS = [
   { name: "d3-scans", url: "/learn/database-architecture/indexes/" },
   { name: "d4-mvcc", url: "/learn/database-architecture/transactions/" },
   { name: "d6-drill-across", url: "/learn/database-architecture/star/" },
+  { name: "g3-predicates", url: "/learn/gis-in-sql/spatial-join/" },
+  { name: "g7-cells", url: "/learn/gis-in-sql/raster/" },
 ];
 const svgTitle = (svg: string) => /<svg\b[^>]*>\s*<title\b[^>]*>([^<]+)<\/title>/.exec(svg)?.[1]?.trim();
 
