@@ -315,6 +315,34 @@
       "key": "20a500242c3b739b466d10c08fa93a29975bbe3e96857bc8bd2af44b274b989a",
       "result": "970772b5c9363d676c5c072b28af68ab1944377dbf9de9cb4b378ebaf9ecc1f8"
     },
+    "g2-bowtie": {
+      "key": "002d13da2dfacc982fd2eda6f1e3c5f2f5b1e5eb4ba29377b415ef9341ebabc0",
+      "result": "12b7140fe4c06ceb41e21be6ebb24694f85886f1a04ed9849fe4c4226e588dee"
+    },
+    "g2-coverage": {
+      "key": "0e243d52b34d960914183830475722faa4ee35807bc8427a0dbb587dc1f36d8e",
+      "result": "f4598852f810c9440e2a23db2337d7953eebc97f4212f593ae17fb9a41e80d41"
+    },
+    "g2-ex": {
+      "key": "8ed1a4138eeaa8bb927d230fc4dc2d025e999de5fdd67be9d905d380a748e374",
+      "result": "602c76970b66c75d87bfa578ef3a54b309957e97385b4bbc750e4d96ba81fb03"
+    },
+    "g2-invalid": {
+      "key": "4dc359e00aa06543b45d789cdd4c3a07891b22d0e91be4f699f3a1d62afeb468",
+      "result": "5a8e8aae36f2ac33bfa2cea5317f802b94a3d47f420378ae39a73973a09dd19a"
+    },
+    "g2-overlay": {
+      "key": "b3d7dc977cc252d263874806353c08619ce5f76160ca0852c1779d8e25f7f151",
+      "result": "5d576c6822a08b0e4d7c6eafb5a59876096d5c5a1f53829e4821cc954bf2d0fe"
+    },
+    "g2-sizes": {
+      "key": "39b7f0c86f12cbbbe6a7559e5a705d51bfc0193d7cf535827ce2e072c909a8ea",
+      "result": "be368d45b17e5307fc27d783ad4870b0fb7fbefec17c5b5398f64c018149f8cc"
+    },
+    "g2-wkb": {
+      "key": "ebbbba5654c60b336f6865e0812ac15a4712b9f6291f5e208fea5c8be56525ba",
+      "result": "38927af928a3c2709cd5557a4d66ea5804a4a5a7f8ca28ebfa2168080f90b514"
+    },
     "pg-role-smoke": {
       "key": "f8475dd05808347550f93843ba81f9091e58beabacefdd5d530c3b970f116efe",
       "result": "d721ea358edd040973fd9309b3e45b68943b9bad01b9efecd1da082d374c7f30"
@@ -339,6 +367,7 @@
     "d5.sql": "e8eb4ec666fc0442cafee630dd97875ab5d825532c1f597ff7e628efb692c7a6",
     "d6.sql": "dc7c792e8b3ec36c04beb1b3807785b621373780da783afcbc41e762d1b93225",
     "g1.sql": "3817e06a7941c31137733610a8dc47308dc5a0d3c49c52ab6769f8b76280c783",
+    "g2.sql": "a50473b3cd47838d9cf45ab114dde8c55a29078f992c424e08382318e52636eb",
     "pg-checks.sql": "348691fbefd3b6c0400e7edfd3a3aaf4f767b186c1a6bcbe2f2ad021cb5607fd"
   },
   "labErd": "fda5ad764ce87eac9f422339254ccfbc46a6a932d8cee00a2a50df5e9502820c"

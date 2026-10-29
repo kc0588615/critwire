@@ -1,0 +1,8 @@
+-- result: g2-coverage · 8 rows · sha256 5e15c2896a74
+outline | inside_it | de9im | overlap_km2 | pct_of_inside_it
+FR | GF | 2F2F11FF2 | 83375 | 100.0
+NO | SJ | 2F2F11FF2 | 62100 | 100.0
+FR | RE | 2F2F11FF2 | 2542 | 100.0
+FR | GP | 2F2F11FF2 | 1540 | 100.0
+FR | MQ | 2F2F11FF2 | 1063 | 100.0
+… 3 more rows

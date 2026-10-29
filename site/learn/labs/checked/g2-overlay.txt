@@ -1,0 +1,1 @@
+-- result: g2-overlay · error: statement 1 of 1: lwgeom_intersection_prec: GEOS Error: TopologyException: side location conflict at 1 1. This can occur if the input geometry is invalid.

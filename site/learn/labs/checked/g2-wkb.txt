@@ -1,0 +1,3 @@
+-- result: g2-wkb · 1 row · sha256 ed472fca4e6e
+wkt | wkb_hex | ewkt | round_trip
+POINT(147.33 -42.88) | 0101000000c3f5285c8f6a6240713d0ad7a37045c0 | SRID=4326;POINT(147.33 -42.88) | true

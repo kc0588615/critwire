@@ -258,7 +258,7 @@
       "prereqs": [
         "g1"
       ],
-      "state": "planned",
+      "state": "built",
       "skill": "The loader, WKT and WKB, `ST_IsValid`, `ST_MakeValid`",
       "questions": [
         "Which shapes are invalid, and why?",

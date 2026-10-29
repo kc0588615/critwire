@@ -5009,28 +5009,18 @@ GL | 59.8 | 83.6 | 2171354 | 35395741 | 16.30 | 14.38
 
 **Tool:** PG · **Time:** 1.5 h · **Prereqs:** g1
 
-**Goal:** know how shapes travel and when they are broken. WKT is the readable text form (`POINT(1 2)`), WKB the binary one that files and databases exchange; the lab file carries every shape as WKB, and the loader turns it into `geometry` (§4.3). A polygon is valid when its rings don't cross themselves or each other, holes lie inside their shell, and shells don't nest. An invalid polygon still loads, and most functions return an answer for it, but the answer can be wrong: a bow-tie's two halves cancel, so its area is 0. `ST_IsValidDetail` says why a shape is invalid and where; `ST_MakeValid` repairs it, sometimes into a different type. The loader keeps invalid shapes on purpose (§4.3), so this module finds them.
+**Concept:** How shapes travel between files and databases, and how to tell when one is broken:
+- **WKT** (well-known text) is the readable form, from the OGC's Simple Features standard: `POINT(147.33 -42.88)`, or `POLYGON((0 0, 4 0, 4 4, 0 4, 0 0))`. A polygon is a list of rings, each closed (its last point repeats its first): the first ring is the outer **shell**, any others are **holes**. A MultiPolygon is a list of polygons, its **parts**.
+- **WKB** (well-known binary) is the same shape as bytes: a byte-order flag, a type number, counts, then each coordinate as an 8-byte floating-point number. It keeps every digit, and a point costs 16 bytes whatever its precision. GeoParquet and GeoPackage files store WKB, and databases exchange it. PostGIS's own forms add the SRID in front: **EWKT** (`SRID=4326;POINT(…)`) and EWKB.
+- **The loader** (`learn_curriculum.sql`, the setup page) carries each shape as WKB written out in base64 text, and turns the text into geometry once the rows are in: `ALTER TABLE country_shapes ALTER COLUMN geom TYPE geometry(MultiPolygon, 4326) USING ST_Multi(ST_GeomFromWKB(decode(geom, 'base64'), 4326))`. `ST_GeomFromWKB` reads the bytes; its second argument sets the SRID, which plain WKB doesn't carry; `ST_Multi` makes a single polygon a one-part MultiPolygon, so the column holds one type. From then on the column refuses any other type or SRID.
+- **Valid** means the shape follows the standard's rules, which PostGIS checks with the GEOS library: no ring crosses itself; the rings of one polygon don't cross each other (they may touch at a point); every hole lies inside its shell; and the parts of a MultiPolygon don't overlap, so one shell inside another (**nested shells**) is invalid.
+- **An invalid shape still loads, and most functions still answer**, but the answer can be wrong: a bow-tie's two halves cancel, so its area is 0. Overlay functions (`ST_Intersection`, `ST_Union`, `ST_Difference`) build new shapes from the edges, and an invalid input can stop them with a GEOS `TopologyException`, the error GIS work meets most often.
+- **Finding and repairing.** `ST_IsValid(geom)` answers true or false and prints the reason as a NOTICE; `ST_IsValidReason` returns the reason as text; `ST_IsValidDetail` returns a row of three: `valid`, `reason`, and `location`, a point at or near the problem. `ST_MakeValid` returns a valid shape built from the same lines, sometimes of another type (a polygon becomes a MultiPolygon). Its default, `method=linework`, keeps every edge and rebuilds polygons from them; `method=structure` (GEOS 3.10 or later) unions the shells and then subtracts the holes. Neither knows what the shape was meant to be, so check what it returns.
+- **Valid isn't the same as non-overlapping.** Validity belongs to one shape. A layer of valid shapes can still overlap, or leave gaps between neighbours, and nothing in the column type or `ST_IsValid` looks across rows. A layer whose shapes don't overlap is a **coverage** (with no gaps either, a partition of its area); to test one, compare pairs:
+  - `ST_Relate(a, b)` returns the pair's **DE-9IM** matrix: nine characters saying where a's interior, boundary and exterior meet b's, in the order interior–interior, interior–boundary, interior–exterior, then boundary–…, then exterior–…. Each is `2` (they share an area), `1` (a line), `0` (points) or `F` (nothing).
+  - `ST_Relate(a, b, '2********')` tests a pattern instead, `*` matching anything: true when the two interiors share an area, that is, when they overlap. Shapes that only touch along a border share a line, not an area, and don't match.
 
-**Data:** a bow-tie typed in; `country_shapes`, `admin1_shapes` and `ecoregions` (RESOLVE, simplified to 0.05°, §4.1).
-
-**Key code:** one point in WKT, in WKB as hex, and in EWKT, PostGIS's WKT with the SRID in front:
-
-```sql
--- q: g2-wkb
--- status: ran
--- engine: postgis
-SELECT ST_AsText(p) AS wkt, encode(ST_AsBinary(p), 'hex') AS wkb_hex, ST_AsEWKT(p) AS ewkt,
-       ST_Equals(ST_GeomFromWKB(ST_AsBinary(p), 4326), p) AS round_trip
-FROM (SELECT ST_SetSRID(ST_Point(147.33, -42.88), 4326) AS p) AS one;
-```
-
-```text
--- result: g2-wkb · 1 row · sha256 ed472fca4e6e
-wkt | wkb_hex | ewkt | round_trip
-POINT(147.33 -42.88) | 0101000000c3f5285c8f6a6240713d0ad7a37045c0 | SRID=4326;POINT(147.33 -42.88) | true
-```
-
-A bow-tie: one ring that crosses itself. Its area is 0, and `ST_MakeValid` returns its two triangles:
+**Worked example:** A bow-tie, one ring that crosses itself, typed in. What does PostGIS say about it, and what does `ST_MakeValid` make of it?
 
 ```sql
 -- q: g2-bowtie
@@ -5050,7 +5040,76 @@ valid | reason | at | area | made_valid | valid_area
 false | Self-intersection | POINT(1 1) | 0 | MULTIPOLYGON(((0 2,1 1,0 0,0 2)),((2 0,1 1,2 2,2 0))) | 2
 ```
 
-The lab's invalid shapes, why, and what `ST_MakeValid` changes:
+The ring runs (0 0) to (2 2), down to (2 0), across to (0 2) and back, so it crosses itself at (1 1), where `ST_IsValidDetail` points. Walking the ring, one triangle is circled clockwise and the other anticlockwise, so their signed areas cancel and `ST_Area` returns 0, with no warning. `ST_MakeValid` cuts the ring at the crossing and returns the two triangles as a MultiPolygon, area 2. Asked to intersect it with the square's left half, an overlay function refuses:
+
+```sql
+-- q: g2-overlay
+-- status: ran
+-- engine: postgis
+-- expect: error TopologyException
+SELECT ST_Area(ST_Intersection(
+         ST_GeomFromText('POLYGON((0 0, 2 2, 2 0, 0 2, 0 0))'),
+         ST_GeomFromText('POLYGON((0 0, 1 0, 1 2, 0 2, 0 0))'))) AS area;
+```
+
+```text
+-- result: g2-overlay · error: statement 1 of 1: lwgeom_intersection_prec: GEOS Error: TopologyException: side location conflict at 1 1. This can occur if the input geometry is invalid.
+```
+
+GEOS stops at the crossing, (1 1), and says the input may be invalid. The same call on `ST_MakeValid` of the bow-tie returns the left triangle. So repair before overlaying, and measure before trusting an area.
+
+**Lab:**
+1. One point in WKT, in WKB written as hex, and in EWKT, then read back from its WKB:
+
+```sql
+-- q: g2-wkb
+-- status: ran
+-- engine: postgis
+SELECT ST_AsText(p) AS wkt, encode(ST_AsBinary(p), 'hex') AS wkb_hex, ST_AsEWKT(p) AS ewkt,
+       ST_Equals(ST_GeomFromWKB(ST_AsBinary(p), 4326), p) AS round_trip
+FROM (SELECT ST_SetSRID(ST_Point(147.33, -42.88), 4326) AS p) AS one;
+```
+
+```text
+-- result: g2-wkb · 1 row · sha256 ed472fca4e6e
+wkt | wkb_hex | ewkt | round_trip
+POINT(147.33 -42.88) | 0101000000c3f5285c8f6a6240713d0ad7a37045c0 | SRID=4326;POINT(147.33 -42.88) | true
+```
+
+The WKB is 21 bytes, 42 hex digits: `01`, little-endian byte order (least significant byte first, as on most computers); `01000000`, type 1, a point; then two 8-byte numbers, 147.33 and −42.88. EWKT adds `SRID=4326;`, and the round trip gives back an equal point.
+
+2. The lab's shapes in each form. PostgreSQL's `encode(…, 'base64')` breaks its output into lines of 76 characters; `translate` takes the breaks out, as the loader's text has none:
+
+```sql
+-- q: g2-sizes
+-- status: ran
+-- engine: postgis
+WITH shapes AS (
+  SELECT 'country_shapes' AS table_name, geom FROM country_shapes
+  UNION ALL SELECT 'admin1_shapes', geom FROM admin1_shapes
+  UNION ALL SELECT 'ecoregions', geom FROM ecoregions
+)
+SELECT table_name, count(*) AS shapes, sum(ST_NPoints(geom)) AS points,
+       sum(length(ST_AsBinary(geom))) AS wkb_bytes,
+       sum(length(translate(encode(ST_AsBinary(geom), 'base64'), E'\n', ''))) AS base64_chars,
+       sum(length(encode(ST_AsBinary(geom), 'hex'))) AS hex_chars,
+       sum(length(ST_AsText(geom))) AS wkt_chars
+FROM shapes
+GROUP BY table_name
+ORDER BY wkb_bytes DESC;
+```
+
+```text
+-- result: g2-sizes · 3 rows · sha256 a8e2ce07cae9
+table_name | shapes | points | wkb_bytes | base64_chars | hex_chars | wkt_chars
+ecoregions | 847 | 545976 | 9668372 | 12892348 | 19336744 | 20815887
+country_shapes | 247 | 100299 | 1628336 | 2171440 | 3256672 | 2062369
+admin1_shapes | 294 | 68408 | 1108310 | 1478096 | 2216620 | 1424373
+```
+
+WKB costs 16 bytes a point, plus a short header for each part and ring: 9,668,372 bytes for the ecoregions' 545,976 points. Base64 writes 3 bytes as 4 characters, a third more, and hex writes each byte as 2, twice as many: that is why the loader uses base64. WKT's size depends on how many digits each coordinate has. The country and admin-1 outlines have few, and their WKT is only a little larger than their WKB (2,062,369 characters against 1,628,336 bytes for the countries); the simplified ecoregions have long decimals, and their WKT is more than twice their WKB. WKT is also decimal text, read back by parsing: `ST_AsText` keeps at most 15 decimal places, while WKB copies each number's bits exactly.
+
+3. Which of the lab's shapes are invalid, why, and what `ST_MakeValid` changes. The loader keeps invalid shapes on purpose, for this step (§4.1):
 
 ```sql
 -- q: g2-invalid
@@ -5083,7 +5142,75 @@ ecoregions | 320 | Nested shells | 2968 | 2966 | MULTIPOLYGON | 0.0
 … 6 more rows
 ```
 
-**Expected:** the point's WKB is 21 bytes: byte order, type 1 (point), then two 8-byte numbers; EWKT adds `SRID=4326;`, and the round trip is equal. The bow-tie is invalid ("Self-intersection" at `POINT(1 1)`), its area is 0, and `ST_MakeValid` returns two triangles of area 2. In the lab, all 247 country outlines are valid; 11 shapes aren't: one admin-1 area (Goiás, `BRA-1294`, a ring crossing itself) and 10 RESOLVE ecoregions, 7 with a ring crossing itself and 3 with nested shells, which simplification left behind. `ST_MakeValid` keeps every one a MultiPolygon, merges a few parts (ecoregion 811 goes from 481 to 477), and changes no area by more than 0.4 km². A learner's next step is ArcGIS Pro's Check and Repair Geometry, compared.
+All 247 country outlines are valid; 11 shapes aren't. One is an admin-1 area, Goiás (`BRA-1294`), whose ring touches itself at a point: a "ring self-intersection" in GEOS's words, as against the bow-tie's "self-intersection", where two edges cross. Ten are RESOLVE ecoregions, 7 with a ring self-intersection and 3 with nested shells: the source has its own self-intersections, and simplifying each ecoregion to 0.05° (§4.1) moved some edges onto others. The three with nested shells are mangrove ecoregions made of many small parts (East African mangroves, 1,846 parts; Madagascar's; Indus River Delta–Arabian Sea's, 2,968), where one part ended up inside another. `ST_MakeValid` keeps every one a MultiPolygon, merges a few parts (the Arabian–Persian Gulf coastal plain desert, 811, goes from 481 to 477), and changes no area by more than 0.4 km². The eleven are pinned: this block's recorded result is checked every time the course is rebuilt, so a shape that turns invalid, or one that stops being so, shows up as a changed result.
+
+4. Valid, yet overlapping. Every pair of country outlines whose interiors share an area, the larger outline first, with the pair's DE-9IM matrix:
+
+```sql
+-- q: g2-coverage
+-- status: ran
+-- engine: postgis
+SELECT a.country_code AS outline, b.country_code AS inside_it,
+       ST_Relate(a.geom, b.geom) AS de9im,
+       round((ST_Area(ST_Intersection(a.geom, b.geom)::geography) / 1e6)::numeric) AS overlap_km2,
+       round((100 * ST_Area(ST_Intersection(a.geom, b.geom)::geography) / ST_Area(b.geom::geography))::numeric, 1) AS pct_of_inside_it
+FROM country_shapes AS a
+JOIN country_shapes AS b ON a.geom && b.geom AND a.country_code <> b.country_code
+WHERE ST_Relate(a.geom, b.geom, '2********')
+  AND ST_Area(a.geom::geography) > ST_Area(b.geom::geography)
+ORDER BY overlap_km2 DESC, outline, inside_it;
+```
+
+```text
+-- result: g2-coverage · 8 rows · sha256 5e15c2896a74
+outline | inside_it | de9im | overlap_km2 | pct_of_inside_it
+FR | GF | 2F2F11FF2 | 83375 | 100.0
+NO | SJ | 2F2F11FF2 | 62100 | 100.0
+FR | RE | 2F2F11FF2 | 2542 | 100.0
+FR | GP | 2F2F11FF2 | 1540 | 100.0
+FR | MQ | 2F2F11FF2 | 1063 | 100.0
+… 3 more rows
+```
+
+`a.geom && b.geom` keeps only the pairs whose bounding boxes overlap, a test the spatial index answers (d3), before `ST_Relate` compares the shapes themselves. Eight pairs overlap, and in each the smaller outline lies wholly inside the larger: Natural Earth draws France with its overseas regions (French Guiana, Réunion, Guadeloupe, Martinique, Mayotte), Norway with Svalbard and Jan Mayen, the Netherlands with the Caribbean Netherlands and New Zealand with Tokelau, and the lab also has each of those places' own outline. Read `2F2F11FF2` in order: the interiors share an area (`2`); the larger's interior reaches beyond the smaller (`2` in third place); their boundaries share lines (`1`), the coast; and the seventh character, `F`, says no part of the smaller's interior lies outside the larger. Every outline is valid, but the layer isn't a coverage, and a point in French Guiana is in two outlines (Spatial joins, g3, counts the records this puts in two countries).
+
+**Result:** Shapes travel as WKB, exact and 16 bytes a point; the loader writes it in base64 (a third larger, against hex's double) and turns it into typed `geometry(MultiPolygon, 4326)` columns with `ST_Multi(ST_GeomFromWKB(…, 4326))`. A bow-tie is invalid, has area 0, and stops an overlay with a `TopologyException`; `ST_MakeValid` turns it into two triangles of area 2. In the lab, all 247 country outlines are valid and 11 shapes aren't: Goiás and 10 simplified ecoregions, whose repair changes no area by more than 0.4 km². Validity is checked one shape at a time: eight pairs of valid country outlines overlap, each a territory that Natural Earth also draws inside its country (French Guiana's 83,375 km² inside France, Svalbard and Jan Mayen's 62,100 km² inside Norway). ArcGIS Pro's Check Geometry and Repair Geometry are the same steps behind a dialog; here they are a query you can rerun and compare.
+
+**Exercise:** Three shapes typed in: a square with a hole outside it, a square with a smaller square as a second part inside it, and a square with a hole inside it. For each, is it valid and why not, what is its area as it stands, and what is its area after `ST_MakeValid` with each method? Which repair, if either, gives what each shape was probably meant to be?
+
+**Answer:** One `VALUES` list of names and shapes, then `ST_IsValidDetail`, `ST_Area` and `ST_MakeValid` with and without `'method=structure'`.
+
+```sql
+-- q: g2-ex
+-- status: ran
+-- engine: postgis
+WITH shapes (name, geom) AS (VALUES
+  ('hole outside its shell', ST_GeomFromText('POLYGON((0 0, 4 0, 4 4, 0 4, 0 0), (5 1, 6 1, 6 2, 5 2, 5 1))')),
+  ('shell inside a shell', ST_GeomFromText('MULTIPOLYGON(((0 0, 4 0, 4 4, 0 4, 0 0)), ((1 1, 2 1, 2 2, 1 2, 1 1)))')),
+  ('shell with a hole', ST_GeomFromText('POLYGON((0 0, 4 0, 4 4, 0 4, 0 0), (1 1, 2 1, 2 2, 1 2, 1 1))'))
+)
+SELECT name, (ST_IsValidDetail(geom)).valid, (ST_IsValidDetail(geom)).reason,
+       ST_Area(geom) AS area,
+       ST_Area(ST_MakeValid(geom)) AS linework_area,
+       ST_Area(ST_MakeValid(geom, 'method=structure')) AS structure_area
+FROM shapes
+ORDER BY name;
+```
+
+```text
+-- result: g2-ex · 3 rows · sha256 0aa66131e1ef
+name | valid | reason | area | linework_area | structure_area
+hole outside its shell | false | Hole lies outside shell | 15 | 17 | 17
+shell inside a shell | false | Nested shells | 17 | 15 | 16
+shell with a hole | true | NULL | 15 | 15 | 15
+```
+
+**Check:** The square with a hole inside it is valid: 16 less the hole's 1, area 15. The other two are invalid, and their areas as they stand are wrong. The hole outside its shell still subtracts its 1, so `ST_Area` says 15 for a shape that has nowhere to put a hole; both repairs turn the stray ring into a second part, an island of 1 beside the square, area 17. The square inside a square counts the small one twice, 17. The default repair rebuilds polygons from the lines and makes the inner square a hole, 15; `method=structure` unions the two parts into the large square, 16. Which is right depends on what the shape was meant to be, which no function knows: a lake drawn as a part should be a hole, and a duplicated island should merge. So repair, then compare areas and part counts before and after, as `g2-invalid` does. (`ST_IsValid` would answer the same, with each reason as a NOTICE beside the result; `ST_IsValidDetail` puts it in a column.)
+
+**Dialects:**
+- **PostgreSQL:** `ST_GeomFromText`, `ST_GeomFromWKB` and `ST_GeomFromEWKB` read shapes, and `ST_AsText`, `ST_AsBinary` and `ST_AsEWKB` write them; a `geometry` value cast to text prints as hex EWKB. `ST_IsValid`, `ST_IsValidReason` and `ST_IsValidDetail` check, and `ST_MakeValid` repairs, with `method=structure` from GEOS 3.10. `ST_IsValid(geom, 1)` accepts a ring that touches itself to enclose a hole, which Esri's rules allow.
+- **DuckDB:** the `spatial` extension (not in this course's browser) reads WKB with `ST_GeomFromWKB` and writes it with `ST_AsWKB`, has `ST_IsValid` and `ST_MakeValid`, and reads a GeoParquet file's geometry column as `GEOMETRY`. In the browser without it, the shape files' `geom` column is plain WKB bytes (`BLOB`).
+- **SQL Server:** `geometry::STGeomFromText(wkt, srid)` and `STGeomFromWKB` read shapes, and `STAsText()` and `STAsBinary()` write them (casting to `varbinary` gives SQL Server's own format, not WKB). `STIsValid()` checks, `IsValidDetailed()` gives the reason, and `MakeValid()` repairs. It stores invalid shapes too, but most methods refuse them with an error until `MakeValid()` has run: the opposite of PostGIS, which answers.
 
 #### g3 · spatial-join
 
