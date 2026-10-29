@@ -1,5 +1,6 @@
 // Postgres load shared by pnpm db:load and pnpm build: drops and re-creates the db/schema.sql tables, then inserts
-// every species, in one transaction under an advisory lock (critwire_dev is shared, so two loads must not interleave).
+// every species in batches of BATCH_ROWS, in one transaction under an advisory lock (critwire_dev is shared, so two
+// loads must not interleave).
 // It refuses before any DDL unless the database it reached is CRITWIRE_DB_TARGET (MF1). lock_timeout bounds the wait
 // for the advisory lock and the tables; statement_timeout bounds each statement (plan D11, D14).
 import { readFile } from "node:fs/promises";
@@ -8,6 +9,8 @@ import type { Species } from "./species.ts";
 
 const schemaFile = new URL("../db/schema.sql", import.meta.url);
 const loadLock = "critwire.load";
+// Rows per INSERT: postgres.js refuses 65,534 parameters or more in one statement (db.test.ts B1).
+export const BATCH_ROWS = 1000;
 
 // Defaults for the builds; tests pass shorter ones.
 export interface LoadTimeouts {
@@ -72,7 +75,10 @@ export async function loadDatabase(
         throw error;
       }
       await tx.unsafe(schema);
-      await tx`insert into public.species ${tx(speciesRows(species))}`;
+      const rows = speciesRows(species);
+      for (let i = 0; i < rows.length; i += BATCH_ROWS) {
+        await tx`insert into public.species ${tx(rows.slice(i, i + BATCH_ROWS))}`;
+      }
     });
   } finally {
     await sql.end();

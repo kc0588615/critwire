@@ -637,7 +637,7 @@ Every step:
   4. g5 gets `g5-analyze` (planner finding, S16).
 - **Estimate:** 20 steps. With the 7 sessions through Steps, the code review, ≈ 2 fix steps, Verification and Release: ≈ 32 sessions.
 
-- [ ] S1 · `db:load` batching (§7.3; item 5) + item 6
+- [x] S1 · `db:load` batching (§7.3; item 5) + item 6
   - Save first: `$M/baseline-manifest.json` = `/srv/apps/critwire/.live/learn/data/manifest.json`, after checking its sha256 is `f180c320…9565`, the Baseline list's.
   - First [T] `scripts/db.test.ts`: `BATCH_ROWS × columns < 65,534` (columns from `speciesRows`).
   - First [D] `scripts/db.dbtest.ts`:
@@ -1004,6 +1004,9 @@ Each step's isolated cases are its **First** list. What a session does when the 
 - 2026-10-28 · Revision: clip windows placed by data (Fable SC2): the 0.75° square on a 0.05° lattice holding the most records with the country's code, ties → most land in outline. `cr` lon −84.20…−83.45, lat 9.85…10.60 (202 rec, all in CR outline; supersedes Osa, 68); `tas` lon 147.25…148.00, lat −43.10…−42.35 (601 rec, 491 in AU 1:50m outline; Hobart inside). Non-blocking owner handoff item (Revision notes); work continues.
 - 2026-10-28 · Revision: `/v1` contract = hand-written `contracts/v1.json`, per field `type`, declared `null`, `means` (meaning/unit/namespace), optional `values`/`pattern`/`source`(+`checklistKey`), per-entry `sha`; any definition edit fails build "needs /v2" unless owner-reviewed (Decisions line + new sha). Nullability declared, checked against data, never inferred (Astra MUST-FIX 2).
 - 2026-10-28 · Revision: habitat freshness = `country_shapes.parquet` sha256 + sha256 of the consumed records (`habitatRecordsCsv`), replacing `sample.csv` sha256 (Fable MISSED 1, Astra SC1).
+- 2026-10-29 · item 5: done (S1). `loadDatabase` inserts in `BATCH_ROWS = 1000` chunks in the same transaction; B1 (unit: 1000 × 22 < 65,534), B2/B3 (db: 3,500 rows load; dup slug in last batch rolls all back).
+- 2026-10-29 · item 6: done (S1). Nothing L1 handed over blocks L3: H3 (GBIF retention) and H4 (Windows check) wait on owner, block nothing (Baseline).
+- 2026-10-29 · Deviations from Architecture §8 (S1): item 6 split (S7 ingest held in `$M/habitat-out/`, S8 `readLabFiles`, S10 atomic swap, S11 004 data sections); raster plumbing before swap (S9); §6 habitat E2E cases written first in S10; g5 gets `g5-analyze` (S16).
 
 ## Log
 
@@ -1013,5 +1016,6 @@ Each step's isolated cases are its **First** list. What a session does when the 
 - 2026-10-28 23:29 UTC · Astra review: APPROVE_WITH_CHANGES, 2 MUST-FIX (window-clip handoff, same as Fable; `/v1` contract semantics + declared nullability), 3 should-consider. Plan-only; no code checks needed.
 - 2026-10-28 23:42 UTC · Revision: architect resolved both MUST-FIX (window handoff → H5 filed; `/v1` contract `means`/`sha`/declared nullability), folded 3 missed items, decided 8 should-consider (7 adopted, Fable SC5 rejected); `cr` window moved by data (202 records). Plan-only; no code checks needed.
 - 2026-10-28 23:59 UTC · Steps: planner wrote S1–S20 + Verification (+ Failure modes). Plan-only; no code checks needed.
+- 2026-10-29 00:08 UTC · S1: `$M/baseline-manifest.json` saved (sha f180c320…9565 ok). db:load batched (1000 rows). red 2 → green 2 (B1 unit; B2/B3 db, MAX_PARAMETERS_EXCEEDED before). T: typecheck ok, test 550/550. D: build ok, test:db 111/111. H, HD (strict): nothing changed.
 
 ## Summary

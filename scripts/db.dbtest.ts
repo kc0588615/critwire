@@ -8,6 +8,9 @@
 //     a short lock timeout refuses, naming the lock, and public.species is untouched.
 // G6: the insert fails after db/schema.sql's DROP → the transaction rolls back: same oid, same rows.
 // G7: two concurrent loads interleave (or one fails on the other's DROP) → both wait on critwire.load, then both succeed.
+// L3 item 5 (batching):
+// B2: one INSERT for every row passes postgres.js's parameter limit → 3,500 synthetic records fail to load; they load.
+// B3: batches commit on their own → a duplicate slug in the last batch leaves earlier batches; everything rolls back.
 import assert from "node:assert/strict";
 import { after, before, mock, test } from "node:test";
 import postgres from "postgres";
@@ -128,5 +131,23 @@ test("G7 two concurrent loads wait on the lock in turn and both succeed", { time
     await release();
   }
   await Promise.all(loads);
+  assert.equal((await table()).n, species.length);
+});
+
+// 3,500 records (four batches): ids and slugs from species[0], made unique.
+const synthetic = (n: number): Species[] =>
+  Array.from({ length: n }, (_, i) => ({ ...species[0], id: 1_000_000 + i, slug: `synthetic-${i}` }));
+
+test("B2 3,500 records load in batches; B3 a duplicate slug in the last batch rolls every batch back", async () => {
+  try {
+    const many = synthetic(3_500);
+    await loadDatabase(url, many);
+    const loaded = await table();
+    assert.equal(loaded.n, 3_500);
+    await assert.rejects(loadDatabase(url, [...many, { ...many[0], id: 2_000_000 }]), /duplicate key/);
+    assert.deepEqual(await table(), loaded);
+  } finally {
+    await loadDatabase(url, species);
+  }
   assert.equal((await table()).n, species.length);
 });
