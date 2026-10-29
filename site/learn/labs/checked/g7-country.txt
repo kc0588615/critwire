@@ -1,0 +1,8 @@
+-- result: g7-country · 35 rows · sha256 8104db915c8f
+habitat_code | name | method1_km2 | method3_km2 | diff_pct | pct_of_outline
+NULL | NULL | 51297.88 | 51199.23 | -0.2 | 99.99
+1401 | Arable Land | 16128.59 | 16108.04 | -0.1 | 31.44
+109 | Forest – Subtropical/tropical moist montane | 13115.84 | 13095.13 | -0.2 | 25.57
+106 | Forest – Subtropical/tropical moist lowland | 7127.03 | 7108.44 | -0.3 | 13.89
+201 | Savanna - Dry | 3533.35 | 3528.48 | -0.1 | 6.89
+… 30 more rows

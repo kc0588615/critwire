@@ -828,7 +828,7 @@ Notes on the habitat files (`data/learn/habitat.json`, written by L3's `pnpm ing
   - `tas`: Tasmania's main island with Bruny and Maria Islands, longitude 144.64…148.35, latitude −43.62…−40.64 (the north edge takes in nine devil records on the north-west tidal flats); King Island, the Furneaux Group and Macquarie Island are outside. 4,131 × 3,318 cells, 173 of 221 tiles kept, 11,206,656 cells, no nodata of the map's own. 1,991 sample records are on a kept tile, all with AU's code. 22 classes; the largest are temperate forest 36.2 %, pastureland 20.1 %, marine neritic 19.2 % and temperate shrubland 10.0 %.
   - g7 studies two 0.75° windows cut from them by a query (`win`, `w`): `cr` −84.20…−83.45, 9.85…10.60, from San José to the Caribbean lowlands, and `tas` 147.25…148.00, −43.10…−42.35, south-east Tasmania with Hobart, each the 0.75° square on a 0.05° lattice holding the most of the sample's records with that country's code, 836 × 836 cells, no nodata. They were the published clips until H5, and the cells cut from the whole clips are the same, cell for cell. `cr` holds 202 records, all inside CR's outline, and 20 classes; `tas` 601 records, 491 of them inside AU's 1:50m outline (the rest are on coasts it simplifies), and 16 classes.
   - The `.tif` files are cloud-optimized GeoTIFFs (DEFLATE level 9, no predictor: class codes aren't a continuous surface, so differences don't help; 256-pixel blocks, nearest-neighbour overviews) for desktop GIS; `habitat_clips.parquet` (zstd level 19) holds the same cells as PostGIS raster WKB (16-bit unsigned, nodata 0), one row per kept tile, which the loader turns into in-database rasters.
-- **Measured in g7** (L3, on the published files): per country, method 3's sum against the outline's geodesic area is within 1 % for 215 of 247 countries, every outline over 431 km² among them; 21 more are within 5 %, 8 within 20 % (all under 135 km²), and 3 beyond: VA (no cell), TV +28.9 %, TK −28.6 % (`g7-countries`). In the `cr` window 693,893 cells have their centre inside CR's outline, an estimated 6,785.90 km² (map area 2.3 % more); a cell covers 9,768–9,790 m² there and 7,298–7,386 m² in `tas` (`g7-latitude`, `g7-estimate`). A record's 100 m class equals its 1 km class for 49 of 202 (`cr`) and 332 of 601 (`tas`) records; the 1 km class is the 100 m majority of its cell for 201 and 579 (`g7-scale`). Method 3 against method 1 in the `tas` window inside AU's outline: −0.2 % in total, −1.1 to −2.8 % for coastal classes (`g7-ex`).
+- **Measured in g7** (L3, on the published files): per country, method 3's sum against the outline's geodesic area is within 1 % for 215 of 247 countries, every outline over 431 km² among them; 21 more are within 5 %, 8 within 20 % (all under 135 km²), and 3 beyond: VA (no cell), TV +28.9 %, TK −28.6 % (`g7-countries`). In the `cr` window 693,893 cells have their centre inside CR's outline, an estimated 6,785.90 km² (map area 2.3 % more); a cell covers 9,768–9,790 m² there and 7,298–7,386 m² in `tas` (`g7-latitude`, `g7-estimate`). Over the whole clips (`g7-tiles`: 117 + 173 tiles, aligned), a record's 100 m class equals its 1 km class for 340 of 625 (`cr`) and 1,204 of 1,991 (`tas`) records; the 1 km class is the 100 m majority of its cell for 617 and 1,921, the other 78 nearly all ties or near ties (`g7-scale`). Method 3 against method 1 over all of CR: 51,199.23 against 51,297.88 km² (−0.2 %), within 1 % for every class over 100 km² but marine neritic (+1.3 %) and seagrass (+1.6 %) (`g7-country`). Method 3 against method 1 in the `tas` window inside AU's outline: −0.2 % in total, −1.1 to −2.8 % for coastal classes (`g7-ex`).
 - **Freshness.** `habitat.json` records `country_shapes.parquet`'s sha256 and the sha256 of the records the ingest read (`id,longitude,latitude`); the build refuses the habitat files when either differs from what it publishes ("run pnpm ingest habitat"). A species change therefore re-runs this ingest too (about 12 minutes, 3.2 GB of downloads, deleted after).
 
 **How each is built.** One command per step, in the order critwire's ingests already use (ingest → derive → build; `AGENTS.md`):
@@ -6124,7 +6124,44 @@ i | j | n | land_km2 | per_land_km2 | rank_by_n
 - **From cells to area.** A count of cells becomes an area once each cell has its ground area. On a longitude–latitude grid every cell in a row has the same area, so one geodesic area per row, `ST_Area(ST_PixelAsPolygon(rast, 1, row)::geography)`, times the row's count is exact for the grid. Cells × (100 m)² overstates by the cos φ shrink. Even exact for the grid, the result is an **estimate**: the map is a model's classification, and the outline picks cells by their centres.
 - **Two ways to summarise a country** (003 §5). **Method 1** counts the 100 m cells whose centre is inside the outline, each at its row's area. **Method 3**, which critwire publishes as `country_habitats`, reads the 1 km fractions instead (for each class, the per mille of each 1 km cell it covers) and sums fraction × cell area over the 1 km cells whose centre is inside. The two differ in the **border cells**: a 1 km cell the outline crosses counts whole or not at all, by its centre, so classes along a coast carry the largest errors.
 
-**Data:** `habitat_clips`, the 100 m map over all of Costa Rica (`cr`) and Tasmania (`tas`), stored as in-database rasters in tiles of 256 × 256 cells, one row per tile, keyed (`clip`, `tile`) (4.1, 4.3). Each clip is its country's box, Tasmania's with Bruny and Maria Islands, and only the tiles holding some of the country are stored: 117 for `cr`, 173 for `tas`. The blocks below study two windows of 836 × 836 cells cut from them: `cr`, longitude −84.20…−83.45 and latitude 9.85…10.60, from San José to the Caribbean lowlands; `tas`, 147.25…148.00 and −43.10…−42.35, south-east Tasmania with Hobart. Each window is the 0.75° square holding the most of the sample's records for its country. Also `habitat_classes`, `country_habitats` (method 3, every country), `occurrence_habitats` (each record's 1 km class), `country_shapes` and `occurrences`. Each block names its window in `win` and builds it as one raster in `w`: `ST_Clip` cuts each stored tile to the window and `ST_Union` mosaics the pieces (ArcGIS Pro's Clip Raster, then Mosaic), and `MATERIALIZED` makes PostgreSQL build it once per query. `ST_Clip`'s result covers every cell the polygon touches, so `win`'s edges sit a fifth of a cell inside the window's outer cell edges: an edge on a cell boundary, or just past it, would add a column or row of nodata. The rasters are in the database, so no raster setting is needed: every block runs on a server's defaults.
+**Data:** `habitat_clips`, the 100 m map over all of Costa Rica (`cr`) and Tasmania (`tas`), stored as in-database rasters in tiles of 256 × 256 cells, one row per tile, keyed (`clip`, `tile`) (4.1, 4.3). Each clip is its country's box, Tasmania's with Bruny and Maria Islands, and only the tiles holding some of the country are stored. Each clip's box and tile grid, the tiles kept and left out, and their cells, from the tiles' georeferences:
+
+```sql
+-- q: g7-tiles
+-- status: ran
+-- engine: postgis
+-- needs: raster
+WITH box AS (
+  SELECT clip, ST_Extent(ST_Envelope(rast)) AS ext, max(ST_ScaleX(rast)) AS d
+  FROM habitat_clips
+  GROUP BY clip
+), grid AS (
+  SELECT clip, round((ST_XMax(ext) - ST_XMin(ext)) / d)::integer AS width,
+         round((ST_YMax(ext) - ST_YMin(ext)) / d)::integer AS height
+  FROM box
+)
+SELECT g.clip, g.width || ' × ' || g.height AS box_cells,
+       ceil(g.width / 256.0) || ' × ' || ceil(g.height / 256.0) AS box_tiles,
+       count(*) AS tiles,
+       ceil(g.width / 256.0) * ceil(g.height / 256.0) - count(*) AS left_out,
+       sum(ST_Width(h.rast) * ST_Height(h.rast)) AS cells,
+       sum(ST_Count(h.rast)) AS class_cells,
+       ST_SameAlignment(h.rast) AS aligned
+FROM habitat_clips AS h JOIN grid AS g USING (clip)
+GROUP BY g.clip, g.width, g.height
+ORDER BY g.clip;
+```
+
+```text
+-- result: g7-tiles · 2 rows · sha256 1514a2c9d499
+clip | box_cells | box_tiles | tiles | left_out | cells | class_cells | aligned
+cr | 3730 × 3474 | 15 × 14 | 117 | 93 | 7555072 | 7554437 | true
+tas | 4131 × 3318 | 17 × 13 | 173 | 48 | 11206656 | 11206656 | true
+```
+
+The country reaches every edge of its box, so the kept tiles do too, and their extent is the box: 3,730 × 3,474 cells in 15 × 14 tiles for `cr`, 4,131 × 3,318 in 17 × 13 for `tas`. Tiles on the east and south edges are narrower or shorter, not padded. The 93 tiles left out of `cr` and the 48 left out of `tas` hold none of the country, only sea and, for `cr`, Nicaragua and Panama. The kept tiles hold 7,555,072 and 11,206,656 cells; 635 of `cr`'s are nodata in the map itself, which `ST_Count` leaves out. `ST_SameAlignment`, used here as an aggregate, is true when every tile lies on one grid: the same cell size and skew, and corners whole cells apart. That is what lets `ST_Union` mosaic tiles without resampling a cell.
+
+Most blocks below study two windows of 836 × 836 cells cut from them: `cr`, longitude −84.20…−83.45 and latitude 9.85…10.60, from San José to the Caribbean lowlands; `tas`, 147.25…148.00 and −43.10…−42.35, south-east Tasmania with Hobart. Each window is the 0.75° square holding the most of the sample's records for its country. Also `habitat_classes`, `country_habitats` (method 3, every country), `occurrence_habitats` (each record's 1 km class), `country_shapes` and `occurrences`. Each windowed block names its window in `win` and builds it as one raster in `w`: `ST_Clip` cuts each stored tile to the window and `ST_Union` mosaics the pieces (ArcGIS Pro's Clip Raster, then Mosaic), and `MATERIALIZED` makes PostgreSQL build it once per query. `ST_Clip`'s result covers every cell the polygon touches, so `win`'s edges sit a fifth of a cell inside the window's outer cell edges: an edge on a cell boundary, or just past it, would add a column or row of nodata. The rasters are in the database, so no raster setting is needed: every block runs on a server's defaults.
 
 **Worked example:** each window's georeference from `ST_MetaData`, one cell per row built from it, and the cells' size and area on the ground against the map's 100 m:
 
@@ -6176,7 +6213,7 @@ Both windows hold 698,896 cells: 6,989.0 km² if every cell were 100 m by 100 m.
 
 **Lab:**
 
-1. The class under each record in the Costa Rica window: `win` and `w` build the window, as in every block here, `ST_Intersects` keeps the records on it, and `ST_Value` reads the cell under each:
+1. The class under each record in the Costa Rica window: `win` and `w` build the window, as in every windowed block here, `ST_Intersects` keeps the records on it, and `ST_Value` reads the cell under each:
 
 ```sql
 -- q: g7-records
@@ -6298,35 +6335,32 @@ habitat_code | name | cells | map_km2 | est_km2 | pct
 
 The window's land inside the outline is an estimated 6,785.90 km², from 836 area calls instead of 693,893. Each class's map area, cells × 0.01 km², is 2.3 % above its estimate: at 10° N a cell covers 0.978 of an equator cell (the worked example). Arable land is 36.5 % of the area, moist montane forest 25.7 % and moist lowland forest 14.8 %; the marsh class with 21 records, 0.1 %.
 
-4. A record's 100 m class against its 1 km class. `occurrence_habitats` gives each record the class with the largest fraction in its 1 km cell. Build that cell from the 1 km grid's numbers (upper-left corner −180.0099155291168, 90.00297126602864; cells 0.009915667822884942° on a side; 4.1), and find the most common 100 m class inside it:
+4. A record's 100 m class against its 1 km class, for every record on both clips. `occurrence_habitats` gives each record the class with the largest fraction in its 1 km cell. Build that cell from the 1 km grid's numbers (upper-left corner −180.0099155291168, 90.00297126602864; cells 0.009915667822884942° on a side; 4.1), and find the most common 100 m class inside it. A 1 km cell can straddle up to four tiles, so `ST_Clip` cuts each tile it touches and `ST_Union` mosaics the pieces, as `w` does for a window. A point on the edge between two tiles meets both, and its cell is the first of the tile to the east or south (a cell holds its west and north edges), so `DISTINCT ON` keeps each record once, on its highest-numbered tile:
 
 ```sql
 -- q: g7-scale
 -- status: ran
 -- engine: postgis
 -- needs: raster
-WITH win (clip, env) AS (
-  VALUES ('cr', ST_MakeEnvelope(-84.2007, 9.8493, -83.4501, 10.5999, 4326)),
-         ('tas', ST_MakeEnvelope(147.2493, -43.1001, 147.9999, -42.3495, 4326))
-), w AS MATERIALIZED (
-  SELECT h.clip, ST_Union(ST_Clip(h.rast, win.env)) AS rast
-  FROM habitat_clips AS h JOIN win ON win.clip = h.clip AND ST_Intersects(h.rast, win.env)
-  GROUP BY h.clip
-), grid (x0, y0, d) AS (
+WITH grid (x0, y0, d) AS (
   VALUES (-180.0099155291168, 90.00297126602864, 0.009915667822884942)
 ), recs AS (
-  SELECT w.clip, w.rast, ST_Value(w.rast, 1, o.geom)::integer AS class_100m, oh.habitat_code AS class_1km,
+  SELECT DISTINCT ON (o.id) h.clip, ST_Value(h.rast, 1, o.geom)::integer AS class_100m, oh.habitat_code AS class_1km,
          ST_MakeEnvelope(g.x0 + k.col * g.d, g.y0 - (k.row + 1) * g.d, g.x0 + (k.col + 1) * g.d, g.y0 - k.row * g.d, 4326) AS cell_1km
-  FROM w
-  JOIN occurrences AS o ON ST_Intersects(w.rast, o.geom)
+  FROM occurrences AS o
+  JOIN habitat_clips AS h ON ST_Intersects(h.rast, o.geom)
   JOIN occurrence_habitats AS oh ON oh.occurrence_id = o.id
   CROSS JOIN grid AS g
   CROSS JOIN LATERAL (SELECT floor((ST_X(o.geom) - g.x0) / g.d) AS col, floor((g.y0 - ST_Y(o.geom)) / g.d) AS row) AS k
-), majority AS MATERIALIZED (
+  ORDER BY o.id, h.tile DESC
+), majority AS (
   SELECT r.clip, r.class_100m, r.class_1km,
-         (SELECT vc.value::integer FROM ST_ValueCount(ST_Clip(r.rast, r.cell_1km), 1) AS vc
+         (SELECT vc.value::integer FROM ST_ValueCount(cell.rast, 1) AS vc
           ORDER BY vc.count DESC, vc.value LIMIT 1) AS most_100m
   FROM recs AS r
+  CROSS JOIN LATERAL (SELECT ST_Union(ST_Clip(h.rast, r.cell_1km)) AS rast
+                      FROM habitat_clips AS h
+                      WHERE h.clip = r.clip AND ST_Intersects(h.rast, r.cell_1km)) AS cell
 )
 SELECT clip, count(*) AS records,
        count(*) FILTER (WHERE class_100m = class_1km) AS same_at_record,
@@ -6338,13 +6372,13 @@ ORDER BY clip;
 ```
 
 ```text
--- result: g7-scale · 2 rows · sha256 9b2b84c68936
+-- result: g7-scale · 2 rows · sha256 dda12e4d18e0
 clip | records | same_at_record | same_as_majority | record_in_majority
-cr | 202 | 49 | 201 | 50
-tas | 601 | 332 | 579 | 347
+cr | 625 | 340 | 617 | 344
+tas | 1991 | 1204 | 1921 | 1225
 ```
 
-The record's own 100 m cell has its 1 km class for 49 of the 202 records in Costa Rica (24 %) and 332 of 601 in Tasmania (55 %). Yet the 1 km class is the most common 100 m class in its cell for 201 and 579: the two maps agree; most records just aren't on the majority. Only 50 of the Costa Rican records are; 77 sit on montane forest in 1 km cells that are mostly arable land. The 23 records whose 1 km class isn't the 100 m majority are all in cells where two classes tie or nearly tie (20 Tasmanian records share one cell with 48 cells each of temperate forest and pastureland), except one in a cell cut by the window's edge. A 1 km class describes the landscape around a record, a 100 m class the patch it is on; neither is the species' habitat.
+The `cr` clip holds 625 records: 618 in Costa Rica, and 4 in Nicaragua and 3 in Panama on tiles that also hold some of Costa Rica. The record's own 100 m cell has its 1 km class for 340 of them (54 %) and 1,204 of the 1,991 in Tasmania (60 %). Yet the 1 km class is the most common 100 m class in its cell for 617 and 1,921: the two maps agree; most records just aren't on the majority. Only 344 of the Costa Rican records are; 78 sit on montane forest in 1 km cells that are mostly arable land. Of the 78 records whose 1 km class isn't the 100 m majority, 46 are in cells where two classes tie, which the block breaks toward the lower code (20 Tasmanian records share one cell with 48 cells each of temperate forest and pastureland), and 31 in cells where the majority leads by 9 cells or fewer of 121 to 132. The last is on the Tasmania clip's north edge, in a 1 km cell 14 % on the clip. A 1 km class describes the landscape around a record, a 100 m class the patch it is on; neither is the species' habitat.
 
 5. How good are the published summaries? Method 3 summed over each country, against the outline's area on the ellipsoid, in bands of error:
 
@@ -6390,7 +6424,62 @@ under 1 % | 215 | 16973548.42 | 146711158 | 146575271 | 0.999074 | NULL
 
 Over all 247 outlines the estimate is 0.999074 of the outlines' area (−0.09 %), the figure `pnpm ingest habitat` records. 215 countries are within 1 %, every outline over 431 km² among them. The error grows as the outline shrinks, since a small island holds few 1 km cells and each counts whole or not at all: Vatican City (0.71 km²) holds no cell centre and has no rows; Tuvalu's atolls, 10.21 km², get 13.16 km² (+28.9 %); Tokelau −28.6 %, Sint Maarten −17.3 %. Read a small country's habitat areas as rough.
 
-**Result:** A cell of v004's 100 m grid covers 9,768 to 9,790 m² in the Costa Rica window and 7,298 to 7,386 m² in Tasmania's; counting cells as 100 m squares overstates by 2.3 % and 36 %. Costa Rica's window holds 202 records and an estimated 6,785.90 km² of land inside the outline, 36.5 % of it arable; its records sit mostly on forest (87 montane, 30 lowland). A record's 100 m class matches its 1 km class for 24 % (Costa Rica) and 55 % (Tasmania) of records, although the 1 km class is the 100 m majority around all but 23 of the 803. The published summaries total 0.999074 of the outlines' area; 215 of 247 countries are within 1 %, the worst are islands under 135 km².
+6. The published summary against the 100 m map, for a whole country. Method 1 over all of Costa Rica: clip each tile the outline touches to it, count the cells by class and row, and give each row one geodesic area, as in step 3. A cell's area depends only on its latitude, so the block builds one cell per row at longitude 0. `ST_Clip` crops a tile to the outline, which moves its upper-left corner, so each row's centre latitude comes from the clipped tile's own georeference (`ST_MetaData`). Then set it beside `country_habitats`, method 3, class by class, and against the outline's area:
+
+```sql
+-- q: g7-country
+-- status: ran
+-- engine: postgis
+-- needs: raster
+WITH cr AS (
+  SELECT geom AS outline, ST_Area(geom::geography) / 1e6 AS outline_km2 FROM country_shapes WHERE country_code = 'CR'
+), clipped AS (
+  SELECT ST_Clip(h.rast, cr.outline) AS rast
+  FROM habitat_clips AS h JOIN cr ON ST_Intersects(h.rast, cr.outline)
+  WHERE h.clip = 'cr'
+), by_row AS (
+  SELECT p.val::integer AS habitat_code, m.upperlefty + (p.y - 0.5) * m.scaley AS lat, m.scalex AS d, count(*) AS cells
+  FROM clipped AS c
+  CROSS JOIN LATERAL ST_MetaData(c.rast) AS m
+  CROSS JOIN LATERAL ST_PixelAsCentroids(c.rast, 1) AS p
+  GROUP BY habitat_code, lat, d
+), row_area AS MATERIALIZED (
+  SELECT lat, ST_Area(ST_MakeEnvelope(0, lat - d / 2, d, lat + d / 2, 4326)::geography) / 1e6 AS cell_km2
+  FROM (SELECT DISTINCT lat, d FROM by_row) AS r
+), method1 AS (
+  SELECT b.habitat_code, sum(b.cells * ra.cell_km2) AS km2
+  FROM by_row AS b JOIN row_area AS ra USING (lat)
+  GROUP BY b.habitat_code
+), method3 AS (
+  SELECT habitat_code, est_area_km2 AS km2 FROM country_habitats WHERE country_code = 'CR'
+)
+SELECT habitat_code, c.name,
+       round(sum(m1.km2)::numeric, 2) AS method1_km2,
+       round(sum(m3.km2), 2) AS method3_km2,
+       round(100 * (sum(m3.km2) / sum(m1.km2)::numeric - 1), 1) AS diff_pct,
+       round((100 * sum(m1.km2) / max(cr.outline_km2))::numeric, 2) AS pct_of_outline
+FROM method1 AS m1
+FULL JOIN method3 AS m3 USING (habitat_code)
+LEFT JOIN habitat_classes AS c ON c.code = habitat_code
+CROSS JOIN cr
+GROUP BY ROLLUP ((habitat_code, c.name))
+ORDER BY habitat_code IS NOT NULL, sum(m1.km2) DESC NULLS LAST, habitat_code;
+```
+
+```text
+-- result: g7-country · 35 rows · sha256 8104db915c8f
+habitat_code | name | method1_km2 | method3_km2 | diff_pct | pct_of_outline
+NULL | NULL | 51297.88 | 51199.23 | -0.2 | 99.99
+1401 | Arable Land | 16128.59 | 16108.04 | -0.1 | 31.44
+109 | Forest – Subtropical/tropical moist montane | 13115.84 | 13095.13 | -0.2 | 25.57
+106 | Forest – Subtropical/tropical moist lowland | 7127.03 | 7108.44 | -0.3 | 13.89
+201 | Savanna - Dry | 3533.35 | 3528.48 | -0.1 | 6.89
+… 30 more rows
+```
+
+Over all of Costa Rica the two methods differ by 0.2 %: 51,199.23 km² by method 3 against 51,297.88 km² by method 1, whose cells cover 99.99 % of the outline's area. Every class over 100 km² agrees within 1 % except two marine ones, and the eight largest, each over 1,900 km², within 0.7 %. The marine classes come out larger by method 3: coral reef (908) by 6.4 %, seagrass (909) 1.6 % and marine neritic (900) 1.3 %. A 1 km cell on the coast whose centre is inside the outline counts whole, sea included: the border cells of the Concept. Rivers and streams (501, 502) come out 3.9 and 4.8 % smaller. Classes this small, a median of 5 and 3 cells of 100 m in each 1 km cell they touch, carry the largest relative differences, since a few cells either way is a large share of them. For a country this size, the published summary stands for the 100 m map to within 1 % for its main classes; read the small and coastal ones as rough.
+
+**Result:** A cell of v004's 100 m grid covers 9,768 to 9,790 m² in the Costa Rica window and 7,298 to 7,386 m² in Tasmania's; counting cells as 100 m squares overstates by 2.3 % and 36 %. Costa Rica's window holds 202 records and an estimated 6,785.90 km² of land inside the outline, 36.5 % of it arable; its records sit mostly on forest (87 montane, 30 lowland). The clips are 290 aligned tiles, the ones holding some of each country. Over both clips a record's 100 m class matches its 1 km class for 54 % (Costa Rica) and 60 % (Tasmania) of records, although the 1 km class is the 100 m majority around all but 78 of the 2,616, nearly all of them ties or near ties. The published summaries total 0.999074 of the outlines' area; 215 of 247 countries are within 1 %, the worst are islands under 135 km². For all of Costa Rica, method 3 is 0.2 % below method 1 at 100 m, within 1 % for every class over 100 km² but marine neritic and seagrass.
 
 **Exercise:** Method 1 at 100 m is the reference for method 3 (003 §5). Compute both for the Tasmania window inside AU's outline, by class, from the 100 m cells alone. Give each 100 m cell its 1 km cell from the grid's numbers (step 4); take a class's fraction of a 1 km cell as its share of the 100 m centres in it; keep only the 1 km cells wholly inside the window; and count a 1 km cell when its centre is inside the outline. Which classes differ most, and why?
 

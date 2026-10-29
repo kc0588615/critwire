@@ -1,4 +1,4 @@
--- result: g7-scale · 2 rows · sha256 9b2b84c68936
+-- result: g7-scale · 2 rows · sha256 dda12e4d18e0
 clip | records | same_at_record | same_as_majority | record_in_majority
-cr | 202 | 49 | 201 | 50
-tas | 601 | 332 | 579 | 347
+cr | 625 | 340 | 617 | 344
+tas | 1991 | 1204 | 1921 | 1225
