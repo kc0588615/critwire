@@ -5873,11 +5873,142 @@ Limit (actual rows=20 loops=1)
 
 **Tool:** PG · **Time:** 1.5 h · **Prereqs:** g4
 
-**Goal:** count points into areal units, and see how much the units decide. `ST_HexagonGrid(edge, bounds)` returns the hexagons of edge `edge` that cover `bounds`, in the bounds' units, so it is used in an equal-area projection (here 3577, metres) and every cell has the same area (ArcGIS Pro's Generate Tessellation). Hexagons are the usual choice: every neighbour shares an edge and sits at the same distance. The **modifiable areal unit problem** (MAUP) is that counts, and every statistic built on them, change with the cells' size (scale) and with where the grid starts (zoning). s4 uses exactly these grids (`s4-cells`), so the numbers here are the ones its Moran's I runs on.
+**Concept:** How to count points into areal units, and how much the units decide:
+- **Why a grid.** Points become comparable numbers once they are counted into areas. Countries and states are areas too, but they differ in size by orders of magnitude, so a count per country says as much about the country's size as about the records. A grid gives every unit the same size and shape, so counts compare directly; the spatial statistics track (s2–s5) builds on such counts.
+- **`ST_HexagonGrid(edge, bounds)`** returns the hexagons of edge length `edge` that touch the box around `bounds`, each with its column and row, `i` and `j` (`ST_SquareGrid(size, bounds)` does the same for squares; ArcGIS Pro's Generate Tessellation). The grid is anchored at the SRID's origin, so the same edge always gives the same cells, and `i`, `j` name one cell in every query. The cells cover the box, not the shape: keep the ones that touch it with `ST_Intersects`.
+- **Equal area needs an equal-area SRID.** The edge is in the bounds' units: on SRID 4326, degrees, and a degree of longitude is shorter on the ground the farther it lies from the equator (cos φ, g1): cells shrink towards the poles and are squashed east–west. In an equal-area projection the edge is in metres and every cell has the same ground area. For Tasmania that is EPSG:3577, Australian Albers. A hexagon of edge e has area (3√3/2)·e²: 64.95 km² at 5 km, 259.81 km² at 10 km.
+- **Hexagons or squares.** In a hexagon grid every neighbour shares an edge, and every neighbour's centre is √3·e away. A square has four neighbours across an edge and four that touch only at a corner, √2 times farther, so "neighbour" needs a rule; s4's neighbour rule relies on it.
+- **Cells at the coast** hold part land, part sea. A count there compares less land than an inland cell's, and records just off the outline (a simplified coast, g5) still fall in the cell. Count with `ST_Contains`: a record on the edge between two cells is then in neither, with `ST_Intersects` in both (g3).
+- **The modifiable areal unit problem** (MAUP): counts, and every statistic built on them, change with the cells' size (the scale effect) and with where the grid starts (the zoning effect). Neither size nor start is given by the data, so a result from one grid should be checked on another.
 
-**Data:** `occurrences` (the Tasmanian devil, *Sarcophilus harrisii*), `admin1_shapes` (Tasmania's main island).
+**Data:** `occurrences` (the Tasmanian devil, *Sarcophilus harrisii*), `admin1_shapes` (Tasmania's main island, the largest of the state's nine parts at 1:50m).
 
-**Key code:** the devil's records in 5 km and 10 km hexagons, and in the 10 km grid moved half an edge east and north. `ST_HexagonGrid` always starts its grid at the projection's origin, so the moved grid is drawn over the island moved back, then moved forward:
+**Worked example:** Hexagons with a 10 km edge drawn in EPSG:3577, and hexagons with a 0.1° edge drawn on SRID 4326, each set kept where it touches the main island, and each cell's area measured on the ellipsoid:
+
+```sql
+-- q: g6-equal-area
+-- status: ran
+-- engine: postgis
+WITH island AS (
+  SELECT (part).geom
+  FROM (SELECT ST_Dump(geom) AS part
+        FROM admin1_shapes WHERE country_code = 'AU' AND name = 'Tasmania') AS parts
+  ORDER BY ST_Area((part).geom::geography) DESC
+  LIMIT 1
+), cells AS (
+  SELECT 'EPSG:3577, edge 10 km' AS grid, ST_Transform(h.geom, 4326) AS geom
+  FROM island, ST_HexagonGrid(10000, ST_Transform(island.geom, 3577)) AS h
+  WHERE ST_Intersects(h.geom, ST_Transform(island.geom, 3577))
+  UNION ALL
+  SELECT 'EPSG:4326, edge 0.1°', h.geom
+  FROM island, ST_HexagonGrid(0.1, island.geom) AS h
+  WHERE ST_Intersects(h.geom, island.geom)
+)
+SELECT grid, count(*) AS cells,
+       round((min(ST_Area(geom::geography)) / 1e6)::numeric, 3) AS min_km2,
+       round((max(ST_Area(geom::geography)) / 1e6)::numeric, 3) AS max_km2,
+       round((max(ST_Area(geom::geography)) / min(ST_Area(geom::geography)))::numeric, 4) AS max_over_min
+FROM cells
+GROUP BY grid
+ORDER BY grid;
+```
+
+```text
+-- result: g6-equal-area · 2 rows · sha256 6c9d4a8a5f33
+grid | cells | min_km2 | max_km2 | max_over_min
+EPSG:3577, edge 10 km | 296 | 259.808 | 259.808 | 1.0000
+EPSG:4326, edge 0.1° | 317 | 232.889 | 244.137 | 1.0483
+```
+
+The 296 cells drawn in Albers each cover 259.808 km² on the ellipsoid, as the formula says: the projection keeps areas, so the planar area is the ground area. The 317 cells drawn in degrees range from 232.889 to 244.137 km², 4.8 % apart: their centres span 3° of latitude, from 40.6° S to 43.7° S, and cos φ falls by that much over them. On the ground each is also squashed: about 8.2 km across per 0.1° of longitude against 11.1 km per 0.1° of latitude. Counts in such cells compare unequal areas, and the difference grows with the area a grid covers.
+
+**Lab:**
+
+1. Which records can the cells hold? Place each devil record on the main island, on one of the state's smaller islands, on another outline or on none, and count those in a 5 km and in a 10 km cell:
+
+```sql
+-- q: g6-records
+-- status: ran
+-- engine: postgis
+WITH parts AS (
+  SELECT (part).geom, rank() OVER (ORDER BY ST_Area((part).geom) DESC) AS size_rank
+  FROM (SELECT ST_Dump(ST_Transform(geom, 3577)) AS part
+        FROM admin1_shapes WHERE country_code = 'AU' AND name = 'Tasmania') AS parts
+), island AS (
+  SELECT geom FROM parts WHERE size_rank = 1
+), cells AS (
+  SELECT e.edge_m, h.geom
+  FROM island, (VALUES (5000), (10000)) AS e (edge_m), ST_HexagonGrid(e.edge_m, island.geom) AS h
+  WHERE ST_Intersects(h.geom, island.geom)
+), devils AS (
+  SELECT o.geom AS geom_4326, ST_Transform(o.geom, 3577) AS geom
+  FROM occurrences AS o JOIN species AS s ON s.id = o.species_id
+  WHERE s.scientific_name = 'Sarcophilus harrisii'
+), placed AS (
+  SELECT d.geom,
+         CASE WHEN ST_Covers(i.geom, d.geom) THEN 'main island'
+              WHEN EXISTS (SELECT 1 FROM parts AS p WHERE ST_Covers(p.geom, d.geom)) THEN 'smaller island'
+              WHEN EXISTS (SELECT 1 FROM admin1_shapes AS a WHERE ST_Covers(a.geom, d.geom_4326)) THEN 'another state'
+              ELSE 'no outline' END AS place
+  FROM devils AS d CROSS JOIN island AS i
+)
+SELECT p.place, count(*) AS records,
+       count(*) FILTER (WHERE EXISTS (SELECT 1 FROM cells AS c WHERE c.edge_m = 5000 AND ST_Contains(c.geom, p.geom))) AS in_5km_cell,
+       count(*) FILTER (WHERE EXISTS (SELECT 1 FROM cells AS c WHERE c.edge_m = 10000 AND ST_Contains(c.geom, p.geom))) AS in_10km_cell
+FROM placed AS p
+GROUP BY p.place
+ORDER BY array_position(ARRAY['main island', 'smaller island', 'no outline', 'another state'], p.place);
+```
+
+```text
+-- result: g6-records · 4 rows · sha256 79d3e0a38cd8
+place | records | in_5km_cell | in_10km_cell
+main island | 1784 | 1784 | 1784
+smaller island | 12 | 0 | 12
+no outline | 198 | 188 | 194
+another state | 6 | 0 | 0
+```
+
+Every record on the main island is in a cell at both sizes, so none lies on an edge between two. The 12 records on Maria Island, 12 to 14 km off the east coast, fall in a 10 km cell that touches the main island and in no 5 km one. Of the 198 records in no outline, 188 sit in coastal 5 km cells and 194 in 10 km ones: the cells reach past the 1:50m coast and catch them. The rest lie farther out. The 6 records on other states (four on the Australian mainland, two in New Mexico, USA) are in neither grid. So the 5 km cells hold 1,972 of the 2,000 records and the 10 km cells 1,990.
+
+2. How much of each cell is land? A cell is all land when the island covers it; its share is the area of its piece of the island over its own:
+
+```sql
+-- q: g6-land
+-- status: ran
+-- engine: postgis
+WITH island AS (
+  SELECT (part).geom
+  FROM (SELECT ST_Dump(ST_Transform(geom, 3577)) AS part
+        FROM admin1_shapes WHERE country_code = 'AU' AND name = 'Tasmania') AS parts
+  ORDER BY ST_Area((part).geom) DESC
+  LIMIT 1
+), cells AS (
+  SELECT e.edge_m, h.geom, ST_Covers(island.geom, h.geom) AS all_land,
+         ST_Area(ST_Intersection(h.geom, island.geom)) / ST_Area(h.geom) AS land_share
+  FROM island, (VALUES (5000), (10000)) AS e (edge_m), ST_HexagonGrid(e.edge_m, island.geom) AS h
+  WHERE ST_Intersects(h.geom, island.geom)
+)
+SELECT c.edge_m, round((min(ST_Area(c.geom)) / 1e6)::numeric, 2) AS cell_km2, count(*) AS cells,
+       count(*) FILTER (WHERE c.all_land) AS all_land,
+       count(*) FILTER (WHERE c.land_share < 0.5) AS under_half_land,
+       round((sum(ST_Area(c.geom)) / 1e6)::numeric) AS cells_km2,
+       round((ST_Area(i.geom) / 1e6)::numeric) AS island_km2
+FROM cells AS c CROSS JOIN island AS i
+GROUP BY c.edge_m, i.geom
+ORDER BY c.edge_m;
+```
+
+```text
+-- result: g6-land · 2 rows · sha256 258e45aa5cd2
+edge_m | cell_km2 | cells | all_land | under_half_land | cells_km2 | island_km2
+5000 | 64.95 | 1094 | 884 | 107 | 71057 | 64246
+10000 | 259.81 | 296 | 199 | 47 | 76903 | 64246
+```
+
+The 1,094 cells of 5 km cover 71,057 km² for an island of 64,246 km²: 884 are all land, and 107 hold less than half. The 296 cells of 10 km cover 76,903 km², with 199 all land and 47 under half. The larger the cells, the more sea the grid takes in along the same coast.
+
+3. The scale and the zoning effects, counted: the devil's records in 5 km and 10 km hexagons, and in the 10 km grid moved half an edge east and north. `ST_HexagonGrid` always starts its grid at the projection's origin, so the moved grid is drawn over the island moved back, then moved forward:
 
 ```sql
 -- q: g6-maup
@@ -5921,7 +6052,62 @@ edge_m | shift_m | cells | occupied | records | max_n | pct_occupied | top_cell_
 10000 | 5000 | 300 | 182 | 1976 | 310 | 60.7 | 15.7
 ```
 
-**Expected:** the same 1,972 to 1,990 devil records give three pictures. At 5 km, 307 of 1,094 cells (28.1 %) hold a record and the fullest holds 256 (13.0 % of all records); at 10 km, 178 of 296 (60.1 %) and the fullest 475 (23.9 %); moving the 10 km grid by half an edge keeps the occupancy (60.7 %) but drops the fullest cell to 310 (15.7 %), because one cluster of records is now split across cells. The records in no cell (10 to 28) lie off the main island or near its coast. The 5 km and 10 km rows equal `s4-cells`.
+The same records give three pictures. At 5 km, 307 of 1,094 cells (28.1 %) hold a record, and the fullest holds 256 (13.0 % of the records in cells); at 10 km, 178 of 296 (60.1 %), and the fullest 475 (23.9 %). That is the scale effect: larger cells merge clusters, so more cells hold something and the fullest holds more. Moving the 10 km grid by half an edge keeps the occupancy (182 of 300, 60.7 %) but the fullest cell drops to 310 (15.7 %): one cluster of records that sat in one cell is now split across several. That is the zoning effect: same size, different start, different hot spot. The record totals differ (1,972, 1,990, 1,976) because each grid reaches out to sea differently (step 1). The 5 km and 10 km rows are the cells s4 builds (`s4-cells`), so its Moran's I runs on exactly these counts.
+
+**Result:** In EPSG:3577 every hexagon of 10 km covers 259.808 km²; drawn in degrees, the cells differ by 4.8 % across Tasmania. The cells hold 1,972 (5 km) and 1,990 (10 km) of the devil's 2,000 records: every main-island record, most records just off the 1:50m coast, Maria Island's 12 only in 10 km cells. Coastal cells are part sea: 107 of 1,094 cells of 5 km hold less than half land. The fullest cell holds 13.0 % of the records at 5 km, 23.9 % at 10 km and 15.7 % in the moved 10 km grid: size and start both change the picture.
+
+**Exercise:** Coastal cells hold less land, so divide: rank the 10 km cells by records per km² of the main island's land in the cell, and compare with the ranking by count. Which cell comes first, and should you believe it?
+
+**Answer:** Intersect each cell with the island, measure the piece in EPSG:3577 (equal-area, so in km²), and order by count over land:
+
+```sql
+-- q: g6-ex
+-- status: ran
+-- engine: postgis
+WITH island AS (
+  SELECT (part).geom
+  FROM (SELECT ST_Dump(ST_Transform(geom, 3577)) AS part
+        FROM admin1_shapes WHERE country_code = 'AU' AND name = 'Tasmania') AS parts
+  ORDER BY ST_Area((part).geom) DESC
+  LIMIT 1
+), devils AS (
+  SELECT ST_Transform(o.geom, 3577) AS geom
+  FROM occurrences AS o JOIN species AS s ON s.id = o.species_id
+  WHERE s.scientific_name = 'Sarcophilus harrisii'
+), cells AS (
+  SELECT h.i, h.j, h.geom, ST_Area(ST_Intersection(h.geom, island.geom)) / 1e6 AS land_km2
+  FROM island, ST_HexagonGrid(10000, island.geom) AS h
+  WHERE ST_Intersects(h.geom, island.geom)
+), counts AS (
+  SELECT c.i, c.j, c.land_km2, count(d.geom) AS n
+  FROM cells AS c LEFT JOIN devils AS d ON ST_Contains(c.geom, d.geom)
+  GROUP BY c.i, c.j, c.land_km2
+)
+SELECT i, j, n, round(land_km2::numeric, 2) AS land_km2,
+       round((n / land_km2)::numeric, 3) AS per_land_km2,
+       rank() OVER (ORDER BY n DESC) AS rank_by_n
+FROM counts
+WHERE n > 0
+ORDER BY n / land_km2 DESC, i, j
+LIMIT 5;
+```
+
+```text
+-- result: g6-ex · 5 rows · sha256 38f8ef12aedc
+i | j | n | land_km2 | per_land_km2 | rank_by_n
+90 | -274 | 12 | 0.51 | 23.355 | 34
+73 | -260 | 18 | 1.38 | 13.086 | 23
+83 | -264 | 86 | 36.32 | 2.368 | 3
+89 | -276 | 475 | 203.05 | 2.339 | 1
+83 | -274 | 153 | 259.81 | 0.589 | 2
+```
+
+**Check:** The first cell, (90, −274), holds 12 records on 0.51 km² of the main island: 23.355 records per km², 34th by count. Its 12 records are the ones on Maria Island (step 1), outside the land the query divides by. The second, (73, −260), holds 18 records on 1.38 km² of land, but 17 of them lie 0.3 to 3 km off the 1:50m coast. The fullest cell by count, (89, −276), with 475 records, comes fourth: 384 of its records are on its 203 km² of land and 91 just off the coast. Dividing by a small, uncertain area makes small counts look large, and here the denominator misses the very land the records stand on. Densities are worth computing only where the cells hold enough land (say half), or with every island and the coast's error counted in; counts per equal cell, as s4 uses, avoid the division.
+
+**Dialects:**
+- **PostgreSQL:** `ST_HexagonGrid`, `ST_SquareGrid` (PostGIS 3.1 and later), and `ST_Hexagon(edge, i, j)` and `ST_Square(size, i, j)` for one cell by its column and row. The `h3` extension (h3-pg) indexes the globe in hexagons of near-equal, not equal, area.
+- **DuckDB:** the `spatial` extension (not in this course's browser) has no hexagon grid function. Square cells come from arithmetic, `floor(x / size)` and `floor(y / size)`, on coordinates projected with `ST_Transform`; the community `h3` extension gives H3's cells.
+- **SQL Server:** no grid function either: build square cells from `floor` of the coordinates, or a table of hexagons with `geometry::STGeomFromText`. Its spatial indexes' grids are internal and can't be used as units.
 
 #### g7 · raster
 

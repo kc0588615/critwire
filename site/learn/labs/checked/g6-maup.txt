@@ -1,0 +1,5 @@
+-- result: g6-maup · 3 rows · sha256 4d11b1459ccb
+edge_m | shift_m | cells | occupied | records | max_n | pct_occupied | top_cell_pct
+5000 | 0 | 1094 | 307 | 1972 | 256 | 28.1 | 13.0
+10000 | 0 | 296 | 178 | 1990 | 475 | 60.1 | 23.9
+10000 | 5000 | 300 | 182 | 1976 | 310 | 60.7 | 15.7

@@ -1,0 +1,6 @@
+-- result: g6-records · 4 rows · sha256 79d3e0a38cd8
+place | records | in_5km_cell | in_10km_cell
+main island | 1784 | 1784 | 1784
+smaller island | 12 | 0 | 12
+no outline | 198 | 188 | 194
+another state | 6 | 0 | 0

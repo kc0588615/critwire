@@ -335,7 +335,7 @@
       "prereqs": [
         "g4"
       ],
-      "state": "planned",
+      "state": "built",
       "skill": "`ST_HexagonGrid` in an equal-area SRID; the modifiable areal unit problem (MAUP)",
       "questions": [
         "How many Tasmanian devil records fall in each 5 km hexagon, and in each 10 km one?",
