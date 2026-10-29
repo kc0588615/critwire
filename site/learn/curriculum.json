@@ -478,7 +478,7 @@
         "s5",
         "g7"
       ],
-      "state": "planned",
+      "state": "built",
       "skill": "Zonal statistics on polygons and rasters; ratios normalized for effort",
       "questions": [
         "Do records over-represent some habitats or ecoregions, once effort is accounted for?"

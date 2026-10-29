@@ -1,0 +1,8 @@
+-- result: s6-ex · 14 rows · sha256 fb2d0c58861d
+habitat_code | name | records | jaguar | jaguar_datasets | jaguar_ratio
+105 | Forest – Subtropical/tropical dry | 42 | 42 | 1 | 6.29
+201 | Savanna - Dry | 35 | 35 | 1 | 6.29
+900 | Marine Neritic | 54 | 12 | 1 | 1.40
+1401 | Arable Land | 236 | 5 | 1 | 0.13
+106 | Forest – Subtropical/tropical moist lowland | 108 | 0 | 0 | 0.00
+… 9 more rows

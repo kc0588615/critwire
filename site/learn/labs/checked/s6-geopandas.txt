@@ -1,0 +1,11 @@
+-- result: s6-geopandas · python · sha256 1c182b76d465
+records coded CR: 619  inside the outline: 591  in a zone: 504
+eco_id | km2 | records
+470 | 17288 | 215
+471 | 9012 | 96
+458 | 8400 | 107
+506 | 8311 | 13
+527 | 6061 | 62
+617 | 636 | 7
+613 | 198 | 4
+chi-square: 77.4  df: 6  p: 1.2e-14

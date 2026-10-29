@@ -604,6 +604,22 @@
     "s5-lisa-sql": {
       "key": "482030462749cbd4450cd6c55379e962cff74427c0a84aa0098b52b77f69eff7",
       "result": "9baeda7b3cc78bacfa750e2969ace829e87182086f176f69f2876555af861d2d"
+    },
+    "s6-ex": {
+      "key": "48eac61bdfa1311f78eb10469dfcc9f95121b7dcdea2121286dad08b80d8305c",
+      "result": "e8e8f16b8a6d9c681e8ed2babb3fce4725cb4dd967a5047d44b7c88cb3f3c1c0"
+    },
+    "s6-geopandas": {
+      "key": "dc25b8f519dc119a4f0f5d21f78209957e0881d7680a4cee293c3268916e8447",
+      "result": "2c2af0bdac3fa2ca750f4f13c29e93f5466d2df5c323bf0568eb1118a9446165"
+    },
+    "s6-habitat": {
+      "key": "c43383bd200cd81eae16a2feaf9aeb98771ece9c78e864a9646c93885d46792e",
+      "result": "b2241288775c02a6bef6535d26ac9b69bbc59dc008460bdef34f3e35dce6c809"
+    },
+    "s6-zones": {
+      "key": "fc76865ccaa02d33c4a9f1192800fa9eb8cb5f589f1fdff733c03d1c100e8a32",
+      "result": "69997b36e80c72b1ea516a45104f29cb368bdd4f344e5f09ca154a0a304b664d"
     }
   },
   "downloads": {
@@ -629,6 +645,8 @@
     "s4.sql": "5b485d76d0fea6d3e9a43d0779b95c471501bd8680abf1afd27045bbd3596ed2",
     "s5.py": "215f8c1667f2278356e9f8e60715b40ff1f4c8479816d49ff5c3d6a933e6a82f",
     "s5.sql": "2ef7a1514bc2f77a77644b1895342c516576ca67ba2b22dc1a16813e6175b068",
+    "s6.py": "8c5f04ff94b6b151d67cdc5011c1dbc37c43951364f254e597e15c7b51827d1a",
+    "s6.sql": "7cb2ea1c6bb8d5c5c884e813521c4f020d56d4cf570d0e24011dccdf042429e3",
     "setup.py": "b40bb61f840f9b42a029df58b8debd131fb2b8c3963d10938beefcb36d8af08b"
   },
   "labErd": "d0727ad9d45127b6ea4c7b07495565182a2a9a35caf25cfb04891152ad77ff8b"

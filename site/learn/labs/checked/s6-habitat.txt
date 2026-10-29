@@ -1,0 +1,8 @@
+-- result: s6-habitat · 34 rows · sha256 3494dd1c6e04
+habitat_code | name | est_area_km2 | records | record_ratio
+1401 | Arable Land | 16108.04 | 236 | 1.21
+109 | Forest – Subtropical/tropical moist montane | 13095.13 | 31 | 0.20
+106 | Forest – Subtropical/tropical moist lowland | 7108.44 | 128 | 1.49
+201 | Savanna - Dry | 3528.48 | 35 | 0.82
+105 | Forest – Subtropical/tropical dry | 2236.93 | 42 | 1.55
+… 29 more rows

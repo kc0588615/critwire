@@ -7819,11 +7819,14 @@ MVZ Mammal Collection (Arctos) | 0 | 0.0 | 3 | 0.2
 
 **Tool:** PG + Py · **Time:** 2.0 h · **Prereqs:** s5, g7
 
-**Goal:** summarise points (or raster cells) by zones, and compare like with like. **Zonal statistics** take a layer of zones, here ecoregions cut to a country's outline, and summarise what falls in each: records, area, records per 1,000 km² (ArcGIS Pro's Zonal Statistics as Table does the same for a raster inside polygons; g7's `ST_ValueCount` is its SQL form). A zone's **ratio** of its share of records to its share of area is 1 when records are spread by area alone; above 1 the zone has more records than its size. That still mixes the animals with the effort, so the second ratio **normalizes for effort**: a species' share of the records in a zone against its share of all records in the country, the "target group" idea, which uses every species' records as a measure of where people recorded at all. A chi-square test then asks whether records follow area; with hundreds of records it almost always says no, which is a statement about the records, not about which habitat an animal prefers.
+**Concept:** s2 to s5 asked where records cluster; this module asks whether some zones hold more records than they should, and what "should" can mean.
+- **Zonal statistics** summarise what falls inside each zone of a layer: a count, a sum, an area or a mean per zone. A zone is any polygon, or every raster cell with one value. Here the zones are Costa Rica's ecoregions, cut to the country's outline, and then the classes of a habitat map. For points in polygons the summary is a spatial join and a `GROUP BY` (g3); for a raster inside polygons it is g7's `ST_ValueCount`.
+- **Like with like.** A count alone says little, because a big zone holds more records than a small one. **Density** divides by area: records per 1,000 km². The **record-to-area ratio** divides a zone's share of the records by its share of the area: 1 when records are spread by area alone, above 1 when the zone holds more than its size predicts. Both shares must cover the same place: the zones cut to the outline, and only the records inside that outline.
+- **Normalizing for effort.** A ratio above 1 still mixes the animals with the people who looked for them (s1). The records of every species in a sample are a rough measure of where people recorded at all, the **target group** idea: records of related species, collected the same way, stand in for effort. A species' **effort-normalized ratio** in a zone is its share of the zone's records divided by its share of all the country's records: 1 when the species turns up in the zone as often as recording in general predicts. It assumes the other species were recorded the same way, which s1 showed this sample's weren't.
+- **The chi-square goodness-of-fit test** asks whether counts follow an expectation, here records in proportion to area: `χ² = Σ (O − E)² / E` over the zones, with O the observed and E the expected count, on (zones − 1) degrees of freedom. With hundreds of records it rejects almost any simple expectation. A rejection says the records aren't spread by area; it doesn't say why, and nothing about which habitat an animal prefers.
+- **Estimated areas.** The habitat classes' areas come from a map, not a survey (§4.1, g7): Jung et al.'s 1 km cells each carry the fraction of each class, and `country_habitats` sums fraction × cell area over the cells whose centre is inside the outline. `occurrence_habitats` gives each record the class with the largest fraction in its 1 km cell: the map's class at that place, not the habitat the animal used.
 
-**Data:** `country_shapes` (Costa Rica), `ecoregions` (RESOLVE, simplified, §4.1), `occurrences`; L3 adds `occurrence_habitats` and the habitat summaries (§4.1).
-
-**Key code:** Costa Rica's ecoregions as zones: area, records (those GBIF codes `CR` that lie inside the outline, g3), records per 1,000 km², the record-to-area ratio, and the jaguar's share relative to all records:
+**Worked example:** Costa Rica's ecoregions as zones: area, records (those GBIF codes `CR` that lie inside the outline, g3), records per 1,000 km², the record-to-area ratio, and the jaguar's effort-normalized ratio:
 
 ```sql
 -- q: s6-zones
@@ -7866,7 +7869,12 @@ eco_id | name | km2 | records | jaguar | per_1000_km2 | record_ratio | jaguar_ra
 … 2 more rows
 ```
 
-The same zones in GeoPandas (an overlay, then a spatial join), with areas in an equal-area projection (EPSG:6933), and a chi-square test of records against area:
+Read it one CTE at a time. `zones` cuts each ecoregion that touches the outline to the outline (`ST_Intersection`, g4). `records` keeps the records coded `CR` that lie inside the outline. `per_zone` joins records to zones with `ST_Contains` and counts them, with `LEFT JOIN` and `count(r.id)` so a zone with no record gets 0, not no row; the jaguar's records are counted with `FILTER`. `ST_Area` on `geography` measures on the WGS 84 ellipsoid, in m². The last query divides each zone's share by the column totals, `sum(…) OVER ()`; `nullif` keeps a zone with no record from dividing by zero.
+
+591 of Costa Rica's 619 records lie inside its outline (g3 found the rest). By area alone the records are uneven: the Talamancan montane forests, 8,311 km² of mountains, hold 13 records (ratio 0.15), the three lowland moist forests 1.05 to 1.26. The jaguar's column looks different again: 61 of the 62 records in the Central American dry forests and all 7 in the Southern Mesoamerican Pacific mangroves are jaguars, 7.29 and 7.41 times its share of the records in zones, and it has none in the other five.
+
+**Lab:**
+1. The same zones in GeoPandas: an overlay of the ecoregions with the outline, then a spatial join of the records to the pieces, with areas in an equal-area projection (EPSG:6933, the global EASE-Grid 2.0), and a chi-square test of records against area. `from_wkb` reads the shapes PostGIS sends as well-known binary (g2):
 
 ```python
 # q: s6-geopandas
@@ -7920,11 +7928,13 @@ eco_id | km2 | records
 chi-square: 77.4  df: 6  p: 1.2e-14
 ```
 
-Records by habitat class against the classes' estimated areas, once L3 has placed every record in a class of the habitat map (g7):
+The course's test checks that every zone `s6-zones` shows has the same records here, and an area within 1 km²: geography's ellipsoid and EPSG:6933's projection differ by less than that (6,062 against 6,061 km² for the dry forests). "In a zone" is 504, but 3 records lie where two pieces overlap (g4) and are counted in both, so 501 records are in a zone and 90 in the gaps the simplified ecoregions leave inside the outline; both engines count a record once per piece that contains it. The chi-square test rejects "records follow area": 77.4 on 6 degrees of freedom, p 1.2 × 10⁻¹⁴.
+
+2. Records by habitat class against the classes' estimated areas, for the whole country. Each record takes its class from `occurrence_habitats`; each class's area is `country_habitats`' estimate:
 
 ```sql
 -- q: s6-habitat
--- status: untested: L3 builds occurrence_habitats
+-- status: ran
 -- engine: postgis
 WITH records AS (
   SELECT oh.habitat_code, count(*) AS records
@@ -7943,7 +7953,71 @@ WHERE ch.country_code = 'CR'
 ORDER BY ch.est_area_km2 DESC, ch.habitat_code;
 ```
 
-**Expected:** 591 of Costa Rica's 619 records lie inside its outline (g3 found the rest), and 504 of those inside an ecoregion piece; the other 87 fall in the gaps the simplified ecoregions leave inside the outline (g4). PostGIS and GeoPandas count the same records in every zone, and their areas agree to 1 km² (geography against EPSG:6933). By area alone the records are uneven: the Talamancan montane forests, 8,311 km² of mountains, hold 13 records (ratio 0.15), the lowland moist forests 1.05 to 1.26, and the chi-square test rejects "records follow area" (77.4 on 6 degrees of freedom, p 1.2 × 10⁻¹⁴). Normalized for effort, the jaguar looks different again: 61 of the 62 records in the Central American dry forests and all 7 in the Pacific mangroves are jaguars, 7.29 and 7.41 times its share of all records, and it has none in the other zones; those are s1's GPS collars, worn by jaguars tracked in the dry northwest. The records say where people recorded, and where one collar study worked, not which forest a jaguar prefers. `s6-habitat` repeats the comparison by habitat class once L3 has placed every record in the habitat map; g7's `ST_ValueCount` is the raster side of the same zonal statistic.
+```text
+-- result: s6-habitat · 34 rows · sha256 3494dd1c6e04
+habitat_code | name | est_area_km2 | records | record_ratio
+1401 | Arable Land | 16108.04 | 236 | 1.21
+109 | Forest – Subtropical/tropical moist montane | 13095.13 | 31 | 0.20
+106 | Forest – Subtropical/tropical moist lowland | 7108.44 | 128 | 1.49
+201 | Savanna - Dry | 3528.48 | 35 | 0.82
+105 | Forest – Subtropical/tropical dry | 2236.93 | 42 | 1.55
+… 29 more rows
+```
+
+Arable land, 31 % of the estimated area, holds 236 of the 619 records (ratio 1.21); 216 of them are red-eyed tree frogs, recorded in 1 km cells that are mostly farmland: the cell's class, not the pond the frog sat in. Moist montane forest, a quarter of the area, holds 31 (0.20), and plantations 2 on 2,107 km² (0.08). The highest ratios belong to small classes at the coast: Marine Neritic, the sea over the continental shelf, has 59 records on 514 km² (9.50), and its coral reefs 7 on 29 km² (20.01). The 1:50m outline takes in some coastal water, and a 1 km cell that is mostly sea gets a marine class even when the record was made on the shore; 54 of the 59 lie inside the outline, up to 3.3 km from its edge, and 5 outside it. Such a ratio measures where the map's coastline, the outline and the records' coordinates disagree, not where frogs, sloths and jaguars live. The block also counts the 28 records outside the outline against areas inside it: the exercise fixes that.
+
+**Result:** Costa Rica's 591 records inside the outline are spread unevenly over its ecoregions: the montane forests hold about a seventh of what their area predicts and the lowland forests a little more, and the chi-square test rejects records in proportion to area (77.4, 6 degrees of freedom, p 1.2 × 10⁻¹⁴). PostGIS and GeoPandas count the same records in every zone, with areas within 1 km². The jaguar's records sit almost only in the dry forests and the Pacific mangroves, 7.29 and 7.41 times its share. By habitat class, arable land holds 1.21 times its share of the records and the coastal marine classes 9.50 and 20.01. All of these are ratios of recording: they say where people recorded, and where one collar study worked, not which forest a jaguar prefers.
+
+**Exercise:** `s6-habitat` counts every record coded `CR`, including the 28 outside the outline, against areas inside it. Compare like with like: keep only the records inside the outline, as `s6-zones` does, and normalize the jaguar for effort by habitat class, as `s6-zones` does by ecoregion. For each class with a record: its records, the jaguar's records, the number of datasets the jaguar's records come from, and the jaguar's effort-normalized ratio. In which classes is the jaguar recorded, and by how many studies?
+
+**Answer:**
+
+```sql
+-- q: s6-ex
+-- status: ran
+-- engine: postgis
+WITH country AS (
+  SELECT geom FROM country_shapes WHERE country_code = 'CR'
+), records AS (
+  SELECT oh.habitat_code, o.dataset_key,
+         o.species_id = (SELECT id FROM species WHERE scientific_name = 'Panthera onca') AS jaguar
+  FROM occurrences AS o
+  JOIN country ON ST_Contains(country.geom, o.geom)
+  JOIN occurrence_habitats AS oh ON oh.occurrence_id = o.id
+  WHERE o.country_code = 'CR'
+), per_class AS (
+  SELECT habitat_code, count(*) AS records,
+         count(*) FILTER (WHERE jaguar) AS jaguar,
+         count(DISTINCT dataset_key) FILTER (WHERE jaguar) AS jaguar_datasets
+  FROM records
+  GROUP BY habitat_code
+)
+SELECT p.habitat_code, hc.name, p.records, p.jaguar, p.jaguar_datasets,
+       round((p.jaguar::numeric / p.records) / (sum(p.jaguar) OVER () / sum(p.records) OVER ()), 2) AS jaguar_ratio
+FROM per_class AS p
+JOIN habitat_classes AS hc ON hc.code = p.habitat_code
+ORDER BY p.jaguar DESC, p.records DESC, p.habitat_code;
+```
+
+```text
+-- result: s6-ex · 14 rows · sha256 fb2d0c58861d
+habitat_code | name | records | jaguar | jaguar_datasets | jaguar_ratio
+105 | Forest – Subtropical/tropical dry | 42 | 42 | 1 | 6.29
+201 | Savanna - Dry | 35 | 35 | 1 | 6.29
+900 | Marine Neritic | 54 | 12 | 1 | 1.40
+1401 | Arable Land | 236 | 5 | 1 | 0.13
+106 | Forest – Subtropical/tropical moist lowland | 108 | 0 | 0 | 0.00
+… 9 more rows
+```
+
+**Check:** The outline drops 28 records: Marine Neritic goes from 59 to 54, its coral reefs from 7 to 4, and moist lowland forest from 128 to 108. The jaguar's 94 records are all inside the outline and fall in four classes. Every record in dry forest (42) and in dry savanna (35) is a jaguar, 6.29 times its share of 94 in 591; it has 12 of the 54 in Marine Neritic (1.40) and 5 of the 236 on arable land (0.13), and none anywhere else. `jaguar_datasets` is 1 in each: all 94 come from the Jaguar Movement Database, GPS collars worn by jaguars tracked in the dry north-west (s1). Normalizing for effort removes the other species' recording, not the collar study's: a ratio of one species from one study says where the collared animals walked, in a habitat map's classes at 1 km, not which habitat jaguars prefer. `count(DISTINCT dataset_key) FILTER (WHERE jaguar)` counts the datasets of one kind of row inside a group, as s5's exercise counted rows.
+
+**Dialects:**
+- **PostgreSQL:** `round(x, 2)` needs a `numeric` (there is no `round(double precision, integer)`), hence the casts. An integer divided by an integer is an integer, so `jaguar / records` would be 0 everywhere: `jaguar::numeric` makes it a fraction. `ST_Area(geom::geography)` measures on the ellipsoid; `ST_Area(geom)` on a 4326 geometry gives square degrees, which shrink towards the poles.
+- **DuckDB:** the `spatial` extension (not in this course's browser) has `ST_Intersection`, `ST_Intersects` and `ST_Contains`, and `ST_Area_Spheroid` for the area on WGS 84's ellipsoid, latitude first (g1). `/` divides in floating point, so no cast is needed. It has no chi-square function; compute the statistic in SQL and the p-value in Python.
+- **SQL Server:** the `geography` type has `STIntersection`, `STContains` and `STArea()` (in m²); a polygon must be valid and wound with its interior on the left (`MakeValid()` and `ReorientObject()` fix the two most common refusals). Integer division as in PostgreSQL: `CAST(jaguar AS decimal(10, 4)) / records`. No statistical distribution functions: the p-value comes from Python.
+- **GeoPandas:** `gpd.overlay(…, how="intersection")` cuts one layer by another (`keep_geom_type=True` drops the lines and points an intersection can leave); `gpd.sjoin(points, polygons, predicate="within")` returns one row per point and polygon that match, so a point in two overlapping polygons appears twice, as in SQL. `to_crs(6933)` projects for areas; `scipy.stats.chisquare(observed, expected)` needs both to sum to the same total.
+- **ArcGIS Pro:** Pairwise Intersect (`arcpy.analysis.PairwiseIntersect`) cuts the ecoregions to the outline. Summarize Within (`arcpy.analysis.SummarizeWithin`) is the zonal count of points: Input Polygons the pieces; Input Summary Features the records inside the outline; Keep all input polygons checked (the `LEFT JOIN`); Add shape summary attributes checked; Group Field the species, which writes a table of each species' count in each zone, the inputs of the effort-normalized ratio. Calculate Geometry Attributes with Area (geodesic) in square kilometres gives `ST_Area` on geography's answer. For a raster in zones, Spatial Analyst's Tabulate Area (`arcpy.sa.TabulateArea`) gives each class's area in each zone (g7's method 1), and Zonal Statistics as Table (`arcpy.sa.ZonalStatisticsAsTable`) the mean, sum or majority of a value raster. Pro has no goodness-of-fit tool; run `scipy.stats.chisquare` on the table in Pro's Python window (Pro's environment includes SciPy).
 
 ### 5.5 ETL
 
@@ -9233,7 +9307,7 @@ The playground and the browser blocks use one engine start per visit (002 §8): 
 The lab files are written by the build from the same blocks the pages show, so the page and the download can't disagree (E2E checks it, 7.6):
 - **`<module>.sql`**: the module's PostGIS blocks in page order, each exactly as `learn:check` runs it: its `-- after:` blocks first, the whole wrapped in `BEGIN; … ROLLBACK;`, except `-- tx: own` blocks (as written). Headers stay as comments, so every block keeps its id. It starts with §0's `pg-session` (`SET search_path`), then the boot setup (below), and runs with `psql -X -d <your database> -f <module>.sql` after the loader (§4.3). No `ON_ERROR_STOP`, because some blocks show an error on purpose (`-- expect: error`, `-- fails:`), and the file says so at the top. The setup page's PostGIS checks (§0) download as `pg-checks.sql`, since `setup.sql` is the browser's schema. A block that runs in two sessions (`-- sessions:`) is commented out like an untested one (below): it needs one psql window per session.
 - **The boot setup.** A download includes every `-- boot` block it needs, once, right after `pg-session` (or `py-connect`), committed, and not again at its page position. It needs one when any block in it, or an `-- after:` block they bring, names a table or view the boot block creates (the names in its `CREATE TABLE` and `CREATE VIEW` statements, matched as whole words). Today that is `s4-cells`, in `s2`, `s3`, `s4`, `s5` and `c1` (`.sql`; c1 through `s5-gistar`) and in `s2`, `s3`, `s4`, `s5` and `setup` (`.py`; `setup` for §3.3's `gpkg-export`). A boot block drops what it builds before building it, so a file runs on a freshly loaded database, and again: a learner can open any module's file first, in any order. In a `.py` the boot block runs through the helper, `with connect() as conn: conn.execute("""<its SQL>""")` (psycopg sends a statement list without parameters as one simple query, and the `with` commits it), and in a notebook it is its own cell. A miss is caught by the assembled run (7.6), which starts each file from a fresh load.
-- **Untested blocks** are in their download, so the learner has them, but never run from it: running `e1.py` mustn't submit a GBIF download or stop on missing credentials, and `d5.sql` mustn't change the learner's database. In a `.sql` or `.py`, such a block at its page position is one line `-- not run from this file: <its reason>. Run it by hand, as its page says.` (`#` in Python), its headers as written, then every other line of its code behind `-- ` (`# `): no `BEGIN; … ROLLBACK;`, no `-- after:` blocks brought for it, and it doesn't count towards the boot setup. In a notebook it is a Markdown cell, the same line and then the code as a fenced block, never a code cell. Which blocks follows their status in the build's own run, so a block a later mission makes `ran` is live in its file from then on. Today: `d5-database` (L2), `g3-iucn` (L3), `e1-submit` (L4; `s6-habitat` until L4 makes it `ran`) and §3.4's `arcpy-moran`, which runs in Pro's Python window: `setup.py` carries it commented out, `setup.ipynb` as a Markdown cell. Power BI's M and DAX are in no download (below).
+- **Untested blocks** are in their download, so the learner has them, but never run from it: running `e1.py` mustn't submit a GBIF download or stop on missing credentials, and `d5.sql` mustn't change the learner's database. In a `.sql` or `.py`, such a block at its page position is one line `-- not run from this file: <its reason>. Run it by hand, as its page says.` (`#` in Python), its headers as written, then every other line of its code behind `-- ` (`# `): no `BEGIN; … ROLLBACK;`, no `-- after:` blocks brought for it, and it doesn't count towards the boot setup. In a notebook it is a Markdown cell, the same line and then the code as a fenced block, never a code cell. Which blocks follows their status in the build's own run, so a block a later mission makes `ran` is live in its file from then on. Today: `d5-database` (L2), `g3-iucn` (L3), `e1-submit` (L4) and §3.4's `arcpy-moran`, which runs in Pro's Python window: `setup.py` carries it commented out, `setup.ipynb` as a Markdown cell. Power BI's M and DAX are in no download (below).
 - **`<module>.py`** and **`<module>.ipynb`**: the module's Python blocks, `py-connect` first, then the boot setup, then each block once, in page order, with its `# q:` line as a comment (the notebook: one cell per block, and a Markdown cell with the block's heading). They read the lab data from `LEARN_BASE` (default `https://critwire.com`) and connect with libpq's `PG*` variables, as in §3.3. §3.3's Python blocks (`py-smoke`, `gpkg-export`) download as `setup.py` and `setup.ipynb`.
 - **`requirements.txt`**: §3.3's pins; the setup page gives the `uv` commands.
 - **Power BI** has no download of its own: a `.pbix` can't be built or tested here (§3.5). Its data files are the star's CSVs under `/learn/data/star/`, which p1 loads by URL.
