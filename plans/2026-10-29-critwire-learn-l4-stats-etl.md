@@ -606,6 +606,6 @@ SHOULD-CONSIDER:
 - 2026-10-29 14:02 UTC: Baseline: install, venv, typecheck, test 601/601, build, test:db 121/121, learn:check, e2e 87/87 all pass; sha256 lists saved.
 - 2026-10-29 14:27 UTC: Architecture: architect wrote findings, target design (Python engine, learn:check Python stage, .py/.ipynb downloads, agree gates, MF5/SC8/SC7 realisation), PY/PYC/AS/AG failure lists, D1–D17. Doc-only; no checks needed.
 - 2026-10-29 14:37 UTC: Fable review: APPROVE WITH CHANGES, 3 MUST-FIX (bundle inputs untouched + assets sha audit; venvState checks labs pins only; learn-labs.spec iterates by Download.kind), 4 missed, 5 should-consider. Doc-only; no checks needed.
-- 2026-10-29 14:58 UTC: Astra review: APPROVE_WITH_CHANGES, 3 MUST-FIX (venv pins checked per purpose; cleanup scoped to target db + unique run id; refresh identity incl. config), 3 should-consider. Doc-only; no checks needed.
+- 2026-10-29 14:38 UTC: Astra review: APPROVE_WITH_CHANGES, 3 MUST-FIX (venv pins checked per purpose; cleanup scoped to target db + unique run id; refresh identity incl. config), 3 should-consider. Doc-only; no checks needed.
 
 ## Summary
