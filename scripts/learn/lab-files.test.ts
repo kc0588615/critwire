@@ -5,7 +5,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { mkdtempSync, rmSync, writeFileSync, unlinkSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync, unlinkSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -57,6 +57,51 @@ test("LP3 a listed file that is missing is refused, naming it", () => withLabDir
 test("LP4 a file both provenance files list is refused", () => withLabDir(async (dir) => {
   writeFileSync(join(dir, "habitat.json"), JSON.stringify({ files: { "a.parquet": entry("aaa"), "b.parquet": entry("bb") } }));
   await assert.rejects(read(dir), (e: Error) => /a\.parquet/.test(e.message) && /both/.test(e.message));
+}));
+
+// LP5–LP8 (L3 plan §1.7 #11, finding 3): clips/{cr,tas}.tif live in a subfolder and have no rows. Written before
+// the code, seen failing first. Failure modes: a nested file published uncredited, an empty or stray folder that the
+// cap (fileSizes, recursive) and this check see differently, a symlink served as something else.
+const tif = "II*\0tif";
+const withClip = (dir: string) => {
+  mkdirSync(join(dir, "clips"));
+  writeFileSync(join(dir, "clips", "cr.tif"), tif);
+  writeFileSync(join(dir, "habitat.json"), JSON.stringify({ files: {
+    "b.parquet": entry("bb"), "clips/cr.tif": { bytes: Buffer.byteLength(tif), sha256: sha256(tif) },
+  } }));
+};
+
+test("LP5 a listed nested file without rows passes, named by its relative path", () => withLabDir(async (dir) => {
+  withClip(dir);
+  assert.deepEqual((await read(dir)).map((f) => [f.name, f.provenance]), [
+    ["a.parquet", "shapes.json"], ["b.parquet", "habitat.json"], ["clips/cr.tif", "habitat.json"],
+  ]);
+  writeFileSync(join(dir, "clips", "cr.tif"), "II*\0tiF");
+  await assert.rejects(read(dir), (e: Error) => /clips\/cr\.tif/.test(e.message) && /sha256/.test(e.message));
+}));
+
+test("LP6 an unlisted nested file is refused, naming its relative path", () => withLabDir(async (dir) => {
+  withClip(dir);
+  writeFileSync(join(dir, "clips", "tas.tif"), tif);
+  await assert.rejects(read(dir), (e: Error) => /clips\/tas\.tif/.test(e.message) && /listed by neither/.test(e.message));
+}));
+
+test("LP7 an empty folder, or one holding no listed file, is refused by name", () => withLabDir(async (dir) => {
+  mkdirSync(join(dir, "clips"));
+  await assert.rejects(read(dir), (e: Error) => /data\/learn\/clips\b/.test(e.message) && /no listed file/.test(e.message));
+  rmSync(join(dir, "clips"), { recursive: true });
+  withClip(dir);
+  mkdirSync(join(dir, "clips", "old"));
+  await assert.rejects(read(dir), (e: Error) => /clips\/old\b/.test(e.message) && /no listed file/.test(e.message));
+}));
+
+test("LP8 a non-regular file (a symlink) is refused by name, nested too", () => withLabDir(async (dir) => {
+  symlinkSync(join(dir, "a.parquet"), join(dir, "c.parquet"));
+  await assert.rejects(read(dir), (e: Error) => /c\.parquet/.test(e.message) && /isn't a regular file/.test(e.message));
+  unlinkSync(join(dir, "c.parquet"));
+  withClip(dir);
+  symlinkSync(join(dir, "a.parquet"), join(dir, "clips", "tas.tif"));
+  await assert.rejects(read(dir), (e: Error) => /clips\/tas\.tif/.test(e.message) && /isn't a regular file/.test(e.message));
 }));
 
 test("LP the committed data/learn/ passes: the four shape files and the two habitat stand-ins", async () => {

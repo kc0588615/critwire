@@ -45,12 +45,17 @@ export async function writeDatasets(rows: readonly SampleDatasetRow[], outDir: U
   });
 }
 
-// Writes /learn/data/ into outDir (created): the sample's files, then byte copies of data/learn/'s files.
+// Writes /learn/data/ into outDir (created): the sample's files, then byte copies of data/learn/'s files (subfolders
+// created).
 export async function writeLearnData(outDir: URL, { learn, files }: { learn: LearnResult; files: readonly LabFile[] }): Promise<void> {
   await mkdir(outDir, { recursive: true });
   await writeOccurrences(learn.occurrences, outDir);
   await writeDatasets(learn.datasets, outDir);
-  for (const f of files) await copyFile(childFile(labDataDir, f.name), childFile(outDir, f.name));
+  for (const f of files) {
+    const dest = childFile(outDir, f.name);
+    await mkdir(new URL(".", dest), { recursive: true }); // clips/cr.tif
+    await copyFile(childFile(labDataDir, f.name), dest);
+  }
 }
 
 // Writes <out>/learn/data/postgis/learn_curriculum.sql from <out>'s published files (after writeLearnData).
