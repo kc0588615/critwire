@@ -19,7 +19,6 @@ try {
   if (all && !values.check) throw new Error("`all` is for --check: port pages one by one");
   const pages = all ? portedPages(doc, setupSql, root) : positionals;
   const ported = pages.map((p) => ({ page: p, ...portPage(doc, p, setupSql) }));
-  for (const { skipped } of ported) for (const s of skipped) console.error(`learn:port: skipped ${s}`);
   const errors = ported.flatMap((p) => p.errors);
   if (errors.length) throw new Error(errors.join("\n"));
   const files = ported.flatMap((p) => p.files);

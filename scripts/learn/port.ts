@@ -1,19 +1,20 @@
-// learn:port (plan D16): a page's blocks from 004's fences to files. Each SQL or Power BI fence becomes its block file,
-// byte for byte (site/learn/sql/<id>.<sql|m|dax>), and the result fence under a ran block its recorded result: PostGIS
-// in site/learn/labs/checked/<id>.txt (learn:check's), DuckDB in e2e/__snapshots__/<id>.txt (E2E's), without a final
-// newline. A page is `setup` (004 §0 and §3.1, 3.2, 3.5) or a module (`#### <id> · <slug>` up to the next heading of
-// its level or above). Python fences are L4's and skipped; the setup block is compared with site/learn/sql/setup.sql,
-// never written. portPage and checkPort are queries; writePort is the one command. Tests: port.test.ts.
+// learn:port (plan D16): a page's blocks from 004's fences to files. Each SQL, Python or Power BI fence becomes its
+// block file, byte for byte (site/learn/sql/<id>.<sql|py|m|dax>), and the result fence under a ran block its recorded
+// result: PostGIS and Python in site/learn/labs/checked/<id>.txt (learn:check's), DuckDB in e2e/__snapshots__/<id>.txt
+// (E2E's), without a final newline. A page is `setup` (004 §0 and §3.1, 3.2, 3.5) or a module (`#### <id> · <slug>` up
+// to the next heading of its level or above); py-connect, on the setup page, is every page's helper (L4 plan D4). The
+// setup block is compared with site/learn/sql/setup.sql, never written. portPage and checkPort are queries; writePort
+// is the one command. Tests: port.test.ts.
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { BLOCK_DIR, CHECKED_DIR, SETUP_ID, SNAPSHOT_DIR, lintPage, parseBlock, type Block } from "./blocks.ts";
+import { BLOCK_DIR, CHECKED_DIR, PY_CONNECT_ID, SETUP_ID, SNAPSHOT_DIR, lintPage, parseBlock, type Block } from "./blocks.ts";
 import { lineDiff } from "./result.ts";
 
 export const SETUP_PAGE = "setup";
 const SETUP_SECTIONS = [/^## 0\. /, /^### 3\.1 /, /^### 3\.2 /, /^### 3\.5 /];
 const MODULE = /^#### ([a-z0-9]+) · /;
 const RESULT = /^-- result: (\S+) · /;
-const EXT: Record<string, string> = { sql: ".sql", m: ".m", dax: ".dax" };
+const EXT: Record<string, string> = { sql: ".sql", python: ".py", m: ".m", dax: ".dax" };
 
 export interface PortFile {
   page: string;
@@ -78,16 +79,23 @@ function differsAt(body: string, file: string): number | null {
   return (at >= 0 ? at : Math.min(got.length, want.length)) + 1;
 }
 
+/** The course-wide helpers a page's `# after:` may name: py-connect, from the setup page, on every other page. */
+function helpers(doc: string, page: string, setupSql: string): Map<string, Block> {
+  if (page === SETUP_PAGE) return new Map();
+  const f = portPage(doc, SETUP_PAGE, setupSql).files.find((x) => x.path === `${BLOCK_DIR}/${PY_CONNECT_ID}.py`);
+  const b = f && parseBlock(f.path, f.text).block;
+  return new Map(b ? [[b.id, b]] : []);
+}
+
 /**
- * A page's files from 004, every error 004's fences show (missing, mismatched or orphan results; a block that fails
- * its lint; a setup block that differs from `setupSql`), and the blocks skipped.
+ * A page's files from 004 and every error 004's fences show: missing, mismatched or orphan results; a block that fails
+ * its parse (named by its fence's line) or its lint; a setup block that differs from `setupSql`.
  */
-export function portPage(doc: string, page: string, setupSql: string): { files: PortFile[]; skipped: string[]; errors: string[] } {
+export function portPage(doc: string, page: string, setupSql: string): { files: PortFile[]; errors: string[] } {
   const lines = doc.split("\n");
   const ranges = sections(lines, page === SETUP_PAGE ? (h) => SETUP_SECTIONS.some((re) => re.test(h)) : (h) => MODULE.exec(h)?.[1] === page);
-  if (!ranges.length) return { files: [], skipped: [], errors: [`no page "${page}" in 004 (${docPages(doc).join(", ")})`] };
+  if (!ranges.length) return { files: [], errors: [`no page "${page}" in 004 (${docPages(doc).join(", ")})`] };
   const files: PortFile[] = [];
-  const skipped: string[] = [];
   const errors: string[] = [];
   const blocks: Block[] = [];
   const all = ranges.flatMap(([from, to]) => fences(lines, from, to));
@@ -96,23 +104,18 @@ export function portPage(doc: string, page: string, setupSql: string): { files: 
   all.forEach((f, k) => {
     const at = `004:${f.open + 1}`;
     const next = all[k + 1];
-    if (f.lang === "python") {
-      skipped.push(`${f.body.map((l) => /^# q: (\S+)$/.exec(l)?.[1]).find(Boolean) ?? at}: python blocks are L4's`);
-      if (isResult(next)) claimed.add(next!);
-      return;
-    }
     const ext = EXT[f.lang];
     if (!ext) return;
     const text = f.body.join("\n") + "\n";
-    const id = /^(?:--|\/\/) q: (\S+)$/.exec(f.body[0] ?? "")?.[1];
+    const id = /^(?:--|\/\/|#) q: (\S+)$/.exec(f.body[0] ?? "")?.[1];
     if (id === SETUP_ID && ext === ".sql") {
       const n = f.body.findIndex((l) => !/^-- (q|status):/.test(l));
       const line = differsAt(f.body.slice(n).join("\n"), setupSql);
       if (line !== null) errors.push(`${at}: q setup: differs from ${BLOCK_DIR}/setup.sql at line ${line}`);
       return;
     }
-    const { block, errors: lint } = parseBlock(id ? `${id}${ext}` : at, text);
-    errors.push(...lint);
+    const { block, errors: parse } = parseBlock(`${id ?? "block"}${ext}`, text);
+    errors.push(...parse.map((e) => `${at}: ${e}`));
     if (!block) return;
     blocks.push(block);
     files.push({ page, path: `${BLOCK_DIR}/${block.id}${ext}`, text });
@@ -121,11 +124,11 @@ export function portPage(doc: string, page: string, setupSql: string): { files: 
     claimed.add(next!);
     const rid = RESULT.exec(next!.body[0]!)![1];
     if (rid !== block.id) return void errors.push(`${at}: q ${block.id}: the result block after it is for "${rid}"`);
-    files.push({ page, path: `${block.engine === "postgis" ? CHECKED_DIR : SNAPSHOT_DIR}/${block.id}.txt`, text: next!.body.join("\n") });
+    files.push({ page, path: `${block.engine === "duckdb" ? SNAPSHOT_DIR : CHECKED_DIR}/${block.id}.txt`, text: next!.body.join("\n") });
   });
   for (const f of all) if (isResult(f) && !claimed.has(f)) errors.push(`004:${f.open + 1}: orphan result block "${RESULT.exec(f.body[0]!)![1]}"`);
-  errors.push(...lintPage(blocks));
-  return { files, skipped, errors };
+  errors.push(...lintPage(blocks, undefined, helpers(doc, page, setupSql)));
+  return { files, errors };
 }
 
 const read = (root: string, path: string) => (existsSync(join(root, path)) ? readFileSync(join(root, path), "utf8") : undefined);

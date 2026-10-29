@@ -6,13 +6,15 @@
 // manifest's rows and sha256, which the served files match and star-check passes. The setup page links the checks'
 // download (pg-checks.sql) and the loader. /learn/labs/requirements.txt is the labs' pin file (L4 plan §5). By
 // Download.kind (L4 plan §10): a .sql holds its page's PostGIS blocks, a .py its Python blocks (untested ones behind
-// `# `), each linked from its block; an .ipynb is served as assembled; the versions line names Python and
-// requirements.txt on a page with a Python block; every download link on a page returns 200.
+// `# `), each linked from its block; an .ipynb is served as assembled, its code cells the .py's cells in order (an
+// untested block a Markdown cell, never code); a download naming s4_cells or s4_neighbours runs s4-cells right after
+// pg-session or py-connect; the versions line names Python and requirements.txt on a page with a Python block; every
+// download link on a page returns 200.
 import { expect, test } from "@playwright/test";
 import { readFile } from "node:fs/promises";
 import { moduleUrl } from "../scripts/build/learn/module-html.ts";
 import { assembleDownloads, pageDownloads, type Download } from "../scripts/learn/assemble.ts";
-import { CHECKED_DIR, type Block } from "../scripts/learn/blocks.ts";
+import { CHECKED_DIR, PG_SESSION_ID, PY_CONNECT_ID, type Block } from "../scripts/learn/blocks.ts";
 import { SETUP_PAGE, type CoursePage } from "../scripts/learn/course.ts";
 import { readCourse } from "../scripts/learn/course-files.ts";
 import { readStamp } from "../scripts/learn/freshness.ts";
@@ -104,7 +106,47 @@ test("every download link on a Learn page returns 200", async ({ page, request }
       expect((await request.get(href)).status(), `${href} on ${url(p)}`).toBe(200);
     }
   }
-  expect([...seen]).toEqual(expect.arrayContaining(["/learn/labs/pg-checks.sql", "/learn/labs/g7.sql"]));
+  expect([...seen]).toEqual(expect.arrayContaining(["/learn/labs/pg-checks.sql", "/learn/labs/g7.sql", "/learn/labs/requirements.txt", "/learn/labs/setup.py", "/learn/labs/setup.ipynb"]));
+});
+
+/** A .py's cells: the text after each `# %% <label>` line, up to the blank line before the next. */
+const pyCells = (text: string) => text.split(/\n\n(?=# %% )/).slice(1).map((c) => {
+  const [marker, ...code] = c.split("\n");
+  return { label: marker!.slice("# %% ".length), code: trimEnd(code.join("\n")) };
+});
+type NbCell = { cell_type: string; id: string; source: string[] };
+
+test("each .ipynb's code cells are its .py's cells, in order, with unique ids; an untested block is a Markdown cell, never code", async () => {
+  const { pages } = await course();
+  const all = assembleDownloads(pages);
+  const py = all.filter((d) => d.kind === "py");
+  expect(py.map((d) => d.name)).toContain("setup.py");
+  for (const d of py) {
+    const nb = JSON.parse(all.find((x) => x.page === d.page && x.kind === "ipynb")!.text) as { cells: NbCell[] };
+    const ids = nb.cells.map((c) => c.id);
+    expect(new Set(ids).size, d.name).toBe(ids.length);
+    const cells = pyCells(d.text);
+    const untested = new Set(pages.find((p) => p.page.id === d.page)!.blocks.filter((b) => b.engine === "python" && b.status === "untested").map((b) => b.id));
+    const code = nb.cells.filter((c) => c.cell_type === "code").map((c) => ({ id: c.id, code: c.source.join("") }));
+    expect(code, d.name).toEqual(cells.filter((c) => !untested.has(c.label)).map((c) => ({ id: c.label.replace(/^boot: /, ""), code: c.code })));
+    for (const id of untested) {
+      const cell = nb.cells.find((c) => c.id === id)!;
+      expect(cell.cell_type, `${id} in ${d.page}.ipynb`).toBe("markdown");
+      expect(cell.source.join(""), id).toMatch(/^not run from this file: .+\. Run it by hand, as its page says\.\n\n```python\n/);
+    }
+  }
+});
+
+test("a download naming s4_cells or s4_neighbours runs s4-cells right after pg-session or py-connect", async () => {
+  const { pages } = await course();
+  const blocks = pages.flatMap((p) => p.blocks);
+  const text = (id: string) => trimEnd(blocks.find((b) => b.id === id)!.text);
+  for (const d of assembleDownloads(pages).filter((x) => x.kind !== "ipynb" && /\bs4_(cells|neighbours)\b/.test(x.text))) {
+    const boot = d.kind === "sql"
+      ? `${text(PG_SESSION_ID)}\n\nBEGIN;\n${text("s4-cells")}\nCOMMIT;\n`
+      : `# %% ${PY_CONNECT_ID}\n${text(PY_CONNECT_ID)}\n\n# %% boot: s4-cells\n`;
+    expect(d.text.includes(boot), d.name).toBe(true);
+  }
 });
 
 test("a Power BI block lists its star inputs with the manifest's rows and sha256, and the served files match", async ({ browser, request }) => {
@@ -130,12 +172,12 @@ test("a Power BI block lists its star inputs with the manifest's rows and sha256
   await context.close();
 });
 
-test("the setup page covers the browser, PostGIS and Power BI, and links pg-checks.sql and the loader", async ({ page }) => {
+test("the setup page covers the browser, PostGIS, Python and Power BI, and links pg-checks.sql, the loader, requirements.txt, setup.py and setup.ipynb", async ({ page }) => {
   expect((await page.goto("/learn/setup/"))?.status()).toBe(200);
   await expect(page.getByRole("heading", { level: 2 })).toHaveText(["The browser", "PostgreSQL with PostGIS, on your computer", "Python", "Power BI Desktop"]);
-  for (const href of ["/learn/labs/pg-checks.sql", "/learn/data/postgis/learn_curriculum.sql", "/learn/schema/lab/"])
+  for (const href of ["/learn/labs/pg-checks.sql", "/learn/data/postgis/learn_curriculum.sql", "/learn/schema/lab/", "/learn/labs/requirements.txt", "/learn/labs/setup.py", "/learn/labs/setup.ipynb"])
     await expect(page.locator(`main a[href="${href}"]`).first()).toBeVisible();
-  for (const id of ["setup-counts", "pg-session", "pg-smoke", "pg-role-smoke", "pg-tx-smoke", "pbi-smoke"]) await expect(page.locator(`#q-${id}`)).toHaveCount(1);
+  for (const id of ["setup-counts", "pg-session", "pg-smoke", "pg-role-smoke", "pg-tx-smoke", "py-connect", "py-smoke", "pbi-smoke"]) await expect(page.locator(`#q-${id}`)).toHaveCount(1);
 });
 
 test("/learn/labs/requirements.txt is site/learn/labs/requirements.txt", async ({ request }) => {

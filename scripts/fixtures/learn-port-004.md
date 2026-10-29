@@ -103,10 +103,16 @@ a
 ```
 
 ```python
-#### f9 · not a heading
 # q: f1-py
 # status: ran
+# after: py-connect
+#### f9 · not a heading
 print(1)
+```
+
+```text
+-- result: f1-py · python · sha256 4355a46b19d3
+1
 ```
 
 ```sql

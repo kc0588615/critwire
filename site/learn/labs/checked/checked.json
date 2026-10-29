@@ -492,6 +492,14 @@
     "pg-tx-smoke": {
       "key": "131c634b1faeb1321ba409f403e888cd671965e08fee1668365c52a95295a4d0",
       "result": "eb5022d9315c90f5cc48bf18dac53418b13ddd980d2d8b638e9c8a8ebd5b9b93"
+    },
+    "py-connect": {
+      "key": "e29d3cc8fd61e82ea9cbfd23c21e512748b0aa301717326ac8d5993e0b9fc5fa",
+      "result": "b4e56e4af54e6565b8a146c6b93b2f709c488b5e99dbc675cf1a699a88bd624c"
+    },
+    "py-smoke": {
+      "key": "0d90fc0acfd23226ccb1246bc43370cd629c590144a4f8c275ab71d98944af45",
+      "result": "a0e3f5749bd87ed74488a486d1d46dbf766f09f0c765cea41798fcbc2b4709a3"
     }
   },
   "downloads": {
@@ -507,7 +515,8 @@
     "g5.sql": "ca0b779d86948aa7ba59b7c9da62c17bfecf5cd6fc0af82bd2935adc91e33f46",
     "g6.sql": "528edf22a48338fdf5e8792bfd1717196d107e4f805b1223b79d61dce9a4f3c1",
     "g7.sql": "97421e93a186f78dcaf5050ff1d6d41096fb4f1286880b5cecb43c89210089fb",
-    "pg-checks.sql": "348691fbefd3b6c0400e7edfd3a3aaf4f767b186c1a6bcbe2f2ad021cb5607fd"
+    "pg-checks.sql": "348691fbefd3b6c0400e7edfd3a3aaf4f767b186c1a6bcbe2f2ad021cb5607fd",
+    "setup.py": "93208bbbb1aa1f1aa5ea2ca58806cd661bee64544aa2a6cd223db3ba18df4c29"
   },
   "labErd": "55b99a7ff2b607851f2703f1889b8540e95e90a85eae01c913c9caec9a6d93ca"
 }

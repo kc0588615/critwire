@@ -1,0 +1,13 @@
+-- result: py-smoke · python · sha256 f75ba856b9f7
+search_path: learn_curriculum,public
+python: 3.12.3
+psycopg: 3.3.6
+pandas: 3.1.0
+pyarrow: 26.0.0
+shapely: 2.2.0
+pyproj: 3.8.0
+pyogrio: 0.13.0
+geopandas: 1.2.0
+libpysal: 4.15.1
+esda: 2.10.0
+pointpats: 2.6.0
