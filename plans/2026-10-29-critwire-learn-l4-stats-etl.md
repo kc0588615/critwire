@@ -145,7 +145,7 @@ The review's numbering: MF = MUST-FIX, SC = SHOULD-CHANGE.
 - [x] Fable review: `architecture-reviewer`
 - [x] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
 - [x] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
-- [ ] Steps: `planner` writes Steps and Verification
+- [x] Steps: `planner` writes Steps and Verification
 
 ## Baseline
 
@@ -693,7 +693,258 @@ Architect, 2026-10-29, on `0d9c7a9`. Every MUST-FIX is resolved by a design chan
 
 ## Steps
 
+Every step:
+- `M` = `/srv/critter-ai/agent-state/missions/critwire-learn-l4-stats-etl`. `B0` = `358abb9` (the Baseline commit). "§n" = this plan's Target design; "D<n>" its Decisions.
+- **First** = failure cases written and run red before the code (Log: `red n → green n`). No test after its code. E2E cases for a feature land in the step that builds it, before its code.
+  - Test ids: where the architecture's id is already taken in the file, it is renumbered: in `assemble.test.ts` (AS1–AS10 exist) the architecture's AS1–AS7 are **AS11–AS17**, in order. The planner's added cases are **BF1** (`check.test.ts`), **FR10–FR12** (`freshness.test.ts`), **MH10–MH14** (`module-html.test.ts`), **PT10–PT13** (`port.test.ts`), defined in their steps.
+- **Checks**, one heavy job at a time (never two of build, test:db, learn:check, e2e at once: test:db and learn:check share the lab lock). No lint script; `pnpm typecheck` is the static check.
+  - `T` = `pnpm typecheck && pnpm test`.
+  - `B` = plain `pnpm build`.
+  - `D` = `B`, then `pnpm test:db` (≈ 11 min; needs `.venv-learn` from S1). While iterating: `pnpm exec tsx --test --test-concurrency=1 <file>.dbtest.ts`.
+  - `L` = `pnpm build --draft && pnpm learn:check && pnpm build`: a whole run re-stamps `checked.json`; `git status --porcelain site/learn/labs/checked` shows `checked.json` only. Any step touching learn:check's import closure, `requirements.txt` or a block needs it (every lab's key moves).
+  - `LU` = `pnpm build --draft && pnpm learn:check --update && pnpm build` (each block runs twice, PY9), then `P`: the only differences are the step's new blocks. Copy each new `checked/<id>.txt` into its 004 result fence; `P` again = 0. `git status --porcelain site/learn/labs/checked e2e/__snapshots__` lists only the step's new results and `checked.json`.
+  - `E` = `B`, then `pnpm e2e`; `jq .stats e2e-artifacts/results.json`: 0 unexpected, 0 skipped, 0 flaky.
+  - `P` = `pnpm learn:port --check all`: 0 differences.
+  - `H` = `(cd dist && sha256sum -c $M/baseline-sha256-dist.txt 2>/dev/null | grep -v ': OK$' | grep -vE '^\./learn/(.+/)?index\.html: FAILED$')` prints nothing: every Baseline `dist/` file except Learn's HTML pages is byte-identical (`/v1`, `index.html`, `learn/data/**` with `manifest.json`, `learn/assets/**`, every baseline `learn/labs/*.sql` and `learn/diagrams/*`).
+  - `HN` = `comm -13 <(awk '{print $2}' $M/baseline-sha256-dist.txt | sort) <(cd dist && find . -type f | sort) | grep -vE '^\./learn/((spatial-statistics|etl)/[a-z-]+/index\.html|labs/((s[1-6]|e[1-5])\.(sql|py|ipynb)|setup\.(py|ipynb)|requirements\.txt)|diagrams/(s4-band|e2-load|e5-refresh)(-dark)?\.svg)$'` prints nothing: no new `dist/` file outside §12's list.
+  - `HR` (repo root) = `sha256sum -c $M/baseline-sha256-repo.txt 2>/dev/null | grep -v ': OK$' | grep -vE '^(AGENTS\.md|package\.json|docs/recovery\.md|plans/(004-learn-curriculum|2026-10-29-critwire-learn-l4-stats-etl)\.md|site/learn/(curriculum\.json|pages/setup\.html|modules/(d4|f4|g7)\.html|labs/(requirements\.(in|txt)|checked/checked\.json))|e2e/(release/)?[a-z-]+(\.spec)?\.ts|scripts/.+\.ts): FAILED$'` prints nothing, and `git diff --quiet $B0 -- data contracts db site/learn/erd site/learn/duckdb-ext` exits 0.
+  - `A` = `git diff --quiet $B0 -- site/learn/src site/learn/sql/setup.sql scripts/build/learn/sql.ts scripts/learn/cell.ts scripts/build/licenses.ts` exits 0 (D20: the bundle's inputs; `H` then proves `learn/assets/**`). Python code goes in `blocks.ts`, `result.ts`, `assemble.ts`, `notebook.ts`, `python.ts`; Python blocks reuse the existing HTML classes (the CSS is `site/learn/src/learn.css`, a bundle input).
+- **Content:**
+  - 004 and the site change together: a block or result edit lands in 004 and its file in one commit (`P`). 004's prose sections (§0, §3.3, §7.3, §7.5, §7.6, §7.7) change with the code that makes them true (§11).
+  - A ported 004 block keeps its result: a difference is a bug (Failure modes). Designed changes only: `e1-checksum` (D8), `e2-geopandas` (D9); `s6-habitat` and the new blocks are new results.
+  - New block: its fence in 004 (`status: ran`) with a provisional result fence (`-- result: <id> · python · sha256 000000000000`; SQL: `-- result: <id> · 0 rows · sha256 000000000000`) so `learn:port` accepts it; `pnpm learn:port <page>`; iterate with `pnpm learn:check --module <page>` (writes nothing); then `LU` records it and its result goes into 004. A new DuckDB block's result comes from `learn-browser`'s run; 004 and `e2e/__snapshots__/<id>.txt` get it together.
+  - Copy per AGENTS.md: records, never range (every map, hot spot and ratio is recording effort); plain English for adults new to the topic, each term defined once; no Wikipedia prose; no mission names on public pages; link only built pages.
+- **Module step** (S12, S13, S15–S23): 004 §5.4/§5.5's outline becomes the full module in 004 (Concept, Worked example, Lab, Result, Exercise `<id>-ex` with its answer, Check, Dialects: for SQL PostgreSQL/DuckDB/SQL Server as in g1–g7; for Python the ArcGIS Pro tool and its parameters in prose, plus an untested arcpy block only where prose can't show it). Then `pnpm learn:port <id>`, `site/learn/modules/<id>.html` from it, and `curriculum.json` `<id>` `built`, in one commit. A page that says the module is "in preparation" links it (f4 → s1, g7 → s6, d4 → e2). Log each Python block's wall time (S6 prints it); a block over 40 s gets `# timeout:` in 004 and its file together. Check: `T`, `P`, `LU`, `E`, `H`, `HN`, `HR`, `A`.
+- **AGENTS.md:** a step that changes a command, the venv or a file rule updates that line in the same commit (each session is fresh and reads it). S27 is the final pass.
+- **Commit** `S<n>: …` (code + plan), push. A step that finishes a review item adds `<item>: done (S<n>)` under Decisions; S27 adds the shas.
+- **Deviations from "Work units and budget"** (S1 records them under Decisions):
+  1. Unit 2's port (and with it `py-connect`, `py-smoke`) moves to S10. A ported `.py` file needs a page slot (`readCourse` refuses an unused block file), a recorded run (plain build refuses a stale lab), a download and a page renderer; and once port knows Python, `P` reports setup's Python files missing. S10 is the first step where all of these exist.
+  2. Units 4 and 5 are split into S4–S10 (result path and role guard; run id and cleanup; the Python stage; assembly; `.py` downloads in learn:check; pages; setup's Python).
+  3. Port's `### 3.3 `/`### 3.4 ` setup sections, `gpkg-export` and `arcpy-moran` land in S14, after s4: `gpkg-export` reads `s4_cells`.
+  4. Diagrams after e5: `e5-refresh` first (S24), then `s4-band` and `e2-load` (S25), so the budget rule's cut ("one diagram, `e5-refresh`") drops a whole unit.
+  5. The release smoke's `s4.py` run is a test in `e2e/release/live.spec.ts` (S26), reusing `python.ts`, `pg.ts` and the lab lock, so it leaves a Playwright report and traces like the rest of the smoke.
+  6. `f4.html`, `g7.html` and `d4.html` (baseline pages) link s1, s6 and e2 once built: AGENTS.md's copy rule, and the brief's DoD allows pages. `HR` lists them as changed on purpose.
+  7. `venvState(file, python = VENV_PYTHON)` takes the interpreter, so Verification can probe a fresh labs-only venv.
+  8. Each step runs learn:check once (`L` or `LU`); the second whole run is Verification's.
+- **Estimate:** 27 steps. With 6 sessions through Steps, the code review, ≈ 2 fix steps, Verification and Release: ≈ 38 of the 48-session cap. Count at each session start: `grep -c '^=== .* session ' /srv/critter-ai/agent-state/missions/critwire-learn-l4-stats-etl.log`. Past 40 before the code review: drop S25 (Decision). Past 48: the brief's rule (no more review steps; finish Verification and Release; unfinished assigned items become handoff items for L5).
+
+- [ ] S1 · The venv split and `scripts/venv.ts` (§1; finding 2; D1, D2, D18)
+  - First [T] `scripts/venv.test.ts` (V1, pure `venvProblems`): a missing pin and a wrong-version pin each refused, naming the package, its pin, what's installed and `pnpm learn:venv`; Python 3.11 and 3.13 refused; every pin matching passes.
+  - First [D] `scripts/learn/python.dbtest.ts` (new; V1 probe, V4), on `.venv-learn` with fixture requirements files: a pin whose marker is false here doesn't appear; a missing and a wrong-version pin appear with `installed` null and the real version; rasterio and ipykernel (unlisted) don't appear; `assertVenv(<fixture ingest file pinning rasterio at another version>)` throws, and `assertVenv(INGEST_REQUIREMENTS)` passes.
+  - Files:
+    - `site/learn/labs/requirements.in` without rasterio; in `site/learn/labs/`: `uv pip compile --universal --python-version 3.12 -o requirements.txt requirements.in`. `git diff` removes exactly `rasterio`, `affine`, `attrs`, `click` (and their `# via` lines); the file equals 004 §3.3's text fence byte for byte: `diff <(awk '/^### 3\.3 /{s=1} s&&/^```text$/{f=1;next} f&&/^```$/{exit} f' plans/004-learn-curriculum.md) site/learn/labs/requirements.txt` is empty. Any other change: revert and find why.
+    - `scripts/ingest/requirements.in` = `-c ../../site/learn/labs/requirements.txt` + `rasterio`; `requirements.txt` compiled the same way in `scripts/ingest/`. The union of both files' pin lines equals `git show $B0:site/learn/labs/requirements.txt`'s 48.
+    - `package.json` `learn:venv`: `… uv pip sync --no-build --python .venv-learn site/learn/labs/requirements.txt scripts/ingest/requirements.txt`.
+    - `scripts/venv.ts`: `VENV_PYTHON`, `LABS_REQUIREMENTS`, `INGEST_REQUIREMENTS`, `venvState(file, python = VENV_PYTHON)` (one `python -I -c` probe through `packaging` and `importlib.metadata`), `venvProblems`, `assertVenv(file, who)`. `scripts/ingest/python.ts:7` uses `VENV_PYTHON`. `ingest shapes` and `ingest habitat` call `assertVenv(INGEST_REQUIREMENTS, "ingest <s>")` where the command starts, before any fetch or spawn (so the build functions' fake-Python tests are untouched).
+    - 004 §3.3: two files (the labs file published, the ingest file never), each checked by the command that needs it, the macOS 14 check, the `ipykernel` note (D2). AGENTS.md Stack/Commands: the split files, `learn:venv` syncs both, `test:db` needs `.venv-learn`.
+  - Proof: `pnpm learn:venv`; `uv pip check --python .venv-learn` clean; `.venv-learn/bin/python -I -c 'import rasterio, geopandas, esda; print(rasterio.__version__)'` prints `1.5.2`. Platform check (PyPI): `uv pip compile --no-build --python-version 3.12 --python-platform <p> site/learn/labs/requirements.txt -o /dev/null` exits 0 for `x86_64-pc-windows-msvc`, `x86_64-unknown-linux-gnu`, `aarch64-unknown-linux-gnu`, and `aarch64-apple-darwin` with `MACOSX_DEPLOYMENT_TARGET=14.0`; `x86_64-apple-darwin` fails on pyproj. Log each.
+  - Decisions: the deviations above; D1, D2, D18 in effect.
+  - Check: `T`, `pnpm exec tsx --test --test-concurrency=1 scripts/learn/python.dbtest.ts`, `L` (`requirements.txt` is a checker file: every lab re-proved, `checked/*.txt` unchanged), `P`, `H`, `HR`, `A`.
+- [ ] S2 · The Python block model (§2 without port; PY1, PY5, PY10, PY11 first)
+  - First [T]: `scripts/learn/blocks.test.ts` PY1 (no `# q:`/`# status:`, an unknown header, a bad `# timeout:`, no code, an unknown status: each names file and line) and PY5 (`# after:` takes an earlier ran Python block of the page or `py-connect`; unknown, later, self, other-engine and untested ids refused); `scripts/learn/privilege.test.ts` PY11 (a ran Python block setting `application_name`, written files included, is refused naming file and line; `learn_spatial` anywhere in a Python block is refused); `scripts/learn/result.test.ts` PY10 (`renderPython`: `-- result: <id> · python · sha256 <12>`, stdout less one final `\n`; `"a"` ≠ `"a\n"`).
+  - Code: `blocks.ts` (`.py` → `engine: "python"`, headers `q|status|after|timeout`, `timeoutS` default 60, `code` vs `text`, `PY_CONNECT_ID`, `lintPage(blocks, bootIds, helpers)`); `privilege.ts` (skips Python like Power BI, but refuses `learn_spatial` and `application_name`); `result.ts` `renderPython`; `course.ts` (`recordedResults` counts ran Python; `assembleCourse` passes the course's helpers; the "no block file" message names `.py`).
+  - No `.py` block file is committed yet (deviation 1).
+  - Check: `T`, `L` (checker closure changed), `P`, `H`, `A`.
+- [ ] S3 · The Python engine `scripts/learn/python.ts` (§3; PY0, PY2, PY3, PY7, PY8 first)
+  - First [T] `scripts/learn/python.test.ts` (offline, no database, `/usr/bin/python3.12`):
+    - PY0: the file checks `/usr/bin/python3.12` once; missing, it registers one failing test "/usr/bin/python3.12 is missing: the engine's process tests need it (so does pnpm learn:venv)" and no process test. Proof: a scratch edit of the path gives exactly that one failure; revert.
+    - PY2 (`-I`, empty cwd, code file outside it, own empty HOME, a planted `json.py` in cwd or beside the code not imported); PY3 (the exact environment, `PGAPPNAME` matching `^critwire-learn-check-py-[0-9a-f]{12}$` and seen by a child process, `MPLCONFIGDIR` outside cwd and HOME, no `GBIF_*`/`DATABASE_URL`/`LEARN_PG_URL`); PY7 (`pythonFailure`: non-zero exit quotes stderr's last 5 lines); PY8 (over `timeoutMs`: the group is SIGKILLed, `pgrep` finds no child, the temp folder is gone); the `blockCode` order (its `# after:` blocks in course page order, `py-connect` first, then its own).
+  - Code: `pythonEnv`, `blockCode`, `runPython` (`critwire-learn-py-*` temp with `code/`, `cwd/`, `home/`; `detached`; SIGKILL group on timeout, abort and close; `finally` removes it), `pythonFailure`. Not imported by learn:check yet.
+  - AGENTS.md: `pnpm test` = "offline, no database; the Python engine's process tests need `/usr/bin/python3.12`".
+  - Check: `T`, `H`.
+- [ ] S4 · One result path, boot blocks first, the lab-role guard (§4.1, §4.2, §4.3's `record.ts`; finding 3; PY6, PY9, BF1, V2, V3 first)
+  - First [T] `scripts/learn/record.test.ts` (temp `checkedDir`): PY6 (stdout ≠ recorded fails with a line diff; no recorded file says "run --update"), PY9 (with `update`, two runs that differ fail and nothing is written; agreeing runs write once every outcome passed). `scripts/learn/check.test.ts` BF1: a `--module <page>` run's blocks start with the course's ran boot blocks (page order) not on that page, then the page's; a boot block on the page isn't listed twice; a whole run's list is unchanged.
+  - First [D] `scripts/learn-check.dbtest.ts` V2 (a superuser lab connection is refused: "the labs run with a learner's privileges: run pnpm learn:check --setup"), V3 (a scratch `learn_t_` role with CREATE on `public`, the same).
+  - Code: `scripts/learn/record.ts` `settleResults` (compare, require agreement, write), moved from `runner.ts:577–617`; `runBlocks` uses it, PostGIS behaviour unchanged. `check.ts`: `staticStage` boot-first (BF1), a `--module` run prints the boot results; `assertLabRole` refuses superuser and CREATE on `public` (D7). 004 §7.6: the role guard.
+  - Check: `T`, `D` (runner and learn-check db tests unchanged otherwise), `L`, `P`, `H`, `A`.
+- [ ] S5 · The run id and Python session ownership (§3's `PGAPPNAME`, §4.4(b)'s query, §4.6; D17; PYC7, PYC8 first)
+  - First [D] `scripts/learn/py-runner.dbtest.ts` (new, under the lab lock), sessions opened with postgres.js `connection.application_name`:
+    - PYC7: idle lab-role sessions named this run's app in another database (`withScratchDatabase`), another run id in this database, and this run's app in this database: cleanup and the (b) query end and name only the third.
+    - PYC8: a lab-role session in this database named `critwire-learn-check-py-<other id>` when a run connects: the run refuses before any block, naming its pid and `select pg_terminate_backend(<pid>)`, and the lock is free afterwards.
+  - Code: `check.ts` makes the run id once (`randomBytes(6)`, app `critwire-learn-check-py-<hex>`); `takeLabLock(lab, db, {app})`; `cleanup.ts`: one helper matching `datname = current_database()`, `usename = current_user`, `application_name = <app>`, used by `release()` (after the recorded pids) and later by check (b); the straggler refusal at connect, after the lock. 004 §7.6: Python cleanup (the run id, this database only).
+  - Check: `T`, `D`, `L`, `H`, `A`.
+- [ ] S6 · The Python blocks stage (§4.2 venv check, §4.3, §4.4, §4.7; PY4, PYC1–PYC5, FR10–FR12 first)
+  - First [D]: `python.dbtest.ts` PY4 (no helper: `relation "species" does not exist`; through `py-connect`: `SHOW search_path` = `learn_curriculum,public`). `py-runner.dbtest.ts` PYC1–PYC5, plus PY7/PY8's "the run goes on" (a failing or timed-out fixture block, then a passing one: both reported, the second ran).
+  - First [T] `freshness.test.ts`: FR10 a ran Python block is stamped, and a missing stamp is stale ("lab <id> is stale"); FR11 its key moves with its own text, a transitive `# after:` block, `py-connect`, any boot block, `pg-session` and `requirements.txt`; FR12 it doesn't move for another page's non-boot block.
+  - Code: `scripts/learn/py-runner.ts` `runPythonBlock` with checks (a)–(d), the Python blocks after the PostGIS ones, outcomes through `settleResults` (D13); `LEARN_BASE=file://<abs dist>` (D6); one `MPLCONFIGDIR` per run; `staticStage` calls `assertVenv(LABS_REQUIREMENTS, "learn:check")` before connecting when the run has a Python block or `.py` download; `Versions` gains `python` and `requirements` (12 hex; recorded, never compared); freshness `isLab` and the §4.7 key. learn:check prints each Python block's id and wall time. 004 §7.6: the Python stage, `LEARN_BASE`. AGENTS.md: learn:check's Python stage, its venv and role checks.
+  - The course has no Python block yet: `L` runs an empty stage and stamps the new `versions`.
+  - Check: `T`, `D`, `L`, `H`, `A`.
+- [ ] S7 · Assembly: `.py`, `.ipynb`, `requirements.txt` (§5; AS11–AS17 first)
+  - First [T] `assemble.test.ts` AS11, AS12, AS14–AS17 and `notebook.test.ts` AS13 (= architecture AS1–AS7): AS11 adding Python blocks to a fixture page leaves its `.sql` byte-identical; AS12 the `.py` order, boot by a string naming `s4_cells` and not by a comment, untested commented out without its `after` blocks or boot; AS13 notebook code cells = `.py` segments, untested as Markdown, unique ids, same bytes twice; AS14 boot SQL with `"""` or `\` refused; AS15 only `py-connect` gives no `.py`; AS16 setup's names `pg-checks.sql`, `setup.py`, `setup.ipynb`; AS17 `pageDownloads` gives s4 `{sql, py, ipynb}`, one kind each.
+  - First [E] `e2e/learn-labs.spec.ts`: `/learn/labs/requirements.txt` returns 200 and equals `site/learn/labs/requirements.txt` (red: 404).
+  - Code: `assemble.ts` (`Download.kind`, `timeoutMs`, `pageDownloads`, `bootsNeeded` with the Python word test here and SQL's through `codeOnly` unchanged, `pythonCells`, the `.py` writer); `scripts/learn/notebook.ts` (nbformat 4.5, kernelspec `python3`, ids `<id>`/`<id>-md`, `source` as lines, `outputs: []`, `execution_count: null`, sorted keys, 1-space indent, final newline). `site.ts` `writeLearn` writes every kind and copies the labs `requirements.txt`; `learnPages` still gets the `sql` names until S9. Freshness stamps `sql` and `py` downloads; learn:check's downloads stage runs `sql` only until S8.
+  - Check: `T`, `L`, `E`, `H`, `HN` (`requirements.txt` new), `A`.
+- [ ] S8 · learn:check runs the `.py` downloads (§4.5; D14; PYC6 first)
+  - First [D] `py-runner.dbtest.ts` PYC6: a fixture `.py` download exiting non-zero midway is named with stderr's tail; the leak check still runs; `checked.json` isn't written.
+  - Code: `check.ts` downloads stage by `kind`: `py` on a fresh load (the loader, then `runPython` on the file from an empty folder, the block environment, limit = its blocks' timeouts + 60 s per boot block, exit 0), the leak check after each file; `ipynb` not run. 004 §7.6 (exit 0, as assembled). AGENTS.md learn:check line.
+  - Check: `T`, `D`, `L`, `H`, `A`.
+- [ ] S9 · Python on pages; `learn-labs` by kind (§7 without setup.html; §10's first two items; MH10–MH14 first)
+  - First [T] `scripts/build/learn/module-html.test.ts`: MH10 a Python block on a page without a `py` download throws naming the block; MH11 a Python block shows its code read-only with Copy and Lab schema, its recorded result, and links `<page>.py` and `<page>.ipynb`, while a PostGIS block on the same page links `<page>.sql`; MH12 the versions line appears once, before the page's first lab block of either engine, with `; Python <v> with requirements.txt sha256 <12>` only on pages with a Python block; MH13 a Python exercise slot renders Show answer around code and result; MH14 an untested Python block shows `Not run here: <reason>.`
+  - First [E] `e2e/learn-labs.spec.ts` reshaped by `Download.kind`: `sql` as today; `py`: each Python block's page code is its segment of the page's `.py`, its links point at that `.py` and `.ipynb`; `ipynb`: fetched and equal to `d.text`. The versions-line test covers pages with any lab block and expects the Python suffix where a page has one. Every download link on a page returns 200. With no Python block yet these branches iterate over nothing; S10 makes them real.
+  - Code: `module-html.ts` (`PageContext.downloads: {sql?, py?, ipynb?}`, the `python` branch, the versions line), `pages.ts` and `site.ts` pass `pageDownloads` (the page → name map goes). No edit under `site/learn/src/` (`A`).
+  - Check: `T`, `E`, `H`, `A`.
+- [ ] S10 · The setup page's Python: port, `py-connect`, `py-smoke` (§2's port; §7 setup.html; §10's new checks; PT10–PT12 first)
+  - First [T] `port.test.ts`: PT10 a `python` fence becomes `site/learn/sql/<id>.py` byte for byte and its result `site/learn/labs/checked/<id>.txt` without its final newline; PT11 a ran Python fence with no result after it is an error, an untested one needs none; PT12 a Python fence failing `parseBlock` (PY1) is an error naming 004's line.
+  - First [E] `learn-labs.spec.ts` (§10's new checks): an untested Python block is commented out under its reason in the `.py` and a Markdown cell, never code, in the `.ipynb`; every `.ipynb` code cell equals its `.py` segment, in order, with unique ids; each download naming `s4_cells` or `s4_neighbours` has `s4-cells` right after `pg-session` or `py-connect`; a Python block's shown result equals `checked/<id>.txt`; the setup test expects `#q-py-connect`, `#q-py-smoke` and links to `requirements.txt`, `setup.py`, `setup.ipynb`. Red until the code.
+  - Code: `port.ts` turns `python` fences into files and results (the skip goes; the setup sections stay §0, §3.1, §3.2, §3.5 until S14). `pnpm learn:port setup` writes `py-connect.py`, `py-smoke.py` and their results. `site/learn/pages/setup.html`: the Python section replaces the "in preparation" paragraph: 004 §3.3's uv commands (Windows, Linux and macOS), the environment, the ipykernel note, links to `/learn/labs/requirements.txt`, `setup.py`, `setup.ipynb`; `{{block:py-connect}}`, `{{block:py-smoke}}`; the tools table's Python row. 004 §0 (Python `# after:`, the course-wide helper, D4) and §7.5 (`site/learn/sql/<id>.py`, D3). AGENTS.md Learn files: `sql/<id>.py`; learn:port reads Python.
+  - Both results come from 004: `L` (not `--update`) must pass with them as recorded. Log the Python stage's time.
+  - Check: `T`, `P`, `L`, `E`, `H`, `HN`, `HR`, `A`.
+- [ ] S11 · The agreement gates (§6; D12; AG1–AG8 first)
+  - First [T] `scripts/learn/agree.test.ts` AG1–AG8, on result texts in §6's formats (`s4-agree`: `edge_m | n | pairs | I | E[I] | Var_norm | z_norm`; `s4-moran-sql` as 004 prints it; `s5-gistar`/`s5-gistar-pysal`; `s5-lisa-sql`/`s5-lisa` `cells`; `s6-zones`/`s6-geopandas` `eco_id | km2 | records`).
+  - Code: `scripts/learn/agree.ts` (pure); `check.ts` runs it over the run's rendered results after the Python stage and before `--update` writes; a failure names the pair and the value and fails the run ("fix the SQL, never the threshold"). The blocks S13, S17 and S18 add print in exactly these formats.
+  - No pair exists yet: every gate is skipped (AG8).
+  - Check: `T`, `L`, `H`, `A`.
+- [ ] S12 · s1 · bias
+  - Module step: `s1-basis`, `s1-dominance` (DuckDB, run by `learn-browser`), `s1-jaguar`, `s1-devil` (PostGIS), `s1-ex`. No Python. `f4.html`'s "s1, in preparation" links it.
+- [ ] S13 · s4 · moran, with `s4-agree` (§6, §8; the Moran gate)
+  - Module step: `s4-cells` (`-- boot`), `s4-geometry`, `s4-moran-sql`, `s4-moran-pysal`, `s4-permutations` (results as 004); new `s4-agree` (asserts the `DistanceBand(threshold=2·edge)` pairs equal `s4_neighbours` per grid, exit 1 naming the grid and 5 differing pairs; prints §6's row per grid with `repr(float)`); `s4-ex`.
+  - Concept: the band 2·e between the ring distances √3·e and 3·e; coincident points (`ST_DWithin` neighbours, not `DistanceBand` ones); 28 of 2,000 devil records in no 5 km cell; Pro's z is `z_rand`, not `z_norm`. Dialects: Pro's Spatial Autocorrelation tool and its parameters; the arcpy block is the setup page's (S14).
+  - Gate: the Moran gate passes on the 5000 and 10000 rows; log I, E[I], Var_norm, z per grid (Summary). The lab ERD stays unchanged: `pnpm erd` writes nothing, learn:check's ERD check passes after the first boot block.
+  - `s4-cells` enters every PostGIS key: the whole `LU` re-proves all labs (existing `checked/*.txt` unchanged). Measure `s4-permutations`.
+  - Downloads: `s4.sql` and `s4.py` carry `s4-cells` after `pg-session`/`py-connect` (E2E's boot check now real).
+- [ ] S14 · Setup: GeoPackage export and the arcpy notes (§7 setup.html; D5; PT13 first)
+  - First [T] `port.test.ts` PT13: setup's sections include `### 3.3 ` and `### 3.4 `: `gpkg-export` and `arcpy-moran` are setup files; §3.3's `text` fence (the requirements file) is neither a block nor an orphan result.
+  - Code: `port.ts` `SETUP_SECTIONS` + §3.3, §3.4; `pnpm learn:port setup` writes `gpkg-export.py`, `arcpy-moran.py`, `checked/gpkg-export.txt`. `setup.html`: the GeoPackage paragraph with `{{block:gpkg-export}}`, the arcpy notes as an `<h3>` under Python (the `<h2>` list E2E expects stays) with `{{block:arcpy-moran}}`. `setup.py` now carries `s4-cells` after `py-connect`; `arcpy-moran` is commented out under its reason in `setup.py` and a Markdown cell in `setup.ipynb`. 004 §7.3: `arcpy-moran` commented out in `setup.py`, not "in no download" (D5, same commit).
+  - `gpkg-export`'s result as 004 (`rows: 1094 records: 1972`).
+  - Check: `T`, `P`, `L`, `E`, `H`, `HN`, `HR`, `A`.
+- [ ] S15 · s2 · point-patterns
+  - Module step: `s2-quadrats`, `s2-nni`, `s2-dbscan`, `s2-kde` (Python), `s2-ex`.
+  - Finding 3's proof: `pnpm learn:check --module s2` passes and prints `s4-cells`' result once (Log).
+- [ ] S16 · s3 · weights
+  - Module step: `s3-contiguity`, `s3-knn`, `s3-countries`, `s3-islands`, `s3-pysal`, `s3-ex`. Teach the k-nearest ties as found: SQL ranks by distance rounded to 0.01 m, then id; PySAL's KDTree breaks the same 1,025 ties its own way. Islands and row standardization.
+- [ ] S17 · s5 · local, with `s5-lisa-sql` (§6, §8; the Gi\* and LISA gates)
+  - Module step: `s5-gistar`, `s5-gistar-pysal`, `s5-lisa` (results as 004); new `s5-lisa-sql` (PostGIS: cells per quadrant from z and the row-standardized lag: 185, 230, 557, 122); `s5-ex`.
+  - Concept: 99 hot spots, 39 after the false discovery rate, no cold spot; hot spots of recording effort, not of devils. Dialects: Pro's Hot Spot Analysis (Getis-Ord Gi\*) and Cluster and Outlier Analysis (Anselin Local Moran's I).
+  - Gates: Gi\* and LISA pass. Measure `s5-lisa` (999 permutations, `seed=2026`).
+- [ ] S18 · s6 · zonal (`s6-habitat` ran; the zonal gate)
+  - Module step: `s6-zones`, `s6-geopandas` (results as 004); `s6-habitat` from `untested: L3 builds occurrence_habitats` to `ran`, a new result (one row per class by `est_area_km2`; finding 9 expects Arable Land 16,108.04 km² with 236 records, ratio 1.21, and Marine Neritic 59 records, ratio 9.50: a different number is investigated before it's recorded); `s6-ex`.
+  - Text: 1 km cells, estimated areas (Jung v004), coastal records landing in marine classes, ratios as recording effort. `g7.html`'s "s6, in preparation" links it.
+  - Gate: zonal passes (records equal, km² within 1).
+- [ ] S19 · e1 · extract (review item 3, e1; D8)
+  - Module step, per §8's e1 row: `e1-request`; new `e1-fetch` (whole-file retry, fresh `.part` per attempt, 429/5xx/dropped connection with 1, 2, 4, 8 s waits, `Retry-After` up to a cap; prints nothing); `e1-checksum` after `e1-fetch` (result changes: 454,202 B, sha256 `35ca89f9bee3`, D8); new `e1-retry` (a local `http.server` thread: a cut body, a 429 with `Retry-After: 1`, then the file; prints attempts, never a port); new `e1-decide` (four canned cases in `decideDownload`'s shape); `e1-submit` stays `untested`, rewritten (intent file, `e1-decide`, `Retry-After`, a polling deadline, `e1-fetch`); `e1-ex`.
+  - The page and 004 say the same: persist the request identity and reconcile before resubmitting; retry the whole file; `Retry-After`; a polling deadline. `e1.py` comments `e1-submit` out; `e1.ipynb` makes it Markdown.
+  - Decisions: e1 correction done.
+- [ ] S20 · e2 · transform-load (review items 1 MF5 and 3, e2; D9)
+  - Module step, per §8's e2 row: `e2-file`, `e2-copy`; `e2-typed` with the comment and prose that its licence mapping is illustrative, not §4.2's effective-licence pipeline (result unchanged); `e2-geopandas` rewritten (`# after: py-connect`, `create_engine(…, creator=connect)`, `to_postgis(schema="learn_curriculum")`, reads `learn_curriculum.devil_buffers` and prints and asserts its `pg_class` namespace before the rollback; new result, D9); new `e2-copy-fails` (an extra field, a NUL byte, bad UTF-8: each COPY fails with its SQLSTATE and line number); new `e2-casts` (`pg_input_is_valid` before the typed insert, reporting gbifID, column and value); `e2-ex`.
+  - It runs as `critwire_lab` (S4's guard); the namespace check inside the open transaction is MF5's test. `d4.html`'s "The ETL track (in preparation)" links e2.
+  - Decisions: MF5 done; e2 correction done.
+- [ ] S21 · e3 · idempotent (review item 2, SC8 e3; D19)
+  - First: RF1–RF3 as `e3-snapshot`'s expected lines in 004, before the code (A loads; A skips; B loads; A loads, target A while the ledger rule leaves B; changed config loads; `TRANSFORM_VERSION` bumped loads; `SCHEMA_VERSION` bumped loads; A again skips), with a provisional hash.
+  - Module step, per §8's e3 row: `e3-pick` (DuckDB) and `e3-pick-pg` ordered by md5, then id (results unchanged); `e3-rerun` kept as the batch ledger (result unchanged); new `e3-snapshot` (four-part key as canonical JSON, one transaction per load, TEMP target and state); new `e3-membership` (PostGIS: the md5 cap repeats on the same input; a newly eligible low-hash id displaces a capped species' highest-hash record); `e3-ex`.
+  - Prose: deterministic output, idempotent batch application and "the target holds snapshot X" as three ideas; the case study's "stale means the request changed".
+  - Decisions: SC8 e3 done.
+- [ ] S22 · e4 · quality-provenance (review item 3, e4)
+  - Module step: `e4-checks` (unchanged), `e4-credits`, `e4-derived`; new `e4-quarantine` (PostGIS, made-up rows: negative, NaN and Infinity uncertainty; 0, 0 rejected as this dataset's rule; a year after the download; the report keeps key, check and value); `e4-ex`.
+  - Prose: the capped sample is neither abundance nor unbiased effort; 1,109 shared coordinates; devil records dated 1599.
+  - Decisions: e4 correction done.
+- [ ] S23 · e5 · schedule (review items 2, SC8 e5, and 3, e5; D11, D19)
+  - First: RF1, RF2, RF4–RF7 as `e5-runs`' expected lines in 004 (§8's eight cases, exit code and log line each), with a provisional hash.
+  - Module step, per §8's e5 row: `e5-job` kept, labelled a simulation in comments and prose, its docstring and Expected matching the redirect (result unchanged); new `e5-refresh` (writes `refresh.py`; PG\* settings checked by name, never logged; no `application_name`; `REFRESH_SCHEMA`, `REFRESH_LICENSES`; the four-part key; lock, compare, fetch, verify, stage and count, replace and upsert state, COMMIT; rollback and exit 1 on any error); new `e5-runs` (`learn_e5`, eight separate `python -I refresh.py` runs incl. two `Popen` at once, dropped in `finally`); `e5-ex`.
+  - Prose: bump `TRANSFORM_VERSION`/`SCHEMA_VERSION` when output/DDL change; with the redirect cron mails nothing; `refresh-failed.service` only writes the journal until its `ExecStart` sends mail or a push; cron, systemd timers and Windows Task Scheduler.
+  - Too big for one session: split as S23a (page built with `e5-job`, `e5-refresh`, `e5-runs`) and S23b (`e5-ex`, dialects), each leaving the page built.
+  - Decisions: SC8 e5 done; e5 correction done.
+- [ ] S24 · Diagram `e5-refresh` (§9; D15)
+  - First [E] `e2e/schema.spec.ts` `DIAGRAMS` + `e5-refresh` (red: no SVG).
+  - `site/learn/diagrams/e5-refresh{,-dark}.{html,svg}` (diagram-design, profile `critwire`, system fonts): lock → compare the key (input, transform, config, schema) → fetch → verify → stage and count → replace + state → COMMIT; an unchanged key or a held lock skips; a failure rolls back. Export with the plugin's `export_svg.py --system-fonts`, pass `self_check.py --offline`; `<title>` and `alt` state its point; `{{diagram:e5-refresh}}` in `e5.html`; 004 e5 names it.
+  - Check: `T`, `E`, `H`, `HN`, `A`.
+- [ ] S25 · Diagrams `s4-band` and `e2-load` (§9; dropped past 40 sessions, deviation 4)
+  - First [E] `schema.spec.ts` `DIAGRAMS` + both.
+  - As S24: `s4-band` (a hexagon's ring distances √3·e and 3·e, the 2·e band between them) in `s4.html`; `e2-load` (file → text staging → typed → checks → one COMMIT or ROLLBACK) in `e2.html`; 004 s4 and e2 name them.
+  - Check: `T`, `E`, `H`, `HN`, `A`.
+- [ ] S26 · E2E completion, screenshots and the release smoke test (§10)
+  - `e2e/learn-screens.spec.ts` `PAGES` + s4, s5, e2: `{s4,s5,e2}-{1280,375}-{light,dark}.png`.
+  - `e2e/learn-map.spec.ts`: Spatial statistics s1–s6 and ETL e1–e5 built, each linked from the map and its track page, returning 200.
+  - `learn-labs`: each §10 check runs on real blocks (s4 and setup with `s4-cells`; `e1-submit` and `arcpy-moran` untested in `.py` and `.ipynb`).
+  - `e2e/release/live.spec.ts` new test: under the lab lock (`takeLabLock`), the origin's loader into `LEARN_PG_URL`'s database (`critwire_dev`, as `critwire_lab`), then the origin's `/learn/labs/s4.py` through `runPython` in `.venv-learn` with `pythonEnv`: exit 0, and stdout holds, in page order, each s4 lesson block's recorded output (a ran Python block whose `# after:` is only `py-connect`: `checked/<id>.txt` after its `-- result:` line); the leak query is empty after. Dry run against a local Caddy on `e2e/Caddyfile` (`RELEASE_ORIGIN=http://127.0.0.1:3100`, as L3 S19 did).
+  - Audit: each DoD E2E item → its test name, listed in the Log; a gap gets its test here.
+  - Check: `T`; `E2E_ARTIFACTS=$M/e2e-s26 pnpm e2e` in full, nothing skipped; the release dry run passes; `H`, `HN`, `A`.
+- [ ] S27 · AGENTS.md, 004 final pass, DoD audit (§11, §12)
+  - AGENTS.md final pass (§11): Stack (the venv for labs, learn:check and the ingests; two requirements files; each command checks its own file's pins), Learn files (`sql/<id>.py`), Commands (learn:check's Python stage, venv and role checks; `pnpm test` wording), State (s1–s6, e1–e5 built; p, c planned, L5).
+  - 004: §0, §3.3, §5.4, §5.5, §7.3, §7.5, §7.6, §7.7 and §9's L4 row agree with the code.
+  - `docs/recovery.md`: L4 adds no state outside Git unless a step did (the run id and `MPLCONFIGDIR` are per-run temp; `.venv-learn` is rebuilt by `pnpm learn:venv`); document anything that was added.
+  - Audit:
+    - review items MF5, SC8 e3, SC8 e5, the e1/e2/e4/e5 corrections, SC7 (Python part) each `done (S<n>, <sha>)` or `rejected` with evidence under Decisions;
+    - every deviation from 004 under Decisions (D1, D3, D5, D6, D8, D9, D14, plus any a module step made);
+    - §12 by `H`, `HN`, `HR`, `A`; §1's venv checks (Verification 1, run here once);
+    - a gap becomes a new step before Verification.
+  - Check: `T`, `P`, `L`, `E`, `H`, `HN`, `HR`, `A`.
+
 ## Verification
+
+Run once, on the final commit (after any code-review fixes), on a clean tree, in this order. `M`, `B0`, `P`, `H`, `HN`, `HR` and `A` are as in Steps. Log each result; the numbers go to the Summary.
+
+Leak query, which must be empty: `psql -d critwire_dev -XAtc "select rolname from pg_roles where rolname like 'learn\_%' union all select nspname from pg_namespace where nspname like 'learn\_%' and nspname not in ('learn_spatial','learn_curriculum')"`.
+
+1. **Install and venv** (DoD's sync/check line, D1):
+   - `pnpm install --frozen-lockfile` is up to date; `uv --version` is 0.13.5.
+   - `pnpm learn:venv`, then `uv pip check --python .venv-learn`: clean.
+   - The labs file alone: `V=$(mktemp -d) && UV_PYTHON_DOWNLOADS=never uv venv --python /usr/bin/python3.12 $V/venv && uv pip sync --no-build --python $V/venv site/learn/labs/requirements.txt && uv pip check --python $V/venv` is clean, and `PY=$V/venv/bin/python pnpm exec tsx -e 'const v = await import("./scripts/venv.ts"); const p = v.venvProblems(await v.venvState(v.LABS_REQUIREMENTS, process.env.PY)); console.log(JSON.stringify(p)); if (p.length) process.exit(1)'` prints `[]`. Then `rm -rf $V`.
+   - Platforms (PyPI): S1's `uv pip compile --no-build` loop: Windows x86-64, Linux x86-64 and aarch64, macOS 14 arm64 exit 0; Intel macOS fails on pyproj.
+   - 004 §3.3's text fence equals `site/learn/labs/requirements.txt` (S1's `diff`, empty).
+2. **Build and cap:** plain `pnpm build` passes (fresh labs, DOIs current, habitat fresh, `/v1` contract, no stale SVG). `find dist/learn/data -type f -printf '%s\n' | awk '{s+=$1} END{print s}'` = 95,936,992, and the same sum over `data/raw/gbif-sample data/learn data/gbif-learn-sample` = 18,822,906 (Baseline; no data file added); each ≤ 120,000,000.
+3. **E2E (primary):** `rm -rf $M/e2e && pnpm build && E2E_ARTIFACTS=$M/e2e pnpm e2e`.
+   - Specs: `attribution`, `countries`, `docs`, `duckdb`, `files`, `learn-data`, `serving`, `learn-map`, `learn-browser`, `learn-labs`, `learn-screens`, `learn-timing`, `schema`.
+   - `jq .stats $M/e2e/results.json`: unexpected 0, skipped 0, flaky 0. `learn-labs` includes "every `.ipynb` code cell equals its `.py` segment".
+   - Artifact `$M/e2e/`: `playwright-report/index.html`; one `trace.zip` per test (`find $M/e2e/test-results -name trace.zip | wc -l` = `.stats.expected`); `results.json`, `setup-timing.json`, `caddy-access.log`; `{s4,s5,e2}-{1280,375}-{light,dark}.png` plus L1–L3's screenshots.
+   - Reproduce: `pnpm build && E2E_ARTIFACTS=<dir> pnpm e2e`.
+4. **Static and isolated tests:** `pnpm typecheck` (both tsconfigs); `pnpm test` (PY0–PY3, PY5, PY7, PY8, PY10, PY11, PY6/PY9, BF1, FR10–FR12, AS11–AS17, MH10–MH14, PT10–PT13, AG1–AG8, V1; each step's Log shows `red n → green n`); `pnpm test:db` (V1 probe, V2–V4, PY4, PYC1–PYC8). Then the leak query is empty.
+5. **learn:check:**
+   - `psql -d critwire_dev -XAtf db/learn/canary.sql > $M/canary-before.txt`.
+   - `pnpm learn:check` twice, each exit 0, as `critwire_lab`, each time:
+     - the loader stage;
+     - every ran PostGIS and Python block of every built page (setup, d1–d6, g1–g7, s1–s6, e1–e5) in check mode, `s6-habitat` included; `e2-geopandas` prints `learn_curriculum` as its table's namespace;
+     - the gates: Moran on the 5000 and 10000 rows (I, E[I], z to 6 decimals and within 5e-7; `s4-agree`'s neighbour-pair assert exit 0), Gi\*, LISA, zonal;
+     - every download: each `.sql` with exactly its announced `ERROR:` lines, each `.py` exit 0 on a fresh load with no `GBIF_*` in its environment.
+   - After both: `git status --porcelain` is empty (`checked.json` byte-identical: the same hashes twice), `diff $M/canary-before.txt <(psql -d critwire_dev -XAtf db/learn/canary.sql)` is empty, the leak query is empty. The printed versions (Python 3.12.3, the requirements sha256) equal `checked.json`'s.
+   - `pnpm learn:check --module s2` passes and prints `s4-cells`' result once (finding 3).
+   - Log both runs' wall times, the Python stage's, and the five slowest Python blocks (Summary: "the Python timings").
+6. **Results vs 004:**
+   - `P` reports 0 differences.
+   - `git diff $B0 -- plans/004-learn-curriculum.md | grep -E '^-.*-- result: '` lists only `e1-checksum` (D8) and `e2-geopandas` (D9), plus any change a Decision proves. Every other Baseline s, e and setup Python result keeps its sha256.
+   - `s6-habitat` is `ran`; `e1-submit` and `arcpy-moran` are `untested`; each of s1–s6 and e1–e5 has a ran `<id>-ex`.
+7. **ERDs:** `pnpm erd` writes nothing (`git status --porcelain site/learn/erd` is empty).
+8. **Existing files unchanged (§12):** `H`, `HN` and `HR` print nothing; `A` exits 0 (so `learn/assets/**` is the Baseline's, D20). `HR`'s allowed files are exactly §12's "changed on purpose" plus deviation 6's pages; any other needs a Decision.
+9. **Determinism:** `(cd dist && find . -type f -print0 | sort -z | xargs -0 sha256sum) > $M/dist-1.sha256`; plain `pnpm build`; the same into `$M/dist-2.sha256`; `diff` is empty.
+
+**Definition of done → proof:**
+
+| DoD item | Proved by |
+|---|---|
+| typecheck, test (engine failure cases first), plain build | 2, 4; S2–S11's Log `red n → green n` |
+| `uv pip sync --no-build` + `uv pip check` clean (both files; the labs file alone, D1) | 1 |
+| `pnpm e2e` in full, nothing skipped; every `.ipynb` cell equals its `.py` block | 3 |
+| Results: ran s/e blocks keep their sha256 (D8, D9 excepted); `s6-habitat` and the exercises `ran`; two runs, same hashes; leak query; canary | 5, 6 |
+| Moran: SQL = PySAL on I, E[I], z to 6 decimals on the 5 km grid; neighbour pairs equal | 5 (gate, `s4-agree`); S13's Log values |
+| Gi\* and LISA tested against esda | 5 (gates); S17 |
+| Existing files unchanged (pages excepted; `manifest.json` unchanged, no file added) | 8 |
+| Review items MF5, SC8 e3/e5, e1/e2/e4/e5 corrections, SC7 Python | 4 (PYC1–PYC8, PY11, V2, V3), 5 (`e2-geopandas`, `e3-snapshot`, `e5-runs`); Decisions with shas (S27) |
+| Artifacts and reproduction | 3 |
+| Release smoke | below |
+| Summary: shipped, pins, Python timings, deviations from 004, release record, notes for L5 | written after 1–9 |
+
+**Release smoke** (the Release unit, after `gh pr merge` and `deploy critwire`; `O=https://critwire.com`; `dist/` built from the merge commit):
+- `RELEASE_ORIGIN=$O E2E_ARTIFACTS=$M/release-smoke pnpm exec playwright test -c playwright.release.config.ts`, every test passing:
+  - every `dist/` file is served with dist's bytes, so every s and e page returns 200 at `/learn/spatial-statistics/<slug>/` and `/learn/etl/<slug>/`, and every `/learn/labs/*.{sql,py,ipynb}`;
+  - the `.wasm` types and f3's block;
+  - S26's test: `$O/learn/labs/s4.py`, after `$O`'s loader in `critwire_dev` as `critwire_lab`, runs in `.venv-learn`, exits 0 and prints s4's recorded lesson outputs; the leak query is empty after.
+- `curl -fsS $O/learn/labs/requirements.txt | cmp - site/learn/labs/requirements.txt` is silent.
+- `## Release` records the merge commit, `deploy`'s last line, these results and `$M/release-smoke/`.
+
+## Failure modes
+
+The isolated tests are the architecture's "Failure cases, written as tests before the code" (PY0–PY11, PYC1–PYC8, AS1–AS7 as AS11–AS17, AG1–AG8, V1–V4, RF1–RF7) plus the planner's BF1, FR10–FR12, MH10–MH14 and PT10–PT13, each in its step's **First** list. What a session does when the plan meets reality:
+- **A recorded result differs from 004** (`P` after `LU`, or a check run): outside D8, D9 and the new blocks it is a bug: the port, the `# after:` chain, the environment (`PGOPTIONS`, `LEARN_BASE`, HOME), a seed or a format. Never re-record to match. Only a proven change updates 004 and the file together, under Decisions. `py-smoke` moves only if the system Python's patch version moved (`checked.json`'s `python`): record it with the proof.
+- **SQL and PySAL disagree beyond 5e-7, or the neighbour pairs differ** (S13, S17): diff the neighbours, k, S0/S1/S2 and the mean; fix the SQL, never the threshold.
+- **A Python block nears or passes its timeout** (`s4-permutations`, `s5-lisa`): measure; `# timeout:` in 004 and the file together. Never fewer permutations, another seed, or numba.
+- **A pin has no wheel** (`--no-build` refuses), **or PyPI is unreachable** for the platform check: no source build, no system GDAL. Do the rest; re-run the check later in the session or in Verification. Still failing: a handoff item (`Blocks: Release`).
+- **learn:check refuses the venv** (`assertVenv`): `pnpm learn:venv`. A labs-only venv is valid (D18).
+- **learn:check refuses at connect, naming an earlier run's session** (PYC8): `pgrep -af learn-check`; if no learn:check runs, end it with the printed command; if one runs, wait for it.
+- **The lab role is refused** (superuser or CREATE on `public`, D7) **or `LEARN_PG_URL` is broken:** `pnpm learn:check --setup` as superuser, per AGENTS.md. Never `--reset-password` without `--env` for each checkout.
+- **Leak query not empty:** drop only this mission's lab-role objects, as cleanup names them. Anything else: a handoff item.
+- **`H`, `HN`, `HR` or `A` prints something:** find what changed it. A bundle input edit (`A`) is reverted: Python code lives outside the bundle. A needed change gets a Decision with its reason.
+- **A block would reach the network** (anything but `file://` under `dist/` and `127.0.0.1`): a bug. e-blocks read `LEARN_BASE` only; `e1-submit` stays `untested`; no GBIF download or registration.
+- **test:db or learn:check slows past a limit:** a test that fails only on time gets its measured time and its own limit raised, with a Decision. Never skip it.
+- **Session budget:** as in Steps' Estimate.
 
 ## Code review (Astra)
 
@@ -710,5 +961,6 @@ Architect, 2026-10-29, on `0d9c7a9`. Every MUST-FIX is resolved by a design chan
 - 2026-10-29 14:37 UTC: Fable review: APPROVE WITH CHANGES, 3 MUST-FIX (bundle inputs untouched + assets sha audit; venvState checks labs pins only; learn-labs.spec iterates by Download.kind), 4 missed, 5 should-consider. Doc-only; no checks needed.
 - 2026-10-29 14:38 UTC: Astra review: APPROVE_WITH_CHANGES, 3 MUST-FIX (venv pins checked per purpose; cleanup scoped to target db + unique run id; refresh identity incl. config), 3 should-consider. Doc-only; no checks needed.
 - 2026-10-29 14:52 UTC: Revision: architect resolved all 6 MUST-FIX (bundle inputs + assets audit, D20; per-file venv pins, D18; downloads by kind; cleanup by db + run-id PGAPPNAME, D17; refresh key incl. config, D19), 4 MISSED, SC per Revision notes. Doc-only; no checks needed.
+- 2026-10-29 15:12 UTC: Steps: planner wrote S1–S27 (tests-first ids per step, checks per step), Verification (E2E artifacts in mission state dir, DoD map, release smoke), Failure modes. Doc-only; no checks needed.
 
 ## Summary
