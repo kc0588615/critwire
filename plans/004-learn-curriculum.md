@@ -6122,7 +6122,7 @@ i | j | n | land_km2 | per_land_km2 | rank_by_n
 - **From cells to area.** A count of cells becomes an area once each cell has its ground area. On a longitude–latitude grid every cell in a row has the same area, so one geodesic area per row, `ST_Area(ST_PixelAsPolygon(rast, 1, row)::geography)`, times the row's count is exact for the grid. Cells × (100 m)² overstates by the cos φ shrink. Even exact for the grid, the result is an **estimate**: the map is a model's classification, and the outline picks cells by their centres.
 - **Two ways to summarise a country** (003 §5). **Method 1** counts the 100 m cells whose centre is inside the outline, each at its row's area. **Method 3**, which critwire publishes as `country_habitats`, reads the 1 km fractions instead (for each class, the per mille of each 1 km cell it covers) and sums fraction × cell area over the 1 km cells whose centre is inside. The two differ in the **border cells**: a 1 km cell the outline crosses counts whole or not at all, by its centre, so classes along a coast carry the largest errors.
 
-**Data:** `habitat_clips`, two windows of the 100 m map stored as in-database rasters of 836 × 836 cells: `cr`, longitude −84.20…−83.45 and latitude 9.85…10.60, from San José to the Caribbean lowlands; `tas`, 147.25…148.00 and −43.10…−42.35, south-east Tasmania with Hobart (4.1). Each window is the 0.75° square holding the most of the sample's records for its country: whole countries at 100 m would take about 70 MB (4.4). Also `habitat_classes`, `country_habitats` (method 3, every country), `occurrence_habitats` (each record's 1 km class), `country_shapes` and `occurrences`. The rasters are in the database, so no raster setting is needed: every block runs on a server's defaults.
+**Data:** `habitat_clips`, two windows of the 100 m map stored as in-database rasters of 836 × 836 cells: `cr`, longitude −84.20…−83.45 and latitude 9.85…10.60, from San José to the Caribbean lowlands; `tas`, 147.25…148.00 and −43.10…−42.35, south-east Tasmania with Hobart (4.1). Each window is the 0.75° square holding the most of the sample's records for its country: whole countries at 100 m would take about 70 MB (4.4). Also `habitat_classes`, `country_habitats` (method 3, every country), `occurrence_habitats` (each record's 1 km class), `country_shapes` and `occurrences`. Each block names its window in `win` and builds it as one raster in `w`: `ST_Clip` cuts each stored tile to the window and `ST_Union` mosaics the pieces (ArcGIS Pro's Clip Raster, then Mosaic), and `MATERIALIZED` makes PostgreSQL build it once per query. The rasters are in the database, so no raster setting is needed: every block runs on a server's defaults.
 
 **Worked example:** each window's georeference from `ST_MetaData`, one cell per row built from it, and the cells' size and area on the ground against the map's 100 m:
 
@@ -6131,9 +6131,16 @@ i | j | n | land_km2 | per_land_km2 | rank_by_n
 -- status: ran
 -- engine: postgis
 -- needs: raster
-WITH meta AS (
-  SELECT h.clip, m.*
-  FROM habitat_clips AS h CROSS JOIN LATERAL ST_MetaData(h.rast) AS m
+WITH win (clip, env) AS (
+  VALUES ('cr', ST_MakeEnvelope(-84.2009, 9.8491, -83.4499, 10.6001, 4326)),
+         ('tas', ST_MakeEnvelope(147.2491, -43.1003, 148.0001, -42.3493, 4326))
+), w AS MATERIALIZED (
+  SELECT h.clip, ST_Union(ST_Clip(h.rast, win.env)) AS rast
+  FROM habitat_clips AS h JOIN win ON win.clip = h.clip AND ST_Intersects(h.rast, win.env)
+  GROUP BY h.clip
+), meta AS (
+  SELECT w.clip, m.*
+  FROM w CROSS JOIN LATERAL ST_MetaData(w.rast) AS m
 ), cell_rows AS (
   SELECT clip, width, r.row = height / 2 AS is_mid,
          ST_MakeEnvelope(upperleftx, upperlefty + r.row * scaley,
@@ -6167,19 +6174,25 @@ Both windows hold 698,896 cells: 6,989.0 km² if every cell were 100 m by 100 m.
 
 **Lab:**
 
-1. The class under each record in the Costa Rica window: `ST_Intersects` keeps the records on the raster, and `ST_Value` reads the cell under each:
+1. The class under each record in the Costa Rica window: `win` and `w` build the window, as in every block here, `ST_Intersects` keeps the records on it, and `ST_Value` reads the cell under each:
 
 ```sql
 -- q: g7-records
 -- status: ran
 -- engine: postgis
 -- needs: raster
+WITH win (clip, env) AS (
+  VALUES ('cr', ST_MakeEnvelope(-84.2009, 9.8491, -83.4499, 10.6001, 4326))
+), w AS MATERIALIZED (
+  SELECT h.clip, ST_Union(ST_Clip(h.rast, win.env)) AS rast
+  FROM habitat_clips AS h JOIN win ON win.clip = h.clip AND ST_Intersects(h.rast, win.env)
+  GROUP BY h.clip
+)
 SELECT v.habitat_code, c.name, count(*) AS records
-FROM habitat_clips AS h
-JOIN occurrences AS o ON ST_Intersects(h.rast, o.geom)
-CROSS JOIN LATERAL (SELECT ST_Value(h.rast, 1, o.geom)::integer AS habitat_code) AS v
+FROM w
+JOIN occurrences AS o ON ST_Intersects(w.rast, o.geom)
+CROSS JOIN LATERAL (SELECT ST_Value(w.rast, 1, o.geom)::integer AS habitat_code) AS v
 LEFT JOIN habitat_classes AS c ON c.code = v.habitat_code
-WHERE h.clip = 'cr'
 GROUP BY v.habitat_code, c.name
 ORDER BY records DESC, v.habitat_code NULLS LAST;
 ```
@@ -6204,11 +6217,17 @@ All 202 records in the window have a class: the window has no nodata cells. 87 a
 -- status: ran
 -- engine: postgis
 -- needs: raster
+WITH win (clip, env) AS (
+  VALUES ('cr', ST_MakeEnvelope(-84.2009, 9.8491, -83.4499, 10.6001, 4326))
+), w AS MATERIALIZED (
+  SELECT h.clip, ST_Union(ST_Clip(h.rast, win.env)) AS rast
+  FROM habitat_clips AS h JOIN win ON win.clip = h.clip AND ST_Intersects(h.rast, win.env)
+  GROUP BY h.clip
+)
 SELECT vc.value::integer AS habitat_code, vc.count AS cells
-FROM habitat_clips AS h
+FROM w
 JOIN country_shapes AS cs ON cs.country_code = 'CR'
-CROSS JOIN LATERAL ST_ValueCount(ST_Clip(h.rast, cs.geom), 1) AS vc
-WHERE h.clip = 'cr'
+CROSS JOIN LATERAL ST_ValueCount(ST_Clip(w.rast, cs.geom), 1) AS vc
 ORDER BY cells DESC, habitat_code;
 ```
 
@@ -6232,20 +6251,24 @@ habitat_code | cells
 -- status: ran
 -- engine: postgis
 -- needs: raster
-WITH cells AS (
+WITH win (clip, env) AS (
+  VALUES ('cr', ST_MakeEnvelope(-84.2009, 9.8491, -83.4499, 10.6001, 4326))
+), w AS MATERIALIZED (
+  SELECT h.clip, ST_Union(ST_Clip(h.rast, win.env)) AS rast
+  FROM habitat_clips AS h JOIN win ON win.clip = h.clip AND ST_Intersects(h.rast, win.env)
+  GROUP BY h.clip
+), cells AS (
   SELECT p.val::integer AS habitat_code, p.y AS row
-  FROM habitat_clips AS h
+  FROM w
   JOIN country_shapes AS cs ON cs.country_code = 'CR'
-  CROSS JOIN LATERAL ST_PixelAsCentroids(ST_Clip(h.rast, cs.geom), 1) AS p
-  WHERE h.clip = 'cr'
+  CROSS JOIN LATERAL ST_PixelAsCentroids(ST_Clip(w.rast, cs.geom), 1) AS p
 ), by_row AS (
   SELECT habitat_code, row, count(*) AS cells
   FROM cells
   GROUP BY habitat_code, row
 ), row_area AS MATERIALIZED (
-  SELECT r.row, ST_Area(ST_PixelAsPolygon(h.rast, 1, r.row)::geography) / 1e6 AS cell_km2
-  FROM habitat_clips AS h, (SELECT DISTINCT row FROM by_row) AS r
-  WHERE h.clip = 'cr'
+  SELECT r.row, ST_Area(ST_PixelAsPolygon(w.rast, 1, r.row)::geography) / 1e6 AS cell_km2
+  FROM w, (SELECT DISTINCT row FROM by_row) AS r
 ), est AS (
   SELECT b.habitat_code, sum(b.cells) AS cells, sum(b.cells * ra.cell_km2) AS est_km2
   FROM by_row AS b JOIN row_area AS ra USING (row)
@@ -6280,19 +6303,27 @@ The window's land inside the outline is an estimated 6,785.90 km², from 836 are
 -- status: ran
 -- engine: postgis
 -- needs: raster
-WITH grid (x0, y0, d) AS (
+WITH win (clip, env) AS (
+  VALUES ('cr', ST_MakeEnvelope(-84.2009, 9.8491, -83.4499, 10.6001, 4326)),
+         ('tas', ST_MakeEnvelope(147.2491, -43.1003, 148.0001, -42.3493, 4326))
+), w AS MATERIALIZED (
+  SELECT h.clip, ST_Union(ST_Clip(h.rast, win.env)) AS rast
+  FROM habitat_clips AS h JOIN win ON win.clip = h.clip AND ST_Intersects(h.rast, win.env)
+  GROUP BY h.clip
+), grid (x0, y0, d) AS (
   VALUES (-180.0099155291168, 90.00297126602864, 0.009915667822884942)
 ), recs AS (
-  SELECT h.clip, h.rast, ST_Value(h.rast, 1, o.geom)::integer AS class_100m, oh.habitat_code AS class_1km,
+  SELECT w.clip, w.rast, ST_Value(w.rast, 1, o.geom)::integer AS class_100m, oh.habitat_code AS class_1km,
          ST_MakeEnvelope(g.x0 + k.col * g.d, g.y0 - (k.row + 1) * g.d, g.x0 + (k.col + 1) * g.d, g.y0 - k.row * g.d, 4326) AS cell_1km
-  FROM habitat_clips AS h
-  JOIN occurrences AS o ON ST_Intersects(h.rast, o.geom)
+  FROM w
+  JOIN occurrences AS o ON ST_Intersects(w.rast, o.geom)
   JOIN occurrence_habitats AS oh ON oh.occurrence_id = o.id
   CROSS JOIN grid AS g
   CROSS JOIN LATERAL (SELECT floor((ST_X(o.geom) - g.x0) / g.d) AS col, floor((g.y0 - ST_Y(o.geom)) / g.d) AS row) AS k
-), majority AS (
-  SELECT r.*, (SELECT vc.value::integer FROM ST_ValueCount(ST_Clip(r.rast, r.cell_1km), 1) AS vc
-               ORDER BY vc.count DESC, vc.value LIMIT 1) AS most_100m
+), majority AS MATERIALIZED (
+  SELECT r.clip, r.class_100m, r.class_1km,
+         (SELECT vc.value::integer FROM ST_ValueCount(ST_Clip(r.rast, r.cell_1km), 1) AS vc
+          ORDER BY vc.count DESC, vc.value LIMIT 1) AS most_100m
   FROM recs AS r
 )
 SELECT clip, count(*) AS records,
@@ -6368,30 +6399,35 @@ Over all 247 outlines the estimate is 0.999074 of the outlines' area (−0.09 %)
 -- status: ran
 -- engine: postgis
 -- needs: raster
-WITH grid (x0, y0, d) AS (
+WITH win (clip, env) AS (
+  VALUES ('tas', ST_MakeEnvelope(147.2491, -43.1003, 148.0001, -42.3493, 4326))
+), w AS MATERIALIZED (
+  SELECT h.clip, ST_Union(ST_Clip(h.rast, win.env)) AS rast
+  FROM habitat_clips AS h JOIN win ON win.clip = h.clip AND ST_Intersects(h.rast, win.env)
+  GROUP BY h.clip
+), grid (x0, y0, d) AS (
   VALUES (-180.0099155291168, 90.00297126602864, 0.009915667822884942)
-), win AS (
-  SELECT h.rast, cs.geom AS outline
-  FROM habitat_clips AS h JOIN country_shapes AS cs ON cs.country_code = 'AU'
-  WHERE h.clip = 'tas'
+), au AS (
+  SELECT geom AS outline FROM country_shapes WHERE country_code = 'AU'
 ), px AS (
   SELECT p.val::integer AS habitat_code, p.y AS row_100m,
          floor((ST_X(p.geom) - g.x0) / g.d)::integer AS col_1km, floor((g.y0 - ST_Y(p.geom)) / g.d)::integer AS row_1km,
-         ST_Intersects(w.outline, p.geom) AS inside
-  FROM win AS w, grid AS g, ST_PixelAsCentroids(w.rast, 1) AS p
+         ST_Intersects(au.outline, p.geom) AS inside
+  FROM w, au, grid AS g, ST_PixelAsCentroids(w.rast, 1) AS p
 ), area_100m AS MATERIALIZED (
   SELECT r.row_100m, ST_Area(ST_PixelAsPolygon(w.rast, 1, r.row_100m)::geography) / 1e6 AS km2
-  FROM win AS w, (SELECT DISTINCT row_100m FROM px) AS r
+  FROM w, (SELECT DISTINCT row_100m FROM px) AS r
 ), cells_1km AS MATERIALIZED (
   SELECT k.col_1km, k.row_1km, ST_Area(k.cell::geography) / 1e6 AS km2,
-         ST_Intersects(w.outline, ST_Centroid(k.cell)) AS centre_inside,
+         ST_Intersects(au.outline, ST_Centroid(k.cell)) AS centre_inside,
          ST_Covers(ST_Envelope(w.rast), k.cell) AS whole
   FROM (SELECT DISTINCT col_1km, row_1km FROM px) AS c
   CROSS JOIN grid AS g
   CROSS JOIN LATERAL (SELECT c.col_1km, c.row_1km,
                              ST_MakeEnvelope(g.x0 + c.col_1km * g.d, g.y0 - (c.row_1km + 1) * g.d,
                                              g.x0 + (c.col_1km + 1) * g.d, g.y0 - c.row_1km * g.d, 4326) AS cell) AS k
-  CROSS JOIN win AS w
+  CROSS JOIN w
+  CROSS JOIN au
 ), counted AS (
   SELECT px.*, count(*) OVER w AS n_1km, count(*) FILTER (WHERE px.inside) OVER w AS n_inside,
          k.km2 AS km2_1km, k.centre_inside, a.km2 AS km2_100m

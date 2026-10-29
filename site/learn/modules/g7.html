@@ -13,7 +13,7 @@
 </ul>
 
 <h2>Data</h2>
-<p><code>habitat_clips</code>, two windows of the 100 m map stored as in-database rasters of 836 × 836 cells: <code>cr</code>, longitude −84.20…−83.45 and latitude 9.85…10.60, from San José to the Caribbean lowlands; <code>tas</code>, 147.25…148.00 and −43.10…−42.35, south-east Tasmania with Hobart (<a href="/learn/data/">the lab data</a>). Each window is the 0.75° square holding the most of the sample's records for its country: whole countries at 100 m would take about 70 MB. Also <code>habitat_classes</code>, <code>country_habitats</code> (method 3, every country), <code>occurrence_habitats</code> (each record's 1 km class), <code>country_shapes</code> and <code>occurrences</code>. The rasters are in the database, so no raster setting is needed: every block runs on a server's defaults.</p>
+<p><code>habitat_clips</code>, two windows of the 100 m map stored as in-database rasters of 836 × 836 cells: <code>cr</code>, longitude −84.20…−83.45 and latitude 9.85…10.60, from San José to the Caribbean lowlands; <code>tas</code>, 147.25…148.00 and −43.10…−42.35, south-east Tasmania with Hobart (<a href="/learn/data/">the lab data</a>). Each window is the 0.75° square holding the most of the sample's records for its country: whole countries at 100 m would take about 70 MB. Also <code>habitat_classes</code>, <code>country_habitats</code> (method 3, every country), <code>occurrence_habitats</code> (each record's 1 km class), <code>country_shapes</code> and <code>occurrences</code>. Each block names its window in <code>win</code> and builds it as one raster in <code>w</code>: <code>ST_Clip</code> cuts each stored tile to the window and <code>ST_Union</code> mosaics the pieces (ArcGIS Pro's Clip Raster, then Mosaic), and <code>MATERIALIZED</code> makes PostgreSQL build it once per query. The rasters are in the database, so no raster setting is needed: every block runs on a server's defaults.</p>
 
 <h2>Worked example</h2>
 <p>Each window's georeference from <code>ST_MetaData</code>, one cell per row built from it, and the cells' size and area on the ground against the map's 100 m:</p>
@@ -22,7 +22,7 @@
 
 <h2>Lab</h2>
 <ol>
-<li><p>The class under each record in the Costa Rica window: <code>ST_Intersects</code> keeps the records on the raster, and <code>ST_Value</code> reads the cell under each:</p>
+<li><p>The class under each record in the Costa Rica window: <code>win</code> and <code>w</code> build the window, as in every block here, <code>ST_Intersects</code> keeps the records on it, and <code>ST_Value</code> reads the cell under each:</p>
 {{block:g7-records}}
 <p>All 202 records in the window have a class: the window has no nodata cells. 87 are on moist montane forest, 30 on moist lowland forest, 23 on high-altitude shrubland, and 21 on small freshwater marshes, a class with 0.1 % of the window's land (step 3). Arable land, over a third of the cells, holds 13. Records gather where people go to look, so these counts describe the recording as much as the animals; Zonal statistics (s6, in preparation) compares records with the classes' areas.</p></li>
 <li><p>The cells inside Costa Rica's outline, by class, as <code>ST_ValueCount</code> gives them:</p>

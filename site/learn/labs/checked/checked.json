@@ -444,27 +444,27 @@
       "result": "d79fdcc41a6c4e5b84b68823b925fc95ba8f0754ef34e0e416d9af575fb4fd73"
     },
     "g7-estimate": {
-      "key": "e7a81a62463c2356aa1daa88befa52d2419a571dbb5a98e16edb39b34a95fa2a",
+      "key": "c7d1bbd3052bb243a0423c0688b5a3fa02865912349f4bc3b35759dde95b26a0",
       "result": "dea5a665443080edb557523cdb9936193a25ea996ccd88a64ccc06bfd16b2686"
     },
     "g7-ex": {
-      "key": "5e535ac169098d584609547924576ffcb7e64f8dd758117b74416aa469c4416c",
+      "key": "79037b93a475bd71ae650b3efa5c5923295e5ec0c1f816dc04edf8510efc5629",
       "result": "3a9f7e4cf7e59870ab6f45d97627ef951ad229cc376574bcaac2e3b5dabb4162"
     },
     "g7-latitude": {
-      "key": "4a2b571c4d0e08c20898cb4fe38492022ab9bd3f1721a95930d589f4d3671806",
+      "key": "3c1447e1efbdeada6ff85aa9ab9b5a3436a3742df4c0e0108cae825ed0202ec4",
       "result": "ee4a06362d418beea2bb0af30495f26080252916591ae80150a19d0a8877d063"
     },
     "g7-records": {
-      "key": "c037767242c0c3c4f4515e867fd5071746b2eb38490ea035de8aa22b4ad2b39c",
+      "key": "3a90f03ac82ec3975c51dc7677f7ff3aaa00d4ca07808263181319b57faa0777",
       "result": "16e1c6980a027ab1a3e7dec3e9540008a3380d295b854dce14ee5f6f2859b448"
     },
     "g7-scale": {
-      "key": "bf604a3bb41a581d3e8d0ceeef2fa88b75a931e678bb87736f38bfcda4d190e8",
+      "key": "538c4ace8fd32038c9170b84acc9836187fc3fa6220ad6e793121f049f23504c",
       "result": "f379ab579d4c0e9a7c05af07c8346a82dbe89369c71c569de5eb5e080a36c297"
     },
     "g7-valuecount": {
-      "key": "043b43cdb9040160a217413e477703b35f76583d833bea87a6ed4a7ec295d939",
+      "key": "2c0d8e2c72450f402e0f2a50f9247a078fbda6867bc3b9981717536efdff9741",
       "result": "ef9d362d229ef63beeb31963b7bb3cfd1f47ad21a592e1f64aa7825e35e5f8f3"
     },
     "pg-role-smoke": {
@@ -496,7 +496,7 @@
     "g4.sql": "69dea62101a6c778cf0b5f62dcf63070acf2486031f1b10b5dfa06cc2a896355",
     "g5.sql": "ca0b779d86948aa7ba59b7c9da62c17bfecf5cd6fc0af82bd2935adc91e33f46",
     "g6.sql": "528edf22a48338fdf5e8792bfd1717196d107e4f805b1223b79d61dce9a4f3c1",
-    "g7.sql": "1a86f779ad9bc378037402e85775b04c8304704a435483fb5c2b5ae57eb87151",
+    "g7.sql": "0d31c184d2ce045ba07ca4796127a12538bac661599ca2b2b5a0352e10244bd4",
     "pg-checks.sql": "348691fbefd3b6c0400e7edfd3a3aaf4f767b186c1a6bcbe2f2ad021cb5607fd"
   },
   "labErd": "fda5ad764ce87eac9f422339254ccfbc46a6a932d8cee00a2a50df5e9502820c"

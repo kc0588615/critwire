@@ -2,9 +2,16 @@
 -- status: ran
 -- engine: postgis
 -- needs: raster
-WITH meta AS (
-  SELECT h.clip, m.*
-  FROM habitat_clips AS h CROSS JOIN LATERAL ST_MetaData(h.rast) AS m
+WITH win (clip, env) AS (
+  VALUES ('cr', ST_MakeEnvelope(-84.2009, 9.8491, -83.4499, 10.6001, 4326)),
+         ('tas', ST_MakeEnvelope(147.2491, -43.1003, 148.0001, -42.3493, 4326))
+), w AS MATERIALIZED (
+  SELECT h.clip, ST_Union(ST_Clip(h.rast, win.env)) AS rast
+  FROM habitat_clips AS h JOIN win ON win.clip = h.clip AND ST_Intersects(h.rast, win.env)
+  GROUP BY h.clip
+), meta AS (
+  SELECT w.clip, m.*
+  FROM w CROSS JOIN LATERAL ST_MetaData(w.rast) AS m
 ), cell_rows AS (
   SELECT clip, width, r.row = height / 2 AS is_mid,
          ST_MakeEnvelope(upperleftx, upperlefty + r.row * scaley,
