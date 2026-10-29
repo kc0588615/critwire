@@ -1,0 +1,4 @@
+-- result: g7-scale · 2 rows · sha256 9b2b84c68936
+clip | records | same_at_record | same_as_majority | record_in_majority
+cr | 202 | 49 | 201 | 50
+tas | 601 | 332 | 579 | 347

@@ -827,6 +827,7 @@ Notes on the habitat files (`data/learn/habitat.json`, written by L3's `pnpm ing
   - `cr`: longitude −84.20…−83.45, latitude 9.85…10.60, from San José to the Caribbean lowlands; 202 records, all inside CR's outline. 20 classes; the largest are arable land 36.2 % of cells, subtropical/tropical moist montane forest 25.5 % and moist lowland forest 14.7 %.
   - `tas`: longitude 147.25…148.00, latitude −43.10…−42.35, south-east Tasmania with Hobart; 601 records, 491 of them inside AU's 1:50m outline (the rest are on coasts it simplifies). 16 classes; the largest are temperate forest 31.8 %, pastureland 22.1 %, temperate shrubland 15.9 % and marine neritic 15.5 %.
   - The `.tif` files are cloud-optimized GeoTIFFs (DEFLATE, predictor 2, 256-pixel blocks, nearest-neighbour overviews) for desktop GIS; `habitat_clips.parquet` holds the same cells as PostGIS raster WKB (16-bit unsigned, nodata 0), which the loader turns into in-database rasters.
+- **Measured in g7** (L3, on the published files): per country, method 3's sum against the outline's geodesic area is within 1 % for 215 of 247 countries, every outline over 431 km² among them; 21 more are within 5 %, 8 within 20 % (all under 135 km²), and 3 beyond: VA (no cell), TV +28.9 %, TK −28.6 % (`g7-countries`). In the `cr` window 693,893 cells have their centre inside CR's outline, an estimated 6,785.90 km² (map area 2.3 % more); a cell covers 9,768–9,790 m² there and 7,298–7,386 m² in `tas` (`g7-latitude`, `g7-estimate`). A record's 100 m class equals its 1 km class for 49 of 202 (`cr`) and 332 of 601 (`tas`) records; the 1 km class is the 100 m majority of its cell for 201 and 579 (`g7-scale`). Method 3 against method 1 in the `tas` window inside AU's outline: −0.2 % in total, −1.1 to −2.8 % for coastal classes (`g7-ex`).
 - **Freshness.** `habitat.json` records `country_shapes.parquet`'s sha256 and the sha256 of the records the ingest read (`id,longitude,latitude`); the build refuses the habitat files when either differs from what it publishes ("run pnpm ingest habitat"). A species change therefore re-runs this ingest too (about 12 minutes, 3.2 GB of downloads, deleted after).
 
 **How each is built.** One command per step, in the order critwire's ingests already use (ingest → derive → build; `AGENTS.md`):
@@ -6113,67 +6114,320 @@ i | j | n | land_km2 | per_land_km2 | rank_by_n
 
 **Tool:** PG · **Time:** 2.5 h · **Prereqs:** g6
 
-**Goal:** read a raster: the value under a point (`ST_Value`), the cells inside a polygon (`ST_Clip`, which keeps a cell when its centre is inside), and their counts by value (`ST_ValueCount`); then turn counts of cells into an **estimated** area. The habitat map (Jung et al. 2020, v004, CC BY 4.0; 003 §5) gives each cell of about 100 m a class of the IUCN habitat classification scheme, written as a number (`106` is class 1.6, "Forest – Subtropical/tropical moist lowland"). Its grid is Web Mercator, so a cell 103.02 m wide on the map is 103.02 × cos(latitude) m on the ground (g1): a count of cells is not an area until each cell is corrected (003 §4, spatial lessons 5–7). The result is still an estimate from a classified map, never a measurement.
+**Concept:** How to read a raster in SQL, and how to turn its cells into an area you can defend:
+- **A raster** is a grid of cells, each holding a number. Six numbers place it on the Earth, its georeference: the x and y of its upper-left corner, the cell's width and height (the height negative, since rows run south), and two skews (0 here). With the SRID they say where every cell is; `ST_MetaData` returns them. In PostGIS a raster is a value of type `raster` in a column. It can hold its cells in the database, as here, or point at a file outside it (out-db), which needs two settings and GDAL drivers a server doesn't enable by default.
+- **The habitat map** (Jung et al. 2020, v004, CC BY 4.0; 003 §5) gives each cell a class of the IUCN habitat classification scheme, written as a number: `106` is class 1.6, "Forest – Subtropical/tropical moist lowland", and `1401` is 14.1, "Arable land". The 100 m map's grid is longitude–latitude, SRID 4326, with cells 0.0008983152841195215° on a side: 100 m at the equator, narrower east–west by cos φ away from it (g1). It isn't Web Mercator, and no cell is 100 m by 100 m except on the equator.
+- **The value under a point:** `ST_Value(rast, band, point)` returns the value of the cell holding the point, and `ST_Intersects(rast, point)` says whether the point is on the raster at all (ArcGIS Pro's Extract Values to Points).
+- **The cells inside a polygon:** `ST_Clip(rast, polygon)` keeps the cells whose centre is inside the polygon and sets the rest to nodata (Extract by Mask). `ST_ValueCount` counts cells by value, leaving nodata out (Tabulate Area, in cells). `ST_PixelAsCentroids` returns each cell as a row: its value, column `x`, row `y` and centre point, so SQL can do the rest.
+- **From cells to area.** A count of cells becomes an area once each cell has its ground area. On a longitude–latitude grid every cell in a row has the same area, so one geodesic area per row, `ST_Area(ST_PixelAsPolygon(rast, 1, row)::geography)`, times the row's count is exact for the grid. Cells × (100 m)² overstates by the cos φ shrink. Even exact for the grid, the result is an **estimate**: the map is a model's classification, and the outline picks cells by their centres.
+- **Two ways to summarise a country** (003 §5). **Method 1** counts the 100 m cells whose centre is inside the outline, each at its row's area. **Method 3**, which critwire publishes as `country_habitats`, reads the 1 km fractions instead (for each class, the per mille of each 1 km cell it covers) and sums fraction × cell area over the 1 km cells whose centre is inside. The two differ in the **border cells**: a 1 km cell the outline crosses counts whole or not at all, by its centre, so classes along a coast carry the largest errors.
 
-**Data:** `habitat_clips` (clips of the map for Costa Rica, `cr`, and Tasmania, `tas`, stored in the database), `habitat_classes`, `country_shapes`, `occurrences`. L3 adds the clips (§4.1, §9), so until then these blocks can't run. The clips are stored in the database, not read from a file, so no raster setting is needed: 003's `pg-once` grants were for reading the whole map out-db, which the labs don't do.
+**Data:** `habitat_clips`, two windows of the 100 m map stored as in-database rasters of 836 × 836 cells: `cr`, longitude −84.20…−83.45 and latitude 9.85…10.60, from San José to the Caribbean lowlands; `tas`, 147.25…148.00 and −43.10…−42.35, south-east Tasmania with Hobart (4.1). Each window is the 0.75° square holding the most of the sample's records for its country: whole countries at 100 m would take about 70 MB (4.4). Also `habitat_classes`, `country_habitats` (method 3, every country), `occurrence_habitats` (each record's 1 km class), `country_shapes` and `occurrences`. The rasters are in the database, so no raster setting is needed: every block runs on a server's defaults.
 
-**Key code:** the class under each of Costa Rica's records:
+**Worked example:** each window's georeference from `ST_MetaData`, one cell per row built from it, and the cells' size and area on the ground against the map's 100 m:
+
+```sql
+-- q: g7-latitude
+-- status: ran
+-- engine: postgis
+-- needs: raster
+WITH meta AS (
+  SELECT h.clip, m.*
+  FROM habitat_clips AS h CROSS JOIN LATERAL ST_MetaData(h.rast) AS m
+), cell_rows AS (
+  SELECT clip, width, r.row = height / 2 AS is_mid,
+         ST_MakeEnvelope(upperleftx, upperlefty + r.row * scaley,
+                         upperleftx + scalex, upperlefty + (r.row - 1) * scaley, srid) AS cell
+  FROM meta CROSS JOIN generate_series(1, height) AS r (row)
+), mid AS (
+  SELECT clip, ST_XMin(cell) AS x0, ST_XMax(cell) AS x1, ST_YMin(cell) AS y0, ST_YMax(cell) AS y1
+  FROM cell_rows WHERE is_mid
+)
+SELECT c.clip,
+       round(min(ST_YMin(c.cell))::numeric, 2) AS lat_south, round(max(ST_YMax(c.cell))::numeric, 2) AS lat_north,
+       round(ST_Distance(ST_Point(m.x0, m.y0, 4326)::geography, ST_Point(m.x1, m.y0, 4326)::geography)::numeric, 1) AS mid_width_m,
+       round(ST_Distance(ST_Point(m.x0, m.y0, 4326)::geography, ST_Point(m.x0, m.y1, 4326)::geography)::numeric, 1) AS mid_height_m,
+       round(count(*) * max(c.width) * 0.01, 1) AS map_km2,
+       round((sum(ST_Area(c.cell::geography)) * max(c.width) / 1e6)::numeric, 1) AS ground_km2,
+       round((sum(ST_Area(c.cell::geography)) / (count(*) * 1e4))::numeric, 4) AS ground_over_map,
+       round(cos(radians((m.y0 + m.y1) / 2))::numeric, 4) AS cos_mid_lat
+FROM cell_rows AS c JOIN mid AS m USING (clip)
+GROUP BY c.clip, m.x0, m.x1, m.y0, m.y1
+ORDER BY c.clip;
+```
+
+```text
+-- result: g7-latitude · 2 rows · sha256 e063bd6e1c5b
+clip | lat_south | lat_north | mid_width_m | mid_height_m | map_km2 | ground_km2 | ground_over_map | cos_mid_lat
+cr | 9.85 | 10.60 | 98.4 | 99.4 | 6989.0 | 6834.8 | 0.9779 | 0.9841
+tas | -43.10 | -42.35 | 73.6 | 99.8 | 6989.0 | 5131.4 | 0.7342 | 0.7346
+```
+
+Both windows hold 698,896 cells: 6,989.0 km² if every cell were 100 m by 100 m. On the ground the Costa Rica window covers 6,834.8 km² and the Tasmania window 5,131.4 km², a quarter less. A cell in the middle row is 98.4 m wide and 99.4 m tall at 10.2° N, and 73.6 m by 99.8 m at 42.7° S: the width follows cos φ (0.9841 and 0.7346). The height changes a little too, because the Earth is flattened: a degree of latitude is about 110.6 km near the equator and 111.1 km at 43°. So Costa Rica's ratio, 0.9779, sits a little below its cos φ. Within a window a cell's area changes from the north edge to the south by 0.2 % (9,768 to 9,790 m²) in Costa Rica and 1.2 % (7,298 to 7,386 m²) in Tasmania.
+
+**Lab:**
+
+1. The class under each record in the Costa Rica window: `ST_Intersects` keeps the records on the raster, and `ST_Value` reads the cell under each:
 
 ```sql
 -- q: g7-records
--- status: untested: L3 builds the clips
+-- status: ran
 -- engine: postgis
 -- needs: raster
 SELECT v.habitat_code, c.name, count(*) AS records
-FROM occurrences AS o
-JOIN habitat_clips AS h ON h.clip = 'cr'
-CROSS JOIN LATERAL (SELECT ST_Value(h.rast, 1, ST_Transform(o.geom, ST_SRID(h.rast))) AS habitat_code) AS v
+FROM habitat_clips AS h
+JOIN occurrences AS o ON ST_Intersects(h.rast, o.geom)
+CROSS JOIN LATERAL (SELECT ST_Value(h.rast, 1, o.geom)::integer AS habitat_code) AS v
 LEFT JOIN habitat_classes AS c ON c.code = v.habitat_code
-WHERE o.country_code = 'CR'
+WHERE h.clip = 'cr'
 GROUP BY v.habitat_code, c.name
 ORDER BY records DESC, v.habitat_code NULLS LAST;
 ```
 
-The cells inside Costa Rica's outline, by class, as `ST_ValueCount` gives them:
+```text
+-- result: g7-records · 12 rows · sha256 e9484b7cc942
+habitat_code | name | records
+109 | Forest – Subtropical/tropical moist montane | 87
+106 | Forest – Subtropical/tropical moist lowland | 30
+307 | Shrubland – Subtropical/tropical high altitude | 23
+507 | Wetlands (inland) – Permanent freshwater marshes/pools (unde… | 21
+1401 | Arable Land | 13
+… 7 more rows
+```
+
+All 202 records in the window have a class: the window has no nodata cells. 87 are on moist montane forest, 30 on moist lowland forest, 23 on high-altitude shrubland, and 21 on small freshwater marshes, a class with 0.1 % of the window's land (step 3). Arable land, over a third of the cells, holds 13. Records gather where people go to look, so these counts describe the recording as much as the animals; s6 compares records with the classes' areas.
+
+2. The cells inside Costa Rica's outline, by class, as `ST_ValueCount` gives them:
 
 ```sql
 -- q: g7-valuecount
--- status: untested: L3 builds the clips
+-- status: ran
 -- engine: postgis
 -- needs: raster
-SELECT vc.value AS habitat_code, vc.count AS cells
+SELECT vc.value::integer AS habitat_code, vc.count AS cells
 FROM habitat_clips AS h
 JOIN country_shapes AS cs ON cs.country_code = 'CR'
-CROSS JOIN LATERAL ST_ValueCount(ST_Clip(h.rast, ST_Transform(cs.geom, ST_SRID(h.rast))), 1) AS vc
+CROSS JOIN LATERAL ST_ValueCount(ST_Clip(h.rast, cs.geom), 1) AS vc
 WHERE h.clip = 'cr'
 ORDER BY cells DESC, habitat_code;
 ```
 
-The same cells as areas: on the map, and corrected cell by cell for the latitude of its row (a Web Mercator y gives latitude 2·atan(e^(y ÷ R)) − π ÷ 2, R = 6,378,137 m), beside L3's published country summary:
+```text
+-- result: g7-valuecount · 20 rows · sha256 f1cb0c12721a
+habitat_code | cells
+1401 | 253016
+109 | 178008
+106 | 102946
+306 | 36961
+1405 | 33473
+… 15 more rows
+```
+
+693,893 of the window's 698,896 cells have their centre inside the outline. The other 5,003 are the sea in its north-east corner, all of them marine neritic (900). Another 6,329 marine neritic cells lie inside the outline, along the coast: a 1:50m outline and a 100 m map don't draw the same coastline (g3, g5). The 20 classes run from arable land, 253,016 cells, to tidepools, 13.
+
+3. The same cells as estimated areas. Every cell in a row has the same ground area, so count the cells by row, measure one cell per row on the ellipsoid, and multiply. `MATERIALIZED` makes the planner measure each row once, not once per class and row (g3's exercise):
 
 ```sql
 -- q: g7-estimate
--- status: untested: L3 builds the clips
+-- status: ran
 -- engine: postgis
 -- needs: raster
 WITH cells AS (
-  SELECT p.val AS habitat_code, 2 * atan(exp(ST_Y(p.geom) / 6378137)) - pi() / 2 AS lat
+  SELECT p.val::integer AS habitat_code, p.y AS row
   FROM habitat_clips AS h
   JOIN country_shapes AS cs ON cs.country_code = 'CR'
-  CROSS JOIN LATERAL ST_PixelAsCentroids(ST_Clip(h.rast, ST_Transform(cs.geom, ST_SRID(h.rast))), 1) AS p
+  CROSS JOIN LATERAL ST_PixelAsCentroids(ST_Clip(h.rast, cs.geom), 1) AS p
   WHERE h.clip = 'cr'
+), by_row AS (
+  SELECT habitat_code, row, count(*) AS cells
+  FROM cells
+  GROUP BY habitat_code, row
+), row_area AS MATERIALIZED (
+  SELECT r.row, ST_Area(ST_PixelAsPolygon(h.rast, 1, r.row)::geography) / 1e6 AS cell_km2
+  FROM habitat_clips AS h, (SELECT DISTINCT row FROM by_row) AS r
+  WHERE h.clip = 'cr'
+), est AS (
+  SELECT b.habitat_code, sum(b.cells) AS cells, sum(b.cells * ra.cell_km2) AS est_km2
+  FROM by_row AS b JOIN row_area AS ra USING (row)
+  GROUP BY b.habitat_code
 )
-SELECT c.habitat_code, count(*) AS cells,
-       round((count(*) * 103.02166779498629 ^ 2 / 1e6)::numeric, 1) AS map_km2,
-       round((sum((103.02166779498629 * cos(c.lat)) ^ 2) / 1e6)::numeric, 1) AS est_km2,
-       ch.est_area_km2 AS published_km2
-FROM cells AS c
-LEFT JOIN country_habitats AS ch ON ch.country_code = 'CR' AND ch.habitat_code = c.habitat_code
-GROUP BY c.habitat_code, ch.est_area_km2
-ORDER BY cells DESC, c.habitat_code;
+SELECT e.habitat_code, c.name, e.cells,
+       round(e.cells * 0.01, 2) AS map_km2,
+       round(e.est_km2::numeric, 2) AS est_km2,
+       round((100 * e.est_km2 / sum(e.est_km2) OVER ())::numeric, 1) AS pct
+FROM est AS e
+LEFT JOIN habitat_classes AS c ON c.code = e.habitat_code
+ORDER BY e.cells DESC, e.habitat_code;
 ```
 
-**Expected:** a class (or `NULL`, off the clip or on a nodata cell) for each of Costa Rica's 619 records; `ST_ValueCount`'s cells and `g7-estimate`'s cells agree class by class (both count the cells whose centres fall inside the outline); at about 10° N each corrected area is about 3 % smaller than its map area (cos² 10° ≈ 0.97); and the corrected areas agree with L3's published summary within the error 003 §5 measured for its method. L3 records the real numbers when it builds the clips and writes g7 in full; s6 then compares the records' classes with the classes' areas.
+```text
+-- result: g7-estimate · 20 rows · sha256 9941c849a9ba
+habitat_code | name | cells | map_km2 | est_km2 | pct
+1401 | Arable Land | 253016 | 2530.16 | 2474.07 | 36.5
+109 | Forest – Subtropical/tropical moist montane | 178008 | 1780.08 | 1741.50 | 25.7
+106 | Forest – Subtropical/tropical moist lowland | 102946 | 1029.46 | 1006.14 | 14.8
+306 | Shrubland – Subtropical/tropical moist | 36961 | 369.61 | 361.29 | 5.3
+1405 | Urban Areas | 33473 | 334.73 | 327.59 | 4.8
+… 15 more rows
+```
+
+The window's land inside the outline is an estimated 6,785.90 km², from 836 area calls instead of 693,893. Each class's map area, cells × 0.01 km², is 2.3 % above its estimate: at 10° N a cell covers 0.978 of an equator cell (the worked example). Arable land is 36.5 % of the area, moist montane forest 25.7 % and moist lowland forest 14.8 %; the marsh class with 21 records, 0.1 %.
+
+4. A record's 100 m class against its 1 km class. `occurrence_habitats` gives each record the class with the largest fraction in its 1 km cell. Build that cell from the 1 km grid's numbers (upper-left corner −180.0099155291168, 90.00297126602864; cells 0.009915667822884942° on a side; 4.1), and find the most common 100 m class inside it:
+
+```sql
+-- q: g7-scale
+-- status: ran
+-- engine: postgis
+-- needs: raster
+WITH grid (x0, y0, d) AS (
+  VALUES (-180.0099155291168, 90.00297126602864, 0.009915667822884942)
+), recs AS (
+  SELECT h.clip, h.rast, ST_Value(h.rast, 1, o.geom)::integer AS class_100m, oh.habitat_code AS class_1km,
+         ST_MakeEnvelope(g.x0 + k.col * g.d, g.y0 - (k.row + 1) * g.d, g.x0 + (k.col + 1) * g.d, g.y0 - k.row * g.d, 4326) AS cell_1km
+  FROM habitat_clips AS h
+  JOIN occurrences AS o ON ST_Intersects(h.rast, o.geom)
+  JOIN occurrence_habitats AS oh ON oh.occurrence_id = o.id
+  CROSS JOIN grid AS g
+  CROSS JOIN LATERAL (SELECT floor((ST_X(o.geom) - g.x0) / g.d) AS col, floor((g.y0 - ST_Y(o.geom)) / g.d) AS row) AS k
+), majority AS (
+  SELECT r.*, (SELECT vc.value::integer FROM ST_ValueCount(ST_Clip(r.rast, r.cell_1km), 1) AS vc
+               ORDER BY vc.count DESC, vc.value LIMIT 1) AS most_100m
+  FROM recs AS r
+)
+SELECT clip, count(*) AS records,
+       count(*) FILTER (WHERE class_100m = class_1km) AS same_at_record,
+       count(*) FILTER (WHERE most_100m = class_1km) AS same_as_majority,
+       count(*) FILTER (WHERE class_100m = most_100m) AS record_in_majority
+FROM majority
+GROUP BY clip
+ORDER BY clip;
+```
+
+```text
+-- result: g7-scale · 2 rows · sha256 9b2b84c68936
+clip | records | same_at_record | same_as_majority | record_in_majority
+cr | 202 | 49 | 201 | 50
+tas | 601 | 332 | 579 | 347
+```
+
+The record's own 100 m cell has its 1 km class for 49 of the 202 records in Costa Rica (24 %) and 332 of 601 in Tasmania (55 %). Yet the 1 km class is the most common 100 m class in its cell for 201 and 579: the two maps agree; most records just aren't on the majority. Only 50 of the Costa Rican records are; 77 sit on montane forest in 1 km cells that are mostly arable land. The 23 records whose 1 km class isn't the 100 m majority are all in cells where two classes tie or nearly tie (20 Tasmanian records share one cell with 48 cells each of temperate forest and pastureland), except one in a cell cut by the window's edge. A 1 km class describes the landscape around a record, a 100 m class the patch it is on; neither is the species' habitat.
+
+5. How good are the published summaries? Method 3 summed over each country, against the outline's area on the ellipsoid, in bands of error:
+
+```sql
+-- q: g7-countries
+-- status: ran
+-- engine: postgis
+-- needs: raster
+WITH est AS (
+  SELECT country_code, sum(est_area_km2) AS est_km2 FROM country_habitats GROUP BY country_code
+), cmp AS (
+  SELECT cs.country_code, ST_Area(cs.geom::geography) / 1e6 AS outline_km2, coalesce(e.est_km2, 0) AS est_km2
+  FROM country_shapes AS cs LEFT JOIN est AS e USING (country_code)
+), banded AS (
+  SELECT *, abs(est_km2 - outline_km2) / outline_km2 AS err,
+         CASE WHEN abs(est_km2 - outline_km2) / outline_km2 < 0.01 THEN 'under 1 %'
+              WHEN abs(est_km2 - outline_km2) / outline_km2 < 0.05 THEN '1 to 5 %'
+              WHEN abs(est_km2 - outline_km2) / outline_km2 < 0.2 THEN '5 to 20 %'
+              ELSE '20 % or more' END AS error
+  FROM cmp
+)
+SELECT coalesce(error, 'all') AS error, count(*) AS countries,
+       round(max(outline_km2)::numeric, 2) AS largest_km2,
+       round(sum(outline_km2)::numeric) AS outline_km2, round(sum(est_km2)) AS est_km2,
+       round(sum(est_km2) / sum(outline_km2)::numeric, 6) AS est_over_outline,
+       CASE WHEN GROUPING(error) = 0 THEN
+         string_agg(country_code || ' ' || to_char(100 * (est_km2 - outline_km2) / outline_km2, 'FMSG990.0'), ', ' ORDER BY err DESC)
+           FILTER (WHERE err >= 0.05) END AS worst_pct
+FROM banded
+GROUP BY ROLLUP (error)
+ORDER BY error IS NOT NULL, min(err);
+```
+
+```text
+-- result: g7-countries · 5 rows · sha256 96b0c186ffd8
+error | countries | largest_km2 | outline_km2 | est_km2 | est_over_outline | worst_pct
+all | 247 | 16973548.42 | 146715521 | 146579614 | 0.999074 | NULL
+under 1 % | 215 | 16973548.42 | 146711158 | 146575271 | 0.999074 | NULL
+1 to 5 % | 21 | 430.33 | 3957 | 3951 | 0.998359 | NULL
+5 to 20 % | 8 | 134.94 | 390 | 375 | 0.961755 | SX -17.3, MF +10.6, CC -9.8, MO -6.2, PN +5.9, BL -5.8, VG -…
+20 % or more | 3 | 10.21 | 16 | 17 | 1.050974 | VA -100.0, TV +28.9, TK -28.6
+```
+
+Over all 247 outlines the estimate is 0.999074 of the outlines' area (−0.09 %), the figure `pnpm ingest habitat` records. 215 countries are within 1 %, every outline over 431 km² among them. The error grows as the outline shrinks, since a small island holds few 1 km cells and each counts whole or not at all: Vatican City (0.71 km²) holds no cell centre and has no rows; Tuvalu's atolls, 10.21 km², get 13.16 km² (+28.9 %); Tokelau −28.6 %, Sint Maarten −17.3 %. Read a small country's habitat areas as rough.
+
+**Result:** A cell of v004's 100 m grid covers 9,768 to 9,790 m² in the Costa Rica window and 7,298 to 7,386 m² in Tasmania's; counting cells as 100 m squares overstates by 2.3 % and 36 %. Costa Rica's window holds 202 records and an estimated 6,785.90 km² of land inside the outline, 36.5 % of it arable; its records sit mostly on forest (87 montane, 30 lowland). A record's 100 m class matches its 1 km class for 24 % (Costa Rica) and 55 % (Tasmania) of records, although the 1 km class is the 100 m majority around all but 23 of the 803. The published summaries total 0.999074 of the outlines' area; 215 of 247 countries are within 1 %, the worst are islands under 135 km².
+
+**Exercise:** Method 1 at 100 m is the reference for method 3 (003 §5). Compute both for the Tasmania window inside AU's outline, by class, from the 100 m cells alone. Give each 100 m cell its 1 km cell from the grid's numbers (step 4); take a class's fraction of a 1 km cell as its share of the 100 m centres in it; keep only the 1 km cells wholly inside the window; and count a 1 km cell when its centre is inside the outline. Which classes differ most, and why?
+
+**Answer:** Assign the cells, count each 1 km cell's centres with a window function, and sum both ways side by side. The share of each class's method 1 area that lies in 1 km cells the outline cuts tells you why:
+
+```sql
+-- q: g7-ex
+-- status: ran
+-- engine: postgis
+-- needs: raster
+WITH grid (x0, y0, d) AS (
+  VALUES (-180.0099155291168, 90.00297126602864, 0.009915667822884942)
+), win AS (
+  SELECT h.rast, cs.geom AS outline
+  FROM habitat_clips AS h JOIN country_shapes AS cs ON cs.country_code = 'AU'
+  WHERE h.clip = 'tas'
+), px AS (
+  SELECT p.val::integer AS habitat_code, p.y AS row_100m,
+         floor((ST_X(p.geom) - g.x0) / g.d)::integer AS col_1km, floor((g.y0 - ST_Y(p.geom)) / g.d)::integer AS row_1km,
+         ST_Intersects(w.outline, p.geom) AS inside
+  FROM win AS w, grid AS g, ST_PixelAsCentroids(w.rast, 1) AS p
+), area_100m AS MATERIALIZED (
+  SELECT r.row_100m, ST_Area(ST_PixelAsPolygon(w.rast, 1, r.row_100m)::geography) / 1e6 AS km2
+  FROM win AS w, (SELECT DISTINCT row_100m FROM px) AS r
+), cells_1km AS MATERIALIZED (
+  SELECT k.col_1km, k.row_1km, ST_Area(k.cell::geography) / 1e6 AS km2,
+         ST_Intersects(w.outline, ST_Centroid(k.cell)) AS centre_inside,
+         ST_Covers(ST_Envelope(w.rast), k.cell) AS whole
+  FROM (SELECT DISTINCT col_1km, row_1km FROM px) AS c
+  CROSS JOIN grid AS g
+  CROSS JOIN LATERAL (SELECT c.col_1km, c.row_1km,
+                             ST_MakeEnvelope(g.x0 + c.col_1km * g.d, g.y0 - (c.row_1km + 1) * g.d,
+                                             g.x0 + (c.col_1km + 1) * g.d, g.y0 - c.row_1km * g.d, 4326) AS cell) AS k
+  CROSS JOIN win AS w
+), counted AS (
+  SELECT px.*, count(*) OVER w AS n_1km, count(*) FILTER (WHERE px.inside) OVER w AS n_inside,
+         k.km2 AS km2_1km, k.centre_inside, a.km2 AS km2_100m
+  FROM px JOIN cells_1km AS k USING (col_1km, row_1km) JOIN area_100m AS a USING (row_100m)
+  WHERE k.whole
+  WINDOW w AS (PARTITION BY px.col_1km, px.row_1km)
+)
+SELECT habitat_code,
+       round(sum(km2_100m) FILTER (WHERE inside)::numeric, 2) AS method1_km2,
+       round(sum(km2_1km / n_1km) FILTER (WHERE centre_inside)::numeric, 2) AS method3_km2,
+       round((100 * (sum(km2_1km / n_1km) FILTER (WHERE centre_inside) / sum(km2_100m) FILTER (WHERE inside) - 1))::numeric, 1) AS diff_pct,
+       round((100 * coalesce(sum(km2_100m) FILTER (WHERE inside AND n_inside < n_1km), 0)
+                  / sum(km2_100m) FILTER (WHERE inside))::numeric, 1) AS border_pct
+FROM counted
+GROUP BY ROLLUP (habitat_code)
+HAVING sum(km2_100m) FILTER (WHERE inside) >= 1
+ORDER BY habitat_code NULLS FIRST;
+```
+
+```text
+-- result: g7-ex · 13 rows · sha256 53600dc8b50d
+habitat_code | method1_km2 | method3_km2 | diff_pct | border_pct
+NULL | 3953.67 | 3944.68 | -0.2 | 2.7
+104 | 1536.61 | 1536.27 | 0.0 | 0.9
+304 | 739.01 | 738.71 | 0.0 | 2.1
+305 | 10.53 | 10.57 | 0.4 | 0.0
+404 | 57.52 | 57.78 | 0.4 | 5.6
+… 8 more rows
+```
+
+**Check:** Over the window's land the methods differ by 0.2 %: 3,944.68 km² by method 3 against 3,953.67 km² by method 1. The classes that differ most, by 1.1 to 2.8 %, are intertidal (1200), urban areas (1405), inland wetlands (500), marine neritic (900) and seagrass (909): 5 to 15 % of their area lies in 1 km cells the outline crosses, where method 3 takes the whole cell or none of it. Classes away from the coast agree within 0.4 %, and what's left there is the grids' misfit: a 1 km cell spans 11.04 cells of 100 m, so a whole one holds 121, 132 or 144 of their centres, and sharing its area among them is close, not exact. 003 §5 found the same pattern, larger, for Trinidad and Tobago and for Åland on 1:10m outlines: marine classes +12.5 % and +13.9 %, with three quarters of their area in border cells. The comparison judges the summary's method, not the map: both columns are estimates from the same classification.
+
+**Dialects:**
+- **PostgreSQL:** PostGIS's raster type comes in the `postgis_raster` extension. `raster2pgsql` loads a file in-db, or out-db with `-R`, which then needs `postgis.enable_outdb_rasters` and `postgis.gdal_enabled_drivers`. `ST_SummaryStats`, `ST_Reclass` and `ST_MapAlgebra` compute over cells; `ST_Tile` cuts a large raster into rows of a table.
+- **DuckDB:** core DuckDB has no raster type. Read a raster's cells outside it (rasterio, as critwire's ingest does) into rows of value, column and row, then count them in SQL.
+- **SQL Server:** no raster type either. Store cells as rows (column, row, value) or one blob decoded outside, and summarise with joins and `GROUP BY`; zonal counts then follow this module's SQL with the cell's polygon built from the grid's numbers.
 
 ### 5.4 Spatial statistics
 
@@ -8406,7 +8660,7 @@ The playground and the browser blocks use one engine start per visit (002 §8): 
 The lab files are written by the build from the same blocks the pages show, so the page and the download can't disagree (E2E checks it, 7.6):
 - **`<module>.sql`**: the module's PostGIS blocks in page order, each exactly as `learn:check` runs it: its `-- after:` blocks first, the whole wrapped in `BEGIN; … ROLLBACK;`, except `-- tx: own` blocks (as written). Headers stay as comments, so every block keeps its id. It starts with §0's `pg-session` (`SET search_path`), then the boot setup (below), and runs with `psql -X -d <your database> -f <module>.sql` after the loader (§4.3). No `ON_ERROR_STOP`, because some blocks show an error on purpose (`-- expect: error`, `-- fails:`), and the file says so at the top. The setup page's PostGIS checks (§0) download as `pg-checks.sql`, since `setup.sql` is the browser's schema. A block that runs in two sessions (`-- sessions:`) is commented out like an untested one (below): it needs one psql window per session.
 - **The boot setup.** A download includes every `-- boot` block it needs, once, right after `pg-session` (or `py-connect`), committed, and not again at its page position. It needs one when any block in it, or an `-- after:` block they bring, names a table or view the boot block creates (the names in its `CREATE TABLE` and `CREATE VIEW` statements, matched as whole words). Today that is `s4-cells`, in `s2`, `s3`, `s4`, `s5` and `c1` (`.sql`; c1 through `s5-gistar`) and in `s2`, `s3`, `s4`, `s5` and `setup` (`.py`; `setup` for §3.3's `gpkg-export`). A boot block drops what it builds before building it, so a file runs on a freshly loaded database, and again: a learner can open any module's file first, in any order. In a `.py` the boot block runs through the helper, `with connect() as conn: conn.execute("""<its SQL>""")` (psycopg sends a statement list without parameters as one simple query, and the `with` commits it), and in a notebook it is its own cell. A miss is caught by the assembled run (7.6), which starts each file from a fresh load.
-- **Untested blocks** are in their download, so the learner has them, but never run from it: running `e1.py` mustn't submit a GBIF download or stop on missing credentials, and `d5.sql` mustn't change the learner's database. In a `.sql` or `.py`, such a block at its page position is one line `-- not run from this file: <its reason>. Run it by hand, as its page says.` (`#` in Python), its headers as written, then every other line of its code behind `-- ` (`# `): no `BEGIN; … ROLLBACK;`, no `-- after:` blocks brought for it, and it doesn't count towards the boot setup. In a notebook it is a Markdown cell, the same line and then the code as a fenced block, never a code cell. Which blocks follows their status in the build's own run, so a block a later mission makes `ran` is live in its file from then on. Today: `d5-database` (L2), `g3-iucn` (L3; g7's three blocks until L3 makes them `ran`) and `e1-submit` (L4; `s6-habitat` until L4 makes it `ran`). §3.4's `arcpy-moran` runs in Pro's Python window and is in no download; nor is Power BI's M and DAX (below).
+- **Untested blocks** are in their download, so the learner has them, but never run from it: running `e1.py` mustn't submit a GBIF download or stop on missing credentials, and `d5.sql` mustn't change the learner's database. In a `.sql` or `.py`, such a block at its page position is one line `-- not run from this file: <its reason>. Run it by hand, as its page says.` (`#` in Python), its headers as written, then every other line of its code behind `-- ` (`# `): no `BEGIN; … ROLLBACK;`, no `-- after:` blocks brought for it, and it doesn't count towards the boot setup. In a notebook it is a Markdown cell, the same line and then the code as a fenced block, never a code cell. Which blocks follows their status in the build's own run, so a block a later mission makes `ran` is live in its file from then on. Today: `d5-database` (L2), `g3-iucn` (L3) and `e1-submit` (L4; `s6-habitat` until L4 makes it `ran`). §3.4's `arcpy-moran` runs in Pro's Python window and is in no download; nor is Power BI's M and DAX (below).
 - **`<module>.py`** and **`<module>.ipynb`**: the module's Python blocks, `py-connect` first, then the boot setup, then each block once, in page order, with its `# q:` line as a comment (the notebook: one cell per block, and a Markdown cell with the block's heading). They read the lab data from `LEARN_BASE` (default `https://critwire.com`) and connect with libpq's `PG*` variables, as in §3.3. §3.3's Python blocks (`py-smoke`, `gpkg-export`) download as `setup.py` and `setup.ipynb`.
 - **`requirements.txt`**: §3.3's pins; the setup page gives the `uv` commands.
 - **Power BI** has no download of its own: a `.pbix` can't be built or tested here (§3.5). Its data files are the star's CSVs under `/learn/data/star/`, which p1 loads by URL.

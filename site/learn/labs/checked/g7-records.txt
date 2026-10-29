@@ -1,0 +1,8 @@
+-- result: g7-records · 12 rows · sha256 e9484b7cc942
+habitat_code | name | records
+109 | Forest – Subtropical/tropical moist montane | 87
+106 | Forest – Subtropical/tropical moist lowland | 30
+307 | Shrubland – Subtropical/tropical high altitude | 23
+507 | Wetlands (inland) – Permanent freshwater marshes/pools (unde… | 21
+1401 | Arable Land | 13
+… 7 more rows

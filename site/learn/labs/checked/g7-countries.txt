@@ -1,0 +1,7 @@
+-- result: g7-countries · 5 rows · sha256 96b0c186ffd8
+error | countries | largest_km2 | outline_km2 | est_km2 | est_over_outline | worst_pct
+all | 247 | 16973548.42 | 146715521 | 146579614 | 0.999074 | NULL
+under 1 % | 215 | 16973548.42 | 146711158 | 146575271 | 0.999074 | NULL
+1 to 5 % | 21 | 430.33 | 3957 | 3951 | 0.998359 | NULL
+5 to 20 % | 8 | 134.94 | 390 | 375 | 0.961755 | SX -17.3, MF +10.6, CC -9.8, MO -6.2, PN +5.9, BL -5.8, VG -…
+20 % or more | 3 | 10.21 | 16 | 17 | 1.050974 | VA -100.0, TV +28.9, TK -28.6

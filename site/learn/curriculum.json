@@ -354,7 +354,7 @@
       "prereqs": [
         "g6"
       ],
-      "state": "planned",
+      "state": "built",
       "skill": "Value at a point; `ST_Clip`, `ST_ValueCount`; estimated areas and their error",
       "questions": [
         "Which habitat classes hold Costa Rica's records?",
