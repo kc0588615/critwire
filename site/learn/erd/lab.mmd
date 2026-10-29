@@ -5,7 +5,7 @@
 %% Keys: PK primary key, FK foreign key, UK unique. Lines: || exactly one, |o or o| zero or one, |{ one or more, o{ zero or more.
 erDiagram
     accTitle: critwire Learn lab database, PostGIS schema learn_curriculum
-    accDescr: The schema v2 tables in PostgreSQL types, plus the shapes: country outlines, admin-1 areas, biomes, ecoregions and the habitat map: its classes, each country's estimated area per class, each record's class, and two clips stored as rasters.
+    accDescr: The schema v2 tables in PostgreSQL types, plus the shapes: country outlines, admin-1 areas, biomes, ecoregions and the habitat map: its classes, each country's estimated area per class, each record's class, and two clips stored as raster tiles.
     taxa {
         text name PK "Agalychnis, Phyllomedusidae, Anura, Amphibia"
         text taxon_rank "class, order, family or genus"
@@ -109,7 +109,8 @@ erDiagram
     }
     habitat_clips {
         text clip PK "cr or tas"
-        raster rast "a clip of the habitat map, stored in the database"
+        integer tile PK "the tile's number in its clip"
+        raster rast "a 256-cell tile of the habitat map, stored in the database"
     }
 
     taxa |o--o{ taxa : "parent of"

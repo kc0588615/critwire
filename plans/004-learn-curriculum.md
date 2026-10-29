@@ -263,7 +263,7 @@ ORDER BY table_name;
 ```
 
 ```text
--- result: pg-smoke · 16 rows · sha256 3e77cac6c4d2
+-- result: pg-smoke · 16 rows · sha256 958789792d50
 table_name | n_rows
 admin1_shapes | 294
 biomes | 14
@@ -487,7 +487,7 @@ The labs are tested on PostgreSQL 16 with PostGIS 3.4. On Windows, the simplest 
 docker run -d --name learn-pg -e POSTGRES_PASSWORD=choose-a-password -p 127.0.0.1:5432:5432 -v learn-pg:/var/lib/postgresql/data postgis/postgis:16-3.4
 docker exec learn-pg psql -U postgres -c "CREATE DATABASE learn"
 docker exec learn-pg psql -U postgres -d learn -c "CREATE EXTENSION postgis" -c "CREATE EXTENSION postgis_raster"
-# The lab file: every lab table, in one transaction (about 26 MB).
+# The lab file: every lab table, in one transaction (about 72 MB).
 curl.exe -fLo learn_curriculum.sql https://critwire.com/learn/data/postgis/learn_curriculum.sql
 docker cp learn_curriculum.sql learn-pg:/tmp/
 docker exec learn-pg psql -X -U postgres -d learn -v ON_ERROR_STOP=1 -f /tmp/learn_curriculum.sql
@@ -807,10 +807,10 @@ Every lab reads the same handful of files. critwire's build writes them from sna
 | RESOLVE Ecoregions 2017, simplified to 0.05° | CC BY 4.0 (003 D9) | `ecoregions.parquet` (GeoParquet), `biomes.csv` | 847; 14 | 6,686,262; 518 | g4, s6 | L1 |
 | Countries (Natural Earth attributes) | public domain (002 §6) | `/v1/countries.{parquet,csv,json}` | 250 | a few KB | every module | L1 |
 | Jung et al. 2020 habitat map, v004: classes, country summaries and each record's class | CC BY 4.0 (003 D4, §5) | `habitat_classes.parquet`, `country_habitats.parquet`, `occurrence_habitats.parquet` | 75; 5,578 (246 countries); 40,395 | 2,488; 22,407; 81,731 | g7, s6, p2–p3 | L3 (A2's 35-row stand-ins before it) |
-| Jung v004 clips: two 0.75° study windows at 100 m, Costa Rica (`cr`) and Tasmania (`tas`) | CC BY 4.0 (003 D4) | `clips/{cr,tas}.tif` (cloud-optimized GeoTIFF); `habitat_clips.parquet` (the same cells as PostGIS raster WKB, for the loader) | 2 rasters of 836 × 836 cells; 2 | 221,986 and 180,362; 256,632 | g7, s6 | L3 |
-| The PostGIS loader | inherits the above | `postgis/learn_curriculum.sql` | 16 tables | 25,757,224 (L3's build; L1's, 14 tables: 21,338,761) | every PostGIS module | build (L1; grown in L3) |
+| Jung v004 clips at 100 m: all of Costa Rica (`cr`) and Tasmania (`tas`) | CC BY 4.0 (003 D4) | `clips/{cr,tas}.tif` (cloud-optimized GeoTIFF); `habitat_clips.parquet` (the same cells as PostGIS raster WKB in 256-cell tiles, for the loader) | 2 rasters of 3,730 × 3,474 and 4,131 × 3,318 cells; 290 tiles (117 and 173) | 1,380,611 and 1,828,711; 1,826,789 | g7, s6 | L3 (two 0.75° windows until H5) |
+| The PostGIS loader | inherits the above | `postgis/learn_curriculum.sql` | 16 tables | 72,088,315 (L3's build, whole-country clips; with the windows, 25,757,224; L1's, 14 tables: 21,338,761) | every PostGIS module | build (L1; grown in L3) |
 | The star export | inherits the above; credits in its own manifest | `star/*.csv` (8 files), `star/manifest.json` | §A.3 | 4,576,053; 10,995 | d6, p1–p4 | build (L2: the records fact; L5: the habitat fact) |
-| The manifest and the index page | | `manifest.json` (4.5), `index.html` | | 26,095; 118,828 (L3's build; L1's: 14,257; 114,820) | every module | build (L1) |
+| The manifest and the index page | | `manifest.json` (4.5), `index.html` | | 26,178; 118,959 (L3's build; L1's: 14,257; 114,820) | every module | build (L1) |
 
 Notes on the shapes (`SP/out/lab-data/summary.md`; sizes re-measured by L1's `pnpm ingest shapes`, `data/learn/shapes.json`):
 - **GeoParquet 1.0.0**: WKB geometry in a `geom` column, its bounding box, longitude-latitude (CRS84), zstd compression, rows sorted by key. The same inputs write byte-identical files. The ingest rebuilds all three (and `biomes.csv`): admin-1, ecoregions and `biomes.csv` are byte-identical to the spike's; `country_shapes` has the spike's WKB for all 247 codes, but the spike wrote it with DuckDB's snappy (1,206,307 bytes), so zstd makes it 1,304,205.
@@ -823,17 +823,18 @@ Notes on the habitat files (`data/learn/habitat.json`, written by L3's `pnpm ing
 - **Source.** Jung et al. 2020, v004, fetched by its Zenodo URL (doi 10.5281/zenodo.4058819) and pinned by bytes, md5 and sha256: the 1 km level-2 fractions (79 layers, one per class, per mille of each cell) for the summaries and the records, and the 100 m level-2 composite (one class per cell) for the clips. Both grids are longitude–latitude (EPSG:4326), not Web Mercator: 0.009915667822884942° cells for the fractions, 0.0008983152841195215° for the composite. 11 layers are zero everywhere (200, 504, 509, 512, 516, 517, 518, 800, 1000, 1100, 1400); five of them (509, 512, 516, 517, 518) have no row in the 75 classes, and a non-zero layer without one would stop the ingest.
 - **`country_habitats`** is 003 §5's method 3: for each country, every 1 km cell whose centre falls inside its Natural Earth 1:50m outline, each class's fraction ÷ 1000 × the cell's geodesic area on WGS 84, summed, rounded to 0.01 km², rows under 0.01 km² left out. Only the partition classes count; the open-water overlays (901, 1000–1004) are left out, so no area is counted twice within a country. Where outlines overlap (FR holds GF, RE and MQ), a shared cell counts for both. Over all 247 outlines the summed estimate is 0.99907 of the summed outline area (−0.09 %; the ingest refuses beyond ±2 %). Vatican City is the one outline with no cell centre inside it, so 246 countries have rows.
 - **`occurrence_habitats`**: one row per sample record, the class with the largest fraction in the record's 1 km cell (ties to the lowest code), NULL when the cell holds no partition class. It is the map's class at that place, not the species' habitat. All 40,395 records have a class.
-- **The clips** are two fixed 0.75° windows, not whole countries: whole-country clips stored in the loader would be about 70 MB, over the cap (4.4). Each window is the 0.75° square on a 0.05° lattice holding the most of the sample's records with that country's code (ties: the most land inside the outline), snapped outward to the composite's grid, cells unchanged: 836 × 836 cells, no nodata.
-  - `cr`: longitude −84.20…−83.45, latitude 9.85…10.60, from San José to the Caribbean lowlands; 202 records, all inside CR's outline. 20 classes; the largest are arable land 36.2 % of cells, subtropical/tropical moist montane forest 25.5 % and moist lowland forest 14.7 %.
-  - `tas`: longitude 147.25…148.00, latitude −43.10…−42.35, south-east Tasmania with Hobart; 601 records, 491 of them inside AU's 1:50m outline (the rest are on coasts it simplifies). 16 classes; the largest are temperate forest 31.8 %, pastureland 22.1 %, temperate shrubland 15.9 % and marine neritic 15.5 %.
-  - The `.tif` files are cloud-optimized GeoTIFFs (DEFLATE, predictor 2, 256-pixel blocks, nearest-neighbour overviews) for desktop GIS; `habitat_clips.parquet` holds the same cells as PostGIS raster WKB (16-bit unsigned, nodata 0), which the loader turns into in-database rasters.
+- **The clips** are all of Costa Rica and Tasmania (owner, L3), each its country's box snapped outward to the composite's grid, cells unchanged, cut into tiles of 256 × 256 cells (a COG block; raster2pgsql's `-t 256x256`), numbered row-major from the upper left. A tile whose box doesn't touch the country's Natural Earth 1:50m outline is all set to nodata in the `.tif` and left out of `habitat_clips`: the rest of each box is sea, Nicaragua and Panama, and with it the loader would be about 71 MB larger (4.4). The `.tif` covers the whole box.
+  - `cr`: the 1:50m outline's box, longitude −85.91…−82.56, latitude 8.07…11.19 (Isla del Coco isn't in the 1:50m outline); 3,730 × 3,474 cells, 117 of its 210 tiles kept, 7,555,072 cells in them, 635 of those nodata in the map itself. 625 sample records are on a kept tile, 618 of them with CR's code; the 619th CR record, 14.6 km out at sea, is on a dropped one. 38 classes; the largest are arable land 24.2 % of the class cells, subtropical/tropical moist montane forest 19.1 %, marine neritic 13.1 % and moist lowland forest 12.3 %.
+  - `tas`: Tasmania's main island with Bruny and Maria Islands, longitude 144.64…148.35, latitude −43.62…−40.64 (the north edge takes in nine devil records on the north-west tidal flats); King Island, the Furneaux Group and Macquarie Island are outside. 4,131 × 3,318 cells, 173 of 221 tiles kept, 11,206,656 cells, no nodata of the map's own. 1,991 sample records are on a kept tile, all with AU's code. 22 classes; the largest are temperate forest 36.2 %, pastureland 20.1 %, marine neritic 19.2 % and temperate shrubland 10.0 %.
+  - g7 studies two 0.75° windows cut from them by a query (`win`, `w`): `cr` −84.20…−83.45, 9.85…10.60, from San José to the Caribbean lowlands, and `tas` 147.25…148.00, −43.10…−42.35, south-east Tasmania with Hobart, each the 0.75° square on a 0.05° lattice holding the most of the sample's records with that country's code, 836 × 836 cells, no nodata. They were the published clips until H5, and the cells cut from the whole clips are the same, cell for cell. `cr` holds 202 records, all inside CR's outline, and 20 classes; `tas` 601 records, 491 of them inside AU's 1:50m outline (the rest are on coasts it simplifies), and 16 classes.
+  - The `.tif` files are cloud-optimized GeoTIFFs (DEFLATE level 9, no predictor: class codes aren't a continuous surface, so differences don't help; 256-pixel blocks, nearest-neighbour overviews) for desktop GIS; `habitat_clips.parquet` (zstd level 19) holds the same cells as PostGIS raster WKB (16-bit unsigned, nodata 0), one row per kept tile, which the loader turns into in-database rasters.
 - **Measured in g7** (L3, on the published files): per country, method 3's sum against the outline's geodesic area is within 1 % for 215 of 247 countries, every outline over 431 km² among them; 21 more are within 5 %, 8 within 20 % (all under 135 km²), and 3 beyond: VA (no cell), TV +28.9 %, TK −28.6 % (`g7-countries`). In the `cr` window 693,893 cells have their centre inside CR's outline, an estimated 6,785.90 km² (map area 2.3 % more); a cell covers 9,768–9,790 m² there and 7,298–7,386 m² in `tas` (`g7-latitude`, `g7-estimate`). A record's 100 m class equals its 1 km class for 49 of 202 (`cr`) and 332 of 601 (`tas`) records; the 1 km class is the 100 m majority of its cell for 201 and 579 (`g7-scale`). Method 3 against method 1 in the `tas` window inside AU's outline: −0.2 % in total, −1.1 to −2.8 % for coastal classes (`g7-ex`).
 - **Freshness.** `habitat.json` records `country_shapes.parquet`'s sha256 and the sha256 of the records the ingest read (`id,longitude,latitude`); the build refuses the habitat files when either differs from what it publishes ("run pnpm ingest habitat"). A species change therefore re-runs this ingest too (about 12 minutes, 3.2 GB of downloads, deleted after).
 
 **How each is built.** One command per step, in the order critwire's ingests already use (ingest → derive → build; `AGENTS.md`):
 - **GBIF sample** (L1): `pnpm ingest gbif-sample` submits the download (or reuses the one in `download.json`), waits, fetches the zip to a temporary folder, applies the species rule, the effective license, the country-key contract and the cap (4.2), reads each dataset's and publisher's metadata, and commits `data/raw/gbif-sample/`. `pnpm derive` writes the sample's per-dataset counts. `pnpm gbif:register --target learn-sample` mints its derived-dataset DOI. `pnpm build` writes the three files, the loader's two tables and the manifest.
 - **Natural Earth and RESOLVE** (L1): an ingest downloads the pinned sources (Natural Earth's commit `f1890d9f…`; RESOLVE's `Ecoregions2017.zip`, read in place, never extracted), writes the GeoParquet files above, `biomes.csv` and `shapes.json` (inputs, tolerance, tool versions, per-file rows, bytes, sha256) and commits them under `data/learn/`. The build copies them and puts the same shapes in the loader.
-- **Habitat summaries and clips** (L3): `pnpm ingest habitat` (003 §5; Python with rasterio in `.venv-learn`) downloads v004's two zips to a temporary folder, computes the summaries and the class at each sample record, cuts the two clips, and commits the files and `habitat.json` under `data/learn/`; the build publishes them and adds their tables to the loader. L3's run: 11 min 54 s, 3.15 GB peak memory; a second run gave the same bytes.
+- **Habitat summaries and clips** (L3): `pnpm ingest habitat` (003 §5; Python with rasterio in `.venv-learn`) downloads v004's two zips to a temporary folder, computes the summaries and the class at each sample record, cuts the two whole-country clips and masks the tiles that don't touch each country, and commits the files and `habitat.json` under `data/learn/`; the build publishes them and adds their tables to the loader. L3's run with the whole-country clips: 24 min 33 s, 12 min of them Zenodo's downloads, 3.17 GB peak memory (with the windows: 11 min 54 s); a second run with the same downloads gave the same bytes in 12 min 18 s.
 - **Loader, star and manifest**: written by `pnpm build` from the files above; nothing new is committed for them.
 
 ### 4.2 The GBIF sample
@@ -887,13 +888,13 @@ The ingest applies the cap, so `data/` is the whole snapshot and `pnpm derive` n
 - The guard and the drop, one `DO` block. Schema separation isn't dependency isolation (§3.2): `DROP SCHEMA learn_curriculum CASCADE` also drops whatever outside depends on it. So the block lists every object outside the schema that has a `pg_depend` entry (rules, triggers, defaults and policies take their table's schema; `pg_toast` belongs to its table), drops the schema, and raises, naming each listed object that is gone. Postgres computes the cascade; the guard only reads what it removed. It catches views and materialized views, foreign keys, columns of an inside type, defaults and functions over inside objects, triggers and policies; inside views, identity columns, indexes and TOAST reload cleanly (LD13–LD16). The one gap: an object another session creates in the second between the listing and the drop isn't listed. A lab database has one user, and `learn:check` holds its lock, so this is accepted.
 - `CREATE SCHEMA learn_curriculum` and `SET LOCAL search_path = learn_curriculum, public`.
 - The tables, with CHECKs for what a value may be: `coordinate_uncertainty_m` at least 0 and below `'Infinity'` (NaN sorts above it, so it fails too), `year` above 0, `est_area_km2` at least 0 and finite, `month` 1 to 12. NULL means unknown and passes. Then each table's rows as `COPY … FROM stdin (FORMAT csv)`. csv format reads a backslash as plain text; the text format would silently change rows (F10, e2).
-- Shapes arrive as base64 text and become geometry afterwards: `ST_Multi(ST_GeomFromWKB(decode(geom, 'base64'), 4326))`, one type per column (MultiPolygon, SRID 4326). Base64 takes a third less room than `bytea`'s hex form: the spike's loader is 21,330,577 bytes instead of 29,598,105, with identical geometries (L1's build, with the guard and the checks, 21,338,761; L3's, with the habitat tables and clips, 25,757,224).
+- Shapes arrive as base64 text and become geometry afterwards: `ST_Multi(ST_GeomFromWKB(decode(geom, 'base64'), 4326))`, one type per column (MultiPolygon, SRID 4326). Base64 takes a third less room than `bytea`'s hex form: the spike's loader is 21,330,577 bytes instead of 29,598,105, with identical geometries (L1's build, with the guard and the checks, 21,338,761; L3's, with the habitat tables and the whole-country clips, 72,088,315).
 - The clips arrive the same way, as base64 raster WKB, and become in-database rasters: `ST_RastFromWKB(decode(rast, 'base64'))`, with a CHECK that each is SRID 4326, one band, `16BUI`. They are stored in the database, not read from files, so no raster setting is needed (`postgis.enable_outdb_rasters` and `postgis.gdal_enabled_drivers` stay at their defaults).
-- Then primary, unique and foreign keys, GiST indexes and `ANALYZE` on every table. The habitat tables' keys: `country_habitats` (`country_code`, `habitat_code`), each a foreign key, to `countries` and `habitat_classes`; `occurrence_habitats` (`occurrence_id`), a foreign key to `occurrences`, and its `habitat_code` (NULL when the cell holds no class) to `habitat_classes`; `habitat_clips` (`clip`).
+- Then primary, unique and foreign keys, GiST indexes and `ANALYZE` on every table. The habitat tables' keys: `country_habitats` (`country_code`, `habitat_code`), each a foreign key, to `countries` and `habitat_classes`; `occurrence_habitats` (`occurrence_id`), a foreign key to `occurrences`, and its `habitat_code` (NULL when the cell holds no class) to `habitat_classes`; `habitat_clips` (`clip`, `tile`), one row per 256-cell tile, with a GiST index on each tile's footprint, `ST_ConvexHull(rast)`, as raster2pgsql's `-I` makes it, so `ST_Intersects` reads only the tiles a shape touches.
 - Then a check that raises on failure: each table's row count equals the build's, every geometry and raster has SRID 4326, and every `LAB_CHECKS` rule holds. Those are the rules keys and CHECKs can't state (`range_status` is `ok` exactly when a species has countries, each taxon's parent is one rank up, the country-key contract, the lab-only tables' codes, every record with exactly one `occurrence_habitats` row); each is one portable query counting the rows that break it, and the build runs the same queries in DuckDB over the published files, so a file that wouldn't load is never published. Shapes may be invalid (g2), so validity isn't checked.
 - `COMMIT`. The file references no table outside `learn_curriculum`; only PostGIS's functions come from `public`. Loading it again replaces the schema, tables you made there included, and its first lines say so.
 
-In the spike it loaded in 1.6 s with 14 tables. L3's build loads in 2.2 s on critwire's server, as `critwire_lab`, twice in a row, with the same rows each time: `admin1_shapes` 294, `biomes` 14, `countries` 250, `country_habitats` 5,578, `country_shapes` 247, `datasets` 400, `ecoregions` 847, `habitat_classes` 75, `habitat_clips` 2, `occurrence_habitats` 40,395, `occurrences` 40,395, `sources` 5, `species` 76, `species_countries` 472, `species_sources` 591, `taxa` 143 (`pg-smoke`, §0). The browser holds the same rows in its eight tables:
+In the spike it loaded in 1.6 s with 14 tables. L3's build loads in 3.9 s on critwire's server (2.2 s before the whole-country clips), as `critwire_lab`, twice in a row, with the same rows each time: `admin1_shapes` 294, `biomes` 14, `countries` 250, `country_habitats` 5,578, `country_shapes` 247, `datasets` 400, `ecoregions` 847, `habitat_classes` 75, `habitat_clips` 290, `occurrence_habitats` 40,395, `occurrences` 40,395, `sources` 5, `species` 76, `species_countries` 472, `species_sources` 591, `taxa` 143 (`pg-smoke`, §0). The browser holds the same rows in its eight tables:
 
 ```sql
 -- q: lab-sizes
@@ -922,19 +923,20 @@ species | 76
 
 ### 4.4 The cap: 120 MB
 
-The build refuses when `dist/learn/data/` exceeds 120,000,000 bytes (50,000,000 until L3, when the owner raised it for the whole-country habitat clips), or when the committed lab data does: `data/raw/gbif-sample/`, `data/learn/` and `data/gbif-learn-sample/` together (L1's build: 35,452,055 and 13,673,945 bytes; L3's: 45,228,556 and 14,444,834). Both refusals name the total and the largest files (`scripts/build/learn/cap.ts`). The browser engine's `parquet` extension (3.22 MB) is counted apart, under 002 §10 item 3.
+The build refuses when `dist/learn/data/` exceeds 120,000,000 bytes (50,000,000 until L3, when the owner raised it for the whole-country habitat clips), or when the committed lab data does: `data/raw/gbif-sample/`, `data/learn/` and `data/gbif-learn-sample/` together (L1's build: 35,452,055 and 13,673,945 bytes; L3's: 95,936,992 and 18,822,906). Both refusals name the total and the largest files (`scripts/build/learn/cap.ts`). The browser engine's `parquet` extension (3.22 MB) is counted apart, under 002 §10 item 3.
 
 | `/learn/data/` | Bytes |
 |---|---|
 | now (the spike, after L1's files): 10 files and the manifest | 35,397,671 (L1's build, with its index page: 35,452,055) |
 | + L2's star (8 CSV files and its manifest) | 39,984,719 |
-| + L3, measured from L2's live build (40,041,618): the habitat files, 763,118 bytes in place of the stand-ins' 850 (the summaries, the records' classes, `habitat_clips.parquet` and the two `.tif` clips); the loader's growth, 4,418,463 (3,727,616 of them the two clips' raster WKB as base64, 609,402 the `occurrence_habitats` rows); the manifest and index page, 6,207 | 45,228,556 |
+| + L3, measured from L2's live build (40,041,618): the habitat files, 763,118 bytes in place of the stand-ins' 850 (the summaries, the records' classes, `habitat_clips.parquet` and the two `.tif` clips); the loader's growth, 4,418,463 (3,727,616 of them the two clips' raster WKB as base64, 609,402 the `occurrence_habitats` rows); the manifest and index page, 6,207 | 45,228,556 (the windows) |
+| + L3's whole-country clips (owner, H5), measured from L2's live build (40,041,618): the habitat files, 5,140,249 bytes in place of the stand-ins' 850 (`habitat_clips.parquet` 1,826,789, `cr.tif` 1,380,611, `tas.tif` 1,828,711, the summaries and the records' classes 104,138); the loader's growth, 50,749,554 (50,056,048 of them the 290 tiles' raster WKB as base64); the manifest and index page, 6,421: 55,895,374 in all | 95,936,992 |
 
 The committed lab data in the spike (`SP/data/learn/`: the shapes, the stand-in habitat summaries and the sample files) is 14,055,088 bytes; L1's `data/raw/gbif-sample/` adds about 4.9 MB in place of the sample files. L1's `country_shapes.parquet` (zstd, 4.1) is 97,898 bytes larger than the spike's, which adds that much to each total above.
 
-L3 measured before it published: whole-country 100 m clips, stored in the loader, would have added about 70 MB (in-database rasters are uncompressed, 2 bytes per cell), so each clip is a 0.75° study window (4.1), about 0.7 million cells. That leaves about 4.8 MB under the cap for L5's habitat fact and margin.
+L3 first published two 0.75° windows, about 0.7 million cells each: whole-country 100 m clips in the loader would have added about 70 MB (in-database rasters are stored uncompressed in the file, 2 bytes per cell as base64), over the 50 MB cap. The owner chose whole countries and raised the cap to 120 MB (H5). Stored whole, the two boxes would make the loader about 71 MB larger again and the folder about 121–125 MB, so only the tiles touching each country are kept (4.1): 18.8 million cells, 290 tiles. That leaves about 24.1 MB under the cap for L4, L5's habitat fact and margin.
 
-With hex geometry the loader was 29,598,105 bytes, and the same projection came to about 52–58 MB, over the cap once L3 landed. Base64 brought it back under, with no change to any table. If a later measured total is over, the cuts go in this order, and each keeps the browser and PostGIS on the same data: RESOLVE is simplified further, in the file and the loader alike, using the same tolerance probe; then the CSV copy of the sample goes, since every reader also takes Parquet; then the Tasmania clip leaves the loader, and g7 keeps Costa Rica's. The loader and the sample's Parquet are cut last: every PostGIS module needs the one, and every browser module the other.
+With hex geometry the loader was 29,598,105 bytes, and the same projection came to about 52–58 MB, over the cap once L3 landed. Base64 brought it back under, with no change to any table. If a later measured total is over, the cuts go in this order, and each keeps the browser and PostGIS on the same data: RESOLVE is simplified further, in the file and the loader alike, using the same tolerance probe; then the CSV copy of the sample goes, since every reader also takes Parquet; then the Tasmania clip leaves the loader, and g7 keeps Costa Rica's. The clips stay whole countries (the owner's choice, H5): going over the cap with them goes to the owner before any cut to them. The loader and the sample's Parquet are cut last: every PostGIS module needs the one, and every browser module the other.
 
 ### 4.5 Credits
 
@@ -2415,7 +2417,7 @@ tar xzf tbls_v1.96.1_linux_amd64.tar.gz tbls
 
 Open `lab-tbls.mmd` beside [the lab schema's diagram](/learn/schema/lab/). What do the two agree on, and what does each have that the other doesn't?
 
-**What you should find:** the 16 tables, their 73 columns and types, and the 17 lines agree, cardinality included. tbls reads "zero or one" from a foreign key that may be `NULL` (`occurrences.country_code`) and "at most one per country" from a foreign key that is also its table's primary key (`country_shapes`), as the course's diagram draws them. It spells a type's punctuation as underscores (`double_precision`, `geometry_Point_4326_`). It draws the view `species_taxonomy` as a box like a table, without lines, because a view has no keys. It leaves out what the database doesn't hold: every column's note (they live in the diagram's source, not in the database), and, in Mermaid, the primary and unique keys. A diagram read back from the catalog shows exactly what the database enforces, so it is a good check on a drawn one; critwire's tests compare the lab diagram with a freshly loaded lab the same way. What a column means and what is planned still has to be written down by a person.
+**What you should find:** the 16 tables, their 74 columns and types, and the 17 lines agree, cardinality included. tbls reads "zero or one" from a foreign key that may be `NULL` (`occurrences.country_code`) and "at most one per country" from a foreign key that is also its table's primary key (`country_shapes`), as the course's diagram draws them. It spells a type's punctuation as underscores (`double_precision`, `geometry_Point_4326_`). It draws the view `species_taxonomy` as a box like a table, without lines, because a view has no keys. It leaves out what the database doesn't hold: every column's note (they live in the diagram's source, not in the database), and, in Mermaid, the primary and unique keys. A diagram read back from the catalog shows exactly what the database enforces, so it is a good check on a drawn one; critwire's tests compare the lab diagram with a freshly loaded lab the same way. What a column means and what is planned still has to be written down by a person.
 
 **Dialects:**
 - **PostgreSQL:** as here, with surrogate keys from `GENERATED ALWAYS AS IDENTITY` (or the older `serial`); generated columns are `STORED` only (virtual ones come in PostgreSQL 18); foreign keys take `ON DELETE CASCADE | SET NULL | RESTRICT`, can be `DEFERRABLE` (checked at commit), and can be added `NOT VALID` and checked later with `VALIDATE CONSTRAINT`; `UNIQUE NULLS NOT DISTINCT` makes `NULL`s collide; no automatic index on a foreign key.
@@ -3647,9 +3649,9 @@ FROM (
 ```
 
 ```text
--- result: d4-xmin-load · 1 row · sha256 430d8c5e620e
+-- result: d4-xmin-load · 1 row · sha256 aa19f0eaf2f6
 transactions | row_versions
-1 | 89784
+1 | 90072
 ```
 
 That is the loader's atomicity in the data itself: the lab arrived in one transaction, so no reader could ever see part of it. The number itself differs on every machine and every load, which is why the lab compares it rather than printing it.
@@ -6115,14 +6117,14 @@ i | j | n | land_km2 | per_land_km2 | rank_by_n
 **Tool:** PG · **Time:** 2.5 h · **Prereqs:** g6
 
 **Concept:** How to read a raster in SQL, and how to turn its cells into an area you can defend:
-- **A raster** is a grid of cells, each holding a number. Six numbers place it on the Earth, its georeference: the x and y of its upper-left corner, the cell's width and height (the height negative, since rows run south), and two skews (0 here). With the SRID they say where every cell is; `ST_MetaData` returns them. In PostGIS a raster is a value of type `raster` in a column. It can hold its cells in the database, as here, or point at a file outside it (out-db), which needs two settings and GDAL drivers a server doesn't enable by default.
+- **A raster** is a grid of cells, each holding a number. Six numbers place it on the Earth, its georeference: the x and y of its upper-left corner, the cell's width and height (the height negative, since rows run south), and two skews (0 here). With the SRID they say where every cell is; `ST_MetaData` returns them. In PostGIS a raster is a value of type `raster` in a column. It can hold its cells in the database, as here, or point at a file outside it (out-db), which needs two settings and GDAL drivers a server doesn't enable by default. A large raster is stored as tiles, one row each (raster2pgsql's `-t 256x256`, or `ST_Tile`), with a GiST index on each tile's footprint (`-I`), so a query reads only the tiles it touches.
 - **The habitat map** (Jung et al. 2020, v004, CC BY 4.0; 003 §5) gives each cell a class of the IUCN habitat classification scheme, written as a number: `106` is class 1.6, "Forest – Subtropical/tropical moist lowland", and `1401` is 14.1, "Arable land". The 100 m map's grid is longitude–latitude, SRID 4326, with cells 0.0008983152841195215° on a side: 100 m at the equator, narrower east–west by cos φ away from it (g1). It isn't Web Mercator, and no cell is 100 m by 100 m except on the equator.
 - **The value under a point:** `ST_Value(rast, band, point)` returns the value of the cell holding the point, and `ST_Intersects(rast, point)` says whether the point is on the raster at all (ArcGIS Pro's Extract Values to Points).
 - **The cells inside a polygon:** `ST_Clip(rast, polygon)` keeps the cells whose centre is inside the polygon and sets the rest to nodata (Extract by Mask). `ST_ValueCount` counts cells by value, leaving nodata out (Tabulate Area, in cells). `ST_PixelAsCentroids` returns each cell as a row: its value, column `x`, row `y` and centre point, so SQL can do the rest.
 - **From cells to area.** A count of cells becomes an area once each cell has its ground area. On a longitude–latitude grid every cell in a row has the same area, so one geodesic area per row, `ST_Area(ST_PixelAsPolygon(rast, 1, row)::geography)`, times the row's count is exact for the grid. Cells × (100 m)² overstates by the cos φ shrink. Even exact for the grid, the result is an **estimate**: the map is a model's classification, and the outline picks cells by their centres.
 - **Two ways to summarise a country** (003 §5). **Method 1** counts the 100 m cells whose centre is inside the outline, each at its row's area. **Method 3**, which critwire publishes as `country_habitats`, reads the 1 km fractions instead (for each class, the per mille of each 1 km cell it covers) and sums fraction × cell area over the 1 km cells whose centre is inside. The two differ in the **border cells**: a 1 km cell the outline crosses counts whole or not at all, by its centre, so classes along a coast carry the largest errors.
 
-**Data:** `habitat_clips`, two windows of the 100 m map stored as in-database rasters of 836 × 836 cells: `cr`, longitude −84.20…−83.45 and latitude 9.85…10.60, from San José to the Caribbean lowlands; `tas`, 147.25…148.00 and −43.10…−42.35, south-east Tasmania with Hobart (4.1). Each window is the 0.75° square holding the most of the sample's records for its country: whole countries at 100 m would take about 70 MB (4.4). Also `habitat_classes`, `country_habitats` (method 3, every country), `occurrence_habitats` (each record's 1 km class), `country_shapes` and `occurrences`. Each block names its window in `win` and builds it as one raster in `w`: `ST_Clip` cuts each stored tile to the window and `ST_Union` mosaics the pieces (ArcGIS Pro's Clip Raster, then Mosaic), and `MATERIALIZED` makes PostgreSQL build it once per query. The rasters are in the database, so no raster setting is needed: every block runs on a server's defaults.
+**Data:** `habitat_clips`, the 100 m map over all of Costa Rica (`cr`) and Tasmania (`tas`), stored as in-database rasters in tiles of 256 × 256 cells, one row per tile, keyed (`clip`, `tile`) (4.1, 4.3). Each clip is its country's box, Tasmania's with Bruny and Maria Islands, and only the tiles holding some of the country are stored: 117 for `cr`, 173 for `tas`. The blocks below study two windows of 836 × 836 cells cut from them: `cr`, longitude −84.20…−83.45 and latitude 9.85…10.60, from San José to the Caribbean lowlands; `tas`, 147.25…148.00 and −43.10…−42.35, south-east Tasmania with Hobart. Each window is the 0.75° square holding the most of the sample's records for its country. Also `habitat_classes`, `country_habitats` (method 3, every country), `occurrence_habitats` (each record's 1 km class), `country_shapes` and `occurrences`. Each block names its window in `win` and builds it as one raster in `w`: `ST_Clip` cuts each stored tile to the window and `ST_Union` mosaics the pieces (ArcGIS Pro's Clip Raster, then Mosaic), and `MATERIALIZED` makes PostgreSQL build it once per query. `ST_Clip`'s result covers every cell the polygon touches, so `win`'s edges sit a fifth of a cell inside the window's outer cell edges: an edge on a cell boundary, or just past it, would add a column or row of nodata. The rasters are in the database, so no raster setting is needed: every block runs on a server's defaults.
 
 **Worked example:** each window's georeference from `ST_MetaData`, one cell per row built from it, and the cells' size and area on the ground against the map's 100 m:
 
@@ -6132,8 +6134,8 @@ i | j | n | land_km2 | per_land_km2 | rank_by_n
 -- engine: postgis
 -- needs: raster
 WITH win (clip, env) AS (
-  VALUES ('cr', ST_MakeEnvelope(-84.2009, 9.8491, -83.4499, 10.6001, 4326)),
-         ('tas', ST_MakeEnvelope(147.2491, -43.1003, 148.0001, -42.3493, 4326))
+  VALUES ('cr', ST_MakeEnvelope(-84.2007, 9.8493, -83.4501, 10.5999, 4326)),
+         ('tas', ST_MakeEnvelope(147.2493, -43.1001, 147.9999, -42.3495, 4326))
 ), w AS MATERIALIZED (
   SELECT h.clip, ST_Union(ST_Clip(h.rast, win.env)) AS rast
   FROM habitat_clips AS h JOIN win ON win.clip = h.clip AND ST_Intersects(h.rast, win.env)
@@ -6182,7 +6184,7 @@ Both windows hold 698,896 cells: 6,989.0 km² if every cell were 100 m by 100 m.
 -- engine: postgis
 -- needs: raster
 WITH win (clip, env) AS (
-  VALUES ('cr', ST_MakeEnvelope(-84.2009, 9.8491, -83.4499, 10.6001, 4326))
+  VALUES ('cr', ST_MakeEnvelope(-84.2007, 9.8493, -83.4501, 10.5999, 4326))
 ), w AS MATERIALIZED (
   SELECT h.clip, ST_Union(ST_Clip(h.rast, win.env)) AS rast
   FROM habitat_clips AS h JOIN win ON win.clip = h.clip AND ST_Intersects(h.rast, win.env)
@@ -6218,7 +6220,7 @@ All 202 records in the window have a class: the window has no nodata cells. 87 a
 -- engine: postgis
 -- needs: raster
 WITH win (clip, env) AS (
-  VALUES ('cr', ST_MakeEnvelope(-84.2009, 9.8491, -83.4499, 10.6001, 4326))
+  VALUES ('cr', ST_MakeEnvelope(-84.2007, 9.8493, -83.4501, 10.5999, 4326))
 ), w AS MATERIALIZED (
   SELECT h.clip, ST_Union(ST_Clip(h.rast, win.env)) AS rast
   FROM habitat_clips AS h JOIN win ON win.clip = h.clip AND ST_Intersects(h.rast, win.env)
@@ -6252,7 +6254,7 @@ habitat_code | cells
 -- engine: postgis
 -- needs: raster
 WITH win (clip, env) AS (
-  VALUES ('cr', ST_MakeEnvelope(-84.2009, 9.8491, -83.4499, 10.6001, 4326))
+  VALUES ('cr', ST_MakeEnvelope(-84.2007, 9.8493, -83.4501, 10.5999, 4326))
 ), w AS MATERIALIZED (
   SELECT h.clip, ST_Union(ST_Clip(h.rast, win.env)) AS rast
   FROM habitat_clips AS h JOIN win ON win.clip = h.clip AND ST_Intersects(h.rast, win.env)
@@ -6304,8 +6306,8 @@ The window's land inside the outline is an estimated 6,785.90 km², from 836 are
 -- engine: postgis
 -- needs: raster
 WITH win (clip, env) AS (
-  VALUES ('cr', ST_MakeEnvelope(-84.2009, 9.8491, -83.4499, 10.6001, 4326)),
-         ('tas', ST_MakeEnvelope(147.2491, -43.1003, 148.0001, -42.3493, 4326))
+  VALUES ('cr', ST_MakeEnvelope(-84.2007, 9.8493, -83.4501, 10.5999, 4326)),
+         ('tas', ST_MakeEnvelope(147.2493, -43.1001, 147.9999, -42.3495, 4326))
 ), w AS MATERIALIZED (
   SELECT h.clip, ST_Union(ST_Clip(h.rast, win.env)) AS rast
   FROM habitat_clips AS h JOIN win ON win.clip = h.clip AND ST_Intersects(h.rast, win.env)
@@ -6400,7 +6402,7 @@ Over all 247 outlines the estimate is 0.999074 of the outlines' area (−0.09 %)
 -- engine: postgis
 -- needs: raster
 WITH win (clip, env) AS (
-  VALUES ('tas', ST_MakeEnvelope(147.2491, -43.1003, 148.0001, -42.3493, 4326))
+  VALUES ('tas', ST_MakeEnvelope(147.2493, -43.1001, 147.9999, -42.3495, 4326))
 ), w AS MATERIALIZED (
   SELECT h.clip, ST_Union(ST_Clip(h.rast, win.env)) AS rast
   FROM habitat_clips AS h JOIN win ON win.clip = h.clip AND ST_Intersects(h.rast, win.env)
@@ -8651,7 +8653,7 @@ The pictures are drawn offline by Mermaid in a headless browser, as SVG only (pl
 `site/learn/erd/lab.mmd`, schema `learn_curriculum`. The same keyed tables as schema v2 in PostgreSQL types (`text`, `float8`; GBIF's dataset key is a `uuid`), plus the shapes the GIS modules join to: country outlines, admin-1 areas for nine countries, RESOLVE's biomes and ecoregions, and the habitat map's classes. Every shape is `geometry` in WGS 84 (SRID 4326) with a GiST index; a record's point is a generated column, so it can never disagree with its longitude and latitude. Two lists sit beside the diagram, as comments in the source:
 
 - **Lab-made:** tables the lessons create in the lab (s4's hexagon grids, the smoke check's table, d1's field notes, d3's copy in year order, d4's sightings feed and its run log, the ETL's staging tables, d6's star and its species history). They aren't part of the loaded lab, so they aren't drawn; the check excuses them when a lesson's setup has made them.
-- **Planned:** none since L3, which added `occurrence_habitats` (the habitat class at each record) and `habitat_clips` (two clips of the habitat map, as in-database rasters; the diagram names the column's type `raster`). The marker stays in the check's rules: a table listed as planned is drawn so the design is whole, excused while it doesn't exist, and fails the check once it does, so the marker can't go stale.
+- **Planned:** none since L3, which added `occurrence_habitats` (the habitat class at each record) and `habitat_clips` (two whole-country clips of the habitat map, as in-database rasters in 256-cell tiles keyed (`clip`, `tile`); the diagram names the column's type `raster`). The marker stays in the check's rules: a table listed as planned is drawn so the design is whole, excused while it doesn't exist, and fails the check once it does, so the marker can't go stale.
 
 ### 6.3 The Power BI star
 

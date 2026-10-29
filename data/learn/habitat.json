@@ -2,79 +2,109 @@
   "clips": {
     "cr": {
       "bounds": {
-        "east": -83.44989663356708,
-        "north": 10.600120352610361,
-        "south": 9.849128775086442,
-        "west": -84.200888211091
+        "east": -82.55966618700464,
+        "north": 11.190313494276879,
+        "south": 8.06956619724566,
+        "west": -85.91038219677046
       },
-      "height": 836,
+      "country": "CR",
+      "height": 3474,
       "nodata": 0,
-      "nodataCells": 0,
+      "nodataCells": 5403583,
       "scale": 0.0008983152841195215,
+      "tileSize": 256,
+      "tiles": 117,
       "values": {
-        "105": 15,
-        "106": 102946,
-        "108": 10318,
-        "109": 178008,
-        "201": 563,
-        "306": 36961,
-        "307": 29887,
-        "407": 85,
-        "500": 1113,
-        "503": 256,
-        "507": 653,
-        "511": 49,
-        "803": 294,
-        "900": 11332,
-        "1200": 168,
-        "1206": 13,
-        "1401": 253016,
-        "1402": 6361,
-        "1403": 33385,
-        "1405": 33473
+        "100": 5386,
+        "105": 240413,
+        "106": 926008,
+        "107": 35724,
+        "108": 57326,
+        "109": 1444464,
+        "201": 379873,
+        "300": 36,
+        "305": 1972,
+        "306": 250211,
+        "307": 216757,
+        "405": 5,
+        "406": 84,
+        "407": 460,
+        "500": 42933,
+        "501": 2056,
+        "502": 920,
+        "503": 14647,
+        "505": 86945,
+        "506": 108,
+        "507": 12835,
+        "511": 251,
+        "515": 1520,
+        "803": 1419,
+        "900": 990824,
+        "908": 8858,
+        "909": 226596,
+        "1101": 388987,
+        "1102": 4714,
+        "1103": 6963,
+        "1200": 16611,
+        "1206": 299,
+        "1207": 170,
+        "1401": 1825202,
+        "1402": 58168,
+        "1403": 237006,
+        "1404": 689,
+        "1405": 66997
       },
-      "width": 836
+      "width": 3730
     },
     "tas": {
       "bounds": {
-        "east": 148.00013800454352,
-        "north": -42.349277439246606,
-        "south": -43.100269016770525,
-        "west": 147.24914642701958
+        "east": 148.35048096535016,
+        "north": -40.63978345356716,
+        "south": -43.62039356627574,
+        "west": 144.6395405266524
       },
-      "height": 836,
+      "country": "AU",
+      "height": 3318,
       "nodata": 0,
-      "nodataCells": 0,
+      "nodataCells": 2500002,
       "scale": 0.0008983152841195215,
+      "tileSize": 256,
+      "tiles": 173,
       "values": {
-        "104": 222337,
-        "108": 55,
-        "304": 110997,
-        "305": 1436,
-        "404": 10527,
-        "500": 9775,
-        "505": 94,
-        "506": 3,
-        "900": 108396,
-        "909": 49211,
-        "1200": 2366,
-        "1206": 30,
-        "1401": 2891,
-        "1402": 154334,
-        "1403": 14748,
-        "1405": 11696
+        "104": 4060363,
+        "108": 111813,
+        "300": 11,
+        "302": 210220,
+        "304": 1123643,
+        "305": 1991,
+        "400": 12,
+        "403": 63108,
+        "404": 74312,
+        "500": 146497,
+        "505": 117362,
+        "506": 706,
+        "803": 2226,
+        "900": 2146526,
+        "909": 266649,
+        "1101": 13163,
+        "1200": 29578,
+        "1206": 1079,
+        "1401": 90031,
+        "1402": 2257190,
+        "1403": 454470,
+        "1405": 35706
       },
-      "width": 836
+      "width": 4131
     }
   },
   "files": {
     "clips/cr.tif": {
-      "bytes": 221986,
-      "sha256": "f3e117226d09fa7e23f2cf27f3ed589b03f374e32447cfb9c4d9723edeef679e"
+      "bytes": 1380611,
+      "sha256": "995f02136865847e13d40c284a6a2efa7cc7345cffdd3c4efec80c58e53a0767"
     },
     "clips/tas.tif": {
-      "bytes": 180362,
-      "sha256": "1deb4201167751c6c86b8b15c8141fc735e042c6fce190f6c9c82ac364cb72ea"
+      "bytes": 1828711,
+      "sha256": "cc513aaec0cb25bbb8f60543396b1bc433b3829021f40795ecfd96a892271d94"
     },
     "country_habitats.parquet": {
       "bytes": 22407,
@@ -92,9 +122,9 @@
       "sha256": "2539cb826ee2ed5a14068bccb37f9c3ee5e1940e4c2e179fb6f105b75bd210f4"
     },
     "habitat_clips.parquet": {
-      "bytes": 256632,
-      "rows": 2,
-      "sha256": "46481464eff9a1ed29ffd8d533b2e37c497c514f159c42656d354d90db766204"
+      "bytes": 1826789,
+      "rows": 290,
+      "sha256": "15f132cb5fda7f54097ab6e9a5b3266cf569397ab2e7fc4ac8ff27e1b5218d00"
     },
     "occurrence_habitats.parquet": {
       "bytes": 81731,
@@ -251,7 +281,7 @@
     "records": 40395
   },
   "method": {
-    "clips": "v004's level-2 composite at 100 m (EPSG:4326), each window snapped outward to its grid, cells unchanged; cloud-optimized GeoTIFF (DEFLATE, PREDICTOR=2, 256 px blocks, nearest-neighbour overviews); habitat_clips.parquet holds the same cells as PostGIS raster WKB",
+    "clips": "v004's level-2 composite at 100 m (EPSG:4326), each country's box snapped outward to its grid, cells unchanged except that every cell of a 256 × 256-cell tile whose box doesn't intersect the country's Natural Earth 1:50m outline is set to nodata; cloud-optimized GeoTIFF (DEFLATE level 9, no predictor, 256 px blocks, nearest-neighbour overviews); habitat_clips.parquet holds the same cells as PostGIS raster WKB, one row per tile holding a class cell (tiles numbered row-major from the upper left)",
     "countries": "method 3 (003 §5): v004's 1 km level-2 fractions (EPSG:4326, 0.009915667822884942° cells); per country, Σ fraction ÷ 1000 × the cell's geodesic area (WGS84) over the cells whose centre is inside its Natural Earth 1:50m outline (overlapping outlines both count a shared cell); partition classes only (open-water overlay 901, 1000, 1001, 1002, 1003, 1004 left out); km² rounded to 0.01; estimated from a map, not measured",
     "records": "the record's 1 km cell: the partition class with the largest fraction, ties to the lowest code; NULL when the cell holds none; the map's class at that place, not the species' habitat"
   },

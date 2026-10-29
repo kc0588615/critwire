@@ -30,7 +30,7 @@ export const LAB_TABLES: readonly LabTable[] = [
   { name: "habitat_classes", from: "read_parquet('habitat_classes.parquet')", key: ["code"] },
   { name: "country_habitats", from: "read_parquet('country_habitats.parquet')", key: ["country_code", "habitat_code"] },
   { name: "occurrence_habitats", from: "read_parquet('occurrence_habitats.parquet')", key: ["occurrence_id"] },
-  { name: "habitat_clips", from: "read_parquet('habitat_clips.parquet')", key: ["clip"] },
+  { name: "habitat_clips", from: "read_parquet('habitat_clips.parquet')", key: ["clip", "tile"] },
 ];
 
 // setup.sql's external-id columns: each UNIQUE there and in the loader's lab-keys.sql.

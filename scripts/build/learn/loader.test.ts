@@ -14,6 +14,7 @@
 //       the raster guard is the first statement after BEGIN; the per-BLOB SRID check (rasters too) says "values".
 // LD20 (L3 §3): the habitat tables missing from the lab, or a raster loaded as text, or one of the wrong shape → 16
 //       tables, habitat_clips.rast converted from base64 WKB in the keys step and CHECKed (SRID, one band, 16BUI).
+//       H5: one row per 256-cell tile, keyed (clip, tile), with raster2pgsql's GiST index on the tiles' hulls.
 // The real loader's LD9 and LD10 need dist/: loader.dbtest.ts.
 import assert from "node:assert/strict";
 import { test } from "node:test";
@@ -124,11 +125,13 @@ test("LD20 16 lab tables, the habitat two after country_habitats; the raster con
   const ddl = readFileSync(new URL("../../../db/learn/lab-ddl.sql", import.meta.url), "utf8");
   assert.deepEqual([...ddlColumns(ddl).keys()].sort(), [...names].sort());
   assert.deepEqual(ddlColumns(ddl).get("occurrence_habitats"), ["occurrence_id", "habitat_code"]);
-  assert.deepEqual(ddlColumns(ddl).get("habitat_clips"), ["clip", "rast"]);
+  assert.deepEqual(ddlColumns(ddl).get("habitat_clips"), ["clip", "tile", "rast"]);
+  assert.deepEqual(LAB_TABLES.find((t) => t.name === "habitat_clips")?.key, ["clip", "tile"]);
   const keys = readFileSync(new URL("../../../db/learn/lab-keys.sql", import.meta.url), "utf8");
   assert.match(keys, /^ALTER TABLE habitat_clips ALTER COLUMN rast TYPE raster USING ST_RastFromWKB\(decode\(rast, 'base64'\)\);$/m);
   assert.match(keys, /^ALTER TABLE habitat_clips ADD CHECK \(ST_SRID\(rast\) = 4326 AND ST_NumBands\(rast\) = 1 AND ST_BandPixelType\(rast, 1\) = '16BUI'\);$/m);
-  assert.match(keys, /^ALTER TABLE habitat_clips ADD PRIMARY KEY \(clip\);$/m);
+  assert.match(keys, /^ALTER TABLE habitat_clips ADD PRIMARY KEY \(clip, tile\);$/m);
+  assert.match(keys, /^CREATE INDEX ON habitat_clips USING gist \(ST_ConvexHull\(rast\)\);$/m);
   assert.match(keys, /^ALTER TABLE occurrence_habitats ADD PRIMARY KEY \(occurrence_id\);$/m);
   assert.match(keys, /^ALTER TABLE occurrence_habitats ADD FOREIGN KEY \(occurrence_id\) REFERENCES occurrences \(id\);$/m);
   assert.match(keys, /^ALTER TABLE occurrence_habitats ADD FOREIGN KEY \(habitat_code\) REFERENCES habitat_classes \(code\);$/m);

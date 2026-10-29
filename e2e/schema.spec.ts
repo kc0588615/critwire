@@ -97,6 +97,8 @@ test("each schema page: its SVG (alt = <title>, linked alone), relationships in 
     await expect(page.locator(`section.dictionary[data-table="${t}"]`), t).toHaveCount(1);
     await expect(page.locator(`section.dictionary[data-table="${t}"] .planned`), t).toHaveCount(0);
   }
+  // H5: the clips are stored as tiles, keyed (clip, tile).
+  await expect(page.locator(`section.dictionary[data-table="habitat_clips"] tbody tr td:first-child`)).toHaveText(["clip", "tile", "rast"]);
   await expect(page.locator("ul.planned-tables")).toHaveCount(0);
   // The star page links each published file.
   await page.goto("/learn/schema/star/");

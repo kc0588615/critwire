@@ -40,7 +40,7 @@ const SOURCES: Record<string, string> = {
   habitat_classes: "Jung et al. 2020, v004 legend (CC BY 4.0)",
   country_habitats: `${JUNG}, 1 km fractions over Natural Earth's outlines (estimated)`,
   occurrence_habitats: `${JUNG}, 1 km class at each sample record`,
-  habitat_clips: `${JUNG}, 100 m classes`,
+  habitat_clips: `${JUNG}, 100 m classes, whole country, in 256-cell tiles`,
   dim_species: "`species` and `species_taxonomy`",
   dim_country: "`countries`, plus the `ZZ` member",
   dim_dataset: "`datasets`",
@@ -56,6 +56,7 @@ const COLUMN_SOURCES: Record<string, string> = {
   "occurrences.country_code": "`country_code_gbif`, when a `countries` row",
   "dim_year.decade": "computed from `year`",
   "dim_year.label": "computed from `year`",
+  "habitat_clips.tile": "the ingest's tiling: row-major from the clip's upper-left tile",
   "dim_habitat_class.level1_name": "`habitat_classes`, its level-1 row",
 };
 

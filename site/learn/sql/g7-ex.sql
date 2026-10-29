@@ -3,7 +3,7 @@
 -- engine: postgis
 -- needs: raster
 WITH win (clip, env) AS (
-  VALUES ('tas', ST_MakeEnvelope(147.2491, -43.1003, 148.0001, -42.3493, 4326))
+  VALUES ('tas', ST_MakeEnvelope(147.2493, -43.1001, 147.9999, -42.3495, 4326))
 ), w AS MATERIALIZED (
   SELECT h.clip, ST_Union(ST_Clip(h.rast, win.env)) AS rast
   FROM habitat_clips AS h JOIN win ON win.clip = h.clip AND ST_Intersects(h.rast, win.env)

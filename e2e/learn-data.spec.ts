@@ -212,6 +212,16 @@ test("occurrence_habitats: one row per sample record; every class code, there an
   expect(r).toEqual({ n: contributions.records, ids: contributions.records, extra: 0, missing: 0, unknown_record_codes: 0, unknown_country_codes: 0 });
 });
 
+test("habitat_clips.parquet: columns clip, tile, rast; one row per kept tile, as many as habitat.json's clips list", async () => {
+  const { clips } = await readJson("data/learn/habitat.json");
+  const tiles = Object.values<{ tiles: number }>(clips).reduce((n, c) => n + c.tiles, 0);
+  const columns = (await db.rows(`DESCRIBE SELECT * FROM ${reader("habitat_clips.parquet")}`)).map((r) => r.column_name);
+  expect(columns).toEqual(["clip", "tile", "rast"]);
+  const [r] = await db.rows(`SELECT count(*)::INTEGER AS n, count(DISTINCT (clip, tile))::INTEGER AS keys FROM ${reader("habitat_clips.parquet")}`);
+  expect(r).toEqual({ n: tiles, keys: tiles });
+  expect(tiles).toBeGreaterThan(Object.keys(clips).length);
+});
+
 test("clips/*.tif start with TIFF's magic and are served in byte ranges (206, the same bytes)", async ({ request }) => {
   for (const name of ["clips/cr.tif", "clips/tas.tif"]) {
     const whole = await (await request.get(`/learn/data/${name}`)).body();

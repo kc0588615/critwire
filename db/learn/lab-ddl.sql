@@ -138,9 +138,11 @@ CREATE TABLE occurrence_habitats (
   habitat_code  integer
 );
 
--- Two clips of the map's 100 m level-2 classes, stored in the database (in-db rasters, no files outside it).
+-- Two clips of the map's 100 m level-2 classes, all of Costa Rica and Tasmania, stored in the database (in-db rasters,
+-- no files outside it) as 256 × 256-cell tiles, one row each; tiles holding none of the country are left out.
 CREATE TABLE habitat_clips (
   clip text NOT NULL,
+  tile integer NOT NULL,
   rast text NOT NULL
 );
 

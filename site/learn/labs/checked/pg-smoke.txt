@@ -1,4 +1,4 @@
--- result: pg-smoke · 16 rows · sha256 3e77cac6c4d2
+-- result: pg-smoke · 16 rows · sha256 958789792d50
 table_name | n_rows
 admin1_shapes | 294
 biomes | 14
