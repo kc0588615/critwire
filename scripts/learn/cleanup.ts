@@ -107,13 +107,18 @@ async function assertNoStragglers(sql: postgres.Sql, db: string): Promise<void> 
 }
 
 /**
- * Terminates the sessions of run `app` in this database as this role (a Python block's, whose pids are unknown); the
- * cleanup's and check (b)'s one query (plan L4 §4.4, §4.6). Returns the pids it ended and a line per one still running.
+ * The sessions of run `app` in this database as this role (a Python block's, whose pids are unknown), but the asking
+ * one: the cleanup's and check (b)'s one query (plan L4 §4.4, §4.6).
  */
-export async function endRunSessions(sql: postgres.Sql, app: string): Promise<{ ended: number[]; problems: string[] }> {
+export async function runSessions(sql: postgres.Sql, app: string): Promise<number[]> {
   const running = await sql<{ pid: number }[]>`select pid from pg_stat_activity where datname = current_database()
     and usename = current_user and application_name = ${app} and pid <> pg_backend_pid() order by pid`;
-  return terminate(sql, running.map((r) => r.pid));
+  return running.map((r) => r.pid);
+}
+
+/** Terminates runSessions' sessions; returns the pids it ended and a line per one still running. */
+export async function endRunSessions(sql: postgres.Sql, app: string): Promise<{ ended: number[]; problems: string[] }> {
+  return terminate(sql, await runSessions(sql, app));
 }
 
 /** Terminates each recorded session still running; returns one line per session that didn't end. */

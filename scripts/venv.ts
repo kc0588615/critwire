@@ -54,11 +54,17 @@ export function venvProblems({ file, python, pins }: VenvState, who: string): st
   return problems.length ? `${who}: .venv-learn doesn't match ${relative(repo, file)}: ${problems.join("; ")}: run pnpm learn:venv` : null;
 }
 
-// Throws venvProblems' refusal, or why the check couldn't run.
-export async function assertVenv(file: string, who: string, python = VENV_PYTHON): Promise<void> {
+// The venv's state once it matches `file`; throws venvProblems' refusal, or why the check couldn't run.
+export async function readVenv(file: string, who: string, python = VENV_PYTHON): Promise<VenvState> {
   const state = await venvState(file, python).catch((e: Error) => {
     throw new Error(`${who}: .venv-learn: the venv check couldn't run (${e.message}): run pnpm learn:venv`);
   });
   const problem = venvProblems(state, who);
   if (problem) throw new Error(problem);
+  return state;
+}
+
+// Throws readVenv's refusal.
+export async function assertVenv(file: string, who: string, python = VENV_PYTHON): Promise<void> {
+  await readVenv(file, who, python);
 }

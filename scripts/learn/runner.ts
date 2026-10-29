@@ -17,13 +17,13 @@
 // block at once and is cancelled. `-- fails:` as in `tx: own`; lock_timeout 30 s is the server's stop for a stalled
 // wait. Then each window must have ended clean, with the `tx: own` checks for leaks and watched schemas, and both
 // sessions end. Its result is every statement that returned rows, as `window | statement | <columns>`.
-// runBlocks runs the boot blocks first, once, then the rest (each twice with `update`), and hands the runs to
-// record.ts settleResults: against their recorded results (site/learn/labs/checked/<id>.txt), or written once both runs
-// agree and every block passed. An abort cancels the running statement and throws its reason. Tests: runner.dbtest.ts.
+// blockRuns runs the boot blocks first, once, then the rest (each twice with `update`); runBlocks hands the runs to
+// record.ts settleResults (learn:check settles them with the Python stage's): against their recorded results
+// (site/learn/labs/checked/<id>.txt), or written once both runs agree and every block passed. An abort cancels the running statement and throws its reason. Tests: runner.dbtest.ts.
 import postgres from "postgres";
 import { statementError, type Statement } from "../build/learn/sql.ts";
 import { PG_SESSION, type Block } from "./blocks.ts";
-import type { Versions } from "./freshness.ts";
+import type { ServerVersions } from "./freshness.ts";
 import { dropObjects, labMade, learnObjects, superuserCleanup } from "./leaks.ts";
 import { LAB_SCHEMA, type PgTarget } from "./pg.ts";
 import { planErrors } from "./plan.ts";
@@ -74,11 +74,11 @@ export interface Watch {
 
 /** The versions a recorded result depends on (SC6): PostgreSQL, PostGIS and GEOS, as numbers; GDAL's (raster blocks),
  * recorded only. Throws when PostGIS raster is missing: the loader needs it. */
-export async function serverVersions(sql: postgres.Sql): Promise<Versions> {
+export async function serverVersions(sql: postgres.Sql): Promise<ServerVersions> {
   const [{ raster, db }] = await sql<{ raster: boolean; db: string }[]>`select
     to_regprocedure('postgis_gdal_version()') is not null as raster, current_database() as db`;
   if (!raster) throw new Error(`PostGIS raster is missing in ${db} (the lab loader needs it): CREATE EXTENSION postgis_raster there as the superuser, then re-run`);
-  const [v] = await sql<Record<keyof Versions, string>[]>`select current_setting('server_version') as postgresql,
+  const [v] = await sql<Record<keyof ServerVersions, string>[]>`select current_setting('server_version') as postgresql,
     postgis_lib_version() as postgis, postgis_geos_version() as geos, postgis_gdal_version() as gdal`;
   const number = (s: string) => /[0-9]+(\.[0-9]+)*/.exec(s)?.[0] ?? s;
   return { postgresql: number(v!.postgresql), postgis: number(v!.postgis), geos: number(v!.geos), gdal: number(v!.gdal) };
@@ -347,7 +347,7 @@ async function runOwnBlock(s: LabSession, b: Block, { known, watch, timeoutMs = 
 
   if (await leftOpen(s, q)) o.failures.push(`${q}: left its transaction open; the runner rolled it back`);
   o.failures.push(...(await restoreSession(s, q)));
-  o.failures.push(...(await committedLeaks(s, q, known)));
+  o.failures.push(...(await committedLeaks(s.sql, s.database, q, known)));
   o.failures.push(...(await committedChanges(watch, before, q)));
 
   if (!o.failures.length && !shown) o.failures.push(`${q}: no statement returned rows to show`);
@@ -482,7 +482,7 @@ async function runSessionsBlock(s: LabSession, b: Block, { known, watch, open, t
   } finally {
     await endWindows(s, windows);
   }
-  o.failures.push(...(await committedLeaks(s, q, known)));
+  o.failures.push(...(await committedLeaks(s.sql, s.database, q, known)));
   o.failures.push(...(await committedChanges(watch, before, q)));
 
   if (!o.failures.length && !shown.length) o.failures.push(`${q}: no statement returned rows to show`);
@@ -524,19 +524,22 @@ async function restoreSession(s: LabSession, q: string): Promise<string[]> {
   }
 }
 
-/** A `-- tx: own` block's committed learn_ objects (LK4): the lab role's dropped, others named once and then known. */
-async function committedLeaks(s: LabSession, q: string, known: Set<string>): Promise<string[]> {
-  const leaks = (await learnObjects(s.sql)).filter((o) => !known.has(o));
-  const ours = new Set(await labMade(s.sql, leaks));
+/**
+ * The learn_ objects a block committed (a `-- tx: own` or Python block; LK4, PYC1), through the lab connection `sql` to
+ * `database`: the lab role's dropped, others named once and then known.
+ */
+export async function committedLeaks(sql: postgres.Sql, database: string, q: string, known: Set<string>): Promise<string[]> {
+  const leaks = (await learnObjects(sql)).filter((o) => !known.has(o));
+  const ours = new Set(await labMade(sql, leaks));
   try {
-    await dropObjects(s.sql, [...ours]);
+    await dropObjects(sql, [...ours]);
   } catch (e) {
     throw new Error(`${q}: ${(e as Error).message}`);
   }
   return leaks.map((leak) => {
     if (ours.has(leak)) return `${q}: committed ${leak}; the runner dropped it`;
     known.add(leak);
-    return `${q}: committed ${leak}; the lab role didn't make it, so as the superuser run: ${superuserCleanup(leak, s.database)}`;
+    return `${q}: committed ${leak}; the lab role didn't make it, so as the superuser run: ${superuserCleanup(leak, database)}`;
   });
 }
 
@@ -548,11 +551,18 @@ export interface BlocksOptions extends RunOptions, SettleOptions {
 }
 
 /**
- * The page's blocks against their recorded results (record.ts settleResults): the `-- boot` blocks first, once (a
- * failing one throws at once), then `afterBoot`, then the rest in order, each of them run twice with `update`. Throws
- * naming every failure.
+ * The page's blocks against their recorded results (record.ts settleResults): blockRuns, then settled. Throws naming
+ * every failure.
  */
-export async function runBlocks(s: LabSession, blocks: readonly Block[], { update, checkedDir, show = false, log = console.log, afterBoot, ...run }: BlocksOptions): Promise<void> {
+export async function runBlocks(s: LabSession, blocks: readonly Block[], { checkedDir, ...options }: BlocksOptions): Promise<void> {
+  await settleResults(await blockRuns(s, blocks, options), { update: options.update, checkedDir, log: options.log });
+}
+
+/**
+ * The blocks' runs, for settleResults: the `-- boot` blocks first, once (a failing one throws at once), then
+ * `afterBoot`, then the rest in order, each of them run twice with `update`.
+ */
+export async function blockRuns(s: LabSession, blocks: readonly Block[], { update, show = false, log = console.log, afterBoot, ...run }: Omit<BlocksOptions, "checkedDir">): Promise<BlockRuns[]> {
   const page = new Map(blocks.map((b) => [b.id, b]));
   const raster = rasterGate((text) => s.sql.unsafe(text));
   const runs: BlockRuns[] = [];
@@ -567,5 +577,5 @@ export async function runBlocks(s: LabSession, blocks: readonly Block[], { updat
   for (const b of blocks.filter((x) => x.boot)) await one(b);
   await afterBoot?.();
   for (const b of blocks.filter((x) => !x.boot)) await one(b);
-  await settleResults(runs, { update, checkedDir, log });
+  return runs;
 }

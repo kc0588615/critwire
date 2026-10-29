@@ -32,7 +32,7 @@ const ctx = (over: Partial<PageContext> = {}): PageContext => ({
     ["x1-pg", "-- result: x1-pg · 1 row · sha256 000000000000\ntag\n</pre>"],
     ["x1-plan", "-- result: x1-plan · 2 rows · sha256 111111111111\nQUERY PLAN\nIndex Scan using t_a_idx on t (actual rows=9 loops=1)\n  Index Cond: (a < 3)"],
   ]),
-  stamp: { checked: "2026-10-28", versions: { postgresql: "16.15", postgis: "3.4.2", geos: "3.12.1", gdal: "3.8.4" } },
+  stamp: { checked: "2026-10-28", versions: { postgresql: "16.15", postgis: "3.4.2", geos: "3.12.1", gdal: "3.8.4", python: "3.12.3", requirements: "0123456789ab" } },
   download: "x1.sql",
   star: { "dim_country.csv": { rows: 250, sha256: "ab".repeat(32) } },
   draft: false,
