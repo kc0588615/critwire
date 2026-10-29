@@ -1,10 +1,11 @@
 // The lab venv's Python for the ingests' raster and geometry work (shapes.py, habitat.py): .venv-learn/bin/python -I.
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { VENV_PYTHON } from "../venv.ts";
 
 // The command that runs `script` (a file in scripts/ingest/) with the venv's Python, isolated (-I).
 export const venvPython = (script: string): string[] =>
-  [fileURLToPath(new URL("../../.venv-learn/bin/python", import.meta.url)), "-I", fileURLToPath(new URL(script, import.meta.url))];
+  [VENV_PYTHON, "-I", fileURLToPath(new URL(script, import.meta.url))];
 
 // Runs python + args; returns its stdout. Throws on a spawn error, a non-zero exit or `signal`'s abort (the child is
 // killed). Its stderr goes to ours. `name` labels the errors.

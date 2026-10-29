@@ -1,0 +1,4 @@
+# The ingests' Python stack (ingest shapes, ingest habitat): the labs' pins plus rasterio. Never published.
+# Exact pins in requirements.txt (uv pip compile --universal); the constraint keeps every shared pin identical.
+-c ../../site/learn/labs/requirements.txt
+rasterio

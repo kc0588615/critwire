@@ -18,7 +18,7 @@
     "learn:check": "tsx scripts/learn-check.ts",
     "learn:port": "tsx scripts/learn-port.ts",
     "erd": "tsx scripts/erd.ts",
-    "learn:venv": "UV_PYTHON_DOWNLOADS=never uv venv --allow-existing --python /usr/bin/python3.12 .venv-learn && uv pip sync --no-build --python .venv-learn site/learn/labs/requirements.txt",
+    "learn:venv": "UV_PYTHON_DOWNLOADS=never uv venv --allow-existing --python /usr/bin/python3.12 .venv-learn && uv pip sync --no-build --python .venv-learn site/learn/labs/requirements.txt scripts/ingest/requirements.txt",
     "e2e": "playwright test",
     "test": "tsx --test 'scripts/**/*.test.ts'",
     "test:db": "tsx --test --test-concurrency=1 'scripts/**/*.dbtest.ts'"

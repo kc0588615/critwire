@@ -728,7 +728,7 @@ Every step:
   8. Each step runs learn:check once (`L` or `LU`); the second whole run is Verification's.
 - **Estimate:** 27 steps. With 6 sessions through Steps, the code review, ≈ 2 fix steps, Verification and Release: ≈ 38 of the 48-session cap. Count at each session start: `grep -c '^=== .* session ' /srv/critter-ai/agent-state/missions/critwire-learn-l4-stats-etl.log`. Past 40 before the code review: drop S25 (Decision). Past 48: the brief's rule (no more review steps; finish Verification and Release; unfinished assigned items become handoff items for L5).
 
-- [ ] S1 · The venv split and `scripts/venv.ts` (§1; finding 2; D1, D2, D18)
+- [x] S1 · The venv split and `scripts/venv.ts` (§1; finding 2; D1, D2, D18)
   - First [T] `scripts/venv.test.ts` (V1, pure `venvProblems`): a missing pin and a wrong-version pin each refused, naming the package, its pin, what's installed and `pnpm learn:venv`; Python 3.11 and 3.13 refused; every pin matching passes.
   - First [D] `scripts/learn/python.dbtest.ts` (new; V1 probe, V4), on `.venv-learn` with fixture requirements files: a pin whose marker is false here doesn't appear; a missing and a wrong-version pin appear with `installed` null and the real version; rasterio and ipykernel (unlisted) don't appear; `assertVenv(<fixture ingest file pinning rasterio at another version>)` throws, and `assertVenv(INGEST_REQUIREMENTS)` passes.
   - Files:
@@ -953,6 +953,9 @@ The isolated tests are the architecture's "Failure cases, written as tests befor
 ## Decisions
 
 - Architecture D1–D20 (end of `## Architecture`) final after Revision, 2026-10-29.
+- S1 (2026-10-29): Steps' deviations 1–8 from "Work units and budget" (top of `## Steps`) are in effect: port + py-connect/py-smoke at S10; units 4–5 split into S4–S10; setup §3.3/§3.4 port with gpkg-export/arcpy-moran at S14; diagrams e5-refresh (S24) before s4-band/e2-load (S25); release smoke's s4.py run as a Playwright test (S26); f4/g7/d4 link s1/s6/e2 once built; `venvState(file, python)` takes the interpreter; one learn:check run per step.
+- S1: D1 (two pin files, one venv), D2 (`ipykernel` unpinned, noted in 004 §3.3) and D18 (each command checks its own file) in effect. The labs file is 004 §3.3's text byte for byte (44 pins); the ingests' file adds `affine`, `attrs`, `click`, `rasterio`; the union equals B0's 48. Platform check (`uv pip compile --no-build --python-version 3.12 --python-platform <p> site/learn/labs/requirements.txt`): Windows x86-64, Linux x86-64, Linux aarch64, macOS arm64 with `MACOSX_DEPLOYMENT_TARGET=14.0` pass; `x86_64-apple-darwin` fails on pyproj 3.8.0 (as 004 says); the ingests' file fails on macOS 14 arm64 (rasterio), as finding 2 says. 004 §3.3's platform command now names `uv pip compile` (the check actually run), not `uv pip install --dry-run`.
+- S1: the venv probe treats a line `packaging` can't parse, or one that isn't exactly `==`, as "not a pin" and refuses the file (fail loud), so a hand-edited range never passes the check.
 
 ## Log
 
@@ -962,5 +965,6 @@ The isolated tests are the architecture's "Failure cases, written as tests befor
 - 2026-10-29 14:38 UTC: Astra review: APPROVE_WITH_CHANGES, 3 MUST-FIX (venv pins checked per purpose; cleanup scoped to target db + unique run id; refresh identity incl. config), 3 should-consider. Doc-only; no checks needed.
 - 2026-10-29 14:52 UTC: Revision: architect resolved all 6 MUST-FIX (bundle inputs + assets audit, D20; per-file venv pins, D18; downloads by kind; cleanup by db + run-id PGAPPNAME, D17; refresh key incl. config, D19), 4 MISSED, SC per Revision notes. Doc-only; no checks needed.
 - 2026-10-29 15:12 UTC: Steps: planner wrote S1–S27 (tests-first ids per step, checks per step), Verification (E2E artifacts in mission state dir, DoD map, release smoke), Failure modes. Doc-only; no checks needed.
+- 2026-10-29 15:47 UTC: S1: labs requirements = 004 §3.3's 44 pins (rasterio removed), new `scripts/ingest/requirements.{in,txt}` (`-c` labs + rasterio; union = B0's 48), `learn:venv` syncs both, `scripts/venv.ts` (probe + `venvProblems` + `assertVenv`; ingest shapes/habitat check first), 004 §3.3 + AGENTS.md. red 10 → green 10 (venv.test 6, python.dbtest 4). T 607/607 (2 min); python.dbtest 4/4; L ok (4 min 10 s; only `checked.json`); P 0 diffs; H, HN, HR, A clean; `uv pip check` clean, rasterio 1.5.2; platforms: Win/Linux x86-64/aarch64/macOS 14 arm64 ok, Intel mac fails (pyproj). Log `M/s1-L.log`.
 
 ## Summary
