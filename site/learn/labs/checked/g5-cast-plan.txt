@@ -1,0 +1,5 @@
+-- result: g5-cast-plan · 3 rows · sha256 05bf25e03416
+QUERY PLAN
+Seq Scan on occurrences o (actual rows=55 loops=1)
+  Filter: st_dwithin((geom)::geography, '0101000020E6100000C…
+  Rows Removed by Filter: 40340

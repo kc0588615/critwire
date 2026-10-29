@@ -1,0 +1,6 @@
+-- result: g5-coast · 4 rows · sha256 ef446e9ae320
+distance | records | nearest_is_gbif_country | max_km
+under 1 km | 236 | 226 | 1.0
+1 to 5 km | 200 | 193 | 4.5
+5 to 25 km | 529 | 529 | 24.8
+25 km or more | 34 | 31 | 343.9

@@ -387,6 +387,38 @@
       "key": "b4de92c42c9bb34203035bff3f8cd078b23a2e83039eaadf8069be9db53ca04a",
       "result": "f466a66a72ab898e959c309eebb25bc49b61cd7e34370a1be637119efbbb4588"
     },
+    "g5-analyze": {
+      "key": "14fa7f24038c9e8933286142e22103a075b6885cb40732b4625eb8058f0e9087",
+      "result": "172c9a3e3756622915f047d155da1fd448f7b926b7fb5e70c40fed3c7a708e51"
+    },
+    "g5-cast-plan": {
+      "key": "9e24f9a04afe91cd56dad987b5cb57b38c84718d95b29cc27c7feed8ba1fe734",
+      "result": "eea6aea29360b65417f733eef95d08a1f4b55f48894ce89e18c1361b5290c627"
+    },
+    "g5-coast": {
+      "key": "4b3c54823f498ab68dbb0d96a44582077bb5ad84c44ed4cf27285b0fc61fa1a3",
+      "result": "2949e992e512c7d99d4b4fea0799cdca08ff0bc023f23d115eece9a8e2a262bf"
+    },
+    "g5-degrees": {
+      "key": "0bd61197997e2f1c129ec2272fc27ea59cb5ad6d192b1cc42d0c71246127385f",
+      "result": "bafbe28068b308835581ab287535ef7d5d9f9bbea4bd3b5c916c01b3bcbc4717"
+    },
+    "g5-ex": {
+      "key": "ec2f412e2ac9b4242fb690f44dc19d69ccff0d316d0178dc3432e5f6c6b41686",
+      "result": "fdd680525296b147d2b93e8a5d2ad7e28c6c0084e08ec04fab0093ec3ea99f64"
+    },
+    "g5-geography-index": {
+      "key": "5acac5b137dbf741ab69b2e84462fb211cc31e350ea252f1ed2b0b6f667069b8",
+      "result": "5c0366c1d2f9a20a50813b6c9388dfcba9c0d98d6a1c5e9d19ccda116ce3b5ca"
+    },
+    "g5-knn-plan": {
+      "key": "b34f4bec911714a75482b8a912bd42035e4fe97cf796820a19431b4b4e56f75d",
+      "result": "2cb7fd25f86f05de3796c5c2f540e18598c3b6661ad214f712236d30a7c0de6f"
+    },
+    "g5-nearest": {
+      "key": "db3ffb70284cd92f3d61d66a93e8fd3602587b10def52d2e082be43461bb82c8",
+      "result": "1c37f3a4514c214d20d76f45b3966ff93a8b3fb4ebfdfe1014032c0f4a971d3b"
+    },
     "pg-role-smoke": {
       "key": "f8475dd05808347550f93843ba81f9091e58beabacefdd5d530c3b970f116efe",
       "result": "d721ea358edd040973fd9309b3e45b68943b9bad01b9efecd1da082d374c7f30"
@@ -414,6 +446,7 @@
     "g2.sql": "a50473b3cd47838d9cf45ab114dde8c55a29078f992c424e08382318e52636eb",
     "g3.sql": "1f0b49c165ae736a470be98df194b1f7f9dc2c431870a0d02753a4d8ba46deca",
     "g4.sql": "69dea62101a6c778cf0b5f62dcf63070acf2486031f1b10b5dfa06cc2a896355",
+    "g5.sql": "ca0b779d86948aa7ba59b7c9da62c17bfecf5cd6fc0af82bd2935adc91e33f46",
     "pg-checks.sql": "348691fbefd3b6c0400e7edfd3a3aaf4f767b186c1a6bcbe2f2ad021cb5607fd"
   },
   "labErd": "fda5ad764ce87eac9f422339254ccfbc46a6a932d8cee00a2a50df5e9502820c"

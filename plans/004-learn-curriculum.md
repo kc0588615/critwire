@@ -5616,11 +5616,16 @@ PA | 2289 | 7 | 1 | 7
 
 **Tool:** PG · **Time:** 1.5 h · **Prereqs:** g3, d3
 
-**Goal:** know when the GiST index does the work and when it can't. d3 showed the index finding boxes (`&&`, `@`, `ST_DWithin`); this module adds nearest-neighbour search, where `ORDER BY geom <-> point LIMIT k` walks the index outward from the point and stops after k rows (ArcGIS Pro's Near, without a search radius). Two traps: on SRID 4326 `<->` orders by degrees, not metres, so near the poles it can rank wrongly (re-rank a few more candidates by `geography`); and a cast in the condition (`geom::geography`) hides the column from a `geometry` index, so the scan reads every row unless the index is built on the same expression.
+**Concept:** When a GiST index does the work in a spatial query, and when it can't:
+- **What the index holds** (d3). A GiST index on a geometry column keeps each shape's bounding box in a tree of boxes. It answers questions about boxes: `&&` (two boxes overlap), `@` and `~` (one box inside the other), and `<->` (how far apart). `ST_Intersects`, `ST_Covers` and `ST_DWithin` add the box test for you, so the plan shows an `Index Cond` on boxes and a `Filter` (or a recheck) with the exact test on the rows the boxes let through.
+- **Nearest neighbours.** `ORDER BY geom <-> point LIMIT k` asks for the k shapes nearest a point. With the index, PostgreSQL walks the tree outward from the point, nearest boxes first, and stops after k rows: the plan is an `Index Scan … Order By` under a `Limit`, with no `Sort` and no search radius to guess (ArcGIS Pro's Near without one). The point must be a constant or come from an outer row (`CROSS JOIN LATERAL`), and `<->` must compare the indexed column itself.
+- **Degrees aren't metres.** On SRID 4326, `<->` measures in degrees, as if a degree of longitude were as long as a degree of latitude. It is only at the equator: at latitude φ a degree of longitude is cos φ as long on the ground, so `<->` counts east–west distances 1 / cos φ too long (1.36 times at Hobart, 2 at 60°). The order it gives can differ from the order in metres. Either take more candidates by `<->` and sort those by their distance in metres, or order by distance on `geography`, whose `<->` measures on a sphere in metres.
+- **A cast hides the column.** An index serves the expression it was built on. `ST_DWithin(geom::geography, …)` compares `geom::geography`, not `geom`, so the index on `geom` can't help and every row is read (g4's border query). Build the index on the same expression, `CREATE INDEX … USING gist ((geom::geography))`, and the condition can use it. The other fix is a column of type `geography` with its own index.
+- **When an index can't help:** a test it can't turn into a box (`ST_Distance(a, b) < d`, d3); a cast or function around the column; a filter that keeps most of the table, which reads every page anyway; and statistics that mislead the planner (run `ANALYZE` after a load, d3).
 
-**Data:** `occurrences`, `country_shapes`; a point in Hobart.
+**Data:** `occurrences`, `country_shapes`; a point in Hobart, Tasmania (147.33° E, 42.88° S).
 
-**Key code:** the five records nearest Hobart, with their true distance:
+**Worked example:** The five records nearest Hobart, with their distance in kilometres on the ellipsoid:
 
 ```sql
 -- q: g5-nearest
@@ -5646,13 +5651,39 @@ id | common_name | km
 1647151259 | Tasmanian Devil | 7.08
 ```
 
-Its plan: an index scan ordered by distance, stopped by the `LIMIT`:
+The nearest records are Tasmanian devils, 2.44 to 7.08 km away. The last two lie at the same spot, with nine more records there, so `o.id` breaks the tie and the same five come back every time. `<->` orders; `ST_Distance` on `geography` gives the distance in metres, worked out for the five rows only.
+
+**Lab:** Each block runs in a transaction that is rolled back, as in d3: in `psql`, type `BEGIN;` before a block and `ROLLBACK;` after it. Each plan lab lists what its plan must show; the plan printed under it is an example, from the versions named above the first block.
+
+1. Statistics first, as in d3: `ANALYZE` reading every row, so the planner's estimates, and the plans below, are the same on your server:
+
+```sql
+-- q: g5-analyze
+-- status: ran
+-- engine: postgis
+SET LOCAL default_statistics_target = 1000;
+ANALYZE occurrences;
+SELECT c.reltuples::bigint AS planner_rows, (SELECT count(*) FROM occurrences) AS table_rows
+FROM pg_class AS c
+WHERE c.oid = 'occurrences'::regclass;
+```
+
+```text
+-- result: g5-analyze · 1 row · sha256 2415e801456a
+planner_rows | table_rows
+40395 | 40395
+```
+
+2. The worked example's plan, without the names and distances. The plan must show the top node returning 5 rows, an index scan on `occurrences_geom_idx`, and its `Order By`:
 
 ```sql
 -- q: g5-knn-plan
 -- status: ran
 -- engine: postgis
--- after: d3-analyze
+-- after: g5-analyze
+-- plan: rows 5
+-- plan: Index Scan using occurrences_geom_idx
+-- plan: Order By
 EXPLAIN (ANALYZE, COSTS OFF, TIMING OFF, SUMMARY OFF)
 SELECT o.id
 FROM occurrences AS o
@@ -5668,13 +5699,57 @@ Limit (actual rows=5 loops=1)
         Order By: (geom <-> '0101000020E6100000C3F5285C8F6A6…
 ```
 
-The records within 20 km of Hobart, measured on the ellipsoid. The cast hides `geom` from its index, so every row is read:
+The index scan reads the records in order of distance and stops when `Limit` has five: 5 rows read of 40,395, and no `Sort`.
+
+3. Does the order in degrees match the order in metres? Rank every record both ways, and keep the rows where the ranks differ in either top 20:
+
+```sql
+-- q: g5-degrees
+-- status: ran
+-- engine: postgis
+WITH hobart AS (SELECT ST_SetSRID(ST_Point(147.33, -42.88), 4326) AS geom),
+ranked AS (
+  SELECT o.id,
+         ST_Distance(o.geom::geography, h.geom::geography) / 1000 AS km,
+         o.geom <-> h.geom AS degrees,
+         ST_X(o.geom) - ST_X(h.geom) AS east_deg,
+         ST_Y(o.geom) - ST_Y(h.geom) AS north_deg,
+         row_number() OVER (ORDER BY o.geom <-> h.geom, o.id) AS by_degrees,
+         row_number() OVER (ORDER BY ST_Distance(o.geom::geography, h.geom::geography), o.id) AS by_metres
+  FROM occurrences AS o
+  CROSS JOIN hobart AS h
+)
+SELECT id, round(km::numeric, 3) AS km, round(degrees::numeric, 4) AS degrees,
+       round(east_deg::numeric, 3) AS east_deg, round(north_deg::numeric, 3) AS north_deg,
+       by_degrees, by_metres
+FROM ranked
+WHERE (by_degrees <= 20 OR by_metres <= 20) AND by_degrees <> by_metres
+ORDER BY by_metres;
+```
+
+```text
+-- result: g5-degrees · 6 rows · sha256 f2b1681a3b45
+id | km | degrees | east_deg | north_deg | by_degrees | by_metres
+6004135264 | 7.997 | 0.0844 | -0.065 | -0.054 | 30 | 16
+6004133344 | 8.003 | 0.0738 | 0.023 | -0.070 | 16 | 17
+6004133858 | 8.003 | 0.0738 | 0.023 | -0.070 | 17 | 18
+6004134874 | 8.003 | 0.0738 | 0.023 | -0.070 | 18 | 19
+6004136872 | 8.003 | 0.0738 | 0.023 | -0.070 | 19 | 20
+… 1 more row
+```
+
+Record 6004135264 is 7.997 km from the point, the 16th nearest in metres, but 30th by `<->`. It lies to the south-west, 0.065° west and 0.054° south: 0.0844° by `<->`. Thirteen records 8.003 km away, nearly due south (0.023° east, 0.070° south), are only 0.0738° away by `<->`, so they take ranks 16 to 28 ahead of it, and so does one 8.185 km away. At 42.88° south a degree of longitude is about 81.7 km on the ground and a degree of latitude about 111.1 km, so `<->` counts the west part 1.36 times too long. The 20 nearest by degrees miss the 16th nearest in metres and take the 21st instead. The difference here is metres, but it grows towards the poles and with the distances involved; a list ranked by `<->` on SRID 4326 is a list of candidates, not an answer in metres.
+
+4. The records within 20 km of Hobart, measured on the ellipsoid. The cast hides `geom` from its index, so every row is read. The plan must show 55 rows, a `Seq Scan`, and no index:
 
 ```sql
 -- q: g5-cast-plan
 -- status: ran
 -- engine: postgis
--- after: d3-analyze
+-- after: g5-analyze
+-- plan: rows 55
+-- plan: Seq Scan on occurrences
+-- plan: no Index
 EXPLAIN (ANALYZE, COSTS OFF, TIMING OFF, SUMMARY OFF)
 SELECT o.id
 FROM occurrences AS o
@@ -5689,13 +5764,17 @@ Seq Scan on occurrences o (actual rows=55 loops=1)
   Rows Removed by Filter: 40340
 ```
 
-An index on the expression itself fixes it (the transaction is rolled back, so the index goes too):
+PostgreSQL measured the distance from all 40,395 records to keep 55.
+
+5. An index on the expression itself fixes it. The plan must show the same 55 rows and a `Bitmap Index Scan` on the new index:
 
 ```sql
 -- q: g5-geography-index
 -- status: ran
 -- engine: postgis
--- after: d3-analyze
+-- after: g5-analyze
+-- plan: rows 55
+-- plan: Bitmap Index Scan on occurrences_geography_idx
 CREATE INDEX occurrences_geography_idx ON occurrences USING gist ((geom::geography));
 EXPLAIN (ANALYZE, COSTS OFF, TIMING OFF, SUMMARY OFF)
 SELECT o.id
@@ -5704,17 +5783,19 @@ WHERE ST_DWithin(o.geom::geography, ST_SetSRID(ST_Point(147.33, -42.88), 4326)::
 ```
 
 ```text
--- result: g5-geography-index · 6 rows · sha256 681f15e00739
+-- result: g5-geography-index · 6 rows · sha256 00b2f96fdafb
 QUERY PLAN
 Bitmap Heap Scan on occurrences o (actual rows=55 loops=1)
   Filter: st_dwithin((geom)::geography, '0101000020E6100000C…
   Rows Removed by Filter: 11
-  Heap Blocks: exact=18
+  Heap Blocks: exact=19
   ->  Bitmap Index Scan on occurrences_geography_idx (actual…
 … 1 more row
 ```
 
-g3's records in no outline: how far is each from the nearest one? Nearest-neighbour search works on polygons too:
+The index finds 66 records whose boxes come within 20 km of the point, the exact test keeps the same 55, and only the pages holding the 66 are read (`Heap Blocks`), not the whole table. The query didn't change: only the index did.
+
+6. g3's 999 records in no outline: how far is each from the nearest outline? Nearest-neighbour search works on polygons too, once per record through `CROSS JOIN LATERAL`:
 
 ```sql
 -- q: g5-coast
@@ -5747,7 +5828,46 @@ under 1 km | 236 | 226 | 1.0
 25 km or more | 34 | 31 | 343.9
 ```
 
-**Expected:** the nearest records to Hobart are Tasmanian devils, 2.44 to 7.08 km away (two at the same spot, so the tie goes to `o.id`). The nearest-neighbour plan is an `Index Scan … Order By` under `Limit`, reading 5 rows; the geography condition is a `Seq Scan` that removes 40,340 rows to keep 55; with the expression index, a `Bitmap Index Scan` finds 66 candidates and the exact test keeps the same 55. Of g3's 999 records in no outline, 436 lie within 5 km of one (beaches, mangroves, simplified coastlines), and in nearly all of them the nearest outline is GBIF's country; 529 lie 5 to 25 km out, mostly on islands too small for 1:50m (346 bilby records on one island off South Australia, 133 pig-nosed turtle records on the Gulf of Papua's delta); 34 are 25 km or more away (up to 343.9 km), worth reading one by one.
+For a polygon, `<->` is the distance to its nearest edge, not to its box, so `LIMIT 1` gets the nearest outline, by degrees. Step 3's caution applies: here the nearest outline by degrees is also the nearest in metres for all 999 records (checked against each record's next two). 436 records lie within 5 km of an outline: beaches, mangroves and coasts the 1:50m outlines simplify. In nearly all of them the nearest outline is GBIF's country. 529 lie 5 to 25 km out, mostly on islands too small for 1:50m: 346 bilby records on one island off South Australia, 133 pig-nosed turtle records on the Gulf of Papua's delta. 34 are 25 km or more from any outline, up to 343.9 km, and are worth reading one by one.
+
+**Result:** The nearest records to Hobart are Tasmanian devils, 2.44 to 7.08 km away, found by an `Index Scan … Order By` that reads 5 rows. `<->` on SRID 4326 ranks in degrees: at 43° south it put the 16th nearest record in metres 30th. With the cast to `geography`, a 20 km search reads all 40,395 rows to keep 55; an index on `geom::geography` finds 66 candidates and keeps the same 55. Of g3's 999 records in no outline, 436 lie within 5 km of one, 529 within 25 km, mostly on small islands, and 34 farther.
+
+**Exercise:** Find the 20 records nearest Hobart in metres, with an index doing the work: no `Sort` and no `Seq Scan`. Show the plan; then run the query and find g5-degrees' record 6004135264 in it.
+
+**Answer:** An index on `geom::geography`, and `ORDER BY` the same expression `<->` the point as `geography`. `<->` on `geography` measures on a sphere, in metres, and the index walks outward from the point as in step 2:
+
+```sql
+-- q: g5-ex
+-- status: ran
+-- engine: postgis
+-- after: g5-analyze
+-- plan: rows 20
+-- plan: Index Scan using occurrences_geography_idx
+-- plan: Order By: ((geom)::geography <->
+-- plan: no Sort
+-- plan: no Seq Scan
+CREATE INDEX occurrences_geography_idx ON occurrences USING gist ((geom::geography));
+EXPLAIN (ANALYZE, COSTS OFF, TIMING OFF, SUMMARY OFF)
+SELECT o.id
+FROM occurrences AS o
+ORDER BY o.geom::geography <-> ST_SetSRID(ST_Point(147.33, -42.88), 4326)::geography
+LIMIT 20;
+```
+
+```text
+-- result: g5-ex · 3 rows · sha256 ce122751eb76
+QUERY PLAN
+Limit (actual rows=20 loops=1)
+  ->  Index Scan using occurrences_geography_idx on occurren…
+        Order By: ((geom)::geography <-> '0101000020E6100000…
+```
+
+**Check:** Compare your plan with the answer's: a `Limit` over an `Index Scan` on your index with `actual rows=20`, its `Order By` on `(geom)::geography <->`, and no `Sort` or `Seq Scan` anywhere. Run the query itself: record 6004135264 is 16th, as in g5-degrees' `by_metres`. On a sphere the distances differ from `ST_Distance`'s on the ellipsoid by a few metres in 7 km (7,088 m against 7,081 m for the eleven records at one spot), which can swap two records whose distances are that close; sort the 20 by `ST_Distance` if that matters. Ordering by `ST_Distance(geom::geography, …)` instead gives the right rows too, but measures all 40,395 and sorts them. Taking 40 candidates by `<->` on `geom` and sorting them by metres also finds the 16th here, through the existing index, but nothing in the query says 40 is enough.
+
+**Dialects:**
+- **PostgreSQL:** GiST on `geometry` and `geography` (and SP-GiST and BRIN on `geometry`); `<->` orders nearest first through GiST, in the column's units on `geometry` and in metres on a sphere on `geography`; `<#>` orders by the distance between boxes. An expression index serves only the same expression; `ST_DWithin`, `ST_Intersects` and the other predicates use either argument's index by themselves.
+- **DuckDB:** the `spatial` extension (not in this course's browser) builds an R-tree with `CREATE INDEX … USING RTREE (geom)`, used to filter a table by a constant shape (`ST_Intersects`, `ST_Within` and the like). For the nearest rows, `ORDER BY ST_Distance(geom, point) LIMIT k` measures every row, in the coordinates' units; `ST_Distance_Spheroid` measures in metres (latitude first, g1).
+- **SQL Server:** spatial indexes are grids, not trees; one on `geometry` needs a `BOUNDING_BOX`. A nearest-neighbour query uses one when it is `SELECT TOP (k) … WHERE geom.STDistance(@p) IS NOT NULL ORDER BY geom.STDistance(@p)`; in metres on `geography`.
 
 #### g6 · grids
 

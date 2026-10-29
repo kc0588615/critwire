@@ -316,7 +316,7 @@
         "g3",
         "d3"
       ],
-      "state": "planned",
+      "state": "built",
       "skill": "GiST, the `&&` operator, nearest neighbours with `<->`, reading spatial plans",
       "questions": [
         "Which record is nearest to a point, found fast?",
