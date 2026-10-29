@@ -1,7 +1,7 @@
 // learn:port (plan D16): a page's blocks from 004's fences to files. Each SQL, Python or Power BI fence becomes its
 // block file, byte for byte (site/learn/sql/<id>.<sql|py|m|dax>), and the result fence under a ran block its recorded
 // result: PostGIS and Python in site/learn/labs/checked/<id>.txt (learn:check's), DuckDB in e2e/__snapshots__/<id>.txt
-// (E2E's), without a final newline. A page is `setup` (004 §0 and §3.1, 3.2, 3.5) or a module (`#### <id> · <slug>` up
+// (E2E's), without a final newline. A page is `setup` (004 §0 and §3.1–3.5) or a module (`#### <id> · <slug>` up
 // to the next heading of its level or above); py-connect, on the setup page, is every page's helper (L4 plan D4). The
 // setup block is compared with site/learn/sql/setup.sql, never written. portPage and checkPort are queries; writePort
 // is the one command. Tests: port.test.ts.
@@ -11,7 +11,7 @@ import { BLOCK_DIR, CHECKED_DIR, PY_CONNECT_ID, SETUP_ID, SNAPSHOT_DIR, lintPage
 import { lineDiff } from "./result.ts";
 
 export const SETUP_PAGE = "setup";
-const SETUP_SECTIONS = [/^## 0\. /, /^### 3\.1 /, /^### 3\.2 /, /^### 3\.5 /];
+const SETUP_SECTIONS = [/^## 0\. /, /^### 3\.[1-5] /];
 const MODULE = /^#### ([a-z0-9]+) · /;
 const RESULT = /^-- result: (\S+) · /;
 const EXT: Record<string, string> = { sql: ".sql", python: ".py", m: ".m", dax: ".dax" };

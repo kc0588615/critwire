@@ -91,8 +91,20 @@ uv pip sync --no-build requirements.txt
 <h3>Check your environment</h3>
 <p>Every Python lab starts with this helper. It connects and sets the search path, so plain table names find the lab tables in <code>learn_curriculum</code> and PostGIS's functions in <code>public</code>. It prints nothing.</p>
 {{block:py-connect}}
-<p>This check prints the search path through the helper, then the versions of Python and the main packages. The same lines mean your environment matches the tested one, except perhaps Python's last number: <code>uv python install 3.12</code> installs the newest 3.12 release. Both blocks are one file, <a href="/learn/labs/setup.py"><code>setup.py</code></a>, also as a notebook, <a href="/learn/labs/setup.ipynb"><code>setup.ipynb</code></a>.</p>
+<p>This check prints the search path through the helper, then the versions of Python and the main packages. The same lines mean your environment matches the tested one, except perhaps Python's last number: <code>uv python install 3.12</code> installs the newest 3.12 release. These blocks and the next two are one file, <a href="/learn/labs/setup.py"><code>setup.py</code></a>, also as a notebook, <a href="/learn/labs/setup.ipynb"><code>setup.ipynb</code></a>.</p>
 {{block:py-smoke}}
+<h3>Moving data to another GIS</h3>
+<p>To take lab tables into ArcGIS Pro, QGIS or any tool built on GDAL, write a <strong>GeoPackage</strong>: one file, an open standard, holding layers with their geometry, fields and coordinate system. This block writes the 5 km hexagons that <a href="/learn/spatial-statistics/moran/">s4</a> builds over Tasmania, each with its count of devil records <code>n</code> and the value <code>y</code> = ln(1 + <code>n</code>) that s4 tests, to <code>s4_cells.gpkg</code> in the folder you run it from, then reads the file back. It needs the <code>s4_cells</code> table, so <code>setup.py</code> builds it first, right after the helper, as every lab file that uses it does.</p>
+{{block:gpkg-export}}
+<h3 id="arcpy">arcpy notes (ArcGIS Pro)</h3>
+<p>For anyone with ArcGIS Pro (the Basic license is enough). This is optional: no lab needs it.</p>
+<ul>
+<li>arcpy, Pro's Python package, lives in Pro's own conda environment, <code>arcgispro-py3</code>. Don't pip-install into it. If you want a lab package there, clone the environment in Pro (Settings → Package Manager → Environment Manager) and add the package to the clone.</li>
+<li>Keep the <code>uv</code> environment for the labs, and move data between the two as a GeoPackage (the block above). Pro lists a GeoPackage's layers as <code>main.&lt;name&gt;</code>.</li>
+<li>Pro Basic's Spatial Statistics toolbox covers s4 and s5: Spatial Autocorrelation (Global Moran's I) and Hot Spot Analysis (Getis-Ord Gi*). Pro reports Moran's z-score under the randomization assumption, so compare it with esda's <code>z_rand</code>, not <code>z_norm</code> (s4 prints both).</li>
+</ul>
+<p>This block runs s4's global Moran's I in Pro's Python window, on the GeoPackage written above. critwire can't run it (Pro is licensed and Windows-only), so <code>setup.py</code> carries it commented out and the notebook as text.</p>
+{{block:arcpy-moran}}
 
 <h2>Power BI Desktop</h2>
 <p><a href="https://www.microsoft.com/power-platform/products/power-bi/desktop">Power BI Desktop</a> is free and runs on Windows only. It reads <a href="/learn/schema/star/">the star schema</a> as CSV files under <code>https://critwire.com/learn/data/star/</code>: no gateway, no account, no database connection. To check your setup, make a blank query (Home → Get data → Blank query → Advanced editor) and paste this in. The first time, Power BI asks how to connect to critwire.com: choose <strong>Anonymous</strong>, and privacy level <strong>Public</strong>.</p>

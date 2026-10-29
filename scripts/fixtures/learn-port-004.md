@@ -61,8 +61,35 @@ n
 
 ### 3.3 Python
 
+```text
+# a requirements file: neither a block nor a result
+geopandas==1.2.0
+```
+
+```python
+# q: gpkg-export
+# status: ran
+# after: py-connect
+print("rows: 1")
+```
+
+```text
+-- result: gpkg-export · python · sha256 000000000000
+rows: 1
+```
+
+### 3.4 arcpy notes (ArcGIS Pro)
+
+```python
+# q: arcpy-moran
+# status: untested: ArcGIS Pro (Windows, licensed)
+import arcpy
+```
+
+### 3.6 Not a setup section
+
 ```sql
--- q: py-only
+-- q: not-setup
 -- status: ran
 SELECT 1 AS a
 ```

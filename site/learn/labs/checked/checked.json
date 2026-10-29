@@ -477,6 +477,10 @@
       "key": "b23279da1f8ef704a58b9acdd820e40f4588201ca94d2a953f5aeb5f65ae5722",
       "result": "ef9d362d229ef63beeb31963b7bb3cfd1f47ad21a592e1f64aa7825e35e5f8f3"
     },
+    "gpkg-export": {
+      "key": "ddddab71f0799de42350f27318a07fd9844f3b1798f3788e03cec53fbda49beb",
+      "result": "4e7f65f5423f79d62dc386ad885cb97a2589a06c081f196e2c0d8b436d2e9f75"
+    },
     "pg-role-smoke": {
       "key": "7024bd621ec04b21c785fe21bc634df1ee4b7a1bf7d1c3a5380ccfc70d2f5091",
       "result": "d721ea358edd040973fd9309b3e45b68943b9bad01b9efecd1da082d374c7f30"
@@ -555,7 +559,7 @@
     "s1.sql": "fffbbb3a0ff9128446a13ac5d3bc23929f8f58ba72e1eb26459824f0cb6f19b8",
     "s4.py": "65b7fc37ddc3225f348883cb88fdb72d696ed64e4115aa096056c08d5be1b2a8",
     "s4.sql": "5b485d76d0fea6d3e9a43d0779b95c471501bd8680abf1afd27045bbd3596ed2",
-    "setup.py": "93208bbbb1aa1f1aa5ea2ca58806cd661bee64544aa2a6cd223db3ba18df4c29"
+    "setup.py": "b40bb61f840f9b42a029df58b8debd131fb2b8c3963d10938beefcb36d8af08b"
   },
   "labErd": "d0727ad9d45127b6ea4c7b07495565182a2a9a35caf25cfb04891152ad77ff8b"
 }

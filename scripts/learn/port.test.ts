@@ -4,6 +4,8 @@
 // edit is overwritten; a ran block without a result, or a result for another block, is seeded silently; `--check`
 // misses a difference or doesn't say where it is. PT10–PT12 (L4 plan S10): a Python fence is written differently from
 // 004, or its result goes elsewhere; a ran one without a result, or one its parse refuses, passes or isn't placed in 004.
+// PT13 (L4 plan S14): setup's §3.3 and §3.4 blocks (gpkg-export, arcpy-moran) are left out, another §3 section's are
+// taken, or §3.3's requirements file (a text fence) is read as a block or an orphan result.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -30,7 +32,7 @@ const put = (root: string, path: string, text: string) => {
   writeFileSync(join(root, path), text);
 };
 
-test("PT1 the setup page: §0 and §3.1, 3.2, 3.5; setup compared, not written", () => {
+test("PT1 the setup page: §0 and §3.1–3.5; setup compared, not written", () => {
   const p = portPage(DOC, "setup", SETUP);
   assert.deepEqual(p.errors, []);
   assert.deepEqual(paths(p.files), [
@@ -40,6 +42,9 @@ test("PT1 the setup page: §0 and §3.1, 3.2, 3.5; setup compared, not written",
     "site/learn/labs/checked/py-connect.txt",
     "site/learn/sql/setup-counts.sql",
     "e2e/__snapshots__/setup-counts.txt",
+    "site/learn/sql/gpkg-export.py",
+    "site/learn/labs/checked/gpkg-export.txt",
+    "site/learn/sql/arcpy-moran.py",
     "site/learn/sql/pbi-smoke.m",
   ]);
   assert.equal(file(p.files, "site/learn/sql/pg-session.sql"), "-- q: pg-session\n-- status: ran\n-- engine: postgis\nSET search_path = learn_curriculum, public;\nSHOW search_path;\n");
@@ -172,4 +177,13 @@ test("PT12 (PY1) a python fence its parse refuses is an error naming 004's line"
     "004:7: m1-a.py: line 3: q m1-a: `# timeout:` takes whole seconds above 0",
     "004:19: block.py: line 1: no `# q:` header",
   ]);
+});
+
+test("PT13 setup's §3.3 and §3.4 are setup sections; §3.3's text fence is neither a block nor an orphan result", () => {
+  const p = portPage(DOC, "setup", SETUP);
+  assert.deepEqual(p.errors, []);
+  assert.equal(file(p.files, "site/learn/sql/gpkg-export.py"), '# q: gpkg-export\n# status: ran\n# after: py-connect\nprint("rows: 1")\n');
+  assert.equal(file(p.files, "site/learn/labs/checked/gpkg-export.txt"), "-- result: gpkg-export · python · sha256 000000000000\nrows: 1");
+  assert.equal(file(p.files, "site/learn/sql/arcpy-moran.py"), "# q: arcpy-moran\n# status: untested: ArcGIS Pro (Windows, licensed)\nimport arcpy\n");
+  assert.ok(!paths(p.files).some((f) => /not-setup|requirements/.test(f)));
 });

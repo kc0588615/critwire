@@ -1,0 +1,6 @@
+-- result: gpkg-export · python · sha256 d91667382d4a
+layer: s4_cells
+crs: EPSG:3577
+geometry: Polygon
+fields: id, n, y
+rows: 1094 records: 1972
