@@ -35,6 +35,13 @@ export function renderResult(id: string, r: Result): string {
   ].join("\n");
 }
 
+// A Python block's result (L4 plan §2; PY10): `-- result: <id> · python · sha256 <12 hex of stdout>`, then stdout less
+// one final newline. The hash covers stdout as printed, so "a" and "a\n" differ.
+export function renderPython(id: string, stdout: string): string {
+  const sha = createHash("sha256").update(stdout).digest("hex").slice(0, 12);
+  return [`-- result: ${id} · python · sha256 ${sha}`, ...(stdout ? [stdout.replace(/\n$/, "")] : [])].join("\n");
+}
+
 // An `-- expect: error` block's result: the error message's first line.
 export const renderError = (id: string, message: string) => `-- result: ${id} · error: ${message.split("\n")[0]}`;
 

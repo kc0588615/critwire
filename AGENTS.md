@@ -55,7 +55,7 @@ GitHub `origin` is the hub; only pushed work exists on the other machine.
 Files under `site/learn/` (004 §7.5):
 - `curriculum.json`: tracks + modules (`id`, `slug`, `title`, `track`, `tools[]`, `hours`, `prereqs[]`, `state` `built|planned`, `skill`, `questions[]`). A page sets its module `built`.
 - `layout.html`, `pages/*.html` (map, track, setup, playground, `schema-{schema,lab,star}`), `modules/<id>.html` (prose + `{{block:}}` `{{exercise:}}` `{{skip:}}` `{{diagram:}}` slots).
-- `sql/<id>.sql|.m`: each block = 004's fence body, headers included (`setup.sql`: header-less, L1's). `labs/checked/<id>.txt` + `checked.json`: written only by `learn:check`. `labs/requirements.{in,txt}`.
+- `sql/<id>.sql|.py|.m|.dax`: each block = 004's fence body, headers included (`setup.sql`: header-less, L1's). `.py`: headers `# q|status|after|timeout` (`timeout` s, default 60); `# after:` = earlier Python blocks of the page or `py-connect`; a ran one never names `application_name`/`PGAPPNAME`. `labs/checked/<id>.txt` + `checked.json`: written only by `learn:check`. `labs/requirements.{in,txt}`.
 - `erd/{v1,schema,lab,star}.mmd` (only copies) + `{schema,lab,star}.svg` (`pnpm erd`). `diagrams/<name>{,-dark}.{html,svg}` (diagram-design, profile `critwire` in `.diagram-design`; edit both sources, re-export both).
 - `src/`: the browser app (esbuild), checked by `site/learn/tsconfig.json` (DOM, no node types; also includes `scripts/build/licenses.ts`, `scripts/build/learn/sql.ts`, `scripts/learn/cell.ts`). `duckdb-ext/`: the extension mirror.
 

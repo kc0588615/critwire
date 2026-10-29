@@ -7,6 +7,8 @@
 //   SET, RESET and transaction control are refused once, by the isolated run's rule (sql.ts isolatedRefusal, D11).
 // - cleanupErrors (CL1–CL9): a block drops the roles and schemas it creates, DROP OWNED BY before DROP ROLE for a role
 //   that was granted or owns anything, RESET ROLE after SET ROLE: each block cleans up as a learner runs it.
+// - Python blocks (L4 plan §2): learn_spatial, as above; a ran one never names its session (application_name,
+//   PGAPPNAME) anywhere in its text, a file it writes included: learn:check owns its sessions by the run's PGAPPNAME.
 // The leak check after each block is the runner's (leaks.ts learnObjects). blocks.ts's lintPage calls both rules.
 // Tests: privilege.test.ts.
 import { codeOnly, type Statement } from "../build/learn/sql.ts";
@@ -19,11 +21,13 @@ const PREFIX = "learn_";
 /** What the rules read of a block (blocks.ts's Block has these fields). */
 export interface RuleBlock {
   id: string;
-  engine: "duckdb" | "postgis" | "powerbi";
+  engine: "duckdb" | "postgis" | "powerbi" | "python";
   status: "ran" | "untested";
   txOwn: boolean;
   /** `-- sessions:`: like `tx: own`, the block runs unwrapped. */
   sessions: readonly string[];
+  /** The file, byte for byte (Python's line numbers). */
+  text: string;
   /** The block's code as learners see it. */
   code: string;
   statements: Statement[];
@@ -302,6 +306,8 @@ const NONDETERMINISTIC: [RegExp, string][] = [
 const RANDOM = /\brandom\s*\(/i;
 const SETSEED = /\bsetseed\s*\(/i;
 const SET_CONFIG = /\bset_config\s*\(/i;
+/** What names a libpq session: a Python block saying either could leave the run's PGAPPNAME (PY11). */
+const SESSION_NAME = /application_name|pgappname/i;
 
 /**
  * Every rule a block breaks (PV1–PV8), as `q <id>: …`. `chain`: the statements its `-- after:` blocks run first, in
@@ -312,6 +318,12 @@ export function blockRuleErrors(b: RuleBlock, chain: readonly Statement[] = []):
   const errors: string[] = [];
   if (b.code.toLowerCase().includes(A2_SCHEMA)) errors.push(`${q}: names ${A2_SCHEMA} (A2's schema, which only the canary reads); never`);
   if (b.status === "untested" || b.engine === "powerbi") return errors;
+  if (b.engine === "python") {
+    b.text.split("\n").forEach((line, i) => {
+      if (SESSION_NAME.test(line)) errors.push(`${q}: line ${i + 1} sets the session's name (application_name, PGAPPNAME): every lab session keeps the run's PGAPPNAME`);
+    });
+    return errors;
+  }
   const pg = b.engine === "postgis";
   const unwrapped = b.txOwn || b.sessions.length > 0;
   let seeded = pg && chain.some((s) => SETSEED.test(codeOnly(s.text)));

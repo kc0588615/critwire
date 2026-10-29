@@ -7,7 +7,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { cellText } from "./cell.ts";
-import { lineDiff, renderError, renderResult, rowsOrdered } from "./result.ts";
+import { lineDiff, renderError, renderPython, renderResult, rowsOrdered } from "./result.ts";
 
 test("RR1 header line, columns, then up to 5 rows; 1 row is singular", () => {
   assert.equal(renderResult("x", { columns: ["a", "b"], rows: [[1, "p"]] }), "-- result: x · 1 row · sha256 " + sha("a | b\n1 | p") + "\na | b\n1 | p");
@@ -66,4 +66,13 @@ test("RQ18 rowsOrdered: ORDER BY in code, or an EXPLAIN; not an ORDER BY in a co
   assert.equal(rowsOrdered("SELECT id FROM t -- ORDER BY id"), false);
   assert.equal(rowsOrdered("SELECT 'order by' FROM t"), false);
   assert.equal(rowsOrdered("SELECT id FROM t"), false);
+});
+
+// PY10 (L4 plan §2): a Python block's result. Failure modes: two outputs that differ only in a final newline record
+// alike; an empty output renders an empty line that 004's fence doesn't have.
+test("PY10 renderPython: `-- result: <id> · python · sha256 <12 of stdout>`, then stdout less one final newline", () => {
+  assert.equal(renderPython("x", "a\nb\n"), `-- result: x · python · sha256 ${sha("a\nb\n")}\na\nb`);
+  assert.equal(renderPython("x", ""), "-- result: x · python · sha256 e3b0c44298fc", "nothing printed: the header alone (004's py-connect)");
+  assert.notEqual(renderPython("x", "a"), renderPython("x", "a\n"), '"a" and "a\\n" differ');
+  assert.equal(renderPython("x", "a\n\n"), `-- result: x · python · sha256 ${sha("a\n\n")}\na\n`, "only one final newline is dropped");
 });
