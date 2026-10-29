@@ -3,7 +3,7 @@
 //   page order, or the course's boot blocks and then one page's (--module, blocksToRun). Then, under the lab lock, as
 //   the lab role:
 // - connect: the live database refused twice, the lab role's privileges (CREATEROLE, set and inherit; no superuser, no
-//   CREATE on public), the lock, the versions (SC6), A2's
+//   CREATE on public), the lock (refused while an earlier run's Python session runs here), the versions (SC6), A2's
 //   learn_spatial canary (read as libpq's default role, which owns it) and the learn_ objects already there;
 // - loader: the published loader run twice as a learner runs it (psql -X -v ON_ERROR_STOP=1 -f), its sha256 and row
 //   counts against the manifest, then once with a duplicate occurrences id, which must fail and change nothing (the
@@ -19,8 +19,9 @@
 //   stage passed, and left alone when only its date would change.
 // The lock is held by the cleanup connection (cleanup.ts), which runs no block. An abort (the CLI's SIGINT/SIGTERM)
 // cancels the running psql or block statement. Every exit then removes the temp loader and releases the lock in
-// cleanup.ts's order: stop the run's sessions, sweep the lab role's new objects, free the lock; a cleanup failure is
-// added to the run's. Tests: learn/check.test.ts (LC6, BF1 pure), learn-check.dbtest.ts (LC1–LC10, V2, V3, CU1–CU5), runner.dbtest.ts.
+// cleanup.ts's order: stop the run's sessions (recorded, or carrying the run's name here), sweep the lab role's new objects, free the lock; a cleanup failure is
+// added to the run's. Tests: learn/check.test.ts (LC6, BF1 pure), learn-check.dbtest.ts (LC1–LC10, V2, V3, CU1–CU5), runner.dbtest.ts,
+// learn/py-runner.dbtest.ts (PYC7, PYC8).
 import { spawn } from "node:child_process";
 import { createHash } from "node:crypto";
 import { mkdtemp, readFile, rename, rm, writeFile } from "node:fs/promises";
@@ -37,6 +38,7 @@ import { dbMeta, LAB_ERD, markerDrift, markers, parseErd, PG_META_SQL } from "./
 import { CHECKED_JSON, LOADER, nextStamp, readFreshness, STAMP_FILE, type Versions } from "./freshness.ts";
 import { learnObjects } from "./leaks.ts";
 import { CANARY_SCHEMA, childEnv, LAB_SCHEMA, libpqTarget, LIVE_DATABASE, pgConnect, psqlArgs, type PgTarget } from "./pg.ts";
+import { pythonApp } from "./python.ts";
 import { openSession, runBlocks, serverVersions, tablesDiff, type LabSession } from "./runner.ts";
 
 export { CANARY_SCHEMA };
@@ -399,7 +401,9 @@ export async function checkLab(lab: PgTarget, { dist, canarySchema, signal, bloc
   let failure: Error | undefined;
   try {
     const who = await assertLabRole(sql);
-    lock = await takeLabLock(lab, who.db);
+    // The run's name (plan L4 D17): its Python sessions' PGAPPNAME, which cleanup matches in this database only.
+    const app = pythonApp();
+    lock = await takeLabLock(lab, who.db, { app });
     const run = await connectStage(lab, sql, lock, who, canarySchema, signal);
     tmp = await mkdtemp(join(tmpdir(), "critwire-learn-check-"));
     const loader = await readLoader(dist);

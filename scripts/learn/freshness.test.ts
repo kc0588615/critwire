@@ -151,10 +151,12 @@ test("FR7 the checker's closure: learn-check.ts's relative imports, nothing from
     "scripts/learn/pg.ts",
     "scripts/learn/plan.ts",
     "scripts/learn/privilege.ts",
+    "scripts/learn/python.ts",
     "scripts/learn/record.ts",
     "scripts/learn/result.ts",
     "scripts/learn/runner.ts",
     "scripts/learn/setup.ts",
+    "scripts/venv.ts",
   ]);
 });
 

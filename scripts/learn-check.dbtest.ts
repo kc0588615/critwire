@@ -56,6 +56,7 @@ import { parseBlock } from "./learn/blocks.ts";
 import { assertConnectedNotLive, assertDownloadRun, CANARY_SCHEMA, checkLab } from "./learn/check.ts";
 import { takeLabLock } from "./learn/cleanup.ts";
 import { LAB_LOCK, libpqTarget, pgConnect, urlTarget } from "./learn/pg.ts";
+import { pythonApp } from "./learn/python.ts";
 import { RUNNER_APP } from "./learn/runner.ts";
 import { testDatabase } from "./test-db.ts";
 
@@ -422,7 +423,7 @@ test("CU1 SIGINT mid-block: no run backend, the block's committed role swept, th
 });
 
 test("CU2 a second learn:check while the sweep runs is refused; the sweep drops the lab role's schema, then frees the lock", async () => {
-  const lock = await takeLabLock(labTarget(), testDatabase);
+  const lock = await takeLabLock(labTarget(), testDatabase, { app: pythonApp() });
   const schema = fresh("cu2");
   made.schemas.push(schema);
   const lab = pgConnect(labTarget());
@@ -453,7 +454,7 @@ test("CU3 the sweep drops the lab role's new role; a superuser's is named with i
   const before = fresh("cu3old");
   made.roles.push(before);
   await admin.unsafe(`CREATE ROLE ${before}`);
-  const lock = await takeLabLock(labTarget(), testDatabase);
+  const lock = await takeLabLock(labTarget(), testDatabase, { app: pythonApp() });
   const [ours, theirs] = [fresh("cu3lab"), fresh("cu3su")];
   made.roles.push(ours, theirs);
   const lab = pgConnect(labTarget());
@@ -474,7 +475,7 @@ test("CU4 a recorded session that can't be stopped fails the cleanup, named; the
   const other = pgConnect(libpqTarget({ PGDATABASE: testDatabase }), { connection: { application_name: RUNNER_APP } });
   try {
     const [{ pid }] = await other<{ pid: number }[]>`select pg_backend_pid() as pid`;
-    const lock = await takeLabLock(labTarget(), testDatabase);
+    const lock = await takeLabLock(labTarget(), testDatabase, { app: pythonApp() });
     lock.record(pid);
     await assert.rejects(lock.release(), new RegExp(`^Error: cleanup: session ${pid} still runs: permission denied`));
     await assertLockFree();
@@ -484,7 +485,7 @@ test("CU4 a recorded session that can't be stopped fails the cleanup, named; the
 });
 
 test("CU5 a lost cleanup connection drops nothing and names every new object", async () => {
-  const lock = await takeLabLock(labTarget(), testDatabase);
+  const lock = await takeLabLock(labTarget(), testDatabase, { app: pythonApp() });
   const ours = fresh("cu5");
   made.roles.push(ours);
   const lab = pgConnect(labTarget());

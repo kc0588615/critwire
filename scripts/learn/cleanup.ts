@@ -1,16 +1,21 @@
 // learn:check's cleanup connection (plan D3 Cleanup; SC7 error paths, R13): it takes the lab lock, reads the learn_
 // objects already there, runs no block, and on release, whatever ended the run, in this order:
-// 1. stops the run's sessions (the runner's, recorded by pid): pg_terminate_backend(pid, 10 s) for each still running,
+// 1. stops the run's sessions: the runner's, recorded by pid, then the Python blocks' (pids unknown), found by the run's
+//    name in this database (endRunSessions, plan L4 §4.6, D17): pg_terminate_backend(pid, 10 s) for each still running,
 //    so its transaction rolls back and its locks go; one still running fails the cleanup, named;
 // 2. sweeps, under the lock: the new learn_ objects the lab role made are dropped (roles, then schemas); any other new
 //    one is named with the superuser's command, never dropped (another process's, e.g. a superuser's test fixture);
 // 3. frees the lock and ends the connection.
 // The lock serializes every lab-role writer (learn:check, test:db's withLabSchema), so what the sweep drops is this
 // run's. A lost connection took the lock with it: nothing is dropped, and every new object is named.
-// Tests: learn-check.dbtest.ts (CU1–CU5).
+// The lock is per database and pg_stat_activity spans the cluster, so only the database, the lab role and the run's
+// name prove a session is this run's. An earlier run's Python session (another name, same prefix) in this database is
+// never ended: the lock refuses the run, naming it.
+// Tests: learn-check.dbtest.ts (CU1–CU5), learn/py-runner.dbtest.ts (PYC7, PYC8).
 import type postgres from "postgres";
 import { dropObjects, labMade, learnObjects, superuserCleanup } from "./leaks.ts";
 import { LAB_LOCK, pgConnect, type PgTarget } from "./pg.ts";
+import { PY_APP_PREFIX } from "./python.ts";
 import { RUNNER_APP } from "./runner.ts";
 
 /** How long a recorded session gets to end once terminated. */
@@ -27,14 +32,18 @@ export interface LabLock {
   release(): Promise<void>;
 }
 
-/** The lab lock on its own connection to `lab` (database `db`); throws if another run holds it. */
-export async function takeLabLock(lab: PgTarget, db: string): Promise<LabLock> {
+/**
+ * The lab lock on its own connection to `lab` (database `db`) for the run named `app` (its Python sessions'
+ * PGAPPNAME); throws if another run holds it, or if an earlier run's Python session still runs in this database.
+ */
+export async function takeLabLock(lab: PgTarget, db: string, { app }: { app: string }): Promise<LabLock> {
   let lost = false;
   const sql = pgConnect(lab, { onclose: () => (lost = true) });
   try {
     const [{ locked, pid }] = await sql<{ locked: boolean; pid: number }[]>`select pg_try_advisory_lock(hashtext(${LAB_LOCK})) as locked,
       pg_backend_pid() as pid`;
     if (!locked) throw new Error(`the lab lock (${LAB_LOCK}) is held by another learn:check or pnpm test:db on ${db}: wait for it`);
+    await assertNoStragglers(sql, db);
     // A sweep waiting on a lock fails rather than hangs.
     await sql`set lock_timeout = '30s'`;
     const known = new Set(await learnObjects(sql));
@@ -51,6 +60,9 @@ export async function takeLabLock(lab: PgTarget, db: string): Promise<LabLock> {
         const problems: string[] = [];
         try {
           problems.push(...(await stopSessions(sql, [...sessions])));
+          const python = await endRunSessions(sql, app);
+          if (python.ended.length) console.log(`learn:check: cleanup: ended the run's Python session(s): ${python.ended.join(", ")}`);
+          problems.push(...python.problems);
           const made = await fresh();
           const ours = await labMade(sql, made);
           if (ours.length) console.log(`learn:check: cleanup: dropping what the run made: ${ours.join(", ")}`);
@@ -82,22 +94,51 @@ async function holdsLock(sql: postgres.Sql, pid: number): Promise<boolean> {
   }
 }
 
+// An earlier run's Python sessions in this database (its parent was killed and the detached group lived on): nothing
+// proves they're this run's, so they're named with the command to end them, never ended (plan L4 §4.6, PYC8).
+async function assertNoStragglers(sql: postgres.Sql, db: string): Promise<void> {
+  const left = await sql<{ pid: number; app: string }[]>`select pid, application_name as app from pg_stat_activity
+    where datname = current_database() and usename = current_user and starts_with(application_name, ${PY_APP_PREFIX})
+    order by pid`;
+  if (left.length) {
+    throw new Error(left.map(({ pid, app }) => `session ${pid} (${app}) on ${db} is an earlier learn:check run's Python session: `
+      + `if no learn:check runs, end it with psql -d ${db} -c 'select pg_terminate_backend(${pid})'`).join("\n"));
+  }
+}
+
+/**
+ * Terminates the sessions of run `app` in this database as this role (a Python block's, whose pids are unknown); the
+ * cleanup's and check (b)'s one query (plan L4 §4.4, §4.6). Returns the pids it ended and a line per one still running.
+ */
+export async function endRunSessions(sql: postgres.Sql, app: string): Promise<{ ended: number[]; problems: string[] }> {
+  const running = await sql<{ pid: number }[]>`select pid from pg_stat_activity where datname = current_database()
+    and usename = current_user and application_name = ${app} and pid <> pg_backend_pid() order by pid`;
+  return terminate(sql, running.map((r) => r.pid));
+}
+
 /** Terminates each recorded session still running; returns one line per session that didn't end. */
 async function stopSessions(sql: postgres.Sql, pids: number[]): Promise<string[]> {
   if (!pids.length) return [];
   const running = await sql<{ pid: number }[]>`select pid from pg_stat_activity where pid in ${sql(pids)} and application_name = ${RUNNER_APP}`;
+  return (await terminate(sql, running.map((r) => r.pid))).problems;
+}
+
+/** pg_terminate_backend(pid, 10 s) for each; returns the pids that ended and one line per session that didn't. */
+async function terminate(sql: postgres.Sql, pids: number[]): Promise<{ ended: number[]; problems: string[] }> {
+  const ended: number[] = [];
   const problems: string[] = [];
-  for (const { pid } of running) {
+  for (const pid of pids) {
     try {
       const [{ gone }] = await sql<{ gone: boolean }[]>`select pg_terminate_backend(${pid}, ${TERMINATE_MS}) as gone`;
       // false also means it had already ended between the two queries.
       const [still] = gone ? [] : await sql`select from pg_stat_activity where pid = ${pid}`;
       if (still) problems.push(`session ${pid} still runs after ${TERMINATE_MS / 1000} s`);
+      else ended.push(pid);
     } catch (e) {
       problems.push(`session ${pid} still runs: ${(e as Error).message}`);
     }
   }
-  return problems;
+  return { ended, problems };
 }
 
 /** What a lost cleanup connection leaves: every new learn_ object, named with its cleanup command (a fresh, read-only look). */
