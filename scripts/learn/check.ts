@@ -14,8 +14,10 @@
 //   learn_curriculum's catalog both ways. Then the ran Python blocks, in page order (py-runner.ts, plan L4 §4.4), with
 //   LEARN_BASE the built site under test. Both engines' runs are checked against their recorded results or, with
 //   `update`, written once every block passed (record.ts);
-// - downloads: each assembled lab file (assemble.ts) on a fresh load, as a learner runs it (the loader, then psql -X -f,
-//   no ON_ERROR_STOP): psql's ERROR lines must be exactly the file's announced errors, in order; then the leak check;
+// - downloads: each assembled lab file (assemble.ts) on a fresh load, as a learner runs it (the loader, then the file):
+//   a .sql through psql -X -f, no ON_ERROR_STOP, whose ERROR lines must be exactly the file's announced errors, in order;
+//   a .py through python.ts runPython (the blocks' environment, its blocks' time), which must exit 0 (plan L4 §4.5, D14);
+//   then the leak check, after a failed file too, so its leftovers are named with it. An .ipynb isn't run;
 // - end: the canary unchanged and no learn_ role or schema left behind;
 // - stamp (a whole-course run only): checked.json (freshness.ts) written through a temp file and a rename, once every
 //   stage passed, and left alone when only its date would change.
@@ -41,10 +43,10 @@ import { CHECKED_JSON, LOADER, nextStamp, readFreshness, STAMP_FILE, type Server
 import { learnObjects } from "./leaks.ts";
 import { CANARY_SCHEMA, childEnv, LAB_SCHEMA, libpqTarget, LIVE_DATABASE, pgConnect, psqlArgs, type PgTarget } from "./pg.ts";
 import { runPythonBlocks } from "./py-runner.ts";
-import { pythonApp } from "./python.ts";
+import { pythonApp, pythonEnv, pythonFailure, runPython, type PythonEnvOptions } from "./python.ts";
 import { settleResults, type BlockRuns } from "./record.ts";
 import { blockRuns, openSession, serverVersions, tablesDiff, type LabSession } from "./runner.ts";
-import { LABS_REQUIREMENTS, readVenv } from "../venv.ts";
+import { LABS_REQUIREMENTS, readVenv, VENV_PYTHON } from "../venv.ts";
 
 export { CANARY_SCHEMA };
 const CANARY_SQL = new URL("../../db/learn/canary.sql", import.meta.url);
@@ -219,8 +221,8 @@ export async function staticStage(module?: string): Promise<StaticCourse> {
   if (errors.length) throw new Error(`static: ${errors.length} error(s):\n${errors.join("\n")}`);
   const run = module === undefined ? pages : pages.filter((p) => p.page.id === module);
   if (module !== undefined && !run.length) throw new Error(`--module ${module}: no such page (${pages.map((p) => p.page.id).join(", ")})`);
-  // The .sql files; the .py ones from L4 S8 (an .ipynb is never run).
-  const downloads = assembleDownloads(pages).filter((d) => d.kind === "sql" && (module === undefined || d.page === module));
+  // The .sql and .py files (an .ipynb is never run: E2E proves its cells equal the .py's).
+  const downloads = assembleDownloads(pages).filter((d) => d.kind !== "ipynb" && (module === undefined || d.page === module));
   const labErd = await readFile(new URL(`../../${LAB_ERD}`, import.meta.url), "utf8");
   try {
     parseErd(labErd);
@@ -230,7 +232,7 @@ export async function staticStage(module?: string): Promise<StaticCourse> {
   }
   console.log(`learn:check: static: ${pages.length} page(s), ${pages.reduce((n, p) => n + p.blocks.length, 0)} block(s) parsed and linted, ${downloads.length} download(s) assembled`);
   const blocks = blocksToRun(pages, module);
-  const venv = module === undefined || hasPython(blocks) ? await venvVersions() : undefined;
+  const venv = module === undefined || hasPython(blocks) || downloads.some((d) => d.kind === "py") ? await venvVersions() : undefined;
   if (venv) console.log(`learn:check: static: .venv-learn = requirements.txt (Python ${venv.python}, sha256 ${venv.requirements})`);
   return { pages, blocks, downloads, labErd, venv };
 }
@@ -320,9 +322,9 @@ async function assertLabErd(s: LabSession, text: string): Promise<void> {
 // The ran PostGIS blocks, in page order, in one runner session (recorded with the lock); `-- tx: own` and `-- sessions:`
 // blocks are watched against the canary (where it exists) and learn_curriculum; a sessions block's windows are sessions
 // of their own, recorded with the lock too. `labErd`: checked once the boot blocks committed. Then the ran Python
-// blocks (py-runner.ts) in `tmp`'s MPLCONFIGDIR, reading the built site `dist`. Both engines' runs are checked against
-// checked/<id>.txt, or written, together (record.ts).
-async function blocksStage(lab: PgTarget, run: Run, blocks: readonly Block[], course: readonly CoursePage[], dist: string, tmp: string, update: boolean, show: boolean, labErd?: string): Promise<void> {
+// blocks (py-runner.ts) in the run's Python environment `py`. Both engines' runs are checked against checked/<id>.txt,
+// or written, together (record.ts).
+async function blocksStage(lab: PgTarget, run: Run, blocks: readonly Block[], course: readonly CoursePage[], py: PythonEnvOptions, update: boolean, show: boolean, labErd?: string): Promise<void> {
   const { admin, canarySchema, canaryBefore, lock, signal } = run;
   const pg = blocks.filter((b) => b.engine === "postgis" && b.status === "ran");
   const watch = { schemas: [...(canaryBefore ? [canarySchema] : []), LAB_SCHEMA], read: (schema: string) => readTables(admin, schema, signal) };
@@ -342,11 +344,8 @@ async function blocksStage(lab: PgTarget, run: Run, blocks: readonly Block[], co
     await session.end();
   }
   signal?.throwIfAborted();
-  const mplConfig = join(tmp, "mpl");
-  await mkdir(mplConfig);
   const python = await runPythonBlocks(blocks, course, {
-    lab, sql: run.sql, database: run.db, readLab: () => readTables(admin, LAB_SCHEMA, signal), app: run.app, known,
-    learnBase: pathToFileURL(resolve(dist)).href, mplConfig, update, show, signal,
+    lab, sql: run.sql, database: run.db, readLab: () => readTables(admin, LAB_SCHEMA, signal), known, ...py, update, show, signal,
   });
   await settleResults([...runs, ...python], { update });
   const done = update ? "run twice, results written" : "equal their recorded results";
@@ -378,15 +377,42 @@ export async function assertDownloadRun(target: PgTarget, file: string, { name, 
   if (failure) throw new Error(failure);
 }
 
-// Each download on a fresh load (the loader, then the file), then the leak check. `tmp`: a folder for the files.
-async function downloadsStage(lab: PgTarget, run: Run, loader: Loader, downloads: readonly Download[], tmp: string): Promise<void> {
+// Runs .py download `d` as a learner runs it (python -I, from an empty folder, the blocks' environment `py`); throws
+// unless it exits 0 within its blocks' time (D14).
+async function assertPyDownloadRun(lab: PgTarget, d: Download, py: PythonEnvOptions, signal?: AbortSignal): Promise<void> {
+  const { timeoutMs } = d;
+  if (timeoutMs === undefined) throw new Error(`download ${d.name}: a .py download has its blocks' time (assemble.ts)`);
+  const started = Date.now();
+  const r = await runPython(d.text, { python: VENV_PYTHON, env: pythonEnv(lab, py), timeoutMs, signal });
+  const failed = pythonFailure(r, timeoutMs / 1000);
+  if (failed) throw new Error(`download ${d.name}: ${failed}`);
+  console.log(`learn:check: download ${d.name}: fresh load, then the file: python exit 0 (${((Date.now() - started) / 1000).toFixed(1)} s)`);
+}
+
+// Each download on a fresh load (the loader, then the file), then the leak check, which names a failed file's
+// leftovers with its failure. `tmp`: a folder for the .sql files; `py`: the .py files' environment.
+async function downloadsStage(lab: PgTarget, run: Run, loader: Loader, downloads: readonly Download[], tmp: string, py: PythonEnvOptions): Promise<void> {
   for (const d of downloads) {
     await psqlOk(lab, ["-q", ...psqlArgs(loader.file)], `download ${d.name}: the fresh load`, run.signal);
-    const file = join(tmp, d.name);
-    await writeFile(file, d.text);
-    await assertDownloadRun(lab, file, d, run.signal);
-    console.log(`learn:check: download ${d.name}: fresh load, then the file: ${d.announced.length} ERROR line(s), as announced`);
-    await assertNoLeaks(run, `download ${d.name}`);
+    let failure: Error | undefined;
+    try {
+      if (d.kind === "py") await assertPyDownloadRun(lab, d, py, run.signal);
+      else {
+        const file = join(tmp, d.name);
+        await writeFile(file, d.text);
+        await assertDownloadRun(lab, file, d, run.signal);
+        console.log(`learn:check: download ${d.name}: fresh load, then the file: ${d.announced.length} ERROR line(s), as announced`);
+      }
+    } catch (e) {
+      failure = e as Error;
+    }
+    run.signal?.throwIfAborted();
+    try {
+      await assertNoLeaks(run, `download ${d.name}`);
+    } catch (e) {
+      throw failure ? new Error(`${failure.message}\n${(e as Error).message}`) : e;
+    }
+    if (failure) throw failure;
   }
 }
 
@@ -449,10 +475,13 @@ export async function checkLab(lab: PgTarget, { dist, canarySchema, signal, bloc
     lock = await takeLabLock(lab, who.db, { app });
     const run = await connectStage(lab, sql, lock, who, app, canarySchema, signal);
     tmp = await mkdtemp(join(tmpdir(), "critwire-learn-check-"));
+    // The Python blocks' and .py downloads' environment: the built site under test, one MPLCONFIGDIR for the run.
+    const py: PythonEnvOptions = { learnBase: pathToFileURL(resolve(dist)).href, app, mplConfig: join(tmp, "mpl") };
+    await mkdir(py.mplConfig);
     const loader = await readLoader(dist);
     await loaderStage(lab, run, loader, tmp);
-    await blocksStage(lab, run, blocks, course ?? [], dist, tmp, update, show, labErd);
-    await downloadsStage(lab, run, loader, downloads, tmp);
+    await blocksStage(lab, run, blocks, course ?? [], py, update, show, labErd);
+    await downloadsStage(lab, run, loader, downloads, tmp, py);
     await endStage(run);
     if (stamp) await writeStamp(dist, stamp, { ...run.versions, ...venv! });
   } catch (e) {

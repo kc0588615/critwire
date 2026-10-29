@@ -18,19 +18,24 @@
 //       learn_ schema or the lock → the run rejects with the reason, and none of them is left.
 // PYC9: a block's child escapes the group (setsid) and keeps a session → after 10 s check (b) ends it and names it.
 // PY7/PY8: a failing or timed-out block stops the stage → both reported, and the next block ran.
+// The .py downloads (plan L4 §4.5; D14), checkLab's downloads stage:
+// PYC6: a .py download exits non-zero midway, and the run passes (or names only the leak, or skips the leak check,
+//       or stamps) → the run fails naming the file and stderr's tail, then the leak check's find; checked.json kept.
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { randomBytes } from "node:crypto";
-import { mkdtempSync, readdirSync, rmSync } from "node:fs";
+import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { after, test } from "node:test";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { loadEnv, requireEnv } from "../env.ts";
 import { testDatabase, withScratchDatabase } from "../test-db.ts";
+import type { Download } from "./assemble.ts";
 import { parseBlock, type Block } from "./blocks.ts";
 import { CANARY_SCHEMA, checkLab, readTables } from "./check.ts";
 import { endRunSessions, takeLabLock } from "./cleanup.ts";
+import { STAMP_FILE } from "./freshness.ts";
 import type { CoursePage } from "./course.ts";
 import { learnObjects } from "./leaks.ts";
 import { LAB_LOCK, LAB_SCHEMA, libpqTarget, pgConnect, urlTarget, type PgTarget } from "./pg.ts";
@@ -263,6 +268,36 @@ test("PYC5 an abort during a Python block: rejects with the reason; no process, 
   assert.deepEqual(processes(marker), [], "no process left");
   assert.deepEqual([...pyTemps()].filter((f) => !temps.has(f)), [], "no temp folder");
   assert.equal(await runSessions(), 0, "no session of the run");
+  assert.ok(!(await learnObjects(admin)).includes(`schema ${schema}`), "the sweep dropped it");
+  await assertLockFree();
+});
+
+test("PYC6 a .py download exiting non-zero midway is named with stderr's tail; the leak check still runs; checked.json kept", async () => {
+  const schema = fresh("pyc6");
+  const py = (name: string, ...code: string[]): Download => ({ page: "t", name, kind: "py", text: [...code, ""].join("\n"), announced: [], timeoutMs: 60_000 });
+  const downloads = [
+    py("ok.py", "import psycopg", "with psycopg.connect() as conn:", "    print(conn.execute('SELECT count(*) FROM learn_curriculum.species').fetchone()[0])"),
+    py("bad.py", ...commits(schema), "import sys", "print('pyc6 broke', file=sys.stderr)", "sys.exit(2)", "print('never')"),
+  ];
+  const stamp = fileURLToPath(STAMP_FILE);
+  const before = readFileSync(stamp);
+  const logged: string[] = [];
+  const log = console.log;
+  console.log = (line: string) => void logged.push(line);
+  try {
+    await assert.rejects(checkLab(labTarget(), { dist, canarySchema: CANARY_SCHEMA, downloads, stamp: course(), venv: { python: "3.12.0", requirements: "000000000000" } }),
+      (e: Error) => {
+        assert.equal(e.message, `download bad.py: python exited with code 2; stderr ends:\npyc6 broke\ndownload bad.py left behind:\n  schema ${schema}`);
+        return true;
+      });
+  } finally {
+    console.log = log;
+    writeFileSync(stamp, before);
+  }
+  assert.ok(logged.some((l) => /^learn:check: download ok\.py: fresh load, then the file: python exit 0 \([0-9.]+ s\)$/.test(l)), logged.join("\n"));
+  assert.ok(logged.includes("learn:check: leak check (download ok.py): nothing left"));
+  assert.ok(!logged.some((l) => l.startsWith("learn:check: download bad.py")), "bad.py isn't reported as passing");
+  assert.ok(!logged.some((l) => l.includes("checked.json")), "no stamp");
   assert.ok(!(await learnObjects(admin)).includes(`schema ${schema}`), "the sweep dropped it");
   await assertLockFree();
 });
