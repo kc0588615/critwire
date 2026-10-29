@@ -20,7 +20,7 @@ import { namedState } from "../gbif/state.ts";
 import { loadEnv } from "../env.ts";
 import { basicAuth, postOnce } from "../gbif/post.ts";
 import { classifyPost } from "../gbif/register.ts";
-import { downloadFile, getJson, sha256File } from "../http.ts";
+import { downloadFile, getJson, hashFile } from "../http.ts";
 import { formatJson, readOptionalText } from "../json.ts";
 import {
   decideDownload, DOWNLOAD_KEY, downloadRequest, parseDownloadKey, sameRequest, type DownloadArgs, type DownloadIntent,
@@ -203,7 +203,7 @@ export async function ingestGbifSample({ api = API, dest = sampleDir, key, speci
     const zipPath = join(tmp, `${key}.zip`);
     // A re-run of the same key must read the same zip; a new key's zip is hashed here for the first time.
     await downloadFile(meta.downloadLink, zipPath, { sha256: stored?.key === key ? stored.zip.sha256 : null, bytes: meta.size, timeoutMs: ZIP_TIMEOUT_MS });
-    zip = { bytes: meta.size, sha256: await sha256File(zipPath) };
+    zip = { bytes: meta.size, sha256: await hashFile(zipPath) };
     records = await readZip(zipPath, key, { downloadYear: new Date(meta.created).getUTCFullYear(), datasetKeys: new Set(Object.keys(listing)) });
   } finally {
     await rm(tmp, { recursive: true, force: true });

@@ -94,7 +94,7 @@ export async function getBytes(url: string, { sha256, ...init }: GetBytesInit): 
 }
 
 // sha256 null: only the size (and md5, if given) is pinned (a file seen for the first time, or a source that publishes
-// md5 only, such as Zenodo; the caller hashes it, sha256File).
+// md5 only, such as Zenodo; the caller hashes it, hashFile).
 export interface DownloadInit extends GetJsonInit { sha256: string | null; md5?: string; bytes: number }
 
 // Streams a pinned file to `path` (getOk's retries), hashing as it writes. Throws unless the file's size, sha256 and
@@ -120,9 +120,9 @@ export async function downloadFile(url: string, path: string, { sha256, md5, byt
   }
 }
 
-// A file's sha256, streamed.
-export async function sha256File(path: string): Promise<string> {
-  const hash = createHash("sha256");
+// A file's digest (hex), streamed.
+export async function hashFile(path: string, algorithm: "sha256" | "md5" = "sha256"): Promise<string> {
+  const hash = createHash(algorithm);
   for await (const chunk of createReadStream(path)) hash.update(chunk as Buffer);
   return hash.digest("hex");
 }

@@ -5,11 +5,10 @@
 // index.html and the 50 MB cap over the whole folder.
 import { createHash } from "node:crypto";
 import { copyFile, mkdir, readFile, writeFile } from "node:fs/promises";
-import type { DuckDBConnection } from "@duckdb/node-api";
 import { formatJson } from "../../json.ts";
 import { OCCURRENCE_COLUMNS, type LearnResult, type OccurrenceRow, type SampleDatasetRow } from "../../derive/sample.ts";
 import { labDataDir, type LabFile } from "../../learn/lab-files.ts";
-import { sqlPath, withOfflineDuckDb } from "../duckdb.ts";
+import { createTable, sqlPath, withOfflineDuckDb, type ColumnType } from "../duckdb.ts";
 import { styleSheet } from "../html.ts";
 import { childFile } from "../paths.ts";
 import { assertCap, fileSizes, LEARN_CAP, totalBytes } from "./cap.ts";
@@ -19,7 +18,6 @@ import { labPageTemplate, renderLabPage } from "./page.ts";
 
 const LOADER = "postgis/learn_curriculum.sql";
 
-type ColumnType = "BIGINT" | "INTEGER" | "VARCHAR" | "DOUBLE";
 const OCCURRENCE_TYPES: Record<(typeof OCCURRENCE_COLUMNS)[number], ColumnType> = {
   id: "BIGINT", species_id: "INTEGER", dataset_key: "VARCHAR", license: "VARCHAR", basis_of_record: "VARCHAR",
   longitude: "DOUBLE", latitude: "DOUBLE", coordinate_uncertainty_m: "DOUBLE", country_code_gbif: "VARCHAR",
@@ -28,25 +26,6 @@ const OCCURRENCE_TYPES: Record<(typeof OCCURRENCE_COLUMNS)[number], ColumnType> 
 const DATASET_TYPES: Record<keyof SampleDatasetRow, ColumnType> = {
   dataset_key: "VARCHAR", title: "VARCHAR", publisher: "VARCHAR", doi: "VARCHAR", license: "VARCHAR",
 };
-
-// Creates table `name` with `types`' columns, in their order, and appends `rows` (null = NULL).
-async function createTable<R>(con: DuckDBConnection, name: string, types: Record<keyof R & string, ColumnType>, rows: readonly R[]): Promise<void> {
-  const columns = Object.keys(types) as (keyof R & string)[];
-  await con.run(`CREATE TABLE ${name} (${columns.map((c) => `${c} ${types[c]}`).join(", ")})`);
-  const appender = await con.createAppender(name);
-  for (const r of rows) {
-    for (const c of columns) {
-      const v = r[c];
-      if (v === null) appender.appendNull();
-      else if (types[c] === "BIGINT") appender.appendBigInt(BigInt(v as number));
-      else if (types[c] === "INTEGER") appender.appendInteger(v as number);
-      else if (types[c] === "DOUBLE") appender.appendDouble(v as number);
-      else appender.appendVarchar(v as string);
-    }
-    appender.endRow();
-  }
-  appender.closeSync();
-}
 
 // Writes <outDir>/occurrences.parquet (zstd) and <outDir>/occurrences.csv (with a header; NULL is empty).
 export async function writeOccurrences(rows: readonly OccurrenceRow[], outDir: URL): Promise<void> {

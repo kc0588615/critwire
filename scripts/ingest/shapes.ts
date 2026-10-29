@@ -4,7 +4,6 @@
 // no network, no country rule) and checks its report. Only then are the four outputs copied into data/learn/, with
 // shapes.json (inputs, tolerance, tool versions, per file rows, bytes, sha256 and invalid geometries, the matcher
 // report). No date in shapes.json, so a re-run is byte-identical.
-import { spawn } from "node:child_process";
 import { createHash } from "node:crypto";
 import { copyFile, mkdir, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -16,6 +15,7 @@ import { readJson, writeJson } from "../json.ts";
 import { labDataDir } from "../learn/lab-files.ts";
 import type { NeLayer } from "../raw.ts";
 import { NE_COMMIT } from "./naturalearth.ts";
+import { runPython, venvPython } from "./python.ts";
 
 const NE_RAW = `https://raw.githubusercontent.com/nvkelso/natural-earth-vector/${NE_COMMIT}/geojson`;
 // File name in the temp folder → pinned source (sha256 and size as the spikes measured them).
@@ -34,7 +34,7 @@ const CHECK_FIELD: Record<NeLayer, string> = { countries: "ADM0_A3", map_units: 
 // countries.json codes with no 1:50m feature (Bouvet Island, Gibraltar, US Minor Outlying Islands).
 export const SHAPE_GAPS = ["BV", "GI", "UM"] as const;
 export const SHAPE_OUTPUTS = ["admin1_shapes.parquet", "biomes.csv", "country_shapes.parquet", "ecoregions.parquet"] as const;
-const PYTHON = [fileURLToPath(new URL("../../.venv-learn/bin/python", import.meta.url)), "-I", fileURLToPath(new URL("shapes.py", import.meta.url))];
+const PYTHON = venvPython("shapes.py");
 // Ecoregions2017.zip is ~149 MB.
 const TIMEOUT_MS = 30 * 60_000;
 
@@ -70,17 +70,6 @@ export function selectShapes(layers: Record<NeLayer, NeProps[]>, countryCodes: s
   });
   const { notInGbif: _n, gbifNotInRows: _g, ...rest } = report;
   return { selection, report: { ...rest, gaps: missing } };
-}
-
-// Runs shapes.py; returns its stdout. Throws on a spawn error or a non-zero exit. Its stderr goes to ours.
-function runPython(python: string[], args: string[]): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const child = spawn(python[0], [...python.slice(1), ...args], { stdio: ["ignore", "pipe", "inherit"] });
-    let out = "";
-    child.stdout.setEncoding("utf8").on("data", (d: string) => { out += d; });
-    child.on("error", (e) => reject(new Error(`shapes.py: ${e.message} (run pnpm learn:venv)`)));
-    child.on("close", (code, signal) => (code === 0 ? resolve(out) : reject(new Error(`shapes.py exited ${code ?? signal}`))));
-  });
 }
 
 // Throws unless the report agrees with the selection, the countries codes and the files in `outDir`.
@@ -120,7 +109,7 @@ export async function buildShapes({ inDir, dest, countryCodes, python = PYTHON }
   await writeFile(selectFile, JSON.stringify(selection));
   const outDir = join(inDir, "out");
   await mkdir(outDir);
-  const report = await checkReport(await runPython(python, ["--in", inDir, "--select", selectFile, "--out", outDir]), outDir, selection, countryCodes);
+  const report = await checkReport(await runPython("shapes.py", python, ["--in", inDir, "--select", selectFile, "--out", outDir]), outDir, selection, countryCodes);
 
   const files: Record<string, { bytes: number; rows: number; sha256: string; invalid?: Record<string, number> }> = {};
   for (const name of SHAPE_OUTPUTS) {

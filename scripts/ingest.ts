@@ -2,11 +2,13 @@
 // succeeded (the old files stay on failure). Request log goes to stderr.
 // Snapshot sources write data/raw/<source>/snapshot.json; wikidata, col and gbif read base.json for the species.
 // shapes writes data/learn/'s shape files and shapes.json (scripts/ingest/shapes.ts; needs pnpm learn:venv).
-// gbif-sample [--download <key> | --new] writes data/raw/gbif-sample/ (scripts/ingest/gbif-sample.ts); the only source with args.
+// habitat [--downloads <dir>] writes data/learn/'s habitat files and habitat.json (scripts/ingest/habitat.ts; needs pnpm learn:venv).
+// gbif-sample [--download <key> | --new] writes data/raw/gbif-sample/ (scripts/ingest/gbif-sample.ts).
 import { fetchCol } from "./ingest/col.ts";
 import { fetchGbif } from "./ingest/gbif.ts";
 import { runGbifSample } from "./ingest/gbif-sample.ts";
 import { fetchNaturalEarth } from "./ingest/naturalearth.ts";
+import { ingestHabitat } from "./ingest/habitat.ts";
 import { ingestShapes } from "./ingest/shapes.ts";
 import { fetchWikidata } from "./ingest/wikidata.ts";
 import { readJson } from "./json.ts";
@@ -45,6 +47,7 @@ const sources: Record<string, (args: string[]) => Promise<void>> = {
   gbif: noArgs(snapshot("gbif", withBase(fetchGbif))),
   naturalearth: noArgs(snapshot("naturalearth", fetchNaturalEarth)),
   shapes: noArgs(ingestShapes),
+  habitat: ingestHabitat,
   "gbif-sample": runGbifSample,
 };
 
