@@ -140,7 +140,7 @@ The review's numbering: MF = MUST-FIX, SC = SHOULD-CHANGE.
 
 ## Stages
 
-- [ ] Baseline: install, migrate, run typecheck, lint, unit and E2E tests; record the results under Baseline
+- [x] Baseline: install, migrate, run typecheck, lint, unit and E2E tests; record the results under Baseline
 - [ ] Architecture: `architect` writes findings and the target design
 - [ ] Fable review: `architecture-reviewer`
 - [ ] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
@@ -148,6 +148,18 @@ The review's numbering: MF = MUST-FIX, SC = SHOULD-CHANGE.
 - [ ] Steps: `planner` writes Steps and Verification
 
 ## Baseline
+
+On `358abb9` (= `origin/main` `7508fc7` + mission start), 2026-10-29, db `critwire_dev` (`CRITWIRE_DB_TARGET=critwire_dev`, `LEARN_PG_URL` as `critwire_lab`). Logs: `/srv/critter-ai/agent-state/missions/critwire-learn-l4-stats-etl/baseline-*.log`.
+- `pnpm install --frozen-lockfile`: ok. No migrations (build rebuilds tables). No lint script; typecheck is the static check.
+- `pnpm learn:venv`: ok (uv 0.13.5 already at `/usr/local/bin/uv`; CPython 3.12.3; 48 packages). `uv pip check`: clean. L1 brought the environment in (`site/learn/labs/requirements.{in,txt}`): reuse it.
+- `pnpm typecheck`: ok (2 s). `pnpm test`: 601/601 (2 min 5 s).
+- `pnpm build` (plain): ok, 6.7 s; `dist/learn/data/` 95,936,992 B, committed lab data 18,822,906 B (cap 120,000,000 each); `dist/` 246 files.
+- `pnpm test:db`: 121/121 (11 min 8 s), after the build.
+- `pnpm learn:check`: ok (3 min 56 s); canary `learn_spatial` unchanged, leak check empty, `checked.json` unchanged.
+- `pnpm e2e`: 87/87 passed (5.9 min); artifacts `.../critwire-learn-l4-stats-etl/baseline-e2e/`.
+- sha256 lists for Definition of done: `.../critwire-learn-l4-stats-etl/baseline-sha256-repo.txt` (728 tracked files) and `baseline-sha256-dist.txt` (246 `dist/` files).
+- Roles: `critwire_live` and `critwire_lab` exist. Handoff: no `done` items; H3 (GBIF retention) waits on the owner, blocks nothing.
+- For the architect: L3's Summary notes (Python blocks `py-connect`, `py-smoke` skipped by `learn:port` until L4; species change also needs `ingest habitat`); Codex db/backend review at `/srv/critter-ai/agent-state/reviews/2026-10-28-critwire-db-backend-codex.md` (L4 items: MF5, SC8, teaching corrections, SC7 Python part).
 
 ## Architecture
 
@@ -168,5 +180,7 @@ The review's numbering: MF = MUST-FIX, SC = SHOULD-CHANGE.
 ## Decisions
 
 ## Log
+
+- 2026-10-29 14:02 UTC: Baseline: install, venv, typecheck, test 601/601, build, test:db 121/121, learn:check, e2e 87/87 all pass; sha256 lists saved.
 
 ## Summary
