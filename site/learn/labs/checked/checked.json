@@ -345,6 +345,26 @@
       "key": "07e66cdbe64e19bdd8596af6690cd139c0d62291eec2d243c4dcae5ee26fcf79",
       "result": "841d86562453afb186b08d48b792dd5f5d633629ec4778918f7a17081bed364f"
     },
+    "e3-ex": {
+      "key": "8c535023ec7b933ef5849f228f43a62cf6081916944df6eecbc9266ce4c4654c",
+      "result": "0f160ac0aa67d321ce7dca9c658e24088157620ab96f39eda3615a0a92e0bbf7"
+    },
+    "e3-membership": {
+      "key": "01b3eb2c5302b7dc2c0d4b46077b24c903fa6cb7d9f43a449eac8cae07c8ba7e",
+      "result": "6ae748fd4c10c2e7efe646734570914013b5c111a402fafb467f797c8426060e"
+    },
+    "e3-pick-pg": {
+      "key": "a45ffb4d78e9f3de3d279aef3b6123fadaef0e9a754e9cb291a7cffebebf83ae",
+      "result": "daab8a920ef25b9546b3aaa4b2690f806af48c4daff39df321195c4e338a6260"
+    },
+    "e3-rerun": {
+      "key": "6209e922a72cfc4a574d522b8c08e4f4e2b5ede8f136bc97415cc338d2671892",
+      "result": "3fbe1a4e0d0016a3d17af6240a33378afff7cb0563c0decd8e3c4803cc14e0e4"
+    },
+    "e3-snapshot": {
+      "key": "6ab3be56f6edb2ac0955fe3ccaac9f725ebd046effea3b3fdb9c37761ad3c05e",
+      "result": "3c815646949658dbc6e744567d8251de4da9b7eca4c37f9e6ea475112fecbaa2"
+    },
     "g1-area": {
       "key": "5e2ec67518f7e7ddb7d85d79fdbb6777cd2a1d41780abbf4066fd64a8165321d",
       "result": "c3123fd9c947bc27c161e6c8e935acc0a9bdae73f375974e31bb262af9d7e21c"
@@ -682,6 +702,8 @@
     "d6.sql": "dc7c792e8b3ec36c04beb1b3807785b621373780da783afcbc41e762d1b93225",
     "e1.py": "4080e801ff00b5c05b688f21f4a8aaa1a9ff64013e2e49a22e7526d31317e4a3",
     "e2.py": "e114f9672d00d7eccc06e063d084890b87c017acc27c4fb2244d3f05b04e80bf",
+    "e3.py": "809f55d720c35eafe6e01c4f4b185fb2c774a611e880e35dc073ecf89a3f54db",
+    "e3.sql": "2dd3b625ec208dcd26aef8ea73b26bceaa3c171ce9cc1e2f87cad94bed38a4a7",
     "g1.sql": "5ae054385045f92b00d5442eb90d9962024114609002aee6b82671e7a7037d32",
     "g2.sql": "a50473b3cd47838d9cf45ab114dde8c55a29078f992c424e08382318e52636eb",
     "g3.sql": "1f0b49c165ae736a470be98df194b1f7f9dc2c431870a0d02753a4d8ba46deca",

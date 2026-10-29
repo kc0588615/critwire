@@ -1,0 +1,6 @@
+-- result: e3-rerun · python · sha256 584e78cd936d
+append, run 1: 2000 rows, md5 7eda803a3b13
+append, run 2: 4000 rows, md5 78fe836dfda5
+idempotent, run 1: run a6672cf0d579, loaded 2000 rows; 2000 rows, md5 7eda803a3b13
+idempotent, run 2: run a6672cf0d579, already loaded: skipped; 2000 rows, md5 7eda803a3b13
+idempotent, run 3 (one year added): run 35146b2ce8b7, loaded 2000 rows; 2000 rows, md5 6294a8e1f695

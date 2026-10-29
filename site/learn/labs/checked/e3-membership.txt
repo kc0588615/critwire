@@ -1,0 +1,4 @@
+-- result: e3-membership · 2 rows · sha256 545f3edf0ed3
+input | picked | entered | dropped
+same records, read in reverse | 100 | none | none
+one new record | 100 | 6556492907 (pick 97) | 1647111730 (was pick 100)

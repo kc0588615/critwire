@@ -1,0 +1,3 @@
+-- result: e3-ex · python · sha256 ee0c539414d9
+without ORDER BY: sha256 3580ece3b509 then 3c1e7511af43: a different file
+ORDER BY id: sha256 3580ece3b509 then 3580ece3b509: same file

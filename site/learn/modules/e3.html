@@ -1,0 +1,63 @@
+<p class="lead">Can you re-run a pipeline without doubling rows or changing its output? Three ideas that sound alike: output that is the same for the same input, a batch that applies once however often it runs, and a target that holds exactly the snapshot it should. A selection rule run in two engines, a batch ledger, a refresh job keyed by input, transform, config and schema, and what a capped sample does when the data changes. The Python blocks run in the Python environment, on the lab tables (<a href="/learn/setup/">the setup page</a>); the first block runs in the browser.</p>
+
+<h2>Concept</h2>
+<p>A pipeline you can re-run without fear. An operation is <strong>idempotent</strong> when doing it twice leaves the same result as doing it once. Schedules retry, people re-run a failed job, and two runs overlap, so a load that appends rows doubles them. Three ideas sound alike here, and each answers a different question:</p>
+<ul>
+<li><strong>Deterministic output:</strong> does the same input give the same rows? "Any 100 records" must be the same 100 every time: <code>LIMIT</code> without <code>ORDER BY</code>, or <code>random()</code> without a seed, is not. The lab sample orders each species' records by the <code>md5</code> of their id, then the id (<a href="/learn/data/">the lab data</a>), which every engine computes the same way. Outputs follow the same rule: rows in key order and stable formats, so the same input gives a byte-identical file and a sha256 proves that nothing changed. A rule like this repeats on the same input; it doesn't promise that a record stays in the sample when the input changes.</li>
+<li><strong>Idempotent batch application:</strong> does a batch applied twice change the target once? Rows carry their source's key (GBIF's <code>gbifID</code>) and go in with <code>ON CONFLICT</code> (<a href="/learn/database-architecture/transactions/">d4</a>), and a ledger of applied batches, keyed by each batch's checksum, skips a batch it has seen. That is right for batches that never change and add up, like each day's new records.</li>
+<li><strong>The target holds snapshot X:</strong> is what the target holds now what this run would produce? A snapshot is the whole dataset as of one moment, and a refresh replaces the target's rows with it. The answer is a <strong>job key</strong>: one checksum over everything that shapes the rows: the input's checksum, the transform's version, the config and the target's schema version. A state table keeps the key, and it changes in the same transaction as the rows, so the key never describes other rows. An equal key skips; any other key reloads, including a return to an earlier input.</li>
+</ul>
+<p><strong>Versions and config.</strong> Bump <code>TRANSFORM_VERSION</code> when the code's output changes, and <code>SCHEMA_VERSION</code> when the target's DDL does. The config is what shapes the rows (here the cap and the licenses), never a connection setting: the same rows loaded through another host are the same snapshot. A key without the config would skip a run whose only change is the config.</p>
+<p><strong>Data:</strong> <code>occurrences</code>; the browser's copy of the same sample. The Tasmanian devil's 2,000 records are the snapshot the refresh job loads.</p>
+
+<h2>Worked example</h2>
+<p>The sample's selection rule, 100 records per species by <code>md5</code>, then id, in the browser:</p>
+{{block:e3-pick}}
+<p>The same SQL in PostgreSQL. Its result block has the same hash as the browser's: the same rows, in two engines.</p>
+{{block:e3-pick-pg}}
+<p>Both engines pick 4,766 records of 71 species (100 each, or all of a species' records when it has fewer), with the same md5 over their ids. The <code>id</code> after the hash is a tie-break: two equal hashes are unlikely, but with it the order is total by construction, not by luck.</p>
+
+<h2>Lab</h2>
+<ol>
+<li><p>The batch ledger. A plain append against an idempotent load, run twice each, then once more with a corrected input:</p>
+{{block:e3-rerun}}
+<p>The append holds 2,000 rows after one run and 4,000 after two. The idempotent load holds 2,000 after both, with the same md5, because the second run's input has the same checksum and is skipped. The corrected input gets a new run id and loads: still 2,000 rows, one changed, and a new md5. For batches that add up, that is the right rule. For snapshots it is wrong: the ledger remembers every input it has ever seen, so a return to an earlier snapshot is skipped, and it keys on the input alone.</p></li>
+<li><p>The snapshot rule. A refresh job (e5 builds the real one): input A is the devil's 2,000 records as a file of <code>id,year,license</code> lines; B is the same file a week later, with one record's year corrected. The transform keeps the config's licenses and the first <code>cap</code> records by md5; version 2 of the transform also drops records without a year, and version 2 of the schema adds a <code>CHECK</code> on the license, so the job rebuilds the table. Each run reads the state row under a row lock (<code>FOR UPDATE</code>) in the transaction that would replace the rows, and compares keys. Beside it, <code>e3-rerun</code>'s ledger rule gets the first four inputs.</p>
+{{block:e3-snapshot}}
+<p>Runs 1 to 4 load A, B, then A again. The snapshot rule ends holding A, the input of the last run; the ledger rule skips A's return, because it has seen A's checksum, and keeps B. Each later run changes one part of the key and reloads: the cap from 1,000 to 500 (the config), the transform, then the schema. Run 8 repeats run 7 and skips. "Holds" is checked, not assumed: the block compares the target's rows with what each input gives under the run's settings. A key without the config would have skipped run 5 and kept 1,000 rows where the config asks for 500.</p></li>
+<li><p>Repeatable is not stable. The md5 cap on the devil's 2,000 records, read in reverse, then with one new record:</p>
+{{block:e3-membership}}
+<p>Read in any order, the same records give the same 100 picks: the rule depends on the ids alone. A new record whose md5 sorts before the 100th pick's enters at pick 97, and the 100th, a record that didn't change, leaves. A capped sample repeats on the same input but isn't stable under a refresh, and the course's own sample is one (at most 2,000 records per species by the same rule, <a href="/learn/data/">the lab data</a>): compare two samples by their ids, not their counts. A species under the cap keeps every record, so there a new record only adds.</p></li>
+</ol>
+
+<h2>The case study: critwire itself</h2>
+<p>Each step has one writer and refuses to run on stale input:</p>
+<pre class="code"><code>pnpm ingest gbif   # the only step that uses the network: normalized responses, keys sorted, one `retrieved` time per file
+pnpm derive        # pure: no network, no clock; refuses a raw snapshot whose request differs from the one it would send now
+pnpm build         # rebuilds the database from data/ each time; refuses derived files that differ from a fresh derive</code></pre>
+<ul>
+<li>Stale means the request changed, not the date: <code>derive</code> rebuilds each request from the registry and compares it with the one the snapshot recorded, so a new species or a changed filter demands a new ingest, and an old snapshot of the same request doesn't.</li>
+<li>Snapshots are committed to git, so any past build can be repeated from its commit.</li>
+<li><code>derive</code> reads only files, so its outputs are a function of its inputs, and the build checks that by deriving again.</li>
+<li>The deploy swaps in the new <code>dist/</code> only if the whole build passed.</li>
+<li>A GBIF derived-dataset DOI is minted only for a pushed commit, tagged, so the deposit it points at never moves; an interrupted registration is re-run and reconciles with GBIF's listing before it posts again (<code>pnpm gbif:register</code>).</li>
+</ul>
+
+<h2>Result</h2>
+<p>Both engines pick the same 4,766 records. A ledger keyed by the input's checksum applies each batch once, and that suits batches; a snapshot refresh keys on the input, the transform, the config and the schema together, commits the key with the rows, and so after A, B, A holds A. An md5 cap repeats on the same input, but a refresh can swap records in and out of it.</p>
+
+<h2>Exercise</h2>
+<p>A deterministic output names its order. Export the devil's records (<code>id</code>, <code>year</code>, <code>license</code>) from a <code>TEMP</code> copy to CSV with <code>COPY (…) TO STDOUT</code>, twice, with an <code>UPDATE</code> between the exports that changes no value (<code>SET year = year</code> on the lowest id). Do it once without <code>ORDER BY</code> and once with <code>ORDER BY id</code>, and compare each pair's sha256.</p>
+{{exercise:e3-ex}}
+
+<h2>Check</h2>
+<p>Without <code>ORDER BY</code> the file changes though no value did. PostgreSQL writes an updated row as a new version wherever it finds room, here at the end of the table, and a scan without <code>ORDER BY</code> returns rows in storage order, so the lowest id moves from the first line to the last. With <code>ORDER BY id</code> both files are the same bytes. Any output compared by checksum names its order, and its format: the same rows written by another tool, or with another number format, are another file.</p>
+
+<h2>Dialects</h2>
+<ul>
+<li><strong>PostgreSQL:</strong> <code>INSERT … ON CONFLICT (key) DO UPDATE</code> is the upsert. <code>MERGE</code> (PostgreSQL 15) inserts, updates and deletes from one source in one statement; PostgreSQL 17 adds <code>WHEN NOT MATCHED BY SOURCE THEN DELETE</code>, which syncs a target to a snapshot. <code>TRUNCATE</code> is transactional in PostgreSQL, so a replace rolls back with the rest. <code>pg_try_advisory_xact_lock</code> keeps two runs of one job from overlapping (e5).</li>
+<li><strong>DuckDB:</strong> <code>INSERT OR REPLACE INTO</code> and <code>INSERT … ON CONFLICT DO UPDATE</code> need a primary key or a unique constraint. <code>md5(CAST(id AS VARCHAR))</code> gives the same hex text as PostgreSQL's, which is why <code>e3-pick</code> and <code>e3-pick-pg</code> agree. <code>BEGIN TRANSACTION; … COMMIT;</code> holds a replace and its state row together.</li>
+<li><strong>SQL Server:</strong> <code>MERGE … WHEN NOT MATCHED BY SOURCE THEN DELETE</code> syncs a target to a snapshot in one statement. <code>HASHBYTES('MD5', CAST(id AS varchar(20)))</code> returns bytes, not hex text; they sort in the same order as the hex. <code>sp_getapplock</code> keeps two runs from overlapping.</li>
+<li><strong>Python:</strong> <code>hashlib.sha256</code> over canonical JSON (<code>json.dumps(parts, sort_keys=True, separators=(",", ":"))</code>) gives one key for equal parts. The built-in <code>hash()</code> of a string changes from one process to the next, so it never picks a sample or makes a key.</li>
+<li><strong>ArcGIS Pro:</strong> Append (<code>arcpy.management.Append</code>) adds rows, so running it twice doubles them; Delete Rows (<code>arcpy.management.DeleteRows</code>) then Append replaces them. Pro keeps no record of what it loaded: keep the job key in a table of your own, as here.</li>
+</ul>

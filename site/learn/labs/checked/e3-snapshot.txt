@@ -1,0 +1,13 @@
+-- result: e3-snapshot · python · sha256 979ea874abbc
+run 1 · A (cap 1000, transform 1, schema 1) · first load: loaded 1000 rows; the target holds A
+  ledger rule · A · loaded 1000 rows; its target holds A
+run 2 · A (cap 1000, transform 1, schema 1) · nothing changed: skipped; the target holds A
+  ledger rule · A · run id seen before: skipped; its target holds A
+run 3 · B (cap 1000, transform 1, schema 1) · input changed: loaded 1000 rows; the target holds B
+  ledger rule · B · loaded 1000 rows; its target holds B
+run 4 · A (cap 1000, transform 1, schema 1) · input changed: loaded 1000 rows; the target holds A
+  ledger rule · A · run id seen before: skipped; its target holds B
+run 5 · A (cap 500, transform 1, schema 1) · config changed: loaded 500 rows; the target holds A
+run 6 · A (cap 500, transform 2, schema 1) · transform changed: loaded 500 rows; the target holds A
+run 7 · A (cap 500, transform 2, schema 2) · schema changed: loaded 500 rows; the target holds A
+run 8 · A (cap 500, transform 2, schema 2) · nothing changed: skipped; the target holds A

@@ -8896,23 +8896,23 @@ load refused: 4 problems in 3 of 3 records
 
 **Tool:** Py + PG · **Time:** 2.0 h · **Prereqs:** e2
 
-**Goal:** a pipeline you can re-run without fear. An operation is **idempotent** when doing it twice leaves the same result as doing it once. Schedules retry, people re-run a failed job, and two runs overlap, so a load that appends rows doubles them. The tools:
-- **Keys and upserts** (d4): rows carry their source's key (GBIF's `gbifID`) and are inserted with `ON CONFLICT`, so a second copy updates instead of adding.
-- **Replace in one transaction:** the lab loader drops and rebuilds its schema inside one transaction (§4.3), so a run either replaces everything or changes nothing.
-- **Run ids from content:** a run's id is the checksum of its input. The same input is recognized and skipped; a changed one loads under a new id. A clock-based id would load the same input twice.
-- **Deterministic choices:** "any 2,000 records" must be the same 2,000 every time. `LIMIT` without `ORDER BY`, or `random()` without a seed, is not. The lab sample orders each species' records by the `md5` of their id (§4.2), which every engine computes the same way.
-- **Deterministic outputs:** rows in key order and stable formats, so the same input gives byte-identical files and a sha256 proves that nothing changed.
+**Concept:** a pipeline you can re-run without fear. An operation is **idempotent** when doing it twice leaves the same result as doing it once. Schedules retry, people re-run a failed job, and two runs overlap, so a load that appends rows doubles them. Three ideas sound alike here, and each answers a different question:
+- **Deterministic output:** does the same input give the same rows? "Any 100 records" must be the same 100 every time: `LIMIT` without `ORDER BY`, or `random()` without a seed, is not. The lab sample orders each species' records by the `md5` of their id, then the id (§4.2), which every engine computes the same way. Outputs follow the same rule: rows in key order and stable formats, so the same input gives a byte-identical file and a sha256 proves that nothing changed. A rule like this repeats on the same input; it doesn't promise that a record stays in the sample when the input changes.
+- **Idempotent batch application:** does a batch applied twice change the target once? Rows carry their source's key (GBIF's `gbifID`) and go in with `ON CONFLICT` (d4), and a ledger of applied batches, keyed by each batch's checksum, skips a batch it has seen. That is right for batches that never change and add up, like each day's new records.
+- **The target holds snapshot X:** is what the target holds now what this run would produce? A snapshot is the whole dataset as of one moment, and a refresh replaces the target's rows with it. The answer is a **job key**: one checksum over everything that shapes the rows: the input's checksum, the transform's version, the config and the target's schema version. A state table keeps the key, and it changes in the same transaction as the rows, so the key never describes other rows. An equal key skips; any other key reloads, including a return to an earlier input.
 
-**Data:** `occurrences`; the browser's copy of the same sample.
+**Versions and config.** Bump `TRANSFORM_VERSION` when the code's output changes, and `SCHEMA_VERSION` when the target's DDL does. The config is what shapes the rows (here the cap and the licenses), never a connection setting: the same rows loaded through another host are the same snapshot. A key without the config would skip a run whose only change is the config.
 
-**Key code:** the sample's selection rule, 100 records per species by `md5`, in the browser:
+**Data:** `occurrences`; the browser's copy of the same sample. The Tasmanian devil's 2,000 records are the snapshot the refresh job loads.
+
+**Worked example:** the sample's selection rule, 100 records per species by `md5`, then id, in the browser:
 
 ```sql
 -- q: e3-pick
 -- status: ran
 WITH ranked AS (
   SELECT id, species_id,
-         row_number() OVER (PARTITION BY species_id ORDER BY md5(CAST(id AS VARCHAR))) AS pick
+         row_number() OVER (PARTITION BY species_id ORDER BY md5(CAST(id AS VARCHAR)), id) AS pick
   FROM occurrences
 )
 SELECT count(*) AS records,
@@ -8936,7 +8936,7 @@ The same SQL in PostgreSQL. Its result block has the same hash as the browser's:
 -- engine: postgis
 WITH ranked AS (
   SELECT id, species_id,
-         row_number() OVER (PARTITION BY species_id ORDER BY md5(CAST(id AS VARCHAR))) AS pick
+         row_number() OVER (PARTITION BY species_id ORDER BY md5(CAST(id AS VARCHAR)), id) AS pick
   FROM occurrences
 )
 SELECT count(*) AS records,
@@ -8952,7 +8952,10 @@ records | species | ids_md5
 4766 | 71 | 6e68cc753c01b6150c7308b6de8e85b6
 ```
 
-A plain append against an idempotent load, run twice each, then once more with a corrected input:
+Both engines pick 4,766 records of 71 species (100 each, or all of a species' records when it has fewer), with the same md5 over their ids. The `id` after the hash is a tie-break: two equal hashes are unlikely, but with it the order is total by construction, not by luck.
+
+**Lab:**
+1. The batch ledger. A plain append against an idempotent load, run twice each, then once more with a corrected input:
 
 ```python
 # q: e3-rerun
@@ -9013,20 +9016,260 @@ idempotent, run 2: run a6672cf0d579, already loaded: skipped; 2000 rows, md5 7ed
 idempotent, run 3 (one year added): run 35146b2ce8b7, loaded 2000 rows; 2000 rows, md5 6294a8e1f695
 ```
 
+The append holds 2,000 rows after one run and 4,000 after two. The idempotent load holds 2,000 after both, with the same md5, because the second run's input has the same checksum and is skipped. The corrected input gets a new run id and loads: still 2,000 rows, one changed, and a new md5. For batches that add up, that is the right rule. For snapshots it is wrong: the ledger remembers every input it has ever seen, so a return to an earlier snapshot is skipped, and it keys on the input alone.
+
+2. The snapshot rule. A refresh job (e5 builds the real one): input A is the devil's 2,000 records as a file of `id,year,license` lines; B is the same file a week later, with one record's year corrected. The transform keeps the config's licenses and the first `cap` records by md5; version 2 of the transform also drops records without a year, and version 2 of the schema adds a `CHECK` on the license, so the job rebuilds the table. Each run reads the state row under a row lock (`FOR UPDATE`) in the transaction that would replace the rows, and compares keys. Beside it, e3-rerun's ledger rule gets the first four inputs.
+
+```python
+# q: e3-snapshot
+# status: ran
+# after: py-connect
+import hashlib
+import json
+
+from psycopg.types.json import Jsonb
+
+# The target's DDL by SCHEMA_VERSION: version 2 adds a CHECK on the licence.
+SCHEMAS = {
+    1: "CREATE TEMP TABLE devil_target (id bigint PRIMARY KEY, year integer, license text NOT NULL)",
+    2: "CREATE TEMP TABLE devil_target (id bigint PRIMARY KEY, year integer, "
+       "license text NOT NULL CHECK (license IN ('CC0 1.0', 'CC BY 4.0')))",
+}
+
+
+def md5_order(row):
+    return hashlib.md5(str(row[0]).encode()).hexdigest(), row[0]
+
+
+def transform_v1(rows, config):
+    """The rows the config keeps: records under its licences, the first `cap` by the md5 of their id."""
+    return sorted((r for r in rows if r[2] in config["licenses"]), key=md5_order)[:config["cap"]]
+
+
+def transform_v2(rows, config):
+    """Version 2 also drops records without a year."""
+    return transform_v1([r for r in rows if r[1] is not None], config)
+
+
+TRANSFORMS = {1: transform_v1, 2: transform_v2}
+
+
+def snapshot(rows):
+    """A delivered file: one line per record, `id,year,license`, an empty year for none."""
+    return "".join(f"{i},{'' if y is None else y},{lic}\n" for i, y, lic in rows).encode()
+
+
+def parse(data):
+    return [(int(i), int(y) if y else None, lic) for i, y, lic in (line.split(",") for line in data.decode().splitlines())]
+
+
+def job_key(parts):
+    """One sha256 over the four parts, as canonical JSON (sorted keys, no spaces), so equal parts give one key."""
+    return hashlib.sha256(json.dumps(parts, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+
+
+def refresh(conn, data, config, transform, schema):
+    """Make the target hold `data` under this transform, config and schema, unless the state says it already does.
+    One transaction: the target's rows and the state row change together, or neither does."""
+    parts = {"input": hashlib.sha256(data).hexdigest(), "transform": transform, "config": config, "schema": schema}
+    key = job_key(parts)
+    with conn.transaction(), conn.cursor() as cur:
+        state = cur.execute("SELECT job_key, parts FROM job_state WHERE job = 'devil' FOR UPDATE").fetchone()
+        if state is not None and state[0] == key:
+            return "nothing changed: skipped"
+        if state is None or state[1]["schema"] != schema:
+            cur.execute("DROP TABLE IF EXISTS devil_target")
+            cur.execute(SCHEMAS[schema])
+        else:
+            cur.execute("TRUNCATE devil_target")
+        rows = TRANSFORMS[transform](parse(data), config)
+        cur.executemany("INSERT INTO devil_target VALUES (%s, %s, %s)", rows)
+        cur.execute("INSERT INTO job_state VALUES ('devil', %s, %s) "
+                    "ON CONFLICT (job) DO UPDATE SET job_key = EXCLUDED.job_key, parts = EXCLUDED.parts",
+                    (key, Jsonb(parts)))
+    changed = "first load" if state is None else " and ".join(p for p in sorted(parts) if parts[p] != state[1][p]) + " changed"
+    return f"{changed}: loaded {len(rows)} rows"
+
+
+def ledger(conn, data, config):
+    """e3-rerun's rule: the run id is the input's checksum alone, and a seen run id is skipped."""
+    with conn.transaction(), conn.cursor() as cur:
+        run_id = hashlib.sha256(data).hexdigest()
+        if cur.execute("INSERT INTO load_runs VALUES (%s) ON CONFLICT DO NOTHING RETURNING run_id",
+                       (run_id,)).fetchone() is None:
+            return "run id seen before: skipped"
+        rows = transform_v1(parse(data), config)
+        cur.executemany("INSERT INTO ledger_target VALUES (%s, %s, %s) ON CONFLICT (id) DO UPDATE "
+                        "SET year = EXCLUDED.year, license = EXCLUDED.license", rows)
+        return f"loaded {len(rows)} rows"
+
+
+def holds(conn, table, inputs, config, transform):
+    """The input whose rows, under these settings, are exactly the table's rows."""
+    rows = set(conn.execute(f"SELECT id, year, license FROM {table}").fetchall())
+    return next(name for name, data in inputs.items() if rows == set(TRANSFORMS[transform](parse(data), config)))
+
+
+with connect() as conn:
+    conn.autocommit = True  # each `with conn.transaction()` is then one transaction of its own
+    conn.execute("CREATE TEMP TABLE job_state (job text PRIMARY KEY, job_key text NOT NULL, parts jsonb NOT NULL)")
+    conn.execute("CREATE TEMP TABLE load_runs (run_id text PRIMARY KEY)")
+    conn.execute(SCHEMAS[1].replace("devil_target", "ledger_target"))
+    try:
+        rows = conn.execute("""SELECT o.id, o.year, o.license FROM occurrences AS o
+                               JOIN species AS s ON s.id = o.species_id
+                               WHERE s.scientific_name = 'Sarcophilus harrisii' ORDER BY o.id""").fetchall()
+        fixed = min((r for r in rows if r[1] is not None), key=md5_order)  # next week the publisher corrects one year
+        inputs = {"A": snapshot(rows), "B": snapshot([(i, y - 1, lic) if i == fixed[0] else (i, y, lic) for i, y, lic in rows])}
+        default = {"cap": 1000, "licenses": ["CC0 1.0", "CC BY 4.0"]}
+        smaller = {**default, "cap": 500}
+        runs = [("A", default, 1, 1), ("A", default, 1, 1), ("B", default, 1, 1), ("A", default, 1, 1),
+                ("A", smaller, 1, 1), ("A", smaller, 2, 1), ("A", smaller, 2, 2), ("A", smaller, 2, 2)]
+        for n, (name, config, transform, schema) in enumerate(runs, 1):
+            what = refresh(conn, inputs[name], config, transform, schema)
+            settings = f"cap {config['cap']}, transform {transform}, schema {schema}"
+            print(f"run {n} · {name} ({settings}) · {what}; the target holds "
+                  f"{holds(conn, 'devil_target', inputs, config, transform)}")
+            if n <= 4:
+                what = ledger(conn, inputs[name], default)
+                print(f"  ledger rule · {name} · {what}; its target holds {holds(conn, 'ledger_target', inputs, default, 1)}")
+    finally:
+        conn.execute("DROP TABLE IF EXISTS job_state, load_runs, ledger_target, devil_target")
+```
+
+```text
+-- result: e3-snapshot · python · sha256 979ea874abbc
+run 1 · A (cap 1000, transform 1, schema 1) · first load: loaded 1000 rows; the target holds A
+  ledger rule · A · loaded 1000 rows; its target holds A
+run 2 · A (cap 1000, transform 1, schema 1) · nothing changed: skipped; the target holds A
+  ledger rule · A · run id seen before: skipped; its target holds A
+run 3 · B (cap 1000, transform 1, schema 1) · input changed: loaded 1000 rows; the target holds B
+  ledger rule · B · loaded 1000 rows; its target holds B
+run 4 · A (cap 1000, transform 1, schema 1) · input changed: loaded 1000 rows; the target holds A
+  ledger rule · A · run id seen before: skipped; its target holds B
+run 5 · A (cap 500, transform 1, schema 1) · config changed: loaded 500 rows; the target holds A
+run 6 · A (cap 500, transform 2, schema 1) · transform changed: loaded 500 rows; the target holds A
+run 7 · A (cap 500, transform 2, schema 2) · schema changed: loaded 500 rows; the target holds A
+run 8 · A (cap 500, transform 2, schema 2) · nothing changed: skipped; the target holds A
+```
+
+Runs 1 to 4 load A, B, then A again. The snapshot rule ends holding A, the input of the last run; the ledger rule skips A's return, because it has seen A's checksum, and keeps B. Each later run changes one part of the key and reloads: the cap from 1,000 to 500 (the config), the transform, then the schema. Run 8 repeats run 7 and skips. "Holds" is checked, not assumed: the block compares the target's rows with what each input gives under the run's settings. A key without the config would have skipped run 5 and kept 1,000 rows where the config asks for 500.
+
+3. Repeatable is not stable. The md5 cap on the devil's 2,000 records, read in reverse, then with one new record:
+
+```sql
+-- q: e3-membership
+-- status: ran
+-- engine: postgis
+WITH ranked AS (
+  SELECT id, species_id,
+         row_number() OVER (PARTITION BY species_id ORDER BY md5(CAST(id AS VARCHAR)), id) AS pick
+  FROM occurrences
+), devil AS (
+  SELECT r.id, r.pick
+  FROM ranked AS r JOIN species AS s ON s.id = r.species_id
+  WHERE s.scientific_name = 'Sarcophilus harrisii'
+), reversed AS (
+  -- the same records, read in the opposite order
+  SELECT id, row_number() OVER (ORDER BY md5(CAST(id AS VARCHAR)), id) AS pick
+  FROM (SELECT id FROM devil ORDER BY id DESC) AS d
+), newcomer AS (
+  -- next week's first new devil record whose md5 sorts before the 100th pick's
+  SELECT n AS id
+  FROM generate_series((SELECT max(id) + 1 FROM occurrences), (SELECT max(id) + 1000 FROM occurrences)) AS n
+  WHERE md5(CAST(n AS VARCHAR)) < (SELECT md5(CAST(id AS VARCHAR)) FROM devil WHERE pick = 100)
+  ORDER BY n
+  LIMIT 1
+), refreshed AS (
+  SELECT id, row_number() OVER (ORDER BY md5(CAST(id AS VARCHAR)), id) AS pick
+  FROM (SELECT id FROM devil UNION ALL SELECT id FROM newcomer) AS d
+), before_ids AS (SELECT id FROM devil WHERE pick <= 100),
+   reversed_ids AS (SELECT id FROM reversed WHERE pick <= 100),
+   refreshed_ids AS (SELECT id FROM refreshed WHERE pick <= 100)
+SELECT 'same records, read in reverse' AS input,
+       (SELECT count(*) FROM reversed_ids) AS picked,
+       coalesce((SELECT string_agg(CAST(id AS VARCHAR), ', ') FROM (SELECT id FROM reversed_ids EXCEPT SELECT id FROM before_ids) AS x), 'none') AS entered,
+       coalesce((SELECT string_agg(CAST(id AS VARCHAR), ', ') FROM (SELECT id FROM before_ids EXCEPT SELECT id FROM reversed_ids) AS x), 'none') AS dropped
+UNION ALL
+SELECT 'one new record',
+       (SELECT count(*) FROM refreshed_ids),
+       (SELECT string_agg(CAST(id AS VARCHAR) || ' (pick ' || pick || ')', ', ') FROM refreshed WHERE pick <= 100 AND id NOT IN (SELECT id FROM before_ids)),
+       (SELECT string_agg(CAST(id AS VARCHAR) || ' (was pick ' || pick || ')', ', ') FROM devil WHERE pick <= 100 AND id NOT IN (SELECT id FROM refreshed_ids));
+```
+
+```text
+-- result: e3-membership · 2 rows · sha256 545f3edf0ed3
+input | picked | entered | dropped
+same records, read in reverse | 100 | none | none
+one new record | 100 | 6556492907 (pick 97) | 1647111730 (was pick 100)
+```
+
+Read in any order, the same records give the same 100 picks: the rule depends on the ids alone. A new record whose md5 sorts before the 100th pick's enters at pick 97, and the 100th, a record that didn't change, leaves. A capped sample repeats on the same input but isn't stable under a refresh, and the course's own sample is one (at most 2,000 records per species by the same rule, §4.2): compare two samples by their ids, not their counts. A species under the cap keeps every record, so there a new record only adds.
+
 **The case study: critwire itself** (`AGENTS.md`). Each step has one writer and refuses to run on stale input:
 
 ```sh
 pnpm ingest gbif   # the only step that uses the network: normalized responses, keys sorted, one `retrieved` time per file
-pnpm derive        # pure: no network, no clock; refuses raw snapshots older than the data they describe
+pnpm derive        # pure: no network, no clock; refuses a raw snapshot whose request differs from the one it would send now
 pnpm build         # rebuilds the database from data/ each time; refuses derived files that differ from a fresh derive
 ```
 
+- Stale means the request changed, not the date: `derive` rebuilds each request from the registry and compares it with the one the snapshot recorded, so a new species or a changed filter demands a new ingest, and an old snapshot of the same request doesn't.
 - Snapshots are committed to git, so any past build can be repeated from its commit.
 - `derive` reads only files, so its outputs are a function of its inputs, and the build checks that by deriving again.
 - The deploy swaps in the new `dist/` only if the whole build passed.
 - A GBIF derived-dataset DOI is minted only for a pushed commit, tagged, so the deposit it points at never moves; an interrupted registration is re-run and reconciles with GBIF's listing before it posts again (`pnpm gbif:register`).
 
-**Expected:** both engines pick 4,766 records of 71 species (100 each, or all of a species' records when it has fewer), with the same md5 over their ids, `6e68cc753c01b6150c7308b6de8e85b6`. The append holds 2,000 rows after one run and 4,000 after two. The idempotent load holds 2,000 rows after both runs with the same md5, because the second run's input has the same checksum and is skipped. The corrected input gets a new run id and loads: still 2,000 rows, one changed, and a new md5.
+**Result:** both engines pick the same 4,766 records. A ledger keyed by the input's checksum applies each batch once, and that suits batches; a snapshot refresh keys on the input, the transform, the config and the schema together, commits the key with the rows, and so after A, B, A holds A. An md5 cap repeats on the same input, but a refresh can swap records in and out of it.
+
+**Exercise:** a deterministic output names its order. Export the devil's records (`id`, `year`, `license`) from a `TEMP` copy to CSV with `COPY (…) TO STDOUT`, twice, with an `UPDATE` between the exports that changes no value (`SET year = year` on the lowest id). Do it once without `ORDER BY` and once with `ORDER BY id`, and compare each pair's sha256.
+
+**Answer:**
+
+```python
+# q: e3-ex
+# status: ran
+# after: py-connect
+import hashlib
+
+EXPORTS = {
+    "without ORDER BY": "SELECT id, year, license FROM devil",
+    "ORDER BY id": "SELECT id, year, license FROM devil ORDER BY id",
+}
+
+
+def export(cur, query):
+    """The query's rows as a CSV file's bytes, and their sha256."""
+    with cur.copy(f"COPY ({query}) TO STDOUT (FORMAT csv, HEADER true)") as copy:
+        return hashlib.sha256(b"".join(copy)).hexdigest()
+
+
+with connect() as conn, conn.cursor() as cur:
+    cur.execute("""CREATE TEMP TABLE devil AS
+                   SELECT o.id, o.year, o.license FROM occurrences AS o JOIN species AS s ON s.id = o.species_id
+                   WHERE s.scientific_name = 'Sarcophilus harrisii' ORDER BY o.id""")
+    before = {name: export(cur, query) for name, query in EXPORTS.items()}
+    cur.execute("UPDATE devil SET year = year WHERE id = (SELECT min(id) FROM devil)")  # changes no value
+    for name, query in EXPORTS.items():
+        after = export(cur, query)
+        print(f"{name}: sha256 {before[name][:12]} then {after[:12]}: {'same file' if after == before[name] else 'a different file'}")
+    conn.rollback()
+```
+
+```text
+-- result: e3-ex · python · sha256 ee0c539414d9
+without ORDER BY: sha256 3580ece3b509 then 3c1e7511af43: a different file
+ORDER BY id: sha256 3580ece3b509 then 3580ece3b509: same file
+```
+
+**Check:** Without `ORDER BY` the file changes though no value did. PostgreSQL writes an updated row as a new version wherever it finds room, here at the end of the table, and a scan without `ORDER BY` returns rows in storage order, so the lowest id moves from the first line to the last. With `ORDER BY id` both files are the same bytes. Any output compared by checksum names its order, and its format: the same rows written by another tool, or with another number format, are another file.
+
+**Dialects:**
+- **PostgreSQL:** `INSERT … ON CONFLICT (key) DO UPDATE` is the upsert. `MERGE` (PostgreSQL 15) inserts, updates and deletes from one source in one statement; PostgreSQL 17 adds `WHEN NOT MATCHED BY SOURCE THEN DELETE`, which syncs a target to a snapshot. `TRUNCATE` is transactional in PostgreSQL, so a replace rolls back with the rest. `pg_try_advisory_xact_lock` keeps two runs of one job from overlapping (e5).
+- **DuckDB:** `INSERT OR REPLACE INTO` and `INSERT … ON CONFLICT DO UPDATE` need a primary key or a unique constraint. `md5(CAST(id AS VARCHAR))` gives the same hex text as PostgreSQL's, which is why `e3-pick` and `e3-pick-pg` agree. `BEGIN TRANSACTION; … COMMIT;` holds a replace and its state row together.
+- **SQL Server:** `MERGE … WHEN NOT MATCHED BY SOURCE THEN DELETE` syncs a target to a snapshot in one statement. `HASHBYTES('MD5', CAST(id AS varchar(20)))` returns bytes, not hex text; they sort in the same order as the hex. `sp_getapplock` keeps two runs from overlapping.
+- **Python:** `hashlib.sha256` over canonical JSON (`json.dumps(parts, sort_keys=True, separators=(",", ":"))`) gives one key for equal parts. The built-in `hash()` of a string changes from one process to the next, so it never picks a sample or makes a key.
+- **ArcGIS Pro:** Append (`arcpy.management.Append`) adds rows, so running it twice doubles them; Delete Rows (`arcpy.management.DeleteRows`) then Append replaces them. Pro keeps no record of what it loaded: keep the job key in a table of your own, as here.
 
 #### e4 · quality-provenance
 

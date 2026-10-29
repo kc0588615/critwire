@@ -535,7 +535,7 @@
       "prereqs": [
         "e2"
       ],
-      "state": "planned",
+      "state": "built",
       "skill": "Run ids, deterministic outputs, checksums; critwire's own ingest → derive → build as the case study",
       "questions": [
         "Can I re-run the pipeline without doubling rows or changing its output?"
