@@ -10,7 +10,7 @@ Open curated species data at critwire.com, dogfooded by Critter Connect (repo `k
 - pnpm, TypeScript (`tsx`), postgres.js + plain SQL. No web framework.
 - Postgres 16 + PostGIS 3.4.2 on the Oracle VPS. No PostGIS 3.5-only functions.
 - `@duckdb/node-api` (pinned) writes Parquet and CSV from `data/species.json`; no DuckDB extensions at build time (build is offline).
-- Python via `uv` (`/usr/local/bin/uv`) in `.venv-learn/` (gitignored; `pnpm learn:venv`), two pin files (004 §3.3): labs' `site/learn/labs/requirements.txt` (published; 44 pins, wheels on Windows/Linux/macOS 14 arm64) and ingests' `scripts/ingest/requirements.txt` (never published; `-c` the labs file + `rasterio`, whose own GDAL decodes v004's GeoTIFFs; no system GDAL). Recompile either with `uv pip compile --universal --python-version 3.12 -o requirements.txt requirements.in` in its folder. `ingest shapes`/`habitat` check the ingests' pins first (`scripts/venv.ts` `assertVenv`). Build stays Node.
+- Python via `uv` (`/usr/local/bin/uv`) in `.venv-learn/` (gitignored; `pnpm learn:venv`), two pin files (004 §3.3): labs' `site/learn/labs/requirements.txt` (published; 44 pins, wheels on Windows/Linux/macOS 14 arm64) and ingests' `scripts/ingest/requirements.txt` (never published; `-c` the labs file + `rasterio`, whose own GDAL decodes v004's GeoTIFFs; no system GDAL). Recompile either with `uv pip compile --universal --python-version 3.12 -o requirements.txt requirements.in` in its folder. One venv serves the labs, `learn:check`, `pnpm test:db` and the ingests; each command checks only its own file's pins first (`scripts/venv.ts`): `learn:check` the labs' (a labs-only venv passes), `ingest shapes`/`habitat` the ingests'. Build stays Node.
 - Learn's browser app: `@duckdb/duckdb-wasm` (pin in `site/learn/src/assets.ts`; build refuses another installed version) + parquet extension mirror committed in `site/learn/duckdb-ext/` (sha256 pinned in `scripts/build/learn/assets.ts`); bundled by `esbuild` (pinned) from `site/learn/src/`. `dist/learn/assets/`: mtime fixed 2000-01-01, so every path there must be versioned or content-hashed (build refuses others).
 - E2E: `@playwright/test` (pinned), headless Chromium, local Caddy copy of the live block (`e2e/Caddyfile`, `admin off`, ports 3100/3101).
 
@@ -65,7 +65,7 @@ Rules:
 - Copy: records, never range; no mission names on public pages; link only pages that exist (planned modules unlinked).
 - Raster: a block using the raster API (`RASTER_API`, `scripts/learn/blocks.ts`) must say `-- needs: raster` (PostGIS only), else it's refused. `learn:check` checks once, before the first such block, that `postgis_raster` answers and the learner defaults hold (`postgis.enable_outdb_rasters` off, `gdal_enabled_drivers` `DISABLE_ALL`); never set either for a lab. A g7 block over 20 s as `critwire_lab` gets restructured, never a higher `statement_timeout`.
 
-State: f1–f4, d1–d6 (L1, L2), g1–g7 (L3) built; s, e, p, c planned (L4, L5).
+State: f1–f4, d1–d6 (L1, L2), g1–g7 (L3), s1–s6, e1–e5 (L4) built; p, c planned (L5).
 
 ## Data
 Files and owners (never hand-edit derived files):
