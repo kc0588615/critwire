@@ -719,6 +719,8 @@ Every step:
   - Every item, in order, on this commit; Log each.
   - A failure becomes a new fix step before this one, and this step re-runs.
   - This is the run before the code review. Rule 7 repeats it on the final commit.
+- [ ] S17. Astra code MUST-FIX 1: p2 Lab makes `Records` and `Species listed` model measures before Report view uses them (a `DEFINE MEASURE` lasts one query). New Lab step before "One country, two facts", as p3's step does: select the fact in the Data pane, Home → New measure, `Records = COUNTROWS ( fact_records )` on `fact_records`, `Species listed = DISTINCTCOUNT ( fact_species_country[species_id] )` on `fact_species_country`. 004 p2 Lab + `modules/p2.html` in one commit; p3's step stops claiming to add `Records` first if it then duplicates (p3 reuses p2's). Check: `T`, `P`, `B`, `E`, `H`, `HN`, `HR`, `A`.
+- [ ] S18. Astra code SHOULD-CONSIDER taken (copy errors on public pages): p2 "Nine relationships" → eight (4 + 2 + 2; Worked example, Result, Dialects Excel line, 004 ×3); p2 Lab "A table with no path" clears the Namibia slicer first (else 176 per row, not 40,395); c1 Lab credits query reads the same source as `cells` (own feed: the same `File.Contents` swap). 004 + pages in one commit. Check: `T`, `P`, `B`, `E`, `H`, `HN`, `HR`, `A`.
 
 ## Verification
 
@@ -925,6 +927,18 @@ These are the isolated tests, each written red before its code (owner's rule), l
 
 ## Code review (Astra)
 
+VERDICT: APPROVE_WITH_CHANGES
+
+MUST-FIX:
+
+1. `site/learn/modules/p2.html:33`: Report visuals require `Records` and `Species listed`, but preceding steps only define query-scoped measures. These do not become model measures automatically ([Microsoft documentation](https://learn.microsoft.com/en-us/dax/measure-statement-dax)). Add an explicit model-measure creation step before building visuals; update 004 too. Following the lab currently stops here.
+
+SHOULD-CONSIDER:
+
+- `site/learn/modules/p2.html:23`: Correct “Nine relationships” to eight (4 + 2 + 2), including Result, Dialects and 004.
+- `site/learn/modules/p2.html:34`: Explicitly clear the preceding Namibia slicer; otherwise each habitat row shows 176, not 40,395.
+- `site/learn/modules/c1.html`: Have the credits query read the same source as `cells`. Following the own-feed instructions currently leaves credits pointing at critwire’s worked feed.
+
 ## Release
 
 ## Decisions
@@ -959,6 +973,7 @@ These are the isolated tests, each written red before its code (owner's rule), l
   - None rejected.
 - S15 deviations from 004, each recorded above with its commit: cross-page `-- after:` (S1, 5633f2d); engine-neutral habitat CHECK (S2, 08b29fe); DAX `// twin:` + feed input (S3, 49882ac); feed written by `learn:check --update` from `c1-feed-file`, bound at build (S4, e5f9f08; S9, 3398591); feed license/attribution/credit DOIs (S10, 65aa5de); `c1-report` reads the feed, not a cell CSV (S11, 908c537); `p3-check` re-run on L3's summaries + `NULLIF` + rename (S7, 5f48895); §2 c1 tools `PG + Py + PBI` (S13, bac5da2); cap 120,000,000 B (owner, L3 H5) instead of the brief's 50 MB ("Data cap" above). 004 §7.5 (feed attribution refusal) and §7.7 (L5 screenshots, release smoke) brought up to the code in S15.
 - S15 (`HR`): `docs/recovery.md` unchanged: L5 adds no state outside Git (feed + schema committed under `site/learn/labs/`, ajv in `pnpm-lock.yaml`, no role, lock, secret or db object).
+- Astra code review (APPROVE_WITH_CHANGES): MUST-FIX 1 (p2 model measures) agreed, verified on `p2.html:33` (Report view uses `Records`/`Species listed`, only defined in `p2-measures`' `DEFINE`): S17. All 3 SHOULD-CONSIDER verified real (table lists 4 + 2 + 2 = 8; Namibia slicer still set on the page; c1 credits query hardcodes critwire.com's feed) and taken as S18, not left to the owner: wrong copy on public pages.
 
 ## Log
 
@@ -988,5 +1003,6 @@ These are the isolated tests, each written red before its code (owner's rule), l
 - 2026-10-30 20:20 UTC: S16 run 1 on `1df42df`: 1 install (frozen, no change; ajv 8.20.0 exact; venv + `uv pip check` clean), 2 typecheck ok, test 703/703 (every listed id passes), 3 plain build ok, `dist/learn/data/` 96,026,477 B ≤ 120,000,000, committed lab data 18,822,906, star 8 CSVs + manifest, 4 e2e 98/98 (unexpected/skipped/flaky 0, 98 traces, 12 map/p3/c1 shots, `$M/e2e/`), 5 test:db 139/140 FAILED: LC5 + LC10 + DL2 (`s4_cells` left by c1.sql, last download) → fix step S16a; Q empty. Informational (S16 re-runs all): 7 P 538 equal, 004 result diffs only p3-check + c1-feed (bytes 34,848 → 35,178 only, = `wc -c`), feed + schema cmp ok, Power BI greps empty, blocks 261 ran / 15 untested; 8 33 built, 68 h, no "in preparation", §2 bad 0; 9 erd no change, `%% planned` 0, self_check ok ×4; 10 H/HN/HR/A empty/0, `/v1` identical, 159 files; 12 H6 waiting on you, Blocks nothing. 6 and 11 not run.
 - 2026-10-30 20:37 UTC: S16a test:db fix (LC5 + LC10 + DL2 accepts c1.sql's `s4_cells`). Red: S16 test:db 139/140 → green: the test alone 1/1 (556 s); typecheck ok; Q empty.
 - 2026-10-30 21:33 UTC: S16 run 2 on `6ea35fd`: all 12 pass. 1 install frozen no change, ajv 8.20.0 exact, venv + `uv pip check` clean; 2 typecheck ok, test 703/703 (listed ids pass); 3 plain build ok, `dist/learn/data/` 96,026,477 B ≤ 120,000,000, committed lab data 18,822,906, star 8 CSVs + manifest; 4 e2e 98/98 (13 specs, unexpected/skipped/flaky 0, 98 traces, 12 map/p3/c1 shots, `$M/e2e/`); 5 test:db 140/140, Q empty; 6 learn:check ×2 ok (573 s, 561 s; downloads p2–p4/c1 + named twins/feed/c1-ex ran; tree clean, canary unchanged, Q empty), `--module p3` 32 s, `--module c1` 62 s; 7 P 538 equal, 004 result diffs only p3-check + c1-feed (bytes 34,848 → 35,178 = `wc -c`), p2/p4/d6 shas unchanged, feed + schema cmp ok, Power BI greps empty, blocks 261 ran / 15 untested; 8 33 built, 68 h, no "in preparation", §2 bad 0; 9 erd up to date, `%% planned` 0, self_check OK ×4; 10 H/HN/HR empty, HR diff + A exit 0, `/v1` identical, 159 files; 11 two builds identical (311 files); 12 H6 waiting on you, Blocks nothing, numerics/NA/ZZ/-1/credits/twins sentence present.
+- 2026-10-30 21:36 UTC: Astra code review (`--code origin/main`): APPROVE_WITH_CHANGES, 1 MUST-FIX (p2 model measures) → S17; 3 SHOULD-CONSIDER (p2 eight relationships, Namibia slicer, c1 credits source) verified, taken → S18. Plan-only change, no checks needed.
 
 ## Summary
