@@ -976,6 +976,13 @@ SHOULD-CONSIDER: none
 
 ## Release
 
+- Rebase: no-op (branch already on origin/main 7508fc7). Code tree = Verification's 6e32eb0 (only the plan changed since); pre-release re-check on 90422dd: frozen install, typecheck, T 664/664, plain build ok (95,936,992 B / 18,822,906 B), E 96/96 (0 unexpected/skipped/flaky). Logs `/srv/critter-ai/agent-state/missions/critwire-learn-l4-stats-etl/release-pre{,-e2e}.log`.
+- PR #13 merged: merge commit `67ceb8f8be14473534793e031a61c847ca786845` (tree = branch head).
+- `deploy critwire` last line: `deploy critwire: live at https://critwire.com`. Log `/srv/critter-ai/agent-state/missions/critwire-learn-l4-stats-etl/release-deploy.log`.
+- Smoke (`RELEASE_ORIGIN=https://critwire.com`, `playwright.release.config.ts`): 4/4 passed (every dist/ file served with dist's bytes, so every s/e page and `/learn/labs/*.{sql,py,ipynb}`; `.wasm` types; f3's block; live `s4.py` after live loader exits 0 with s4's recorded outputs). Leak query empty after. `curl … /learn/labs/requirements.txt | cmp` silent. Artifact `/srv/critter-ai/agent-state/missions/critwire-learn-l4-stats-etl/release-smoke/`, log `/srv/critter-ai/agent-state/missions/critwire-learn-l4-stats-etl/release-smoke.log`.
+
+Result: done
+
 ## Decisions
 
 - Architecture D1–D20 (end of `## Architecture`) final after Revision, 2026-10-29.
@@ -1064,10 +1071,11 @@ SHOULD-CONSIDER: none
 - 2026-10-30 02:50 UTC: Verification (on cdd2d58), stopped at 4: 1 ok (frozen install, uv 0.13.5, `uv pip check` clean 48, labs-only venv clean + probe `null`, platforms Windows/Linux x86-64/aarch64/macOS 14 arm64 0, Intel macOS 1 on pyproj, fence = requirements.txt); 2 ok (95,936,992 B; 18,822,906 B); 3 E 96/96 (0 unexpected/skipped/flaky, 96 traces, `M/e2e`); 4 T 664/664, test:db 1 failure (LC7, fixture: S30 added). Logs `M/verify/`.
 - 2026-10-30 03:18 UTC: S30: LC7's `tamperedDist` links the rest of `dist/learn/data/`. learn-check.dbtest 26/26 (19 min; LC7 474 s, red in Verification's run → green); typecheck ok; L ok (learn:check 147 PostGIS + 33 Python blocks equal; `checked.json` keys only, 180, no result moved); leak query empty. Log `M/s30-{lc,L}.log`.
 - 2026-10-30 04:12 UTC: Verification 1–9 (on 6e32eb0, clean tree), all ok: 1 venv (frozen install, uv 0.13.5, `uv pip check` clean, labs-only venv clean + probe `null`, Windows/Linux x86-64/aarch64/macOS 14 arm64 0, Intel macOS 1 on pyproj, fence = requirements.txt); 2 build ok, 95,936,992 B / 18,822,906 B; 3 E 96/96 (0 unexpected/skipped/flaky, 96 traces, 12 s4/s5/e2 PNGs, `M/e2e`); 4 T 664/664, test:db 138/138 (22 min), leak empty; 5 learn:check ×2 exit 0 (489 s, 495 s; 147 PostGIS + 33 Python blocks equal; gates moran, gistar, lisa, zonal ok; every download ok), tree clean (checked.json byte-identical), canary unchanged, leak empty, versions = checked.json (Python 3.12.3, requirements d5bbe28024cc); `--module s2` ran s4-cells once; 6 P 0 diffs (29 pages, 509 files), result changes only e1-checksum, e2-geopandas; s6-habitat ran, e1-submit/arcpy-moran untested, 11 ran `-ex`; 7 erd nothing; 8 H, HN, HR empty, data/contracts/db/erd/duckdb-ext and A unchanged; 9 dist 294 files identical across two builds. Script + logs `M/verify-final/`.
+- 2026-10-30 04:40 UTC: Release: rebase no-op; pre-check T 664/664, build ok, E 96/96; PR #13 merged (67ceb8f); `deploy critwire` live; smoke 4/4, requirements.txt cmp silent, leak empty. Result: done.
 
 ## Summary
 
-**Status:** every stage, step (S1–S30), the Astra code review (2 MUST-FIX → S28, S29) and the full Verification done on `6e32eb0`. Release (merge + `deploy critwire` + smoke) is the next unit.
+**Status:** every stage, step (S1–S30), the Astra code review (2 MUST-FIX → S28, S29) and the full Verification done on `6e32eb0`. Released 2026-10-30: PR #13 merged (67ceb8f), `deploy critwire` live, release smoke 4/4.
 
 **Shipped:**
 - Python labs tested like SQL: `learn:check`'s Python stage (`scripts/learn/python.ts`: `python -I`, empty folder, process-group kill, bounded pipe wait, per-run session names, leak checks), one result path for PostGIS and Python, the agreement gates (`scripts/learn/agree.ts`: Moran, Gi\*, LISA, zonal; SQL = PySAL), freshness keys over Python blocks, their `# after:` chain, boot blocks and `requirements.txt`.
