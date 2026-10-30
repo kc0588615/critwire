@@ -878,6 +878,11 @@ Every step:
   - `e1-submit` (untested: real GBIF download): when `decide` returns `adopt`, `save({**intent, "key": key})` before the poll, so a restart resumes (`e1-decide`'s "key saved: resume" case is that restart; the block itself can't run offline). 004 and `site/learn/sql/e1-submit.py` together; page prose if it describes adoption.
   - Check: `P`; `B`; `E` (learn-labs: e1-submit still commented out / Markdown); `H`, `A`.
 
+- [x] S30 · Verification fix: test:db LC7's `--dist` fixture lacks the files the Python blocks read
+  - Found by Verification 4 (2026-10-30): `pnpm test:db` 1 failure, LC7 "a load that changes the canary schema": its `tamperedDist` held the manifest and loader only, so the whole run's `e1-checksum`, `e5-job`, `e5-runs`, `e5-ex` (S19, S23, all after test:db's last run at S8) failed on `LEARN_BASE` files missing before the canary check at the end.
+  - Fix: `tamperedDist` links every other `dist/learn/data/` file (symlinks) and writes only the manifest and loader; `CheckOptions.dist`'s doc says learn:check reads `learn/data/` for the Python blocks too. No product change.
+  - Check: `pnpm typecheck`; `scripts/learn-check.dbtest.ts` in full; `L` (`check.ts` is a checker file: every key moves, every result unchanged); leak query.
+
 ## Verification
 
 Run once, on the final commit (after any code-review fixes), on a clean tree, in this order. `M`, `B0`, `P`, `H`, `HN`, `HR` and `A` are as in Steps. Log each result; the numbers go to the Summary.
@@ -1015,6 +1020,7 @@ SHOULD-CONSIDER: none
 - Astra code review (2026-10-30): both MUST-FIX accepted. MF1: an escaped child (`setsid`) holds stdout/stderr after the block exits, `close` never comes and the timer is already cleared, so learn:check could hang and an escaped process passes unseen; fix S28 (bounded grace, then fail loud). MF2: an adopted key lives only in memory, so a second interruption relists and may refuse; fix S29. Its restart test is `e1-decide`'s existing "key saved" case: `e1-submit` is untested (real GBIF account), so no offline test runs it.
 - Astra code MF1: done (S28). On exit the group is killed and a 1 s grace (`PIPE_GRACE_MS`) starts; pipes still open then are destroyed, the run marked `pipesHeld`, and `pythonFailure` fails it ("left its process group and held its output"; the pid isn't known to the runner, so the message names the kind, not the pid: the run's PGAPPNAME still lets PYC8 find a session it left). 004 §7.6 + AGENTS.md learn:check line say it.
 - Astra code MF2: done (S29). `e1-submit` saves `{**intent, "key": key}` when `decide` returns `adopt`, before the poll, so a restart takes `decide`'s "resume" path (`e1-decide`'s "key saved" case) instead of relisting. 004 block + item 5's prose and `e1-submit.py` + `e1.html` together. No offline test: the block stays untested (real GBIF download), commented out in `e1.py`, Markdown in `e1.ipynb`.
+- S30 (Verification 4 found it): LC7 fixture fixed, not the check: learn:check rightly runs every block before the end-of-run canary check, and the Python blocks rightly read `LEARN_BASE`; the fixture was the stale part. Verification restarts from 1 on S30's commit (it runs once, on the final commit).
 
 ## Log
 
@@ -1055,5 +1061,7 @@ SHOULD-CONSIDER: none
 - 2026-10-30 01:48 UTC: Code review (Astra): `astra-review --code origin/main` exit 0, APPROVE_WITH_CHANGES, 2 MUST-FIX (runPython unbounded pipe wait on an escaped child; e1-submit adopted key unsaved), both accepted: S28, S29 added before Verification. Doc-only; no checks needed.
 - 2026-10-30 02:25 UTC: S28: `runPython` bounds the pipe wait after exit (1 s grace, then pipes destroyed, `PyRun.pipesHeld`, `pythonFailure` fails it); 004 §7.6 + AGENTS.md. red 2 → green 2 (python.test PY7 pipesHeld message; PY8 start_new_session child: 50.3 s hang → 1.0 s, failed, temp gone, escaped sleep killed by the test). T 664/664; L ok (learn:check 743 s; only `checked.json`, 180 keys moved, every result hash unchanged); H empty; A 0.
 - 2026-10-30 02:21 UTC: S29: `e1-submit` saves the adopted key before polling (004 + `e1-submit.py` + e1.html item 5 prose). P 0 diffs (29 pages, 509 files); L ok (only `checked.json`, e1's key; `e1.py` carries the new lines commented out); B ok (95,936,992 B); E 96/96 (0 unexpected/skipped/flaky, `M/s29-e2e`); H, HN empty; HR clean; A 0. Logs `M/s29-{L,E}.log`.
+- 2026-10-30 03:05 UTC: Verification (on cdd2d58), stopped at 4: 1 ok (frozen install, uv 0.13.5, `uv pip check` clean 48, labs-only venv clean + probe `null`, platforms Windows/Linux x86-64/aarch64/macOS 14 arm64 0, Intel macOS 1 on pyproj, fence = requirements.txt); 2 ok (95,936,992 B; 18,822,906 B); 3 E 96/96 (0 unexpected/skipped/flaky, 96 traces, `M/e2e`); 4 T 664/664, test:db 1 failure (LC7, fixture: S30 added). Logs `M/verify/`.
+- 2026-10-30 03:50 UTC: S30: LC7's `tamperedDist` links the rest of `dist/learn/data/`. learn-check.dbtest 26/26 (19 min; LC7 474 s, red in Verification's run → green); typecheck ok; L ok (learn:check 147 PostGIS + 33 Python blocks equal; `checked.json` keys only, 180, no result moved); leak query empty. Log `M/s30-{lc,L}.log`.
 
 ## Summary

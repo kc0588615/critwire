@@ -55,7 +55,7 @@ const CANARY_SQL = new URL("../../db/learn/canary.sql", import.meta.url);
 const SETUP = "run pnpm learn:check --setup as the superuser";
 
 export interface CheckOptions {
-  /** The built site (default dist); learn:check reads its manifest and loader only. */
+  /** The built site (default dist): its manifest and loader, and learn/data/ for the Python blocks (LEARN_BASE). */
   dist: string;
   /** learn_spatial, or a learn_t_ fixture in tests (LC7). */
   canarySchema: string;

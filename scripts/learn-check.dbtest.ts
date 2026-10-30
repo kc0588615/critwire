@@ -46,7 +46,7 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { createHash, randomBytes } from "node:crypto";
-import { chmodSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { chmodSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { after, test } from "node:test";
@@ -103,12 +103,19 @@ async function waitFor(what: string, ok: () => Promise<boolean>, ms = 10_000) {
   }
 }
 
-// A dist/ holding the manifest and the loader only (all learn:check reads), the loader changed by `loader` (it must
-// change), and the manifest edited by `edit`; the loader's sha256 and bytes in the manifest follow the new loader.
+// A dist/ whose learn/data/ links dist's files (the Python blocks read them through LEARN_BASE) except the manifest
+// and the loader, written here: the loader changed by `loader` (it must change), and the manifest edited by `edit`;
+// the loader's sha256 and bytes in the manifest follow the new loader.
 function tamperedDist(name: string, { loader: change, edit = (m: Manifest) => m }:
   { loader?: (s: string) => string; edit?: (m: Manifest) => Manifest } = {}) {
   const out = join(dir, name);
   mkdirSync(join(out, "learn/data/postgis"), { recursive: true });
+  for (const sub of ["", "postgis"]) {
+    for (const f of readdirSync(join(dist, "learn/data", sub))) {
+      const rel = join(sub, f);
+      if (![LOADER, "manifest.json", "postgis"].includes(rel)) symlinkSync(join(dist, "learn/data", rel), join(out, "learn/data", rel));
+    }
+  }
   const original = readFileSync(join(dist, "learn/data", LOADER), "utf8");
   const loader = change ? change(original) : original;
   if (change && loader === original) throw new Error(`tamperedDist ${name}: the loader edit changed nothing`);
