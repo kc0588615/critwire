@@ -1,0 +1,21 @@
+// q: p4-ex
+// status: untested: Power BI is Windows-only
+// input: star/fact_records.csv, star/dim_species.csv, star/dim_dataset.csv
+// twin: p4-ex-check
+DEFINE
+    MEASURE fact_records[Records] = COUNTROWS ( fact_records )
+    MEASURE fact_records[CC BY records] =
+        IF (
+            NOT ISBLANK ( [Records] ),
+            COALESCE ( CALCULATE ( [Records], fact_records[license] = "CC BY 4.0" ), 0 )
+        )
+EVALUATE
+SUMMARIZECOLUMNS (
+    dim_dataset[title],
+    dim_dataset[publisher],
+    dim_dataset[doi],
+    TREATAS ( { "Sarcophilus harrisii" }, dim_species[scientific_name] ),
+    "Records", [Records],
+    "CC BY records", [CC BY records]
+)
+ORDER BY [CC BY records] DESC, [Records] DESC, dim_dataset[title]

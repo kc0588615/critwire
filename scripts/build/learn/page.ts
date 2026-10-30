@@ -29,6 +29,8 @@ const DESCRIPTIONS: Record<string, string> = {
   "star/dim_year.csv": "Star dimension: each year with records, its decade, plus -1 for a record with no year.",
   "star/fact_records.csv": "Star fact: one row per sample record, with a key to each dimension.",
   "star/fact_species_country.csv": "Star fact with no measure: each species and country with open records of it.",
+  "star/dim_habitat_class.csv": "Star dimension: each habitat class of the map, with its level-1 class (a level-1 class is its own).",
+  "star/fact_country_habitat.csv": "Star fact: one row per country and habitat class, its estimated area in km² (estimated from a map, not measured).",
   "star/manifest.json": "The star's files: columns, keys, rows, sha256 and sources, for Power BI's input check.",
 };
 

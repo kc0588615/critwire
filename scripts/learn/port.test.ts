@@ -187,3 +187,55 @@ test("PT13 setup's §3.3 and §3.4 are setup sections; §3.3's text fence is nei
   assert.equal(file(p.files, "site/learn/sql/arcpy-moran.py"), "# q: arcpy-moran\n# status: untested: ArcGIS Pro (Windows, licensed)\nimport arcpy\n");
   assert.ok(!paths(p.files).some((f) => /not-setup|requirements/.test(f)));
 });
+
+// Cross-page `-- after:` (L5 plan T1, S1). Failure modes: learn:port refuses a page whose PostGIS block names a
+// prerequisite page's block (p2–p4's twins, c1's feed), so it can't port; or it takes any page's block, so a block
+// that names a page the learner may not have opened is ported and fails only at learn:check.
+const twoPages = [
+  "# x", "", "## 5. Modules", "",
+  "#### m1 · one", "", ...fence("sql", "-- q: m1-a", "-- status: ran", "-- engine: postgis", "CREATE TEMP TABLE a AS SELECT 1 AS id;"),
+  "", ...fence("text", "-- result: m1-a · 0 rows · sha256 000000000000"), "",
+  "#### m2 · two", "", ...fence("sql", "-- q: m2-a", "-- status: ran", "-- engine: postgis", "-- after: m1-a", "SELECT id FROM a;"),
+  "", ...fence("text", "-- result: m2-a · 1 row · sha256 000000000000", "id", "1"), "",
+].join("\n");
+
+test("PT14 a block naming a prerequisite page's ran PostGIS block ports; naming another page's is an error naming 004's line", () => {
+  const p = portPage(twoPages, "m2", SETUP, ["m1"]);
+  assert.deepEqual(p.errors, []);
+  assert.deepEqual(paths(p.files), ["site/learn/sql/m2-a.sql", "site/learn/labs/checked/m2-a.txt"]);
+  const line = twoPages.split("\n").indexOf("-- q: m2-a");
+  assert.deepEqual(portPage(twoPages, "m2", SETUP).errors, [`004:${line}: m2-a.sql: q m2-a: \`-- after\`: unknown block "m1-a" (not on this page or a prerequisite's)`]);
+});
+
+// A JSON fence published as a lab file (L5 plan T4, S4; PT15–PT16): c1's feed schema. Failure modes: the published
+// schema drifts from 004's fence (or never leaves it); any json fence (an example doc) is written somewhere or refused;
+// two fences claim the same file and one silently wins.
+const SCHEMA_ID = "https://critwire.com/learn/labs/m1-feed.schema.json";
+const schemaFence = (title: string) => fence("json", "{", `  "$id": "${SCHEMA_ID}",`, `  "title": "${title}"`, "}");
+const withJson = (...extra: string[][]) => [
+  "# x", "", "## 5. Modules", "",
+  "#### m1 · one", "", ...schemaFence("feed"), "", ...fence("json", '{"cells": []}'), "",
+  ...fence("json", "not json"), "", ...extra.flatMap((f) => [...f, ""]),
+  "#### m2 · two", "", "text", "",
+].join("\n");
+
+test("PT15 a json fence whose $id is critwire.com/learn/labs/<name>.json ports to site/learn/labs/<name>.json byte for byte; other json fences are neither blocks nor errors", () => withRoot((root) => {
+  const doc = withJson();
+  const p = portPage(doc, "m1", SETUP);
+  assert.deepEqual(p.errors, []);
+  assert.deepEqual(paths(p.files), ["site/learn/labs/m1-feed.schema.json"]);
+  assert.equal(file(p.files, "site/learn/labs/m1-feed.schema.json"), `{\n  "$id": "${SCHEMA_ID}",\n  "title": "feed"\n}\n`);
+  assert.deepEqual(checkPort(p.files, root), ["site/learn/labs/m1-feed.schema.json: missing (004 has it)"]);
+  writePort(p.files, root);
+  assert.deepEqual(checkPort(p.files, root), []);
+  put(root, "site/learn/labs/m1-feed.schema.json", `{\n  "$id": "${SCHEMA_ID}",\n  "title": "edited"\n}\n`);
+  assert.match(checkPort(p.files, root).join("\n"), /site\/learn\/labs\/m1-feed\.schema\.json differs from 004:\n {2}- {3}"title": "feed"\n {2}\+ {3}"title": "edited"/);
+}));
+
+test("PT16 two json fences with the same $id are refused, naming both 004 lines", () => {
+  const doc = withJson(schemaFence("again"));
+  const lines = doc.split("\n");
+  const at = lines.flatMap((l, i) => (l === "```json" && lines[i + 2]?.includes(SCHEMA_ID) ? [i + 1] : []));
+  assert.equal(at.length, 2);
+  assert.deepEqual(portPage(doc, "m1", SETUP).errors, [`004:${at[0]}, 004:${at[1]}: two json fences with $id ${SCHEMA_ID}`]);
+});

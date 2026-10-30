@@ -2,7 +2,8 @@
 // - RQE1–RQE5: parse, drift against a catalog both ways (tables, attributes, keys, lines), an embedded copy;
 // - RE1–RE4: a grown ERD keeps its base's entities and lines; `||--o|` only on a unique FK; the subset stays strict;
 // - EG1–EG4: schema.mmd extends v1.mmd; the lab and star against their catalogs, `%% lab-made:` and `%% planned:`
-//   excused one way, a planned entity that exists failing (the marker is stale). EG3 runs on a fixture star manifest.
+//   excused one way, a planned entity that exists failing (the marker is stale). EG3 runs on a fixture star manifest
+//   (all eight tables since L5).
 // Plus accTitle/accDescr, and the records 002 and 003 keep of v1.mmd and 003's ERD (RE5).
 import { test } from "node:test";
 import assert from "node:assert/strict";
@@ -394,7 +395,7 @@ test("EG2 markers reads %% lab-made: and %% planned: lists, once each", () => {
   assert.deepEqual(markers(MINI_ERD), { labMade: ["made"], planned: ["p"] });
   assert.deepEqual(markers(LAB).planned, []);
   assert.ok(markers(LAB).labMade.includes("s4_cells"));
-  assert.deepEqual(markers(STAR), { labMade: [], planned: ["dim_habitat_class", "fact_country_habitat"] });
+  assert.deepEqual(markers(STAR), { labMade: [], planned: [] });
   assert.deepEqual(markers(SCHEMA), { labMade: [], planned: [] });
   assert.throws(() => markers(MINI_ERD + "%% planned: q\n"), /%% planned: appears 2 times/);
   assert.throws(() => markers("%% lab-made: a,,b\nerDiagram\n"), /lab-made/);
@@ -444,7 +445,7 @@ test("PG_META_SQL has the three catalog queries; dbMeta reads tables, views, col
   });
 });
 
-// --- EG3: the star against a fixture manifest (the six tables L2 publishes), its habitat pair planned.
+// --- EG3: the star against a fixture manifest (the eight tables published since L5), none planned.
 
 const star = (mmd: string, m: StarTables = MANIFEST) => markerDrift(parseErd(mmd), starMeta(m), markers(mmd));
 const withManifest = (change: (m: StarTables) => void): StarTables => {
@@ -452,16 +453,14 @@ const withManifest = (change: (m: StarTables) => void): StarTables => {
   change(m);
   return m;
 };
-const HABITAT_CLASS = { table: "dim_habitat_class", columns: [{ name: "habitat_code", type: "INTEGER" }, { name: "name", type: "VARCHAR" }, { name: "level1_code", type: "INTEGER" }, { name: "level1_name", type: "VARCHAR" }], primaryKey: ["habitat_code"], foreignKeys: [] };
-
-test("EG3 star.mmd matches the fixture manifest: 6 tables, their columns, keys and 6 lines; the 2 planned are excused while absent", () => {
-  assert.equal(starMeta(MANIFEST).tables.length, 6);
+test("EG3 star.mmd matches the fixture manifest: 8 tables, their columns, keys and 8 lines", () => {
+  assert.equal(starMeta(MANIFEST).tables.length, 8);
   assert.deepEqual(star(STAR), []);
   assert.equal(parseErd(STAR).relationships.length, 8);
 });
 
 test("EG3 a planned star entity that is in the manifest fails: the marker is stale", () => {
-  assertHas(star(STAR, withManifest((m) => (m.files["dim_habitat_class.csv"] = HABITAT_CLASS))), "dim_habitat_class is marked %% planned: but is a table in the database");
+  assertHas(star(edit(STAR, ["\nerDiagram\n", "\n%% planned: dim_habitat_class\nerDiagram\n"])), "dim_habitat_class is marked %% planned: but is a table in the database");
 });
 
 test("EG3 an entity, key or relationship that differs from the manifest fails, either way", () => {

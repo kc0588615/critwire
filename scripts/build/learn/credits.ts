@@ -2,10 +2,12 @@
 // /learn/data/ file to its sources, labSources defines them, and credits(file) gives a file's entries for manifest.json,
 // refusing (ST4) a file with no sources, an unknown source, a license missing from LICENSE_URLS, a CC BY source with no
 // citation, and, for a source that credits the sample's datasets, none or one with no title or publisher.
-// /v1/attribution.json stays about the species and countries files.
+// /v1/attribution.json stays about the species and countries files. feedAttribution: what c1's feed must credit (its
+// FEED.sources through the same credits(), and the sample's datasets with their DOI; L5 plan T4).
 import { readJson } from "../../json.ts";
 import type { Registration } from "../../gbif/derived-dataset.ts";
 import { labDataDir } from "../../learn/lab-files.ts";
+import { FEED, type FeedAttribution } from "../../learn/feed.ts";
 import type { SampleDownload } from "../../learn/sample-files.ts";
 import { CRITWIRE_CREDIT, licenseUrl, NATURAL_EARTH, SOURCES } from "../sources.ts";
 
@@ -21,7 +23,7 @@ export interface LabSource {
   derivedDataset?: { doi: string; citation: string; url: string };
 }
 export interface Credit extends LabSource { licenseUrl: string | null }
-export interface CreditDataset { dataset_key: string; title: string | null; publisher: string | null }
+export interface CreditDataset { dataset_key: string; title: string | null; publisher: string | null; doi: string | null }
 export interface CreditContext {
   sources: Record<string, LabSource>;
   files: Record<string, readonly string[]>; // file (its path under /learn/data/) → source ids
@@ -51,6 +53,8 @@ export const LAB_FILES: Record<string, readonly string[]> = {
   "star/dim_year.csv": ["gbif-sample"],
   "star/fact_records.csv": ["gbif-sample"],
   "star/fact_species_country.csv": ["critwire"],
+  "star/dim_habitat_class.csv": ["jung-habitat"],
+  "star/fact_country_habitat.csv": ["jung-habitat", "natural-earth"],
   "star/manifest.json": ["critwire"],
 };
 
@@ -77,6 +81,12 @@ export function credits(file: string, ctx: CreditContext): Credit[] {
       ...(s.doi && { doi: s.doi }), ...(s.datasets && { datasets: s.datasets }), ...(s.derivedDataset && { derivedDataset: s.derivedDataset }),
     };
   });
+}
+
+// c1's feed's expected credits (feedAttributionErrors): critwire's and the sample's, checked as any file's (ST4).
+export function feedAttribution(ctx: CreditContext): FeedAttribution {
+  const [critwire, sample] = credits(FEED.input, { ...ctx, files: { [FEED.input]: FEED.sources } });
+  return { critwire: critwire!, sample: sample!, datasets: ctx.datasets };
 }
 
 // GBIF's download license (a legal-code URL) as critwire's license string.

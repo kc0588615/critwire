@@ -1,0 +1,8 @@
+-- result: p4-ex-check · 9 rows · sha256 561748a1ef09
+title | publisher | doi | records | cc_by_records
+Tasmanian Natural Values Atlas | Department of Natural Resources and Environment Tasmania | 10.15468/rtnb4m | 1413 | 1413
+Tasmanian Museum and Art Gallery provider for OZCAM | Tasmanian Museum and Art Gallery | 10.15468/ijp8p9 | 569 | 569
+Museums Victoria provider for OZCAM | Museums Victoria | 10.15468/lp1ctu | 5 | 5
+Australian Museum provider for OZCAM | Australian Museum | 10.15468/e7susi | 3 | 3
+South Australian Museum Adelaide provider for OZCAM | South Australian Museum | 10.15468/wz4rrh | 3 | 3
+… 4 more rows

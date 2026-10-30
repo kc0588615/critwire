@@ -40,7 +40,7 @@ test("a drawn ERD without accTitle or accDescr fails; v1 needs neither", async (
 
 test("a marker naming an undrawn planned entity or a drawn lab-made table fails", async () => {
   const t = await real();
-  assertHas(errorsWith(t, { star: t.star.replace("%% planned: dim_habitat_class,", "%% planned: dim_month, dim_habitat_class,") }), "site/learn/erd/star.mmd: ERD: dim_month is marked %% planned: but not drawn");
+  assertHas(errorsWith(t, { star: t.star.replace("\nerDiagram\n", "\n%% planned: dim_month\nerDiagram\n") }), "site/learn/erd/star.mmd: ERD: dim_month is marked %% planned: but not drawn");
   assertHas(errorsWith(t, { lab: t.lab.replace("%% lab-made: s4_cells,", "%% lab-made: taxa, s4_cells,") }), "site/learn/erd/lab.mmd: ERD: taxa is marked %% lab-made: but drawn in the diagram");
 });
 

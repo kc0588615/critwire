@@ -1,0 +1,26 @@
+// q: p4-labels
+// status: untested: Power BI is Windows-only
+// input: star/fact_records.csv, star/dim_species.csv, star/dim_dataset.csv
+// twin: p4-check
+DEFINE
+    MEASURE fact_records[Records] = COUNTROWS ( fact_records )
+    MEASURE fact_records[Map title] =
+        SELECTEDVALUE ( dim_species[common_name], "Selected species" ) & ": "
+            & FORMAT ( [Records], "#,0" ) & " open GBIF records (where people recorded it, not its range)"
+    MEASURE fact_records[Datasets to credit] =
+        COUNTROWS (
+            CALCULATETABLE (
+                VALUES ( dim_dataset[dataset_key] ),
+                FILTER ( fact_records, fact_records[license] = "CC BY 4.0" )
+            )
+        )
+EVALUATE
+CALCULATETABLE (
+    ROW (
+        "Map title", [Map title],
+        "Records", [Records],
+        "Datasets", DISTINCTCOUNT ( fact_records[dataset_key] ),
+        "Datasets to credit", [Datasets to credit]
+    ),
+    dim_species[scientific_name] = "Sarcophilus harrisii"
+)

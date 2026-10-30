@@ -1,6 +1,6 @@
 // checked.json (plan D6; 004 §7.5): what learn:check last proved, so the build can refuse a lab it didn't run.
 // - Each ran PostGIS or Python block's key: a sha256 over every input that decides its result: the texts of the block,
-//   its `-- after:`/`# after:` blocks (transitively), every boot block and pg-session, and for a Python block py-connect
+//   its `-- after:`/`# after:` blocks (transitively, across pages: a superset of what runs), every boot block and pg-session, and for a Python block py-connect
 //   (plan L4 §4.7: the boot tables it reads are made in pg-session's session) (by id, sorted); the lab data files' sha256s
 //   (the manifest's `files`, outside star/: its dois, sizes and the star don't move a lab result); the checker's own
 //   sources (learn-check.ts's relative-import closure), db/learn/canary.sql and requirements.txt. Each input enters as
@@ -19,7 +19,7 @@ import { dirname, join, normalize } from "node:path";
 import { formatJson } from "../json.ts";
 import { assembleDownloads } from "./assemble.ts";
 import { CHECKED_DIR, PG_SESSION_ID, PY_CONNECT_ID, type Block } from "./blocks.ts";
-import type { CoursePage } from "./course.ts";
+import { courseBlocks, type CoursePage } from "./course.ts";
 import { LAB_ERD } from "./erd-model.ts";
 
 export const CHECKED_JSON = `${CHECKED_DIR}/checked.json`;
@@ -75,20 +75,20 @@ const sorted = <T>(o: Readonly<Record<string, T>>) => Object.fromEntries(Object.
 /** A ran PostGIS or Python block: one learn:check runs and stamps. */
 const isLab = (b: Block) => (b.engine === "postgis" || b.engine === "python") && b.status === "ran";
 
-/** `b`'s `-- after:` blocks on its page, transitively (a Python block's py-connect is in every Python key). */
-function afterChain(b: Block, page: ReadonlyMap<string, Block>, seen = new Set<string>()): Set<string> {
+/** `b`'s `-- after:` blocks, transitively, from `course` (courseBlocks; a Python block's py-connect is in every Python key). */
+function afterChain(b: Block, course: ReadonlyMap<string, Block>, seen = new Set<string>()): Set<string> {
   for (const id of b.after) {
     if (seen.has(id)) continue;
     seen.add(id);
-    const a = page.get(id);
-    if (a) afterChain(a, page, seen);
+    const a = course.get(id);
+    if (a) afterChain(a, course, seen);
   }
   return seen;
 }
 
 /** Every block's freshness key and result sha256, and every download's sha256. `results`: checked/<id>.txt by id. */
 export function freshness(pages: readonly CoursePage[], files: KeyFiles, results: ReadonlyMap<string, string>): Fresh {
-  const all = new Map(pages.flatMap((p) => p.blocks).map((b) => [b.id, b]));
+  const all = courseBlocks(pages);
   const labs = [...all.values()].filter(isLab);
   if (labs.length && !all.has(PG_SESSION_ID)) throw new Error(`the course has no ${PG_SESSION_ID} block`);
   const shared = [...labs.filter((b) => b.boot).map((b) => b.id), PG_SESSION_ID];
@@ -98,14 +98,11 @@ export function freshness(pages: readonly CoursePage[], files: KeyFiles, results
     ...Object.entries(files.checker).map(([path, sha]) => `${path}\0${sha}`),
   ].sort();
   const blocks: Fresh["blocks"] = {};
-  for (const { blocks: onPage } of pages) {
-    const page = new Map(onPage.map((b) => [b.id, b]));
-    for (const b of onPage.filter(isLab)) {
-      const ids = [...new Set([b.id, ...afterChain(b, page), ...(b.engine === "python" ? python : shared)])].sort();
-      const entries = [...ids.map((id) => `block ${id}\0${sha256(all.get(id)?.text ?? "")}`), ...fileEntries];
-      const result = results.get(b.id);
-      blocks[b.id] = { key: sha256(entries.join("\n")), result: result === undefined ? "" : sha256(result) };
-    }
+  for (const b of labs) {
+    const ids = [...new Set([b.id, ...afterChain(b, all), ...(b.engine === "python" ? python : shared)])].sort();
+    const entries = [...ids.map((id) => `block ${id}\0${sha256(all.get(id)?.text ?? "")}`), ...fileEntries];
+    const result = results.get(b.id);
+    blocks[b.id] = { key: sha256(entries.join("\n")), result: result === undefined ? "" : sha256(result) };
   }
   // The files learn:check runs (004 §7.5): .sql and .py; an .ipynb isn't run (E2E proves its cells are the .py's).
   const downloads = Object.fromEntries(assembleDownloads(pages).filter((d) => d.kind !== "ipynb").map((d) => [d.name, sha256(d.text)]));

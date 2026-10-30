@@ -4,14 +4,15 @@
 // file on a fresh load, and E2E; each consumer splits by `kind`. The .sql, in order: a head comment; pg-session as
 // written; the boot blocks the file needs (those its page holds, and those whose CREATE TABLE/VIEW names a runnable
 // block or its `-- after:` block uses as a whole word in code: comments and strings don't count), once, committed; then
-// each PostGIS block in page order: a ran block in BEGIN … ROLLBACK after its `-- after:` blocks, a `-- tx: own` block
+// each PostGIS block in page order: a ran block in BEGIN … ROLLBACK after its `-- after:` blocks' code (on its page or
+// a prerequisite's, course.ts courseBlocks; never their own `-- after:` blocks), a `-- tx: own` block
 // verbatim, an untested or two-session block commented out under its reason. The .py and the .ipynb come from one cell
 // list (pythonCells): py-connect; the boot blocks a ran Python block names as a whole word outside `#` lines (the SQL
 // sits in Python strings), each run through connect() and committed; then each Python block once, in page order, an
 // untested one commented out (.py) or a Markdown cell (.ipynb). Pure. Tests: assemble.test.ts, notebook.test.ts.
 import { codeOnly } from "../build/learn/sql.ts";
 import { PG_SESSION_ID, PY_CONNECT_ID, type Block } from "./blocks.ts";
-import { SETUP_PAGE, type CoursePage } from "./course.ts";
+import { courseBlocks, SETUP_PAGE, type CoursePage } from "./course.ts";
 import { notebook, type Cell } from "./notebook.ts";
 
 /** An error a download's run must show: psql's ERROR lines, in order, each containing its text. */
@@ -92,13 +93,13 @@ function commentedOut(b: Block, reason: string, mark: "--" | "#"): string {
   return [`${mark} ${notRunLine(reason)}`, ...lines.slice(0, headers), ...lines.slice(headers).map((l) => (l ? `${mark} ${l}` : mark))].join("\n");
 }
 
-/** One page block in its download form. */
-function blockPart(b: Block, page: ReadonlyMap<string, Block>): string {
+/** One page block in its download form; `course`: every block by id (courseBlocks). */
+function blockPart(b: Block, course: ReadonlyMap<string, Block>): string {
   if (!runnable(b)) return commentedOut(b, notRunReason(b), "--");
   if (b.txOwn) return trimEnd(b.text);
   const after = b.after.map((id) => {
-    const a = page.get(id);
-    if (!a) throw new Error(`q ${b.id}: \`-- after\`: no block ${id} on its page`);
+    const a = course.get(id);
+    if (!a) throw new Error(`q ${b.id}: \`-- after\`: no block ${id} in the course`);
     return `-- runs first: ${id}\n${trimEnd(a.code)}`;
   });
   return ["BEGIN;", ...after, trimEnd(b.text), "ROLLBACK;"].join("\n");
@@ -110,18 +111,18 @@ const announcedBy = (b: Block): Announced[] =>
 
 /** Every page's downloads, in page order (.sql, .py, .ipynb); throws when a file's first block (pg-session, py-connect) is missing. */
 export function assembleDownloads(pages: readonly CoursePage[]): Download[] {
-  const all = pages.flatMap((p) => p.blocks);
+  const course = courseBlocks(pages);
+  const all = [...course.values()];
   const boots = all.filter((b) => b.boot && b.status === "ran");
-  return pages.flatMap((p) => [...sqlDownload(p, all, boots), ...pythonDownloads(p, all, boots)]);
+  return pages.flatMap((p) => [...sqlDownload(p, course, boots), ...pythonDownloads(p, all, boots)]);
 }
 
 /** A page's .sql: none without a PostGIS block other than pg-session. */
-function sqlDownload({ page, blocks }: CoursePage, all: readonly Block[], boots: readonly Block[]): Download[] {
+function sqlDownload({ page, blocks }: CoursePage, byId: ReadonlyMap<string, Block>, boots: readonly Block[]): Download[] {
   const pgBlocks = blocks.filter((b) => b.engine === "postgis" && b.id !== PG_SESSION_ID);
   if (!pgBlocks.length) return [];
-  const session = all.find((b) => b.id === PG_SESSION_ID);
+  const session = byId.get(PG_SESSION_ID);
   if (!session) throw new Error(`${page.file}: PostGIS blocks, but the course has no pg-session block to start its download`);
-  const byId = new Map(blocks.map((b) => [b.id, b]));
   const body = pgBlocks.filter((b) => !b.boot);
   const used = body.filter(runnable).flatMap((b) => [b, ...b.after.flatMap((id) => byId.get(id) ?? [])]).map((b) => b.code);
   const named = bootsNeeded(boots, used, sqlNames);

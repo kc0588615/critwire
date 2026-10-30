@@ -7,6 +7,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { readFile } from "node:fs/promises";
 import { dictionaries, type DrawnErd } from "../scripts/build/learn/erd.ts";
+import { STAR_FILES } from "../scripts/build/learn/star.ts";
 import { dbMeta, erdDrift, ERD_DIR, markers, META_SQL, parseErd } from "../scripts/learn/erd-model.ts";
 import type { Result } from "../scripts/learn/result.ts";
 import { hookResult, learnContext, repoPath, runPlayground, waitReady } from "./helpers.ts";
@@ -100,13 +101,13 @@ test("each schema page: its SVG (alt = <title>, linked alone), relationships in 
   // H5: the clips are stored as tiles, keyed (clip, tile).
   await expect(page.locator(`section.dictionary[data-table="habitat_clips"] tbody tr td:first-child`)).toHaveText(["clip", "tile", "rast"]);
   await expect(page.locator("ul.planned-tables")).toHaveCount(0);
-  // The star page links each published file.
+  // L5: the star page links all eight published files, with no planned list or badge.
   await page.goto("/learn/schema/star/");
-  const { planned } = markers(await mmd("star"));
-  for (const d of dictionaries(await mmd("star"))) {
-    const file = page.locator(`section.dictionary[data-table="${d.table}"] a[href="/learn/data/star/${d.table}.csv"]`);
-    await expect(file).toHaveCount(planned.includes(d.table) ? 0 : 1);
-  }
+  const star = dictionaries(await mmd("star")).map((d) => d.table);
+  expect(star.map((t) => `star/${t}.csv`).sort()).toEqual([...STAR_FILES].sort());
+  for (const t of star) await expect(page.locator(`section.dictionary[data-table="${t}"] a[href="/learn/data/star/${t}.csv"]`), t).toHaveCount(1);
+  await expect(page.locator("section.dictionary .planned, section.dictionary[data-planned]")).toHaveCount(0);
+  await expect(page.locator("ul.planned-tables")).toHaveCount(0);
 });
 
 test("the Schema and Lab schema dialogs open and close by keyboard alone and return focus", async ({ page }) => {
@@ -143,6 +144,8 @@ const DIAGRAMS = [
   { name: "s4-band", url: "/learn/spatial-statistics/moran/" },
   { name: "e2-load", url: "/learn/etl/transform-load/" },
   { name: "e5-refresh", url: "/learn/etl/schedule/" },
+  { name: "c1-pipeline", url: "/learn/capstone/game-feed/" },
+  { name: "c1-feed", url: "/learn/capstone/game-feed/" },
 ];
 const svgTitle = (svg: string) => /<svg\b[^>]*>\s*<title\b[^>]*>([^<]+)<\/title>/.exec(svg)?.[1]?.trim();
 

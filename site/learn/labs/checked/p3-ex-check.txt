@@ -1,0 +1,8 @@
+-- result: p3-ex-check · 8 rows · sha256 70c1540a66db
+continent | records | habitat_km2 | share_of_records | share_of_area
+Africa | 10791 | 29703399.22 | 0.2671 | 0.2026
+Antarctica | NULL | 12356486.85 | NULL | 0.0843
+Asia | 2985 | 31108178.20 | 0.0739 | 0.2122
+Europe | 469 | 23004583.24 | 0.0116 | 0.1569
+North America | 9688 | 24217714.23 | 0.2398 | 0.1652
+… 3 more rows

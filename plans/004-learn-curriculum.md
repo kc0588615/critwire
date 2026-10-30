@@ -16,9 +16,9 @@ Every example in this document is tested. A block is a fenced code block whose f
   - SQL with no `-- engine:` line (or `-- engine: duckdb`) runs in DuckDB-WASM in headless Chromium, on the browser database the `setup` block builds (below), as a page runs it.
   - `-- engine: postgis` runs in PostgreSQL 16 with PostGIS 3.4.2, in schema `learn_curriculum`, after the loader and `pg-session` (below).
   - ```` ```python ```` blocks run in the pinned `uv` environment (§3), each in its own process, isolated (`python -I`), from an empty folder, connected through libpq's `PG*` variables. Their search path starts as `pg_catalog`, so a block that skips the `py-connect` helper fails on its first table name instead of quietly reading another schema.
-  - ```` ```m ```` and ```` ```dax ```` blocks (Power BI) never run; their status is always `untested: Power BI is Windows-only`. Each names its inputs (`// input: star/<file>.csv, …`) and the runner checks those files instead: the file exists, its header equals the star manifest's columns, primary keys are unique and filled, every foreign key finds its dimension row, and rows and sha256 equal the manifest's.
+  - ```` ```m ```` and ```` ```dax ```` blocks (Power BI) never run; their status is always `untested: Power BI is Windows-only`. Each names its inputs (`// input: star/<file>.csv, …`, or c1's feed, `labs/c1-feed.json`) and the runner checks those files instead: for a star file, the file exists, its header equals the star manifest's columns, primary keys are unique and filled, every foreign key finds its dimension row, and rows and sha256 equal the manifest's; for the feed, its rows are its cells and its sha256 is the served file's. A DAX block also names its twin (`// twin: <id>`), a ran PostGIS block on the same page that computes the table the DAX query should return from the same files; an M block has none. The twin checks the arithmetic only, not M parsing, relationship direction, filter context or DAX execution.
 - **More headers:**
-  - `-- after: <id>, …`: those earlier blocks of the same engine run first, in the same transaction, in the order named; the result is still this block's last statement. An exercise runs after its lesson this way. Python's `# after:` puts the named blocks' code first, in document order, in one process; it names earlier Python blocks of its page, or `py-connect`, the course-wide helper (below) any page may name.
+  - `-- after: <id>, …`: those earlier blocks of the same engine run first, in the same transaction, in the order named; the result is still this block's last statement. An exercise runs after its lesson this way. A PostGIS block may also name a ran PostGIS block on a page in its scope: its module's prerequisites, transitively (§2), so p3's twin can run d6's star blocks and c1's feed `s5-gistar`. Scope is transitive, execution isn't: the block runs exactly the blocks it lists, in that order, each with only its own statements, never their own `-- after:` blocks, so it lists every block it needs (the download does the same, 7.3). A browser block names only earlier blocks of its page, since the browser runs them from the page. Python's `# after:` puts the named blocks' code first, in document order, in one process; it names earlier Python blocks of its page, or `py-connect`, the course-wide helper (below) any page may name.
   - `-- expect: error <text>`: the last statement must fail with an error containing `<text>` (d1's constraint violations); the block fails if it doesn't.
   - `-- plan: <text>`, `-- plan: no <text>`, `-- plan: rows <n>` (PostGIS, on a block whose last statement is `EXPLAIN (ANALYZE …)`): what the plan must show, by meaning: some plan line contains `<text>` (a node, an index, an `Index Cond`); no line contains it; the top node's `actual rows=<n>`. Every such block has one `rows` line and at least one about its nodes (d3).
   - `-- params: [<value>, …]` (DuckDB only): JSON values for the last statement's `?` placeholders, as a page binds a learner's input.
@@ -405,9 +405,9 @@ pointpats: 2.6.0
 
 ## 2. The curriculum map
 
-Seven tracks, 33 modules, about 68 hours. Foundations come first and go fast; then the five areas; then a capstone that uses all of them. Each module answers real questions with the lab data (§4) on one or two tools: **B** the browser (DuckDB-WASM, nothing to install), **PG** your own PostgreSQL with PostGIS, **Py** Python in the `uv` environment, **PBI** Power BI Desktop (§3). Hours include the lab and the exercise. A module's id names its blocks (`d3-plan`) and its page (§7).
+Seven tracks, 33 modules, about 68 hours. Foundations come first and go fast; then the five areas; then a capstone that uses all of them. Each module answers real questions with the lab data (§4) on one or two tools (the capstone on three): **B** the browser (DuckDB-WASM, nothing to install), **PG** your own PostgreSQL with PostGIS, **Py** Python in the `uv` environment, **PBI** Power BI Desktop (§3). Hours include the lab and the exercise. A module's id names its blocks (`d3-plan`) and its page (§7).
 
-The table is in prerequisite order: every module's prerequisites come above it, so working down the table never meets a module that needs a later one. After f3 the tracks branch: GIS in SQL needs only f3 (and d3 for g5), ETL starts from f2, and Power BI waits for d6. **Depth** is what this document holds: `full` modules are written out in §5 (concept, worked example, lab, result, exercise, answer, check, dialects); `outline` modules give the goal, data, key code and expected result, and the build missions (§9) write them in full.
+The table is in prerequisite order: every module's prerequisites come above it, so working down the table never meets a module that needs a later one. After f3 the tracks branch: GIS in SQL needs only f3 (and d3 for g5), ETL starts from f2, and Power BI waits for d6. **Depth** is what this document holds: every module is `full`, written out in §5 (concept, worked example, lab, result, exercise, answer, check, dialects). Until its build mission (§9) wrote it, a module was an `outline`: the goal, data, key code and expected result.
 
 | id | Track | Module | Skill | Questions it answers | Tool | h | Prereqs | Depth |
 |---|---|---|---|---|---|---|---|---|
@@ -439,11 +439,11 @@ The table is in prerequisite order: every module's prerequisites come above it, 
 | e3 | ETL | idempotent | Run ids, deterministic outputs, checksums; critwire's own ingest → derive → build as the case study | Can I re-run the pipeline without doubling rows or changing its output? | Py + PG | 2.0 | e2 | full |
 | e4 | ETL | quality-provenance | Data quality checks written as SQL; license filters; provenance tables; citations; derived datasets | Which datasets must I credit, and under which license? Which checks stop a bad load? | Py + PG | 2.0 | e3 | full |
 | e5 | ETL | schedule | cron, systemd timers, Windows Task Scheduler; logs, alerts, incremental loads | How do I refresh weekly, and know when a run broke? | Py | 1.5 | e4 | full |
-| p1 | Power BI | power-query | Power Query: `Web.Contents` on critwire's CSV files; types with an explicit culture; refresh | How do I load the star from critwire.com so that it refreshes, on any locale? | PBI | 1.5 | d6 | outline |
-| p2 | Power BI | model | Relationships, cardinality, filter direction, conformed dimensions, factless facts | How do I filter records and habitat areas by the same country? | PBI | 2.0 | p1 | outline |
-| p3 | Power BI | dax | Measures: `COUNTROWS`, `DISTINCTCOUNT`, `CALCULATE`, ratios | How many records per 1,000 km² of forest, by country? | PBI | 2.0 | p2 | outline |
-| p4 | Power BI | maps-report | Map visuals, honest labels, publishing and scheduled refresh | How do I build a report that maps records and never calls them a range? | PBI | 1.5 | p3 | outline |
-| c1 | Capstone | game-feed | ETL into PostGIS → Gi* on hexagons → a Power BI report → a static JSON feed a game reads (encounter weights per hexagon, labelled as records) | What could a player meet here, honestly? | all | 8.0 | s5, e4, p4 | outline |
+| p1 | Power BI | power-query | Power Query: `Web.Contents` on critwire's CSV files; types with an explicit culture; refresh | How do I load the star from critwire.com so that it refreshes, on any locale? | PBI | 1.5 | d6 | full |
+| p2 | Power BI | model | Relationships, cardinality, filter direction, conformed dimensions, factless facts | How do I filter records and habitat areas by the same country? | PBI + PG | 2.0 | p1 | full |
+| p3 | Power BI | dax | Measures: `COUNTROWS`, `DISTINCTCOUNT`, `CALCULATE`, ratios | How many sample records per 1,000 km² of forest, by country? | PBI + PG | 2.0 | p2 | full |
+| p4 | Power BI | maps-report | Map visuals, honest labels, publishing and scheduled refresh | How do I build a report that maps records and never calls them a range? | PBI + PG | 1.5 | p3 | full |
+| c1 | Capstone | game-feed | ETL into PostGIS → Gi* on hexagons → a Power BI report → a static JSON feed a game reads (encounter weights per hexagon, labelled as records) | What could a player meet here, honestly? | PG + Py + PBI | 8.0 | s5, e4, p4 | full |
 
 | Track | Modules | Hours | Depth |
 |---|---|---|---|
@@ -452,9 +452,9 @@ The table is in prerequisite order: every module's prerequisites come above it, 
 | GIS in SQL | g1–g7 | 12.5 | full |
 | Spatial statistics | s1–s6 | 12.5 | full |
 | ETL | e1–e5 | 10.0 | full |
-| Power BI | p1–p4 | 7.0 | outline |
-| Capstone | c1 | 8.0 | outline |
-| **Total** | **33** | **68.0** | 28 full, 5 outline |
+| Power BI | p1–p4 | 7.0 | full |
+| Capstone | c1 | 8.0 | full |
+| **Total** | **33** | **68.0** | 33 full |
 
 **Going fast.** Each foundations module opens with an "Already know this?" exercise; solving it marks the module done, so someone who already writes joins and window functions spends minutes, not six hours, on the first track. The dialect notes in each full module (PostgreSQL, DuckDB, SQL Server) let a SQL Server user map what they know. After foundations, the order within the prerequisites is yours: a GIS specialist might take d1, d3 and d4, then GIS in SQL and spatial statistics, and come back for d5 and d6 before ETL and Power BI.
 
@@ -465,7 +465,7 @@ Four tools, each set up once. Every lab names the tool it runs on (§2). The fil
 | Tool | Modules | Runs on | Tested here | Not tested here |
 |---|---|---|---|---|
 | **B** browser | f1–f4, d1, d2, s1 | The course page: DuckDB-WASM in your browser | Every block, in headless Chromium, as the page runs it | — |
-| **PG** PostGIS | d1, d3–d6, g1–g7, s1–s6, e2–e4, c1 | Your PostgreSQL 16 with PostGIS 3.4 | The loader (twice, with the command below) and every block, in PostgreSQL 16.x with PostGIS 3.4.2 on critwire's server | The Docker and installer commands (Windows) |
+| **PG** PostGIS | d1, d3–d6, g1–g7, s1–s6, e2–e4, p2–p4, c1 | Your PostgreSQL 16 with PostGIS 3.4 | The loader (twice, with the command below) and every block, in PostgreSQL 16.x with PostGIS 3.4.2 on critwire's server | The Docker and installer commands (Windows) |
 | **Py** Python | s2–s6, e1–e5, c1 | The `uv` environment on your computer | Every block, isolated, on the pins below (CPython 3.12.3, Linux aarch64) | The install commands; Windows itself (the pins' Windows wheels were resolved, below) |
 | **PBI** Power BI | p1–p4, c1 | Power BI Desktop (Windows) | The files each query reads: header, keys, rows, sha256 (§0) | Power Query, DAX, visuals and refresh (§10 asks for one check on Windows) |
 | arcpy (optional) | s4, s5 | ArcGIS Pro's own Python | — | Everything (needs ArcGIS Pro, Windows, licensed) |
@@ -793,7 +793,7 @@ It should show 251 rows: 250 countries and `ZZ`, d6's unknown member for records
 - **`Encoding = 65001`** (UTF-8) and `QuoteStyle.Csv`: names with accents and commas inside quotes are read as written.
 - **The culture `"en-US"`** on the type change: critwire's files write `12.5`, and a computer set to a comma-decimal locale would otherwise misread it.
 
-p1 (§5.6) turns this into one function for all eight tables. **Tested here:** every file a Power BI block names, against the star's manifest (header, unique and filled keys, foreign keys, row count, sha256), in each run (§0). **Not tested:** whether Power BI evaluates the M, the DAX results, the visuals and the refresh: Power BI has no Linux version. §10 asks the owner for one check on Windows.
+p1 (§5.6) turns this into one function for all eight tables. **Tested here:** every file a Power BI block names, against the star's manifest (header, unique and filled keys, foreign keys, row count, sha256), in each run (§0). **Not tested:** whether Power BI evaluates the M, the DAX results, the visuals and the refresh: Power BI has no Linux version. Each DAX block's PostGIS twin (§0) checks the arithmetic of the table it should return, not M parsing, relationship direction, filter context or DAX execution. §10 asks the owner for one check on Windows.
 
 ## 4. Lab data
 
@@ -811,7 +811,7 @@ Every lab reads the same handful of files. critwire's build writes them from sna
 | Jung et al. 2020 habitat map, v004: classes, country summaries and each record's class | CC BY 4.0 (003 D4, §5) | `habitat_classes.parquet`, `country_habitats.parquet`, `occurrence_habitats.parquet` | 75; 5,578 (246 countries); 40,395 | 2,488; 22,407; 81,731 | g7, s6, p2–p3 | L3 (A2's 35-row stand-ins before it) |
 | Jung v004 clips at 100 m: all of Costa Rica (`cr`) and Tasmania (`tas`) | CC BY 4.0 (003 D4) | `clips/{cr,tas}.tif` (cloud-optimized GeoTIFF); `habitat_clips.parquet` (the same cells as PostGIS raster WKB in 256-cell tiles, for the loader) | 2 rasters of 3,730 × 3,474 and 4,131 × 3,318 cells; 290 tiles (117 and 173) | 1,380,611 and 1,828,711; 1,826,789 | g7, s6 | L3 (two 0.75° windows until H5) |
 | The PostGIS loader | inherits the above | `postgis/learn_curriculum.sql` | 16 tables | 72,088,315 (L3's build, whole-country clips; with the windows, 25,757,224; L1's, 14 tables: 21,338,761) | every PostGIS module | build (L1; grown in L3) |
-| The star export | inherits the above; credits in its own manifest | `star/*.csv` (8 files), `star/manifest.json` | §A.3 | 4,576,053; 10,995 | d6, p1–p4 | build (L2: the records fact; L5: the habitat fact) |
+| The star export | inherits the above; credits in its own manifest | `star/*.csv` (8 files), `star/manifest.json` | §A.3 | 4,653,920; 12,139 (L5's build; on the habitat stand-ins, 4,576,053; 10,995) | d6, p1–p4 | build (L2: the records fact; L5: the habitat fact) |
 | The manifest and the index page | | `manifest.json` (4.5), `index.html` | | 26,178; 118,959 (L3's build; L1's: 14,257; 114,820) | every module | build (L1) |
 
 Notes on the shapes (`SP/out/lab-data/summary.md`; sizes re-measured by L1's `pnpm ingest shapes`, `data/learn/shapes.json`):
@@ -4438,7 +4438,7 @@ pairs | species | countries
 472 | 72 | 107
 ```
 
-The habitat classes have two levels; `dim_habitat_class` flattens them, and a level-1 class is its own parent, so a report can group by `level1_name` with no gaps. The habitat areas are estimates from a map (§4.1), and the star publishes these two tables later (L5).
+The habitat classes have two levels; `dim_habitat_class` flattens them, and a level-1 class is its own parent, so a report can group by `level1_name` with no gaps. The habitat areas are estimates from a map (§4.1), not measured.
 
 ```sql
 -- q: d6-star-dim-habitat-class
@@ -4464,7 +4464,7 @@ classes | level1_classes
 75 | 13
 ```
 
-`fact_country_habitat`: the grain is **one country and one habitat class**, with a measure that adds up across classes, `est_area_km2`. It shares only `dim_country` with the other facts; it has no species.
+`fact_country_habitat`: the grain is **one country and one habitat class**, with a measure that adds up across classes, `est_area_km2`. It shares only `dim_country` with the other facts; it has no species. The `CHECK` keeps an area at least 0 and at most the largest value `DECIMAL(12, 2)` holds. The same text runs in PostgreSQL and in DuckDB, which writes the published star: DuckDB can't compare a decimal with `'Infinity'`, and in PostgreSQL a decimal can't be infinite while `NaN` fails the upper bound.
 
 ```sql
 -- q: d6-star-fact-country-habitat
@@ -4474,7 +4474,7 @@ classes | level1_classes
 CREATE TABLE fact_country_habitat (
   country_code VARCHAR NOT NULL REFERENCES dim_country (country_code),
   habitat_code INTEGER NOT NULL REFERENCES dim_habitat_class (habitat_code),
-  est_area_km2 DECIMAL(12, 2) NOT NULL CHECK (est_area_km2 >= 0 AND est_area_km2 < 'Infinity'),
+  est_area_km2 DECIMAL(12, 2) NOT NULL CHECK (est_area_km2 >= 0 AND est_area_km2 <= 9999999999.99),
   PRIMARY KEY (country_code, habitat_code)
 );
 INSERT INTO fact_country_habitat
@@ -10029,25 +10029,23 @@ run 4 · links, TRANSFORM_VERSION = 2 again · exit 0 · INFO refresh: nothing c
 
 ### 5.6 Power BI
 
-Four modules, seven hours, in Power BI Desktop (§3.5), on the star d6 builds: eight CSV files under `https://critwire.com/learn/data/star/` (§A.3). These are outlines, in §5.3's form; build mission L5 (§9) writes them in full. Power BI runs only on Windows, so its blocks are `untested` here, and the tests check what they can instead (§0): every file a block names, against the star's manifest. Each DAX block is a query for Power BI's DAX query view (Home → DAX query view): its `DEFINE MEASURE` lines can be added to the model from there, and its `EVALUATE` returns a small table. A PostGIS block beside it computes the same table from the same star with `star.sql` (d6), so its result is the table Power BI should show. §10 asks the owner for one check on Windows.
+Four modules, seven hours, in Power BI Desktop (§3.5), with PostGIS twins (§3.2) from p2 on, on the star d6 builds: eight CSV files under `https://critwire.com/learn/data/star/` (§A.3). Build mission L5 (§9) wrote them in full from their outlines, in §5.3's form. Power BI runs only on Windows, so its blocks are `untested` here, and the tests check what they can instead (§0): every file a block names, against the star's manifest. Each DAX block is a query for Power BI's DAX query view (Home → DAX query view): its `DEFINE MEASURE` lines can be added to the model from there, and its `EVALUATE` returns a small table. A PostGIS block beside it, its twin (`// twin:`, §0), computes the same table from the same star with `star.sql` (d6), so its result is the table Power BI should show. The twin checks the arithmetic only, not M parsing, relationship direction, filter context or DAX execution: those need Power BI itself. §10 asks the owner for one check on Windows.
 
 #### p1 · power-query
 
 **Tool:** PBI · **Time:** 1.5 h · **Prereqs:** d6
 
-**Goal:** get the star into Power BI with Power Query, so it loads the same way on any computer and refreshes in the Power BI Service. Power Query records each step as a line of M, its formula language, so a load is code you can read, copy and review:
-- `Web.Contents` fetches the file. A fixed base URL, with the file name in `RelativePath`, is a source the Service can refresh on a schedule with anonymous access; a URL built by joining text is a dynamic source, which it won't refresh (§3.5).
-- `Csv.Document` parses it, with UTF-8 and CSV quoting stated, then `Table.PromoteHeaders` takes the first row as column names.
-- `Table.TransformColumnTypes` sets each column's type **with an explicit culture**. Without one, Power Query parses numbers and dates in the computer's locale, so `12.5` means something else on a computer set to a comma decimal.
-- Codes are text. `country_code` holds `NA` (Namibia), which other tools read as "not available", and keys like `dataset_key` are identifiers, never numbers to add.
+**Concept:** get the star into Power BI with Power Query, so it loads the same way on any computer and refreshes in the Power BI Service. **Power Query** is the tool inside Power BI Desktop (and Excel) that fetches and shapes data before it reaches the model. It records each step as a line of **M**, its formula language, so a load is code you can read, copy and review. Four rules make a load that works anywhere:
+- **A fixed base URL.** `Web.Contents` fetches the file. Give it a fixed base URL and put the file name in `RelativePath`: the Power BI Service can then refresh the published report on a schedule with anonymous access. A whole URL built by joining text is a **dynamic data source**, which the Service won't refresh.
+- **Say how the file is written.** `Csv.Document` parses it with UTF-8 (`Encoding = 65001`) and CSV quoting stated, so accents and commas inside quotes are read as written; `Table.PromoteHeaders` takes the first row as column names.
+- **Types with an explicit culture.** `Table.TransformColumnTypes` sets each column's type. A **culture** (a locale, such as `"en-US"`) says how text becomes a number or a date. Without one, Power Query uses the computer's own: on a computer set to German, the dot is a thousands separator, so `179.18` becomes 17,918. critwire's files write numbers with a dot, so every load states `"en-US"`.
+- **Codes are text.** `country_code` holds `NA` (Namibia), which other tools read as "not available", and keys like `dataset_key` are identifiers, never numbers to add. An empty cell in a numeric column becomes `null`, Power Query's missing value; an empty cell in a text column stays an empty text, `""`.
 
-One function serves all eight tables, so the rules above are written once (DRY, in M).
+One function serves all eight tables, so the rules are written once. A **custom function** in M is a query whose body is `(parameters) => expression`; other queries call it by name.
 
-**Data:** the eight star files and `star/manifest.json`, whose columns and types the queries follow (§6.3).
+**Data:** the eight star files under `https://critwire.com/learn/data/star/` and `star/manifest.json`, whose columns and types the queries follow (§6.3).
 
-**Key code:**
-
-Power BI reads the star d6 builds, as CSV files critwire publishes under `/learn/data/star/`. `LoadStar` is one function for all eight tables: create it as a blank query (Home → Get data → Blank query → Advanced editor), then add one query per table that calls it, for example `dim_country = LoadStar("dim_country", {{"country_code", type text}, {"name", type text}, {"continent", type text}, {"region", type text}, {"subregion", type text}})`. The base URL is fixed and the file name goes in `RelativePath`, so the Power BI Service can refresh it with anonymous access. The culture `"en-US"` is explicit, so a computer set to a comma-decimal locale still reads `12.5` as twelve and a half. Type `country_code` as text: Namibia's code is `NA`, which some tools read as "not available".
+**Worked example:** the function, then the largest table. Power BI reads the star d6 builds, as CSV files critwire publishes under `/learn/data/star/`. Create `LoadStar` as a blank query (Home → Get data → Blank query → Advanced editor), paste the block, and rename the query `LoadStar`. The first time it runs, Power BI asks how to connect to critwire.com: choose **Anonymous**, privacy level **Public** (§3.5). The base URL is fixed and the file name goes in `RelativePath`, so the Service sees one data source, `https://critwire.com`, for all eight tables.
 
 ```m
 // q: p1-load
@@ -10063,9 +10061,7 @@ in
     Typed
 ```
 
-`p1-load`'s inputs, `star/dim_habitat_class.csv` and `star/fact_country_habitat.csv`, and their sizes in §A.3, are recorded on A2's two-country habitat stand-ins (AX and TT, 35 rows): L3 replaced them with every country's estimates (§4.1), so they are re-run by the mission that builds this module (L5).
-
-The largest table's query. Name the query `fact_records`; whole numbers are `Int64.Type`, decimals `type number`, and an empty cell (a record with no month, or no stated uncertainty) becomes null:
+`types` is a list of pairs, a column's name and its type, in the form `Table.TransformColumnTypes` takes. Each table is then one call. Create a blank query, name it `fact_records`, and paste this; whole numbers are `Int64.Type`, decimals `type number`:
 
 ```m
 // q: p1-fact-records
@@ -10079,20 +10075,72 @@ LoadStar("fact_records", {
 })
 ```
 
-**Expected:** eight tables, with the manifest's rows: `dim_species` 76, `dim_country` 251, `dim_dataset` 400, `dim_year` 177, `fact_records` 40,395, `fact_species_country` 472, `dim_habitat_class` 75 and `fact_country_habitat` 35. In `fact_records`, 2,289 records have year `-1` (unknown) and none has country `ZZ`; `month` and `coordinate_uncertainty_m` hold nulls; `NA` stays Namibia. Refresh repeats the load from critwire.com and gives the same tables until the files change.
+A record with no month, or no stated uncertainty, has an empty cell, which becomes `null`. Power Query shows each step on the right (Applied steps); the function's steps run inside the call, so `fact_records` shows one.
+
+**Lab:**
+1. The other six tables. Each is a blank query named after its file, calling `LoadStar` with the file's columns. The manifest gives each column's type, and each has one M type:
+
+   | Manifest type | M type | Power BI calls it |
+   |---|---|---|
+   | `INTEGER`, `BIGINT` | `Int64.Type` | Whole number |
+   | `DOUBLE` | `type number` | Decimal number |
+   | `DECIMAL(12,2)` | `Currency.Type` | Fixed decimal number |
+   | `VARCHAR` | `type text` | Text |
+
+   So `dim_country = LoadStar("dim_country", {{"country_code", type text}, {"name", type text}, {"continent", type text}, {"region", type text}, {"subregion", type text}})`, and `dim_year = LoadStar("dim_year", {{"year", Int64.Type}, {"decade", Int64.Type}, {"label", type text}})`. In `dim_species`, `dim_dataset`, `fact_species_country` and `dim_habitat_class`, the ids and codes that the manifest calls `INTEGER` are `Int64.Type` and the rest is text. `fact_country_habitat`'s `est_area_km2` is `Currency.Type`: a fixed decimal number keeps four decimal places exactly, so 5,578 areas with two decimals add up to the cent, where a decimal number (a binary double) can leave a trailing digit.
+2. Close & Apply (Home). Power BI loads the eight tables into the model; `LoadStar` is a function, so it isn't loaded. In Table view, the status bar shows each table's rows: compare them with the manifest's `rows`.
+3. Look at the edges. In `dim_country`, filter `country_code` to `NA`: Namibia, a text code, not a missing value. In `dim_year`, the row `-1` is the unknown member (d6), with `decade` null and label `Unknown`. In `fact_records`, filter `year` to `-1`, then `month` to null.
+4. Refresh. Home → Refresh repeats every query from critwire.com: the same tables until the files change. To share the report, Home → Publish to a workspace; then, in the Service, the semantic model's Settings → Data source credentials → Edit credentials: **Anonymous**, privacy level **Public**, and set a scheduled refresh (a Pro licence allows eight a day). A dynamic data source is where this stops: the settings page says the model can't be refreshed.
+5. Your own database instead. Power BI also reads PostgreSQL directly (Get data → PostgreSQL database): server `localhost`, database `learn`, with d5's `learn_powerbi` login, and the navigator lists `learn_curriculum`'s tables. Power BI tries an encrypted connection first; a server on your own computer without TLS makes it ask whether to connect unencrypted, which is fine for `localhost`. That suits a database only you use. A report in the Service that refreshes from a database on your computer needs an on-premises data gateway, a Windows service on that computer, running whenever the refresh is due; files on a public URL need none, which is why the course reads the star from critwire.com.
+
+**Result:** eight tables, with the manifest's rows: `dim_species` 76, `dim_country` 251, `dim_dataset` 400, `dim_year` 177, `fact_records` 40,395, `fact_species_country` 472, `dim_habitat_class` 75 and `fact_country_habitat` 5,578 (246 countries). In `fact_records`, 2,289 records have year `-1` (unknown) and none has country `ZZ`; 6,545 have no month and 24,002 no stated uncertainty, all null; 176 are from Namibia, `NA`. Refresh repeats the load from critwire.com and gives the same tables until the files change.
+
+**Exercise:** a load check in M. Load `dim_habitat_class` and `fact_country_habitat` with `LoadStar`, and return one small table to compare with the manifest: each table's rows, the area rows with an empty key, the area rows whose class isn't in `dim_habitat_class`, the total estimated area, and Namibia's. Which type keeps the area's sums exact?
+
+**Answer:** `Currency.Type` (fixed decimal number) for `est_area_km2`. `Table.NestedJoin` with `JoinKind.LeftAnti` keeps the rows of the first table that have no match in the second, so its row count is the number of orphans. A text key is checked for both `null` and `""`.
+
+```m
+// q: p1-ex
+// status: untested: Power BI is Windows-only
+// input: star/dim_habitat_class.csv, star/fact_country_habitat.csv
+let
+    Classes = LoadStar("dim_habitat_class", {{"habitat_code", Int64.Type}, {"name", type text}, {"level1_code", Int64.Type}, {"level1_name", type text}}),
+    Areas = LoadStar("fact_country_habitat", {{"country_code", type text}, {"habitat_code", Int64.Type}, {"est_area_km2", Currency.Type}}),
+    Check = #table({"check", "value"}, {
+        {"dim_habitat_class rows", Table.RowCount(Classes)},
+        {"fact_country_habitat rows", Table.RowCount(Areas)},
+        {"area rows with an empty key", Table.RowCount(Table.SelectRows(Areas, each [country_code] = null or [country_code] = "" or [habitat_code] = null))},
+        {"area rows with no class", Table.RowCount(Table.NestedJoin(Areas, {"habitat_code"}, Classes, {"habitat_code"}, "class", JoinKind.LeftAnti))},
+        {"total km2", List.Sum(Areas[est_area_km2])},
+        {"Namibia (NA) km2", List.Sum(Table.SelectRows(Areas, each [country_code] = "NA")[est_area_km2])}
+    })
+in
+    Check
+```
+
+**Check:** 75 and 5,578 rows, as the manifest says; no empty key and no area without its class; 146,579,613.97 km² in all, and 822,099.38 km² for Namibia, whose 33 rows kept their code. Change `LoadStar`'s culture to `"de-DE"` and run it again: every area is read with the dot as a thousands separator, and the totals no longer match. The areas are estimates from a habitat map (§4.1), not measurements.
+
+**Dialects:**
+- **Excel (Windows):** the same Power Query and the same M. Data → Get Data → From Other Sources → Blank Query, then the same `LoadStar` and calls; Data → Refresh All repeats them. A table loaded to a sheet stops at 1,048,576 rows, so `fact_records` fits; load to the Data Model for more.
+- **Tableau:** Tableau Desktop's Text file connector reads files on your computer, so download the star first. Set each code's type to String on the Data Source page, and relate the tables there by their keys.
+- **pandas:** `pd.read_csv(url, dtype={"country_code": str}, keep_default_na=False, na_values=[""])`. pandas reads `NA` as missing by default; `keep_default_na=False` stops that, and `na_values=[""]` keeps empty cells missing. Python's `float` already reads `12.5` the same way in every locale.
+- **SQL:** DuckDB's `read_csv('https://critwire.com/learn/data/star/dim_country.csv', types = {'country_code': 'VARCHAR'})` (the `httpfs` extension fetches the URL); PostgreSQL's `\copy dim_country FROM 'dim_country.csv' WITH (FORMAT csv, HEADER)` into a table d6's block made, which reads an empty unquoted cell as NULL and `NA` as text. PostgreSQL reads only the dot as a decimal point; DuckDB does too unless told otherwise (`decimal_separator = ','`).
 
 #### p2 · model
 
-**Tool:** PBI · **Time:** 2.0 h · **Prereqs:** p1
+**Tool:** PBI + PG · **Time:** 2.0 h · **Prereqs:** p1
 
-**Goal:** turn eight tables into one model that filters correctly. In Model view, each fact gets a relationship to each of its dimensions:
-- **Cardinality many-to-one** (`*:1`): many fact rows point at one dimension row, by the key d6 declared.
+**Concept:** turn eight tables into one model that filters correctly. A **relationship** tells Power BI which column of one table matches which column of another, so that a choice made in one table (a country in a slicer) reaches the rows of another (that country's records). In Model view, each fact gets a relationship to each of its dimensions, set four ways:
+- **Cardinality many-to-one** (`*:1`): many fact rows point at one dimension row, by the key d6 declared. The "one" side must hold each key once, which d6's primary keys guarantee.
 - **Filter direction single:** a filter flows from the dimension to the fact. Choosing a country in a slicer filters `fact_records` and `fact_country_habitat`, never the other way round. Both directions invite ambiguous paths and slow, surprising totals; keep them for the rare case that needs them.
 - **Conformed dimensions:** `dim_country` is shared by all three facts and `dim_species` by the two species facts (`fact_records`, `fact_species_country`), so a country slicer filters all three at once and a species slicer the two that have a species (d6). The habitat fact has no species.
 - **Facts are never related to each other.** Joining two facts directly multiplies their rows (d6's drill across). Each fact is summed under the shared dimension instead, which is what a model with only fact-to-dimension relationships does.
-- **The factless fact:** `fact_species_country` has no measure column; its measure is a count of its rows (species listed in a country). It answers "where does critwire list the species?", while `fact_records` answers "what was recorded where?", and the two need not agree.
 
-Power BI may create relationships on its own, from matching column names. Check each one against the table below.
+The **factless fact**, `fact_species_country`, has no measure column; its measure is a count of its rows (species listed in a country). It answers "where does critwire list the species?", while `fact_records` answers "what was recorded where?", and the two need not agree. A **measure** is a calculation Power BI evaluates for each cell of a table or chart, under that cell's filters; p3 builds them, and this module uses three simple ones.
+
+**Data:** the eight tables from p1.
+
+**Worked example:** the relationships, then a query that slices two facts by one column. Power BI may create relationships on its own when it loads tables, from matching column names. Open Model view (the left bar) and check each line against this table; delete any other, and set the missing ones.
 
 | From (many) | To (one) | Key |
 |---|---|---|
@@ -10100,14 +10148,13 @@ Power BI may create relationships on its own, from matching column names. Check 
 | `fact_species_country` | `dim_species`, `dim_country` | `species_id`, `country_code` |
 | `fact_country_habitat` | `dim_country`, `dim_habitat_class` | `country_code`, `habitat_code` |
 
-**Data:** the eight tables from p1.
-
-**Key code:** three measures, and a query that slices both facts by continent through `dim_country`:
+Eight relationships, every one many-to-one, single direction. Then three measures, and a query that slices both species facts by continent through `dim_country`. Run it in DAX query view (Home → DAX query view, paste, Run): `DEFINE MEASURE` declares each measure for the query, and `EVALUATE` returns the table. `SUMMARIZECOLUMNS` groups by the columns it names and computes each measure for each group, leaving out a group whose measures are all blank.
 
 ```dax
 // q: p2-measures
 // status: untested: Power BI is Windows-only
 // input: star/fact_records.csv, star/fact_species_country.csv, star/dim_country.csv
+// twin: p2-check
 DEFINE
     MEASURE fact_records[Records] = COUNTROWS ( fact_records )
     MEASURE fact_records[Species recorded] = DISTINCTCOUNT ( fact_records[species_id] )
@@ -10122,7 +10169,7 @@ SUMMARIZECOLUMNS (
 ORDER BY [Records] DESC, dim_country[continent]
 ```
 
-The table it should return, from the same star in PostGIS:
+The table it should return, from the same star in PostGIS. Each fact is grouped by continent on its own, then the two are joined on the continent: d6's drill across, which is what the model does with the shared `dim_country`.
 
 ```sql
 -- q: p2-check
@@ -10155,31 +10202,101 @@ Asia | 2985 | 21 | 20
 … 2 more rows
 ```
 
-**Expected:** seven continents, the same rows as `p2-check`: South America 11,308 records, Africa 10,791, North America 9,688, Oceania 5,147, Asia 2,985, Europe 469, and 7 at sea ("Seven seas"). Antarctica and the unknown member `Unknown` (`ZZ`) have neither records nor listings, so the query leaves them out. The two facts disagree, and should: Europe has records of 19 species but critwire lists only 11 there, because critwire's countries rule withholds a country outside a species' core region that has a single record there, such as an okapi in Germany: often a captive animal or a museum specimen (`AGENTS.md`). The sample keeps those records, and `fact_records` shows them. Oceania lists 9 species but the sample has records of 8, because the listings count every open record while the sample holds at most 2,000 per species (§4.2).
+**Lab:**
+1. Set the relationships. Turn off the guessing first (File → Options and settings → Options → Current file → Data Load → clear "Autodetect new relationships after data is loaded"), so a refresh adds none. Then, in Model view, Manage relationships → New for each line of the table: the fact and its key column first, the dimension and its key second, Cardinality "Many to one (*:1)", Cross filter direction "Single". Model view draws each as a line from the fact to the dimension, with `*` at the fact's end, `1` at the dimension's and an arrow pointing at the fact: the way the filter flows.
+2. Look for a blank row. When a fact holds a key its dimension lacks, Power BI adds a blank member to the dimension, and slicers show "(Blank)". d6's unknown members, `ZZ` and `-1`, are real rows, so every fact row finds its dimension row and no blank appears. Add a slicer with `dim_country[name]` and scroll it: "Unknown or outside any country" is there, "(Blank)" isn't.
+3. Run `p2-measures` in DAX query view and compare it with `p2-check` above, row by row.
+4. Make the measures part of the model. A `DEFINE MEASURE` lasts for one query; the visuals below need model measures. In Report view, select `fact_records` in the Data pane, Home → New measure, and type the measure in the formula bar as name = formula: `Records = COUNTROWS ( fact_records )`. Then select `fact_species_country` and add `Species listed = DISTINCTCOUNT ( fact_species_country[species_id] )` the same way.
+5. One country, two facts. In Report view, add a slicer with `dim_country[name]`, a table with `dim_year[decade]` and `Records`, and a card with `Species listed`. Choose Namibia: the table shows Namibia's 176 records by decade, and the card the species critwire lists there. The slicer filters both facts because both reach `dim_country`.
+6. A table with no path. Clear the Namibia choice first (the slicer's eraser icon, Clear selections), else every row shows Namibia's 176. Then add a table with `dim_habitat_class[level1_name]` and `Records`. Every row shows 40,395, the whole fact: no relationship joins habitat classes to records, so the class has nothing to filter. A total repeated on every row is how a missing or wrong relationship shows itself.
+
+**Result:** eight relationships, all many-to-one and single direction, and no blank member. The query returns seven continents, the same rows as `p2-check`: South America 11,308 records, Africa 10,791, North America 9,688, Oceania 5,147, Asia 2,985, Europe 469, and 7 at sea ("Seven seas"). Antarctica and the unknown member `Unknown` (`ZZ`) have neither records nor listings, so the query leaves them out. The two facts disagree, and should: Europe has records of 19 species but critwire lists only 11 there, because critwire's countries rule withholds a country outside a species' core region that has a single record there, such as an okapi in Germany: often a captive animal or a museum specimen (`AGENTS.md`). The sample keeps those records, and `fact_records` shows them. Oceania lists 9 species but the sample has records of 8, because the listings count every open record while the sample holds at most 2,000 per species (§4.2).
+
+**Exercise:** records and habitat areas by the same country column. Write a DAX query that returns, for each continent, the records and the estimated habitat area in km² (the sum of `fact_country_habitat[est_area_km2]`), both sliced by `dim_country[continent]`. Which continent has area but no records, and why is it in the table?
+
+**Answer:** one measure per fact, both grouped by the shared dimension's column; the model does the drill across. Antarctica: the habitat map covers it, the sample has no record there, and `SUMMARIZECOLUMNS` keeps a group while any of its measures has a value, so its `Records` is blank.
+
+```dax
+// q: p2-ex
+// status: untested: Power BI is Windows-only
+// input: star/fact_records.csv, star/fact_country_habitat.csv, star/dim_country.csv
+// twin: p2-ex-check
+DEFINE
+    MEASURE fact_records[Records] = COUNTROWS ( fact_records )
+    MEASURE fact_country_habitat[Habitat km2] = SUM ( fact_country_habitat[est_area_km2] )
+EVALUATE
+SUMMARIZECOLUMNS (
+    dim_country[continent],
+    "Records", [Records],
+    "Habitat km2", [Habitat km2]
+)
+ORDER BY dim_country[continent]
+```
+
+Its twin, the table it should return:
+
+```sql
+-- q: p2-ex-check
+-- status: ran
+-- engine: postgis
+-- after: d6-star-dim-species, d6-star-dim-country, d6-star-dim-dataset, d6-star-dim-year, d6-star-fact-records, d6-star-dim-habitat-class, d6-star-fact-country-habitat
+SELECT c.continent, r.records, h.habitat_km2
+FROM (SELECT DISTINCT continent FROM dim_country) AS c
+LEFT JOIN (SELECT d.continent, count(*) AS records
+           FROM fact_records AS f JOIN dim_country AS d ON d.country_code = f.country_code
+           GROUP BY d.continent) AS r ON r.continent = c.continent
+LEFT JOIN (SELECT d.continent, sum(f.est_area_km2) AS habitat_km2
+           FROM fact_country_habitat AS f JOIN dim_country AS d ON d.country_code = f.country_code
+           GROUP BY d.continent) AS h ON h.continent = c.continent
+WHERE r.records IS NOT NULL OR h.habitat_km2 IS NOT NULL
+ORDER BY c.continent;
+```
+
+```text
+-- result: p2-ex-check · 8 rows · sha256 755d2b0ec7e2
+continent | records | habitat_km2
+Africa | 10791 | 29703399.22
+Antarctica | NULL | 12356486.85
+Asia | 2985 | 31108178.20
+Europe | 469 | 23004583.24
+North America | 9688 | 24217714.23
+… 3 more rows
+```
+
+**Check:** eight rows, the seven continents with records plus Antarctica, with 12,356,486.85 km² and no records. The areas add up to 146,579,613.97 km², p1's total; `Unknown` (`ZZ`) has neither records nor area, so it's left out. Records and areas sit side by side only because both facts reach `dim_country`: put `dim_species[class]` in place of the continent and every row shows the same total area, since the habitat fact has no species. The area is land the habitat map classifies, estimated from it: it says nothing about where a species lives, and the records say only where it was recorded.
+
+**Dialects:**
+- **Excel (Windows):** the same model in Excel's Data Model (Power Pivot): Data → Relationships, or Power Pivot → Manage → Diagram View, with the same eight relationships and the same DAX measures. A PivotTable on the Data Model gives the same table; Excel has no DAX query view.
+- **Tableau:** relationships in the Data Source page's logical layer join each table to the others by its keys, and since Tableau 2024.2 a model may hold several facts sharing dimensions. Each measure is computed at its own table's grain before the tables meet, as in Power BI.
+- **pandas:** no model, so do the drill across yourself: group each fact by the shared column, then put the results side by side. `records.merge(dim_country, on="country_code").groupby("continent").size()` and `habitat.merge(dim_country, on="country_code").groupby("continent")["est_area_km2"].sum()`, then `pd.concat([...], axis=1)`. Merging the two facts on `country_code` instead repeats each record once for each of its country's habitat classes.
+- **SQL:** `p2-check`'s shape: one subquery per fact, grouped by the dimension's column, joined on that column (d6). The same direct join of two facts multiplies rows here too.
 
 #### p3 · dax
 
-**Tool:** PBI · **Time:** 2.0 h · **Prereqs:** p2
+**Tool:** PBI + PG · **Time:** 2.0 h · **Prereqs:** p2
 
-**Goal:** measures that stay right under any filter. A **measure** is a formula evaluated in the current filter context: the slicers, the visual's rows and columns. It is not stored per row, which is what a calculated column does.
-- `COUNTROWS` counts a table's visible rows, `DISTINCTCOUNT` a column's distinct values.
-- `CALCULATE` evaluates an expression under changed filters: here, the habitat area with the class filter set to forest.
-- `DIVIDE` returns blank instead of an error when the denominator is 0 or blank.
-- A ratio of two facts at different grains (records per record, area per country and class) works because both are filtered by the same `dim_country`. Its meaning is the honest part: records per 1,000 km² of forest measures how much recording happened per area of forest, not how many animals live there.
+**Concept:** measures that stay right under any filter. A **measure** is a formula Power BI evaluates in the current **filter context**: the filters a cell of a visual sits under, from slicers, the visual's rows and columns, and the relationships p2 set. A measure isn't stored. A **calculated column** is: it is computed once per row when the data loads, so a slicer can't change it. Four functions do most of the work:
+- `COUNTROWS ( table )` counts the table's rows the filters leave visible; `DISTINCTCOUNT ( column )` counts a column's distinct visible values.
+- `CALCULATE ( expression, filter, … )` evaluates an expression under changed filters. A filter such as `dim_habitat_class[level1_name] = "Forest"` replaces any filter on that column; `ALL ( dim_country )` removes every filter on the table, which gives a total to divide by. `REMOVEFILTERS` is the same thing under a clearer name.
+- `DIVIDE ( numerator, denominator )` returns blank, not an error, when the denominator is 0 or blank. Blank isn't zero: a visual leaves out a row whose measures are all blank, and blank times a number is still blank.
+- A ratio of two facts with different grains (one row per record; one row per country and habitat class) works because both are filtered by the same `dim_country`, and only through what they share.
 
-**Data:** `fact_records`, `fact_country_habitat`, `dim_habitat_class`, `dim_country`. The habitat facts cover every country (§4.1). `p3-measures`' expected values and `p3-check`'s result below are recorded on A2's two-country habitat stand-ins (AX and TT, 35 rows): L3 replaced them with every country's estimates (§4.1), so they are re-run by the mission that builds this module (L5).
+The ratio this module builds is **sample records divided by forest area**: the records of critwire's sample in a country for each 1,000 km² of its forest. Say exactly that, because the name invites more. It isn't sampling effort, nor records made in forest: the numerator counts every record in the country, in forest or not, and the sample holds at most 2,000 records per species (§4.2), so a country where a much-recorded species lives holds fewer of its records than GBIF does. Nor is it how many animals live there: records say where someone recorded a species, not how many there are.
 
-**Key code:**
+**Data:** `fact_records`, `fact_country_habitat`, `dim_habitat_class` and `dim_country`, with p2's relationships. The habitat fact holds estimates for every country the habitat map covers: 246 of the 251 rows of `dim_country`.
+
+**Worked example:** three measures and one query, for every country with forest. `Forest km2` sums the habitat fact with the class filter replaced by forest; the ratio divides with `DIVIDE`. `ADDCOLUMNS ( VALUES ( dim_country[country_code] ), … )` makes one row per country code and evaluates each measure on it, with that row's country as the filter: a measure used inside a row turns the row into a filter (**context transition**). `FILTER` keeps the countries with forest.
 
 ```dax
 // q: p3-measures
 // status: untested: Power BI is Windows-only
 // input: star/fact_records.csv, star/fact_country_habitat.csv, star/dim_habitat_class.csv, star/dim_country.csv
+// twin: p3-check
 DEFINE
     MEASURE fact_records[Records] = COUNTROWS ( fact_records )
     MEASURE fact_country_habitat[Forest km2] =
         CALCULATE ( SUM ( fact_country_habitat[est_area_km2] ), dim_habitat_class[level1_name] = "Forest" )
-    MEASURE fact_records[Records per 1,000 km2 of forest] =
+    MEASURE fact_records[Sample records per 1,000 km2 of forest] =
         VAR forest = [Forest km2]
         RETURN IF ( NOT ISBLANK ( forest ), 1000 * DIVIDE ( COALESCE ( [Records], 0 ), forest ) )
 EVALUATE
@@ -10188,14 +10305,14 @@ FILTER (
         VALUES ( dim_country[country_code] ),
         "Records", COALESCE ( [Records], 0 ),
         "Forest km2", [Forest km2],
-        "Records per 1,000 km2 of forest", [Records per 1,000 km2 of forest]
+        "Sample records per 1,000 km2 of forest", [Sample records per 1,000 km2 of forest]
     ),
     NOT ISBLANK ( [Forest km2] )
 )
 ORDER BY dim_country[country_code]
 ```
 
-The same numbers in PostGIS:
+The table it should return, from the same star in PostGIS. `NULLIF ( h.forest_km2, 0 )` turns a zero area into unknown, so the division gives NULL where `DIVIDE` gives blank, instead of an error.
 
 ```sql
 -- q: p3-check
@@ -10205,7 +10322,7 @@ The same numbers in PostGIS:
 SELECT h.country_code,
        coalesce(r.records, 0) AS records,
        h.forest_km2,
-       round(1000 * coalesce(r.records, 0) / h.forest_km2, 3) AS records_per_1000_km2_forest
+       round(1000 * coalesce(r.records, 0) / NULLIF(h.forest_km2, 0), 3) AS sample_records_per_1000_km2_forest
 FROM (SELECT f.country_code, sum(f.est_area_km2) AS forest_km2
       FROM fact_country_habitat AS f
       JOIN dim_habitat_class AS c ON c.habitat_code = f.habitat_code
@@ -10217,32 +10334,111 @@ ORDER BY h.country_code;
 ```
 
 ```text
--- result: p3-check · 2 rows · sha256 66ff688f234f
-country_code | records | forest_km2 | records_per_1000_km2_forest
-AX | 0 | 233.33 | 0.000
-TT | 2 | 2865.12 | 0.698
+-- result: p3-check · 215 rows · sha256 a26cfe30c3ed
+country_code | records | forest_km2 | sample_records_per_1000_km2_forest
+AD | 0 | 179.18 | 0.000
+AE | 0 | 13.11 | 0.000
+AF | 0 | 2985.10 | 0.000
+AG | 0 | 51.59 | 0.000
+AI | 0 | 0.12 | 0.000
+… 210 more rows
 ```
 
-**Expected:** two rows, as `p3-check`. Trinidad and Tobago has 2 records and 2,865.12 km² of forest, so 0.698 records per 1,000 km²; Åland has 233.33 km² of forest and no records, so 0. A slicer on one species changes the records but not the forest area, because `dim_species` filters `fact_records` only.
+**Lab:**
+1. Run `p3-measures` in DAX query view and compare it with `p3-check`, row by row. Power BI shows the ratio with every decimal; the twin rounds it to 3 places.
+2. Make the measures part of the model, as p2 did: a `DEFINE MEASURE` lasts for one query, and the visuals need model measures. `Records` is there from p2. Select `fact_country_habitat` in the Data pane, Home → New measure, and type `Forest km2 =` and its formula from `p3-measures` in the formula bar; then add the ratio the same way on `fact_records`, and give it 3 decimal places (Measure tools → Format).
+3. A table visual with `dim_country[name]`, `Records`, `Forest km2` and the ratio, sorted by the ratio, highest first. Mauritania heads it with 20,000: 2 records over 0.10 km² of forest. A ratio over a tiny denominator is noise; 22 countries have less than 10 km² of forest. Add a filter on this visual, `Forest km2` is greater than or equal to 1,000: Benin now heads the list with 230.269 (961 records, 4,173.38 km²), then Kenya and South Africa.
+4. Add a slicer with `dim_species[common_name]` and choose Jaguar. The records change and the forest doesn't, because `dim_species` filters `fact_records` only (p2): Costa Rica shows 94 records and 4.050, Brazil 1,370 records and 0.320. The ratio is now that species' sample records per 1,000 km² of forest. Countries without a jaguar record still show their forest and a ratio of 0, because `COALESCE` turns their blank count into 0.
+5. A calculated column next to the measure. Select `dim_country`, Table tools → New column, and type `Records (column) = COUNTROWS ( RELATEDTABLE ( fact_records ) )`. Add it to the table: with Jaguar still chosen, it shows each country's records of every species, because it was computed when the data loaded, before any slicer. Delete the column: a count that ignores the report's filters belongs in a measure, with `ALL` when the total is what's wanted.
+
+**Result:** 215 rows, one for each country the habitat map gives some forest; 105 of them have sample records. They hold 40,394 of the 40,395 records. The last is in Niue, whose habitat estimates hold no forest, so `FILTER` leaves it out, with the 30 other countries in the same case. Trinidad and Tobago has 2 records and 2,806.26 km² of forest: 0.713 sample records per 1,000 km². Åland has 187.69 km² of forest and no records: 0. No country's forest area is 0, so `NULLIF` changes no row here; it is there for the data that will have one.
+
+**Exercise:** shares of a total. Write a DAX query that returns, for each continent, the records and the habitat area in km², and each as a share of its total over every country: the continent's value divided by the value with no country filter. Which continents hold a larger share of the records than of the area?
+
+**Answer:** `CALCULATE ( [Records], ALL ( dim_country ) )` is the records with every country filter removed, so dividing by it gives the share; the same for the area. Africa, North America, Oceania and South America hold a larger share of the records than of the area; Asia and Europe a smaller one, and Antarctica none. The comparison is s6's record-to-area ratio, by continent: it shows where the sample's species were recorded more than area alone predicts. That follows from which species critwire lists and where people record them, not from where wildlife is.
+
+```dax
+// q: p3-ex
+// status: untested: Power BI is Windows-only
+// input: star/fact_records.csv, star/fact_country_habitat.csv, star/dim_country.csv
+// twin: p3-ex-check
+DEFINE
+    MEASURE fact_records[Records] = COUNTROWS ( fact_records )
+    MEASURE fact_country_habitat[Habitat km2] = SUM ( fact_country_habitat[est_area_km2] )
+    MEASURE fact_records[Share of records] =
+        DIVIDE ( [Records], CALCULATE ( [Records], ALL ( dim_country ) ) )
+    MEASURE fact_country_habitat[Share of area] =
+        DIVIDE ( [Habitat km2], CALCULATE ( [Habitat km2], ALL ( dim_country ) ) )
+EVALUATE
+SUMMARIZECOLUMNS (
+    dim_country[continent],
+    "Records", [Records],
+    "Habitat km2", [Habitat km2],
+    "Share of records", [Share of records],
+    "Share of area", [Share of area]
+)
+ORDER BY dim_country[continent]
+```
+
+Its twin, the table it should return, with the shares rounded to 4 places. A window over no partition, `sum(…) OVER ()`, is SQL's total over every row: what `ALL` gives in DAX.
+
+```sql
+-- q: p3-ex-check
+-- status: ran
+-- engine: postgis
+-- after: d6-star-dim-species, d6-star-dim-country, d6-star-dim-dataset, d6-star-dim-year, d6-star-fact-records, d6-star-dim-habitat-class, d6-star-fact-country-habitat
+SELECT c.continent, r.records, h.habitat_km2,
+       round(r.records / sum(r.records) OVER (), 4) AS share_of_records,
+       round(h.habitat_km2 / sum(h.habitat_km2) OVER (), 4) AS share_of_area
+FROM (SELECT DISTINCT continent FROM dim_country) AS c
+LEFT JOIN (SELECT d.continent, count(*) AS records
+           FROM fact_records AS f JOIN dim_country AS d ON d.country_code = f.country_code
+           GROUP BY d.continent) AS r ON r.continent = c.continent
+LEFT JOIN (SELECT d.continent, sum(f.est_area_km2) AS habitat_km2
+           FROM fact_country_habitat AS f JOIN dim_country AS d ON d.country_code = f.country_code
+           GROUP BY d.continent) AS h ON h.continent = c.continent
+WHERE r.records IS NOT NULL OR h.habitat_km2 IS NOT NULL
+ORDER BY c.continent;
+```
+
+```text
+-- result: p3-ex-check · 8 rows · sha256 70c1540a66db
+continent | records | habitat_km2 | share_of_records | share_of_area
+Africa | 10791 | 29703399.22 | 0.2671 | 0.2026
+Antarctica | NULL | 12356486.85 | NULL | 0.0843
+Asia | 2985 | 31108178.20 | 0.0739 | 0.2122
+Europe | 469 | 23004583.24 | 0.0116 | 0.1569
+North America | 9688 | 24217714.23 | 0.2398 | 0.1652
+… 3 more rows
+```
+
+**Check:** eight rows, p2's exercise with two more columns. Europe holds 1.2% of the records and 15.7% of the area, Asia 7.4% and 21.2%; South America 28.0% and 12.1%, Oceania 12.7% and 5.8%. Each share column adds up to 1. Antarctica's share of records is blank, not 0: `DIVIDE` of a blank count is blank, as the twin's NULL is.
+
+**Dialects:**
+- **Excel (Windows):** the same measures in Excel's Data Model: Power Pivot → Measures → New Measure, the same DAX, shown in a PivotTable on the Data Model. Worksheet formulas such as `SUMIFS` give the same totals, but each cell names its own criteria; there is no filter context.
+- **Tableau:** an aggregate calculation such as `COUNT([Record Id]) / SUM([Est Area Km2])` is evaluated under the view's filters, as a measure is. A level of detail expression does what `CALCULATE` does: `{FIXED : COUNT([Record Id])}` is the total with every dimension removed, like `ALL`. Dividing by zero gives null, as `DIVIDE` gives blank.
+- **pandas:** group, then divide. `records / forest.replace(0, pd.NA)` gives missing, not `inf`, for a zero area, and `s / s.sum()` a share of the total. Join each grouped fact to the other on `country_code`, never the facts row by row (p2).
+- **SQL:** `p3-check`'s `NULLIF` for `DIVIDE`, and `p3-ex-check`'s `sum(…) OVER ()` for `CALCULATE ( …, ALL ( … ) )`.
 
 #### p4 · maps-report
 
-**Tool:** PBI · **Time:** 1.5 h · **Prereqs:** p3
+**Tool:** PBI + PG · **Time:** 1.5 h · **Prereqs:** p3
 
-**Goal:** a report that maps records honestly, credits its sources and refreshes by itself.
-- **Map visuals:** the Azure Maps visual places each record by `fact_records[latitude]` and `[longitude]` (set their data category to Latitude and Longitude); Microsoft recommends it over the older Bing-based Map and Filled map visuals, and your organization's admin may have to enable it. Colour by `basis_of_record` or by dataset, and the GPS collars and atlas grids of s1 become visible. To shade countries, use `dim_country[name]` with the data category Country, not the two-letter code, which a map can misread (`NA`).
+**Concept:** a report that maps records honestly, credits its sources and refreshes by itself. Four parts:
+- **Map visuals:** the **Azure Maps** visual places each record by `fact_records[latitude]` and `[longitude]`, once their **data category** (what kind of place a column holds) is set to Latitude and Longitude. Microsoft recommends it over the older Bing-based Map and Filled map visuals, and your organization's admin may have to enable it. Colour the points by `basis_of_record` or by dataset, and the way each was recorded shows: s1's GPS collars as dense tracks, an atlas's sightings as scattered points. To map countries instead of records, use `dim_country[name]` with the data category Country, not the two-letter code, which a map can misread (`NA` is Namibia).
 - **Honest labels:** a map of records shows where people recorded the animal. Its title says "records", gives the count and the source, and never says "range", "distribution" or "where it lives" (`AGENTS.md`). A measure writes the title, so it stays true when a slicer changes the species.
-- **Credits:** the report cites the GBIF download's DOI and the datasets with CC BY 4.0 records among those shown (e4), counted by a measure and listed in a table visual from `dim_dataset`.
-- **Publishing and refresh:** Home → Publish sends the report to the Power BI Service. Under the semantic model's settings, set the critwire.com source to Anonymous with privacy level Public, then schedule a refresh. The Service refreshes the CSV sources directly, with no gateway, because the base URL is fixed (p1).
+- **Credits:** CC BY 4.0 asks you to credit each dataset whose records you show; CC0 asks for nothing (e4). A measure counts the datasets to credit among the records shown, and a table visual from `dim_dataset` lists them. The report also cites the sample as a whole: the GBIF download's DOI, `10.15468/dl.fbpk9w`, and the derived dataset that credits every dataset in it; both citations are in `star/manifest.json`, under `fact_records.csv`'s sources.
+- **Publishing and refresh:** Home → Publish sends the report to the **Power BI Service**, Microsoft's website for shared reports. Its data and queries travel as a **semantic model**. In the model's settings, set the critwire.com source to Anonymous with privacy level Public, then schedule a refresh. The Service refreshes the CSV sources directly, with no gateway, because the base URL is fixed (p1).
 
-**Data:** the model from p2 and its measures.
+**Data:** the model from p2, with p3's `Records` measure. Each record has a latitude and a longitude: 40,395 of 40,395.
 
-**Key code:** the title and credit measures, evaluated for the Tasmanian devil:
+**Worked example:** the title and credit measures, evaluated for the Tasmanian devil. `SELECTEDVALUE ( dim_species[common_name], "Selected species" )` returns the species' name when the filters leave exactly one, and the fallback text otherwise. `FORMAT ( [Records], "#,0" )` writes the count with a thousands separator. `Datasets to credit` counts the datasets left by the records shown that carry a CC BY 4.0 license. `CALCULATETABLE` evaluates a table under a filter, as `CALCULATE` does a value; `ROW` makes a one-row table to show the measures.
 
 ```dax
 // q: p4-labels
 // status: untested: Power BI is Windows-only
 // input: star/fact_records.csv, star/dim_species.csv, star/dim_dataset.csv
+// twin: p4-check
 DEFINE
     MEASURE fact_records[Records] = COUNTROWS ( fact_records )
     MEASURE fact_records[Map title] =
@@ -10267,7 +10463,7 @@ CALCULATETABLE (
 )
 ```
 
-What they should return, from the same star in PostGIS:
+What they should return, from the same star in PostGIS. `to_char ( count(*), 'FM999,999' )` writes the count as `FORMAT` does, and `count ( DISTINCT … ) FILTER ( WHERE … )` counts the datasets with a CC BY 4.0 record.
 
 ```sql
 -- q: p4-check
@@ -10291,11 +10487,85 @@ map_title | records | datasets | datasets_to_credit
 Tasmanian Devil: 2,000 open GBIF records (where people recor… | 2000 | 9 | 7
 ```
 
-**Expected:** the title reads "Tasmanian Devil: 2,000 open GBIF records (where people recorded it, not its range)"; the devil's records come from 9 datasets, 7 of which supply CC BY 4.0 records and must be credited. Select another species and the title, count and credits change with it.
+**Lab:**
+1. Run `p4-labels` in DAX query view and compare it with `p4-check`. Then add `Map title` and `Datasets to credit` to the model as p3 did (select `fact_records`, Home → New measure); `Records` is there from p2.
+2. Prepare the coordinates. Select `fact_records[latitude]` in the Data pane and, under Column tools, set Data category to Latitude and Summarization to Don't summarize; the same for `longitude`, with Longitude. Otherwise the visual sums or averages them and draws one point where there should be many.
+3. The map. Add a slicer with `dim_species[common_name]` and choose Tasmanian Devil. Add an Azure Maps visual (if it isn't in the Visualizations pane, your admin has turned it off): `latitude` to Latitude, `longitude` to Longitude, `basis_of_record` to Legend, and `dim_dataset[title]` to Tooltips. Records at the same coordinates share a point: the devil's 2,000 records sit at 1,014 places. Almost all are on Tasmania; 4 records lie north of Bass Strait, and one point is in Albuquerque, New Mexico: two preserved specimens, CC0, from a museum collection there. A point is where a record was made, which for a specimen can be far from any wild animal; the map says nothing about where the devil isn't. Choose Jaguar: 1,948 of its 2,000 records are GPS-collar fixes from the Jaguar Movement Database (`MACHINE_OBSERVATION`), and they draw the paths of a few collared animals; the jaguar's records lie mostly in Brazil (1,370) and Paraguay (302).
+4. The title. Select the map, and in the Format pane, General → Title → Text, select the fx button, Format style Field value, field `Map title`. The title now follows the slicer: "Jaguar: 2,000 open GBIF records (where people recorded it, not its range)"; choose Maned Wolf and it reads 1,128. Clear the slicer and it reads "Selected species: 40,395 …": a title must hold for every state of the page, the empty one too.
+5. Credits. A card visual with `Datasets to credit`, and a text box beneath the map with the sample's citations from `star/manifest.json`. For the devil, the card shows 7; for the jaguar, 22 of its 25 datasets. The exercise builds the table that names them.
+6. Countries. A second Azure Maps visual, or a copy of the first: `dim_country[name]` in Location, with its data category set to Country, and `Records` in Size. With no species chosen, Namibia shows 176 records under its name; its code `NA` could be read as a missing value.
+7. Publish. Home → Publish, sign in and choose a workspace. In the Service, open the workspace, the semantic model's Settings → Data source credentials → Edit credentials: Anonymous, privacy level Public. Then Refresh → Scheduled refresh: on, and add a time. A Pro licence allows eight refreshes a day. Each refresh fetches the eight files again, so the report shows critwire's current star without anyone opening Power BI Desktop.
+
+**Result:** the title reads "Tasmanian Devil: 2,000 open GBIF records (where people recorded it, not its range)". The devil's records come from 9 datasets, 7 of which supply CC BY 4.0 records and must be credited. Choose another species, and the title, count and credits change with it.
+
+**Exercise:** the credits table. Write a DAX query that lists, for the Tasmanian devil, every dataset its records come from: title, publisher and DOI, its records, and its CC BY 4.0 records, most CC BY records first. Which datasets must be credited, and which may be?
+
+**Answer:** `SUMMARIZECOLUMNS` groups by the three dataset columns and leaves out a group whose measures are all blank, so only the datasets with devil records appear. `TREATAS ( { "Sarcophilus harrisii" }, dim_species[scientific_name] )` filters by a list of values, as a slicer does. A dataset with records but none under CC BY needs 0, not blank, so the second measure is 0 when `Records` isn't blank.
+
+```dax
+// q: p4-ex
+// status: untested: Power BI is Windows-only
+// input: star/fact_records.csv, star/dim_species.csv, star/dim_dataset.csv
+// twin: p4-ex-check
+DEFINE
+    MEASURE fact_records[Records] = COUNTROWS ( fact_records )
+    MEASURE fact_records[CC BY records] =
+        IF (
+            NOT ISBLANK ( [Records] ),
+            COALESCE ( CALCULATE ( [Records], fact_records[license] = "CC BY 4.0" ), 0 )
+        )
+EVALUATE
+SUMMARIZECOLUMNS (
+    dim_dataset[title],
+    dim_dataset[publisher],
+    dim_dataset[doi],
+    TREATAS ( { "Sarcophilus harrisii" }, dim_species[scientific_name] ),
+    "Records", [Records],
+    "CC BY records", [CC BY records]
+)
+ORDER BY [CC BY records] DESC, [Records] DESC, dim_dataset[title]
+```
+
+Its twin, the table it should return:
+
+```sql
+-- q: p4-ex-check
+-- status: ran
+-- engine: postgis
+-- after: d6-star-dim-species, d6-star-dim-country, d6-star-dim-dataset, d6-star-dim-year, d6-star-fact-records
+SELECT d.title, d.publisher, d.doi,
+       count(*) AS records,
+       count(*) FILTER (WHERE f.license = 'CC BY 4.0') AS cc_by_records
+FROM fact_records AS f
+JOIN dim_species AS s ON s.species_id = f.species_id
+JOIN dim_dataset AS d ON d.dataset_key = f.dataset_key
+WHERE s.scientific_name = 'Sarcophilus harrisii'
+GROUP BY d.title, d.publisher, d.doi
+ORDER BY cc_by_records DESC, records DESC, d.title;
+```
+
+```text
+-- result: p4-ex-check · 9 rows · sha256 561748a1ef09
+title | publisher | doi | records | cc_by_records
+Tasmanian Natural Values Atlas | Department of Natural Resources and Environment Tasmania | 10.15468/rtnb4m | 1413 | 1413
+Tasmanian Museum and Art Gallery provider for OZCAM | Tasmanian Museum and Art Gallery | 10.15468/ijp8p9 | 569 | 569
+Museums Victoria provider for OZCAM | Museums Victoria | 10.15468/lp1ctu | 5 | 5
+Australian Museum provider for OZCAM | Australian Museum | 10.15468/e7susi | 3 | 3
+South Australian Museum Adelaide provider for OZCAM | South Australian Museum | 10.15468/wz4rrh | 3 | 3
+… 4 more rows
+```
+
+**Check:** nine rows, the 9 datasets of `p4-check`. The first seven hold CC BY 4.0 records and must be credited: the Tasmanian Natural Values Atlas (1,413 records) and the Tasmanian Museum and Art Gallery (569) supply 1,982 of the 2,000, and five other Australian museums 13. The last two, the MVZ and MSB mammal collections in Arctos, hold 5 CC0 records and ask for no credit; credit them anyway, as e4 does, since it costs one line. In the report, this is a table visual with the same five fields under the species slicer; the derived dataset's DOI credits all nine at once.
+
+**Dialects:**
+- **Excel (Windows):** Excel's 3D Maps (Insert → 3D Map) plots rows by latitude and longitude from the Data Model; a chart title can come from a cell (select the title, type `=` and click the cell), where a formula such as `=B1&": "&TEXT(B2,"#,##0")&" open GBIF records"` writes it.
+- **Tableau:** a map from `Latitude` and `Longitude` as dimensions, not measures (which Tableau would average into one point). A title can insert a field or a calculated field, so it changes with the filters as the measure does; `COUNTD([Dataset Key])` counts datasets.
+- **pandas:** `geopandas.GeoDataFrame` with `points_from_xy(longitude, latitude)` and `.explore()` draws an interactive map; the title is an f-string from the filtered frame's `len()`, and `df.loc[df.license == "CC BY 4.0", "dataset_key"].nunique()` counts the datasets to credit.
+- **SQL:** `p4-check` writes the title with `||` and `to_char`, and `p4-ex-check` the credits with `count(*) FILTER (WHERE …)`.
 
 ### 5.7 Capstone
 
-One module, eight hours, on every tool. It is an outline, in §5.3's form; build mission L5 (§9) writes it in full. It asks a game designer's question, "what could a player meet here?", and answers it with a pipeline built from the earlier modules, ending in a file a game can read. Records can only say where people recorded an animal, so the file says that too, in its own fields.
+One module, eight hours, in your own PostGIS (§3.2), Python (§3.3) and Power BI Desktop (§3.5). Build mission L5 (§9) wrote it in full from its outline, in §5.3's form. It asks a game designer's question, "what could a player meet here?", and answers it with a pipeline built from the earlier modules, ending in a file a game can read. Records can only say where people recorded an animal, so the file says that too, in its own fields.
 
 #### c1 · game-feed
 
@@ -10305,19 +10575,26 @@ One module, eight hours, on every tool. It is an outline, in §5.3's form; build
 - **Extract and load** (e1–e4): a GBIF download for the species and region the game needs (your own predicate, or the lab sample), loaded into PostGIS in one transaction, re-runnable, checked, and with its credits.
 - **Look before counting** (s1): which datasets, which basis of record, any GPS collars? A species whose records are mostly one telemetry study gives a feed about that study, and the feed's numbers would say so only if you looked.
 - **Grid and hot spots** (g6, s5): equal-area hexagons, records per cell, Gi\* with the false discovery rate. The feed flags the surviving cells as **recording hot spots**: places people recorded the animal most, not places it is most common.
-- **Report** (p1–p4): the cell table goes beside the star (exported as CSV, as d6 exports the star, and loaded with p1's pattern); the report maps cells by their centre, sizes them by records, colours them by hot spot, and takes its title from p4's measure.
-- **The feed:** one static JSON file per species and region, written by one SQL statement, valid against the JSON Schema below, versioned. Each cell has an encounter **weight**, its share of the records; the game draws a cell with probability weight ÷ Σ weight (a cumulative sum and one random number), so rounding never matters. A cell missing from the feed means "no record", never "no animal". The feed carries the download's citation and every dataset with CC BY 4.0 records in it (e4), because the attribution travels with anything derived from them; the game shows both on its credits screen.
+- **Report** (p1–p4): Power BI reads the feed itself, with p1's `Web.Contents` pattern, and turns its cells into a typed table; the report maps the cells by their centre, sizes them by records, colours them by hot spot, and takes its title from p4's measure. Reading the feed, not a copy of its cells, means the report shows exactly what the game gets.
+- **The feed:** one static JSON file per species and region, written by one SQL statement, valid against the JSON Schema below, versioned. Each cell has an encounter **weight**, its share of the records; the game draws a cell with probability weight ÷ Σ weight (a cumulative sum and one random number), so rounding never matters. A cell missing from the feed means "no record", never "no animal". The feed carries its own license (CC BY 4.0, the license of the data critwire writes) and attribution, the download's citation, and every dataset with CC BY 4.0 records in it with its DOI (e4), because the attribution travels with anything derived from them and a game copies the feed alone; the game shows them on its credits screen.
 - **Shipping and refresh:** the game ships the file with its own static files, so it is read from the game's own origin and needs no CORS (§4.6). e5's schedule rebuilds it; a change to its fields bumps `version` and the schema. A game with its own PostGIS, such as Critter Connect's, can run the same statement there instead.
+
+**Diagram:** `c1-pipeline`, after the Goal's list: GBIF download → extract and load (e1–e4) → look before counting (s1) → grid and hot spots (g6, s4, s5) → the feed (c1), which the report (p1–p4) and the game both read; beside each stage its honesty rule: cite the download's DOI; credits from the loaded datasets, never typed; name a dominant study in `meaning`; equal-area cells, and hot spots only after the false discovery rate, called recording hot spots; a weight is a share of the records, not the range; the report's title says records, the game shows the credits and reads a missing cell as no record.
 
 **Data:** `s4_cells` (s4's 5 km hexagons over Tasmania's main island, with the devil's record counts), `s5_gistar` (s5's Gi\* per cell), `occurrences`, `datasets`, `species`. The worked example is the Tasmanian devil; in L5's lab the learner repeats it for a species and region of their own.
 
-**Key code:** the feed, built in PostGIS from s4's cells and s5's Gi\*; the query returns the feed's summary and its fullest cell (`SELECT doc FROM feed` returns the file itself):
+**Worked example:** the feed for the Tasmanian devil, in two blocks. `c1-feed` builds the feed with one statement, from s4's 5 km cells and s5's Gi\* (`s5_gistar`, so it runs after `s5-gistar`), and keeps it as a temporary view, `c1_feed`: one row, one `jsonb` column, `doc`. It then returns the feed's summary and its fullest cell. Four parts make the feed:
+- `sp`: the species, by its scientific name.
+- `cells`: the cells holding a record (`c.n > 0`), each with its centre in WGS 84 (`ST_Transform` of the hexagon's centre from EPSG:3577), its **weight**, its share of the records, rounded to six places (`n / sum(n) OVER ()`), and whether Gi\* made it a hot spot that survives the false discovery rate (`z > 0 AND fdr`).
+- `credit`: the datasets with a CC BY 4.0 record inside those cells, with title, publisher and DOI; `ST_Contains` finds a record's cell, after `ST_Transform` puts the record's point in the cells' projection.
+- the final `SELECT`: `jsonb_build_object` writes the document, and `jsonb_agg (… ORDER BY id)` the cells in a fixed order, so the same data always gives the same file.
 
 ```sql
 -- q: c1-feed
 -- status: ran
 -- engine: postgis
 -- after: s5-gistar
+CREATE OR REPLACE TEMP VIEW c1_feed AS
 WITH sp AS (
   SELECT id, scientific_name, common_name FROM species WHERE scientific_name = 'Sarcophilus harrisii'
 ), cells AS (
@@ -10327,26 +10604,28 @@ WITH sp AS (
   FROM s4_cells AS c JOIN s5_gistar AS g ON g.id = c.id
   WHERE c.edge_m = 5000 AND c.n > 0
 ), credit AS (
-  SELECT DISTINCT d.title, d.publisher
+  SELECT DISTINCT d.title, d.publisher, d.doi
   FROM occurrences AS o
   JOIN sp ON sp.id = o.species_id
   JOIN cells AS c ON ST_Contains(c.geom, ST_Transform(o.geom, 3577))
   JOIN datasets AS d ON d.dataset_key = o.dataset_key
   WHERE o.license = 'CC BY 4.0'
-), feed AS (
-  SELECT jsonb_build_object(
-    'version', 1,
-    'species', (SELECT jsonb_build_object('scientific_name', scientific_name, 'common_name', common_name) FROM sp),
-    'cell', '5 km hexagon, EPSG:3577',
-    'meaning', 'share of the open GBIF records in each cell: where people recorded the animal, not its range',
-    'source', 'GBIF.org (23 October 2026) GBIF Occurrence Download https://doi.org/10.15468/dl.fbpk9w',
-    'credit', coalesce((SELECT jsonb_agg(to_jsonb(credit) ORDER BY title, publisher) FROM credit), '[]'),
-    'cells', jsonb_agg(jsonb_build_object(
-      'id', id, 'lon', round(ST_X(centre)::numeric, 4), 'lat', round(ST_Y(centre)::numeric, 4),
-      'records', n, 'weight', weight, 'recording_hot_spot', hot_spot) ORDER BY id)
-  ) AS doc
-  FROM cells
 )
+SELECT jsonb_build_object(
+  'version', 1,
+  'species', (SELECT jsonb_build_object('scientific_name', scientific_name, 'common_name', common_name) FROM sp),
+  'cell', '5 km hexagon, EPSG:3577',
+  'meaning', 'share of the open GBIF records in each cell: where people recorded the animal, not its range',
+  'license', 'CC BY 4.0',
+  'license_url', 'https://creativecommons.org/licenses/by/4.0/',
+  'attribution', 'critwire (https://critwire.com), CC BY 4.0',
+  'source', 'GBIF.org (23 October 2026) GBIF Occurrence Download https://doi.org/10.15468/dl.fbpk9w',
+  'credit', coalesce((SELECT jsonb_agg(to_jsonb(credit) ORDER BY title, publisher, doi) FROM credit), '[]'),
+  'cells', jsonb_agg(jsonb_build_object(
+    'id', id, 'lon', round(ST_X(centre)::numeric, 4), 'lat', round(ST_Y(centre)::numeric, 4),
+    'records', n, 'weight', weight, 'recording_hot_spot', hot_spot) ORDER BY id)
+) AS doc
+FROM cells;
 SELECT jsonb_array_length(doc -> 'cells') AS cells,
        (SELECT sum((c ->> 'records')::int) FROM jsonb_array_elements(doc -> 'cells') AS c) AS records,
        (SELECT sum((c ->> 'weight')::numeric) FROM jsonb_array_elements(doc -> 'cells') AS c) AS weight_sum,
@@ -10356,14 +10635,45 @@ SELECT jsonb_array_length(doc -> 'cells') AS cells,
        octet_length(doc::text) AS bytes,
        (SELECT c::text FROM jsonb_array_elements(doc -> 'cells') AS c
         ORDER BY (c ->> 'records')::int DESC, (c ->> 'id')::int LIMIT 1) AS fullest
-FROM feed;
+FROM c1_feed;
 ```
 
 ```text
--- result: c1-feed · 1 row · sha256 0ed7d7c256c4
+-- result: c1-feed · 1 row · sha256 4eb751b94b5d
 cells | records | weight_sum | hot_spots | datasets_to_credit | bytes | fullest
-307 | 1972 | 0.999954 | 37 | 7 | 34848 | {"id": 917, "lat": -42.8981, "lon": 147.8865, "weight": 0.12…
+307 | 1972 | 0.999954 | 37 | 7 | 35178 | {"id": 917, "lat": -42.8981, "lon": 147.8865, "weight": 0.12…
 ```
+
+`c1-feed-file` returns the file itself: `doc::text` writes the document as one line of JSON, and that one text cell is, byte for byte, the worked feed critwire publishes, `/learn/labs/c1-feed.json` (`pnpm learn:check --update` writes it from this block, §7.3). Its result shows the cell's first 60 characters; its sha256 covers the whole file.
+
+```sql
+-- q: c1-feed-file
+-- status: ran
+-- engine: postgis
+-- after: s5-gistar, c1-feed
+SELECT doc::text AS feed FROM c1_feed;
+```
+
+```text
+-- result: c1-feed-file · 1 row · sha256 330d13fc6135
+feed
+{"cell": "5 km hexagon, EPSG:3577", "cells": [{"id": 6, "lat…
+```
+
+**The feed's fields:** a game reads these, so each says what it is.
+- `version`: 1. A change to the fields bumps it and the schema.
+- `species`: the scientific and common name.
+- `cell`: the cells' shape, size and projection, `5 km hexagon, EPSG:3577` (Australian Albers, an equal-area projection, so every cell covers the same ground).
+- `meaning`: what a weight is, in words a player-facing screen can quote: where people recorded the animal, not its range.
+- `license` and `license_url`: the feed's own license, CC BY 4.0, and its deed: anyone may copy and change the feed, crediting as the next three fields say.
+- `attribution`: who made the feed, in the words they ask to be credited with: `critwire (https://critwire.com), CC BY 4.0`. A feed you make names you.
+- `source`: GBIF's citation of the download, with its DOI, which lists every dataset in the download.
+- `credit`: every dataset with CC BY 4.0 records in the feed's cells, by title, publisher and DOI (`null` for a dataset without one), sorted by those three.
+- `cells`: one object per cell that holds a record: `id` (s4's cell id), `lon` and `lat` (the cell's centre in WGS 84, four decimal places, about 10 m), `records`, `weight` and `recording_hot_spot`.
+
+A game draws a cell with probability weight ÷ Σ weight: it adds the weights up in order (a cumulative sum), takes one random number between 0 and the total, and picks the first cell whose running sum passes it. A cell missing from the feed means "no record", never "no animal".
+
+**Diagram:** `c1-feed`, after the paragraph above: the fullest cell (917) as the feed writes it; its weight, 256 ÷ 1,972 = 0.129817, a share of the records, with the 307 weights summing to 0.999954; the draw on the running sum of the weights, where one random number, 0.83, falls in cell 917's span (0.768217 to 0.898034); and cell 7, with 0 records, left out of the feed: no record, never no animal.
 
 The feed's JSON Schema (draft 2020-12), which L5 publishes beside its worked feed and checks the feed against:
 
@@ -10374,7 +10684,7 @@ The feed's JSON Schema (draft 2020-12), which L5 publishes beside its worked fee
   "title": "Encounter weights from open GBIF records",
   "description": "Where people recorded a species, per equal-area cell. Records, not a range: a missing cell means no record, not no animal.",
   "type": "object",
-  "required": ["version", "species", "cell", "meaning", "source", "credit", "cells"],
+  "required": ["version", "species", "cell", "meaning", "license", "license_url", "attribution", "source", "credit", "cells"],
   "additionalProperties": false,
   "properties": {
     "version": { "const": 1 },
@@ -10386,15 +10696,18 @@ The feed's JSON Schema (draft 2020-12), which L5 publishes beside its worked fee
     },
     "cell": { "type": "string", "description": "The cells' shape, size and projection" },
     "meaning": { "type": "string", "description": "What a weight is, in words a player-facing screen can quote" },
+    "license": { "type": "string", "description": "The feed's license" },
+    "license_url": { "type": "string", "pattern": "^https://", "description": "The license's deed" },
+    "attribution": { "type": "string", "description": "Who made the feed, as they ask to be credited" },
     "source": { "type": "string", "description": "GBIF's citation of the download, with its DOI" },
     "credit": {
       "type": "array",
-      "description": "Every dataset with CC BY 4.0 records in the feed",
+      "description": "Every dataset with CC BY 4.0 records in the feed, with its DOI (null if it has none)",
       "items": {
         "type": "object",
-        "required": ["title", "publisher"],
+        "required": ["title", "publisher", "doi"],
         "additionalProperties": false,
-        "properties": { "title": { "type": "string" }, "publisher": { "type": "string" } }
+        "properties": { "title": { "type": "string" }, "publisher": { "type": "string" }, "doi": { "type": ["string", "null"] } }
       }
     },
     "cells": {
@@ -10418,7 +10731,86 @@ The feed's JSON Schema (draft 2020-12), which L5 publishes beside its worked fee
 }
 ```
 
-**Expected:** 307 of the 1,094 cells hold a record, so the feed has 307 cells and 1,972 records (the devil's 2,000, less the 28 off the main island's cells, as in g6). The weights, rounded to six places, sum to 0.999954, which is why the game divides by their sum. 37 cells are recording hot spots: s5's 39, less 2 cells with no record of their own, flagged by Gi\* because their neighbours are full (Gi\* counts a cell's neighbours too), and absent from a feed of recorded cells. The fullest cell (id 917) holds 256 records, 13.0 % of the weight, and is a hot spot. 7 datasets must be credited. The file is 34,848 bytes, small enough to ship with any game. L5 adds the report (`untested: Power BI is Windows-only`, its cell CSV checked as p1–p4's inputs are) and publishes the worked feed and schema under `/learn/labs/` (§7).
+**Expected:** 307 of the 1,094 cells hold a record, so the feed has 307 cells and 1,972 records (the devil's 2,000, less the 28 off the main island's cells, as in g6). The weights, rounded to six places, sum to 0.999954, which is why the game divides by their sum. 37 cells are recording hot spots: s5's 39, less 2 cells with no record of their own, flagged by Gi\* because their neighbours are full (Gi\* counts a cell's neighbours too), and absent from a feed of recorded cells. The fullest cell (id 917) holds 256 records, 13.0 % of the weight, and is a hot spot. 7 datasets must be credited. The file is 35,178 bytes, small enough to ship with any game. critwire publishes it and its schema under `/learn/labs/` (§7), and the report in the Lab reads that file.
+
+**Lab:** the pipeline again, for a species and region of your own; each stage keeps its honesty rule.
+1. **Extract and load** (e1–e4, Python). Choose a species and a region. Build the request with e1's `build_request` and your species' GBIF key, and run e1's client with your GBIF account (`e1.py` carries it commented out); then load, check and credit the download as e2, e3 and e4 do, pointing their downloads (`e2.py`, `e3.py`, `e4.py`) at your files instead of the lab's. The rule: the feed's `source` is your download's citation, with its DOI, and its `credit` comes from your loaded `datasets`, never typed by hand. Without a GBIF account, take a species of the lab sample in a region of your own, and keep the course download's citation.
+2. **Look before counting** (s1). Run `s1-devil` with your species' name: which datasets, which basis of record, which years. The jaguar's 2,000 records are 1,948 GPS-collar fixes of a few animals, so a jaguar feed would describe those animals' paths. If one study dominates, say so in `meaning`, or leave the study out and say that instead.
+3. **Grid and hot spots** (g6, s5). Copy `s4-cells` and change the region (`island`), the species and the projection: EPSG:3577, Australian Albers, is equal-area over Australia only; EPSG:6933 (WGS 84 / NSIDC EASE-Grid 2.0 Global) is equal-area anywhere. Change every `3577` in it, in `s4_neighbours` and in `c1-feed`. Then run `s5-gistar` unchanged. The rule: equal-area cells, so each covers the same ground, and hot spots only after the false discovery rate, called recording hot spots.
+4. **The feed.** Copy `c1-feed` and change the species' name, `cell` (your cells' size and projection), `source` (your download's citation) and `attribution`: your name and site, followed by CC BY 4.0, because a feed you make names you, as critwire's names critwire. Keep `meaning` and the license. To save the file, in the same psql session: `\pset format unaligned`, `\pset tuples_only on`, `\o my-feed.json`, `SELECT doc::text FROM c1_feed;`, `\o`. Validate it against the schema before you ship it (Dialects names validators).
+5. **The report** (p1–p4). In Power BI Desktop: Home → Get data → Blank query, then Advanced editor, paste `c1-report` and name the query `cells`. It reads the worked feed from critwire.com as p1 reads the star; for your own feed, replace the `Web.Contents (…)` call with `File.Contents ( "C:\path\my-feed.json" )` (the Service then needs a gateway to refresh it, as d5's PostgreSQL connection does). It fails, rather than guessing, if a cell lacks a field.
+6. **The map** (p4). Set `lat` and `lon` to the Latitude and Longitude data categories, Don't summarize (p4, step 2). An Azure Maps visual: `lat` and `lon`, `records` to Size, `kind` to Legend, `weight` to Tooltips. The title, as p4's measure: `Map title = SELECTEDVALUE ( cells[species] ) & ": " & FORMAT ( SUM ( cells[records] ), "#,0" ) & " open GBIF records in " & COUNTROWS ( cells ) & " cells (where people recorded it, not its range)"`. Credits: a second blank query on the same file as `cells`, `Table.FromRecords ( Json.Document ( Web.Contents ( "https://critwire.com", [RelativePath = "learn/labs/c1-feed.json"] ) )[credit] )` (for your own feed, the same `File.Contents` swap), in a table visual, and a text box quoting `attribution` and `source`.
+7. **Ship and refresh** (e5). The game copies the file in with its own static files and reads it from its own origin. Its credits screen shows `attribution`, `source` and each `credit` with its DOI (as a link, `https://doi.org/` followed by the DOI). e5's schedule rebuilds the feed; new numbers keep `version`, a changed field bumps it and the schema.
+
+The report reads the feed, the file the game gets:
+
+```m
+// q: c1-report
+// status: untested: Power BI is Windows-only
+// input: labs/c1-feed.json
+let
+    Source = Json.Document(Web.Contents("https://critwire.com", [RelativePath = "learn/labs/c1-feed.json"]), 65001),
+    Cells = Table.FromRecords(Source[cells], {"id", "lon", "lat", "records", "weight", "recording_hot_spot"}, MissingField.Error),
+    Typed = Table.TransformColumnTypes(Cells, {
+        {"id", Int64.Type}, {"lon", type number}, {"lat", type number},
+        {"records", Int64.Type}, {"weight", type number}, {"recording_hot_spot", type logical}
+    }),
+    Species = Table.AddColumn(Typed, "species", each Source[species][common_name], type text),
+    Kind = Table.AddColumn(Species, "kind", each if [recording_hot_spot] then "recording hot spot" else "other recorded cell", type text)
+in
+    Kind
+```
+
+`Json.Document` parses the file into records and lists; `Table.FromRecords` with `MissingField.Error` makes one row per cell and stops at a cell without one of the six fields. `species` repeats the feed's common name on each row, for the title; `kind` spells out the legend, so it never shows a bare True or False.
+
+**Result:** your feed: one file, valid against the schema, with your species, your cells' size and projection, you in `attribution`, your download in `source`, every dataset with CC BY 4.0 records in `credit`, and "not its range" in `meaning`. On the worked feed, the report's title reads "Tasmanian Devil: 1,972 open GBIF records in 307 cells (where people recorded it, not its range)", 37 cells are recording hot spots, and the largest bubble is cell 917, with 256 records.
+
+**Exercise:** look before counting, on the feed's fullest cell. Cell 917 holds 13.0 % of the weight: a game would place about one devil in eight there. Who made its records, how, at how many places and in which years? Find the fullest cell from `c1_feed`, as `c1-feed`'s summary does, and break its devil records down by dataset and basis of record, with the number of distinct places and the first and last year.
+
+**Answer:** `jsonb_array_elements` turns the feed's cells back into rows, and `ORDER BY … LIMIT 1` takes the fullest, the same tie rule as `c1-feed`'s `fullest`. The records are placed in that cell as `c1-feed` places them, with `ST_Contains` after `ST_Transform`. `count(DISTINCT (o.longitude, o.latitude))` counts places: records at the same coordinates count once. The block runs after `s5-gistar` and `c1-feed`, so the view exists.
+
+```sql
+-- q: c1-ex
+-- status: ran
+-- engine: postgis
+-- after: s5-gistar, c1-feed
+WITH fullest AS (
+  SELECT (c ->> 'id')::int AS id
+  FROM c1_feed, jsonb_array_elements(doc -> 'cells') AS c
+  ORDER BY (c ->> 'records')::int DESC, (c ->> 'id')::int
+  LIMIT 1
+)
+SELECT f.id AS cell, d.title, o.basis_of_record,
+       count(*) AS records,
+       count(DISTINCT (o.longitude, o.latitude)) AS places,
+       min(o.year) AS first_year, max(o.year) AS last_year
+FROM fullest AS f
+JOIN s4_cells AS c ON c.id = f.id AND c.edge_m = 5000
+JOIN occurrences AS o ON ST_Contains(c.geom, ST_Transform(o.geom, 3577))
+JOIN species AS s ON s.id = o.species_id
+JOIN datasets AS d ON d.dataset_key = o.dataset_key
+WHERE s.scientific_name = 'Sarcophilus harrisii'
+GROUP BY f.id, d.title, o.basis_of_record
+ORDER BY records DESC, d.title, o.basis_of_record;
+```
+
+```text
+-- result: c1-ex · 3 rows · sha256 161c0f8ea4f7
+cell | title | basis_of_record | records | places | first_year | last_year
+917 | Tasmanian Natural Values Atlas | OBSERVATION | 225 | 90 | 2005 | 2011
+917 | Tasmanian Museum and Art Gallery provider for OZCAM | MATERIAL_SAMPLE | 22 | 1 | 2006 | 2009
+917 | Tasmanian Natural Values Atlas | OCCURRENCE | 9 | 9 | 2007 | 2008
+```
+
+**Check:** three rows, 256 records. The Tasmanian Natural Values Atlas's observations supply 225 of them, at 90 places, all made from 2005 to 2011; 9 more atlas records, at 9 places, from 2007 and 2008. The Tasmanian Museum and Art Gallery's 22 material samples share one place, from 2006 to 2009. No record in the cell is later than 2011. The cell is full because people recorded devils there, intensively, for a few years; a weight can't tell such a survey from many devils, and says nothing about the years since. `meaning` already says what a weight is. A game designer who reads this may still choose to keep it, cap a cell's weight, or note the years: each is honest once it is stated.
+
+**Dialects:**
+- **Python:** `json.dumps(doc, separators=(", ", ": "))` spaces the text as `jsonb` does, but `jsonb` orders an object's keys by length, then byte by byte (`"id"` before `"lat"`, `"cell"` before `"cells"`), so a byte-identical file sorts them the same way. PostgreSQL's `round(numeric, 6)` rounds halves away from zero; Python's `round` on a float rounds the binary value, halves to even, so use `decimal.Decimal` with `ROUND_HALF_UP` for the same weights.
+- **DuckDB:** `json_object` builds the document, and `to_json(list(… ORDER BY id))` the cells in order (`json_group_array` takes no `ORDER BY`); the spatial extension adds `ST_Transform` and `ST_Contains`. Its JSON text has no space after `:` or `,` and keeps keys in the order written: the same document, not the same bytes.
+- **JSON Schema validators:** ajv in JavaScript (critwire's tests validate the worked feed with it) and Python's `jsonschema` package (not in the course's pins) both read draft 2020-12.
+- **Excel:** Data → Get Data → From Web runs the same M, on Windows and Mac; 3D Maps (Windows) maps the cells.
+- **Tableau:** the JSON file connector reads `cells` as a table; put `lat` and `lon` on the map as dimensions, `records` on Size and `recording_hot_spot` on Colour.
+- **The game (JavaScript):** with `total` the weights' sum, `let r = Math.random() * total;` then `cells.find((c) => (r -= c.weight) < 0) ?? cells.at(-1)` draws a cell; the fallback catches a float that passes every cell.
 
 ## 6. ERDs
 
@@ -10443,7 +10835,7 @@ The pictures are drawn offline by Mermaid in a headless browser, as SVG only (pl
 
 `site/learn/erd/star.mmd`: the eight CSV files `star.sql` writes (d6, §A.3), checked against the star's `manifest.json`. `fact_records` holds one row per sample record; `fact_species_country` has no measure (a factless fact: a row says a species has open records in a country); `fact_country_habitat` holds the habitat estimates per country and class (§4.1). `dim_species` is shared by the two species facts (`fact_records`, `fact_species_country`), not by the habitat fact, which has no species; `dim_country` by all three. A shared dimension is conformed: one slicer on it filters every fact that uses it. Every fact foreign key is filled: a record with no year points at `dim_year`'s `-1` member, one with no country at `dim_country`'s `ZZ`, so every line is "exactly one" on the dimension's side.
 
-Two of the eight are **planned**: `dim_habitat_class` and `fact_country_habitat` wait for the habitat map, so the star published with L2 has six files. The source lists them on a `%% planned:` line, with the lab's rule: they are drawn, so the design is whole; the check excuses them while the manifest lacks them, and fails once it has them, so the marker can't go stale. The star page teaches the word: drawn, not yet published.
+All eight are published since L5, which added `dim_habitat_class` and `fact_country_habitat` from L3's habitat summaries (L2 published the other six while the two waited on a `%% planned:` line). The star page says the habitat areas are map estimates.
 
 ## 7. The site
 
@@ -10453,7 +10845,7 @@ Learn stays what 002 §8 designed: static pages in the same `dist/`, written by 
 
 | URL | Page | Built in |
 |---|---|---|
-| `/learn/` | The curriculum map (§2): the seven tracks in order, each module with its tool badges, hours, prerequisites and a done tick; "Clear progress"; links to setup, the schemas, the data and the playground. Modules not yet built are listed, unlinked, as "in preparation" | L2 |
+| `/learn/` | The curriculum map (§2): the seven tracks in order, each module with its tool badges, hours, prerequisites and a done tick; "Clear progress"; links to setup, the schemas, the data and the playground. Every module is built and linked since L5; a module not yet built would be listed, unlinked, as "in preparation" | L2 |
 | `/learn/<track>/` | A track's index: its modules in order, with their questions (§2). Tracks: `foundations`, `database-architecture`, `gis-in-sql`, `spatial-statistics`, `etl`, `power-bi`, `capstone` | L2 |
 | `/learn/<track>/<module>/` | A module (`/learn/foundations/select/` … `/learn/capstone/game-feed/`), with Previous and Next within its track and its prerequisites linked | L2 (f, d), L3 (g), L4 (s, e), L5 (p, c) |
 | `/learn/setup/` | §3, every environment: the browser, PostGIS (Windows: Docker or the installer; then the loader), Python with `uv`, the arcpy notes, Power BI Desktop | L2; L4 adds Python |
@@ -10472,7 +10864,7 @@ Learn stays what 002 §8 designed: static pages in the same `dist/`, written by 
 Every module page has the same frame: the title and id, `**Tool:** · **Time:** · **Prereqs:**` as badges, the sections of §5 in §5's order (full modules: Concept, Worked example, Lab, Result, Exercise, Answer, Check, Dialects; foundations add "Already know this?" first), a "Mark done" button, and Previous and Next. What a code block looks like depends on where it runs:
 - **Browser (B) blocks** are 002's: an editor holding the block's SQL, Run, Stop, Reset database, results as a table or cards (`-- show: cards`), the Schema dialog on schema v2. An exercise has "Your answer", Check and Show answer; checking runs the reference answer on the pristine database, as 002 §1 does. Nothing is pre-rendered (002 §8).
 - **PostGIS and Python blocks** can't run in the page. Each shows its code (read-only, with a Copy button), the result `learn:check` recorded, with the date and the versions it ran on (PostgreSQL, PostGIS, GEOS and GDAL; from L4 Python and the `requirements.txt` hash; from `checked.json`), and a link to the module's download. A "Lab schema" button opens the lab ERD as the Schema button opens schema v2's. A block marked `untested` shows its reason in place of a result, in the same words as here.
-- **Power BI blocks** (```` ```m ````, ```` ```dax ````) show their code and, instead of a result, the files they read with their rows and sha256 (the `-- input:` checks), the PostGIS twin's table where there is one (`p2-check`…), and the line "Not run by critwire: Power BI Desktop is Windows-only."
+- **Power BI blocks** (```` ```m ````, ```` ```dax ````) show their code and, instead of a result, the files they read with their rows and sha256 (the `// input:` checks), the line "Not run by critwire: Power BI Desktop is Windows-only.", and for a DAX block one line linking its PostGIS twin (`p2-check`…, shown with its result on the same page) and saying what the twin doesn't check. A Power BI exercise shows its answer behind Show answer, as a PostGIS one does.
 - **Results are numbers from the published files.** A result shown under a PostGIS or Python block was produced by `learn:check` on the same `/learn/data/` files the page links to; the build refuses it otherwise (7.4).
 
 The playground and the browser blocks use one engine start per visit (002 §8): moving between module pages keeps the running database.
@@ -10486,7 +10878,7 @@ The lab files are written by the build from the same blocks the pages show, so t
 - **`<module>.py`** and **`<module>.ipynb`**: the module's Python blocks, `py-connect` first, then the boot setup, then each block once, in page order, with its `# q:` line as a comment (the notebook: one cell per block, and a Markdown cell with the block's heading). They read the lab data from `LEARN_BASE` (default `https://critwire.com`) and connect with libpq's `PG*` variables, as in §3.3. §3.3's Python blocks (`py-smoke`, `gpkg-export`) download as `setup.py` and `setup.ipynb`.
 - **`requirements.txt`**: §3.3's pins; the setup page gives the `uv` commands.
 - **Power BI** has no download of its own: a `.pbix` can't be built or tested here (§3.5). Its data files are the star's CSVs under `/learn/data/star/`, which p1 loads by URL.
-- **The capstone's worked feed** (`c1-feed.json`, written by `c1-feed`'s query) and its schema (`c1-feed.schema.json`, §5.7).
+- **The capstone's worked feed** (`c1-feed.json`) and its schema (`c1-feed.schema.json`, §5.7). The feed is the one text cell `c1-feed-file` returns (`SELECT doc::text AS feed …`): a whole `learn:check --update` run writes it to `site/learn/labs/checked/c1-feed.json`, byte for byte, once every result settled, and the build binds it to that block's recorded result, whose sha256 covers the whole text. The schema is its fence in §5.7, which `learn:port` writes to `site/learn/labs/c1-feed.schema.json` (a `json` fence whose `$id` is `https://critwire.com/learn/labs/<name>.json`). Both are copied under `/learn/labs/`, outside `/learn/data/`, so the cap and the data manifest don't count them.
 
 ### 7.4 Progress, without accounts
 
@@ -10499,7 +10891,7 @@ One `localStorage` key, `critwire.learn.done.v1`, holds `{ "<module id>": "<YYYY
 **Sources in the repository:**
 - `site/learn/curriculum.json`: the tracks in order, and each module's `id`, `slug`, `title`, `track`, `tools` (`B`, `PG`, `Py`, `PBI`), `hours`, `prereqs`, `state` (`built` or `planned`; the commit that adds a module's page sets it `built`), and the `skill` and `questions` the track pages show. §2's table is its first content.
 - `site/learn/modules/<id>.html`: each built module's text, with `{{block:<q-id>}}` slots where its blocks go, `{{exercise:<q-id>}}` and `{{skip:<q-id>}}` for an exercise and an "Already know this?" check, and `{{diagram:<name>}}` (below).
-- `site/learn/sql/<q-id>.sql` and `<q-id>.py`: every block, its fence body exactly as here, headers included (`pnpm learn:port` writes it, and seeds each ran block's result from the fence under it; the page shows it without its test headers, `-- show: cards` kept); L1's `setup.sql` is the one header-less file. Power BI blocks the same, as `.m` and `.dax`.
+- `site/learn/sql/<q-id>.sql` and `<q-id>.py`: every block, its fence body exactly as here, headers included (`pnpm learn:port` writes it, and seeds each ran block's result from the fence under it; the page shows it without its test headers, `-- show: cards` kept); L1's `setup.sql` is the one header-less file. Power BI blocks the same, as `.m` and `.dax`; a `.dax` names its twin (`// twin:`, §0).
 - `site/learn/labs/checked/`: what `learn:check` recorded, one file per block (its result) and `checked.json` (below).
 - `site/learn/diagrams/<name>.html` and `<name>-dark.html`: the teaching diagrams other than the ERDs, drawn with the diagram-design plugin (profile `critwire`: default tokens, system fonts), exported to `<name>.svg` and `<name>-dark.svg` with `export_svg.py --system-fonts`. A page shows one with `{{diagram:<name>}}`: a `<picture>` whose dark source follows the reader's colour scheme, its `alt` the SVG's `<title>`.
 
@@ -10510,43 +10902,46 @@ One `localStorage` key, `critwire.learn.done.v1`, holds `{ "<module id>": "<YYYY
 - a PostGIS or Python block whose freshness key differs from `checked.json`: "lab <id> is stale: run pnpm learn:check";
 - a star block (d6) whose result in the build's DuckDB differs from what `learn:check` recorded on PostGIS;
 - a breach of the 120 MB cap (§4.4); a lab file without `sources`, or another credit failure (§4.5);
+- a Power BI `// input:` other than a published star file or `labs/c1-feed.json`; a DAX block without a `// twin:`, an M block with one, or a twin that isn't a ran PostGIS block of the same page;
+- once the course has `c1-feed-file`: a missing `checked/c1-feed.json` or `c1-feed.schema.json`, or a feed that isn't that block's recorded result ("…c1-feed.json isn't c1-feed-file's result: run pnpm learn:check --update"), or whose `license`, `license_url`, `attribution`, `source` or `credit` rows differ from the lab's credits (critwire's and the sample's datasets, in (title, publisher, doi) order); before it has one, a feed file at all (nothing would bind it);
 - any missing file.
 
-The two staleness refusals (lab and star) only warn in `pnpm build --draft`, a preview that is never deployed, so `learn:check` can run on a draft of the change it is about to prove.
+The staleness refusals (lab, star and feed) only warn in `pnpm build --draft`, a preview that is never deployed, so `learn:check` can run on a draft of the change it is about to prove, and `learn:check --update` can rewrite the feed.
 
 **`checked.json` freshness.** For each lab block, one sha256 over everything that decides its result: its own source; the source of every block it runs with, which is its `-- after:` (`# after:`) blocks, transitively, every `-- boot` block (committed before every PostGIS and Python block, so `gpkg-export`, which reads `s4_cells`, depends on `s4-cells`), and `pg-session` or `py-connect`; the data files' sha256s from the manifest's `files`, the loader's among them, outside `star/` (not its `dois`, which a `--draft` build leaves out, nor sizes or the star, which can't move a lab result); the checker's own source files and the canary's SQL; and `requirements.txt`. Each input enters with its id or path, in a fixed order (block ids sorted, then the files), so editing `s4-cells`, `py-connect` or an exercise's lesson makes every block that runs it stale, not just the block edited. Beside each key, the sha256 of the block's recorded result, so a result edited after the run loses its stamp; and each download's sha256 as assembled (7.3), so a download that changes, through its blocks or the assembly itself, is stale until 7.6 runs it again; and one sha256 over what decides the lab ERD check (`lab.mmd`, the loader and the boot blocks). All are files in the repository or in `dist/`, so the build recomputes them offline and compares. The versions of PostgreSQL, PostGIS, GEOS, GDAL, Python and the packages are recorded beside them and shown on the page, but not compared: the build may run on a machine with other versions, and `deploy` must not depend on the checker's machine. The file's date moves only when something else in it changes, so a rerun with nothing changed leaves it byte for byte.
 
 ### 7.6 `pnpm learn:check`
 
 A development command, never part of `build` or `deploy`. It is the repository's port of §0's runner, PostGIS and Python engines, not a second harness: once L2 lands it, the spike is frozen as this mission's evidence and never extended.
-- It runs the loader and every PostGIS block, and (from L4) every Python block in `.venv-learn`, and writes their results and `checked.json`.
+- It runs the loader and every PostGIS block, and (from L4) every Python block in `.venv-learn`, and writes their results and `checked.json`; with `--update` (L5), also the capstone's feed, from `c1-feed-file`'s one row and one text column `feed` (a `jsonb` cell, or any other shape, is refused naming the block), only when it changed (7.3).
 - **The agreement gates** (from L4) compare the run's SQL and PySAL results, where a module shows the same statistic both ways: global Moran's I (`s4-moran-sql` against `s4-agree`: a row per grid, n equal, I, E[I], the normality variance and z within 5e-7 and the same to 6 decimals), Gi\* (`s5-gistar`'s line equals `s5-gistar-pysal`'s), LISA (`s5-lisa-sql`'s cells per quadrant equal `s5-lisa`'s) and zonal (each zone `s6-zones` shows has `s6-geopandas`' records and km² within 1). A pair is checked when both its blocks ran; a difference fails the run and nothing is written. A disagreement is fixed in the SQL, never in the threshold.
 - **Then it runs every download as assembled**, as a learner would: the files the build's own assembly function writes (7.3), each on a freshly loaded database (the loader, then the file), so no file leans on another's tables. A `.sql` runs with `psql -X -f`; its `ERROR:` lines must be exactly those its `-- expect: error` and `-- fails:` statements announce, in order, each containing the announced text. A `.py` runs as assembled with `python -I` in `.venv-learn` from an empty folder, with the Python blocks' environment (no `GBIF_*` variable), and must exit 0 within its blocks' timeouts plus 60 s per boot block it runs, so an `e1-submit` left live fails here. The `.ipynb` isn't run again: E2E proves its cells equal the `.py` (7.7). The leak check (§0) runs after each file, a failed one too. A failure names the file and its first unexpected error (a `.py`: its exit code and stderr's last lines), then any leftover the leak check found, and nothing is written to `checked.json`.
 - It connects with libpq's `PG*` variables, or `LEARN_PG_URL`, never `DATABASE_URL` (whose role, `critwire`, can't create roles). On critwire's server that is `critwire_dev` as `critwire_lab` through `LEARN_PG_URL` (§0; `learn:check --setup` creates the role and writes the URL); on the owner's WSL, the owner's own PostGIS (`AGENTS.md`'s two machines).
 - It refuses the database `critwire` twice: by name before connecting, and by `current_database()` after, so a service file or `PGDATABASE` can't slip past. It refuses a superuser lab role, and one with CREATE on `public`: the labs run with a learner's privileges, so a block that needs more fails here as it would for a learner (`learn:check --setup` makes the role right). It checks for CREATEROLE and says it's needed. The `learn_spatial` canary (§0) runs only where that schema exists, read as libpq's default role (the schema's owner), so `critwire_lab` needs no grant on A2's schema.
 - **The loader stage (L1)**, under one advisory lock (`critwire.learn`) for the whole run: the loader's sha256 against the manifest; two loads, each giving the manifest's `tables` counts; then the **forced failure**: a temp copy of the loader with the first `occurrences` row repeated before that COPY's `\.`. Every COPY succeeds and psql must exit non-zero at `ALTER TABLE occurrences ADD PRIMARY KEY`, naming the duplicate id, with every table's count and md5 equal to the second load's: the whole load is one transaction. A cut COPY isn't used (on a row boundary psql exits 0 and the disconnect rolls back), and a loader without exactly one `COPY occurrences (id, …)` with rows fails "loader layout changed" before any load. Then the leak check, so a loader that leaves a `learn_` object is named before any block runs. **The blocks stage** then runs every PostGIS block of the pages in page order (`pg-role-smoke` among them), each inside the runner's transaction (§0), against its recorded result. **Then the Python blocks** (L4), in page order, in `.venv-learn`, which the static stage checks against the labs' `requirements.txt` before connecting (its Python and the file's sha256 go into `checked.json`'s versions). Each runs as `python -I` from an empty folder with its own empty `HOME` and only these variables: the lab's `PG*`, `PGOPTIONS=-c search_path=pg_catalog` (so a block finds the lab tables only through `py-connect`), the run's `PGAPPNAME`, one `MPLCONFIGDIR` for the run and `LEARN_BASE`, the built site under test as a `file://` URL. Its code is its `# after:` blocks' then its own, its time limit its `# timeout:` (60 s by default), and its stdout its result. A block fails on a non-zero exit or the timeout (its process group is killed), on a process it started outside that group still holding its output 1 s after it exited, on a session of the run still open 10 s after it exited (ended and named), or on a committed `learn_` object (the lab role's dropped, any other named); a change to `learn_curriculum` stops the run there, since the blocks after it would read another lab. Both engines' results are compared, or written, together. Then the canary and the leak check. Before the first `-- needs: raster` block, once, the raster check (§0): `postgis_raster` answers and `postgis.enable_outdb_rasters` and `postgis.gdal_enabled_drivers` hold a learner's defaults, as `critwire_lab`, or the run stops naming the block and the setting. A server without PostGIS raster is refused at connect, since the loader needs it.
 - **Cleanup:** the lock is held by a cleanup connection that runs no block. Every exit, a failed check or SIGINT/SIGTERM included, cancels the running psql (SIGINT, so the server rolls back) or block statement and removes the temp loader, then, in this order: **terminate** every session the run opened that still runs (`pg_terminate_backend`, 10 s each; one still alive fails the run, named): the runner's by pid, and (L4) the Python blocks' by the run's name. Each run names itself once, `critwire-learn-check-py-<12 hex>`, and every Python process gets it as `PGAPPNAME` (no block may set `application_name`); cleanup ends only sessions of this database, the lab role and this name, since the lock is per database and `pg_stat_activity` spans the server. An earlier run's Python session in this database (same prefix, another name) is never ended: the next run refuses at connect, after the lock, naming its pid and `select pg_terminate_backend(<pid>)`; **sweep**, still under the lock, the new `learn_%` objects the lab role made (roles it holds ADMIN OPTION on, then schemas it owns), naming any other new one with the superuser's cleanup command, never dropping it; **unlock** and end the connections. If the cleanup connection was lost, the lock went with it: nothing is dropped and every new object is named.
-- **Modes:** before connecting, a static stage reads and lints the whole course, so a lint error needs no database. `--update` runs each block twice (a boot block once) and writes its result once both runs agree and every block passed, the same rule for every engine; `--module <page>` runs the course's `-- boot` blocks (page order), then one page's blocks and its download, and prints their results, writing nothing: a page reading another page's boot tables runs as in a whole run. `checked.json` is written only by a whole run.
+- **Modes:** before connecting, a static stage reads and lints the whole course, so a lint error needs no database. `--update` runs each block twice (a boot block once) and writes its result once both runs agree and every block passed, the same rule for every engine; `--module <page>` runs the course's `-- boot` blocks (page order), then one page's blocks and its download, and prints their results, writing nothing (no result, no feed): a page reading another page's boot tables runs as in a whole run, and a block naming a prerequisite page's block in `-- after:` replays it from that page's file (so `--module c1` runs `s5-gistar`'s statements before `c1-feed`, and takes about as long). `checked.json` is written only by a whole run.
 - L1 creates it with the loader stage; L2 adds the static stage, the blocks, the lab ERD check, the downloads, two-session blocks, the cleanup lint and the in-transaction leak check (§0); L3 the raster check and GDAL's version; L4 the Python blocks and `.py` downloads, the agreement gates, and the lab role's refusal of superuser or CREATE on `public`.
 
 ### 7.7 E2E
 
 The repository's harness, unchanged in kind (002 §8): `pnpm build`, then Playwright headless Chromium against the local Caddy copy of the live block on 3100; expectations computed from `data/` and the manifests, never typed in; no request leaves 3100. New specs:
-- **`learn-map`**: the map lists `curriculum.json`'s tracks and modules in order, with hours and prerequisites; planned modules aren't links; a done tick survives a reload, and "Clear progress" removes it.
+- **`learn-map`**: the map lists `curriculum.json`'s tracks and modules in order, with hours and prerequisites; planned modules aren't links; a done tick survives a reload, and "Clear progress" removes it. **L5**: all 33 modules built, each linked from the map and its track page and returning 200; no `/learn/` page says "in preparation".
 - **`learn-browser`**: every browser block runs in its page without an error; every exercise accepts its answer and rejects a fixed wrong one; every "Already know this?" check marks its module done; Reset and Stop work; moving across three module pages starts the engine once.
-- **`learn-labs`**: each PostGIS, Python and Power BI block's code on its page equals its download; each download that names a boot block's table holds that boot block right after `pg-session` or `py-connect`; each `untested` block is in its `.sql` or `.py` commented out under its reason (its code, the `-- `/`# ` taken off, equals the page's) and in its notebook as a Markdown cell, never a code cell; the result shown equals the recorded one; every `.ipynb` cell equals its block in the `.py`; the capstone's feed validates against its schema.
+- **`learn-labs`**: each PostGIS, Python and Power BI block's code on its page equals its download; each download that names a boot block's table holds that boot block right after `pg-session` or `py-connect`; each `untested` block is in its `.sql` or `.py` commented out under its reason (its code, the `-- `/`# ` taken off, equals the page's) and in its notebook as a Markdown cell, never a code cell; the result shown equals the recorded one; every `.ipynb` cell equals its block in the `.py`. **L5**: every Power BI block is `untested` and shows its inputs, each `// input:` file matching the star's manifest (or the feed); each DAX block links its PostGIS twin; the capstone's feed validates against its schema (`ajv`, JSON Schema 2020-12) and its license, attribution and credits equal the served manifest and `datasets.csv`.
 - **`learn-data`**: every file's sha256 and size against `manifest.json`, row counts, CSV headers, the star's key coverage, the 120 MB cap, every file's `sources`, and the `/learn/data/` index listing every dataset of the sample with title, publisher and license.
   - **L1** (`e2e/learn-data.spec.ts`): the manifest lists exactly the folder's files; each file's sha256 and size; Parquet and CSV rows and columns (types as the build's reader sees them: GeoParquet's `geom` as WKB) and CSV headers; the occurrences equal `data/raw/gbif-sample/sample.csv` and `datasets.csv` its `datasets.json` entries; the loader's `tables` equal counts from `data/`; the cap; sources and citations; both DOIs equal the sample's `registration.json`; `inputs` equal the served `/v1` files and the committed sample; the index lists every file, every dataset (title, publisher, DOI, license, records) and both DOIs; screenshots at 1280 and 375 px. Global setup's `assertBuilt` also refuses a `dist/learn/data/` whose `inputs` or copied `data/learn/` files are stale.
   - **L2**: the star's key coverage (the star files are L2's).
+  - **L5**: all eight star files, the habitat fact's included, pass the input check (§0: header, keys, rows, sha256) as served, with the unknown members (`ZZ`, `-1`) and `NA` as Namibia, text; every Power BI block's star inputs against them.
   - **L3**: the habitat files as `habitat.json` records them (sha256, size, Jung v004's credit, no stand-in); `occurrence_habitats` one row per sample record with known codes; `habitat_clips.parquet`'s columns (`clip`, `tile`, `rast`) and its rows = the clips' tiles; `clips/*.tif` start with TIFF's magic and answer a Range request with 206.
 - **`schema`**: `schema.mmd` against the browser's catalog (`lab.mmd` and `star.mmd` are checked by `learn:check` and `pnpm build`, §6); the three ERD pages with their SVGs, relationships and dictionaries; the Schema and Lab schema dialogs by keyboard; the teaching diagrams, light and dark.
 - **`learn-screens`**: the screenshots (below), each page fitting its width.
 - **`learn-timing`**: five first visits to the playground, each in a fresh context; the median time to the end of `setup.sql` must be at most 1.5 × A1's 2.9 s first visit (002 §1; the sample's boot, §A.1).
 - **`serving`**: `.wasm` content types and the fixed modification times of `/learn/assets/` (002 §8).
 
-**Artifacts**, as today in `E2E_ARTIFACTS`: the Playwright HTML report, a trace per test, `results.json` and screenshots at 1280 and 375 px of the map, f3 (browser), d3 (PostGIS), g3 and g7 (L3), s4, s5 and e2 (L4), the lab schema and the setup page, each light and dark, and of the data index, reproducible with `pnpm build && E2E_ARTIFACTS=<dir> pnpm e2e`.
+**Artifacts**, as today in `E2E_ARTIFACTS`: the Playwright HTML report, a trace per test, `results.json` and screenshots at 1280 and 375 px of the map, f3 (browser), d3 (PostGIS), g3 and g7 (L3), s4, s5 and e2 (L4), p3 and c1 (L5), the lab schema and the setup page, each light and dark, and of the data index, reproducible with `pnpm build && E2E_ARTIFACTS=<dir> pnpm e2e`.
 
-**Release smoke** (`e2e/release/`, never in the default run): after a deploy, with `dist/` the released build, `RELEASE_ORIGIN=https://critwire.com E2E_ARTIFACTS=<dir> pnpm exec playwright test -c playwright.release.config.ts` checks every `dist/` file is served with its bytes, the `.wasm` files' content type, f3's first browser block's result, and (L4) the origin's `s4.py`, run after the origin's loader in `.venv-learn` as the lab role: exit 0, s4's recorded outputs printed in page order, nothing left behind.
+**Release smoke** (`e2e/release/`, never in the default run): after a deploy, with `dist/` the released build, `RELEASE_ORIGIN=https://critwire.com E2E_ARTIFACTS=<dir> pnpm exec playwright test -c playwright.release.config.ts` checks every `dist/` file is served with its bytes, the `.wasm` files' content type, f3's first browser block's result, and (L4) the origin's `s4.py`, run after the origin's loader in `.venv-learn` as the lab role: exit 0, s4's recorded outputs printed in page order, nothing left behind; and (L5) each `/learn/data/star/` file's sha256 against the served star manifest, the served feed valid against the served schema, and its license, attribution and credits against the served manifest and `datasets.csv`.
 
 ## 8. For the owner only: the vault overlap
 
@@ -10582,12 +10977,12 @@ Five missions build the course, one after another, each from a ready-to-start br
 | L2 | `plans/briefs/critwire-learn-l2-site.md` | `critwire-learn-l2-site` | The engine and app core (002 §1, §8) on schema v2; the map, track and module pages, progress, `/learn/setup/`, the playground (§2, §7); f1–f4 and d1–d6 in full (§5.1–5.2); the three ERD pages (§6); `writeStar` with the records fact; SQL downloads; `learn:check` for every PostGIS block, with its lints and `checked.json`; E2E. The design spike is frozen from here | L1's data, loader, credits and `learn:check` | 34–40 |
 | L3 | `plans/briefs/critwire-learn-l3-gis.md` | `critwire-learn-l3-gis` | `ingest habitat` (003 §5, v004): summaries for every country, `occurrence_habitats`, the Costa Rica and Tasmania clips (whole countries, 256-cell tiles; the cap raised to 120 MB by the owner); the loader and the lab ERD grow; `learn:check`'s raster check; g1–g7 in full (§5.3); review items: the `/v1` contract (`contracts/v1.json`), `docs/recovery.md`, `db:load` in batches | L2's pages, templates and `learn:check` | 28–34 |
 | L4 | `plans/briefs/critwire-learn-l4-stats-etl.md` | `critwire-learn-l4-stats-etl` | `requirements.txt` and `uv` (§3.3; L1 brought them, L4 split off the ingests' file); `learn:check`'s Python stage, the agreement gates and the lab role's refusals (§7.6); `.py` and `.ipynb` downloads (§7.3); s1–s6 and e1–e5 in full (§5.4–5.5), Moran, Gi\* and LISA tested against esda; three teaching diagrams (`s4-band`, `e2-load`, `e5-refresh`); review items: `e2-geopandas` in `learn_curriculum` as the lab role, a restartable refresh (e3, e5), the e1, e2, e4, e5 corrections, Python cleanup | L3's habitat data; the hexagon cells (g6, s4) | 30–36 |
-| L5 | `plans/briefs/critwire-learn-l5-powerbi-capstone.md` | `critwire-learn-l5-powerbi-capstone` | The habitat fact in `writeStar`; p1–p4 and c1 in full (§5.6–5.7), the game feed and its JSON Schema; a curriculum pass (all 33 modules built); a handoff item for the owner's Power BI check | L4's s5 (Gi\*), s4's cells and e4's credits | 22–28 |
+| L5 | `plans/briefs/critwire-learn-l5-powerbi-capstone.md` | `critwire-learn-l5-powerbi-capstone` | The habitat fact in `writeStar` (eight star files; `est_area_km2 >= 0`, foreign keys NOT NULL); cross-page `-- after:` (§0); Power BI blocks' `// input:` checks and DAX `// twin:` (§0); p1–p4 and c1 in full (§5.6–5.7), the game feed `c1-feed.json` (written by `c1-feed-file`, with its license, attribution and credit DOIs) and its JSON Schema; two teaching diagrams (`c1-pipeline`, `c1-feed`); a curriculum pass (all 33 modules built); a handoff item for the owner's Power BI check | L4's s5 (Gi\*), s4's cells and e4's credits | 22–28 |
 | | | | | **Total** | **146–176** |
 
 **Why this order.** Every lab reads L1's files, and L1 holds the course's only network write (the derived-dataset registration), so data comes first. L2 builds the site on it with the ten modules this document already writes in full. The habitat ingest is the largest data job and spatial statistics and Power BI both read it, so L3 comes before them. Python (L4) arrives with the modules that need it. Power BI and the capstone (L5) use every earlier track.
 
-**The same data throughout.** L1 republishes the spike's sample (§4.2: the same download and the same rules give the same 40,395 records), so every result recorded here holds on the published files, and a build mission that gets a different result has found a bug, not a new number. The one planned change was L3's: its habitat summaries replaced A2's two-country stand-ins, so the built blocks that read them (`pg-smoke`, `d4-xmin-load`, `d6-star-fact-country-habitat` and `d6-drill-across`) were re-run and updated, with the reason, in the same commit; its whole-country clips changed `pg-smoke` and `d4-xmin-load` once more (the clips' tile rows). `p1-load`'s inputs, `p3-check` and `p3-measures` carry a note that they were recorded on the stand-ins; L5 re-runs them.
+**The same data throughout.** L1 republishes the spike's sample (§4.2: the same download and the same rules give the same 40,395 records), so every result recorded here holds on the published files, and a build mission that gets a different result has found a bug, not a new number. The one planned change was L3's: its habitat summaries replaced A2's two-country stand-ins, so the built blocks that read them (`pg-smoke`, `d4-xmin-load`, `d6-star-fact-country-habitat` and `d6-drill-across`) were re-run and updated, with the reason, in the same commit; its whole-country clips changed `pg-smoke` and `d4-xmin-load` once more (the clips' tile rows). L5 re-measured `p1-load`'s inputs on the published star (§A.3's two habitat rows) and re-ran `p3-check` on L3's summaries: 215 rows instead of 2, with `NULLIF` and the column renamed `sample_records_per_1000_km2_forest` (Trinidad and Tobago 0.713, 0.698 on the stand-ins).
 
 **How they're queued.** After the owner has reviewed this document and answered §10 (or accepted its recommendations), the control room copies the five briefs to `/srv/critter-ai/agent-state/missions/briefs/<date>-critwire-learn-l<n>-<slug>.md` (the file name minus the date is the mission's name, branch and worktree) and starts them as `queue-learn.sh` started A1 and A2: `mission start critwire` for L1; wait until its plan says `status: done` and its `## Release` has `Result: done`; start the next; and push one alert, then keep waiting, if a mission stops before finishing. Each brief's start comment repeats its precondition, so a mission started by hand checks the same thing. §10 item 7 gives the alternative of stopping after L2.
 
@@ -10736,8 +11131,8 @@ Every open record, uncapped, would be 4.8 MB as Parquet and 44.6 MB as CSV; it i
 | `dim_year.csv` | year, plus `-1` | 177 | 2,670 |
 | `fact_records.csv` | one sample record | 40,395 | 4,475,330 |
 | `fact_species_country.csv` | species × country (factless) | 472 | 2,818 |
-| `dim_habitat_class.csv` | habitat class (stand-in) | 75 | 4,525 |
-| `fact_country_habitat.csv` | country × class (stand-in) | 35 | 500 |
+| `dim_habitat_class.csv` | habitat class | 75 | 4,525 |
+| `fact_country_habitat.csv` | country × class | 5,578 | 78,367 |
 
 `manifest.json` lists, per file: columns and types, primary key and foreign keys (read from DuckDB's catalog, so `star.sql` is their one definition), rows, bytes, sha256, and `sources` (name, license, license URL, citation, DOI). `fact_records`' source is the GBIF download's citation, with `"datasets": "datasets.csv"` for each dataset's credit, which `dim_dataset` also carries.
 

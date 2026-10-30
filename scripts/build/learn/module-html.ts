@@ -11,16 +11,16 @@
 // - python (L4 plan §7): the same, linking the page's .py and .ipynb.
 // - Before the page's first PostGIS or Python block: "Checked <date> on PostgreSQL…", from checked.json, plus the
 //   Python and requirements.txt it ran on when the page has a Python block.
-// - powerbi (m, dax): the code; the star files it reads with the manifest's rows and sha256; "Not run by critwire".
+// - powerbi (m, dax): the code; the files it reads (PageContext.inputs: star files, c1's feed) with their rows and
+//   sha256; "Not run by critwire"; a DAX block's PostGIS twin, linked, and what the twin doesn't check.
 // - diagram: a <picture>, light and dark, with its alt (diagrams.ts).
 // - exercise and skip (duckdb): Your answer, Check, a verdict, the reference behind Show answer; a skip check marks the
-//   module done. A PostGIS or Python exercise: Show answer around its code and recorded result.
+//   module done. A PostGIS, Python or Power BI exercise: Show answer around the block.
 import type { DownloadKind } from "../../learn/assemble.ts";
 import type { Block } from "../../learn/blocks.ts";
 import type { PlanAssertion } from "../../learn/plan.ts";
 import { pageSlots, type Curriculum, type Module, type Slot, type TOOLS } from "../../learn/course.ts";
 import type { Stamp } from "../../learn/freshness.ts";
-import type { StarManifest } from "../../learn/star-check.ts";
 import { esc, link } from "../html.ts";
 import { diagramHtml, type Diagram } from "./diagrams.ts";
 
@@ -35,14 +35,20 @@ export interface PageContext {
   stamp: Pick<Stamp, "checked" | "versions"> | undefined;
   /** The page's downloads under /learn/labs/ by kind (assemble.ts pageDownloads): .sql with PostGIS blocks, .py and .ipynb with Python ones. */
   downloads: Partial<Record<DownloadKind, string>>;
-  /** /learn/data/star/manifest.json's files. */
-  star: Readonly<Record<string, Pick<StarManifest["files"][string], "rows" | "sha256">>>;
-  /** --draft: a ran PostGIS or Python block may lack its recorded result (preview only). */
+  /** Power BI `// input:` files the build publishes, by input: where it's served, its rows and sha256. */
+  inputs: ReadonlyMap<string, PowerBiInput>;
+  /** --draft: a ran PostGIS or Python block may lack its recorded result, a Power BI input its file (preview only). */
   draft: boolean;
   /** The Schema and Lab schema dialogs' SVG titles (their .mmd accTitle). */
   erdTitles: Record<Dialog, string>;
   /** site/learn/diagrams/'s diagrams, checked (diagrams.ts). */
   diagrams: ReadonlyMap<string, Diagram>;
+}
+
+export interface PowerBiInput {
+  url: string;
+  rows: number;
+  sha256: string;
 }
 
 type Dialog = "schema" | "lab";
@@ -157,15 +163,21 @@ function labHtml(b: Block, engine: keyof typeof LAB_ENGINES, ctx: PageContext): 
 
 function powerBiHtml(b: Block, ctx: PageContext): string {
   const inputs = b.inputs.map((input) => {
-    const f = ctx.star[input.slice("star/".length)];
-    if (!f) throw new Error(`${ctx.file}: q ${b.id}: input ${input} isn't in the star manifest`);
-    return `<tr><td>${link(`/learn/data/${input}`, input)}</td><td>${n(f.rows)}</td><td><code>${esc(f.sha256)}</code></td></tr>`;
+    const f = ctx.inputs.get(input);
+    if (f) return `<tr><td>${link(f.url, input)}</td><td>${n(f.rows)}</td><td><code>${esc(f.sha256)}</code></td></tr>`;
+    if (ctx.draft) return `<tr><td>${esc(input)}</td><td colspan="2">not built yet (draft build)</td></tr>`;
+    throw new Error(`${ctx.file}: q ${b.id}: input ${input} isn't built`);
   });
+  const twin = b.twin === undefined ? [] : [
+    `<p class="twin">The table it should return, from the same files in PostGIS: <a href="#q-${b.twin}">${b.twin}</a>. ` +
+      "That twin checks the arithmetic only, not M parsing, relationship direction, filter context or DAX execution.</p>",
+  ];
   return [
     `<div class="block powerbi" id="q-${b.id}">`,
     codeHead(b, `Power BI (${b.file.endsWith(".dax") ? "DAX" : "M"})`),
     `<table class="inputs"><caption>The files it reads</caption><thead><tr><th scope="col">File</th><th scope="col">Rows</th><th scope="col">sha256</th></tr></thead><tbody>${inputs.join("")}</tbody></table>`,
     `<p class="untested">Not run by critwire: Power BI Desktop is Windows-only.</p>`,
+    ...twin,
     `</div>`,
   ].join("\n");
 }
@@ -203,10 +215,8 @@ export function renderFragment(html: string, ctx: PageContext): string {
       dialogs.add("schema");
       return slot.kind === "block" ? editorHtml(b) : exerciseHtml(b, slot.inOrder, slot.kind === "skip");
     }
-    if (b.engine === "postgis" || b.engine === "python")
-      return slot.kind === "block" ? lab(b, b.engine) : `<details class="exercise-answer"><summary>Show answer</summary>\n${lab(b, b.engine)}\n</details>`;
-    if (slot.kind !== "block") throw new Error(`${at}: a Power BI block can't be an exercise`);
-    return powerBiHtml(b, ctx);
+    const html = b.engine === "powerbi" ? powerBiHtml(b, ctx) : lab(b, b.engine);
+    return slot.kind === "block" ? html : `<details class="exercise-answer"><summary>Show answer</summary>\n${html}\n</details>`;
   });
   return [body, ...[...dialogs].map((d) => dialogHtml(d, ctx.erdTitles[d]))].join("\n");
 }

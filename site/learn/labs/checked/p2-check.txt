@@ -1,0 +1,8 @@
+-- result: p2-check · 7 rows · sha256 022cceeadc7e
+continent | records | species_recorded | species_listed
+South America | 11308 | 18 | 17
+Africa | 10791 | 29 | 28
+North America | 9688 | 39 | 36
+Oceania | 5147 | 8 | 9
+Asia | 2985 | 21 | 20
+… 2 more rows

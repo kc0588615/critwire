@@ -1,7 +1,9 @@
 // The release smoke (plan S26, Verification "Release smoke"), against RELEASE_ORIGIN, never run by the default config:
 // every dist/ file is served with dist's bytes (each page at its folder URL), the .wasm files as application/wasm, and
 // f3's first browser block shows its recorded result; and (L4) the origin's s4.py, run in .venv-learn after the origin's
-// loader, prints s4's recorded lesson outputs. dist/ must be the build of the released commit.
+// loader, prints s4's recorded lesson outputs; and (L5 T8) each star file hashes as the served star manifest says, and
+// c1's served feed is valid against its served schema and credits as the served data manifest and datasets.csv say.
+// dist/ must be the build of the released commit.
 // Run: RELEASE_ORIGIN=https://critwire.com E2E_ARTIFACTS=<dir> pnpm exec playwright test -c playwright.release.config.ts
 import { expect, test } from "@playwright/test";
 import { execFile } from "node:child_process";
@@ -12,13 +14,15 @@ import { promisify } from "node:util";
 import { loadEnv } from "../../scripts/env.ts";
 import { assembleDownloads } from "../../scripts/learn/assemble.ts";
 import { CHECKED_DIR, PY_CONNECT_ID } from "../../scripts/learn/blocks.ts";
+import { FEED, feedAttributionErrors } from "../../scripts/learn/feed.ts";
+import type { StarManifest } from "../../scripts/learn/star-check.ts";
 import { takeLabLock } from "../../scripts/learn/cleanup.ts";
 import { readCourse } from "../../scripts/learn/course-files.ts";
 import { learnObjects } from "../../scripts/learn/leaks.ts";
 import { childEnv, LAB_ROLE, labTarget, pgConnect, psqlArgs } from "../../scripts/learn/pg.ts";
 import { pythonApp, pythonEnv, pythonFailure, runPython } from "../../scripts/learn/python.ts";
 import { VENV_PYTHON } from "../../scripts/venv.ts";
-import { distPath, firstBrowserBlock, rendered, repoPath, runBlock, sha256, waitReady } from "../helpers.ts";
+import { distPath, feedSchemaErrors, firstBrowserBlock, openDuckDB, rendered, repoPath, runBlock, servedFeedAttribution, sha256, waitReady } from "../helpers.ts";
 
 // Every file under dist/, as its URL path: an index.html as its folder.
 async function distFiles(): Promise<{ file: string; url: string }[]> {
@@ -58,6 +62,37 @@ test("f3's first browser block shows its recorded result", async ({ page }) => {
   await waitReady(page);
   await runBlock(page.locator(`#q-${id}`));
   expect(await rendered(page, id)).toMatchSnapshot(`${id}.txt`);
+});
+
+test("each /learn/data/star/ file hashes as the served star manifest says", async ({ request }) => {
+  const res = await request.get("/learn/data/star/manifest.json");
+  expect(res.status()).toBe(200);
+  const { files } = (await res.json()) as StarManifest;
+  expect(Object.keys(files)).toHaveLength(8);
+  const differ: string[] = [];
+  for (const [name, f] of Object.entries(files)) {
+    const file = await request.get(`/learn/data/star/${name}`);
+    if (file.status() !== 200) differ.push(`${name}: ${file.status()}`);
+    else if (sha256(await file.body()) !== f.sha256) differ.push(`${name}: sha256 isn't the manifest's`);
+  }
+  expect(differ).toEqual([]);
+});
+
+test("c1's served feed is valid against its served schema", async ({ request }) => {
+  const [feed, schema] = await Promise.all([`/learn/${FEED.input}`, "/learn/labs/c1-feed.schema.json"].map((u) => request.get(u)));
+  expect(feed!.status()).toBe(200);
+  expect(schema!.status()).toBe(200);
+  expect(feedSchemaErrors(await feed!.json(), (await schema!.json()) as object)).toEqual([]);
+});
+
+test("c1's served feed credits as the served data manifest and datasets.csv say", async ({ request, baseURL }) => {
+  const feed: unknown = await (await request.get(`/learn/${FEED.input}`)).json();
+  const db = await openDuckDB();
+  try {
+    expect(feedAttributionErrors(feed, await servedFeedAttribution(db, baseURL!))).toEqual([]);
+  } finally {
+    db.close();
+  }
 });
 
 // The download a learner runs (plan L4 S26): the origin's loader into LEARN_PG_URL's database as the lab role, under the

@@ -1,6 +1,6 @@
 // Learn's screenshots (plan S26, D13 artifacts): the map, f3 (the browser tool, its first block run), d3 (PostGIS, its
 // recorded results), g3 and g7 (GIS in SQL, with their diagrams; L3 S19), s4, s5 and e2 (Python labs and diagrams; L4
-// S26), the lab schema and the setup page, each at
+// S26), p3 and c1 (Power BI and the capstone; L5 S14), the lab schema and the setup page, each at
 // 1280 and 375 px in light and dark:
 // <page>-<width>-<scheme>.png in E2E_ARTIFACTS. Each page fits its width, and nothing leaves the origin.
 import { expect, test, type Page } from "@playwright/test";
@@ -24,6 +24,8 @@ const PAGES: { name: string; url: () => Promise<string>; ready?: (page: Page) =>
   { name: "s4", url: () => courseUrl("s4") },
   { name: "s5", url: () => courseUrl("s5") },
   { name: "e2", url: () => courseUrl("e2") },
+  { name: "p3", url: () => courseUrl("p3") },
+  { name: "c1", url: () => courseUrl("c1") },
   { name: "schema-lab", url: async () => "/learn/schema/lab/" },
   { name: "setup", url: async () => "/learn/setup/" },
 ];

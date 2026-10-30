@@ -172,8 +172,8 @@ test("the star: the manifest lists star/; each served file passes the input chec
     }
     expect(unknownMemberErrors(tables)).toEqual([]);
     expect(tables.get("dim_country.csv")!.rows.find((r) => r[0] === "NA")?.[1]).toBe("Namibia");
-    // Every Power BI block's inputs (p1's later), against the served files.
-    const inputs = (await readCourse()).pages.flatMap((p) => p.blocks).filter((b) => b.engine === "powerbi").flatMap((b) => b.inputs);
+    // Every Power BI block's star inputs, against the served files (c1's feed is learn-labs').
+    const inputs = (await readCourse()).pages.flatMap((p) => p.blocks).filter((b) => b.engine === "powerbi").flatMap((b) => b.inputs).filter((i) => i.startsWith("star/"));
     expect(inputs.length).toBeGreaterThan(0);
     for (const input of inputs) expect((await checkInput(dir, input)).errors, input).toEqual([]);
   } finally {

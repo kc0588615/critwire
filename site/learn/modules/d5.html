@@ -21,7 +21,7 @@
 <h2>Worked example</h2>
 <p>How do I give a reporting tool read-only access to one schema and nothing else? Make a group role that holds the privileges, <code>learn_reporting</code>, and a login for the tool, <code>learn_powerbi</code>, that is a member of it. The group gets <code>USAGE</code> on <code>learn_curriculum</code> and <code>SELECT</code> on its tables; nothing else. Then act as the tool: reading works, writing and making tables don't.</p>
 {{block:d5-reporting}}
-<p><code>learn_powerbi</code> holds no privilege of its own: it reads through its membership in <code>learn_reporting</code>. <code>SET ROLE</code> is how you test a role without its password; a superuser may switch to any role, and you, with <code>createrole_self_grant</code>, to those you made. For the real tool, give the login a password with psql's <code>\password learn_powerbi</code> (it isn't echoed or logged), and put the server's address, the database and that login in the tool's connection settings (Power Query, p1, in preparation).</p>
+<p><code>learn_powerbi</code> holds no privilege of its own: it reads through its membership in <code>learn_reporting</code>. <code>SET ROLE</code> is how you test a role without its password; a superuser may switch to any role, and you, with <code>createrole_self_grant</code>, to those you made. For the real tool, give the login a password with psql's <code>\password learn_powerbi</code> (it isn't echoed or logged), and put the server's address, the database and that login in the tool's connection settings (<a href="/learn/power-bi/power-query/">Power Query, p1</a>).</p>
 
 <h2>Lab</h2>
 <ol class="steps">

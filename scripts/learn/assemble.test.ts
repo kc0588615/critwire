@@ -228,3 +228,39 @@ test("AS17 pageDownloads: each page's name per kind, none replacing another", ()
   const one = assembleDownloads([pySetup])[0]!;
   assert.throws(() => pageDownloads([one, { ...one, text: "" }]), /setup: two sql downloads \(pg-checks\.sql, pg-checks\.sql\)/);
 });
+
+// Cross-page `-- after:` (L5 plan T1, S1). Failure modes: a download inlines a cross-page helper's own `-- after:`
+// blocks, so it runs more than learn:check did (or throws, the helper not being on the page); boot detection misses a
+// table only the helper's code names, so the file fails on a fresh load; an existing download's bytes move.
+const star = pg("d6-dim", ["-- status: ran"], "CREATE TEMP TABLE dim AS SELECT 1 AS id;");
+const fact = pg("d6-fact", ["-- status: ran", "-- after: d6-dim"], "CREATE TEMP TABLE fact AS SELECT id FROM dim;");
+const twin = pg("p3-twin", ["-- status: ran", "-- after: d6-dim, d6-fact"], "SELECT count(*) AS n FROM fact;");
+
+test("AS18 a cross-page `-- after:` block's own statements run first, in the listed order, inside BEGIN … ROLLBACK; never its own after blocks", () => {
+  const only = pg("p3-only", ["-- status: ran", "-- after: d6-fact"], "SELECT 1 AS one;");
+  const byPage = new Map(assembleDownloads([setup, page("d6", star, fact), page("p3", twin, only)]).map((d) => [d.page, d.text]));
+  const p3 = byPage.get("p3")!;
+  assert.ok(p3.includes([
+    "BEGIN;", "-- runs first: d6-dim", "CREATE TEMP TABLE dim AS SELECT 1 AS id;", "-- runs first: d6-fact", "CREATE TEMP TABLE fact AS SELECT id FROM dim;",
+    "-- q: p3-twin", "-- status: ran", "-- after: d6-dim, d6-fact", "-- engine: postgis", "SELECT count(*) AS n FROM fact;", "ROLLBACK;",
+  ].join("\n")), p3);
+  assert.ok(p3.includes(["BEGIN;", "-- runs first: d6-fact", "CREATE TEMP TABLE fact AS SELECT id FROM dim;", "-- q: p3-only"].join("\n")), "d6-fact alone, without d6-dim");
+  assert.doesNotMatch(p3, /^-- q: d6-/m, "the helpers aren't blocks of p3's file");
+});
+
+test("AS19 boot detection sees a cross-page helper's code: s4-cells comes after pg-session in the dependent page's .sql", () => {
+  const boot = pg("s4-cells", ["-- status: ran", "-- boot"], "CREATE TABLE s4_cells AS SELECT 1 AS id;");
+  const gistar = pg("s5-gistar", ["-- status: ran"], "CREATE TEMP VIEW g AS SELECT id FROM s4_cells;");
+  const feed = pg("c1-feed", ["-- status: ran", "-- after: s5-gistar"], "SELECT count(*) AS n FROM g;");
+  const [c1] = assembleDownloads([setup, page("s4", boot), page("s5", gistar), page("c1", feed)]).filter((d) => d.page === "c1");
+  assert.ok(c1!.text.includes("SHOW search_path;\n\nBEGIN;\n-- q: s4-cells\n-- status: ran\n-- boot\n-- engine: postgis\nCREATE TABLE s4_cells AS SELECT 1 AS id;\nCOMMIT;\n\nBEGIN;\n-- runs first: s5-gistar\n"), c1!.text);
+});
+
+test("AS20 an existing download is byte-identical with a cross-page page in the course", () => {
+  const load = pg("d1-load", ["-- status: ran"], "CREATE TABLE t (id int);");
+  const read = pg("d1-read", ["-- status: ran", "-- after: d1-load"], "SELECT id FROM t;");
+  const base = [setup, page("d1", load, read), page("d6", star, fact)];
+  const before = assembleDownloads(base);
+  const after = assembleDownloads([...base, page("p3", twin)]);
+  assert.deepEqual(after.filter((d) => d.page !== "p3"), before);
+});

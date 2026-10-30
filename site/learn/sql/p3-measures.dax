@@ -1,0 +1,22 @@
+// q: p3-measures
+// status: untested: Power BI is Windows-only
+// input: star/fact_records.csv, star/fact_country_habitat.csv, star/dim_habitat_class.csv, star/dim_country.csv
+// twin: p3-check
+DEFINE
+    MEASURE fact_records[Records] = COUNTROWS ( fact_records )
+    MEASURE fact_country_habitat[Forest km2] =
+        CALCULATE ( SUM ( fact_country_habitat[est_area_km2] ), dim_habitat_class[level1_name] = "Forest" )
+    MEASURE fact_records[Sample records per 1,000 km2 of forest] =
+        VAR forest = [Forest km2]
+        RETURN IF ( NOT ISBLANK ( forest ), 1000 * DIVIDE ( COALESCE ( [Records], 0 ), forest ) )
+EVALUATE
+FILTER (
+    ADDCOLUMNS (
+        VALUES ( dim_country[country_code] ),
+        "Records", COALESCE ( [Records], 0 ),
+        "Forest km2", [Forest km2],
+        "Sample records per 1,000 km2 of forest", [Sample records per 1,000 km2 of forest]
+    ),
+    NOT ISBLANK ( [Forest km2] )
+)
+ORDER BY dim_country[country_code]

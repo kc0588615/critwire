@@ -1,0 +1,16 @@
+// q: p2-measures
+// status: untested: Power BI is Windows-only
+// input: star/fact_records.csv, star/fact_species_country.csv, star/dim_country.csv
+// twin: p2-check
+DEFINE
+    MEASURE fact_records[Records] = COUNTROWS ( fact_records )
+    MEASURE fact_records[Species recorded] = DISTINCTCOUNT ( fact_records[species_id] )
+    MEASURE fact_species_country[Species listed] = DISTINCTCOUNT ( fact_species_country[species_id] )
+EVALUATE
+SUMMARIZECOLUMNS (
+    dim_country[continent],
+    "Records", [Records],
+    "Species recorded", [Species recorded],
+    "Species listed", [Species listed]
+)
+ORDER BY [Records] DESC, dim_country[continent]

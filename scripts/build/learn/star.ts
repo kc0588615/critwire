@@ -1,13 +1,12 @@
-// The star (plan D9, 004 §5.2 d6, §A.3): d6's six published d6-star-* blocks are star.sql, the one definition of the
+// The star (plan D9, 004 §5.2 d6, §A.3): d6's eight d6-star-* blocks are star.sql, the one definition of the
 // Power BI star. learn:check runs them in PostGIS and records each result; writeStar runs the same text in Node DuckDB
 // over the published lab tables (withLabTables) and writes /learn/data/star/: one CSV per table, `ORDER BY` its primary
-// key, plus star/manifest.json (columns, keys, rows, bytes, sha256, sources). The habitat blocks stay on d6's page until
-// the habitat data are real (planned in star.mmd).
+// key, plus star/manifest.json (columns, keys, rows, bytes, sha256, sources).
 // Checks: starBlocks (each block on a page, no schema name, CREATE TABLE <table> first, its `-- after:` blocks published
-// before it) and starInputErrors (every Power BI `// input:` a file this build publishes) before anything is written;
-// writeStar refuses a dimension without its unknown member and star.mmd drift (planned tables excused), and its
-// cross-engine guard compares each block's last result in Node DuckDB with checked/<id>.txt, PostGIS's: a plain build
-// refuses a difference, --draft warns (D16's loop). Tests: star.test.ts.
+// before it) and inputErrors (every Power BI `// input:` a file this build publishes: star or feed) before anything is
+// written; writeStar refuses a dimension without its unknown member and star.mmd drift, and its cross-engine guard
+// compares each block's last result in Node DuckDB with checked/<id>.txt, PostGIS's: a plain build refuses a
+// difference, --draft warns (D16's loop). Tests: star.test.ts.
 import { createHash } from "node:crypto";
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
@@ -15,6 +14,7 @@ import type { DuckDBConnection, DuckDBResultReader } from "@duckdb/node-api";
 import { formatJson } from "../../json.ts";
 import { CHECKED_DIR, type Block } from "../../learn/blocks.ts";
 import type { CoursePage } from "../../learn/course.ts";
+import { FEED } from "../../learn/feed.ts";
 import { markerDrift, markers, parseErd, starMeta } from "../../learn/erd-model.ts";
 import { lineDiff, renderResult, type Result } from "../../learn/result.ts";
 import { readCsv, schemaQualified, UNKNOWN_MEMBERS, unknownMemberErrors, type CsvTable, type StarManifest } from "../../learn/star-check.ts";
@@ -31,6 +31,7 @@ const PREFIX = "d6-star-";
 /** The blocks the build publishes, in an order that runs each after the blocks it needs. */
 export const STAR_BLOCKS = [
   "d6-star-dim-species", "d6-star-dim-country", "d6-star-dim-dataset", "d6-star-dim-year", "d6-star-fact-records", "d6-star-fact-species-country",
+  "d6-star-dim-habitat-class", "d6-star-fact-country-habitat",
 ] as const;
 const tableOf = (id: string) => id.slice(PREFIX.length).replaceAll("-", "_");
 /** The files under /learn/data/ the star publishes, manifest aside (Power BI's inputs). */
@@ -66,10 +67,11 @@ export function starBlocks(pages: readonly CoursePage[]): { blocks: StarBlock[];
   return { blocks, errors };
 }
 
-/** Every Power BI `// input:` that names a file this build doesn't publish (query). */
-export function starInputErrors(pages: readonly CoursePage[]): string[] {
+/** Every Power BI `// input:` that names a file this build doesn't publish: a star file or c1's feed (query). */
+export function inputErrors(pages: readonly CoursePage[]): string[] {
+  const published = [...STAR_FILES, FEED.input];
   return pages.flatMap((p) => p.blocks).filter((b) => b.engine === "powerbi").flatMap((b) =>
-    b.inputs.filter((i) => !STAR_FILES.includes(i)).map((i) => `q ${b.id}: input ${i} isn't a file this build publishes (${STAR_FILES.join(", ")})`));
+    b.inputs.filter((i) => !published.includes(i)).map((i) => `q ${b.id}: input ${i} isn't a file this build publishes (${published.join(", ")})`));
 }
 
 /** A Node DuckDB result as the recorded results hold it: decimals, dates and other DuckDB values as their text. */

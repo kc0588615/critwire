@@ -30,10 +30,11 @@ const PY = block("site/learn/sql/x1-py.py", "# q: x1-py\n# status: ran\n# after:
 const PYEX = block("site/learn/sql/x1-pyex.py", "# q: x1-pyex\n# status: ran\nprint(2)\n");
 const PYU = block("site/learn/sql/x1-pyu.py", "# q: x1-pyu\n# status: untested: it submits a real GBIF download\nprint(3)\n");
 const PBI = block("site/learn/sql/x1-pbi.m", '// q: x1-pbi\n// status: untested: Power BI is Windows-only\n// input: star/dim_country.csv\nlet T = Table.TransformColumnTypes(S, {{"a", type text}}) in T\n');
+const DAX = block("site/learn/sql/x1-dax.dax", "// q: x1-dax\n// status: untested: Power BI is Windows-only\n// input: star/dim_country.csv, labs/c1-feed.json\n// twin: x1-pg\nEVALUATE dim_country\n");
 
 const ctx = (over: Partial<PageContext> = {}): PageContext => ({
   file: "site/learn/modules/x1.html",
-  blocks: new Map([LESSON, AFTER, EX, PROBE, PG, PLAN, PG2, PBI].map((b) => [b.id, b])),
+  blocks: new Map([LESSON, AFTER, EX, PROBE, PG, PLAN, PG2, PBI, DAX].map((b) => [b.id, b])),
   recorded: new Map([
     ["x1-pg", "-- result: x1-pg · 1 row · sha256 000000000000\ntag\n</pre>"],
     ["x1-py", "-- result: x1-py · python · sha256 222222222222\n<b>"],
@@ -42,14 +43,17 @@ const ctx = (over: Partial<PageContext> = {}): PageContext => ({
   ]),
   stamp: { checked: "2026-10-28", versions: { postgresql: "16.15", postgis: "3.4.2", geos: "3.12.1", gdal: "3.8.4", python: "3.12.3", requirements: "0123456789ab" } },
   downloads: { sql: "x1.sql", py: "x1.py", ipynb: "x1.ipynb" },
-  star: { "dim_country.csv": { rows: 250, sha256: "ab".repeat(32) } },
+  inputs: new Map([
+    ["star/dim_country.csv", { url: "/learn/data/star/dim_country.csv", rows: 250, sha256: "ab".repeat(32) }],
+    ["labs/c1-feed.json", { url: "/learn/labs/c1-feed.json", rows: 307, sha256: "cd".repeat(32) }],
+  ]),
   draft: false,
   erdTitles: { schema: "Schema v2", lab: "The lab database" },
   diagrams: new Map([["flow", { title: "Data flows one way", width: 800, height: 360 }]]),
   ...over,
 });
 /** The page's blocks with its Python ones: a page with a Python block. */
-const withPython = { blocks: new Map([LESSON, AFTER, EX, PROBE, PG, PLAN, PG2, PBI, PY, PYEX, PYU].map((b) => [b.id, b])) };
+const withPython = { blocks: new Map([LESSON, AFTER, EX, PROBE, PG, PLAN, PG2, PBI, DAX, PY, PYEX, PYU].map((b) => [b.id, b])) };
 const render = (html: string, over: Partial<PageContext> = {}) => renderFragment(html, ctx(over));
 const count = (html: string, s: string) => html.split(s).length - 1;
 
@@ -118,7 +122,30 @@ test("MH7 a Power BI block lists its inputs with the star manifest's rows and sh
   const html = render("{{block:x1-pbi}}");
   assert.ok(html.includes('<a href="/learn/data/star/dim_country.csv">star/dim_country.csv</a></td><td>250</td><td><code>' + "ab".repeat(32)));
   assert.ok(html.includes("Not run by critwire: Power BI Desktop is Windows-only."));
-  assert.throws(() => render("{{block:x1-pbi}}", { star: {} }), /x1-pbi: input star\/dim_country\.csv isn't in the star manifest/);
+  assert.throws(() => render("{{block:x1-pbi}}", { inputs: new Map() }), /x1-pbi: input star\/dim_country\.csv isn't built/);
+});
+
+const TWIN = '<p class="twin">The table it should return, from the same files in PostGIS: <a href="#q-x1-pg">x1-pg</a>. That twin checks the arithmetic only, not M parsing, relationship direction, filter context or DAX execution.</p>';
+
+test("MH15 a DAX block: the Windows-only line, then its twin's sentence linking #q-<twin>; an M block has no twin line", () => {
+  const dax = part(render("{{block:x1-dax}}"), "x1-dax");
+  assert.ok(dax.includes(`<p class="untested">Not run by critwire: Power BI Desktop is Windows-only.</p>\n${TWIN}`), dax);
+  assert.equal(count(dax, 'class="twin"'), 1);
+  assert.ok(!render("{{block:x1-pbi}}").includes('class="twin"'));
+});
+
+test("MH16 a Power BI exercise renders behind Show answer; a Power BI skip is still refused", () => {
+  assert.match(render("{{exercise:x1-dax}}"), /^<details class="exercise-answer"><summary>Show answer<\/summary>\n<div class="block powerbi" id="q-x1-dax">[\s\S]*<\/div>\n<\/details>$/);
+  assert.throws(() => render("{{skip:x1-pbi}}"), /\{\{skip:x1-pbi\}\}: a skip check runs in the browser, and x1-pbi is powerbi/);
+});
+
+test("MH17 the inputs table comes from PageContext.inputs: star and feed URLs, rows, sha256; a missing input is a draft note or a refusal", () => {
+  const dax = part(render("{{block:x1-dax}}"), "x1-dax");
+  assert.ok(dax.includes('<tr><td><a href="/learn/data/star/dim_country.csv">star/dim_country.csv</a></td><td>250</td><td><code>' + "ab".repeat(32) + "</code></td></tr>"), dax);
+  assert.ok(dax.includes('<tr><td><a href="/learn/labs/c1-feed.json">labs/c1-feed.json</a></td><td>307</td><td><code>' + "cd".repeat(32) + "</code></td></tr>"), dax);
+  const only = new Map([...ctx().inputs].filter(([k]) => k.startsWith("star/")));
+  assert.ok(part(render("{{block:x1-dax}}", { inputs: only, draft: true }), "x1-dax").includes('<tr><td>labs/c1-feed.json</td><td colspan="2">not built yet (draft build)</td></tr>'));
+  assert.throws(() => render("{{block:x1-dax}}", { inputs: only }), /site\/learn\/modules\/x1\.html: q x1-dax: input labs\/c1-feed\.json isn't built/);
 });
 
 test("MH8 refused slots: a skip check on a non-browser block, a diagram not in site/learn/diagrams/, a block the page lacks; a diagram renders", () => {

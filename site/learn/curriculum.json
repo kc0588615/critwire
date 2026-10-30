@@ -591,7 +591,7 @@
       "prereqs": [
         "d6"
       ],
-      "state": "planned",
+      "state": "built",
       "skill": "Power Query: `Web.Contents` on critwire's CSV files; types with an explicit culture; refresh",
       "questions": [
         "How do I load the star from critwire.com so that it refreshes, on any locale?"
@@ -603,13 +603,14 @@
       "title": "The data model",
       "track": "power-bi",
       "tools": [
-        "PBI"
+        "PBI",
+        "PG"
       ],
       "hours": 2,
       "prereqs": [
         "p1"
       ],
-      "state": "planned",
+      "state": "built",
       "skill": "Relationships, cardinality, filter direction, conformed dimensions, factless facts",
       "questions": [
         "How do I filter records and habitat areas by the same country?"
@@ -621,16 +622,17 @@
       "title": "DAX measures",
       "track": "power-bi",
       "tools": [
-        "PBI"
+        "PBI",
+        "PG"
       ],
       "hours": 2,
       "prereqs": [
         "p2"
       ],
-      "state": "planned",
+      "state": "built",
       "skill": "Measures: `COUNTROWS`, `DISTINCTCOUNT`, `CALCULATE`, ratios",
       "questions": [
-        "How many records per 1,000 km² of forest, by country?"
+        "How many sample records per 1,000 km² of forest, by country?"
       ]
     },
     {
@@ -639,13 +641,14 @@
       "title": "Maps and reports",
       "track": "power-bi",
       "tools": [
-        "PBI"
+        "PBI",
+        "PG"
       ],
       "hours": 1.5,
       "prereqs": [
         "p3"
       ],
-      "state": "planned",
+      "state": "built",
       "skill": "Map visuals, honest labels, publishing and scheduled refresh",
       "questions": [
         "How do I build a report that maps records and never calls them a range?"
@@ -667,7 +670,7 @@
         "e4",
         "p4"
       ],
-      "state": "planned",
+      "state": "built",
       "skill": "ETL into PostGIS → Gi* on hexagons → a Power BI report → a static JSON feed a game reads (encounter weights per hexagon, labelled as records)",
       "questions": [
         "What could a player meet here, honestly?"

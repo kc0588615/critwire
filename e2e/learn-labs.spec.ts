@@ -2,8 +2,12 @@
 // /learn/labs/ file is served as the build assembled it (assemble.ts, what learn:check ran); each PostGIS block's
 // page code appears verbatim in it, or, for an untested or two-session block, commented out under its reason; the
 // result a page shows is checked/<id>.txt, and its versions line is checked.json's; an EXPLAIN block lists its
-// `-- plan:` lines and labels its plan an example (D4); a Power BI block lists the star files it reads with the
-// manifest's rows and sha256, which the served files match and star-check passes. The setup page links the checks'
+// `-- plan:` lines and labels its plan an example (D4); a Power BI block lists the files it reads (star files with the
+// manifest's rows and sha256, which the served files match and star-check passes; c1's feed with its cells and the
+// served file's sha256), and a DAX block links its PostGIS twin, shown with its recorded result. c1's feed is served as
+// checked/c1-feed.json, valid against its served schema, says records not range, and agrees with c1-feed's recorded
+// summary (L5 plan T8), and carries its license, critwire's attribution, the sample's citation and only sample datasets'
+// credits (feedAttributionErrors against the served data manifest and datasets.csv); c1's page links both. The setup page links the checks'
 // download (pg-checks.sql) and the loader. /learn/labs/requirements.txt is the labs' pin file (L4 plan §5). By
 // Download.kind (L4 plan §10): a .sql holds its page's PostGIS blocks, a .py its Python blocks (untested ones behind
 // `# `), each linked from its block; an .ipynb is served as assembled, its code cells the .py's cells in order (an
@@ -18,9 +22,10 @@ import { assembleDownloads, pageDownloads, type Download } from "../scripts/lear
 import { CHECKED_DIR, PG_SESSION_ID, PY_CONNECT_ID, type Block } from "../scripts/learn/blocks.ts";
 import { SETUP_PAGE, type CoursePage } from "../scripts/learn/course.ts";
 import { readCourse } from "../scripts/learn/course-files.ts";
+import { FEED, feedAttributionErrors } from "../scripts/learn/feed.ts";
 import { readStamp } from "../scripts/learn/freshness.ts";
 import { checkInput, type StarManifest } from "../scripts/learn/star-check.ts";
-import { distPath, learnContext, repoPath, sha256 } from "./helpers.ts";
+import { distPath, feedSchemaErrors, learnContext, openDuckDB, ORIGIN, repoPath, servedFeedAttribution, sha256 } from "./helpers.ts";
 
 const trimEnd = (s: string) => s.replace(/\n+$/, "");
 const runnable = (b: Block) => b.status === "ran" && !b.sessions.length;
@@ -154,8 +159,8 @@ test("a download naming s4_cells or s4_neighbours runs s4-cells right after pg-s
   // A .sql names a table in its code (a string literal or comment doesn't: g1-columns filters 's4_cells' out); a .py in its SQL strings.
   const names = (d: Download) => /\bs4_(cells|neighbours)\b/.test(d.kind === "sql" ? codeOnly(d.text) : d.text);
   const naming = assembleDownloads(pages).filter((x) => x.kind !== "ipynb" && names(x));
-  // L4: s2–s5 read the 5 km and 10 km cells in both engines, and setup.py's gpkg-export writes them.
-  expect(naming.map((d) => d.name)).toEqual(expect.arrayContaining(["setup.py", ...["s2", "s3", "s4", "s5"].flatMap((p) => [`${p}.sql`, `${p}.py`])]));
+  // L4: s2–s5 read the 5 km and 10 km cells in both engines, and setup.py's gpkg-export writes them; L5: c1's feed (after s5-gistar).
+  expect(naming.map((d) => d.name)).toEqual(expect.arrayContaining(["setup.py", ...["s2", "s3", "s4", "s5"].flatMap((p) => [`${p}.sql`, `${p}.py`]), "c1.sql"]));
   for (const d of naming) {
     const boot = d.kind === "sql"
       ? `${text(PG_SESSION_ID)}\n\nBEGIN;\n${text("s4-cells")}\nCOMMIT;\n`
@@ -164,27 +169,95 @@ test("a download naming s4_cells or s4_neighbours runs s4-cells right after pg-s
   }
 });
 
-test("a Power BI block lists its star inputs with the manifest's rows and sha256, and the served files match", async ({ browser, request }) => {
+test("p1–p4 and c1 are built; a Power BI block lists its inputs (star files, c1's feed) with their rows and sha256, the served files match, and a DAX block links its PostGIS twin", async ({ browser, request }) => {
   const { pages, url } = await course();
+  const { curriculum } = await readCourse();
   const manifest = (await (await request.get("/learn/data/star/manifest.json")).json()) as StarManifest;
   const { context } = await learnContext(browser);
   const page = await context.newPage();
   const pbi = pages.flatMap((p) => p.blocks.filter((b) => b.engine === "powerbi").map((b) => [p, b] as const));
   expect(pbi.map(([, b]) => b.id)).toContain("pbi-smoke");
+  // L5 (plan T8): the Power BI track and the capstone, each built, each with Power BI blocks; every block reads at
+  // least one input, and every DAX block (.dax) has a twin.
+  const L5 = ["p1", "p2", "p3", "p4", "c1"];
+  for (const id of L5) expect(curriculum!.modules.find((m) => m.id === id)?.state, id).toBe("built");
+  expect([...new Set(pbi.map(([p]) => p.page.id))].filter((id) => L5.includes(id)), "pages with Power BI blocks").toEqual(L5);
+  for (const [, b] of pbi) {
+    expect(b.inputs.length, `${b.id}'s inputs`).toBeGreaterThan(0);
+    expect(b.twin !== undefined, `${b.id} has a twin`).toBe(b.file.endsWith(".dax"));
+  }
+  expect(pbi.filter(([, b]) => b.file.endsWith(".dax")).map(([p]) => p.page.id), "pages with DAX blocks").toEqual(expect.arrayContaining(["p2", "p3", "p4"]));
+  expect(pbi.filter(([, b]) => b.inputs.includes(FEED.input)).map(([, b]) => b.id), "blocks reading c1's feed").toEqual(["c1-report"]);
+  /** What the inputs table shows for an input, by kind: a star file from its manifest, the feed from the served file. */
+  const expected = async (input: string): Promise<[string, string, string]> => {
+    if (input === FEED.input) {
+      const body = await (await request.get(`/learn/${input}`)).body();
+      return [input, (JSON.parse(body.toString("utf8")) as { cells: unknown[] }).cells.length.toLocaleString("en-US"), sha256(body)];
+    }
+    const f = manifest.files[input.slice("star/".length)]!;
+    expect(sha256(await (await request.get(`/learn/data/${input}`)).body()), input).toBe(f.sha256);
+    return [input, f.rows.toLocaleString("en-US"), f.sha256];
+  };
   for (const [p, b] of pbi) {
     await page.goto(url(p));
     await expect(page.locator(`#q-${b.id} .untested`)).toHaveText("Not run by critwire: Power BI Desktop is Windows-only.");
     const rows = await page.locator(`#q-${b.id} table.inputs tbody tr`).evaluateAll((trs) => trs.map((tr) => [...tr.querySelectorAll("td")].map((td) => td.textContent)));
-    const want = b.inputs.map((input) => {
-      const f = manifest.files[input.slice("star/".length)]!;
-      return [input, f.rows.toLocaleString("en-US"), f.sha256];
-    });
+    const want = [];
+    for (const input of b.inputs) want.push(await expected(input));
     expect(rows, b.id).toEqual(want);
-    for (const [input, , hash] of want) expect(sha256(await (await request.get(`/learn/data/${input}`)).body()), input).toBe(hash);
     // What the M reads passes the star's checks: header, rows, sha256, keys (star-check).
-    for (const input of b.inputs) expect((await checkInput(distPath("learn/data/star"), input)).errors, `${b.id} ${input}`).toEqual([]);
+    for (const input of b.inputs.filter((i) => i !== FEED.input)) expect((await checkInput(distPath("learn/data/star"), input)).errors, `${b.id} ${input}`).toEqual([]);
+    // A DAX block's twin: on the page with its recorded result, linked, with what it doesn't check (T3).
+    const twin = page.locator(`#q-${b.id} p.twin`);
+    if (b.twin === undefined) await expect(twin, b.id).toHaveCount(0);
+    else {
+      await expect(twin, b.id).toHaveText(`The table it should return, from the same files in PostGIS: ${b.twin}. That twin checks the arithmetic only, not M parsing, relationship direction, filter context or DAX execution.`);
+      await expect(twin.locator("a"), b.id).toHaveAttribute("href", `#q-${b.twin}`);
+      expect(await page.locator(`#q-${b.twin} pre.recorded`).textContent(), b.twin)
+        .toBe(trimEnd(await readFile(repoPath(`${CHECKED_DIR}/${b.twin}.txt`), "utf8")));
+    }
   }
   await context.close();
+});
+
+test("c1's feed is checked/c1-feed.json as served, valid against its served schema, says records not range, and agrees with c1-feed's recorded summary", async ({ page, request }) => {
+  const res = await request.get(`/learn/${FEED.input}`);
+  expect(res.status()).toBe(200);
+  const body = await res.body();
+  expect(body.equals(await readFile(repoPath(FEED.file))), "served feed = checked/c1-feed.json").toBe(true);
+  const schemaRes = await request.get("/learn/labs/c1-feed.schema.json");
+  expect(schemaRes.status()).toBe(200);
+  const schemaText = await schemaRes.text();
+  expect(schemaText).toBe(await readFile(repoPath(FEED.schema), "utf8"));
+  type Cell = { records: number; weight: number; recording_hot_spot: boolean };
+  const feed = JSON.parse(body.toString("utf8")) as { meaning: string; credit: unknown[]; cells: Cell[] };
+  expect(feedSchemaErrors(feed, JSON.parse(schemaText) as object)).toEqual([]);
+  expect(feed.meaning).toContain("not its range");
+  // c1-feed's summary row (one row; no cell holds " | "): what the file must hold, counted from the file itself.
+  const [, header, row] = (await readFile(repoPath(`${CHECKED_DIR}/c1-feed.txt`), "utf8")).split("\n");
+  const values = row!.split(" | ");
+  const s = Object.fromEntries(header!.split(" | ").map((c, i) => [c, values[i]!]));
+  expect(feed.cells.length, "cells").toBe(Number(s.cells));
+  expect(feed.cells.reduce((n, c) => n + c.records, 0), "records").toBe(Number(s.records));
+  expect(feed.cells.filter((c) => c.recording_hot_spot).length, "hot_spots").toBe(Number(s.hot_spots));
+  expect(feed.credit.length, "datasets_to_credit").toBe(Number(s.datasets_to_credit));
+  expect(body.length, "bytes").toBe(Number(s.bytes));
+  // Six places each, so in millionths the sum is exact.
+  expect(feed.cells.reduce((n, c) => n + Math.round(c.weight * 1e6), 0), "weight_sum").toBe(Math.round(Number(s.weight_sum) * 1e6));
+  // The capstone's page links the feed and its schema.
+  const { url, pages } = await course();
+  await page.goto(url(pages.find((p) => p.page.id === "c1")!));
+  for (const href of [`/learn/${FEED.input}`, "/learn/labs/c1-feed.schema.json"]) await expect(page.locator(`main a[href="${href}"]`).first()).toBeVisible();
+});
+
+test("c1's feed carries critwire's license and attribution, the sample's citation and only the sample datasets' credits, as served", async ({ request }) => {
+  const feed: unknown = await (await request.get(`/learn/${FEED.input}`)).json();
+  const db = await openDuckDB();
+  try {
+    expect(feedAttributionErrors(feed, await servedFeedAttribution(db, ORIGIN))).toEqual([]);
+  } finally {
+    db.close();
+  }
 });
 
 test("the setup page covers the browser, PostGIS, Python and Power BI, and links pg-checks.sql, the loader, requirements.txt, setup.py and setup.ipynb", async ({ page }) => {

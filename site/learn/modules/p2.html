@@ -1,0 +1,57 @@
+<p class="lead">Turn the eight tables <a href="/learn/power-bi/power-query/">Power Query, p1</a> loads into one model that filters correctly: a relationship from each fact to each of its dimensions, many-to-one and single direction, with <code>dim_country</code> shared by all three facts. Each DAX query is shown with its PostGIS twin, the table Power BI should return, computed from the same star <a href="/learn/database-architecture/star/">Star schemas, d6</a> builds and drawn on <a href="/learn/schema/star/">the star schema</a>.</p>
+
+<h2>Concept</h2>
+<p>Turn eight tables into one model that filters correctly. A <strong>relationship</strong> tells Power BI which column of one table matches which column of another, so that a choice made in one table (a country in a slicer) reaches the rows of another (that country's records). In Model view, each fact gets a relationship to each of its dimensions, set four ways:</p>
+<ul>
+<li><strong>Cardinality many-to-one</strong> (<code>*:1</code>): many fact rows point at one dimension row, by the key d6 declared. The "one" side must hold each key once, which d6's primary keys guarantee.</li>
+<li><strong>Filter direction single:</strong> a filter flows from the dimension to the fact. Choosing a country in a slicer filters <code>fact_records</code> and <code>fact_country_habitat</code>, never the other way round. Both directions invite ambiguous paths and slow, surprising totals; keep them for the rare case that needs them.</li>
+<li><strong>Conformed dimensions:</strong> <code>dim_country</code> is shared by all three facts and <code>dim_species</code> by the two species facts (<code>fact_records</code>, <code>fact_species_country</code>), so a country slicer filters all three at once and a species slicer the two that have a species. The habitat fact has no species.</li>
+<li><strong>Facts are never related to each other.</strong> Joining two facts directly multiplies their rows (d6's drill across). Each fact is summed under the shared dimension instead, which is what a model with only fact-to-dimension relationships does.</li>
+</ul>
+<p>The <strong>factless fact</strong>, <code>fact_species_country</code>, has no measure column; its measure is a count of its rows (species listed in a country). It answers "where does critwire list the species?", while <code>fact_records</code> answers "what was recorded where?", and the two need not agree. A <strong>measure</strong> is a calculation Power BI evaluates for each cell of a table or chart, under that cell's filters; the next module, <a href="/learn/power-bi/dax/">DAX measures, p3</a>, builds them, and this module uses three simple ones.</p>
+
+<h2>Worked example</h2>
+<p>The relationships, then a query that slices two facts by one column. Power BI may create relationships on its own when it loads tables, from matching column names. Open Model view (the left bar) and check each line against this table; delete any other, and set the missing ones.</p>
+<div class="table-wrap"><table class="tools-table">
+<thead><tr><th scope="col">From (many)</th><th scope="col">To (one)</th><th scope="col">Key</th></tr></thead>
+<tbody>
+<tr><td><code>fact_records</code></td><td><code>dim_species</code>, <code>dim_country</code>, <code>dim_dataset</code>, <code>dim_year</code></td><td><code>species_id</code>, <code>country_code</code>, <code>dataset_key</code>, <code>year</code></td></tr>
+<tr><td><code>fact_species_country</code></td><td><code>dim_species</code>, <code>dim_country</code></td><td><code>species_id</code>, <code>country_code</code></td></tr>
+<tr><td><code>fact_country_habitat</code></td><td><code>dim_country</code>, <code>dim_habitat_class</code></td><td><code>country_code</code>, <code>habitat_code</code></td></tr>
+</tbody>
+</table></div>
+<p>Eight relationships, every one many-to-one, single direction. Then three measures, and a query that slices both species facts by continent through <code>dim_country</code>. Run it in DAX query view (Home → DAX query view, paste, Run): <code>DEFINE MEASURE</code> declares each measure for the query, and <code>EVALUATE</code> returns the table. <code>SUMMARIZECOLUMNS</code> groups by the columns it names and computes each measure for each group, leaving out a group whose measures are all blank.</p>
+{{block:p2-measures}}
+<p>The table it should return, from the same star in PostGIS. Each fact is grouped by continent on its own, then the two are joined on the continent: d6's drill across, which is what the model does with the shared <code>dim_country</code>.</p>
+{{block:p2-check}}
+
+<h2>Lab</h2>
+<ol class="steps">
+<li><p>Set the relationships. Turn off the guessing first (File → Options and settings → Options → Current file → Data Load → clear "Autodetect new relationships after data is loaded"), so a refresh adds none. Then, in Model view, Manage relationships → New for each line of the table: the fact and its key column first, the dimension and its key second, Cardinality "Many to one (*:1)", Cross filter direction "Single". Model view draws each as a line from the fact to the dimension, with <code>*</code> at the fact's end, <code>1</code> at the dimension's and an arrow pointing at the fact: the way the filter flows.</p></li>
+<li><p>Look for a blank row. When a fact holds a key its dimension lacks, Power BI adds a blank member to the dimension, and slicers show "(Blank)". d6's unknown members, <code>ZZ</code> and <code>-1</code>, are real rows, so every fact row finds its dimension row and no blank appears. Add a slicer with <code>dim_country[name]</code> and scroll it: "Unknown or outside any country" is there, "(Blank)" isn't.</p></li>
+<li><p>Run <code>p2-measures</code> in DAX query view and compare it with <code>p2-check</code> above, row by row.</p></li>
+<li><p>Make the measures part of the model. A <code>DEFINE MEASURE</code> lasts for one query; the visuals below need model measures. In Report view, select <code>fact_records</code> in the Data pane, Home → New measure, and type the measure in the formula bar as name = formula: <code>Records = COUNTROWS ( fact_records )</code>. Then select <code>fact_species_country</code> and add <code>Species listed = DISTINCTCOUNT ( fact_species_country[species_id] )</code> the same way.</p></li>
+<li><p>One country, two facts. In Report view, add a slicer with <code>dim_country[name]</code>, a table with <code>dim_year[decade]</code> and <code>Records</code>, and a card with <code>Species listed</code>. Choose Namibia: the table shows Namibia's 176 records by decade, and the card the species critwire lists there. The slicer filters both facts because both reach <code>dim_country</code>.</p></li>
+<li><p>A table with no path. Clear the Namibia choice first (the slicer's eraser icon, Clear selections), else every row shows Namibia's 176. Then add a table with <code>dim_habitat_class[level1_name]</code> and <code>Records</code>. Every row shows 40,395, the whole fact: no relationship joins habitat classes to records, so the class has nothing to filter. A total repeated on every row is how a missing or wrong relationship shows itself.</p></li>
+</ol>
+
+<h2>Result</h2>
+<p>Eight relationships, all many-to-one and single direction, and no blank member. The query returns seven continents, the same rows as <code>p2-check</code>: South America 11,308 records, Africa 10,791, North America 9,688, Oceania 5,147, Asia 2,985, Europe 469, and 7 at sea ("Seven seas"). Antarctica and the unknown member <code>Unknown</code> (<code>ZZ</code>) have neither records nor listings, so the query leaves them out. The two facts disagree, and should: Europe has records of 19 species but critwire lists only 11 there, because critwire's countries rule withholds a country outside a species' core region that has a single record there, such as an okapi in Germany: often a captive animal or a museum specimen. The sample keeps those records, and <code>fact_records</code> shows them. Oceania lists 9 species but the sample has records of 8, because the listings count every open record while the sample holds at most 2,000 per species.</p>
+
+<h2>Exercise</h2>
+<p>Records and habitat areas by the same country column. Write a DAX query that returns, for each continent, the records and the estimated habitat area in km² (the sum of <code>fact_country_habitat[est_area_km2]</code>), both sliced by <code>dim_country[continent]</code>. Which continent has area but no records, and why is it in the table?</p>
+{{exercise:p2-ex}}
+<p>Its twin, the table it should return:</p>
+{{exercise:p2-ex-check}}
+
+<h2>Check</h2>
+<p>The answer: one measure per fact, both grouped by the shared dimension's column; the model does the drill across. Antarctica: the habitat map covers it, the sample has no record there, and <code>SUMMARIZECOLUMNS</code> keeps a group while any of its measures has a value, so its <code>Records</code> is blank.</p>
+<p>Eight rows, the seven continents with records plus Antarctica, with 12,356,486.85 km² and no records. The areas add up to 146,579,613.97 km², p1's total; <code>Unknown</code> (<code>ZZ</code>) has neither records nor area, so it's left out. Records and areas sit side by side only because both facts reach <code>dim_country</code>: put <code>dim_species[class]</code> in place of the continent and every row shows the same total area, since the habitat fact has no species. The area is land the habitat map classifies, estimated from it: it says nothing about where a species lives, and the records say only where it was recorded.</p>
+
+<h2>Dialects</h2>
+<ul>
+<li><strong>Excel (Windows):</strong> the same model in Excel's Data Model (Power Pivot): Data → Relationships, or Power Pivot → Manage → Diagram View, with the same eight relationships and the same DAX measures. A PivotTable on the Data Model gives the same table; Excel has no DAX query view.</li>
+<li><strong>Tableau:</strong> relationships in the Data Source page's logical layer join each table to the others by its keys, and since Tableau 2024.2 a model may hold several facts sharing dimensions. Each measure is computed at its own table's grain before the tables meet, as in Power BI.</li>
+<li><strong>pandas:</strong> no model, so do the drill across yourself: group each fact by the shared column, then put the results side by side. <code>records.merge(dim_country, on="country_code").groupby("continent").size()</code> and <code>habitat.merge(dim_country, on="country_code").groupby("continent")["est_area_km2"].sum()</code>, then <code>pd.concat([...], axis=1)</code>. Merging the two facts on <code>country_code</code> instead repeats each record once for each of its country's habitat classes.</li>
+<li><strong>SQL:</strong> <code>p2-check</code>'s shape: one subquery per fact, grouped by the dimension's column, joined on that column. The same direct join of two facts multiplies rows here too.</li>
+</ul>

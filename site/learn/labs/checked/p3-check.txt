@@ -1,0 +1,8 @@
+-- result: p3-check · 215 rows · sha256 a26cfe30c3ed
+country_code | records | forest_km2 | sample_records_per_1000_km2_forest
+AD | 0 | 179.18 | 0.000
+AE | 0 | 13.11 | 0.000
+AF | 0 | 2985.10 | 0.000
+AG | 0 | 51.59 | 0.000
+AI | 0 | 0.12 | 0.000
+… 210 more rows

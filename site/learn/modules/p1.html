@@ -1,0 +1,56 @@
+<p class="lead">Load the star into Power BI with Power Query: one function for the eight files critwire publishes, a fixed base URL the Power BI Service can refresh, and types set with an explicit culture so the load reads the same on any computer. Power BI Desktop is Windows-only (<a href="/learn/setup/">the setup page</a>); the files are the star <a href="/learn/database-architecture/star/">Star schemas, d6</a> builds, under <a href="/learn/data/">the lab data</a>'s <code>star/</code>, drawn on <a href="/learn/schema/star/">the star schema</a>.</p>
+
+<h2>Concept</h2>
+<p>Get the star into Power BI so it loads the same way on any computer and refreshes in the Power BI Service. <strong>Power Query</strong> is the tool inside Power BI Desktop (and Excel) that fetches and shapes data before it reaches the model. It records each step as a line of <strong>M</strong>, its formula language, so a load is code you can read, copy and review. Four rules make a load that works anywhere:</p>
+<ul>
+<li><strong>A fixed base URL.</strong> <code>Web.Contents</code> fetches the file. Give it a fixed base URL and put the file name in <code>RelativePath</code>: the Power BI Service can then refresh the published report on a schedule with anonymous access. A whole URL built by joining text is a <strong>dynamic data source</strong>, which the Service won't refresh.</li>
+<li><strong>Say how the file is written.</strong> <code>Csv.Document</code> parses it with UTF-8 (<code>Encoding = 65001</code>) and CSV quoting stated, so accents and commas inside quotes are read as written; <code>Table.PromoteHeaders</code> takes the first row as column names.</li>
+<li><strong>Types with an explicit culture.</strong> <code>Table.TransformColumnTypes</code> sets each column's type. A <strong>culture</strong> (a locale, such as <code>"en-US"</code>) says how text becomes a number or a date. Without one, Power Query uses the computer's own: on a computer set to German, the dot is a thousands separator, so <code>179.18</code> becomes 17,918. critwire's files write numbers with a dot, so every load states <code>"en-US"</code>.</li>
+<li><strong>Codes are text.</strong> <code>country_code</code> holds <code>NA</code> (Namibia), which other tools read as "not available", and keys like <code>dataset_key</code> are identifiers, never numbers to add. An empty cell in a numeric column becomes <code>null</code>, Power Query's missing value; an empty cell in a text column stays an empty text, <code>""</code>.</li>
+</ul>
+<p>One function serves all eight tables, so the rules are written once. A <strong>custom function</strong> in M is a query whose body is <code>(parameters) =&gt; expression</code>; other queries call it by name.</p>
+
+<h2>Worked example</h2>
+<p>The function, then the largest table. Create <code>LoadStar</code> as a blank query (Home → Get data → Blank query → Advanced editor), paste the block, and rename the query <code>LoadStar</code>. The first time it runs, Power BI asks how to connect to critwire.com: choose <strong>Anonymous</strong>, privacy level <strong>Public</strong>. The base URL is fixed and the file name goes in <code>RelativePath</code>, so the Service sees one data source, <code>https://critwire.com</code>, for all eight tables.</p>
+{{block:p1-load}}
+<p><code>types</code> is a list of pairs, a column's name and its type, in the form <code>Table.TransformColumnTypes</code> takes. Each table is then one call. Create a blank query, name it <code>fact_records</code>, and paste this; whole numbers are <code>Int64.Type</code>, decimals <code>type number</code>:</p>
+{{block:p1-fact-records}}
+<p>A record with no month, or no stated uncertainty, has an empty cell, which becomes <code>null</code>. Power Query shows each step on the right (Applied steps); the function's steps run inside the call, so <code>fact_records</code> shows one.</p>
+
+<h2>Lab</h2>
+<ol class="steps">
+<li><p>The other six tables. Each is a blank query named after its file, calling <code>LoadStar</code> with the file's columns. The manifest gives each column's type, and each has one M type:</p>
+<div class="table-wrap"><table class="tools-table">
+<thead><tr><th scope="col">Manifest type</th><th scope="col">M type</th><th scope="col">Power BI calls it</th></tr></thead>
+<tbody>
+<tr><td><code>INTEGER</code>, <code>BIGINT</code></td><td><code>Int64.Type</code></td><td>Whole number</td></tr>
+<tr><td><code>DOUBLE</code></td><td><code>type number</code></td><td>Decimal number</td></tr>
+<tr><td><code>DECIMAL(12,2)</code></td><td><code>Currency.Type</code></td><td>Fixed decimal number</td></tr>
+<tr><td><code>VARCHAR</code></td><td><code>type text</code></td><td>Text</td></tr>
+</tbody>
+</table></div>
+<p>So <code>dim_country = LoadStar("dim_country", &#123;{"country_code", type text}, {"name", type text}, {"continent", type text}, {"region", type text}, {"subregion", type text}})</code>, and <code>dim_year = LoadStar("dim_year", &#123;{"year", Int64.Type}, {"decade", Int64.Type}, {"label", type text}})</code>. In <code>dim_species</code>, <code>dim_dataset</code>, <code>fact_species_country</code> and <code>dim_habitat_class</code>, the ids and codes that the manifest calls <code>INTEGER</code> are <code>Int64.Type</code> and the rest is text. <code>fact_country_habitat</code>'s <code>est_area_km2</code> is <code>Currency.Type</code>: a fixed decimal number keeps four decimal places exactly, so 5,578 areas with two decimals add up to the cent, where a decimal number (a binary double) can leave a trailing digit.</p></li>
+<li><p>Close &amp; Apply (Home). Power BI loads the eight tables into the model; <code>LoadStar</code> is a function, so it isn't loaded. In Table view, the status bar shows each table's rows: compare them with the manifest's <code>rows</code>.</p></li>
+<li><p>Look at the edges. In <code>dim_country</code>, filter <code>country_code</code> to <code>NA</code>: Namibia, a text code, not a missing value. In <code>dim_year</code>, the row <code>-1</code> is the unknown member (d6), with <code>decade</code> null and label <code>Unknown</code>. In <code>fact_records</code>, filter <code>year</code> to <code>-1</code>, then <code>month</code> to null.</p></li>
+<li><p>Refresh. Home → Refresh repeats every query from critwire.com: the same tables until the files change. To share the report, Home → Publish to a workspace; then, in the Service, the semantic model's Settings → Data source credentials → Edit credentials: <strong>Anonymous</strong>, privacy level <strong>Public</strong>, and set a scheduled refresh (a Pro licence allows eight a day). A dynamic data source is where this stops: the settings page says the model can't be refreshed.</p></li>
+<li><p>Your own database instead. Power BI also reads PostgreSQL directly (Get data → PostgreSQL database): server <code>localhost</code>, database <code>learn</code>, with the <code>learn_powerbi</code> login of <a href="/learn/database-architecture/roles/">Roles and privileges, d5</a>, and the navigator lists <code>learn_curriculum</code>'s tables. Power BI tries an encrypted connection first; a server on your own computer without TLS makes it ask whether to connect unencrypted, which is fine for <code>localhost</code>. That suits a database only you use. A report in the Service that refreshes from a database on your computer needs an on-premises data gateway, a Windows service on that computer, running whenever the refresh is due; files on a public URL need none, which is why the course reads the star from critwire.com.</p></li>
+</ol>
+
+<h2>Result</h2>
+<p>Eight tables, with the manifest's rows: <code>dim_species</code> 76, <code>dim_country</code> 251, <code>dim_dataset</code> 400, <code>dim_year</code> 177, <code>fact_records</code> 40,395, <code>fact_species_country</code> 472, <code>dim_habitat_class</code> 75 and <code>fact_country_habitat</code> 5,578 (246 countries). In <code>fact_records</code>, 2,289 records have year <code>-1</code> (unknown) and none has country <code>ZZ</code>; 6,545 have no month and 24,002 no stated uncertainty, all null; 176 are from Namibia, <code>NA</code>. Refresh repeats the load from critwire.com and gives the same tables until the files change.</p>
+
+<h2>Exercise</h2>
+<p>A load check in M. Load <code>dim_habitat_class</code> and <code>fact_country_habitat</code> with <code>LoadStar</code>, and return one small table to compare with the manifest: each table's rows, the area rows with an empty key, the area rows whose class isn't in <code>dim_habitat_class</code>, the total estimated area, and Namibia's. Which type keeps the area's sums exact?</p>
+{{exercise:p1-ex}}
+
+<h2>Check</h2>
+<p>The answer: <code>Currency.Type</code> (fixed decimal number) for <code>est_area_km2</code>. <code>Table.NestedJoin</code> with <code>JoinKind.LeftAnti</code> keeps the rows of the first table that have no match in the second, so its row count is the number of orphans. A text key is checked for both <code>null</code> and <code>""</code>.</p>
+<p>75 and 5,578 rows, as the manifest says; no empty key and no area without its class; 146,579,613.97 km² in all, and 822,099.38 km² for Namibia, whose 33 rows kept their code. Change <code>LoadStar</code>'s culture to <code>"de-DE"</code> and run it again: every area is read with the dot as a thousands separator, and the totals no longer match. The areas are estimates from a habitat map, not measurements.</p>
+
+<h2>Dialects</h2>
+<ul>
+<li><strong>Excel (Windows):</strong> the same Power Query and the same M. Data → Get Data → From Other Sources → Blank Query, then the same <code>LoadStar</code> and calls; Data → Refresh All repeats them. A table loaded to a sheet stops at 1,048,576 rows, so <code>fact_records</code> fits; load to the Data Model for more.</li>
+<li><strong>Tableau:</strong> Tableau Desktop's Text file connector reads files on your computer, so download the star first. Set each code's type to String on the Data Source page, and relate the tables there by their keys.</li>
+<li><strong>pandas:</strong> <code>pd.read_csv(url, dtype={"country_code": str}, keep_default_na=False, na_values=[""])</code>. pandas reads <code>NA</code> as missing by default; <code>keep_default_na=False</code> stops that, and <code>na_values=[""]</code> keeps empty cells missing. Python's <code>float</code> already reads <code>12.5</code> the same way in every locale.</li>
+<li><strong>SQL:</strong> DuckDB's <code>read_csv('https://critwire.com/learn/data/star/dim_country.csv', types = {'country_code': 'VARCHAR'})</code> (the <code>httpfs</code> extension fetches the URL); PostgreSQL's <code>\copy dim_country FROM 'dim_country.csv' WITH (FORMAT csv, HEADER)</code> into a table d6's block made, which reads an empty unquoted cell as NULL and <code>NA</code> as text. PostgreSQL reads only the dot as a decimal point; DuckDB does too unless told otherwise (<code>decimal_separator = ','</code>).</li>
+</ul>

@@ -68,7 +68,7 @@ await writeStar(out, { blocks: star, recorded: readRecorded(pages), starErd: erd
 console.log(`learn star: ${star.length} tables, each block's result equal to PostGIS's`);
 await writeLabIndex(out, { ctx: labCredits, learn, tables: projection.tables });
 // checked.json against what this build publishes (plan D6): learn:check ran every lab block and download as they are now.
-assertLabsFresh(fileURLToPath(out), pages, { draft });
+assertLabsFresh(fileURLToPath(out), pages, labCredits, { draft });
 await writeLearn(out, learnInputs, { draft });
 
 // Every file with its size in bytes, sorted by path (for the PR body).
