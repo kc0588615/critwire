@@ -10902,7 +10902,7 @@ One `localStorage` key, `critwire.learn.done.v1`, holds `{ "<module id>": "<YYYY
 - a star block (d6) whose result in the build's DuckDB differs from what `learn:check` recorded on PostGIS;
 - a breach of the 120 MB cap (§4.4); a lab file without `sources`, or another credit failure (§4.5);
 - a Power BI `// input:` other than a published star file or `labs/c1-feed.json`; a DAX block without a `// twin:`, an M block with one, or a twin that isn't a ran PostGIS block of the same page;
-- once the course has `c1-feed-file`: a missing `checked/c1-feed.json` or `c1-feed.schema.json`, or a feed that isn't that block's recorded result ("…c1-feed.json isn't c1-feed-file's result: run pnpm learn:check --update"); before it has one, a feed file at all (nothing would bind it);
+- once the course has `c1-feed-file`: a missing `checked/c1-feed.json` or `c1-feed.schema.json`, or a feed that isn't that block's recorded result ("…c1-feed.json isn't c1-feed-file's result: run pnpm learn:check --update"), or whose `license`, `license_url`, `attribution`, `source` or `credit` rows differ from the lab's credits (critwire's and the sample's datasets, in (title, publisher, doi) order); before it has one, a feed file at all (nothing would bind it);
 - any missing file.
 
 The staleness refusals (lab, star and feed) only warn in `pnpm build --draft`, a preview that is never deployed, so `learn:check` can run on a draft of the change it is about to prove, and `learn:check --update` can rewrite the feed.
@@ -10938,9 +10938,9 @@ The repository's harness, unchanged in kind (002 §8): `pnpm build`, then Playwr
 - **`learn-timing`**: five first visits to the playground, each in a fresh context; the median time to the end of `setup.sql` must be at most 1.5 × A1's 2.9 s first visit (002 §1; the sample's boot, §A.1).
 - **`serving`**: `.wasm` content types and the fixed modification times of `/learn/assets/` (002 §8).
 
-**Artifacts**, as today in `E2E_ARTIFACTS`: the Playwright HTML report, a trace per test, `results.json` and screenshots at 1280 and 375 px of the map, f3 (browser), d3 (PostGIS), g3 and g7 (L3), s4, s5 and e2 (L4), the lab schema and the setup page, each light and dark, and of the data index, reproducible with `pnpm build && E2E_ARTIFACTS=<dir> pnpm e2e`.
+**Artifacts**, as today in `E2E_ARTIFACTS`: the Playwright HTML report, a trace per test, `results.json` and screenshots at 1280 and 375 px of the map, f3 (browser), d3 (PostGIS), g3 and g7 (L3), s4, s5 and e2 (L4), p3 and c1 (L5), the lab schema and the setup page, each light and dark, and of the data index, reproducible with `pnpm build && E2E_ARTIFACTS=<dir> pnpm e2e`.
 
-**Release smoke** (`e2e/release/`, never in the default run): after a deploy, with `dist/` the released build, `RELEASE_ORIGIN=https://critwire.com E2E_ARTIFACTS=<dir> pnpm exec playwright test -c playwright.release.config.ts` checks every `dist/` file is served with its bytes, the `.wasm` files' content type, f3's first browser block's result, and (L4) the origin's `s4.py`, run after the origin's loader in `.venv-learn` as the lab role: exit 0, s4's recorded outputs printed in page order, nothing left behind.
+**Release smoke** (`e2e/release/`, never in the default run): after a deploy, with `dist/` the released build, `RELEASE_ORIGIN=https://critwire.com E2E_ARTIFACTS=<dir> pnpm exec playwright test -c playwright.release.config.ts` checks every `dist/` file is served with its bytes, the `.wasm` files' content type, f3's first browser block's result, and (L4) the origin's `s4.py`, run after the origin's loader in `.venv-learn` as the lab role: exit 0, s4's recorded outputs printed in page order, nothing left behind; and (L5) each `/learn/data/star/` file's sha256 against the served star manifest, the served feed valid against the served schema, and its license, attribution and credits against the served manifest and `datasets.csv`.
 
 ## 8. For the owner only: the vault overlap
 
