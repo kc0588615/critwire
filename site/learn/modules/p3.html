@@ -1,0 +1,48 @@
+<p class="lead">Write DAX measures that stay right under any filter, on the model <a href="/learn/power-bi/model/">The data model, p2</a> builds: counts, a total with the filters changed, and a ratio of two facts. The ratio here is sample records divided by forest area, named for what it is. Each DAX query is shown with its PostGIS twin, the table Power BI should return, computed from the same star <a href="/learn/database-architecture/star/">Star schemas, d6</a> builds.</p>
+
+<h2>Concept</h2>
+<p>Measures that stay right under any filter. A <strong>measure</strong> is a formula Power BI evaluates in the current <strong>filter context</strong>: the filters a cell of a visual sits under, from slicers, the visual's rows and columns, and the relationships p2 set. A measure isn't stored. A <strong>calculated column</strong> is: it is computed once per row when the data loads, so a slicer can't change it. Four functions do most of the work:</p>
+<ul>
+<li><code>COUNTROWS ( table )</code> counts the table's rows the filters leave visible; <code>DISTINCTCOUNT ( column )</code> counts a column's distinct visible values.</li>
+<li><code>CALCULATE ( expression, filter, … )</code> evaluates an expression under changed filters. A filter such as <code>dim_habitat_class[level1_name] = "Forest"</code> replaces any filter on that column; <code>ALL ( dim_country )</code> removes every filter on the table, which gives a total to divide by. <code>REMOVEFILTERS</code> is the same thing under a clearer name.</li>
+<li><code>DIVIDE ( numerator, denominator )</code> returns blank, not an error, when the denominator is 0 or blank. Blank isn't zero: a visual leaves out a row whose measures are all blank, and blank times a number is still blank.</li>
+<li>A ratio of two facts with different grains (one row per record; one row per country and habitat class) works because both are filtered by the same <code>dim_country</code>, and only through what they share.</li>
+</ul>
+<p>The ratio this module builds is <strong>sample records divided by forest area</strong>: the records of critwire's sample in a country for each 1,000 km² of its forest. Say exactly that, because the name invites more. It isn't sampling effort, nor records made in forest: the numerator counts every record in the country, in forest or not, and the sample holds at most 2,000 records per species, so a country where a much-recorded species lives holds fewer of its records than GBIF does. Nor is it how many animals live there: records say where someone recorded a species, not how many there are.</p>
+<p>The data: <code>fact_records</code>, <code>fact_country_habitat</code>, <code>dim_habitat_class</code> and <code>dim_country</code>, with p2's relationships. The habitat fact holds estimates for every country the habitat map covers: 246 of the 251 rows of <code>dim_country</code>.</p>
+
+<h2>Worked example</h2>
+<p>Three measures and one query, for every country with forest. <code>Forest km2</code> sums the habitat fact with the class filter replaced by forest; the ratio divides with <code>DIVIDE</code>. <code>ADDCOLUMNS ( VALUES ( dim_country[country_code] ), … )</code> makes one row per country code and evaluates each measure on it, with that row's country as the filter: a measure used inside a row turns the row into a filter (<strong>context transition</strong>). <code>FILTER</code> keeps the countries with forest.</p>
+{{block:p3-measures}}
+<p>The table it should return, from the same star in PostGIS. <code>NULLIF ( h.forest_km2, 0 )</code> turns a zero area into unknown, so the division gives NULL where <code>DIVIDE</code> gives blank, instead of an error.</p>
+{{block:p3-check}}
+
+<h2>Lab</h2>
+<ol class="steps">
+<li><p>Run <code>p3-measures</code> in DAX query view and compare it with <code>p3-check</code>, row by row. Power BI shows the ratio with every decimal; the twin rounds it to 3 places.</p></li>
+<li><p>Make the measures part of the model. A <code>DEFINE MEASURE</code> lasts for one query; a model measure is what every visual uses. In Report view, select <code>fact_records</code> in the Data pane, Home → New measure, and type the measure in the formula bar as name = formula: <code>Records = COUNTROWS ( fact_records )</code>. Add <code>Forest km2</code> the same way on <code>fact_country_habitat</code>, then the ratio on <code>fact_records</code>, and give the ratio 3 decimal places (Measure tools → Format).</p></li>
+<li><p>A table visual with <code>dim_country[name]</code>, <code>Records</code>, <code>Forest km2</code> and the ratio, sorted by the ratio, highest first. Mauritania heads it with 20,000: 2 records over 0.10 km² of forest. A ratio over a tiny denominator is noise; 22 countries have less than 10 km² of forest. Add a filter on this visual, <code>Forest km2</code> is greater than or equal to 1,000: Benin now heads the list with 230.269 (961 records, 4,173.38 km²), then Kenya and South Africa.</p></li>
+<li><p>Add a slicer with <code>dim_species[common_name]</code> and choose Jaguar. The records change and the forest doesn't, because <code>dim_species</code> filters <code>fact_records</code> only (p2): Costa Rica shows 94 records and 4.050, Brazil 1,370 records and 0.320. The ratio is now that species' sample records per 1,000 km² of forest. Countries without a jaguar record still show their forest and a ratio of 0, because <code>COALESCE</code> turns their blank count into 0.</p></li>
+<li><p>A calculated column next to the measure. Select <code>dim_country</code>, Table tools → New column, and type <code>Records (column) = COUNTROWS ( RELATEDTABLE ( fact_records ) )</code>. Add it to the table: with Jaguar still chosen, it shows each country's records of every species, because it was computed when the data loaded, before any slicer. Delete the column: a count that ignores the report's filters belongs in a measure, with <code>ALL</code> when the total is what's wanted.</p></li>
+</ol>
+
+<h2>Result</h2>
+<p>215 rows, one for each country the habitat map gives some forest; 105 of them have sample records. They hold 40,394 of the 40,395 records. The last is in Niue, whose habitat estimates hold no forest, so <code>FILTER</code> leaves it out, with the 30 other countries in the same case. Trinidad and Tobago has 2 records and 2,806.26 km² of forest: 0.713 sample records per 1,000 km². Åland has 187.69 km² of forest and no records: 0. No country's forest area is 0, so <code>NULLIF</code> changes no row here; it is there for the data that will have one.</p>
+
+<h2>Exercise</h2>
+<p>Shares of a total. Write a DAX query that returns, for each continent, the records and the habitat area in km², and each as a share of its total over every country: the continent's value divided by the value with no country filter. Which continents hold a larger share of the records than of the area?</p>
+{{exercise:p3-ex}}
+<p>Its twin, the table it should return, with the shares rounded to 4 places. A window over no partition, <code>sum(…) OVER ()</code>, is SQL's total over every row: what <code>ALL</code> gives in DAX.</p>
+{{exercise:p3-ex-check}}
+
+<h2>Check</h2>
+<p>The answer: <code>CALCULATE ( [Records], ALL ( dim_country ) )</code> is the records with every country filter removed, so dividing by it gives the share; the same for the area. Africa, North America, Oceania and South America hold a larger share of the records than of the area; Asia and Europe a smaller one, and Antarctica none. The comparison is the record-to-area ratio of <a href="/learn/spatial-statistics/zonal/">Zonal statistics, s6</a>, by continent: it shows where the sample's species were recorded more than area alone predicts. That follows from which species critwire lists and where people record them, not from where wildlife is.</p>
+<p>Eight rows, p2's exercise with two more columns. Europe holds 1.2% of the records and 15.7% of the area, Asia 7.4% and 21.2%; South America 28.0% and 12.1%, Oceania 12.7% and 5.8%. Each share column adds up to 1. Antarctica's share of records is blank, not 0: <code>DIVIDE</code> of a blank count is blank, as the twin's NULL is.</p>
+
+<h2>Dialects</h2>
+<ul>
+<li><strong>Excel (Windows):</strong> the same measures in Excel's Data Model: Power Pivot → Measures → New Measure, the same DAX, shown in a PivotTable on the Data Model. Worksheet formulas such as <code>SUMIFS</code> give the same totals, but each cell names its own criteria; there is no filter context.</li>
+<li><strong>Tableau:</strong> an aggregate calculation such as <code>COUNT([Record Id]) / SUM([Est Area Km2])</code> is evaluated under the view's filters, as a measure is. A level of detail expression does what <code>CALCULATE</code> does: <code>{FIXED : COUNT([Record Id])}</code> is the total with every dimension removed, like <code>ALL</code>. Dividing by zero gives null, as <code>DIVIDE</code> gives blank.</li>
+<li><strong>pandas:</strong> group, then divide. <code>records / forest.replace(0, pd.NA)</code> gives missing, not <code>inf</code>, for a zero area, and <code>s / s.sum()</code> a share of the total. Join each grouped fact to the other on <code>country_code</code>, never the facts row by row (p2).</li>
+<li><strong>SQL:</strong> <code>p3-check</code>'s <code>NULLIF</code> for <code>DIVIDE</code>, and <code>p3-ex-check</code>'s <code>sum(…) OVER ()</code> for <code>CALCULATE ( …, ALL ( … ) )</code>.</li>
+</ul>

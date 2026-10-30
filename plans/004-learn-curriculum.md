@@ -441,7 +441,7 @@ The table is in prerequisite order: every module's prerequisites come above it, 
 | e5 | ETL | schedule | cron, systemd timers, Windows Task Scheduler; logs, alerts, incremental loads | How do I refresh weekly, and know when a run broke? | Py | 1.5 | e4 | full |
 | p1 | Power BI | power-query | Power Query: `Web.Contents` on critwire's CSV files; types with an explicit culture; refresh | How do I load the star from critwire.com so that it refreshes, on any locale? | PBI | 1.5 | d6 | outline |
 | p2 | Power BI | model | Relationships, cardinality, filter direction, conformed dimensions, factless facts | How do I filter records and habitat areas by the same country? | PBI | 2.0 | p1 | outline |
-| p3 | Power BI | dax | Measures: `COUNTROWS`, `DISTINCTCOUNT`, `CALCULATE`, ratios | How many records per 1,000 km² of forest, by country? | PBI | 2.0 | p2 | outline |
+| p3 | Power BI | dax | Measures: `COUNTROWS`, `DISTINCTCOUNT`, `CALCULATE`, ratios | How many sample records per 1,000 km² of forest, by country? | PBI | 2.0 | p2 | outline |
 | p4 | Power BI | maps-report | Map visuals, honest labels, publishing and scheduled refresh | How do I build a report that maps records and never calls them a range? | PBI | 1.5 | p3 | outline |
 | c1 | Capstone | game-feed | ETL into PostGIS → Gi* on hexagons → a Power BI report → a static JSON feed a game reads (encounter weights per hexagon, labelled as records) | What could a player meet here, honestly? | all | 8.0 | s5, e4, p4 | outline |
 
@@ -10272,17 +10272,19 @@ North America | 9688 | 24217714.23
 
 #### p3 · dax
 
-**Tool:** PBI · **Time:** 2.0 h · **Prereqs:** p2
+**Tool:** PBI + PG · **Time:** 2.0 h · **Prereqs:** p2
 
-**Goal:** measures that stay right under any filter. A **measure** is a formula evaluated in the current filter context: the slicers, the visual's rows and columns. It is not stored per row, which is what a calculated column does.
-- `COUNTROWS` counts a table's visible rows, `DISTINCTCOUNT` a column's distinct values.
-- `CALCULATE` evaluates an expression under changed filters: here, the habitat area with the class filter set to forest.
-- `DIVIDE` returns blank instead of an error when the denominator is 0 or blank.
-- A ratio of two facts at different grains (records per record, area per country and class) works because both are filtered by the same `dim_country`. Its meaning is the honest part: records per 1,000 km² of forest measures how much recording happened per area of forest, not how many animals live there.
+**Concept:** measures that stay right under any filter. A **measure** is a formula Power BI evaluates in the current **filter context**: the filters a cell of a visual sits under, from slicers, the visual's rows and columns, and the relationships p2 set. A measure isn't stored. A **calculated column** is: it is computed once per row when the data loads, so a slicer can't change it. Four functions do most of the work:
+- `COUNTROWS ( table )` counts the table's rows the filters leave visible; `DISTINCTCOUNT ( column )` counts a column's distinct visible values.
+- `CALCULATE ( expression, filter, … )` evaluates an expression under changed filters. A filter such as `dim_habitat_class[level1_name] = "Forest"` replaces any filter on that column; `ALL ( dim_country )` removes every filter on the table, which gives a total to divide by. `REMOVEFILTERS` is the same thing under a clearer name.
+- `DIVIDE ( numerator, denominator )` returns blank, not an error, when the denominator is 0 or blank. Blank isn't zero: a visual leaves out a row whose measures are all blank, and blank times a number is still blank.
+- A ratio of two facts with different grains (one row per record; one row per country and habitat class) works because both are filtered by the same `dim_country`, and only through what they share.
 
-**Data:** `fact_records`, `fact_country_habitat`, `dim_habitat_class`, `dim_country`. The habitat facts cover every country (§4.1). `p3-measures`' expected values and `p3-check`'s result below are recorded on A2's two-country habitat stand-ins (AX and TT, 35 rows): L3 replaced them with every country's estimates (§4.1), so they are re-run by the mission that builds this module (L5).
+The ratio this module builds is **sample records divided by forest area**: the records of critwire's sample in a country for each 1,000 km² of its forest. Say exactly that, because the name invites more. It isn't sampling effort, nor records made in forest: the numerator counts every record in the country, in forest or not, and the sample holds at most 2,000 records per species (§4.2), so a country where a much-recorded species lives holds fewer of its records than GBIF does. Nor is it how many animals live there: records say where someone recorded a species, not how many there are.
 
-**Key code:**
+**Data:** `fact_records`, `fact_country_habitat`, `dim_habitat_class` and `dim_country`, with p2's relationships. The habitat fact holds estimates for every country the habitat map covers: 246 of the 251 rows of `dim_country`.
+
+**Worked example:** three measures and one query, for every country with forest. `Forest km2` sums the habitat fact with the class filter replaced by forest; the ratio divides with `DIVIDE`. `ADDCOLUMNS ( VALUES ( dim_country[country_code] ), … )` makes one row per country code and evaluates each measure on it, with that row's country as the filter: a measure used inside a row turns the row into a filter (**context transition**). `FILTER` keeps the countries with forest.
 
 ```dax
 // q: p3-measures
@@ -10293,7 +10295,7 @@ DEFINE
     MEASURE fact_records[Records] = COUNTROWS ( fact_records )
     MEASURE fact_country_habitat[Forest km2] =
         CALCULATE ( SUM ( fact_country_habitat[est_area_km2] ), dim_habitat_class[level1_name] = "Forest" )
-    MEASURE fact_records[Records per 1,000 km2 of forest] =
+    MEASURE fact_records[Sample records per 1,000 km2 of forest] =
         VAR forest = [Forest km2]
         RETURN IF ( NOT ISBLANK ( forest ), 1000 * DIVIDE ( COALESCE ( [Records], 0 ), forest ) )
 EVALUATE
@@ -10302,14 +10304,14 @@ FILTER (
         VALUES ( dim_country[country_code] ),
         "Records", COALESCE ( [Records], 0 ),
         "Forest km2", [Forest km2],
-        "Records per 1,000 km2 of forest", [Records per 1,000 km2 of forest]
+        "Sample records per 1,000 km2 of forest", [Sample records per 1,000 km2 of forest]
     ),
     NOT ISBLANK ( [Forest km2] )
 )
 ORDER BY dim_country[country_code]
 ```
 
-The same numbers in PostGIS:
+The table it should return, from the same star in PostGIS. `NULLIF ( h.forest_km2, 0 )` turns a zero area into unknown, so the division gives NULL where `DIVIDE` gives blank, instead of an error.
 
 ```sql
 -- q: p3-check
@@ -10319,7 +10321,7 @@ The same numbers in PostGIS:
 SELECT h.country_code,
        coalesce(r.records, 0) AS records,
        h.forest_km2,
-       round(1000 * coalesce(r.records, 0) / h.forest_km2, 3) AS records_per_1000_km2_forest
+       round(1000 * coalesce(r.records, 0) / NULLIF(h.forest_km2, 0), 3) AS sample_records_per_1000_km2_forest
 FROM (SELECT f.country_code, sum(f.est_area_km2) AS forest_km2
       FROM fact_country_habitat AS f
       JOIN dim_habitat_class AS c ON c.habitat_code = f.habitat_code
@@ -10331,13 +10333,91 @@ ORDER BY h.country_code;
 ```
 
 ```text
--- result: p3-check · 2 rows · sha256 66ff688f234f
-country_code | records | forest_km2 | records_per_1000_km2_forest
-AX | 0 | 233.33 | 0.000
-TT | 2 | 2865.12 | 0.698
+-- result: p3-check · 215 rows · sha256 a26cfe30c3ed
+country_code | records | forest_km2 | sample_records_per_1000_km2_forest
+AD | 0 | 179.18 | 0.000
+AE | 0 | 13.11 | 0.000
+AF | 0 | 2985.10 | 0.000
+AG | 0 | 51.59 | 0.000
+AI | 0 | 0.12 | 0.000
+… 210 more rows
 ```
 
-**Expected:** two rows, as `p3-check`. Trinidad and Tobago has 2 records and 2,865.12 km² of forest, so 0.698 records per 1,000 km²; Åland has 233.33 km² of forest and no records, so 0. A slicer on one species changes the records but not the forest area, because `dim_species` filters `fact_records` only.
+**Lab:**
+1. Run `p3-measures` in DAX query view and compare it with `p3-check`, row by row. Power BI shows the ratio with every decimal; the twin rounds it to 3 places.
+2. Make the measures part of the model. A `DEFINE MEASURE` lasts for one query; a model measure is what every visual uses. In Report view, select `fact_records` in the Data pane, Home → New measure, and type the measure in the formula bar as name = formula: `Records = COUNTROWS ( fact_records )`. Add `Forest km2` the same way on `fact_country_habitat`, then the ratio on `fact_records`, and give the ratio 3 decimal places (Measure tools → Format).
+3. A table visual with `dim_country[name]`, `Records`, `Forest km2` and the ratio, sorted by the ratio, highest first. Mauritania heads it with 20,000: 2 records over 0.10 km² of forest. A ratio over a tiny denominator is noise; 22 countries have less than 10 km² of forest. Add a filter on this visual, `Forest km2` is greater than or equal to 1,000: Benin now heads the list with 230.269 (961 records, 4,173.38 km²), then Kenya and South Africa.
+4. Add a slicer with `dim_species[common_name]` and choose Jaguar. The records change and the forest doesn't, because `dim_species` filters `fact_records` only (p2): Costa Rica shows 94 records and 4.050, Brazil 1,370 records and 0.320. The ratio is now that species' sample records per 1,000 km² of forest. Countries without a jaguar record still show their forest and a ratio of 0, because `COALESCE` turns their blank count into 0.
+5. A calculated column next to the measure. Select `dim_country`, Table tools → New column, and type `Records (column) = COUNTROWS ( RELATEDTABLE ( fact_records ) )`. Add it to the table: with Jaguar still chosen, it shows each country's records of every species, because it was computed when the data loaded, before any slicer. Delete the column: a count that ignores the report's filters belongs in a measure, with `ALL` when the total is what's wanted.
+
+**Result:** 215 rows, one for each country the habitat map gives some forest; 105 of them have sample records. They hold 40,394 of the 40,395 records. The last is in Niue, whose habitat estimates hold no forest, so `FILTER` leaves it out, with the 30 other countries in the same case. Trinidad and Tobago has 2 records and 2,806.26 km² of forest: 0.713 sample records per 1,000 km². Åland has 187.69 km² of forest and no records: 0. No country's forest area is 0, so `NULLIF` changes no row here; it is there for the data that will have one.
+
+**Exercise:** shares of a total. Write a DAX query that returns, for each continent, the records and the habitat area in km², and each as a share of its total over every country: the continent's value divided by the value with no country filter. Which continents hold a larger share of the records than of the area?
+
+**Answer:** `CALCULATE ( [Records], ALL ( dim_country ) )` is the records with every country filter removed, so dividing by it gives the share; the same for the area. Africa, North America, Oceania and South America hold a larger share of the records than of the area; Asia and Europe a smaller one, and Antarctica none. The comparison is s6's record-to-area ratio, by continent: it shows where the sample's species were recorded more than area alone predicts. That follows from which species critwire lists and where people record them, not from where wildlife is.
+
+```dax
+// q: p3-ex
+// status: untested: Power BI is Windows-only
+// input: star/fact_records.csv, star/fact_country_habitat.csv, star/dim_country.csv
+// twin: p3-ex-check
+DEFINE
+    MEASURE fact_records[Records] = COUNTROWS ( fact_records )
+    MEASURE fact_country_habitat[Habitat km2] = SUM ( fact_country_habitat[est_area_km2] )
+    MEASURE fact_records[Share of records] =
+        DIVIDE ( [Records], CALCULATE ( [Records], ALL ( dim_country ) ) )
+    MEASURE fact_country_habitat[Share of area] =
+        DIVIDE ( [Habitat km2], CALCULATE ( [Habitat km2], ALL ( dim_country ) ) )
+EVALUATE
+SUMMARIZECOLUMNS (
+    dim_country[continent],
+    "Records", [Records],
+    "Habitat km2", [Habitat km2],
+    "Share of records", [Share of records],
+    "Share of area", [Share of area]
+)
+ORDER BY dim_country[continent]
+```
+
+Its twin, the table it should return, with the shares rounded to 4 places. A window over no partition, `sum(…) OVER ()`, is SQL's total over every row: what `ALL` gives in DAX.
+
+```sql
+-- q: p3-ex-check
+-- status: ran
+-- engine: postgis
+-- after: d6-star-dim-species, d6-star-dim-country, d6-star-dim-dataset, d6-star-dim-year, d6-star-fact-records, d6-star-dim-habitat-class, d6-star-fact-country-habitat
+SELECT c.continent, r.records, h.habitat_km2,
+       round(r.records / sum(r.records) OVER (), 4) AS share_of_records,
+       round(h.habitat_km2 / sum(h.habitat_km2) OVER (), 4) AS share_of_area
+FROM (SELECT DISTINCT continent FROM dim_country) AS c
+LEFT JOIN (SELECT d.continent, count(*) AS records
+           FROM fact_records AS f JOIN dim_country AS d ON d.country_code = f.country_code
+           GROUP BY d.continent) AS r ON r.continent = c.continent
+LEFT JOIN (SELECT d.continent, sum(f.est_area_km2) AS habitat_km2
+           FROM fact_country_habitat AS f JOIN dim_country AS d ON d.country_code = f.country_code
+           GROUP BY d.continent) AS h ON h.continent = c.continent
+WHERE r.records IS NOT NULL OR h.habitat_km2 IS NOT NULL
+ORDER BY c.continent;
+```
+
+```text
+-- result: p3-ex-check · 8 rows · sha256 70c1540a66db
+continent | records | habitat_km2 | share_of_records | share_of_area
+Africa | 10791 | 29703399.22 | 0.2671 | 0.2026
+Antarctica | NULL | 12356486.85 | NULL | 0.0843
+Asia | 2985 | 31108178.20 | 0.0739 | 0.2122
+Europe | 469 | 23004583.24 | 0.0116 | 0.1569
+North America | 9688 | 24217714.23 | 0.2398 | 0.1652
+… 3 more rows
+```
+
+**Check:** eight rows, p2's exercise with two more columns. Europe holds 1.2% of the records and 15.7% of the area, Asia 7.4% and 21.2%; South America 28.0% and 12.1%, Oceania 12.7% and 5.8%. Each share column adds up to 1. Antarctica's share of records is blank, not 0: `DIVIDE` of a blank count is blank, as the twin's NULL is.
+
+**Dialects:**
+- **Excel (Windows):** the same measures in Excel's Data Model: Power Pivot → Measures → New Measure, the same DAX, shown in a PivotTable on the Data Model. Worksheet formulas such as `SUMIFS` give the same totals, but each cell names its own criteria; there is no filter context.
+- **Tableau:** an aggregate calculation such as `COUNT([Record Id]) / SUM([Est Area Km2])` is evaluated under the view's filters, as a measure is. A level of detail expression does what `CALCULATE` does: `{FIXED : COUNT([Record Id])}` is the total with every dimension removed, like `ALL`. Dividing by zero gives null, as `DIVIDE` gives blank.
+- **pandas:** group, then divide. `records / forest.replace(0, pd.NA)` gives missing, not `inf`, for a zero area, and `s / s.sum()` a share of the total. Join each grouped fact to the other on `country_code`, never the facts row by row (p2).
+- **SQL:** `p3-check`'s `NULLIF` for `DIVIDE`, and `p3-ex-check`'s `sum(…) OVER ()` for `CALCULATE ( …, ALL ( … ) )`.
 
 #### p4 · maps-report
 
@@ -10704,7 +10784,7 @@ Five missions build the course, one after another, each from a ready-to-start br
 
 **Why this order.** Every lab reads L1's files, and L1 holds the course's only network write (the derived-dataset registration), so data comes first. L2 builds the site on it with the ten modules this document already writes in full. The habitat ingest is the largest data job and spatial statistics and Power BI both read it, so L3 comes before them. Python (L4) arrives with the modules that need it. Power BI and the capstone (L5) use every earlier track.
 
-**The same data throughout.** L1 republishes the spike's sample (§4.2: the same download and the same rules give the same 40,395 records), so every result recorded here holds on the published files, and a build mission that gets a different result has found a bug, not a new number. The one planned change was L3's: its habitat summaries replaced A2's two-country stand-ins, so the built blocks that read them (`pg-smoke`, `d4-xmin-load`, `d6-star-fact-country-habitat` and `d6-drill-across`) were re-run and updated, with the reason, in the same commit; its whole-country clips changed `pg-smoke` and `d4-xmin-load` once more (the clips' tile rows). `p3-check` and `p3-measures` carry a note that they were recorded on the stand-ins; L5 re-runs them. L5 re-measured `p1-load`'s inputs on the published star (§A.3's two habitat rows).
+**The same data throughout.** L1 republishes the spike's sample (§4.2: the same download and the same rules give the same 40,395 records), so every result recorded here holds on the published files, and a build mission that gets a different result has found a bug, not a new number. The one planned change was L3's: its habitat summaries replaced A2's two-country stand-ins, so the built blocks that read them (`pg-smoke`, `d4-xmin-load`, `d6-star-fact-country-habitat` and `d6-drill-across`) were re-run and updated, with the reason, in the same commit; its whole-country clips changed `pg-smoke` and `d4-xmin-load` once more (the clips' tile rows). L5 re-measured `p1-load`'s inputs on the published star (§A.3's two habitat rows) and re-ran `p3-check` on L3's summaries: 215 rows instead of 2, with `NULLIF` and the column renamed `sample_records_per_1000_km2_forest` (Trinidad and Tobago 0.713, 0.698 on the stand-ins).
 
 **How they're queued.** After the owner has reviewed this document and answered §10 (or accepted its recommendations), the control room copies the five briefs to `/srv/critter-ai/agent-state/missions/briefs/<date>-critwire-learn-l<n>-<slug>.md` (the file name minus the date is the mission's name, branch and worktree) and starts them as `queue-learn.sh` started A1 and A2: `mission start critwire` for L1; wait until its plan says `status: done` and its `## Release` has `Result: done`; start the next; and push one alert, then keep waiting, if a mission stops before finishing. Each brief's start comment repeats its precondition, so a mission started by hand checks the same thing. §10 item 7 gives the alternative of stopping after L2.
 

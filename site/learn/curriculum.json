@@ -622,16 +622,17 @@
       "title": "DAX measures",
       "track": "power-bi",
       "tools": [
-        "PBI"
+        "PBI",
+        "PG"
       ],
       "hours": 2,
       "prereqs": [
         "p2"
       ],
-      "state": "planned",
+      "state": "built",
       "skill": "Measures: `COUNTROWS`, `DISTINCTCOUNT`, `CALCULATE`, ratios",
       "questions": [
-        "How many records per 1,000 km² of forest, by country?"
+        "How many sample records per 1,000 km² of forest, by country?"
       ]
     },
     {
