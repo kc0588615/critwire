@@ -243,10 +243,11 @@ function resultErrors(b: Block, q: string, ran: Exclude<Ran, { error: string }>,
 
 /**
  * One PostGIS block: a plain or `-- boot` block in BEGIN … ROLLBACK (COMMIT for a clean boot block), with its `-- after:`
- * blocks (from `page`) first; a `-- tx: own` block unwrapped (runOwnBlock). Throws only when the session can't go on
+ * blocks (from `course`: every block by id, course.ts courseBlocks; each with its own statements only) first; a
+ * `-- tx: own` block unwrapped (runOwnBlock). Throws only when the session can't go on
  * (BEGIN, SAVEPOINT or ROLLBACK failed, an abort); a block's own failures are in the outcome.
  */
-export async function runBlock(s: LabSession, b: Block, page: ReadonlyMap<string, Block>, options: RunOptions): Promise<Outcome> {
+export async function runBlock(s: LabSession, b: Block, course: ReadonlyMap<string, Block>, options: RunOptions): Promise<Outcome> {
   if (b.engine !== "postgis" || b.status !== "ran") throw new Error(`q ${b.id}: the runner runs ran PostGIS blocks only`);
   if (b.sessions.length) return runSessionsBlock(s, b, options);
   if (b.txOwn) return runOwnBlock(s, b, options);
@@ -262,8 +263,8 @@ export async function runBlock(s: LabSession, b: Block, page: ReadonlyMap<string
   await tx("BEGIN");
   try {
     for (const id of b.after) {
-      const a = page.get(id);
-      if (!a) throw new Error(`${q}: \`-- after\`: no block ${id} on its page`);
+      const a = course.get(id);
+      if (!a) throw new Error(`${q}: \`-- after\`: no block ${id} in the course`);
       for (const st of a.statements) {
         const r = await s.run(st.text, deadline);
         if (!("error" in r)) continue;
@@ -548,6 +549,8 @@ export interface BlocksOptions extends RunOptions, SettleOptions {
   show?: boolean;
   /** Runs once the boot blocks committed, before any other block (learn:check's lab ERD check); a throw stops the run. */
   afterBoot?: () => Promise<void>;
+  /** Every block by id, for `-- after:` (course.ts courseBlocks: a prerequisite page's block too); default the run's. */
+  course?: ReadonlyMap<string, Block>;
 }
 
 /**
@@ -562,16 +565,16 @@ export async function runBlocks(s: LabSession, blocks: readonly Block[], { check
  * The blocks' runs, for settleResults: the `-- boot` blocks first, once (a failing one throws at once), then
  * `afterBoot`, then the rest in order, each of them run twice with `update`.
  */
-export async function blockRuns(s: LabSession, blocks: readonly Block[], { update, show = false, log = console.log, afterBoot, ...run }: Omit<BlocksOptions, "checkedDir">): Promise<BlockRuns[]> {
-  const page = new Map(blocks.map((b) => [b.id, b]));
+export async function blockRuns(s: LabSession, blocks: readonly Block[], { update, show = false, log = console.log, afterBoot, course, ...run }: Omit<BlocksOptions, "checkedDir">): Promise<BlockRuns[]> {
+  const byId = course ?? new Map(blocks.map((b) => [b.id, b]));
   const raster = rasterGate((text) => s.sql.unsafe(text));
   const runs: BlockRuns[] = [];
   const one = async (b: Block): Promise<void> => {
     await raster(b);
-    const first = await runBlock(s, b, page, run);
+    const first = await runBlock(s, b, byId, run);
     if (b.boot && first.failures.length) throw new Error(`boot block ${b.id}: ${first.failures.join("; ")}`);
     if (first.rendered !== undefined && show) log(`learn:check: q ${b.id}:\n  ${first.rendered.split("\n").join("\n  ")}`);
-    const second = update && !b.boot && first.rendered !== undefined ? await runBlock(s, b, page, run) : undefined;
+    const second = update && !b.boot && first.rendered !== undefined ? await runBlock(s, b, byId, run) : undefined;
     runs.push({ block: b, first, ...(second ? { second } : {}) });
   };
   for (const b of blocks.filter((x) => x.boot)) await one(b);

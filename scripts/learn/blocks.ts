@@ -1,7 +1,8 @@
 // The block model (plan D2; spike plan-queries.ts, ported from 004's fences to files). A block file is 004's fence body,
 // headers included, named by its id: site/learn/sql/<id>.sql (`-- ` headers), <id>.py (Python, `# `; L4 plan §2) or
 // <id>.m / <id>.dax (Power BI, `// `). parseBlock reads one file and lints what one file can show; lintPage lints a
-// page's blocks together (ids, `-- after:`, with the course's helpers).
+// page's blocks together (ids, `-- after:`, with the course's helpers: py-connect and the PostGIS blocks of the
+// page's prerequisites, course.ts afterScope).
 // What a statement may do to roles, schemas and settings, the determinism rules and the cleanup pairing are
 // privilege.ts's; lintPage applies them with each block's `-- after:` chain.
 // Pure. Tests: blocks.test.ts.
@@ -36,8 +37,9 @@ export interface Block {
   status: "ran" | "untested";
   /** untested: why. */
   reason: string;
-  /** `-- after:` earlier blocks of the page, run first in the same transaction, in the order named (not transitive).
-   *  Python's `# after:`: their code first, in page order, in one process. */
+  /** `-- after:` earlier blocks of the page, or (PostGIS) ran PostGIS blocks of a prerequisite page, run first in the
+   *  same transaction, in the order named (not transitive). Python's `# after:`: their code first, in page order, in
+   *  one process. */
   after: string[];
   /** `-- boot` (PostGIS): run once at connect and committed. */
   boot: boolean;
@@ -324,11 +326,12 @@ function statementErrors(b: Block, q: string): string[] {
 }
 
 /**
- * A page's blocks, in page order, linted together: unique ids; each `-- after:` block on the page, earlier, ran,
- * expecting no error, wrapped, single-session and in the same engine; then each block's privilege rules with its
- * `-- after:` chain (PV1–PV8) and a ran PostGIS block's cleanup (CL1–CL9; a `-- fails:` statement doesn't happen).
- * `bootIds`: ids that run at boot without a file. `helpers`: course-wide blocks an `-- after:` may name from any page
- * (py-connect, on the setup page), held to the same rules.
+ * A page's blocks, in page order, linted together: unique ids; each `-- after:` block on the page and earlier, or a
+ * helper; ran, expecting no error, wrapped, single-session and in the same engine; then each block's privilege rules
+ * with its `-- after:` chain, helpers included (PV1–PV8), and a ran PostGIS block's cleanup (CL1–CL9; a `-- fails:`
+ * statement doesn't happen). `bootIds`: ids that run at boot without a file. `helpers`: blocks of other pages an
+ * `-- after:` may name (py-connect, on the setup page; the PostGIS blocks of the page's prerequisites), held to the
+ * same rules.
  */
 export function lintPage(blocks: readonly Block[], bootIds: ReadonlySet<string> = new Set([SETUP_ID]), helpers: ReadonlyMap<string, Block> = new Map()): string[] {
   const errors: string[] = [];
@@ -344,7 +347,7 @@ export function lintPage(blocks: readonly Block[], bootIds: ReadonlySet<string> 
       const i = blocks.findIndex((x) => x.id === a);
       const named = blocks[i] ?? helpers.get(a);
       if (bootIds.has(a) || named?.boot) errors.push(`${q}: "${a}" already runs at boot`);
-      else if (!named) errors.push(`${q}: unknown block "${a}" (not on this page)`);
+      else if (!named) errors.push(`${q}: unknown block "${a}" (not on this page or a prerequisite's)`);
       else if (i >= k) errors.push(`${q}: "${a}" comes after it`);
       else if (named.status === "untested") errors.push(`${q}: "${a}" is untested`);
       else if (named.expectError) errors.push(`${q}: "${a}" expects an error`);
@@ -352,7 +355,7 @@ export function lintPage(blocks: readonly Block[], bootIds: ReadonlySet<string> 
       else if (named.sessions.length) errors.push(`${q}: "${a}" runs in sessions ${named.sessions.join(", ")}`);
       else if (named.engine !== b.engine) errors.push(`${q}: "${a}" runs in ${named.engine}, not ${b.engine}`);
     }
-    const chain = b.after.flatMap((a) => first.get(a)?.statements ?? []);
+    const chain = b.after.flatMap((a) => (first.get(a) ?? helpers.get(a))?.statements ?? []);
     const rules = blockRuleErrors(b, chain);
     if (b.engine === "postgis" && b.status === "ran") rules.push(...cleanupErrors(b.id, b.statements.filter((_, i) => b.fails[i] === undefined)));
     errors.push(...rules.map((e) => `${b.file}: ${e}`));

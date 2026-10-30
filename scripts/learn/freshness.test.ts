@@ -261,3 +261,22 @@ test("FR12 a Python block's key doesn't move with another page's plain block", (
   assert.equal(k(pyCourse({ c: edit(c, "-- a comment") })), k(pyCourse()));
   assert.equal(fresh(pyCourse({ p2: editPy(p2, "# a comment") })).blocks["d1-c"]!.key, fresh(pyCourse()).blocks["d1-c"]!.key, "nor a PostGIS block's with a Python edit");
 });
+
+// Cross-page `-- after:` (L5 plan T1, S1). Failure modes: the key reads `-- after:` on the block's page only, so an
+// edit to a prerequisite page's block it runs first leaves a stale result looking fresh; or every key moves with
+// any other page's edit, so one edit makes the whole course stale.
+const d6a = pg("d6-a", [], "CREATE TEMP TABLE a6 AS SELECT 1 AS id;");
+const d6b = pg("d6-b", ["-- after: d6-a"], "CREATE TEMP TABLE b6 AS SELECT id FROM a6;");
+const p3 = pg("p3-c", ["-- after: d6-b"], "SELECT id FROM b6;");
+const crossCourse = (over: Partial<Record<"d6a" | "d6b" | "other", Block>> = {}) => [...course(), page("d6", over.d6a ?? d6a, over.d6b ?? d6b), page("p3", p3), page("g1", over.other ?? pg("g1-x", [], "SELECT 2 AS two;"))];
+
+test("FR13 a block's key moves with a cross-page `-- after:` block, and with that block's own `-- after:` block (a transitive superset)", () => {
+  const k = (pages = crossCourse()) => fresh(pages).blocks["p3-c"]!.key;
+  assert.notEqual(k(crossCourse({ d6b: edit(d6b, "-- a comment") })), k(), "its cross-page after block");
+  assert.notEqual(k(crossCourse({ d6a: edit(d6a, "-- a comment") })), k(), "that block's own after block");
+});
+
+test("FR14 the key doesn't move with another page's non-boot block it doesn't name", () => {
+  const k = (pages = crossCourse()) => fresh(pages).blocks["p3-c"]!.key;
+  assert.equal(k(crossCourse({ other: pg("g1-x", [], "SELECT 3 AS three;") })), k());
+});

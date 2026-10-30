@@ -187,3 +187,22 @@ test("PT13 setup's §3.3 and §3.4 are setup sections; §3.3's text fence is nei
   assert.equal(file(p.files, "site/learn/sql/arcpy-moran.py"), "# q: arcpy-moran\n# status: untested: ArcGIS Pro (Windows, licensed)\nimport arcpy\n");
   assert.ok(!paths(p.files).some((f) => /not-setup|requirements/.test(f)));
 });
+
+// Cross-page `-- after:` (L5 plan T1, S1). Failure modes: learn:port refuses a page whose PostGIS block names a
+// prerequisite page's block (p2–p4's twins, c1's feed), so it can't port; or it takes any page's block, so a block
+// that names a page the learner may not have opened is ported and fails only at learn:check.
+const twoPages = [
+  "# x", "", "## 5. Modules", "",
+  "#### m1 · one", "", ...fence("sql", "-- q: m1-a", "-- status: ran", "-- engine: postgis", "CREATE TEMP TABLE a AS SELECT 1 AS id;"),
+  "", ...fence("text", "-- result: m1-a · 0 rows · sha256 000000000000"), "",
+  "#### m2 · two", "", ...fence("sql", "-- q: m2-a", "-- status: ran", "-- engine: postgis", "-- after: m1-a", "SELECT id FROM a;"),
+  "", ...fence("text", "-- result: m2-a · 1 row · sha256 000000000000", "id", "1"), "",
+].join("\n");
+
+test("PT14 a block naming a prerequisite page's ran PostGIS block ports; naming another page's is an error naming 004's line", () => {
+  const p = portPage(twoPages, "m2", SETUP, ["m1"]);
+  assert.deepEqual(p.errors, []);
+  assert.deepEqual(paths(p.files), ["site/learn/sql/m2-a.sql", "site/learn/labs/checked/m2-a.txt"]);
+  const line = twoPages.split("\n").indexOf("-- q: m2-a");
+  assert.deepEqual(portPage(twoPages, "m2", SETUP).errors, [`004:${line}: m2-a.sql: q m2-a: \`-- after\`: unknown block "m1-a" (not on this page or a prerequisite's)`]);
+});

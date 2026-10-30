@@ -38,7 +38,7 @@ import { agreement } from "./agree.ts";
 import { assembleDownloads, type Announced, type Download } from "./assemble.ts";
 import type { Block } from "./blocks.ts";
 import { takeLabLock, type LabLock } from "./cleanup.ts";
-import type { CoursePage } from "./course.ts";
+import { courseBlocks, type CoursePage } from "./course.ts";
 import { readCourse } from "./course-files.ts";
 import { dbMeta, LAB_ERD, markerDrift, markers, parseErd, PG_META_SQL } from "./erd-model.ts";
 import { CHECKED_JSON, LOADER, nextStamp, readFreshness, STAMP_FILE, type ServerVersions, type Versions } from "./freshness.ts";
@@ -341,7 +341,7 @@ async function blocksStage(lab: PgTarget, run: Run, blocks: readonly Block[], co
   const runs: BlockRuns[] = [];
   try {
     const afterBoot = labErd === undefined ? undefined : () => assertLabErd(session, labErd);
-    runs.push(...(await blockRuns(session, pg, { update, show, known, watch, afterBoot, open })));
+    runs.push(...(await blockRuns(session, pg, { update, show, known, watch, afterBoot, open, course: courseBlocks(course) })));
   } finally {
     await session.end();
   }

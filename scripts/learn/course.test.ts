@@ -8,7 +8,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readdirSync, readFileSync } from "node:fs";
 import { parseBlock, type Block } from "./blocks.ts";
-import { assembleCourse, pageOrder, pageSlots, parseCurriculum, recordedResults, type Curriculum, type Page } from "./course.ts";
+import { afterScope, assembleCourse, courseBlocks, pageOrder, pageSlots, parseCurriculum, recordedResults, type Curriculum, type Module, type Page } from "./course.ts";
 
 const tracks = [
   { id: "foundations", title: "Foundations" },
@@ -102,6 +102,10 @@ const pyFile = (id: string, ...lines: string[]): Block => {
 const ran = (id: string, ...h: string[]) => blockFile(id, "-- status: ran", ...h, "SELECT 1 AS a");
 const pageOf = (id: string, html: string): Page => ({ id, file: `site/learn/modules/${id}.html`, html });
 const blocks = (...bs: Block[]) => new Map(bs.map((b) => [b.id, b]));
+/** A curriculum built by hand (past parseCurriculum): `[id, prereqs]` pairs, in order. */
+const cur = (...ms: [string, string[]?][]): Curriculum => ({ tracks, modules: ms.map(([id, prereqs = []]) => mod(id, { prereqs }) as unknown as Module) });
+/** A curriculum of the given modules, none with prerequisites. */
+const flat = (...ids: string[]) => cur(...ids.map((id): [string] => [id]));
 
 test("SL1 slots: block, exercise and skip name a block, diagram names a diagram; `in order` only on exercise and skip", () => {
   const { slots, errors } = pageSlots("p.html", "<p>{{title}}</p>{{block:f1-a}} {{exercise:f1-ex in order}} {{skip:f1-skip}} {{diagram:grain}}");
@@ -121,7 +125,7 @@ test("SL2 page order: the setup page, then built modules in curriculum order", (
 
 test("SL3 a slot without a file, a block on two pages, a block file no page uses; setup.sql needs no slot", () => {
   const all = blocks(ran("f1-a"), ran("f1-b"), ran("orphan"), blockFile("setup", "-- status: ran", "CREATE TABLE t (id int)"));
-  const { errors } = assembleCourse([pageOf("f1", "{{block:f1-a}} {{block:f1-x}} {{diagram:nope}}"), pageOf("f2", "{{block:f1-a}} {{block:f1-b}}")], all, new Set());
+  const { errors } = assembleCourse(flat("f1", "f2"), [pageOf("f1", "{{block:f1-a}} {{block:f1-x}} {{diagram:nope}}"), pageOf("f2", "{{block:f1-a}} {{block:f1-b}}")], all, new Set());
   has(
     errors,
     "site/learn/modules/f1.html: {{block:f1-x}}: no block file site/learn/sql/f1-x.sql (.py, .m, .dax)",
@@ -132,18 +136,18 @@ test("SL3 a slot without a file, a block on two pages, a block file no page uses
   assert.ok(!errors.some((e) => e.includes("setup.sql")), errors.join("\n"));
 });
 
-test("SL4 `-- after:` across pages fails: each page's blocks are linted together, in slot order", () => {
+test("SL4 a page's blocks are linted together, in slot order; a browser block can't name another page's", () => {
   const all = blocks(ran("f1-a"), ran("f2-b", "-- after: f1-a"));
-  has(assembleCourse([pageOf("f1", "{{block:f1-a}}"), pageOf("f2", "{{block:f2-b}}")], all, new Set()).errors, 'q f2-b: `-- after`: unknown block "f1-a" (not on this page)');
-  const { pages, errors } = assembleCourse([pageOf("f1", "{{block:f1-a}} {{exercise:f2-b}}")], all, new Set(["grain"]));
+  has(assembleCourse(cur(["f1"], ["f2", ["f1"]]), [pageOf("f1", "{{block:f1-a}}"), pageOf("f2", "{{block:f2-b}}")], all, new Set()).errors, 'q f2-b: `-- after`: unknown block "f1-a" (not on this page or a prerequisite\'s)');
+  const { pages, errors } = assembleCourse(flat("f1"), [pageOf("f1", "{{block:f1-a}} {{exercise:f2-b}}")], all, new Set(["grain"]));
   assert.deepEqual(errors, []);
   assert.deepEqual(pages.map((p) => [p.page.id, p.blocks.map((b) => b.id)]), [["f1", ["f1-a", "f2-b"]]]);
-  has(assembleCourse([pageOf("f1", "{{block:f2-b}} {{block:f1-a}}")], all, new Set()).errors, 'q f2-b: `-- after`: "f1-a" comes after it');
+  has(assembleCourse(flat("f1"), [pageOf("f1", "{{block:f2-b}} {{block:f1-a}}")], all, new Set()).errors, 'q f2-b: `-- after`: "f1-a" comes after it');
 });
 
 test("SL5 the page lint includes the privilege and cleanup rules", () => {
   const all = blocks(blockFile("d5-a", "-- status: ran", "-- engine: postgis", "CREATE ROLE reporter;", "SELECT 1 AS a"));
-  has(assembleCourse([pageOf("d5", "{{block:d5-a}}")], all, new Set()).errors, "site/learn/sql/d5-a.sql: q d5-a: statement 1 names role reporter");
+  has(assembleCourse(flat("d5"), [pageOf("d5", "{{block:d5-a}}")], all, new Set()).errors, "site/learn/sql/d5-a.sql: q d5-a: statement 1 names role reporter");
 });
 
 test("SL6 recorded results: a ran PostGIS or Python block without checked/<id>.txt, and a .txt no ran PostGIS or Python block owns", () => {
@@ -152,7 +156,7 @@ test("SL6 recorded results: a ran PostGIS or Python block without checked/<id>.t
     blockFile("d1-d", "-- status: untested: needs two sessions", "-- engine: postgis", "SELECT 1 AS a"),
     pyFile("d1-py", "# status: ran", "print(1)"), pyFile("d1-pu", "# status: untested: ArcGIS Pro", "import arcpy"),
   );
-  const { pages, errors } = assembleCourse([pageOf("d1", "{{block:d1-a}} {{block:d1-b}} {{block:d1-c}} {{block:d1-d}} {{block:d1-py}} {{block:d1-pu}}")], all, new Set());
+  const { pages, errors } = assembleCourse(flat("d1"), [pageOf("d1", "{{block:d1-a}} {{block:d1-b}} {{block:d1-c}} {{block:d1-d}} {{block:d1-py}} {{block:d1-pu}}")], all, new Set());
   assert.deepEqual(errors, []);
   const { missing, orphans } = recordedResults(pages, new Set(["d1-a", "d1-c", "d1-d", "d1-pu", "gone"]));
   assert.deepEqual(missing, [
@@ -171,6 +175,60 @@ test("SL6 recorded results: a ran PostGIS or Python block without checked/<id>.t
 test("PY5 through the course: a Python block on any page may name py-connect, from the setup page", () => {
   const all = blocks(pyFile("py-connect", "# status: ran", "def connect(): pass"), pyFile("s4-a", "# status: ran", "# after: py-connect", "print(1)"));
   const setup: Page = { id: "setup", file: "site/learn/pages/setup.html", html: "{{block:py-connect}}" };
-  assert.deepEqual(assembleCourse([setup, pageOf("s4", "{{block:s4-a}}")], all, new Set()).errors, []);
-  has(assembleCourse([pageOf("s4", "{{block:s4-a}}")], blocks(all.get("s4-a")!), new Set()).errors, 'q s4-a: `# after`: unknown block "py-connect" (not on this page)');
+  assert.deepEqual(assembleCourse(flat("s4"), [setup, pageOf("s4", "{{block:s4-a}}")], all, new Set()).errors, []);
+  has(assembleCourse(flat("s4"), [pageOf("s4", "{{block:s4-a}}")], blocks(all.get("s4-a")!), new Set()).errors, 'q s4-a: `# after`: unknown block "py-connect" (not on this page or a prerequisite\'s)');
+});
+
+// ---------------------------------------------------------------------------------------------------------------
+// Cross-page `-- after:` (L5 plan T1, S1; 004 §0). Failure modes: a block names a block on a page the learner may
+// not have opened (not a prerequisite, transitively); a cycle or self-reference in a hand-built curriculum loops or
+// returns an empty scope silently; the lint depends on page order, so a page listed before its prerequisite's page
+// is refused; the course's id resolver misses a page's block.
+
+test("XS1 afterScope: a module's prerequisites, transitively; setup and a module without prerequisites → none", () => {
+  const file = new URL("../../site/learn/curriculum.json", import.meta.url);
+  const pages = new Set(readdirSync(new URL("../../site/learn/modules/", import.meta.url)).map((n) => n.replace(/\.html$/, "")));
+  const c = parseCurriculum("site/learn/curriculum.json", readFileSync(file, "utf8"), pages).curriculum!;
+  assert.deepEqual([...afterScope(c, "p3")].sort(), ["d1", "d2", "d3", "d4", "d6", "f1", "f2", "f3", "p1", "p2"]);
+  assert.deepEqual([...afterScope(c, "setup")], []);
+  assert.deepEqual([...afterScope(c, "f1")], []);
+});
+
+test("XS2 afterScope throws, naming the page: an unknown page, a module naming itself, a prerequisite cycle (named)", () => {
+  assert.throws(() => afterScope(flat("f1"), "f9"), /afterScope f9: no page f9 in the curriculum/);
+  assert.throws(() => afterScope(cur(["f1", ["f1"]]), "f1"), /afterScope f1: prerequisites form a cycle: f1 → f1/);
+  assert.throws(() => afterScope(cur(["f1", ["f2"]], ["f2", ["f1"]], ["f3", ["f2"]]), "f3"), /afterScope f3: prerequisites form a cycle: f2 → f1 → f2/);
+  assert.throws(() => afterScope(cur(["f1", ["f0"]]), "f1"), /afterScope f1: module f1: unknown prerequisite "f0"/);
+});
+
+const pgRan = (id: string, ...h: string[]) => ran(id, "-- engine: postgis", ...h);
+
+test("XS3 courseBlocks: every page's blocks by id, the union of assembleCourse's pages", () => {
+  const all = blocks(pgRan("f1-a"), pgRan("f2-a"), ran("f2-b"));
+  const { pages, errors } = assembleCourse(flat("f1", "f2"), [pageOf("f1", "{{block:f1-a}}"), pageOf("f2", "{{block:f2-a}} {{block:f2-b}}")], all, new Set());
+  assert.deepEqual(errors, []);
+  const by = courseBlocks(pages);
+  assert.deepEqual([...by.keys()], ["f1-a", "f2-a", "f2-b"]);
+  for (const p of pages) for (const b of p.blocks) assert.equal(by.get(b.id), b);
+});
+
+test("XS4 a page listed before its prerequisite's page may name that page's ran PostGIS block: the lint doesn't depend on page order", () => {
+  const all = blocks(pgRan("d6-a"), pgRan("p3-a", "-- after: d6-a"));
+  const c = cur(["d6"], ["p3", ["d6"]]);
+  const d6 = pageOf("d6", "{{block:d6-a}}");
+  const p3 = pageOf("p3", "{{block:p3-a}}");
+  assert.deepEqual(assembleCourse(c, [d6, p3], all, new Set()).errors, []);
+  assert.deepEqual(assembleCourse(c, [p3, d6], all, new Set()).errors, []);
+  const far = blocks(pgRan("f1-a"), pgRan("d6-a"), pgRan("p3-a", "-- after: f1-a"));
+  assert.deepEqual(assembleCourse(cur(["f1"], ["d6", ["f1"]], ["p3", ["d6"]]), [pageOf("p3", "{{block:p3-a}}"), d6, pageOf("f1", "{{block:f1-a}}")], far, new Set()).errors, [], "transitively");
+});
+
+test("XS5 a block on a page outside the scope (unrelated, or a dependent page) is unknown", () => {
+  const all = blocks(pgRan("d6-a", "-- after: p3-a"), pgRan("p3-a"), pgRan("g1-a"), pgRan("p4-a", "-- after: g1-a"));
+  const c = cur(["d6"], ["g1"], ["p3", ["d6"]], ["p4", ["p3"]]);
+  const { errors } = assembleCourse(c, [pageOf("d6", "{{block:d6-a}}"), pageOf("g1", "{{block:g1-a}}"), pageOf("p3", "{{block:p3-a}}"), pageOf("p4", "{{block:p4-a}}")], all, new Set());
+  has(errors,
+    'site/learn/sql/d6-a.sql: q d6-a: `-- after`: unknown block "p3-a" (not on this page or a prerequisite\'s)',
+    'site/learn/sql/p4-a.sql: q p4-a: `-- after`: unknown block "g1-a" (not on this page or a prerequisite\'s)');
+  assert.equal(errors.length, 2, errors.join("\n"));
 });

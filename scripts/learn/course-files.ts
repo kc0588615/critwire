@@ -59,7 +59,7 @@ export async function readCourse(): Promise<CourseFiles> {
     if (block) blocks.set(block.id, block);
   }
 
-  const course = assembleCourse(pageOrder(parsed.curriculum, pages), blocks, new Set(stems(await list(DIAGRAM_DIR), ".svg")));
+  const course = assembleCourse(parsed.curriculum, pageOrder(parsed.curriculum, pages), blocks, new Set(stems(await list(DIAGRAM_DIR), ".svg")));
   const { missing, orphans } = recordedResults(course.pages, new Set(stems(await list(CHECKED_DIR), ".txt")));
   return { curriculum: parsed.curriculum, pages: course.pages, errors: [...errors, ...course.errors, ...orphans], missing };
 }

@@ -2,7 +2,8 @@
 // block file, byte for byte (site/learn/sql/<id>.<sql|py|m|dax>), and the result fence under a ran block its recorded
 // result: PostGIS and Python in site/learn/labs/checked/<id>.txt (learn:check's), DuckDB in e2e/__snapshots__/<id>.txt
 // (E2E's), without a final newline. A page is `setup` (004 §0 and §3.1–3.5) or a module (`#### <id> · <slug>` up
-// to the next heading of its level or above); py-connect, on the setup page, is every page's helper (L4 plan D4). The
+// to the next heading of its level or above); py-connect, on the setup page, is every page's helper (L4 plan D4), and
+// the PostGIS blocks of a page's scope (course.ts afterScope, from curriculum.json) its PostGIS blocks' helpers. The
 // setup block is compared with site/learn/sql/setup.sql, never written. portPage and checkPort are queries; writePort
 // is the one command. Tests: port.test.ts.
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -79,25 +80,34 @@ function differsAt(body: string, file: string): number | null {
   return (at >= 0 ? at : Math.min(got.length, want.length)) + 1;
 }
 
-/** The course-wide helpers a page's `# after:` may name: py-connect, from the setup page, on every other page. */
-function helpers(doc: string, page: string, setupSql: string): Map<string, Block> {
+/** The ported blocks of a page, from 004 (its errors aside). */
+const portedBlocks = (doc: string, page: string, setupSql: string): Block[] =>
+  portPage(doc, page, setupSql).files.flatMap((f) => (f.path.startsWith(`${BLOCK_DIR}/`) ? parseBlock(f.path, f.text).block ?? [] : []));
+
+/**
+ * The helpers a page's `-- after:`/`# after:` may name: py-connect, from the setup page, on every other page; and the
+ * PostGIS blocks of the `scope` pages (its prerequisites, transitively).
+ */
+function helpers(doc: string, page: string, setupSql: string, scope: Iterable<string>): Map<string, Block> {
   if (page === SETUP_PAGE) return new Map();
-  const f = portPage(doc, SETUP_PAGE, setupSql).files.find((x) => x.path === `${BLOCK_DIR}/${PY_CONNECT_ID}.py`);
-  const b = f && parseBlock(f.path, f.text).block;
-  return new Map(b ? [[b.id, b]] : []);
+  const connect = portedBlocks(doc, SETUP_PAGE, setupSql).filter((b) => b.id === PY_CONNECT_ID);
+  const pg = [...scope].flatMap((p) => portedBlocks(doc, p, setupSql)).filter((b) => b.engine === "postgis");
+  return new Map([...connect, ...pg].map((b) => [b.id, b]));
 }
 
 /**
  * A page's files from 004 and every error 004's fences show: missing, mismatched or orphan results; a block that fails
- * its parse (named by its fence's line) or its lint; a setup block that differs from `setupSql`.
+ * its parse or its lint (each named by its fence's line); a setup block that differs from `setupSql`. `scope`: the
+ * pages whose PostGIS blocks its `-- after:` may name (course.ts afterScope).
  */
-export function portPage(doc: string, page: string, setupSql: string): { files: PortFile[]; errors: string[] } {
+export function portPage(doc: string, page: string, setupSql: string, scope: Iterable<string> = []): { files: PortFile[]; errors: string[] } {
   const lines = doc.split("\n");
   const ranges = sections(lines, page === SETUP_PAGE ? (h) => SETUP_SECTIONS.some((re) => re.test(h)) : (h) => MODULE.exec(h)?.[1] === page);
   if (!ranges.length) return { files: [], errors: [`no page "${page}" in 004 (${docPages(doc).join(", ")})`] };
   const files: PortFile[] = [];
   const errors: string[] = [];
   const blocks: Block[] = [];
+  const lineOf = new Map<string, string>();
   const all = ranges.flatMap(([from, to]) => fences(lines, from, to));
   const claimed = new Set<Fence>();
   const isResult = (f: Fence | undefined) => f?.lang === "text" && RESULT.test(f.body[0] ?? "");
@@ -118,6 +128,7 @@ export function portPage(doc: string, page: string, setupSql: string): { files: 
     errors.push(...parse.map((e) => `${at}: ${e}`));
     if (!block) return;
     blocks.push(block);
+    lineOf.set(`${block.file}: `, at);
     files.push({ page, path: `${BLOCK_DIR}/${block.id}${ext}`, text });
     if (block.status !== "ran" || block.engine === "powerbi") return;
     if (!isResult(next)) return void errors.push(`${at}: q ${block.id}: no result block after it`);
@@ -127,7 +138,8 @@ export function portPage(doc: string, page: string, setupSql: string): { files: 
     files.push({ page, path: `${block.engine === "duckdb" ? SNAPSHOT_DIR : CHECKED_DIR}/${block.id}.txt`, text: next!.body.join("\n") });
   });
   for (const f of all) if (isResult(f) && !claimed.has(f)) errors.push(`004:${f.open + 1}: orphan result block "${RESULT.exec(f.body[0]!)![1]}"`);
-  errors.push(...lintPage(blocks, undefined, helpers(doc, page, setupSql)));
+  const at = (e: string) => [...lineOf].find(([file]) => e.startsWith(file))?.[1];
+  errors.push(...lintPage(blocks, undefined, helpers(doc, page, setupSql, scope)).map((e) => (at(e) ? `${at(e)}: ${e}` : e)));
   return { files, errors };
 }
 

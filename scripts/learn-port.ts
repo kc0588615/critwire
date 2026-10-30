@@ -3,10 +3,13 @@
 //                                       writing nothing, if a file exists and differs from 004.
 //   pnpm learn:port --check <page>…|all compares the files with 004 and names each difference; `all` = every page with
 //                                       a block file written. This is the plan's `P`.
-// A page is `setup` or a module id (f1, d3 …). Any 004 error (a lint, a missing result) exits 1 before anything is written.
-import { readFileSync } from "node:fs";
+// A page is `setup` or a module id (f1, d3 …); a PostGIS block may name a ran PostGIS block of a prerequisite page
+// (site/learn/curriculum.json, course.ts afterScope). Any 004 error (a lint, a missing result) exits 1 before anything
+// is written.
+import { readdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
+import { afterScope, CURRICULUM_FILE, MODULE_DIR, parseCurriculum } from "./learn/course.ts";
 import { checkPort, portedPages, portPage, writePort } from "./learn/port.ts";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
@@ -17,8 +20,11 @@ try {
   const setupSql = readFileSync(new URL("../site/learn/sql/setup.sql", import.meta.url), "utf8");
   const all = positionals.length === 1 && positionals[0] === "all";
   if (all && !values.check) throw new Error("`all` is for --check: port pages one by one");
+  const modulePages = new Set(readdirSync(new URL(`../${MODULE_DIR}/`, import.meta.url)).filter((n) => n.endsWith(".html")).map((n) => n.slice(0, -".html".length)));
+  const { curriculum, errors: curriculumErrors } = parseCurriculum(CURRICULUM_FILE, readFileSync(new URL(`../${CURRICULUM_FILE}`, import.meta.url), "utf8"), modulePages);
+  if (!curriculum) throw new Error(curriculumErrors.join("\n"));
   const pages = all ? portedPages(doc, setupSql, root) : positionals;
-  const ported = pages.map((p) => ({ page: p, ...portPage(doc, p, setupSql) }));
+  const ported = pages.map((p) => ({ page: p, ...portPage(doc, p, setupSql, afterScope(curriculum, p)) }));
   const errors = ported.flatMap((p) => p.errors);
   if (errors.length) throw new Error(errors.join("\n"));
   const files = ported.flatMap((p) => p.files);

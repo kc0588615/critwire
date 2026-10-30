@@ -8,7 +8,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { parseBlock } from "./blocks.ts";
 import { blocksToRun, forcedFailureLoader } from "./check.ts";
-import type { CoursePage } from "./course.ts";
+import { courseBlocks, type CoursePage } from "./course.ts";
 import { rasterGate } from "./runner.ts";
 
 const COPY = "COPY occurrences (id, species_id, license) FROM stdin (FORMAT csv);";
@@ -109,4 +109,16 @@ test("BF1 a boot block on the run's page isn't listed twice", () => {
 
 test("BF1 a whole run's list is every page's blocks in page order", () => {
   assert.deepEqual(ids(), ["pg-role-smoke", "s2-a", "s2-b", "s4-cells", "s4-a", "s4-later", "s5-plan", "s5-a"]);
+});
+
+// BF2 (L5 plan T1, S1). Failure modes: `--module p3` builds its lookup from the run list, so a block naming a
+// prerequisite page's block fails only there; or the run list picks the helper up as a block of its own, recording
+// it twice or running it out of its page.
+test("BF2 --module: a cross-page `-- after:` block resolves through courseBlocks; the run list is still boot blocks, then the page's", () => {
+  const helper = ran("s4-h");
+  const named = blockOf("s5-b", "-- status: ran\n-- engine: postgis\n-- after: s4-h\n");
+  const course = [...COURSE.slice(0, 2), pageOf("s4", bootOf("s4-cells"), helper), pageOf("s5", named)];
+  assert.deepEqual(blocksToRun(course, "s5").map((b) => b.id), ["s4-cells", "s5-b"]);
+  assert.equal(courseBlocks(course).get("s4-h"), helper);
+  assert.deepEqual(blocksToRun(course).map((b) => b.id), ["pg-role-smoke", "s2-a", "s2-b", "s4-cells", "s4-h", "s5-b"]);
 });

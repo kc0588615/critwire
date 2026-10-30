@@ -537,7 +537,7 @@ Every step:
   4. S16 runs the full Verification once before the code review. Rule 7 runs it again on the final commit.
 - **Estimate:** 16 steps. With 6 sessions through Steps, plus code review 1, ≈ 2 fix steps, final Verification 1 and Release 1: ≈ 27 of the 48 cap. Count at each session start with `grep -c '^=== .* session ' /srv/critter-ai/agent-state/missions/critwire-learn-l5-powerbi-capstone.log`. Past 48, the brief's rule applies: no more review steps; finish Verification and Release; each unfinished assigned item becomes a handoff item.
 
-- [ ] S1. Cross-page `-- after:` (T1; F1)
+- [x] S1. Cross-page `-- after:` (T1; F1)
   - First [T]: XS1–XS5 (`scripts/learn/course.test.ts`), XA1–XA3 (`blocks.test.ts`), AS18–AS20 (`assemble.test.ts`), FR13–FR14 (`freshness.test.ts`), PT14 (`port.test.ts`), BF2 (`check.test.ts`). First [D]: XR1 (`runner.dbtest.ts`).
   - Code:
     - `course.ts`: `afterScope`, `courseBlocks`, and `assembleCourse(curriculum, pages, blocks, diagrams)` in two passes. Update its callers (`course-files.ts`, …).
@@ -933,6 +933,8 @@ These are the isolated tests, each written red before its code (owner's rule), l
 - Feed attribution embedded in the feed JSON (license, license_url, attribution, per-credit doi), no companion file (Astra MUST-FIX 1).
 - Planner order deviations (Steps stage): `feedAttributionErrors` + `CreditDataset.doi` land in S10 with attribution fields, not S4; build's feed check + `writeFeed` apply only when course has `FEED.block` (stray feed file refused), keeps S4–S8 plain-green; `FEED` constant created in S3 (T3 input rule names `FEED.input`); S16 runs full Verification once before code review, rule 7 reruns it on final commit.
 - Data cap: Verification checks the build's 120,000,000 B cap (owner raised it, L3 H5), not the brief's 50 MB; `/learn/data/` already 95.9 MB at Baseline.
+- S1 (planner's call): a built page's `curriculum.json` tools change in the same commit as its page (badges must be true); S13 verifies them.
+- S1: `portPage(doc, page, setupSql, scope)` takes the scope as a 4th arg (default none); `learn:port` computes it from `curriculum.json` via `afterScope`. Lint errors from port now carry their fence's `004:<line>:` prefix (PT14). `blockRuns` takes `course` (courseBlocks) as an option, default the run list, so existing callers are unchanged.
 
 ## Log
 
@@ -944,5 +946,6 @@ These are the isolated tests, each written red before its code (owner's rule), l
 - 2026-10-30 05:40 UTC: Revision by `architect`: 3 MUST-FIX resolved (H6 before Verification; T1 two-pass scope from full map, afterScope refuses self/cycle/unknown; F9/T4 feed embeds license + attribution, checked at build/e2e/smoke); SCs folded in; rounding probe clean. Plan-only change, no checks needed.
 
 - 2026-10-30 05:53 UTC: Steps by `planner`: 16 steps (S1 cross-page after … S16 Verification), Verification, Failure modes; planner deviations under Decisions. Plan-only change, no checks needed.
+- 2026-10-30 06:47 UTC: S1 cross-page `-- after:`: `afterScope`/`courseBlocks`, two-pass `assembleCourse`, lint/assemble/freshness/runner/port resolve course-wide; 004 §0, §7.6, AGENTS.md. Red 18 (11 failing + course/check suites not loading: XS1–5, SL4, BF2; XA1–XA2 already held by `lintPage`'s helpers) → green. T: typecheck ok, test 679/679; L: learn:check ok, only `checked.json` re-stamped; build ok; D: test:db 139/139 (XR1 incl.); P 0 diffs; H, HN, HR empty, A ok (`dist/` byte-identical to Baseline); Q empty.
 
 ## Summary

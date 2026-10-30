@@ -1,7 +1,8 @@
 // The course's shape (plan D2, D8.1; 004 §2, §7.5): site/learn/curriculum.json (tracks, modules, prerequisites,
 // built or planned), the pages' block slots, and the page order learn:check, the build and E2E share: the setup page,
-// then the built modules in curriculum order. Each page's blocks are linted together (blocks.ts lintPage), so an
-// `-- after:` block must be on the same page. Pure. Tests: course.test.ts.
+// then the built modules in curriculum order. Each page's blocks are linted together (blocks.ts lintPage); a PostGIS
+// block's `-- after:` may also name a ran PostGIS block on a page in its scope (afterScope: its module's prerequisites,
+// transitively; 004 §0). Pure. Tests: course.test.ts.
 import { lintPage, SETUP_ID, BLOCK_DIR, CHECKED_DIR, PY_CONNECT_ID, type Block } from "./blocks.ts";
 
 export const CURRICULUM_FILE = "site/learn/curriculum.json";
@@ -212,16 +213,41 @@ export interface CoursePage {
 }
 
 /**
+ * The pages a page's PostGIS `-- after:` may reach besides its own (004 §0): its module's prerequisites, transitively;
+ * none for the setup page. Throws, naming the page, on an unknown page or prerequisite, or a cycle (named): never an
+ * empty scope for a broken curriculum.
+ */
+export function afterScope(curriculum: Curriculum, pageId: string): Set<string> {
+  if (pageId === SETUP_PAGE) return new Set();
+  const by = new Map(curriculum.modules.map((m) => [m.id, m]));
+  if (!by.has(pageId)) throw new Error(`afterScope ${pageId}: no page ${pageId} in the curriculum`);
+  const scope = new Set<string>();
+  const visit = (id: string, path: readonly string[]) => {
+    for (const p of by.get(id)!.prereqs) {
+      if (path.includes(p)) throw new Error(`afterScope ${pageId}: prerequisites form a cycle: ${[...path.slice(path.indexOf(p)), p].join(" → ")}`);
+      if (!by.has(p)) throw new Error(`afterScope ${pageId}: module ${id}: unknown prerequisite "${p}"`);
+      if (scope.has(p)) continue;
+      scope.add(p);
+      visit(p, [...path, p]);
+    }
+  };
+  visit(pageId, [pageId]);
+  return scope;
+}
+
+/** Every page's blocks by id: the one resolver of `-- after:` for the runner, the downloads and the keys. */
+export const courseBlocks = (pages: readonly CoursePage[]): Map<string, Block> => new Map(pages.flatMap((p) => p.blocks).map((b) => [b.id, b]));
+
+/**
  * The pages (in page order) with their blocks, and every error: a bad slot, a slot without its block file or
  * diagram, a block on two pages, a block file no page uses (setup.sql runs at boot and needs none), and each page's
- * lint (lintPage: ids, `-- after:` on the same page and earlier, or py-connect from the setup page, privilege,
- * cleanup). `diagrams`: the names in site/learn/diagrams/.
+ * lint (lintPage: ids, `-- after:` earlier on the same page, a PostGIS block on a page of its afterScope, or py-connect
+ * from the setup page; privilege, cleanup). Two passes, so the lint doesn't depend on page order: every page's blocks
+ * first, then each page's lint. `diagrams`: the names in site/learn/diagrams/.
  */
-export function assembleCourse(pages: readonly Page[], blocks: ReadonlyMap<string, Block>, diagrams: ReadonlySet<string>): { pages: CoursePage[]; errors: string[] } {
+export function assembleCourse(curriculum: Curriculum, pages: readonly Page[], blocks: ReadonlyMap<string, Block>, diagrams: ReadonlySet<string>): { pages: CoursePage[]; errors: string[] } {
   const errors: string[] = [];
   const usedOn = new Map<string, string>();
-  const connect = blocks.get(PY_CONNECT_ID);
-  const helpers = new Map(connect ? [[connect.id, connect]] : []);
   const out = pages.map((page): CoursePage => {
     const { slots, errors: slotErrors } = pageSlots(page.file, page.html);
     errors.push(...slotErrors);
@@ -245,9 +271,16 @@ export function assembleCourse(pages: readonly Page[], blocks: ReadonlyMap<strin
       usedOn.set(b.id, page.file);
       onPage.push(b);
     }
-    errors.push(...lintPage(onPage, undefined, helpers));
     return { page, slots, blocks: onPage };
   });
+  const connect = blocks.get(PY_CONNECT_ID);
+  const byPage = new Map(out.map((p) => [p.page.id, p.blocks]));
+  for (const { page, blocks: onPage } of out) {
+    const scope = afterScope(curriculum, page.id);
+    const pgHelpers = [...scope].flatMap((id) => byPage.get(id) ?? []).filter((b) => b.engine === "postgis");
+    const helpers = new Map([...(connect ? [connect] : []), ...pgHelpers].map((b) => [b.id, b]));
+    errors.push(...lintPage(onPage, undefined, helpers));
+  }
   for (const b of blocks.values()) if (b.id !== SETUP_ID && !usedOn.has(b.id)) errors.push(`${b.file}: no page uses block ${b.id}`);
   return { pages: out, errors };
 }

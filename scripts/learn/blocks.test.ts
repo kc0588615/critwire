@@ -95,7 +95,7 @@ test("RQ26, RP5 p5k: `-- after:` blocks exist on the page, come earlier, run, do
   ];
   has(
     lintPage(page),
-    'r26c.sql: q r26c: `-- after`: unknown block "nope" (not on this page)',
+    'r26c.sql: q r26c: `-- after`: unknown block "nope" (not on this page or a prerequisite\'s)',
     'q r26c: `-- after`: "r26d" comes after it',
     'q r26d: `-- after`: "r26d" comes after it',
     'q r26e: `-- after`: "setup" already runs at boot',
@@ -269,18 +269,58 @@ test("PY5 `# after:` takes an earlier ran Python block of the page or py-connect
   const e = lintPage(page, undefined, helpers);
   has(
     e,
-    's4-c.py: q s4-c: `# after`: unknown block "nope" (not on this page)',
+    's4-c.py: q s4-c: `# after`: unknown block "nope" (not on this page or a prerequisite\'s)',
     'q s4-c: `# after`: "s4-d" comes after it',
     'q s4-c: `# after`: "s4-c" comes after it',
     'q s4-c: `# after`: "s4-u" is untested',
     'q s4-c: `# after`: "s4-sql" runs in postgis, not python',
   );
   assert.deepEqual(e.filter((x) => !x.startsWith("s4-c.py")), [], "s4-a and s4-b pass: py-connect is a course helper");
-  has(lintPage([ranPy("s4-a", "# after: py-connect")]), 'q s4-a: `# after`: unknown block "py-connect" (not on this page)');
+  has(lintPage([ranPy("s4-a", "# after: py-connect")]), 'q s4-a: `# after`: unknown block "py-connect" (not on this page or a prerequisite\'s)');
   // the setup page holds py-connect itself: an earlier block of the page
   assert.deepEqual(lintPage([connect, ranPy("py-smoke", "# after: py-connect")], undefined, helpers), []);
   const untested = block(`${PY_CONNECT_ID}.py`, py(PY_CONNECT_ID, "# status: untested: no", "print(1)"));
   has(lintPage([ranPy("s4-a", "# after: py-connect")], undefined, new Map([[untested.id, untested]])), 'q s4-a: `# after`: "py-connect" is untested');
   // a SQL block can't name the Python helper
   has(lintPage([block("s4-q.sql", pg("s4-q", "-- after: py-connect", "SELECT 1 AS a"))], undefined, helpers), 'q s4-q: `-- after`: "py-connect" runs in python, not postgis');
+});
+
+// Cross-page helpers (L5 plan T1, S1): another page's PostGIS block, held to the on-page rules. Failure modes: a
+// helper that can't run first (untested, boot, expecting an error, owning its transaction, in sessions) is taken
+// because it's off the page; a browser or Python block runs a PostGIS helper's SQL in the wrong engine; the
+// privilege chain misses a helper's statements (its setseed), so a seeded block is refused or an unseeded one passes.
+test("XA1 a cross-page helper that is untested, boot, expects an error, owns its transaction or runs in sessions is refused as on the page", () => {
+  const helpers = new Map([
+    block("d6-u.sql", sql("d6-u", "-- status: untested: later", "-- engine: postgis", "SELECT 1")),
+    block("d6-b.sql", pg("d6-b", "-- boot", "CREATE TABLE grid (id int)")),
+    block("d6-x.sql", pg("d6-x", "-- expect: error division by zero", "SELECT 1 / 0")),
+    block("d6-t.sql", pg("d6-t", "-- tx: own", "SELECT 1 AS a")),
+    block("d6-s.sql", pg("d6-s", "-- sessions: A, B", "-- window A", "SELECT 1;", "-- window B", "SELECT 2")),
+    block("d6-ok.sql", pg("d6-ok", "SELECT 1 AS a")),
+  ].map((b) => [b.id, b]));
+  const e = lintPage([block("p3-a.sql", pg("p3-a", "-- after: d6-u, d6-b, d6-x, d6-t, d6-s, d6-ok", "SELECT 1 AS a"))], undefined, helpers);
+  has(e,
+    'q p3-a: `-- after`: "d6-u" is untested',
+    'q p3-a: `-- after`: "d6-b" already runs at boot',
+    'q p3-a: `-- after`: "d6-x" expects an error',
+    'q p3-a: `-- after`: "d6-t" owns its transaction',
+    'q p3-a: `-- after`: "d6-s" runs in sessions A, B');
+  assert.equal(e.length, 5, e.join("\n"));
+});
+
+test("XA2 a browser or Python block naming a cross-page PostGIS block fails the engine check; Python still takes py-connect", () => {
+  const helper = block("d6-a.sql", pg("d6-a", "SELECT 1 AS a"));
+  const connect = ranPy(PY_CONNECT_ID);
+  const helpers = new Map([[helper.id, helper], [connect.id, connect]]);
+  has(lintPage([block("p3-b.sql", sql("p3-b", "-- status: ran", "-- after: d6-a", "SELECT 1 AS a"))], undefined, helpers), 'q p3-b: `-- after`: "d6-a" runs in postgis, not duckdb');
+  has(lintPage([ranPy("p3-p", "# after: py-connect, d6-a")], undefined, helpers), 'q p3-p: `# after`: "d6-a" runs in postgis, not python');
+  assert.deepEqual(lintPage([ranPy("p3-q", "# after: py-connect")], undefined, helpers), []);
+});
+
+test("XA3 the privilege chain includes a cross-page helper's statements, as an on-page helper's", () => {
+  const seed = block("d6-seed.sql", pg("d6-seed", "SELECT setseed(0.25);", "SELECT 1 AS a"));
+  const uses = block("p3-r.sql", pg("p3-r", "-- after: d6-seed", "SELECT random() AS r"));
+  assert.deepEqual(lintPage([seed, uses]), [], "on the page");
+  assert.deepEqual(lintPage([uses], undefined, new Map([[seed.id, seed]])), [], "from another page");
+  has(lintPage([block("p3-s.sql", pg("p3-s", "SELECT random() AS r"))], undefined, new Map([[seed.id, seed]])), "q p3-s: not deterministic: random(");
 });

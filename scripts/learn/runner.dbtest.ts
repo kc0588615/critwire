@@ -55,7 +55,7 @@ import { testDatabase, withLabSchema, withScratchDatabase } from "../test-db.ts"
 import { readTables } from "./check.ts";
 import { LAB_ROLE, libpqTarget, pgConnect, urlTarget } from "./pg.ts";
 import { learnObjects } from "./leaks.ts";
-import { assertSession, openSession, runBlock, runBlocks, serverVersions, type LabSession, type Watch } from "./runner.ts";
+import { assertSession, blockRuns, openSession, runBlock, runBlocks, serverVersions, type LabSession, type Watch } from "./runner.ts";
 
 loadEnv();
 const target = urlTarget(requireEnv("LEARN_PG_URL"), "LEARN_PG_URL");
@@ -462,4 +462,23 @@ test("NR5 a server without postgis_raster is refused, naming CREATE EXTENSION po
       await sql.end();
     }
   });
+});
+
+// XR1 (L5 plan T1, S1): a cross-page `-- after:` (p3's twin naming d6's star blocks). Failure modes: the run list's
+// lookup misses another page's block, so `--module` fails; the runner brings the helper's own `-- after:` blocks, so
+// learn:check runs more than the download; the result differs from the same block run with the helper on its page.
+test("XR1 a cross-page `-- after:` runs exactly the listed blocks, in order, inside the block's transaction", async () => {
+  const dim = block("xr-dim", `CREATE TEMP TABLE xr_dim AS SELECT 1 AS id UNION ALL SELECT 2;\nSELECT count(*) AS n FROM xr_dim`);
+  const fact = block("xr-fact", `CREATE TEMP TABLE xr_fact AS SELECT id FROM xr_dim;\nSELECT count(*) AS n FROM xr_fact`, ["-- after: xr-dim"]);
+  const twin = block("xr-twin", "SELECT count(*) AS n FROM xr_fact", ["-- after: xr-dim, xr-fact"]);
+  const lone = block("xr-lone", "SELECT count(*) AS n FROM xr_fact", ["-- after: xr-fact"]);
+  const course = new Map([dim, fact, twin, lone].map((b) => [b.id, b]));
+  const runs = await blockRuns(session, [twin, lone], { update: false, known, watch, course, log: () => {} });
+  assert.deepEqual(runs.map((r) => r.block.id), ["xr-twin", "xr-lone"], "the helpers aren't run as blocks of their own");
+  const [t, l] = runs.map((r) => r.first);
+  assert.deepEqual(t!.failures, []);
+  assert.equal(shown(t!), "n|2");
+  assert.match(l!.failures.join("\n"), /q xr-lone: after xr-fact: statement 1 of 2: relation "xr_dim" does not exist/, "never the helper's own after blocks");
+  assert.equal(t!.rendered, (await run(twin, [dim, fact, twin])).rendered, "the same as with the helpers on its page");
+  assert.deepEqual((await session.sql`select to_regclass('pg_temp.xr_dim') as t`)[0]!.t, null, "rolled back");
 });
