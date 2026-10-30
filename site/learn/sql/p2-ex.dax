@@ -1,0 +1,14 @@
+// q: p2-ex
+// status: untested: Power BI is Windows-only
+// input: star/fact_records.csv, star/fact_country_habitat.csv, star/dim_country.csv
+// twin: p2-ex-check
+DEFINE
+    MEASURE fact_records[Records] = COUNTROWS ( fact_records )
+    MEASURE fact_country_habitat[Habitat km2] = SUM ( fact_country_habitat[est_area_km2] )
+EVALUATE
+SUMMARIZECOLUMNS (
+    dim_country[continent],
+    "Records", [Records],
+    "Habitat km2", [Habitat km2]
+)
+ORDER BY dim_country[continent]

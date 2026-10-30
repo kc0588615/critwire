@@ -173,6 +173,8 @@ test("a Power BI block lists its inputs (star files, c1's feed) with their rows 
   const page = await context.newPage();
   const pbi = pages.flatMap((p) => p.blocks.filter((b) => b.engine === "powerbi").map((b) => [p, b] as const));
   expect(pbi.map(([, b]) => b.id)).toContain("pbi-smoke");
+  const dax = pbi.filter(([, b]) => b.twin !== undefined);
+  expect(dax.length, "DAX blocks with a twin").toBeGreaterThan(0);
   /** What the inputs table shows for an input, by kind: a star file from its manifest, the feed from the served file. */
   const expected = async (input: string): Promise<[string, string, string]> => {
     if (input === FEED.input) {

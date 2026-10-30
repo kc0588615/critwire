@@ -37,7 +37,7 @@
 {{block:d6-star-fact-country-habitat}}
 <p>Now a report is one join per dimension it slices by. Records since 2000 by class and continent:</p>
 {{block:d6-report}}
-<p>The query never mentions genus, family or <code>taxa</code>: the dimension already holds the class. Every join is from the fact to one dimension by its key, which is the shape reporting tools expect (Power BI draws each as a one-to-many relationship; The data model, p2, in preparation). <code>Seven seas (open ocean)</code> is Natural Earth's continent for island countries far from any continent, such as Mauritius and Réunion. Records with no year fall out here only because the <code>WHERE</code> asks for a decade; they still join, to year <code>-1</code>.</p>
+<p>The query never mentions genus, family or <code>taxa</code>: the dimension already holds the class. Every join is from the fact to one dimension by its key, which is the shape reporting tools expect (Power BI draws each as a one-to-many relationship: <a href="/learn/power-bi/model/">The data model, p2</a>). <code>Seven seas (open ocean)</code> is Natural Earth's continent for island countries far from any continent, such as Mauritius and Réunion. Records with no year fall out here only because the <code>WHERE</code> asks for a decade; they still join, to year <code>-1</code>.</p>
 
 <h2>Lab</h2>
 <ol class="steps">

@@ -603,13 +603,14 @@
       "title": "The data model",
       "track": "power-bi",
       "tools": [
-        "PBI"
+        "PBI",
+        "PG"
       ],
       "hours": 2,
       "prereqs": [
         "p1"
       ],
-      "state": "planned",
+      "state": "built",
       "skill": "Relationships, cardinality, filter direction, conformed dimensions, factless facts",
       "questions": [
         "How do I filter records and habitat areas by the same country?"

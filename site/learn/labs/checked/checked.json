@@ -589,6 +589,14 @@
       "key": "352ca543bd9765f27bee7d9b18761113af786b5921099270c17958871daa8d48",
       "result": "4e7f65f5423f79d62dc386ad885cb97a2589a06c081f196e2c0d8b436d2e9f75"
     },
+    "p2-check": {
+      "key": "7987c4cbf37b1c15a7925928aa15b376e9988e31ea5e1eb3b92aadd725e4a2bc",
+      "result": "d8ec70d9f43cb5c7bb082cfa4f891b1da0960e6f4519b7572c334091b990b1b1"
+    },
+    "p2-ex-check": {
+      "key": "00901879b9ed9b28c3a1c086be07fec8e00a9164c5e4d1a9394f97c43d5a013e",
+      "result": "14593bae9f5dcf5c7015da160c405c0791050360652cad0e75e58606f0fde2f5"
+    },
     "pg-role-smoke": {
       "key": "e85ff83835497b4cfd4b0de07d4cc6bb65305f5f692b8d1f2f8f25e7f671f2ac",
       "result": "d721ea358edd040973fd9309b3e45b68943b9bad01b9efecd1da082d374c7f30"
@@ -750,6 +758,7 @@
     "g5.sql": "ca0b779d86948aa7ba59b7c9da62c17bfecf5cd6fc0af82bd2935adc91e33f46",
     "g6.sql": "528edf22a48338fdf5e8792bfd1717196d107e4f805b1223b79d61dce9a4f3c1",
     "g7.sql": "97421e93a186f78dcaf5050ff1d6d41096fb4f1286880b5cecb43c89210089fb",
+    "p2.sql": "56a15c468f18848600002d2cfbebaa874f9a47d1cb2c7d1f89c8525ed0023363",
     "pg-checks.sql": "348691fbefd3b6c0400e7edfd3a3aaf4f767b186c1a6bcbe2f2ad021cb5607fd",
     "s1.sql": "fffbbb3a0ff9128446a13ac5d3bc23929f8f58ba72e1eb26459824f0cb6f19b8",
     "s2.py": "8aedcd8347143cadd1d7c138f65cfd6c9a8abb1d6ac371d2690b2d2a5653b166",

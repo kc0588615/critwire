@@ -1,0 +1,8 @@
+-- result: p2-ex-check · 8 rows · sha256 755d2b0ec7e2
+continent | records | habitat_km2
+Africa | 10791 | 29703399.22
+Antarctica | NULL | 12356486.85
+Asia | 2985 | 31108178.20
+Europe | 469 | 23004583.24
+North America | 9688 | 24217714.23
+… 3 more rows
