@@ -126,7 +126,7 @@ The review's numbering: SC = SHOULD-CHANGE.
 
 - [x] Baseline: install, migrate, run typecheck, lint, unit and E2E tests; record the results under Baseline
 - [x] Architecture: `architect` writes findings and the target design
-- [ ] Fable review: `architecture-reviewer`
+- [x] Fable review: `architecture-reviewer`
 - [ ] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
 - [ ] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
 - [ ] Steps: `planner` writes Steps and Verification
@@ -386,6 +386,25 @@ Each one is recorded under Decisions with its commit.
 
 ## Architecture review (Fable)
 
+Checked on `ade619e` against the code: `blocks.ts` `lintPage` (helpers = py-connect only, `first.get(a)` chain), `course.ts` `assembleCourse`, `assemble.ts` `blockPart` (throws on an off-page `-- after:`), `freshness.ts` `afterChain` (page map), `runner.ts` `blockRuns`/`runBlock` (run-list map), `port.ts` `helpers()`, `star.ts` `STAR_BLOCKS` (6) / `starInputErrors`, `credits.ts` `LAB_FILES`, `star.mmd` `%% planned:` + `schema-html.ts:66` slot rule, `module-html.ts:207` exercise refusal, `result.ts` `MAX_CELL`/`SHOWN_ROWS` + full-text sha, `course-files.ts` `stems` (`.txt` only, so `checked/c1-feed.json` isn't an orphan), the `'Infinity'` CHECK in `d6-star-fact-country-habitat.sql`, 004's `p2-check`/`p3-check` `-- after:` lines, c1-feed (`jsonb`, `octet_length(doc::text)` = 34848), prereq chains p2→p1→d6, c1→s5/p4, `e2e/learn-data.spec.ts` (already `STAR_FILES`-driven; the inputs loop at :177 would break on the feed input, T8 covers it). F1–F8 are accurate; T1–T10 are in the brief's scope, reuse existing interfaces (star guard, `checkInput`, freshness stamp, `writeLabIndex`, `assembleDownloads`), and the rejected alternatives are the right calls (feed from `learn:check`, Ajv only in e2e, no 9th star file).
+
+VERDICT: APPROVE_WITH_CHANGES
+
+MUST-FIX:
+1. **H6 is sequenced after the mission can write it.** T10 says the handoff item is "written once the release is live", but the brief's Definition of done requires the Summary (written before the release unit) to name the item, and the release session ends with `MISSION_DONE`. Write H6 in the AGENTS/audit step (before Verification), `Blocks: nothing`, telling the owner to run it against critwire.com once the mission's PR is merged; the release unit only appends the merge commit to it if useful.
+2. **T1's helper scope must come from the full course map, not from pages assembled so far.** `assembleCourse` lints each page inside the one `pages.map` pass; "passes each page's in-scope blocks to lintPage as helpers" implemented there works only because prerequisite pages happen to precede their dependents in page order (the same "works by accident" F1 criticises in `blockRuns`). State it: collect every page's `onPage` first, then lint each page with helpers = ran PostGIS blocks of `afterScope(pageId)` pages, and make `afterScope` refuse a page naming itself or a prerequisite cycle (fail loud, not an empty set).
+
+MISSED:
+- `writeStar` casts `country_habitats.est_area_km2` into `DECIMAL(12,2)` in DuckDB while PostGIS casts into `numeric(12,2)`; if the parquet holds more than two decimals, the two engines may round a `.xx5` differently and the star guard fails on `sum(est_area_km2)`. Confirm before T2 (one DuckDB probe: `est_area_km2 = round(est_area_km2, 2)` for every row) and note the result under Decisions.
+- The feed's `bytes` column (`c1-feed`'s summary, 34848) is a free end-to-end check the design doesn't use: T8 should also assert `Buffer.byteLength(checked/c1-feed.json) === bytes` from `checked/c1-feed.txt`'s row, besides cells/records/hot spots/credits.
+
+SHOULD-CONSIDER:
+- Root `tsconfig.json` includes `e2e/` under `moduleResolution: nodenext`: import `ajv/dist/2020.js` (with the extension), or `pnpm typecheck` fails; pin `ajv` exact as the other dev deps are.
+- `writeFeed`: write with `utf8` and refuse a result whose cell isn't a string (postgres.js returns `text` as string; a `jsonb` slip would arrive as an object and `cellText` would render it, not serialise it).
+- `--module p3`/`--module c1` now replay d6's six star blocks or `s5-gistar` (a spatial join over all occurrences) inside each twin's transaction; acceptable, but say so in AGENTS.md's `--module` note so the next mission doesn't read a slow page run as a regression.
+- The `// twin:` lint can reuse `lintPage`'s existing helper resolution for "ran PostGIS on this page" instead of a second lookup; keep one id resolver.
+- In T5, write the p3 prose change (SC9) and the `NULLIF` + column rename in one commit with 004 and the re-recorded result, and record the before/after ratio row for TT under Decisions, since the brief calls it out.
+
 ## Architecture review (Astra)
 
 ## Revision notes
@@ -404,5 +423,6 @@ Each one is recorded under Decisions with its commit.
 
 - 2026-10-30 05:05 UTC: Baseline on `afed437`: install, venv, typecheck ok; test 664/664; build ok (`/learn/data/` 95.9 MB); test:db 138/138; learn:check ok; e2e 96/96; sha256 lists saved.
 - 2026-10-30 05:21 UTC: Architecture by `architect`: F1 cross-page `-- after:` (prereq pages), F2 DuckDB CHECK fix, habitat fact = 2 star blocks, feed via `c1-feed-file` + checked file + ajv, DAX `// twin:` header; est. 25–28 more sessions. Plan-only change, no checks needed.
+- 2026-10-30 05:28 UTC: Fable review by `architecture-reviewer`: APPROVE_WITH_CHANGES, 2 MUST-FIX (H6 handoff before Verification, not after release; T1 cross-page scope from full course map, refuse self/cycles). Plan-only change, no checks needed.
 
 ## Summary
