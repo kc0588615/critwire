@@ -10421,17 +10421,17 @@ North America | 9688 | 24217714.23 | 0.2398 | 0.1652
 
 #### p4 · maps-report
 
-**Tool:** PBI · **Time:** 1.5 h · **Prereqs:** p3
+**Tool:** PBI + PG · **Time:** 1.5 h · **Prereqs:** p3
 
-**Goal:** a report that maps records honestly, credits its sources and refreshes by itself.
-- **Map visuals:** the Azure Maps visual places each record by `fact_records[latitude]` and `[longitude]` (set their data category to Latitude and Longitude); Microsoft recommends it over the older Bing-based Map and Filled map visuals, and your organization's admin may have to enable it. Colour by `basis_of_record` or by dataset, and the GPS collars and atlas grids of s1 become visible. To shade countries, use `dim_country[name]` with the data category Country, not the two-letter code, which a map can misread (`NA`).
+**Concept:** a report that maps records honestly, credits its sources and refreshes by itself. Four parts:
+- **Map visuals:** the **Azure Maps** visual places each record by `fact_records[latitude]` and `[longitude]`, once their **data category** (what kind of place a column holds) is set to Latitude and Longitude. Microsoft recommends it over the older Bing-based Map and Filled map visuals, and your organization's admin may have to enable it. Colour the points by `basis_of_record` or by dataset, and the way each was recorded shows: s1's GPS collars as dense tracks, an atlas's sightings as scattered points. To map countries instead of records, use `dim_country[name]` with the data category Country, not the two-letter code, which a map can misread (`NA` is Namibia).
 - **Honest labels:** a map of records shows where people recorded the animal. Its title says "records", gives the count and the source, and never says "range", "distribution" or "where it lives" (`AGENTS.md`). A measure writes the title, so it stays true when a slicer changes the species.
-- **Credits:** the report cites the GBIF download's DOI and the datasets with CC BY 4.0 records among those shown (e4), counted by a measure and listed in a table visual from `dim_dataset`.
-- **Publishing and refresh:** Home → Publish sends the report to the Power BI Service. Under the semantic model's settings, set the critwire.com source to Anonymous with privacy level Public, then schedule a refresh. The Service refreshes the CSV sources directly, with no gateway, because the base URL is fixed (p1).
+- **Credits:** CC BY 4.0 asks you to credit each dataset whose records you show; CC0 asks for nothing (e4). A measure counts the datasets to credit among the records shown, and a table visual from `dim_dataset` lists them. The report also cites the sample as a whole: the GBIF download's DOI, `10.15468/dl.fbpk9w`, and the derived dataset that credits every dataset in it; both citations are in `star/manifest.json`, under `fact_records.csv`'s sources.
+- **Publishing and refresh:** Home → Publish sends the report to the **Power BI Service**, Microsoft's website for shared reports. Its data and queries travel as a **semantic model**. In the model's settings, set the critwire.com source to Anonymous with privacy level Public, then schedule a refresh. The Service refreshes the CSV sources directly, with no gateway, because the base URL is fixed (p1).
 
-**Data:** the model from p2 and its measures.
+**Data:** the model from p2, with p3's `Records` measure. Each record has a latitude and a longitude: 40,395 of 40,395.
 
-**Key code:** the title and credit measures, evaluated for the Tasmanian devil:
+**Worked example:** the title and credit measures, evaluated for the Tasmanian devil. `SELECTEDVALUE ( dim_species[common_name], "Selected species" )` returns the species' name when the filters leave exactly one, and the fallback text otherwise. `FORMAT ( [Records], "#,0" )` writes the count with a thousands separator. `Datasets to credit` counts the datasets left by the records shown that carry a CC BY 4.0 license. `CALCULATETABLE` evaluates a table under a filter, as `CALCULATE` does a value; `ROW` makes a one-row table to show the measures.
 
 ```dax
 // q: p4-labels
@@ -10462,7 +10462,7 @@ CALCULATETABLE (
 )
 ```
 
-What they should return, from the same star in PostGIS:
+What they should return, from the same star in PostGIS. `to_char ( count(*), 'FM999,999' )` writes the count as `FORMAT` does, and `count ( DISTINCT … ) FILTER ( WHERE … )` counts the datasets with a CC BY 4.0 record.
 
 ```sql
 -- q: p4-check
@@ -10486,7 +10486,81 @@ map_title | records | datasets | datasets_to_credit
 Tasmanian Devil: 2,000 open GBIF records (where people recor… | 2000 | 9 | 7
 ```
 
-**Expected:** the title reads "Tasmanian Devil: 2,000 open GBIF records (where people recorded it, not its range)"; the devil's records come from 9 datasets, 7 of which supply CC BY 4.0 records and must be credited. Select another species and the title, count and credits change with it.
+**Lab:**
+1. Run `p4-labels` in DAX query view and compare it with `p4-check`. Then add `Map title` and `Datasets to credit` to the model as p3 did (select `fact_records`, Home → New measure); `Records` is there from p3.
+2. Prepare the coordinates. Select `fact_records[latitude]` in the Data pane and, under Column tools, set Data category to Latitude and Summarization to Don't summarize; the same for `longitude`, with Longitude. Otherwise the visual sums or averages them and draws one point where there should be many.
+3. The map. Add a slicer with `dim_species[common_name]` and choose Tasmanian Devil. Add an Azure Maps visual (if it isn't in the Visualizations pane, your admin has turned it off): `latitude` to Latitude, `longitude` to Longitude, `basis_of_record` to Legend, and `dim_dataset[title]` to Tooltips. Records at the same coordinates share a point: the devil's 2,000 records sit at 1,014 places. Almost all are on Tasmania; 4 records lie north of Bass Strait, and one point is in Albuquerque, New Mexico: two preserved specimens, CC0, from a museum collection there. A point is where a record was made, which for a specimen can be far from any wild animal; the map says nothing about where the devil isn't. Choose Jaguar: 1,948 of its 2,000 records are GPS-collar fixes from the Jaguar Movement Database (`MACHINE_OBSERVATION`), and they draw the paths of a few collared animals; the jaguar's records lie mostly in Brazil (1,370) and Paraguay (302).
+4. The title. Select the map, and in the Format pane, General → Title → Text, select the fx button, Format style Field value, field `Map title`. The title now follows the slicer: "Jaguar: 2,000 open GBIF records (where people recorded it, not its range)"; choose Maned Wolf and it reads 1,128. Clear the slicer and it reads "Selected species: 40,395 …": a title must hold for every state of the page, the empty one too.
+5. Credits. A card visual with `Datasets to credit`, and a text box beneath the map with the sample's citations from `star/manifest.json`. For the devil, the card shows 7; for the jaguar, 22 of its 25 datasets. The exercise builds the table that names them.
+6. Countries. A second Azure Maps visual, or a copy of the first: `dim_country[name]` in Location, with its data category set to Country, and `Records` in Size. With no species chosen, Namibia shows 176 records under its name; its code `NA` could be read as a missing value.
+7. Publish. Home → Publish, sign in and choose a workspace. In the Service, open the workspace, the semantic model's Settings → Data source credentials → Edit credentials: Anonymous, privacy level Public. Then Refresh → Scheduled refresh: on, and add a time. A Pro licence allows eight refreshes a day. Each refresh fetches the eight files again, so the report shows critwire's current star without anyone opening Power BI Desktop.
+
+**Result:** the title reads "Tasmanian Devil: 2,000 open GBIF records (where people recorded it, not its range)". The devil's records come from 9 datasets, 7 of which supply CC BY 4.0 records and must be credited. Choose another species, and the title, count and credits change with it.
+
+**Exercise:** the credits table. Write a DAX query that lists, for the Tasmanian devil, every dataset its records come from: title, publisher and DOI, its records, and its CC BY 4.0 records, most CC BY records first. Which datasets must be credited, and which may be?
+
+**Answer:** `SUMMARIZECOLUMNS` groups by the three dataset columns and leaves out a group whose measures are all blank, so only the datasets with devil records appear. `TREATAS ( { "Sarcophilus harrisii" }, dim_species[scientific_name] )` filters by a list of values, as a slicer does. A dataset with records but none under CC BY needs 0, not blank, so the second measure is 0 when `Records` isn't blank.
+
+```dax
+// q: p4-ex
+// status: untested: Power BI is Windows-only
+// input: star/fact_records.csv, star/dim_species.csv, star/dim_dataset.csv
+// twin: p4-ex-check
+DEFINE
+    MEASURE fact_records[Records] = COUNTROWS ( fact_records )
+    MEASURE fact_records[CC BY records] =
+        IF (
+            NOT ISBLANK ( [Records] ),
+            COALESCE ( CALCULATE ( [Records], fact_records[license] = "CC BY 4.0" ), 0 )
+        )
+EVALUATE
+SUMMARIZECOLUMNS (
+    dim_dataset[title],
+    dim_dataset[publisher],
+    dim_dataset[doi],
+    TREATAS ( { "Sarcophilus harrisii" }, dim_species[scientific_name] ),
+    "Records", [Records],
+    "CC BY records", [CC BY records]
+)
+ORDER BY [CC BY records] DESC, [Records] DESC, dim_dataset[title]
+```
+
+Its twin, the table it should return:
+
+```sql
+-- q: p4-ex-check
+-- status: ran
+-- engine: postgis
+-- after: d6-star-dim-species, d6-star-dim-country, d6-star-dim-dataset, d6-star-dim-year, d6-star-fact-records
+SELECT d.title, d.publisher, d.doi,
+       count(*) AS records,
+       count(*) FILTER (WHERE f.license = 'CC BY 4.0') AS cc_by_records
+FROM fact_records AS f
+JOIN dim_species AS s ON s.species_id = f.species_id
+JOIN dim_dataset AS d ON d.dataset_key = f.dataset_key
+WHERE s.scientific_name = 'Sarcophilus harrisii'
+GROUP BY d.title, d.publisher, d.doi
+ORDER BY cc_by_records DESC, records DESC, d.title;
+```
+
+```text
+-- result: p4-ex-check · 9 rows · sha256 561748a1ef09
+title | publisher | doi | records | cc_by_records
+Tasmanian Natural Values Atlas | Department of Natural Resources and Environment Tasmania | 10.15468/rtnb4m | 1413 | 1413
+Tasmanian Museum and Art Gallery provider for OZCAM | Tasmanian Museum and Art Gallery | 10.15468/ijp8p9 | 569 | 569
+Museums Victoria provider for OZCAM | Museums Victoria | 10.15468/lp1ctu | 5 | 5
+Australian Museum provider for OZCAM | Australian Museum | 10.15468/e7susi | 3 | 3
+South Australian Museum Adelaide provider for OZCAM | South Australian Museum | 10.15468/wz4rrh | 3 | 3
+… 4 more rows
+```
+
+**Check:** nine rows, the 9 datasets of `p4-check`. The first seven hold CC BY 4.0 records and must be credited: the Tasmanian Natural Values Atlas (1,413 records) and the Tasmanian Museum and Art Gallery (569) supply 1,982 of the 2,000, and five other Australian museums 13. The last two, the MVZ and MSB mammal collections in Arctos, hold 5 CC0 records and ask for no credit; credit them anyway, as e4 does, since it costs one line. In the report, this is a table visual with the same five fields under the species slicer; the derived dataset's DOI credits all nine at once.
+
+**Dialects:**
+- **Excel (Windows):** Excel's 3D Maps (Insert → 3D Map) plots rows by latitude and longitude from the Data Model; a chart title can come from a cell (select the title, type `=` and click the cell), where a formula such as `=B1&": "&TEXT(B2,"#,##0")&" open GBIF records"` writes it.
+- **Tableau:** a map from `Latitude` and `Longitude` as dimensions, not measures (which Tableau would average into one point). A title can insert a field or a calculated field, so it changes with the filters as the measure does; `COUNTD([Dataset Key])` counts datasets.
+- **pandas:** `geopandas.GeoDataFrame` with `points_from_xy(longitude, latitude)` and `.explore()` draws an interactive map; the title is an f-string from the filtered frame's `len()`, and `df.loc[df.license == "CC BY 4.0", "dataset_key"].nunique()` counts the datasets to credit.
+- **SQL:** `p4-check` writes the title with `||` and `to_char`, and `p4-ex-check` the credits with `count(*) FILTER (WHERE …)`.
 
 ### 5.7 Capstone
 

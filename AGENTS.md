@@ -65,7 +65,7 @@ Rules:
 - Copy: records, never range; no mission names on public pages; link only pages that exist (planned modules unlinked).
 - Raster: a block using the raster API (`RASTER_API`, `scripts/learn/blocks.ts`) must say `-- needs: raster` (PostGIS only), else it's refused. `learn:check` checks once, before the first such block, that `postgis_raster` answers and the learner defaults hold (`postgis.enable_outdb_rasters` off, `gdal_enabled_drivers` `DISABLE_ALL`); never set either for a lab. A g7 block over 20 s as `critwire_lab` gets restructured, never a higher `statement_timeout`.
 
-State: f1–f4, d1–d6 (L1, L2), g1–g7 (L3), s1–s6, e1–e5 (L4), p1–p3 (L5) built; p4, c1 planned (L5).
+State: f1–f4, d1–d6 (L1, L2), g1–g7 (L3), s1–s6, e1–e5 (L4), p1–p4 (L5) built; c1 planned (L5).
 
 ## Data
 Files and owners (never hand-edit derived files):

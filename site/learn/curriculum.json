@@ -641,13 +641,14 @@
       "title": "Maps and reports",
       "track": "power-bi",
       "tools": [
-        "PBI"
+        "PBI",
+        "PG"
       ],
       "hours": 1.5,
       "prereqs": [
         "p3"
       ],
-      "state": "planned",
+      "state": "built",
       "skill": "Map visuals, honest labels, publishing and scheduled refresh",
       "questions": [
         "How do I build a report that maps records and never calls them a range?"
