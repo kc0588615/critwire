@@ -9,7 +9,9 @@
 //      → the environment is exactly the listed variables, PGAPPNAME inherited by children, MPLCONFIGDIR elsewhere.
 // PY7: a failing block is reported without why → its exit and stderr's last 5 lines.
 // PY8: a block over its time (or a process it started) runs on, or leaves its temp folder → the group is SIGKILLed,
-//      nothing left (pgrep), the folder gone; the same after a normal exit (a background straggler) and an abort.
+//      nothing left (pgrep), the folder gone; the same after a normal exit (a background straggler) and an abort; a
+//      child that left the group (start_new_session) holds the pipes, so the run never returns → after a short grace
+//      the pipes are dropped, the run marked pipesHeld and failed, the folder gone.
 // blockCode: `# after:` code runs in the order named instead of page order, or py-connect after a page block, or an
 //      unknown id is skipped silently → course page order, py-connect first, unknown ids throw.
 import assert from "node:assert/strict";
@@ -76,8 +78,9 @@ test("blockCode: `# after:` texts in course page order, py-connect first, then i
 });
 
 test("PY7 pythonFailure: a timeout; a non-zero exit (or a signal) quoting stderr's last 5 lines; exit 0 none", () => {
-  const r = (over: Partial<PyRun>): PyRun => ({ stdout: "", stderr: "", exit: 0, timedOut: false, ...over });
+  const r = (over: Partial<PyRun>): PyRun => ({ stdout: "", stderr: "", exit: 0, timedOut: false, pipesHeld: false, ...over });
   assert.equal(pythonFailure(r({}), 60), undefined);
+  assert.match(pythonFailure(r({ pipesHeld: true }), 60)!, /^a process the block started left its process group/);
   assert.equal(pythonFailure(r({ exit: null, timedOut: true }), 7), "timed out after 7 s");
   const stderr = lines("1", "2", "3", "4", "5", "6", "7");
   assert.equal(pythonFailure(r({ exit: 3, stderr }), 60), "python exited with code 3; stderr ends:\n3\n4\n5\n6\n7");
@@ -157,6 +160,25 @@ if (!existsSync(PYTHON)) {
     assert.deepEqual([r.exit, r.timedOut, r.stdout], [0, false, "done\n"]);
     assert.ok(Date.now() - t0 < 10_000, `took ${Date.now() - t0} ms`);
     assert.equal(gone(`sleep ${marker}`).status, 1, "straggler left running");
+  });
+
+  test("PY8 a child that left the group holds the pipes: the run returns within the grace, failed, the folder gone", async (t) => {
+    const r0 = Date.now();
+    const r = await run(lines(
+      "import os, subprocess",
+      `p = subprocess.Popen(["sleep", "50.3125"], start_new_session=True)`,
+      "print(p.pid, os.path.dirname(os.getcwd()), flush=True)",
+    ));
+    const [pid, folder] = r.stdout.trim().split(" ") as [string, string];
+    t.after(() => {
+      try {
+        process.kill(Number(pid), "SIGKILL");
+      } catch {}
+    });
+    assert.ok(Date.now() - r0 < 2_000 + 1_000, `took ${Date.now() - r0} ms`);
+    assert.deepEqual([r.exit, r.timedOut, r.pipesHeld], [0, false, true]);
+    assert.match(pythonFailure(r, 60)!, /left its process group and held its output/);
+    assert.equal(existsSync(folder), false, "temp folder removed");
   });
 
   test("PY8 an abort rejects with its reason after killing the group and removing the temp folder", async () => {

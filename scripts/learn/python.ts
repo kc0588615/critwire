@@ -1,6 +1,7 @@
 // The lab's Python engine (plan L4 §3): one block's code, run as `python -I <tmp>/code/block.py` from an empty cwd with
 // its own empty HOME and only pythonEnv's variables. The block leads its own process group, which is SIGKILLed on a
-// timeout, an abort and after it exits (stragglers); its temp folder goes on every path. The venv check is venv.ts's.
+// timeout, an abort and after it exits (stragglers); a process that left the group and still holds the pipes
+// PIPE_GRACE_MS after the exit fails the run (pipesHeld); its temp folder goes on every path. The venv check is venv.ts's.
 // scripts/ingest/python.ts's runPython (progress on stderr, no isolation) is the ingests'. Tests: python.test.ts.
 import { spawn } from "node:child_process";
 import { randomBytes } from "node:crypto";
@@ -16,6 +17,8 @@ import { childEnv, type PgTarget } from "./pg.ts";
 export const PY_APP_PREFIX = "critwire-learn-check-py-";
 /** How many of stderr's last lines a failure quotes (PY7). */
 const STDERR_TAIL = 5;
+/** How long the pipes may stay open after the block exits and its group is killed (PY8: a process outside the group). */
+const PIPE_GRACE_MS = 1000;
 
 /** A new run's name: PY_APP_PREFIX + 12 hex (36 bytes, under PostgreSQL's 63). */
 export const pythonApp = (): string => PY_APP_PREFIX + randomBytes(6).toString("hex");
@@ -48,6 +51,8 @@ export interface PyRun {
   /** The exit code; null when a signal ended it. */
   exit: number | null;
   timedOut: boolean;
+  /** A process outside the block's group held stdout or stderr PIPE_GRACE_MS after the exit; the pipes were dropped. */
+  pipesHeld: boolean;
 }
 
 export interface RunPythonOptions {
@@ -58,7 +63,8 @@ export interface RunPythonOptions {
   signal?: AbortSignal;
 }
 
-/** Runs `code` isolated (PY2, PY8). Resolves when the block and its pipes are done; an abort rejects with its reason. */
+/** Runs `code` isolated (PY2, PY8). Resolves when the block and its pipes are done, at most PIPE_GRACE_MS after its
+ *  exit; an abort rejects with its reason. */
 export async function runPython(code: string, { python, env, timeoutMs, signal }: RunPythonOptions): Promise<PyRun> {
   signal?.throwIfAborted();
   const tmp = mkdtempSync(join(tmpdir(), "critwire-learn-py-"));
@@ -82,6 +88,8 @@ export async function runPython(code: string, { python, env, timeoutMs, signal }
       child.stdout.on("data", (d: Buffer) => out.push(d));
       child.stderr.on("data", (d: Buffer) => err.push(d));
       let timedOut = false;
+      let pipesHeld = false;
+      let grace: NodeJS.Timeout | undefined;
       const timer = setTimeout(() => {
         timedOut = true;
         killGroup();
@@ -90,22 +98,29 @@ export async function runPython(code: string, { python, env, timeoutMs, signal }
       signal?.addEventListener("abort", onAbort, { once: true });
       const done = () => {
         clearTimeout(timer);
+        clearTimeout(grace);
         signal?.removeEventListener("abort", onAbort);
       };
       child.once("error", (e) => {
         done();
         reject(e);
       });
-      // A straggler holding the pipes would delay "close": kill the group once the block itself has exited.
+      // A straggler holding the pipes would delay "close": kill the group once the block itself has exited. One that
+      // left the group survives that: drop the pipes after the grace, so "close" comes, and fail the run.
       child.once("exit", () => {
         clearTimeout(timer);
         killGroup();
+        grace = setTimeout(() => {
+          pipesHeld = true;
+          child.stdout.destroy();
+          child.stderr.destroy();
+        }, PIPE_GRACE_MS);
       });
       child.once("close", (exit) => {
         done();
         killGroup();
         if (signal?.aborted) reject(signal.reason);
-        else resolve({ stdout: Buffer.concat(out).toString("utf8"), stderr: Buffer.concat(err).toString("utf8"), exit, timedOut });
+        else resolve({ stdout: Buffer.concat(out).toString("utf8"), stderr: Buffer.concat(err).toString("utf8"), exit, timedOut, pipesHeld });
       });
     });
   } finally {
@@ -113,9 +128,11 @@ export async function runPython(code: string, { python, env, timeoutMs, signal }
   }
 }
 
-/** Why a finished run failed (a timeout, a non-zero exit), or undefined if it exited 0 (PY7, PY8). */
+/** Why a finished run failed (a timeout, held pipes, a non-zero exit), or undefined if it exited 0 (PY7, PY8). */
 export function pythonFailure(r: PyRun, timeoutS: number): string | undefined {
   if (r.timedOut) return `timed out after ${timeoutS} s`;
+  if (r.pipesHeld)
+    return `a process the block started left its process group and held its output ${PIPE_GRACE_MS / 1000} s after the block exited (start_new_session or setsid): it may still run; end it`;
   if (r.exit === 0) return undefined;
   const tail = r.stderr.trimEnd().split("\n").slice(-STDERR_TAIL).join("\n");
   return `python exited with ${r.exit === null ? "a signal" : `code ${r.exit}`}; stderr ends:\n${tail}`;
