@@ -434,6 +434,6 @@ SHOULD-CONSIDER:
 - 2026-10-30 05:05 UTC: Baseline on `afed437`: install, venv, typecheck ok; test 664/664; build ok (`/learn/data/` 95.9 MB); test:db 138/138; learn:check ok; e2e 96/96; sha256 lists saved.
 - 2026-10-30 05:21 UTC: Architecture by `architect`: F1 cross-page `-- after:` (prereq pages), F2 DuckDB CHECK fix, habitat fact = 2 star blocks, feed via `c1-feed-file` + checked file + ajv, DAX `// twin:` header; est. 25–28 more sessions. Plan-only change, no checks needed.
 - 2026-10-30 05:28 UTC: Fable review by `architecture-reviewer`: APPROVE_WITH_CHANGES, 2 MUST-FIX (H6 handoff before Verification, not after release; T1 cross-page scope from full course map, refuse self/cycles). Plan-only change, no checks needed.
-- 2026-10-30 05:55 UTC: Astra review: APPROVE_WITH_CHANGES, 1 MUST-FIX (T4 feed needs published license + attribution shipped with download). Plan-only change, no checks needed.
+- 2026-10-30 05:29 UTC: Astra review: APPROVE_WITH_CHANGES, 1 MUST-FIX (T4 feed needs published license + attribution shipped with download). Plan-only change, no checks needed.
 
 ## Summary
