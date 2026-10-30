@@ -234,7 +234,7 @@
       "result": "37022d815ae3e895f7f738cbb2fb368c7d29c41ac7cc2c2d05d7a7dd54f2fa48"
     },
     "d6-drill-across": {
-      "key": "440c5278c3666b88189603973dfd381dabbfc23bac2938876228d75110f39712",
+      "key": "3ca3b2d6268840eb5083d8364dc83f431b705c1a0ac2ed1a62c64948f7516d7e",
       "result": "81843a125e715baa1c4e3efd0ffbea522b6c0362fdc916f894bb46423e0f8edb"
     },
     "d6-report": {
@@ -278,7 +278,7 @@
       "result": "a591c5a1dfed8ef087c6fb59d90eb16a7651e079dc3310c5ff75b65b1d42a34b"
     },
     "d6-star-fact-country-habitat": {
-      "key": "ed01b308c65f07b549de4939e83e7086a333d1f15b353ac41bab5978fec11341",
+      "key": "9e330ba855ca8627d9c920f464b2f6c4c96abb1143e52a3a52920ab755b46a7b",
       "result": "75e7316f9986fcb88672a06fcb25a6d3f9345a25013e31189123552289b610b8"
     },
     "d6-star-fact-records": {
@@ -735,7 +735,7 @@
     "d3.sql": "76f1a6863b298725cfe135502a592646b2ea055272d64b3dc7ebd6abed8de379",
     "d4.sql": "8bb9f4184361bb570af906a26de9e3717557ec5dceac36154885003c276cc25f",
     "d5.sql": "e8eb4ec666fc0442cafee630dd97875ab5d825532c1f597ff7e628efb692c7a6",
-    "d6.sql": "dc7c792e8b3ec36c04beb1b3807785b621373780da783afcbc41e762d1b93225",
+    "d6.sql": "f8ae46df32c615bc655e435727a22e72aa411aab70a3418a1e1c78400a36a669",
     "e1.py": "9fa2a15bf6f8b8bf234014a622c2a753651ad7790420962efc4a362d606478fe",
     "e2.py": "e114f9672d00d7eccc06e063d084890b87c017acc27c4fb2244d3f05b04e80bf",
     "e3.py": "809f55d720c35eafe6e01c4f4b185fb2c774a611e880e35dc073ecf89a3f54db",

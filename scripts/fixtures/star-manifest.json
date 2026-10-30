@@ -254,6 +254,76 @@
           }
         }
       ]
+    },
+    "dim_habitat_class.csv": {
+      "table": "dim_habitat_class",
+      "columns": [
+        {
+          "name": "habitat_code",
+          "type": "INTEGER"
+        },
+        {
+          "name": "name",
+          "type": "VARCHAR"
+        },
+        {
+          "name": "level1_code",
+          "type": "INTEGER"
+        },
+        {
+          "name": "level1_name",
+          "type": "VARCHAR"
+        }
+      ],
+      "primaryKey": [
+        "habitat_code"
+      ],
+      "foreignKeys": []
+    },
+    "fact_country_habitat.csv": {
+      "table": "fact_country_habitat",
+      "columns": [
+        {
+          "name": "country_code",
+          "type": "VARCHAR"
+        },
+        {
+          "name": "habitat_code",
+          "type": "INTEGER"
+        },
+        {
+          "name": "est_area_km2",
+          "type": "DECIMAL(12,2)"
+        }
+      ],
+      "primaryKey": [
+        "country_code",
+        "habitat_code"
+      ],
+      "foreignKeys": [
+        {
+          "columns": [
+            "country_code"
+          ],
+          "references": {
+            "file": "dim_country.csv",
+            "columns": [
+              "country_code"
+            ]
+          }
+        },
+        {
+          "columns": [
+            "habitat_code"
+          ],
+          "references": {
+            "file": "dim_habitat_class.csv",
+            "columns": [
+              "habitat_code"
+            ]
+          }
+        }
+      ]
     }
   }
 }

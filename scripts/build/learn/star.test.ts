@@ -1,9 +1,11 @@
-// The star (star.ts; plan D9, S9; Fable MISSED1, Astra SC1), written before the code. writeStar runs d6's six
+// The star (star.ts; plan D9, S9; Fable MISSED1, Astra SC1; L5 S2), written before the code. writeStar runs d6's eight
 // published d6-star-* blocks in Node DuckDB over the published files and writes /learn/data/star/. Failure modes: a star
 // block missing from the course, naming a schema (it must run in PostGIS and DuckDB), not starting with CREATE TABLE of
 // its table, or needing a block that isn't published before it; Node DuckDB giving another result than PostGIS recorded
 // (the cross-engine guard: a plain build refuses with the line diff, --draft warns); a dimension without its unknown
-// member; the files disagreeing with star.mmd; a Power BI `// input:` naming a file the build doesn't publish.
+// member; the files disagreeing with star.mmd; a Power BI `// input:` naming a file the build doesn't publish; the
+// habitat fact's DDL failing in DuckDB (L5 F2: a CHECK DuckDB can't evaluate) or letting a negative, oversized, empty,
+// duplicate or orphan row in.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readdirSync, readFileSync } from "node:fs";
@@ -17,6 +19,7 @@ import { checkInput, readCsv } from "../../learn/star-check.ts";
 import { labCreditContext } from "./credits.ts";
 import { deriveInputs, derived, withDist } from "./dist-fixture.ts";
 import { readErds } from "./erd.ts";
+import { withLabTables } from "./projection.ts";
 import { STAR_BLOCKS, STAR_FILES, starBlocks, starInputErrors, writeStar, type StarManifest } from "./star.ts";
 
 const course = await readCourse();
@@ -55,10 +58,11 @@ async function warnings(fn: () => Promise<void>): Promise<string[]> {
   return got;
 }
 
-test("SB1 the six published blocks are d6's, in an order that runs each after the blocks it needs", () => {
+test("SB1 the eight published blocks are d6's, in an order that runs each after the blocks it needs", () => {
   assert.deepEqual(real().map((s) => [s.block.id, s.table]), [
     ["d6-star-dim-species", "dim_species"], ["d6-star-dim-country", "dim_country"], ["d6-star-dim-dataset", "dim_dataset"],
     ["d6-star-dim-year", "dim_year"], ["d6-star-fact-records", "fact_records"], ["d6-star-fact-species-country", "fact_species_country"],
+    ["d6-star-dim-habitat-class", "dim_habitat_class"], ["d6-star-fact-country-habitat", "fact_country_habitat"],
   ]);
   assert.deepEqual(STAR_FILES, STAR_BLOCKS.map((id) => `star/${id.slice("d6-star-".length).replaceAll("-", "_")}.csv`));
 });
@@ -70,17 +74,17 @@ test("SB2 a star block missing, naming a schema, not opening with CREATE TABLE <
   assert.ok(schema.includes("star: d6-star-dim-country names a schema (learn_curriculum.); star.sql relies on search_path"), schema.join("\n"));
   const first = starBlocks(edited("d6-star-dim-year", (t) => t.replace("CREATE TABLE dim_year (", "CREATE TABLE dim_years ("))).errors;
   assert.ok(first.includes("star: d6-star-dim-year's first statement must be CREATE TABLE dim_year ("), first.join("\n"));
-  const after = starBlocks(edited("d6-star-fact-records", (t) => t.replace("-- after: d6-star-dim-species,", "-- after: d6-star-dim-habitat-class, d6-star-dim-species,"))).errors;
-  assert.ok(after.includes("star: d6-star-fact-records runs after d6-star-dim-habitat-class, which isn't published before it"), after.join("\n"));
+  const after = starBlocks(edited("d6-star-fact-records", (t) => t.replace("-- after: d6-star-dim-species,", "-- after: d6-star-fact-country-habitat, d6-star-dim-species,"))).errors;
+  assert.ok(after.includes("star: d6-star-fact-records runs after d6-star-fact-country-habitat, which isn't published before it"), after.join("\n"));
 });
 
 test("SB3 a Power BI `// input:` must name a file the build publishes", () => {
   assert.deepEqual(starInputErrors(course.pages), []);
-  const pages = edited("pbi-smoke", (t) => t.replace("// input: star/dim_country.csv", "// input: star/dim_country.csv, star/dim_habitat_class.csv"));
-  assert.deepEqual(starInputErrors(pages), [`q pbi-smoke: input star/dim_habitat_class.csv isn't a file this build publishes (${STAR_FILES.join(", ")})`]);
+  const pages = edited("pbi-smoke", (t) => t.replace("// input: star/dim_country.csv", "// input: star/dim_country.csv, star/dim_habitat.csv"));
+  assert.deepEqual(starInputErrors(pages), [`q pbi-smoke: input star/dim_habitat.csv isn't a file this build publishes (${STAR_FILES.join(", ")})`]);
 });
 
-test("SB4 writeStar: six CSVs and star/manifest.json; every file passes the input check; unknown members; NA is Namibia", () => withDist(async (out) => {
+test("SB4 writeStar: eight CSVs and star/manifest.json; every file passes the input check; unknown members; NA is Namibia", () => withDist(async (out) => {
   await writeStar(out, { blocks: real(), recorded, starErd, ctx, draft: false });
   const dir = starDir(out);
   assert.deepEqual(readdirSync(dir).sort(), [...STAR_FILES.map((f) => f.slice(5)), "manifest.json"].sort());
@@ -91,6 +95,13 @@ test("SB4 writeStar: six CSVs and star/manifest.json; every file passes the inpu
   assert.deepEqual(manifest.files["fact_records.csv"]!.foreignKeys.map((k) => k.references.file).sort(), ["dim_country.csv", "dim_dataset.csv", "dim_species.csv", "dim_year.csv"]);
   assert.equal(manifest.files["fact_records.csv"]!.rows, derived.learn.occurrences.length);
   assert.ok(manifest.files["dim_dataset.csv"]!.sources.some((s) => s.datasets === "datasets.csv"));
+  // The habitat fact: grain one country × one class, both keys filled and found (checkInput), every class row published.
+  const habitat = manifest.files["fact_country_habitat.csv"]!;
+  assert.deepEqual(habitat.primaryKey, ["country_code", "habitat_code"]);
+  assert.deepEqual(habitat.foreignKeys.map((k) => k.references.file).sort(), ["dim_country.csv", "dim_habitat_class.csv"]);
+  assert.deepEqual(habitat.columns.map((c) => c.name), ["country_code", "habitat_code", "est_area_km2"]);
+  assert.equal(habitat.rows, 5578);
+  assert.equal(manifest.files["dim_habitat_class.csv"]!.rows, 75);
   const country = await readCsv(join(dir, "dim_country.csv"));
   assert.deepEqual(country.rows.find((r) => r[0] === "NA")?.[1], "Namibia");
   assert.ok(country.rows.some((r) => r[0] === "ZZ"));
@@ -124,3 +135,28 @@ test("SB7 the files against star.mmd: a drawn column the star doesn't write is r
   const drawn = starErd.replace('VARCHAR label "2016; Unknown for -1"', 'VARCHAR label "2016; Unknown for -1"\n        VARCHAR era "drawn, not written"');
   await assert.rejects(writeStar(out, { blocks: real(), recorded, starErd: drawn, ctx, draft: true }), /site\/learn\/erd\/star\.mmd: .*era/);
 }));
+
+/** Runs d6's star blocks up to and including `last` in Node DuckDB over the published lab tables, then fn. */
+const withStar = (last: string, fn: (run: (sql: string) => Promise<unknown>) => Promise<void>) => withDist((out) => withLabTables(out, async (con) => {
+  for (const { block } of real().slice(0, STAR_BLOCKS.indexOf(last as (typeof STAR_BLOCKS)[number]) + 1))
+    for (const s of block.statements) await con.run(s.text);
+  await fn((sql) => con.run(sql));
+}));
+/** A (country, class) pair both dimensions hold that the fact doesn't. */
+const freePair = "SELECT c.country_code, h.habitat_code FROM dim_country AS c, dim_habitat_class AS h EXCEPT SELECT country_code, habitat_code FROM fact_country_habitat ORDER BY 1, 2 LIMIT 1";
+
+test("SB8 the habitat fact's DDL in DuckDB: the committed rows insert; a negative or oversized area is refused", () =>
+  withStar("d6-star-fact-country-habitat", async (run) => {
+    await assert.rejects(run(`INSERT INTO fact_country_habitat SELECT *, -1 FROM (${freePair})`), /CHECK constraint/);
+    await assert.rejects(run(`INSERT INTO fact_country_habitat SELECT *, 10000000000 FROM (${freePair})`));
+    await assert.rejects(run(`INSERT INTO fact_country_habitat SELECT *, 9999999999.995 FROM (${freePair})`));
+    await run(`INSERT INTO fact_country_habitat SELECT *, 0 FROM (${freePair})`);
+  }));
+
+test("SB9 the habitat fact refuses an empty key, a duplicate (country, class) and a class dim_habitat_class lacks", () =>
+  withStar("d6-star-fact-country-habitat", async (run) => {
+    await assert.rejects(run("INSERT INTO fact_country_habitat VALUES (NULL, (SELECT min(habitat_code) FROM dim_habitat_class), 1)"), /NOT NULL/);
+    await assert.rejects(run("INSERT INTO fact_country_habitat VALUES ('ZZ', NULL, 1)"), /NOT NULL/);
+    await assert.rejects(run("INSERT INTO fact_country_habitat SELECT country_code, habitat_code, 1 FROM fact_country_habitat ORDER BY 1, 2 LIMIT 1"), /[Dd]uplicate key/);
+    await assert.rejects(run("INSERT INTO fact_country_habitat VALUES ('ZZ', (SELECT max(habitat_code) + 1 FROM dim_habitat_class), 1)"), /foreign key/i);
+  }));

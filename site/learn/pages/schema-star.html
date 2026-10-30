@@ -2,16 +2,13 @@
 <h1>Star schema: what Power BI reads</h1>
 <p class="lead">A star schema built from the lab data for reporting: CSV files under <a href="/learn/data/"><code>/learn/data/star/</code></a>, which Power BI Desktop loads by URL. The database architecture track builds the same star in SQL.</p>
 <p>A star puts the numbers to add up in <em>fact</em> tables, one row per event at a fixed grain, and the words to filter and group by in <em>dimension</em> tables around them. <code>fact_records</code> has one row per sample record. <code>fact_species_country</code> has no measure at all: a row says that a species has open records in a country, and counting rows is the analysis (a <em>factless</em> fact).</p>
-<p>Both share <code>dim_species</code> and <code>dim_country</code>. A dimension two facts share is <em>conformed</em>: one slicer on species or country filters both. The habitat fact, <code>fact_country_habitat</code>, shares only <code>dim_country</code>; it has no species.</p>
+<p>Both share <code>dim_species</code> and <code>dim_country</code>. A dimension two facts share is <em>conformed</em>: one slicer on species or country filters both. The habitat fact, <code>fact_country_habitat</code>, shares only <code>dim_country</code>; it has no species, and its areas are estimates from a habitat map, not measurements.</p>
 <p>Every foreign key in a fact is filled. A record with no year points at <code>dim_year</code>'s <code>-1</code> row, and one in no country at <code>dim_country</code>'s <code>ZZ</code> row: an <em>unknown member</em>. So every line is "exactly one" on the dimension's side, and no record falls out of a report because a key was empty.</p>
 <h2>The diagram</h2>
 <p>PK primary key, FK foreign key; <code>||</code> exactly one, <code>o{</code> zero or more, with the crow's foot on the fact that holds the foreign key.</p>
 {{diagram}}
 <h2>The relationships, in words</h2>
 {{relationships}}
-<h2>Planned: drawn, not yet published</h2>
-<p>Two tables are <em>planned</em>: drawn, so the design is whole, but not published yet, because they wait for the habitat map. The star published today has the other six files. The build compares this diagram with the star's manifest: it excuses a planned table while the manifest lacks it, and fails once the manifest has it, so the label can't outlive the truth.</p>
-{{planned}}
 <h2>The data dictionary</h2>
 <p>Every column, with a link to each published file.</p>
 {{dictionary}}

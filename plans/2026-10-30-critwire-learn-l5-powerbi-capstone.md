@@ -549,7 +549,7 @@ Every step:
   - 004 §0 gets the scope rule: scope is transitive, execution runs only the listed blocks, in order; DuckDB stays page-only; Python takes its page or `py-connect`. 004 §7.6: `--module` replays cross-page `-- after:` blocks. AGENTS.md: the scope rule and the `--module` slowness note (T9).
   - Byte-neutral: no block names another page's block yet.
   - Check: `T`, `D`, `L` (every key moves with the checker's closure; `checked/*.txt` unchanged), `P`, `H` and `HN` print nothing, `A`.
-- [ ] S2. The habitat fact in the star (T2; F2, F3; SC9 c)
+- [x] S2. The habitat fact in the star (T2; F2, F3; SC9 c)
   - First [T]: SB1 and SB4 rewritten for eight files, SB8–SB9 (`scripts/build/learn/star.test.ts`), ST6 (`credits.test.ts`). First [E]: `e2e/schema.spec.ts`: the star page has no planned list or badge and links all eight files (red: the Planned section exists).
   - Files:
     - `site/learn/sql/d6-star-fact-country-habitat.sql` and 004 d6, in one commit: `CHECK (est_area_km2 >= 0 AND est_area_km2 <= 9999999999.99)`.
@@ -935,6 +935,7 @@ These are the isolated tests, each written red before its code (owner's rule), l
 - Data cap: Verification checks the build's 120,000,000 B cap (owner raised it, L3 H5), not the brief's 50 MB; `/learn/data/` already 95.9 MB at Baseline.
 - S1 (planner's call): a built page's `curriculum.json` tools change in the same commit as its page (badges must be true); S13 verifies them.
 - S1: `portPage(doc, page, setupSql, scope)` takes the scope as a 4th arg (default none); `learn:port` computes it from `curriculum.json` via `afterScope`. Lint errors from port now carry their fence's `004:<line>:` prefix (PT14). `blockRuns` takes `course` (courseBlocks) as an option, default the run list, so existing callers are unchanged.
+- S2 (F2): habitat fact CHECK `>= 0 AND <= 9999999999.99` (DECIMAL(12,2) max) replaces `< 'Infinity'`, which DuckDB can't compare with a decimal; same text runs in PostGIS + DuckDB. Result sha `80b11c41e5b3` holds (`checked/d6-star-fact-country-habitat.txt`, `d6-drill-across.txt` unchanged). SC9 c (habitat fact `>= 0`, NOT NULL FKs, unknown members kept): done (S2). Star habitat CSVs credit as their lab files (`habitat_classes`/`country_habitats.parquet`: Jung, + Natural Earth for the fact). `%% planned:` marker machinery kept (lab may reuse); tests now build their own planned fixture.
 
 ## Log
 
@@ -947,5 +948,6 @@ These are the isolated tests, each written red before its code (owner's rule), l
 
 - 2026-10-30 05:53 UTC: Steps by `planner`: 16 steps (S1 cross-page after … S16 Verification), Verification, Failure modes; planner deviations under Decisions. Plan-only change, no checks needed.
 - 2026-10-30 06:47 UTC: S1 cross-page `-- after:`: `afterScope`/`courseBlocks`, two-pass `assembleCourse`, lint/assemble/freshness/runner/port resolve course-wide; 004 §0, §7.6, AGENTS.md. Red 18 (11 failing + course/check suites not loading: XS1–5, SL4, BF2; XA1–XA2 already held by `lintPage`'s helpers) → green. T: typecheck ok, test 679/679; L: learn:check ok, only `checked.json` re-stamped; build ok; D: test:db 139/139 (XR1 incl.); P 0 diffs; H, HN, HR empty, A ok (`dist/` byte-identical to Baseline); Q empty.
+- 2026-10-30 09:00 UTC: S2 habitat fact in the star: `STAR_BLOCKS` 8, `LAB_FILES`/descriptions += 2 CSVs, CHECK fix (004 + file), star.mmd unplanned + `star.svg` re-rendered, star page Planned section gone, d6/004 §6.3 copy. Red: SB1/SB4 (6 files), SB8 (DuckDB CHECK), ST6, e2e star links (habitat CSVs 0 of 1) → green. New files: `dim_habitat_class.csv` 75 rows 4,525 B, `fact_country_habitat.csv` 5,578 rows 78,367 B; `/learn/data/` 96,026,477 B (Baseline 95,936,992; +89,485). T: test 682/682; L: learn:check ok (d6-star-fact-country-habitat, d6-drill-across re-run, results unchanged; only `checked.json`); build ok; E: e2e 96/96 (`$M/e2e-s2`, unexpected/skipped/flaky 0); P 509 equal; H, HN, HR empty; A ok; Q empty. Session interrupted by usage limit after E; checks re-verified (T rerun) before commit.
 
 ## Summary

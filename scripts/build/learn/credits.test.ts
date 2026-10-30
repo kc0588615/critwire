@@ -69,3 +69,12 @@ test("ST4 every LAB_FILES entry credits from the real context without error", as
   assert.deepEqual(names("occurrence_habitats.parquet"), [jung, "GBIF occurrence download"]);
   for (const f of ["habitat_clips.parquet", "clips/cr.tif", "clips/tas.tif"]) assert.deepEqual(names(f), [jung], f);
 });
+
+test("ST6 the star's habitat files credit what they are built from, as their lab files do", async () => {
+  const real = await labCreditContext({ download: learn.download, registration, datasets: [{ dataset_key: "k", title: "T", publisher: "P" }] });
+  const names = (file: string) => credits(file, real).map((c) => c.name);
+  assert.deepEqual(names("star/dim_habitat_class.csv"), names("habitat_classes.parquet"));
+  assert.deepEqual(names("star/dim_habitat_class.csv"), [habitat.name]);
+  assert.deepEqual(names("star/fact_country_habitat.csv"), names("country_habitats.parquet"));
+  assert.deepEqual(names("star/fact_country_habitat.csv"), [habitat.name, "Natural Earth"]);
+});

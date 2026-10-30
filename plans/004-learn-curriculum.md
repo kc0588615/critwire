@@ -4438,7 +4438,7 @@ pairs | species | countries
 472 | 72 | 107
 ```
 
-The habitat classes have two levels; `dim_habitat_class` flattens them, and a level-1 class is its own parent, so a report can group by `level1_name` with no gaps. The habitat areas are estimates from a map (§4.1), and the star publishes these two tables later (L5).
+The habitat classes have two levels; `dim_habitat_class` flattens them, and a level-1 class is its own parent, so a report can group by `level1_name` with no gaps. The habitat areas are estimates from a map (§4.1), not measured.
 
 ```sql
 -- q: d6-star-dim-habitat-class
@@ -4464,7 +4464,7 @@ classes | level1_classes
 75 | 13
 ```
 
-`fact_country_habitat`: the grain is **one country and one habitat class**, with a measure that adds up across classes, `est_area_km2`. It shares only `dim_country` with the other facts; it has no species.
+`fact_country_habitat`: the grain is **one country and one habitat class**, with a measure that adds up across classes, `est_area_km2`. It shares only `dim_country` with the other facts; it has no species. The `CHECK` keeps an area at least 0 and at most the largest value `DECIMAL(12, 2)` holds. The same text runs in PostgreSQL and in DuckDB, which writes the published star: DuckDB can't compare a decimal with `'Infinity'`, and in PostgreSQL a decimal can't be infinite while `NaN` fails the upper bound.
 
 ```sql
 -- q: d6-star-fact-country-habitat
@@ -4474,7 +4474,7 @@ classes | level1_classes
 CREATE TABLE fact_country_habitat (
   country_code VARCHAR NOT NULL REFERENCES dim_country (country_code),
   habitat_code INTEGER NOT NULL REFERENCES dim_habitat_class (habitat_code),
-  est_area_km2 DECIMAL(12, 2) NOT NULL CHECK (est_area_km2 >= 0 AND est_area_km2 < 'Infinity'),
+  est_area_km2 DECIMAL(12, 2) NOT NULL CHECK (est_area_km2 >= 0 AND est_area_km2 <= 9999999999.99),
   PRIMARY KEY (country_code, habitat_code)
 );
 INSERT INTO fact_country_habitat
@@ -10443,7 +10443,7 @@ The pictures are drawn offline by Mermaid in a headless browser, as SVG only (pl
 
 `site/learn/erd/star.mmd`: the eight CSV files `star.sql` writes (d6, §A.3), checked against the star's `manifest.json`. `fact_records` holds one row per sample record; `fact_species_country` has no measure (a factless fact: a row says a species has open records in a country); `fact_country_habitat` holds the habitat estimates per country and class (§4.1). `dim_species` is shared by the two species facts (`fact_records`, `fact_species_country`), not by the habitat fact, which has no species; `dim_country` by all three. A shared dimension is conformed: one slicer on it filters every fact that uses it. Every fact foreign key is filled: a record with no year points at `dim_year`'s `-1` member, one with no country at `dim_country`'s `ZZ`, so every line is "exactly one" on the dimension's side.
 
-Two of the eight are **planned**: `dim_habitat_class` and `fact_country_habitat` wait for the habitat map, so the star published with L2 has six files. The source lists them on a `%% planned:` line, with the lab's rule: they are drawn, so the design is whole; the check excuses them while the manifest lacks them, and fails once it has them, so the marker can't go stale. The star page teaches the word: drawn, not yet published.
+All eight are published since L5, which added `dim_habitat_class` and `fact_country_habitat` from L3's habitat summaries (L2 published the other six while the two waited on a `%% planned:` line). The star page says the habitat areas are map estimates.
 
 ## 7. The site
 

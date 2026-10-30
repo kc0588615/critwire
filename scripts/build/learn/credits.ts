@@ -51,6 +51,8 @@ export const LAB_FILES: Record<string, readonly string[]> = {
   "star/dim_year.csv": ["gbif-sample"],
   "star/fact_records.csv": ["gbif-sample"],
   "star/fact_species_country.csv": ["critwire"],
+  "star/dim_habitat_class.csv": ["jung-habitat"],
+  "star/fact_country_habitat.csv": ["jung-habitat", "natural-earth"],
   "star/manifest.json": ["critwire"],
 };
 
