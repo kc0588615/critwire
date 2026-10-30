@@ -2,7 +2,7 @@
 mission: critwire-learn-l4-stats-etl
 project: critwire
 branch: agent/critwire-learn-l4-stats-etl
-status: active
+status: done
 started: 2026-10-29 13:38 UTC
 ---
 
@@ -1063,5 +1063,28 @@ SHOULD-CONSIDER: none
 - 2026-10-30 02:21 UTC: S29: `e1-submit` saves the adopted key before polling (004 + `e1-submit.py` + e1.html item 5 prose). P 0 diffs (29 pages, 509 files); L ok (only `checked.json`, e1's key; `e1.py` carries the new lines commented out); B ok (95,936,992 B); E 96/96 (0 unexpected/skipped/flaky, `M/s29-e2e`); H, HN empty; HR clean; A 0. Logs `M/s29-{L,E}.log`.
 - 2026-10-30 02:50 UTC: Verification (on cdd2d58), stopped at 4: 1 ok (frozen install, uv 0.13.5, `uv pip check` clean 48, labs-only venv clean + probe `null`, platforms Windows/Linux x86-64/aarch64/macOS 14 arm64 0, Intel macOS 1 on pyproj, fence = requirements.txt); 2 ok (95,936,992 B; 18,822,906 B); 3 E 96/96 (0 unexpected/skipped/flaky, 96 traces, `M/e2e`); 4 T 664/664, test:db 1 failure (LC7, fixture: S30 added). Logs `M/verify/`.
 - 2026-10-30 03:18 UTC: S30: LC7's `tamperedDist` links the rest of `dist/learn/data/`. learn-check.dbtest 26/26 (19 min; LC7 474 s, red in Verification's run → green); typecheck ok; L ok (learn:check 147 PostGIS + 33 Python blocks equal; `checked.json` keys only, 180, no result moved); leak query empty. Log `M/s30-{lc,L}.log`.
+- 2026-10-30 04:12 UTC: Verification 1–9 (on 6e32eb0, clean tree), all ok: 1 venv (frozen install, uv 0.13.5, `uv pip check` clean, labs-only venv clean + probe `null`, Windows/Linux x86-64/aarch64/macOS 14 arm64 0, Intel macOS 1 on pyproj, fence = requirements.txt); 2 build ok, 95,936,992 B / 18,822,906 B; 3 E 96/96 (0 unexpected/skipped/flaky, 96 traces, 12 s4/s5/e2 PNGs, `M/e2e`); 4 T 664/664, test:db 138/138 (22 min), leak empty; 5 learn:check ×2 exit 0 (489 s, 495 s; 147 PostGIS + 33 Python blocks equal; gates moran, gistar, lisa, zonal ok; every download ok), tree clean (checked.json byte-identical), canary unchanged, leak empty, versions = checked.json (Python 3.12.3, requirements d5bbe28024cc); `--module s2` ran s4-cells once; 6 P 0 diffs (29 pages, 509 files), result changes only e1-checksum, e2-geopandas; s6-habitat ran, e1-submit/arcpy-moran untested, 11 ran `-ex`; 7 erd nothing; 8 H, HN, HR empty, data/contracts/db/erd/duckdb-ext and A unchanged; 9 dist 294 files identical across two builds. Script + logs `M/verify-final/`.
 
 ## Summary
+
+**Status:** every stage, step (S1–S30), the Astra code review (2 MUST-FIX → S28, S29) and the full Verification done on `6e32eb0`. Release (merge + `deploy critwire` + smoke) is the next unit.
+
+**Shipped:**
+- Python labs tested like SQL: `learn:check`'s Python stage (`scripts/learn/python.ts`: `python -I`, empty folder, process-group kill, bounded pipe wait, per-run session names, leak checks), one result path for PostGIS and Python, the agreement gates (`scripts/learn/agree.ts`: Moran, Gi\*, LISA, zonal; SQL = PySAL), freshness keys over Python blocks, their `# after:` chain, boot blocks and `requirements.txt`.
+- Downloads: `/learn/labs/<page>.py` + `.ipynb` (cells = `.py` blocks; untested blocks commented out / Markdown), `setup.py`/`.ipynb`, `/learn/labs/requirements.txt`; `learn:check` runs every `.py` download on a fresh load (exit 0) and every `.sql` with its announced errors.
+- s1–s6 (bias, point patterns, weights, Moran, local statistics, zonal) and e1–e5 (extract, transform-load, idempotent, quality-provenance, schedule) in full in 004 and on the site, each with a ran exercise; `s6-habitat` ran; setup page's Python, GeoPackage export and arcpy notes; diagrams `s4-band`, `e2-load`, `e5-refresh`.
+- E2E: `learn-labs` covers Python blocks and notebooks; screenshots s4, s5, e2; release smoke runs the live `s4.py`.
+
+**Pins:** labs `site/learn/labs/requirements.txt`, 44 pins, sha256 `d5bbe28024cc` (CPython 3.12.3; geopandas 1.2.0, libpysal 4.15.1, esda 2.10.0, pointpats 2.6.0, psycopg 3.3.6, numpy 2.5.4, pandas 3.1.0, shapely 2.2.0, pyproj 3.8.0, scipy 1.18.1); wheels on Windows x86-64, Linux x86-64/aarch64, macOS 14 arm64; Intel macOS fails (pyproj). Ingests' file adds rasterio 1.5.2, affine, attrs, click (never published).
+
+**Moran (5 km, n 1094):** I 0.2732961251160256, E[I] −0.0009149130832570906, z 15.177857980448 (PySAL) vs 15.177857980449 (SQL); neighbour pairs equal (`s4-agree`).
+
+**Python timings** (Verification 5): learn:check 489 s / 495 s whole; 33 Python blocks 31–34 s total, slowest `s4-agree` 3.2 s, `e1-retry` 2.6 s, `s5-lisa` 2.5 s, `s5-gistar-pysal` 2.4 s, `s4-permutations` 2.4 s; 11 `.py` downloads 29 s total (slowest `s4.py` 4.6 s). test:db now 22 min (138 tests); e2e 6.8 min (96).
+
+**Deviations from 004** (each in 004 in its commit; audit under Decisions, S27): two pin files (D1), block files `sql/<id>.py` (D3), `arcpy-moran` commented out (D5), `LEARN_BASE=file://<dist>` (D6), `e1-checksum` re-recorded (D8), `e2-geopandas` re-recorded (D9, MF5), `.py` downloads run to exit 0 + release smoke `s4.py` (D14); `g1-columns` filters `s4_cells`; s3/s6 outline prose corrected; `e5-job` raises only on failure.
+
+**Reviews:** architecture Fable APPROVE WITH CHANGES, Astra APPROVE_WITH_CHANGES (MUST-FIX resolved in Revision); code review Astra APPROVE_WITH_CHANGES, both MUST-FIX fixed (S28, S29), no SHOULD-CONSIDER.
+
+**Artifacts:** `/srv/critter-ai/agent-state/missions/critwire-learn-l4-stats-etl/e2e/` (Playwright report, 96 traces, `results.json`, screenshots); reproduce `pnpm build && E2E_ARTIFACTS=<dir> pnpm e2e`. Verification logs `.../verify-final/`.
+
+**Notes for L5:** c1's `.sql` must carry `s4-cells` as boot after `pg-session` (as s2–s5); the habitat fact in the star is L5's; untested blocks stay `arcpy-moran`, `e1-submit`, `g3-iucn`; a new Python block needs `# after:` and a run via `learn:check --update`; budget test:db ≈ 22 min and learn:check ≈ 8 min per run. Handoff H3 (GBIF retention past 2027-04-23) still waits on the owner.
