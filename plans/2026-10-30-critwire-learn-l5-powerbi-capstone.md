@@ -128,7 +128,7 @@ The review's numbering: SC = SHOULD-CHANGE.
 - [x] Architecture: `architect` writes findings and the target design
 - [x] Fable review: `architecture-reviewer`
 - [x] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
-- [ ] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
+- [x] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
 - [ ] Steps: `planner` writes Steps and Verification
 
 ## Baseline
@@ -147,7 +147,7 @@ On `afed437` (= `origin/main` `67ceb8f`, L4 merged and live, + mission start), 2
 
 ## Architecture
 
-Read on `6e8d566`. Line refs are to that commit. Facts marked "verified" were run during this stage (DuckDB/psql probes on the committed data; no build, learn:check or e2e).
+Read on `6e8d566`. Line refs are to that commit. Facts marked "verified" were run during this stage (DuckDB/psql probes on the committed data; no build, learn:check or e2e). Revised on `0428cfe` after both reviews (F9, T1, T2, T3, T4, T5, T8, T9, T10; see Revision notes).
 
 ### Findings (ranked by impact)
 
@@ -211,23 +211,34 @@ So the feed must be a file `learn:check` writes, bound to a recorded result the 
 - Pages say "in preparation" for p1, p2 and c1 (`d5.html:24`, `d6.html:16,40`, `s5.html:17`); they must become links (AGENTS.md: link only pages that exist).
 
 **F8. Risks.**
-- First repo run of `p2-check` (`022cceeadc7e`), `p4-check` (`26cbac454e1c`) and `c1-feed` (`0ed7d7c256c4`): a difference is a bug to find, not a number to update.
-- Disk is 9.2 GB free (not 11): about 750 MB per e2e run, keep two.
+- First repo run of `p2-check` (`022cceeadc7e`), `p4-check` (`26cbac454e1c`) and `c1-feed` (`0ed7d7c256c4`, before F9's fields; T4): a difference is a bug to find, not a number to update.
+- Disk is 9.2 GB free (not 11; 8.7 GB at Revision): about 750 MB per e2e run, keep two.
 - Each `learn:check` run takes about 9–10 min and each `test:db` run about 22 min: one heavy run per session.
+
+**F9. 004's feed ships without a license and with partial credits (Astra MUST-FIX 1).** The `c1-feed` doc has `source` (the download citation) and `credit` (title and publisher only). It has no license of its own, no credit for critwire (whose species names, cells and weights it holds), and no per-dataset DOI, although e4's credit query (`e4-credits`) teaches `doi`. Published at `/learn/labs/`, outside `/learn/data/`'s manifest, it would break AGENTS.md's rule that every third-party field records its source and license, and CC BY 4.0's license-notice and URI terms.
+- Verified: the hardcoded `source` equals the build's `downloadCitation` (`/learn/data/manifest.json`'s gbif-sample citation), and all 7 credited devil datasets have a DOI in `datasets.csv`.
+- Nothing binds that string to the sample, so after a sample refresh the feed would cite the old download.
 
 ### Target design
 
 **T1. Cross-page `-- after:` for PostGIS blocks (fixes F1).**
-- Rule (004 §0): a PostGIS block's `-- after:` may name an earlier block of its own page, or a ran PostGIS block on a page of its module's **prerequisites, transitively**. Python keeps "its page or `py-connect`". DuckDB stays page-only, because the browser runs `data-after` from the page DOM.
-- One query in `course.ts`, `afterScope(curriculum, pageId) → Set<pageId>`, used in two places:
-  - `assembleCourse`: it gains the curriculum, then passes each page's in-scope blocks to `lintPage` as helpers.
-  - `port.ts` `helpers()`: it reads `site/learn/curriculum.json` and ports the scope pages' blocks from 004.
-- `lintPage`: the chain becomes `(first.get(a) ?? helpers.get(a))`, and helpers are refused for DuckDB blocks.
-- Everyone else resolves ids course-wide, and the lint alone decides scope. Ids are unique course-wide: one file per id, and `assembleCourse` refuses a block on two pages.
-  - `runner.ts` `blockRuns`/`runBlock` take the course's `Map<id, Block>`; `check.ts` passes it.
-  - `assemble.ts` `sqlDownload` uses `all` for `byId`, so `used` sees `s5-gistar`'s code and `c1.sql` gets `s4-cells`.
-  - `freshness.ts` `afterChain` uses `all`.
-- Byte-neutral today: no existing block has a cross-page `-- after:`, so every existing download, key and page is unchanged.
+- Rule (004 §0): a PostGIS block's `-- after:` may name an earlier block of its own page, or a ran PostGIS block on a page in its **scope**: its module's prerequisites, transitively. Python keeps "its page or `py-connect`". DuckDB stays page-only, because the browser runs `data-after` from the page DOM.
+- **Scope is transitive; execution isn't (Astra SC1).** A block runs exactly the blocks its `-- after:` lists, in that order, each with only its own statements, as the runner and downloads do today. So `p3-check` lists every d6 star block it needs, as 004 already does.
+  - The runner (`runBlock`) and the downloads (`blockPart`, and boot detection's `used`) resolve the same ids from the same map, and run or inline the same list.
+  - Freshness's `afterChain` stays transitive over that map, so its key covers a superset of what runs. A stale result can't look fresh; at worst a block re-runs when it didn't need to.
+- `course.ts`, three queries:
+  - `afterScope(curriculum, pageId) → Set<pageId>`: the module's prerequisites, transitively (`setup` → ∅). It **throws** on an unknown page, a module naming itself, or a prerequisite cycle (naming the cycle), never returning an empty set. `parseCurriculum` already rejects cycles; this guards direct callers such as `port.ts`.
+  - `courseBlocks(pages) → Map<id, Block>`: every page's blocks. It is the **one id resolver** for the runner, `assemble.ts` and `freshness.ts` (freshness's own `all` map moves here). Ids are unique course-wide, because `assembleCourse` refuses a block on two pages.
+  - `assembleCourse(curriculum, pages, blocks, diagrams)` runs in **two passes (Fable MUST-FIX 2)**. First it collects every page's slots and `onPage`; then it lints each page with helpers = `py-connect` ∪ every PostGIS block on its `afterScope` pages. The lint no longer depends on page order.
+- `lintPage`: the chain becomes `first.get(a) ?? helpers.get(a)`.
+  - Its existing checks (boot, untested, expects an error, own transaction, sessions, engine) refuse every helper but a plain ran PostGIS block. So a DuckDB or Python block naming a helper fails the engine check.
+  - A block outside the scope stays "unknown block … (not on this page or a prerequisite's)".
+- Users of `courseBlocks`:
+  - `runner.ts` `blockRuns`/`runBlock`, passed by `check.ts`, so `--module p3` resolves d6's blocks.
+  - `assemble.ts` `sqlDownload`'s `byId`, so `used` sees `s5-gistar`'s code and `c1.sql` gets `s4-cells`.
+  - `freshness.ts` `afterChain`.
+- `port.ts` `helpers()`: reads `site/learn/curriculum.json` and ports the blocks of the `afterScope` pages from 004.
+- Byte-neutral today: no existing block names another page's block, so every existing download, key and page is unchanged.
 
 **T2. The habitat fact in the star (fixes F2, F3; Goal 1).**
 - `d6-star-fact-country-habitat.sql` and 004 d6 get the F2 CHECK in one commit; the result sha stays the same, the reason goes under Decisions. Its key and `d6-drill-across`'s go stale, so `learn:check` re-runs them. `/learn/labs/d6.sql` changes: a recorded deviation from the baseline sha256 list.
@@ -237,6 +248,7 @@ So the feed must be a file `learn:check` writes, bound to a recorded result the 
   - `dim_habitat_class(habitat_code INTEGER PK, name, level1_code, level1_name)`.
   - `fact_country_habitat(country_code VARCHAR NOT NULL FK dim_country, habitat_code INTEGER NOT NULL FK dim_habitat_class, est_area_km2 DECIMAL(12,2) NOT NULL CHECK (>= 0 AND <= 9999999999.99), PK (country_code, habitat_code))`, rows ordered by the PK.
 - The cross-engine guard compares Node DuckDB's result with the PostGIS records (`37ad5647623e`, `80b11c41e5b3`).
+- Rounding, verified (Fable MISSED): `country_habitats.parquet`'s `est_area_km2` is already `DECIMAL(12,2)`. None of the 5,578 rows goes beyond 2 places, and DuckDB's sum, 146,579,613.97, equals the recorded PostGIS `total_km2`. Neither engine rounds on insert, so `sum(est_area_km2)` agrees. Goes under Decisions.
 - The manifest gains both files (columns, keys from DuckDB's catalog, rows, bytes, sha256, credits); the data manifest and index list them through the existing `writeLabIndex`.
 - `star.mmd`: drop the `%% planned:` line and its comment, and update the accDescr. `schema-star.html`: drop the "Planned" section and its `{{planned}}` slot, keeping a sentence that the habitat areas are map estimates.
 - `pnpm erd` re-renders `star.svg`. `d6.html` and 004 d6/§6.3 say "published".
@@ -245,6 +257,8 @@ So the feed must be a file `learn:check` writes, bound to a recorded result the 
 
 **T3. The Power BI block model (fixes F5).**
 - **`// twin: <id>`** (DAX only, required). It names a ran PostGIS block on the same page. `PBI_HEADERS` += `twin`; `lintPage` refuses a DAX block without one, an M block with one, and a twin that is missing, not PostGIS or not ran.
+  - One resolver (Fable SC): `lintPage` looks the twin up in its page map `first`, with no helpers, because a twin is on its own page.
+  - It checks the twin with the same named-block predicate as `-- after:`, factored out of the loop once.
 - **Page text.** `powerBiHtml` keeps "Not run by critwire: Power BI Desktop is Windows-only." exactly as now, and for DAX adds one `<p class="twin">`: "The table it should return, from the same files in PostGIS: <a href="#q-…">…</a>. That twin checks the arithmetic only, not M parsing, relationship direction, filter context or DAX execution." No new CSS: reuse existing styles, so the asset hashes stay.
 - **Inputs.** `// input:` is `star/<file>.csv` (under `/learn/data/`) or `labs/c1-feed.json` (under `/learn/`).
   - `STAR_INPUT` becomes `INPUT = /^(star\/[a-z_]+\.csv|labs\/c1-feed\.json)$/`.
@@ -253,19 +267,39 @@ So the feed must be a file `learn:check` writes, bound to a recorded result the 
   - In `--draft`, a missing input renders "not built yet (draft build)", as `labResult` does, so c1's page can build before the first feed exists. A plain build throws.
 - **Exercises.** `{{exercise:}}` is allowed for Power BI, rendered in the same `<details class="exercise-answer">` as lab blocks; `skip` is still refused.
 
-**T4. The feed and its schema (fixes F4; Goal 3).** Everything below hangs off one constant in a new pure module, `scripts/learn/feed.ts`: `FEED = { block: "c1-feed-file", column: "feed", file: "site/learn/labs/checked/c1-feed.json", schema: "site/learn/labs/c1-feed.schema.json", input: "labs/c1-feed.json" }`.
+**T4. The feed and its schema (fixes F4, F9; Goal 3).** Everything below hangs off one constant in a new pure module, `scripts/learn/feed.ts`: `FEED = { block: "c1-feed-file", column: "feed", file: "site/learn/labs/checked/c1-feed.json", schema: "site/learn/labs/c1-feed.schema.json", input: "labs/c1-feed.json", sources: ["critwire", "gbif-sample"] }`.
 - **Blocks (004 §5.7):**
-  - `c1-feed` (after `s5-gistar`) becomes `CREATE OR REPLACE TEMP VIEW c1_feed AS <004's WITH … SELECT jsonb_build_object(…) AS doc FROM cells>;` followed by 004's summary query `FROM c1_feed`. It is the same doc and the same summary row, so the sha `0ed7d7c256c4` must hold.
+  - `c1-feed` (after `s5-gistar`) becomes `CREATE OR REPLACE TEMP VIEW c1_feed AS <004's WITH … SELECT jsonb_build_object(…) AS doc FROM cells>;` followed by 004's summary query `FROM c1_feed`.
   - New `c1-feed-file` (after `s5-gistar, c1-feed`): `SELECT doc::text AS feed FROM c1_feed;`. Its result is the whole feed as one text cell; the 60-character render goes in 004, and its sha256 covers the full text.
+  - **Two moves, two commits.** First the restructure, with 004's doc verbatim: it must hold `0ed7d7c256c4`, which proves the view is faithful. Then the license and attribution fields (below): after that only `bytes` may differ from 004's row (cells 307, records 1,972, weight_sum 0.999954, hot spots 37, credits 7, `fullest` all unchanged). The second commit records the new sha and bytes in 004, with the deviation under Decisions.
+- **License and attribution (F9; Astra MUST-FIX 1).** A game copies the feed alone, so the feed carries its own license and complete credits, with no companion file.
+  - The doc gains three fields:
+    - `license` `'CC BY 4.0'`: DATA-LICENSE.md's license for data critwire derives. This applies the existing license and is no new licensing decision, so it needs no handoff item.
+    - `license_url`: that license's deed.
+    - `attribution`: critwire's requested credit (`CRITWIRE_CREDIT`).
+  - Each `credit` item gains `doi` (`e4-credits`' column), ordered by title, publisher and doi.
+  - Kept as they are: `source` (GBIF's download citation, with its DOI, which lists every dataset) and `meaning` (marks the change: shares per cell).
+  - Schema (004's fence): `required` += `license`, `license_url`, `attribution`. Credit items' `required` += `doi` (`["string", "null"]`). `license_url` gets `"pattern": "^https://"` and no `format`, because Ajv strict refuses `format` without ajv-formats.
+  - **Build check, reusing the credit interfaces.** `feedAttributionErrors(doc, expected)` in `feed.ts` is pure. `expected` comes from `credits(FEED.input, {...labCredits, files: {[FEED.input]: FEED.sources}})`, so ST4's checks apply for free, plus `labCredits.datasets`.
+    - `CreditDataset` gains `doi: string | null`. Its values are already `learn.datasets`, which carry it.
+    - It requires `license`, `license_url` and `attribution` to equal the critwire credit's `license`, `licenseUrl` and `citation`.
+    - It requires `source` to equal the gbif-sample credit's `citation`, which catches a sample refresh that leaves the old citation in the SQL.
+    - It requires every `credit` row to equal one sample dataset's (title, publisher, doi), unique and sorted. The list's completeness belongs to the SQL, bound by the recorded `datasets_to_credit`.
+  - The e2e and the release smoke (T8) call the same `feedAttributionErrors` on the served files.
 - **Write.** `Outcome` (record.ts) gains `result?: Result`, the uncut result `runBlock` rendered from.
-  - After `settleResults` succeeds in a whole `--update` run, `check.ts` calls `writeFeed(runs)`. It requires exactly one row and one text column `feed`, and writes `FEED.file` byte for byte (34,848 B per 004; no newline) when it changed.
+  - After `settleResults` succeeds in a whole `--update` run, `check.ts` calls `writeFeed(runs)`.
+  - `writeFeed` requires exactly one row, one column `feed`, and a cell with `typeof === "string"` (Fable SC). A `jsonb` slip arrives as an object and is refused, not rendered.
+  - It writes `FEED.file` byte for byte, `utf8`, with no newline, only when it changed. The size is measured at the first run with attribution; 004's 34,848 B predates the new fields.
   - `--module` and plain runs write nothing.
 - **Bind (build, offline).** `feedStaleness(feedText, recorded)` in `feed.ts` requires `renderResult(FEED.block, {columns: ["feed"], rows: [[feedText]]}) === checked/c1-feed-file.txt`. That recorded result is itself stamped in `checked.json`, so the existing chain proves the file came from the query.
-  - It is called from `assertLabsFresh`: plain refuses ("…c1-feed.json isn't c1-feed-file's result: run pnpm learn:check --update"), `--draft` warns. A missing feed is the same error.
+  - `assertLabsFresh` gains `labCredits` and adds the feed's errors to its list: a missing feed, `feedStaleness`, then `feedAttributionErrors`.
+  - One policy for all three: plain refuses ("…c1-feed.json isn't c1-feed-file's result: run pnpm learn:check --update"), `--draft` warns. A throw in `--draft` would block the `build --draft && learn:check --update` loop that rewrites the feed.
   - No new freshness field and no `checked.json` format change.
 - **Publish.** `writeLearn` copies `FEED.file` → `dist/learn/labs/c1-feed.json` and `FEED.schema` → `dist/learn/labs/c1-feed.schema.json`. They sit outside `/learn/data/`, so the data cap and manifest are untouched.
 - **Schema source.** `site/learn/labs/c1-feed.schema.json` is 004's ```` ```json ```` fence. `learn:port` gains one rule: a `json` fence whose `$id` is `https://critwire.com/learn/labs/<name>.json` ports to `site/learn/labs/<name>.json`. `--check all` then proves the two are the same.
-- **Validator.** `ajv` as an exact-pinned devDependency (current 8.x at install), `import Ajv2020 from "ajv/dist/2020"`, `strict: true, allErrors: true`. It is used only from e2e: a helper `feedSchemaErrors(feed, schema)` in `e2e/helpers.ts`, shared by `learn-labs` and `release/live.spec.ts`. The build and `learn:check` never import it.
+- **Validator.** `ajv` as an exact-pinned devDependency, like `@playwright/test` (8.20.0 is current). Construct it with `strict: true, allErrors: true`.
+  - Import it as `import { Ajv2020 } from "ajv/dist/2020.js"`. The root tsconfig is `nodenext` and includes `e2e/`, so the extension is required, and the named export can be constructed where the default import of this CommonJS module can't. `pnpm typecheck` proves it (Fable SC).
+  - It is used only from e2e: a helper `feedSchemaErrors(feed, schema)` in `e2e/helpers.ts`, shared by `learn-labs` and `release/live.spec.ts`. The build and `learn:check` never import it.
 - **Report block.** `c1-report` (M, `// input: labs/c1-feed.json`) loads the feed with p1's pattern: `Json.Document(Web.Contents("https://critwire.com", [RelativePath = "learn/labs/c1-feed.json"]))`, cells to a typed table. So the game and the report read the same bytes, with no extra CSV. Deviation from §5.7, recorded.
 
 **T5. Modules in full (Goal 2, 3).** 004 is written first, then `learn:port <page>`, then the page; the module's `curriculum.json` state turns `built` in the same commit. Form: §5's (Concept, Worked example, Lab, Result, Exercise, Answer, Check, plus a "Dialects" section, which for p is how other tools say the same). Copy is for adults, records not range, and has no mission names.
@@ -276,12 +310,14 @@ So the feed must be a file `learn:check` writes, bound to a recorded result the 
   - The `p3-measures` measure becomes "Sample records per 1,000 km2 of forest".
   - The prose calls it "sample records divided by forest area" and says why it isn't sampling effort.
   - Plus a DAX exercise and its twin.
+  - One commit (Fable SC): 004, `p3-check` (`NULLIF`, rename), `p3-measures`, the prose and the re-recorded result. TT's ratio before (0.698, on the stand-ins) and after goes under Decisions.
 - **p4** (PBI, PG): `p4-labels` (twin `p4-check`, keep `26cbac454e1c`), plus an exercise.
 - **c1** (PG, Py, PBI):
   - Blocks: `c1-feed` and `c1-feed-file` (T4), `c1-report` (T4), and one ran PostGIS exercise (for example s1's "look before counting" on the fullest cell). The `json` schema fence. Diagrams `c1-pipeline` and `c1-feed`.
   - Py stays: the lab has the learner run e1–e4's downloads for their own species, and the page links them. 004 §5.7 already says this; §2's "all" is corrected.
   - `c1.sql` carries `s4-cells` as boot (T1). The feed's `meaning`, every title and the report say records, never range.
-- Only `p3-check` (and `p3-measures`' prose) changes a recorded result; every other p/c sha holds or is new.
+  - The prose says what a game's credits screen shows: `attribution`, `source` and each `credit` with its DOI. It also says a learner's own feed names its maker in `attribution`.
+- Two blocks change a recorded result. `p3-check` (and `p3-measures`' prose) runs on L3's summaries; `c1-feed` changes only its `bytes` column, from the feed's attribution fields (T4). Every other p/c sha holds or is new.
 
 **T6. Curriculum pass (Goal 4).** `curriculum.json`:
 - all 33 `built`; tools p1 `[PBI]`, p2–p4 `[PBI, PG]`, c1 `[PG, Py, PBI]`;
@@ -308,27 +344,42 @@ Every "in preparation" text under `site/learn/` becomes a link (F7). Verificatio
 - `learn-labs`:
   - The Power BI test is generalized to `inputs`: star → manifest and `checkInput`; feed → rows = cells, sha256 of the served file.
   - Each DAX block's twin link resolves to `#q-<twin>` with its recorded result, and shows the twin sentence.
-  - The feed: served bytes = `checked/c1-feed.json`, served schema = `site/learn/labs/c1-feed.schema.json`, Ajv-valid, `meaning` says "not its range", and cells/records/hot spots/credits equal `checked/c1-feed.txt`'s first row.
+  - The feed, against its recorded summary (`checked/c1-feed.txt`'s row):
+    - The served bytes equal `checked/c1-feed.json`, the served schema equals `site/learn/labs/c1-feed.schema.json`, and the feed is Ajv-valid. `meaning` says "not its range".
+    - cells, records, hot spots and credits equal the row.
+    - `Buffer.byteLength` of the served file equals `bytes` (Fable MISSED).
+    - Σ `round(weight × 10⁶)` equals `weight_sum × 10⁶` in integer arithmetic (Astra SC2).
+  - The feed's attribution: `feedAttributionErrors` returns none against the served `/learn/data/manifest.json` credits (critwire, gbif-sample) and the served `datasets.csv` (title, publisher, doi).
   - The s4-cells boot list gains `c1.sql`.
 - `learn-data`: the star test needs nothing new (8 files); its "every Power BI input" loop takes star inputs only.
 - `schema`: the star page has no planned list.
 - `learn-screens`: + `p3`, `c1`.
-- Release smoke (`e2e/release/live.spec.ts`): the served feed is Ajv-valid against the served schema, and each `/learn/data/star/*` sha256 matches the served star manifest. The existing "every dist file served" already covers every `/learn/` page returning 200.
+- Release smoke (`e2e/release/live.spec.ts`), on the live site:
+  - The served feed is Ajv-valid against the served schema, which requires the license and attribution fields.
+  - `feedAttributionErrors` returns none against the served manifest and `datasets.csv`.
+  - Each `/learn/data/star/*` sha256 matches the served star manifest.
+  - The existing "every dist file served" already covers every `/learn/` page returning 200.
 
 **T9. AGENTS.md.** Update:
 - State: all built.
-- Stack: ajv for e2e.
+- Stack: ajv for e2e (`ajv/dist/2020.js`, exact pin).
 - Learn files: `labs/c1-feed.schema.json`, `checked/c1-feed.json` (`learn:check --update` only), `// twin:`, inputs incl. `labs/c1-feed.json`.
-- The `-- after:` scope rule; the build list (`learn/labs/c1-feed.json`, `c1-feed.schema.json`; star 8 files; the feed binding refusal).
+- The `-- after:` scope rule: scope transitive, execution only the listed blocks, in order.
+- The build list: `learn/labs/c1-feed.json` and `c1-feed.schema.json`; the star's 8 files; the feed refusals (binding and attribution: plain refuses, `--draft` warns).
 - `learn:check --update` writes the feed.
+- `--module` note (Fable SC): `--module p2|p3|p4` replays d6's star blocks inside each twin's transaction, and `--module c1` replays `s5-gistar`. Slower page runs are expected, not a regression.
 
-**T10. Handoff H6 (Goal 5; Addendum item 1d, 2).** "Power BI Desktop check against the live star", `Blocks: nothing`, written once the release is live. Steps:
-- p1: `LoadStar` and the eight queries; row counts equal each page's input table.
-- Empty `month` / `coordinate_uncertainty_m` cells become null, not errors.
-- `NA` is Namibia, never null or blank. The unknown members `ZZ` and `-1` are present and filterable.
-- p2's relationships: many-to-one, single direction.
-- `p2-measures`, `p3-measures` and `p4-labels` in DAX query view, each compared with its twin on the page. The devil's species-filtered credits are 7.
-- c1: `c1-report`'s 307 rows.
+**T10. Handoff H6 (Goal 5; Addendum item 1d, 2).** "Power BI Desktop check against the live star", `Blocks: nothing`.
+- **Timing (Fable MUST-FIX 1; Astra SC3).** It is written in the AGENTS.md + review-audit step, before Verification, so the Summary can name it.
+  - Its Why tells the owner to run it against https://critwire.com once the mission's PR is merged and deployed.
+  - The release unit at most appends the merge commit to it. The mission never waits on it.
+- Steps:
+  - p1: `LoadStar` and the eight queries; row counts equal each page's input table.
+  - Empty `month` / `coordinate_uncertainty_m` cells become null, not errors.
+  - `NA` is Namibia, never null or blank. The unknown members `ZZ` and `-1` are present and filterable.
+  - p2's relationships: many-to-one, single direction.
+  - `p2-measures`, `p3-measures` and `p4-labels` in DAX query view, each compared with its twin on the page. The devil's species-filtered credits are 7.
+  - c1: `c1-report`'s 307 rows; the feed's `license`, `attribution`, `source` and 7 credits are readable in Power Query.
 
 The item states that the twins verify arithmetic only, not M parsing, relationship direction, filter context or DAX execution, which is what this check covers. Reply: per query, "matches" or what differs.
 
@@ -359,6 +410,13 @@ Each one is recorded under Decisions with its commit.
 - **jsonb `doc` instead of `doc::text`**: cellText renders objects as `{k: v}`, not JSON, so the binding would need a jsonb re-serializer.
 - **A cell CSV for the c1 report (004 §5.7) or a 9th star file**: an extra published file with the same data as the feed, and the star stays "eight".
 - **Validating with Python `jsonschema`**: it changes the published labs' `requirements.txt` (44 pins, every Python key stale). **A hand-rolled subset validator**: it ignores keywords nobody implemented, while Ajv strict refuses them. **`@cfworker/json-schema`**: less established than Ajv. **Validating in build/learn:check**: the e2e and the release smoke are the one place, and ajv stays out of the build.
+- **The feed's attribution**:
+  - A companion file (`c1-feed.credits.json`): a game copies the feed alone, so a sidecar gets lost.
+  - Adding the license only in `c1-feed-file`'s SELECT (keeping `0ed7d7c256c4`): the learner's doc and the published one would differ, and `bytes` would stop matching the file.
+  - The build recomputing the credit list: cell membership needs PostGIS. The SQL and the recorded `datasets_to_credit` bind it.
+  - Attribution errors throwing in `--draft`: that blocks the loop that rewrites the feed.
+- **Making freshness's `afterChain` non-transitive**, to mirror execution exactly: it would only shrink keys. The transitive key is a safe superset, and unchanged today.
+- **Linting each page inside `assembleCourse`'s single pass**: correct only while prerequisites precede their dependents in page order.
 - **A `dim_habitat_class` unknown member**: no fact row lacks a class.
 - **Leaving `< 'Infinity'` and skipping the habitat block in DuckDB**: the star must come from one text.
 
@@ -369,20 +427,25 @@ Each one is recorded under Decisions with its commit.
   2. T2, then a build, `learn:check` (d6 keys stale), and the e2e `learn-data` and `schema` specs.
   3. T3 and T4's code, with cases first in `blocks.test.ts`, `module-html.test.ts`, `star.test.ts`, `record`/`check` and `port.test.ts`; then the ajv install.
   4. p1, p2, p3, p4: one module per step, each 004 → port → page → `build --draft && learn:check --update && build` → the relevant e2e. p1 and p3 need T2 first, because their inputs must be star files.
-  5. c1: first `c1-feed`, `c1-feed-file`, the page and the schema; the first `--update` writes the feed. Then `c1-report` and the exercise.
-  6. The diagrams; the curriculum pass and 004's map/tables; the remaining e2e and the release smoke; AGENTS.md; the review-item audit; Verification; code review; release; H6.
+  5. c1:
+     - First `c1-feed` restructured with 004's doc verbatim, `c1-feed-file`, the page and the schema. The first `--update` writes the feed, and `0ed7d7c256c4` must hold.
+     - Then the license and attribution fields (004's SQL, schema and Expected; only `bytes` moves) with `feedAttributionErrors`.
+     - Then `c1-report` and the exercise.
+  6. The diagrams; the curriculum pass and 004's map/tables; the remaining e2e and the release smoke.
+  7. AGENTS.md, the review-item audit and H6 (written there; T10).
+  8. Verification; code review; release (appends the merge commit to H6).
 - **Risks**:
   - The first repo run of `c1-feed`, `p2-check` or `p4-check` may differ from 004: treat it as a bug and investigate before re-recording.
-  - `c1-feed`'s restructure must keep `0ed7d7c256c4`.
+  - `c1-feed`'s restructure must keep `0ed7d7c256c4`. After the attribution fields, only `bytes` may move.
   - Write c1-feed.json from `doc::text` exactly (no reformat), or the binding fails.
   - Keep CSS unchanged so the asset hashes don't move. Expected dist changes against the baseline list: the star (+2 CSVs, its manifest), the data manifest and index, pages, `schema/star.svg`, `labs/d6.sql`, new `labs/p2–p4.sql`, `c1.sql`, `c1-feed.json`, `c1-feed.schema.json`, new diagrams. `/v1/*` stays byte-identical.
-  - Disk: delete older e2e artifact folders.
-- **Budget**: 2 sessions used (Baseline, Architecture). Estimated remaining:
-  - 4 pipeline stages;
-  - about 16 steps (T1 1, T2 1–2, T3+T4 2, p1–p4 4, c1 2, diagrams 1, curriculum pass 1, e2e 1, AGENTS + audit 1, Verification 1–2);
+  - Disk (8.7 GB free at Revision): delete older e2e artifact folders.
+- **Budget**: 5 sessions used (Baseline, Architecture, Fable, Astra, Revision). Estimated remaining:
+  - the Steps stage, 1;
+  - about 16–18 steps (T1 1, T2 1–2, T3+T4 2, p1–p4 4, c1 2–3, diagrams 1, curriculum pass 1, e2e 1, AGENTS + audit + H6 1, Verification 1–2);
   - the code review 1, its fixes about 2, final Verification 1, release 1.
 
-  That makes about 25–28 sessions, ≈ 27–30 in all, against the 48 cap.
+  That makes about 22–25 sessions, ≈ 27–30 in all, against the 48 cap.
 
 ## Architecture review (Fable)
 
@@ -419,6 +482,22 @@ SHOULD-CONSIDER:
 
 ## Revision notes
 
+One round, on `0428cfe`. Nothing rejected outright; one item taken in part (Astra SC1, freshness).
+- **Fable MUST-FIX 1 (H6 timing):** resolved. T10 writes H6 in the AGENTS.md + audit step, before Verification, `Blocks: nothing`, to be run against critwire.com once the PR is merged; the release only appends the merge commit. Planner order items 7–8 updated.
+- **Fable MUST-FIX 2 (T1 scope from the full map):** resolved in T1. `assembleCourse` runs in two passes (every page's `onPage` first, then the lint with `afterScope` helpers). `afterScope` throws on an unknown page, a module naming itself, or a cycle.
+- **Astra MUST-FIX 1 (feed license and attribution):** resolved by new finding F9 and T4's "License and attribution". The feed embeds `license`, `license_url`, `attribution` and a per-credit `doi`, and the schema requires them. The build checks them with `feedAttributionErrors` against `credits()`/`labCredits`; the e2e and the release smoke run the same check on the served files (T8). `c1-feed` moves only `bytes` (two commits, T4); the deviation goes under Decisions. Companion file rejected.
+- **Fable MISSED (DECIMAL rounding):** probed now, no risk (T2). The parquet column is `DECIMAL(12,2)`, no row goes beyond 2 places, and the DuckDB sum 146,579,613.97 equals the recorded PostGIS `total_km2`.
+- **Fable MISSED (feed bytes):** T8, `Buffer.byteLength` = `bytes`.
+- **Astra SC1 (transitive scope, ordered non-transitive execution):** taken in T1. The runner and downloads share `courseBlocks` and run exactly the listed blocks, in order. Freshness's `afterChain` is deliberately kept transitive (a safe superset key, unchanged today), so it isn't made "identical"; reason in Rejected alternatives.
+- **Astra SC2 (weight sum):** T8, integer sum of `round(weight × 10⁶)` = `weight_sum × 10⁶`.
+- **Astra SC3 (handoff before Verification):** same fix as Fable MUST-FIX 1 (T10).
+- **Fable SC (ajv import and pin):** T4 Validator and T9: exact pin, `import { Ajv2020 } from "ajv/dist/2020.js"`. The named import is used because the CommonJS default import isn't constructable under `nodenext`.
+- **Fable SC (writeFeed `utf8` and refusing a non-string cell):** T4 Write.
+- **Fable SC (AGENTS.md `--module` slowness note):** T9.
+- **Fable SC (one id resolver for `// twin:`):** T3 (lintPage's `first` and a shared named-block predicate); T1's `courseBlocks` is the one course-wide resolver.
+- **Fable SC (p3 in one commit; TT before/after under Decisions):** T5 p3.
+- **Budget:** 5 sessions used; ≈ 27–30 in all is unchanged (c1 grows to 2–3 steps).
+
 ## Steps
 
 ## Verification
@@ -429,11 +508,17 @@ SHOULD-CONSIDER:
 
 ## Decisions
 
+- Rounding probe (Fable MISSED): `country_habitats.est_area_km2` already `DECIMAL(12,2)`, no row > 2 places; DuckDB sum 146,579,613.97 = PostGIS `total_km2`. No DuckDB/PostGIS rounding risk for T2.
+- Freshness `afterChain` stays transitive (Astra SC1 taken in part): superset key can't make a stale result look fresh; runner + downloads run listed `-- after:` only, in order.
+- Feed attribution embedded in the feed JSON (license, license_url, attribution, per-credit doi), no companion file (Astra MUST-FIX 1).
+
 ## Log
 
 - 2026-10-30 05:05 UTC: Baseline on `afed437`: install, venv, typecheck ok; test 664/664; build ok (`/learn/data/` 95.9 MB); test:db 138/138; learn:check ok; e2e 96/96; sha256 lists saved.
 - 2026-10-30 05:21 UTC: Architecture by `architect`: F1 cross-page `-- after:` (prereq pages), F2 DuckDB CHECK fix, habitat fact = 2 star blocks, feed via `c1-feed-file` + checked file + ajv, DAX `// twin:` header; est. 25–28 more sessions. Plan-only change, no checks needed.
 - 2026-10-30 05:28 UTC: Fable review by `architecture-reviewer`: APPROVE_WITH_CHANGES, 2 MUST-FIX (H6 handoff before Verification, not after release; T1 cross-page scope from full course map, refuse self/cycles). Plan-only change, no checks needed.
 - 2026-10-30 05:29 UTC: Astra review: APPROVE_WITH_CHANGES, 1 MUST-FIX (T4 feed needs published license + attribution shipped with download). Plan-only change, no checks needed.
+
+- 2026-10-30 05:40 UTC: Revision by `architect`: 3 MUST-FIX resolved (H6 before Verification; T1 two-pass scope from full map, afterScope refuses self/cycle/unknown; F9/T4 feed embeds license + attribution, checked at build/e2e/smoke); SCs folded in; rounding probe clean. Plan-only change, no checks needed.
 
 ## Summary
