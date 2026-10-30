@@ -124,7 +124,7 @@ The review's numbering: SC = SHOULD-CHANGE.
 
 ## Stages
 
-- [ ] Baseline: install, migrate, run typecheck, lint, unit and E2E tests; record the results under Baseline
+- [x] Baseline: install, migrate, run typecheck, lint, unit and E2E tests; record the results under Baseline
 - [ ] Architecture: `architect` writes findings and the target design
 - [ ] Fable review: `architecture-reviewer`
 - [ ] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
@@ -132,6 +132,18 @@ The review's numbering: SC = SHOULD-CHANGE.
 - [ ] Steps: `planner` writes Steps and Verification
 
 ## Baseline
+
+On `afed437` (= `origin/main` `67ceb8f`, L4 merged and live, + mission start), 2026-10-30, db `critwire_dev` (`CRITWIRE_DB_TARGET=critwire_dev`, `LEARN_PG_URL` as `critwire_lab`). Logs: `/srv/critter-ai/agent-state/missions/critwire-learn-l5-powerbi-capstone/baseline-*.log` (`$S` below).
+- `pnpm install --frozen-lockfile`: ok. No migrations (build rebuilds tables). No lint script; typecheck is the static check.
+- `pnpm learn:venv`: ok (CPython 3.12.3, 48 packages, both pin files); `uv pip check`: clean.
+- `pnpm typecheck`: ok (2 s). `pnpm test`: 664/664 (2 min 10 s).
+- `pnpm build` (plain): ok, 6.8 s; `dist/learn/data/` 95,936,992 B, committed lab data 18,822,906 B (cap 120,000,000 each); `dist/` 294 files. Star today: 6 CSVs + `manifest.json` (no `dim_habitat_class`, `fact_country_habitat`).
+- `pnpm test:db`: 138/138 (21 min 28 s), after the build.
+- `pnpm learn:check`: ok (9 min 20 s); canary `learn_spatial` unchanged, leak check empty, `checked.json` unchanged, working tree clean.
+- `pnpm e2e`: 96/96 passed (7.2 min); artifacts `$S/baseline-e2e/` (748 MB).
+- sha256 lists for Definition of done: `$S/baseline-sha256-repo.txt` (895 tracked files) and `$S/baseline-sha256-dist.txt` (294 `dist/` files).
+- Roles: `critwire_live` and `critwire_lab` exist. Handoff: no `done` items; H3 (GBIF retention) waits on the owner, blocks nothing. Session 1 of the mission.
+- For the architect: L4's Summary (`plans/2026-10-29-critwire-learn-l4-stats-etl.md`, Summary; Python engine, s4/s5 boot blocks, downloads); Codex db/backend review `/srv/critter-ai/agent-state/reviews/2026-10-28-critwire-db-backend-codex.md` (L5 items in the brief's addendum: SC9 L5 part, twins-verify-arithmetic wording, capstone diagrams). Disk: 11 GB free; E2E artifacts ≈ 750 MB per run.
 
 ## Architecture
 
@@ -152,5 +164,7 @@ The review's numbering: SC = SHOULD-CHANGE.
 ## Decisions
 
 ## Log
+
+- 2026-10-30 05:05 UTC: Baseline on `afed437`: install, venv, typecheck ok; test 664/664; build ok (`/learn/data/` 95.9 MB); test:db 138/138; learn:check ok; e2e 96/96; sha256 lists saved.
 
 ## Summary
