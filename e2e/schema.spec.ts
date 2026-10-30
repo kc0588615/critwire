@@ -140,6 +140,8 @@ const DIAGRAMS = [
   { name: "d6-drill-across", url: "/learn/database-architecture/star/" },
   { name: "g3-predicates", url: "/learn/gis-in-sql/spatial-join/" },
   { name: "g7-cells", url: "/learn/gis-in-sql/raster/" },
+  { name: "s4-band", url: "/learn/spatial-statistics/moran/" },
+  { name: "e2-load", url: "/learn/etl/transform-load/" },
   { name: "e5-refresh", url: "/learn/etl/schedule/" },
 ];
 const svgTitle = (svg: string) => /<svg\b[^>]*>\s*<title\b[^>]*>([^<]+)<\/title>/.exec(svg)?.[1]?.trim();

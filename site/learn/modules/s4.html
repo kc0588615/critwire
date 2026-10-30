@@ -12,6 +12,7 @@
 <li><strong>Two engines, one statistic.</strong> Plain SQL and PySAL (<code>esda</code>) compute the same I, E[I], variance and z from the same cells and agree to 10⁻⁷, as long as their neighbours are the same pairs. That is a real condition: two records at one spot are 0 m apart, <code>ST_DWithin</code> makes them neighbours and PySAL's <code>DistanceBand</code> doesn't. Cells with distinct centroids avoid it, and this module checks both the centroids and the pairs before it trusts a number.</li>
 <li><strong>What clusters?</strong> The cells count records, so I measures how recording effort clusters as much as how devils do (<a href="/learn/spatial-statistics/bias/">Bias in records, s1</a>).</li>
 </ul>
+{{diagram:s4-band}}
 
 <h2>Worked example</h2>
 <p>The cells, and a check of their geometry.</p>
