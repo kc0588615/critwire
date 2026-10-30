@@ -405,9 +405,9 @@ pointpats: 2.6.0
 
 ## 2. The curriculum map
 
-Seven tracks, 33 modules, about 68 hours. Foundations come first and go fast; then the five areas; then a capstone that uses all of them. Each module answers real questions with the lab data (§4) on one or two tools: **B** the browser (DuckDB-WASM, nothing to install), **PG** your own PostgreSQL with PostGIS, **Py** Python in the `uv` environment, **PBI** Power BI Desktop (§3). Hours include the lab and the exercise. A module's id names its blocks (`d3-plan`) and its page (§7).
+Seven tracks, 33 modules, about 68 hours. Foundations come first and go fast; then the five areas; then a capstone that uses all of them. Each module answers real questions with the lab data (§4) on one or two tools (the capstone on three): **B** the browser (DuckDB-WASM, nothing to install), **PG** your own PostgreSQL with PostGIS, **Py** Python in the `uv` environment, **PBI** Power BI Desktop (§3). Hours include the lab and the exercise. A module's id names its blocks (`d3-plan`) and its page (§7).
 
-The table is in prerequisite order: every module's prerequisites come above it, so working down the table never meets a module that needs a later one. After f3 the tracks branch: GIS in SQL needs only f3 (and d3 for g5), ETL starts from f2, and Power BI waits for d6. **Depth** is what this document holds: `full` modules are written out in §5 (concept, worked example, lab, result, exercise, answer, check, dialects); `outline` modules give the goal, data, key code and expected result, and the build missions (§9) write them in full.
+The table is in prerequisite order: every module's prerequisites come above it, so working down the table never meets a module that needs a later one. After f3 the tracks branch: GIS in SQL needs only f3 (and d3 for g5), ETL starts from f2, and Power BI waits for d6. **Depth** is what this document holds: every module is `full`, written out in §5 (concept, worked example, lab, result, exercise, answer, check, dialects). Until its build mission (§9) wrote it, a module was an `outline`: the goal, data, key code and expected result.
 
 | id | Track | Module | Skill | Questions it answers | Tool | h | Prereqs | Depth |
 |---|---|---|---|---|---|---|---|---|
@@ -439,11 +439,11 @@ The table is in prerequisite order: every module's prerequisites come above it, 
 | e3 | ETL | idempotent | Run ids, deterministic outputs, checksums; critwire's own ingest → derive → build as the case study | Can I re-run the pipeline without doubling rows or changing its output? | Py + PG | 2.0 | e2 | full |
 | e4 | ETL | quality-provenance | Data quality checks written as SQL; license filters; provenance tables; citations; derived datasets | Which datasets must I credit, and under which license? Which checks stop a bad load? | Py + PG | 2.0 | e3 | full |
 | e5 | ETL | schedule | cron, systemd timers, Windows Task Scheduler; logs, alerts, incremental loads | How do I refresh weekly, and know when a run broke? | Py | 1.5 | e4 | full |
-| p1 | Power BI | power-query | Power Query: `Web.Contents` on critwire's CSV files; types with an explicit culture; refresh | How do I load the star from critwire.com so that it refreshes, on any locale? | PBI | 1.5 | d6 | outline |
-| p2 | Power BI | model | Relationships, cardinality, filter direction, conformed dimensions, factless facts | How do I filter records and habitat areas by the same country? | PBI | 2.0 | p1 | outline |
-| p3 | Power BI | dax | Measures: `COUNTROWS`, `DISTINCTCOUNT`, `CALCULATE`, ratios | How many sample records per 1,000 km² of forest, by country? | PBI | 2.0 | p2 | outline |
-| p4 | Power BI | maps-report | Map visuals, honest labels, publishing and scheduled refresh | How do I build a report that maps records and never calls them a range? | PBI | 1.5 | p3 | outline |
-| c1 | Capstone | game-feed | ETL into PostGIS → Gi* on hexagons → a Power BI report → a static JSON feed a game reads (encounter weights per hexagon, labelled as records) | What could a player meet here, honestly? | all | 8.0 | s5, e4, p4 | outline |
+| p1 | Power BI | power-query | Power Query: `Web.Contents` on critwire's CSV files; types with an explicit culture; refresh | How do I load the star from critwire.com so that it refreshes, on any locale? | PBI | 1.5 | d6 | full |
+| p2 | Power BI | model | Relationships, cardinality, filter direction, conformed dimensions, factless facts | How do I filter records and habitat areas by the same country? | PBI + PG | 2.0 | p1 | full |
+| p3 | Power BI | dax | Measures: `COUNTROWS`, `DISTINCTCOUNT`, `CALCULATE`, ratios | How many sample records per 1,000 km² of forest, by country? | PBI + PG | 2.0 | p2 | full |
+| p4 | Power BI | maps-report | Map visuals, honest labels, publishing and scheduled refresh | How do I build a report that maps records and never calls them a range? | PBI + PG | 1.5 | p3 | full |
+| c1 | Capstone | game-feed | ETL into PostGIS → Gi* on hexagons → a Power BI report → a static JSON feed a game reads (encounter weights per hexagon, labelled as records) | What could a player meet here, honestly? | PG + Py + PBI | 8.0 | s5, e4, p4 | full |
 
 | Track | Modules | Hours | Depth |
 |---|---|---|---|
@@ -452,9 +452,9 @@ The table is in prerequisite order: every module's prerequisites come above it, 
 | GIS in SQL | g1–g7 | 12.5 | full |
 | Spatial statistics | s1–s6 | 12.5 | full |
 | ETL | e1–e5 | 10.0 | full |
-| Power BI | p1–p4 | 7.0 | outline |
-| Capstone | c1 | 8.0 | outline |
-| **Total** | **33** | **68.0** | 28 full, 5 outline |
+| Power BI | p1–p4 | 7.0 | full |
+| Capstone | c1 | 8.0 | full |
+| **Total** | **33** | **68.0** | 33 full |
 
 **Going fast.** Each foundations module opens with an "Already know this?" exercise; solving it marks the module done, so someone who already writes joins and window functions spends minutes, not six hours, on the first track. The dialect notes in each full module (PostgreSQL, DuckDB, SQL Server) let a SQL Server user map what they know. After foundations, the order within the prerequisites is yours: a GIS specialist might take d1, d3 and d4, then GIS in SQL and spatial statistics, and come back for d5 and d6 before ETL and Power BI.
 
@@ -465,7 +465,7 @@ Four tools, each set up once. Every lab names the tool it runs on (§2). The fil
 | Tool | Modules | Runs on | Tested here | Not tested here |
 |---|---|---|---|---|
 | **B** browser | f1–f4, d1, d2, s1 | The course page: DuckDB-WASM in your browser | Every block, in headless Chromium, as the page runs it | — |
-| **PG** PostGIS | d1, d3–d6, g1–g7, s1–s6, e2–e4, c1 | Your PostgreSQL 16 with PostGIS 3.4 | The loader (twice, with the command below) and every block, in PostgreSQL 16.x with PostGIS 3.4.2 on critwire's server | The Docker and installer commands (Windows) |
+| **PG** PostGIS | d1, d3–d6, g1–g7, s1–s6, e2–e4, p2–p4, c1 | Your PostgreSQL 16 with PostGIS 3.4 | The loader (twice, with the command below) and every block, in PostgreSQL 16.x with PostGIS 3.4.2 on critwire's server | The Docker and installer commands (Windows) |
 | **Py** Python | s2–s6, e1–e5, c1 | The `uv` environment on your computer | Every block, isolated, on the pins below (CPython 3.12.3, Linux aarch64) | The install commands; Windows itself (the pins' Windows wheels were resolved, below) |
 | **PBI** Power BI | p1–p4, c1 | Power BI Desktop (Windows) | The files each query reads: header, keys, rows, sha256 (§0) | Power Query, DAX, visuals and refresh (§10 asks for one check on Windows) |
 | arcpy (optional) | s4, s5 | ArcGIS Pro's own Python | — | Everything (needs ArcGIS Pro, Windows, licensed) |
@@ -10029,7 +10029,7 @@ run 4 · links, TRANSFORM_VERSION = 2 again · exit 0 · INFO refresh: nothing c
 
 ### 5.6 Power BI
 
-Four modules, seven hours, in Power BI Desktop (§3.5), on the star d6 builds: eight CSV files under `https://critwire.com/learn/data/star/` (§A.3). These are outlines, in §5.3's form; build mission L5 (§9) writes them in full. Power BI runs only on Windows, so its blocks are `untested` here, and the tests check what they can instead (§0): every file a block names, against the star's manifest. Each DAX block is a query for Power BI's DAX query view (Home → DAX query view): its `DEFINE MEASURE` lines can be added to the model from there, and its `EVALUATE` returns a small table. A PostGIS block beside it, its twin (`// twin:`, §0), computes the same table from the same star with `star.sql` (d6), so its result is the table Power BI should show. The twin checks the arithmetic only, not M parsing, relationship direction, filter context or DAX execution: those need Power BI itself. §10 asks the owner for one check on Windows.
+Four modules, seven hours, in Power BI Desktop (§3.5), with PostGIS twins (§3.2) from p2 on, on the star d6 builds: eight CSV files under `https://critwire.com/learn/data/star/` (§A.3). Build mission L5 (§9) wrote them in full from their outlines, in §5.3's form. Power BI runs only on Windows, so its blocks are `untested` here, and the tests check what they can instead (§0): every file a block names, against the star's manifest. Each DAX block is a query for Power BI's DAX query view (Home → DAX query view): its `DEFINE MEASURE` lines can be added to the model from there, and its `EVALUATE` returns a small table. A PostGIS block beside it, its twin (`// twin:`, §0), computes the same table from the same star with `star.sql` (d6), so its result is the table Power BI should show. The twin checks the arithmetic only, not M parsing, relationship direction, filter context or DAX execution: those need Power BI itself. §10 asks the owner for one check on Windows.
 
 #### p1 · power-query
 
@@ -10564,7 +10564,7 @@ South Australian Museum Adelaide provider for OZCAM | South Australian Museum | 
 
 ### 5.7 Capstone
 
-One module, eight hours, on every tool. It is an outline, in §5.3's form; build mission L5 (§9) writes it in full. It asks a game designer's question, "what could a player meet here?", and answers it with a pipeline built from the earlier modules, ending in a file a game can read. Records can only say where people recorded an animal, so the file says that too, in its own fields.
+One module, eight hours, in your own PostGIS (§3.2), Python (§3.3) and Power BI Desktop (§3.5). Build mission L5 (§9) wrote it in full from its outline, in §5.3's form. It asks a game designer's question, "what could a player meet here?", and answers it with a pipeline built from the earlier modules, ending in a file a game can read. Records can only say where people recorded an animal, so the file says that too, in its own fields.
 
 #### c1 · game-feed
 
@@ -10844,7 +10844,7 @@ Learn stays what 002 §8 designed: static pages in the same `dist/`, written by 
 
 | URL | Page | Built in |
 |---|---|---|
-| `/learn/` | The curriculum map (§2): the seven tracks in order, each module with its tool badges, hours, prerequisites and a done tick; "Clear progress"; links to setup, the schemas, the data and the playground. Modules not yet built are listed, unlinked, as "in preparation" | L2 |
+| `/learn/` | The curriculum map (§2): the seven tracks in order, each module with its tool badges, hours, prerequisites and a done tick; "Clear progress"; links to setup, the schemas, the data and the playground. Every module is built and linked since L5; a module not yet built would be listed, unlinked, as "in preparation" | L2 |
 | `/learn/<track>/` | A track's index: its modules in order, with their questions (§2). Tracks: `foundations`, `database-architecture`, `gis-in-sql`, `spatial-statistics`, `etl`, `power-bi`, `capstone` | L2 |
 | `/learn/<track>/<module>/` | A module (`/learn/foundations/select/` … `/learn/capstone/game-feed/`), with Previous and Next within its track and its prerequisites linked | L2 (f, d), L3 (g), L4 (s, e), L5 (p, c) |
 | `/learn/setup/` | §3, every environment: the browser, PostGIS (Windows: Docker or the installer; then the loader), Python with `uv`, the arcpy notes, Power BI Desktop | L2; L4 adds Python |
@@ -10925,12 +10925,13 @@ A development command, never part of `build` or `deploy`. It is the repository's
 ### 7.7 E2E
 
 The repository's harness, unchanged in kind (002 §8): `pnpm build`, then Playwright headless Chromium against the local Caddy copy of the live block on 3100; expectations computed from `data/` and the manifests, never typed in; no request leaves 3100. New specs:
-- **`learn-map`**: the map lists `curriculum.json`'s tracks and modules in order, with hours and prerequisites; planned modules aren't links; a done tick survives a reload, and "Clear progress" removes it.
+- **`learn-map`**: the map lists `curriculum.json`'s tracks and modules in order, with hours and prerequisites; planned modules aren't links; a done tick survives a reload, and "Clear progress" removes it. **L5**: all 33 modules built, each linked from the map and its track page and returning 200; no `/learn/` page says "in preparation".
 - **`learn-browser`**: every browser block runs in its page without an error; every exercise accepts its answer and rejects a fixed wrong one; every "Already know this?" check marks its module done; Reset and Stop work; moving across three module pages starts the engine once.
-- **`learn-labs`**: each PostGIS, Python and Power BI block's code on its page equals its download; each download that names a boot block's table holds that boot block right after `pg-session` or `py-connect`; each `untested` block is in its `.sql` or `.py` commented out under its reason (its code, the `-- `/`# ` taken off, equals the page's) and in its notebook as a Markdown cell, never a code cell; the result shown equals the recorded one; every `.ipynb` cell equals its block in the `.py`; the capstone's feed validates against its schema.
+- **`learn-labs`**: each PostGIS, Python and Power BI block's code on its page equals its download; each download that names a boot block's table holds that boot block right after `pg-session` or `py-connect`; each `untested` block is in its `.sql` or `.py` commented out under its reason (its code, the `-- `/`# ` taken off, equals the page's) and in its notebook as a Markdown cell, never a code cell; the result shown equals the recorded one; every `.ipynb` cell equals its block in the `.py`. **L5**: every Power BI block is `untested` and shows its inputs, each `// input:` file matching the star's manifest (or the feed); each DAX block links its PostGIS twin; the capstone's feed validates against its schema (`ajv`, JSON Schema 2020-12) and its license, attribution and credits equal the served manifest and `datasets.csv`.
 - **`learn-data`**: every file's sha256 and size against `manifest.json`, row counts, CSV headers, the star's key coverage, the 120 MB cap, every file's `sources`, and the `/learn/data/` index listing every dataset of the sample with title, publisher and license.
   - **L1** (`e2e/learn-data.spec.ts`): the manifest lists exactly the folder's files; each file's sha256 and size; Parquet and CSV rows and columns (types as the build's reader sees them: GeoParquet's `geom` as WKB) and CSV headers; the occurrences equal `data/raw/gbif-sample/sample.csv` and `datasets.csv` its `datasets.json` entries; the loader's `tables` equal counts from `data/`; the cap; sources and citations; both DOIs equal the sample's `registration.json`; `inputs` equal the served `/v1` files and the committed sample; the index lists every file, every dataset (title, publisher, DOI, license, records) and both DOIs; screenshots at 1280 and 375 px. Global setup's `assertBuilt` also refuses a `dist/learn/data/` whose `inputs` or copied `data/learn/` files are stale.
   - **L2**: the star's key coverage (the star files are L2's).
+  - **L5**: all eight star files, the habitat fact's included, pass the input check (§0: header, keys, rows, sha256) as served, with the unknown members (`ZZ`, `-1`) and `NA` as Namibia, text; every Power BI block's star inputs against them.
   - **L3**: the habitat files as `habitat.json` records them (sha256, size, Jung v004's credit, no stand-in); `occurrence_habitats` one row per sample record with known codes; `habitat_clips.parquet`'s columns (`clip`, `tile`, `rast`) and its rows = the clips' tiles; `clips/*.tif` start with TIFF's magic and answer a Range request with 206.
 - **`schema`**: `schema.mmd` against the browser's catalog (`lab.mmd` and `star.mmd` are checked by `learn:check` and `pnpm build`, §6); the three ERD pages with their SVGs, relationships and dictionaries; the Schema and Lab schema dialogs by keyboard; the teaching diagrams, light and dark.
 - **`learn-screens`**: the screenshots (below), each page fitting its width.
@@ -10975,7 +10976,7 @@ Five missions build the course, one after another, each from a ready-to-start br
 | L2 | `plans/briefs/critwire-learn-l2-site.md` | `critwire-learn-l2-site` | The engine and app core (002 §1, §8) on schema v2; the map, track and module pages, progress, `/learn/setup/`, the playground (§2, §7); f1–f4 and d1–d6 in full (§5.1–5.2); the three ERD pages (§6); `writeStar` with the records fact; SQL downloads; `learn:check` for every PostGIS block, with its lints and `checked.json`; E2E. The design spike is frozen from here | L1's data, loader, credits and `learn:check` | 34–40 |
 | L3 | `plans/briefs/critwire-learn-l3-gis.md` | `critwire-learn-l3-gis` | `ingest habitat` (003 §5, v004): summaries for every country, `occurrence_habitats`, the Costa Rica and Tasmania clips (whole countries, 256-cell tiles; the cap raised to 120 MB by the owner); the loader and the lab ERD grow; `learn:check`'s raster check; g1–g7 in full (§5.3); review items: the `/v1` contract (`contracts/v1.json`), `docs/recovery.md`, `db:load` in batches | L2's pages, templates and `learn:check` | 28–34 |
 | L4 | `plans/briefs/critwire-learn-l4-stats-etl.md` | `critwire-learn-l4-stats-etl` | `requirements.txt` and `uv` (§3.3; L1 brought them, L4 split off the ingests' file); `learn:check`'s Python stage, the agreement gates and the lab role's refusals (§7.6); `.py` and `.ipynb` downloads (§7.3); s1–s6 and e1–e5 in full (§5.4–5.5), Moran, Gi\* and LISA tested against esda; three teaching diagrams (`s4-band`, `e2-load`, `e5-refresh`); review items: `e2-geopandas` in `learn_curriculum` as the lab role, a restartable refresh (e3, e5), the e1, e2, e4, e5 corrections, Python cleanup | L3's habitat data; the hexagon cells (g6, s4) | 30–36 |
-| L5 | `plans/briefs/critwire-learn-l5-powerbi-capstone.md` | `critwire-learn-l5-powerbi-capstone` | The habitat fact in `writeStar`; p1–p4 and c1 in full (§5.6–5.7), the game feed and its JSON Schema; a curriculum pass (all 33 modules built); a handoff item for the owner's Power BI check | L4's s5 (Gi\*), s4's cells and e4's credits | 22–28 |
+| L5 | `plans/briefs/critwire-learn-l5-powerbi-capstone.md` | `critwire-learn-l5-powerbi-capstone` | The habitat fact in `writeStar` (eight star files; `est_area_km2 >= 0`, foreign keys NOT NULL); cross-page `-- after:` (§0); Power BI blocks' `// input:` checks and DAX `// twin:` (§0); p1–p4 and c1 in full (§5.6–5.7), the game feed `c1-feed.json` (written by `c1-feed-file`, with its license, attribution and credit DOIs) and its JSON Schema; two teaching diagrams (`c1-pipeline`, `c1-feed`); a curriculum pass (all 33 modules built); a handoff item for the owner's Power BI check | L4's s5 (Gi\*), s4's cells and e4's credits | 22–28 |
 | | | | | **Total** | **146–176** |
 
 **Why this order.** Every lab reads L1's files, and L1 holds the course's only network write (the derived-dataset registration), so data comes first. L2 builds the site on it with the ten modules this document already writes in full. The habitat ingest is the largest data job and spatial statistics and Power BI both read it, so L3 comes before them. Python (L4) arrives with the modules that need it. Power BI and the capstone (L5) use every earlier track.

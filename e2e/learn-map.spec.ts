@@ -1,9 +1,9 @@
 // Learn's map, track pages, progress and navigation (plan D11 nav, D12, D13 learn-map; 004 §7.1, §7.4). Expectations
 // come from site/learn/curriculum.json, not from the page code: the map and each track list its modules in order, with
 // tools, hours and prerequisites, built modules linked and planned ones unlinked "in preparation"; a done tick survives
-// a reload and Clear progress removes it; every /learn/ page returns 200 with one <h1>, no broken internal link and an
-// alt on every SVG picture (whose SVG has a <title>); the map links setup, the schemas, the data and the playground;
-// nav.ts swaps <main> without a full load, and falls back to one when the swap fails.
+// a reload and Clear progress removes it; all 33 built; every /learn/ page returns 200 with one <h1>, no "in preparation",
+// no broken internal link and an alt on every SVG picture (whose SVG has a <title>); the map links setup, the schemas,
+// the data and the playground; nav.ts swaps <main> without a full load, and falls back to one when the swap fails.
 import { expect, test, type Page } from "@playwright/test";
 import { readFile } from "node:fs/promises";
 import { hoursText, moduleUrl, TOOL_NAMES } from "../scripts/build/learn/module-html.ts";
@@ -73,23 +73,21 @@ test("each track page lists its modules in order with their skills and questions
   }
 });
 
-// L3 and L4: these tracks are built in full, so a module set back to planned fails here, not only on its own page.
-const BUILT_TRACKS: [title: string, track: string, ids: string[]][] = [
-  ["GIS in SQL", "gis-in-sql", ["g1", "g2", "g3", "g4", "g5", "g6", "g7"]],
-  ["Spatial statistics", "spatial-statistics", ["s1", "s2", "s3", "s4", "s5", "s6"]],
-  ["ETL", "etl", ["e1", "e2", "e3", "e4", "e5"]],
-];
-for (const [title, track, ids] of BUILT_TRACKS) {
-  test(`${title}: ${ids[0]}–${ids.at(-1)} built, each linked from the map and its track page and returning 200`, async ({ page, request }) => {
-    const ms = (await curriculum()).modules.filter((m) => m.track === track);
-    expect(ms.map((m) => [m.id, m.state])).toEqual(ids.map((id) => [id, "built"]));
-    for (const path of [MAP, `/learn/${track}/`]) {
-      await page.goto(path);
-      for (const m of ms) await expect(page.locator(`li[data-module="${m.id}"] .module-title a[href="${moduleUrl(m)}"]`), `${path} ${m.id}`).toHaveText(m.title);
-    }
-    for (const m of ms) expect((await request.get(moduleUrl(m))).status(), m.id).toBe(200);
-  });
-}
+// L5: the course is complete (004 §2), so a module set back to planned fails here, not only on its own page.
+const MODULES = 33;
+test(`all ${MODULES} modules built, each linked from the map and its track page and returning 200`, async ({ page, request }) => {
+  const ms = (await curriculum()).modules;
+  expect(ms).toHaveLength(MODULES);
+  expect(ms.filter((m) => m.state !== "built").map((m) => m.id)).toEqual([]);
+  await page.goto(MAP);
+  for (const m of ms) await expect(page.locator(`li[data-module="${m.id}"] .module-title a[href="${moduleUrl(m)}"]`), `map ${m.id}`).toHaveText(m.title);
+  for (const track of new Set(ms.map((m) => m.track))) {
+    await page.goto(`/learn/${track}/`);
+    for (const m of ms.filter((x) => x.track === track))
+      await expect(page.locator(`li[data-module="${m.id}"] .module-title a[href="${moduleUrl(m)}"]`), `${track} ${m.id}`).toHaveText(m.title);
+  }
+  for (const m of ms) expect((await request.get(moduleUrl(m))).status(), m.id).toBe(200);
+});
 
 test("a done tick survives a reload, shows on the map and its track, and Clear progress removes it", async ({ page }) => {
   const c = await curriculum();
@@ -117,7 +115,7 @@ test("a done tick survives a reload, shows on the map and its track, and Clear p
   await expect(page.locator(".mark-done")).toHaveAttribute("aria-pressed", "false");
 });
 
-test("every /learn/ page returns 200, has one <h1> and no broken internal link", async ({ page, request }) => {
+test("every /learn/ page returns 200, has one <h1>, no \"in preparation\" and no broken internal link", async ({ page, request }) => {
   const pages = [MAP];
   const seen = new Set(pages);
   const checked = new Map<string, number>();
@@ -125,6 +123,8 @@ test("every /learn/ page returns 200, has one <h1> and no broken internal link",
     const path = pages[i]!;
     expect((await page.goto(path))?.status(), path).toBe(200);
     expect(await page.locator("h1").count(), path).toBe(1);
+    // Every module is built: no page still calls one "in preparation".
+    expect(await page.locator("body").textContent(), path).not.toContain("in preparation");
     // Every SVG picture has an alt, and the SVG a <title>.
     for (const img of await page.locator("img[src$='.svg']").evaluateAll((is) => is.map((i) => ({ src: (i as HTMLImageElement).src, alt: i.getAttribute("alt") })))) {
       expect(img.alt, `${path}: ${img.src} alt`).toBeTruthy();
