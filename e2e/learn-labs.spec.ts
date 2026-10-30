@@ -169,15 +169,24 @@ test("a download naming s4_cells or s4_neighbours runs s4-cells right after pg-s
   }
 });
 
-test("a Power BI block lists its inputs (star files, c1's feed) with their rows and sha256, the served files match, and a DAX block links its PostGIS twin", async ({ browser, request }) => {
+test("p1–p4 and c1 are built; a Power BI block lists its inputs (star files, c1's feed) with their rows and sha256, the served files match, and a DAX block links its PostGIS twin", async ({ browser, request }) => {
   const { pages, url } = await course();
+  const { curriculum } = await readCourse();
   const manifest = (await (await request.get("/learn/data/star/manifest.json")).json()) as StarManifest;
   const { context } = await learnContext(browser);
   const page = await context.newPage();
   const pbi = pages.flatMap((p) => p.blocks.filter((b) => b.engine === "powerbi").map((b) => [p, b] as const));
   expect(pbi.map(([, b]) => b.id)).toContain("pbi-smoke");
-  const dax = pbi.filter(([, b]) => b.twin !== undefined);
-  expect(dax.length, "DAX blocks with a twin").toBeGreaterThan(0);
+  // L5 (plan T8): the Power BI track and the capstone, each built, each with Power BI blocks; every block reads at
+  // least one input, and every DAX block (.dax) has a twin.
+  const L5 = ["p1", "p2", "p3", "p4", "c1"];
+  for (const id of L5) expect(curriculum!.modules.find((m) => m.id === id)?.state, id).toBe("built");
+  expect([...new Set(pbi.map(([p]) => p.page.id))].filter((id) => L5.includes(id)), "pages with Power BI blocks").toEqual(L5);
+  for (const [, b] of pbi) {
+    expect(b.inputs.length, `${b.id}'s inputs`).toBeGreaterThan(0);
+    expect(b.twin !== undefined, `${b.id} has a twin`).toBe(b.file.endsWith(".dax"));
+  }
+  expect(pbi.filter(([, b]) => b.file.endsWith(".dax")).map(([p]) => p.page.id), "pages with DAX blocks").toEqual(expect.arrayContaining(["p2", "p3", "p4"]));
   expect(pbi.filter(([, b]) => b.inputs.includes(FEED.input)).map(([, b]) => b.id), "blocks reading c1's feed").toEqual(["c1-report"]);
   /** What the inputs table shows for an input, by kind: a star file from its manifest, the feed from the served file. */
   const expected = async (input: string): Promise<[string, string, string]> => {
