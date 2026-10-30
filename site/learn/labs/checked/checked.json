@@ -9,6 +9,14 @@
   },
   "checked": "2026-10-30",
   "blocks": {
+    "c1-feed": {
+      "key": "854b36dc33de271fde5dd011fddde957f24cd676b9d3a90c25506527d44ad5aa",
+      "result": "249c9b55efc92c8e8aa0dac6731d7fc31d092444434861c193ede9d552684811"
+    },
+    "c1-feed-file": {
+      "key": "eaa7b94f57f230f69aeeb4a5eebf28fb7da1200754721ee9948ef97248ff9f06",
+      "result": "5c1dc3044f154064e546e38487774a7ecdab20f768247ef06963aef67d392928"
+    },
     "d1-fk-delete": {
       "key": "5234f7307be127f7ba441b217e003a018cf1a744fdbd34adf3f5d257d10bf74d",
       "result": "1800c7d20a3b95c6db5edba92d2c894692df3633a443cacbc6b2a59a7283dbb7"
@@ -755,6 +763,7 @@
     }
   },
   "downloads": {
+    "c1.sql": "04916cef6c09d3ec0e2c73f6593bdd9b963a88320924402c832eadb589de1b48",
     "d1.sql": "ad0f35b5d9a5c1f2a1e6b37f3bb0f6498f33a9f998aab703962965a7392e3b26",
     "d3.sql": "76f1a6863b298725cfe135502a592646b2ea055272d64b3dc7ebd6abed8de379",
     "d4.sql": "8bb9f4184361bb570af906a26de9e3717557ec5dceac36154885003c276cc25f",

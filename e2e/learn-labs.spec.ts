@@ -4,7 +4,9 @@
 // result a page shows is checked/<id>.txt, and its versions line is checked.json's; an EXPLAIN block lists its
 // `-- plan:` lines and labels its plan an example (D4); a Power BI block lists the files it reads (star files with the
 // manifest's rows and sha256, which the served files match and star-check passes; c1's feed with its cells and the
-// served file's sha256), and a DAX block links its PostGIS twin, shown with its recorded result. The setup page links the checks'
+// served file's sha256), and a DAX block links its PostGIS twin, shown with its recorded result. c1's feed is served as
+// checked/c1-feed.json, valid against its served schema, says records not range, and agrees with c1-feed's recorded
+// summary (L5 plan T8); c1's page links both. The setup page links the checks'
 // download (pg-checks.sql) and the loader. /learn/labs/requirements.txt is the labs' pin file (L4 plan §5). By
 // Download.kind (L4 plan §10): a .sql holds its page's PostGIS blocks, a .py its Python blocks (untested ones behind
 // `# `), each linked from its block; an .ipynb is served as assembled, its code cells the .py's cells in order (an
@@ -22,7 +24,7 @@ import { readCourse } from "../scripts/learn/course-files.ts";
 import { FEED } from "../scripts/learn/feed.ts";
 import { readStamp } from "../scripts/learn/freshness.ts";
 import { checkInput, type StarManifest } from "../scripts/learn/star-check.ts";
-import { distPath, learnContext, repoPath, sha256 } from "./helpers.ts";
+import { distPath, feedSchemaErrors, learnContext, repoPath, sha256 } from "./helpers.ts";
 
 const trimEnd = (s: string) => s.replace(/\n+$/, "");
 const runnable = (b: Block) => b.status === "ran" && !b.sessions.length;
@@ -156,8 +158,8 @@ test("a download naming s4_cells or s4_neighbours runs s4-cells right after pg-s
   // A .sql names a table in its code (a string literal or comment doesn't: g1-columns filters 's4_cells' out); a .py in its SQL strings.
   const names = (d: Download) => /\bs4_(cells|neighbours)\b/.test(d.kind === "sql" ? codeOnly(d.text) : d.text);
   const naming = assembleDownloads(pages).filter((x) => x.kind !== "ipynb" && names(x));
-  // L4: s2–s5 read the 5 km and 10 km cells in both engines, and setup.py's gpkg-export writes them.
-  expect(naming.map((d) => d.name)).toEqual(expect.arrayContaining(["setup.py", ...["s2", "s3", "s4", "s5"].flatMap((p) => [`${p}.sql`, `${p}.py`])]));
+  // L4: s2–s5 read the 5 km and 10 km cells in both engines, and setup.py's gpkg-export writes them; L5: c1's feed (after s5-gistar).
+  expect(naming.map((d) => d.name)).toEqual(expect.arrayContaining(["setup.py", ...["s2", "s3", "s4", "s5"].flatMap((p) => [`${p}.sql`, `${p}.py`]), "c1.sql"]));
   for (const d of naming) {
     const boot = d.kind === "sql"
       ? `${text(PG_SESSION_ID)}\n\nBEGIN;\n${text("s4-cells")}\nCOMMIT;\n`
@@ -205,6 +207,36 @@ test("a Power BI block lists its inputs (star files, c1's feed) with their rows 
     }
   }
   await context.close();
+});
+
+test("c1's feed is checked/c1-feed.json as served, valid against its served schema, says records not range, and agrees with c1-feed's recorded summary", async ({ page, request }) => {
+  const res = await request.get(`/learn/${FEED.input}`);
+  expect(res.status()).toBe(200);
+  const body = await res.body();
+  expect(body.equals(await readFile(repoPath(FEED.file))), "served feed = checked/c1-feed.json").toBe(true);
+  const schemaRes = await request.get("/learn/labs/c1-feed.schema.json");
+  expect(schemaRes.status()).toBe(200);
+  const schemaText = await schemaRes.text();
+  expect(schemaText).toBe(await readFile(repoPath(FEED.schema), "utf8"));
+  type Cell = { records: number; weight: number; recording_hot_spot: boolean };
+  const feed = JSON.parse(body.toString("utf8")) as { meaning: string; credit: unknown[]; cells: Cell[] };
+  expect(feedSchemaErrors(feed, JSON.parse(schemaText) as object)).toEqual([]);
+  expect(feed.meaning).toContain("not its range");
+  // c1-feed's summary row (one row; no cell holds " | "): what the file must hold, counted from the file itself.
+  const [, header, row] = (await readFile(repoPath(`${CHECKED_DIR}/c1-feed.txt`), "utf8")).split("\n");
+  const values = row!.split(" | ");
+  const s = Object.fromEntries(header!.split(" | ").map((c, i) => [c, values[i]!]));
+  expect(feed.cells.length, "cells").toBe(Number(s.cells));
+  expect(feed.cells.reduce((n, c) => n + c.records, 0), "records").toBe(Number(s.records));
+  expect(feed.cells.filter((c) => c.recording_hot_spot).length, "hot_spots").toBe(Number(s.hot_spots));
+  expect(feed.credit.length, "datasets_to_credit").toBe(Number(s.datasets_to_credit));
+  expect(body.length, "bytes").toBe(Number(s.bytes));
+  // Six places each, so in millionths the sum is exact.
+  expect(feed.cells.reduce((n, c) => n + Math.round(c.weight * 1e6), 0), "weight_sum").toBe(Math.round(Number(s.weight_sum) * 1e6));
+  // The capstone's page links the feed and its schema.
+  const { url, pages } = await course();
+  await page.goto(url(pages.find((p) => p.page.id === "c1")!));
+  for (const href of [`/learn/${FEED.input}`, "/learn/labs/c1-feed.schema.json"]) await expect(page.locator(`main a[href="${href}"]`).first()).toBeVisible();
 });
 
 test("the setup page covers the browser, PostGIS, Python and Power BI, and links pg-checks.sql, the loader, requirements.txt, setup.py and setup.ipynb", async ({ page }) => {

@@ -670,7 +670,7 @@
         "e4",
         "p4"
       ],
-      "state": "planned",
+      "state": "built",
       "skill": "ETL into PostGIS → Gi* on hexagons → a Power BI report → a static JSON feed a game reads (encounter weights per hexagon, labelled as records)",
       "questions": [
         "What could a player meet here, honestly?"

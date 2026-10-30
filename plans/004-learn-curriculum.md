@@ -10580,13 +10580,18 @@ One module, eight hours, on every tool. It is an outline, in §5.3's form; build
 
 **Data:** `s4_cells` (s4's 5 km hexagons over Tasmania's main island, with the devil's record counts), `s5_gistar` (s5's Gi\* per cell), `occurrences`, `datasets`, `species`. The worked example is the Tasmanian devil; in L5's lab the learner repeats it for a species and region of their own.
 
-**Key code:** the feed, built in PostGIS from s4's cells and s5's Gi\*; the query returns the feed's summary and its fullest cell (`SELECT doc FROM feed` returns the file itself):
+**Worked example:** the feed for the Tasmanian devil, in two blocks. `c1-feed` builds the feed with one statement, from s4's 5 km cells and s5's Gi\* (`s5_gistar`, so it runs after `s5-gistar`), and keeps it as a temporary view, `c1_feed`: one row, one `jsonb` column, `doc`. It then returns the feed's summary and its fullest cell. Four parts make the feed:
+- `sp`: the species, by its scientific name.
+- `cells`: the cells holding a record (`c.n > 0`), each with its centre in WGS 84 (`ST_Transform` of the hexagon's centre from EPSG:3577), its **weight**, its share of the records, rounded to six places (`n / sum(n) OVER ()`), and whether Gi\* made it a hot spot that survives the false discovery rate (`z > 0 AND fdr`).
+- `credit`: the datasets with a CC BY 4.0 record inside those cells, title and publisher; `ST_Contains` finds a record's cell, after `ST_Transform` puts the record's point in the cells' projection.
+- the final `SELECT`: `jsonb_build_object` writes the document, and `jsonb_agg (… ORDER BY id)` the cells in a fixed order, so the same data always gives the same file.
 
 ```sql
 -- q: c1-feed
 -- status: ran
 -- engine: postgis
 -- after: s5-gistar
+CREATE OR REPLACE TEMP VIEW c1_feed AS
 WITH sp AS (
   SELECT id, scientific_name, common_name FROM species WHERE scientific_name = 'Sarcophilus harrisii'
 ), cells AS (
@@ -10602,20 +10607,19 @@ WITH sp AS (
   JOIN cells AS c ON ST_Contains(c.geom, ST_Transform(o.geom, 3577))
   JOIN datasets AS d ON d.dataset_key = o.dataset_key
   WHERE o.license = 'CC BY 4.0'
-), feed AS (
-  SELECT jsonb_build_object(
-    'version', 1,
-    'species', (SELECT jsonb_build_object('scientific_name', scientific_name, 'common_name', common_name) FROM sp),
-    'cell', '5 km hexagon, EPSG:3577',
-    'meaning', 'share of the open GBIF records in each cell: where people recorded the animal, not its range',
-    'source', 'GBIF.org (23 October 2026) GBIF Occurrence Download https://doi.org/10.15468/dl.fbpk9w',
-    'credit', coalesce((SELECT jsonb_agg(to_jsonb(credit) ORDER BY title, publisher) FROM credit), '[]'),
-    'cells', jsonb_agg(jsonb_build_object(
-      'id', id, 'lon', round(ST_X(centre)::numeric, 4), 'lat', round(ST_Y(centre)::numeric, 4),
-      'records', n, 'weight', weight, 'recording_hot_spot', hot_spot) ORDER BY id)
-  ) AS doc
-  FROM cells
 )
+SELECT jsonb_build_object(
+  'version', 1,
+  'species', (SELECT jsonb_build_object('scientific_name', scientific_name, 'common_name', common_name) FROM sp),
+  'cell', '5 km hexagon, EPSG:3577',
+  'meaning', 'share of the open GBIF records in each cell: where people recorded the animal, not its range',
+  'source', 'GBIF.org (23 October 2026) GBIF Occurrence Download https://doi.org/10.15468/dl.fbpk9w',
+  'credit', coalesce((SELECT jsonb_agg(to_jsonb(credit) ORDER BY title, publisher) FROM credit), '[]'),
+  'cells', jsonb_agg(jsonb_build_object(
+    'id', id, 'lon', round(ST_X(centre)::numeric, 4), 'lat', round(ST_Y(centre)::numeric, 4),
+    'records', n, 'weight', weight, 'recording_hot_spot', hot_spot) ORDER BY id)
+) AS doc
+FROM cells;
 SELECT jsonb_array_length(doc -> 'cells') AS cells,
        (SELECT sum((c ->> 'records')::int) FROM jsonb_array_elements(doc -> 'cells') AS c) AS records,
        (SELECT sum((c ->> 'weight')::numeric) FROM jsonb_array_elements(doc -> 'cells') AS c) AS weight_sum,
@@ -10625,7 +10629,7 @@ SELECT jsonb_array_length(doc -> 'cells') AS cells,
        octet_length(doc::text) AS bytes,
        (SELECT c::text FROM jsonb_array_elements(doc -> 'cells') AS c
         ORDER BY (c ->> 'records')::int DESC, (c ->> 'id')::int LIMIT 1) AS fullest
-FROM feed;
+FROM c1_feed;
 ```
 
 ```text
@@ -10633,6 +10637,33 @@ FROM feed;
 cells | records | weight_sum | hot_spots | datasets_to_credit | bytes | fullest
 307 | 1972 | 0.999954 | 37 | 7 | 34848 | {"id": 917, "lat": -42.8981, "lon": 147.8865, "weight": 0.12…
 ```
+
+`c1-feed-file` returns the file itself: `doc::text` writes the document as one line of JSON, and that one text cell is, byte for byte, the worked feed critwire publishes, `/learn/labs/c1-feed.json` (`pnpm learn:check --update` writes it from this block, §7.3). Its result shows the cell's first 60 characters; its sha256 covers the whole file.
+
+```sql
+-- q: c1-feed-file
+-- status: ran
+-- engine: postgis
+-- after: s5-gistar, c1-feed
+SELECT doc::text AS feed FROM c1_feed;
+```
+
+```text
+-- result: c1-feed-file · 1 row · sha256 cf7491953851
+feed
+{"cell": "5 km hexagon, EPSG:3577", "cells": [{"id": 6, "lat…
+```
+
+**The feed's fields:** a game reads these, so each says what it is.
+- `version`: 1. A change to the fields bumps it and the schema.
+- `species`: the scientific and common name.
+- `cell`: the cells' shape, size and projection, `5 km hexagon, EPSG:3577` (Australian Albers, an equal-area projection, so every cell covers the same ground).
+- `meaning`: what a weight is, in words a player-facing screen can quote: where people recorded the animal, not its range.
+- `source`: GBIF's citation of the download, with its DOI.
+- `credit`: every dataset with CC BY 4.0 records in the feed's cells, by title and publisher.
+- `cells`: one object per cell that holds a record: `id` (s4's cell id), `lon` and `lat` (the cell's centre in WGS 84, four decimal places, about 10 m), `records`, `weight` and `recording_hot_spot`.
+
+A game draws a cell with probability weight ÷ Σ weight: it adds the weights up in order (a cumulative sum), takes one random number between 0 and the total, and picks the first cell whose running sum passes it. A cell missing from the feed means "no record", never "no animal".
 
 The feed's JSON Schema (draft 2020-12), which L5 publishes beside its worked feed and checks the feed against:
 
