@@ -9946,6 +9946,79 @@ Task Scheduler keeps the last result, and the task's history, and tells nobody: 
 
 **Result:** a refresh job that a scheduler can run as often as it likes. Each run is one process and one transaction: an unchanged job key skips, a changed input or config reloads, a failed check leaves the target and state as they were, and of two runs at once exactly one loads. After A, B and A again, the target holds A. The job checks its connection settings by name and logs no value, and the scheduling recipes say plainly where a failure ends up: a log file, the journal, or a task's last result, until you add the mail or push that tells a person.
 
+**Exercise:** a job key covers only what you put in it. Change `refresh.py`'s transform so each DOI is stored as a link that resolves, `https://doi.org/` followed by the DOI. Write the change as a copy of `refresh.py`, and a second copy that also sets `TRANSFORM_VERSION = 2`. Into a schema `learn_e5ex` of your own, created as `e5-runs` creates `learn_e5`, run the old job once, then the new code without the bump, then with it, twice, each as a new process. After each run, count the target's DOIs that are links.
+
+**Answer:**
+
+```python
+# q: e5-ex
+# status: ran
+# after: py-connect, e5-refresh
+import os
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
+
+SCHEMA = "learn_e5ex"
+JOB = Path("refresh.py").read_text(encoding="utf-8")
+
+
+def edit(text, old, new):
+    """`text` with its one `old` replaced by `new`: an edit that finds nothing to change fails, it doesn't pass silently."""
+    if text.count(old) != 1:
+        raise ValueError(f"expected one {old!r} in refresh.py")
+    return text.replace(old, new)
+
+
+# The new transform: each DOI stored as a link, https://doi.org/<doi>. Same input, same config, a different output.
+LINKS = edit(JOB, "SELECT * FROM pg_temp.stage WHERE",
+             "SELECT dataset_key, title, publisher, 'https://doi.org/' || doi, license FROM pg_temp.stage WHERE")
+
+
+def run(conn, n, label, script):
+    """`script` as a new process, with this block's environment, then the target's DOIs that are links."""
+    done = subprocess.run([sys.executable, "-I", str(script)], env={**os.environ, "REFRESH_SCHEMA": SCHEMA},
+                          text=True, capture_output=True, timeout=120)
+    links = conn.execute(f"SELECT count(*) FROM {SCHEMA}.datasets WHERE starts_with(doi, 'https://doi.org/')").fetchone()[0]
+    print(f"run {n} · {label} · exit {done.returncode} · {done.stdout.strip()} · {links} DOIs as links")
+
+
+with connect() as conn, tempfile.TemporaryDirectory() as tmp:
+    conn.autocommit = True  # each statement commits, so the job's own sessions see the tables
+    unbumped, bumped = Path(tmp) / "refresh_links.py", Path(tmp) / "refresh_v2.py"
+    unbumped.write_text(LINKS, encoding="utf-8")
+    bumped.write_text(edit(LINKS, "TRANSFORM_VERSION = 1", "TRANSFORM_VERSION = 2"), encoding="utf-8")
+    conn.execute(f"CREATE SCHEMA {SCHEMA}")
+    try:
+        conn.execute(f"CREATE TABLE {SCHEMA}.datasets (dataset_key uuid PRIMARY KEY, title text NOT NULL, "
+                     "publisher text NOT NULL, doi text, license text NOT NULL)")
+        conn.execute(f"CREATE TABLE {SCHEMA}.refresh_state (job text PRIMARY KEY, job_key text NOT NULL, parts jsonb NOT NULL)")
+        run(conn, 1, "the old job", "refresh.py")
+        run(conn, 2, "links, TRANSFORM_VERSION still 1", unbumped)
+        run(conn, 3, "links, TRANSFORM_VERSION = 2", bumped)
+        run(conn, 4, "links, TRANSFORM_VERSION = 2 again", bumped)
+    finally:
+        conn.execute(f"DROP SCHEMA {SCHEMA} CASCADE")
+```
+
+```text
+-- result: e5-ex · python · sha256 b706ba3740bb
+run 1 · the old job · exit 0 · INFO refresh: first load: loaded 400 rows · 0 DOIs as links
+run 2 · links, TRANSFORM_VERSION still 1 · exit 0 · INFO refresh: nothing changed: skipped · 0 DOIs as links
+run 3 · links, TRANSFORM_VERSION = 2 · exit 0 · INFO refresh: transform changed: loaded 400 rows · 400 DOIs as links
+run 4 · links, TRANSFORM_VERSION = 2 again · exit 0 · INFO refresh: nothing changed: skipped · 400 DOIs as links
+```
+
+**Check:** run 2 is the failure the version number exists for. The code changed, but the input, the config and both versions didn't, so the key is the same: the job skips, exits 0, and the target keeps 400 bare DOIs under a state row that says it is up to date. Nothing tells a job that its own code changed except what you put in its key. With the bump, run 3 reloads and logs `transform changed`, and run 4 skips, every DOI now a link. Every one of the 400 datasets has a DOI, so the count goes from 0 to 400 in one run.
+
+**Dialects:**
+- **PostgreSQL:** the `pg_cron` extension schedules SQL inside the database, `SELECT cron.schedule('refresh', '17 4 * * 1', 'CALL refresh()')`, in cron's syntax, and keeps each run's outcome in `cron.job_run_details`. It runs SQL only, so fetching a file stays with an outside job like `refresh.py`. `pg_try_advisory_xact_lock` takes a `bigint` or two `integer`s: `hashtext` turns a name into one, and a fixed number written into the job does as well.
+- **DuckDB:** no server and no scheduler: the job is a script that cron, a systemd timer or Task Scheduler starts, as here. A database file opens for writing in one process at a time, and a second process that tries gets a lock error, so the file's lock does the advisory lock's work, except that the second run gets an error where `refresh.py` skips: catch that error if runs are expected to overlap. `BEGIN TRANSACTION; … COMMIT;` holds the replacement and the state row together.
+- **SQL Server:** SQL Server Agent runs jobs on schedules, records each run's outcome in its history, and notifies an operator by Database Mail on failure; Express edition has no Agent, so it uses Task Scheduler. `sp_getapplock` with `@LockMode = 'Exclusive'`, `@LockOwner = 'Transaction'` and `@LockTimeout = 0` is `pg_try_advisory_xact_lock`: it returns a negative number instead of waiting when another session holds the lock.
+- **Python:** `raise SystemExit(main())` turns the job's result into its exit code; an uncaught exception also exits 1, with the traceback but without the job's own log line. A scheduler inside Python (APScheduler, or the `schedule` package) runs jobs while its own process lives, so a crash or a restart stops every schedule; orchestrators such as Airflow, Dagster and Prefect add retries, history and alerts, and still run each task as here, so it must be safe to run again.
+- **ArcGIS Pro:** a geoprocessing tool or a model can be scheduled from the Geoprocessing pane (the Run button's menu → Schedule), which creates a Windows Task Scheduler task. A Python script runs on a schedule with Pro's own Python, `"C:\Program Files\ArcGIS\Pro\bin\Python\Scripts\propy.bat" refresh.py`, in a task like the one above; `arcpy` then needs a Pro license the task's account can use.
+
 ### 5.6 Power BI
 
 Four modules, seven hours, in Power BI Desktop (§3.5), on the star d6 builds: eight CSV files under `https://critwire.com/learn/data/star/` (§A.3). These are outlines, in §5.3's form; build mission L5 (§9) writes them in full. Power BI runs only on Windows, so its blocks are `untested` here, and the tests check what they can instead (§0): every file a block names, against the star's manifest. Each DAX block is a query for Power BI's DAX query view (Home → DAX query view): its `DEFINE MEASURE` lines can be added to the model from there, and its `EVALUATE` returns a small table. A PostGIS block beside it computes the same table from the same star with `star.sql` (d6), so its result is the table Power BI should show. §10 asks the owner for one check on Windows.
