@@ -2,6 +2,7 @@
 // access log, and Learn's browser pages (learnContext, waitReady, the course pages and running their blocks).
 import { expect, type Browser, type BrowserContext, type Locator, type Page } from "@playwright/test";
 import { DuckDBInstance } from "@duckdb/node-api";
+import { Ajv2020 } from "ajv/dist/2020.js";
 import { createHash, randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
@@ -53,6 +54,13 @@ export async function assertBuilt(): Promise<void> {
   if (manifest.inputs.sample.sha256 !== contributions.sample.sha256) stale.push("inputs.sample");
   for (const f of await readLabFiles()) if (manifest.files[f.name]?.sha256 !== f.sha256) stale.push(f.name);
   if (stale.length) throw new Error(`dist/learn/data/ is older than data/ (${stale.join(", ")}): run pnpm build`);
+}
+
+// c1's feed against its JSON Schema 2020-12 (L5 plan T4): every error as `<path> <message>`, none when valid. Strict, so
+// a schema keyword Ajv doesn't know throws instead of being ignored.
+export function feedSchemaErrors(feed: unknown, schema: object): string[] {
+  const validate = new Ajv2020({ strict: true, allErrors: true }).compile(schema);
+  return validate(feed) ? [] : (validate.errors ?? []).map((e) => `${e.instancePath || "/"} ${e.message ?? e.keyword}`);
 }
 
 // A query-string tag that picks one test's requests out of the shared access log.

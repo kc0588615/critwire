@@ -7,21 +7,29 @@
 // PostGIS block without its recorded result fails a plain build and only warns with --draft (D16's loop: learn:check
 // --update writes it). Throws naming every error. Writes nothing.
 // assertLabsFresh (plan D6), once the data manifest is written: checked.json against the freshness the build recomputes
-// (learn/freshness.ts); a plain build refuses a stale lab, --draft only warns.
+// (learn/freshness.ts), and c1's feed against c1-feed-file's recorded result (learn/feed.ts feedErrors, L5 plan T4); a
+// plain build refuses a stale lab or feed, --draft only warns.
 // writeLearn (plan D8.6, D12), last: the Learn site under dist/learn/: its assets; the lab downloads (labs/<page>.sql,
 // .py and .ipynb, assemble.ts, the files learn:check ran and checked.json stamps) and the labs' requirements.txt (L4
-// plan §5); the drawn ERDs (schema/<name>.svg); the teaching
+// plan §5); c1's feed and its schema (labs/c1-feed.json, labs/c1-feed.schema.json), once the course has c1-feed-file
+// and the feed is written; the drawn ERDs (schema/<name>.svg); the teaching
 // diagrams (diagrams/<name>.svg and <name>-dark.svg); then the pages
-// (pages.ts: the schema pages from the ERD sources), which read checked.json and the star manifest writeStar wrote.
+// (pages.ts: the schema pages from the ERD sources), which read checked.json, the star manifest writeStar wrote and the
+// published feed (the Power BI inputs).
+import { createHash } from "node:crypto";
+import { existsSync, readFileSync } from "node:fs";
+import { basename } from "node:path";
 import { copyFile, mkdir, readFile, writeFile } from "node:fs/promises";
 import { assembleDownloads, pageDownloads } from "../../learn/assemble.ts";
-import type { CoursePage, Curriculum } from "../../learn/course.ts";
+import { courseBlocks, type CoursePage, type Curriculum } from "../../learn/course.ts";
 import { readCourse } from "../../learn/course-files.ts";
 import { parseErd } from "../../learn/erd-model.ts";
+import { FEED, feedErrors, type FeedState } from "../../learn/feed.ts";
 import { readFreshness, readRecorded, readStamp, staleness } from "../../learn/freshness.ts";
 import type { StarManifest } from "../../learn/star-check.ts";
 import { LABS_REQUIREMENTS } from "../../venv.ts";
 import { DUCKDB_EXT, DUCKDB_WASM } from "../../../site/learn/src/assets.ts";
+import type { PowerBiInput } from "./module-html.ts";
 import { assetErrors, writeAssets } from "./assets.ts";
 import { learnPages, readTemplates, writePages } from "./pages.ts";
 import { DRAWN_ERDS, readErds, type ErdSvgs, type ErdTexts } from "./erd.ts";
@@ -54,9 +62,20 @@ export async function readLearnInputs({ draft }: { draft: boolean }): Promise<Le
   return { curriculum: curriculum!, pages, erds: erds.texts, svgs: erds.svgs, star: star.blocks, diagrams };
 }
 
-/** Throws (warns with `draft`) naming every way checked.json fails to prove the labs `pages` publish; `dist`: the built site. */
+const repo = new URL("../../../", import.meta.url);
+const readRepo = (path: string) => (existsSync(new URL(path, repo)) ? readFileSync(new URL(path, repo), "utf8") : undefined);
+
+/** c1's feed as committed, with what binds it (learn/feed.ts). */
+function readFeed(pages: readonly CoursePage[]): FeedState {
+  return { block: courseBlocks(pages).has(FEED.block), feed: readRepo(FEED.file), recorded: readRecorded(pages).get(FEED.block), schema: existsSync(new URL(FEED.schema, repo)) };
+}
+
+/**
+ * Throws (warns with `draft`) naming every way checked.json fails to prove the labs `pages` publish, and c1's feed
+ * fails to be c1-feed-file's result; `dist`: the built site.
+ */
 export function assertLabsFresh(dist: string, pages: readonly CoursePage[], { draft }: { draft: boolean }): void {
-  const errors = staleness(readStamp(), readFreshness(dist, pages));
+  const errors = [...staleness(readStamp(), readFreshness(dist, pages)), ...feedErrors(readFeed(pages))];
   if (draft) for (const e of errors) console.warn(`build --draft: ${e}`);
   else if (errors.length) throw new Error(`site/learn/labs: ${errors.length} error(s):\n${errors.join("\n")}`);
 }
@@ -71,7 +90,16 @@ export async function writeLearn(out: URL, { curriculum, pages, erds, svgs, diag
   await mkdir(labs, { recursive: true });
   for (const d of downloads) await writeFile(new URL(d.name, labs), d.text);
   await copyFile(LABS_REQUIREMENTS, new URL("requirements.txt", labs));
-  console.log(`learn labs: ${downloads.map((d) => d.name).join(", ")}, requirements.txt`);
+  const { block, feed: feedText, schema: hasSchema } = readFeed(pages);
+  // Published once bound (assertLabsFresh refused it otherwise, or --draft warned); a --draft build without it skips it.
+  const feed = block && hasSchema ? feedText : undefined;
+  const feedSchema = `labs/${basename(FEED.schema)}`;
+  if (feed !== undefined) {
+    await writeFile(new URL(`learn/${FEED.input}`, out), feed);
+    await copyFile(new URL(FEED.schema, repo), new URL(`learn/${feedSchema}`, out));
+  }
+  const published = ["requirements.txt", ...(feed === undefined ? [] : [basename(FEED.input), basename(feedSchema)])];
+  console.log(`learn labs: ${downloads.map((d) => d.name).join(", ")}, ${published.join(", ")}`);
 
   const schema = new URL("learn/schema/", out);
   await mkdir(schema, { recursive: true });
@@ -82,7 +110,11 @@ export async function writeLearn(out: URL, { curriculum, pages, erds, svgs, diag
   for (const [n, text] of diagrams.svgs) await writeFile(new URL(n, drawn), text);
 
   const star = (JSON.parse(await readFile(new URL("learn/data/star/manifest.json", out), "utf8")) as StarManifest).files;
-  const inputs = new Map(Object.entries(star).map(([f, { rows, sha256 }]) => [`star/${f}`, { url: `/learn/data/star/${f}`, rows, sha256 }]));
+  const inputs = new Map<string, PowerBiInput>(Object.entries(star).map(([f, { rows, sha256 }]) => [`star/${f}`, { url: `/learn/data/star/${f}`, rows, sha256 }]));
+  if (feed !== undefined) {
+    const rows = (JSON.parse(feed) as { cells: unknown[] }).cells.length;
+    inputs.set(FEED.input, { url: `/learn/${FEED.input}`, rows, sha256: createHash("sha256").update(feed).digest("hex") });
+  }
   const html = learnPages({
     curriculum,
     pages,

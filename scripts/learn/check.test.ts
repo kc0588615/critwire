@@ -5,10 +5,16 @@
 //   byte for byte, and its id returned;
 // - the loader's layout changed (no site, two sites, no `\.`, no rows to copy) → refused, "loader layout changed".
 import assert from "node:assert/strict";
+import { mkdtempSync, readFileSync, rmSync, statSync, utimesSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { test } from "node:test";
 import { parseBlock } from "./blocks.ts";
-import { blocksToRun, forcedFailureLoader } from "./check.ts";
+import { blocksToRun, forcedFailureLoader, recordRuns, writeFeed } from "./check.ts";
 import { courseBlocks, type CoursePage } from "./course.ts";
+import { FEED } from "./feed.ts";
+import type { BlockRuns, Outcome } from "./record.ts";
+import { renderResult, type Result } from "./result.ts";
 import { rasterGate } from "./runner.ts";
 
 const COPY = "COPY occurrences (id, species_id, license) FROM stdin (FORMAT csv);";
@@ -122,3 +128,87 @@ test("BF2 --module: a cross-page `-- after:` block resolves through courseBlocks
   assert.equal(courseBlocks(course).get("s4-h"), helper);
   assert.deepEqual(blocksToRun(course).map((b) => b.id), ["pg-role-smoke", "s2-a", "s2-b", "s4-cells", "s4-h", "s5-b"]);
 });
+
+// writeFeed (L5 plan T4, S4; WF1–WF3): learn:check --update writes c1's feed from c1-feed-file's one cell. Failure
+// modes:
+// - WF1: the feed comes from a run that didn't happen or failed, or from a result that isn't one text cell named `feed`
+//   (0 or 2 rows, 2 columns, another name, a jsonb object that would render as something else) → refused, naming the
+//   block, nothing written;
+// - WF2: the file isn't the cell's text byte for byte (a final newline, re-encoded) → it is, utf8, no final newline;
+//   an equal file is rewritten (its mtime moves, so make sees a change) → left alone;
+// - WF3: a --module run (never --update), a plain run, or an --update run whose results didn't settle writes the feed
+//   → nothing written.
+const FEED_TEXT = '{"cells": [{"h3": "8a2a1072b59ffff", "weight": 1}], "meaning": "Records — not its range"}';
+const feedRuns = (result: Result | undefined, failures: string[] = []): BlockRuns[] => {
+  const o: Outcome = { id: FEED.block, failures, ...(result && !failures.length ? { rendered: renderResult(FEED.block, result), result } : {}) };
+  return [{ block: { id: FEED.block, boot: false, plan: [] }, first: o, second: { ...o } }];
+};
+const cell = (text: unknown) => ({ columns: [FEED.column], rows: [[text]] });
+function withDir(fn: (dir: string) => Promise<void>) {
+  return async () => {
+    const dir = mkdtempSync(join(tmpdir(), "critwire-feed-"));
+    try {
+      await fn(dir);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  };
+}
+const exists = (f: string) => {
+  try {
+    statSync(f);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+test("WF1 writeFeed refuses, naming the block, a missing or failed run and a result that isn't one text cell `feed`", withDir(async (dir) => {
+  const file = join(dir, "c1-feed.json");
+  const cases: [BlockRuns[], RegExp][] = [
+    [[], /q c1-feed-file: no run to write .*c1-feed\.json from/],
+    [feedRuns(cell(FEED_TEXT), ["q c1-feed-file: boom"]), /q c1-feed-file: failed, so .*c1-feed\.json isn't written/],
+    [feedRuns({ columns: [FEED.column], rows: [] }), /q c1-feed-file: 0 rows, not 1/],
+    [feedRuns({ columns: [FEED.column], rows: [[FEED_TEXT], [FEED_TEXT]] }), /q c1-feed-file: 2 rows, not 1/],
+    [feedRuns({ columns: [FEED.column, "n"], rows: [[FEED_TEXT, 1]] }), /q c1-feed-file: columns feed, n, not feed/],
+    [feedRuns({ columns: ["doc"], rows: [[FEED_TEXT]] }), /q c1-feed-file: columns doc, not feed/],
+    [feedRuns(cell(JSON.parse(FEED_TEXT))), /q c1-feed-file: feed is an object, not text: select doc::text/],
+  ];
+  for (const [runs, error] of cases) await assert.rejects(writeFeed(runs, file), error, String(error));
+  assert.ok(!exists(file), "nothing written");
+}));
+
+test("WF2 writeFeed writes the cell's text byte for byte, utf8, no final newline; an equal file keeps its mtime", withDir(async (dir) => {
+  const file = join(dir, "c1-feed.json");
+  await writeFeed(feedRuns(cell(FEED_TEXT)), file);
+  assert.equal(readFileSync(file, "utf8"), FEED_TEXT);
+  assert.deepEqual(readFileSync(file), Buffer.from(FEED_TEXT, "utf8"));
+  const old = new Date("2001-01-01T00:00:00Z");
+  utimesSync(file, old, old);
+  await writeFeed(feedRuns(cell(FEED_TEXT)), file);
+  assert.equal(statSync(file).mtimeMs, old.getTime(), "left alone");
+  await writeFeed(feedRuns(cell(FEED_TEXT.replace("1}", "2}"))), file);
+  assert.equal(readFileSync(file, "utf8"), FEED_TEXT.replace("1}", "2}"));
+}));
+
+test("WF3 a run without --update (a --module or plain run) and an --update run that didn't settle write no feed", withDir(async (dir) => {
+  const file = join(dir, "c1-feed.json");
+  const checkedDir = join(dir, "checked");
+  const quiet = { checkedDir, log: () => {} };
+  // A plain or --module run: the result is checked (here: it has no recorded result, so the run fails) and never written.
+  await assert.rejects(recordRuns(feedRuns(cell(FEED_TEXT)), { ...quiet, update: false, feed: file }), /no recorded result/);
+  writeFileSync(join(dir, "c1-feed-file.txt"), renderResult(FEED.block, cell(FEED_TEXT)));
+  await recordRuns(feedRuns(cell(FEED_TEXT)), { update: false, feed: file, checkedDir: dir, log: () => {} });
+  assert.ok(!exists(file), "a checking run writes no feed");
+  // An --update run whose blocks didn't all pass, or whose gates failed: nothing written, the feed included.
+  const failing: BlockRuns = { block: { id: "c1-other", boot: false, plan: [] }, first: { id: "c1-other", failures: ["q c1-other: boom"] }, second: { id: "c1-other", failures: [] } };
+  await assert.rejects(recordRuns([...feedRuns(cell(FEED_TEXT)), failing], { ...quiet, update: true, feed: file }), /q c1-other: boom/);
+  await assert.rejects(recordRuns(feedRuns(cell(FEED_TEXT)), { ...quiet, update: true, feed: file, gateFailures: ["agree x: off"] }), /agree x: off/);
+  assert.ok(!exists(file), "an unsettled --update writes no feed");
+  // An --update run of a course without c1-feed-file (feed undefined): results written, no feed.
+  await recordRuns(feedRuns(cell(FEED_TEXT)), { ...quiet, update: true });
+  assert.ok(!exists(file));
+  // Settled: the results, then the feed.
+  await recordRuns(feedRuns(cell(FEED_TEXT)), { ...quiet, update: true, feed: file });
+  assert.equal(readFileSync(file, "utf8"), FEED_TEXT);
+}));

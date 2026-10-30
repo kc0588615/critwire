@@ -41,6 +41,8 @@
 // SS6: an abort mid-wait → the run rejects with its reason, and both window backends are gone.
 // NR4: a `-- needs: raster` block needs a grant or setting the lab role lacks → a raster made in SQL runs as
 //      critwire_lab, through runBlocks (its raster check passes on critwire_dev); GDAL's version reads as a number.
+// OR1 (L5 plan T4, S4): writeFeed needs the result runBlock rendered from, but the recorded text cuts rows and cells →
+//      Outcome.result holds it uncut (every row, a 100-character cell whole) while `rendered` stays cut and hashes the whole.
 // NR5: a server without postgis_raster sends the learner to a fix that changes nothing (--setup) → the refusal names
 //      CREATE EXTENSION postgis_raster and the database.
 import assert from "node:assert/strict";
@@ -53,6 +55,7 @@ import { loadEnv, requireEnv } from "../env.ts";
 import { parseBlock, type Block } from "./blocks.ts";
 import { testDatabase, withLabSchema, withScratchDatabase } from "../test-db.ts";
 import { readTables } from "./check.ts";
+import { renderResult } from "./result.ts";
 import { LAB_ROLE, libpqTarget, pgConnect, urlTarget } from "./pg.ts";
 import { learnObjects } from "./leaks.ts";
 import { assertSession, blockRuns, openSession, runBlock, runBlocks, serverVersions, type LabSession, type Watch } from "./runner.ts";
@@ -481,4 +484,17 @@ test("XR1 a cross-page `-- after:` runs exactly the listed blocks, in order, ins
   assert.match(l!.failures.join("\n"), /q xr-lone: after xr-fact: statement 1 of 2: relation "xr_dim" does not exist/, "never the helper's own after blocks");
   assert.equal(t!.rendered, (await run(twin, [dim, fact, twin])).rendered, "the same as with the helpers on its page");
   assert.deepEqual((await session.sql`select to_regclass('pg_temp.xr_dim') as t`)[0]!.t, null, "rolled back");
+});
+
+test("OR1 Outcome.result holds the uncut result; the recorded text is cut and hashes the whole", async () => {
+  const b = block("or-uncut", "SELECT g AS n, repeat('x', 100) AS long FROM generate_series(1, 7) g ORDER BY g");
+  const o = await run(b);
+  assert.deepEqual(o.failures, []);
+  assert.deepEqual(o.result?.columns, ["n", "long"]);
+  assert.equal(o.result?.rows.length, 7);
+  assert.equal(o.result?.rows[6]?.[1], "x".repeat(100));
+  assert.equal(o.rendered, renderResult(b.id, o.result!));
+  assert.match(o.rendered!, /^-- result: or-uncut · 7 rows · sha256 [0-9a-f]{12}\n/);
+  assert.match(o.rendered!, /\n… 2 more rows$/);
+  assert.ok(o.rendered!.includes(`x`.repeat(60) + "…"), "cells cut at 60");
 });

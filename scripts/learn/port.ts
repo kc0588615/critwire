@@ -4,8 +4,10 @@
 // (E2E's), without a final newline. A page is `setup` (004 §0 and §3.1–3.5) or a module (`#### <id> · <slug>` up
 // to the next heading of its level or above); py-connect, on the setup page, is every page's helper (L4 plan D4), and
 // the PostGIS blocks of a page's scope (course.ts afterScope, from curriculum.json) its PostGIS blocks' helpers. The
-// setup block is compared with site/learn/sql/setup.sql, never written. portPage and checkPort are queries; writePort
-// is the one command. Tests: port.test.ts.
+// setup block is compared with site/learn/sql/setup.sql, never written. A json fence whose `$id` is
+// https://critwire.com/learn/labs/<name>.json (c1's feed schema, L5 plan T4) becomes site/learn/labs/<name>.json; two
+// fences with one `$id` anywhere in 004 are refused. portPage and checkPort are queries; writePort is the one command.
+// Tests: port.test.ts.
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { BLOCK_DIR, CHECKED_DIR, PY_CONNECT_ID, SETUP_ID, SNAPSHOT_DIR, lintPage, parseBlock, type Block } from "./blocks.ts";
@@ -16,6 +18,8 @@ const SETUP_SECTIONS = [/^## 0\. /, /^### 3\.[1-5] /];
 const MODULE = /^#### ([a-z0-9]+) · /;
 const RESULT = /^-- result: (\S+) · /;
 const EXT: Record<string, string> = { sql: ".sql", python: ".py", m: ".m", dax: ".dax" };
+const LAB_JSON = /^https:\/\/critwire\.com\/learn\/labs\/([a-z0-9][a-z0-9.-]*\.json)$/;
+const LABS_DIR = "site/learn/labs";
 
 export interface PortFile {
   page: string;
@@ -71,6 +75,18 @@ export function docPages(doc: string): string[] {
   return [SETUP_PAGE, ...headings(lines).flatMap(([line]) => MODULE.exec(lines[line]!)?.[1] ?? [])];
 }
 
+/** A json fence's lab file name (its `$id` under critwire.com/learn/labs/), or undefined: not JSON, or another `$id`. */
+function labJson(f: Fence): string | undefined {
+  if (f.lang !== "json") return undefined;
+  let id: unknown;
+  try {
+    id = (JSON.parse(f.body.join("\n")) as { $id?: unknown } | null)?.$id;
+  } catch {
+    return undefined;
+  }
+  return typeof id === "string" ? LAB_JSON.exec(id)?.[1] : undefined;
+}
+
 /** Where `text` (header lines aside) first differs from `file`, 1-based, or null if equal. */
 function differsAt(body: string, file: string): number | null {
   const want = file.split("\n");
@@ -114,6 +130,14 @@ export function portPage(doc: string, page: string, setupSql: string, scope: Ite
   all.forEach((f, k) => {
     const at = `004:${f.open + 1}`;
     const next = all[k + 1];
+    const json = labJson(f);
+    if (json) {
+      const twins = fences(lines).filter((g) => labJson(g) === json);
+      const twice = `${twins.map((g) => `004:${g.open + 1}`).join(", ")}: two json fences with $id https://critwire.com/learn/labs/${json}`;
+      if (twins.length > 1) errors.push(...(errors.includes(twice) ? [] : [twice]));
+      else files.push({ page, path: `${LABS_DIR}/${json}`, text: f.body.join("\n") + "\n" });
+      return;
+    }
     const ext = EXT[f.lang];
     if (!ext) return;
     const text = f.body.join("\n") + "\n";

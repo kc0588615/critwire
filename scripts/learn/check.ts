@@ -14,7 +14,8 @@
 //   learn_curriculum's catalog both ways. Then the ran Python blocks, in page order (py-runner.ts, plan L4 §4.4), with
 //   LEARN_BASE the built site under test. Both engines' runs are checked against their recorded results or, with
 //   `update`, written once every block passed (record.ts), and the agreement gates (agree.ts: SQL = PySAL) run over
-//   their results, a failure failing the run;
+//   their results, a failure failing the run; then, with `update` and c1-feed-file in the course, c1's feed written
+//   from that block's one text cell (writeFeed, L5 plan T4);
 // - downloads: each assembled lab file (assemble.ts) on a fresh load, as a learner runs it (the loader, then the file):
 //   a .sql through psql -X -f, no ON_ERROR_STOP, whose ERROR lines must be exactly the file's announced errors, in order;
 //   a .py through python.ts runPython (the blocks' environment, its blocks' time), which must exit 0 (plan L4 §4.5, D14);
@@ -26,7 +27,7 @@
 // cancels the running psql or block statement. Every exit then removes the temp loader and releases the lock in
 // cleanup.ts's order: stop the run's sessions (recorded, or carrying the run's name here), sweep the lab role's new objects, free the lock; a cleanup failure is
 // added to the run's. Tests: learn/check.test.ts (LC6, BF1 pure), learn/agree.test.ts (AG1–AG8), learn-check.dbtest.ts (LC1–LC10, V2, V3, CU1–CU5), runner.dbtest.ts,
-// learn/py-runner.dbtest.ts (PYC1–PYC9).
+// learn/py-runner.dbtest.ts (PYC1–PYC9), check.test.ts (WF1–WF3).
 import { spawn } from "node:child_process";
 import { createHash } from "node:crypto";
 import { mkdir, mkdtemp, readFile, rename, rm, writeFile } from "node:fs/promises";
@@ -39,6 +40,7 @@ import { assembleDownloads, type Announced, type Download } from "./assemble.ts"
 import type { Block } from "./blocks.ts";
 import { takeLabLock, type LabLock } from "./cleanup.ts";
 import { courseBlocks, type CoursePage } from "./course.ts";
+import { FEED } from "./feed.ts";
 import { readCourse } from "./course-files.ts";
 import { dbMeta, LAB_ERD, markerDrift, markers, parseErd, PG_META_SQL } from "./erd-model.ts";
 import { CHECKED_JSON, LOADER, nextStamp, readFreshness, STAMP_FILE, type ServerVersions, type Versions } from "./freshness.ts";
@@ -46,7 +48,7 @@ import { learnObjects } from "./leaks.ts";
 import { CANARY_SCHEMA, childEnv, LAB_SCHEMA, libpqTarget, LIVE_DATABASE, pgConnect, psqlArgs, type PgTarget } from "./pg.ts";
 import { runPythonBlocks } from "./py-runner.ts";
 import { pythonApp, pythonEnv, pythonFailure, runPython, type PythonEnvOptions } from "./python.ts";
-import { settleResults, type BlockRuns } from "./record.ts";
+import { settleResults, type BlockRuns, type SettleOptions } from "./record.ts";
 import { blockRuns, openSession, serverVersions, tablesDiff, type LabSession } from "./runner.ts";
 import { LABS_REQUIREMENTS, readVenv, VENV_PYTHON } from "../venv.ts";
 
@@ -352,9 +354,46 @@ async function blocksStage(lab: PgTarget, run: Run, blocks: readonly Block[], co
   const all = [...runs, ...python];
   const gates = agreement(new Map(all.flatMap(({ block, first }) => (first.rendered === undefined ? [] : [[block.id, first.rendered] as const]))));
   for (const g of gates) console.log(`learn:check: agree ${g.gate}: ${g.skipped ? "skipped (a block of the pair isn't in the run)" : g.failures.length ? "failed" : "ok"}`);
-  await settleResults(all, { update, gateFailures: gates.flatMap((g) => g.failures) });
+  const feed = update && courseBlocks(course).has(FEED.block) ? FEED_FILE : undefined;
+  await recordRuns(all, { update, feed, gateFailures: gates.flatMap((g) => g.failures) });
   const done = update ? "run twice, results written" : "equal their recorded results";
   console.log(`learn:check: blocks: ${pg.length} PostGIS and ${python.length} Python block(s) ${done}`);
+}
+
+const FEED_FILE = fileURLToPath(new URL(`../../${FEED.file}`, import.meta.url));
+
+/**
+ * c1's feed (plan T4) from FEED.block's run: its one row's one `feed` cell, which must be text (a jsonb slip arrives as
+ * an object), written to `file` byte for byte (utf8, no final newline), and only when it changed. Throws naming the block.
+ */
+export async function writeFeed(runs: readonly BlockRuns[], file: string): Promise<void> {
+  const q = `q ${FEED.block}`;
+  const run = runs.find((r) => r.block.id === FEED.block);
+  if (!run) throw new Error(`${q}: no run to write ${file} from`);
+  const { failures, result } = run.first;
+  if (failures.length || !result) throw new Error(`${q}: failed, so ${file} isn't written`);
+  if (result.rows.length !== 1) throw new Error(`${q}: ${result.rows.length} rows, not 1`);
+  if (result.columns.length !== 1 || result.columns[0] !== FEED.column) throw new Error(`${q}: columns ${result.columns.join(", ")}, not ${FEED.column}`);
+  const text = result.rows[0]![0];
+  if (typeof text !== "string") throw new Error(`${q}: ${FEED.column} is ${text === null ? "NULL" : `an ${typeof text}`}, not text: select doc::text`);
+  let old: string | undefined;
+  try {
+    old = await readFile(file, "utf8");
+  } catch (e) {
+    if ((e as NodeJS.ErrnoException).code !== "ENOENT") throw e;
+  }
+  if (old === text) return void console.log(`learn:check: unchanged: ${file}`);
+  await writeFile(file, text, "utf8");
+  console.log(`learn:check: wrote ${file}`);
+}
+
+/**
+ * The runs settled (record.ts settleResults: checked, or with `update` written); then, with `update` and `feed` (the
+ * course has FEED.block), c1's feed written there. A run that didn't settle throws first, so it writes no feed.
+ */
+export async function recordRuns(runs: readonly BlockRuns[], { feed, ...settle }: SettleOptions & { feed?: string }): Promise<void> {
+  await settleResults(runs, settle);
+  if (settle.update && feed !== undefined) await writeFeed(runs, feed);
 }
 
 const ERROR_LINE = /^psql:.*?:\d+: ERROR: /;

@@ -302,7 +302,10 @@ export async function runBlock(s: LabSession, b: Block, course: ReadonlyMap<stri
   }
   o.failures.push(...resultErrors(b, q, last, b.statements.at(-1)!.text));
   if (b.expectError) o.failures.push(`${q}: expected an error containing "${b.expectError}", but it ran`);
-  if (!o.failures.length) o.rendered = renderResult(b.id, last.result);
+  if (!o.failures.length) {
+    o.rendered = renderResult(b.id, last.result);
+    o.result = last.result;
+  }
   return o;
 }
 

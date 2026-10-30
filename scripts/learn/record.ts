@@ -6,7 +6,7 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { CHECKED_DIR, type Block } from "./blocks.ts";
-import { lineDiff } from "./result.ts";
+import { lineDiff, type Result } from "./result.ts";
 
 /** One run of a block. */
 export interface Outcome {
@@ -14,6 +14,8 @@ export interface Outcome {
   failures: string[];
   /** The result as checked/<id>.txt records it, when the block ran as it should. */
   rendered?: string;
+  /** The result `rendered` came from, uncut (a plain PostGIS block's): what learn:check writes c1's feed from (plan T4). */
+  result?: Result;
 }
 
 /** A block's runs: the first, and with `update` the second (none for a `-- boot` block, which runs once). */
