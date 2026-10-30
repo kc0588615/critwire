@@ -10,6 +10,7 @@ import { fileURLToPath } from "node:url";
 import type { LabManifest } from "../scripts/build/learn/data.ts";
 import { moduleUrl } from "../scripts/build/learn/module-html.ts";
 import { SETUP_PAGE, type CoursePage } from "../scripts/learn/course.ts";
+import type { FeedAttribution } from "../scripts/learn/feed.ts";
 import { readCourse } from "../scripts/learn/course-files.ts";
 import { renderError, renderResult } from "../scripts/learn/result.ts";
 import { readLabFiles } from "../scripts/learn/lab-files.ts";
@@ -97,6 +98,20 @@ export async function parquetRecords(db: DuckDB, source: string): Promise<unknow
 // species.csv (a path or URL) as rows of strings, NULL for an empty field.
 export const csvRows = (db: DuckDB, source: string) =>
   db.rows(`SELECT * FROM read_csv(${sqlText(source)}, header=true, all_varchar=true)`);
+
+// What c1's feed must credit, from the files `origin` serves (L5 plan T4, T8; feedAttributionErrors): critwire's credit and
+// the sample's (the one crediting datasets.csv) from /learn/data/manifest.json, and datasets.csv's (title, publisher, doi).
+export async function servedFeedAttribution(db: DuckDB, origin: string): Promise<FeedAttribution> {
+  const res = await fetch(`${origin}/learn/data/manifest.json`);
+  if (!res.ok) throw new Error(`${origin}/learn/data/manifest.json: ${res.status}`);
+  const { files } = (await res.json()) as LabManifest;
+  const sources = Object.values(files).flatMap((f) => f.sources);
+  const critwire = sources.find((s) => s.name === "critwire");
+  const sample = sources.find((s) => s.datasets === "datasets.csv");
+  if (!critwire || !sample) throw new Error(`${origin}/learn/data/manifest.json credits no critwire or no sample`);
+  const datasets = (await csvRows(db, `${origin}/learn/data/datasets.csv`)).map(({ title, publisher, doi }) => ({ title, publisher, doi }) as FeedAttribution["datasets"][number]);
+  return { critwire, sample, datasets };
+}
 
 // One request in Caddy's JSON access log.
 export interface Access {

@@ -4,7 +4,7 @@
   "title": "Encounter weights from open GBIF records",
   "description": "Where people recorded a species, per equal-area cell. Records, not a range: a missing cell means no record, not no animal.",
   "type": "object",
-  "required": ["version", "species", "cell", "meaning", "source", "credit", "cells"],
+  "required": ["version", "species", "cell", "meaning", "license", "license_url", "attribution", "source", "credit", "cells"],
   "additionalProperties": false,
   "properties": {
     "version": { "const": 1 },
@@ -16,15 +16,18 @@
     },
     "cell": { "type": "string", "description": "The cells' shape, size and projection" },
     "meaning": { "type": "string", "description": "What a weight is, in words a player-facing screen can quote" },
+    "license": { "type": "string", "description": "The feed's license" },
+    "license_url": { "type": "string", "pattern": "^https://", "description": "The license's deed" },
+    "attribution": { "type": "string", "description": "Who made the feed, as they ask to be credited" },
     "source": { "type": "string", "description": "GBIF's citation of the download, with its DOI" },
     "credit": {
       "type": "array",
-      "description": "Every dataset with CC BY 4.0 records in the feed",
+      "description": "Every dataset with CC BY 4.0 records in the feed, with its DOI (null if it has none)",
       "items": {
         "type": "object",
-        "required": ["title", "publisher"],
+        "required": ["title", "publisher", "doi"],
         "additionalProperties": false,
-        "properties": { "title": { "type": "string" }, "publisher": { "type": "string" } }
+        "properties": { "title": { "type": "string" }, "publisher": { "type": "string" }, "doi": { "type": ["string", "null"] } }
       }
     },
     "cells": {

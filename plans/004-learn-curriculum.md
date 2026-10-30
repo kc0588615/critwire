@@ -10575,7 +10575,7 @@ One module, eight hours, on every tool. It is an outline, in §5.3's form; build
 - **Look before counting** (s1): which datasets, which basis of record, any GPS collars? A species whose records are mostly one telemetry study gives a feed about that study, and the feed's numbers would say so only if you looked.
 - **Grid and hot spots** (g6, s5): equal-area hexagons, records per cell, Gi\* with the false discovery rate. The feed flags the surviving cells as **recording hot spots**: places people recorded the animal most, not places it is most common.
 - **Report** (p1–p4): the cell table goes beside the star (exported as CSV, as d6 exports the star, and loaded with p1's pattern); the report maps cells by their centre, sizes them by records, colours them by hot spot, and takes its title from p4's measure.
-- **The feed:** one static JSON file per species and region, written by one SQL statement, valid against the JSON Schema below, versioned. Each cell has an encounter **weight**, its share of the records; the game draws a cell with probability weight ÷ Σ weight (a cumulative sum and one random number), so rounding never matters. A cell missing from the feed means "no record", never "no animal". The feed carries the download's citation and every dataset with CC BY 4.0 records in it (e4), because the attribution travels with anything derived from them; the game shows both on its credits screen.
+- **The feed:** one static JSON file per species and region, written by one SQL statement, valid against the JSON Schema below, versioned. Each cell has an encounter **weight**, its share of the records; the game draws a cell with probability weight ÷ Σ weight (a cumulative sum and one random number), so rounding never matters. A cell missing from the feed means "no record", never "no animal". The feed carries its own license (CC BY 4.0, the license of the data critwire writes) and attribution, the download's citation, and every dataset with CC BY 4.0 records in it with its DOI (e4), because the attribution travels with anything derived from them and a game copies the feed alone; the game shows them on its credits screen.
 - **Shipping and refresh:** the game ships the file with its own static files, so it is read from the game's own origin and needs no CORS (§4.6). e5's schedule rebuilds it; a change to its fields bumps `version` and the schema. A game with its own PostGIS, such as Critter Connect's, can run the same statement there instead.
 
 **Data:** `s4_cells` (s4's 5 km hexagons over Tasmania's main island, with the devil's record counts), `s5_gistar` (s5's Gi\* per cell), `occurrences`, `datasets`, `species`. The worked example is the Tasmanian devil; in L5's lab the learner repeats it for a species and region of their own.
@@ -10583,7 +10583,7 @@ One module, eight hours, on every tool. It is an outline, in §5.3's form; build
 **Worked example:** the feed for the Tasmanian devil, in two blocks. `c1-feed` builds the feed with one statement, from s4's 5 km cells and s5's Gi\* (`s5_gistar`, so it runs after `s5-gistar`), and keeps it as a temporary view, `c1_feed`: one row, one `jsonb` column, `doc`. It then returns the feed's summary and its fullest cell. Four parts make the feed:
 - `sp`: the species, by its scientific name.
 - `cells`: the cells holding a record (`c.n > 0`), each with its centre in WGS 84 (`ST_Transform` of the hexagon's centre from EPSG:3577), its **weight**, its share of the records, rounded to six places (`n / sum(n) OVER ()`), and whether Gi\* made it a hot spot that survives the false discovery rate (`z > 0 AND fdr`).
-- `credit`: the datasets with a CC BY 4.0 record inside those cells, title and publisher; `ST_Contains` finds a record's cell, after `ST_Transform` puts the record's point in the cells' projection.
+- `credit`: the datasets with a CC BY 4.0 record inside those cells, with title, publisher and DOI; `ST_Contains` finds a record's cell, after `ST_Transform` puts the record's point in the cells' projection.
 - the final `SELECT`: `jsonb_build_object` writes the document, and `jsonb_agg (… ORDER BY id)` the cells in a fixed order, so the same data always gives the same file.
 
 ```sql
@@ -10601,7 +10601,7 @@ WITH sp AS (
   FROM s4_cells AS c JOIN s5_gistar AS g ON g.id = c.id
   WHERE c.edge_m = 5000 AND c.n > 0
 ), credit AS (
-  SELECT DISTINCT d.title, d.publisher
+  SELECT DISTINCT d.title, d.publisher, d.doi
   FROM occurrences AS o
   JOIN sp ON sp.id = o.species_id
   JOIN cells AS c ON ST_Contains(c.geom, ST_Transform(o.geom, 3577))
@@ -10613,8 +10613,11 @@ SELECT jsonb_build_object(
   'species', (SELECT jsonb_build_object('scientific_name', scientific_name, 'common_name', common_name) FROM sp),
   'cell', '5 km hexagon, EPSG:3577',
   'meaning', 'share of the open GBIF records in each cell: where people recorded the animal, not its range',
+  'license', 'CC BY 4.0',
+  'license_url', 'https://creativecommons.org/licenses/by/4.0/',
+  'attribution', 'critwire (https://critwire.com), CC BY 4.0',
   'source', 'GBIF.org (23 October 2026) GBIF Occurrence Download https://doi.org/10.15468/dl.fbpk9w',
-  'credit', coalesce((SELECT jsonb_agg(to_jsonb(credit) ORDER BY title, publisher) FROM credit), '[]'),
+  'credit', coalesce((SELECT jsonb_agg(to_jsonb(credit) ORDER BY title, publisher, doi) FROM credit), '[]'),
   'cells', jsonb_agg(jsonb_build_object(
     'id', id, 'lon', round(ST_X(centre)::numeric, 4), 'lat', round(ST_Y(centre)::numeric, 4),
     'records', n, 'weight', weight, 'recording_hot_spot', hot_spot) ORDER BY id)
@@ -10633,9 +10636,9 @@ FROM c1_feed;
 ```
 
 ```text
--- result: c1-feed · 1 row · sha256 0ed7d7c256c4
+-- result: c1-feed · 1 row · sha256 4eb751b94b5d
 cells | records | weight_sum | hot_spots | datasets_to_credit | bytes | fullest
-307 | 1972 | 0.999954 | 37 | 7 | 34848 | {"id": 917, "lat": -42.8981, "lon": 147.8865, "weight": 0.12…
+307 | 1972 | 0.999954 | 37 | 7 | 35178 | {"id": 917, "lat": -42.8981, "lon": 147.8865, "weight": 0.12…
 ```
 
 `c1-feed-file` returns the file itself: `doc::text` writes the document as one line of JSON, and that one text cell is, byte for byte, the worked feed critwire publishes, `/learn/labs/c1-feed.json` (`pnpm learn:check --update` writes it from this block, §7.3). Its result shows the cell's first 60 characters; its sha256 covers the whole file.
@@ -10649,7 +10652,7 @@ SELECT doc::text AS feed FROM c1_feed;
 ```
 
 ```text
--- result: c1-feed-file · 1 row · sha256 cf7491953851
+-- result: c1-feed-file · 1 row · sha256 330d13fc6135
 feed
 {"cell": "5 km hexagon, EPSG:3577", "cells": [{"id": 6, "lat…
 ```
@@ -10659,8 +10662,10 @@ feed
 - `species`: the scientific and common name.
 - `cell`: the cells' shape, size and projection, `5 km hexagon, EPSG:3577` (Australian Albers, an equal-area projection, so every cell covers the same ground).
 - `meaning`: what a weight is, in words a player-facing screen can quote: where people recorded the animal, not its range.
-- `source`: GBIF's citation of the download, with its DOI.
-- `credit`: every dataset with CC BY 4.0 records in the feed's cells, by title and publisher.
+- `license` and `license_url`: the feed's own license, CC BY 4.0, and its deed: anyone may copy and change the feed, crediting as the next three fields say.
+- `attribution`: who made the feed, in the words they ask to be credited with: `critwire (https://critwire.com), CC BY 4.0`. A feed you make names you.
+- `source`: GBIF's citation of the download, with its DOI, which lists every dataset in the download.
+- `credit`: every dataset with CC BY 4.0 records in the feed's cells, by title, publisher and DOI (`null` for a dataset without one), sorted by those three.
 - `cells`: one object per cell that holds a record: `id` (s4's cell id), `lon` and `lat` (the cell's centre in WGS 84, four decimal places, about 10 m), `records`, `weight` and `recording_hot_spot`.
 
 A game draws a cell with probability weight ÷ Σ weight: it adds the weights up in order (a cumulative sum), takes one random number between 0 and the total, and picks the first cell whose running sum passes it. A cell missing from the feed means "no record", never "no animal".
@@ -10674,7 +10679,7 @@ The feed's JSON Schema (draft 2020-12), which L5 publishes beside its worked fee
   "title": "Encounter weights from open GBIF records",
   "description": "Where people recorded a species, per equal-area cell. Records, not a range: a missing cell means no record, not no animal.",
   "type": "object",
-  "required": ["version", "species", "cell", "meaning", "source", "credit", "cells"],
+  "required": ["version", "species", "cell", "meaning", "license", "license_url", "attribution", "source", "credit", "cells"],
   "additionalProperties": false,
   "properties": {
     "version": { "const": 1 },
@@ -10686,15 +10691,18 @@ The feed's JSON Schema (draft 2020-12), which L5 publishes beside its worked fee
     },
     "cell": { "type": "string", "description": "The cells' shape, size and projection" },
     "meaning": { "type": "string", "description": "What a weight is, in words a player-facing screen can quote" },
+    "license": { "type": "string", "description": "The feed's license" },
+    "license_url": { "type": "string", "pattern": "^https://", "description": "The license's deed" },
+    "attribution": { "type": "string", "description": "Who made the feed, as they ask to be credited" },
     "source": { "type": "string", "description": "GBIF's citation of the download, with its DOI" },
     "credit": {
       "type": "array",
-      "description": "Every dataset with CC BY 4.0 records in the feed",
+      "description": "Every dataset with CC BY 4.0 records in the feed, with its DOI (null if it has none)",
       "items": {
         "type": "object",
-        "required": ["title", "publisher"],
+        "required": ["title", "publisher", "doi"],
         "additionalProperties": false,
-        "properties": { "title": { "type": "string" }, "publisher": { "type": "string" } }
+        "properties": { "title": { "type": "string" }, "publisher": { "type": "string" }, "doi": { "type": ["string", "null"] } }
       }
     },
     "cells": {
@@ -10718,7 +10726,7 @@ The feed's JSON Schema (draft 2020-12), which L5 publishes beside its worked fee
 }
 ```
 
-**Expected:** 307 of the 1,094 cells hold a record, so the feed has 307 cells and 1,972 records (the devil's 2,000, less the 28 off the main island's cells, as in g6). The weights, rounded to six places, sum to 0.999954, which is why the game divides by their sum. 37 cells are recording hot spots: s5's 39, less 2 cells with no record of their own, flagged by Gi\* because their neighbours are full (Gi\* counts a cell's neighbours too), and absent from a feed of recorded cells. The fullest cell (id 917) holds 256 records, 13.0 % of the weight, and is a hot spot. 7 datasets must be credited. The file is 34,848 bytes, small enough to ship with any game. L5 adds the report (`untested: Power BI is Windows-only`, its cell CSV checked as p1–p4's inputs are) and publishes the worked feed and schema under `/learn/labs/` (§7).
+**Expected:** 307 of the 1,094 cells hold a record, so the feed has 307 cells and 1,972 records (the devil's 2,000, less the 28 off the main island's cells, as in g6). The weights, rounded to six places, sum to 0.999954, which is why the game divides by their sum. 37 cells are recording hot spots: s5's 39, less 2 cells with no record of their own, flagged by Gi\* because their neighbours are full (Gi\* counts a cell's neighbours too), and absent from a feed of recorded cells. The fullest cell (id 917) holds 256 records, 13.0 % of the weight, and is a hot spot. 7 datasets must be credited. The file is 35,178 bytes, small enough to ship with any game. L5 adds the report (`untested: Power BI is Windows-only`, its cell CSV checked as p1–p4's inputs are) and publishes the worked feed and schema under `/learn/labs/` (§7).
 
 ## 6. ERDs
 

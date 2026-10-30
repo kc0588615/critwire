@@ -12,7 +12,7 @@ WITH sp AS (
   FROM s4_cells AS c JOIN s5_gistar AS g ON g.id = c.id
   WHERE c.edge_m = 5000 AND c.n > 0
 ), credit AS (
-  SELECT DISTINCT d.title, d.publisher
+  SELECT DISTINCT d.title, d.publisher, d.doi
   FROM occurrences AS o
   JOIN sp ON sp.id = o.species_id
   JOIN cells AS c ON ST_Contains(c.geom, ST_Transform(o.geom, 3577))
@@ -24,8 +24,11 @@ SELECT jsonb_build_object(
   'species', (SELECT jsonb_build_object('scientific_name', scientific_name, 'common_name', common_name) FROM sp),
   'cell', '5 km hexagon, EPSG:3577',
   'meaning', 'share of the open GBIF records in each cell: where people recorded the animal, not its range',
+  'license', 'CC BY 4.0',
+  'license_url', 'https://creativecommons.org/licenses/by/4.0/',
+  'attribution', 'critwire (https://critwire.com), CC BY 4.0',
   'source', 'GBIF.org (23 October 2026) GBIF Occurrence Download https://doi.org/10.15468/dl.fbpk9w',
-  'credit', coalesce((SELECT jsonb_agg(to_jsonb(credit) ORDER BY title, publisher) FROM credit), '[]'),
+  'credit', coalesce((SELECT jsonb_agg(to_jsonb(credit) ORDER BY title, publisher, doi) FROM credit), '[]'),
   'cells', jsonb_agg(jsonb_build_object(
     'id', id, 'lon', round(ST_X(centre)::numeric, 4), 'lat', round(ST_Y(centre)::numeric, 4),
     'records', n, 'weight', weight, 'recording_hot_spot', hot_spot) ORDER BY id)

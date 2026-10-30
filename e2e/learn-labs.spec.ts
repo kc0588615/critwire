@@ -6,7 +6,8 @@
 // manifest's rows and sha256, which the served files match and star-check passes; c1's feed with its cells and the
 // served file's sha256), and a DAX block links its PostGIS twin, shown with its recorded result. c1's feed is served as
 // checked/c1-feed.json, valid against its served schema, says records not range, and agrees with c1-feed's recorded
-// summary (L5 plan T8); c1's page links both. The setup page links the checks'
+// summary (L5 plan T8), and carries its license, critwire's attribution, the sample's citation and only sample datasets'
+// credits (feedAttributionErrors against the served data manifest and datasets.csv); c1's page links both. The setup page links the checks'
 // download (pg-checks.sql) and the loader. /learn/labs/requirements.txt is the labs' pin file (L4 plan §5). By
 // Download.kind (L4 plan §10): a .sql holds its page's PostGIS blocks, a .py its Python blocks (untested ones behind
 // `# `), each linked from its block; an .ipynb is served as assembled, its code cells the .py's cells in order (an
@@ -21,10 +22,10 @@ import { assembleDownloads, pageDownloads, type Download } from "../scripts/lear
 import { CHECKED_DIR, PG_SESSION_ID, PY_CONNECT_ID, type Block } from "../scripts/learn/blocks.ts";
 import { SETUP_PAGE, type CoursePage } from "../scripts/learn/course.ts";
 import { readCourse } from "../scripts/learn/course-files.ts";
-import { FEED } from "../scripts/learn/feed.ts";
+import { FEED, feedAttributionErrors } from "../scripts/learn/feed.ts";
 import { readStamp } from "../scripts/learn/freshness.ts";
 import { checkInput, type StarManifest } from "../scripts/learn/star-check.ts";
-import { distPath, feedSchemaErrors, learnContext, repoPath, sha256 } from "./helpers.ts";
+import { distPath, feedSchemaErrors, learnContext, openDuckDB, ORIGIN, repoPath, servedFeedAttribution, sha256 } from "./helpers.ts";
 
 const trimEnd = (s: string) => s.replace(/\n+$/, "");
 const runnable = (b: Block) => b.status === "ran" && !b.sessions.length;
@@ -237,6 +238,16 @@ test("c1's feed is checked/c1-feed.json as served, valid against its served sche
   const { url, pages } = await course();
   await page.goto(url(pages.find((p) => p.page.id === "c1")!));
   for (const href of [`/learn/${FEED.input}`, "/learn/labs/c1-feed.schema.json"]) await expect(page.locator(`main a[href="${href}"]`).first()).toBeVisible();
+});
+
+test("c1's feed carries critwire's license and attribution, the sample's citation and only the sample datasets' credits, as served", async ({ request }) => {
+  const feed: unknown = await (await request.get(`/learn/${FEED.input}`)).json();
+  const db = await openDuckDB();
+  try {
+    expect(feedAttributionErrors(feed, await servedFeedAttribution(db, ORIGIN))).toEqual([]);
+  } finally {
+    db.close();
+  }
 });
 
 test("the setup page covers the browser, PostGIS, Python and Power BI, and links pg-checks.sql, the loader, requirements.txt, setup.py and setup.ipynb", async ({ page }) => {

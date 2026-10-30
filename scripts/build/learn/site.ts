@@ -7,8 +7,9 @@
 // PostGIS block without its recorded result fails a plain build and only warns with --draft (D16's loop: learn:check
 // --update writes it). Throws naming every error. Writes nothing.
 // assertLabsFresh (plan D6), once the data manifest is written: checked.json against the freshness the build recomputes
-// (learn/freshness.ts), and c1's feed against c1-feed-file's recorded result (learn/feed.ts feedErrors, L5 plan T4); a
-// plain build refuses a stale lab or feed, --draft only warns.
+// (learn/freshness.ts), and c1's feed against c1-feed-file's recorded result (learn/feed.ts feedErrors, L5 plan T4), then
+// its license and credits against the lab's (feedAttributionErrors, credits.ts feedAttribution); a plain build refuses a
+// stale lab or feed, --draft only warns.
 // writeLearn (plan D8.6, D12), last: the Learn site under dist/learn/: its assets; the lab downloads (labs/<page>.sql,
 // .py and .ipynb, assemble.ts, the files learn:check ran and checked.json stamps) and the labs' requirements.txt (L4
 // plan §5); c1's feed and its schema (labs/c1-feed.json, labs/c1-feed.schema.json), once the course has c1-feed-file
@@ -24,13 +25,14 @@ import { assembleDownloads, pageDownloads } from "../../learn/assemble.ts";
 import { courseBlocks, type CoursePage, type Curriculum } from "../../learn/course.ts";
 import { readCourse } from "../../learn/course-files.ts";
 import { parseErd } from "../../learn/erd-model.ts";
-import { FEED, feedErrors, type FeedState } from "../../learn/feed.ts";
+import { FEED, feedAttributionErrors, feedErrors, type FeedState } from "../../learn/feed.ts";
 import { readFreshness, readRecorded, readStamp, staleness } from "../../learn/freshness.ts";
 import type { StarManifest } from "../../learn/star-check.ts";
 import { LABS_REQUIREMENTS } from "../../venv.ts";
 import { DUCKDB_EXT, DUCKDB_WASM } from "../../../site/learn/src/assets.ts";
 import type { PowerBiInput } from "./module-html.ts";
 import { assetErrors, writeAssets } from "./assets.ts";
+import { feedAttribution, type CreditContext } from "./credits.ts";
 import { learnPages, readTemplates, writePages } from "./pages.ts";
 import { DRAWN_ERDS, readErds, type ErdSvgs, type ErdTexts } from "./erd.ts";
 import { starBlocks, inputErrors, type StarBlock } from "./star.ts";
@@ -70,12 +72,26 @@ function readFeed(pages: readonly CoursePage[]): FeedState {
   return { block: courseBlocks(pages).has(FEED.block), feed: readRepo(FEED.file), recorded: readRecorded(pages).get(FEED.block), schema: existsSync(new URL(FEED.schema, repo)) };
 }
 
+/** The committed feed as JSON, `undefined` (an error of feedAttributionErrors) if it isn't JSON. */
+function parseFeed(text: string): unknown {
+  try {
+    return JSON.parse(text);
+  } catch {
+    return undefined;
+  }
+}
+
 /**
  * Throws (warns with `draft`) naming every way checked.json fails to prove the labs `pages` publish, and c1's feed
- * fails to be c1-feed-file's result; `dist`: the built site.
+ * fails to be c1-feed-file's result or to carry the license and credits `labCredits` give; `dist`: the built site.
  */
-export function assertLabsFresh(dist: string, pages: readonly CoursePage[], { draft }: { draft: boolean }): void {
-  const errors = [...staleness(readStamp(), readFreshness(dist, pages)), ...feedErrors(readFeed(pages))];
+export function assertLabsFresh(dist: string, pages: readonly CoursePage[], labCredits: CreditContext, { draft }: { draft: boolean }): void {
+  const feed = readFeed(pages);
+  const errors = [
+    ...staleness(readStamp(), readFreshness(dist, pages)),
+    ...feedErrors(feed),
+    ...(feed.block && feed.feed !== undefined ? feedAttributionErrors(parseFeed(feed.feed), feedAttribution(labCredits)) : []),
+  ];
   if (draft) for (const e of errors) console.warn(`build --draft: ${e}`);
   else if (errors.length) throw new Error(`site/learn/labs: ${errors.length} error(s):\n${errors.join("\n")}`);
 }
