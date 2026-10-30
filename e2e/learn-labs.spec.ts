@@ -27,6 +27,9 @@ const runnable = (b: Block) => b.status === "ran" && !b.sessions.length;
 /** The engine whose blocks a download holds, and the comment mark that hides an unrun one; an .ipynb holds the .py's. */
 const HOLDS = { sql: { engine: "postgis", mark: "--" }, py: { engine: "python", mark: "#" } } as const;
 const isLab = (b: Block) => b.engine === "postgis" || b.engine === "python";
+/** The module pages with Python blocks (L4), and the untested blocks the downloads must hide, by page. */
+const PY_PAGES = ["s2", "s3", "s4", "s5", "s6", "e1", "e2", "e3", "e4", "e5"];
+const UNTESTED = [["g3", "g3-iucn"], ["setup", "arcpy-moran"], ["e1", "e1-submit"]] as const;
 
 async function course() {
   const c = await readCourse();
@@ -44,8 +47,11 @@ test("each download is served as assembled; each PostGIS (Python) block's page c
     expect(await res.text(), d.name).toBe(d.text);
   }
   expect(all.filter((d) => d.kind === "sql").map((d) => d.name)).toEqual(expect.arrayContaining(["pg-checks.sql", "d6.sql", "g1.sql", "g2.sql", "g3.sql", "g4.sql", "g5.sql", "g6.sql", "g7.sql"]));
-  // L3: g3-iucn reads the learner's own IUCN download, so g3.sql holds it commented out (checked below).
-  expect(pages.find((p) => p.page.id === "g3")!.blocks.find((b) => b.id === "g3-iucn")?.status).toBe("untested");
+  // L4: every page with a Python block has its .py (and .ipynb, checked below).
+  expect(all.filter((d) => d.kind === "py").map((d) => d.name)).toEqual(expect.arrayContaining(["setup.py", ...PY_PAGES.map((p) => `${p}.py`)]));
+  // L3: g3-iucn reads the learner's own IUCN download, so g3.sql holds it commented out (checked below); L4: so do
+  // setup.py arcpy-moran (ArcGIS Pro only) and e1.py e1-submit (a real GBIF download).
+  for (const [p, id] of UNTESTED) expect(pages.find((x) => x.page.id === p)!.blocks.find((b) => b.id === id)?.status, id).toBe("untested");
   const { context, offOrigin } = await learnContext(browser);
   const page = await context.newPage();
   for (const d of all.filter((x): x is Download & { kind: keyof typeof HOLDS } => x.kind in HOLDS)) {
@@ -121,7 +127,8 @@ test("each .ipynb's code cells are its .py's cells, in order, with unique ids; a
   const { pages } = await course();
   const all = assembleDownloads(pages);
   const py = all.filter((d) => d.kind === "py");
-  expect(py.map((d) => d.name)).toContain("setup.py");
+  expect(py.map((d) => d.name)).toEqual(expect.arrayContaining(["setup.py", ...PY_PAGES.map((p) => `${p}.py`)]));
+  const markdown: string[] = [];
   for (const d of py) {
     const nb = JSON.parse(all.find((x) => x.page === d.page && x.kind === "ipynb")!.text) as { cells: NbCell[] };
     const ids = nb.cells.map((c) => c.id);
@@ -134,8 +141,10 @@ test("each .ipynb's code cells are its .py's cells, in order, with unique ids; a
       const cell = nb.cells.find((c) => c.id === id)!;
       expect(cell.cell_type, `${id} in ${d.page}.ipynb`).toBe("markdown");
       expect(cell.source.join(""), id).toMatch(/^not run from this file: .+\. Run it by hand, as its page says\.\n\n```python\n/);
+      markdown.push(id);
     }
   }
+  expect(markdown).toEqual(expect.arrayContaining(UNTESTED.filter(([p]) => p !== "g3").map(([, id]) => id)));
 });
 
 test("a download naming s4_cells or s4_neighbours runs s4-cells right after pg-session or py-connect", async () => {
@@ -144,7 +153,10 @@ test("a download naming s4_cells or s4_neighbours runs s4-cells right after pg-s
   const text = (id: string) => trimEnd(blocks.find((b) => b.id === id)!.text);
   // A .sql names a table in its code (a string literal or comment doesn't: g1-columns filters 's4_cells' out); a .py in its SQL strings.
   const names = (d: Download) => /\bs4_(cells|neighbours)\b/.test(d.kind === "sql" ? codeOnly(d.text) : d.text);
-  for (const d of assembleDownloads(pages).filter((x) => x.kind !== "ipynb" && names(x))) {
+  const naming = assembleDownloads(pages).filter((x) => x.kind !== "ipynb" && names(x));
+  // L4: s2–s5 read the 5 km and 10 km cells in both engines, and setup.py's gpkg-export writes them.
+  expect(naming.map((d) => d.name)).toEqual(expect.arrayContaining(["setup.py", ...["s2", "s3", "s4", "s5"].flatMap((p) => [`${p}.sql`, `${p}.py`])]));
+  for (const d of naming) {
     const boot = d.kind === "sql"
       ? `${text(PG_SESSION_ID)}\n\nBEGIN;\n${text("s4-cells")}\nCOMMIT;\n`
       : `# %% ${PY_CONNECT_ID}\n${text(PY_CONNECT_ID)}\n\n# %% boot: s4-cells\n`;

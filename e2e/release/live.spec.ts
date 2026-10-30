@@ -1,11 +1,24 @@
 // The release smoke (plan S26, Verification "Release smoke"), against RELEASE_ORIGIN, never run by the default config:
 // every dist/ file is served with dist's bytes (each page at its folder URL), the .wasm files as application/wasm, and
-// f3's first browser block shows its recorded result. dist/ must be the build of the released commit.
+// f3's first browser block shows its recorded result; and (L4) the origin's s4.py, run in .venv-learn after the origin's
+// loader, prints s4's recorded lesson outputs. dist/ must be the build of the released commit.
 // Run: RELEASE_ORIGIN=https://critwire.com E2E_ARTIFACTS=<dir> pnpm exec playwright test -c playwright.release.config.ts
 import { expect, test } from "@playwright/test";
-import { readdir, readFile } from "node:fs/promises";
+import { execFile } from "node:child_process";
+import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
-import { distPath, firstBrowserBlock, rendered, runBlock, sha256, waitReady } from "../helpers.ts";
+import { promisify } from "node:util";
+import { loadEnv } from "../../scripts/env.ts";
+import { assembleDownloads } from "../../scripts/learn/assemble.ts";
+import { CHECKED_DIR, PY_CONNECT_ID } from "../../scripts/learn/blocks.ts";
+import { takeLabLock } from "../../scripts/learn/cleanup.ts";
+import { readCourse } from "../../scripts/learn/course-files.ts";
+import { learnObjects } from "../../scripts/learn/leaks.ts";
+import { childEnv, LAB_ROLE, labTarget, pgConnect, psqlArgs } from "../../scripts/learn/pg.ts";
+import { pythonApp, pythonEnv, pythonFailure, runPython } from "../../scripts/learn/python.ts";
+import { VENV_PYTHON } from "../../scripts/venv.ts";
+import { distPath, firstBrowserBlock, rendered, repoPath, runBlock, sha256, waitReady } from "../helpers.ts";
 
 // Every file under dist/, as its URL path: an index.html as its folder.
 async function distFiles(): Promise<{ file: string; url: string }[]> {
@@ -45,4 +58,49 @@ test("f3's first browser block shows its recorded result", async ({ page }) => {
   await waitReady(page);
   await runBlock(page.locator(`#q-${id}`));
   expect(await rendered(page, id)).toMatchSnapshot(`${id}.txt`);
+});
+
+// The download a learner runs (plan L4 S26): the origin's loader into LEARN_PG_URL's database as the lab role, under the
+// lab lock, then the origin's s4.py as learn:check runs a download (python -I, empty folder, pythonEnv, no GBIF_*),
+// LEARN_BASE the origin. Its stdout holds, in page order, the recorded result of each s4 Python block that runs after
+// py-connect alone; nothing learn_ is left after.
+test("the origin's s4.py, after the origin's loader, runs in .venv-learn and prints s4's recorded lesson outputs", async ({ request, baseURL }) => {
+  test.setTimeout(600_000);
+  loadEnv(repoPath(".env"));
+  const lab = labTarget(process.env);
+  const { pages } = await readCourse();
+  const s4 = assembleDownloads(pages).find((d) => d.name === "s4.py")!;
+  const lessons = pages.find((p) => p.page.id === "s4")!.blocks
+    .filter((b) => b.engine === "python" && b.status === "ran" && b.after.length === 1 && b.after[0] === PY_CONNECT_ID);
+  expect(lessons.map((b) => b.id)).toEqual(expect.arrayContaining(["s4-moran-pysal", "s4-permutations", "s4-agree"]));
+  const app = pythonApp();
+  const sql = pgConnect(lab);
+  const lock = await takeLabLock(lab, lab.database, { app });
+  const tmp = await mkdtemp(join(tmpdir(), "critwire-release-s4-"));
+  try {
+    const [who] = await sql<{ user: string; superuser: boolean }[]>`select current_user as user, rolsuper as superuser from pg_roles where rolname = current_user`;
+    expect(who, "LEARN_PG_URL's role").toEqual({ user: LAB_ROLE, superuser: false });
+    const loader = await request.get("/learn/data/postgis/learn_curriculum.sql");
+    expect(loader.status()).toBe(200);
+    await writeFile(join(tmp, "loader.sql"), await loader.body());
+    await promisify(execFile)("psql", ["-q", ...psqlArgs(join(tmp, "loader.sql"))], { env: childEnv(lab), maxBuffer: 64 << 20 });
+    const file = await request.get("/learn/labs/s4.py");
+    expect(file.status()).toBe(200);
+    const mplConfig = join(tmp, "mpl");
+    await mkdir(mplConfig);
+    const r = await runPython(await file.text(), { python: VENV_PYTHON, env: pythonEnv(lab, { learnBase: baseURL!, app, mplConfig }), timeoutMs: s4.timeoutMs! });
+    expect(pythonFailure(r, s4.timeoutMs! / 1000)).toBeUndefined();
+    let at = 0;
+    for (const b of lessons) {
+      const recorded = (await readFile(repoPath(`${CHECKED_DIR}/${b.id}.txt`), "utf8")).split("\n").slice(1).join("\n").replace(/\n+$/, "");
+      const found = r.stdout.indexOf(`${recorded}\n`, at);
+      expect(found, `${b.id}'s recorded output, after the blocks before it`).toBeGreaterThanOrEqual(0);
+      at = found + recorded.length;
+    }
+    expect(await learnObjects(sql), "the leak query").toEqual([]);
+  } finally {
+    await rm(tmp, { recursive: true, force: true });
+    await sql.end();
+    await lock.release();
+  }
 });
