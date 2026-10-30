@@ -16,6 +16,7 @@
 </ul></li>
 <li><strong>Incremental loads</strong> move only what changed. A file with a published checksum tells you whether anything changed at all. Records that changed or were deleted upstream are the hard part: an append-only increment never sees them. For a sample this size, the honest increment is a whole reload, in one transaction, when the job key changes. A weekly GBIF refresh is a new download with a new DOI, so it is a new run of e1 to e4.</li>
 </ul>
+{{diagram:e5-refresh}}
 <p><strong>Data:</strong> <a href="/learn/data/">the lab data</a>'s <code>manifest.json</code> and <code>datasets.csv</code>; the lab's <code>datasets</code> table, for the shape of the job's copy.</p>
 
 <h2>Worked example</h2>

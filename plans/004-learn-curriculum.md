@@ -9541,6 +9541,8 @@ with two made-up records (2,002 rows): refused
   - **a lock** covers the comparison and the replacement, so two runs that overlap, a slow one and the next one or a manual re-run, can't both load. `pg_try_advisory_xact_lock` doesn't wait: a run that finds it held does nothing and exits 0, since the run holding it is doing the work. The lock is the transaction's, so it is freed when the job ends, however it ends.
 - **Incremental loads** move only what changed. A file with a published checksum tells you whether anything changed at all. Records that changed or were deleted upstream are the hard part: an append-only increment never sees them. For a sample this size, the honest increment is a whole reload, in one transaction, when the job key changes. A weekly GBIF refresh is a new download with a new DOI, so it is a new run of e1–e4.
 
+**Diagram:** `e5-refresh`, after the Concept: one run is one transaction: lock → compare the job key (input, transform, config, schema) → fetch → verify the sha256 → stage with `COPY` and count → replace the target and upsert the state → COMMIT. A held lock or an unchanged key skips with exit 0; a failed fetch, checksum or count rolls everything back with exit 1, so the target and its key change together or not at all.
+
 **Data:** `/learn/data/manifest.json` and `datasets.csv`; the lab's `datasets` table, for the shape of the job's copy.
 
 **Worked example:** a simulation of a weekly refresh, in one process on `TEMP` tables, so it leaves the lab as it was and can be checked in one go. It compares the published checksum with the one it loaded last, reloads in one transaction when they differ, checks the row count, and exits 1 with the traceback on any failure.
