@@ -1,0 +1,6 @@
+-- result: e2-casts · python · sha256 f015257c3640
+the cast alone: 22P02 invalid input syntax for type double precision: "30 m"
+gbifID | column | value | type
+1000000001 | coordinateUncertaintyInMeters | 30 m | float8
+1000000002 | decimalLatitude | -22,4310 | float8
+load refused before INSERT_TYPED: 2 values in 2 of 3 records

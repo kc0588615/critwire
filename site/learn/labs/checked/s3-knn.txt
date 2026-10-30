@@ -1,0 +1,4 @@
+-- result: s3-knn · 2 rows · sha256 160008ed6781
+k | links | one_way | tied_cells
+4 | 4376 | 1968 | 1025
+6 | 6564 | 254 | 129

@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 800 614" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="e2-load-title e2-load-desc" id="e2-load-root">
+        <title id="e2-load-title">Stage, check, type, commit: a delivered file is staged as text, checked, typed and checked again in one transaction, so it loads whole or not at all</title>
+        <desc id="e2-load-desc">A delivered GBIF file is copied into a staging table of text columns, its values are checked with pg_input_is_valid before any cast, the typed rows are inserted with their constraints, generated geometry and species rule, and the checks run; then one COMMIT. If COPY refuses the file, a value won't cast, a constraint fails or a check's count isn't 0, everything rolls back, and the error names the line, or the record, column and value, or the constraint or check.</desc>
+<defs>
+      <style>#e2-load-root { --paper: #f5f5f5; --paper-2: #ececec; --ink: #2d3142; --muted: #4f5d75; --soft: #5a6580;
+      --rule: rgba(45,49,66,0.12); --rule-solid: #bfc0c0; --accent: #bf4520; --accent-tint: rgba(191,69,32,0.08);
+      --font-sans: 'Geist', system-ui, sans-serif;
+      --font-serif: 'Instrument Serif', 'Noto Serif', serif;
+      --font-mono: 'Geist Mono', ui-monospace, monospace; }
+      #e2-load-root { font-family: var(--font-sans); color: var(--ink); }
+      #e2-load-root .diagram-container { width: 100%; overflow-x: auto; }
+      @media print {
+#e2-load-root .diagram-container { overflow-x: visible; }
+}
+      #e2-load-root .bg { fill: var(--paper); }
+      #e2-load-root .zone { fill: var(--paper-2); stroke: var(--rule); stroke-width: 1; }
+      #e2-load-root .mask { fill: var(--paper); }
+      #e2-load-root .zmask { fill: var(--paper-2); }
+      #e2-load-root .node { fill: var(--paper); stroke: var(--ink); stroke-width: 1; }
+      #e2-load-root .store { fill: var(--paper-2); stroke: var(--muted); stroke-width: 1; }
+      #e2-load-root .focal { fill: var(--accent-tint); stroke: var(--accent); stroke-width: 1.2; }
+      #e2-load-root .name { fill: var(--ink); font-family: var(--font-sans); font-size: 13px; font-weight: 600; }
+      #e2-load-root .sub { fill: var(--muted); font-family: var(--font-mono); font-size: 10px; }
+      #e2-load-root .eyebrow-text { fill: var(--soft); font-family: var(--font-mono); font-size: 9px; font-weight: 500; letter-spacing: 0.14em; }
+      #e2-load-root .label { fill: var(--soft); font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.06em; }
+      #e2-load-root .note { fill: var(--muted); font-family: var(--font-serif); font-size: 14px; font-style: italic; }
+      #e2-load-root .arrow { fill: none; stroke: var(--muted); stroke-width: 1.2; }
+      #e2-load-root .arrow-accent { fill: none; stroke: var(--accent); stroke-width: 1.4; }
+      #e2-load-root .dashed { stroke-dasharray: 5 4; }
+      #e2-load-root .head { fill: var(--muted); }
+      #e2-load-root .head-accent { fill: var(--accent); }
+      #e2-load-root .rule-line { stroke: var(--rule-solid); stroke-width: 0.8; }</style>
+<marker id="e2-load-arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon class="head" points="0 0, 8 3, 0 6"/></marker>
+<marker id="e2-load-arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon class="head-accent" points="0 0, 8 3, 0 6"/></marker>
+</defs>
+<rect class="bg" width="100%" height="100%"/>
+<rect class="mask" x="56" y="24" width="272" height="52" rx="6"/>
+<rect class="store" x="56" y="24" width="272" height="52" rx="6"/>
+<text class="name" x="192" y="46" text-anchor="middle">The delivered file</text>
+<text class="sub" x="192" y="62" text-anchor="middle">GBIF SIMPLE_CSV: tabs, never quoted</text>
+<rect class="zone" x="24" y="96" width="488" height="412" rx="6"/>
+<text class="eyebrow-text" x="40" y="116">ONE TRANSACTION</text>
+<path class="arrow" d="M192 76 V132" marker-end="url(#e2-load-arrow)"/>
+<path class="arrow" d="M192 184 V208" marker-end="url(#e2-load-arrow)"/>
+<path class="arrow" d="M192 260 V284" marker-end="url(#e2-load-arrow)"/>
+<path class="arrow" d="M192 336 V360" marker-end="url(#e2-load-arrow)"/>
+<path class="arrow" d="M192 412 V436" marker-end="url(#e2-load-arrow)"/>
+<path class="arrow" d="M328 158 H568" marker-end="url(#e2-load-arrow)"/>
+<path class="arrow" d="M328 234 H568" marker-end="url(#e2-load-arrow)"/>
+<path class="arrow" d="M328 310 H568" marker-end="url(#e2-load-arrow)"/>
+<path class="arrow" d="M328 386 H568" marker-end="url(#e2-load-arrow)"/>
+<path class="arrow-accent" d="M328 462 H568" marker-end="url(#e2-load-arrow-accent)"/>
+<rect class="zmask" x="409.3" y="141" width="77.4" height="12" rx="2"/>
+<text class="label" x="448" y="150" text-anchor="middle">COPY REFUSES</text>
+<rect class="zmask" x="391.4" y="217" width="113.1" height="12" rx="2"/>
+<text class="label" x="448" y="226" text-anchor="middle">A VALUE WON'T CAST</text>
+<rect class="zmask" x="391.4" y="293" width="113.1" height="12" rx="2"/>
+<text class="label" x="448" y="302" text-anchor="middle">A CONSTRAINT FAILS</text>
+<rect class="zmask" x="400.4" y="369" width="95.2" height="12" rx="2"/>
+<text class="label" x="448" y="378" text-anchor="middle">A COUNT ISN'T 0</text>
+<rect class="mask" x="56" y="132" width="272" height="52" rx="6"/>
+<rect class="node" x="56" y="132" width="272" height="52" rx="6"/>
+<text class="name" x="192" y="154" text-anchor="middle">Stage as text</text>
+<text class="sub" x="192" y="170" text-anchor="middle">COPY · FORMAT csv, tab, QUOTE E'\b'</text>
+<rect class="mask" x="56" y="208" width="272" height="52" rx="6"/>
+<rect class="node" x="56" y="208" width="272" height="52" rx="6"/>
+<text class="name" x="192" y="230" text-anchor="middle">Check before you cast</text>
+<text class="sub" x="192" y="246" text-anchor="middle">pg_input_is_valid(value, type)</text>
+<rect class="mask" x="56" y="284" width="272" height="52" rx="6"/>
+<rect class="node" x="56" y="284" width="272" height="52" rx="6"/>
+<text class="name" x="192" y="306" text-anchor="middle">Insert typed</text>
+<text class="sub" x="192" y="322" text-anchor="middle">casts · constraints · geom · species</text>
+<rect class="mask" x="56" y="360" width="272" height="52" rx="6"/>
+<rect class="node" x="56" y="360" width="272" height="52" rx="6"/>
+<text class="name" x="192" y="382" text-anchor="middle">Run the checks</text>
+<text class="sub" x="192" y="398" text-anchor="middle">each check's count must be 0</text>
+<rect class="mask" x="56" y="436" width="272" height="52" rx="6"/>
+<rect class="focal" x="56" y="436" width="272" height="52" rx="6"/>
+<text class="name" x="192" y="458" text-anchor="middle">COMMIT</text>
+<text class="sub" x="192" y="474" text-anchor="middle">the new rows, all at once</text>
+<rect class="mask" x="568" y="132" width="208" height="280" rx="6"/>
+<rect class="store" x="568" y="132" width="208" height="280" rx="6"/>
+<text class="name" x="672" y="236" text-anchor="middle">ROLLBACK</text>
+<text class="sub" x="672" y="252" text-anchor="middle">the tables as they were</text>
+<text class="sub" x="672" y="268" text-anchor="middle"></text>
+<text class="sub" x="672" y="284" text-anchor="middle">COPY: the file's line</text>
+<text class="sub" x="672" y="300" text-anchor="middle">cast: gbifID, column, value</text>
+<text class="sub" x="672" y="316" text-anchor="middle">constraint or check: its name</text>
+<rect class="mask" x="568" y="436" width="208" height="52" rx="6"/>
+<rect class="node" x="568" y="436" width="208" height="52" rx="6"/>
+<text class="name" x="672" y="458" text-anchor="middle">Loaded</text>
+<text class="sub" x="672" y="474" text-anchor="middle">typed, checked tables</text>
+<text class="note" x="24" y="540">Staging takes any value, so every type error comes from a query that can name its record;</text>
+<text class="note" x="24" y="562">one transaction means a refused load leaves the tables exactly as they were.</text>
+<line class="rule-line" x1="24" y1="578" x2="776" y2="578"/>
+<text class="label" x="24" y="596">STAGING: ONE TEXT COLUMN PER FIELD · NEVER COPY'S TEXT FORMAT ON A FILE YOU DIDN'T WRITE</text>
+      </svg>

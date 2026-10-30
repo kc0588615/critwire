@@ -1,0 +1,6 @@
+-- result: e4-ex · python · sha256 9fac0647c0e1
+the devil's records (2,000 rows): every reject check 0: load
+with two made-up records (2,002 rows): refused
+  coordinates exactly 0, 0: 1 (first 9000000001)
+  coordinate uncertainty negative, NaN or infinite: 1 (first 9000000002)
+  year after the download (2026): 1 (first 9000000002)

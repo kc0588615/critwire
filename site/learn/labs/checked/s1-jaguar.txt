@@ -1,0 +1,4 @@
+-- result: s1-jaguar · 2 rows · sha256 c6055b9de80b
+source | datasets | records | pct | countries | locations | first_year | last_year
+GPS collars | 1 | 1948 | 97.4 | 5 | 1948 | 2001 | 2016
+everything else | 24 | 52 | 2.6 | 8 | 47 | 1949 | 2025

@@ -1,0 +1,8 @@
+-- result: s3-ex · 6 rows · sha256 3f25bd602944
+band_neighbours | cells | records | shortest_km | longest_km
+1 | 1 | 0 | 22.91 | 22.91
+2 | 7 | 57 | 17.32 | 17.32
+3 | 36 | 16 | 15.00 | 17.32
+4 | 66 | 243 | 15.00 | 15.00
+5 | 45 | 133 | 15.00 | 15.00
+… 1 more row

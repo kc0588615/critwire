@@ -7,6 +7,8 @@
 //      make the two differ, so the post-connect assertion is called directly.
 // LC3: a role without CREATEROLE, or without createrole_self_grant set and inherit, runs the loader and fails in the
 //      labs → refused before the lock, naming --setup.
+// V2, V3 (plan L4 D7, MF5): a superuser lab role, or one with CREATE on public, runs the labs with more than a learner's
+//      privileges and hides a block that needs them → refused before the lock, naming --setup.
 // LC4: two runs overlap (each drops the other's schema) → the second is refused while the lock is held, and loads nothing.
 // LC5: a load that gives other row counts than the manifest's tables, or a loader whose sha256 isn't the manifest's,
 //      passes → refused, naming the table and both counts, or the file; a clean run loads twice and exits 0.
@@ -44,7 +46,7 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { createHash, randomBytes } from "node:crypto";
-import { chmodSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { chmodSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { after, test } from "node:test";
@@ -54,6 +56,7 @@ import { parseBlock } from "./learn/blocks.ts";
 import { assertConnectedNotLive, assertDownloadRun, CANARY_SCHEMA, checkLab } from "./learn/check.ts";
 import { takeLabLock } from "./learn/cleanup.ts";
 import { LAB_LOCK, libpqTarget, pgConnect, urlTarget } from "./learn/pg.ts";
+import { pythonApp } from "./learn/python.ts";
 import { RUNNER_APP } from "./learn/runner.ts";
 import { testDatabase } from "./test-db.ts";
 
@@ -100,12 +103,19 @@ async function waitFor(what: string, ok: () => Promise<boolean>, ms = 10_000) {
   }
 }
 
-// A dist/ holding the manifest and the loader only (all learn:check reads), the loader changed by `loader` (it must
-// change), and the manifest edited by `edit`; the loader's sha256 and bytes in the manifest follow the new loader.
+// A dist/ whose learn/data/ links dist's files (the Python blocks read them through LEARN_BASE) except the manifest
+// and the loader, written here: the loader changed by `loader` (it must change), and the manifest edited by `edit`;
+// the loader's sha256 and bytes in the manifest follow the new loader.
 function tamperedDist(name: string, { loader: change, edit = (m: Manifest) => m }:
   { loader?: (s: string) => string; edit?: (m: Manifest) => Manifest } = {}) {
   const out = join(dir, name);
   mkdirSync(join(out, "learn/data/postgis"), { recursive: true });
+  for (const sub of ["", "postgis"]) {
+    for (const f of readdirSync(join(dist, "learn/data", sub))) {
+      const rel = join(sub, f);
+      if (![LOADER, "manifest.json", "postgis"].includes(rel)) symlinkSync(join(dist, "learn/data", rel), join(out, "learn/data", rel));
+    }
+  }
   const original = readFileSync(join(dist, "learn/data", LOADER), "utf8");
   const loader = change ? change(original) : original;
   if (change && loader === original) throw new Error(`tamperedDist ${name}: the loader edit changed nothing`);
@@ -176,6 +186,25 @@ test("LC3 a role without CREATEROLE, or without createrole_self_grant, is refuse
   const r2 = await cli([], { LEARN_PG_URL: plain.url });
   assert.equal(r2.code, 1);
   assert.match(r2.stderr, /createrole_self_grant.*--setup/);
+});
+
+test("V2 a superuser lab role is refused before the lock, naming --setup", async () => {
+  const su = await loginRole("v2", "SUPERUSER CREATEROLE");
+  await admin.unsafe(`ALTER ROLE ${su.role} SET createrole_self_grant = 'set, inherit'`);
+  const r = await cli([], { LEARN_PG_URL: su.url });
+  assert.equal(r.code, 1);
+  assert.match(r.stderr, new RegExp(`${su.role} is a superuser: the labs run with a learner's privileges: run pnpm learn:check --setup`));
+  assert.doesNotMatch(r.stdout, /lab lock taken/);
+});
+
+test("V3 a lab role with CREATE on public is refused before the lock, naming --setup", async () => {
+  const role = await loginRole("v3", "CREATEROLE");
+  await admin.unsafe(`ALTER ROLE ${role.role} SET createrole_self_grant = 'set, inherit'`);
+  await admin.unsafe(`GRANT CREATE ON SCHEMA public TO ${role.role}`);
+  const r = await cli([], { LEARN_PG_URL: role.url });
+  assert.equal(r.code, 1);
+  assert.match(r.stderr, new RegExp(`${role.role} has CREATE on schema public: the labs run with a learner's privileges: run pnpm learn:check --setup`));
+  assert.doesNotMatch(r.stdout, /lab lock taken/);
 });
 
 test("LC4 a run is refused while the lab lock is held, and loads nothing", async () => {
@@ -401,7 +430,7 @@ test("CU1 SIGINT mid-block: no run backend, the block's committed role swept, th
 });
 
 test("CU2 a second learn:check while the sweep runs is refused; the sweep drops the lab role's schema, then frees the lock", async () => {
-  const lock = await takeLabLock(labTarget(), testDatabase);
+  const lock = await takeLabLock(labTarget(), testDatabase, { app: pythonApp() });
   const schema = fresh("cu2");
   made.schemas.push(schema);
   const lab = pgConnect(labTarget());
@@ -432,7 +461,7 @@ test("CU3 the sweep drops the lab role's new role; a superuser's is named with i
   const before = fresh("cu3old");
   made.roles.push(before);
   await admin.unsafe(`CREATE ROLE ${before}`);
-  const lock = await takeLabLock(labTarget(), testDatabase);
+  const lock = await takeLabLock(labTarget(), testDatabase, { app: pythonApp() });
   const [ours, theirs] = [fresh("cu3lab"), fresh("cu3su")];
   made.roles.push(ours, theirs);
   const lab = pgConnect(labTarget());
@@ -453,7 +482,7 @@ test("CU4 a recorded session that can't be stopped fails the cleanup, named; the
   const other = pgConnect(libpqTarget({ PGDATABASE: testDatabase }), { connection: { application_name: RUNNER_APP } });
   try {
     const [{ pid }] = await other<{ pid: number }[]>`select pg_backend_pid() as pid`;
-    const lock = await takeLabLock(labTarget(), testDatabase);
+    const lock = await takeLabLock(labTarget(), testDatabase, { app: pythonApp() });
     lock.record(pid);
     await assert.rejects(lock.release(), new RegExp(`^Error: cleanup: session ${pid} still runs: permission denied`));
     await assertLockFree();
@@ -463,7 +492,7 @@ test("CU4 a recorded session that can't be stopped fails the cleanup, named; the
 });
 
 test("CU5 a lost cleanup connection drops nothing and names every new object", async () => {
-  const lock = await takeLabLock(labTarget(), testDatabase);
+  const lock = await takeLabLock(labTarget(), testDatabase, { app: pythonApp() });
   const ours = fresh("cu5");
   made.roles.push(ours);
   const lab = pgConnect(labTarget());

@@ -1,0 +1,8 @@
+-- result: e2-copy · python · sha256 23d586f7e1b2
+COPY | gbifID | locality | recordedBy | read
+csv form | 1000000001 | Cradle Mountain\Dove Lake track | A. "Sam" Lee | as sent
+csv form | 1000000002 | Pafuri\north bank | NULL | as sent
+csv form | 1000000003 | Sirena station | \N | as sent
+text format | 1000000001 | Cradle MountainDove Lake track | A. "Sam" Lee | CHANGED
+text format | 1000000002 | Pafuri↵orth bank | '' | CHANGED
+text format | 1000000003 | Sirena station | NULL | CHANGED

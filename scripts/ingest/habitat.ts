@@ -17,6 +17,7 @@ import type { OccurrenceRow } from "../derive/sample.ts";
 import { downloadFile, hashFile } from "../http.ts";
 import { formatJson, readJson } from "../json.ts";
 import { labDataDir, readLabFiles } from "../learn/lab-files.ts";
+import { assertVenv, INGEST_REQUIREMENTS } from "../venv.ts";
 import { publishFiles } from "./publish.ts";
 import { runPython, venvPython } from "./python.ts";
 
@@ -446,6 +447,7 @@ async function zenodoFile(path: string, { url, bytes, md5 }: (typeof HABITAT_INP
 // then buildHabitat into data/learn/ for the records the build publishes. The temp folder is always removed.
 export async function ingestHabitat(args: string[]): Promise<void> {
   const { downloads } = parseHabitatArgs(args);
+  await assertVenv(INGEST_REQUIREMENTS, "ingest habitat");
   await readLabFiles(); // data/learn/ as its provenance files record it, before anything runs
   const records = deriveAll(await readDeriveInputs()).learn.occurrences;
   await withWorkDir("critwire-habitat-", async (work, signal) => {

@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Why the band is twice the edge</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --paper: #2d3142; --paper-2: #393e53; --ink: #f5f5f5; --muted: #bfc0c0; --soft: #949eb2;
+      --rule: rgba(245,245,245,0.12); --rule-solid: rgba(191,192,192,0.25); --accent: #f08a59; --accent-tint: rgba(240,138,89,0.10);
+      --font-sans: 'Geist', system-ui, sans-serif;
+      --font-serif: 'Instrument Serif', 'Noto Serif', serif;
+      --font-mono: 'Geist Mono', ui-monospace, monospace;
+    }
+    body { font-family: var(--font-sans); background: var(--paper); color: var(--ink); padding: 3rem 2rem; }
+    .frame { max-width: 1200px; margin: 0 auto; }
+    .diagram-container { width: 100%; overflow-x: auto; }
+    .eyebrow { font-family: var(--font-mono); font-size: 0.66rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.5rem; }
+    h1 { font-family: var(--font-serif); font-size: 1.75rem; font-weight: 400; margin-bottom: 1.5rem; }
+    svg { width: 100%; min-width: 800px; display: block; }
+    @media print { .diagram-container { overflow-x: visible; } svg { min-width: 0; } }
+    .bg { fill: var(--paper); }
+    .zone { fill: var(--paper-2); stroke: var(--rule); stroke-width: 1; }
+    .mask { fill: var(--paper); }
+    .zmask { fill: var(--paper-2); }
+    .node { fill: var(--paper); stroke: var(--ink); stroke-width: 1; }
+    .store { fill: var(--paper-2); stroke: var(--muted); stroke-width: 1; }
+    .focal { fill: var(--accent-tint); stroke: var(--accent); stroke-width: 1.2; }
+    .name { fill: var(--ink); font-family: var(--font-sans); font-size: 13px; font-weight: 600; }
+    .sub { fill: var(--muted); font-family: var(--font-mono); font-size: 10px; }
+    .eyebrow-text { fill: var(--soft); font-family: var(--font-mono); font-size: 9px; font-weight: 500; letter-spacing: 0.14em; }
+    .label { fill: var(--soft); font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.06em; }
+    .note { fill: var(--muted); font-family: var(--font-serif); font-size: 14px; font-style: italic; }
+    .arrow { fill: none; stroke: var(--muted); stroke-width: 1.2; }
+    .arrow-accent { fill: none; stroke: var(--accent); stroke-width: 1.4; }
+    .dashed { stroke-dasharray: 5 4; }
+    .head { fill: var(--muted); }
+    .head-accent { fill: var(--accent); }
+    .band { fill: var(--accent-tint); stroke: var(--accent); stroke-width: 1.4; }
+    .band-zone { fill: var(--accent-tint); }
+    .band-line { stroke: var(--accent); stroke-width: 1.4; }
+    .ring { fill: none; stroke: var(--muted); stroke-width: 1; stroke-dasharray: 4 3; }
+    .radius { fill: none; stroke: var(--ink); stroke-width: 1; }
+    .radius-accent { fill: none; stroke: var(--accent); stroke-width: 1.2; }
+    .dot { fill: var(--muted); }
+    .dot-accent { fill: var(--accent); }
+    .axis { stroke: var(--muted); stroke-width: 1; }
+    .tick { stroke: var(--muted); stroke-width: 1; }
+    .gap { fill: none; stroke: var(--soft); stroke-width: 0.8; }
+    .label-accent { fill: var(--accent); font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.06em; }
+    .rule-line { stroke: var(--rule-solid); stroke-width: 0.8; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Spatial weights · s4</p>
+    <h1>Why the band is twice the edge</h1>
+    <div class="diagram-container">
+      <svg viewBox="0 0 800 552" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="s4-band-dark-title s4-band-dark-desc">
+        <title id="s4-band-dark-title">Why the band is twice the edge: touching hexagons' centroids are 1.73 edges apart and the next ring's 3, so a 2-edge band holds exactly the six touching cells</title>
+        <desc id="s4-band-dark-desc">A flat-topped hexagon grid with edge e, as ST_HexagonGrid makes it. The middle cell's six touching cells have centroids √3·e (about 1.73·e) away; the next ring's are 3·e and 2√3·e (about 3.46·e) away. A distance band of 2·e lies between √3·e and 3·e, 0.27·e beyond the touching cells and a whole edge short of the next ring, so it selects exactly the touching cells and no pair sits near the threshold.</desc>
+<defs>
+<marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon class="head" points="0 0, 8 3, 0 6"/></marker>
+<marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon class="head-accent" points="0 0, 8 3, 0 6"/></marker>
+</defs>
+<rect class="bg" width="100%" height="100%"/>
+<polygon class="node" points="130,192.7 110,227.4 70,227.4 50,192.7 70,158.1 110,158.1"/>
+<polygon class="node" points="130,262 110,296.6 70,296.6 50,262 70,227.4 110,227.4"/>
+<polygon class="node" points="130,331.3 110,365.9 70,365.9 50,331.3 70,296.6 110,296.6"/>
+<polygon class="node" points="190,158.1 170,192.7 130,192.7 110,158.1 130,123.4 170,123.4"/>
+<polygon class="store" points="190,227.4 170,262 130,262 110,227.4 130,192.7 170,192.7"/>
+<polygon class="store" points="190,296.6 170,331.3 130,331.3 110,296.6 130,262 170,262"/>
+<polygon class="node" points="190,365.9 170,400.6 130,400.6 110,365.9 130,331.3 170,331.3"/>
+<polygon class="node" points="250,123.4 230,158.1 190,158.1 170,123.4 190,88.8 230,88.8"/>
+<polygon class="store" points="250,192.7 230,227.4 190,227.4 170,192.7 190,158.1 230,158.1"/>
+<polygon class="focal" points="250,262 230,296.6 190,296.6 170,262 190,227.4 230,227.4"/>
+<polygon class="store" points="250,331.3 230,365.9 190,365.9 170,331.3 190,296.6 230,296.6"/>
+<polygon class="node" points="250,400.6 230,435.2 190,435.2 170,400.6 190,365.9 230,365.9"/>
+<polygon class="node" points="310,158.1 290,192.7 250,192.7 230,158.1 250,123.4 290,123.4"/>
+<polygon class="store" points="310,227.4 290,262 250,262 230,227.4 250,192.7 290,192.7"/>
+<polygon class="store" points="310,296.6 290,331.3 250,331.3 230,296.6 250,262 290,262"/>
+<polygon class="node" points="310,365.9 290,400.6 250,400.6 230,365.9 250,331.3 290,331.3"/>
+<polygon class="node" points="370,192.7 350,227.4 310,227.4 290,192.7 310,158.1 350,158.1"/>
+<polygon class="node" points="370,262 350,296.6 310,296.6 290,262 310,227.4 350,227.4"/>
+<polygon class="node" points="370,331.3 350,365.9 310,365.9 290,331.3 310,296.6 350,296.6"/>
+<circle class="band" cx="210" cy="262" r="80"/>
+<circle class="ring" cx="210" cy="262" r="69.3"/>
+<circle class="ring" cx="210" cy="262" r="120"/>
+<circle class="dot" cx="90" cy="262" r="2.6"/>
+<circle class="dot" cx="150" cy="158.1" r="2.6"/>
+<circle class="dot-accent" cx="150" cy="227.4" r="2.6"/>
+<circle class="dot-accent" cx="150" cy="296.6" r="2.6"/>
+<circle class="dot" cx="150" cy="365.9" r="2.6"/>
+<circle class="dot-accent" cx="210" cy="192.7" r="2.6"/>
+<circle class="dot-accent" cx="210" cy="262" r="2.6"/>
+<circle class="dot-accent" cx="210" cy="331.3" r="2.6"/>
+<circle class="dot" cx="270" cy="158.1" r="2.6"/>
+<circle class="dot-accent" cx="270" cy="227.4" r="2.6"/>
+<circle class="dot-accent" cx="270" cy="296.6" r="2.6"/>
+<circle class="dot" cx="270" cy="365.9" r="2.6"/>
+<circle class="dot" cx="330" cy="262" r="2.6"/>
+<path class="radius" d="M210 262 V192.7"/>
+<path class="radius" d="M210 262 H330"/>
+<path class="radius-accent" d="M210 262 L153.4 318.6"/>
+<rect class="mask" x="211" y="221.4" width="29.8" height="12" rx="2"/>
+<text class="label" x="214" y="230.4" text-anchor="start">√3·e</text>
+<rect class="mask" x="288.1" y="248" width="23.9" height="12" rx="2"/>
+<text class="label" x="300" y="257" text-anchor="middle">3·e</text>
+<rect class="mask" x="168.1" y="299" width="23.9" height="12" rx="2"/>
+<text class="label-accent" x="180" y="308" text-anchor="middle">2·e</text>
+<text class="eyebrow-text" x="24" y="60">ONE CELL AND ITS TWO RINGS · EDGE e</text>
+<text class="eyebrow-text" x="440" y="60">CENTROID DISTANCES FROM THE MIDDLE CELL</text>
+<rect class="band-zone" x="440" y="210" width="178.3" height="72" rx="4"/>
+<text class="label-accent" x="446" y="222">NEIGHBOURS: WITHIN 2·e</text>
+<line class="axis" x1="440" y1="262" x2="776" y2="262"/>
+<line class="tick" x1="440" y1="257" x2="440" y2="267"/>
+<circle class="dot-accent" cx="440" cy="262" r="3.2"/>
+<text class="sub" x="440" y="282" text-anchor="middle">0</text>
+<line class="tick" x1="594.4" y1="257" x2="594.4" y2="267"/>
+<circle class="dot-accent" cx="594.4" cy="262" r="3.2"/>
+<text class="sub" x="594.4" y="282" text-anchor="middle">√3·e</text>
+<line class="tick" x1="707.4" y1="257" x2="707.4" y2="267"/>
+<circle class="dot" cx="707.4" cy="262" r="3.2"/>
+<text class="sub" x="707.4" y="282" text-anchor="middle">3·e</text>
+<line class="tick" x1="748.8" y1="257" x2="748.8" y2="267"/>
+<circle class="dot" cx="748.8" cy="262" r="3.2"/>
+<text class="sub" x="748.8" y="282" text-anchor="middle">2√3·e</text>
+<text class="sub" x="586.4" y="252" text-anchor="end">6 touching</text>
+<text class="sub" x="707.4" y="252" text-anchor="middle">6</text>
+<text class="sub" x="748.8" y="252" text-anchor="middle">6</text>
+<text class="label" x="728.1" y="236" text-anchor="middle">NEXT RING</text>
+<line class="band-line" x1="618.3" y1="210" x2="618.3" y2="306"/>
+<text class="label-accent" x="618.3" y="318" text-anchor="middle">BAND 2·e</text>
+<path class="gap" d="M594.4 350 V358 M594.4 354 H618.3 M618.3 350 V358"/>
+<text class="label" x="606.3" y="370" text-anchor="middle">0.27·e</text>
+<path class="gap" d="M618.3 350 V358 M618.3 354 H707.4 M707.4 350 V358"/>
+<text class="label" x="662.9" y="370" text-anchor="middle">1·e</text>
+<text class="sub" x="440" y="398">e = 5 km: band 10 km, touching cells 8.66 km apart,</text>
+<text class="sub" x="440" y="414">the next ring from 15 km. e = 10 km: all doubled.</text>
+<text class="note" x="24" y="478">A band of twice the edge holds exactly the six cells that touch, and no centroid lies</text>
+<text class="note" x="24" y="500">within 0.27·e of it, so a rounding difference between SQL and PySAL can't move a pair across.</text>
+<line class="rule-line" x1="24" y1="516" x2="776" y2="516"/>
+<text class="label" x="24" y="534">S4_NEIGHBOURS: ST_DWITHIN(CENTROID_A, CENTROID_B, 2 * EDGE_M) · PYSAL: DISTANCEBAND(THRESHOLD = 2 * EDGE)</text>
+      </svg>
+    </div>
+  </div>
+</body>
+</html>

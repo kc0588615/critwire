@@ -13,6 +13,7 @@ import { downloadFile } from "../http.ts";
 import { formatJson, readJson } from "../json.ts";
 import { labDataDir } from "../learn/lab-files.ts";
 import type { NeLayer } from "../raw.ts";
+import { assertVenv, INGEST_REQUIREMENTS } from "../venv.ts";
 import { NE_COMMIT } from "./naturalearth.ts";
 import { publishFiles } from "./publish.ts";
 import { runPython, venvPython } from "./python.ts";
@@ -126,6 +127,7 @@ export async function buildShapes({ inDir, dest, countryCodes, python = PYTHON }
 
 // pnpm ingest shapes: downloads every input into a fresh temp folder, builds into data/learn/, removes the folder.
 export async function ingestShapes(): Promise<void> {
+  await assertVenv(INGEST_REQUIREMENTS, "ingest shapes");
   const { rows } = await readJson<CountriesFile>(countriesFile);
   const inDir = await mkdtemp(join(tmpdir(), "critwire-shapes-"));
   try {

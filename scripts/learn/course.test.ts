@@ -94,6 +94,11 @@ const blockFile = (id: string, ...lines: string[]): Block => {
   assert.deepEqual(errors, [], id);
   return block!;
 };
+const pyFile = (id: string, ...lines: string[]): Block => {
+  const { block, errors } = parseBlock(`site/learn/sql/${id}.py`, [`# q: ${id}`, ...lines].join("\n") + "\n");
+  assert.deepEqual(errors, [], id);
+  return block!;
+};
 const ran = (id: string, ...h: string[]) => blockFile(id, "-- status: ran", ...h, "SELECT 1 AS a");
 const pageOf = (id: string, html: string): Page => ({ id, file: `site/learn/modules/${id}.html`, html });
 const blocks = (...bs: Block[]) => new Map(bs.map((b) => [b.id, b]));
@@ -119,7 +124,7 @@ test("SL3 a slot without a file, a block on two pages, a block file no page uses
   const { errors } = assembleCourse([pageOf("f1", "{{block:f1-a}} {{block:f1-x}} {{diagram:nope}}"), pageOf("f2", "{{block:f1-a}} {{block:f1-b}}")], all, new Set());
   has(
     errors,
-    "site/learn/modules/f1.html: {{block:f1-x}}: no block file site/learn/sql/f1-x.sql (.m, .dax)",
+    "site/learn/modules/f1.html: {{block:f1-x}}: no block file site/learn/sql/f1-x.sql (.py, .m, .dax)",
     "site/learn/modules/f1.html: {{diagram:nope}}: no diagram site/learn/diagrams/nope.svg",
     "site/learn/modules/f2.html: {{block:f1-a}}: block f1-a is already on site/learn/modules/f1.html",
     "site/learn/sql/orphan.sql: no page uses block orphan",
@@ -141,18 +146,31 @@ test("SL5 the page lint includes the privilege and cleanup rules", () => {
   has(assembleCourse([pageOf("d5", "{{block:d5-a}}")], all, new Set()).errors, "site/learn/sql/d5-a.sql: q d5-a: statement 1 names role reporter");
 });
 
-test("SL6 recorded results: a ran PostGIS block without checked/<id>.txt, and a .txt no ran PostGIS block owns", () => {
+test("SL6 recorded results: a ran PostGIS or Python block without checked/<id>.txt, and a .txt no ran PostGIS or Python block owns", () => {
   const all = blocks(
     ran("d1-a", "-- engine: postgis"), ran("d1-b", "-- engine: postgis"), ran("d1-c"),
     blockFile("d1-d", "-- status: untested: needs two sessions", "-- engine: postgis", "SELECT 1 AS a"),
+    pyFile("d1-py", "# status: ran", "print(1)"), pyFile("d1-pu", "# status: untested: ArcGIS Pro", "import arcpy"),
   );
-  const { pages } = assembleCourse([pageOf("d1", "{{block:d1-a}} {{block:d1-b}} {{block:d1-c}} {{block:d1-d}}")], all, new Set());
-  const { missing, orphans } = recordedResults(pages, new Set(["d1-a", "d1-c", "d1-d", "gone"]));
-  assert.deepEqual(missing, ["site/learn/labs/checked/d1-b.txt: no recorded result for q d1-b: run pnpm learn:check --update"]);
-  assert.deepEqual(orphans, [
-    "site/learn/labs/checked/d1-c.txt: no ran PostGIS block d1-c on a page",
-    "site/learn/labs/checked/d1-d.txt: no ran PostGIS block d1-d on a page",
-    "site/learn/labs/checked/gone.txt: no ran PostGIS block gone on a page",
+  const { pages, errors } = assembleCourse([pageOf("d1", "{{block:d1-a}} {{block:d1-b}} {{block:d1-c}} {{block:d1-d}} {{block:d1-py}} {{block:d1-pu}}")], all, new Set());
+  assert.deepEqual(errors, []);
+  const { missing, orphans } = recordedResults(pages, new Set(["d1-a", "d1-c", "d1-d", "d1-pu", "gone"]));
+  assert.deepEqual(missing, [
+    "site/learn/labs/checked/d1-b.txt: no recorded result for q d1-b: run pnpm learn:check --update",
+    "site/learn/labs/checked/d1-py.txt: no recorded result for q d1-py: run pnpm learn:check --update",
   ]);
-  assert.deepEqual(recordedResults(pages, new Set(["d1-a", "d1-b"])), { missing: [], orphans: [] });
+  assert.deepEqual(orphans, [
+    "site/learn/labs/checked/d1-c.txt: no ran PostGIS or Python block d1-c on a page",
+    "site/learn/labs/checked/d1-d.txt: no ran PostGIS or Python block d1-d on a page",
+    "site/learn/labs/checked/d1-pu.txt: no ran PostGIS or Python block d1-pu on a page",
+    "site/learn/labs/checked/gone.txt: no ran PostGIS or Python block gone on a page",
+  ]);
+  assert.deepEqual(recordedResults(pages, new Set(["d1-a", "d1-b", "d1-py"])), { missing: [], orphans: [] });
+});
+
+test("PY5 through the course: a Python block on any page may name py-connect, from the setup page", () => {
+  const all = blocks(pyFile("py-connect", "# status: ran", "def connect(): pass"), pyFile("s4-a", "# status: ran", "# after: py-connect", "print(1)"));
+  const setup: Page = { id: "setup", file: "site/learn/pages/setup.html", html: "{{block:py-connect}}" };
+  assert.deepEqual(assembleCourse([setup, pageOf("s4", "{{block:s4-a}}")], all, new Set()).errors, []);
+  has(assembleCourse([pageOf("s4", "{{block:s4-a}}")], blocks(all.get("s4-a")!), new Set()).errors, 'q s4-a: `# after`: unknown block "py-connect" (not on this page)');
 });

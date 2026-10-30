@@ -6,7 +6,7 @@ Written by mission `critwire-learn-curriculum` (plan `plans/2026-10-23-critwire-
 
 ## 0. Conventions
 
-Every example in this document is tested. A block is a fenced code block whose first lines are headers. The test runners read the headers, run the block on the engine they name, and compare what they get with the result block printed under it: `pnpm learn:check` for PostGIS (§7.6), E2E for the browser (§7.7) and, from L4, `learn:check`'s Python stage. A block that can't run here says why.
+Every example in this document is tested. A block is a fenced code block whose first lines are headers. The test runners read the headers, run the block on the engine they name, and compare what they get with the result block printed under it: `pnpm learn:check` for PostGIS and Python (§7.6), E2E for the browser (§7.7). A block that can't run here says why.
 
 ### Blocks, engines and statuses
 
@@ -18,7 +18,7 @@ Every example in this document is tested. A block is a fenced code block whose f
   - ```` ```python ```` blocks run in the pinned `uv` environment (§3), each in its own process, isolated (`python -I`), from an empty folder, connected through libpq's `PG*` variables. Their search path starts as `pg_catalog`, so a block that skips the `py-connect` helper fails on its first table name instead of quietly reading another schema.
   - ```` ```m ```` and ```` ```dax ```` blocks (Power BI) never run; their status is always `untested: Power BI is Windows-only`. Each names its inputs (`// input: star/<file>.csv, …`) and the runner checks those files instead: the file exists, its header equals the star manifest's columns, primary keys are unique and filled, every foreign key finds its dimension row, and rows and sha256 equal the manifest's.
 - **More headers:**
-  - `-- after: <id>, …`: those earlier blocks of the same engine run first, in the same transaction, in the order named; the result is still this block's last statement. An exercise runs after its lesson this way. Python's `# after:` puts the named blocks' code first, in document order, in one process.
+  - `-- after: <id>, …`: those earlier blocks of the same engine run first, in the same transaction, in the order named; the result is still this block's last statement. An exercise runs after its lesson this way. Python's `# after:` puts the named blocks' code first, in document order, in one process; it names earlier Python blocks of its page, or `py-connect`, the course-wide helper (below) any page may name.
   - `-- expect: error <text>`: the last statement must fail with an error containing `<text>` (d1's constraint violations); the block fails if it doesn't.
   - `-- plan: <text>`, `-- plan: no <text>`, `-- plan: rows <n>` (PostGIS, on a block whose last statement is `EXPLAIN (ANALYZE …)`): what the plan must show, by meaning: some plan line contains `<text>` (a node, an index, an `Index Cond`); no line contains it; the top node's `actual rows=<n>`. Every such block has one `rows` line and at least one about its nodes (d3).
   - `-- params: [<value>, …]` (DuckDB only): JSON values for the last statement's `?` placeholders, as a page binds a learner's input.
@@ -29,7 +29,7 @@ Every example in this document is tested. A block is a fenced code block whose f
   - `# timeout: <seconds>` (Python): when the block is stopped; 60 by default.
   - `-- show: cards` is not a test header: it stays in the SQL learners see, and the page shows the result as animal cards (002 §8).
 - **Every other SQL block runs in a transaction the runner rolls back,** so each starts from the same database and the order of modules doesn't matter. Results must be deterministic: rows ordered by a unique key, `random()` only after `setseed()`, no clock; Python prints with explicit formats, never a DataFrame's repr.
-- **Result blocks.** The ```` ```text ```` block under a `ran` block starts `-- result: <id> · <n> rows · sha256 <12 hex>`, then the column names, the first 5 rows (cells cut at 60 characters) and how many more. The hash covers the column names and every row, uncut, so the 5 rows shown don't limit what is checked. A Python result starts `-- result: <id> · python · sha256 <12 hex>`, then the block's whole output. Only a run writes results (`pnpm learn:check --update` for PostGIS); a changed result is a bug to explain, and lands here and in its recorded file together. An `EXPLAIN` block is the exception: its result block is an example of the plan, from the PostgreSQL, PostGIS and GEOS versions the page names, and the run checks its `-- plan:` lines instead of its hash, because plan text moves with versions and statistics. Data results keep their hashes.
+- **Result blocks.** The ```` ```text ```` block under a `ran` block starts `-- result: <id> · <n> rows · sha256 <12 hex>`, then the column names, the first 5 rows (cells cut at 60 characters) and how many more. The hash covers the column names and every row, uncut, so the 5 rows shown don't limit what is checked. A Python result starts `-- result: <id> · python · sha256 <12 hex>`, then the block's whole output. Only a run writes results (`pnpm learn:check --update` for PostGIS and Python); a changed result is a bug to explain, and lands here and in its recorded file together. An `EXPLAIN` block is the exception: its result block is an example of the plan, from the PostgreSQL, PostGIS and GEOS versions the page names, and the run checks its `-- plan:` lines instead of its hash, because plan text moves with versions and statistics. Data results keep their hashes.
 - **Not counted:** ```` ```sh ```` and ```` ```powershell ```` fences are commands for the learner's own machine (installing PostgreSQL, Docker or `uv`; loading the lab file). They carry no headers and don't run here; §3 says which were checked another way. ```` ```mermaid ```` fences are the ERDs, checked against their files and the live catalogs (§6).
 
 ### Lab objects: the `learn_` rules
@@ -45,9 +45,9 @@ The PostGIS labs share a database with other work, on the test server and perhap
 ### Re-running the tests, and where results live
 
 The tests are the repository's. From a checkout whose `.env` has `LEARN_PG_URL` (§7.6): `pnpm build --draft && pnpm learn:check && pnpm build`, then `pnpm e2e`.
-- `pnpm learn:check` runs the loader, every PostGIS block of the built pages in page order against its recorded result (`site/learn/labs/checked/<id>.txt`), the lab ERD against `learn_curriculum`, and every SQL download on a fresh load (§7.6). `--update` rewrites the recorded results; `--module <page>` runs one page and writes nothing. E2E runs every browser block against its recorded result (`e2e/__snapshots__/<id>.txt`) and checks the Power BI inputs and schema v2's ERD (§7.7).
+- `pnpm learn:check` runs the loader, every PostGIS block and then every Python block of the built pages in page order against its recorded result (`site/learn/labs/checked/<id>.txt`), the agreement gates between SQL and PySAL, the lab ERD against `learn_curriculum`, and every `.sql` and `.py` download on a fresh load (§7.6). `--update` rewrites the recorded results; `--module <page>` runs one page and writes nothing. E2E runs every browser block against its recorded result (`e2e/__snapshots__/<id>.txt`) and checks the Power BI inputs and schema v2's ERD (§7.7).
 - `pnpm learn:port --check all` proves that every block file and recorded result in the repository equals its fence and result block here, so a change lands in this document and on its page in the same commit.
-- **Results** are in this document, under each block, and in those recorded files; `checked.json` records the PostgreSQL, PostGIS, GEOS and GDAL versions they ran on (§7.5). The design spike, `SP=/srv/critter-ai/agent-state/missions/critwire-learn-curriculum/spike` (not committed), is frozen as the design's evidence and never extended: its run log (`/srv/critter-ai/agent-state/missions/critwire-learn-curriculum/queries.log`: engine versions, the canary, every lab file's sha256), `$SP/out/<spike>/summary.md` (§A) and the first ERD renders in `$SP/erd/`. Its log is still the only run of the blocks of modules not yet built (s, e, p, c, and §3.3's Python), until the mission that builds each module ports and checks them.
+- **Results** are in this document, under each block, and in those recorded files; `checked.json` records the PostgreSQL, PostGIS, GEOS, GDAL and Python versions they ran on, and the sha256 of the labs' `requirements.txt` (§7.5). The design spike, `SP=/srv/critter-ai/agent-state/missions/critwire-learn-curriculum/spike` (not committed), is frozen as the design's evidence and never extended: its run log (`/srv/critter-ai/agent-state/missions/critwire-learn-curriculum/queries.log`: engine versions, the canary, every lab file's sha256), `$SP/out/<spike>/summary.md` (§A) and the first ERD renders in `$SP/erd/`. Its log is still the only run of the blocks of modules not yet built (p, c), until the mission that builds each module ports and checks them.
 
 ### The browser setup
 
@@ -421,24 +421,24 @@ The table is in prerequisite order: every module's prerequisites come above it, 
 | d4 | Database architecture | transactions | ACID, MVCC, isolation levels, locks, savepoints, `ON CONFLICT` | How do I re-run a failed load safely? What does another session see while a load runs? | PG | 2.0 | d3 | full |
 | d5 | Database architecture | roles | Schemas, roles, `GRANT` and `REVOKE`, default privileges, least privilege, a taste of row-level security | How do I give a reporting tool read-only access to one schema and nothing else? What do default privileges change? | PG | 1.5 | d4 | full |
 | d6 | Database architecture | star | Grain, facts, dimensions, conformed dimensions, unknown members, slowly changing dimensions (types 1 and 2); star vs snowflake; export | What is one record fact's grain? Which dimensions does it share with habitat area per country? Where does a record with no country go? | PG (+ DuckDB) | 2.5 | d2, d4 | full |
-| g1 | GIS in SQL | crs | SRIDs, `ST_Transform`, geometry vs geography, Web Mercator's area error | How big is Tasmania in EPSG:3857, in EPSG:3577 and as geography? Why does Web Mercator overstate it? | PG | 1.5 | f3 | outline |
-| g2 | GIS in SQL | load-validate | The loader, WKT and WKB, `ST_IsValid`, `ST_MakeValid` | Which shapes are invalid, and why? What does `ST_MakeValid` change? | PG | 1.5 | g1 | outline |
-| g3 | GIS in SQL | spatial-join | `ST_Contains`, `ST_Covers`, `ST_Intersects`; point in polygon; records on boundaries | Do GBIF's country codes agree with the country outlines? Which records fall on a coast or in no country? | PG | 2.0 | g2 | outline |
-| g4 | GIS in SQL | measure-overlay | Distances on the ellipsoid, `ST_DWithin`, buffers, `ST_Intersection` | How much of each country does each ecoregion cover? Which records lie within 10 km of a border? | PG | 2.0 | g3 | outline |
-| g5 | GIS in SQL | spatial-index | GiST, the `&&` operator, nearest neighbours with `<->`, reading spatial plans | Which record is nearest to a point, found fast? When doesn't a spatial index help? | PG | 1.5 | g3, d3 | outline |
-| g6 | GIS in SQL | grids | `ST_HexagonGrid` in an equal-area SRID; the modifiable areal unit problem (MAUP) | How many Tasmanian devil records fall in each 5 km hexagon, and in each 10 km one? How does the picture change with the grid? | PG | 1.5 | g4 | outline |
-| g7 | GIS in SQL | raster | Value at a point; `ST_Clip`, `ST_ValueCount`; estimated areas and their error | Which habitat classes hold Costa Rica's records? How much of each class does a clip hold, and how good is that estimate? | PG | 2.5 | g6 | outline |
-| s1 | Spatial statistics | bias | Datasets, basis of record, telemetry, recording effort; framing results honestly | How much of the jaguar sample is GPS-collar data? Which datasets and years dominate a species' records? What can records say about where an animal lives, and what can't they? | PG + B | 1.5 | g3 | outline |
-| s2 | Spatial statistics | point-patterns | Quadrats, the nearest-neighbour index, kernel density, DBSCAN | Are devil records more clustered than chance? Where is record density highest? | PG + Py | 2.5 | s1, g6 | outline |
-| s3 | Spatial statistics | weights | Distance-band, k-nearest and contiguity weights; row standardization; islands; ties | Who are a cell's neighbours? What does row standardization do, and what happens to a cell with none? | PG + Py | 2.0 | s2 | outline |
-| s4 | Spatial statistics | moran | Global Moran's I, its expectation, variance and z-score in SQL, matched by PySAL; permutation tests | Does record density cluster across Tasmania? Do SQL and PySAL agree? How does the answer change at 10 km? | PG + Py | 2.0 | s3 | outline |
-| s5 | Spatial statistics | local | Local Moran's I (LISA) and Getis-Ord Gi*; false discovery rate | Where are the hot and cold spots of recording effort? Which survive a false discovery rate correction? | PG + Py | 2.5 | s4 | outline |
-| s6 | Spatial statistics | zonal | Zonal statistics on polygons and rasters; ratios normalized for effort | Do records over-represent some habitats or ecoregions, once effort is accounted for? | PG + Py | 2.0 | s5, g7 | outline |
-| e1 | ETL | extract | Search API vs download API (asynchronous, with a DOI); paging, rate limits, retries; files with checksums | How do I get every open Tasmanian devil record, with a DOI to cite? | Py | 2.0 | f2 | outline |
-| e2 | ETL | transform-load | Staging tables, types, `COPY`, upserts, geometry; GeoPandas to and from PostGIS | How do I load the download in one transaction, typed and checked, with each record matched to its species? | Py + PG | 2.5 | e1, d4 | outline |
-| e3 | ETL | idempotent | Run ids, deterministic outputs, checksums; critwire's own ingest → derive → build as the case study | Can I re-run the pipeline without doubling rows or changing its output? | Py + PG | 2.0 | e2 | outline |
-| e4 | ETL | quality-provenance | Data quality checks written as SQL; license filters; provenance tables; citations; derived datasets | Which datasets must I credit, and under which license? Which checks stop a bad load? | Py + PG | 2.0 | e3 | outline |
-| e5 | ETL | schedule | cron, systemd timers, Windows Task Scheduler; logs, alerts, incremental loads | How do I refresh weekly, and know when a run broke? | Py | 1.5 | e4 | outline |
+| g1 | GIS in SQL | crs | SRIDs, `ST_Transform`, geometry vs geography, Web Mercator's area error | How big is Tasmania in EPSG:3857, in EPSG:3577 and as geography? Why does Web Mercator overstate it? | PG | 1.5 | f3 | full |
+| g2 | GIS in SQL | load-validate | The loader, WKT and WKB, `ST_IsValid`, `ST_MakeValid` | Which shapes are invalid, and why? What does `ST_MakeValid` change? | PG | 1.5 | g1 | full |
+| g3 | GIS in SQL | spatial-join | `ST_Contains`, `ST_Covers`, `ST_Intersects`; point in polygon; records on boundaries | Do GBIF's country codes agree with the country outlines? Which records fall on a coast or in no country? | PG | 2.0 | g2 | full |
+| g4 | GIS in SQL | measure-overlay | Distances on the ellipsoid, `ST_DWithin`, buffers, `ST_Intersection` | How much of each country does each ecoregion cover? Which records lie within 10 km of a border? | PG | 2.0 | g3 | full |
+| g5 | GIS in SQL | spatial-index | GiST, the `&&` operator, nearest neighbours with `<->`, reading spatial plans | Which record is nearest to a point, found fast? When doesn't a spatial index help? | PG | 1.5 | g3, d3 | full |
+| g6 | GIS in SQL | grids | `ST_HexagonGrid` in an equal-area SRID; the modifiable areal unit problem (MAUP) | How many Tasmanian devil records fall in each 5 km hexagon, and in each 10 km one? How does the picture change with the grid? | PG | 1.5 | g4 | full |
+| g7 | GIS in SQL | raster | Value at a point; `ST_Clip`, `ST_ValueCount`; estimated areas and their error | Which habitat classes hold Costa Rica's records? How much of each class does a clip hold, and how good is that estimate? | PG | 2.5 | g6 | full |
+| s1 | Spatial statistics | bias | Datasets, basis of record, telemetry, recording effort; framing results honestly | How much of the jaguar sample is GPS-collar data? Which datasets and years dominate a species' records? What can records say about where an animal lives, and what can't they? | PG + B | 1.5 | g3 | full |
+| s2 | Spatial statistics | point-patterns | Quadrats, the nearest-neighbour index, kernel density, DBSCAN | Are devil records more clustered than chance? Where is record density highest? | PG + Py | 2.5 | s1, g6 | full |
+| s3 | Spatial statistics | weights | Distance-band, k-nearest and contiguity weights; row standardization; islands; ties | Who are a cell's neighbours? What does row standardization do, and what happens to a cell with none? | PG + Py | 2.0 | s2 | full |
+| s4 | Spatial statistics | moran | Global Moran's I, its expectation, variance and z-score in SQL, matched by PySAL; permutation tests | Does record density cluster across Tasmania? Do SQL and PySAL agree? How does the answer change at 10 km? | PG + Py | 2.0 | s3 | full |
+| s5 | Spatial statistics | local | Local Moran's I (LISA) and Getis-Ord Gi*; false discovery rate | Where are the hot and cold spots of recording effort? Which survive a false discovery rate correction? | PG + Py | 2.5 | s4 | full |
+| s6 | Spatial statistics | zonal | Zonal statistics on polygons and rasters; ratios normalized for effort | Do records over-represent some habitats or ecoregions, once effort is accounted for? | PG + Py | 2.0 | s5, g7 | full |
+| e1 | ETL | extract | Search API vs download API (asynchronous, with a DOI); paging, rate limits, retries; files with checksums | How do I get every open Tasmanian devil record, with a DOI to cite? | Py | 2.0 | f2 | full |
+| e2 | ETL | transform-load | Staging tables, types, `COPY`, upserts, geometry; GeoPandas to and from PostGIS | How do I load the download in one transaction, typed and checked, with each record matched to its species? | Py + PG | 2.5 | e1, d4 | full |
+| e3 | ETL | idempotent | Run ids, deterministic outputs, checksums; critwire's own ingest → derive → build as the case study | Can I re-run the pipeline without doubling rows or changing its output? | Py + PG | 2.0 | e2 | full |
+| e4 | ETL | quality-provenance | Data quality checks written as SQL; license filters; provenance tables; citations; derived datasets | Which datasets must I credit, and under which license? Which checks stop a bad load? | Py + PG | 2.0 | e3 | full |
+| e5 | ETL | schedule | cron, systemd timers, Windows Task Scheduler; logs, alerts, incremental loads | How do I refresh weekly, and know when a run broke? | Py | 1.5 | e4 | full |
 | p1 | Power BI | power-query | Power Query: `Web.Contents` on critwire's CSV files; types with an explicit culture; refresh | How do I load the star from critwire.com so that it refreshes, on any locale? | PBI | 1.5 | d6 | outline |
 | p2 | Power BI | model | Relationships, cardinality, filter direction, conformed dimensions, factless facts | How do I filter records and habitat areas by the same country? | PBI | 2.0 | p1 | outline |
 | p3 | Power BI | dax | Measures: `COUNTROWS`, `DISTINCTCOUNT`, `CALCULATE`, ratios | How many records per 1,000 km² of forest, by country? | PBI | 2.0 | p2 | outline |
@@ -449,18 +449,18 @@ The table is in prerequisite order: every module's prerequisites come above it, 
 |---|---|---|---|
 | Foundations | f1–f4 | 6.0 | full |
 | Database architecture | d1–d6 | 12.0 | full |
-| GIS in SQL | g1–g7 | 12.5 | outline |
-| Spatial statistics | s1–s6 | 12.5 | outline |
-| ETL | e1–e5 | 10.0 | outline |
+| GIS in SQL | g1–g7 | 12.5 | full |
+| Spatial statistics | s1–s6 | 12.5 | full |
+| ETL | e1–e5 | 10.0 | full |
 | Power BI | p1–p4 | 7.0 | outline |
 | Capstone | c1 | 8.0 | outline |
-| **Total** | **33** | **68.0** | 10 full, 23 outline |
+| **Total** | **33** | **68.0** | 28 full, 5 outline |
 
 **Going fast.** Each foundations module opens with an "Already know this?" exercise; solving it marks the module done, so someone who already writes joins and window functions spends minutes, not six hours, on the first track. The dialect notes in each full module (PostgreSQL, DuckDB, SQL Server) let a SQL Server user map what they know. After foundations, the order within the prerequisites is yours: a GIS specialist might take d1, d3 and d4, then GIS in SQL and spatial statistics, and come back for d5 and d6 before ETL and Power BI.
 
 ## 3. Lab environments and setup
 
-Four tools, each set up once. Every lab names the tool it runs on (§2). The file URLs below are where the build missions publish them (§7, §9); they don't exist yet.
+Four tools, each set up once. Every lab names the tool it runs on (§2). The file URLs below are where the build missions publish them (§7, §9); each exists from the mission that builds it.
 
 | Tool | Modules | Runs on | Tested here | Not tested here |
 |---|---|---|---|---|
@@ -551,9 +551,9 @@ uv pip sync --no-build requirements.txt
 .venv/bin/python -c "import geopandas, esda; print(geopandas.__version__, esda.__version__)"
 ```
 
-A lab is a `.py` file with `# %%` cells: run it whole (`.venv\Scripts\python s4-moran.py`), or cell by cell in VS Code or Jupyter, which ask to add `ipykernel` to the environment the first time; the site also offers each lab as a notebook (`.ipynb`, the same cells; §7).
+A lab is a `.py` file with `# %%` cells: run it whole (`.venv\Scripts\python s4.py`), or cell by cell in VS Code or Jupyter, which ask to add `ipykernel` to the environment the first time; the site also offers each lab as a notebook (`.ipynb`, the same cells; §7).
 
-**The environment.** `requirements.in` names what the labs import, with the lowest versions they need (`geopandas>=1.0`, `shapely>=2.0`, `libpysal>=4.10`, `esda>=2.6`); `requirements.txt` pins every package to one version, compiled for every platform at once with `uv pip compile --universal --python-version 3.12 -o requirements.txt requirements.in`. The 44 pins have prebuilt wheels for Windows x86-64, Linux x86-64 and aarch64, and macOS 14 or later on Apple silicon: resolved with `--no-build` for each platform (`uv pip install --dry-run --python-platform …`). Intel Macs aren't covered (no `pyproj` 3.8.0 wheel). This is the file, verbatim:
+**The environment.** `requirements.in` names what the labs import, with the lowest versions they need (`geopandas>=1.0`, `shapely>=2.0`, `libpysal>=4.10`, `esda>=2.6`); `requirements.txt` pins every package to one version, compiled for every platform at once with `uv pip compile --universal --python-version 3.12 -o requirements.txt requirements.in`. The 44 pins have prebuilt wheels for Windows x86-64, Linux x86-64 and aarch64, and macOS 14 or later on Apple silicon: resolved with `--no-build` for each platform (`uv pip compile --no-build --python-version 3.12 --python-platform <platform> requirements.txt`, macOS with `MACOSX_DEPLOYMENT_TARGET=14.0`). Intel Macs aren't covered (no `pyproj` 3.8.0 wheel). `ipykernel` isn't pinned: the editor installs it when a notebook first runs, and the next `uv pip sync` removes it again; nothing here depends on it. This is the file, verbatim:
 
 ```text
 # This file was autogenerated by uv via the following command:
@@ -713,6 +713,8 @@ tzdata==2026.5
 urllib3==2.8.0
     # via requests
 ```
+
+critwire's own data ingests (`ingest shapes`, `ingest habitat`) also need `rasterio`, which the labs never import and which has no macOS 14 wheel. So they have their own file, never published: `scripts/ingest/requirements.in` is the labs' `requirements.txt` as a constraint (`-c`) plus `rasterio`, compiled the same way, so every shared pin stays identical. `pnpm learn:venv` syncs both files into one venv, `.venv-learn`. Each command checks only the file it needs before it starts: `learn:check` the labs' pins, the two ingests theirs (each pin installed at its version, markers evaluated, other packages ignored), so a labs-only environment like a learner's passes `learn:check`.
 
 Every Python lab starts with §0's `py-connect` helper, which connects through the `PG*` settings above and puts `learn_curriculum` first on the search path. To move data to another GIS, write a GeoPackage: one file, read by ArcGIS Pro, QGIS and GDAL alike. This block writes the 5 km hexagons s4 builds (§5.4) to `s4_cells.gpkg` and reads the file back.
 
@@ -4823,7 +4825,7 @@ fact_rows | records | reconciles | unknown_decade
 
 ### 5.3 GIS in SQL
 
-Seven modules, twelve and a half hours, all in your own PostGIS (§3.2), on the lab tables of §4. These are outlines: each gives the goal, the data, the key code with its tested result, and what a learner should find. Build mission L3 (§9) writes them in full, in §5.2's form, and adds g7's habitat clips. Every block runs in `learn_curriculum` after `pg-session` (§0), in a transaction the tests roll back. Shapes are stored in longitude and latitude (SRID 4326); the modules measure in metres, which is g1's subject. The skills are the ones ArcGIS Pro's geoprocessing tools hide behind a dialog (Project, Repair Geometry, Spatial Join, Near, Generate Tessellation, Extract by Mask); here they are SQL, so they run inside a pipeline (§5.5) and their steps can be read.
+Seven modules, twelve and a half hours, all in your own PostGIS (§3.2), on the lab tables of §4. Build mission L3 (§9) wrote them in full from their outlines, in §5.2's form, and added g7's habitat clips. Every block runs in `learn_curriculum` after `pg-session` (§0), in a transaction the tests roll back. Shapes are stored in longitude and latitude (SRID 4326); the modules measure in metres, which is g1's subject. The skills are the ones ArcGIS Pro's geoprocessing tools hide behind a dialog (Project, Repair Geometry, Spatial Join, Near, Generate Tessellation, Extract by Mask); here they are SQL, so they run inside a pipeline (§5.5) and their steps can be read.
 
 #### g1 · crs
 
@@ -4906,6 +4908,7 @@ The columns are read out of `proj4text`, PROJ's short form of each definition. 4
 SELECT f_table_name AS table_name, f_geometry_column AS column_name, type, srid
 FROM geometry_columns
 WHERE f_table_schema = current_schema()
+  AND f_table_name <> 's4_cells'
 ORDER BY table_name, column_name;
 ```
 
@@ -4918,7 +4921,7 @@ ecoregions | geom | MULTIPOLYGON | 4326
 occurrences | geom | POINT | 4326
 ```
 
-All four are in 4326, and each column is typed with its SRID (`geometry(MultiPolygon, 4326)`), so a value in another system can't be stored there. Every measurement in these modules therefore casts to `geography` or transforms first.
+All four are in 4326, and each column is typed with its SRID (`geometry(MultiPolygon, 4326)`), so a value in another system can't be stored there. The filter leaves out `s4_cells`, the hexagon grid a later module (s4) builds in the same schema, so the answer is the same whether you have run it or not. Every measurement in these modules therefore casts to `geography` or transforms first.
 
 3. Moving versus relabelling. Hobart typed as longitude and latitude, then put into Albers both ways, and read back in degrees:
 
@@ -6560,17 +6563,27 @@ NULL | 3953.67 | 3944.68 | -0.2 | 2.7
 
 ### 5.4 Spatial statistics
 
-Six modules, twelve and a half hours, in your own PostGIS (§3.2) and the Python environment (§3.3), on the lab tables of §4. These are outlines, in §5.3's form; build mission L4 (§9) writes them in full. The track asks one question several ways: are the Tasmanian devil's records clustered, and where? The answer is always about **records**, not animals. A record is where someone looked, found the animal and published what they found, so every pattern below mixes where the animal is with where people recorded: roads, towns, research projects, GPS collars. s1 measures that mix first, and every later module says which part its numbers can speak to. The units for s2–s5 are the equal-area hexagons over Tasmania's main island that g6 drew; `s4-cells` builds them once when a PostGIS run starts (table `s4_cells`, view `s4_neighbours`), so every module reads the same cells. The weights, Moran's I, Gi\* and the zonal counts are computed twice, in SQL and in Python (PySAL, GeoPandas), and agree. Each method has an ArcGIS Pro tool (§3.4): Average Nearest Neighbor, Density-based Clustering, Kernel Density, Generate Spatial Weights Matrix, Spatial Autocorrelation, Hot Spot Analysis, Cluster and Outlier Analysis, Zonal Statistics as Table.
+Six modules, twelve and a half hours, in your own PostGIS (§3.2) and the Python environment (§3.3), on the lab tables of §4. Build mission L4 (§9) wrote them in full from their outlines, in §5.3's form. The track asks one question several ways: are the Tasmanian devil's records clustered, and where? The answer is always about **records**, not animals. A record is where someone looked, found the animal and published what they found, so every pattern below mixes where the animal is with where people recorded: roads, towns, research projects, GPS collars. s1 measures that mix first, and every later module says which part its numbers can speak to. The units for s2–s5 are the equal-area hexagons over Tasmania's main island that g6 drew; `s4-cells` builds them once when a PostGIS run starts (table `s4_cells`, view `s4_neighbours`), so every module reads the same cells. The weights, Moran's I, Gi\* and the zonal counts are computed twice, in SQL and in Python (PySAL, GeoPandas), and agree. Each method has an ArcGIS Pro tool (§3.4): Average Nearest Neighbor, Density-based Clustering, Kernel Density, Generate Spatial Weights Matrix, Spatial Autocorrelation, Hot Spot Analysis, Cluster and Outlier Analysis, Zonal Statistics as Table.
 
 #### s1 · bias
 
 **Tool:** PG + B · **Time:** 1.5 h · **Prereqs:** g3
 
-**Goal:** before any statistic, know what the records are. GBIF records come from datasets of very different kinds: a museum's specimens, a national atlas, a citizen-science app, camera traps, one research team's GPS collars. Each kind records a different thing: a collar logs one animal every few hours wherever it walks; an atlas logs where people looked. `basis_of_record` says what kind of evidence a record is, the dataset says who collected it, and together they tell how much a map of records shows the animal and how much it shows the people. The honest wording follows from that: "records of jaguars", "where devils were recorded", never "where jaguars live" or "the devil's range" (critwire's countries field says the same, `AGENTS.md`).
+**Concept:** Before any statistic, know what the records are:
+- **A record is evidence**, not a census. It says that someone found the animal at a place on a date and published what they found. Many records at a place show that the animal was there and that people looked there; no record shows nothing at all. Every map, count and ratio of records mixes the two, so the rest of this track keeps asking which part a number can speak to.
+- **Basis of record** (`basis_of_record`, a Darwin Core term) says what kind of evidence a record is:
+  - `HUMAN_OBSERVATION`: a person saw or heard the animal (surveys, atlases, citizen-science apps).
+  - `MACHINE_OBSERVATION`: a device recorded it (camera traps, GPS collars, sound recorders).
+  - `PRESERVED_SPECIMEN`: an animal kept in a museum; `MATERIAL_SAMPLE`: a part kept from one, such as tissue for DNA; `MATERIAL_CITATION`: a specimen cited in a publication.
+  - `OBSERVATION` and `OCCURRENCE`: generic values, used when the publisher didn't say which.
+  Each kind has its own bias. Specimens follow old expeditions and collectors' interests, observations follow people, roads and towns, and devices follow where a team put them.
+- **The dataset** (`dataset_key`, with its title and publisher in `datasets`) says who collected the records. One project can hold most of a species' records: a census flight, a single survey, one team's collars. The share of the largest dataset is a quick test: near 100 %, the species' records describe that project.
+- **Telemetry** is a device that reports an animal's position by itself; a GPS collar logs one animal every few hours, wherever it walks. A thousand fixes from a few collared animals aren't a thousand sightings: they trace those animals' paths, at the rate the collar was set to.
+- **Recording effort** is how much looking was done, where and when: the visits, traps, flights and hours behind the records. Records gather near roads, towns, research stations and reserves, and in the years a project ran. The records alone don't measure effort, so they can't say how common an animal is in one place against another; s6 compares records with what each zone could be expected to hold.
+- **The sample** keeps at most 2,000 open records per species, picked by a hash of the GBIF id, which works like a fixed random draw (§4). Shares within a species estimate the shares among all its open records; counts across species don't compare, since every well-recorded species shows 2,000.
+- **Honest wording** follows from all of this: "records of jaguars", "where devils were recorded", "countries with open records"; never "where jaguars live", "the devil's range" or "devils cluster". critwire's own country field is named that way (`range.countriesWithOpenRecords`).
 
-**Data:** `occurrences`, `datasets`, `species`; the browser blocks run on the same sample in DuckDB (§3.1).
-
-**Key code:** the sample by basis of record, in the browser:
+**Worked example:** the sample by basis of record, in the browser:
 
 ```sql
 -- q: s1-basis
@@ -6595,7 +6608,10 @@ OBSERVATION | 1384 | 3.4 | 5
 … 2 more rows
 ```
 
-How much of each species' records one dataset holds, for the species with at least 100 records, in the browser:
+`sum(count(*)) OVER ()` is a window over the grouped rows (f4): the total of all groups, beside each one, so each row can show its share. Human observations are 43.5 % of the 40,395 records and preserved specimens 26.2 %. Machine observations are 20.8 %, from only 22 of the sample's 71 species: a few species carry nearly all the devices. The two rows below the cut are `MATERIAL_CITATION` (441) and `OCCURRENCE` (192).
+
+**Lab:**
+1. How much of each species' records one dataset holds, for the species with at least 100 records, in the browser:
 
 ```sql
 -- q: s1-dominance
@@ -6628,7 +6644,9 @@ Golden Poison Frog | 299 | 5 | 287 | 96
 … 33 more rows
 ```
 
-The jaguar's records: GPS collars against everything else, with the places and years each covers:
+Of the 38 species with at least 100 records, 17 have more than half from one dataset and 6 have 90 % or more. Livingstone's flying fox's 109 come from a single dataset, the golden-rumped sengi's 98.1 % from one biodiversity survey, the jaguar's 97.4 % from one dataset. For these species, any pattern in the records is first a pattern in one project's work.
+
+2. The jaguar's records: GPS collars against everything else, with the places and years each covers. The title test (`ILIKE '%GPS%'`) is a shortcut that works on this sample; on other data, read each dataset's description before sorting it:
 
 ```sql
 -- q: s1-jaguar
@@ -6658,7 +6676,9 @@ GPS collars | 1 | 1948 | 97.4 | 5 | 1948 | 2001 | 2016
 everything else | 24 | 52 | 2.6 | 8 | 47 | 1949 | 2025
 ```
 
-The devil's records, which s2–s5 analyse, by dataset and basis of record:
+The collar dataset holds 1,948 records at 1,948 different points in 5 countries, between 2001 and 2016; the other 24 datasets hold 52 records (8 countries, 1949 to 2025). `count(DISTINCT (o.longitude, o.latitude))` counts distinct pairs of coordinates, written as one row value. Every collar fix is a new point, so nothing in a list of locations shows that they come from a few animals; only the dataset does. Any map of the jaguar's records is mostly a map of a few collared animals' paths.
+
+3. The devil's records, which s2–s5 analyse, by dataset and basis of record:
 
 ```sql
 -- q: s1-devil
@@ -6688,17 +6708,70 @@ Museums Victoria provider for OZCAM | PRESERVED_SPECIMEN | 5 | 0.3 | NULL | NULL
 … 7 more rows
 ```
 
-**Expected:** human observations are 43.5 % of the 40,395 records, preserved specimens 26.2 % and machine observations (camera traps, collars, sound recorders) 20.8 %, from only 22 species. Of the 38 species with at least 100 records, 17 have more than half from one dataset and 6 have 90 % or more: Livingstone's flying fox's 109 come from a single dataset, the golden-rumped sengi's 98.1 % from one biodiversity survey, the jaguar's 97.4 %. That jaguar dataset is GPS collars: 1,948 records at 1,948 different points in 5 countries between 2001 and 2016, against 52 records from 24 other datasets (8 countries, 1949 to 2025). Any map of the jaguar's records is mostly a map of a few collared animals' paths. The devil's 2,000 records are 70.7 % the Tasmanian Natural Values Atlas (1,367 `OBSERVATION` and 46 `OCCURRENCE`) and 27.9 % material samples (such as tissue) at the Tasmanian Museum and Art Gallery (558 `MATERIAL_SAMPLE`, 2000 to 2023); the other 9 rows are museum specimens and one observation. The atlas's first year, 1599, predates the first European sighting of Tasmania (1642): a date to check before trusting a time series (e4). So s2–s5 measure where the atlas and the museum's field teams recorded devils, and say so.
+The devil's 2,000 records are 70.7 % the Tasmanian Natural Values Atlas (1,367 `OBSERVATION` and 46 `OCCURRENCE`) and 27.9 % material samples, such as tissue, at the Tasmanian Museum and Art Gallery (558 `MATERIAL_SAMPLE`, 2000 to 2023); the other 9 rows are museum specimens and one observation. The atlas's first year, 1599, comes before the first European sighting of Tasmania (1642): a date to check before trusting a time series (Quality and provenance, e4). 19 of the 28 museum specimens have no year at all.
+
+**Result:** Human observations are 43.5 % of the sample's 40,395 records, preserved specimens 26.2 % and machine observations 20.8 %, from only 22 species. Of the 38 species with at least 100 records, 17 have more than half from one dataset and 6 have 90 % or more. The jaguar's 97.4 % is one GPS-collar dataset: 1,948 records at 1,948 points in 5 countries between 2001 and 2016, against 52 records from 24 other datasets. The devil's records are 70.7 % one atlas and 27.9 % one museum's material samples. So s2–s5 measure where the atlas and the museum's field teams recorded devils, and say so; the honest sentence is always about records.
+
+**Exercise:** Datasets aren't the only thing that piles up: so do years. For each species with at least 100 records, find the year with the most records (the earliest one on a tie), how many records it holds, and its share of all the species' records. Records with no year count in the total but can't be a busiest year. Run it in the browser. Which species have half or more of their records in one year, and why?
+
+**Answer:** One count over all records per species, and one count per species and year that ranks the years with `row_number()` over the grouped rows:
+
+```sql
+-- q: s1-ex
+-- status: ran
+WITH totals AS (
+  SELECT species_id, count(*) AS records
+  FROM occurrences
+  GROUP BY species_id
+  HAVING count(*) >= 100
+), per_year AS (
+  SELECT species_id, year, count(*) AS n,
+         row_number() OVER (PARTITION BY species_id ORDER BY count(*) DESC, year) AS place
+  FROM occurrences
+  WHERE year IS NOT NULL
+  GROUP BY species_id, year
+)
+SELECT s.common_name, t.records, p.year AS top_year, p.n AS top_year_records,
+       round(100.0 * p.n / t.records, 1) AS top_pct
+FROM totals AS t
+JOIN per_year AS p ON p.species_id = t.species_id AND p.place = 1
+JOIN species AS s ON s.id = t.species_id
+ORDER BY top_pct DESC, t.records DESC, s.id;
+```
+
+```text
+-- result: s1-ex · 38 rows · sha256 dfa578491a18
+common_name | records | top_year | top_year_records | top_pct
+Golden Poison Frog | 299 | 2017 | 251 | 83.9
+Grévy's Zebra | 321 | 2008 | 257 | 80.1
+Tiger | 2000 | 2021 | 1202 | 60.1
+Livingstone's Flying Fox | 109 | 2016 | 61 | 56
+Golden-rumped Sengi | 1613 | 2021 | 763 | 47.3
+… 33 more rows
+```
+
+**Check:** Four species have half or more of their records in one year: the golden poison frog (251 of 299 in 2017, 83.9 %), Grévy's zebra (257 of 321 in 2008, 80.1 %), the tiger (1,202 of 2,000 in 2021, 60.1 %) and Livingstone's flying fox (61 of 109 in 2016, 56 %). Each peak is one project: the frog's year is one population survey in Colombia, the zebra's one aerial census in Kenya, and 1,198 of the tiger's are photographs of tigers posted on Facebook in India, gathered into one dataset. The cheetah's busiest year, 2007, is 919 fixes from one tracking study. A chart of records by year shows when projects ran, not when animals were common. Without `WHERE year IS NOT NULL`, the records with no year form a group of their own, and for 11 species it outnumbers every real year (the spiny softshell turtle's 362 against 87 in 1976), so the "busiest year" comes out empty.
+
+**Dialects:**
+- **PostgreSQL:** `count(DISTINCT (a, b))` counts distinct pairs through a row value; `ILIKE` matches without regard to case; `round(x, 1)` takes a `numeric`, which `100.0 * count(*)` already is.
+- **DuckDB:** the same query runs: `ILIKE` exists, and `(a, b)` is an unnamed struct that `count(DISTINCT …)` accepts. It also has `arg_max(year, n)` for "the year with the most", which leaves ties to the engine; `row_number()` with a tie-break gives the same answer every run.
+- **SQL Server:** no `ILIKE`; `LIKE` ignores case under the usual case-insensitive collations. `COUNT(DISTINCT …)` takes one expression, so count pairs in a subquery (`SELECT COUNT(*) FROM (SELECT DISTINCT longitude, latitude FROM …) AS p`). `SUM(COUNT(*)) OVER ()` and `ROUND(x, 1)` work as here.
 
 #### s2 · point-patterns
 
 **Tool:** PG + Py · **Time:** 2.5 h · **Prereqs:** s1, g6
 
-**Goal:** measure whether points are more clustered than chance, four ways, and see what each assumes. "Chance" is complete spatial randomness: every point falls anywhere in the study area with equal probability, independently of the others, so counts in equal cells follow a Poisson distribution, whose variance equals its mean. **Quadrats** compare the two: a variance-to-mean ratio (VMR) well above 1 means clustered. The **nearest-neighbour index** (Clark and Evans) compares the mean distance from each point to its nearest other point with what randomness gives in the same area, 0.5 ÷ √(n ÷ A): a ratio R below 1 means clustered, and its z-score uses the standard error 0.26136 ÷ √(n² ÷ A). Both depend on the area chosen (ArcGIS Pro's Average Nearest Neighbor uses the points' bounding rectangle unless given one); here it is the main island. **Kernel density** spreads each point over a smooth bump of chosen width, the bandwidth, and sums the bumps into a surface of records per km². **DBSCAN** finds clusters as places where at least `minpoints` points lie within `eps` of each other, and labels the rest noise. Duplicate coordinates matter to all four: many records share one spot (an atlas grid point, a museum's locality), and every method counts them as separate points.
+**Concept:** Are points more bunched together than chance would put them, and what does each way of asking assume?
+- **Complete spatial randomness** is the yardstick: every point falls anywhere in the study area with equal probability, independently of the others. A pattern is **clustered** when points sit closer together than that, and **dispersed** (spread out evenly, like trees in a plantation) when they sit farther apart.
+- **Quadrats** are equal cells laid over the area. Under randomness, the number of points per cell follows a Poisson distribution, whose variance equals its mean, so the **variance-to-mean ratio** (VMR) is close to 1. Well above 1 means clustered: many empty cells and a few full ones. Below 1 means dispersed. The answer changes with the cell size (g6's scale effect).
+- **The nearest-neighbour index** (Clark and Evans) takes each point's distance to its nearest other point and averages them. Under randomness with `n` points in an area `A`, that mean is `0.5 ÷ √(n ÷ A)`. The ratio R of observed to expected is below 1 when points are clustered and above 1 when dispersed; its z-score divides the difference by the standard error `0.26136 ÷ √(n² ÷ A)`.
+- **The study area** is part of every test that compares with randomness: points scattered over an island look clustered if the area includes the sea around it, since no point can fall there. Here it is Tasmania's main island; the exercise shows what other choices do.
+- **Kernel density** spreads each point over a smooth bump of a chosen width, the **bandwidth**, and adds the bumps into a surface of points per km². It doesn't test anything: it shows where the points are dense, and the bandwidth decides how smooth the picture is.
+- **DBSCAN** (density-based spatial clustering of applications with noise) finds clusters as places where at least `minpoints` points lie within a distance `eps` of each other. A point with that many neighbours is a core point; core points within `eps` of each other join one cluster, with the points near them. Everything else is **noise**. It finds clusters of any shape and doesn't need their number in advance, but `eps` and `minpoints` decide what counts.
+- **Duplicate coordinates** affect all four. Many records share one spot: a survey site visited many times, an atlas grid point, a museum's locality. Every method counts them as separate points, so one busy spot looks like a dense cluster.
+- **What clusters?** As s1 showed, the devil's records are mostly one atlas and one museum's samples. Every test below measures how the records bunch, which mixes where devils are with where people looked.
 
-**Data:** `occurrences` (the devil's records), `admin1_shapes` (Tasmania's main island), `s4_cells` (the 5 km and 10 km hexagons).
-
-**Key code:** quadrats: the variance-to-mean ratio of records per hexagon, at both sizes:
+**Worked example:** quadrats. The cells are the equal-area hexagons over Tasmania's main island that g6 drew, at edges of 5 and 10 km. s4 builds them as the table `s4_cells`, one row per cell with its edge (`edge_m`), its number of devil records (`n`) and its centroid (`cx`, `cy`); its first block, `s4-cells`, makes them. Every download of this module runs that block first, right after connecting, so `s2.sql` and `s2.py` work on their own; to run the blocks one at a time, run `s4-cells` once first. The variance-to-mean ratio of records per hexagon, at both sizes:
 
 ```sql
 -- q: s2-quadrats
@@ -6720,7 +6793,10 @@ edge_m | cells | records | mean | variance | vmr
 10000 | 296 | 1990 | 6.723 | 934.23 | 139.0
 ```
 
-The nearest-neighbour index for the records inside the main island, counting every record and then each distinct location once. `<->` with `LIMIT 1` finds each point's nearest other point (g5):
+At 5 km the 1,094 cells hold 1.803 records on average, with a variance of 115.68: the variance is 64.2 times the mean, where randomness gives about 1. At 10 km the ratio is 139.0. `var_samp` is the sample variance (dividing by `n − 1`); the ratio grows with the cell size because larger cells gather more of each cluster into one count, as in g6.
+
+**Lab:**
+1. The nearest-neighbour index for the records inside the main island, counting every record and then each distinct location once. `<->` with `LIMIT 1` finds each point's nearest other point (g5); `DISTINCT ON` keeps one record per pair of coordinates:
 
 ```sql
 -- q: s2-nni
@@ -6770,7 +6846,9 @@ every record | 1784 | 1109 | 985.8 | 3000.5 | 0.329 | -54.3
 distinct locations | 913 | 0 | 2298.4 | 4194.3 | 0.548 | -26.1
 ```
 
-DBSCAN with `eps` 2 km and `minpoints` 20 (ArcGIS Pro's Density-based Clustering, DBSCAN method). `ST_ClusterDBSCAN` is a window function: it gives each point its cluster's number, or `NULL` for noise:
+Counting every record, 1,109 of the 1,784 records on the main island sit on exactly the same spot as another record, so their nearest-neighbour distance is 0. The mean distance is 985.8 m where randomness gives 3,000.5 m: R = 0.329, z −54.3. Counting the 913 distinct locations once, R = 0.548 (z −26.1). Both are far below 1, so the records are clustered either way; the duplicates make it look twice as strong. A z-score below −1.96 means a mean distance this small would happen by chance less than 5 % of the time.
+
+2. DBSCAN with `eps` 2 km and `minpoints` 20 (ArcGIS Pro's Density-based Clustering, DBSCAN method). `ST_ClusterDBSCAN` is a window function: it gives each point its cluster's number, or `NULL` for noise:
 
 ```sql
 -- q: s2-dbscan
@@ -6809,7 +6887,9 @@ clusters | clustered | noise | largest | one_location_clusters
 10 | 871 | 913 | 357 | 1
 ```
 
-Kernel density in Python (scikit-learn), a Gaussian kernel with a 5 km bandwidth, read at the 5 km hexagons' centroids. The density comes out per m² and sums to 1, so it is scaled to records per km²; summed over the cells it should give back roughly the records in them:
+DBSCAN finds 10 clusters holding 871 records and calls 913 noise; the largest cluster holds 357 records. One "cluster" is a single location repeated 20 times or more: by DBSCAN's rule, 20 records at one spot are 20 points within 2 km of each other. `count(DISTINCT (ST_X(geom), ST_Y(geom)))` counts a cluster's distinct locations. Change `eps` or `minpoints` and the clusters change; neither has a right value, so report them with the result.
+
+3. Kernel density in Python (scikit-learn), a Gaussian kernel with a 5 km bandwidth, read at the 5 km hexagons' centroids. The coordinates are in metres, so the density comes out per m² and sums to 1 over the plane; multiplying by the number of records and by 10⁶ turns it into records per km². Summed over the cells it should give back roughly the records in them:
 
 ```python
 # q: s2-kde
@@ -6854,17 +6934,88 @@ densest cells: id | records in cell | records per km2
 916 | 45 | 0.787
 ```
 
-**Expected:** every test says clustered, and duplicates inflate every one. The quadrats' variance is 64.2 times the mean at 5 km and 139.0 times at 10 km (1 for random). Inside the main island, 1,109 of the 1,784 records sit on exactly the same spot as another record, so their nearest-neighbour distance is 0: R = 0.329 (z −54.3) counting every record, R = 0.548 (z −26.1) counting the 913 distinct locations once; both far below 1. DBSCAN finds 10 clusters holding 871 records and calls 913 noise; the largest holds 357 records, and one "cluster" is a single location repeated 20 times or more. The kernel surface peaks at 2.12 records per km² over cell 917, the cell with 256 records (s4's `max_n`); summed over the 1,094 cells of 64.95 km² it gives back 1,895 of the 2,000 records (the rest spill into the sea or lie off the main island). Clustered means the records bunch together; s1 says why: they were recorded by a few teams, at places they returned to.
+The surface peaks at 2.12 records per km² over cell 917, the cell with 256 records (s4's fullest). Cells 947 and 948 come next with far fewer records of their own (42 and 49): they border cell 917 and each other, so the bumps from its records spill into them. Cell 888, with 111 records, ranks only fourth: apart from cell 917, its neighbours hold 6 records between them. Summed over the 1,094 cells of 64.95 km², density times area gives back 1,895 of the 2,000 records; the rest spill into the sea or lie off the main island. `score_samples` returns the logarithm of the density, hence `np.exp`.
+
+**Result:** every test says clustered, and duplicates inflate every one. The quadrats' variance is 64.2 times the mean at 5 km and 139.0 times at 10 km (1 for random). Inside the main island, 1,109 of the 1,784 records sit on exactly the same spot as another record, so their nearest-neighbour distance is 0: R = 0.329 (z −54.3) counting every record, R = 0.548 (z −26.1) counting the 913 distinct locations once; both far below 1. DBSCAN finds 10 clusters holding 871 records and calls 913 noise; the largest holds 357 records, and one "cluster" is a single location repeated 20 times or more. The kernel surface peaks at 2.12 records per km² over cell 917, the cell with 256 records (s4's `max_n`); summed over the 1,094 cells of 64.95 km² it gives back 1,895 of the 2,000 records (the rest spill into the sea or lie off the main island). Clustered means the records bunch together; s1 says why: they were recorded by a few teams, at places they returned to.
+
+**Exercise:** The nearest-neighbour index needs an area, and `s2-nni` used the main island. For the 913 distinct locations, compute R and its z-score with four areas: the main island, the rectangle around the locations along the axes (`ST_Envelope`), the smallest rectangle around them at any angle (`ST_OrientedEnvelope`), and their convex hull (`ST_ConvexHull`, the smallest shape with no inward bends that holds them all). Show each area in km². How much does the area change R, and which area answers the question?
+
+**Answer:** `s2-nni`'s distinct locations, one observed mean distance, and four areas. `ST_Collect` gathers the locations into one geometry so each shape can be built around them; since the locations are distinct, `NOT ST_Equals` leaves out only the point itself:
+
+```sql
+-- q: s2-ex
+-- status: ran
+-- engine: postgis
+WITH island AS (
+  SELECT (part).geom
+  FROM (SELECT ST_Dump(ST_Transform(geom, 3577)) AS part
+        FROM admin1_shapes WHERE country_code = 'AU' AND name = 'Tasmania') AS parts
+  ORDER BY ST_Area((part).geom) DESC
+  LIMIT 1
+), locations AS (
+  SELECT DISTINCT ON (ST_X(g), ST_Y(g)) g AS geom
+  FROM (SELECT ST_Transform(o.geom, 3577) AS g
+        FROM occurrences AS o JOIN species AS s ON s.id = o.species_id, island
+        WHERE s.scientific_name = 'Sarcophilus harrisii'
+          AND ST_Contains(island.geom, ST_Transform(o.geom, 3577))) AS devils
+  ORDER BY ST_X(g), ST_Y(g)
+), observed AS (
+  SELECT count(*) AS n,
+         avg((SELECT ST_Distance(a.geom, b.geom) FROM locations AS b
+              WHERE NOT ST_Equals(b.geom, a.geom)
+              ORDER BY a.geom <-> b.geom LIMIT 1)) AS observed_m,
+         ST_Collect(geom) AS points
+  FROM locations AS a
+), areas AS (
+  SELECT 'main island' AS area, ST_Area(island.geom) AS area_m2 FROM island
+  UNION ALL
+  SELECT 'bounding rectangle', ST_Area(ST_Envelope(points)) FROM observed
+  UNION ALL
+  SELECT 'smallest rectangle', ST_Area(ST_OrientedEnvelope(points)) FROM observed
+  UNION ALL
+  SELECT 'convex hull', ST_Area(ST_ConvexHull(points)) FROM observed
+)
+SELECT a.area, round((a.area_m2 / 1e6)::numeric) AS km2, o.n,
+       round(o.observed_m::numeric, 1) AS observed_m,
+       round((0.5 / sqrt(o.n / a.area_m2))::numeric, 1) AS expected_m,
+       round((o.observed_m / (0.5 / sqrt(o.n / a.area_m2)))::numeric, 3) AS r,
+       round(((o.observed_m - 0.5 / sqrt(o.n / a.area_m2)) / (0.26136 / sqrt(o.n ^ 2 / a.area_m2)))::numeric, 1) AS z
+FROM areas AS a, observed AS o
+ORDER BY a.area_m2 DESC;
+```
+
+```text
+-- result: s2-ex · 4 rows · sha256 ff1aa0fff429
+area | km2 | n | observed_m | expected_m | r | z
+bounding rectangle | 100881 | 913 | 2298.4 | 5255.8 | 0.437 | -32.5
+smallest rectangle | 95274 | 913 | 2298.4 | 5107.7 | 0.450 | -31.8
+convex hull | 70537 | 913 | 2298.4 | 4394.9 | 0.523 | -27.6
+main island | 64246 | 913 | 2298.4 | 4194.3 | 0.548 | -26.1
+```
+
+**Check:** The observed mean is 2,298.4 m in every row, as in `s2-nni`; only the expected distance changes, with the square root of the area. The main island (64,246 km²) gives R 0.548 and z −26.1, the convex hull (70,537 km²) 0.523 and −27.6, the smallest rectangle (95,274 km²) 0.450 and −31.8, and the rectangle along the axes (100,881 km²) 0.437 and −32.5. Same points, four answers: every area says clustered, but the rectangles add 31,000 to 37,000 km² of sea, where no devil can be recorded, and that empty space alone makes the points look more bunched. The island is the area a record could fall in, so it answers the question best; even then it includes mountains and forest nobody visited, so R below 1 still mixes devils with recording effort. ArcGIS Pro's Average Nearest Neighbor uses a rectangle around all the points when it isn't given an area, so give it the island's.
+
+**Dialects:**
+- **PostgreSQL:** `var_samp` divides by `n − 1` and `var_pop` by `n`; `variance` is `var_samp`. `ORDER BY a.geom <-> b.geom LIMIT 1` uses a GiST index when the column has one (g5); `devils` here is a CTE with no index, so each subquery measures every other point, which 1,784 points still allow. `ST_ClusterDBSCAN(…) OVER (PARTITION BY species_id)` would cluster each species separately; `ST_ClusterKMeans` and `ST_ClusterWithin` are other window functions for grouping points.
+- **DuckDB:** `var_samp`, `var_pop` and `variance` work as here. The `spatial` extension has `ST_Envelope`, `ST_ConvexHull` and `ST_Distance`, but no `<->`: find the nearest point with `ORDER BY ST_Distance(a.geom, b.geom) LIMIT 1`, which measures every pair (g5). It has no DBSCAN; use scikit-learn on the exported points.
+- **SQL Server:** `VAR` is the sample variance and `VARP` the population one. The nearest point is `SELECT TOP (1) … WHERE b.geom.STDistance(a.geom) IS NOT NULL ORDER BY b.geom.STDistance(a.geom)`, which a spatial index can serve (g5). `STEnvelope()` and `STConvexHull()` build the areas; there is no DBSCAN or kernel density built in.
+- **scikit-learn:** `KernelDensity(bandwidth=…, kernel=…)` also offers `tophat`, `epanechnikov` and others; the bandwidth is in the coordinates' units, so project to metres first. `sklearn.cluster.DBSCAN(eps=2000, min_samples=20)` on the same projected points gives the same 10 clusters, 871 clustered records and 913 noise as `ST_ClusterDBSCAN`: both count the point itself toward the minimum. A point within `eps` of two clusters can join either, depending on the order the points are read.
+- **ArcGIS Pro:** Average Nearest Neighbor (`arcpy.stats.AverageNearestNeighbor`): Distance Method `Euclidean`, Area the island's in square metres (without it, a rectangle around all the points); it reports the observed and expected mean distances, the nearest neighbor ratio, z-score and p-value. Density-based Clustering (`arcpy.stats.DensityBasedClustering`): Clustering Method `Defined distance (DBSCAN)`, Minimum Features per Cluster `20`, Search Distance `2 Kilometers`. Kernel Density (`arcpy.sa.KernelDensity`, Spatial Analyst): Search Radius, Area Units `Square kilometers`, Output Cell Values `Densities`. Its kernel is a quartic one that reaches zero at the search radius, not a Gaussian, so its surface doesn't equal scikit-learn's even with the same width.
 
 #### s3 · weights
 
 **Tool:** PG + Py · **Time:** 2.0 h · **Prereqs:** s2
 
-**Goal:** build the neighbour list every spatial statistic needs, and see where it breaks. A **spatial weights matrix** W says, for each pair of units i and j, how much j counts as i's neighbour (`w_ij`; `w_ii` = 0). Three common rules: a **distance band** (neighbours within a threshold), **k-nearest** (each unit's k closest), and **contiguity** (units sharing an edge, "rook", or an edge or a corner, "queen"). **Row standardization** divides each row by its sum, so a unit's neighbours' weights add to 1 and the weighted sum becomes the neighbours' mean (`w_ij = 1/k_i`); a unit with one neighbour gives it all the weight. A unit with no neighbour, an **island**, has a row of zeros that can't be standardized, and the statistics are undefined for it. k-nearest weights are not symmetric (j can be among i's nearest without i being among j's), and when several units sit at the same distance the k-th neighbour is a tie that the software breaks its own way.
+**Concept:** Who counts as a unit's neighbour? Every spatial statistic compares each unit with its neighbours, so the answer is part of the result.
+- A **spatial weights matrix** W holds, for each pair of units i and j, a weight `w_ij` saying how much j counts as i's neighbour; `w_ii` is 0. Most weights are **binary**: 1 for a neighbour, 0 otherwise. The units here are s4's hexagons and the countries' outlines.
+- A **distance band** makes j a neighbour of i when their centroids lie within a threshold. Every unit reaches equally far, so the number of neighbours varies: a cell on the coast has fewer. s4's `s4_neighbours` is a band of twice the hexagons' edge.
+- **k-nearest** makes each unit's k closest units its neighbours. Every unit gets exactly k, so how far it reaches varies instead. The weights aren't **symmetric**: j can be among i's nearest without i being among j's.
+- **Ties:** when several units sit at the same distance, the k-th neighbour is a choice, and each program breaks the tie its own way. Grids are full of ties, so two programs can give different k-nearest weights from the same data.
+- **Contiguity** makes units neighbours when their shapes share a boundary: an edge for **rook** contiguity, an edge or a corner for **queen**. It needs the shapes, not just centroids. Hexagons that touch always share an edge, so on a hexagon grid rook, queen and s4's band give the same neighbours; on a square grid queen adds the four diagonal cells.
+- **Row standardization** divides each row of W by its sum, so the weights of a unit's neighbours add to 1: `w_ij = 1/k_i`, where `k_i` is i's number of neighbours. The weighted sum `Σ_j w_ij y_j` is then the mean of the neighbours' values, the **spatial lag**. A unit with one neighbour gives it all the weight.
+- An **island** is a unit with no neighbour. Its row is all zeros and can't be standardized (its sum is 0), and a statistic over it either drops the unit or is undefined. A distance band too short, or contiguity between real islands, makes them.
 
-**Data:** `s4_cells`, `s4_neighbours` (s4's distance band: centroids within twice the edge), `country_shapes`, `occurrences`.
-
-**Key code:** how many neighbours the distance band gives each cell:
+**Worked example:** the distance band from s4, read as weights. `s4_cells` holds the hexagons over Tasmania's main island at edges of 5 and 10 km and `s4_neighbours` their pairs, one row per ordered pair `(i, j)`; s4's first block, `s4-cells`, makes both. Every download of this module runs that block first, right after connecting, so `s3.sql` and `s3.py` work on their own; to run the blocks one at a time, run `s4-cells` once first. How many neighbours the band gives each cell:
 
 ```sql
 -- q: s3-contiguity
@@ -6888,7 +7039,10 @@ edge_m | neighbours | cells
 … 6 more rows
 ```
 
-k-nearest neighbours on the 5 km cells, ranked by distance rounded to the centimetre and then by id, so ties are broken the same way every run. For k = 4 and k = 6: the links, the links whose reverse is missing, and the cells whose k-th and (k + 1)-th neighbours are tied:
+On the 5 km grid, 939 of the 1,094 cells have all six neighbours; the coast leaves the rest with fewer, down to one cell with a single neighbour (cell 1051). On the 10 km grid, 221 of the 296 cells have six and the fewest is two (6 cells). No cell has none, so the band leaves no island. A cell with no neighbour wouldn't appear here at all: `count(*)` over its missing rows gives 0, and the result has no row with 0.
+
+**Lab:**
+1. k-nearest neighbours on the 5 km cells, ranked by distance rounded to the centimetre and then by id, so ties are broken the same way every run. For k = 4 and k = 6: the links, the links whose reverse is missing, and the cells whose k-th and (k + 1)-th neighbours are tied. `LIMIT 7` keeps one more neighbour than the largest k, to see the tie:
 
 ```sql
 -- q: s3-knn
@@ -6926,7 +7080,9 @@ k | links | one_way | tied_cells
 6 | 6564 | 254 | 129
 ```
 
-Contiguity between countries, where the units are real outlines: countries with no neighbour that touches (`ST_Touches`: boundaries meet, interiors don't) or intersects (`ST_Intersects`) them, and the countries whose outlines overlap a neighbour's, which `ST_Touches` misses:
+With k = 4, 1,025 of the 1,094 cells have their 4th and 5th neighbours at the same distance: an interior cell has six touching cells, all 8.66 km away, and must keep four of them. The rule here (lowest id first) gives the same answer every run, but it isn't neutral. `s4-cells` numbers the cells column by column from the west, so each cell keeps the cells directly above and below it and its two western neighbours; those western cells keep their own western neighbours, never it. 1,968 of the 4,376 links are one-way. With k = 6 an interior cell keeps all six touching cells, so only 129 cells, near the coast, are tied, and 254 links are one-way.
+
+2. Contiguity between countries, where the units are real outlines. Two tests can call outlines neighbours: `ST_Touches` (the boundaries meet and the interiors don't) and `ST_Intersects` (they share any point). For each country, the outlines it intersects and the ones it touches; then the countries with none (islands), those with more intersecting than touching outlines (overlapping), and the most neighbours any country has:
 
 ```sql
 -- q: s3-countries
@@ -6955,7 +7111,9 @@ countries | islands | islands_by_touches | overlapping | most_neighbours
 247 | 76 | 84 | 12 | 16
 ```
 
-The islands that hold records:
+76 of the 247 outlines intersect no other: as units, they are islands. `ST_Touches` finds 84. The 12 overlapping countries are g2's eight pairs of nested outlines: France's outline includes French Guiana, Réunion, Guadeloupe, Martinique and Mayotte, Norway's Svalbard and Jan Mayen, the Netherlands' the Caribbean Netherlands and New Zealand's Tokelau, and each of those places also has its own outline. A nested pair's interiors overlap, so `ST_Touches` says no, and eight of the twelve (New Zealand and seven of the places) have no other neighbour: 8 more islands. Neither test is right on its own: the layer isn't a coverage (shapes that tile the area without overlapping), so decide what a nested pair should be before building contiguity on it. The most neighbours any outline intersects is 16 (China).
+
+3. The islands that hold records:
 
 ```sql
 -- q: s3-islands
@@ -6982,7 +7140,9 @@ PH | Philippines | 12
 … 5 more rows
 ```
 
-The same weights in PySAL: queen contiguity from the hexagons' shapes against the distance band from their centroids, row standardization, and k = 4 nearest neighbours, whose ties PySAL breaks its own way:
+Ten islands hold records, among them Australia (4,636) and Madagascar (2,012). Contiguity weights over countries would give both no neighbour, so a statistic over countries would drop them or fail. The other five are Singapore (11), Japan (2), Trinidad and Tobago (2), Mauritius (1) and Niue (1); Singapore is here because its outline doesn't reach Malaysia's across the strait between them.
+
+4. The same weights in PySAL: queen contiguity from the hexagons' shapes against the distance band from their centroids, row standardization, and k = 4 nearest neighbours. `Queen.from_dataframe` reads the shapes from a GeoDataFrame (GeoPandas' table with a geometry column); `DistanceBand` with `binary=True` gives weights of 1 within the threshold, here 10 km, twice the edge. `queen.s0` is the sum of all weights, so the number of links while they are binary; `histogram` counts the cells by number of neighbours. `cKDTree.query(xy, k=6)` returns each cell's six nearest centroids, itself first at distance 0, so columns 4 and 5 are its 4th and 5th neighbours:
 
 ```python
 # q: s3-pysal
@@ -7030,17 +7190,75 @@ rows sum to 1: True  cell 1051 (1 neighbour): [1.0]  cell 8 (6): [0.1667, 0.1667
 k = 4: links: 4376  one-way: 600  cells with the 4th and 5th tied: 1025
 ```
 
-**Expected:** on the 5 km grid, 939 of 1,094 cells have all 6 neighbours and the coast leaves the rest with fewer, down to one cell with a single neighbour (cell 1051); on the 10 km grid 221 of 296 have 6 and the fewest is 2. No cell has none. PySAL's queen contiguity from the hexagons' shapes gives exactly the distance band's 6,246 links, the same histogram and no islands. After row standardization every row sums to 1: cell 1051's one neighbour has weight 1.0, an interior cell's six have 0.1667 each. k-nearest is lopsided: with k = 4, 1,025 cells have their 4th and 5th neighbours at the same distance, so the choice is a tie-break; SQL's rule (lowest id) leaves 1,968 of 4,376 links one-way, PySAL's leaves 600, with the same distances. With k = 6 only 129 cells are tied and 254 links one-way. Between countries, 76 of the 247 outlines intersect no other: they are islands, and 10 of them hold records (Australia 4,636, Madagascar 2,012, Comoros 109, …), so contiguity weights over countries would give Australia and Madagascar no neighbour at all. `ST_Touches` alone finds 84 islands, because 12 countries' simplified outlines overlap a neighbour's instead of meeting it; contiguity on real outlines needs `ST_Intersects` (or a snapping tolerance), and the most neighbours any country has is 16.
+Queen contiguity from the shapes gives exactly the band's 6,246 links, the same histogram as `s3-contiguity` and no island. After `queen.transform = "r"` every row sums to 1: cell 1051's one neighbour has weight 1.0, and an interior cell's six have 0.1667 each. PySAL's k = 4 has the same 4,376 links and the same 1,025 tied cells as the SQL, but leaves 600 links one-way, not 1,968: its k-d tree (a structure for finding nearest points fast) breaks the ties in its own order. Same data, same distances, different weights.
+
+**Result:** on the 5 km grid, 939 of the 1,094 cells have all six neighbours and the coast leaves the rest with fewer, down to one cell with a single neighbour (cell 1051); on the 10 km grid 221 of 296 have six and the fewest is two. No cell has none. PySAL's queen contiguity from the hexagons' shapes gives exactly the distance band's 6,246 links, the same histogram and no island. After row standardization every row sums to 1: cell 1051's one neighbour has weight 1.0, an interior cell's six have 0.1667 each. k-nearest is lopsided: with k = 4, 1,025 cells have their 4th and 5th neighbours at the same distance, so the choice is a tie-break; SQL's rule (lowest id) leaves 1,968 of 4,376 links one-way, PySAL's leaves 600, with the same distances. With k = 6 only 129 cells are tied and 254 links one-way. Between countries, 76 of the 247 outlines intersect no other: they are islands, and 10 of them hold records (Australia 4,636, Madagascar 2,012, Comoros 109, …), so contiguity weights over countries would give Australia and Madagascar no neighbour at all. `ST_Touches` alone finds 84 islands, because 12 countries belong to g2's nested pairs (France and its overseas regions, among others), whose interiors overlap; the most neighbours any outline intersects is 16.
+
+**Exercise:** k-nearest weights never leave a cell without neighbours: with k = 6, every 5 km cell gets six. How far does each cell have to reach for its 6th neighbour? Group the 5 km cells by their number of neighbours in s4's distance band (`s4_neighbours`), and show for each group the cells, their records, and the shortest and longest reach in km. What does k = 6 do to a coastal cell, and which of the two would you use for s4's Moran's I?
+
+**Answer:** the band's neighbour count per cell, then each cell's 6th-nearest centroid with the same ordering as `s3-knn` (distance, then id); `OFFSET 5 LIMIT 1` skips the first five:
+
+```sql
+-- q: s3-ex
+-- status: ran
+-- engine: postgis
+WITH band AS (
+  SELECT i, count(*) AS k FROM s4_neighbours WHERE edge_m = 5000 GROUP BY i
+), reach AS (
+  SELECT band.k, a.n,
+         (SELECT ST_Distance(ST_Point(a.cx, a.cy), ST_Point(c.cx, c.cy))
+          FROM s4_cells AS c
+          WHERE c.edge_m = a.edge_m AND c.id <> a.id
+          ORDER BY 1, c.id
+          OFFSET 5 LIMIT 1) AS d6_m
+  FROM s4_cells AS a JOIN band ON band.i = a.id
+  WHERE a.edge_m = 5000
+)
+SELECT k AS band_neighbours, count(*) AS cells, sum(n) AS records,
+       round((min(d6_m) / 1000)::numeric, 2) AS shortest_km,
+       round((max(d6_m) / 1000)::numeric, 2) AS longest_km
+FROM reach
+GROUP BY k
+ORDER BY k;
+```
+
+```text
+-- result: s3-ex · 6 rows · sha256 3f25bd602944
+band_neighbours | cells | records | shortest_km | longest_km
+1 | 1 | 0 | 22.91 | 22.91
+2 | 7 | 57 | 17.32 | 17.32
+3 | 36 | 16 | 15.00 | 17.32
+4 | 66 | 243 | 15.00 | 15.00
+5 | 45 | 133 | 15.00 | 15.00
+… 1 more row
+```
+
+**Check:** the 939 cells with six neighbours in the band reach 8.66 km (√3 times the edge), the touching cells, so for them k = 6 and the band agree. Every cell on the coast reaches farther: 15.00 km (3 times the edge, the second ring) for the cells with four or five band neighbours, 15.00 to 17.32 km for those with three, 17.32 km for the cells with two, and 22.91 km for cell 1051, more than two and a half times an interior cell's reach. Those 155 coastal cells hold 449 of the 1,972 records in cells. k = 6 keeps the number of neighbours equal and lets the distance grow; the band keeps the distance equal and lets the number shrink. For s4 the band is the better choice: the cells are equal, they cover one island with no gap, and the band leaves no island, so a coastal cell is compared with the cells it touches, not with cells two rings inland. k-nearest earns its place where units differ in size and spacing, like countries, or where a band would leave islands; then state k and the tie rule with the result.
+
+**Dialects:**
+- **PostgreSQL:** `ST_DWithin(a, b, d)` builds a band and uses a GiST index on either column; k-nearest is a `CROSS JOIN LATERAL (… ORDER BY a.geom <-> b.geom LIMIT k)`, which an index serves when `geom` is a column with one (g5), not a point built on the fly as here. `ST_Touches` is queen contiguity; rook needs the shared boundary to be a line, `ST_Relate(a.geom, b.geom, 'F***1****')` (interiors apart, boundaries sharing a line; g2's DE-9IM). PostgreSQL has no matrix type: weights live as rows `(i, j, w)`, as in `s4_neighbours`.
+- **DuckDB:** the `spatial` extension has `ST_DWithin`, `ST_Touches`, `ST_Intersects` and `ST_Distance`, but no `<->`. k-nearest ranks every pair: `QUALIFY row_number() OVER (PARTITION BY a.id ORDER BY ST_Distance(a.geom, b.geom), b.id) <= 4`, which 1,094 cells (1.2 million pairs) allow.
+- **SQL Server:** `STDistance`, `STTouches`, `STIntersects` and `STRelate(other, 'F***1****')` for rook; k-nearest is `CROSS APPLY (SELECT TOP (4) … WHERE b.geom.STDistance(a.geom) IS NOT NULL ORDER BY b.geom.STDistance(a.geom), b.id)`, which a spatial index can serve (g5).
+- **PySAL:** `libpysal.weights` has `DistanceBand`, `KNN`, `Queen` and `Rook` (`from_dataframe` for shapes); `w.transform = "r"` row-standardizes and `"b"` goes back to binary; `w.islands`, `w.cardinalities`, `w.histogram` and `w.s0` describe the weights, and building them warns about islands unless `silence_warnings=True`. `DistanceBand(…, binary=False, alpha=-1)` gives inverse-distance weights. The newer `libpysal.graph.Graph` (`build_distance_band`, `build_knn`, `build_contiguity`) builds the same rules. `KNN` has no tie rule to choose: its k-d tree decides.
+- **ArcGIS Pro:** Generate Spatial Weights Matrix (`arcpy.stats.GenerateSpatialWeightsMatrix`) writes a `.swm` file the statistics tools read. Conceptualization of Spatial Relationships: `Fixed distance` (a band, with Threshold Distance), `K nearest neighbors` (Number of Neighbors), `Contiguity edges only` (rook) or `Contiguity edges corners` (queen); Row Standardization is on by default. With `Fixed distance`, Number of Neighbors is a minimum: a unit with fewer neighbours within the threshold gets its nearest ones added, so no unit is an island, and its reach grows like k-nearest's.
 
 #### s4 · moran
 
 **Tool:** PG + Py · **Time:** 2.0 h · **Prereqs:** s3
 
-**Goal:** one number for "do similar values sit together?", and its test. **Global Moran's I** compares each cell's deviation from the mean, `z_i = y_i − ȳ`, with its neighbours': `I = (n / S0) · Σ_i Σ_j w_ij z_i z_j / Σ_i z_i²`, where `S0` is the sum of all weights. With no pattern, I is close to its expectation `E[I] = −1/(n−1)`; above it, similar values cluster; below, they alternate. Whether I is far enough from `E[I]` is judged by a z-score, from a variance that has a closed form under two assumptions (normality: `z_norm`; randomization: `z_rand`, which ArcGIS Pro reports), or by a **permutation test**: shuffle the values over the cells many times, recompute I each time, and count how often a shuffle beats the real I; with 999 shuffles the smallest possible pseudo p-value is 1/1000. Here the plain SQL and PySAL compute the same statistic from the same cells and agree to 10⁻⁷ (§A.2). Then the honest question: what clusters? The cells count records, so I measures how recording effort clusters as much as how devils do.
+**Concept:** One number for "do similar values sit together?", and how to test it:
+- **Spatial autocorrelation** is the tendency of values at nearby places to be alike (positive) or unlike (negative). A **global** statistic gives one number for the whole study area; a local one (s5) says where.
+- **Cells, not points.** A record has no value to compare with its neighbours', and many records share one spot (s2). So the records are counted into equal-area hexagons over Tasmania's main island, at two sizes (edges of 5 and 10 km), and each cell's value is `y = ln(1 + n)`, where `n` is its number of records. The logarithm keeps the few cells with hundreds of records from outweighing everything else. Records outside every cell drop out: 28 of the devil's 2,000 at 5 km (12 on Maria Island, others off the coast, on the mainland, and 2 in New Mexico), 10 at 10 km.
+- **Weights** say which cells are neighbours: `w_ij` is cell j's weight for cell i, 0 when they aren't neighbours. Here two cells are neighbours when their centroids are within a **distance band** of twice the edge. In a hexagon grid with edge `e`, the centroids of touching cells are √3·e ≈ 1.73·e apart and the next ring's 3·e, so a band of 2·e gives each cell exactly the cells it touches, and since no pair lies near 2·e, a rounding difference between two programs can't move a pair across.
+- **Row standardization** divides each of cell i's weights by `k_i`, its number of neighbours, so each cell's weights sum to 1 and `Σ_j w_ij y_j` is the mean of its neighbours' values: its **spatial lag**.
+- **Moran's I** compares each cell's deviation from the mean, `z_i = y_i − ȳ`, with its neighbours': `I = (n / S0) · Σ_i Σ_j w_ij z_i z_j / Σ_i z_i²`, where `n` is the number of cells and `S0` the sum of all weights (equal to `n` with row-standardized weights). With no pattern, I is close to its **expectation** `E[I] = −1/(n−1)`; above it, similar values cluster; below, they alternate.
+- **Is I far from E[I]?** A **z-score** divides the difference by the standard deviation I would have with no pattern. That variance has a closed form under two assumptions: **normality** (the values are a sample from a normal distribution: `z_norm`) or **randomization** (these exact values, shuffled over the cells: `z_rand`, which ArcGIS Pro reports). A **permutation test** makes no formula: shuffle the values over the cells many times, recompute I each time, and count how often a shuffle beats the real I. With 999 shuffles, the smallest possible **pseudo p-value** is 1/1000.
+- **Two engines, one statistic.** Plain SQL and PySAL (`esda`) compute the same I, E[I], variance and z from the same cells and agree to 10⁻⁷, as long as their neighbours are the same pairs. That is a real condition: two records at one spot are 0 m apart, `ST_DWithin` makes them neighbours and PySAL's `DistanceBand` doesn't. Cells with distinct centroids avoid it, and this module checks both the centroids and the pairs before it trusts a number.
+- **What clusters?** The cells count records, so I measures how recording effort clusters as much as how devils do (s1).
 
-**Data:** `occurrences` (the devil's records), `admin1_shapes` (Tasmania's main island); the cells it builds, `s4_cells` and `s4_neighbours`, are the ones s2, s3 and s5 read.
+**Diagram:** `s4-band`, after the Concept: in a hexagon grid with edge `e` (flat-topped, as `ST_HexagonGrid` makes it), the six touching cells' centroids are √3·e ≈ 1.73·e from the middle cell's and the next ring's 3·e and 2√3·e ≈ 3.46·e, so the 2·e band holds exactly the touching cells, 0.27·e beyond them and a whole edge short of the next ring.
 
-**Key code:**
+**Worked example:** the cells, and a check of their geometry.
 
 Points can't be the units for Moran's I: a record has no value to compare with its neighbours', and many records share one spot. So the records are counted into equal-area hexagons over Tasmania's main island (EPSG:3577, Australian Albers), at two cell sizes, and each cell's value is `y = ln(1 + n)`. Its centroid is kept as two plain numbers, `cx` and `cy`, so SQL and PySAL measure distances from the same coordinates. The neighbour rule is a view: two cells of one grid are neighbours when their centroids are within twice the edge length. This block runs when a PostGIS run starts, and its tables stay until the lab data is loaded again. It drops them first, so running it again rebuilds them, and every download that reads them starts with it (§7.3).
 
@@ -7098,6 +7316,8 @@ edge_m | cells | records_in_cells | records_in_no_cell | max_n
 10000 | 296 | 1990 | 10 | 475
 ```
 
+The island gives 1,094 cells of 5 km and 296 of 10 km. 1,972 of the 2,000 records fall in a 5 km cell and 1,990 in a 10 km one; the fullest cell holds 256 records at 5 km and 475 at 10 km. `ST_HexagonGrid` returns the hexagons covering the island's bounding box, with their column and row (`i`, `j`), so `WHERE ST_Intersects` keeps the ones touching land. `ST_Contains` puts a record in the one cell that contains it.
+
 Before building weights from a distance band, look at the distances. In a hexagon grid with edge `e`, centroids are √3·e apart (the touching cells), then 3·e (the next ring). A threshold of 2·e sits between the two, with no pair near it, so every cell gets exactly its touching cells and a rounding error can't move a pair across. The block also counts duplicate centroids and cells with no neighbour (an "island"), which would break the statistic.
 
 ```sql
@@ -7134,7 +7354,10 @@ edge_m | threshold_m | class_1_m | class_2_m | duplicate_centroids | islands | p
 10000 | 20000 | 17320.51 | 30000.00 | 0 | 0 | 0
 ```
 
-Global Moran's I in plain SQL, with row-standardized weights (`w_ij = 1/k_i`, where `k_i` is cell i's number of neighbours) and its expected value, variance and z-score under the normality assumption. These are the formulas PySAL's `esda.Moran` uses (`EI`, `VI_norm`, `z_norm`).
+The grid passes at both sizes: the nearest centroids are 8,660.25 m and 17,320.51 m apart, the next class 15,000 and 30,000 m, with no duplicate centroid, no island and no pair within 1 m of the threshold. `dense_rank()` numbers the distinct distances in order, so class 1 is the smallest and class 2 the next; rounding to 0.01 m first keeps 8,660.254 and 8,660.2540001 in one class.
+
+**Lab:**
+1. Global Moran's I in plain SQL, with row-standardized weights (`w_ij = 1/k_i`, where `k_i` is cell i's number of neighbours) and its expected value, variance and z-score under the normality assumption. These are the formulas PySAL's `esda.Moran` uses (`EI`, `VI_norm`, `z_norm`):
 
 ```sql
 -- q: s4-moran-sql
@@ -7179,7 +7402,9 @@ edge_m | n | i | ei | var_norm | z
 10000 | 296 | 0.2035877773186644 | -0.003389830508474576 | 0.0012597916525627741 | 5.831415676740585
 ```
 
-The same statistic in PySAL, from the same cells. `DistanceBand` builds the binary weights; `transformation="r"` row-standardizes them. `z_rand` is the z-score under the randomization assumption, which ArcGIS reports.
+Read it one CTE at a time. `z` takes each grid's mean from its values. `w` gives every pair its row-standardized weight: `count(*) OVER (PARTITION BY i)` is `k_i`. `pairs` puts `w_ij` and `w_ji` on one row, since they differ when two neighbours have different numbers of neighbours. `sums` makes the numerator and `S0`, and `S1` (half the sum of `(w_ij + w_ji)²`); `s2` makes `S2` (the sum over cells of each cell's row total plus column total, squared). `moran` combines them into I, E[I] and the variance under normality. At 5 km, I is 0.2733, far above E[I] (−0.0009): z is 15.18. At 10 km, I is 0.2036 and z 5.83.
+
+2. The same statistic in PySAL, from the same cells. `DistanceBand` builds the binary weights; `transformation="r"` row-standardizes them. `z_rand` is the z-score under the randomization assumption, which ArcGIS reports:
 
 ```python
 # q: s4-moran-pysal
@@ -7215,7 +7440,58 @@ edge_m | n | I | E[I] | Var_norm | z_norm | z_rand
 10000 | 296 | 0.203588 | -0.003390 | 1.259792e-03 | 5.831416 | 5.847466
 ```
 
-The permutation test on the 5 km cells. esda's global `Moran` takes no seed, so NumPy's is set first; 999 shuffles:
+Every printed digit equals the SQL's. `z_rand` is a little larger than `z_norm` (15.25 against 15.18 at 5 km): the randomization variance uses the values' own kurtosis (how heavy their tails are) where the normality one assumes a normal distribution's.
+
+3. Equal printed digits could still hide different neighbours. This block checks the pairs themselves: per grid, it builds PySAL's distance band from the same centroids, compares its pairs with `s4_neighbours`' one by one, and stops with an error naming the grid and the first five differing pairs if one set has a pair the other lacks. Then it prints the statistics at full precision (`repr` gives every digit a float holds), which the course's own test compares with the SQL's, within 5 × 10⁻⁷, every time it runs:
+
+```python
+# q: s4-agree
+# status: ran
+# after: py-connect
+import sys
+
+import esda
+import numpy as np
+from libpysal.weights import DistanceBand
+
+with connect() as conn:
+    edges = [e for (e,) in conn.execute("SELECT DISTINCT edge_m FROM s4_cells ORDER BY edge_m")]
+    grids = {}
+    for edge_m in edges:
+        rows = conn.execute(
+            "SELECT id, y, cx, cy FROM s4_cells WHERE edge_m = %s ORDER BY id", (edge_m,)
+        ).fetchall()
+        sql_pairs = set(conn.execute("SELECT i, j FROM s4_neighbours WHERE edge_m = %s", (edge_m,)).fetchall())
+        grids[edge_m] = (rows, sql_pairs)
+
+table = []
+for edge_m, (rows, sql_pairs) in grids.items():
+    w = DistanceBand(np.array([(r[2], r[3]) for r in rows]), threshold=2 * edge_m, binary=True, ids=[r[0] for r in rows])
+    pysal_pairs = {(i, j) for i, js in w.neighbors.items() for j in js}
+    differ = sorted(sql_pairs ^ pysal_pairs)
+    if differ:
+        shown = ", ".join(f"{p} only in {'SQL' if p in sql_pairs else 'PySAL'}" for p in differ[:5])
+        sys.exit(f"{edge_m} m grid: {len(differ)} neighbour pairs differ; first: {shown}")
+    mi = esda.Moran(np.array([r[1] for r in rows]), w, transformation="r", permutations=0)
+    table.append((edge_m, mi.n, len(pysal_pairs), mi.I, mi.EI, mi.VI_norm, mi.z_norm))
+
+print("neighbour pairs equal s4_neighbours on every grid")
+print("edge_m | n | pairs | I | E[I] | Var_norm | z_norm")
+for edge_m, n, pairs, *stats in table:
+    print(" | ".join([str(edge_m), str(n), str(pairs), *(repr(float(s)) for s in stats)]))
+```
+
+```text
+-- result: s4-agree · python · sha256 44e33d16750b
+neighbour pairs equal s4_neighbours on every grid
+edge_m | n | pairs | I | E[I] | Var_norm | z_norm
+5000 | 1094 | 6246 | 0.2732961251160256 | -0.0009149130832570906 | 0.00032639905787023167 | 15.177857980448268
+10000 | 296 | 1620 | 0.2035877773186628 | -0.003389830508474576 | 0.0012597916525627275 | 5.831415676740648
+```
+
+Both grids pass: the 6,246 pairs at 5 km and the 1,620 at 10 km are the same pairs in both programs (each counted once from each side, so a pair of cells is two rows of `s4_neighbours`). The statistics differ from the SQL's only in their last digits, by 10⁻¹² at most.
+
+4. The permutation test on the 5 km cells. esda's global `Moran` takes no seed, so NumPy's is set first; 999 shuffles:
 
 ```python
 # q: s4-permutations
@@ -7245,17 +7521,89 @@ shuffled I: mean -0.000776  sd 0.018192  max 0.065027
 pseudo p: 0.0010  z_sim: 15.07
 ```
 
-**Expected:** the grid checks pass at both sizes (the nearest centroids 8,660.25 m and 17,320.51 m apart, the next class 15,000 and 30,000 m, no duplicate centroid, no island, no pair near the threshold). Moran's I is 0.2733 on the 1,094 cells of 5 km (E[I] −0.0009, z 15.18) and 0.2036 on the 296 cells of 10 km (z 5.83): SQL and PySAL agree to every printed digit (§A.2 compares them to 5 × 10⁻⁷ and pair by pair). ArcGIS Pro's z would be `z_rand`, 15.25. In 999 shuffles no I came near the real one (the largest 0.0650), so the pseudo p-value is the smallest possible, 0.001, and the shuffles' spread gives z 15.07, close to the formulas'. Larger cells give a smaller I and a much smaller z: the modifiable areal unit problem (g6) reaches the statistic. And since s1 showed the records are mostly one atlas and one museum's samples, the honest sentence is "devil records cluster strongly at both scales", not "devils cluster".
+In 999 shuffles no I came near the real one: the largest was 0.0650, against 0.2733. So the pseudo p-value is the smallest possible, 0.001, and the shuffles' spread (mean −0.0008, standard deviation 0.0182) gives a z of 15.07, close to the formulas'.
+
+**Result:** the grid checks pass at both sizes (the nearest centroids 8,660.25 m and 17,320.51 m apart, the next class 15,000 and 30,000 m, no duplicate centroid, no island, no pair near the threshold). Moran's I is 0.2733 on the 1,094 cells of 5 km (E[I] −0.0009, z 15.18) and 0.2036 on the 296 cells of 10 km (z 5.83): SQL and PySAL agree to every printed digit, on the same neighbour pairs (§A.2 compares them to 5 × 10⁻⁷). ArcGIS Pro's z would be `z_rand`, 15.25. In 999 shuffles no I came near the real one (the largest 0.0650), so the pseudo p-value is the smallest possible, 0.001, and the shuffles' spread gives z 15.07, close to the formulas'. Larger cells give a smaller I and a much smaller z: the modifiable areal unit problem (g6) reaches the statistic. And since s1 showed the records are mostly one atlas and one museum's samples, the honest sentence is "devil records cluster strongly at both scales", not "devils cluster".
+
+**Exercise:** `y = ln(1 + n)` still lets a cell with 256 records weigh more than one with 1. Ask a plainer question: do cells with any record at all sit together? Compute Moran's I, E[I] and the z-score under normality in SQL for `y = 1` when a cell has a record and `0` when it has none, on both grids, with the same row-standardized weights, and show how many cells have a record. Is the pattern weaker or stronger than for `ln(1 + n)`, and what does that say?
+
+**Answer:** `s4-moran-sql` with one change, the value in the first CTE:
+
+```sql
+-- q: s4-ex
+-- status: ran
+-- engine: postgis
+WITH v AS (
+  SELECT id, edge_m, CASE WHEN n > 0 THEN 1.0 ELSE 0.0 END::float8 AS y FROM s4_cells
+), z AS (
+  SELECT id, edge_m, y - avg(y) OVER (PARTITION BY edge_m) AS z FROM v
+), w AS (
+  SELECT edge_m, i, j, 1 / count(*) OVER (PARTITION BY i)::float8 AS w FROM s4_neighbours
+), pairs AS (
+  SELECT w.edge_m, w.i, w.j, w.w AS w_ij, t.w AS w_ji
+  FROM w JOIN w AS t ON t.i = w.j AND t.j = w.i
+), sums AS (
+  SELECT p.edge_m,
+         sum(p.w_ij * zi.z * zj.z) AS wzz,
+         sum(p.w_ij) AS s0,
+         sum((p.w_ij + p.w_ji) ^ 2) / 2 AS s1
+  FROM pairs AS p JOIN z AS zi ON zi.id = p.i JOIN z AS zj ON zj.id = p.j
+  GROUP BY p.edge_m
+), s2 AS (
+  SELECT edge_m, sum(ws ^ 2) AS s2
+  FROM (SELECT edge_m, i, sum(w_ij) + sum(w_ji) AS ws FROM pairs GROUP BY edge_m, i) AS cell
+  GROUP BY edge_m
+), cells AS (
+  SELECT z.edge_m, count(*)::float8 AS n, sum(z.z * z.z) AS zz, sum(v.y)::integer AS with_records
+  FROM z JOIN v USING (id)
+  GROUP BY z.edge_m
+), moran AS (
+  SELECT c.edge_m, c.n, c.with_records,
+         c.n / s.s0 * s.wzz / c.zz AS i,
+         -1 / (c.n - 1) AS ei,
+         (c.n ^ 2 * s.s1 - c.n * s2.s2 + 3 * s.s0 ^ 2) / ((c.n - 1) * (c.n + 1) * s.s0 ^ 2) - (1 / (c.n - 1)) ^ 2 AS var_norm
+  FROM cells AS c JOIN sums AS s USING (edge_m) JOIN s2 USING (edge_m)
+)
+SELECT edge_m, n::integer AS n, with_records,
+       round(i::numeric, 6) AS i,
+       round(ei::numeric, 6) AS ei,
+       round(((i - ei) / sqrt(var_norm))::numeric, 2) AS z
+FROM moran
+ORDER BY edge_m;
+```
+
+```text
+-- result: s4-ex · 2 rows · sha256 1840f4611e5b
+edge_m | n | with_records | i | ei | z
+5000 | 1094 | 307 | 0.208633 | -0.000915 | 11.60
+10000 | 296 | 178 | 0.229060 | -0.003390 | 6.55
+```
+
+**Check:** The answer has 307 of the 1,094 cells of 5 km with a record, and 178 of the 296 of 10 km. At 5 km, presence clusters less than the counts did (I 0.2086 against 0.2733, z 11.60 against 15.18): part of what `ln(1 + n)` measured was cells with many records next to each other, and with presence alone a cell of 256 records counts as much as a cell of 1. It still clusters strongly: cells with a record sit beside cells with a record. At 10 km it goes the other way (I 0.2291 against 0.2036, z 6.55 against 5.83): most cells there have a record, and what clusters is the contrast between areas where someone recorded a devil and areas where nobody did. Both versions answer a question about records: where people looked and published, not where devils are. The choice of value, like the choice of cell size, changes the number, so a Moran's I is reported with the value it measures, its cells and its weights.
+
+**Dialects:**
+- **PostgreSQL:** `^` raises to a power (as `power(a, b)`), and `1 / count(*) OVER (…)::float8` divides in floating point because the cast binds to the window's result; without it, `1 / 6` is integer division and gives 0. `ln`, `sqrt` and `avg(…) OVER (PARTITION BY …)` are standard.
+- **DuckDB:** the same SQL runs once `s4_cells` exists (with the spatial extension, `ST_Point(x, y)` takes no SRID and `ST_DWithin` measures in the coordinates' units, metres here). `^` and `**` are both powers. `/` always divides in floating point in DuckDB (`//` is integer division), so the cast isn't needed there.
+- **SQL Server:** `^` is bitwise exclusive or, not a power: `2 ^ 2` is 0. Write `POWER(x, 2)` or `x * x`. `/` between integers truncates, so cast: `1.0 / COUNT(*) OVER (PARTITION BY i)`. `LOG(x)` is the natural logarithm. The distance band is `a.geom.STDistance(b.geom) <= 2 * a.edge_m` on `geometry` points; a spatial index serves it only as `STDistance(…) <= …` in the `WHERE` or `ON` clause.
+- **PySAL:** `esda.Moran(y, w, transformation="r", permutations=999)`; `I`, `EI`, `VI_norm`, `z_norm`, `VI_rand`, `z_rand`, `p_norm`, `p_rand` and, with permutations, `p_sim`, `EI_sim`, `seI_sim`, `z_sim`. Set `np.random.seed` first for repeatable shuffles. `libpysal.weights.KNN` or `Queen` give other neighbour rules (s3); the statistic only means something with the weights stated beside it.
+- **ArcGIS Pro:** the Spatial Autocorrelation (Global Moran's I) tool (`arcpy.stats.SpatialAutocorrelation`), on a feature class of the cells: Input Field `y`; Conceptualization of Spatial Relationships `Fixed distance band`; Distance Method `Euclidean`; Standardization `Row`; Distance Band or Threshold Distance `10000` (metres, at 5 km). It reports Moran's Index, Expected Index, Variance, z-score and p-value; its variance and z-score are the randomization ones, so compare its z with `z_rand` (15.25), not `z_norm`. Ask for its HTML report to see where I falls among the values it would take by chance. §3.4's arcpy notes (the setup page) run it from Python, on the cells exported as a GeoPackage (§3.3).
 
 #### s5 · local
 
 **Tool:** PG + Py · **Time:** 2.5 h · **Prereqs:** s4
 
-**Goal:** say **where** values cluster, and how many of those places a careful test keeps. **Getis-Ord Gi\*** compares the sum of a cell's values and its neighbours' (the star: the cell counts as its own neighbour) with what the sum would be if the values were spread at random; its z-score, `Gi* = (Σ_j w_ij x_j − x̄ Σ_j w_ij) / (S √((n Σ_j w_ij² − (Σ_j w_ij)²) / (n − 1)))` with `S` the values' standard deviation, is high in a **hot spot** and low in a **cold spot** (ArcGIS Pro's Hot Spot Analysis). **Local Moran's I** (LISA) gives each cell its own share of global Moran's I and sorts the significant ones into high-high and low-low clusters and high-low and low-high outliers (Cluster and Outlier Analysis); its p-values come from permutations. Either way a test runs once per cell, here 1,094 times, so at p ≤ 0.05 about 55 cells would pass by chance alone. The **false discovery rate** (Benjamini and Hochberg) corrects that: sort the m p-values, find the largest rank k with `p_(k) ≤ k · 0.05 / m`, and keep the k smallest. On cells that count records, a hot spot is a hot spot of recording.
+**Concept:** s4 gave one number for the whole island; this module asks **where** values cluster, and how many of those places survive a careful test.
+- A **local** statistic gives each cell its own value, computed from the cell and its neighbours, so it can be mapped. The cells, values and weights are s4's: the 5 km hexagons over Tasmania's main island, `y = ln(1 + n)`, and the band of twice the edge.
+- **Getis-Ord Gi\*** compares the sum of the values in a cell's neighbourhood, the cell included (the star), with the sum that neighbourhood would have if the values were spread at random: `Gi* = (Σ_j w_ij y_j − ȳ Σ_j w_ij) / (S √((n Σ_j w_ij² − (Σ_j w_ij)²) / (n − 1)))`, where `S` is the values' standard deviation, `n` the number of cells and the weights binary (1 for each neighbour and for the cell itself). The result is a z-score: high in a **hot spot**, a neighbourhood of high values, and low in a **cold spot**, a neighbourhood of low ones.
+- **p-values from z.** Under the null hypothesis a z-score follows the standard normal distribution, so the **two-sided** p-value, the chance of a z at least this far from 0 in either direction, is `erfc(|z| / √2)` (`erfc` is the complementary error function). |z| ≥ 1.96 is p ≤ 0.05.
+- **Local Moran's I** (LISA, a local indicator of spatial association) gives each cell its own share of global Moran's I: `I_i = z_i · Σ_j w_ij z_j / m2`, where `z_i = y_i − ȳ`, the weights are row-standardized and `m2 = Σ_k z_k² / n`. The sign of `z_i` (above or below the mean) and of the **spatial lag** `Σ_j w_ij z_j` (the neighbours' mean, s3) put each cell in a **quadrant**: high-high and low-low cells sit among values like their own (**clusters**); high-low and low-high cells differ from their neighbours (**outliers**).
+- **Permutation p-values.** LISA has no trusted formula for its variance, so each cell's p-value comes from a **conditional permutation** test: keep the cell's own value, give its neighbours values drawn at random from the other cells, recompute `I_i`, and repeat 999 times. With 999 permutations the smallest possible pseudo p-value is 1/1000, as in s4. The draws are random, so a repeatable result needs a fixed seed.
+- **Many tests at once.** A local statistic runs one test per cell, here 1,094. At p ≤ 0.05, about 55 cells would pass by chance alone even with no pattern at all. The **false discovery rate** (FDR, Benjamini and Hochberg) controls the expected share of false positives among the cells kept: sort the m p-values, find the largest rank k with `p_(k) ≤ k · 0.05 / m`, and keep the k smallest. It's less strict than the **Bonferroni** correction (`p ≤ 0.05 / m` for every cell), which controls the chance of even one false positive.
+- **Hot spots of what?** The cells count records, and s1 showed the devil's records are mostly one atlas and one museum's samples. A hot spot here is a place where people recorded many devils, and it is reported as a hot spot of recording.
 
-**Data:** `s4_cells`, `s4_neighbours` (the 5 km cells, `y = ln(1 + n)`).
+**Worked example:** Gi\* in plain SQL. Like s2 and s3, the blocks read s4's `s4_cells` and `s4_neighbours`: every download of this module runs `s4-cells` first, right after connecting, so `s5.sql` and `s5.py` work on their own; to run the blocks one at a time, run `s4-cells` once first.
 
-**Key code:** Gi\* in plain SQL with binary weights and the cell itself included, then two-sided p-values from the normal distribution (`erfc`, PostgreSQL 16) and the Benjamini-Hochberg cut, kept as a temporary view, `s5_gistar` (one row per cell: `id`, `z`, `p`, and `fdr`, true where the cell survives the correction), so c1 reads the same result instead of repeating the query:
+The block keeps its result as a temporary view, `s5_gistar`, one row per 5 km cell: `id`, `z`, the two-sided `p`, and `fdr`, true where the cell survives the false discovery rate. The exercise below reads it, and so does the capstone (c1), instead of repeating the query. A temporary view lasts until the session ends:
 
 ```sql
 -- q: s5-gistar
@@ -7303,7 +7651,12 @@ cells | hot_05 | cold_05 | hot_fdr | cold_fdr | max_z | min_z
 1094 | 99 | 0 | 39 | 0 | 10.632449 | -1.289294
 ```
 
-The same in PySAL: `G_Local` with `star=True` and binary weights, and esda's `fdr`, which returns the p-value cut:
+Read it one CTE at a time. `stats` makes n, ȳ and `S`, the population standard deviation (`sqrt(avg(y²) − ȳ²)`, dividing by n, not n − 1, as the formula requires). `w` adds each cell to its own neighbours (the star) with `UNION ALL`, so `sums` gets `Σ_j w_ij y_j` and, with binary weights, `Σ_j w_ij = Σ_j w_ij²` = the number of cells in the neighbourhood. `z` is the Gi\* formula. `p` turns z into a two-sided p-value with `erfc` (new in PostgreSQL 16) and ranks the cells by it, `i` breaking ties. `cut` is the Benjamini-Hochberg step: the largest rank whose p-value is at most `rank · 0.05 / m` (0 when no cell passes). The last query counts the cells.
+
+99 cells are hot at p ≤ 0.05 and 39 survive the false discovery rate; the highest z is 10.63. There is no cold spot at all, and the lowest z is only −1.29: 787 of the 1,094 cells hold no record (s4's exercise), so an empty neighbourhood is the typical one and can't stand out below the mean.
+
+**Lab:**
+1. The same Gi\* in PySAL: `G_Local` with `star=True` and binary weights (`transform="B"`), from the same cells and the same band. esda's own `p_norm` is one-sided, so the block computes the two-sided p-value from `Zs`; esda's `fdr` returns the p-value cut:
 
 ```python
 # q: s5-gistar-pysal
@@ -7334,7 +7687,9 @@ cells | hot_05 | cold_05 | hot_fdr | cold_fdr | max_z | min_z
 1094 | 99 | 0 | 39 | 0 | 10.632449 | -1.289294
 ```
 
-Local Moran's I with 999 permutations (seeded), by quadrant: all cells, significant at p ≤ 0.05, and after the false discovery rate:
+The line equals the SQL's, digit for digit: the course's test compares the two every time the labs run.
+
+2. Local Moran's I with 999 permutations (seeded), by quadrant: all cells, significant at p ≤ 0.05, and after the false discovery rate. `transformation="r"` row-standardizes the weights, as in s4; `seed=2026` makes the permutations repeatable:
 
 ```python
 # q: s5-lisa
@@ -7369,17 +7724,111 @@ low-low | 557 | 0 | 0
 high-low | 122 | 29 | 29
 ```
 
-**Expected:** SQL's Gi\* and PySAL's `G_Local` give the same line: 99 hot cells at p ≤ 0.05, 39 after the false discovery rate, the highest z 10.632449, and no cold spot at all, because 787 of the cells are empty and the lowest z is −1.29: where most cells hold nothing, "cold" can't stand out from the mean. Local Moran's I finds 68 high-high cells at p ≤ 0.05 and 16 after the correction (its cut is p ≤ 0.0021, so only cells with p_sim 0.001 or 0.002 survive, the floor 999 permutations allow); 29 high-low outliers survive too, single cells of many records among empty ones, the shape of an atlas grid point or a sampling site; no low-low cell is significant. The FDR removes more than half of Gi\*'s hot spots and removes three in four of LISA's high-high cells. What is left are the places the atlas and the museum's teams recorded devils most: hot spots of effort, which a report labels as such.
+The false discovery rate's cut is p ≤ 0.0021, so only cells with a pseudo p-value of 0.001 or 0.002 survive: the floor 999 permutations allow, and the step above it. 68 high-high cells are significant at p ≤ 0.05 and 16 after the correction. 29 high-low outliers survive too: single cells of many records among empty ones, the shape of an atlas grid point or a sampling site. No low-low cell is significant.
+
+3. The quadrants need no permutations: they come from the sign of each cell's deviation from the mean and of its spatial lag, both plain SQL. This block computes them from `s4_cells` and `s4_neighbours`, with the records each quadrant holds; the course's test checks that its cells per quadrant equal esda's `cells` column:
+
+```sql
+-- q: s5-lisa-sql
+-- status: ran
+-- engine: postgis
+WITH c AS (
+  SELECT id, n, y - avg(y) OVER () AS z FROM s4_cells WHERE edge_m = 5000
+), lag AS (
+  SELECT nb.i AS id, avg(c.z) AS lag
+  FROM s4_neighbours AS nb JOIN c ON c.id = nb.j
+  WHERE nb.edge_m = 5000
+  GROUP BY nb.i
+), q AS (
+  SELECT c.id, c.n,
+         CASE WHEN c.z > 0 AND l.lag > 0 THEN 1
+              WHEN c.z <= 0 AND l.lag > 0 THEN 2
+              WHEN c.z <= 0 AND l.lag <= 0 THEN 3
+              ELSE 4 END AS q
+  FROM c JOIN lag AS l USING (id)
+)
+SELECT (ARRAY['high-high', 'low-high', 'low-low', 'high-low'])[q] AS quadrant,
+       count(*) AS cells,
+       sum(n) AS records
+FROM q
+GROUP BY q
+ORDER BY q;
+```
+
+```text
+-- result: s5-lisa-sql · 4 rows · sha256 61ccb6a48dc8
+quadrant | cells | records
+high-high | 185 | 1613
+low-high | 230 | 0
+low-low | 557 | 0
+high-low | 122 | 359
+```
+
+`avg(c.z)` over a cell's neighbours is the row-standardized lag: each of its `k_i` neighbours weighs `1/k_i`. The quadrants are numbered as esda's `q` (1 high-high, 2 low-high, 3 low-low, 4 high-low), with a value exactly at the mean counted as low, as esda does. The counts equal esda's: 185, 230, 557, 122. The records column shows what "low" means here: both low quadrants hold no record at all. The mean of `y` is below `ln 2`, the value of a cell with one record, so a single record lifts a cell above the mean, so "high" means "has a record" and "low" means "empty".
+
+**Result:** Gi\* finds 99 hot cells at p ≤ 0.05 and 39 after the false discovery rate, with the highest z 10.63, and no cold spot: SQL and PySAL give the same line. Local Moran's I puts 185 cells in high-high, 230 in low-high, 557 in low-low and 122 in high-low, in SQL as in esda; 68 high-high cells are significant at p ≤ 0.05 and 16 after the correction, with 29 high-low outliers, and no low-low cell. The correction removes more than half of Gi\*'s hot spots and three in four of LISA's high-high cells. What is left are the places the atlas and the museum's teams recorded devils most: hot spots of recording effort, which a report or a map labels as such, never as where devils are most common.
+
+**Exercise:** How much of the record do the 39 hot spots that survive the false discovery rate hold, and who recorded it? For each dataset with a devil record in a 5 km cell, count its records in those 39 cells and its records in any cell, each with its share of the column's total. Compare the shares: does one dataset weigh more in the hot spots than in the whole sample?
+
+**Answer:** each record placed in its cell as in `s4-cells`, then joined to `s5_gistar`; the block runs after `s5-gistar`, so the view exists:
+
+```sql
+-- q: s5-ex
+-- status: ran
+-- engine: postgis
+-- after: s5-gistar
+WITH devils AS (
+  SELECT o.dataset_key, ST_Transform(o.geom, 3577) AS geom
+  FROM occurrences AS o JOIN species AS s ON s.id = o.species_id
+  WHERE s.scientific_name = 'Sarcophilus harrisii'
+), placed AS (
+  SELECT d.dataset_key, g.fdr AND g.z > 0 AS hot
+  FROM devils AS d
+  JOIN s4_cells AS c ON c.edge_m = 5000 AND ST_Contains(c.geom, d.geom)
+  JOIN s5_gistar AS g ON g.id = c.id
+)
+SELECT ds.title,
+       count(*) FILTER (WHERE p.hot) AS hot_records,
+       round(100.0 * count(*) FILTER (WHERE p.hot) / sum(count(*) FILTER (WHERE p.hot)) OVER (), 1) AS hot_pct,
+       count(*) AS records_in_cells,
+       round(100.0 * count(*) / sum(count(*)) OVER (), 1) AS pct
+FROM placed AS p JOIN datasets AS ds USING (dataset_key)
+GROUP BY ds.title
+ORDER BY hot_records DESC, records_in_cells DESC, ds.title;
+```
+
+```text
+-- result: s5-ex · 8 rows · sha256 a2b623ef575f
+title | hot_records | hot_pct | records_in_cells | pct
+Tasmanian Natural Values Atlas | 870 | 78.5 | 1402 | 71.1
+Tasmanian Museum and Art Gallery provider for OZCAM | 237 | 21.4 | 555 | 28.1
+Northern Territory Museum and Art Gallery provider for OZCAM | 1 | 0.1 | 1 | 0.1
+Museums Victoria provider for OZCAM | 0 | 0.0 | 5 | 0.3
+MVZ Mammal Collection (Arctos) | 0 | 0.0 | 3 | 0.2
+… 3 more rows
+```
+
+**Check:** The 39 hot spots, 3.6 % of the 1,094 cells, hold 1,108 of the 1,972 records in cells (870 + 237 + 1), 56 %. The atlas supplies 78.5 % of them against 71.1 % of all records in cells, and the museum's material samples 21.4 % against 28.1 %: the hot spots are, even more than the sample, the atlas's. Five of the eight datasets have no record in a hot spot. So the map of hot spots is largely a map of where the atlas's observers worked; before reading it as anything about devils, a report says which datasets made it, as s1 did for the whole sample. `FILTER (WHERE p.hot)` counts one kind of row inside a group, and `sum(…) OVER ()` over the grouped counts gives the column's total for the shares.
+
+**Dialects:**
+- **PostgreSQL:** `erf` and `erfc` are new in PostgreSQL 16; on an older server, compute p-values in Python, or compare |z| with fixed cut-offs (1.96 for p ≤ 0.05) and skip the false discovery rate, which needs p-values. The Benjamini-Hochberg cut is window functions: `row_number()` and `count(*) OVER ()` for rank and m, then `max(rank) FILTER (WHERE …)`.
+- **DuckDB:** the same SQL runs once `s4_cells` and `s4_neighbours` exist, except the p-values: DuckDB 1.5 has no `erf` or `erfc` (`Scalar Function with name erfc does not exist`). `stddev_pop` gives `S` directly.
+- **SQL Server:** no error function either; `STDEVP` is the population standard deviation (`STDEV` the sample one, which would change every z slightly). Arrays don't exist: name the quadrants with `CASE` or `CHOOSE(q, 'high-high', 'low-high', 'low-low', 'high-low')`.
+- **PySAL:** `esda.G_Local(y, w, transform="B", star=True)` gives `Zs` and a one-sided `p_norm` (and `p_sim` with permutations); `esda.Moran_Local(y, w, transformation="r", permutations=999, seed=2026)` gives `Is`, `q` (1 high-high, 2 low-high, 3 low-low, 4 high-low) and `p_sim`; `esda.fdr(p, 0.05)` returns the p-value cut (and the Bonferroni bound 0.05/m if every test would pass). The `splot` package maps them; it isn't in the course's pins.
+- **ArcGIS Pro:** Hot Spot Analysis (Getis-Ord Gi\*) (`arcpy.stats.HotSpots`) on a feature class of the cells: Input Field `y`; Conceptualization of Spatial Relationships `Fixed distance band`; Distance Method `Euclidean`; Standardization `None` (binary weights, as here); Distance Band or Threshold Distance `10000`; Apply False Discovery Rate (FDR) Correction checked. Pro always counts the cell as its own neighbour, so its z-score (`GiZScore`) is Gi\*'s; its `Gi_Bin` field sorts cells into bins of 90, 95 and 99 % confidence, hot (1 to 3) or cold (−1 to −3). Cluster and Outlier Analysis (Anselin Local Moran's I) (`arcpy.stats.ClusterOutlierAnalysis`) gives each cell `COType` (`HH`, `LL`, `HL`, `LH`, or blank when not significant): Standardization `Row`, Number of Permutations 999, the same FDR option. Its permutations come from another random generator, so its pseudo p-values, and which cells pass, can differ a little from esda's; the quadrants, which take no permutation, can't. Both tools label the output as hot and cold spots; a report on records adds "of recording". §3.4's arcpy notes (the setup page) show how to run a Spatial Statistics tool from Python, on the cells exported as a GeoPackage (§3.3).
 
 #### s6 · zonal
 
 **Tool:** PG + Py · **Time:** 2.0 h · **Prereqs:** s5, g7
 
-**Goal:** summarise points (or raster cells) by zones, and compare like with like. **Zonal statistics** take a layer of zones, here ecoregions cut to a country's outline, and summarise what falls in each: records, area, records per 1,000 km² (ArcGIS Pro's Zonal Statistics as Table does the same for a raster inside polygons; g7's `ST_ValueCount` is its SQL form). A zone's **ratio** of its share of records to its share of area is 1 when records are spread by area alone; above 1 the zone has more records than its size. That still mixes the animals with the effort, so the second ratio **normalizes for effort**: a species' share of the records in a zone against its share of all records in the country, the "target group" idea, which uses every species' records as a measure of where people recorded at all. A chi-square test then asks whether records follow area; with hundreds of records it almost always says no, which is a statement about the records, not about which habitat an animal prefers.
+**Concept:** s2 to s5 asked where records cluster; this module asks whether some zones hold more records than they should, and what "should" can mean.
+- **Zonal statistics** summarise what falls inside each zone of a layer: a count, a sum, an area or a mean per zone. A zone is any polygon, or every raster cell with one value. Here the zones are Costa Rica's ecoregions, cut to the country's outline, and then the classes of a habitat map. For points in polygons the summary is a spatial join and a `GROUP BY` (g3); for a raster inside polygons it is g7's `ST_ValueCount`.
+- **Like with like.** A count alone says little, because a big zone holds more records than a small one. **Density** divides by area: records per 1,000 km². The **record-to-area ratio** divides a zone's share of the records by its share of the area: 1 when records are spread by area alone, above 1 when the zone holds more than its size predicts. Both shares must cover the same place: the zones cut to the outline, and only the records inside that outline.
+- **Normalizing for effort.** A ratio above 1 still mixes the animals with the people who looked for them (s1). The records of every species in a sample are a rough measure of where people recorded at all, the **target group** idea: records of related species, collected the same way, stand in for effort. A species' **effort-normalized ratio** in a zone is its share of the zone's records divided by its share of all the country's records: 1 when the species turns up in the zone as often as recording in general predicts. It assumes the other species were recorded the same way, which s1 showed this sample's weren't.
+- **The chi-square goodness-of-fit test** asks whether counts follow an expectation, here records in proportion to area: `χ² = Σ (O − E)² / E` over the zones, with O the observed and E the expected count, on (zones − 1) degrees of freedom. With hundreds of records it rejects almost any simple expectation. A rejection says the records aren't spread by area; it doesn't say why, and nothing about which habitat an animal prefers.
+- **Estimated areas.** The habitat classes' areas come from a map, not a survey (§4.1, g7): Jung et al.'s 1 km cells each carry the fraction of each class, and `country_habitats` sums fraction × cell area over the cells whose centre is inside the outline. `occurrence_habitats` gives each record the class with the largest fraction in its 1 km cell: the map's class at that place, not the habitat the animal used.
 
-**Data:** `country_shapes` (Costa Rica), `ecoregions` (RESOLVE, simplified, §4.1), `occurrences`; L3 adds `occurrence_habitats` and the habitat summaries (§4.1).
-
-**Key code:** Costa Rica's ecoregions as zones: area, records (those GBIF codes `CR` that lie inside the outline, g3), records per 1,000 km², the record-to-area ratio, and the jaguar's share relative to all records:
+**Worked example:** Costa Rica's ecoregions as zones: area, records (those GBIF codes `CR` that lie inside the outline, g3), records per 1,000 km², the record-to-area ratio, and the jaguar's effort-normalized ratio:
 
 ```sql
 -- q: s6-zones
@@ -7422,7 +7871,12 @@ eco_id | name | km2 | records | jaguar | per_1000_km2 | record_ratio | jaguar_ra
 … 2 more rows
 ```
 
-The same zones in GeoPandas (an overlay, then a spatial join), with areas in an equal-area projection (EPSG:6933), and a chi-square test of records against area:
+Read it one CTE at a time. `zones` cuts each ecoregion that touches the outline to the outline (`ST_Intersection`, g4). `records` keeps the records coded `CR` that lie inside the outline. `per_zone` joins records to zones with `ST_Contains` and counts them, with `LEFT JOIN` and `count(r.id)` so a zone with no record gets 0, not no row; the jaguar's records are counted with `FILTER`. `ST_Area` on `geography` measures on the WGS 84 ellipsoid, in m². The last query divides each zone's share by the column totals, `sum(…) OVER ()`; `nullif` keeps a zone with no record from dividing by zero.
+
+591 of Costa Rica's 619 records lie inside its outline (g3 found the rest). By area alone the records are uneven: the Talamancan montane forests, 8,311 km² of mountains, hold 13 records (ratio 0.15), the three lowland moist forests 1.05 to 1.26. The jaguar's column looks different again: 61 of the 62 records in the Central American dry forests and all 7 in the Southern Mesoamerican Pacific mangroves are jaguars, 7.29 and 7.41 times its share of the records in zones, and it has none in the other five.
+
+**Lab:**
+1. The same zones in GeoPandas: an overlay of the ecoregions with the outline, then a spatial join of the records to the pieces, with areas in an equal-area projection (EPSG:6933, the global EASE-Grid 2.0), and a chi-square test of records against area. `from_wkb` reads the shapes PostGIS sends as well-known binary (g2):
 
 ```python
 # q: s6-geopandas
@@ -7476,11 +7930,13 @@ eco_id | km2 | records
 chi-square: 77.4  df: 6  p: 1.2e-14
 ```
 
-Records by habitat class against the classes' estimated areas, once L3 has placed every record in a class of the habitat map (g7):
+The course's test checks that every zone `s6-zones` shows has the same records here, and an area within 1 km²: geography's ellipsoid and EPSG:6933's projection differ by less than that (6,062 against 6,061 km² for the dry forests). "In a zone" is 504, but 3 records lie where two pieces overlap (g4) and are counted in both, so 501 records are in a zone and 90 in the gaps the simplified ecoregions leave inside the outline; both engines count a record once per piece that contains it. The chi-square test rejects "records follow area": 77.4 on 6 degrees of freedom, p 1.2 × 10⁻¹⁴.
+
+2. Records by habitat class against the classes' estimated areas, for the whole country. Each record takes its class from `occurrence_habitats`; each class's area is `country_habitats`' estimate:
 
 ```sql
 -- q: s6-habitat
--- status: untested: L3 builds occurrence_habitats
+-- status: ran
 -- engine: postgis
 WITH records AS (
   SELECT oh.habitat_code, count(*) AS records
@@ -7499,27 +7955,89 @@ WHERE ch.country_code = 'CR'
 ORDER BY ch.est_area_km2 DESC, ch.habitat_code;
 ```
 
-**Expected:** 591 of Costa Rica's 619 records lie inside its outline (g3 found the rest), and 504 of those inside an ecoregion piece; the other 87 fall in the gaps the simplified ecoregions leave inside the outline (g4). PostGIS and GeoPandas count the same records in every zone, and their areas agree to 1 km² (geography against EPSG:6933). By area alone the records are uneven: the Talamancan montane forests, 8,311 km² of mountains, hold 13 records (ratio 0.15), the lowland moist forests 1.05 to 1.26, and the chi-square test rejects "records follow area" (77.4 on 6 degrees of freedom, p 1.2 × 10⁻¹⁴). Normalized for effort, the jaguar looks different again: 61 of the 62 records in the Central American dry forests and all 7 in the Pacific mangroves are jaguars, 7.29 and 7.41 times its share of all records, and it has none in the other zones; those are s1's GPS collars, worn by jaguars tracked in the dry northwest. The records say where people recorded, and where one collar study worked, not which forest a jaguar prefers. `s6-habitat` repeats the comparison by habitat class once L3 has placed every record in the habitat map; g7's `ST_ValueCount` is the raster side of the same zonal statistic.
+```text
+-- result: s6-habitat · 34 rows · sha256 3494dd1c6e04
+habitat_code | name | est_area_km2 | records | record_ratio
+1401 | Arable Land | 16108.04 | 236 | 1.21
+109 | Forest – Subtropical/tropical moist montane | 13095.13 | 31 | 0.20
+106 | Forest – Subtropical/tropical moist lowland | 7108.44 | 128 | 1.49
+201 | Savanna - Dry | 3528.48 | 35 | 0.82
+105 | Forest – Subtropical/tropical dry | 2236.93 | 42 | 1.55
+… 29 more rows
+```
+
+Arable land, 31 % of the estimated area, holds 236 of the 619 records (ratio 1.21); 216 of them are red-eyed tree frogs, recorded in 1 km cells that are mostly farmland: the cell's class, not the pond the frog sat in. Moist montane forest, a quarter of the area, holds 31 (0.20), and plantations 2 on 2,107 km² (0.08). The highest ratios belong to small classes at the coast: Marine Neritic, the sea over the continental shelf, has 59 records on 514 km² (9.50), and its coral reefs 7 on 29 km² (20.01). The 1:50m outline takes in some coastal water, and a 1 km cell that is mostly sea gets a marine class even when the record was made on the shore; 54 of the 59 lie inside the outline, up to 3.3 km from its edge, and 5 outside it. Such a ratio measures where the map's coastline, the outline and the records' coordinates disagree, not where frogs, sloths and jaguars live. The block also counts the 28 records outside the outline against areas inside it: the exercise fixes that.
+
+**Result:** Costa Rica's 591 records inside the outline are spread unevenly over its ecoregions: the montane forests hold about a seventh of what their area predicts and the lowland forests a little more, and the chi-square test rejects records in proportion to area (77.4, 6 degrees of freedom, p 1.2 × 10⁻¹⁴). PostGIS and GeoPandas count the same records in every zone, with areas within 1 km². The jaguar's records sit almost only in the dry forests and the Pacific mangroves, 7.29 and 7.41 times its share. By habitat class, arable land holds 1.21 times its share of the records and the coastal marine classes 9.50 and 20.01. All of these are ratios of recording: they say where people recorded, and where one collar study worked, not which forest a jaguar prefers.
+
+**Exercise:** `s6-habitat` counts every record coded `CR`, including the 28 outside the outline, against areas inside it. Compare like with like: keep only the records inside the outline, as `s6-zones` does, and normalize the jaguar for effort by habitat class, as `s6-zones` does by ecoregion. For each class with a record: its records, the jaguar's records, the number of datasets the jaguar's records come from, and the jaguar's effort-normalized ratio. In which classes is the jaguar recorded, and by how many studies?
+
+**Answer:**
+
+```sql
+-- q: s6-ex
+-- status: ran
+-- engine: postgis
+WITH country AS (
+  SELECT geom FROM country_shapes WHERE country_code = 'CR'
+), records AS (
+  SELECT oh.habitat_code, o.dataset_key,
+         o.species_id = (SELECT id FROM species WHERE scientific_name = 'Panthera onca') AS jaguar
+  FROM occurrences AS o
+  JOIN country ON ST_Contains(country.geom, o.geom)
+  JOIN occurrence_habitats AS oh ON oh.occurrence_id = o.id
+  WHERE o.country_code = 'CR'
+), per_class AS (
+  SELECT habitat_code, count(*) AS records,
+         count(*) FILTER (WHERE jaguar) AS jaguar,
+         count(DISTINCT dataset_key) FILTER (WHERE jaguar) AS jaguar_datasets
+  FROM records
+  GROUP BY habitat_code
+)
+SELECT p.habitat_code, hc.name, p.records, p.jaguar, p.jaguar_datasets,
+       round((p.jaguar::numeric / p.records) / (sum(p.jaguar) OVER () / sum(p.records) OVER ()), 2) AS jaguar_ratio
+FROM per_class AS p
+JOIN habitat_classes AS hc ON hc.code = p.habitat_code
+ORDER BY p.jaguar DESC, p.records DESC, p.habitat_code;
+```
+
+```text
+-- result: s6-ex · 14 rows · sha256 fb2d0c58861d
+habitat_code | name | records | jaguar | jaguar_datasets | jaguar_ratio
+105 | Forest – Subtropical/tropical dry | 42 | 42 | 1 | 6.29
+201 | Savanna - Dry | 35 | 35 | 1 | 6.29
+900 | Marine Neritic | 54 | 12 | 1 | 1.40
+1401 | Arable Land | 236 | 5 | 1 | 0.13
+106 | Forest – Subtropical/tropical moist lowland | 108 | 0 | 0 | 0.00
+… 9 more rows
+```
+
+**Check:** The outline drops 28 records: Marine Neritic goes from 59 to 54, its coral reefs from 7 to 4, and moist lowland forest from 128 to 108. The jaguar's 94 records are all inside the outline and fall in four classes. Every record in dry forest (42) and in dry savanna (35) is a jaguar, 6.29 times its share of 94 in 591; it has 12 of the 54 in Marine Neritic (1.40) and 5 of the 236 on arable land (0.13), and none anywhere else. `jaguar_datasets` is 1 in each: all 94 come from the Jaguar Movement Database, GPS collars worn by jaguars tracked in the dry north-west (s1). Normalizing for effort removes the other species' recording, not the collar study's: a ratio of one species from one study says where the collared animals walked, in a habitat map's classes at 1 km, not which habitat jaguars prefer. `count(DISTINCT dataset_key) FILTER (WHERE jaguar)` counts the datasets of one kind of row inside a group, as s5's exercise counted rows.
+
+**Dialects:**
+- **PostgreSQL:** `round(x, 2)` needs a `numeric` (there is no `round(double precision, integer)`), hence the casts. An integer divided by an integer is an integer, so `jaguar / records` would be 0 everywhere: `jaguar::numeric` makes it a fraction. `ST_Area(geom::geography)` measures on the ellipsoid; `ST_Area(geom)` on a 4326 geometry gives square degrees, which shrink towards the poles.
+- **DuckDB:** the `spatial` extension (not in this course's browser) has `ST_Intersection`, `ST_Intersects` and `ST_Contains`, and `ST_Area_Spheroid` for the area on WGS 84's ellipsoid, latitude first (g1). `/` divides in floating point, so no cast is needed. It has no chi-square function; compute the statistic in SQL and the p-value in Python.
+- **SQL Server:** the `geography` type has `STIntersection`, `STContains` and `STArea()` (in m²); a polygon must be valid and wound with its interior on the left (`MakeValid()` and `ReorientObject()` fix the two most common refusals). Integer division as in PostgreSQL: `CAST(jaguar AS decimal(10, 4)) / records`. No statistical distribution functions: the p-value comes from Python.
+- **GeoPandas:** `gpd.overlay(…, how="intersection")` cuts one layer by another (`keep_geom_type=True` drops the lines and points an intersection can leave); `gpd.sjoin(points, polygons, predicate="within")` returns one row per point and polygon that match, so a point in two overlapping polygons appears twice, as in SQL. `to_crs(6933)` projects for areas; `scipy.stats.chisquare(observed, expected)` needs both to sum to the same total.
+- **ArcGIS Pro:** Pairwise Intersect (`arcpy.analysis.PairwiseIntersect`) cuts the ecoregions to the outline. Summarize Within (`arcpy.analysis.SummarizeWithin`) is the zonal count of points: Input Polygons the pieces; Input Summary Features the records inside the outline; Keep all input polygons checked (the `LEFT JOIN`); Add shape summary attributes checked; Group Field the species, which writes a table of each species' count in each zone, the inputs of the effort-normalized ratio. Calculate Geometry Attributes with Area (geodesic) in square kilometres gives `ST_Area` on geography's answer. For a raster in zones, Spatial Analyst's Tabulate Area (`arcpy.sa.TabulateArea`) gives each class's area in each zone (g7's method 1), and Zonal Statistics as Table (`arcpy.sa.ZonalStatisticsAsTable`) the mean, sum or majority of a value raster. Pro has no goodness-of-fit tool; run `scipy.stats.chisquare` on the table in Pro's Python window (Pro's environment includes SciPy).
 
 ### 5.5 ETL
 
-Five modules, ten hours, in Python (§3.3) and your own PostGIS (§3.2). These are outlines, in §5.3's form; build mission L4 (§9) writes them in full. The track builds one pipeline, the one that made this course's sample (§4.2, §A.1): ask GBIF for a download (e1), load it typed and checked in one transaction (e2), make re-running it safe (e3), check it and credit its sources (e4), and run it on a schedule (e5). The code is the spike's (`SP/etl/`), cut down to what each lesson needs. Every block that can run without a GBIF account runs here, on the lab tables and the published lab files; the blocks write only TEMP tables or roll back, so `learn_curriculum` stays as the loader left it.
+Five modules, ten hours, in Python (§3.3) and your own PostGIS (§3.2). Build mission L4 (§9) wrote them in full from their outlines, in §5.3's form. The track builds one pipeline, the one that made this course's sample (§4.2, §A.1): ask GBIF for a download (e1), load it typed and checked in one transaction (e2), make re-running it safe (e3), check it and credit its sources (e4), and run it on a schedule (e5). The code is the spike's (`SP/etl/`), cut down to what each lesson needs. Every block that can run without a GBIF account runs here, on the lab tables and the published lab files; the blocks write only TEMP tables or roll back, so `learn_curriculum` stays as the loader left it.
 
 #### e1 · extract
 
 **Tool:** Py · **Time:** 2.0 h · **Prereqs:** f2
 
-**Goal:** get every open record of a species from GBIF, as a file you can cite. GBIF has two ways in:
-- **The search API** (`/v1/occurrence/search`) answers at once, in pages of at most 300 records, and stops at an offset of 100,000. It suits a count or a quick look. A result assembled from pages has no DOI, and the data under it changes daily, so nobody can fetch exactly your records again.
-- **The download API** is **asynchronous**: you POST a query (a *predicate*) with your GBIF account, GBIF runs it as a job, and you ask for its status until it is ready. The result is one zip of every matching record, with a **DOI** that cites exactly that file; GBIF keeps a download that has been cited and deletes an uncited one after six months.
+**Concept:** get every open record of a species from GBIF as a file you can cite, with a client that survives the failures a long download meets.
+- **Two ways in.** The **search API** (`/v1/occurrence/search`) answers at once, in pages of at most 300 records, and stops at an offset of 100,000. It suits a count or a quick look. A result assembled from pages has no DOI, and the data under it changes daily, so nobody can fetch exactly your records again. The **download API** is **asynchronous**: you POST a query (a *predicate*) with your GBIF account, GBIF runs it as a job, and you ask for its status until it is ready. The result is one zip of every matching record, with a **DOI** that cites exactly that file; GBIF keeps a download that has been cited and deletes an uncited one after six months.
+- **Transient failures.** Some failures pass on their own: a **429** ("too many requests": you asked too fast), a **5xx** (the server's own error), a connection that drops. Others don't: a 404 (no such file) or a 403 (not allowed) gives the same answer on every try. A client paces its requests (critwire's rule: at most 2 a second) and retries only the transient ones, waiting longer each time (**exponential backoff**: 1, 2, 4, then 8 s here). A server can say how long to wait with a **`Retry-After`** header, a number of seconds or a date; a client honours it, up to a cap of its own, rather than its backoff. Many clients add a random part to each wait (*jitter*) so that clients that failed together don't retry together; this course's waits are fixed so that its tests repeat.
+- **Retry the whole file.** A connection can drop halfway through a file, long after the response opened with a `200`. A retry wrapped around opening the response never sees that, and Python's `urllib` hands back a cut body without an error, so the client compares the bytes it got with the `Content-Length` the server announced. Each attempt starts a fresh `.part` file from its first byte, hashed as it arrives (**sha256**, a 64-hex-digit fingerprint that changes if one byte does), and a file gets its real name only once it is complete and its size and checksum match what the publisher says.
+- **Never POST twice.** A POST that times out may still have made a download. The client saves its request (an **intent file**) before the POST and the download key GBIF returns after it. A run that finds an intent with a key resumes that download. One that finds an intent without a key doesn't POST again: it lists the account's downloads and adopts the one with the same request created since the intent was saved; if there is none yet, or several, it stops and leaves the choice to a person. Saving what you asked for and comparing it with what exists, before acting, is **reconciling**.
+- **A polling deadline.** A job can stall. The client asks at most once a minute and gives up after a deadline; a later run resumes the same download from the intent file.
+- **Pin the taxonomy.** A query names taxa by key, and a key means something only in one checklist. GBIF's download documentation says: "If no `checklistKey` is supplied the obsolete GBIF Backbone Taxonomy will be used." Today that default is the checklist critwire's `ids.gbif` come from, but GBIF calls it obsolete, and the search API's default has already moved to the Catalogue of Life. A pipeline that leans on a default its provider has said will change can start matching other taxa with no error, so the request names `checklistKey` at the top level and on `TAXON_KEY`, and the client checks that GBIF's stored request echoes both (§4.2).
 
-The client is where most of the care goes. Pace the requests (critwire's rule: at most 2 a second), retry what can fail for a moment (429 "too many requests", 5xx, a dropped connection) with growing waits, and never retry a POST blindly, because a second POST is a second download. Stream large files to disk and hash them as they arrive; a file gets its real name only after its size and checksum match what the publisher says.
-
-**Pin the taxonomy.** A query names taxa by key, and a key means something only in one checklist. GBIF's download documentation says: "If no `checklistKey` is supplied the obsolete GBIF Backbone Taxonomy will be used." Today that default is the checklist critwire's `ids.gbif` come from, but GBIF calls it obsolete, and the search API's default has already moved to the Catalogue of Life. A pipeline that leans on a default its provider has said will change can start matching other taxa with no error, so the request names `checklistKey` at the top level and on `TAXON_KEY`, and the client checks that GBIF's stored request echoes both (§4.2).
-
-**Data:** `species.gbif_id` (73 keys) in the lab database; GBIF's API, with your own account (free, gbif.org); the lab files under `/learn/data/` and their `manifest.json` (§4.5).
-
-**Key code:** the request, built from the lab's keys. For the Tasmanian devil alone, `TAXON_KEY` would hold one key, `2435451`.
+**Worked example:** the request, built from `species.gbif_id` (73 keys) in the lab database. For the Tasmanian devil alone, `TAXON_KEY` would hold one key, `2435451`.
 
 ```python
 # q: e1-request
@@ -7576,27 +8094,262 @@ BASIS_OF_RECORD in ['HUMAN_OBSERVATION', 'OBSERVATION', 'MACHINE_OBSERVATION', '
 bytes: 1551
 ```
 
-Submitting, waiting and fetching. This needs your account in `GBIF_USERNAME` and `GBIF_PASSWORD`, and makes a real download each time it runs, so the tests don't run it; the spike ran the same steps (`SP/etl/gbif_download.py`, §A.1).
+`build_request` is a pure function of the keys and the account: the same keys give the same request, byte for byte, which is what lets a later run compare its request with a saved one. The filters are §4.2's: open licences only (CC0 1.0 and CC BY 4.0), a coordinate with no geospatial issue, the record marked present, and every basis of record except living and fossil specimens. Apart from `creator` and `sendNotification`, it equals, as JSON, the request GBIF stored for the course's own download.
+
+**Lab:**
+1. The download function. `fetch_file` retries the whole file: each attempt writes a fresh `.part`, a transient failure deletes it and waits, a cut body counts as a dropped connection, and only a complete file that matches the publisher's size and sha256 is renamed. The block prints nothing; the blocks after it run it first.
 
 ```python
-# q: e1-submit
-# status: untested: makes a real GBIF download with your account (the spike ran the same steps, §A.1)
-# after: py-connect, e1-request
-import base64
+# q: e1-fetch
+# status: ran
 import hashlib
+import http.client
 import os
 import time
 import urllib.error
 import urllib.request
 
+WAITS = [1, 2, 4, 8]  # seconds before attempts 2 to 5
+RETRY_AFTER_CAP = 60  # the longest wait a server's Retry-After can ask for here
+
+
+def transient(error):
+    """Worth another try: a rate limit (429), a server error (5xx), a dropped or cut connection. A 404 or 403 is not."""
+    if isinstance(error, urllib.error.HTTPError):
+        return error.code == 429 or error.code >= 500
+    return isinstance(error, (urllib.error.URLError, ConnectionError, TimeoutError, http.client.HTTPException))
+
+
+def wait_for(error, attempt):
+    """Seconds to wait before the next attempt: the server's Retry-After, in seconds and up to the cap, else the backoff."""
+    value = error.headers.get("Retry-After", "") if isinstance(error, urllib.error.HTTPError) else ""
+    return min(int(value), RETRY_AFTER_CAP) if value.isdigit() else WAITS[attempt]
+
+
+def describe(error):
+    if isinstance(error, urllib.error.HTTPError):
+        value = error.headers.get("Retry-After")
+        return f"HTTP {error.code}" + (f", Retry-After {value}" if value else "")
+    return str(error)
+
+
+def fetch_file(url, path, size=None, sha256=None, log=lambda attempt, what: None):
+    """Download url to path, whole. Each attempt writes a fresh path.part from its first byte, hashing as it arrives; a
+    transient failure deletes the .part and starts the file again. Only a complete file whose size and sha256 equal
+    what the publisher says (when given) gets its real name. Returns (bytes, sha256 hex)."""
+    part = path + ".part"
+    for attempt in range(len(WAITS) + 1):
+        try:
+            digest, got = hashlib.sha256(), 0
+            with urllib.request.urlopen(url, timeout=60) as r, open(part, "wb") as f:
+                declared = r.headers.get("Content-Length")
+                for chunk in iter(lambda: r.read(1 << 20), b""):
+                    digest.update(chunk)
+                    got += len(chunk)
+                    f.write(chunk)
+            if declared is not None and got != int(declared):  # urllib returns a cut body without an error
+                raise ConnectionError(f"body cut at {got} of {declared} bytes")
+        except Exception as e:
+            if os.path.exists(part):
+                os.remove(part)
+            if isinstance(e, urllib.error.HTTPError):
+                e.close()
+            if not transient(e) or attempt == len(WAITS):
+                raise
+            wait = wait_for(e, attempt)
+            log(attempt + 1, f"{describe(e)}; again in {wait} s")
+            time.sleep(wait)
+            continue
+        if (size is not None and got != size) or (sha256 is not None and digest.hexdigest() != sha256):
+            os.remove(part)  # complete but not the publisher's file: retrying would fetch it again
+            raise ValueError(f"{path}: {got} bytes, sha256 {digest.hexdigest()[:12]}; the publisher says "
+                             f"{size}, {(sha256 or '?')[:12]}")
+        os.replace(part, path)
+        log(attempt + 1, f"{got} bytes")
+        return got, digest.hexdigest()
+```
+
+```text
+-- result: e1-fetch · python · sha256 e3b0c44298fc
+```
+
+2. A server that fails on purpose. A small web server on your own machine (`127.0.0.1`, a port the system picks) answers three requests from a script: the first is cut after 40,000 of its 102,400 bytes, the second is a 429 with `Retry-After: 1`, the third is the file.
+
+```python
+# q: e1-retry
+# status: ran
+# after: e1-fetch
+import http.server
+import threading
+
+BODY = bytes(range(256)) * 400  # 102,400 bytes of made-up data
+SCRIPT = ["cut", "429", "whole"]  # what the server does with each request, in order
+
+
+class Flaky(http.server.BaseHTTPRequestHandler):
+    def do_GET(self):
+        step = SCRIPT.pop(0)
+        if step == "429":
+            self.send_response(429)
+            self.send_header("Retry-After", "1")
+            self.send_header("Content-Length", "0")
+            self.end_headers()
+            return
+        self.send_response(200)
+        self.send_header("Content-Length", str(len(BODY)))
+        self.end_headers()
+        self.wfile.write(BODY if step == "whole" else BODY[:40_000])  # "cut": the connection closes 40,000 bytes in
+
+    def log_message(self, *args):
+        pass  # no request log on stderr
+
+
+server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Flaky)  # port 0: the system picks a free one
+threading.Thread(target=server.serve_forever, daemon=True).start()
+try:
+    url = f"http://127.0.0.1:{server.server_port}/flaky.bin"
+    got, digest = fetch_file(url, "flaky.bin", len(BODY), hashlib.sha256(BODY).hexdigest(),
+                             log=lambda attempt, what: print(f"attempt {attempt}: {what}"))
+finally:
+    server.shutdown()
+    server.server_close()
+print(f"flaky.bin: {got} bytes, sha256 {digest[:12]}; .part left: {os.path.exists('flaky.bin.part')}")
+```
+
+```text
+-- result: e1-retry · python · sha256 02500c87f7e2
+attempt 1: body cut at 40000 of 102400 bytes; again in 1 s
+attempt 2: HTTP 429, Retry-After 1; again in 1 s
+attempt 3: 102400 bytes
+flaky.bin: 102400 bytes, sha256 27783e87963a; .part left: False
+```
+
+The cut body is caught by its length and retried from byte 0 after the backoff's first wait; the 429 waits the second its `Retry-After` asks for, not the 2 s the backoff would; the third attempt gets the whole file, and no `.part` is left behind.
+
+3. Files with checksums, on the published lab files: the manifest first (§4.5), then each file, kept only if its size and sha256 equal the manifest's. The block reads `LEARN_BASE` (default `https://critwire.com`); the course's tests point it at their own build.
+
+```python
+# q: e1-checksum
+# status: ran
+# after: e1-fetch
+import json
+import os
+
+BASE = os.environ.get("LEARN_BASE", "https://critwire.com")
+
+fetch_file(f"{BASE}/learn/data/manifest.json", "manifest.json")
+with open("manifest.json") as f:
+    manifest = json.load(f)
+for name in ["occurrences.parquet", "datasets.csv"]:
+    expected = manifest["files"][name]
+    got, digest = fetch_file(f"{BASE}/learn/data/{name}", name, expected["bytes"], expected["sha256"])
+    print(f"{name}: {got} bytes, sha256 {digest[:12]} = manifest, {expected['rows']} rows")
+```
+
+```text
+-- result: e1-checksum · python · sha256 cc6aa287e5bb
+occurrences.parquet: 454202 bytes, sha256 35ca89f9bee3 = manifest, 40395 rows
+datasets.csv: 72797 bytes, sha256 3bd8c1726239 = manifest, 400 rows
+```
+
+A file that doesn't match is deleted and the block stops, naming both checksums. A mismatch isn't retried: the server sent a whole file, just not the one the manifest describes, and it would send it again.
+
+4. The reconcile rule, on six made-up situations. `decide` runs before any POST and returns what the run does: post, resume a saved key, list the account's downloads and decide again, adopt one, or refuse.
+
+```python
+# q: e1-decide
+# status: ran
+from datetime import datetime, timedelta
+
+SKEW = timedelta(minutes=5)  # a download listed a little before the intent may still be its POST's: clocks differ
+
+
+def same(a, b):
+    """The same download request: what GBIF runs, not who asked."""
+    return all(a.get(k) == b.get(k) for k in ("format", "checklistKey", "predicate"))
+
+
+def decide(intent, request, listing=None):
+    """Which download this run uses, before any POST. intent: what the last run saved just before its POST
+    ({"request", "started", "key"}), or None. listing: the user's downloads, once asked for. Returns ("post",),
+    ("resume", key), ("list",) (list the downloads, then decide again), ("adopt", key) or ("refuse", why)."""
+    if intent is None:
+        return ("post",)
+    if not same(intent["request"], request):
+        return ("refuse", "the intent is for another request: finish its download or delete the intent first")
+    if intent["key"] is not None:
+        return ("resume", intent["key"])
+    if listing is None:
+        return ("list",)
+    since = datetime.fromisoformat(intent["started"]) - SKEW
+    keys = [d["key"] for d in listing
+            if datetime.fromisoformat(d["created"]) >= since and same(d["request"], intent["request"])]
+    if len(keys) == 1:
+        return ("adopt", keys[0])
+    if keys:
+        return ("refuse", f"{len(keys)} downloads match the POST: a person picks one")
+    return ("refuse", "the POST may have made a download GBIF doesn't list yet: run again later")
+
+
+# Six made-up situations; "devil" stands in for e1-request's request, "other" for a changed one.
+devil = {"format": "SIMPLE_CSV", "checklistKey": "d7dddbf4", "predicate": {"type": "equals", "key": "TAXON_KEY", "value": "2435451"}}
+other = {**devil, "predicate": {"type": "equals", "key": "TAXON_KEY", "value": "2440897"}}
+unsaved = {"request": devil, "started": "2026-10-23T09:00:00+00:00", "key": None}  # POSTed; the key never saved
+cases = {
+    "first run": (None, None),
+    "key saved": ({**unsaved, "key": "0041824-260928105237408"}, None),
+    "key lost, GBIF lists one": (unsaved, [
+        {"key": "0041819-260928105237408", "created": "2026-10-23T08:40:00+00:00", "request": devil},  # older: not ours
+        {"key": "0041824-260928105237408", "created": "2026-10-23T09:00:02+00:00", "request": devil},
+        {"key": "0041830-260928105237408", "created": "2026-10-23T09:03:00+00:00", "request": other},  # another request
+    ]),
+    "key lost, GBIF lists none": (unsaved, []),
+    "key lost, GBIF lists two": (unsaved, [
+        {"key": "0041824-260928105237408", "created": "2026-10-23T09:00:02+00:00", "request": devil},
+        {"key": "0041825-260928105237408", "created": "2026-10-23T09:00:05+00:00", "request": devil},
+    ]),
+    "request changed": (unsaved, None),
+}
+for name, (intent, listing) in cases.items():
+    request = other if name == "request changed" else devil
+    step = decide(intent, request)
+    steps = [step]
+    if step == ("list",):
+        steps.append(decide(intent, request, listing))
+    print(f"{name}: " + ", then ".join(": ".join(s) for s in steps))
+```
+
+```text
+-- result: e1-decide · python · sha256 35daf375ebbe
+first run: post
+key saved: resume: 0041824-260928105237408
+key lost, GBIF lists one: list, then adopt: 0041824-260928105237408
+key lost, GBIF lists none: list, then refuse: the POST may have made a download GBIF doesn't list yet: run again later
+key lost, GBIF lists two: list, then refuse: 2 downloads match the POST: a person picks one
+request changed: refuse: the intent is for another request: finish its download or delete the intent first
+```
+
+A run posts only when no intent exists. A download made 20 minutes before the intent isn't adopted (another run's), nor is one of another request. When two downloads match, both may be this run's or one may be another client's; picking one is a person's call, so the run stops.
+
+5. The whole client: submit, wait, fetch. It needs your account in `GBIF_USERNAME` and `GBIF_PASSWORD` and makes a real download each time it posts, so the tests don't run it and `e1.py` carries it commented out. The intent file is saved before the POST and again with the key, or with the key it adopts, before any wait; a POST GBIF refuses (a 4xx) made nothing, so its intent is deleted; a 5xx or a dropped connection keeps it for the next run to reconcile. GETs retry as `fetch_file` does; the POST never retries.
+
+```python
+# q: e1-submit
+# status: untested: makes a real GBIF download with your account; the course's sample was made with the same steps
+# after: py-connect, e1-request, e1-fetch, e1-decide
+import base64
+from datetime import timezone
+
 API = "https://api.gbif.org/v1"
 USER, PASSWORD = os.environ["GBIF_USERNAME"], os.environ["GBIF_PASSWORD"]  # from the environment, never in the code
 AUTH = "Basic " + base64.b64encode(f"{USER}:{PASSWORD}".encode()).decode()
+INTENT = "download-intent.json"  # what this run asked for, saved before its POST
+DEADLINE_S = 6 * 3600  # stop asking after 6 hours; a run started later resumes the same download
 _last = 0.0
 
 
-def call(method, url, body=None, auth=False, retries=4):
-    """One request, at most 2 a second. GETs retry 429, 5xx and network errors with backoff; a POST never retries,
+def call(method, url, body=None, auth=False):
+    """One request, at most 2 a second. A GET retries what is transient, as fetch_file does; a POST never retries,
     because a second POST is a second download."""
     global _last
     headers = {"Accept": "application/json, text/plain"}
@@ -7606,124 +8359,160 @@ def call(method, url, body=None, auth=False, retries=4):
         headers["Content-Type"] = "application/json"
     if auth:
         headers["Authorization"] = AUTH
+    retries = len(WAITS) if method == "GET" else 0
     for attempt in range(retries + 1):
         time.sleep(max(0.0, _last + 0.5 - time.monotonic()))
         _last = time.monotonic()
         try:
             with urllib.request.urlopen(urllib.request.Request(url, data, headers, method=method), timeout=60) as r:
                 return r.read()
-        except urllib.error.HTTPError as e:
-            if method != "GET" or (e.code != 429 and e.code < 500) or attempt == retries:
+        except Exception as e:
+            if not transient(e) or attempt == retries:
                 raise
-        except urllib.error.URLError:
-            if method != "GET" or attempt == retries:
-                raise
-        time.sleep(2 ** attempt)
+            time.sleep(wait_for(e, attempt))
 
 
-key = call("POST", f"{API}/occurrence/download/request", build_request(keys, USER), auth=True).decode()
+def save(intent):
+    """Write the intent whole: a .part first, then the rename, so a killed run never leaves half a file."""
+    with open(INTENT + ".part", "w") as f:
+        json.dump(intent, f)
+    os.replace(INTENT + ".part", INTENT)
+
+
+request = build_request(keys, USER)
+intent = None
+if os.path.exists(INTENT):
+    with open(INTENT) as f:
+        intent = json.load(f)
+step = decide(intent, request)
+if step == ("list",):  # a run POSTed and stopped before saving the key: find its download, never POST again
+    listed = json.loads(call("GET", f"{API}/occurrence/download/user/{USER}?limit=50", auth=True))["results"]
+    step = decide(intent, request, [{"key": d["key"], "created": d["created"], "request": d["request"]} for d in listed])
+if step[0] == "refuse":
+    raise SystemExit(f"{INTENT}: {step[1]}")
+if step == ("post",):
+    intent = {"request": request, "started": datetime.now(timezone.utc).isoformat(), "key": None}
+    save(intent)  # before the POST: a run killed during it leaves the trace the next run reconciles
+    try:
+        key = call("POST", f"{API}/occurrence/download/request", request, auth=True).decode()
+    except urllib.error.HTTPError as e:
+        if e.code < 500:  # GBIF answered no (a bad request, a wrong password, too many downloads): nothing was made
+            os.remove(INTENT)
+        raise  # a 5xx or a dropped connection may have made one: the intent stays, and the next run lists
+    save({**intent, "key": key})
+else:
+    key = step[1]
+    if step[0] == "adopt":  # saved before polling: a run stopped while waiting resumes this key, never lists again
+        save({**intent, "key": key})
 print("download key:", key)
-while True:  # a job, not a response: ask at most once a minute
+
+deadline = time.monotonic() + DEADLINE_S
+while True:  # a job, not a response: ask at most once a minute, and not forever
     meta = json.loads(call("GET", f"{API}/occurrence/download/{key}"))
     if meta["status"] == "SUCCEEDED":
         break
     if meta["status"] in ("KILLED", "FAILED", "CANCELLED"):
-        raise SystemExit(f"download {key} ended {meta['status']}")
+        raise SystemExit(f"download {key} ended {meta['status']}; delete {INTENT} to ask again")
+    if time.monotonic() > deadline:
+        raise SystemExit(f"download {key} is still {meta['status']} after {DEADLINE_S // 3600} h; "
+                         f"run again later: {INTENT} resumes it")
     time.sleep(60)
 stored = meta["request"]
 if stored["checklistKey"] != BACKBONE or stored["predicate"]["predicates"][0]["checklistKey"] != BACKBONE:
     raise SystemExit("GBIF didn't keep the pinned taxonomy")  # the echo check: what ran is what was asked
 print("DOI:", meta["doi"], "records:", meta["totalRecords"], "bytes:", meta["size"])
 
-sha, size = hashlib.sha256(), 0
-with urllib.request.urlopen(meta["downloadLink"], timeout=600) as r, open(f"{key}.zip.part", "wb") as f:
-    for chunk in iter(lambda: r.read(1 << 20), b""):
-        sha.update(chunk)
-        size += len(chunk)
-        f.write(chunk)
-if size != meta["size"]:
-    raise SystemExit(f"zip is {size} bytes; GBIF says {meta['size']}")
-os.replace(f"{key}.zip.part", f"{key}.zip")
-print("zip sha256:", sha.hexdigest())  # keep it with the DOI: it is how a later run knows it has the same file
+got, digest = fetch_file(meta["downloadLink"], f"{key}.zip", size=meta["size"])
+print("zip sha256:", digest)  # keep it with the DOI: it is how a later run knows it has the same file
 ```
 
-Files with checksums, on the published lab files: stream each one to disk, hash it on the way, and keep it only if its size and sha256 equal the manifest's.
+**Result:** the request holds critwire's 73 GBIF keys and the six filters of §4.2, with the legacy checklist pinned twice. Submitted, the course's download was ready after 16 min 41 s: a 34,725,756-byte zip of 394,532 records from 454 datasets, DOI `10.15468/dl.fbpk9w`, and GBIF's stored request echoed both checklist keys (§A.1). The client retries a whole file, honours `Retry-After`, keeps only files whose size and sha256 match the publisher's, and never posts while a download it may have made could exist. Both lab files match the manifest.
+
+**Exercise:** `wait_for` reads `Retry-After` only as a number of seconds, but HTTP also lets a server send a date ([RFC 9110, section 10.2.3](https://www.rfc-editor.org/rfc/rfc9110#section-10.2.3)), and a server can ask for a wait no client should accept. Write `retry_after(value, now)`: the seconds either form asks for, never below 0 or above `RETRY_AFTER_CAP`, and `None` for a value that is neither (the backoff applies then). Put it into `wait_for` and show what the client does, at 12:00:00 UTC on 29 October 2026, with a 429 and `Retry-After: 1`; a 503 with a date 30 s later; a 503 with a date an hour earlier; a 503 with `3600`; a 503 with `soon`; and a 404.
+
+**Answer:**
 
 ```python
-# q: e1-checksum
+# q: e1-ex
 # status: ran
-import hashlib
-import json
-import os
-import time
-import urllib.error
-import urllib.request
-
-BASE = os.environ.get("LEARN_BASE", "https://critwire.com")
+# after: e1-fetch
+import email.message
+from datetime import datetime, timezone
+from email.utils import parsedate_to_datetime
 
 
-def get(url, retries=4):
-    """A GET that retries rate limits (429), server errors and dropped connections, waiting 1, 2, 4, 8 s."""
-    for attempt in range(retries + 1):
+def retry_after(value, now):
+    """Seconds a Retry-After asks for, as a number of seconds or as an HTTP date, kept between 0 and the cap;
+    None when it is neither."""
+    if value.isdigit():
+        seconds = int(value)
+    else:
         try:
-            return urllib.request.urlopen(url, timeout=60)
-        except urllib.error.HTTPError as e:
-            if (e.code != 429 and e.code < 500) or attempt == retries:
-                raise
-        except urllib.error.URLError:
-            if attempt == retries:
-                raise
-        time.sleep(2 ** attempt)
+            when = parsedate_to_datetime(value)
+        except (TypeError, ValueError):
+            return None
+        seconds = (when - now).total_seconds()
+    return int(min(max(seconds, 0), RETRY_AFTER_CAP))
 
 
-def fetch(name, manifest):
-    """Stream a lab file to disk, hashing as it arrives; refuse it unless its size and sha256 match the manifest."""
-    expected = manifest["files"][name]
-    sha, size = hashlib.sha256(), 0
-    with get(f"{BASE}/learn/data/{name}") as r, open(name + ".part", "wb") as f:
-        for chunk in iter(lambda: r.read(1 << 20), b""):
-            sha.update(chunk)
-            size += len(chunk)
-            f.write(chunk)
-    if size != expected["bytes"] or sha.hexdigest() != expected["sha256"]:
-        os.remove(name + ".part")
-        raise SystemExit(f"{name}: {size} bytes, sha256 {sha.hexdigest()[:12]}; the manifest says "
-                         f"{expected['bytes']}, {expected['sha256'][:12]}")
-    os.replace(name + ".part", name)  # only a checked file gets its real name
-    return size, sha.hexdigest()
+def wait_for(error, attempt, now=None):
+    """e1-fetch's rule with both forms: the server's wait when it gives one that can be read, else the backoff."""
+    value = error.headers.get("Retry-After") if isinstance(error, urllib.error.HTTPError) else None
+    seconds = retry_after(value, now or datetime.now(timezone.utc)) if value else None
+    return WAITS[attempt] if seconds is None else seconds
 
 
-with get(f"{BASE}/learn/data/manifest.json") as r:
-    manifest = json.load(r)
-for name in ["occurrences.parquet", "datasets.csv"]:
-    size, digest = fetch(name, manifest)
-    print(f"{name}: {size} bytes, sha256 {digest[:12]} = manifest, {manifest['files'][name]['rows']} rows")
+NOW = datetime(2026, 10, 29, 12, 0, 0, tzinfo=timezone.utc)
+for code, value in [(429, "1"), (503, "Thu, 29 Oct 2026 12:00:30 GMT"), (503, "Thu, 29 Oct 2026 11:00:00 GMT"),
+                    (503, "3600"), (503, "soon"), (404, None)]:
+    headers = email.message.Message()
+    if value is not None:
+        headers["Retry-After"] = value
+    error = urllib.error.HTTPError("https://example.org/file", code, "", headers, None)
+    shown = f"HTTP {code}" + (f", Retry-After {value!r}" if value else "")
+    print(f"{shown}: " + (f"again in {wait_for(error, 0, NOW)} s" if transient(error) else "not retried"))
 ```
 
 ```text
--- result: e1-checksum · python · sha256 429afc1d5bca
-occurrences.parquet: 622971 bytes, sha256 53086c9a1fb8 = manifest, 40395 rows
-datasets.csv: 72797 bytes, sha256 3bd8c1726239 = manifest, 400 rows
+-- result: e1-ex · python · sha256 b7f9b6d2f5dd
+HTTP 429, Retry-After '1': again in 1 s
+HTTP 503, Retry-After 'Thu, 29 Oct 2026 12:00:30 GMT': again in 30 s
+HTTP 503, Retry-After 'Thu, 29 Oct 2026 11:00:00 GMT': again in 0 s
+HTTP 503, Retry-After '3600': again in 60 s
+HTTP 503, Retry-After 'soon': again in 1 s
+HTTP 404: not retried
 ```
 
-**Expected:** the request holds critwire's 73 GBIF keys and the six filters of §4.2, with the legacy checklist pinned twice; apart from `creator` and `sendNotification`, it equals, as JSON, the request GBIF stored for the spike's download. Submitted, that download was ready after 16 min 41 s: a 34,725,756-byte zip of 394,532 records from 454 datasets, DOI `10.15468/dl.fbpk9w`, and GBIF's stored request echoed both checklist keys (§A.1). Both lab files match the manifest; a file that doesn't is deleted and the block stops, naming both checksums.
+**Check:** The date 30 s ahead gives 30 s; the date in the past gives 0, not a negative wait; `3600` is cut to the 60 s cap; `soon` can't be read, so the backoff's first wait, 1 s, applies; the 404 isn't retried at all, whatever its headers say. `parsedate_to_datetime`, from the standard library's `email.utils`, reads HTTP's date form; redefining `wait_for` after `e1-fetch` is enough, because `fetch_file` looks the name up each time it calls it. Python compares its answer with `now` only because both carry a time zone: an HTTP date is always GMT, so the function returns it as UTC, and a naive `now` would raise a `TypeError`.
+
+**Dialects:**
+- **requests and urllib3:** `requests` with urllib3's `Retry` (`total`, `backoff_factor`, `status_forcelist=[429, 500, 502, 503, 504]`, `respect_retry_after_header=True`, mounted with an `HTTPAdapter`) retries the request and its opening; a body cut while you stream it with `iter_content` still raises in your own loop, so the whole-file retry and the length check stay yours. `allowed_methods` leaves POST out by default, for the reason above.
+- **pygbif:** `occ.download(…)` posts a download, `occ.download_meta(key)` reads its status, `occ.download_get(key)` fetches the zip. It saves no intent: the key it returns is yours to keep before anything else can fail.
+- **R:** rgbif's `occ_download(pred_in("taxonKey", keys), …)`, `occ_download_wait(key)` and `occ_download_get(key)`, then `occ_download_import()` to read it.
+- **curl:** `curl --fail --retry 4 -o file.part URL` retries timeouts and the transient HTTP codes (408, 429, 500, 502, 503, 504), doubling a 1 s wait and honouring `Retry-After`; `curl -C - …` resumes a partial file instead of starting it again, which is safe only when you check the finished file's checksum.
+- **ArcGIS Pro:** Pro has no tool for GBIF's download API. The download client uses only Python's standard library, so it runs as written in Pro's Python window or a Pro notebook. XY Table To Point (`arcpy.management.XYTableToPoint`, X Field `decimalLongitude`, Y Field `decimalLatitude`, Coordinate System WGS 1984) turns the download's table into points.
 
 #### e2 · transform-load
 
 **Tool:** Py + PG · **Time:** 2.5 h · **Prereqs:** e1, d4
 
-**Goal:** load a delivered file into typed, checked tables, all or nothing. The pattern has three parts:
-- **Staging:** a table with one `text` column per column of the file, loaded exactly as delivered. Nothing can fail on a type here, and every later error is a SQL query that names its rows.
-- **`COPY`**, not row-by-row `INSERT`: PostgreSQL reads the file as one stream. The spike staged GBIF's 394,532 rows in 6.7 s and finished the whole load, types and checks included, in 14.2 s. psycopg's `cursor.copy` streams from Python, so a zip member goes in without being extracted.
+**Concept:** load a delivered file into typed, checked tables, all or nothing, and when the load refuses, say which record broke it and why. The pattern has three parts:
+- **Staging:** a table with one `text` column per column of the file, loaded exactly as delivered. No value can fail a type here, so the type errors come later, from SQL queries that can name their rows. The file itself can still fail: a record with a field too many, a NUL byte (the zero byte, which a PostgreSQL text value can't hold), or bytes that aren't valid UTF-8 stop `COPY`, and its error gives the line.
+- **`COPY`**, not row-by-row `INSERT`: PostgreSQL reads the file as one stream. The spike staged GBIF's 394,532 rows in 6.7 s and finished the whole load, types and checks included, in 14.2 s. psycopg's `cursor.copy` streams from Python, so a zip member goes in without being extracted. A `COPY` keeps all its rows or none: one bad line refuses the lines before it too.
 - **Typed tables, filled from staging with SQL:** casts, constraints, the geometry (a generated column, so it can't disagree with the coordinates), and the species rule. Then the checks. All of it runs in one transaction, so a failed check leaves the tables as they were before the run (d4).
+- **Check before you cast.** A cast that fails stops the statement at its first bad value, and its message gives the value but neither the record nor the column. `pg_input_is_valid(value, type)` (PostgreSQL 16) answers whether a value would cast, without raising an error, so one query can list every bad value with its record's key and column before the typed insert runs; `pg_input_error_info` gives the message the cast would have raised.
+
+**Diagram:** `e2-load`, after the Concept's list: the file → stage as text with `COPY` → check before you cast (`pg_input_is_valid`) → insert typed (casts, constraints, the geometry, the species rule) → the checks → one COMMIT. If `COPY` refuses the file, a value won't cast, a constraint fails or a check's count isn't 0, everything rolls back, and the error names the file's line, or the record, column and value, or the constraint or check.
 
 **`COPY`'s default format is wrong for files you didn't write.** GBIF's `SIMPLE_CSV` is tab-separated and never quotes a field. Read with `FORMAT text`, `COPY`'s default, a backslash starts an escape: `\n` becomes a line break, other backslashes vanish, `\N` becomes NULL, and an empty field stays an empty string. Nothing raises an error. CSV mode with a tab delimiter and a quote character that never occurs (`\b`, backspace) reads every byte as data and an empty field as NULL. On the real download, text format silently changed 9 rows, while this form kept all 97 rows holding a `\` or a `"` byte for byte (§A.1). The same rule applies to the lab loader (§4.3): never use text format on data you didn't write.
 
 **Synonyms.** Four of critwire's GBIF keys are synonyms in GBIF's checklist (Blanding's turtle, Baird's tapir, Temminck's and giant pangolins). GBIF files their records under the accepted species' `speciesKey` and keeps the key you asked for in `taxonKey`, so joining on `speciesKey` alone loses them: 2,385 records in the spike. The rule is the species whose key is the record's `speciesKey`, else its `taxonKey`; a record that matches no species, or two different ones, fails the load (§4.2).
 
+**Licences.** The typed insert below renames the two licence codes this file uses, and nothing more. That is an illustration, not the lab sample's licence rule: the sample keeps a record only if its *effective* licence, the more restrictive of the record's own and its dataset's, is CC0 1.0 or CC BY 4.0 (§4.2), which needs each dataset's licence as well (e4).
+
 **Data:** three made-up records in GBIF's format (a few of its 50 columns), which the first block holds; `species` (the GBIF keys); `occurrences` for the GeoPandas round trip.
 
-**Key code:** the file and the staging step. The `COPY` statement is the spike's, character for character (`SP/etl/gbif_load.py`). The block prints nothing; the next two run it first.
+**Worked example:** the file and the staging step. The `COPY` statement is the spike's, character for character (`SP/etl/gbif_load.py`). The block prints nothing; the blocks after it run it first.
 
 ```python
 # q: e2-file
@@ -7742,8 +8531,14 @@ ROWS = [
      "Sirena station", "8.4800", "-83.5900", "250", "", "", "2440897", "8395500",
      "MACHINE_OBSERVATION", "CC_BY_4_0", r"\N"],
 ]
-# Three made-up records in GBIF's SIMPLE_CSV form: tab-separated, no quoting, an empty field for "no value".
-GBIF_FILE = ("\n".join("\t".join(row) for row in [HEADER, *ROWS]) + "\n").encode()
+
+
+def gbif_file(rows):
+    """Records in GBIF's SIMPLE_CSV form: a header line, tab-separated, no quoting, an empty field for "no value"."""
+    return ("\n".join("\t".join(row) for row in [HEADER, *rows]) + "\n").encode()
+
+
+GBIF_FILE = gbif_file(ROWS)  # three made-up records
 
 # Every column text: the file is read exactly as delivered, and typed in SQL afterwards.
 CREATE_STAGING = "CREATE TEMP TABLE gbif_staging (" + ", ".join(f'"{h}" text' for h in HEADER) + ")"
@@ -7805,7 +8600,60 @@ text format | 1000000002 | Pafuri↵orth bank | '' | CHANGED
 text format | 1000000003 | Sirena station | NULL | CHANGED
 ```
 
-Typed, matched to species and checked, in one transaction. A `TEMP` table can't have a foreign key to a lasting table, so here the species rule's `NOT NULL` does that job; in your own schema, declare the key.
+CSV mode keeps all three records as sent. Text format changes all three, and says nothing: the backslash in `Cradle Mountain\Dove Lake track` disappears, `Pafuri\north bank` gains a line break, the empty `recordedBy` becomes an empty string instead of NULL, and the recorder `\N` becomes NULL.
+
+**Lab:**
+1. Files that break `COPY`. Staging takes any value, but not any file: each of three copies of the file has one record damaged in a way a real delivery can be, and each `COPY` runs in a savepoint (a point inside the transaction that a failure rolls back to), so the next one can try.
+
+```python
+# q: e2-copy-fails
+# status: ran
+# after: py-connect, e2-file
+import re
+
+import psycopg
+
+# Three ways a delivered file breaks COPY itself, before any type is involved: each damages one record of GBIF_FILE.
+BROKEN = [
+    ("a tab inside a field", GBIF_FILE.replace(b"Sirena station", b"Sirena\tstation")),
+    ("a NUL byte", GBIF_FILE.replace(b"Pafuri", b"Paf\x00uri")),
+    ("Latin-1, not UTF-8", GBIF_FILE.replace('A. "Sam" Lee'.encode(), 'A. "Sam" Lée'.encode("latin-1"))),
+]
+
+with connect() as conn, conn.cursor() as cur:
+    cur.execute(CREATE_STAGING)
+    print("file | SQLSTATE | line | error")
+    for name, data in BROKEN:
+        try:
+            with conn.transaction():  # a savepoint: the failed COPY is undone, the table stays
+                with cur.copy(COPY_STAGING) as copy:
+                    copy.write(data)
+        except psycopg.Error as error:
+            line = re.search(r"\bline (\d+)", error.diag.context or "")  # COPY's context names the file's line
+            print(f"{name} | {error.sqlstate} | {line[1] if line else '?'} | {error.diag.message_primary}")
+        else:
+            raise SystemExit(f"{name}: COPY accepted it")
+    failed = cur.execute("SELECT count(*) FROM gbif_staging").fetchone()[0]
+    with cur.copy(COPY_STAGING) as copy:
+        copy.write(GBIF_FILE)
+    delivered = cur.execute("SELECT count(*) FROM gbif_staging").fetchone()[0]
+    conn.rollback()
+
+print(f"rows staged: {failed} after the three failed COPYs, {delivered} from the file as delivered")
+```
+
+```text
+-- result: e2-copy-fails · python · sha256 6e24b65c626e
+file | SQLSTATE | line | error
+a tab inside a field | 22P04 | 4 | extra data after last expected column
+a NUL byte | 22021 | 3 | invalid byte sequence for encoding "UTF8": 0x00
+Latin-1, not UTF-8 | 22021 | 2 | invalid byte sequence for encoding "UTF8": 0xe9 0x65 0x0a
+rows staged: 0 after the three failed COPYs, 3 from the file as delivered
+```
+
+Each error names the problem and the line: the header is line 1, so line 4 is the tapir's record, whose locality now holds a tab and so one field too many. `22P04` is "bad copy file format"; `22021` is "character not in repertoire", a byte sequence that isn't a character in the connection's encoding (UTF-8 here). The line before each damaged one was fine, yet the staging table is empty after all three: a `COPY` is one statement, and a statement keeps all its rows or none. The fix belongs at the source, or in a step that repairs the bytes before `COPY` and records what it changed; `COPY` has no option that skips a malformed line.
+
+2. Typed, matched to species and checked, in one transaction. A `TEMP` table can't have a foreign key to a lasting table, so here the species rule's `NOT NULL` does that job; in your own schema, declare the key.
 
 ```python
 # q: e2-typed
@@ -7828,6 +8676,8 @@ CREATE TEMP TABLE occurrences_new (
 )"""
 
 # The species whose GBIF key is the record's speciesKey, else its taxonKey (a synonym keeps our key in taxonKey).
+# The license: this file's two codes renamed, for illustration only. The lab sample keeps a record only if its
+# effective license, the more restrictive of its own and its dataset's, is open; that needs the dataset's too.
 INSERT_TYPED = """
 INSERT INTO occurrences_new
 SELECT g."gbifID"::bigint, coalesce(by_species.id, by_taxon.id), g."datasetKey"::uuid,
@@ -7879,63 +8729,196 @@ id | species | license | uncertainty_m | year | geom
 1000000003 | Tapirus bairdii | CC BY 4.0 | 250.0 | NULL | POINT(-83.59 8.48)
 ```
 
-GeoPandas to and from PostGIS, for work that is easier in Python. `read_postgis` turns a query into a GeoDataFrame, `to_postgis` writes one back as a table (it needs SQLAlchemy and GeoAlchemy2, both in §3.3's environment). The write stays in the connection's transaction, which the block rolls back.
+The three records map to the devil, Temminck's pangolin and Baird's tapir, but a join on `speciesKey` alone finds only the devil: the other two are synonyms. Missing values arrive as NULL, and each record has a point in SRID 4326. The license column shows the renaming worked on these three records; it says nothing about whether their datasets allow them to be published.
+
+3. Casts that name their record. Two values a spreadsheet might write, a unit after a number and a decimal comma, staged without complaint; the typed insert's cast would stop at the first.
+
+```python
+# q: e2-casts
+# status: ran
+# after: py-connect, e2-file
+import psycopg
+
+# The type each staged column gets in e2-typed's INSERT_TYPED.
+CASTS = {"gbifID": "bigint", "datasetKey": "uuid", "decimalLatitude": "float8", "decimalLongitude": "float8",
+         "coordinateUncertaintyInMeters": "float8", "year": "integer", "month": "integer", "taxonKey": "bigint",
+         "speciesKey": "bigint"}
+# Every staged value its cast would refuse, with its record's key and its column: what a failed cast doesn't say.
+BAD_VALUES = " UNION ALL ".join(
+    f"""SELECT "gbifID", '{column}', "{column}", '{type_}' FROM gbif_staging
+        WHERE NOT pg_input_is_valid("{column}", '{type_}')""" for column, type_ in CASTS.items()) + " ORDER BY 1, 2"
+
+rows = [row.copy() for row in ROWS]
+rows[0][HEADER.index("coordinateUncertaintyInMeters")] = "30 m"
+rows[1][HEADER.index("decimalLatitude")] = "-22,4310"
+
+with connect() as conn, conn.cursor() as cur:
+    stage(cur, gbif_file(rows))  # staging takes both: every column is text
+    try:
+        with conn.transaction():
+            cur.execute('SELECT "decimalLatitude"::float8, "coordinateUncertaintyInMeters"::float8 FROM gbif_staging')
+    except psycopg.Error as error:
+        print(f"the cast alone: {error.sqlstate} {error.diag.message_primary}")
+    bad = cur.execute(BAD_VALUES).fetchall()  # run this before INSERT_TYPED; refuse the load if it returns a row
+    conn.rollback()
+
+print("gbifID | column | value | type")
+for row in bad:
+    print(" | ".join(row))
+print(f"load refused before INSERT_TYPED: {len(bad)} values in {len({row[0] for row in bad})} of {len(rows)} records")
+```
+
+```text
+-- result: e2-casts · python · sha256 f015257c3640
+the cast alone: 22P02 invalid input syntax for type double precision: "30 m"
+gbifID | column | value | type
+1000000001 | coordinateUncertaintyInMeters | 30 m | float8
+1000000002 | decimalLatitude | -22,4310 | float8
+load refused before INSERT_TYPED: 2 values in 2 of 3 records
+```
+
+The cast alone reports `"30 m"` and stops: the decimal comma two records later stays hidden until the first is fixed and the load run again, and nothing in the message says which record held `30 m`. The check lists both, keyed by `gbifID`, in one pass. `pg_input_is_valid` returns NULL for a NULL value, so an empty field is never reported as bad; a column that must have a value says so with `NOT NULL`.
+
+4. GeoPandas to and from PostGIS, for work that is easier in Python. `read_postgis` turns a query into a GeoDataFrame, `to_postgis` writes one back as a table (it needs SQLAlchemy and GeoAlchemy2, both in §3.3's environment). SQLAlchemy gets its connections from `connect()`, so it uses the same database, role and search path as every other block, and the write names its schema rather than trusting the search path to pick one. The write stays in the connection's transaction, which the block rolls back.
 
 ```python
 # q: e2-geopandas
 # status: ran
+# after: py-connect
 import geopandas as gpd
 from sqlalchemy import create_engine, text
 
-# The same lab connection for SQLAlchemy: libpq's PG* variables pick the database, the options set the search path.
-engine = create_engine("postgresql+psycopg://", connect_args={"options": "-c search_path=learn_curriculum,public"})
+# SQLAlchemy on py-connect's connection: the same database, role and search path.
+engine = create_engine("postgresql+psycopg://", creator=connect)
 
 with engine.connect() as conn:
     devils = gpd.read_postgis(
-        text("SELECT o.id, o.year, o.geom FROM occurrences AS o JOIN species AS s ON s.id = o.species_id "
+        text("SELECT o.id, o.year, o.geom FROM learn_curriculum.occurrences AS o "
+             "JOIN learn_curriculum.species AS s ON s.id = o.species_id "
              "WHERE s.scientific_name = 'Sarcophilus harrisii' ORDER BY o.id"),
         conn, geom_col="geom")
     print(f"read: {len(devils)} rows, CRS {devils.crs.to_string()}, geometry {devils.geom_type.iloc[0]}")
 
     metres = devils.to_crs(3577)  # GDA94 / Australian Albers, an equal-area projection in metres
     metres["geom"] = metres.buffer(1000)  # a 1 km circle around each record
-    metres.to_postgis("devil_buffers", conn, if_exists="fail", index=False)  # in this transaction
+    # The schema named, not left to the search path; the write stays in this connection's transaction.
+    metres.to_postgis("devil_buffers", conn, schema="learn_curriculum", if_exists="fail", index=False)
     n, srid, kind, km2 = conn.execute(text(
         "SELECT count(*), min(ST_SRID(geom)), min(GeometryType(geom)), round(sum(ST_Area(geom))::numeric / 1e6, 1) "
-        "FROM devil_buffers")).one()
+        "FROM learn_curriculum.devil_buffers")).one()
     print(f"written: {n} rows, SRID {srid}, {kind}, {km2} km² in all")
+    schema = conn.execute(text(
+        "SELECT relnamespace::regnamespace::text FROM pg_class "
+        "WHERE oid = to_regclass('learn_curriculum.devil_buffers')")).scalar_one()
+    assert schema == "learn_curriculum", f"devil_buffers was written to {schema}"
+    print(f"devil_buffers is in schema {schema}, until the rollback")
     conn.rollback()  # the lab leaves learn_curriculum as it found it
+    left = conn.execute(text("SELECT to_regclass('learn_curriculum.devil_buffers')")).scalar_one()
+    print(f"after the rollback: {left or 'no table'}")
 ```
 
 ```text
--- result: e2-geopandas · python · sha256 2cde0f113ff8
+-- result: e2-geopandas · python · sha256 3d5433163e79
 read: 2000 rows, CRS EPSG:4326, geometry Point
 written: 2000 rows, SRID 3577, POLYGON, 6273.1 km² in all
+devil_buffers is in schema learn_curriculum, until the rollback
+after the rollback: no table
 ```
 
-**Expected:** CSV mode keeps all three records as sent. Text format changes all three, silently: the backslash in `Cradle Mountain\Dove Lake track` disappears, `Pafuri\north bank` gains a line break, the empty `recordedBy` becomes an empty string instead of NULL, and the recorder `\N` becomes NULL. Typed, the three records map to the devil, Temminck's pangolin and Baird's tapir, but a join on `speciesKey` alone finds only the devil: the other two are synonyms. Missing values arrive as NULL, and each record has a point in SRID 4326. GeoPandas reads the devil's 2,000 records as points in EPSG:4326 and writes 2,000 one-kilometre buffers in EPSG:3577 (Australian Albers, in metres), 6,273.1 km² together.
+GeoPandas reads the devil's 2,000 records as points in EPSG:4326 and writes 2,000 one-kilometre buffers in EPSG:3577 (Australian Albers, in metres), 6,273.1 km² together, overlaps counted twice. The catalogue (`pg_class`, whose `relnamespace` is the table's schema) confirms where the table went while the transaction is still open; after the rollback it is gone. The lab role can create tables only in `learn_curriculum`, its own schema, not in `public`, so a write that fell back to the search path's next schema would fail rather than land somewhere unexpected.
+
+**Result:** a delivered file goes into staging exactly as sent, in CSV mode, never text format. A file with a damaged line is refused whole, and the error gives the line and its SQLSTATE. Every value that wouldn't cast is listed with its record's key and its column before the typed insert runs. The typed load matches synonyms through `taxonKey`, and any failed check rolls it all back. GeoPandas writes into the schema it names, and the lab leaves `learn_curriculum` as it found it.
+
+**Exercise:** a cast that succeeds can still break a `CHECK`: `13` is a valid integer but not a month. Write one query that reports every problem in the staging table at once: for `datasetKey` (uuid), `decimalLatitude` and `decimalLongitude` (float8, within −90 to 90 and −180 to 180), `year` and `month` (integer, month within 1 to 12), each value that won't cast, with the message the cast would raise, and each value that casts but falls outside its range. Run it on the three records with month `13` on the first, latitude `-122.4310` on the second, and on the third a `datasetKey` one digit short and year `c. 2015`.
+
+**Answer:**
+
+```python
+# q: e2-ex
+# status: ran
+# after: py-connect, e2-file
+# e2-typed's casts and CHECKs, per staged column: its type, and the range a typed value must fall in (None: any).
+RULES = [
+    ("datasetKey", "uuid", None),
+    ("decimalLatitude", "float8", (-90, 90)),
+    ("decimalLongitude", "float8", (-180, 180)),
+    ("year", "integer", None),
+    ("month", "integer", (1, 12)),
+]
+
+
+def problem(column, type_, bounds):
+    """A value's problem, or NULL: the cast's own message, else the range it breaks. CASE tests in order,
+    so a value is cast only once pg_input_is_valid has said it can be."""
+    out_of_range = (f"""WHEN NOT ("{column}"::{type_} BETWEEN {bounds[0]} AND {bounds[1]})
+                    THEN 'outside {bounds[0]} to {bounds[1]}'""" if bounds else "")
+    return f"""SELECT "gbifID", '{column}' AS column_name, "{column}" AS value,
+                      CASE WHEN NOT pg_input_is_valid("{column}", '{type_}')
+                           THEN (pg_input_error_info("{column}", '{type_}')).message
+                           {out_of_range} END AS problem
+               FROM gbif_staging"""
+
+
+PROBLEMS = ("SELECT * FROM (" + " UNION ALL ".join(problem(*rule) for rule in RULES) + ") AS p "
+            "WHERE problem IS NOT NULL ORDER BY 1, 2")
+
+rows = [row.copy() for row in ROWS]
+rows[0][HEADER.index("month")] = "13"
+rows[1][HEADER.index("decimalLatitude")] = "-122.4310"
+rows[2][HEADER.index("datasetKey")] = "00000000-0000-0000-0000-00000000002"
+rows[2][HEADER.index("year")] = "c. 2015"
+
+with connect() as conn, conn.cursor() as cur:
+    stage(cur, gbif_file(rows))
+    problems = cur.execute(PROBLEMS).fetchall()
+    conn.rollback()
+
+print("gbifID | column | value | problem")
+for row in problems:
+    print(" | ".join(row))
+print(f"load refused: {len(problems)} problems in {len({row[0] for row in problems})} of {len(rows)} records")
+```
+
+```text
+-- result: e2-ex · python · sha256 9f02311e2683
+gbifID | column | value | problem
+1000000001 | month | 13 | outside 1 to 12
+1000000002 | decimalLatitude | -122.4310 | outside -90 to 90
+1000000003 | datasetKey | 00000000-0000-0000-0000-00000000002 | invalid input syntax for type uuid: "00000000-0000-0000-0000-00000000002"
+1000000003 | year | c. 2015 | invalid input syntax for type integer: "c. 2015"
+load refused: 4 problems in 3 of 3 records
+```
+
+**Check:** All four problems appear, though the third record has two: a cast error stops a statement at its first bad value, while this query only asks. The month and the latitude cast fine and fail their ranges; the short `datasetKey` and `c. 2015` fail their casts, with the message PostgreSQL would have raised. The order inside `CASE` matters: SQL may evaluate the parts of a `WHERE … OR …` in any order, so casting in an `OR` beside `pg_input_is_valid` could still raise; a `CASE` tests its branches in order, so the cast runs only on values that can take it.
+
+**Dialects:**
+- **PostgreSQL:** psql's `\copy gbif_staging FROM 'file.csv' (FORMAT csv, DELIMITER E'\t', QUOTE E'\b', NULL '', HEADER true)` sends a file from your machine, where `COPY … FROM 'file'` reads one on the database server. `COPY` reads in the connection's client encoding: `ENCODING 'LATIN1'` reads a file you know is Latin-1, converted to UTF-8 as it loads. PostgreSQL 17 adds `ON_ERROR ignore`, which skips rows whose values don't fit the column types; a malformed line still stops the `COPY`, and into an all-text staging table no value can fail its type anyway.
+- **DuckDB:** `read_csv('file.csv', delim = '\t', quote = '', all_varchar = true)` is the staging read; `store_rejects = true` records each line it can't read in the `reject_errors` table instead of stopping. `TRY_CAST(x AS DOUBLE)` returns NULL for a value that won't cast, so `WHERE x IS NOT NULL AND TRY_CAST(x AS DOUBLE) IS NULL` is the bad-value check.
+- **SQL Server:** `BULK INSERT staging FROM 'file.csv' WITH (FIELDTERMINATOR = '\t', ROWTERMINATOR = '0x0a', CODEPAGE = '65001', FIRSTROW = 2)`, with `ERRORFILE` to keep the lines it rejects. `TRY_CAST` and `TRY_CONVERT` return NULL for a value that won't cast. There is no generated geometry column of this kind: compute `geography::Point(latitude, longitude, 4326)` in the insert.
+- **GeoPandas:** `to_postgis(name, con, schema=…, if_exists="fail" | "replace" | "append")`; `"replace"` drops the table first, with its indexes and grants. `read_postgis(sql, con, geom_col=…)` needs the geometry column's name. Both take a SQLAlchemy connection, and `create_engine(…, creator=…)` builds one from any function that returns a DBAPI connection.
+- **ArcGIS Pro:** Export Table (`arcpy.conversion.ExportTable`) reads a tab-separated text file into a geodatabase table, guessing each field's type from the file; a `schema.ini` beside the file, in the Microsoft text-driver format, fixes the delimiter and each field's type. XY Table To Point (`arcpy.management.XYTableToPoint`) builds points from the coordinates. Pro writes to PostgreSQL through a database connection file (`.sde`), and Export Features (`arcpy.conversion.ExportFeatures`) copies a layer into it.
 
 #### e3 · idempotent
 
 **Tool:** Py + PG · **Time:** 2.0 h · **Prereqs:** e2
 
-**Goal:** a pipeline you can re-run without fear. An operation is **idempotent** when doing it twice leaves the same result as doing it once. Schedules retry, people re-run a failed job, and two runs overlap, so a load that appends rows doubles them. The tools:
-- **Keys and upserts** (d4): rows carry their source's key (GBIF's `gbifID`) and are inserted with `ON CONFLICT`, so a second copy updates instead of adding.
-- **Replace in one transaction:** the lab loader drops and rebuilds its schema inside one transaction (§4.3), so a run either replaces everything or changes nothing.
-- **Run ids from content:** a run's id is the checksum of its input. The same input is recognized and skipped; a changed one loads under a new id. A clock-based id would load the same input twice.
-- **Deterministic choices:** "any 2,000 records" must be the same 2,000 every time. `LIMIT` without `ORDER BY`, or `random()` without a seed, is not. The lab sample orders each species' records by the `md5` of their id (§4.2), which every engine computes the same way.
-- **Deterministic outputs:** rows in key order and stable formats, so the same input gives byte-identical files and a sha256 proves that nothing changed.
+**Concept:** a pipeline you can re-run without fear. An operation is **idempotent** when doing it twice leaves the same result as doing it once. Schedules retry, people re-run a failed job, and two runs overlap, so a load that appends rows doubles them. Three ideas sound alike here, and each answers a different question:
+- **Deterministic output:** does the same input give the same rows? "Any 100 records" must be the same 100 every time: `LIMIT` without `ORDER BY`, or `random()` without a seed, is not. The lab sample orders each species' records by the `md5` of their id, then the id (§4.2), which every engine computes the same way. Outputs follow the same rule: rows in key order and stable formats, so the same input gives a byte-identical file and a sha256 proves that nothing changed. A rule like this repeats on the same input; it doesn't promise that a record stays in the sample when the input changes.
+- **Idempotent batch application:** does a batch applied twice change the target once? Rows carry their source's key (GBIF's `gbifID`) and go in with `ON CONFLICT` (d4), and a ledger of applied batches, keyed by each batch's checksum, skips a batch it has seen. That is right for batches that never change and add up, like each day's new records.
+- **The target holds snapshot X:** is what the target holds now what this run would produce? A snapshot is the whole dataset as of one moment, and a refresh replaces the target's rows with it. The answer is a **job key**: one checksum over everything that shapes the rows: the input's checksum, the transform's version, the config and the target's schema version. A state table keeps the key, and it changes in the same transaction as the rows, so the key never describes other rows. An equal key skips; any other key reloads, including a return to an earlier input.
 
-**Data:** `occurrences`; the browser's copy of the same sample.
+**Versions and config.** Bump `TRANSFORM_VERSION` when the code's output changes, and `SCHEMA_VERSION` when the target's DDL does. The config is what shapes the rows (here the cap and the licenses), never a connection setting: the same rows loaded through another host are the same snapshot. A key without the config would skip a run whose only change is the config.
 
-**Key code:** the sample's selection rule, 100 records per species by `md5`, in the browser:
+**Data:** `occurrences`; the browser's copy of the same sample. The Tasmanian devil's 2,000 records are the snapshot the refresh job loads.
+
+**Worked example:** the sample's selection rule, 100 records per species by `md5`, then id, in the browser:
 
 ```sql
 -- q: e3-pick
 -- status: ran
 WITH ranked AS (
   SELECT id, species_id,
-         row_number() OVER (PARTITION BY species_id ORDER BY md5(CAST(id AS VARCHAR))) AS pick
+         row_number() OVER (PARTITION BY species_id ORDER BY md5(CAST(id AS VARCHAR)), id) AS pick
   FROM occurrences
 )
 SELECT count(*) AS records,
@@ -7959,7 +8942,7 @@ The same SQL in PostgreSQL. Its result block has the same hash as the browser's:
 -- engine: postgis
 WITH ranked AS (
   SELECT id, species_id,
-         row_number() OVER (PARTITION BY species_id ORDER BY md5(CAST(id AS VARCHAR))) AS pick
+         row_number() OVER (PARTITION BY species_id ORDER BY md5(CAST(id AS VARCHAR)), id) AS pick
   FROM occurrences
 )
 SELECT count(*) AS records,
@@ -7975,7 +8958,10 @@ records | species | ids_md5
 4766 | 71 | 6e68cc753c01b6150c7308b6de8e85b6
 ```
 
-A plain append against an idempotent load, run twice each, then once more with a corrected input:
+Both engines pick 4,766 records of 71 species (100 each, or all of a species' records when it has fewer), with the same md5 over their ids. The `id` after the hash is a tie-break: two equal hashes are unlikely, but with it the order is total by construction, not by luck.
+
+**Lab:**
+1. The batch ledger. A plain append against an idempotent load, run twice each, then once more with a corrected input:
 
 ```python
 # q: e3-rerun
@@ -8036,34 +9022,278 @@ idempotent, run 2: run a6672cf0d579, already loaded: skipped; 2000 rows, md5 7ed
 idempotent, run 3 (one year added): run 35146b2ce8b7, loaded 2000 rows; 2000 rows, md5 6294a8e1f695
 ```
 
+The append holds 2,000 rows after one run and 4,000 after two. The idempotent load holds 2,000 after both, with the same md5, because the second run's input has the same checksum and is skipped. The corrected input gets a new run id and loads: still 2,000 rows, one changed, and a new md5. For batches that add up, that is the right rule. For snapshots it is wrong: the ledger remembers every input it has ever seen, so a return to an earlier snapshot is skipped, and it keys on the input alone.
+
+2. The snapshot rule. A refresh job (e5 builds the real one): input A is the devil's 2,000 records as a file of `id,year,license` lines; B is the same file a week later, with one record's year corrected. The transform keeps the config's licenses and the first `cap` records by md5; version 2 of the transform also drops records without a year, and version 2 of the schema adds a `CHECK` on the license, so the job rebuilds the table. Each run reads the state row under a row lock (`FOR UPDATE`) in the transaction that would replace the rows, and compares keys. Beside it, e3-rerun's ledger rule gets the first four inputs.
+
+```python
+# q: e3-snapshot
+# status: ran
+# after: py-connect
+import hashlib
+import json
+
+from psycopg.types.json import Jsonb
+
+# The target's DDL by SCHEMA_VERSION: version 2 adds a CHECK on the licence.
+SCHEMAS = {
+    1: "CREATE TEMP TABLE devil_target (id bigint PRIMARY KEY, year integer, license text NOT NULL)",
+    2: "CREATE TEMP TABLE devil_target (id bigint PRIMARY KEY, year integer, "
+       "license text NOT NULL CHECK (license IN ('CC0 1.0', 'CC BY 4.0')))",
+}
+
+
+def md5_order(row):
+    return hashlib.md5(str(row[0]).encode()).hexdigest(), row[0]
+
+
+def transform_v1(rows, config):
+    """The rows the config keeps: records under its licences, the first `cap` by the md5 of their id."""
+    return sorted((r for r in rows if r[2] in config["licenses"]), key=md5_order)[:config["cap"]]
+
+
+def transform_v2(rows, config):
+    """Version 2 also drops records without a year."""
+    return transform_v1([r for r in rows if r[1] is not None], config)
+
+
+TRANSFORMS = {1: transform_v1, 2: transform_v2}
+
+
+def snapshot(rows):
+    """A delivered file: one line per record, `id,year,license`, an empty year for none."""
+    return "".join(f"{i},{'' if y is None else y},{lic}\n" for i, y, lic in rows).encode()
+
+
+def parse(data):
+    return [(int(i), int(y) if y else None, lic) for i, y, lic in (line.split(",") for line in data.decode().splitlines())]
+
+
+def job_key(parts):
+    """One sha256 over the four parts, as canonical JSON (sorted keys, no spaces), so equal parts give one key."""
+    return hashlib.sha256(json.dumps(parts, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+
+
+def refresh(conn, data, config, transform, schema):
+    """Make the target hold `data` under this transform, config and schema, unless the state says it already does.
+    One transaction: the target's rows and the state row change together, or neither does."""
+    parts = {"input": hashlib.sha256(data).hexdigest(), "transform": transform, "config": config, "schema": schema}
+    key = job_key(parts)
+    with conn.transaction(), conn.cursor() as cur:
+        state = cur.execute("SELECT job_key, parts FROM job_state WHERE job = 'devil' FOR UPDATE").fetchone()
+        if state is not None and state[0] == key:
+            return "nothing changed: skipped"
+        if state is None or state[1]["schema"] != schema:
+            cur.execute("DROP TABLE IF EXISTS devil_target")
+            cur.execute(SCHEMAS[schema])
+        else:
+            cur.execute("TRUNCATE devil_target")
+        rows = TRANSFORMS[transform](parse(data), config)
+        cur.executemany("INSERT INTO devil_target VALUES (%s, %s, %s)", rows)
+        cur.execute("INSERT INTO job_state VALUES ('devil', %s, %s) "
+                    "ON CONFLICT (job) DO UPDATE SET job_key = EXCLUDED.job_key, parts = EXCLUDED.parts",
+                    (key, Jsonb(parts)))
+    changed = "first load" if state is None else " and ".join(p for p in sorted(parts) if parts[p] != state[1][p]) + " changed"
+    return f"{changed}: loaded {len(rows)} rows"
+
+
+def ledger(conn, data, config):
+    """e3-rerun's rule: the run id is the input's checksum alone, and a seen run id is skipped."""
+    with conn.transaction(), conn.cursor() as cur:
+        run_id = hashlib.sha256(data).hexdigest()
+        if cur.execute("INSERT INTO load_runs VALUES (%s) ON CONFLICT DO NOTHING RETURNING run_id",
+                       (run_id,)).fetchone() is None:
+            return "run id seen before: skipped"
+        rows = transform_v1(parse(data), config)
+        cur.executemany("INSERT INTO ledger_target VALUES (%s, %s, %s) ON CONFLICT (id) DO UPDATE "
+                        "SET year = EXCLUDED.year, license = EXCLUDED.license", rows)
+        return f"loaded {len(rows)} rows"
+
+
+def holds(conn, table, inputs, config, transform):
+    """The input whose rows, under these settings, are exactly the table's rows."""
+    rows = set(conn.execute(f"SELECT id, year, license FROM {table}").fetchall())
+    return next(name for name, data in inputs.items() if rows == set(TRANSFORMS[transform](parse(data), config)))
+
+
+with connect() as conn:
+    conn.autocommit = True  # each `with conn.transaction()` is then one transaction of its own
+    conn.execute("CREATE TEMP TABLE job_state (job text PRIMARY KEY, job_key text NOT NULL, parts jsonb NOT NULL)")
+    conn.execute("CREATE TEMP TABLE load_runs (run_id text PRIMARY KEY)")
+    conn.execute(SCHEMAS[1].replace("devil_target", "ledger_target"))
+    try:
+        rows = conn.execute("""SELECT o.id, o.year, o.license FROM occurrences AS o
+                               JOIN species AS s ON s.id = o.species_id
+                               WHERE s.scientific_name = 'Sarcophilus harrisii' ORDER BY o.id""").fetchall()
+        fixed = min((r for r in rows if r[1] is not None), key=md5_order)  # next week the publisher corrects one year
+        inputs = {"A": snapshot(rows), "B": snapshot([(i, y - 1, lic) if i == fixed[0] else (i, y, lic) for i, y, lic in rows])}
+        default = {"cap": 1000, "licenses": ["CC0 1.0", "CC BY 4.0"]}
+        smaller = {**default, "cap": 500}
+        runs = [("A", default, 1, 1), ("A", default, 1, 1), ("B", default, 1, 1), ("A", default, 1, 1),
+                ("A", smaller, 1, 1), ("A", smaller, 2, 1), ("A", smaller, 2, 2), ("A", smaller, 2, 2)]
+        for n, (name, config, transform, schema) in enumerate(runs, 1):
+            what = refresh(conn, inputs[name], config, transform, schema)
+            settings = f"cap {config['cap']}, transform {transform}, schema {schema}"
+            print(f"run {n} · {name} ({settings}) · {what}; the target holds "
+                  f"{holds(conn, 'devil_target', inputs, config, transform)}")
+            if n <= 4:
+                what = ledger(conn, inputs[name], default)
+                print(f"  ledger rule · {name} · {what}; its target holds {holds(conn, 'ledger_target', inputs, default, 1)}")
+    finally:
+        conn.execute("DROP TABLE IF EXISTS job_state, load_runs, ledger_target, devil_target")
+```
+
+```text
+-- result: e3-snapshot · python · sha256 979ea874abbc
+run 1 · A (cap 1000, transform 1, schema 1) · first load: loaded 1000 rows; the target holds A
+  ledger rule · A · loaded 1000 rows; its target holds A
+run 2 · A (cap 1000, transform 1, schema 1) · nothing changed: skipped; the target holds A
+  ledger rule · A · run id seen before: skipped; its target holds A
+run 3 · B (cap 1000, transform 1, schema 1) · input changed: loaded 1000 rows; the target holds B
+  ledger rule · B · loaded 1000 rows; its target holds B
+run 4 · A (cap 1000, transform 1, schema 1) · input changed: loaded 1000 rows; the target holds A
+  ledger rule · A · run id seen before: skipped; its target holds B
+run 5 · A (cap 500, transform 1, schema 1) · config changed: loaded 500 rows; the target holds A
+run 6 · A (cap 500, transform 2, schema 1) · transform changed: loaded 500 rows; the target holds A
+run 7 · A (cap 500, transform 2, schema 2) · schema changed: loaded 500 rows; the target holds A
+run 8 · A (cap 500, transform 2, schema 2) · nothing changed: skipped; the target holds A
+```
+
+Runs 1 to 4 load A, B, then A again. The snapshot rule ends holding A, the input of the last run; the ledger rule skips A's return, because it has seen A's checksum, and keeps B. Each later run changes one part of the key and reloads: the cap from 1,000 to 500 (the config), the transform, then the schema. Run 8 repeats run 7 and skips. "Holds" is checked, not assumed: the block compares the target's rows with what each input gives under the run's settings. A key without the config would have skipped run 5 and kept 1,000 rows where the config asks for 500.
+
+3. Repeatable is not stable. The md5 cap on the devil's 2,000 records, read in reverse, then with one new record:
+
+```sql
+-- q: e3-membership
+-- status: ran
+-- engine: postgis
+WITH ranked AS (
+  SELECT id, species_id,
+         row_number() OVER (PARTITION BY species_id ORDER BY md5(CAST(id AS VARCHAR)), id) AS pick
+  FROM occurrences
+), devil AS (
+  SELECT r.id, r.pick
+  FROM ranked AS r JOIN species AS s ON s.id = r.species_id
+  WHERE s.scientific_name = 'Sarcophilus harrisii'
+), reversed AS (
+  -- the same records, read in the opposite order
+  SELECT id, row_number() OVER (ORDER BY md5(CAST(id AS VARCHAR)), id) AS pick
+  FROM (SELECT id FROM devil ORDER BY id DESC) AS d
+), newcomer AS (
+  -- next week's first new devil record whose md5 sorts before the 100th pick's
+  SELECT n AS id
+  FROM generate_series((SELECT max(id) + 1 FROM occurrences), (SELECT max(id) + 1000 FROM occurrences)) AS n
+  WHERE md5(CAST(n AS VARCHAR)) < (SELECT md5(CAST(id AS VARCHAR)) FROM devil WHERE pick = 100)
+  ORDER BY n
+  LIMIT 1
+), refreshed AS (
+  SELECT id, row_number() OVER (ORDER BY md5(CAST(id AS VARCHAR)), id) AS pick
+  FROM (SELECT id FROM devil UNION ALL SELECT id FROM newcomer) AS d
+), before_ids AS (SELECT id FROM devil WHERE pick <= 100),
+   reversed_ids AS (SELECT id FROM reversed WHERE pick <= 100),
+   refreshed_ids AS (SELECT id FROM refreshed WHERE pick <= 100)
+SELECT 'same records, read in reverse' AS input,
+       (SELECT count(*) FROM reversed_ids) AS picked,
+       coalesce((SELECT string_agg(CAST(id AS VARCHAR), ', ') FROM (SELECT id FROM reversed_ids EXCEPT SELECT id FROM before_ids) AS x), 'none') AS entered,
+       coalesce((SELECT string_agg(CAST(id AS VARCHAR), ', ') FROM (SELECT id FROM before_ids EXCEPT SELECT id FROM reversed_ids) AS x), 'none') AS dropped
+UNION ALL
+SELECT 'one new record',
+       (SELECT count(*) FROM refreshed_ids),
+       (SELECT string_agg(CAST(id AS VARCHAR) || ' (pick ' || pick || ')', ', ') FROM refreshed WHERE pick <= 100 AND id NOT IN (SELECT id FROM before_ids)),
+       (SELECT string_agg(CAST(id AS VARCHAR) || ' (was pick ' || pick || ')', ', ') FROM devil WHERE pick <= 100 AND id NOT IN (SELECT id FROM refreshed_ids));
+```
+
+```text
+-- result: e3-membership · 2 rows · sha256 545f3edf0ed3
+input | picked | entered | dropped
+same records, read in reverse | 100 | none | none
+one new record | 100 | 6556492907 (pick 97) | 1647111730 (was pick 100)
+```
+
+Read in any order, the same records give the same 100 picks: the rule depends on the ids alone. A new record whose md5 sorts before the 100th pick's enters at pick 97, and the 100th, a record that didn't change, leaves. A capped sample repeats on the same input but isn't stable under a refresh, and the course's own sample is one (at most 2,000 records per species by the same rule, §4.2): compare two samples by their ids, not their counts. A species under the cap keeps every record, so there a new record only adds.
+
 **The case study: critwire itself** (`AGENTS.md`). Each step has one writer and refuses to run on stale input:
 
 ```sh
 pnpm ingest gbif   # the only step that uses the network: normalized responses, keys sorted, one `retrieved` time per file
-pnpm derive        # pure: no network, no clock; refuses raw snapshots older than the data they describe
+pnpm derive        # pure: no network, no clock; refuses a raw snapshot whose request differs from the one it would send now
 pnpm build         # rebuilds the database from data/ each time; refuses derived files that differ from a fresh derive
 ```
 
+- Stale means the request changed, not the date: `derive` rebuilds each request from the registry and compares it with the one the snapshot recorded, so a new species or a changed filter demands a new ingest, and an old snapshot of the same request doesn't.
 - Snapshots are committed to git, so any past build can be repeated from its commit.
 - `derive` reads only files, so its outputs are a function of its inputs, and the build checks that by deriving again.
 - The deploy swaps in the new `dist/` only if the whole build passed.
 - A GBIF derived-dataset DOI is minted only for a pushed commit, tagged, so the deposit it points at never moves; an interrupted registration is re-run and reconciles with GBIF's listing before it posts again (`pnpm gbif:register`).
 
-**Expected:** both engines pick 4,766 records of 71 species (100 each, or all of a species' records when it has fewer), with the same md5 over their ids, `6e68cc753c01b6150c7308b6de8e85b6`. The append holds 2,000 rows after one run and 4,000 after two. The idempotent load holds 2,000 rows after both runs with the same md5, because the second run's input has the same checksum and is skipped. The corrected input gets a new run id and loads: still 2,000 rows, one changed, and a new md5.
+**Result:** both engines pick the same 4,766 records. A ledger keyed by the input's checksum applies each batch once, and that suits batches; a snapshot refresh keys on the input, the transform, the config and the schema together, commits the key with the rows, and so after A, B, A holds A. An md5 cap repeats on the same input, but a refresh can swap records in and out of it.
+
+**Exercise:** a deterministic output names its order. Export the devil's records (`id`, `year`, `license`) from a `TEMP` copy to CSV with `COPY (…) TO STDOUT`, twice, with an `UPDATE` between the exports that changes no value (`SET year = year` on the lowest id). Do it once without `ORDER BY` and once with `ORDER BY id`, and compare each pair's sha256.
+
+**Answer:**
+
+```python
+# q: e3-ex
+# status: ran
+# after: py-connect
+import hashlib
+
+EXPORTS = {
+    "without ORDER BY": "SELECT id, year, license FROM devil",
+    "ORDER BY id": "SELECT id, year, license FROM devil ORDER BY id",
+}
+
+
+def export(cur, query):
+    """The query's rows as a CSV file's bytes, and their sha256."""
+    with cur.copy(f"COPY ({query}) TO STDOUT (FORMAT csv, HEADER true)") as copy:
+        return hashlib.sha256(b"".join(copy)).hexdigest()
+
+
+with connect() as conn, conn.cursor() as cur:
+    cur.execute("""CREATE TEMP TABLE devil AS
+                   SELECT o.id, o.year, o.license FROM occurrences AS o JOIN species AS s ON s.id = o.species_id
+                   WHERE s.scientific_name = 'Sarcophilus harrisii' ORDER BY o.id""")
+    before = {name: export(cur, query) for name, query in EXPORTS.items()}
+    cur.execute("UPDATE devil SET year = year WHERE id = (SELECT min(id) FROM devil)")  # changes no value
+    for name, query in EXPORTS.items():
+        after = export(cur, query)
+        print(f"{name}: sha256 {before[name][:12]} then {after[:12]}: {'same file' if after == before[name] else 'a different file'}")
+    conn.rollback()
+```
+
+```text
+-- result: e3-ex · python · sha256 ee0c539414d9
+without ORDER BY: sha256 3580ece3b509 then 3c1e7511af43: a different file
+ORDER BY id: sha256 3580ece3b509 then 3580ece3b509: same file
+```
+
+**Check:** Without `ORDER BY` the file changes though no value did. PostgreSQL writes an updated row as a new version wherever it finds room, here at the end of the table, and a scan without `ORDER BY` returns rows in storage order, so the lowest id moves from the first line to the last. With `ORDER BY id` both files are the same bytes. Any output compared by checksum names its order, and its format: the same rows written by another tool, or with another number format, are another file.
+
+**Dialects:**
+- **PostgreSQL:** `INSERT … ON CONFLICT (key) DO UPDATE` is the upsert. `MERGE` (PostgreSQL 15) inserts, updates and deletes from one source in one statement; PostgreSQL 17 adds `WHEN NOT MATCHED BY SOURCE THEN DELETE`, which syncs a target to a snapshot. `TRUNCATE` is transactional in PostgreSQL, so a replace rolls back with the rest. `pg_try_advisory_xact_lock` keeps two runs of one job from overlapping (e5).
+- **DuckDB:** `INSERT OR REPLACE INTO` and `INSERT … ON CONFLICT DO UPDATE` need a primary key or a unique constraint. `md5(CAST(id AS VARCHAR))` gives the same hex text as PostgreSQL's, which is why `e3-pick` and `e3-pick-pg` agree. `BEGIN TRANSACTION; … COMMIT;` holds a replace and its state row together.
+- **SQL Server:** `MERGE … WHEN NOT MATCHED BY SOURCE THEN DELETE` syncs a target to a snapshot in one statement. `HASHBYTES('MD5', CAST(id AS varchar(20)))` returns bytes, not hex text; they sort in the same order as the hex. `sp_getapplock` keeps two runs from overlapping.
+- **Python:** `hashlib.sha256` over canonical JSON (`json.dumps(parts, sort_keys=True, separators=(",", ":"))`) gives one key for equal parts. The built-in `hash()` of a string changes from one process to the next, so it never picks a sample or makes a key.
+- **ArcGIS Pro:** Append (`arcpy.management.Append`) adds rows, so running it twice doubles them; Delete Rows (`arcpy.management.DeleteRows`) then Append replaces them. Pro keeps no record of what it loaded: keep the job key in a table of your own, as here.
 
 #### e4 · quality-provenance
 
 **Tool:** Py + PG · **Time:** 2.0 h · **Prereqs:** e3
 
-**Goal:** know what you loaded, and who to thank for it.
+**Concept:** know what you loaded, and who to thank for it.
 - **Checks written as SQL:** each check is a query that counts the rows breaking one rule, so 0 means it passed, and the same query finds the rows when it didn't. A **reject** check stops the load (e2 runs those inside its transaction); a **flag** check is reported, and the rows stay with a note, because a strange value isn't always a wrong one.
+- **Rules belong to a dataset:** a check states what this data may hold, not a truth about every map. 0, 0 is a real place, in the Gulf of Guinea; this sample rejects it because none of its records lies within 5° of it, so there two zeros are far more likely a missing coordinate than a sighting. A seabird or fisheries dataset would keep it. One zero alone is legal: two tiger records sit on the equator in Sumatra.
+- **A number can be wrong in ways `< 0` misses:** a float column holds `NaN` (not a number) and `Infinity` as well as numbers, and a delivered file's text `NaN` casts without error (e2). PostgreSQL sorts `NaN` above every number, `Infinity` included, so a check written `uncertainty < 0` passes both, and a flag written `uncertainty > 100000` counts them as merely coarse. Test the range a value must fall in, `>= 0 AND < 'Infinity'`, which every bad case fails.
+- **Quarantine:** rows a reject check refuses go to a report with their source's key, the check and the value, so someone can fix the source or the rule; a count alone tells nobody which record to look at.
+- **What the sample is:** a capped sample of open records, at most 2,000 per species by md5 (e3), so its counts are neither abundance nor an even measure of effort. The cap makes a species with 200,000 records and one with 2,000 look alike, and within a species it keeps every bias of the records: more where more people look, and many GPS fixes from each collared animal (`Bias in records`, s1).
 - **License filters:** keep only what you may publish. critwire keeps CC0 1.0 and CC BY 4.0, using each record's *effective* license, the more restrictive of its own and its dataset's (§4.2).
 - **Provenance:** every row can be traced to its source. Here that is the download's DOI, each record's `dataset_key` and the `datasets` table of titles, publishers and DOIs (§4.5).
 - **Citations:** GBIF's terms ask you to cite the download's DOI. CC BY 4.0 records also require credit to their dataset. When you publish a subset, cite a **derived dataset**: you register the subset's per-dataset record counts with GBIF and receive a DOI that credits every dataset in it. critwire does this for its countries field (`pnpm gbif:register`) and, from L1, for the lab sample (§4.2).
 
 **Data:** `occurrences`, `datasets`, `species`.
 
-**Key code:** the checks, run on the lab sample:
+**Worked example:** the checks, run on the lab sample:
 
 ```sql
 -- q: e4-checks
@@ -8113,7 +9343,58 @@ GBIF country code with no countries row | reject | 0
 … 5 more rows
 ```
 
-Which datasets the Tasmanian devil's and the jaguar's records come from, and under which license:
+**Expected:** every reject check is 0: the sample was loaded with them (§A.1), and they guard each refresh. The flags are what a reviewer reads:
+- 24,002 records (59.4 %) give no coordinate uncertainty, so their precision is unknown;
+- 15,643 repeat another record's species, dataset, place, year and month. That can be several animals, several visits, or one record published twice: inspect them, don't delete them;
+- 297 records are uncertain by more than 100 km, too coarse for the 5 km cells of s2–s5;
+- 10 Tasmanian devil records are dated 1599, before Europeans first sighted Tasmania (1642). The year is a placeholder or an error, and s1 already met it.
+
+The sample's table can't hold a negative, `NaN` or infinite uncertainty: its `CHECK` refuses them (`learn_curriculum.sql`, §4), so `e4-checks` has no row for them. A staging table, all text or without that `CHECK`, can.
+
+**Lab:**
+1. Quarantine a batch. Six made-up staged records, each check run on each record, one report row per failure:
+
+```sql
+-- q: e4-quarantine
+-- status: ran
+-- engine: postgis
+WITH staged (gbif_id, longitude, latitude, coordinate_uncertainty_m, year) AS (
+  VALUES (9000000001, 146.8, -41.4, CAST(30 AS double precision), 2019),
+         (9000000002, 146.8, -41.4, CAST(-30 AS double precision), 2019),
+         (9000000003, 146.8, -41.4, CAST('NaN' AS double precision), 2019),
+         (9000000004, 146.8, -41.4, CAST('Infinity' AS double precision), 2019),
+         (9000000005, 0.0, 0.0, CAST(10 AS double precision), 2019),
+         (9000000006, 146.8, -41.4, CAST('-Infinity' AS double precision), 2031)
+)
+SELECT s.gbif_id, c.check_name, c.value
+FROM staged AS s
+CROSS JOIN LATERAL (VALUES
+  -- NaN sorts above Infinity in PostgreSQL, so this range fails negative, NaN, Infinity and -Infinity; NULL is a flag, not a reject
+  ('coordinate uncertainty negative, NaN or infinite',
+   NOT (s.coordinate_uncertainty_m >= 0 AND s.coordinate_uncertainty_m < 'Infinity'),
+   CAST(s.coordinate_uncertainty_m AS text)),
+  -- this dataset's rule: none of its records lies near 0, 0, so there two zeros mean a missing coordinate
+  ('coordinates exactly 0, 0', s.longitude = 0 AND s.latitude = 0, s.longitude || ', ' || s.latitude),
+  ('year after the download (2026)', s.year > 2026, CAST(s.year AS text))
+) AS c (check_name, failed, value)
+WHERE c.failed
+ORDER BY s.gbif_id, c.check_name;
+```
+
+```text
+-- result: e4-quarantine · 6 rows · sha256 786d6242a0ea
+gbif_id | check_name | value
+9000000002 | coordinate uncertainty negative, NaN or infinite | -30
+9000000003 | coordinate uncertainty negative, NaN or infinite | NaN
+9000000004 | coordinate uncertainty negative, NaN or infinite | Infinity
+9000000005 | coordinates exactly 0, 0 | 0.0, 0.0
+9000000006 | coordinate uncertainty negative, NaN or infinite | -Infinity
+… 1 more row
+```
+
+Each made-up record breaks one check except the last, which breaks two and gets two report rows; record 9000000001 passes them all and would load. A test written `coordinate_uncertainty_m < 0` catches 9000000002 and 9000000006's `-Infinity`, and passes 9000000003 and 9000000004: `NaN` and `Infinity` compare above 0. The report keeps the source's key and the value as delivered, so the fix can go back to the source.
+
+2. Who to credit. Which datasets the Tasmanian devil's and the jaguar's records come from, and under which license:
 
 ```sql
 -- q: e4-credits
@@ -8139,7 +9420,7 @@ ICMBio \| Dados de ocorrência de espécies do Sistema de Autor… | Instituto C
 … 28 more rows
 ```
 
-The derived-dataset registration for that subset: the request body, built but never posted.
+3. The derived-dataset registration for that subset: the request body, built but never posted.
 
 ```python
 # q: e4-derived
@@ -8179,32 +9460,105 @@ relatedDatasets: 33 datasets, 4000 records
 body: 1718 bytes, ready to POST with your GBIF account
 ```
 
-**Expected:** every reject check is 0: the sample was loaded with them (§A.1), and they guard each refresh. The flags are what a reviewer reads:
-- 24,002 records (59.4 %) give no coordinate uncertainty, so their precision is unknown;
-- 15,643 repeat another record's species, dataset, place, year and month. That can be several animals, several visits, or one record published twice: inspect them, don't delete them;
-- 297 records are uncertain by more than 100 km, too coarse for the 5 km cells of s2–s5;
-- 10 Tasmanian devil records are dated 1599, before Europeans first sighted Tasmania (1642). The year is a placeholder or an error, and s1 already met it.
+The devil and the jaguar have 4,000 records from 33 datasets. 29 datasets supply CC BY 4.0 records (3,992) and must be credited, led by the Jaguar Movement Database (1,948 GPS-collar records), the Tasmanian Natural Values Atlas (1,413) and the Tasmanian Museum and Art Gallery (569). The 4 CC0 datasets (8 records) ask for no credit, and are credited anyway. The registration body lists the same 33 datasets and 4,000 records, with `originalDownloadDOI` set to the download's DOI. These counts are records in a capped sample: the Jaguar Movement Database supplies 1,948 of the jaguar's 2,000 because a GPS collar records the same animal again and again, not because it saw most jaguars. They say whom to credit and for how much of the sample, and nothing about where either animal is common.
 
-The devil and the jaguar have 4,000 records from 33 datasets. 29 datasets supply CC BY 4.0 records (3,992) and must be credited, led by the Jaguar Movement Database (1,948 GPS-collar records), the Tasmanian Natural Values Atlas (1,413) and the Tasmanian Museum and Art Gallery (569). The 4 CC0 datasets (8 records) ask for no credit, and are credited anyway. The registration body lists the same 33 datasets and 4,000 records, with `originalDownloadDOI` set to the download's DOI.
+**Result:** every reject check passes on the sample, and four flags are left for a reviewer: unknown precision, repeats, coarse places, and dates before 1642. A quarantine report names each refused record by its key, with the check and the value, and an uncertainty check written as a range catches negative, `NaN` and infinite values that `< 0` lets through. The devil and the jaguar need credits to 29 datasets, and a derived dataset lists all 33 in one DOI.
+
+**Exercise:** turn the row-level reject checks into a gate a load calls before its `COMMIT`. For each check, count the staged rows breaking it and keep the first key; the load goes ahead only if every count is 0. Use `e4-checks`' coordinate and year checks and `e4-quarantine`'s uncertainty check. Run the gate on a `TEMP` copy of the devil's 2,000 records, then again after inserting two made-up records: one at 0, 0, and one dated 2031 with `NaN` uncertainty.
+
+**Answer:**
+
+```python
+# q: e4-ex
+# status: ran
+# after: py-connect
+# The row-level reject checks: each one's name, and the condition a breaking row meets.
+REJECTS = [
+    ("coordinates out of range", "longitude NOT BETWEEN -180 AND 180 OR latitude NOT BETWEEN -90 AND 90"),
+    ("coordinates exactly 0, 0", "longitude = 0 AND latitude = 0"),
+    ("coordinate uncertainty negative, NaN or infinite",
+     "NOT (coordinate_uncertainty_m >= 0 AND coordinate_uncertainty_m < 'Infinity')"),
+    ("year after the download (2026)", "year > 2026"),
+]
+
+
+def failures(cur):
+    """Each reject check the staged rows break: its name, how many rows, the lowest key."""
+    found = []
+    for name, condition in REJECTS:
+        n, first = cur.execute(f"SELECT count(*), min(id) FROM staged WHERE {condition}").fetchone()
+        if n:
+            found.append((name, n, first))
+    return found
+
+
+def report(label, cur):
+    rows = cur.execute("SELECT count(*) FROM staged").fetchone()[0]
+    found = failures(cur)
+    print(f"{label} ({rows:,} rows): {'refused' if found else 'every reject check 0: load'}")
+    for name, n, first in found:
+        print(f"  {name}: {n} (first {first})")
+
+
+with connect() as conn, conn.cursor() as cur:
+    # CREATE TABLE AS copies no CHECK, as a staging table wouldn't have the target's
+    cur.execute("""CREATE TEMP TABLE staged AS
+                   SELECT o.id, o.longitude, o.latitude, o.coordinate_uncertainty_m, o.year
+                   FROM occurrences AS o JOIN species AS s ON s.id = o.species_id
+                   WHERE s.scientific_name = 'Sarcophilus harrisii'""")
+    report("the devil's records", cur)
+    cur.execute("""INSERT INTO staged VALUES (9000000001, 0, 0, NULL, 2019),
+                                             (9000000002, 146.8, -41.4, 'NaN', 2031)""")
+    report("with two made-up records", cur)
+    conn.rollback()
+```
+
+```text
+-- result: e4-ex · python · sha256 9fac0647c0e1
+the devil's records (2,000 rows): every reject check 0: load
+with two made-up records (2,002 rows): refused
+  coordinates exactly 0, 0: 1 (first 9000000001)
+  coordinate uncertainty negative, NaN or infinite: 1 (first 9000000002)
+  year after the download (2026): 1 (first 9000000002)
+```
+
+**Check:** the devil's records pass every check, as the whole sample does in `e4-checks`. With the two made-up records the gate refuses, and names three checks, each with its count and first key: 9000000001 breaks the 0, 0 rule, and 9000000002 breaks both the uncertainty and the year checks. In a real load the refusal raises an error inside the transaction, so nothing commits (e2), and `e4-quarantine`'s report is what you send back to the source.
+
+**Dialects:**
+- **PostgreSQL:** `'NaN'::float8 = 'NaN'::float8` is true, and `NaN` sorts above every number, so `>= 0 AND < 'Infinity'` is the whole finite, non-negative test; PostgreSQL 16 has no `isnan` for floats. A `CHECK` holds the same rule in the table (`learn_curriculum.sql`). `pg_input_is_valid` (e2) tests text before a cast, and accepts `NaN` and `Infinity` as valid floats.
+- **DuckDB:** `isfinite(x)`, `isnan(x)` and `isinf(x)` name the cases; like PostgreSQL, it treats `NaN` as equal to itself and greater than every other value. `CHECK` constraints work as in PostgreSQL.
+- **SQL Server:** `float` can't hold `NaN` or infinity, so the cast is where they're caught: `TRY_CAST('NaN' AS float)` is `NULL`, and a staged text column is checked for that before the insert. `CHECK` constraints and `TRY_CAST` give the reject and the report.
+- **Python:** `math.isfinite(x)` is false for `NaN` and both infinities; `x == x` is false only for `NaN`, which is why pandas' `isna` and NumPy's `isfinite` exist. `float("nan") < 0` and `float("nan") > 100000` are both false: in Python, unlike PostgreSQL, `NaN` slips through both a lower and an upper test.
+- **ArcGIS Pro:** Select Layer By Attribute (`arcpy.management.SelectLayerByAttribute`) with a check's `WHERE` clause finds the rows that break it. A Constraint attribute rule (Add Attribute Rule, `arcpy.management.AddAttributeRule`) refuses an edit whose Arcade expression returns false, Pro's form of a `CHECK`.
 
 #### e5 · schedule
 
 **Tool:** Py · **Time:** 1.5 h · **Prereqs:** e4
 
-**Goal:** a pipeline that runs without you, and tells you when it breaks.
-- **A job is one command** with an exit code: 0 for success, anything else for failure. The scheduler only sees that code, so a job catches nothing silently, logs the traceback and exits 1.
+**Concept:** a pipeline that runs without you, and tells you when it breaks.
+- **A job is one command** with an exit code: 0 for success, anything else for failure. The scheduler sees only that code, so a job catches nothing silently: it writes the reason, puts the traceback in its error output and exits 1.
+- **The scheduler's environment isn't yours.** cron, a systemd timer and Task Scheduler start the job without your shell's profile, so the `PG*` settings you typed in a terminal aren't there. Give them to the job where the scheduler reads them (the crontab, the unit's `EnvironmentFile=`, the account's variables), keep the password in the password file, and have the job check them by name before it connects. Its log names a missing setting and never prints a value: logs are read by more people than passwords should be.
 - **Logs:** one line per step, with a timestamp, to a file or the journal.
-- **Alerts:** on Linux, systemd's `OnFailure=` starts another unit when a job fails, and cron mails a job's output to `MAILTO`. Windows' Task Scheduler records the last result, and can be set to restart a failed task.
-- **Incremental loads** move only what changed. A file with a published checksum tells you whether anything changed at all. Records that changed or were deleted upstream are the hard part: an append-only increment never sees them. For a sample this size, the honest increment is a whole reload, in one transaction, when the input's checksum changes. A weekly GBIF refresh is a new download with a new DOI, so it is a new run of e1–e4.
+- **Alerts:** a failure nobody hears about is a silent one. systemd's `OnFailure=` starts another unit when a job fails; that unit alerts a person only if its command sends mail or a push. cron mails a job's output to `MAILTO` only when the crontab line doesn't redirect it to a file, so a line ending `>> refresh.log 2>&1` mails nothing. Task Scheduler records the last result, and can restart a failed task.
+- **A refresh you can restart** (e3's snapshot rule, run by a scheduler):
+  - **the job key** is one checksum over the input's checksum, `TRANSFORM_VERSION`, the config and `SCHEMA_VERSION`. Bump `TRANSFORM_VERSION` when the code's output changes, and `SCHEMA_VERSION` when the target's DDL does;
+  - **a persistent target and a state table** in their own schema, created once: the state row keeps the key the target was loaded with;
+  - **one transaction** replaces the target's rows and updates the state row, so a failed run leaves both as they were, and a run killed half-way commits nothing;
+  - **a lock** covers the comparison and the replacement, so two runs that overlap, a slow one and the next one or a manual re-run, can't both load. `pg_try_advisory_xact_lock` doesn't wait: a run that finds it held does nothing and exits 0, since the run holding it is doing the work. The lock is the transaction's, so it is freed when the job ends, however it ends.
+- **Incremental loads** move only what changed. A file with a published checksum tells you whether anything changed at all. Records that changed or were deleted upstream are the hard part: an append-only increment never sees them. For a sample this size, the honest increment is a whole reload, in one transaction, when the job key changes. A weekly GBIF refresh is a new download with a new DOI, so it is a new run of e1–e4.
 
-**Data:** `/learn/data/manifest.json` and `datasets.csv`; the lab's `datasets` table, for the shape of its copy.
+**Diagram:** `e5-refresh`, after the Concept: one run is one transaction: lock → compare the job key (input, transform, config, schema) → fetch → verify the sha256 → stage with `COPY` and count → replace the target and upsert the state → COMMIT. A held lock or an unchanged key skips with exit 0; a failed fetch, checksum or count rolls everything back with exit 1, so the target and its key change together or not at all.
 
-**Key code:** a weekly refresh job: it compares the published checksum with the one it loaded last, reloads in one transaction when they differ, checks the row count, and exits 1 with the traceback on any failure.
+**Data:** `/learn/data/manifest.json` and `datasets.csv`; the lab's `datasets` table, for the shape of the job's copy.
+
+**Worked example:** a simulation of a weekly refresh, in one process on `TEMP` tables, so it leaves the lab as it was and can be checked in one go. It compares the published checksum with the one it loaded last, reloads in one transaction when they differ, checks the row count, and exits 1 with the traceback on any failure.
 
 ```python
 # q: e5-job
 # status: ran
 # after: py-connect
+# A simulation: both "weeks" run in this one process, on TEMP tables that vanish when it ends. A scheduler runs a job as
+# a new process each time, against tables that persist; e5-refresh writes that job, and e5-runs runs it.
 import hashlib
 import json
 import logging
@@ -8247,10 +9601,11 @@ def refresh(conn):
 
 
 def main():
-    """Exit 0 on success, 1 on any failure, with the traceback in the log: cron mails it, systemd marks the unit failed."""
+    """Exit 0 on success, 1 on any failure, with the traceback in the output. The scheduler sees only the exit code:
+    systemd marks the unit failed; cron mails the output only if the crontab line doesn't redirect it to a file."""
     try:
         with connect() as conn:
-            # The lab's tables are TEMP, so it leaves learn_curriculum as it was; a real job's live in its own schema.
+            # TEMP tables: the simulation leaves learn_curriculum as it was; a real job's tables live in its own schema.
             conn.execute("CREATE TEMP TABLE my_datasets (LIKE datasets)")
             conn.execute("CREATE TEMP TABLE refresh_state (file text PRIMARY KEY, sha256 text NOT NULL)")
             for run in (1, 2):  # this week's run, then next week's with nothing new
@@ -8262,7 +9617,10 @@ def main():
     return 0
 
 
-raise SystemExit(main())
+# A scheduled script ends with `raise SystemExit(main())`; here the lab goes on, so only a failure stops it.
+exit_code = main()
+if exit_code:
+    raise SystemExit(exit_code)
 ```
 
 ```text
@@ -8273,18 +9631,277 @@ INFO refresh: run 2
 INFO refresh: datasets.csv unchanged (sha256 3bd8c1726239): nothing to do
 ```
 
-Scheduling it. On Linux with cron, every Monday at 04:17:
+**Expected:** the first run loads `datasets.csv`, 400 rows, and records its sha256 (`3bd8c1726239…`); the second finds the same checksum and does nothing. Both log one line per step, and the job exits 0. Point `LEARN_BASE` at a server that isn't running and it logs the traceback and exits 1. What the simulation can't show is what a scheduler does: start a new process each week, against tables that outlived the last one, maybe while the last one is still running.
+
+**Lab:**
+1. The real job. This block writes `refresh.py` to the current folder and prints nothing; the job is the string. It reads the `PG*` settings, `LEARN_BASE`, `REFRESH_SCHEMA` (the schema holding its target and state tables, `etl` by default) and `REFRESH_LICENSES` (the licenses it keeps, `CC0 1.0,CC BY 4.0` by default: its config). Each run is one transaction: the lock, the key compared with the state row's, the file fetched and checked against the manifest, staged with `COPY` and counted, then the target's rows replaced and the state row updated, together. A held lock or an equal key exits 0 having changed nothing; any error rolls the whole run back and exits 1.
+
+```python
+# q: e5-refresh
+# status: ran
+from pathlib import Path
+
+JOB = r'''"""refresh.py: makes <REFRESH_SCHEMA>.datasets hold the published datasets.csv, under this code and config.
+Exit 0: loaded, or nothing to do. Exit 1: failed, and nothing changed. The reason goes to stdout, the traceback to stderr."""
+import hashlib
+import json
+import logging
+import os
+import sys
+import traceback
+import urllib.request
+from pathlib import Path
+
+import psycopg
+from psycopg import sql
+from psycopg.types.json import Jsonb
+
+FILE = "datasets.csv"
+TRANSFORM_VERSION = 1  # bump when this code's output changes
+SCHEMA_VERSION = 1  # bump when the target's DDL changes
+SETTINGS = ("PGHOST", "PGPORT", "PGUSER", "PGDATABASE")
+
+# A scheduled job writes a timestamp on every line (add %(asctime)s); this lab leaves it out so its output can be checked.
+logging.basicConfig(stream=sys.stdout, level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
+log = logging.getLogger("refresh")
+
+
+def missing_settings():
+    """The connection settings this environment lacks, by name: no value, the password least of all, reaches the log."""
+    missing = [name for name in SETTINGS if not os.environ.get(name)]
+    default = (Path(os.environ.get("APPDATA", "")) / "postgresql" / "pgpass.conf" if os.name == "nt"
+               else Path.home() / ".pgpass")
+    if not os.environ.get("PGPASSWORD") and not Path(os.environ.get("PGPASSFILE", default)).is_file():
+        missing.append("PGPASSWORD or a password file")
+    return missing
+
+
+def read(url):
+    with urllib.request.urlopen(url, timeout=60) as r:
+        return r.read()
+
+
+def job_key(parts):
+    """One sha256 over the four parts, as canonical JSON (sorted keys, no spaces), so equal parts give one key (e3)."""
+    return hashlib.sha256(json.dumps(parts, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+
+
+def refresh(conn, base, schema, licenses):
+    """One run in one transaction: the lock, the comparison, the replacement and the new state commit together, or
+    nothing does. Returns the log line."""
+    entry = json.loads(read(f"{base}/learn/data/manifest.json"))["files"][FILE]
+    parts = {"input": entry["sha256"], "transform": TRANSFORM_VERSION,
+             "config": {"file": FILE, "licenses": licenses}, "schema": SCHEMA_VERSION}
+    key = job_key(parts)
+    target, state = sql.Identifier(schema, "datasets"), sql.Identifier(schema, "refresh_state")
+    with conn.transaction():
+        # The transaction's own lock: COMMIT or ROLLBACK frees it, however the job ends. Held means another run is at work.
+        if not conn.execute("SELECT pg_try_advisory_xact_lock(hashtext(%s))", (f"refresh:{schema}",)).fetchone()[0]:
+            return "another refresh holds the lock: skipped"
+        last = conn.execute(sql.SQL("SELECT job_key, parts FROM {} WHERE job = %s").format(state), (FILE,)).fetchone()
+        if last is not None and last[0] == key:
+            return "nothing changed: skipped"
+        data = read(f"{base}/learn/data/{FILE}")
+        if hashlib.sha256(data).hexdigest() != entry["sha256"]:
+            raise RuntimeError(f"{FILE} doesn't match its manifest's sha256")
+        conn.execute(sql.SQL("CREATE TEMP TABLE stage (LIKE {}) ON COMMIT DROP").format(target))
+        with conn.cursor().copy("COPY pg_temp.stage FROM STDIN (FORMAT csv, HEADER true)") as copy:
+            copy.write(data)
+        staged = conn.execute("SELECT count(*) FROM pg_temp.stage").fetchone()[0]
+        if staged != entry["rows"]:
+            raise RuntimeError(f"staged {staged} rows; the manifest says {entry['rows']}")
+        conn.execute(sql.SQL("TRUNCATE {}").format(target))
+        loaded = conn.execute(sql.SQL("INSERT INTO {} SELECT * FROM pg_temp.stage WHERE license = ANY(%s)").format(target),
+                              (licenses,)).rowcount
+        conn.execute(sql.SQL("INSERT INTO {} VALUES (%s, %s, %s) ON CONFLICT (job) DO UPDATE "
+                             "SET job_key = EXCLUDED.job_key, parts = EXCLUDED.parts").format(state),
+                     (FILE, key, Jsonb(parts)))
+    if last is None:
+        return f"first load: loaded {loaded} rows"
+    changed = " and ".join(p for p in sorted(parts) if parts[p] != last[1].get(p))
+    return f"{changed} changed: loaded {loaded} rows"
+
+
+def main():
+    missing = missing_settings()
+    if missing:
+        log.error("failed: not set in this environment: %s", ", ".join(missing))
+        return 1
+    base = os.environ.get("LEARN_BASE", "https://critwire.com")
+    schema = os.environ.get("REFRESH_SCHEMA", "etl")
+    licenses = sorted(name.strip() for name in os.environ.get("REFRESH_LICENSES", "CC0 1.0,CC BY 4.0").split(","))
+    try:
+        with psycopg.connect(autocommit=True) as conn:  # autocommit: conn.transaction() is then the one transaction
+            log.info(refresh(conn, base, schema, licenses))
+    except Exception as e:
+        log.error("failed: %s", e)
+        traceback.print_exc()
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
+'''
+
+Path("refresh.py").write_text(JOB, encoding="utf-8")
+```
+
+```text
+-- result: e5-refresh · python · sha256 e3b0c44298fc
+```
+
+2. Run it as a scheduler does: a new process each time, here eight times. The block creates a schema `learn_e5` with the target and state tables, as you would create `etl`'s once, and drops it at the end. A is the published `datasets.csv`; B is a local copy with one title corrected; C is B with one made-up dataset added, under a manifest that still says 400 rows, as if the publisher's count went wrong. Each run gets this block's environment; run 8 without `PGDATABASE`. Run 6 holds the job's lock from this block's own session, as a run still going would; run 7 starts two runs at once.
+
+```python
+# q: e5-runs
+# status: ran
+# after: py-connect, e5-refresh
+import csv
+import hashlib
+import io
+import json
+import os
+import subprocess
+import sys
+import tempfile
+import urllib.request
+from pathlib import Path
+
+BASE = os.environ.get("LEARN_BASE", "https://critwire.com")
+SCHEMA = "learn_e5"
+LICENSES = {"CC0 1.0", "CC BY 4.0"}  # refresh.py's default config
+
+
+def rows_of(data):
+    return [tuple(r) for r in csv.reader(io.StringIO(data.decode("utf-8"), newline=""))][1:]
+
+
+def csv_file(header, rows):
+    out = io.StringIO()
+    csv.writer(out, lineterminator="\n").writerows([header, *rows])
+    return out.getvalue().encode("utf-8")
+
+
+def publish(folder, data, rows):
+    """A copy of /learn/data/ on this machine holding `data`, its manifest saying `rows` rows; returns its LEARN_BASE."""
+    d = Path(folder) / "learn" / "data"
+    d.mkdir(parents=True)
+    (d / "datasets.csv").write_bytes(data)
+    entry = {"sha256": hashlib.sha256(data).hexdigest(), "rows": rows}
+    (d / "manifest.json").write_text(json.dumps({"files": {"datasets.csv": entry}}), encoding="utf-8")
+    return Path(folder).as_uri()
+
+
+def start(base=None, licenses=None, without=None):
+    """refresh.py as a new process, with this block's environment and these changes."""
+    env = {k: v for k, v in os.environ.items() if k != without}
+    env["REFRESH_SCHEMA"] = SCHEMA
+    if base:
+        env["LEARN_BASE"] = base
+    if licenses:
+        env["REFRESH_LICENSES"] = licenses
+    return subprocess.Popen([sys.executable, "-I", "refresh.py"], env=env, text=True,
+                            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+
+def finish(proc):
+    out, err = proc.communicate(timeout=120)
+    return proc.returncode, out.strip(), " · traceback on stderr" if "Traceback" in err else ""
+
+
+def show(n, label, proc):
+    code, out, err = finish(proc)
+    print(f"run {n} · {label} · exit {code} · {out}{err}")
+
+
+def holds(conn, inputs):
+    """Which input the target's rows and the state's key come from: read, not assumed."""
+    rows = set(conn.execute(f"SELECT CAST(dataset_key AS text), title, publisher, coalesce(doi, ''), license "
+                            f"FROM {SCHEMA}.datasets").fetchall())
+    target = next((n for n, data in inputs.items() if rows == {r for r in rows_of(data) if r[4] in LICENSES}), "no input")
+    sha = conn.execute(f"SELECT parts->>'input' FROM {SCHEMA}.refresh_state WHERE job = 'datasets.csv'").fetchone()[0]
+    state = next((n for n, data in inputs.items() if hashlib.sha256(data).hexdigest() == sha), "no input")
+    print(f"  the target holds {target}; the state's input is {state}")
+
+
+with connect() as conn, tempfile.TemporaryDirectory() as tmp:
+    conn.autocommit = True  # each statement commits, so the job's own sessions see the tables
+    conn.execute(f"CREATE SCHEMA {SCHEMA}")
+    try:
+        conn.execute(f"CREATE TABLE {SCHEMA}.datasets (dataset_key uuid PRIMARY KEY, title text NOT NULL, "
+                     "publisher text NOT NULL, doi text, license text NOT NULL)")
+        conn.execute(f"CREATE TABLE {SCHEMA}.refresh_state (job text PRIMARY KEY, job_key text NOT NULL, parts jsonb NOT NULL)")
+        with urllib.request.urlopen(f"{BASE}/learn/data/datasets.csv", timeout=60) as r:
+            a = r.read()
+        header, *rows = csv.reader(io.StringIO(a.decode("utf-8"), newline=""))
+        b_rows = [[*rows[0][:1], rows[0][1] + " (corrected)", *rows[0][2:]], *rows[1:]]
+        made_up = ["00000000-0000-4000-8000-000000000001", "A made-up dataset", "Nobody", "", "CC0 1.0"]
+        inputs = {"A": a, "B": csv_file(header, b_rows), "C": csv_file(header, [*b_rows, made_up])}
+        b_base = publish(Path(tmp) / "b", inputs["B"], len(b_rows))
+        c_base = publish(Path(tmp) / "c", inputs["C"], len(b_rows))  # one row more than its manifest says
+
+        show(1, "A", start())
+        show(2, "A again", start())
+        show(3, "A, REFRESH_LICENSES=CC0 1.0", start(licenses="CC0 1.0"))
+        show(4, "B, one title corrected", start(base=b_base))
+        show(5, "C, one row added, its manifest still says 400 rows", start(base=c_base))
+        holds(conn, inputs)
+        lock = f"refresh:{SCHEMA}"
+        conn.execute("SELECT pg_advisory_lock(hashtext(%s))", (lock,))  # as a run that is still going holds it
+        try:
+            show(6, "A, the lock held by another session", start())
+        finally:
+            conn.execute("SELECT pg_advisory_unlock(hashtext(%s))", (lock,))
+        holds(conn, inputs)
+        both = [finish(p) for p in [start(), start()]]
+        # Which one wins, and whether the other meets the lock or the new state, varies from run to run.
+        outcomes = sorted("loaded" if ": loaded " in out else "not loaded" for _, out, _ in both)
+        print(f"run 7 · A, two runs started together · exit {' and '.join(str(c) for c, _, _ in both)} · {', '.join(outcomes)}")
+        holds(conn, inputs)
+        show(8, "A, without PGDATABASE", start(without="PGDATABASE"))
+    finally:
+        conn.execute(f"DROP SCHEMA {SCHEMA} CASCADE")
+```
+
+```text
+-- result: e5-runs · python · sha256 bda9eaea67a6
+run 1 · A · exit 0 · INFO refresh: first load: loaded 400 rows
+run 2 · A again · exit 0 · INFO refresh: nothing changed: skipped
+run 3 · A, REFRESH_LICENSES=CC0 1.0 · exit 0 · INFO refresh: config changed: loaded 124 rows
+run 4 · B, one title corrected · exit 0 · INFO refresh: config and input changed: loaded 400 rows
+run 5 · C, one row added, its manifest still says 400 rows · exit 1 · ERROR refresh: failed: staged 401 rows; the manifest says 400 · traceback on stderr
+  the target holds B; the state's input is B
+run 6 · A, the lock held by another session · exit 0 · INFO refresh: another refresh holds the lock: skipped
+  the target holds B; the state's input is B
+run 7 · A, two runs started together · exit 0 and 0 · loaded, not loaded
+  the target holds A; the state's input is A
+run 8 · A, without PGDATABASE · exit 1 · ERROR refresh: failed: not set in this environment: PGDATABASE
+```
+
+Each line is one process: its exit code and the one line it logged. Run 2 skips because the state row outlived run 1's process. Run 3 changes only the config, so it reloads, keeping the 124 CC0 1.0 datasets; run 4 changes the input and puts the default config back. Run 5 stages 401 rows against a manifest of 400 and fails: it exits 1, and the target and the state still hold B, because the replacement and the state row would have committed together. Run 6 finds the lock held and changes nothing. In run 7 one process loads A; the other either finds the lock held or, starting a moment later, finds the new state, and both are right to exit 0. After A, B and A again the target holds A. Run 8 names the missing setting and prints no value.
+
+**Scheduling it.** Put `refresh.py` in a folder of its own, `~/etl` here, with a `.venv` built from the lab's `requirements.txt` (§3.3), and create the schema `etl` with its two tables once, as `e5-runs` creates `learn_e5`'s.
+
+On Linux with cron, every Monday at 04:17. cron reads `VAR=value` lines at the top of the crontab; the password stays in `~/.pgpass`:
 
 ```sh
 crontab -e
-# then add this line:
+# then add these lines:
+PGHOST=localhost
+PGPORT=5432
+PGUSER=postgres
+PGDATABASE=learn
 17 4 * * 1 cd "$HOME/etl" && .venv/bin/python -I refresh.py >> refresh.log 2>&1
 ```
+
+With `>> refresh.log 2>&1`, everything the job prints goes to `refresh.log`, so cron has nothing to mail and a failure is only a line in that file. Leave the redirect off and set `MAILTO=you@example.org` to have cron mail each run's output, if the machine can send mail.
 
 Or a systemd user timer, which catches up on a run missed while the machine was off (`Persistent=true`) and logs to the journal:
 
 ```sh
 mkdir -p ~/.config/systemd/user
+printf 'PGHOST=localhost\nPGPORT=5432\nPGUSER=postgres\nPGDATABASE=learn\n' > ~/etl/refresh.env
 cat > ~/.config/systemd/user/refresh.service <<'EOF'
 [Unit]
 Description=Weekly lab data refresh
@@ -8293,11 +9910,12 @@ OnFailure=refresh-failed.service
 [Service]
 Type=oneshot
 WorkingDirectory=%h/etl
+EnvironmentFile=%h/etl/refresh.env
 ExecStart=%h/etl/.venv/bin/python -I refresh.py
 EOF
 cat > ~/.config/systemd/user/refresh-failed.service <<'EOF'
 [Unit]
-Description=Tell someone the refresh failed
+Description=Record that the refresh failed
 
 [Service]
 Type=oneshot
@@ -8320,9 +9938,9 @@ loginctl enable-linger "$USER"     # run it even when you aren't logged in
 journalctl --user -u refresh.service   # the log
 ```
 
-`refresh-failed.service` only writes to the system log here. To be told on your phone or by email, replace its `ExecStart` with your mail or push command.
+`refresh-failed.service` only writes a line to the system log, which alerts nobody: someone has to read it. To be told, replace its `ExecStart` with a command that sends mail or a push to your phone.
 
-On Windows, with Task Scheduler, from PowerShell:
+On Windows, with Task Scheduler, from PowerShell. The task runs as you, so it sees your user environment variables (`setx PGHOST localhost`, and so on, once) and your password file, `%APPDATA%\postgresql\pgpass.conf`:
 
 ```powershell
 $action = New-ScheduledTaskAction -Execute "$HOME\etl\.venv\Scripts\python.exe" -Argument "-I refresh.py" -WorkingDirectory "$HOME\etl"
@@ -8332,7 +9950,82 @@ Register-ScheduledTask -TaskName "Lab data refresh" -Action $action -Trigger $tr
 Get-ScheduledTaskInfo -TaskName "Lab data refresh"   # LastTaskResult 0 means success
 ```
 
-**Expected:** the first run loads `datasets.csv`, 400 rows, and records its sha256 (`3bd8c1726239…`); the second finds the same checksum and does nothing. Both runs log one line per step and the job exits 0. Break it, for example by pointing `LEARN_BASE` at a server that isn't running, and the job logs the traceback and exits 1: cron mails the output, systemd marks the unit failed and starts `refresh-failed.service`, and Task Scheduler shows a non-zero last result.
+Task Scheduler keeps the last result, and the task's history, and tells nobody: check `LastTaskResult`, or add a second task triggered by the failure event that sends a message.
+
+**Result:** a refresh job that a scheduler can run as often as it likes. Each run is one process and one transaction: an unchanged job key skips, a changed input or config reloads, a failed check leaves the target and state as they were, and of two runs at once exactly one loads. After A, B and A again, the target holds A. The job checks its connection settings by name and logs no value, and the scheduling recipes say plainly where a failure ends up: a log file, the journal, or a task's last result, until you add the mail or push that tells a person.
+
+**Exercise:** a job key covers only what you put in it. Change `refresh.py`'s transform so each DOI is stored as a link that resolves, `https://doi.org/` followed by the DOI. Write the change as a copy of `refresh.py`, and a second copy that also sets `TRANSFORM_VERSION = 2`. Into a schema `learn_e5ex` of your own, created as `e5-runs` creates `learn_e5`, run the old job once, then the new code without the bump, then with it, twice, each as a new process. After each run, count the target's DOIs that are links.
+
+**Answer:**
+
+```python
+# q: e5-ex
+# status: ran
+# after: py-connect, e5-refresh
+import os
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
+
+SCHEMA = "learn_e5ex"
+JOB = Path("refresh.py").read_text(encoding="utf-8")
+
+
+def edit(text, old, new):
+    """`text` with its one `old` replaced by `new`: an edit that finds nothing to change fails, it doesn't pass silently."""
+    if text.count(old) != 1:
+        raise ValueError(f"expected one {old!r} in refresh.py")
+    return text.replace(old, new)
+
+
+# The new transform: each DOI stored as a link, https://doi.org/<doi>. Same input, same config, a different output.
+LINKS = edit(JOB, "SELECT * FROM pg_temp.stage WHERE",
+             "SELECT dataset_key, title, publisher, 'https://doi.org/' || doi, license FROM pg_temp.stage WHERE")
+
+
+def run(conn, n, label, script):
+    """`script` as a new process, with this block's environment, then the target's DOIs that are links."""
+    done = subprocess.run([sys.executable, "-I", str(script)], env={**os.environ, "REFRESH_SCHEMA": SCHEMA},
+                          text=True, capture_output=True, timeout=120)
+    links = conn.execute(f"SELECT count(*) FROM {SCHEMA}.datasets WHERE starts_with(doi, 'https://doi.org/')").fetchone()[0]
+    print(f"run {n} · {label} · exit {done.returncode} · {done.stdout.strip()} · {links} DOIs as links")
+
+
+with connect() as conn, tempfile.TemporaryDirectory() as tmp:
+    conn.autocommit = True  # each statement commits, so the job's own sessions see the tables
+    unbumped, bumped = Path(tmp) / "refresh_links.py", Path(tmp) / "refresh_v2.py"
+    unbumped.write_text(LINKS, encoding="utf-8")
+    bumped.write_text(edit(LINKS, "TRANSFORM_VERSION = 1", "TRANSFORM_VERSION = 2"), encoding="utf-8")
+    conn.execute(f"CREATE SCHEMA {SCHEMA}")
+    try:
+        conn.execute(f"CREATE TABLE {SCHEMA}.datasets (dataset_key uuid PRIMARY KEY, title text NOT NULL, "
+                     "publisher text NOT NULL, doi text, license text NOT NULL)")
+        conn.execute(f"CREATE TABLE {SCHEMA}.refresh_state (job text PRIMARY KEY, job_key text NOT NULL, parts jsonb NOT NULL)")
+        run(conn, 1, "the old job", "refresh.py")
+        run(conn, 2, "links, TRANSFORM_VERSION still 1", unbumped)
+        run(conn, 3, "links, TRANSFORM_VERSION = 2", bumped)
+        run(conn, 4, "links, TRANSFORM_VERSION = 2 again", bumped)
+    finally:
+        conn.execute(f"DROP SCHEMA {SCHEMA} CASCADE")
+```
+
+```text
+-- result: e5-ex · python · sha256 b706ba3740bb
+run 1 · the old job · exit 0 · INFO refresh: first load: loaded 400 rows · 0 DOIs as links
+run 2 · links, TRANSFORM_VERSION still 1 · exit 0 · INFO refresh: nothing changed: skipped · 0 DOIs as links
+run 3 · links, TRANSFORM_VERSION = 2 · exit 0 · INFO refresh: transform changed: loaded 400 rows · 400 DOIs as links
+run 4 · links, TRANSFORM_VERSION = 2 again · exit 0 · INFO refresh: nothing changed: skipped · 400 DOIs as links
+```
+
+**Check:** run 2 is the failure the version number exists for. The code changed, but the input, the config and both versions didn't, so the key is the same: the job skips, exits 0, and the target keeps 400 bare DOIs under a state row that says it is up to date. Nothing tells a job that its own code changed except what you put in its key. With the bump, run 3 reloads and logs `transform changed`, and run 4 skips, every DOI now a link. Every one of the 400 datasets has a DOI, so the count goes from 0 to 400 in one run.
+
+**Dialects:**
+- **PostgreSQL:** the `pg_cron` extension schedules SQL inside the database, `SELECT cron.schedule('refresh', '17 4 * * 1', 'CALL refresh()')`, in cron's syntax, and keeps each run's outcome in `cron.job_run_details`. It runs SQL only, so fetching a file stays with an outside job like `refresh.py`. `pg_try_advisory_xact_lock` takes a `bigint` or two `integer`s: `hashtext` turns a name into one, and a fixed number written into the job does as well.
+- **DuckDB:** no server and no scheduler: the job is a script that cron, a systemd timer or Task Scheduler starts, as here. A database file opens for writing in one process at a time, and a second process that tries gets a lock error, so the file's lock does the advisory lock's work, except that the second run gets an error where `refresh.py` skips: catch that error if runs are expected to overlap. `BEGIN TRANSACTION; … COMMIT;` holds the replacement and the state row together.
+- **SQL Server:** SQL Server Agent runs jobs on schedules, records each run's outcome in its history, and notifies an operator by Database Mail on failure; Express edition has no Agent, so it uses Task Scheduler. `sp_getapplock` with `@LockMode = 'Exclusive'`, `@LockOwner = 'Transaction'` and `@LockTimeout = 0` is `pg_try_advisory_xact_lock`: it returns a negative number instead of waiting when another session holds the lock.
+- **Python:** `raise SystemExit(main())` turns the job's result into its exit code; an uncaught exception also exits 1, with the traceback but without the job's own log line. A scheduler inside Python (APScheduler, or the `schedule` package) runs jobs while its own process lives, so a crash or a restart stops every schedule; orchestrators such as Airflow, Dagster and Prefect add retries, history and alerts, and still run each task as here, so it must be safe to run again.
+- **ArcGIS Pro:** a geoprocessing tool or a model can be scheduled from the Geoprocessing pane (the Run button's menu → Schedule), which creates a Windows Task Scheduler task. A Python script runs on a schedule with Pro's own Python, `"C:\Program Files\ArcGIS\Pro\bin\Python\Scripts\propy.bat" refresh.py`, in a task like the one above; `arcpy` then needs a Pro license the task's account can use.
 
 ### 5.6 Power BI
 
@@ -8789,7 +10482,7 @@ The playground and the browser blocks use one engine start per visit (002 §8): 
 The lab files are written by the build from the same blocks the pages show, so the page and the download can't disagree (E2E checks it, 7.6):
 - **`<module>.sql`**: the module's PostGIS blocks in page order, each exactly as `learn:check` runs it: its `-- after:` blocks first, the whole wrapped in `BEGIN; … ROLLBACK;`, except `-- tx: own` blocks (as written). Headers stay as comments, so every block keeps its id. It starts with §0's `pg-session` (`SET search_path`), then the boot setup (below), and runs with `psql -X -d <your database> -f <module>.sql` after the loader (§4.3). No `ON_ERROR_STOP`, because some blocks show an error on purpose (`-- expect: error`, `-- fails:`), and the file says so at the top. The setup page's PostGIS checks (§0) download as `pg-checks.sql`, since `setup.sql` is the browser's schema. A block that runs in two sessions (`-- sessions:`) is commented out like an untested one (below): it needs one psql window per session.
 - **The boot setup.** A download includes every `-- boot` block it needs, once, right after `pg-session` (or `py-connect`), committed, and not again at its page position. It needs one when any block in it, or an `-- after:` block they bring, names a table or view the boot block creates (the names in its `CREATE TABLE` and `CREATE VIEW` statements, matched as whole words). Today that is `s4-cells`, in `s2`, `s3`, `s4`, `s5` and `c1` (`.sql`; c1 through `s5-gistar`) and in `s2`, `s3`, `s4`, `s5` and `setup` (`.py`; `setup` for §3.3's `gpkg-export`). A boot block drops what it builds before building it, so a file runs on a freshly loaded database, and again: a learner can open any module's file first, in any order. In a `.py` the boot block runs through the helper, `with connect() as conn: conn.execute("""<its SQL>""")` (psycopg sends a statement list without parameters as one simple query, and the `with` commits it), and in a notebook it is its own cell. A miss is caught by the assembled run (7.6), which starts each file from a fresh load.
-- **Untested blocks** are in their download, so the learner has them, but never run from it: running `e1.py` mustn't submit a GBIF download or stop on missing credentials, and `d5.sql` mustn't change the learner's database. In a `.sql` or `.py`, such a block at its page position is one line `-- not run from this file: <its reason>. Run it by hand, as its page says.` (`#` in Python), its headers as written, then every other line of its code behind `-- ` (`# `): no `BEGIN; … ROLLBACK;`, no `-- after:` blocks brought for it, and it doesn't count towards the boot setup. In a notebook it is a Markdown cell, the same line and then the code as a fenced block, never a code cell. Which blocks follows their status in the build's own run, so a block a later mission makes `ran` is live in its file from then on. Today: `d5-database` (L2), `g3-iucn` (L3) and `e1-submit` (L4; `s6-habitat` until L4 makes it `ran`). §3.4's `arcpy-moran` runs in Pro's Python window and is in no download; nor is Power BI's M and DAX (below).
+- **Untested blocks** are in their download, so the learner has them, but never run from it: running `e1.py` mustn't submit a GBIF download or stop on missing credentials, and `d5.sql` mustn't change the learner's database. In a `.sql` or `.py`, such a block at its page position is one line `-- not run from this file: <its reason>. Run it by hand, as its page says.` (`#` in Python), its headers as written, then every other line of its code behind `-- ` (`# `): no `BEGIN; … ROLLBACK;`, no `-- after:` blocks brought for it, and it doesn't count towards the boot setup. In a notebook it is a Markdown cell, the same line and then the code as a fenced block, never a code cell. Which blocks follows their status in the build's own run, so a block a later mission makes `ran` is live in its file from then on. Today: `d5-database` (L2), `g3-iucn` (L3), `e1-submit` (L4) and §3.4's `arcpy-moran`, which runs in Pro's Python window: `setup.py` carries it commented out, `setup.ipynb` as a Markdown cell. Power BI's M and DAX are in no download (below).
 - **`<module>.py`** and **`<module>.ipynb`**: the module's Python blocks, `py-connect` first, then the boot setup, then each block once, in page order, with its `# q:` line as a comment (the notebook: one cell per block, and a Markdown cell with the block's heading). They read the lab data from `LEARN_BASE` (default `https://critwire.com`) and connect with libpq's `PG*` variables, as in §3.3. §3.3's Python blocks (`py-smoke`, `gpkg-export`) download as `setup.py` and `setup.ipynb`.
 - **`requirements.txt`**: §3.3's pins; the setup page gives the `uv` commands.
 - **Power BI** has no download of its own: a `.pbix` can't be built or tested here (§3.5). Its data files are the star's CSVs under `/learn/data/star/`, which p1 loads by URL.
@@ -8806,7 +10499,7 @@ One `localStorage` key, `critwire.learn.done.v1`, holds `{ "<module id>": "<YYYY
 **Sources in the repository:**
 - `site/learn/curriculum.json`: the tracks in order, and each module's `id`, `slug`, `title`, `track`, `tools` (`B`, `PG`, `Py`, `PBI`), `hours`, `prereqs`, `state` (`built` or `planned`; the commit that adds a module's page sets it `built`), and the `skill` and `questions` the track pages show. §2's table is its first content.
 - `site/learn/modules/<id>.html`: each built module's text, with `{{block:<q-id>}}` slots where its blocks go, `{{exercise:<q-id>}}` and `{{skip:<q-id>}}` for an exercise and an "Already know this?" check, and `{{diagram:<name>}}` (below).
-- `site/learn/sql/<q-id>.sql` and `site/learn/labs/<q-id>.py`: every block, its fence body exactly as here, headers included (`pnpm learn:port` writes it; the page shows it without its test headers, `-- show: cards` kept); L1's `setup.sql` is the one header-less file. Power BI blocks the same, as `.m` and `.dax`.
+- `site/learn/sql/<q-id>.sql` and `<q-id>.py`: every block, its fence body exactly as here, headers included (`pnpm learn:port` writes it, and seeds each ran block's result from the fence under it; the page shows it without its test headers, `-- show: cards` kept); L1's `setup.sql` is the one header-less file. Power BI blocks the same, as `.m` and `.dax`.
 - `site/learn/labs/checked/`: what `learn:check` recorded, one file per block (its result) and `checked.json` (below).
 - `site/learn/diagrams/<name>.html` and `<name>-dark.html`: the teaching diagrams other than the ERDs, drawn with the diagram-design plugin (profile `critwire`: default tokens, system fonts), exported to `<name>.svg` and `<name>-dark.svg` with `export_svg.py --system-fonts`. A page shows one with `{{diagram:<name>}}`: a `<picture>` whose dark source follows the reader's colour scheme, its `alt` the SVG's `<title>`.
 
@@ -8827,13 +10520,14 @@ The two staleness refusals (lab and star) only warn in `pnpm build --draft`, a p
 
 A development command, never part of `build` or `deploy`. It is the repository's port of §0's runner, PostGIS and Python engines, not a second harness: once L2 lands it, the spike is frozen as this mission's evidence and never extended.
 - It runs the loader and every PostGIS block, and (from L4) every Python block in `.venv-learn`, and writes their results and `checked.json`.
-- **Then it runs every download as assembled**, as a learner would: the files the build's own assembly function writes (7.3), each on a freshly loaded database (the loader, then the file), so no file leans on another's tables. A `.sql` runs with `psql -X -f`; its `ERROR:` lines must be exactly those its `-- expect: error` and `-- fails:` statements announce, in order, each containing the announced text. A `.py` runs in `.venv-learn` from an empty folder, with no `GBIF_*` variable in its environment, and must exit 0, so an `e1-submit` left live fails here. The `.ipynb` isn't run again: E2E proves its cells equal the `.py` (7.7). The leak check (§0) runs after each file. A failure names the file and its first unexpected error, and nothing is written to `checked.json`.
+- **The agreement gates** (from L4) compare the run's SQL and PySAL results, where a module shows the same statistic both ways: global Moran's I (`s4-moran-sql` against `s4-agree`: a row per grid, n equal, I, E[I], the normality variance and z within 5e-7 and the same to 6 decimals), Gi\* (`s5-gistar`'s line equals `s5-gistar-pysal`'s), LISA (`s5-lisa-sql`'s cells per quadrant equal `s5-lisa`'s) and zonal (each zone `s6-zones` shows has `s6-geopandas`' records and km² within 1). A pair is checked when both its blocks ran; a difference fails the run and nothing is written. A disagreement is fixed in the SQL, never in the threshold.
+- **Then it runs every download as assembled**, as a learner would: the files the build's own assembly function writes (7.3), each on a freshly loaded database (the loader, then the file), so no file leans on another's tables. A `.sql` runs with `psql -X -f`; its `ERROR:` lines must be exactly those its `-- expect: error` and `-- fails:` statements announce, in order, each containing the announced text. A `.py` runs as assembled with `python -I` in `.venv-learn` from an empty folder, with the Python blocks' environment (no `GBIF_*` variable), and must exit 0 within its blocks' timeouts plus 60 s per boot block it runs, so an `e1-submit` left live fails here. The `.ipynb` isn't run again: E2E proves its cells equal the `.py` (7.7). The leak check (§0) runs after each file, a failed one too. A failure names the file and its first unexpected error (a `.py`: its exit code and stderr's last lines), then any leftover the leak check found, and nothing is written to `checked.json`.
 - It connects with libpq's `PG*` variables, or `LEARN_PG_URL`, never `DATABASE_URL` (whose role, `critwire`, can't create roles). On critwire's server that is `critwire_dev` as `critwire_lab` through `LEARN_PG_URL` (§0; `learn:check --setup` creates the role and writes the URL); on the owner's WSL, the owner's own PostGIS (`AGENTS.md`'s two machines).
-- It refuses the database `critwire` twice: by name before connecting, and by `current_database()` after, so a service file or `PGDATABASE` can't slip past. It checks for CREATEROLE first and says it's needed. The `learn_spatial` canary (§0) runs only where that schema exists, read as libpq's default role (the schema's owner), so `critwire_lab` needs no grant on A2's schema.
-- **The loader stage (L1)**, under one advisory lock (`critwire.learn`) for the whole run: the loader's sha256 against the manifest; two loads, each giving the manifest's `tables` counts; then the **forced failure**: a temp copy of the loader with the first `occurrences` row repeated before that COPY's `\.`. Every COPY succeeds and psql must exit non-zero at `ALTER TABLE occurrences ADD PRIMARY KEY`, naming the duplicate id, with every table's count and md5 equal to the second load's: the whole load is one transaction. A cut COPY isn't used (on a row boundary psql exits 0 and the disconnect rolls back), and a loader without exactly one `COPY occurrences (id, …)` with rows fails "loader layout changed" before any load. Then the leak check, so a loader that leaves a `learn_` object is named before any block runs. **The blocks stage** then runs every PostGIS block of the pages in page order (`pg-role-smoke` among them), each inside the runner's transaction (§0), against its recorded result; then the canary and the leak check. Before the first `-- needs: raster` block, once, the raster check (§0): `postgis_raster` answers and `postgis.enable_outdb_rasters` and `postgis.gdal_enabled_drivers` hold a learner's defaults, as `critwire_lab`, or the run stops naming the block and the setting. A server without PostGIS raster is refused at connect, since the loader needs it.
-- **Cleanup:** the lock is held by a cleanup connection that runs no block. Every exit, a failed check or SIGINT/SIGTERM included, cancels the running psql (SIGINT, so the server rolls back) or block statement and removes the temp loader, then, in this order: **terminate** every session the run opened that still runs (`pg_terminate_backend`, 10 s each; one still alive fails the run, named); **sweep**, still under the lock, the new `learn_%` objects the lab role made (roles it holds ADMIN OPTION on, then schemas it owns), naming any other new one with the superuser's cleanup command, never dropping it; **unlock** and end the connections. If the cleanup connection was lost, the lock went with it: nothing is dropped and every new object is named.
-- **Modes:** before connecting, a static stage reads and lints the whole course, so a lint error needs no database. `--update` runs each block twice and writes its result once both runs agree and every block passed; `--module <page>` runs one page's blocks and its download and prints their results, writing nothing. `checked.json` is written only by a whole run.
-- L1 creates it with the loader stage; L2 adds the static stage, the blocks, the lab ERD check, the downloads, two-session blocks, the cleanup lint and the in-transaction leak check (§0); L3 the raster check and GDAL's version; L4 adds Python.
+- It refuses the database `critwire` twice: by name before connecting, and by `current_database()` after, so a service file or `PGDATABASE` can't slip past. It refuses a superuser lab role, and one with CREATE on `public`: the labs run with a learner's privileges, so a block that needs more fails here as it would for a learner (`learn:check --setup` makes the role right). It checks for CREATEROLE and says it's needed. The `learn_spatial` canary (§0) runs only where that schema exists, read as libpq's default role (the schema's owner), so `critwire_lab` needs no grant on A2's schema.
+- **The loader stage (L1)**, under one advisory lock (`critwire.learn`) for the whole run: the loader's sha256 against the manifest; two loads, each giving the manifest's `tables` counts; then the **forced failure**: a temp copy of the loader with the first `occurrences` row repeated before that COPY's `\.`. Every COPY succeeds and psql must exit non-zero at `ALTER TABLE occurrences ADD PRIMARY KEY`, naming the duplicate id, with every table's count and md5 equal to the second load's: the whole load is one transaction. A cut COPY isn't used (on a row boundary psql exits 0 and the disconnect rolls back), and a loader without exactly one `COPY occurrences (id, …)` with rows fails "loader layout changed" before any load. Then the leak check, so a loader that leaves a `learn_` object is named before any block runs. **The blocks stage** then runs every PostGIS block of the pages in page order (`pg-role-smoke` among them), each inside the runner's transaction (§0), against its recorded result. **Then the Python blocks** (L4), in page order, in `.venv-learn`, which the static stage checks against the labs' `requirements.txt` before connecting (its Python and the file's sha256 go into `checked.json`'s versions). Each runs as `python -I` from an empty folder with its own empty `HOME` and only these variables: the lab's `PG*`, `PGOPTIONS=-c search_path=pg_catalog` (so a block finds the lab tables only through `py-connect`), the run's `PGAPPNAME`, one `MPLCONFIGDIR` for the run and `LEARN_BASE`, the built site under test as a `file://` URL. Its code is its `# after:` blocks' then its own, its time limit its `# timeout:` (60 s by default), and its stdout its result. A block fails on a non-zero exit or the timeout (its process group is killed), on a process it started outside that group still holding its output 1 s after it exited, on a session of the run still open 10 s after it exited (ended and named), or on a committed `learn_` object (the lab role's dropped, any other named); a change to `learn_curriculum` stops the run there, since the blocks after it would read another lab. Both engines' results are compared, or written, together. Then the canary and the leak check. Before the first `-- needs: raster` block, once, the raster check (§0): `postgis_raster` answers and `postgis.enable_outdb_rasters` and `postgis.gdal_enabled_drivers` hold a learner's defaults, as `critwire_lab`, or the run stops naming the block and the setting. A server without PostGIS raster is refused at connect, since the loader needs it.
+- **Cleanup:** the lock is held by a cleanup connection that runs no block. Every exit, a failed check or SIGINT/SIGTERM included, cancels the running psql (SIGINT, so the server rolls back) or block statement and removes the temp loader, then, in this order: **terminate** every session the run opened that still runs (`pg_terminate_backend`, 10 s each; one still alive fails the run, named): the runner's by pid, and (L4) the Python blocks' by the run's name. Each run names itself once, `critwire-learn-check-py-<12 hex>`, and every Python process gets it as `PGAPPNAME` (no block may set `application_name`); cleanup ends only sessions of this database, the lab role and this name, since the lock is per database and `pg_stat_activity` spans the server. An earlier run's Python session in this database (same prefix, another name) is never ended: the next run refuses at connect, after the lock, naming its pid and `select pg_terminate_backend(<pid>)`; **sweep**, still under the lock, the new `learn_%` objects the lab role made (roles it holds ADMIN OPTION on, then schemas it owns), naming any other new one with the superuser's cleanup command, never dropping it; **unlock** and end the connections. If the cleanup connection was lost, the lock went with it: nothing is dropped and every new object is named.
+- **Modes:** before connecting, a static stage reads and lints the whole course, so a lint error needs no database. `--update` runs each block twice (a boot block once) and writes its result once both runs agree and every block passed, the same rule for every engine; `--module <page>` runs the course's `-- boot` blocks (page order), then one page's blocks and its download, and prints their results, writing nothing: a page reading another page's boot tables runs as in a whole run. `checked.json` is written only by a whole run.
+- L1 creates it with the loader stage; L2 adds the static stage, the blocks, the lab ERD check, the downloads, two-session blocks, the cleanup lint and the in-transaction leak check (§0); L3 the raster check and GDAL's version; L4 the Python blocks and `.py` downloads, the agreement gates, and the lab role's refusal of superuser or CREATE on `public`.
 
 ### 7.7 E2E
 
@@ -8850,9 +10544,9 @@ The repository's harness, unchanged in kind (002 §8): `pnpm build`, then Playwr
 - **`learn-timing`**: five first visits to the playground, each in a fresh context; the median time to the end of `setup.sql` must be at most 1.5 × A1's 2.9 s first visit (002 §1; the sample's boot, §A.1).
 - **`serving`**: `.wasm` content types and the fixed modification times of `/learn/assets/` (002 §8).
 
-**Artifacts**, as today in `E2E_ARTIFACTS`: the Playwright HTML report, a trace per test, `results.json` and screenshots at 1280 and 375 px of the map, f3 (browser), d3 (PostGIS), g3 and g7 (L3), the lab schema and the setup page, each light and dark, and of the data index, reproducible with `pnpm build && E2E_ARTIFACTS=<dir> pnpm e2e`.
+**Artifacts**, as today in `E2E_ARTIFACTS`: the Playwright HTML report, a trace per test, `results.json` and screenshots at 1280 and 375 px of the map, f3 (browser), d3 (PostGIS), g3 and g7 (L3), s4, s5 and e2 (L4), the lab schema and the setup page, each light and dark, and of the data index, reproducible with `pnpm build && E2E_ARTIFACTS=<dir> pnpm e2e`.
 
-**Release smoke** (`e2e/release/`, never in the default run): after a deploy, with `dist/` the released build, `RELEASE_ORIGIN=https://critwire.com E2E_ARTIFACTS=<dir> pnpm exec playwright test -c playwright.release.config.ts` checks every `dist/` file is served with its bytes, the `.wasm` files' content type, and f3's first browser block's result.
+**Release smoke** (`e2e/release/`, never in the default run): after a deploy, with `dist/` the released build, `RELEASE_ORIGIN=https://critwire.com E2E_ARTIFACTS=<dir> pnpm exec playwright test -c playwright.release.config.ts` checks every `dist/` file is served with its bytes, the `.wasm` files' content type, f3's first browser block's result, and (L4) the origin's `s4.py`, run after the origin's loader in `.venv-learn` as the lab role: exit 0, s4's recorded outputs printed in page order, nothing left behind.
 
 ## 8. For the owner only: the vault overlap
 
@@ -8887,7 +10581,7 @@ Five missions build the course, one after another, each from a ready-to-start br
 | L1 | `plans/briefs/critwire-learn-l1-data.md` | `critwire-learn-l1-data` | `/v1/countries.*` (002 §6); `/learn/data/`: the GBIF sample (`ingest gbif-sample`, its derived-dataset DOI with `gbif:register --target learn-sample`), the Natural Earth and RESOLVE shapes, A2's habitat stand-ins, the loader, the manifest and credits, the index page, the 50 MB cap (§4); `pnpm learn:check`'s loader stage (§7.6); `AGENTS.md`'s copy line (§10); E2E `learn-data` | 004 merged; the owner's §10 answers | 32–38 |
 | L2 | `plans/briefs/critwire-learn-l2-site.md` | `critwire-learn-l2-site` | The engine and app core (002 §1, §8) on schema v2; the map, track and module pages, progress, `/learn/setup/`, the playground (§2, §7); f1–f4 and d1–d6 in full (§5.1–5.2); the three ERD pages (§6); `writeStar` with the records fact; SQL downloads; `learn:check` for every PostGIS block, with its lints and `checked.json`; E2E. The design spike is frozen from here | L1's data, loader, credits and `learn:check` | 34–40 |
 | L3 | `plans/briefs/critwire-learn-l3-gis.md` | `critwire-learn-l3-gis` | `ingest habitat` (003 §5, v004): summaries for every country, `occurrence_habitats`, the Costa Rica and Tasmania clips (whole countries, 256-cell tiles; the cap raised to 120 MB by the owner); the loader and the lab ERD grow; `learn:check`'s raster check; g1–g7 in full (§5.3); review items: the `/v1` contract (`contracts/v1.json`), `docs/recovery.md`, `db:load` in batches | L2's pages, templates and `learn:check` | 28–34 |
-| L4 | `plans/briefs/critwire-learn-l4-stats-etl.md` | `critwire-learn-l4-stats-etl` | `requirements.txt` and `uv` (§3.3, unless L1 brought them); `learn:check`'s Python stage; `.py` and `.ipynb` downloads; s1–s6 and e1–e5 in full (§5.4–5.5), Gi\* and LISA tested against esda | L3's habitat data; the hexagon cells (g6, s4) | 30–36 |
+| L4 | `plans/briefs/critwire-learn-l4-stats-etl.md` | `critwire-learn-l4-stats-etl` | `requirements.txt` and `uv` (§3.3; L1 brought them, L4 split off the ingests' file); `learn:check`'s Python stage, the agreement gates and the lab role's refusals (§7.6); `.py` and `.ipynb` downloads (§7.3); s1–s6 and e1–e5 in full (§5.4–5.5), Moran, Gi\* and LISA tested against esda; three teaching diagrams (`s4-band`, `e2-load`, `e5-refresh`); review items: `e2-geopandas` in `learn_curriculum` as the lab role, a restartable refresh (e3, e5), the e1, e2, e4, e5 corrections, Python cleanup | L3's habitat data; the hexagon cells (g6, s4) | 30–36 |
 | L5 | `plans/briefs/critwire-learn-l5-powerbi-capstone.md` | `critwire-learn-l5-powerbi-capstone` | The habitat fact in `writeStar`; p1–p4 and c1 in full (§5.6–5.7), the game feed and its JSON Schema; a curriculum pass (all 33 modules built); a handoff item for the owner's Power BI check | L4's s5 (Gi\*), s4's cells and e4's credits | 22–28 |
 | | | | | **Total** | **146–176** |
 

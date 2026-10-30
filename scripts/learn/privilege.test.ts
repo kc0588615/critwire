@@ -11,7 +11,7 @@ import { splitStatements } from "../build/learn/sql.ts";
 import { lintPage, parseBlock, type Block } from "./blocks.ts";
 import { blockRuleErrors, roleStatement, type RuleBlock } from "./privilege.ts";
 
-const rule = (sql: string, over: Partial<RuleBlock> = {}): RuleBlock => ({ id: "b", engine: "postgis", status: "ran", txOwn: false, sessions: [], code: sql, statements: splitStatements(sql), ...over });
+const rule = (sql: string, over: Partial<RuleBlock> = {}): RuleBlock => ({ id: "b", engine: "postgis", status: "ran", txOwn: false, sessions: [], text: sql, code: sql, statements: splitStatements(sql), ...over });
 const errs = (sql: string, over: Partial<RuleBlock> = {}, chain: string[] = []) => blockRuleErrors(rule(sql, over), chain.flatMap((c) => splitStatements(c)));
 const ok = (sql: string, over: Partial<RuleBlock> = {}, chain: string[] = []) => assert.deepEqual(errs(sql, over, chain), [], sql);
 const bad = (sql: string, re: RegExp, over: Partial<RuleBlock> = {}, chain: string[] = []) => {
@@ -319,4 +319,23 @@ test("RP14 an untested block may show privileged statements (a learner's one-tim
 test("PV6 through the page: a setseed() in an `-- after:` block seeds the block", () => {
   page([pgFile("seed", "SELECT setseed(0.25) AS s"), pgFile("draw", "-- after: seed", "SELECT random() AS r")], [], ["q draw:"]);
   page([pgFile("draw", "SELECT random() AS r")], ["draw.sql: q draw: not deterministic: random("]);
+});
+
+// PY11 (L4 plan §2, §4.6): Python blocks. learn:check owns a Python block's sessions by the run's PGAPPNAME, so a
+// block (or a file it writes, as e5's refresh.py) that names its session itself would hide from the cleanup and the
+// straggler check. Failure modes: the name is set in a DSN string, a keyword argument, a written file's text or the
+// environment and passes; learn_spatial hides in a Python block.
+const pyFile = (id: string, ...lines: string[]) => {
+  const { block, errors } = parseBlock(`${id}.py`, [`# q: ${id}`, ...lines].join("\n") + "\n");
+  assert.deepEqual(errors, [], id);
+  return block!;
+};
+test("PY11 a ran Python block that sets application_name or PGAPPNAME is refused, naming file and line; learn_spatial anywhere in a Python block is refused", () => {
+  const name = "sets the session's name (application_name, PGAPPNAME): every lab session keeps the run's PGAPPNAME";
+  page([pyFile("e5-a", "# status: ran", "import psycopg", 'psycopg.connect(application_name="mine")')], [`e5-a.py: q e5-a: line 4 ${name}`]);
+  page([pyFile("e5-b", "# status: ran", "# after: py-connect", "JOB = '''", "conn = psycopg.connect('Application_Name=job')", "'''", "open('refresh.py', 'w').write(JOB)")], ["e5-b.py: q e5-b: line 5 sets the session's name"]);
+  page([pyFile("e5-c", "# status: ran", "import os", 'os.environ["PGAPPNAME"] = "x"')], ["e5-c.py: q e5-c: line 4 sets the session's name"]);
+  page([pyFile("e5-d", "# status: untested: shown only", 'psycopg.connect(application_name="mine")')], [], ["sets the session's name"]);
+  for (const status of ["ran", "untested: shown only"]) page([pyFile("s1-x", `# status: ${status}`, 'print("learn_spatial")')], ["s1-x.py: q s1-x: names learn_spatial"]);
+  assert.deepEqual(lintPage([pyFile("s1-y", "# status: ran", "import psycopg", "print(1)")]), [], "a plain Python block passes");
 });

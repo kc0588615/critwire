@@ -1,0 +1,8 @@
+-- result: s6-zones · 7 rows · sha256 72c259664d1d
+eco_id | name | km2 | records | jaguar | per_1000_km2 | record_ratio | jaguar_ratio
+470 | Isthmian-Atlantic moist forests | 17288 | 215 | 0 | 12.4 | 1.23 | 0.00
+471 | Isthmian-Pacific moist forests | 9012 | 96 | 0 | 10.7 | 1.05 | 0.00
+458 | Costa Rican seasonal moist forests | 8400 | 107 | 0 | 12.7 | 1.26 | 0.00
+506 | Talamancan montane forests | 8311 | 13 | 0 | 1.6 | 0.15 | 0.00
+527 | Central American dry forests | 6062 | 62 | 61 | 10.2 | 1.01 | 7.29
+… 2 more rows

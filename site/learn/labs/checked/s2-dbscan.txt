@@ -1,0 +1,3 @@
+-- result: s2-dbscan · 1 row · sha256 34fd8cce6ca6
+clusters | clustered | noise | largest | one_location_clusters
+10 | 871 | 913 | 357 | 1

@@ -1,0 +1,4 @@
+-- result: s4-geometry · 2 rows · sha256 099b07470829
+edge_m | threshold_m | class_1_m | class_2_m | duplicate_centroids | islands | pairs_near_threshold
+5000 | 10000 | 8660.25 | 15000.00 | 0 | 0 | 0
+10000 | 20000 | 17320.51 | 30000.00 | 0 | 0 | 0

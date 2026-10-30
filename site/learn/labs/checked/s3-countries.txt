@@ -1,0 +1,3 @@
+-- result: s3-countries · 1 row · sha256 5c0dcf803a58
+countries | islands | islands_by_touches | overlapping | most_neighbours
+247 | 76 | 84 | 12 | 16

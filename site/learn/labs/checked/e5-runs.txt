@@ -1,0 +1,12 @@
+-- result: e5-runs · python · sha256 bda9eaea67a6
+run 1 · A · exit 0 · INFO refresh: first load: loaded 400 rows
+run 2 · A again · exit 0 · INFO refresh: nothing changed: skipped
+run 3 · A, REFRESH_LICENSES=CC0 1.0 · exit 0 · INFO refresh: config changed: loaded 124 rows
+run 4 · B, one title corrected · exit 0 · INFO refresh: config and input changed: loaded 400 rows
+run 5 · C, one row added, its manifest still says 400 rows · exit 1 · ERROR refresh: failed: staged 401 rows; the manifest says 400 · traceback on stderr
+  the target holds B; the state's input is B
+run 6 · A, the lock held by another session · exit 0 · INFO refresh: another refresh holds the lock: skipped
+  the target holds B; the state's input is B
+run 7 · A, two runs started together · exit 0 and 0 · loaded, not loaded
+  the target holds A; the state's input is A
+run 8 · A, without PGDATABASE · exit 1 · ERROR refresh: failed: not set in this environment: PGDATABASE

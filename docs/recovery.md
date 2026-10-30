@@ -13,7 +13,8 @@ A commit plus its `pnpm-lock.yaml` rebuilds `dist/` byte for byte, offline (rehe
 
 - `~/.local/state/critwire/` (`$XDG_STATE_HOME/critwire/` if set): the GBIF lock and intent per run, `gbif-register{.lock,-intent.json}`, `gbif-register-learn-sample{.lock,-intent.json}`, `gbif-sample-download{.lock,-intent.json}`. Empty between runs; an intent left behind is how an interrupted run reconciles, so keep it.
 - `.env` files: the agents' checkout (`/srv/critter-ai/critwire/.env`), each worktree's, and the live copy's (`/srv/apps/critwire/.env`). They hold `DATABASE_URL`, `CRITWIRE_DB_TARGET`, `LEARN_PG_URL` and the GBIF account.
-- The database roles and their passwords: `critwire` (dev), `critwire_live` (live build), `critwire_lab` (Learn labs; `pnpm learn:check --setup` recreates it).
+- The database roles and their passwords: `critwire` (dev), `critwire_live` (live build), `critwire_lab` (Learn labs; `pnpm learn:check --setup` recreates it; learn:check refuses it as superuser or with CREATE on `public`).
+- `.venv-learn/` in each checkout: no unique state, `pnpm learn:venv` rebuilds it from the two pin files. learn:check's per-run Python state (the run name `critwire-learn-check-py-<hex>`, `MPLCONFIGDIR`, each block's `HOME` and folder) is temp, removed on exit; a session an interrupted run left is named, with its `pg_terminate_backend` command, by the next run.
 - The frozen design spike (`/srv/critter-ai/agent-state/missions/critwire-learn-curriculum/`): the evidence for 004's blocks not yet ported.
 - The databases (`critwire`, `critwire_dev`): rebuilt by every `pnpm build`; no unique state.
 

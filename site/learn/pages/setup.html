@@ -5,7 +5,7 @@
 <tbody>
 <tr><td>Browser</td><td>The module page: DuckDB, a database engine, running in your browser</td><td>Every block, in headless Chromium, as the page runs it</td></tr>
 <tr><td>PostgreSQL with PostGIS</td><td>PostgreSQL 16 with PostGIS 3.4, on your own computer</td><td>The lab file (loaded twice) and every block, on PostgreSQL 16 with PostGIS 3.4 on critwire's server. Not the Docker and installer steps on Windows.</td></tr>
-<tr><td>Python</td><td>A <code>uv</code> environment on your computer</td><td>In preparation, with the Python modules</td></tr>
+<tr><td>Python</td><td>Python 3.12 with pinned packages, in a <code>uv</code> environment on your computer</td><td>Every block and each lab's <code>.py</code> as you download it, in the same pinned environment on critwire's server. On Windows and macOS, only that every pinned package has a prebuilt version for them.</td></tr>
 <tr><td>Power BI Desktop</td><td>Windows</td><td>The files each query reads: header, keys, rows and sha256. Not Power BI itself, which has no Linux version.</td></tr>
 </tbody>
 </table></div>
@@ -65,7 +65,46 @@ curl.exe -fLo learn_curriculum.sql https://critwire.com/learn/data/postgis/learn
 {{block:pg-tx-smoke}}
 
 <h2>Python</h2>
-<p>The spatial statistics and ETL modules run Python scripts and notebooks that read the same lab data. Their setup, with pinned packages and the <code>uv</code> commands, is in preparation and will appear here with those modules.</p>
+<p>The spatial statistics and ETL modules run Python scripts that read the same lab database. They run in a virtual environment: a folder holding one Python and exactly the package versions the labs were tested with. <a href="https://docs.astral.sh/uv/">uv</a> builds it with the same commands on Windows, Linux and macOS, installs Python 3.12 itself, and installs the versions <a href="/learn/labs/requirements.txt"><code>requirements.txt</code></a> pins. <code>--no-build</code> makes it stop with an error rather than compile a package that has no prebuilt version for your computer.</p>
+<h3>Windows (PowerShell)</h3>
+<pre class="code"><code>powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/0.13.5/install.ps1 | iex"
+mkdir $HOME\learn; cd $HOME\learn
+curl.exe -fLo requirements.txt https://critwire.com/learn/labs/requirements.txt
+uv python install 3.12
+uv venv --python 3.12
+uv pip sync --no-build requirements.txt
+.venv\Scripts\python -c "import geopandas, esda; print(geopandas.__version__, esda.__version__)"</code></pre>
+<h3>Linux and macOS</h3>
+<pre class="code"><code>curl -LsSf https://astral.sh/uv/0.13.5/install.sh | sh
+mkdir -p ~/learn &amp;&amp; cd ~/learn
+curl -fLo requirements.txt https://critwire.com/learn/labs/requirements.txt
+uv python install 3.12
+uv venv --python 3.12
+uv pip sync --no-build requirements.txt
+.venv/bin/python -c "import geopandas, esda; print(geopandas.__version__, esda.__version__)"</code></pre>
+<p>The last line prints two version numbers. GeoPandas and esda import most of the rest, so if they load, the environment is complete.</p>
+<h3>The environment</h3>
+<p><code>requirements.txt</code> pins 44 packages, each to one version: GeoPandas and Shapely for shapes, pyproj for coordinate systems, psycopg to talk to PostgreSQL, and PySAL's <code>libpysal</code>, <code>esda</code> and <code>pointpats</code> for spatial statistics, with what they need. Every pin has a prebuilt package for Windows on x86-64, Linux on x86-64 and ARM, and macOS 14 or later on Apple silicon. Intel Macs aren't covered: pyproj 3.8.0 has no build for them. <code>uv pip sync</code> installs exactly the file and removes anything else, so run it again whenever you download a newer <code>requirements.txt</code>.</p>
+<h3>Scripts and notebooks</h3>
+<p>Each module's lab is one <code>.py</code> file, split into cells by <code># %%</code> lines, and the same cells as a notebook (<code>.ipynb</code>). Run a file whole (<code>.venv\Scripts\python setup.py</code> on Windows, <code>.venv/bin/python setup.py</code> elsewhere), or cell by cell in VS Code or Jupyter. The first time, the editor asks to add <code>ipykernel</code>, the package that lets it run cells, to the environment. Let it: nothing here depends on it, and the next <code>uv pip sync</code> removes it again.</p>
+<p>A lab file finds the database through the same <code>PG*</code> variables as psql (Connection settings, above), with the password in the same pgpass file or in <code>PGPASSWORD</code>. critwire runs every Python lab as an ordinary user with the privileges listed above, not as a superuser.</p>
+<h3>Check your environment</h3>
+<p>Every Python lab starts with this helper. It connects and sets the search path, so plain table names find the lab tables in <code>learn_curriculum</code> and PostGIS's functions in <code>public</code>. It prints nothing.</p>
+{{block:py-connect}}
+<p>This check prints the search path through the helper, then the versions of Python and the main packages. The same lines mean your environment matches the tested one, except perhaps Python's last number: <code>uv python install 3.12</code> installs the newest 3.12 release. These blocks and the next two are one file, <a href="/learn/labs/setup.py"><code>setup.py</code></a>, also as a notebook, <a href="/learn/labs/setup.ipynb"><code>setup.ipynb</code></a>.</p>
+{{block:py-smoke}}
+<h3>Moving data to another GIS</h3>
+<p>To take lab tables into ArcGIS Pro, QGIS or any tool built on GDAL, write a <strong>GeoPackage</strong>: one file, an open standard, holding layers with their geometry, fields and coordinate system. This block writes the 5 km hexagons that <a href="/learn/spatial-statistics/moran/">s4</a> builds over Tasmania, each with its count of devil records <code>n</code> and the value <code>y</code> = ln(1 + <code>n</code>) that s4 tests, to <code>s4_cells.gpkg</code> in the folder you run it from, then reads the file back. It needs the <code>s4_cells</code> table, so <code>setup.py</code> builds it first, right after the helper, as every lab file that uses it does.</p>
+{{block:gpkg-export}}
+<h3 id="arcpy">arcpy notes (ArcGIS Pro)</h3>
+<p>For anyone with ArcGIS Pro (the Basic license is enough). This is optional: no lab needs it.</p>
+<ul>
+<li>arcpy, Pro's Python package, lives in Pro's own conda environment, <code>arcgispro-py3</code>. Don't pip-install into it. If you want a lab package there, clone the environment in Pro (Settings → Package Manager → Environment Manager) and add the package to the clone.</li>
+<li>Keep the <code>uv</code> environment for the labs, and move data between the two as a GeoPackage (the block above). Pro lists a GeoPackage's layers as <code>main.&lt;name&gt;</code>.</li>
+<li>Pro Basic's Spatial Statistics toolbox covers s4 and s5: Spatial Autocorrelation (Global Moran's I) and Hot Spot Analysis (Getis-Ord Gi*). Pro reports Moran's z-score under the randomization assumption, so compare it with esda's <code>z_rand</code>, not <code>z_norm</code> (s4 prints both).</li>
+</ul>
+<p>This block runs s4's global Moran's I in Pro's Python window, on the GeoPackage written above. critwire can't run it (Pro is licensed and Windows-only), so <code>setup.py</code> carries it commented out and the notebook as text.</p>
+{{block:arcpy-moran}}
 
 <h2>Power BI Desktop</h2>
 <p><a href="https://www.microsoft.com/power-platform/products/power-bi/desktop">Power BI Desktop</a> is free and runs on Windows only. It reads <a href="/learn/schema/star/">the star schema</a> as CSV files under <code>https://critwire.com/learn/data/star/</code>: no gateway, no account, no database connection. To check your setup, make a blank query (Home → Get data → Blank query → Advanced editor) and paste this in. The first time, Power BI asks how to connect to critwire.com: choose <strong>Anonymous</strong>, and privacy level <strong>Public</strong>.</p>

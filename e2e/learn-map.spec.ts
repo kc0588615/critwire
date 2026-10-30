@@ -73,16 +73,23 @@ test("each track page lists its modules in order with their skills and questions
   }
 });
 
-// L3: the whole GIS in SQL track is built, so a module set back to planned fails here, not only on its own page.
-test("GIS in SQL: g1–g7 built, each linked from the map and its track page and returning 200", async ({ page, request }) => {
-  const g = (await curriculum()).modules.filter((m) => m.track === "gis-in-sql");
-  expect(g.map((m) => [m.id, m.state])).toEqual(["g1", "g2", "g3", "g4", "g5", "g6", "g7"].map((id) => [id, "built"]));
-  for (const path of [MAP, "/learn/gis-in-sql/"]) {
-    await page.goto(path);
-    for (const m of g) await expect(page.locator(`li[data-module="${m.id}"] .module-title a[href="${moduleUrl(m)}"]`), `${path} ${m.id}`).toHaveText(m.title);
-  }
-  for (const m of g) expect((await request.get(moduleUrl(m))).status(), m.id).toBe(200);
-});
+// L3 and L4: these tracks are built in full, so a module set back to planned fails here, not only on its own page.
+const BUILT_TRACKS: [title: string, track: string, ids: string[]][] = [
+  ["GIS in SQL", "gis-in-sql", ["g1", "g2", "g3", "g4", "g5", "g6", "g7"]],
+  ["Spatial statistics", "spatial-statistics", ["s1", "s2", "s3", "s4", "s5", "s6"]],
+  ["ETL", "etl", ["e1", "e2", "e3", "e4", "e5"]],
+];
+for (const [title, track, ids] of BUILT_TRACKS) {
+  test(`${title}: ${ids[0]}–${ids.at(-1)} built, each linked from the map and its track page and returning 200`, async ({ page, request }) => {
+    const ms = (await curriculum()).modules.filter((m) => m.track === track);
+    expect(ms.map((m) => [m.id, m.state])).toEqual(ids.map((id) => [id, "built"]));
+    for (const path of [MAP, `/learn/${track}/`]) {
+      await page.goto(path);
+      for (const m of ms) await expect(page.locator(`li[data-module="${m.id}"] .module-title a[href="${moduleUrl(m)}"]`), `${path} ${m.id}`).toHaveText(m.title);
+    }
+    for (const m of ms) expect((await request.get(moduleUrl(m))).status(), m.id).toBe(200);
+  });
+}
 
 test("a done tick survives a reload, shows on the map and its track, and Clear progress removes it", async ({ page }) => {
   const c = await curriculum();

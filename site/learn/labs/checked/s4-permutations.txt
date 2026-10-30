@@ -1,0 +1,4 @@
+-- result: s4-permutations · python · sha256 e4f919f6c5a8
+I: 0.273296  shuffles: 999
+shuffled I: mean -0.000776  sd 0.018192  max 0.065027
+pseudo p: 0.0010  z_sim: 15.07

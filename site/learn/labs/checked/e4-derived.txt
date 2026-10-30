@@ -1,0 +1,6 @@
+-- result: e4-derived · python · sha256 da576d8cb1de
+relatedDatasets: 33 datasets, 4000 records
+  06e98c3e-2801-4d29-8e81-943a13bb3785: 1948
+  2985efd1-45b1-46de-b6db-0465d2834a5a: 1413
+  4ffe66a0-6c8b-11de-8226-b8a03c50a862: 569
+body: 1718 bytes, ready to POST with your GBIF account

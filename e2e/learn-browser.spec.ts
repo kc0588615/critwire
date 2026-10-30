@@ -294,7 +294,7 @@ test("every browser block of the course pages equals its snapshot, and cards fol
   }
   // f3-brazil-list is the release smoke's block (cards, as its `-- show: cards` says).
   expect(seen).toEqual(
-    expect.arrayContaining(["setup-counts", "f1-no-photo", "f1-page", "f2-count", "f2-distinct", "f3-brazil-list", "f3-not-in", "f4-top-dataset", "f4-running", "d1-constraints", "d1-check-null", "d1-ex-same-url", "d2-list", "d2-sources", "d2-update-anomaly", "d2-delete-anomaly", "d2-ex-two-titles", "d6-export"]),
+    expect.arrayContaining(["setup-counts", "f1-no-photo", "f1-page", "f2-count", "f2-distinct", "f3-brazil-list", "f3-not-in", "f4-top-dataset", "f4-running", "d1-constraints", "d1-check-null", "d1-ex-same-url", "d2-list", "d2-sources", "d2-update-anomaly", "d2-delete-anomaly", "d2-ex-two-titles", "d6-export", "s1-basis", "s1-dominance"]),
   );
   expect(offOrigin).toEqual([]);
   await context.close();
@@ -395,6 +395,15 @@ SELECT (SELECT count(*) FROM r_species) AS species, (SELECT count(*) FROM r_data
     hint: `d2-ex-two-titles should fail after your answer with "PRIMARY KEY or UNIQUE constraint violation", but it ran without an error.`,
   },
   // No Unknown member: the records without a year fall out of the fact, so it no longer reconciles.
+  // No WHERE year IS NOT NULL: for 11 species the undated records outnumber every year and become the "busiest year".
+  "s1-ex": {
+    sql: `WITH totals AS (SELECT species_id, count(*) AS records FROM occurrences GROUP BY species_id HAVING count(*) >= 100),
+per_year AS (SELECT species_id, year, count(*) AS n, row_number() OVER (PARTITION BY species_id ORDER BY count(*) DESC, year) AS place
+  FROM occurrences GROUP BY species_id, year)
+SELECT s.common_name, t.records, p.year, p.n, round(100.0 * p.n / t.records, 1) AS top_pct
+FROM totals AS t JOIN per_year AS p ON p.species_id = t.species_id AND p.place = 1 JOIN species AS s ON s.id = t.species_id`,
+    hint: "Some rows differ from the answer.",
+  },
   "d6-ex": {
     sql: `CREATE TABLE dim_decade (decade INTEGER PRIMARY KEY, label VARCHAR NOT NULL);
 INSERT INTO dim_decade SELECT DISTINCT year - year % 10, CAST(year - year % 10 AS VARCHAR) || 's' FROM occurrences WHERE year IS NOT NULL;
@@ -444,7 +453,7 @@ test("every exercise and skip check rejects a fixed wrong answer and accepts its
       seen.push(b.id);
     }
   }
-  expect(seen).toEqual(expect.arrayContaining(["f1-skip", "f1-ex", "f2-skip", "f2-ex", "f3-skip", "f3-ex", "f4-skip", "f4-ex", "d1-ex", "d2-ex", "d6-ex"]));
+  expect(seen).toEqual(expect.arrayContaining(["f1-skip", "f1-ex", "f2-skip", "f2-ex", "f3-skip", "f3-ex", "f4-skip", "f4-ex", "d1-ex", "d2-ex", "d6-ex", "s1-ex"]));
   expect(offOrigin).toEqual([]);
   await context.close();
 });

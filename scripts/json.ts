@@ -23,7 +23,7 @@ export async function readOptionalText(url: URL): Promise<string | null> {
 }
 
 // Recursively sorts object keys (code-unit order); arrays keep their order.
-function sortKeys(value: unknown): unknown {
+export function sortKeys(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(sortKeys);
   if (value === null || typeof value !== "object") return value;
   const entries = Object.entries(value).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));

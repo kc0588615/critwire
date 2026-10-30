@@ -7,7 +7,7 @@
 // The privilege, cleanup and determinism rules (RQ15's PostGIS half, RQ18, RP5, RP12, RP14) are privilege.ts's (S2).
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { lintPage, parseBlock, PBI_STATUS, type Block } from "./blocks.ts";
+import { lintPage, parseBlock, PBI_STATUS, PY_CONNECT_ID, type Block } from "./blocks.ts";
 
 /** A block file's errors (parse only). */
 const errs = (file: string, text: string) => parseBlock(file, text).errors;
@@ -23,6 +23,8 @@ function has(errors: string[], ...want: string[]) {
 }
 const sql = (id: string, ...lines: string[]) => [`-- q: ${id}`, ...lines].join("\n") + "\n";
 const pg = (id: string, ...lines: string[]) => sql(id, "-- status: ran", "-- engine: postgis", ...lines);
+const py = (id: string, ...lines: string[]) => [`# q: ${id}`, ...lines].join("\n") + "\n";
+const ranPy = (id: string, ...lines: string[]) => block(`${id}.py`, py(id, "# status: ran", ...lines, "print(1)"));
 
 test("BL0 a valid block: fields, code without the test headers (`-- show: cards` kept), statements", () => {
   const b = block("f1-page.sql", sql("f1-page", "-- status: ran", "-- after: f1-a, f1-b", "-- show: cards", "SELECT 1 AS a;", "SELECT 2 AS b"));
@@ -123,9 +125,9 @@ test("PC7 boot blocks: PostGIS only, no value, no `-- after`, no expected error,
   has(lintPage([b0, block("b3.sql", pg("b3", "-- after: b0", "SELECT 1"))]), 'q b3: `-- after`: "b0" already runs at boot');
 });
 
-test("BL1 the file name is the id, with .sql, .m or .dax", () => {
+test("BL1 the file name is the id, with .sql, .py, .m or .dax", () => {
   has(errs("other.sql", sql("f1-a", "-- status: ran", "SELECT 1")), 'other.sql: q f1-a: the file is named "other.sql", not "f1-a.sql"');
-  has(errs("f1-a.txt", sql("f1-a", "-- status: ran", "SELECT 1")), "f1-a.txt: a block file is .sql, .m or .dax");
+  has(errs("f1-a.txt", sql("f1-a", "-- status: ran", "SELECT 1")), "f1-a.txt: a block file is .sql, .py, .m or .dax");
   has(errs("x.sql", "\n"), "x.sql: no `-- q:` header");
   has(errs("x.sql", sql("x", "-- status: ran", "-- comment only")), "q x: no SQL to run");
   has(errs("x.sql", sql("x", "-- status: ran", "SELECT 'open")), "q x: unterminated string");
@@ -219,4 +221,66 @@ test("BL9 a page's lint passes a valid page", () => {
     block("d1-c.sql", sql("d1-c", "-- status: ran", "SELECT 1 AS a")),
   ];
   assert.deepEqual(lintPage(page), []);
+});
+
+// PY1, PY5 (L4 plan §2): Python blocks. Failure modes: a misspelt or unknown `# …:` header is silently taken as code
+// (or a comment), so the block runs untested or without its helper; a bad timeout becomes NaN or 0 and every run
+// times out or never does; a block with no code records an empty result as proof; `# after:` names a block that
+// can't run first (later, itself, untested, SQL), so its code runs without what it needs.
+test("PY0 a valid Python block: engine, status, after, timeout (default 60), code without the headers, text byte for byte", () => {
+  const text = py("s4-moran", "# status: ran", "# after: py-connect", "# timeout: 90", "# a comment, not a header", "import esda", "print(1)");
+  const b = block("s4-moran.py", text);
+  assert.deepEqual(
+    { id: b.id, engine: b.engine, status: b.status, after: b.after, timeoutS: b.timeoutS, code: b.code, text: b.text, statements: b.statements },
+    { id: "s4-moran", engine: "python", status: "ran", after: ["py-connect"], timeoutS: 90, code: "# a comment, not a header\nimport esda\nprint(1)\n", text, statements: [] },
+  );
+  assert.equal(ranPy("x").timeoutS, 60);
+  const u = block("arcpy-moran.py", py("arcpy-moran", "# status: untested: ArcGIS Pro (Windows, licensed)", "import arcpy"));
+  assert.deepEqual([u.engine, u.status, u.reason], ["python", "untested", "ArcGIS Pro (Windows, licensed)"]);
+});
+
+test("PY1 a Python block without `# q:` or `# status:`, an unknown header, a bad timeout, no code or an unknown status fails, naming the file and line", () => {
+  has(errs("x.py", "# status: ran\nprint(1)\n"), "x.py: line 1: no `# q:` header");
+  has(errs("x.py", py("x", "print(1)")), "x.py: line 2: q x: no `# status:` header");
+  has(errs("x.py", py("x", "# status: ran", "# engine: postgis", "print(1)")), "x.py: line 3: q x: unknown header `# engine:` (q, status, after, timeout)");
+  has(errs("x.py", py("x", "# status: ran", "# note: keep", "print(1)")), "x.py: line 3: q x: unknown header `# note:`");
+  for (const t of ["0", "-5", "1.5", "ten", ""]) has(errs("x.py", py("x", "# status: ran", `# timeout: ${t}`, "print(1)")), "x.py: line 3: q x: `# timeout:` takes whole seconds above 0");
+  has(errs("x.py", py("x", "# status: ran")), "x.py: line 3: q x: no code");
+  has(errs("x.py", py("x", "# status: ran", "# only a comment", "")), "x.py: line 3: q x: no code");
+  has(errs("x.py", py("x", "# status: maybe", "print(1)")), 'x.py: line 2: q x: unknown status "maybe" (ran or untested: <reason>)');
+  has(errs("x.py", py("x", "# status: untested:", "print(1)")), "x.py: line 2: q x: `untested:` needs a reason");
+  has(errs("x.py", py("x", "# status: ran", "# status: ran", "print(1)")), "x.py: line 3: q x: duplicate `# status:` header");
+  has(errs("x.py", py("x", "# status: ran", "# after: a,, B", "print(1)")), "x.py: line 3: q x: `# after` must be a comma-separated list of ids");
+  has(errs("y.py", py("x", "# status: ran", "print(1)")), 'y.py: q x: the file is named "y.py", not "x.py"');
+  has(errs("x.py", py("x", "-- status: ran", "print(1)")), "x.py: line 2: q x: no `# status:` header");
+});
+
+test("PY5 `# after:` takes an earlier ran Python block of the page or py-connect; unknown, later, self, other-engine and untested ids are refused", () => {
+  const connect = ranPy(PY_CONNECT_ID);
+  const helpers = new Map([[connect.id, connect]]);
+  const page = [
+    ranPy("s4-a", "# after: py-connect"),
+    block("s4-u.py", py("s4-u", "# status: untested: ArcGIS Pro", "import arcpy")),
+    block("s4-sql.sql", pg("s4-sql", "SELECT 1 AS a")),
+    ranPy("s4-b", "# after: py-connect, s4-a"),
+    ranPy("s4-c", "# after: nope, s4-d, s4-c, s4-u, s4-sql"),
+    ranPy("s4-d"),
+  ];
+  const e = lintPage(page, undefined, helpers);
+  has(
+    e,
+    's4-c.py: q s4-c: `# after`: unknown block "nope" (not on this page)',
+    'q s4-c: `# after`: "s4-d" comes after it',
+    'q s4-c: `# after`: "s4-c" comes after it',
+    'q s4-c: `# after`: "s4-u" is untested',
+    'q s4-c: `# after`: "s4-sql" runs in postgis, not python',
+  );
+  assert.deepEqual(e.filter((x) => !x.startsWith("s4-c.py")), [], "s4-a and s4-b pass: py-connect is a course helper");
+  has(lintPage([ranPy("s4-a", "# after: py-connect")]), 'q s4-a: `# after`: unknown block "py-connect" (not on this page)');
+  // the setup page holds py-connect itself: an earlier block of the page
+  assert.deepEqual(lintPage([connect, ranPy("py-smoke", "# after: py-connect")], undefined, helpers), []);
+  const untested = block(`${PY_CONNECT_ID}.py`, py(PY_CONNECT_ID, "# status: untested: no", "print(1)"));
+  has(lintPage([ranPy("s4-a", "# after: py-connect")], undefined, new Map([[untested.id, untested]])), 'q s4-a: `# after`: "py-connect" is untested');
+  // a SQL block can't name the Python helper
+  has(lintPage([block("s4-q.sql", pg("s4-q", "-- after: py-connect", "SELECT 1 AS a"))], undefined, helpers), 'q s4-q: `-- after`: "py-connect" runs in python, not postgis');
 });

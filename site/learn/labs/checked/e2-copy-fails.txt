@@ -1,0 +1,6 @@
+-- result: e2-copy-fails · python · sha256 6e24b65c626e
+file | SQLSTATE | line | error
+a tab inside a field | 22P04 | 4 | extra data after last expected column
+a NUL byte | 22021 | 3 | invalid byte sequence for encoding "UTF8": 0x00
+Latin-1, not UTF-8 | 22021 | 2 | invalid byte sequence for encoding "UTF8": 0xe9 0x65 0x0a
+rows staged: 0 after the three failed COPYs, 3 from the file as delivered

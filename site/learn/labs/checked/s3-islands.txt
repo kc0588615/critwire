@@ -1,0 +1,8 @@
+-- result: s3-islands · 10 rows · sha256 0039efb8454f
+country_code | name | records
+AU | Australia | 4636
+MG | Madagascar | 2012
+KM | Comoros | 109
+LK | Sri Lanka | 26
+PH | Philippines | 12
+… 5 more rows

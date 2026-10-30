@@ -1,0 +1,8 @@
+-- result: s1-devil · 12 rows · sha256 889e2a2404f5
+title | basis_of_record | records | pct | first_year | last_year
+Tasmanian Natural Values Atlas | OBSERVATION | 1367 | 68.4 | 1599 | 2012
+Tasmanian Museum and Art Gallery provider for OZCAM | MATERIAL_SAMPLE | 558 | 27.9 | 2000 | 2023
+Tasmanian Natural Values Atlas | OCCURRENCE | 46 | 2.3 | 2005 | 2010
+Tasmanian Museum and Art Gallery provider for OZCAM | PRESERVED_SPECIMEN | 10 | 0.5 | NULL | NULL
+Museums Victoria provider for OZCAM | PRESERVED_SPECIMEN | 5 | 0.3 | NULL | NULL
+… 7 more rows

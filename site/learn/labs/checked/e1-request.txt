@@ -1,0 +1,9 @@
+-- result: e1-request · python · sha256 5cc14736466a
+taxon keys: 73, first 2421431, last 7451150
+checklistKey: request d7dddbf4-2cf0-4f39-9b2a-bb099caae36c, TAXON_KEY d7dddbf4-2cf0-4f39-9b2a-bb099caae36c
+LICENSE in ['CC0_1_0', 'CC_BY_4_0']
+HAS_COORDINATE equals true
+HAS_GEOSPATIAL_ISSUE equals false
+OCCURRENCE_STATUS equals PRESENT
+BASIS_OF_RECORD in ['HUMAN_OBSERVATION', 'OBSERVATION', 'MACHINE_OBSERVATION', 'PRESERVED_SPECIMEN', 'MATERIAL_SAMPLE', 'MATERIAL_CITATION', 'OCCURRENCE']
+bytes: 1551

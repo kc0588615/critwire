@@ -1,6 +1,7 @@
 // The block model (plan D2; spike plan-queries.ts, ported from 004's fences to files). A block file is 004's fence body,
-// headers included, named by its id: site/learn/sql/<id>.sql (`-- ` headers) or <id>.m / <id>.dax (Power BI, `// `).
-// parseBlock reads one file and lints what one file can show; lintPage lints a page's blocks together (ids, `-- after:`).
+// headers included, named by its id: site/learn/sql/<id>.sql (`-- ` headers), <id>.py (Python, `# `; L4 plan §2) or
+// <id>.m / <id>.dax (Power BI, `// `). parseBlock reads one file and lints what one file can show; lintPage lints a
+// page's blocks together (ids, `-- after:`, with the course's helpers).
 // What a statement may do to roles, schemas and settings, the determinism rules and the cleanup pairing are
 // privilege.ts's; lintPage applies them with each block's `-- after:` chain.
 // Pure. Tests: blocks.test.ts.
@@ -16,12 +17,16 @@ export const SETUP_ID = "setup";
 export const PG_SESSION_ID = "pg-session";
 export const PG_SESSION: readonly string[] = [`SET search_path = ${LAB_SCHEMA}, public`];
 export const PBI_STATUS = "untested: Power BI is Windows-only";
+/** The setup page's Python connection helper: any page's Python block may name it in `# after:` (L4 plan §2). */
+export const PY_CONNECT_ID = "py-connect";
+/** A Python block's `# timeout:` when it has none, in seconds. */
+export const PY_TIMEOUT_S = 60;
 /** Where blocks and their recorded results live, from the repository root. */
 export const BLOCK_DIR = "site/learn/sql";
 export const CHECKED_DIR = "site/learn/labs/checked";
 export const SNAPSHOT_DIR = "e2e/__snapshots__";
 
-export type Engine = "duckdb" | "postgis" | "powerbi";
+export type Engine = "duckdb" | "postgis" | "powerbi" | "python";
 
 export interface Block {
   id: string;
@@ -31,7 +36,8 @@ export interface Block {
   status: "ran" | "untested";
   /** untested: why. */
   reason: string;
-  /** `-- after:` earlier blocks of the page, run first in the same transaction, in the order named (not transitive). */
+  /** `-- after:` earlier blocks of the page, run first in the same transaction, in the order named (not transitive).
+   *  Python's `# after:`: their code first, in page order, in one process. */
   after: string[];
   /** `-- boot` (PostGIS): run once at connect and committed. */
   boot: boolean;
@@ -45,6 +51,8 @@ export interface Block {
   plan: PlanAssertion[];
   /** `-- sessions: A, B` (PostGIS): the block runs in these sessions, statement by statement (D5). */
   sessions: string[];
+  /** Python `# timeout:`, in seconds. */
+  timeoutS: number;
   /** Power BI `// input:` star files. */
   inputs: string[];
   /** The file, byte for byte. */
@@ -65,6 +73,8 @@ const SESSION = /^[A-Z][A-Za-z0-9]*$/;
 const HEADER = /^-- (q|status|params|expect|after|engine|needs|boot|tx|plan|sessions):(?: (.*))?$|^-- (boot)$/;
 const PBI_HEADER = /^\/\/ ([a-z]+):(?: (.*))?$/;
 const PBI_HEADERS = ["q", "status", "input"];
+const PY_HEADER = /^# ([a-z]+):(?: (.*))?$/;
+const PY_HEADERS = ["q", "status", "after", "timeout"];
 /** A Power BI `// input:`: a file of the star, under /learn/data/star/. */
 export const STAR_INPUT = /^star\/[a-z_]+\.csv$/;
 const ENGINES = ["duckdb", "postgis"];
@@ -98,14 +108,72 @@ function list(raw: string, item: RegExp): { items: string[]; bad: boolean; twice
 
 const empty = (id: string, file: string, text: string) => ({
   id, file, text, engine: "duckdb" as Engine, status: "untested" as const, reason: "", after: [], boot: false, txOwn: false, needsRaster: false,
-  plan: [], sessions: [], inputs: [], code: "", statements: [], fails: [], waits: [], windows: [],
+  plan: [], sessions: [], timeoutS: PY_TIMEOUT_S, inputs: [], code: "", statements: [], fails: [], waits: [], windows: [],
 });
+
+/** A `status:` header's value into the block: `ran` or `untested: <reason>`; the errors, prefixed `q`. */
+function parseStatus(block: Block, status: string | undefined, h: string, q: string): string[] {
+  if (status === undefined) return [`${q}: no \`${h} status:\` header`];
+  if (status === "ran") block.status = "ran";
+  else if (status.startsWith("untested:")) {
+    block.reason = status.slice("untested:".length).trim();
+    if (!block.reason) return [`${q}: \`untested:\` needs a reason`];
+  } else return [`${q}: unknown status "${status}" (ran or untested: <reason>)`];
+  return [];
+}
+
+/** An `after:` header's value into the block; the errors, prefixed `q`. */
+function parseAfter(block: Block, raw: string, h: string, q: string): string[] {
+  const { items, bad, twice } = list(raw, ID);
+  block.after = items;
+  return [...(bad ? [`${q}: \`${h} after\` must be a comma-separated list of ids`] : []), ...twice.map((a) => `${q}: \`${h} after\`: "${a}" named twice`)];
+}
+
+/**
+ * A Python block file (L4 plan §2; PY1): `# q:` and `# status:` required, `# after:` and `# timeout:` optional; every
+ * other leading `# <word>:` line is an unknown header. Each error names the file and line.
+ */
+function parsePython(file: string, text: string): { block?: Block; errors: string[] } {
+  const lines = text.split("\n");
+  const headers = new Map<string, [value: string, line: number]>();
+  const bad: [error: string, line: number][] = [];
+  let n = 0;
+  for (; n < lines.length; n++) {
+    const m = PY_HEADER.exec(lines[n]!);
+    if (!m) break;
+    const key = m[1]!;
+    if (!PY_HEADERS.includes(key)) bad.push([`unknown header \`# ${key}:\` (${PY_HEADERS.join(", ")})`, n + 1]);
+    else if (headers.has(key)) bad.push([`duplicate \`# ${key}:\` header`, n + 1]);
+    else headers.set(key, [(m[2] ?? "").trim(), n + 1]);
+  }
+  const id = headers.get("q")?.[0];
+  if (id === undefined) return { errors: [`${file}: line 1: no \`# q:\` header`] };
+  if (!ID.test(id)) return { errors: [`${file}: line ${headers.get("q")![1]}: invalid id "${id}" (want [a-z0-9-]+)`] };
+  const at = (line: number) => `${file}: line ${line}: q ${id}`;
+  const end = n + 1;
+  const out = bad.map(([e, line]) => `${at(line)}: ${e}`);
+  if (basename(file) !== `${id}.py`) out.push(`${file}: q ${id}: the file is named "${basename(file)}", not "${id}.py"`);
+  const code = lines.slice(n).join("\n");
+  const block: Block = { ...empty(id, file, text), engine: "python", code };
+  const status = headers.get("status");
+  out.push(...parseStatus(block, status?.[0], "#", at(status?.[1] ?? end)));
+  const after = headers.get("after");
+  if (after) out.push(...parseAfter(block, after[0], "#", at(after[1])));
+  const timeout = headers.get("timeout");
+  if (timeout) {
+    if (/^[1-9][0-9]*$/.test(timeout[0])) block.timeoutS = Number(timeout[0]);
+    else out.push(`${at(timeout[1])}: \`# timeout:\` takes whole seconds above 0`);
+  }
+  if (!code.split("\n").some((l) => l.trim() && !l.trim().startsWith("#"))) out.push(`${at(end)}: no code`);
+  return { block, errors: out };
+}
 
 /** One block file: the block (once its id is known) and every error the file alone shows, each naming the file. */
 export function parseBlock(file: string, text: string): { block?: Block; errors: string[] } {
   const name = basename(file);
   const ext = extname(name);
-  if (![".sql", ".m", ".dax"].includes(ext)) return { errors: [`${file}: a block file is .sql, .m or .dax`] };
+  if (ext === ".py") return parsePython(file, text);
+  if (![".sql", ".m", ".dax"].includes(ext)) return { errors: [`${file}: a block file is .sql, .py, .m or .dax`] };
   const pbi = ext !== ".sql";
   const h = pbi ? "//" : "--";
   const lines = text.split("\n");
@@ -147,25 +215,14 @@ export function parseBlock(file: string, text: string): { block?: Block; errors:
     return { block, errors };
   }
 
-  const status = headers.get("status");
-  if (status === undefined) errors.push(`${q}: no \`-- status:\` header`);
-  else if (status === "ran") block.status = "ran";
-  else if (status.startsWith("untested:")) {
-    block.reason = status.slice("untested:".length).trim();
-    if (!block.reason) errors.push(`${q}: \`untested:\` needs a reason`);
-  } else errors.push(`${q}: unknown status "${status}" (ran or untested: <reason>)`);
+  errors.push(...parseStatus(block, headers.get("status"), "--", q));
 
   const engine = headers.get("engine") ?? "duckdb";
   if (ENGINES.includes(engine)) block.engine = engine as Engine;
   else errors.push(`${q}: unknown engine "${engine}" (${ENGINES.join(" or ")})`);
   const pg = block.engine === "postgis";
 
-  if (headers.has("after")) {
-    const { items, bad, twice } = list(headers.get("after")!, ID);
-    block.after = items;
-    if (bad) errors.push(`${q}: \`-- after\` must be a comma-separated list of ids`);
-    for (const a of twice) errors.push(`${q}: \`-- after\`: "${a}" named twice`);
-  }
+  if (headers.has("after")) errors.push(...parseAfter(block, headers.get("after")!, "--", q));
   if (headers.has("params")) errors.push(`${q}: \`-- params\` isn't supported: no page binds a learner's input`);
   if (headers.has("expect")) {
     block.expectError = /^error (.+)$/.exec(headers.get("expect")!)?.[1];
@@ -270,9 +327,10 @@ function statementErrors(b: Block, q: string): string[] {
  * A page's blocks, in page order, linted together: unique ids; each `-- after:` block on the page, earlier, ran,
  * expecting no error, wrapped, single-session and in the same engine; then each block's privilege rules with its
  * `-- after:` chain (PV1–PV8) and a ran PostGIS block's cleanup (CL1–CL9; a `-- fails:` statement doesn't happen).
- * `bootIds`: ids that run at boot without a file.
+ * `bootIds`: ids that run at boot without a file. `helpers`: course-wide blocks an `-- after:` may name from any page
+ * (py-connect, on the setup page), held to the same rules.
  */
-export function lintPage(blocks: readonly Block[], bootIds: ReadonlySet<string> = new Set([SETUP_ID])): string[] {
+export function lintPage(blocks: readonly Block[], bootIds: ReadonlySet<string> = new Set([SETUP_ID]), helpers: ReadonlyMap<string, Block> = new Map()): string[] {
   const errors: string[] = [];
   const first = new Map<string, Block>();
   for (const b of blocks) {
@@ -281,10 +339,10 @@ export function lintPage(blocks: readonly Block[], bootIds: ReadonlySet<string> 
     else first.set(b.id, b);
   }
   blocks.forEach((b, k) => {
-    const q = `${b.file}: q ${b.id}: \`-- after\``;
+    const q = `${b.file}: q ${b.id}: \`${b.engine === "python" ? "#" : "--"} after\``;
     for (const a of new Set(b.after.filter((a) => ID.test(a)))) {
       const i = blocks.findIndex((x) => x.id === a);
-      const named = blocks[i];
+      const named = blocks[i] ?? helpers.get(a);
       if (bootIds.has(a) || named?.boot) errors.push(`${q}: "${a}" already runs at boot`);
       else if (!named) errors.push(`${q}: unknown block "${a}" (not on this page)`);
       else if (i >= k) errors.push(`${q}: "${a}" comes after it`);

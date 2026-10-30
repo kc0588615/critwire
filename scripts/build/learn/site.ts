@@ -9,16 +9,18 @@
 // assertLabsFresh (plan D6), once the data manifest is written: checked.json against the freshness the build recomputes
 // (learn/freshness.ts); a plain build refuses a stale lab, --draft only warns.
 // writeLearn (plan D8.6, D12), last: the Learn site under dist/learn/: its assets; the lab downloads (labs/<page>.sql,
-// assemble.ts, the files learn:check ran and checked.json stamps); the drawn ERDs (schema/<name>.svg); the teaching
+// .py and .ipynb, assemble.ts, the files learn:check ran and checked.json stamps) and the labs' requirements.txt (L4
+// plan §5); the drawn ERDs (schema/<name>.svg); the teaching
 // diagrams (diagrams/<name>.svg and <name>-dark.svg); then the pages
 // (pages.ts: the schema pages from the ERD sources), which read checked.json and the star manifest writeStar wrote.
-import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { assembleDownloads } from "../../learn/assemble.ts";
+import { copyFile, mkdir, readFile, writeFile } from "node:fs/promises";
+import { assembleDownloads, pageDownloads } from "../../learn/assemble.ts";
 import type { CoursePage, Curriculum } from "../../learn/course.ts";
 import { readCourse } from "../../learn/course-files.ts";
 import { parseErd } from "../../learn/erd-model.ts";
 import { readFreshness, readRecorded, readStamp, staleness } from "../../learn/freshness.ts";
 import type { StarManifest } from "../../learn/star-check.ts";
+import { LABS_REQUIREMENTS } from "../../venv.ts";
 import { DUCKDB_EXT, DUCKDB_WASM } from "../../../site/learn/src/assets.ts";
 import { assetErrors, writeAssets } from "./assets.ts";
 import { learnPages, readTemplates, writePages } from "./pages.ts";
@@ -68,7 +70,8 @@ export async function writeLearn(out: URL, { curriculum, pages, erds, svgs, diag
   const labs = new URL("learn/labs/", out);
   await mkdir(labs, { recursive: true });
   for (const d of downloads) await writeFile(new URL(d.name, labs), d.text);
-  console.log(`learn labs: ${downloads.map((d) => d.name).join(", ")}`);
+  await copyFile(LABS_REQUIREMENTS, new URL("requirements.txt", labs));
+  console.log(`learn labs: ${downloads.map((d) => d.name).join(", ")}, requirements.txt`);
 
   const schema = new URL("learn/schema/", out);
   await mkdir(schema, { recursive: true });
@@ -82,7 +85,7 @@ export async function writeLearn(out: URL, { curriculum, pages, erds, svgs, diag
   const html = learnPages({
     curriculum,
     pages,
-    downloads: new Map(downloads.map((d) => [d.page, d.name])),
+    downloads: pageDownloads(downloads),
     templates: await readTemplates(),
     erds,
     context: {

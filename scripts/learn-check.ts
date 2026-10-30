@@ -2,7 +2,8 @@
 // Default: learn/check.ts's stages: static (the committed course linted, before connecting), then connect, loader,
 // blocks, end as the lab role, LEARN_PG_URL or else libpq's PG* settings, never DATABASE_URL; the blocks stage checks
 // each PostGIS block of every page, in page order, against site/learn/labs/checked/<id>.txt, and, after the boot
-// blocks, site/learn/erd/lab.mmd against learn_curriculum's catalog; the downloads stage runs
+// blocks, site/learn/erd/lab.mmd against learn_curriculum's catalog, then each ran Python block in .venv-learn (checked
+// against the labs' requirements.txt before connecting; learn/py-runner.ts); the downloads stage runs
 // every assembled lab file on a fresh load; then site/learn/labs/checked/checked.json is written (freshness.ts).
 // --update runs each block twice and writes its result once both runs agree and every block passed. --module <page>
 // (setup, or a built module's id) runs one page's blocks and its download and prints their results; it never writes. --dist names the
@@ -36,10 +37,10 @@ try {
     const stop = new AbortController();
     for (const s of ["SIGINT", "SIGTERM"] as const) process.once(s, () => stop.abort(new Error(`interrupted by ${s}; nothing kept`)));
     if (values.module !== undefined && values.update) throw new Error("--module never writes: drop --update");
-    const { pages, blocks, downloads, labErd } = await staticStage(values.module);
+    const { pages, blocks, downloads, labErd, venv } = await staticStage(values.module);
     const whole = values.module === undefined;
     await checkLab(labTarget(process.env), {
-      dist: values.dist, canarySchema: values["canary-schema"], blocks, downloads, labErd, update: values.update, show: !whole, stamp: whole ? pages : undefined, signal: stop.signal,
+      dist: values.dist, canarySchema: values["canary-schema"], blocks, course: pages, venv, downloads, labErd, update: values.update, show: !whole, stamp: whole ? pages : undefined, signal: stop.signal,
     });
     console.log("learn:check: ok");
   }

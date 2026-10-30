@@ -1,0 +1,5 @@
+-- result: e2-geopandas · python · sha256 3d5433163e79
+read: 2000 rows, CRS EPSG:4326, geometry Point
+written: 2000 rows, SRID 3577, POLYGON, 6273.1 km² in all
+devil_buffers is in schema learn_curriculum, until the rollback
+after the rollback: no table

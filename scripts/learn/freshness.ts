@@ -1,6 +1,7 @@
 // checked.json (plan D6; 004 §7.5): what learn:check last proved, so the build can refuse a lab it didn't run.
-// - Each ran PostGIS block's key: a sha256 over every input that decides its result: the texts of the block, its
-//   `-- after:` blocks (transitively), every boot block and pg-session (by id, sorted); the lab data files' sha256s
+// - Each ran PostGIS or Python block's key: a sha256 over every input that decides its result: the texts of the block,
+//   its `-- after:`/`# after:` blocks (transitively), every boot block and pg-session, and for a Python block py-connect
+//   (plan L4 §4.7: the boot tables it reads are made in pg-session's session) (by id, sorted); the lab data files' sha256s
 //   (the manifest's `files`, outside star/: its dois, sizes and the star don't move a lab result); the checker's own
 //   sources (learn-check.ts's relative-import closure), db/learn/canary.sql and requirements.txt. Each input enters as
 //   `name\0sha256`, so none can blur into another.
@@ -8,8 +9,8 @@
 // - Each download's sha256 as assembled (assemble.ts).
 // - labErd: a sha256 over what decides the lab ERD check (learn:check compares lab.mmd with learn_curriculum after the
 //   boot blocks): lab.mmd, the loader's sha256 and the boot blocks' texts.
-// - The versions it ran on (PostgreSQL, PostGIS, GEOS, GDAL) and the date: recorded, never compared. The date moves
-//   only with something else.
+// - The versions it ran on (PostgreSQL, PostGIS, GEOS, GDAL, .venv-learn's Python, requirements.txt's sha256) and the
+//   date: recorded, never compared. The date moves only with something else.
 // learn:check writes it (nextStamp) once every stage passed; the build compares (staleness). readFreshness reads the
 // inputs; the rest is pure. Tests: freshness.test.ts.
 import { createHash } from "node:crypto";
@@ -17,7 +18,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { dirname, join, normalize } from "node:path";
 import { formatJson } from "../json.ts";
 import { assembleDownloads } from "./assemble.ts";
-import { CHECKED_DIR, PG_SESSION_ID, type Block } from "./blocks.ts";
+import { CHECKED_DIR, PG_SESSION_ID, PY_CONNECT_ID, type Block } from "./blocks.ts";
 import type { CoursePage } from "./course.ts";
 import { LAB_ERD } from "./erd-model.ts";
 
@@ -35,7 +36,14 @@ export interface Versions {
   geos: string;
   /** PostGIS raster's GDAL (raster blocks). */
   gdal: string;
+  /** .venv-learn's Python (plan L4 §4.7). */
+  python: string;
+  /** The labs requirements.txt's sha256, 12 hex. */
+  requirements: string;
 }
+
+/** The versions the lab database reports (runner.ts serverVersions). */
+export type ServerVersions = Omit<Versions, "python" | "requirements">;
 
 /** What learn:check proves and the build recomputes. */
 export interface Fresh {
@@ -64,10 +72,10 @@ export interface KeyFiles {
 const sha256 = (text: string | Buffer) => createHash("sha256").update(text).digest("hex");
 const sorted = <T>(o: Readonly<Record<string, T>>) => Object.fromEntries(Object.entries(o).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)));
 
-/** A ran PostGIS block: one learn:check runs and stamps. */
-const isLab = (b: Block) => b.engine === "postgis" && b.status === "ran";
+/** A ran PostGIS or Python block: one learn:check runs and stamps. */
+const isLab = (b: Block) => (b.engine === "postgis" || b.engine === "python") && b.status === "ran";
 
-/** `b`'s `-- after:` blocks on its page, transitively. */
+/** `b`'s `-- after:` blocks on its page, transitively (a Python block's py-connect is in every Python key). */
 function afterChain(b: Block, page: ReadonlyMap<string, Block>, seen = new Set<string>()): Set<string> {
   for (const id of b.after) {
     if (seen.has(id)) continue;
@@ -84,6 +92,7 @@ export function freshness(pages: readonly CoursePage[], files: KeyFiles, results
   const labs = [...all.values()].filter(isLab);
   if (labs.length && !all.has(PG_SESSION_ID)) throw new Error(`the course has no ${PG_SESSION_ID} block`);
   const shared = [...labs.filter((b) => b.boot).map((b) => b.id), PG_SESSION_ID];
+  const python = all.has(PY_CONNECT_ID) ? [...shared, PY_CONNECT_ID] : shared;
   const fileEntries = [
     ...Object.entries(files.manifest).filter(([path]) => !path.startsWith("star/")).map(([path, f]) => `learn/data/${path}\0${f.sha256}`),
     ...Object.entries(files.checker).map(([path, sha]) => `${path}\0${sha}`),
@@ -92,13 +101,14 @@ export function freshness(pages: readonly CoursePage[], files: KeyFiles, results
   for (const { blocks: onPage } of pages) {
     const page = new Map(onPage.map((b) => [b.id, b]));
     for (const b of onPage.filter(isLab)) {
-      const ids = [...new Set([b.id, ...afterChain(b, page), ...shared])].sort();
+      const ids = [...new Set([b.id, ...afterChain(b, page), ...(b.engine === "python" ? python : shared)])].sort();
       const entries = [...ids.map((id) => `block ${id}\0${sha256(all.get(id)?.text ?? "")}`), ...fileEntries];
       const result = results.get(b.id);
       blocks[b.id] = { key: sha256(entries.join("\n")), result: result === undefined ? "" : sha256(result) };
     }
   }
-  const downloads = Object.fromEntries(assembleDownloads(pages).map((d) => [d.name, sha256(d.text)]));
+  // The files learn:check runs (004 §7.5): .sql and .py; an .ipynb isn't run (E2E proves its cells are the .py's).
+  const downloads = Object.fromEntries(assembleDownloads(pages).filter((d) => d.kind !== "ipynb").map((d) => [d.name, sha256(d.text)]));
   const loader = files.manifest[LOADER];
   if (!loader) throw new Error(`the data manifest has no ${LOADER}: run pnpm build`);
   const boots = [...all.values()].filter((x) => isLab(x) && x.boot).map((x) => `block ${x.id}\0${sha256(x.text)}`).sort();
@@ -122,7 +132,7 @@ export function staleness(stamp: Stamp | undefined, now: Fresh): string[] {
     const had = stamp.blocks[id];
     if (had && had.key === now.blocks[id]!.key && had.result !== result) errors.push(`${CHECKED_DIR}/${id}.txt changed after learn:check: ${again}`);
   }
-  for (const id of Object.keys(stamp.blocks)) if (!(id in now.blocks)) errors.push(`${CHECKED_JSON}: block ${id} has a key but no ran PostGIS block: ${again}`);
+  for (const id of Object.keys(stamp.blocks)) if (!(id in now.blocks)) errors.push(`${CHECKED_JSON}: block ${id} has a key but no ran lab block: ${again}`);
   for (const [name, sha] of Object.entries(now.downloads)) if (stamp.downloads[name] !== sha) errors.push(`download ${name} is stale: ${again}`);
   for (const name of Object.keys(stamp.downloads)) if (!(name in now.downloads)) errors.push(`${CHECKED_JSON}: download ${name} has a sha256 but no page: ${again}`);
   if (stamp.labErd !== now.labErd) errors.push(`the lab ERD is stale (${LAB_ERD}, the loader or a boot block changed): ${again}`);

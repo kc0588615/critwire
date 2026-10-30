@@ -13,7 +13,7 @@ test("CF1 the committed course passes every lint, and every ran PostGIS block ha
   assert.equal(pages[0]?.page.id, "setup");
 });
 
-test("CF2 the setup page holds §0's and §3.5's blocks in 004's order", async () => {
+test("CF2 the setup page holds §0's (Python's too) and §3.3–3.5's blocks in 004's order", async () => {
   const { pages } = await readCourse();
   const setup = pages.find((p) => p.page.id === "setup")!;
   assert.equal(setup.page.file, "site/learn/pages/setup.html");
@@ -23,6 +23,10 @@ test("CF2 the setup page holds §0's and §3.5's blocks in 004's order", async (
     ["pg-smoke", "postgis", "ran"],
     ["pg-role-smoke", "postgis", "ran"],
     ["pg-tx-smoke", "postgis", "ran"],
+    ["py-connect", "python", "ran"],
+    ["py-smoke", "python", "ran"],
+    ["gpkg-export", "python", "ran"],
+    ["arcpy-moran", "python", "untested"],
     ["pbi-smoke", "powerbi", "untested"],
   ]);
 });

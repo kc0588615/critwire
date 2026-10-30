@@ -11,6 +11,11 @@
 // - lab.mmd, the loader or a boot block changes after learn:check checked the lab ERD against them → labErd moves and
 //   the build refuses it; a plain block or another data file leaves it alone;
 // - GDAL's version (raster blocks) isn't recorded, or a newer one makes every lab stale → recorded, never compared.
+// Python blocks (plan L4 §4.7):
+// - a ran Python block ships without a stamp, or its stamp missing passes → stamped like a PostGIS one, stale if missing;
+// - its key misses what its run executes or shapes: its text, a `# after:` block (transitively), py-connect (on
+//   another page), a boot block, pg-session (whose session makes the boot tables), requirements.txt → each moves it;
+// - another page's plain block moves it, so every Python lab goes stale on any edit → it doesn't.
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
@@ -87,7 +92,8 @@ test("FR3 the key moves with a lab data file, the checker, canary.sql and requir
   assert.equal(with_({ manifest: { ...m, "star/dim_year.csv": { sha256: "1".repeat(64), bytes: 1 } } }), base, "a new star file");
 });
 
-const stamp = (f: Fresh): Stamp => ({ versions: { postgresql: "16.15", postgis: "3.4.2", geos: "3.12.1", gdal: "3.8.4" }, checked: "2026-10-28", ...f });
+const VERSIONS = { postgresql: "16.15", postgis: "3.4.2", geos: "3.12.1", gdal: "3.8.4", python: "3.12.3", requirements: "0123456789ab" };
+const stamp = (f: Fresh): Stamp => ({ versions: VERSIONS, checked: "2026-10-28", ...f });
 
 test("FR4 a fresh stamp passes; a stale key, an edited result, a missing or orphan key, a changed or missing download are refused", () => {
   const now = fresh();
@@ -100,7 +106,7 @@ test("FR4 a fresh stamp passes; a stale key, an edited result, a missing or orph
   const { "d3-x": _, ...without } = now.blocks;
   assert.deepEqual(staleness(stamp({ ...now, blocks: without }), now), ["lab d3-x is stale: run pnpm learn:check"]);
   assert.deepEqual(staleness(stamp({ ...now, blocks: { ...now.blocks, gone: now.blocks["d3-x"]! } }), now),
-    [`${CHECKED_JSON}: block gone has a key but no ran PostGIS block: run pnpm learn:check`]);
+    [`${CHECKED_JSON}: block gone has a key but no ran lab block: run pnpm learn:check`]);
   assert.deepEqual(staleness(stamp({ ...now, downloads: { ...now.downloads, "d1.sql": "0".repeat(64) } }), now), ["download d1.sql is stale: run pnpm learn:check"]);
   const { "d3.sql": __, ...fewer } = now.downloads;
   assert.deepEqual(staleness(stamp({ ...now, downloads: fewer }), now), ["download d3.sql is stale: run pnpm learn:check"]);
@@ -118,7 +124,7 @@ test("FR5 stale blocks are named five at a time, then counted", () => {
 
 test("FR6 nextStamp: nothing changed but the date → undefined; any change → the new stamp, dated today", () => {
   const now = fresh();
-  const versions = { postgresql: "16.15", postgis: "3.4.2", geos: "3.12.1", gdal: "3.8.4" };
+  const versions = VERSIONS;
   const first = nextStamp(null, now, versions, "2026-10-28")!;
   assert.deepEqual(JSON.parse(first), stamp(now));
   assert.ok(first.endsWith("}\n"));
@@ -138,6 +144,7 @@ test("FR7 the checker's closure: learn-check.ts's relative imports, nothing from
     "scripts/env.ts",
     "scripts/json.ts",
     "scripts/learn-check.ts",
+    "scripts/learn/agree.ts",
     "scripts/learn/assemble.ts",
     "scripts/learn/blocks.ts",
     "scripts/learn/cell.ts",
@@ -148,12 +155,17 @@ test("FR7 the checker's closure: learn-check.ts's relative imports, nothing from
     "scripts/learn/erd-model.ts",
     "scripts/learn/freshness.ts",
     "scripts/learn/leaks.ts",
+    "scripts/learn/notebook.ts",
     "scripts/learn/pg.ts",
     "scripts/learn/plan.ts",
     "scripts/learn/privilege.ts",
+    "scripts/learn/py-runner.ts",
+    "scripts/learn/python.ts",
+    "scripts/learn/record.ts",
     "scripts/learn/result.ts",
     "scripts/learn/runner.ts",
     "scripts/learn/setup.ts",
+    "scripts/venv.ts",
   ]);
 });
 
@@ -201,4 +213,51 @@ test("FR9 GDAL's version is recorded in checked.json and never compared", () => 
   assert.deepEqual(staleness({ ...stamp(now), versions: { ...versions, gdal: "3.12.2" } }, now), []);
   const first = nextStamp(null, now, versions, "2026-10-28")!;
   assert.equal(JSON.parse(nextStamp(first, now, { ...versions, gdal: "3.12.2" }, "2026-10-29")!).versions.gdal, "3.12.2");
+});
+
+function pyBlock(id: string, ...lines: string[]): Block {
+  const { block: b, errors } = parseBlock(`site/learn/sql/${id}.py`, lines.join("\n") + "\n");
+  assert.deepEqual(errors, [], id);
+  return b!;
+}
+const connect = pyBlock("py-connect", "# q: py-connect", "# status: ran", "import psycopg", "def connect():", "    return psycopg.connect()");
+const p1 = pyBlock("s4-p1", "# q: s4-p1", "# status: ran", "# after: py-connect", "x = 1");
+const p2 = pyBlock("s4-p2", "# q: s4-p2", "# status: ran", "# after: s4-p1", "print(x)");
+const editPy = (x: Block, extra: string) => pyBlock(x.id, ...x.text.trimEnd().split("\n"), extra);
+const pyCourse = (over: Partial<Record<"connect" | "p1" | "p2" | "c" | "boot" | "session", Block>> = {}) => [
+  page("setup", over.session ?? session, over.connect ?? connect),
+  page("s4", over.boot ?? boot, over.p1 ?? p1, over.p2 ?? p2),
+  page("d1", a, b, over.c ?? c),
+];
+
+test("FR10 a ran Python block is stamped with its key and result; a missing stamp is stale", () => {
+  const now = fresh(pyCourse());
+  assert.deepEqual(Object.keys(now.blocks), ["d1-a", "d1-b", "d1-c", "pg-session", "py-connect", "s4-cells", "s4-p1", "s4-p2"]);
+  assert.match(now.blocks["s4-p2"]!.key, /^[0-9a-f]{64}$/);
+  assert.equal(now.blocks["s4-p2"]!.result, createHash("sha256").update("-- result: s4-p2").digest("hex"));
+  const { "s4-p2": _, ...without } = now.blocks;
+  assert.deepEqual(staleness(stamp({ ...now, blocks: without }), now), ["lab s4-p2 is stale: run pnpm learn:check"]);
+  assert.deepEqual(staleness(stamp({ ...now, blocks: { ...now.blocks, gone: now.blocks["s4-p2"]! } }), now),
+    [`${CHECKED_JSON}: block gone has a key but no ran lab block: run pnpm learn:check`]);
+});
+
+test("FR11 a Python block's key moves with its text, its after chain, py-connect, a boot block, pg-session and requirements.txt", () => {
+  const k = (pages = pyCourse(), f: KeyFiles = files) => fresh(pages, f).blocks["s4-p2"]!.key;
+  const base = k();
+  assert.notEqual(k(pyCourse({ p2: editPy(p2, "# a comment") })), base, "its text");
+  assert.notEqual(k(pyCourse({ p1: editPy(p1, "# a comment") })), base, "its after block");
+  assert.notEqual(k(pyCourse({ connect: editPy(connect, "# a comment") })), base, "py-connect, its after block's after block");
+  assert.notEqual(k(pyCourse({ boot: edit(boot, "-- a comment") })), base, "a boot block");
+  assert.notEqual(k(pyCourse({ session: edit(session, "-- a comment") })), base, "pg-session");
+  assert.notEqual(k(pyCourse(), { ...files, checker: { ...files.checker, "site/learn/labs/requirements.txt": "1".repeat(64) } }), base, "requirements.txt");
+  const alone = pyBlock("s4-p3", "# q: s4-p3", "# status: ran", "print(1)");
+  const pages = [...pyCourse(), page("s5", alone)];
+  const editedConnect = [...pyCourse({ connect: editPy(connect, "# a comment") }), page("s5", alone)];
+  assert.notEqual(fresh(editedConnect).blocks["s4-p3"]!.key, fresh(pages).blocks["s4-p3"]!.key, "py-connect even without `# after`");
+});
+
+test("FR12 a Python block's key doesn't move with another page's plain block", () => {
+  const k = (pages: CoursePage[]) => fresh(pages).blocks["s4-p2"]!.key;
+  assert.equal(k(pyCourse({ c: edit(c, "-- a comment") })), k(pyCourse()));
+  assert.equal(fresh(pyCourse({ p2: editPy(p2, "# a comment") })).blocks["d1-c"]!.key, fresh(pyCourse()).blocks["d1-c"]!.key, "nor a PostGIS block's with a Python edit");
 });

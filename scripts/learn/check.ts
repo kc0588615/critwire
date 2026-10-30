@@ -1,55 +1,72 @@
 // pnpm learn:check (plan D3; L1's D10 checks 1–11 and Cleanup), in stages:
 // - static (staticStage, before connecting): the committed course read and linted (course-files.ts); its blocks in
-//   page order, or one page's (--module). Then, under the lab lock, as the lab role:
-// - connect: the live database refused twice, the lab role's privileges, the lock, the versions (SC6), A2's
+//   page order, or the course's boot blocks and then one page's (--module, blocksToRun); .venv-learn against the labs'
+//   requirements.txt (venv.ts), when the run has a Python block or stamps. Then, under the lab lock, as the lab role:
+// - connect: the live database refused twice, the lab role's privileges (CREATEROLE, set and inherit; no superuser, no
+//   CREATE on public), the lock (refused while an earlier run's Python session runs here), the versions (SC6), A2's
 //   learn_spatial canary (read as libpq's default role, which owns it) and the learn_ objects already there;
 // - loader: the published loader run twice as a learner runs it (psql -X -v ON_ERROR_STOP=1 -f), its sha256 and row
 //   counts against the manifest, then once with a duplicate occurrences id, which must fail and change nothing (the
 //   load is one transaction); then the leak check, so a leaking loader is named before any block runs;
 // - blocks: the given PostGIS blocks (pg-role-smoke among them), in page order, in one runner session (runner.ts), each
-//   in the runner's transaction, checked against their recorded results or, with `update`, written; `-- tx: own`
-//   blocks must leave the canary and learn_curriculum unchanged. Once the boot blocks committed, the lab ERD
-//   (site/learn/erd/lab.mmd, with its lab-made and planned lists) must match learn_curriculum's catalog both ways;
-// - downloads: each assembled lab file (assemble.ts) on a fresh load, as a learner runs it (the loader, then psql -X -f,
-//   no ON_ERROR_STOP): psql's ERROR lines must be exactly the file's announced errors, in order; then the leak check;
+//   in the runner's transaction; `-- tx: own` blocks must leave the canary and learn_curriculum unchanged. Once the
+//   boot blocks committed, the lab ERD (site/learn/erd/lab.mmd, with its lab-made and planned lists) must match
+//   learn_curriculum's catalog both ways. Then the ran Python blocks, in page order (py-runner.ts, plan L4 §4.4), with
+//   LEARN_BASE the built site under test. Both engines' runs are checked against their recorded results or, with
+//   `update`, written once every block passed (record.ts), and the agreement gates (agree.ts: SQL = PySAL) run over
+//   their results, a failure failing the run;
+// - downloads: each assembled lab file (assemble.ts) on a fresh load, as a learner runs it (the loader, then the file):
+//   a .sql through psql -X -f, no ON_ERROR_STOP, whose ERROR lines must be exactly the file's announced errors, in order;
+//   a .py through python.ts runPython (the blocks' environment, its blocks' time), which must exit 0 (plan L4 §4.5, D14);
+//   then the leak check, after a failed file too, so its leftovers are named with it. An .ipynb isn't run;
 // - end: the canary unchanged and no learn_ role or schema left behind;
 // - stamp (a whole-course run only): checked.json (freshness.ts) written through a temp file and a rename, once every
 //   stage passed, and left alone when only its date would change.
 // The lock is held by the cleanup connection (cleanup.ts), which runs no block. An abort (the CLI's SIGINT/SIGTERM)
 // cancels the running psql or block statement. Every exit then removes the temp loader and releases the lock in
-// cleanup.ts's order: stop the run's sessions, sweep the lab role's new objects, free the lock; a cleanup failure is
-// added to the run's. Tests: learn/check.test.ts (LC6 pure), learn-check.dbtest.ts (LC1–LC10, CU1–CU5), runner.dbtest.ts.
+// cleanup.ts's order: stop the run's sessions (recorded, or carrying the run's name here), sweep the lab role's new objects, free the lock; a cleanup failure is
+// added to the run's. Tests: learn/check.test.ts (LC6, BF1 pure), learn/agree.test.ts (AG1–AG8), learn-check.dbtest.ts (LC1–LC10, V2, V3, CU1–CU5), runner.dbtest.ts,
+// learn/py-runner.dbtest.ts (PYC1–PYC9).
 import { spawn } from "node:child_process";
 import { createHash } from "node:crypto";
-import { mkdtemp, readFile, rename, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join, resolve } from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import type postgres from "postgres";
+import { agreement } from "./agree.ts";
 import { assembleDownloads, type Announced, type Download } from "./assemble.ts";
 import type { Block } from "./blocks.ts";
 import { takeLabLock, type LabLock } from "./cleanup.ts";
 import type { CoursePage } from "./course.ts";
 import { readCourse } from "./course-files.ts";
 import { dbMeta, LAB_ERD, markerDrift, markers, parseErd, PG_META_SQL } from "./erd-model.ts";
-import { CHECKED_JSON, LOADER, nextStamp, readFreshness, STAMP_FILE, type Versions } from "./freshness.ts";
+import { CHECKED_JSON, LOADER, nextStamp, readFreshness, STAMP_FILE, type ServerVersions, type Versions } from "./freshness.ts";
 import { learnObjects } from "./leaks.ts";
 import { CANARY_SCHEMA, childEnv, LAB_SCHEMA, libpqTarget, LIVE_DATABASE, pgConnect, psqlArgs, type PgTarget } from "./pg.ts";
-import { openSession, runBlocks, serverVersions, tablesDiff, type LabSession } from "./runner.ts";
+import { runPythonBlocks } from "./py-runner.ts";
+import { pythonApp, pythonEnv, pythonFailure, runPython, type PythonEnvOptions } from "./python.ts";
+import { settleResults, type BlockRuns } from "./record.ts";
+import { blockRuns, openSession, serverVersions, tablesDiff, type LabSession } from "./runner.ts";
+import { LABS_REQUIREMENTS, readVenv, VENV_PYTHON } from "../venv.ts";
 
 export { CANARY_SCHEMA };
 const CANARY_SQL = new URL("../../db/learn/canary.sql", import.meta.url);
 const SETUP = "run pnpm learn:check --setup as the superuser";
 
 export interface CheckOptions {
-  /** The built site (default dist); learn:check reads its manifest and loader only. */
+  /** The built site (default dist): its manifest and loader, and learn/data/ for the Python blocks (LEARN_BASE). */
   dist: string;
   /** learn_spatial, or a learn_t_ fixture in tests (LC7). */
   canarySchema: string;
   /** Aborting cancels the running psql (SIGINT: psql cancels its statement) and stops the run; the reason is thrown. */
   signal?: AbortSignal;
-  /** The course's blocks in page order; the blocks stage runs the ran PostGIS ones. */
+  /** The course's blocks in page order; the blocks stage runs the ran PostGIS and Python ones. */
   blocks?: readonly Block[];
+  /** The course's pages: a Python block's `# after:` code (python.ts blockCode); required with a ran Python block. */
+  course?: readonly CoursePage[];
+  /** .venv-learn's versions (staticStage); required with `stamp`. */
+  venv?: VenvVersions;
   /** Write the blocks' recorded results instead of checking them. */
   update?: boolean;
   /** Print each block's rendered result (--module). */
@@ -160,15 +177,40 @@ async function readLoader(dist: string): Promise<Loader> {
   return { file, text: bytes.toString("utf8"), entry: entry as LoaderEntry };
 }
 
+/** What checked.json records of .venv-learn: its Python and the labs requirements.txt's sha256 (12 hex). */
+export type VenvVersions = Pick<Versions, "python" | "requirements">;
+
+const hasPython = (blocks: readonly Block[]) => blocks.some((b) => b.engine === "python" && b.status === "ran");
+
+// .venv-learn against the labs' requirements.txt (plan L4 §4.2); throws its refusal.
+async function venvVersions(): Promise<VenvVersions> {
+  const { python } = await readVenv(LABS_REQUIREMENTS, "learn:check");
+  return { python, requirements: createHash("sha256").update(await readFile(LABS_REQUIREMENTS)).digest("hex").slice(0, 12) };
+}
+
 export interface StaticCourse {
   /** Every page, in page order. */
   pages: CoursePage[];
-  /** The blocks to run, in page order: every page's, or one module's. */
+  /** The blocks to run (blocksToRun): every page's, or the boot blocks and one module's. */
   blocks: Block[];
   /** The downloads to run: every page's, or one module's. */
   downloads: Download[];
   /** lab.mmd's text, parsed. */
   labErd: string;
+  /** .venv-learn's versions, when the run has a Python block or is a whole run (its stamp records them). */
+  venv?: VenvVersions;
+}
+
+/**
+ * The blocks a run runs, in order: every page's in page order, or (`module`) the course's ran `-- boot` blocks in page
+ * order and then the page's other blocks, so a page reading another page's boot tables runs as in a whole run (004 §0).
+ */
+export function blocksToRun(pages: readonly CoursePage[], module?: string): Block[] {
+  const all = pages.flatMap((p) => p.blocks);
+  if (module === undefined) return all;
+  const own = pages.filter((p) => p.page.id === module).flatMap((p) => p.blocks);
+  const boot = all.filter((b) => b.boot && b.status === "ran");
+  return [...boot, ...own.filter((b) => !boot.includes(b))];
 }
 
 /**
@@ -181,7 +223,8 @@ export async function staticStage(module?: string): Promise<StaticCourse> {
   if (errors.length) throw new Error(`static: ${errors.length} error(s):\n${errors.join("\n")}`);
   const run = module === undefined ? pages : pages.filter((p) => p.page.id === module);
   if (module !== undefined && !run.length) throw new Error(`--module ${module}: no such page (${pages.map((p) => p.page.id).join(", ")})`);
-  const downloads = assembleDownloads(pages).filter((d) => module === undefined || d.page === module);
+  // The .sql and .py files (an .ipynb is never run: E2E proves its cells equal the .py's).
+  const downloads = assembleDownloads(pages).filter((d) => d.kind !== "ipynb" && (module === undefined || d.page === module));
   const labErd = await readFile(new URL(`../../${LAB_ERD}`, import.meta.url), "utf8");
   try {
     parseErd(labErd);
@@ -190,13 +233,20 @@ export async function staticStage(module?: string): Promise<StaticCourse> {
     throw new Error(`static: ${LAB_ERD}: ${(e as Error).message}`);
   }
   console.log(`learn:check: static: ${pages.length} page(s), ${pages.reduce((n, p) => n + p.blocks.length, 0)} block(s) parsed and linted, ${downloads.length} download(s) assembled`);
-  return { pages, blocks: run.flatMap((p) => p.blocks), downloads, labErd };
+  const blocks = blocksToRun(pages, module);
+  const venv = module === undefined || hasPython(blocks) || downloads.some((d) => d.kind === "py") ? await venvVersions() : undefined;
+  if (venv) console.log(`learn:check: static: .venv-learn = requirements.txt (Python ${venv.python}, sha256 ${venv.requirements})`);
+  return { pages, blocks, downloads, labErd, venv };
 }
 
 /** What the stages share: the lab connection, the lock, the admin target (the canary's reader), the canary at connect. */
 interface Run {
   sql: postgres.Sql;
-  versions: Versions;
+  /** The lab database. */
+  db: string;
+  /** The run's name: its Python sessions' PGAPPNAME. */
+  app: string;
+  versions: ServerVersions;
   lock: LabLock;
   admin: PgTarget;
   canarySchema: string;
@@ -206,12 +256,17 @@ interface Run {
 
 interface Who { db: string; user: string }
 
-// The lab role's checks; returns the database and role it reached.
+// The lab role's checks; returns the database and role it reached. A superuser, or CREATE on public, would run the labs
+// with more than a learner's privileges and hide a block that needs them (plan L4 D7, MF5).
 async function assertLabRole(sql: postgres.Sql): Promise<Who> {
-  const [who] = await sql<{ db: string; user: string; createrole: boolean; selfGrant: string }[]>`select current_database() as db,
-    current_user as user, (select rolcreaterole from pg_roles where rolname = current_user) as createrole,
+  const [who] = await sql<{ db: string; user: string; superuser: boolean; createPublic: boolean; createrole: boolean; selfGrant: string }[]>`select
+    current_database() as db, current_user as user, (select rolsuper from pg_roles where rolname = current_user) as superuser,
+    has_schema_privilege('public', 'CREATE') as "createPublic", (select rolcreaterole from pg_roles where rolname = current_user) as createrole,
     current_setting('createrole_self_grant') as "selfGrant"`;
   assertConnectedNotLive(who.db);
+  const learner = `the labs run with a learner's privileges: ${SETUP}`;
+  if (who.superuser) throw new Error(`${who.user} is a superuser: ${learner}`);
+  if (who.createPublic) throw new Error(`${who.user} has CREATE on schema public: ${learner}`);
   if (!who.createrole) throw new Error(`${who.user} has no CREATEROLE (the role labs need it): ${SETUP}`);
   const grants = who.selfGrant.split(",").map((s) => s.trim());
   if (!grants.includes("set") || !grants.includes("inherit")) {
@@ -221,14 +276,14 @@ async function assertLabRole(sql: postgres.Sql): Promise<Who> {
 }
 
 // The versions (SC6), and the canary's reading at connect (the lock read the learn_ objects already there).
-async function connectStage(lab: PgTarget, sql: postgres.Sql, lock: LabLock, { db, user }: Who, canarySchema: string, signal?: AbortSignal): Promise<Run> {
+async function connectStage(lab: PgTarget, sql: postgres.Sql, lock: LabLock, { db, user }: Who, app: string, canarySchema: string, signal?: AbortSignal): Promise<Run> {
   console.log(`learn:check: ${user} on ${db}, lab lock taken`);
   const versions = await serverVersions(sql);
   console.log(`learn:check: PostgreSQL ${versions.postgresql}, PostGIS ${versions.postgis}, GEOS ${versions.geos}, GDAL ${versions.gdal}`);
   const admin = libpqTarget({ PGDATABASE: db, PGPORT: String(lab.port) });
   const [{ has }] = await sql<{ has: boolean }[]>`select to_regnamespace(${canarySchema}) is not null as has`;
   const canaryBefore = has ? await readTables(admin, canarySchema, signal) : undefined;
-  return { sql, versions, lock, admin, canarySchema, canaryBefore, signal };
+  return { sql, db, app, versions, lock, admin, canarySchema, canaryBefore, signal };
 }
 
 // The loader twice to the manifest's counts, then the forced failure. `tmp`: a folder for the forced loader.
@@ -266,14 +321,16 @@ async function assertLabErd(s: LabSession, text: string): Promise<void> {
   console.log(`learn:check: lab ERD: ${LAB_ERD} = ${LAB_SCHEMA} (${meta.tables.length} tables)`);
 }
 
-// The ran PostGIS blocks, in page order, in one runner session (recorded with the lock); checked against
-// checked/<id>.txt, or written. `-- tx: own` and `-- sessions:` blocks are watched against the canary (where it exists)
-// and learn_curriculum; a sessions block's windows are sessions of their own, recorded with the lock too.
-// `labErd`: checked once the boot blocks committed.
-async function blocksStage(lab: PgTarget, run: Run, blocks: readonly Block[], update: boolean, show: boolean, labErd?: string): Promise<void> {
+// The ran PostGIS blocks, in page order, in one runner session (recorded with the lock); `-- tx: own` and `-- sessions:`
+// blocks are watched against the canary (where it exists) and learn_curriculum; a sessions block's windows are sessions
+// of their own, recorded with the lock too. `labErd`: checked once the boot blocks committed. Then the ran Python
+// blocks (py-runner.ts) in the run's Python environment `py`. Both engines' runs are checked against checked/<id>.txt,
+// or written, together (record.ts), with the agreement gates (agree.ts) over the first runs' results.
+async function blocksStage(lab: PgTarget, run: Run, blocks: readonly Block[], course: readonly CoursePage[], py: PythonEnvOptions, update: boolean, show: boolean, labErd?: string): Promise<void> {
   const { admin, canarySchema, canaryBefore, lock, signal } = run;
   const pg = blocks.filter((b) => b.engine === "postgis" && b.status === "ran");
   const watch = { schemas: [...(canaryBefore ? [canarySchema] : []), LAB_SCHEMA], read: (schema: string) => readTables(admin, schema, signal) };
+  const known = new Set(lock.known);
   const session = await openSession(lab, signal);
   lock.record(session.pid);
   const open = async () => {
@@ -281,14 +338,23 @@ async function blocksStage(lab: PgTarget, run: Run, blocks: readonly Block[], up
     lock.record(window.pid);
     return window;
   };
+  const runs: BlockRuns[] = [];
   try {
     const afterBoot = labErd === undefined ? undefined : () => assertLabErd(session, labErd);
-    await runBlocks(session, pg, { update, show, known: new Set(lock.known), watch, afterBoot, open });
+    runs.push(...(await blockRuns(session, pg, { update, show, known, watch, afterBoot, open })));
   } finally {
     await session.end();
   }
   signal?.throwIfAborted();
-  console.log(`learn:check: blocks: ${pg.length} PostGIS block(s) ${update ? "run twice, results written" : "equal their recorded results"}`);
+  const python = await runPythonBlocks(blocks, course, {
+    lab, sql: run.sql, database: run.db, readLab: () => readTables(admin, LAB_SCHEMA, signal), known, ...py, update, show, signal,
+  });
+  const all = [...runs, ...python];
+  const gates = agreement(new Map(all.flatMap(({ block, first }) => (first.rendered === undefined ? [] : [[block.id, first.rendered] as const]))));
+  for (const g of gates) console.log(`learn:check: agree ${g.gate}: ${g.skipped ? "skipped (a block of the pair isn't in the run)" : g.failures.length ? "failed" : "ok"}`);
+  await settleResults(all, { update, gateFailures: gates.flatMap((g) => g.failures) });
+  const done = update ? "run twice, results written" : "equal their recorded results";
+  console.log(`learn:check: blocks: ${pg.length} PostGIS and ${python.length} Python block(s) ${done}`);
 }
 
 const ERROR_LINE = /^psql:.*?:\d+: ERROR: /;
@@ -316,15 +382,42 @@ export async function assertDownloadRun(target: PgTarget, file: string, { name, 
   if (failure) throw new Error(failure);
 }
 
-// Each download on a fresh load (the loader, then the file), then the leak check. `tmp`: a folder for the files.
-async function downloadsStage(lab: PgTarget, run: Run, loader: Loader, downloads: readonly Download[], tmp: string): Promise<void> {
+// Runs .py download `d` as a learner runs it (python -I, from an empty folder, the blocks' environment `py`); throws
+// unless it exits 0 within its blocks' time (D14).
+async function assertPyDownloadRun(lab: PgTarget, d: Download, py: PythonEnvOptions, signal?: AbortSignal): Promise<void> {
+  const { timeoutMs } = d;
+  if (timeoutMs === undefined) throw new Error(`download ${d.name}: a .py download has its blocks' time (assemble.ts)`);
+  const started = Date.now();
+  const r = await runPython(d.text, { python: VENV_PYTHON, env: pythonEnv(lab, py), timeoutMs, signal });
+  const failed = pythonFailure(r, timeoutMs / 1000);
+  if (failed) throw new Error(`download ${d.name}: ${failed}`);
+  console.log(`learn:check: download ${d.name}: fresh load, then the file: python exit 0 (${((Date.now() - started) / 1000).toFixed(1)} s)`);
+}
+
+// Each download on a fresh load (the loader, then the file), then the leak check, which names a failed file's
+// leftovers with its failure. `tmp`: a folder for the .sql files; `py`: the .py files' environment.
+async function downloadsStage(lab: PgTarget, run: Run, loader: Loader, downloads: readonly Download[], tmp: string, py: PythonEnvOptions): Promise<void> {
   for (const d of downloads) {
     await psqlOk(lab, ["-q", ...psqlArgs(loader.file)], `download ${d.name}: the fresh load`, run.signal);
-    const file = join(tmp, d.name);
-    await writeFile(file, d.text);
-    await assertDownloadRun(lab, file, d, run.signal);
-    console.log(`learn:check: download ${d.name}: fresh load, then the file: ${d.announced.length} ERROR line(s), as announced`);
-    await assertNoLeaks(run, `download ${d.name}`);
+    let failure: Error | undefined;
+    try {
+      if (d.kind === "py") await assertPyDownloadRun(lab, d, py, run.signal);
+      else {
+        const file = join(tmp, d.name);
+        await writeFile(file, d.text);
+        await assertDownloadRun(lab, file, d, run.signal);
+        console.log(`learn:check: download ${d.name}: fresh load, then the file: ${d.announced.length} ERROR line(s), as announced`);
+      }
+    } catch (e) {
+      failure = e as Error;
+    }
+    run.signal?.throwIfAborted();
+    try {
+      await assertNoLeaks(run, `download ${d.name}`);
+    } catch (e) {
+      throw failure ? new Error(`${failure.message}\n${(e as Error).message}`) : e;
+    }
+    if (failure) throw failure;
   }
 }
 
@@ -372,23 +465,30 @@ async function endStage(run: Run): Promise<void> {
  * Runs learn:check's stages against `lab` (labTarget, already refused by name); throws at the first failed check, with
  * any cleanup failure added.
  */
-export async function checkLab(lab: PgTarget, { dist, canarySchema, signal, blocks = [], update = false, show = false, downloads = [], stamp, labErd }: CheckOptions): Promise<void> {
+export async function checkLab(lab: PgTarget, { dist, canarySchema, signal, blocks = [], course, venv, update = false, show = false, downloads = [], stamp, labErd }: CheckOptions): Promise<void> {
   assertCanarySchema(canarySchema);
+  if (stamp && !venv) throw new Error("a whole run stamps the venv's versions: staticStage reads them");
+  if (hasPython(blocks) && !course) throw new Error("a Python block runs with its course's `# after:` code: pass the course");
   const sql = pgConnect(lab);
   let lock: LabLock | undefined;
   let tmp: string | undefined;
   let failure: Error | undefined;
   try {
     const who = await assertLabRole(sql);
-    lock = await takeLabLock(lab, who.db);
-    const run = await connectStage(lab, sql, lock, who, canarySchema, signal);
+    // The run's name (plan L4 D17): its Python sessions' PGAPPNAME, which cleanup matches in this database only.
+    const app = pythonApp();
+    lock = await takeLabLock(lab, who.db, { app });
+    const run = await connectStage(lab, sql, lock, who, app, canarySchema, signal);
     tmp = await mkdtemp(join(tmpdir(), "critwire-learn-check-"));
+    // The Python blocks' and .py downloads' environment: the built site under test, one MPLCONFIGDIR for the run.
+    const py: PythonEnvOptions = { learnBase: pathToFileURL(resolve(dist)).href, app, mplConfig: join(tmp, "mpl") };
+    await mkdir(py.mplConfig);
     const loader = await readLoader(dist);
     await loaderStage(lab, run, loader, tmp);
-    await blocksStage(lab, run, blocks, update, show, labErd);
-    await downloadsStage(lab, run, loader, downloads, tmp);
+    await blocksStage(lab, run, blocks, course ?? [], py, update, show, labErd);
+    await downloadsStage(lab, run, loader, downloads, tmp, py);
     await endStage(run);
-    if (stamp) await writeStamp(dist, stamp, run.versions);
+    if (stamp) await writeStamp(dist, stamp, { ...run.versions, ...venv! });
   } catch (e) {
     failure = e as Error;
   }

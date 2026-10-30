@@ -17,19 +17,18 @@
 // block at once and is cancelled. `-- fails:` as in `tx: own`; lock_timeout 30 s is the server's stop for a stalled
 // wait. Then each window must have ended clean, with the `tx: own` checks for leaks and watched schemas, and both
 // sessions end. Its result is every statement that returned rows, as `window | statement | <columns>`.
-// runBlocks runs the boot blocks first, once, then the rest, against their recorded results
-// (site/learn/labs/checked/<id>.txt), or with `update` runs each twice and writes the results once both runs agree and
-// every block passed. An abort cancels the running statement and throws its reason. Tests: runner.dbtest.ts.
-import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { join } from "node:path";
+// blockRuns runs the boot blocks first, once, then the rest (each twice with `update`); runBlocks hands the runs to
+// record.ts settleResults (learn:check settles them with the Python stage's): against their recorded results
+// (site/learn/labs/checked/<id>.txt), or written once both runs agree and every block passed. An abort cancels the running statement and throws its reason. Tests: runner.dbtest.ts.
 import postgres from "postgres";
 import { statementError, type Statement } from "../build/learn/sql.ts";
-import { CHECKED_DIR, PG_SESSION, type Block } from "./blocks.ts";
-import type { Versions } from "./freshness.ts";
+import { PG_SESSION, type Block } from "./blocks.ts";
+import type { ServerVersions } from "./freshness.ts";
 import { dropObjects, labMade, learnObjects, superuserCleanup } from "./leaks.ts";
 import { LAB_SCHEMA, type PgTarget } from "./pg.ts";
 import { planErrors } from "./plan.ts";
-import { lineDiff, renderError, renderResult, rowsOrdered, type Result } from "./result.ts";
+import { settleResults, type Outcome, type BlockRuns, type SettleOptions } from "./record.ts";
+import { renderError, renderResult, rowsOrdered, type Result } from "./result.ts";
 
 /** The runner's sessions' application_name: what cleanup.ts stops on exit, and nothing else. */
 export const RUNNER_APP = "critwire-learn-check";
@@ -75,11 +74,11 @@ export interface Watch {
 
 /** The versions a recorded result depends on (SC6): PostgreSQL, PostGIS and GEOS, as numbers; GDAL's (raster blocks),
  * recorded only. Throws when PostGIS raster is missing: the loader needs it. */
-export async function serverVersions(sql: postgres.Sql): Promise<Versions> {
+export async function serverVersions(sql: postgres.Sql): Promise<ServerVersions> {
   const [{ raster, db }] = await sql<{ raster: boolean; db: string }[]>`select
     to_regprocedure('postgis_gdal_version()') is not null as raster, current_database() as db`;
   if (!raster) throw new Error(`PostGIS raster is missing in ${db} (the lab loader needs it): CREATE EXTENSION postgis_raster there as the superuser, then re-run`);
-  const [v] = await sql<Record<keyof Versions, string>[]>`select current_setting('server_version') as postgresql,
+  const [v] = await sql<Record<keyof ServerVersions, string>[]>`select current_setting('server_version') as postgresql,
     postgis_lib_version() as postgis, postgis_geos_version() as geos, postgis_gdal_version() as gdal`;
   const number = (s: string) => /[0-9]+(\.[0-9]+)*/.exec(s)?.[0] ?? s;
   return { postgresql: number(v!.postgresql), postgis: number(v!.postgis), geos: number(v!.geos), gdal: number(v!.gdal) };
@@ -202,13 +201,6 @@ export async function openSession(target: PgTarget, signal?: AbortSignal): Promi
     await sql.end();
     throw e;
   }
-}
-
-export interface Outcome {
-  id: string;
-  failures: string[];
-  /** The result as checked/<id>.txt records it, when the block ran as it should. */
-  rendered?: string;
 }
 
 export interface RunOptions {
@@ -355,7 +347,7 @@ async function runOwnBlock(s: LabSession, b: Block, { known, watch, timeoutMs = 
 
   if (await leftOpen(s, q)) o.failures.push(`${q}: left its transaction open; the runner rolled it back`);
   o.failures.push(...(await restoreSession(s, q)));
-  o.failures.push(...(await committedLeaks(s, q, known)));
+  o.failures.push(...(await committedLeaks(s.sql, s.database, q, known)));
   o.failures.push(...(await committedChanges(watch, before, q)));
 
   if (!o.failures.length && !shown) o.failures.push(`${q}: no statement returned rows to show`);
@@ -490,7 +482,7 @@ async function runSessionsBlock(s: LabSession, b: Block, { known, watch, open, t
   } finally {
     await endWindows(s, windows);
   }
-  o.failures.push(...(await committedLeaks(s, q, known)));
+  o.failures.push(...(await committedLeaks(s.sql, s.database, q, known)));
   o.failures.push(...(await committedChanges(watch, before, q)));
 
   if (!o.failures.length && !shown.length) o.failures.push(`${q}: no statement returned rows to show`);
@@ -532,86 +524,58 @@ async function restoreSession(s: LabSession, q: string): Promise<string[]> {
   }
 }
 
-/** A `-- tx: own` block's committed learn_ objects (LK4): the lab role's dropped, others named once and then known. */
-async function committedLeaks(s: LabSession, q: string, known: Set<string>): Promise<string[]> {
-  const leaks = (await learnObjects(s.sql)).filter((o) => !known.has(o));
-  const ours = new Set(await labMade(s.sql, leaks));
+/**
+ * The learn_ objects a block committed (a `-- tx: own` or Python block; LK4, PYC1), through the lab connection `sql` to
+ * `database`: the lab role's dropped, others named once and then known.
+ */
+export async function committedLeaks(sql: postgres.Sql, database: string, q: string, known: Set<string>): Promise<string[]> {
+  const leaks = (await learnObjects(sql)).filter((o) => !known.has(o));
+  const ours = new Set(await labMade(sql, leaks));
   try {
-    await dropObjects(s.sql, [...ours]);
+    await dropObjects(sql, [...ours]);
   } catch (e) {
     throw new Error(`${q}: ${(e as Error).message}`);
   }
   return leaks.map((leak) => {
     if (ours.has(leak)) return `${q}: committed ${leak}; the runner dropped it`;
     known.add(leak);
-    return `${q}: committed ${leak}; the lab role didn't make it, so as the superuser run: ${superuserCleanup(leak, s.database)}`;
+    return `${q}: committed ${leak}; the lab role didn't make it, so as the superuser run: ${superuserCleanup(leak, database)}`;
   });
 }
 
-export interface BlocksOptions extends RunOptions {
-  /** Write the recorded results (each block run twice) instead of checking them. */
-  update: boolean;
-  /** Where the recorded results live (default site/learn/labs/checked). */
-  checkedDir?: string;
+export interface BlocksOptions extends RunOptions, SettleOptions {
   /** Print each block's rendered result (learn:check --module). */
   show?: boolean;
-  log?: (line: string) => void;
   /** Runs once the boot blocks committed, before any other block (learn:check's lab ERD check); a throw stops the run. */
   afterBoot?: () => Promise<void>;
 }
 
-async function readRecorded(file: string): Promise<string | undefined> {
-  try {
-    return await readFile(file, "utf8");
-  } catch (e) {
-    if ((e as NodeJS.ErrnoException).code === "ENOENT") return undefined;
-    throw e;
-  }
+/**
+ * The page's blocks against their recorded results (record.ts settleResults): blockRuns, then settled. Throws naming
+ * every failure.
+ */
+export async function runBlocks(s: LabSession, blocks: readonly Block[], { checkedDir, ...options }: BlocksOptions): Promise<void> {
+  await settleResults(await blockRuns(s, blocks, options), { update: options.update, checkedDir, log: options.log });
 }
 
 /**
- * The page's blocks against their recorded results: the `-- boot` blocks first, once (a failing one throws at once),
- * then `afterBoot`, then the rest in order; with `update`, each of the rest run twice and, once every block passed,
- * each result written where it changed. Throws naming every failure.
+ * The blocks' runs, for settleResults: the `-- boot` blocks first, once (a failing one throws at once), then
+ * `afterBoot`, then the rest in order, each of them run twice with `update`.
  */
-export async function runBlocks(s: LabSession, blocks: readonly Block[], { update, checkedDir = CHECKED_DIR, show = false, log = console.log, afterBoot, ...run }: BlocksOptions): Promise<void> {
+export async function blockRuns(s: LabSession, blocks: readonly Block[], { update, show = false, log = console.log, afterBoot, ...run }: Omit<BlocksOptions, "checkedDir">): Promise<BlockRuns[]> {
   const page = new Map(blocks.map((b) => [b.id, b]));
   const raster = rasterGate((text) => s.sql.unsafe(text));
-  const failures: string[] = [];
-  const writes: [file: string, text: string][] = [];
+  const runs: BlockRuns[] = [];
   const one = async (b: Block): Promise<void> => {
-    const q = `q ${b.id}`;
-    const file = join(checkedDir, `${b.id}.txt`);
     await raster(b);
     const first = await runBlock(s, b, page, run);
     if (b.boot && first.failures.length) throw new Error(`boot block ${b.id}: ${first.failures.join("; ")}`);
-    failures.push(...first.failures);
-    if (first.rendered === undefined) return;
-    if (show) log(`learn:check: ${q}:\n  ${first.rendered.split("\n").join("\n  ")}`);
-    const recorded = await readRecorded(file);
-    if (update) {
-      const second = b.boot ? first : await runBlock(s, b, page, run);
-      failures.push(...(b.boot ? [] : second.failures));
-      if (second.rendered === undefined) return;
-      if (!b.plan.length && second.rendered !== first.rendered) {
-        failures.push(`${q}: two runs differ, so its result isn't reproducible:\n  ${lineDiff(first.rendered, second.rendered).join("\n  ")}`);
-        return;
-      }
-      if (recorded !== first.rendered) writes.push([file, first.rendered]);
-    } else if (recorded === undefined) failures.push(`${q}: no recorded result: run pnpm learn:check --update`);
-    else if (recorded !== first.rendered) {
-      const diff = lineDiff(recorded, first.rendered).join("\n  ");
-      if (b.plan.length) log(`learn:check: ${q}: the plan's text differs from ${file} (its assertions hold):\n  ${diff}`);
-      else failures.push(`${q}: result differs from ${file}:\n  ${diff}`);
-    } else if (!first.failures.length) log(`learn:check: ${q}: ok`);
+    if (first.rendered !== undefined && show) log(`learn:check: q ${b.id}:\n  ${first.rendered.split("\n").join("\n  ")}`);
+    const second = update && !b.boot && first.rendered !== undefined ? await runBlock(s, b, page, run) : undefined;
+    runs.push({ block: b, first, ...(second ? { second } : {}) });
   };
   for (const b of blocks.filter((x) => x.boot)) await one(b);
   await afterBoot?.();
   for (const b of blocks.filter((x) => !x.boot)) await one(b);
-  if (failures.length) throw new Error(`blocks: ${failures.length} failure(s):\n${failures.join("\n")}`);
-  if (writes.length) await mkdir(checkedDir, { recursive: true });
-  for (const [file, text] of writes) {
-    await writeFile(file, text);
-    log(`learn:check: wrote ${file}`);
-  }
+  return runs;
 }

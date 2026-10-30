@@ -1,0 +1,4 @@
+-- result: s2-quadrats · 2 rows · sha256 0cefd3b143f3
+edge_m | cells | records | mean | variance | vmr
+5000 | 1094 | 1972 | 1.803 | 115.68 | 64.2
+10000 | 296 | 1990 | 6.723 | 934.23 | 139.0

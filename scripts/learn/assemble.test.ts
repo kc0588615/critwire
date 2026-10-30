@@ -9,9 +9,19 @@
 // - the setup page's file clashes with setup.sql (the browser's schema) → pg-checks.sql;
 // - the announced errors out of order, so the ERROR-line rule (check.ts) can't match psql's output → page order,
 //   each block's `-- fails:` then its `-- expect: error`.
+// The Python downloads (L4 plan §5; AS11–AS17 = the architecture's AS1–AS7, AS13 in notebook.test.ts):
+// - adding Python blocks changes a page's .sql → the .sql byte-identical;
+// - the .py runs a block before connect() exists, or a boot table isn't there → py-connect first, then the boot setup;
+// - a boot block pulled in by a comment, or by an untested block, or missed when a string names its table → the
+//   Python word test: whole word outside `#` lines;
+// - an untested block runs from the .py (e1-submit would submit a GBIF download) → commented out under its reason;
+// - boot SQL that a Python """ string changes (`"""`, `\`) → refused;
+// - a page whose only Python block is py-connect gets an empty .py; setup's .py clashes → setup.py / setup.ipynb;
+// - one page → name map keeps one download per page (finding 1) → pageDownloads by kind, one name each;
+// - a block line `# %%` splits a cell in two (the .py's cell marker) → refused.
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { assembleDownloads, downloadName } from "./assemble.ts";
+import { assembleDownloads, downloadName, pageDownloads, type Download } from "./assemble.ts";
 import { parseBlock, type Block } from "./blocks.ts";
 import type { CoursePage } from "./course.ts";
 
@@ -132,4 +142,89 @@ test("AS9 announced errors in page order: each block's -- fails: texts, then its
 
 test("AS10 a course with PostGIS blocks but no pg-session block is refused", () => {
   assert.throws(() => assembleDownloads([page("setup", smoke)]), /no pg-session block/);
+});
+
+function pyFile(id: string, ...lines: string[]): Block {
+  const { block: b, errors } = parseBlock(`site/learn/sql/${id}.py`, lines.join("\n") + "\n");
+  assert.deepEqual(errors, [], id);
+  return b!;
+}
+const connect = pyFile("py-connect", "# q: py-connect", "# status: ran", "import psycopg", "", "", "def connect():",
+  '    return psycopg.connect(options="-c search_path=learn_curriculum,public")');
+const pySmoke = pyFile("py-smoke", "# q: py-smoke", "# status: ran", "# after: py-connect", "with connect() as conn:",
+  '    print(conn.execute("SHOW search_path").fetchone()[0])');
+const cells = pg("s4-cells", ["-- status: ran", "-- boot"], "DROP TABLE IF EXISTS s4_cells;", "CREATE TABLE s4_cells AS SELECT 1 AS id;");
+const pySetup = page("setup", session, smoke, connect, pySmoke);
+const byName = (ds: Download[]) => new Map(ds.map((d) => [d.name, d]));
+
+test("AS11 adding Python blocks to a page leaves its .sql byte-identical", () => {
+  const geo = pg("s4-geo", ["-- status: ran"], "SELECT count(*) AS n FROM s4_cells;");
+  const before = assembleDownloads([setup, page("s4", cells, geo)]);
+  const after = assembleDownloads([page("setup", ...setup.blocks, connect, pySmoke),
+    page("s4", cells, geo, pyFile("s4-moran", "# q: s4-moran", "# status: ran", "# after: py-connect", 'print("s4_cells")'))]);
+  const sql = (ds: Download[]) => ds.filter((d) => d.kind === "sql").map((d) => [d.name, d.text, d.announced]);
+  assert.deepEqual(sql(after), sql(before));
+  assert.deepEqual(before.map((d) => d.kind), ["sql", "sql"]);
+  assert.deepEqual(after.map((d) => d.name), ["pg-checks.sql", "setup.py", "setup.ipynb", "s4.sql", "s4.py", "s4.ipynb"]);
+});
+
+test("AS12 the .py: head, py-connect, the boot setup a string needs (not a comment), each block once; untested commented out", () => {
+  const note = pyFile("s2-note", "# q: s2-note", "# status: ran", "# after: py-connect", "# reads s4_cells later", 'print("note")');
+  const kde = pyFile("s2-kde", "# q: s2-kde", "# status: ran", "# after: py-connect, s2-note", "# timeout: 90", "with connect() as conn:",
+    '    print(conn.execute("SELECT count(*) FROM s4_cells").fetchone()[0])');
+  const later = pyFile("s2-later", "# q: s2-later", "# status: untested: submits a download", "# after: s2-kde", "import s4_cells", "", "submit()");
+  const plain = [pySetup, page("s4", cells), page("s2", note)];
+  assert.doesNotMatch(byName(assembleDownloads(plain)).get("s2.py")!.text, /s4-cells/, "a comment pulls no boot block in");
+  const untested = [pySetup, page("s4", cells), page("s2", note, later)];
+  assert.doesNotMatch(byName(assembleDownloads(untested)).get("s2.py")!.text, /boot: s4-cells/, "nor an untested block");
+  const d = byName(assembleDownloads([pySetup, page("s4", cells), page("s2", note, kde, later)])).get("s2.py")!;
+  assert.equal(d.kind, "py");
+  assert.equal(d.page, "s2");
+  assert.deepEqual(d.announced, []);
+  assert.equal(d.timeoutMs, (60 + 60 + 90) * 1000 + 60_000, "its ran blocks' timeouts (py-connect's too) + 60 s per boot block");
+  const [head, ...parts] = d.text.split(/\n\n(?=# %% )/);
+  assert.match(head!, /^# critwire Learn: \/learn\/labs\/s2\.py\n/);
+  assert.match(head!, /^#   python s2\.py$/m);
+  for (const w of ["learn_curriculum.sql", "requirements.txt", "PGDATABASE", "LEARN_BASE", "https://critwire.com"]) assert.ok(head!.includes(w), w);
+  assert.ok(head!.split("\n").every((l) => l.startsWith("#")), "the head is comments");
+  assert.deepEqual(parts, [
+    `# %% py-connect\n${connect.text.trimEnd()}`,
+    ["# %% boot: s4-cells", "with connect() as conn:", '    conn.execute("""', cells.text.trimEnd(), '""")'].join("\n"),
+    `# %% s2-note\n${note.text.trimEnd()}`,
+    `# %% s2-kde\n${kde.text.trimEnd()}`,
+    ["# %% s2-later", "# not run from this file: submits a download. Run it by hand, as its page says.",
+      "# q: s2-later", "# status: untested: submits a download", "# after: s2-kde", "# import s4_cells", "#", "# submit()\n"].join("\n"),
+  ]);
+});
+
+test("AS14 a .py refuses boot SQL a Python string would change, and a block line that starts a cell", () => {
+  const reads = pyFile("s2-a", "# q: s2-a", "# status: ran", "# after: py-connect", 'print("s4_cells")');
+  for (const bad of ['SELECT \'"""\' AS q;', "SELECT E'\\n' AS q;"]) {
+    const boot = pg("s4-cells", ["-- status: ran", "-- boot"], "CREATE TABLE s4_cells AS SELECT 1 AS id;", bad);
+    assert.throws(() => assembleDownloads([pySetup, page("s4", boot), page("s2", reads)]), /s2\.py: boot block s4-cells: its SQL holds """ or \\/);
+  }
+  const marker = pyFile("s2-b", "# q: s2-b", "# status: ran", "x = 1", "# %% two", "print(x)");
+  assert.throws(() => assembleDownloads([pySetup, page("s2", marker)]), /s2\.py: q s2-b: line 4 starts with "# %%"/);
+});
+
+test("AS15 a page whose only Python block is py-connect gets no .py; Python blocks without py-connect in the course are refused", () => {
+  assert.deepEqual(assembleDownloads([page("setup", session, smoke, connect)]).map((d) => d.name), ["pg-checks.sql"]);
+  assert.throws(() => assembleDownloads([page("setup", session, smoke), page("s2", pyFile("s2-a", "# q: s2-a", "# status: ran", 'print("a")'))]),
+    /site\/learn\/modules\/s2\.html: Python blocks, but the course has no py-connect block to start its download/);
+});
+
+test("AS16 setup's downloads: pg-checks.sql, setup.py and setup.ipynb", () => {
+  assert.deepEqual(assembleDownloads([pySetup]).map((d) => [d.name, d.kind]), [["pg-checks.sql", "sql"], ["setup.py", "py"], ["setup.ipynb", "ipynb"]]);
+  assert.equal(downloadName("setup", "py"), "setup.py");
+  assert.equal(downloadName("s4", "ipynb"), "s4.ipynb");
+});
+
+test("AS17 pageDownloads: each page's name per kind, none replacing another", () => {
+  const s4 = page("s4", cells, pg("s4-geo", ["-- status: ran"], "SELECT 1 AS one;"), pyFile("s4-m", "# q: s4-m", "# status: ran", 'print("m")'));
+  const map = pageDownloads(assembleDownloads([pySetup, s4, page("d1", pg("d1-a", ["-- status: ran"], "SELECT 1 AS one;"))]));
+  assert.deepEqual(map.get("s4"), { sql: "s4.sql", py: "s4.py", ipynb: "s4.ipynb" });
+  assert.deepEqual(map.get("setup"), { sql: "pg-checks.sql", py: "setup.py", ipynb: "setup.ipynb" });
+  assert.deepEqual(map.get("d1"), { sql: "d1.sql" });
+  const one = assembleDownloads([pySetup])[0]!;
+  assert.throws(() => pageDownloads([one, { ...one, text: "" }]), /setup: two sql downloads \(pg-checks\.sql, pg-checks\.sql\)/);
 });

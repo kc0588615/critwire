@@ -7,12 +7,15 @@
 //   a probe), Run, Stop, Reset database, Schema, a result region (cards.ts tabs). The page's script runs it isolated
 //   after its `-- after:` blocks' code as written (site/learn/src/pages/module.ts).
 // - postgis: the code, read-only, with Copy; the result learn:check recorded (checked/<id>.txt) or the untested reason;
-//   an EXPLAIN block's `-- plan:` lines in words above its recorded plan, an example; the page's download; Lab schema.
-//   Before the page's first one: "Checked <date> on PostgreSQL…", from checked.json.
+//   an EXPLAIN block's `-- plan:` lines in words above its recorded plan, an example; the page's .sql; Lab schema.
+// - python (L4 plan §7): the same, linking the page's .py and .ipynb.
+// - Before the page's first PostGIS or Python block: "Checked <date> on PostgreSQL…", from checked.json, plus the
+//   Python and requirements.txt it ran on when the page has a Python block.
 // - powerbi (m, dax): the code; the star files it reads with the manifest's rows and sha256; "Not run by critwire".
 // - diagram: a <picture>, light and dark, with its alt (diagrams.ts).
 // - exercise and skip (duckdb): Your answer, Check, a verdict, the reference behind Show answer; a skip check marks the
-//   module done. A PostGIS exercise: Show answer around its code and recorded result.
+//   module done. A PostGIS or Python exercise: Show answer around its code and recorded result.
+import type { DownloadKind } from "../../learn/assemble.ts";
 import type { Block } from "../../learn/blocks.ts";
 import type { PlanAssertion } from "../../learn/plan.ts";
 import { pageSlots, type Curriculum, type Module, type Slot, type TOOLS } from "../../learn/course.ts";
@@ -30,11 +33,11 @@ export interface PageContext {
   recorded: ReadonlyMap<string, string>;
   /** checked.json's versions and date; undefined before the first learn:check. */
   stamp: Pick<Stamp, "checked" | "versions"> | undefined;
-  /** The page's download under /learn/labs/ (assemble.ts), if it has PostGIS blocks. */
-  download: string | undefined;
+  /** The page's downloads under /learn/labs/ by kind (assemble.ts pageDownloads): .sql with PostGIS blocks, .py and .ipynb with Python ones. */
+  downloads: Partial<Record<DownloadKind, string>>;
   /** /learn/data/star/manifest.json's files. */
   star: Readonly<Record<string, Pick<StarManifest["files"][string], "rows" | "sha256">>>;
-  /** --draft: a ran PostGIS block may lack its recorded result (preview only). */
+  /** --draft: a ran PostGIS or Python block may lack its recorded result (preview only). */
   draft: boolean;
   /** The Schema and Lab schema dialogs' SVG titles (their .mmd accTitle). */
   erdTitles: Record<Dialog, string>;
@@ -133,13 +136,21 @@ function labResult(b: Block, ctx: PageContext): string {
   throw new Error(`${ctx.file}: q ${b.id}: no recorded result (site/learn/labs/checked/${b.id}.txt)`);
 }
 
-function labHtml(b: Block, ctx: PageContext): string {
-  if (ctx.download === undefined) throw new Error(`${ctx.file}: q ${b.id}: the page has no download`);
+const LAB_ENGINES = { postgis: { name: "PostgreSQL with PostGIS", kinds: ["sql"] }, python: { name: "Python", kinds: ["py", "ipynb"] } } as const;
+
+/** A PostGIS or Python block: its code with Copy and Lab schema, its result, and the page's downloads that hold it. */
+function labHtml(b: Block, engine: keyof typeof LAB_ENGINES, ctx: PageContext): string {
+  const { name, kinds } = LAB_ENGINES[engine];
+  const links = kinds.map((k) => {
+    const file = ctx.downloads[k];
+    if (file === undefined) throw new Error(`${ctx.file}: q ${b.id}: the page has no .${k} download`);
+    return `<a href="/learn/labs/${esc(file)}">${esc(file)}</a>`;
+  });
   return [
     `<div class="block lab" id="q-${b.id}">`,
-    codeHead(b, "PostgreSQL with PostGIS", ` ${dialogButton("lab")}`),
+    codeHead(b, name, ` ${dialogButton("lab")}`),
     labResult(b, ctx),
-    `<p class="download">In <a href="/learn/labs/${esc(ctx.download)}">${esc(ctx.download)}</a>, with the blocks it runs after.</p>`,
+    `<p class="download">In ${links.join(" and ")}, with the blocks it runs after.</p>`,
     `</div>`,
   ].join("\n");
 }
@@ -166,15 +177,17 @@ export function renderFragment(html: string, ctx: PageContext): string {
   const versions = () => {
     if (versionsShown) return "";
     versionsShown = true;
-    if (!ctx.stamp) throw new Error(`${ctx.file}: PostGIS blocks, but no site/learn/labs/checked/checked.json: run pnpm learn:check`);
+    if (!ctx.stamp) throw new Error(`${ctx.file}: lab blocks, but no site/learn/labs/checked/checked.json: run pnpm learn:check`);
     const v = ctx.stamp.versions;
     // A stamp from before GDAL was recorded is stale (the checker changed with it), so only a --draft build shows one.
     const gdal = v.gdal === undefined ? "" : `, GDAL ${esc(v.gdal)}`;
-    return `<p class="checked">Checked ${esc(ctx.stamp.checked)} on PostgreSQL ${esc(v.postgresql)}, PostGIS ${esc(v.postgis)}, GEOS ${esc(v.geos)}${gdal}.</p>\n`;
+    const python = !hasPython ? "" : `; Python ${esc(v.python)} with requirements.txt sha256 ${esc(v.requirements)}`;
+    return `<p class="checked">Checked ${esc(ctx.stamp.checked)} on PostgreSQL ${esc(v.postgresql)}, PostGIS ${esc(v.postgis)}, GEOS ${esc(v.geos)}${gdal}${python}.</p>\n`;
   };
-  const lab = (b: Block) => {
+  const hasPython = [...ctx.blocks.values()].some((b) => b.engine === "python");
+  const lab = (b: Block, engine: keyof typeof LAB_ENGINES) => {
     dialogs.add("lab");
-    return versions() + labHtml(b, ctx);
+    return versions() + labHtml(b, engine, ctx);
   };
   const body = fillBlockSlots(ctx.file, html, (slot) => {
     const at = `${ctx.file}: ${slot.text}`;
@@ -190,7 +203,8 @@ export function renderFragment(html: string, ctx: PageContext): string {
       dialogs.add("schema");
       return slot.kind === "block" ? editorHtml(b) : exerciseHtml(b, slot.inOrder, slot.kind === "skip");
     }
-    if (b.engine === "postgis") return slot.kind === "block" ? lab(b) : `<details class="exercise-answer"><summary>Show answer</summary>\n${lab(b)}\n</details>`;
+    if (b.engine === "postgis" || b.engine === "python")
+      return slot.kind === "block" ? lab(b, b.engine) : `<details class="exercise-answer"><summary>Show answer</summary>\n${lab(b, b.engine)}\n</details>`;
     if (slot.kind !== "block") throw new Error(`${at}: a Power BI block can't be an exercise`);
     return powerBiHtml(b, ctx);
   });

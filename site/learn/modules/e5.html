@@ -1,0 +1,110 @@
+<p class="lead">How does a pipeline run every week without you, and how do you find out when a run broke? A job is one command and an exit code; the scheduler starts it in an environment that isn't your shell's, overlapping runs and failed runs are normal, and a failure nobody is told about is a silent one. A simulation of a weekly refresh, then the real job, written to a file and run eight times as a scheduler would run it, then cron, systemd timers and Windows Task Scheduler. Everything runs in the Python environment, on the lab tables (<a href="/learn/setup/">the setup page</a>).</p>
+
+<h2>Concept</h2>
+<p>A pipeline that runs without you, and tells you when it breaks.</p>
+<ul>
+<li><strong>A job is one command</strong> with an exit code: 0 for success, anything else for failure. The scheduler sees only that code, so a job catches nothing silently: it writes the reason, puts the traceback in its error output and exits 1.</li>
+<li><strong>The scheduler's environment isn't yours.</strong> cron, a systemd timer and Task Scheduler start the job without your shell's profile, so the <code>PG*</code> settings you typed in a terminal aren't there. Give them to the job where the scheduler reads them (the crontab, the unit's <code>EnvironmentFile=</code>, the account's variables), keep the password in the password file, and have the job check them by name before it connects. Its log names a missing setting and never prints a value: logs are read by more people than passwords should be.</li>
+<li><strong>Logs:</strong> one line per step, with a timestamp, to a file or the journal.</li>
+<li><strong>Alerts:</strong> a failure nobody hears about is a silent one. systemd's <code>OnFailure=</code> starts another unit when a job fails; that unit alerts a person only if its command sends mail or a push. cron mails a job's output to <code>MAILTO</code> only when the crontab line doesn't redirect it to a file, so a line ending <code>&gt;&gt; refresh.log 2&gt;&amp;1</code> mails nothing. Task Scheduler records the last result, and can restart a failed task.</li>
+<li><strong>A refresh you can restart</strong> (the snapshot rule of <a href="/learn/etl/idempotent/">e3</a>, run by a scheduler):
+<ul>
+<li><strong>the job key</strong> is one checksum over the input's checksum, <code>TRANSFORM_VERSION</code>, the config and <code>SCHEMA_VERSION</code>. Bump <code>TRANSFORM_VERSION</code> when the code's output changes, and <code>SCHEMA_VERSION</code> when the target's DDL does;</li>
+<li><strong>a persistent target and a state table</strong> in their own schema, created once: the state row keeps the key the target was loaded with;</li>
+<li><strong>one transaction</strong> replaces the target's rows and updates the state row, so a failed run leaves both as they were, and a run killed half-way commits nothing;</li>
+<li><strong>a lock</strong> covers the comparison and the replacement, so two runs that overlap, a slow one and the next one or a manual re-run, can't both load. <code>pg_try_advisory_xact_lock</code> doesn't wait: a run that finds it held does nothing and exits 0, since the run holding it is doing the work. The lock is the transaction's, so it is freed when the job ends, however it ends.</li>
+</ul></li>
+<li><strong>Incremental loads</strong> move only what changed. A file with a published checksum tells you whether anything changed at all. Records that changed or were deleted upstream are the hard part: an append-only increment never sees them. For a sample this size, the honest increment is a whole reload, in one transaction, when the job key changes. A weekly GBIF refresh is a new download with a new DOI, so it is a new run of e1 to e4.</li>
+</ul>
+{{diagram:e5-refresh}}
+<p><strong>Data:</strong> <a href="/learn/data/">the lab data</a>'s <code>manifest.json</code> and <code>datasets.csv</code>; the lab's <code>datasets</code> table, for the shape of the job's copy.</p>
+
+<h2>Worked example</h2>
+<p>A simulation of a weekly refresh, in one process on <code>TEMP</code> tables, so it leaves the lab as it was and can be checked in one go. It compares the published checksum with the one it loaded last, reloads in one transaction when they differ, checks the row count, and exits 1 with the traceback on any failure.</p>
+{{block:e5-job}}
+<p>The first run loads <code>datasets.csv</code>, 400 rows, and records its sha256 (<code>3bd8c1726239…</code>); the second finds the same checksum and does nothing. Both log one line per step, and the job exits 0. Point <code>LEARN_BASE</code> at a server that isn't running and it logs the traceback and exits 1. What the simulation can't show is what a scheduler does: start a new process each week, against tables that outlived the last one, maybe while the last one is still running.</p>
+
+<h2>Lab</h2>
+<ol>
+<li><p>The real job. This block writes <code>refresh.py</code> to the current folder and prints nothing; the job is the string. It reads the <code>PG*</code> settings, <code>LEARN_BASE</code>, <code>REFRESH_SCHEMA</code> (the schema holding its target and state tables, <code>etl</code> by default) and <code>REFRESH_LICENSES</code> (the licenses it keeps, <code>CC0 1.0,CC BY 4.0</code> by default: its config). Each run is one transaction: the lock, the key compared with the state row's, the file fetched and checked against the manifest, staged with <code>COPY</code> and counted, then the target's rows replaced and the state row updated, together. A held lock or an equal key exits 0 having changed nothing; any error rolls the whole run back and exits 1.</p>
+{{block:e5-refresh}}</li>
+<li><p>Run it as a scheduler does: a new process each time, here eight times. The block creates a schema <code>learn_e5</code> with the target and state tables, as you would create <code>etl</code>'s once, and drops it at the end. A is the published <code>datasets.csv</code>; B is a local copy with one title corrected; C is B with one made-up dataset added, under a manifest that still says 400 rows, as if the publisher's count went wrong. Each run gets this block's environment; run 8 without <code>PGDATABASE</code>. Run 6 holds the job's lock from this block's own session, as a run still going would; run 7 starts two runs at once.</p>
+{{block:e5-runs}}
+<p>Each line is one process: its exit code and the one line it logged. Run 2 skips because the state row outlived run 1's process. Run 3 changes only the config, so it reloads, keeping the 124 CC0 1.0 datasets; run 4 changes the input and puts the default config back. Run 5 stages 401 rows against a manifest of 400 and fails: it exits 1, and the target and the state still hold B, because the replacement and the state row would have committed together. Run 6 finds the lock held and changes nothing. In run 7 one process loads A; the other either finds the lock held or, starting a moment later, finds the new state, and both are right to exit 0. After A, B and A again the target holds A. Run 8 names the missing setting and prints no value.</p></li>
+</ol>
+
+<h2>Scheduling it</h2>
+<p>Put <code>refresh.py</code> in a folder of its own, <code>~/etl</code> here, with a <code>.venv</code> built from the lab's <a href="/learn/labs/requirements.txt"><code>requirements.txt</code></a> (<a href="/learn/setup/">the setup page</a>), and create the schema <code>etl</code> with its two tables once, as <code>e5-runs</code> creates <code>learn_e5</code>'s.</p>
+<p>On Linux with cron, every Monday at 04:17. cron reads <code>VAR=value</code> lines at the top of the crontab; the password stays in <code>~/.pgpass</code>:</p>
+<pre class="code"><code>crontab -e
+# then add these lines:
+PGHOST=localhost
+PGPORT=5432
+PGUSER=postgres
+PGDATABASE=learn
+17 4 * * 1 cd "$HOME/etl" &amp;&amp; .venv/bin/python -I refresh.py &gt;&gt; refresh.log 2&gt;&amp;1</code></pre>
+<p>With <code>&gt;&gt; refresh.log 2&gt;&amp;1</code>, everything the job prints goes to <code>refresh.log</code>, so cron has nothing to mail and a failure is only a line in that file. Leave the redirect off and set <code>MAILTO=you@example.org</code> to have cron mail each run's output, if the machine can send mail.</p>
+<p>Or a systemd user timer, which catches up on a run missed while the machine was off (<code>Persistent=true</code>) and logs to the journal:</p>
+<pre class="code"><code>mkdir -p ~/.config/systemd/user
+printf 'PGHOST=localhost\nPGPORT=5432\nPGUSER=postgres\nPGDATABASE=learn\n' &gt; ~/etl/refresh.env
+cat &gt; ~/.config/systemd/user/refresh.service &lt;&lt;'EOF'
+[Unit]
+Description=Weekly lab data refresh
+OnFailure=refresh-failed.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=%h/etl
+EnvironmentFile=%h/etl/refresh.env
+ExecStart=%h/etl/.venv/bin/python -I refresh.py
+EOF
+cat &gt; ~/.config/systemd/user/refresh-failed.service &lt;&lt;'EOF'
+[Unit]
+Description=Record that the refresh failed
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/logger -p user.err "refresh failed: journalctl --user -u refresh.service"
+EOF
+cat &gt; ~/.config/systemd/user/refresh.timer &lt;&lt;'EOF'
+[Unit]
+Description=Run the refresh every Monday
+
+[Timer]
+OnCalendar=Mon *-*-* 04:17:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+EOF
+systemctl --user daemon-reload
+systemctl --user enable --now refresh.timer
+loginctl enable-linger "$USER"     # run it even when you aren't logged in
+journalctl --user -u refresh.service   # the log</code></pre>
+<p><code>refresh-failed.service</code> only writes a line to the system log, which alerts nobody: someone has to read it. To be told, replace its <code>ExecStart</code> with a command that sends mail or a push to your phone.</p>
+<p>On Windows, with Task Scheduler, from PowerShell. The task runs as you, so it sees your user environment variables (<code>setx PGHOST localhost</code>, and so on, once) and your password file, <code>%APPDATA%\postgresql\pgpass.conf</code>:</p>
+<pre class="code"><code>$action = New-ScheduledTaskAction -Execute "$HOME\etl\.venv\Scripts\python.exe" -Argument "-I refresh.py" -WorkingDirectory "$HOME\etl"
+$trigger = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Monday -At 4:17am
+$settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -RestartCount 2 -RestartInterval (New-TimeSpan -Minutes 30)
+Register-ScheduledTask -TaskName "Lab data refresh" -Action $action -Trigger $trigger -Settings $settings
+Get-ScheduledTaskInfo -TaskName "Lab data refresh"   # LastTaskResult 0 means success</code></pre>
+<p>Task Scheduler keeps the last result, and the task's history, and tells nobody: check <code>LastTaskResult</code>, or add a second task triggered by the failure event that sends a message.</p>
+
+<h2>Result</h2>
+<p>A refresh job that a scheduler can run as often as it likes. Each run is one process and one transaction: an unchanged job key skips, a changed input or config reloads, a failed check leaves the target and state as they were, and of two runs at once exactly one loads. After A, B and A again, the target holds A. The job checks its connection settings by name and logs no value, and the scheduling recipes say plainly where a failure ends up: a log file, the journal, or a task's last result, until you add the mail or push that tells a person.</p>
+
+<h2>Exercise</h2>
+<p>A job key covers only what you put in it. Change <code>refresh.py</code>'s transform so each DOI is stored as a link that resolves, <code>https://doi.org/</code> followed by the DOI. Write the change as a copy of <code>refresh.py</code>, and a second copy that also sets <code>TRANSFORM_VERSION = 2</code>. Into a schema <code>learn_e5ex</code> of your own, created as <code>e5-runs</code> creates <code>learn_e5</code>, run the old job once, then the new code without the bump, then with it, twice, each as a new process. After each run, count the target's DOIs that are links.</p>
+{{exercise:e5-ex}}
+
+<h2>Check</h2>
+<p>Run 2 is the failure the version number exists for. The code changed, but the input, the config and both versions didn't, so the key is the same: the job skips, exits 0, and the target keeps 400 bare DOIs under a state row that says it is up to date. Nothing tells a job that its own code changed except what you put in its key. With the bump, run 3 reloads and logs <code>transform changed</code>, and run 4 skips, every DOI now a link. Every one of the 400 datasets has a DOI, so the count goes from 0 to 400 in one run.</p>
+
+<h2>Dialects</h2>
+<ul>
+<li><strong>PostgreSQL:</strong> the <code>pg_cron</code> extension schedules SQL inside the database, <code>SELECT cron.schedule('refresh', '17 4 * * 1', 'CALL refresh()')</code>, in cron's syntax, and keeps each run's outcome in <code>cron.job_run_details</code>. It runs SQL only, so fetching a file stays with an outside job like <code>refresh.py</code>. <code>pg_try_advisory_xact_lock</code> takes a <code>bigint</code> or two <code>integer</code>s: <code>hashtext</code> turns a name into one, and a fixed number written into the job does as well.</li>
+<li><strong>DuckDB:</strong> no server and no scheduler: the job is a script that cron, a systemd timer or Task Scheduler starts, as here. A database file opens for writing in one process at a time, and a second process that tries gets a lock error, so the file's lock does the advisory lock's work, except that the second run gets an error where <code>refresh.py</code> skips: catch that error if runs are expected to overlap. <code>BEGIN TRANSACTION; … COMMIT;</code> holds the replacement and the state row together.</li>
+<li><strong>SQL Server:</strong> SQL Server Agent runs jobs on schedules, records each run's outcome in its history, and notifies an operator by Database Mail on failure; Express edition has no Agent, so it uses Task Scheduler. <code>sp_getapplock</code> with <code>@LockMode = 'Exclusive'</code>, <code>@LockOwner = 'Transaction'</code> and <code>@LockTimeout = 0</code> is <code>pg_try_advisory_xact_lock</code>: it returns a negative number instead of waiting when another session holds the lock.</li>
+<li><strong>Python:</strong> <code>raise SystemExit(main())</code> turns the job's result into its exit code; an uncaught exception also exits 1, with the traceback but without the job's own log line. A scheduler inside Python (APScheduler, or the <code>schedule</code> package) runs jobs while its own process lives, so a crash or a restart stops every schedule; orchestrators such as Airflow, Dagster and Prefect add retries, history and alerts, and still run each task as here, so it must be safe to run again.</li>
+<li><strong>ArcGIS Pro:</strong> a geoprocessing tool or a model can be scheduled from the Geoprocessing pane (the Run button's menu → Schedule), which creates a Windows Task Scheduler task. A Python script runs on a schedule with Pro's own Python, <code>"C:\Program Files\ArcGIS\Pro\bin\Python\Scripts\propy.bat" refresh.py</code>, in a task like the one above; <code>arcpy</code> then needs a Pro license the task's account can use.</li>
+</ul>
