@@ -811,7 +811,7 @@ Every lab reads the same handful of files. critwire's build writes them from sna
 | Jung et al. 2020 habitat map, v004: classes, country summaries and each record's class | CC BY 4.0 (003 D4, §5) | `habitat_classes.parquet`, `country_habitats.parquet`, `occurrence_habitats.parquet` | 75; 5,578 (246 countries); 40,395 | 2,488; 22,407; 81,731 | g7, s6, p2–p3 | L3 (A2's 35-row stand-ins before it) |
 | Jung v004 clips at 100 m: all of Costa Rica (`cr`) and Tasmania (`tas`) | CC BY 4.0 (003 D4) | `clips/{cr,tas}.tif` (cloud-optimized GeoTIFF); `habitat_clips.parquet` (the same cells as PostGIS raster WKB in 256-cell tiles, for the loader) | 2 rasters of 3,730 × 3,474 and 4,131 × 3,318 cells; 290 tiles (117 and 173) | 1,380,611 and 1,828,711; 1,826,789 | g7, s6 | L3 (two 0.75° windows until H5) |
 | The PostGIS loader | inherits the above | `postgis/learn_curriculum.sql` | 16 tables | 72,088,315 (L3's build, whole-country clips; with the windows, 25,757,224; L1's, 14 tables: 21,338,761) | every PostGIS module | build (L1; grown in L3) |
-| The star export | inherits the above; credits in its own manifest | `star/*.csv` (8 files), `star/manifest.json` | §A.3 | 4,576,053; 10,995 | d6, p1–p4 | build (L2: the records fact; L5: the habitat fact) |
+| The star export | inherits the above; credits in its own manifest | `star/*.csv` (8 files), `star/manifest.json` | §A.3 | 4,653,920; 12,139 (L5's build; on the habitat stand-ins, 4,576,053; 10,995) | d6, p1–p4 | build (L2: the records fact; L5: the habitat fact) |
 | The manifest and the index page | | `manifest.json` (4.5), `index.html` | | 26,178; 118,959 (L3's build; L1's: 14,257; 114,820) | every module | build (L1) |
 
 Notes on the shapes (`SP/out/lab-data/summary.md`; sizes re-measured by L1's `pnpm ingest shapes`, `data/learn/shapes.json`):
@@ -10035,19 +10035,17 @@ Four modules, seven hours, in Power BI Desktop (§3.5), on the star d6 builds: e
 
 **Tool:** PBI · **Time:** 1.5 h · **Prereqs:** d6
 
-**Goal:** get the star into Power BI with Power Query, so it loads the same way on any computer and refreshes in the Power BI Service. Power Query records each step as a line of M, its formula language, so a load is code you can read, copy and review:
-- `Web.Contents` fetches the file. A fixed base URL, with the file name in `RelativePath`, is a source the Service can refresh on a schedule with anonymous access; a URL built by joining text is a dynamic source, which it won't refresh (§3.5).
-- `Csv.Document` parses it, with UTF-8 and CSV quoting stated, then `Table.PromoteHeaders` takes the first row as column names.
-- `Table.TransformColumnTypes` sets each column's type **with an explicit culture**. Without one, Power Query parses numbers and dates in the computer's locale, so `12.5` means something else on a computer set to a comma decimal.
-- Codes are text. `country_code` holds `NA` (Namibia), which other tools read as "not available", and keys like `dataset_key` are identifiers, never numbers to add.
+**Concept:** get the star into Power BI with Power Query, so it loads the same way on any computer and refreshes in the Power BI Service. **Power Query** is the tool inside Power BI Desktop (and Excel) that fetches and shapes data before it reaches the model. It records each step as a line of **M**, its formula language, so a load is code you can read, copy and review. Four rules make a load that works anywhere:
+- **A fixed base URL.** `Web.Contents` fetches the file. Give it a fixed base URL and put the file name in `RelativePath`: the Power BI Service can then refresh the published report on a schedule with anonymous access. A whole URL built by joining text is a **dynamic data source**, which the Service won't refresh.
+- **Say how the file is written.** `Csv.Document` parses it with UTF-8 (`Encoding = 65001`) and CSV quoting stated, so accents and commas inside quotes are read as written; `Table.PromoteHeaders` takes the first row as column names.
+- **Types with an explicit culture.** `Table.TransformColumnTypes` sets each column's type. A **culture** (a locale, such as `"en-US"`) says how text becomes a number or a date. Without one, Power Query uses the computer's own: on a computer set to German, the dot is a thousands separator, so `179.18` becomes 17,918. critwire's files write numbers with a dot, so every load states `"en-US"`.
+- **Codes are text.** `country_code` holds `NA` (Namibia), which other tools read as "not available", and keys like `dataset_key` are identifiers, never numbers to add. An empty cell in a numeric column becomes `null`, Power Query's missing value; an empty cell in a text column stays an empty text, `""`.
 
-One function serves all eight tables, so the rules above are written once (DRY, in M).
+One function serves all eight tables, so the rules are written once. A **custom function** in M is a query whose body is `(parameters) => expression`; other queries call it by name.
 
-**Data:** the eight star files and `star/manifest.json`, whose columns and types the queries follow (§6.3).
+**Data:** the eight star files under `https://critwire.com/learn/data/star/` and `star/manifest.json`, whose columns and types the queries follow (§6.3).
 
-**Key code:**
-
-Power BI reads the star d6 builds, as CSV files critwire publishes under `/learn/data/star/`. `LoadStar` is one function for all eight tables: create it as a blank query (Home → Get data → Blank query → Advanced editor), then add one query per table that calls it, for example `dim_country = LoadStar("dim_country", {{"country_code", type text}, {"name", type text}, {"continent", type text}, {"region", type text}, {"subregion", type text}})`. The base URL is fixed and the file name goes in `RelativePath`, so the Power BI Service can refresh it with anonymous access. The culture `"en-US"` is explicit, so a computer set to a comma-decimal locale still reads `12.5` as twelve and a half. Type `country_code` as text: Namibia's code is `NA`, which some tools read as "not available".
+**Worked example:** the function, then the largest table. Power BI reads the star d6 builds, as CSV files critwire publishes under `/learn/data/star/`. Create `LoadStar` as a blank query (Home → Get data → Blank query → Advanced editor), paste the block, and rename the query `LoadStar`. The first time it runs, Power BI asks how to connect to critwire.com: choose **Anonymous**, privacy level **Public** (§3.5). The base URL is fixed and the file name goes in `RelativePath`, so the Service sees one data source, `https://critwire.com`, for all eight tables.
 
 ```m
 // q: p1-load
@@ -10063,9 +10061,7 @@ in
     Typed
 ```
 
-`p1-load`'s inputs, `star/dim_habitat_class.csv` and `star/fact_country_habitat.csv`, and their sizes in §A.3, are recorded on A2's two-country habitat stand-ins (AX and TT, 35 rows): L3 replaced them with every country's estimates (§4.1), so they are re-run by the mission that builds this module (L5).
-
-The largest table's query. Name the query `fact_records`; whole numbers are `Int64.Type`, decimals `type number`, and an empty cell (a record with no month, or no stated uncertainty) becomes null:
+`types` is a list of pairs, a column's name and its type, in the form `Table.TransformColumnTypes` takes. Each table is then one call. Create a blank query, name it `fact_records`, and paste this; whole numbers are `Int64.Type`, decimals `type number`:
 
 ```m
 // q: p1-fact-records
@@ -10079,7 +10075,56 @@ LoadStar("fact_records", {
 })
 ```
 
-**Expected:** eight tables, with the manifest's rows: `dim_species` 76, `dim_country` 251, `dim_dataset` 400, `dim_year` 177, `fact_records` 40,395, `fact_species_country` 472, `dim_habitat_class` 75 and `fact_country_habitat` 35. In `fact_records`, 2,289 records have year `-1` (unknown) and none has country `ZZ`; `month` and `coordinate_uncertainty_m` hold nulls; `NA` stays Namibia. Refresh repeats the load from critwire.com and gives the same tables until the files change.
+A record with no month, or no stated uncertainty, has an empty cell, which becomes `null`. Power Query shows each step on the right (Applied steps); the function's steps run inside the call, so `fact_records` shows one.
+
+**Lab:**
+1. The other six tables. Each is a blank query named after its file, calling `LoadStar` with the file's columns. The manifest gives each column's type, and each has one M type:
+
+   | Manifest type | M type | Power BI calls it |
+   |---|---|---|
+   | `INTEGER`, `BIGINT` | `Int64.Type` | Whole number |
+   | `DOUBLE` | `type number` | Decimal number |
+   | `DECIMAL(12,2)` | `Currency.Type` | Fixed decimal number |
+   | `VARCHAR` | `type text` | Text |
+
+   So `dim_country = LoadStar("dim_country", {{"country_code", type text}, {"name", type text}, {"continent", type text}, {"region", type text}, {"subregion", type text}})`, and `dim_year = LoadStar("dim_year", {{"year", Int64.Type}, {"decade", Int64.Type}, {"label", type text}})`. In `dim_species`, `dim_dataset`, `fact_species_country` and `dim_habitat_class`, the ids and codes that the manifest calls `INTEGER` are `Int64.Type` and the rest is text. `fact_country_habitat`'s `est_area_km2` is `Currency.Type`: a fixed decimal number keeps four decimal places exactly, so 5,578 areas with two decimals add up to the cent, where a decimal number (a binary double) can leave a trailing digit.
+2. Close & Apply (Home). Power BI loads the eight tables into the model; `LoadStar` is a function, so it isn't loaded. In Table view, the status bar shows each table's rows: compare them with the manifest's `rows`.
+3. Look at the edges. In `dim_country`, filter `country_code` to `NA`: Namibia, a text code, not a missing value. In `dim_year`, the row `-1` is the unknown member (d6), with `decade` null and label `Unknown`. In `fact_records`, filter `year` to `-1`, then `month` to null.
+4. Refresh. Home → Refresh repeats every query from critwire.com: the same tables until the files change. To share the report, Home → Publish to a workspace; then, in the Service, the semantic model's Settings → Data source credentials → Edit credentials: **Anonymous**, privacy level **Public**, and set a scheduled refresh (a Pro licence allows eight a day). A dynamic data source is where this stops: the settings page says the model can't be refreshed.
+5. Your own database instead. Power BI also reads PostgreSQL directly (Get data → PostgreSQL database): server `localhost`, database `learn`, with d5's `learn_powerbi` login, and the navigator lists `learn_curriculum`'s tables. Power BI tries an encrypted connection first; a server on your own computer without TLS makes it ask whether to connect unencrypted, which is fine for `localhost`. That suits a database only you use. A report in the Service that refreshes from a database on your computer needs an on-premises data gateway, a Windows service on that computer, running whenever the refresh is due; files on a public URL need none, which is why the course reads the star from critwire.com.
+
+**Result:** eight tables, with the manifest's rows: `dim_species` 76, `dim_country` 251, `dim_dataset` 400, `dim_year` 177, `fact_records` 40,395, `fact_species_country` 472, `dim_habitat_class` 75 and `fact_country_habitat` 5,578 (246 countries). In `fact_records`, 2,289 records have year `-1` (unknown) and none has country `ZZ`; 6,545 have no month and 24,002 no stated uncertainty, all null; 176 are from Namibia, `NA`. Refresh repeats the load from critwire.com and gives the same tables until the files change.
+
+**Exercise:** a load check in M. Load `dim_habitat_class` and `fact_country_habitat` with `LoadStar`, and return one small table to compare with the manifest: each table's rows, the area rows with an empty key, the area rows whose class isn't in `dim_habitat_class`, the total estimated area, and Namibia's. Which type keeps the area's sums exact?
+
+**Answer:** `Currency.Type` (fixed decimal number) for `est_area_km2`. `Table.NestedJoin` with `JoinKind.LeftAnti` keeps the rows of the first table that have no match in the second, so its row count is the number of orphans. A text key is checked for both `null` and `""`.
+
+```m
+// q: p1-ex
+// status: untested: Power BI is Windows-only
+// input: star/dim_habitat_class.csv, star/fact_country_habitat.csv
+let
+    Classes = LoadStar("dim_habitat_class", {{"habitat_code", Int64.Type}, {"name", type text}, {"level1_code", Int64.Type}, {"level1_name", type text}}),
+    Areas = LoadStar("fact_country_habitat", {{"country_code", type text}, {"habitat_code", Int64.Type}, {"est_area_km2", Currency.Type}}),
+    Check = #table({"check", "value"}, {
+        {"dim_habitat_class rows", Table.RowCount(Classes)},
+        {"fact_country_habitat rows", Table.RowCount(Areas)},
+        {"area rows with an empty key", Table.RowCount(Table.SelectRows(Areas, each [country_code] = null or [country_code] = "" or [habitat_code] = null))},
+        {"area rows with no class", Table.RowCount(Table.NestedJoin(Areas, {"habitat_code"}, Classes, {"habitat_code"}, "class", JoinKind.LeftAnti))},
+        {"total km2", List.Sum(Areas[est_area_km2])},
+        {"Namibia (NA) km2", List.Sum(Table.SelectRows(Areas, each [country_code] = "NA")[est_area_km2])}
+    })
+in
+    Check
+```
+
+**Check:** 75 and 5,578 rows, as the manifest says; no empty key and no area without its class; 146,579,613.97 km² in all, and 822,099.38 km² for Namibia, whose 33 rows kept their code. Change `LoadStar`'s culture to `"de-DE"` and run it again: every area is read with the dot as a thousands separator, and the totals no longer match. The areas are estimates from a habitat map (§4.1), not measurements.
+
+**Dialects:**
+- **Excel (Windows):** the same Power Query and the same M. Data → Get Data → From Other Sources → Blank Query, then the same `LoadStar` and calls; Data → Refresh All repeats them. A table loaded to a sheet stops at 1,048,576 rows, so `fact_records` fits; load to the Data Model for more.
+- **Tableau:** Tableau Desktop's Text file connector reads files on your computer, so download the star first. Set each code's type to String on the Data Source page, and relate the tables there by their keys.
+- **pandas:** `pd.read_csv(url, dtype={"country_code": str}, keep_default_na=False, na_values=[""])`. pandas reads `NA` as missing by default; `keep_default_na=False` stops that, and `na_values=[""]` keeps empty cells missing. Python's `float` already reads `12.5` the same way in every locale.
+- **SQL:** DuckDB's `read_csv('https://critwire.com/learn/data/star/dim_country.csv', types = {'country_code': 'VARCHAR'})` (the `httpfs` extension fetches the URL); PostgreSQL's `\copy dim_country FROM 'dim_country.csv' WITH (FORMAT csv, HEADER)` into a table d6's block made, which reads an empty unquoted cell as NULL and `NA` as text. PostgreSQL reads only the dot as a decimal point; DuckDB does too unless told otherwise (`decimal_separator = ','`).
 
 #### p2 · model
 
@@ -10592,7 +10637,7 @@ Five missions build the course, one after another, each from a ready-to-start br
 
 **Why this order.** Every lab reads L1's files, and L1 holds the course's only network write (the derived-dataset registration), so data comes first. L2 builds the site on it with the ten modules this document already writes in full. The habitat ingest is the largest data job and spatial statistics and Power BI both read it, so L3 comes before them. Python (L4) arrives with the modules that need it. Power BI and the capstone (L5) use every earlier track.
 
-**The same data throughout.** L1 republishes the spike's sample (§4.2: the same download and the same rules give the same 40,395 records), so every result recorded here holds on the published files, and a build mission that gets a different result has found a bug, not a new number. The one planned change was L3's: its habitat summaries replaced A2's two-country stand-ins, so the built blocks that read them (`pg-smoke`, `d4-xmin-load`, `d6-star-fact-country-habitat` and `d6-drill-across`) were re-run and updated, with the reason, in the same commit; its whole-country clips changed `pg-smoke` and `d4-xmin-load` once more (the clips' tile rows). `p1-load`'s inputs, `p3-check` and `p3-measures` carry a note that they were recorded on the stand-ins; L5 re-runs them.
+**The same data throughout.** L1 republishes the spike's sample (§4.2: the same download and the same rules give the same 40,395 records), so every result recorded here holds on the published files, and a build mission that gets a different result has found a bug, not a new number. The one planned change was L3's: its habitat summaries replaced A2's two-country stand-ins, so the built blocks that read them (`pg-smoke`, `d4-xmin-load`, `d6-star-fact-country-habitat` and `d6-drill-across`) were re-run and updated, with the reason, in the same commit; its whole-country clips changed `pg-smoke` and `d4-xmin-load` once more (the clips' tile rows). `p3-check` and `p3-measures` carry a note that they were recorded on the stand-ins; L5 re-runs them. L5 re-measured `p1-load`'s inputs on the published star (§A.3's two habitat rows).
 
 **How they're queued.** After the owner has reviewed this document and answered §10 (or accepted its recommendations), the control room copies the five briefs to `/srv/critter-ai/agent-state/missions/briefs/<date>-critwire-learn-l<n>-<slug>.md` (the file name minus the date is the mission's name, branch and worktree) and starts them as `queue-learn.sh` started A1 and A2: `mission start critwire` for L1; wait until its plan says `status: done` and its `## Release` has `Result: done`; start the next; and push one alert, then keep waiting, if a mission stops before finishing. Each brief's start comment repeats its precondition, so a mission started by hand checks the same thing. §10 item 7 gives the alternative of stopping after L2.
 
@@ -10741,8 +10786,8 @@ Every open record, uncapped, would be 4.8 MB as Parquet and 44.6 MB as CSV; it i
 | `dim_year.csv` | year, plus `-1` | 177 | 2,670 |
 | `fact_records.csv` | one sample record | 40,395 | 4,475,330 |
 | `fact_species_country.csv` | species × country (factless) | 472 | 2,818 |
-| `dim_habitat_class.csv` | habitat class (stand-in) | 75 | 4,525 |
-| `fact_country_habitat.csv` | country × class (stand-in) | 35 | 500 |
+| `dim_habitat_class.csv` | habitat class | 75 | 4,525 |
+| `fact_country_habitat.csv` | country × class | 5,578 | 78,367 |
 
 `manifest.json` lists, per file: columns and types, primary key and foreign keys (read from DuckDB's catalog, so `star.sql` is their one definition), rows, bytes, sha256, and `sources` (name, license, license URL, citation, DOI). `fact_records`' source is the GBIF download's citation, with `"datasets": "datasets.csv"` for each dataset's credit, which `dim_dataset` also carries.
 
