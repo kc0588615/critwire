@@ -127,7 +127,7 @@ The review's numbering: SC = SHOULD-CHANGE.
 - [x] Baseline: install, migrate, run typecheck, lint, unit and E2E tests; record the results under Baseline
 - [x] Architecture: `architect` writes findings and the target design
 - [x] Fable review: `architecture-reviewer`
-- [ ] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
+- [x] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
 - [ ] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
 - [ ] Steps: `planner` writes Steps and Verification
 
@@ -407,6 +407,16 @@ SHOULD-CONSIDER:
 
 ## Architecture review (Astra)
 
+VERDICT: APPROVE_WITH_CHANGES
+
+MUST-FIX:
+1. T4 publishes a standalone feed outside the data manifest without an explicit license or complete attribution mechanism. Its credits contain only titles/publishers and a download citation. AGENTS.md requires source and license for every third-party field. Define published attribution covering the feed and its reuse—embedded metadata or a companion attribution file—and verify it ships with the download.
+
+SHOULD-CONSIDER:
+1. Make T1 explicit that prerequisite scope is transitive, but SQL `after` execution remains ordered and non-transitive. Preserve identical behavior across runner, downloads and freshness checks.
+2. Check feed byte length and weight sum against the recorded summary, alongside the proposed counts.
+3. Create the Windows-check handoff before final verification; keep it nonblocking as authorized.
+
 ## Revision notes
 
 ## Steps
@@ -424,5 +434,6 @@ SHOULD-CONSIDER:
 - 2026-10-30 05:05 UTC: Baseline on `afed437`: install, venv, typecheck ok; test 664/664; build ok (`/learn/data/` 95.9 MB); test:db 138/138; learn:check ok; e2e 96/96; sha256 lists saved.
 - 2026-10-30 05:21 UTC: Architecture by `architect`: F1 cross-page `-- after:` (prereq pages), F2 DuckDB CHECK fix, habitat fact = 2 star blocks, feed via `c1-feed-file` + checked file + ajv, DAX `// twin:` header; est. 25–28 more sessions. Plan-only change, no checks needed.
 - 2026-10-30 05:28 UTC: Fable review by `architecture-reviewer`: APPROVE_WITH_CHANGES, 2 MUST-FIX (H6 handoff before Verification, not after release; T1 cross-page scope from full course map, refuse self/cycles). Plan-only change, no checks needed.
+- 2026-10-30 05:55 UTC: Astra review: APPROVE_WITH_CHANGES, 1 MUST-FIX (T4 feed needs published license + attribution shipped with download). Plan-only change, no checks needed.
 
 ## Summary
