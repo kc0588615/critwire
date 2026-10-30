@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 800 632" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="c1-pipeline-title c1-pipeline-desc" id="c1-pipeline-root">
+        <title id="c1-pipeline-title">From a GBIF download to a game: each stage is a module you have done, and each keeps an honesty rule, so the feed says where people recorded the animal, not its range</title>
+        <desc id="c1-pipeline-desc">A GBIF download (cited by its DOI) is extracted and loaded in one checked, re-runnable transaction (e1 to e4, credits from the loaded datasets); looked at before counting (s1: datasets, basis of record, years; a dominant study is named); gridded into equal-area hexagons with Gi* hot spots kept only after the false discovery rate and called recording hot spots (g6, s4, s5); and written as one feed by one SQL statement (c1), valid against its JSON Schema, CC BY 4.0, each weight a share of the records. Power BI's report (p1 to p4) and the game both read the feed: the report's title says records, never range; the game shows the credits and treats a missing cell as no record.</desc>
+<defs>
+      <style>#c1-pipeline-root { --paper: #f5f5f5; --paper-2: #ececec; --ink: #2d3142; --muted: #4f5d75; --soft: #5a6580;
+      --rule: rgba(45,49,66,0.12); --rule-solid: #bfc0c0; --accent: #bf4520; --accent-tint: rgba(191,69,32,0.08);
+      --font-sans: 'Geist', system-ui, sans-serif;
+      --font-serif: 'Instrument Serif', 'Noto Serif', serif;
+      --font-mono: 'Geist Mono', ui-monospace, monospace; }
+      #c1-pipeline-root { font-family: var(--font-sans); color: var(--ink); }
+      #c1-pipeline-root .diagram-container { width: 100%; overflow-x: auto; }
+      @media print {
+#c1-pipeline-root .diagram-container { overflow-x: visible; }
+}
+      #c1-pipeline-root .bg { fill: var(--paper); }
+      #c1-pipeline-root .zone { fill: var(--paper-2); stroke: var(--rule); stroke-width: 1; }
+      #c1-pipeline-root .mask { fill: var(--paper); }
+      #c1-pipeline-root .zmask { fill: var(--paper-2); }
+      #c1-pipeline-root .node { fill: var(--paper); stroke: var(--ink); stroke-width: 1; }
+      #c1-pipeline-root .store { fill: var(--paper-2); stroke: var(--muted); stroke-width: 1; }
+      #c1-pipeline-root .focal { fill: var(--accent-tint); stroke: var(--accent); stroke-width: 1.2; }
+      #c1-pipeline-root .name { fill: var(--ink); font-family: var(--font-sans); font-size: 13px; font-weight: 600; }
+      #c1-pipeline-root .sub { fill: var(--muted); font-family: var(--font-mono); font-size: 10px; }
+      #c1-pipeline-root .eyebrow-text { fill: var(--soft); font-family: var(--font-mono); font-size: 9px; font-weight: 500; letter-spacing: 0.14em; }
+      #c1-pipeline-root .label { fill: var(--soft); font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.06em; }
+      #c1-pipeline-root .note { fill: var(--muted); font-family: var(--font-serif); font-size: 14px; font-style: italic; }
+      #c1-pipeline-root .arrow { fill: none; stroke: var(--muted); stroke-width: 1.2; }
+      #c1-pipeline-root .arrow-accent { fill: none; stroke: var(--accent); stroke-width: 1.4; }
+      #c1-pipeline-root .dashed { stroke-dasharray: 5 4; }
+      #c1-pipeline-root .head { fill: var(--muted); }
+      #c1-pipeline-root .head-accent { fill: var(--accent); }
+      #c1-pipeline-root .rule-line { stroke: var(--rule-solid); stroke-width: 0.8; }
+      #c1-pipeline-root .rule-text { fill: var(--ink); font-family: var(--font-sans); font-size: 12.5px; }
+      #c1-pipeline-root .code { fill: var(--ink); font-family: var(--font-mono); font-size: 12px; }
+      #c1-pipeline-root .code-key { fill: var(--muted); }
+      #c1-pipeline-root .code-accent { fill: var(--accent); font-weight: 600; }
+      #c1-pipeline-root .label-accent { fill: var(--accent); font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.06em; }
+      #c1-pipeline-root .ticks { fill: none; stroke: var(--rule-solid); stroke-width: 0.6; }
+      #c1-pipeline-root .marker { stroke: var(--accent); stroke-width: 1.4; }
+      #c1-pipeline-root .missing { fill: none; stroke: var(--muted); stroke-width: 1; stroke-dasharray: 4 3; }</style>
+<marker id="c1-pipeline-arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon class="head" points="0 0, 8 3, 0 6"/></marker>
+<marker id="c1-pipeline-arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon class="head-accent" points="0 0, 8 3, 0 6"/></marker>
+</defs>
+<rect class="bg" width="100%" height="100%"/>
+<text class="eyebrow-text" x="40" y="40">STAGE · MODULES</text>
+<text class="eyebrow-text" x="364" y="40">ITS HONESTY RULE</text>
+<rect class="mask" x="40" y="56" width="288" height="52" rx="6"/>
+<rect class="store" x="40" y="56" width="288" height="52" rx="6"/>
+<text class="name" x="184" y="78" text-anchor="middle">GBIF download</text>
+<text class="sub" x="184" y="94" text-anchor="middle">open records · one DOI</text>
+<line class="rule-line dashed" x1="328" y1="82" x2="352" y2="82"/>
+<text class="rule-text" x="364" y="86">Cite the download by its DOI: it lists every dataset in it.</text>
+<path class="arrow" d="M184 108 V136" marker-end="url(#c1-pipeline-arrow)"/>
+<rect class="mask" x="40" y="136" width="288" height="52" rx="6"/>
+<rect class="node" x="40" y="136" width="288" height="52" rx="6"/>
+<text class="name" x="184" y="158" text-anchor="middle">Extract and load · e1–e4</text>
+<text class="sub" x="184" y="174" text-anchor="middle">one transaction · re-runnable · checked</text>
+<line class="rule-line dashed" x1="328" y1="162" x2="352" y2="162"/>
+<text class="rule-text" x="364" y="166">Credits come from the loaded datasets, never typed by hand.</text>
+<path class="arrow" d="M184 188 V216" marker-end="url(#c1-pipeline-arrow)"/>
+<rect class="mask" x="40" y="216" width="288" height="52" rx="6"/>
+<rect class="node" x="40" y="216" width="288" height="52" rx="6"/>
+<text class="name" x="184" y="238" text-anchor="middle">Look before counting · s1</text>
+<text class="sub" x="184" y="254" text-anchor="middle">datasets · basis of record · years</text>
+<line class="rule-line dashed" x1="328" y1="242" x2="352" y2="242"/>
+<text class="rule-text" x="364" y="246">If one study (GPS collars) dominates, say so in meaning.</text>
+<path class="arrow" d="M184 268 V296" marker-end="url(#c1-pipeline-arrow)"/>
+<rect class="mask" x="40" y="296" width="288" height="52" rx="6"/>
+<rect class="node" x="40" y="296" width="288" height="52" rx="6"/>
+<text class="name" x="184" y="318" text-anchor="middle">Grid and hot spots · g6, s4, s5</text>
+<text class="sub" x="184" y="334" text-anchor="middle">equal-area hexagons · Gi* · FDR</text>
+<line class="rule-line dashed" x1="328" y1="322" x2="352" y2="322"/>
+<text class="rule-text" x="364" y="318">Equal-area cells, so each covers the same ground;</text>
+<text class="rule-text" x="364" y="336">hot spots only after the FDR, called recording hot spots.</text>
+<path class="arrow" d="M184 348 V376" marker-end="url(#c1-pipeline-arrow)"/>
+<rect class="mask" x="40" y="376" width="288" height="52" rx="6"/>
+<rect class="focal" x="40" y="376" width="288" height="52" rx="6"/>
+<text class="name" x="184" y="398" text-anchor="middle">The feed · c1</text>
+<text class="sub" x="184" y="414" text-anchor="middle">one statement · JSON Schema · CC BY 4.0</text>
+<line class="rule-line dashed" x1="328" y1="402" x2="352" y2="402"/>
+<text class="rule-text" x="364" y="398">A weight is a share of the records: where people</text>
+<text class="rule-text" x="364" y="416">recorded the animal, not its range.</text>
+<path class="arrow-accent" d="M108 428 V456" marker-end="url(#c1-pipeline-arrow-accent)"/>
+<path class="arrow-accent" d="M260 428 V456" marker-end="url(#c1-pipeline-arrow-accent)"/>
+<rect class="zmask" x="132" y="436" width="104" height="12" rx="2"/>
+<text class="label" x="184" y="445" text-anchor="middle">BOTH READ IT</text>
+<rect class="mask" x="40" y="456" width="136" height="52" rx="6"/>
+<rect class="node" x="40" y="456" width="136" height="52" rx="6"/>
+<text class="name" x="108" y="478" text-anchor="middle">Report · p1–p4</text>
+<text class="sub" x="108" y="494" text-anchor="middle">reads the feed</text>
+<rect class="mask" x="192" y="456" width="136" height="52" rx="6"/>
+<rect class="node" x="192" y="456" width="136" height="52" rx="6"/>
+<text class="name" x="260" y="478" text-anchor="middle">Game</text>
+<text class="sub" x="260" y="494" text-anchor="middle">ships the file</text>
+<line class="rule-line dashed" x1="328" y1="482" x2="352" y2="482"/>
+<text class="rule-text" x="364" y="478">Report: its title says records, never range.</text>
+<text class="rule-text" x="364" y="496">Game: shows the credits; a missing cell is no record.</text>
+<text class="note" x="24" y="560">Each stage is a module you have done, and each keeps its rule, so the game says</text>
+<text class="note" x="24" y="582">what the records say: where people recorded the animal, not its range.</text>
+<line class="rule-line" x1="24" y1="598" x2="776" y2="598"/>
+<text class="label" x="24" y="616">WORKED EXAMPLE: TASMANIAN DEVIL · 1,972 RECORDS IN 307 CELLS · 37 RECORDING HOT SPOTS · 7 CREDITS</text>
+      </svg>

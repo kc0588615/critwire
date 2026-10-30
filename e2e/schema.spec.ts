@@ -144,6 +144,8 @@ const DIAGRAMS = [
   { name: "s4-band", url: "/learn/spatial-statistics/moran/" },
   { name: "e2-load", url: "/learn/etl/transform-load/" },
   { name: "e5-refresh", url: "/learn/etl/schedule/" },
+  { name: "c1-pipeline", url: "/learn/capstone/game-feed/" },
+  { name: "c1-feed", url: "/learn/capstone/game-feed/" },
 ];
 const svgTitle = (svg: string) => /<svg\b[^>]*>\s*<title\b[^>]*>([^<]+)<\/title>/.exec(svg)?.[1]?.trim();
 

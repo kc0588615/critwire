@@ -10578,6 +10578,8 @@ One module, eight hours, on every tool. It is an outline, in §5.3's form; build
 - **The feed:** one static JSON file per species and region, written by one SQL statement, valid against the JSON Schema below, versioned. Each cell has an encounter **weight**, its share of the records; the game draws a cell with probability weight ÷ Σ weight (a cumulative sum and one random number), so rounding never matters. A cell missing from the feed means "no record", never "no animal". The feed carries its own license (CC BY 4.0, the license of the data critwire writes) and attribution, the download's citation, and every dataset with CC BY 4.0 records in it with its DOI (e4), because the attribution travels with anything derived from them and a game copies the feed alone; the game shows them on its credits screen.
 - **Shipping and refresh:** the game ships the file with its own static files, so it is read from the game's own origin and needs no CORS (§4.6). e5's schedule rebuilds it; a change to its fields bumps `version` and the schema. A game with its own PostGIS, such as Critter Connect's, can run the same statement there instead.
 
+**Diagram:** `c1-pipeline`, after the Goal's list: GBIF download → extract and load (e1–e4) → look before counting (s1) → grid and hot spots (g6, s4, s5) → the feed (c1), which the report (p1–p4) and the game both read; beside each stage its honesty rule: cite the download's DOI; credits from the loaded datasets, never typed; name a dominant study in `meaning`; equal-area cells, and hot spots only after the false discovery rate, called recording hot spots; a weight is a share of the records, not the range; the report's title says records, the game shows the credits and reads a missing cell as no record.
+
 **Data:** `s4_cells` (s4's 5 km hexagons over Tasmania's main island, with the devil's record counts), `s5_gistar` (s5's Gi\* per cell), `occurrences`, `datasets`, `species`. The worked example is the Tasmanian devil; in L5's lab the learner repeats it for a species and region of their own.
 
 **Worked example:** the feed for the Tasmanian devil, in two blocks. `c1-feed` builds the feed with one statement, from s4's 5 km cells and s5's Gi\* (`s5_gistar`, so it runs after `s5-gistar`), and keeps it as a temporary view, `c1_feed`: one row, one `jsonb` column, `doc`. It then returns the feed's summary and its fullest cell. Four parts make the feed:
@@ -10669,6 +10671,8 @@ feed
 - `cells`: one object per cell that holds a record: `id` (s4's cell id), `lon` and `lat` (the cell's centre in WGS 84, four decimal places, about 10 m), `records`, `weight` and `recording_hot_spot`.
 
 A game draws a cell with probability weight ÷ Σ weight: it adds the weights up in order (a cumulative sum), takes one random number between 0 and the total, and picks the first cell whose running sum passes it. A cell missing from the feed means "no record", never "no animal".
+
+**Diagram:** `c1-feed`, after the paragraph above: the fullest cell (917) as the feed writes it; its weight, 256 ÷ 1,972 = 0.129817, a share of the records, with the 307 weights summing to 0.999954; the draw on the running sum of the weights, where one random number, 0.83, falls in cell 917's span (0.768217 to 0.898034); and cell 7, with 0 records, left out of the feed: no record, never no animal.
 
 The feed's JSON Schema (draft 2020-12), which L5 publishes beside its worked feed and checks the feed against:
 

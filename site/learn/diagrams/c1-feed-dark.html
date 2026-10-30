@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>One cell, its weight, and one draw</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --paper: #2d3142; --paper-2: #393e53; --ink: #f5f5f5; --muted: #bfc0c0; --soft: #949eb2;
+      --rule: rgba(245,245,245,0.12); --rule-solid: rgba(191,192,192,0.25); --accent: #f08a59; --accent-tint: rgba(240,138,89,0.10);
+      --font-sans: 'Geist', system-ui, sans-serif;
+      --font-serif: 'Instrument Serif', 'Noto Serif', serif;
+      --font-mono: 'Geist Mono', ui-monospace, monospace;
+    }
+    body { font-family: var(--font-sans); background: var(--paper); color: var(--ink); padding: 3rem 2rem; }
+    .frame { max-width: 1200px; margin: 0 auto; }
+    .diagram-container { width: 100%; overflow-x: auto; }
+    .eyebrow { font-family: var(--font-mono); font-size: 0.66rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.5rem; }
+    h1 { font-family: var(--font-serif); font-size: 1.75rem; font-weight: 400; margin-bottom: 1.5rem; }
+    svg { width: 100%; min-width: 800px; display: block; }
+    @media print { .diagram-container { overflow-x: visible; } svg { min-width: 0; } }
+    .bg { fill: var(--paper); }
+    .zone { fill: var(--paper-2); stroke: var(--rule); stroke-width: 1; }
+    .mask { fill: var(--paper); }
+    .zmask { fill: var(--paper-2); }
+    .node { fill: var(--paper); stroke: var(--ink); stroke-width: 1; }
+    .store { fill: var(--paper-2); stroke: var(--muted); stroke-width: 1; }
+    .focal { fill: var(--accent-tint); stroke: var(--accent); stroke-width: 1.2; }
+    .name { fill: var(--ink); font-family: var(--font-sans); font-size: 13px; font-weight: 600; }
+    .sub { fill: var(--muted); font-family: var(--font-mono); font-size: 10px; }
+    .eyebrow-text { fill: var(--soft); font-family: var(--font-mono); font-size: 9px; font-weight: 500; letter-spacing: 0.14em; }
+    .label { fill: var(--soft); font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.06em; }
+    .note { fill: var(--muted); font-family: var(--font-serif); font-size: 14px; font-style: italic; }
+    .arrow { fill: none; stroke: var(--muted); stroke-width: 1.2; }
+    .arrow-accent { fill: none; stroke: var(--accent); stroke-width: 1.4; }
+    .dashed { stroke-dasharray: 5 4; }
+    .head { fill: var(--muted); }
+    .head-accent { fill: var(--accent); }
+    .rule-line { stroke: var(--rule-solid); stroke-width: 0.8; }
+    .rule-text { fill: var(--ink); font-family: var(--font-sans); font-size: 12.5px; }
+    .code { fill: var(--ink); font-family: var(--font-mono); font-size: 12px; }
+    .code-key { fill: var(--muted); }
+    .code-accent { fill: var(--accent); font-weight: 600; }
+    .label-accent { fill: var(--accent); font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.06em; }
+    .ticks { fill: none; stroke: var(--rule-solid); stroke-width: 0.6; }
+    .marker { stroke: var(--accent); stroke-width: 1.4; }
+    .missing { fill: none; stroke: var(--muted); stroke-width: 1; stroke-dasharray: 4 3; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">The game feed · c1</p>
+    <h1>One cell, its weight, and one draw</h1>
+    <div class="diagram-container">
+      <svg viewBox="0 0 800 708" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="c1-feed-dark-title c1-feed-dark-desc">
+        <title id="c1-feed-dark-title">A cell's weight is its share of the feed's records; the game draws a cell with one random number on the running sum of the weights, and a cell missing from the feed means no record, never no animal</title>
+        <desc id="c1-feed-dark-desc">The fullest cell of the worked feed, 917, has id, lon, lat, 256 records, weight 0.129817 (256 of 1,972 records, rounded to six places) and recording_hot_spot true. The 307 weights sum to 0.999954, so the game divides by their sum. The draw: add the weights in id order, take one random number r between 0 and the total (here 0.83), and pick the first cell whose running sum passes it: cell 917, whose span runs from 0.768217 to 0.898034. Cell 7 has no record, so the feed leaves it out: a missing cell means no record there, never no animal.</desc>
+<defs>
+<marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon class="head" points="0 0, 8 3, 0 6"/></marker>
+<marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon class="head-accent" points="0 0, 8 3, 0 6"/></marker>
+</defs>
+<rect class="bg" width="100%" height="100%"/>
+<rect class="zone" x="24" y="24" width="368" height="224" rx="6"/>
+<text class="eyebrow-text" x="40" y="44">ONE CELL OF THE FEED · THE FULLEST</text>
+<text class="code" x="48" y="76">{</text>
+<text class="code" x="48" y="96" xml:space="preserve">  <tspan class="code-key">"id"</tspan><tspan>: 917,</tspan></text>
+<text class="code" x="48" y="116" xml:space="preserve">  <tspan class="code-key">"lon"</tspan><tspan>: 147.8865,</tspan></text>
+<text class="code" x="48" y="136" xml:space="preserve">  <tspan class="code-key">"lat"</tspan><tspan>: -42.8981,</tspan></text>
+<text class="code" x="48" y="156" xml:space="preserve">  <tspan class="code-key">"records"</tspan><tspan>: 256,</tspan></text>
+<text class="code" x="48" y="176" xml:space="preserve">  <tspan class="code-key">"weight"</tspan><tspan class="code-accent">: 0.129817,</tspan></text>
+<text class="code" x="48" y="196" xml:space="preserve">  <tspan class="code-key">"recording_hot_spot"</tspan><tspan>: true</tspan></text>
+<text class="code" x="48" y="216">}</text>
+<rect class="zone" x="408" y="24" width="368" height="224" rx="6"/>
+<text class="eyebrow-text" x="424" y="44">WEIGHT = ITS SHARE OF THE RECORDS</text>
+<text class="name" x="424" y="80">256 ÷ 1,972 = 0.129817</text>
+<text class="sub" x="424" y="98">its records ÷ all the feed's records,</text>
+<text class="sub" x="424" y="112">rounded to six places</text>
+<text class="rule-text" x="424" y="146">The 307 weights sum to 0.999954, not 1,</text>
+<text class="rule-text" x="424" y="164">so the game divides by their sum.</text>
+<text class="rule-text" x="424" y="200">A weight says where people recorded</text>
+<text class="rule-text" x="424" y="218">the animal, not its range.</text>
+<rect class="zone" x="24" y="272" width="752" height="184" rx="6"/>
+<text class="eyebrow-text" x="40" y="292">THE DRAW · ONE RANDOM NUMBER</text>
+<text class="label" x="40" y="384">0</text>
+<text class="label" x="760" y="384" text-anchor="end">0.999954</text>
+<rect class="node" x="40" y="336" width="720" height="28"/>
+<path class="ticks" d="M41.5 336 V364 M48.8 336 V364 M50.2 336 V364 M50.6 336 V364 M51.0 336 V364 M51.3 336 V364 M51.7 336 V364 M52.0 336 V364 M52.4 336 V364 M53.9 336 V364 M62.3 336 V364 M82.0 336 V364 M82.7 336 V364 M83.1 336 V364 M83.8 336 V364 M84.2 336 V364 M88.9 336 V364 M90.0 336 V364 M105.7 336 V364 M106.1 336 V364 M106.5 336 V364 M109.0 336 V364 M110.5 336 V364 M110.8 336 V364 M111.6 336 V364 M113.4 336 V364 M113.8 336 V364 M114.1 336 V364 M116.3 336 V364 M116.7 336 V364 M118.1 336 V364 M118.5 336 V364 M118.9 336 V364 M119.2 336 V364 M119.6 336 V364 M120.0 336 V364 M120.7 336 V364 M121.4 336 V364 M122.1 336 V364 M122.5 336 V364 M124.0 336 V364 M124.3 336 V364 M125.1 336 V364 M125.8 336 V364 M133.1 336 V364 M133.5 336 V364 M134.9 336 V364 M138.6 336 V364 M140.0 336 V364 M140.4 336 V364 M140.8 336 V364 M141.1 336 V364 M141.5 336 V364 M142.2 336 V364 M143.0 336 V364 M143.3 336 V364 M144.1 336 V364 M144.4 336 V364 M145.2 336 V364 M145.9 336 V364 M147.7 336 V364 M148.8 336 V364 M149.2 336 V364 M151.4 336 V364 M151.7 336 V364 M152.1 336 V364 M155.7 336 V364 M159.0 336 V364 M160.1 336 V364 M160.5 336 V364 M162.3 336 V364 M163.8 336 V364 M164.1 336 V364 M164.5 336 V364 M165.2 336 V364 M167.1 336 V364 M167.8 336 V364 M168.2 336 V364 M175.8 336 V364 M179.1 336 V364 M180.2 336 V364 M183.5 336 V364 M183.9 336 V364 M192.6 336 V364 M193.0 336 V364 M196.3 336 V364 M196.6 336 V364 M203.9 336 V364 M204.7 336 V364 M206.9 336 V364 M207.9 336 V364 M208.3 336 V364 M209.4 336 V364 M212.0 336 V364 M219.6 336 V364 M229.5 336 V364 M231.0 336 V364 M231.7 336 V364 M232.0 336 V364 M232.4 336 V364 M232.8 336 V364 M233.1 336 V364 M234.6 336 V364 M235.0 336 V364 M235.3 336 V364 M237.2 336 V364 M237.5 336 V364 M237.9 336 V364 M238.3 336 V364 M238.6 336 V364 M239.3 336 V364 M241.2 336 V364 M244.1 336 V364 M244.5 336 V364 M244.8 336 V364 M245.2 336 V364 M245.6 336 V364 M245.9 336 V364 M246.7 336 V364 M248.1 336 V364 M248.5 336 V364 M268.9 336 V364 M270.0 336 V364 M270.7 336 V364 M271.8 336 V364 M272.2 336 V364 M272.6 336 V364 M272.9 336 V364 M273.3 336 V364 M281.0 336 V364 M283.2 336 V364 M284.3 336 V364 M294.8 336 V364 M295.2 336 V364 M295.6 336 V364 M295.9 336 V364 M297.4 336 V364 M297.8 336 V364 M298.5 336 V364 M298.9 336 V364 M299.2 336 V364 M301.4 336 V364 M302.1 336 V364 M302.5 336 V364 M303.2 336 V364 M313.8 336 V364 M357.3 336 V364 M357.6 336 V364 M358.0 336 V364 M358.4 336 V364 M358.7 336 V364 M359.1 336 V364 M373.0 336 V364 M373.3 336 V364 M375.2 336 V364 M375.5 336 V364 M376.3 336 V364 M376.6 336 V364 M377.0 336 V364 M377.4 336 V364 M377.7 336 V364 M378.1 336 V364 M387.2 336 V364 M422.3 336 V364 M423.4 336 V364 M424.5 336 V364 M424.8 336 V364 M425.2 336 V364 M425.6 336 V364 M425.9 336 V364 M426.3 336 V364 M426.7 336 V364 M427.0 336 V364 M428.1 336 V364 M429.9 336 V364 M430.3 336 V364 M432.1 336 V364 M433.2 336 V364 M434.3 336 V364 M435.1 336 V364 M436.1 336 V364 M436.5 336 V364 M436.9 336 V364 M437.2 336 V364 M438.3 336 V364 M442.7 336 V364 M443.4 336 V364 M444.9 336 V364 M446.4 336 V364 M447.8 336 V364 M448.6 336 V364 M448.9 336 V364 M449.3 336 V364 M449.7 336 V364 M457.0 336 V364 M457.3 336 V364 M458.1 336 V364 M458.4 336 V364 M459.1 336 V364 M460.2 336 V364 M461.7 336 V364 M462.1 336 V364 M462.8 336 V364 M463.5 336 V364 M465.4 336 V364 M465.7 336 V364 M466.1 336 V364 M473.0 336 V364 M473.4 336 V364 M473.8 336 V364 M475.9 336 V364 M485.1 336 V364 M486.2 336 V364 M486.5 336 V364 M486.9 336 V364 M487.3 336 V364 M488.0 336 V364 M503.3 336 V364 M503.7 336 V364 M508.8 336 V364 M509.2 336 V364 M509.5 336 V364 M509.9 336 V364 M510.3 336 V364 M511.0 336 V364 M511.4 336 V364 M511.7 336 V364 M512.1 336 V364 M512.5 336 V364 M512.8 336 V364 M513.2 336 V364 M513.5 336 V364 M513.9 336 V364 M514.3 336 V364 M515.0 336 V364 M515.4 336 V364 M515.7 336 V364 M516.1 336 V364 M516.5 336 V364 M517.2 336 V364 M517.9 336 V364 M518.3 336 V364 M519.4 336 V364 M520.5 336 V364 M521.2 336 V364 M522.7 336 V364 M523.0 336 V364 M523.4 336 V364 M523.8 336 V364 M524.1 336 V364 M526.0 336 V364 M526.7 336 V364 M527.4 336 V364 M567.9 336 V364 M568.3 336 V364 M568.7 336 V364 M571.2 336 V364 M572.0 336 V364 M573.1 336 V364 M573.4 336 V364 M573.8 336 V364 M574.2 336 V364 M574.5 336 V364 M574.9 336 V364 M576.7 336 V364 M593.1 336 V364 M686.6 336 V364 M687.0 336 V364 M688.4 336 V364 M688.8 336 V364 M689.2 336 V364 M689.9 336 V364 M705.2 336 V364 M723.1 336 V364 M723.5 336 V364 M723.9 336 V364 M725.0 336 V364 M725.7 336 V364 M727.1 336 V364 M727.5 336 V364 M728.2 336 V364 M728.6 336 V364 M729.7 336 V364 M730.4 336 V364 M730.8 336 V364 M731.5 336 V364 M732.3 336 V364 M733.3 336 V364 M734.4 336 V364 M734.8 336 V364 M735.2 336 V364 M735.5 336 V364 M735.9 336 V364 M736.3 336 V364 M737.4 336 V364 M738.8 336 V364 M739.2 336 V364 M741.7 336 V364 M742.1 336 V364 M746.9 336 V364 M747.2 336 V364 M747.6 336 V364 M748.7 336 V364 M756.7 336 V364 M757.1 336 V364 M758.5 336 V364"/>
+<rect class="focal" x="593.1" y="336" width="93.5" height="28"/>
+<line class="marker" x1="637.6" y1="322" x2="637.6" y2="370"/>
+<text class="label-accent" x="637.6" y="318" text-anchor="middle">r = 0.83</text>
+<text class="label" x="686.6" y="384" text-anchor="end">CELL 917: 0.768217 TO 0.898034</text>
+<text class="rule-text" x="40" y="404">1. Add the weights up in id order: a running (cumulative) sum, one span per cell.</text>
+<text class="rule-text" x="40" y="422">2. Take one random number r between 0 and the total, 0.999954; here r = 0.83.</text>
+<text class="rule-text" x="40" y="440">3. Draw the first cell whose running sum passes r: cell 917, 13.0 % of the weight.</text>
+<rect class="zone" x="24" y="480" width="752" height="124" rx="6"/>
+<text class="eyebrow-text" x="40" y="500">A CELL MISSING FROM THE FEED</text>
+<polygon class="node" points="122.0,534.0 109.0,556.5 83.0,556.5 70.0,534.0 83.0,511.5 109.0,511.5"/>
+<text class="sub" x="96" y="538" text-anchor="middle">cell 6</text>
+<text class="label" x="96" y="574" text-anchor="middle">4 RECORDS</text>
+<polygon class="missing" points="222.0,534.0 209.0,556.5 183.0,556.5 170.0,534.0 183.0,511.5 209.0,511.5"/>
+<text class="sub" x="196" y="538" text-anchor="middle">cell 7</text>
+<text class="label" x="196" y="574" text-anchor="middle">0 RECORDS</text>
+<polygon class="node" points="322.0,534.0 309.0,556.5 283.0,556.5 270.0,534.0 283.0,511.5 309.0,511.5"/>
+<text class="sub" x="296" y="538" text-anchor="middle">cell 8</text>
+<text class="label" x="296" y="574" text-anchor="middle">20 RECORDS</text>
+<text class="label" x="196" y="592" text-anchor="middle">NOT IN THE FEED</text>
+<text class="rule-text" x="380" y="528">The feed lists only cells that hold a record.</text>
+<text class="rule-text" x="380" y="546">A missing cell means no record there, never no animal:</text>
+<text class="rule-text" x="380" y="564">nobody recorded one, or nobody looked.</text>
+<text class="note" x="24" y="636">The game draws where records are, in proportion to them, and says so:</text>
+<text class="note" x="24" y="658">a weight is a share of what people recorded, not of where the animal lives.</text>
+<line class="rule-line" x1="24" y1="674" x2="776" y2="674"/>
+<text class="label" x="24" y="692">THE WORKED FEED: TASMANIAN DEVIL · 307 CELLS · 1,972 RECORDS · 5 KM HEXAGONS, EPSG:3577</text>
+      </svg>
+    </div>
+  </div>
+</body>
+</html>

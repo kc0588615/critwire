@@ -10,6 +10,7 @@
 <li><strong>The feed</strong>: one static JSON file per species and region, written by one SQL statement, valid against a published JSON Schema, versioned. Each cell has an encounter <strong>weight</strong>, its share of the records. The feed carries its own license (CC BY 4.0) and attribution, the download's citation, and every dataset with CC BY 4.0 records in it with its DOI, because the attribution travels with anything derived from them and a game copies the feed alone.</li>
 <li><strong>Shipping and refresh</strong>: the game ships the file with its own static files, so it reads it from its own origin. <a href="/learn/etl/schedule/">Scheduling, e5</a>, rebuilds it; a change to its fields bumps <code>version</code> and the schema. A game with its own PostGIS can run the same statement there instead.</li>
 </ul>
+{{diagram:c1-pipeline}}
 <p>The data: <code>s4_cells</code> (s4's 5 km hexagons over Tasmania's main island, with the devil's record counts), <code>s5_gistar</code> (s5's Gi* per cell), <code>occurrences</code>, <code>datasets</code> and <code>species</code>.</p>
 
 <h2>Worked example</h2>
@@ -39,6 +40,7 @@
 <li><code>cells</code>: one object per cell that holds a record: <code>id</code> (s4's cell id), <code>lon</code> and <code>lat</code> (the cell's centre in WGS 84, four decimal places, about 10 m), <code>records</code>, <code>weight</code> and <code>recording_hot_spot</code>.</li>
 </ul>
 <p>A game draws a cell with probability weight ÷ Σ weight: it adds the weights up in order (a cumulative sum), takes one random number between 0 and the total, and picks the first cell whose running sum passes it. A cell missing from the feed means "no record", never "no animal".</p>
+{{diagram:c1-feed}}
 <p>The feed's <strong>JSON Schema</strong> (draft 2020-12), <a href="/learn/labs/c1-feed.schema.json">c1-feed.schema.json</a>, states those rules so a program can check them: every field required and no other allowed, <code>version</code> exactly 1, a license URL starting <code>https://</code>, a DOI or <code>null</code> for each credit, at least one cell, each with an integer id, a longitude and latitude in range, at least one record and a weight between 0 and 1. A game's build can validate a new feed against it before shipping it; critwire's end-to-end tests validate the worked feed against it.</p>
 
 <h2>Lab</h2>
