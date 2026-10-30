@@ -129,7 +129,7 @@ The review's numbering: SC = SHOULD-CHANGE.
 - [x] Fable review: `architecture-reviewer`
 - [x] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
 - [x] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
-- [ ] Steps: `planner` writes Steps and Verification
+- [x] Steps: `planner` writes Steps and Verification
 
 ## Baseline
 
@@ -500,7 +500,427 @@ One round, on `0428cfe`. Nothing rejected outright; one item taken in part (Astr
 
 ## Steps
 
+Every step:
+- `M` = `/srv/critter-ai/agent-state/missions/critwire-learn-l5-powerbi-capstone`. `B0` = `afed437` (Baseline). T<n>/F<n> = this plan's Architecture. Test ids (XS1, FD1, …) = Failure modes below.
+- **First** = the step's failure cases written and run red before its code (Log: `red n → green n`). No test after its code. E2E cases for a feature land in its step, before its code; red shown in the Log, or by a scratch mutation that is reverted.
+- **Checks**, one heavy job at a time (never two of build, test:db, learn:check, e2e; test:db and learn:check share the lab lock). No lint script: `pnpm typecheck` is the static check.
+  - `T` = `pnpm typecheck && pnpm test`.
+  - `B` = plain `pnpm build`. If it calls a lab stale, run `L`.
+  - `D` = `B`, then `pnpm test:db` (≈ 22 min). While iterating: `pnpm exec tsx --test --test-concurrency=1 <file>.dbtest.ts`.
+  - `L` = `pnpm build --draft && pnpm learn:check && pnpm build` (≈ 10 min). A whole run re-stamps `checked.json`; `git status --porcelain site/learn/labs/checked` shows `checked.json` only. Needed when a step touches learn:check's import closure or a block.
+  - `LU` = `pnpm build --draft && pnpm learn:check --update && pnpm build` (each block runs twice), then `P`: only the step's new or designed-changed results differ. Copy each into its 004 result fence; `P` again = 0. `git status --porcelain site/learn/labs/checked` lists only those results, `checked.json`, and (S9 on) `c1-feed.json` when the feed changed.
+  - `E` = `B`, then `rm -rf $M/e2e-s* e2e-artifacts && E2E_ARTIFACTS=$M/e2e-s<n> pnpm e2e`; `jq .stats $M/e2e-s<n>/results.json`: unexpected 0, skipped 0, flaky 0. Disk (8.7 GB free, ≈ 750 MB per run): one intermediate folder at a time. S2's `E` first copies `$M/baseline-e2e/results.json` to `$M/baseline-e2e-results.json`, then deletes `$M/baseline-e2e`.
+  - `P` = `pnpm learn:port --check all`: 0 differences.
+  - `Q` (leak query) = `psql -d critwire_dev -XAtc "select rolname from pg_roles where rolname like 'learn\_%' union all select nspname from pg_namespace where nspname like 'learn\_%' and nspname not in ('learn_spatial','learn_curriculum')"` prints nothing.
+  - `H` = `(cd dist && sha256sum -c $M/baseline-sha256-dist.txt 2>/dev/null | grep -v ': OK$' | grep -vE '^\./learn/((.+/)?index\.html|data/(star/)?manifest\.json|schema/star\.svg|labs/d6\.sql): FAILED$')` prints nothing. Every Baseline `dist/` file is byte-identical except Learn's pages, the two manifests, `star.svg` and `d6.sql` (all four from S2). That covers `/v1/**`, `/index.html`, `learn/assets/**`, the six Baseline star CSVs and every other `learn/data/**`, `learn/labs/**` and `learn/diagrams/**` file. Before S2, only pages may differ, and only in the versions line's date.
+  - `HN` = `comm -13 <(awk '{print $2}' $M/baseline-sha256-dist.txt | sort) <(cd dist && find . -type f | sort) | grep -vE '^\./learn/(data/star/(dim_habitat_class|fact_country_habitat)\.csv|(power-bi|capstone)/[a-z-]+/index\.html|labs/((p[2-4]|c1)\.sql|c1-feed(\.schema)?\.json)|diagrams/c1-(pipeline|feed)(-dark)?\.svg)$'` prints nothing: no new `dist/` file outside the Architecture's list. Power BI blocks have no download, so there is no `p1.sql`; c1 has no Python block, so there is no `c1.py`.
+  - `HR` (repo root) = `sha256sum -c $M/baseline-sha256-repo.txt 2>/dev/null | grep -v ': OK$' | grep -vE '^(AGENTS\.md|package\.json|pnpm-lock\.yaml|plans/(004-learn-curriculum|2026-10-30-critwire-learn-l5-powerbi-capstone)\.md|site/learn/(curriculum\.json|modules/(d5|d6|s5)\.html|pages/schema-star\.html|erd/star\.(mmd|svg)|sql/d6-star-fact-country-habitat\.sql|labs/checked/checked\.json)|e2e/(release/)?[a-z-]+(\.spec)?\.ts|scripts/.+\.ts|scripts/fixtures/(learn-port-004\.md|star-manifest\.json)): FAILED$'` prints nothing, and `git diff --quiet $B0 -- data contracts db docs .diagram-design e2e/__snapshots__ site/learn/duckdb-ext site/learn/labs/requirements.in site/learn/labs/requirements.txt site/learn/erd/v1.mmd site/learn/erd/schema.mmd site/learn/erd/schema.svg site/learn/erd/lab.mmd site/learn/erd/lab.svg` exits 0. Any other changed file needs a Decision.
+  - `A` = `git diff --quiet $B0 -- site/learn/src site/learn/sql/setup.sql scripts/build/learn/sql.ts scripts/learn/cell.ts scripts/build/licenses.ts` exits 0. These are the bundle's inputs, CSS included: T3 adds no CSS, and `H` then proves `learn/assets/**`.
+- **Draft builds:** every step ends on a passing plain `B`. Mid-step, a plain build refuses a stale lab, and from S9 a missing or unbound feed (T4); `--draft` warns instead. That is why the draft → check → plain loop of `L`/`LU` exists.
+- **Content:**
+  - 004 and the site change together: a block, result or schema edit lands in 004 and its file in one commit (`P`). 004's prose (§0, §3.5, §5.6, §5.7, §6.3, §7.x, §9, §A.3) changes with the code that makes it true.
+  - Ported 004 results hold. A difference is a bug (Failure modes): `p2-check` `022cceeadc7e`, `p4-check` `26cbac454e1c`, and `c1-feed` `0ed7d7c256c4` until S10. The designed changes are `p3-check` (S7, SC9 on L3's summaries) and `c1-feed`'s `bytes` (S10, attribution).
+  - **A new ran block** goes into 004 with a provisional result fence (`-- result: <id> · 0 rows · sha256 000000000000`), so `learn:port` accepts it. Iterate with `pnpm learn:check --module <page>`, which writes nothing and replays cross-page `-- after:` blocks. Then `LU` records it.
+  - A changed block's file: `learn:port` refuses a file that differs, so delete it and re-port, or edit both; `P` proves them equal.
+  - Copy: records, never range (every title, map, ratio and feed field); plain English for adults new to the topic, each term defined once; no Wikipedia prose; no mission names on public pages; link only built pages.
+- **Module step** (S5–S8; c1 across S9–S11):
+  - 004 §5.6/§5.7's outline becomes the full module in 004, in §5's form: Concept, Worked example, Lab, Result, Exercise `<id>-ex` with its answer, Check, and Dialects (how other tools say the same: Excel's Power Query, Tableau, pandas or SQL).
+  - Then `pnpm learn:port <id>`, `site/learn/modules/<id>.html` from it, and `curriculum.json` `<id>` set `built` with T6's tools, all in one commit. Planner's call (Decision at S1): a built page's badges must be true, so the tools change with the page, and S13 verifies them.
+  - Power BI blocks keep `untested: Power BI is Windows-only` and their `// input:` lines. Each DAX block names a ran PostGIS twin on its page (`// twin:`). A DAX exercise `<id>-ex` gets its own twin `<id>-ex-check`, both in exercise slots.
+  - Pages that call the module "in preparation" link it instead.
+- **AGENTS.md:** a step that changes a command, a file rule or the build list updates that line in the same commit. S15 does the final pass (T9).
+- **Commit** `S<n>: …` (code + plan), then push. A step that finishes a review item or makes a deviation from 004 adds it under Decisions; S15 adds the shas.
+- **Deviations from the Architecture's planner order** (recorded under Decisions at the Steps stage):
+  1. `feedAttributionErrors` and `CreditDataset.doi` land in S10 with the attribution fields (planner order 5b), not with T4's other code in S4. S9's plain build binds the feed without attribution checks.
+  2. The build's feed check and `writeFeed` apply only when the course has `FEED.block`. A feed file without that block is refused. This keeps S4–S8 plain-green before c1 exists.
+  3. `FEED` (the constant only) is created in S3, since T3's input rule names `FEED.input`.
+  4. S16 runs the full Verification once before the code review. Rule 7 runs it again on the final commit.
+- **Estimate:** 16 steps. With 6 sessions through Steps, plus code review 1, ≈ 2 fix steps, final Verification 1 and Release 1: ≈ 27 of the 48 cap. Count at each session start with `grep -c '^=== .* session ' /srv/critter-ai/agent-state/missions/critwire-learn-l5-powerbi-capstone.log`. Past 48, the brief's rule applies: no more review steps; finish Verification and Release; each unfinished assigned item becomes a handoff item.
+
+- [ ] S1. Cross-page `-- after:` (T1; F1)
+  - First [T]: XS1–XS5 (`scripts/learn/course.test.ts`), XA1–XA3 (`blocks.test.ts`), AS18–AS20 (`assemble.test.ts`), FR13–FR14 (`freshness.test.ts`), PT14 (`port.test.ts`), BF2 (`check.test.ts`). First [D]: XR1 (`runner.dbtest.ts`).
+  - Code:
+    - `course.ts`: `afterScope`, `courseBlocks`, and `assembleCourse(curriculum, pages, blocks, diagrams)` in two passes. Update its callers (`course-files.ts`, …).
+    - `blocks.ts` `lintPage`: the chain is `first.get(a) ?? helpers.get(a)`; the message becomes "(not on this page or a prerequisite's)"; the privilege chain includes the helpers.
+    - `assemble.ts`: `sqlDownload`, `blockPart` and boot `used` resolve through `courseBlocks`.
+    - `freshness.ts`: `afterChain` over `courseBlocks`; its own `all` map goes.
+    - `runner.ts` `blockRuns`/`runBlock` take `courseBlocks` from `check.ts`.
+    - `port.ts` `helpers()`: the `afterScope` pages' blocks, from 004.
+  - 004 §0 gets the scope rule: scope is transitive, execution runs only the listed blocks, in order; DuckDB stays page-only; Python takes its page or `py-connect`. 004 §7.6: `--module` replays cross-page `-- after:` blocks. AGENTS.md: the scope rule and the `--module` slowness note (T9).
+  - Byte-neutral: no block names another page's block yet.
+  - Check: `T`, `D`, `L` (every key moves with the checker's closure; `checked/*.txt` unchanged), `P`, `H` and `HN` print nothing, `A`.
+- [ ] S2. The habitat fact in the star (T2; F2, F3; SC9 c)
+  - First [T]: SB1 and SB4 rewritten for eight files, SB8–SB9 (`scripts/build/learn/star.test.ts`), ST6 (`credits.test.ts`). First [E]: `e2e/schema.spec.ts`: the star page has no planned list or badge and links all eight files (red: the Planned section exists).
+  - Files:
+    - `site/learn/sql/d6-star-fact-country-habitat.sql` and 004 d6, in one commit: `CHECK (est_area_km2 >= 0 AND est_area_km2 <= 9999999999.99)`.
+    - `scripts/build/learn/star.ts` `STAR_BLOCKS` += `d6-star-dim-habitat-class`, `d6-star-fact-country-habitat`; `credits.ts` `LAB_FILES` += the two CSVs (T2).
+    - `site/learn/erd/star.mmd`: drop `%% planned:` and its comment; rewrite the accDescr. Then `pnpm erd` re-renders `star.svg`.
+    - `site/learn/pages/schema-star.html`: drop the Planned section and `{{planned}}`; keep one sentence saying the habitat areas are map estimates.
+    - `site/learn/modules/d6.html:34` says "published". 004: d6 ("later (L5)" goes), §6.3 (the planned paragraph goes). Update `scripts/fixtures/star-manifest.json` only if a test needs it.
+    - AGENTS.md: the build list's star has 8 files.
+  - Decisions: the CHECK's reason (F2) and that sha `80b11c41e5b3` holds; SC9 c (habitat fact `>= 0`, NOT NULL FKs, unknown members kept): done (S2).
+  - Log: the two files' rows (75, 5,578) and bytes; `dist/learn/data/` bytes against Baseline.
+  - Check: `T`; `L` (`d6-star-fact-country-habitat` and `d6-drill-across` re-run, results unchanged); `P`; `E` (learn-data's star test now covers 8 files: no NULL FK, `ZZ`/`-1`, `NA` as text); `H`; `HN`; `HR`; `A`.
+- [ ] S3. The Power BI block model (T3; F5; review item 2 on pages)
+  - First [T]: PW1–PW2 (`blocks.test.ts`), SB10 (`star.test.ts`), MH15–MH17 (`module-html.test.ts`).
+  - First [E]:
+    - `e2e/learn-labs.spec.ts`: the Power BI test is generalized to inputs by kind. A star input is checked against the manifest and `checkInput`; the feed input by rows = `cells.length` and the served file's sha256. For DAX twins: `#q-<twin>` exists with its recorded result, and the twin sentence is shown. It iterates over no DAX block until S6.
+    - `e2e/learn-data.spec.ts`: its Power BI inputs loop takes `star/` inputs only.
+  - Code:
+    - `scripts/learn/feed.ts` (new; the `FEED` constant only).
+    - `blocks.ts`: `PBI_HEADERS` += `twin`; `INPUT`; the twin lint through the shared named-block predicate, on the page map `first`, with no helpers.
+    - `star.ts`: `starInputErrors` → `inputErrors`.
+    - `module-html.ts`: `PageContext.inputs`; `powerBiHtml`'s `<p class="twin">` with T3's exact text; Power BI exercises.
+    - `site.ts`/`pages.ts` build `inputs` from the star manifest; S4 adds the feed's entry.
+    - No CSS (`A`).
+  - 004: §0 and §7.5 (`// twin:`, the inputs); §3.5 and §5.6's intro (the twins check arithmetic only, not M parsing, relationship direction, filter context or DAX execution). AGENTS.md Learn files: `// twin:`, and inputs including `labs/c1-feed.json`.
+  - Check: `T`, `L`, `P`, `E`, `H`, `HN`, `A`.
+- [ ] S4. The feed's machinery before c1 (T4 except attribution; F4)
+  - First [T]: FD1–FD2 (`scripts/learn/feed.test.ts`, new), WF1–WF3 (`check.test.ts`), PT15–PT16 (`port.test.ts`). First [D]: OR1 (`runner.dbtest.ts`).
+  - Code:
+    - `feed.ts`: `feedStaleness`, plus the build's feed errors, gated on `FEED.block` (deviation 2).
+    - `record.ts` `Outcome.result`, set by `runner.ts` `runBlock`.
+    - `check.ts` `writeFeed(runs)`, after `settleResults`, in whole `--update` runs only.
+    - `site.ts`:
+      - `assertLabsFresh` adds the feed errors: plain refuses, `--draft` warns.
+      - `writeLearn` copies `FEED.file` → `dist/learn/labs/c1-feed.json` and `FEED.schema` → `c1-feed.schema.json`.
+      - `inputs` gets the feed's entry once the feed is published.
+    - `port.ts`: the `json` fence `$id` rule.
+  - Validator:
+    - `pnpm add -D -E ajv@<current 8.x>` (exact pin; Log the version).
+    - `e2e/helpers.ts` `feedSchemaErrors(feed, schema)`: `import { Ajv2020 } from "ajv/dist/2020.js"`, `strict: true, allErrors: true`.
+    - Runtime probe, in the Log: `pnpm exec tsx -e` calls it on 004's schema text with `{}`, and errors are listed. A schema with an unknown keyword throws (strict).
+  - 004 §7.3 (`learn:check --update` writes the feed from `c1-feed-file`), §7.5 (the refusals), §7.6. AGENTS.md:
+    - Stack: ajv for e2e, exact pin.
+    - Commands: `learn:check --update` writes the feed; the build list gets `learn/labs/c1-feed{,.schema}.json`; the feed refusals.
+  - No feed exists yet, so `dist/` is unchanged.
+  - Check: `T`, `D`, `L`, `P`, `H`, `HN`, `HR`, `A`.
+- [ ] S5. p1 · power-query (T5 p1)
+  - Module step: `p1-load` (`LoadStar`, eight inputs), `p1-fact-records`, `p1-ex` (M, untested).
+  - Expected values are re-measured from `dist/learn/data/star/manifest.json` (75; 5,578). The stand-in note goes. 004 §A.3's two habitat rows and bytes come from the manifest.
+  - `d5.html:24` and `d6.html:16` link p1.
+  - No PostGIS block, so no download and no learn:check run.
+  - Check: `T`, `P`, `B`, `E`, `H`, `HN`, `HR`, `A`.
+- [ ] S6. p2 · model (T5 p2)
+  - Module step: `p2-measures` (`// twin: p2-check`); `p2-check` (its first repo run must give `022cceeadc7e`); `p2-ex` (DAX) with `p2-ex-check` (PostGIS, ran, new). `d6.html:40` links p2. Tools `[PBI, PG]`.
+  - learn-labs' twin test is now real: add `expect(dax.length).toBeGreaterThan(0)` and Log the count.
+  - Check: `T`, `P`, `LU`, `E`, `H`, `HN`, `HR`, `A`.
+- [ ] S7. p3 · dax, with SC9 (T5 p3; SC9 a, b)
+  - One commit holds:
+    - 004 p3.
+    - `p3-check`: `round(1000 * coalesce(r.records, 0) / NULLIF(h.forest_km2, 0), 3)`, column `sample_records_per_1000_km2_forest`.
+    - `p3-measures`: `// twin: p3-check`; the measure becomes "Sample records per 1,000 km2 of forest".
+    - Prose: "sample records divided by forest area", and why it isn't sampling effort (the numerator counts records outside forest and is capped per species).
+    - The re-recorded result (215 rows, from 2), Expected rewritten from it, and the stand-in note removed.
+    - p3's question in `curriculum.json` and in 004 §2's row says "sample records". Tools `[PBI, PG]`.
+    - `p3-ex` (DAX) with `p3-ex-check`.
+  - TT before: 0.698, on the stand-ins. TT after: `p3-check`'s SQL filtered to `TT`, run once by hand (psql as `critwire_lab` after d6's star blocks in one transaction, rolled back; or DuckDB on `dist/learn/data/star/`). Log the command; both values go under Decisions.
+  - Decisions: SC9 a (`NULLIF`) and SC9 b (wording): done (S7). Deviation: `p3-check`'s result and column name.
+  - Check: `T`, `P`, `LU` (`p3-check` is a designed change, so 004 takes its new result), `E`, `H`, `HN`, `HR`, `A`.
+- [ ] S8. p4 · maps-report (T5 p4)
+  - Module step: `p4-labels` (`// twin: p4-check`); `p4-check` (must give `26cbac454e1c`); `p4-ex` (with `p4-ex-check` if it's DAX). The prose covers Azure Maps, titles from a measure that say records and never range, credits from `dim_dataset`, and publishing with anonymous scheduled refresh. Tools `[PBI, PG]`.
+  - Check: `T`, `P`, `LU`, `E`, `H`, `HN`, `HR`, `A`.
+- [ ] S9. c1 (1/3) · the feed through a view (T4 restructure; T5 c1)
+  - First [E] `learn-labs.spec.ts` (red: 404):
+    - The served `c1-feed.json` equals `checked/c1-feed.json`, and the served schema equals `site/learn/labs/c1-feed.schema.json`.
+    - `feedSchemaErrors` returns none, and `meaning` contains "not its range".
+    - Against `checked/c1-feed.txt`'s row: cells, records, hot spots and datasets_to_credit are equal; `Buffer.byteLength` = `bytes`; Σ `round(weight × 10⁶)` = `weight_sum × 10⁶` (integers).
+    - The s4-cells boot list gains `c1.sql`.
+  - 004 c1:
+    - `c1-feed` becomes `CREATE OR REPLACE TEMP VIEW c1_feed AS …` (004's doc verbatim), then the summary `FROM c1_feed`.
+    - New `c1-feed-file` (after `s5-gistar, c1-feed`), with a provisional fence.
+    - The schema fence is unchanged.
+  - `pnpm learn:port c1` writes `c1-feed.sql`, `c1-feed-file.sql` and `site/learn/labs/c1-feed.schema.json`.
+  - `site/learn/modules/c1.html`: Concept, a worked example with both blocks, the feed's fields and schema, and links to `/learn/labs/c1-feed.json` and its schema. Curriculum c1 `built`, tools `[PG, Py, PBI]`.
+  - `LU`:
+    - `c1-feed` must hold `0ed7d7c256c4`, which proves the view faithful.
+    - `c1-feed-file`'s result goes into 004.
+    - `checked/c1-feed.json` is written (Log: 34,848 B), and plain `B` binds it.
+  - Decisions: deviation, 004 §5.7/§7.3: a view plus `c1-feed-file`; `learn:check --update` writes the feed.
+  - Check: `T`, `P`, `LU`, `E`, `H`, `HN`, `HR`, `A`.
+- [ ] S10. c1 (2/3) · the feed's license and attribution (T4; F9; Astra MUST-FIX 1)
+  - First [T]: FD3–FD6 (`feed.test.ts`), ST7 (`credits.test.ts`). First [E] `learn-labs.spec.ts`: `feedAttributionErrors` on the served feed, against the served `/learn/data/manifest.json` credits and `datasets.csv` (title, publisher, doi), returns none (red: no `license`).
+  - Code:
+    - `feed.ts` `feedAttributionErrors`.
+    - `credits.ts` `CreditDataset.doi`.
+    - `site.ts`: `assertLabsFresh` takes `labCredits` and adds the attribution errors after the binding (plain refuses, `--draft` warns).
+  - 004 c1:
+    - The doc gains `license` `'CC BY 4.0'`, `license_url` (the deed) and `attribution` (`CRITWIRE_CREDIT`'s text).
+    - Each credit gains `doi`; credits are ordered by title, publisher, doi.
+    - Schema: `required` += the three fields; credit items `required` += `doi` (`["string","null"]`); `license_url` gets `"pattern": "^https://"`.
+    - Expected: the new bytes.
+    - `c1-feed.sql` and the schema file change with it.
+  - `LU`: against 004's row, only `bytes` moves (cells 307, records 1,972, weight_sum 0.999954, hot spots 37, credits 7, `fullest` all equal). `c1-feed-file` gets a new sha, and the feed is rewritten. 004 takes both results.
+  - Decisions: deviation, the feed's license and attribution with its new bytes and sha. No new licensing decision: it applies DATA-LICENSE.md's CC BY 4.0.
+  - Check: `T`, `P`, `LU`, `E`, `H`, `HN`, `HR`, `A`.
+- [ ] S11. c1 (3/3) · the report, the exercise, the whole page (T4 report; T5 c1)
+  - 004 c1 and `c1.html`:
+    - `c1-report` (M, `// input: labs/c1-feed.json`, p1's `Web.Contents` pattern, cells to a typed table; untested).
+    - `c1-ex` (PostGIS, ran, new; for example, look before counting on the fullest cell).
+    - Prose: each pipeline stage with its honesty rule; records, never range, in every title and the report; what a game's credits screen shows (`attribution`, `source`, each `credit` with its DOI); a learner's own feed names its maker in `attribution`; the Python part (run e1–e4's downloads for your own species, linked); Dialects.
+  - Decision: deviation, the report reads the feed instead of 004 §5.7's cell CSV.
+  - `s5.html:17` links c1. learn-labs' Power BI input test now covers the feed input.
+  - Check: `T`, `P`, `LU`, `E`, `H`, `HN`, `HR`, `A`.
+- [ ] S12. Diagrams `c1-pipeline` and `c1-feed` (T7; review item 3)
+  - First [E]: `schema.spec.ts` `DIAGRAMS` += both (red: no SVG).
+  - Files: `site/learn/diagrams/c1-{pipeline,feed}{,-dark}.{html,svg}`, content per T7.
+    - Profile `critwire` (`.diagram-design` exists). If the plugin asks its first-run question anyway, answer per the brief's addendum: default tokens, `Font source: system`, profile `critwire`.
+    - System fonts; SVG only.
+    - Export with `python3 $DD/export_svg.py --system-fonts`; check with `python3 $DD/self_check.py --offline` (`DD=~/.claude/plugins/cache/diagram-design/diagram-design/2.6.136/skills/diagram-design/scripts`).
+  - The `<title>` and `alt` state each diagram's point. `{{diagram:c1-pipeline}}` and `{{diagram:c1-feed}}` go in `c1.html`; 004 c1 names them.
+  - Decisions: review item 3: done (S12).
+  - Check: `T`, `B`, `E`, `H`, `HN`, `A`.
+- [ ] S13. Curriculum pass (T6; Goal 4)
+  - `curriculum.json`: all 33 `built`; tools per T6; hours (p 7.0, c 8.0, total 68.0) and prerequisites unchanged; p3's question (S7) checked.
+  - 004:
+    - §2: the Tool column (p1 `PBI`, p2–p4 `PBI + PG`, c1 `PG + Py + PBI`), Depth `full`, the Depth paragraph, totals "33 full".
+    - §3's tool table (PG gains p2–p4).
+    - §5.6 and §5.7 intros (no longer outlines).
+    - §6.3 and §7.1 as built; §7.7 with L5's e2e items; §9's L5 row as built.
+  - First [E] `learn-map.spec.ts`:
+    - `BUILT_TRACKS` becomes "all 33 modules built, each linked from the map and its track page, returning 200".
+    - No `/learn/` page contains "in preparation".
+    - Red proof: a scratch "in preparation" in a page makes it fail; revert.
+  - Verification 8's §2 script prints `bad 0`.
+  - Check: `T`, `P`, `B`, `E`, `H`, `HN`, `HR`, `A`.
+- [ ] S14. E2E completion and the release smoke (T8)
+  - `learn-screens.spec.ts` `PAGES` += `p3`, `c1`, giving `{p3,c1}-{1280,375}-{light,dark}.png`.
+  - `learn-labs`: one test names p1–p4 and c1. Each is built, each Power BI block is untested with its inputs, and each DAX block has its twin.
+  - `e2e/release/live.spec.ts` += T8's three tests:
+    - each `/learn/data/star/*` sha256 equals the served star manifest's;
+    - the served feed is valid against the served schema (`feedSchemaErrors`);
+    - `feedAttributionErrors` returns none against the served manifest and `datasets.csv`.
+  - Release dry run, as L4 S26: a local Caddy on `e2e/Caddyfile`, then `RELEASE_ORIGIN=http://127.0.0.1:3100 E2E_ARTIFACTS=$M/release-dry pnpm exec playwright test -c playwright.release.config.ts`. Every test passes. Red proof: a scratch edit of one star CSV in `dist/` fails the star test; rebuild.
+  - Audit: map each Definition of done E2E item to its test name, in the Log. A gap gets its test here.
+  - Check: `T`, `E`, the dry run, `H`, `HN`, `A`.
+- [ ] S15. AGENTS.md, 004 final pass, review-item audit, handoff H6 (T9, T10)
+  - AGENTS.md final pass (T9): State (all 33 built), Stack (ajv), Learn files (`labs/c1-feed.schema.json`, `checked/c1-feed.json`, `// twin:`, inputs), the scope rule, the build list (8 star files, the feed and schema, the feed refusals), `learn:check --update` writes the feed, the `--module` note.
+  - 004: §0, §3.5, §5.6, §5.7, §6.3, §7.1, §7.3, §7.5, §7.6, §7.7, §9 and §A.3 agree with the code.
+  - `docs/recovery.md`: L5 adds no state outside Git (the feed is committed; ajv is in the lockfile). If a step added state, document it and add a Decision (`HR`).
+  - Audit, under Decisions:
+    - Each item is `done (S<n>, <sha>)`, or `rejected` with evidence: SC9 a–d; twins wording (pages S3, handoff here); diagrams (S12).
+    - Every deviation from 004 is recorded: cross-page `-- after:` (S1), the CHECK (S2), `// twin:` (S3), the feed's writer (S4, S9), attribution (S10), the report reading the feed (S11), p3 (S7), §2's c1 tools (S13), and the 120 MB cap (H5) instead of the brief's 50 MB.
+  - H6 in `/srv/critter-ai/handoff/critwire.md`:
+    - The number is the next free one (H6 expected); use `~/AGENTS.md`'s exact item format. Title "Power BI Desktop check against the live star", with no values. `From: critwire-learn-l5-powerbi-capstone · <date>`, `Blocks: nothing`.
+    - **Why:** run it against https://critwire.com once the mission's PR is merged and deployed.
+    - **Steps** per T10:
+      - p1: `LoadStar` and the eight queries; row counts equal each page's input table.
+      - Empty `month` and `coordinate_uncertainty_m` cells become null, not errors.
+      - `NA` is Namibia, never null or blank. `ZZ` and `-1` are present and filterable.
+      - p2's relationships are many-to-one, single direction.
+      - `p2-measures`, `p3-measures` and `p4-labels` in DAX query view, each against its twin. The devil's species-filtered credits are 7.
+      - `c1-report` has 307 rows. The feed's license, attribution, source and 7 credits are readable.
+    - The sentence: the twins verify arithmetic only, not M parsing, relationship direction, filter context or DAX execution; this check covers those.
+    - **Your reply:** per query, "matches" or what differs.
+  - Decisions: SC9 d and item 2 (handoff part): done.
+  - Check: `T`, `P`, `B`, `H`, `HN`, `HR`, `A`. Add `E` if a gap fix changed behaviour.
+- [ ] S16. Verification: run the full Verification below
+  - Every item, in order, on this commit; Log each.
+  - A failure becomes a new fix step before this one, and this step re-runs.
+  - This is the run before the code review. Rule 7 repeats it on the final commit.
+
 ## Verification
+
+Run on the final commit, after the code review's fixes, on a clean tree, in this order. S16 runs the same once before the code review. `M`, `B0`, `P`, `Q`, `H`, `HN`, `HR` and `A` are as in Steps. Log each result; the numbers go to the Summary.
+
+1. **Install:**
+   - `pnpm install --frozen-lockfile` changes nothing.
+   - `jq -r .devDependencies.ajv package.json` is an exact version (no `^`/`~`), and `pnpm ls ajv` shows it.
+   - `pnpm learn:venv`, then `uv pip check --python .venv-learn`: clean.
+2. **Static and isolated tests:**
+   - `pnpm typecheck` passes (both tsconfigs).
+   - `pnpm test` passes in full, including XS1–XS5, XA1–XA3, AS18–AS20, FR13–FR14, PT14–PT16, BF2, WF1–WF3, SB1–SB10, ST6–ST7, PW1–PW2, MH15–MH17 and FD1–FD6. Each step's Log shows `red n → green n`.
+3. **Build and cap:**
+   - Plain `pnpm build` passes: labs fresh, the feed bound to `c1-feed-file` and attributed, DOIs current, habitat fresh, `/v1` contract, ERDs and diagrams current.
+   - `ls dist/learn/data/star` shows 8 CSVs + `manifest.json`, and `jq '.files|keys' dist/learn/data/star/manifest.json` lists the 8 CSVs.
+   - `find dist/learn/data -type f -printf '%s\n' | awk '{s+=$1} END{print s}'` ≤ `jq .cap dist/learn/data/manifest.json` = 120,000,000. Expected ≈ 96.0 MB: Baseline 95,936,992 plus the two CSVs and the manifest growth; Log the exact number.
+     - The brief's "50 MB cap" predates the owner's H5 raise to 120,000,000 (AGENTS.md). The build's cap is the one that holds (Decision in S15).
+     - The committed lab data, the same sum over `data/raw/gbif-sample data/learn data/gbif-learn-sample`, = 18,822,906 (unchanged).
+4. **E2E (primary):** `rm -rf $M/e2e-s* $M/e2e && pnpm build && E2E_ARTIFACTS=$M/e2e pnpm e2e`.
+   - Specs: `attribution`, `countries`, `docs`, `duckdb`, `files`, `learn-data`, `serving`, `learn-map`, `learn-browser`, `learn-labs`, `learn-screens`, `learn-timing`, `schema`.
+   - `jq .stats $M/e2e/results.json`: unexpected 0, skipped 0, flaky 0.
+   - Among the passes:
+     - learn-map: all 33 modules built, and no "in preparation".
+     - learn-labs: the p/c pages test; Power BI inputs (star and feed) and DAX twins; the feed (served = committed, schema served = committed, Ajv-valid, counts, bytes, weight sum, attribution); the s4-cells boot list with `c1.sql`.
+     - learn-data: the star (8 files, no NULL FK, `ZZ` and `-1`, `NA` as text).
+     - schema: the star page has no planned list; `c1-pipeline` and `c1-feed` light and dark, each with `<title>` = `alt`.
+   - Artifact `$M/e2e/`:
+     - `playwright-report/index.html`;
+     - one `trace.zip` per test: `find $M/e2e/test-results -name trace.zip | wc -l` = `.stats.expected`;
+     - `results.json`, `setup-timing.json`, `caddy-access.log`;
+     - `{map,p3,c1}-{1280,375}-{light,dark}.png` (12), plus the earlier missions' screenshots.
+   - Reproduce: `pnpm build && E2E_ARTIFACTS=<dir> pnpm e2e`.
+5. **test:db:** `pnpm test:db` passes in full (XR1 and OR1 included), then `Q` prints nothing.
+6. **learn:check:**
+   - `psql -d critwire_dev -XAtf db/learn/canary.sql > $M/canary-before.txt`.
+   - `pnpm learn:check` twice, each exiting 0, as `critwire_lab`. Each run covers:
+     - the loader stage;
+     - every ran PostGIS and Python block of every built page against its recorded result, including p2–p4's twins and exercise twins, `c1-feed`, `c1-feed-file` and `c1-ex`;
+     - the gates;
+     - every download on a fresh load, `p2.sql`, `p3.sql`, `p4.sql` and `c1.sql` included.
+   - After both:
+     - `git status --porcelain` is empty (`checked.json`, `checked/*.txt` and `checked/c1-feed.json` unchanged);
+     - `diff $M/canary-before.txt <(psql -d critwire_dev -XAtf db/learn/canary.sql)` is empty;
+     - `Q` prints nothing.
+   - `pnpm learn:check --module p3` and `pnpm learn:check --module c1` pass (cross-page `-- after:`, F1).
+   - Log the wall times.
+7. **Results vs 004:**
+   - `P`: 0 differences, covering blocks, results and `c1-feed.schema.json`.
+   - `git diff $B0 -- plans/004-learn-curriculum.md | grep -E '^-.*-- result: '` lists only `p3-check` (SC9) and `c1-feed` (bytes), plus any change a Decision proves.
+     - `p2-check` `022cceeadc7e`, `p4-check` `26cbac454e1c` and every Baseline result are unchanged, including d6's `80b11c41e5b3` and `37ad5647623e`.
+   - `c1-feed`'s recorded row differs from Baseline 004's only in `bytes`.
+     - `wc -c < site/learn/labs/checked/c1-feed.json` = that `bytes`.
+     - `cmp dist/learn/labs/c1-feed.json site/learn/labs/checked/c1-feed.json` and `cmp dist/learn/labs/c1-feed.schema.json site/learn/labs/c1-feed.schema.json` print nothing.
+   - Power BI blocks:
+     - `grep -L '^// status: untested: Power BI is Windows-only' site/learn/sql/*.{m,dax}` prints nothing;
+     - `grep -L '^// twin: ' site/learn/sql/*.dax` prints nothing.
+   - Block counts (Summary): `grep -hE '^(--|#|//) status: ' site/learn/sql/* | grep -oE 'status: (ran|untested)' | sort | uniq -c`.
+8. **Curriculum:**
+   - `jq '([.modules[]|select(.state=="built")]|length), ([.modules[].hours]|add)' site/learn/curriculum.json` prints 33 and 68.
+   - `grep -rl 'in preparation' site/learn/modules site/learn/pages` prints nothing.
+   - The §2 script prints `bad 0`:
+     ```
+     python3 -I - <<'EOF'
+     import json, re
+     doc = open('plans/004-learn-curriculum.md').read()
+     sec = doc.split('\n## 2. The curriculum map', 1)[1].split('\n## 3.', 1)[0]
+     rows = [r for r in sec.splitlines() if re.match(r'^\| [a-z]\d \|', r)]
+     c = json.load(open('site/learn/curriculum.json')); title = {t['id']: t['title'] for t in c['tracks']}
+     bad = int(len(rows) != len(c['modules']))
+     for r, m in zip(rows, c['modules']):
+         i, tr, slug, skill, q, tool, h, pre, depth = [x.strip() for x in r.strip('|').split('|')]
+         tools = {'B' if t == 'DuckDB' else t for t in re.findall(r'\b(B|PG|Py|PBI|DuckDB)\b', tool)}
+         got = (i, tr, slug, skill, q, tools, float(h), [] if pre == '—' else [p.strip() for p in pre.split(',')], depth, m['state'])
+         want = (m['id'], title[m['track']], m['slug'], m['skill'], ' '.join(m['questions']), set(m['tools']), m['hours'], m['prereqs'], 'full', 'built')
+         if got != want: bad += 1; print(i, [(g, w) for g, w in zip(got, want) if g != w])
+     print('bad', bad)
+     EOF
+     ```
+9. **ERDs and diagrams:**
+   - `pnpm erd` writes nothing (`git status --porcelain site/learn/erd` is empty).
+   - `grep -c '%% planned' site/learn/erd/star.mmd` prints 0.
+   - `self_check.py --offline` passes on `c1-pipeline` and `c1-feed`, light and dark.
+10. **Existing files unchanged:**
+    - `H`, `HN` and `HR` print nothing, and `A` exits 0. Their exceptions are exactly the Architecture's expected changes: the star (+2 CSVs, its manifest), the data manifest and index, pages, `schema/star.svg`, `labs/d6.sql`, the new `labs/p2–p4.sql` and `c1.sql`, `c1-feed.json`, `c1-feed.schema.json`, and the four diagrams.
+    - `/v1` is byte-identical: `(cd dist && grep -E '  \./v1/' $M/baseline-sha256-dist.txt | sha256sum -c --quiet)` exits 0, and `find dist/v1 -type f | wc -l` = 159 (Baseline's count).
+11. **Determinism:**
+    - `(cd dist && find . -type f -print0 | sort -z | xargs -0 sha256sum) > $M/dist-1.sha256`;
+    - plain `pnpm build`;
+    - the same into `$M/dist-2.sha256`;
+    - `diff` is empty.
+12. **Handoff:** `/srv/critter-ai/handoff/critwire.md` holds S15's item with `Status: waiting on you` and `Blocks: nothing`. It lists empty numerics, `NA`, `ZZ`/`-1` and the species-filtered credits, and it has the twins-verify-arithmetic sentence.
+
+**Definition of done → proof:**
+
+| DoD item | Proved by |
+|---|---|
+| typecheck, test, plain build | 2, 3 |
+| `pnpm e2e` in full, nothing skipped; learn-map 33 built; learn-labs p/c pages, feed vs schema, every Power BI input; learn-data 8 star files' key coverage (`ZZ`, `-1`) | 4 |
+| Results: p/c shas as 004, except `p3-check`/`p3-measures`/`p1-load` inputs (re-run on L3) and `c1-feed` bytes (S10 Decision); learn:check twice; leak query; canary | 6, 7 |
+| Cap with the full star (120,000,000 per H5; brief's 50 MB superseded) | 3 |
+| Existing files unchanged except star, manifests, pages (and the Architecture's listed additions) | 10 |
+| Artifacts and reproduction | 4 |
+| Goal: habitat fact, p1–p4, c1 + feed + schema, curriculum pass, H6 | 3, 4, 7, 8, 9, 12 |
+| Review items (SC9 a–d, twins wording, capstone diagrams) | 4, 7, 9, 12; Decisions with shas (S15) |
+| Release smoke | below |
+| Summary: what shipped, the course in numbers (33 modules, blocks ran/untested from 7, 68.0 h), deviations from 004, release record, H6 | written after 1–12 |
+
+**Release smoke**, in the Release unit after `gh pr merge` and `deploy critwire`. `O=https://critwire.com`; `dist/` = plain `pnpm build` of the merge commit.
+- `RELEASE_ORIGIN=$O E2E_ARTIFACTS=$M/release-smoke pnpm exec playwright test -c playwright.release.config.ts`: every test passes.
+  - Every `dist/` file is served with dist's bytes. That covers every `/learn/` page (200, the p and c pages included), `c1-feed.json`, `c1-feed.schema.json`, `p2–p4.sql`, `c1.sql` and the star.
+  - The `.wasm` types; f3's block; the `s4.py` run.
+  - Each `/learn/data/star/*` sha256 matches the served star manifest.
+  - The served feed is valid against the served schema, and `feedAttributionErrors` returns none against the served manifest and `datasets.csv`.
+- Independent curl checks:
+  - Pages: `(cd dist && find learn -name index.html | sed 's#index\.html$##') | while read p; do printf '%s /%s\n' "$(curl -s -o /dev/null -w '%{http_code}' "$O/$p")" "$p"; done | grep -v '^200 '` prints nothing.
+  - Star: in a new empty temp dir, `curl -fsS $O/learn/data/star/manifest.json | jq -r '.files|to_entries[]|"\(.value.sha256)  \(.key)"' > star.sha`, then fetch each listed file from `$O/learn/data/star/`. `sha256sum -c star.sha` shows 8 OK.
+  - Feed: `curl -fsS $O/learn/labs/c1-feed.json | cmp - site/learn/labs/checked/c1-feed.json` and `curl -fsS $O/learn/labs/c1-feed.schema.json | cmp - site/learn/labs/c1-feed.schema.json` print nothing.
+- `## Release` records the merge commit, `deploy`'s last line, these results and `$M/release-smoke/`. The release unit appends the merge commit to H6 (T10).
+
+## Failure modes
+
+These are the isolated tests, each written red before its code (owner's rule), listed per part. The ids go in the test names.
+
+**Cross-page `-- after:` (S1)**
+- XS1 `afterScope`: `p3` → its prerequisites, transitively (p2, p1, d6, d2, d4, d3, d1, f3, f2, f1 on the real curriculum). `setup` → ∅, and so does a module without prerequisites.
+- XS2 `afterScope` throws, naming the page, for an unknown page, a module naming itself, or a prerequisite cycle (the cycle named). The curricula are built by hand, past `parseCurriculum`.
+- XS3 `courseBlocks` returns every page's blocks by id, equal to the union of `assembleCourse`'s pages.
+- XS4 `assembleCourse` in two passes: a page listed before its prerequisite's page may name that page's ran PostGIS block. The result doesn't depend on page order.
+- XS5 Naming a block on a page outside the scope (unrelated, or a dependent page) fails "unknown block "<id>" (not on this page or a prerequisite's)".
+- XA1 A cross-page helper that is untested, `-- boot`, expects an error, owns its transaction or runs in sessions is refused with today's message for that case.
+- XA2 A DuckDB or Python block naming a cross-page PostGIS block fails the engine check. Python still takes `py-connect`.
+- XA3 The privilege chain (`blockRuleErrors(b, chain)`) includes a cross-page helper's statements, as it does an on-page helper's.
+- AS18 A page's `.sql` runs a cross-page `-- after:` block's own statements before the block, in the listed order, inside its `BEGIN; … ROLLBACK;`. It never brings that helper's own `-- after:` blocks.
+- AS19 Boot detection sees a cross-page helper's code: a helper naming `s4_cells` puts `s4-cells` after `pg-session` in the dependent page's `.sql`.
+- AS20 The existing fixture downloads are byte-identical.
+- FR13 A block's key moves when a cross-page `-- after:` block changes, and when that block's own `-- after:` block changes (a transitive superset).
+- FR14 The key doesn't move for a non-boot block on another page that the block doesn't name.
+- PT14 `learn:port` ports a page whose block names a prerequisite page's ran PostGIS block. Naming a non-prerequisite page's block is an error naming 004's line.
+- BF2 `--module <page>`: a block naming a prerequisite page's block resolves through `courseBlocks`. The run list is still boot blocks, then the page's blocks; a whole run's list is unchanged.
+- XR1 [db] `runBlock` with a cross-page `-- after:` runs exactly the listed blocks, in order, inside the block's transaction.
+  - A fixture relying on a helper's own `-- after:` fails, naming the missing relation.
+  - The result equals the same block's result with the helper on its own page.
+
+**The habitat fact (S2)**
+- SB1, SB4 Eight blocks and eight CSVs, in `STAR_BLOCKS` order with `-- after:` respected. Each CSV passes the input check.
+- SB8 The habitat fact's DDL in DuckDB: the committed rows insert. `est_area_km2` of −1 and of 10,000,000,000 are refused.
+- SB9 A NULL `country_code` or `habitat_code`, a duplicate (country, class), or a `habitat_code` missing from `dim_habitat_class` is refused.
+- ST6 `star/dim_habitat_class.csv` credits `jung-habitat`. `star/fact_country_habitat.csv` credits `jung-habitat` and `natural-earth`, as `country_habitats.parquet` does.
+
+**The Power BI block model (S3)**
+- PW1 These are refused, each naming file and line: a `.dax` without `// twin:`; a `.m` with one; a twin that is missing, on another page, not PostGIS, or untested.
+- PW2 `// input:` takes `star/<table>.csv` and `labs/c1-feed.json`. It refuses `labs/other.json`, `star/x.parquet`, `/learn/data/star/x.csv` and `../x.csv`.
+- SB10 `inputErrors` refuses an input outside `STAR_FILES` ∪ {`FEED.input`}, naming the block and the input.
+- MH15 A DAX block shows "Not run by critwire: Power BI Desktop is Windows-only." as today. Then one `<p class="twin">` with T3's sentence and a link to `#q-<twin>`. An M block has no twin line.
+- MH16 A Power BI `{{exercise:}}` renders in `<details class="exercise-answer">`. A Power BI `{{skip:}}` is still refused.
+- MH17 The inputs table comes from `PageContext.inputs`: star → `/learn/data/star/<file>`, feed → `/learn/labs/c1-feed.json`, with rows and sha256 from the map. An input missing from the map renders "not built yet (draft build)" in `--draft`, and in a plain build throws naming the block and input.
+
+**The feed's machinery (S4)**
+- FD1 `feedStaleness(text, recorded)` returns none when `renderResult(FEED.block, {columns: ["feed"], rows: [[text]]})` equals the recorded result. A changed byte, an added final newline or re-indented JSON gives "…c1-feed.json isn't c1-feed-file's result: run pnpm learn:check --update".
+- FD2 The build's feed check:
+  - with `c1-feed-file` in the course and no feed file: "missing";
+  - with no `c1-feed-file`: no check, and nothing published;
+  - a feed file without the block: refused.
+  - Plain refuses; `--draft` warns.
+- WF1 `writeFeed` refuses, naming the block: no `c1-feed-file` outcome, or a failed one; 0 or 2 rows; 2 columns; a column not named `feed`; a cell that isn't a string (a `jsonb` object).
+- WF2 It writes `FEED.file` as the cell's text, byte for byte (utf8, no final newline), and leaves an equal file untouched (mtime kept).
+- WF3 A `--module` run, a plain run and an `--update` run whose results didn't settle write nothing.
+- PT15 A `json` fence whose `$id` is `https://critwire.com/learn/labs/<name>.json` ports to `site/learn/labs/<name>.json` byte for byte.
+  - A `json` fence without such an `$id` is neither a block nor an error.
+  - `--check` reports a differing file.
+- PT16 Two fences with the same `$id` are refused, naming both 004 lines.
+- OR1 [db] `Outcome.result` holds the uncut result (7 rows, a 100-character cell), while the recorded text is cut (`SHOWN_ROWS`, `MAX_CELL`) and hashed over the whole.
+
+**The feed's attribution (S10)**
+- FD3 `feedAttributionErrors(doc, expected)` returns none for a matching doc. If `license`, `license_url` or `attribution` is missing, or differs from critwire's credit (`license`, `licenseUrl`, `citation`), it gives one error naming the field.
+- FD4 A `source` that differs from the gbif-sample credit's `citation` is an error. This is the case of a sample refresh that leaves the old citation in the SQL.
+- FD5 `credit` errors: a row equal to no sample dataset's (title, publisher, doi); a duplicate; rows out of (title, publisher, doi) order; a missing `doi` key. `doi: null` passes only for a dataset whose doi is null.
+- FD6 A doc that isn't an object, or has no `credit` array, gives errors, never a throw.
+- ST7 `CreditDataset.doi` comes from the sample's datasets. `credits(FEED.input, {...labCredits, files: {[FEED.input]: FEED.sources}})` gives the critwire and gbif-sample credits, with ST4's checks.
+
+**When the plan meets reality:**
+- **A first repo run differs from 004** (`p2-check`, `p4-check`, or `c1-feed` after S9's restructure). It's a bug. Check, in turn:
+  - the `-- after:` list and its order against 004;
+  - S2's CHECK text;
+  - `PGOPTIONS`/`search_path`;
+  - the view against the CTE (`--module c1` prints both).
+  Never re-record to match. Only a proven change updates 004 and the file together, under Decisions.
+- **After S10, a `c1-feed` column other than `bytes` moves:** the attribution SQL changed which cells or credits are in the doc, or their order. Fix the SQL.
+- **`writeFeed` refuses a non-string cell:** the SELECT lacks `::text`.
+- **The build refuses the binding after `--update`:** something rewrote the file (an editor or a formatter). Re-run `learn:check --update`; never hand-edit `checked/`.
+- **Ajv strict refuses the schema** (an unknown keyword, or `format`): fix 004's fence and the file together (`P`). Never loosen `strict`.
+- **The DuckDB star guard fails on the habitat fact:** compare `sum(est_area_km2)` and the counts in both engines (F2's probe found them equal). Fix the DDL text; never skip the block in DuckDB.
+- **The lint refuses a p/c block** ("not on this page or a prerequisite's"): its page's prerequisites don't reach the named block's page. Fix the `-- after:` (and 004); never widen the scope rule.
+- **`self_check.py --offline` fails, or an export references fonts:** fix the diagram. System fonts and SVG only.
+- **`H`, `HN`, `HR` or `A` prints something:** find what changed it. A bundle-input edit (`A`) is reverted, so no new CSS. A needed change gets a Decision.
+- **learn:check refuses the venv or the lab role, or names an earlier run's session, or the leak query isn't empty:**
+  - venv: run `pnpm learn:venv`;
+  - lab role: run `pnpm learn:check --setup`, never `--reset-password` without `--env` for each checkout;
+  - earlier session: end it with the printed command, only if no learn:check is running;
+  - leaks: drop only this mission's lab-role objects.
+- **Disk under 3 GB before an `E`:** delete older intermediate folders; never delete the final `$M/e2e`.
+- **A heavy job passes a time limit:** measure it. Raise only that test's limit, with a Decision; never skip it.
+- **Session budget:** see the Estimate in Steps.
 
 ## Code review (Astra)
 
@@ -511,6 +931,8 @@ One round, on `0428cfe`. Nothing rejected outright; one item taken in part (Astr
 - Rounding probe (Fable MISSED): `country_habitats.est_area_km2` already `DECIMAL(12,2)`, no row > 2 places; DuckDB sum 146,579,613.97 = PostGIS `total_km2`. No DuckDB/PostGIS rounding risk for T2.
 - Freshness `afterChain` stays transitive (Astra SC1 taken in part): superset key can't make a stale result look fresh; runner + downloads run listed `-- after:` only, in order.
 - Feed attribution embedded in the feed JSON (license, license_url, attribution, per-credit doi), no companion file (Astra MUST-FIX 1).
+- Planner order deviations (Steps stage): `feedAttributionErrors` + `CreditDataset.doi` land in S10 with attribution fields, not S4; build's feed check + `writeFeed` apply only when course has `FEED.block` (stray feed file refused), keeps S4–S8 plain-green; `FEED` constant created in S3 (T3 input rule names `FEED.input`); S16 runs full Verification once before code review, rule 7 reruns it on final commit.
+- Data cap: Verification checks the build's 120,000,000 B cap (owner raised it, L3 H5), not the brief's 50 MB; `/learn/data/` already 95.9 MB at Baseline.
 
 ## Log
 
@@ -520,5 +942,7 @@ One round, on `0428cfe`. Nothing rejected outright; one item taken in part (Astr
 - 2026-10-30 05:29 UTC: Astra review: APPROVE_WITH_CHANGES, 1 MUST-FIX (T4 feed needs published license + attribution shipped with download). Plan-only change, no checks needed.
 
 - 2026-10-30 05:40 UTC: Revision by `architect`: 3 MUST-FIX resolved (H6 before Verification; T1 two-pass scope from full map, afterScope refuses self/cycle/unknown; F9/T4 feed embeds license + attribution, checked at build/e2e/smoke); SCs folded in; rounding probe clean. Plan-only change, no checks needed.
+
+- 2026-10-30 05:53 UTC: Steps by `planner`: 16 steps (S1 cross-page after … S16 Verification), Verification, Failure modes; planner deviations under Decisions. Plan-only change, no checks needed.
 
 ## Summary
