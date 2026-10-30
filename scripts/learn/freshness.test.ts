@@ -153,6 +153,7 @@ test("FR7 the checker's closure: learn-check.ts's relative imports, nothing from
     "scripts/learn/course-files.ts",
     "scripts/learn/course.ts",
     "scripts/learn/erd-model.ts",
+    "scripts/learn/feed.ts",
     "scripts/learn/freshness.ts",
     "scripts/learn/leaks.ts",
     "scripts/learn/notebook.ts",

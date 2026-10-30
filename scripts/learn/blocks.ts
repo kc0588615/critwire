@@ -2,12 +2,13 @@
 // headers included, named by its id: site/learn/sql/<id>.sql (`-- ` headers), <id>.py (Python, `# `; L4 plan §2) or
 // <id>.m / <id>.dax (Power BI, `// `). parseBlock reads one file and lints what one file can show; lintPage lints a
 // page's blocks together (ids, `-- after:`, with the course's helpers: py-connect and the PostGIS blocks of the
-// page's prerequisites, course.ts afterScope).
+// page's prerequisites, course.ts afterScope; a DAX block's `// twin:`, on its page).
 // What a statement may do to roles, schemas and settings, the determinism rules and the cleanup pairing are
 // privilege.ts's; lintPage applies them with each block's `-- after:` chain.
 // Pure. Tests: blocks.test.ts.
 import { basename, extname } from "node:path";
 import { codeOnly, isolatedRefusal, splitStatements, type Statement } from "../build/learn/sql.ts";
+import { FEED } from "./feed.ts";
 import { LAB_SCHEMA } from "./pg.ts";
 import { parsePlanAssertion, type PlanAssertion } from "./plan.ts";
 import { blockRuleErrors, cleanupErrors } from "./privilege.ts";
@@ -55,7 +56,9 @@ export interface Block {
   sessions: string[];
   /** Python `# timeout:`, in seconds. */
   timeoutS: number;
-  /** Power BI `// input:` star files. */
+  /** DAX `// twin: <id>`: the ran PostGIS block of its page that checks its arithmetic. */
+  twin?: string;
+  /** Power BI `// input:` files (isInput). */
   inputs: string[];
   /** The file, byte for byte. */
   text: string;
@@ -74,11 +77,13 @@ const ID = /^[a-z0-9-]+$/;
 const SESSION = /^[A-Z][A-Za-z0-9]*$/;
 const HEADER = /^-- (q|status|params|expect|after|engine|needs|boot|tx|plan|sessions):(?: (.*))?$|^-- (boot)$/;
 const PBI_HEADER = /^\/\/ ([a-z]+):(?: (.*))?$/;
-const PBI_HEADERS = ["q", "status", "input"];
+const PBI_HEADERS = ["q", "status", "input", "twin"];
 const PY_HEADER = /^# ([a-z]+):(?: (.*))?$/;
 const PY_HEADERS = ["q", "status", "after", "timeout"];
-/** A Power BI `// input:`: a file of the star, under /learn/data/star/. */
+/** A star file, under /learn/data/star/. */
 export const STAR_INPUT = /^star\/[a-z_]+\.csv$/;
+/** A Power BI `// input:`: a star file, or c1's feed (under /learn/labs/). */
+export const isInput = (input: string) => STAR_INPUT.test(input) || input === FEED.input;
 const ENGINES = ["duckdb", "postgis"];
 /** A statement's leading comment lines: `-- fails: <text>`, `-- waits: <why>`, `-- window <name>[: note]`. */
 const FAILS = /^-- fails:(.*)$/;
@@ -181,6 +186,7 @@ export function parseBlock(file: string, text: string): { block?: Block; errors:
   const lines = text.split("\n");
   const errors: string[] = [];
   const headers = new Map<string, string>();
+  const lineOf = new Map<string, number>();
   const plans: [value: string, line: number][] = [];
   let n = 0;
   for (; n < lines.length; n++) {
@@ -192,6 +198,7 @@ export function parseBlock(file: string, text: string): { block?: Block; errors:
     if (key === "plan") plans.push([value, n + 1]);
     else if (headers.has(key)) errors.push(`${file}: duplicate \`${h} ${key}:\` header`);
     headers.set(key, value);
+    lineOf.set(key, n + 1);
   }
   const id = headers.get("q");
   if (id === undefined) return { errors: [...errors, `${file}: no \`${h} q:\` header`] };
@@ -210,9 +217,13 @@ export function parseBlock(file: string, text: string): { block?: Block; errors:
     else {
       const { items, twice } = list(raw, STAR_INPUT);
       block.inputs = items;
-      for (const i of items) if (!STAR_INPUT.test(i)) errors.push(`${q}: input "${i}" isn't star/<file>.csv`);
+      for (const i of items) if (!isInput(i)) errors.push(`${q}: input "${i}" isn't star/<file>.csv or ${FEED.input}`);
       for (const i of twice) errors.push(`${q}: input "${i}" named twice`);
     }
+    block.twin = headers.get("twin");
+    if (ext === ".dax" && block.twin === undefined) errors.push(`${file}: line ${n + 1}: q ${id}: no \`// twin:\` header (the PostGIS block that checks it)`);
+    if (ext === ".m" && block.twin !== undefined) errors.push(`${file}: line ${lineOf.get("twin")}: q ${id}: \`// twin:\` is for DAX blocks`);
+    if (block.twin !== undefined && !ID.test(block.twin)) errors.push(`${file}: line ${lineOf.get("twin")}: q ${id}: \`// twin:\` takes one id`);
     if (!code.trim()) errors.push(`${q}: no code`);
     return { block, errors };
   }
@@ -327,9 +338,9 @@ function statementErrors(b: Block, q: string): string[] {
 
 /**
  * A page's blocks, in page order, linted together: unique ids; each `-- after:` block on the page and earlier, or a
- * helper; ran, expecting no error, wrapped, single-session and in the same engine; then each block's privilege rules
- * with its `-- after:` chain, helpers included (PV1–PV8), and a ran PostGIS block's cleanup (CL1–CL9; a `-- fails:`
- * statement doesn't happen). `bootIds`: ids that run at boot without a file. `helpers`: blocks of other pages an
+ * helper; ran, expecting no error, wrapped, single-session and in the same engine; a DAX block's `// twin:` on the page,
+ * under the same rules, in PostGIS; then each block's privilege rules with its `-- after:` chain, helpers included
+ * (PV1–PV8), and a ran PostGIS block's cleanup (CL1–CL9; a `-- fails:` statement doesn't happen). `bootIds`: ids that run at boot without a file. `helpers`: blocks of other pages an
  * `-- after:` may name (py-connect, on the setup page; the PostGIS blocks of the page's prerequisites), held to the
  * same rules.
  */
@@ -341,19 +352,30 @@ export function lintPage(blocks: readonly Block[], bootIds: ReadonlySet<string> 
     if (seen) errors.push(`${b.file}: duplicate id "${b.id}" (first in ${seen.file})`);
     else first.set(b.id, b);
   }
+  /** Why block `a` (`named`, if found) can't run for a block in `engine`, or undefined; `where` names the scope searched. */
+  const namedError = (a: string, named: Block | undefined, engine: Engine, where: string): string | undefined => {
+    if (bootIds.has(a) || named?.boot) return `"${a}" already runs at boot`;
+    if (!named) return `unknown block "${a}" (${where})`;
+    if (named.status === "untested") return `"${a}" is untested`;
+    if (named.expectError) return `"${a}" expects an error`;
+    if (named.txOwn) return `"${a}" owns its transaction`;
+    if (named.sessions.length) return `"${a}" runs in sessions ${named.sessions.join(", ")}`;
+    if (named.engine !== engine) return `"${a}" runs in ${named.engine}, not ${engine}`;
+    return undefined;
+  };
   blocks.forEach((b, k) => {
     const q = `${b.file}: q ${b.id}: \`${b.engine === "python" ? "#" : "--"} after\``;
     for (const a of new Set(b.after.filter((a) => ID.test(a)))) {
       const i = blocks.findIndex((x) => x.id === a);
       const named = blocks[i] ?? helpers.get(a);
-      if (bootIds.has(a) || named?.boot) errors.push(`${q}: "${a}" already runs at boot`);
-      else if (!named) errors.push(`${q}: unknown block "${a}" (not on this page or a prerequisite's)`);
-      else if (i >= k) errors.push(`${q}: "${a}" comes after it`);
-      else if (named.status === "untested") errors.push(`${q}: "${a}" is untested`);
-      else if (named.expectError) errors.push(`${q}: "${a}" expects an error`);
-      else if (named.txOwn) errors.push(`${q}: "${a}" owns its transaction`);
-      else if (named.sessions.length) errors.push(`${q}: "${a}" runs in sessions ${named.sessions.join(", ")}`);
-      else if (named.engine !== b.engine) errors.push(`${q}: "${a}" runs in ${named.engine}, not ${b.engine}`);
+      const e = i >= k && !bootIds.has(a) && !named!.boot ? `"${a}" comes after it` : namedError(a, named, b.engine, "not on this page or a prerequisite's");
+      if (e) errors.push(`${q}: ${e}`);
+    }
+    // A DAX block's twin is a ran PostGIS block of its own page, before or after it (helpers aren't searched).
+    if (b.twin !== undefined && ID.test(b.twin)) {
+      const e = namedError(b.twin, first.get(b.twin), "postgis", "not on this page");
+      const line = b.text.split("\n").findIndex((l) => l.startsWith("// twin:")) + 1;
+      if (e) errors.push(`${b.file}: line ${line}: q ${b.id}: \`// twin\`: ${e}`);
     }
     const chain = b.after.flatMap((a) => (first.get(a) ?? helpers.get(a))?.statements ?? []);
     const rules = blockRuleErrors(b, chain);

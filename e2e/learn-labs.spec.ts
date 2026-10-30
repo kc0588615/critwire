@@ -2,8 +2,9 @@
 // /learn/labs/ file is served as the build assembled it (assemble.ts, what learn:check ran); each PostGIS block's
 // page code appears verbatim in it, or, for an untested or two-session block, commented out under its reason; the
 // result a page shows is checked/<id>.txt, and its versions line is checked.json's; an EXPLAIN block lists its
-// `-- plan:` lines and labels its plan an example (D4); a Power BI block lists the star files it reads with the
-// manifest's rows and sha256, which the served files match and star-check passes. The setup page links the checks'
+// `-- plan:` lines and labels its plan an example (D4); a Power BI block lists the files it reads (star files with the
+// manifest's rows and sha256, which the served files match and star-check passes; c1's feed with its cells and the
+// served file's sha256), and a DAX block links its PostGIS twin, shown with its recorded result. The setup page links the checks'
 // download (pg-checks.sql) and the loader. /learn/labs/requirements.txt is the labs' pin file (L4 plan §5). By
 // Download.kind (L4 plan §10): a .sql holds its page's PostGIS blocks, a .py its Python blocks (untested ones behind
 // `# `), each linked from its block; an .ipynb is served as assembled, its code cells the .py's cells in order (an
@@ -18,6 +19,7 @@ import { assembleDownloads, pageDownloads, type Download } from "../scripts/lear
 import { CHECKED_DIR, PG_SESSION_ID, PY_CONNECT_ID, type Block } from "../scripts/learn/blocks.ts";
 import { SETUP_PAGE, type CoursePage } from "../scripts/learn/course.ts";
 import { readCourse } from "../scripts/learn/course-files.ts";
+import { FEED } from "../scripts/learn/feed.ts";
 import { readStamp } from "../scripts/learn/freshness.ts";
 import { checkInput, type StarManifest } from "../scripts/learn/star-check.ts";
 import { distPath, learnContext, repoPath, sha256 } from "./helpers.ts";
@@ -164,25 +166,41 @@ test("a download naming s4_cells or s4_neighbours runs s4-cells right after pg-s
   }
 });
 
-test("a Power BI block lists its star inputs with the manifest's rows and sha256, and the served files match", async ({ browser, request }) => {
+test("a Power BI block lists its inputs (star files, c1's feed) with their rows and sha256, the served files match, and a DAX block links its PostGIS twin", async ({ browser, request }) => {
   const { pages, url } = await course();
   const manifest = (await (await request.get("/learn/data/star/manifest.json")).json()) as StarManifest;
   const { context } = await learnContext(browser);
   const page = await context.newPage();
   const pbi = pages.flatMap((p) => p.blocks.filter((b) => b.engine === "powerbi").map((b) => [p, b] as const));
   expect(pbi.map(([, b]) => b.id)).toContain("pbi-smoke");
+  /** What the inputs table shows for an input, by kind: a star file from its manifest, the feed from the served file. */
+  const expected = async (input: string): Promise<[string, string, string]> => {
+    if (input === FEED.input) {
+      const body = await (await request.get(`/learn/${input}`)).body();
+      return [input, (JSON.parse(body.toString("utf8")) as { cells: unknown[] }).cells.length.toLocaleString("en-US"), sha256(body)];
+    }
+    const f = manifest.files[input.slice("star/".length)]!;
+    expect(sha256(await (await request.get(`/learn/data/${input}`)).body()), input).toBe(f.sha256);
+    return [input, f.rows.toLocaleString("en-US"), f.sha256];
+  };
   for (const [p, b] of pbi) {
     await page.goto(url(p));
     await expect(page.locator(`#q-${b.id} .untested`)).toHaveText("Not run by critwire: Power BI Desktop is Windows-only.");
     const rows = await page.locator(`#q-${b.id} table.inputs tbody tr`).evaluateAll((trs) => trs.map((tr) => [...tr.querySelectorAll("td")].map((td) => td.textContent)));
-    const want = b.inputs.map((input) => {
-      const f = manifest.files[input.slice("star/".length)]!;
-      return [input, f.rows.toLocaleString("en-US"), f.sha256];
-    });
+    const want = [];
+    for (const input of b.inputs) want.push(await expected(input));
     expect(rows, b.id).toEqual(want);
-    for (const [input, , hash] of want) expect(sha256(await (await request.get(`/learn/data/${input}`)).body()), input).toBe(hash);
     // What the M reads passes the star's checks: header, rows, sha256, keys (star-check).
-    for (const input of b.inputs) expect((await checkInput(distPath("learn/data/star"), input)).errors, `${b.id} ${input}`).toEqual([]);
+    for (const input of b.inputs.filter((i) => i !== FEED.input)) expect((await checkInput(distPath("learn/data/star"), input)).errors, `${b.id} ${input}`).toEqual([]);
+    // A DAX block's twin: on the page with its recorded result, linked, with what it doesn't check (T3).
+    const twin = page.locator(`#q-${b.id} p.twin`);
+    if (b.twin === undefined) await expect(twin, b.id).toHaveCount(0);
+    else {
+      await expect(twin, b.id).toHaveText(`The table it should return, from the same files in PostGIS: ${b.twin}. That twin checks the arithmetic only, not M parsing, relationship direction, filter context or DAX execution.`);
+      await expect(twin.locator("a"), b.id).toHaveAttribute("href", `#q-${b.twin}`);
+      expect(await page.locator(`#q-${b.twin} pre.recorded`).textContent(), b.twin)
+        .toBe(trimEnd(await readFile(repoPath(`${CHECKED_DIR}/${b.twin}.txt`), "utf8")));
+    }
   }
   await context.close();
 });

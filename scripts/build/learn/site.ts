@@ -2,7 +2,7 @@
 // readLearnInputs reads the course (learn/course-files.ts
 // readCourse: the curriculum, the pages' slots, every block file's lint, recorded results without a block) and the ERD
 // sources (erd.ts readErds: each parses, schema.mmd keeps v1.mmd, markers, accTitle/accDescr, sources), the star's
-// blocks and Power BI inputs (star.ts starBlocks, starInputErrors), the engine pins (assets.ts assetErrors), and the
+// blocks and Power BI inputs (star.ts starBlocks, inputErrors), the engine pins (assets.ts assetErrors), and the
 // teaching diagrams the pages name (diagrams.ts readDiagrams: both variants, sources, <title>, offline, used). A ran
 // PostGIS block without its recorded result fails a plain build and only warns with --draft (D16's loop: learn:check
 // --update writes it). Throws naming every error. Writes nothing.
@@ -25,7 +25,7 @@ import { DUCKDB_EXT, DUCKDB_WASM } from "../../../site/learn/src/assets.ts";
 import { assetErrors, writeAssets } from "./assets.ts";
 import { learnPages, readTemplates, writePages } from "./pages.ts";
 import { DRAWN_ERDS, readErds, type ErdSvgs, type ErdTexts } from "./erd.ts";
-import { starBlocks, starInputErrors, type StarBlock } from "./star.ts";
+import { starBlocks, inputErrors, type StarBlock } from "./star.ts";
 import { readDiagrams, type Diagram } from "./diagrams.ts";
 
 export interface LearnInputs {
@@ -49,7 +49,7 @@ export async function readLearnInputs({ draft }: { draft: boolean }): Promise<Le
   const star = starBlocks(pages);
   const diagrams = await readDiagrams(pages);
   if (draft) for (const m of missing) console.warn(`build --draft: ${m}`);
-  const all = [...errors, ...erds.errors, ...star.errors, ...starInputErrors(pages), ...diagrams.errors, ...assetErrors(), ...(draft ? [] : missing)];
+  const all = [...errors, ...erds.errors, ...star.errors, ...inputErrors(pages), ...diagrams.errors, ...assetErrors(), ...(draft ? [] : missing)];
   if (all.length) throw new Error(`site/learn: ${all.length} error(s):\n${all.join("\n")}`);
   return { curriculum: curriculum!, pages, erds: erds.texts, svgs: erds.svgs, star: star.blocks, diagrams };
 }
@@ -82,6 +82,7 @@ export async function writeLearn(out: URL, { curriculum, pages, erds, svgs, diag
   for (const [n, text] of diagrams.svgs) await writeFile(new URL(n, drawn), text);
 
   const star = (JSON.parse(await readFile(new URL("learn/data/star/manifest.json", out), "utf8")) as StarManifest).files;
+  const inputs = new Map(Object.entries(star).map(([f, { rows, sha256 }]) => [`star/${f}`, { url: `/learn/data/star/${f}`, rows, sha256 }]));
   const html = learnPages({
     curriculum,
     pages,
@@ -91,7 +92,7 @@ export async function writeLearn(out: URL, { curriculum, pages, erds, svgs, diag
     context: {
       recorded: readRecorded(pages),
       stamp: readStamp(),
-      star,
+      inputs,
       draft,
       erdTitles: { schema: parseErd(erds.schema).title!, lab: parseErd(erds.lab).title! },
       diagrams: diagrams.diagrams,

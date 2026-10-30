@@ -14,13 +14,14 @@ import { fileURLToPath } from "node:url";
 import { parseBlock, type Block } from "../../learn/blocks.ts";
 import type { CoursePage } from "../../learn/course.ts";
 import { readCourse } from "../../learn/course-files.ts";
+import { FEED } from "../../learn/feed.ts";
 import { readRecorded } from "../../learn/freshness.ts";
 import { checkInput, readCsv } from "../../learn/star-check.ts";
 import { labCreditContext } from "./credits.ts";
 import { deriveInputs, derived, withDist } from "./dist-fixture.ts";
 import { readErds } from "./erd.ts";
 import { withLabTables } from "./projection.ts";
-import { STAR_BLOCKS, STAR_FILES, starBlocks, starInputErrors, writeStar, type StarManifest } from "./star.ts";
+import { STAR_BLOCKS, STAR_FILES, starBlocks, inputErrors, writeStar, type StarManifest } from "./star.ts";
 
 const course = await readCourse();
 const starErd = (await readErds()).texts.star;
@@ -79,9 +80,15 @@ test("SB2 a star block missing, naming a schema, not opening with CREATE TABLE <
 });
 
 test("SB3 a Power BI `// input:` must name a file the build publishes", () => {
-  assert.deepEqual(starInputErrors(course.pages), []);
+  assert.deepEqual(inputErrors(course.pages), []);
   const pages = edited("pbi-smoke", (t) => t.replace("// input: star/dim_country.csv", "// input: star/dim_country.csv, star/dim_habitat.csv"));
-  assert.deepEqual(starInputErrors(pages), [`q pbi-smoke: input star/dim_habitat.csv isn't a file this build publishes (${STAR_FILES.join(", ")})`]);
+  assert.deepEqual(inputErrors(pages), [`q pbi-smoke: input star/dim_habitat.csv isn't a file this build publishes (${[...STAR_FILES, FEED.input].join(", ")})`]);
+});
+
+test("SB10 inputErrors allows the star files and the feed, and refuses any other input, naming the block and the input", () => {
+  assert.deepEqual(inputErrors(edited("pbi-smoke", (t) => t.replace("// input: star/dim_country.csv", `// input: star/dim_country.csv, ${FEED.input}`))), []);
+  const pages = edited("pbi-smoke", (t) => t.replace("// input: star/dim_country.csv", "// input: star/dim_country.csv, star/x.csv, star/fact_records.csv"));
+  assert.deepEqual(inputErrors(pages), [`q pbi-smoke: input star/x.csv isn't a file this build publishes (${[...STAR_FILES, FEED.input].join(", ")})`]);
 });
 
 test("SB4 writeStar: eight CSVs and star/manifest.json; every file passes the input check; unknown members; NA is Namibia", () => withDist(async (out) => {

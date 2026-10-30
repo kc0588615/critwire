@@ -16,7 +16,7 @@ Every example in this document is tested. A block is a fenced code block whose f
   - SQL with no `-- engine:` line (or `-- engine: duckdb`) runs in DuckDB-WASM in headless Chromium, on the browser database the `setup` block builds (below), as a page runs it.
   - `-- engine: postgis` runs in PostgreSQL 16 with PostGIS 3.4.2, in schema `learn_curriculum`, after the loader and `pg-session` (below).
   - ```` ```python ```` blocks run in the pinned `uv` environment (§3), each in its own process, isolated (`python -I`), from an empty folder, connected through libpq's `PG*` variables. Their search path starts as `pg_catalog`, so a block that skips the `py-connect` helper fails on its first table name instead of quietly reading another schema.
-  - ```` ```m ```` and ```` ```dax ```` blocks (Power BI) never run; their status is always `untested: Power BI is Windows-only`. Each names its inputs (`// input: star/<file>.csv, …`) and the runner checks those files instead: the file exists, its header equals the star manifest's columns, primary keys are unique and filled, every foreign key finds its dimension row, and rows and sha256 equal the manifest's.
+  - ```` ```m ```` and ```` ```dax ```` blocks (Power BI) never run; their status is always `untested: Power BI is Windows-only`. Each names its inputs (`// input: star/<file>.csv, …`, or c1's feed, `labs/c1-feed.json`) and the runner checks those files instead: for a star file, the file exists, its header equals the star manifest's columns, primary keys are unique and filled, every foreign key finds its dimension row, and rows and sha256 equal the manifest's; for the feed, its rows are its cells and its sha256 is the served file's. A DAX block also names its twin (`// twin: <id>`), a ran PostGIS block on the same page that computes the table the DAX query should return from the same files; an M block has none. The twin checks the arithmetic only, not M parsing, relationship direction, filter context or DAX execution.
 - **More headers:**
   - `-- after: <id>, …`: those earlier blocks of the same engine run first, in the same transaction, in the order named; the result is still this block's last statement. An exercise runs after its lesson this way. A PostGIS block may also name a ran PostGIS block on a page in its scope: its module's prerequisites, transitively (§2), so p3's twin can run d6's star blocks and c1's feed `s5-gistar`. Scope is transitive, execution isn't: the block runs exactly the blocks it lists, in that order, each with only its own statements, never their own `-- after:` blocks, so it lists every block it needs (the download does the same, 7.3). A browser block names only earlier blocks of its page, since the browser runs them from the page. Python's `# after:` puts the named blocks' code first, in document order, in one process; it names earlier Python blocks of its page, or `py-connect`, the course-wide helper (below) any page may name.
   - `-- expect: error <text>`: the last statement must fail with an error containing `<text>` (d1's constraint violations); the block fails if it doesn't.
@@ -793,7 +793,7 @@ It should show 251 rows: 250 countries and `ZZ`, d6's unknown member for records
 - **`Encoding = 65001`** (UTF-8) and `QuoteStyle.Csv`: names with accents and commas inside quotes are read as written.
 - **The culture `"en-US"`** on the type change: critwire's files write `12.5`, and a computer set to a comma-decimal locale would otherwise misread it.
 
-p1 (§5.6) turns this into one function for all eight tables. **Tested here:** every file a Power BI block names, against the star's manifest (header, unique and filled keys, foreign keys, row count, sha256), in each run (§0). **Not tested:** whether Power BI evaluates the M, the DAX results, the visuals and the refresh: Power BI has no Linux version. §10 asks the owner for one check on Windows.
+p1 (§5.6) turns this into one function for all eight tables. **Tested here:** every file a Power BI block names, against the star's manifest (header, unique and filled keys, foreign keys, row count, sha256), in each run (§0). **Not tested:** whether Power BI evaluates the M, the DAX results, the visuals and the refresh: Power BI has no Linux version. Each DAX block's PostGIS twin (§0) checks the arithmetic of the table it should return, not M parsing, relationship direction, filter context or DAX execution. §10 asks the owner for one check on Windows.
 
 ## 4. Lab data
 
@@ -10029,7 +10029,7 @@ run 4 · links, TRANSFORM_VERSION = 2 again · exit 0 · INFO refresh: nothing c
 
 ### 5.6 Power BI
 
-Four modules, seven hours, in Power BI Desktop (§3.5), on the star d6 builds: eight CSV files under `https://critwire.com/learn/data/star/` (§A.3). These are outlines, in §5.3's form; build mission L5 (§9) writes them in full. Power BI runs only on Windows, so its blocks are `untested` here, and the tests check what they can instead (§0): every file a block names, against the star's manifest. Each DAX block is a query for Power BI's DAX query view (Home → DAX query view): its `DEFINE MEASURE` lines can be added to the model from there, and its `EVALUATE` returns a small table. A PostGIS block beside it computes the same table from the same star with `star.sql` (d6), so its result is the table Power BI should show. §10 asks the owner for one check on Windows.
+Four modules, seven hours, in Power BI Desktop (§3.5), on the star d6 builds: eight CSV files under `https://critwire.com/learn/data/star/` (§A.3). These are outlines, in §5.3's form; build mission L5 (§9) writes them in full. Power BI runs only on Windows, so its blocks are `untested` here, and the tests check what they can instead (§0): every file a block names, against the star's manifest. Each DAX block is a query for Power BI's DAX query view (Home → DAX query view): its `DEFINE MEASURE` lines can be added to the model from there, and its `EVALUATE` returns a small table. A PostGIS block beside it, its twin (`// twin:`, §0), computes the same table from the same star with `star.sql` (d6), so its result is the table Power BI should show. The twin checks the arithmetic only, not M parsing, relationship direction, filter context or DAX execution: those need Power BI itself. §10 asks the owner for one check on Windows.
 
 #### p1 · power-query
 
@@ -10108,6 +10108,7 @@ Power BI may create relationships on its own, from matching column names. Check 
 // q: p2-measures
 // status: untested: Power BI is Windows-only
 // input: star/fact_records.csv, star/fact_species_country.csv, star/dim_country.csv
+// twin: p2-check
 DEFINE
     MEASURE fact_records[Records] = COUNTROWS ( fact_records )
     MEASURE fact_records[Species recorded] = DISTINCTCOUNT ( fact_records[species_id] )
@@ -10175,6 +10176,7 @@ Asia | 2985 | 21 | 20
 // q: p3-measures
 // status: untested: Power BI is Windows-only
 // input: star/fact_records.csv, star/fact_country_habitat.csv, star/dim_habitat_class.csv, star/dim_country.csv
+// twin: p3-check
 DEFINE
     MEASURE fact_records[Records] = COUNTROWS ( fact_records )
     MEASURE fact_country_habitat[Forest km2] =
@@ -10243,6 +10245,7 @@ TT | 2 | 2865.12 | 0.698
 // q: p4-labels
 // status: untested: Power BI is Windows-only
 // input: star/fact_records.csv, star/dim_species.csv, star/dim_dataset.csv
+// twin: p4-check
 DEFINE
     MEASURE fact_records[Records] = COUNTROWS ( fact_records )
     MEASURE fact_records[Map title] =
@@ -10472,7 +10475,7 @@ Learn stays what 002 §8 designed: static pages in the same `dist/`, written by 
 Every module page has the same frame: the title and id, `**Tool:** · **Time:** · **Prereqs:**` as badges, the sections of §5 in §5's order (full modules: Concept, Worked example, Lab, Result, Exercise, Answer, Check, Dialects; foundations add "Already know this?" first), a "Mark done" button, and Previous and Next. What a code block looks like depends on where it runs:
 - **Browser (B) blocks** are 002's: an editor holding the block's SQL, Run, Stop, Reset database, results as a table or cards (`-- show: cards`), the Schema dialog on schema v2. An exercise has "Your answer", Check and Show answer; checking runs the reference answer on the pristine database, as 002 §1 does. Nothing is pre-rendered (002 §8).
 - **PostGIS and Python blocks** can't run in the page. Each shows its code (read-only, with a Copy button), the result `learn:check` recorded, with the date and the versions it ran on (PostgreSQL, PostGIS, GEOS and GDAL; from L4 Python and the `requirements.txt` hash; from `checked.json`), and a link to the module's download. A "Lab schema" button opens the lab ERD as the Schema button opens schema v2's. A block marked `untested` shows its reason in place of a result, in the same words as here.
-- **Power BI blocks** (```` ```m ````, ```` ```dax ````) show their code and, instead of a result, the files they read with their rows and sha256 (the `-- input:` checks), the PostGIS twin's table where there is one (`p2-check`…), and the line "Not run by critwire: Power BI Desktop is Windows-only."
+- **Power BI blocks** (```` ```m ````, ```` ```dax ````) show their code and, instead of a result, the files they read with their rows and sha256 (the `// input:` checks), the line "Not run by critwire: Power BI Desktop is Windows-only.", and for a DAX block one line linking its PostGIS twin (`p2-check`…, shown with its result on the same page) and saying what the twin doesn't check. A Power BI exercise shows its answer behind Show answer, as a PostGIS one does.
 - **Results are numbers from the published files.** A result shown under a PostGIS or Python block was produced by `learn:check` on the same `/learn/data/` files the page links to; the build refuses it otherwise (7.4).
 
 The playground and the browser blocks use one engine start per visit (002 §8): moving between module pages keeps the running database.
@@ -10499,7 +10502,7 @@ One `localStorage` key, `critwire.learn.done.v1`, holds `{ "<module id>": "<YYYY
 **Sources in the repository:**
 - `site/learn/curriculum.json`: the tracks in order, and each module's `id`, `slug`, `title`, `track`, `tools` (`B`, `PG`, `Py`, `PBI`), `hours`, `prereqs`, `state` (`built` or `planned`; the commit that adds a module's page sets it `built`), and the `skill` and `questions` the track pages show. §2's table is its first content.
 - `site/learn/modules/<id>.html`: each built module's text, with `{{block:<q-id>}}` slots where its blocks go, `{{exercise:<q-id>}}` and `{{skip:<q-id>}}` for an exercise and an "Already know this?" check, and `{{diagram:<name>}}` (below).
-- `site/learn/sql/<q-id>.sql` and `<q-id>.py`: every block, its fence body exactly as here, headers included (`pnpm learn:port` writes it, and seeds each ran block's result from the fence under it; the page shows it without its test headers, `-- show: cards` kept); L1's `setup.sql` is the one header-less file. Power BI blocks the same, as `.m` and `.dax`.
+- `site/learn/sql/<q-id>.sql` and `<q-id>.py`: every block, its fence body exactly as here, headers included (`pnpm learn:port` writes it, and seeds each ran block's result from the fence under it; the page shows it without its test headers, `-- show: cards` kept); L1's `setup.sql` is the one header-less file. Power BI blocks the same, as `.m` and `.dax`; a `.dax` names its twin (`// twin:`, §0).
 - `site/learn/labs/checked/`: what `learn:check` recorded, one file per block (its result) and `checked.json` (below).
 - `site/learn/diagrams/<name>.html` and `<name>-dark.html`: the teaching diagrams other than the ERDs, drawn with the diagram-design plugin (profile `critwire`: default tokens, system fonts), exported to `<name>.svg` and `<name>-dark.svg` with `export_svg.py --system-fonts`. A page shows one with `{{diagram:<name>}}`: a `<picture>` whose dark source follows the reader's colour scheme, its `alt` the SVG's `<title>`.
 
@@ -10510,6 +10513,7 @@ One `localStorage` key, `critwire.learn.done.v1`, holds `{ "<module id>": "<YYYY
 - a PostGIS or Python block whose freshness key differs from `checked.json`: "lab <id> is stale: run pnpm learn:check";
 - a star block (d6) whose result in the build's DuckDB differs from what `learn:check` recorded on PostGIS;
 - a breach of the 120 MB cap (§4.4); a lab file without `sources`, or another credit failure (§4.5);
+- a Power BI `// input:` other than a published star file or `labs/c1-feed.json`; a DAX block without a `// twin:`, an M block with one, or a twin that isn't a ran PostGIS block of the same page;
 - any missing file.
 
 The two staleness refusals (lab and star) only warn in `pnpm build --draft`, a preview that is never deployed, so `learn:check` can run on a draft of the change it is about to prove.

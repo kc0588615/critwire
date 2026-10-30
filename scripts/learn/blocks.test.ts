@@ -207,8 +207,8 @@ test("BL8 Power BI blocks: `// q:`, the fixed status, star inputs, code; never a
   assert.deepEqual([ok.engine, ok.status, ok.reason, ok.inputs, ok.code], ["powerbi", "untested", "Power BI is Windows-only", ["star/dim_country.csv", "star/dim_year.csv"], "let\n  x = 1\nin\n  x\n"]);
   has(errs("p.dax", m("// q: p", "// status: ran", "// input: star/x.csv", "M = 1")), "q p: Power BI can't run here; its status is `// status: untested: Power BI is Windows-only`");
   has(errs("p.dax", m("// q: p", `// status: ${PBI_STATUS}`, "M = 1")), "q p: no `// input:` header (the star files it reads)");
-  has(errs("p.dax", m("// q: p", `// status: ${PBI_STATUS}`, "// input: dim_year.csv, star/a.csv, star/a.csv", "M = 1")), 'q p: input "dim_year.csv" isn\'t star/<file>.csv', 'q p: input "star/a.csv" named twice');
-  has(errs("p.dax", m("// q: p", `// status: ${PBI_STATUS}`, "// input: star/a.csv", "// after: q", "M = 1")), "p.dax: line 4: unknown header `// after:` (q, status, input)");
+  has(errs("p.dax", m("// q: p", `// status: ${PBI_STATUS}`, "// input: dim_year.csv, star/a.csv, star/a.csv", "M = 1")), 'q p: input "dim_year.csv" isn\'t star/<file>.csv or labs/c1-feed.json', 'q p: input "star/a.csv" named twice');
+  has(errs("p.dax", m("// q: p", `// status: ${PBI_STATUS}`, "// input: star/a.csv", "// after: q", "M = 1")), "p.dax: line 4: unknown header `// after:` (q, status, input, twin)");
   has(errs("p.dax", m("// q: p", `// status: ${PBI_STATUS}`, "// input: star/a.csv")), "q p: no code");
   has(errs("p.m", m("-- q: p", "SELECT 1")), "p.m: no `// q:` header");
 });
@@ -323,4 +323,29 @@ test("XA3 the privilege chain includes a cross-page helper's statements, as an o
   assert.deepEqual(lintPage([seed, uses]), [], "on the page");
   assert.deepEqual(lintPage([uses], undefined, new Map([[seed.id, seed]])), [], "from another page");
   has(lintPage([block("p3-s.sql", pg("p3-s", "SELECT random() AS r"))], undefined, new Map([[seed.id, seed]])), "q p3-s: not deterministic: random(");
+});
+
+const pbi = (file: string, ...lines: string[]) => [`// q: ${file.replace(/\.(m|dax)$/, "")}`, `// status: ${PBI_STATUS}`, ...lines].join("\n") + "\n";
+
+test("PW1 `// twin:`: a DAX block names a ran PostGIS block of its page; an M block has none; each refusal names file and line", () => {
+  const dax = (twin: string) => block("p2-q.dax", pbi("p2-q.dax", "// input: star/dim_year.csv", `// twin: ${twin}`, "EVALUATE dim_year"));
+  const ok = dax("p2-check");
+  assert.equal(ok.twin, "p2-check");
+  const check = block("p2-check.sql", pg("p2-check", "SELECT 1 AS a"));
+  assert.deepEqual(lintPage([ok, check]), [], "a twin later on the page");
+  assert.deepEqual(lintPage([check, ok]), [], "a twin earlier on the page");
+  has(errs("p2-q.dax", pbi("p2-q.dax", "// input: star/dim_year.csv", "EVALUATE dim_year")), "p2-q.dax: line 4: q p2-q: no `// twin:` header (the PostGIS block that checks it)");
+  has(errs("p1-q.m", pbi("p1-q.m", "// input: star/dim_year.csv", "// twin: p1-check", "let x = 1 in x")), "p1-q.m: line 4: q p1-q: `// twin:` is for DAX blocks");
+  has(lintPage([dax("p2-none")]), 'p2-q.dax: line 4: q p2-q: `// twin`: unknown block "p2-none" (not on this page)');
+  has(lintPage([dax("d6-a")], undefined, new Map([["d6-a", block("d6-a.sql", pg("d6-a", "SELECT 1 AS a"))]])), 'p2-q.dax: line 4: q p2-q: `// twin`: unknown block "d6-a" (not on this page)');
+  has(lintPage([dax("p2-b"), block("p2-b.sql", sql("p2-b", "-- status: ran", "SELECT 1 AS a"))]), 'p2-q.dax: line 4: q p2-q: `// twin`: "p2-b" runs in duckdb, not postgis');
+  has(lintPage([dax("p2-u"), block("p2-u.sql", pg("p2-u", "SELECT 1 AS a").replace("-- status: ran", "-- status: untested: two windows"))]), 'p2-q.dax: line 4: q p2-q: `// twin`: "p2-u" is untested');
+  has(lintPage([dax("p2-m"), block("p2-m.dax", pbi("p2-m.dax", "// input: star/dim_year.csv", "// twin: p2-check", "EVALUATE dim_year")), check]), 'p2-q.dax: line 4: q p2-q: `// twin`: "p2-m" is untested');
+});
+
+test("PW2 `// input:` takes star/<table>.csv and labs/c1-feed.json, nothing else", () => {
+  const ok = block("p4-q.m", pbi("p4-q.m", "// input: star/dim_country.csv, labs/c1-feed.json", "let x = 1 in x"));
+  assert.deepEqual(ok.inputs, ["star/dim_country.csv", "labs/c1-feed.json"]);
+  for (const bad of ["labs/other.json", "star/x.parquet", "/learn/data/star/x.csv", "../x.csv"])
+    has(errs("p4-q.m", pbi("p4-q.m", `// input: ${bad}`, "let x = 1 in x")), `q p4-q: input "${bad}" isn't star/<file>.csv or labs/c1-feed.json`);
 });
