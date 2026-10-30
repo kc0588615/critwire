@@ -10574,7 +10574,7 @@ One module, eight hours, on every tool. It is an outline, in §5.3's form; build
 - **Extract and load** (e1–e4): a GBIF download for the species and region the game needs (your own predicate, or the lab sample), loaded into PostGIS in one transaction, re-runnable, checked, and with its credits.
 - **Look before counting** (s1): which datasets, which basis of record, any GPS collars? A species whose records are mostly one telemetry study gives a feed about that study, and the feed's numbers would say so only if you looked.
 - **Grid and hot spots** (g6, s5): equal-area hexagons, records per cell, Gi\* with the false discovery rate. The feed flags the surviving cells as **recording hot spots**: places people recorded the animal most, not places it is most common.
-- **Report** (p1–p4): the cell table goes beside the star (exported as CSV, as d6 exports the star, and loaded with p1's pattern); the report maps cells by their centre, sizes them by records, colours them by hot spot, and takes its title from p4's measure.
+- **Report** (p1–p4): Power BI reads the feed itself, with p1's `Web.Contents` pattern, and turns its cells into a typed table; the report maps the cells by their centre, sizes them by records, colours them by hot spot, and takes its title from p4's measure. Reading the feed, not a copy of its cells, means the report shows exactly what the game gets.
 - **The feed:** one static JSON file per species and region, written by one SQL statement, valid against the JSON Schema below, versioned. Each cell has an encounter **weight**, its share of the records; the game draws a cell with probability weight ÷ Σ weight (a cumulative sum and one random number), so rounding never matters. A cell missing from the feed means "no record", never "no animal". The feed carries its own license (CC BY 4.0, the license of the data critwire writes) and attribution, the download's citation, and every dataset with CC BY 4.0 records in it with its DOI (e4), because the attribution travels with anything derived from them and a game copies the feed alone; the game shows them on its credits screen.
 - **Shipping and refresh:** the game ships the file with its own static files, so it is read from the game's own origin and needs no CORS (§4.6). e5's schedule rebuilds it; a change to its fields bumps `version` and the schema. A game with its own PostGIS, such as Critter Connect's, can run the same statement there instead.
 
@@ -10726,7 +10726,86 @@ The feed's JSON Schema (draft 2020-12), which L5 publishes beside its worked fee
 }
 ```
 
-**Expected:** 307 of the 1,094 cells hold a record, so the feed has 307 cells and 1,972 records (the devil's 2,000, less the 28 off the main island's cells, as in g6). The weights, rounded to six places, sum to 0.999954, which is why the game divides by their sum. 37 cells are recording hot spots: s5's 39, less 2 cells with no record of their own, flagged by Gi\* because their neighbours are full (Gi\* counts a cell's neighbours too), and absent from a feed of recorded cells. The fullest cell (id 917) holds 256 records, 13.0 % of the weight, and is a hot spot. 7 datasets must be credited. The file is 35,178 bytes, small enough to ship with any game. L5 adds the report (`untested: Power BI is Windows-only`, its cell CSV checked as p1–p4's inputs are) and publishes the worked feed and schema under `/learn/labs/` (§7).
+**Expected:** 307 of the 1,094 cells hold a record, so the feed has 307 cells and 1,972 records (the devil's 2,000, less the 28 off the main island's cells, as in g6). The weights, rounded to six places, sum to 0.999954, which is why the game divides by their sum. 37 cells are recording hot spots: s5's 39, less 2 cells with no record of their own, flagged by Gi\* because their neighbours are full (Gi\* counts a cell's neighbours too), and absent from a feed of recorded cells. The fullest cell (id 917) holds 256 records, 13.0 % of the weight, and is a hot spot. 7 datasets must be credited. The file is 35,178 bytes, small enough to ship with any game. critwire publishes it and its schema under `/learn/labs/` (§7), and the report in the Lab reads that file.
+
+**Lab:** the pipeline again, for a species and region of your own; each stage keeps its honesty rule.
+1. **Extract and load** (e1–e4, Python). Choose a species and a region. Build the request with e1's `build_request` and your species' GBIF key, and run e1's client with your GBIF account (`e1.py` carries it commented out); then load, check and credit the download as e2, e3 and e4 do, pointing their downloads (`e2.py`, `e3.py`, `e4.py`) at your files instead of the lab's. The rule: the feed's `source` is your download's citation, with its DOI, and its `credit` comes from your loaded `datasets`, never typed by hand. Without a GBIF account, take a species of the lab sample in a region of your own, and keep the course download's citation.
+2. **Look before counting** (s1). Run `s1-devil` with your species' name: which datasets, which basis of record, which years. The jaguar's 2,000 records are 1,948 GPS-collar fixes of a few animals, so a jaguar feed would describe those animals' paths. If one study dominates, say so in `meaning`, or leave the study out and say that instead.
+3. **Grid and hot spots** (g6, s5). Copy `s4-cells` and change the region (`island`), the species and the projection: EPSG:3577, Australian Albers, is equal-area over Australia only; EPSG:6933 (WGS 84 / NSIDC EASE-Grid 2.0 Global) is equal-area anywhere. Change every `3577` in it, in `s4_neighbours` and in `c1-feed`. Then run `s5-gistar` unchanged. The rule: equal-area cells, so each covers the same ground, and hot spots only after the false discovery rate, called recording hot spots.
+4. **The feed.** Copy `c1-feed` and change the species' name, `cell` (your cells' size and projection), `source` (your download's citation) and `attribution`: your name and site, followed by CC BY 4.0, because a feed you make names you, as critwire's names critwire. Keep `meaning` and the license. To save the file, in the same psql session: `\pset format unaligned`, `\pset tuples_only on`, `\o my-feed.json`, `SELECT doc::text FROM c1_feed;`, `\o`. Validate it against the schema before you ship it (Dialects names validators).
+5. **The report** (p1–p4). In Power BI Desktop: Home → Get data → Blank query, then Advanced editor, paste `c1-report` and name the query `cells`. It reads the worked feed from critwire.com as p1 reads the star; for your own feed, replace the `Web.Contents (…)` call with `File.Contents ( "C:\path\my-feed.json" )` (the Service then needs a gateway to refresh it, as d5's PostgreSQL connection does). It fails, rather than guessing, if a cell lacks a field.
+6. **The map** (p4). Set `lat` and `lon` to the Latitude and Longitude data categories, Don't summarize (p4, step 2). An Azure Maps visual: `lat` and `lon`, `records` to Size, `kind` to Legend, `weight` to Tooltips. The title, as p4's measure: `Map title = SELECTEDVALUE ( cells[species] ) & ": " & FORMAT ( SUM ( cells[records] ), "#,0" ) & " open GBIF records in " & COUNTROWS ( cells ) & " cells (where people recorded it, not its range)"`. Credits: a second blank query, `Table.FromRecords ( Json.Document ( Web.Contents ( "https://critwire.com", [RelativePath = "learn/labs/c1-feed.json"] ) )[credit] )`, in a table visual, and a text box quoting `attribution` and `source`.
+7. **Ship and refresh** (e5). The game copies the file in with its own static files and reads it from its own origin. Its credits screen shows `attribution`, `source` and each `credit` with its DOI (as a link, `https://doi.org/` followed by the DOI). e5's schedule rebuilds the feed; new numbers keep `version`, a changed field bumps it and the schema.
+
+The report reads the feed, the file the game gets:
+
+```m
+// q: c1-report
+// status: untested: Power BI is Windows-only
+// input: labs/c1-feed.json
+let
+    Source = Json.Document(Web.Contents("https://critwire.com", [RelativePath = "learn/labs/c1-feed.json"]), 65001),
+    Cells = Table.FromRecords(Source[cells], {"id", "lon", "lat", "records", "weight", "recording_hot_spot"}, MissingField.Error),
+    Typed = Table.TransformColumnTypes(Cells, {
+        {"id", Int64.Type}, {"lon", type number}, {"lat", type number},
+        {"records", Int64.Type}, {"weight", type number}, {"recording_hot_spot", type logical}
+    }),
+    Species = Table.AddColumn(Typed, "species", each Source[species][common_name], type text),
+    Kind = Table.AddColumn(Species, "kind", each if [recording_hot_spot] then "recording hot spot" else "other recorded cell", type text)
+in
+    Kind
+```
+
+`Json.Document` parses the file into records and lists; `Table.FromRecords` with `MissingField.Error` makes one row per cell and stops at a cell without one of the six fields. `species` repeats the feed's common name on each row, for the title; `kind` spells out the legend, so it never shows a bare True or False.
+
+**Result:** your feed: one file, valid against the schema, with your species, your cells' size and projection, you in `attribution`, your download in `source`, every dataset with CC BY 4.0 records in `credit`, and "not its range" in `meaning`. On the worked feed, the report's title reads "Tasmanian Devil: 1,972 open GBIF records in 307 cells (where people recorded it, not its range)", 37 cells are recording hot spots, and the largest bubble is cell 917, with 256 records.
+
+**Exercise:** look before counting, on the feed's fullest cell. Cell 917 holds 13.0 % of the weight: a game would place about one devil in eight there. Who made its records, how, at how many places and in which years? Find the fullest cell from `c1_feed`, as `c1-feed`'s summary does, and break its devil records down by dataset and basis of record, with the number of distinct places and the first and last year.
+
+**Answer:** `jsonb_array_elements` turns the feed's cells back into rows, and `ORDER BY … LIMIT 1` takes the fullest, the same tie rule as `c1-feed`'s `fullest`. The records are placed in that cell as `c1-feed` places them, with `ST_Contains` after `ST_Transform`. `count(DISTINCT (o.longitude, o.latitude))` counts places: records at the same coordinates count once. The block runs after `s5-gistar` and `c1-feed`, so the view exists.
+
+```sql
+-- q: c1-ex
+-- status: ran
+-- engine: postgis
+-- after: s5-gistar, c1-feed
+WITH fullest AS (
+  SELECT (c ->> 'id')::int AS id
+  FROM c1_feed, jsonb_array_elements(doc -> 'cells') AS c
+  ORDER BY (c ->> 'records')::int DESC, (c ->> 'id')::int
+  LIMIT 1
+)
+SELECT f.id AS cell, d.title, o.basis_of_record,
+       count(*) AS records,
+       count(DISTINCT (o.longitude, o.latitude)) AS places,
+       min(o.year) AS first_year, max(o.year) AS last_year
+FROM fullest AS f
+JOIN s4_cells AS c ON c.id = f.id AND c.edge_m = 5000
+JOIN occurrences AS o ON ST_Contains(c.geom, ST_Transform(o.geom, 3577))
+JOIN species AS s ON s.id = o.species_id
+JOIN datasets AS d ON d.dataset_key = o.dataset_key
+WHERE s.scientific_name = 'Sarcophilus harrisii'
+GROUP BY f.id, d.title, o.basis_of_record
+ORDER BY records DESC, d.title, o.basis_of_record;
+```
+
+```text
+-- result: c1-ex · 3 rows · sha256 161c0f8ea4f7
+cell | title | basis_of_record | records | places | first_year | last_year
+917 | Tasmanian Natural Values Atlas | OBSERVATION | 225 | 90 | 2005 | 2011
+917 | Tasmanian Museum and Art Gallery provider for OZCAM | MATERIAL_SAMPLE | 22 | 1 | 2006 | 2009
+917 | Tasmanian Natural Values Atlas | OCCURRENCE | 9 | 9 | 2007 | 2008
+```
+
+**Check:** three rows, 256 records. The Tasmanian Natural Values Atlas's observations supply 225 of them, at 90 places, all made from 2005 to 2011; 9 more atlas records, at 9 places, from 2007 and 2008. The Tasmanian Museum and Art Gallery's 22 material samples share one place, from 2006 to 2009. No record in the cell is later than 2011. The cell is full because people recorded devils there, intensively, for a few years; a weight can't tell such a survey from many devils, and says nothing about the years since. `meaning` already says what a weight is. A game designer who reads this may still choose to keep it, cap a cell's weight, or note the years: each is honest once it is stated.
+
+**Dialects:**
+- **Python:** `json.dumps(doc, separators=(", ", ": "))` spaces the text as `jsonb` does, but `jsonb` orders an object's keys by length, then byte by byte (`"id"` before `"lat"`, `"cell"` before `"cells"`), so a byte-identical file sorts them the same way. PostgreSQL's `round(numeric, 6)` rounds halves away from zero; Python's `round` on a float rounds the binary value, halves to even, so use `decimal.Decimal` with `ROUND_HALF_UP` for the same weights.
+- **DuckDB:** `json_object` builds the document, and `to_json(list(… ORDER BY id))` the cells in order (`json_group_array` takes no `ORDER BY`); the spatial extension adds `ST_Transform` and `ST_Contains`. Its JSON text has no space after `:` or `,` and keeps keys in the order written: the same document, not the same bytes.
+- **JSON Schema validators:** ajv in JavaScript (critwire's tests validate the worked feed with it) and Python's `jsonschema` package (not in the course's pins) both read draft 2020-12.
+- **Excel:** Data → Get Data → From Web runs the same M, on Windows and Mac; 3D Maps (Windows) maps the cells.
+- **Tableau:** the JSON file connector reads `cells` as a table; put `lat` and `lon` on the map as dimensions, `records` on Size and `recording_hot_spot` on Colour.
+- **The game (JavaScript):** with `total` the weights' sum, `let r = Math.random() * total;` then `cells.find((c) => (r -= c.weight) < 0) ?? cells.at(-1)` draws a cell; the fallback catches a float that passes every cell.
 
 ## 6. ERDs
 

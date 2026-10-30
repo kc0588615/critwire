@@ -9,6 +9,10 @@
   },
   "checked": "2026-10-30",
   "blocks": {
+    "c1-ex": {
+      "key": "3856ca3f70d9fbad007854869bb0bcb8d38011e758dabba9e5d08105fc8b64ae",
+      "result": "74da1a06295ef0e4749badaca2710f5b6e29577812a8042dc9c97d0878db39e6"
+    },
     "c1-feed": {
       "key": "3677f6110f6be1e97547fd21b4e5a6c3427801fbc285f9821dbc06ee7ebbb613",
       "result": "c44b88cc156e8011b71b918e8a3ae1b2778a1dd0e056003a62fb4ac7b2bc0349"
@@ -763,7 +767,7 @@
     }
   },
   "downloads": {
-    "c1.sql": "aa96f11bf4f9b33010736abc256cbfad82b6c061d414f8791114a286a86644af",
+    "c1.sql": "8e6f4070f269bd206df62f6bd38eb401a131f1558f3bd3f24642aeafb924cfee",
     "d1.sql": "ad0f35b5d9a5c1f2a1e6b37f3bb0f6498f33a9f998aab703962965a7392e3b26",
     "d3.sql": "76f1a6863b298725cfe135502a592646b2ea055272d64b3dc7ebd6abed8de379",
     "d4.sql": "8bb9f4184361bb570af906a26de9e3717557ec5dceac36154885003c276cc25f",

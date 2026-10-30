@@ -1,0 +1,5 @@
+-- result: c1-ex · 3 rows · sha256 161c0f8ea4f7
+cell | title | basis_of_record | records | places | first_year | last_year
+917 | Tasmanian Natural Values Atlas | OBSERVATION | 225 | 90 | 2005 | 2011
+917 | Tasmanian Museum and Art Gallery provider for OZCAM | MATERIAL_SAMPLE | 22 | 1 | 2006 | 2009
+917 | Tasmanian Natural Values Atlas | OCCURRENCE | 9 | 9 | 2007 | 2008
