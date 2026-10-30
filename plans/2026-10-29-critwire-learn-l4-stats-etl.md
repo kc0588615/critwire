@@ -870,6 +870,13 @@ Every step:
     - §12 by `H`, `HN`, `HR`, `A`; §1's venv checks (Verification 1, run here once);
     - a gap becomes a new step before Verification.
   - Check: `T`, `P`, `L`, `E`, `H`, `HN`, `HR`, `A`.
+- [ ] S28 · Astra code MF1: `runPython` bounds pipe completion after the block exits
+  - First (red): `python.test.ts` PY8 case: a block starts a child with `start_new_session=True` that inherits stdout and sleeps, prints its pid, exits 0. Expect: `runPython` resolves within the grace (≤ 2 s past exit), the result marks the held pipes, `pythonFailure` fails it (names the escaped process), the temp folder gone; the test kills the escaped pid after.
+  - Then: on `exit`, kill the group and start a short grace timer; if `close` hasn't come, destroy stdout/stderr and record it on `PyRun` (e.g. `pipesHeld`); `pythonFailure` fails such a run (fail loud: a process left the block's group). No other behaviour changes.
+  - Check: `T`; `L` (Python stage unchanged, `checked.json` unchanged); `H`, `A`.
+- [ ] S29 · Astra code MF2: `e1-submit` saves an adopted key before polling
+  - `e1-submit` (untested: real GBIF download): when `decide` returns `adopt`, `save({**intent, "key": key})` before the poll, so a restart resumes (`e1-decide`'s "key saved: resume" case is that restart; the block itself can't run offline). 004 and `site/learn/sql/e1-submit.py` together; page prose if it describes adoption.
+  - Check: `P`; `B`; `E` (learn-labs: e1-submit still commented out / Markdown); `H`, `A`.
 
 ## Verification
 
@@ -950,6 +957,18 @@ The isolated tests are the architecture's "Failure cases, written as tests befor
 
 ## Code review (Astra)
 
+Run 2026-10-30 against `origin/main` (7508fc7), branch head 293dcff.
+
+VERDICT: APPROVE_WITH_CHANGES
+
+MUST-FIX:
+
+1. `scripts/learn/python.ts:100`: Clearing the timeout on process exit leaves completion waiting indefinitely for inherited output pipes. A subprocess using `start_new_session=True` escapes `killGroup()` and can hold those pipes open, preventing cleanup. Reproduced the handlers exceeding a 100 ms deadline by ~1.45 s while reporting success. Bound pipe completion and test this escaped-child case.
+
+2. `site/learn/sql/e1-submit.py:68`: Reconciliation adopts a download key without persisting it. After another interruption, the intent still contains `key: null`; a subsequent matching download or the original falling outside the first 50 results prevents resumption. Save the adopted key before polling; test adoption followed by restart.
+
+SHOULD-CONSIDER: none
+
 ## Release
 
 ## Decisions
@@ -993,6 +1012,7 @@ The isolated tests are the architecture's "Failure cases, written as tests befor
 - S27: final pass. **AGENTS.md:** Stack says one venv serves the labs, learn:check, test:db and the ingests, each command checking only its own file's pins (learn:check the labs', a labs-only venv passes); State s1–s6, e1–e5 built, p, c planned (L5). Learn files (`sql/<id>.py`), Commands (learn:check's Python stage, venv and role checks, `pnpm test` wording) were already current. **004:** §0 (learn:check runs PostGIS and Python, gates, `.py` downloads; `--update` for both; `checked.json` adds Python + requirements sha256; the spike is the only run of p, c only); §2 Depth: g1–g7, s1–s6, e1–e5 `full` (28 full, 5 outline: the column is "what this document holds", and L3 left g `outline`; S12 deferred s1 here); §3's "they don't exist yet" → "each exists from the mission that builds it"; §3.3's run example `s4.py` (the download's name, not `s4-moran.py`); §5.3–5.5 intros in past tense; §7.6 L4's additions; §7.7 L4's screenshots (s4, s5, e2) and the release smoke's `s4.py`; §9 L4 row = what L4 built. §3.3, §5.4/§5.5 modules, §7.3, §7.5 checked against `assemble.ts`, `venv.ts`, `freshness.ts`, `dist/learn/labs/s4.py`: already agree. Prose only: `P` 0 diffs. **recovery.md:** `.venv-learn` (rebuilt by `pnpm learn:venv`), learn:check's per-run temp (run name, `MPLCONFIGDIR`, HOMEs: `mkdtemp`, removed on exit; a left session named by the next run), the lab role's refusal (superuser, CREATE on `public`). No other state outside Git.
 - S27 audit, review items: MF5 done (S4 `21aee2b` role guard; S20 `2867d2f` `e2-geopandas` schema + namespace; V2, V3 in test:db). SC8 e3 done (S21 `43360c0`). SC8 e5 done (S23a `f6b5fa5`, S23b `2aac8ec`; diagram S24 `ed27740`). Corrections: e1 done (S19 `08c2f2a`), e2 done (S20 `2867d2f`), e4 done (S22 `d63ace5`), e5 done (S23a `f6b5fa5`, S23b `2aac8ec`). SC7 Python part done (S3 `944e2e5` process-group kill; S5 `25228ba` run name, stragglers refuse; S6 `e4dd183` run sessions 10 s after exit; S8 `0c5d4dd` leak check after a failed download; PYC1–PYC9 in `scripts/learn/py-runner.dbtest.ts`, PY11 in `pnpm test`). None rejected.
 - S27 audit, deviations from 004 (each in 004 in its commit): D1 two pin files (S1 `93e5edd`, 004 §3.3), D3 `site/learn/sql/<id>.py` (S2 `46b9626`, S10 `3265d08`; 35 files; 004 §7.5), D5 `arcpy-moran` commented out (S14 `513f177`, §7.3), D6 `LEARN_BASE=file://<dist>` (S6 `e4dd183`, §7.6), D8 `e1-checksum` (S19 `08c2f2a`), D9 `e2-geopandas` (S20 `2867d2f`), D14 `.py` download exit 0 (S8 `0c5d4dd`) + release smoke `s4.py` (S26 `db1ce28`). Module steps: `g1-columns` filters `s4_cells` (S13 `cf3ee28`), s3 and s6 outline prose corrected (S16 `8858095`, S18 `6e3dcfb`), `e5-job` raises only on failure (S23a `f6b5fa5`), §2 Depth (S27). §12: H, HN empty, HR clean (changed baseline files all in its allowed list: §12's on-purpose files, deviation 6's d4/f4/g7 pages, S13's g1 page + `g1-columns.sql`, the e2e specs and scripts the steps touched), A 0. No gap, no new step.
+- Astra code review (2026-10-30): both MUST-FIX accepted. MF1: an escaped child (`setsid`) holds stdout/stderr after the block exits, `close` never comes and the timer is already cleared, so learn:check could hang and an escaped process passes unseen; fix S28 (bounded grace, then fail loud). MF2: an adopted key lives only in memory, so a second interruption relists and may refuse; fix S29. Its restart test is `e1-decide`'s existing "key saved" case: `e1-submit` is untested (real GBIF account), so no offline test runs it.
 
 ## Log
 
@@ -1030,5 +1050,6 @@ The isolated tests are the architecture's "Failure cases, written as tests befor
 - 2026-10-30 01:08 UTC: S25: diagrams `s4-band` and `e2-load` `{,-dark}.{html,svg}` (export_svg --system-fonts, self_check --offline OK all 4), `{{diagram:s4-band}}` / `{{diagram:e2-load}}` after the Concepts' lists, 004 s4 + e2 **Diagram:** lines; `schema.spec.ts` DIAGRAMS + both. red 1 → green 1 (diagram test failed before the SVGs). T 663/663; P 0 diffs (29 pages, 509 files); B ok; E 91/91 (0 unexpected/skipped/flaky, `M/s25-e2e`); H, HN empty; A 0. Removed `M/s23b-e2e`.
 - 2026-10-30 01:22 UTC: S26: `learn-screens` + s4, s5, e2 (12 PNGs); `learn-map` GIS test generalised to `BUILT_TRACKS` (GIS in SQL g1–g7, Spatial statistics s1–s6, ETL e1–e5: built, linked on map + track, 200); `learn-labs` on real blocks (every .py page listed; s4-cells boot named by setup.py + s2–s5 .sql/.py; arcpy-moran, e1-submit, g3-iucn untested, both Python ones Markdown cells); `release/live.spec.ts` new test (lab lock, origin's loader as critwire_lab, origin's s4.py via runPython/pythonEnv, LEARN_BASE = origin: s4-moran-pysal, s4-agree, s4-permutations recorded outputs in order; leak query empty). Red proof: s4-permutations.txt mutated → the s4.py test failed; restored. Audit, DoD E2E item → test: e2e in full → whole run; .ipynb cells = .py → learn-labs "each .ipynb's code cells are its .py's cells…"; Python blocks + downloads → learn-labs "each download is served as assembled…", "a PostGIS or Python block shows checked/<id>.txt…", "a download naming s4_cells…"; requirements.txt → learn-labs "/learn/labs/requirements.txt is…" (+ Verification curl); pages built → learn-map "Spatial statistics: s1–s6 built…", "ETL: e1–e5 built…"; screenshots → learn-screens "s4: …", "s5: …", "e2: …"; release smoke s/e pages 200 → release "every dist/ file is served…"; s4.py live → release "the origin's s4.py…". No gap. T: typecheck ok, test 663/663. B ok (95,936,992 B). E 96/96 (0 unexpected/skipped/flaky, `M/e2e-s26`, 43 PNGs). Release dry run (local Caddy, `RELEASE_ORIGIN=http://127.0.0.1:3100`, `M/release-dry-s26`): 4/4 (s4.py test 10.7 s). H, HN empty; A 0.
 - 2026-10-30 01:43 UTC: S27: AGENTS.md (Stack venv/pins per command, State), 004 final pass (§0, §2 Depth, §3, §3.3, §5.3–5.5 intros, §7.6, §7.7, §9 L4 row; prose only), recovery.md (venv, per-run temp, lab-role refusal); audit under Decisions (review items with shas, deviations), no gap. Verification 1's probe command fixed (top-level await; `venvProblems` returns null). T 663/663; P 0 diffs (29 pages, 509 files); L ok (503 s; `checked.json` unchanged; Python blocks ≤ 3.2 s, s4-agree slowest); E 96/96 (0 unexpected/skipped/flaky, `M/s27-e2e`); H, HN empty; HR clean; A 0. Venv: learn:venv + `uv pip check` clean (48), labs-only fresh venv clean (44) and probe `null`; `uv pip compile --no-build`: Windows x86-64, Linux x86-64/aarch64, macOS 14 arm64 0, Intel macOS 1 (pyproj, as 004); 004 §3.3 fence = requirements.txt. Logs `M/s27-{T,L,E,venv}.log`; removed `M/s24-e2e`, `M/s25-e2e`.
+- 2026-10-30 01:48 UTC: Code review (Astra): `astra-review --code origin/main` exit 0, APPROVE_WITH_CHANGES, 2 MUST-FIX (runPython unbounded pipe wait on an escaped child; e1-submit adopted key unsaved), both accepted: S28, S29 added before Verification. Doc-only; no checks needed.
 
 ## Summary
