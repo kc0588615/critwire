@@ -368,7 +368,10 @@ test("LC5 + LC10 + DL2 a clean run loads twice to the manifest's counts, runs pg
   assert.match(r.stdout, /leak check \(download pg-checks\.sql\): nothing left/);
   assert.match(r.stdout, /learn:check: lab ERD: site\/learn\/erd\/lab\.mmd = learn_curriculum \(\d+ tables\)/);
   assert.match(r.stdout, /learn:check: (wrote|unchanged:) site\/learn\/labs\/checked\/checked\.json/);
-  assert.deepEqual(await labCounts(), Object.fromEntries(Object.entries(tables).sort(([a], [b]) => a.localeCompare(b))));
+  // The last download, c1.sql, runs on a fresh load and keeps what it makes, as a learner's run does: s4-cells' table.
+  const { s4_cells, ...loaded } = await labCounts();
+  assert.ok(s4_cells, "c1.sql, the last download, made s4_cells");
+  assert.deepEqual(loaded, Object.fromEntries(Object.entries(tables).sort(([a], [b]) => a.localeCompare(b))));
   const calls = readdirSync(dump).map((f) => readFileSync(join(dump, f), "utf8"));
   assert.ok(calls.length >= 4, `${calls.length} psql calls`);
   const password = decodeURIComponent(new URL(labUrl).password);
