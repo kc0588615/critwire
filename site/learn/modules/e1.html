@@ -29,7 +29,7 @@
 <li><p>The reconcile rule, on six made-up situations. <code>decide</code> runs before any POST and returns what the run does: post, resume a saved key, list the account's downloads and decide again, adopt one, or refuse.</p>
 {{block:e1-decide}}
 <p>A run posts only when no intent exists. A download made 20 minutes before the intent isn't adopted (another run's), nor is one of another request. When two downloads match, both may be this run's or one may be another client's; picking one is a person's call, so the run stops.</p></li>
-<li><p>The whole client: submit, wait, fetch. It needs your account in <code>GBIF_USERNAME</code> and <code>GBIF_PASSWORD</code> and makes a real download each time it posts, so the tests don't run it and <code>e1.py</code> carries it commented out. The intent file is saved before the POST and again with the key; a POST GBIF refuses (a 4xx) made nothing, so its intent is deleted; a 5xx or a dropped connection keeps it for the next run to reconcile. GETs retry as <code>fetch_file</code> does; the POST never retries.</p>
+<li><p>The whole client: submit, wait, fetch. It needs your account in <code>GBIF_USERNAME</code> and <code>GBIF_PASSWORD</code> and makes a real download each time it posts, so the tests don't run it and <code>e1.py</code> carries it commented out. The intent file is saved before the POST and again with the key, or with the key it adopts, before any wait; a POST GBIF refuses (a 4xx) made nothing, so its intent is deleted; a 5xx or a dropped connection keeps it for the next run to reconcile. GETs retry as <code>fetch_file</code> does; the POST never retries.</p>
 {{block:e1-submit}}</li>
 </ol>
 

@@ -8331,7 +8331,7 @@ request changed: refuse: the intent is for another request: finish its download 
 
 A run posts only when no intent exists. A download made 20 minutes before the intent isn't adopted (another run's), nor is one of another request. When two downloads match, both may be this run's or one may be another client's; picking one is a person's call, so the run stops.
 
-5. The whole client: submit, wait, fetch. It needs your account in `GBIF_USERNAME` and `GBIF_PASSWORD` and makes a real download each time it posts, so the tests don't run it and `e1.py` carries it commented out. The intent file is saved before the POST and again with the key; a POST GBIF refuses (a 4xx) made nothing, so its intent is deleted; a 5xx or a dropped connection keeps it for the next run to reconcile. GETs retry as `fetch_file` does; the POST never retries.
+5. The whole client: submit, wait, fetch. It needs your account in `GBIF_USERNAME` and `GBIF_PASSWORD` and makes a real download each time it posts, so the tests don't run it and `e1.py` carries it commented out. The intent file is saved before the POST and again with the key, or with the key it adopts, before any wait; a POST GBIF refuses (a 4xx) made nothing, so its intent is deleted; a 5xx or a dropped connection keeps it for the next run to reconcile. GETs retry as `fetch_file` does; the POST never retries.
 
 ```python
 # q: e1-submit
@@ -8402,6 +8402,8 @@ if step == ("post",):
     save({**intent, "key": key})
 else:
     key = step[1]
+    if step[0] == "adopt":  # saved before polling: a run stopped while waiting resumes this key, never lists again
+        save({**intent, "key": key})
 print("download key:", key)
 
 deadline = time.monotonic() + DEADLINE_S

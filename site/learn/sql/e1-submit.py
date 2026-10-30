@@ -66,6 +66,8 @@ if step == ("post",):
     save({**intent, "key": key})
 else:
     key = step[1]
+    if step[0] == "adopt":  # saved before polling: a run stopped while waiting resumes this key, never lists again
+        save({**intent, "key": key})
 print("download key:", key)
 
 deadline = time.monotonic() + DEADLINE_S
