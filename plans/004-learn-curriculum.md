@@ -9529,20 +9529,28 @@ with two made-up records (2,002 rows): refused
 
 **Tool:** Py · **Time:** 1.5 h · **Prereqs:** e4
 
-**Goal:** a pipeline that runs without you, and tells you when it breaks.
-- **A job is one command** with an exit code: 0 for success, anything else for failure. The scheduler only sees that code, so a job catches nothing silently, logs the traceback and exits 1.
+**Concept:** a pipeline that runs without you, and tells you when it breaks.
+- **A job is one command** with an exit code: 0 for success, anything else for failure. The scheduler sees only that code, so a job catches nothing silently: it writes the reason, puts the traceback in its error output and exits 1.
+- **The scheduler's environment isn't yours.** cron, a systemd timer and Task Scheduler start the job without your shell's profile, so the `PG*` settings you typed in a terminal aren't there. Give them to the job where the scheduler reads them (the crontab, the unit's `EnvironmentFile=`, the account's variables), keep the password in the password file, and have the job check them by name before it connects. Its log names a missing setting and never prints a value: logs are read by more people than passwords should be.
 - **Logs:** one line per step, with a timestamp, to a file or the journal.
-- **Alerts:** on Linux, systemd's `OnFailure=` starts another unit when a job fails, and cron mails a job's output to `MAILTO`. Windows' Task Scheduler records the last result, and can be set to restart a failed task.
-- **Incremental loads** move only what changed. A file with a published checksum tells you whether anything changed at all. Records that changed or were deleted upstream are the hard part: an append-only increment never sees them. For a sample this size, the honest increment is a whole reload, in one transaction, when the input's checksum changes. A weekly GBIF refresh is a new download with a new DOI, so it is a new run of e1–e4.
+- **Alerts:** a failure nobody hears about is a silent one. systemd's `OnFailure=` starts another unit when a job fails; that unit alerts a person only if its command sends mail or a push. cron mails a job's output to `MAILTO` only when the crontab line doesn't redirect it to a file, so a line ending `>> refresh.log 2>&1` mails nothing. Task Scheduler records the last result, and can restart a failed task.
+- **A refresh you can restart** (e3's snapshot rule, run by a scheduler):
+  - **the job key** is one checksum over the input's checksum, `TRANSFORM_VERSION`, the config and `SCHEMA_VERSION`. Bump `TRANSFORM_VERSION` when the code's output changes, and `SCHEMA_VERSION` when the target's DDL does;
+  - **a persistent target and a state table** in their own schema, created once: the state row keeps the key the target was loaded with;
+  - **one transaction** replaces the target's rows and updates the state row, so a failed run leaves both as they were, and a run killed half-way commits nothing;
+  - **a lock** covers the comparison and the replacement, so two runs that overlap, a slow one and the next one or a manual re-run, can't both load. `pg_try_advisory_xact_lock` doesn't wait: a run that finds it held does nothing and exits 0, since the run holding it is doing the work. The lock is the transaction's, so it is freed when the job ends, however it ends.
+- **Incremental loads** move only what changed. A file with a published checksum tells you whether anything changed at all. Records that changed or were deleted upstream are the hard part: an append-only increment never sees them. For a sample this size, the honest increment is a whole reload, in one transaction, when the job key changes. A weekly GBIF refresh is a new download with a new DOI, so it is a new run of e1–e4.
 
-**Data:** `/learn/data/manifest.json` and `datasets.csv`; the lab's `datasets` table, for the shape of its copy.
+**Data:** `/learn/data/manifest.json` and `datasets.csv`; the lab's `datasets` table, for the shape of the job's copy.
 
-**Key code:** a weekly refresh job: it compares the published checksum with the one it loaded last, reloads in one transaction when they differ, checks the row count, and exits 1 with the traceback on any failure.
+**Worked example:** a simulation of a weekly refresh, in one process on `TEMP` tables, so it leaves the lab as it was and can be checked in one go. It compares the published checksum with the one it loaded last, reloads in one transaction when they differ, checks the row count, and exits 1 with the traceback on any failure.
 
 ```python
 # q: e5-job
 # status: ran
 # after: py-connect
+# A simulation: both "weeks" run in this one process, on TEMP tables that vanish when it ends. A scheduler runs a job as
+# a new process each time, against tables that persist; e5-refresh writes that job, and e5-runs runs it.
 import hashlib
 import json
 import logging
@@ -9585,10 +9593,11 @@ def refresh(conn):
 
 
 def main():
-    """Exit 0 on success, 1 on any failure, with the traceback in the log: cron mails it, systemd marks the unit failed."""
+    """Exit 0 on success, 1 on any failure, with the traceback in the output. The scheduler sees only the exit code:
+    systemd marks the unit failed; cron mails the output only if the crontab line doesn't redirect it to a file."""
     try:
         with connect() as conn:
-            # The lab's tables are TEMP, so it leaves learn_curriculum as it was; a real job's live in its own schema.
+            # TEMP tables: the simulation leaves learn_curriculum as it was; a real job's tables live in its own schema.
             conn.execute("CREATE TEMP TABLE my_datasets (LIKE datasets)")
             conn.execute("CREATE TEMP TABLE refresh_state (file text PRIMARY KEY, sha256 text NOT NULL)")
             for run in (1, 2):  # this week's run, then next week's with nothing new
@@ -9600,7 +9609,10 @@ def main():
     return 0
 
 
-raise SystemExit(main())
+# A scheduled script ends with `raise SystemExit(main())`; here the lab goes on, so only a failure stops it.
+exit_code = main()
+if exit_code:
+    raise SystemExit(exit_code)
 ```
 
 ```text
@@ -9611,18 +9623,277 @@ INFO refresh: run 2
 INFO refresh: datasets.csv unchanged (sha256 3bd8c1726239): nothing to do
 ```
 
-Scheduling it. On Linux with cron, every Monday at 04:17:
+**Expected:** the first run loads `datasets.csv`, 400 rows, and records its sha256 (`3bd8c1726239…`); the second finds the same checksum and does nothing. Both log one line per step, and the job exits 0. Point `LEARN_BASE` at a server that isn't running and it logs the traceback and exits 1. What the simulation can't show is what a scheduler does: start a new process each week, against tables that outlived the last one, maybe while the last one is still running.
+
+**Lab:**
+1. The real job. This block writes `refresh.py` to the current folder and prints nothing; the job is the string. It reads the `PG*` settings, `LEARN_BASE`, `REFRESH_SCHEMA` (the schema holding its target and state tables, `etl` by default) and `REFRESH_LICENSES` (the licenses it keeps, `CC0 1.0,CC BY 4.0` by default: its config). Each run is one transaction: the lock, the key compared with the state row's, the file fetched and checked against the manifest, staged with `COPY` and counted, then the target's rows replaced and the state row updated, together. A held lock or an equal key exits 0 having changed nothing; any error rolls the whole run back and exits 1.
+
+```python
+# q: e5-refresh
+# status: ran
+from pathlib import Path
+
+JOB = r'''"""refresh.py: makes <REFRESH_SCHEMA>.datasets hold the published datasets.csv, under this code and config.
+Exit 0: loaded, or nothing to do. Exit 1: failed, and nothing changed. The reason goes to stdout, the traceback to stderr."""
+import hashlib
+import json
+import logging
+import os
+import sys
+import traceback
+import urllib.request
+from pathlib import Path
+
+import psycopg
+from psycopg import sql
+from psycopg.types.json import Jsonb
+
+FILE = "datasets.csv"
+TRANSFORM_VERSION = 1  # bump when this code's output changes
+SCHEMA_VERSION = 1  # bump when the target's DDL changes
+SETTINGS = ("PGHOST", "PGPORT", "PGUSER", "PGDATABASE")
+
+# A scheduled job writes a timestamp on every line (add %(asctime)s); this lab leaves it out so its output can be checked.
+logging.basicConfig(stream=sys.stdout, level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
+log = logging.getLogger("refresh")
+
+
+def missing_settings():
+    """The connection settings this environment lacks, by name: no value, the password least of all, reaches the log."""
+    missing = [name for name in SETTINGS if not os.environ.get(name)]
+    default = (Path(os.environ.get("APPDATA", "")) / "postgresql" / "pgpass.conf" if os.name == "nt"
+               else Path.home() / ".pgpass")
+    if not os.environ.get("PGPASSWORD") and not Path(os.environ.get("PGPASSFILE", default)).is_file():
+        missing.append("PGPASSWORD or a password file")
+    return missing
+
+
+def read(url):
+    with urllib.request.urlopen(url, timeout=60) as r:
+        return r.read()
+
+
+def job_key(parts):
+    """One sha256 over the four parts, as canonical JSON (sorted keys, no spaces), so equal parts give one key (e3)."""
+    return hashlib.sha256(json.dumps(parts, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+
+
+def refresh(conn, base, schema, licenses):
+    """One run in one transaction: the lock, the comparison, the replacement and the new state commit together, or
+    nothing does. Returns the log line."""
+    entry = json.loads(read(f"{base}/learn/data/manifest.json"))["files"][FILE]
+    parts = {"input": entry["sha256"], "transform": TRANSFORM_VERSION,
+             "config": {"file": FILE, "licenses": licenses}, "schema": SCHEMA_VERSION}
+    key = job_key(parts)
+    target, state = sql.Identifier(schema, "datasets"), sql.Identifier(schema, "refresh_state")
+    with conn.transaction():
+        # The transaction's own lock: COMMIT or ROLLBACK frees it, however the job ends. Held means another run is at work.
+        if not conn.execute("SELECT pg_try_advisory_xact_lock(hashtext(%s))", (f"refresh:{schema}",)).fetchone()[0]:
+            return "another refresh holds the lock: skipped"
+        last = conn.execute(sql.SQL("SELECT job_key, parts FROM {} WHERE job = %s").format(state), (FILE,)).fetchone()
+        if last is not None and last[0] == key:
+            return "nothing changed: skipped"
+        data = read(f"{base}/learn/data/{FILE}")
+        if hashlib.sha256(data).hexdigest() != entry["sha256"]:
+            raise RuntimeError(f"{FILE} doesn't match its manifest's sha256")
+        conn.execute(sql.SQL("CREATE TEMP TABLE stage (LIKE {}) ON COMMIT DROP").format(target))
+        with conn.cursor().copy("COPY pg_temp.stage FROM STDIN (FORMAT csv, HEADER true)") as copy:
+            copy.write(data)
+        staged = conn.execute("SELECT count(*) FROM pg_temp.stage").fetchone()[0]
+        if staged != entry["rows"]:
+            raise RuntimeError(f"staged {staged} rows; the manifest says {entry['rows']}")
+        conn.execute(sql.SQL("TRUNCATE {}").format(target))
+        loaded = conn.execute(sql.SQL("INSERT INTO {} SELECT * FROM pg_temp.stage WHERE license = ANY(%s)").format(target),
+                              (licenses,)).rowcount
+        conn.execute(sql.SQL("INSERT INTO {} VALUES (%s, %s, %s) ON CONFLICT (job) DO UPDATE "
+                             "SET job_key = EXCLUDED.job_key, parts = EXCLUDED.parts").format(state),
+                     (FILE, key, Jsonb(parts)))
+    if last is None:
+        return f"first load: loaded {loaded} rows"
+    changed = " and ".join(p for p in sorted(parts) if parts[p] != last[1].get(p))
+    return f"{changed} changed: loaded {loaded} rows"
+
+
+def main():
+    missing = missing_settings()
+    if missing:
+        log.error("failed: not set in this environment: %s", ", ".join(missing))
+        return 1
+    base = os.environ.get("LEARN_BASE", "https://critwire.com")
+    schema = os.environ.get("REFRESH_SCHEMA", "etl")
+    licenses = sorted(name.strip() for name in os.environ.get("REFRESH_LICENSES", "CC0 1.0,CC BY 4.0").split(","))
+    try:
+        with psycopg.connect(autocommit=True) as conn:  # autocommit: conn.transaction() is then the one transaction
+            log.info(refresh(conn, base, schema, licenses))
+    except Exception as e:
+        log.error("failed: %s", e)
+        traceback.print_exc()
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
+'''
+
+Path("refresh.py").write_text(JOB, encoding="utf-8")
+```
+
+```text
+-- result: e5-refresh · python · sha256 e3b0c44298fc
+```
+
+2. Run it as a scheduler does: a new process each time, here eight times. The block creates a schema `learn_e5` with the target and state tables, as you would create `etl`'s once, and drops it at the end. A is the published `datasets.csv`; B is a local copy with one title corrected; C is B with one made-up dataset added, under a manifest that still says 400 rows, as if the publisher's count went wrong. Each run gets this block's environment; run 8 without `PGDATABASE`. Run 6 holds the job's lock from this block's own session, as a run still going would; run 7 starts two runs at once.
+
+```python
+# q: e5-runs
+# status: ran
+# after: py-connect, e5-refresh
+import csv
+import hashlib
+import io
+import json
+import os
+import subprocess
+import sys
+import tempfile
+import urllib.request
+from pathlib import Path
+
+BASE = os.environ.get("LEARN_BASE", "https://critwire.com")
+SCHEMA = "learn_e5"
+LICENSES = {"CC0 1.0", "CC BY 4.0"}  # refresh.py's default config
+
+
+def rows_of(data):
+    return [tuple(r) for r in csv.reader(io.StringIO(data.decode("utf-8"), newline=""))][1:]
+
+
+def csv_file(header, rows):
+    out = io.StringIO()
+    csv.writer(out, lineterminator="\n").writerows([header, *rows])
+    return out.getvalue().encode("utf-8")
+
+
+def publish(folder, data, rows):
+    """A copy of /learn/data/ on this machine holding `data`, its manifest saying `rows` rows; returns its LEARN_BASE."""
+    d = Path(folder) / "learn" / "data"
+    d.mkdir(parents=True)
+    (d / "datasets.csv").write_bytes(data)
+    entry = {"sha256": hashlib.sha256(data).hexdigest(), "rows": rows}
+    (d / "manifest.json").write_text(json.dumps({"files": {"datasets.csv": entry}}), encoding="utf-8")
+    return Path(folder).as_uri()
+
+
+def start(base=None, licenses=None, without=None):
+    """refresh.py as a new process, with this block's environment and these changes."""
+    env = {k: v for k, v in os.environ.items() if k != without}
+    env["REFRESH_SCHEMA"] = SCHEMA
+    if base:
+        env["LEARN_BASE"] = base
+    if licenses:
+        env["REFRESH_LICENSES"] = licenses
+    return subprocess.Popen([sys.executable, "-I", "refresh.py"], env=env, text=True,
+                            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+
+def finish(proc):
+    out, err = proc.communicate(timeout=120)
+    return proc.returncode, out.strip(), " · traceback on stderr" if "Traceback" in err else ""
+
+
+def show(n, label, proc):
+    code, out, err = finish(proc)
+    print(f"run {n} · {label} · exit {code} · {out}{err}")
+
+
+def holds(conn, inputs):
+    """Which input the target's rows and the state's key come from: read, not assumed."""
+    rows = set(conn.execute(f"SELECT CAST(dataset_key AS text), title, publisher, coalesce(doi, ''), license "
+                            f"FROM {SCHEMA}.datasets").fetchall())
+    target = next((n for n, data in inputs.items() if rows == {r for r in rows_of(data) if r[4] in LICENSES}), "no input")
+    sha = conn.execute(f"SELECT parts->>'input' FROM {SCHEMA}.refresh_state WHERE job = 'datasets.csv'").fetchone()[0]
+    state = next((n for n, data in inputs.items() if hashlib.sha256(data).hexdigest() == sha), "no input")
+    print(f"  the target holds {target}; the state's input is {state}")
+
+
+with connect() as conn, tempfile.TemporaryDirectory() as tmp:
+    conn.autocommit = True  # each statement commits, so the job's own sessions see the tables
+    conn.execute(f"CREATE SCHEMA {SCHEMA}")
+    try:
+        conn.execute(f"CREATE TABLE {SCHEMA}.datasets (dataset_key uuid PRIMARY KEY, title text NOT NULL, "
+                     "publisher text NOT NULL, doi text, license text NOT NULL)")
+        conn.execute(f"CREATE TABLE {SCHEMA}.refresh_state (job text PRIMARY KEY, job_key text NOT NULL, parts jsonb NOT NULL)")
+        with urllib.request.urlopen(f"{BASE}/learn/data/datasets.csv", timeout=60) as r:
+            a = r.read()
+        header, *rows = csv.reader(io.StringIO(a.decode("utf-8"), newline=""))
+        b_rows = [[*rows[0][:1], rows[0][1] + " (corrected)", *rows[0][2:]], *rows[1:]]
+        made_up = ["00000000-0000-4000-8000-000000000001", "A made-up dataset", "Nobody", "", "CC0 1.0"]
+        inputs = {"A": a, "B": csv_file(header, b_rows), "C": csv_file(header, [*b_rows, made_up])}
+        b_base = publish(Path(tmp) / "b", inputs["B"], len(b_rows))
+        c_base = publish(Path(tmp) / "c", inputs["C"], len(b_rows))  # one row more than its manifest says
+
+        show(1, "A", start())
+        show(2, "A again", start())
+        show(3, "A, REFRESH_LICENSES=CC0 1.0", start(licenses="CC0 1.0"))
+        show(4, "B, one title corrected", start(base=b_base))
+        show(5, "C, one row added, its manifest still says 400 rows", start(base=c_base))
+        holds(conn, inputs)
+        lock = f"refresh:{SCHEMA}"
+        conn.execute("SELECT pg_advisory_lock(hashtext(%s))", (lock,))  # as a run that is still going holds it
+        try:
+            show(6, "A, the lock held by another session", start())
+        finally:
+            conn.execute("SELECT pg_advisory_unlock(hashtext(%s))", (lock,))
+        holds(conn, inputs)
+        both = [finish(p) for p in [start(), start()]]
+        # Which one wins, and whether the other meets the lock or the new state, varies from run to run.
+        outcomes = sorted("loaded" if ": loaded " in out else "not loaded" for _, out, _ in both)
+        print(f"run 7 · A, two runs started together · exit {' and '.join(str(c) for c, _, _ in both)} · {', '.join(outcomes)}")
+        holds(conn, inputs)
+        show(8, "A, without PGDATABASE", start(without="PGDATABASE"))
+    finally:
+        conn.execute(f"DROP SCHEMA {SCHEMA} CASCADE")
+```
+
+```text
+-- result: e5-runs · python · sha256 bda9eaea67a6
+run 1 · A · exit 0 · INFO refresh: first load: loaded 400 rows
+run 2 · A again · exit 0 · INFO refresh: nothing changed: skipped
+run 3 · A, REFRESH_LICENSES=CC0 1.0 · exit 0 · INFO refresh: config changed: loaded 124 rows
+run 4 · B, one title corrected · exit 0 · INFO refresh: config and input changed: loaded 400 rows
+run 5 · C, one row added, its manifest still says 400 rows · exit 1 · ERROR refresh: failed: staged 401 rows; the manifest says 400 · traceback on stderr
+  the target holds B; the state's input is B
+run 6 · A, the lock held by another session · exit 0 · INFO refresh: another refresh holds the lock: skipped
+  the target holds B; the state's input is B
+run 7 · A, two runs started together · exit 0 and 0 · loaded, not loaded
+  the target holds A; the state's input is A
+run 8 · A, without PGDATABASE · exit 1 · ERROR refresh: failed: not set in this environment: PGDATABASE
+```
+
+Each line is one process: its exit code and the one line it logged. Run 2 skips because the state row outlived run 1's process. Run 3 changes only the config, so it reloads, keeping the 124 CC0 1.0 datasets; run 4 changes the input and puts the default config back. Run 5 stages 401 rows against a manifest of 400 and fails: it exits 1, and the target and the state still hold B, because the replacement and the state row would have committed together. Run 6 finds the lock held and changes nothing. In run 7 one process loads A; the other either finds the lock held or, starting a moment later, finds the new state, and both are right to exit 0. After A, B and A again the target holds A. Run 8 names the missing setting and prints no value.
+
+**Scheduling it.** Put `refresh.py` in a folder of its own, `~/etl` here, with a `.venv` built from the lab's `requirements.txt` (§3.3), and create the schema `etl` with its two tables once, as `e5-runs` creates `learn_e5`'s.
+
+On Linux with cron, every Monday at 04:17. cron reads `VAR=value` lines at the top of the crontab; the password stays in `~/.pgpass`:
 
 ```sh
 crontab -e
-# then add this line:
+# then add these lines:
+PGHOST=localhost
+PGPORT=5432
+PGUSER=postgres
+PGDATABASE=learn
 17 4 * * 1 cd "$HOME/etl" && .venv/bin/python -I refresh.py >> refresh.log 2>&1
 ```
+
+With `>> refresh.log 2>&1`, everything the job prints goes to `refresh.log`, so cron has nothing to mail and a failure is only a line in that file. Leave the redirect off and set `MAILTO=you@example.org` to have cron mail each run's output, if the machine can send mail.
 
 Or a systemd user timer, which catches up on a run missed while the machine was off (`Persistent=true`) and logs to the journal:
 
 ```sh
 mkdir -p ~/.config/systemd/user
+printf 'PGHOST=localhost\nPGPORT=5432\nPGUSER=postgres\nPGDATABASE=learn\n' > ~/etl/refresh.env
 cat > ~/.config/systemd/user/refresh.service <<'EOF'
 [Unit]
 Description=Weekly lab data refresh
@@ -9631,11 +9902,12 @@ OnFailure=refresh-failed.service
 [Service]
 Type=oneshot
 WorkingDirectory=%h/etl
+EnvironmentFile=%h/etl/refresh.env
 ExecStart=%h/etl/.venv/bin/python -I refresh.py
 EOF
 cat > ~/.config/systemd/user/refresh-failed.service <<'EOF'
 [Unit]
-Description=Tell someone the refresh failed
+Description=Record that the refresh failed
 
 [Service]
 Type=oneshot
@@ -9658,9 +9930,9 @@ loginctl enable-linger "$USER"     # run it even when you aren't logged in
 journalctl --user -u refresh.service   # the log
 ```
 
-`refresh-failed.service` only writes to the system log here. To be told on your phone or by email, replace its `ExecStart` with your mail or push command.
+`refresh-failed.service` only writes a line to the system log, which alerts nobody: someone has to read it. To be told, replace its `ExecStart` with a command that sends mail or a push to your phone.
 
-On Windows, with Task Scheduler, from PowerShell:
+On Windows, with Task Scheduler, from PowerShell. The task runs as you, so it sees your user environment variables (`setx PGHOST localhost`, and so on, once) and your password file, `%APPDATA%\postgresql\pgpass.conf`:
 
 ```powershell
 $action = New-ScheduledTaskAction -Execute "$HOME\etl\.venv\Scripts\python.exe" -Argument "-I refresh.py" -WorkingDirectory "$HOME\etl"
@@ -9670,7 +9942,9 @@ Register-ScheduledTask -TaskName "Lab data refresh" -Action $action -Trigger $tr
 Get-ScheduledTaskInfo -TaskName "Lab data refresh"   # LastTaskResult 0 means success
 ```
 
-**Expected:** the first run loads `datasets.csv`, 400 rows, and records its sha256 (`3bd8c1726239…`); the second finds the same checksum and does nothing. Both runs log one line per step and the job exits 0. Break it, for example by pointing `LEARN_BASE` at a server that isn't running, and the job logs the traceback and exits 1: cron mails the output, systemd marks the unit failed and starts `refresh-failed.service`, and Task Scheduler shows a non-zero last result.
+Task Scheduler keeps the last result, and the task's history, and tells nobody: check `LastTaskResult`, or add a second task triggered by the failure event that sends a message.
+
+**Result:** a refresh job that a scheduler can run as often as it likes. Each run is one process and one transaction: an unchanged job key skips, a changed input or config reloads, a failed check leaves the target and state as they were, and of two runs at once exactly one loads. After A, B and A again, the target holds A. The job checks its connection settings by name and logs no value, and the scheduling recipes say plainly where a failure ends up: a log file, the journal, or a task's last result, until you add the mail or push that tells a person.
 
 ### 5.6 Power BI
 

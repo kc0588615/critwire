@@ -573,7 +573,7 @@
       "prereqs": [
         "e4"
       ],
-      "state": "planned",
+      "state": "built",
       "skill": "cron, systemd timers, Windows Task Scheduler; logs, alerts, incremental loads",
       "questions": [
         "How do I refresh weekly, and know when a run broke?"
