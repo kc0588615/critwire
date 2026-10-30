@@ -2,7 +2,7 @@
 mission: critwire-learn-l5-powerbi-capstone
 project: critwire
 branch: agent/critwire-learn-l5-powerbi-capstone
-status: active
+status: done
 started: 2026-10-30 04:23 UTC
 ---
 
@@ -1007,5 +1007,24 @@ SHOULD-CONSIDER:
 - 2026-10-30 21:36 UTC: Astra code review (`--code origin/main`): APPROVE_WITH_CHANGES, 1 MUST-FIX (p2 model measures) → S17; 3 SHOULD-CONSIDER (p2 eight relationships, Namibia slicer, c1 credits source) verified, taken → S18. Plan-only change, no checks needed.
 - 2026-10-30 21:48 UTC: S17 p2 model measures (Astra MUST-FIX 1): p2 Lab + step making `Records`/`Species listed` model measures; p3 reuses p2's `Records`; p4 says from p2; 004 + 3 pages. No new tests (copy only; e2e crawl covers pages). T: typecheck ok, test 703/703; P 538 equal; B ok; E: e2e 98/98 (`$M/e2e-s17`, unexpected/skipped/flaky 0); H, HN, HR empty; A ok.
 - 2026-10-30 21:58 UTC: S18 Astra SHOULD-CONSIDER copy fixes: p2 nine → eight relationships (×3), p2 lab clears Namibia slicer before habitat table, c1 credits query on same file as `cells` + own-feed `File.Contents` swap; 004 + p2/c1 pages. No new tests (copy only). T: typecheck ok, test 703/703; P 538 equal; B ok; E: e2e 98/98 (`$M/e2e-s18`, unexpected/skipped/flaky 0); H, HN, HR empty; A ok.
+- 2026-10-30 23:35 UTC: Final Verification (rule 7) on `beec070`: all 12 pass. 1 install frozen no change, ajv 8.20.0 exact, venv + `uv pip check` clean; 2 typecheck ok, test 703/703 (listed ids pass); 3 plain build ok, `dist/learn/data/` 96,026,477 B ≤ 120,000,000, committed lab data 18,822,906, star 8 CSVs + manifest; 4 e2e 98/98 (13 specs, unexpected/skipped/flaky 0, 98 traces, 12 map/p3/c1 shots, `$M/e2e/`); 5 test:db 140/140 (1,413 s), Q empty; 6 learn:check ×2 ok (556 s, 551 s; p2–p4/c1 downloads 0 ERROR as announced; tree clean, canary unchanged, Q empty), `--module p3` 31 s, `--module c1` 62 s; 7 P 538 equal, 004 result diffs only p3-check + c1-feed (bytes 34,848 → 35,178 = `wc -c`), cmps clean, Power BI greps empty, blocks 261 ran / 15 untested; 8 33 built, 68 h, no "in preparation", §2 bad 0; 9 erd no change, 0 `%% planned`, self_check OK ×4; 10 H, HN, HR empty, HR-diff + A exit 0, `/v1` 159 files identical; 11 determinism diff empty (311 files); 12 H6 waiting on you, Blocks nothing, all four items + twins sentence. Summary written, status done.
 
 ## Summary
+
+**What shipped** (Learn complete, all 33 modules built):
+- Habitat fact in the star: `dim_habitat_class` (75 rows) + `fact_country_habitat` (5,578 rows, one country × one habitat class, `est_area_km2 >= 0`, FKs NOT NULL, unknown members `ZZ`/`-1` kept) from L3's summaries; `/learn/data/star/` 8 CSVs + manifest; star ERD unplanned, drift check passes.
+- p1–p4 in full (Power Query on `Web.Contents` + explicit culture, model + 8 relationships, DAX measures, maps/report with honest titles, refresh). M and DAX `untested: Power BI is Windows-only`; every block's `// input:` checked (header, keys, rows, sha256); each DAX block names a ran PostGIS `// twin:`; pages say twins verify arithmetic only.
+- c1 in full: L1 data → s4 hexagons → s5 Gi\* → `c1-feed` → `/learn/labs/c1-feed.json` (307 cells, 1,972 records, weight sum 0.999954, 37 recording hot spots, 7 datasets credited, CC BY 4.0 license + attribution + credit DOIs, 35,178 B) + `c1-feed.schema.json` (2020-12, Ajv-valid in e2e and release smoke); `c1-report` (M) reads the feed; exercise `c1-ex`; diagrams `c1-pipeline`, `c1-feed` (light + dark, diagram-design). Records, never range, throughout.
+- Machinery: cross-page `-- after:` (prereq scope, `afterScope`), engine-neutral habitat CHECK, `// twin:`/inputs lint, feed bound at build (plain refuses stale/unattributed), `learn:check --update` writes the feed; ajv 8.20.0 (dev, e2e only).
+
+**Course in numbers:** 33 modules built, 68.0 h; blocks 261 ran / 15 untested (11 Power BI M/DAX, plus arcpy, e1 submit, d5 database, g3 IUCN). `/learn/data/` 96,026,477 B (cap 120,000,000).
+
+**Verification** (final, `beec070`): typecheck, test 703/703, plain build, e2e 98/98 (nothing skipped), test:db 140/140, learn:check ×2 green, canary unchanged, leak query empty, `learn:port --check all` 538 equal, `/v1` byte-identical, deterministic build. Artifact: `/srv/critter-ai/agent-state/missions/critwire-learn-l5-powerbi-capstone/e2e/` (Playwright report, 98 traces, `results.json`, map/p3/c1 at 1280/375 light+dark). Reproduce: `pnpm build && E2E_ARTIFACTS=<dir> pnpm e2e`.
+
+**Deviations from 004** (Decisions, with commits): cross-page `-- after:` (S1); habitat CHECK `>= 0 AND <= 9999999999.99` (S2); DAX `// twin:` + feed input (S3); feed written from `c1-feed-file` via temp view `c1_feed` (S4, S9); feed license/attribution/credit DOIs, bytes 34,848 → 35,178 (S10); `c1-report` reads the feed (S11); `p3-check` re-run on L3's summaries, `NULLIF`, "sample records divided by forest area" (S7); §2 c1 tools `PG + Py + PBI` (S13); cap 120 MB (owner, L3 H5) not 50 MB; p2/p3/p4 Lab copy fixes from Astra's code review (S17, S18).
+
+**Reviews:** architecture Fable APPROVE_WITH_CHANGES, Astra APPROVE_WITH_CHANGES (all MUST-FIX resolved); code Astra APPROVE_WITH_CHANGES, MUST-FIX 1 + 3 SHOULD-CONSIDER fixed (S17, S18). Review items SC9 a–d, item 2, item 3: all done, none rejected.
+
+**Release:** see `## Release` (next unit: merge PR + `deploy critwire` + smoke).
+
+**Owner:** H6 "Power BI Desktop check against the live star" in `/srv/critter-ai/handoff/critwire.md` (blocks nothing): run p1's queries and p2–p4's DAX query view queries against critwire.com, compare with each twin.
