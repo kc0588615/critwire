@@ -941,6 +941,19 @@ SHOULD-CONSIDER:
 
 ## Release
 
+- Rebase: no-op (`origin/main` `67ceb8f` already in the branch; `beec070..HEAD` plan-only). Re-check on HEAD `e186903`: `pnpm install --frozen-lockfile` no change, typecheck ok, test 703/703, plain build ok (`/learn/data/` 96,026,477 B), e2e 98/98 (unexpected/skipped/flaky 0). test:db, learn:check, determinism not re-run: code identical to the final Verification's `beec070` (all 12 pass).
+- PR #14 (https://github.com/kc0588615/critwire/pull/14), merged `gh pr merge 14 --merge`: merge commit `daa896dbbddd4484b74d15b24a8b0bf930a084b8` (tree = branch HEAD's, so `dist/` = its plain build).
+- `deploy critwire`: `67ceb8f -> daa896d`; last line `deploy critwire: live at https://critwire.com`. Log: `$M/r-deploy.log`.
+- Smoke (`O=https://critwire.com`):
+  - `playwright.release.config.ts`: 7/7 passed (every `dist/` file served with dist's bytes, `.wasm` types, f3's block, star sha256 vs served manifest, served feed Ajv-valid vs served schema, feed credits vs served manifest + `datasets.csv`, `s4.py` run). Artifact `$M/release-smoke/`, log `$M/r-smoke.log`.
+  - Pages: all 47 `/learn/` pages 200.
+  - Star: 8/8 `sha256sum -c` OK against the served manifest.
+  - Feed + schema: served bytes = `checked/c1-feed.json` / `c1-feed.schema.json` (cmp clean).
+- H6 updated with the merge commit (T10).
+- `$M` = `/srv/critter-ai/agent-state/missions/critwire-learn-l5-powerbi-capstone`.
+
+Result: done
+
 ## Decisions
 
 - Rounding probe (Fable MISSED): `country_habitats.est_area_km2` already `DECIMAL(12,2)`, no row > 2 places; DuckDB sum 146,579,613.97 = PostGIS `total_km2`. No DuckDB/PostGIS rounding risk for T2.
@@ -1008,6 +1021,7 @@ SHOULD-CONSIDER:
 - 2026-10-30 21:48 UTC: S17 p2 model measures (Astra MUST-FIX 1): p2 Lab + step making `Records`/`Species listed` model measures; p3 reuses p2's `Records`; p4 says from p2; 004 + 3 pages. No new tests (copy only; e2e crawl covers pages). T: typecheck ok, test 703/703; P 538 equal; B ok; E: e2e 98/98 (`$M/e2e-s17`, unexpected/skipped/flaky 0); H, HN, HR empty; A ok.
 - 2026-10-30 21:58 UTC: S18 Astra SHOULD-CONSIDER copy fixes: p2 nine → eight relationships (×3), p2 lab clears Namibia slicer before habitat table, c1 credits query on same file as `cells` + own-feed `File.Contents` swap; 004 + p2/c1 pages. No new tests (copy only). T: typecheck ok, test 703/703; P 538 equal; B ok; E: e2e 98/98 (`$M/e2e-s18`, unexpected/skipped/flaky 0); H, HN, HR empty; A ok.
 - 2026-10-30 23:35 UTC: Final Verification (rule 7) on `beec070`: all 12 pass. 1 install frozen no change, ajv 8.20.0 exact, venv + `uv pip check` clean; 2 typecheck ok, test 703/703 (listed ids pass); 3 plain build ok, `dist/learn/data/` 96,026,477 B ≤ 120,000,000, committed lab data 18,822,906, star 8 CSVs + manifest; 4 e2e 98/98 (13 specs, unexpected/skipped/flaky 0, 98 traces, 12 map/p3/c1 shots, `$M/e2e/`); 5 test:db 140/140 (1,413 s), Q empty; 6 learn:check ×2 ok (556 s, 551 s; p2–p4/c1 downloads 0 ERROR as announced; tree clean, canary unchanged, Q empty), `--module p3` 31 s, `--module c1` 62 s; 7 P 538 equal, 004 result diffs only p3-check + c1-feed (bytes 34,848 → 35,178 = `wc -c`), cmps clean, Power BI greps empty, blocks 261 ran / 15 untested; 8 33 built, 68 h, no "in preparation", §2 bad 0; 9 erd no change, 0 `%% planned`, self_check OK ×4; 10 H, HN, HR empty, HR-diff + A exit 0, `/v1` 159 files identical; 11 determinism diff empty (311 files); 12 H6 waiting on you, Blocks nothing, all four items + twins sentence. Summary written, status done.
+- 2026-10-30 23:07 UTC: Release: rebase no-op; HEAD re-check install/typecheck/test 703/703/build/e2e 98/98 ok; PR #14 merged `daa896d`; `deploy critwire` live; smoke 7/7 + 47 pages 200 + star 8/8 + feed/schema cmp ok; H6 gets merge commit.
 
 ## Summary
 
@@ -1025,6 +1039,6 @@ SHOULD-CONSIDER:
 
 **Reviews:** architecture Fable APPROVE_WITH_CHANGES, Astra APPROVE_WITH_CHANGES (all MUST-FIX resolved); code Astra APPROVE_WITH_CHANGES, MUST-FIX 1 + 3 SHOULD-CONSIDER fixed (S17, S18). Review items SC9 a–d, item 2, item 3: all done, none rejected.
 
-**Release:** see `## Release` (next unit: merge PR + `deploy critwire` + smoke).
+**Release:** PR #14 merged (`daa896d`), `deploy critwire` live at https://critwire.com; smoke: release suite 7/7, 47 `/learn/` pages 200, star 8/8 sha256, feed + schema bytes match. Details in `## Release`.
 
 **Owner:** H6 "Power BI Desktop check against the live star" in `/srv/critter-ai/handoff/critwire.md` (blocks nothing): run p1's queries and p2–p4's DAX query view queries against critwire.com, compare with each twin.
