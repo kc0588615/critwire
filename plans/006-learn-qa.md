@@ -243,6 +243,7 @@ Hand-only, not run here: Docker and its image tags, the EDB installer and Stack 
 | Q37 | g7 | prose | T0 | Result: "the worst are islands under 135 km²". The list holds Vatican City and Macau | fixed | `qa-fixes.ts` |
 | Q38 | s1 | number | T0 | "19 of the 28 museum specimens have no year": 20 do (10, 5, 3, 1, 1 across the rows, lab db) | fixed | `qa-fixes.ts` |
 | Q39 | s1, p4, c1 | prose | T0 | "A few collared animals": the Jaguar Movement Database holds 134,690 fixes from 117 jaguars ([its record](https://doi.org/10.5061/dryad.2dh0223)). s1 now says so, with the link; p4 and c1 drop "a few". What each page teaches stands | fixed | `qa-fixes.ts` |
+| Q40 | f4, s6, c1 | prose | T0 | "One collar study": the sample's dataset is a database that many teams' tracking fed, in 5 countries, so "study" says more than the data does. `jaguar_datasets` counts datasets; the prose now does too | fixed | `qa-fixes.ts` |
 
 ## Ledger
 
