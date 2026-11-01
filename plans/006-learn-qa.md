@@ -254,6 +254,7 @@ Hand-only, not run here: Docker and its image tags, the EDB installer and Stack 
 | Q48 | s4 | number | T0 | "Differ … by 10⁻¹² at most": `z_norm` at 5 km differs by 1.05 × 10⁻¹² (`s4-moran-sql`, `s4-agree`) | fixed | `qa-fixes.ts` |
 | Q49 | s4 | missing step | T0 | "This block runs when a PostGIS run starts" is the checker's view, and a learner told to roll back (setup, d3) would lose s4's tables. Says to keep its work | fixed | `qa-fixes.ts` |
 | Q50 | s5 | jargon | T0 | "Under the null hypothesis", the course's only use, unexplained; s4 said "with no pattern" | fixed | `qa-fixes.ts` |
+| Q51 | s5 | wrong fact | T0 | `esda.fdr` returns the Bonferroni bound "if every test would pass": it does when none passes (`len(sig_all) == 0`, esda 2.10.0) | fixed | `qa-fixes.ts` |
 
 ## Ledger
 
