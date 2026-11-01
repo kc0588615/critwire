@@ -577,6 +577,14 @@ Live walk or axe isn't needed: same bytes (§8). Record the result and the log's
 
 ## Code review (Astra)
 
+Ran `astra-review --code origin/main` once, exit 0.
+
+VERDICT: APPROVE
+
+MUST-FIX: none
+
+SHOULD-CONSIDER: none
+
 ## Release
 
 ## Decisions
@@ -610,5 +618,6 @@ Live walk or axe isn't needed: same bytes (§8). Record the result and the log's
 - 2026-11-01 15:33 UTC: U10: R7 read: ledger, sources, all 18 prose links with a verdict in 006, plus one scan of terms outside their home's closure. Two missing prereqs fixed (Q76 d1, g1 need f4; Q77 c1 needs e5), Q78, Q79, Q80 prose, each seen to fail on the unfixed build. Q81 queued for U11. Nothing listed. typecheck pass, `learn:port --check all` pass, `pnpm test` pass, plain build pass, scoped e2e 57/57 (walk, map). Next: U11.
 - 2026-11-01 16:27 UTC: U11: lab batch Q55, Q62, Q81 (comments only), each `QA_FIXES` row seen to fail first. Loop plain: `learn:check` ok, 189 block results unchanged, keys and 27 download shas moved; `checked.json` committed. e3, e4 `.ipynb` hashes moved, so notebooks rerun: 11/11 exit 0, Labs rows updated, hash check empty. typecheck pass, `learn:port --check all` pass, test 754/754, test:db 140/140, plain build pass, e2e 149/149 (11 min). Next: U12.
 - 2026-11-01 16:27 UTC: U12: 006 complete: 79 `fixed` SHAs filled and each resolved to its `Q<n>:` subject, 2 listed with recommendations, 0 queued, 81 rows; 47 Pages rows each with a read unit, every issue but Q2 (38 pages, noted) on its page; 47 Labs rows; hash check empty; `/v1` hashes equal baseline. typecheck pass, `learn:port --check all` pass (538 files). Next: Astra code review.
+- 2026-11-01 16:30 UTC: Astra code review: APPROVE, 0 MUST-FIX, 0 SHOULD-CONSIDER. Plan only, no checks run. Next: final Verification.
 
 ## Summary
