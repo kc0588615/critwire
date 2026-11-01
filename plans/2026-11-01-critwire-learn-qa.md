@@ -77,7 +77,7 @@ Out:
 - [x] Fable review: `architecture-reviewer`
 - [x] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
 - [x] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
-- [ ] Steps: `planner` writes Steps and Verification
+- [x] Steps: `planner` writes Steps and Verification
 
 ## Baseline
 
@@ -373,7 +373,207 @@ SHOULD-CONSIDER:
 
 ## Steps
 
+Rules for every step. A session reads these, its item, the Architecture sections the item names, and `plans/006-learn-qa.md` once it exists.
+
+- **Where:** everything runs from `/srv/critter-ai/worktrees/critwire-learn-qa`. `S=/srv/critter-ai/agent-state/missions/critwire-learn-qa`. Heavy jobs one at a time.
+- **Scoped E2E:** `pnpm build && E2E_ARTIFACTS=/tmp/critwire-qa-e2e pnpm exec playwright test <files>`, with `<files>` as the item lists them. `rm -rf /tmp/critwire-qa-e2e` before the session ends. No intermediate folder under `$S`: `e2e-baseline/` stays until the final Verification writes `e2e-final/`.
+- **Minimum check:** `pnpm typecheck` in every session. There's no lint script.
+- **Tiers (§7, binding):** fix T0 and T1 in the session that finds them. Write T2 in 006 as `queued`, for U11. Write as `listed`, with a recommendation: a result change, a boot block, `pg-session`, `py-connect`, star output, data, the loader, `/v1`, or what a module teaches. `pnpm learn:check --update` doesn't run without a Decision saying why.
+- **Each fix:** its own commit, subject starting `Q<n>:` (next free number in 006's Issues), holding the fix, its 006 row and the assertion §7 names:
+  - prose, or an external URL: a `QA_FIXES` row in `e2e/qa-fixes.ts`
+  - internal link: the crawl in `e2e/learn-map.spec.ts`
+  - alt text: `e2e/learn-map.spec.ts:129`
+  - layout, axe: `e2e/learn-walk.spec.ts`
+  - exercise: a `WRONG` row, `e2e/learn-browser.spec.ts:320`
+  - code: the test named in the row
+
+  See the assertion fail on the unfixed build first. A prose fix also changes the same sentence in `plans/004-learn-curriculum.md` (`grep` it), same commit. A prereq fix also edits 004's `**Prereqs:**`. A T1 fix changes 004's fence and the block file in one commit, then `pnpm learn:port --check <page>`. SHA cells wait for U12.
+- **Copy:** AGENTS.md's Data rules and Learn rules (own words, records never range, no mission names on public pages, planned modules unlinked).
+- **Too big:** a fix beyond about one step gets listed. A reading unit that won't fit one session is split per the session rules, 25 steps at most.
+
+**Reading protocol (U4–U9, §4).**
+1. Recreate `/tmp/critwire-qa/qa-read.mts` from 006's Method fence (U4 writes it first). Read 006's ledger.
+2. For each page, in curriculum order: run `pnpm exec tsx /tmp/critwire-qa/qa-read.mts <page>` and read its output as a GIS specialist and game developer new to the topic, reading fast. Flag undefined jargon, steps that skip a needed action, and contradictions with the ledger. Give a verdict on every number it flags, on small integers and rates, and on whether a number it found is the right one. It's triage, not a gate.
+3. Add to 006: the page row's read unit and issues, Issues rows, and ledger rows (**terms**: term, defined at, used undefined at; **claims**: sample cap, versions, licences, what a table holds, rules).
+4. Apply T0 and T1 fixes; queue or list the rest.
+5. Checks: `pnpm typecheck`. With any fix, scoped `e2e/learn-walk e2e/learn-map`, plus `e2e/learn-browser` for a T1 fix or a `WRONG` row. A session with no fix needs only typecheck.
+
+- [ ] U1a. **Walk spec, axe, fixes 1 and 2, 006 skeleton** (§1, §2, §5; findings 1, 2). T0; no lab loop.
+  - Files: `package.json`, `pnpm-lock.yaml`, `AGENTS.md` (Stack line), `e2e/helpers.ts`, `e2e/learn-map.spec.ts`, `e2e/learn-screens.spec.ts`, new `e2e/learn-walk.spec.ts`, `site/learn/src/learn.css`, `site/learn/src/results.ts`, `scripts/build/learn/pages.ts`, `site/learn/data/index.html`, new `plans/006-learn-qa.md`.
+  - Do:
+    1. `pnpm add -D -E axe-core@4.14.0` (no build script, so no `allowBuilds` entry).
+    2. Move `learnPageUrls(c)` (from `learn-map.spec.ts:147`) and `WIDTHS`/`SCHEMES` (from `learn-screens.spec.ts:9-10`) into `e2e/helpers.ts`.
+    3. Write `e2e/learn-walk.spec.ts` as §1: titles `walk <url>`, 47 pages, Schema dialog on f1, Lab schema dialog on d3, and the keyboard test. One `test()` per page needs the list at collection, so read `site/learn/curriculum.json` synchronously.
+    4. See it fail: `pnpm build && E2E_ARTIFACTS=/tmp/critwire-qa-e2e pnpm exec playwright test e2e/learn-walk -g /learn/database-architecture/keys/`. It must show d1's overflow at 375 px and `scrollable-region-focusable`.
+    5. Commit `Q1:` `overflow-wrap: anywhere` on `.result-error` (`learn.css:22`).
+    6. Commit `Q2:` `focusableScrollers(main)` in `pages.ts`, called from `renderPage`, plus `tabindex="0"` by hand at `results.ts:46` and `site/learn/data/index.html:54`.
+    7. Commit the spec and the dependency.
+    8. Create 006 with §5's sections: commit walked, reproduce commands, Q1 and Q2 rows. Fill Pages and Axe from `results.json`'s annotations. Axe before: 1,248 nodes, 188 views, 38 pages (finding 2). Read a sample of `incomplete` and record it.
+  - Checks: `pnpm typecheck`; `pnpm test`; scoped `e2e/learn-walk e2e/learn-labs e2e/schema e2e/learn-map e2e/learn-screens`. Must show 196 views, 0 axe violations, 0 overflow, the keyboard test passing on both regions, `offOrigin` empty, no `pageerror`.
+
+- [ ] U1b. **`learn-map` tightening, `QA_FIXES`, live test** (§1's last two bullets, §7, §8). T0; no lab loop.
+  - Files: `e2e/learn-map.spec.ts`, new `e2e/qa-fixes.ts`, `e2e/learn-walk.spec.ts`, `e2e/release/live.spec.ts`, 006.
+  - Do:
+    1. `learn-map.spec.ts:137`: collect cross-page fragments, visit each target (including `/#files`), assert the id, and assert the set isn't empty (22 measured).
+    2. `:35`: assert each prereq's `href`.
+    3. `:89`: each module page's `.prereqs a` hrefs equal `m.prereqs.map(moduleUrl)`, in order.
+    4. `e2e/qa-fixes.ts`: `QA_FIXES: { q, url, has, not?, from?: { file, values[] } }[]`, empty for now.
+    5. Add test `QA_FIXES on dist` to the walk spec (`has`, `not`, `from`) and test `QA_FIXES on the origin` to `live.spec.ts` (`has`, `not`). Update the header comments of both.
+    6. Prove they bite: a temporary row with text the page lacks must fail both tests. Remove it before committing.
+    7. 006's Links section: the crawl's result, cross-page fragment count, prereq hrefs.
+  - Checks: `pnpm typecheck`; scoped `e2e/learn-walk e2e/learn-map`; then the live test's dry run against a local Caddy:
+    ```sh
+    mkdir -p /tmp/critwire-qa-e2e
+    CRITWIRE_DIST=$PWD/dist CRITWIRE_FIXTURES=$PWD/e2e/fixtures E2E_ARTIFACTS=/tmp/critwire-qa-e2e caddy run --config e2e/Caddyfile --adapter caddyfile >/dev/null 2>&1 & C=$!
+    timeout 20 sh -c 'until curl -sf -o /dev/null http://127.0.0.1:3101/; do :; done'
+    RELEASE_ORIGIN=http://127.0.0.1:3100 E2E_ARTIFACTS=/tmp/critwire-qa-e2e pnpm exec playwright test -c playwright.release.config.ts -g QA_FIXES
+    kill $C
+    ```
+
+- [ ] U2. **Labs and external links, one-off** (§3; findings 4, 5). Below T0: changes no repo file but 006, unless a dead link needs a fix.
+  - Do:
+    1. `pnpm build`. Save the runner: `mkdir -p /tmp/critwire-qa && sed -n '/^```ts$/,/^```$/p' plans/2026-11-01-critwire-learn-qa.md | sed '1d;$d' > /tmp/critwire-qa/qa-notebooks.mts`.
+    2. Run §3's `sh` fence (≈ 1.5 min). Must print 11 lines `<name>.ipynb <sha256> exit 0, … nothing left`.
+    3. 006's Labs, 47 rows. `.ipynb` (11): how run, result, sha256. Add `requirements.txt`'s sha256 (`sha256sum dist/learn/labs/requirements.txt`). `.sql` (25) and `.py` (11): "`learn:check` downloads stage", result from `$S/baseline-learncheck.log` for now; the final Verification replaces it.
+    4. 006's Method: both §3 fences, verbatim.
+    5. 006's Setup vs downloads: claim | evidence, for packages, the "44 pins" (`site/learn/pages/setup.html:87`), uv 0.13.5, the pyproj 3.8.0 Intel note, extensions, privileges, ipykernel. Mark Docker, EDB and Windows hand-only.
+    6. External links (≈ 3.5 min; Bash timeout 600000 ms):
+       ```sh
+       grep -rhoE 'href="https?://[^"]+"' dist/learn --include=index.html | sed -E 's/^href="|"$//g; s/&amp;/\&/g' | sort -u > /tmp/critwire-qa/links.txt
+       sed 's/.*/url = "&"\noutput = "\/dev\/null"/' /tmp/critwire-qa/links.txt > /tmp/critwire-qa/links.curl
+       curl --rate 2/s -sSL --max-time 30 -A 'critwire-qa (+https://critwire.com)' -w '%{http_code} %{url}\n' -K /tmp/critwire-qa/links.curl > /tmp/critwire-qa/links.out 2>&1
+       ```
+       `links.txt` holds 415 URLs today. Anything but 200: open it by hand once, and tell a bot block from a dead link. A dead hand-written link is a T0 fix or listed; a dead dataset DOI is listed. Never a gate. Record totals and non-200s in 006's Links.
+    7. A failing notebook (probed 11/11, so not expected) gets an Issues row, `queued` for U11 or `listed`.
+  - Checks: `pnpm typecheck`; `git status` shows only 006, plus any `Q<n>` fix, which gets the scoped run the fix rules name. The venv is gone (the fence deletes it). `rm -rf /tmp/critwire-qa`.
+
+- [ ] U3. **Astra's two leftovers** (§6; finding 7). T0: `scripts/ingest/gbif.ts` isn't in the checker's closure, so no key moves.
+  - Files: `scripts/ingest/gbif.ts`, `scripts/ingest/gbif.test.ts`, 006.
+  - Do:
+    1. Slugs: re-check §6's citations and record "covered, no test" in 006's Astra leftovers.
+    2. GBIF: first add failure modes (a)–(f) to the header of `gbif.test.ts`. Then `export` `fetchDatasets` (`gbif.ts:107`) and add one test per mode with `mock.method(globalThis, "fetch", …)`, answering by `facetOffset`.
+    3. A mode that exposes a real bug in `fetchDatasets` gets a `Q<n>` fix, with that mode as its test.
+  - Checks: `pnpm typecheck`; `pnpm exec tsx --test scripts/ingest/gbif.test.ts` (≤ 1.5 s a case); `pnpm exec tsx --test scripts/ingest/habitat.dbtest.ts` (the one dbtest whose closure reaches `gbif.ts`; `critwire_dev` only); `pnpm build` (plain, still fresh).
+
+- [ ] U4. **R1: map, setup, 7 track pages, playground, 3 schemas, data, f1–f4** (18 pages, 90 KB; §4, finding 8). Reading protocol; T0/T1 fixes.
+  - First write `/tmp/critwire-qa/qa-read.mts` as §4's Prose numbers says (≈ 40 lines; `readCourse` is `scripts/learn/course-files.ts`). Its whole-course totals should be near 1,115 tokens, 734 present, 381 absent. Put its text in 006's Method.
+  - Finding 8, as one `Q<n>` fix:
+    - Add the Jupyter install line to `site/learn/pages/setup.html:89`, and change the matching sentence at `plans/004-learn-curriculum.md:554`.
+    - Run the line as written in a throwaway `mktemp -d` venv built like §3's fence, confirm `jupyter --version`, delete the venv.
+    - Add a `QA_FIXES` row for `/learn/setup/`.
+  - Don't edit `scripts/learn/assemble.ts` here (T2). Record in 006 whether its line 190 still reads wrong: `queued` for U11, or "no change".
+  - Then the protocol over the 18 pages; start the ledger.
+
+- [ ] U5. **R2: d1–d6** (167 KB, the largest; §4). Reading protocol; T0/T1 fixes.
+
+- [ ] U6. **R3: g1–g7** (130 KB; §4). Reading protocol; T0/T1 fixes.
+
+- [ ] U7. **R4: s1–s6** (115 KB; §4). Reading protocol; T0/T1 fixes.
+
+- [ ] U8. **R5: e1–e5** (132 KB; §4). Reading protocol; T0/T1 fixes.
+
+- [ ] U9. **R6: p1–p4, c1** (74 KB; §4). Reading protocol; T0/T1 fixes.
+
+- [ ] U10. **R7: cross-module pass** (§4). T0/T1 fixes; no page rereads beyond what the ledger points to.
+  - Read only 006's ledger, the sources it points to, and §4's 18 prose links outside the prereq closure. Give each link a verdict in 006: missing prereq or harmless aside. Forward links (28) are fine unless the text needs them.
+  - A missing prereq is a T0 fix in `site/learn/curriculum.json` plus 004's `**Prereqs:**`, caught by `learn-map.spec.ts:89`. Contradictions go through the tiers.
+  - Checks: `pnpm typecheck`; `pnpm learn:port --check all`; with any fix, scoped `e2e/learn-walk e2e/learn-map`, plus `e2e/learn-browser` for T1.
+
+- [ ] U11. **Lab batch** (§7, §3, finding 8). **The only lab-tier step.** Its loop is `pnpm build --draft && pnpm learn:check && pnpm build`, plain: §7 rules `--update` out, because a whole plain run refuses a changed result and still rewrites `checked.json`.
+  - Read 006's `queued` rows, including `scripts/learn/assemble.ts:190` if R1 left it wrong.
+  - **Nothing queued:** write "lab batch empty" in 006 and do only the hash check below.
+  - **Otherwise:**
+    1. One `Q<n>:` commit per item: 004 and the file together.
+    2. `pnpm learn:port --check all`.
+    3. Run the loop once. A changed result means that item isn't T2: revert it and write it as `listed`.
+    4. Commit `site/learn/labs/checked/checked.json` from that whole run.
+    5. `pnpm typecheck`; `pnpm test`; `pnpm test:db` (≈ 24 min: dbtests read the course's blocks and import `assemble.ts`); `E2E_ARTIFACTS=/tmp/critwire-qa-e2e pnpm e2e` in full.
+  - **Hash check, always** (after a plain `pnpm build`). It must print nothing:
+    ```sh
+    for f in dist/learn/labs/*.ipynb dist/learn/labs/requirements.txt; do grep -q "$(sha256sum "$f" | cut -d' ' -f1)" plans/006-learn-qa.md || echo "STALE $f"; done
+    ```
+    If it prints anything, rerun §3's whole fence (U2's items 1–2) and update every Labs row.
+
+- [ ] U12. **006 complete** (§5). No code; no heavy run.
+  - Every issue has a state and no row is `queued`.
+  - Fill `fixed` SHAs from `git log --format='%h %s' --grep='^Q[0-9]*:' origin/main..HEAD`.
+  - Check all of it: header with commit walked and reproduce commands; 47 Pages rows, each with a read unit; 47 Labs rows; Links; Axe; Setup vs downloads; Astra leftovers; Ledger; Method fences (`qa-notebooks.mts`, `qa-read`, the link check).
+  - Name `$S/e2e-final/` as the evidence path. Drop leftovers: `rm -rf /tmp/critwire-qa /tmp/critwire-qa-e2e`.
+  - Checks: `pnpm typecheck`; `pnpm learn:port --check all`.
+
 ## Verification
+
+Run by the session of rule 7, on the final tree, after the Astra code review and any fix steps it adds. Rule 8 reruns all of it after its rebase. One command per Bash call, one at a time (timeout 1500000 ms), with `set -o pipefail` before each `tee`. A failure becomes a new fix step, then the run starts again from the top. Never edit an assertion or a recorded result to pass. There's no lint script; `pnpm typecheck` is the static check.
+
+`S=/srv/critter-ai/agent-state/missions/critwire-learn-qa`
+
+**1. Build and E2E.**
+
+| Command | Must show |
+|---|---|
+| `pnpm install --frozen-lockfile` | Lockfile unchanged. |
+| `pnpm build 2>&1 \| tee $S/final-build.log` | Plain, never `--draft`. Exit 0. Refusals for stale labs or DOIs would stop it. |
+| `rm -rf $S/e2e-final && E2E_ARTIFACTS=$S/e2e-final pnpm e2e 2>&1 \| tee $S/final-e2e.log` | Exit 0, ≈ 10 min. |
+| `node -e "console.log(require('$S/e2e-final/results.json').stats)"` | `unexpected: 0`, `flaky: 0`, `skipped: 0`, `expected` ≥ 149 (98 at baseline + 47 pages + 2 dialogs + keyboard + `QA_FIXES on dist`). |
+
+E2E scenarios that must pass:
+- `e2e/learn-walk.spec.ts`:
+  - 47 pages and 2 dialogs, each at 1280 and 375 px, light and dark (196 views).
+  - Every block run, every exercise filled and checked, every `<details>` open.
+  - `scrollWidth` ≤ width and 0 axe violations in every view; nothing off-origin; no `pageerror`.
+  - Keyboard: Tab reaches a code block and a result table on d1, the ring shows, ArrowRight scrolls.
+  - `QA_FIXES on dist`: each fixed page has its fix, and the recorded result holds its values.
+- `e2e/learn-map.spec.ts`: crawl of every `/learn/` page: 200, one `<h1>`, internal links, same-page and cross-page fragments, alt + `<title>`, prereq hrefs on map, tracks and module pages.
+- `e2e/learn-browser.spec.ts`: every browser block equals its snapshot; every exercise and skip check rejects its `WRONG` answer and accepts its own.
+- `e2e/learn-labs.spec.ts`: downloads are served as assembled; recorded results; `.ipynb` cells equal the `.py`'s.
+- `e2e/learn-screens.spec.ts`: 12 pages, 2 widths, 2 themes, 48 screenshots.
+- `e2e/schema.spec.ts`, `learn-data`, `learn-timing` and the `/v1` specs (`attribution`, `countries`, `docs`, `duckdb`, `files`, `serving`): unchanged and passing.
+
+**Artifact:** `$S/e2e-final/` (`playwright-report/index.html`, `results.json` with the walk's `{page, views, blocks, incomplete}` annotations, the 48 PNGs, `caddy-access.log`).
+- Reproduce: `pnpm install --frozen-lockfile && pnpm build && E2E_ARTIFACTS=<dir> pnpm e2e`.
+- View: `pnpm exec playwright show-report $S/e2e-final/playwright-report`.
+- Disk (§8): once it's written, `rm -rf $S/e2e-baseline /tmp/critwire-qa /tmp/critwire-qa-e2e`. Rule 8's re-verify overwrites `e2e-final/`, and `release-smoke/` takes the intermediate slot, so there are never more than two.
+
+**2. Labs.**
+
+| Command | Must show |
+|---|---|
+| `pnpm learn:check 2>&1 \| tee $S/final-learncheck-1.log` | Last line `learn:check: ok`; `unchanged: site/learn/labs/checked/checked.json`; 25 `.sql` and 11 `.py` download lines. |
+| `pnpm learn:check 2>&1 \| tee $S/final-learncheck-2.log` | The same. |
+| `git status --porcelain -- . ':!plans/'` | Empty, so the build E2E tested is still the proven one. |
+| The hash check fence in U11 | Prints nothing. If not, rerun §3's whole fence (U2's items 1–2), update 006's Labs rows, rerun the check. |
+
+**3. Static and unit.**
+
+| Command | Must show |
+|---|---|
+| `pnpm typecheck` | Exit 0. |
+| `pnpm test` | All pass (748 at baseline, plus U3's six modes). |
+| `pnpm learn:port --check all` | Exit 0: 004 equals the site's blocks and results. |
+| `pnpm test:db` | Only if a commit after U11 touched `scripts/learn/`, `scripts/learn-check.ts`, `site/learn/sql/` or `site/learn/labs/requirements.txt`. Not in the DoD. All pass. |
+
+**4. `plans/006-learn-qa.md` complete.**
+- 47 Pages rows, refreshed from `$S/e2e-final/results.json`, each with axe 0 and overflow 0.
+- Links: crawl and external totals. Axe: rules, before and after, `incomplete`.
+- Labs: 47 rows, with `.sql` and `.py` results citing `final-learncheck-1.log` and `final-learncheck-2.log`, and `.ipynb` rows whose sha256s match the hash check.
+- Setup vs downloads, Astra leftovers, Ledger, Method fences.
+- Issues: no `queued`. Each `fixed` row's SHA resolves and its subject starts `Q<n>:` (`git log --format='%h %s' --grep='^Q[0-9]*:' origin/main..HEAD`), with its catching assertion named. Each `listed` row has a recommendation. Refill SHAs after a rebase (§5).
+
+**5. Release smoke** (rule 8, after `deploy critwire`; `dist/` is the re-verify's build, same tree as the merge):
+
+`RELEASE_ORIGIN=https://critwire.com E2E_ARTIFACTS=$S/release-smoke pnpm exec playwright test -c playwright.release.config.ts 2>&1 | tee $S/release-smoke.log`
+
+All pass, including:
+- `every dist/ file is served with dist's bytes`: every `/learn/` page returns 200 (47 of them), with CSS and app.
+- `QA_FIXES on the origin`: each fixed page shows its fix and lacks the old text.
+- The existing wasm, f3 block, star, feed and `s4.py` checks.
+
+Live walk or axe isn't needed: same bytes (§8). Record the result and the log's path under `## Release`.
+
+**Risks.**
+- The walk's 60 s per page or its ≈ 3 min total could prove tight on this 2-CPU server. A timeout is a failure to investigate, not to raise blindly.
+- R2 (167 KB) may not fit one session; split it (slack: 12 steps).
+- `axe` `incomplete` and external links are recorded, never asserted, so a later change there goes unnoticed. Accepted (§1, Rejected alternatives).
 
 ## Code review (Astra)
 
@@ -391,5 +591,6 @@ SHOULD-CONSIDER:
 - 2026-11-01 12:36 UTC: Corrected Fable's reason for `assemble.ts:190` being T2 (closure key, not download sha; see Decisions). Read code only, no checks run. Next: Astra review.
 - 2026-11-01 12:28 UTC: Astra review: APPROVE_WITH_CHANGES, 1 MUST-FIX (notebook runner must use lab lock, guarded db target, cleanup), 3 SHOULD-CONSIDER. Plan only, no checks run. Next: Revision.
 - 2026-11-01 12:44 UTC: Revision by `architect`: Astra MUST-FIX resolved (notebook run = throwaway script under lab lock, target guards, cleanup), finding 8 tiers fixed, all 8 SHOULD-CONSIDER accepted, U1 split (13 of 25 steps). Script probed: 11/11 notebooks, cell failure, timeout, SIGTERM, held lock, `critwire` refused. No suite run (plan only). Next: Steps.
+- 2026-11-01 12:54 UTC: Steps by `planner`: 13 steps (U1a, U1b, U2–U12), Verification written; U11 sole lab step, plain loop per §7. Plan only, no suite run. Next: U1a.
 
 ## Summary
