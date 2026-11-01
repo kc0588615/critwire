@@ -50,7 +50,7 @@
 {{diagram:d6-drill-across}}</li>
 <li><p>Where does a record with no country go? The sample has none (GBIF's geospatial filter removed them when the sample was drawn), but a refresh can bring one: a record at sea has GBIF code <code>XZ</code> and no <code>country_code</code>. Add a made-up one, in Bass Strait between Victoria and Tasmania, with no year either:</p>
 {{block:d6-at-sea}}
-<p>Then build the star after it and count the records each way:</p>
+<p>Then build the star after it (in psql: <code>ROLLBACK;</code> a star you already built, <code>BEGIN;</code>, run <code>d6-at-sea</code>, then the star's blocks) and count the records each way:</p>
 {{block:d6-unknown}}
 <p>The normalized tables lose the record as soon as a report joins countries; the star keeps it, under "Unknown or outside any country", and under year <code>-1</code> with the 2,289 records that have no year. The <code>coalesce</code> in <code>d6-star-fact-records</code> is the one place this happens, so no report has to remember a <code>LEFT JOIN</code>.</p></li>
 <li><p>Type 1: overwrite. "Temminck's ground pangolin" is the name more lists use now. Correct it in the dimension and look at the records:</p>

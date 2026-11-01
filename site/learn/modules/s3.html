@@ -15,7 +15,7 @@
 <h2>Worked example</h2>
 <p>The distance band from <a href="/learn/spatial-statistics/moran/">Global Moran's I, s4</a>, read as weights. <code>s4_cells</code> holds the hexagons over Tasmania's main island at edges of 5 and 10 km and <code>s4_neighbours</code> their pairs, one row per ordered pair <code>(i, j)</code>; s4's first block, <code>s4-cells</code>, makes both. Every download of this module runs that block first, right after connecting, so <code>s3.sql</code> and <code>s3.py</code> work on their own; to run the blocks one at a time, run <code>s4-cells</code> once first. How many neighbours the band gives each cell:</p>
 {{block:s3-contiguity}}
-<p>On the 5 km grid, 939 of the 1,094 cells have all six neighbours; the coast leaves the rest with fewer, down to one cell with a single neighbour (cell 1051). On the 10 km grid, 221 of the 296 cells have six and the fewest is two (6 cells). No cell has none, so the band leaves no island. A cell with no neighbour wouldn't appear here at all: <code>count(*)</code> over its missing rows gives 0, and the result has no row with 0.</p>
+<p>On the 5 km grid, 939 of the 1,094 cells have all six neighbours; the coast leaves the rest with fewer, down to one cell with a single neighbour (cell 1051). On the 10 km grid, 221 of the 296 cells have six and the fewest is two (6 cells). No cell has none, so the band leaves no island. A cell with no neighbour would show as a row with 0, since <code>count(*)</code> over no rows gives 0, and the result has no such row.</p>
 
 <h2>Lab</h2>
 <ol>

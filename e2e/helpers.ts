@@ -9,7 +9,7 @@ import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { LabManifest } from "../scripts/build/learn/data.ts";
 import { moduleUrl } from "../scripts/build/learn/module-html.ts";
-import { SETUP_PAGE, type CoursePage } from "../scripts/learn/course.ts";
+import { SETUP_PAGE, type CoursePage, type Curriculum } from "../scripts/learn/course.ts";
 import type { FeedAttribution } from "../scripts/learn/feed.ts";
 import { readCourse } from "../scripts/learn/course-files.ts";
 import { renderError, renderResult } from "../scripts/learn/result.ts";
@@ -150,6 +150,15 @@ export async function learnContext(browser: Browser): Promise<{ context: Browser
   });
   return { context, offOrigin, photos };
 }
+
+// The widths and schemes every Learn layout check covers.
+export const WIDTHS = [1280, 375];
+export const SCHEMES = ["light", "dark"] as const;
+
+export const SCHEMA_PAGES = ["/learn/schema/", "/learn/schema/lab/", "/learn/schema/star/"];
+// Every /learn/ page the build writes: the map, the playground, the data, setup, the schemas, the tracks, the built modules.
+export const learnPageUrls = (c: Curriculum) =>
+  ["/learn/", "/learn/playground/", "/learn/data/", "/learn/setup/", ...SCHEMA_PAGES, ...c.tracks.map((t) => `/learn/${t.id}/`), ...c.modules.filter((m) => m.state === "built").map(moduleUrl)];
 
 // The engine's state on a Learn page (site/learn/src/app.ts sets body[data-engine], and body[data-changed] once the
 // playground changed the tables).

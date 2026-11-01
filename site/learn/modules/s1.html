@@ -4,7 +4,7 @@
 <p>Before any statistic, know what the records are:</p>
 <ul>
 <li><strong>A record is evidence</strong>, not a census. It says that someone found the animal at a place on a date and published what they found. Many records at a place show that the animal was there and that people looked there; no record shows nothing at all. Every map, count and ratio of records mixes the two, so the rest of this track keeps asking which part a number can speak to.</li>
-<li><strong>Basis of record</strong> (<code>basis_of_record</code>, a Darwin Core term) says what kind of evidence a record is:
+<li><strong>Basis of record</strong> (<code>basis_of_record</code>, a term of Darwin Core, the standard vocabulary for biodiversity records) says what kind of evidence a record is:
 <ul>
 <li><code>HUMAN_OBSERVATION</code>: a person saw or heard the animal (surveys, atlases, citizen-science apps).</li>
 <li><code>MACHINE_OBSERVATION</code>: a device recorded it (camera traps, GPS collars, sound recorders).</li>
@@ -31,10 +31,10 @@ Each kind has its own bias. Specimens follow old expeditions and collectors' int
 <p>Of the 38 species with at least 100 records, 17 have more than half from one dataset and 6 have 90 % or more. Livingstone's flying fox's 109 come from a single dataset, the golden-rumped sengi's 98.1 % from one biodiversity survey, the jaguar's 97.4 % from one dataset. For these species, any pattern in the records is first a pattern in one project's work.</p></li>
 <li><p>The jaguar's records: GPS collars against everything else, with the places and years each covers. The title test (<code>ILIKE '%GPS%'</code>) is a shortcut that works on this sample; on other data, read each dataset's description before sorting it:</p>
 {{block:s1-jaguar}}
-<p>The collar dataset holds 1,948 records at 1,948 different points in 5 countries, between 2001 and 2016; the other 24 datasets hold 52 records (8 countries, 1949 to 2025). <code>count(DISTINCT (o.longitude, o.latitude))</code> counts distinct pairs of coordinates, written as one row value. Every collar fix is a new point, so nothing in a list of locations shows that they come from a few animals; only the dataset does. Any map of the jaguar's records is mostly a map of a few collared animals' paths.</p></li>
+<p>The collar dataset holds 1,948 records at 1,948 different points in 5 countries, between 2001 and 2016; the other 24 datasets hold 52 records (8 countries, 1949 to 2025). <code>count(DISTINCT (o.longitude, o.latitude))</code> counts distinct pairs of coordinates, written as one row value. Every collar fix is a new point, so nothing in a list of locations shows that they come from collared animals; only the dataset does: the <a href="https://doi.org/10.5061/dryad.2dh0223">Jaguar Movement Database</a>, 134,690 fixes from 117 jaguars in all, of which the sample keeps these 1,948. Any map of the jaguar's records is mostly a map of those animals' paths.</p></li>
 <li><p>The devil's records, which the next four modules analyse, by dataset and basis of record:</p>
 {{block:s1-devil}}
-<p>The devil's 2,000 records are 70.7 % the Tasmanian Natural Values Atlas (1,367 <code>OBSERVATION</code> and 46 <code>OCCURRENCE</code>) and 27.9 % material samples, such as tissue, at the Tasmanian Museum and Art Gallery (558 <code>MATERIAL_SAMPLE</code>, 2000 to 2023); the other 9 rows are museum specimens and one observation. The atlas's first year, 1599, comes before the first European sighting of Tasmania (1642): a date to check before trusting a time series (<a href="/learn/etl/quality-provenance/">Quality and provenance, e4</a>). 19 of the 28 museum specimens have no year at all.</p></li>
+<p>The devil's 2,000 records are 70.7 % the Tasmanian Natural Values Atlas (1,367 <code>OBSERVATION</code> and 46 <code>OCCURRENCE</code>) and 27.9 % material samples, such as tissue, at the Tasmanian Museum and Art Gallery (558 <code>MATERIAL_SAMPLE</code>, 2000 to 2023); the other 9 rows are museum specimens and one observation. The atlas's first year, 1599, comes before the first European sighting of Tasmania (1642): a date to check before trusting a time series (<a href="/learn/etl/quality-provenance/">Quality and provenance, e4</a>). 20 of the 28 museum specimens have no year at all.</p></li>
 </ol>
 
 <h2>Result</h2>

@@ -60,12 +60,12 @@
 {{block:d4-rerun}}</li>
 <li><p><code>ON CONFLICT … DO NOTHING</code> adds what's missing and skips the rest. Widen the batch to every year since 2000; <code>RETURNING</code> hands back the rows actually inserted, which a <code>WITH</code> query can count:</p>
 {{block:d4-do-nothing}}</li>
-<li><p>Version 2 of the feed carries the month. <code>DO UPDATE</code> brings existing rows up to date from <code>EXCLUDED</code>, the row that was refused; its <code>WHERE</code> skips rows that wouldn't change, so they aren't rewritten (a new version each, for nothing). Whether <code>RETURNING</code> hands back an inserted or an updated row shows in <code>xmax</code>, which is 0 on a freshly inserted version: a PostgreSQL detail, but a well-known one.</p>
+<li><p>Version 2 of the feed carries the month. <code>DO UPDATE</code> brings existing rows up to date from <code>EXCLUDED</code>, the row that was refused; its <code>WHERE</code> skips rows that wouldn't change, so they aren't rewritten (a new version each, for nothing). <code>IS DISTINCT FROM</code> is <code>&lt;&gt;</code> for values that may be <code>NULL</code>: two <code>NULL</code>s count as the same, a <code>NULL</code> and a value as different. Whether <code>RETURNING</code> hands back an inserted or an updated row shows in <code>xmax</code>, which is 0 on a freshly inserted version: a PostgreSQL detail, but a well-known one.</p>
 {{block:d4-do-update}}
 <p>The other 496 rows of version 1 have no month in version 2 either, so they were left alone. The feed's upsert brings month and country up to date and nothing else: a record whose animal or year changed upstream keeps its old values here, and one GBIF removed stays in <code>sightings</code>. A full refresh would update those columns too and delete the rows missing from a complete batch.</p></li>
 <li><p>Two ways an upsert fails. <code>ON CONFLICT</code> names the columns of a unique constraint or index; there is none on <code>(species_id, year)</code>:</p>
 {{block:d4-no-arbiter}}
-<p>And a batch that holds the same key twice can't decide which row wins, so <code>DO UPDATE</code> refuses it: remove duplicates in the batch first (<code>DISTINCT ON</code>, or a check in staging).</p>
+<p>And a batch that holds the same key twice can't decide which row wins, so <code>DO UPDATE</code> refuses it: remove duplicates in the batch first (<code>DISTINCT ON (key)</code>, which keeps one row per key, or a check in staging).</p>
 {{block:d4-twice}}</li>
 </ol>
 

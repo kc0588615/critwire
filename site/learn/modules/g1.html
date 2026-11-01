@@ -42,7 +42,7 @@
 
 <h2>Check</h2>
 <p>The answer: the worked example's columns, for two countries, plus <code>ST_YMin</code> and <code>ST_YMax</code>.</p>
-<p>The two cover about the same ground, 2,324,450 km² (CD) and 2,171,354 km² (GL), yet Web Mercator draws Greenland 15 times larger (35,395,741 against 2,359,632 km²). The centroid's 1 ÷ cos², 14.38, falls short of Greenland's stretch, 16.30. Each point's stretch is 1 ÷ cos² of its own latitude, 3.95 at Greenland's southern tip (59.8° N) and about 81 at its northern coast (83.6° N), and it grows faster the further north, so the average over the whole shape is larger than the value at its middle. The centroid rule works for shapes short in latitude, such as Australia's states; for tall ones, measure. If your areas came out as 190 and 664, you measured <code>geom</code> in square degrees, which also rank Greenland first: cast to <code>geography</code>.</p>
+<p>The two cover about the same ground, 2,324,450 km² (CD) and 2,171,354 km² (GL), yet Web Mercator draws Greenland 15 times larger (35,395,741 against 2,359,632 km²). The centroid's 1 ÷ cos², 14.38, falls short of Greenland's stretch, 16.30. Each point's stretch is 1 ÷ cos² of its own latitude, 3.95 at Greenland's southern tip (59.8° N) and about 80 at its northern coast (83.6° N), and it grows faster the further north, so the average over the whole shape is larger than the value at its middle. The centroid rule works for shapes short in latitude, such as Australia's states; for tall ones, measure. If your areas came out as 190 and 664, you measured <code>geom</code> in square degrees, which also rank Greenland first: cast to <code>geography</code>.</p>
 
 <h2>Dialects</h2>
 <ul>

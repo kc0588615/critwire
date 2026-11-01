@@ -6,7 +6,7 @@ import json
 
 from psycopg.types.json import Jsonb
 
-# The target's DDL by SCHEMA_VERSION: version 2 adds a CHECK on the licence.
+# The target's DDL by SCHEMA_VERSION: version 2 adds a CHECK on the license.
 SCHEMAS = {
     1: "CREATE TEMP TABLE devil_target (id bigint PRIMARY KEY, year integer, license text NOT NULL)",
     2: "CREATE TEMP TABLE devil_target (id bigint PRIMARY KEY, year integer, "
@@ -19,7 +19,7 @@ def md5_order(row):
 
 
 def transform_v1(rows, config):
-    """The rows the config keeps: records under its licences, the first `cap` by the md5 of their id."""
+    """The rows the config keeps: records under its licenses, the first `cap` by the md5 of their id."""
     return sorted((r for r in rows if r[2] in config["licenses"]), key=md5_order)[:config["cap"]]
 
 

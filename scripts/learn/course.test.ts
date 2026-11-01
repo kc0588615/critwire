@@ -81,7 +81,7 @@ test("CU6 the committed curriculum is 004 §2: 7 tracks, 33 modules, 68 hours, a
   assert.deepEqual(c.modules.map((m) => m.id).join(" "), "f1 f2 f3 f4 d1 d2 d3 d4 d5 d6 g1 g2 g3 g4 g5 g6 g7 s1 s2 s3 s4 s5 s6 e1 e2 e3 e4 e5 p1 p2 p3 p4 c1");
   const by = new Map(c.modules.map((m) => [m.id, m]));
   assert.deepEqual([by.get("d6")!.slug, by.get("d6")!.prereqs, by.get("d6")!.tools], ["star", ["d2", "d4"], ["PG", "B"]]);
-  assert.deepEqual([by.get("c1")!.slug, by.get("c1")!.prereqs, by.get("c1")!.tools], ["game-feed", ["s5", "e4", "p4"], ["PG", "Py", "PBI"]]);
+  assert.deepEqual([by.get("c1")!.slug, by.get("c1")!.prereqs, by.get("c1")!.tools], ["game-feed", ["s5", "e5", "p4"], ["PG", "Py", "PBI"]]);
   assert.deepEqual(c.modules.filter((m) => m.state === "built").map((m) => m.id), c.modules.map((m) => m.id).filter((id) => pages.has(id)));
   assert.deepEqual(by.get("f3")!.questions, ["Which animals were recorded in Brazil?", "Which have no records at all?", "How many records fall in each 10° box?"]);
 });
@@ -189,7 +189,7 @@ test("XS1 afterScope: a module's prerequisites, transitively; setup and a module
   const file = new URL("../../site/learn/curriculum.json", import.meta.url);
   const pages = new Set(readdirSync(new URL("../../site/learn/modules/", import.meta.url)).map((n) => n.replace(/\.html$/, "")));
   const c = parseCurriculum("site/learn/curriculum.json", readFileSync(file, "utf8"), pages).curriculum!;
-  assert.deepEqual([...afterScope(c, "p3")].sort(), ["d1", "d2", "d3", "d4", "d6", "f1", "f2", "f3", "p1", "p2"]);
+  assert.deepEqual([...afterScope(c, "p3")].sort(), ["d1", "d2", "d3", "d4", "d6", "f1", "f2", "f3", "f4", "p1", "p2"]);
   assert.deepEqual([...afterScope(c, "setup")], []);
   assert.deepEqual([...afterScope(c, "f1")], []);
 });

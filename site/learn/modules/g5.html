@@ -39,7 +39,7 @@
 </ol>
 
 <h2>Result</h2>
-<p>The nearest records to Hobart are Tasmanian devils, 2.44 to 7.08 km away, found by an <code>Index Scan … Order By</code> that reads 5 rows. <code>&lt;-&gt;</code> on SRID 4326 ranks in degrees: at 43° south it put the 16th nearest record in metres 30th. With the cast to <code>geography</code>, a 20 km search reads all 40,395 rows to keep 55; an index on <code>geom::geography</code> finds 66 candidates and keeps the same 55. Of g3's 999 records in no outline, 436 lie within 5 km of one, 529 within 25 km, mostly on small islands, and 34 farther.</p>
+<p>The nearest records to Hobart are Tasmanian devils, 2.44 to 7.08 km away, found by an <code>Index Scan … Order By</code> that reads 5 rows. <code>&lt;-&gt;</code> on SRID 4326 ranks in degrees: at 43° south it put the 16th nearest record in metres 30th. With the cast to <code>geography</code>, a 20 km search reads all 40,395 rows to keep 55; an index on <code>geom::geography</code> finds 66 candidates and keeps the same 55. Of g3's 999 records in no outline, 436 lie within 5 km of one, 529 more within 25 km, mostly on small islands, and 34 farther.</p>
 
 <h2>Exercise</h2>
 <p>Find the 20 records nearest Hobart in metres, with an index doing the work: no <code>Sort</code> and no <code>Seq Scan</code>. Show the plan; then run the query and find g5-degrees' record 6004135264 in it.</p>

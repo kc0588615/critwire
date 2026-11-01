@@ -51,7 +51,7 @@ export function mapMain(curriculum: Curriculum, template: string): string {
 /** /learn/<track>/'s main. */
 export function trackMain(curriculum: Curriculum, t: Track, template: string): string {
   const modules = trackModules(curriculum, t);
-  const summary = `${counts(modules)}. Work through them in order: each module lists the ones it needs first.`;
+  const summary = `${counts(modules)}.${modules.length > 1 ? " Work through them in order: each module lists the ones it needs first." : ""}`;
   return fillSlots(template, {
     title: esc(t.title),
     summary: esc(summary),

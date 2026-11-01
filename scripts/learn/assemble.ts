@@ -79,7 +79,7 @@ function head(name: string): string {
     `--   psql -X -d <your database> -f ${name}`,
     "-- Without ON_ERROR_STOP: some blocks fail on purpose, and say so in their `-- expect: error` or `-- fails:` line.",
     "-- Each block runs as its page shows it, in BEGIN … ROLLBACK after the blocks its `-- after:` line names, so it",
-    "-- changes nothing; a `-- tx: own` block runs as written.",
+    "-- changes nothing. A `-- tx: own` block runs as written. A `-- boot` block commits, so what it creates stays.",
   ].join("\n");
 }
 

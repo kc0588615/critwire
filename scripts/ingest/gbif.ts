@@ -104,7 +104,7 @@ export function toDatasetPage(url: string, r: unknown, count: number, seen: Reco
 }
 
 // Pages the datasetKey facet until an empty page (never trusting a short page or the facet limit); counts must sum to `count`.
-async function fetchDatasets(taxonKey: number, count: number): Promise<GbifDatasets> {
+export async function fetchDatasets(taxonKey: number, count: number): Promise<GbifDatasets> {
   const counts: Record<string, number> = {};
   for (let offset = 0; ; offset += FACET_LIMIT) {
     const url = gbifDatasetsUrl(taxonKey, offset);

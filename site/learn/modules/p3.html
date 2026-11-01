@@ -36,7 +36,7 @@
 {{exercise:p3-ex-check}}
 
 <h2>Check</h2>
-<p>The answer: <code>CALCULATE ( [Records], ALL ( dim_country ) )</code> is the records with every country filter removed, so dividing by it gives the share; the same for the area. Africa, North America, Oceania and South America hold a larger share of the records than of the area; Asia and Europe a smaller one, and Antarctica none. The comparison is the record-to-area ratio of <a href="/learn/spatial-statistics/zonal/">Zonal statistics, s6</a>, by continent: it shows where the sample's species were recorded more than area alone predicts. That follows from which species critwire lists and where people record them, not from where wildlife is.</p>
+<p>The answer: <code>CALCULATE ( [Records], ALL ( dim_country ) )</code> is the records with every country filter removed, so dividing by it gives the share; the same for the area. Africa, North America, Oceania and South America hold a larger share of the records than of the area, as does Seven seas, on its 7 records; Asia and Europe a smaller one, and Antarctica none. The comparison is the record-to-area ratio of <a href="/learn/spatial-statistics/zonal/">Zonal statistics, s6</a>, by continent: it shows where the sample's species were recorded more than area alone predicts. That follows from which species critwire lists and where people record them, not from where wildlife is.</p>
 <p>Eight rows, p2's exercise with two more columns. Europe holds 1.2% of the records and 15.7% of the area, Asia 7.4% and 21.2%; South America 28.0% and 12.1%, Oceania 12.7% and 5.8%. Each share column adds up to 1. Antarctica's share of records is blank, not 0: <code>DIVIDE</code> of a blank count is blank, as the twin's NULL is.</p>
 
 <h2>Dialects</h2>
