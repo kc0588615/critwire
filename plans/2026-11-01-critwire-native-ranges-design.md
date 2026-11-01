@@ -780,6 +780,13 @@ SHOULD-CONSIDER:
 
 ## Release
 
+- Rebase: none needed, `origin/main` still `40a0274`. Full Verification re-run: `VERIFY OK`, log `/srv/critter-ai/agent-state/missions/critwire-native-ranges-design/verify/verify-20261101T2009Z.log`.
+- PR #18 (https://github.com/kc0588615/critwire/pull/18), merge commit `29508c3`.
+- `deploy critwire`, last line: `deploy critwire: live at https://critwire.com`. Log `/srv/critter-ai/agent-state/missions/critwire-native-ranges-design/verify/deploy-20261101T2013Z.log`. Live copy at `29508c3`.
+- Smoke: `SMOKE OK`. X1 live = `dist-baseline.sha256`, byte for byte; X2 all 11 unchanged pages 200; X3 `/v1/range-listings.json` 404. `plans/007-native-ranges.md` on `main`, so the handoff items' `main` link resolves.
+
+Result: done
+
 ## Decisions
 
 - S1, gate 4 hit early: `fetch.py`'s scan refused the first run. Dataset `9e86d932-72b2-46ca-a441-0ecb68dc5d1a` (Humboldt Institute, Colombia: mammals prioritised for national Red Book categorisation) names IUCN in `title` and `citation.text`. Read in session, nothing saved. BY-NC, so unusable anyway; no recommended answer needs it, so O2 gets no guard question. No role, dropped in `fetch.py`, re-fetched: 7 rows counted, none kept.
@@ -832,6 +839,7 @@ SHOULD-CONSIDER:
 - 2026-11-01 20:00 UTC: Final code review (Astra): APPROVE_WITH_CHANGES, 1 MUST-FIX (curated `sourceTerm` words), added as S12; 2 should-consider, for the Summary. Typecheck pass; plan-only diff; no build.
 - 2026-11-01 20:01 UTC: S12: curated `sourceTerm` = our paraphrase, in our own words, in 007's contract entry and table row and §3's row; `sha` 0813a604497a → 830c1de6fcd0 by `entrySha`. V6 contract ok; `own words` agrees across 007 and brief; V8 0 hits (272 files). Typecheck pass; plan-only diff; no build.
 - 2026-11-01 20:08 UTC: Full Verification: `VERIFY OK`, V1–V9 pass (typecheck, test 754 pass 0 fail, build; `dist/` 311 files = baseline; contract ok; IUCN greps clean; leak check 272 files 0 hits; 5 handoff items, none blocking); `measure.py` re-run byte-identical; `origin/main` unmoved. One earlier attempt stopped at V6 because the session's extraction cut the block at a fence inside V6's regex, not a check failure; V1–V5 had passed; its partial log deleted, block re-run whole. Log `verify/verify-20261101T2004Z.log`; E2E not re-run (by Verification's rule), artifact stays `e2e-baseline/`, 149/149. Summary written, `status: done`.
+- 2026-11-01 20:15 UTC: Release: Verification re-run `VERIFY OK`, PR #18 merged (`29508c3`), `deploy critwire` live, `SMOKE OK`: live byte-identical to baseline, 11 pages 200, `range-listings` 404.
 
 ## Summary
 
@@ -873,3 +881,5 @@ MDD matched 50 of 50 mammals by exact name. Mammals' open-record countries sit o
 **Verification:** `VERIFY OK`, `$M/verify/verify-20261101T2004Z.log` (`$M` = `/srv/critter-ai/agent-state/missions/critwire-native-ranges-design`). Typecheck pass, test 754 pass 0 fail, `dist/` 311 files byte-identical to baseline. E2E not re-run: same bytes as Baseline's 149/149 run; artifact `$M/e2e-baseline/`. Spike evidence `$M/spike/`, stays on this VPS, not in the repo; re-run with Verification's V5.
 
 **Limits:** GBIF rows are live, so 007's numbers hold for the saved `raw/`. Some license quotes come from Internet Archive snapshots; the build should re-read them when it starts.
+
+**Release:** PR #18 merged (`29508c3`), deployed, `SMOKE OK`; live site byte-identical to baseline, since only `plans/` changed.
