@@ -18,10 +18,34 @@
     "reason": "Undated NHMUK specimen, Nyiragongo Territory, Kivu, 500 m uncertainty: a field locality, but on another continent from COL's Asian list, and no second record. Mislabel or misidentification can't be told from the record, so it stays excluded. An NHM curator could settle it."
   },
   {
+    "speciesId": 4,
+    "country": "RE",
+    "action": "keep",
+    "reason": "Two rows of France's TAXREF territory checklist, undated, no locality, one island-wide point with 32 km uncertainty. A checklist line documents no animal, and its status here isn't in the fields; COL's list is Asian. Too thin to call, so it stays."
+  },
+  {
+    "speciesId": 12,
+    "country": "US",
+    "action": "remove",
+    "reason": "Three California specimens: two MVZ, marked captive, at East Bay Vivarium, Berkeley; one SBMNH at \"Turtle Dreams\", a street address in Montecito, whose establishmentMeans says \"native\". That third is inferred to be a private collection; the record doesn't say so."
+  },
+  {
     "speciesId": 15,
     "country": "DE",
     "action": "remove",
     "reason": "Locality \"Zoologischer Garten Frankfurt am Main\": a zoo, NABU|naturgucker record of a captive animal. No other counted record here."
+  },
+  {
+    "speciesId": 17,
+    "country": "ID",
+    "action": "keep",
+    "reason": "Two field specimens from two museums: CAS 1909, Noord (Lorentz) River; NHMUK, Vriendschaps River, Dutch New Guinea. No captive sign, and COL's distribution names the Lorentz River. The flag comes from GBIF placing Indonesia in Asia, while the core here is Oceania."
+  },
+  {
+    "speciesId": 17,
+    "country": "SG",
+    "action": "keep",
+    "reason": "Two iNaturalist research-grade records, 2021 and 2026, no captive mark, coordinates obscured to about 31 km. They point to animals outside captivity, likely released or escaped, but it's one dataset and COL's list doesn't name Singapore, so no second source agrees."
   },
   {
     "speciesId": 17,
@@ -43,6 +67,18 @@
   },
   {
     "speciesId": 20,
+    "country": "MQ",
+    "action": "keep",
+    "reason": "Three rows of France's TAXREF territory checklist, undated, no locality, one island-wide point with 27 km uncertainty. A checklist line documents no animal, and its status here isn't in the fields; COL's list is African. Too thin to call, so it stays."
+  },
+  {
+    "speciesId": 20,
+    "country": "MX",
+    "action": "keep",
+    "reason": "iBOL and INSDC copies of one 2017 COI sequence from a Mexican institute, locality \"El Pochote\", Sinaloa. A place name with no wild or captive mark; a kept tortoise can't be told from a free one here, and COL's list is African. Too thin to call, so it stays."
+  },
+  {
+    "speciesId": 20,
     "country": "NL",
     "action": "remove",
     "reason": "Natural History Museum Rotterdam specimen, 2025, locality \"Locality not ascertained, Rotterdam Zoo specimen\". The record itself says zoo; no other counted record here."
@@ -52,6 +88,18 @@
     "country": "SG",
     "action": "remove",
     "reason": "NABU|naturgucker record, 2012, locality \"Chinesischer und Japanischer Garten mit Schildkrötenmuseum, Singapur\": a turtle museum in a garden, so a kept animal. No other counted record here."
+  },
+  {
+    "speciesId": 20,
+    "country": "TH",
+    "action": "remove",
+    "reason": "Two NABU|naturgucker records at managed sites: \"Thai Farmers Way Museum\", Suphanburi, 2026, and \"Botanischer Garten\", Trat, 2024. COL's list is African. Points to kept animals, but neither record says captive."
+  },
+  {
+    "speciesId": 20,
+    "country": "US",
+    "action": "keep",
+    "reason": "Three iNaturalist research-grade records in three states (South Carolina, California, Massachusetts), 2020–2026, no captive mark: likely escaped or released pets. The fourth record is from San Angelo Nature Center, so no second source agrees on animals outside captivity."
   },
   {
     "speciesId": 21,
@@ -73,9 +121,21 @@
   },
   {
     "speciesId": 25,
+    "country": "BR",
+    "action": "remove",
+    "reason": "11 ICMBio SISBio records, no locality: 9 within 1 km of zoos in São Paulo, Rio and Brasília (Wikidata Q3364798, Q10306230, Q10306226), 2 not near one. 3 iBOL sequences from Sapucaia do Sul zoo. COL doesn't list the Americas. Points to zoo animals; most records don't say so."
+  },
+  {
+    "speciesId": 25,
     "country": "CA",
     "action": "remove",
     "reason": "iBOL record \"Mined from GenBank\": a sequence, no locality, no date, coordinates near the middle of Canada. It documents no animal there, and COL doesn't list the Americas. Inferred from the record type, not stated by it."
+  },
+  {
+    "speciesId": 25,
+    "country": "DE",
+    "action": "remove",
+    "reason": "Six records: four name a zoo (Frankfurt, Tierpark Berlin, Hellabrunn twice). Two NABU map-sheet records, Rheine and Hamm, fall 3.5 and 2.1 km from zoos there (Wikidata Q165073, Q1536456) but don't say so, and neither has a wild sign. Inferred for those two, not stated."
   },
   {
     "speciesId": 25,
@@ -103,9 +163,33 @@
   },
   {
     "speciesId": 25,
+    "country": "RU",
+    "action": "keep",
+    "reason": "Four iNaturalist research-grade records in Primorye, 2017–2026, no captive mark, plus two MHNG specimens from eastern Siberia; COL lists Europe & Northern Asia. Live count is 6, snapshot 8. The flag comes from GBIF placing Russia in Europe, while the core is Asia."
+  },
+  {
+    "speciesId": 25,
     "country": "SE",
     "action": "remove",
     "reason": "NTNU specimen, remarks \"Frösön Dyrepark, Østersund. Kranium. Utstilt\": a skull from an animal park, put on display. The record itself names the park; no other counted record here."
+  },
+  {
+    "speciesId": 25,
+    "country": "US",
+    "action": "remove",
+    "reason": "Of 67 live records, 52 are marked captive; 35 are in New Mexico, and all 20 we read are MSB specimens from Albuquerque BioPark Zoo. The other 15 are unread: Borror Lab recordings and other museums' specimens. Live count moved from 64, so this can't be high. COL doesn't list the Americas."
+  },
+  {
+    "speciesId": 25,
+    "country": "ZA",
+    "action": "remove",
+    "reason": "Two iBOL records \"Mined from GenBank\": sequences, no locality, coordinates near the middle of South Africa. They document no animal there, and COL doesn't list Africa. Inferred from the record type, not stated by it."
+  },
+  {
+    "speciesId": 28,
+    "country": "BE",
+    "action": "remove",
+    "reason": "Three Ghent University specimens, 1888, locality \"Gentse Dierentuin\": the Ghent zoo. The records themselves name the zoo, and they're every counted record here."
   },
   {
     "speciesId": 28,
@@ -121,9 +205,27 @@
   },
   {
     "speciesId": 28,
+    "country": "DE",
+    "action": "remove",
+    "reason": "Seven of nine records are from Tierpark Hellabrunn, Munich. Two NABU records say only a Hamburg street corner (2017) and \"Heidelberg\" (2014), 2.9 km from its zoo (Wikidata Q220035), with no wild sign. COL's list is Southern Asia. Those two are inferred, not stated."
+  },
+  {
+    "speciesId": 28,
+    "country": "DK",
+    "action": "remove",
+    "reason": "Three undated NHMD objects, \"unnamed locality\", coordinates near the middle of Denmark. Remarks: \"presumably from the Agricultural College\", or identification \"not certain\", loaned for exhibition. They document no animal in Denmark, but don't say where it lived."
+  },
+  {
+    "speciesId": 28,
     "country": "NL",
     "action": "remove",
     "reason": "Natuurmuseum Brabant specimen, 1906, locality \"Amsterdam\", 10 km uncertainty. A city locality with no wild sign, and COL's list is Southern Asia: points to a kept animal, but the record doesn't say so."
+  },
+  {
+    "speciesId": 28,
+    "country": "US",
+    "action": "remove",
+    "reason": "Of 4,468 live records, 4,433 are marked captive and 4,441 are MSB specimens from New Mexico; all 20 we read are from Albuquerque BioPark Zoo. The other records weren't read one by one. Live count moved from 4,461, so this can't be high. COL's list is Southern Asia."
   },
   {
     "speciesId": 29,
@@ -132,10 +234,58 @@
     "reason": "Locality \"Zoologischer Garten Berlin\": a zoo, NABU|naturgucker record of a captive animal. No other counted record here."
   },
   {
+    "speciesId": 29,
+    "country": "US",
+    "action": "remove",
+    "reason": "Two records, each naming a captive site: INSDC genome \"Whiteoak Conservation Center, FL\", and BYU specimen \"San Diego Zoo\", remarks \"born San Diego\". They're every counted record here."
+  },
+  {
+    "speciesId": 35,
+    "country": "US",
+    "action": "remove",
+    "reason": "Of 23 records, 17 are marked captive, and 19 of the 20 we read name a zoo (Albuquerque, Seattle, San Francisco, Chicago, Santa Barbara). YPM's \"Remlik\", Virginia names none, and 3 weren't returned. COL's list is Southern Asia. Those are inferred, not stated."
+  },
+  {
+    "speciesId": 39,
+    "country": "FR",
+    "action": "remove",
+    "reason": "Five undated MNHN (Paris) specimens with no locality, all at one point 0.1 km from Paris Zoological Park (Wikidata Q1969385). COL says Africa. Points to zoo animals, but the records themselves don't name one."
+  },
+  {
     "speciesId": 39,
     "country": "NL",
     "action": "remove",
     "reason": "Natuurmuseum Brabant specimen, 1978, locality \"Arnhem\", 5 km uncertainty, 6.6 km from Burgers' Zoo (Wikidata Q390504). COL says Africa. A city locality points to a zoo animal, but the record doesn't say so."
+  },
+  {
+    "speciesId": 39,
+    "country": "US",
+    "action": "remove",
+    "reason": "Two iBOL records \"Mined from GenBank\": sequences, no locality, no date, coordinates near the middle of the USA. They document no animal there, and COL says Africa. Inferred from the record type, not stated by it."
+  },
+  {
+    "speciesId": 40,
+    "country": "US",
+    "action": "remove",
+    "reason": "All 81 records are MSB specimens in New Mexico, and all 81 are marked degreeOfEstablishment \"captive\"; each of the 20 we read says Albuquerque BioPark Zoo. The records themselves say captive. Wikidata has this species endemic to Sumatra."
+  },
+  {
+    "speciesId": 43,
+    "country": "DE",
+    "action": "keep",
+    "reason": "The snapshot counted 3 records, but GBIF now returns none under this filter, so there's nothing to judge or cite. Leave it unaccepted: the next GBIF ingest settles it, and a keep with no records would then make derive refuse."
+  },
+  {
+    "speciesId": 43,
+    "country": "US",
+    "action": "remove",
+    "reason": "Two Angelo State specimens, locality \"San Antonio Zoo\". The records themselves name the zoo, and they're every counted record here."
+  },
+  {
+    "speciesId": 48,
+    "country": "US",
+    "action": "remove",
+    "reason": "All 31 records are MSB specimens in New Mexico: 28 are marked captive, and the 3 unmarked ones (read) say Albuquerque BioPark Zoo, two of them dead on arrival. The records themselves settle every one. Wikidata has this species endemic to Australia."
   },
   {
     "speciesId": 50,
@@ -150,6 +300,18 @@
     "reason": "Locality \"Zoologischer Garten Frankfurt am Main\": a zoo, NABU|naturgucker record of a captive animal. No other counted record here."
   },
   {
+    "speciesId": 50,
+    "country": "MX",
+    "action": "remove",
+    "reason": "Two AMNH specimens, 1938, no locality, establishmentMeans \"native\", coordinates at sea off Mexico's Pacific coast (19.50, -105.87; 17.47, -107.95). A land animal at sea is misplaced or misidentified, and COL says Africa, but the records don't say so. Same pattern as 69:PA."
+  },
+  {
+    "speciesId": 50,
+    "country": "US",
+    "action": "keep",
+    "reason": "Three Angelo State specimens: two at San Antonio Zoo, one (2014) only \"Kerr County, Texas\", 37 km uncertainty, no captive mark. A county alone can't tell a free animal from a kept one, and COL says Africa. Too thin to call, so it stays."
+  },
+  {
     "speciesId": 52,
     "country": "DE",
     "action": "remove",
@@ -157,9 +319,33 @@
   },
   {
     "speciesId": 56,
+    "country": "AU",
+    "action": "remove",
+    "reason": "Two DNA reads, no locality: one from water near Sydney (Australian Microbiome 18S), one from air sampling in Canberra (CSIRO). Neither documents an animal; COL says Africa. Misidentified or contaminant reads are likely, but the records don't say so."
+  },
+  {
+    "speciesId": 56,
     "country": "BE",
     "action": "remove",
     "reason": "Ghent University specimen, 1855, locality \"Gentse Dierentuin\": the Ghent zoo. The record itself names the zoo; no other counted record here."
+  },
+  {
+    "speciesId": 56,
+    "country": "BR",
+    "action": "remove",
+    "reason": "14 ICMBio SISBio records, no locality: 12 within 1 km of zoos in São Paulo, Sorocaba, Rio and Brusque (Wikidata Q3364798, Q1535754, Q10306230, Q121094903); 2 elsewhere. COL says Africa. Points to zoo animals, but the records don't name one."
+  },
+  {
+    "speciesId": 56,
+    "country": "DE",
+    "action": "remove",
+    "reason": "Two NABU|naturgucker records, locality \"Zoologischer Garten Frankfurt am Main\": a zoo, so captive animals. They're every counted record here."
+  },
+  {
+    "speciesId": 56,
+    "country": "DK",
+    "action": "remove",
+    "reason": "26 air-sampling DNA reads, 2023, from two Globe Institute airDNA experiments, no locality, none within 10 km of a zoo on Wikidata for the points checked. They document no animal; COL says Africa. Misidentified or contaminant reads are likely, not stated."
   },
   {
     "speciesId": 56,
@@ -180,10 +366,64 @@
     "reason": "Animal Sound Archive recording, locality \"Zoo Moskau\": a zoo, so a captive animal. No other counted record here."
   },
   {
+    "speciesId": 56,
+    "country": "SE",
+    "action": "remove",
+    "reason": "Two KTH 18S reads from Baltic Sea metabarcoding, 2016 and 2017: DNA from water, so no chimpanzee was there; misidentified or contaminant reads, as in 56:NU. They're every counted record here."
+  },
+  {
+    "speciesId": 56,
+    "country": "US",
+    "action": "remove",
+    "reason": "Of 85 records, 79 are marked captive and 71 are in New Mexico; all 20 we read name a zoo (Albuquerque, \"Captive at San Francisco Zoo\"). The 5 other unmarked ones, from other museums, are unread, so this can't be high. COL says Africa."
+  },
+  {
+    "speciesId": 57,
+    "country": "US",
+    "action": "remove",
+    "reason": "Five records: three name a zoo (Point Defiance, San Antonio, Hogle). An INSDC genome sits 0.5 km from Bronx Zoo (Wikidata Q739792), and an iBOL GenBank sequence has no locality. Wikidata has this species in Africa. Those two are inferred, not stated."
+  },
+  {
+    "speciesId": 58,
+    "country": "AU",
+    "action": "remove",
+    "reason": "11 air-sampling DNA reads, 2024–25, CSIRO, Canberra: 3 are 0.09 km from the National Zoo & Aquarium (Wikidata Q495039), 8 at another point with no zoo within 1 km. They document no free animal; COL doesn't list Oceania. Inferred from dataset and coordinates."
+  },
+  {
+    "speciesId": 58,
+    "country": "DE",
+    "action": "remove",
+    "reason": "Two records: a Bavarian State Collection sample from Tierpark Hellabrunn, 2011, and NABU|naturgucker \"Tempelhof Nord\", a Berlin district, 2024, with no wild or captive mark. COL says Africa; Southern Asia. The second is inferred, not stated."
+  },
+  {
     "speciesId": 58,
     "country": "IQ",
     "action": "keep",
     "reason": "NHMUK specimen, July 1928, Shamiyan Desert near Busaiyah Wells: a dated field locality, no captive mark. COL says Africa; Southern Asia, which doesn't clearly include Iraq, so no second source agrees. Restores the country, as a historical record."
+  },
+  {
+    "speciesId": 58,
+    "country": "IR",
+    "action": "keep",
+    "reason": "32 records: 30 in the Global Roadkill dataset, the 20 we read with field localities in Iran to 2023, plus an iNaturalist record from Semnan with a field remark and an FMNH specimen. Three datasets, no captive sign, and COL lists Southern Asia. The flag comes from the core being Africa."
+  },
+  {
+    "speciesId": 58,
+    "country": "NL",
+    "action": "remove",
+    "reason": "Three Natuurmuseum Brabant specimens: \"Hilvarenbeek\" twice (5 km uncertainty, 7.8 km from Safaripark Beekse Bergen, Wikidata Q2183630) and \"'s-Hertogenbosch\", 1992. Town localities with no wild sign, as in 25:NL; points to kept animals, but the records don't say so."
+  },
+  {
+    "speciesId": 58,
+    "country": "US",
+    "action": "remove",
+    "reason": "Of 56 records, 46 are marked captive and 44 are MSB specimens in New Mexico; all 20 we read say Albuquerque BioPark Zoo. Nine unmarked ones, including other museums' specimens, are unread, so this can't be high. COL says Africa; Southern Asia."
+  },
+  {
+    "speciesId": 60,
+    "country": "DE",
+    "action": "remove",
+    "reason": "Two NABU|naturgucker records: \"Zoologischer Garten Berlin\", 2007, and a grid-cell locality at 54.18, 7.90 (Helgoland), 2024, no captive mark. Wikidata has this species endemic to China. The second looks like a misidentification or data error, but the record doesn't say so."
   },
   {
     "speciesId": 60,
@@ -192,16 +432,64 @@
     "reason": "iBOL sequence from an NIH genomics lab, no locality, no date, remarks \"Check provenance - Country\", coordinates near the middle of the USA. The record itself doubts its country; no other counted record here."
   },
   {
+    "speciesId": 64,
+    "country": "DE",
+    "action": "keep",
+    "reason": "Four NABU|naturgucker map-sheet or town records, 2008–2016, no captive or wild mark: two 2.1 km from Zoo Halle (Wikidata Q220245), two (Langebrück, Illertissen) with no zoo within 3 km. COL says Africa. Too thin to call, so it stays."
+  },
+  {
+    "speciesId": 64,
+    "country": "DK",
+    "action": "remove",
+    "reason": "Two records: an NHMD tusk whose remarks say it was confiscated in a Copenhagen court case, 1988, and one air-sampling DNA read, 2022. The first is stated by the record; the read documents no animal, but doesn't say so. COL says Africa."
+  },
+  {
+    "speciesId": 64,
+    "country": "PL",
+    "action": "remove",
+    "reason": "Four sequence records (two iBOL, two INSDC), 2007, at one point in Warsaw, no locality. Remarks give vouchers \"PL-IGAB-ZBM\" and subspecies \"knochenhaueri\", so likely a Polish lab's material, not an animal seen in Poland. COL says Africa. Inferred, not stated."
+  },
+  {
+    "speciesId": 64,
+    "country": "US",
+    "action": "remove",
+    "reason": "Seven records: Columbus, Brookfield and San Antonio zoos by name; an INSDC genome 0.2 km from Louisville Zoo (Wikidata Q3576024); Seattle's \"Watoto\", \"animal still alive\", a named individual. Seattle (2014) and Ogden (1905) give only a city. COL says Africa. Inferred for those."
+  },
+  {
+    "speciesId": 65,
+    "country": "BR",
+    "action": "remove",
+    "reason": "Four ICMBio SISBio records, 2017–2019, São Paulo, no locality, all at one point 0.3 km from São Paulo Zoo (Wikidata Q3364798). COL says Africa. Points to zoo animals, but the records themselves don't name one."
+  },
+  {
     "speciesId": 65,
     "country": "KR",
     "action": "remove",
     "reason": "iBOL record \"Mined from GenBank\": a sequence, no locality, no date, coordinates near the middle of South Korea. It documents no animal there, and COL says Africa. Inferred from the record type, not stated by it."
   },
   {
+    "speciesId": 65,
+    "country": "US",
+    "action": "remove",
+    "reason": "Of 95 records, 94 are marked captive; 89 are MSB specimens in New Mexico, and all 20 we read say Albuquerque BioPark Zoo. One unmarked record, unread, keeps this from high. COL says Africa."
+  },
+  {
     "speciesId": 66,
     "country": "DE",
     "action": "remove",
     "reason": "Locality \"Zoologischer Garten Frankfurt am Main\": a zoo, NABU|naturgucker record of a captive animal. No other counted record here."
+  },
+  {
+    "speciesId": 66,
+    "country": "FR",
+    "action": "remove",
+    "reason": "Two undated MNHN (Paris) specimens with no locality, at one point 0.1 km from Paris Zoological Park (Wikidata Q1969385). COL says Africa. Points to zoo animals, but the records themselves don't name one."
+  },
+  {
+    "speciesId": 66,
+    "country": "US",
+    "action": "remove",
+    "reason": "245 records: 179 Borror Lab sound recordings, all 20 we read in zoo pens and yards (Columbus, Pittsburgh, Potter Park, Brookfield); 64 iBOL sequences and 2 specimens unread. No captive field filled, and COL says Africa. The rest is inferred, not stated."
   },
   {
     "speciesId": 68,
@@ -211,15 +499,45 @@
   },
   {
     "speciesId": 69,
+    "country": "ES",
+    "action": "remove",
+    "reason": "All 390 are EEZA (CSIC, Almería) specimens in one ungulate collection, 1971–2008; all 20 we read say \"Almería; Finca La Hoya\", one farm address. COL says Africa. Points to a herd kept at the institute, but no record says captive, and 370 are unread."
+  },
+  {
+    "speciesId": 69,
     "country": "PA",
     "action": "remove",
     "reason": "AMNH specimen, January 1938, no locality, establishmentMeans \"native\", coordinates 5.98, -79.80 at sea south of Panama. The field and the coordinates conflict with COL's \"Africa\"; a data error is likely but not proven, so it stays excluded."
+  },
+  {
+    "speciesId": 69,
+    "country": "US",
+    "action": "remove",
+    "reason": "Seven specimens, and each names a zoo: Oakland (2), Honolulu (2), Hogle, San Antonio, Houston. The records themselves name the zoos, and they're every counted record here."
   },
   {
     "speciesId": 71,
     "country": "DE",
     "action": "remove",
     "reason": "Locality \"Zoologischer Garten Frankfurt am Main\": a zoo, NABU|naturgucker record of a captive animal. No other counted record here."
+  },
+  {
+    "speciesId": 71,
+    "country": "JP",
+    "action": "remove",
+    "reason": "An Ibaraki Nature Museum specimen, Kumamoto, 1998, no locality, and an iBOL record \"Mined from GenBank\", coordinates near the middle of Japan. Neither documents a free animal, and COL says South America. Inferred from the record types, not stated."
+  },
+  {
+    "speciesId": 74,
+    "country": "DE",
+    "action": "keep",
+    "reason": "Two NABU|naturgucker records: \"Luisenpark - Mannheim\", 2018, a park that keeps animals, and a former military site in Berlin, 2015, a field locality with no captive mark: likely a released animal. One dataset, and COL says Middle America, so no second source agrees."
+  },
+  {
+    "speciesId": 74,
+    "country": "NZ",
+    "action": "keep",
+    "reason": "Two Auckland Museum specimens, 1980, no locality, coordinates with 800 km uncertainty, so they name only the country. A kept animal can't be told from a free one here, and COL says Middle America. Too thin to call, so it stays."
   },
   {
     "speciesId": 74,

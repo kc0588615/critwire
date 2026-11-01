@@ -29,25 +29,25 @@ Terms: **kept** or **excluded** is what derive publishes today with no override.
 
 | Recommendation | high | medium | low | total | changes /v1 |
 |---|---:|---:|---:|---:|---:|
-| keep | 0 | 2 | 0 | 2 | 2 |
-| remove | 18 | 13 | 5 | 36 | 0 |
+| keep | 3 | 5 | 7 | 15 | 2 |
+| remove | 26 | 45 | 5 | 76 | 40 |
 | fix | 14 | 4 | 0 | 18 | n/a |
 | no action | 6 | 1 | 3 | 10 | n/a |
-| pending |  |  |  | 148 | |
-| **all entries** | 38 | 20 | 8 | 214 | 2 |
+| pending |  |  |  | 95 | |
+| **all entries** | 49 | 55 | 15 | 214 | 42 |
 
 ## Accept in one go
 
 Two sentences you can reply with:
 
-- **"accept the high-confidence confirmations only"**: `pnpm review:accept --confidence high --confirm-only` (18 entries). Published countries don't change, and the next release isn't held up.
-- **"accept the high-confidence set"**: `pnpm review:accept --confidence high` (18 entries: 18 confirming, 0 output-changing). The output-changing ones hold the next release until the follow-on below is done.
+- **"accept the high-confidence confirmations only"**: `pnpm review:accept --confidence high --confirm-only` (21 entries). Published countries don't change, and the next release isn't held up.
+- **"accept the high-confidence set"**: `pnpm review:accept --confidence high` (29 entries: 21 confirming, 8 output-changing). The output-changing ones hold the next release until the follow-on below is done.
 
 Any other selection works too: `pnpm review:accept --ids 25:DE,25:RU`, or `--confidence medium` for medium and higher. The command copies the chosen proposals into `data/review/country-overrides.json` and runs `pnpm derive`. Non-country entries can't be accepted this way; their fixes are separate work.
 
-Confirming, high (18): `15:DE,17:US,20:NL,20:SG,21:DE,25:DK,25:MW,25:SE,29:DE,50:DE,52:DE,56:BE,56:NU,56:RU,60:US,66:DE,68:US,71:DE`
+Confirming, high (21): `15:DE,17:ID,17:US,20:NL,20:SG,21:DE,25:DK,25:MW,25:RU,25:SE,29:DE,50:DE,52:DE,56:BE,56:NU,56:RU,58:IR,60:US,66:DE,68:US,71:DE`
 
-Output-changing, high (0): none
+Output-changing, high (8): `28:BE,29:US,40:US,43:US,48:US,56:DE,56:SE,69:US`
 
 Non-country fixes, high (20, not covered by accept): `12:ids.iucn:iucn-id,15:ids.iucn:iucn-id,17:ids.iucn:iucn-id,18:ids.iucn:iucn-id,19:ids.gbif:identity,19:ids.iucn:iucn-id,1:ids.gbif:synonym-info,1:ids.ncbi:not-found,20:ids.iucn:iucn-id,21:ids.iucn:iucn-id,22:ids.iucn:iucn-id,47:range.countriesWithOpenRecords:no-records,4:ids.iucn:iucn-id,55:ids.gbif:synonym-info,59:ids.col:identity,63:ids.gbif:synonym-info,70:ids.gbif:synonym-info,73:ids.col:identity,9:ids.col:identity,9:ids.gbif:identity`
 
@@ -63,7 +63,7 @@ What accepting does:
 
 Species that could lose every published country:
 
-- 69 Nanger dama (Dama Gazelle): all 7 published countries are flagged. The high-confidence set leaves 7; every recommendation taken leaves 7.
+- 69 Nanger dama (Dama Gazelle): all 7 published countries are flagged. The high-confidence set leaves 6; every recommendation taken leaves 5.
 
 ## Per species
 
@@ -181,7 +181,9 @@ Species that could lose every published country:
 - **Records shown** (2 of 2):
   - [3935098136](https://www.gbif.org/occurrence/3935098136) · HUMAN_OBSERVATION · no date · -21.13317, 55.53241 ±32,290 m · issues: COUNTRY_MISMATCH
   - [4548578603](https://www.gbif.org/occurrence/4548578603) · HUMAN_OBSERVATION · no date · -21.13317, 55.53241 ±32,290 m · issues: COUNTRY_MISMATCH
-- **Recommendation:** pending
+- **Recommendation:** keep · **low** · confirming
+- **Why:** Two rows of France's TAXREF territory checklist, undated, no locality, one island-wide point with 32 km uncertainty. A checklist line documents no animal, and its status here isn't in the fields; COL's list is Asian. Too thin to call, so it stays.
+- **Cites:** [gbif:occurrence:3935098136](https://www.gbif.org/occurrence/3935098136), [gbif:occurrence:4548578603](https://www.gbif.org/occurrence/4548578603), [gbif:dataset:91aa3d5b-6f77-4135-a823-cef438a60dfa](https://www.gbif.org/dataset/91aa3d5b-6f77-4135-a823-cef438a60dfa), [col:4JZ39](https://www.checklistbank.org/dataset/316595/taxon/4JZ39)
 
 #### 4:ids.iucn:iucn-id · iucn-id (blocking)
 
@@ -406,7 +408,9 @@ Species that could lose every published country:
   - [735668986](https://www.gbif.org/occurrence/735668986) · PRESERVED_SPECIMEN · 2002 · 34.441389, -119.596944 · Montecito; Turtle Dreams, 2298 Featherhill Rd. · California · SBMNH · establishment: native
   - [5147071145](https://www.gbif.org/occurrence/5147071145) · PRESERVED_SPECIMEN · no date · 37.869574, -122.299078 ±23 m · East Bay Vivarium, Berkeley · California · MVZ · degree: captive
   - [5147422146](https://www.gbif.org/occurrence/5147422146) · PRESERVED_SPECIMEN · no date · 37.869574, -122.299078 ±23 m · East Bay Vivarium, Berkeley · California · MVZ · degree: captive
-- **Recommendation:** pending
+- **Recommendation:** remove · **medium** · output-changing
+- **Why:** Three California specimens: two MVZ, marked captive, at East Bay Vivarium, Berkeley; one SBMNH at "Turtle Dreams", a street address in Montecito, whose establishmentMeans says "native". That third is inferred to be a private collection; the record doesn't say so.
+- **Cites:** [gbif:occurrence:5147071145](https://www.gbif.org/occurrence/5147071145), [gbif:occurrence:5147422146](https://www.gbif.org/occurrence/5147422146), [gbif:occurrence:735668986](https://www.gbif.org/occurrence/735668986), [gbif:dataset:09c4287e-e6d5-4552-a07f-bff8a00833d8](https://www.gbif.org/dataset/09c4287e-e6d5-4552-a07f-bff8a00833d8), [gbif:dataset:75018539-6328-41de-b875-7c2e61dc1635](https://www.gbif.org/dataset/75018539-6328-41de-b875-7c2e61dc1635)
 
 #### 12:ids.iucn:iucn-id · iucn-id (blocking)
 
@@ -496,7 +500,9 @@ Species that could lose every published country:
 - **Records shown** (2 of 2):
   - [543720438](https://www.gbif.org/occurrence/543720438) · PRESERVED_SPECIMEN · 1909 · -5.371119, 138.102744 · Noord River \[Lorentz River\] · Papua Prov. · CAS · remarks: Exch. from Amsterdam Museum.
   - [1057229649](https://www.gbif.org/occurrence/1057229649) · PRESERVED_SPECIMEN · no date · -5.25, 138.983333 · Vriendschaps River, about 40 miles above junction with Eilanden River, S.W. Dutch New Guinea · Papua · NHMUK · issues: CONTINENT_COORDINATE_MISMATCH
-- **Recommendation:** pending
+- **Recommendation:** keep · **high** · confirming
+- **Why:** Two field specimens from two museums: CAS 1909, Noord (Lorentz) River; NHMUK, Vriendschaps River, Dutch New Guinea. No captive sign, and COL's distribution names the Lorentz River. The flag comes from GBIF placing Indonesia in Asia, while the core here is Oceania.
+- **Cites:** [gbif:occurrence:543720438](https://www.gbif.org/occurrence/543720438), [gbif:occurrence:1057229649](https://www.gbif.org/occurrence/1057229649), [gbif:dataset:7e380070-f762-11e1-a439-00145eb45e9a](https://www.gbif.org/dataset/7e380070-f762-11e1-a439-00145eb45e9a), [gbif:dataset:cece4fc2-1fec-4bb5-a335-7252548e3f0b](https://www.gbif.org/dataset/cece4fc2-1fec-4bb5-a335-7252548e3f0b), [col:R7VH](https://www.checklistbank.org/dataset/316595/taxon/R7VH)
 
 #### 17:SG · country-captive-suspect (review, kept)
 
@@ -512,7 +518,9 @@ Species that could lose every published country:
 - **Records shown** (2 of 2):
   - [6184872379](https://www.gbif.org/occurrence/6184872379) · HUMAN_OBSERVATION · 2026-01 · 1.340158, 103.926385 ±31,447 m · East · iNaturalist
   - [3124898556](https://www.gbif.org/occurrence/3124898556) · HUMAN_OBSERVATION · 2021-05 · 1.344183, 103.890386 ±31,447 m · Central · iNaturalist
-- **Recommendation:** pending
+- **Recommendation:** keep · **medium** · confirming
+- **Why:** Two iNaturalist research-grade records, 2021 and 2026, no captive mark, coordinates obscured to about 31 km. They point to animals outside captivity, likely released or escaped, but it's one dataset and COL's list doesn't name Singapore, so no second source agrees.
+- **Cites:** [gbif:occurrence:6184872379](https://www.gbif.org/occurrence/6184872379), [gbif:occurrence:3124898556](https://www.gbif.org/occurrence/3124898556), [gbif:dataset:50c9509d-22c7-4a22-a47d-8c48425ef4a7](https://www.gbif.org/dataset/50c9509d-22c7-4a22-a47d-8c48425ef4a7), [col:R7VH](https://www.checklistbank.org/dataset/316595/taxon/R7VH)
 
 #### 17:US · country-captive-suspect (blocking, excluded)
 
@@ -663,7 +671,9 @@ Species that could lose every published country:
   - [3846910598](https://www.gbif.org/occurrence/3846910598) · HUMAN_OBSERVATION · no date · 14.65485, -61.01929 ±26,983 m · issues: COUNTRY_MISMATCH
   - [3935050832](https://www.gbif.org/occurrence/3935050832) · HUMAN_OBSERVATION · no date · 14.65485, -61.01929 ±26,983 m · issues: COUNTRY_MISMATCH
   - [4548504222](https://www.gbif.org/occurrence/4548504222) · HUMAN_OBSERVATION · no date · 14.65485, -61.01929 ±26,983 m · issues: COUNTRY_MISMATCH
-- **Recommendation:** pending
+- **Recommendation:** keep · **low** · confirming
+- **Why:** Three rows of France's TAXREF territory checklist, undated, no locality, one island-wide point with 27 km uncertainty. A checklist line documents no animal, and its status here isn't in the fields; COL's list is African. Too thin to call, so it stays.
+- **Cites:** [gbif:occurrence:3846910598](https://www.gbif.org/occurrence/3846910598), [gbif:occurrence:3935050832](https://www.gbif.org/occurrence/3935050832), [gbif:occurrence:4548504222](https://www.gbif.org/occurrence/4548504222), [gbif:dataset:91aa3d5b-6f77-4135-a823-cef438a60dfa](https://www.gbif.org/dataset/91aa3d5b-6f77-4135-a823-cef438a60dfa), [col:S9KW](https://www.checklistbank.org/dataset/316595/taxon/S9KW)
 
 #### 20:MR · country-borderline (review, kept)
 
@@ -697,7 +707,9 @@ Species that could lose every published country:
 - **Records shown** (2 of 2):
   - [3442057921](https://www.gbif.org/occurrence/3442057921) · MATERIAL_SAMPLE · 2017-02 · 25.4766, -108.304 · El Pochote · Sinaloa · Instituto Politecnico Nacional, Centro de Biotecnologia Genomica
   - [3818449828](https://www.gbif.org/occurrence/3818449828) · PRESERVED_SPECIMEN · 2017-02 · 25.48, -108.3 · Sinaloa, El Pochote, Sinaloa, El Pochote · remarks: Centrochelys sulcata cytochrome oxidase subunit 1 (COI) gene, partial cds mitochondrial.
-- **Recommendation:** pending
+- **Recommendation:** keep · **low** · confirming
+- **Why:** iBOL and INSDC copies of one 2017 COI sequence from a Mexican institute, locality "El Pochote", Sinaloa. A place name with no wild or captive mark; a kept tortoise can't be told from a free one here, and COL's list is African. Too thin to call, so it stays.
+- **Cites:** [gbif:occurrence:3442057921](https://www.gbif.org/occurrence/3442057921), [gbif:occurrence:3818449828](https://www.gbif.org/occurrence/3818449828), [gbif:dataset:040c5662-da76-4782-a48e-cdea1892d14c](https://www.gbif.org/dataset/040c5662-da76-4782-a48e-cdea1892d14c), [gbif:dataset:d8cd16ba-bb74-4420-821e-083f2bac17c2](https://www.gbif.org/dataset/d8cd16ba-bb74-4420-821e-083f2bac17c2), [col:S9KW](https://www.checklistbank.org/dataset/316595/taxon/S9KW)
 
 #### 20:NG · country-borderline (review, kept)
 
@@ -794,7 +806,9 @@ Species that could lose every published country:
 - **Records shown** (2 of 2):
   - [6137478509](https://www.gbif.org/occurrence/6137478509) · HUMAN_OBSERVATION · 2026-02 · 14.490823, 100.053658 ±250 m · Suphanburi - Thai Farmers Way Museum · NABU|naturgucker
   - [5013281554](https://www.gbif.org/occurrence/5013281554) · HUMAN_OBSERVATION · 2024-12 · 12.255418, 102.518181 ±250 m · Trat - Botanischer Garten · NABU|naturgucker
-- **Recommendation:** pending
+- **Recommendation:** remove · **medium** · output-changing
+- **Why:** Two NABU|naturgucker records at managed sites: "Thai Farmers Way Museum", Suphanburi, 2026, and "Botanischer Garten", Trat, 2024. COL's list is African. Points to kept animals, but neither record says captive.
+- **Cites:** [gbif:occurrence:6137478509](https://www.gbif.org/occurrence/6137478509), [gbif:occurrence:5013281554](https://www.gbif.org/occurrence/5013281554), [gbif:dataset:6ac3f774-d9fb-4796-b3e9-92bf6c81c084](https://www.gbif.org/dataset/6ac3f774-d9fb-4796-b3e9-92bf6c81c084), [col:S9KW](https://www.checklistbank.org/dataset/316595/taxon/S9KW)
 
 #### 20:US · country-captive-suspect (review, kept)
 
@@ -813,7 +827,9 @@ Species that could lose every published country:
   - [4926034362](https://www.gbif.org/occurrence/4926034362) · HUMAN_OBSERVATION · 2024-07 · 37.400855, -119.566278 ±4 m · California · iNaturalist
   - [5897320601](https://www.gbif.org/occurrence/5897320601) · HUMAN_OBSERVATION · 2020-06 · 42.121403, -72.583719 ±27,692 m · Massachusetts · iNaturalist · remarks: Has the pyramidal shapes on carapace, but not the coloring on legs and plastron edges I've previously seen. Could be a tortoise?
   - [5103689176](https://www.gbif.org/occurrence/5103689176) · PRESERVED_SPECIMEN · 2019-01 · 31.375752, -100.490081 · San Angelo Nature Center · Texas · ASNHC
-- **Recommendation:** pending
+- **Recommendation:** keep · **medium** · confirming
+- **Why:** Three iNaturalist research-grade records in three states (South Carolina, California, Massachusetts), 2020–2026, no captive mark: likely escaped or released pets. The fourth record is from San Angelo Nature Center, so no second source agrees on animals outside captivity.
+- **Cites:** [gbif:occurrence:6579206758](https://www.gbif.org/occurrence/6579206758), [gbif:occurrence:4926034362](https://www.gbif.org/occurrence/4926034362), [gbif:occurrence:5897320601](https://www.gbif.org/occurrence/5897320601), [gbif:occurrence:5103689176](https://www.gbif.org/occurrence/5103689176), [gbif:dataset:50c9509d-22c7-4a22-a47d-8c48425ef4a7](https://www.gbif.org/dataset/50c9509d-22c7-4a22-a47d-8c48425ef4a7), [gbif:dataset:91025c69-111a-45c0-8440-59cb9efbdff7](https://www.gbif.org/dataset/91025c69-111a-45c0-8440-59cb9efbdff7), [col:S9KW](https://www.checklistbank.org/dataset/316595/taxon/S9KW)
 
 #### 20:ids.iucn:iucn-id · iucn-id (blocking)
 
@@ -1024,22 +1040,16 @@ Species that could lose every published country:
 - **Datasets:**
   - [ICMBio | Dados de ocorrência de espécies do Sistema de Autorização e Informações de Biodiversidade (SISBio) do ICMBio](https://www.gbif.org/dataset/ffe38a37-d659-4b1a-a935-5a5264e3cc0a) · Instituto Chico Mendes de Conservação da Biodiversidade - ICMBIO · 11 records
   - [International Barcode of Life project (iBOL)](https://www.gbif.org/dataset/040c5662-da76-4782-a48e-cdea1892d14c) · The International Barcode of Life Consortium · 3 records
-- **Records shown** (14 of 14):
+- **Records shown** (6 of 14):
   - [6510070967](https://www.gbif.org/occurrence/6510070967) · HUMAN_OBSERVATION · 2019-01 · -23.649167, -46.618611 · São Paulo · ICMBio
-  - [6510344384](https://www.gbif.org/occurrence/6510344384) · HUMAN_OBSERVATION · 2019-01 · -23.649167, -46.618611 · São Paulo · ICMBio
   - [6511023741](https://www.gbif.org/occurrence/6511023741) · HUMAN_OBSERVATION · 2019-01 · -15.925833, -48.819444 · Goiás · ICMBio
-  - [6511206409](https://www.gbif.org/occurrence/6511206409) · HUMAN_OBSERVATION · 2019-01 · -23.649167, -46.618611 · São Paulo · ICMBio
   - [6510464995](https://www.gbif.org/occurrence/6510464995) · HUMAN_OBSERVATION · 2019-06 · -22.905278, -43.229167 · Rio de Janeiro · ICMBio
-  - [6510455715](https://www.gbif.org/occurrence/6510455715) · HUMAN_OBSERVATION · 2018-01 · -23.649167, -46.618611 · São Paulo · ICMBio
   - [6510882533](https://www.gbif.org/occurrence/6510882533) · HUMAN_OBSERVATION · 2017-01 · -15.854722, -47.941111 · Distrito Federal · ICMBio
-  - [6510646180](https://www.gbif.org/occurrence/6510646180) · HUMAN_OBSERVATION · 2017-05 · -23.649167, -46.618611 · São Paulo · ICMBio
-  - [6510959871](https://www.gbif.org/occurrence/6510959871) · HUMAN_OBSERVATION · 2017-08 · -23.649167, -46.618611 · São Paulo · ICMBio
-  - [6510955179](https://www.gbif.org/occurrence/6510955179) · HUMAN_OBSERVATION · 2017-09 · -22.904444, -43.229167 · Rio de Janeiro · ICMBio
   - [6511311352](https://www.gbif.org/occurrence/6511311352) · HUMAN_OBSERVATION · 2012-02 · -26.73885, -49.178933 · Santa Catarina · ICMBio
   - [2248829128](https://www.gbif.org/occurrence/2248829128) · MATERIAL_SAMPLE · no date · -11.524631, -54.355206 · Parque Zoologico Sapucaia do Sul · remarks: Faecal sample from Zoo animal
-  - [2248831229](https://www.gbif.org/occurrence/2248831229) · MATERIAL_SAMPLE · no date · -11.524631, -54.355206 · Parque Zoologico Sapucaia do Sul · remarks: Faecal sample from Zoo animal
-  - [2248831251](https://www.gbif.org/occurrence/2248831251) · MATERIAL_SAMPLE · no date · -11.524631, -54.355206 · Parque Zoologico Sapucaia do Sul · remarks: Faecal sample from Zoo animal
-- **Recommendation:** pending
+- **Recommendation:** remove · **medium** · output-changing
+- **Why:** 11 ICMBio SISBio records, no locality: 9 within 1 km of zoos in São Paulo, Rio and Brasília (Wikidata Q3364798, Q10306230, Q10306226), 2 not near one. 3 iBOL sequences from Sapucaia do Sul zoo. COL doesn't list the Americas. Points to zoo animals; most records don't say so.
+- **Cites:** [gbif:occurrence:6510070967](https://www.gbif.org/occurrence/6510070967), [gbif:occurrence:6510464995](https://www.gbif.org/occurrence/6510464995), [gbif:occurrence:6510882533](https://www.gbif.org/occurrence/6510882533), [gbif:occurrence:6511023741](https://www.gbif.org/occurrence/6511023741), [gbif:occurrence:6511311352](https://www.gbif.org/occurrence/6511311352), [gbif:occurrence:2248829128](https://www.gbif.org/occurrence/2248829128), [gbif:dataset:ffe38a37-d659-4b1a-a935-5a5264e3cc0a](https://www.gbif.org/dataset/ffe38a37-d659-4b1a-a935-5a5264e3cc0a), [gbif:dataset:040c5662-da76-4782-a48e-cdea1892d14c](https://www.gbif.org/dataset/040c5662-da76-4782-a48e-cdea1892d14c), [col:4CGXS](https://www.checklistbank.org/dataset/316595/taxon/4CGXS)
 
 #### 25:CA · country-captive-suspect (blocking, excluded)
 
@@ -1077,7 +1087,9 @@ Species that could lose every published country:
   - [5016883542](https://www.gbif.org/occurrence/5016883542) · HUMAN_OBSERVATION · 2017-03 · 51.673656, 7.790796 ±250 m · TK25 Blatt 4312/2 - Hamm · NABU|naturgucker
   - [5862771137](https://www.gbif.org/occurrence/5862771137) · MATERIAL_SAMPLE · 2012-04 · 48.099, 11.558 · Muenchen, Tierparkstrasse 30, Tierpark Hellabrunn · Bavaria · Bavarian State Collection of Zoology
   - [5863060254](https://www.gbif.org/occurrence/5863060254) · MATERIAL_SAMPLE · 2010-12 · 48.099, 11.558 · Muenchen, Tierparkstrasse 30, Tierpark Hellabrunn · Bavaria · Bavarian State Collection of Zoology
-- **Recommendation:** pending
+- **Recommendation:** remove · **medium** · output-changing
+- **Why:** Six records: four name a zoo (Frankfurt, Tierpark Berlin, Hellabrunn twice). Two NABU map-sheet records, Rheine and Hamm, fall 3.5 and 2.1 km from zoos there (Wikidata Q165073, Q1536456) but don't say so, and neither has a wild sign. Inferred for those two, not stated.
+- **Cites:** [gbif:occurrence:5012798798](https://www.gbif.org/occurrence/5012798798), [gbif:occurrence:5022891055](https://www.gbif.org/occurrence/5022891055), [gbif:occurrence:5862771137](https://www.gbif.org/occurrence/5862771137), [gbif:occurrence:5863060254](https://www.gbif.org/occurrence/5863060254), [gbif:occurrence:5026992435](https://www.gbif.org/occurrence/5026992435), [gbif:occurrence:5016883542](https://www.gbif.org/occurrence/5016883542), [gbif:dataset:6ac3f774-d9fb-4796-b3e9-92bf6c81c084](https://www.gbif.org/dataset/6ac3f774-d9fb-4796-b3e9-92bf6c81c084), [gbif:dataset:040c5662-da76-4782-a48e-cdea1892d14c](https://www.gbif.org/dataset/040c5662-da76-4782-a48e-cdea1892d14c)
 
 #### 25:DK · country-captive-suspect (blocking, excluded)
 
@@ -1159,14 +1171,15 @@ Species that could lose every published country:
 - **Datasets:**
   - [iNaturalist Research-grade Observations](https://www.gbif.org/dataset/50c9509d-22c7-4a22-a47d-8c48425ef4a7) · iNaturalist.org · 4 records
   - [Mammal Collection (MHNG-MAMO) of Muséum d'histoire naturelle de Genève](https://www.gbif.org/dataset/5a659248-1f70-11e3-b2c5-00145eb45e9a) · Swiss Natural History Collections - SwissNatColl · 2 records
-- **Records shown** (6 of 6):
+- **Records shown** (5 of 6):
   - [6352915840](https://www.gbif.org/occurrence/6352915840) · HUMAN_OBSERVATION · 2026-05 · 43.892475, 132.782714 ±27,411 m · Primor'ye · iNaturalist
   - [4936509469](https://www.gbif.org/occurrence/4936509469) · HUMAN_OBSERVATION · 2024-05 · 42.696995, 131.236192 ±27,599 m · Primor'ye · iNaturalist
   - [4978158254](https://www.gbif.org/occurrence/4978158254) · HUMAN_OBSERVATION · 2024-10 · 43.113799, 132.493785 ±27,537 m · Primor'ye · iNaturalist
   - [3698357851](https://www.gbif.org/occurrence/3698357851) · HUMAN_OBSERVATION · 2017-06 · 43.722198, 132.262804 ±27,443 m · Primor'ye · iNaturalist
   - [865739434](https://www.gbif.org/occurrence/865739434) · PRESERVED_SPECIMEN · no date · 60, 105 ±10,000 m · Sibérie orientale · Krasnoyarsk Krai · MHNG
-  - [865739455](https://www.gbif.org/occurrence/865739455) · PRESERVED_SPECIMEN · no date · 60, 105 ±10,000 m · Sibérie orientale · Krasnoyarsk Krai · MHNG
-- **Recommendation:** pending
+- **Recommendation:** keep · **high** · confirming
+- **Why:** Four iNaturalist research-grade records in Primorye, 2017–2026, no captive mark, plus two MHNG specimens from eastern Siberia; COL lists Europe & Northern Asia. Live count is 6, snapshot 8. The flag comes from GBIF placing Russia in Europe, while the core is Asia.
+- **Cites:** [gbif:occurrence:6352915840](https://www.gbif.org/occurrence/6352915840), [gbif:occurrence:4936509469](https://www.gbif.org/occurrence/4936509469), [gbif:occurrence:4978158254](https://www.gbif.org/occurrence/4978158254), [gbif:occurrence:3698357851](https://www.gbif.org/occurrence/3698357851), [gbif:occurrence:865739434](https://www.gbif.org/occurrence/865739434), [gbif:dataset:50c9509d-22c7-4a22-a47d-8c48425ef4a7](https://www.gbif.org/dataset/50c9509d-22c7-4a22-a47d-8c48425ef4a7), [gbif:dataset:5a659248-1f70-11e3-b2c5-00145eb45e9a](https://www.gbif.org/dataset/5a659248-1f70-11e3-b2c5-00145eb45e9a), [col:4CGXS](https://www.checklistbank.org/dataset/316595/taxon/4CGXS)
 
 #### 25:SE · country-captive-suspect (blocking, excluded)
 
@@ -1208,28 +1221,15 @@ Species that could lose every published country:
   - [CAS Mammalogy (MAM)](https://www.gbif.org/dataset/6ce7290f-47f6-4046-8356-371f5b6749df) · California Academy of Sciences · 1 record
   - [Ohio Wesleyan University Mammal Specimens (Arctos)](https://www.gbif.org/dataset/7f9b9e18-e266-4bc0-ac29-37b86c5fc24f) · Ohio Wesleyan University Museum of Natural History · 1 record
   - [FHSM Mammals Collection](https://www.gbif.org/dataset/84e6e5f8-f762-11e1-a439-00145eb45e9a) · Fort Hays Sternberg Museum of Natural History · 1 record
-- **Records shown** (20 of 67):
+- **Records shown** (5 of 67):
   - [6605811305](https://www.gbif.org/occurrence/6605811305) · PRESERVED_SPECIMEN · 2025-11 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
+  - [6446444301](https://www.gbif.org/occurrence/6446444301) · PRESERVED_SPECIMEN · 2024-03 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
   - [6605824301](https://www.gbif.org/occurrence/6605824301) · PRESERVED_SPECIMEN · 2025-11 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
   - [6605825305](https://www.gbif.org/occurrence/6605825305) · PRESERVED_SPECIMEN · 2025-11 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [6446444301](https://www.gbif.org/occurrence/6446444301) · PRESERVED_SPECIMEN · 2024-03 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
   - [6446442304](https://www.gbif.org/occurrence/6446442304) · PRESERVED_SPECIMEN · 2024-06 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [6446443321](https://www.gbif.org/occurrence/6446443321) · PRESERVED_SPECIMEN · 2023-01 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [6446448320](https://www.gbif.org/occurrence/6446448320) · PRESERVED_SPECIMEN · 2023-01 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [6446437301](https://www.gbif.org/occurrence/6446437301) · PRESERVED_SPECIMEN · 2023-09 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [6446448313](https://www.gbif.org/occurrence/6446448313) · PRESERVED_SPECIMEN · 2023-09 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [6446431309](https://www.gbif.org/occurrence/6446431309) · PRESERVED_SPECIMEN · 2022-08 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [5099706183](https://www.gbif.org/occurrence/5099706183) · PRESERVED_SPECIMEN · 2019-03 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [5099706211](https://www.gbif.org/occurrence/5099706211) · PRESERVED_SPECIMEN · 2019-03 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [5099709174](https://www.gbif.org/occurrence/5099709174) · PRESERVED_SPECIMEN · 2019-03 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [5099713216](https://www.gbif.org/occurrence/5099713216) · PRESERVED_SPECIMEN · 2019-03 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [5099715197](https://www.gbif.org/occurrence/5099715197) · PRESERVED_SPECIMEN · 2019-03 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [5099715198](https://www.gbif.org/occurrence/5099715198) · PRESERVED_SPECIMEN · 2019-03 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [5099717170](https://www.gbif.org/occurrence/5099717170) · PRESERVED_SPECIMEN · 2019-03 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [5099717191](https://www.gbif.org/occurrence/5099717191) · PRESERVED_SPECIMEN · 2019-03 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [5099709170](https://www.gbif.org/occurrence/5099709170) · PRESERVED_SPECIMEN · 2016-06 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [5099713214](https://www.gbif.org/occurrence/5099713214) · PRESERVED_SPECIMEN · 2016-06 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-- **Recommendation:** pending
+- **Recommendation:** remove · **medium** · output-changing
+- **Why:** Of 67 live records, 52 are marked captive; 35 are in New Mexico, and all 20 we read are MSB specimens from Albuquerque BioPark Zoo. The other 15 are unread: Borror Lab recordings and other museums' specimens. Live count moved from 64, so this can't be high. COL doesn't list the Americas.
+- **Cites:** [gbif:occurrence:6605811305](https://www.gbif.org/occurrence/6605811305), [gbif:occurrence:6446444301](https://www.gbif.org/occurrence/6446444301), [gbif:dataset:b15d4952-7d20-46f1-8a3e-556a512b04c5](https://www.gbif.org/dataset/b15d4952-7d20-46f1-8a3e-556a512b04c5), [gbif:dataset:1da75725-1eb5-4e17-b586-ffad7b783987](https://www.gbif.org/dataset/1da75725-1eb5-4e17-b586-ffad7b783987), [gbif:dataset:f11db245-3f9f-4fc6-a0cc-12b4124d081b](https://www.gbif.org/dataset/f11db245-3f9f-4fc6-a0cc-12b4124d081b), [col:4CGXS](https://www.checklistbank.org/dataset/316595/taxon/4CGXS)
 
 #### 25:VN · country-borderline (review, kept)
 
@@ -1260,7 +1260,9 @@ Species that could lose every published country:
 - **Records shown** (2 of 2):
   - [2249800680](https://www.gbif.org/occurrence/2249800680) · MATERIAL_SAMPLE · 2014-10 · -28.55362, 24.752527 · Mined from GenBank, NCBI
   - [2249796881](https://www.gbif.org/occurrence/2249796881) · MATERIAL_SAMPLE · no date · -28.55362, 24.752527 · Mined from GenBank, NCBI
-- **Recommendation:** pending
+- **Recommendation:** remove · **medium** · output-changing
+- **Why:** Two iBOL records "Mined from GenBank": sequences, no locality, coordinates near the middle of South Africa. They document no animal there, and COL doesn't list Africa. Inferred from the record type, not stated by it.
+- **Cites:** [gbif:occurrence:2249800680](https://www.gbif.org/occurrence/2249800680), [gbif:occurrence:2249796881](https://www.gbif.org/occurrence/2249796881), [gbif:dataset:040c5662-da76-4782-a48e-cdea1892d14c](https://www.gbif.org/dataset/040c5662-da76-4782-a48e-cdea1892d14c), [col:4CGXS](https://www.checklistbank.org/dataset/316595/taxon/4CGXS)
 
 ### 26 · Mustela nigripes · Black-footed Ferret
 
@@ -1345,7 +1347,9 @@ Species that could lose every published country:
   - [1313781169](https://www.gbif.org/occurrence/1313781169) · PRESERVED_SPECIMEN · 1888 · 50.503887, 4.469936 · Gentse Dierentuin · Ugent
   - [1313781180](https://www.gbif.org/occurrence/1313781180) · PRESERVED_SPECIMEN · 1888 · 50.503887, 4.469936 · Gentse Dierentuin · Ugent
   - [1313781206](https://www.gbif.org/occurrence/1313781206) · PRESERVED_SPECIMEN · 1888 · 50.503887, 4.469936 · Gentse Dierentuin · Ugent
-- **Recommendation:** pending
+- **Recommendation:** remove · **high** · output-changing
+- **Why:** Three Ghent University specimens, 1888, locality "Gentse Dierentuin": the Ghent zoo. The records themselves name the zoo, and they're every counted record here.
+- **Cites:** [gbif:occurrence:1313781169](https://www.gbif.org/occurrence/1313781169), [gbif:occurrence:1313781180](https://www.gbif.org/occurrence/1313781180), [gbif:occurrence:1313781206](https://www.gbif.org/occurrence/1313781206), [gbif:dataset:0310b080-ec4b-11dc-b73e-b8a03c50a862](https://www.gbif.org/dataset/0310b080-ec4b-11dc-b73e-b8a03c50a862)
 
 #### 28:BR · country-captive-suspect (blocking, excluded)
 
@@ -1410,17 +1414,15 @@ Species that could lose every published country:
 - **Datasets:**
   - [International Barcode of Life project (iBOL)](https://www.gbif.org/dataset/040c5662-da76-4782-a48e-cdea1892d14c) · The International Barcode of Life Consortium · 7 records
   - [NABU|naturgucker](https://www.gbif.org/dataset/6ac3f774-d9fb-4796-b3e9-92bf6c81c084) · naturgucker.de · 2 records
-- **Records shown** (9 of 9):
+- **Records shown** (5 of 9):
   - [5025597615](https://www.gbif.org/occurrence/5025597615) · HUMAN_OBSERVATION · 2017-04 · 53.587109, 10.002799 ±250 m · Ecke Sierichstraße/Maria-Louisen-Straße · NABU|naturgucker
   - [5863272385](https://www.gbif.org/occurrence/5863272385) · MATERIAL_SAMPLE · 2015-02 · 48.099, 11.558 · Muenchen, Tierparkstrasse 30, Tierpark Hellabrunn · Bavaria · Bavarian State Collection of Zoology
-  - [5859939574](https://www.gbif.org/occurrence/5859939574) · MATERIAL_SAMPLE · 2015-03 · 48.099, 11.558 · Muenchen, Tierparkstrasse 30, Tierpark Hellabrunn · Bavaria · Bavarian State Collection of Zoology
   - [5017190976](https://www.gbif.org/occurrence/5017190976) · HUMAN_OBSERVATION · 2014-05 · 49.3965, 8.688008 ±250 m · Heidelberg · NABU|naturgucker
   - [5861260323](https://www.gbif.org/occurrence/5861260323) · MATERIAL_SAMPLE · 2013-08 · 48.099, 11.558 · Muenchen, Tierparkstrasse 30, Tierpark Hellabrunn · Bavaria · Bavarian State Collection of Zoology
-  - [5863183749](https://www.gbif.org/occurrence/5863183749) · MATERIAL_SAMPLE · 2013-12 · 48.099, 11.558 · Muenchen, Tierparkstrasse 30, Tierpark Hellabrunn · Bavaria · Bavarian State Collection of Zoology
-  - [5859963497](https://www.gbif.org/occurrence/5859963497) · MATERIAL_SAMPLE · 2012-06 · 48.099, 11.558 · Muenchen, Tierparkstrasse 30, Tierpark Hellabrunn · Bavaria · Bavarian State Collection of Zoology
-  - [5864168801](https://www.gbif.org/occurrence/5864168801) · MATERIAL_SAMPLE · 2011-09 · 48.099, 11.558 · Muenchen, Tierparkstrasse 30, Tierpark Hellabrunn · Bavaria · Bavarian State Collection of Zoology
-  - [5860456221](https://www.gbif.org/occurrence/5860456221) · MATERIAL_SAMPLE · 2005-05 · 48.099, 11.558 · Muenchen, Tierparkstrasse 30, Tierpark Hellabrunn · Bavaria · Bavarian State Collection of Zoology
-- **Recommendation:** pending
+  - [5859939574](https://www.gbif.org/occurrence/5859939574) · MATERIAL_SAMPLE · 2015-03 · 48.099, 11.558 · Muenchen, Tierparkstrasse 30, Tierpark Hellabrunn · Bavaria · Bavarian State Collection of Zoology
+- **Recommendation:** remove · **medium** · output-changing
+- **Why:** Seven of nine records are from Tierpark Hellabrunn, Munich. Two NABU records say only a Hamburg street corner (2017) and "Heidelberg" (2014), 2.9 km from its zoo (Wikidata Q220035), with no wild sign. COL's list is Southern Asia. Those two are inferred, not stated.
+- **Cites:** [gbif:occurrence:5861260323](https://www.gbif.org/occurrence/5861260323), [gbif:occurrence:5863272385](https://www.gbif.org/occurrence/5863272385), [gbif:occurrence:5025597615](https://www.gbif.org/occurrence/5025597615), [gbif:occurrence:5017190976](https://www.gbif.org/occurrence/5017190976), [gbif:dataset:040c5662-da76-4782-a48e-cdea1892d14c](https://www.gbif.org/dataset/040c5662-da76-4782-a48e-cdea1892d14c), [gbif:dataset:6ac3f774-d9fb-4796-b3e9-92bf6c81c084](https://www.gbif.org/dataset/6ac3f774-d9fb-4796-b3e9-92bf6c81c084), [col:398D9](https://www.checklistbank.org/dataset/316595/taxon/398D9)
 
 #### 28:DK · country-captive-suspect (review, kept)
 
@@ -1437,7 +1439,9 @@ Species that could lose every published country:
   - [3315035822](https://www.gbif.org/occurrence/3315035822) · PRESERVED_SPECIMEN · no date · 56.964846, 9.632483 · unnamed locality · NHMD · remarks: Antageligfra Landbohøjskolen (Boas). Mærket "1940".
   - [3315048659](https://www.gbif.org/occurrence/3315048659) · PRESERVED_SPECIMEN · no date · 56.964846, 9.632483 · unnamed locality · NHMD · remarks: Artsbestemmelsen er ikke sikker. Halespids med lange hår. Uden oplysninger, nummeret/indført i forbindelse med udlån til "Museum Europa", Nationalmuseet, april 1993.
   - [3315051752](https://www.gbif.org/occurrence/3315051752) · PRESERVED_SPECIMEN · no date · 56.964846, 9.632483 · unnamed locality · NHMD · remarks: Antageligfra Landbohøjskolen (Boas). Mærket "1940". Har været opstillet.
-- **Recommendation:** pending
+- **Recommendation:** remove · **medium** · output-changing
+- **Why:** Three undated NHMD objects, "unnamed locality", coordinates near the middle of Denmark. Remarks: "presumably from the Agricultural College", or identification "not certain", loaned for exhibition. They document no animal in Denmark, but don't say where it lived.
+- **Cites:** [gbif:occurrence:3315035822](https://www.gbif.org/occurrence/3315035822), [gbif:occurrence:3315048659](https://www.gbif.org/occurrence/3315048659), [gbif:occurrence:3315051752](https://www.gbif.org/occurrence/3315051752), [gbif:dataset:78b270c5-a5fe-4f1d-b87e-eb0dd7b7ae02](https://www.gbif.org/dataset/78b270c5-a5fe-4f1d-b87e-eb0dd7b7ae02), [col:398D9](https://www.checklistbank.org/dataset/316595/taxon/398D9)
 
 #### 28:LA · country-borderline (review, kept)
 
@@ -1491,28 +1495,15 @@ Species that could lose every published country:
   - [LACM Vertebrate Collection](https://www.gbif.org/dataset/7a25f7aa-03fb-4322-aaeb-66719e1a9527) · Natural History Museum of Los Angeles County · 1 record
   - [Macaulay Library Audio and Video Collection](https://www.gbif.org/dataset/7f6dd0f7-9ed4-49c0-bb71-b2a9c7fed9f1) · Cornell Lab of Ornithology · 1 record
   - [INSDC Sequences](https://www.gbif.org/dataset/d8cd16ba-bb74-4420-821e-083f2bac17c2) · European Nucleotide Archive (EMBL-EBI) · 1 record
-- **Records shown** (20 of 4,468):
+- **Records shown** (5 of 4,468):
   - [6446441311](https://www.gbif.org/occurrence/6446441311) · PRESERVED_SPECIMEN · 2026-01 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
   - [6446448315](https://www.gbif.org/occurrence/6446448315) · PRESERVED_SPECIMEN · 2026-01 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
   - [6446430309](https://www.gbif.org/occurrence/6446430309) · PRESERVED_SPECIMEN · 2026-02 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
   - [6446431311](https://www.gbif.org/occurrence/6446431311) · PRESERVED_SPECIMEN · 2026-02 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
   - [6446432302](https://www.gbif.org/occurrence/6446432302) · PRESERVED_SPECIMEN · 2026-02 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [6446433302](https://www.gbif.org/occurrence/6446433302) · PRESERVED_SPECIMEN · 2026-02 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [6446435307](https://www.gbif.org/occurrence/6446435307) · PRESERVED_SPECIMEN · 2026-02 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [6446435311](https://www.gbif.org/occurrence/6446435311) · PRESERVED_SPECIMEN · 2026-02 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [6446437302](https://www.gbif.org/occurrence/6446437302) · PRESERVED_SPECIMEN · 2026-02 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [6446437316](https://www.gbif.org/occurrence/6446437316) · PRESERVED_SPECIMEN · 2026-02 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [6446438314](https://www.gbif.org/occurrence/6446438314) · PRESERVED_SPECIMEN · 2026-02 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [6446440304](https://www.gbif.org/occurrence/6446440304) · PRESERVED_SPECIMEN · 2026-02 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [6446441316](https://www.gbif.org/occurrence/6446441316) · PRESERVED_SPECIMEN · 2026-02 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [6446445310](https://www.gbif.org/occurrence/6446445310) · PRESERVED_SPECIMEN · 2026-02 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [6446447303](https://www.gbif.org/occurrence/6446447303) · PRESERVED_SPECIMEN · 2026-02 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [6446447308](https://www.gbif.org/occurrence/6446447308) · PRESERVED_SPECIMEN · 2026-02 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [6446447312](https://www.gbif.org/occurrence/6446447312) · PRESERVED_SPECIMEN · 2026-02 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [6446430306](https://www.gbif.org/occurrence/6446430306) · PRESERVED_SPECIMEN · 2026-03 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [6446434308](https://www.gbif.org/occurrence/6446434308) · PRESERVED_SPECIMEN · 2026-03 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [6446434312](https://www.gbif.org/occurrence/6446434312) · PRESERVED_SPECIMEN · 2026-03 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-- **Recommendation:** pending
+- **Recommendation:** remove · **medium** · output-changing
+- **Why:** Of 4,468 live records, 4,433 are marked captive and 4,441 are MSB specimens from New Mexico; all 20 we read are from Albuquerque BioPark Zoo. The other records weren't read one by one. Live count moved from 4,461, so this can't be high. COL's list is Southern Asia.
+- **Cites:** [gbif:occurrence:6446441311](https://www.gbif.org/occurrence/6446441311), [gbif:occurrence:6446448315](https://www.gbif.org/occurrence/6446448315), [gbif:dataset:b15d4952-7d20-46f1-8a3e-556a512b04c5](https://www.gbif.org/dataset/b15d4952-7d20-46f1-8a3e-556a512b04c5), [gbif:dataset:040c5662-da76-4782-a48e-cdea1892d14c](https://www.gbif.org/dataset/040c5662-da76-4782-a48e-cdea1892d14c), [col:398D9](https://www.checklistbank.org/dataset/316595/taxon/398D9)
 
 #### 28:VN · country-borderline (review, kept)
 
@@ -1570,7 +1561,9 @@ Species that could lose every published country:
 - **Records shown** (2 of 2):
   - [3349519538](https://www.gbif.org/occurrence/3349519538) · MATERIAL_SAMPLE · 2013-01 · 36.4, -81.4 · Whiteoak Conservation Center, FL · remarks: Okapia johnstoni isolate WOAK, whole genome shotgun sequencing project.
   - [3356335026](https://www.gbif.org/occurrence/3356335026) · PRESERVED_SPECIMEN · 1971-10 · 32.736718, -117.151977 ±2,300 m · San Diego Zoo · California · BYU · remarks: no data born San Diego, 5 September 1971, died at 6 weeks old
-- **Recommendation:** pending
+- **Recommendation:** remove · **high** · output-changing
+- **Why:** Two records, each naming a captive site: INSDC genome "Whiteoak Conservation Center, FL", and BYU specimen "San Diego Zoo", remarks "born San Diego". They're every counted record here.
+- **Cites:** [gbif:occurrence:3349519538](https://www.gbif.org/occurrence/3349519538), [gbif:occurrence:3356335026](https://www.gbif.org/occurrence/3356335026), [gbif:dataset:d8cd16ba-bb74-4420-821e-083f2bac17c2](https://www.gbif.org/dataset/d8cd16ba-bb74-4420-821e-083f2bac17c2), [gbif:dataset:1da75725-1eb5-4e17-b586-ffad7b783987](https://www.gbif.org/dataset/1da75725-1eb5-4e17-b586-ffad7b783987)
 
 ### 35 · Ailurus fulgens · Red Panda
 
@@ -1596,28 +1589,15 @@ Species that could lose every published country:
   - [Angelo State Natural History Collections (ASNHC) Mammal specimens (Arctos)](https://www.gbif.org/dataset/2aa02cf8-c402-412c-9ad1-585e1e185bef) · Angelo State Natural History Collections (ASNHC) · 1 record
   - [SBMNH Vertebrate Zoology](https://www.gbif.org/dataset/75018539-6328-41de-b875-7c2e61dc1635) · Santa Barbara Museum of Natural History · 1 record
   - [Vertebrate Zoology Division - Mammalogy, Yale Peabody Museum](https://www.gbif.org/dataset/854f602e-f762-11e1-a439-00145eb45e9a) · Yale University Peabody Museum · 1 record
-- **Records shown** (20 of 23):
+- **Records shown** (5 of 23):
   - [6405541301](https://www.gbif.org/occurrence/6405541301) · PRESERVED_SPECIMEN · 2024-10 · 37.73292, -122.501849 ±457 m · San Francisco Zoo · California · MVZ · degree: captive
   - [2541249181](https://www.gbif.org/occurrence/2541249181) · PRESERVED_SPECIMEN · 2017-07 · 47.668428, -122.350877 ±357 m · Seattle, Woodland Park Zoo · Washington · UWBM · degree: captive
-  - [1702720584](https://www.gbif.org/occurrence/1702720584) · PRESERVED_SPECIMEN · 2013-02 · 47.668428, -122.350877 ±357 m · Seattle, Woodland Park Zoo · Washington · UWBM · degree: captive
   - [5285020432](https://www.gbif.org/occurrence/5285020432) · PRESERVED_SPECIMEN · 2011-02 · 41.922255, -87.633665 ±2,289 m · Chicago, Lincoln Park Zoo · Illinois · UWBM · degree: captive · remarks: Need zoo data sheet. Specimen type other than tissue not recorded in prep log.
-  - [5099717051](https://www.gbif.org/occurrence/5099717051) · PRESERVED_SPECIMEN · 2011-03 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [5099713095](https://www.gbif.org/occurrence/5099713095) · PRESERVED_SPECIMEN · 2010-05 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [5099709056](https://www.gbif.org/occurrence/5099709056) · PRESERVED_SPECIMEN · 2007-07 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [5099717055](https://www.gbif.org/occurrence/5099717055) · PRESERVED_SPECIMEN · 2006-10 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [5099706064](https://www.gbif.org/occurrence/5099706064) · PRESERVED_SPECIMEN · 2005-04 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [5099715080](https://www.gbif.org/occurrence/5099715080) · PRESERVED_SPECIMEN · 2005-04 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [1702716783](https://www.gbif.org/occurrence/1702716783) · PRESERVED_SPECIMEN · 2004-08 · 47.668428, -122.350877 ±357 m · Seattle, Woodland Park Zoo · Washington · UWBM · degree: captive · remarks: WPZ Medical Records Available.
   - [735670799](https://www.gbif.org/occurrence/735670799) · PRESERVED_SPECIMEN · 2002-03 · 34.419444, -119.663056 · Santa Barbara; Santa Barbara Zoological Gardens · California · SBMNH · establishment: native
-  - [1702714618](https://www.gbif.org/occurrence/1702714618) · PRESERVED_SPECIMEN · 2000-01 · 47.668428, -122.350877 ±357 m · Seattle, Woodland Park Zoo · Washington · UWBM · degree: captive · remarks: WPZ Medical Records Available.
-  - [5099473013](https://www.gbif.org/occurrence/5099473013) · PRESERVED_SPECIMEN · 1997-01 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive · remarks: "MAURY", CAPTIVE; COLLECTOR# 2196
-  - [1702696663](https://www.gbif.org/occurrence/1702696663) · PRESERVED_SPECIMEN · 1997-07 · 47.668428, -122.350877 ±357 m · Seattle, Woodland Park Zoo · Washington · UWBM · degree: captive
-  - [1702714320](https://www.gbif.org/occurrence/1702714320) · PRESERVED_SPECIMEN · 1992-10 · 47.668428, -122.350877 ±357 m · Seattle, Woodland Park Zoo · Washington · UWBM · degree: captive
-  - [5099450582](https://www.gbif.org/occurrence/5099450582) · PRESERVED_SPECIMEN · 1990-07 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · remarks: +BAC
-  - [1702677931](https://www.gbif.org/occurrence/1702677931) · PRESERVED_SPECIMEN · 1990-08 · 47.668428, -122.350877 ±357 m · Seattle, Woodland Park Zoo · Washington · UWBM · degree: captive
-  - [1702674443](https://www.gbif.org/occurrence/1702674443) · PRESERVED_SPECIMEN · 1985-06 · 47.668428, -122.350877 ±357 m · Seattle, Woodland Park Zoo · Washington · UWBM · degree: captive
   - [1039520717](https://www.gbif.org/occurrence/1039520717) · PRESERVED_SPECIMEN · no date · 37.6614, -76.5358 ±1,850 m · Remlik · Virginia · YPM · remarks: MAM number 9795; original catalog number Osteo 4567 (MAM.O.04567); accn=YPM.06299
-- **Recommendation:** pending
+- **Recommendation:** remove · **medium** · output-changing
+- **Why:** Of 23 records, 17 are marked captive, and 19 of the 20 we read name a zoo (Albuquerque, Seattle, San Francisco, Chicago, Santa Barbara). YPM's "Remlik", Virginia names none, and 3 weren't returned. COL's list is Southern Asia. Those are inferred, not stated.
+- **Cites:** [gbif:occurrence:6405541301](https://www.gbif.org/occurrence/6405541301), [gbif:occurrence:2541249181](https://www.gbif.org/occurrence/2541249181), [gbif:occurrence:5285020432](https://www.gbif.org/occurrence/5285020432), [gbif:occurrence:735670799](https://www.gbif.org/occurrence/735670799), [gbif:occurrence:1039520717](https://www.gbif.org/occurrence/1039520717), [gbif:dataset:b15d4952-7d20-46f1-8a3e-556a512b04c5](https://www.gbif.org/dataset/b15d4952-7d20-46f1-8a3e-556a512b04c5), [gbif:dataset:830eb5d0-f762-11e1-a439-00145eb45e9a](https://www.gbif.org/dataset/830eb5d0-f762-11e1-a439-00145eb45e9a), [gbif:dataset:854f602e-f762-11e1-a439-00145eb45e9a](https://www.gbif.org/dataset/854f602e-f762-11e1-a439-00145eb45e9a), [col:65V3W](https://www.checklistbank.org/dataset/316595/taxon/65V3W)
 
 #### 35:ids.inaturalist:multi-value · multi-value (blocking)
 
@@ -1675,7 +1655,9 @@ Species that could lose every published country:
   - [1417518656](https://www.gbif.org/occurrence/1417518656) · PRESERVED_SPECIMEN · no date · 48.832, 2.417 · MNHN
   - [1417518697](https://www.gbif.org/occurrence/1417518697) · PRESERVED_SPECIMEN · no date · 48.832, 2.417 · MNHN
   - [1417518911](https://www.gbif.org/occurrence/1417518911) · PRESERVED_SPECIMEN · no date · 48.832, 2.417 · MNHN
-- **Recommendation:** pending
+- **Recommendation:** remove · **medium** · output-changing
+- **Why:** Five undated MNHN (Paris) specimens with no locality, all at one point 0.1 km from Paris Zoological Park (Wikidata Q1969385). COL says Africa. Points to zoo animals, but the records themselves don't name one.
+- **Cites:** [gbif:occurrence:1043990755](https://www.gbif.org/occurrence/1043990755), [gbif:occurrence:1043991214](https://www.gbif.org/occurrence/1043991214), [gbif:occurrence:1417518656](https://www.gbif.org/occurrence/1417518656), [gbif:occurrence:1417518697](https://www.gbif.org/occurrence/1417518697), [gbif:occurrence:1417518911](https://www.gbif.org/occurrence/1417518911), [gbif:dataset:3959ee49-7678-4a88-9049-5dfc55ccebf3](https://www.gbif.org/dataset/3959ee49-7678-4a88-9049-5dfc55ccebf3), [col:7TKN5](https://www.checklistbank.org/dataset/316595/taxon/7TKN5)
 
 #### 39:NL · country-captive-suspect (blocking, excluded)
 
@@ -1708,7 +1690,9 @@ Species that could lose every published country:
 - **Records shown** (2 of 2):
   - [2249799194](https://www.gbif.org/occurrence/2249799194) · MATERIAL_SAMPLE · no date · 38.82081, -96.33162 · Mined from GenBank, NCBI
   - [2249970304](https://www.gbif.org/occurrence/2249970304) · MATERIAL_SAMPLE · no date · 38.82081, -96.33162 · Mined from GenBank, NCBI
-- **Recommendation:** pending
+- **Recommendation:** remove · **medium** · output-changing
+- **Why:** Two iBOL records "Mined from GenBank": sequences, no locality, no date, coordinates near the middle of the USA. They document no animal there, and COL says Africa. Inferred from the record type, not stated by it.
+- **Cites:** [gbif:occurrence:2249799194](https://www.gbif.org/occurrence/2249799194), [gbif:occurrence:2249970304](https://www.gbif.org/occurrence/2249970304), [gbif:dataset:040c5662-da76-4782-a48e-cdea1892d14c](https://www.gbif.org/dataset/040c5662-da76-4782-a48e-cdea1892d14c), [col:7TKN5](https://www.checklistbank.org/dataset/316595/taxon/7TKN5)
 
 #### 39:ZM · country-borderline (review, kept)
 
@@ -1744,28 +1728,15 @@ Species that could lose every published country:
 - **Establishment means:** none filled. **Degree of establishment:** captive 81, managed 81
 - **Datasets:**
   - [MSB Mammal Collection (Arctos)](https://www.gbif.org/dataset/b15d4952-7d20-46f1-8a3e-556a512b04c5) · Museum of Southwestern Biology · 81 records
-- **Records shown** (20 of 81):
+- **Records shown** (5 of 81):
   - [6497448312](https://www.gbif.org/occurrence/6497448312) · PRESERVED_SPECIMEN · 2025-07 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [6497452311](https://www.gbif.org/occurrence/6497452311) · PRESERVED_SPECIMEN · 2025-07 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
   - [5293352668](https://www.gbif.org/occurrence/5293352668) · PRESERVED_SPECIMEN · 2024-02 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
+  - [6497452311](https://www.gbif.org/occurrence/6497452311) · PRESERVED_SPECIMEN · 2025-07 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
   - [5293352675](https://www.gbif.org/occurrence/5293352675) · PRESERVED_SPECIMEN · 2024-02 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
   - [6187128514](https://www.gbif.org/occurrence/6187128514) · PRESERVED_SPECIMEN · 2023-05 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [6187126821](https://www.gbif.org/occurrence/6187126821) · PRESERVED_SPECIMEN · 2023-09 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [6187127108](https://www.gbif.org/occurrence/6187127108) · PRESERVED_SPECIMEN · 2023-09 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [6187128443](https://www.gbif.org/occurrence/6187128443) · PRESERVED_SPECIMEN · 2023-09 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [6187129435](https://www.gbif.org/occurrence/6187129435) · PRESERVED_SPECIMEN · 2023-09 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [6446430301](https://www.gbif.org/occurrence/6446430301) · PRESERVED_SPECIMEN · 2023-10 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [5099723399](https://www.gbif.org/occurrence/5099723399) · PRESERVED_SPECIMEN · 2022-03 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [6187126941](https://www.gbif.org/occurrence/6187126941) · PRESERVED_SPECIMEN · 2022-03 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [6187128925](https://www.gbif.org/occurrence/6187128925) · PRESERVED_SPECIMEN · 2022-03 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [6187130200](https://www.gbif.org/occurrence/6187130200) · PRESERVED_SPECIMEN · 2022-03 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [6446442301](https://www.gbif.org/occurrence/6446442301) · PRESERVED_SPECIMEN · 2022-05 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [5099729464](https://www.gbif.org/occurrence/5099729464) · PRESERVED_SPECIMEN · 2021-08 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive · remarks: Not assigned an NK
-  - [6187127427](https://www.gbif.org/occurrence/6187127427) · PRESERVED_SPECIMEN · 2021-08 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [6187127454](https://www.gbif.org/occurrence/6187127454) · PRESERVED_SPECIMEN · 2021-08 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [5099720323](https://www.gbif.org/occurrence/5099720323) · PRESERVED_SPECIMEN · 2020-07 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [5099723440](https://www.gbif.org/occurrence/5099723440) · PRESERVED_SPECIMEN · 2020-07 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-- **Recommendation:** pending
+- **Recommendation:** remove · **high** · output-changing
+- **Why:** All 81 records are MSB specimens in New Mexico, and all 81 are marked degreeOfEstablishment "captive"; each of the 20 we read says Albuquerque BioPark Zoo. The records themselves say captive. Wikidata has this species endemic to Sumatra.
+- **Cites:** [gbif:occurrence:6497448312](https://www.gbif.org/occurrence/6497448312), [gbif:occurrence:5293352668](https://www.gbif.org/occurrence/5293352668), [gbif:dataset:b15d4952-7d20-46f1-8a3e-556a512b04c5](https://www.gbif.org/dataset/b15d4952-7d20-46f1-8a3e-556a512b04c5), [wikidata:Q543424](https://www.wikidata.org/wiki/Q543424)
 
 #### 40:ids.inaturalist:multi-value · multi-value (blocking)
 
@@ -1912,7 +1883,9 @@ Species that could lose every published country:
 - **State or province:** none filled
 - **Establishment means:** none filled. **Degree of establishment:** none filled
 - **Datasets:** none
-- **Recommendation:** pending
+- **Recommendation:** keep · **low** · confirming
+- **Why:** The snapshot counted 3 records, but GBIF now returns none under this filter, so there's nothing to judge or cite. Leave it unaccepted: the next GBIF ingest settles it, and a keep with no records would then make derive refuse.
+- **Cites:** entry
 
 #### 43:US · country-captive-suspect (review, kept)
 
@@ -1928,7 +1901,9 @@ Species that could lose every published country:
 - **Records shown** (2 of 2):
   - [2804496273](https://www.gbif.org/occurrence/2804496273) · PRESERVED_SPECIMEN · no date · 29.463525, -98.471854 ±250 m · San Antonio Zoo · Texas · ASNHC · remarks: Created in SPECIFY; 2014-06-07|Last modified by SPECIFY; 2016-01-14|
   - [2804496687](https://www.gbif.org/occurrence/2804496687) · PRESERVED_SPECIMEN · no date · 29.463525, -98.471854 ±250 m · San Antonio Zoo · Texas · ASNHC · remarks: Created in SPECIFY; 2014-06-07|Last modified by SPECIFY; 2014-06-07|Skeleton not found as of 6/12/2009
-- **Recommendation:** pending
+- **Recommendation:** remove · **high** · output-changing
+- **Why:** Two Angelo State specimens, locality "San Antonio Zoo". The records themselves name the zoo, and they're every counted record here.
+- **Cites:** [gbif:occurrence:2804496273](https://www.gbif.org/occurrence/2804496273), [gbif:occurrence:2804496687](https://www.gbif.org/occurrence/2804496687), [gbif:dataset:2aa02cf8-c402-412c-9ad1-585e1e185bef](https://www.gbif.org/dataset/2aa02cf8-c402-412c-9ad1-585e1e185bef)
 
 ### 47 · Ochotona iliensis · Ili Pika
 
@@ -1958,28 +1933,15 @@ Species that could lose every published country:
 - **Establishment means:** none filled. **Degree of establishment:** captive 28, managed 28
 - **Datasets:**
   - [MSB Mammal Collection (Arctos)](https://www.gbif.org/dataset/b15d4952-7d20-46f1-8a3e-556a512b04c5) · Museum of Southwestern Biology · 31 records
-- **Records shown** (20 of 31):
+- **Records shown** (5 of 31):
   - [5099720204](https://www.gbif.org/occurrence/5099720204) · PRESERVED_SPECIMEN · 2020-06 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · remarks: DOA
   - [6405529315](https://www.gbif.org/occurrence/6405529315) · PRESERVED_SPECIMEN · 2020-06 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [5099706210](https://www.gbif.org/occurrence/5099706210) · PRESERVED_SPECIMEN · 2019-03 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [5099709201](https://www.gbif.org/occurrence/5099709201) · PRESERVED_SPECIMEN · 2019-03 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [5099713242](https://www.gbif.org/occurrence/5099713242) · PRESERVED_SPECIMEN · 2019-03 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [5099713243](https://www.gbif.org/occurrence/5099713243) · PRESERVED_SPECIMEN · 2019-03 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [5099713257](https://www.gbif.org/occurrence/5099713257) · PRESERVED_SPECIMEN · 2019-03 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [5099713259](https://www.gbif.org/occurrence/5099713259) · PRESERVED_SPECIMEN · 2019-03 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [5099715224](https://www.gbif.org/occurrence/5099715224) · PRESERVED_SPECIMEN · 2019-03 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [5099715225](https://www.gbif.org/occurrence/5099715225) · PRESERVED_SPECIMEN · 2019-03 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [5099717197](https://www.gbif.org/occurrence/5099717197) · PRESERVED_SPECIMEN · 2019-03 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [5099717198](https://www.gbif.org/occurrence/5099717198) · PRESERVED_SPECIMEN · 2019-03 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
   - [5232537315](https://www.gbif.org/occurrence/5232537315) · PRESERVED_SPECIMEN · 2019-03 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · remarks: dead on arrival: yes | date of birth: Mar 20, 2010 | date of death: Mar 23, 2019
-  - [6187128527](https://www.gbif.org/occurrence/6187128527) · PRESERVED_SPECIMEN · 2019-12 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [6187129426](https://www.gbif.org/occurrence/6187129426) · PRESERVED_SPECIMEN · 2019-12 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [5099706224](https://www.gbif.org/occurrence/5099706224) · PRESERVED_SPECIMEN · 2018-01 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [5099715223](https://www.gbif.org/occurrence/5099715223) · PRESERVED_SPECIMEN · 2018-01 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [5099717210](https://www.gbif.org/occurrence/5099717210) · PRESERVED_SPECIMEN · 2018-01 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
   - [5099700747](https://www.gbif.org/occurrence/5099700747) · PRESERVED_SPECIMEN · 2018-04 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · remarks: DOA. Weight recorded in brackets - taken without organs.
-  - [5099709200](https://www.gbif.org/occurrence/5099709200) · PRESERVED_SPECIMEN · 2018-04 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-- **Recommendation:** pending
+  - [5099706210](https://www.gbif.org/occurrence/5099706210) · PRESERVED_SPECIMEN · 2019-03 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
+- **Recommendation:** remove · **high** · output-changing
+- **Why:** All 31 records are MSB specimens in New Mexico: 28 are marked captive, and the 3 unmarked ones (read) say Albuquerque BioPark Zoo, two of them dead on arrival. The records themselves settle every one. Wikidata has this species endemic to Australia.
+- **Cites:** [gbif:occurrence:5099720204](https://www.gbif.org/occurrence/5099720204), [gbif:occurrence:5232537315](https://www.gbif.org/occurrence/5232537315), [gbif:occurrence:5099700747](https://www.gbif.org/occurrence/5099700747), [gbif:occurrence:6405529315](https://www.gbif.org/occurrence/6405529315), [gbif:dataset:b15d4952-7d20-46f1-8a3e-556a512b04c5](https://www.gbif.org/dataset/b15d4952-7d20-46f1-8a3e-556a512b04c5), [wikidata:Q134964](https://www.wikidata.org/wiki/Q134964)
 
 ### 50 · Addax nasomaculatus · Addax
 
@@ -2036,7 +1998,9 @@ Species that could lose every published country:
 - **Records shown** (2 of 2):
   - [859508231](https://www.gbif.org/occurrence/859508231) · PRESERVED_SPECIMEN · 1938-01 · 19.5, -105.87 · AMNH · establishment: native · issues: COUNTRY_DERIVED_FROM_COORDINATES, TAXON_MATCH_HIGHERRANK
   - [859508236](https://www.gbif.org/occurrence/859508236) · PRESERVED_SPECIMEN · 1938-01 · 17.47, -107.95 · AMNH · establishment: native · issues: COUNTRY_DERIVED_FROM_COORDINATES, TAXON_MATCH_HIGHERRANK
-- **Recommendation:** pending
+- **Recommendation:** remove · **medium** · output-changing
+- **Why:** Two AMNH specimens, 1938, no locality, establishmentMeans "native", coordinates at sea off Mexico's Pacific coast (19.50, -105.87; 17.47, -107.95). A land animal at sea is misplaced or misidentified, and COL says Africa, but the records don't say so. Same pattern as 69:PA.
+- **Cites:** [gbif:occurrence:859508231](https://www.gbif.org/occurrence/859508231), [gbif:occurrence:859508236](https://www.gbif.org/occurrence/859508236), [gbif:dataset:96ca66b4-f762-11e1-a439-00145eb45e9a](https://www.gbif.org/dataset/96ca66b4-f762-11e1-a439-00145eb45e9a), [col:652YZ](https://www.checklistbank.org/dataset/316595/taxon/652YZ)
 
 #### 50:US · country-captive-suspect (review, kept)
 
@@ -2053,7 +2017,9 @@ Species that could lose every published country:
   - [5100621618](https://www.gbif.org/occurrence/5100621618) · PRESERVED_SPECIMEN · 2014-08 · 30.062142, -99.328307 ±36,592 m · Kerr County, Texas · Texas · ASNHC
   - [2804484306](https://www.gbif.org/occurrence/2804484306) · PRESERVED_SPECIMEN · 2012-05 · 29.465053, -98.476456 · San Antonio Zoo · Texas · ASNHC · degree: captive
   - [2804496691](https://www.gbif.org/occurrence/2804496691) · PRESERVED_SPECIMEN · no date · 29.463525, -98.471854 ±250 m · San Antonio Zoo · Texas · ASNHC · remarks: Created in SPECIFY; 2014-06-07|Last modified by SPECIFY; 2014-06-07|lower mandible missing
-- **Recommendation:** pending
+- **Recommendation:** keep · **low** · confirming
+- **Why:** Three Angelo State specimens: two at San Antonio Zoo, one (2014) only "Kerr County, Texas", 37 km uncertainty, no captive mark. A county alone can't tell a free animal from a kept one, and COL says Africa. Too thin to call, so it stays.
+- **Cites:** [gbif:occurrence:5100621618](https://www.gbif.org/occurrence/5100621618), [gbif:occurrence:2804484306](https://www.gbif.org/occurrence/2804484306), [gbif:occurrence:2804496691](https://www.gbif.org/occurrence/2804496691), [gbif:dataset:2aa02cf8-c402-412c-9ad1-585e1e185bef](https://www.gbif.org/dataset/2aa02cf8-c402-412c-9ad1-585e1e185bef), [col:652YZ](https://www.checklistbank.org/dataset/316595/taxon/652YZ)
 
 ### 51 · Panthera onca · Jaguar
 
@@ -2261,7 +2227,9 @@ Species that could lose every published country:
 - **Records shown** (2 of 2):
   - [6240587658](https://www.gbif.org/occurrence/6240587658) · MATERIAL_SAMPLE · 2024-12 · -35.27314, 149.110701 · issues: COUNTRY_DERIVED_FROM_COORDINATES
   - [5945442009](https://www.gbif.org/occurrence/5945442009) · MATERIAL_SAMPLE · 2016-05 · -34.006627, 151.190374 · issues: COUNTRY_DERIVED_FROM_COORDINATES
-- **Recommendation:** pending
+- **Recommendation:** remove · **medium** · output-changing
+- **Why:** Two DNA reads, no locality: one from water near Sydney (Australian Microbiome 18S), one from air sampling in Canberra (CSIRO). Neither documents an animal; COL says Africa. Misidentified or contaminant reads are likely, but the records don't say so.
+- **Cites:** [gbif:occurrence:5945442009](https://www.gbif.org/occurrence/5945442009), [gbif:occurrence:6240587658](https://www.gbif.org/occurrence/6240587658), [gbif:dataset:9fc74265-28a7-4d62-97ea-33eb5588562e](https://www.gbif.org/dataset/9fc74265-28a7-4d62-97ea-33eb5588562e), [gbif:dataset:a6474305-bc0e-48e2-9bd5-4cd60fc79c15](https://www.gbif.org/dataset/a6474305-bc0e-48e2-9bd5-4cd60fc79c15), [col:4C92G](https://www.checklistbank.org/dataset/316595/taxon/4C92G)
 
 #### 56:BE · country-captive-suspect (blocking, excluded)
 
@@ -2291,22 +2259,16 @@ Species that could lose every published country:
 - **Establishment means:** none filled. **Degree of establishment:** none filled
 - **Datasets:**
   - [ICMBio | Dados de ocorrência de espécies do Sistema de Autorização e Informações de Biodiversidade (SISBio) do ICMBio](https://www.gbif.org/dataset/ffe38a37-d659-4b1a-a935-5a5264e3cc0a) · Instituto Chico Mendes de Conservação da Biodiversidade - ICMBIO · 14 records
-- **Records shown** (14 of 14):
+- **Records shown** (6 of 14):
   - [6510081148](https://www.gbif.org/occurrence/6510081148) · HUMAN_OBSERVATION · 2023-08 · -23.505316, -47.441929 · São Paulo · ICMBio
-  - [6511192826](https://www.gbif.org/occurrence/6511192826) · HUMAN_OBSERVATION · 2023-10 · -23.505316, -47.441929 · São Paulo · ICMBio
-  - [6510992736](https://www.gbif.org/occurrence/6510992736) · HUMAN_OBSERVATION · 2022-08 · -23.505316, -47.441929 · São Paulo · ICMBio
   - [6510096848](https://www.gbif.org/occurrence/6510096848) · HUMAN_OBSERVATION · 2019-01 · -23.649167, -46.618611 · São Paulo · ICMBio
-  - [6510681347](https://www.gbif.org/occurrence/6510681347) · HUMAN_OBSERVATION · 2019-01 · -23.649167, -46.618611 · São Paulo · ICMBio
-  - [6510262676](https://www.gbif.org/occurrence/6510262676) · HUMAN_OBSERVATION · 2018-03 · -23.649167, -46.618611 · São Paulo · ICMBio
   - [6511037240](https://www.gbif.org/occurrence/6511037240) · HUMAN_OBSERVATION · 2018-11 · -8.015, -34.977222 · Pernambuco · ICMBio
-  - [6510562804](https://www.gbif.org/occurrence/6510562804) · HUMAN_OBSERVATION · 2017-02 · -23.651944, -46.617778 · São Paulo · ICMBio
   - [6510296804](https://www.gbif.org/occurrence/6510296804) · HUMAN_OBSERVATION · 2017-07 · -22.904444, -43.229167 · Rio de Janeiro · ICMBio
-  - [6510414758](https://www.gbif.org/occurrence/6510414758) · HUMAN_OBSERVATION · 2017-10 · -23.649167, -46.618611 · São Paulo · ICMBio
-  - [6511063208](https://www.gbif.org/occurrence/6511063208) · HUMAN_OBSERVATION · 2015-06 · -23.651944, -46.617778 · São Paulo · ICMBio
-  - [6511094840](https://www.gbif.org/occurrence/6511094840) · HUMAN_OBSERVATION · 2012-01 · -23.651944, -46.617778 · São Paulo · ICMBio
   - [6511082120](https://www.gbif.org/occurrence/6511082120) · HUMAN_OBSERVATION · 2012-02 · -26.73885, -49.178933 · Santa Catarina · ICMBio
   - [6511135958](https://www.gbif.org/occurrence/6511135958) · HUMAN_OBSERVATION · 2012-09 · -27.0946, -48.919931 · Santa Catarina · ICMBio
-- **Recommendation:** pending
+- **Recommendation:** remove · **medium** · output-changing
+- **Why:** 14 ICMBio SISBio records, no locality: 12 within 1 km of zoos in São Paulo, Sorocaba, Rio and Brusque (Wikidata Q3364798, Q1535754, Q10306230, Q121094903); 2 elsewhere. COL says Africa. Points to zoo animals, but the records don't name one.
+- **Cites:** [gbif:occurrence:6510096848](https://www.gbif.org/occurrence/6510096848), [gbif:occurrence:6510081148](https://www.gbif.org/occurrence/6510081148), [gbif:occurrence:6510296804](https://www.gbif.org/occurrence/6510296804), [gbif:occurrence:6511135958](https://www.gbif.org/occurrence/6511135958), [gbif:occurrence:6511037240](https://www.gbif.org/occurrence/6511037240), [gbif:occurrence:6511082120](https://www.gbif.org/occurrence/6511082120), [gbif:dataset:ffe38a37-d659-4b1a-a935-5a5264e3cc0a](https://www.gbif.org/dataset/ffe38a37-d659-4b1a-a935-5a5264e3cc0a), [col:4C92G](https://www.checklistbank.org/dataset/316595/taxon/4C92G)
 
 #### 56:DE · country-captive-suspect (review, kept)
 
@@ -2322,7 +2284,9 @@ Species that could lose every published country:
 - **Records shown** (2 of 2):
   - [5024608851](https://www.gbif.org/occurrence/5024608851) · HUMAN_OBSERVATION · 2022-11 · 50.11615, 8.701043 ±250 m · Zoologischer Garten Frankfurt am Main · NABU|naturgucker
   - [5018701325](https://www.gbif.org/occurrence/5018701325) · HUMAN_OBSERVATION · 2021-08 · 50.11615, 8.701043 ±250 m · Zoologischer Garten Frankfurt am Main · NABU|naturgucker
-- **Recommendation:** pending
+- **Recommendation:** remove · **high** · output-changing
+- **Why:** Two NABU|naturgucker records, locality "Zoologischer Garten Frankfurt am Main": a zoo, so captive animals. They're every counted record here.
+- **Cites:** [gbif:occurrence:5024608851](https://www.gbif.org/occurrence/5024608851), [gbif:occurrence:5018701325](https://www.gbif.org/occurrence/5018701325), [gbif:dataset:6ac3f774-d9fb-4796-b3e9-92bf6c81c084](https://www.gbif.org/dataset/6ac3f774-d9fb-4796-b3e9-92bf6c81c084)
 
 #### 56:DK · country-captive-suspect (review, kept)
 
@@ -2336,28 +2300,15 @@ Species that could lose every published country:
 - **Datasets:**
   - [Advancing airDNA Experiment 3 16Smamm](https://www.gbif.org/dataset/fe9354ec-7577-49f9-8ef4-a0498d238d55) · Globe Institute · 22 records
   - [Advancing airDNA Experiment 2 16Smamm](https://www.gbif.org/dataset/1832266b-d4bd-4a84-b861-50a3b1851921) · Globe Institute · 4 records
-- **Records shown** (20 of 26):
+- **Records shown** (5 of 26):
   - [5170230305](https://www.gbif.org/occurrence/5170230305) · MATERIAL_SAMPLE · 2023-08 · 55.63875, 10.168283 · issues: COUNTRY_DERIVED_FROM_COORDINATES
+  - [5170234305](https://www.gbif.org/occurrence/5170234305) · MATERIAL_SAMPLE · 2023-09 · 56.833889, 10.248333 · issues: COUNTRY_DERIVED_FROM_COORDINATES
   - [5170230308](https://www.gbif.org/occurrence/5170230308) · MATERIAL_SAMPLE · 2023-08 · 55.639667, 10.1671 · issues: COUNTRY_DERIVED_FROM_COORDINATES
   - [5170230385](https://www.gbif.org/occurrence/5170230385) · MATERIAL_SAMPLE · 2023-08 · 55.639667, 10.1671 · issues: COUNTRY_DERIVED_FROM_COORDINATES
   - [5170230406](https://www.gbif.org/occurrence/5170230406) · MATERIAL_SAMPLE · 2023-08 · 55.638433, 10.168733 · issues: COUNTRY_DERIVED_FROM_COORDINATES
-  - [5170234305](https://www.gbif.org/occurrence/5170234305) · MATERIAL_SAMPLE · 2023-09 · 56.833889, 10.248333 · issues: COUNTRY_DERIVED_FROM_COORDINATES
-  - [5170234306](https://www.gbif.org/occurrence/5170234306) · MATERIAL_SAMPLE · 2023-09 · 56.833889, 10.248333 · issues: COUNTRY_DERIVED_FROM_COORDINATES
-  - [5170234392](https://www.gbif.org/occurrence/5170234392) · MATERIAL_SAMPLE · 2023-09 · 56.833889, 10.248333 · issues: COUNTRY_DERIVED_FROM_COORDINATES
-  - [5170234393](https://www.gbif.org/occurrence/5170234393) · MATERIAL_SAMPLE · 2023-09 · 56.833889, 10.248333 · issues: COUNTRY_DERIVED_FROM_COORDINATES
-  - [5170234461](https://www.gbif.org/occurrence/5170234461) · MATERIAL_SAMPLE · 2023-09 · 56.833889, 10.248611 · issues: COUNTRY_DERIVED_FROM_COORDINATES
-  - [5170234465](https://www.gbif.org/occurrence/5170234465) · MATERIAL_SAMPLE · 2023-09 · 56.833889, 10.248611 · issues: COUNTRY_DERIVED_FROM_COORDINATES
-  - [5170234511](https://www.gbif.org/occurrence/5170234511) · MATERIAL_SAMPLE · 2023-09 · 56.833611, 10.249444 · issues: COUNTRY_DERIVED_FROM_COORDINATES
-  - [5170234513](https://www.gbif.org/occurrence/5170234513) · MATERIAL_SAMPLE · 2023-09 · 56.833611, 10.249444 · issues: COUNTRY_DERIVED_FROM_COORDINATES
-  - [5170234585](https://www.gbif.org/occurrence/5170234585) · MATERIAL_SAMPLE · 2023-09 · 56.834444, 10.251111 · issues: COUNTRY_DERIVED_FROM_COORDINATES
-  - [5170234674](https://www.gbif.org/occurrence/5170234674) · MATERIAL_SAMPLE · 2023-09 · 56.834444, 10.251111 · issues: COUNTRY_DERIVED_FROM_COORDINATES
-  - [5170234743](https://www.gbif.org/occurrence/5170234743) · MATERIAL_SAMPLE · 2023-09 · 56.834167, 10.25 · issues: COUNTRY_DERIVED_FROM_COORDINATES
-  - [5170234746](https://www.gbif.org/occurrence/5170234746) · MATERIAL_SAMPLE · 2023-09 · 56.834167, 10.25 · issues: COUNTRY_DERIVED_FROM_COORDINATES
-  - [5170234803](https://www.gbif.org/occurrence/5170234803) · MATERIAL_SAMPLE · 2023-09 · 56.834167, 10.250556 · issues: COUNTRY_DERIVED_FROM_COORDINATES
-  - [5170234805](https://www.gbif.org/occurrence/5170234805) · MATERIAL_SAMPLE · 2023-09 · 56.834167, 10.250556 · issues: COUNTRY_DERIVED_FROM_COORDINATES
-  - [5170234812](https://www.gbif.org/occurrence/5170234812) · MATERIAL_SAMPLE · 2023-09 · 56.833889, 10.248611 · issues: COUNTRY_DERIVED_FROM_COORDINATES
-  - [5170234819](https://www.gbif.org/occurrence/5170234819) · MATERIAL_SAMPLE · 2023-09 · 56.833889, 10.248611 · issues: COUNTRY_DERIVED_FROM_COORDINATES
-- **Recommendation:** pending
+- **Recommendation:** remove · **medium** · output-changing
+- **Why:** 26 air-sampling DNA reads, 2023, from two Globe Institute airDNA experiments, no locality, none within 10 km of a zoo on Wikidata for the points checked. They document no animal; COL says Africa. Misidentified or contaminant reads are likely, not stated.
+- **Cites:** [gbif:occurrence:5170230305](https://www.gbif.org/occurrence/5170230305), [gbif:occurrence:5170234305](https://www.gbif.org/occurrence/5170234305), [gbif:dataset:fe9354ec-7577-49f9-8ef4-a0498d238d55](https://www.gbif.org/dataset/fe9354ec-7577-49f9-8ef4-a0498d238d55), [gbif:dataset:1832266b-d4bd-4a84-b861-50a3b1851921](https://www.gbif.org/dataset/1832266b-d4bd-4a84-b861-50a3b1851921), [col:4C92G](https://www.checklistbank.org/dataset/316595/taxon/4C92G)
 
 #### 56:FR · country-captive-suspect (blocking, excluded)
 
@@ -2487,7 +2438,9 @@ Species that could lose every published country:
 - **Records shown** (2 of 2):
   - [5179077505](https://www.gbif.org/occurrence/5179077505) · MATERIAL_SAMPLE · 2017-02 · 58.593667, 18.236367 · KTH
   - [5178900805](https://www.gbif.org/occurrence/5178900805) · MATERIAL_SAMPLE · 2016-11 · 56.940167, 12.212667 · KTH
-- **Recommendation:** pending
+- **Recommendation:** remove · **high** · output-changing
+- **Why:** Two KTH 18S reads from Baltic Sea metabarcoding, 2016 and 2017: DNA from water, so no chimpanzee was there; misidentified or contaminant reads, as in 56:NU. They're every counted record here.
+- **Cites:** [gbif:occurrence:5179077505](https://www.gbif.org/occurrence/5179077505), [gbif:occurrence:5178900805](https://www.gbif.org/occurrence/5178900805), [gbif:dataset:9a228813-6288-4aba-a8f8-480e425b5f62](https://www.gbif.org/dataset/9a228813-6288-4aba-a8f8-480e425b5f62)
 
 #### 56:SS · country-borderline (review, kept)
 
@@ -2539,28 +2492,15 @@ Species that could lose every published country:
   - [UWBM Mammalogy Collection (Arctos)](https://www.gbif.org/dataset/830eb5d0-f762-11e1-a439-00145eb45e9a) · University of Washington Burke Museum · 1 record
   - [UCM Mammal Collection (Arctos)](https://www.gbif.org/dataset/88d8974c-f762-11e1-a439-00145eb45e9a) · University of Colorado Museum of Natural History · 1 record
   - [UTEP Mammals (Arctos)](https://www.gbif.org/dataset/c053c6ad-e590-4c69-a141-5fd9c8ebbe3c) · University of Texas at El Paso Biodiversity Collections · 1 record
-- **Records shown** (20 of 85):
+- **Records shown** (5 of 85):
   - [5893122315](https://www.gbif.org/occurrence/5893122315) · PRESERVED_SPECIMEN · 2025-03 · 37.733963, -122.500104 · Captive at San Francisco Zoo · California · CAS · remarks: Complete skeleton in different preparations.
   - [6187129407](https://www.gbif.org/occurrence/6187129407) · PRESERVED_SPECIMEN · 2025-05 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
   - [5293352643](https://www.gbif.org/occurrence/5293352643) · PRESERVED_SPECIMEN · 2024-02 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
   - [5293352374](https://www.gbif.org/occurrence/5293352374) · PRESERVED_SPECIMEN · 2024-06 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
   - [6446442302](https://www.gbif.org/occurrence/6446442302) · PRESERVED_SPECIMEN · 2024-06 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [5293352340](https://www.gbif.org/occurrence/5293352340) · PRESERVED_SPECIMEN · 2024-08 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [6446438315](https://www.gbif.org/occurrence/6446438315) · PRESERVED_SPECIMEN · 2024-08 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [6446440305](https://www.gbif.org/occurrence/6446440305) · PRESERVED_SPECIMEN · 2024-08 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [5293352599](https://www.gbif.org/occurrence/5293352599) · PRESERVED_SPECIMEN · 2024-09 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [5293352395](https://www.gbif.org/occurrence/5293352395) · PRESERVED_SPECIMEN · 2024-10 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [5099732390](https://www.gbif.org/occurrence/5099732390) · PRESERVED_SPECIMEN · 2022-07 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [6187125646](https://www.gbif.org/occurrence/6187125646) · PRESERVED_SPECIMEN · 2022-07 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [6187128967](https://www.gbif.org/occurrence/6187128967) · PRESERVED_SPECIMEN · 2022-07 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [5099727359](https://www.gbif.org/occurrence/5099727359) · PRESERVED_SPECIMEN · 2021-03 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [5099727794](https://www.gbif.org/occurrence/5099727794) · PRESERVED_SPECIMEN · 2021-03 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [5099729778](https://www.gbif.org/occurrence/5099729778) · PRESERVED_SPECIMEN · 2021-03 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [5099720322](https://www.gbif.org/occurrence/5099720322) · PRESERVED_SPECIMEN · 2021-04 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [5099723320](https://www.gbif.org/occurrence/5099723320) · PRESERVED_SPECIMEN · 2021-04 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [5099732312](https://www.gbif.org/occurrence/5099732312) · PRESERVED_SPECIMEN · 2021-04 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [6405530318](https://www.gbif.org/occurrence/6405530318) · PRESERVED_SPECIMEN · 2021-04 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-- **Recommendation:** pending
+- **Recommendation:** remove · **medium** · output-changing
+- **Why:** Of 85 records, 79 are marked captive and 71 are in New Mexico; all 20 we read name a zoo (Albuquerque, "Captive at San Francisco Zoo"). The 5 other unmarked ones, from other museums, are unread, so this can't be high. COL says Africa.
+- **Cites:** [gbif:occurrence:5893122315](https://www.gbif.org/occurrence/5893122315), [gbif:occurrence:6187129407](https://www.gbif.org/occurrence/6187129407), [gbif:dataset:b15d4952-7d20-46f1-8a3e-556a512b04c5](https://www.gbif.org/dataset/b15d4952-7d20-46f1-8a3e-556a512b04c5), [gbif:dataset:6ce7290f-47f6-4046-8356-371f5b6749df](https://www.gbif.org/dataset/6ce7290f-47f6-4046-8356-371f5b6749df), [col:4C92G](https://www.checklistbank.org/dataset/316595/taxon/4C92G)
 
 ### 57 · Orycteropus afer · Aardvark
 
@@ -2710,7 +2650,9 @@ Species that could lose every published country:
   - [2249969183](https://www.gbif.org/occurrence/2249969183) · MATERIAL_SAMPLE · no date · 38.82081, -96.33162 · Mined from GenBank, NCBI
   - [2804493793](https://www.gbif.org/occurrence/2804493793) · PRESERVED_SPECIMEN · no date · 29.463525, -98.471854 ±250 m · San Antonio Zoo · Texas · ASNHC · remarks: Created in SPECIFY; 2014-06-07|Last modified by SPECIFY; 2014-06-07|
   - [3356343740](https://www.gbif.org/occurrence/3356343740) · PRESERVED_SPECIMEN · no date · 40.74976, -111.815929 ±433 m · Hogle Zoo, Salt Lake City · Utah · BYU · degree: captive
-- **Recommendation:** pending
+- **Recommendation:** remove · **medium** · output-changing
+- **Why:** Five records: three name a zoo (Point Defiance, San Antonio, Hogle). An INSDC genome sits 0.5 km from Bronx Zoo (Wikidata Q739792), and an iBOL GenBank sequence has no locality. Wikidata has this species in Africa. Those two are inferred, not stated.
+- **Cites:** [gbif:occurrence:1702673459](https://www.gbif.org/occurrence/1702673459), [gbif:occurrence:2804493793](https://www.gbif.org/occurrence/2804493793), [gbif:occurrence:3356343740](https://www.gbif.org/occurrence/3356343740), [gbif:occurrence:6190497951](https://www.gbif.org/occurrence/6190497951), [gbif:occurrence:2249969183](https://www.gbif.org/occurrence/2249969183), [gbif:dataset:830eb5d0-f762-11e1-a439-00145eb45e9a](https://www.gbif.org/dataset/830eb5d0-f762-11e1-a439-00145eb45e9a), [gbif:dataset:2aa02cf8-c402-412c-9ad1-585e1e185bef](https://www.gbif.org/dataset/2aa02cf8-c402-412c-9ad1-585e1e185bef), [gbif:dataset:1da75725-1eb5-4e17-b586-ffad7b783987](https://www.gbif.org/dataset/1da75725-1eb5-4e17-b586-ffad7b783987), [gbif:dataset:d8cd16ba-bb74-4420-821e-083f2bac17c2](https://www.gbif.org/dataset/d8cd16ba-bb74-4420-821e-083f2bac17c2), [gbif:dataset:040c5662-da76-4782-a48e-cdea1892d14c](https://www.gbif.org/dataset/040c5662-da76-4782-a48e-cdea1892d14c), [wikidata:Q46212](https://www.wikidata.org/wiki/Q46212)
 
 #### 57:ZW · country-borderline (review, kept)
 
@@ -2761,19 +2703,15 @@ Species that could lose every published country:
 - **Datasets:**
   - [Sampling design influences on airborne eDNA detections - 12SV5 marker](https://www.gbif.org/dataset/a6474305-bc0e-48e2-9bd5-4cd60fc79c15) · Commonwealth Scientific and Industrial Research Organisation · 6 records
   - [Sampling design influences on airborne eDNA detections - Mam12 marker](https://www.gbif.org/dataset/aab94105-e9c4-48b6-b866-882edcfa9a76) · Commonwealth Scientific and Industrial Research Organisation · 5 records
-- **Records shown** (11 of 11):
+- **Records shown** (5 of 11):
   - [6240581426](https://www.gbif.org/occurrence/6240581426) · MATERIAL_SAMPLE · 2025-04 · -35.300685, 149.06994 · issues: COUNTRY_DERIVED_FROM_COORDINATES
+  - [6240587672](https://www.gbif.org/occurrence/6240587672) · MATERIAL_SAMPLE · 2025-06 · -35.27314, 149.110701 · issues: COUNTRY_DERIVED_FROM_COORDINATES
   - [6240583510](https://www.gbif.org/occurrence/6240583510) · MATERIAL_SAMPLE · 2025-04 · -35.300685, 149.06994 · issues: COUNTRY_DERIVED_FROM_COORDINATES
   - [6240585528](https://www.gbif.org/occurrence/6240585528) · MATERIAL_SAMPLE · 2025-04 · -35.300685, 149.06994 · issues: COUNTRY_DERIVED_FROM_COORDINATES
-  - [6240587672](https://www.gbif.org/occurrence/6240587672) · MATERIAL_SAMPLE · 2025-06 · -35.27314, 149.110701 · issues: COUNTRY_DERIVED_FROM_COORDINATES
   - [6240578511](https://www.gbif.org/occurrence/6240578511) · MATERIAL_SAMPLE · 2024-11 · -35.27314, 149.110701 · issues: COUNTRY_DERIVED_FROM_COORDINATES
-  - [6240580351](https://www.gbif.org/occurrence/6240580351) · MATERIAL_SAMPLE · 2024-11 · -35.27314, 149.110701 · issues: COUNTRY_DERIVED_FROM_COORDINATES
-  - [6240583422](https://www.gbif.org/occurrence/6240583422) · MATERIAL_SAMPLE · 2024-11 · -35.27314, 149.110701 · issues: COUNTRY_DERIVED_FROM_COORDINATES
-  - [6240584655](https://www.gbif.org/occurrence/6240584655) · MATERIAL_SAMPLE · 2024-11 · -35.27314, 149.110701 · issues: COUNTRY_DERIVED_FROM_COORDINATES
-  - [6240586435](https://www.gbif.org/occurrence/6240586435) · MATERIAL_SAMPLE · 2024-11 · -35.27314, 149.110701 · issues: COUNTRY_DERIVED_FROM_COORDINATES
-  - [6240586893](https://www.gbif.org/occurrence/6240586893) · MATERIAL_SAMPLE · 2024-11 · -35.27314, 149.110701 · issues: COUNTRY_DERIVED_FROM_COORDINATES
-  - [6240588574](https://www.gbif.org/occurrence/6240588574) · MATERIAL_SAMPLE · 2024-11 · -35.27314, 149.110701 · issues: COUNTRY_DERIVED_FROM_COORDINATES
-- **Recommendation:** pending
+- **Recommendation:** remove · **medium** · output-changing
+- **Why:** 11 air-sampling DNA reads, 2024–25, CSIRO, Canberra: 3 are 0.09 km from the National Zoo & Aquarium (Wikidata Q495039), 8 at another point with no zoo within 1 km. They document no free animal; COL doesn't list Oceania. Inferred from dataset and coordinates.
+- **Cites:** [gbif:occurrence:6240581426](https://www.gbif.org/occurrence/6240581426), [gbif:occurrence:6240587672](https://www.gbif.org/occurrence/6240587672), [gbif:dataset:a6474305-bc0e-48e2-9bd5-4cd60fc79c15](https://www.gbif.org/dataset/a6474305-bc0e-48e2-9bd5-4cd60fc79c15), [gbif:dataset:aab94105-e9c4-48b6-b866-882edcfa9a76](https://www.gbif.org/dataset/aab94105-e9c4-48b6-b866-882edcfa9a76), [col:9BTZ](https://www.checklistbank.org/dataset/316595/taxon/9BTZ)
 
 #### 58:CD · country-borderline (review, kept)
 
@@ -2806,7 +2744,9 @@ Species that could lose every published country:
 - **Records shown** (2 of 2):
   - [5027728920](https://www.gbif.org/occurrence/5027728920) · HUMAN_OBSERVATION · 2024-09 · 52.461414, 13.382386 ±250 m · Tempelhof Nord · NABU|naturgucker
   - [5862135549](https://www.gbif.org/occurrence/5862135549) · MATERIAL_SAMPLE · 2011-04 · 48.099, 11.558 · Muenchen, Tierparkstrasse 30, Tierpark Hellabrunn · Bavaria · Bavarian State Collection of Zoology
-- **Recommendation:** pending
+- **Recommendation:** remove · **medium** · output-changing
+- **Why:** Two records: a Bavarian State Collection sample from Tierpark Hellabrunn, 2011, and NABU|naturgucker "Tempelhof Nord", a Berlin district, 2024, with no wild or captive mark. COL says Africa; Southern Asia. The second is inferred, not stated.
+- **Cites:** [gbif:occurrence:5862135549](https://www.gbif.org/occurrence/5862135549), [gbif:occurrence:5027728920](https://www.gbif.org/occurrence/5027728920), [gbif:dataset:040c5662-da76-4782-a48e-cdea1892d14c](https://www.gbif.org/dataset/040c5662-da76-4782-a48e-cdea1892d14c), [gbif:dataset:6ac3f774-d9fb-4796-b3e9-92bf6c81c084](https://www.gbif.org/dataset/6ac3f774-d9fb-4796-b3e9-92bf6c81c084), [col:9BTZ](https://www.checklistbank.org/dataset/316595/taxon/9BTZ)
 
 #### 58:DZ · country-borderline (review, kept)
 
@@ -2869,28 +2809,15 @@ Species that could lose every published country:
   - [Global Roadkill Data: a dataset on terrestrial vertebrate mortality caused by collision with vehicles (Opportunistic Records)](https://www.gbif.org/dataset/65908f95-5ab6-48d9-bf6d-6da274ed730e) · CIBIO (Research Center in Biodiversity and Genetic Resources) Portugal · 30 records
   - [Field Museum of Natural History (Zoology) Mammal Collection](https://www.gbif.org/dataset/41fc5c40-5e81-496f-9733-6b5681b3b7a5) · Field Museum · 1 record
   - [iNaturalist Research-grade Observations](https://www.gbif.org/dataset/50c9509d-22c7-4a22-a47d-8c48425ef4a7) · iNaturalist.org · 1 record
-- **Records shown** (20 of 32):
+- **Records shown** (5 of 32):
   - [4522773421](https://www.gbif.org/occurrence/4522773421) · HUMAN_OBSERVATION · 2024-02 · 35.905099, 56.173424 ±28,620 m · Semnan · iNaturalist · remarks: هیوا، توله ماده‌ی هرب ۲۱بهمن ۱۴۰۲ اطراف پاسگاه دلبر
   - [5101007601](https://www.gbif.org/occurrence/5101007601) · HUMAN_OBSERVATION · 2023-03 · 36.4233, 56.033643 ±30 m · دهستان میامی · CIBIO
+  - [5100922062](https://www.gbif.org/occurrence/5100922062) · HUMAN_OBSERVATION · 2016-05 · 36.351829, 56.334763 ±30 m · عباس آباد · CIBIO
   - [5101011895](https://www.gbif.org/occurrence/5101011895) · HUMAN_OBSERVATION · 2023-06 · 36.397075, 55.831774 ±1,000 m · ابراهیم آبادعلیا · CIBIO
   - [5100927449](https://www.gbif.org/occurrence/5100927449) · HUMAN_OBSERVATION · 2022-08 · 36.412338, 55.937331 ±30 m · دهستان میامی · CIBIO
-  - [5100973606](https://www.gbif.org/occurrence/5100973606) · HUMAN_OBSERVATION · 2018-08 · 36.412745, 55.94032 ±30 m · دهستان میامی · CIBIO
-  - [5100922062](https://www.gbif.org/occurrence/5100922062) · HUMAN_OBSERVATION · 2016-05 · 36.351829, 56.334763 ±30 m · عباس آباد · CIBIO
-  - [5100939923](https://www.gbif.org/occurrence/5100939923) · HUMAN_OBSERVATION · 2016-05 · 36.355833, 56.315278 ±100 m · عباس آباد · CIBIO
-  - [5100863382](https://www.gbif.org/occurrence/5100863382) · HUMAN_OBSERVATION · 2014-12 · 36.354167, 56.311667 ±100 m · عباس آباد · CIBIO
-  - [5100925796](https://www.gbif.org/occurrence/5100925796) · HUMAN_OBSERVATION · 2014-12 · 36.356867, 56.311461 ±30 m · عباس آباد · CIBIO
-  - [5101004631](https://www.gbif.org/occurrence/5101004631) · HUMAN_OBSERVATION · 2014-12 · 36.355, 56.3175 ±100 m · عباس آباد · CIBIO
-  - [5101018928](https://www.gbif.org/occurrence/5101018928) · HUMAN_OBSERVATION · 2011-03 · 32.40824, 57.595899 ±1,000 m · دهستان کویر · CIBIO
-  - [5100985355](https://www.gbif.org/occurrence/5100985355) · HUMAN_OBSERVATION · 2011-05 · 32.486717, 55.094897 ±30 m · دهستان رباطات · CIBIO
-  - [5100999755](https://www.gbif.org/occurrence/5100999755) · HUMAN_OBSERVATION · 2011-05 · 32.484863, 55.131237 ±100 m · دهستان رباطات · CIBIO
-  - [5100949884](https://www.gbif.org/occurrence/5100949884) · HUMAN_OBSERVATION · 2010-07 · 36.355676, 56.365233 ±30 m · عباس آباد · CIBIO
-  - [5100943448](https://www.gbif.org/occurrence/5100943448) · HUMAN_OBSERVATION · 2010-09 · 36.360556, 56.295278 ±100 m · عباس آباد · CIBIO
-  - [5100999375](https://www.gbif.org/occurrence/5100999375) · HUMAN_OBSERVATION · 2010-09 · 36.360556, 56.295278 ±100 m · عباس آباد · CIBIO
-  - [5100907889](https://www.gbif.org/occurrence/5100907889) · HUMAN_OBSERVATION · 2008-01 · 31.34656, 54.796658 ±100 m · دهستان بهادران · CIBIO
-  - [5100935507](https://www.gbif.org/occurrence/5100935507) · HUMAN_OBSERVATION · 2008-01 · 31.346342, 54.798367 ±30 m · دهستان بهادران · CIBIO
-  - [5100954277](https://www.gbif.org/occurrence/5100954277) · HUMAN_OBSERVATION · 2008-04 · 31.382032, 54.748765 ±100 m · دهستان بهادران · CIBIO
-  - [5100985436](https://www.gbif.org/occurrence/5100985436) · HUMAN_OBSERVATION · 2008-09 · 31.3831, 54.748811 ±30 m · دهستان بهادران · CIBIO
-- **Recommendation:** pending
+- **Recommendation:** keep · **high** · confirming
+- **Why:** 32 records: 30 in the Global Roadkill dataset, the 20 we read with field localities in Iran to 2023, plus an iNaturalist record from Semnan with a field remark and an FMNH specimen. Three datasets, no captive sign, and COL lists Southern Asia. The flag comes from the core being Africa.
+- **Cites:** [gbif:occurrence:5101007601](https://www.gbif.org/occurrence/5101007601), [gbif:occurrence:5100922062](https://www.gbif.org/occurrence/5100922062), [gbif:occurrence:4522773421](https://www.gbif.org/occurrence/4522773421), [gbif:dataset:65908f95-5ab6-48d9-bf6d-6da274ed730e](https://www.gbif.org/dataset/65908f95-5ab6-48d9-bf6d-6da274ed730e), [gbif:dataset:50c9509d-22c7-4a22-a47d-8c48425ef4a7](https://www.gbif.org/dataset/50c9509d-22c7-4a22-a47d-8c48425ef4a7), [gbif:dataset:41fc5c40-5e81-496f-9733-6b5681b3b7a5](https://www.gbif.org/dataset/41fc5c40-5e81-496f-9733-6b5681b3b7a5), [col:9BTZ](https://www.checklistbank.org/dataset/316595/taxon/9BTZ)
 
 #### 58:NG · country-borderline (review, kept)
 
@@ -2922,7 +2849,9 @@ Species that could lose every published country:
   - [4101745744](https://www.gbif.org/occurrence/4101745744) · PRESERVED_SPECIMEN · 1996-11 · 51.45, 5.1 ±5,000 m · Hilvarenbeek · Noord-Brabant · NMBT
   - [4101747203](https://www.gbif.org/occurrence/4101747203) · PRESERVED_SPECIMEN · 1992 · 51.68, 5.29 ±1,000 m · 's-Hertogenbosch · Noord-Brabant · NMBT
   - [4101747110](https://www.gbif.org/occurrence/4101747110) · PRESERVED_SPECIMEN · no date · 51.45, 5.1 ±5,000 m · Hilvarenbeek · Noord-Brabant · NMBT
-- **Recommendation:** pending
+- **Recommendation:** remove · **medium** · output-changing
+- **Why:** Three Natuurmuseum Brabant specimens: "Hilvarenbeek" twice (5 km uncertainty, 7.8 km from Safaripark Beekse Bergen, Wikidata Q2183630) and "'s-Hertogenbosch", 1992. Town localities with no wild sign, as in 25:NL; points to kept animals, but the records don't say so.
+- **Cites:** [gbif:occurrence:4101745744](https://www.gbif.org/occurrence/4101745744), [gbif:occurrence:4101747110](https://www.gbif.org/occurrence/4101747110), [gbif:occurrence:4101747203](https://www.gbif.org/occurrence/4101747203), [gbif:dataset:3c2eb73a-82c8-4373-956f-1cb9473f76ba](https://www.gbif.org/dataset/3c2eb73a-82c8-4373-956f-1cb9473f76ba), [col:9BTZ](https://www.checklistbank.org/dataset/316595/taxon/9BTZ)
 
 #### 58:TD · country-borderline (review, kept)
 
@@ -2956,28 +2885,15 @@ Species that could lose every published country:
   - [International Barcode of Life project (iBOL)](https://www.gbif.org/dataset/040c5662-da76-4782-a48e-cdea1892d14c) · The International Barcode of Life Consortium · 1 record
   - [UWBM Mammalogy Collection (Arctos)](https://www.gbif.org/dataset/830eb5d0-f762-11e1-a439-00145eb45e9a) · University of Washington Burke Museum · 1 record
   - [Borror Lab of Bioacoustics (BLB), Ohio State University](https://www.gbif.org/dataset/f11db245-3f9f-4fc6-a0cc-12b4124d081b) · Museum of Biological Diversity, The Ohio State University · 1 record
-- **Records shown** (20 of 56):
+- **Records shown** (5 of 56):
   - [6446433308](https://www.gbif.org/occurrence/6446433308) · PRESERVED_SPECIMEN · 2026-03 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
+  - [5099727436](https://www.gbif.org/occurrence/5099727436) · PRESERVED_SPECIMEN · 2022-03 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive · remarks: International studbook number 9848
   - [6446437315](https://www.gbif.org/occurrence/6446437315) · PRESERVED_SPECIMEN · 2026-03 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
   - [6446449312](https://www.gbif.org/occurrence/6446449312) · PRESERVED_SPECIMEN · 2026-03 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
   - [6187126179](https://www.gbif.org/occurrence/6187126179) · PRESERVED_SPECIMEN · 2025-02 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [6446430310](https://www.gbif.org/occurrence/6446430310) · PRESERVED_SPECIMEN · 2025-08 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [6405521313](https://www.gbif.org/occurrence/6405521313) · PRESERVED_SPECIMEN · 2024-01 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB
-  - [6446436309](https://www.gbif.org/occurrence/6446436309) · PRESERVED_SPECIMEN · 2024-02 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [6446447317](https://www.gbif.org/occurrence/6446447317) · PRESERVED_SPECIMEN · 2023-05 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [6187128339](https://www.gbif.org/occurrence/6187128339) · PRESERVED_SPECIMEN · 2023-06 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [5099727436](https://www.gbif.org/occurrence/5099727436) · PRESERVED_SPECIMEN · 2022-03 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive · remarks: International studbook number 9848
-  - [6187126870](https://www.gbif.org/occurrence/6187126870) · PRESERVED_SPECIMEN · 2022-03 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [6187128720](https://www.gbif.org/occurrence/6187128720) · PRESERVED_SPECIMEN · 2022-03 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [5099723398](https://www.gbif.org/occurrence/5099723398) · PRESERVED_SPECIMEN · 2022-09 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive · remarks: International studbook number 9848
-  - [6187125360](https://www.gbif.org/occurrence/6187125360) · PRESERVED_SPECIMEN · 2022-09 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [6187126427](https://www.gbif.org/occurrence/6187126427) · PRESERVED_SPECIMEN · 2022-09 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [6187127863](https://www.gbif.org/occurrence/6187127863) · PRESERVED_SPECIMEN · 2022-09 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [6187128993](https://www.gbif.org/occurrence/6187128993) · PRESERVED_SPECIMEN · 2022-09 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [6446446304](https://www.gbif.org/occurrence/6446446304) · PRESERVED_SPECIMEN · 2021-01 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [6497438311](https://www.gbif.org/occurrence/6497438311) · PRESERVED_SPECIMEN · 2021-05 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [6187126011](https://www.gbif.org/occurrence/6187126011) · PRESERVED_SPECIMEN · 2020-07 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-- **Recommendation:** pending
+- **Recommendation:** remove · **medium** · output-changing
+- **Why:** Of 56 records, 46 are marked captive and 44 are MSB specimens in New Mexico; all 20 we read say Albuquerque BioPark Zoo. Nine unmarked ones, including other museums' specimens, are unread, so this can't be high. COL says Africa; Southern Asia.
+- **Cites:** [gbif:occurrence:6446433308](https://www.gbif.org/occurrence/6446433308), [gbif:occurrence:5099727436](https://www.gbif.org/occurrence/5099727436), [gbif:dataset:b15d4952-7d20-46f1-8a3e-556a512b04c5](https://www.gbif.org/dataset/b15d4952-7d20-46f1-8a3e-556a512b04c5), [gbif:dataset:2aa02cf8-c402-412c-9ad1-585e1e185bef](https://www.gbif.org/dataset/2aa02cf8-c402-412c-9ad1-585e1e185bef), [gbif:dataset:1da75725-1eb5-4e17-b586-ffad7b783987](https://www.gbif.org/dataset/1da75725-1eb5-4e17-b586-ffad7b783987), [col:9BTZ](https://www.checklistbank.org/dataset/316595/taxon/9BTZ)
 
 ### 59 · Manis crassicaudata · Indian Pangolin
 
@@ -3013,7 +2929,9 @@ Species that could lose every published country:
 - **Records shown** (2 of 2):
   - [5015137678](https://www.gbif.org/occurrence/5015137678) · HUMAN_OBSERVATION · 2024-04 · 54.182098, 7.898537 ±25 m · UTM25_32U_0425_6000 · NABU|naturgucker
   - [5014445687](https://www.gbif.org/occurrence/5014445687) · HUMAN_OBSERVATION · 2007-11 · 52.508018, 13.33869 ±250 m · Zoologischer Garten Berlin · NABU|naturgucker
-- **Recommendation:** pending
+- **Recommendation:** remove · **medium** · output-changing
+- **Why:** Two NABU|naturgucker records: "Zoologischer Garten Berlin", 2007, and a grid-cell locality at 54.18, 7.90 (Helgoland), 2024, no captive mark. Wikidata has this species endemic to China. The second looks like a misidentification or data error, but the record doesn't say so.
+- **Cites:** [gbif:occurrence:5014445687](https://www.gbif.org/occurrence/5014445687), [gbif:occurrence:5015137678](https://www.gbif.org/occurrence/5015137678), [gbif:dataset:6ac3f774-d9fb-4796-b3e9-92bf6c81c084](https://www.gbif.org/dataset/6ac3f774-d9fb-4796-b3e9-92bf6c81c084), [wikidata:Q33602](https://www.wikidata.org/wiki/Q33602)
 
 #### 60:US · country-captive-suspect (blocking, excluded)
 
@@ -3111,7 +3029,9 @@ Species that could lose every published country:
   - [5028013537](https://www.gbif.org/occurrence/5028013537) · HUMAN_OBSERVATION · 2016-10 · 51.523697, 11.956833 ±250 m · TK25 Blatt 4437/4 - Halle (Saale)-Nord · NABU|naturgucker
   - [5017511855](https://www.gbif.org/occurrence/5017511855) · HUMAN_OBSERVATION · 2012-05 · 51.123756, 13.873221 ±250 m · TK25 Blatt 4849/3 - Langebrück / Radeberg (West) · NABU|naturgucker
   - [5016688305](https://www.gbif.org/occurrence/5016688305) · HUMAN_OBSERVATION · 2008-08 · 48.232498, 10.116111 ±250 m · Illertissen Reiser · NABU|naturgucker
-- **Recommendation:** pending
+- **Recommendation:** keep · **low** · confirming
+- **Why:** Four NABU|naturgucker map-sheet or town records, 2008–2016, no captive or wild mark: two 2.1 km from Zoo Halle (Wikidata Q220245), two (Langebrück, Illertissen) with no zoo within 3 km. COL says Africa. Too thin to call, so it stays.
+- **Cites:** [gbif:occurrence:5023503016](https://www.gbif.org/occurrence/5023503016), [gbif:occurrence:5028013537](https://www.gbif.org/occurrence/5028013537), [gbif:occurrence:5017511855](https://www.gbif.org/occurrence/5017511855), [gbif:occurrence:5016688305](https://www.gbif.org/occurrence/5016688305), [gbif:dataset:6ac3f774-d9fb-4796-b3e9-92bf6c81c084](https://www.gbif.org/dataset/6ac3f774-d9fb-4796-b3e9-92bf6c81c084), [col:3W9KV](https://www.checklistbank.org/dataset/316595/taxon/3W9KV)
 
 #### 64:DK · country-captive-suspect (review, kept)
 
@@ -3128,7 +3048,9 @@ Species that could lose every published country:
 - **Records shown** (2 of 2):
   - [5170228585](https://www.gbif.org/occurrence/5170228585) · MATERIAL_SAMPLE · 2022-11 · 55.587952, 12.538947 · issues: COUNTRY_DERIVED_FROM_COORDINATES
   - [3315038005](https://www.gbif.org/occurrence/3315038005) · PRESERVED_SPECIMEN · no date · 56.964846, 9.632483 · unnamed locality · NHMD · remarks: Den 22.7.1988 modtager ZM en stødtand af afrikansk elefant, som er konfiskeret i Københavns Byret i sag mod Gert Ellegaard.
-- **Recommendation:** pending
+- **Recommendation:** remove · **medium** · output-changing
+- **Why:** Two records: an NHMD tusk whose remarks say it was confiscated in a Copenhagen court case, 1988, and one air-sampling DNA read, 2022. The first is stated by the record; the read documents no animal, but doesn't say so. COL says Africa.
+- **Cites:** [gbif:occurrence:3315038005](https://www.gbif.org/occurrence/3315038005), [gbif:occurrence:5170228585](https://www.gbif.org/occurrence/5170228585), [gbif:dataset:78b270c5-a5fe-4f1d-b87e-eb0dd7b7ae02](https://www.gbif.org/dataset/78b270c5-a5fe-4f1d-b87e-eb0dd7b7ae02), [gbif:dataset:9c92d48c-13d3-462f-8a6c-ee1f4bb6984a](https://www.gbif.org/dataset/9c92d48c-13d3-462f-8a6c-ee1f4bb6984a), [col:3W9KV](https://www.checklistbank.org/dataset/316595/taxon/3W9KV)
 
 #### 64:NG · country-borderline (review, kept)
 
@@ -3162,7 +3084,9 @@ Species that could lose every published country:
   - [2249970131](https://www.gbif.org/occurrence/2249970131) · MATERIAL_SAMPLE · 2007-07 · 52.15, 21.01 · Mined from GenBank, NCBI
   - [3349750703](https://www.gbif.org/occurrence/3349750703) · PRESERVED_SPECIMEN · 2007-07 · 52.15, 21.01 · issues: TAXON_MATCH_HIGHERRANK · remarks: Loxodonta africana knochenhaueri voucher PL-IGAB-ZBM55 cytochrome oxidase subunit I (COI) gene, partial cds mitochondrial.
   - [3349761866](https://www.gbif.org/occurrence/3349761866) · PRESERVED_SPECIMEN · 2007-07 · 52.15, 21.01 · issues: TAXON_MATCH_HIGHERRANK · remarks: Loxodonta africana knochenhaueri voucher PL-IGAB-ZBM56 cytochrome oxidase subunit I (COI) gene, partial cds mitochondrial.
-- **Recommendation:** pending
+- **Recommendation:** remove · **medium** · output-changing
+- **Why:** Four sequence records (two iBOL, two INSDC), 2007, at one point in Warsaw, no locality. Remarks give vouchers "PL-IGAB-ZBM" and subspecies "knochenhaueri", so likely a Polish lab's material, not an animal seen in Poland. COL says Africa. Inferred, not stated.
+- **Cites:** [gbif:occurrence:2249969743](https://www.gbif.org/occurrence/2249969743), [gbif:occurrence:2249970131](https://www.gbif.org/occurrence/2249970131), [gbif:occurrence:3349750703](https://www.gbif.org/occurrence/3349750703), [gbif:occurrence:3349761866](https://www.gbif.org/occurrence/3349761866), [gbif:dataset:040c5662-da76-4782-a48e-cdea1892d14c](https://www.gbif.org/dataset/040c5662-da76-4782-a48e-cdea1892d14c), [gbif:dataset:d8cd16ba-bb74-4420-821e-083f2bac17c2](https://www.gbif.org/dataset/d8cd16ba-bb74-4420-821e-083f2bac17c2), [col:3W9KV](https://www.checklistbank.org/dataset/316595/taxon/3W9KV)
 
 #### 64:SD · country-borderline (review, kept)
 
@@ -3235,7 +3159,9 @@ Species that could lose every published country:
   - [1019040948](https://www.gbif.org/occurrence/1019040948) · HUMAN_OBSERVATION · 1994-03 · 40.1667, -83.0833 · Interior pen, Pachyderm Building, Columbus Zoo, Powell (W of), Delaware, Ohio, USA · Ohio · Borror Laboratory of Bioacoustics, Ohio State University, Columbus, OH (BLB)
   - [1019040964](https://www.gbif.org/occurrence/1019040964) · HUMAN_OBSERVATION · 1994-03 · 41.8, -87.8333 · Interior pen, Pachyderm Building, Brookfield Zoo (Chicago Zoo), Brookfield, Cook, Illinois, USA · Illinois · Borror Laboratory of Bioacoustics, Ohio State University, Columbus, OH (BLB)
   - [3356352640](https://www.gbif.org/occurrence/3356352640) · PRESERVED_SPECIMEN · 1905-06 · 41.223002, -111.973827 ±5,062 m · Ogden · Utah · BYU · remarks: (3 years old)
-- **Recommendation:** pending
+- **Recommendation:** remove · **medium** · output-changing
+- **Why:** Seven records: Columbus, Brookfield and San Antonio zoos by name; an INSDC genome 0.2 km from Louisville Zoo (Wikidata Q3576024); Seattle's "Watoto", "animal still alive", a named individual. Seattle (2014) and Ogden (1905) give only a city. COL says Africa. Inferred for those.
+- **Cites:** [gbif:occurrence:1019040948](https://www.gbif.org/occurrence/1019040948), [gbif:occurrence:1019040964](https://www.gbif.org/occurrence/1019040964), [gbif:occurrence:5100621889](https://www.gbif.org/occurrence/5100621889), [gbif:occurrence:6190749157](https://www.gbif.org/occurrence/6190749157), [gbif:occurrence:5189239029](https://www.gbif.org/occurrence/5189239029), [gbif:occurrence:1702720623](https://www.gbif.org/occurrence/1702720623), [gbif:occurrence:3356352640](https://www.gbif.org/occurrence/3356352640), [gbif:dataset:f11db245-3f9f-4fc6-a0cc-12b4124d081b](https://www.gbif.org/dataset/f11db245-3f9f-4fc6-a0cc-12b4124d081b), [gbif:dataset:830eb5d0-f762-11e1-a439-00145eb45e9a](https://www.gbif.org/dataset/830eb5d0-f762-11e1-a439-00145eb45e9a), [gbif:dataset:2aa02cf8-c402-412c-9ad1-585e1e185bef](https://www.gbif.org/dataset/2aa02cf8-c402-412c-9ad1-585e1e185bef), [gbif:dataset:d8cd16ba-bb74-4420-821e-083f2bac17c2](https://www.gbif.org/dataset/d8cd16ba-bb74-4420-821e-083f2bac17c2), [gbif:dataset:1da75725-1eb5-4e17-b586-ffad7b783987](https://www.gbif.org/dataset/1da75725-1eb5-4e17-b586-ffad7b783987), [col:3W9KV](https://www.checklistbank.org/dataset/316595/taxon/3W9KV)
 
 ### 65 · Lycaon pictus · African Wild Dog
 
@@ -3260,7 +3186,9 @@ Species that could lose every published country:
   - [6511129896](https://www.gbif.org/occurrence/6511129896) · HUMAN_OBSERVATION · 2019-01 · -23.649167, -46.618611 · São Paulo · ICMBio
   - [6510338608](https://www.gbif.org/occurrence/6510338608) · HUMAN_OBSERVATION · 2018-01 · -23.649167, -46.618611 · São Paulo · ICMBio
   - [6510587602](https://www.gbif.org/occurrence/6510587602) · HUMAN_OBSERVATION · 2017-05 · -23.649167, -46.618611 · São Paulo · ICMBio
-- **Recommendation:** pending
+- **Recommendation:** remove · **medium** · output-changing
+- **Why:** Four ICMBio SISBio records, 2017–2019, São Paulo, no locality, all at one point 0.3 km from São Paulo Zoo (Wikidata Q3364798). COL says Africa. Points to zoo animals, but the records themselves don't name one.
+- **Cites:** [gbif:occurrence:6510708451](https://www.gbif.org/occurrence/6510708451), [gbif:occurrence:6511129896](https://www.gbif.org/occurrence/6511129896), [gbif:occurrence:6510338608](https://www.gbif.org/occurrence/6510338608), [gbif:occurrence:6510587602](https://www.gbif.org/occurrence/6510587602), [gbif:dataset:ffe38a37-d659-4b1a-a935-5a5264e3cc0a](https://www.gbif.org/dataset/ffe38a37-d659-4b1a-a935-5a5264e3cc0a), [col:73256](https://www.checklistbank.org/dataset/316595/taxon/73256)
 
 #### 65:CD · country-borderline (review, kept)
 
@@ -3353,28 +3281,15 @@ Species that could lose every published country:
   - [UWBM Mammalogy Collection (Arctos)](https://www.gbif.org/dataset/830eb5d0-f762-11e1-a439-00145eb45e9a) · University of Washington Burke Museum · 4 records
   - [Brigham Young University Life Science Museum (BYU) Mammal Collection (Arctos)](https://www.gbif.org/dataset/1da75725-1eb5-4e17-b586-ffad7b783987) · Brigham Young University Life Science Museum · 1 record
   - [Angelo State Natural History Collections (ASNHC) Mammal specimens (Arctos)](https://www.gbif.org/dataset/2aa02cf8-c402-412c-9ad1-585e1e185bef) · Angelo State Natural History Collections (ASNHC) · 1 record
-- **Records shown** (20 of 95):
+- **Records shown** (5 of 95):
   - [6446448308](https://www.gbif.org/occurrence/6446448308) · PRESERVED_SPECIMEN · 2024-01 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
+  - [5099729460](https://www.gbif.org/occurrence/5099729460) · PRESERVED_SPECIMEN · 2022-11 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive · remarks: DOA; blastomycosis - white lumps/lesions on lungs; necropsied by BioPark
   - [6187127858](https://www.gbif.org/occurrence/6187127858) · PRESERVED_SPECIMEN · 2024-05 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive · remarks: dead on arrival: yes
   - [6446444305](https://www.gbif.org/occurrence/6446444305) · PRESERVED_SPECIMEN · 2024-05 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
   - [6446441302](https://www.gbif.org/occurrence/6446441302) · PRESERVED_SPECIMEN · 2024-06 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [6446435322](https://www.gbif.org/occurrence/6446435322) · PRESERVED_SPECIMEN · 2024-07 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [6187125410](https://www.gbif.org/occurrence/6187125410) · PRESERVED_SPECIMEN · 2022-05 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [6187130046](https://www.gbif.org/occurrence/6187130046) · PRESERVED_SPECIMEN · 2022-05 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [6187129849](https://www.gbif.org/occurrence/6187129849) · PRESERVED_SPECIMEN · 2022-06 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [6187128362](https://www.gbif.org/occurrence/6187128362) · PRESERVED_SPECIMEN · 2022-09 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [6446441304](https://www.gbif.org/occurrence/6446441304) · PRESERVED_SPECIMEN · 2022-09 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [5099729460](https://www.gbif.org/occurrence/5099729460) · PRESERVED_SPECIMEN · 2022-11 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive · remarks: DOA; blastomycosis - white lumps/lesions on lungs; necropsied by BioPark
-  - [6187125576](https://www.gbif.org/occurrence/6187125576) · PRESERVED_SPECIMEN · 2022-11 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [6446449304](https://www.gbif.org/occurrence/6446449304) · PRESERVED_SPECIMEN · 2022-11 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [6405524314](https://www.gbif.org/occurrence/6405524314) · PRESERVED_SPECIMEN · 2022-12 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [6446438309](https://www.gbif.org/occurrence/6446438309) · PRESERVED_SPECIMEN · 2022-12 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [6187128555](https://www.gbif.org/occurrence/6187128555) · PRESERVED_SPECIMEN · 2021-10 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [5099726434](https://www.gbif.org/occurrence/5099726434) · PRESERVED_SPECIMEN · 2020-01 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive · remarks: DOA. Brittle bones, very worn teeth.
-  - [6187126154](https://www.gbif.org/occurrence/6187126154) · PRESERVED_SPECIMEN · 2020-01 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [6187129659](https://www.gbif.org/occurrence/6187129659) · PRESERVED_SPECIMEN · 2020-01 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-  - [6187126350](https://www.gbif.org/occurrence/6187126350) · PRESERVED_SPECIMEN · 2020-04 · 35.078382, -106.663485 ±500 m · Albuquerque BioPark Zoo, Albuquerque · New Mexico · MSB · degree: captive
-- **Recommendation:** pending
+- **Recommendation:** remove · **medium** · output-changing
+- **Why:** Of 95 records, 94 are marked captive; 89 are MSB specimens in New Mexico, and all 20 we read say Albuquerque BioPark Zoo. One unmarked record, unread, keeps this from high. COL says Africa.
+- **Cites:** [gbif:occurrence:6446448308](https://www.gbif.org/occurrence/6446448308), [gbif:occurrence:5099729460](https://www.gbif.org/occurrence/5099729460), [gbif:dataset:b15d4952-7d20-46f1-8a3e-556a512b04c5](https://www.gbif.org/dataset/b15d4952-7d20-46f1-8a3e-556a512b04c5), [gbif:dataset:830eb5d0-f762-11e1-a439-00145eb45e9a](https://www.gbif.org/dataset/830eb5d0-f762-11e1-a439-00145eb45e9a), [col:73256](https://www.checklistbank.org/dataset/316595/taxon/73256)
 
 ### 66 · Diceros bicornis · Black Rhinoceros
 
@@ -3446,7 +3361,9 @@ Species that could lose every published country:
 - **Records shown** (2 of 2):
   - [1043991377](https://www.gbif.org/occurrence/1043991377) · PRESERVED_SPECIMEN · no date · 48.832, 2.417 · MNHN
   - [1563898248](https://www.gbif.org/occurrence/1563898248) · PRESERVED_SPECIMEN · no date · 48.832, 2.417 · MNHN
-- **Recommendation:** pending
+- **Recommendation:** remove · **medium** · output-changing
+- **Why:** Two undated MNHN (Paris) specimens with no locality, at one point 0.1 km from Paris Zoological Park (Wikidata Q1969385). COL says Africa. Points to zoo animals, but the records themselves don't name one.
+- **Cites:** [gbif:occurrence:1043991377](https://www.gbif.org/occurrence/1043991377), [gbif:occurrence:1563898248](https://www.gbif.org/occurrence/1563898248), [gbif:dataset:3959ee49-7678-4a88-9049-5dfc55ccebf3](https://www.gbif.org/dataset/3959ee49-7678-4a88-9049-5dfc55ccebf3), [col:35JVB](https://www.checklistbank.org/dataset/316595/taxon/35JVB)
 
 #### 66:MW · country-borderline (review, kept)
 
@@ -3509,28 +3426,15 @@ Species that could lose every published country:
   - [International Barcode of Life project (iBOL)](https://www.gbif.org/dataset/040c5662-da76-4782-a48e-cdea1892d14c) · The International Barcode of Life Consortium · 64 records
   - [Angelo State Natural History Collections (ASNHC) Mammal specimens (Arctos)](https://www.gbif.org/dataset/2aa02cf8-c402-412c-9ad1-585e1e185bef) · Angelo State Natural History Collections (ASNHC) · 1 record
   - [CAS Mammalogy (MAM)](https://www.gbif.org/dataset/6ce7290f-47f6-4046-8356-371f5b6749df) · California Academy of Sciences · 1 record
-- **Records shown** (20 of 245):
+- **Records shown** (5 of 245):
   - [1019041371](https://www.gbif.org/occurrence/1019041371) · HUMAN_OBSERVATION · 1996-01 · 40.1667, -83.0833 · Interior pen, Pachyderm Building, Columbus Zoo, Powell (W of), Delaware, Ohio, USA · Ohio · Borror Laboratory of Bioacoustics, Ohio State University, Columbus, OH (BLB)
-  - [1019041615](https://www.gbif.org/occurrence/1019041615) · HUMAN_OBSERVATION · 1996-01 · 40.1667, -83.0833 · Interior pen, Pachyderm Building, Columbus Zoo, Powell (W of), Delaware, Ohio, USA · Ohio · Borror Laboratory of Bioacoustics, Ohio State University, Columbus, OH (BLB)
   - [1019042244](https://www.gbif.org/occurrence/1019042244) · HUMAN_OBSERVATION · 1996-10 · 40.5, -80 · Rhino yard, Pittsburgh Zoo, Pittsburgh, Allegheny, Pennsylvania, USA · Pennsylvania · Borror Laboratory of Bioacoustics, Ohio State University, Columbus, OH (BLB)
-  - [1019042270](https://www.gbif.org/occurrence/1019042270) · HUMAN_OBSERVATION · 1996-10 · 40.5, -80 · Rhino yard, Pittsburgh Zoo, Pittsburgh, Allegheny, Pennsylvania, USA · Pennsylvania · Borror Laboratory of Bioacoustics, Ohio State University, Columbus, OH (BLB)
-  - [1019042303](https://www.gbif.org/occurrence/1019042303) · HUMAN_OBSERVATION · 1996-10 · 40.5, -80 · Rhino yard, Pittsburgh Zoo, Pittsburgh, Allegheny, Pennsylvania, USA · Pennsylvania · Borror Laboratory of Bioacoustics, Ohio State University, Columbus, OH (BLB)
-  - [1019040978](https://www.gbif.org/occurrence/1019040978) · HUMAN_OBSERVATION · 1995-02 · 40.1667, -83.0833 · Interior south side pen, Pachyderm Building, Columbus Zoo, Powell (W of), Delaware, Ohio, USA · Ohio · Borror Laboratory of Bioacoustics, Ohio State University, Columbus, OH (BLB)
-  - [1019041195](https://www.gbif.org/occurrence/1019041195) · HUMAN_OBSERVATION · 1995-04 · 40.1667, -83.0833 · Interior pen, Pachyderm Building, Columbus Zoo, Powell (W of), Delaware, Ohio, USA · Ohio · Borror Laboratory of Bioacoustics, Ohio State University, Columbus, OH (BLB)
-  - [1019042076](https://www.gbif.org/occurrence/1019042076) · HUMAN_OBSERVATION · 1995-04 · 40.1667, -83.0833 · Interior pen, Pachyderm Building, Columbus Zoo, Powell (W of), Delaware, Ohio, USA · Ohio · Borror Laboratory of Bioacoustics, Ohio State University, Columbus, OH (BLB)
   - [1019041843](https://www.gbif.org/occurrence/1019041843) · HUMAN_OBSERVATION · 1995-05 · 42.7103, -84.5531 · Inside rhino barn, Potter Park Zoo, Lansing, Ingham, Michigan, USA · Michigan · Borror Laboratory of Bioacoustics, Ohio State University, Columbus, OH (BLB)
-  - [1019041867](https://www.gbif.org/occurrence/1019041867) · HUMAN_OBSERVATION · 1995-05 · 42.7103, -84.5531 · In outside yard, Potter Park Zoo, Lansing, Ingham, Michigan, USA · Michigan · Borror Laboratory of Bioacoustics, Ohio State University, Columbus, OH (BLB)
-  - [1019041919](https://www.gbif.org/occurrence/1019041919) · HUMAN_OBSERVATION · 1995-05 · 42.7103, -84.5531 · In outside yard and in barn; trotting in and out, Potter Park Zoo, Lansing, Ingham, Michigan, USA · Michigan · Borror Laboratory of Bioacoustics, Ohio State University, Columbus, OH (BLB)
-  - [1019041945](https://www.gbif.org/occurrence/1019041945) · HUMAN_OBSERVATION · 1995-05 · 42.7103, -84.5531 · Interior of barn, Potter Park Zoo, Lansing, Ingham, Michigan, USA · Michigan · Borror Laboratory of Bioacoustics, Ohio State University, Columbus, OH (BLB)
-  - [1019041972](https://www.gbif.org/occurrence/1019041972) · HUMAN_OBSERVATION · 1995-05 · 42.7103, -84.5531 · In yard of exhibit, Potter Park Zoo, Lansing, Ingham, Michigan, USA · Michigan · Borror Laboratory of Bioacoustics, Ohio State University, Columbus, OH (BLB)
-  - [1019041996](https://www.gbif.org/occurrence/1019041996) · HUMAN_OBSERVATION · 1995-05 · 42.7103, -84.5531 · In yard of exhibit, Potter Park Zoo, Lansing, Ingham, Michigan, USA · Michigan · Borror Laboratory of Bioacoustics, Ohio State University, Columbus, OH (BLB)
-  - [1019041323](https://www.gbif.org/occurrence/1019041323) · HUMAN_OBSERVATION · 1995-06 · 40.1667, -83.0833 · South yards of Pachyderm Building, Columbus Zoo, Powell (W of), Delaware, Ohio, USA · Ohio · Borror Laboratory of Bioacoustics, Ohio State University, Columbus, OH (BLB)
-  - [1019041347](https://www.gbif.org/occurrence/1019041347) · HUMAN_OBSERVATION · 1995-06 · 40.1667, -83.0833 · South yards of Pachyderm Building, Columbus Zoo, Powell (W of), Delaware, Ohio, USA · Ohio · Borror Laboratory of Bioacoustics, Ohio State University, Columbus, OH (BLB)
-  - [1019041000](https://www.gbif.org/occurrence/1019041000) · HUMAN_OBSERVATION · 1995-07 · 40.1667, -83.0833 · Interior south side pen, Pachyderm Building, Columbus Zoo, Powell (W of), Delaware, Ohio, USA · Ohio · Borror Laboratory of Bioacoustics, Ohio State University, Columbus, OH (BLB)
-  - [1019041220](https://www.gbif.org/occurrence/1019041220) · HUMAN_OBSERVATION · 1995-07 · 40.1667, -83.0833 · Interior pen, Pachyderm Building, Columbus Zoo, Powell (W of), Delaware, Ohio, USA · Ohio · Borror Laboratory of Bioacoustics, Ohio State University, Columbus, OH (BLB)
   - [1019041975](https://www.gbif.org/occurrence/1019041975) · HUMAN_OBSERVATION · 1994-03 · 41.8, -87.8333 · Interior pen, Pachyderm Building, Brookfield Zoo (Chicago Zoo), Brookfield, Cook, Illinois, USA · Illinois · Borror Laboratory of Bioacoustics, Ohio State University, Columbus, OH (BLB)
-  - [1019041535](https://www.gbif.org/occurrence/1019041535) · HUMAN_OBSERVATION · 1994-08 · 40.1667, -83.0833 · Interior pen, Pachyderm Building, Columbus Zoo, Powell (W of), Delaware, Ohio, USA · Ohio · Borror Laboratory of Bioacoustics, Ohio State University, Columbus, OH (BLB)
-- **Recommendation:** pending
+  - [1019041615](https://www.gbif.org/occurrence/1019041615) · HUMAN_OBSERVATION · 1996-01 · 40.1667, -83.0833 · Interior pen, Pachyderm Building, Columbus Zoo, Powell (W of), Delaware, Ohio, USA · Ohio · Borror Laboratory of Bioacoustics, Ohio State University, Columbus, OH (BLB)
+- **Recommendation:** remove · **medium** · output-changing
+- **Why:** 245 records: 179 Borror Lab sound recordings, all 20 we read in zoo pens and yards (Columbus, Pittsburgh, Potter Park, Brookfield); 64 iBOL sequences and 2 specimens unread. No captive field filled, and COL says Africa. The rest is inferred, not stated.
+- **Cites:** [gbif:occurrence:1019041371](https://www.gbif.org/occurrence/1019041371), [gbif:occurrence:1019042244](https://www.gbif.org/occurrence/1019042244), [gbif:occurrence:1019041843](https://www.gbif.org/occurrence/1019041843), [gbif:occurrence:1019041975](https://www.gbif.org/occurrence/1019041975), [gbif:dataset:f11db245-3f9f-4fc6-a0cc-12b4124d081b](https://www.gbif.org/dataset/f11db245-3f9f-4fc6-a0cc-12b4124d081b), [gbif:dataset:040c5662-da76-4782-a48e-cdea1892d14c](https://www.gbif.org/dataset/040c5662-da76-4782-a48e-cdea1892d14c), [gbif:dataset:2aa02cf8-c402-412c-9ad1-585e1e185bef](https://www.gbif.org/dataset/2aa02cf8-c402-412c-9ad1-585e1e185bef), [gbif:dataset:6ce7290f-47f6-4046-8356-371f5b6749df](https://www.gbif.org/dataset/6ce7290f-47f6-4046-8356-371f5b6749df), [col:35JVB](https://www.checklistbank.org/dataset/316595/taxon/35JVB)
 
 ### 68 · Beatragus hunteri · Hirola
 
@@ -3574,28 +3478,15 @@ Species that could lose every published country:
 - **Establishment means:** none filled. **Degree of establishment:** none filled
 - **Datasets:**
   - [Estación Experimental de Zonas Áridas (CSIC), Almería: EEZA-Ungulados](https://www.gbif.org/dataset/7d515e86-f762-11e1-a439-00145eb45e9a) · Estación Experimental de Zonas Áridas (CSIC) · 390 records
-- **Records shown** (20 of 390):
+- **Records shown** (5 of 390):
   - [318099304](https://www.gbif.org/occurrence/318099304) · PRESERVED_SPECIMEN · 2008-02 · 36.842777, -2.472685 · Almería; Finca La Hoya · Al · EEZA · issues: TAXON_MATCH_FUZZY
+  - [318099273](https://www.gbif.org/occurrence/318099273) · PRESERVED_SPECIMEN · 2007-01 · 36.842777, -2.472685 · Almería; Finca La Hoya · Al · EEZA · issues: TAXON_MATCH_FUZZY
+  - [318099233](https://www.gbif.org/occurrence/318099233) · PRESERVED_SPECIMEN · 2006-01 · 36.842777, -2.472685 · Almería; Finca La Hoya · Al · EEZA · issues: TAXON_MATCH_FUZZY
   - [318099303](https://www.gbif.org/occurrence/318099303) · PRESERVED_SPECIMEN · 2008-03 · 36.842777, -2.472685 · Almería; Finca La Hoya · Al · EEZA · issues: TAXON_MATCH_FUZZY
   - [318099306](https://www.gbif.org/occurrence/318099306) · PRESERVED_SPECIMEN · 2008-03 · 36.842777, -2.472685 · Almería; Finca La Hoya · Al · EEZA · issues: TAXON_MATCH_FUZZY
-  - [318099308](https://www.gbif.org/occurrence/318099308) · PRESERVED_SPECIMEN · 2008-03 · 36.842777, -2.472685 · Almería; Finca La Hoya · Al · EEZA · issues: TAXON_MATCH_FUZZY
-  - [318099273](https://www.gbif.org/occurrence/318099273) · PRESERVED_SPECIMEN · 2007-01 · 36.842777, -2.472685 · Almería; Finca La Hoya · Al · EEZA · issues: TAXON_MATCH_FUZZY
-  - [318099271](https://www.gbif.org/occurrence/318099271) · PRESERVED_SPECIMEN · 2007-04 · 36.842777, -2.472685 · Almería; Finca La Hoya · Al · EEZA · issues: TAXON_MATCH_FUZZY
-  - [318099272](https://www.gbif.org/occurrence/318099272) · PRESERVED_SPECIMEN · 2007-04 · 36.842777, -2.472685 · Almería; Finca La Hoya · Al · EEZA · issues: TAXON_MATCH_FUZZY
-  - [318099295](https://www.gbif.org/occurrence/318099295) · PRESERVED_SPECIMEN · 2007-06 · 36.842777, -2.472685 · Almería; Finca La Hoya · Al · EEZA · issues: TAXON_MATCH_FUZZY
-  - [318099309](https://www.gbif.org/occurrence/318099309) · PRESERVED_SPECIMEN · 2007-06 · 36.842777, -2.472685 · Almería; Finca La Hoya · Al · EEZA · issues: TAXON_MATCH_FUZZY
-  - [318099297](https://www.gbif.org/occurrence/318099297) · PRESERVED_SPECIMEN · 2007-09 · 36.842777, -2.472685 · Almería; Finca La Hoya · Al · EEZA · issues: TAXON_MATCH_FUZZY
-  - [318099298](https://www.gbif.org/occurrence/318099298) · PRESERVED_SPECIMEN · 2007-09 · 36.842777, -2.472685 · Almería; Finca La Hoya · Al · EEZA · issues: TAXON_MATCH_FUZZY
-  - [318099299](https://www.gbif.org/occurrence/318099299) · PRESERVED_SPECIMEN · 2007-09 · 36.842777, -2.472685 · Almería; Finca La Hoya · Al · EEZA · issues: TAXON_MATCH_FUZZY
-  - [318099305](https://www.gbif.org/occurrence/318099305) · PRESERVED_SPECIMEN · 2007-10 · 36.842777, -2.472685 · Almería; Finca La Hoya · Al · EEZA · issues: TAXON_MATCH_FUZZY
-  - [318099233](https://www.gbif.org/occurrence/318099233) · PRESERVED_SPECIMEN · 2006-01 · 36.842777, -2.472685 · Almería; Finca La Hoya · Al · EEZA · issues: TAXON_MATCH_FUZZY
-  - [318099238](https://www.gbif.org/occurrence/318099238) · PRESERVED_SPECIMEN · 2006-01 · 36.842777, -2.472685 · Almería; Finca La Hoya · Al · EEZA · issues: TAXON_MATCH_FUZZY
-  - [318099252](https://www.gbif.org/occurrence/318099252) · PRESERVED_SPECIMEN · 2006-01 · 36.842777, -2.472685 · Almería; Finca La Hoya · Al · EEZA · issues: TAXON_MATCH_FUZZY
-  - [318099251](https://www.gbif.org/occurrence/318099251) · PRESERVED_SPECIMEN · 2006-05 · 36.842777, -2.472685 · Almería; Finca La Hoya · Al · EEZA · issues: TAXON_MATCH_FUZZY
-  - [318099301](https://www.gbif.org/occurrence/318099301) · PRESERVED_SPECIMEN · 2006-09 · 36.842777, -2.472685 · Almería; Finca La Hoya · Al · EEZA · issues: TAXON_MATCH_FUZZY
-  - [318099253](https://www.gbif.org/occurrence/318099253) · PRESERVED_SPECIMEN · 2006-10 · 36.842777, -2.472685 · Almería; Finca La Hoya · Al · EEZA · issues: TAXON_MATCH_FUZZY
-  - [318099274](https://www.gbif.org/occurrence/318099274) · PRESERVED_SPECIMEN · 2006-10 · 36.842777, -2.472685 · Almería; Finca La Hoya · Al · EEZA · issues: TAXON_MATCH_FUZZY
-- **Recommendation:** pending
+- **Recommendation:** remove · **medium** · output-changing
+- **Why:** All 390 are EEZA (CSIC, Almería) specimens in one ungulate collection, 1971–2008; all 20 we read say "Almería; Finca La Hoya", one farm address. COL says Africa. Points to a herd kept at the institute, but no record says captive, and 370 are unread.
+- **Cites:** [gbif:occurrence:318099304](https://www.gbif.org/occurrence/318099304), [gbif:occurrence:318099273](https://www.gbif.org/occurrence/318099273), [gbif:occurrence:318099233](https://www.gbif.org/occurrence/318099233), [gbif:dataset:7d515e86-f762-11e1-a439-00145eb45e9a](https://www.gbif.org/dataset/7d515e86-f762-11e1-a439-00145eb45e9a), [col:45LTS](https://www.checklistbank.org/dataset/316595/taxon/45LTS)
 
 #### 69:ET · country-borderline (review, kept)
 
@@ -3710,7 +3601,9 @@ Species that could lose every published country:
   - [2804485001](https://www.gbif.org/occurrence/2804485001) · PRESERVED_SPECIMEN · no date · 29.463525, -98.471854 ±250 m · San Antonio Zoo · Texas · ASNHC · remarks: Created in SPECIFY; 2014-06-07|Last modified by SPECIFY; 2016-09-07|
   - [2804492121](https://www.gbif.org/occurrence/2804492121) · PRESERVED_SPECIMEN · no date · 29.714158, -95.390883 ±300 m · Houston Zoo · Texas · ASNHC · remarks: Created in SPECIFY; 2014-06-07|Last modified by SPECIFY; 2014-06-07|
   - [6453009303](https://www.gbif.org/occurrence/6453009303) · PRESERVED_SPECIMEN · no date · 21.27109, -157.821478 · Honolulu Zoo, Honolulu, Oahu · Hawaii · BYU · degree: captive · remarks: Skull only
-- **Recommendation:** pending
+- **Recommendation:** remove · **high** · output-changing
+- **Why:** Seven specimens, and each names a zoo: Oakland (2), Honolulu (2), Hogle, San Antonio, Houston. The records themselves name the zoos, and they're every counted record here.
+- **Cites:** [gbif:occurrence:2612361323](https://www.gbif.org/occurrence/2612361323), [gbif:occurrence:2612361317](https://www.gbif.org/occurrence/2612361317), [gbif:occurrence:6453007360](https://www.gbif.org/occurrence/6453007360), [gbif:occurrence:6453009303](https://www.gbif.org/occurrence/6453009303), [gbif:occurrence:3356350057](https://www.gbif.org/occurrence/3356350057), [gbif:occurrence:2804485001](https://www.gbif.org/occurrence/2804485001), [gbif:occurrence:2804492121](https://www.gbif.org/occurrence/2804492121), [gbif:dataset:1da75725-1eb5-4e17-b586-ffad7b783987](https://www.gbif.org/dataset/1da75725-1eb5-4e17-b586-ffad7b783987), [gbif:dataset:2aa02cf8-c402-412c-9ad1-585e1e185bef](https://www.gbif.org/dataset/2aa02cf8-c402-412c-9ad1-585e1e185bef), [gbif:dataset:6ce7290f-47f6-4046-8356-371f5b6749df](https://www.gbif.org/dataset/6ce7290f-47f6-4046-8356-371f5b6749df)
 
 ### 70 · Tapirus bairdii · Baird's Tapir
 
@@ -3812,7 +3705,9 @@ Species that could lose every published country:
 - **Records shown** (2 of 2):
   - [380185269](https://www.gbif.org/occurrence/380185269) · PRESERVED_SPECIMEN · 1998 · 32.68436, 130.65874 · Kumamoto · INM
   - [2249797666](https://www.gbif.org/occurrence/2249797666) · MATERIAL_SAMPLE · no date · 36.767387, 137.46935 · Mined from GenBank, NCBI
-- **Recommendation:** pending
+- **Recommendation:** remove · **medium** · output-changing
+- **Why:** An Ibaraki Nature Museum specimen, Kumamoto, 1998, no locality, and an iBOL record "Mined from GenBank", coordinates near the middle of Japan. Neither documents a free animal, and COL says South America. Inferred from the record types, not stated.
+- **Cites:** [gbif:occurrence:380185269](https://www.gbif.org/occurrence/380185269), [gbif:occurrence:2249797666](https://www.gbif.org/occurrence/2249797666), [gbif:dataset:811f7d86-f762-11e1-a439-00145eb45e9a](https://www.gbif.org/dataset/811f7d86-f762-11e1-a439-00145eb45e9a), [gbif:dataset:040c5662-da76-4782-a48e-cdea1892d14c](https://www.gbif.org/dataset/040c5662-da76-4782-a48e-cdea1892d14c), [col:5832V](https://www.checklistbank.org/dataset/316595/taxon/5832V)
 
 #### 71:PA · country-borderline (review, kept)
 
@@ -3952,7 +3847,9 @@ Species that could lose every published country:
 - **Records shown** (2 of 2):
   - [5014867447](https://www.gbif.org/occurrence/5014867447) · HUMAN_OBSERVATION · 2018-10 · 49.483742, 8.491745 ±250 m · Luisenpark - Mannheim · NABU|naturgucker
   - [5019486819](https://www.gbif.org/occurrence/5019486819) · HUMAN_OBSERVATION · 2015-08 · 52.406609, 13.360662 ±250 m · Ehem. Militärgelände am Diedersdorfer Weg, Berlin · NABU|naturgucker
-- **Recommendation:** pending
+- **Recommendation:** keep · **medium** · confirming
+- **Why:** Two NABU|naturgucker records: "Luisenpark - Mannheim", 2018, a park that keeps animals, and a former military site in Berlin, 2015, a field locality with no captive mark: likely a released animal. One dataset, and COL says Middle America, so no second source agrees.
+- **Cites:** [gbif:occurrence:5019486819](https://www.gbif.org/occurrence/5019486819), [gbif:occurrence:5014867447](https://www.gbif.org/occurrence/5014867447), [gbif:dataset:6ac3f774-d9fb-4796-b3e9-92bf6c81c084](https://www.gbif.org/dataset/6ac3f774-d9fb-4796-b3e9-92bf6c81c084), [col:CQ4M](https://www.checklistbank.org/dataset/316595/taxon/CQ4M)
 
 #### 74:NZ · country-captive-suspect (review, kept)
 
@@ -3968,7 +3865,9 @@ Species that could lose every published country:
 - **Records shown** (2 of 2):
   - [1268744697](https://www.gbif.org/occurrence/1268744697) · PRESERVED_SPECIMEN · 1980-10 · -41.509583, 173.575278 ±800,000 m · AK
   - [1268746426](https://www.gbif.org/occurrence/1268746426) · PRESERVED_SPECIMEN · 1980-10 · -41.515167, 173.577667 ±800,000 m · AK
-- **Recommendation:** pending
+- **Recommendation:** keep · **low** · confirming
+- **Why:** Two Auckland Museum specimens, 1980, no locality, coordinates with 800 km uncertainty, so they name only the country. A kept animal can't be told from a free one here, and COL says Middle America. Too thin to call, so it stays.
+- **Cites:** [gbif:occurrence:1268744697](https://www.gbif.org/occurrence/1268744697), [gbif:occurrence:1268746426](https://www.gbif.org/occurrence/1268746426), [gbif:dataset:aad97542-a068-449d-adb3-a8e937f64cb4](https://www.gbif.org/dataset/aad97542-a068-449d-adb3-a8e937f64cb4), [col:CQ4M](https://www.checklistbank.org/dataset/316595/taxon/CQ4M)
 
 #### 74:UA · country-captive-suspect (blocking, excluded)
 
