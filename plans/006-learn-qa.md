@@ -262,6 +262,7 @@ Hand-only, not run here: Docker and its image tags, the EDB installer and Stack 
 | Q56 | e1 | number | T0 | "73 GBIF keys and the lab sample's six filters": the request's six predicates are the keys plus five filters, as `e1-request` prints them | fixed | `qa-fixes.ts` |
 | Q57 | e1 | wrong fact | T0 | "Apart from `creator` and `sendNotification`, it equals, as JSON, the request GBIF stored": the stored one also holds `type`, `interpretedExtensions` and `verbatimExtensions` (`data/raw/gbif-sample/download.json`). Its `format`, `checklistKey` and `predicate` do equal `build_request`'s, every key in order (lab db), and those are what `same` compares | fixed | `qa-fixes.ts` |
 | Q58 | e2 | prose | T0 | "The decimal comma two records later": `e2-casts` puts `30 m` on the first record and the comma on the second | fixed | `qa-fixes.ts` |
+| Q59 | e2 | wrong fact | T0 | "`read_postgis(sql, con, geom_col=…)` needs the geometry column's name": it defaults to `geom` (geopandas signature, the pinned version) | fixed | `qa-fixes.ts` |
 
 ## Ledger
 
