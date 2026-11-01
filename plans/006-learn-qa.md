@@ -277,6 +277,7 @@ Hand-only, not run here: Docker and its image tags, the EDB installer and Stack 
 | Q71 | c1 | prose | T0 | "The jaguar's 2,000 records are 1,948 GPS-collar fixes" reads as if the rest weren't records. p4's wording used | fixed | `qa-fixes.ts` |
 | Q72 | c1 | prose | T0 | "A gateway, as d5's PostgreSQL connection does": d5 makes the login and sends the reader to p1; only p1's Lab connects and names the gateway. Removes §4's c1→d5 link | fixed | `qa-fixes.ts` |
 | Q73 | c1 | wrong fact | T0 | "From Web … on Windows and Mac": Microsoft's table of Excel versions lists no Web source for Mac, and From Web's dialog takes a URL, not M. p1's route used | fixed | `qa-fixes.ts` |
+| Q74 | p2 | jargon | T0 | DAX carries p2 to p4 and c1, and no page said what it is; p1 does say what M is. Defined at its first use | fixed | `qa-fixes.ts` |
 
 ## Ledger
 

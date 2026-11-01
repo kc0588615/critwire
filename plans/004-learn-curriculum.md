@@ -10140,7 +10140,7 @@ in
 - **Conformed dimensions:** `dim_country` is shared by all three facts and `dim_species` by the two species facts (`fact_records`, `fact_species_country`), so a country slicer filters all three at once and a species slicer the two that have a species (d6). The habitat fact has no species.
 - **Facts are never related to each other.** Joining two facts directly multiplies their rows (d6's drill across). Each fact is summed under the shared dimension instead, which is what a model with only fact-to-dimension relationships does.
 
-The **factless fact**, `fact_species_country`, has no measure column; its measure is a count of its rows (species listed in a country). It answers "where does critwire list the species?", while `fact_records` answers "what was recorded where?", and the two need not agree. A **measure** is a calculation Power BI evaluates for each cell of a table or chart, under that cell's filters; p3 builds them, and this module uses three simple ones.
+The **factless fact**, `fact_species_country`, has no measure column; its measure is a count of its rows (species listed in a country). It answers "where does critwire list the species?", while `fact_records` answers "what was recorded where?", and the two need not agree. A **measure** is a calculation Power BI evaluates for each cell of a table or chart, under that cell's filters, written in **DAX** (Data Analysis Expressions), Power BI's formula and query language; p3 builds them, and this module uses three simple ones.
 
 **Data:** the eight tables from p1.
 
