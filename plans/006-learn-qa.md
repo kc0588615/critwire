@@ -94,7 +94,7 @@ axe-core 4.14.0, default rules, `axe.run()` on each view after the page's blocks
 | `scrollable-region-focusable` (serious, WCAG 2.1.1) | 1,248 nodes, 188 views, 38 pages (architecture probe): `pre.code` 666, `pre.recorded` 438, `.table-wrap` 118, `figure.diagram` 24, bare `pre` 2 | 0 |
 | every other rule | 0 | 0 |
 
-`incomplete` (axe can't decide, recorded, not asserted): 5,598 nodes over the 196 views. Sample read on map, setup, d1 and data at 1280 light and 375 dark: all `color-contrast`, with "background color could not be determined because it's partially obscured" or "content is too short". They're cells and lines clipped by a scrolling region, so axe can't see their background. `/learn/data/` is most of it (3,248 nodes: its 400-row dataset table). The same colours pass where axe can decide: 0 contrast violations in either theme.
+`incomplete` (axe can't decide, recorded, not asserted): 5,598 nodes over the 196 views. Sample read on map, setup, d1 and data at 1280 light and 375 dark: all `color-contrast`, with "background color could not be determined because it's partially obscured" or "content is too short". Likely cause, inferred, not proven: cells and lines clipped by a scrolling region hide their background from axe (`/learn/data/` shows none at 1280 light and 1,624 at 375 dark, on its table cells). `/learn/data/` is most of the total (3,248 nodes). The same colours pass where axe can decide: 0 contrast violations in either theme.
 
 ## Labs
 

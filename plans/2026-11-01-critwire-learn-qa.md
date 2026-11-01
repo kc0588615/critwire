@@ -581,7 +581,7 @@ Live walk or axe isn't needed: same bytes (§8). Record the result and the log's
 
 ## Decisions
 
-- U1a: the keyboard test passed before Q2, because Chromium's keyboard-focusable scrollers focus an overflowing region with no `tabindex`. Added one assertion to §1's test, `tabindex="0"` on each region, so it bites and covers browsers without that default. The Fable/architect probe injected `tabindex`, so it couldn't see this.
+- U1a: the keyboard test passed before Q2, because Chromium's keyboard-focusable scrollers focus an overflowing region with no `tabindex`. Added one assertion to §1's test, `tabindex="0"` on each region, so it bites and covers browsers without that default. The architect's probe injected `tabindex`, so it couldn't see this.
 - Correction to Fable's MISSED 1 (and to commit `3abf588`'s subject): `assemble.ts:190` is the `.ipynb` "about" cell only, and `freshness.ts:108` drops `.ipynb` from the download shas, so no download sha moves. It's still T2: `assemble.ts` is in the checker's closure (`learn-check.ts` → `check.ts:39`), so any edit moves every block key. Conclusion unchanged, queue it for the lab batch (U11); `setup.html:89` stays T0.
 
 ## Log
@@ -593,6 +593,6 @@ Live walk or axe isn't needed: same bytes (§8). Record the result and the log's
 - 2026-11-01 12:28 UTC: Astra review: APPROVE_WITH_CHANGES, 1 MUST-FIX (notebook runner must use lab lock, guarded db target, cleanup), 3 SHOULD-CONSIDER. Plan only, no checks run. Next: Revision.
 - 2026-11-01 12:44 UTC: Revision by `architect`: Astra MUST-FIX resolved (notebook run = throwaway script under lab lock, target guards, cleanup), finding 8 tiers fixed, all 8 SHOULD-CONSIDER accepted, U1 split (13 of 25 steps). Script probed: 11/11 notebooks, cell failure, timeout, SIGTERM, held lock, `critwire` refused. No suite run (plan only). Next: Steps.
 - 2026-11-01 12:54 UTC: Steps by `planner`: 13 steps (U1a, U1b, U2–U12), Verification written; U11 sole lab step, plain loop per §7. Plan only, no suite run. Next: U1a.
-- 2026-11-01 13:25 UTC: U1a: walk spec (49 walks + keyboard), axe-core pin, Q1 (d1 overflow), Q2 (tabindex on scrollers), 006 skeleton. Saw both fail first. typecheck pass, test 748/748, scoped e2e 82/82 (196 views, 0 axe, 0 overflow). Next: U1b.
+- 2026-11-01 13:11 UTC: U1a: walk spec (49 walks + keyboard), axe-core pin, Q1 (d1 overflow), Q2 (tabindex on scrollers), 006 skeleton. Saw both fail first. typecheck pass, test 748/748, scoped e2e 82/82 (196 views, 0 axe, 0 overflow). Next: U1b.
 
 ## Summary
