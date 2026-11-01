@@ -443,7 +443,7 @@ Written on `73cd51a`. Read **Target design** above first: shapes, messages and r
   - Run: `pnpm ingest mdd 2>> $S/ingest-mdd.log` (under 1 min).
   - Verified: F2 pass. Snapshot: exactly the 50 mammals, 50 non-null; every `|` token (less a trailing `?`) is in `MDD_PLACES`; `grep -ciE 'iucn|"extinct"' data/raw/mdd/snapshot.json` prints 0; temp folder gone. Byte check empty.
 
-- [ ] S3. **`deriveListings`: pure, not wired yet.**
+- [x] S3. **`deriveListings`: pure, not wired yet.**
   - Files: `scripts/derive/listings.ts` (new: `readListingInputs`, `parseCurated`, `assertGbifChecklistsFresh`, `assertMddFresh`, `mapChecklistRow`, `mapMddPlace`, `rangeConflicts`, `deriveListings`; imports `checklist-roles.ts`, `MDD_FILE`, `OPEN_LICENSES`, never `gbif-sample.ts`, which would cycle), `scripts/species.ts` (`MismatchKind` + `range-conflict`, `range-not-found`), test `scripts/derive/listings.test.ts` (F3–F6), `e2e/range-listings.spec.ts` (new: E11's JS half, F7).
   - Verified: `pnpm exec tsx --test scripts/derive/listings.test.ts`; `E2E_ARTIFACTS=$S/e2e-s3 pnpm exec playwright test e2e/range-listings.spec.ts`. No caller yet: byte check empty.
 
@@ -655,6 +655,7 @@ Isolated parts only. Written into each test file's header before its code.
 - 2026-11-01: S1 re-read GBIF's data-user terms (archived copy; live page still answers 403 here): both 007 quotes unchanged. Licenses re-checked at the fetch: all 18 role datasets open (12 CC BY 4.0, 6 CC0 1.0).
 - 2026-11-01: deviation from 007 (Finding 5): snapshot holds role-dataset rows only, no-role rows counted per dataset key, metadata fetched for role datasets only. 007's mapping row and Pipeline row updated in the same commit.
 - 2026-11-01: S2 re-read MDD's terms: Zenodo record still `license.id` `cc-by-4.0`, `v2.5`, DOI `10.5281/zenodo.21654811`, `release.toml` same as the design's copy; paper's "initially sourced from the IUCN, HMW, and CMW" unchanged. `fetchMdd` takes an optional pin (default the real one) so tests use a small CSV.
+- 2026-11-01: S3 split `parseCurated` into `scripts/derive/range-curated.ts`: `listings.ts` passed about 300 lines, Target design's trigger. `assertMddFresh` compares `file` only, not `release.version`, so R8's new release fails at `mddCitation` naming `MDD_CITATIONS`, as the table asks.
 
 ## Log
 
@@ -666,5 +667,6 @@ Isolated parts only. Written into each test file's header before its code.
 - 2026-11-01 21:30 UTC: Steps (`planner`): S1–S11, E1–E12, R1–R20, F1–F8. Lead added the Wayback disclosure (Decisions, H12). Spot-checked: byte check empty on current `dist/`; 311 baseline lines; 26 non-mammal ids (15 + 11) = `data/species.json`; `contract.ts:116` logs additions; `scripts/derive/pipeline.ts:118`; PR #17 open. No code.
 - 2026-11-01 21:40 UTC: S1: `ingest gbif-checklists` real fetch (4 min 20 s): 76 names, 73 with keys, two keys on 1, 55, 63, 70 (= spike), 35 role rows on 13 species (identical to spike's), 18 datasets. 679 rows fetched, 216 with `threatStatus` (72 red-list + spike's 144), none kept; grep 0. Typecheck pass, test 771/771, plain build pass, byte check empty. E2E not run: no `dist/` byte moved.
 - 2026-11-01 21:50 UTC: S2: `ingest mdd` real fetch: md5 pin holds, 6,904 rows, exactly the 50 mammals, 50 non-null, 400 tokens (36 `?`), 92 places, none unmapped, no non-place token (= spike); `MDD_PLACES` 243 = spike's file; grep 0; temp folder gone. Typecheck pass, test 783/783, plain build pass, byte check empty. E2E not run: no `dist/` byte moved.
+- 2026-11-01 21:56 UTC: S3: `deriveListings` pure, not wired. F3–F6 written first, seen failing (no module), 23 pass. E11's JS half was written after `rangeConflicts`, against the plan's order; so mutated the code twice (area rows counted; introduced ignored): spec failed both, passes restored. Trial on real snapshots, curated `[]`: 432 rows on 57 species (MDD 400 on 50, GBIF 32 on 17 datasets), 155,391 B, collapsed 2, excluded 1 (GRIIS Australia's blank), 26 not-found, 2 conflicts (66 ZA, 74 DE); MDD 275 of 364 `present` with records (= spike). Typecheck pass, test pass, plain build pass, byte check empty. `$S/e2e-baseline` deleted, per Steps.
 
 ## Summary
