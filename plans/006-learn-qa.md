@@ -39,8 +39,8 @@ pnpm learn:check                                               # every .sql and 
 | f1 | `/learn/foundations/select/` | 4 | 0 | 0 | 8 | 66 | R1 |  |
 | f2 | `/learn/foundations/aggregate/` | 4 | 0 | 0 | 9 | 96 | R1 |  |
 | f3 | `/learn/foundations/join/` | 4 | 0 | 0 | 14 | 70 | R1 | Q15 |
-| f4 | `/learn/foundations/window/` | 4 | 0 | 0 | 7 | 1018 | R1 |  |
-| d1 | `/learn/database-architecture/keys/` | 4 | 0 | 0 | 13 | 26 | R2 | Q1, Q18 |
+| f4 | `/learn/foundations/window/` | 4 | 0 | 0 | 7 | 1018 | R1 | Q40 |
+| d1 | `/learn/database-architecture/keys/` | 4 | 0 | 0 | 13 | 26 | R2 | Q1, Q18, Q54 |
 | d2 | `/learn/database-architecture/normalize/` | 4 | 0 | 0 | 14 | 114 | R2 | Q19, Q20 |
 | d3 | `/learn/database-architecture/indexes/` | 4 | 0 | 0 | 0 | 0 | R2 | Q16, Q21–Q24 |
 | d4 | `/learn/database-architecture/transactions/` | 4 | 0 | 0 | 0 | 2 | R2 | Q25 |
@@ -53,12 +53,12 @@ pnpm learn:check                                               # every .sql and 
 | g5 | `/learn/gis-in-sql/spatial-index/` | 4 | 0 | 0 | 0 | 0 | R3 | Q31 |
 | g6 | `/learn/gis-in-sql/grids/` | 4 | 0 | 0 | 0 | 0 | R3 | Q32 |
 | g7 | `/learn/gis-in-sql/raster/` | 4 | 0 | 0 | 0 | 0 | R3 | Q33–Q37 |
-| s1 | `/learn/spatial-statistics/bias/` | 4 | 0 | 0 | 3 | 394 | R4 |  |
-| s2 | `/learn/spatial-statistics/point-patterns/` | 4 | 0 | 0 | 0 | 0 | R4 |  |
-| s3 | `/learn/spatial-statistics/weights/` | 4 | 0 | 0 | 0 | 0 | R4 |  |
-| s4 | `/learn/spatial-statistics/moran/` | 4 | 0 | 0 | 0 | 0 | R4 |  |
-| s5 | `/learn/spatial-statistics/local/` | 4 | 0 | 0 | 0 | 0 | R4 |  |
-| s6 | `/learn/spatial-statistics/zonal/` | 4 | 0 | 0 | 0 | 0 | R4 |  |
+| s1 | `/learn/spatial-statistics/bias/` | 4 | 0 | 0 | 3 | 394 | R4 | Q38, Q39, Q41 |
+| s2 | `/learn/spatial-statistics/point-patterns/` | 4 | 0 | 0 | 0 | 0 | R4 | Q42–Q46 |
+| s3 | `/learn/spatial-statistics/weights/` | 4 | 0 | 0 | 0 | 0 | R4 | Q47 |
+| s4 | `/learn/spatial-statistics/moran/` | 4 | 0 | 0 | 0 | 0 | R4 | Q48, Q49 |
+| s5 | `/learn/spatial-statistics/local/` | 4 | 0 | 0 | 0 | 0 | R4 | Q50–Q53 |
+| s6 | `/learn/spatial-statistics/zonal/` | 4 | 0 | 0 | 0 | 0 | R4 | Q33, Q40 |
 | e1 | `/learn/etl/extract/` | 4 | 0 | 0 | 0 | 2 | R5 |  |
 | e2 | `/learn/etl/transform-load/` | 4 | 0 | 0 | 0 | 2 | R5 |  |
 | e3 | `/learn/etl/idempotent/` | 4 | 0 | 0 | 1 | 2 | R5 |  |
@@ -67,8 +67,8 @@ pnpm learn:check                                               # every .sql and 
 | p1 | `/learn/power-bi/power-query/` | 4 | 0 | 0 | 0 | 0 | R6 |  |
 | p2 | `/learn/power-bi/model/` | 4 | 0 | 0 | 0 | 0 | R6 |  |
 | p3 | `/learn/power-bi/dax/` | 4 | 0 | 0 | 0 | 0 | R6 |  |
-| p4 | `/learn/power-bi/maps-report/` | 4 | 0 | 0 | 0 | 0 | R6 |  |
-| c1 | `/learn/capstone/game-feed/` | 4 | 0 | 0 | 0 | 0 | R6 |  |
+| p4 | `/learn/power-bi/maps-report/` | 4 | 0 | 0 | 0 | 0 | R6 | Q39 |
+| c1 | `/learn/capstone/game-feed/` | 4 | 0 | 0 | 0 | 0 | R6 | Q39, Q40 |
 
 Dialogs, open over their page:
 
@@ -103,7 +103,7 @@ External: 415 distinct URLs in `dist/learn` (13 hand-written, 402 dataset, sourc
 | 403, other publishers | 7 | Bot challenge or CloudFront refusal here: `10.1093/biosci/bix014` (OUP), `10.5519/qd.dyj48ok9` (NHM), `10.5962/bhl.title.96897` (BHL), `10.71819/{kjau6n,lr0yrg,qu77cz,wrldzz}` (SiBBr, ICMBio). Each DOI resolves; the page behind it is unconfirmed from this server |
 | Dead | 2 | Q3, Q4 below, both dataset DOIs, both at the publisher |
 
-Hand-written links: none dead.
+Hand-written links: none dead. One added since (Q39): `10.5061/dryad.2dh0223`, the Jaguar Movement Database's record, 200 through its DOI.
 
 ## Axe
 
@@ -258,6 +258,7 @@ Hand-only, not run here: Docker and its image tags, the EDB installer and Stack 
 | Q52 | s5 | wrong fact | T0 | Concept's `m2 = Σ_k z_k² / n`, then the Dialects' esda gives `Is`: esda divides by `n − 1` (esda 2.10.0), so a learner comparing sees each off by (n − 1)/n. Says so; no sign or p-value moves | fixed | `qa-fixes.ts` |
 | Q53 | s5 | prose | T0 | "The museum's material samples 21.4 % against 28.1 %": those shares are the whole dataset, specimens and an observation included (`s1-devil`, 569 rows, 558 samples) | fixed | `qa-fixes.ts` |
 | Q54 | d1 | missing step | T0 | The tbls exercise says 16 tables agree, but `setup.py` and every download holding `s4-cells` leave s4's table and view in `learn_curriculum`, so a learner who ran one sees two more (the ledger's open item) | fixed | `qa-fixes.ts` |
+| Q55 | every `.sql` holding `s4-cells` (s2–s5, c1) | prose | T2 | The download's header says each block "changes nothing", and `-- tx: own` runs as written; a `-- boot` block commits its tables (`s4.sql` has the `COMMIT`). Add it to the header, `scripts/learn/assemble.ts:81-82` | queued | `learn:check` download stage |
 
 ## Ledger
 
@@ -294,7 +295,7 @@ R1–R6 read this first; R7 reads only this and what it points to. Prereqs read 
 | role, membership, owner, PUBLIC, schema, `search_path`, default privileges, RLS | d5 | |
 | measures (additive, semi, non), snowflake, degenerate, drill across, slowly changing types, aggregate fact | d6 | |
 | fan-out | d6 says it explains itself in f3, which calls it "the row multiplier" (block `f3-fan-out`). R7: other uses | d6 |
-| `DISTINCT ON` | no; g7 says what it does where it uses it (keeps each record once) | d4 names it as the fix for a duplicated batch. R4 (s2) to look |
+| `DISTINCT ON` | no; g7 says what it does where it uses it (keeps each record once) | d4 names it as the fix for a duplicated batch (s2 answers, below) |
 | `FILTER (WHERE …)`, `LATERAL` beyond f3 | blocks only; `FILTER` reads as itself | d3, d4, d5, d6 |
 | ACL, SQLSTATE, struct | no; the reader's trade | d5, d4, d2 |
 | CRS, ellipsoid, datum, geographic, projected, equal-area, conformal, `geography`, axis order | g1 | |
@@ -306,6 +307,17 @@ R1–R6 read this first; R7 reads only this and what it points to. Prereqs read 
 | `ST_Dump` | g6 (Q32) | |
 | MAUP, scale effect, zoning effect | g6 | |
 | raster, georeference, out-db, tile, nodata, method 1, method 3 (Q33), border cells | g7 | method 1 in s6, with a link |
+| Darwin Core | s1 (Q41) | d6, in passing |
+| basis of record's seven values, telemetry, fix, recording effort, the wording rule | s1 | |
+| complete spatial randomness, clustered, dispersed, quadrat, VMR, Clark-Evans R, study area, kernel density, bandwidth, DBSCAN, core point, noise | s2 | |
+| `DISTINCT ON` | s2 says it where it uses it (one record per pair of coordinates); answers R2's question | d4 |
+| z-score | s2 by use, s4 by definition; s5 agrees (Q43) | |
+| standard error, standard deviation, Poisson, kurtosis | s2, s4 gloss in place or lean on the reader's trade | s2, s4 |
+| weights matrix, binary, distance band, k-nearest, ties, contiguity, rook, queen, spatial lag, island (a unit with no neighbour), k-d tree | s3 | island used in s4's geometry check, with its gloss |
+| spatial autocorrelation, global and local, Moran's I, E[I], normality, randomization, permutation test, pseudo p-value | s4 | |
+| Gi\*, hot and cold spot, two-sided, LISA, quadrants, outlier, conditional permutation, FDR, Bonferroni | s5 | |
+| null hypothesis | s5 (Q50) | |
+| zonal statistics, density, record-to-area ratio, target group, effort-normalized ratio, chi-square, degrees of freedom, EASE-Grid 2.0 | s6 | |
 
 **Claims** (claim | where | checked):
 
@@ -316,7 +328,7 @@ R1–R6 read this first; R7 reads only this and what it points to. Prereqs read 
 | Licences: only CC0 1.0 and CC BY 4.0, the record's or the dataset's when stricter | data, f2, f3 | results |
 | 5 species without records: 3 unsettled, Ili Pika none open, Yangtze turtle's only open record in a CC BY-NC dataset | f1, f3 | results; the turtle's dataset not re-checked |
 | Country rule: one record outside the core region is left out; the sample keeps it | f3 | AGENTS.md rule; ids 4 and 50 have 1 BR record each, Tiger, Chimpanzee, Wild Dog on both lists (lab db) |
-| Devil: 2,000 records, 1,993 around Tasmania, 7 elsewhere; Jaguar: 20 countries, 97.4 % one GPS dataset | f3, f4 | results. R4: s4's cells hold 1,972, say why |
+| Devil: 2,000 records, 1,993 around Tasmania, 7 elsewhere; Jaguar: 20 countries, 97.4 % one GPS dataset | f3, f4 | results. Why 1,972: below |
 | Most species' samples lean on one or two datasets | f4 | 55 of 71 have ≥ 50 % in their top two (lab db) |
 | Before 1900 mostly specimens | f2 | 110 of 140 (lab db) |
 | Exactly 2 animals with `photo_license` `NULL` | f1 | lab db |
@@ -326,12 +338,12 @@ R1–R6 read this first; R7 reads only this and what it points to. Prereqs read 
 | Editors roll back; only the playground keeps changes, and they follow the learner through in-site links until Reset or reload | playground, f1–f4, d1 | `learn-browser.spec.ts:570-590`. So "if you changed them in the playground, Reset database first" is right, though it reads odd |
 | PostGIS results print the first 5 rows and "… n more rows" | setup | `result.ts`. Prose can't ask to compare rows it doesn't print (Q9); R2–R6 watch for it |
 | Lab: 16 tables, admin-1 for nine countries, clips all of Costa Rica and Tasmania, loader needs `postgis` and `postgis_raster` | schema-lab, data, setup | lab db, loader, Q10, Q12. R3 (g7) to agree |
-| s4 at 5 km: 1,094 cells, I = 0.273296, z_rand 15.246590 | setup's arcpy block | s4's results. R4 to agree |
+| s4 at 5 km: 1,094 cells, I = 0.273296, z_rand 15.246590 | setup's arcpy block | s4's results agree |
 | Star: `dim_country` 251 rows, `ZZ` and `-1` unknown members; rows 76, 251, 400, 177, 40,395, 472, 75, 5,578 | setup, schema-star, d6 | d6's results agree; R6 to agree |
 | Hours: 6, 12, 12.5, 12.5, 10, 7, 8 | map, tracks | sums of `curriculum.json` |
 | Every module has an exercise; 8 browser checks, 28 show an answer | map (Q13) | 33 modules, 36 slots |
 
-| Lab: 16 tables, 74 columns, 17 ERD lines; rows 90,072, one transaction | d1, d4 | lab db, `lab.mmd`. Every download holding the boot block `s4-cells` (`s2`–`s5`, `c1`, `setup`) commits `s4_cells` and `s4_neighbours` into `learn_curriculum` (`s4.sql` has the `COMMIT`; seen in the lab db after `setup.ipynb`). `DROP … IF EXISTS` first, so re-running is safe; one run before d1's tbls exercise shows 17 tables. R4 to look |
+| Lab: 16 tables, 74 columns, 17 ERD lines; rows 90,072, one transaction | d1, d4 | lab db, `lab.mmd`. Every download holding the boot block `s4-cells` (`s2`–`s5`, `c1`, `setup`) commits `s4_cells` and `s4_neighbours` into `learn_curriculum` (`s4.sql` has the `COMMIT`; seen in the lab db after `setup.ipynb`). `DROP … IF EXISTS` first, so re-running is safe; one run before d1's tbls exercise shows 17 tables; d1 says so (Q54), s4 says to keep it (Q49), the header queued (Q55) |
 | Devil: 2,000 records, 41 no year, 1,858 since 2000, 101 before; 1,998 `AU`, 2 `US`; 182 in 2010. Jaguar: 1,994 with a year | d3, d4, d5 | results; jaguar lab db |
 | Pangolins: Temminck's 9 (first 1930), giant 10; 13 of 19 before 2018; 2018 a teaching boundary (Gaubert et al. 2018) | d3, d6 | results |
 | Outside ids: 8 `UNIQUE` on `species` (slug, name, six ids); missing gbif 3, col 7, wikidata 0, inaturalist 2, ncbi 1 | d1 | results; f1's three |
@@ -351,17 +363,36 @@ R1–R6 read this first; R7 reads only this and what it points to. Prereqs read 
 | Costa Rica: outline 51,303 km², pieces 49,908, gap 2,070, of it 969 within 5 km of the sea; strips' 3 and 2 records outside the outline | g4 | lab db |
 | Hobart's nearest: 11 records at 7.081 km, 13 at 8.003, one at 8.185, ranks 16 to 30 | g5 | lab db |
 | The 999: 436 under 5 km, 529 from 5 to 25, 34 beyond; 346 bilby on one island (136.1° E, 35.0° S), 133 turtle at 144.5° E, 7.7° S | g5 | lab db; `nearest in metres for all 999` not re-checked |
-| Devil in cells: 1,972 at 5 km, 1,990 at 10 km; Maria Island's 12, 11.7 to 13.9 km off; 6 on other states (3 Victoria, 1 Northern Territory, 2 New Mexico). Top 10 km cell's 475 split 309, 137, 29 | g6 | lab db. R4: s4's cells are these; s4 still to say why 1,972 |
+| Devil in cells: 1,972 at 5 km, 1,990 at 10 km; Maria Island's 12, 11.7 to 13.9 km off; 6 on other states (3 Victoria, 1 Northern Territory, 2 New Mexico). Top 10 km cell's 475 split 309, 137, 29 | g6 | lab db. s4's cells are these; why 1,972: below |
 | Windows 836 × 836, most records on 0.05° steps (Q35); 5,003 + 6,329 marine neritic cells; `g7-scale`'s 78 (46 tied, 31 within 9 cells, 1 on the clip's edge) and the other 78 on montane forest | g7 | lab db |
 | Method 3 over method 1: 0.999074 of the outlines, as `data/learn/habitat.json`'s `estimateOverOutline` | g7 | file; full 35 rows of `g7-country` and 13 of `g7-ex` read |
 | Trinidad and Tobago and Åland, marine +12.5 % and +13.9 % | g7 | Earlier comparison's numbers, not in the repo's sample, not re-checked |
 | IUCN's files: `id_no`, several rows per taxon; the name column's 2023 rename | g3 | `id_no` and the row codes from public listings of IUCN's layers. No IUCN file read, as the rules ask. The rename not re-checked |
+| Basis of record: 7 values, 17,587 / 10,568 / 8,418 / 1,805 / 1,384 / 441 / 192; machine observations from 22 species | s1 | lab db |
+| Of 38 species with ≥ 100 records, 17 over half from one dataset, 6 at 90 % or more; flying fox `INSDC Sequences`, sengi Dakatcha survey | s1 | lab db |
+| Peaks: frog 2017, zebra 2008, tiger 2021 (1,198 Facebook, India), cheetah 2007 (919), each named from its dataset's title; no year beats every year for 11 species, softshell 362 against 87 | s1 | lab db. "Each peak is one project" names three of the four; the flying fox's 61 are one dataset's, Comoros, 2016 |
+| Jaguar Movement Database: 134,690 fixes, 117 jaguars; 1,948 here in BR, PY, AR, CR, MX, 2001 to 2016; all 94 of Costa Rica's, 2014 to 2016 | s1 (Q39), e4, s6, p4, c1 | Sample: lab db. Whole database: its Dryad record and data paper, not in the repo's sample. R5, R6 to agree |
+| Devil's 28 museum specimens: 20 with no year (Q38); 1,367 + 46 atlas, 70.7 %; first year 1599 | s1 | lab db |
+| Devil: 1,784 inside the main island, 188 in a cell outside it (≤ 4.2 km, Q44), 28 in no 5 km cell (12 Maria Island, 10 offshore, 4 mainland, 2 New Mexico) | s2, s4 | lab db. Answers R1's and R3's "say why 1,972". f3's 7 elsewhere are these 6 off Tasmania's states plus one at 150.3° E |
+| s4's cells: 1,094 and 296, 1,972 and 1,990, 256 and 475; 6,246 and 1,620 ordered pairs; I 0.2733, z 15.18, `z_rand` 15.25 | s2–s5, setup | results; setup's arcpy block agrees |
+| Cell 917's and 888's neighbours; 947 and 948 touch; 888's other five hold 6 | s2 | lab db |
+| 5 km cells by neighbours 1, 7, 36, 66, 45, 939; 10 km fewest 2 (6 cells), 221 with six; cell 1051 | s3 | lab db |
+| Outlines: 247, 76 intersect none, 84 by `ST_Touches`, 12 in eight nested pairs, 16 for China; Singapore 3.0 km from Malaysia | s3 | lab db, all 12 listed. g2's eight pairs agree |
+| Mean `y` 0.364 below ln 2; 787 cells empty | s5 | lab db |
+| Costa Rica: 619 records, 591 inside, 501 in a zone (3 in two), 90 in gaps; estimated 51,199 km², arable 31 %, montane 26 %; 216 tree frogs on arable, plantations 2 | s6 | lab db |
+| Marine Neritic 59: 54 inside, up to 3.3 km from the edge, 5 outside | s6 | lab db |
+| `esda` 2.10.0: `fdr` falls back when no test passes (Q51), `Is` uses n − 1 (Q52), `p_norm` one-sided, `q` numbering, value at the mean is low; `DistanceBand` leaves two points at one spot apart; `libpysal` 4.15.1 `Graph.build_*` | s3, s4, s5 | read in the venv's source, or run |
+| DuckDB 1.5.6: `count(DISTINCT (a, b))`, `ILIKE`, `arg_max`, `var_*`, `stddev_pop`, `^`, `**`, `/`, `//`, no `erfc` | s1, s2, s4, s5 | run here |
 
 **R1's flagged numbers:** setup's 3.4, 3.5, 5432, 5433, 2024, 10,000 and 251, f2's 1.0, 4.0, 1,000 and 3.5 (`7 / 2`), f4's 1,000: all right; versions, ports, thresholds or the outside facts above. f1 and f3 flag none.
 
 **R2's flagged numbers:** d1's 1.96 (tbls), d2's 9,581 and 3,152 (above, unchecked), 2025 (SQL Server), d3's 300, 100, 30,000, 1,000 and 300,000 (`ANALYZE`'s sample), 0.62 (Q22), d4's 2005 (its record, lab db), 2019, 496, 143, 1,994 (each derived, added up), 9.5 (version), d5's 9.5, 2016 (versions), d6's 2000, 2005, 2017, 2018, 2010, 2020, 2016 (years in prose): all right. Small integers and rates (seven in ten, 72 %, nine times, a twentieth, three pages, seven ranges, four of them, 84 datasets, 22 classes): each worked out from its result.
 
 **R3's flagged numbers:** g1's 111, 0.1, 1.13, 0.01, 8,500, 1.29, 4.76, 2.6, 3.95, 190, 664, 0.5; g2's 3.10, 0.05, 811, 481, 477; g3's 0.3, 0.1, 933, 40,395, 924, 2023, 247, 0.45; g4's 4326, 0.05, 637, 198, 97.3, 100, 51,978, 675, 1.3, 4.0, 40,395, 0.7, 10,000, 5.2, 4.5, 2,670, 2,500, 206; g5's 4326, 1.36, 147.33, 42.88, 8.185, 81.7, 111.1, 999, 436, 346, 7,088, 7,081; g6's 4.8, 40.6, 43.7, 8.2, 11.1, 2,000, 0.3, 384, 3.1; g7's 2020, 10.5281, 1.6, 14.1, 4326, the grid's constants, 635, 836, the windows' bounds, 0.75, 698,896, 42.7, 110.6, 111.1, the four cell areas, 7,386, 202, 693,893, 5,003, 900, 6,329, 6,785.90, 0.01, 0.978, 618, 121, 132, 0.09, 431, 0.71, 13.16, 1,900, 908, 6.4, 909, 1.3, 501, 502, 3.9, 290, 2,616, 135, 1.1, 2.8, 1200, 500, 11.04, 144, 12.5, 13.9: all right, by the claims above, by arithmetic or as outside facts, bar 81 (Q26) and the order of 3.9 and 4.8 (Q34). Small integers and rates (seven ecoregions, ten pairs, eight pairs, thirteen records, a quarter less, half of the gap, 54 %, 60 %): each worked out from its result.
+
+**R4's flagged numbers:** s1's 40,395, 441, 192, 70.7, 1642, 1,198, 2007, 919, 362, 1976; s2's 1.96, 31,000, 37,000; s3's 1,094, 221, 296, 8.66, 155, 449, 1,972, 1.2; s4's 1.73, 3577, 8,660.254, the rounded 0.2733, 15.18, 0.2036, 15.25, 0.0008, 0.0182, 0.2291; s5's 1.96, 999, 1000, 1.29, 787, 0.001, 3.6, 1,108, 1,972, 1.5; s6's 7.41, 6933, 2.0, 501, 216, 2,107, 0.08, 514, 9.50, 20.01, 3.3, 4326: all right, by the claims above, by arithmetic or as outside facts. Small integers and rates (55 cells by chance, three in four, more than half, a seventh, a quarter, 31 %, 56 %, the chi-square's 77.4 by hand, the FDR cut 47 × 0.05 ÷ 1,094): each worked out. 19 (Q38) and 10⁻¹² (Q48) weren't.
+
+R4's reading of the dialects: DuckDB, esda and libpysal lines as in the claims; PostgreSQL's by `pg_proc` and the blocks. SQL Server and ArcGIS Pro lines read against what's known of those products, not run; no such tool here, as setup says. R7 still owes the verdict on s1→f4, s2→g5, s3→g5. s4's diagram alt text read: says what the figure shows.
 
 R3 prereqs read fine as ordered; R7 still owes the verdict on the out-of-closure links (g2→d3, g3→d3, g4→d3, g5→g4, g6→g5, g7→g5). `g3-iucn` isn't run (`untested`, its reason on the page); read only. Diagrams' alt text read: both say what the figure shows.
 

@@ -468,7 +468,7 @@ Rules for every step. A session reads these, its item, the Architecture sections
 
 - [x] U6. **R3: g1–g7** (130 KB; §4). Reading protocol; T0/T1 fixes.
 
-- [ ] U7. **R4: s1–s6** (115 KB; §4). Reading protocol; T0/T1 fixes.
+- [x] U7. **R4: s1–s6** (115 KB; §4). Reading protocol; T0/T1 fixes.
 
 - [ ] U8. **R5: e1–e5** (132 KB; §4). Reading protocol; T0/T1 fixes.
 
@@ -603,5 +603,6 @@ Live walk or axe isn't needed: same bytes (§8). Record the result and the log's
 - 2026-11-01 14:35 UTC: U4: R1 read (18 pages), qa-read written (1,133 tokens, 739 present, 394 absent), ledger started. 11 T0 fixes, Q5–Q15, each row seen to fail first; finding 8 done, `assemble.ts:190` no change, nothing queued. typecheck pass, `learn:port --check all` pass, build pass, scoped e2e 57/57, build unit tests and `learn-data` pass. Next: U5.
 - 2026-11-01 14:17 UTC: U5: R2 read (d1–d6), every prose number judged, claims checked in the lab db, ledger extended. 10 T0 fixes, Q16–Q25, each assertion seen to fail first; Q16 gives lab blocks the browser's Runs after line. Nothing queued or listed. typecheck pass, `learn:port --check all` pass, module-html tests 18/18, plain build pass, scoped e2e 67/67 (walk, map, labs). Next: U6.
 - 2026-11-01 14:33 UTC: U6: R3 read (g1–g7), every prose number judged, claims and full results checked in the lab db (read only), ledger extended. 12 T0 fixes, Q26–Q37, every row seen to fail first on the unfixed build. Nothing queued or listed. typecheck pass, `learn:port --check all` pass, plain build pass, scoped e2e 57/57 (walk, map). Next: U7.
+- 2026-11-01 14:47 UTC: U7: R4 read (s1–s6), every prose number judged, claims checked in the lab db, esda, libpysal and DuckDB claims run or read in source, ledger extended, R1–R3's open items answered. 17 T0 fixes, Q38–Q54, each assertion seen to fail on the unfixed build; Q39 and Q40 also touch f4, p4, c1, Q54 d1, as the same facts. Q55 queued for U11 (`assemble.ts` header, T2). Nothing listed. typecheck pass, `learn:port --check all` pass, plain build pass, scoped e2e 57/57 (walk, map). Next: U8.
 
 ## Summary
