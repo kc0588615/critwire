@@ -256,6 +256,7 @@ Hand-only, not run here: Docker and its image tags, the EDB installer and Stack 
 | Q50 | s5 | jargon | T0 | "Under the null hypothesis", the course's only use, unexplained; s4 said "with no pattern" | fixed | `qa-fixes.ts` |
 | Q51 | s5 | wrong fact | T0 | `esda.fdr` returns the Bonferroni bound "if every test would pass": it does when none passes (`len(sig_all) == 0`, esda 2.10.0) | fixed | `qa-fixes.ts` |
 | Q52 | s5 | wrong fact | T0 | Concept's `m2 = Σ_k z_k² / n`, then the Dialects' esda gives `Is`: esda divides by `n − 1` (esda 2.10.0), so a learner comparing sees each off by (n − 1)/n. Says so; no sign or p-value moves | fixed | `qa-fixes.ts` |
+| Q53 | s5 | prose | T0 | "The museum's material samples 21.4 % against 28.1 %": those shares are the whole dataset, specimens and an observation included (`s1-devil`, 569 rows, 558 samples) | fixed | `qa-fixes.ts` |
 
 ## Ledger
 

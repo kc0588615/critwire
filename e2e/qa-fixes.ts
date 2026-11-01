@@ -69,6 +69,7 @@ export const QA_FIXES: QaFix[] = [
   { q: "Q50", url: "/learn/spatial-statistics/local/", has: "Under the null hypothesis, here no spatial pattern", not: "Under the null hypothesis a z-score" },
   { q: "Q51", url: "/learn/spatial-statistics/local/", has: "if no test passes", not: "if every test would pass" },
   { q: "Q52", url: "/learn/spatial-statistics/local/", has: "times (n − 1)/n" },
+  { q: "Q53", url: "/learn/spatial-statistics/local/", has: "the museum's dataset 21.4 %", not: "material samples 21.4 %" },
 ];
 
 // What's wrong with each row on the origin `request` points at; [] when every fix shows.
