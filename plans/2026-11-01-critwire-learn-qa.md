@@ -72,7 +72,7 @@ Out:
 
 ## Stages
 
-- [ ] Baseline: install, migrate, run typecheck, lint, unit and E2E tests; record the results under Baseline
+- [x] Baseline: install, migrate, run typecheck, lint, unit and E2E tests; record the results under Baseline
 - [ ] Architecture: `architect` writes findings and the target design
 - [ ] Fable review: `architecture-reviewer`
 - [ ] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
@@ -80,6 +80,16 @@ Out:
 - [ ] Steps: `planner` writes Steps and Verification
 
 ## Baseline
+
+Run 2026-11-01 on `eca544f` (= `origin/main` `ca66440` + mission start), db `critwire_dev` (`.env`). Logs: `/srv/critter-ai/agent-state/missions/critwire-learn-qa/baseline-*.log`.
+- `pnpm install --frozen-lockfile`: up to date. `pnpm learn:venv`: ok. No migrations (build rebuilds `db/schema.sql` tables each run). No lint script; typecheck is the static check.
+- `pnpm typecheck`: pass.
+- `pnpm test`: 748/748 pass (2.9 min).
+- `pnpm test:db`: 140/140 pass (24 min).
+- `pnpm build` (plain): pass; `dist/learn/data/` 96,026,477 B, committed lab data 18,822,906 B (cap 120,000,000 each).
+- `pnpm learn:check`: ok (9.4 min), `checked.json` unchanged, working tree clean after.
+- `pnpm e2e`: 98/98 pass (7.2 min); artifacts `/srv/critter-ai/agent-state/missions/critwire-learn-qa/e2e-baseline/` (808 MB).
+- `dist/` hashes: 311 files, list `/srv/critter-ai/agent-state/missions/critwire-learn-qa/dist-baseline.sha256` (list's sha256 `e9b15e9942e8cceb…`). Live `/srv/apps/critwire/.live` identical (diff empty).
 
 ## Architecture
 
@@ -100,5 +110,7 @@ Out:
 ## Decisions
 
 ## Log
+
+- 2026-11-01 12:00 UTC: Baseline. typecheck pass, test 748/748, test:db 140/140, build pass, learn:check ok, e2e 98/98; dist = live. Next: Architecture.
 
 ## Summary
