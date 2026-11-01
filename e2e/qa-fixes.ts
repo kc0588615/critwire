@@ -19,6 +19,7 @@ export const QA_FIXES: QaFix[] = [
   { q: "Q7", url: "/learn/setup/", has: "docker exec -it learn-pg psql -U postgres -d learn" },
   { q: "Q8", url: "/learn/setup/", has: "export PGHOST=localhost PGPORT=5432 PGUSER=postgres PGDATABASE=learn" },
   { q: "Q8", url: "/learn/setup/", has: "libpq, PostgreSQL's client library", not: "libpq's standard environment variables" },
+  { q: "Q9", url: "/learn/setup/", has: "the lab file checked all 16 before it committed", not: "The same 16 counts mean", from: { file: "site/learn/labs/checked/pg-smoke.txt", values: ["16 rows", "… 11 more rows"] } },
 ];
 
 // What's wrong with each row on the origin `request` points at; [] when every fix shows.
