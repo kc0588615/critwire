@@ -232,6 +232,7 @@ Hand-only, not run here: Docker and its image tags, the EDB installer and Stack 
 | Q26 | g1 | number | T0 | Check: Greenland's north coast "about 81" times; 1 ÷ cos²(83.6°) is 80.5 (lab db, `ST_YMax` 83.5996) | fixed | `qa-fixes.ts` |
 | Q27 | g2 | jargon | T0 | `(ST_IsValidDetail(geom)).valid` carries the worked example, and `(d).reason` the lab; no page said why the parentheses. g6's `(part).geom` and s2, s4 lean on the same syntax. Said once | fixed | `qa-fixes.ts` |
 | Q28 | g2 | prose | T0 | "The square's left half": no square had been mentioned, only a bow-tie. Names it | fixed | `qa-fixes.ts` |
+| Q29 | g3 | missing step | T0 | The IUCN appendix asks for one multipolygon per taxon with the id in `iucn_id`, but not that IUCN's files name it `id_no` and hold several rows per taxon (presence, origin, season). Without a dissolve the block counts a record once per row. Field names from public listings of IUCN's layers, no file read; block not run, as the page says | fixed | `qa-fixes.ts` |
 
 ## Ledger
 
