@@ -76,7 +76,7 @@ Out:
 - [x] Architecture: `architect` writes findings and the target design
 - [x] Fable review: `architecture-reviewer`
 - [x] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
-- [ ] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
+- [x] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
 - [ ] Steps: `planner` writes Steps and Verification
 
 ## Baseline
@@ -93,7 +93,9 @@ Run 2026-11-01 on `eca544f` (= `origin/main` `ca66440` + mission start), db `cri
 
 ## Architecture
 
-Basis: code read at `def8b4c`, plus throwaway measurements on its `dist/` (scripts in `/tmp`, repo untouched; axe-core 4.14.0, Chromium headless, labs-only venv). Numbers below are measured unless marked. The mission re-records them through the design below; nothing here is QA evidence yet.
+Basis: code read at `def8b4c`, plus throwaway measurements on its `dist/` (scripts in `/tmp`, repo untouched; axe-core 4.14.0, Chromium headless, labs-only venv). Numbers below are measured unless marked. The mission re-records them through the design below; nothing here is QA evidence yet. Revised at `b3928b7`: §3's script and the keyboard test were probed the same way (under the lab lock on `critwire_dev`, `tabindex` injected in the page).
+
+Paths: a bare `module-html.ts`, `pages.ts`, `page.ts`, `diagrams.ts`, `schema-html.ts` is under `scripts/build/learn/`; a bare `check.ts`, `cleanup.ts`, `python.ts`, `pg.ts`, `leaks.ts`, `freshness.ts`, `result.ts`, `setup.ts` under `scripts/learn/`; `results.ts`, `editor.ts`, `learn.css` under `site/learn/src/`.
 
 ### Coverage today (Q1)
 
@@ -118,7 +120,9 @@ Basis: code read at `def8b4c`, plus throwaway measurements on its `dist/` (scrip
 5. **Gap: `.venv-learn` is a superset of what a learner installs.** It also holds the ingest pins (`package.json` `learn:venv`), so learn:check can't see a lab needing `rasterio`. No live defect: `.py` imports are stdlib + numpy, scikit-learn, geopandas, sqlalchemy, pyogrio, shapely, libpysal, scipy, esda, psycopg, all pinned. Same one-off closes it.
 6. **Gap: cross-page fragments and prerequisite `href`s** (Q1 table). No live defect. Fix: Target §1.
 7. **Gap: GBIF paging untested.** `scripts/ingest/gbif.ts:107` `fetchDatasets` isn't exported or tested; `gbif.test.ts` covers one page (`toDatasetPage`). No bug by reading. Fix: Target §6.
-8. **Real step gap (seed for R1).** `site/learn/pages/setup.html:89` says run cells "in VS Code or Jupyter", but no step installs Jupyter and `requirements.txt` has none; `assemble.ts:190` repeats it. Small prose fix.
+8. **Real step gap (seed for R1).** `site/learn/pages/setup.html:89` says run cells "in VS Code or Jupyter" and covers VS Code (the editor offers `ipykernel`), but no step installs Jupyter and `requirements.txt` has none. Two sites, two tiers (§7):
+   - `site/learn/pages/setup.html:89` is **T0**: R1 adds the install line.
+   - `scripts/learn/assemble.ts:190` (the `.ipynb` "about" cell: "Open it in Jupyter or VS Code") is **T2**, queued for U11: `assemble.ts` is in the checker's closure (`learn-check.ts` → `check.ts:39`), so any edit moves every block key. No download sha moves (`freshness.ts:108` drops `.ipynb`), but all 11 notebook hashes do (§3). With the install line on the page the sentence reads true, so U11 edits it only if it's still wrong after R1; otherwise U11 records "no change" for it.
 
 Fine, no work: browser blocks, exercises, diagrams; `.sql`/`.py` chain (served = assembled `learn-labs.spec.ts:49-53`; 25 + 11 run on fresh loads `check.ts:438`, baseline log; `checked.json` binds them `freshness.ts:108`); setup's extensions (`postgis`, `postgis_raster`, `setup.html:28,38`; no other `CREATE EXTENSION` in blocks), role (`setup.ts:2-3` = page's Privileges, `check.ts:263` refuses more); slugs (§6); copy rule (no mission names in pages, grep).
 
@@ -126,7 +130,9 @@ Fine, no work: browser blocks, exercises, diagrams; `.sql`/`.py` chain (served =
 
 **§1 Walk (Q2): extend, no harness.**
 - `e2e/learn-walk.spec.ts` (≈ 60 lines): one `test()` per page (47), plus Schema dialog on f1 and Lab schema dialog on d3. Reuses `learnContext`, `waitReady`, `runBlock`. `helpers.ts` gains `learnPageUrls(c)` (moved from `learn-map.spec.ts:147`) and `WIDTHS`/`SCHEMES` (moved from `learn-screens.spec.ts:9-10`).
+- `test.setTimeout(60_000)` per page: measured mean is 3 s, but a page can boot the engine, run several blocks and make 4 axe passes on a busy 2-CPU server (`learn-browser.spec.ts:271` budgets 15 s for blocks alone). The 47 include `/learn/data/` (`learn-map.spec.ts:147`'s list), so axe covers its `<pre class="wrap">` (`page.ts:65`) with no special case.
 - Each test: load; `waitReady` if the page has a textarea; run every `.block.editor`; fill each `.block.exercise` from its own `details code` and Check; on the playground one fixed wide query; open every `<details>`. Then for each width × scheme: `expect.soft` `scrollWidth ≤ width` and `expect.soft` axe violations `[]`. Also `offOrigin` empty, no `pageerror`. Results aren't re-asserted (proven at `learn-browser.spec.ts:273`).
+- Keyboard test (axe says a region can take focus, not that the keys work), one `test()`, ≈ 15 lines: d1 at 375 px, dark, its blocks run. For the first `pre.code:visible` and the first `.result .table-wrap` with `scrollWidth > clientWidth`: press Tab until it's focused (cap 200), assert `:focus-visible` and computed `outlineStyle` not `none`, press ArrowRight, assert `scrollLeft > 0`. Probed with `tabindex` injected: Tab reaches both, ring `auto` 1 px, scroll 40 px and 21 px; g3's diagram the same. `:visible` matters: f3's first overflowing `pre` is in a closed `<details>`, not focusable. Nothing traps Tab (`editor.ts:74` takes only Ctrl/Cmd+Enter) or removes the ring (`learn.css:87` is `h1[tabindex="-1"]` only).
 - Axe: `axe-core` exact pin, e2e only, like `ajv`; no build scripts. `page.evaluate(axe.source)`, then `axe.run()`, default rules. Add to AGENTS.md's Stack line.
 - `test.use({ trace: "off", screenshot: "only-on-failure" })`: `playwright.config.ts:26`'s `trace: "on"` is the 808 MB. No full-page screenshots (`learn-screens` keeps its 12).
 - Output: each test pushes `{page, views, blocks, incomplete}` to `info.annotations`; `results.json` carries it and survives worker restarts. 006's tables come from there.
@@ -135,9 +141,110 @@ Fine, no work: browser blocks, exercises, diagrams; `.sql`/`.py` chain (served =
 - `learn-map.spec.ts`: `:137` collects cross-page fragments, then visits each target (including `/#files`) and asserts the id; `:35` asserts the `href`; `:89` also asserts each module page's `.prereqs a` hrefs equal `m.prereqs.map(moduleUrl)` in order.
 - `e2e/qa-fixes.ts`: `QA_FIXES: { q, url, has, not?, from?: { file, values[] } }[]`, one row per prose fix: page has `has`, lacks `not`, and the recorded result `file` holds each of `values`. Run by the walk spec on dist and by `release/live.spec.ts` live.
 
-**§2 Fix 2, one place.** `focusableScrollers(main)` in `renderPage` (`pages.ts:73`) adds `tabindex="0"` to `<pre`, `class="table-wrap"`, `class="diagram"` in the page's `main`; block code is escaped, so `<pre` can't come from a block. Plus `results.ts:46` and `site/learn/data/index.html:54` by hand (neither goes through `renderPage`). Not in learn:check's closure: no lab key moves. `schema.spec.ts:113`'s keyboard test uses `.focus()`, unaffected.
+**§2 Fix 2, one place.** `focusableScrollers(main)`, pure like its caller `renderPage` (`pages.ts:66`), adds `tabindex="0"` to `<pre(?=[\s>])`, `class="table-wrap"`, `class="diagram"` in the page's `main`, skipping an element that already has a `tabindex`; block code is escaped, so `<pre` can't come from a block. Plus `results.ts:46` and `site/learn/data/index.html:54` by hand (neither goes through `renderPage`). Not in learn:check's closure: no lab key moves. `schema.spec.ts:113`'s keyboard test uses `.focus()`, unaffected.
 
-**§3 Labs (Q3): one-off, recorded in 006, no gate.** In an empty folder under the mission's state, the setup page's Linux commands verbatim bar `uv python install` (`UV_PYTHON_DOWNLOADS=never`, system 3.12): `uv venv`, `uv pip sync --no-build requirements.txt`, the import check; then `uv pip install --constraint requirements.txt ipykernel nbclient`. For each `dist/learn/labs/*.ipynb`: fresh loader as `critwire_lab`, copy into an empty folder, `jupyter-execute --timeout=600`, leak query. Commands as a fence in 006. Probed: 11/11 exit 0, 1–6 s each, nothing left, `rasterio` absent. Delete the venv after. The `.sql`/`.py` result comes from the final learn:check log. 006's setup table: claim | evidence, covering packages, the "44 pins" (`setup.html:87`), uv 0.13.5, pyproj 3.8.0 Intel note, extensions, privileges, ipykernel. Hand-only by nature: Docker, EDB, Windows (the page already says so). External links, same session: `curl` ≤ 2 req/s, 13 + 402 DOIs ≈ 3.5 min; a dead link is a fix or listed issue, never a gate.
+**§3 Labs (Q3): one-off under the lab protocol, recorded in 006, no gate.**
+
+*Venv.* In a `mktemp -d`, the setup page's Linux commands bar two: `requirements.txt` copied from `dist/learn/labs/` instead of `curl`, and no `uv python install` (`UV_PYTHON_DOWNLOADS=never`, system 3.12). Then `uv pip install --constraint requirements.txt ipykernel nbclient`. Deleted after.
+
+*Runner: a throwaway script, not a `learn:check` option.* `qa-notebooks.mts` below, in `/tmp`, its text copied into 006's Method. It changes no repo file, so it's below T0: no block key or download sha moves (`importClosure`, `freshness.ts:152`, follows `learn-check.ts`'s imports only), and it adds no state, so `docs/recovery.md` stands. U2 runs it. It imports the checker's exported functions and copies the lifecycle of `e2e/release/live.spec.ts:102-140`, the same one-file-on-a-fresh-load run, and of `check.ts:516-541`:
+
+| Step | Reuses | Why it matters here |
+|---|---|---|
+| Target | `loadEnv` `scripts/env.ts:8`, `labTarget` `pg.ts:78` → `assertNotLive` `pg.ts:35` | `LEARN_PG_URL`, never `DATABASE_URL`; refuses `critwire` by name before connecting |
+| What it reached | `assertConnectedNotLive` `check.ts:85`, `LAB_ROLE` `pg.ts:10`, one query | Refuses `critwire` by `current_database()`, another role, a superuser, all before the lock and the loader's DDL (order of `check.ts:516-519`). `assertLabRole` `check.ts:263` is private, and exporting it would be T2 |
+| Lock | `takeLabLock` `cleanup.ts:39`, which runs `assertNoStragglers` `:99` | `critwire_dev` is shared across checkouts and the loader drops `learn_curriculum`: refused while a `learn:check` or `test:db` holds it, or an earlier run's Python session lives |
+| Session names | `pythonApp` `python.ts:24`, `pythonEnv` `python.ts:36` (`PGAPPNAME`) | The kernel inherits the run's name, so cleanup can end its sessions and a later run's `assertNoStragglers` can name them. A name of our own would hide them from both |
+| Process | `runPython` `python.ts:68` with `python` = the throwaway venv, `pythonFailure` `python.ts:132` | Group kill, wall-clock timeout, empty cwd and HOME. Its driver is 2 lines of `nbclient`, not `jupyter-execute` through a spawn of our own |
+| Fresh load | `psqlArgs` `pg.ts:100`, `childEnv` `pg.ts:89`, `LOADER` `freshness.ts:31` | As `live.spec.ts:121`, plus the abort signal, `SIGINT` as `check.ts:121` |
+| Leak check | `learnObjects` `leaks.ts:10` minus `lock.known` | As `check.ts:484-487` |
+| Signals | `AbortController` as `learn-check.ts:37-38`, passed to `runPython` and `execFile` | `runPython`'s child is `detached` (`python.ts:78`): without the handler a SIGTERM kills node and leaves the notebook running |
+| Any exit | `lock.release()` `cleanup.ts:55` in `finally` | Ends the run's sessions, sweeps what the lab role made, frees the lock |
+
+The one override is `PATH`: `pythonEnv` puts `.venv-learn` first (`python.ts:38`), which would bring back finding 5's superset. Stops at the first failure, as `downloadsStage` `check.ts:438` does. The kernel leaves `runPython`'s group (`jupyter_client/launcher.py:151`, `start_new_session`), so the group kill misses it. It exits by itself when its parent dies (`ipykernel/parentpoller.py:58-61`), and `release()` ends any session it still holds.
+
+Probed as written, with a cell holding a read lock on `learn_curriculum.occurrences` where it applies:
+
+| Case | Result |
+|---|---|
+| 11 notebooks | all exit 0, 1–6 s each plus a 4 s load, 87 s in all; nothing left |
+| Kernel | runs the throwaway venv's Python, `rasterio` absent, `python` on `PATH` is that venv's |
+| Cell raises | exit 1 with the traceback's tail; 0 sessions, 0 kernels |
+| Timeout (8 s) | fails naming it; 0 sessions, 0 kernels; the next run passes |
+| SIGTERM during a cell, during the load | exit 1; 0 sessions, 0 kernels |
+| Another run holds the lock | refused: "the lab lock (critwire.learn) is held by another learn:check or pnpm test:db" |
+| `LEARN_PG_URL` → `critwire` | refused by name, before connecting |
+
+*Evidence is bound to hashes.* The script prints each file's sha256; 006's Labs rows hold them, with `requirements.txt`'s. U11 and the final Verification compare those with the final `dist/learn/labs/`. If any differs, rerun the whole fence (≈ 1.5 min) and update the rows.
+
+```sh
+# From the repo root, after pnpm build; the script saved as /tmp/critwire-qa/qa-notebooks.mts
+V=$(mktemp -d); cp dist/learn/labs/requirements.txt "$V"
+(cd "$V" && export UV_PYTHON_DOWNLOADS=never && uv venv --python 3.12 && uv pip sync --no-build requirements.txt \
+  && .venv/bin/python -c "import geopandas, esda; print(geopandas.__version__, esda.__version__)" \
+  && uv pip install --constraint requirements.txt ipykernel nbclient)
+pnpm exec tsx /tmp/critwire-qa/qa-notebooks.mts "$V/.venv"; rm -rf "$V"
+```
+
+```ts
+// Runs every dist/learn/labs/*.ipynb in a learner's venv under learn:check's protocol. From the repo root:
+//   pnpm exec tsx <this file> <venv>
+// .mts: outside the package, top-level await needs ESM. Imports at run time, so it reads the repo as it stands.
+import { execFile } from "node:child_process";
+import { createHash } from "node:crypto";
+import { mkdir, mkdtemp, readdir, readFile, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
+import { pathToFileURL } from "node:url";
+import { promisify } from "node:util";
+
+const from = (p: string) => import(pathToFileURL(resolve(p)).href);
+const { loadEnv } = await from("scripts/env.ts");
+const { childEnv, labTarget, LAB_ROLE, pgConnect, psqlArgs } = await from("scripts/learn/pg.ts");
+const { assertConnectedNotLive } = await from("scripts/learn/check.ts");
+const { takeLabLock } = await from("scripts/learn/cleanup.ts");
+const { LOADER } = await from("scripts/learn/freshness.ts");
+const { learnObjects } = await from("scripts/learn/leaks.ts");
+const { pythonApp, pythonEnv, pythonFailure, runPython } = await from("scripts/learn/python.ts");
+
+const venv = resolve(process.argv[2]!);
+const TIMEOUT_S = 600;
+const stop = new AbortController();
+for (const s of ["SIGINT", "SIGTERM"] as const) process.once(s, () => stop.abort(new Error(`interrupted by ${s}`)));
+loadEnv();
+const lab = labTarget(process.env);
+const sql = pgConnect(lab);
+const [who] = await sql`select current_database() as db, current_user as "user", rolsuper as superuser from pg_roles where rolname = current_user`;
+assertConnectedNotLive(who.db);
+if (who.user !== LAB_ROLE || who.superuser) throw new Error(`${who.user}: run as ${LAB_ROLE}, no superuser`);
+const app = pythonApp();
+const lock = await takeLabLock(lab, who.db, { app });
+const tmp = await mkdtemp(join(tmpdir(), "critwire-qa-nb-"));
+try {
+  const mplConfig = join(tmp, "mpl");
+  await mkdir(mplConfig);
+  const env = { ...pythonEnv(lab, { learnBase: pathToFileURL(resolve("dist")).href, app, mplConfig }), PATH: `${venv}/bin:/usr/bin:/bin` };
+  const labs = resolve("dist/learn/labs");
+  for (const name of (await readdir(labs)).filter((f) => f.endsWith(".ipynb")).sort()) {
+    const file = join(labs, name);
+    await promisify(execFile)("psql", ["-q", ...psqlArgs(resolve("dist/learn/data", LOADER))], { env: childEnv(lab), maxBuffer: 64 << 20, signal: stop.signal, killSignal: "SIGINT" });
+    const driver = `import nbclient, nbformat\nnbclient.NotebookClient(nbformat.read(${JSON.stringify(file)}, as_version=4), kernel_name="python3").execute()\n`;
+    const started = Date.now();
+    const r = await runPython(driver, { python: `${venv}/bin/python`, env, timeoutMs: TIMEOUT_S * 1000, signal: stop.signal });
+    const failed = pythonFailure(r, TIMEOUT_S);
+    if (failed) throw new Error(`${name}: ${failed}`);
+    const left = (await learnObjects(sql)).filter((o: string) => !lock.known.has(o));
+    if (left.length) throw new Error(`${name} left behind: ${left.join(", ")}`);
+    console.log(`${name} ${createHash("sha256").update(await readFile(file)).digest("hex")} exit 0, ${((Date.now() - started) / 1000).toFixed(1)} s, nothing left`);
+  }
+} finally {
+  await rm(tmp, { recursive: true, force: true });
+  await sql.end();
+  await lock.release();
+}
+```
+
+*The rest of §3.* The `.sql`/`.py` result comes from the final learn:check log. 006's setup table: claim | evidence, covering packages, the "44 pins" (`setup.html:87`), uv 0.13.5, pyproj 3.8.0 Intel note, extensions, privileges, ipykernel. Hand-only by nature: Docker, EDB, Windows (the page already says so). External links, same session: `curl` ≤ 2 req/s, 13 + 402 DOIs ≈ 3.5 min; a dead link is a fix or listed issue, never a gate.
 
 **§4 Reading (Q4): one reader, fresh sessions, a ledger.** In curriculum order (every prereq precedes its module). No fan-out. Sizes include blocks and results:
 
@@ -158,8 +265,8 @@ Each of R1–R6: read as a GIS specialist and game developer new to the topic; r
 **§5 006's format.** Header: commit walked, reproduce commands. Sections: **Pages** (47: page, URL, views, axe, overflow, blocks, read unit, issues); **Links**; **Axe** (rules, before/after, `incomplete`); **Labs** (47 files: kind, how run, result); **Setup vs downloads**; **Astra leftovers**; **Issues** (`Q<n>`, page, kind, tier, what, state: `fixed <sha>` + catching assertion, or `queued`, or `listed` + recommendation); **Ledger**; **Method** (fences). Fix commits start `Q<n>:`; the last step fills SHAs from `git log --grep`, again if a rebase moves them.
 
 **§6 Goal 4 (Q5).**
-- Slugs: covered; record it, no test. `SLUG` + not-all-digits `scripts/species.ts:132`, via `deriveCore` `derive/pipeline.ts:115`, reached by `readBuildInputs` `inputs.ts:63` before any write (`inputs.ts` itself only calls it), and `load.ts:13`. Tests: V2 `species.test.ts:75-80` (`../x`, `a/b`, empty, `123`). Second guard: `childFile` `build/paths.ts:8` at `build.ts:54-55`, tested `paths.test.ts:11`.
-- GBIF: the test is needed. Export `fetchDatasets`; extend `scripts/ingest/gbif.test.ts`, failure modes listed in its header before the code (owner's brief asks a test on existing code; AGENTS.md's isolated-test rule applies; E2E can't reach GBIF). `mock.method(globalThis, "fetch", …)` by `facetOffset`. Modes: (a) a page of 300 taken as the end, datasets lost: 305 datasets asks offsets 0, 300, 600, keeps 305, stores offset 0's URL; (b) exactly 300 stops after the empty page at 300; (c) a short page ending paging early; (d) overlapping pages: "repeated across pages"; (e) total moves on page 2: "index moved"; (f) facet counts short of `count`: "sum to". Pacing 500 ms (`http.ts:10`), ≤ 1.5 s a case.
+- Slugs: covered; record it, no test. `SLUG` + not-all-digits `scripts/species.ts:132`, via `deriveCore` `scripts/derive/pipeline.ts:115`, reached by `readBuildInputs` `scripts/build/inputs.ts:63` before any write (`inputs.ts` itself only calls it), and `scripts/load.ts:13`. Tests: V2 `scripts/species.test.ts:75-80` (`../x`, `a/b`, empty, `123`). Second guard: `childFile` `scripts/build/paths.ts:8` at `scripts/build.ts:54-55`, tested `scripts/build/paths.test.ts:11`.
+- GBIF: the test is needed. Export `fetchDatasets`; extend `scripts/ingest/gbif.test.ts`, failure modes listed in its header before the code (owner's brief asks a test on existing code; AGENTS.md's isolated-test rule applies; E2E can't reach GBIF). `mock.method(globalThis, "fetch", …)` by `facetOffset`. Modes: (a) a page of 300 taken as the end, datasets lost: 305 datasets asks offsets 0, 300, 600, keeps 305, stores offset 0's URL; (b) exactly 300 stops after the empty page at 300; (c) a short page ending paging early; (d) overlapping pages: "repeated across pages"; (e) total moves on page 2: "index moved"; (f) facet counts short of `count`: "sum to". Pacing 500 ms (`scripts/http.ts:10`), ≤ 1.5 s a case.
 
 **§7 What binds a fix (Q6).**
 
@@ -175,27 +282,36 @@ Each of R1–R6: read as a GIS specialist and game developer new to the topic; r
 - `learn:port --check all` sees blocks and results only. 004 also holds module prose (`plans/004-learn-curriculum.md:7042,7195`): a prose fix greps 004 and changes the same sentence in the same commit. A prereq fix also edits 004's `**Prereqs:**`.
 - Every fix's assertion: prose → `QA_FIXES` row; link → crawl; alt → `learn-map.spec.ts:129`; layout, axe → walk; exercise → `WRONG` row `learn-browser.spec.ts:320`; code → test named there.
 - `checked/` comes from whole runs only; `--module` to iterate.
+- Throwaway scripts (`qa-notebooks.mts`, `qa-read`) sit below T0: their text lives in 006, which enters no key. A T2 change can move `.ipynb` hashes; then §3's evidence rule applies.
 
-**§8 Release (Q7).** `e2e/release/live.spec.ts:36-47` already proves every dist file, so every `/learn/` page, is 200 with dist's bytes, including CSS and app. Missing only: one test running `QA_FIXES` (`has`/`not`) against the origin, for "fixed pages show the fix". No walk or axe live: same bytes, same result. Release artifact folder replaces the intermediate one.
+**§8 Release (Q7).** `e2e/release/live.spec.ts:36-47` already proves every dist file, so every `/learn/` page, is 200 with dist's bytes, including CSS and app. Missing only: one test running `QA_FIXES` (`has`/`not`) against the origin, for "fixed pages show the fix". No walk or axe live: same bytes, same result.
 
-**§9 Units and heavy-run budget.** For the planner; 12 of 25 steps, spare room for review fixes or splitting a read.
+Evidence: the release smoke doesn't replace the walk's coverage, so the final Verification's folder (`e2e-final/` in the mission's state) stays with the release. It already holds the walk's HTML report and `results.json`, and `learn-screens`' 12 pages at 2 widths and 2 themes, so no new code. 006 names the path. Disk rule (two folders): release's re-verify overwrites `e2e-final/` rather than adding a third, and the release smoke's folder takes the intermediate slot.
+
+**§9 Units and heavy-run budget.** For the planner; 13 of 25 steps, spare room for review fixes or splitting a read.
 
 | Unit | Work | Heavy runs |
 |---|---|---|
-| U1 | Walk, axe dep, `learn-map` tightening, `qa-fixes.ts`, live test, fixes 1 and 2, 006 skeleton (one unit: the walk can't pass without the fixes) | build; `learn-walk learn-map learn-labs schema` |
-| U2 | §3 one-offs; 006 tables | none |
+| U1a | Walk with keyboard test, axe dep, fixes 1 and 2, 006 skeleton (one unit: the walk can't pass without the fixes) | build; `learn-walk learn-labs schema` |
+| U1b | `learn-map` tightening, `qa-fixes.ts`, live test | build; `learn-walk learn-map` |
+| U2 | §3 one-offs: notebooks under the lab lock, link `curl`; 006 tables | notebook script (≈ 1.5 min) |
 | U3 | §6; 006 | one test file |
 | U4–U9 | R1–R6 with T0/T1 fixes | named specs |
 | U10 | R7 | named specs |
-| U11 | Lab batch, if queued; else check off | one learn:check, full e2e |
+| U11 | Lab batch, if queued (`scripts/learn/assemble.ts:190` only if R1 left it wrong); then §3's hash check; else check off | one learn:check, full e2e; notebook script if a hash moved |
 | U12 | SHAs, 006 complete, drop leftovers | none |
 
-Full `pnpm e2e`: at most U11 + final, plus release's re-verify. Whole `learn:check`: U11 + 2 final + release's. `test:db`: not in the DoD; only if the branch touches a `*.dbtest.ts`-covered file (none expected). Scoped runs use `E2E_ARTIFACTS=/tmp/critwire-qa-e2e`, removed at session end; `e2e-baseline/` goes when the first folder after it is written.
+Full `pnpm e2e`: at most U11 + final, plus release's re-verify. Whole `learn:check`: U11 + 2 final + release's. Notebook script: U2, plus a rerun only if §3's hash check fails. `test:db`: not in the DoD; only if the branch touches a `*.dbtest.ts`-covered file (none expected). Scoped runs use `E2E_ARTIFACTS=/tmp/critwire-qa-e2e`, removed at session end; `e2e-baseline/` goes when the first folder after it is written.
 
 ### Rejected alternatives
 
 - Prose-number gate: 381 false positives need an allowlist, and a hit doesn't prove the context.
 - Permanent notebook gate: a third pin set (about 32 more packages) for cells E2E already proves equal to the `.py`'s.
+- `learn:check --notebooks`: edits `check.ts`, so T2, moving every key for a one-off, and it still needs that pin set.
+- Committed runner outside the closure: a third permanent copy of the protocol, after `check.ts` and `live.spec.ts`, run once or twice.
+- Shared `withLabRun()` for `check.ts` and `live.spec.ts`: T2 churn on two working callers, out of a QA mission's scope.
+- `jupyter-execute` through a spawn of our own: loses `runPython`'s group kill, timeout, empty HOME.
+- Running on after a failed notebook, or rerunning only changed ones: more branches to save seconds; `downloadsStage` stops too and the whole run is 1.5 min.
 - Labs-only `.venv-learn`: it serves `test:db` and the ingests; the throwaway venv proves the same.
 - External links in E2E: not deterministic, and 402 DOIs at ≤ 2 req/s.
 - `@axe-core/playwright`: a package for three lines.
@@ -244,6 +360,17 @@ SHOULD-CONSIDER:
 
 ## Revision notes
 
+- Astra MUST-FIX 1 (notebook runner outside the protocol): fixed. §3 is now a throwaway script using `labTarget`, `assertConnectedNotLive`, `takeLabLock`, `pythonApp`, `pythonEnv`, `runPython`, `pythonFailure`, `learnObjects` and `lock.release()`, no repo file changed, below T0, in U2. Probed on success, cell failure, timeout, SIGTERM, held lock and `critwire`.
+- Fable MISSED 1, with the Decisions correction: fixed. Finding 8 says `setup.html:89` is T0, `scripts/learn/assemble.ts:190` is T2, queued for U11; U11 edits it only if R1's install line leaves the sentence wrong.
+- Fable SC1 (citations): accepted, verified, fixed. `scripts/learn/assemble.ts:190`, `scripts/build.ts:54-55`, `scripts/http.ts:10` are right. `renderPage` is `pages.ts:66`; Fable's `:65` is its doc comment. Added a paths key and full paths in §6.
+- Fable SC2 (`<pre(?=[\s>])`, skip existing `tabindex`, stay pure): accepted, §2.
+- Fable SC3 (per-page timeout): accepted, §1, 60 s.
+- Fable SC4 (U1 too big): accepted, split into U1a and U1b. U2–U12 keep their numbers, since Decisions and finding 8 cite U11.
+- Fable SC5 (data page's `<pre class="wrap">`): accepted, no work; the page is one of the 47, noted in §1.
+- Astra SC1 (keep the walk's reports and screenshots): accepted, no new code. The final Verification's folder already holds them; §8 says how it stays within the two-folder disk rule.
+- Astra SC2 (bind notebook evidence to hashes): accepted, §3. Rerun the whole fence on any difference; selecting notebooks saves seconds.
+- Astra SC3 (keyboard and visible focus): accepted, one test in the walk spec, §1, probed on d1. The existing keyboard test (`schema.spec.ts:113`) covers dialogs, not scrolling.
+
 ## Steps
 
 ## Verification
@@ -263,5 +390,6 @@ SHOULD-CONSIDER:
 - 2026-11-01 12:32 UTC: Fable review by `architecture-reviewer`: APPROVE, 0 MUST-FIX, 1 MISSED (`assemble.ts:190` is T2, not T0), 5 SHOULD-CONSIDER. Plan only, no checks run. Next: Astra review.
 - 2026-11-01 12:36 UTC: Corrected Fable's reason for `assemble.ts:190` being T2 (closure key, not download sha; see Decisions). Read code only, no checks run. Next: Astra review.
 - 2026-11-01 12:28 UTC: Astra review: APPROVE_WITH_CHANGES, 1 MUST-FIX (notebook runner must use lab lock, guarded db target, cleanup), 3 SHOULD-CONSIDER. Plan only, no checks run. Next: Revision.
+- 2026-11-01 12:44 UTC: Revision by `architect`: Astra MUST-FIX resolved (notebook run = throwaway script under lab lock, target guards, cleanup), finding 8 tiers fixed, all 8 SHOULD-CONSIDER accepted, U1 split (13 of 25 steps). Script probed: 11/11 notebooks, cell failure, timeout, SIGTERM, held lock, `critwire` refused. No suite run (plan only). Next: Steps.
 
 ## Summary
