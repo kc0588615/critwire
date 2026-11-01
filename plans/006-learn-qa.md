@@ -225,6 +225,7 @@ Hand-only, not run here: Docker and its image tags, the EDB installer and Stack 
 | Q19 | d2 | jargon | T0 | `read_parquet` and `species.parquet` carry the worked example, and no page says what Parquet is. Defined at the first module that uses it | fixed | `qa-fixes.ts` |
 | Q20 | d2 | prose | T0 | "The outside ids from Wikidata and GBIF", under a result whose first row is `ids.col`, from the Catalogue of Life | fixed | `qa-fixes.ts` |
 | Q21 | d3 | prose | T0 | Result: "40,386 of the pangolin's 40,395 rows". The pangolin has nine; 40,395 is the table | fixed | `qa-fixes.ts` |
+| Q22 | d3 | number | T0 | "`year` is partly ordered (0.62), the rest close to 0", over a result showing `license` at 0.39. 0.62 is the sixth row, which the page doesn't print; seen in the lab db, 0.624 | fixed | `qa-fixes.ts` |
 
 ## Ledger
 

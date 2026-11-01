@@ -3071,7 +3071,7 @@ Bitmap Heap Scan on occurrences (actual rows=107 loops=1)
         Index Cond: ((year >= 1850) AND (year <= 1899))
 ```
 
-9. What the planner believes about `occurrences`. A negative `n_distinct` is a share of the rows: −1 means every value is different. `id` has a correlation of 1 because the loader writes the rows in id order; `year` is partly ordered (0.62), the rest close to 0.
+9. What the planner believes about `occurrences`. A negative `n_distinct` is a share of the rows: −1 means every value is different. `id` has a correlation of 1 because the loader writes the rows in id order; `year` is partly ordered (0.62), `license` a little (0.39), the rest close to 0.
 
 ```sql
 -- q: d3-stats
