@@ -8,7 +8,37 @@ For the owner: how critwire could publish where sources list each animal as nati
 
 ## Summary
 
-Written last, once every section below is final.
+**Recommended sources.** One per claim, all at country level:
+
+- **MDD v2.5** for mammals' native lists (CC BY 4.0), if O1 is yes.
+- **GBIF checklist distributions**, by dataset allowlist, for introduced and native-but-absent rows: 18 datasets with a role, each CC0 or CC BY. GRIIS and the Central Asia checklist only if O2 is yes.
+- **A hand-written curated file** for the 26 non-mammals' native rows, if O3 is (a). No open native list exists for them.
+
+The other 19 sources are rejected or, for Natural Earth, give only the spatial unit, each with its license quoted under Sources. IUCN data is never used, and its checklist is dropped by key.
+
+**Coverage, measured on all 76:**
+
+| Owner's answers | Rows | Species | What it holds |
+|---|---|---|---|
+| All defaults | 10 | 5 | Introduced only; no native or historical rows |
+| O2 only | 32 | 12 | Introduced, plus 6 native-but-absent rows |
+| O1 only | 410 | 54 | Native lists for all 50 mammals |
+| O1 and O2 | 432 | 57 | 155,392 B of JSON |
+| O1, O2 and O3 (a) | 432 + curated | 76 | Native rows on every species |
+
+MDD matched 50 of 50 mammals by exact name. Mammals' open-record countries sit on a listing 75 % of the time with MDD (285 of 379); across all 76, without MDD, 0.85 % (4 of 472). The conflict gate was too few to judge: 9 introduced mammal rows, under the 20 it asks for.
+
+**Shape.** A new file family, `/v1/range-listings.{json,csv,parquet}`: one row per claim a named source makes, 11 columns, with `origin` and `presence` as separate columns. Conflicts ship, both rows shown. `species.*`, `countries.*` and all of `dist/learn/` stay byte-identical, and `range.countriesWithOpenRecords` is untouched. No row means critwire holds no open listing, never that the animal isn't there.
+
+**Your choices** (details under Owner's choices):
+
+- **O1:** publish MDD's lists, given their stated IUCN ancestry? Recommend yes.
+- **O2:** publish GRIIS rows, given their IUCN-group publisher? Recommend yes.
+- **O3:** a curated native file for the 26 non-mammals? Recommend (a).
+- **O4:** change the copy rule when a page first reads this file? Recommend yes.
+- **O5:** which Learn additions, when? Recommend s1, f3 and e4, one small mission after the build goes live.
+
+All defaults publish only 10 rows, so the build shouldn't start until O1 or O2 is yes. The build brief is `plans/briefs/critwire-native-ranges-build.md`.
 
 ## Sources
 
@@ -429,20 +459,107 @@ The wording names no source, so an O1 no leaves nothing false or dangling: `nati
 
 ## Pipeline
 
-To follow.
+| Command | Owns | Notes |
+|---|---|---|
+| `pnpm ingest mdd` | `data/raw/mdd/snapshot.json` | **Exists only after O1 is a recorded yes.** Pinned file (md5 `533e662fd5b8f66a5f56c191e7efac44`); cut columns and names only, keyed by base mammal name (null = no match); under 1 min |
+| `pnpm ingest gbif-checklists` | `data/raw/gbif-checklists/snapshot.json` | Per species `keys` and rows, the `allowlist` it used, drop counts per reason. About 6 min at ≤ 2 req/s: the spike's GBIF part took 630 requests, which at its 0.55 s throttle is 347 s |
+| hand, agents + owner (O3) | `data/review/range-curated.json` | Only if O3 is (a). Each row cites its reference, and no IUCN page. `sourceKey` `curated`, `license` `CC BY 4.0` (critwire's own, `DATA-LICENSE.md`), `doi` null |
+| `pnpm derive` | `data/range-listings.json` (`{sources, rows}`, like `countries.json`), `data/review/range-conflicts.json` | Pure and offline, in `deriveCore` before `matchCountries` (`scripts/derive/pipeline.ts:119`), which also gets the listing codes, so a code with no country row throws. Every code the spike's rows and places use has a row today. `MDD_PLACES` crosswalk: an unknown place throws |
+| `pnpm build` | `dist/v1/range-listings.{json,csv,parquet}` | `scripts/build/range-listings.ts`, like `countries.ts`; after `writeCountries` (`scripts/build.ts:58`) |
+
+**The allowlist in the snapshot.** The ingest's constant holds dataset → role, `area` and reason, with O2's datasets only after a yes. The snapshot's `allowlist` holds dataset → role and `area` only. `reason` stays in the ingest's constant and in this file, because `assertNoIucnData` (the pattern at `scripts/ingest/gbif.ts:138`) walks the snapshot, and a reason may name the tie.
+
+**The guard.** `assertNoIucnData` (`scripts/raw.ts:95`) catches `iucn` and `additionalStatus`, but not `threatStatus` or `appendixCites`: the spike met 144 rows with `threatStatus` on other datasets. Rows and metadata are written through a key allowlist, as the spike's `fetch.py` does, which keeps both out, and the guard gains `threatStatus`. It covers snapshots only; `attribution.json` and `DATA-LICENSE.md` may name IUCN to state a tie.
+
+**O1 gate.** Nothing of MDD enters `data/`, `scripts/` or `dist/` until O1 is a recorded yes (the handoff reply, copied to the build plan's Decisions). Until then the build has no MDD ingest, no `MDD_PLACES` and no MDD rows; the brief makes these steps conditional.
+
+**Key staleness.** The GBIF rows belong to the taxon they were fetched for, and base names don't show a changed key. One function, `checklistKeys(g)` in `scripts/derive/gbif.ts`, gives a species' keys from `deriveGbif`'s result: the unique non-null `g.id`, `g.taxonKey`. The ingest fetches those and records them. `deriveCore`, right after `deriveGbif` (`scripts/derive/pipeline.ts:98`), compares them, the pattern of `assertGbifFresh` (`scripts/derive/gbif.ts:30`) and `assertBaseNames` (`scripts/raw.ts:89`): `staleSnapshot` names the species and the ingest, and nothing is written. Today that's 73 species with a key, 4 of them with two.
+
+**Refresh cost:** about 7 min of fetching (GBIF 6, MDD 1), then derive and build. No `learn:check`, no DOI, no habitat, no sample. A species change adds these two ingests to its existing ≈ 1 h.
+
+**DOI impact:** none. Rows cite each dataset's own DOI; the derived-dataset DOIs cover occurrence counts, which don't move.
+
+**The plain build refuses, and `--draft` lifts none of these:**
+
+- a stale `data/range-listings.json` ("run pnpm derive");
+- a snapshot not covering the base names ("run pnpm ingest …");
+- a checklists snapshot whose `keys` differ from a species' current keys, or whose `allowlist` differs from the constant ("data/raw/gbif-checklists is stale (Emydoidea blandingii: keys): run pnpm ingest gbif-checklists");
+- an MDD pin or citation mismatch;
+- a license other than the two, or, in a snapshot, an IUCN string or `threatStatus` key;
+- a value or combination off the Data model's mapping, naming the row;
+- an unmapped place or a country with no row;
+- a contract break.
+
+**`/learn/data` doesn't change in the first build.** The build's check, against that mission's own Baseline hash list: only `v1/range-listings.*` are new, only `index.html` and `v1/attribution.json` differ, and every other file, including all of `dist/learn/` and `v1/species*`, is byte-identical. Learn's credits don't read `attribution.json`'s contents (`scripts/build/learn/credits.ts`).
+
+**Risk.** `/v1/species/{key}/distributions` sits on the legacy backbone. It answered all 73 keyed species in the spike, serving datasets published in late October 2026. If GBIF retires it, the ingest fails loudly, the committed snapshot stands and builds keep working.
 
 ## Learn tie-in
 
-To follow.
+Recommended: **no Learn change in the first build**, then a small separate mission, whose native-row lessons (s1, f3) need O1 or O3 (a). Each addition follows the 004-and-site-together rule. A browser block needs one entry in `V1_INPUTS` (`scripts/build/learn/data.ts:80`) and in `DATA_FILES` (`site/learn/src/engine.ts:25`), which changes `manifest.json`, but no loader table.
+
+| Module | What it gains | Path | Cost |
+|---|---|---|---|
+| **s1 Bias** | Answers its own question, "What can records say about where an animal lives, and what can't they?": records against native listings, per species. Spike, mammals: 275 of 364 native rows have open records (0.7555), and 94 record countries sit on no listing, each one a question to ask | Browser | One block, prose, results |
+| **f3 Joins** | An anti join: listed native countries with no open record (89 of those 364), next to "Which have no records at all?" | Browser | One exercise |
+| **d1/d2** | A long table against a list in a cell; a composite key; origin and presence as two facts | Browser | One block |
+| **e4 Provenance** | A license and quality case from what the spike met, on made-up rows: 44 of the 88 datasets met are CC BY-NC, a catalogue marks animals introduced in their home countries, a row to drop by dataset | PostGIS, inline rows | One block |
+| **g3 Spatial joins** | An open version of the appendix on records against a range (`site/learn/modules/g3.html:43`, today IUCN-download-only): records per outline against listed countries | PostGIS: a 17th lab table, so loader, `LAB_TABLES`, `lab.mmd`, `checked/` | Largest; defer |
+| **c1 Feed** | A flag on each cell's country (listed or not) | Feed schema and results change | Defer |
+
+**Copy rule.** "Records, never range" (`AGENTS.md:68`) stays for records. A page reading this file needs one added line: *native, introduced and range words describe only `/v1/range-listings` rows, worded as what a named source lists ("MDD lists it in Kenya as native or introduced before 1500"); records are still never range.* That's O4. `site/learn/modules/s1.html:19`, `p4.html:7`, `c1.html:35`, `site/index.html:140` and `DATA-LICENSE.md` are all true and stay true for records; each needs a sentence only when its page first reads the file.
 
 ## Owner's choices
 
-To follow.
+Nothing in this design waited on these. The build brief carries the defaults, and the build starts when you start it.
+
+**Defaults, for any question unanswered when the build starts: no MDD, no GRIIS or other O2 dataset, O3 (b).** An all-defaults build publishes 10 rows on 5 species, all introduced, none native. So **don't start the build until O1 or O2 is yes.**
+
+| Answer | What it flips in the build | Rows, spike |
+|---|---|---|
+| O1 yes | Adds `ingest mdd`, `MDD_PLACES`, `native-or-pre-1500` rows, `range-not-found`, MDD's attribution and ancestry note | + 400, all 50 mammals |
+| O2 yes | Adds GRIIS and the other O2 dataset to the allowlist, with their ties stated | + 22: GRIIS 15 on 9 species, Central Asia 7 |
+| O3 (a) | Adds `data/review/range-curated.json` and `native` rows for the 26 | By hand: at least one row on each of the 26 |
+| O4, O5 | Nothing in this build: they belong to the Learn mission | None |
+
+- **O1. May critwire publish MDD's country lists, given their IUCN ancestry?** They're the American Society of Mammalogists' curated work, under CC BY 4.0, but the paper says the data were "initially sourced from the IUCN, HMW, and CMW", and no row says which. **Recommend yes**, with no IUCN field stored and the ancestry stated in attribution and `DATA-LICENSE.md`.
+  - **Worth:** 400 rows on all 50 mammals by exact name, 36 of them uncertain. It's the only practical open route found to country-level native lists. It lifts open-record countries on a listing from 4 of 472 across all 76 to 285 of 379 for the mammals.
+  - **Agreement:** only 9 introduced rows on 4 mammals exist to test it against, under the 20 the gate asks for, so the conflict rate was too few to judge. Fewer than 5 of them conflict. Other lists' native claims agree with MDD: at least 95 % of 78 such rows.
+  - **The honest risk:** IUCN's terms bar sharing what's made from its ranges (`site/learn/modules/g3.html:44`), and this is a step removed from that, not free of it.
+  - **No answer means no MDD anywhere:** no rows, nothing in `data/`, and even this spike kept only aggregates, because your rule is non-negotiable. A no leaves the curated route (O3) as the only native source.
+- **O2. May critwire publish GRIIS rows, given that an IUCN specialist group publishes them?** They aren't Red List data: national experts write them, and each is CC BY or CC0. The same question covers the one other kept dataset that says it uses IUCN, the Central Asia checklist (a stated cross-check; its 7 rows include all 6 `native` + `absent`, the file's only historical signal). **Recommend yes.** It's the only global introduced source found.
+  - **Worth:** GRIIS alone reaches only 9 species, 15 rows from 10 datasets; with every other kept dataset, 32 rows on 12.
+  - **Agreement:** the same 9 rows, too few to judge.
+  - **No answer means all of them are left out:** 10 rows on 5 species from the other lists, and no historical rows.
+- **O3. The 26 non-mammals have no open native list.** Either (a) a hand-written `data/review/range-curated.json`, agents' entries you review, each row citing its reference, under the existing rule "Bare trait values may come from any cited source in our own words; bulk imports only from open datasets", never reading IUCN pages, about two sessions plus your review; or (b) introduced rows only for them, no native rows. **Recommend (a).** It's the one route where every row names its reference, so IUCN can be kept out row by row, and with O1 it takes native coverage from 50 to 76. Wikidata won't shortcut it: 4 of the 26 have a referenced value. Without an answer: (b).
+- **O4. Change the copy rule as in Learn tie-in** when a page first reads this file. **Recommend yes,** only then, in that change.
+- **O5. Which Learn additions, and when?** **Recommend** s1, f3 and e4 as one small mission after the build goes live; d1/d2 if it fits; defer g3 and c1. s1 and f3 need O1 or O3 (a), because they read native rows. e4 uses made-up rows, so it needs neither.
 
 ## Follow-up
 
-To follow.
+Not in the first build, and nothing here depends on them.
+
+- **Captive records may reach `range.countriesWithOpenRecords`.** `scripts/ingest/gbif.ts:17` filters by `basisOfRecord` only, and 4,433 of the Asian elephant's 6,884 open records carry `degreeOfEstablishment=captive` (probe, one species; not measured across the 76). Open-record countries outside every listing, a possible symptom, come to 94 for mammals, 5,916 records or 1.55 % of mammal records, and 70 % of those countries already carry a `country-*` flag. The fix changes `/v1` and Learn: published countries move, and `BASIS_OF_RECORD` is shared with the lab sample's download. So it costs at least the ≈ 1 h of a new sample plus ≈ 1–2 h of `learn:check --update` and results (`AGENTS.md`, Countries), and it needs its own plan. Measure first: the share of captive-labelled records per species, and which countries would fall away.
+- **Per-species JSON,** `/v1/range-listings/{id}.json`. Additive. Not needed at 155,392 B.
+- **Polygons,** under the reserved name `ranges.parquet` (`plans/001-mvp.md:49`). GARD first for the turtles if O3 is (b); it needs a spatial pipeline and has native rows only.
+- **Overrides for listings.** Additive, once a real conflict needs one. Today conflicts are shown, and fewer than 5 exist.
+- **Re-read the archived quotes** when the build starts, and a dataset's license at each ingest (the ingest refuses any but the two). A dataset met later has no role until a person gives it one.
 
 ## Rejected
 
-To follow.
+- **Fields under `range` in species records:** CSV prefix rule, one source per field, and it changes `dist/learn/manifest.json`.
+- **Native list only, no introduced:** the brief asks for both.
+- **Merging every GBIF checklist by its fields:** the Brazil catalogue and COLSA rows prove that's wrong (Sources).
+- **Deriving native from records (a core-region rule):** records aren't range.
+- **One `status` column:** blurs uncertain native with doubtful introduced.
+- **`extirpated` as a value:** GBIF's `ABSENT` doesn't say so, and may also retract an old claim.
+- **Plain `native` for MDD:** its rule includes introductions before 1500.
+- **`area` from `locality`:** free text ("Belgium", "Flanders", "Flemish Region") makes near-duplicate keys.
+- **Keeping a cut of MDD in the spike folder:** retains the lists O1 asks about.
+- **Leaving MDD out of the spike:** the brief requires its numbers, and you couldn't weigh O1 without them.
+- **Polygons (GARD, range maps, RESOLVE):** native only, hundreds of MB to 20 GB, and a spatial pipeline; countries are what the sources and the game can use now.
+- **An overrides file now:** conflicts are shown, and nothing needs one yet; additive when something does.
+- **Conflicts in `mismatches.json`:** breaks the review queue (Data model).
+- **A Learn lab table now:** loader, manifest, ERD and `checked/` churn with no need.
+- **Using the CC BY GBIF copy of the IUCN checklist:** your rule forbids it whatever the license.
+- **Sources,** each for the reason in its row: COL, GBIF occurrence fields, Wikidata, AmphibiaWeb, Reptile Database, Amphibian Species of the World, CITES Species+, iNaturalist, GARD, Mammal range maps, ITIS, RESOLVE, FishBase, SeaLifeBase, WoRMS, Avibase, Clements, IOC.
