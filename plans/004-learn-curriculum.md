@@ -3885,7 +3885,7 @@ ON CONFLICT (species_id, year) DO NOTHING;
 -- result: d4-no-arbiter · error: statement 1 of 1: there is no unique or exclusion constraint matching the ON CONFLICT specification
 ```
 
-And a batch that holds the same key twice can't decide which row wins, so `DO UPDATE` refuses it: remove duplicates in the batch first (`DISTINCT ON`, or a check in staging).
+And a batch that holds the same key twice can't decide which row wins, so `DO UPDATE` refuses it: remove duplicates in the batch first (`DISTINCT ON (key)`, which keeps one row per key, or a check in staging).
 
 ```sql
 -- q: d4-twice

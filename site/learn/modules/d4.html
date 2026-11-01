@@ -65,7 +65,7 @@
 <p>The other 496 rows of version 1 have no month in version 2 either, so they were left alone. The feed's upsert brings month and country up to date and nothing else: a record whose animal or year changed upstream keeps its old values here, and one GBIF removed stays in <code>sightings</code>. A full refresh would update those columns too and delete the rows missing from a complete batch.</p></li>
 <li><p>Two ways an upsert fails. <code>ON CONFLICT</code> names the columns of a unique constraint or index; there is none on <code>(species_id, year)</code>:</p>
 {{block:d4-no-arbiter}}
-<p>And a batch that holds the same key twice can't decide which row wins, so <code>DO UPDATE</code> refuses it: remove duplicates in the batch first (<code>DISTINCT ON</code>, or a check in staging).</p>
+<p>And a batch that holds the same key twice can't decide which row wins, so <code>DO UPDATE</code> refuses it: remove duplicates in the batch first (<code>DISTINCT ON (key)</code>, which keeps one row per key, or a check in staging).</p>
 {{block:d4-twice}}</li>
 </ol>
 
