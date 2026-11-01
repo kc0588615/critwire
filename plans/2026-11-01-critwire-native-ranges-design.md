@@ -2,7 +2,7 @@
 mission: critwire-native-ranges-design
 project: critwire
 branch: agent/critwire-native-ranges-design
-status: active
+status: done
 started: 2026-11-01 17:41 UTC
 ---
 
@@ -831,5 +831,45 @@ SHOULD-CONSIDER:
 - 2026-11-01 19:57 UTC: S11: full Verification, first pass: `VERIFY OK`, V1–V9 pass (typecheck, test 754 pass 0 fail, build; `dist/` 311 files = baseline; contract ok; IUCN greps clean; leak check 272 files 0 hits; 5 handoff items, none blocking); `measure.py` re-run byte-identical; `origin/main` unmoved. No document fix needed. Log `verify/verify-20261101T1954Z.log`; E2E artifact stays `e2e-baseline/`.
 - 2026-11-01 20:00 UTC: Final code review (Astra): APPROVE_WITH_CHANGES, 1 MUST-FIX (curated `sourceTerm` words), added as S12; 2 should-consider, for the Summary. Typecheck pass; plan-only diff; no build.
 - 2026-11-01 20:01 UTC: S12: curated `sourceTerm` = our paraphrase, in our own words, in 007's contract entry and table row and §3's row; `sha` 0813a604497a → 830c1de6fcd0 by `entrySha`. V6 contract ok; `own words` agrees across 007 and brief; V8 0 hits (272 files). Typecheck pass; plan-only diff; no build.
+- 2026-11-01 20:08 UTC: Full Verification: `VERIFY OK`, V1–V9 pass (typecheck, test 754 pass 0 fail, build; `dist/` 311 files = baseline; contract ok; IUCN greps clean; leak check 272 files 0 hits; 5 handoff items, none blocking); `measure.py` re-run byte-identical; `origin/main` unmoved. One earlier attempt stopped at V6 because the session's extraction cut the block at a fence inside V6's regex, not a check failure; V1–V5 had passed; its partial log deleted, block re-run whole. Log `verify/verify-20261101T2004Z.log`; E2E not re-run (by Verification's rule), artifact stays `e2e-baseline/`, 149/149. Summary written, `status: done`.
 
 ## Summary
+
+Design done; nothing public changes. Design: `plans/007-native-ranges.md`. Build brief: `plans/briefs/critwire-native-ranges-build.md` (about 22–28 sessions). Start it only once O1 or O2 is yes: all defaults publish 10 rows.
+
+**Recommended sources** (one per claim, all country level):
+- MDD v2.5 (CC BY 4.0): mammals' native lists, if O1 is yes.
+- GBIF checklist distributions, by dataset allowlist: introduced and native-but-absent rows; 18 datasets with a role, each CC0 or CC BY. GRIIS and the Central Asia checklist only if O2 is yes.
+- Hand-written curated file: native rows for the 26 non-mammals, in our own words, if O3 is (a). No open native list exists for them.
+- Rejected, or spatial unit only (Natural Earth): the other 19 sources, each with its license quoted in 007. No IUCN data used; its checklist is dropped by key.
+
+**Coverage, measured on all 76:**
+
+| Owner's answers | Rows | Species |
+|---|---|---|
+| All defaults | 10 | 5 |
+| O2 only | 32 | 12 |
+| O1 only | 410 | 54 |
+| O1 and O2 | 432 | 57 |
+| O1, O2 and O3 (a) | 432 + curated | 76 |
+
+MDD matched 50 of 50 mammals by exact name. Mammals' open-record countries sit on a listing 75 % of the time with MDD (285 of 379); across all 76 without MDD, 0.85 % (4 of 472). **Agreement between sources is unproven:** the conflict gate was too few to judge (9 introduced mammal rows, under the 20 it asks for). GRIIS alone reaches 9 species.
+
+**Data shape:** new additive `/v1/range-listings.{json,csv,parquet}`: one row per claim a named source makes, 11 columns, `origin` and `presence` separate. Conflicts ship, both rows shown. `species.*`, `countries.*`, `dist/learn/` and `range.countriesWithOpenRecords` stay as they are. No row means critwire holds no open listing, never that the animal isn't there.
+
+**Owner's choices** (handoff file, none blocking):
+- H7, O1: publish MDD's lists, given their stated IUCN ancestry? Recommend yes.
+- H8, O2: publish GRIIS rows, given their IUCN-group publisher? Recommend yes.
+- H9, O3: curated native file for the 26 non-mammals? Recommend (a).
+- H10, O4: change the copy rule when a page first reads this file? Recommend yes.
+- H11, O5: which Learn additions, when? Recommend s1, f3 and e4, one small mission after the build goes live.
+
+**Reviews:** architecture: Fable and Astra both APPROVE_WITH_CHANGES, all MUST-FIX resolved in Revision. Final code review: Astra APPROVE_WITH_CHANGES, its one MUST-FIX fixed (S12).
+
+**Astra's SHOULD-CONSIDER, not done, for the owner or the build:**
+- `plans/007-native-ranges.md`: bind `reviewedBy` to the reviewed rows' hash; otherwise later edits keep the approval.
+- `plans/007-native-ranges.md`: set a deterministic tie-break when collapsed rows share `sourceTaxonKey` but differ in `sourceTerm`.
+
+**Verification:** `VERIFY OK`, `$M/verify/verify-20261101T2004Z.log` (`$M` = `/srv/critter-ai/agent-state/missions/critwire-native-ranges-design`). Typecheck pass, test 754 pass 0 fail, `dist/` 311 files byte-identical to baseline. E2E not re-run: same bytes as Baseline's 149/149 run; artifact `$M/e2e-baseline/`. Spike evidence `$M/spike/`, stays on this VPS, not in the repo; re-run with Verification's V5.
+
+**Limits:** GBIF rows are live, so 007's numbers hold for the saved `raw/`. Some license quotes come from Internet Archive snapshots; the build should re-read them when it starts.
