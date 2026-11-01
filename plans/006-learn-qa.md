@@ -275,6 +275,7 @@ Hand-only, not run here: Docker and its image tags, the EDB installer and Stack 
 | Q69 | c1 | missing step | T0 | Lead: "everything runs in your own PostgreSQL", but the Lab's stages use Python (e1 to e4) and Power BI, and the module's tools say so. As Q61. No 004 sentence: the leads are only on the pages | fixed | `qa-fixes.ts` |
 | Q70 | c1 | prose | T0 | Q40's word left behind in the Concept: the records show a dataset, and the Lab already says "if one dataset dominates" | fixed | `qa-fixes.ts` |
 | Q71 | c1 | prose | T0 | "The jaguar's 2,000 records are 1,948 GPS-collar fixes" reads as if the rest weren't records. p4's wording used | fixed | `qa-fixes.ts` |
+| Q72 | c1 | prose | T0 | "A gateway, as d5's PostgreSQL connection does": d5 makes the login and sends the reader to p1; only p1's Lab connects and names the gateway. Removes §4's c1→d5 link | fixed | `qa-fixes.ts` |
 
 ## Ledger
 
