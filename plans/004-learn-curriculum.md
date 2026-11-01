@@ -10812,7 +10812,7 @@ cell | title | basis_of_record | records | places | first_year | last_year
 - **Python:** `json.dumps(doc, separators=(", ", ": "))` spaces the text as `jsonb` does, but `jsonb` orders an object's keys by length, then byte by byte (`"id"` before `"lat"`, `"cell"` before `"cells"`), so a byte-identical file sorts them the same way. PostgreSQL's `round(numeric, 6)` rounds halves away from zero; Python's `round` on a float rounds the binary value, halves to even, so use `decimal.Decimal` with `ROUND_HALF_UP` for the same weights.
 - **DuckDB:** `json_object` builds the document, and `to_json(list(… ORDER BY id))` the cells in order (`json_group_array` takes no `ORDER BY`); the spatial extension adds `ST_Transform` and `ST_Contains`. Its JSON text has no space after `:` or `,` and keeps keys in the order written: the same document, not the same bytes.
 - **JSON Schema validators:** ajv in JavaScript (critwire's tests validate the worked feed with it) and Python's `jsonschema` package (not in the course's pins) both read draft 2020-12.
-- **Excel:** Data → Get Data → From Web runs the same M, on Windows and Mac; 3D Maps (Windows) maps the cells.
+- **Excel (Windows):** Data → Get Data → From Other Sources → Blank Query runs the same M, as in p1; 3D Maps maps the cells. Microsoft's list of Excel for Mac's Power Query sources has no web source.
 - **Tableau:** the JSON file connector reads `cells` as a table; put `lat` and `lon` on the map as dimensions, `records` on Size and `recording_hot_spot` on Colour.
 - **The game (JavaScript):** with `total` the weights' sum, `let r = Math.random() * total;` then `cells.find((c) => (r -= c.weight) < 0) ?? cells.at(-1)` draws a cell; the fallback catches a float that passes every cell.
 
