@@ -7493,7 +7493,7 @@ edge_m | n | pairs | I | E[I] | Var_norm | z_norm
 10000 | 296 | 1620 | 0.2035877773186628 | -0.003389830508474576 | 0.0012597916525627275 | 5.831415676740648
 ```
 
-Both grids pass: the 6,246 pairs at 5 km and the 1,620 at 10 km are the same pairs in both programs (each counted once from each side, so a pair of cells is two rows of `s4_neighbours`). The statistics differ from the SQL's only in their last digits, by 10⁻¹² at most.
+Both grids pass: the 6,246 pairs at 5 km and the 1,620 at 10 km are the same pairs in both programs (each counted once from each side, so a pair of cells is two rows of `s4_neighbours`). The statistics differ from the SQL's only in their last digits, by about 10⁻¹² at most.
 
 4. The permutation test on the 5 km cells. esda's global `Moran` takes no seed, so NumPy's is set first; 999 shuffles:
 

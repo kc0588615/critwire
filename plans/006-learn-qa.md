@@ -251,6 +251,7 @@ Hand-only, not run here: Docker and its image tags, the EDB installer and Stack 
 | Q45 | s2 | prose | T0 | 913 noise and 913 distinct locations, in one page and one paragraph of its Result: unrelated counts that read as one. Said so at the first | fixed | `qa-fixes.ts` |
 | Q46 | s2 | wrong fact | T0 | "`ST_ClusterWithin` [is a] window function": it's an aggregate (`prokind` a, lab db). The window form is `ST_ClusterWithinWin`, PostGIS 3.4 | fixed | `qa-fixes.ts` |
 | Q47 | s3 | prose | T0 | "A cell with no neighbour wouldn't appear here at all", then says its `count(*)` gives 0. The `LATERAL` count returns a row for it, so it would appear, with 0; that's what the check rests on | fixed | `qa-fixes.ts` |
+| Q48 | s4 | number | T0 | "Differ … by 10⁻¹² at most": `z_norm` at 5 km differs by 1.05 × 10⁻¹² (`s4-moran-sql`, `s4-agree`) | fixed | `qa-fixes.ts` |
 
 ## Ledger
 
