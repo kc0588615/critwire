@@ -6575,7 +6575,7 @@ Six modules, twelve and a half hours, in your own PostGIS (§3.2) and the Python
 
 **Concept:** Before any statistic, know what the records are:
 - **A record is evidence**, not a census. It says that someone found the animal at a place on a date and published what they found. Many records at a place show that the animal was there and that people looked there; no record shows nothing at all. Every map, count and ratio of records mixes the two, so the rest of this track keeps asking which part a number can speak to.
-- **Basis of record** (`basis_of_record`, a Darwin Core term) says what kind of evidence a record is:
+- **Basis of record** (`basis_of_record`, a term of Darwin Core, the standard vocabulary for biodiversity records) says what kind of evidence a record is:
   - `HUMAN_OBSERVATION`: a person saw or heard the animal (surveys, atlases, citizen-science apps).
   - `MACHINE_OBSERVATION`: a device recorded it (camera traps, GPS collars, sound recorders).
   - `PRESERVED_SPECIMEN`: an animal kept in a museum; `MATERIAL_SAMPLE`: a part kept from one, such as tissue for DNA; `MATERIAL_CITATION`: a specimen cited in a publication.

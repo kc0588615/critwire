@@ -56,6 +56,7 @@ export const QA_FIXES: QaFix[] = [
   { q: "Q40", url: "/learn/foundations/window/", has: "one GPS-collar dataset is almost everything", not: "one GPS-collar study" },
   { q: "Q40", url: "/learn/spatial-statistics/zonal/", has: "from how many datasets?", not: "collar study" },
   { q: "Q40", url: "/learn/capstone/game-feed/", has: "If one dataset dominates", not: "If one study dominates" },
+  { q: "Q41", url: "/learn/spatial-statistics/bias/", has: "the standard vocabulary for biodiversity records", not: "a Darwin Core term" },
 ];
 
 // What's wrong with each row on the origin `request` points at; [] when every fix shows.
