@@ -69,7 +69,7 @@ Out:
 - [x] Baseline: install, migrate, run typecheck, lint, unit and E2E tests; record the results under Baseline
 - [x] Architecture: `architect` writes findings and the target design
 - [x] Fable review: `architecture-reviewer`
-- [ ] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
+- [x] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
 - [ ] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
 - [ ] Steps: `planner` writes Steps and Verification
 
@@ -359,6 +359,21 @@ SHOULD-CONSIDER:
 
 ## Architecture review (Astra)
 
+VERDICT: APPROVE_WITH_CHANGES
+
+MUST-FIX:
+
+1. **Snapshot freshness (§4).** Base-name coverage cannot detect changed GBIF usage or accepted keys. Record fetched keys and validate them against current resolved identities during derive; reject stale snapshots before publishing another taxon’s listings.
+2. **Status semantics (§3).** `ABSENT` does not establish extirpation; blank register status does not establish current presence. Preserve absence/unknown unless the dataset explicitly supports stronger claims. MDD’s native-or-pre-1500-introduction category must also remain distinguishable from strictly native.
+3. **Incomplete mapping (§3).** Unlisted combinations of dataset role, establishment and presence have no defined outcome. Specify exhaustive mapping and explicit counted exclusions; reject unexpected combinations. Otherwise refreshes can silently discard or misclassify claims.
+4. **Approval boundary (§5 versus §7).** The unconditional MDD spike retains country lists whose inseparable IUCN ancestry is explicitly awaiting O1. Gate retention on the owner’s recorded exception, including research snapshots; deleting status columns does not remove range ancestry.
+
+SHOULD-CONSIDER:
+
+1. Use a stable source identifier in row identity and attribution joins; dataset titles can change or collide.
+2. Define geographic normalization explicitly: island/subnational listings must retain their scope; missing locality must not automatically mean whole-country coverage.
+3. Specify duplicate handling across usage-key and accepted-key fetches so repeated evidence cannot inflate coverage or conflict metrics.
+
 ## Revision notes
 
 ## Steps
@@ -376,5 +391,6 @@ SHOULD-CONSIDER:
 - 2026-11-01 17:56 UTC: Baseline: typecheck pass, test 754/754, build pass, e2e 149/149; `dist/` 311 files = live.
 - 2026-11-01 18:26 UTC: Architecture: architect wrote findings + design, light probe (evidence `arch-probe/`). Picks: MDD v2.5 + GBIF checklist distributions; new `/v1/range-listings.*`. Spot-checked species counts, cited code lines, MDD license, md5 and quotes against evidence: all match; stripped MDD `extinct` from saved cut. Plan-only diff; no code, no build.
 - 2026-11-01 18:32 UTC: Fable review: APPROVE_WITH_CHANGES, 1 MUST-FIX (§3 mapping not exhaustive: refuse unlisted combos, spike lists all met, never store dataset `description`); 3 missed, 5 should-consider, all for Revision. Plan-only diff; no build.
+- 2026-11-01 18:33 UTC: Astra review: APPROVE_WITH_CHANGES, 4 MUST-FIX (key-stale snapshot, status semantics incl. MDD pre-1500, exhaustive mapping, O1 gate on MDD spike retention); 3 should-consider, all for Revision. Plan-only diff; no build.
 
 ## Summary
