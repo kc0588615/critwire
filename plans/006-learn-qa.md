@@ -213,6 +213,7 @@ Hand-only, not run here: Docker and its image tags, the EDB installer and Stack 
 | Q7 | setup | missing step | T0 | `psql -X -d learn -f pg-checks.sql` assumes `psql` on `PATH`, which neither Windows route gives: EDB's is `$psql`, Docker's is in the container. Added both forms, built from the page's own commands (Docker and EDB are hand-only here, as the page says) | fixed | `qa-fixes.ts` |
 | Q8 | setup | missing step | T0 | Connection settings gave PowerShell only, while the page promises Linux and macOS, and named libpq without saying what it is. Added the `export` line and `~/.pgpass`; libpq defined | fixed | `qa-fixes.ts` |
 | Q9 | setup | prose | T0 | "The same 16 counts mean your lab matches", but the recorded result prints 5 rows and "… 11 more rows", so the page can't be compared. Now says so, and that the lab file checked all 16 before it committed (`learn_curriculum.sql`'s validation) | fixed | `qa-fixes.ts` |
+| Q10 | data | prose | T0 | "Nothing but `psql` and the PostGIS extension", but the file stops without `postgis_raster` (its first check; setup installs both). 004 §4 already had it right | fixed | `qa-fixes.ts` |
 
 ## Ledger
 
