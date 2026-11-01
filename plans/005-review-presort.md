@@ -30,23 +30,23 @@ Terms: **kept** or **excluded** is what derive publishes today with no override.
 | Recommendation | high | medium | low | total | changes /v1 |
 |---|---:|---:|---:|---:|---:|
 | keep | 48 | 31 | 19 | 98 | 2 |
-| remove | 33 | 49 | 6 | 88 | 52 |
+| remove | 32 | 50 | 6 | 88 | 52 |
 | fix | 14 | 4 | 0 | 18 | n/a |
 | no action | 6 | 1 | 3 | 10 | n/a |
-| **all entries** | 101 | 85 | 28 | 214 | 54 |
+| **all entries** | 100 | 86 | 28 | 214 | 54 |
 
 ## Accept in one go
 
 Two sentences you can reply with:
 
 - **"accept the high-confidence confirmations only"**: `pnpm review:accept --confidence high --confirm-only` (66 entries). Published countries don't change, and the next release isn't held up.
-- **"accept the high-confidence set"**: `pnpm review:accept --confidence high` (81 entries: 66 confirming, 15 output-changing). The output-changing ones hold the next release until the follow-on below is done.
+- **"accept the high-confidence set"**: `pnpm review:accept --confidence high` (80 entries: 66 confirming, 14 output-changing). The output-changing ones hold the next release until the follow-on below is done.
 
 Any other selection works too: `pnpm review:accept --ids 25:DE,25:RU`, or `--confidence medium` for medium and higher. The command copies the chosen proposals into `data/review/country-overrides.json` and runs `pnpm derive`. Non-country entries can't be accepted this way; their fixes are separate work.
 
 Confirming, high (66): `15:DE,17:ID,17:US,20:ML,20:MR,20:NL,20:SG,20:SN,21:DE,24:BN,24:IN,25:BD,25:DK,25:MW,25:RU,25:SE,26:MX,28:BT,28:LA,28:VN,29:DE,36:VE,41:CD,41:CM,41:GN,41:GQ,50:DE,51:HN,51:SR,52:DE,52:GT,52:SR,56:BE,56:GH,56:GW,56:NU,56:RU,57:AO,57:BF,57:GH,57:NE,57:SD,57:ZW,58:DZ,58:EG,58:IR,58:NG,60:US,64:AO,64:NG,64:SS,64:TD,65:CD,65:CF,65:MZ,65:UG,66:DE,66:MW,66:NG,66:RW,68:US,69:NE,70:CO,71:DE,72:PE,72:UY`
 
-Output-changing, high (15): `28:BE,29:US,39:ZM,40:US,43:US,48:US,52:MX,54:SR,56:DE,56:SE,56:SS,64:SD,69:US,6:US,70:US`
+Output-changing, high (14): `28:BE,29:US,40:US,43:US,48:US,52:MX,54:SR,56:DE,56:SE,56:SS,64:SD,69:US,6:US,70:US`
 
 Non-country fixes, high (20, not covered by accept): `12:ids.iucn:iucn-id,15:ids.iucn:iucn-id,17:ids.iucn:iucn-id,18:ids.iucn:iucn-id,19:ids.gbif:identity,19:ids.iucn:iucn-id,1:ids.gbif:synonym-info,1:ids.ncbi:not-found,20:ids.iucn:iucn-id,21:ids.iucn:iucn-id,22:ids.iucn:iucn-id,47:range.countriesWithOpenRecords:no-records,4:ids.iucn:iucn-id,55:ids.gbif:synonym-info,59:ids.col:identity,63:ids.gbif:synonym-info,70:ids.gbif:synonym-info,73:ids.col:identity,9:ids.col:identity,9:ids.gbif:identity`
 
@@ -1763,8 +1763,8 @@ Species that could lose every published country:
 - **Records shown** (2 of 2):
   - [5099407177](https://www.gbif.org/occurrence/5099407177) · PRESERVED_SPECIMEN · 1967-01 · -14.199621, 28.169434 ±34,153 m · SPECIFIC LOCALITY UNKNOWN · MSB · remarks: SPECIMEN FROM RIO GRANDE ZOO, ALBUQUERQUE, NM
   - [5099408911](https://www.gbif.org/occurrence/5099408911) · PRESERVED_SPECIMEN · 1966-08 · -14.199621, 28.169434 ±34,153 m · SPECIFIC LOCALITY UNKNOWN · MSB · remarks: SHIPPED TO U.S. IN 1964 AT AGE 6-9 YEARS
-- **Recommendation:** remove · **high** · output-changing
-- **Why:** Both MSB specimens, 1966–67, say "specific locality unknown"; one is "from Rio Grande Zoo, Albuquerque", the other "shipped to U.S. in 1964". Their remarks show kept animals, and neither documents one in Zambia's wild. No other counted record.
+- **Recommendation:** remove · **medium** · output-changing
+- **Why:** Both MSB specimens, 1966–67, say "specific locality unknown" and share one coordinate; one is "from Rio Grande Zoo, Albuquerque", the other "shipped to U.S. in 1964". That shows later US custody, not a wrong Zambia attribution, but nothing places one in the wild there. No other counted record.
 - **Cites:** [gbif:occurrence:5099407177](https://www.gbif.org/occurrence/5099407177), [gbif:occurrence:5099408911](https://www.gbif.org/occurrence/5099408911), [gbif:dataset:b15d4952-7d20-46f1-8a3e-556a512b04c5](https://www.gbif.org/dataset/b15d4952-7d20-46f1-8a3e-556a512b04c5), [col:7TKN5](https://www.checklistbank.org/dataset/316595/taxon/7TKN5)
 
 ### 40 · Pongo abelii · Sumatran Orangutan

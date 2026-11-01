@@ -1722,8 +1722,8 @@
   {
     "key": "39:ZM",
     "recommendation": "remove",
-    "confidence": "high",
-    "reason": "Both MSB specimens, 1966–67, say \"specific locality unknown\"; one is \"from Rio Grande Zoo, Albuquerque\", the other \"shipped to U.S. in 1964\". Their remarks show kept animals, and neither documents one in Zambia's wild. No other counted record.",
+    "confidence": "medium",
+    "reason": "Both MSB specimens, 1966–67, say \"specific locality unknown\" and share one coordinate; one is \"from Rio Grande Zoo, Albuquerque\", the other \"shipped to U.S. in 1964\". That shows later US custody, not a wrong Zambia attribution, but nothing places one in the wild there. No other counted record.",
     "cite": [
       "gbif:occurrence:5099407177",
       "gbif:occurrence:5099408911",
