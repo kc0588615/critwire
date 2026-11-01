@@ -250,6 +250,7 @@ Hand-only, not run here: Docker and its image tags, the EDB installer and Stack 
 | Q44 | s2 | missing step | T0 | The worked example counts 1,972 records and lab 1 counts 1,784, with no word why. A hexagon that touches land reaches past the outline: 188 records lie in a cell but outside the island, at most 4.2 km from it (lab db) | fixed | `qa-fixes.ts` |
 | Q45 | s2 | prose | T0 | 913 noise and 913 distinct locations, in one page and one paragraph of its Result: unrelated counts that read as one. Said so at the first | fixed | `qa-fixes.ts` |
 | Q46 | s2 | wrong fact | T0 | "`ST_ClusterWithin` [is a] window function": it's an aggregate (`prokind` a, lab db). The window form is `ST_ClusterWithinWin`, PostGIS 3.4 | fixed | `qa-fixes.ts` |
+| Q47 | s3 | prose | T0 | "A cell with no neighbour wouldn't appear here at all", then says its `count(*)` gives 0. The `LATERAL` count returns a row for it, so it would appear, with 0; that's what the check rests on | fixed | `qa-fixes.ts` |
 
 ## Ledger
 

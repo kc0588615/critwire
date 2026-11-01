@@ -7043,7 +7043,7 @@ edge_m | neighbours | cells
 … 6 more rows
 ```
 
-On the 5 km grid, 939 of the 1,094 cells have all six neighbours; the coast leaves the rest with fewer, down to one cell with a single neighbour (cell 1051). On the 10 km grid, 221 of the 296 cells have six and the fewest is two (6 cells). No cell has none, so the band leaves no island. A cell with no neighbour wouldn't appear here at all: `count(*)` over its missing rows gives 0, and the result has no row with 0.
+On the 5 km grid, 939 of the 1,094 cells have all six neighbours; the coast leaves the rest with fewer, down to one cell with a single neighbour (cell 1051). On the 10 km grid, 221 of the 296 cells have six and the fewest is two (6 cells). No cell has none, so the band leaves no island. A cell with no neighbour would show as a row with 0, since `count(*)` over no rows gives 0, and the result has no such row.
 
 **Lab:**
 1. k-nearest neighbours on the 5 km cells, ranked by distance rounded to the centimetre and then by id, so ties are broken the same way every run. For k = 4 and k = 6: the links, the links whose reverse is missing, and the cells whose k-th and (k + 1)-th neighbours are tied. `LIMIT 7` keeps one more neighbour than the largest k, to see the tie:
