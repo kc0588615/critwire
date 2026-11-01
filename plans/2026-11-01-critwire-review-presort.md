@@ -77,7 +77,7 @@ Out:
 - [x] Baseline: install, migrate, run typecheck, lint, unit and E2E tests; record the results under Baseline
 - [x] Architecture: `architect` writes findings and the target design
 - [x] Fable review: `architecture-reviewer`
-- [ ] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
+- [x] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
 - [ ] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
 - [ ] Steps: `planner` writes Steps and Verification
 
@@ -367,6 +367,19 @@ SHOULD-CONSIDER:
 
 ## Architecture review (Astra)
 
+VERDICT: APPROVE_WITH_CHANGES
+
+MUST-FIX:
+1. **Q1’s evidence validation always fails.** The copied queue contains `ids.iucn` and `iucn-id`; `assertNoIucnData` rejects those strings. Apply the prohibition check to allowlisted fetched sections, excluding the existing queue metadata.
+2. **Q5 bypasses recommendation validation.** Acceptance checks proposal equality but never runs `assertRecommendations`. Editing confidence or citations leaves the proposal unchanged and can bypass the rubric. Validate recommendations and evidence before selection and writes.
+3. **Q5’s recovery instruction can lose owner decisions.** `git restore country-overrides.json` discards earlier uncommitted acceptances too. Preserve the exact pre-run contents and provide recovery that restores that state. Account for interrupted derived-file writes: in-memory validation does not make multiple filesystem writes transactional.
+4. **Acceptance tests depend on mutable production review state.** Selecting success cases from the committed proposal can fail after legitimate acceptance or re-ingestion. Use self-contained review fixtures in the throwaway copy, independent of existing proposals and owner overrides.
+
+SHOULD-CONSIDER:
+1. Bind evidence to the source snapshot and taxon identity, not only the mismatch entry: its country counts can remain identical while the underlying identity changes.
+2. Explicitly disallow high-confidence removal when record/dataset coverage is incomplete; twenty records and truncated facets cannot establish that every record warrants exclusion.
+3. Define `--confidence` plus `--ids` as an intersection, or clearly document the union beside each example; union can accept more entries than the owner expects.
+
 ## Revision notes
 
 ## Steps
@@ -384,5 +397,6 @@ SHOULD-CONSIDER:
 - 2026-11-01 08:11 UTC: Baseline. typecheck pass, test 703/703, build pass, e2e 98/98; dist hashes recorded = live.
 - 2026-11-01 08:25 UTC: Architecture. architect wrote findings (output-changing overrides make plain build refuse until learn:check --update; no DOI staleness) + target design (review:evidence/presort/accept, keys, deriveCore-based proposal validation). Plan-only change; no code to verify.
 - 2026-11-01 08:30 UTC: Fable review. APPROVE_WITH_CHANGES, 2 MUST-FIX (IUCN gate vs verbatim queue copy; accept CLI test must be self-contained). Plan-only change; no code to verify.
+- 2026-11-01 08:52 UTC: Astra review. APPROVE_WITH_CHANGES, 4 MUST-FIX (IUCN gate scope, accept must run assertRecommendations, overrides recovery must preserve pre-run bytes + interrupted derive writes, self-contained accept test). Plan-only change; no code to verify.
 
 ## Summary
