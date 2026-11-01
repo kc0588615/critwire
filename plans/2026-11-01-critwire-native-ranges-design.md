@@ -594,6 +594,7 @@ Checklist:
   - Out: Learn (O4, O5), polygons, Finding 8's fix, IUCN, Wikipedia prose.
   - Check: V3. Each default removes steps; the estimate stays well within 60 sessions.
 - [x] S11. **Full Verification, first pass.** Run Verification's block. Fix document failures in this session. A failure needing a spike re-run adds a step before this one, and this stays unchecked. Log line: pass, log path.
+- [ ] S12. **Astra MUST-FIX: `sourceTerm` for curated rows.** 007's contract entry (`plans/007-native-ranges.md:440`) says a curated row's `sourceTerm` holds its reference's own words; O3 and the brief (`plans/briefs/critwire-native-ranges-build.md:75`) require our own words. Reword the entry's `means` so a curated row's value is our paraphrase of its reference, and match 007's table row (`:253`, "verbatim" holds for sources' rows only). Recompute the entry's `sha` with `entrySha`. Copy any other line that repeats it. Check: V6 contract ok; `grep -n "own words"` agrees across 007 and the brief; V8. Definition edit before any freeze: no contract exists in the repo, so no owner review.
 
 ### Spike outcomes
 
@@ -766,6 +767,17 @@ The spike's scripts can't be tested end to end, and a slip breaks a non-negotiab
 
 ## Code review (Astra)
 
+VERDICT: APPROVE_WITH_CHANGES
+
+MUST-FIX:
+
+1. `plans/007-native-ranges.md:440`: Frozen `sourceTerm` definition requires curated references’ verbatim words, contradicting O3’s own-words requirement and the build brief at `plans/briefs/critwire-native-ranges-build.md:75`. Define curated values as our paraphrases before freezing the contract; update its SHA.
+
+SHOULD-CONSIDER:
+
+1. `plans/007-native-ranges.md:466`: Bind `reviewedBy` to the reviewed rows’ hash; otherwise later edits retain approval automatically.
+2. `plans/007-native-ranges.md:257`: Specify a deterministic tie-break when collapsed rows share `sourceTaxonKey` but differ in `sourceTerm`.
+
 ## Release
 
 ## Decisions
@@ -795,6 +807,7 @@ The spike's scripts can't be tested end to end, and a slip breaks a non-negotiab
 - S8, §4 corrected in 007: derive runs the listings before `matchCountries`, not after, since that call takes their codes. The snapshot's allowlist drops `reason`; the ingest's constant holds O2's datasets only after a yes, so it needs no `o2` flag. The guard gains `threatStatus` only (Finding 3); the key allowlist keeps `appendixCites` out. The guard covers snapshots, so `attribution.json` and `DATA-LICENSE.md` may name IUCN to state a tie.
 - S8, 007 adds to the spec: a coverage table by owner's answers in the Summary, a rows column in the flip table, and curated rows' `license` `CC BY 4.0` (critwire's own, `DATA-LICENSE.md`), since the contract allows only the two. O5: d1/d2 "if it fits", which §7 didn't place. e4's license figure takes the spike's 44 of 88 BY-NC, replacing §6's probe 7 of 30. Checked for §4's "a code with no country row throws": every code on roled rows (19) and in `mdd-places.json` has a `/v1/countries` row today.
 - S10, adds to the spec: `range-curated.json` is `{reviewedBy, rows}`, and derive publishes its rows only once `reviewedBy` holds the owner's reply, because O3 (a) promises the owner's review and a mission can't wait for it; the release goes ahead without those rows. One line added to 007's Pipeline, the brief's Decision rules. Brief also adds a section `## The owner's answers` and `## The plain build refuses` to the L-series format, and notes `NA` stays text in the new spec.
+- Final code review, run although the diff is `plans/` only: the skip for research missions names the vault, and the review checks this design against its brief. One MUST-FIX, agreed after reading the lines: quoting a curated reference's words contradicts O3 and the brief. Added as S12. Both SHOULD-CONSIDER items (`reviewedBy` bound to the reviewed rows' hash; collapse tie-break when rows share `sourceTaxonKey` but differ in `sourceTerm`) go to the Summary for the owner.
 
 ## Log
 
@@ -815,5 +828,6 @@ The spike's scripts can't be tested end to end, and a slip breaks a non-negotiab
 - 2026-11-01 19:50 UTC: S9: handoff H7–H11 added (O1–O5, none blocking), H numbers in 007's Owner's choices. V9 pass, V8 0 hits with `$H`, V7 clean on 007. Typecheck pass; plan-only diff; no build.
 - 2026-11-01 19:53 UTC: S10: `plans/briefs/critwire-native-ranges-build.md` written (L-series format; defaults, flip table with H7–H11, O1 gate, contract, refusals, `threatStatus` guard, key staleness, no-reason snapshot; done means live; about 22–28 sessions). V3 pass, V7 clean, V8 0 hits (272 files). Typecheck pass; plan-only diff; no build.
 - 2026-11-01 19:57 UTC: S11: full Verification, first pass: `VERIFY OK`, V1–V9 pass (typecheck, test 754 pass 0 fail, build; `dist/` 311 files = baseline; contract ok; IUCN greps clean; leak check 272 files 0 hits; 5 handoff items, none blocking); `measure.py` re-run byte-identical; `origin/main` unmoved. No document fix needed. Log `verify/verify-20261101T1954Z.log`; E2E artifact stays `e2e-baseline/`.
+- 2026-11-01 20:00 UTC: Final code review (Astra): APPROVE_WITH_CHANGES, 1 MUST-FIX (curated `sourceTerm` words), added as S12; 2 should-consider, for the Summary. Typecheck pass; plan-only diff; no build.
 
 ## Summary
