@@ -397,6 +397,6 @@ SHOULD-CONSIDER:
 - 2026-11-01 08:11 UTC: Baseline. typecheck pass, test 703/703, build pass, e2e 98/98; dist hashes recorded = live.
 - 2026-11-01 08:25 UTC: Architecture. architect wrote findings (output-changing overrides make plain build refuse until learn:check --update; no DOI staleness) + target design (review:evidence/presort/accept, keys, deriveCore-based proposal validation). Plan-only change; no code to verify.
 - 2026-11-01 08:30 UTC: Fable review. APPROVE_WITH_CHANGES, 2 MUST-FIX (IUCN gate vs verbatim queue copy; accept CLI test must be self-contained). Plan-only change; no code to verify.
-- 2026-11-01 08:52 UTC: Astra review. APPROVE_WITH_CHANGES, 4 MUST-FIX (IUCN gate scope, accept must run assertRecommendations, overrides recovery must preserve pre-run bytes + interrupted derive writes, self-contained accept test). Plan-only change; no code to verify.
+- 2026-11-01 08:31 UTC: Astra review. APPROVE_WITH_CHANGES, 4 MUST-FIX (IUCN gate scope, accept must run assertRecommendations, overrides recovery must preserve pre-run bytes + interrupted derive writes, self-contained accept test). Plan-only change; no code to verify.
 
 ## Summary
