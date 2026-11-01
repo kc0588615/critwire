@@ -260,6 +260,7 @@ Hand-only, not run here: Docker and its image tags, the EDB installer and Stack 
 | Q54 | d1 | missing step | T0 | The tbls exercise says 16 tables agree, but `setup.py` and every download holding `s4-cells` leave s4's table and view in `learn_curriculum`, so a learner who ran one sees two more (the ledger's open item) | fixed | `qa-fixes.ts` |
 | Q55 | every `.sql` holding `s4-cells` (s2–s5, c1) | prose | T2 | The download's header says each block "changes nothing", and `-- tx: own` runs as written; a `-- boot` block commits its tables (`s4.sql` has the `COMMIT`). Add it to the header, `scripts/learn/assemble.ts:81-82` | queued | `learn:check` download stage |
 | Q56 | e1 | number | T0 | "73 GBIF keys and the lab sample's six filters": the request's six predicates are the keys plus five filters, as `e1-request` prints them | fixed | `qa-fixes.ts` |
+| Q57 | e1 | wrong fact | T0 | "Apart from `creator` and `sendNotification`, it equals, as JSON, the request GBIF stored": the stored one also holds `type`, `interpretedExtensions` and `verbatimExtensions` (`data/raw/gbif-sample/download.json`). Its `format`, `checklistKey` and `predicate` do equal `build_request`'s, every key in order (lab db), and those are what `same` compares | fixed | `qa-fixes.ts` |
 
 ## Ledger
 

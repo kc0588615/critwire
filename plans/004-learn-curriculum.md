@@ -8098,7 +8098,7 @@ BASIS_OF_RECORD in ['HUMAN_OBSERVATION', 'OBSERVATION', 'MACHINE_OBSERVATION', '
 bytes: 1551
 ```
 
-`build_request` is a pure function of the keys and the account: the same keys give the same request, byte for byte, which is what lets a later run compare its request with a saved one. The filters are §4.2's: open licences only (CC0 1.0 and CC BY 4.0), a coordinate with no geospatial issue, the record marked present, and every basis of record except living and fossil specimens. Apart from `creator` and `sendNotification`, it equals, as JSON, the request GBIF stored for the course's own download.
+`build_request` is a pure function of the keys and the account: the same keys give the same request, byte for byte, which is what lets a later run compare its request with a saved one. The filters are §4.2's: open licences only (CC0 1.0 and CC BY 4.0), a coordinate with no geospatial issue, the record marked present, and every basis of record except living and fossil specimens. Its `format`, `checklistKey` and `predicate` equal, as JSON, the ones GBIF stored for the course's own download; GBIF's copy adds a few defaults of its own.
 
 **Lab:**
 1. The download function. `fetch_file` retries the whole file: each attempt writes a fresh `.part`, a transient failure deletes it and waits, a cut body counts as a dropped connection, and only a complete file that matches the publisher's size and sha256 is renamed. The block prints nothing; the blocks after it run it first.

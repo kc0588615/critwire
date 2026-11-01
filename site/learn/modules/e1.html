@@ -14,7 +14,7 @@
 <h2>Worked example</h2>
 <p>The request, built from <code>species.gbif_id</code> (73 keys) in the lab database. For the Tasmanian devil alone, <code>TAXON_KEY</code> would hold one key, <code>2435451</code>.</p>
 {{block:e1-request}}
-<p><code>build_request</code> is a pure function of the keys and the account: the same keys give the same request, byte for byte, which is what lets a later run compare its request with a saved one. The filters are the lab sample's: open licences only (CC0 1.0 and CC BY 4.0), a coordinate with no geospatial issue, the record marked present, and every basis of record except living and fossil specimens. Apart from <code>creator</code> and <code>sendNotification</code>, it equals, as JSON, the request GBIF stored for the course's own download.</p>
+<p><code>build_request</code> is a pure function of the keys and the account: the same keys give the same request, byte for byte, which is what lets a later run compare its request with a saved one. The filters are the lab sample's: open licences only (CC0 1.0 and CC BY 4.0), a coordinate with no geospatial issue, the record marked present, and every basis of record except living and fossil specimens. Its <code>format</code>, <code>checklistKey</code> and <code>predicate</code> equal, as JSON, the ones GBIF stored for the course's own download; GBIF's copy adds a few defaults of its own.</p>
 
 <h2>Lab</h2>
 <ol>
