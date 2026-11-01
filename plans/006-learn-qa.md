@@ -211,6 +211,7 @@ Hand-only, not run here: Docker and its image tags, the EDB installer and Stack 
 | Q5 | setup | missing step | T0 | Says to run cells "in VS Code or Jupyter", but no step installs Jupyter and `requirements.txt` has none (finding 8). Added the install line, run as written in a learner's venv: `jupyter lab --version` 4.6.5, no pin moved, the next `uv pip sync` removes it | fixed | `qa-fixes.ts` |
 | Q6 | setup | missing step | T0 | The Python fences fail when pasted: uv's installer changes `PATH` for new terminals only, so the next `uv` line isn't found (run on Linux with an empty `HOME`; `install.ps1`'s own message says the same). Each fence now adds it for the current terminal, with the line the installer prints | fixed | `qa-fixes.ts` |
 | Q7 | setup | missing step | T0 | `psql -X -d learn -f pg-checks.sql` assumes `psql` on `PATH`, which neither Windows route gives: EDB's is `$psql`, Docker's is in the container. Added both forms, built from the page's own commands (Docker and EDB are hand-only here, as the page says) | fixed | `qa-fixes.ts` |
+| Q8 | setup | missing step | T0 | Connection settings gave PowerShell only, while the page promises Linux and macOS, and named libpq without saying what it is. Added the `export` line and `~/.pgpass`; libpq defined | fixed | `qa-fixes.ts` |
 
 ## Ledger
 

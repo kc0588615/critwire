@@ -17,6 +17,8 @@ export const QA_FIXES: QaFix[] = [
   { q: "Q6", url: "/learn/setup/", has: "source $HOME/.local/bin/env" },
   { q: "Q6", url: "/learn/setup/", has: "$env:Path = \"$HOME\\.local\\bin;$env:Path\"" },
   { q: "Q7", url: "/learn/setup/", has: "docker exec -it learn-pg psql -U postgres -d learn" },
+  { q: "Q8", url: "/learn/setup/", has: "export PGHOST=localhost PGPORT=5432 PGUSER=postgres PGDATABASE=learn" },
+  { q: "Q8", url: "/learn/setup/", has: "libpq, PostgreSQL's client library", not: "libpq's standard environment variables" },
 ];
 
 // What's wrong with each row on the origin `request` points at; [] when every fix shows.

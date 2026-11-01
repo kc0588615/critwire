@@ -42,9 +42,10 @@ curl.exe -fLo learn_curriculum.sql https://critwire.com/learn/data/postgis/learn
 <h3>Loading, and loading again</h3>
 <p><a href="/learn/data/postgis/learn_curriculum.sql"><code>learn_curriculum.sql</code></a> (its size is on <a href="/learn/data/">the lab data page</a>) builds the schema <code>learn_curriculum</code> in one transaction: it drops the schema, creates it again, loads every table, adds the keys and indexes, and checks every table's row count before it commits. A failed load changes nothing. A second load replaces the schema, including any table you made in it, so keep your own work in another schema. Another schema keeps your tables, but not what depends on the lab: a view, foreign key, trigger or policy of yours that reads <code>learn_curriculum</code> would be dropped with it. The lab file refuses that reload instead, naming each such object, and changes nothing; move or drop them, then load again. <a href="/learn/schema/lab/">The lab schema</a> lists every table and column.</p>
 <h3>Connection settings</h3>
-<p>Any lab file you run with psql finds the database through libpq's standard environment variables, so the same file runs on your computer and on critwire's test server. In PowerShell, for one session:</p>
+<p>Any lab file you run with psql finds the database through the standard environment variables of libpq, PostgreSQL's client library, so the same file runs on your computer and on critwire's test server. In PowerShell, for one session:</p>
 <pre class="code"><code>$env:PGHOST = "localhost"; $env:PGPORT = "5432"; $env:PGUSER = "postgres"; $env:PGDATABASE = "learn"
 # The password goes in %APPDATA%\postgresql\pgpass.conf, one line: localhost:5432:learn:postgres:choose-a-password</code></pre>
+<p>On Linux or macOS: <code>export PGHOST=localhost PGPORT=5432 PGUSER=postgres PGDATABASE=learn</code>, and the same line in <code>~/.pgpass</code>, readable only by you (<code>chmod 600 ~/.pgpass</code>).</p>
 <h3>Privileges</h3>
 <p>The <code>postgres</code> user is a superuser and can do everything the labs do. As another user, you need:</p>
 <ul>

@@ -509,12 +509,14 @@ psql on Windows talks to the server in the console's code page unless told other
 
 **Loading, and loading again.** The lab file builds schema `learn_curriculum` in one transaction: it drops the schema, recreates it, loads every table, adds the keys and indexes, and checks every table's row count before `COMMIT`. A failed load changes nothing; a second load replaces the schema, including any table you made there, so keep your own work in another schema. Another schema keeps your tables, not your dependencies: a view, a foreign key, a trigger or a policy of yours that reads `learn_curriculum` would go with it (`DROP SCHEMA … CASCADE`). The lab file refuses that reload instead, naming each such object, and changes nothing; move or drop them and load again. Then connect with your SQL client (psql, pgAdmin, DBeaver, VS Code) to database `learn` and run §0's `pg-session` and `pg-smoke` blocks: the 16 row counts there mean your lab matches the tested one. The setup page shows §0's four PostGIS checks (`pg-session`, `pg-smoke`, `pg-role-smoke`, `pg-tx-smoke`) with their recorded results, and they download as one file, `/learn/labs/pg-checks.sql` (§7.3), run with `psql -X -d learn -f pg-checks.sql`.
 
-**Connection settings.** The Python labs, and any lab file you run with psql, find the database through libpq's standard environment variables, so the same file runs on your computer and on the test server. In PowerShell, for one session:
+**Connection settings.** The Python labs, and any lab file you run with psql, find the database through the standard environment variables of libpq, PostgreSQL's client library, so the same file runs on your computer and on the test server. In PowerShell, for one session:
 
 ```powershell
 $env:PGHOST = "localhost"; $env:PGPORT = "5432"; $env:PGUSER = "postgres"; $env:PGDATABASE = "learn"
 # The password goes in %APPDATA%\postgresql\pgpass.conf, one line: localhost:5432:learn:postgres:choose-a-password
 ```
+
+On Linux or macOS: `export PGHOST=localhost PGPORT=5432 PGUSER=postgres PGDATABASE=learn`, and the same line in `~/.pgpass`, readable only by you (`chmod 600 ~/.pgpass`).
 
 **Privileges.** The `postgres` user is a superuser and can do everything the labs do. As another user you need:
 - `CONNECT`, `CREATE` and `TEMPORARY` on the database (its owner has them; else `GRANT CONNECT, CREATE, TEMPORARY ON DATABASE learn TO <you>;` as the superuser), to connect, to (re)create `learn_curriculum` and for temporary tables, and ownership of that schema once it exists;
