@@ -44,6 +44,7 @@ export const QA_FIXES: QaFix[] = [
   { q: "Q30", url: "/learn/gis-in-sql/measure-overlay/", has: "the buffer's round ends add a little", not: "and smaller where the sea" },
   { q: "Q31", url: "/learn/gis-in-sql/spatial-index/", has: "529 more within 25 km", not: "529 within 25 km" },
   { q: "Q32", url: "/learn/gis-in-sql/grids/", has: "<code>ST_Dump</code> splits a MultiPolygon into one row per part" },
+  { q: "Q33", url: "/learn/gis-in-sql/raster/", has: "Method 2, counting cells on coarser copies of the map, wasn't chosen" },
 ];
 
 // What's wrong with each row on the origin `request` points at; [] when every fix shows.

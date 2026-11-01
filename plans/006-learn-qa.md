@@ -236,6 +236,7 @@ Hand-only, not run here: Docker and its image tags, the EDB installer and Stack 
 | Q30 | g4 | prose | T0 | A strip is "close to" length × 10 km "and smaller", beside Nicaragua's 2,673 against 2,670. The buffer's round ends add area; said so | fixed | `qa-fixes.ts` |
 | Q31 | g5 | prose | T0 | Result: "436 lie within 5 km of one, 529 within 25 km". 965 lie within 25 km; 529 is the 5 to 25 km band | fixed | `qa-fixes.ts` |
 | Q32 | g6 | jargon | T0 | `ST_Dump` picks the main island in every g6 block (and s2, s4), and no page says what it does. Defined at its first use | fixed | `qa-fixes.ts` |
+| Q33 | g7, s6 | prose | T0 | "Two ways to summarise a country", named method 1 and method 3, and no page says what became of 2. The names are in the block's columns, so they stay; says where they come from (design plan's E3c) | fixed | `qa-fixes.ts` |
 
 ## Ledger
 
