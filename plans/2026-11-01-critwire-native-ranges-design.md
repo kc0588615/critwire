@@ -471,6 +471,71 @@ Evidence removed from the state folder (item 4): see Architecture, Evidence. The
 - The Central Asia checklist states an IUCN cross-check, and is the probe's only `native` + `absent` source: put under O2, so the all-defaults file has no native rows at all (§2, §5, §7).
 - Snapshot also records its `allowlist`, so adding a dataset without a re-ingest refuses rather than silently missing rows (§4).
 
+## Spike results
+
+Measured 2026-11-01 (S1 fetch, S4 measure), all 76 species; GBIF rows are live, so these numbers are for `$S/raw/` at that date. Totals only: per-species MDD stays out (§5). `<5` = small cell, pooled (Conventions). "Listings" = rows after §3's mapping and collapse key.
+
+| metric | value |
+|---|---|
+| mdd_exact_name_matches | 50 of 50 |
+| mdd_rows | 400 |
+| mdd_rows_uncertain | 36 |
+| mdd_rows_per_species_min_median_max | 1 / 3.0 / 42 |
+| mdd_domestic_flagged_of_matched | 0 / 2 |
+| mdd_na_domesticated_tokens_whole_file | 2 / 17 |
+| gbif_species_with_keys | 73 |
+| gbif_species_row_beyond_red_list | 70 |
+| gbif_species_country_row | 31 |
+| listings_griis_only | 15 rows, 9 species, 10 datasets |
+| listings_non_griis | 17 rows, 7 species, 7 datasets |
+| listings_griis_and_non_griis | 32 rows, 12 species, 17 datasets |
+| listings_all_defaults | 10 rows, 5 species, 6 datasets |
+| listings_both_introduced_absent | 1 rows, 1 species |
+| listings_both_introduced_present | 21 rows, 11 species |
+| listings_both_introduced_uncertain | 4 rows, 2 species |
+| listings_both_native_absent | 6 rows, 2 species |
+| conflict_rate_both | <5 (9 rows, 4 species) |
+| conflict_rate_griis_only | <5 (4 rows, 3 species) |
+| conflict_rate_non_griis | <5 (5 rows, 2 species) |
+| conflict_rate_both_area_null | <5 (9 rows, 4 species) |
+| section3_conflict_pairs_origin_presence | <5 / <5 |
+| native_recall_mammals_micro_macro | 0.7555 / 0.8448 |
+| records_explained_mammals_micro_macro | 0.752 / 0.7683 |
+| records_explained_all_without_mdd | 0.0085 |
+| records_outside_mammals_countries_records | 94 / 5916 |
+| records_outside_mammals_flagged_share | 0.7021 |
+| red_list_rows_dropped | 72 |
+| threat_rows_other_datasets | 144 |
+| griis_rows_fetched | 17 |
+| datasets_rows_dropped_for_license | 88 datasets, 125 rows dropped |
+| shape_combinations_unmapped | 13 / 0 |
+| projection_all_defaults | 10 rows, 5 species, 4217 JSON bytes |
+| projection_all_yes_without_curated | 432 rows, 57 species, 155392 JSON bytes |
+| wikidata_non_mammals_value_reference | 10 / 4 of 26 |
+| gate1NameMatches | pass |
+| gate2PlacesMapped | pass |
+| gate3ConflictRate | too few to judge |
+| gate4NoGuardedStrings | pass |
+| gate5Licenses | pass |
+
+**Gates:**
+- Gate 1, MDD name matches ≥ 45 of 50: pass, 50 of 50, no misses.
+- Gate 2, every used place mapped: pass, 92 used, 0 unmapped, 0 null.
+- Gate 3, conflict rate ≤ 10 %: too few to judge, 9 introduced mammal rows on 4 species (rule: under 20). Neither pass nor fail. The count of conflicts is `<5`.
+- Gate 4, no IUCN string kept: pass, 0 in `raw/` and `results.*`. One dataset was dropped on the way (S1, Decisions).
+- Gate 5, every kept row CC0 or CC BY: pass; MDD `cc-by-4.0`.
+
+**Reproduce** (§5; the fetch moves the counts, `measure.py` on the same `raw/` repeats byte for byte):
+```
+S=/srv/critter-ai/agent-state/missions/critwire-native-ranges-design/spike
+python3 -I $S/fetch.py --repo /srv/critter-ai/worktrees/critwire-native-ranges-design --out $S/raw 2>> $S/fetch.log
+python3 -I $S/measure.py --repo /srv/critter-ai/worktrees/critwire-native-ranges-design --raw $S/raw --out $S
+```
+
+**Evidence:** `$S/results.json` (sha256 `5b1b81baf4b10fd1c330bcd7602bffb9749dcf45f9ba65c015edd1d18f1d857b`), `$S/results.tsv`, `$S/fetch.log`, `$S/raw/`, `$S/allowlist.json`, `$S/mdd-places.json`, `$S/datasets-first-pass.tsv`, code `$S/fetch.py`, `$S/measure.py`.
+
+**Outcomes applied** (Decisions, S5): all-defaults projection under 20 rows, GRIIS alone under 10 species, one dataset mixing scopes, gate 3 reported as too few. Every other row of Spike outcomes didn't fire.
+
 ## Steps
 
 Planner, 2026-11-01. Spike first: its numbers fill every later document. The Architecture as revised is final; it changes only through **Spike outcomes** below. §n = Architecture, V<n> = Verification's block, F<n> = Failure modes.
@@ -508,7 +573,7 @@ Checklist:
   - Writes `$S/results.json` (top level `mdd`, `agreement`, `gbif`, `wikidata`, `shape`, `licenses`, `redList`, `projection`, `gates`; sorted keys, no clock) and `$S/results.tsv` (`metric<TAB>value`, ≤ 40 headline lines, no `|`, covering all gates and coverage). Metric names avoid `iucn` and `threatStatus` (`redListRowsDropped`, `threatRows`), since gate 4 greps these files.
   - Every Shape combination gets its §3 outcome or `unmapped`. Projection: rows and bytes, all defaults and all yes.
   - Check: V5's re-run lines (repeatable); V7, V8. Log line: the five gates.
-- [ ] S5. **Record the spike; decide outcomes.** Add `## Spike results` above `## Steps`: date; each `results.tsv` line as a table row, exactly `| metric | value |`; gates pass or fail; §5's reproduce commands; `$S` paths and `results.json`'s sha256. Apply **Spike outcomes**, one Decisions line each, or one line "design unchanged". An outcome needing a re-run does it here if it fits, else adds a step after this one. Check: V5's table test on this plan; V7, V8.
+- [x] S5. **Record the spike; decide outcomes.** Add `## Spike results` above `## Steps`: date; each `results.tsv` line as a table row, exactly `| metric | value |`; gates pass or fail; §5's reproduce commands; `$S` paths and `results.json`'s sha256. Apply **Spike outcomes**, one Decisions line each, or one line "design unchanged". An outcome needing a re-run does it here if it fits, else adds a step after this one. Check: V5's table test on this plan; V7, V8.
 - [ ] S6. **007: Sources, Spike results.** Create `$D`, voice like `plans/006-learn-qa.md`, with exactly these headings in order: `## Summary`, `## Sources`, `## Spike results`, `## Allowlist`, `## Data model`, `## Contract`, `## Pipeline`, `## Learn tie-in`, `## Owner's choices`, `## Follow-up`, `## Rejected`.
   - Sources: one table from §2, one row per source, first cell starting with the names V4 lists. Each row: license quoted, URL, spatial unit, republishing terms, coverage (spike's where measured, else marked "probe"), used or rejected and why. Any other source met goes in V4's list too.
   - The §2 rows with no quote (FishBase, SeaLifeBase, WoRMS, Avibase, Clements, IOC; Amphibian Species of the World): one GET of each terms page, Internet Archive if refused, saved in `$M/arch-probe/terms/`. Unobtainable: `Not retrievable: <URL tried>, <date>`, not used ("Licenses decide").
@@ -520,9 +585,10 @@ Checklist:
   - Data model: all of §3, with the mapping table covering every combination in `results.json` `shape`; no `unmapped` left.
   - Contract: one fence opened as ` ```json contract `, holding `{"rangeListings": {<11 entries keyed by JSON name>}, "rangeListingsCsv": [<11 CSV names in column order>]}`. Entry keys as `scripts/build/contract.ts:44`: `type`, `null`, `means` (plain, from §3's tables), `values` (`origin` 4, `presence` 4, `license` 2), `pattern` (`country`), `sha` by `entrySha` (`contract.ts:47`): V6's error names each right sha; a control run gave `species.id`'s `efec33eb73ce`.
   - Check: V6; every `origin`, `presence` value in the mapping table is in `values`.
-- [ ] S8. **007: the rest.** Pipeline, Learn tie-in, Owner's choices, Follow-up (Finding 8), Rejected, Summary, from §4, §6, §7, §8, spike numbers replacing every estimate (rows, bytes, fetch minutes, all-defaults rows). Owner's choices take any recommendation changed by Spike outcomes. Pipeline must say: the snapshot's `allowlist` holds dataset → role and `area` only; `reason` stays in the ingest's constant and 007, because `assertNoIucnData` (`scripts/ingest/gbif.ts:138` pattern) walks the snapshot and a reason may name the tie. Summary: recommended sources, coverage, shape, choices. Check: read through for an estimate the spike replaced; V8.
+- [ ] S8. **007: the rest.** Pipeline, Learn tie-in, Owner's choices, Follow-up (Finding 8), Rejected, Summary, from §4, §6, §7, §8, spike numbers replacing every estimate (rows, bytes, fetch minutes, all-defaults rows). Owner's choices take any recommendation changed by Spike outcomes. From S5: O2 says GRIIS alone reaches 9 species; O1 and O2 say gate 3 was too few to judge (9 rows). Pipeline must say: the snapshot's `allowlist` holds dataset → role and `area` only; `reason` stays in the ingest's constant and 007, because `assertNoIucnData` (`scripts/ingest/gbif.ts:138` pattern) walks the snapshot and a reason may name the tie. Summary: recommended sources, coverage, shape, choices. Check: read through for an estimate the spike replaced; V8.
 - [ ] S9. **Handoff items.** Re-read `$H`; take the next free numbers (highest is H6 on 2026-11-01). Five items in Open, `~/AGENTS.md`'s format exactly: title `### H<n> · Native ranges O<k>: <short title>`, `Status: waiting on you`, `From: critwire-native-ranges-design · <today>`, `Blocks: nothing yet (the build brief's default applies)`. **Why:** the question, the recommendation, the spike's numbers (totals only). **Steps:** read `## Owner's choices` in `$D` (on GitHub, branch `agent/critwire-native-ranges-design`, or `main` after the release), then reply. **Your reply:** `O1 = yes / no`; `O2 = yes / no`; `O3 = a / b`; `O4 = yes / no`; `O5 =` modules, when. Add the H numbers to `$D`'s Owner's choices. Check: V9; V8 on `$H`.
 - [ ] S10. **Build brief.** Write `$B` in the L-series format (read `plans/briefs/critwire-learn-l5-powerbi-capstone.md`): header comment (copy-to path, `mission start critwire <file>`, base main, written by this mission, design `plans/007-native-ranges.md`, `Estimate:` from "Later Steps' deliverables and size" and the spike), `## Goal`, `## Why`, `## Scope` (In, Out), `## Definition of done`, `## Decision rules`, `## Notes`.
+  - Header also says, S5's outcome: don't start until O1 or O2 is yes (all defaults = 10 rows).
   - Must carry: §7's defaults and flip table with the H numbers to read first; MDD's steps conditional on a recorded O1 yes (§4's gate, those exact words); the contract from 007's fence; §4's refusal list, the `threatStatus` guard (Finding 3), key staleness; no-reason snapshot (S8).
   - Done means live: §4's byte-identical check against that mission's own Baseline list; an E2E spec like `e2e/countries.spec.ts`; `e2e/duckdb.spec.ts:59`, `e2e/attribution.spec.ts:32`, the docs page, `AGENTS.md`, `DATA-LICENSE.md` updated; E2E artifact path and reproduce command; release smoke.
   - Out: Learn (O4, O5), polygons, Finding 8's fix, IUCN, Wikipedia prose.
@@ -578,7 +644,7 @@ hashes dist | cmp - "$M/dist-baseline.sha256" || fail "dist differs from the bas
 for f in "$D" "$B"; do test -s "$f" || fail "missing $f"; done
 for h in Summary Sources 'Spike results' Allowlist 'Data model' Contract Pipeline 'Learn tie-in' "Owner's choices" Follow-up Rejected; do grep -qx "## $h" "$D" || fail "007 heading: $h"; done
 for h in Goal Why Scope 'Definition of done' 'Decision rules'; do grep -qx "## $h" "$B" || fail "brief heading: $h"; done
-for t in 'mission start critwire' 'Estimate:' 'O1 yes' 'O2 yes' 'O3 (a)' 'recorded O1 yes'; do grep -qF "$t" "$B" || fail "brief lacks: $t"; done
+for t in 'mission start critwire' 'Estimate:' 'O1 yes' 'O2 yes' 'O3 (a)' 'recorded O1 yes' 'until O1 or O2 is yes'; do grep -qF "$t" "$B" || fail "brief lacks: $t"; done
 
 # V4 every source: its row, a URL, a quote (or the recorded failure to get one)
 sources=$(sed -n '/^## Sources$/,/^## /p' "$D")
@@ -714,6 +780,13 @@ The spike's scripts can't be tested end to end, and a slip breaks a non-negotiab
 - S3, `datasets-first-pass.tsv` adds to the spec: `claims` (distinct dataset, country, means, status per species, beside raw `rowsKept`: 475 rows, 329 claims), `mammalRowsWithCountry`, and license and guard drops. `rowsInMdd` is `<5` under 5 rows or 5 species.
 - S4, `measure.py` adds to the spec: a fourth view `defaults` (roled, not `o2`: what an all-defaults build holds; the three §5 views treat every roled non-GRIIS dataset as `nonGriis`, Central Asia included); `explainedWithoutMdd`, so O1's worth has a number; projections `o1Only` and `o2Only`; other datasets' `INTRODUCED` rows in M beside `NATIVE`. Present = `PRESENT`-class or blank there, because the Brazil catalogue's rows have no status and they're what the comparison validates.
 - S4, small cells tightened: a share of 95 % or more over a dataset's rows prints `>=95%`, because near 100 % over rows kept in `raw/` reads back those rows as MDD's list (§5, "May not"). Per-dataset cells also pool entirely when the remainder is small, since total minus visible would read it back. So every per-dataset conflict rate is pooled, and no dataset is judged alone.
+- S5, outcome all-defaults projection < 20 rows: fired, 10 rows on 5 species. Brief's header says don't start until O1 or O2 is yes (S10, V3 now checks it). O1 only 410 rows on 54 species, O2 only 32 on 12, both 432 on 57, before O3.
+- S5, outcome GRIIS alone < 10 species: fired, 15 rows on 9 species from 10 datasets. Design holds; O2's text says so (S8).
+- S5, outcome dataset mixes scopes: fired, GRIIS Belgium's rows say both `Belgium` and `Flemish Region`. `area` already null; its reason now says so. RINSE's localities are each row's own country, so no mix. The two Belgian alien lists show only `Flemish Region`, but span the country by title: stay null (S3's reason).
+- S5, gate 3: too few to judge, Σ|I| = 9 under 20. Nothing dropped, no allowlist change, design unchanged; O1 and O2 report it (S8). S4 pooled the per-dataset rates, so none is judged alone. The build's `range-conflicts.json` shows real conflicts as they come.
+- S5, no `native` + `absent` outcome: didn't fire, 6 rows on 2 species with all yes. All 6 come from an O2 dataset, so an all-defaults build has none, so no historical rows there; 007 says so. `absent` stays in the contract either way.
+- S5, gates 1, 2, 4, 5 pass; Shape 13 combinations, 0 outside §3; projection 155,392 B JSON all yes, under 2 MB; Wikidata 4 of 26 non-mammals with references, under 13; Zenodo and GBIF up. Those rows of Spike outcomes change nothing.
+- S5, §7's probe figure "10 rows on 19 species" for all defaults is wrong against the spike (10 on 5). 007 and the brief take the spike's; §7 stays as written, as the plan's record.
 
 ## Log
 
@@ -727,5 +800,6 @@ The spike's scripts can't be tested end to end, and a slip breaks a non-negotiab
 - 2026-11-01 19:19 UTC: S2: `measure.py` loader, `mdd-places.json`, leak check. md5 and whole-file counts pass; matches 50 of 50, 0 misses; places 243 of 243 mapped (2 null), 92 used by matched species, 0 unmapped, 0 null. Leak check 252 files, 0 hits; 11 synthetic controls pass; no MDD file kept. Typecheck pass; plan-only diff; no build.
 - 2026-11-01 19:25 UTC: S3: first pass written, `allowlist.json` by hand: 88 datasets, 15 `register`, 3 `checklist`, 70 none; 12 `o2`, 1 `area` (Hawaii); 35 rows on roled datasets. Check: every key has a reason, every role's license CC BY 4.0 or CC0 1.0. Leak check 0 hits. Typecheck pass; plan-only diff; no build.
 - 2026-11-01 19:32 UTC: S4: `measure.py` finished, all metrics, 4 views. Gates: 1 pass (50 of 50), 2 pass (92 used, 0 unmapped), 3 too few to judge (9 introduced mammal rows, under 20), 4 pass (0 strings), 5 pass. 13 Shape combinations, 0 unmapped; outcomes sum to 679 rows fetched. Re-run byte-identical; V7 greps clean; leak check 0 hits. Typecheck pass; plan-only diff; no build.
+- 2026-11-01 19:35 UTC: S5: `## Spike results` recorded, 40 rows. Outcomes fired: all-defaults 10 rows (brief waits for O1 or O2 yes), GRIIS alone 9 species (O2 text), GRIIS Belgium mixes scopes (`area` null, reason updated), gate 3 too few (9 rows). Added S8, S10, V3 lines for them. V5 table test 0 missing, re-run byte-identical, sha unchanged; V7 clean; V8 0 hits. Typecheck pass; plan-only diff; no build.
 
 ## Summary
