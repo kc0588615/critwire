@@ -66,6 +66,7 @@ export const QA_FIXES: QaFix[] = [
   { q: "Q47", url: "/learn/spatial-statistics/weights/", has: "would show as a row with 0", not: "wouldn't appear here at all" },
   { q: "Q48", url: "/learn/spatial-statistics/moran/", has: "by about 10⁻¹² at most", not: "by 10⁻¹² at most" },
   { q: "Q49", url: "/learn/spatial-statistics/moran/", has: "Unlike most blocks, this one keeps its work", not: "This block runs when a PostGIS run starts" },
+  { q: "Q50", url: "/learn/spatial-statistics/local/", has: "Under the null hypothesis, here no spatial pattern", not: "Under the null hypothesis a z-score" },
 ];
 
 // What's wrong with each row on the origin `request` points at; [] when every fix shows.
