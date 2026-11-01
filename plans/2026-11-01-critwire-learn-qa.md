@@ -464,7 +464,7 @@ Rules for every step. A session reads these, its item, the Architecture sections
   - Don't edit `scripts/learn/assemble.ts` here (T2). Record in 006 whether its line 190 still reads wrong: `queued` for U11, or "no change".
   - Then the protocol over the 18 pages; start the ledger.
 
-- [ ] U5. **R2: d1–d6** (167 KB, the largest; §4). Reading protocol; T0/T1 fixes.
+- [x] U5. **R2: d1–d6** (167 KB, the largest; §4). Reading protocol; T0/T1 fixes.
 
 - [ ] U6. **R3: g1–g7** (130 KB; §4). Reading protocol; T0/T1 fixes.
 
@@ -601,5 +601,6 @@ Live walk or axe isn't needed: same bytes (§8). Record the result and the log's
 - 2026-11-01 13:40 UTC: U2: 11/11 notebooks exit 0 in a learner's venv (nothing left); 47 Labs rows; setup claims checked, 4 platforms resolve, Intel Mac refused as stated. 415 external links: 111 200, 295 GBIF Cloudflare blocks confirmed via API, 7 other blocks unconfirmed, 2 dead at publishers (Q3, Q4, listed). typecheck pass. Next: U3.
 - 2026-11-01 13:43 UTC: U3: slugs already covered, recorded. `fetchDatasets` exported, 6 paging tests PG(a)–(f) with failure modes first; no bug; 7 mutations each caught. typecheck pass, gbif.test 10/10, habitat.dbtest pass, plain build pass. Next: U4.
 - 2026-11-01 14:35 UTC: U4: R1 read (18 pages), qa-read written (1,133 tokens, 739 present, 394 absent), ledger started. 11 T0 fixes, Q5–Q15, each row seen to fail first; finding 8 done, `assemble.ts:190` no change, nothing queued. typecheck pass, `learn:port --check all` pass, build pass, scoped e2e 57/57, build unit tests and `learn-data` pass. Next: U5.
+- 2026-11-01 15:30 UTC: U5: R2 read (d1–d6), every prose number judged, claims checked in the lab db, ledger extended. 10 T0 fixes, Q16–Q25, each assertion seen to fail first; Q16 gives lab blocks the browser's Runs after line. Nothing queued or listed. typecheck pass, `learn:port --check all` pass, module-html tests 18/18, plain build pass, scoped e2e 67/67 (walk, map, labs). Next: U6.
 
 ## Summary

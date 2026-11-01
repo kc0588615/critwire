@@ -25,7 +25,7 @@ pnpm learn:check                                               # every .sql and 
 | map | `/learn/` | 4 | 0 | 0 | 0 | 0 | R1 | Q13 |
 | playground | `/learn/playground/` | 4 | 0 | 0 | 0 | 278 | R1 |  |
 | data | `/learn/data/` | 4 | 0 | 0 | 0 | 3248 | R1 | Q3, Q4, Q10, Q11 |
-| setup | `/learn/setup/` | 4 | 0 | 0 | 1 | 22 | R1 | Q5–Q9 |
+| setup | `/learn/setup/` | 4 | 0 | 0 | 1 | 22 | R1 | Q5–Q9, Q16 |
 | schema | `/learn/schema/` | 4 | 0 | 0 | 0 | 114 | R1 |  |
 | schema-lab | `/learn/schema/lab/` | 4 | 0 | 0 | 0 | 98 | R1 | Q12 |
 | schema-star | `/learn/schema/star/` | 4 | 0 | 0 | 0 | 36 | R1 |  |
@@ -40,12 +40,12 @@ pnpm learn:check                                               # every .sql and 
 | f2 | `/learn/foundations/aggregate/` | 4 | 0 | 0 | 9 | 96 | R1 |  |
 | f3 | `/learn/foundations/join/` | 4 | 0 | 0 | 14 | 70 | R1 | Q15 |
 | f4 | `/learn/foundations/window/` | 4 | 0 | 0 | 7 | 1018 | R1 |  |
-| d1 | `/learn/database-architecture/keys/` | 4 | 0 | 0 | 13 | 26 | R2 | Q1 |
-| d2 | `/learn/database-architecture/normalize/` | 4 | 0 | 0 | 14 | 114 | R2 |  |
-| d3 | `/learn/database-architecture/indexes/` | 4 | 0 | 0 | 0 | 0 | R2 |  |
-| d4 | `/learn/database-architecture/transactions/` | 4 | 0 | 0 | 0 | 2 | R2 |  |
+| d1 | `/learn/database-architecture/keys/` | 4 | 0 | 0 | 13 | 26 | R2 | Q1, Q18 |
+| d2 | `/learn/database-architecture/normalize/` | 4 | 0 | 0 | 14 | 114 | R2 | Q19, Q20 |
+| d3 | `/learn/database-architecture/indexes/` | 4 | 0 | 0 | 0 | 0 | R2 | Q16, Q21–Q24 |
+| d4 | `/learn/database-architecture/transactions/` | 4 | 0 | 0 | 0 | 2 | R2 | Q25 |
 | d5 | `/learn/database-architecture/roles/` | 4 | 0 | 0 | 0 | 0 | R2 |  |
-| d6 | `/learn/database-architecture/star/` | 4 | 0 | 0 | 2 | 2 | R2 |  |
+| d6 | `/learn/database-architecture/star/` | 4 | 0 | 0 | 2 | 2 | R2 | Q17 |
 | g1 | `/learn/gis-in-sql/crs/` | 4 | 0 | 0 | 0 | 0 | R3 |  |
 | g2 | `/learn/gis-in-sql/load-validate/` | 4 | 0 | 0 | 0 | 0 | R3 |  |
 | g3 | `/learn/gis-in-sql/spatial-join/` | 4 | 0 | 0 | 0 | 0 | R3 |  |
@@ -244,15 +244,28 @@ R1–R6 read this first; R7 reads only this and what it points to. Prereqs read 
 | haversine | setup ("the distance along the Earth's surface") | |
 | WSL 2 | no | setup (Docker's backend; the installer handles it) |
 | GDAL, WKB, WGS 84, SRID, GeoParquet | no; the reader's trade | setup, data, schema-lab. R2+: define if a module leans on them |
-| Parquet | no (`d2`, `d6`, `g2` use it; R2–R3 to say if any defines it) | data, setup, schema |
-| GiST | R2 (d3), R3 (g5) to confirm | schema-lab |
+| Parquet | d2 (Q19) | data, setup, schema, before d2 |
+| GiST | d3; R3 (g5) to agree | schema-lab, before d3 |
 | ERD, PK, FK, UK, view | schema | |
-| fact, dimension, grain, factless, conformed, unknown member | schema-star; R2 (d6) to agree | |
+| fact, dimension, grain, factless, conformed, unknown member | schema-star; d6 agrees | |
 | `NULL`, `IS NULL`, `coalesce`, `IN` | f1 | |
 | aggregate, `GROUP BY`, `HAVING`, `CASE`, `basis_of_record`, `MACHINE_OBSERVATION` | f2 | |
 | join kinds, anti join, junction table, bounding box, `EXCEPT` | f3 | |
 | normalized | f3 links forward to d2 | |
 | subquery, CTE, window function, frame (`ROWS UNBOUNDED PRECEDING`) | f4 | |
+| entity; candidate, alternate, natural, surrogate, foreign key; `CHECK`; generated column | d1 | |
+| catalog, `::regclass` | d1 (Q18) | |
+| functional dependency, anomalies, 1NF–3NF, BCNF, lossless split, denormalizing | d2 | |
+| sequential scan, planner, statistics, B-tree, Index/Bitmap scan, correlation, BRIN, `EXPLAIN` | d3 | |
+| `VACUUM`, autovacuum | d4; d3 says "housekeeping" (Q24) | |
+| ACID, autocommit, savepoint, MVCC, snapshot, isolation levels, deadlock, idempotent, upsert, `EXCLUDED`, `RETURNING` | d4 | |
+| `IS DISTINCT FROM` | d4 (Q25) | |
+| role, membership, owner, PUBLIC, schema, `search_path`, default privileges, RLS | d5 | |
+| measures (additive, semi, non), snowflake, degenerate, drill across, slowly changing types, aggregate fact | d6 | |
+| fan-out | d6 says it explains itself in f3, which calls it "the row multiplier" (block `f3-fan-out`). R7: other uses | d6 |
+| `DISTINCT ON` | no | d4 names it as the fix for a duplicated batch. R3 (g7), R4 (s2) use it: define if they lean on it |
+| `FILTER (WHERE …)`, `LATERAL` beyond f3 | blocks only; `FILTER` reads as itself | d3, d4, d5, d6 |
+| ACL, SQLSTATE, struct | no; the reader's trade | d5, d4, d2 |
 
 **Claims** (claim | where | checked):
 
@@ -274,11 +287,28 @@ R1–R6 read this first; R7 reads only this and what it points to. Prereqs read 
 | PostGIS results print the first 5 rows and "… n more rows" | setup | `result.ts`. Prose can't ask to compare rows it doesn't print (Q9); R2–R6 watch for it |
 | Lab: 16 tables, admin-1 for nine countries, clips all of Costa Rica and Tasmania, loader needs `postgis` and `postgis_raster` | schema-lab, data, setup | lab db, loader, Q10, Q12. R3 (g7) to agree |
 | s4 at 5 km: 1,094 cells, I = 0.273296, z_rand 15.246590 | setup's arcpy block | s4's results. R4 to agree |
-| Star: `dim_country` 251 rows, `ZZ` and `-1` unknown members | setup, schema-star | R2 (d6), R6 to agree |
+| Star: `dim_country` 251 rows, `ZZ` and `-1` unknown members; rows 76, 251, 400, 177, 40,395, 472, 75, 5,578 | setup, schema-star, d6 | d6's results agree; R6 to agree |
 | Hours: 6, 12, 12.5, 12.5, 10, 7, 8 | map, tracks | sums of `curriculum.json` |
 | Every module has an exercise; 8 browser checks, 28 show an answer | map (Q13) | 33 modules, 36 slots |
 
+| Lab: 16 tables, 74 columns, 17 ERD lines; rows 90,072, one transaction | d1, d4 | lab db, `lab.mmd`. `setup.py` and the s4–s6 and c1 downloads also leave the helpers `s4_cells`, `s4_neighbours` in `learn_curriculum` (`DROP … IF EXISTS` first, so re-running is safe; a `.py` run before d1's tbls exercise shows 17 tables). R4 to look |
+| Devil: 2,000 records, 41 no year, 1,858 since 2000, 101 before; 1,998 `AU`, 2 `US`; 182 in 2010. Jaguar: 1,994 with a year | d3, d4, d5 | results; jaguar lab db |
+| Pangolins: Temminck's 9 (first 1930), giant 10; 13 of 19 before 2018; 2018 a teaching boundary (Gaubert et al. 2018) | d3, d6 | results |
+| Outside ids: 8 `UNIQUE` on `species` (slug, name, six ids); missing gbif 3, col 7, wikidata 0, inaturalist 2, ncbi 1 | d1 | results; f1's three |
+| iNaturalist research-grade in the full download: 9,581 CC BY, 3,152 CC0; dataset declares CC BY-NC | d2 | Not in the repo's sample; not re-checked. BY-NC agrees with `data/` page's rule |
+| `ANALYZE` in a transaction is undone by `ROLLBACK` | d3 (Q16) | lab db: 316 common `dataset_key`s inside, 100 after |
+| `occurrences`: 8 kB pages, about 50 rows each, 832 pages, 7 BRIN ranges | d3 | `d3-sizes` 6,656 kB; `d3-brin` |
+| Every geometry column has a GiST index; loader ends tables with `ANALYZE` (16) and starts with `ON_ERROR_STOP` | d3, d4 | lab db, loader |
+| `MU`, `RE` are "Seven seas (open ocean)" | d6 | lab db |
+| Trinidad and Tobago 2 records, 22 habitat classes; Åland 0 | d6 | results |
+| tbls 1.96.1 sha256s | d1 | both downloaded, both match |
+| PUBLIC's and the test db's privileges as d5 says | d5 | full 13 rows of `d5-privileges` in the lab db |
+
 **R1's flagged numbers:** setup's 3.4, 3.5, 5432, 5433, 2024, 10,000 and 251, f2's 1.0, 4.0, 1,000 and 3.5 (`7 / 2`), f4's 1,000: all right; versions, ports, thresholds or the outside facts above. f1 and f3 flag none.
+
+**R2's flagged numbers:** d1's 1.96 (tbls), d2's 9,581 and 3,152 (above, unchecked), 2025 (SQL Server), d3's 300, 100, 30,000, 1,000 and 300,000 (`ANALYZE`'s sample), 0.62 (Q22), d4's 2005 (its record, lab db), 2019, 496, 143, 1,994 (each derived, added up), 9.5 (version), d5's 9.5, 2016 (versions), d6's 2000, 2005, 2017, 2018, 2010, 2020, 2016 (years in prose): all right. Small integers and rates (seven in ten, 72 %, nine times, a twentieth, three pages, seven ranges, four of them, 84 datasets, 22 classes): each worked out from its result.
+
+R2 prereqs read fine as ordered; d3's and d6's links back all resolve to what they name. `d5-database` isn't run (`untested`, its reason on the page); read only.
 
 **Finding 8's other site:** `scripts/learn/assemble.ts:190`, "Open it in Jupyter or VS Code, with the environment's Python as its kernel", reads true now that setup installs Jupyter (Q5). No change; nothing queued for U11 from R1.
 
