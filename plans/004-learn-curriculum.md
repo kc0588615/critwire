@@ -3836,7 +3836,7 @@ added | first_year
 42 | 2020
 ```
 
-10. Version 2 of the feed carries the month. `DO UPDATE` brings existing rows up to date from `EXCLUDED`, the row that was refused; its `WHERE` skips rows that wouldn't change, so they aren't rewritten (a new version each, for nothing). Whether `RETURNING` hands back an inserted or an updated row shows in `xmax`, which is 0 on a freshly inserted version: a PostgreSQL detail, but a well-known one.
+10. Version 2 of the feed carries the month. `DO UPDATE` brings existing rows up to date from `EXCLUDED`, the row that was refused; its `WHERE` skips rows that wouldn't change, so they aren't rewritten (a new version each, for nothing). `IS DISTINCT FROM` is `<>` for values that may be `NULL`: two `NULL`s count as the same, a `NULL` and a value as different. Whether `RETURNING` hands back an inserted or an updated row shows in `xmax`, which is 0 on a freshly inserted version: a PostgreSQL detail, but a well-known one.
 
 ```sql
 -- q: d4-do-update
