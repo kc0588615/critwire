@@ -263,6 +263,7 @@ Hand-only, not run here: Docker and its image tags, the EDB installer and Stack 
 | Q57 | e1 | wrong fact | T0 | "Apart from `creator` and `sendNotification`, it equals, as JSON, the request GBIF stored": the stored one also holds `type`, `interpretedExtensions` and `verbatimExtensions` (`data/raw/gbif-sample/download.json`). Its `format`, `checklistKey` and `predicate` do equal `build_request`'s, every key in order (lab db), and those are what `same` compares | fixed | `qa-fixes.ts` |
 | Q58 | e2 | prose | T0 | "The decimal comma two records later": `e2-casts` puts `30 m` on the first record and the comma on the second | fixed | `qa-fixes.ts` |
 | Q59 | e2 | wrong fact | T0 | "`read_postgis(sql, con, geom_col=…)` needs the geometry column's name": it defaults to `geom` (geopandas signature, the pinned version) | fixed | `qa-fixes.ts` |
+| Q60 | e2 | prose | T0 | "The catalogue (`pg_class`…)": d1 defines the term as "catalog" and every other page uses it | fixed | `qa-fixes.ts` |
 
 ## Ledger
 

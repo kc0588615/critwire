@@ -8829,7 +8829,7 @@ devil_buffers is in schema learn_curriculum, until the rollback
 after the rollback: no table
 ```
 
-GeoPandas reads the devil's 2,000 records as points in EPSG:4326 and writes 2,000 one-kilometre buffers in EPSG:3577 (Australian Albers, in metres), 6,273.1 km² together, overlaps counted twice. The catalogue (`pg_class`, whose `relnamespace` is the table's schema) confirms where the table went while the transaction is still open; after the rollback it is gone. The lab role can create tables only in `learn_curriculum`, its own schema, not in `public`, so a write that fell back to the search path's next schema would fail rather than land somewhere unexpected.
+GeoPandas reads the devil's 2,000 records as points in EPSG:4326 and writes 2,000 one-kilometre buffers in EPSG:3577 (Australian Albers, in metres), 6,273.1 km² together, overlaps counted twice. The catalog (`pg_class`, whose `relnamespace` is the table's schema) confirms where the table went while the transaction is still open; after the rollback it is gone. The lab role can create tables only in `learn_curriculum`, its own schema, not in `public`, so a write that fell back to the search path's next schema would fail rather than land somewhere unexpected.
 
 **Result:** a delivered file goes into staging exactly as sent, in CSV mode, never text format. A file with a damaged line is refused whole, and the error gives the line and its SQLSTATE. Every value that wouldn't cast is listed with its record's key and its column before the typed insert runs. The typed load matches synonyms through `taxonKey`, and any failed check rolls it all back. GeoPandas writes into the schema it names, and the lab leaves `learn_curriculum` as it found it.
 
