@@ -283,6 +283,7 @@ Hand-only, not run here: Docker and its image tags, the EDB installer and Stack 
 | Q77 | c1 | missing prereq | T0 | Lab stage "Ship and refresh (e5)" and the Concept rest on e5's schedule to rebuild the feed, but c1 named e4. e5 needs e4, so nothing else is lost | fixed | `qa-fixes.ts` |
 | Q78 | f3 | jargon | T0 | d6 says "the fan-out of Joins, f3", and f3's prose only said "row multiplier"; the word was in a block id alone. The one other use, p2's "multiplies rows", reads as itself | fixed | `qa-fixes.ts` |
 | Q79 | d4 | jargon | T0 | Named as the fix for a duplicated batch, with no word on what it does; g7 and s2 say so where they use it, much later | fixed | `qa-fixes.ts` |
+| Q80 | e1, e2, p1, p4, g3, g7, s6 | prose | T0 | e1, e2, p1, p4 wrote "licence", every other page and the column "license"; g3, g7, s6 "summarise", the rest "summarize". Each now one form. "neighbor" stays where it quotes ArcGIS's labels; `e3-snapshot`'s comment is Q81 | fixed | `qa-fixes.ts` |
 
 ## Ledger
 

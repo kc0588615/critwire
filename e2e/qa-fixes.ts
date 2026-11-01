@@ -96,6 +96,13 @@ export const QA_FIXES: QaFix[] = [
   { q: "Q77", url: "/learn/capstone/game-feed/", has: "<a href=\"/learn/etl/schedule/\">Scheduling</a> (e5), <a href=\"/learn/power-bi/maps-report/\">", not: "<a href=\"/learn/etl/quality-provenance/\">Quality and provenance</a> (e4), <a href=\"/learn/power-bi/maps-report/\">" },
   { q: "Q78", url: "/learn/foundations/join/", has: "The row multiplier, or fan-out.", not: "The row multiplier. The Jaguar" },
   { q: "Q79", url: "/learn/database-architecture/transactions/", has: "<code>DISTINCT ON (key)</code>, which keeps one row per key, or a check in staging", not: "(<code>DISTINCT ON</code>, or a check" },
+  { q: "Q80", url: "/learn/etl/extract/", has: "open licenses only", not: "licences" },
+  { q: "Q80", url: "/learn/etl/transform-load/", has: "<strong>Licenses.</strong>", not: "icence" },
+  { q: "Q80", url: "/learn/power-bi/power-query/", has: "a Pro license allows eight a day", not: "licence" },
+  { q: "Q80", url: "/learn/power-bi/maps-report/", has: "A Pro license allows eight refreshes a day", not: "licence" },
+  { q: "Q80", url: "/learn/gis-in-sql/spatial-join/", has: "summarize per record", not: "summarise" },
+  { q: "Q80", url: "/learn/gis-in-sql/raster/", has: "Two ways to summarize a country", not: "summarise" },
+  { q: "Q80", url: "/learn/spatial-statistics/zonal/", has: "<strong>Zonal statistics</strong> summarize what falls", not: "summarise" },
 ];
 
 // What's wrong with each row on the origin `request` points at; [] when every fix shows.
