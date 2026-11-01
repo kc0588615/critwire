@@ -37,7 +37,7 @@
 {{block:f3-fan-out}}</li>
 <li><p>Light spatial in plain SQL. Every record has a <code>longitude</code> and <code>latitude</code> in degrees (WGS 84), so <code>min</code> and <code>max</code> give a species' <strong>bounding box</strong>, the smallest rectangle around its records:</p>
 {{block:f3-bbox}}
-<p>The Tasmanian Devil's box runs from New Mexico to Tasmania: a few zoo specimens in Albuquerque stretch it across the Pacific (the Jaguar's northern edge is the same zoo). One outlier ruins a box, so look at where the records actually are. A rectangle as a filter (<code>BETWEEN</code> on both axes) finds the records in and around Tasmania:</p>
+<p>The Tasmanian Devil's box runs from New Mexico to Tasmania: a few zoo specimens in Albuquerque stretch it over 257° of longitude, the long way round through Africa and Asia (the Jaguar's northern edge is the same zoo). One outlier ruins a box, so look at where the records actually are. A rectangle as a filter (<code>BETWEEN</code> on both axes) finds the records in and around Tasmania:</p>
 {{block:f3-box-filter}}</li>
 <li><p>Count records in a grid of 10° boxes: <code>floor(longitude / 10) * 10</code> is the west edge of a record's box, <code>floor(latitude / 10) * 10</code> its south edge. <code>floor</code> rounds down, also below zero, so latitude -41.2 falls in the box from -50 to -40.</p>
 {{block:f3-bins}}</li>

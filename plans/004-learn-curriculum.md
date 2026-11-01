@@ -1644,7 +1644,7 @@ id | common_name | records | west | east | south | north
 51 | Jaguar | 2000 | -109.45264 | -39.7565988 | -25.790838 | 35.078382
 ```
 
-   The Tasmanian Devil's box runs from New Mexico to Tasmania: a few zoo specimens in Albuquerque stretch it across the Pacific (the Jaguar's northern edge is the same zoo). One outlier ruins a box, so look at where the records actually are. A rectangle as a filter (`BETWEEN` on both axes) finds the records in and around Tasmania:
+   The Tasmanian Devil's box runs from New Mexico to Tasmania: a few zoo specimens in Albuquerque stretch it over 257° of longitude, the long way round through Africa and Asia (the Jaguar's northern edge is the same zoo). One outlier ruins a box, so look at where the records actually are. A rectangle as a filter (`BETWEEN` on both axes) finds the records in and around Tasmania:
 
 ```sql
 -- q: f3-box-filter

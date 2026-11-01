@@ -218,6 +218,7 @@ Hand-only, not run here: Docker and its image tags, the EDB installer and Stack 
 | Q12 | schema-lab | prose | T0 | "Two whole-country clips": Tasmania is an Australian state, not a country. Names the two | fixed | `qa-fixes.ts` |
 | Q13 | map | prose | T0 | "Has an exercise that checks your answer": true of 8 of the 36 exercises, the browser's. The other 28 (PostGIS, Python, Power BI) show the answer to compare | fixed | `qa-fixes.ts` |
 | Q14 | capstone | prose | T0 | A track of one module told the learner to "work through them in order" | fixed | `qa-fixes.ts` |
+| Q15 | f3 | prose | T0 | The devil's box "across the Pacific": `min`/`max` of longitude give -106.66 to 150.25, 257° the long way round through Africa and Asia. The box misses the Pacific, which is why a lat/lon box can't wrap the antimeridian | fixed | `qa-fixes.ts` |
 
 ## Ledger
 
