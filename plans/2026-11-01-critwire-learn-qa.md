@@ -74,7 +74,7 @@ Out:
 
 - [x] Baseline: install, migrate, run typecheck, lint, unit and E2E tests; record the results under Baseline
 - [x] Architecture: `architect` writes findings and the target design
-- [ ] Fable review: `architecture-reviewer`
+- [x] Fable review: `architecture-reviewer`
 - [ ] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
 - [ ] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
 - [ ] Steps: `planner` writes Steps and Verification
@@ -207,6 +207,27 @@ Full `pnpm e2e`: at most U11 + final, plus release's re-verify. Whole `learn:che
 
 ## Architecture review (Fable)
 
+Checked at `3afbfa3` by reading the cited files and computing the checker's import closure (`importClosure(CHECKER_ENTRY)` via tsx, no heavy jobs). Findings 1 and 2 are probe measurements I didn't re-run; both are consistent with the code (`learn.css:22` has `white-space: pre-wrap` and no `overflow-wrap`, so an unbroken URL overflows; no `tabindex` anywhere in the emitters).
+
+Verified true:
+- Coverage table: every "Proven by" line exists and asserts what the row says (`learn-map.spec.ts:118-149` crawl, `:137` same-page fragments only, `:136` skips off-origin; `:35` text-only prereqs; `learn-browser.spec.ts:273-301`, `:418-459`, `:438` throws on a missing `WRONG`; `learn-screens.spec.ts` 12 pages, `WIDTHS`/`SCHEMES` at `:9-10`; `learn-data.spec.ts:260` no scheme; `schema.spec.ts:160-172`; `diagrams.ts:43-46`; `learn-labs.spec.ts:237` feed summary). 47 `index.html` under `dist/learn/`.
+- §2: `renderPage` (`pages.ts:65`, not `:73`; pure, used only by `writePages`, no test imports it) is outside the closure. Closure = 27 files; from `scripts/build/learn/` only `sql.ts`. The data page is built by `scripts/build/learn/page.ts` (`fillSlots`), not `renderPage`, so its hand edit is right. `schema.spec.ts:113` uses button clicks and `.focus()`, unaffected by `tabindex` on `pre`.
+- §7: `freshness.ts:1-14,100-113` keys block texts (+`after` chain, boots, pg-session/py-connect), lab data shas, the closure, `canary.sql`, `requirements.txt`, and each `.sql`/`.py` download's sha (`:108`, `:133` "download … is stale"). Page HTML, `learn.css`, `curriculum.json`, `e2e/` enter nowhere: T0 leaves plain `pnpm build` valid. T1/T2/List as described.
+- §6 slugs: `species.ts:132` (`SLUG` + not-all-digits) via `deriveCore`, reached by `readBuildInputs` (`inputs.ts:63`); tests `species.test.ts:75-80` include `../x`, `a/b`, `""`, `123`; `childFile` (`paths.ts:8`, `paths.test.ts:11`) guards `scripts/build.ts:54-55`. Recording it without a new test is correct. GBIF: `fetchDatasets` (`gbif.ts:107`) unexported, untested; modes (a)–(f) match its loop (`offset += FACET_LIMIT`, break on empty page, sum check); pacing `MIN_GAP_MS = 500` (`scripts/http.ts:10`).
+- §8: `release/live.spec.ts:36-47` compares every dist file's bytes live; only the `QA_FIXES` live test is missing for "fixed pages show the fix".
+- Budget: 12 units ≤ 25 steps; full `pnpm e2e` ≤ 3 runs, whole `learn:check` ≤ 4; walk has `trace: "off"`, scoped runs in `/tmp/*-e2e`: within the disk rule.
+
+VERDICT: APPROVE
+MUST-FIX: none
+MISSED:
+1. Finding 8's second site, `scripts/learn/assemble.ts:190`, is in the closure *and* changes every `.py`/`.ipynb` download's text, so its sha in `checked.json` moves: by §7 it is T2 (queue to U11), not the "small prose fix" the finding implies. Only the `setup.html:89` half is T0. Say so, or a session fixes it in place and plain `pnpm build` refuses until a whole `learn:check`.
+SHOULD-CONSIDER:
+1. Three citations name the wrong folder: `assemble.ts` is `scripts/learn/assemble.ts`, `build.ts:54-55` is `scripts/build.ts`, `http.ts:10` is `scripts/http.ts`; `renderPage` is `pages.ts:65`. Fix in the revision so the planner's steps point at real files.
+2. `focusableScrollers`: match `<pre(?=[\s>])` and skip an element that already carries `tabindex`, so a future hand-written `<pre tabindex=…>` isn't doubled. Keep `renderPage` pure (it's documented so).
+3. Walk spec: set `test.setTimeout` per page (the s/g pages boot the engine and run several blocks before 4 axe passes); `learn-browser` budgets 15 s a page.
+4. U1 is the largest unit (spec, dep, `learn-map` tightening, `qa-fixes.ts`, live test, two fixes, 006 skeleton). If a session runs long, the live test and `qa-fixes.ts` can move to U2 without breaking "the walk can't pass without the fixes".
+5. The data page also emits `<pre class="wrap">` (`page.ts:65`); the probe didn't flag it (it wraps), but the walk's axe pass on `/learn/data/` is what proves that, so keep that page in the walk.
+
 ## Architecture review (Astra)
 
 ## Revision notes
@@ -225,5 +246,6 @@ Full `pnpm e2e`: at most U11 + final, plus release's re-verify. Whole `learn:che
 
 - 2026-11-01 12:00 UTC: Baseline. typecheck pass, test 748/748, test:db 140/140, build pass, learn:check ok, e2e 98/98; dist = live. Next: Architecture.
 - 2026-11-01 12:22 UTC: Architecture written by `architect`: d1 overflow at 375 px + axe `scrollable-region-focusable` found (probe, not yet fixed); walk spec, axe-core, one-off .ipynb run, reading units R1–R7. No checks run (plan only). Next: Fable review.
+- 2026-11-01 12:32 UTC: Fable review by `architecture-reviewer`: APPROVE, 0 MUST-FIX, 1 MISSED (`assemble.ts:190` is T2, not T0), 5 SHOULD-CONSIDER. Plan only, no checks run. Next: Astra review.
 
 ## Summary
