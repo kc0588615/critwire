@@ -22,12 +22,12 @@ pnpm learn:check                                               # every .sql and 
 
 | Page | URL | Views | Axe | Overflow | Blocks | `incomplete` | Read | Issues |
 |---|---|---|---|---|---|---|---|---|
-| map | `/learn/` | 4 | 0 | 0 | 0 | 0 | R1 |  |
+| map | `/learn/` | 4 | 0 | 0 | 0 | 0 | R1 | Q13 |
 | playground | `/learn/playground/` | 4 | 0 | 0 | 0 | 278 | R1 |  |
-| data | `/learn/data/` | 4 | 0 | 0 | 0 | 3248 | R1 | Q3, Q4 |
-| setup | `/learn/setup/` | 4 | 0 | 0 | 1 | 22 | R1 |  |
+| data | `/learn/data/` | 4 | 0 | 0 | 0 | 3248 | R1 | Q3, Q4, Q10, Q11 |
+| setup | `/learn/setup/` | 4 | 0 | 0 | 1 | 22 | R1 | Q5–Q9 |
 | schema | `/learn/schema/` | 4 | 0 | 0 | 0 | 114 | R1 |  |
-| schema-lab | `/learn/schema/lab/` | 4 | 0 | 0 | 0 | 98 | R1 |  |
+| schema-lab | `/learn/schema/lab/` | 4 | 0 | 0 | 0 | 98 | R1 | Q12 |
 | schema-star | `/learn/schema/star/` | 4 | 0 | 0 | 0 | 36 | R1 |  |
 | track foundations | `/learn/foundations/` | 4 | 0 | 0 | 0 | 0 | R1 |  |
 | track database-architecture | `/learn/database-architecture/` | 4 | 0 | 0 | 0 | 0 | R1 |  |
@@ -35,10 +35,10 @@ pnpm learn:check                                               # every .sql and 
 | track spatial-statistics | `/learn/spatial-statistics/` | 4 | 0 | 0 | 0 | 0 | R1 |  |
 | track etl | `/learn/etl/` | 4 | 0 | 0 | 0 | 0 | R1 |  |
 | track power-bi | `/learn/power-bi/` | 4 | 0 | 0 | 0 | 0 | R1 |  |
-| track capstone | `/learn/capstone/` | 4 | 0 | 0 | 0 | 0 | R1 |  |
+| track capstone | `/learn/capstone/` | 4 | 0 | 0 | 0 | 0 | R1 | Q14 |
 | f1 | `/learn/foundations/select/` | 4 | 0 | 0 | 8 | 66 | R1 |  |
 | f2 | `/learn/foundations/aggregate/` | 4 | 0 | 0 | 9 | 96 | R1 |  |
-| f3 | `/learn/foundations/join/` | 4 | 0 | 0 | 14 | 70 | R1 |  |
+| f3 | `/learn/foundations/join/` | 4 | 0 | 0 | 14 | 70 | R1 | Q15 |
 | f4 | `/learn/foundations/window/` | 4 | 0 | 0 | 7 | 1018 | R1 |  |
 | d1 | `/learn/database-architecture/keys/` | 4 | 0 | 0 | 13 | 26 | R2 | Q1 |
 | d2 | `/learn/database-architecture/normalize/` | 4 | 0 | 0 | 14 | 114 | R2 |  |
@@ -222,11 +222,103 @@ Hand-only, not run here: Docker and its image tags, the EDB installer and Stack 
 
 ## Ledger
 
-Filled by U4–U9: terms (term, defined at, used undefined at) and claims (sample cap, versions, licences, what a table holds, rules).
+R1–R6 read this first; R7 reads only this and what it points to. Prereqs read fine as ordered on R1's pages.
+
+**Terms** (term | defined at | used undefined at):
+
+| Term | Defined at | Used undefined at |
+|---|---|---|
+| record | map, schema, data | |
+| DuckDB, PostgreSQL, PostGIS | setup | map names them as tools, with a link |
+| GEOS, libpq, virtual environment, `ipykernel`, GeoPackage | setup | |
+| haversine | setup ("the distance along the Earth's surface") | |
+| WSL 2 | no | setup (Docker's backend; the installer handles it) |
+| GDAL, WKB, WGS 84, SRID, GeoParquet | no; the reader's trade | setup, data, schema-lab. R2+: define if a module leans on them |
+| Parquet | no (`d2`, `d6`, `g2` use it; R2–R3 to say if any defines it) | data, setup, schema |
+| GiST | R2 (d3), R3 (g5) to confirm | schema-lab |
+| ERD, PK, FK, UK, view | schema | |
+| fact, dimension, grain, factless, conformed, unknown member | schema-star; R2 (d6) to agree | |
+| `NULL`, `IS NULL`, `coalesce`, `IN` | f1 | |
+| aggregate, `GROUP BY`, `HAVING`, `CASE`, `basis_of_record`, `MACHINE_OBSERVATION` | f2 | |
+| join kinds, anti join, junction table, bounding box, `EXCEPT` | f3 | |
+| normalized | f3 links forward to d2 | |
+| subquery, CTE, window function, frame (`ROWS UNBOUNDED PRECEDING`) | f4 | |
+
+**Claims** (claim | where | checked):
+
+| Claim | Where | Checked |
+|---|---|---|
+| Sample: 40,395 records, 400 datasets, 71 of 76 species, 106 countries, 250 `countries` rows | setup, f2 | results |
+| Cap 2,000 records per species, lowest `md5` of the GBIF id; 13 species at the cap | data, f2, f4 | results |
+| Licences: only CC0 1.0 and CC BY 4.0, the record's or the dataset's when stricter | data, f2, f3 | results |
+| 5 species without records: 3 unsettled, Ili Pika none open, Yangtze turtle's only open record in a CC BY-NC dataset | f1, f3 | results; the turtle's dataset not re-checked |
+| Country rule: one record outside the core region is left out; the sample keeps it | f3 | AGENTS.md rule; ids 4 and 50 have 1 BR record each, Tiger, Chimpanzee, Wild Dog on both lists (lab db) |
+| Devil: 2,000 records, 1,993 around Tasmania, 7 elsewhere; Jaguar: 20 countries, 97.4 % one GPS dataset | f3, f4 | results. R4: s4's cells hold 1,972, say why |
+| Most species' samples lean on one or two datasets | f4 | 55 of 71 have ≥ 50 % in their top two (lab db) |
+| Before 1900 mostly specimens | f2 | 110 of 140 (lab db) |
+| Exactly 2 animals with `photo_license` `NULL` | f1 | lab db |
+| Tested pair: PostgreSQL 16, PostGIS 3.4; EDB also 3.5; Docker tags 16-3.5, 16-3.6 may change last digits | setup | image dates from Docker Hub: 16-3.4 last built 2024-10-14, amd64 only, as stated |
+| Python 3.12, uv 0.13.5, 44 pins; `.venv` installers | setup | U2; Q5, Q6 run here |
+| Browser result cap 10,000 rows; 4 files build 8 tables + 1 view | setup, schema | `setup-counts` |
+| Editors roll back; only the playground keeps changes, and they follow the learner through in-site links until Reset or reload | playground, f1–f4, d1 | `learn-browser.spec.ts:570-590`. So "if you changed them in the playground, Reset database first" is right, though it reads odd |
+| PostGIS results print the first 5 rows and "… n more rows" | setup | `result.ts`. Prose can't ask to compare rows it doesn't print (Q9); R2–R6 watch for it |
+| Lab: 16 tables, admin-1 for nine countries, clips all of Costa Rica and Tasmania, loader needs `postgis` and `postgis_raster` | schema-lab, data, setup | lab db, loader, Q10, Q12. R3 (g7) to agree |
+| s4 at 5 km: 1,094 cells, I = 0.273296, z_rand 15.246590 | setup's arcpy block | s4's results. R4 to agree |
+| Star: `dim_country` 251 rows, `ZZ` and `-1` unknown members | setup, schema-star | R2 (d6), R6 to agree |
+| Hours: 6, 12, 12.5, 12.5, 10, 7, 8 | map, tracks | sums of `curriculum.json` |
+| Every module has an exercise; 8 browser checks, 28 show an answer | map (Q13) | 33 modules, 36 slots |
+
+**R1's flagged numbers:** setup's 3.4, 3.5, 5432, 5433, 2024, 10,000 and 251, f2's 1.0, 4.0, 1,000 and 3.5 (`7 / 2`), f4's 1,000: all right; versions, ports, thresholds or the outside facts above. f1 and f3 flag none.
+
+**Finding 8's other site:** `scripts/learn/assemble.ts:190`, "Open it in Jupyter or VS Code, with the environment's Python as its kernel", reads true now that setup installs Jupyter (Q5). No change; nothing queued for U11 from R1.
 
 ## Method
 
-Throwaway scripts, kept here because they're in no repo file. U4 adds the reader's.
+Throwaway scripts, kept here because they're in no repo file.
+
+Reader's triage (R1–R6): its totals today are 1,133 tokens, 739 present, 394 absent. Save as `/tmp/critwire-qa/qa-read.mts`:
+
+```ts
+// Prose-number triage for one page, or the whole course's totals (`all`). Not a gate; a human gives every verdict. From the repo root:
+//   pnpm exec tsx /tmp/critwire-qa/qa-read.mts <module id|setup|playground|schema-schema|schema-lab|schema-star|dist path|all>
+// Prints the page with each slot expanded to its code + recorded result, then every number token outside code/pre/var absent from the page's results.
+import { existsSync, readdirSync, readFileSync } from "node:fs";
+
+const read = (f: string) => readFileSync(f, "utf8");
+const MODS = readdirSync("site/learn/modules").map((f) => f.replace(".html", ""));
+const OTHER = ["setup", "playground", "schema-schema", "schema-lab", "schema-star"];
+const sourceOf = (p: string) => [`site/learn/modules/${p}.html`, `site/learn/pages/${p}.html`, `dist/${p.replace(/\/?$/, "/")}index.html`].find(existsSync);
+const blockCode = (id: string) => {
+  const f = ["sql", "py", "m", "dax"].map((e) => `site/learn/sql/${id}.${e}`).find(existsSync);
+  return f ? read(f) : "";
+};
+const resultOf = (id: string) => [`site/learn/labs/checked/${id}.txt`, `e2e/__snapshots__/${id}.txt`].filter(existsSync).map(read).join("\n");
+const SLOT = /\{\{(block|exercise|skip|diagram):([^}]+)\}\}/g;
+const ids = (html: string) => [...html.matchAll(SLOT)].filter((m) => m[1] !== "diagram").map((m) => m[2]!.split(" ")[0]!);
+const strip = (s: string) => s.replace(/<(pre|code|var|script|style)\b[\s\S]*?<\/\1>/g, " ").replace(/<[^>]+>/g, " ").replace(/&[a-z]+;/g, " ");
+const NUM = /(?<![\w.,-])\d{1,3}(?:,\d{3})+(?:\.\d+)?|(?<![\w.,-])\d+\.\d+|(?<![\w.,-])\d{3,}(?![\w-])/g;
+const tokens = (html: string) => [...strip(html.replace(SLOT, " ")).matchAll(NUM)].map((m) => m[0]);
+const bare = (t: string) => t.replace(/,/g, "");
+const scan = (p: string) => {
+  const html = read(sourceOf(p)!);
+  const results = ids(html).map(resultOf).join("\n").replace(/,/g, "");
+  return { html, toks: tokens(html), absent: tokens(html).filter((t) => !results.includes(bare(t))) };
+};
+const arg = process.argv[2]!;
+if (arg === "all") {
+  const all = [...MODS, ...OTHER].map(scan);
+  const n = all.reduce((a, s) => a + s.toks.length, 0), abs = all.reduce((a, s) => a + s.absent.length, 0);
+  console.log(`${n} tokens, ${n - abs} present, ${abs} absent`);
+} else {
+  const { html, absent } = scan(arg);
+  console.log(html.replace(SLOT, (_m, kind: string, slot: string) => { const id = slot.split(" ")[0]!; return kind === "diagram" ? `[diagram ${id}]` : `\n--- ${kind} ${slot}\n${blockCode(id)}\n--- result\n${resultOf(id)}\n---\n`; }));
+  console.log("\n=== numbers absent from this page's results");
+  for (const t of [...new Set(absent)]) {
+    const elsewhere = [...MODS, ...OTHER].filter((q) => q !== arg && (read(sourceOf(q)!).includes(t) || ids(read(sourceOf(q)!)).some((i) => resultOf(i).replace(/,/g, "").includes(bare(t)))));
+    console.log(`${t}  elsewhere: ${elsewhere.join(" ") || "-"}`);
+  }
+}
+```
 
 Notebooks, in a learner's venv under `learn:check`'s protocol. From the repo root, after `pnpm build`, the script saved as `/tmp/critwire-qa/qa-notebooks.mts`:
 

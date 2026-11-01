@@ -455,7 +455,7 @@ Rules for every step. A session reads these, its item, the Architecture sections
     3. A mode that exposes a real bug in `fetchDatasets` gets a `Q<n>` fix, with that mode as its test.
   - Checks: `pnpm typecheck`; `pnpm exec tsx --test scripts/ingest/gbif.test.ts` (≤ 1.5 s a case); `pnpm exec tsx --test scripts/ingest/habitat.dbtest.ts` (the one dbtest whose closure reaches `gbif.ts`; `critwire_dev` only); `pnpm build` (plain, still fresh).
 
-- [ ] U4. **R1: map, setup, 7 track pages, playground, 3 schemas, data, f1–f4** (18 pages, 90 KB; §4, finding 8). Reading protocol; T0/T1 fixes.
+- [x] U4. **R1: map, setup, 7 track pages, playground, 3 schemas, data, f1–f4** (18 pages, 90 KB; §4, finding 8). Reading protocol; T0/T1 fixes.
   - First write `/tmp/critwire-qa/qa-read.mts` as §4's Prose numbers says (≈ 40 lines; `readCourse` is `scripts/learn/course-files.ts`). Its whole-course totals should be near 1,115 tokens, 734 present, 381 absent. Put its text in 006's Method.
   - Finding 8, as one `Q<n>` fix:
     - Add the Jupyter install line to `site/learn/pages/setup.html:89`, and change the matching sentence at `plans/004-learn-curriculum.md:554`.
@@ -584,6 +584,7 @@ Live walk or axe isn't needed: same bytes (§8). Record the result and the log's
 - U1a: the keyboard test passed before Q2, because Chromium's keyboard-focusable scrollers focus an overflowing region with no `tabindex`. Added one assertion to §1's test, `tabindex="0"` on each region, so it bites and covers browsers without that default. The architect's probe injected `tabindex`, so it couldn't see this.
 - Correction to Fable's MISSED 1 (and to commit `3abf588`'s subject): `assemble.ts:190` is the `.ipynb` "about" cell only, and `freshness.ts:108` drops `.ipynb` from the download shas, so no download sha moves. It's still T2: `assemble.ts` is in the checker's closure (`learn-check.ts` → `check.ts:39`), so any edit moves every block key. Conclusion unchanged, queue it for the lab batch (U11); `setup.html:89` stays T0.
 - U1b: `goto` returns null when only the fragment changes, so the crawl's cross-page loop asserts the id only; `checked` already proved each path 200. `QA_FIXES` matches the served HTML as written, not rendered text, so one row type covers a sentence and an external URL. Crawl and "all 33" tests get 180 s (default 30 s; they took 18 s and 6 s here).
+- U4: `$env:Path` on Windows comes from `install.ps1`'s own message and default folder, not a run: no Windows here. Q7's Docker and EDB commands are also unrun here (no Docker, per `~/AGENTS.md`), built from the page's own lines; the page already marks those routes untested. No 004 sentence for Q7, Q9, Q11, Q13, Q14: their text is only on the page. Q10's 004 sentence was already right.
 - U2: this server's IP gets a Cloudflare 403 from `www.gbif.org`, in Chromium too, so "open it by hand" can't tell a dead GBIF page. Used the DOI handle record and `api.gbif.org` instead (304 lookups, ≤ 2 req/s); 7 other publishers' pages stay unconfirmed, recorded as such. Also tested setup's platform and `ipykernel` claims with `uv`, which the step named but gave no command for; commands in 006's Method.
 
 ## Log
@@ -599,5 +600,6 @@ Live walk or axe isn't needed: same bytes (§8). Record the result and the log's
 - 2026-11-01 13:30 UTC: U1b: prereq `href`s (map, tracks, modules), cross-page fragments (22 links, 11 targets, 0 broken), `QA_FIXES` + dist and origin tests. Each seen to fail on a bad row or broken `dist/`. typecheck pass, scoped e2e 57/57 (196 views), live dry run pass. Next: U2.
 - 2026-11-01 13:40 UTC: U2: 11/11 notebooks exit 0 in a learner's venv (nothing left); 47 Labs rows; setup claims checked, 4 platforms resolve, Intel Mac refused as stated. 415 external links: 111 200, 295 GBIF Cloudflare blocks confirmed via API, 7 other blocks unconfirmed, 2 dead at publishers (Q3, Q4, listed). typecheck pass. Next: U3.
 - 2026-11-01 13:43 UTC: U3: slugs already covered, recorded. `fetchDatasets` exported, 6 paging tests PG(a)–(f) with failure modes first; no bug; 7 mutations each caught. typecheck pass, gbif.test 10/10, habitat.dbtest pass, plain build pass. Next: U4.
+- 2026-11-01 14:35 UTC: U4: R1 read (18 pages), qa-read written (1,133 tokens, 739 present, 394 absent), ledger started. 11 T0 fixes, Q5–Q15, each row seen to fail first; finding 8 done, `assemble.ts:190` no change, nothing queued. typecheck pass, `learn:port --check all` pass, build pass, scoped e2e 57/57, build unit tests and `learn-data` pass. Next: U5.
 
 ## Summary
