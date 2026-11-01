@@ -492,6 +492,10 @@ Written on `73cd51a`. Read **Target design** above first: shapes, messages and r
   - **Handoff item H12** (next free number; check) in `/srv/critter-ai/handoff/critwire.md`, exact format, title with no value, `Blocks: nothing`: where to read (`https://github.com/kc0588615/critwire/blob/main/data/review/range-curated.json` after the release; `/v1/range-listings.csv`, `source_key` = `curated`); how to correct (tell an agent the species, country, value and reference, or edit the row → `pnpm derive` → `pnpm build` → commit → merge → `deploy critwire`); which references were read and their terms (Risks 6), and that Amphibian Species of the World's live site refused this server (403), so S9 read its public Wayback copies; reply: corrections, or "fine".
   - Verified: `grep -A3 'H12' /srv/critter-ai/handoff/critwire.md` shows `Blocks: nothing`. Byte check: the 7 lines.
 
+- [ ] S12. **Astra MUST-FIX: H4 test survives a zero-conflict snapshot.** `scripts/derive/pipeline.test.ts:24` sets `conflicts` to `[]`, same as a valid empty file, so no rejection and `pnpm test` blocks a legitimate release (Revision said a zero-conflict refresh passes).
+  - Mutate every file with a value guaranteed to differ, empty originals included (`entries`, the same trap, too); not `[]`.
+  - Verified: temporarily empty `listings.conflicts` in `derivedFiles`' input (throwaway, reverted) or equivalent: H4 still names `data/review/range-conflicts.json`, on an empty original too. Typecheck, `pnpm test`, plain build, byte check the 7 lines. E2E not needed: no `dist/` byte moves.
+
 ## Verification
 
 **Order, on the final commit, clean tree, one at a time:**
@@ -641,6 +645,14 @@ Isolated parts only. Written into each test file's header before its code.
 
 ## Code review (Astra)
 
+VERDICT: APPROVE_WITH_CHANGES
+
+MUST-FIX:
+
+1. `scripts/derive/pipeline.test.ts:24` — Setting conflicts to `[]` does not corrupt a valid zero-conflict snapshot. After such a refresh, `pnpm test` fails with “Missing expected rejection,” blocking a legitimate release contrary to the plan. Reproduced without file changes. Use a mutation guaranteed to differ, including when the original array is empty.
+
+SHOULD-CONSIDER: none
+
 ## Release
 
 ## Decisions
@@ -660,6 +672,8 @@ Isolated parts only. Written into each test file's header before its code.
 - 2026-11-01: S9 readings. Hairy frog (id 7): Amphibian Species of the World's old `Trichobatrachus-robustus` path redirects to `Astylosternus-robustus`, its current name for the same animal; that page is the `url`, and our name stays `Trichobatrachus robustus` (taxonomy isn't this mission's). Pipa pipa (id 10): "the Guianas" read as GY, SR, GF, a region whose countries are fixed, not one "without a named country". Skipped as introduced: Andrias davidianus in Japan and (likely) Taiwan, the hellbender's Susquehanna drainage (US stays via its native range). 46 rows, not the plan's estimated 60: the pages list fewer countries.
 - 2026-11-01: S7's docs add, beyond 007's text, `ORDER BY 1, 2` on the conflict query (E9 and E11 compare in order) and one starter query, what sources list for the jaguar (`data-example`, so `e2e/duckdb.spec.ts` runs it). Both queries print critwire.com URLs in place of 007's bare file names. No meaning changes, so 007 stays as is.
 - 2026-11-01: S10 readings, Reptile Database (query URL redirects to `/<Genus>/<species>`; that's the `url`). Pinta tortoise (id 22): no page of its own ("not found"), so read as `abingdonii` on the `Chelonoidis/niger` page, same `url` as id 19; `absent`, the page says none are left in the wild and its last animal died. Floreana (id 19): `absent` from the page's own sentence that `galapagoensis`, a synonym it lists for this animal, is extinct; its IUCN line wasn't used. Big-headed turtle (id 4): Hong Kong has its own code, and the page names it, under China, so HK gets a row; a later split (`peguense`, Liang et al. 2025) leaves the page's top line standing, and the row set follows it. Pig-nosed turtle (id 17): no ID row, though open records exist there: the page names only Papua New Guinea and Australia, and placing its Lorentz River in Indonesia would be our inference. Skipped as introduced: spiny softshell in California (US stays via its native range), African spurred tortoise in the US and British Virgin Islands. 40 rows, as estimated.
+- 2026-11-01: Astra code review's one MUST-FIX accepted: read `pipeline.test.ts:24` and `assertDerivedFiles`; with `conflicts` already `[]` the mutation changes nothing. S12 added, also covering `entries`.
+- 2026-11-01: PR #17 no longer held: owner merged it to `origin/main` (`089f100`, `country-overrides.json`, `mismatches.json`) during this mission. This branch touches neither file; the release rebase takes it, and Verification runs on the rebased commit.
 
 ## Log
 
@@ -680,5 +694,6 @@ Isolated parts only. Written into each test file's header before its code.
 - 2026-11-01 23:05 UTC: S9: 46 curated rows on the 15 amphibians, all from Amphibian Species of the World's Wayback copies, one page each, deleted after; 45 `present`, 1 `uncertain` (Conraua goliath, GA); no backup needed. Derive: `range-not-found` 26 → 11, conflicts still 2 (66 ZA, 74 DE). Grep `iucn` in curated 0. Typecheck pass, test 811/811, plain build pass, no "add to contracts" line, byte check the 7 lines. `range-listings.spec.ts` 12/12; artifacts `$S/e2e-s9/`, `$S/e2e-s7` deleted.
 - 2026-11-01 23:22 UTC: S10: 40 curated rows on the 11 turtles, one Reptile Database page each (id 22 read from id 19's), deleted after; 38 `present`, 2 `absent` (ids 19, 22). E12 first, seen failing, then pass. Derive: `range-not-found` 11 → 0, conflicts still 2 (66 ZA, 74 DE); 518 rows on all 76 species (MDD 400, curated 86, GBIF 32). Grep `iucn` in curated 0. Typecheck pass, test 811/811, plain build pass, no "add to contracts" line, byte check the 7 lines. `range-listings.spec.ts` 13/13; artifacts `$S/e2e-s10/`, `$S/e2e-s9` deleted.
 - 2026-11-01 23:35 UTC: S11: `AGENTS.md` (what this is, IUCN ties, commands, files and owners, stale-listing recovery, correcting a curated row, DOI refresh, cost of a species change, refusal harness), 007's line 7 says built, H12 added (`Blocks: nothing`, terms and Wayback disclosed). Typecheck pass, test 811/811, plain build pass, no "add to contracts" line, byte check the 7 lines. E2E not run: no `dist/` byte moved since S10.
+- 2026-11-01 23:31 UTC: Final code review (Astra, `--code origin/main`): APPROVE_WITH_CHANGES, 1 MUST-FIX (H4 test fails on a zero-conflict snapshot), accepted, S12 added; no SHOULD-CONSIDER. No code.
 
 ## Summary
