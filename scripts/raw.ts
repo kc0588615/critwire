@@ -77,7 +77,16 @@ export interface GbifChecklistsSnapshot {
   dropped: { noSourceTaxonKey: number; redList: number; noRole: Record<string, number> };
 }
 
-export interface Snapshots { wikidata: WikidataSnapshot; col: ColSnapshot; gbif: GbifSnapshot; naturalearth: NaturalEarthSnapshot; "gbif-checklists": GbifChecklistsSnapshot }
+// MDD's country cell per base mammal (scripts/ingest/mdd.ts): places is the cell verbatim; null: the file has no such name.
+export interface MddSnapshot {
+  retrieved: string;
+  file: { url: string; md5: string; bytes: number };
+  release: { version: string; issued: string; doi: string };
+  license: "CC BY 4.0";
+  species: Record<string, { id: string; places: string } | null>;
+}
+
+export interface Snapshots { wikidata: WikidataSnapshot; col: ColSnapshot; gbif: GbifSnapshot; naturalearth: NaturalEarthSnapshot; "gbif-checklists": GbifChecklistsSnapshot; mdd: MddSnapshot }
 export type Source = keyof Snapshots;
 
 const snapshotFile = (source: Source) => new URL(`../data/raw/${source}/snapshot.json`, import.meta.url);

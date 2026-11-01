@@ -437,7 +437,7 @@ Written on `73cd51a`. Read **Target design** above first: shapes, messages and r
   - Run: `pnpm ingest gbif-checklists 2>> $S/ingest-gbif-checklists.log` (about 6 min).
   - Verified: F1 pass. Snapshot: all 76 names, 73 with keys, two keys on ids 1, 55, 63, 70 (= spike `raw/keys.json`); about 35 rows on role datasets; every row's keys exactly the five, every dataset's the four; `grep -ciE 'iucn|threatStatus|19491596' data/raw/gbif-checklists/snapshot.json` prints 0. Log line: fetched rows with `threatStatus` (spike: 144), `dropped`. Byte check empty.
 
-- [ ] S2. **MDD ingest and `MDD_PLACES`** (O1 yes, Decisions).
+- [x] S2. **MDD ingest and `MDD_PLACES`** (O1 yes, Decisions).
   - First: re-read 007's MDD quotes: `license.id`, version, DOI at `https://zenodo.org/api/records/21654811`; ancestry quote in `arch-probe/papers`.
   - Files: `scripts/raw.ts` (`MddSnapshot`, `Snapshots` key), `scripts/ingest/mdd.ts` (new; `MDD_FILE`, 9,303,589 B, md5 as brief; `fetchMdd(base)`), `scripts/derive/mdd-places.ts` (new; committed copy of spike `mdd-places.json`, 243 places), `scripts/ingest.ts`, test `scripts/ingest/mdd.test.ts` (F2), `data/raw/mdd/snapshot.json`.
   - Run: `pnpm ingest mdd 2>> $S/ingest-mdd.log` (under 1 min).
@@ -654,6 +654,7 @@ Isolated parts only. Written into each test file's header before its code.
 - 2026-11-01: S9 reads Amphibian Species of the World through public Wayback copies, one page per species, because its live site answers 403 here. Disclosed, not hidden: Summary and H12 say so, with the source's noncommercial terms, so the owner can object or swap the reference.
 - 2026-11-01: S1 re-read GBIF's data-user terms (archived copy; live page still answers 403 here): both 007 quotes unchanged. Licenses re-checked at the fetch: all 18 role datasets open (12 CC BY 4.0, 6 CC0 1.0).
 - 2026-11-01: deviation from 007 (Finding 5): snapshot holds role-dataset rows only, no-role rows counted per dataset key, metadata fetched for role datasets only. 007's mapping row and Pipeline row updated in the same commit.
+- 2026-11-01: S2 re-read MDD's terms: Zenodo record still `license.id` `cc-by-4.0`, `v2.5`, DOI `10.5281/zenodo.21654811`, `release.toml` same as the design's copy; paper's "initially sourced from the IUCN, HMW, and CMW" unchanged. `fetchMdd` takes an optional pin (default the real one) so tests use a small CSV.
 
 ## Log
 
@@ -664,5 +665,6 @@ Isolated parts only. Written into each test file's header before its code.
 - 2026-11-01 21:08 UTC: Revision (`architect`): Fable MUST-FIX resolved (literal `licenseUrl: null`, `licenses.ts` untouched); MISSED items and all SHOULD-CONSIDER taken, none rejected; zero-conflict refresh passes, detection on 007's six fixed cases in E2E. Spot-checked: `attribution.ts:72`, `:103`, `html.ts:8`, `pipeline.ts:118`, `e2e/attribution.spec.ts:41`. No code.
 - 2026-11-01 21:30 UTC: Steps (`planner`): S1–S11, E1–E12, R1–R20, F1–F8. Lead added the Wayback disclosure (Decisions, H12). Spot-checked: byte check empty on current `dist/`; 311 baseline lines; 26 non-mammal ids (15 + 11) = `data/species.json`; `contract.ts:116` logs additions; `scripts/derive/pipeline.ts:118`; PR #17 open. No code.
 - 2026-11-01 21:40 UTC: S1: `ingest gbif-checklists` real fetch (4 min 20 s): 76 names, 73 with keys, two keys on 1, 55, 63, 70 (= spike), 35 role rows on 13 species (identical to spike's), 18 datasets. 679 rows fetched, 216 with `threatStatus` (72 red-list + spike's 144), none kept; grep 0. Typecheck pass, test 771/771, plain build pass, byte check empty. E2E not run: no `dist/` byte moved.
+- 2026-11-01 21:50 UTC: S2: `ingest mdd` real fetch: md5 pin holds, 6,904 rows, exactly the 50 mammals, 50 non-null, 400 tokens (36 `?`), 92 places, none unmapped, no non-place token (= spike); `MDD_PLACES` 243 = spike's file; grep 0; temp folder gone. Typecheck pass, test 783/783, plain build pass, byte check empty. E2E not run: no `dist/` byte moved.
 
 ## Summary
