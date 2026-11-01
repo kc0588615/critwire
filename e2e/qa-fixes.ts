@@ -14,6 +14,8 @@ export interface QaFix {
 
 export const QA_FIXES: QaFix[] = [
   { q: "Q5", url: "/learn/setup/", has: "uv pip install --constraint requirements.txt jupyterlab" },
+  { q: "Q6", url: "/learn/setup/", has: "source $HOME/.local/bin/env" },
+  { q: "Q6", url: "/learn/setup/", has: "$env:Path = \"$HOME\\.local\\bin;$env:Path\"" },
 ];
 
 // What's wrong with each row on the origin `request` points at; [] when every fix shows.

@@ -531,6 +531,7 @@ The Python labs (s2–s6, e1–e5, c1) run in a virtual environment built by `uv
 
 ```powershell
 powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/0.13.5/install.ps1 | iex"
+$env:Path = "$HOME\.local\bin;$env:Path"   # so this terminal finds uv; new ones already do
 mkdir $HOME\learn; cd $HOME\learn
 curl.exe -fLo requirements.txt https://critwire.com/learn/labs/requirements.txt
 uv python install 3.12
@@ -543,6 +544,7 @@ Linux and macOS:
 
 ```sh
 curl -LsSf https://astral.sh/uv/0.13.5/install.sh | sh
+source $HOME/.local/bin/env   # so this terminal finds uv; new ones already do
 mkdir -p ~/learn && cd ~/learn
 curl -fLo requirements.txt https://critwire.com/learn/labs/requirements.txt
 uv python install 3.12
