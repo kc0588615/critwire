@@ -2228,7 +2228,7 @@ UPDATE species SET genus = 'Felidae' WHERE id = 25;
 ```
 
    `taxa`'s own `parent_name` can be held to the rank one up the same way: a `parent_rank` column whose `CHECK` ties it to the row's rank, and a foreign key from `(parent_name, parent_rank)`. No trigger is needed. The lab tables don't carry these keys; the lab's load checks every rank and parent instead (§4.3).
-8. PostgreSQL builds an index for every primary key and `UNIQUE` constraint, because it needs one to check them. It doesn't for a foreign key: checking a new record needs only the parent's key, which is indexed already. But deleting a parent, or joining from it, has to find the children, and with no index on `occurrences.species_id` that means reading the whole table (d3). Which of `occurrences`' keys have an index that starts with their column?
+8. PostgreSQL builds an index for every primary key and `UNIQUE` constraint, because it needs one to check them. It doesn't for a foreign key: checking a new record needs only the parent's key, which is indexed already. But deleting a parent, or joining from it, has to find the children, and with no index on `occurrences.species_id` that means reading the whole table (d3). PostgreSQL describes itself in its **catalog**, tables such as `pg_constraint`, `pg_attribute` (every column) and `pg_index`; `'occurrences'::regclass` turns a table's name into the id they use, and an index's column list counts from 0, a constraint's from 1. Which of `occurrences`' keys have an index that starts with their column?
 
 ```sql
 -- q: d1-fk-index
