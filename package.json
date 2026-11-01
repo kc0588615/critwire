@@ -14,6 +14,7 @@
     "db:load": "tsx scripts/load.ts",
     "ingest": "tsx scripts/ingest.ts",
     "derive": "tsx scripts/derive.ts",
+    "review:evidence": "tsx scripts/review-evidence.ts",
     "gbif:register": "tsx scripts/gbif-register.ts",
     "learn:check": "tsx scripts/learn-check.ts",
     "learn:port": "tsx scripts/learn-port.ts",
