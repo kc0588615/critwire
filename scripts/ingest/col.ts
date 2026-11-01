@@ -4,7 +4,7 @@ import { getJson } from "../http.ts";
 import { assertNoIucnData, omitKeys, type ColMatchResponse, type ColRelease, type ColSnapshot, type Fetched } from "../raw.ts";
 import type { BaseSpecies } from "../species.ts";
 
-const API = "https://api.checklistbank.org";
+export const COL_API = "https://api.checklistbank.org";
 // ChecklistBank bookkeeping that changes without the data changing.
 const VOLATILE = new Set(["created", "modified", "modifiedBy"]);
 
@@ -21,10 +21,10 @@ function toRelease(r: Record<string, unknown>): ColRelease {
 }
 
 export const colMatchUrl = (key: number, name: string) =>
-  `${API}/dataset/${key}/match/nameusage?scientificName=${encodeURIComponent(name)}`;
+  `${COL_API}/dataset/${key}/match/nameusage?scientificName=${encodeURIComponent(name)}`;
 
 export async function fetchCol(base: BaseSpecies[]): Promise<Omit<ColSnapshot, "retrieved">> {
-  const release = toRelease((await getJson(`${API}/dataset/3LR`)) as Record<string, unknown>);
+  const release = toRelease((await getJson(`${COL_API}/dataset/3LR`)) as Record<string, unknown>);
   const matches: Record<string, Fetched<ColMatchResponse>> = {};
   for (const { scientificName } of base) {
     const url = colMatchUrl(release.key, scientificName);
