@@ -46,13 +46,13 @@ pnpm learn:check                                               # every .sql and 
 | d4 | `/learn/database-architecture/transactions/` | 4 | 0 | 0 | 0 | 2 | R2 | Q25 |
 | d5 | `/learn/database-architecture/roles/` | 4 | 0 | 0 | 0 | 0 | R2 |  |
 | d6 | `/learn/database-architecture/star/` | 4 | 0 | 0 | 2 | 2 | R2 | Q17 |
-| g1 | `/learn/gis-in-sql/crs/` | 4 | 0 | 0 | 0 | 0 | R3 |  |
-| g2 | `/learn/gis-in-sql/load-validate/` | 4 | 0 | 0 | 0 | 0 | R3 |  |
-| g3 | `/learn/gis-in-sql/spatial-join/` | 4 | 0 | 0 | 0 | 0 | R3 |  |
-| g4 | `/learn/gis-in-sql/measure-overlay/` | 4 | 0 | 0 | 0 | 0 | R3 |  |
-| g5 | `/learn/gis-in-sql/spatial-index/` | 4 | 0 | 0 | 0 | 0 | R3 |  |
-| g6 | `/learn/gis-in-sql/grids/` | 4 | 0 | 0 | 0 | 0 | R3 |  |
-| g7 | `/learn/gis-in-sql/raster/` | 4 | 0 | 0 | 0 | 0 | R3 |  |
+| g1 | `/learn/gis-in-sql/crs/` | 4 | 0 | 0 | 0 | 0 | R3 | Q26 |
+| g2 | `/learn/gis-in-sql/load-validate/` | 4 | 0 | 0 | 0 | 0 | R3 | Q27, Q28 |
+| g3 | `/learn/gis-in-sql/spatial-join/` | 4 | 0 | 0 | 0 | 0 | R3 | Q29 |
+| g4 | `/learn/gis-in-sql/measure-overlay/` | 4 | 0 | 0 | 0 | 0 | R3 | Q30 |
+| g5 | `/learn/gis-in-sql/spatial-index/` | 4 | 0 | 0 | 0 | 0 | R3 | Q31 |
+| g6 | `/learn/gis-in-sql/grids/` | 4 | 0 | 0 | 0 | 0 | R3 | Q32 |
+| g7 | `/learn/gis-in-sql/raster/` | 4 | 0 | 0 | 0 | 0 | R3 | Q33–Q37 |
 | s1 | `/learn/spatial-statistics/bias/` | 4 | 0 | 0 | 3 | 394 | R4 |  |
 | s2 | `/learn/spatial-statistics/point-patterns/` | 4 | 0 | 0 | 0 | 0 | R4 |  |
 | s3 | `/learn/spatial-statistics/weights/` | 4 | 0 | 0 | 0 | 0 | R4 |  |
@@ -255,9 +255,11 @@ R1–R6 read this first; R7 reads only this and what it points to. Prereqs read 
 | GEOS, libpq, virtual environment, `ipykernel`, GeoPackage | setup | |
 | haversine | setup ("the distance along the Earth's surface") | |
 | WSL 2 | no | setup (Docker's backend; the installer handles it) |
-| GDAL, WKB, WGS 84, SRID, GeoParquet | no; the reader's trade | setup, data, schema-lab. R2+: define if a module leans on them |
+| SRID, WGS 84, EPSG | g1 | setup, data, schema-lab, before g1 |
+| WKB | g2 | setup, data, before g2 |
+| GDAL, GeoParquet, GEOS's `TopologyException` context | no; the reader's trade. g2, g7 say what they do where they lean on them | setup, data, g2, g7 |
 | Parquet | d2 (Q19) | data, setup, schema, before d2 |
-| GiST | d3; R3 (g5) to agree | schema-lab, before d3 |
+| GiST | d3; g5 agrees (a tree of bounding boxes) | schema-lab, before d3 |
 | ERD, PK, FK, UK, view | schema | |
 | fact, dimension, grain, factless, conformed, unknown member | schema-star; d6 agrees | |
 | `NULL`, `IS NULL`, `coalesce`, `IN` | f1 | |
@@ -275,9 +277,18 @@ R1–R6 read this first; R7 reads only this and what it points to. Prereqs read 
 | role, membership, owner, PUBLIC, schema, `search_path`, default privileges, RLS | d5 | |
 | measures (additive, semi, non), snowflake, degenerate, drill across, slowly changing types, aggregate fact | d6 | |
 | fan-out | d6 says it explains itself in f3, which calls it "the row multiplier" (block `f3-fan-out`). R7: other uses | d6 |
-| `DISTINCT ON` | no | d4 names it as the fix for a duplicated batch. R3 (g7), R4 (s2) use it: define if they lean on it |
+| `DISTINCT ON` | no; g7 says what it does where it uses it (keeps each record once) | d4 names it as the fix for a duplicated batch. R4 (s2) to look |
 | `FILTER (WHERE …)`, `LATERAL` beyond f3 | blocks only; `FILTER` reads as itself | d3, d4, d5, d6 |
 | ACL, SQLSTATE, struct | no; the reader's trade | d5, d4, d2 |
+| CRS, ellipsoid, datum, geographic, projected, equal-area, conformal, `geography`, axis order | g1 | |
+| WKT, EWKT, shell, hole, part, valid, nested shells, coverage, DE-9IM | g2 | WKT in g1's `srtext`, a line before g2 |
+| one field of a row, `(f(x)).field` | g2 (Q27) | |
+| spatial predicate, spatial join, prepared copy; `ROLLUP`, `MATERIALIZED` | g3 | |
+| buffer, overlay, dissolve | g4 | |
+| `<->`, nearest neighbours, expression index on `geom::geography` | g5 | |
+| `ST_Dump` | g6 (Q32) | |
+| MAUP, scale effect, zoning effect | g6 | |
+| raster, georeference, out-db, tile, nodata, method 1, method 3 (Q33), border cells | g7 | method 1 in s6, with a link |
 
 **Claims** (claim | where | checked):
 
@@ -315,10 +326,27 @@ R1–R6 read this first; R7 reads only this and what it points to. Prereqs read 
 | Trinidad and Tobago 2 records, 22 habitat classes; Åland 0 | d6 | results |
 | tbls 1.96.1 sha256s | d1 | both downloaded, both match |
 | PUBLIC's and the test db's privileges as d5 says | d5 | full 13 rows of `d5-privileges` in the lab db |
+| 8,500 systems; 3577's parallels and `+towgs84` | g1 | lab db |
+| Ellipsoid and Albers within 0.1 % on all 9 states; Mercator 1.13 to 1.81, within 0.01 of 1 ÷ cos² | g1 | all 9 rows, lab db |
+| 11 invalid shapes (Goiás, 10 ecoregions: 7 ring, 3 nested); 247 valid outlines; 8 overlapping pairs | g2, g3, g4 | names and part counts, lab db |
+| Join: 40,329 pairs, 39,396 records in an outline, 39,190 agree, 206 disagree, 999 in none; 933 in two; `FR` 944 falls to 11, the 11 coded `FR` | g3, g5, g7 | results; lab db. 193 of the 206 lie within 5 km of their coded country's outline, so g4's "mostly records like these" holds |
+| Timings 7 s against 0.3 s; 82 s against 0.45 s | g3 | here: 6.8 s, 0.31 s, 82.4 s |
+| Costa Rica: outline 51,303 km², pieces 49,908, gap 2,070, of it 969 within 5 km of the sea; strips' 3 and 2 records outside the outline | g4 | lab db |
+| Hobart's nearest: 11 records at 7.081 km, 13 at 8.003, one at 8.185, ranks 16 to 30 | g5 | lab db |
+| The 999: 436 under 5 km, 529 from 5 to 25, 34 beyond; 346 bilby on one island (136.1° E, 35.0° S), 133 turtle at 144.5° E, 7.7° S | g5 | lab db; `nearest in metres for all 999` not re-checked |
+| Devil in cells: 1,972 at 5 km, 1,990 at 10 km; Maria Island's 12, 11.7 to 13.9 km off; 6 on other states (3 Victoria, 1 Northern Territory, 2 New Mexico). Top 10 km cell's 475 split 309, 137, 29 | g6 | lab db. R4: s4's cells are these; s4 still to say why 1,972 |
+| Windows 836 × 836, most records on 0.05° steps (Q35); 5,003 + 6,329 marine neritic cells; `g7-scale`'s 78 (46 tied, 31 within 9 cells, 1 on the clip's edge) and the other 78 on montane forest | g7 | lab db |
+| Method 3 over method 1: 0.999074 of the outlines, as `data/learn/habitat.json`'s `estimateOverOutline` | g7 | file; full 35 rows of `g7-country` and 13 of `g7-ex` read |
+| Trinidad and Tobago and Åland, marine +12.5 % and +13.9 % | g7 | Earlier comparison's numbers, not in the repo's sample, not re-checked |
+| IUCN's files: `id_no`, several rows per taxon; the name column's 2023 rename | g3 | `id_no` and the row codes from public listings of IUCN's layers. No IUCN file read, as the rules ask. The rename not re-checked |
 
 **R1's flagged numbers:** setup's 3.4, 3.5, 5432, 5433, 2024, 10,000 and 251, f2's 1.0, 4.0, 1,000 and 3.5 (`7 / 2`), f4's 1,000: all right; versions, ports, thresholds or the outside facts above. f1 and f3 flag none.
 
 **R2's flagged numbers:** d1's 1.96 (tbls), d2's 9,581 and 3,152 (above, unchecked), 2025 (SQL Server), d3's 300, 100, 30,000, 1,000 and 300,000 (`ANALYZE`'s sample), 0.62 (Q22), d4's 2005 (its record, lab db), 2019, 496, 143, 1,994 (each derived, added up), 9.5 (version), d5's 9.5, 2016 (versions), d6's 2000, 2005, 2017, 2018, 2010, 2020, 2016 (years in prose): all right. Small integers and rates (seven in ten, 72 %, nine times, a twentieth, three pages, seven ranges, four of them, 84 datasets, 22 classes): each worked out from its result.
+
+**R3's flagged numbers:** g1's 111, 0.1, 1.13, 0.01, 8,500, 1.29, 4.76, 2.6, 3.95, 190, 664, 0.5; g2's 3.10, 0.05, 811, 481, 477; g3's 0.3, 0.1, 933, 40,395, 924, 2023, 247, 0.45; g4's 4326, 0.05, 637, 198, 97.3, 100, 51,978, 675, 1.3, 4.0, 40,395, 0.7, 10,000, 5.2, 4.5, 2,670, 2,500, 206; g5's 4326, 1.36, 147.33, 42.88, 8.185, 81.7, 111.1, 999, 436, 346, 7,088, 7,081; g6's 4.8, 40.6, 43.7, 8.2, 11.1, 2,000, 0.3, 384, 3.1; g7's 2020, 10.5281, 1.6, 14.1, 4326, the grid's constants, 635, 836, the windows' bounds, 0.75, 698,896, 42.7, 110.6, 111.1, the four cell areas, 7,386, 202, 693,893, 5,003, 900, 6,329, 6,785.90, 0.01, 0.978, 618, 121, 132, 0.09, 431, 0.71, 13.16, 1,900, 908, 6.4, 909, 1.3, 501, 502, 3.9, 290, 2,616, 135, 1.1, 2.8, 1200, 500, 11.04, 144, 12.5, 13.9: all right, by the claims above, by arithmetic or as outside facts, bar 81 (Q26) and the order of 3.9 and 4.8 (Q34). Small integers and rates (seven ecoregions, ten pairs, eight pairs, thirteen records, a quarter less, half of the gap, 54 %, 60 %): each worked out from its result.
+
+R3 prereqs read fine as ordered; R7 still owes the verdict on the out-of-closure links (g2→d3, g3→d3, g4→d3, g5→g4, g6→g5, g7→g5). `g3-iucn` isn't run (`untested`, its reason on the page); read only. Diagrams' alt text read: both say what the figure shows.
 
 R2 prereqs read fine as ordered; d3's and d6's links back all resolve to what they name. `d5-database` isn't run (`untested`, its reason on the page); read only.
 
