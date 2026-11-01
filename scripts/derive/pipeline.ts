@@ -16,7 +16,7 @@ import {
 import { assertColFresh, deriveCol } from "./col.ts";
 import { gbifContributions } from "./contributions.ts";
 import { deriveCountries, parseOverrides } from "./countries.ts";
-import { assertGbifFresh, deriveGbif } from "./gbif.ts";
+import { assertGbifFresh, checklistKeys, deriveGbif } from "./gbif.ts";
 import { assertNaturalEarthFresh, countriesFile, matchCountries, type CountriesFile, type CountriesResult } from "./naturalearth.ts";
 import { buildRecord } from "./record.ts";
 import { deriveSample, readLearnInputs, type LearnInputs, type LearnResult } from "./sample.ts";
@@ -37,7 +37,8 @@ export interface CoreInputs {
 
 // doi: the registration's DOI when it matches the contributions, else null (gbif/derived-dataset.ts currentDoi).
 // countries: data/countries.json; countriesReport: how each code matched (derive prints it); issuedIds:
-// data/issued-ids.json, every {id, slug} ever derived, sorted by id.
+// data/issued-ids.json, every {id, slug} ever derived, sorted by id. checklistKeys: every base name → its GBIF keys
+// (in memory only: ingest gbif-checklists fetches them).
 export interface CoreResult {
   records: Species[];
   entries: Mismatch[];
@@ -46,6 +47,7 @@ export interface CoreResult {
   countries: CountriesFile;
   countriesReport: CountriesResult["report"];
   issuedIds: IssuedId[];
+  checklistKeys: Record<string, number[]>;
 }
 
 export interface DeriveInputs extends CoreInputs { learn: LearnInputs }
@@ -121,7 +123,8 @@ export function deriveCore({ base: unsorted, wikidata, col, gbif, naturalearth, 
     gbifCodes: Object.keys(gbif.countries),
   });
   const { release, commit, retrieved } = naturalearth;
-  return { records, entries, contributions, doi, countries: { source: { release, commit, retrieved }, rows }, countriesReport, issuedIds };
+  return { records, entries, contributions, doi, countries: { source: { release, commit, retrieved }, rows }, countriesReport, issuedIds,
+    checklistKeys: Object.fromEntries(rules.map(({ s, g }) => [s.scientificName, checklistKeys(g)])) };
 }
 
 // Every file pnpm derive writes, with its content and format (canonical: keys sorted, json.ts formatJson).

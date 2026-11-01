@@ -1,0 +1,978 @@
+{
+  "allowlist": {
+    "15147db1-27c3-49b5-9c69-c78d55a4b8ff": {
+      "area": null,
+      "role": "checklist"
+    },
+    "168568e7-eb5f-4ef6-8c59-f73ceaf57e91": {
+      "area": null,
+      "role": "register"
+    },
+    "1df9467e-0c60-4e5a-a7b0-2b60bd6648ed": {
+      "area": null,
+      "role": "register"
+    },
+    "2a281675-c184-4d54-a47e-5d3a7ec6653f": {
+      "area": null,
+      "role": "register"
+    },
+    "38de3b7a-5af3-4b6f-a1c5-4c0aa6abf010": {
+      "area": null,
+      "role": "register"
+    },
+    "39f36f10-559b-427f-8c86-2d28afff68ca": {
+      "area": null,
+      "role": "register"
+    },
+    "3cabcf37-db13-4dc1-9bf3-e6f3fbfbbe23": {
+      "area": null,
+      "role": "register"
+    },
+    "3f5e930b-52a5-461d-87ec-26ecd66f14a3": {
+      "area": null,
+      "role": "register"
+    },
+    "5aa5f29e-532e-4ae5-81c0-f8a9eb4dcaf2": {
+      "area": null,
+      "role": "register"
+    },
+    "5c5a6e45-d510-45ed-b7bf-6d0624fac056": {
+      "area": null,
+      "role": "register"
+    },
+    "6baf6a53-c106-40fb-bbde-f6d4e4051513": {
+      "area": "Hawaii",
+      "role": "register"
+    },
+    "6d9e952f-948c-4483-9807-575348147c7e": {
+      "area": null,
+      "role": "register"
+    },
+    "78ee0f56-267b-49e1-8afc-19f03cf81276": {
+      "area": null,
+      "role": "register"
+    },
+    "7b6661a3-5bbd-4dbb-b3e4-0c26df341977": {
+      "area": null,
+      "role": "register"
+    },
+    "9a52d8bf-864a-4abb-95ba-319c4edfca8d": {
+      "area": null,
+      "role": "register"
+    },
+    "a12e2bf8-13ce-4d0b-b2d4-b1cd20450a63": {
+      "area": null,
+      "role": "register"
+    },
+    "c71d02ff-b756-4cc0-b089-d29ba9155619": {
+      "area": null,
+      "role": "checklist"
+    },
+    "de8934f4-a136-481c-a87a-b0b202b80a31": {
+      "area": null,
+      "role": "checklist"
+    }
+  },
+  "datasets": {
+    "15147db1-27c3-49b5-9c69-c78d55a4b8ff": {
+      "citation": "Randall J, McDonald J, Wong L J, Pagad S (2026). Global Register of Introduced and Invasive Species - Australia. Version 1.13. Invasive Species Specialist Group ISSG. Checklist dataset https://doi.org/10.15468/3pz20c accessed via GBIF.org on 2026-11-01.",
+      "doi": "10.15468/3pz20c",
+      "license": "CC BY 4.0",
+      "title": "Global Register of Introduced and Invasive Species - Australia"
+    },
+    "168568e7-eb5f-4ef6-8c59-f73ceaf57e91": {
+      "citation": "Piedad Baptiste E M, Marcela García L. L, Acevedo-Charry O, Acosta A, Alarcón J, Arévalo E, Carolina Avella G, Blanco A, E. Botero J, Rancés Caicedo-Portilla J, Camelo Martínez C, Camelo-Calvo M P, Certuche-Cubillos K, Chasqui L, Cifuentes Y, Julián Contreras P, Córdoba S, Correa J, Fernanda Díaz M, DoNascimiento C, Alexandra Duque R, Victoria Flechas S, Dimitri Forero I, José Gómez Hoyos A, González Durán G, Guayara S, Carlos Guetiva J, Jiménez G, Larrahondo M, Maldonado Ocampo J, Medina-Rangel G F, Merino M C, Mesa L M, Millán M V, Mojica H, César Neita Moreno J, del Pilar Parrado M, Camilo Pérez S, Ramírez W, Rojas V, Rojas Z, Urbina-Cardona N, Paola Velásquez L, Wong L J, Pagad S (2022). Global Register of Introduced and Invasive Species - Colombia. Version 1.7. Invasive Species Specialist Group ISSG. Checklist dataset https://doi.org/10.15468/yznr8v accessed via GBIF.org on 2026-11-01.",
+      "doi": "10.15468/yznr8v",
+      "license": "CC BY 4.0",
+      "title": "Global Register of Introduced and Invasive Species - Colombia"
+    },
+    "1df9467e-0c60-4e5a-a7b0-2b60bd6648ed": {
+      "citation": "Herrera I, Espinoza F, Alvarez Solas S, Gómez Laporta M, Molineros Ruiz E, Rodriguez R, Tejena N, Narváez S, Ferri M, Pagad S (2021). GRIIS Checklist of Introduced and Invasive Species - Ecuador. Version 1.7. Invasive Species Specialist Group ISSG. Checklist dataset https://doi.org/10.15468/ngh7rj accessed via GBIF.org on 2026-11-01.",
+      "doi": "10.15468/ngh7rj",
+      "license": "CC BY 4.0",
+      "title": "GRIIS Checklist of Introduced and Invasive Species - Ecuador"
+    },
+    "2a281675-c184-4d54-a47e-5d3a7ec6653f": {
+      "citation": "Gollasch S, Kühn I, Wong L J, Pagad S (2026). Global Register of Introduced and Invasive Species - Germany. Version 1.7. Invasive Species Specialist Group ISSG. Checklist dataset https://doi.org/10.15468/yazb1f accessed via GBIF.org on 2026-11-01.",
+      "doi": "10.15468/yazb1f",
+      "license": "CC BY 4.0",
+      "title": "Global Register of Introduced and Invasive Species - Germany"
+    },
+    "38de3b7a-5af3-4b6f-a1c5-4c0aa6abf010": {
+      "citation": "Hilmo O, Taraldset Haugland B, Eilertsen M, van der Kooij J, Finstad A, Øystein Gjelland K, Magnus Bærum K, Gunnar Stokke B, Solvang R, Høistad Schei F, Solstad H, M. M. Vollering J, Pedersen O, Vandvik V, Kjærstad G, Jensen T, Agnalt A, Falkenhaug T, Eldegard K, Holand Ø, Karlsbakk E, Persdatter Tangvik M, Nordén B, Nordén J, Pettersson M, Endrestøl A, Staverløkk A, Kristian Slagsvold P, Olberg S, Husa V, Steen H, Kind Dervo B, Forsgren E, Knutsen H, Hesthagen T, Wienerroither R, Ove Gjershaug J, Skarpaas O, Hegre H, Sundheim Fløistad I, B. Westergaard K, Alm T, Velle G, Ivar Johnsen S, Mortensen S, Glenner H, Høitomt T, Rolandsen C, Magnusson C, Hamnes I, Talgø V, Børja I, Spies Perminow J I, Andreasen M, Endre Laugsand A, Arild Hatteland B, Åström S, Gammelmo Ø, Pagad S (2026). Global Register of Invasive and Introduced Species - Norway. Version 1.18. Invasive Species Specialist Group ISSG. Checklist dataset https://doi.org/10.15468/9oaedf accessed via GBIF.org on 2026-11-01.",
+      "doi": "10.15468/9oaedf",
+      "license": "CC BY 4.0",
+      "title": "Global Register of Invasive and Introduced Species - Norway"
+    },
+    "39f36f10-559b-427f-8c86-2d28afff68ca": {
+      "citation": "Roy D, Alderman D, Anastasiu P, Arianoutsou M, Augustin S, Bacher S, Başnou C, Beisel J, Bertolino S, Bonesi L, Bretagnolle F, Chapuis J L, Chauvel B, Chiron F, Clergeau P, Cooper J, Cunha T, Delipetrou P, Desprez-Loustau M, Détaint M, Devin S, Didžiulis V, Essl F, Galil B S, Genovesi P, Gherardi F, Gollasch S, Hejda M, Hulme P E, Josefsson M, Kark S, Kauhala K, Kenis M, Klotz S, Kobelt M, Kühn I, Lambdon P W, Larsson T, Lopez-Vaamonde C, Lorvelec O, Marchante H, Minchin D, Nentwig W, Occhipinti-Ambrogi A, Olenin S, Olenina I, Ovcharenko I, Panov V E, Pascal M, Pergl J, Perglová I, Pino J, Pyšek P, Rabitsch W, Rasplus J, Rathod B, Roques A, Roy H, Sauvard D, Scalera R, Shiganova T A, Shirley S, Shwartz A, Solarz W, Vilà M, Winter M, Yésou P, Zaiko A, Adriaens T, Desmet P, Reyserhove L (2020). DAISIE - Inventory of alien invasive species in Europe. Version 1.7. Research Institute for Nature and Forest (INBO). Checklist dataset https://doi.org/10.15468/ybwd3x accessed via GBIF.org on 2026-11-01.",
+      "doi": "10.15468/ybwd3x",
+      "license": "CC BY 4.0",
+      "title": "DAISIE - Inventory of alien invasive species in Europe"
+    },
+    "3cabcf37-db13-4dc1-9bf3-e6f3fbfbbe23": {
+      "citation": "Robinson T, Ivey P, Powrie L, Winter P, Wong L J, Pagad S (2026). Global Register of Introduced and Invasive Species - South Africa. Version 2.8. Invasive Species Specialist Group ISSG. Checklist dataset https://doi.org/10.15468/l6smob accessed via GBIF.org on 2026-11-01.",
+      "doi": "10.15468/l6smob",
+      "license": "CC BY 4.0",
+      "title": "Global Register of Introduced and Invasive Species - South Africa"
+    },
+    "3f5e930b-52a5-461d-87ec-26ecd66f14a3": {
+      "citation": "Zieritz A, Gallardo B, Aldridge D, Desmet P, Reyserhove L (2019). RINSE - Registry of non-native species in the Two Seas region countries (Great Britain, France, Belgium and the Netherlands). Version 1.6. Research Institute for Nature and Forest (INBO). Checklist dataset https://doi.org/10.15468/focajn accessed via GBIF.org on 2026-11-01.",
+      "doi": "10.15468/focajn",
+      "license": "CC0 1.0",
+      "title": "RINSE - Registry of non-native species in the Two Seas region countries (Great Britain, France, Belgium and the Netherlands)"
+    },
+    "5aa5f29e-532e-4ae5-81c0-f8a9eb4dcaf2": {
+      "citation": "Pagad S (2022). Global Register of Introduced and Invasive Species - Peru. Version 1.2. Invasive Species Specialist Group ISSG. Checklist dataset https://doi.org/10.15468/gvpapr accessed via GBIF.org on 2026-11-01.",
+      "doi": "10.15468/gvpapr",
+      "license": "CC BY 4.0",
+      "title": "Global Register of Introduced and Invasive Species - Peru"
+    },
+    "5c5a6e45-d510-45ed-b7bf-6d0624fac056": {
+      "citation": "Ikeda T, Iwasaki K, Suzuki T, Wong L J, Pagad S (2026). Global Register of Introduced and Invasive Species - Japan. Version 1.5. Invasive Species Specialist Group ISSG. Checklist dataset https://doi.org/10.15468/nt2yla accessed via GBIF.org on 2026-11-01.",
+      "doi": "10.15468/nt2yla",
+      "license": "CC BY 4.0",
+      "title": "Global Register of Introduced and Invasive Species - Japan"
+    },
+    "6baf6a53-c106-40fb-bbde-f6d4e4051513": {
+      "citation": "Simpson A, Sellers E, Pagad S (2023). Global Register of Introduced and Invasive Species - Hawaii, United States (ver.2.0, 2022). Invasive Species Specialist Group ISSG. Checklist dataset https://doi.org/10.5066/p9kfftod accessed via GBIF.org on 2026-11-01.",
+      "doi": "10.5066/p9kfftod",
+      "license": "CC0 1.0",
+      "title": "Global Register of Introduced and Invasive Species - Hawaii, United States (ver.2.0, 2022)"
+    },
+    "6d9e952f-948c-4483-9807-575348147c7e": {
+      "citation": "Desmet P, Reyserhove L, Oldoni D, Groom Q, Adriaens T, Vanderhoeven S, Pagad S (2025). Global Register of Introduced and Invasive Species - Belgium. Version 1.15. Invasive Species Specialist Group ISSG. Checklist dataset https://doi.org/10.15468/xoidmd accessed via GBIF.org on 2026-11-01.",
+      "doi": "10.15468/xoidmd",
+      "license": "CC BY 4.0",
+      "title": "Global Register of Introduced and Invasive Species - Belgium"
+    },
+    "78ee0f56-267b-49e1-8afc-19f03cf81276": {
+      "citation": "Zengeya T, Mtileni P, Faulkner K, Wilson J (2025). List of Alien Species in South Africa 2025. South African National Biodiversity Institute. Checklist dataset https://doi.org/10.15468/vncky6 accessed via GBIF.org on 2026-11-01.",
+      "doi": "10.15468/vncky6",
+      "license": "CC BY 4.0",
+      "title": "List of Alien Species in South Africa 2025"
+    },
+    "7b6661a3-5bbd-4dbb-b3e4-0c26df341977": {
+      "citation": "Kwek Yan C, Yeo Chong Jinn D Y C J, Chia C, Tan Tiang Wah H, Lim Kok Peng K, Heok Hui T, Koh Siang T, Wong L J, Pagad S (2026). Global Register of Introduced and Invasive Species - Singapore. Version 1.3. Invasive Species Specialist Group ISSG. Checklist dataset https://doi.org/10.15468/iqgcwo accessed via GBIF.org on 2026-11-01.",
+      "doi": "10.15468/iqgcwo",
+      "license": "CC BY 4.0",
+      "title": "Global Register of Introduced and Invasive Species - Singapore"
+    },
+    "9a52d8bf-864a-4abb-95ba-319c4edfca8d": {
+      "citation": "Adriaens T, Huysentruyt F, Dekeukeleire D, Devisscher S, Reyserhove L, Govaert S (2025). Checklist of alien mammals of Belgium. Version 1.5. Research Institute for Nature and Forest (INBO). Checklist dataset https://doi.org/10.15468/3e4dgf accessed via GBIF.org on 2026-11-01.",
+      "doi": "10.15468/3e4dgf",
+      "license": "CC0 1.0",
+      "title": "Checklist of alien mammals of Belgium"
+    },
+    "a12e2bf8-13ce-4d0b-b2d4-b1cd20450a63": {
+      "citation": "van Doorn L, Reyserhove L, Speybroeck J, Adriaens T, Govaert S (2024). Checklist of alien herpetofauna of Belgium. Version 1.4. Research Institute for Nature and Forest (INBO). Checklist dataset https://doi.org/10.15468/pnxu4c accessed via GBIF.org on 2026-11-01.",
+      "doi": "10.15468/pnxu4c",
+      "license": "CC0 1.0",
+      "title": "Checklist of alien herpetofauna of Belgium"
+    },
+    "c71d02ff-b756-4cc0-b089-d29ba9155619": {
+      "citation": "Adzhigildyaev P (2026). Checklist of the mammals of Central Asia (Kazakhstan, Kyrgyzstan, Tajikistan, Turkmenistan, Uzbekistan). Version 1.12. Wings - Animal and Plant Conservation and Protection Fund. Checklist dataset https://doi.org/10.15468/hmrvjn accessed via GBIF.org on 2026-11-01.",
+      "doi": "10.15468/hmrvjn",
+      "license": "CC0 1.0",
+      "title": "Checklist of the mammals of Central Asia (Kazakhstan, Kyrgyzstan, Tajikistan, Turkmenistan, Uzbekistan)"
+    },
+    "de8934f4-a136-481c-a87a-b0b202b80a31": {
+      "citation": "Backlund M (2026). Dyntaxa. Svensk taxonomisk databas. SLU Artdatabanken. Checklist dataset https://doi.org/10.15468/j43wfc accessed via GBIF.org on 2026-11-01.",
+      "doi": "10.15468/j43wfc",
+      "license": "CC0 1.0",
+      "title": "Dyntaxa. Svensk taxonomisk databas"
+    }
+  },
+  "dropped": {
+    "noRole": {
+      "02beaa1b-8f15-44f1-99da-e3971aac9959": 2,
+      "05dc0c1b-6a83-43c6-b76a-c1f062da3e31": 6,
+      "086d0402-a5e1-42ae-b67f-ac6244178fa2": 9,
+      "09174029-d182-442c-a12f-8013aee328d7": 8,
+      "0b1735ff-6a66-454b-8686-cae1cbc732a2": 1,
+      "0e9c8278-06c3-455d-902c-0bb6cc4fa11a": 3,
+      "128fd844-b069-42a1-8f8c-9bb66a52f9d9": 3,
+      "144c554d-7057-4ce6-a149-ab643f86e033": 3,
+      "1b720e9d-e5fa-4e88-85ff-ae38f0fa1680": 1,
+      "1ee55f5c-dfb8-4b30-9650-e73f16368645": 1,
+      "29886bf9-62d2-4208-87f6-109dd1972607": 4,
+      "2ddc5d66-d860-4319-87d6-048626d65a99": 3,
+      "300ec783-3fbd-48a9-9a45-9f810f7a9fec": 3,
+      "30e1f28c-9753-481d-9f13-2c8243490d59": 3,
+      "3408ce35-c482-4df0-9644-b8d4e6318f99": 2,
+      "372cab18-3df1-4e84-b99f-a47b03137a1a": 2,
+      "3a0dc0d1-3753-4d04-833d-19879bca9aa2": 2,
+      "3d10c579-8f9f-4502-9b82-da800ed934c5": 8,
+      "3d9b97e9-2f2c-458e-883b-488a628a3fa5": 2,
+      "4493273e-47df-487e-b285-f8e5062d2b14": 2,
+      "45aeea93-1630-4731-b486-29960b42eeb7": 1,
+      "4691d4f4-b22a-45a5-8f5a-1ccfa31597a4": 1,
+      "496a7abf-771f-48ce-9131-2745585f0490": 1,
+      "497ececa-2909-42cd-bf67-b9ffe58a60b5": 2,
+      "4c2de81c-6080-45ac-be58-ded05acc1f32": 1,
+      "4c3e0985-4430-4182-9884-543ed91784ca": 1,
+      "5084b757-cb3d-455e-9981-93cb2de56fef": 1,
+      "57d68787-134e-4ad8-b160-ea38832c5eb6": 1,
+      "58226abf-d99b-4d34-a7b6-9e9c19e29dd4": 1,
+      "5b08055f-75cf-4bfb-b326-c2700eb5788e": 1,
+      "64fa10f0-ca43-4f53-aa88-621ec9ea2b50": 2,
+      "668282c7-8d71-4c2b-b9ba-f9ab705c88d5": 28,
+      "6c462e5c-d82e-48fa-b35d-943d3ce2b032": 4,
+      "77e48d5b-d23d-486a-bd03-5187149d278d": 1,
+      "78eaf40d-d4bc-4ad8-8be3-a25a1e3c4c79": 6,
+      "79882638-7903-4723-9320-0dca0cb7d878": 5,
+      "79927afb-0776-4453-8af5-bee2769dbedb": 3,
+      "7b3f4866-9369-45a9-b2a8-bcd0b144d500": 4,
+      "7ddf754f-d193-4cc9-b351-99906754a03b": 71,
+      "7ed622d0-54a4-45b1-9af0-3f06e9a1a279": 2,
+      "8074a87b-7149-4a79-b032-043fd3c411a3": 1,
+      "811d48a6-fd04-4a34-81f2-7605492e54b8": 205,
+      "8b4ecd20-850f-473e-af8c-dbf5d1e76932": 3,
+      "90145449-83f1-40b7-833a-090f7b34c6c4": 1,
+      "93f843fe-7e41-452f-918a-a9b7fce6ab68": 2,
+      "9ca92552-f23a-41a8-a140-01abaa31c931": 79,
+      "9e11f45e-f496-42e5-a1a6-9415907a3717": 4,
+      "9e86d932-72b2-46ca-a441-0ecb68dc5d1a": 7,
+      "a0f0ede8-17a9-4d2f-b86b-bb1ad0cbbc30": 2,
+      "a5224e5b-6379-4d33-a29d-14b56015893d": 1,
+      "a6c6cead-b5ce-4a4e-8cf5-1542ba708dec": 1,
+      "a77ad84a-c2c6-46fb-847a-d7867412a673": 3,
+      "bc1a1eb3-243d-4e87-b9fa-d35fe0800230": 4,
+      "bfc9fd52-c81b-4bc9-93b7-524a2888412b": 4,
+      "bfd9dbff-4581-4dcb-980b-1473ced21cb2": 1,
+      "c2a11b56-71fc-44ce-8bd8-844f7934b13e": 7,
+      "c3521c2c-3483-49fa-b7d8-ddca40877970": 1,
+      "cc056915-475e-4179-b12e-849acebc6ed9": 7,
+      "cd4af563-4b18-4cc7-a3ab-94d64be06105": 1,
+      "cfce3836-bed5-4530-9584-36ecb59b42be": 1,
+      "d922f0cd-fae6-4600-8daa-2b41bb4f76ad": 1,
+      "e15d0466-ce09-4e13-b03d-d7c3c060a1ea": 1,
+      "e228ea36-82e8-4b17-9b94-fb5e55420c5e": 4,
+      "e6cd63a7-fa39-42b3-b78d-720a72a86431": 5,
+      "e7250318-b8ac-4780-b2c8-da946f4792da": 1,
+      "e8b9ed9b-f715-4eac-ae24-772fbf40d7ae": 7,
+      "f06ad66a-2ad8-45e4-93c5-03c5d9503019": 3,
+      "f089fe8c-7b73-4990-b70f-e9136caaa214": 1,
+      "f1b45fe9-6c87-4139-9cf5-df0005cbe8fd": 3,
+      "fc18b0b1-8777-4c8a-8cb8-f9f15870d6a9": 1,
+      "ff5c51bc-c53c-448d-97e6-ea0fafc3f51f": 5
+    },
+    "noSourceTaxonKey": 0,
+    "redList": 72
+  },
+  "retrieved": "2026-11-01",
+  "species": {
+    "Acinonyx jubatus": {
+      "keys": [
+        2435270
+      ],
+      "rows": [
+        {
+          "country": "KZ",
+          "datasetKey": "c71d02ff-b756-4cc0-b089-d29ba9155619",
+          "establishmentMeans": "NATIVE",
+          "sourceTaxonKey": 337339424,
+          "status": "ABSENT"
+        },
+        {
+          "country": "TJ",
+          "datasetKey": "c71d02ff-b756-4cc0-b089-d29ba9155619",
+          "establishmentMeans": "NATIVE",
+          "sourceTaxonKey": 337339424,
+          "status": "ABSENT"
+        },
+        {
+          "country": "TM",
+          "datasetKey": "c71d02ff-b756-4cc0-b089-d29ba9155619",
+          "establishmentMeans": "NATIVE",
+          "sourceTaxonKey": 337339424,
+          "status": "ABSENT"
+        },
+        {
+          "country": "UZ",
+          "datasetKey": "c71d02ff-b756-4cc0-b089-d29ba9155619",
+          "establishmentMeans": "NATIVE",
+          "sourceTaxonKey": 337339424,
+          "status": "ABSENT"
+        }
+      ]
+    },
+    "Addax nasomaculatus": {
+      "keys": [
+        2441101
+      ],
+      "rows": [
+        {
+          "country": "ZA",
+          "datasetKey": "3cabcf37-db13-4dc1-9bf3-e6f3fbfbbe23",
+          "establishmentMeans": "INTRODUCED",
+          "sourceTaxonKey": 134848878,
+          "status": "PRESENT"
+        }
+      ]
+    },
+    "Agalychnis callidryas": {
+      "keys": [
+        2428197
+      ],
+      "rows": []
+    },
+    "Ailuropoda melanoleuca": {
+      "keys": [
+        2433399
+      ],
+      "rows": []
+    },
+    "Ailurus fulgens": {
+      "keys": [
+        5219446
+      ],
+      "rows": []
+    },
+    "Ambystoma mexicanum": {
+      "keys": [
+        2431950
+      ],
+      "rows": [
+        {
+          "country": "CO",
+          "datasetKey": "168568e7-eb5f-4ef6-8c59-f73ceaf57e91",
+          "establishmentMeans": "INTRODUCED",
+          "sourceTaxonKey": 148736828,
+          "status": "PRESENT"
+        },
+        {
+          "country": "EC",
+          "datasetKey": "1df9467e-0c60-4e5a-a7b0-2b60bd6648ed",
+          "establishmentMeans": "INTRODUCED",
+          "sourceTaxonKey": 168211681,
+          "status": "PRESENT"
+        },
+        {
+          "country": "DE",
+          "datasetKey": "2a281675-c184-4d54-a47e-5d3a7ec6653f",
+          "establishmentMeans": "INTRODUCED",
+          "sourceTaxonKey": 160944230,
+          "status": "PRESENT"
+        },
+        {
+          "country": "DE",
+          "datasetKey": "39f36f10-559b-427f-8c86-2d28afff68ca",
+          "establishmentMeans": "INTRODUCED",
+          "sourceTaxonKey": 159514508,
+          "status": "ABSENT"
+        },
+        {
+          "country": "PE",
+          "datasetKey": "5aa5f29e-532e-4ae5-81c0-f8a9eb4dcaf2",
+          "establishmentMeans": "INTRODUCED",
+          "sourceTaxonKey": 196394466,
+          "status": "PRESENT"
+        },
+        {
+          "country": "ZA",
+          "datasetKey": "78ee0f56-267b-49e1-8afc-19f03cf81276",
+          "establishmentMeans": null,
+          "sourceTaxonKey": 294304185,
+          "status": "PRESENT"
+        },
+        {
+          "country": "ZA",
+          "datasetKey": "78ee0f56-267b-49e1-8afc-19f03cf81276",
+          "establishmentMeans": null,
+          "sourceTaxonKey": 294304185,
+          "status": "PRESENT"
+        }
+      ]
+    },
+    "Andrias davidianus": {
+      "keys": [
+        2432037
+      ],
+      "rows": [
+        {
+          "country": "JP",
+          "datasetKey": "5c5a6e45-d510-45ed-b7bf-6d0624fac056",
+          "establishmentMeans": "INTRODUCED",
+          "sourceTaxonKey": 334457404,
+          "status": "PRESENT"
+        }
+      ]
+    },
+    "Apalone spinifera": {
+      "keys": [
+        2442680
+      ],
+      "rows": [
+        {
+          "country": "NO",
+          "datasetKey": "38de3b7a-5af3-4b6f-a1c5-4c0aa6abf010",
+          "establishmentMeans": "INTRODUCED",
+          "sourceTaxonKey": 331196771,
+          "status": "PRESENT"
+        },
+        {
+          "country": "US",
+          "datasetKey": "6baf6a53-c106-40fb-bbde-f6d4e4051513",
+          "establishmentMeans": null,
+          "sourceTaxonKey": 205105016,
+          "status": "PRESENT"
+        },
+        {
+          "country": "SE",
+          "datasetKey": "de8934f4-a136-481c-a87a-b0b202b80a31",
+          "establishmentMeans": "INTRODUCED",
+          "sourceTaxonKey": 159935771,
+          "status": "DOUBTFUL"
+        }
+      ]
+    },
+    "Ascaphus truei": {
+      "keys": [
+        2429804
+      ],
+      "rows": []
+    },
+    "Astrochelys radiata": {
+      "keys": [
+        2441666
+      ],
+      "rows": []
+    },
+    "Beatragus hunteri": {
+      "keys": [
+        4262734
+      ],
+      "rows": []
+    },
+    "Bradypus pygmaeus": {
+      "keys": [
+        2436352
+      ],
+      "rows": []
+    },
+    "Bradypus variegatus": {
+      "keys": [
+        2436353
+      ],
+      "rows": []
+    },
+    "Breviceps macrops": {
+      "keys": [
+        5218077
+      ],
+      "rows": []
+    },
+    "Canis simensis": {
+      "keys": [
+        5219143
+      ],
+      "rows": []
+    },
+    "Carettochelys insculpta": {
+      "keys": [
+        2442506
+      ],
+      "rows": [
+        {
+          "country": "SG",
+          "datasetKey": "7b6661a3-5bbd-4dbb-b3e4-0c26df341977",
+          "establishmentMeans": "INTRODUCED",
+          "sourceTaxonKey": 331113698,
+          "status": "PRESENT"
+        }
+      ]
+    },
+    "Centrochelys sulcata": {
+      "keys": [
+        2441533
+      ],
+      "rows": [
+        {
+          "country": "EC",
+          "datasetKey": "1df9467e-0c60-4e5a-a7b0-2b60bd6648ed",
+          "establishmentMeans": "INTRODUCED",
+          "sourceTaxonKey": 168211592,
+          "status": "PRESENT"
+        },
+        {
+          "country": "BE",
+          "datasetKey": "6d9e952f-948c-4483-9807-575348147c7e",
+          "establishmentMeans": "INTRODUCED",
+          "sourceTaxonKey": 182133869,
+          "status": "PRESENT"
+        },
+        {
+          "country": "BE",
+          "datasetKey": "6d9e952f-948c-4483-9807-575348147c7e",
+          "establishmentMeans": "INTRODUCED",
+          "sourceTaxonKey": 182133869,
+          "status": "PRESENT"
+        },
+        {
+          "country": "BE",
+          "datasetKey": "a12e2bf8-13ce-4d0b-b2d4-b1cd20450a63",
+          "establishmentMeans": "INTRODUCED",
+          "sourceTaxonKey": 180661233,
+          "status": "PRESENT"
+        }
+      ]
+    },
+    "Chelonoidis abingdonii": {
+      "keys": [
+        7451150
+      ],
+      "rows": []
+    },
+    "Chelonoidis niger": {
+      "keys": [],
+      "rows": []
+    },
+    "Chrysocyon brachyurus": {
+      "keys": [
+        2434450
+      ],
+      "rows": []
+    },
+    "Conraua goliath": {
+      "keys": [
+        2428946
+      ],
+      "rows": []
+    },
+    "Cryptobranchus alleganiensis": {
+      "keys": [
+        2432031
+      ],
+      "rows": []
+    },
+    "Cryptochloris wintoni": {
+      "keys": [
+        5218453
+      ],
+      "rows": []
+    },
+    "Daubentonia madagascariensis": {
+      "keys": [
+        5219587
+      ],
+      "rows": []
+    },
+    "Dendrobates tinctorius": {
+      "keys": [],
+      "rows": []
+    },
+    "Dendrolagus goodfellowi": {
+      "keys": [
+        2440222
+      ],
+      "rows": []
+    },
+    "Diceros bicornis": {
+      "keys": [
+        5220111
+      ],
+      "rows": [
+        {
+          "country": "ZA",
+          "datasetKey": "3cabcf37-db13-4dc1-9bf3-e6f3fbfbbe23",
+          "establishmentMeans": "INTRODUCED",
+          "sourceTaxonKey": 134848921,
+          "status": "PRESENT"
+        }
+      ]
+    },
+    "Dyscophus antongilii": {
+      "keys": [
+        5216573
+      ],
+      "rows": [
+        {
+          "country": "ZA",
+          "datasetKey": "78ee0f56-267b-49e1-8afc-19f03cf81276",
+          "establishmentMeans": null,
+          "sourceTaxonKey": 294304144,
+          "status": "PRESENT"
+        }
+      ]
+    },
+    "Elephas maximus": {
+      "keys": [
+        5219461
+      ],
+      "rows": []
+    },
+    "Emydoidea blandingii": {
+      "keys": [
+        2442885,
+        5220530
+      ],
+      "rows": []
+    },
+    "Equus grevyi": {
+      "keys": [
+        2440894
+      ],
+      "rows": []
+    },
+    "Heosemys spinosa": {
+      "keys": [
+        2443326
+      ],
+      "rows": []
+    },
+    "Indri indri": {
+      "keys": [
+        2436432
+      ],
+      "rows": []
+    },
+    "Lasiorhinus krefftii": {
+      "keys": [
+        5219997
+      ],
+      "rows": []
+    },
+    "Loxodonta africana": {
+      "keys": [
+        2435350
+      ],
+      "rows": []
+    },
+    "Loxodonta cyclotis": {
+      "keys": [
+        2435349
+      ],
+      "rows": []
+    },
+    "Lycaon pictus": {
+      "keys": [
+        5219317
+      ],
+      "rows": []
+    },
+    "Macrotis lagotis": {
+      "keys": [
+        5219460
+      ],
+      "rows": [
+        {
+          "country": "AU",
+          "datasetKey": "15147db1-27c3-49b5-9c69-c78d55a4b8ff",
+          "establishmentMeans": null,
+          "sourceTaxonKey": 323576815,
+          "status": "PRESENT"
+        }
+      ]
+    },
+    "Malacochersus tornieri": {
+      "keys": [
+        2441842
+      ],
+      "rows": []
+    },
+    "Manis crassicaudata": {
+      "keys": [
+        5219633
+      ],
+      "rows": []
+    },
+    "Manis javanica": {
+      "keys": [
+        5219628
+      ],
+      "rows": []
+    },
+    "Marmota vancouverensis": {
+      "keys": [
+        2437365
+      ],
+      "rows": []
+    },
+    "Mustela nigripes": {
+      "keys": [
+        5218985
+      ],
+      "rows": []
+    },
+    "Myrmecophaga tridactyla": {
+      "keys": [
+        2436346
+      ],
+      "rows": []
+    },
+    "Nanger dama": {
+      "keys": [
+        4262713
+      ],
+      "rows": []
+    },
+    "Nasikabatrachus sahyadrensis": {
+      "keys": [
+        2421431
+      ],
+      "rows": []
+    },
+    "Ochotona iliensis": {
+      "keys": [
+        2436969
+      ],
+      "rows": []
+    },
+    "Okapia johnstoni": {
+      "keys": [
+        2441207
+      ],
+      "rows": []
+    },
+    "Orycteropus afer": {
+      "keys": [
+        5218416
+      ],
+      "rows": []
+    },
+    "Pan troglodytes": {
+      "keys": [
+        5219534
+      ],
+      "rows": []
+    },
+    "Panthera onca": {
+      "keys": [
+        5219426
+      ],
+      "rows": []
+    },
+    "Panthera tigris": {
+      "keys": [
+        5219416
+      ],
+      "rows": [
+        {
+          "country": "CO",
+          "datasetKey": "168568e7-eb5f-4ef6-8c59-f73ceaf57e91",
+          "establishmentMeans": "INTRODUCED",
+          "sourceTaxonKey": 148736669,
+          "status": "PRESENT"
+        },
+        {
+          "country": "EC",
+          "datasetKey": "1df9467e-0c60-4e5a-a7b0-2b60bd6648ed",
+          "establishmentMeans": "INTRODUCED",
+          "sourceTaxonKey": 168211532,
+          "status": "PRESENT"
+        },
+        {
+          "country": "KZ",
+          "datasetKey": "c71d02ff-b756-4cc0-b089-d29ba9155619",
+          "establishmentMeans": "INTRODUCED",
+          "sourceTaxonKey": 337339421,
+          "status": "PRESENT"
+        },
+        {
+          "country": "TJ",
+          "datasetKey": "c71d02ff-b756-4cc0-b089-d29ba9155619",
+          "establishmentMeans": "NATIVE",
+          "sourceTaxonKey": 337339421,
+          "status": "ABSENT"
+        },
+        {
+          "country": "UZ",
+          "datasetKey": "c71d02ff-b756-4cc0-b089-d29ba9155619",
+          "establishmentMeans": "NATIVE",
+          "sourceTaxonKey": 337339421,
+          "status": "ABSENT"
+        }
+      ]
+    },
+    "Phyllobates terribilis": {
+      "keys": [
+        5218020
+      ],
+      "rows": [
+        {
+          "country": "EC",
+          "datasetKey": "1df9467e-0c60-4e5a-a7b0-2b60bd6648ed",
+          "establishmentMeans": "INTRODUCED",
+          "sourceTaxonKey": 168211667,
+          "status": "PRESENT"
+        }
+      ]
+    },
+    "Pipa pipa": {
+      "keys": [
+        2423966
+      ],
+      "rows": []
+    },
+    "Platysternon megacephalum": {
+      "keys": [
+        2441884
+      ],
+      "rows": []
+    },
+    "Pongo abelii": {
+      "keys": [
+        5707420
+      ],
+      "rows": []
+    },
+    "Priodontes maximus": {
+      "keys": [
+        5220096
+      ],
+      "rows": []
+    },
+    "Pseudoryx nghetinhensis": {
+      "keys": [
+        4262655
+      ],
+      "rows": []
+    },
+    "Pteronura brasiliensis": {
+      "keys": [
+        2433681
+      ],
+      "rows": []
+    },
+    "Pteropus livingstonii": {
+      "keys": [
+        5218694
+      ],
+      "rows": []
+    },
+    "Rafetus swinhoei": {
+      "keys": [
+        2442647
+      ],
+      "rows": []
+    },
+    "Rhacophorus nigropalmatus": {
+      "keys": [
+        5217285
+      ],
+      "rows": []
+    },
+    "Rhinoceros sondaicus": {
+      "keys": [
+        5220112
+      ],
+      "rows": []
+    },
+    "Rhinoderma darwinii": {
+      "keys": [
+        5217388
+      ],
+      "rows": []
+    },
+    "Rhinopithecus roxellana": {
+      "keys": [
+        7262005
+      ],
+      "rows": []
+    },
+    "Rhynchocyon chrysopygus": {
+      "keys": [
+        5220103
+      ],
+      "rows": []
+    },
+    "Sarcophilus harrisii": {
+      "keys": [
+        2435451
+      ],
+      "rows": [
+        {
+          "country": "BE",
+          "datasetKey": "3f5e930b-52a5-461d-87ec-26ecd66f14a3",
+          "establishmentMeans": "INTRODUCED",
+          "sourceTaxonKey": 145954567,
+          "status": "PRESENT"
+        },
+        {
+          "country": "FR",
+          "datasetKey": "3f5e930b-52a5-461d-87ec-26ecd66f14a3",
+          "establishmentMeans": "INTRODUCED",
+          "sourceTaxonKey": 145954567,
+          "status": "DOUBTFUL"
+        },
+        {
+          "country": "GB",
+          "datasetKey": "3f5e930b-52a5-461d-87ec-26ecd66f14a3",
+          "establishmentMeans": "INTRODUCED",
+          "sourceTaxonKey": 145954567,
+          "status": "DOUBTFUL"
+        },
+        {
+          "country": "NL",
+          "datasetKey": "3f5e930b-52a5-461d-87ec-26ecd66f14a3",
+          "establishmentMeans": "INTRODUCED",
+          "sourceTaxonKey": 145954567,
+          "status": "DOUBTFUL"
+        },
+        {
+          "country": "BE",
+          "datasetKey": "9a52d8bf-864a-4abb-95ba-319c4edfca8d",
+          "establishmentMeans": "INTRODUCED",
+          "sourceTaxonKey": 222536628,
+          "status": "PRESENT"
+        }
+      ]
+    },
+    "Smutsia gigantea": {
+      "keys": [
+        5786559,
+        5219631
+      ],
+      "rows": []
+    },
+    "Smutsia temminckii": {
+      "keys": [
+        5786560,
+        5219630
+      ],
+      "rows": []
+    },
+    "Solenodon paradoxus": {
+      "keys": [
+        5219470
+      ],
+      "rows": []
+    },
+    "Tapirus bairdii": {
+      "keys": [
+        2440897,
+        8395500
+      ],
+      "rows": []
+    },
+    "Tapirus terrestris": {
+      "keys": [
+        2440898
+      ],
+      "rows": []
+    },
+    "Tremarctos ornatus": {
+      "keys": [
+        2433401
+      ],
+      "rows": []
+    },
+    "Trichobatrachus robustus": {
+      "keys": [
+        2429660
+      ],
+      "rows": []
+    },
+    "Zaglossus bartoni": {
+      "keys": [
+        2433385
+      ],
+      "rows": []
+    },
+    "Zaglossus bruijnii": {
+      "keys": [],
+      "rows": []
+    }
+  }
+}

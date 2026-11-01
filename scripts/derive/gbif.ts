@@ -16,6 +16,11 @@ export interface GbifResult {
   entries: Mismatch[];
 }
 
+// The keys whose checklist distributions speak for a species (ingest gbif-checklists): its id and its counted taxon, once each.
+export function checklistKeys({ id, taxonKey }: Pick<GbifResult, "id" | "taxonKey">): number[] {
+  return [...new Set([id, taxonKey].filter((key) => key !== null))];
+}
+
 // The backbone's license URL; anything else throws.
 const LICENSES: Readonly<Record<string, string>> = { "http://creativecommons.org/licenses/by/4.0/legalcode": "CC BY 4.0" };
 export function gbifBackboneLicense(license: string): string {

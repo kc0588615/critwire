@@ -431,7 +431,7 @@ Written on `73cd51a`. Read **Target design** above first: shapes, messages and r
 - **Ingest logs:** `2>> $S/ingest-<source>.log`.
 - **A deviation from 007:** edit 007 in the same commit, with a Decisions line.
 
-- [ ] S1. **GBIF checklists ingest: real fetch, committed snapshot.** Most enabling, and the one live API.
+- [x] S1. **GBIF checklists ingest: real fetch, committed snapshot.** Most enabling, and the one live API.
   - First: re-read 007's GBIF terms quotes (archived URLs in its Sources row). Changed: Decisions line.
   - Files: `scripts/raw.ts` (guard gains `threatStatus`; `GbifChecklistsSnapshot`; `Snapshots` key), `scripts/ingest/checklist-roles.ts` (new; the 18 with a role from spike `allowlist.json`, with reasons), `scripts/ingest/gbif-checklists.ts` (new), `scripts/derive/gbif.ts` (`checklistKeys`), `scripts/derive/pipeline.ts` (`CoreResult.checklistKeys` only), `scripts/ingest.ts`, tests `scripts/ingest/gbif-checklists.test.ts`, `scripts/derive/gbif.test.ts` (F1), `plans/007-native-ranges.md` (Finding 5: `:285`, Pipeline's row), `data/raw/gbif-checklists/snapshot.json`.
   - Run: `pnpm ingest gbif-checklists 2>> $S/ingest-gbif-checklists.log` (about 6 min).
@@ -652,6 +652,8 @@ Isolated parts only. Written into each test file's header before its code.
   - **O4 = yes**, only when a page first reads the listings file, in that change (H10). **O5 = s1, f3, e4** as one small mission after the build goes live; d1/d2 only if it fits; g3, c1 deferred (H11). Neither changes this build: `critwire-learn-range-lessons`.
 - Held work (addendum): PR #17 stays held; `data/review/country-overrides.json` isn't touched.
 - 2026-11-01: S9 reads Amphibian Species of the World through public Wayback copies, one page per species, because its live site answers 403 here. Disclosed, not hidden: Summary and H12 say so, with the source's noncommercial terms, so the owner can object or swap the reference.
+- 2026-11-01: S1 re-read GBIF's data-user terms (archived copy; live page still answers 403 here): both 007 quotes unchanged. Licenses re-checked at the fetch: all 18 role datasets open (12 CC BY 4.0, 6 CC0 1.0).
+- 2026-11-01: deviation from 007 (Finding 5): snapshot holds role-dataset rows only, no-role rows counted per dataset key, metadata fetched for role datasets only. 007's mapping row and Pipeline row updated in the same commit.
 
 ## Log
 
@@ -661,5 +663,6 @@ Isolated parts only. Written into each test file's header before its code.
 - 2026-11-01 21:02 UTC: Astra review: APPROVE, no MUST-FIX; 3 SHOULD-CONSIDER (deriveAll's new dependents documented; mixed-license entry apart from dataset licenses; zero-conflict refresh mustn't fail). No code.
 - 2026-11-01 21:08 UTC: Revision (`architect`): Fable MUST-FIX resolved (literal `licenseUrl: null`, `licenses.ts` untouched); MISSED items and all SHOULD-CONSIDER taken, none rejected; zero-conflict refresh passes, detection on 007's six fixed cases in E2E. Spot-checked: `attribution.ts:72`, `:103`, `html.ts:8`, `pipeline.ts:118`, `e2e/attribution.spec.ts:41`. No code.
 - 2026-11-01 21:30 UTC: Steps (`planner`): S1–S11, E1–E12, R1–R20, F1–F8. Lead added the Wayback disclosure (Decisions, H12). Spot-checked: byte check empty on current `dist/`; 311 baseline lines; 26 non-mammal ids (15 + 11) = `data/species.json`; `contract.ts:116` logs additions; `scripts/derive/pipeline.ts:118`; PR #17 open. No code.
+- 2026-11-01 21:40 UTC: S1: `ingest gbif-checklists` real fetch (4 min 20 s): 76 names, 73 with keys, two keys on 1, 55, 63, 70 (= spike), 35 role rows on 13 species (identical to spike's), 18 datasets. 679 rows fetched, 216 with `threatStatus` (72 red-list + spike's 144), none kept; grep 0. Typecheck pass, test 771/771, plain build pass, byte check empty. E2E not run: no `dist/` byte moved.
 
 ## Summary
