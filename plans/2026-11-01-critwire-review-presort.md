@@ -2,7 +2,7 @@
 mission: critwire-review-presort
 project: critwire
 branch: agent/critwire-review-presort
-status: active
+status: done
 started: 2026-11-01 08:01 UTC
 ---
 
@@ -574,7 +574,29 @@ SHOULD-CONSIDER:
 - 2026-11-01 10:42 UTC: Astra code review. APPROVE_WITH_CHANGES, 2 MUST-FIX accepted (S15 accept race, S16 39:ZM to medium), 1 SHOULD-CONSIDER for the Summary. Plan-only change; no code to verify.
 - 2026-11-01 10:49 UTC: S15. `claimBackup` (`link`, then compare) replaces the backup write; overrides read once. A14–A16 written first, A16 red 1 of 3 on the old CLI. typecheck ok, test 748/748, A16 green 6/6, GUARD empty.
 - 2026-11-01 10:52 UTC: S16. 39:ZM high → medium, reason reworded (294 chars), 005 + proposal regenerated. High country 80 (66 confirming, 14 output-changing). `--check` exit 0, second run byte-identical, typecheck ok, test 748/748, GUARD empty.
+- 2026-11-01 11:03 UTC: Final Verification 1–10 on `bb40e27`: install ok, typecheck ok, test 748/748, `--check` exit 0 (214, 0 pending, counts = S16), build ok, dist = Baseline (311 files, diff empty), GUARD empty, data diff only proposal + `presort/{evidence,recommendations}.json`, status clean, e2e 98/98, no `.pre-accept`. Artifact `<state>/e2e-final/`. Summary written, status done.
 
 ## Summary
+
+**Done.** All 214 queue entries have a recommendation, evidence and a confidence level, in `plans/005-review-presort.md`. `pnpm review:presort --check` proves coverage (214 keys, once each, 0 pending).
+
+| | high | medium | low | total | change /v1 |
+|---|---|---|---|---|---|
+| keep | 48 | 31 | 19 | 98 | 2 |
+| remove | 32 | 50 | 6 | 88 | 52 |
+| fix (non-country) | 14 | 4 | 0 | 18 | n/a |
+| no action (non-country) | 6 | 1 | 3 | 10 | n/a |
+
+**Reply with one sentence:**
+- **"accept the high-confidence confirmations only"**: `pnpm review:accept --confidence high --confirm-only`, 66 entries. Published countries don't change; the next release isn't held up.
+- **"accept the high-confidence set"**: `pnpm review:accept --confidence high`, 80 entries (66 + 14 that change published countries). Those 14 hold the next release until the follow-on in 005 is done (≈ 1–2 h).
+
+**Built:** `review:evidence`, `review:presort [--check]`, `review:accept`; proposal `data/review/country-overrides.proposed.json` (186 entries, validated by test). `review:accept` was tested on a throwaway copy only, never run on real data; `country-overrides.json`, `species.json` and `mismatches.json` are untouched, and nothing in derive or build reads the presort files.
+
+**Verification (`bb40e27`):** typecheck ok, test 748/748, build ok, `dist/` = Baseline (311 files, diff empty), e2e 98/98. Artifact: `/srv/critter-ai/agent-state/missions/critwire-review-presort/e2e-final/`; reproduce: `git checkout $(cat <artifact>/commit.txt) && pnpm test && pnpm review:presort --check && pnpm build && E2E_ARTIFACTS=<dir> pnpm e2e`.
+
+**Reviews:** Fable and Astra (architecture) both APPROVE_WITH_CHANGES, MUST-FIX resolved in Revision. Astra (code) APPROVE_WITH_CHANGES, 2 MUST-FIX fixed (S15 accept race, S16 `39:ZM` to medium).
+
+**Worth knowing:** non-country fixes (18) aren't applied by `review:accept`; each is separate work, and any that changes a `scientificName` or `ids.gbif` costs ≈ 1 h ("Cost of a species change"). `--confidence low` also takes `43:DE` and `57:TG` (`keep`, 0 live records), which breaks the next `ingest gbif`; leave those two out.
 
 For the owner, from the code review (SHOULD-CONSIDER, not done): add fixture tests for the evidence fetch (allowlists, facet completeness, dropping whole Wikidata statements with prohibited references). Current tests exercise only the downstream gate.
