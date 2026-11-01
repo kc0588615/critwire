@@ -9432,7 +9432,7 @@ ICMBio \| Dados de ocorrência de espécies do Sistema de Autor… | Instituto C
 # after: py-connect
 import json
 
-DOWNLOAD_DOI = "10.15468/dl.fbpk9w"  # the GBIF download the records came from (§4.2)
+DOWNLOAD_DOI = "10.15468/dl.fbpk9w"  # the GBIF download the records came from
 
 with connect() as conn:
     counts = dict(conn.execute("""
