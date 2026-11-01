@@ -5050,7 +5050,7 @@ valid | reason | at | area | made_valid | valid_area
 false | Self-intersection | POINT(1 1) | 0 | MULTIPOLYGON(((0 2,1 1,0 0,0 2)),((2 0,1 1,2 2,2 0))) | 2
 ```
 
-The ring runs (0 0) to (2 2), down to (2 0), across to (0 2) and back, so it crosses itself at (1 1), where `ST_IsValidDetail` points. Walking the ring, one triangle is circled clockwise and the other anticlockwise, so their signed areas cancel and `ST_Area` returns 0, with no warning. `ST_MakeValid` cuts the ring at the crossing and returns the two triangles as a MultiPolygon, area 2. Asked to intersect it with the square's left half, an overlay function refuses:
+The ring runs (0 0) to (2 2), down to (2 0), across to (0 2) and back, so it crosses itself at (1 1), where `ST_IsValidDetail` points. Walking the ring, one triangle is circled clockwise and the other anticlockwise, so their signed areas cancel and `ST_Area` returns 0, with no warning. `ST_MakeValid` cuts the ring at the crossing and returns the two triangles as a MultiPolygon, area 2. Asked to intersect it with the left half of the 2 × 2 square it sits in, an overlay function refuses:
 
 ```sql
 -- q: g2-overlay

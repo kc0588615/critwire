@@ -231,6 +231,7 @@ Hand-only, not run here: Docker and its image tags, the EDB installer and Stack 
 | Q25 | d4 | jargon | T0 | Lab 10, the exercise and the Check turn on `IS DISTINCT FROM`, and `month` is often `NULL`, which is the point of it. No page said what it does | fixed | `qa-fixes.ts` |
 | Q26 | g1 | number | T0 | Check: Greenland's north coast "about 81" times; 1 ÷ cos²(83.6°) is 80.5 (lab db, `ST_YMax` 83.5996) | fixed | `qa-fixes.ts` |
 | Q27 | g2 | jargon | T0 | `(ST_IsValidDetail(geom)).valid` carries the worked example, and `(d).reason` the lab; no page said why the parentheses. g6's `(part).geom` and s2, s4 lean on the same syntax. Said once | fixed | `qa-fixes.ts` |
+| Q28 | g2 | prose | T0 | "The square's left half": no square had been mentioned, only a bow-tie. Names it | fixed | `qa-fixes.ts` |
 
 ## Ledger
 

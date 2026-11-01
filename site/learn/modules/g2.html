@@ -20,7 +20,7 @@
 <h2>Worked example</h2>
 <p>A bow-tie, one ring that crosses itself, typed in. What does PostGIS say about it, and what does <code>ST_MakeValid</code> make of it?</p>
 {{block:g2-bowtie}}
-<p>The ring runs (0 0) to (2 2), down to (2 0), across to (0 2) and back, so it crosses itself at (1 1), where <code>ST_IsValidDetail</code> points. Walking the ring, one triangle is circled clockwise and the other anticlockwise, so their signed areas cancel and <code>ST_Area</code> returns 0, with no warning. <code>ST_MakeValid</code> cuts the ring at the crossing and returns the two triangles as a MultiPolygon, area 2. Asked to intersect it with the square's left half, an overlay function refuses:</p>
+<p>The ring runs (0 0) to (2 2), down to (2 0), across to (0 2) and back, so it crosses itself at (1 1), where <code>ST_IsValidDetail</code> points. Walking the ring, one triangle is circled clockwise and the other anticlockwise, so their signed areas cancel and <code>ST_Area</code> returns 0, with no warning. <code>ST_MakeValid</code> cuts the ring at the crossing and returns the two triangles as a MultiPolygon, area 2. Asked to intersect it with the left half of the 2 × 2 square it sits in, an overlay function refuses:</p>
 {{block:g2-overlay}}
 <p>GEOS stops at the crossing, (1 1), and says the input may be invalid. The same call on <code>ST_MakeValid</code> of the bow-tie returns the left triangle. So repair before overlaying, and measure before trusting an area.</p>
 
