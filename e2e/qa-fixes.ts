@@ -80,6 +80,7 @@ export const QA_FIXES: QaFix[] = [
   { q: "Q61", url: "/learn/etl/quality-provenance/", has: "Everything runs in your own PostgreSQL with PostGIS and the Python environment", not: "Everything runs in the Python environment" },
   { q: "Q63", url: "/learn/power-bi/power-query/", has: "The other seven tables.", not: "The other six tables." },
   { q: "Q64", url: "/learn/power-bi/model/", has: "(its icon on the left bar, paste, Run)", not: "Home → DAX query view" },
+  { q: "Q65", url: "/learn/power-bi/dax/", has: "as does Seven seas, on its 7 records" },
 ];
 
 // What's wrong with each row on the origin `request` points at; [] when every fix shows.

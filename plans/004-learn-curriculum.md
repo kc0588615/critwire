@@ -10359,7 +10359,7 @@ AI | 0 | 0.12 | 0.000
 
 **Exercise:** shares of a total. Write a DAX query that returns, for each continent, the records and the habitat area in km², and each as a share of its total over every country: the continent's value divided by the value with no country filter. Which continents hold a larger share of the records than of the area?
 
-**Answer:** `CALCULATE ( [Records], ALL ( dim_country ) )` is the records with every country filter removed, so dividing by it gives the share; the same for the area. Africa, North America, Oceania and South America hold a larger share of the records than of the area; Asia and Europe a smaller one, and Antarctica none. The comparison is s6's record-to-area ratio, by continent: it shows where the sample's species were recorded more than area alone predicts. That follows from which species critwire lists and where people record them, not from where wildlife is.
+**Answer:** `CALCULATE ( [Records], ALL ( dim_country ) )` is the records with every country filter removed, so dividing by it gives the share; the same for the area. Africa, North America, Oceania and South America hold a larger share of the records than of the area, as does Seven seas, on its 7 records; Asia and Europe a smaller one, and Antarctica none. The comparison is s6's record-to-area ratio, by continent: it shows where the sample's species were recorded more than area alone predicts. That follows from which species critwire lists and where people record them, not from where wildlife is.
 
 ```dax
 // q: p3-ex
