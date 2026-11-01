@@ -41,6 +41,7 @@ export const QA_FIXES: QaFix[] = [
   { q: "Q27", url: "/learn/gis-in-sql/load-validate/", has: "<code>(ST_IsValidDetail(geom)).reason</code>" },
   { q: "Q28", url: "/learn/gis-in-sql/load-validate/", has: "the left half of the 2 × 2 square it sits in", not: "the square's left half" },
   { q: "Q29", url: "/learn/gis-in-sql/spatial-join/", has: "call that id <code>id_no</code> and hold several rows per taxon" },
+  { q: "Q30", url: "/learn/gis-in-sql/measure-overlay/", has: "the buffer's round ends add a little", not: "and smaller where the sea" },
 ];
 
 // What's wrong with each row on the origin `request` points at; [] when every fix shows.
