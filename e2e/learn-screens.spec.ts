@@ -4,10 +4,8 @@
 // 1280 and 375 px in light and dark:
 // <page>-<width>-<scheme>.png in E2E_ARTIFACTS. Each page fits its width, and nothing leaves the origin.
 import { expect, test, type Page } from "@playwright/test";
-import { ARTIFACTS, coursePages, firstBrowserBlock, learnContext, rendered, runBlock, waitReady } from "./helpers.ts";
+import { ARTIFACTS, coursePages, firstBrowserBlock, learnContext, rendered, runBlock, SCHEMES, waitReady, WIDTHS } from "./helpers.ts";
 
-const WIDTHS = [1280, 375];
-const SCHEMES = ["light", "dark"] as const;
 const courseUrl = async (id: string) => (await coursePages()).find((c) => c.page.page.id === id)!.url;
 
 // Each page, and what it does before its screenshots.

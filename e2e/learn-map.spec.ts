@@ -8,10 +8,9 @@ import { expect, test, type Page } from "@playwright/test";
 import { readFile } from "node:fs/promises";
 import { hoursText, moduleUrl, TOOL_NAMES } from "../scripts/build/learn/module-html.ts";
 import { CURRICULUM_FILE, type Curriculum, type Module } from "../scripts/learn/course.ts";
-import { learnContext, ORIGIN, repoPath } from "./helpers.ts";
+import { learnContext, learnPageUrls, ORIGIN, repoPath, SCHEMA_PAGES } from "./helpers.ts";
 
 const MAP = "/learn/";
-const SCHEMA_PAGES = ["/learn/schema/", "/learn/schema/lab/", "/learn/schema/star/"];
 const KEY = "critwire.learn.done.v1";
 const curriculum = async (): Promise<Curriculum> => JSON.parse(await readFile(repoPath(CURRICULUM_FILE), "utf8"));
 // Curriculum text as the page shows it: `code` spans lose their backticks.
@@ -143,9 +142,7 @@ test("every /learn/ page returns 200, has one <h1>, no \"in preparation\" and no
       }
     }
   }
-  const c = await curriculum();
-  const want = [MAP, "/learn/playground/", "/learn/data/", "/learn/setup/", ...SCHEMA_PAGES, ...c.tracks.map((t) => `/learn/${t.id}/`), ...c.modules.filter((m) => m.state === "built").map(moduleUrl)];
-  expect(want.filter((p) => !seen.has(p))).toEqual([]);
+  expect(learnPageUrls(await curriculum()).filter((p) => !seen.has(p))).toEqual([]);
 });
 
 test("nav swaps <main>, keeps the page, focuses the <h1>, works with Back, and falls back to a full load", async ({ browser }) => {
