@@ -74,7 +74,7 @@ Out:
 
 ## Stages
 
-- [ ] Baseline: install, migrate, run typecheck, lint, unit and E2E tests; record the results under Baseline
+- [x] Baseline: install, migrate, run typecheck, lint, unit and E2E tests; record the results under Baseline
 - [ ] Architecture: `architect` writes findings and the target design
 - [ ] Fable review: `architecture-reviewer`
 - [ ] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
@@ -82,6 +82,15 @@ Out:
 - [ ] Steps: `planner` writes Steps and Verification
 
 ## Baseline
+
+Run 2026-11-01 on `5ec037f` (= `origin/main` `daa896d` + mission start), worktree db `critwire_dev`-style target from `.env`.
+- `pnpm install --frozen-lockfile`: up to date. No migrations (build rebuilds `db/schema.sql` tables each run). No lint script in `package.json`; typecheck is the static check.
+- `pnpm typecheck`: pass.
+- `pnpm test`: 703/703 pass (133 s).
+- `pnpm build` (plain): pass; `dist/learn/data/` 96,026,477 B, committed lab data 18,822,906 B.
+- `pnpm e2e`: 98/98 pass (7.2 min); artifacts `/srv/critter-ai/agent-state/missions/critwire-review-presort/e2e-baseline/`.
+- `dist/` hashes: 311 files, `sha256sum` list at `/srv/critter-ai/agent-state/missions/critwire-review-presort/dist-baseline.sha256` (list's own sha256 `e9b15e99…2adee`). Live `/srv/apps/critwire/.live` hashes identical (diff empty). Re-check: `(cd dist && find . -type f -print0 | sort -z | xargs -0 sha256sum) | diff - <state>/dist-baseline.sha256`.
+- Review queue `data/review/mismatches.json`: 214 entries. By kind: country-borderline 95, country-captive-suspect 91, iucn-id 10, identity 7, synonym-info 4, not-found 4, multi-value 2, no-records 1. By severity: blocking 60, review 148, info 6. `country-overrides.json`: `[]`.
 
 ## Architecture
 
@@ -102,5 +111,7 @@ Out:
 ## Decisions
 
 ## Log
+
+- 2026-11-01 08:11 UTC: Baseline. typecheck pass, test 703/703, build pass, e2e 98/98; dist hashes recorded = live.
 
 ## Summary
