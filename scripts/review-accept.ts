@@ -1,13 +1,14 @@
 // Usage: pnpm review:accept (--confidence high|medium|low | --ids 25:DE,25:RU) [--confirm-only]. The owner's word only.
 // Copies the chosen proposals into data/review/country-overrides.json and runs pnpm derive. Every check runs before any
 // write; the exact pre-run bytes stay in the backup until derive has exited 0 (mission plan 2026-11-01-critwire-review-presort, Q5).
+// The backup is claimed atomically, so two runs at once can't lose an override (A14-A16).
 import { spawnSync } from "node:child_process";
 import { readFile, unlink } from "node:fs/promises";
 import { parseOverrides } from "./derive/countries.ts";
 import { assertDerivedFiles, deriveAll, readDeriveInputs } from "./derive/pipeline.ts";
 import { formatJson, readJson, readOptionalText, writeJson } from "./json.ts";
-import { backupFile, countryChanges, flagDrift, mergeOverrides, parseAcceptArgs, RECOVERY, selectProposals, UsageError, type AcceptArgs } from "./review/accept.ts";
-import { writeText } from "./review/io.ts";
+import { backupFile, countryChanges, flagDrift, mergeOverrides, parseAcceptArgs, RECOVERY, selectProposals, UNFINISHED_ACCEPT, UsageError, type AcceptArgs } from "./review/accept.ts";
+import { claimBackup } from "./review/io.ts";
 import {
   assertEvidence, assertRecommendations, evidenceFile, OUTPUT_CHANGE_FOLLOW_ON, proposalFile, proposalOf, recommendationsFile,
   type Evidence, type Recommendation,
@@ -22,15 +23,17 @@ try {
   console.error(e.message);
   process.exit(2);
 }
-if ((await readOptionalText(backupFile)) !== null) throw new Error(`an earlier accept didn't finish: its backup is still there.\n${RECOVERY}`);
+if ((await readOptionalText(backupFile)) !== null) throw new Error(UNFINISHED_ACCEPT);
 
-const [proposalText, recommendations, evidence, currentText, inputs] = await Promise.all([
+const [proposalText, recommendations, evidence, currentText, read] = await Promise.all([
   readFile(proposalFile, "utf8"),
   readJson<Recommendation[]>(recommendationsFile),
   readJson<Evidence>(evidenceFile),
   readFile(overridesFile, "utf8"),
   readDeriveInputs(),
 ]);
+// One read of the overrides: the merge must start from the very bytes claimBackup compares.
+const inputs = { ...read, overrides: JSON.parse(currentText) as unknown };
 assertEvidence(evidence, inputs.gbif);
 assertRecommendations(recommendations, evidence);
 if (proposalText !== formatJson(proposalOf(recommendations))) throw new Error("country-overrides.proposed.json isn't recommendations.json's: run pnpm review:presort");
@@ -54,7 +57,7 @@ for (const key of totalMoved) console.warn(`warning: ${key}: the species' total 
 const after = deriveAll({ ...inputs, overrides: merged });
 const changes = countryChanges(before.records, after.records);
 
-await writeText(backupFile, currentText);
+await claimBackup(backupFile, overridesFile, currentText);
 await writeJson(overridesFile, merged);
 const derive = spawnSync("pnpm", ["derive"], { cwd: new URL("..", import.meta.url), stdio: "inherit" });
 if (derive.status !== 0) {

@@ -9,6 +9,8 @@
 // A11: a selected pair the overrides file holds with the same action → skipped, not added (a rerun adds nothing).
 // Plus: --confidence medium = medium + high; --confirm-only drops output-changing proposals; the owner's entries keep
 // order and text, new ones appended sorted; countryChanges lists per species what a merge adds and removes.
+// A14: the backup is already there at the claim → refused naming Undo and Finish, its bytes unchanged, no temp file left.
+// A15: the overrides differ from the bytes this run read → refused, this run's backup removed, overrides unchanged.
 // The CLI, on a self-contained throwaway copy (real paths from import.meta.url, real pnpm derive; never the repo's review state):
 // A1: a malformed command line → exit 2, nothing written.
 // A5: a hand-edited proposal, or a recommendation edited to low with the proposal untouched → refused, nothing written.
@@ -19,18 +21,21 @@
 // A11: a rerun → exit 0, nothing written.
 // A12: any file other than the overrides, derive's outputs and the backup touched → every case compares the copy's hashes.
 // A13: the backup exists → refused, naming Undo and Finish, nothing written. Undo gives back every pre-run byte.
+// A16: two runs at once with different --ids → at least one exits 0, the file holds exactly the exit-0 runs' keys, no
+//      backup or temp file left, derived files match it.
 // Plus: the real repo's data/ is untouched.
 import assert from "node:assert/strict";
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { chmod, cp, mkdir, mkdtemp, readdir, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
 import { after, before, describe, test } from "node:test";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { gbifTaxonKey, type GbifSnapshot } from "../raw.ts";
 import type { CountryOverride, Mismatch, Species } from "../species.ts";
 import { countryChanges, mergeOverrides, parseAcceptArgs, selectProposals, UsageError } from "./accept.ts";
+import { claimBackup } from "./io.ts";
 import { isCountryEntry, entryKey, proposalOf, sameFlag, statusQuo, type Evidence, type Recommendation } from "./presort.ts";
 
 const entry = (speciesId: number, country: string, kind: Mismatch["kind"], severity: Mismatch["severity"]): Mismatch => ({
@@ -189,6 +194,39 @@ test("countryChanges: per species, what was added and removed; a species losing 
   throwsWith(() => countryChanges(before, after.slice(1)), /species 1/);
 });
 
+describe("claimBackup", () => {
+  // Runs a claim in an empty folder holding the target; returns what's left there.
+  const claiming = async (body: (backup: URL, target: URL) => Promise<void>) => {
+    const dir = await mkdtemp(join(tmpdir(), "critwire-claim-"));
+    try {
+      const target = pathToFileURL(join(dir, "overrides"));
+      await writeFile(target, "current");
+      await body(pathToFileURL(join(dir, "overrides.pre-accept")), target);
+      return new Map(await Promise.all((await readdir(dir)).map(async (f) => [f, await readFile(join(dir, f), "utf8")] as const)));
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  };
+
+  test("a free claim holds the exact bytes and leaves no temp file", async () => {
+    const left = await claiming((backup, target) => claimBackup(backup, target, "current"));
+    assert.deepEqual([...left].sort(), [["overrides", "current"], ["overrides.pre-accept", "current"]]);
+  });
+
+  test("A14: a backup already there is refused, naming both ways out, its bytes unchanged", async () => {
+    const left = await claiming(async (backup, target) => {
+      await writeFile(backup, "earlier");
+      await assert.rejects(claimBackup(backup, target, "current"), /didn't finish[^]*Undo: [^]*Finish: /);
+    });
+    assert.deepEqual([...left].sort(), [["overrides", "current"], ["overrides.pre-accept", "earlier"]]);
+  });
+
+  test("A15: overrides that moved since this run read them are refused, its backup removed", async () => {
+    const left = await claiming((backup, target) => assert.rejects(claimBackup(backup, target, "read earlier"), /changed since this run read it/));
+    assert.deepEqual([...left], [["overrides", "current"]]);
+  });
+});
+
 describe("review:accept on a throwaway copy", () => {
   const REPO = fileURLToPath(new URL("../../", import.meta.url));
   const COPIED = ["scripts", "data", "package.json", "tsconfig.json", "pnpm-lock.yaml", "pnpm-workspace.yaml"];
@@ -228,6 +266,14 @@ describe("review:accept on a throwaway copy", () => {
   const write = (file: string, text: string) => writeFile(join(copy, file), text);
   const shell = (command: string) => spawnSync("sh", ["-c", command], { cwd: copy, encoding: "utf8" });
   const pnpm = (...args: string[]) => spawnSync("pnpm", args, { cwd: copy, encoding: "utf8" });
+  const pnpmAtOnce = (...args: string[]) => new Promise<{ status: number | null; stdout: string; stderr: string }>((resolve, reject) => {
+    const child = spawn("pnpm", args, { cwd: copy });
+    let [stdout, stderr] = ["", ""];
+    child.stdout.on("data", (d) => { stdout += d; });
+    child.stderr.on("data", (d) => { stderr += d; });
+    child.on("error", reject);
+    child.on("close", (status) => resolve({ status, stdout, stderr }));
+  });
   const output = (r: { stdout: string; stderr: string }) => r.stdout + r.stderr;
   const succeeds = (r: { status: number | null; stdout: string; stderr: string }) => assert.equal(r.status, 0, output(r));
   // Back to no overrides, derived files to match; every case starts here.
@@ -428,6 +474,20 @@ describe("review:accept on a throwaway copy", () => {
     succeeds(shell(FINISH));
     assert.deepEqual(changed(start, await hashes(copy)), [QUEUE, OVERRIDES, SPECIES].sort());
     assert.deepEqual(JSON.parse(await read(OVERRIDES)), proposalOf(recs.filter((x) => x.key === k2Key)));
+    await reset();
+  });
+
+  test("A16: two accepts at once lose nothing: the file holds exactly what the exit-0 runs reported", async () => {
+    const runs = await Promise.all([k1Key, k2Key].map(async (key) => ({ key, run: await pnpmAtOnce("review:accept", "--ids", key) })));
+    const log = runs.map((r) => output(r.run)).join("\n");
+    const won = runs.filter((r) => r.run.status === 0).map((r) => r.key).sort();
+    assert.ok(won.length > 0, log);
+    const held = (JSON.parse(await read(OVERRIDES)) as CountryOverride[]).map((o) => `${o.speciesId}:${o.country}`).sort();
+    assert.deepEqual(held, won, log);
+    const settled = await hashes(copy);
+    assert.deepEqual([...settled.keys()].filter((f) => /\.pre-accept$|\.tmp-/.test(f)), [], log);
+    succeeds(pnpm("derive"));
+    assert.deepEqual(changed(settled, await hashes(copy)), [], log);
     await reset();
   });
 

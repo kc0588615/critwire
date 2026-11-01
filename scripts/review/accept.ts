@@ -13,6 +13,8 @@ export const RECOVERY = [
   "Finish: pnpm derive && rm data/review/country-overrides.json.pre-accept",
 ].join("\n");
 
+export const UNFINISHED_ACCEPT = `an earlier accept didn't finish, or one is still running: its backup is there.\n${RECOVERY}`;
+
 export const ACCEPT_USAGE = "usage: pnpm review:accept (--confidence high|medium|low | --ids 25:DE,25:RU) [--confirm-only]";
 
 // A malformed command line (A1): the CLI prints it and exits 2.
