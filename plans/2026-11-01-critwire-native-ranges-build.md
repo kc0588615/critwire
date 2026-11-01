@@ -132,7 +132,7 @@ This addendum is part of the brief. Where it differs from the text above, it win
 
 - [x] Baseline: install, migrate, run typecheck, lint, unit and E2E tests; record the results under Baseline
 - [x] Architecture: `architect` writes findings and the target design
-- [ ] Fable review: `architecture-reviewer`
+- [x] Fable review: `architecture-reviewer`
 - [ ] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
 - [ ] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
 - [ ] Steps: `planner` writes Steps and Verification
@@ -338,6 +338,25 @@ Coverage of the 26 is an E2E check, not a derive refusal: a future non-mammal sh
 
 ## Architecture review (Fable)
 
+Read on `97aeffb`. Checked against code: `scripts/derive/pipeline.ts`, `raw.ts`, `build/{attribution,docs,sources,licenses,html,tables,countries,columns,contract,inputs}.ts`, `build/learn/credits.ts`, `learn/freshness.ts` (ran `importClosure("scripts/learn-check.ts")`: 27 files, as stated; none this mission edits), `site/learn/src/*` imports, `ingest/gbif-sample.ts`, `review/presort.test.ts` P9 guard, `e2e/{attribution,docs,duckdb,files}.spec.ts`, 007 Data model/Contract/Pipeline, and the spike's `raw/gbif-rows.json` (475 rows, 48 codes, all in `data/countries.json`).
+
+VERDICT: APPROVE_WITH_CHANGES
+
+MUST-FIX:
+1. **`GBIF checklists` attribution entry can't be built the way the design says (Target design, Attribution; Finding 3).** It sets `license` to `CC0 1.0 or CC BY 4.0, per dataset` with `licenseUrl` null, but every `sources[]` entry today goes through `licenseUrl(license)` (`scripts/build/attribution.ts:75`, `:120`; `scripts/build/licenses.ts:21`), which throws on any string not in `LICENSE_URLS`. The only registry is `scripts/build/licenses.ts`, which Finding 2 correctly puts off limits (it's in the Learn bundle, `site/learn/src/cards.ts:6`): adding the string there moves the hashed asset and breaks byte-identical. As written, the implementer either hits the throw or edits `licenses.ts`. Fix: say the entry is built with `licenseUrl: null` set directly, never through `licenseUrl()` (`e2e/attribution.spec.ts:40` already accepts null), and that `LICENSE_URLS` gains nothing. Same for `docs.ts`: `licenseLink(license, null)` prints text, so no change there.
+
+MISSED:
+- `deriveAll` is also run by `scripts/gbif-register.ts:42`, `scripts/review-accept.ts:44`, `:57` and `scripts/ingest/habitat.ts:452`. With the third half, a stale `gbif-checklists`/`mdd` snapshot (for example after an `ingest gbif` that moves a key) blocks a DOI refresh, `review:accept` and `ingest habitat` until `ingest gbif-checklists` runs. Consistent with how the sample half already behaves, and the species-change order covers it, but Finding 1 names only `gbif-sample`; `AGENTS.md` (Commands, GBIF DOI refresh) must say it.
+- `DATASET_LICENSES` (`scripts/ingest/gbif-sample.ts:51`) maps `CC BY-NC 4.0` too. The Reuse table lists it for "License"; the refusal must be against `OPEN_LICENSES` (`scripts/learn/sample-rules.ts:12`) after the map, or a BY-NC role dataset passes the ingest. Say so under Snapshots.
+- Spike rows were already written through `fetch.py`'s key allowlist, so "no `threatStatus` in the spike's rows" proves nothing about the live API; the 144 count is from the fetch log. The ingest's allowlist must be the proof, and the guard addition is still right (no `data/` file holds the key: grep clean).
+
+SHOULD-CONSIDER:
+1. `MDD_PLACES` "from `mdd-places.json`": say the TS constant is the committed copy of the spike file; derive reads nothing outside the repo (it's pure anyway, but the module table reads as if it loads a file).
+2. Curated rule "a blank `area` (null or text)" is ambiguous; write "`area` is null or non-blank text".
+3. `range-conflicts.json` rows use `Mismatch`, whose `field` is required: name the value (`range-listings`?) so the two files' entries sort and dedupe the same way as `mismatches.json` (`pipeline.ts:116`).
+4. The e2e conflict cross-check (JS set = docs SQL) is good; add the agreement SQL from 007 to the same test so both published queries are proven on served bytes, as the brief's Definition of done asks.
+5. `derive.ts` prints per source; include `dropped.noRole` by dataset so a newly met dataset is visible in the PR body, as the Decision rule "counted" intends.
+
 ## Architecture review (Astra)
 
 ## Revision notes
@@ -363,5 +382,6 @@ Coverage of the 26 is an E2E check, not a derive refusal: a future non-mammal sh
 
 - 2026-11-01 20:45 UTC: Baseline on `4074546`: typecheck pass, test 754/754, plain build pass, e2e 149/149, 311 `dist/` hashes = live. H7–H11 picked up, closed, copied to Decisions.
 - 2026-11-01 20:55 UTC: Architecture written (`architect`): derive listings as third half, not in `deriveCore` (007 wrong); byte-identical traps named; attribution, curated shape, snapshot rows decided. No blockers. No code; deriveCore claim spot-checked (`pipeline.ts:61`, `:75`, `gbif-sample.ts:77`).
+- 2026-11-01 21:01 UTC: Fable review (`architecture-reviewer`): APPROVE_WITH_CHANGES, 1 MUST-FIX (`GBIF checklists` license string hits `licenseUrl()` throw; `licenses.ts` off limits, Learn bundle), for Revision. Spot-checked: `attribution.ts:75`, `licenses.ts:21`, `cards.ts:6`. No code.
 
 ## Summary
