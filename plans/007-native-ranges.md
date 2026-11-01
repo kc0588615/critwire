@@ -250,7 +250,7 @@ A new file leaves `species.*`, `countries.*` and all of `dist/learn/` byte-ident
 | `license` | VARCHAR | no | `CC0 1.0`, `CC BY 4.0` |
 | `doi` | VARCHAR | yes | The dataset's DOI; null only on curated rows (O3). All 18 datasets with a role have one |
 | `url` | VARCHAR | no | The row's evidence page: `https://www.gbif.org/species/{sourceTaxonKey}`; `https://www.mammaldiversity.org/taxon/{id}`; a curated row's own reference |
-| `sourceTerm` (`source_term`) | VARCHAR | no | What the source said, verbatim: `Cambodia?`, `INTRODUCED/PRESENT`, `-/PRESENT` (`-` = blank) |
+| `sourceTerm` (`source_term`) | VARCHAR | no | What the source said. A source's row, verbatim: `Cambodia?`, `INTRODUCED/PRESENT`, `-/PRESENT` (`-` = blank). A curated row: our paraphrase of its reference, in our own words |
 
 - **Codes:** ISO alpha-2 only. GBIF's TDWG, GADM and free-text `locationId` values aren't kept.
 - **Key and order:** rows are sorted by `speciesId, country, area, origin, presence, sourceKey`, and that tuple is the key.
@@ -437,8 +437,8 @@ The wording names no source, so an O1 no leaves nothing false or dangling: `nati
     "sourceTerm": {
       "type": "VARCHAR",
       "null": false,
-      "means": "what the source said, verbatim: a place as listed, with its question mark if it has one (Cambodia?), or establishment means and status joined by a slash (INTRODUCED/PRESENT; - when blank), or a curated row's reference's own words",
-      "sha": "0813a604497a"
+      "means": "what the source said: on a source's row verbatim, a place as listed, with its question mark if it has one (Cambodia?), or establishment means and status joined by a slash (INTRODUCED/PRESENT; - when blank); on a curated row, our paraphrase of its reference, in our own words",
+      "sha": "830c1de6fcd0"
     }
   },
   "rangeListingsCsv": [
