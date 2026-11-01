@@ -143,6 +143,17 @@ export function changesOutput(entry: Mismatch, action: "keep" | "remove"): boole
   return action !== statusQuo(entry);
 }
 
+// A country entry without what may move while its flag stands (A8): the reason's words and the species' total.
+function flagOf({ reason, values, ...flag }: Mismatch): unknown {
+  const { speciesRecords, ...gbif } = values["gbif"] as Record<string, unknown>;
+  return { ...flag, values: { ...values, gbif } };
+}
+
+// Whether two country entries are the same flag: everything but the reason and speciesRecords.
+export function sameFlag(a: Mismatch, b: Mismatch): boolean {
+  return isDeepStrictEqual(flagOf(a), flagOf(b));
+}
+
 // The entry's counted records in its country (derive's values.gbif.records).
 function entryRecords(entry: Mismatch): number | undefined {
   return (entry.values["gbif"] as { records?: number } | undefined)?.records;
@@ -265,6 +276,11 @@ export function assertRecommendations(recs: readonly Recommendation[], evidence:
   fail("recommendations", problems);
 }
 
+// Sorts overrides by speciesId, then country.
+export function byOverride(a: CountryOverride, b: CountryOverride): number {
+  return a.speciesId - b.speciesId || (a.country < b.country ? -1 : a.country > b.country ? 1 : 0);
+}
+
 // The proposal (country-overrides.proposed.json): one override per country recommendation, in country-overrides.json's
 // key order, sorted by speciesId, then country.
 export function proposalOf(recs: readonly Recommendation[]): CountryOverride[] {
@@ -275,5 +291,5 @@ export function proposalOf(recs: readonly Recommendation[]): CountryOverride[] {
       if (!m) throw new Error(`${r.key}: keep/remove on a non-country key`);
       return { speciesId: Number(m[1]), country: m[2]!, action: r.recommendation as CountryOverride["action"], reason: r.reason };
     })
-    .sort((a, b) => a.speciesId - b.speciesId || (a.country < b.country ? -1 : a.country > b.country ? 1 : 0));
+    .sort(byOverride);
 }
