@@ -13,7 +13,7 @@
 </ul>
 
 <h2>Worked example</h2>
-<p>Hexagons with a 10 km edge drawn in EPSG:3577, and hexagons with a 0.1° edge drawn on SRID 4326, each set kept where it touches the main island, and each cell's area measured on the ellipsoid:</p>
+<p>Tasmania's outline holds many islands. <code>ST_Dump</code> splits a MultiPolygon into one row per part, each a pair of <code>path</code> and <code>geom</code>; <code>(part).geom</code> reads one field of the pair (<a href="/learn/gis-in-sql/load-validate/">g2</a>), and the largest part is the main island. Hexagons with a 10 km edge drawn in EPSG:3577, and hexagons with a 0.1° edge drawn on SRID 4326, each set kept where it touches the main island, and each cell's area measured on the ellipsoid:</p>
 {{block:g6-equal-area}}
 <p>The 296 cells drawn in Albers each cover 259.808 km² on the ellipsoid, as the formula says: the projection keeps areas, so the planar area is the ground area. The 317 cells drawn in degrees range from 232.889 to 244.137 km², 4.8 % apart: their centres span 3° of latitude, from 40.6° S to 43.7° S, and cos φ falls by that much over them. On the ground each is also squashed: about 8.2 km across per 0.1° of longitude against 11.1 km per 0.1° of latitude. Counts in such cells compare unequal areas, and the difference grows with the area a grid covers.</p>
 

@@ -5893,7 +5893,7 @@ Limit (actual rows=20 loops=1)
 
 **Data:** `occurrences` (the Tasmanian devil, *Sarcophilus harrisii*), `admin1_shapes` (Tasmania's main island, the largest of the state's nine parts at 1:50m).
 
-**Worked example:** Hexagons with a 10 km edge drawn in EPSG:3577, and hexagons with a 0.1° edge drawn on SRID 4326, each set kept where it touches the main island, and each cell's area measured on the ellipsoid:
+**Worked example:** Tasmania's outline holds many islands. `ST_Dump` splits a MultiPolygon into one row per part, each a pair of `path` and `geom`; `(part).geom` reads one field of the pair ([g2](/learn/gis-in-sql/load-validate/)), and the largest part is the main island. Hexagons with a 10 km edge drawn in EPSG:3577, and hexagons with a 0.1° edge drawn on SRID 4326, each set kept where it touches the main island, and each cell's area measured on the ellipsoid:
 
 ```sql
 -- q: g6-equal-area

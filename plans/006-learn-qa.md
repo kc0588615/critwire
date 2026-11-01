@@ -235,6 +235,7 @@ Hand-only, not run here: Docker and its image tags, the EDB installer and Stack 
 | Q29 | g3 | missing step | T0 | The IUCN appendix asks for one multipolygon per taxon with the id in `iucn_id`, but not that IUCN's files name it `id_no` and hold several rows per taxon (presence, origin, season). Without a dissolve the block counts a record once per row. Field names from public listings of IUCN's layers, no file read; block not run, as the page says | fixed | `qa-fixes.ts` |
 | Q30 | g4 | prose | T0 | A strip is "close to" length × 10 km "and smaller", beside Nicaragua's 2,673 against 2,670. The buffer's round ends add area; said so | fixed | `qa-fixes.ts` |
 | Q31 | g5 | prose | T0 | Result: "436 lie within 5 km of one, 529 within 25 km". 965 lie within 25 km; 529 is the 5 to 25 km band | fixed | `qa-fixes.ts` |
+| Q32 | g6 | jargon | T0 | `ST_Dump` picks the main island in every g6 block (and s2, s4), and no page says what it does. Defined at its first use | fixed | `qa-fixes.ts` |
 
 ## Ledger
 
