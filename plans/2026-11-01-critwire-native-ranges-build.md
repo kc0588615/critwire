@@ -395,6 +395,6 @@ SHOULD-CONSIDER:
 - 2026-11-01 20:45 UTC: Baseline on `4074546`: typecheck pass, test 754/754, plain build pass, e2e 149/149, 311 `dist/` hashes = live. H7–H11 picked up, closed, copied to Decisions.
 - 2026-11-01 20:55 UTC: Architecture written (`architect`): derive listings as third half, not in `deriveCore` (007 wrong); byte-identical traps named; attribution, curated shape, snapshot rows decided. No blockers. No code; deriveCore claim spot-checked (`pipeline.ts:61`, `:75`, `gbif-sample.ts:77`).
 - 2026-11-01 21:01 UTC: Fable review (`architecture-reviewer`): APPROVE_WITH_CHANGES, 1 MUST-FIX (`GBIF checklists` license string hits `licenseUrl()` throw; `licenses.ts` off limits, Learn bundle), for Revision. Spot-checked: `attribution.ts:75`, `licenses.ts:21`, `cards.ts:6`. No code.
-- 2026-11-01 21:10 UTC: Astra review: APPROVE, no MUST-FIX; 3 SHOULD-CONSIDER (deriveAll's new dependents documented; mixed-license entry apart from dataset licenses; zero-conflict refresh mustn't fail). No code.
+- 2026-11-01 21:02 UTC: Astra review: APPROVE, no MUST-FIX; 3 SHOULD-CONSIDER (deriveAll's new dependents documented; mixed-license entry apart from dataset licenses; zero-conflict refresh mustn't fail). No code.
 
 ## Summary
