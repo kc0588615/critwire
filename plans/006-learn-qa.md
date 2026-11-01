@@ -264,6 +264,7 @@ Hand-only, not run here: Docker and its image tags, the EDB installer and Stack 
 | Q58 | e2 | prose | T0 | "The decimal comma two records later": `e2-casts` puts `30 m` on the first record and the comma on the second | fixed | `qa-fixes.ts` |
 | Q59 | e2 | wrong fact | T0 | "`read_postgis(sql, con, geom_col=…)` needs the geometry column's name": it defaults to `geom` (geopandas signature, the pinned version) | fixed | `qa-fixes.ts` |
 | Q60 | e2 | prose | T0 | "The catalogue (`pg_class`…)": d1 defines the term as "catalog" and every other page uses it | fixed | `qa-fixes.ts` |
+| Q61 | e3, e4 | missing step | T0 | e4's lead says "everything runs in the Python environment" and e3's names only Python and the browser; e4 has 3 PostGIS blocks and e3 has 2, which a learner runs in a SQL client. Worded as s6's. No 004 sentence: the leads are only on the pages | fixed | `qa-fixes.ts` |
 
 ## Ledger
 

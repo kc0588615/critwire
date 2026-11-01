@@ -76,6 +76,8 @@ export const QA_FIXES: QaFix[] = [
   { q: "Q58", url: "/learn/etl/transform-load/", has: "the decimal comma in the next record", not: "two records later" },
   { q: "Q59", url: "/learn/etl/transform-load/", has: "takes the geometry column's name, <code>geom</code> unless you say otherwise", not: "needs the geometry column's name" },
   { q: "Q60", url: "/learn/etl/transform-load/", has: "The catalog (<code>pg_class</code>", not: "The catalogue (" },
+  { q: "Q61", url: "/learn/etl/idempotent/", has: "The SQL blocks run in your own PostgreSQL with PostGIS and the Python blocks in the Python environment", not: "The Python blocks run in the Python environment" },
+  { q: "Q61", url: "/learn/etl/quality-provenance/", has: "Everything runs in your own PostgreSQL with PostGIS and the Python environment", not: "Everything runs in the Python environment" },
 ];
 
 // What's wrong with each row on the origin `request` points at; [] when every fix shows.
