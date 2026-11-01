@@ -593,7 +593,7 @@ Checklist:
   - Done means live: §4's byte-identical check against that mission's own Baseline list; an E2E spec like `e2e/countries.spec.ts`; `e2e/duckdb.spec.ts:59`, `e2e/attribution.spec.ts:32`, the docs page, `AGENTS.md`, `DATA-LICENSE.md` updated; E2E artifact path and reproduce command; release smoke.
   - Out: Learn (O4, O5), polygons, Finding 8's fix, IUCN, Wikipedia prose.
   - Check: V3. Each default removes steps; the estimate stays well within 60 sessions.
-- [ ] S11. **Full Verification, first pass.** Run Verification's block. Fix document failures in this session. A failure needing a spike re-run adds a step before this one, and this stays unchecked. Log line: pass, log path.
+- [x] S11. **Full Verification, first pass.** Run Verification's block. Fix document failures in this session. A failure needing a spike re-run adds a step before this one, and this stays unchecked. Log line: pass, log path.
 
 ### Spike outcomes
 
@@ -814,5 +814,6 @@ The spike's scripts can't be tested end to end, and a slip breaks a non-negotiab
 - 2026-11-01 19:58 UTC: S8: 007's Pipeline, Learn tie-in, Owner's choices, Follow-up, Rejected, Summary; spike numbers replace estimates (fetch about 7 min, all-defaults 10 rows on 5 species, e4's 44 of 88). No estimate left but Follow-up's stated costs. V5 table 0 missing, V6 contract ok, V7 clean on 007, V8 0 hits (271 files). Typecheck pass; plan-only diff; no build.
 - 2026-11-01 19:50 UTC: S9: handoff H7–H11 added (O1–O5, none blocking), H numbers in 007's Owner's choices. V9 pass, V8 0 hits with `$H`, V7 clean on 007. Typecheck pass; plan-only diff; no build.
 - 2026-11-01 19:53 UTC: S10: `plans/briefs/critwire-native-ranges-build.md` written (L-series format; defaults, flip table with H7–H11, O1 gate, contract, refusals, `threatStatus` guard, key staleness, no-reason snapshot; done means live; about 22–28 sessions). V3 pass, V7 clean, V8 0 hits (272 files). Typecheck pass; plan-only diff; no build.
+- 2026-11-01 19:57 UTC: S11: full Verification, first pass: `VERIFY OK`, V1–V9 pass (typecheck, test 754 pass 0 fail, build; `dist/` 311 files = baseline; contract ok; IUCN greps clean; leak check 272 files 0 hits; 5 handoff items, none blocking); `measure.py` re-run byte-identical; `origin/main` unmoved. No document fix needed. Log `verify/verify-20261101T1954Z.log`; E2E artifact stays `e2e-baseline/`.
 
 ## Summary
