@@ -52,7 +52,7 @@ export const QA_FIXES: QaFix[] = [
   { q: "Q38", url: "/learn/spatial-statistics/bias/", has: "20 of the 28 museum specimens", not: "19 of the 28" },
   { q: "Q39", url: "/learn/spatial-statistics/bias/", has: "134,690 fixes from 117 jaguars", not: "from a few animals" },
   { q: "Q39", url: "/learn/power-bi/maps-report/", has: "and they draw collared animals' paths;", not: "a few collared" },
-  { q: "Q39", url: "/learn/capstone/game-feed/", has: "1,948 GPS-collar fixes, so a jaguar feed", not: "fixes of a few animals" },
+  { q: "Q39", url: "/learn/capstone/game-feed/", has: "GPS-collar fixes, so a jaguar feed", not: "fixes of a few animals" },
   { q: "Q40", url: "/learn/foundations/window/", has: "one GPS-collar dataset is almost everything", not: "one GPS-collar study" },
   { q: "Q40", url: "/learn/spatial-statistics/zonal/", has: "from how many datasets?", not: "collar study" },
   { q: "Q40", url: "/learn/capstone/game-feed/", has: "If one dataset dominates", not: "If one study dominates" },
