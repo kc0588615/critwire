@@ -9,11 +9,29 @@
 // A11: a selected pair the overrides file holds with the same action → skipped, not added (a rerun adds nothing).
 // Plus: --confidence medium = medium + high; --confirm-only drops output-changing proposals; the owner's entries keep
 // order and text, new ones appended sorted; countryChanges lists per species what a merge adds and removes.
+// The CLI, on a self-contained throwaway copy (real paths from import.meta.url, real pnpm derive; never the repo's review state):
+// A1: a malformed command line → exit 2, nothing written.
+// A5: a hand-edited proposal, or a recommendation edited to low with the proposal untouched → refused, nothing written.
+// A6: derived files stale before the run → refused, nothing written.
+// A7: a conflict with an override already in the file → refused, nothing written.
+// A8: the flag moved since the evidence was gathered → refused, nothing written; a moved species total only warns.
+// A10: derive fails after the write → the error names Undo and Finish, the backup holds the exact pre-run bytes.
+// A11: a rerun → exit 0, nothing written.
+// A12: any file other than the overrides, derive's outputs and the backup touched → every case compares the copy's hashes.
+// A13: the backup exists → refused, naming Undo and Finish, nothing written. Undo gives back every pre-run byte.
+// Plus: the real repo's data/ is untouched.
 import assert from "node:assert/strict";
-import { test } from "node:test";
+import { spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
+import { chmod, cp, mkdir, mkdtemp, readdir, readFile, rm, symlink, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join, relative } from "node:path";
+import { after, before, describe, test } from "node:test";
+import { fileURLToPath } from "node:url";
+import { gbifTaxonKey, type GbifSnapshot } from "../raw.ts";
 import type { CountryOverride, Mismatch, Species } from "../species.ts";
 import { countryChanges, mergeOverrides, parseAcceptArgs, selectProposals, UsageError } from "./accept.ts";
-import { sameFlag, type Recommendation } from "./presort.ts";
+import { isCountryEntry, entryKey, proposalOf, sameFlag, statusQuo, type Evidence, type Recommendation } from "./presort.ts";
 
 const entry = (speciesId: number, country: string, kind: Mismatch["kind"], severity: Mismatch["severity"]): Mismatch => ({
   speciesId, scientificName: `Species ${speciesId}`, field: "range.countriesWithOpenRecords", kind, severity, country,
@@ -169,4 +187,251 @@ test("countryChanges: per species, what was added and removed; a species losing 
     { speciesId: 4, added: ["KE"], removed: [] },
   ]);
   throwsWith(() => countryChanges(before, after.slice(1)), /species 1/);
+});
+
+describe("review:accept on a throwaway copy", () => {
+  const REPO = fileURLToPath(new URL("../../", import.meta.url));
+  const COPIED = ["scripts", "data", "package.json", "tsconfig.json", "pnpm-lock.yaml", "pnpm-workspace.yaml"];
+  const OVERRIDES = "data/review/country-overrides.json";
+  const BACKUP = `${OVERRIDES}.pre-accept`;
+  const SPECIES = "data/species.json";
+  const QUEUE = "data/review/mismatches.json";
+  const EVIDENCE = "data/review/presort/evidence.json";
+  const RECOMMENDATIONS = "data/review/presort/recommendations.json";
+  const PROPOSAL = "data/review/country-overrides.proposed.json";
+  const LAST_DERIVE_DIR = "data/gbif-learn-sample";
+  // Not formatJson's bytes, so a byte-exact backup and a reformatting one differ.
+  const HAND_FORMATTED = "[ ]";
+  const DATASET = "dddddddd-0000-0000-0000-000000000001";
+  const UNDO = `mv ${BACKUP} ${OVERRIDES} && pnpm derive`;
+  const FINISH = `pnpm derive && rm ${BACKUP}`;
+
+  let copy = "";
+  let realData = new Map<string, string>();
+  let k1: Mismatch;
+  let k2: Mismatch;
+  let k1Key = "";
+  let k2Key = "";
+  let recs: Recommendation[] = [];
+
+  const hashes = async (dir: string) => {
+    const files = await readdir(dir, { recursive: true, withFileTypes: true });
+    const pairs = await Promise.all(files.filter((f) => f.isFile()).map(async (f) => {
+      const path = join(f.parentPath, f.name);
+      return [relative(dir, path), createHash("sha256").update(await readFile(path)).digest("hex")] as const;
+    }));
+    return new Map(pairs);
+  };
+  const changed = (a: ReadonlyMap<string, string>, b: ReadonlyMap<string, string>) =>
+    [...new Set([...a.keys(), ...b.keys()])].filter((f) => a.get(f) !== b.get(f)).sort();
+  const read = (file: string) => readFile(join(copy, file), "utf8");
+  const write = (file: string, text: string) => writeFile(join(copy, file), text);
+  const shell = (command: string) => spawnSync("sh", ["-c", command], { cwd: copy, encoding: "utf8" });
+  const pnpm = (...args: string[]) => spawnSync("pnpm", args, { cwd: copy, encoding: "utf8" });
+  const output = (r: { stdout: string; stderr: string }) => r.stdout + r.stderr;
+  const succeeds = (r: { status: number | null; stdout: string; stderr: string }) => assert.equal(r.status, 0, output(r));
+  // Back to no overrides, derived files to match; every case starts here.
+  const reset = async () => {
+    await write(OVERRIDES, HAND_FORMATTED);
+    succeeds(pnpm("derive"));
+  };
+  // Runs accept, which must refuse with `message` and leave every file as it was.
+  const refuses = async (args: string[], message: RegExp, status = 1) => {
+    const start = await hashes(copy);
+    const r = pnpm("review:accept", ...args);
+    assert.equal(r.status, status, output(r));
+    assert.match(output(r), message);
+    assert.deepEqual(changed(start, await hashes(copy)), []);
+    return r;
+  };
+  const tampered = async (file: string, edit: (text: string) => string, body: () => Promise<unknown>) => {
+    const text = await read(file);
+    await write(file, edit(text));
+    try {
+      await body();
+    } finally {
+      await write(file, text);
+    }
+  };
+  const editJson = <T>(edit: (value: T) => void) => (text: string) => {
+    const value = JSON.parse(text) as T;
+    edit(value);
+    return JSON.stringify(value, null, 2) + "\n";
+  };
+
+  before(async () => {
+    if (process.getuid?.() === 0) throw new Error("run as a normal user: chmod doesn't block root, so the interrupted derive case would pass vacuously");
+    realData = await hashes(join(REPO, "data"));
+    copy = await mkdtemp(join(tmpdir(), "critwire-accept-"));
+    await Promise.all(COPIED.map((f) => cp(join(REPO, f), join(copy, f), { recursive: true })));
+    await symlink(join(REPO, "node_modules"), join(copy, "node_modules"));
+    await mkdir(join(copy, "plans"));
+    await reset();
+
+    const queue = JSON.parse(await read(QUEUE)) as Mismatch[];
+    const species = JSON.parse(await read(SPECIES)) as Species[];
+    const published = (id: number) => species.find((s) => s.id === id)?.range.countriesWithOpenRecords?.length ?? 0;
+    const kept = queue.filter((e) => isCountryEntry(e) && statusQuo(e) === "keep" && published(e.speciesId) >= 2);
+    if (!kept[1]) throw new Error("the queue has fewer than two kept country entries of species with 2+ published countries");
+    [k1, k2] = [kept[0]!, kept[1]];
+    [k1Key, k2Key] = [entryKey(k1), entryKey(k2)];
+
+    const gbif = JSON.parse(await read("data/raw/gbif/snapshot.json")) as GbifSnapshot;
+    const evidence: Evidence = {
+      retrieved: "2026-01-01",
+      sources: [],
+      entries: queue.map((entry) => {
+        if (!isCountryEntry(entry)) return { key: entryKey(entry), entry, gbif: null };
+        const count = (entry.values["gbif"] as { records: number }).records;
+        return {
+          key: entryKey(entry),
+          entry,
+          gbif: {
+            taxonKey: gbifTaxonKey(gbif.species[entry.scientificName]!.match.response)!,
+            url: "https://example.invalid/occurrences",
+            count,
+            facets: { datasetKey: { counts: [{ name: DATASET, count }], truncated: false } },
+            records: [],
+          },
+        };
+      }),
+      datasets: { [DATASET]: { title: "Synthetic dataset", type: "OCCURRENCE", license: "CC0", doi: null, publishingOrganizationKey: null } },
+      organizations: {},
+      col: {},
+      gbifSpecies: {},
+      wikidata: { query: "", statements: [] },
+    };
+    recs = [
+      { key: k1Key, recommendation: "keep", confidence: "high", reason: "Fixture: a wild record.", cite: [`gbif:dataset:${DATASET}`] },
+      { key: k2Key, recommendation: "remove", confidence: "high", reason: "Fixture: every record captive.", cite: [`gbif:dataset:${DATASET}`] },
+    ];
+    await mkdir(join(copy, "data/review/presort"), { recursive: true });
+    await write(EVIDENCE, JSON.stringify(evidence));
+    await write(RECOMMENDATIONS, JSON.stringify(recs));
+    succeeds(pnpm("review:presort"));
+  });
+
+  after(async () => {
+    if (copy) {
+      await chmod(join(copy, LAST_DERIVE_DIR), 0o755);
+      await rm(copy, { recursive: true, force: true });
+    }
+  });
+
+  test("A1: a malformed command line exits 2 with the usage, nothing written", async () => {
+    await refuses([], /usage: pnpm review:accept/, 2);
+    await refuses(["--confidence", "high", "--ids", "1:DE"], /usage: pnpm review:accept/, 2);
+  });
+
+  test("A5: a hand-edited proposal is refused", async () => {
+    await tampered(PROPOSAL, editJson<CountryOverride[]>((p) => { p[0]!.action = p[0]!.action === "keep" ? "remove" : "keep"; }), () =>
+      refuses(["--ids", `${k1Key},${k2Key}`], /proposed\.json .*run pnpm review:presort/));
+  });
+
+  test("A5: a recommendation edited to low, proposal untouched, is refused before anything else", async () => {
+    await tampered(RECOMMENDATIONS, editJson<Recommendation[]>((r) => { r.find((x) => x.key === k2Key)!.confidence = "low"; }), () =>
+      refuses(["--ids", k1Key], new RegExp(`${k2Key}: low must be the status quo`)));
+  });
+
+  test("A5: evidence that fails assertEvidence is refused", async () => {
+    await tampered(EVIDENCE, editJson<Evidence>((e) => { e.entries.find((x) => x.key === k1Key)!.gbif!.taxonKey = -1; }), () =>
+      refuses(["--ids", k1Key], /taxon changed/));
+  });
+
+  test("A6: a stale derived file is refused", async () => {
+    await tampered(SPECIES, (t) => `${t}\n`, () => refuses(["--ids", k1Key], /species\.json is stale: run pnpm derive/));
+  });
+
+  test("A7: a conflict with an override already in the file is refused", async () => {
+    await write(OVERRIDES, JSON.stringify([{ speciesId: k1.speciesId, country: k1.country, action: "remove", reason: "The owner's call." }]));
+    succeeds(pnpm("derive"));
+    await refuses(["--ids", k1Key], new RegExp(`${k1Key}: conflict: .*remove.*keep`));
+    await reset();
+  });
+
+  test("A8: a flag that moved since the evidence was gathered is refused", async () => {
+    await tampered(EVIDENCE, editJson<Evidence>((e) => {
+      const item = e.entries.find((x) => x.key === k1Key)!;
+      (item.entry.values["gbif"] as { records: number }).records += 1;
+    }), () => refuses(["--ids", k1Key], new RegExp(`${k1Key}: the flag moved`)));
+  });
+
+  test("A4: an empty selection through the CLI is refused", async () => {
+    await refuses(["--ids", k2Key, "--confirm-only"], /nothing selected/);
+  });
+
+  test("--confidence high --confirm-only: only the confirming override lands; species.json unchanged, no follow-on", async () => {
+    const start = await hashes(copy);
+    const r = pnpm("review:accept", "--confidence", "high", "--confirm-only");
+    succeeds(r);
+    assert.deepEqual(changed(start, await hashes(copy)), [QUEUE, OVERRIDES].sort());
+    assert.deepEqual(JSON.parse(await read(OVERRIDES)), proposalOf(recs.filter((x) => x.key === k1Key)));
+    assert.doesNotMatch(r.stdout, /learn:check/);
+    await reset();
+  });
+
+  test("success, then A11: both overrides land, entries gone, only K2's species changes; a rerun writes nothing", async () => {
+    const speciesBefore = JSON.parse(await read(SPECIES)) as Species[];
+    const start = await hashes(copy);
+    let r: ReturnType<typeof pnpm> | undefined;
+    await tampered(EVIDENCE, editJson<Evidence>((e) => {
+      const item = e.entries.find((x) => x.key === k1Key)!;
+      (item.entry.values["gbif"] as { speciesRecords: number }).speciesRecords += 1;
+    }), async () => { r = pnpm("review:accept", "--ids", `${k1Key},${k2Key}`); });
+    succeeds(r!);
+    assert.match(r!.stdout + r!.stderr, new RegExp(`${k1Key}: .*total moved`));
+    assert.match(r!.stdout, new RegExp(`accepted 2: ${k1Key},${k2Key}`));
+    assert.match(r!.stdout, new RegExp(`species ${k2.speciesId}: removed ${k2.country}`));
+    assert.match(r!.stdout, /pnpm learn:check --update/);
+    assert.deepEqual(changed(start, await hashes(copy)), [QUEUE, OVERRIDES, SPECIES].sort());
+    assert.deepEqual(JSON.parse(await read(OVERRIDES)), proposalOf(recs));
+    const queue = JSON.parse(await read(QUEUE)) as Mismatch[];
+    assert.ok(!queue.some((e) => [k1Key, k2Key].includes(entryKey(e))));
+    const expected = structuredClone(speciesBefore);
+    const s = expected.find((x) => x.id === k2.speciesId)!;
+    s.range.countriesWithOpenRecords = s.range.countriesWithOpenRecords!.filter((c) => c !== k2.country);
+    assert.deepEqual(JSON.parse(await read(SPECIES)), expected);
+
+    const settled = await hashes(copy);
+    const rerun = pnpm("review:accept", "--ids", `${k1Key},${k2Key}`);
+    succeeds(rerun);
+    assert.match(rerun.stdout, /already accepted/);
+    assert.deepEqual(changed(settled, await hashes(copy)), []);
+    await reset();
+  });
+
+  test("A10, A13, Undo: an interrupted derive names both ways out; a second accept is refused; Undo gives back every byte", async () => {
+    const start = await hashes(copy);
+    await chmod(join(copy, LAST_DERIVE_DIR), 0o555);
+    const r = pnpm("review:accept", "--ids", k2Key);
+    assert.notEqual(r.status, 0, output(r));
+    assert.ok(output(r).includes(UNDO), output(r));
+    assert.ok(output(r).includes(FINISH), output(r));
+    assert.equal(await read(BACKUP), HAND_FORMATTED);
+    assert.ok(changed(start, await hashes(copy)).includes(SPECIES), "derive got past species.json before failing");
+
+    const refused = await refuses(["--ids", k1Key], /didn't finish/);
+    assert.ok(output(refused).includes(UNDO), output(refused));
+    assert.ok(output(refused).includes(FINISH), output(refused));
+
+    await chmod(join(copy, LAST_DERIVE_DIR), 0o755);
+    succeeds(shell(UNDO));
+    assert.equal(await read(OVERRIDES), HAND_FORMATTED);
+    assert.deepEqual(changed(start, await hashes(copy)), []);
+  });
+
+  test("Finish: after an interrupted derive, the accept lands and the backup is gone", async () => {
+    const start = await hashes(copy);
+    await chmod(join(copy, LAST_DERIVE_DIR), 0o555);
+    assert.notEqual(pnpm("review:accept", "--ids", k2Key).status, 0);
+    await chmod(join(copy, LAST_DERIVE_DIR), 0o755);
+    succeeds(shell(FINISH));
+    assert.deepEqual(changed(start, await hashes(copy)), [QUEUE, OVERRIDES, SPECIES].sort());
+    assert.deepEqual(JSON.parse(await read(OVERRIDES)), proposalOf(recs.filter((x) => x.key === k2Key)));
+    await reset();
+  });
+
+  test("the real repo's data/ is untouched", async () => {
+    assert.deepEqual(changed(realData, await hashes(join(REPO, "data"))), []);
+  });
 });

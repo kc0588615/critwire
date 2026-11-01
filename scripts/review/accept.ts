@@ -1,11 +1,17 @@
 // Accept core (mission plan 2026-11-01-critwire-review-presort, Q5): what pnpm review:accept selects and merges. Pure: no
 // fs, no network. Only review:accept writes country-overrides.json, on the owner's word.
-import { parseArgs } from "node:util";
-import type { CountryOverride, Species } from "../species.ts";
-import { byOverride, changesOutput, CONFIDENCES, isCountryEntry, proposalOf, type Confidence, type Evidence, type Recommendation } from "./presort.ts";
+import { isDeepStrictEqual, parseArgs } from "node:util";
+import type { CountryOverride, Mismatch, Species } from "../species.ts";
+import { byOverride, changesOutput, CONFIDENCES, indexEntries, isCountryEntry, proposalOf, sameFlag, type Confidence, type Evidence, type Recommendation } from "./presort.ts";
 
 // Untracked and not ignored, so git status shows an unfinished accept; exists only while an accept is writing.
 export const backupFile = new URL("../../data/review/country-overrides.json.pre-accept", import.meta.url);
+
+// The two ways out of an accept that didn't finish; both re-run derive from inputs, which is idempotent (docs/recovery.md).
+export const RECOVERY = [
+  "Undo: mv data/review/country-overrides.json.pre-accept data/review/country-overrides.json && pnpm derive",
+  "Finish: pnpm derive && rm data/review/country-overrides.json.pre-accept",
+].join("\n");
 
 export const ACCEPT_USAGE = "usage: pnpm review:accept (--confidence high|medium|low | --ids 25:DE,25:RU) [--confirm-only]";
 
@@ -83,6 +89,24 @@ export function mergeOverrides(current: readonly CountryOverride[], selected: re
   }
   added.sort(byOverride);
   return { merged: [...current, ...added], added, skipped };
+}
+
+export interface FlagDrift { moved: string[]; totalMoved: string[] }
+
+// How each override about to be added compares with what derive flags today: moved = the flag itself changed or is gone
+// (A8, the presort is stale for it); totalMoved = only the species' total or the reason's words did.
+export function flagDrift(added: readonly CountryOverride[], evidence: Pick<Evidence, "entries">, current: readonly Mismatch[]): FlagDrift {
+  const gathered = new Map(evidence.entries.map((e) => [e.key, e.entry]));
+  const today = indexEntries(current);
+  const drift: FlagDrift = { moved: [], totalMoved: [] };
+  for (const { speciesId, country } of added) {
+    const key = `${speciesId}:${country}`;
+    const was = gathered.get(key);
+    const now = today.get(key);
+    if (!was || !now || !sameFlag(was, now)) drift.moved.push(key);
+    else if (!isDeepStrictEqual(was, now)) drift.totalMoved.push(key);
+  }
+  return drift;
 }
 
 export interface CountryChange { speciesId: number; added: string[]; removed: string[] }

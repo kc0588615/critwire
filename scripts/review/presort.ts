@@ -139,6 +139,9 @@ export function statusQuo(entry: Mismatch): "keep" | "remove" {
   return entry.kind === "country-captive-suspect" && entry.severity === "blocking" ? "remove" : "keep";
 }
 
+// What an output-changing override costs (Q6): plain pnpm build, so deploy, refuses "lab <id> is stale" <this>.
+export const OUTPUT_CHANGE_FOLLOW_ON = "until `pnpm build --draft && pnpm learn:check --update`. Changed results then need 004, `checked/`, `e2e/__snapshots__/` and the prose numbers changed in one commit, then `pnpm build`, `pnpm e2e` and the deploy: a separate unit of about 1–2 h";
+
 export function changesOutput(entry: Mismatch, action: "keep" | "remove"): boolean {
   return action !== statusQuo(entry);
 }

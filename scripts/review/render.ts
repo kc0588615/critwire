@@ -5,7 +5,7 @@ import { bindingsByName } from "../derive/wikidata.ts";
 import type { Snapshots, SparqlBinding } from "../raw.ts";
 import type { Species } from "../species.ts";
 import {
-  changesOutput, colIdsOf, CONFIDENCES, gbifKeysOf, isCountryEntry, NO_ACTION, statusQuo, wikidataItemsOf,
+  changesOutput, colIdsOf, CONFIDENCES, gbifKeysOf, isCountryEntry, NO_ACTION, OUTPUT_CHANGE_FOLLOW_ON, statusQuo, wikidataItemsOf,
   type Confidence, type Evidence, type EvidenceItem, type FacetEvidence, type GbifRecord, type Recommendation, type WikidataStatement,
 } from "./presort.ts";
 
@@ -163,7 +163,7 @@ function acceptSection(inputs: PresortInputs, itemsByKey: ReadonlyMap<string, Ev
     "| `species.json`, `/v1` | unchanged | the country is added or removed (removing every published country turns the status into `no-open-records`) |",
     "| Countries DOI | stays current | stays current: its counts include every record of the countries query, strays too |",
     "| Learn-sample DOI, `habitat.json` | current | current: both come from the sample, which doesn't read any species' country list |",
-    "| `pnpm build`, `deploy` | pass, `dist/` byte-identical | **refused** (\"lab <id> is stale\") until `pnpm build --draft && pnpm learn:check --update`. Changed results then need 004, `checked/`, `e2e/__snapshots__/` and the prose numbers changed in one commit, then `pnpm build`, `pnpm e2e` and the deploy: a separate unit of about 1–2 h |",
+    `| \`pnpm build\`, \`deploy\` | pass, \`dist/\` byte-identical | **refused** ("lab <id> is stale") ${OUTPUT_CHANGE_FOLLOW_ON} |`,
     "",
     ...(exposed.length ? ["Species that could lose every published country:", "", ...exposed, ""] : []),
   ];
