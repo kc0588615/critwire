@@ -486,7 +486,7 @@ Conventions:
 
 Checklist:
 
-- [ ] S1. **Spike fetch.** Write `$S/fetch.py` (§2 "GBIF checklists", §5, F1–F6); run §5's first command (≈ 10 min; Bash timeout 1800000).
+- [x] S1. **Spike fetch.** Write `$S/fetch.py` (§2 "GBIF checklists", §5, F1–F6); run §5's first command (≈ 10 min; Bash timeout 1800000).
   - Keys: `$R/data/species.json` `ids.gbif`, plus `data/raw/gbif/snapshot.json` `species[<scientificName>].match.response.acceptedUsage.key` (a string) when present. No `ids.gbif` = no GBIF fetch (9, 19, 27). Control: 73 species with keys, two keys on exactly 1, 55, 63, 70.
   - Wikidata: `https://www.wikidata.org/wiki/Special:EntityData/{ids.wikidata}.json` for all 76.
   - One throttle over all hosts, 0.55 s, retries included; user agent `critwire-design-spike/0.1`; a non-200 after two retries exits non-zero. Writes `$S/raw.partial/`, renamed to `--out` only at the end.
@@ -704,6 +704,8 @@ The spike's scripts can't be tested end to end, and a slip breaks a non-negotiab
 
 ## Decisions
 
+- S1, gate 4 hit early: `fetch.py`'s scan refused the first run. Dataset `9e86d932-72b2-46ca-a441-0ecb68dc5d1a` (Humboldt Institute, Colombia: mammals prioritised for national Red Book categorisation) names IUCN in `title` and `citation.text`. Read in session, nothing saved. BY-NC, so unusable anyway; no recommended answer needs it, so O2 gets no guard question. No role, dropped in `fetch.py`, re-fetched: 7 rows counted, none kept.
+- S1, additions to the spec: `raw/keys.json` (species → keys fetched, for F5), and `counts.json` also holds `rowsFetched` and license/guard drops per species, license and dataset, so F14's totals sum and BY-NC stays visible. Rows dropped for license (F6) never land, so S3's first pass shows those datasets' rows from these counts.
 ## Log
 
 - 2026-11-01 17:56 UTC: Baseline: typecheck pass, test 754/754, build pass, e2e 149/149; `dist/` 311 files = live.
@@ -712,5 +714,6 @@ The spike's scripts can't be tested end to end, and a slip breaks a non-negotiab
 - 2026-11-01 18:33 UTC: Astra review: APPROVE_WITH_CHANGES, 4 MUST-FIX (key-stale snapshot, status semantics incl. MDD pre-1500, exhaustive mapping, O1 gate on MDD spike retention); 3 should-consider, all for Revision. Plan-only diff; no build.
 - 2026-11-01 18:45 UTC: Revision: architect fixed all 5 MUST-FIX (exhaustive mapping + refusal, key staleness, `absent`/`unstated`/`native-or-pre-1500`, MDD spike aggregates only + O1 gate); took all should-consider; deleted MDD cut from state folder, counts kept. Spot-checked: GBIF enums live, 19 of 29 datasets' unkept metadata mention IUCN and 0 in the five read, no MDD copy left in state folder or /tmp. Plan-only diff; no build.
 - 2026-11-01 18:58 UTC: Steps: planner wrote S1–S11, Spike outcomes, Verification (V1–V9, X1–X3), Failure modes, Risks. Spot-checked: 73 keyed species, two keys on 1, 55, 63, 70, null countries 9, 19, 27, 47, `entrySha` export, test log lines, `dist/` = baseline list, 2 threat-category lines in plan: all match. Typecheck pass; plan-only diff; no build.
+- 2026-11-01 19:14 UTC: S1: `fetch.py` run: 706 requests in 389.1 s (1.81/s), 679 rows fetched: 475 kept, 72 Red List, 125 license, 7 guard, 0 lacking `sourceTaxonKey`; 88 datasets. Control pass: 73 species with keys, two keys on 1, 55, 63, 70. V7 first two greps clean. Typecheck pass; plan-only diff; no build.
 
 ## Summary
