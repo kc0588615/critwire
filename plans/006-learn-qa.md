@@ -291,11 +291,11 @@ R1–R6 read this first; R7 reads only this and what it points to. Prereqs read 
 | Hours: 6, 12, 12.5, 12.5, 10, 7, 8 | map, tracks | sums of `curriculum.json` |
 | Every module has an exercise; 8 browser checks, 28 show an answer | map (Q13) | 33 modules, 36 slots |
 
-| Lab: 16 tables, 74 columns, 17 ERD lines; rows 90,072, one transaction | d1, d4 | lab db, `lab.mmd`. `setup.py` and the s4–s6 and c1 downloads also leave the helpers `s4_cells`, `s4_neighbours` in `learn_curriculum` (`DROP … IF EXISTS` first, so re-running is safe; a `.py` run before d1's tbls exercise shows 17 tables). R4 to look |
+| Lab: 16 tables, 74 columns, 17 ERD lines; rows 90,072, one transaction | d1, d4 | lab db, `lab.mmd`. Every download holding the boot block `s4-cells` (`s2`–`s5`, `c1`, `setup`) commits `s4_cells` and `s4_neighbours` into `learn_curriculum` (`s4.sql` has the `COMMIT`; seen in the lab db after `setup.ipynb`). `DROP … IF EXISTS` first, so re-running is safe; one run before d1's tbls exercise shows 17 tables. R4 to look |
 | Devil: 2,000 records, 41 no year, 1,858 since 2000, 101 before; 1,998 `AU`, 2 `US`; 182 in 2010. Jaguar: 1,994 with a year | d3, d4, d5 | results; jaguar lab db |
 | Pangolins: Temminck's 9 (first 1930), giant 10; 13 of 19 before 2018; 2018 a teaching boundary (Gaubert et al. 2018) | d3, d6 | results |
 | Outside ids: 8 `UNIQUE` on `species` (slug, name, six ids); missing gbif 3, col 7, wikidata 0, inaturalist 2, ncbi 1 | d1 | results; f1's three |
-| iNaturalist research-grade in the full download: 9,581 CC BY, 3,152 CC0; dataset declares CC BY-NC | d2 | Not in the repo's sample; not re-checked. BY-NC agrees with `data/` page's rule |
+| iNaturalist research-grade in the full download: 9,581 CC BY, 3,152 CC0; dataset declares CC BY-NC | d2 | Not in the repo's sample, so not re-checked. Source named by the build plan `plans/2026-10-23-critwire-learn-curriculum.md:1506` (an earlier spike's `summary.md`, not committed) |
 | `ANALYZE` in a transaction is undone by `ROLLBACK` | d3 (Q16) | lab db: 316 common `dataset_key`s inside, 100 after |
 | `occurrences`: 8 kB pages, about 50 rows each, 832 pages, 7 BRIN ranges | d3 | `d3-sizes` 6,656 kB; `d3-brin` |
 | Every geometry column has a GiST index; loader ends tables with `ANALYZE` (16) and starts with `ON_ERROR_STOP` | d3, d4 | lab db, loader |
