@@ -272,6 +272,7 @@ Hand-only, not run here: Docker and its image tags, the EDB installer and Stack 
 | Q66 | p4 | prose | T0 | "p3's `Records` measure": p2's Lab adds it, and p3's and p4's Labs both say it's there from p2 | fixed | `qa-fixes.ts` |
 | Q67 | p4 | wrong fact | T0 | "With no gateway, because the base URL is fixed": the fixed URL avoids a dynamic data source. p1 has it right: files on a public URL need no gateway | fixed | `qa-fixes.ts` |
 | Q68 | p4 | missing step | T0 | The pandas line's `.explore()` raises `ImportError` in the course's environment (run here): `folium` isn't pinned. Said as c1 says it of `jsonschema` | fixed | `qa-fixes.ts` |
+| Q69 | c1 | missing step | T0 | Lead: "everything runs in your own PostgreSQL", but the Lab's stages use Python (e1 to e4) and Power BI, and the module's tools say so. As Q61. No 004 sentence: the leads are only on the pages | fixed | `qa-fixes.ts` |
 
 ## Ledger
 
