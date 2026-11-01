@@ -31,10 +31,10 @@ Terms: **kept** or **excluded** is what derive publishes today with no override.
 |---|---:|---:|---:|---:|---:|
 | keep | 0 | 0 | 0 | 0 | 0 |
 | remove | 0 | 0 | 0 | 0 | 0 |
-| fix | 0 | 0 | 0 | 0 | n/a |
-| no action | 0 | 0 | 0 | 0 | n/a |
-| pending |  |  |  | 214 | |
-| **all entries** | 0 | 0 | 0 | 214 | 0 |
+| fix | 14 | 4 | 0 | 18 | n/a |
+| no action | 6 | 1 | 3 | 10 | n/a |
+| pending |  |  |  | 186 | |
+| **all entries** | 20 | 5 | 3 | 214 | 0 |
 
 ## Accept in one go
 
@@ -49,7 +49,7 @@ Confirming, high (0): none
 
 Output-changing, high (0): none
 
-Non-country fixes, high (0, not covered by accept): none
+Non-country fixes, high (20, not covered by accept): `12:ids.iucn:iucn-id,15:ids.iucn:iucn-id,17:ids.iucn:iucn-id,18:ids.iucn:iucn-id,19:ids.gbif:identity,19:ids.iucn:iucn-id,1:ids.gbif:synonym-info,1:ids.ncbi:not-found,20:ids.iucn:iucn-id,21:ids.iucn:iucn-id,22:ids.iucn:iucn-id,47:range.countriesWithOpenRecords:no-records,4:ids.iucn:iucn-id,55:ids.gbif:synonym-info,59:ids.col:identity,63:ids.gbif:synonym-info,70:ids.gbif:synonym-info,73:ids.col:identity,9:ids.col:identity,9:ids.gbif:identity`
 
 What accepting does:
 
@@ -74,13 +74,17 @@ Species that could lose every published country:
 - **Flagged:** The GBIF backbone calls Emydoidea blandingii (2442885) a synonym of Emys blandingii (5220530); the countries are counted for 5220530, which covers all its synonyms.
 - **Values:** `{"gbif":{"accepted":{"key":5220530,"name":"Emys blandingii"},"status":"SYNONYM","usageKey":2442885}}`
 - **Wikidata:** [Q185526](https://www.wikidata.org/wiki/Q185526) P846 = 2442885, normal rank, stated in [Q1531570](https://www.wikidata.org/wiki/Q1531570), retrieved 2015-05-26
-- **Recommendation:** pending
+- **Recommendation:** no action · **high**
+- **Why:** Info only: GBIF treats Emydoidea blandingii as a synonym of Emys blandingii (5220530), and the countries are counted on 5220530, which includes all its synonyms. ids.gbif stays 2442885, the same as Wikidata's P846. Published countries aren't affected.
+- **Cites:** entry, [wikidata:Q185526](https://www.wikidata.org/wiki/Q185526)
 
 #### 1:ids.ncbi:not-found · not-found (info)
 
 - **Flagged:** Wikidata Q185526 has no P685.
 - **Values:** `{"wikidata":[]}`
-- **Recommendation:** pending
+- **Recommendation:** no action · **high**
+- **Why:** Info only: Wikidata Q185526 has no P685, so ids.ncbi is null. Nothing is wrong. Filling it is optional: add P685 on Wikidata, then pnpm ingest wikidata.
+- **Cites:** entry, [wikidata:Q185526](https://www.wikidata.org/wiki/Q185526)
 
 ### 2 · Apalone spinifera · Spiny Softshell Turtle
 
@@ -178,7 +182,9 @@ Species that could lose every published country:
 - **Flagged:** Wikidata Q754035 (P225 Platysternon megacephalum) has P627 17585. Kept 9605.
 - **Values:** `{"base":9605,"wikidata":["17585"]}`
 - **Wikidata:** [Q754035](https://www.wikidata.org/wiki/Q754035) P627 = 17585, normal rank, stated in [Q32059](https://www.wikidata.org/wiki/Q32059), retrieved 2016-07-10
-- **Recommendation:** pending
+- **Recommendation:** Critter Connect profile `db/content/animals/04-big-headed-turtle.json`: set `iucnId` 9605 → 17585, then `pnpm seed:cc`, `pnpm ingest wikidata` (a changed `ids.iucn` makes its snapshot stale), `pnpm derive`. Click to confirm: https://www.iucnredlist.org/species/9605 and https://www.iucnredlist.org/species/17585. This changes `/v1` and Learn's lab data, so plain `pnpm build`, and `deploy`, refuse until `pnpm build --draft && pnpm learn:check --update`. · **high**
+- **Why:** Wikidata Q754035 gives 17585 (stated in the Red List). The Critter Connect profile's own Red List link also uses 17585; only its iucnId says 9605.
+- **Cites:** [wikidata:Q754035](https://www.wikidata.org/wiki/Q754035)
 
 ### 5 · Rhacophorus nigropalmatus · Wallace's Flying Frog
 
@@ -298,7 +304,9 @@ Species that could lose every published country:
 - **COL 589RN** (release 2026-10-14): Trichobatrachus robustus, species, synonym, accepted name Astylosternus robustus (687FL). [Open](https://www.checklistbank.org/dataset/316595/taxon/589RN).
 - **COL 687FL** (release 2026-10-14): Astylosternus robustus, species, accepted. [Open](https://www.checklistbank.org/dataset/316595/taxon/687FL).
 - **Wikidata:** [Q1028620](https://www.wikidata.org/wiki/Q1028620) P10585 = 589RN, normal rank, no reference
-- **Recommendation:** pending
+- **Recommendation:** no action · **low**
+- **Why:** Only COL moves it to Astylosternus (synonym 589RN, accepted 687FL). GBIF still accepts Trichobatrachus robustus (2429660) and Wikidata's P225 is the same. A rename costs a species change and breaks the Wikidata join; ids.col stays null, the base taxonomy stays.
+- **Cites:** entry, [col:589RN](https://www.checklistbank.org/dataset/316595/taxon/589RN), [col:687FL](https://www.checklistbank.org/dataset/316595/taxon/687FL), [wikidata:Q1028620](https://www.wikidata.org/wiki/Q1028620)
 
 ### 9 · Dendrobates tinctorius · Dyeing Poison Dart Frog
 
@@ -309,7 +317,9 @@ Species that could lose every published country:
 - **COL 6CJSY** (release 2026-10-14): Dendrobates tinctorius, species, accepted. [Open](https://www.checklistbank.org/dataset/316595/taxon/6CJSY).
 - **COL 6CK4Y** (release 2026-10-14): Dendrobates tinctorius, species, synonym, accepted name Dendrobates tinctorius (6CJSY). [Open](https://www.checklistbank.org/dataset/316595/taxon/6CK4Y).
 - **Wikidata:** [Q1478869](https://www.wikidata.org/wiki/Q1478869) P10585 = 6CK4Y, normal rank, no reference
-- **Recommendation:** pending
+- **Recommendation:** Wikidata Q1478869: replace P10585 6CK4Y with 6CJSY, then `pnpm ingest wikidata`, `pnpm derive`. `ids.col` fills and the taxonomy comes from COL. This changes `/v1` and Learn's lab data, so plain `pnpm build`, and `deploy`, refuse until `pnpm build --draft && pnpm learn:check --update`. · **high**
+- **Why:** COL's own record calls Wikidata's 6CK4Y a synonym of 6CJSY, the accepted Dendrobates tinctorius derive already matched. Same name, no doubt about identity: Wikidata holds the synonym's id.
+- **Cites:** [col:6CJSY](https://www.checklistbank.org/dataset/316595/taxon/6CJSY), [col:6CK4Y](https://www.checklistbank.org/dataset/316595/taxon/6CK4Y), [wikidata:Q1478869](https://www.wikidata.org/wiki/Q1478869)
 
 #### 9:ids.gbif:identity · identity (blocking)
 
@@ -318,7 +328,9 @@ Species that could lose every published country:
 - **GBIF 9724339:** Dendrobates tinctorius (Cuvier, 1797), SPECIES, ACCEPTED. [Open](https://www.gbif.org/species/9724339).
 - **GBIF 5218024:** Dendrobates tinctorius (Schneider, 1799), SPECIES, SYNONYM, accepted name Dendrobates tinctorius (Cuvier, 1797). [Open](https://www.gbif.org/species/5218024).
 - **Wikidata:** [Q1478869](https://www.wikidata.org/wiki/Q1478869) P846 = 5218024, normal rank, stated in [Q1531570](https://www.wikidata.org/wiki/Q1531570), retrieved 2015-05-17
-- **Recommendation:** pending
+- **Recommendation:** Wikidata Q1478869: replace P846 5218024 with 9724339, then `pnpm ingest wikidata`, `pnpm derive`. `ids.gbif` becomes 9724339 and the species' countries publish for the first time. Cost of a species change (AGENTS.md, about 1 h: new GBIF sample, `pnpm ingest habitat`, learn-sample DOI), plus the Learn follow-on: This changes `/v1` and Learn's lab data, so plain `pnpm build`, and `deploy`, refuse until `pnpm build --draft && pnpm learn:check --update`. · **high**
+- **Why:** GBIF's own record calls Wikidata's 5218024 (Schneider, 1799) a synonym of 9724339, the accepted Dendrobates tinctorius the match found. Wikidata's statement dates from 2015; no doubt about identity.
+- **Cites:** [gbif:species:9724339](https://www.gbif.org/species/9724339), [gbif:species:5218024](https://www.gbif.org/species/5218024), [wikidata:Q1478869](https://www.wikidata.org/wiki/Q1478869)
 
 ### 10 · Pipa pipa · Suriname Toad
 
@@ -395,7 +407,9 @@ Species that could lose every published country:
 - **Flagged:** Wikidata Q2532001 (P225 Heosemys spinosa) has P627 9942. Kept 104303.
 - **Values:** `{"base":104303,"wikidata":["9942"]}`
 - **Wikidata:** [Q2532001](https://www.wikidata.org/wiki/Q2532001) P627 = 9942, normal rank, stated in [Q32059](https://www.wikidata.org/wiki/Q32059), retrieved 2016-07-10
-- **Recommendation:** pending
+- **Recommendation:** Critter Connect profile `db/content/animals/12-spiny-turtle.json`: set `iucnId` 104303 → 9942, then `pnpm seed:cc`, `pnpm ingest wikidata` (a changed `ids.iucn` makes its snapshot stale), `pnpm derive`. Click to confirm: https://www.iucnredlist.org/species/104303 and https://www.iucnredlist.org/species/9942. This changes `/v1` and Learn's lab data, so plain `pnpm build`, and `deploy`, refuse until `pnpm build --draft && pnpm learn:check --update`. · **high**
+- **Why:** Wikidata Q2532001 gives 9942 (stated in the Red List). The Critter Connect profile's own Red List link also uses 9942; only its iucnId says 104303.
+- **Cites:** [wikidata:Q2532001](https://www.wikidata.org/wiki/Q2532001)
 
 ### 14 · Breviceps macrops · Desert Rain Frog
 
@@ -448,7 +462,9 @@ Species that could lose every published country:
 - **Flagged:** Wikidata Q832357 (P225 Malacochersus tornieri) has P627 12696. Kept 9041.
 - **Values:** `{"base":9041,"wikidata":["12696"]}`
 - **Wikidata:** [Q832357](https://www.wikidata.org/wiki/Q832357) P627 = 12696, normal rank, stated in [Q32059](https://www.wikidata.org/wiki/Q32059), retrieved 2016-07-10
-- **Recommendation:** pending
+- **Recommendation:** Critter Connect profile `db/content/animals/15-pancake-tortoise.json`: set `iucnId` 9041 → 12696, then `pnpm seed:cc`, `pnpm ingest wikidata` (a changed `ids.iucn` makes its snapshot stale), `pnpm derive`. Click to confirm: https://www.iucnredlist.org/species/9041 and https://www.iucnredlist.org/species/12696. This changes `/v1` and Learn's lab data, so plain `pnpm build`, and `deploy`, refuse until `pnpm build --draft && pnpm learn:check --update`. · **high**
+- **Why:** Wikidata Q832357 gives 12696 (stated in the Red List). The Critter Connect profile's own Red List link also uses 12696; only its iucnId says 9041.
+- **Cites:** [wikidata:Q832357](https://www.wikidata.org/wiki/Q832357)
 
 ### 17 · Carettochelys insculpta · Pig-nosed Turtle
 
@@ -510,7 +526,9 @@ Species that could lose every published country:
 - **Flagged:** Wikidata Q457742 (P225 Carettochelys insculpta) has P627 3898. Kept 28859.
 - **Values:** `{"base":28859,"wikidata":["3898"]}`
 - **Wikidata:** [Q457742](https://www.wikidata.org/wiki/Q457742) P627 = 3898, normal rank, stated in [Q32059](https://www.wikidata.org/wiki/Q32059), retrieved 2016-07-10
-- **Recommendation:** pending
+- **Recommendation:** Critter Connect profile `db/content/animals/17-pig-nosed-turtle.json`: set `iucnId` 28859 → 3898, then `pnpm seed:cc`, `pnpm ingest wikidata` (a changed `ids.iucn` makes its snapshot stale), `pnpm derive`. Click to confirm: https://www.iucnredlist.org/species/28859 and https://www.iucnredlist.org/species/3898. This changes `/v1` and Learn's lab data, so plain `pnpm build`, and `deploy`, refuse until `pnpm build --draft && pnpm learn:check --update`. · **high**
+- **Why:** Wikidata Q457742 gives 3898 (stated in the Red List). The Critter Connect profile's own Red List link also uses 3898; only its iucnId says 28859.
+- **Cites:** [wikidata:Q457742](https://www.wikidata.org/wiki/Q457742)
 
 ### 18 · Rafetus swinhoei · Yangtze Giant Softshell Turtle
 
@@ -520,7 +538,9 @@ Species that could lose every published country:
 - **Values:** `{"base":22971,"wikidata":["39621"],"wikidataItemsWithBaseId":{"Q3074062":"Vidumelon wattii"}}`
 - **Wikidata:** [Q1075096](https://www.wikidata.org/wiki/Q1075096) P627 = 39621, normal rank, stated in [Q32059](https://www.wikidata.org/wiki/Q32059), retrieved 2016-07-11
 - **Wikidata:** [Q3074062](https://www.wikidata.org/wiki/Q3074062) P627 = 22971, normal rank, stated in [Q32059](https://www.wikidata.org/wiki/Q32059), retrieved 2016-07-11
-- **Recommendation:** pending
+- **Recommendation:** Critter Connect profile `db/content/animals/18-yangtze-giant-softshell-turtle.json`: set `iucnId` 22971 → 39621, then `pnpm seed:cc`, `pnpm ingest wikidata` (a changed `ids.iucn` makes its snapshot stale), `pnpm derive`. Click to confirm: https://www.iucnredlist.org/species/22971 and https://www.iucnredlist.org/species/39621. This changes `/v1` and Learn's lab data, so plain `pnpm build`, and `deploy`, refuse until `pnpm build --draft && pnpm learn:check --update`. · **high**
+- **Why:** Wikidata Q1075096 gives 39621 (stated in the Red List). The Critter Connect profile's own Red List link also uses 39621; only its iucnId says 22971. Wikidata has 22971 on Q3074062 (Vidumelon wattii), another species.
+- **Cites:** [wikidata:Q1075096](https://www.wikidata.org/wiki/Q1075096), [wikidata:Q3074062](https://www.wikidata.org/wiki/Q3074062)
 
 ### 19 · Chelonoidis niger · Floreana Giant Tortoise
 
@@ -531,7 +551,9 @@ Species that could lose every published country:
 - **GBIF 9527499:** Chelonoidis niger (Quoy & Gaimard, 1824), SPECIES, ACCEPTED. [Open](https://www.gbif.org/species/9527499).
 - **GBIF 5220266:** Chelonoidis nigra (Quoy & Gaimard, 1824), SPECIES, SYNONYM, accepted name Chelonoidis niger (Quoy & Gaimard, 1824). [Open](https://www.gbif.org/species/5220266).
 - **Wikidata:** [Q486672](https://www.wikidata.org/wiki/Q486672) P846 = 5220266, normal rank, stated in [Q1531570](https://www.wikidata.org/wiki/Q1531570), retrieved 2015-05-16
-- **Recommendation:** pending
+- **Recommendation:** Wikidata Q486672: replace P846 5220266 with 9527499, then `pnpm ingest wikidata`, `pnpm derive`. `ids.gbif` becomes 9527499 and the species' countries publish for the first time. Cost of a species change (AGENTS.md, about 1 h: new GBIF sample, `pnpm ingest habitat`, learn-sample DOI), plus the Learn follow-on: This changes `/v1` and Learn's lab data, so plain `pnpm build`, and `deploy`, refuse until `pnpm build --draft && pnpm learn:check --update`. · **high**
+- **Why:** GBIF's own record calls Wikidata's 5220266 (spelled Chelonoidis nigra) a synonym of 9527499, the accepted Chelonoidis niger the match found. Wikidata's statement dates from 2015; no doubt about identity.
+- **Cites:** [gbif:species:9527499](https://www.gbif.org/species/9527499), [gbif:species:5220266](https://www.gbif.org/species/5220266), [wikidata:Q486672](https://www.wikidata.org/wiki/Q486672)
 
 #### 19:ids.iucn:iucn-id · iucn-id (blocking)
 
@@ -539,7 +561,9 @@ Species that could lose every published country:
 - **Values:** `{"base":9010,"wikidata":["9023"],"wikidataItemsWithBaseId":{"Q28049777":"Geochelone gigantea"}}`
 - **Wikidata:** [Q28049777](https://www.wikidata.org/wiki/Q28049777) P627 = 9010, normal rank, stated in [Q32059](https://www.wikidata.org/wiki/Q32059), retrieved 2016-12-22
 - **Wikidata:** [Q486672](https://www.wikidata.org/wiki/Q486672) P627 = 9023, normal rank, stated in [Q32059](https://www.wikidata.org/wiki/Q32059), retrieved 2017-12-23
-- **Recommendation:** pending
+- **Recommendation:** Critter Connect profile `db/content/animals/19-floreana-giant-tortoise.json`: set `iucnId` 9010 → 9023, then `pnpm seed:cc`, `pnpm ingest wikidata` (a changed `ids.iucn` makes its snapshot stale), `pnpm derive`. Click to confirm: https://www.iucnredlist.org/species/9010 and https://www.iucnredlist.org/species/9023. This changes `/v1` and Learn's lab data, so plain `pnpm build`, and `deploy`, refuse until `pnpm build --draft && pnpm learn:check --update`. · **high**
+- **Why:** Wikidata Q486672 gives 9023 (stated in the Red List). The Critter Connect profile's own Red List link also uses 9023; only its iucnId says 9010. Wikidata has 9010 on Q28049777 (Geochelone gigantea), another species.
+- **Cites:** [wikidata:Q486672](https://www.wikidata.org/wiki/Q486672), [wikidata:Q28049777](https://www.wikidata.org/wiki/Q28049777)
 
 ### 20 · Centrochelys sulcata · African Spurred Tortoise
 
@@ -778,7 +802,9 @@ Species that could lose every published country:
 - **Flagged:** Wikidata Q301016 (P225 Centrochelys sulcata) has P627 163423. Kept 9781.
 - **Values:** `{"base":9781,"wikidata":["163423"]}`
 - **Wikidata:** [Q301016](https://www.wikidata.org/wiki/Q301016) P627 = 163423, normal rank, stated in [Q32059](https://www.wikidata.org/wiki/Q32059), retrieved 2016-07-10
-- **Recommendation:** pending
+- **Recommendation:** Critter Connect profile `db/content/animals/20-african-spurred-tortoise.json`: set `iucnId` 9781 → 163423, then `pnpm seed:cc`, `pnpm ingest wikidata` (a changed `ids.iucn` makes its snapshot stale), `pnpm derive`. Click to confirm: https://www.iucnredlist.org/species/9781 and https://www.iucnredlist.org/species/163423. This changes `/v1` and Learn's lab data, so plain `pnpm build`, and `deploy`, refuse until `pnpm build --draft && pnpm learn:check --update`. · **high**
+- **Why:** Wikidata Q301016 gives 163423 (stated in the Red List). The Critter Connect profile's own Red List link also uses 163423; only its iucnId says 9781.
+- **Cites:** [wikidata:Q301016](https://www.wikidata.org/wiki/Q301016)
 
 ### 21 · Astrochelys radiata · Radiated Tortoise
 
@@ -838,7 +864,9 @@ Species that could lose every published country:
 - **Values:** `{"base":3901,"wikidata":["9014"],"wikidataItemsWithBaseId":{"Q1384328":"Carinurella paradoxa"}}`
 - **Wikidata:** [Q1384328](https://www.wikidata.org/wiki/Q1384328) P627 = 3901, normal rank, stated in [Q32059](https://www.wikidata.org/wiki/Q32059), retrieved 2016-07-10
 - **Wikidata:** [Q630954](https://www.wikidata.org/wiki/Q630954) P627 = 9014, normal rank, stated in [Q32059](https://www.wikidata.org/wiki/Q32059), retrieved 2016-07-09
-- **Recommendation:** pending
+- **Recommendation:** Critter Connect profile `db/content/animals/21-radiated-tortoise.json`: set `iucnId` 3901 → 9014, then `pnpm seed:cc`, `pnpm ingest wikidata` (a changed `ids.iucn` makes its snapshot stale), `pnpm derive`. Click to confirm: https://www.iucnredlist.org/species/3901 and https://www.iucnredlist.org/species/9014. This changes `/v1` and Learn's lab data, so plain `pnpm build`, and `deploy`, refuse until `pnpm build --draft && pnpm learn:check --update`. · **high**
+- **Why:** Wikidata Q630954 gives 9014 (stated in the Red List). The Critter Connect profile's own Red List link also uses 9014; only its iucnId says 3901. Wikidata has 3901 on Q1384328 (Carinurella paradoxa), another species.
+- **Cites:** [wikidata:Q630954](https://www.wikidata.org/wiki/Q630954), [wikidata:Q1384328](https://www.wikidata.org/wiki/Q1384328)
 
 ### 22 · Chelonoidis abingdonii · Pinta Island Tortoise
 
@@ -848,14 +876,18 @@ Species that could lose every published country:
 - **Values:** `{"col":{"kingdom":"Animalia","match":true,"name":"Chelonoidis","rank":"genus","type":"higherrank"}}`
 - **COL 3MPP** (release 2026-10-14): Chelonoidis, genus, accepted. [Open](https://www.checklistbank.org/dataset/316595/taxon/3MPP).
 - **Wikidata:** [Q4045992](https://www.wikidata.org/wiki/Q4045992) P10585 = TVKZ, normal rank, no reference
-- **Recommendation:** pending
+- **Recommendation:** no action · **medium**
+- **Why:** COL ranks it a subspecies (Chelonoidis niger abingdonii, C6Q3T), so it has no species to match; Wikidata's P10585 TVKZ isn't in this release (404). GBIF keeps species 7451150, which the countries use. ids.col stays null; nothing on our side changes that.
+- **Cites:** entry, [col:3MPP](https://www.checklistbank.org/dataset/316595/taxon/3MPP), [wikidata:Q4045992](https://www.wikidata.org/wiki/Q4045992)
 
 #### 22:ids.iucn:iucn-id · iucn-id (blocking)
 
 - **Flagged:** Wikidata Q4045992 (P225 Chelonoidis abingdonii) has P627 9017. Kept 3902.
 - **Values:** `{"base":3902,"wikidata":["9017"]}`
 - **Wikidata:** [Q4045992](https://www.wikidata.org/wiki/Q4045992) P627 = 9017, normal rank, stated in [Q32059](https://www.wikidata.org/wiki/Q32059), retrieved 2016-07-10
-- **Recommendation:** pending
+- **Recommendation:** Critter Connect profile `db/content/animals/22-pinta-island-tortoise.json`: set `iucnId` 3902 → 9017, then `pnpm seed:cc`, `pnpm ingest wikidata` (a changed `ids.iucn` makes its snapshot stale), `pnpm derive`. Click to confirm: https://www.iucnredlist.org/species/3902 and https://www.iucnredlist.org/species/9017. This changes `/v1` and Learn's lab data, so plain `pnpm build`, and `deploy`, refuse until `pnpm build --draft && pnpm learn:check --update`. · **high**
+- **Why:** Wikidata Q4045992 gives 9017 (stated in the Red List). The Critter Connect profile's own Red List link also uses 9017; only its iucnId says 3902.
+- **Cites:** [wikidata:Q4045992](https://www.wikidata.org/wiki/Q4045992)
 
 ### 23 · Daubentonia madagascariensis · Aye-aye
 
@@ -1226,7 +1258,9 @@ Species that could lose every published country:
 - **Values:** `{"col":{"kingdom":"Animalia","match":true,"name":"Zaglossus bruijni","rank":"species","type":"variant"}}`
 - **COL 7GBTL** (release 2026-10-14): Zaglossus bruijni, species, accepted. [Open](https://www.checklistbank.org/dataset/316595/taxon/7GBTL).
 - **Wikidata:** [Q635949](https://www.wikidata.org/wiki/Q635949) P10585 = 7GBTL, normal rank, no reference
-- **Recommendation:** pending
+- **Recommendation:** Rename to Zaglossus bruijni: `scientificName` in Critter Connect profile `db/content/animals/27-western-long-beaked-echidna.json`, and P225 on Wikidata Q635949 (derive joins Wikidata on P225, so the item must follow). Then `pnpm seed:cc`, `pnpm ingest wikidata`, `pnpm ingest col`, `pnpm ingest gbif`, `pnpm derive`. One rename settles both 27 entries; `ids.col` fills and the countries publish. Cost of a species change (AGENTS.md, about 1 h: new GBIF sample, `pnpm ingest habitat`, learn-sample DOI), plus the Learn follow-on: This changes `/v1` and Learn's lab data, so plain `pnpm build`, and `deploy`, refuse until `pnpm build --draft && pnpm learn:check --update`. · **medium**
+- **Why:** COL spells it Zaglossus bruijni, and Wikidata's P10585 7GBTL is that record, so identity is agreed and only the spelling differs. Medium: the rename needs a Wikidata P225 edit that others could revert.
+- **Cites:** [col:7GBTL](https://www.checklistbank.org/dataset/316595/taxon/7GBTL), [wikidata:Q635949](https://www.wikidata.org/wiki/Q635949)
 
 #### 27:ids.gbif:not-found · not-found (blocking)
 
@@ -1234,7 +1268,9 @@ Species that could lose every published country:
 - **Values:** `{"gbif":{"canonicalName":"Zaglossus bruijni","kingdom":"Animalia","matchType":"VARIANT","rank":"SPECIES"}}`
 - **GBIF 2433391:** Zaglossus bruijni (Peters & Doria, 1876), SPECIES, ACCEPTED. [Open](https://www.gbif.org/species/2433391).
 - **Wikidata:** [Q635949](https://www.wikidata.org/wiki/Q635949) P846 = 2433391, normal rank, stated in [Q1531570](https://www.wikidata.org/wiki/Q1531570), retrieved 2015-05-25
-- **Recommendation:** pending
+- **Recommendation:** Rename to Zaglossus bruijni: `scientificName` in Critter Connect profile `db/content/animals/27-western-long-beaked-echidna.json`, and P225 on Wikidata Q635949 (derive joins Wikidata on P225, so the item must follow). Then `pnpm seed:cc`, `pnpm ingest wikidata`, `pnpm ingest col`, `pnpm ingest gbif`, `pnpm derive`. One rename settles both 27 entries; `ids.gbif` fills and the countries publish. Cost of a species change (AGENTS.md, about 1 h: new GBIF sample, `pnpm ingest habitat`, learn-sample DOI), plus the Learn follow-on: This changes `/v1` and Learn's lab data, so plain `pnpm build`, and `deploy`, refuse until `pnpm build --draft && pnpm learn:check --update`. · **medium**
+- **Why:** GBIF spells it Zaglossus bruijni, and Wikidata's P846 2433391 is that record, so identity is agreed and only the spelling differs. Medium: the rename needs a Wikidata P225 edit that others could revert.
+- **Cites:** [gbif:species:2433391](https://www.gbif.org/species/2433391), [wikidata:Q635949](https://www.wikidata.org/wiki/Q635949)
 
 ### 28 · Elephas maximus · Asian Elephant
 
@@ -1545,7 +1581,9 @@ Species that could lose every published country:
 - **Values:** `{"wikidata":["41653","418148"]}`
 - **Wikidata:** [Q41960](https://www.wikidata.org/wiki/Q41960) P3151 = 41653, normal rank, no reference
 - **Wikidata:** [Q41960](https://www.wikidata.org/wiki/Q41960) P3151 = 418148, normal rank, no reference
-- **Recommendation:** pending
+- **Recommendation:** Wikidata Q41960: remove P3151 418148, keep 41653, then `pnpm ingest wikidata`, `pnpm derive`. `ids.inaturalist` becomes 41653. Click to confirm: https://www.inaturalist.org/taxa/41653 and https://www.inaturalist.org/taxa/418148. This changes `/v1` and Learn's lab data, so plain `pnpm build`, and `deploy`, refuse until `pnpm build --draft && pnpm learn:check --update`. · **medium**
+- **Why:** Q41960 has both values, no references. 418148 is also P3151 of Q89502501 (Ailurus styani; one-off Wikidata query, 2026-11-01), so it reads as that taxon's id; 41653 is on Q41960 alone. Medium: iNaturalist itself wasn't queried.
+- **Cites:** entry, [wikidata:Q41960](https://www.wikidata.org/wiki/Q41960)
 
 ### 36 · Priodontes maximus · Giant Armadillo
 
@@ -1689,7 +1727,9 @@ Species that could lose every published country:
 - **Values:** `{"wikidata":["569678","67982"]}`
 - **Wikidata:** [Q543424](https://www.wikidata.org/wiki/Q543424) P3151 = 569678, normal rank, no reference
 - **Wikidata:** [Q543424](https://www.wikidata.org/wiki/Q543424) P3151 = 67982, normal rank, no reference
-- **Recommendation:** pending
+- **Recommendation:** no action · **low**
+- **Why:** Q543424 has both values, no references, and neither is on another item, so the evidence doesn't say which is the species. ids.inaturalist stays null. To settle: open inaturalist.org/taxa/569678 and /67982, keep the species' one on Q543424, pnpm ingest wikidata.
+- **Cites:** entry, [wikidata:Q543424](https://www.wikidata.org/wiki/Q543424)
 
 ### 41 · Loxodonta cyclotis · African Forest Elephant
 
@@ -1850,7 +1890,9 @@ Species that could lose every published country:
 
 - **Flagged:** No CC0 or CC BY 4.0 records with a known country match the filters.
 - **Values:** `{"gbif":{"speciesRecords":0}}`
-- **Recommendation:** pending
+- **Recommendation:** no action · **high**
+- **Why:** Info only: GBIF's snapshot has no CC0 or CC BY 4.0 record with a known country for this species, and /v1 says no-open-records, which is accurate. It clears by itself if open records appear in a later pnpm ingest gbif.
+- **Cites:** entry
 
 ### 48 · Sarcophilus harrisii · Tasmanian Devil
 
@@ -2141,7 +2183,9 @@ Species that could lose every published country:
 - **Flagged:** The GBIF backbone calls Smutsia gigantea (5786559) a synonym of Manis gigantea (5219631); the countries are counted for 5219631, which covers all its synonyms.
 - **Values:** `{"gbif":{"accepted":{"key":5219631,"name":"Manis gigantea"},"status":"SYNONYM","usageKey":5786559}}`
 - **Wikidata:** [Q20085878](https://www.wikidata.org/wiki/Q20085878) P846 = 5786559, normal rank, no reference
-- **Recommendation:** pending
+- **Recommendation:** no action · **high**
+- **Why:** Info only: GBIF treats Smutsia gigantea as a synonym of Manis gigantea (5219631), and the countries are counted on 5219631, which includes all its synonyms. ids.gbif stays 5786559, the same as Wikidata's P846. Published countries aren't affected.
+- **Cites:** entry, [wikidata:Q20085878](https://www.wikidata.org/wiki/Q20085878)
 
 ### 56 · Pan troglodytes · Chimpanzee
 
@@ -2882,7 +2926,9 @@ Species that could lose every published country:
 - **COL 3XVJJ** (release 2026-10-14): Manis crassicaudata, species, accepted. [Open](https://www.checklistbank.org/dataset/316595/taxon/3XVJJ).
 - **COL 7VRVK** (release 2026-10-14): Manis crassicaudata, species, synonym, accepted name Manis crassicaudata (3XVJJ). [Open](https://www.checklistbank.org/dataset/316595/taxon/7VRVK).
 - **Wikidata:** [Q752467](https://www.wikidata.org/wiki/Q752467) P10585 = 7VRVK, normal rank, no reference
-- **Recommendation:** pending
+- **Recommendation:** Wikidata Q752467: replace P10585 7VRVK with 3XVJJ, then `pnpm ingest wikidata`, `pnpm derive`. `ids.col` fills and the taxonomy comes from COL. This changes `/v1` and Learn's lab data, so plain `pnpm build`, and `deploy`, refuse until `pnpm build --draft && pnpm learn:check --update`. · **high**
+- **Why:** COL's own record calls Wikidata's 7VRVK a synonym of 3XVJJ, the accepted Manis crassicaudata derive already matched. Same name, no doubt about identity: Wikidata holds the synonym's id.
+- **Cites:** [col:3XVJJ](https://www.checklistbank.org/dataset/316595/taxon/3XVJJ), [col:7VRVK](https://www.checklistbank.org/dataset/316595/taxon/7VRVK), [wikidata:Q752467](https://www.wikidata.org/wiki/Q752467)
 
 ### 60 · Ailuropoda melanoleuca · Giant Panda
 
@@ -2929,7 +2975,9 @@ Species that could lose every published country:
 - **Flagged:** Wikidata Q61312 (P225 Andrias davidianus) has P627 1272. Kept 179010104.
 - **Values:** `{"base":179010104,"wikidata":["1272"]}`
 - **Wikidata:** [Q61312](https://www.wikidata.org/wiki/Q61312) P627 = 1272, normal rank, stated in [Q32059](https://www.wikidata.org/wiki/Q32059), retrieved 2016-07-09
-- **Recommendation:** pending
+- **Recommendation:** Click first: https://www.iucnredlist.org/species/179010104 and https://www.iucnredlist.org/species/1272. If the first is this species: on Wikidata Q61312 replace P627 1272 with 179010104, then `pnpm ingest wikidata`, `pnpm derive`. `ids.iucn` stays 179010104, so nothing published changes. If it isn't: treat as the other iucn-id fixes (profile `62-chinese-giant-salamander.json`). · **medium**
+- **Why:** Unlike the other iucn-id entries, the profile's iucnId and its own Red List link agree on 179010104. Wikidata's 1272 was retrieved in 2016 and could predate it. So Wikidata looks stale, not us. Medium: only the Red List page can settle it, and that's out of scope here.
+- **Cites:** entry, [wikidata:Q61312](https://www.wikidata.org/wiki/Q61312)
 
 ### 63 · Smutsia temminckii · Temminck's Pangolin
 
@@ -2938,7 +2986,9 @@ Species that could lose every published country:
 - **Flagged:** The GBIF backbone calls Smutsia temminckii (5786560) a synonym of Manis temminckii (5219630); the countries are counted for 5219630, which covers all its synonyms.
 - **Values:** `{"gbif":{"accepted":{"key":5219630,"name":"Manis temminckii"},"status":"SYNONYM","usageKey":5786560}}`
 - **Wikidata:** [Q28173017](https://www.wikidata.org/wiki/Q28173017) P846 = 5786560, normal rank, no reference
-- **Recommendation:** pending
+- **Recommendation:** no action · **high**
+- **Why:** Info only: GBIF treats Smutsia temminckii as a synonym of Manis temminckii (5219630), and the countries are counted on 5219630, which includes all its synonyms. ids.gbif stays 5786560, the same as Wikidata's P846. Published countries aren't affected.
+- **Cites:** entry, [wikidata:Q28173017](https://www.wikidata.org/wiki/Q28173017)
 
 ### 64 · Loxodonta africana · African Savanna Elephant
 
@@ -3638,14 +3688,18 @@ Species that could lose every published country:
 - **COL 54TGH** (release 2026-10-14): Tapirus bairdii, species, synonym, accepted name Tapirella bairdii (54TF2). [Open](https://www.checklistbank.org/dataset/316595/taxon/54TGH).
 - **COL 54TF2** (release 2026-10-14): Tapirella bairdii, species, accepted. [Open](https://www.checklistbank.org/dataset/316595/taxon/54TF2).
 - **Wikidata:** [Q215997](https://www.wikidata.org/wiki/Q215997) P10585 = 54TGH, normal rank, no reference
-- **Recommendation:** pending
+- **Recommendation:** no action · **low**
+- **Why:** COL and GBIF both accept Tapirella bairdii (54TF2, 8395500), but Wikidata's item keeps P225 Tapirus bairdii. Countries already count 8395500. A rename costs a species change and a Wikidata edit to fill only ids.col and the genus, so stay until Wikidata moves.
+- **Cites:** entry, [col:54TGH](https://www.checklistbank.org/dataset/316595/taxon/54TGH), [col:54TF2](https://www.checklistbank.org/dataset/316595/taxon/54TF2), [wikidata:Q215997](https://www.wikidata.org/wiki/Q215997)
 
 #### 70:ids.gbif:synonym-info · synonym-info (info)
 
 - **Flagged:** The GBIF backbone calls Tapirus bairdii (2440897) a synonym of Tapirella bairdii (8395500); the countries are counted for 8395500, which covers all its synonyms.
 - **Values:** `{"gbif":{"accepted":{"key":8395500,"name":"Tapirella bairdii"},"status":"SYNONYM","usageKey":2440897}}`
 - **Wikidata:** [Q215997](https://www.wikidata.org/wiki/Q215997) P846 = 2440897, normal rank, stated in [Q1531570](https://www.wikidata.org/wiki/Q1531570), retrieved 2015-05-15
-- **Recommendation:** pending
+- **Recommendation:** no action · **high**
+- **Why:** Info only: GBIF treats Tapirus bairdii as a synonym of Tapirella bairdii (8395500), and the countries are counted on 8395500, which includes all its synonyms. ids.gbif stays 2440897, the same as Wikidata's P846. Published countries aren't affected.
+- **Cites:** entry, [wikidata:Q215997](https://www.wikidata.org/wiki/Q215997)
 
 ### 71 · Tremarctos ornatus · Andean Bear
 
@@ -3783,7 +3837,9 @@ Species that could lose every published country:
 - **COL 4PZZS** (release 2026-10-14): Pteronura brasiliensis, species, accepted. [Open](https://www.checklistbank.org/dataset/316595/taxon/4PZZS).
 - **COL 4PZZR** (release 2026-10-14): Pteronura brasiliensis, species, synonym, accepted name Pteronura brasiliensis (4PZZS). [Open](https://www.checklistbank.org/dataset/316595/taxon/4PZZR).
 - **Wikidata:** [Q83774](https://www.wikidata.org/wiki/Q83774) P10585 = 4PZZR, normal rank, no reference
-- **Recommendation:** pending
+- **Recommendation:** Wikidata Q83774: replace P10585 4PZZR with 4PZZS, then `pnpm ingest wikidata`, `pnpm derive`. `ids.col` fills and the taxonomy comes from COL. This changes `/v1` and Learn's lab data, so plain `pnpm build`, and `deploy`, refuse until `pnpm build --draft && pnpm learn:check --update`. · **high**
+- **Why:** COL's own record calls Wikidata's 4PZZR a synonym of 4PZZS, the accepted Pteronura brasiliensis derive already matched. Same name, no doubt about identity: Wikidata holds the synonym's id.
+- **Cites:** [col:4PZZS](https://www.checklistbank.org/dataset/316595/taxon/4PZZS), [col:4PZZR](https://www.checklistbank.org/dataset/316595/taxon/4PZZR), [wikidata:Q83774](https://www.wikidata.org/wiki/Q83774)
 
 ### 74 · Ambystoma mexicanum · Axolotl
 
