@@ -24,6 +24,7 @@ export const QA_FIXES: QaFix[] = [
   { q: "Q11", url: "/learn/data/", has: "<a href=\"/\">critwire</a> / <a href=\"/learn/\">Learn</a>" },
   { q: "Q12", url: "/learn/schema/lab/", has: "two clips of the 100 m map, all of Costa Rica and all of Tasmania", not: "whole-country" },
   { q: "Q13", url: "/learn/", has: "the browser's check your answer, the others show theirs to compare", not: "an exercise that checks your answer" },
+  { q: "Q14", url: "/learn/capstone/", has: "1 module, 8 hours.", not: "Work through them in order" },
 ];
 
 // What's wrong with each row on the origin `request` points at; [] when every fix shows.
