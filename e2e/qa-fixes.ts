@@ -50,6 +50,9 @@ export const QA_FIXES: QaFix[] = [
   { q: "Q36", url: "/learn/gis-in-sql/raster/", has: "some of Costa Rica or Tasmania", not: "The country reaches every edge" },
   { q: "Q37", url: "/learn/gis-in-sql/raster/", has: "the worst are all under 135 km²", not: "the worst are islands" },
   { q: "Q38", url: "/learn/spatial-statistics/bias/", has: "20 of the 28 museum specimens", not: "19 of the 28" },
+  { q: "Q39", url: "/learn/spatial-statistics/bias/", has: "134,690 fixes from 117 jaguars", not: "from a few animals" },
+  { q: "Q39", url: "/learn/power-bi/maps-report/", has: "and they draw collared animals' paths;", not: "a few collared" },
+  { q: "Q39", url: "/learn/capstone/game-feed/", has: "1,948 GPS-collar fixes, so a jaguar feed", not: "fixes of a few animals" },
 ];
 
 // What's wrong with each row on the origin `request` points at; [] when every fix shows.
