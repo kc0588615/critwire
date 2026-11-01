@@ -430,7 +430,7 @@ Rules for every step. A session reads these, its item, the Architecture sections
     kill $C
     ```
 
-- [ ] U2. **Labs and external links, one-off** (§3; findings 4, 5). Below T0: changes no repo file but 006, unless a dead link needs a fix.
+- [x] U2. **Labs and external links, one-off** (§3; findings 4, 5). Below T0: changes no repo file but 006, unless a dead link needs a fix.
   - Do:
     1. `pnpm build`. Save the runner: `mkdir -p /tmp/critwire-qa && sed -n '/^```ts$/,/^```$/p' plans/2026-11-01-critwire-learn-qa.md | sed '1d;$d' > /tmp/critwire-qa/qa-notebooks.mts`.
     2. Run §3's `sh` fence (≈ 1.5 min). Must print 11 lines `<name>.ipynb <sha256> exit 0, … nothing left`.
@@ -584,6 +584,7 @@ Live walk or axe isn't needed: same bytes (§8). Record the result and the log's
 - U1a: the keyboard test passed before Q2, because Chromium's keyboard-focusable scrollers focus an overflowing region with no `tabindex`. Added one assertion to §1's test, `tabindex="0"` on each region, so it bites and covers browsers without that default. The architect's probe injected `tabindex`, so it couldn't see this.
 - Correction to Fable's MISSED 1 (and to commit `3abf588`'s subject): `assemble.ts:190` is the `.ipynb` "about" cell only, and `freshness.ts:108` drops `.ipynb` from the download shas, so no download sha moves. It's still T2: `assemble.ts` is in the checker's closure (`learn-check.ts` → `check.ts:39`), so any edit moves every block key. Conclusion unchanged, queue it for the lab batch (U11); `setup.html:89` stays T0.
 - U1b: `goto` returns null when only the fragment changes, so the crawl's cross-page loop asserts the id only; `checked` already proved each path 200. `QA_FIXES` matches the served HTML as written, not rendered text, so one row type covers a sentence and an external URL. Crawl and "all 33" tests get 180 s (default 30 s; they took 18 s and 6 s here).
+- U2: this server's IP gets a Cloudflare 403 from `www.gbif.org`, in Chromium too, so "open it by hand" can't tell a dead GBIF page. Used the DOI handle record and `api.gbif.org` instead (304 lookups, ≤ 2 req/s); 7 other publishers' pages stay unconfirmed, recorded as such. Also tested setup's platform and `ipykernel` claims with `uv`, which the step named but gave no command for; commands in 006's Method.
 
 ## Log
 
@@ -596,5 +597,6 @@ Live walk or axe isn't needed: same bytes (§8). Record the result and the log's
 - 2026-11-01 12:54 UTC: Steps by `planner`: 13 steps (U1a, U1b, U2–U12), Verification written; U11 sole lab step, plain loop per §7. Plan only, no suite run. Next: U1a.
 - 2026-11-01 13:11 UTC: U1a: walk spec (49 walks + keyboard), axe-core pin, Q1 (d1 overflow), Q2 (tabindex on scrollers), 006 skeleton. Saw both fail first. typecheck pass, test 748/748, scoped e2e 82/82 (196 views, 0 axe, 0 overflow). Next: U1b.
 - 2026-11-01 13:30 UTC: U1b: prereq `href`s (map, tracks, modules), cross-page fragments (22 links, 11 targets, 0 broken), `QA_FIXES` + dist and origin tests. Each seen to fail on a bad row or broken `dist/`. typecheck pass, scoped e2e 57/57 (196 views), live dry run pass. Next: U2.
+- 2026-11-01 13:40 UTC: U2: 11/11 notebooks exit 0 in a learner's venv (nothing left); 47 Labs rows; setup claims checked, 4 platforms resolve, Intel Mac refused as stated. 415 external links: 111 200, 295 GBIF Cloudflare blocks confirmed via API, 7 other blocks unconfirmed, 2 dead at publishers (Q3, Q4, listed). typecheck pass. Next: U3.
 
 ## Summary
