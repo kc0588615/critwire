@@ -1,6 +1,12 @@
 [
   {
     "speciesId": 2,
+    "country": "AR",
+    "action": "keep",
+    "reason": "iNaturalist research-grade record in Buenos Aires, 2021, 555 m uncertainty, no captive mark, 2.5 km from Buenos Aires Eco-Park (Wikidata Q220023): likely a released or escaped animal outside captivity. The only record; COL's list names only the USA, so no second source agrees."
+  },
+  {
+    "speciesId": 2,
     "country": "PT",
     "action": "keep",
     "reason": "iNaturalist research-grade record in central Lisbon, 2020, 5 m uncertainty, no captive mark, 1.8 km from Lisbon Zoo (Wikidata Q220063): likely a released or escaped animal outside captivity. The only record; COL's list doesn't name Portugal, so no second source agrees."
@@ -24,10 +30,64 @@
     "reason": "Two rows of France's TAXREF territory checklist, undated, no locality, one island-wide point with 32 km uncertainty. A checklist line documents no animal, and its status here isn't in the fields; COL's list is Asian. Too thin to call, so it stays."
   },
   {
+    "speciesId": 5,
+    "country": "BN",
+    "action": "keep",
+    "reason": "iNaturalist research-grade record, Temburong, 2015, 122 m uncertainty, no captive mark. A community-verified wild observation, but the only record here, and COL gives no distribution, so no second source agrees."
+  },
+  {
+    "speciesId": 6,
+    "country": "US",
+    "action": "remove",
+    "reason": "UWBM specimen, 2015, locality \"Seattle, Woodland Park Zoo\", marked degreeOfEstablishment \"captive\". The record itself says captive; no other counted record here. COL says Middle and South America."
+  },
+  {
+    "speciesId": 7,
+    "country": "AO",
+    "action": "keep",
+    "reason": "Material citation from a herpetological checklist of Mayombe, locality Cabinda Province, no captive sign. One dataset, and the species has no COL id, so no second source agrees."
+  },
+  {
+    "speciesId": 7,
+    "country": "CD",
+    "action": "keep",
+    "reason": "RMCA specimen, 1920, field locality Butu-Polo, no captive sign. One dataset, and the species has no COL id, so no second source agrees."
+  },
+  {
+    "speciesId": 7,
+    "country": "CF",
+    "action": "keep",
+    "reason": "SMNS specimen with no locality or valid date, country derived from whole-degree coordinates (5, 16), flagged COUNTRY_INVALID. It names only the country, and the species has no COL id. Too thin to call, so it stays."
+  },
+  {
+    "speciesId": 7,
+    "country": "CG",
+    "action": "keep",
+    "reason": "iNaturalist research-grade record, Niari, 2012, 212 m uncertainty, no captive mark. A community-verified wild observation, but the only record here, and the species has no COL id, so no second source agrees."
+  },
+  {
+    "speciesId": 10,
+    "country": "TT",
+    "action": "keep",
+    "reason": "Two specimens at Trinidad's national museum, 1953 and 1961, with field localities: Bush Bush Forest in Nariva Swamp, and Bonasse Village. No captive sign. One dataset, and COL gives no distribution, so no second source agrees."
+  },
+  {
+    "speciesId": 11,
+    "country": "GQ",
+    "action": "keep",
+    "reason": "SMNS specimen, no locality or date, coordinates to the minute in Río Muni, no captive sign. COL lists Africa, but without a field locality the record alone can't show a free animal."
+  },
+  {
     "speciesId": 12,
     "country": "US",
     "action": "remove",
     "reason": "Three California specimens: two MVZ, marked captive, at East Bay Vivarium, Berkeley; one SBMNH at \"Turtle Dreams\", a street address in Montecito, whose establishmentMeans says \"native\". That third is inferred to be a private collection; the record doesn't say so."
+  },
+  {
+    "speciesId": 14,
+    "country": "NA",
+    "action": "keep",
+    "reason": "National Museum of Namibia specimen, 1985, Boegoeberg, Diamond Area 1: a field locality. SAIAB's \"McDougals Bay\" doesn't count: that bay is in South Africa at -29.28 (Wikidata Q31953520), the record says -26.27, so it looks misplaced. COL gives no distribution, so no second source."
   },
   {
     "speciesId": 15,
@@ -61,9 +121,21 @@
   },
   {
     "speciesId": 20,
+    "country": "EG",
+    "action": "keep",
+    "reason": "iNaturalist research-grade record, 2009; its remark says a very large tortoise roamed freely by a Bedouin village 30 km from Hurghada, no zoo there. Free, though maybe a village animal. The only record, and COL's list doesn't name Egypt."
+  },
+  {
+    "speciesId": 20,
     "country": "ES",
     "action": "remove",
     "reason": "ornitho.cat record, Catalonia, 2025, no locality, 7 km uncertainty, no captive mark. A pet escape outside captivity or a garden animal can't be told apart from these fields, and COL's list is African. It stays excluded."
+  },
+  {
+    "speciesId": 20,
+    "country": "ML",
+    "action": "keep",
+    "reason": "NABU|naturgucker record, 2009, Falaise de Bandiagara: a field locality, no captive mark, and COL's distribution names Mali."
   },
   {
     "speciesId": 20,
@@ -73,9 +145,21 @@
   },
   {
     "speciesId": 20,
+    "country": "MR",
+    "action": "keep",
+    "reason": "CIBIO field observation, 2012, Diawling National Park headquarters, remark \"LiveNotcaptured\", and COL's distribution names S Mauritania. The other record, MVZ, is captive-bred from a pair taken at Rosso, so the observation carries this."
+  },
+  {
+    "speciesId": 20,
     "country": "MX",
     "action": "keep",
     "reason": "iBOL and INSDC copies of one 2017 COI sequence from a Mexican institute, locality \"El Pochote\", Sinaloa. A place name with no wild or captive mark; a kept tortoise can't be told from a free one here, and COL's list is African. Too thin to call, so it stays."
+  },
+  {
+    "speciesId": 20,
+    "country": "NG",
+    "action": "keep",
+    "reason": "iNaturalist research-grade record, Lagos, 2009, coordinates to 31 km, no captive mark: likely a kept or released animal, but nothing says so. The only record, and COL's list doesn't name Nigeria, so no second source agrees."
   },
   {
     "speciesId": 20,
@@ -85,9 +169,21 @@
   },
   {
     "speciesId": 20,
+    "country": "SD",
+    "action": "keep",
+    "reason": "UMMZ specimen, 1907, \"Eastern Sudan\", no captive sign, and COL's distribution names Sudan. The other UMMZ record, near Khartoum, says \"born spring 61\" and \"tank\", so it's a kept animal; the 1907 one carries this."
+  },
+  {
+    "speciesId": 20,
     "country": "SG",
     "action": "remove",
     "reason": "NABU|naturgucker record, 2012, locality \"Chinesischer und Japanischer Garten mit Schildkrötenmuseum, Singapur\": a turtle museum in a garden, so a kept animal. No other counted record here."
+  },
+  {
+    "speciesId": 20,
+    "country": "SN",
+    "action": "keep",
+    "reason": "Two iNaturalist research-grade records, Dakar 2009 and Saint-Louis 2008, no captive mark, and COL's distribution names Senegal."
   },
   {
     "speciesId": 20,
@@ -108,6 +204,18 @@
     "reason": "Locality \"Zoologischer Garten Berlin\": a zoo, NABU|naturgucker record of a captive animal. No other counted record here."
   },
   {
+    "speciesId": 21,
+    "country": "MU",
+    "action": "remove",
+    "reason": "NABU|naturgucker record, 2010, locality \"La Vanille Krokodilpark … und Umgebung\": a crocodile park that keeps animals, \"and surroundings\" leaving slight room. The only record; COL says endemic to Madagascar."
+  },
+  {
+    "speciesId": 21,
+    "country": "SC",
+    "action": "keep",
+    "reason": "iNaturalist research-grade record, La Digue, 2009; its remark says apparently introduced in 1994 to join a female there since 1967. Introduced counts as keep, though it may be a kept pair. The only record, and COL says endemic to Madagascar."
+  },
+  {
     "speciesId": 23,
     "country": "CN",
     "action": "remove",
@@ -118,6 +226,24 @@
     "country": "FR",
     "action": "remove",
     "reason": "Undated MNHN (Paris) specimen with no locality; its coordinates fall 0.1 km from Paris Zoological Park (Wikidata Q1969385). COL says Africa. Points to a zoo animal, but the record itself doesn't name one."
+  },
+  {
+    "speciesId": 24,
+    "country": "BN",
+    "action": "keep",
+    "reason": "Two iNaturalist research-grade records, Temburong and Brunei-Muara, 2026, one a roadkill, no captive mark; COL lists Southern Asia."
+  },
+  {
+    "speciesId": 24,
+    "country": "IN",
+    "action": "keep",
+    "reason": "Camera-trap dataset citation, locality Namdapha National Park: a field locality, no captive sign; COL lists Southern Asia."
+  },
+  {
+    "speciesId": 25,
+    "country": "BD",
+    "action": "keep",
+    "reason": "iNaturalist research-grade record, Khulna, 2023, and an INSDC voucher, Sundarbans, 2022: two datasets, no captive sign. COL lists Southern Asia."
   },
   {
     "speciesId": 25,
@@ -181,9 +307,27 @@
   },
   {
     "speciesId": 25,
+    "country": "VN",
+    "action": "keep",
+    "reason": "MHNG specimen, no year, \"Sud Vietnam\", Gia Lai Province, coordinates to 1,000 km, no captive sign. COL lists Southern Asia, but one vague specimen doesn't settle a free animal."
+  },
+  {
+    "speciesId": 25,
     "country": "ZA",
     "action": "remove",
     "reason": "Two iBOL records \"Mined from GenBank\": sequences, no locality, coordinates near the middle of South Africa. They document no animal there, and COL doesn't list Africa. Inferred from the record type, not stated by it."
+  },
+  {
+    "speciesId": 26,
+    "country": "MX",
+    "action": "keep",
+    "reason": "iNaturalist research-grade record, Chihuahua, 2001, no captive mark, and a UTEP Jimenez Cave specimen (a fossils collection, so old). Two datasets; COL lists North America."
+  },
+  {
+    "speciesId": 28,
+    "country": "BD",
+    "action": "remove",
+    "reason": "INSDC voucher MBSV 011, 2022, no locality, coordinates 0.35 km from Gazipur Safari Park (Wikidata Q16345864): likely a park animal, though the record doesn't say so. The only record; inferred from the coordinates."
   },
   {
     "speciesId": 28,
@@ -196,6 +340,12 @@
     "country": "BR",
     "action": "remove",
     "reason": "ICMBio SISBio record, Santa Catarina, 2012, no locality, no captive mark. Nothing says zoo or wild (no zoo found within 3 km on Wikidata), and COL's list is Southern Asia. Too thin to call, so it stays excluded."
+  },
+  {
+    "speciesId": 28,
+    "country": "BT",
+    "action": "keep",
+    "reason": "iNaturalist research-grade record \"along the highway\", 2015, and a Bhutan Biodiversity Portal observation, 2014: two datasets, no captive sign. COL lists Southern Asia."
   },
   {
     "speciesId": 28,
@@ -217,6 +367,12 @@
   },
   {
     "speciesId": 28,
+    "country": "LA",
+    "action": "keep",
+    "reason": "Two camera-trap records, 2020, Nakai-Nam Theun National Protected Area: a field locality, no captive sign. COL lists Southern Asia."
+  },
+  {
+    "speciesId": 28,
     "country": "NL",
     "action": "remove",
     "reason": "Natuurmuseum Brabant specimen, 1906, locality \"Amsterdam\", 10 km uncertainty. A city locality with no wild sign, and COL's list is Southern Asia: points to a kept animal, but the record doesn't say so."
@@ -226,6 +382,12 @@
     "country": "US",
     "action": "remove",
     "reason": "Of 4,468 live records, 4,433 are marked captive and 4,441 are MSB specimens from New Mexico; all 20 we read are from Albuquerque BioPark Zoo. The other records weren't read one by one. Live count moved from 4,461, so this can't be high. COL's list is Southern Asia."
+  },
+  {
+    "speciesId": 28,
+    "country": "VN",
+    "action": "keep",
+    "reason": "iNaturalist research-grade tracks, Đồng Nai, 2023, and an MSU specimen, 1958, field locality, establishmentMeans native: two datasets, no captive sign. COL lists Southern Asia."
   },
   {
     "speciesId": 29,
@@ -246,6 +408,12 @@
     "reason": "Of 23 records, 17 are marked captive, and 19 of the 20 we read name a zoo (Albuquerque, Seattle, San Francisco, Chicago, Santa Barbara). YPM's \"Remlik\", Virginia names none, and 3 weren't returned. COL's list is Southern Asia. Those are inferred, not stated."
   },
   {
+    "speciesId": 36,
+    "country": "VE",
+    "action": "keep",
+    "reason": "USNM specimen, 1967, field locality on the Río Manapiare east of Puerto Ayacucho, no captive sign; COL lists South America."
+  },
+  {
     "speciesId": 39,
     "country": "FR",
     "action": "remove",
@@ -264,10 +432,58 @@
     "reason": "Two iBOL records \"Mined from GenBank\": sequences, no locality, no date, coordinates near the middle of the USA. They document no animal there, and COL says Africa. Inferred from the record type, not stated by it."
   },
   {
+    "speciesId": 39,
+    "country": "ZM",
+    "action": "remove",
+    "reason": "Both MSB specimens, 1966–67, say \"specific locality unknown\"; one is \"from Rio Grande Zoo, Albuquerque\", the other \"shipped to U.S. in 1964\". Their remarks show kept animals, and neither documents one in Zambia's wild. No other counted record."
+  },
+  {
     "speciesId": 40,
     "country": "US",
     "action": "remove",
     "reason": "All 81 records are MSB specimens in New Mexico, and all 81 are marked degreeOfEstablishment \"captive\"; each of the 20 we read says Albuquerque BioPark Zoo. The records themselves say captive. Wikidata has this species endemic to Sumatra."
+  },
+  {
+    "speciesId": 41,
+    "country": "CD",
+    "action": "keep",
+    "reason": "Two AMNH specimens, 1911 and 1933, Haut Zaire and \"10 mi W of Loanger\", both establishmentMeans native, no captive sign; COL lists Africa."
+  },
+  {
+    "speciesId": 41,
+    "country": "CM",
+    "action": "keep",
+    "reason": "Two iNaturalist research-grade records, Est, 2014, with field remarks on seedlings in forest elephant dung, no captive mark; COL lists Africa."
+  },
+  {
+    "speciesId": 41,
+    "country": "GN",
+    "action": "keep",
+    "reason": "iNaturalist research-grade record, 2023, remark on tracks and fresh dung in forest, and an MHNG specimen from Damandougou: two datasets, no captive sign. COL lists Africa."
+  },
+  {
+    "speciesId": 41,
+    "country": "GQ",
+    "action": "keep",
+    "reason": "iNaturalist research-grade record, Centro Sur, 2025, no captive mark; COL lists Africa. One record, but community-verified."
+  },
+  {
+    "speciesId": 41,
+    "country": "KE",
+    "action": "keep",
+    "reason": "NABU|naturgucker in Shimba Hills and a Kenya Virtual Museum record at Mount Kenya: free animals, but nothing on them separates forest from savanna elephant, and the two get confused. COL says only Africa. Conflicting on identity, so it stays."
+  },
+  {
+    "speciesId": 41,
+    "country": "RW",
+    "action": "keep",
+    "reason": "iNaturalist research-grade record, Amajyaruguru, 2021, no captive mark; COL lists Africa. Coordinates only to 31 km, and forest and savanna elephant get confused, so one record doesn't settle it."
+  },
+  {
+    "speciesId": 41,
+    "country": "ZA",
+    "action": "keep",
+    "reason": "NABU|naturgucker record, 2019, grid locality in the Kruger area: a free animal, but nothing on it separates forest from savanna elephant, and the two get confused. COL says only Africa. Thin on identity, so it stays."
   },
   {
     "speciesId": 43,
@@ -312,10 +528,64 @@
     "reason": "Three Angelo State specimens: two at San Antonio Zoo, one (2014) only \"Kerr County, Texas\", 37 km uncertainty, no captive mark. A county alone can't tell a free animal from a kept one, and COL says Africa. Too thin to call, so it stays."
   },
   {
+    "speciesId": 51,
+    "country": "HN",
+    "action": "keep",
+    "reason": "MVZ specimen, probably 1907–50, Buena Vista, Gulf of Fonseca: a field locality, no captive sign; COL lists Middle America."
+  },
+  {
+    "speciesId": 51,
+    "country": "SR",
+    "action": "keep",
+    "reason": "Conservation International RAP survey record, 2005, Lely Plateau: a field survey, no captive sign; COL lists South America."
+  },
+  {
+    "speciesId": 51,
+    "country": "UY",
+    "action": "keep",
+    "reason": "MCNB specimen with no locality or year, coordinates to 417 km, so it names only the country. COL lists South America, but a kept animal can't be told from a free one here. Too thin to call, so it stays."
+  },
+  {
     "speciesId": 52,
     "country": "DE",
     "action": "remove",
     "reason": "Locality \"Zoo Köln\": a zoo, NABU|naturgucker record of a captive animal. No other counted record here."
+  },
+  {
+    "speciesId": 52,
+    "country": "GT",
+    "action": "keep",
+    "reason": "FMNH specimen, 1905, Los Amates, Izabal: a field locality, no captive sign; COL lists Middle America."
+  },
+  {
+    "speciesId": 52,
+    "country": "MX",
+    "action": "remove",
+    "reason": "Chiapas material citation whose own remark says, per Ramírez-Pulido & González-Ruíz (2012), the identification is wrong, since the species lives in Central and South America. Misidentified by its own record; no other counted record."
+  },
+  {
+    "speciesId": 52,
+    "country": "SR",
+    "action": "keep",
+    "reason": "Conservation International RAP survey record, 2005, Lely Plateau: a field survey, no captive sign; COL lists South America."
+  },
+  {
+    "speciesId": 54,
+    "country": "HN",
+    "action": "keep",
+    "reason": "MVZ specimen, field locality about 45 mi up the Río Plátano, but its remark says \"from San Diego Zoo\": a zoo animal with a wild origin. COL lists Middle America. Conflicting signals in one record, so not high."
+  },
+  {
+    "speciesId": 54,
+    "country": "MX",
+    "action": "keep",
+    "reason": "KU specimen, no year, stateProvince Yucatan, locality \"NO LOCALITY\": it names only the state. COL lists Middle America, but a kept animal can't be told from a free one here. Too thin to call, so it stays."
+  },
+  {
+    "speciesId": 54,
+    "country": "SR",
+    "action": "remove",
+    "reason": "OMNH specimen, 1971, country Suriname, but its own fields say stateProvince French Guiana, locality Maripasoula, Lawa River: misplaced by its own record. No other counted record. Removing doesn't add French Guiana to the list."
   },
   {
     "speciesId": 56,
@@ -352,6 +622,24 @@
     "country": "FR",
     "action": "remove",
     "reason": "Luxembourg museum specimen, 1899, locality \"Unknown\", so the coordinates in Meuse rest on no stated place. COL says Africa. Likely misplaced, though the record doesn't say so itself."
+  },
+  {
+    "speciesId": 56,
+    "country": "GH",
+    "action": "keep",
+    "reason": "Two Conservation International RAP survey records, 2003, Boi-Tano/Tano Nimiri and Draw River: field surveys, no captive sign; COL lists Africa."
+  },
+  {
+    "speciesId": 56,
+    "country": "GW",
+    "action": "keep",
+    "reason": "iNaturalist research-grade record, Tombali, 2017, no captive mark; COL lists Africa."
+  },
+  {
+    "speciesId": 56,
+    "country": "KE",
+    "action": "remove",
+    "reason": "NABU|naturgucker at Ol Pejeta Conservancy, 2017, and Kenya Virtual Museum at Sweetwaters, 2015. Ol Pejeta holds the Sweetwaters chimpanzee sanctuary for rescued animals (common account; not in the sources read), and neither record marks a wild one. Inferred from locality."
   },
   {
     "speciesId": 56,

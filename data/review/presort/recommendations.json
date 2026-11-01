@@ -1400,5 +1400,553 @@
       "gbif:dataset:aad97542-a068-449d-adb3-a8e937f64cb4",
       "col:CQ4M"
     ]
+  },
+  {
+    "key": "2:AR",
+    "recommendation": "keep",
+    "confidence": "medium",
+    "reason": "iNaturalist research-grade record in Buenos Aires, 2021, 555 m uncertainty, no captive mark, 2.5 km from Buenos Aires Eco-Park (Wikidata Q220023): likely a released or escaped animal outside captivity. The only record; COL's list names only the USA, so no second source agrees.",
+    "cite": [
+      "gbif:occurrence:3061733591",
+      "gbif:dataset:50c9509d-22c7-4a22-a47d-8c48425ef4a7",
+      "col:F6QR"
+    ]
+  },
+  {
+    "key": "5:BN",
+    "recommendation": "keep",
+    "confidence": "medium",
+    "reason": "iNaturalist research-grade record, Temburong, 2015, 122 m uncertainty, no captive mark. A community-verified wild observation, but the only record here, and COL gives no distribution, so no second source agrees.",
+    "cite": [
+      "gbif:occurrence:4950239195",
+      "gbif:dataset:50c9509d-22c7-4a22-a47d-8c48425ef4a7"
+    ]
+  },
+  {
+    "key": "6:US",
+    "recommendation": "remove",
+    "confidence": "high",
+    "reason": "UWBM specimen, 2015, locality \"Seattle, Woodland Park Zoo\", marked degreeOfEstablishment \"captive\". The record itself says captive; no other counted record here. COL says Middle and South America.",
+    "cite": [
+      "gbif:occurrence:5195971375",
+      "gbif:dataset:78122332-6315-41bd-914b-e9c1342d9093",
+      "col:65JNR"
+    ]
+  },
+  {
+    "key": "7:AO",
+    "recommendation": "keep",
+    "confidence": "medium",
+    "reason": "Material citation from a herpetological checklist of Mayombe, locality Cabinda Province, no captive sign. One dataset, and the species has no COL id, so no second source agrees.",
+    "cite": [
+      "gbif:occurrence:5180117484",
+      "gbif:dataset:6fe8b005-3a3d-481d-b90e-dcc44f4902b0"
+    ]
+  },
+  {
+    "key": "7:CD",
+    "recommendation": "keep",
+    "confidence": "medium",
+    "reason": "RMCA specimen, 1920, field locality Butu-Polo, no captive sign. One dataset, and the species has no COL id, so no second source agrees.",
+    "cite": [
+      "gbif:occurrence:70134226",
+      "gbif:dataset:85e8c69c-f762-11e1-a439-00145eb45e9a"
+    ]
+  },
+  {
+    "key": "7:CF",
+    "recommendation": "keep",
+    "confidence": "low",
+    "reason": "SMNS specimen with no locality or valid date, country derived from whole-degree coordinates (5, 16), flagged COUNTRY_INVALID. It names only the country, and the species has no COL id. Too thin to call, so it stays.",
+    "cite": [
+      "gbif:occurrence:1830955192",
+      "gbif:dataset:1c5c3e48-7fc0-4d4f-96e6-c4df2c747f34"
+    ]
+  },
+  {
+    "key": "7:CG",
+    "recommendation": "keep",
+    "confidence": "medium",
+    "reason": "iNaturalist research-grade record, Niari, 2012, 212 m uncertainty, no captive mark. A community-verified wild observation, but the only record here, and the species has no COL id, so no second source agrees.",
+    "cite": [
+      "gbif:occurrence:2814428469",
+      "gbif:dataset:50c9509d-22c7-4a22-a47d-8c48425ef4a7"
+    ]
+  },
+  {
+    "key": "10:TT",
+    "recommendation": "keep",
+    "confidence": "medium",
+    "reason": "Two specimens at Trinidad's national museum, 1953 and 1961, with field localities: Bush Bush Forest in Nariva Swamp, and Bonasse Village. No captive sign. One dataset, and COL gives no distribution, so no second source agrees.",
+    "cite": [
+      "gbif:occurrence:4089453861",
+      "gbif:occurrence:4089453865",
+      "gbif:dataset:bb82a8fc-fc97-4d2a-84e7-fc4595a1ccb6"
+    ]
+  },
+  {
+    "key": "11:GQ",
+    "recommendation": "keep",
+    "confidence": "medium",
+    "reason": "SMNS specimen, no locality or date, coordinates to the minute in Río Muni, no captive sign. COL lists Africa, but without a field locality the record alone can't show a free animal.",
+    "cite": [
+      "gbif:occurrence:1830943043",
+      "gbif:dataset:1c5c3e48-7fc0-4d4f-96e6-c4df2c747f34",
+      "col:XV4Z"
+    ]
+  },
+  {
+    "key": "14:NA",
+    "recommendation": "keep",
+    "confidence": "medium",
+    "reason": "National Museum of Namibia specimen, 1985, Boegoeberg, Diamond Area 1: a field locality. SAIAB's \"McDougals Bay\" doesn't count: that bay is in South Africa at -29.28 (Wikidata Q31953520), the record says -26.27, so it looks misplaced. COL gives no distribution, so no second source.",
+    "cite": [
+      "gbif:occurrence:1671751837",
+      "gbif:occurrence:4531391239",
+      "gbif:dataset:1aaec653-c71c-4695-9b6e-0e26214dd817",
+      "gbif:dataset:5ca354eb-7675-4422-81e0-784bd8ae29d5"
+    ]
+  },
+  {
+    "key": "20:EG",
+    "recommendation": "keep",
+    "confidence": "medium",
+    "reason": "iNaturalist research-grade record, 2009; its remark says a very large tortoise roamed freely by a Bedouin village 30 km from Hurghada, no zoo there. Free, though maybe a village animal. The only record, and COL's list doesn't name Egypt.",
+    "cite": [
+      "gbif:occurrence:5199020537",
+      "gbif:dataset:50c9509d-22c7-4a22-a47d-8c48425ef4a7",
+      "col:S9KW"
+    ]
+  },
+  {
+    "key": "20:ML",
+    "recommendation": "keep",
+    "confidence": "high",
+    "reason": "NABU|naturgucker record, 2009, Falaise de Bandiagara: a field locality, no captive mark, and COL's distribution names Mali.",
+    "cite": [
+      "gbif:occurrence:5014407138",
+      "gbif:dataset:6ac3f774-d9fb-4796-b3e9-92bf6c81c084",
+      "col:S9KW"
+    ]
+  },
+  {
+    "key": "20:MR",
+    "recommendation": "keep",
+    "confidence": "high",
+    "reason": "CIBIO field observation, 2012, Diawling National Park headquarters, remark \"LiveNotcaptured\", and COL's distribution names S Mauritania. The other record, MVZ, is captive-bred from a pair taken at Rosso, so the observation carries this.",
+    "cite": [
+      "gbif:occurrence:2421795591",
+      "gbif:occurrence:5147497123",
+      "gbif:dataset:09c4287e-e6d5-4552-a07f-bff8a00833d8",
+      "gbif:dataset:4d028294-7e88-4bed-8519-176af6a4b78f",
+      "col:S9KW"
+    ]
+  },
+  {
+    "key": "20:NG",
+    "recommendation": "keep",
+    "confidence": "medium",
+    "reason": "iNaturalist research-grade record, Lagos, 2009, coordinates to 31 km, no captive mark: likely a kept or released animal, but nothing says so. The only record, and COL's list doesn't name Nigeria, so no second source agrees.",
+    "cite": [
+      "gbif:occurrence:5063343974",
+      "gbif:dataset:50c9509d-22c7-4a22-a47d-8c48425ef4a7",
+      "col:S9KW"
+    ]
+  },
+  {
+    "key": "20:SD",
+    "recommendation": "keep",
+    "confidence": "high",
+    "reason": "UMMZ specimen, 1907, \"Eastern Sudan\", no captive sign, and COL's distribution names Sudan. The other UMMZ record, near Khartoum, says \"born spring 61\" and \"tank\", so it's a kept animal; the 1907 one carries this.",
+    "cite": [
+      "gbif:occurrence:1987033334",
+      "gbif:occurrence:1987167601",
+      "gbif:dataset:8e479b8f-ac16-4bed-a11a-bc7e27c31663",
+      "col:S9KW"
+    ]
+  },
+  {
+    "key": "20:SN",
+    "recommendation": "keep",
+    "confidence": "high",
+    "reason": "Two iNaturalist research-grade records, Dakar 2009 and Saint-Louis 2008, no captive mark, and COL's distribution names Senegal.",
+    "cite": [
+      "gbif:occurrence:1571143542",
+      "gbif:occurrence:1571175194",
+      "gbif:dataset:50c9509d-22c7-4a22-a47d-8c48425ef4a7",
+      "col:S9KW"
+    ]
+  },
+  {
+    "key": "21:MU",
+    "recommendation": "remove",
+    "confidence": "medium",
+    "reason": "NABU|naturgucker record, 2010, locality \"La Vanille Krokodilpark … und Umgebung\": a crocodile park that keeps animals, \"and surroundings\" leaving slight room. The only record; COL says endemic to Madagascar.",
+    "cite": [
+      "gbif:occurrence:5024986951",
+      "gbif:dataset:6ac3f774-d9fb-4796-b3e9-92bf6c81c084",
+      "col:J439"
+    ]
+  },
+  {
+    "key": "21:SC",
+    "recommendation": "keep",
+    "confidence": "medium",
+    "reason": "iNaturalist research-grade record, La Digue, 2009; its remark says apparently introduced in 1994 to join a female there since 1967. Introduced counts as keep, though it may be a kept pair. The only record, and COL says endemic to Madagascar.",
+    "cite": [
+      "gbif:occurrence:3079658854",
+      "gbif:dataset:50c9509d-22c7-4a22-a47d-8c48425ef4a7",
+      "col:J439"
+    ]
+  },
+  {
+    "key": "24:BN",
+    "recommendation": "keep",
+    "confidence": "high",
+    "reason": "Two iNaturalist research-grade records, Temburong and Brunei-Muara, 2026, one a roadkill, no captive mark; COL lists Southern Asia.",
+    "cite": [
+      "gbif:occurrence:6133486759",
+      "gbif:occurrence:6333897467",
+      "gbif:dataset:50c9509d-22c7-4a22-a47d-8c48425ef4a7",
+      "col:3XVJR"
+    ]
+  },
+  {
+    "key": "24:IN",
+    "recommendation": "keep",
+    "confidence": "high",
+    "reason": "Camera-trap dataset citation, locality Namdapha National Park: a field locality, no captive sign; COL lists Southern Asia.",
+    "cite": [
+      "gbif:occurrence:4037396605",
+      "gbif:dataset:84b5b072-2832-4c72-ad17-eb90bcb0c5ac",
+      "col:3XVJR"
+    ]
+  },
+  {
+    "key": "25:BD",
+    "recommendation": "keep",
+    "confidence": "high",
+    "reason": "iNaturalist research-grade record, Khulna, 2023, and an INSDC voucher, Sundarbans, 2022: two datasets, no captive sign. COL lists Southern Asia.",
+    "cite": [
+      "gbif:occurrence:4919532830",
+      "gbif:occurrence:6237451549",
+      "gbif:dataset:50c9509d-22c7-4a22-a47d-8c48425ef4a7",
+      "gbif:dataset:d8cd16ba-bb74-4420-821e-083f2bac17c2",
+      "col:4CGXS"
+    ]
+  },
+  {
+    "key": "25:VN",
+    "recommendation": "keep",
+    "confidence": "medium",
+    "reason": "MHNG specimen, no year, \"Sud Vietnam\", Gia Lai Province, coordinates to 1,000 km, no captive sign. COL lists Southern Asia, but one vague specimen doesn't settle a free animal.",
+    "cite": [
+      "gbif:occurrence:1142104486",
+      "gbif:dataset:5a659248-1f70-11e3-b2c5-00145eb45e9a",
+      "col:4CGXS"
+    ]
+  },
+  {
+    "key": "26:MX",
+    "recommendation": "keep",
+    "confidence": "high",
+    "reason": "iNaturalist research-grade record, Chihuahua, 2001, no captive mark, and a UTEP Jimenez Cave specimen (a fossils collection, so old). Two datasets; COL lists North America.",
+    "cite": [
+      "gbif:occurrence:4974316690",
+      "gbif:occurrence:1638527842",
+      "gbif:dataset:50c9509d-22c7-4a22-a47d-8c48425ef4a7",
+      "gbif:dataset:dab57200-c600-4f26-b657-cf217443034e",
+      "col:44QY2"
+    ]
+  },
+  {
+    "key": "28:BD",
+    "recommendation": "remove",
+    "confidence": "medium",
+    "reason": "INSDC voucher MBSV 011, 2022, no locality, coordinates 0.35 km from Gazipur Safari Park (Wikidata Q16345864): likely a park animal, though the record doesn't say so. The only record; inferred from the coordinates.",
+    "cite": [
+      "gbif:occurrence:4152703269",
+      "gbif:dataset:d8cd16ba-bb74-4420-821e-083f2bac17c2",
+      "col:398D9"
+    ]
+  },
+  {
+    "key": "28:BT",
+    "recommendation": "keep",
+    "confidence": "high",
+    "reason": "iNaturalist research-grade record \"along the highway\", 2015, and a Bhutan Biodiversity Portal observation, 2014: two datasets, no captive sign. COL lists Southern Asia.",
+    "cite": [
+      "gbif:occurrence:1831214648",
+      "gbif:occurrence:3334780216",
+      "gbif:dataset:50c9509d-22c7-4a22-a47d-8c48425ef4a7",
+      "gbif:dataset:926f3dd4-89d9-4cbd-8ed7-32fb6fcfa861",
+      "col:398D9"
+    ]
+  },
+  {
+    "key": "28:LA",
+    "recommendation": "keep",
+    "confidence": "high",
+    "reason": "Two camera-trap records, 2020, Nakai-Nam Theun National Protected Area: a field locality, no captive sign. COL lists Southern Asia.",
+    "cite": [
+      "gbif:occurrence:3806677665",
+      "gbif:occurrence:3990782720",
+      "gbif:dataset:84b5b072-2832-4c72-ad17-eb90bcb0c5ac",
+      "col:398D9"
+    ]
+  },
+  {
+    "key": "28:VN",
+    "recommendation": "keep",
+    "confidence": "high",
+    "reason": "iNaturalist research-grade tracks, Đồng Nai, 2023, and an MSU specimen, 1958, field locality, establishmentMeans native: two datasets, no captive sign. COL lists Southern Asia.",
+    "cite": [
+      "gbif:occurrence:6163366213",
+      "gbif:occurrence:919422710",
+      "gbif:dataset:22a66350-7947-4a49-84a3-39c7c1b0881f",
+      "gbif:dataset:50c9509d-22c7-4a22-a47d-8c48425ef4a7",
+      "col:398D9"
+    ]
+  },
+  {
+    "key": "36:VE",
+    "recommendation": "keep",
+    "confidence": "high",
+    "reason": "USNM specimen, 1967, field locality on the Río Manapiare east of Puerto Ayacucho, no captive sign; COL lists South America.",
+    "cite": [
+      "gbif:occurrence:1321297131",
+      "gbif:dataset:821cc27a-e3bb-4bc5-ac34-89ada245069d",
+      "col:4MF3Z"
+    ]
+  },
+  {
+    "key": "39:ZM",
+    "recommendation": "remove",
+    "confidence": "high",
+    "reason": "Both MSB specimens, 1966–67, say \"specific locality unknown\"; one is \"from Rio Grande Zoo, Albuquerque\", the other \"shipped to U.S. in 1964\". Their remarks show kept animals, and neither documents one in Zambia's wild. No other counted record.",
+    "cite": [
+      "gbif:occurrence:5099407177",
+      "gbif:occurrence:5099408911",
+      "gbif:dataset:b15d4952-7d20-46f1-8a3e-556a512b04c5",
+      "col:7TKN5"
+    ]
+  },
+  {
+    "key": "41:CD",
+    "recommendation": "keep",
+    "confidence": "high",
+    "reason": "Two AMNH specimens, 1911 and 1933, Haut Zaire and \"10 mi W of Loanger\", both establishmentMeans native, no captive sign; COL lists Africa.",
+    "cite": [
+      "gbif:occurrence:859437526",
+      "gbif:occurrence:859428032",
+      "gbif:dataset:96ca66b4-f762-11e1-a439-00145eb45e9a",
+      "col:3W9KX"
+    ]
+  },
+  {
+    "key": "41:CM",
+    "recommendation": "keep",
+    "confidence": "high",
+    "reason": "Two iNaturalist research-grade records, Est, 2014, with field remarks on seedlings in forest elephant dung, no captive mark; COL lists Africa.",
+    "cite": [
+      "gbif:occurrence:911502680",
+      "gbif:occurrence:1098893894",
+      "gbif:dataset:50c9509d-22c7-4a22-a47d-8c48425ef4a7",
+      "col:3W9KX"
+    ]
+  },
+  {
+    "key": "41:GN",
+    "recommendation": "keep",
+    "confidence": "high",
+    "reason": "iNaturalist research-grade record, 2023, remark on tracks and fresh dung in forest, and an MHNG specimen from Damandougou: two datasets, no captive sign. COL lists Africa.",
+    "cite": [
+      "gbif:occurrence:4420982888",
+      "gbif:occurrence:865728398",
+      "gbif:dataset:50c9509d-22c7-4a22-a47d-8c48425ef4a7",
+      "gbif:dataset:5a659248-1f70-11e3-b2c5-00145eb45e9a",
+      "col:3W9KX"
+    ]
+  },
+  {
+    "key": "41:GQ",
+    "recommendation": "keep",
+    "confidence": "high",
+    "reason": "iNaturalist research-grade record, Centro Sur, 2025, no captive mark; COL lists Africa. One record, but community-verified.",
+    "cite": [
+      "gbif:occurrence:5889945301",
+      "gbif:dataset:50c9509d-22c7-4a22-a47d-8c48425ef4a7",
+      "col:3W9KX"
+    ]
+  },
+  {
+    "key": "41:KE",
+    "recommendation": "keep",
+    "confidence": "low",
+    "reason": "NABU|naturgucker in Shimba Hills and a Kenya Virtual Museum record at Mount Kenya: free animals, but nothing on them separates forest from savanna elephant, and the two get confused. COL says only Africa. Conflicting on identity, so it stays.",
+    "cite": [
+      "gbif:occurrence:5027002404",
+      "gbif:occurrence:2005653680",
+      "gbif:dataset:6ac3f774-d9fb-4796-b3e9-92bf6c81c084",
+      "gbif:dataset:999d8fed-d06d-48d8-87ee-cc36e6c8456c",
+      "col:3W9KX"
+    ]
+  },
+  {
+    "key": "41:RW",
+    "recommendation": "keep",
+    "confidence": "medium",
+    "reason": "iNaturalist research-grade record, Amajyaruguru, 2021, no captive mark; COL lists Africa. Coordinates only to 31 km, and forest and savanna elephant get confused, so one record doesn't settle it.",
+    "cite": [
+      "gbif:occurrence:5167247409",
+      "gbif:dataset:50c9509d-22c7-4a22-a47d-8c48425ef4a7",
+      "col:3W9KX"
+    ]
+  },
+  {
+    "key": "41:ZA",
+    "recommendation": "keep",
+    "confidence": "low",
+    "reason": "NABU|naturgucker record, 2019, grid locality in the Kruger area: a free animal, but nothing on it separates forest from savanna elephant, and the two get confused. COL says only Africa. Thin on identity, so it stays.",
+    "cite": [
+      "gbif:occurrence:5014450288",
+      "gbif:dataset:6ac3f774-d9fb-4796-b3e9-92bf6c81c084",
+      "col:3W9KX"
+    ]
+  },
+  {
+    "key": "51:HN",
+    "recommendation": "keep",
+    "confidence": "high",
+    "reason": "MVZ specimen, probably 1907–50, Buena Vista, Gulf of Fonseca: a field locality, no captive sign; COL lists Middle America.",
+    "cite": [
+      "gbif:occurrence:5147325792",
+      "gbif:dataset:0daed095-478a-4af6-abf5-18acb790fbb2",
+      "col:4CGXQ"
+    ]
+  },
+  {
+    "key": "51:SR",
+    "recommendation": "keep",
+    "confidence": "high",
+    "reason": "Conservation International RAP survey record, 2005, Lely Plateau: a field survey, no captive sign; COL lists South America.",
+    "cite": [
+      "gbif:occurrence:197163295",
+      "gbif:dataset:4d749d70-e2e1-11dd-8102-b8a03c50a862",
+      "col:4CGXQ"
+    ]
+  },
+  {
+    "key": "51:UY",
+    "recommendation": "keep",
+    "confidence": "low",
+    "reason": "MCNB specimen with no locality or year, coordinates to 417 km, so it names only the country. COL lists South America, but a kept animal can't be told from a free one here. Too thin to call, so it stays.",
+    "cite": [
+      "gbif:occurrence:858402097",
+      "gbif:dataset:71d58564-f762-11e1-a439-00145eb45e9a",
+      "col:4CGXQ"
+    ]
+  },
+  {
+    "key": "52:GT",
+    "recommendation": "keep",
+    "confidence": "high",
+    "reason": "FMNH specimen, 1905, Los Amates, Izabal: a field locality, no captive sign; COL lists Middle America.",
+    "cite": [
+      "gbif:occurrence:665784969",
+      "gbif:dataset:41fc5c40-5e81-496f-9733-6b5681b3b7a5",
+      "col:45B2F"
+    ]
+  },
+  {
+    "key": "52:MX",
+    "recommendation": "remove",
+    "confidence": "high",
+    "reason": "Chiapas material citation whose own remark says, per Ramírez-Pulido & González-Ruíz (2012), the identification is wrong, since the species lives in Central and South America. Misidentified by its own record; no other counted record.",
+    "cite": [
+      "gbif:occurrence:1894051669",
+      "gbif:dataset:a5be4674-3ee0-4aab-9ce6-c602a7d71d18",
+      "col:45B2F"
+    ]
+  },
+  {
+    "key": "52:SR",
+    "recommendation": "keep",
+    "confidence": "high",
+    "reason": "Conservation International RAP survey record, 2005, Lely Plateau: a field survey, no captive sign; COL lists South America.",
+    "cite": [
+      "gbif:occurrence:197156671",
+      "gbif:dataset:4d749d70-e2e1-11dd-8102-b8a03c50a862",
+      "col:45B2F"
+    ]
+  },
+  {
+    "key": "54:HN",
+    "recommendation": "keep",
+    "confidence": "medium",
+    "reason": "MVZ specimen, field locality about 45 mi up the Río Plátano, but its remark says \"from San Diego Zoo\": a zoo animal with a wild origin. COL lists Middle America. Conflicting signals in one record, so not high.",
+    "cite": [
+      "gbif:occurrence:5146966343",
+      "gbif:dataset:0daed095-478a-4af6-abf5-18acb790fbb2",
+      "col:N5F8"
+    ]
+  },
+  {
+    "key": "54:MX",
+    "recommendation": "keep",
+    "confidence": "low",
+    "reason": "KU specimen, no year, stateProvince Yucatan, locality \"NO LOCALITY\": it names only the state. COL lists Middle America, but a kept animal can't be told from a free one here. Too thin to call, so it stays.",
+    "cite": [
+      "gbif:occurrence:686338072",
+      "gbif:dataset:1d04e739-98a9-4e16-9970-8f8f3bf9e9e3",
+      "col:N5F8"
+    ]
+  },
+  {
+    "key": "54:SR",
+    "recommendation": "remove",
+    "confidence": "high",
+    "reason": "OMNH specimen, 1971, country Suriname, but its own fields say stateProvince French Guiana, locality Maripasoula, Lawa River: misplaced by its own record. No other counted record. Removing doesn't add French Guiana to the list.",
+    "cite": [
+      "gbif:occurrence:202059584",
+      "gbif:dataset:84aefc7e-f762-11e1-a439-00145eb45e9a",
+      "col:N5F8"
+    ]
+  },
+  {
+    "key": "56:GH",
+    "recommendation": "keep",
+    "confidence": "high",
+    "reason": "Two Conservation International RAP survey records, 2003, Boi-Tano/Tano Nimiri and Draw River: field surveys, no captive sign; COL lists Africa.",
+    "cite": [
+      "gbif:occurrence:197163378",
+      "gbif:occurrence:197163379",
+      "gbif:dataset:4d749d70-e2e1-11dd-8102-b8a03c50a862",
+      "col:4C92G"
+    ]
+  },
+  {
+    "key": "56:GW",
+    "recommendation": "keep",
+    "confidence": "high",
+    "reason": "iNaturalist research-grade record, Tombali, 2017, no captive mark; COL lists Africa.",
+    "cite": [
+      "gbif:occurrence:3325835136",
+      "gbif:dataset:50c9509d-22c7-4a22-a47d-8c48425ef4a7",
+      "col:4C92G"
+    ]
+  },
+  {
+    "key": "56:KE",
+    "recommendation": "remove",
+    "confidence": "medium",
+    "reason": "NABU|naturgucker at Ol Pejeta Conservancy, 2017, and Kenya Virtual Museum at Sweetwaters, 2015. Ol Pejeta holds the Sweetwaters chimpanzee sanctuary for rescued animals (common account; not in the sources read), and neither record marks a wild one. Inferred from locality.",
+    "cite": [
+      "gbif:occurrence:5013632864",
+      "gbif:occurrence:2005653544",
+      "gbif:dataset:6ac3f774-d9fb-4796-b3e9-92bf6c81c084",
+      "gbif:dataset:999d8fed-d06d-48d8-87ee-cc36e6c8456c",
+      "col:4C92G"
+    ]
   }
 ]

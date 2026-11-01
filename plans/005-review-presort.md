@@ -29,25 +29,25 @@ Terms: **kept** or **excluded** is what derive publishes today with no override.
 
 | Recommendation | high | medium | low | total | changes /v1 |
 |---|---:|---:|---:|---:|---:|
-| keep | 3 | 5 | 7 | 15 | 2 |
-| remove | 26 | 45 | 5 | 76 | 40 |
+| keep | 25 | 19 | 12 | 56 | 2 |
+| remove | 30 | 48 | 5 | 83 | 47 |
 | fix | 14 | 4 | 0 | 18 | n/a |
 | no action | 6 | 1 | 3 | 10 | n/a |
-| pending |  |  |  | 95 | |
-| **all entries** | 49 | 55 | 15 | 214 | 42 |
+| pending |  |  |  | 47 | |
+| **all entries** | 75 | 72 | 20 | 214 | 49 |
 
 ## Accept in one go
 
 Two sentences you can reply with:
 
-- **"accept the high-confidence confirmations only"**: `pnpm review:accept --confidence high --confirm-only` (21 entries). Published countries don't change, and the next release isn't held up.
-- **"accept the high-confidence set"**: `pnpm review:accept --confidence high` (29 entries: 21 confirming, 8 output-changing). The output-changing ones hold the next release until the follow-on below is done.
+- **"accept the high-confidence confirmations only"**: `pnpm review:accept --confidence high --confirm-only` (43 entries). Published countries don't change, and the next release isn't held up.
+- **"accept the high-confidence set"**: `pnpm review:accept --confidence high` (55 entries: 43 confirming, 12 output-changing). The output-changing ones hold the next release until the follow-on below is done.
 
 Any other selection works too: `pnpm review:accept --ids 25:DE,25:RU`, or `--confidence medium` for medium and higher. The command copies the chosen proposals into `data/review/country-overrides.json` and runs `pnpm derive`. Non-country entries can't be accepted this way; their fixes are separate work.
 
-Confirming, high (21): `15:DE,17:ID,17:US,20:NL,20:SG,21:DE,25:DK,25:MW,25:RU,25:SE,29:DE,50:DE,52:DE,56:BE,56:NU,56:RU,58:IR,60:US,66:DE,68:US,71:DE`
+Confirming, high (43): `15:DE,17:ID,17:US,20:ML,20:MR,20:NL,20:SD,20:SG,20:SN,21:DE,24:BN,24:IN,25:BD,25:DK,25:MW,25:RU,25:SE,26:MX,28:BT,28:LA,28:VN,29:DE,36:VE,41:CD,41:CM,41:GN,41:GQ,50:DE,51:HN,51:SR,52:DE,52:GT,52:SR,56:BE,56:GH,56:GW,56:NU,56:RU,58:IR,60:US,66:DE,68:US,71:DE`
 
-Output-changing, high (8): `28:BE,29:US,40:US,43:US,48:US,56:DE,56:SE,69:US`
+Output-changing, high (12): `28:BE,29:US,39:ZM,40:US,43:US,48:US,52:MX,54:SR,56:DE,56:SE,69:US,6:US`
 
 Non-country fixes, high (20, not covered by accept): `12:ids.iucn:iucn-id,15:ids.iucn:iucn-id,17:ids.iucn:iucn-id,18:ids.iucn:iucn-id,19:ids.gbif:identity,19:ids.iucn:iucn-id,1:ids.gbif:synonym-info,1:ids.ncbi:not-found,20:ids.iucn:iucn-id,21:ids.iucn:iucn-id,22:ids.iucn:iucn-id,47:range.countriesWithOpenRecords:no-records,4:ids.iucn:iucn-id,55:ids.gbif:synonym-info,59:ids.col:identity,63:ids.gbif:synonym-info,70:ids.gbif:synonym-info,73:ids.col:identity,9:ids.col:identity,9:ids.gbif:identity`
 
@@ -106,7 +106,9 @@ Species that could lose every published country:
   - [iNaturalist Research-grade Observations](https://www.gbif.org/dataset/50c9509d-22c7-4a22-a47d-8c48425ef4a7) · iNaturalist.org · 1 record
 - **Records shown** (1 of 1):
   - [3061733591](https://www.gbif.org/occurrence/3061733591) · HUMAN_OBSERVATION · 2021-03 · -34.560129, -58.430534 ±555 m · Ciudad de Buenos Aires · iNaturalist
-- **Recommendation:** pending
+- **Recommendation:** keep · **medium** · confirming
+- **Why:** iNaturalist research-grade record in Buenos Aires, 2021, 555 m uncertainty, no captive mark, 2.5 km from Buenos Aires Eco-Park (Wikidata Q220023): likely a released or escaped animal outside captivity. The only record; COL's list names only the USA, so no second source agrees.
+- **Cites:** [gbif:occurrence:3061733591](https://www.gbif.org/occurrence/3061733591), [gbif:dataset:50c9509d-22c7-4a22-a47d-8c48425ef4a7](https://www.gbif.org/dataset/50c9509d-22c7-4a22-a47d-8c48425ef4a7), [col:F6QR](https://www.checklistbank.org/dataset/316595/taxon/F6QR)
 
 #### 2:PT · country-captive-suspect (blocking, excluded)
 
@@ -214,7 +216,9 @@ Species that could lose every published country:
   - [iNaturalist Research-grade Observations](https://www.gbif.org/dataset/50c9509d-22c7-4a22-a47d-8c48425ef4a7) · iNaturalist.org · 1 record
 - **Records shown** (1 of 1):
   - [4950239195](https://www.gbif.org/occurrence/4950239195) · HUMAN_OBSERVATION · 2015-02 · 4.546429, 115.156508 ±122 m · Temburong · iNaturalist
-- **Recommendation:** pending
+- **Recommendation:** keep · **medium** · confirming
+- **Why:** iNaturalist research-grade record, Temburong, 2015, 122 m uncertainty, no captive mark. A community-verified wild observation, but the only record here, and COL gives no distribution, so no second source agrees.
+- **Cites:** [gbif:occurrence:4950239195](https://www.gbif.org/occurrence/4950239195), [gbif:dataset:50c9509d-22c7-4a22-a47d-8c48425ef4a7](https://www.gbif.org/dataset/50c9509d-22c7-4a22-a47d-8c48425ef4a7)
 
 ### 6 · Agalychnis callidryas · Red-eyed Tree Frog
 
@@ -236,7 +240,9 @@ Species that could lose every published country:
   - [UWBM Herpetology Collection (Arctos)](https://www.gbif.org/dataset/78122332-6315-41bd-914b-e9c1342d9093) · University of Washington Burke Museum · 1 record
 - **Records shown** (1 of 1):
   - [5195971375](https://www.gbif.org/occurrence/5195971375) · PRESERVED_SPECIMEN · 2015-10 · 47.668428, -122.350877 ±357 m · Seattle, Woodland Park Zoo · Washington · UWBM · degree: captive
-- **Recommendation:** pending
+- **Recommendation:** remove · **high** · output-changing
+- **Why:** UWBM specimen, 2015, locality "Seattle, Woodland Park Zoo", marked degreeOfEstablishment "captive". The record itself says captive; no other counted record here. COL says Middle and South America.
+- **Cites:** [gbif:occurrence:5195971375](https://www.gbif.org/occurrence/5195971375), [gbif:dataset:78122332-6315-41bd-914b-e9c1342d9093](https://www.gbif.org/dataset/78122332-6315-41bd-914b-e9c1342d9093), [col:65JNR](https://www.checklistbank.org/dataset/316595/taxon/65JNR)
 
 ### 7 · Trichobatrachus robustus · Hairy Frog
 
@@ -258,7 +264,9 @@ Species that could lose every published country:
   - [Filling the gaps: herpetological checklist of Mayombe National Park and Cabinda Province (Angola) shed light on one of the most unexplored corners of tropical Central Africa](https://www.gbif.org/dataset/6fe8b005-3a3d-481d-b90e-dcc44f4902b0) · Plazi.org taxonomic treatments database · 1 record
 - **Records shown** (1 of 1):
   - [5180117484](https://www.gbif.org/occurrence/5180117484) · MATERIAL_CITATION · no date · -4.486, 12.878 · Cabinda Province · Cabinda · FKH
-- **Recommendation:** pending
+- **Recommendation:** keep · **medium** · confirming
+- **Why:** Material citation from a herpetological checklist of Mayombe, locality Cabinda Province, no captive sign. One dataset, and the species has no COL id, so no second source agrees.
+- **Cites:** [gbif:occurrence:5180117484](https://www.gbif.org/occurrence/5180117484), [gbif:dataset:6fe8b005-3a3d-481d-b90e-dcc44f4902b0](https://www.gbif.org/dataset/6fe8b005-3a3d-481d-b90e-dcc44f4902b0)
 
 #### 7:CD · country-borderline (review, kept)
 
@@ -273,7 +281,9 @@ Species that could lose every published country:
   - [RMCA-HERP](https://www.gbif.org/dataset/85e8c69c-f762-11e1-a439-00145eb45e9a) · Royal Museum for Central Africa, Belgium · 1 record
 - **Records shown** (1 of 1):
   - [70134226](https://www.gbif.org/occurrence/70134226) · PRESERVED_SPECIMEN · 1920-10 · -4.81763, 12.9311 · Butu-Polo · RMCA
-- **Recommendation:** pending
+- **Recommendation:** keep · **medium** · confirming
+- **Why:** RMCA specimen, 1920, field locality Butu-Polo, no captive sign. One dataset, and the species has no COL id, so no second source agrees.
+- **Cites:** [gbif:occurrence:70134226](https://www.gbif.org/occurrence/70134226), [gbif:dataset:85e8c69c-f762-11e1-a439-00145eb45e9a](https://www.gbif.org/dataset/85e8c69c-f762-11e1-a439-00145eb45e9a)
 
 #### 7:CF · country-borderline (review, kept)
 
@@ -288,7 +298,9 @@ Species that could lose every published country:
   - [The Herpetology Collection at the Staatliches Museum für Naturkunde Stuttgart](https://www.gbif.org/dataset/1c5c3e48-7fc0-4d4f-96e6-c4df2c747f34) · Staatliche Naturwissenschaftliche Sammlungen Bayerns · 1 record
 - **Records shown** (1 of 1):
   - [1830955192](https://www.gbif.org/occurrence/1830955192) · PRESERVED_SPECIMEN · no date · 5, 16 · SMNS · issues: COUNTRY_INVALID, COUNTRY_DERIVED_FROM_COORDINATES
-- **Recommendation:** pending
+- **Recommendation:** keep · **low** · confirming
+- **Why:** SMNS specimen with no locality or valid date, country derived from whole-degree coordinates (5, 16), flagged COUNTRY_INVALID. It names only the country, and the species has no COL id. Too thin to call, so it stays.
+- **Cites:** [gbif:occurrence:1830955192](https://www.gbif.org/occurrence/1830955192), [gbif:dataset:1c5c3e48-7fc0-4d4f-96e6-c4df2c747f34](https://www.gbif.org/dataset/1c5c3e48-7fc0-4d4f-96e6-c4df2c747f34)
 
 #### 7:CG · country-borderline (review, kept)
 
@@ -303,7 +315,9 @@ Species that could lose every published country:
   - [iNaturalist Research-grade Observations](https://www.gbif.org/dataset/50c9509d-22c7-4a22-a47d-8c48425ef4a7) · iNaturalist.org · 1 record
 - **Records shown** (1 of 1):
   - [2814428469](https://www.gbif.org/occurrence/2814428469) · HUMAN_OBSERVATION · 2012-10 · -2.300444, 12.81375 ±212 m · Niari · iNaturalist
-- **Recommendation:** pending
+- **Recommendation:** keep · **medium** · confirming
+- **Why:** iNaturalist research-grade record, Niari, 2012, 212 m uncertainty, no captive mark. A community-verified wild observation, but the only record here, and the species has no COL id, so no second source agrees.
+- **Cites:** [gbif:occurrence:2814428469](https://www.gbif.org/occurrence/2814428469), [gbif:dataset:50c9509d-22c7-4a22-a47d-8c48425ef4a7](https://www.gbif.org/dataset/50c9509d-22c7-4a22-a47d-8c48425ef4a7)
 
 #### 7:ids.col:identity · identity (blocking)
 
@@ -361,7 +375,9 @@ Species that could lose every published country:
 - **Records shown** (2 of 2):
   - [4089453861](https://www.gbif.org/occurrence/4089453861) · PRESERVED_SPECIMEN · 1961-01 · 10.423877, -61.075996 ±301 m · Bush Bush Forest, Nariva Swamp, Trinidad, W.I. · UWIZM
   - [4089453865](https://www.gbif.org/occurrence/4089453865) · PRESERVED_SPECIMEN · 1953-04 · 10.091031, -61.860966 ±3,036 m · Bonasse Village, Trinidad, W.I. · UWIZM
-- **Recommendation:** pending
+- **Recommendation:** keep · **medium** · confirming
+- **Why:** Two specimens at Trinidad's national museum, 1953 and 1961, with field localities: Bush Bush Forest in Nariva Swamp, and Bonasse Village. No captive sign. One dataset, and COL gives no distribution, so no second source agrees.
+- **Cites:** [gbif:occurrence:4089453861](https://www.gbif.org/occurrence/4089453861), [gbif:occurrence:4089453865](https://www.gbif.org/occurrence/4089453865), [gbif:dataset:bb82a8fc-fc97-4d2a-84e7-fc4595a1ccb6](https://www.gbif.org/dataset/bb82a8fc-fc97-4d2a-84e7-fc4595a1ccb6)
 
 ### 11 · Conraua goliath · Goliath Frog
 
@@ -383,7 +399,9 @@ Species that could lose every published country:
   - [The Herpetology Collection at the Staatliches Museum für Naturkunde Stuttgart](https://www.gbif.org/dataset/1c5c3e48-7fc0-4d4f-96e6-c4df2c747f34) · Staatliche Naturwissenschaftliche Sammlungen Bayerns · 1 record
 - **Records shown** (1 of 1):
   - [1830943043](https://www.gbif.org/occurrence/1830943043) · PRESERVED_SPECIMEN · no date · 1.63333, 10.33333 · SMNS
-- **Recommendation:** pending
+- **Recommendation:** keep · **medium** · confirming
+- **Why:** SMNS specimen, no locality or date, coordinates to the minute in Río Muni, no captive sign. COL lists Africa, but without a field locality the record alone can't show a free animal.
+- **Cites:** [gbif:occurrence:1830943043](https://www.gbif.org/occurrence/1830943043), [gbif:dataset:1c5c3e48-7fc0-4d4f-96e6-c4df2c747f34](https://www.gbif.org/dataset/1c5c3e48-7fc0-4d4f-96e6-c4df2c747f34), [col:XV4Z](https://www.checklistbank.org/dataset/316595/taxon/XV4Z)
 
 ### 12 · Heosemys spinosa · Spiny Hill Turtle
 
@@ -443,7 +461,9 @@ Species that could lose every published country:
 - **Records shown** (2 of 2):
   - [1671751837](https://www.gbif.org/occurrence/1671751837) · PRESERVED_SPECIMEN · 2007-08 · -26.266667, 16.883333 · McDougals Bay · SAIAB
   - [4531391239](https://www.gbif.org/occurrence/4531391239) · PRESERVED_SPECIMEN · 1985-01 · -27.875, 15.875 · Boegoeberg, Diamond Area 1; Luderitz distr. · //Karas
-- **Recommendation:** pending
+- **Recommendation:** keep · **medium** · confirming
+- **Why:** National Museum of Namibia specimen, 1985, Boegoeberg, Diamond Area 1: a field locality. SAIAB's "McDougals Bay" doesn't count: that bay is in South Africa at -29.28 (Wikidata Q31953520), the record says -26.27, so it looks misplaced. COL gives no distribution, so no second source.
+- **Cites:** [gbif:occurrence:1671751837](https://www.gbif.org/occurrence/1671751837), [gbif:occurrence:4531391239](https://www.gbif.org/occurrence/4531391239), [gbif:dataset:1aaec653-c71c-4695-9b6e-0e26214dd817](https://www.gbif.org/dataset/1aaec653-c71c-4695-9b6e-0e26214dd817), [gbif:dataset:5ca354eb-7675-4422-81e0-784bd8ae29d5](https://www.gbif.org/dataset/5ca354eb-7675-4422-81e0-784bd8ae29d5)
 
 ### 15 · Malacochersus tornieri · Pancake Tortoise
 
@@ -620,7 +640,9 @@ Species that could lose every published country:
   - [iNaturalist Research-grade Observations](https://www.gbif.org/dataset/50c9509d-22c7-4a22-a47d-8c48425ef4a7) · iNaturalist.org · 1 record
 - **Records shown** (1 of 1):
   - [5199020537](https://www.gbif.org/occurrence/5199020537) · HUMAN_OBSERVATION · 2009-03 · 27.098034, 33.834961 ±29,775 m · Al Bahr al Ahmar · iNaturalist · remarks: Очень большая особь была обнаружена рядом с деревней бедуинов, расположенной в 30 км к юго-востоку от Хургады в Аравийской пустыне. Зоопарка там нет, черепаха свободно разгуливает по территории. Можно
-- **Recommendation:** pending
+- **Recommendation:** keep · **medium** · confirming
+- **Why:** iNaturalist research-grade record, 2009; its remark says a very large tortoise roamed freely by a Bedouin village 30 km from Hurghada, no zoo there. Free, though maybe a village animal. The only record, and COL's list doesn't name Egypt.
+- **Cites:** [gbif:occurrence:5199020537](https://www.gbif.org/occurrence/5199020537), [gbif:dataset:50c9509d-22c7-4a22-a47d-8c48425ef4a7](https://www.gbif.org/dataset/50c9509d-22c7-4a22-a47d-8c48425ef4a7), [col:S9KW](https://www.checklistbank.org/dataset/316595/taxon/S9KW)
 
 #### 20:ES · country-captive-suspect (blocking, excluded)
 
@@ -652,7 +674,9 @@ Species that could lose every published country:
   - [NABU|naturgucker](https://www.gbif.org/dataset/6ac3f774-d9fb-4796-b3e9-92bf6c81c084) · naturgucker.de · 1 record
 - **Records shown** (1 of 1):
   - [5014407138](https://www.gbif.org/occurrence/5014407138) · HUMAN_OBSERVATION · 2009-01 · 14.3583, -3.59548 ±250 m · Falaise de Bandiagara, Dogonland · NABU|naturgucker
-- **Recommendation:** pending
+- **Recommendation:** keep · **high** · confirming
+- **Why:** NABU|naturgucker record, 2009, Falaise de Bandiagara: a field locality, no captive mark, and COL's distribution names Mali.
+- **Cites:** [gbif:occurrence:5014407138](https://www.gbif.org/occurrence/5014407138), [gbif:dataset:6ac3f774-d9fb-4796-b3e9-92bf6c81c084](https://www.gbif.org/dataset/6ac3f774-d9fb-4796-b3e9-92bf6c81c084), [col:S9KW](https://www.checklistbank.org/dataset/316595/taxon/S9KW)
 
 #### 20:MQ · country-captive-suspect (review, kept)
 
@@ -690,7 +714,9 @@ Species that could lose every published country:
 - **Records shown** (2 of 2):
   - [2421795591](https://www.gbif.org/occurrence/2421795591) · HUMAN_OBSERVATION · 2012-01 · 16.30334, -16.401357 ±100 m · PN Diawling headquarters · Trarza · CIBIO · remarks: LiveNotcaptured
   - [5147497123](https://www.gbif.org/occurrence/5147497123) · PRESERVED_SPECIMEN · 2001-08 · 16.525667, -15.772667 ±1,020 m · 5 km E (by dirt road) Rosso · Nouakchott · MVZ · remarks: Hatched in 1999 from pair collected at Rosso in 1989.
-- **Recommendation:** pending
+- **Recommendation:** keep · **high** · confirming
+- **Why:** CIBIO field observation, 2012, Diawling National Park headquarters, remark "LiveNotcaptured", and COL's distribution names S Mauritania. The other record, MVZ, is captive-bred from a pair taken at Rosso, so the observation carries this.
+- **Cites:** [gbif:occurrence:2421795591](https://www.gbif.org/occurrence/2421795591), [gbif:occurrence:5147497123](https://www.gbif.org/occurrence/5147497123), [gbif:dataset:09c4287e-e6d5-4552-a07f-bff8a00833d8](https://www.gbif.org/dataset/09c4287e-e6d5-4552-a07f-bff8a00833d8), [gbif:dataset:4d028294-7e88-4bed-8519-176af6a4b78f](https://www.gbif.org/dataset/4d028294-7e88-4bed-8519-176af6a4b78f), [col:S9KW](https://www.checklistbank.org/dataset/316595/taxon/S9KW)
 
 #### 20:MX · country-captive-suspect (review, kept)
 
@@ -724,7 +750,9 @@ Species that could lose every published country:
   - [iNaturalist Research-grade Observations](https://www.gbif.org/dataset/50c9509d-22c7-4a22-a47d-8c48425ef4a7) · iNaturalist.org · 1 record
 - **Records shown** (1 of 1):
   - [5063343974](https://www.gbif.org/occurrence/5063343974) · HUMAN_OBSERVATION · 2009-09 · 6.555538, 3.535648 ±31,350 m · Lagos · iNaturalist
-- **Recommendation:** pending
+- **Recommendation:** keep · **medium** · confirming
+- **Why:** iNaturalist research-grade record, Lagos, 2009, coordinates to 31 km, no captive mark: likely a kept or released animal, but nothing says so. The only record, and COL's list doesn't name Nigeria, so no second source agrees.
+- **Cites:** [gbif:occurrence:5063343974](https://www.gbif.org/occurrence/5063343974), [gbif:dataset:50c9509d-22c7-4a22-a47d-8c48425ef4a7](https://www.gbif.org/dataset/50c9509d-22c7-4a22-a47d-8c48425ef4a7), [col:S9KW](https://www.checklistbank.org/dataset/316595/taxon/S9KW)
 
 #### 20:NL · country-captive-suspect (blocking, excluded)
 
@@ -757,7 +785,9 @@ Species that could lose every published country:
 - **Records shown** (2 of 2):
   - [1987033334](https://www.gbif.org/occurrence/1987033334) · PRESERVED_SPECIMEN · 1907-11 · 17.37198, 35.912109 ±526,586 m · EASTERN SUDAN · UMMZ · issues: CONTINENT_INVALID · remarks: S-488
   - [1987167601](https://www.gbif.org/occurrence/1987167601) · PRESERVED_SPECIMEN · no date · 15.529015, 32.547283 ±63,496 m · VIC OF KHARTOUM · Khartoum province · UMMZ · issues: CONTINENT_INVALID · remarks: BORN SPRING 61 CARAPACE 4.5-5.0 INCHES TANK
-- **Recommendation:** pending
+- **Recommendation:** keep · **high** · confirming
+- **Why:** UMMZ specimen, 1907, "Eastern Sudan", no captive sign, and COL's distribution names Sudan. The other UMMZ record, near Khartoum, says "born spring 61" and "tank", so it's a kept animal; the 1907 one carries this.
+- **Cites:** [gbif:occurrence:1987033334](https://www.gbif.org/occurrence/1987033334), [gbif:occurrence:1987167601](https://www.gbif.org/occurrence/1987167601), [gbif:dataset:8e479b8f-ac16-4bed-a11a-bc7e27c31663](https://www.gbif.org/dataset/8e479b8f-ac16-4bed-a11a-bc7e27c31663), [col:S9KW](https://www.checklistbank.org/dataset/316595/taxon/S9KW)
 
 #### 20:SG · country-captive-suspect (blocking, excluded)
 
@@ -790,7 +820,9 @@ Species that could lose every published country:
 - **Records shown** (2 of 2):
   - [1571143542](https://www.gbif.org/occurrence/1571143542) · HUMAN_OBSERVATION · 2009-04 · 14.793835, -17.414044 ±30,941 m · Dakar · iNaturalist
   - [1571175194](https://www.gbif.org/occurrence/1571175194) · HUMAN_OBSERVATION · 2008-02 · 15.849732, -16.54926 ±30,855 m · Saint-Louis · iNaturalist
-- **Recommendation:** pending
+- **Recommendation:** keep · **high** · confirming
+- **Why:** Two iNaturalist research-grade records, Dakar 2009 and Saint-Louis 2008, no captive mark, and COL's distribution names Senegal.
+- **Cites:** [gbif:occurrence:1571143542](https://www.gbif.org/occurrence/1571143542), [gbif:occurrence:1571175194](https://www.gbif.org/occurrence/1571175194), [gbif:dataset:50c9509d-22c7-4a22-a47d-8c48425ef4a7](https://www.gbif.org/dataset/50c9509d-22c7-4a22-a47d-8c48425ef4a7), [col:S9KW](https://www.checklistbank.org/dataset/316595/taxon/S9KW)
 
 #### 20:TH · country-captive-suspect (review, kept)
 
@@ -877,7 +909,9 @@ Species that could lose every published country:
   - [NABU|naturgucker](https://www.gbif.org/dataset/6ac3f774-d9fb-4796-b3e9-92bf6c81c084) · naturgucker.de · 1 record
 - **Records shown** (1 of 1):
   - [5024986951](https://www.gbif.org/occurrence/5024986951) · HUMAN_OBSERVATION · 2010-09 · -20.482582, 57.559521 ±250 m · La Vanille Krokodilpark bei Reviere de Anguilles und Umgebung · NABU|naturgucker
-- **Recommendation:** pending
+- **Recommendation:** remove · **medium** · output-changing
+- **Why:** NABU|naturgucker record, 2010, locality "La Vanille Krokodilpark … und Umgebung": a crocodile park that keeps animals, "and surroundings" leaving slight room. The only record; COL says endemic to Madagascar.
+- **Cites:** [gbif:occurrence:5024986951](https://www.gbif.org/occurrence/5024986951), [gbif:dataset:6ac3f774-d9fb-4796-b3e9-92bf6c81c084](https://www.gbif.org/dataset/6ac3f774-d9fb-4796-b3e9-92bf6c81c084), [col:J439](https://www.checklistbank.org/dataset/316595/taxon/J439)
 
 #### 21:SC · country-borderline (review, kept)
 
@@ -892,7 +926,9 @@ Species that could lose every published country:
   - [iNaturalist Research-grade Observations](https://www.gbif.org/dataset/50c9509d-22c7-4a22-a47d-8c48425ef4a7) · iNaturalist.org · 1 record
 - **Records shown** (1 of 1):
   - [3079658854](https://www.gbif.org/occurrence/3079658854) · HUMAN_OBSERVATION · 2009-09 · -3.792241, 55.213367 ±31,418 m · La Digue and Inner Islands · iNaturalist · remarks: Apparently introduced to the island in 1994 to accompany a female that has been on the island since 1967.
-- **Recommendation:** pending
+- **Recommendation:** keep · **medium** · confirming
+- **Why:** iNaturalist research-grade record, La Digue, 2009; its remark says apparently introduced in 1994 to join a female there since 1967. Introduced counts as keep, though it may be a kept pair. The only record, and COL says endemic to Madagascar.
+- **Cites:** [gbif:occurrence:3079658854](https://www.gbif.org/occurrence/3079658854), [gbif:dataset:50c9509d-22c7-4a22-a47d-8c48425ef4a7](https://www.gbif.org/dataset/50c9509d-22c7-4a22-a47d-8c48425ef4a7), [col:J439](https://www.checklistbank.org/dataset/316595/taxon/J439)
 
 #### 21:ids.iucn:iucn-id · iucn-id (blocking)
 
@@ -987,7 +1023,9 @@ Species that could lose every published country:
 - **Records shown** (2 of 2):
   - [6133486759](https://www.gbif.org/occurrence/6133486759) · HUMAN_OBSERVATION · 2026-02 · 4.497497, 115.039798 ±31,403 m · Temburong · iNaturalist
   - [6333897467](https://www.gbif.org/occurrence/6333897467) · HUMAN_OBSERVATION · 2026-05 · 4.896734, 114.814257 ±31,394 m · Brunei and Muara · iNaturalist · remarks: Unfortunately roadkill 😢
-- **Recommendation:** pending
+- **Recommendation:** keep · **high** · confirming
+- **Why:** Two iNaturalist research-grade records, Temburong and Brunei-Muara, 2026, one a roadkill, no captive mark; COL lists Southern Asia.
+- **Cites:** [gbif:occurrence:6133486759](https://www.gbif.org/occurrence/6133486759), [gbif:occurrence:6333897467](https://www.gbif.org/occurrence/6333897467), [gbif:dataset:50c9509d-22c7-4a22-a47d-8c48425ef4a7](https://www.gbif.org/dataset/50c9509d-22c7-4a22-a47d-8c48425ef4a7), [col:3XVJR](https://www.checklistbank.org/dataset/316595/taxon/3XVJR)
 
 #### 24:IN · country-borderline (review, kept)
 
@@ -1002,7 +1040,9 @@ Species that could lose every published country:
   - [Sharing vertebrate occurrence data from camera traps in Asia](https://www.gbif.org/dataset/84b5b072-2832-4c72-ad17-eb90bcb0c5ac) · Small Mammals Conservation and Research Foundation · 1 record
 - **Records shown** (1 of 1):
   - [4037396605](https://www.gbif.org/occurrence/4037396605) · MATERIAL_CITATION · no date · 27.459176, 96.491542 · Namdapha National Park
-- **Recommendation:** pending
+- **Recommendation:** keep · **high** · confirming
+- **Why:** Camera-trap dataset citation, locality Namdapha National Park: a field locality, no captive sign; COL lists Southern Asia.
+- **Cites:** [gbif:occurrence:4037396605](https://www.gbif.org/occurrence/4037396605), [gbif:dataset:84b5b072-2832-4c72-ad17-eb90bcb0c5ac](https://www.gbif.org/dataset/84b5b072-2832-4c72-ad17-eb90bcb0c5ac), [col:3XVJR](https://www.checklistbank.org/dataset/316595/taxon/3XVJR)
 
 ### 25 · Panthera tigris · Tiger
 
@@ -1026,7 +1066,9 @@ Species that could lose every published country:
 - **Records shown** (2 of 2):
   - [4919532830](https://www.gbif.org/occurrence/4919532830) · HUMAN_OBSERVATION · 2023-02 · 22.211581, 89.408594 ±30,298 m · Khulna · iNaturalist
   - [6237451549](https://www.gbif.org/occurrence/6237451549) · PRESERVED_SPECIMEN · 2022-01 · 22.25039, 89.24194 · Sundarbans · remarks: Panthera tigris tigris voucher MBSV001 tRNA-Pro gene and control region, partial sequence mitochondrial.
-- **Recommendation:** pending
+- **Recommendation:** keep · **high** · confirming
+- **Why:** iNaturalist research-grade record, Khulna, 2023, and an INSDC voucher, Sundarbans, 2022: two datasets, no captive sign. COL lists Southern Asia.
+- **Cites:** [gbif:occurrence:4919532830](https://www.gbif.org/occurrence/4919532830), [gbif:occurrence:6237451549](https://www.gbif.org/occurrence/6237451549), [gbif:dataset:50c9509d-22c7-4a22-a47d-8c48425ef4a7](https://www.gbif.org/dataset/50c9509d-22c7-4a22-a47d-8c48425ef4a7), [gbif:dataset:d8cd16ba-bb74-4420-821e-083f2bac17c2](https://www.gbif.org/dataset/d8cd16ba-bb74-4420-821e-083f2bac17c2), [col:4CGXS](https://www.checklistbank.org/dataset/316595/taxon/4CGXS)
 
 #### 25:BR · country-captive-suspect (review, kept)
 
@@ -1244,7 +1286,9 @@ Species that could lose every published country:
   - [Mammal Collection (MHNG-MAMO) of Muséum d'histoire naturelle de Genève](https://www.gbif.org/dataset/5a659248-1f70-11e3-b2c5-00145eb45e9a) · Swiss Natural History Collections - SwissNatColl · 1 record
 - **Records shown** (1 of 1):
   - [1142104486](https://www.gbif.org/occurrence/1142104486) · PRESERVED_SPECIMEN · no date · 14.07, 108.3 ±1,000,000 m · Sud Vietnam · Gia Lai Province · MHNG
-- **Recommendation:** pending
+- **Recommendation:** keep · **medium** · confirming
+- **Why:** MHNG specimen, no year, "Sud Vietnam", Gia Lai Province, coordinates to 1,000 km, no captive sign. COL lists Southern Asia, but one vague specimen doesn't settle a free animal.
+- **Cites:** [gbif:occurrence:1142104486](https://www.gbif.org/occurrence/1142104486), [gbif:dataset:5a659248-1f70-11e3-b2c5-00145eb45e9a](https://www.gbif.org/dataset/5a659248-1f70-11e3-b2c5-00145eb45e9a), [col:4CGXS](https://www.checklistbank.org/dataset/316595/taxon/4CGXS)
 
 #### 25:ZA · country-captive-suspect (review, kept)
 
@@ -1286,7 +1330,9 @@ Species that could lose every published country:
 - **Records shown** (2 of 2):
   - [4974316690](https://www.gbif.org/occurrence/4974316690) · HUMAN_OBSERVATION · 2001-11 · 30.611811, -108.348767 ±29,330 m · Chihuahua · iNaturalist
   - [1638527842](https://www.gbif.org/occurrence/1638527842) · PRESERVED_SPECIMEN · no date · 27.03037, -104.82347 ±1,000 m · Jimenez Cave · Chihuahua · UTEP
-- **Recommendation:** pending
+- **Recommendation:** keep · **high** · confirming
+- **Why:** iNaturalist research-grade record, Chihuahua, 2001, no captive mark, and a UTEP Jimenez Cave specimen (a fossils collection, so old). Two datasets; COL lists North America.
+- **Cites:** [gbif:occurrence:4974316690](https://www.gbif.org/occurrence/4974316690), [gbif:occurrence:1638527842](https://www.gbif.org/occurrence/1638527842), [gbif:dataset:50c9509d-22c7-4a22-a47d-8c48425ef4a7](https://www.gbif.org/dataset/50c9509d-22c7-4a22-a47d-8c48425ef4a7), [gbif:dataset:dab57200-c600-4f26-b657-cf217443034e](https://www.gbif.org/dataset/dab57200-c600-4f26-b657-cf217443034e), [col:44QY2](https://www.checklistbank.org/dataset/316595/taxon/44QY2)
 
 ### 27 · Zaglossus bruijnii · Western Long-beaked Echidna
 
@@ -1330,7 +1376,9 @@ Species that could lose every published country:
   - [INSDC Sequences](https://www.gbif.org/dataset/d8cd16ba-bb74-4420-821e-083f2bac17c2) · European Nucleotide Archive (EMBL-EBI) · 1 record
 - **Records shown** (1 of 1):
   - [4152703269](https://www.gbif.org/occurrence/4152703269) · PRESERVED_SPECIMEN · 2022-01 · 24.17, 90.4 · remarks: Elephas maximus voucher MBSV 011 cytochrome b (cytb) gene, partial cds mitochondrial.
-- **Recommendation:** pending
+- **Recommendation:** remove · **medium** · output-changing
+- **Why:** INSDC voucher MBSV 011, 2022, no locality, coordinates 0.35 km from Gazipur Safari Park (Wikidata Q16345864): likely a park animal, though the record doesn't say so. The only record; inferred from the coordinates.
+- **Cites:** [gbif:occurrence:4152703269](https://www.gbif.org/occurrence/4152703269), [gbif:dataset:d8cd16ba-bb74-4420-821e-083f2bac17c2](https://www.gbif.org/dataset/d8cd16ba-bb74-4420-821e-083f2bac17c2), [col:398D9](https://www.checklistbank.org/dataset/316595/taxon/398D9)
 
 #### 28:BE · country-captive-suspect (review, kept)
 
@@ -1383,7 +1431,9 @@ Species that could lose every published country:
 - **Records shown** (2 of 2):
   - [1831214648](https://www.gbif.org/occurrence/1831214648) · HUMAN_OBSERVATION · 2015-01 · 26.98004, 91.437576 ±29,798 m · Samdrupjongkhar · iNaturalist · remarks: Along the highway
   - [3334780216](https://www.gbif.org/occurrence/3334780216) · HUMAN_OBSERVATION · 2014-01 · 26.9513, 90.499535 · issues: COUNTRY_DERIVED_FROM_COORDINATES
-- **Recommendation:** pending
+- **Recommendation:** keep · **high** · confirming
+- **Why:** iNaturalist research-grade record "along the highway", 2015, and a Bhutan Biodiversity Portal observation, 2014: two datasets, no captive sign. COL lists Southern Asia.
+- **Cites:** [gbif:occurrence:1831214648](https://www.gbif.org/occurrence/1831214648), [gbif:occurrence:3334780216](https://www.gbif.org/occurrence/3334780216), [gbif:dataset:50c9509d-22c7-4a22-a47d-8c48425ef4a7](https://www.gbif.org/dataset/50c9509d-22c7-4a22-a47d-8c48425ef4a7), [gbif:dataset:926f3dd4-89d9-4cbd-8ed7-32fb6fcfa861](https://www.gbif.org/dataset/926f3dd4-89d9-4cbd-8ed7-32fb6fcfa861), [col:398D9](https://www.checklistbank.org/dataset/316595/taxon/398D9)
 
 #### 28:CF · country-captive-suspect (blocking, excluded)
 
@@ -1457,7 +1507,9 @@ Species that could lose every published country:
 - **Records shown** (2 of 2):
   - [3806677665](https://www.gbif.org/occurrence/3806677665) · MATERIAL_CITATION · 2020-02 · 17.873416, 105.288115 · NakaiNam Theun National Protected Area
   - [3990782720](https://www.gbif.org/occurrence/3990782720) · MATERIAL_CITATION · 2020-02 · 17.873416, 105.288115 · NakaiNam Theun National Protected Area
-- **Recommendation:** pending
+- **Recommendation:** keep · **high** · confirming
+- **Why:** Two camera-trap records, 2020, Nakai-Nam Theun National Protected Area: a field locality, no captive sign. COL lists Southern Asia.
+- **Cites:** [gbif:occurrence:3806677665](https://www.gbif.org/occurrence/3806677665), [gbif:occurrence:3990782720](https://www.gbif.org/occurrence/3990782720), [gbif:dataset:84b5b072-2832-4c72-ad17-eb90bcb0c5ac](https://www.gbif.org/dataset/84b5b072-2832-4c72-ad17-eb90bcb0c5ac), [col:398D9](https://www.checklistbank.org/dataset/316595/taxon/398D9)
 
 #### 28:NL · country-captive-suspect (blocking, excluded)
 
@@ -1520,7 +1572,9 @@ Species that could lose every published country:
 - **Records shown** (2 of 2):
   - [6163366213](https://www.gbif.org/occurrence/6163366213) · HUMAN_OBSERVATION · 2023-12 · 11.388943, 107.287682 ±31,148 m · Đồng Nai · iNaturalist · remarks: Tracks, circa 2 weeks old
   - [919422710](https://www.gbif.org/occurrence/919422710) · PRESERVED_SPECIMEN · 1958-11 · 11.06044, 108.41666 ±75,150 m · 40 mi. SW Dgerin, 60 mi. S. Dalat · MSU · establishment: native · remarks: No measurements; on exhibit.
-- **Recommendation:** pending
+- **Recommendation:** keep · **high** · confirming
+- **Why:** iNaturalist research-grade tracks, Đồng Nai, 2023, and an MSU specimen, 1958, field locality, establishmentMeans native: two datasets, no captive sign. COL lists Southern Asia.
+- **Cites:** [gbif:occurrence:6163366213](https://www.gbif.org/occurrence/6163366213), [gbif:occurrence:919422710](https://www.gbif.org/occurrence/919422710), [gbif:dataset:22a66350-7947-4a49-84a3-39c7c1b0881f](https://www.gbif.org/dataset/22a66350-7947-4a49-84a3-39c7c1b0881f), [gbif:dataset:50c9509d-22c7-4a22-a47d-8c48425ef4a7](https://www.gbif.org/dataset/50c9509d-22c7-4a22-a47d-8c48425ef4a7), [col:398D9](https://www.checklistbank.org/dataset/316595/taxon/398D9)
 
 ### 29 · Okapia johnstoni · Okapi
 
@@ -1629,7 +1683,9 @@ Species that could lose every published country:
   - [NMNH Extant Specimen Records (USNM, US)](https://www.gbif.org/dataset/821cc27a-e3bb-4bc5-ac34-89ada245069d) · National Museum of Natural History, Smithsonian Institution · 1 record
 - **Records shown** (1 of 1):
   - [1321297131](https://www.gbif.org/occurrence/1321297131) · PRESERVED_SPECIMEN · 1967-07 · 5.3, -66.22 · Puerto Ayacucho, 163 Km ESE, San Juan, Rio Manapiare · Amazonas · USNM
-- **Recommendation:** pending
+- **Recommendation:** keep · **high** · confirming
+- **Why:** USNM specimen, 1967, field locality on the Río Manapiare east of Puerto Ayacucho, no captive sign; COL lists South America.
+- **Cites:** [gbif:occurrence:1321297131](https://www.gbif.org/occurrence/1321297131), [gbif:dataset:821cc27a-e3bb-4bc5-ac34-89ada245069d](https://www.gbif.org/dataset/821cc27a-e3bb-4bc5-ac34-89ada245069d), [col:4MF3Z](https://www.checklistbank.org/dataset/316595/taxon/4MF3Z)
 
 ### 39 · Equus grevyi · Grévy's Zebra
 
@@ -1708,7 +1764,9 @@ Species that could lose every published country:
 - **Records shown** (2 of 2):
   - [5099407177](https://www.gbif.org/occurrence/5099407177) · PRESERVED_SPECIMEN · 1967-01 · -14.199621, 28.169434 ±34,153 m · SPECIFIC LOCALITY UNKNOWN · MSB · remarks: SPECIMEN FROM RIO GRANDE ZOO, ALBUQUERQUE, NM
   - [5099408911](https://www.gbif.org/occurrence/5099408911) · PRESERVED_SPECIMEN · 1966-08 · -14.199621, 28.169434 ±34,153 m · SPECIFIC LOCALITY UNKNOWN · MSB · remarks: SHIPPED TO U.S. IN 1964 AT AGE 6-9 YEARS
-- **Recommendation:** pending
+- **Recommendation:** remove · **high** · output-changing
+- **Why:** Both MSB specimens, 1966–67, say "specific locality unknown"; one is "from Rio Grande Zoo, Albuquerque", the other "shipped to U.S. in 1964". Their remarks show kept animals, and neither documents one in Zambia's wild. No other counted record.
+- **Cites:** [gbif:occurrence:5099407177](https://www.gbif.org/occurrence/5099407177), [gbif:occurrence:5099408911](https://www.gbif.org/occurrence/5099408911), [gbif:dataset:b15d4952-7d20-46f1-8a3e-556a512b04c5](https://www.gbif.org/dataset/b15d4952-7d20-46f1-8a3e-556a512b04c5), [col:7TKN5](https://www.checklistbank.org/dataset/316595/taxon/7TKN5)
 
 ### 40 · Pongo abelii · Sumatran Orangutan
 
@@ -1769,7 +1827,9 @@ Species that could lose every published country:
 - **Records shown** (2 of 2):
   - [859437526](https://www.gbif.org/occurrence/859437526) · PRESERVED_SPECIMEN · 1933-11 · -4.15, 20 · 10 mi W of Loanger and 10 mi S Kosai R. · AMNH · establishment: native
   - [859428032](https://www.gbif.org/occurrence/859428032) · PRESERVED_SPECIMEN · 1911-12 · 3.733333, 29.716694 · Haut Zaire · AMNH · establishment: native · remarks: Note in catalog: Scapula, 2 tusks, jaw, molars
-- **Recommendation:** pending
+- **Recommendation:** keep · **high** · confirming
+- **Why:** Two AMNH specimens, 1911 and 1933, Haut Zaire and "10 mi W of Loanger", both establishmentMeans native, no captive sign; COL lists Africa.
+- **Cites:** [gbif:occurrence:859437526](https://www.gbif.org/occurrence/859437526), [gbif:occurrence:859428032](https://www.gbif.org/occurrence/859428032), [gbif:dataset:96ca66b4-f762-11e1-a439-00145eb45e9a](https://www.gbif.org/dataset/96ca66b4-f762-11e1-a439-00145eb45e9a), [col:3W9KX](https://www.checklistbank.org/dataset/316595/taxon/3W9KX)
 
 #### 41:CM · country-borderline (review, kept)
 
@@ -1785,7 +1845,9 @@ Species that could lose every published country:
 - **Records shown** (2 of 2):
   - [911502680](https://www.gbif.org/occurrence/911502680) · HUMAN_OBSERVATION · 2014-05 · 2.580728, 15.939393 ±31,436 m · Est · iNaturalist · remarks: Pictures taken by Matthias Graben: www.matthias-graben-fotografie.de
   - [1098893894](https://www.gbif.org/occurrence/1098893894) · HUMAN_OBSERVATION · 2014-05 · 2.577395, 15.652643 ±31,436 m · Est · iNaturalist · remarks: 1st picture illustrates how important forest elephants are for seed dispersal (a large number of plants exclusively depends on them!): a lot of seedlings sprouting from old elephant dung. 2nd picture
-- **Recommendation:** pending
+- **Recommendation:** keep · **high** · confirming
+- **Why:** Two iNaturalist research-grade records, Est, 2014, with field remarks on seedlings in forest elephant dung, no captive mark; COL lists Africa.
+- **Cites:** [gbif:occurrence:911502680](https://www.gbif.org/occurrence/911502680), [gbif:occurrence:1098893894](https://www.gbif.org/occurrence/1098893894), [gbif:dataset:50c9509d-22c7-4a22-a47d-8c48425ef4a7](https://www.gbif.org/dataset/50c9509d-22c7-4a22-a47d-8c48425ef4a7), [col:3W9KX](https://www.checklistbank.org/dataset/316595/taxon/3W9KX)
 
 #### 41:GN · country-borderline (review, kept)
 
@@ -1802,7 +1864,9 @@ Species that could lose every published country:
 - **Records shown** (2 of 2):
   - [4420982888](https://www.gbif.org/occurrence/4420982888) · HUMAN_OBSERVATION · 2023-08 · 8.240793, -9.392882 ±31,287 m · Nzérékoré · iNaturalist · remarks: We found an elephant's path in the forest, its tracks in the rain-soaked ground and fresh feces (the elephant was in this place in the morning).
   - [865728398](https://www.gbif.org/occurrence/865728398) · PRESERVED_SPECIMEN · no date · 9.1167, -7.8667 ±10,000 m · Damandougou, Préfecture de Beyla · Nzérékoré Region · MHNG
-- **Recommendation:** pending
+- **Recommendation:** keep · **high** · confirming
+- **Why:** iNaturalist research-grade record, 2023, remark on tracks and fresh dung in forest, and an MHNG specimen from Damandougou: two datasets, no captive sign. COL lists Africa.
+- **Cites:** [gbif:occurrence:4420982888](https://www.gbif.org/occurrence/4420982888), [gbif:occurrence:865728398](https://www.gbif.org/occurrence/865728398), [gbif:dataset:50c9509d-22c7-4a22-a47d-8c48425ef4a7](https://www.gbif.org/dataset/50c9509d-22c7-4a22-a47d-8c48425ef4a7), [gbif:dataset:5a659248-1f70-11e3-b2c5-00145eb45e9a](https://www.gbif.org/dataset/5a659248-1f70-11e3-b2c5-00145eb45e9a), [col:3W9KX](https://www.checklistbank.org/dataset/316595/taxon/3W9KX)
 
 #### 41:GQ · country-borderline (review, kept)
 
@@ -1817,7 +1881,9 @@ Species that could lose every published country:
   - [iNaturalist Research-grade Observations](https://www.gbif.org/dataset/50c9509d-22c7-4a22-a47d-8c48425ef4a7) · iNaturalist.org · 1 record
 - **Records shown** (1 of 1):
   - [5889945301](https://www.gbif.org/occurrence/5889945301) · HUMAN_OBSERVATION · 2025-05 · 1.786779, 10.112765 ±31,444 m · Centro Sur · iNaturalist
-- **Recommendation:** pending
+- **Recommendation:** keep · **high** · confirming
+- **Why:** iNaturalist research-grade record, Centro Sur, 2025, no captive mark; COL lists Africa. One record, but community-verified.
+- **Cites:** [gbif:occurrence:5889945301](https://www.gbif.org/occurrence/5889945301), [gbif:dataset:50c9509d-22c7-4a22-a47d-8c48425ef4a7](https://www.gbif.org/dataset/50c9509d-22c7-4a22-a47d-8c48425ef4a7), [col:3W9KX](https://www.checklistbank.org/dataset/316595/taxon/3W9KX)
 
 #### 41:KE · country-borderline (review, kept)
 
@@ -1834,7 +1900,9 @@ Species that could lose every published country:
 - **Records shown** (2 of 2):
   - [5027002404](https://www.gbif.org/occurrence/5027002404) · HUMAN_OBSERVATION · 2016-04 · -4.252948, 39.405899 ±250 m · SHIMBA HILLS NATIONAL RESERVE · NABU|naturgucker
   - [2005653680](https://www.gbif.org/occurrence/2005653680) · HUMAN_OBSERVATION · 2007-06 · -0.375, 36.875 ±12,000 m · Serena Mountain Lodge, Mount Kenya · ADU-UCT
-- **Recommendation:** pending
+- **Recommendation:** keep · **low** · confirming
+- **Why:** NABU|naturgucker in Shimba Hills and a Kenya Virtual Museum record at Mount Kenya: free animals, but nothing on them separates forest from savanna elephant, and the two get confused. COL says only Africa. Conflicting on identity, so it stays.
+- **Cites:** [gbif:occurrence:5027002404](https://www.gbif.org/occurrence/5027002404), [gbif:occurrence:2005653680](https://www.gbif.org/occurrence/2005653680), [gbif:dataset:6ac3f774-d9fb-4796-b3e9-92bf6c81c084](https://www.gbif.org/dataset/6ac3f774-d9fb-4796-b3e9-92bf6c81c084), [gbif:dataset:999d8fed-d06d-48d8-87ee-cc36e6c8456c](https://www.gbif.org/dataset/999d8fed-d06d-48d8-87ee-cc36e6c8456c), [col:3W9KX](https://www.checklistbank.org/dataset/316595/taxon/3W9KX)
 
 #### 41:RW · country-borderline (review, kept)
 
@@ -1849,7 +1917,9 @@ Species that could lose every published country:
   - [iNaturalist Research-grade Observations](https://www.gbif.org/dataset/50c9509d-22c7-4a22-a47d-8c48425ef4a7) · iNaturalist.org · 1 record
 - **Records shown** (1 of 1):
   - [5167247409](https://www.gbif.org/occurrence/5167247409) · HUMAN_OBSERVATION · 2021-09 · -1.532047, 29.401388 ±31,446 m · Amajyaruguru · iNaturalist
-- **Recommendation:** pending
+- **Recommendation:** keep · **medium** · confirming
+- **Why:** iNaturalist research-grade record, Amajyaruguru, 2021, no captive mark; COL lists Africa. Coordinates only to 31 km, and forest and savanna elephant get confused, so one record doesn't settle it.
+- **Cites:** [gbif:occurrence:5167247409](https://www.gbif.org/occurrence/5167247409), [gbif:dataset:50c9509d-22c7-4a22-a47d-8c48425ef4a7](https://www.gbif.org/dataset/50c9509d-22c7-4a22-a47d-8c48425ef4a7), [col:3W9KX](https://www.checklistbank.org/dataset/316595/taxon/3W9KX)
 
 #### 41:ZA · country-borderline (review, kept)
 
@@ -1864,7 +1934,9 @@ Species that could lose every published country:
   - [NABU|naturgucker](https://www.gbif.org/dataset/6ac3f774-d9fb-4796-b3e9-92bf6c81c084) · naturgucker.de · 1 record
 - **Records shown** (1 of 1):
   - [5014450288](https://www.gbif.org/occurrence/5014450288) · HUMAN_OBSERVATION · 2019-08 · -24.634148, 31.764963 ±250 m · UTM50_36J_0350_7250 · NABU|naturgucker
-- **Recommendation:** pending
+- **Recommendation:** keep · **low** · confirming
+- **Why:** NABU|naturgucker record, 2019, grid locality in the Kruger area: a free animal, but nothing on it separates forest from savanna elephant, and the two get confused. COL says only Africa. Thin on identity, so it stays.
+- **Cites:** [gbif:occurrence:5014450288](https://www.gbif.org/occurrence/5014450288), [gbif:dataset:6ac3f774-d9fb-4796-b3e9-92bf6c81c084](https://www.gbif.org/dataset/6ac3f774-d9fb-4796-b3e9-92bf6c81c084), [col:3W9KX](https://www.checklistbank.org/dataset/316595/taxon/3W9KX)
 
 ### 43 · Dendrolagus goodfellowi · Goodfellow's Tree-kangaroo
 
@@ -2041,7 +2113,9 @@ Species that could lose every published country:
   - [MVZ Mammal Collection (Arctos)](https://www.gbif.org/dataset/0daed095-478a-4af6-abf5-18acb790fbb2) · Museum of Vertebrate Zoology · 1 record
 - **Records shown** (1 of 1):
   - [5147325792](https://www.gbif.org/occurrence/5147325792) · PRESERVED_SPECIMEN · no date · 13.1667, -87.6667 ±37,576 m · Buena Vista Prop., Gulf of Fonseca · Choluteca · MVZ · remarks: YEAR UNKNOWN; PROBABLY 1907-50
-- **Recommendation:** pending
+- **Recommendation:** keep · **high** · confirming
+- **Why:** MVZ specimen, probably 1907–50, Buena Vista, Gulf of Fonseca: a field locality, no captive sign; COL lists Middle America.
+- **Cites:** [gbif:occurrence:5147325792](https://www.gbif.org/occurrence/5147325792), [gbif:dataset:0daed095-478a-4af6-abf5-18acb790fbb2](https://www.gbif.org/dataset/0daed095-478a-4af6-abf5-18acb790fbb2), [col:4CGXQ](https://www.checklistbank.org/dataset/316595/taxon/4CGXQ)
 
 #### 51:SR · country-borderline (review, kept)
 
@@ -2056,7 +2130,9 @@ Species that could lose every published country:
   - [Rapid Assessment Program (RAP) Biodiversity Survey Database](https://www.gbif.org/dataset/4d749d70-e2e1-11dd-8102-b8a03c50a862) · Conservation International · 1 record
 - **Records shown** (1 of 1):
   - [197163295](https://www.gbif.org/occurrence/197163295) · HUMAN_OBSERVATION · 2005-11 · 4.27, -54.738 · Lely Plateau · Conservation International
-- **Recommendation:** pending
+- **Recommendation:** keep · **high** · confirming
+- **Why:** Conservation International RAP survey record, 2005, Lely Plateau: a field survey, no captive sign; COL lists South America.
+- **Cites:** [gbif:occurrence:197163295](https://www.gbif.org/occurrence/197163295), [gbif:dataset:4d749d70-e2e1-11dd-8102-b8a03c50a862](https://www.gbif.org/dataset/4d749d70-e2e1-11dd-8102-b8a03c50a862), [col:4CGXQ](https://www.checklistbank.org/dataset/316595/taxon/4CGXQ)
 
 #### 51:UY · country-borderline (review, kept)
 
@@ -2071,7 +2147,9 @@ Species that could lose every published country:
   - [Museu de Ciències Naturals de Barcelona: MCNB-Cord](https://www.gbif.org/dataset/71d58564-f762-11e1-a439-00145eb45e9a) · Museu de Ciències Naturals de Barcelona · 1 record
 - **Records shown** (1 of 1):
   - [858402097](https://www.gbif.org/occurrence/858402097) · PRESERVED_SPECIMEN · no date · -32.875555, -56.020152 ±417,340 m · MCNB · issues: CONTINENT_INVALID
-- **Recommendation:** pending
+- **Recommendation:** keep · **low** · confirming
+- **Why:** MCNB specimen with no locality or year, coordinates to 417 km, so it names only the country. COL lists South America, but a kept animal can't be told from a free one here. Too thin to call, so it stays.
+- **Cites:** [gbif:occurrence:858402097](https://www.gbif.org/occurrence/858402097), [gbif:dataset:71d58564-f762-11e1-a439-00145eb45e9a](https://www.gbif.org/dataset/71d58564-f762-11e1-a439-00145eb45e9a), [col:4CGXQ](https://www.checklistbank.org/dataset/316595/taxon/4CGXQ)
 
 ### 52 · Myrmecophaga tridactyla · Giant Anteater
 
@@ -2110,7 +2188,9 @@ Species that could lose every published country:
   - [Field Museum of Natural History (Zoology) Mammal Collection](https://www.gbif.org/dataset/41fc5c40-5e81-496f-9733-6b5681b3b7a5) · Field Museum · 1 record
 - **Records shown** (1 of 1):
   - [665784969](https://www.gbif.org/occurrence/665784969) · PRESERVED_SPECIMEN · 1905-04 · 15.266667, -89.099998 ±3.04 m · Los Amates · Izabal · FMNH
-- **Recommendation:** pending
+- **Recommendation:** keep · **high** · confirming
+- **Why:** FMNH specimen, 1905, Los Amates, Izabal: a field locality, no captive sign; COL lists Middle America.
+- **Cites:** [gbif:occurrence:665784969](https://www.gbif.org/occurrence/665784969), [gbif:dataset:41fc5c40-5e81-496f-9733-6b5681b3b7a5](https://www.gbif.org/dataset/41fc5c40-5e81-496f-9733-6b5681b3b7a5), [col:45B2F](https://www.checklistbank.org/dataset/316595/taxon/45B2F)
 
 #### 52:MX · country-borderline (review, kept)
 
@@ -2125,7 +2205,9 @@ Species that could lose every published country:
   - [Bosque Mesófilo de Montaña de México](https://www.gbif.org/dataset/a5be4674-3ee0-4aab-9ce6-c602a7d71d18) · Comisión nacional para el conocimiento y uso de la biodiversidad · 1 record
 - **Records shown** (1 of 1):
   - [1894051669](https://www.gbif.org/occurrence/1894051669) · MATERIAL_CITATION · no date · 17.175, -92.175 · Community Muquenal · Chiapas · remarks: \* De acuerdo a Ramírez-Pulido & González-Ruíz \[(com. pers.), 2012\] corresponde a una determinación errónea, ya que la especie asignada tiene una distribución en Centro y Suramérica, muy probablemente
-- **Recommendation:** pending
+- **Recommendation:** remove · **high** · output-changing
+- **Why:** Chiapas material citation whose own remark says, per Ramírez-Pulido & González-Ruíz (2012), the identification is wrong, since the species lives in Central and South America. Misidentified by its own record; no other counted record.
+- **Cites:** [gbif:occurrence:1894051669](https://www.gbif.org/occurrence/1894051669), [gbif:dataset:a5be4674-3ee0-4aab-9ce6-c602a7d71d18](https://www.gbif.org/dataset/a5be4674-3ee0-4aab-9ce6-c602a7d71d18), [col:45B2F](https://www.checklistbank.org/dataset/316595/taxon/45B2F)
 
 #### 52:SR · country-borderline (review, kept)
 
@@ -2140,7 +2222,9 @@ Species that could lose every published country:
   - [Rapid Assessment Program (RAP) Biodiversity Survey Database](https://www.gbif.org/dataset/4d749d70-e2e1-11dd-8102-b8a03c50a862) · Conservation International · 1 record
 - **Records shown** (1 of 1):
   - [197156671](https://www.gbif.org/occurrence/197156671) · HUMAN_OBSERVATION · 2005-11 · 4.27, -54.738 · Lely Plateau · Conservation International
-- **Recommendation:** pending
+- **Recommendation:** keep · **high** · confirming
+- **Why:** Conservation International RAP survey record, 2005, Lely Plateau: a field survey, no captive sign; COL lists South America.
+- **Cites:** [gbif:occurrence:197156671](https://www.gbif.org/occurrence/197156671), [gbif:dataset:4d749d70-e2e1-11dd-8102-b8a03c50a862](https://www.gbif.org/dataset/4d749d70-e2e1-11dd-8102-b8a03c50a862), [col:45B2F](https://www.checklistbank.org/dataset/316595/taxon/45B2F)
 
 ### 54 · Bradypus variegatus · Brown-throated Sloth
 
@@ -2162,7 +2246,9 @@ Species that could lose every published country:
   - [MVZ Mammal Collection (Arctos)](https://www.gbif.org/dataset/0daed095-478a-4af6-abf5-18acb790fbb2) · Museum of Vertebrate Zoology · 1 record
 - **Records shown** (1 of 1):
   - [5146966343](https://www.gbif.org/occurrence/5146966343) · PRESERVED_SPECIMEN · no date · 15.4389, -85.10798 ±4,936 m · ca. 45 mi up Rio Platano, La Mosquitia · Gracias a Dios · MVZ · issues: TAXON_MATCH_HIGHERRANK · remarks: FR. SAN DIEGO ZOO
-- **Recommendation:** pending
+- **Recommendation:** keep · **medium** · confirming
+- **Why:** MVZ specimen, field locality about 45 mi up the Río Plátano, but its remark says "from San Diego Zoo": a zoo animal with a wild origin. COL lists Middle America. Conflicting signals in one record, so not high.
+- **Cites:** [gbif:occurrence:5146966343](https://www.gbif.org/occurrence/5146966343), [gbif:dataset:0daed095-478a-4af6-abf5-18acb790fbb2](https://www.gbif.org/dataset/0daed095-478a-4af6-abf5-18acb790fbb2), [col:N5F8](https://www.checklistbank.org/dataset/316595/taxon/N5F8)
 
 #### 54:MX · country-borderline (review, kept)
 
@@ -2177,7 +2263,9 @@ Species that could lose every published country:
   - [KUBI Mammalogy Collection](https://www.gbif.org/dataset/1d04e739-98a9-4e16-9970-8f8f3bf9e9e3) · University of Kansas Biodiversity Institute · 1 record
 - **Records shown** (1 of 1):
   - [686338072](https://www.gbif.org/occurrence/686338072) · PRESERVED_SPECIMEN · no date · 20.7569973, -88.8639687 ±98 m · NO LOCALITY · Yucatan · KU · issues: TAXON_MATCH_HIGHERRANK
-- **Recommendation:** pending
+- **Recommendation:** keep · **low** · confirming
+- **Why:** KU specimen, no year, stateProvince Yucatan, locality "NO LOCALITY": it names only the state. COL lists Middle America, but a kept animal can't be told from a free one here. Too thin to call, so it stays.
+- **Cites:** [gbif:occurrence:686338072](https://www.gbif.org/occurrence/686338072), [gbif:dataset:1d04e739-98a9-4e16-9970-8f8f3bf9e9e3](https://www.gbif.org/dataset/1d04e739-98a9-4e16-9970-8f8f3bf9e9e3), [col:N5F8](https://www.checklistbank.org/dataset/316595/taxon/N5F8)
 
 #### 54:SR · country-borderline (review, kept)
 
@@ -2192,7 +2280,9 @@ Species that could lose every published country:
   - [Mammals Specimens](https://www.gbif.org/dataset/84aefc7e-f762-11e1-a439-00145eb45e9a) · Sam Noble Oklahoma Museum of Natural History · 1 record
 - **Records shown** (1 of 1):
   - [202059584](https://www.gbif.org/occurrence/202059584) · PRESERVED_SPECIMEN · 1971-07 · 3.65, -54.033333 ±301 m · Maripasoula, Lawa River · French Guiana · OMNH
-- **Recommendation:** pending
+- **Recommendation:** remove · **high** · output-changing
+- **Why:** OMNH specimen, 1971, country Suriname, but its own fields say stateProvince French Guiana, locality Maripasoula, Lawa River: misplaced by its own record. No other counted record. Removing doesn't add French Guiana to the list.
+- **Cites:** [gbif:occurrence:202059584](https://www.gbif.org/occurrence/202059584), [gbif:dataset:84aefc7e-f762-11e1-a439-00145eb45e9a](https://www.gbif.org/dataset/84aefc7e-f762-11e1-a439-00145eb45e9a), [col:N5F8](https://www.checklistbank.org/dataset/316595/taxon/N5F8)
 
 ### 55 · Smutsia gigantea · Giant Pangolin
 
@@ -2341,7 +2431,9 @@ Species that could lose every published country:
 - **Records shown** (2 of 2):
   - [197163378](https://www.gbif.org/occurrence/197163378) · HUMAN_OBSERVATION · 2003-10 · 5.533, -2.617 · Boi-Tano/Tano Nimiri · Conservation International
   - [197163379](https://www.gbif.org/occurrence/197163379) · HUMAN_OBSERVATION · 2003-10 · 5.2, -2.4 · Draw River · Conservation International
-- **Recommendation:** pending
+- **Recommendation:** keep · **high** · confirming
+- **Why:** Two Conservation International RAP survey records, 2003, Boi-Tano/Tano Nimiri and Draw River: field surveys, no captive sign; COL lists Africa.
+- **Cites:** [gbif:occurrence:197163378](https://www.gbif.org/occurrence/197163378), [gbif:occurrence:197163379](https://www.gbif.org/occurrence/197163379), [gbif:dataset:4d749d70-e2e1-11dd-8102-b8a03c50a862](https://www.gbif.org/dataset/4d749d70-e2e1-11dd-8102-b8a03c50a862), [col:4C92G](https://www.checklistbank.org/dataset/316595/taxon/4C92G)
 
 #### 56:GW · country-borderline (review, kept)
 
@@ -2356,7 +2448,9 @@ Species that could lose every published country:
   - [iNaturalist Research-grade Observations](https://www.gbif.org/dataset/50c9509d-22c7-4a22-a47d-8c48425ef4a7) · iNaturalist.org · 1 record
 - **Records shown** (1 of 1):
   - [3325835136](https://www.gbif.org/occurrence/3325835136) · HUMAN_OBSERVATION · 2017-12 · 11.268799, -14.988794 ±31,148 m · Tombali · iNaturalist
-- **Recommendation:** pending
+- **Recommendation:** keep · **high** · confirming
+- **Why:** iNaturalist research-grade record, Tombali, 2017, no captive mark; COL lists Africa.
+- **Cites:** [gbif:occurrence:3325835136](https://www.gbif.org/occurrence/3325835136), [gbif:dataset:50c9509d-22c7-4a22-a47d-8c48425ef4a7](https://www.gbif.org/dataset/50c9509d-22c7-4a22-a47d-8c48425ef4a7), [col:4C92G](https://www.checklistbank.org/dataset/316595/taxon/4C92G)
 
 #### 56:KE · country-borderline (review, kept)
 
@@ -2373,7 +2467,9 @@ Species that could lose every published country:
 - **Records shown** (2 of 2):
   - [5013632864](https://www.gbif.org/occurrence/5013632864) · HUMAN_OBSERVATION · 2017-07 · 0.009699, 36.938953 ±250 m · Ol Pejeta Conservancy · NABU|naturgucker
   - [2005653544](https://www.gbif.org/occurrence/2005653544) · HUMAN_OBSERVATION · 2015-07 · 0.125, 36.875 ±12,000 m · Sweetwaters · ADU-UCT
-- **Recommendation:** pending
+- **Recommendation:** remove · **medium** · output-changing
+- **Why:** NABU|naturgucker at Ol Pejeta Conservancy, 2017, and Kenya Virtual Museum at Sweetwaters, 2015. Ol Pejeta holds the Sweetwaters chimpanzee sanctuary for rescued animals (common account; not in the sources read), and neither record marks a wild one. Inferred from locality.
+- **Cites:** [gbif:occurrence:5013632864](https://www.gbif.org/occurrence/5013632864), [gbif:occurrence:2005653544](https://www.gbif.org/occurrence/2005653544), [gbif:dataset:6ac3f774-d9fb-4796-b3e9-92bf6c81c084](https://www.gbif.org/dataset/6ac3f774-d9fb-4796-b3e9-92bf6c81c084), [gbif:dataset:999d8fed-d06d-48d8-87ee-cc36e6c8456c](https://www.gbif.org/dataset/999d8fed-d06d-48d8-87ee-cc36e6c8456c), [col:4C92G](https://www.checklistbank.org/dataset/316595/taxon/4C92G)
 
 #### 56:ML · country-borderline (review, kept)
 
