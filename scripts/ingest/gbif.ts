@@ -8,7 +8,7 @@ import {
 } from "../raw.ts";
 import type { BaseSpecies } from "../species.ts";
 
-const API = "https://api.gbif.org";
+export const GBIF_API = "https://api.gbif.org";
 // The legacy GBIF Backbone Taxonomy: ids.gbif and Wikidata P846 are its keys (D2).
 export const BACKBONE_KEY = "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c";
 const FACET_LIMIT = 300;
@@ -21,7 +21,7 @@ export const BASIS_OF_RECORD = [
 const MATCH_DROP = new Set(["timeTaken", "timings", "additionalStatus", "left", "right"]);
 
 export const gbifMatchUrl = (name: string) =>
-  `${API}/v2/species/match?checklistKey=${BACKBONE_KEY}&scientificName=${encodeURIComponent(name)}`;
+  `${GBIF_API}/v2/species/match?checklistKey=${BACKBONE_KEY}&scientificName=${encodeURIComponent(name)}`;
 
 // The record filters of the countries rule, shared by every occurrence query so the counts agree.
 const OCCURRENCE_FILTERS = [
@@ -31,10 +31,11 @@ const OCCURRENCE_FILTERS = [
 const UUID = /^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/;
 
 // An occurrence search's query, parameters in a fixed order, so the stored URL (sources[].url) is stable. Also the lab
-// sample's search count at submission (ingest gbif-sample --new), over all its taxa.
-export const occurrenceSearchQuery = (taxonKeys: readonly number[], facets: string[] = []) =>
-  [`checklistKey=${BACKBONE_KEY}`, ...taxonKeys.map((k) => `taxonKey=${k}`), ...facets, "limit=0", ...OCCURRENCE_FILTERS].join("&");
-const occurrenceSearchUrl = (taxonKey: number, facets: string[]) => `${API}/v1/occurrence/search?${occurrenceSearchQuery([taxonKey], facets)}`;
+// sample's search count at submission (ingest gbif-sample --new), over all its taxa, and the review presort's records
+// query (limit > 0).
+export const occurrenceSearchQuery = (taxonKeys: readonly number[], facets: string[] = [], limit = 0) =>
+  [`checklistKey=${BACKBONE_KEY}`, ...taxonKeys.map((k) => `taxonKey=${k}`), ...facets, `limit=${limit}`, ...OCCURRENCE_FILTERS].join("&");
+const occurrenceSearchUrl = (taxonKey: number, facets: string[]) => `${GBIF_API}/v1/occurrence/search?${occurrenceSearchQuery([taxonKey], facets)}`;
 
 export const gbifOccurrenceUrl = (taxonKey: number) =>
   occurrenceSearchUrl(taxonKey, ["facet=country", "facet=license", `facetLimit=${FACET_LIMIT}`]);
@@ -117,8 +118,8 @@ async function fetchDatasets(taxonKey: number, count: number): Promise<GbifDatas
 }
 
 export async function fetchGbif(base: BaseSpecies[]): Promise<Omit<GbifSnapshot, "retrieved">> {
-  const checklist = toChecklist((await getJson(`${API}/v1/dataset/${BACKBONE_KEY}`)) as Record<string, unknown>);
-  const countries = toCountries(await getJson(`${API}/v1/enumeration/country`));
+  const checklist = toChecklist((await getJson(`${GBIF_API}/v1/dataset/${BACKBONE_KEY}`)) as Record<string, unknown>);
+  const countries = toCountries(await getJson(`${GBIF_API}/v1/enumeration/country`));
   const species: GbifSnapshot["species"] = {};
   for (const { scientificName } of base) {
     const matchUrl = gbifMatchUrl(scientificName);

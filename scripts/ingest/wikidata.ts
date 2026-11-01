@@ -39,14 +39,18 @@ function compareBindings(a: SparqlBinding, b: SparqlBinding): number {
   return cmp(JSON.stringify(a), JSON.stringify(b));
 }
 
-export async function fetchWikidata(base: BaseSpecies[]): Promise<Omit<WikidataSnapshot, "retrieved">> {
-  const query = wikidataQuery(base);
-  const res = (await getJson(WIKIDATA_ENDPOINT, {
+// One SPARQL query POSTed to the Wikidata endpoint; the raw response, unchecked.
+export const postSparql = (query: string): Promise<unknown> =>
+  getJson(WIKIDATA_ENDPOINT, {
     method: "POST",
     headers: { Accept: "application/sparql-results+json", "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({ query }).toString(),
     timeoutMs: SPARQL_TIMEOUT_MS,
-  })) as { head?: { vars?: unknown }; results?: { bindings?: unknown } };
+  });
+
+export async function fetchWikidata(base: BaseSpecies[]): Promise<Omit<WikidataSnapshot, "retrieved">> {
+  const query = wikidataQuery(base);
+  const res = (await postSparql(query)) as { head?: { vars?: unknown }; results?: { bindings?: unknown } };
   if (JSON.stringify(res.head?.vars) !== JSON.stringify(VARS)) throw new Error(`wikidata: unexpected head.vars ${JSON.stringify(res.head?.vars)}`);
   const bindings = res.results?.bindings;
   if (!Array.isArray(bindings)) throw new Error("wikidata: results.bindings is not an array");
