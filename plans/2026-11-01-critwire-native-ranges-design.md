@@ -66,7 +66,7 @@ Out:
 
 ## Stages
 
-- [ ] Baseline: install, migrate, run typecheck, lint, unit and E2E tests; record the results under Baseline
+- [x] Baseline: install, migrate, run typecheck, lint, unit and E2E tests; record the results under Baseline
 - [ ] Architecture: `architect` writes findings and the target design
 - [ ] Fable review: `architecture-reviewer`
 - [ ] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
@@ -74,6 +74,16 @@ Out:
 - [ ] Steps: `planner` writes Steps and Verification
 
 ## Baseline
+
+Run 2026-11-01 on `e1f4461` (`origin/main` `40a0274` + mission start), db `critwire_dev` (`.env`). Script and logs: `/srv/critter-ai/agent-state/missions/critwire-native-ranges-design/` (`baseline.sh`, `baseline-*.log`, `baseline-summary.txt`).
+- `pnpm install --frozen-lockfile`: up to date. `pnpm learn:venv`: ok. No migrations (build rebuilds `db/schema.sql` tables each run). No lint script; typecheck is the static check.
+- `pnpm typecheck`: pass.
+- `pnpm test`: 754/754 pass (3.1 min).
+- `pnpm build` (plain): pass; `dist/learn/data/` 96,026,558 B, committed lab data 18,822,906 B (cap 120,000,000 each).
+- `pnpm e2e`: 149/149 pass (11.0 min); artifacts `.../critwire-native-ranges-design/e2e-baseline/` (827 MB). Reproduce: `pnpm build && E2E_ARTIFACTS=<dir> pnpm e2e`.
+- `dist/` hashes: 311 files, list `.../critwire-native-ranges-design/dist-baseline.sha256` (list's sha256 `349935ae916c4308…`); unchanged after E2E; live `/srv/apps/critwire/.live` identical (`cmp` clean). **This list is the byte-identical reference for Verification and the release smoke.**
+- Not run: `pnpm test:db` (24 min), `pnpm learn:check` (9 min): brief's Baseline doesn't name them, and this mission changes no code; plain build already refuses a lab not proven as committed.
+- Working tree clean after. Handoff: H3, H6 waiting on owner, neither blocks this mission; no `Status: done` items.
 
 ## Architecture
 
@@ -94,5 +104,7 @@ Out:
 ## Decisions
 
 ## Log
+
+- 2026-11-01 18:00 UTC: Baseline: typecheck pass, test 754/754, build pass, e2e 149/149; `dist/` 311 files = live.
 
 ## Summary
