@@ -587,6 +587,13 @@ SHOULD-CONSIDER: none
 
 ## Release
 
+- Rebase on `origin/main` (`ca66440`): no-op, branch already on it. Full Verification rerun on `c1d997e`: plain build pass; e2e 149/149, 0 flaky, 0 skipped; `learn:check` ok twice (25 `.sql`, 11 `.py`, `checked.json` unchanged); tree clean, hash check empty; typecheck pass, test 754/754, `learn:port --check all` pass (538 files). `test:db` not needed (no commit after U11 in its paths). `e2e-final/` now holds this run; 006's Pages came from `92f572e`'s, and only the plan changed between them.
+- PR: https://github.com/kc0588615/critwire/pull/16. Merge commit: `40a0274`; its tree equals the verified branch.
+- Deploy's last line: `deploy critwire: live at https://critwire.com`. Log: `/srv/critter-ai/agent-state/missions/critwire-learn-qa/release-deploy.log`. `.live` identical to the verified `dist/` (`diff -rq` empty).
+- Smoke: 8/8 pass, including every `dist/` file served with dist's bytes and `QA_FIXES on the origin`. Log: `/srv/critter-ai/agent-state/missions/critwire-learn-qa/release-smoke.log`; artifacts: `release-smoke/`. Direct curl: 47 `/learn/` pages, all 200.
+
+Result: done
+
 ## Decisions
 
 - U1a: the keyboard test passed before Q2, because Chromium's keyboard-focusable scrollers focus an overflowing region with no `tabindex`. Added one assertion to §1's test, `tabindex="0"` on each region, so it bites and covers browsers without that default. The architect's probe injected `tabindex`, so it couldn't see this.
@@ -620,6 +627,7 @@ SHOULD-CONSIDER: none
 - 2026-11-01 16:27 UTC: U12: 006 complete: 79 `fixed` SHAs filled and each resolved to its `Q<n>:` subject, 2 listed with recommendations, 0 queued, 81 rows; 47 Pages rows each with a read unit, every issue but Q2 (38 pages, noted) on its page; 47 Labs rows; hash check empty; `/v1` hashes equal baseline. typecheck pass, `learn:port --check all` pass (538 files). Next: Astra code review.
 - 2026-11-01 16:30 UTC: Astra code review: APPROVE, 0 MUST-FIX, 0 SHOULD-CONSIDER. Plan only, no checks run. Next: final Verification.
 - 2026-11-01 17:04 UTC: Final Verification on `92f572e`: plain build pass; e2e 149/149, 0 flaky, 0 skipped; `learn:check` ok twice (25 `.sql`, 11 `.py`, `checked.json` unchanged); tree clean, hash check empty; typecheck pass, test 754/754, `learn:port --check all` pass (538 files); test:db not needed (no commit after U11 in its paths). 006 refreshed from these runs; 79 SHAs resolve, 0 queued. Next: release.
+- 2026-11-01 17:40 UTC: Release: full Verification rerun on `c1d997e`, all pass (e2e 149/149, `learn:check` ok twice, test 754/754). PR #16 merged `40a0274`, deployed, `.live` = verified `dist/`, smoke 8/8, 47 `/learn/` pages 200. Mission done.
 
 ## Summary
 
@@ -636,3 +644,5 @@ One learner's pass over all of `/learn/`: 47 pages and 2 dialogs at 1280 and 375
 - **Not tested:** Power BI's M and DAX (H6, yours); Docker, EDB and Windows setup routes (no such machine here; the page says so).
 
 Verification on `92f572e`: build pass, E2E 149/149, `learn:check` ok twice, typecheck pass, test 754/754, `learn:port --check all` pass. Artifact: `/srv/critter-ai/agent-state/missions/critwire-learn-qa/e2e-final/`. Reproduce: `pnpm install --frozen-lockfile && pnpm build && E2E_ARTIFACTS=<dir> pnpm e2e`.
+
+Released: PR #16, merge `40a0274`, live at https://critwire.com; smoke 8/8, all 47 `/learn/` pages 200.
