@@ -23,6 +23,7 @@ export const QA_FIXES: QaFix[] = [
   { q: "Q10", url: "/learn/data/", has: "the extensions <code>postgis</code> and <code>postgis_raster</code>", not: "and the PostGIS extension" },
   { q: "Q11", url: "/learn/data/", has: "<a href=\"/\">critwire</a> / <a href=\"/learn/\">Learn</a>" },
   { q: "Q12", url: "/learn/schema/lab/", has: "two clips of the 100 m map, all of Costa Rica and all of Tasmania", not: "whole-country" },
+  { q: "Q13", url: "/learn/", has: "the browser's check your answer, the others show theirs to compare", not: "an exercise that checks your answer" },
 ];
 
 // What's wrong with each row on the origin `request` points at; [] when every fix shows.

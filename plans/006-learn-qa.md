@@ -216,6 +216,7 @@ Hand-only, not run here: Docker and its image tags, the EDB installer and Stack 
 | Q10 | data | prose | T0 | "Nothing but `psql` and the PostGIS extension", but the file stops without `postgis_raster` (its first check; setup installs both). 004 §4 already had it right | fixed | `qa-fixes.ts` |
 | Q11 | data | navigation | T0 | The only page with no way back to Learn: its header's "Learn" was plain text | fixed | `qa-fixes.ts` |
 | Q12 | schema-lab | prose | T0 | "Two whole-country clips": Tasmania is an Australian state, not a country. Names the two | fixed | `qa-fixes.ts` |
+| Q13 | map | prose | T0 | "Has an exercise that checks your answer": true of 8 of the 36 exercises, the browser's. The other 28 (PostGIS, Python, Power BI) show the answer to compare | fixed | `qa-fixes.ts` |
 
 ## Ledger
 
