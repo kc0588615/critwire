@@ -47,6 +47,7 @@ export const QA_FIXES: QaFix[] = [
   { q: "Q33", url: "/learn/gis-in-sql/raster/", has: "Method 2, counting cells on coarser copies of the map, wasn't chosen" },
   { q: "Q34", url: "/learn/gis-in-sql/raster/", has: "come out 4.8 and 3.9 % smaller", not: "come out 3.9 and 4.8 %" },
   { q: "Q35", url: "/learn/gis-in-sql/raster/", has: "on a grid of 0.05° steps", not: "square holding the most" },
+  { q: "Q36", url: "/learn/gis-in-sql/raster/", has: "some of Costa Rica or Tasmania", not: "The country reaches every edge" },
 ];
 
 // What's wrong with each row on the origin `request` points at; [] when every fix shows.
