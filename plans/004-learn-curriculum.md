@@ -10134,7 +10134,7 @@ in
 
 **Tool:** PBI + PG · **Time:** 2.0 h · **Prereqs:** p1
 
-**Concept:** turn eight tables into one model that filters correctly. A **relationship** tells Power BI which column of one table matches which column of another, so that a choice made in one table (a country in a slicer) reaches the rows of another (that country's records). In Model view, each fact gets a relationship to each of its dimensions, set four ways:
+**Concept:** turn eight tables into one model that filters correctly. A **relationship** tells Power BI which column of one table matches which column of another, so that a choice made in one table (a country in a **slicer**, a list on the report page that filters what the page shows) reaches the rows of another (that country's records). In Model view, each fact gets a relationship to each of its dimensions, set four ways:
 - **Cardinality many-to-one** (`*:1`): many fact rows point at one dimension row, by the key d6 declared. The "one" side must hold each key once, which d6's primary keys guarantee.
 - **Filter direction single:** a filter flows from the dimension to the fact. Choosing a country in a slicer filters `fact_records` and `fact_country_habitat`, never the other way round. Both directions invite ambiguous paths and slow, surprising totals; keep them for the rare case that needs them.
 - **Conformed dimensions:** `dim_country` is shared by all three facts and `dim_species` by the two species facts (`fact_records`, `fact_species_country`), so a country slicer filters all three at once and a species slicer the two that have a species (d6). The habitat fact has no species.

@@ -90,6 +90,7 @@ export const QA_FIXES: QaFix[] = [
   { q: "Q72", url: "/learn/capstone/game-feed/", has: "<a href=\"/learn/power-bi/power-query/\">p1</a>'s connection to your own PostgreSQL", not: "PostgreSQL connection does" },
   { q: "Q73", url: "/learn/capstone/game-feed/", has: "Microsoft's list of Excel for Mac's Power Query sources has no web source", not: "on Windows and Mac" },
   { q: "Q74", url: "/learn/power-bi/model/", has: "<strong>DAX</strong> (Data Analysis Expressions), Power BI's formula and query language" },
+  { q: "Q75", url: "/learn/power-bi/model/", has: "<strong>slicer</strong>, a list on the report page that filters what the page shows" },
 ];
 
 // What's wrong with each row on the origin `request` points at; [] when every fix shows.
