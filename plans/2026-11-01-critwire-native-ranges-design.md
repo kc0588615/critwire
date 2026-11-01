@@ -580,7 +580,7 @@ Checklist:
   - Grep each row-deciding quote against its saved file in `arch-probe/`.
   - Spike results: the S5 table, reproduce commands, what each number means, which outcomes applied. Totals only (§5).
   - Check: V4; V5's table test on `$D`; V8.
-- [ ] S7. **007: Allowlist, Data model, Contract.**
+- [x] S7. **007: Allowlist, Data model, Contract.**
   - Allowlist: from `$S/allowlist.json`: dataset, key, role, `area`, license, rows, reason, O2 flag; rejected ones grouped by reason, with counts.
   - Data model: all of §3, with the mapping table covering every combination in `results.json` `shape`; no `unmapped` left.
   - Contract: one fence opened as ` ```json contract `, holding `{"rangeListings": {<11 entries keyed by JSON name>}, "rangeListingsCsv": [<11 CSV names in column order>]}`. Entry keys as `scripts/build/contract.ts:44`: `type`, `null`, `means` (plain, from §3's tables), `values` (`origin` 4, `presence` 4, `license` 2), `pattern` (`country`), `sha` by `entrySha` (`contract.ts:47`): V6's error names each right sha; a control run gave `species.id`'s `efec33eb73ce`.
@@ -790,6 +790,8 @@ The spike's scripts can't be tested end to end, and a slip breaks a non-negotiab
 - S6, terms read, replacing §2's "Terms not checked" and "Not fetched": Amphibian Species of the World now has an archived terms page (2026-08-31), noncommercial, all other rights reserved: still rejected, for a stated reason instead of unclear terms. FishBase and SeaLifeBase CC BY-NC, WoRMS CC BY, IOC CC BY 3.0, Clements barred without authorization; Avibase's archived about page says only "© Denis Lepage", so terms unclear. None applies: no birds, fish or marine species among the 76. Their spatial units weren't checked; 007 says so. Saved in `arch-probe/terms/`; that fetch overwrote `asw-home.html`, a refusal page either way (`asw-terms.html` keeps the earlier one).
 - S6, spike replaces a probe line: §2 says Wikidata has "no references on any" (16 species); across all 76, 16 have a referenced value (12 mammals, 4 others). Still rejected: sparse, 4 of 26 non-mammals. §2 stays as the plan's record.
 - S6, 007 adds to the spec: a by-class and `range.status` coverage table, from `results.json` `gbif.groups` and `mdd.groups`. `<5` cells kept as `results.json` has them.
+- S7, contract wording names no source: `origin` and `presence` `means` define `native-or-pre-1500` and `present` by what they say, not as "MDD's rule", so an O1 no leaves no dangling reference in a frozen entry. 007's Values table keeps MDD's rule and quotes. `sourceKey` still gives `mdd` as an example id; adding rows under it needs no edit.
+- S7, 007's mapping adds a first-class "dataset with no role" line, so the 5 Shape combinations on role-less datasets (440 rows) have an outcome in the table. Same outcome as before; no new value.
 
 ## Log
 
@@ -805,5 +807,6 @@ The spike's scripts can't be tested end to end, and a slip breaks a non-negotiab
 - 2026-11-01 19:32 UTC: S4: `measure.py` finished, all metrics, 4 views. Gates: 1 pass (50 of 50), 2 pass (92 used, 0 unmapped), 3 too few to judge (9 introduced mammal rows, under 20), 4 pass (0 strings), 5 pass. 13 Shape combinations, 0 unmapped; outcomes sum to 679 rows fetched. Re-run byte-identical; V7 greps clean; leak check 0 hits. Typecheck pass; plan-only diff; no build.
 - 2026-11-01 19:35 UTC: S5: `## Spike results` recorded, 40 rows. Outcomes fired: all-defaults 10 rows (brief waits for O1 or O2 yes), GRIIS alone 9 species (O2 text), GRIIS Belgium mixes scopes (`area` null, reason updated), gate 3 too few (9 rows). Added S8, S10, V3 lines for them. V5 table test 0 missing, re-run byte-identical, sha unchanged; V7 clean; V8 0 hits. Typecheck pass; plan-only diff; no build.
 - 2026-11-01 19:42 UTC: S6: `plans/007-native-ranges.md` created with all 11 headings; Sources (21 rows) and Spike results written. Fetched the 7 missing terms pages (ASW, bird lists, fish, marine): 6 quoted, Avibase states no license. Row-deciding quotes checked against saved files. V4 pass, V5 table 0 missing, V7 clean on 007, V8 0 hits (260 files). Typecheck pass; plan-only diff; no build.
+- 2026-11-01 19:46 UTC: S7: 007's Allowlist (18 roled, 70 grouped by reason, row totals sum to 679), Data model (mapping covers all 13 Shape combinations), Contract (11 entries, 11 CSV names, shas by `entrySha`). Both SQL queries run on DuckDB: conflict test on synthetic rows, join on today's `species.parquet` (472 pairs). V4, V5 table 0 missing, V6 contract ok, mapping values in `values`, V7 clean on 007, V8 0 hits (271 files). Typecheck pass; plan-only diff; no build.
 
 ## Summary

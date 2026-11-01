@@ -147,15 +147,285 @@ python3 -I $S/measure.py --repo /srv/critter-ai/worktrees/critwire-native-ranges
 
 ## Allowlist
 
-Next step: from the spike's `allowlist.json`.
+From the spike's `allowlist.json`. Rows pass by dataset, never by field value (Sources). Every dataset the spike met has an entry and a reason: 88 datasets, 18 with a role, 70 without. A dataset met later has no role until a person gives it one: its rows yield nothing, and the ingest counts them.
+
+- **`register`:** holds only non-native species, so a blank `establishmentMeans` means introduced there.
+- **`checklist`:** holds native and non-native species alike, so a blank means nothing.
+- **`area`:** only where the whole dataset covers less than its country. Null doesn't claim the whole country.
+- **O2:** left out unless O2 is yes. 12 of the 18; the other 6 are what an all-defaults build holds.
+- **Rows:** the dataset's rows in the spike's `raw/`, before the Data model's mapping and collapse key. 35 rows in all: one yields nothing (GRIIS Australia's blank), 34 map, 32 remain after the collapse.
+
+**The GRIIS tie (O2),** for the 11 rows marked below: published by ISSG, a group of IUCN's Species Survival Commission; metadata names ISSG as project lead or contact, and some lists cite IUCN's alien-species definition or the EICAT paper. Rows are national expert lists of non-native species, not Red List data, so it's the owner's question, not a drop.
+
+| Dataset | Key | Role | `area` | License | Rows | O2 | Reason |
+|---|---|---|---|---|---|---|---|
+| Dyntaxa. Svensk taxonomisk databas | `de8934f4-a136-481c-a87a-b0b202b80a31` | checklist | null | CC0 1.0 | 1 | no | Sweden's national taxon database: native and non-native species alike, so checklist. Its one row states INTRODUCED outright. No IUCN mention. |
+| Checklist of alien herpetofauna of Belgium | `a12e2bf8-13ce-4d0b-b2d4-b1cd20450a63` | register | null | CC0 1.0 | 1 | no | Belgium's alien herpetofauna list. Row's locality is a region but the dataset spans the country, so area null. No IUCN mention. |
+| Checklist of alien mammals of Belgium | `9a52d8bf-864a-4abb-95ba-319c4edfca8d` | register | null | CC0 1.0 | 1 | no | Belgium's alien mammals list. Row's locality is a region but the dataset spans the country, so area null. No IUCN mention. |
+| DAISIE - Inventory of alien invasive species in Europe | `39f36f10-559b-427f-8c86-2d28afff68ca` | register | null | CC BY 4.0 | 1 | no | Inventory of alien species in Europe; per-row country. Only IUCN tie is one contact's affiliation (ISSG's European chair), read in session: no use of IUCN data, so not O2. |
+| List of Alien Species in South Africa 2025 | `78ee0f56-267b-49e1-8afc-19f03cf81276` | register | null | CC BY 4.0 | 3 | no | SANBI's list of alien species in South Africa: by its title holds only non-native species, so a blank means introduced. No IUCN mention. |
+| RINSE - Registry of non-native species in the Two Seas region countries (Great Britain, France, Belgium and the Netherlands) | `3f5e930b-52a5-461d-87ec-26ecd66f14a3` | register | null | CC0 1.0 | 4 | no | Registry of non-native species for four countries; per-row country, so no dataset area. No IUCN mention. |
+| Checklist of the mammals of Central Asia (Kazakhstan, Kyrgyzstan, Tajikistan, Turkmenistan, Uzbekistan) | `c71d02ff-b756-4cc0-b089-d29ba9155619` | checklist | null | CC0 1.0 | 7 | yes | The only native-but-absent source met, plus one explicit INTRODUCED row. Stated sources are literature, monographs and institutional checklists; metadata says global aggregators including IUCN were used for cross-checking and its conservation status follows the Red List. Status is never kept. A stated cross-check, not a stated source of rows, so O2's question, not a drop. |
+| Global Register of Introduced and Invasive Species - Australia | `15147db1-27c3-49b5-9c69-c78d55a4b8ff` | checklist | null | CC BY 4.0 | 1 | yes | GRIIS Australia isn't non-native only: its one row met has a blank means on the greater bilby, an Australian endemic, and an even sample of its species read in session gave 24 INTRODUCED rows and 1 blank. So a blank can't mean introduced here: role checklist, the row yields none, explicit INTRODUCED rows still count. GRIIS tie, above. |
+| GRIIS Checklist of Introduced and Invasive Species - Ecuador | `1df9467e-0c60-4e5a-a7b0-2b60bd6648ed` | register | null | CC BY 4.0 | 4 | yes | National list of introduced species; rows met say INTRODUCED outright. GRIIS tie, above. |
+| Global Register of Introduced and Invasive Species - Belgium | `6d9e952f-948c-4483-9807-575348147c7e` | register | null | CC BY 4.0 | 2 | yes | National list of introduced species; rows met say INTRODUCED outright. Rows mix scopes in locality (Belgium, Flemish Region), so area null. GRIIS tie, above. |
+| Global Register of Introduced and Invasive Species - Colombia | `168568e7-eb5f-4ef6-8c59-f73ceaf57e91` | register | null | CC BY 4.0 | 2 | yes | National list of introduced species; rows met say INTRODUCED outright. GRIIS tie, above. |
+| Global Register of Introduced and Invasive Species - Germany | `2a281675-c184-4d54-a47e-5d3a7ec6653f` | register | null | CC BY 4.0 | 1 | yes | National list of introduced species; rows met say INTRODUCED outright. GRIIS tie, above. |
+| Global Register of Introduced and Invasive Species - Hawaii, United States (ver.2.0, 2022) | `6baf6a53-c106-40fb-bbde-f6d4e4051513` | register | Hawaii | CC0 1.0 | 1 | yes | US-RIIS Hawaii list: 'a taxon must be non-native everywhere in the locality'; 'Native pest species are not included'. Whole dataset is Hawaii, so area. GRIIS tie, above. |
+| Global Register of Introduced and Invasive Species - Japan | `5c5a6e45-d510-45ed-b7bf-6d0624fac056` | register | null | CC BY 4.0 | 1 | yes | National list of introduced species; rows met say INTRODUCED outright. GRIIS tie, above. |
+| Global Register of Introduced and Invasive Species - Peru | `5aa5f29e-532e-4ae5-81c0-f8a9eb4dcaf2` | register | null | CC BY 4.0 | 1 | yes | National list of introduced species; rows met say INTRODUCED outright. GRIIS tie, above. |
+| Global Register of Introduced and Invasive Species - Singapore | `7b6661a3-5bbd-4dbb-b3e4-0c26df341977` | register | null | CC BY 4.0 | 1 | yes | National list of introduced species; rows met say INTRODUCED outright. GRIIS tie, above. |
+| Global Register of Introduced and Invasive Species - South Africa | `3cabcf37-db13-4dc1-9bf3-e6f3fbfbbe23` | register | null | CC BY 4.0 | 2 | yes | National list of introduced species; rows met say INTRODUCED outright. GRIIS tie, above. |
+| Global Register of Invasive and Introduced Species - Norway | `38de3b7a-5af3-4b6f-a1c5-4c0aa6abf010` | register | null | CC BY 4.0 | 1 | yes | National list of introduced species; rows met say INTRODUCED outright. GRIIS tie, above. |
+
+**Without a role.** 70 datasets, 440 rows in `raw/`, none published:
+
+| Why no role | Datasets | Rows in `raw/` | Rows dropped at fetch |
+|---|---|---|---|
+| License isn't CC0 or CC BY (44 CC BY-NC, 1 unspecified) | 45 | 0 | 125 |
+| Fields can't be trusted: the Brazil catalogue marks animals INTRODUCED in their home countries, COLSA marks exotic animals NATIVE in South Africa | 2 | 233 | 0 |
+| Text, no country on any row: COL and ITIS | 2 | 150 | 0 |
+| Local, regional or national list with blank means and status: no claim to map | 16 | 42 | 0 |
+| National list of `NATIVE` rows, or `NATIVE` and blank: no row under one native authority; comparison only | 3 | 13 | 0 |
+| National or regional red list with a blank means: no origin claimed | 2 | 2 | 0 |
+
+**Dropped before any of the above, and not among the 88:**
+
+- The IUCN checklist (`19491596-35ae-4a91-9a98-85cf505f1bd3`), by key, whatever its license: 72 rows.
+- Humboldt Institute's list of mammals prioritised for national Red Book categorisation (`9e86d932-72b2-46ca-a441-0ecb68dc5d1a`), which names IUCN in its title and citation and is CC BY-NC anyway: 7 rows.
+
+So 679 rows fetched = 72 + 7 + 125 for license + 475 in `raw/`, of which 35 on the 18 and 440 on the 70.
 
 ## Data model
 
-Next step.
+**A new file family: `/v1/range-listings.{json,csv,parquet}`**, one row per claim a source makes: "this source lists this animal in this country as…". The word *listings* keeps it honest and leaves `ranges.parquet` free for the polygons `plans/001-mvp.md:49` reserves that name for. The JSON is an array of rows, like `/v1/countries.json`.
+
+It's a file and not a field under `range` for three reasons:
+
+- `scripts/build/columns.ts:17` and `:47-50` put a new `range.*` leaf before `photo_url` in the CSV, and `scripts/build/contract.ts:177` then fails "needs /v2".
+- `sources[]` allows one source per field (`scripts/derive/record.ts:19`, `:74`), and a country list has many.
+- `/learn/data/manifest.json` pins `species.parquet`'s sha256 (`scripts/build/learn/data.ts:80`), so any species byte would change `dist/learn/`.
+
+A new file leaves `species.*`, `countries.*` and all of `dist/learn/` byte-identical.
+
+| JSON (CSV) | Type | Null | Means |
+|---|---|---|---|
+| `speciesId` (`species_id`) | INTEGER | no | `/v1/species` `id` |
+| `country` | VARCHAR | no | `/v1/countries` `code`; pattern `^[A-Z]{2}$` |
+| `area` | VARCHAR | yes | The narrower scope the source states (Hawaii, Azores), set per dataset in the allowlist or per place in `MDD_PLACES`, never from free-text `locality`. Null: none recorded, which doesn't claim the whole country |
+| `origin` | VARCHAR | no | Table below |
+| `presence` | VARCHAR | no | Table below |
+| `source` | VARCHAR | no | The dataset's name; `attribution.json` credits each |
+| `sourceKey` (`source_key`) | VARCHAR | no | Stable id: GBIF `datasetKey`, `mdd` or `curated`; joins `attribution.gbifChecklists[].key` |
+| `license` | VARCHAR | no | `CC0 1.0`, `CC BY 4.0` |
+| `doi` | VARCHAR | yes | The dataset's DOI; null only on curated rows (O3). All 18 datasets with a role have one |
+| `url` | VARCHAR | no | The row's evidence page: `https://www.gbif.org/species/{sourceTaxonKey}`; `https://www.mammaldiversity.org/taxon/{id}`; a curated row's own reference |
+| `sourceTerm` (`source_term`) | VARCHAR | no | What the source said, verbatim: `Cambodia?`, `INTRODUCED/PRESENT`, `-/PRESENT` (`-` = blank) |
+
+- **Codes:** ISO alpha-2 only. GBIF's TDWG, GADM and free-text `locationId` values aren't kept.
+- **Key and order:** rows are sorted by `speciesId, country, area, origin, presence, sourceKey`, and that tuple is the key.
+- **Collapse:** rows with the same key become one, so a usage-key and an accepted-key fetch can't double count. The lowest `sourceTaxonKey` gives `url` and `sourceTerm`, and derive prints how many collapsed.
+- **Size, spike:** all yes before O3, 432 rows on 57 species, 155,392 B JSON, 68,669 B CSV. All defaults, 10 rows on 5 species, 4,217 B JSON. A whole file, so no per-species JSON at first (additive later).
+- **`area` in the spike:** one row has it, GRIIS Hawaii's. MDD has 10 places with an `area`, and no matched species uses them.
+
+**Values.** Two columns, because "uncertain" alone would blur *uncertainly native* with *doubtfully introduced*, and they mirror Darwin Core's `establishmentMeans` and occurrence status. Each value claims only what the source says. The contract freezes all of them in the first build, whatever O1 to O3 say, so a later yes adds rows, not a definition edit.
+
+| `origin` | Means |
+|---|---|
+| `native-or-pre-1500` | MDD's rule: native, or introduced before 1500 CE. MDD doesn't separate the two |
+| `native` | The source says native, without that blur: a checklist, or a curated row's reference |
+| `introduced` | The source says introduced, or lists it on a register of non-native species. Doesn't say it lives wild there |
+| `uncertain` | The source marks its origin uncertain |
+
+| `presence` | Means |
+|---|---|
+| `present` | The source says present. MDD: "extant or reintroduced into its native distribution" |
+| `uncertain` | MDD's `?`: "uncertainly present or possibly extinct". GBIF: `DOUBTFUL` |
+| `absent` | The source says absent. Doesn't say it once lived there, or why, or since when |
+| `unstated` | The source gives no status. Doesn't say it lives there now |
+
+**Mapping.** Exhaustive; first match wins. `*` = by status: `PRESENT`, `COMMON`, `RARE`, `IRREGULAR`, `DETECTED` → `present`; `DOUBTFUL` → `uncertain`; `ABSENT` → `absent`; blank → `unstated`.
+
+| Role | `establishmentMeans` | `status` | `origin` | `presence` |
+|---|---|---|---|---|
+| MDD | `Kenya` | | `native-or-pre-1500` | `present` |
+| MDD | `Cambodia?` | | `native-or-pre-1500` | `uncertain` |
+| MDD | `NA`, `Domesticated` | | no row, counted | |
+| curated (O3) | as its reference says | | `native` | `present`, `uncertain` or `absent` |
+| dataset with no role | any | any | no row, counted | |
+| register, checklist | no `country` | any | no row, counted | |
+| register, checklist | any | `EXCLUDED`, `NOT_DETECTED` | no row, counted | |
+| register, checklist | `MANAGED` | any | no row, counted | |
+| register, checklist | `INTRODUCED`, `NATURALISED`, `INVASIVE` | any | `introduced` | `*` |
+| register, checklist | `UNCERTAIN` | any | `uncertain` | `*` |
+| register | blank | any | `introduced` | `*` |
+| register | `NATIVE` | any | no row, counted | |
+| checklist | `NATIVE` | `ABSENT` | `native` | `absent` |
+| checklist | `NATIVE` | other | no row, counted: one native authority (below) | |
+| checklist | blank | any | no row, counted: no origin claimed | |
+
+- A dataset gets role `register` only if it holds only non-native species, which is what lets a blank mean `introduced` there: GRIIS Hawaii's `Apalone spinifera` row (`-/PRESENT`, remark "Native to: contiguous 48 states"), South Africa's alien list.
+- `COMMON`, `RARE` and `IRREGULAR` all assert presence; `sourceTerm` keeps the adjective.
+- **Any other value or combination refuses at derive, naming the row.** Derive prints each exclusion's count.
+
+**Every combination the spike met,** all 475 rows in `raw/`, each with its outcome above, none unmapped (`-` = blank):
+
+| Role | `establishmentMeans` | `status` | Rows | Outcome |
+|---|---|---|---|---|
+| register | - | PRESENT | 4 | `introduced` / `present` |
+| register | INTRODUCED | ABSENT | 1 | `introduced` / `absent` |
+| register | INTRODUCED | DOUBTFUL | 3 | `introduced` / `uncertain` |
+| register | INTRODUCED | PRESENT | 18 | `introduced` / `present` |
+| checklist | - | PRESENT | 1 | no row: no origin claimed |
+| checklist | INTRODUCED | DOUBTFUL | 1 | `introduced` / `uncertain` |
+| checklist | INTRODUCED | PRESENT | 1 | `introduced` / `present` |
+| checklist | NATIVE | ABSENT | 6 | `native` / `absent` |
+| none | - | - | 139 | no row: dataset has no role |
+| none | - | PRESENT | 81 | no row: dataset has no role |
+| none | INTRODUCED | - | 8 | no row: dataset has no role |
+| none | NATIVE | - | 204 | no row: dataset has no role |
+| none | NATIVE | PRESENT | 8 | no row: dataset has no role |
+
+Most of the mapping's lines met no row today. They stay, because the enums allow those values and a refresh may bring them.
+
+**Historical is thin, by the sources' choice.** MDD says "Recently introduced and extinct populations are not included in the distribution of living mammals". The file's only historical signal is `native` + `absent`: 6 rows on 2 species, all from the Central Asia checklist, an O2 dataset. So an all-defaults build has no historical rows at all. That checklist's remark, "исчез на территории" (disappeared from the territory), isn't kept, so the row claims only what its field says, and `url` leads to the rest. The contract says rows state what open checklists list, with no promise of completeness.
+
+**Null and absent.** No row means critwire holds no open listing, never that the animal isn't there. No arrays, no `[]`, no per-species status: `range.status` stays what it is, about records. A species with `identity-unsettled` can still have MDD rows, because that state is about GBIF's match.
+
+**Conflict rule.** Prefer one good source:
+
+- **One authority per claim.** Native lists: MDD for mammals (O1), the curated file for others (O3). Introduced, and native but absent: the allowlisted registers and checklists. No two native lists are ever merged.
+- **Disagreements are shown, never fixed.** A conflict is a claim against its opposite, on `area`-null rows of one species and country: `native` or `native-or-pre-1500` against `introduced`; `present` against `absent`. `uncertain` and `unstated` contradict nothing. **Both rows ship**, and `data/review/range-conflicts.json` gets a `range-conflict` entry, severity `review`, naming both `sourceKey`s. Agreeing rows from two registers also both ship, each credited.
+- **Name misses.** A base name with no MDD row gets a `range-not-found` entry, severity `info`, when it's a mammal. The spike had none.
+
+`range-conflicts.json` uses the `Mismatch` shape (`scripts/species.ts:60`), but stays out of `data/review/mismatches.json`, because `scripts/review/presort.ts:172-174` refuses a queue that differs from its evidence. That file isn't served, so the docs page prints the same test, checked on DuckDB against synthetic rows (found: `native-or-pre-1500` against `introduced`, `native` + `absent` against `introduced` + `present`, `introduced` + `present` against `introduced` + `absent`; not found: a pair where one row has an `area`, `native` against `native-or-pre-1500`, `uncertain` against `introduced`):
+
+```sql
+SELECT speciesId, country FROM 'range-listings.parquet' WHERE area IS NULL GROUP BY 1, 2
+HAVING (COUNT(*) FILTER (origin LIKE 'native%') > 0 AND COUNT(*) FILTER (origin = 'introduced') > 0)
+    OR (COUNT(*) FILTER (presence = 'present') > 0 AND COUNT(*) FILTER (presence = 'absent') > 0);
+```
+
+**Against `range.countriesWithOpenRecords`.** It isn't replaced or touched: it answers "where do open records exist", this file answers "what do sources list". The agreement measure is a join anyone can run, and `pnpm derive` prints the totals. Checked on DuckDB against today's `species.parquet`, whose 472 species-country pairs all stay in the result:
+
+```sql
+SELECT s.id, s.code, l.origin, l.presence, l.source
+FROM (SELECT id, unnest("range".countriesWithOpenRecords) AS code FROM 'species.parquet') AS s
+LEFT JOIN 'range-listings.parquet' AS l ON l.speciesId = s.id AND l.country = s.code;
+```
+
+Spike, totals only, the 50 mammals: 285 of 379 record countries are on a listing (0.752), and 275 of MDD's 364 `present` rows have open records (0.7555).
+
+**Attribution.** `attribution.sources[]` gains `GBIF checklists` and, with O1, `Mammal Diversity Database`, registered in `scripts/build/sources.ts` (MDD's citation per release, as `COL_CITATIONS` does, so a new release fails until added). `fields` lists the columns file-qualified, one by one, as Natural Earth's does (`scripts/build/attribution.ts:71`). A new top-level `gbifChecklists` lists every used dataset with key, license, DOI, citation and row count, as `gbifDerivedDataset.datasets` does. `notes` and `DATA-LICENSE.md` state the IUCN ties of whatever the owner accepts, plainly.
 
 ## Contract
 
-Next step.
+The build copies this into `contracts/v1.json` in the commit that adds the writer. It needs two new top-level keys in `V1Contract` and one more `checkTable` and `checkCsv` call (`scripts/build/contract.ts:25-31`, `:185-197`). Entries for a new file are additions, not definition edits, so there's no `/v2` and no owner review (`AGENTS.md`, Data). Each `sha` is `entrySha`'s (`contract.ts:47`).
+
+The wording names no source, so an O1 no leaves nothing false or dangling: `native-or-pre-1500` is defined by what it says, and MDD's rule is what the Values table above ties it to.
+
+```json contract
+{
+  "rangeListings": {
+    "speciesId": {
+      "type": "INTEGER",
+      "null": false,
+      "means": "the animal's id in /v1/species (its id field)",
+      "sha": "a73d3a0a2316"
+    },
+    "country": {
+      "type": "VARCHAR",
+      "null": false,
+      "means": "the country the source lists the animal in: a code from /v1/countries; a row says what a source lists, not that the animal lives there; no row means critwire holds no open listing, never that the animal isn't there",
+      "pattern": "^[A-Z]{2}$",
+      "sha": "97766e3f4fc0"
+    },
+    "area": {
+      "type": "VARCHAR",
+      "null": true,
+      "means": "the narrower scope the source states inside the country (Hawaii, Azores), set per source or place, never from free text; null: none recorded, which doesn't claim the whole country",
+      "sha": "55345a8d47d7"
+    },
+    "origin": {
+      "type": "VARCHAR",
+      "null": false,
+      "means": "how the source says the animal came to be there: native-or-pre-1500 (native, or introduced before 1500 CE; the source doesn't separate the two), native (the source says native, without that blur), introduced (the source says introduced, or lists it on a register of non-native species; doesn't say it lives wild there), uncertain (the source marks its origin uncertain)",
+      "values": [
+        "native",
+        "native-or-pre-1500",
+        "introduced",
+        "uncertain"
+      ],
+      "sha": "a795d9fe9e82"
+    },
+    "presence": {
+      "type": "VARCHAR",
+      "null": false,
+      "means": "what the source says about the animal being there: present (the source says present; a native list's present can include a reintroduction into the native distribution), uncertain (the source marks it doubtful, uncertainly present or possibly extinct), absent (the source says absent; doesn't say it once lived there, or why, or since when), unstated (the source gives no status; doesn't say it lives there now)",
+      "values": [
+        "present",
+        "uncertain",
+        "absent",
+        "unstated"
+      ],
+      "sha": "33fd7bdaecf0"
+    },
+    "source": {
+      "type": "VARCHAR",
+      "null": false,
+      "means": "the source's name, as attribution.json credits it",
+      "sha": "fec809e5dd0b"
+    },
+    "sourceKey": {
+      "type": "VARCHAR",
+      "null": false,
+      "means": "the source's stable id: a GBIF dataset key, or a short name for any other source (mdd, curated); a GBIF key joins attribution.json's gbifChecklists[].key",
+      "sha": "b0c4c6d8169f"
+    },
+    "license": {
+      "type": "VARCHAR",
+      "null": false,
+      "means": "the license of this row's values, as its source grants it",
+      "values": [
+        "CC0 1.0",
+        "CC BY 4.0"
+      ],
+      "sha": "af0ed682f935"
+    },
+    "doi": {
+      "type": "VARCHAR",
+      "null": true,
+      "means": "a DOI to cite the source by (bare, without https://doi.org/); null only on a curated row, whose url is its reference",
+      "sha": "f6a1312e9caa"
+    },
+    "url": {
+      "type": "VARCHAR",
+      "null": false,
+      "means": "the page to check this row against: the source's page for the taxon, or a curated row's own reference",
+      "sha": "38ff98ecc068"
+    },
+    "sourceTerm": {
+      "type": "VARCHAR",
+      "null": false,
+      "means": "what the source said, verbatim: a place as listed, with its question mark if it has one (Cambodia?), or establishment means and status joined by a slash (INTRODUCED/PRESENT; - when blank), or a curated row's reference's own words",
+      "sha": "0813a604497a"
+    }
+  },
+  "rangeListingsCsv": [
+    "species_id",
+    "country",
+    "area",
+    "origin",
+    "presence",
+    "source",
+    "source_key",
+    "license",
+    "doi",
+    "url",
+    "source_term"
+  ]
+}
+```
 
 ## Pipeline
 
