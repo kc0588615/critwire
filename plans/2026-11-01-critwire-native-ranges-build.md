@@ -134,7 +134,7 @@ This addendum is part of the brief. Where it differs from the text above, it win
 - [x] Architecture: `architect` writes findings and the target design
 - [x] Fable review: `architecture-reviewer`
 - [x] Astra review: `astra-review` (write "Skipped: <reason>" if it's unavailable)
-- [ ] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
+- [x] Revision: `architect` resolves MUST-FIX items (check off as "none needed" if there are none)
 - [ ] Steps: `planner` writes Steps and Verification
 
 ## Baseline
@@ -163,12 +163,13 @@ Ranked by impact. Each was checked against code or run.
    - `ingest gbif-sample` uses `deriveCore` so a stale derived file never blocks its re-ingest (`pipeline.ts:3-4`, `scripts/ingest/gbif-sample.ts:74-78`, tested at `scripts/derive/sample.test.ts:146`). Stale listings would block it.
    - The function that makes `species.json` would depend on the new sources.
    **Fix:** a third half, like `deriveSample`: `deriveAll = deriveCore + deriveSample + deriveListings`. `deriveCore` only adds an in-memory `checklistKeys`, and `matchCountries` stays untouched. Same refusals, same strength. Update 007 and record it under Decisions.
+   **Cost:** `deriveAll`'s other callers now refuse a stale listing snapshot too (`scripts/gbif-register.ts:42`, `scripts/review-accept.ts:44`, `:57`, `scripts/ingest/habitat.ts:452`), as they already do a stale sample. Accepted and documented: Target design, "Who a stale listing snapshot blocks".
 2. **Byte-identical has traps 007 doesn't name.** The data flow is sound, but editing these moves `dist/learn/` or stales every lab:
    - `site/style.css`: inlined into every Learn page (`scripts/build/learn/pages.ts:97`, `data.ts:129`). The docs section uses existing styles only.
    - `scripts/build/licenses.ts`, `scripts/build/learn/sql.ts`, `scripts/learn/cell.ts`: in the Learn bundle (`site/learn/src/cards.ts:6-8`, `engine.ts:13`), so the hashed asset moves.
    - `scripts/json.ts`, `scripts/env.ts`, `scripts/venv.ts`, `scripts/learn/*`: checker closure (`scripts/learn/freshness.ts:27`, `:170`). One byte fails plain build with "lab … is stale". So no shared helper goes in `json.ts`.
    - Computed closure: 27 files, none of the others this mission edits.
-3. **Attribution is undecided for `mdd` and `curated` (`007:349`, `:249`).** The brief's E2E needs every `source_key` credited, but only GBIF keys have a join. Curated rows have no source name or credit. `GBIF checklists` needs one `license` (`scripts/build/attribution.ts:16`) over a CC0 and CC BY mix. `attribution.ts:57` throws for a registered source with no entry. `scripts/build/docs.ts:24` says "records" for anything but Natural Earth. Fix under Target design.
+3. **Attribution is undecided for `mdd` and `curated` (`007:349`, `:249`).** The brief's E2E needs every `source_key` credited, but only GBIF keys have a join. Curated rows have no source name or credit. `GBIF checklists` needs one `license` (`scripts/build/attribution.ts:16`) over a CC0 and CC BY mix, and `licenseUrl()` throws on a string `LICENSE_URLS` lacks (`attribution.ts:72`, `:103`; `scripts/build/licenses.ts:21`). `attribution.ts:57` throws for a registered source with no entry. `scripts/build/docs.ts:24` says "records" for anything but Natural Earth. Fix under Target design.
 4. **Curated file (`007:466`, `:534`, brief line 88): the addendum removes the gate, and 007's shape dies with it.** `reviewedBy` would be a dead field: drop it. 007 also never says how the file is validated, and "the guard covers snapshots only" would leave it unguarded. Fix under Target design.
 5. **Spike's snapshot shape shouldn't be copied.** `fetch.py:38` keeps `locality`, and `raw/` holds 440 rows on no-role datasets. Committing those puts rows of unchecked license in a public repo, for no use: a new role already forces a re-ingest through the `allowlist` check. **Fix:** write role-dataset rows only, and count the rest per dataset. `007:285`'s "dataset with no role" line moves to the ingest. Metadata is fetched for role datasets only, so about 70 fewer requests.
 6. **Sort order bug if `writeCountries` is copied.** DuckDB's default `ORDER BY` puts NULL last (run: `a, b, NULL`). `area` is in the key, and JS needs a defined order too. **Fix:** derive sorts null first; the writer says `area NULLS FIRST`.
@@ -202,7 +203,7 @@ Ranked by impact. Each was checked against code or run.
 | MDD CSV | `withOfflineDuckDb` + `read_csv`, selecting 3 columns. `simple-csv.ts` is tab-only; no CSV dep |
 | CLI wrapper | `snapshot`, `withBase`, `noArgs` (`scripts/ingest.ts:20-37`) |
 | Staleness | `staleSnapshot`, `assertBaseNames` (`scripts/raw.ts:86`, `:89`). `staleSnapshot` already gives the brief's exact message |
-| License | `DATASET_LICENSES` (`gbif-sample.ts:51`), `OPEN_LICENSES` (`scripts/learn/sample-rules.ts:12`), `licenseUrl` |
+| License | `DATASET_LICENSES` (`gbif-sample.ts:51`) maps the URL, then `OPEN_LICENSES` (`scripts/learn/sample-rules.ts:12`) decides; `licenseUrl` per dataset |
 | Curated parsing | `parseOverrides`' pattern (`scripts/derive/countries.ts:133`) |
 | Contract | `checkTable`, `checkCsv` (`scripts/build/contract.ts:114`, `:177`) |
 | Citation per release | `colCitation`'s pattern (`scripts/build/sources.ts:30`) |
@@ -220,9 +221,9 @@ Ranked by impact. Each was checked against code or run.
 | `scripts/ingest/gbif-checklists.ts` (new) | `fetchGbifChecklists(keysByName)`: fetch and normalize, no fs. Key allowlist, license refusal, guard |
 | `scripts/ingest/mdd.ts` (new) | `MDD_FILE` pin, `fetchMdd(base)` |
 | `scripts/derive/gbif.ts` | Adds `checklistKeys(g)` |
-| `scripts/derive/mdd-places.ts` (new) | `MDD_PLACES`, from `mdd-places.json` |
-| `scripts/derive/listings.ts` (new) | Files, `readListingInputs`, `deriveListings`: freshness, curated parsing, mapping, collapse, conflicts. Pure. Split curated parsing out if it grows past about 300 lines |
-| `scripts/derive/pipeline.ts` | `CoreResult.checklistKeys`, third half in `deriveAll`, two more `derivedFiles` (appended, so `species.json` stays first) |
+| `scripts/derive/mdd-places.ts` (new) | `MDD_PLACES`: a committed TS constant, copied once from the spike's `mdd-places.json`. Derive reads nothing outside the repo |
+| `scripts/derive/listings.ts` (new) | Files, `readListingInputs`, `deriveListings`: freshness, curated parsing, mapping, collapse, `rangeConflicts(rows)` (exported for E2E). Pure. Split curated parsing out if it grows past about 300 lines |
+| `scripts/derive/pipeline.ts` | `CoreResult.checklistKeys`, third half in `deriveAll`, two more `derivedFiles` (appended, so `species.json` stays first); `:118`'s comparator becomes a module constant `byEntry`, which `deriveAll` also applies to the listings' entries |
 | `scripts/build/range-listings.ts` (new) | `RANGE_LISTING_COLUMNS` (a `Columns`), `writeRangeListings(rows, outDir)` |
 | `scripts/build/tables.ts` | Shared `<name>.parquet` + `.csv` writer; `writeTables`, `writeCountries` and the new one call it |
 | `scripts/build/contract.ts`, `sources.ts`, `attribution.ts`, `docs.ts` | Third table and CSV list; 3 registered sources and `MDD_CITATIONS`; credits; rendering |
@@ -245,12 +246,14 @@ MddSnapshot {
   species: Record<baseMammalName, { id: string; places: string } | null>; // places: the cell, verbatim
 }
 ```
-- A role dataset whose license isn't one of the two, or that lacks `doi`, `title` or `citation.text`: the ingest throws, nothing written. A person removes the role, with a Decisions line.
+- License: `DATASET_LICENSES` maps the URL (an unknown one throws), then the ingest refuses anything outside `OPEN_LICENSES`. The map alone isn't enough: it also holds `CC BY-NC 4.0`.
+- A role dataset whose license fails that, or that lacks `doi`, `title` or `citation.text`: the ingest throws, nothing written. A person removes the role, with a Decisions line.
+- **The key allowlist is what keeps `threatStatus` out.** `fetchGbifChecklists` builds each row and dataset field by field from the keys above, never by spread or denylist. The spike's `raw/` rows prove nothing, since `fetch.py`'s `ROW_KEYS` had already filtered them. Its count does matter: 144 fetched rows carried the key, 5 of them on role datasets (spike `results.json:1296-1297`). The guard's new key is the second line. Proof at the real fetch: the ingest logs that count (stderr only), and the spec checks that each committed row's keys are exactly the five and each dataset's the four.
 - The red-list dataset's key is never written; only its count is.
 - MDD: the Zenodo record's `license.id`, DOI and version are read each run. Refuses unless 6,904 rows and unique names. `iucnStatus` and `extinct` are never selected. The temp file lives in its own `mkdtemp` folder and is removed after.
 - "Mammal" means `base[].taxonomy.class`, in both ingest and derive. `assertBaseNames` takes the filtered list unchanged.
 
-**Derived file:** `data/range-listings.json`: `{ sources: { gbifChecklists: { retrieved, datasets: [{ key, title, license, doi, citation, rows }] }, mdd: { retrieved, release, license, rows }, curated: { rows } }, rows }`. Datasets with 0 rows aren't "used" and aren't listed (GRIIS Australia today). `data/review/range-conflicts.json`: `Mismatch[]`, `canonical: false`.
+**Derived file:** `data/range-listings.json`: `{ sources: { gbifChecklists: { retrieved, datasets: [{ key, title, license, doi, citation, rows }] }, mdd: { retrieved, release, license, rows }, curated: { rows } }, rows }`. Datasets with 0 rows aren't "used" and aren't listed (GRIIS Australia today). `data/review/range-conflicts.json`: `Mismatch[]`, `canonical: false`, `field: "range-listings"` (the file's name: not a record path, so it can't read as a species field), sorted by `byEntry`. One `range-conflict` per (species, country), the query's grain, with `values.claims` holding every `area`-null row's `{ sourceKey, origin, presence }` in key order (`007:328`'s "both" becomes "every": a cell can hold three). One `range-not-found` per species, no `country`. So `byEntry`'s four keys are unique, and the file sorts and dedupes as `mismatches.json` does.
 
 **Data flow:**
 ```
@@ -263,7 +266,7 @@ readBuildInputs         assertDerivedFiles, then checkV1Contract (third table) �
 scripts/build.ts        buildAttribution(…, rangeListings), renderDocs (before any write);
                         writeRangeListings(rows, v1) right after writeCountries (:58)
 ```
-`deriveListings` order: freshness and guard on both snapshots → parse curated → map GBIF, MDD, curated → check each code against `core.countries.rows` → collapse, sort → conflicts, not-found → guard on rows. Printed by `scripts/derive.ts`: rows and species per source, collapsed, each exclusion's count, `dropped`, conflicts, agreement totals.
+`deriveListings` order: freshness and guard on both snapshots → parse curated → map GBIF, MDD, curated → check each code against `core.countries.rows` → collapse, sort → conflicts, not-found → guard on rows. Printed by `scripts/derive.ts`: rows and species per source, collapsed, each exclusion's count, `dropped` (`noRole` by dataset key, so a newly met dataset shows in the PR body), conflicts, agreement totals.
 
 **Where each refusal lives** (all run in `pnpm derive` or before `scripts/build.ts` writes anything):
 
@@ -274,7 +277,7 @@ scripts/build.ts        buildAttribution(…, rangeListings), renderDocs (before
 | Keys or allowlist differ | `assertGbifChecklistsFresh(snapshot, base, core.checklistKeys)`, `isDeepStrictEqual` as `naturalearth.ts:44`, `staleSnapshot("gbif-checklists", "<name>: keys")` / `"allowlist"` |
 | MDD pin | `assertMddFresh` against `MDD_FILE` |
 | MDD citation | `mddCitation` in `sources.ts`, during `buildAttribution` (`scripts/build.ts:43`), before any write |
-| License | Both fresh asserts, on `datasets[].license` and MDD's `license`; contract `values` again |
+| License | Both fresh asserts, `OPEN_LICENSES` on `datasets[].license` and MDD's `license`; contract `values` again |
 | IUCN string, `threatStatus` | `assertNoIucnData` at ingest and in both fresh asserts (derive doesn't re-guard snapshots today), on curated input and on final rows |
 | Off-mapping value or combination | Table-driven `mapChecklistRow`, throws naming species, dataset, country, means, status |
 | Unmapped place, country with no row | `mapMddPlace`, and the code check in `deriveListings`, naming the row. Replaces 007's `matchCountries` route; better message |
@@ -285,7 +288,7 @@ scripts/build.ts        buildAttribution(…, rangeListings), renderDocs (before
 **Curated rows, no gate (addendum).** `data/review/range-curated.json` is a bare array, like `country-overrides.json`; it starts `[]`. Each element has exactly `speciesId, country, area, presence, url, sourceTerm`. Derive fills the rest: `origin` `native`, `source` `critwire curated`, `sourceKey` `curated`, `license` `CC BY 4.0`, `doi` null.
 `parseCurated` refuses:
 - an unknown species, or a mammal (one authority per claim);
-- a bad country; `presence` other than `present`, `uncertain`, `absent`; a non-`https` `url`; a blank `sourceTerm`; a blank `area` (null or text);
+- a bad country; `presence` other than `present`, `uncertain`, `absent`; a non-`https` `url`; a blank `sourceTerm`; an `area` that's neither null nor non-blank text;
 - a duplicate key;
 - anything `assertNoIucnData` refuses, which covers any `iucn` URL.
 
@@ -295,8 +298,8 @@ Coverage of the 26 is an E2E check, not a derive refusal: a future non-mammal sh
 - Rows' `source` is the GBIF dataset title, `Mammal Diversity Database` or `critwire curated`.
 - `sources[]` gains all three registered entries, always emitted, so `attribution.ts:57` holds while curated is `[]`.
 - `sources[].sourceKey` (new, optional) is set on `mdd` and `curated`. The E2E join: `gbifChecklists[].key` ∪ `sources[].sourceKey`.
-- `GBIF checklists`: `license` `CC0 1.0 or CC BY 4.0, per dataset`, `licenseUrl` null. `licenseLink` prints plain text (`scripts/build/html.ts:8`).
-- Top-level `gbifChecklists`: `{ key, title, license, licenseUrl, doi, url, citation, rows }[]`.
+- `GBIF checklists`: `license` `CC0 1.0 or CC BY 4.0, per dataset`, a summary only. Its builder sets the literal `licenseUrl: null` and never calls `licenseUrl()`, which would throw (`scripts/build/licenses.ts:21`). `LICENSE_URLS` and `licenses.ts` gain nothing: that file is in the Learn bundle (Finding 2). `docs.ts` needs nothing for it: `licenseLink(license, null)` prints text (`scripts/build/html.ts:8`). `e2e/attribution.spec.ts:41` already accepts null. MDD and curated do call `licenseUrl("CC BY 4.0")`.
+- Top-level `gbifChecklists`: `{ key, title, license, licenseUrl, doi, url, citation, rows }[]`. Each `license` is one of the two, and each `licenseUrl` comes from `licenseUrl(license)`. The summary string stays on the `sources[]` entry: no dataset or row carries it. E2E: a row's `license` equals its dataset's.
 - `MDD_CITATIONS["v2.5"]`: `release.toml`'s `zenodo_citation`, verbatim; a new release fails until added.
 - Curated credit: `CRITWIRE_CREDIT`, url the file on GitHub.
 - Ties: per-source `notes` on `GBIF checklists` and MDD.
@@ -311,12 +314,27 @@ Coverage of the 26 is an E2E check, not a derive refusal: a future non-mammal sh
 - `dist/learn/`'s inputs don't change, given Finding 2's off-limits list.
 - Elapsed time is never staleness, as `assertGbifFresh`. A plain `ingest gbif` that keeps keys doesn't stale listings.
 - Proof: `sha256sum -c` against `dist-baseline.sha256` after the writer refactor and at Verification. No `learn:check` needed.
-- E2E addition: the set of (species, country) from the docs' conflict SQL equals `range-conflict` entries in `range-conflicts.json`, proving JS and SQL agree. Today at least one non-MDD conflict exists (species 74, DE), so `e2e/duckdb.spec.ts:46`'s rows > 0 holds. A refresh that empties it fails loudly; replace the example then.
+
+**Who a stale listing snapshot blocks:**
+- Blocked, as by a stale sample: `pnpm derive`, `pnpm build`, `gbif:register`, `review:accept`, `ingest habitat`, all through `deriveAll`. Only a moved key, a base-name change or an allowlist edit stales a snapshot.
+- Never blocked, so there's always a way out: `ingest gbif-checklists`, `ingest gbif-sample` (`deriveCore` only), `ingest mdd` (`base` only).
+- Recovery, which the refusal's message starts: `pnpm ingest gbif-checklists` (plus `mdd` if the base's mammals changed) → `pnpm derive` → commit (`gbif:register` refuses a dirty tree, `scripts/gbif-register.ts:39-40`) → re-run the blocked command.
+- `AGENTS.md` says so in Commands (the `gbif:register`, `review:accept` and `ingest habitat` lines), GBIF DOI refresh (before step 1: a moved key stops `pnpm derive` until this recovery) and Cost of a species change (the order below).
+
+**Published queries in E2E (`e2e/range-listings.spec.ts`).** A refresh with zero conflicts is legitimate and must pass, so current data only has to agree, and detection is proven on fixed rows:
+- **Markup:** the conflict query is `<code data-query="range-conflicts">`, not `data-example`, so `e2e/duckdb.spec.ts:46`'s rows > 0 doesn't apply. The agreement query has `data-example="sql"` (always rows, one per record country at least) and `data-query="range-agreement"`.
+- **Served bytes, current data:** the conflict query's (species, country) set equals the `range-conflict` entries in `range-conflicts.json`; 0 = 0 passes. The agreement query's row count and null-`source` count equal what the spec computes from `data/species.json` and `data/range-listings.json`.
+- **Fixed rows, one test, no `pnpm test` file:** the same rows go through `rangeConflicts(rows)` and through the served conflict query, its URL swapped for a temp Parquet of those rows. Both must return the expected set.
+- **Owner's testing rules:** that test is the one isolated check, so its ways to fail come first. They're `007:331`'s cases:
+  - Must find: `native-or-pre-1500` vs `introduced`; `native` + `absent` vs `introduced` + `present`; `introduced` + `present` vs `introduced` + `absent`.
+  - Must not find: a pair where one row has an `area`; `native` vs `native-or-pre-1500`; `uncertain` vs `introduced`.
+  - JS and SQL differing on any of them.
 
 **Order constraints for Steps:**
 - Ingests and committed snapshots land before `deriveAll` reads them. Every real-data test goes through `readDeriveInputs`, so wiring (half, files, `range-curated.json` as `[]`) is one commit.
 - Writer, contract fence and attribution land together.
 - Curated rows are later commits, each with `pnpm derive`.
+- The fixed-rows test's JS half lands before `rangeConflicts`' code; its SQL half lands with the docs section, same rows.
 - Species-change order for `AGENTS.md`: `ingest gbif` → `gbif-checklists`, `mdd` → `gbif-sample --new` → `derive` → `habitat` → DOIs.
 
 **Scope:** no owner item needed. Cost, licensing and what goes public don't change. Wiring files named above sit outside the brief's parenthetical list (`scripts/species.ts`, `scripts/ingest.ts`, `scripts/derive.ts`, `scripts/build.ts`, `scripts/build/{inputs,docs,tables,countries}.ts`): necessary, not a scope change. Deviations from 007 to record under Decisions, with 007 updated in the same commit: Finding 1, Finding 5, `range-not-found` on non-mammals, the curated shape.
@@ -373,6 +391,20 @@ SHOULD-CONSIDER:
 
 ## Revision notes
 
+Read on `57c6d4a`. Nothing rejected. No second review round.
+
+- **Fable MUST-FIX 1:** fixed, Attribution and Finding 3: literal `licenseUrl: null`, `licenses.ts` untouched, no `docs.ts` change. Verified in code; the review's line numbers were slightly off (`attribution.ts:72`, `:103`, `e2e/attribution.spec.ts:41`).
+- **Fable MISSED (a), Astra SC 1:** fixed: Finding 1's Cost line, and new "Who a stale listing snapshot blocks" with the recovery order and the three `AGENTS.md` places.
+- **Fable MISSED (b):** fixed, Snapshots, Reuse and refusal tables: `OPEN_LICENSES` after the map, at ingest and in derive.
+- **Fable MISSED (c):** fixed, Snapshots: the allowlist is the proof. One correction to the review: the count is in the spike's `results.json`, not its log, and 5 of the 144 rows are on role datasets, so the allowlist does real work.
+- **Fable SC 1:** taken, module table.
+- **Fable SC 2:** taken, curated rules.
+- **Fable SC 3:** taken: `field: "range-listings"`, one conflict entry per (species, country), one comparator (`byEntry`, from `pipeline.ts:118`; the review said `:116`).
+- **Fable SC 4:** taken: both queries on served bytes.
+- **Fable SC 5:** taken: derive prints `noRole` by dataset key.
+- **Astra SC 2:** taken: the summary stays on the `sources[]` entry; datasets and rows keep their own license.
+- **Astra SC 3:** taken, replacing "a refresh that empties it fails loudly": the conflict query leaves `data-example`, 0 = 0 passes on current data, and detection is proven on 007's six fixed cases. How it fits the owner's rules: it's one test in the E2E spec, not a `pnpm test` file; it runs the served query text; its ways to fail are listed in the design, and its JS half lands before the code.
+
 ## Steps
 
 ## Verification
@@ -396,5 +428,6 @@ SHOULD-CONSIDER:
 - 2026-11-01 20:55 UTC: Architecture written (`architect`): derive listings as third half, not in `deriveCore` (007 wrong); byte-identical traps named; attribution, curated shape, snapshot rows decided. No blockers. No code; deriveCore claim spot-checked (`pipeline.ts:61`, `:75`, `gbif-sample.ts:77`).
 - 2026-11-01 21:01 UTC: Fable review (`architecture-reviewer`): APPROVE_WITH_CHANGES, 1 MUST-FIX (`GBIF checklists` license string hits `licenseUrl()` throw; `licenses.ts` off limits, Learn bundle), for Revision. Spot-checked: `attribution.ts:75`, `licenses.ts:21`, `cards.ts:6`. No code.
 - 2026-11-01 21:02 UTC: Astra review: APPROVE, no MUST-FIX; 3 SHOULD-CONSIDER (deriveAll's new dependents documented; mixed-license entry apart from dataset licenses; zero-conflict refresh mustn't fail). No code.
+- 2026-11-01 21:08 UTC: Revision (`architect`): Fable MUST-FIX resolved (literal `licenseUrl: null`, `licenses.ts` untouched); MISSED items and all SHOULD-CONSIDER taken, none rejected; zero-conflict refresh passes, detection on 007's six fixed cases in E2E. Spot-checked: `attribution.ts:72`, `:103`, `html.ts:8`, `pipeline.ts:118`, `e2e/attribution.spec.ts:41`. No code.
 
 ## Summary
