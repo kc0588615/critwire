@@ -259,6 +259,7 @@ Hand-only, not run here: Docker and its image tags, the EDB installer and Stack 
 | Q53 | s5 | prose | T0 | "The museum's material samples 21.4 % against 28.1 %": those shares are the whole dataset, specimens and an observation included (`s1-devil`, 569 rows, 558 samples) | fixed | `qa-fixes.ts` |
 | Q54 | d1 | missing step | T0 | The tbls exercise says 16 tables agree, but `setup.py` and every download holding `s4-cells` leave s4's table and view in `learn_curriculum`, so a learner who ran one sees two more (the ledger's open item) | fixed | `qa-fixes.ts` |
 | Q55 | every `.sql` holding `s4-cells` (s2–s5, c1) | prose | T2 | The download's header says each block "changes nothing", and `-- tx: own` runs as written; a `-- boot` block commits its tables (`s4.sql` has the `COMMIT`). Add it to the header, `scripts/learn/assemble.ts:81-82` | queued | `learn:check` download stage |
+| Q56 | e1 | number | T0 | "73 GBIF keys and the lab sample's six filters": the request's six predicates are the keys plus five filters, as `e1-request` prints them | fixed | `qa-fixes.ts` |
 
 ## Ledger
 
