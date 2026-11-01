@@ -245,6 +245,7 @@ Hand-only, not run here: Docker and its image tags, the EDB installer and Stack 
 | Q39 | s1, p4, c1 | prose | T0 | "A few collared animals": the Jaguar Movement Database holds 134,690 fixes from 117 jaguars ([its record](https://doi.org/10.5061/dryad.2dh0223)). s1 now says so, with the link; p4 and c1 drop "a few". What each page teaches stands | fixed | `qa-fixes.ts` |
 | Q40 | f4, s6, c1 | prose | T0 | "One collar study": the sample's dataset is a database that many teams' tracking fed, in 5 countries, so "study" says more than the data does. `jaguar_datasets` counts datasets; the prose now does too | fixed | `qa-fixes.ts` |
 | Q41 | s1 | jargon | T0 | "A Darwin Core term", with no word on what Darwin Core is. Defined here; d6's passing use reads as itself | fixed | `qa-fixes.ts` |
+| Q42 | s2 | prose | T0 | Result: "Every test says clustered", though the Concept says kernel density "doesn't test anything" and DBSCAN only labels. Two of the four are tests | fixed | `qa-fixes.ts` |
 
 ## Ledger
 
