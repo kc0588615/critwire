@@ -29,23 +29,23 @@ Terms: **kept** or **excluded** is what derive publishes today with no override.
 
 | Recommendation | high | medium | low | total | changes /v1 |
 |---|---:|---:|---:|---:|---:|
-| keep | 0 | 0 | 0 | 0 | 0 |
-| remove | 0 | 0 | 0 | 0 | 0 |
+| keep | 0 | 2 | 0 | 2 | 2 |
+| remove | 18 | 13 | 5 | 36 | 0 |
 | fix | 14 | 4 | 0 | 18 | n/a |
 | no action | 6 | 1 | 3 | 10 | n/a |
-| pending |  |  |  | 186 | |
-| **all entries** | 20 | 5 | 3 | 214 | 0 |
+| pending |  |  |  | 148 | |
+| **all entries** | 38 | 20 | 8 | 214 | 2 |
 
 ## Accept in one go
 
 Two sentences you can reply with:
 
-- **"accept the high-confidence confirmations only"**: `pnpm review:accept --confidence high --confirm-only` (0 entries). Published countries don't change, and the next release isn't held up.
-- **"accept the high-confidence set"**: `pnpm review:accept --confidence high` (0 entries: 0 confirming, 0 output-changing). The output-changing ones hold the next release until the follow-on below is done.
+- **"accept the high-confidence confirmations only"**: `pnpm review:accept --confidence high --confirm-only` (18 entries). Published countries don't change, and the next release isn't held up.
+- **"accept the high-confidence set"**: `pnpm review:accept --confidence high` (18 entries: 18 confirming, 0 output-changing). The output-changing ones hold the next release until the follow-on below is done.
 
 Any other selection works too: `pnpm review:accept --ids 25:DE,25:RU`, or `--confidence medium` for medium and higher. The command copies the chosen proposals into `data/review/country-overrides.json` and runs `pnpm derive`. Non-country entries can't be accepted this way; their fixes are separate work.
 
-Confirming, high (0): none
+Confirming, high (18): `15:DE,17:US,20:NL,20:SG,21:DE,25:DK,25:MW,25:SE,29:DE,50:DE,52:DE,56:BE,56:NU,56:RU,60:US,66:DE,68:US,71:DE`
 
 Output-changing, high (0): none
 
@@ -121,7 +121,9 @@ Species that could lose every published country:
   - [iNaturalist Research-grade Observations](https://www.gbif.org/dataset/50c9509d-22c7-4a22-a47d-8c48425ef4a7) · iNaturalist.org · 1 record
 - **Records shown** (1 of 1):
   - [2619941935](https://www.gbif.org/occurrence/2619941935) · HUMAN_OBSERVATION · 2020-04 · 38.731433, -9.154303 ±5 m · Lisboa · iNaturalist
-- **Recommendation:** pending
+- **Recommendation:** keep · **medium** · output-changing
+- **Why:** iNaturalist research-grade record in central Lisbon, 2020, 5 m uncertainty, no captive mark, 1.8 km from Lisbon Zoo (Wikidata Q220063): likely a released or escaped animal outside captivity. The only record; COL's list doesn't name Portugal, so no second source agrees.
+- **Cites:** [gbif:occurrence:2619941935](https://www.gbif.org/occurrence/2619941935), [gbif:dataset:50c9509d-22c7-4a22-a47d-8c48425ef4a7](https://www.gbif.org/dataset/50c9509d-22c7-4a22-a47d-8c48425ef4a7), [col:F6QR](https://www.checklistbank.org/dataset/316595/taxon/F6QR)
 
 ### 4 · Platysternon megacephalum · Big-headed Turtle
 
@@ -143,7 +145,9 @@ Species that could lose every published country:
   - [Museu de Ciències Naturals de Barcelona: MCNB-Cord](https://www.gbif.org/dataset/71d58564-f762-11e1-a439-00145eb45e9a) · Museu de Ciències Naturals de Barcelona · 1 record
 - **Records shown** (1 of 1):
   - [858408459](https://www.gbif.org/occurrence/858408459) · PRESERVED_SPECIMEN · no date · -10.333333, -53.2 ±3,227,250 m · MCNB · issues: CONTINENT_INVALID
-- **Recommendation:** pending
+- **Recommendation:** remove · **medium** · confirming
+- **Why:** Undated MCNB specimen with no locality; its coordinates carry 3,227 km uncertainty, so they name only the country. Nothing documents an animal in Brazil, and COL's list is Asian only. Likely misplaced, though the record doesn't say so itself.
+- **Cites:** [gbif:occurrence:858408459](https://www.gbif.org/occurrence/858408459), [gbif:dataset:71d58564-f762-11e1-a439-00145eb45e9a](https://www.gbif.org/dataset/71d58564-f762-11e1-a439-00145eb45e9a), [col:4JZ39](https://www.checklistbank.org/dataset/316595/taxon/4JZ39)
 
 #### 4:CD · country-captive-suspect (blocking, excluded)
 
@@ -158,7 +162,9 @@ Species that could lose every published country:
   - [Natural History Museum (London) Collection Specimens](https://www.gbif.org/dataset/7e380070-f762-11e1-a439-00145eb45e9a) · Natural History Museum · 1 record
 - **Records shown** (1 of 1):
   - [1056661385](https://www.gbif.org/occurrence/1056661385) · PRESERVED_SPECIMEN · no date · -1.54783, 29.251941 ±500 m · Nyiragongo Territory · Kivu · NHMUK
-- **Recommendation:** pending
+- **Recommendation:** remove · **low** · confirming
+- **Why:** Undated NHMUK specimen, Nyiragongo Territory, Kivu, 500 m uncertainty: a field locality, but on another continent from COL's Asian list, and no second record. Mislabel or misidentification can't be told from the record, so it stays excluded. An NHM curator could settle it.
+- **Cites:** [gbif:occurrence:1056661385](https://www.gbif.org/occurrence/1056661385), [gbif:dataset:7e380070-f762-11e1-a439-00145eb45e9a](https://www.gbif.org/dataset/7e380070-f762-11e1-a439-00145eb45e9a), [col:4JZ39](https://www.checklistbank.org/dataset/316595/taxon/4JZ39)
 
 #### 4:RE · country-captive-suspect (review, kept)
 
@@ -455,7 +461,9 @@ Species that could lose every published country:
   - [NABU|naturgucker](https://www.gbif.org/dataset/6ac3f774-d9fb-4796-b3e9-92bf6c81c084) · naturgucker.de · 1 record
 - **Records shown** (1 of 1):
   - [5026285734](https://www.gbif.org/occurrence/5026285734) · HUMAN_OBSERVATION · 2020-01 · 50.11615, 8.701043 ±250 m · Zoologischer Garten Frankfurt am Main · NABU|naturgucker
-- **Recommendation:** pending
+- **Recommendation:** remove · **high** · confirming
+- **Why:** Locality "Zoologischer Garten Frankfurt am Main": a zoo, NABU|naturgucker record of a captive animal. No other counted record here.
+- **Cites:** [gbif:occurrence:5026285734](https://www.gbif.org/occurrence/5026285734), [gbif:dataset:6ac3f774-d9fb-4796-b3e9-92bf6c81c084](https://www.gbif.org/dataset/6ac3f774-d9fb-4796-b3e9-92bf6c81c084)
 
 #### 15:ids.iucn:iucn-id · iucn-id (blocking)
 
@@ -519,7 +527,9 @@ Species that could lose every published country:
   - [MVZ Herp Collection (Arctos)](https://www.gbif.org/dataset/09c4287e-e6d5-4552-a07f-bff8a00833d8) · Museum of Vertebrate Zoology · 1 record
 - **Records shown** (1 of 1):
   - [5147427224](https://www.gbif.org/occurrence/5147427224) · PRESERVED_SPECIMEN · 2002-05 · 26.682617, -81.80215 ±10 m · Fort Myers, 5207 Palm Beach Boulevard · Florida · MVZ · degree: captive
-- **Recommendation:** pending
+- **Recommendation:** remove · **high** · confirming
+- **Why:** MVZ specimen, 2002, marked degreeOfEstablishment "captive", at a street address in Fort Myers, Florida. The record itself says captive; no other counted record here.
+- **Cites:** [gbif:occurrence:5147427224](https://www.gbif.org/occurrence/5147427224), [gbif:dataset:09c4287e-e6d5-4552-a07f-bff8a00833d8](https://www.gbif.org/dataset/09c4287e-e6d5-4552-a07f-bff8a00833d8)
 
 #### 17:ids.iucn:iucn-id · iucn-id (blocking)
 
@@ -585,7 +595,9 @@ Species that could lose every published country:
   - [NABU|naturgucker](https://www.gbif.org/dataset/6ac3f774-d9fb-4796-b3e9-92bf6c81c084) · naturgucker.de · 1 record
 - **Records shown** (1 of 1):
   - [5028531300](https://www.gbif.org/occurrence/5028531300) · HUMAN_OBSERVATION · 2023-09 · 49.483742, 8.491745 ±250 m · Luisenpark - Mannheim · NABU|naturgucker
-- **Recommendation:** pending
+- **Recommendation:** remove · **medium** · confirming
+- **Why:** NABU|naturgucker record, 2023, locality "Luisenpark - Mannheim": a city park that keeps animals (Wikidata Q202120, 0.4 km). The record doesn't say captive itself, and no wild sign; the only record here.
+- **Cites:** [gbif:occurrence:5028531300](https://www.gbif.org/occurrence/5028531300), [gbif:dataset:6ac3f774-d9fb-4796-b3e9-92bf6c81c084](https://www.gbif.org/dataset/6ac3f774-d9fb-4796-b3e9-92bf6c81c084)
 
 #### 20:EG · country-borderline (review, kept)
 
@@ -615,7 +627,9 @@ Species that could lose every published country:
   - [Data collected on citizen science web portal www.ornitho.cat](https://www.gbif.org/dataset/f3278405-0943-41a0-9f04-3a7733ec344d) · ICO-Institut Català d'Ornitologia (Catalan Ornithological Institute) · 1 record
 - **Records shown** (1 of 1):
   - [6289713848](https://www.gbif.org/occurrence/6289713848) · HUMAN_OBSERVATION · 2025-05 · 41.13, 1.04 ±7,071.06 m · Catalonia · ICO · remarks: If you will query the original data you must register in www.ornitho .cat and report at least one observation made in Catalonia. Then you can get the observation using the URL provided in associated m
-- **Recommendation:** pending
+- **Recommendation:** remove · **low** · confirming
+- **Why:** ornitho.cat record, Catalonia, 2025, no locality, 7 km uncertainty, no captive mark. A pet escape outside captivity or a garden animal can't be told apart from these fields, and COL's list is African. It stays excluded.
+- **Cites:** [gbif:occurrence:6289713848](https://www.gbif.org/occurrence/6289713848), [gbif:dataset:f3278405-0943-41a0-9f04-3a7733ec344d](https://www.gbif.org/dataset/f3278405-0943-41a0-9f04-3a7733ec344d), [col:S9KW](https://www.checklistbank.org/dataset/316595/taxon/S9KW)
 
 #### 20:ML · country-borderline (review, kept)
 
@@ -713,7 +727,9 @@ Species that could lose every published country:
   - [Natural History Museum Rotterdam - Specimens](https://www.gbif.org/dataset/a307e4d7-1de2-4adc-95d5-a0a8d5f57236) · Natural History Museum Rotterdam · 1 record
 - **Records shown** (1 of 1):
   - [5931806081](https://www.gbif.org/occurrence/5931806081) · PRESERVED_SPECIMEN · 2025-08 · 51.92, 4.44 ±1,113 m · Locality not ascertained, Rotterdam Zoo specimen · NMR · issues: COUNTRY_DERIVED_FROM_COORDINATES
-- **Recommendation:** pending
+- **Recommendation:** remove · **high** · confirming
+- **Why:** Natural History Museum Rotterdam specimen, 2025, locality "Locality not ascertained, Rotterdam Zoo specimen". The record itself says zoo; no other counted record here.
+- **Cites:** [gbif:occurrence:5931806081](https://www.gbif.org/occurrence/5931806081), [gbif:dataset:a307e4d7-1de2-4adc-95d5-a0a8d5f57236](https://www.gbif.org/dataset/a307e4d7-1de2-4adc-95d5-a0a8d5f57236)
 
 #### 20:SD · country-borderline (review, kept)
 
@@ -744,7 +760,9 @@ Species that could lose every published country:
   - [NABU|naturgucker](https://www.gbif.org/dataset/6ac3f774-d9fb-4796-b3e9-92bf6c81c084) · naturgucker.de · 1 record
 - **Records shown** (1 of 1):
   - [5014669903](https://www.gbif.org/occurrence/5014669903) · HUMAN_OBSERVATION · 2012-03 · 1.337343, 103.730492 ±250 m · Chinesischer und Japanischer Garten mit Schildkrötenmuseum, Singapur · NABU|naturgucker
-- **Recommendation:** pending
+- **Recommendation:** remove · **high** · confirming
+- **Why:** NABU|naturgucker record, 2012, locality "Chinesischer und Japanischer Garten mit Schildkrötenmuseum, Singapur": a turtle museum in a garden, so a kept animal. No other counted record here.
+- **Cites:** [gbif:occurrence:5014669903](https://www.gbif.org/occurrence/5014669903), [gbif:dataset:6ac3f774-d9fb-4796-b3e9-92bf6c81c084](https://www.gbif.org/dataset/6ac3f774-d9fb-4796-b3e9-92bf6c81c084)
 
 #### 20:SN · country-borderline (review, kept)
 
@@ -826,7 +844,9 @@ Species that could lose every published country:
   - [NABU|naturgucker](https://www.gbif.org/dataset/6ac3f774-d9fb-4796-b3e9-92bf6c81c084) · naturgucker.de · 1 record
 - **Records shown** (1 of 1):
   - [5013592795](https://www.gbif.org/occurrence/5013592795) · HUMAN_OBSERVATION · 2018-10 · 52.508018, 13.33869 ±250 m · Zoologischer Garten Berlin · NABU|naturgucker
-- **Recommendation:** pending
+- **Recommendation:** remove · **high** · confirming
+- **Why:** Locality "Zoologischer Garten Berlin": a zoo, NABU|naturgucker record of a captive animal. No other counted record here.
+- **Cites:** [gbif:occurrence:5013592795](https://www.gbif.org/occurrence/5013592795), [gbif:dataset:6ac3f774-d9fb-4796-b3e9-92bf6c81c084](https://www.gbif.org/dataset/6ac3f774-d9fb-4796-b3e9-92bf6c81c084)
 
 #### 21:MU · country-borderline (review, kept)
 
@@ -909,7 +929,9 @@ Species that could lose every published country:
   - [INSDC Sequences](https://www.gbif.org/dataset/d8cd16ba-bb74-4420-821e-083f2bac17c2) · European Nucleotide Archive (EMBL-EBI) · 1 record
 - **Records shown** (1 of 1):
   - [6322377438](https://www.gbif.org/occurrence/6322377438) · MATERIAL_SAMPLE · 2025-02 · 34.83, 113.53 · remarks: Daubentonia madagascariensis cocaine esterase isoform 2 precursor, mRNA, complete cds.
-- **Recommendation:** pending
+- **Recommendation:** remove · **medium** · confirming
+- **Why:** INSDC sequence record, 2025: "mRNA, complete cds", no locality. A lab sequence, not an animal observed in China; the coordinates likely mark the submitter. COL says Africa. Inferred from the record type, not stated by it.
+- **Cites:** [gbif:occurrence:6322377438](https://www.gbif.org/occurrence/6322377438), [gbif:dataset:d8cd16ba-bb74-4420-821e-083f2bac17c2](https://www.gbif.org/dataset/d8cd16ba-bb74-4420-821e-083f2bac17c2), [col:34B7X](https://www.checklistbank.org/dataset/316595/taxon/34B7X)
 
 #### 23:FR · country-captive-suspect (blocking, excluded)
 
@@ -924,7 +946,9 @@ Species that could lose every published country:
   - [The mammals collection (ZM) of the Muséum national d'Histoire naturelle (MNHN - Paris)](https://www.gbif.org/dataset/3959ee49-7678-4a88-9049-5dfc55ccebf3) · MNHN - Museum national d'Histoire naturelle · 1 record
 - **Records shown** (1 of 1):
   - [1426045795](https://www.gbif.org/occurrence/1426045795) · PRESERVED_SPECIMEN · no date · 48.832, 2.417 · MNHN
-- **Recommendation:** pending
+- **Recommendation:** remove · **medium** · confirming
+- **Why:** Undated MNHN (Paris) specimen with no locality; its coordinates fall 0.1 km from Paris Zoological Park (Wikidata Q1969385). COL says Africa. Points to a zoo animal, but the record itself doesn't name one.
+- **Cites:** [gbif:occurrence:1426045795](https://www.gbif.org/occurrence/1426045795), [gbif:dataset:3959ee49-7678-4a88-9049-5dfc55ccebf3](https://www.gbif.org/dataset/3959ee49-7678-4a88-9049-5dfc55ccebf3), [col:34B7X](https://www.checklistbank.org/dataset/316595/taxon/34B7X)
 
 ### 24 · Manis javanica · Sunda Pangolin
 
@@ -1030,7 +1054,9 @@ Species that could lose every published country:
   - [International Barcode of Life project (iBOL)](https://www.gbif.org/dataset/040c5662-da76-4782-a48e-cdea1892d14c) · The International Barcode of Life Consortium · 1 record
 - **Records shown** (1 of 1):
   - [2251400446](https://www.gbif.org/occurrence/2251400446) · MATERIAL_SAMPLE · no date · 57.55048, -98.4168 · Mined from GenBank, NCBI
-- **Recommendation:** pending
+- **Recommendation:** remove · **medium** · confirming
+- **Why:** iBOL record "Mined from GenBank": a sequence, no locality, no date, coordinates near the middle of Canada. It documents no animal there, and COL doesn't list the Americas. Inferred from the record type, not stated by it.
+- **Cites:** [gbif:occurrence:2251400446](https://www.gbif.org/occurrence/2251400446), [gbif:dataset:040c5662-da76-4782-a48e-cdea1892d14c](https://www.gbif.org/dataset/040c5662-da76-4782-a48e-cdea1892d14c), [col:4CGXS](https://www.checklistbank.org/dataset/316595/taxon/4CGXS)
 
 #### 25:DE · country-captive-suspect (review, kept)
 
@@ -1066,7 +1092,9 @@ Species that could lose every published country:
   - [Mammal collection NTNU University Museum](https://www.gbif.org/dataset/44ff990f-945e-4b37-9060-fc7de856b1ea) · Norwegian University of Science and Technology · 1 record
 - **Records shown** (1 of 1):
   - [1809981640](https://www.gbif.org/occurrence/1809981640) · PRESERVED_SPECIMEN · 1963-01 · 55.685463, 12.566874 ±2,000 m · København (by) · Hovedstaden · NTNU-VM · remarks: Lok. København, gave fra zoologisk have. Magasinert 1967. Sjøfartsmuseet. (J. nr. 412-415/1962, Z. 1.).
-- **Recommendation:** pending
+- **Recommendation:** remove · **high** · confirming
+- **Why:** NTNU specimen, 1963, remarks "København, gave fra zoologisk have": a gift from the Copenhagen zoo. The record itself says zoo; no other counted record here.
+- **Cites:** [gbif:occurrence:1809981640](https://www.gbif.org/occurrence/1809981640), [gbif:dataset:44ff990f-945e-4b37-9060-fc7de856b1ea](https://www.gbif.org/dataset/44ff990f-945e-4b37-9060-fc7de856b1ea)
 
 #### 25:KE · country-captive-suspect (blocking, excluded)
 
@@ -1081,7 +1109,9 @@ Species that could lose every published country:
   - [International Barcode of Life project (iBOL)](https://www.gbif.org/dataset/040c5662-da76-4782-a48e-cdea1892d14c) · The International Barcode of Life Consortium · 1 record
 - **Records shown** (1 of 1):
   - [3032895801](https://www.gbif.org/occurrence/3032895801) · MATERIAL_SAMPLE · 2012-07 · 0.689918, 37.953094 · Mined from GenBank, NCBI
-- **Recommendation:** pending
+- **Recommendation:** remove · **medium** · confirming
+- **Why:** iBOL record "Mined from GenBank", 2012: a sequence, no locality, coordinates near the middle of Kenya. It documents no animal there, and COL doesn't list Africa. Inferred from the record type, not stated by it.
+- **Cites:** [gbif:occurrence:3032895801](https://www.gbif.org/occurrence/3032895801), [gbif:dataset:040c5662-da76-4782-a48e-cdea1892d14c](https://www.gbif.org/dataset/040c5662-da76-4782-a48e-cdea1892d14c), [col:4CGXS](https://www.checklistbank.org/dataset/316595/taxon/4CGXS)
 
 #### 25:MW · country-captive-suspect (blocking, excluded)
 
@@ -1096,7 +1126,9 @@ Species that could lose every published country:
   - [Macaulay Library Audio and Video Collection](https://www.gbif.org/dataset/7f6dd0f7-9ed4-49c0-bb71-b2a9c7fed9f1) · Cornell Lab of Ornithology · 1 record
 - **Records shown** (1 of 1):
   - [1147087823](https://www.gbif.org/occurrence/1147087823) · MACHINE_OBSERVATION · 1994-02 · -14, 34 · Lilongwe Nature Center · Central · CLO · remarks: NOTES: (Range Status: Captive. Breed. Status: Not breeding. General Climate: Cyclic wet-dry. Cov. Density: Open.) Caged at park headquarters. Sounds in response to human conversation directed at him
-- **Recommendation:** pending
+- **Recommendation:** remove · **high** · confirming
+- **Why:** Macaulay Library recording, 1994, Lilongwe Nature Center, notes "Range Status: Captive", "Caged at park headquarters". The record itself says captive; no other counted record here.
+- **Cites:** [gbif:occurrence:1147087823](https://www.gbif.org/occurrence/1147087823), [gbif:dataset:7f6dd0f7-9ed4-49c0-bb71-b2a9c7fed9f1](https://www.gbif.org/dataset/7f6dd0f7-9ed4-49c0-bb71-b2a9c7fed9f1)
 
 #### 25:NL · country-captive-suspect (blocking, excluded)
 
@@ -1111,7 +1143,9 @@ Species that could lose every published country:
   - [Natuurmuseum Brabant, Tilburg - Vertebrates](https://www.gbif.org/dataset/3c2eb73a-82c8-4373-956f-1cb9473f76ba) · Natuurmuseum Brabant · 1 record
 - **Records shown** (1 of 1):
   - [4101747025](https://www.gbif.org/occurrence/4101747025) · PRESERVED_SPECIMEN · 1976 · 51.95, 5.9 ±5,000 m · Arnhem · Gelderland · NMBT
-- **Recommendation:** pending
+- **Recommendation:** remove · **medium** · confirming
+- **Why:** Natuurmuseum Brabant specimen, 1976, locality "Arnhem", 5 km uncertainty, 6.6 km from Burgers' Zoo (Wikidata Q390504). A city locality with no wild sign points to a zoo animal, but the record doesn't say so.
+- **Cites:** [gbif:occurrence:4101747025](https://www.gbif.org/occurrence/4101747025), [gbif:dataset:3c2eb73a-82c8-4373-956f-1cb9473f76ba](https://www.gbif.org/dataset/3c2eb73a-82c8-4373-956f-1cb9473f76ba)
 
 #### 25:RU · country-captive-suspect (review, kept)
 
@@ -1147,7 +1181,9 @@ Species that could lose every published country:
   - [Mammal collection NTNU University Museum](https://www.gbif.org/dataset/44ff990f-945e-4b37-9060-fc7de856b1ea) · Norwegian University of Science and Technology · 1 record
 - **Records shown** (1 of 1):
   - [1809982003](https://www.gbif.org/occurrence/1809982003) · PRESERVED_SPECIMEN · no date · 63.192797, 14.522789 ±1,000 m · Frøsøn, Jamtland · Jämtland · NTNU-VM · remarks: Lok.: Frösön Dyrepark, Østersund. Kranium. Utstilt. Kroppslengde: 200 cm + hale, vekt ca. 300 kg.
-- **Recommendation:** pending
+- **Recommendation:** remove · **high** · confirming
+- **Why:** NTNU specimen, remarks "Frösön Dyrepark, Østersund. Kranium. Utstilt": a skull from an animal park, put on display. The record itself names the park; no other counted record here.
+- **Cites:** [gbif:occurrence:1809982003](https://www.gbif.org/occurrence/1809982003), [gbif:dataset:44ff990f-945e-4b37-9060-fc7de856b1ea](https://www.gbif.org/dataset/44ff990f-945e-4b37-9060-fc7de856b1ea)
 
 #### 25:US · country-captive-suspect (review, kept)
 
@@ -1324,7 +1360,9 @@ Species that could lose every published country:
   - [ICMBio | Dados de ocorrência de espécies do Sistema de Autorização e Informações de Biodiversidade (SISBio) do ICMBio](https://www.gbif.org/dataset/ffe38a37-d659-4b1a-a935-5a5264e3cc0a) · Instituto Chico Mendes de Conservação da Biodiversidade - ICMBIO · 1 record
 - **Records shown** (1 of 1):
   - [6511234162](https://www.gbif.org/occurrence/6511234162) · HUMAN_OBSERVATION · 2012-02 · -26.73885, -49.178933 · Santa Catarina · ICMBio
-- **Recommendation:** pending
+- **Recommendation:** remove · **low** · confirming
+- **Why:** ICMBio SISBio record, Santa Catarina, 2012, no locality, no captive mark. Nothing says zoo or wild (no zoo found within 3 km on Wikidata), and COL's list is Southern Asia. Too thin to call, so it stays excluded.
+- **Cites:** [gbif:occurrence:6511234162](https://www.gbif.org/occurrence/6511234162), [gbif:dataset:ffe38a37-d659-4b1a-a935-5a5264e3cc0a](https://www.gbif.org/dataset/ffe38a37-d659-4b1a-a935-5a5264e3cc0a), [col:398D9](https://www.checklistbank.org/dataset/316595/taxon/398D9)
 
 #### 28:BT · country-borderline (review, kept)
 
@@ -1356,7 +1394,9 @@ Species that could lose every published country:
   - [The mammals collection (ZM) of the Muséum national d'Histoire naturelle (MNHN - Paris)](https://www.gbif.org/dataset/3959ee49-7678-4a88-9049-5dfc55ccebf3) · MNHN - Museum national d'Histoire naturelle · 1 record
 - **Records shown** (1 of 1):
   - [1044048819](https://www.gbif.org/occurrence/1044048819) · PRESERVED_SPECIMEN · no date · 4.383, 18.617 · Bangui · MNHN
-- **Recommendation:** pending
+- **Recommendation:** remove · **low** · confirming
+- **Why:** Undated MNHN specimen, locality "Bangui", the country's capital. No sign of captivity, misidentification or a wild animal in the fields, and COL's list is Southern Asia. Too thin to call, so it stays excluded.
+- **Cites:** [gbif:occurrence:1044048819](https://www.gbif.org/occurrence/1044048819), [gbif:dataset:3959ee49-7678-4a88-9049-5dfc55ccebf3](https://www.gbif.org/dataset/3959ee49-7678-4a88-9049-5dfc55ccebf3), [col:398D9](https://www.checklistbank.org/dataset/316595/taxon/398D9)
 
 #### 28:DE · country-captive-suspect (review, kept)
 
@@ -1428,7 +1468,9 @@ Species that could lose every published country:
   - [Natuurmuseum Brabant, Tilburg - Vertebrates](https://www.gbif.org/dataset/3c2eb73a-82c8-4373-956f-1cb9473f76ba) · Natuurmuseum Brabant · 1 record
 - **Records shown** (1 of 1):
   - [4101746898](https://www.gbif.org/occurrence/4101746898) · PRESERVED_SPECIMEN · 1906-05 · 52.3, 4.9 ±10,000 m · Amsterdam · Noord-Holland · NMBT
-- **Recommendation:** pending
+- **Recommendation:** remove · **medium** · confirming
+- **Why:** Natuurmuseum Brabant specimen, 1906, locality "Amsterdam", 10 km uncertainty. A city locality with no wild sign, and COL's list is Southern Asia: points to a kept animal, but the record doesn't say so.
+- **Cites:** [gbif:occurrence:4101746898](https://www.gbif.org/occurrence/4101746898), [gbif:dataset:3c2eb73a-82c8-4373-956f-1cb9473f76ba](https://www.gbif.org/dataset/3c2eb73a-82c8-4373-956f-1cb9473f76ba), [col:398D9](https://www.checklistbank.org/dataset/316595/taxon/398D9)
 
 #### 28:US · country-captive-suspect (review, kept)
 
@@ -1509,7 +1551,9 @@ Species that could lose every published country:
   - [NABU|naturgucker](https://www.gbif.org/dataset/6ac3f774-d9fb-4796-b3e9-92bf6c81c084) · naturgucker.de · 1 record
 - **Records shown** (1 of 1):
   - [5014542417](https://www.gbif.org/occurrence/5014542417) · HUMAN_OBSERVATION · 2013-09 · 52.508018, 13.33869 ±250 m · Zoologischer Garten Berlin · NABU|naturgucker
-- **Recommendation:** pending
+- **Recommendation:** remove · **high** · confirming
+- **Why:** Locality "Zoologischer Garten Berlin": a zoo, NABU|naturgucker record of a captive animal. No other counted record here.
+- **Cites:** [gbif:occurrence:5014542417](https://www.gbif.org/occurrence/5014542417), [gbif:dataset:6ac3f774-d9fb-4796-b3e9-92bf6c81c084](https://www.gbif.org/dataset/6ac3f774-d9fb-4796-b3e9-92bf6c81c084)
 
 #### 29:US · country-captive-suspect (review, kept)
 
@@ -1646,7 +1690,9 @@ Species that could lose every published country:
   - [Natuurmuseum Brabant, Tilburg - Vertebrates](https://www.gbif.org/dataset/3c2eb73a-82c8-4373-956f-1cb9473f76ba) · Natuurmuseum Brabant · 1 record
 - **Records shown** (1 of 1):
   - [4101748225](https://www.gbif.org/occurrence/4101748225) · PRESERVED_SPECIMEN · 1978 · 51.95, 5.9 ±5,000 m · Arnhem · Gelderland · NMBT
-- **Recommendation:** pending
+- **Recommendation:** remove · **medium** · confirming
+- **Why:** Natuurmuseum Brabant specimen, 1978, locality "Arnhem", 5 km uncertainty, 6.6 km from Burgers' Zoo (Wikidata Q390504). COL says Africa. A city locality points to a zoo animal, but the record doesn't say so.
+- **Cites:** [gbif:occurrence:4101748225](https://www.gbif.org/occurrence/4101748225), [gbif:dataset:3c2eb73a-82c8-4373-956f-1cb9473f76ba](https://www.gbif.org/dataset/3c2eb73a-82c8-4373-956f-1cb9473f76ba), [col:7TKN5](https://www.checklistbank.org/dataset/316595/taxon/7TKN5)
 
 #### 39:US · country-captive-suspect (review, kept)
 
@@ -1955,7 +2001,9 @@ Species that could lose every published country:
   - [ICMBio | Dados de ocorrência de espécies do Sistema de Autorização e Informações de Biodiversidade (SISBio) do ICMBio](https://www.gbif.org/dataset/ffe38a37-d659-4b1a-a935-5a5264e3cc0a) · Instituto Chico Mendes de Conservação da Biodiversidade - ICMBIO · 1 record
 - **Records shown** (1 of 1):
   - [6510623347](https://www.gbif.org/occurrence/6510623347) · HUMAN_OBSERVATION · 2019-07 · -23.650556, -46.620278 · São Paulo · ICMBio
-- **Recommendation:** pending
+- **Recommendation:** remove · **medium** · confirming
+- **Why:** ICMBio SISBio record, 2019, São Paulo; its coordinates fall 0.04 km from São Paulo Zoo (Wikidata Q3364798). COL says Africa. Points to a zoo animal, but the record itself doesn't name one.
+- **Cites:** [gbif:occurrence:6510623347](https://www.gbif.org/occurrence/6510623347), [gbif:dataset:ffe38a37-d659-4b1a-a935-5a5264e3cc0a](https://www.gbif.org/dataset/ffe38a37-d659-4b1a-a935-5a5264e3cc0a), [col:652YZ](https://www.checklistbank.org/dataset/316595/taxon/652YZ)
 
 #### 50:DE · country-captive-suspect (blocking, excluded)
 
@@ -1970,7 +2018,9 @@ Species that could lose every published country:
   - [NABU|naturgucker](https://www.gbif.org/dataset/6ac3f774-d9fb-4796-b3e9-92bf6c81c084) · naturgucker.de · 1 record
 - **Records shown** (1 of 1):
   - [5015965753](https://www.gbif.org/occurrence/5015965753) · HUMAN_OBSERVATION · 2017-04 · 50.11615, 8.701043 ±250 m · Zoologischer Garten Frankfurt am Main · NABU|naturgucker
-- **Recommendation:** pending
+- **Recommendation:** remove · **high** · confirming
+- **Why:** Locality "Zoologischer Garten Frankfurt am Main": a zoo, NABU|naturgucker record of a captive animal. No other counted record here.
+- **Cites:** [gbif:occurrence:5015965753](https://www.gbif.org/occurrence/5015965753), [gbif:dataset:6ac3f774-d9fb-4796-b3e9-92bf6c81c084](https://www.gbif.org/dataset/6ac3f774-d9fb-4796-b3e9-92bf6c81c084)
 
 #### 50:MX · country-captive-suspect (review, kept)
 
@@ -2077,7 +2127,9 @@ Species that could lose every published country:
   - [NABU|naturgucker](https://www.gbif.org/dataset/6ac3f774-d9fb-4796-b3e9-92bf6c81c084) · naturgucker.de · 1 record
 - **Records shown** (1 of 1):
   - [5019266970](https://www.gbif.org/occurrence/5019266970) · HUMAN_OBSERVATION · 2019-06 · 50.959507, 6.974559 ±250 m · Zoo Köln · NABU|naturgucker
-- **Recommendation:** pending
+- **Recommendation:** remove · **high** · confirming
+- **Why:** Locality "Zoo Köln": a zoo, NABU|naturgucker record of a captive animal. No other counted record here.
+- **Cites:** [gbif:occurrence:5019266970](https://www.gbif.org/occurrence/5019266970), [gbif:dataset:6ac3f774-d9fb-4796-b3e9-92bf6c81c084](https://www.gbif.org/dataset/6ac3f774-d9fb-4796-b3e9-92bf6c81c084)
 
 #### 52:GT · country-borderline (review, kept)
 
@@ -2224,7 +2276,9 @@ Species that could lose every published country:
   - [Ghent University - Zoology Museum - Vertebrate collection](https://www.gbif.org/dataset/0310b080-ec4b-11dc-b73e-b8a03c50a862) · Ghent University · 1 record
 - **Records shown** (1 of 1):
   - [1313779598](https://www.gbif.org/occurrence/1313779598) · PRESERVED_SPECIMEN · 1855 · 50.503887, 4.469936 · Gentse Dierentuin · Ugent
-- **Recommendation:** pending
+- **Recommendation:** remove · **high** · confirming
+- **Why:** Ghent University specimen, 1855, locality "Gentse Dierentuin": the Ghent zoo. The record itself names the zoo; no other counted record here.
+- **Cites:** [gbif:occurrence:1313779598](https://www.gbif.org/occurrence/1313779598), [gbif:dataset:0310b080-ec4b-11dc-b73e-b8a03c50a862](https://www.gbif.org/dataset/0310b080-ec4b-11dc-b73e-b8a03c50a862)
 
 #### 56:BR · country-captive-suspect (review, kept)
 
@@ -2318,7 +2372,9 @@ Species that could lose every published country:
   - [Collections and observation data National Museum of Natural History Luxembourg](https://www.gbif.org/dataset/962f59bc-f762-11e1-a439-00145eb45e9a) · National Museum of Natural History Luxembourg · 1 record
 - **Records shown** (1 of 1):
   - [2417942385](https://www.gbif.org/occurrence/2417942385) · PRESERVED_SPECIMEN · 1899-12 · 48.9302, 5.0763 · Unknown · issues: COUNTRY_DERIVED_FROM_COORDINATES
-- **Recommendation:** pending
+- **Recommendation:** remove · **medium** · confirming
+- **Why:** Luxembourg museum specimen, 1899, locality "Unknown", so the coordinates in Meuse rest on no stated place. COL says Africa. Likely misplaced, though the record doesn't say so itself.
+- **Cites:** [gbif:occurrence:2417942385](https://www.gbif.org/occurrence/2417942385), [gbif:dataset:962f59bc-f762-11e1-a439-00145eb45e9a](https://www.gbif.org/dataset/962f59bc-f762-11e1-a439-00145eb45e9a), [col:4C92G](https://www.checklistbank.org/dataset/316595/taxon/4C92G)
 
 #### 56:GH · country-borderline (review, kept)
 
@@ -2396,7 +2452,9 @@ Species that could lose every published country:
   - [Australian Microbiome 18S (Eukaryote) Dataset of Aquatic Samples](https://www.gbif.org/dataset/9fc74265-28a7-4d62-97ea-33eb5588562e) · Australian Microbiome · 1 record
 - **Records shown** (1 of 1):
   - [5950614035](https://www.gbif.org/occurrence/5950614035) · MATERIAL_SAMPLE · 2016-06 · -22.00178, -169.99993 · issues: COUNTRY_DERIVED_FROM_COORDINATES
-- **Recommendation:** pending
+- **Recommendation:** remove · **high** · confirming
+- **Why:** Australian Microbiome 18S record, 2016: a DNA read from an aquatic sample, in the Pacific south of Niue. No chimpanzee was there; the dataset is sequence reads from water, so this is a misidentified or contaminant read. The only record.
+- **Cites:** [gbif:occurrence:5950614035](https://www.gbif.org/occurrence/5950614035), [gbif:dataset:9fc74265-28a7-4d62-97ea-33eb5588562e](https://www.gbif.org/dataset/9fc74265-28a7-4d62-97ea-33eb5588562e)
 
 #### 56:RU · country-captive-suspect (blocking, excluded)
 
@@ -2411,7 +2469,9 @@ Species that could lose every published country:
   - [Animal Sound Archive](https://www.gbif.org/dataset/b7ec1bf8-819b-11e2-bad2-00145eb45e9a) · Museum für Naturkunde Berlin · 1 record
 - **Records shown** (1 of 1):
   - [779861061](https://www.gbif.org/occurrence/779861061) · OBSERVATION · no date · 55.5, 37.5 · Zoo Moskau · MfN
-- **Recommendation:** pending
+- **Recommendation:** remove · **high** · confirming
+- **Why:** Animal Sound Archive recording, locality "Zoo Moskau": a zoo, so a captive animal. No other counted record here.
+- **Cites:** [gbif:occurrence:779861061](https://www.gbif.org/occurrence/779861061), [gbif:dataset:b7ec1bf8-819b-11e2-bad2-00145eb45e9a](https://www.gbif.org/dataset/b7ec1bf8-819b-11e2-bad2-00145eb45e9a)
 
 #### 56:SE · country-captive-suspect (review, kept)
 
@@ -2792,7 +2852,9 @@ Species that could lose every published country:
   - [Natural History Museum (London) Collection Specimens](https://www.gbif.org/dataset/7e380070-f762-11e1-a439-00145eb45e9a) · Natural History Museum · 1 record
 - **Records shown** (1 of 1):
   - [1919841811](https://www.gbif.org/occurrence/1919841811) · PRESERVED_SPECIMEN · 1928-07 · 30.67, 45.75 · Named Geo. Feature: Shamiyan (Desert); Nearest Named Place: Shamiyan Desert; Nearest Named Place: Busaiyah Wells · Al-Muthannia · NHMUK
-- **Recommendation:** pending
+- **Recommendation:** keep · **medium** · output-changing
+- **Why:** NHMUK specimen, July 1928, Shamiyan Desert near Busaiyah Wells: a dated field locality, no captive mark. COL says Africa; Southern Asia, which doesn't clearly include Iraq, so no second source agrees. Restores the country, as a historical record.
+- **Cites:** [gbif:occurrence:1919841811](https://www.gbif.org/occurrence/1919841811), [gbif:dataset:7e380070-f762-11e1-a439-00145eb45e9a](https://www.gbif.org/dataset/7e380070-f762-11e1-a439-00145eb45e9a), [col:9BTZ](https://www.checklistbank.org/dataset/316595/taxon/9BTZ)
 
 #### 58:IR · country-captive-suspect (review, kept)
 
@@ -2966,7 +3028,9 @@ Species that could lose every published country:
   - [International Barcode of Life project (iBOL)](https://www.gbif.org/dataset/040c5662-da76-4782-a48e-cdea1892d14c) · The International Barcode of Life Consortium · 1 record
 - **Records shown** (1 of 1):
   - [2248830674](https://www.gbif.org/occurrence/2248830674) · MATERIAL_SAMPLE · no date · 38.82081, -96.33162 · National Institutes of Health, Laboratory of Genomic Diversity, United States · remarks: Check provenance - Country
-- **Recommendation:** pending
+- **Recommendation:** remove · **high** · confirming
+- **Why:** iBOL sequence from an NIH genomics lab, no locality, no date, remarks "Check provenance - Country", coordinates near the middle of the USA. The record itself doubts its country; no other counted record here.
+- **Cites:** [gbif:occurrence:2248830674](https://www.gbif.org/occurrence/2248830674), [gbif:dataset:040c5662-da76-4782-a48e-cdea1892d14c](https://www.gbif.org/dataset/040c5662-da76-4782-a48e-cdea1892d14c)
 
 ### 62 · Andrias davidianus · Chinese Giant Salamander
 
@@ -3241,7 +3305,9 @@ Species that could lose every published country:
   - [International Barcode of Life project (iBOL)](https://www.gbif.org/dataset/040c5662-da76-4782-a48e-cdea1892d14c) · The International Barcode of Life Consortium · 1 record
 - **Records shown** (1 of 1):
   - [2250111357](https://www.gbif.org/occurrence/2250111357) · MATERIAL_SAMPLE · no date · 36.402386, 127.762245 · Mined from GenBank, NCBI
-- **Recommendation:** pending
+- **Recommendation:** remove · **medium** · confirming
+- **Why:** iBOL record "Mined from GenBank": a sequence, no locality, no date, coordinates near the middle of South Korea. It documents no animal there, and COL says Africa. Inferred from the record type, not stated by it.
+- **Cites:** [gbif:occurrence:2250111357](https://www.gbif.org/occurrence/2250111357), [gbif:dataset:040c5662-da76-4782-a48e-cdea1892d14c](https://www.gbif.org/dataset/040c5662-da76-4782-a48e-cdea1892d14c), [col:73256](https://www.checklistbank.org/dataset/316595/taxon/73256)
 
 #### 65:MZ · country-borderline (review, kept)
 
@@ -3362,7 +3428,9 @@ Species that could lose every published country:
   - [NABU|naturgucker](https://www.gbif.org/dataset/6ac3f774-d9fb-4796-b3e9-92bf6c81c084) · naturgucker.de · 1 record
 - **Records shown** (1 of 1):
   - [5021247157](https://www.gbif.org/occurrence/5021247157) · HUMAN_OBSERVATION · 2016-11 · 50.11615, 8.701043 ±250 m · Zoologischer Garten Frankfurt am Main · NABU|naturgucker
-- **Recommendation:** pending
+- **Recommendation:** remove · **high** · confirming
+- **Why:** Locality "Zoologischer Garten Frankfurt am Main": a zoo, NABU|naturgucker record of a captive animal. No other counted record here.
+- **Cites:** [gbif:occurrence:5021247157](https://www.gbif.org/occurrence/5021247157), [gbif:dataset:6ac3f774-d9fb-4796-b3e9-92bf6c81c084](https://www.gbif.org/dataset/6ac3f774-d9fb-4796-b3e9-92bf6c81c084)
 
 #### 66:FR · country-captive-suspect (review, kept)
 
@@ -3484,7 +3552,9 @@ Species that could lose every published country:
   - [Angelo State Natural History Collections (ASNHC) Mammal specimens (Arctos)](https://www.gbif.org/dataset/2aa02cf8-c402-412c-9ad1-585e1e185bef) · Angelo State Natural History Collections (ASNHC) · 1 record
 - **Records shown** (1 of 1):
   - [2804488420](https://www.gbif.org/occurrence/2804488420) · PRESERVED_SPECIMEN · no date · 29.463525, -98.471854 ±250 m · San Antonio Zoo · Texas · ASNHC · remarks: Created in SPECIFY; 2014-06-07|Last modified by SPECIFY; 2014-06-07|taxidermy head
-- **Recommendation:** pending
+- **Recommendation:** remove · **high** · confirming
+- **Why:** Angelo State specimen, locality "San Antonio Zoo", a taxidermy head. The record itself names the zoo; no other counted record here.
+- **Cites:** [gbif:occurrence:2804488420](https://www.gbif.org/occurrence/2804488420), [gbif:dataset:2aa02cf8-c402-412c-9ad1-585e1e185bef](https://www.gbif.org/dataset/2aa02cf8-c402-412c-9ad1-585e1e185bef)
 
 ### 69 · Nanger dama · Dama Gazelle
 
@@ -3585,7 +3655,9 @@ Species that could lose every published country:
   - [AMNH Mammal Collections](https://www.gbif.org/dataset/96ca66b4-f762-11e1-a439-00145eb45e9a) · American Museum of Natural History · 1 record
 - **Records shown** (1 of 1):
   - [859508226](https://www.gbif.org/occurrence/859508226) · PRESERVED_SPECIMEN · 1938-01 · 5.98, -79.8 · AMNH · establishment: native · issues: COUNTRY_DERIVED_FROM_COORDINATES, TAXON_MATCH_HIGHERRANK
-- **Recommendation:** pending
+- **Recommendation:** remove · **low** · confirming
+- **Why:** AMNH specimen, January 1938, no locality, establishmentMeans "native", coordinates 5.98, -79.80 at sea south of Panama. The field and the coordinates conflict with COL's "Africa"; a data error is likely but not proven, so it stays excluded.
+- **Cites:** [gbif:occurrence:859508226](https://www.gbif.org/occurrence/859508226), [gbif:dataset:96ca66b4-f762-11e1-a439-00145eb45e9a](https://www.gbif.org/dataset/96ca66b4-f762-11e1-a439-00145eb45e9a), [col:45LTS](https://www.checklistbank.org/dataset/316595/taxon/45LTS)
 
 #### 69:SN · country-borderline (review, kept)
 
@@ -3721,7 +3793,9 @@ Species that could lose every published country:
   - [NABU|naturgucker](https://www.gbif.org/dataset/6ac3f774-d9fb-4796-b3e9-92bf6c81c084) · naturgucker.de · 1 record
 - **Records shown** (1 of 1):
   - [5022167739](https://www.gbif.org/occurrence/5022167739) · HUMAN_OBSERVATION · 2018-06 · 50.11615, 8.701043 ±250 m · Zoologischer Garten Frankfurt am Main · NABU|naturgucker
-- **Recommendation:** pending
+- **Recommendation:** remove · **high** · confirming
+- **Why:** Locality "Zoologischer Garten Frankfurt am Main": a zoo, NABU|naturgucker record of a captive animal. No other counted record here.
+- **Cites:** [gbif:occurrence:5022167739](https://www.gbif.org/occurrence/5022167739), [gbif:dataset:6ac3f774-d9fb-4796-b3e9-92bf6c81c084](https://www.gbif.org/dataset/6ac3f774-d9fb-4796-b3e9-92bf6c81c084)
 
 #### 71:JP · country-captive-suspect (review, kept)
 
@@ -3909,7 +3983,9 @@ Species that could lose every published country:
   - [International Barcode of Life project (iBOL)](https://www.gbif.org/dataset/040c5662-da76-4782-a48e-cdea1892d14c) · The International Barcode of Life Consortium · 1 record
 - **Records shown** (1 of 1):
   - [4913773496](https://www.gbif.org/occurrence/4913773496) · MATERIAL_SAMPLE · no date · 48.65753, 31.273771 · Mined from GenBank, NCBI
-- **Recommendation:** pending
+- **Recommendation:** remove · **medium** · confirming
+- **Why:** iBOL record "Mined from GenBank": a sequence, no locality, no date, coordinates near the middle of Ukraine. It documents no animal there, and COL says Middle America. Inferred from the record type, not stated by it.
+- **Cites:** [gbif:occurrence:4913773496](https://www.gbif.org/occurrence/4913773496), [gbif:dataset:040c5662-da76-4782-a48e-cdea1892d14c](https://www.gbif.org/dataset/040c5662-da76-4782-a48e-cdea1892d14c), [col:CQ4M](https://www.checklistbank.org/dataset/316595/taxon/CQ4M)
 
 ### 76 · Phyllobates terribilis · Golden Poison Frog
 

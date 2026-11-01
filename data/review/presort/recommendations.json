@@ -20,6 +20,39 @@
     ]
   },
   {
+    "key": "2:PT",
+    "recommendation": "keep",
+    "confidence": "medium",
+    "reason": "iNaturalist research-grade record in central Lisbon, 2020, 5 m uncertainty, no captive mark, 1.8 km from Lisbon Zoo (Wikidata Q220063): likely a released or escaped animal outside captivity. The only record; COL's list doesn't name Portugal, so no second source agrees.",
+    "cite": [
+      "gbif:occurrence:2619941935",
+      "gbif:dataset:50c9509d-22c7-4a22-a47d-8c48425ef4a7",
+      "col:F6QR"
+    ]
+  },
+  {
+    "key": "4:BR",
+    "recommendation": "remove",
+    "confidence": "medium",
+    "reason": "Undated MCNB specimen with no locality; its coordinates carry 3,227 km uncertainty, so they name only the country. Nothing documents an animal in Brazil, and COL's list is Asian only. Likely misplaced, though the record doesn't say so itself.",
+    "cite": [
+      "gbif:occurrence:858408459",
+      "gbif:dataset:71d58564-f762-11e1-a439-00145eb45e9a",
+      "col:4JZ39"
+    ]
+  },
+  {
+    "key": "4:CD",
+    "recommendation": "remove",
+    "confidence": "low",
+    "reason": "Undated NHMUK specimen, Nyiragongo Territory, Kivu, 500 m uncertainty: a field locality, but on another continent from COL's Asian list, and no second record. Mislabel or misidentification can't be told from the record, so it stays excluded. An NHM curator could settle it.",
+    "cite": [
+      "gbif:occurrence:1056661385",
+      "gbif:dataset:7e380070-f762-11e1-a439-00145eb45e9a",
+      "col:4JZ39"
+    ]
+  },
+  {
     "key": "4:ids.iucn:iucn-id",
     "recommendation": "Critter Connect profile `db/content/animals/04-big-headed-turtle.json`: set `iucnId` 9605 → 17585, then `pnpm seed:cc`, `pnpm ingest wikidata` (a changed `ids.iucn` makes its snapshot stale), `pnpm derive`. Click to confirm: https://www.iucnredlist.org/species/9605 and https://www.iucnredlist.org/species/17585. This changes `/v1` and Learn's lab data, so plain `pnpm build`, and `deploy`, refuse until `pnpm build --draft && pnpm learn:check --update`.",
     "confidence": "high",
@@ -72,12 +105,32 @@
     ]
   },
   {
+    "key": "15:DE",
+    "recommendation": "remove",
+    "confidence": "high",
+    "reason": "Locality \"Zoologischer Garten Frankfurt am Main\": a zoo, NABU|naturgucker record of a captive animal. No other counted record here.",
+    "cite": [
+      "gbif:occurrence:5026285734",
+      "gbif:dataset:6ac3f774-d9fb-4796-b3e9-92bf6c81c084"
+    ]
+  },
+  {
     "key": "15:ids.iucn:iucn-id",
     "recommendation": "Critter Connect profile `db/content/animals/15-pancake-tortoise.json`: set `iucnId` 9041 → 12696, then `pnpm seed:cc`, `pnpm ingest wikidata` (a changed `ids.iucn` makes its snapshot stale), `pnpm derive`. Click to confirm: https://www.iucnredlist.org/species/9041 and https://www.iucnredlist.org/species/12696. This changes `/v1` and Learn's lab data, so plain `pnpm build`, and `deploy`, refuse until `pnpm build --draft && pnpm learn:check --update`.",
     "confidence": "high",
     "reason": "Wikidata Q832357 gives 12696 (stated in the Red List). The Critter Connect profile's own Red List link also uses 12696; only its iucnId says 9041.",
     "cite": [
       "wikidata:Q832357"
+    ]
+  },
+  {
+    "key": "17:US",
+    "recommendation": "remove",
+    "confidence": "high",
+    "reason": "MVZ specimen, 2002, marked degreeOfEstablishment \"captive\", at a street address in Fort Myers, Florida. The record itself says captive; no other counted record here.",
+    "cite": [
+      "gbif:occurrence:5147427224",
+      "gbif:dataset:09c4287e-e6d5-4552-a07f-bff8a00833d8"
     ]
   },
   {
@@ -121,12 +174,63 @@
     ]
   },
   {
+    "key": "20:DE",
+    "recommendation": "remove",
+    "confidence": "medium",
+    "reason": "NABU|naturgucker record, 2023, locality \"Luisenpark - Mannheim\": a city park that keeps animals (Wikidata Q202120, 0.4 km). The record doesn't say captive itself, and no wild sign; the only record here.",
+    "cite": [
+      "gbif:occurrence:5028531300",
+      "gbif:dataset:6ac3f774-d9fb-4796-b3e9-92bf6c81c084"
+    ]
+  },
+  {
+    "key": "20:ES",
+    "recommendation": "remove",
+    "confidence": "low",
+    "reason": "ornitho.cat record, Catalonia, 2025, no locality, 7 km uncertainty, no captive mark. A pet escape outside captivity or a garden animal can't be told apart from these fields, and COL's list is African. It stays excluded.",
+    "cite": [
+      "gbif:occurrence:6289713848",
+      "gbif:dataset:f3278405-0943-41a0-9f04-3a7733ec344d",
+      "col:S9KW"
+    ]
+  },
+  {
+    "key": "20:NL",
+    "recommendation": "remove",
+    "confidence": "high",
+    "reason": "Natural History Museum Rotterdam specimen, 2025, locality \"Locality not ascertained, Rotterdam Zoo specimen\". The record itself says zoo; no other counted record here.",
+    "cite": [
+      "gbif:occurrence:5931806081",
+      "gbif:dataset:a307e4d7-1de2-4adc-95d5-a0a8d5f57236"
+    ]
+  },
+  {
+    "key": "20:SG",
+    "recommendation": "remove",
+    "confidence": "high",
+    "reason": "NABU|naturgucker record, 2012, locality \"Chinesischer und Japanischer Garten mit Schildkrötenmuseum, Singapur\": a turtle museum in a garden, so a kept animal. No other counted record here.",
+    "cite": [
+      "gbif:occurrence:5014669903",
+      "gbif:dataset:6ac3f774-d9fb-4796-b3e9-92bf6c81c084"
+    ]
+  },
+  {
     "key": "20:ids.iucn:iucn-id",
     "recommendation": "Critter Connect profile `db/content/animals/20-african-spurred-tortoise.json`: set `iucnId` 9781 → 163423, then `pnpm seed:cc`, `pnpm ingest wikidata` (a changed `ids.iucn` makes its snapshot stale), `pnpm derive`. Click to confirm: https://www.iucnredlist.org/species/9781 and https://www.iucnredlist.org/species/163423. This changes `/v1` and Learn's lab data, so plain `pnpm build`, and `deploy`, refuse until `pnpm build --draft && pnpm learn:check --update`.",
     "confidence": "high",
     "reason": "Wikidata Q301016 gives 163423 (stated in the Red List). The Critter Connect profile's own Red List link also uses 163423; only its iucnId says 9781.",
     "cite": [
       "wikidata:Q301016"
+    ]
+  },
+  {
+    "key": "21:DE",
+    "recommendation": "remove",
+    "confidence": "high",
+    "reason": "Locality \"Zoologischer Garten Berlin\": a zoo, NABU|naturgucker record of a captive animal. No other counted record here.",
+    "cite": [
+      "gbif:occurrence:5013592795",
+      "gbif:dataset:6ac3f774-d9fb-4796-b3e9-92bf6c81c084"
     ]
   },
   {
@@ -160,6 +264,90 @@
     ]
   },
   {
+    "key": "23:CN",
+    "recommendation": "remove",
+    "confidence": "medium",
+    "reason": "INSDC sequence record, 2025: \"mRNA, complete cds\", no locality. A lab sequence, not an animal observed in China; the coordinates likely mark the submitter. COL says Africa. Inferred from the record type, not stated by it.",
+    "cite": [
+      "gbif:occurrence:6322377438",
+      "gbif:dataset:d8cd16ba-bb74-4420-821e-083f2bac17c2",
+      "col:34B7X"
+    ]
+  },
+  {
+    "key": "23:FR",
+    "recommendation": "remove",
+    "confidence": "medium",
+    "reason": "Undated MNHN (Paris) specimen with no locality; its coordinates fall 0.1 km from Paris Zoological Park (Wikidata Q1969385). COL says Africa. Points to a zoo animal, but the record itself doesn't name one.",
+    "cite": [
+      "gbif:occurrence:1426045795",
+      "gbif:dataset:3959ee49-7678-4a88-9049-5dfc55ccebf3",
+      "col:34B7X"
+    ]
+  },
+  {
+    "key": "25:CA",
+    "recommendation": "remove",
+    "confidence": "medium",
+    "reason": "iBOL record \"Mined from GenBank\": a sequence, no locality, no date, coordinates near the middle of Canada. It documents no animal there, and COL doesn't list the Americas. Inferred from the record type, not stated by it.",
+    "cite": [
+      "gbif:occurrence:2251400446",
+      "gbif:dataset:040c5662-da76-4782-a48e-cdea1892d14c",
+      "col:4CGXS"
+    ]
+  },
+  {
+    "key": "25:DK",
+    "recommendation": "remove",
+    "confidence": "high",
+    "reason": "NTNU specimen, 1963, remarks \"København, gave fra zoologisk have\": a gift from the Copenhagen zoo. The record itself says zoo; no other counted record here.",
+    "cite": [
+      "gbif:occurrence:1809981640",
+      "gbif:dataset:44ff990f-945e-4b37-9060-fc7de856b1ea"
+    ]
+  },
+  {
+    "key": "25:KE",
+    "recommendation": "remove",
+    "confidence": "medium",
+    "reason": "iBOL record \"Mined from GenBank\", 2012: a sequence, no locality, coordinates near the middle of Kenya. It documents no animal there, and COL doesn't list Africa. Inferred from the record type, not stated by it.",
+    "cite": [
+      "gbif:occurrence:3032895801",
+      "gbif:dataset:040c5662-da76-4782-a48e-cdea1892d14c",
+      "col:4CGXS"
+    ]
+  },
+  {
+    "key": "25:MW",
+    "recommendation": "remove",
+    "confidence": "high",
+    "reason": "Macaulay Library recording, 1994, Lilongwe Nature Center, notes \"Range Status: Captive\", \"Caged at park headquarters\". The record itself says captive; no other counted record here.",
+    "cite": [
+      "gbif:occurrence:1147087823",
+      "gbif:dataset:7f6dd0f7-9ed4-49c0-bb71-b2a9c7fed9f1"
+    ]
+  },
+  {
+    "key": "25:NL",
+    "recommendation": "remove",
+    "confidence": "medium",
+    "reason": "Natuurmuseum Brabant specimen, 1976, locality \"Arnhem\", 5 km uncertainty, 6.6 km from Burgers' Zoo (Wikidata Q390504). A city locality with no wild sign points to a zoo animal, but the record doesn't say so.",
+    "cite": [
+      "gbif:occurrence:4101747025",
+      "gbif:dataset:3c2eb73a-82c8-4373-956f-1cb9473f76ba"
+    ]
+  },
+  {
+    "key": "25:SE",
+    "recommendation": "remove",
+    "confidence": "high",
+    "reason": "NTNU specimen, remarks \"Frösön Dyrepark, Østersund. Kranium. Utstilt\": a skull from an animal park, put on display. The record itself names the park; no other counted record here.",
+    "cite": [
+      "gbif:occurrence:1809982003",
+      "gbif:dataset:44ff990f-945e-4b37-9060-fc7de856b1ea"
+    ]
+  },
+  {
     "key": "27:ids.col:not-found",
     "recommendation": "Rename to Zaglossus bruijni: `scientificName` in Critter Connect profile `db/content/animals/27-western-long-beaked-echidna.json`, and P225 on Wikidata Q635949 (derive joins Wikidata on P225, so the item must follow). Then `pnpm seed:cc`, `pnpm ingest wikidata`, `pnpm ingest col`, `pnpm ingest gbif`, `pnpm derive`. One rename settles both 27 entries; `ids.col` fills and the countries publish. Cost of a species change (AGENTS.md, about 1 h: new GBIF sample, `pnpm ingest habitat`, learn-sample DOI), plus the Learn follow-on: This changes `/v1` and Learn's lab data, so plain `pnpm build`, and `deploy`, refuse until `pnpm build --draft && pnpm learn:check --update`.",
     "confidence": "medium",
@@ -180,6 +368,49 @@
     ]
   },
   {
+    "key": "28:BR",
+    "recommendation": "remove",
+    "confidence": "low",
+    "reason": "ICMBio SISBio record, Santa Catarina, 2012, no locality, no captive mark. Nothing says zoo or wild (no zoo found within 3 km on Wikidata), and COL's list is Southern Asia. Too thin to call, so it stays excluded.",
+    "cite": [
+      "gbif:occurrence:6511234162",
+      "gbif:dataset:ffe38a37-d659-4b1a-a935-5a5264e3cc0a",
+      "col:398D9"
+    ]
+  },
+  {
+    "key": "28:CF",
+    "recommendation": "remove",
+    "confidence": "low",
+    "reason": "Undated MNHN specimen, locality \"Bangui\", the country's capital. No sign of captivity, misidentification or a wild animal in the fields, and COL's list is Southern Asia. Too thin to call, so it stays excluded.",
+    "cite": [
+      "gbif:occurrence:1044048819",
+      "gbif:dataset:3959ee49-7678-4a88-9049-5dfc55ccebf3",
+      "col:398D9"
+    ]
+  },
+  {
+    "key": "28:NL",
+    "recommendation": "remove",
+    "confidence": "medium",
+    "reason": "Natuurmuseum Brabant specimen, 1906, locality \"Amsterdam\", 10 km uncertainty. A city locality with no wild sign, and COL's list is Southern Asia: points to a kept animal, but the record doesn't say so.",
+    "cite": [
+      "gbif:occurrence:4101746898",
+      "gbif:dataset:3c2eb73a-82c8-4373-956f-1cb9473f76ba",
+      "col:398D9"
+    ]
+  },
+  {
+    "key": "29:DE",
+    "recommendation": "remove",
+    "confidence": "high",
+    "reason": "Locality \"Zoologischer Garten Berlin\": a zoo, NABU|naturgucker record of a captive animal. No other counted record here.",
+    "cite": [
+      "gbif:occurrence:5014542417",
+      "gbif:dataset:6ac3f774-d9fb-4796-b3e9-92bf6c81c084"
+    ]
+  },
+  {
     "key": "35:ids.inaturalist:multi-value",
     "recommendation": "Wikidata Q41960: remove P3151 418148, keep 41653, then `pnpm ingest wikidata`, `pnpm derive`. `ids.inaturalist` becomes 41653. Click to confirm: https://www.inaturalist.org/taxa/41653 and https://www.inaturalist.org/taxa/418148. This changes `/v1` and Learn's lab data, so plain `pnpm build`, and `deploy`, refuse until `pnpm build --draft && pnpm learn:check --update`.",
     "confidence": "medium",
@@ -187,6 +418,17 @@
     "cite": [
       "entry",
       "wikidata:Q41960"
+    ]
+  },
+  {
+    "key": "39:NL",
+    "recommendation": "remove",
+    "confidence": "medium",
+    "reason": "Natuurmuseum Brabant specimen, 1978, locality \"Arnhem\", 5 km uncertainty, 6.6 km from Burgers' Zoo (Wikidata Q390504). COL says Africa. A city locality points to a zoo animal, but the record doesn't say so.",
+    "cite": [
+      "gbif:occurrence:4101748225",
+      "gbif:dataset:3c2eb73a-82c8-4373-956f-1cb9473f76ba",
+      "col:7TKN5"
     ]
   },
   {
@@ -209,6 +451,37 @@
     ]
   },
   {
+    "key": "50:BR",
+    "recommendation": "remove",
+    "confidence": "medium",
+    "reason": "ICMBio SISBio record, 2019, São Paulo; its coordinates fall 0.04 km from São Paulo Zoo (Wikidata Q3364798). COL says Africa. Points to a zoo animal, but the record itself doesn't name one.",
+    "cite": [
+      "gbif:occurrence:6510623347",
+      "gbif:dataset:ffe38a37-d659-4b1a-a935-5a5264e3cc0a",
+      "col:652YZ"
+    ]
+  },
+  {
+    "key": "50:DE",
+    "recommendation": "remove",
+    "confidence": "high",
+    "reason": "Locality \"Zoologischer Garten Frankfurt am Main\": a zoo, NABU|naturgucker record of a captive animal. No other counted record here.",
+    "cite": [
+      "gbif:occurrence:5015965753",
+      "gbif:dataset:6ac3f774-d9fb-4796-b3e9-92bf6c81c084"
+    ]
+  },
+  {
+    "key": "52:DE",
+    "recommendation": "remove",
+    "confidence": "high",
+    "reason": "Locality \"Zoo Köln\": a zoo, NABU|naturgucker record of a captive animal. No other counted record here.",
+    "cite": [
+      "gbif:occurrence:5019266970",
+      "gbif:dataset:6ac3f774-d9fb-4796-b3e9-92bf6c81c084"
+    ]
+  },
+  {
     "key": "55:ids.gbif:synonym-info",
     "recommendation": "no action",
     "confidence": "high",
@@ -216,6 +489,58 @@
     "cite": [
       "entry",
       "wikidata:Q20085878"
+    ]
+  },
+  {
+    "key": "56:BE",
+    "recommendation": "remove",
+    "confidence": "high",
+    "reason": "Ghent University specimen, 1855, locality \"Gentse Dierentuin\": the Ghent zoo. The record itself names the zoo; no other counted record here.",
+    "cite": [
+      "gbif:occurrence:1313779598",
+      "gbif:dataset:0310b080-ec4b-11dc-b73e-b8a03c50a862"
+    ]
+  },
+  {
+    "key": "56:FR",
+    "recommendation": "remove",
+    "confidence": "medium",
+    "reason": "Luxembourg museum specimen, 1899, locality \"Unknown\", so the coordinates in Meuse rest on no stated place. COL says Africa. Likely misplaced, though the record doesn't say so itself.",
+    "cite": [
+      "gbif:occurrence:2417942385",
+      "gbif:dataset:962f59bc-f762-11e1-a439-00145eb45e9a",
+      "col:4C92G"
+    ]
+  },
+  {
+    "key": "56:NU",
+    "recommendation": "remove",
+    "confidence": "high",
+    "reason": "Australian Microbiome 18S record, 2016: a DNA read from an aquatic sample, in the Pacific south of Niue. No chimpanzee was there; the dataset is sequence reads from water, so this is a misidentified or contaminant read. The only record.",
+    "cite": [
+      "gbif:occurrence:5950614035",
+      "gbif:dataset:9fc74265-28a7-4d62-97ea-33eb5588562e"
+    ]
+  },
+  {
+    "key": "56:RU",
+    "recommendation": "remove",
+    "confidence": "high",
+    "reason": "Animal Sound Archive recording, locality \"Zoo Moskau\": a zoo, so a captive animal. No other counted record here.",
+    "cite": [
+      "gbif:occurrence:779861061",
+      "gbif:dataset:b7ec1bf8-819b-11e2-bad2-00145eb45e9a"
+    ]
+  },
+  {
+    "key": "58:IQ",
+    "recommendation": "keep",
+    "confidence": "medium",
+    "reason": "NHMUK specimen, July 1928, Shamiyan Desert near Busaiyah Wells: a dated field locality, no captive mark. COL says Africa; Southern Asia, which doesn't clearly include Iraq, so no second source agrees. Restores the country, as a historical record.",
+    "cite": [
+      "gbif:occurrence:1919841811",
+      "gbif:dataset:7e380070-f762-11e1-a439-00145eb45e9a",
+      "col:9BTZ"
     ]
   },
   {
@@ -227,6 +552,16 @@
       "col:3XVJJ",
       "col:7VRVK",
       "wikidata:Q752467"
+    ]
+  },
+  {
+    "key": "60:US",
+    "recommendation": "remove",
+    "confidence": "high",
+    "reason": "iBOL sequence from an NIH genomics lab, no locality, no date, remarks \"Check provenance - Country\", coordinates near the middle of the USA. The record itself doubts its country; no other counted record here.",
+    "cite": [
+      "gbif:occurrence:2248830674",
+      "gbif:dataset:040c5662-da76-4782-a48e-cdea1892d14c"
     ]
   },
   {
@@ -247,6 +582,48 @@
     "cite": [
       "entry",
       "wikidata:Q28173017"
+    ]
+  },
+  {
+    "key": "65:KR",
+    "recommendation": "remove",
+    "confidence": "medium",
+    "reason": "iBOL record \"Mined from GenBank\": a sequence, no locality, no date, coordinates near the middle of South Korea. It documents no animal there, and COL says Africa. Inferred from the record type, not stated by it.",
+    "cite": [
+      "gbif:occurrence:2250111357",
+      "gbif:dataset:040c5662-da76-4782-a48e-cdea1892d14c",
+      "col:73256"
+    ]
+  },
+  {
+    "key": "66:DE",
+    "recommendation": "remove",
+    "confidence": "high",
+    "reason": "Locality \"Zoologischer Garten Frankfurt am Main\": a zoo, NABU|naturgucker record of a captive animal. No other counted record here.",
+    "cite": [
+      "gbif:occurrence:5021247157",
+      "gbif:dataset:6ac3f774-d9fb-4796-b3e9-92bf6c81c084"
+    ]
+  },
+  {
+    "key": "68:US",
+    "recommendation": "remove",
+    "confidence": "high",
+    "reason": "Angelo State specimen, locality \"San Antonio Zoo\", a taxidermy head. The record itself names the zoo; no other counted record here.",
+    "cite": [
+      "gbif:occurrence:2804488420",
+      "gbif:dataset:2aa02cf8-c402-412c-9ad1-585e1e185bef"
+    ]
+  },
+  {
+    "key": "69:PA",
+    "recommendation": "remove",
+    "confidence": "low",
+    "reason": "AMNH specimen, January 1938, no locality, establishmentMeans \"native\", coordinates 5.98, -79.80 at sea south of Panama. The field and the coordinates conflict with COL's \"Africa\"; a data error is likely but not proven, so it stays excluded.",
+    "cite": [
+      "gbif:occurrence:859508226",
+      "gbif:dataset:96ca66b4-f762-11e1-a439-00145eb45e9a",
+      "col:45LTS"
     ]
   },
   {
@@ -272,6 +649,16 @@
     ]
   },
   {
+    "key": "71:DE",
+    "recommendation": "remove",
+    "confidence": "high",
+    "reason": "Locality \"Zoologischer Garten Frankfurt am Main\": a zoo, NABU|naturgucker record of a captive animal. No other counted record here.",
+    "cite": [
+      "gbif:occurrence:5022167739",
+      "gbif:dataset:6ac3f774-d9fb-4796-b3e9-92bf6c81c084"
+    ]
+  },
+  {
     "key": "73:ids.col:identity",
     "recommendation": "Wikidata Q83774: replace P10585 4PZZR with 4PZZS, then `pnpm ingest wikidata`, `pnpm derive`. `ids.col` fills and the taxonomy comes from COL. This changes `/v1` and Learn's lab data, so plain `pnpm build`, and `deploy`, refuse until `pnpm build --draft && pnpm learn:check --update`.",
     "confidence": "high",
@@ -280,6 +667,17 @@
       "col:4PZZS",
       "col:4PZZR",
       "wikidata:Q83774"
+    ]
+  },
+  {
+    "key": "74:UA",
+    "recommendation": "remove",
+    "confidence": "medium",
+    "reason": "iBOL record \"Mined from GenBank\": a sequence, no locality, no date, coordinates near the middle of Ukraine. It documents no animal there, and COL says Middle America. Inferred from the record type, not stated by it.",
+    "cite": [
+      "gbif:occurrence:4913773496",
+      "gbif:dataset:040c5662-da76-4782-a48e-cdea1892d14c",
+      "col:CQ4M"
     ]
   }
 ]
